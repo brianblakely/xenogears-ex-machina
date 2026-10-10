@@ -311,7 +311,7 @@ void func_8007A968(u8 **pc, u8 enemy) {
 
 /* AI action 07: resident halfword b1 = b2. */
 void func_8007A9A8(u8 **pc) {
-    D_8005A3A0[(*pc)[1]] = (*pc)[2];
+    mode_battle_ai_variables[(*pc)[1]] = (*pc)[2];
 }
 
 /* AI action 08: byte variable b1 += b2, saturating at 0xff. */
@@ -655,7 +655,7 @@ void func_8007B6C0(u8 **pc, u8 enemy) {
             D_800CCCE8.records[func_80079E7C(D_800D3400[enemy].vars[op[3]])].gear.hp;
         break;
     case 2:
-        D_800D3400[enemy].longs[op[1]] = D_8006D634.gold;
+        D_800D3400[enemy].longs[op[1]] = game_data.gold;
         break;
     }
 }
@@ -681,14 +681,14 @@ u8 func_8007B7B0(u8 **pc, u8 enemy, u8 count) {
 void func_8007B8D4(u8 **pc, u8 enemy) {
     u8 *op = *pc;
 
-    D_800D3400[enemy].vars[op[1]] = D_8005A3A0[op[2]];
+    D_800D3400[enemy].vars[op[1]] = mode_battle_ai_variables[op[2]];
 }
 
 /* AI action 31: resident halfword b2 = variable b1. */
 void func_8007B914(u8 **pc, u8 enemy) {
     u8 *op = *pc;
 
-    D_8005A3A0[op[2]] = D_800D3400[enemy].vars[op[1]];
+    mode_battle_ai_variables[op[2]] = D_800D3400[enemy].vars[op[1]];
 }
 
 /* AI action 32: byte variable b2 = byte variable b1. */
@@ -782,7 +782,7 @@ void func_8007BC40(u8 **pc, u8 *list, u8 count) {
 
 /* AI action 3e: byte variable b1 = random 0..b2. */
 void func_8007BC84(u8 **pc, u8 enemy) {
-    D_800D3400[enemy].bytes[(*pc)[1]] = func_8001BD40(0, (*pc)[2]);
+    D_800D3400[enemy].bytes[(*pc)[1]] = mode_get_random_byte_in_range(0, (*pc)[2]);
 }
 
 /* AI action 3f: variable b1 = random 0..(b2 | b3 << 8). */
@@ -803,7 +803,7 @@ void func_8007BD5C(u8 **pc, u8 enemy) {
     tried[0] = 0;
     D_800D3400[enemy].vars[(*pc)[1]] = 0;
     while (!(tried[2] & (tried[0] & tried[1]))) {
-        slot = func_8001BD40(0, 2);
+        slot = mode_get_random_byte_in_range(0, 2);
         if (tried[slot] == 0) {
             if (func_8007A628(slot, (*pc)[2]) && D_800D32A0[slot].unk1 == 0) {
                 D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(slot);
@@ -825,7 +825,7 @@ void func_8007BEA8(u8 **pc, u8 enemy) {
     tried[0] = 0;
     D_800D3400[enemy].vars[(*pc)[1]] = 0;
     while (!(tried[2] & (tried[0] & tried[1]))) {
-        slot = func_8001BD40(0, 2);
+        slot = mode_get_random_byte_in_range(0, 2);
         if (tried[slot] == 0) {
             if (func_8007A628(slot, (*pc)[2]) && D_800C3EB4[enemy + 3].group == D_800C3EB4[slot].group &&
                 D_800D32A0[slot].unk1 == 0) {
@@ -855,7 +855,7 @@ void func_8007C040(u8 **pc, u8 enemy) {
         }
     }
     if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[mode_get_random_byte_in_range(0, count - 1)]);
     }
 }
 
@@ -870,7 +870,7 @@ void func_8007C1A4(u8 **pc, u8 enemy) {
     tried[0] = 0;
     D_800D3400[enemy].vars[(*pc)[1]] = 0;
     while (!(tried[2] & (tried[0] & tried[1]))) {
-        slot = func_8001BD40(0, 2);
+        slot = mode_get_random_byte_in_range(0, 2);
         if (tried[slot] == 0) {
             if (func_8007A628(slot, (*pc)[2]) && D_800C3EB4[enemy + 3].group != D_800C3EB4[slot].group &&
                 D_800D32A0[slot].unk1 == 0) {
@@ -899,7 +899,7 @@ void func_8007C33C(u8 **pc, u8 enemy) {
         }
     }
     if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[mode_get_random_byte_in_range(0, count - 1)]);
     }
 }
 
@@ -978,7 +978,7 @@ void func_8007C840(u8 **pc, u8 enemy) {
     tried[0] = 0;
     D_800D3400[enemy].vars[(*pc)[1]] = 0;
     while (!(tried[2] & (tried[0] & tried[1]))) {
-        slot = func_8001BD40(0, 2);
+        slot = mode_get_random_byte_in_range(0, 2);
         if (tried[slot] == 0) {
             if (func_8007A628(slot, (*pc)[2]) && D_800D32A0[slot].unk1 != 0 &&
                 D_800C3EB4[enemy + 3].group == D_800C3EB4[slot].group) {
@@ -1001,7 +1001,7 @@ void func_8007C9D4(u8 **pc, u8 enemy) {
     tried[0] = 0;
     D_800D3400[enemy].vars[(*pc)[1]] = 0;
     while (!(tried[2] & (tried[0] & tried[1]))) {
-        slot = func_8001BD40(0, 2);
+        slot = mode_get_random_byte_in_range(0, 2);
         if (tried[slot] == 0) {
             if (func_8007A628(slot, (*pc)[2]) && D_800D32A0[slot].unk1 != 0) {
                 D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(slot);
@@ -1028,7 +1028,7 @@ void func_8007CB20(u8 **pc, u8 enemy) {
         }
     }
     if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[mode_get_random_byte_in_range(0, count - 1)]);
     }
 }
 
@@ -1123,7 +1123,7 @@ void func_8007D148(u8 **pc, u8 *list, u8 enemy, u8 count) {
 
 /* AI action 53: long b1 = the party's gold. */
 void func_8007D1A8(u8 **pc, u8 enemy) {
-    D_800D3400[enemy].longs[(*pc)[1]] = D_8006D634.gold;
+    D_800D3400[enemy].longs[(*pc)[1]] = game_data.gold;
 }
 
 /* AI action 54: variable b1 = the bit of a random slot passing 8007a744
@@ -1142,7 +1142,7 @@ void func_8007D1DC(u8 **pc, u8 enemy) {
         }
     }
     if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[mode_get_random_byte_in_range(0, count - 1)]);
     }
 }
 
@@ -1168,7 +1168,7 @@ void func_8007D344(u8 **pc, u8 enemy) {
         }
     }
     if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+        D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(candidates[mode_get_random_byte_in_range(0, count - 1)]);
     }
 }
 
@@ -1184,7 +1184,7 @@ void func_8007D478(u8 **pc, u8 enemy) {
     tried[0] = 0;
     D_800D3400[enemy].vars[(*pc)[1]] = 0;
     while (!(tried[2] & (tried[0] & tried[1]))) {
-        slot = func_8001BD40(0, 2);
+        slot = mode_get_random_byte_in_range(0, 2);
         if (tried[slot] == 0) {
             flags = D_800CCCE8.records[slot].pilot.status7C;
             if ((flags & 0x8000) && !(flags & 0x4002)) {
@@ -1272,7 +1272,7 @@ void func_8007D8C0(u8 **pc, u8 enemy) {
         }
     }
     if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[mode_get_random_byte_in_range(0, count - 1)]);
     }
 }
 
@@ -1290,7 +1290,7 @@ void func_8007DA1C(u8 **pc, u8 enemy) {
         }
     }
     if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[mode_get_random_byte_in_range(0, count - 1)]);
     }
 }
 
@@ -1310,7 +1310,7 @@ void func_8007DB78(u8 **pc, u8 enemy) {
         }
     }
     if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[mode_get_random_byte_in_range(0, count - 1)]);
     }
 }
 
@@ -1330,7 +1330,7 @@ void func_8007DCF8(u8 **pc, u8 enemy) {
         }
     }
     if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[mode_get_random_byte_in_range(0, count - 1)]);
     }
 }
 
@@ -1349,7 +1349,7 @@ void func_8007DE78(u8 **pc, u8 enemy) {
         }
     }
     if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[mode_get_random_byte_in_range(0, count - 1)]);
     }
 }
 
@@ -1369,7 +1369,7 @@ void func_8007DFD4(u8 **pc, u8 enemy) {
         }
     }
     if (count != 0) {
-        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[func_8001BD40(0, count - 1)]);
+        D_800D3400[enemy].vars[(*pc)[2]] = func_80089C08(candidates[mode_get_random_byte_in_range(0, count - 1)]);
     }
 }
 
@@ -2245,7 +2245,7 @@ void func_8007FBE0(u8 count, u8 selected) {
 /* Release the loaded menu module block (UI +0xae). */
 void func_8007FCE8(void) {
     if (D_800D2D28->unkAE != 0) {
-        func_800320E8(D_800D367C);
+        heap_free(D_800D367C);
         D_800D2D28->unkAE = 0;
     }
 }
@@ -2262,8 +2262,8 @@ void func_8007FD38(u8 member) {
             file = 1;
         }
         func_8008AB94();
-        D_800D367C = (void *)func_8008ABB8(func_800288EC(file), 0);
-        func_800295D8(file, D_800D367C, 0, 0x80);
+        D_800D367C = (void *)func_8008ABB8(cd_get_aligned_file_size(file), 0);
+        cd_read_file(file, D_800D367C, 0, 0x80);
         func_8008AC50();
         D_800D2D28->unkAE = 1;
     }
@@ -2272,7 +2272,7 @@ void func_8007FD38(u8 member) {
 /* Release the loaded file-3 block (UI +0x96). */
 void func_8007FDEC(void) {
     if (D_800D2D28->unk96 != 0) {
-        func_800320E8(D_800C3DE8);
+        heap_free(D_800C3DE8);
         D_800D2D28->unk96 = 0;
     }
 }
@@ -2282,8 +2282,8 @@ void func_8007FE3C(void) {
     if (D_800D2D28->unk96 == 0) {
         func_8008AC50();
         func_8008AB94();
-        D_800C3DE8 = (void *)func_8008ABB8(func_800288EC(3), 0);
-        func_800295D8(3, D_800C3DE8, 0, 0x80);
+        D_800C3DE8 = (void *)func_8008ABB8(cd_get_aligned_file_size(3), 0);
+        cd_read_file(3, D_800C3DE8, 0, 0x80);
         func_8008AC50();
         D_800D2D28->unk96 = 1;
     }
@@ -2350,7 +2350,7 @@ void func_800800E8(u8 member) {
     if (D_800D32A0[member].unk1 == 2) {
         D_800D32A0[member].unk1 = 1;
     }
-    func_800320E8(D_800D2DB4);
+    heap_free(D_800D2DB4);
 }
 
 /* Run party member `member`'s command menu: reset the turn state's menu
@@ -2397,17 +2397,17 @@ void func_80080160(u8 member) {
     }
     if (D_800D2D24[member] == 4) {
         if (D_800D32A0[member].unk1 == 0) {
-            if (D_8006D634.ammo[D_8006D634.characters[4].entryItems[0] - 50] == 0) {
+            if (game_data.ammo[game_data.characters[4].entryItems[0] - 50] == 0) {
                 D_800C3EAC->slots[member].items[0] = D_800C3234[0];
             }
-            if (D_8006D634.ammo[D_8006D634.characters[4].entryItems[3] - 50] == 0) {
+            if (game_data.ammo[game_data.characters[4].entryItems[3] - 50] == 0) {
                 D_800C3EAC->slots[member].items[2] = D_800C3234[2];
             }
         } else {
-            if (D_8006D634.gearAmmo[D_8006D634.gears[D_8006D634.characters[4].gearId].partItems[0] - 50] == 0) {
+            if (game_data.gearAmmo[game_data.gears[game_data.characters[4].gearId].partItems[0] - 50] == 0) {
                 D_800C3EAC->slots[member].items[0] = D_800C3234[0];
             }
-            if (D_8006D634.gearAmmo[D_8006D634.gears[D_8006D634.characters[D_800D2D24[member]].gearId].partItems[3] - 50] == 0) {
+            if (game_data.gearAmmo[game_data.gears[game_data.characters[D_800D2D24[member]].gearId].partItems[3] - 50] == 0) {
                 D_800C3EAC->slots[member].items[2] = D_800C3234[2];
             }
         }
@@ -2620,7 +2620,7 @@ void func_80080C94(u8 member) {
                 *next++ = i;
             }
         }
-        while ((D_800C3E2C = targets[func_8001BD40(0, 10)]) == 0xFF || D_800C3E2C == member) {
+        while ((D_800C3E2C = targets[mode_get_random_byte_in_range(0, 10)]) == 0xFF || D_800C3E2C == member) {
         }
     }
     func_800879A8(member, D_800C3E2C);

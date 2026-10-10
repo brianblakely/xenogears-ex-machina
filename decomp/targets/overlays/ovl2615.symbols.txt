@@ -1,1 +1,4 @@
 D_800D3368 = 0x800D3368;
+// Names tools/names.py gave these addresses (docs/matching.md, Names).
+game_data_party_state = 0x8006F364;
+game_data_slot_in_gear = 0x8006F8E5;

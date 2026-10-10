@@ -69,7 +69,7 @@ s32 func_8007A9F8(s32 index) {
     case 2:
         func_80089160(0x11, NULL, NULL);
         actor->state = 1;
-        func_80039E60((D_8006259C->id << 16) | 1);
+        sound_play_effect((sound_effect_bank->id << 16) | 1);
         break;
     /* 3: slot 2 request 2; emitter groups 0xF and 0x10; area sounds 4-6. */
     case 3:
@@ -77,9 +77,9 @@ s32 func_8007A9F8(s32 index) {
         actor->state = 1;
         func_80089160(0xF, NULL, NULL);
         func_80089160(0x10, NULL, NULL);
-        func_80039E60((D_8006259C->id << 16) | 4);
-        func_80039E60((D_8006259C->id << 16) | 5);
-        func_80039E60((D_8006259C->id << 16) | 6);
+        sound_play_effect((sound_effect_bank->id << 16) | 4);
+        sound_play_effect((sound_effect_bank->id << 16) | 5);
+        sound_play_effect((sound_effect_bank->id << 16) | 6);
         break;
     /* 4: slot 2 request 3, slot 3 request 1. */
     case 4:
@@ -93,17 +93,17 @@ s32 func_8007A9F8(s32 index) {
         func_80097770(4, 1);
         func_80097770(5, 1);
         actor->state = 1;
-        func_80039E60((D_8006259C->id << 16) | 7);
-        func_80039E60((D_8006259C->id << 16) | 8);
-        func_80039E60((D_8006259C->id << 16) | 9);
+        sound_play_effect((sound_effect_bank->id << 16) | 7);
+        sound_play_effect((sound_effect_bank->id << 16) | 8);
+        sound_play_effect((sound_effect_bank->id << 16) | 9);
         break;
     /* 6: slot 2 request 4; area sound 0xA, and 0xB and 0xC on voices 12-13. */
     case 6:
         func_80097770(2, 4);
         actor->state = 1;
-        func_80039E60((D_8006259C->id << 16) | 0xA);
-        func_80039E18((D_8006259C->id << 16) | 0xB);
-        func_80039E18((D_8006259C->id << 16) | 0xC);
+        sound_play_effect((sound_effect_bank->id << 16) | 0xA);
+        sound_play_effect_on_channels_12_13((sound_effect_bank->id << 16) | 0xB);
+        sound_play_effect_on_channels_12_13((sound_effect_bank->id << 16) | 0xC);
         break;
     /* 7: slot 2 request 5. */
     case 7:
@@ -565,7 +565,7 @@ void func_8007BF50(void) {
     MoveImage(&rect, 0x2C0, 0x100);
     DrawSync(0);
     func_80072DB4(0x40, 0, 4, 2);
-    while (func_800286CC() >= 3) {
+    while (cd_get_pending_read_count() >= 3) {
     }
     func_80076954();
     func_8009766C();
@@ -576,7 +576,7 @@ void func_8007BF50(void) {
     D_8009D144 = 0;
     D_8009CD40 = func_80086700;
     func_80098044();
-    func_80028A60(0);
+    cd_sync_reads(0);
     func_800721E4();
     D_8009C5AC.vx = 0xD00000;
     D_8009C5AC.vy = -0xA0000;
@@ -590,9 +590,9 @@ void func_8007BF50(void) {
     func_80075030();
     func_800739B8();
     func_80088F64();
-    func_80028A60(0);
-    func_80038428(D_8006259C);
-    func_80028470(0x24, 0);
+    cd_sync_reads(0);
+    sound_add_effect_bank(sound_effect_bank);
+    cd_select_directory(0x24, 0);
     func_80097BC0(&D_8009C5AC);
     do {
         func_800967E4();
@@ -617,9 +617,9 @@ void func_8007BF50(void) {
 
 /* Leave the world map for scene 0x111 (flag word 2), releasing its sound, subsystems and buffers. */
 void func_8007C260(void) {
-    func_80039FF8();
-    func_8003852C(D_8006259C);
-    func_800320E8(D_8006259C);
+    sound_stop_all_effects();
+    sound_remove_effect_bank(sound_effect_bank);
+    heap_free(sound_effect_bank);
     func_80084818();
     func_80086568();
     func_800866C8();
@@ -628,16 +628,16 @@ void func_8007C260(void) {
     func_80088FF4();
     func_80089128();
     func_80097D64();
-    func_800320E8(D_8009BBC8[0].ot);
-    func_800320E8(D_8009BBC8[1].ot);
-    func_800320E8(D_8009BBC8[0].packets);
-    func_800320E8(D_8009BBC8[1].packets);
-    func_800320E8(D_8009C180);
+    heap_free(D_8009BBC8[0].ot);
+    heap_free(D_8009BBC8[1].ot);
+    heap_free(D_8009BBC8[0].packets);
+    heap_free(D_8009BBC8[1].packets);
+    heap_free(D_8009C180);
     func_800976A0();
-    D_8006D634.map = 0x111;
-    D_8006D634.entry[2] = 2;
+    game_data.map = 0x111;
+    game_data.entry[2] = 2;
     D_8009BBC4 = 1;
-    D_8006D634.entry[0] = D_8009BD38.vy;
+    game_data.entry[0] = D_8009BD38.vy;
 }
 
 /* Start an actor's timed sequence: first state and its duration. */

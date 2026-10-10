@@ -72,17 +72,17 @@ typedef struct CameraMove {
 /* Resident calls declared here: these callers convert arguments or results
  * differently from the resident definitions
  * (decomp/src/resident/own_declarations.h). */
-void func_80039DB8(s32 effect);            /* play a sound effect */
-void func_80033698(s32 x, s32 y);          /* text palettes */
-u8 *func_80033728(void *table, s32 index); /* entry of a text table */
-u8 *func_80033A2C(s32 id);                 /* kind 3 part name */
-u8 *func_80033A5C(s32 id);                 /* kind 4 part name */
-void func_80033B34(u8 *codes, u8 *text, s32 count); /* codes to text */
-s32 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text line */
-s32 func_8002675C(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale); /* sprite */
-s32 func_800263E4(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale, s32 flip_x,
+void sound_play_effect_on_last_channels(s32 effect);            /* play a sound effect */
+void text_load_palette(s32 x, s32 y);          /* text palettes */
+u8 *text_get_resource_entry(void *table, s32 index); /* entry of a text table */
+u8 *text_get_gear_accessory_name(s32 id);                 /* kind 3 part name */
+u8 *text_get_gear_part_name(s32 id);                 /* kind 4 part name */
+void text_decode_codes(u8 *codes, u8 *text, s32 count); /* codes to text */
+s32 window_render_text_line(u8 *text, void *pixels, s32 width, s32 line); /* render a text line */
+s32 sprite_sheet_draw_scaled(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale); /* sprite */
+s32 sprite_sheet_draw_scaled_flip(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale, s32 flip_x,
                   s32 flip_y); /* mirrored sprite */
-u8 func_8001BD40(u8 low, u8 high); /* random number in [low, high] */
+u8 mode_get_random_byte_in_range(u8 low, u8 high); /* random number in [low, high] */
 
 /* The actor module (ovl2143/actors.h), whose actor 1 is the gear shown. Its
  * draw, which each target declares itself: this screen passes four

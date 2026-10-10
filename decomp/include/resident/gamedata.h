@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-/* The game data D_8006D634 (0x2358 bytes, a common of the resident): the
+/* The game data game_data (0x2358 bytes, a common of the resident): the
  * saved game, which 8001b970 loads whole from directory 16 file 3 and the
  * file screens copy whole. Every image addresses its parts at these offsets;
  * members carry the names their readers' reviewed uses give them, and a
@@ -255,7 +255,7 @@ typedef struct GameData {
     u8 unk1928[0x1930 - 0x1928];
     u16 vars[0x200];              /* 0x1930: the saved event variables (the field's 800c3a68);
                                    * [0] the scene id (D_8006EF64) */
-    u16 joined;                   /* 0x1D30: characters who may join (D_8006F364) */
+    u16 joined;                   /* 0x1D30: characters who may join (game_data_party_state) */
     u16 available;                /* 0x1D32: characters available */
     u8 party[3];                  /* 0x1D34: character per party slot, 0xff empty */
     u8 unk1D37;
@@ -293,7 +293,7 @@ typedef struct GameData {
     u16 locked;                   /* 0x2318: characters locked in place */
     u16 map;                      /* 0x231A: the saved map (scene) */
     u16 entry[3];                 /* 0x231C: its entry parameters (heading, area); the world
-                                   * map reads entry[2] as its first flag word (D_8006F954) */
+                                   * map reads entry[2] as its first flag word (game_data_worldmap_flag_word) */
     u16 flagWords[17];            /* 0x2322 */
     u8 progress[8];               /* 0x2344: progress flags, one bit each (D_8006F978) */
     SystemOptions options;        /* 0x234C */
@@ -302,8 +302,8 @@ typedef struct GameData {
     u8 unk2356[0x2358 - 0x2356];
 } GameData;
 
-extern GameData D_8006D634;
-extern GameData *D_8005A39C; /* the game data in use (&D_8006D634) */
+extern GameData game_data;
+extern GameData *game_current_data; /* the game data in use (&game_data) */
 
 LAYOUT_CHECK(GameDataRecordSizes, sizeof(CharacterRecord) == 0xA4 && sizeof(GearRecord) == 0xA4 &&
                                       sizeof(CharacterSkills) == 0x20 &&

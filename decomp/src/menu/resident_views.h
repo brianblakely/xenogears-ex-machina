@@ -16,52 +16,52 @@ struct Light;
  * resident definition: the menu passes words where the resident takes
  * narrow parameters (or the reverse), as each comment says. */
 /* The resident takes u8 r, g, b. */
-void func_8002C6E0(s32 r, s32 g, s32 b); /* the back colour */
+void model_set_color(s32 r, s32 g, s32 b); /* the back colour */
 /* The resident takes a ModelBuffer and u8 ** (the world map passes four words). */
-void func_8002CB54(SpriteModel *model, void **first, void **second);
+void model_alloc_packet_buffers(SpriteModel *model, void **first, void **second);
 /* The resident takes u16 x, y. */
-void func_8002CC74(s32 x, s32 y);
+void model_set_clut_override(s32 x, s32 y);
 /* The resident takes s16 modes and u16 second coordinates. */
-void func_8002DDE4(void *target, s32 on, s32 a, s32 b, s32 c, s32 d, s32 e);
+void model_load_image_list(void *target, s32 on, s32 a, s32 b, s32 c, s32 d, s32 e);
 /* The resident takes a u16 index and a ModelLight. */
-void func_80030A30(s32 index, struct Light *light);
+void model_set_light(s32 index, struct Light *light);
 /* The resident takes an s16 kind. */
-void func_800324B8(s32 tag); /* heap allocation tag */
+void heap_set_next_class(s32 tag); /* heap allocation tag */
 /* The resident takes s16 and u16 coordinates and sizes. */
-void func_80032F54(Window *window, s32 x, s32 y, s32 w, s32 h, s32 a5, s32 a6);
+void window_open(Window *window, s32 x, s32 y, s32 w, s32 h, s32 columns, s32 rows);
 /* The resident takes and returns u8 pointers. */
-s32 func_80033728(s32 table, s32 index); /* text string of an index */
+s32 text_get_resource_entry(s32 table, s32 index); /* text string of an index */
 /* The resident returns a u8. */
-s32 func_80033CD0(Window *window); /* chosen answer, 0 while open */
+s32 window_get_wait_state(Window *window); /* chosen answer, 0 while open */
 /* The resident takes u8 r, g, b. */
-void func_80034800(Window *window, s32 colour, s32 a2, s32 a3);
+void window_set_color(Window *window, s32 colour, s32 green, s32 blue);
 /* The resident takes a u8 value. */
-void func_80034874(Window *window, s32 cursor);
+void window_highlight_line(Window *window, s32 cursor);
 /* The resident takes an s16 width. */
-s32 func_80034EAC(s32 string, u8 *image, s32 colour, s32 arg); /* returns width */
+s32 window_render_text_line(s32 string, u8 *image, s32 colour, s32 arg); /* returns width */
 /* The resident takes s16 frames. */
-void func_80036258(s32 port, s32 arg);
+void pad_run_actuator(s32 port, s32 arg);
 /* The resident takes word volume and pan; the menu narrows them to s16. */
-void func_80039F9C(s32 sound, s32 voice, s16 volume, s16 pan); /* key on */
+void sound_play_effect_on_channel_volume_pan(s32 sound, s32 voice, s16 volume, s16 pan); /* key on */
 
 /* The resident's option bytes of the field and the menu (its u8[6] at
  * 8005061c) and the byte after them, each by its own name: indexed from the
  * array, func_800852C4 keeps the array's address in a register where the
  * original loads each byte absolutely. */
-extern u8 D_8005061C; /* nonzero keeps the options in D_8006D634.options */
-extern u8 D_8005061D; /* entry kind (0 bout, 1 bout mode 4, 2 scene) */
-extern u8 D_8005061E; /* first actor's model id */
-extern u8 D_8005061F; /* second actor's model id */
-extern u8 D_80050620; /* option 6 */
-extern u8 D_80050621; /* level */
-extern u8 D_80050622; /* result of the last menu battle */
+extern u8 mode_arena_task_parameters; /* nonzero keeps the options in game_data.options */
+extern u8 mode_arena_entry_kind; /* entry kind (0 bout, 1 bout mode 4, 2 scene) */
+extern u8 mode_arena_first_model; /* first actor's model id */
+extern u8 mode_arena_second_model; /* second actor's model id */
+extern u8 mode_arena_option6; /* option 6 */
+extern u8 mode_arena_level; /* level */
+extern u8 mode_arena_bout_outcome; /* result of the last menu battle */
 
 /* The resident's vertical blank count (main2.c counts it), volatile here:
  * the menu's frame loop reads it again at each use (80088e90). */
-extern volatile s32 D_80059488;
+extern volatile s32 pad_vblank_count;
 
-/* The resident's model colour (main_8002C3E8.c's CVECTOR), which the map
+/* The resident's model colour (model_renderer.c's CVECTOR), which the map
  * drawing rewrites with its code byte as one word (8008779c). */
-extern u32 D_80059598;
+extern u32 model_color;
 
 #endif

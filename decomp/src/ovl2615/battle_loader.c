@@ -21,9 +21,9 @@ void *D_801E96B4;
 /* Start the loading task for the enemy set file `data` while flagging the
  * battle setup as running. */
 void func_801E62E0(u8 *data) {
-    D_800591AF = 1;
+    task_alloc_mode = 1;
     func_801E7098(data);
-    D_800591AF = 0;
+    task_alloc_mode = 0;
 }
 
 /* The enemy set file's sprite rows (slots 3..): its table is a count, a
@@ -59,7 +59,7 @@ void func_801E6314(u8 *data) {
     count = data[0];
     column = data[1] * 0x40 + 0x140;
     table = count * sizeof(EnemyEntry) + 8;
-    D_800D39C8 = func_80031BDC(*(s32 *)(data + 4) - table, 0);
+    D_800D39C8 = heap_alloc(*(s32 *)(data + 4) - table, 0);
     memcpy(D_800D39C8, data + table, *(s32 *)(data + 4) - table);
     entry = (EnemyEntry *)(data + 8);
     base = (u8 *)D_800D39C8 - table;
@@ -111,10 +111,10 @@ void func_801E6314(u8 *data) {
             if (entry->images < 8) {
                 index = entry->images;
             } else {
-                func_80022A70((u8 *)(entry->images + (s32)data), column, 0x100);
+                sprite_upload_images_side_by_side((u8 *)(entry->images + (s32)data), column, 0x100);
                 index = images;
                 columns[images++] = column;
-                column += func_80022A00((s32 *)(entry->images + (s32)data)) << 6;
+                column += sprite_read_word((s32 *)(entry->images + (s32)data)) << 6;
                 if (column >= 0x2C1) {
                     column = 0;
                 }
@@ -161,10 +161,10 @@ void func_801E67A4(s32 slot, s32 row, s32 animation) {
     D_800C3EB0.tasks[slot] = (SpriteTask *)task;
     sprite->slotLow = slot;
     sprite->slotHigh = (u32)slot >> 2;
-    func_80021D3C(sprite, D_800C3EB0.slots[slot].x, D_800C3EB0.slots[slot].z);
+    sprite_set_position_xz(sprite, D_800C3EB0.slots[slot].x, D_800C3EB0.slots[slot].z);
     angle = (D_800C3EB0.slots[slot].targetCode != 0) << 11;
-    func_800223B0(sprite, angle);
-    func_80021FE0(sprite, angle);
+    sprite_set_facing(sprite, angle);
+    sprite_set_direction(sprite, angle);
     if (D_800C3EB0.slots[slot].hidden != 0) {
         sprite->countdown = 0;
     }
@@ -178,13 +178,13 @@ void func_801E693C(FileRequest *list) {
     s32 type;
     void *block;
 
-    func_80028470(0x2C, 1);
+    cd_select_directory(0x2C, 1);
     for (entries = member = 0; member != 3; member++) {
         type = D_800C3EB0.slots[member].field2;
         if (type < 0x11 && D_800C3EB0.slots[member].gear == 0) {
             file = D_801E95BC[type].file;
             list[entries].file = file;
-            block = func_80031BDC(func_800288EC(file), 0);
+            block = heap_alloc(cd_get_aligned_file_size(file), 0);
             list[entries].destination = block;
             entries++;
             D_800C3EB0.sources[member].data = block;
@@ -193,7 +193,7 @@ void func_801E693C(FileRequest *list) {
     }
     list[entries].file = 0;
     list[entries].destination = NULL;
-    func_80029AFC(list, 0, 0);
+    cd_read_file_list(list, 0, 0);
 }
 
 /* Set up the members placed with a model (800bb760). */
@@ -228,8 +228,8 @@ void func_801E6AC4(void) {
             func_801E67A4(member, member, 1);
             sprite = (BattleSprite *)D_800C3EB0.sprites[member];
             *sprite->sequencer = D_801E95BC[type].sequence;
-            func_800320E8(sprite->renderer->parts[0]);
-            sprite->renderer->parts[0] = func_80031BDC(0x300, 0);
+            heap_free(sprite->renderer->parts[0]);
+            sprite->renderer->parts[0] = heap_alloc(0x300, 0);
         }
     }
     if (D_800D36B8 == 0) {
@@ -243,7 +243,7 @@ void func_801E6AC4(void) {
                 sprite->target[0] = x;
                 sprite->target[1] = y;
                 sprite->target[2] = z;
-                func_800245D8((Sprite *)sprite, 0x17);
+                sprite_start_animation((Sprite *)sprite, 0x17);
             }
         }
     }
@@ -265,7 +265,7 @@ void func_801E6C80(Task *node) {
             }
         }
         D_800C3EB0.field8DA8 = 1;
-        func_8001CE44(node);
+        task_destroy_main_task(node);
     } else {
         task->timer--;
     }
@@ -275,30 +275,30 @@ void func_801E6C80(Task *node) {
 void func_801E6D34(Task *node) {
     if (D_800C35D8 == 0) {
         ((LoaderTask *)node)->timer = 0x10;
-        func_8001CD6C(node, func_801E6C80);
+        task_set_update_callback(node, func_801E6C80);
     }
 }
 
 /* Loading state: once the sound transfer is done, release the battle images
  * file and set up the members with models. */
 void func_801E6D6C(Task *node) {
-    if (func_8003BDFC(0) == 0) {
-        func_800320E8(((LoaderTask *)node)->images);
+    if (sound_sync_transfer(0) == 0) {
+        heap_free(((LoaderTask *)node)->images);
         func_801E6A4C();
-        func_8001CD6C(node, func_801E6D34);
+        task_set_update_callback(node, func_801E6D34);
     }
 }
 
 /* Upload the battle images (D_801E96B4) on a private 8 KB stack. */
 void func_801E6DC8(void) {
-    u8 *stack = func_80031BDC(0x2000, 1);
+    u8 *stack = heap_alloc(0x2000, 1);
 
     /* Push the caller's sp at the new stack top and switch to it. */
     STACK_ENTER(stack + 0x1F00);
-    func_8002DDE4(D_801E96B4, 0, 0, 0, 0, 0, 0);
+    model_load_image_list(D_801E96B4, 0, 0, 0, 0, 0, 0);
     DrawSync(0);
     STACK_LEAVE();
-    func_800320E8(stack);
+    heap_free(stack);
 }
 
 /* Loading state: once the disc is idle, upload the battle images, bind the
@@ -309,17 +309,17 @@ void func_801E6E48(Task *node) {
     DVECTOR image;
     DVECTOR clut;
 
-    if (func_800286CC() == 0) {
+    if (cd_get_pending_read_count() == 0) {
         D_801E96B4 = task->images;
         func_801E6DC8();
         image.vx = 0x380;
         image.vy = 0;
         clut.vx = 0;
         clut.vy = 0x1D1;
-        func_80022224(D_8006BE10, task->shared, image, clut, 0);
-        func_80038428(task->effects);
-        D_8005919C = task->effects;
-        func_8001CD6C(node, func_801E6D6C);
+        sprite_resolve_resource(sprite_shared_source, task->shared, image, clut, 0);
+        sound_add_effect_bank(task->effects);
+        sprite_script_sound_bank = task->effects;
+        task_set_update_callback(node, func_801E6D6C);
         func_800B14B8();
     }
 }
@@ -331,21 +331,21 @@ void func_801E6F00(Task *node) {
     FileRequest *files;
     s32 busy;
 
-    busy = func_800286CC();
-    func_80028470(0x2C, 0);
+    busy = cd_get_pending_read_count();
+    cd_select_directory(0x2C, 0);
     if (busy == 0) {
         func_801E6AC4();
         files = task->files;
-        task->images = files[0].destination = func_80031BDC(func_800288EC(1), 1);
+        task->images = files[0].destination = heap_alloc(cd_get_aligned_file_size(1), 1);
         files[0].file = 1;
-        D_800D2D54 = task->shared = files[1].destination = func_80031BDC(func_800288EC(2), 0);
+        D_800D2D54 = task->shared = files[1].destination = heap_alloc(cd_get_aligned_file_size(2), 0);
         files[1].file = 2;
-        task->effects = files[2].destination = func_80031BDC(func_800288EC(3), 0);
+        task->effects = files[2].destination = heap_alloc(cd_get_aligned_file_size(3), 0);
         files[2].file = 3;
         files[3].destination = NULL;
         files[3].file = 0;
-        func_80029AFC(files, 0, 0);
-        func_8001CD6C(node, func_801E6E48);
+        cd_read_file_list(files, 0, 0);
+        task_set_update_callback(node, func_801E6E48);
     }
 }
 
@@ -356,24 +356,24 @@ void func_801E6FEC(Task *node) {
     LoaderTask *task = (LoaderTask *)node;
     u8 *stack;
 
-    if (func_800286CC() == 0) {
-        stack = func_80031BDC(0x4000, 1);
+    if (cd_get_pending_read_count() == 0) {
+        stack = heap_alloc(0x4000, 1);
         STACK_ENTER(stack + 0x3FFC);
         func_801E6314(task->data);
         func_801E6710(task->data);
         STACK_LEAVE();
-        func_800320E8(stack);
+        heap_free(stack);
         DrawSync(0);
-        func_800320E8(task->data);
-        func_8001CD6C(node, func_801E6F00);
+        heap_free(task->data);
+        task_set_update_callback(node, func_801E6F00);
         func_801E693C(task->members);
     }
 }
 
 /* Create the loading task for the enemy set file `data`. */
 void func_801E7098(u8 *data) {
-    LoaderTask *task = (LoaderTask *)func_8001CD08(0, 0x78);
+    LoaderTask *task = (LoaderTask *)task_alloc_main_task(0, 0x78);
 
-    func_8001CD6C(&task->task, func_801E6FEC);
+    task_set_update_callback(&task->task, func_801E6FEC);
     task->data = data;
 }

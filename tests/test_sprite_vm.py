@@ -181,11 +181,11 @@ def block(*scripts: bytes, directory_high: int = 0, sections: int = 3) -> bytes:
 
 class SpriteDisassemblyTests(unittest.TestCase):
     def test_tables_hold_exactly_the_recovered_switch_cases(self):
-        generic = function_body("decomp/src/resident/sprite.c", "func_8001FBE4")
+        generic = function_body("decomp/src/resident/sprite.c", "sprite_vm_run_generic_command")
         self.assertEqual(hex_cases(generic), set(vm.GENERIC))
         shared = set(vm._interpreter("x"))
-        resident = "decomp/src/resident/sprite_800248D4.c"
-        self.assertEqual(hex_cases(function_body(resident, "func_800248D4")), shared)
+        resident = "decomp/src/resident/sprite_vm_draw.c"
+        self.assertEqual(hex_cases(function_body(resident, "sprite_vm_run")), shared)
         battle = function_body("decomp/src/battle/battle_800C11CC.c", "func_800C11CC")
         own = {op for op, spec in vm.BATTLE_SPECS.items() if spec.handler[:8] == "800c11cc"}
         self.assertEqual(hex_cases(battle), own)
@@ -198,8 +198,10 @@ class SpriteDisassemblyTests(unittest.TestCase):
     def test_lengths_follow_the_width_rule_except_be(self):
         self.assertEqual([vm.table_width(op) for op in (0x80, 0x9F, 0xA0, 0xC7)], [1, 1, 2, 2])
         self.assertEqual([vm.table_width(op) for op in (0xC8, 0xF0, 0xF1, 0xFF)], [3, 3, 4, 4])
-        source = (ROOT / "decomp/src/resident/sprite_80022090.c").read_text()
-        table = re.search(r"u8 D_8004FCC0\[0x80\] = \{([^}]*)\}", source).group(1)
+        source = re.sub(
+            r"/\*.*?\*/", "", (ROOT / "decomp/src/resident/sprite_construction.c").read_text()
+        )
+        table = re.search(r"u8 sprite_vm_command_lengths\[0x80\] = \{([^}]*)\}", source).group(1)
         lengths = [int(value) for value in re.findall(r"\d+", table)]
         self.assertEqual(lengths, [vm.table_width(op) for op in range(0x80, 0x100)])
         for dialect in vm.DIALECTS:

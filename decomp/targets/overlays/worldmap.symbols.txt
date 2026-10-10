@@ -1,6 +1,6 @@
 // The resident's VSync callback (resident/pad.h), which the overlay entry
 // installs again.
-func_8003634C = 0x8003634C; // type:func
+pad_vblank_callback = 0x8003634C; // type:func
 // Sizes of C data objects whose interior the code addresses at unaligned
 // offsets: splat would otherwise name each such address and list it in
 // undefined_syms_auto.txt.
@@ -15,3 +15,13 @@ D_8009B578 = 0x8009B578; // size:0xA
 D_8009B624 = 0x8009B624; // size:0x28
 D_8009B64C = 0x8009B64C; // size:0x28
 D_8009BB48 = 0x8009BB48; // size:0x3
+// Names tools/names.py gave these addresses (docs/matching.md, Names).
+game_data_parked_vehicle0_heading = 0x8006EE5A;
+game_data_parked_vehicle1_heading = 0x8006EE5C;
+game_data_parked_vehicle2_heading = 0x8006EE5E;
+game_data_flying_vehicle_heading = 0x8006EE66;
+game_data_worldmap_return_flags = 0x8006EE68;
+game_data_vehicle_spots_by_follower = 0x8006EF8A;
+game_data_vehicle_spots = 0x8006EF8E;
+game_data_party_state = 0x8006F364;
+game_data_worldmap_flag_word = 0x8006F954;

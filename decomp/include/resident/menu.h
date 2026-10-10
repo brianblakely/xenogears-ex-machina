@@ -61,7 +61,7 @@ typedef struct {
     SVECTOR verts[4];  /* 0x50: corners when drawn through the GTE */
     RECT rect;         /* 0x70: VRAM area of the rendered text */
     u8 *pixels;        /* 0x78: render buffer (only labels[0] owns one) */
-    u8 highlight;      /* 0x7c: the highlighted CLUT (D_80059414), else the plain one */
+    u8 highlight;      /* 0x7c: the highlighted CLUT (text_plane1_clut), else the plain one */
     u8 buffer;         /* 0x7d: the quad of the buffer it was built for */
     u8 width;          /* 0x7e: rendered text width */
     u8 projected;      /* 0x7f: drawn through the GTE */
@@ -180,23 +180,23 @@ LAYOUT_CHECK(MenuStateLayout, sizeof(MenuBuffer) == 0xB4 && sizeof(MenuLabel) ==
                                   OFFSET_OF(MenuState, debug_show) == 0x1E94 &&
                                   sizeof(MenuState) == 0x1E98);
 
-extern MenuState *D_800625A0;
+extern MenuState *menu_state_current;
 
-/* The menu's resource file (*D_8005945C, file 1 of directory 16): packed
+/* The menu's resource file (*menu_state_resource_file, file 1 of directory 16): packed
  * files by index, which the screens unpack (80032e88). */
 typedef struct {
     s32 count;
     void *files[8];
 } MenuResources;
 
-extern u8 D_80059178;       /* debug start: choose the menu screen */
-extern u8 D_80059460;       /* menu screen */
-extern u8 D_80059171;       /* menu screen parameter */
-extern char *D_8004FA9C[7]; /* menu screen names */
-extern void *D_8005945C;    /* the menu's resource file (MenuResources) */
-extern void *D_800658CC;
-extern void *D_8006BE24;
-extern u32 *D_8005A4AC[2]; /* the menu's large ordering tables, one per draw buffer */
+extern u8 menu_state_debug_start;       /* debug start: choose the menu screen */
+extern u8 menu_state_screen;       /* menu screen */
+extern u8 menu_state_screen_parameter;       /* menu screen parameter */
+extern char *menu_state_screen_names[7]; /* menu screen names */
+extern void *menu_state_resource_file;    /* the menu's resource file (MenuResources) */
+extern void *menu_state_debug_heap_marker;
+extern void *menu_state_debug_heap_reservation;
+extern u32 *menu_state_big_ots[2]; /* the menu's large ordering tables, one per draw buffer */
 
 /* Menu overlay (801c5000) entries. */
 void func_801C62A8(void);
@@ -205,11 +205,11 @@ void func_801CBDBC(void);
 void func_801CCD28(void);
 void func_801CE024(void);
 
-void func_8001BDDC(MenuBuffer *buffer);
-void func_8001BE14(void);
-void func_8001BEEC(void);
-void func_8001C1A8(void);
-void func_8001BF38(void);
-void func_8001C074(void);
+void menu_state_init_buffer(MenuBuffer *buffer);
+void menu_state_init_display(void);
+void menu_state_reset_views(void);
+void menu_state_run_screen(void);
+void menu_state_decode_input(void);
+void menu_state_update_frame(void);
 
 #endif

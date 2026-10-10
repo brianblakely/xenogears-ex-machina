@@ -54,11 +54,11 @@ extern s32 D_8009BD0C;    /* the saved map at entry less 0x400 (event variable 2
 /* The world map's first flag word, game data entry[2], by a name of its own
  * where the overlay entry tests and sets it before choosing the mode: as the
  * member it compiles differently there. */
-extern u16 D_8006F954[];
+extern u16 game_data_worldmap_flag_word[];
 
 /* The map flags: event variables 254-255, one bit per map dot (bits 24-26
  * the vehicles). */
-#define MAP_FLAGS (*(u32 *)&D_8006D634.vars[254])
+#define MAP_FLAGS (*(u32 *)&game_data.vars[254])
 
 /* Per-area file set: the first disc file, the area's extent in blocks (x, z)
  * and the frame loop's first result. */
@@ -95,12 +95,12 @@ void func_80071FEC(void); /* read the shared files 0x25 and 0x26 */
 void func_80072090(void); /* read the area's files 4-8 */
 void func_800721E4(void); /* read its sound bank (file 6) */
 
-/* The music files' sequence data (D_80062648, resident/mode.h), as the
+/* The music files' sequence data (mode_music_buffer, resident/mode.h), as the
  * sequence header the sound driver reads. A declaration of its own for the
  * same symbol: func_80072238 forms the address anew rather than from the
  * destination of the copy before it, which cse keeps in a saved register
- * when both are D_80062648. */
-extern struct SoundSeqHeader D_80062648_sequence __asm__("D_80062648");
+ * when both are mode_music_buffer. */
+extern struct SoundSeqHeader D_80062648_sequence __asm__("mode_music_buffer");
 
 /* The area data's header (file 1): section offsets from its start. */
 typedef struct {
@@ -185,7 +185,7 @@ void func_80075D4C(void); /* apply the party's riding changes */
 extern u16 D_8009CD4C, D_8009CD50; /* held */
 extern u16 D_8009BD10, D_8009BD14; /* pressed */
 extern u16 D_8009BD18, D_8009BD1C; /* repeated */
-extern s32 D_80059488;
+extern s32 pad_vblank_count;
 
 /* Per display buffer: its environments, its ordering table (0x400 entries)
  * and its terrain triangle packets (0x10000 bytes). */
@@ -209,7 +209,7 @@ void func_800762FC(void); /* wait for the GPU, flush the cache */
 
 /* A resident display call the world map declares itself: its calls pass
  * words where the resident's definition takes bytes. */
-void func_8002C6E0(s32 r, s32 g, s32 b);
+void model_set_color(s32 r, s32 g, s32 b);
 
 /* Gouraud quad packet (PsyQ POLY_G4 layout); colour words carry the code
  * in their top byte. */
@@ -286,7 +286,7 @@ typedef struct WorldmapActor {
     VECTOR motion;   /* 0x38 */
     s16 heading;     /* 0x48 */
     s16 turn;        /* 0x4A: turn step */
-    Sprite *handle;  /* 0x4C: its model sprite (func_80024524), NULL none */
+    Sprite *handle;  /* 0x4C: its model sprite (sprite_create), NULL none */
     union {
         s16 *script; /* script position */
         u16 value;   /* low half of step */
@@ -321,7 +321,7 @@ void func_80097800(void);                 /* run the pending commands */
 
 /* An actor's model sprite: render bit 2 hides it (a new model starts hidden),
  * and the last byte of its motion word, read signed, is the animation
- * func_800245D8 set. */
+ * sprite_start_animation set. */
 #define SPRITE_HIDDEN 4
 #define SPRITE_ANIMATION(sprite) ((s8)(sprite)->motion.bytes[3])
 
@@ -329,8 +329,8 @@ void func_80085CDC(void); /* draw the actors' model sprites */
 
 /* Resident sprite calls the world map declares itself: its calls pass words
  * where the resident's definitions take halfwords. */
-Sprite *func_80024524(s32 *data, s32 x, s32 y, s32 width, s32 height, s32 unused);
-void func_800223B0(Sprite *sprite, s32 angle);
+Sprite *sprite_create(s32 *data, s32 x, s32 y, s32 width, s32 height, s32 unused);
+void sprite_set_facing(Sprite *sprite, s32 angle);
 
 /* Scratchpad work area of the actor updaters. */
 typedef struct {
@@ -398,10 +398,10 @@ typedef struct {
     VECTOR camera_target;  /* 0x22EC */
 } WorldmapSave;
 
-extern WorldmapSave D_8005A4E4;
+extern WorldmapSave mode_snapshot_block;
 
 /* A resident window call the world map declares itself: its call passes
  * words where the resident's definition takes halfwords. */
-void func_80033698(s32 a, s32 b);
+void text_load_palette(s32 a, s32 b);
 
 #endif

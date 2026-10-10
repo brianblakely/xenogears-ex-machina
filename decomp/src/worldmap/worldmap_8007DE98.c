@@ -86,9 +86,9 @@ s32 func_8007DE98(s32 index) {
         break;
     /* 2: area sounds 0x1C-0x1E; slots 2 and 3 request 2, the flames 3. */
     case 2:
-        func_80039E60((D_8006259C->id << 16) | 0x1C);
-        func_80039E60((D_8006259C->id << 16) | 0x1D);
-        func_80039E60((D_8006259C->id << 16) | 0x1E);
+        sound_play_effect((sound_effect_bank->id << 16) | 0x1C);
+        sound_play_effect((sound_effect_bank->id << 16) | 0x1D);
+        sound_play_effect((sound_effect_bank->id << 16) | 0x1E);
         func_80097770(2, 2);
         func_80097770(3, 2);
         func_80097770(4, 3);
@@ -210,16 +210,16 @@ s32 func_8007DE98(s32 index) {
         break;
     /* 61: the three ambient sounds of D_8009A5A0[D_8009D3D4]. */
     case 61:
-        func_80039E60((D_8006259C->id << 16) | D_8009A5A0[D_8009D3D4][0]);
-        func_80039E60((D_8006259C->id << 16) | D_8009A5A0[D_8009D3D4][1]);
-        func_80039E60((D_8006259C->id << 16) | D_8009A5A0[D_8009D3D4][2]);
+        sound_play_effect((sound_effect_bank->id << 16) | D_8009A5A0[D_8009D3D4][0]);
+        sound_play_effect((sound_effect_bank->id << 16) | D_8009A5A0[D_8009D3D4][1]);
+        sound_play_effect((sound_effect_bank->id << 16) | D_8009A5A0[D_8009D3D4][2]);
         actor->state = 1;
         break;
     /* 62: area sounds 0x19-0x1B. */
     case 62:
-        func_80039E60((D_8006259C->id << 16) | 0x19);
-        func_80039E60((D_8006259C->id << 16) | 0x1A);
-        func_80039E60((D_8006259C->id << 16) | 0x1B);
+        sound_play_effect((sound_effect_bank->id << 16) | 0x19);
+        sound_play_effect((sound_effect_bank->id << 16) | 0x1A);
+        sound_play_effect((sound_effect_bank->id << 16) | 0x1B);
         actor->state = 1;
         break;
     /* 63: fade out at rate 2, 4 per frame. */
@@ -952,7 +952,7 @@ void func_8007FF70(void) {
     MoveImage(&rect, 0x2C0, 0x100);
     DrawSync(0);
     func_80072DB4(0x40, 0, 4, 2);
-    while (func_800286CC() >= 3) {
+    while (cd_get_pending_read_count() >= 3) {
     }
     func_80076954();
     func_8009766C();
@@ -963,7 +963,7 @@ void func_8007FF70(void) {
     D_8009D144 = 0;
     D_8009CD40 = func_80086700;
     func_80098044();
-    func_80028A60(0);
+    cd_sync_reads(0);
     func_800721E4();
     D_8009C5AC.vx = 0x4100000;
     D_8009C5AC.vy = -0x80000;
@@ -978,9 +978,9 @@ void func_8007FF70(void) {
     func_80075030();
     func_800739B8();
     func_80088F64();
-    func_80028A60(0);
-    func_80038428(D_8006259C);
-    func_80028470(0x24, 0);
+    cd_sync_reads(0);
+    sound_add_effect_bank(sound_effect_bank);
+    cd_select_directory(0x24, 0);
     func_80097BC0(&D_8009C5AC);
     do {
         func_800967E4();
@@ -1001,9 +1001,9 @@ void func_8007FF70(void) {
 
 /* Leave the world map for scene 0x84 (flag word 2). */
 void func_80080218(void) {
-    func_80039FF8();
-    func_8003852C(D_8006259C);
-    func_800320E8(D_8006259C);
+    sound_stop_all_effects();
+    sound_remove_effect_bank(sound_effect_bank);
+    heap_free(sound_effect_bank);
     func_80084818();
     func_80086124();
     func_80086568();
@@ -1013,16 +1013,16 @@ void func_80080218(void) {
     func_80088FF4();
     func_80089128();
     func_80097D64();
-    func_800320E8(D_8009BBC8[0].ot);
-    func_800320E8(D_8009BBC8[1].ot);
-    func_800320E8(D_8009BBC8[0].packets);
-    func_800320E8(D_8009BBC8[1].packets);
-    func_800320E8(D_8009C180);
+    heap_free(D_8009BBC8[0].ot);
+    heap_free(D_8009BBC8[1].ot);
+    heap_free(D_8009BBC8[0].packets);
+    heap_free(D_8009BBC8[1].packets);
+    heap_free(D_8009C180);
     func_800976A0();
-    D_8006D634.map = 0x84;
-    D_8006D634.entry[2] = 2;
+    game_data.map = 0x84;
+    game_data.entry[2] = 2;
     D_8009BBC4 = 1;
-    D_8006D634.entry[0] = D_8009BD38.vy;
+    game_data.entry[0] = D_8009BD38.vy;
 }
 
 /* Restart an actor's timed sequence at its first step. */

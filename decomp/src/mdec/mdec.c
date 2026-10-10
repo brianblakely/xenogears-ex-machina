@@ -123,7 +123,7 @@ s32 movie_open(u16 width, u16 height, u16 scale, u16 slice, u16 sectors, u16 lim
     s32 product;
     s32 slice_bytes;
 
-    if (func_8002C3D8() != 0) {
+    if (cd_has_pc_file_server() != 0) {
         movie_host_stream = 1;
     } else {
         movie_host_stream = 0;
@@ -136,8 +136,8 @@ s32 movie_open(u16 width, u16 height, u16 scale, u16 slice, u16 sectors, u16 lim
     product = width * height * (scale << 1);
     movie_color_mode = mode & 3;
     movie_vlc_limit = limit;
-    movie_decoder.vlc_buffers[0] = func_80031BDC(product / 256, 0);
-    movie_decoder.vlc_buffers[1] = func_80031BDC(product / 256, 0);
+    movie_decoder.vlc_buffers[0] = heap_alloc(product / 256, 0);
+    movie_decoder.vlc_buffers[1] = heap_alloc(product / 256, 0);
     if (movie_color_mode & 1) {
         slice = (u32)(slice * 3) >> 1;
         width = (u32)(width * 3) >> 1;
@@ -145,8 +145,8 @@ s32 movie_open(u16 width, u16 height, u16 scale, u16 slice, u16 sectors, u16 lim
     movie_image_width = width;
     movie_image_height = height;
     slice_bytes = (slice * height) * 2;
-    movie_decoder.slice_buffers[0] = func_80031BDC(slice_bytes, 0);
-    movie_decoder.slice_buffers[1] = func_80031BDC(slice_bytes, 0);
+    movie_decoder.slice_buffers[0] = heap_alloc(slice_bytes, 0);
+    movie_decoder.slice_buffers[1] = heap_alloc(slice_bytes, 0);
     movie_decoder.display[0].x = 0;
     movie_decoder.display[0].y = 0;
     movie_decoder.display[0].right = width;
@@ -164,9 +164,9 @@ s32 movie_open(u16 width, u16 height, u16 scale, u16 slice, u16 sectors, u16 lim
     movie_decoder.slice[1].w = slice;
     movie_decoder.slice[1].h = height;
     if (movie_host_stream != 0) {
-        movie_ring_buffer = func_8002A260(sectors, 0);
+        movie_ring_buffer = stream_create_ring(sectors, 0);
     } else {
-        movie_ring_buffer = func_80031BDC(sectors << 11, 0);
+        movie_ring_buffer = heap_alloc(sectors << 11, 0);
         StSetRing(movie_ring_buffer, sectors);
     }
     if (movie_ring_buffer == NULL) {
@@ -190,7 +190,7 @@ void movie_start(s32 file, s32 sector, u16 first_frame, u16 last_frame, u16 chan
     if (movie_player_state == 0) {
         return;
     }
-    func_800284B4(&movie_saved_directory, &movie_saved_index);
+    cd_get_selected_directory(&movie_saved_directory, &movie_saved_index);
     DecDCToutCallback(movie_slice_decoded);
     if (hold != 0) {
         movie_player_state = 2;
@@ -209,9 +209,9 @@ void movie_start(s32 file, s32 sector, u16 first_frame, u16 last_frame, u16 chan
             movie_xa_channel = 1;
             movie_cd_mode = 0x200;
         }
-        func_80028AAC();
-        D_8005A4B8 = 0;
-        D_80062514 = 0;
+        stream_reset_ring();
+        stream_frame_number = 0;
+        cd_movie_request_last_frame = 0;
     } else {
         if (select & 1) {
             /* Real-time CD-XA audio: the drive plays it into the SPU. */
@@ -272,12 +272,12 @@ u_long *movie_next_bitstream(u32 end_frame, MovieSectorHeader **header) {
     u32 columns;
 
     if (movie_host_stream != 0) {
-        if (func_80028F30((u8 **)&data, (StreamFrame **)&sector) != 0) {
+        if (stream_get_next_movie_frame((u8 **)&data, (StreamFrame **)&sector) != 0) {
             return NULL;
         }
         movie_ring_frame = sector->frame;
         if (movie_ring_frame >= end_frame) {
-            func_8002A498(0);
+            cd_stop_read(0);
         }
     } else {
         if (StGetNext(&data, (u_long **)&sector) != 0) {
@@ -353,7 +353,7 @@ void movie_decode(void) {
         return;
     }
     if (movie_host_stream != 0) {
-        func_800294B4((u8 *)movie_decoded_bitstream);
+        stream_release_movie_frame((u8 *)movie_decoded_bitstream);
     } else {
         StFreeRing(movie_frame_bitstream);
     }
@@ -372,11 +372,11 @@ void movie_poll(void) {
     }
     if (movie_shown_frame > movie_first_frame && movie_fade_in_pending != 0) {
         movie_fade_in_pending = 0;
-        func_80038D18(0x7FFF, 0x28);
+        sound_set_cd_volume(0x7FFF, 0x28);
     }
     if (movie_shown_frame >= movie_end_frame - 3 && movie_fade_out_pending != 0) {
         movie_fade_out_pending = 0;
-        func_80038D18(0, 0x28);
+        sound_set_cd_volume(0, 0x28);
     }
     if (movie_shown_frame >= movie_end_frame) {
         if (movie_player_state == 1) {
@@ -393,10 +393,10 @@ void movie_poll(void) {
     if (movie_stall_count >= 0x871) {
         movie_stall_count = 0;
         frame = StGetBackloc(&location);
-        D_8005A4B8 = frame;
-        D_8005A4DC++;
-        D_8005A4A8 = CdPosToInt(&location);
-        D_8005A4B4 = movie_start_sector;
+        stream_frame_number = frame;
+        cd_error_count++;
+        cd_stat_stop_ok_count = CdPosToInt(&location);
+        cd_stat_stop_fail_count = movie_start_sector;
         if (movie_end_frame < frame || frame <= 0) {
             seek = NULL;
         } else {
@@ -416,23 +416,23 @@ void movie_restart(s32 file, s32 sector, s32 arg2, s32 mode, CdlLOC *location) {
     s32 kept_directory;
     s32 kept_offset;
 
-    func_80038D18(0, 0);
-    func_8002A498(0);
-    func_80028A60(0);
-    func_800284B4(&kept_directory, &kept_offset);
-    func_80028470(movie_saved_directory, movie_saved_index);
+    sound_set_cd_volume(0, 0);
+    cd_stop_read(0);
+    cd_sync_reads(0);
+    cd_get_selected_directory(&kept_directory, &kept_offset);
+    cd_select_directory(movie_saved_directory, movie_saved_index);
     movie_fade_in_pending = 1;
     movie_fade_out_pending = 1;
     if (movie_host_stream != 0) {
-        func_800295D8(file, movie_ring_buffer, arg2, mode);
+        cd_read_file(file, movie_ring_buffer, arg2, mode);
         if (mode & 8) {
-            PClseek(D_8004FE4C, sector * 0x920, 0);
+            PClseek(cd_pc_file_descriptor, sector * 0x920, 0);
         } else {
-            PClseek(D_8004FE4C, sector << 11, 0);
+            PClseek(cd_pc_file_descriptor, sector << 11, 0);
         }
     } else {
         mode |= 0x80;
-        CdIntToPos(func_800289D0(file) + sector, &position);
+        CdIntToPos(cd_get_file_sector(file) + sector, &position);
         if (location != NULL) {
             seek = location;
         } else {
@@ -443,36 +443,36 @@ void movie_restart(s32 file, s32 sector, s32 arg2, s32 mode, CdlLOC *location) {
         while (CdRead2(mode) == 0) {
         }
     }
-    func_80028470(kept_directory, kept_offset);
+    cd_select_directory(kept_directory, kept_offset);
 }
 
 /* Stop the stream: silence the CD input, stop the MDEC, drop the ring's
  * callbacks, pause the drive and restore the resident read mode. */
 void movie_stop(void) {
-    func_80038D18(0, 0);
-    func_8002A498(0);
+    sound_set_cd_volume(0, 0);
+    cd_stop_read(0);
     DecDCToutCallback(NULL);
     DecDCTReset(0);
     movie_player_state = -1;
     if (movie_host_stream != 0) {
-        func_80028AAC();
+        stream_reset_ring();
     } else {
         StUnSetRing();
         while (CdControlB(CdlPause, NULL, NULL) == 0) {
         }
-        func_8002A428(0xA0);
+        cd_set_mode(0xA0);
     }
-    func_80028A60(0);
+    cd_sync_reads(0);
 }
 
 /* Stop, then release the run-level and slice buffers and the ring. */
 void movie_close(void) {
     movie_stop();
-    func_800320E8(movie_decoder.vlc_buffers[0]);
-    func_800320E8(movie_decoder.vlc_buffers[1]);
-    func_800320E8(movie_decoder.slice_buffers[0]);
-    func_800320E8(movie_decoder.slice_buffers[1]);
-    func_800320E8(movie_ring_buffer);
+    heap_free(movie_decoder.vlc_buffers[0]);
+    heap_free(movie_decoder.vlc_buffers[1]);
+    heap_free(movie_decoder.slice_buffers[0]);
+    heap_free(movie_decoder.slice_buffers[1]);
+    heap_free(movie_ring_buffer);
     movie_decoder.vlc_buffers[0] = NULL;
     movie_decoder.vlc_buffers[1] = NULL;
     movie_decoder.slice_buffers[0] = NULL;

@@ -99,7 +99,7 @@ Environment D_8009178C[] = {
     { { 0x08, 0x30, 0x3F }, 0, 0x20, 0x20, 0x30, 0, { 0x40, 0x40, 0x50 }, 0, { 0x30, 0x30, 0x38 }, 0, 0 },
 };
 
-/* Files of the menu mode, loaded by func_80029AFC up to the zero file. */
+/* Files of the menu mode, loaded by cd_read_file_list up to the zero file. */
 FileRequest D_800917C0[6] = { { 1 }, { 2 }, { 3 }, { 4 }, { 5 }, { 0 } };
 
 s32 D_800917F0 = 0;
@@ -214,19 +214,19 @@ void func_80082178(s32 x, s32 z, s32 direction) {
 
     x >>= 8;
     z >>= 8;
-    last_x = start_x = x + ((func_8003F8B0(direction + 0x280) * 10) >> 12);
-    last_z = start_z = z + ((func_8003F8CC(direction + 0x280) * 10) >> 12);
+    last_x = start_x = x + ((gpu_get_sin(direction + 0x280) * 10) >> 12);
+    last_z = start_z = z + ((gpu_get_cos(direction + 0x280) * 10) >> 12);
     angle = direction + 0x580;
     for (i = 0; i < 6; i++) {
-        next_x = x + ((func_8003F8B0(angle) * 24) >> 12);
-        next_z = z + ((func_8003F8CC(angle) * 24) >> 12);
+        next_x = x + ((gpu_get_sin(angle) * 24) >> 12);
+        next_z = z + ((gpu_get_cos(angle) * 24) >> 12);
         func_80087698(last_x, last_z, next_x, next_z);
         last_x = next_x;
         last_z = next_z;
         angle += 0x100;
     }
-    next_x = x + ((func_8003F8B0(direction - 0x280) * 10) >> 12);
-    next_z = z + ((func_8003F8CC(direction - 0x280) * 10) >> 12);
+    next_x = x + ((gpu_get_sin(direction - 0x280) * 10) >> 12);
+    next_z = z + ((gpu_get_cos(direction - 0x280) * 10) >> 12);
     func_80087698(last_x, last_z, next_x, next_z);
     func_80087698(start_x, start_z, next_x, next_z);
 }
@@ -244,19 +244,19 @@ void func_80082300(s32 x, s32 z, s32 direction) {
 
     x >>= 8;
     z >>= 8;
-    last_x = start_x = x + ((func_8003F8B0(direction + 0x100) * 16) >> 12);
-    last_z = start_z = z + ((func_8003F8CC(direction + 0x100) * 16) >> 12);
+    last_x = start_x = x + ((gpu_get_sin(direction + 0x100) * 16) >> 12);
+    last_z = start_z = z + ((gpu_get_cos(direction + 0x100) * 16) >> 12);
     angle = direction + 0x78A;
     for (i = 0; i < 3; i++) {
-        next_x = x + ((func_8003F8B0(angle) * 32) >> 12);
-        next_z = z + ((func_8003F8CC(angle) * 32) >> 12);
+        next_x = x + ((gpu_get_sin(angle) * 32) >> 12);
+        next_z = z + ((gpu_get_cos(angle) * 32) >> 12);
         func_80087698(last_x, last_z, next_x, next_z);
         last_x = next_x;
         last_z = next_z;
         angle += 0x75;
     }
-    next_x = x + ((func_8003F8B0(direction - 0x100) * 16) >> 12);
-    next_z = z + ((func_8003F8CC(direction - 0x100) * 16) >> 12);
+    next_x = x + ((gpu_get_sin(direction - 0x100) * 16) >> 12);
+    next_z = z + ((gpu_get_cos(direction - 0x100) * 16) >> 12);
     func_80087698(last_x, last_z, next_x, next_z);
     func_80087698(start_x, start_z, next_x, next_z);
 }
@@ -337,7 +337,7 @@ s32 func_80082488(VECTOR *pos, s32 lift) {
         scratch.tri[1] = scratch.geometry.corner[3];
         scratch.tri[2] = scratch.geometry.corner[1];
     }
-    func_8002DB84(&scratch.tri[0], &scratch.tri[1], &scratch.tri[2], &D_80092768);
+    model_compute_face_normal(&scratch.tri[0], &scratch.tri[1], &scratch.tri[2], &D_80092768);
     {
         scratch.geometry.plane.point.vx = scratch.tri[0].vx;
         scratch.geometry.plane.point.vy = scratch.tri[0].vy;
@@ -435,7 +435,7 @@ void func_80082A70(void) {
     bottom_r = env->bottom[0];
     bottom_g = env->bottom[1];
     bottom_b = env->bottom[2];
-    func_8002C6E0(env->back[0], env->back[1], env->back[2]);
+    model_set_color(env->back[0], env->back[1], env->back[2]);
     SetFarColor(bottom_r, bottom_g, bottom_b);
     D_80095580[0].r0 = top_r;
     D_80095580[1].r0 = top_r;
@@ -462,8 +462,8 @@ void func_80082A70(void) {
     D_8009A0D8[1].background.g0 = bottom_g;
     D_8009A0D8[1].background.b0 = bottom_b;
     SetFogNearFar(0x800, 0x1800, 0xC0);
-    D_80059598 = (D_80059598 & 0xFFFFFF) | 0x28000000;
-    gte_ldrgb(&D_80059598);
+    model_color = (model_color & 0xFFFFFF) | 0x28000000;
+    gte_ldrgb(&model_color);
 }
 
 /* Load the stage's floor texture (a TIM, palette made semi-transparent)
@@ -486,8 +486,8 @@ void func_80082C4C(MenuImageFile *files) {
     D_800927A0 = GetClut(tim.crect->x, tim.crect->y);
     D_800927A4 = GetTPage(1, 0, tim.prect->x, tim.prect->y);
     D_800927A8 = (u8)tim.prect->y;
-    D_80092788[0] = func_80031BDC(0xA00, 0);
-    D_80092788[1] = func_80031BDC(0xA00, 0);
+    D_80092788[0] = heap_alloc(0xA00, 0);
+    D_80092788[1] = heap_alloc(0xA00, 0);
     quad = D_80092788[0];
     for (i = 0; i < 0x40; i += 2) {
         setlen(&quad[0], 9);
@@ -549,14 +549,14 @@ void func_80082E60(u32 *ot, VECTOR *pos) {
     mid0.vy = mid1.vy = -0x290;
     base0.vy = base1.vy = 0;
     top0.vy = top1.vy = -0x520;
-    base0.vx = ((func_8003F8B0(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vx - 0x3F80);
-    base0.vz = ((func_8003F8CC(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vz - 0x3F80);
+    base0.vx = ((gpu_get_sin(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vx - 0x3F80);
+    base0.vz = ((gpu_get_cos(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vz - 0x3F80);
     angle += 0x10;
     for (; i < 32; i++) {
         top0.vx = mid0.vx = base0.vx;
         top0.vz = mid0.vz = base0.vz;
-        top1.vx = mid1.vx = base1.vx = ((func_8003F8B0(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vx - 0x3F80);
-        top1.vz = mid1.vz = base1.vz = ((func_8003F8CC(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vz - 0x3F80);
+        top1.vx = mid1.vx = base1.vx = ((gpu_get_sin(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vx - 0x3F80);
+        top1.vz = mid1.vz = base1.vz = ((gpu_get_cos(angle) * 0x3F80) >> 12) - (s16)(D_80096FA8.vz - 0x3F80);
         gte_ldv3(&base0, &base1, &mid0);
         gte_rtpt();
         gte_dpcs();
@@ -606,8 +606,8 @@ void func_800831C8(void) {
 
     radius = (rand() & 0x1FFF) + 0x800;
     angle = rand() % 0x600 + 0x500;
-    D_8009871C.vx = ((func_8003F8B0(angle) * radius) >> 12) + 0x4000;
-    D_8009871C.vz = ((func_8003F8CC(angle) * radius) >> 12) + 0x4000;
+    D_8009871C.vx = ((gpu_get_sin(angle) * radius) >> 12) + 0x4000;
+    D_8009871C.vz = ((gpu_get_cos(angle) * radius) >> 12) + 0x4000;
     D_8009871C.vy = -((rand() & 0x7FF) + 0x400);
     D_80092770 = 0x100;
     D_80092774 = 0x40;
@@ -683,8 +683,8 @@ void func_80083310(s32 smooth) {
     D_8009867C.vy += offset.vy;
     D_8009867C.vz += offset.vz;
     value = D_800927AC + D_800928AC * D_800927B0;
-    look.vx = (func_8003F8B0(value) * D_80092770) >> 12;
-    look.vz = (func_8003F8CC(value) * D_80092770) >> 12;
+    look.vx = (gpu_get_sin(value) * D_80092770) >> 12;
+    look.vz = (gpu_get_cos(value) * D_80092770) >> 12;
     look.vy = -(D_800928AC * 6 + 0x200);
     look.vx += D_8009867C.vx;
     look.vy += D_8009867C.vy;
@@ -731,11 +731,11 @@ void func_80083738(Actor *first, Actor *second) {
     D_8009867C.vx = (first->pos.vx + second->pos.vx) / 2;
     D_8009867C.vy = (first->pos.vy + second->pos.vy) / 2 - 0xA0;
     D_8009867C.vz = (first->pos.vz + second->pos.vz) / 2;
-    side.vx = D_8009867C.vx + ((func_8003F8B0(angle) * D_80092770) >> 12);
-    side.vz = D_8009867C.vz + ((func_8003F8CC(angle) * D_80092770) >> 12);
+    side.vx = D_8009867C.vx + ((gpu_get_sin(angle) * D_80092770) >> 12);
+    side.vz = D_8009867C.vz + ((gpu_get_cos(angle) * D_80092770) >> 12);
     value = heading + 0x400;
-    other_side.vx = D_8009867C.vx + ((func_8003F8B0(value) * D_80092770) >> 12);
-    other_side.vz = D_8009867C.vz + ((func_8003F8CC(value) * D_80092770) >> 12);
+    other_side.vx = D_8009867C.vx + ((gpu_get_sin(value) * D_80092770) >> 12);
+    other_side.vz = D_8009867C.vz + ((gpu_get_cos(value) * D_80092770) >> 12);
     side.vx -= D_8009871C.vx;
     side.vy -= D_8009871C.vy;
     side.vz -= D_8009871C.vz;
@@ -755,8 +755,8 @@ void func_80083738(Actor *first, Actor *second) {
         distance = 0x300;
     }
     side.vy = D_8009867C.vy - D_80092774 - distance;
-    side.vx = D_8009867C.vx + ((func_8003F8B0(heading + D_8009290C) * D_80092770) >> 12);
-    side.vz = D_8009867C.vz + ((func_8003F8CC(heading + D_8009290C) * D_80092770) >> 12);
+    side.vx = D_8009867C.vx + ((gpu_get_sin(heading + D_8009290C) * D_80092770) >> 12);
+    side.vz = D_8009867C.vz + ((gpu_get_cos(heading + D_8009290C) * D_80092770) >> 12);
     value = func_80082488(&side, 0) - 0x100;
     if (value < side.vy) {
         side.vy = value;
@@ -869,7 +869,7 @@ void func_80083DCC(LightRig *rig, Actor *actor, s32 index) {
     NODE_LIGHT(light)->direction[0] -= actor->opponent->pos.vx;
     NODE_LIGHT(light)->direction[1] -= actor->opponent->pos.vy;
     NODE_LIGHT(light)->direction[2] -= actor->opponent->pos.vz;
-    func_80030A30(index, NODE_LIGHT(light));
+    model_set_light(index, NODE_LIGHT(light));
     light = rig->lights[2];
     NODE_LIGHT(light)->colour[0] = NODE_LIGHT(light)->colour[1] = NODE_LIGHT(light)->colour[2] = 0;
     NODE_LIGHT(light)->direction[0] = actor->pos.vx;
@@ -878,7 +878,7 @@ void func_80083DCC(LightRig *rig, Actor *actor, s32 index) {
     NODE_LIGHT(light)->direction[0] -= D_8009871C.vx;
     NODE_LIGHT(light)->direction[1] -= D_8009871C.vy;
     NODE_LIGHT(light)->direction[2] -= D_8009871C.vz;
-    func_80030A30(2, NODE_LIGHT(light));
+    model_set_light(2, NODE_LIGHT(light));
 }
 
 /* Draw the 3D arena: aim the camera, pose the actors, then draw the floor,
@@ -906,7 +906,7 @@ s32 func_800840CC(LightRig *rig) {
     ((Node *)D_8009872C.object)->view = ((Node *)D_80097010.object)->view = camera;
     light = NODE_LIGHT(rig->lights[0]);
     light->colour[0] = light->colour[1] = light->colour[2] = 0x800;
-    func_80030A30(0, NODE_LIGHT(rig->lights[0]));
+    model_set_light(0, NODE_LIGHT(rig->lights[0]));
     gte_SetBackColor(D_8009291C, D_80092910, D_80092908);
     func_80083DCC(rig, &D_8009872C, 1);
     func_8008A7E0(D_8009872C.node);
@@ -941,7 +941,7 @@ s32 func_800840CC(LightRig *rig) {
     func_8008779C(layer->ot[D_800928A0], D_8009867C.vx, D_8009867C.vz);
     func_8008AE1C(layer);
     func_80086E24();
-    func_80031678((u_long *)D_80092938, &D_80095580[D_800928A0]);
+    gpu_ot_link_poly_g4((u_long *)D_80092938, &D_80095580[D_800928A0]);
     return 0;
 }
 
@@ -962,7 +962,7 @@ s32 func_800846A0(LightRig *rig) {
     func_8008A62C();
     light = NODE_LIGHT(rig->lights[0]);
     light->colour[0] = light->colour[1] = light->colour[2] = 0x800;
-    func_80030A30(0, NODE_LIGHT(rig->lights[0]));
+    model_set_light(0, NODE_LIGHT(rig->lights[0]));
     gte_SetBackColor(D_8009291C, D_80092910, D_80092908);
     func_80083DCC(rig, &D_8009872C, 1);
     func_8008A7E0(D_8009872C.node);
@@ -1027,7 +1027,7 @@ void func_80084B48(void) {
         if (D_80092780 <= 0) {
             D_80092780 = 0;
             D_80092784 = 0;
-            func_8003A838(D_80092948, 0x100, 0);
+            sound_set_seq_tempo(D_80092948, 0x100, 0);
             D_8009292C = 0x100;
             func_8008E064();
         } else {
@@ -1139,7 +1139,7 @@ void func_80084C88(Actor *actor, ModelFile *data, s32 side) {
         LoadImage(&rect, (u_long *)(data->image + 0x200));
     } else {
         source = data->image + 0x200;
-        block = func_80031BDC(0x1E4, 0);
+        block = heap_alloc(0x1E4, 0);
         out = block;
         for (i = 0; i < 0x16; i++) {
             for (j = 0; j < 0x16; j++) {
@@ -1148,7 +1148,7 @@ void func_80084C88(Actor *actor, ModelFile *data, s32 side) {
             source += 0x16;
         }
         LoadImage(&rect, block);
-        func_80032C18(block, 1);
+        heap_delay_free(block, 1);
     }
     rect.x = 0x3A0;
     rect.y = side * 8 + 0x100;
@@ -1161,7 +1161,7 @@ void func_80084C88(Actor *actor, ModelFile *data, s32 side) {
  * overlay fade runs, step the glow field (8008e120, which calls rand) on odd
  * blank counts. */
 void func_80084FD0(void) {
-    if (D_80092784 != 0 && (D_80059488 & 1)) {
+    if (D_80092784 != 0 && (pad_vblank_count & 1)) {
         func_8008E120();
     }
 }
@@ -1192,42 +1192,42 @@ void func_8008509C(s32 which, s32 id) {
         D_8009872C.model_id = id;
     }
     if (D_800927B4[which] != NULL) {
-        func_800320E8(D_800927B4[which]);
+        heap_free(D_800927B4[which]);
         D_800927B4[which] = NULL;
     }
-    func_80028470(0x30, 1);
+    cd_select_directory(0x30, 1);
     D_800927B4[which] = func_800891C0(id + 2);
-    func_80028470(0x30, 0);
+    cd_select_directory(0x30, 0);
 }
 
 /* Release actor slot `which`'s model. */
 void func_80085134(s32 which) {
-    func_80028A60(0);
+    cd_sync_reads(0);
     if (D_800927B4[which] != NULL) {
-        func_800320E8(D_800927B4[which]);
+        heap_free(D_800927B4[which]);
         D_800927B4[which] = NULL;
     }
 }
 
 /* Load a resource by its file number. */
 void func_8008518C(FileRequest *resource, s32 arg) {
-    resource->destination = func_80031BDC(func_800288EC(resource->file), arg);
+    resource->destination = heap_alloc(cd_get_aligned_file_size(resource->file), arg);
 }
 
 /* Leave the menu mode: stop its sound and streams, wait for drawing and
  * dispatch the next mode. */
 void func_800851D4(void) {
-    func_8003852C(D_800927C4);
+    sound_remove_effect_bank(D_800927C4);
     if (D_800917F0 != 0) {
-        func_80039C4C(D_80092948);
-        func_800399D4(D_80092948);
+        sound_stop_seq(D_80092948);
+        sound_release_seq(D_80092948);
     }
     func_80088A40();
-    func_8001996C(1);
+    mode_select_next_mode(1);
     DrawSync(0);
     VSync(2);
-    D_8005061C = 1;
-    func_80019ACC(0);
+    mode_arena_task_parameters = 1;
+    mode_dispatch(0);
 }
 
 /* Whether the scene is in a state that ends the menu mode. */
@@ -1235,7 +1235,7 @@ s32 func_80085264(void) {
     s32 done = 0;
 
     if (D_80092794 == 5 || D_80092794 == 7 ||
-        (D_80092794 == 1 && D_800928C8 == 4 && D_8005061C == 0)) {
+        (D_80092794 == 1 && D_800928C8 == 4 && mode_arena_task_parameters == 0)) {
         done = 1;
     }
     return done;
@@ -1255,24 +1255,24 @@ void func_800852C4(s32 arg) {
 
     D_800928D0 = 0;
     D_80092920 |= 1;
-    D_800928DC = func_80031BDC(0x10010, 0);
+    D_800928DC = heap_alloc(0x10010, 0);
     rig = func_8008A3E0(func_8008A2B8(0x1000));
-    func_8002C59C(&D_80091FB0);
+    model_relocate_sprite_model(&D_80091FB0);
     func_8008518C(&D_800917C0[0], 0);
     func_8008518C(&D_800917C0[1], 0);
     func_8008518C(&D_800917C0[2], 1);
     func_8008518C(&D_800917C0[3], 1);
     func_8008518C(&D_800917C0[4], 1);
-    func_80029AFC(D_800917C0, 0, 0);
+    cd_read_file_list(D_800917C0, 0, 0);
     sequence = D_800917C0[0].destination;
     D_800927C4 = D_800917C0[1].destination;
     func_8008976C(0x140, 0xDA);
     func_80088308();
-    func_80030988(1, 1, 0x40, 0x40);
+    model_set_envmap_mapping(1, 1, 0x40, 0x40);
     D_80092784 = 0;
-    func_800363F0(func_80084FD0);
-    func_80036E4C(0x7FFF, 0x8000);
-    func_80033698(0x140, 0xFF);
+    pad_set_vblank_hook(func_80084FD0);
+    console_load_font_cluts(0x7FFF, 0x8000);
+    text_load_palette(0x140, 0xFF);
     func_800814AC();
     func_80079A8C();
     func_8008DF30();
@@ -1281,68 +1281,68 @@ void func_800852C4(s32 arg) {
     D_80097010.object = NULL;
     D_8009872C.object = NULL;
     func_80080AA0(1);
-    func_80028A60(0);
-    func_80038428(D_800927C4);
+    cd_sync_reads(0);
+    sound_add_effect_bank(D_800927C4);
     if (D_800917F0 != 0) {
-        D_80092948 = func_80039850(sequence);
-        func_80039A80(D_80092948, 0x7F, 0);
+        D_80092948 = sound_create_seq(sequence);
+        sound_play_seq(D_80092948, 0x7F, 0);
     } else {
-        D_80092948 = (SoundSeq *)D_80062528;
+        D_80092948 = (SoundSeq *)mode_music_seq;
     }
-    func_80032EB4(D_800917C0[3].destination, D_800928DC);
-    func_800320E8(D_800917C0[3].destination);
+    text_unpack_lzss(D_800917C0[3].destination, D_800928DC);
+    heap_free(D_800917C0[3].destination);
     func_80081ECC();
-    file = func_80032E88(D_800917C0[2].destination, 0);
-    func_800320E8(D_800917C0[2].destination);
-    func_8003342C(file);
+    file = text_unpack_lzss_alloc(D_800917C0[2].destination, 0);
+    heap_free(D_800917C0[2].destination);
+    text_relocate_offset_table(file);
     D_80092880 = ((s32 *)file)[1];
     D_80092874 = (MoveList *)((s32 *)file)[2];
-    func_8007EEE8(D_8005061C == 1);
-    file = func_80032E88(D_800917C0[4].destination, 1);
-    func_800320E8(D_800917C0[4].destination);
-    func_8003342C(file);
+    func_8007EEE8(mode_arena_task_parameters == 1);
+    file = text_unpack_lzss_alloc(D_800917C0[4].destination, 1);
+    heap_free(D_800917C0[4].destination);
+    text_relocate_offset_table(file);
     func_80082C4C(file);
     func_8007B388(file);
     func_8007E634(file);
     func_800878DC(file);
     func_800868E0(file);
     func_80071794(file);
-    func_800320E8(file);
+    heap_free(file);
     func_8007EFB4();
     func_800718C0();
     func_8008BC04();
     D_8009289C = 0;
 restart:
     idle = 0x4650;
-    func_80032D60();
+    heap_flush_delayed_frees();
     func_80089D5C(D_8009872C.object);
     func_80089D5C(D_80097010.object);
-    func_80032D60();
+    heap_flush_delayed_frees();
     func_800809D8();
     D_80092780 = 0xFF;
     D_80092784 = 0;
     func_8008DF50();
     func_80079B0C();
-    func_800346A4(&D_8009868C);
+    window_reset(&D_8009868C);
     D_80092794 = -1;
     D_800928C4 = 0;
     D_800928B4 = 0;
-    if (D_8005061C == 1) {
+    if (mode_arena_task_parameters == 1) {
         D_80092898 = 0;
         step = 0;
     } else {
-        if (D_8005061C == 2) {
+        if (mode_arena_task_parameters == 2) {
             D_800928C4 = 1;
             D_80092884 = 0;
         }
-        D_8005061C = 0;
-        D_80099D98.level = D_80050621;
-        D_80099D98.option6 = D_80050620;
+        mode_arena_task_parameters = 0;
+        D_80099D98.level = mode_arena_level;
+        D_80099D98.option6 = mode_arena_option6;
         func_80080A58();
         D_80099D98.com1 = 0;
-        D_80092798 = D_8005061E;
-        D_8009279C = D_8005061F;
-        switch (D_8005061D) {
+        D_80092798 = mode_arena_first_model;
+        D_8009279C = mode_arena_second_model;
+        switch (mode_arena_entry_kind) {
         case 0:
             D_80099D98.driven = 1;
             func_80083C0C(1);
@@ -1371,15 +1371,15 @@ restart:
         D_80092898 = 2;
     }
     if (func_80085264()) {
-        func_80028A60(0);
+        cd_sync_reads(0);
         step = 10;
     }
     if (step != 10) {
         do {
-            if ((D_80059570 & ~1) || (D_80059574 & ~1)) {
+            if ((pad_port0_held & ~1) || (pad_port1_held & ~1)) {
                 idle = 0x4650;
             }
-            if ((D_80059570 & 1) && func_800809BC()) {
+            if ((pad_port0_held & 1) && func_800809BC()) {
                 if (++hold == 0x78) {
                     idle = 0;
                 }
@@ -1391,7 +1391,7 @@ restart:
             } else if (D_80092780 != 0) {
                 func_80080570();
                 D_80092780 = 0;
-                func_80028A60(0);
+                cd_sync_reads(0);
                 func_80085014();
                 break;
             }
@@ -1408,12 +1408,12 @@ restart:
                 }
                 break;
             case 1:
-                func_80036420();
+                pad_merge_queued_states();
                 if (!func_80085264()) {
                     func_8008E120();
                     func_8007F258(D_80092938, 0);
                 }
-                if (!func_80028A60(1)) {
+                if (!cd_sync_reads(1)) {
                     step = 10;
                 }
                 break;
@@ -1429,12 +1429,12 @@ restart:
         func_8008E064();
         func_80080A58();
     }
-    model = func_80032E88(D_800927B4[0], 0);
-    func_800320E8(D_800927B4[0]);
+    model = text_unpack_lzss_alloc(D_800927B4[0], 0);
+    heap_free(D_800927B4[0]);
     D_800927B4[0] = model;
     func_80084AE0();
-    model = func_80032E88(D_800927B4[1], 0);
-    func_800320E8(D_800927B4[1]);
+    model = text_unpack_lzss_alloc(D_800927B4[1], 0);
+    heap_free(D_800927B4[1]);
     D_800927B4[1] = model;
     func_80084AE0();
     func_80084C88(&D_8009872C, D_800927B4[0], 0);
@@ -1445,7 +1445,7 @@ restart:
     func_80081E00();
     if (D_80092780 != 0) {
         D_80092784 = 1;
-        func_8003A838(D_80092948, 0x158, 0);
+        sound_set_seq_tempo(D_80092948, 0x158, 0);
         D_8009292C = 0x200;
     }
     D_80092890 = 2;
@@ -1458,12 +1458,12 @@ new_bout:
     D_80097010.pos.vy = 0;
     D_80097010.pos.vz = 0x3F80;
     for (;;) {
-        func_80036DC8(0, 0xFF, 0);
+        console_set_color(0, 0xFF, 0);
         D_80092898 = 2;
         D_800928B0 = 0;
         D_80092790 = D_80092794;
         func_80084B48();
-        func_80034888(&D_8009868C, (u_long *)D_80092938, D_800928A0);
+        window_draw_frame(&D_8009868C, (u_long *)D_80092938, D_800928A0);
         switch (D_80092790) {
         case 1:
             func_80079DF0(&D_8009872C, &D_80097010);
@@ -1506,10 +1506,10 @@ new_bout:
             D_80092898 = 0;
             break;
         case 5:
-            func_80036420();
-            if (D_8005948C != 0) {
-                D_8005948C = 0;
-                D_800594A4 = 0;
+            pad_merge_queued_states();
+            if (pad_port0_pressed != 0) {
+                pad_port0_pressed = 0;
+                pad_port0_repeated = 0;
                 func_80085070();
                 D_80092898 = 0;
                 func_80081E6C();
@@ -1523,7 +1523,7 @@ new_bout:
             break;
         case 3:
         leave:
-            if (D_8005061C == 0) {
+            if (mode_arena_task_parameters == 0) {
                 func_800851D4();
             }
             func_80081E6C();
@@ -1548,8 +1548,8 @@ new_bout:
             func_80083C0C(1);
             goto new_bout;
         }
-        func_8003708C(0x9E, 0);
-        func_80036DC8(0xFF, 0xFF, 0);
+        console_place_cursor_and_line_start(0x9E, 0);
+        console_set_color(0xFF, 0xFF, 0);
         func_8008BC04();
     }
 }
@@ -1996,7 +1996,7 @@ void func_80087068(Actor *left, Actor *right) {
     n = left->charge >> 6;
     bar = &D_80095698.bar_l[D_800928A0];
     if (n > 0x38) {
-        bar->r0 = D_80059488 << 3;
+        bar->r0 = pad_vblank_count << 3;
     } else {
         bar->r0 = 0xFF;
     }
@@ -2005,7 +2005,7 @@ void func_80087068(Actor *left, Actor *right) {
     n = right->charge >> 6;
     bar = &D_80095698.bar_r[D_800928A0];
     if (n > 0x38) {
-        bar->r0 = D_80059488 << 3;
+        bar->r0 = pad_vblank_count << 3;
     } else {
         bar->r0 = 0xFF;
     }
@@ -2099,8 +2099,8 @@ void func_80087698(s32 x0, s32 y0, s32 x1, s32 y1) {
  * code) into the GTE, copy the 0x30-byte map table into the scratchpad and
  * run the triangle loop. */
 void func_8008779C(u32 *ot, s32 originX, s32 originZ) {
-    D_80059598 = (D_80059598 & 0xFFFFFF) | 0x24000000;
-    gte_ldrgb(&D_80059598);
+    model_color = (model_color & 0xFFFFFF) | 0x24000000;
+    gte_ldrgb(&model_color);
     func_800732AC((void *)0x1F800120, &D_80091934, sizeof(MapTable));
     func_80072D18(ot, originX, originZ);
 }
@@ -2113,8 +2113,8 @@ void func_80087830(void) {
 
     D_800927CC = (u8 *)0x1F800000;
     D_800927D0 = (u8 *)0x1F800080;
-    D_80092854[0] = func_80031BDC(0xE100, 0);
-    D_80092854[1] = func_80031BDC(0xE100, 0);
+    D_80092854[0] = heap_alloc(0xE100, 0);
+    D_80092854[1] = heap_alloc(0xE100, 0);
     poly = D_80092854[0];
     for (i = 0; i < 0x708; i++) {
         setlen(poly, 7);
@@ -2309,9 +2309,9 @@ void func_80087EA0(u32 *ot) {
         *(u32 *)&point->axes[D_800928A0][1].r0 = 0x4000FF00;
         setlen(&point->axes[D_800928A0][2], 3);
         *(u32 *)&point->axes[D_800928A0][2].r0 = 0x40FF0000;
-        func_800316C0((u_long *)ot, &point->axes[D_800928A0][0]);
-        func_800316C0((u_long *)ot, &point->axes[D_800928A0][1]);
-        func_800316C0((u_long *)ot, &point->axes[D_800928A0][2]);
+        gpu_ot_link_line_f2((u_long *)ot, &point->axes[D_800928A0][0]);
+        gpu_ot_link_line_f2((u_long *)ot, &point->axes[D_800928A0][1]);
+        gpu_ot_link_line_f2((u_long *)ot, &point->axes[D_800928A0][2]);
     }
     D_800928F8 = 0;
 }
@@ -2386,7 +2386,7 @@ void func_8008832C(void *ot) {
             gte_stsxy01(&line->packets[D_800928A0].x0, &line->packets[D_800928A0].x1);
             setlen(&line->packets[D_800928A0], 3);
             setcode(&line->packets[D_800928A0], 0x40);
-            func_800316C0(ot, &line->packets[D_800928A0]);
+            gpu_ot_link_line_f2(ot, &line->packets[D_800928A0]);
         }
     }
 }
@@ -2398,7 +2398,7 @@ void func_800884E0(VECTOR *vector, void *out) {
     s32 square;
     s32 length;
 
-    square = func_8002DC9C(scaled.vx, scaled.vy, scaled.vz);
+    square = model_get_largest_component(scaled.vx, scaled.vy, scaled.vz);
     if (square < 0) {
         square = -square;
     }
@@ -2416,7 +2416,7 @@ void func_8008859C(VECTOR *vector, void *out) {
     s32 square;
     s32 length;
 
-    square = func_8002DC9C(scaled.vx, scaled.vy, scaled.vz);
+    square = model_get_largest_component(scaled.vx, scaled.vy, scaled.vz);
     if (square < 0) {
         square = -square;
     }
@@ -2436,7 +2436,7 @@ void func_80088658(SVECTOR *vector, void *out) {
     scaled.vx = vector->vx;
     scaled.vy = vector->vy;
     scaled.vz = vector->vz;
-    square = func_8002DC9C(scaled.vx, scaled.vy, scaled.vz);
+    square = model_get_largest_component(scaled.vx, scaled.vy, scaled.vz);
     if (square < 0) {
         square = -square;
     }
@@ -2498,7 +2498,7 @@ void func_800888B0(s32 flag) {
 
     bit = 1;
     bit <<= flag & 7;
-    D_8006D634.progress[flag >> 3] |= bit;
+    game_data.progress[flag >> 3] |= bit;
 }
 
 /* Test a bit of the resident flag array. */
@@ -2507,7 +2507,7 @@ s32 func_800888E4(s32 flag) {
 
     bit = 1;
     bit <<= flag & 7;
-    return D_8006D634.progress[flag >> 3] & bit;
+    return game_data.progress[flag >> 3] & bit;
 }
 
 /* Clear a bit of the resident flag array. */
@@ -2516,18 +2516,18 @@ void func_80088908(s32 flag) {
 
     bit = 1;
     bit <<= flag & 7;
-    D_8006D634.progress[flag >> 3] &= ~bit;
+    game_data.progress[flag >> 3] &= ~bit;
 }
 
 /* Set bit 16 of the resident state word. */
 void func_80088940(void) {
-    D_8006D634.options.complete = 1;
+    game_data.options.complete = 1;
 }
 
 /* Once bit 16 of the resident state word is set, queue list entry 22
  * (ARGENTO, only once). */
 void func_8008895C(void) {
-    if (D_8006D634.options.complete && D_800927EC == 0) {
+    if (game_data.options.complete && D_800927EC == 0) {
         D_800927EC = 1;
         D_800928EC[D_80092888++] = &D_80091964[22];
     }
@@ -2543,19 +2543,19 @@ s32 func_800889C8(void) {
             return 0;
         }
     }
-    D_8006D634.options.complete = 1;
+    game_data.options.complete = 1;
     func_8008895C();
     return 0;
 }
 
 /* Store the current option settings in the saved options word. */
 void func_80088A40(void) {
-    if (D_8005061C) {
-        D_8006D634.options.version = 1;
-        D_8006D634.options.option4 = D_80099D98.option4;
-        D_8006D634.options.option5 = D_80099D98.option5;
-        D_8006D634.options.option6 = D_80099D98.option6;
-        D_8006D634.options.option13 = D_80099D98.level;
+    if (mode_arena_task_parameters) {
+        game_data.options.version = 1;
+        game_data.options.option4 = D_80099D98.option4;
+        game_data.options.option5 = D_80099D98.option5;
+        game_data.options.option6 = D_80099D98.option6;
+        game_data.options.option13 = D_80099D98.level;
     }
 }
 
@@ -2564,16 +2564,16 @@ void func_80088A40(void) {
 void func_80088AF8(void) {
     s32 i;
 
-    if (D_8005061C) {
+    if (mode_arena_task_parameters) {
         D_800927EC = 0;
-        if (D_8006D634.options.version == 1) {
-            D_80099D98.option4 = D_8006D634.options.option4;
-            D_80099D98.option5 = D_8006D634.options.option5;
-            D_80099D98.option6 = D_8006D634.options.option6;
-            D_80099D98.level = D_8006D634.options.option13;
-            if (D_8006D634.options.complete) {
+        if (game_data.options.version == 1) {
+            D_80099D98.option4 = game_data.options.option4;
+            D_80099D98.option5 = game_data.options.option5;
+            D_80099D98.option6 = game_data.options.option6;
+            D_80099D98.level = game_data.options.option13;
+            if (game_data.options.complete) {
                 for (i = 0; i < 8; i++) {
-                    D_8006D634.progress[i] = 0;
+                    game_data.progress[i] = 0;
                 }
             }
         } else {

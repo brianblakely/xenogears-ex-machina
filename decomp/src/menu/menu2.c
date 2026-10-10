@@ -109,7 +109,7 @@ LightRig *D_800910F0 = NULL;
 /* Start the menu camera: mode 3 setup and its script block. */
 void func_800707A8(void) {
     func_80083C0C(3);
-    func_800346D4(&D_80092954);
+    window_close(&D_80092954);
 }
 
 /* One easing step from current toward target: the remaining distance
@@ -179,9 +179,9 @@ void func_8007099C(u32 mode) {
         target = D_8009872C.core;
         target.vy += D_800925F4;
         func_80070808(&target, 0x10);
-        target.vx = D_8009872C.pos.vx + ((func_8003F8B0(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
+        target.vx = D_8009872C.pos.vx + ((gpu_get_sin(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
         target.vy = D_8009872C.pos.vy - (D_800925F4 + 0x20);
-        target.vz = D_8009872C.pos.vz + ((func_8003F8CC(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
+        target.vz = D_8009872C.pos.vz + ((gpu_get_cos(D_8009872C.angle + 0xA80) * 0xD0) >> 12);
         func_800708C4(&target, 0x46);
         top = func_80082488(&D_8009871C, 0) - (D_800925F4 + 0x40);
         if (top < D_8009871C.vy) {
@@ -192,9 +192,9 @@ void func_8007099C(u32 mode) {
         D_8009867C.vx = D_80097010.pos.vx;
         D_8009867C.vy = D_80097010.pos.vy - 0xC0;
         D_8009867C.vz = D_80097010.pos.vz;
-        D_8009871C.vx = D_8009867C.vx + ((func_8003F8B0(D_80097010.angle + 0x900) * 0xE0) >> 12);
+        D_8009871C.vx = D_8009867C.vx + ((gpu_get_sin(D_80097010.angle + 0x900) * 0xE0) >> 12);
         D_8009871C.vy = D_80097010.pos.vy - 0xD0;
-        D_8009871C.vz = D_8009867C.vz + ((func_8003F8CC(D_80097010.angle + 0x900) * 0xE0) >> 12);
+        D_8009871C.vz = D_8009867C.vz + ((gpu_get_cos(D_80097010.angle + 0x900) * 0xE0) >> 12);
         break;
     }
 }
@@ -458,9 +458,9 @@ s32 func_8007107C(void) {
             D_800925D4 = *D_800925F8;
             D_800925F8++;
             break;
-        /* 19: resume the message window (func_800345E0). */
+        /* 19: resume the message window (window_end_wait). */
         case 19:
-            func_800345E0(&D_8009868C);
+            window_end_wait(&D_8009868C);
             D_800925F8++;
             break;
         /* 27: hide the marker sprite and put it back at 0xA0, 0x6D. */
@@ -496,23 +496,23 @@ s32 func_8007107C(void) {
          * 0x20 is newly pressed, then resume it and advance; a stop with
          * another code is resumed in place. */
         case 25:
-            if (func_80033CD0(&D_8009868C) == 0 || !(D_8005948C & 0x20)) {
+            if (window_get_wait_state(&D_8009868C) == 0 || !(pad_port0_pressed & 0x20)) {
                 return;
             }
-            if (func_80033CD0(&D_8009868C) == 1) {
+            if (window_get_wait_state(&D_8009868C) == 1) {
                 D_800925F8++;
             }
-            func_800345E0(&D_8009868C);
+            window_end_wait(&D_8009868C);
             break;
         /* 26: wait for a stop with code 2 or 3 while pad button 0x20 is newly
          * pressed, then resume the window and advance; yields on every run. */
         case 26:
-            if (func_80033CD0(&D_8009868C) != 0 && (D_8005948C & 0x20)) {
-                s32 answer = func_80033CD0(&D_8009868C);
+            if (window_get_wait_state(&D_8009868C) != 0 && (pad_port0_pressed & 0x20)) {
+                s32 answer = window_get_wait_state(&D_8009868C);
 
                 if (answer < 4) {
                     if (answer >= 2) {
-                        func_800345E0(&D_8009868C);
+                        window_end_wait(&D_8009868C);
                         D_800925F8++;
                     }
                 }
@@ -615,7 +615,7 @@ void func_80071794(MenuImageFile *files) {
 void func_800718C0(void) {
     D_800925D8 = -1;
     D_800925D4 = 0;
-    func_80032F54(&D_8009868C, 0x140, 0x30, 0x1C, 0x9A, 0x40, 4);
+    window_open(&D_8009868C, 0x140, 0x30, 0x1C, 0x9A, 0x40, 4);
 }
 
 /* Enter a menu scene: the first scene also starts sound 0x37 and uses a
@@ -649,8 +649,8 @@ void func_800719F0(void) {
     func_80083C0C(7);
     D_800928C8 = 5;
     D_80092884 = 0;
-    func_80032F54(&D_80092954, 0x140, 0x70, 0xA2, 0x2A, 0x1C, 8);
-    func_80034714(&D_80092954, func_80033728(D_80092880, 0x42));
+    window_open(&D_80092954, 0x140, 0x70, 0xA2, 0x2A, 0x1C, 8);
+    window_queue_message(&D_80092954, text_get_resource_entry(D_80092880, 0x42));
     D_80092954.unk68 = 0x1E;
     D_800925DC = 0;
     func_80070F80(D_80090F38);
@@ -669,14 +669,14 @@ void func_80071AD0(void) {
     if (D_800925F0 != 0 && (D_800928E8 & 4)) {
         func_80071724(D_80092938);
     }
-    func_80036420();
+    pad_merge_queued_states();
     message = &D_8009868C;
     if (D_80092608 != 0) {
-        if (D_800594A4 & 0x1000) {
+        if (pad_port0_repeated & 0x1000) {
             func_8008EB4C(0x1E);
             D_80092604--;
         }
-        if (D_800594A4 & 0x4000) {
+        if (pad_port0_repeated & 0x4000) {
             func_8008EB4C(0x1E);
             D_80092604++;
         }
@@ -686,12 +686,12 @@ void func_80071AD0(void) {
         if (D_80092604 < 0) {
             D_80092604 = 7;
         }
-        func_80034800(&D_80092954, (D_800928E8 * 7) & 0x3F, 0xC0, 0x10);
-        func_80034874(&D_80092954, D_80092604);
-        if (D_8005948C & 0x20) {
+        window_set_color(&D_80092954, (D_800928E8 * 7) & 0x3F, 0xC0, 0x10);
+        window_highlight_line(&D_80092954, D_80092604);
+        if (pad_port0_pressed & 0x20) {
             func_8008EB4C(0x21);
             func_8007191C(D_80092604 + 1);
-            func_800346A4(message);
+            window_reset(message);
         }
     }
     if (*D_800925F8 == 0) {
@@ -701,12 +701,12 @@ void func_80071AD0(void) {
     D_800925E0 += func_800707D8(D_800925E8, D_800925E0, 4);
     D_800925E4 += func_800707D8(D_800925EC, D_800925E4, 4);
     if (D_80092608 != 0) {
-        func_80034888(&D_80092954, (u_long *)D_80092938, D_800928A0);
+        window_draw_frame(&D_80092954, (u_long *)D_80092938, D_800928A0);
     }
     if (D_800925D4 != D_800925D8) {
         message->unk68 = 3;
-        func_800346A4(message);
-        func_80034714(message, func_80033728(D_80092880, D_800925D4));
+        window_reset(message);
+        window_queue_message(message, text_get_resource_entry(D_80092880, D_800925D4));
         D_800925D8 = D_800925D4;
     }
     func_80079DF0(&D_8009872C, &D_80097010);
@@ -766,8 +766,8 @@ void func_80071DA4(Actor *actor) {
 s32 func_80071F8C(s32 command) {
     switch (command) {
     case 0:
-        func_80039C4C(D_80092948);
-        func_80039FF8();
+        sound_stop_seq(D_80092948);
+        sound_stop_all_effects();
         break;
     case 1:
         func_80071DA4(&D_8009872C);
@@ -878,7 +878,7 @@ void func_80072170(void) {
             D_8009260C += 3;
             if (D_8009260C >= 0x100) {
                 D_8009260C = 0xFF;
-                D_80050622 = 0x7F;
+                mode_arena_bout_outcome = 0x7F;
                 func_80083BB4(0);
                 func_800851D4();
             }
@@ -888,8 +888,8 @@ void func_80072170(void) {
         func_8007107C();
         if (D_800925D4 != D_800925D8) {
             window->unk68 = 1;
-            func_8003463C(window);
-            func_80034714(window, func_80033728(D_80092880, D_800925D4));
+            window_release_queue_if_idle(window);
+            window_queue_message(window, text_get_resource_entry(D_80092880, D_800925D4));
             window->lines = 2;
             window->unk6 = 0xB4;
             D_800925D8 = D_800925D4;
@@ -908,7 +908,7 @@ void func_800725A8(void) {
 void func_800725B0(Actor *scene) {
     SceneHeader *header;
 
-    func_80030988(5, 4, 0x40, 0x40);
+    model_set_envmap_mapping(5, 4, 0x40, 0x40);
     D_800910F0 = func_8008A3E0(func_8008A2B8(0x10));
     D_80092610 = func_8008C2C0(scene->node);
     func_8008976C(0x280, 0xDA);
@@ -933,7 +933,7 @@ void func_800725B0(Actor *scene) {
 void func_800726B4(void) {
     func_8008BC04();
     func_8007F834();
-    func_80030988(1, 1, 0x40, 0x40);
+    model_set_envmap_mapping(1, 1, 0x40, 0x40);
     func_8008A5BC(D_800910F0);
     func_80089D5C(D_80092610);
     func_8008976C(0x140, 0xDA);
@@ -972,12 +972,12 @@ void func_80072858(LightRig *rig) {
     u8 y;
     ModelSet *set;
 
-    func_80036420();
+    pad_merge_queued_states();
     if (winner->model_id != 7) {
-        if (D_80059570 & 0x2000) {
+        if (pad_port0_held & 0x2000) {
             D_80092620--;
         }
-        if (D_80059570 & 0x8000) {
+        if (pad_port0_held & 0x8000) {
             D_80092620++;
         }
     }
@@ -988,19 +988,19 @@ void func_80072858(LightRig *rig) {
         D_80092620 = 0x80;
     }
     if (D_800928FC == 1) {
-        if (D_80059490 & 0x20) {
+        if (pad_port1_pressed & 0x20) {
             func_800726B4();
             return;
         }
-        if (D_80059490 & 1) {
+        if (pad_port1_pressed & 1) {
             D_80092618++;
         }
     } else {
-        if (D_8005948C & 0x20) {
+        if (pad_port0_pressed & 0x20) {
             func_800726B4();
             return;
         }
-        if (D_8005948C & 1) {
+        if (pad_port0_pressed & 1) {
             D_80092618++;
         }
     }
@@ -1031,7 +1031,7 @@ void func_80072858(LightRig *rig) {
     D_80092630.vx = D_8009261C;
     D_80092630.vy += D_80092620;
     D_80092630.vz = 0;
-    func_8003F738(&D_80092630, &m);
+    gpu_build_rotation_matrix(&D_80092630, &m);
     MulMatrix2(&D_80096FE0, &m);
     m.t[0] = 0;
     m.t[1] = D_80092624;

@@ -22,16 +22,16 @@ void func_801E4048(void) {
     D_800C3D5C = 0;
     D_800D2D44 = 0;
     D_800C492A = 0;
-    D_8005941C = 0;
-    D_8005942C = 0;
+    mode_battle_turn_count = 0;
+    mode_battle_return_fade = 0;
     for (i = 0; i < 3; i++) {
-        D_80059468[i] = D_800CCCE8_setup.partyIds[i];
+        mode_battle_party_ids[i] = D_800CCCE8_setup.partyIds[i];
         D_800C3EB0.slots[i].field2 = D_800CCCE8_setup.partyIds[i];
     }
     for (i = 0; i < SLOT_COUNT; i++) {
         D_800C3EB0.slots[i].hidden = 0;
         if (D_800D3294 == 0) {
-            D_800C3EB0.slots[i].gear = D_8006F8E5[i];
+            D_800C3EB0.slots[i].gear = game_data_slot_in_gear[i];
         } else {
             D_800C3EB0.slots[i].gear = 1;
         }
@@ -49,8 +49,8 @@ void func_801E4160(void) {
     u8 id;
 
     D_800D3280 = 0;
-    D_800D3364 = (BattleScene *)D_8005949C;
-    D_800C3EB0.formation = (struct Formation *)D_8005949C;
+    D_800D3364 = (BattleScene *)mode_battle_scene_file;
+    D_800C3EB0.formation = (struct Formation *)mode_battle_scene_file;
     for (i = 0; i < 3; i++) {
         if ((D_800C3EB0.slots[i].field2 & 0x7F) != NO_COMBATANT) {
             D_800D2DCC.present[i] = 1;
@@ -260,28 +260,28 @@ void func_801E4CD0(void) {
         D_800D2CB0[i] = 0;
         D_800D2FE4[i] = 0;
     }
-    for (i = 0, count = D_8006D634.itemCounts; i < INVENTORY_SLOTS; i++) {
+    for (i = 0, count = game_data.itemCounts; i < INVENTORY_SLOTS; i++) {
         if (*count >= 100) {
             *count = 99;
         }
         if (*count++ == 0) {
-            D_8006D634.itemIds[i] = 0;
+            game_data.itemIds[i] = 0;
         }
     }
     listed = 0;
     for (i = 0; i < INVENTORY_SLOTS && listed < BATTLE_ITEMS; i++) {
-        if (D_8006D634.itemIds[i] != 0 && D_8006D634.itemIds[i] < 49) {
-            LIST_ITEM(D_800D2CE0, listed, D_8006D634.itemIds[i]);
-            D_800D2CB0[listed] = D_8006D634.itemCounts[i];
-            D_800D2FE4[listed] = D_8006D634.itemIds[i];
+        if (game_data.itemIds[i] != 0 && game_data.itemIds[i] < 49) {
+            LIST_ITEM(D_800D2CE0, listed, game_data.itemIds[i]);
+            D_800D2CB0[listed] = game_data.itemCounts[i];
+            D_800D2FE4[listed] = game_data.itemIds[i];
             listed++;
         }
     }
     D_800C3EAC->lastItem = 47;
     for (i = 0, listed = 0; i < 100; i++) {
-        if (D_8006D634.weaponIds[i] >= 50 && D_8006D634.weaponIds[i] < 73) {
-            LIST_ITEM(D_800C3D70, listed, D_8006D634.weaponIds[i]);
-            D_800D3688[listed] = D_8006D634.weaponCounts[i];
+        if (game_data.weaponIds[i] >= 50 && game_data.weaponIds[i] < 73) {
+            LIST_ITEM(D_800C3D70, listed, game_data.weaponIds[i]);
+            D_800D3688[listed] = game_data.weaponCounts[i];
             listed++;
         }
     }
@@ -305,7 +305,7 @@ void func_801E4E7C(void) {
     func_80078508(drawn);
     i = 0;
     do {
-        slot = func_8001BD40(0, 10);
+        slot = mode_get_random_byte_in_range(0, 10);
         if (drawn[slot] == 0) {
             drawn[slot] = 1;
             D_800D2DCC.order[i] = slot;
@@ -347,7 +347,7 @@ void func_801E5014(void) {
         D_800C3D48 = 1;
     }
     for (i = 0; i < 3; i++) {
-        D_800D32A1.party[i].character_b = D_8006D634.skills[D_800CCCE8_setup.partyIds[i]].tier;
+        D_800D32A1.party[i].character_b = game_data.skills[D_800CCCE8_setup.partyIds[i]].tier;
         for (j = 0; j < 8; j++) {
             D_800C3EAC->slots[i].layout[j] = D_800C20F0[D_800CCCE8_setup.work.records[i].pilot.characterId][j];
         }
@@ -396,12 +396,12 @@ void func_801E5384(void) {
     } else {
         D_800D3294 = 0;
     }
-    mask = (D_8006D634.joined & D_8006D634.available) & 0x7FF;
+    mask = (game_data.joined & game_data.available) & 0x7FF;
     if (D_800D3294 == 0) {
         count = 0;
         for (i = 0; i < 3; i++) {
-            if (func_80089C9C(mask, D_8006D634.party[i])) {
-                D_800CCCE8_setup.partyIds[count] = D_8006D634.party[i] & 0x7F;
+            if (func_80089C9C(mask, game_data.party[i])) {
+                D_800CCCE8_setup.partyIds[count] = game_data.party[i] & 0x7F;
                 count++;
             }
         }
@@ -411,13 +411,13 @@ void func_801E5384(void) {
     } else {
         D_800CCCE8_setup.partyIds[1] = 10;
         D_800CCCE8_setup.partyIds[2] = 10;
-        D_800CCCE8_setup.partyIds[0] = D_8006D634.party[0] & 0x7F;
+        D_800CCCE8_setup.partyIds[0] = game_data.party[0] & 0x7F;
     }
-    func_8003342C(D_800595A8);
-    archive = D_800595A8;
+    text_relocate_offset_table(mode_battle_setup_archive);
+    archive = mode_battle_setup_archive;
     for (i = 0; i < 3; i++) {
         if (D_800CCCE8_setup.partyIds[i] != NO_COMBATANT) {
-            memmove(&D_800CCCE8_setup.work.records[i].pilot, &D_8006D634.characters[D_800CCCE8_setup.partyIds[i]], 0xA4);
+            memmove(&D_800CCCE8_setup.work.records[i].pilot, &game_data.characters[D_800CCCE8_setup.partyIds[i]], 0xA4);
             if (D_800D3294 != 0 && (u32)(i - 1) < 2) {
                 D_800CCCE8_setup.work.records[i].pilot.gearId = 0x11;
             }
@@ -425,49 +425,49 @@ void func_801E5384(void) {
             if (gear == 0xFF) {
                 gear = 0;
             }
-            memmove(&D_800CCCE8_setup.work.records[i].gear, &D_8006D634.gears[gear], 0xA4);
-            block = func_80032E88(archive[5 + D_800CCCE8_setup.partyIds[i]], 1);
+            memmove(&D_800CCCE8_setup.work.records[i].gear, &game_data.gears[gear], 0xA4);
+            block = text_unpack_lzss_alloc(archive[5 + D_800CCCE8_setup.partyIds[i]], 1);
             memmove(D_800CCCE8_setup.work.partyCommands[i], block, 0x5F0);
-            func_800320E8(block);
-            block = func_80032E88(archive[0x11 + gear], 1);
+            heap_free(block);
+            block = text_unpack_lzss_alloc(archive[0x11 + gear], 1);
             memmove(D_800CCCE8_setup.work.gearCommands[i], block, 0x690);
-            func_800320E8(block);
+            heap_free(block);
         }
     }
     /* The setup archive fills the work area from the enemy command table
      * (0x35D8, 0x1F40 bytes of item 4) to 0x5B18 (items 3 and 0x25 at 0x5518
      * and 0x5818). */
-    block = func_80032E88(archive[4], 1);
+    block = text_unpack_lzss_alloc(archive[4], 1);
     memmove(D_800CCCE8_setup.work.enemyCommands, block, 0x1F40);
-    func_800320E8(block);
-    block = func_80032E88(archive[3], 1);
+    heap_free(block);
+    block = text_unpack_lzss_alloc(archive[3], 1);
     memmove((u8 *)&D_800CCCE8_setup + 0x5518, block, 0x300);
-    func_800320E8(block);
-    block = func_80032E88(archive[2], 1);
-    func_8002DDE4(block, 0, 0, 0, 0, 0, 0);
-    func_800320E8(block);
-    D_800D2F5C = func_80032E88(archive[1], 0);
-    func_80033698(0, 0x1F0);
-    D_800D329C = func_80032E88(archive[0x10], 0);
-    block = func_80032E88(archive[0x24], 1);
+    heap_free(block);
+    block = text_unpack_lzss_alloc(archive[2], 1);
+    model_load_image_list(block, 0, 0, 0, 0, 0, 0);
+    heap_free(block);
+    D_800D2F5C = text_unpack_lzss_alloc(archive[1], 0);
+    text_load_palette(0, 0x1F0);
+    D_800D329C = text_unpack_lzss_alloc(archive[0x10], 0);
+    block = text_unpack_lzss_alloc(archive[0x24], 1);
     func_80078310(block, 0x61);
-    func_800320E8(block);
-    block = func_80032E88(archive[0x25], 1);
+    heap_free(block);
+    block = text_unpack_lzss_alloc(archive[0x25], 1);
     memmove((u8 *)&D_800CCCE8_setup + 0x5818, (u8 *)block + 0x320, 0x300);
-    func_800320E8(block);
-    D_800D39F0 = func_80032E88(archive[0x26], 0);
-    func_800320E8(D_800595A8);
-    func_80028470(0xC, 1);
-    D_800C3DD0 = func_8008ABB8(func_800288EC(D_8006F9DC.battle * 2 + 2), 0);
+    heap_free(block);
+    D_800D39F0 = text_unpack_lzss_alloc(archive[0x26], 0);
+    heap_free(mode_battle_setup_archive);
+    cd_select_directory(0xC, 1);
+    D_800C3DD0 = func_8008ABB8(cd_get_aligned_file_size(formation_active.battle * 2 + 2), 0);
     D_800D33EC = D_800C3DD0;
     list = &D_800D33E8;
-    *list = D_8006F9DC.battle * 2 + 2;
-    D_800C3DEC = (s32)func_8008ABB8(func_800288EC(D_8006F9DC.battle * 2 + 3), 1);
+    *list = formation_active.battle * 2 + 2;
+    D_800C3DEC = (s32)func_8008ABB8(cd_get_aligned_file_size(formation_active.battle * 2 + 3), 1);
     D_800D33F4 = (void *)D_800C3DEC;
     D_800D33F8 = 0;
     D_800D33FC = NULL;
-    D_800D33F0 = D_8006F9DC.battle * 2 + 3;
-    func_80029AFC((FileRequest *)list, 0, 0x80);
+    D_800D33F0 = formation_active.battle * 2 + 3;
+    cd_read_file_list((FileRequest *)list, 0, 0x80);
 }
 
 /* Run one battle setup phase: 0 the party, 1 the formation and combatant
@@ -505,7 +505,7 @@ void func_801E5924(void) {
     D_800D2D28->reaction[0] = 1;
     D_800D2D28->reaction[1] = 1;
     D_800D2D28->reaction[2] = 1;
-    func_80026338(D_800D2F5C, 0x5C, &D_800C3EA4->sprites[0].unk0, &D_800C3EA4->sprites[0].tpageMode,
+    sprite_sheet_get_texture(D_800D2F5C, 0x5C, &D_800C3EA4->sprites[0].unk0, &D_800C3EA4->sprites[0].tpageMode,
                   &D_800C3EA4->sprites[0].clutX, &D_800C3EA4->sprites[0].clutY, &D_800C3EA4->sprites[0].pageX,
                   &D_800C3EA4->sprites[0].pageY);
     D_800C3EA4->barCluts[1] = GetClut(D_800C3EA4->sprites[0].clutX, D_800C3EA4->sprites[0].clutY);
@@ -577,7 +577,7 @@ void func_801E5E78(void) {
 
     for (i = 0; i < 10; i++) {
         D_800C3E5C[i].pixels = func_8008AC00(4);
-        func_80034EAC(func_800338D8(i), D_800C3E5C[i].pixels, 2, 0);
+        window_render_text_line(text_get_battle_message(i), D_800C3E5C[i].pixels, 2, 0);
     }
 }
 

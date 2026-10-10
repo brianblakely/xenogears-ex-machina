@@ -54,16 +54,16 @@ The scan finds 4436 compiled game functions and these library entries
 
 | Library | Entries the game calls |
 | --- | --- |
-| libgpu | DrawSync (159), AddPrim (135), GetTPage (114), LoadImage (109), SetSemiTrans (76), GetClut (69), SetShadeTex (59), MoveImage (40), PutDispEnv/PutDrawEnv (38/37), SetDrawMode (30), DrawOTag (27), ClearOTagR (25), StoreImage (23), ClearImage (17), OpenTIM/ReadTIM (17), SetDefDrawEnv/SetDefDispEnv (15), SetDispMask (13), SetDrawTPage (13), ResetGraph (8), DrawSyncCallback (5), AddPrims (3), TermPrim (3: kernel menu func_8001A4B4, the debug console's flush func_80037324, arena func_80088E90), GetDrawEnv (2: the resident panorama func_8002709C, ovl2615's stage backdrop func_801E7914), MargePrim (arena HUD func_80085EC8), LoadClut2 (arena palette func_8007B270), SetGraphDebug(0) (boot func_80019578), SetDrawMove, SetDrawArea, SetDrawOffset, SetDrawEnv, SetTexWindow, DrawOTagEnv, DrawPrim, and the primitive setters SetPolyFT4 (37), SetPolyG4 (21), SetPolyF4 (13), SetLineF3, SetLineF2, SetSprt, SetPolyFT3, SetPolyGT3, SetPolyGT4, SetPolyF3, SetTile, SetLineG2, SetPolyG3 |
+| libgpu | DrawSync (159), AddPrim (135), GetTPage (114), LoadImage (109), SetSemiTrans (76), GetClut (69), SetShadeTex (59), MoveImage (40), PutDispEnv/PutDrawEnv (38/37), SetDrawMode (30), DrawOTag (27), ClearOTagR (25), StoreImage (23), ClearImage (17), OpenTIM/ReadTIM (17), SetDefDrawEnv/SetDefDispEnv (15), SetDispMask (13), SetDrawTPage (13), ResetGraph (8), DrawSyncCallback (5), AddPrims (3), TermPrim (3: kernel menu mode_run_kernel_menu, the debug console's flush console_flush, arena func_80088E90), GetDrawEnv (2: the resident panorama gpu_create_panorama, ovl2615's stage backdrop func_801E7914), MargePrim (arena HUD func_80085EC8), LoadClut2 (arena palette func_8007B270), SetGraphDebug(0) (boot boot_main), SetDrawMove, SetDrawArea, SetDrawOffset, SetDrawEnv, SetTexWindow, DrawOTagEnv, DrawPrim, and the primitive setters SetPolyFT4 (37), SetPolyG4 (21), SetPolyF4 (13), SetLineF3, SetLineF2, SetSprt, SetPolyFT3, SetPolyGT3, SetPolyGT4, SetPolyF3, SetTile, SetLineG2, SetPolyG3 |
 | libgte | SetRotMatrix (94), SetTransMatrix (92), SquareRoot0 (61), ratan2 (56), RotTransPers4 (51), CompMatrix (47), VectorNormal (36), ScaleMatrix/TransMatrix (29 each), SetGeomScreen (24), ApplyMatrix (22), MulMatrix0 (20), RotTransPers (19), SetGeomOffset (19), Push/PopMatrix (15), ReadGeomScreen (12), MulMatrix2, ReadGeomOffset, RotAverage4, RotTransPers3, ApplyMatrixLV/ApplyMatrixSV, SetBackColor, SetColorMatrix, SetLightMatrix, OuterProduct0, VectorNormalS/VectorNormalSS, InitGeom, RotTransSV, RotMatrixZ, ScaleMatrixL, SetMulMatrix, lighting (NormalColor, NormalColor3, NormalColorCol, NormalColorCol3), SetFogNearFar, and 16 entries without a signature name (below) |
-| libcd | CdSyncCallback (17), CdIntToPos (16), CdControlF (14), CdReadyCallback (14), CdDataCallback (10), CdControlB (8), CdPosToInt, CdGetSector, CdInit, CdControl and CdSetDebug (func_80028230 only: Standby and debug level 0 at start-up), CdSync, CdDataSync, CdFlush, CdReadCallback, CdMix (dormant, see Sound); mdec: CdRead2 and the streaming ring's StSetRing, StSetStream, StGetNext, StFreeRing, StGetBackloc, StCdInterrupt and StUnSetRing (Disc and files) |
-| libapi | events (Open/Close/Enable/Disable/Test/UnDeliverEvent; Enable/DisableEvent 18/17, the sound driver's tick guard, Interrupt-context work), root counters (Set/Get/Start/StopRCnt), critical sections (11 each), SwEnterCriticalSection/SwExitCriticalSection (the soft reset func_80019CD0), FlushCache, InitPAD/StartPAD/StopPAD/ChangeClearPAD, BIOS file calls open B(32h), read B(34h), write B(35h), close B(36h), format B(41h), firstfile B(42h), nextfile B(43h), rename B(44h) and delete B(45h) (Memory card and saves), Krom2RawAdd B(51h), GetGp (the arena task's gp, menu func_8008BA2C) |
+| libcd | CdSyncCallback (17), CdIntToPos (16), CdControlF (14), CdReadyCallback (14), CdDataCallback (10), CdControlB (8), CdPosToInt, CdGetSector, CdInit, CdControl and CdSetDebug (cd_init_disc_access only: Standby and debug level 0 at start-up), CdSync, CdDataSync, CdFlush, CdReadCallback, CdMix (dormant, see Sound); mdec: CdRead2 and the streaming ring's StSetRing, StSetStream, StGetNext, StFreeRing, StGetBackloc, StCdInterrupt and StUnSetRing (Disc and files) |
+| libapi | events (Open/Close/Enable/Disable/Test/UnDeliverEvent; Enable/DisableEvent 18/17, the sound driver's tick guard, Interrupt-context work), root counters (Set/Get/Start/StopRCnt), critical sections (11 each), SwEnterCriticalSection/SwExitCriticalSection (the soft reset boot_restart), FlushCache, InitPAD/StartPAD/StopPAD/ChangeClearPAD, BIOS file calls open B(32h), read B(34h), write B(35h), close B(36h), format B(41h), firstfile B(42h), nextfile B(43h), rename B(44h) and delete B(45h) (Memory card and saves), Krom2RawAdd B(51h), GetGp (the arena task's gp, menu func_8008BA2C) |
 | libetc | VSync (75), VSyncCallback (3), ResetCallback, SetVideoMode |
-| libspu | SpuInit/SpuQuit, SpuInitMalloc, SpuSetCommonAttr, SpuSetReverb and the reverb mode setters, SpuGetReverbModeType, SpuSetIRQ/SpuSetIRQCallback, SpuSetTransferMode/StartAddr/Callback, SpuReadDecodedData, SpuGetVoiceEnvelopeAttr, SpuSetNoiseClock; SpuRead/SpuWrite (8004d818/8004d878) by inspection (unattributed, called by sound.c func_8003BE68) |
+| libspu | SpuInit/SpuQuit, SpuInitMalloc, SpuSetCommonAttr, SpuSetReverb and the reverb mode setters, SpuGetReverbModeType, SpuSetIRQ/SpuSetIRQCallback, SpuSetTransferMode/StartAddr/Callback, SpuReadDecodedData, SpuGetVoiceEnvelopeAttr, SpuSetNoiseClock; SpuRead/SpuWrite (8004d818/8004d878) by inspection (unattributed, called by sound.c sound_start_next_transfer) |
 | libcard | InitCARD, StartCARD, `_bu_init` (A(70h)), `_card_info` (A(ABh), the card check of slot39 func_801C891C) |
 | libpress, libds | DecDCTReset/DecDCTin/DecDCTout/DecDCTvlc/DecDCTvlcSize and DecDCToutCallback, all from mdec |
 | libc, libc2 | bzero (126), rand (96), memcpy (33), memmove (16), sprintf (11), strcat, strcpy, strlen, memset, memchr, strcmp |
-| libsn | PCopen, PCcreat, PClseek, PCclose and PCinit/PCread/PCwrite (8004c38c/8004c398/8004c470, by inspection): development-host paths only (D_8004FE48 set, or `D_80010000 != -1`) |
+| libsn | PCopen, PCcreat, PClseek, PCclose and PCinit/PCread/PCwrite (8004c38c/8004c398/8004c470, by inspection): development-host paths only (cd_pc_file_names set, or `mode_disc_mode != -1`) |
 
 The rows and, for the unattributed libapi_register_pad_send_buffers, the note below name every
 entry the scan reports at this revision; its `--detail` output lists each
@@ -96,13 +96,13 @@ else `libgte_` and what it computes):
 | NormalClip (8004a70c) | NCLIP of three screen points |
 | libgte_project_front_quad (8004a83c) | RTPT, NCLIP, then RTPS, AVSZ4, depth cue and FLAG out (RotAverageNclip4's arguments) |
 | libgte_transpose_matrix (8004a8ec) | copy a matrix's rotation transposed (TransposeMatrix form) |
-| RotMatrixYXZ, RotMatrix (8004a92c, 8004abbc) | rotation matrix from three angles through the sin/cos table D_800523F0 |
+| RotMatrixYXZ, RotMatrix (8004a92c, 8004abbc) | rotation matrix from three angles through the sin/cos table rcossin_tbl |
 | RotMatrixX, RotMatrixY (8004ae4c, 8004afec) | single-axis rotation matrix |
 
 Outside the libraries the game itself uses:
 
-- **SPU registers** through the pointer `D_800508E4` (0x1F801C00, sound.h),
-  loaded by 15 functions of sound.c and main2_800366E0.c (the voice-register
+- **SPU registers** through the pointer `sound_spu_registers` (0x1F801C00, sound.h),
+  loaded by 15 functions of sound.c and console_and_sound_driver.c (the voice-register
   writers). No compiled game function addresses the I/O window directly.
 - **GTE** inline in 78 compiled functions (the PsyQ GTE macros) and in the
   handwritten renderers (resident model renderers, menu and world-map batches).
@@ -128,9 +128,9 @@ Outside the libraries the game itself uses:
 - **BIOS Kanji ROM**: Krom2RawAdd returns a ROM glyph address for a Shift-JIS
   code. slot39 func_801E65E4 draws every listed save title from it; field
   func_800ABFDC uses it for staff-roll codes outside the game font (8540-887F).
-  The staff roll (func_800A7948) runs only while D_8004F300 is set, which only
+  The staff roll (func_800A7948) runs only while mode_staff_roll_enabled is set, which only
   field ext `be` (enable_movie_overlay, func_80087C0C, entry 0xBE of the
-  extended table D_800AE6A0) does; the game-wide reset func_8001AADC clears it
+  extended table D_800AE6A0) does; the game-wide reset mode_reset_game_state clears it
   (`tools/data_users.py --range 8004f300:8004f304`). The movie player
   func_800A7C58 calls it on each pass of a mode-0 movie (ext `a0`, or ext `60`
   with layout 1 or 2), and it draws over movie frames 0x687-0x18E1. No
@@ -140,37 +140,37 @@ Outside the libraries the game itself uses:
 
 ### Controllers
 
-- InitPAD fills `D_800625FC[2]` (0x22-byte receive buffers); StartPAD and
-  ChangeClearPAD(0) follow (main2.c func_80036288). func_8003569C accepts types
+- InitPAD fills `pad_receive_buffers[2]` (0x22-byte receive buffers); StartPAD and
+  ChangeClearPAD(0) follow (main2.c pad_start_controllers). pad_read_buttons accepts types
   0x40 (digital), 0x50 (analog joystick) and 0x70 (analog pad) with status 0;
-  func_80035734 reports 0 none (status 0xFF), 1 digital, 2 mouse, 3 joystick,
+  pad_get_controller_kind reports 0 none (status 0xFF), 1 digital, 2 mouse, 3 joystick,
   4 analog pad, -1 other. Field, world-map, battle and menu loops pause while
   the first pad is missing.
-- func_800358BC remaps the low button byte through the assignment D_80050238
-  (func_800357C0; default {1,0,3,2,4,5,6,7}) and swaps the shoulder and face
-  bits of a 0x50 pad (func_8003582C). Analog pads store the stick bytes
-  data[0..3] in D_80059444/D_8005944C/D_80059430/D_80059438 (port 0) and
-  D_80059448/D_80059450/D_80059434/D_8005943C (port 1); a digital pad gets
-  D_80059430/D_80059438 from the d-pad (tables D_8005020C/D_8005021C). Only the
+- pad_read_controllers remaps the low button byte through the assignment pad_button_assignment
+  (pad_remap_buttons; default {1,0,3,2,4,5,6,7}) and swaps the shoulder and face
+  bits of a 0x50 pad (pad_swap_button_layout). Analog pads store the stick bytes
+  data[0..3] in pad_port0_right_stick_x/pad_port0_right_stick_y/pad_port0_left_stick_x/pad_port0_left_stick_y (port 0) and
+  pad_port1_right_stick_x/pad_port1_right_stick_y/pad_port1_left_stick_x/pad_port1_left_stick_y (port 1); a digital pad gets
+  pad_port0_left_stick_x/pad_port0_left_stick_y from the d-pad (tables pad_dpad_stick_x_table/pad_dpad_stick_y_table). Only the
   arena reads them (menu3.c func_80076884, menu4.c func_8008162C).
-- Vibration: `D_8005A1BC[2]` hold each port's four transmit bytes, registered
-  once with libapi_register_pad_send_buffers(act0, 4, act1, 4) (func_8003611C). The vblank handler
-  steps them (func_80036220/func_80036188): {1, 0x40, 1, 0} while the timer
-  runs, {1, 0x40, 0, 0} once, then off. func_80036258(port, frames) starts one;
+- Vibration: `pad_actuators[2]` hold each port's four transmit bytes, registered
+  once with libapi_register_pad_send_buffers(act0, 4, act1, 4) (pad_init_actuators). The vblank handler
+  steps them (pad_step_actuators/pad_step_actuator): {1, 0x40, 1, 0} while the timer
+  runs, {1, 0x40, 0, 0} once, then off. pad_run_actuator(port, frames) starts one;
   only the arena calls it (menu3.c func_800776A8, per side, gated by the
   settings' port vibration options D_80099D98.option4/.option5).
 - Input is sampled once per vertical blank, not per game frame: the vblank
   handler queues held, pressed and repeat words for both ports in a 16-entry
-  ring (func_80035C0C; overflow sets D_80050208); loops dequeue
-  (func_80035CDC), or OR all queued states (func_80036420, which resets after
+  ring (pad_queue_state; overflow sets pad_queue_overflowed); loops dequeue
+  (pad_dequeue_state), or OR all queued states (pad_merge_queued_states, which resets after
   an overflow). Repeat starts after 32 unchanged vblanks, then every fourth
-  (`D_80059488 & 3`).
+  (`pad_vblank_count & 3`).
 - Soft reset is the remapped held word 0x90C (L1+R1+Start+Select) in
-  D_80059570 (Control flow).
+  pad_port0_held (Control flow).
 
 ### Memory card and saves
 
-- Start-up: InitCARD(1), StartCARD, `_bu_init` at boot (main.c func_80019578)
+- Start-up: InitCARD(1), StartCARD, `_bu_init` at boot (main.c boot_main)
   and again on the file screens (slot39.c func_801D9B08), which also open and
   enable the four card events on 0xF4000001: 4 (done), 0x8000 (error), 0x100
   (timeout), 0x2000 (new card). func_801C881C busy-polls them with TestEvent
@@ -194,8 +194,8 @@ Outside the libraries the game itself uses:
 - Load (func_801CB304, READ_SAVE): read the 0x2000-byte file in 0x100-byte
   reads (five retries) into a 0x2100-byte heap block, compare the sum, then
   func_801CB28C: func_801E4D10 copies the saved blocks and recomputes the gear
-  fields that are not saved, D_80059488 = the saved play time and
-  D_8005A3A0[16] (battle-AI globals) come back from GameData +0x2324. The field
+  fields that are not saved, pad_vblank_count = the saved play time and
+  mode_battle_ai_variables[16] (battle-AI globals) come back from GameData +0x2324. The field
   finishes a load through event variables 0x46 and 4 (field.c func_800799D4).
 - Payload layout (slot39/file.h): the play time in vblanks at +0 and the party
   summary with the file digit at +0x23 (SaveSummary), then SaveData's
@@ -206,40 +206,40 @@ Outside the libraries the game itself uses:
 
 ### Disc and files
 
-The resident disc unit (main_8002709C.c, 80028230-8002c3e8, API in
+The resident disc unit (cd_reads_and_streams.c, 80028230-8002c3e8, API in
 `resident/cd.h`) holds the file index and reads every file except the world-map
 terrain and the movie streams, whose readers (below) issue their own drive
-commands at sectors taken from that index (func_800289D0 at
+commands at sectors taken from that index (cd_get_file_sector at
 worldmap_80094A5C.c:1652/2044 and mdec.c:435). Outside the unit, three
 shipped parts issue drive commands themselves: the world-map terrain reader,
 the movie library (mdec) and the disc check of the swap (and the movie
 overlay's development tools). Each of them, like the unit, branches on
-func_8002C3D8 (D_8004FE48) to a host-file path, so the original development
+cd_has_pc_file_server (cd_pc_file_names) to a host-file path, so the original development
 build replaced the drive at these four places (PC file server, below). A port can take the same cut: serve the unit's reads,
 rings and image streams, the world map's request lists, the movie ring and the
 swap's disc check from the imported discs. Raw sector reads are part of it,
-which the host path does not serve (func_8002954C returns -1 there): the
+which the host path does not serve (cd_read_raw_sectors returns -1 there): the
 arena's portraits and the swap's label and index. The other libcd calls are the
-busy test's CdDataSync(1) (func_800286CC), CdDataSync(0) before a field movie
+busy test's CdDataSync(1) (cd_get_pending_read_count), CdDataSync(0) before a field movie
 (field func_800A7394), a per-frame CdSync(1) whose status no code reads (world
 map func_800712D0), CdFlush at soft reset, the card screens' callback save and
 restore (Memory card and saves) and the dormant CdMix.
 
 - **Index.** Each resident image carries its disc's index ahead of its code,
   the only bytes in which SLUS_006.64 and SLUS_006.69 differ (three rodatabins,
-  [matching.md](matching.md#recovering-data)): the boot word D_80010000 (-1 in
-  both), 0x8000 bytes of 7-byte file records (D_8004FDF0: a 24-bit first sector,
+  [matching.md](matching.md#recovering-data)): the boot word mode_disc_mode (-1 in
+  both), 0x8000 bytes of 7-byte file records (cd_file_index: a 24-bit first sector,
   then a signed 32-bit size in bytes; a negative size marks a directory record
-  whose magnitude counts its files, func_80028928) and the u16 directory table
-  (D_8004FDF4: each directory's first record, 1-based; word 0x3C is the disc
-  number). Boot passes the three to func_80028230 (main.c func_80019578): -1
+  whose magnitude counts its files, cd_get_directory_file_count) and the u16 directory table
+  (cd_directory_table: each directory's first record, 1-based; word 0x3C is the disc
+  number). Boot passes the three to cd_init_disc_access (main.c boot_main): -1
   keeps the embedded copies, 0 re-reads them from sectors 24 (0x8000 bytes) and
   40 (0x7A bytes), any other value selects the PC file server.
-- **Addressing.** func_80028470(g, i) selects the base D_8004FE14 =
-  table[g + i] - 1 (g a multiple of four, func_800284B4; a zero entry returns -1
+- **Addressing.** cd_select_directory(g, i) selects the base cd_selected_directory =
+  table[g + i] - 1 (g a multiple of four, cd_get_selected_directory; a zero entry returns -1
   and selects 0, but the tables' unused entries hold 0xFFFF, which it does not
-  catch). File f of the selection is record f + base - 1 (func_800289D0 its
-  first sector, func_80028738 its size, func_800288EC the size rounded up to
+  catch). File f of the selection is record f + base - 1 (cd_get_file_sector its
+  first sector, cd_get_file_size its size, cd_get_aligned_file_size the size rounded up to
   words), that is slot f + table[g + i] - 2, the rule
   [matching.md](matching.md#script-instructions) gives and the slot numbering of
   `tools/extraction/disc_files.py`. It reproduces the field pairs of
@@ -251,31 +251,31 @@ restore (Memory card and saves) and the dormant CdMix.
   [EVID-REF-005](../analysis/findings/EVID-REF-005.json) measured the record
   format at LBA 24 and the label at LBA 23 on both discs and left their loader
   use open; these functions are that use. A read resolves its later files in
-  the directory selected when it started (D_8004FE18: func_80028808,
-  func_80028A18), so callers reselect right after starting one (field
-  func_80085B20); func_800284B4 returns the selection's (g, i), which battle,
-  mdec, main.c func_800199CC and func_800379D8 restore after reading elsewhere.
-- **Reads.** Each read entry spins until the drive is idle (func_80028A60(0)),
-  sets the busy count D_8004FDFC, issues Setloc and returns; the CD callbacks
-  (Interrupt-context work) finish it. func_800286CC returns that count (for a
-  list, the files not yet finished, which func_8002BA40 copies from D_8004FE00;
-  otherwise 1), or 1 while a command (D_8004FE1C) or a sector transfer
+  the directory selected when it started (cd_reading_directory: cd_get_aligned_file_size_in_reading_directory,
+  cd_get_file_sector_in_reading_directory), so callers reselect right after starting one (field
+  func_80085B20); cd_get_selected_directory returns the selection's (g, i), which battle,
+  mdec, main.c mode_load_overlay_block and mode_load_battle_stage restore after reading elsewhere.
+- **Reads.** Each read entry spins until the drive is idle (cd_sync_reads(0)),
+  sets the busy count cd_pending_read_count, issues Setloc and returns; the CD callbacks
+  (Interrupt-context work) finish it. cd_get_pending_read_count returns that count (for a
+  list, the files not yet finished, which cd_update_pending_read_count copies from cd_remaining_list_file_count;
+  otherwise 1), or 1 while a command (cd_command_state) or a sector transfer
   (CdDataSync(1)) is pending. The world map's entry (func_80072238) and scene
   setups go on once a list has fewer than three files left
-  (`while (func_800286CC() >= 3)` at eleven sites; `>= 2` in func_800758C0),
+  (`while (cd_get_pending_read_count() >= 3)` at eleven sites; `>= 2` in func_800758C0),
   so a port must report the count, not only busy. A finished or stopped read
-  seeks to the file given as its `after` argument (D_8004FE38, func_8002A394)
+  seeks to the file given as its `after` argument (cd_read_mode, cd_seek_or_pause)
   or, for 0, pauses; every shipped caller passes 0 (only the movie overlay's
   development tools pass 1).
 
   | Entry | Reads | Sector callbacks |
   | --- | --- | --- |
-  | func_800295D8(file, dest, after, flags), func_80029690 | one file of the selection; flags 0x100: into a stream ring (0x200: the host movie stream; on the disc it issues nothing) | func_8002B084 copies; for a ring, func_8002B2F0 puts each sector in a free slot numbered in arrival order and the data callback func_8002BA58 completes the slots in order |
-  | func_8002954C(sector, dest, size) | raw sectors: the swap's label and index, the arena's portraits (two sectors each inside file 6, menu4.c func_80080644), boot word 0's index, the movie tools | func_8002B084 |
-  | func_80029AFC(list, after) | a zero-terminated (file, destination) list, sorted by file and read in one pass: a next file at most D_8004FDE0 = 16 sectors ahead is read through (the sectors between are not copied), a farther one gets Pause and Setloc | func_8002AC24 |
-  | func_80029EB0(file, ring, after, 0, placement) | an image stream into VRAM (Streams) | func_8002B5D0 (a copy of func_8002B2F0); the data callback func_8002BB50 loads the strips |
-  | func_8002A2D0, func_8002A394(file) | a seek (Setloc, SeekL) to a file, or Pause for file <= 0; func_8002A2D0 only when idle, once before a field movie (field func_800A7C58) | — |
-  | func_8002A428(mode), func_8002A498(after) | Setmode, then Pause; a stop request that the next sector callback carries out | — |
+  | cd_read_file(file, dest, after, flags), cd_start_read | one file of the selection; flags 0x100: into a stream ring (0x200: the host movie stream; on the disc it issues nothing) | cd_copy_file_sector copies; for a ring, stream_store_sector puts each sector in a free slot numbered in arrival order and the data callback stream_mark_sector_complete completes the slots in order |
+  | cd_read_raw_sectors(sector, dest, size) | raw sectors: the swap's label and index, the arena's portraits (two sectors each inside file 6, menu4.c func_80080644), boot word 0's index, the movie tools | cd_copy_file_sector |
+  | cd_read_file_list(list, after) | a zero-terminated (file, destination) list, sorted by file and read in one pass: a next file at most cd_max_list_gap_sectors = 16 sectors ahead is read through (the sectors between are not copied), a farther one gets Pause and Setloc | cd_copy_list_sector |
+  | stream_start_image_load(file, ring, after, 0, placement) | an image stream into VRAM (Streams) | stream_store_image_sector (a copy of stream_store_sector); the data callback stream_load_image_strip loads the strips |
+  | cd_seek_or_pause_if_idle, cd_seek_or_pause(file) | a seek (Setloc, SeekL) to a file, or Pause for file <= 0; cd_seek_or_pause_if_idle only when idle, once before a field movie (field func_800A7C58) | — |
+  | cd_set_mode(mode), cd_stop_read(after) | Setmode, then Pause; a stop request that the next sector callback carries out | — |
 
 - **Commands**, numbered as libcd's own name table (libcd_command_name_table) names them.
   CdControlF returns at once and completion reaches the sync callback;
@@ -284,25 +284,25 @@ restore (Memory card and saves) and the dormant CdMix.
 
   | Command | Issued by |
   | --- | --- |
-  | Setloc (2) | every resident read and seek (func_80029690, func_80029AFC, func_80029EB0, func_8002A2D0, func_8002A394), retries and list gaps (func_8002A68C, at a gap once func_8002AC24's Pause completes); the world-map reader (func_8009699C, func_80096A6C, func_80096C0C); movie_restart; the swap (sector 0) |
-  | ReadN (6) | func_8002A68C after Setloc: every resident read |
+  | Setloc (2) | every resident read and seek (cd_start_read, cd_read_file_list, stream_start_image_load, cd_seek_or_pause_if_idle, cd_seek_or_pause), retries and list gaps (cd_advance_command_state, at a gap once cd_copy_list_sector's Pause completes); the world-map reader (func_8009699C, func_80096A6C, func_80096C0C); movie_restart; the swap (sector 0) |
+  | ReadN (6) | cd_advance_command_state after Setloc: every resident read |
   | ReadS (0x1B) | the world-map reader (func_80096A6C); CdRead2 for movies (movie_restart) |
-  | SeekL (0x15) | func_8002A68C after a seek's Setloc; the swap |
-  | Pause (9) | the end of every shipped resident read, func_8002A428 after Setmode, list gaps (func_8002AC24), retries; soft reset (func_800283D4); the world-map reader at a list's end and in recovery; movie_stop |
+  | SeekL (0x15) | cd_advance_command_state after a seek's Setloc; the swap |
+  | Pause (9) | the end of every shipped resident read, cd_set_mode after Setmode, list gaps (cd_copy_list_sector), retries; soft reset (cd_shutdown_disc_access); the world-map reader at a list's end and in recovery; movie_stop |
   | Stop (8) | retry reason 4; the swap's preparation (func_801E92CC) |
-  | Standby (7) | func_80028230 through CdControl, after CdInit (repeated until it succeeds) and CdSetDebug(0) |
-  | Setmode (0x0E) | func_8002A428: 0xA0 at start-up, soft reset, movie_stop and before the swap's label read, 0 in the swap's preparation; retry reason 6; CdRead2 with the movie mode |
+  | Standby (7) | cd_init_disc_access through CdControl, after CdInit (repeated until it succeeds) and CdSetDebug(0) |
+  | Setmode (0x0E) | cd_set_mode: 0xA0 at start-up, soft reset, movie_stop and before the swap's label read, 0 in the swap's preparation; retry reason 6; CdRead2 with the movie mode |
   | Setfilter (0x0D) | movie_start: file 1 and the movie's channel, when its select bit 0 is set |
-  | Nop (1, Getstat) | retries (func_8002A68C and the sector callbacks func_8002AC24, func_8002B084, func_8002B2F0 and func_8002B5D0; the world-map reader's func_80096A6C, func_80096C0C); the swap's lid and motor polling |
+  | Nop (1, Getstat) | retries (cd_advance_command_state and the sector callbacks cd_copy_list_sector, cd_copy_file_sector, stream_store_sector and stream_store_image_sector; the world-map reader's func_80096A6C, func_80096C0C); the swap's lid and motor polling |
   | GetTN (0x13) | retries, once the drive status shows the lid closed; the swap |
 
 - **Modes and sectors** (Setmode bits after psx-spx: 0x80 double speed, 0x40
   XA-ADPCM to the SPU, 0x20 whole 0x924-byte sectors, 0x08 XA filter).
   Resident and world-map reads run in 0xA0: each sector callback copies the
   4-byte header and 8-byte subheader (CdGetSector(..., 3)) and the 2048 data
-  bytes (the rest of a short last sector goes to D_800596F8, the world map's to
+  bytes (the rest of a short last sector goes to cd_sector_buffer, the world map's to
   D_8009D7D4) and checks the header's position against the expected sector
-  (CdPosToInt): on a mismatch, counted in D_8004FDE4/D_8004FDE8/D_8004FDEC (the
+  (CdPosToInt): on a mismatch, counted in cd_file_out_of_order_count/cd_list_out_of_order_count/cd_stream_out_of_order_count (the
   world map's in D_8009CCA0), the sector is not taken and the read restarts
   there (Retries). Movies read 2048-byte sectors in the low byte of
   movie_cd_mode | 0x80: 0xC8 with XA audio, 0x88 when select bit 1 clears the
@@ -314,27 +314,27 @@ restore (Memory card and saves) and the dormant CdMix.
   (StCdInterrupt2, data_ready_callback) for bit 0x100 and sends ReadS (mdec
   CdRead2). Setmode 0 is "NORMAL SPEED" in the development test (movie.c
   func_80072480).
-- **Retries.** func_8002A68C (state D_8004FE1C, reason D_8004FE20): a command
+- **Retries.** cd_advance_command_state (state cd_command_state, reason cd_retry_reason): a command
   that does not complete (status other than Complete, 2), or a sector that
   fails, arrives out of place or finds no free ring slot, makes it poll Getstat
   until a status completes with the lid closed (bit 0x10 clear) and send GetTN,
   then by reason: 1 Setloc and SeekL again, 2 Pause again, 3 Pause, then Setloc
   and ReadN from the failed sector, 4 Stop and then as 3, 6 Setmode and Pause
-  again. Every third failed sector of a read (D_8005A4DC) takes reason 4 after
+  again. Every third failed sector of a read (cd_error_count) takes reason 4 after
   an empty 10,000 x 2,000 loop inside the callback, which an optimising native
   compiler may delete. Nothing limits the retries or reports an error to the
-  caller: an unreadable disc leaves func_80028A60(0) spinning, without a message
-  (func_8002804C's bars run only on the PC server's paths). States 12 and 8
-  (Setmode, then Setfilter with file 1 and the low byte of D_8004FE38) are
+  caller: an unreadable disc leaves cd_sync_reads(0) spinning, without a message
+  (cd_draw_error_indicator's bars run only on the PC server's paths). States 12 and 8
+  (Setmode, then Setfilter with file 1 and the low byte of cd_read_mode) are
   entered only through reason 5, which only they set, so the resident never
-  selects an XA channel. The read statistics, which func_80028230 zeroes
-  (D_8005A488, D_8005A48C, D_8005A490, D_8005A494, D_8005A498, D_8005A49C,
-  which nothing increments, D_8005A4A4, D_8005A4A8 and D_8005A4B4; the blocks
-  D_8005A4A0, D_8005A4AC and D_8005A4B0 among them are other data), feed only
+  selects an XA channel. The read statistics, which cd_init_disc_access zeroes
+  (cd_stat_setloc_count, cd_stat_command_ok_count, cd_stat_command_fail_count, cd_stat_retry_setloc_count, cd_stat_retry_fail_count, cd_stat_lesmem_count,
+  which nothing increments, cd_stat_error_limit_count, cd_stat_stop_ok_count and cd_stat_stop_fail_count; the blocks
+  mode_preloaded_text_images, menu_state_big_ots and D_8005A4B0 among them are other data), feed only
   the movie overlay's development screens (movie.c func_800704E8, and
-  func_800737EC, which prints and clears D_8005A49C, D_8005A4A4, D_8005A4A8
-  and D_8005A4B4). On a stalled movie, movie_poll overwrites D_8005A4A8 and
-  D_8005A4B4 for those screens with the resume position StGetBackloc gives and
+  func_800737EC, which prints and clears cd_stat_lesmem_count, cd_stat_error_limit_count, cd_stat_stop_ok_count
+  and cd_stat_stop_fail_count). On a stalled movie, movie_poll overwrites cd_stat_stop_ok_count and
+  cd_stat_stop_fail_count for those screens with the resume position StGetBackloc gives and
   the movie's starting sector in its file (mdec.c:398-399). The world-map
   reader recovers the same way under its own state D_8009CD44 (Getstat while
   the lid is open, GetTN, Pause, Setloc and ReadS), while the world-map loop
@@ -344,22 +344,22 @@ restore (Memory card and saves) and the dormant CdMix.
     (0x1C, 0), field func_80085B20) through an eight-slot ring
     (func_80085560, flags 0x100). The field's post-frame step (func_80078B5C,
     func_80085C90, func_80085C3C) takes up to five sectors a frame in order
-    (func_80028B14); func_800859DC gathers the first four into a 0x2000-byte
-    wave bank (func_800380D0) and hands later ones to the SPU (func_8003827C)
-    after the previous transfer (func_8003BDFC(0x10)). A full ring makes the
+    (stream_get_next_chunk); func_800859DC gathers the first four into a 0x2000-byte
+    wave bank (sound_start_wave_bank_stream) and hands later ones to the SPU (sound_transfer_wave_bank_part)
+    after the previous transfer (sound_sync_transfer(0x10)). A full ring makes the
     drive read the sector again (Retries). Sequences (0x14 + 2 * music) are
-    plain reads, as is the battle stage (func_800379D8: its stage file 6 + 2s
+    plain reads, as is the battle stage (mode_load_battle_stage: its stage file 6 + 2s
     and scene data 7 + 2s, a two-file list of directory (12, 3);
     [formations.md](scripts/formations.md)).
-  - Image streams (func_80029EB0): the field map's (file 0xB9 + 2 * map of
+  - Image streams (stream_start_image_load): the field map's (file 0xB9 + 2 * map of
     entry 4, four slots, field.c func_80070488, waited for by func_80070508)
     and a battle action's (file 0x23 + 2 * index of (0xC, 2), eight slots,
     battle_800B7134.c func_800B7C34). Each image's first sector holds type
     0x1200 or 0x1201, an origin and an offset (placed by the caller's mode and
-    base for each type, D_80059F24-D_80059F38; both shipped callers pass 0,
+    base for each type, stream_image_1200_mode-stream_image_1201_base_y; both shipped callers pass 0,
     origin plus offset), the strip width, the image count, the strip count and
     the strip heights. Each following sector is one strip, loaded with
-    LoadImage by the data callback func_8002BB50 at interrupt time.
+    LoadImage by the data callback stream_load_image_strip at interrupt time.
   - World-map terrain: the world map queues (sector, bytes, destination)
     requests per frame (func_8009623C: at most 0x58 a list, 16 lists;
     func_80096328 sorts a list by sector). Its reader (func_8009699C,
@@ -390,9 +390,9 @@ restore (Memory card and saves) and the dormant CdMix.
   and the field's frame feeds the music ring. How many frames a load spans is
   the read latency, which nothing bounds. The host path finishes plain and list
   reads and image streams inside the call.
-- **Disc identity and the swap.** func_80028530 returns directory word 0x3C, 1
+- **Disc identity and the swap.** cd_get_disc_number returns directory word 0x3C, 1
   in Disc 1's table and 2 in Disc 2's. Its readers: boot's opening-movie
-  request (main.c func_80019578: D_8004FE45 = 0x10 on Disc 1, else 7, played as
+  request (main.c boot_main: cd_movie_request_index = 0x10 on Disc 1, else 7, played as
   file 0x12 or 9 of directory (0x18, 1), movie.c func_80076488), the title file
   screen's exit after 600 idle frames, on Disc 1 only (slot39.c func_801C58EC),
   the swap (func_801C8694), the save (func_801CBA4C: D_8006F008 = disc - 1, or
@@ -418,7 +418,7 @@ restore (Memory card and saves) and the dormant CdMix.
   digit of the wanted disc (else 3); a nonzero result shows message 0x89 for 29
   frames and asks again. On a match the index (sector 0x18, 0x8000 bytes) and
   the directory table (sector 0x28, 0x7A bytes) are re-read over the copies
-  boot passed (0x80010004, 0x80018004), so func_80028530 reports the new disc;
+  boot passed (0x80010004, 0x80018004), so cd_get_disc_number reports the new disc;
   they lie in the loaded image, which a soft reset keeps (Control flow).
   EVID-REF-005 found "DS01_XENOGEARS" and "DS02_XENOGEARS" at the start of LBA
   23. Both discs run the same code and address files only through these tables,
@@ -426,15 +426,15 @@ restore (Memory card and saves) and the dormant CdMix.
   motor, successful GetTN, Setloc and SeekL, the label at sector 23 and the
   other disc's sectors 24 and 40.
 - **PC file server, development only.** A boot word other than 0 and -1 selects
-  it: func_80028230 calls PCinit (8004c38c, by inspection) and keeps the
-  word as D_8004FE48, a table of 64-byte host file names, one per index record
-  (func_80028998), which func_8002C3D8 returns. Both retail images hold -1, so
+  it: cd_init_disc_access calls PCinit (8004c38c, by inspection) and keeps the
+  word as cd_pc_file_names, a table of 64-byte host file names, one per index record
+  (cd_get_pc_file_name), which cd_has_pc_file_server returns. Both retail images hold -1, so
   none of this runs on retail. Plain and list reads then open, read and close
-  host files with four tries per call, drawing func_8002804C's coloured bars
+  host files with four tries per call, drawing cd_draw_error_indicator's coloured bars
   and, after the fourth failure, its endless text screen; sizes come from
-  PClseek; ring streams read a sector per step (func_80028B14; func_80028F30
+  PClseek; ring streams read a sector per step (stream_get_next_chunk; stream_get_next_movie_frame
   reads 0x920-byte records with their subheaders when the mode byte has 0x08,
-  skipping file-1 sectors); func_80029EB0 pumps a whole image stream before it
+  skipping file-1 sectors); stream_start_image_load pumps a whole image stream before it
   returns; the world map reads (path, offset) lists (func_800962B0,
   func_800966CC); the movie library uses the resident ring
   (movie_host_stream); and the swap loads `c:\work\cdrom.mdg` (the index,
@@ -451,7 +451,7 @@ n > 1, returns once n blanks have passed since the previous wait returned (at
 least one new blank); VSync(1) returns the horizontal blanks since the last
 wait; VSync(-1) returns libetc's blank counter (libetc_vsync_count). The game calls it
 from 75 functions: VSync(0) 89 sites, VSync(2) 15, VSync(3) 13, VSync(1) 13,
-VSync(-1) 4, and VSync(8), VSync(D_80092898), VSync(D_80059198 + 1).
+VSync(-1) 4, and VSync(8), VSync(D_80092898), VSync(sprite_frame_skip + 1).
 
 - VSync(-1) is read at exactly four sites: the start and end of the field
   frame (field.c func_8007554C), which only pace it, and of the battle frame
@@ -460,11 +460,11 @@ VSync(-1) 4, and VSync(8), VSync(D_80092898), VSync(D_80059198 + 1).
 - VSync(1) feeds only profiling values (field D_800ADB9C/D_800ADBA0/D_800ADBA4
   read by debug595, battle D_800D309C.cpu/gpu read by debug2611, arena
   D_800927F0 and the movie monitor's D_800773B8).
-- GetRCnt: the sound tick times itself on root counter 2 (D_800595C4,
-  D_80059540; profiling); the arena compacts its ordering table while root
+- GetRCnt: the sound tick times itself on root counter 2 (sound_unread_tick_time_total,
+  sound_unread_timed_tick_count; profiling); the arena compacts its ordering table while root
   counter 1 (horizontal blanks) stays within a budget (menu7.c func_8008AC8C,
   func_8008ACB8), which changes which empty tags are skipped, not the image.
-- D_80059488, the game's own blank count (vblank handler), is the play time
+- pad_vblank_count, the game's own blank count (vblank handler), is the play time
   stored in saves; it also drives input repeat, arena colour cycles and the
   arena's vblank hook. Every pause and missing-pad loop (Pacing per mode)
   saves and restores it, so paused time is not counted. These are field
@@ -472,59 +472,59 @@ VSync(-1) 4, and VSync(8), VSync(D_80092898), VSync(D_80059198 + 1).
   readers func_80089CCC, func_8008A3EC and func_8008A684 (battle.c), and the
   menu input readers slot39 func_801C7D78, ovl2598 func_801C92AC, ovl2600
   func_801C98E8, ovl2601 func_801CACC8 and ovl2602 func_801CB4E4.
-- The vblank handler's h:m:s clock (main2.c func_80035E44) counts blanks in
-  D_80059370 (60 to the second), then seconds in D_80059418, minutes in
-  D_80059420 and hours in D_80059484; D_800501F8 stops it at 100 h. The
+- The vblank handler's h:m:s clock (main2.c pad_advance_play_time) counts blanks in
+  pad_play_time_frames (60 to the second), then seconds in pad_play_time_seconds, minutes in
+  pad_play_time_minutes and hours in pad_play_time_hours; pad_play_time_stopped stops it at 100 h. The
   counters live in BSS, so they start at zero at boot and after a soft reset.
-  The stop flag is initialised data (main2.c:76) that only func_80035E44 tests
+  The stop flag is initialised data (main2.c:76) that only pad_advance_play_time tests
   and sets and nothing clears, and a soft reset keeps .data: once the clock has
   reached 100 h it stays stopped, at 00:00:00 after a soft reset, until the
-  program is loaded again. It counts through pauses, because only D_80059488
-  is restored, and saves do not store it (the payload keeps D_80059488).
+  program is loaded again. It counts through pauses, because only pad_vblank_count
+  is restored, and saves do not store it (the payload keeps pad_vblank_count).
   Scripts can read it: in each field frame
   (func_80077DAC) func_800A31E8 copies it into event variables 0xC (seconds |
   minutes << 8) and 0xE (hours) (field_800854D0.c:10932-10933). The kernel
-  menu also prints it (main.c func_8001A344). Decoding all 935 maps
+  menu also prints it (main.c mode_kernel_menu_update). Decoding all 935 maps
   of both discs with `tools/analysis/events.py` (walking from each entry) finds
   no instruction that names variables 0xC-0xF as a variable or bit operand.
   Shipped scripts are therefore not known to read the clock, though an indirect
   read is not ruled out.
-- Video is NTSC only: SetVideoMode(0) at boot (main.c func_80019578).
+- Video is NTSC only: SetVideoMode(0) at boot (main.c boot_main).
 
 ### Pacing per mode
 
 | Mode (entry) | Frame wait | Blanks per frame | Notes |
 | --- | --- | --- | --- |
-| 0 kernel menu (resident func_8001A4B4) | DrawSync, VSync(0) | 1 | development start screen |
-| boot logo (func_80019D48) | VSync(0) per step | 1 | 16 fade-in steps, 110 held, 17 fade-out |
-| 1 field (func_80077E88, frame func_8007554C) | start = VSync(-1); DrawSync and VSync(0) mid-frame; at the end busy-waits until VSync(-1) >= start + D_800B2078.unk217C + 2 | 2, 3 or 4 | unk217C comes from field event d6 (func_800925A0, operand 0/1/2, which also sets text speed 8/6/4); scripts use all three values on both discs. Sprite scripts tick D_80059198 + 1 = 2 times per update (field.c func_80071FB0) |
-| 1 field pause (func_80077E88) | DrawSync, VSync(2) | 2 | Two loops, each also running the input drain func_80074700 and the soft-reset check. One runs while the first pad is missing (field.c:2963-2974). The other is a toggle on Start (field.c:2976-2987): it starts when the field's repeat word D_800C3900 (the queued D_800594A4, masked) holds Start 0x800, unless held bit 0x40 or D_800B2078.unk2358 is set, and ends when D_800C3900 holds Start again. That is the next press, or the auto-repeat once Start has been held for 32 blanks (Controllers). Both silence the voices and suspend the sound tick (func_80037EE4, until func_80037E8C) and restore D_80059488 |
+| 0 kernel menu (resident mode_run_kernel_menu) | DrawSync, VSync(0) | 1 | development start screen |
+| boot logo (boot_show_logo) | VSync(0) per step | 1 | 16 fade-in steps, 110 held, 17 fade-out |
+| 1 field (func_80077E88, frame func_8007554C) | start = VSync(-1); DrawSync and VSync(0) mid-frame; at the end busy-waits until VSync(-1) >= start + D_800B2078.unk217C + 2 | 2, 3 or 4 | unk217C comes from field event d6 (func_800925A0, operand 0/1/2, which also sets text speed 8/6/4); scripts use all three values on both discs. Sprite scripts tick sprite_frame_skip + 1 = 2 times per update (field.c func_80071FB0) |
+| 1 field pause (func_80077E88) | DrawSync, VSync(2) | 2 | Two loops, each also running the input drain func_80074700 and the soft-reset check. One runs while the first pad is missing (field.c:2963-2974). The other is a toggle on Start (field.c:2976-2987): it starts when the field's repeat word D_800C3900 (the queued pad_port0_repeated, masked) holds Start 0x800, unless held bit 0x40 or D_800B2078.unk2358 is set, and ends when D_800C3900 holds Start again. That is the next press, or the auto-repeat once Start has been held for 32 blanks (Controllers). Both silence the voices and suspend the sound tick (sound_silence_voices, until sound_restore_voices) and restore pad_vblank_count |
 | 1 field movie (func_800A7C58) | mode D_800ADB74 0: VSync(0) before each decode batch (func_800A732C); 1: field overlays and VSync(0) (func_80075910); 2: the full field frame | 1, or the field's | movie progress D_800B06A0 comes from the MDEC callback |
-| 2 battle (resident func_8001B6C4, overlay func_80070F40, frame func_800BE790) | start = VSync(-1); after DrawSync D_80059494 = VSync(-1) - start - D_80059198, clamped 0-4; then VSync(D_80059198 + 1), or VSync(0) when D_80059198 is 0 | 1, plus catch-up | the next frame consumes the measured blanks (below). func_800B88C4 leaves D_80059198 = 0. Turn logic calls frames from inside rules (func_800716D8, nesting counted by D_800C37D0). Development: holding Select gives VSync(8) and drops the catch-up (func_800BEBC4, D_80010000 != -1) |
-| 2 battle pause and missing pad (battle.c func_80089CCC, func_8008A3EC, func_8008A684) | none: spins | — | The battle step's input readers spin, with no VSync or DrawSync, while the first pad is missing. A Start press (the pressed word; in func_80089CCC and func_8008A3EC only while D_800CCC58 is set) toggles D_800C3444. While it is set the reader keeps draining the input queue, which only the vblank handler fills, until the next press. No frame is presented meanwhile. Voices and tick are suspended and D_80059488 is restored, as in the field |
-| 3 world map (func_80070CFC, loop func_800712D0) | DrawSync, VSync(2) | 2 | first spins VSync(0) while the terrain stream reports 3 (func_800967E4); sprite scripts tick twice per update (D_80059198 = 1, func_80072238) |
-| 3 world-map pause (worldmap_80072238.c func_8007634C, func_80076594) | DrawSync, VSync(0) | 1 | A Start press (the pressed word D_8009BD10 & 0x800) enters func_8007634C until the next press, and a missing first pad enters func_80076594 until one answers (worldmap.c func_800712D0). Both draw on the other buffer, suspend voices and tick, and restore D_80059488 |
+| 2 battle (resident mode_run_battle, overlay func_80070F40, frame func_800BE790) | start = VSync(-1); after DrawSync task_catch_up_frame_count = VSync(-1) - start - sprite_frame_skip, clamped 0-4; then VSync(sprite_frame_skip + 1), or VSync(0) when sprite_frame_skip is 0 | 1, plus catch-up | the next frame consumes the measured blanks (below). func_800B88C4 leaves sprite_frame_skip = 0. Turn logic calls frames from inside rules (func_800716D8, nesting counted by D_800C37D0). Development: holding Select gives VSync(8) and drops the catch-up (func_800BEBC4, mode_disc_mode != -1) |
+| 2 battle pause and missing pad (battle.c func_80089CCC, func_8008A3EC, func_8008A684) | none: spins | — | The battle step's input readers spin, with no VSync or DrawSync, while the first pad is missing. A Start press (the pressed word; in func_80089CCC and func_8008A3EC only while D_800CCC58 is set) toggles D_800C3444. While it is set the reader keeps draining the input queue, which only the vblank handler fills, until the next press. No frame is presented meanwhile. Voices and tick are suspended and pad_vblank_count is restored, as in the field |
+| 3 world map (func_80070CFC, loop func_800712D0) | DrawSync, VSync(2) | 2 | first spins VSync(0) while the terrain stream reports 3 (func_800967E4); sprite scripts tick twice per update (sprite_frame_skip = 1, func_80072238) |
+| 3 world-map pause (worldmap_80072238.c func_8007634C, func_80076594) | DrawSync, VSync(0) | 1 | A Start press (the pressed word D_8009BD10 & 0x800) enters func_8007634C until the next press, and a missing first pad enters func_80076594 until one answers (worldmap.c func_800712D0). Both draw on the other buffer, suspend voices and tick, and restore pad_vblank_count |
 | 4 Battling arena (`menu` target, func_80088E90) | VSync(D_80092898) | 1 or 2 | the arena task sets D_80092898 to 0 or 2 (menu5.c func_800852C4); the arena coroutine runs once per frame (Control flow) |
-| 5 in-game menu (resident func_8001C634; frames func_8001C074, slot39 func_801C7BF4) | DrawSync, VSync(0) | 1 | also the ovl2598/2600/2601/2602 screens; card and disc-change waits inside |
-| 5 menu missing pad (slot39 func_801C7D78; ovl2598 func_801C92AC, ovl2600 func_801C98E8, ovl2601 func_801CACC8, ovl2602 func_801CB4E4) | none: spins | — | each screen's input reader spins on func_80035734(0), with no VSync, until the first pad answers; voices and tick suspended, D_80059488 restored |
+| 5 in-game menu (resident mode_run_menu; frames menu_state_update_frame, slot39 func_801C7BF4) | DrawSync, VSync(0) | 1 | also the ovl2598/2600/2601/2602 screens; card and disc-change waits inside |
+| 5 menu missing pad (slot39 func_801C7D78; ovl2598 func_801C92AC, ovl2600 func_801C98E8, ovl2601 func_801CACC8, ovl2602 func_801CB4E4) | none: spins | — | each screen's input reader spins on pad_get_controller_kind(0), with no VSync, until the first pad answers; voices and tick suspended, pad_vblank_count restored |
 | 6 movie (func_800737EC, player func_80076488) | VSync(0) per pass, three decode steps per frame (movie_poll) | 1 | mdec's DecDCTout callback delivers frames |
 | battle screen effects (ovl2615 load/burst modes, ovl3387) | DrawSync, VSync(2) | 2 | |
 
 Battle alone measures its frames and scales logic by the result. The field's
 VSync(-1) values only pace its frame (field.c:2109-2182), and the work driven by
-blanks rather than frames follows D_80059488 (above). After DrawSync the battle
-frame func_800BE790 stores D_80059494, the blanks since the frame's start less
-D_80059198, clamped to 0-4. It also stores frameTicks D_800CCC5C
-(BattleArea.frameTicks) = D_80059494 + D_80059198 (battle_800BD3AC.c:717-724).
+blanks rather than frames follows pad_vblank_count (above). After DrawSync the battle
+frame func_800BE790 stores task_catch_up_frame_count, the blanks since the frame's start less
+sprite_frame_skip, clamped to 0-4. It also stores frameTicks D_800CCC5C
+(BattleArea.frameTicks) = task_catch_up_frame_count + sprite_frame_skip (battle_800BD3AC.c:717-724).
 The next frame consumes them:
 
 - Catch-up in the frame (battle_800BD3AC.c:703-713). The camera step
-  func_800BBAB8 and the main task list func_8001C964 run D_80059494 more times,
+  func_800BBAB8 and the main task list task_run_main_list run task_catch_up_frame_count more times,
   and so does the battle step func_8008A9C0(1). func_8008A9C0 dispatches on
   D_800C3E4C, and in state 1 its func_8008A274 runs the ATB tick func_8007171C
   (while D_800CCC58 is set). The ATB therefore advances once per blank of the
-  previous frame, up to five times a frame. func_8001C964 zeroes D_80059494
-  when its pause count D_80059428 runs out.
+  previous frame, up to five times a frame. task_run_main_list zeroes task_catch_up_frame_count
+  when its pause count task_main_pause_timer runs out.
 - Stage steps (battle_8009E53C.c:4144-4152, func_800A9A50). D_800C3E88 += 1 +
   frameTicks, capped at 6, yields up to three steps of two blanks, and the
   remainder carries over. The steps advance:
@@ -557,13 +557,13 @@ The sound driver runs beside this on its own timer: 240 ticks per second, about
 
 | Callback | Installed by | Runs | Writes | Waits that depend on it |
 | --- | --- | --- | --- | --- |
-| vblank handler func_8003634C (main2.c) | VSyncCallback at boot (func_80019578) and on world-map entry (func_80070CFC); cleared by soft reset | every vertical blank | D_80059488++; pad words D_80059570/D_80059574, D_8005948C/D_80059490, D_800594A4/D_800594A8 and the sticks; the input ring D_8005A0FC-D_8005A19C; the h:m:s clock D_80059370/D_80059418/D_80059420/D_80059484 (stops at 100 h, D_800501F8); actuators D_8005A1BC; then the hook D_800501FC. Last comes a development-only `pollhost()` (`break 1024`, a host-debugger trap). It needs D_80010000 != -1 and D_80059390 set. Only func_800363E0 can set D_80059390 (func_80036288 clears it), and nothing calls or references func_800363E0 | input readers, including the battle pause, which spins on the queue |
-| BIOS pad driver | InitPAD on the two 0x22-byte receive buffers, StartPAD and ChangeClearPAD(0) at boot (main2.c func_80036288); StopPAD in the soft reset | in the BIOS's interrupt handling (psx-spx: at vertical blank; not in the recovered code) | D_800625FC[0]/[1] (pad.h PadBuffer: status 0, or 0xFF without a controller; type; buttons; stick or mouse bytes) | the vblank handler's read (func_800358BC). Main-thread readers: the pad check func_80035734, which the battle and menu missing-pad loops spin on without VSync; the button read func_8003569C in the movie player (movie.c func_800737EC, func_800747AC, func_800769A4) and in battle's development pad read func_800BEC18; the field's mouse pointer (field_8007A44C.c func_8007AE78/func_8007AF74, type 0x12 on port 1); the unreferenced dump func_800365FC |
-| vblank hook D_800501FC | the arena (menu5.c func_800852C4: func_80084FD0); cleared by the dispatcher | every vertical blank | on odd blanks while D_80092784 is set, func_8008E120 steps the arena's glow field, calling rand(): interrupt-time draws from the gameplay RNG | — |
-| sound tick func_8003C020 (sound.c) | func_80037B88: OpenEvent(0xF2000002), SetRCnt(0xF2000002, 0x44E8, 0x1000) (system clock / 8: 4233600 / 17640 = 240 Hz) | 240 Hz; returns at once while flag 0x40 is set (every pause loop sets it with the voices silenced, func_80037EE4, and func_80037E8C clears it) | D_80059504 (tick count, stamps effect voices); every other tick the master and CD fades (D_8005A3C0), every tick the sequence slides and beats (D_80059564, which links the effect channels too), staged voice registers written through D_800508E4 (func_8003E900, func_8003EB5C), SpuSetCommonAttr, SPU IRQ re-enable (D_8005955C) | the effect-end waits (below); the main loop reads the same driver state between ticks |
-| SPU transfer done func_8003BB64 | func_80037B88, each transfer (func_8003BE68) | DMA completion | runs the transfer's callback with flag 4, clears flag 0x10, starts the next of the eight queued transfers (D_80059510/D_800594F4), which sets 0x10 again | the transfer waits (below) |
-| SPU IRQ func_8003BFA0 | func_80037B88 | SPU IRQ | D_80059514++, hook D_8005950C | — |
-| CD sync/ready/data | resident func_80029690 (one file), func_80029AFC (file list), func_80029EB0 (image stream), func_8002A2D0, then the callbacks themselves (main_8002709C.c); world map func_8009699C, func_80096A6C (installs func_80096C0C) | CD interrupts | the read state machine D_8004FE1C, retry reason D_8004FE20, counters D_8005A48C/D_8005A490, sector copies (CdGetSector), stream-ring slots D_8004FE2C; image streams load VRAM strips from the callback (func_8002BB50) | func_80028A60(0) and `while (func_800286CC() ...)` busy-wait without VSync; world-map func_800967E4 |
+| vblank handler pad_vblank_callback (main2.c) | VSyncCallback at boot (boot_main) and on world-map entry (func_80070CFC); cleared by soft reset | every vertical blank | pad_vblank_count++; pad words pad_port0_held/pad_port1_held, pad_port0_pressed/pad_port1_pressed, pad_port0_repeated/pad_port1_repeated and the sticks; the input ring pad_queue_port0_held-pad_queue_port1_repeated; the h:m:s clock pad_play_time_frames/pad_play_time_seconds/pad_play_time_minutes/pad_play_time_hours (stops at 100 h, pad_play_time_stopped); actuators pad_actuators; then the hook pad_vblank_hook. Last comes a development-only `pollhost()` (`break 1024`, a host-debugger trap). It needs mode_disc_mode != -1 and pad_vblank_polls_host set. Only pad_set_host_polling can set pad_vblank_polls_host (pad_start_controllers clears it), and nothing calls or references pad_set_host_polling | input readers, including the battle pause, which spins on the queue |
+| BIOS pad driver | InitPAD on the two 0x22-byte receive buffers, StartPAD and ChangeClearPAD(0) at boot (main2.c pad_start_controllers); StopPAD in the soft reset | in the BIOS's interrupt handling (psx-spx: at vertical blank; not in the recovered code) | pad_receive_buffers[0]/[1] (pad.h PadBuffer: status 0, or 0xFF without a controller; type; buttons; stick or mouse bytes) | the vblank handler's read (pad_read_controllers). Main-thread readers: the pad check pad_get_controller_kind, which the battle and menu missing-pad loops spin on without VSync; the button read pad_read_buttons in the movie player (movie.c func_800737EC, func_800747AC, func_800769A4) and in battle's development pad read func_800BEC18; the field's mouse pointer (field_8007A44C.c func_8007AE78/func_8007AF74, type 0x12 on port 1); the unreferenced dump pad_print_state |
+| vblank hook pad_vblank_hook | the arena (menu5.c func_800852C4: func_80084FD0); cleared by the dispatcher | every vertical blank | on odd blanks while D_80092784 is set, func_8008E120 steps the arena's glow field, calling rand(): interrupt-time draws from the gameplay RNG | — |
+| sound tick sound_run_tick (sound.c) | sound_start_driver: OpenEvent(0xF2000002), SetRCnt(0xF2000002, 0x44E8, 0x1000) (system clock / 8: 4233600 / 17640 = 240 Hz) | 240 Hz; returns at once while flag 0x40 is set (every pause loop sets it with the voices silenced, sound_silence_voices, and sound_restore_voices clears it) | sound_tick_count (tick count, stamps effect voices); every other tick the master and CD fades (sound_volumes), every tick the sequence slides and beats (sound_playing_seq_list, which links the effect channels too), staged voice registers written through sound_spu_registers (sound_flush_voice_registers, sound_key_off_voices), SpuSetCommonAttr, SPU IRQ re-enable (sound_pending_irq_enable) | the effect-end waits (below); the main loop reads the same driver state between ticks |
+| SPU transfer done sound_complete_transfer | sound_start_driver, each transfer (sound_start_next_transfer) | DMA completion | runs the transfer's callback with flag 4, clears flag 0x10, starts the next of the eight queued transfers (sound_transfer_ring_read_index/sound_transfer_ring_write_index), which sets 0x10 again | the transfer waits (below) |
+| SPU IRQ sound_dispatch_spu_irq | sound_start_driver | SPU IRQ | sound_unread_spu_irq_count++, hook sound_spu_irq_hook | — |
+| CD sync/ready/data | resident cd_start_read (one file), cd_read_file_list (file list), stream_start_image_load (image stream), cd_seek_or_pause_if_idle, then the callbacks themselves (cd_reads_and_streams.c); world map func_8009699C, func_80096A6C (installs func_80096C0C) | CD interrupts | the read state machine cd_command_state, retry reason cd_retry_reason, counters cd_stat_command_ok_count/cd_stat_command_fail_count, sector copies (CdGetSector), stream-ring slots stream_slots; image streams load VRAM strips from the callback (stream_load_image_strip) | cd_sync_reads(0) and `while (cd_get_pending_read_count() ...)` busy-wait without VSync; world-map func_800967E4 |
 | MDEC output movie_slice_decoded (mdec.c) | DecDCToutCallback in movie_start (mdec.c:194), removed by movie_stop (mdec.c:454) | MDEC DMA completion | LoadImage of each slice, StCdInterrupt, the decoder state, then the frame callback: field func_800A7120 (D_800B06A0 frame number, display block D_800ADB78/D_800C426C, isrgb24) or movie func_800768D8 | movie loops; field scripts and the staff roll key off D_800B06A0 |
 | DrawSync callback | field func_8007781C (development kits only, D_800C268C == 0), arena func_80088C00 | GPU idle | VSync(1) stamps (profiling) | — |
 | card events 0xF4000001 | slot39 func_801D9B08 | BIOS card driver | event state | func_801C881C (TestEvent spin) |
@@ -572,33 +572,33 @@ How the main program excludes these handlers:
 
 - **Critical sections.** EnterCriticalSection/ExitCriticalSection appear in 11
   functions. They bracket:
-  - the instruction-cache flush, FlushCache, in the dispatcher func_80019ACC,
+  - the instruction-cache flush, FlushCache, in the dispatcher mode_dispatch,
     field func_8007999C, battle func_800BEB04 and world map func_800762FC,
     each after a DrawSync and a VSync;
-  - the sound driver's start and stop (func_80037B88, func_80037DC0) and its
-    transfer queue (func_8003BCA0);
+  - the sound driver's start and stop (sound_start_driver, sound_stop_driver) and its
+    transfer queue (sound_queue_transfer);
   - slot39's card events and its CD-callback swap (func_801C8960,
     func_801D9B08, func_801D9C84, func_801D9E3C).
 
-  The soft reset func_80019CD0 uses SwExitCriticalSection and
+  The soft reset boot_restart uses SwExitCriticalSection and
   SwEnterCriticalSection instead. These set and clear status-register bits
   0x401 directly (80040514, 800404f4).
 - **The sound tick.** The sound-driver API excludes only the tick: 16 functions
-  wrap their updates in DisableEvent/EnableEvent(D_800595BC), the tick's
+  wrap their updates in DisableEvent/EnableEvent(sound_tick_event), the tick's
   root-counter event. They guard:
-  - the wave-bank list: func_80037FD8, func_800380D0, func_80038310;
-  - the effect-bank list: func_80038428, func_8003852C;
-  - the driver memory pool: func_80038F18, func_80039024, func_80039144;
-  - sequence start, resume, snapshot, restart and stop: func_80039A80,
-    func_8003AA30, func_8003ADCC, func_8003AE84, func_8003AF24;
-  - the effect channels: func_80039FF8, func_8003B644;
-  - the playing list: func_8003B9E4.
+  - the wave-bank list: sound_load_wave_bank, sound_start_wave_bank_stream, sound_release_wave_bank;
+  - the effect-bank list: sound_add_effect_bank, sound_remove_effect_bank;
+  - the driver memory pool: sound_alloc_memory_low, sound_alloc_memory_high, sound_free_memory;
+  - sequence start, resume, snapshot, restart and stop: sound_play_seq,
+    sound_resume_seq, sound_take_seq_snapshot, sound_restore_seq_snapshot, sound_skip_seq_to_bar;
+  - the effect channels: sound_stop_all_effects, sound_start_effect;
+  - the playing list: sound_link_seq.
 
-  The functions up to func_80039A80 are in main2_800366E0.c, the rest in
+  The functions up to sound_play_seq are in console_and_sound_driver.c, the rest in
   sound.c. A port that runs the tick on an audio thread must keep each of these
   sections exclusive with it. Two paths return with the event still disabled:
-  a failed allocation in func_80038F18 or func_80039024, and error 0xB in
-  func_8003852C. The tick then stays off until the next guarded call reaches
+  a failed allocation in sound_alloc_memory_low or sound_alloc_memory_high, and error 0xB in
+  sound_remove_effect_bank. The tick then stays off until the next guarded call reaches
   its EnableEvent.
 
 Waits on the sound driver. A host that does not run the tick and the transfer
@@ -606,45 +606,45 @@ callback never leaves these:
 
 - **Effect ends.** The tick ends an effect channel when its data reaches opcode
   90 end with no loop point set, or FF stop_when_silent once the voice's
-  envelope level is 0 (sound.c func_8003CD8C, func_8003E54C). A loop point
-  (91 loop_point, func_8003CE04, or 8D loop_point_if when its selector matches,
-  func_8003CD54; effect starts clear it, func_8003B644) makes 90 continue there,
+  envelope level is 0 (sound.c sound_seq_end, sound_seq_stop_when_silent). A loop point
+  (91 loop_point, sound_seq_loop_point, or 8D loop_point_if when its selector matches,
+  sound_seq_loop_point_if; effect starts clear it, sound_start_effect) makes 90 continue there,
   so a looping effect never ends by itself. Otherwise a channel ends only
-  through a stop call or a new effect that takes it. The stop calls are func_80039FF8 (all), func_8003A094 (a bank),
-  func_8003A14C (an effect) and func_8003A20C (a channel pair); the channel
-  choice for a new effect is func_8003A65C.
+  through a stop call or a new effect that takes it. The stop calls are sound_stop_all_effects (all), sound_stop_bank_effects (a bank),
+  sound_stop_effect (an effect) and sound_stop_effect_on_channel (a channel pair); the channel
+  choice for a new effect is sound_find_effect_channels.
   - Field event fe 64 (func_8008F5E4) yields while any effect channel in the
-    mask operand 1 << 8 is active (func_8003A5D0(-1)), so its script stalls.
+    mask operand 1 << 8 is active (sound_get_active_effect_mask(-1)), so its script stalls.
   - Battle func_800B838C, reached through ovl3087 opcode 48 (func_801E8750),
-    runs battle frames until func_8003A5D0(sound) returns 0. The event VM
+    runs battle frames until sound_get_active_effect_mask(sound) returns 0. The event VM
     stalls while the battle keeps running.
 - **SPU transfers.** Flag 0x10 stays set until the transfer queue is empty.
-  - func_8003BDFC(0x10) re-reads the flag until it clears (the loop at
+  - sound_sync_transfer(0x10) re-reads the flag until it clears (the loop at
     8003be08). Every such call is a busy-wait
-    (`grep -rn 'func_8003BDFC(0x10)' decomp/src`). They are boot
-    func_80019578 (main.c:123), the driver's error beep func_8003F6B0
+    (`grep -rn 'sound_sync_transfer(0x10)' decomp/src`). They are boot
+    boot_main (main.c:123), the driver's error beep sound_report_error
     (sound.c:3960), field func_80085788, func_80085890, func_800859DC,
     func_80085C90, func_80085F30 and func_8008AACC (field_800854D0.c:182, 216,
     245, 306, 379, 1960), and ovl3087 func_801E5160 (ovl3087.c:160).
-  - `while (func_8003BDFC(0) != 0)` runs battle frames in battle
+  - `while (sound_sync_transfer(0) != 0)` runs battle frames in battle
     func_800B838C, func_800B853C and func_800B89FC (battle_800B8098.c:241, 305,
     439) and func_800BFBA0 (battle_800BD3AC.c:1207). It spins in battle
     func_800C0FAC (battle_800BFE48.c:547), trapping to the debugger on each
     pass on a development kit, and in movie.c's unreferenced host-PC loaders
     func_800753B8 and func_8007548C.
   - ovl2615 func_801E6D6C polls the flag once per task step.
-  - Outside a transfer callback, func_8003BCA0 spins while at least six of the
-    eight ring entries are queued (func_8003BDBC).
-  - Not a wait: the world map's `while (D_8005957C & 0x10) {}` in
+  - Outside a transfer callback, sound_queue_transfer spins while at least six of the
+    eight ring entries are queued (sound_is_transfer_ring_full).
+  - Not a wait: the world map's `while (sound_driver_flags & 0x10) {}` in
     func_80072238 (worldmap_80072238.c:296), and its
     `if (debug) while (debug)` form in func_8007D918, func_80080D00 and
-    func_80082324. Each runs after a wave-bank load (func_80037FD8) and the
+    func_80082324. Each runs after a wave-bank load (sound_load_wave_bank) and the
     terrain-stream wait. All four compile to a single test followed by a
     branch to itself (`bnez v0` at 0x80072584, 0x8007DB54, 0x80080EFC and
     0x80082538), so the world map hangs if a transfer is still running when it
     gets there. No other code in the images branches to itself this way. The
     other self-branches are counted delay loops, which change their counter in
-    the delay slot, and the fatal error's endless `j` (func_80019EF8). A modern
+    the delay slot, and the fatal error's endless `j` (mode_show_fatal_error). A modern
     compiler may treat the loop differently: it can re-read the flag, keep the
     hang, or drop the loop, since C11 lets it assume such a loop terminates
     (6.8.5p6). A port should code the intended behaviour explicitly.
@@ -652,9 +652,9 @@ callback never leaves these:
 Blocking waits deep in call stacks:
 
 - VSync and DrawSync (75 and 159 functions).
-- Disc waits: func_80028A60(0) and the world map's
-  `while (func_800286CC() >= 3)` spin without VSync.
-- The CdInit/CdControlB retry loops (func_80028230, func_800283D4) and the
+- Disc waits: cd_sync_reads(0) and the world map's
+  `while (cd_get_pending_read_count() >= 3)` spin without VSync.
+- The CdInit/CdControlB retry loops (cd_init_disc_access, cd_shutdown_disc_access) and the
   disc-change checks in slot39 (func_801E92CC, func_801E93A0, with VSync(3)
   between commands).
 - The transfer waits above.
@@ -662,13 +662,13 @@ Blocking waits deep in call stacks:
   per mode). These run without VSync and depend on the pad driver and the
   vblank handler.
 - The card TestEvent loop.
-- The endless error screens (func_80019EF8; func_8002804C, PC file server
+- The endless error screens (mode_show_fatal_error; cd_draw_error_indicator, PC file server
   only).
 
 Development only:
 
 - The ovl2606 battle-scene selector func_801E0238 loops DrawSync and VSync(0)
-  until Start. Battle func_80070F40 runs it only while D_800594F8 is set
+  until Start. Battle func_80070F40 runs it only while mode_battle_standalone is set
   (battle_80070E2C.c:382), and the field's and world map's battle requests
   clear that flag (field.c:3418, field_800854D0.c:4984 and 5011,
   worldmap.c:152).
@@ -678,17 +678,17 @@ Development only:
 
 | Routine | Where and who | Keeps | Discards | Native replacement |
 | --- | --- | --- | --- | --- |
-| entry func_80019524 (handwritten) | PS-X EXE entry (header.c); soft reset calls it | .data and .sdata as they are | resident BSS 0x800592BC-0x8006FAEC (GameData included) | start-up that clears only BSS-backed state; restarting the process is not equivalent |
-| stack reset func_80019548 (handwritten) | entry fallthrough; the dispatcher (call at 80019bd0) | resident globals, kept heap blocks, VRAM, SPU RAM | every stack frame: sp = fp = 0x80200000, gp = _gp | transfer to a host-owned dispatch loop (longjmp or fiber reset) that unwinds no host frames |
-| dispatcher func_80019ACC(error) (main.c) | error: GET_RA, then the error screen. Otherwise ResetGraph, clear DrawSync and vblank hooks, VSync(2), restart the heap, clear the mode's BSS (func_80019560), decode its cached overlay to 0x8006FAF0 (func_80032EB4), FlushCache, reset the stack, clear the pad queue, run `entry()`, then call itself | the mode row (in a register across the reset), resident data | the previous mode's stack, BSS, heap blocks not marked keep and its overlay .data (re-decoded on each entry) | top-level loop; overlay .data reset from a pristine copy and BSS cleared on each entry |
-| never-returning dispatch sites | boot func_80019578, kernel menu func_8001A4B4, field func_8007954C, battle func_8001B6C4, world map func_80070CFC, arena func_800851D4 (from inside the arena coroutine), menu func_8001C1A8 (debug start), movie func_800737EC (2 sites), heap errors 0x82 (func_80031BDC) and 0x83 (func_800320E8, func_80032C18) | — | the caller's whole stack | a non-local mode exit (12 sites); the heap errors are fatal, as is the PC file server's error screen (func_8002804C, endless at the fourth failed try of a host file call; development only, Disc and files) |
-| fatal error func_80019EF8 | dispatcher with a nonzero error (the heap's 0x82 and 0x83) | — | — | on retail (D_80010000 = -1) it clears VRAM red and loops forever; the 384x240 report only runs on the PC host |
-| soft reset func_80019CA0 -> func_80019CD0 | held 0x90C, checked at 18 call sites in 14 files; field extended event e2 (func_80086D4C), unused by shipped scripts | resident .data/.sdata | with interrupts enabled (SwExitCriticalSection) stops the graphics (ResetGraph), the CD (func_800283D4, CdFlush), sound (func_80037DC0), SPU, the vblank hook, the DrawSync and VSync callbacks and the pads, disables interrupts (SwEnterCriticalSection), then calls the entry, which clears BSS | reset that keeps modified initialised data; the sound mode returns to Stereo |
+| entry boot_entry_point (handwritten) | PS-X EXE entry (header.c); soft reset calls it | .data and .sdata as they are | resident BSS 0x800592BC-0x8006FAEC (GameData included) | start-up that clears only BSS-backed state; restarting the process is not equivalent |
+| stack reset boot_reset_stack_and_gp (handwritten) | entry fallthrough; the dispatcher (call at 80019bd0) | resident globals, kept heap blocks, VRAM, SPU RAM | every stack frame: sp = fp = 0x80200000, gp = _gp | transfer to a host-owned dispatch loop (longjmp or fiber reset) that unwinds no host frames |
+| dispatcher mode_dispatch(error) (main.c) | error: GET_RA, then the error screen. Otherwise ResetGraph, clear DrawSync and vblank hooks, VSync(2), restart the heap, clear the mode's BSS (boot_clear_bss_range), decode its cached overlay to 0x8006FAF0 (text_unpack_lzss), FlushCache, reset the stack, clear the pad queue, run `entry()`, then call itself | the mode row (in a register across the reset), resident data | the previous mode's stack, BSS, heap blocks not marked keep and its overlay .data (re-decoded on each entry) | top-level loop; overlay .data reset from a pristine copy and BSS cleared on each entry |
+| never-returning dispatch sites | boot boot_main, kernel menu mode_run_kernel_menu, field func_8007954C, battle mode_run_battle, world map func_80070CFC, arena func_800851D4 (from inside the arena coroutine), menu menu_state_run_screen (debug start), movie func_800737EC (2 sites), heap errors 0x82 (heap_alloc) and 0x83 (heap_free, heap_delay_free) | — | the caller's whole stack | a non-local mode exit (12 sites); the heap errors are fatal, as is the PC file server's error screen (cd_draw_error_indicator, endless at the fourth failed try of a host file call; development only, Disc and files) |
+| fatal error mode_show_fatal_error | dispatcher with a nonzero error (the heap's 0x82 and 0x83) | — | — | on retail (mode_disc_mode = -1) it clears VRAM red and loops forever; the 384x240 report only runs on the PC host |
+| soft reset boot_check_soft_reset -> boot_restart | held 0x90C, checked at 18 call sites in 14 files; field extended event e2 (func_80086D4C), unused by shipped scripts | resident .data/.sdata | with interrupts enabled (SwExitCriticalSection) stops the graphics (ResetGraph), the CD (cd_shutdown_disc_access, CdFlush), sound (sound_stop_driver), SPU, the vblank hook, the DrawSync and VSync callbacks and the pads, disables interrupts (SwEnterCriticalSection), then calls the entry, which clears BSS | reset that keeps modified initialised data; the sound mode returns to Stereo |
 | arena coroutine func_8008BB3C (resume) / func_8008BC04 (yield) (handwritten, menu) | task made by func_8008BA2C on a 0x1000-byte stack at 0x801FE000 with gp from GetGp, resumed once per frame (menu6.c func_80088E90); yields at 7 sites (menu2.c 1, menu5.c 6); D_80096D88/D_80096D8C hold the suspended caller; func_8008BB00/func_8008BB1C (nested schedulers) are unreferenced | the task's registers and stack | — | a fiber nested in the game fiber (Asyncify, JSPI or stack switching in WebAssembly); snapshots only outside the task or at its yields |
-| environment-map patcher func_80030988 (handwritten) | rewrites the six `srl` shift fields and six `addiu` offsets of func_80030750 at fixed offsets from D_800308D0; image default (6, 6, 0x40, 0x40); callers arena menu2.c func_800725B0 (5, 4), func_800726B4 and menu5.c func_800852C4 (1, 1), battle func_800A8B0C and ovl2143 func_801E738C (2, 2); no I-cache flush | persists across modes in resident code | — | four resident globals read by the C renderer, kept in snapshots |
+| environment-map patcher model_set_envmap_mapping (handwritten) | rewrites the six `srl` shift fields and six `addiu` offsets of model_draw_ft3_envmap at fixed offsets from model_envmap_patch_base; image default (6, 6, 0x40, 0x40); callers arena menu2.c func_800725B0 (5, 4), func_800726B4 and menu5.c func_800852C4 (1, 1), battle func_800A8B0C and ovl2143 func_801E738C (2, 2); no I-cache flush | persists across modes in resident code | — | four resident globals read by the C renderer, kept in snapshots |
 
-Mode table D_8001808C (rows {entry, BSS start, BSS end, loaded}; overlay files
-D_8004EAA0 in directory (0, 1)):
+Mode table mode_table (rows {entry, BSS start, BSS end, loaded}; overlay files
+mode_overlay_files in directory (0, 1)):
 
 | Mode | Entry | Image, first word at 0x8006FAF0 | BSS | File |
 | --- | --- | --- | --- | --- |
@@ -700,21 +700,21 @@ D_8004EAA0 in directory (0, 1)):
 | 5 in-game menu | 8001c634 (resident) | none (loaded 0) | — | 0x11, not read |
 | 6 movie | 800737ec | movie, 8 | 80076f38-80077454 | 0x12 |
 
-The heap runs from the mode's BSS end to 0x801FC000 (main.c func_80019578).
+The heap runs from the mode's BSS end to 0x801FC000 (main.c boot_main).
 Secondary overlays sit at fixed addresses inside it, each placed by a top
 allocation sized to end at the slot ("top - slot - 8"), so placement is heap
 state and an image at one address can be any of its tenants:
 
 | Address | Images | Loaded by |
 | --- | --- | --- |
-| 0x801C5000 | slot39, ovl2598, ovl2600, ovl2601, ovl2602 (directory 0x10, file kind + 5) | field func_800799D4 (reads the file), world map func_800758C0 (decodes its packed copy D_8009D528), resident func_8001C1A8 on the debug start; func_8001C1A8 then calls the tenant's entry: func_801C62A8, func_801CB0A8, func_801CBDBC, func_801CCD28 or func_801CE024 |
+| 0x801C5000 | slot39, ovl2598, ovl2600, ovl2601, ovl2602 (directory 0x10, file kind + 5) | field func_800799D4 (reads the file), world map func_800758C0 (decodes its packed copy D_8009D528), resident menu_state_run_screen on the debug start; menu_state_run_screen then calls the tenant's entry: func_801C62A8, func_801CB0A8, func_801CBDBC, func_801CCD28 or func_801CE024 |
 | 0x801D3000 | mdec movie library | movie func_800737EC (directory 0x18 file 1); field func_800A7C58 copies directory 4 file 0xA9 there |
-| 0x801DC000 | ovl2143 (actor module) | field func_80077884 (directory 4 file 0x6B9); for the gear shop func_800799D4 reads directory 0x10 file 0xC to 0x1DC000, the slot's KUSEG mirror; resident func_8001C1A8 on the debug start. The world map's directory 0x24 holds a third copy (file 0x28) that no world map code reads; its func_80076098, which would draw actor 0, has no caller |
+| 0x801DC000 | ovl2143 (actor module) | field func_80077884 (directory 4 file 0x6B9); for the gear shop func_800799D4 reads directory 0x10 file 0xC to 0x1DC000, the slot's KUSEG mirror; resident menu_state_run_screen on the debug start. The world map's directory 0x24 holds a third copy (file 0x28) that no world map code reads; its func_80076098, which would draw actor 0, has no caller |
 | 0x801DE000 | ovl2596 (battle results) | battle func_80070F40 |
 | 0x801E0000 | ovl2606 (debug battle selector) | battle func_80070F40 |
-| 0x801E4000 | ovl2615 (battle setup) | resident func_8001BBAC |
+| 0x801E4000 | ovl2615 (battle setup) | resident mode_battle_load_files |
 | 0x801E5000 | ovl3087 (battle event VM) | battle func_80070E2C |
-| 0x801FC000 | ovl3381, ovl3383-ovl3387 (battle modules) | battle func_800BEB04, mid-frame when D_800591B3 changes (DrawSync, VSync(0), FlushCache); above the heap |
+| 0x801FC000 | ovl3381, ovl3383-ovl3387 (battle modules) | battle func_800BEB04, mid-frame when sprite_requested_battle_module changes (DrawSync, VSync(0), FlushCache); above the heap |
 | 0x80280000 | debug595, debug2611 | field func_80077E88, battle func_80070F40; development kits only (8 MB) |
 
 Resident code calls these entries by address whichever tenant is loaded, so a
@@ -742,17 +742,17 @@ isrgb24 0. The game changes only what the table lists.
 
 | Mode | Draw / display buffers (VRAM) | Screen window | isrgb24 | isinter | Draw environment | Frame | Source |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| boot logo | one 320x224 at (0, 0) | default | 0 | 0 | defaults; DrawPrim without an OT | 1 | main.c func_80019D48 |
-| kernel menu | 320x224 at y 0 and 240 | default | 0 | 0 | isbg (0, 0, 0x20) | 1 | main.c func_8001A250 |
-| fatal error (host only) | 384x240 at y 0 and 240 | default | 0 | 0 | isbg black | 1 | main.c func_80019EF8 |
-| file server error (PC file server only) | draw 320x256, display 320x240 at (0, 0) | default | 0 | 0 | dtd 0, dfe 1 | — | main_8002709C.c func_8002804C |
+| boot logo | one 320x224 at (0, 0) | default | 0 | 0 | defaults; DrawPrim without an OT | 1 | main.c boot_show_logo |
+| kernel menu | 320x224 at y 0 and 240 | default | 0 | 0 | isbg (0, 0, 0x20) | 1 | main.c mode_kernel_menu_init |
+| fatal error (host only) | 384x240 at y 0 and 240 | default | 0 | 0 | isbg black | 1 | main.c mode_show_fatal_error |
+| file server error (PC file server only) | draw 320x256, display 320x240 at (0, 0) | default | 0 | 0 | dtd 0, dfe 1 | — | cd_reads_and_streams.c cd_draw_error_indicator |
 | field | 320x224 at y 0 and 256 | (0, 10, 256, 216) | 0, 1 on the shown block while a 24-bit movie plays (func_800A7120) | 0 | no isbg: ClearImage each frame; dtd 0 after map setup when D_800B2078.jump_mode is set (func_80078C5C) | 2-4 | field.c func_80071FB0, field_800854D0.c func_80086D8C |
 | field, 640 wide | 640x224 at y 0 and 256 | (0, 10, 256, 216) | 0 | 0 | as field | 2-4 | event fe df operand 0 (func_80086E1C), used once, field map 41 on both discs; the staff roll func_800A7948 also switches to it but needs field ext `be` (enable_movie_overlay, func_80087C0C), which no shipped script uses (Services, BIOS Kanji ROM) |
 | world map | 320x216 at y 0 and 216 | (0, 10, 256, 216) | 0 | 0 | isbg (0, 0, 0x70), black in mode 2 | 2 | worldmap_80072238.c func_80072BB0 |
-| battle (resident preparation) | 320x224 at y 0 and 224 | default | 0 | 0 | isbg (0x3C, 0x78, 0x78) | — | main_8001B6C4.c func_8001B844 |
+| battle (resident preparation) | 320x224 at y 0 and 224 | default | 0 | 0 | isbg (0x3C, 0x78, 0x78) | — | mode_battle_and_menu.c mode_battle_init_display |
 | battle | 320x224 at y 0 and 224 | (0, 10, 256, 216) | 0 | 0 | isbg from the stage (func_801E7210) | 1 + catch-up | battle_800B8098.c func_800B8284 |
 | Battling arena | 640x218 for scenes (menu2.c func_800725B0), 320x218 for its menus (func_800726B4, menu5.c func_800852C4), at y 0 and 256 | (0, 10, 256, 218) | 0 | 0; the interlaced branch for heights above 256 (both buffers at y 0, screen (0, 16, 256, 212)) has no caller | dtd 1, isbg 0, tpage GetTPage(0, 2, 0x280, 0); DR_AREA/DR_OFFSET per layer | 1 or 2 | menu7.c func_80089330, func_80089534 |
-| in-game menu | 320x224 at y 0 and 224 | (0, 10, 256, 216) | 0 | 0 | dtd 1, isbg 0; the saved screen is copied into the back buffer every frame | 1 | main_8001B6C4.c func_8001BE14, func_8001BDDC; slot39.c func_801C7BF4 |
+| in-game menu | 320x224 at y 0 and 224 | (0, 10, 256, 216) | 0 | 0 | dtd 1, isbg 0; the saved screen is copied into the back buffer every frame | 1 | mode_battle_and_menu.c menu_state_init_display, menu_state_init_buffer; slot39.c func_801C7BF4 |
 | movie | 320x240 at y 0 and 240 | (0, 10, 256, 216) | 1 while a movie plays | 0 | isbg 1 (0 during playback) | 1 | movie.c func_800737EC, func_800763BC; its CD-ROM and sector monitors (debug) use 640x240 |
 
 The screen window values are PsyQ display units; rendering-behavior.md
@@ -762,7 +762,7 @@ from the map (FieldView.projection), the compass H 0x80 at (0x10A, 0xA6); world
 map H 0x100 at (160, D_8009BE0C); battle (160, 164) with H 0x200 (the screen
 shatter 512, the sky its own); menu (160, 112) H 0x200; arena (width / 2,
 height / 2) with H set per screen (0xC0-0x800); 2D sprite sheets through the
-GTE with H 0x1000 (sprite_80025C04.c).
+GTE with H 0x1000 (sprite_sheet.c).
 
 ### GPU features the game uses
 
@@ -799,7 +799,7 @@ GTE with H 0x1000 (sprite_80025C04.c).
   abr argument (0 at 127 sites, 1 at 29, 2 at 31, 3 once in
   worldmap_80077E68.c, plus variables such as the field fade channels'
   D_800B2078.fades[i].abr) or from data in raw E1 words (battle_800B3F04.c
-  effects, sprite render bits 5-6 in sprite_800248D4.c).
+  effects, sprite render bits 5-6 in sprite_vm_draw.c).
 - Texture windows: SetDrawMode with a window for field dialogue and text
   (field_8007A44C.c), field overlay sprites (field_800A9274.c) and ovl2615's
   stage backdrops (stage.c); DR_TWIN through SetTexWindow for the world-map
@@ -815,7 +815,7 @@ GTE with H 0x1000 (sprite_80025C04.c).
   E6 set=0 check=0 (rendering-behavior.md).
 - 24-bit display only for MDEC frames (field and movie, above).
 - Culling: the resident model renderers (8002e010-8003014c) drop faces outside
-  the screen bounds D_800500F8/D_800500FC (func_8002DFF0), back faces (NCLIP) and
+  the screen bounds model_screen_x_limit/model_screen_y_limit (model_set_screen_bounds), back faces (NCLIP) and
   OTZ 0. Their error test (`mfc2 $t0, $31`, model_draw.s) reads GTE data
   register 31, LZCR, not the FLAG control register, so it never rejects:
   near-camera triangles larger than the GPU's 1023x511 limit are submitted
@@ -825,33 +825,33 @@ GTE with H 0x1000 (sprite_80025C04.c).
 
 ## Sound output modes
 
-- **State**: bits 0x700 of the driver flags D_8005957C, set by
-  `func_800386C4(mode)` (main2_800366E0.c): 0 Mono (no bit), 1 Stereo (0x100),
-  2 Wide (0x300), 3 (0x500) has no caller. Boot runs func_80037B88(0): flags
+- **State**: bits 0x700 of the driver flags sound_driver_flags, set by
+  `sound_set_output_mode(mode)` (console_and_sound_driver.c): 0 Mono (no bit), 1 Stereo (0x100),
+  2 Wide (0x300), 3 (0x500) has no caller. Boot runs sound_start_driver(0): flags
   0xB801, then Stereo. The sound option (slot39.c func_801D9808) maps its
   choices 0/1/2 to modes 0/2/1. The mode is not saved, and boot (also after a
   soft reset) restores Stereo.
-- **Voices**: the pan law func_8003EBF0 (sound.c) gives every voice the centre
+- **Voices**: the pan law sound_stage_seq_voices (sound.c) gives every voice the centre
   gain 0x5A00 on both sides in Mono; Stereo and Wide share the two-ramp law
   (0x7F00/0 at the edges, 0x5A00 at the centre). Wide changes no voice value.
-- **Signed pairs** (func_80038E6C): both sides take the volume, then
-  - 0x300 (Wide): the master pair's **right** side (D_8005A3C0.attr.mvol, SPU
-    0x1F801D80/2) and the reverb depth pair's **left** side (D_8005940C, SPU
+- **Signed pairs** (sound_set_stereo_volume): both sides take the volume, then
+  - 0x300 (Wide): the master pair's **right** side (sound_volumes.attr.mvol, SPU
+    0x1F801D80/2) and the reverb depth pair's **left** side (sound_reverb_depth, SPU
     0x1F801D84/6) are negated (`0 - volume`);
   - 0x500: the master's left and the reverb's right, the opposite pair;
   - Mono and Stereo leave both pairs positive.
 
   The master volume is 0x3FFF from boot, so Wide writes (0x3FFF, 0xC001); the
-  reverb depth comes from each sequence (func_80038934), 0x2800 at the end of
-  the recorded routes, so Wide writes (0xD800, 0x2800). Master fades (func_80038C68,
+  reverb depth comes from each sequence (sound_set_reverb), 0x2800 at the end of
+  the recorded routes, so Wide writes (0xD800, 0x2800). Master fades (sound_set_master_volume,
   stepped on every other tick) and reverb changes re-apply the sign through
-  func_80038E6C. The CD input pair (D_8005A3C0.attr.cd.volume, SPU
-  0x1F801DB0/2, func_80038D18) is never negated.
+  sound_set_stereo_volume. The CD input pair (sound_volumes.attr.cd.volume, SPU
+  0x1F801DB0/2, sound_set_cd_volume) is never negated.
 - **CD, XA and movie audio stay stereo in every mode.** Boot enables CD input
-  without reverb (func_80038DB4(0, 1)) at volume 0x7FFF. func_8003885C would
+  without reverb (sound_set_cd_reverb_and_mix(0, 1)) at volume 0x7FFF. sound_set_cd_mix_volume would
   program the CD-to-SPU attenuation with libcd CdMix (Mono: all four at half
   volume; stereo modes: same side full, cross 0), but both its callers
-  (func_80037B88, func_800386C4) require flag 0x4000, which boot's 0xB801 does
+  (sound_start_driver, sound_set_output_mode) require flag 0x4000, which boot's 0xB801 does
   not set and no store ever ORs in: CdMix is never called. Mono therefore
   changes only the voice pan law; the master and CD pairs and the stereo
   reverb return are as in Stereo. The capture agrees: in the opening movie

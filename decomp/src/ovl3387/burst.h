@@ -9,7 +9,7 @@
 
 /* Callers convert arguments/result differently from the resident definition:
  * add, clamped to 0..255 (the module passes and takes a byte). */
-u8 func_80021AD8(u8 value, s32 delta);
+u8 sprite_add_clamp_byte(u8 value, s32 delta);
 
 /* The screen burst (battle/burst.h), which func_801FC8F4 runs in its own
  * frame loop. */

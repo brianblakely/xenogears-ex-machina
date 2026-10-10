@@ -16,7 +16,7 @@
  * definition cannot leave, so it stays original data. */
 INCLUDE_ORIGINAL(".data", D_801E44C0, 0x801E44C0, 4);
 extern u8 D_801E44C0; /* the result fanfare has started */
-GameData *D_801E44C4 = &D_8006D634;
+GameData *D_801E44C4 = &game_data;
 BattleWork *D_801E44C8 = &D_800CCCE8;
 /* The module's uninitialized variables (the level gauge animation, the
  * growth data and the record being processed, the experience pools), zero
@@ -217,7 +217,7 @@ void func_801DEDC0(u8 fromGameData) {
             if (fromGameData == 0) {
                 func_8008AAA0(D_800D32A5[i].level);
             } else {
-                func_8008AAA0(D_8006D634.characters[D_800D2D24[i]].level);
+                func_8008AAA0(game_data.characters[D_800D2D24[i]].level);
             }
             for (j = 0; j < 3; j++) {
                 n = j + 18;
@@ -231,7 +231,7 @@ void func_801DEDC0(u8 fromGameData) {
                 if (fromGameData == 0) {
                     func_8008AAA0(D_800D32A5[i].level2);
                 } else {
-                    func_8008AAA0(D_8006D634.characters[D_800D2D24[i]].level2);
+                    func_8008AAA0(game_data.characters[D_800D2D24[i]].level2);
                 }
                 for (j = 0; j < 3; j++) {
                     n = j + 18;
@@ -507,7 +507,7 @@ void func_801DFF50(u8 member) {
     s32 digit;
 
     before = D_800CCCE8.savedMax[member][0];
-    after = D_8006D634.characters[D_800D2D24[member]].maxHp;
+    after = game_data.characters[D_800D2D24[member]].maxHp;
     difference = after - before;
     arrow = 0xE3;
     if (difference < 0) {
@@ -544,7 +544,7 @@ void func_801E0184(u8 member) {
     s32 digit;
 
     before = D_800CCCE8.savedMax[member][1];
-    after = D_8006D634.characters[D_800D2D24[member]].maxEp;
+    after = game_data.characters[D_800D2D24[member]].maxEp;
     difference = after - before;
     arrow = 0xE3;
     if (difference < 0) {
@@ -652,13 +652,13 @@ void func_801E03FC(u8 member) {
 
 /* Play effect id of the system effect bank. */
 void func_801E09C0(u8 id) {
-    func_80039E60((D_8005919C->bank << 16) | id);
+    sound_play_effect((sprite_script_sound_bank->bank << 16) | id);
 }
 
 /* Start the result fanfare's three effects once. */
 void func_801E09F4(void) {
     if (D_801E44C0 == 0) {
-        D_80059180 = 1;
+        mode_result_fanfare_started = 1;
         func_801E09C0(0x5C);
         func_801E09C0(0x5D);
         func_801E09C0(0x5E);
@@ -688,8 +688,8 @@ void func_801E0ACC(u8 member) {
     u8 width;
     RECT rect;
 
-    newCounter = D_8006D634.skills[D_800D2D24[member]].counterSkills & ~D_800C3E0C[member].counterSkills;
-    newLevel = D_8006D634.skills[D_800D2D24[member]].levelSkills & ~D_800C3E0C[member].levelSkills;
+    newCounter = game_data.skills[D_800D2D24[member]].counterSkills & ~D_800C3E0C[member].counterSkills;
+    newLevel = game_data.skills[D_800D2D24[member]].levelSkills & ~D_800C3E0C[member].levelSkills;
     if (newCounter == 0 && newLevel == 0) {
         return;
     }
@@ -706,7 +706,7 @@ void func_801E0ACC(u8 member) {
         if (func_80089C6C(newCounter, i) != 0) {
             s32 *buffer = &D_800C3EB0.buffer;
 
-            width = func_80034EAC(func_80033784(D_800D2D24[member], i), image, 0x1B, 0);
+            width = window_render_text_line(text_get_system_resource_entry(D_800D2D24[member], i), image, 0x1B, 0);
             rect.x = 0x3C0;
             rect.y = 0x1A;
             rect.w = 0x1E;
@@ -726,7 +726,7 @@ void func_801E0ACC(u8 member) {
         if (func_80089C6C(newLevel, i) != 0) {
             s32 *buffer = &D_800C3EB0.buffer;
 
-            width = func_80034EAC(func_80033908(D_800D2D24[member] * 16 + i), image, 0x1B, 0);
+            width = window_render_text_line(text_get_character_art_name(D_800D2D24[member] * 16 + i), image, 0x1B, 0);
             rect.x = 0x3C0;
             rect.y = 0x1A;
             rect.w = 0x1E;
@@ -772,7 +772,7 @@ void func_801E10F8(u32 experience) {
         }
     }
     D_800D334C->run2F60.buffer = D_800C3EB0.buffer;
-    func_8008AAA0(D_8006D634.gold);
+    func_8008AAA0(game_data.gold);
     for (i = 0; i < 9; i++) {
         n = i + 24;
         digit = D_800C3CDC[n];
@@ -831,19 +831,19 @@ void func_801E1444(u8 *ids, u8 *counts, u8 *categories) {
         if (ids[i] != 0) {
             switch (categories[i]) {
             case 0:
-                func_801E1370(ids[i], counts[i], D_8006D634.weaponIds, D_8006D634.weaponCounts, 100);
+                func_801E1370(ids[i], counts[i], game_data.weaponIds, game_data.weaponCounts, 100);
                 break;
             case 1:
-                func_801E1370(ids[i], counts[i], D_8006D634.accessoryIds, D_8006D634.accessoryCounts, 200);
+                func_801E1370(ids[i], counts[i], game_data.accessoryIds, game_data.accessoryCounts, 200);
                 break;
             case 2:
-                func_801E1370(ids[i], counts[i], D_8006D634.itemIds, D_8006D634.itemCounts, 150);
+                func_801E1370(ids[i], counts[i], game_data.itemIds, game_data.itemCounts, 150);
                 break;
             case 3:
-                func_801E1370(ids[i], counts[i], D_8006D634.gearPartIds, D_8006D634.gearPartCounts, 100);
+                func_801E1370(ids[i], counts[i], game_data.gearPartIds, game_data.gearPartCounts, 100);
                 break;
             case 4:
-                func_801E1370(ids[i], counts[i], D_8006D634.gearAccessoryIds, D_8006D634.gearAccessoryCounts, 150);
+                func_801E1370(ids[i], counts[i], game_data.gearAccessoryIds, game_data.gearAccessoryCounts, 150);
                 break;
             }
         }
@@ -903,19 +903,19 @@ void func_801E1690(void) {
             names[count] = func_8008AC00(0x1B);
             switch (categories[i]) {
             case 0:
-                width = func_80034EAC(func_80033848(ids[i]), names[count], 0x1B, 0);
+                width = window_render_text_line(text_get_weapon_name(ids[i]), names[count], 0x1B, 0);
                 break;
             case 1:
-                width = func_80034EAC(func_800337E8(ids[i]), names[count], 0x1B, 0);
+                width = window_render_text_line(text_get_accessory_name(ids[i]), names[count], 0x1B, 0);
                 break;
             case 2:
-                width = func_80034EAC(func_80033818(ids[i]), names[count], 0x1B, 0);
+                width = window_render_text_line(text_get_item_name(ids[i]), names[count], 0x1B, 0);
                 break;
             case 3:
-                width = func_80034EAC(func_80033A5C(ids[i]), names[count], 0x1B, 0);
+                width = window_render_text_line(text_get_gear_part_name(ids[i]), names[count], 0x1B, 0);
                 break;
             case 4:
-                width = func_80034EAC(func_80033A2C(ids[i]), names[count], 0x1B, 0);
+                width = window_render_text_line(text_get_gear_accessory_name(ids[i]), names[count], 0x1B, 0);
                 break;
             }
             rect.x = 0x380;
@@ -930,7 +930,7 @@ void func_801E1690(void) {
     }
     func_801E1444(ids, counts, categories);
     for (i = 0; i < count; i++) {
-        func_800320E8(text[i]);
+        heap_free(text[i]);
     }
     D_800D334C->listCount = count;
     D_800D334C->listBuffer = D_800C3EB0.buffer;
@@ -996,8 +996,8 @@ void func_801E1AA4(void) {
     D_800D2D28->waitingCross = 0;
     D_800D32F8[0]->counting = 0;
     for (i = 0; i < 3; i++) {
-        D_800CCCE8.expTotals[i][0] = D_8006D634.characters[D_800D2D24[i]].expTotalA;
-        D_800CCCE8.expTotals[i][1] = D_8006D634.characters[D_800D2D24[i]].expTotalB;
+        D_800CCCE8.expTotals[i][0] = game_data.characters[D_800D2D24[i]].expTotalA;
+        D_800CCCE8.expTotals[i][1] = game_data.characters[D_800D2D24[i]].expTotalB;
         D_800CCCE8.toCount[i][0] = 0;
         D_800CCCE8.toCount[i][1] = 0;
     }
@@ -1064,7 +1064,7 @@ void func_801E1E10(u32 experience) {
     func_801E126C();
     func_801E1690();
     D_800D2D28->showSpoils = 1;
-    func_80039DB8((D_8005919C->bank << 16) | 0x5B);
+    sound_play_effect_on_last_channels((sprite_script_sound_bank->bank << 16) | 0x5B);
     D_800D2D28->waitingCross = 1;
     while (D_800D3014 != 4) {
         func_800716D8();
@@ -1094,7 +1094,7 @@ void func_801E1FB8(u32 experience) {
     }
     D_800D334C = func_8008ABB8(sizeof(ResultSummary), 0);
     bzero((u8 *)D_800D334C, sizeof(ResultSummary));
-    D_800D32F8[0]->secondValue = (D_8006D634.flags >> 15) ^ 1;
+    D_800D32F8[0]->secondValue = (game_data.flags >> 15) ^ 1;
     func_800716D8();
     D_800C3EB0.outcome = 0;
     func_801E196C();
@@ -1106,11 +1106,11 @@ void func_801E1FB8(u32 experience) {
     D_800D2D28->showSkill = 0;
     func_800716D8();
     for (i = 0; i < 3; i++) {
-        func_800320E8(D_800D32F8[i]);
+        heap_free(D_800D32F8[i]);
     }
-    func_800320E8(D_800D334C);
+    heap_free(D_800D334C);
     D_800C3EB0.outcome = saved;
-    func_80039FF8();
+    sound_stop_all_effects();
 }
 
 /* Hide the battle windows and reload the results resources: archive file
@@ -1129,21 +1129,21 @@ void func_801E211C(void) {
     D_800D2D28->barShown[0] = D_800D2D28->barShown[1] = D_800D2D28->barShown[2] = 0;
     func_800716D8();
     func_800716D8();
-    func_800320E8(D_800D2F5C);
-    func_80028470(0x10, 2);
-    archive = func_8008ABB8(func_800288EC(2), 1);
-    func_800295D8(2, archive, 0, 0x80);
+    heap_free(D_800D2F5C);
+    cd_select_directory(0x10, 2);
+    archive = func_8008ABB8(cd_get_aligned_file_size(2), 1);
+    cd_read_file(2, archive, 0, 0x80);
     func_8008AC50();
-    func_8003342C(archive);
-    D_800D2C08[0] = func_80032E88(archive->items[0], 0);
-    data = func_80032E88(archive->items[2], 0);
-    func_8002DD20(data);
-    func_800320E8(data);
-    D_800D2F5C = func_80032E88(archive->items[1], 0);
-    data = func_80032E88(archive->items[3], 0);
+    text_relocate_offset_table(archive);
+    D_800D2C08[0] = text_unpack_lzss_alloc(archive->items[0], 0);
+    data = text_unpack_lzss_alloc(archive->items[2], 0);
+    model_load_tim_list(data);
+    heap_free(data);
+    D_800D2F5C = text_unpack_lzss_alloc(archive->items[1], 0);
+    data = text_unpack_lzss_alloc(archive->items[3], 0);
     func_80078310(data, 0xFC);
-    func_800320E8(data);
-    func_800320E8(archive);
+    heap_free(data);
+    heap_free(archive);
     func_80076EA4();
 }
 
@@ -1167,7 +1167,7 @@ void func_801E2280(void) {
                 D_800CCCE8.defeated |= func_80089C08(i);
             }
         }
-        partyGold = &D_8006D634.gold;
+        partyGold = &game_data.gold;
         *partyGold += gold;
         if (*partyGold > 9999999) {
             *partyGold = 9999999;
@@ -1184,7 +1184,7 @@ void func_801E2280(void) {
         D_800C3EB0.slots[1].field2 = D_800C3EB0.slots[2].field2 = 0x7F;
     }
     func_801E2794();
-    if (D_800D2D50 == 0 && !(D_8006F9DC.flags & 8)) {
+    if (D_800D2D50 == 0 && !(formation_active.flags & 8)) {
         func_801E1FB8(gold);
     }
 }
@@ -1199,8 +1199,8 @@ void func_801E24B0(void) {
         item = &D_800D2FE4[i];
         if (*item != 0) {
             for (j = 0; j < 150; j++) {
-                if (*item == D_8006D634.itemIds[j]) {
-                    D_8006D634.itemCounts[j] = D_800D2CB0[i];
+                if (*item == game_data.itemIds[j]) {
+                    game_data.itemCounts[j] = D_800D2CB0[i];
                 }
             }
         }
@@ -1216,49 +1216,49 @@ void func_801E252C(void) {
 
     func_801E211C();
     if (D_800C3D48 != 0) {
-        func_800320E8((void *)D_800D3284);
-        func_800320E8((void *)D_800D328C);
+        heap_free((void *)D_800D3284);
+        heap_free((void *)D_800D328C);
     }
-    if (D_800594F8 == 0) {
+    if (mode_battle_standalone == 0) {
         if (D_800D3338 != 0) {
-            func_800199CC(6);
-        } else if (D_8005947C != 0) {
-            func_800199CC(2);
-        } else if ((D_8006D634.map & 0x7FF) >= 0x400) {
-            func_800199CC(3);
+            mode_load_overlay_block(6);
+        } else if (mode_pending_battle_formation != 0) {
+            mode_load_overlay_block(2);
+        } else if ((game_data.map & 0x7FF) >= 0x400) {
+            mode_load_overlay_block(3);
         } else {
-            func_8001ACA4();
+            mode_preload_field_files();
             func_8008AC50();
-            func_800199CC(1);
+            mode_load_overlay_block(1);
         }
     }
     func_8008AC50();
     func_801E24B0();
     outcome = &D_800C3EB0.outcome;
-    if (!(*outcome & 0xC0) && *outcome != 0x21 && D_800D2FC4 == 0 && D_800594D0 != 3) {
+    if (!(*outcome & 0xC0) && *outcome != 0x21 && D_800D2FC4 == 0 && mode_result_code != 3) {
         func_800BFBA0();
         func_801E2280();
     }
     for (i = 0; i < 8; i += 2) {
-        func_800320E8(D_800D3720[i].data);
+        heap_free(D_800D3720[i].data);
     }
     for (i = 0; i < 10; i++) {
-        func_800320E8(D_800C3E5C[i].pixels);
+        heap_free(D_800C3E5C[i].pixels);
     }
-    func_800320E8(D_800D329C);
-    func_800320E8(D_800C3E24);
+    heap_free(D_800D329C);
+    heap_free(D_800C3E24);
     func_8008FA60(5);
     func_8008FA60(4);
-    func_800320E8(D_800D39F0);
-    func_800320E8(D_800C3EA4);
-    func_800320E8(D_800D2D28);
-    func_800320E8(D_800C3EAC);
-    func_800320E8(D_800D2C08[0]);
-    func_800320E8(D_800D2F5C);
-    func_8003218C(2);
-    if (D_800594F8 != 0) {
-        func_80039C4C((SoundSeq *)D_800C3E54);
-        func_800399D4((SoundSeq *)D_800C3E54);
+    heap_free(D_800D39F0);
+    heap_free(D_800C3EA4);
+    heap_free(D_800D2D28);
+    heap_free(D_800C3EAC);
+    heap_free(D_800D2C08[0]);
+    heap_free(D_800D2F5C);
+    heap_free_tag(2);
+    if (mode_battle_standalone != 0) {
+        sound_stop_seq((SoundSeq *)D_800C3E54);
+        sound_release_seq((SoundSeq *)D_800C3E54);
     }
     func_800B8774();
 }
@@ -1285,11 +1285,11 @@ void func_801E2794(void) {
         func_801E41B4();
         func_801E2888();
         func_801E42C4();
-        if (D_8006D634.characters[3].gearId == 0x12) {
-            extra = D_8006D634.gears[12].field4F;
-            D_8006D634.skills[3].flags1A = 0x4000;
+        if (game_data.characters[3].gearId == 0x12) {
+            extra = game_data.gears[12].field4F;
+            game_data.skills[3].flags1A = 0x4000;
             if (extra != 0) {
-                D_8006D634.skills[3].flags1A = 0xC000;
+                game_data.skills[3].flags1A = 0xC000;
             }
         }
     }
@@ -1705,16 +1705,16 @@ u8 func_801E3BE0(u8 id) {
     s32 bit;
 
     count = 7;
-    if (D_8006D634.flags & 0x4000) {
+    if (game_data.flags & 0x4000) {
         count = 13;
     }
     learnt = 0xFF;
     for (j = 0; j < count; j++) {
         bit = 0x8000;
-        if (D_8006D634.skills[id].counterSkills & (bit >> j)) {
+        if (game_data.skills[id].counterSkills & (bit >> j)) {
             continue;
         }
-        if (D_801E44E8->characters[id].counterLevels[j] > D_8006D634.characters[id].level) {
+        if (D_801E44E8->characters[id].counterLevels[j] > game_data.characters[id].level) {
             break;
         }
         for (k = 0; k < 7; k++) {
@@ -1730,7 +1730,7 @@ u8 func_801E3BE0(u8 id) {
     if (learnt == 0xFF) {
         return 0;
     }
-    D_8006D634.skills[id].counterSkills |= 0x8000 >> learnt;
+    game_data.skills[id].counterSkills |= 0x8000 >> learnt;
     return learnt;
 }
 
@@ -1748,7 +1748,7 @@ u8 func_801E3D54(u8 id) {
         if (level == 0xFF) {
             return 0;
         }
-        if (D_8006D634.characters[id].level >= level) {
+        if (game_data.characters[id].level >= level) {
             known = D_801E44C4->skills[id].levelSkills;
             if (!(bit & known)) {
                 D_801E44C4->skills[id].levelSkills = bit | known;
@@ -1788,7 +1788,7 @@ void func_801E3EA4(void) {
         if (level == 0xFF) {
             return;
         }
-        if (D_8006D634.characters[8].level >= level) {
+        if (game_data.characters[8].level >= level) {
             known = D_801E44C4->skills[8].unlocksA;
             bit = 0x1000 >> k;
             if (!(known & bit)) {
@@ -1856,7 +1856,7 @@ void func_801E403C(void) {
             }
             break;
         case 6:
-            if (character->level >= 50 && (D_8006D634.flags & 0x4000)) {
+            if (character->level >= 50 && (game_data.flags & 0x4000)) {
                 skills->tier = 7;
             }
             break;
@@ -1871,14 +1871,14 @@ void func_801E41B4(void) {
 
     for (slot = 0; slot < 3; slot++) {
         id = D_800CCCE8.records[slot].pilot.characterId;
-        if (D_8006D634.characters[id].level >= 50) {
-            D_8006D634.skills[id].unlocksA |= 8;
+        if (game_data.characters[id].level >= 50) {
+            game_data.skills[id].unlocksA |= 8;
         }
-        if (D_8006D634.characters[id].level >= 60) {
-            D_8006D634.skills[id].unlocksA |= 4;
+        if (game_data.characters[id].level >= 60) {
+            game_data.skills[id].unlocksA |= 4;
         }
-        if (D_8006D634.characters[id].level >= 70) {
-            D_8006D634.skills[id].unlocksA |= 2;
+        if (game_data.characters[id].level >= 70) {
+            game_data.skills[id].unlocksA |= 2;
         }
     }
 }

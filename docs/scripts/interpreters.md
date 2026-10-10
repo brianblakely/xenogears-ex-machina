@@ -24,7 +24,7 @@ with its handler, and its decoder sweeps both discs.
 | Enemy AI | battle | `800799c8`, `80079ab0`, `80079c24` | switches `8007ef6c` (actions), `8007f8c0` (conditions) | [battle-ai.md](battle-ai.md) | `battle_ai` |
 | Effect scripts | battle, ovl2143 | `800aad54`, `801e39f0` | switches | [battle-effect-vm.md](battle-effect-vm.md) | `battle_effect_vm` |
 | Battle events | ovl3087 | `801e879c` | switch | [battle-event-vm.md](battle-event-vm.md) | `battle_event_vm` |
-| Sound sequences | resident | `8003c6e8` | `D_80050624[128]` | [sound-sequence.md](sound-sequence.md) | `sound_sequence` |
+| Sound sequences | resident | `8003c6e8` | `sound_seq_opcode_handlers[128]` | [sound-sequence.md](sound-sequence.md) | `sound_sequence` |
 | Sprite animation | resident, battle | `800248d4`, `800c11cc` | switches, `8001fbe4`, `800b3f04` | [sprite-vm.md](sprite-vm.md) | `sprite_vm` |
 | Text controls | resident | `80033df0` | bytes, 0F's jump table `80018a7c` | [text-control.md](text-control.md) | `text_control` |
 | Staff roll | field | `800ac0f0` | CR only | [text-control.md](text-control.md) | `staff_roll` |
@@ -47,19 +47,19 @@ documents both; `overlay_scripts` decodes them.
 | Table | Image | Index | Census |
 | --- | --- | --- | --- |
 | `D_800C348C`, `D_800C34DC` | battle | a command descriptor's formula | [dispatch-tables.md](dispatch-tables.md) |
-| `D_8004FE50` | resident | a model primitive group's type | [dispatch-tables.md](dispatch-tables.md) |
-| `D_800508A4` | resident | a sound modulator's mode & 0xf (16 slots) | [sound-sequence.md](sound-sequence.md) |
+| `model_primitive_types` | resident | a model primitive group's type | [dispatch-tables.md](dispatch-tables.md) |
+| `sound_modulator_waves` | resident | a sound modulator's mode & 0xf (16 slots) | [sound-sequence.md](sound-sequence.md) |
 | `D_8009A058` | worldmap | the arrival word +0x2320 & 0x7fff | [dispatch-tables.md](dispatch-tables.md) |
-| `D_8004FD40` | resident | a sprite header's kind (four bits) | [dispatch-tables.md](dispatch-tables.md) |
+| `sprite_draw_callbacks` | resident | a sprite header's kind (four bits) | [dispatch-tables.md](dispatch-tables.md) |
 | `D_800AE2A0`, `D_800AE6A0` | field | the field event opcode | the field events interpreter |
-| `D_80050624` | resident | the sound sequence opcode - 0x80 | the sound sequence interpreter |
+| `sound_seq_opcode_handlers` | resident | the sound sequence opcode - 0x80 | the sound sequence interpreter |
 | `D_8009A3C0` | worldmap | the world map actor opcode | the world map actor interpreter |
 | `D_80091368`, `D_80091390`, `D_800913B8`, `D_8009141C`, `D_800914A8`, `D_800914D0`, `D_80091534`, `D_8009155C`, `D_800915AC` | menu | the menu page and cursor (menu4's items and lines) | code |
-| `D_80088BFC` | menu | `D_80050618`, which only `func_800379B4(0)` sets (resident and field) | code |
+| `D_80088BFC` | menu | `mode_arena_task`, which only `mode_set_arena_task(0)` sets (resident and field) | code |
 | `D_80091C74`, `D_80091CC4`, `D_80091CDC` | menu | an emitter's shape and placement, constants at both callers of `func_8008D3F4` (1, 0 and 3, 0); its one update | code |
 | `D_80099E8C` | worldmap | the actors every area starts, a list ended by kind 0 | code |
 | `D_80099F0C`, `D_80099F24`, `D_80099F3C`, `D_80099F74`, `D_80099FAC`, `D_80099FEC` | worldmap | the area's actor list, `D_8009A034[D_8009C610]`; the area index comes from the position against `D_8009B564`, whose last threshold is 0xffff | code |
-| `D_8001808C` | resident | the mode number (0-6) the dispatcher `func_80019ACC` runs, set by `func_8001996C` from code and from the movie's next-mode word `D_8004FE44`; rows {entry, BSS start, BSS end, loaded} | [original-boundaries.md](../original-boundaries.md) |
+| `mode_table` | resident | the mode number (0-6) the dispatcher `mode_dispatch` runs, set by `mode_select_next_mode` from code and from the movie's next-mode word `cd_movie_request_kind`; rows {entry, BSS start, BSS end, loaded} | [original-boundaries.md](../original-boundaries.md) |
 | `exe_header` | resident | the PS-X EXE header's entry point, not a dispatch | none |
 
 ## Data-selected switches
@@ -80,7 +80,7 @@ takes the switch's default.
 - TMD primitive builder (`func_800B1720`, `func_800B1F6C`, ovl3384): a model
   format (`battle/effect_script.h`'s "effect script file"), not an instruction
   stream. Its kinds are censused as a data-selected dispatch.
-- Morph channels (resident `func_800303C8`, `func_8003014C`): per-target vertex
+- Morph channels (resident `model_start_morph`, `model_step_morph_weight`): per-target vertex
   and normal delta lists that code weights; each channel's update is a function
   the code installs (the default steps the weight), and nothing reads an
   instruction stream.

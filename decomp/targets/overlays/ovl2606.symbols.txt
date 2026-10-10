@@ -1,1 +1,3 @@
 D_801E1DD0 = 0x801E1DD0; // size:0xC
+// Names tools/names.py gave these addresses (docs/matching.md, Names).
+game_data_party_state = 0x8006F364;

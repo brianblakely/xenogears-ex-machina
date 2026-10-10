@@ -1,16 +1,16 @@
 """Battle formation and encounter set decoder (resident/formation.h).
 
-The battle overlay copies formation D_80059508 of the encounter set D_800658DC
-into D_8006F9DC as it starts (battle func_80070F40). A set is 16 formations of
+The battle overlay copies formation formation_selected_index of the encounter set formation_encounter_set
+into formation_active as it starts (battle func_80070F40). A set is 16 formations of
 0x20 bytes, BattleFormation in decomp/include/resident/formation.h, whose
 member comments name their readers; FIELDS follows that struct (the tests
 compare the two) and FLAGS names the flag bits its readers test. Sets come
 from:
 
 - a field map: map bundle component 6 (sizes at +0x10c, offsets at +0x130),
-  which func_80070CC8 decodes into D_800658DC itself: the set, then the 16
-  weights D_80065ADC of the random draw (func_80079288). The packed stream may
-  end a few bytes later, in D_80065AEC; an empty component leaves the set in
+  which func_80070CC8 decodes into formation_encounter_set itself: the set, then the 16
+  weights formation_encounter_weights of the random draw (func_80079288). The packed stream may
+  end a few bytes later, in commons_unused_4_words_b; an empty component leaves the set in
   place. Player control (events 0c, a7: func_8009F5F4) runs the draw, which
   waits until a script of the map runs event f7 with a nonzero period and count
   (func_8008E85C; every map load clears both).
@@ -58,7 +58,7 @@ FORMATION = 0x20
 FORMATIONS = 16
 SET = FORMATION * FORMATIONS  # what the battle indexes and the world map copies
 WEIGHTS = FORMATIONS  # one weight per formation
-FIELD_SIZE = SET + WEIGHTS  # D_800658DC then D_80065ADC
+FIELD_SIZE = SET + WEIGHTS  # formation_encounter_set then formation_encounter_weights
 # BattleFormation (resident/formation.h): member, offset, bytes.
 FIELDS = (
     ("battle", 0x00, 1),
@@ -85,7 +85,7 @@ GEAR = 0x80  # enemyIds: slot byte 4
 HIDDEN, BYTE5 = 0x80, 0x01  # enemyFlags: slot bytes 3 and 5
 FIRST_ENEMY_SLOT = 3
 
-FIELD_COMPONENT = 6  # func_80070CC8 decodes it into D_800658DC
+FIELD_COMPONENT = 6  # func_80070CC8 decodes it into formation_encounter_set
 SIZES, OFFSETS = 0x10C, 0x130  # FieldBundle.sizes, .offsets
 SLACK = 0x10  # func_80070CC8 passes the component's size + 0x10
 AREA_DIRECTORY = (0x24, 0)  # the world map's (80028470(0x24, 0))
@@ -94,11 +94,11 @@ KINDS = 16
 BRACKET_UNIT = "worldmap/worldmap_80094A5C.c"  # D_8009B578
 DEBUG_DIRECTORY = (0x20, 3)  # ovl2606 func_801E0A34: 80028470(0x20, 3)
 DEBUG_FIRST = 4  # Event1-3 are files 4-6, FileNo n file 7 + n
-STAGE_DIRECTORY = (12, 3)  # func_800379D8: 80028470(12, 3)
-STAGE_COUNT = 5  # func_800379D8: scene < the file count of entry 5 / 2
+STAGE_DIRECTORY = (12, 3)  # mode_load_battle_stage: 80028470(12, 3)
+STAGE_COUNT = 5  # mode_load_battle_stage: scene < the file count of entry 5 / 2
 SCRIPT_DIRECTORY = (0x20, 0)  # ovl3087's
 SCRIPT_ARCHIVE = 2  # ovl3087 func_801E5160
-REQUESTS = ("71", "fe 84")  # field events that set D_80059508 from operand 1
+REQUESTS = ("71", "fe 84")  # field events that set formation_selected_index from operand 1
 ARMING = "f7"  # func_8008E85C: the field draw's period and count from operands 1 and 3
 CONTROL = ("0c", "a7")  # player control (func_8009F5F4), which runs the draw func_80079288
 CHAIN = 0x24  # battle event opcode next_battle (func_801E7700)
@@ -109,11 +109,11 @@ class FormationError(ValueError):
 
 
 class Request(NamedTuple):
-    """A field event that sets D_80059508 from operand 1 (func_800ACDEC)."""
+    """A field event that sets formation_selected_index from operand 1 (func_800ACDEC)."""
 
     pc: int
     event: str  # 71 or fe 84
-    formation: int | None  # an immediate operand's value (D_80059508 is a u8)
+    formation: int | None  # an immediate operand's value (formation_selected_index is a u8)
     variable: int | None  # the variable it names otherwise
 
 
@@ -321,7 +321,7 @@ class EncounterSource:
 
 
 def field_component(data: bytes) -> tuple[int, bytes] | None:
-    """Map bundle component 6 as func_80070CC8 writes it at D_800658DC: the
+    """Map bundle component 6 as func_80070CC8 writes it at formation_encounter_set: the
     header's size and the whole decoded stream (empty for an empty component);
     None for a file too short to be a bundle (events.map_events)."""
     if len(data) < events.HEADER:
@@ -337,7 +337,7 @@ def field_source(map_id: int, size: int, stream: bytes) -> EncounterSource | Non
     if size < FIELD_SIZE or len(stream) < FIELD_SIZE:
         raise FormationError(f"component 6 of 0x{size:x} bytes is not a set and its weights")
     tail = len(stream) - FIELD_SIZE
-    note = f"component 6, 0x{size:x} bytes; its stream writes {tail} bytes more, into D_80065AEC"
+    note = f"component 6, 0x{size:x} bytes; its stream writes {tail} bytes more, into commons_unused_4_words_b"
     return EncounterSource(
         "field", map_id, None, stream[:FIELD_SIZE], (stream[SET:FIELD_SIZE],), note
     )
@@ -772,7 +772,7 @@ def disc_report(census: Census) -> list[str]:
         f" {len(field_sets)} with an encounter set,"
         f" {len(census.empty_maps)} with an empty component 6",
         f"    component 6 sizes: {_counts(census.component_sizes)};"
-        f" stream bytes past 0x{FIELD_SIZE:x} (into D_80065AEC):"
+        f" stream bytes past 0x{FIELD_SIZE:x} (into commons_unused_4_words_b):"
         f" {_counts(census.stream_tails, '{}')}",
         f"    f7 reached (func_8008E85C, period/count): {sum(armings.values())},"
         f" {_counts(armings, '{}')}",

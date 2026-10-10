@@ -133,19 +133,19 @@ typedef struct RenderPacket {
     s32 value;
 } RenderPacket;
 
-extern RenderPacket *D_80059424; /* the primitive being built */
-extern s32 *D_80059498;          /* lit-color cache: color word, then the face normal */
-extern SVECTOR *D_8005952C;      /* vertex normals of the model being drawn */
-extern SVECTOR *D_8005953C;      /* vertices of the model being drawn */
-extern u32 *D_80059568;          /* the ordering table models are drawn into */
-extern s32 D_80059578;           /* primitives drawn */
-extern s32 D_80050100;           /* depth shift into the ordering table */
+extern RenderPacket *model_current_packet; /* the primitive being built */
+extern s32 *model_lit_color_cache;          /* lit-color cache: color word, then the face normal */
+extern SVECTOR *model_current_normals;      /* vertex normals of the model being drawn */
+extern SVECTOR *model_current_vertices;      /* vertices of the model being drawn */
+extern u32 *model_ot;          /* the ordering table models are drawn into */
+extern s32 model_drawn_primitive_count;           /* primitives drawn */
+extern s32 model_ot_depth_shift;           /* depth shift into the ordering table */
 
-void func_8002DB84(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *normal); /* face normal */
+void model_compute_face_normal(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *normal); /* face normal */
 
-u8 *func_8002DFE0(void); /* the shared unpack buffer */
+u8 *model_get_overlay_area(void); /* the shared unpack buffer */
 
-/* A primitive group: its type (an index into D_8004FE50) and count; the
+/* A primitive group: its type (an index into model_primitive_types) and count; the
  * primitive records follow. */
 typedef struct PrimitiveGroup {
     u8 type;
@@ -167,35 +167,35 @@ typedef struct {
     s32 packet_size;
 } PrimitiveType;
 
-extern PrimitiveType D_8004FE50[];
-extern PrimitiveGroup *D_80059528; /* the primitive group being drawn */
-extern s32 D_800595C0;             /* primitives submitted */
-extern s32 D_80050104;             /* bounding box test mode (8003101C), 0 off */
-extern u8 *D_80059538;             /* auxiliary data of the record being prepared */
+extern PrimitiveType model_primitive_types[];
+extern PrimitiveGroup *model_current_primitive_group; /* the primitive group being drawn */
+extern s32 model_submitted_primitive_count;             /* primitives submitted */
+extern s32 model_box_test_mode;             /* bounding box test mode (8003101C), 0 off */
+extern u8 *model_current_aux_data;             /* auxiliary data of the record being prepared */
 
-s32 func_8002C700(SpriteModel *model, RenderPacket *packets, u32 *ot, s32 mode); /* draw */
-void func_8002C8CC(SpriteModel *model, RenderPacket *packets, s32 mode); /* build packets */
-void func_8002CCAC(void);
-s32 func_8002C3E8(ModelGroup *group);
-void func_8002C59C(SpriteModel *model);
+s32 model_draw_sprite_model(SpriteModel *model, RenderPacket *packets, u32 *ot, s32 mode); /* draw */
+void model_build_packets(SpriteModel *model, RenderPacket *packets, s32 mode); /* build packets */
+void model_clear_overrides(void);
+s32 model_relocate_group(ModelGroup *group);
+void model_relocate_sprite_model(SpriteModel *model);
 /* Old-style definition: callers pass the mode as an int. */
-s32 func_8003101C(); /* (SpriteModel *model, u16 mode): bounding box off screen */
+s32 model_is_box_off_screen(); /* (SpriteModel *model, u16 mode): bounding box off screen */
 
 /* More of the model services. */
-s32 func_8002C4BC(ModelGroup *group);
-s32 func_8002C644(ModelGroup *group);
-void func_8002CBBC(ModelBuffer *buffer);
-void func_8002CC54(u16 tpage);
-s32 func_8002DC9C(s32 x, s32 y, s32 z);
-void func_8002DD20(u32 *list);
-void func_8002DFF0(s32 a, s32 b);
-MorphState *func_800303C8(SpriteModel *model, s32 mode);
-void func_800305D8(MorphState *state);
-void func_800306D0(MorphState *state);
-void func_80030B14(MATRIX *rotation);
+s32 model_unrelocate_group(ModelGroup *group);
+s32 model_trim_group(ModelGroup *group);
+void model_free_owned_block(ModelBuffer *buffer);
+void model_set_raw_tpage_override(u16 tpage);
+s32 model_get_largest_component(s32 x, s32 y, s32 z);
+void model_load_tim_list(u32 *list);
+void model_set_screen_bounds(s32 a, s32 b);
+MorphState *model_start_morph(SpriteModel *model, s32 mode);
+void model_update_morph(MorphState *state);
+void model_stop_morph(MorphState *state);
+void model_load_light_matrix(MATRIX *rotation);
 
-/* Set the environment-map texture mapping of func_80030750 by rewriting its
+/* Set the environment-map texture mapping of model_draw_ft3_envmap by rewriting its
  * code: the u and v shifts and offsets (handwritten). */
-void func_80030988(s32 u_shift, s32 v_shift, s32 u_offset, s32 v_offset);
+void model_set_envmap_mapping(s32 u_shift, s32 v_shift, s32 u_offset, s32 v_offset);
 
 #endif

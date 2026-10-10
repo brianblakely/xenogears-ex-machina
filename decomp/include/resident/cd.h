@@ -20,70 +20,70 @@ typedef struct {
     void *data;
 } FileEntry;
 
-extern s32 D_8004FDE0;      /* largest sector gap read through between list files */
-extern s32 D_8004FDE4;      /* out-of-order sectors in single-file reads */
-extern s32 D_8004FDE8;      /* out-of-order sectors in list reads */
-extern s32 D_8004FDEC;      /* out-of-order sectors in stream reads */
-extern u8 *D_8004FDF0;      /* file index: 7 bytes per file */
-extern u16 *D_8004FDF4;     /* directory table: first file of each directory, 1-based */
-extern s32 D_8004FDF8;      /* bytes of the current read */
-extern s32 D_8004FDFC;
-extern s32 D_8004FE00;      /* files in the current list */
-extern s32 D_8004FE04;      /* sector of the current read */
-extern void *D_8004FE08;    /* destination of the current read */
-extern FileRequest *D_8004FE0C; /* the file list being read */
-extern s32 D_8004FE10;
-extern s32 D_8004FE14;      /* selected directory (first file - 1) */
-extern s32 D_8004FE18;      /* second directory selection */
-extern s32 D_8004FE1C;      /* CD command state (8002a68c) */
-extern s32 D_8004FE20;      /* retry reason of the failed command */
-extern s32 D_8004FE34;
+extern s32 cd_max_list_gap_sectors;      /* largest sector gap read through between list files */
+extern s32 cd_file_out_of_order_count;      /* out-of-order sectors in single-file reads */
+extern s32 cd_list_out_of_order_count;      /* out-of-order sectors in list reads */
+extern s32 cd_stream_out_of_order_count;      /* out-of-order sectors in stream reads */
+extern u8 *cd_file_index;      /* file index: 7 bytes per file */
+extern u16 *cd_directory_table;     /* directory table: first file of each directory, 1-based */
+extern s32 cd_read_bytes_left;      /* bytes of the current read */
+extern s32 cd_pending_read_count;
+extern s32 cd_remaining_list_file_count;      /* files in the current list */
+extern s32 cd_next_sector;      /* sector of the current read */
+extern void *cd_read_destination;    /* destination of the current read */
+extern FileRequest *cd_current_file_list; /* the file list being read */
+extern s32 cd_read_cursor;
+extern s32 cd_selected_directory;      /* selected directory (first file - 1) */
+extern s32 cd_reading_directory;      /* second directory selection */
+extern s32 cd_command_state;      /* CD command state (8002a68c) */
+extern s32 cd_retry_reason;      /* retry reason of the failed command */
+extern s32 cd_stop_requested;
 /* The current read's mode (the read calls' mode argument, or a stop's
  * reason): when the read ends or stops, 8002a394 seeks to that file, or
  * pauses for 0, as nearly every caller passes (the movie mode's read check
  * passes 1, the movie library its XA channel); the XA filter takes its low
  * byte as the channel (8002a68c). */
-extern s32 D_8004FE38;
-extern s32 D_8004FE3C;
-extern u8 D_8004FE44;
-extern u8 D_8004FE45;
-extern u8 D_8004FE46;
-extern u8 D_8004FE47;
-extern char *D_8004FE48;    /* PC file server name table (64 bytes per file), or NULL */
-extern s32 D_8004FE4C;
-extern s32 D_8005A488, D_8005A48C, D_8005A490, D_8005A494, D_8005A498, D_8005A49C;
-extern s32 D_8005A4A4, D_8005A4A8, D_8005A4B4;
-extern s32 D_8005A4DC;
+extern s32 cd_read_mode;
+extern s32 cd_list_skipping_gap;
+extern u8 cd_movie_request_kind;
+extern u8 cd_movie_request_index;
+extern u8 cd_movie_request_next_mode;
+extern u8 cd_movie_request_unskippable;
+extern char *cd_pc_file_names;    /* PC file server name table (64 bytes per file), or NULL */
+extern s32 cd_pc_file_descriptor;
+extern s32 cd_stat_setloc_count, cd_stat_command_ok_count, cd_stat_command_fail_count, cd_stat_retry_setloc_count, cd_stat_retry_fail_count, cd_stat_lesmem_count;
+extern s32 cd_stat_error_limit_count, cd_stat_stop_ok_count, cd_stat_stop_fail_count;
+extern s32 cd_error_count;
 
-void func_80028230(u8 *files, u16 *directories, u32 mode);
-void func_800283D4(void);
-s32 func_80028470(s32 group, s32 index);
-s32 func_800284B4(s32 *group, s32 *index);
-s32 func_80028530(void);
-s32 func_80028548(s32 group, s32 index);
-s32 func_800286CC(void); /* disc busy */
-s32 func_80028738(s32 file);
-s32 func_800288EC(s32 file); /* file size rounded up to words */
-s16 func_80028928(s32 file);
-char *func_80028998(s32 file);
-s32 func_800289D0(s32 file);
-s32 func_80028A60(s32 mode);
-void func_80028ECC(s32 index);
-s32 func_8002954C(s32 sector, void *destination, s32 size, s32 a3, s32 a4);
-s32 func_800295D8(s32 file, void *destination, s32 a2, s32 a3);
-s32 func_80029690(s32 file, void *destination, s32 a2, s32 a3);
-s32 func_80029AFC(FileRequest *list, s32 mode, s32 a2);
-void func_8002A2D0(s32 file);
-void func_8002A394(s32 file);
-void func_8002A498(s32 reason);
-void func_8002A524(FileEntry *table);
-FileEntry *func_8002A57C(s32 first, FileEntry *table);
+void cd_init_disc_access(u8 *files, u16 *directories, u32 mode);
+void cd_shutdown_disc_access(void);
+s32 cd_select_directory(s32 group, s32 index);
+s32 cd_get_selected_directory(s32 *group, s32 *index);
+s32 cd_get_disc_number(void);
+s32 cd_get_relative_directory(s32 group, s32 index);
+s32 cd_get_pending_read_count(void); /* disc busy */
+s32 cd_get_file_size(s32 file);
+s32 cd_get_aligned_file_size(s32 file); /* file size rounded up to words */
+s16 cd_get_directory_file_count(s32 file);
+char *cd_get_pc_file_name(s32 file);
+s32 cd_get_file_sector(s32 file);
+s32 cd_sync_reads(s32 mode);
+void stream_merge_free_slots(s32 index);
+s32 cd_read_raw_sectors(s32 sector, void *destination, s32 size, s32 mode, s32 flags);
+s32 cd_read_file(s32 file, void *destination, s32 mode, s32 flags);
+s32 cd_start_read(s32 file, void *destination, s32 mode, s32 flags);
+s32 cd_read_file_list(FileRequest *list, s32 mode, s32 unused);
+void cd_seek_or_pause_if_idle(s32 file);
+void cd_seek_or_pause(s32 file);
+void cd_stop_read(s32 reason);
+void cd_free_file_table(FileEntry *table);
+FileEntry *cd_alloc_directory_file_table(s32 first, FileEntry *table);
 
 /* More of the disc and file services. */
-void *func_80028570(char *name, s32 *size);
-s32 func_800286BC(void);
-u8 *func_80028B14(void);
-u16 func_8002945C(u8 *chunk);
-u16 func_800294B4(u8 *chunk);
+void *cd_load_pc_file(char *name, s32 *size);
+s32 cd_get_read_bytes_left(void);
+u8 *stream_get_next_chunk(void);
+u16 stream_release_chunk(u8 *chunk);
+u16 stream_release_movie_frame(u8 *chunk);
 
 #endif

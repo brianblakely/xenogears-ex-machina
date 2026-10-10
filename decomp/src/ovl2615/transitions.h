@@ -22,7 +22,7 @@
 
 /* Callers convert arguments/result differently from the resident definition
  * (words there): add to a colour, clamped to 0..255. */
-u8 func_80021AD8(u8 value, s32 delta);
+u8 sprite_add_clamp_byte(u8 value, s32 delta);
 
 typedef struct {
     SVECTOR rot;         /* +00 */

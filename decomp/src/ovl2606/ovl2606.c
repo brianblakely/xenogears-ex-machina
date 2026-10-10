@@ -49,11 +49,11 @@ void func_801E0124(void) {
     PutDispEnv(&D_800C3EB0.buffers[0].dispEnv);
     PutDispEnv(&D_800C3EB0.buffers[1].dispEnv);
     SetDispMask(1);
-    D_8006D634.party[1] = 1;
-    D_8006D634.party[2] = 2;
+    game_data.party[1] = 1;
+    game_data.party[2] = 2;
     D_801E1DA0[0][0] = 3;
     D_801E1DA0[1][1] = 1;
-    D_8006D634.party[0] = 0;
+    game_data.party[0] = 0;
     D_801E1DA0[1][0] = 0;
     D_801E1DA0[1][2] = 2;
     D_801E1DA0[2][2] = 0;
@@ -183,42 +183,42 @@ void func_801E0238(void) {
             }
             break;
         }
-        func_8003700C("\n\n");
+        console_printf("\n\n");
         for (i = 0; i < 4; i++) {
-            func_8003700C("\n\n%s", D_801E1D40[i]);
+            console_printf("\n\n%s", D_801E1D40[i]);
             for (j = 0; j < 3; j++) {
                 if (D_801E1DD0[i][j]) {
                     switch (i) {
                     case 0:
                         if (row == i && j == col) {
-                            func_8003700C("[%d] ", D_801E1DA0[row][col]);
+                            console_printf("[%d] ", D_801E1DA0[row][col]);
                         } else {
-                            func_8003700C("%d ", D_801E1DA0[i][j]);
+                            console_printf("%d ", D_801E1DA0[i][j]);
                         }
                         break;
                     case 2:
                         if (row == i && j == col) {
                             switch (D_801E1DA0[row][col]) {
                             case 0:
-                                func_8003700C("[Off] ");
+                                console_printf("[Off] ");
                                 break;
                             case 1:
-                                func_8003700C("[Nml] ");
+                                console_printf("[Nml] ");
                                 break;
                             case 2:
-                                func_8003700C("[Bar] ");
+                                console_printf("[Bar] ");
                                 break;
                             }
                         } else {
                             switch (D_801E1DA0[i][j]) {
                             case 0:
-                                func_8003700C("Off ");
+                                console_printf("Off ");
                                 break;
                             case 1:
-                                func_8003700C("Nml ");
+                                console_printf("Nml ");
                                 break;
                             case 2:
-                                func_8003700C("Bar ");
+                                console_printf("Bar ");
                                 break;
                             }
                         }
@@ -227,34 +227,34 @@ void func_801E0238(void) {
                         if (row == i && j == col) {
                             value = D_801E1DA0[row][col];
                             if (value < 253) {
-                                func_8003700C("[%d] ", value);
+                                console_printf("[%d] ", value);
                             } else {
                                 switch (value - 253) {
                                 case 0:
-                                    func_8003700C("[Event3] ", value);
+                                    console_printf("[Event3] ", value);
                                     break;
                                 case 1:
-                                    func_8003700C("[Event2] ", value);
+                                    console_printf("[Event2] ", value);
                                     break;
                                 case 2:
-                                    func_8003700C("[Event1] ", value);
+                                    console_printf("[Event1] ", value);
                                     break;
                                 }
                             }
                         } else {
                             value = D_801E1DA0[i][j];
                             if (value < 253) {
-                                func_8003700C("%d ", value);
+                                console_printf("%d ", value);
                             } else {
                                 switch (value - 253) {
                                 case 0:
-                                    func_8003700C("Event3 ", value);
+                                    console_printf("Event3 ", value);
                                     break;
                                 case 1:
-                                    func_8003700C("Event2 ", value);
+                                    console_printf("Event2 ", value);
                                     break;
                                 case 2:
-                                    func_8003700C("Event1 ", value);
+                                    console_printf("Event1 ", value);
                                     break;
                                 }
                             }
@@ -263,23 +263,23 @@ void func_801E0238(void) {
                     case 1:
                         if (row == i && j == col) {
                             if (D_801E1DA0[row][col] >= 12) {
-                                func_8003700C("[%s] ", D_801E1D50[11]);
+                                console_printf("[%s] ", D_801E1D50[11]);
                             } else {
-                                func_8003700C("[%s] ", D_801E1D50[D_801E1DA0[row][col]]);
+                                console_printf("[%s] ", D_801E1D50[D_801E1DA0[row][col]]);
                             }
                         } else {
                             name = D_801E1DA0[i][j] >= 12 ? D_801E1D50[11] : D_801E1D50[D_801E1DA0[i][j]];
-                            func_8003700C("%s ", name);
+                            console_printf("%s ", name);
                         }
                         break;
                     }
                 }
             }
         }
-        func_8003700C("\n\n     LU       Start  to Battle");
-        func_8003700C("\n   LL  LR     Maru   +");
-        func_8003700C("\n     LD       Batsu  -");
-        func_80037324((u_long *)D_800C3EB0.current->ot);
+        console_printf("\n\n     LU       Start  to Battle");
+        console_printf("\n   LL  LR     Maru   +");
+        console_printf("\n     LD       Batsu  -");
+        console_flush((u_long *)D_800C3EB0.current->ot);
         DrawSync(0);
         VSync(0);
         PutDrawEnv(&D_800C3EB0.current->drawEnv);
@@ -302,60 +302,60 @@ void func_801E0A34(void) {
     func_801E0238();
     member = 0;
     for (i = 0; i < 3; i++) {
-        D_8006D634.inGear[i] = 0;
-        D_8006D634.party[i] = 0xFF;
+        game_data.inGear[i] = 0;
+        game_data.party[i] = 0xFF;
         if (D_801E1DA0[1][i] < 11) {
-            D_8006D634.party[member] = D_801E1DA0[1][i];
+            game_data.party[member] = D_801E1DA0[1][i];
             switch (D_801E1DA0[2][i]) {
             case 0:
-                D_8006D634.inGear[member] = 0;
+                game_data.inGear[member] = 0;
                 break;
             case 2:
-                D_8006D634.characters[D_8006D634.party[member]].gearId = D_801E1D90[D_8006D634.party[member]];
-                D_8006D634.inGear[member] = 1;
+                game_data.characters[game_data.party[member]].gearId = D_801E1D90[game_data.party[member]];
+                game_data.inGear[member] = 1;
                 break;
             case 1:
-                D_8006D634.characters[D_8006D634.party[member]].gearId = D_801E1D80[D_8006D634.party[member]];
-                D_8006D634.inGear[member] = 1;
+                game_data.characters[game_data.party[member]].gearId = D_801E1D80[game_data.party[member]];
+                game_data.inGear[member] = 1;
                 break;
             }
             member++;
         }
     }
-    func_80028470(0x20, 3);
+    cd_select_directory(0x20, 3);
     if (D_801E1DA0[3][0] < 0xFD) {
         i = D_801E1DA0[3][0] + 7;
     } else {
         i = D_801E1DA0[3][0] - 0xF9;
     }
-    D_80059508 = D_801E1DA0[0][0];
-    if (D_80059508 == 0xF && i == 7) {
-        D_80059508 = 3;
-        D_8005947C = 3;
+    formation_selected_index = D_801E1DA0[0][0];
+    if (formation_selected_index == 0xF && i == 7) {
+        formation_selected_index = 3;
+        mode_pending_battle_formation = 3;
     }
-    size = func_800288EC(i);
-    func_80032498(2, 0);
+    size = cd_get_aligned_file_size(i);
+    heap_select_owner_tag(2, 0);
     data = func_8008ABB8(size, 1);
-    func_800295D8(i, data, 0, 0x80);
-    func_80028A60(0);
-    memmove(&D_800658DC, data, sizeof(EncounterSet));
-    func_800320E8(data);
-    func_8001B66C();
+    cd_read_file(i, data, 0, 0x80);
+    cd_sync_reads(0);
+    memmove(&formation_encounter_set, data, sizeof(EncounterSet));
+    heap_free(data);
+    mode_stop_music();
     func_8008AB70();
-    size = func_800288EC(4);
+    size = cd_get_aligned_file_size(4);
     D_800D39D8 = func_8008ABB8(size, 1);
-    func_800295D8(4, D_800D39D8, 0, 0x80);
-    func_80028A60(0);
-    memmove(D_80062648, D_800D39D8, size);
-    func_800320E8(D_800D39D8);
+    cd_read_file(4, D_800D39D8, 0, 0x80);
+    cd_sync_reads(0);
+    memmove(mode_music_buffer, D_800D39D8, size);
+    heap_free(D_800D39D8);
     func_8009B1E4();
     for (i = 0; i < 11; i++) {
-        D_8006D634.characters[i].hp = 999;
-        D_8006D634.characters[i].maxHp = 999;
-        D_8006D634.characters[i].ep = 99;
-        D_8006D634.characters[i].maxEp = 99;
+        game_data.characters[i].hp = 999;
+        game_data.characters[i].maxHp = 999;
+        game_data.characters[i].ep = 99;
+        game_data.characters[i].maxEp = 99;
     }
-    D_8006D634.joined = 0xFFFF;
-    func_8003748C();
-    D_8005954C = D_80059508 & 3;
+    game_data.joined = 0xFFFF;
+    console_close();
+    mode_battle_kind = formation_selected_index & 3;
 }

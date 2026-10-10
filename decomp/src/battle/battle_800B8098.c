@@ -138,22 +138,22 @@ SlotPulse *D_800C3748 = NULL;
 void func_800B8098(s32 mode) {
     D_800D36B8 = mode;
     func_800B8284();
-    func_8001BBAC();
+    mode_battle_load_files();
     switch (mode) {
     case 1:
-        func_80028A60(0);
+        cd_sync_reads(0);
         func_801E8588();
         break;
     case 2:
-        func_80028A60(0);
+        cd_sync_reads(0);
         func_801E91E8();
         break;
     case 3:
-        func_80028A60(0);
+        cd_sync_reads(0);
         func_801E9594();
         break;
     case 4:
-        func_80028A60(0);
+        cd_sync_reads(0);
         func_801E893C();
         break;
     case 0:
@@ -162,9 +162,9 @@ void func_800B8098(s32 mode) {
         func_800B7870();
         break;
     }
-    func_80028A60(0);
+    cd_sync_reads(0);
     func_800A8B0C();
-    BATTLE_AREA.buffers[0].drawEnv.isbg = func_801E7210(&D_8005949C, D_80059520, D_80059470, D_800CCB94,
+    BATTLE_AREA.buffers[0].drawEnv.isbg = func_801E7210(&mode_battle_scene_file, mode_battle_stage_unused_word, mode_battle_stage_file, D_800CCB94,
                                                         D_800CCB94 + 0x20, &D_800C4A39);
     func_800A5E9C(&D_800C4A39, &BATTLE_AREA.buffers[1].drawEnv.r0);
 }
@@ -175,11 +175,11 @@ void func_800B81BC(s32 arg0) {
     func_800B88C4();
     func_800B8840();
     func_801E62E0(arg0);
-    func_80038310(D_800595AC);
-    func_80021B04(&D_800D30A0[0], SCENE_DATA->cameras[0].eye[0], SCENE_DATA->cameras[0].eye[1], SCENE_DATA->cameras[0].eye[2]);
-    func_80021B04(&D_800D3354, SCENE_DATA->cameras[0].eye[0], SCENE_DATA->cameras[0].eye[1], SCENE_DATA->cameras[0].eye[2]);
-    func_80021B04(&D_800D30A0[1], SCENE_DATA->cameras[0].lookAt[0], SCENE_DATA->cameras[0].lookAt[1], SCENE_DATA->cameras[0].lookAt[2]);
-    func_80021B04(&D_800D335C, SCENE_DATA->cameras[0].lookAt[0], SCENE_DATA->cameras[0].lookAt[1], SCENE_DATA->cameras[0].lookAt[2]);
+    sound_release_wave_bank(mode_wave_bank_5);
+    sprite_set_svector(&D_800D30A0[0], SCENE_DATA->cameras[0].eye[0], SCENE_DATA->cameras[0].eye[1], SCENE_DATA->cameras[0].eye[2]);
+    sprite_set_svector(&D_800D3354, SCENE_DATA->cameras[0].eye[0], SCENE_DATA->cameras[0].eye[1], SCENE_DATA->cameras[0].eye[2]);
+    sprite_set_svector(&D_800D30A0[1], SCENE_DATA->cameras[0].lookAt[0], SCENE_DATA->cameras[0].lookAt[1], SCENE_DATA->cameras[0].lookAt[2]);
+    sprite_set_svector(&D_800D335C, SCENE_DATA->cameras[0].lookAt[0], SCENE_DATA->cameras[0].lookAt[1], SCENE_DATA->cameras[0].lookAt[2]);
     SetDispMask(1);
 }
 
@@ -203,7 +203,7 @@ void func_800B8284(void) {
 
 /* Run frames while the disc is busy. */
 void func_800B8354(void) {
-    while (func_800286CC() != 0) {
+    while (cd_get_pending_read_count() != 0) {
         func_800BE790();
     }
 }
@@ -220,9 +220,9 @@ void func_800B838C(s32 index, s32 variant) {
 
     func_800C0F70();
     func_800B8354();
-    func_80028470(0x2C, 1);
+    cd_select_directory(0x2C, 1);
     banks[0].file = D_800C35DC[index].bank;
-    system = func_80031BDC(func_800288EC(banks[0].file), 0);
+    system = heap_alloc(cd_get_aligned_file_size(banks[0].file), 0);
     banks[0].destination = system;
     if (index == 8) {
         banks[1].file = D_800C35DC[8].bank + 1;
@@ -230,31 +230,31 @@ void func_800B838C(s32 index, s32 variant) {
         banks[1].file = D_800C35DC[index].bank + 1;
         banks[1].file += variant;
     }
-    waves = func_80031BDC(func_800288EC(banks[1].file), 0);
+    waves = heap_alloc(cd_get_aligned_file_size(banks[1].file), 0);
     banks[1].destination = waves;
     banks[2].destination = NULL;
     banks[2].file = 0;
-    func_80029AFC(banks, 0, 0);
+    cd_read_file_list(banks, 0, 0);
     func_800B8354();
-    func_80038428(system);
-    waveBank = func_80037FD8(waves, 0);
-    while (func_8003BDFC(0) != 0) {
+    sound_add_effect_bank(system);
+    waveBank = sound_load_wave_bank(waves, 0);
+    while (sound_sync_transfer(0) != 0) {
         func_800BE790();
     }
     sound = D_800C35DC[index].sound + variant + (system->id << 16);
-    func_80039E60(sound);
-    while (func_8003A5D0(sound) != 0) {
+    sound_play_effect(sound);
+    while (sound_get_active_effect_mask(sound) != 0) {
         func_800BE790();
     }
-    func_8003852C(system);
-    func_80038310(waveBank);
-    func_800320E8(waves);
-    func_800320E8(system);
+    sound_remove_effect_bank(system);
+    sound_release_wave_bank(waveBank);
+    heap_free(waves);
+    heap_free(system);
 }
 
 /* Close the battle: for mode 0 the party (on foot) turns to its pose 0x18,
  * for mode 2 a white fade and pose 5 over 40 frames; then remove the enemy
- * slots, load wave bank 5 as the battle's (D_800595AC) and free the enemy
+ * slots, load wave bank 5 as the battle's (mode_wave_bank_5) and free the enemy
  * set data. */
 void func_800B853C(s32 mode) {
     s32 i;
@@ -270,7 +270,7 @@ void func_800B853C(s32 mode) {
             sprite = BATTLE_AREA.sprites[i];
             if (sprite != NULL && (s8)sprite->motion.bytes[3] != 0x15) {
                 func_800BFC80(sprite, 0, 2);
-                func_800245D8(sprite, 0x18);
+                sprite_start_animation(sprite, 0x18);
             }
         }
         break;
@@ -280,7 +280,7 @@ void func_800B853C(s32 mode) {
         for (slot = 0; slot != 3; slot++) {
             member = BATTLE_AREA.sprites[slot];
             if (member != NULL && (s8)member->motion.bytes[3] != 0x15) {
-                func_800245D8(member, 5);
+                sprite_start_animation(member, 5);
             }
         }
         slot = 0x28;
@@ -297,16 +297,16 @@ void func_800B853C(s32 mode) {
     }
     func_800C0F70();
     func_800B8354();
-    func_80028470(0x2C, 0);
-    waves = func_80031BDC(func_800288EC(5), 1);
-    func_800295D8(5, waves, 0, 0x80);
+    cd_select_directory(0x2C, 0);
+    waves = heap_alloc(cd_get_aligned_file_size(5), 1);
+    cd_read_file(5, waves, 0, 0x80);
     func_800B8354();
-    D_800595AC = func_80037FD8(waves, 0);
-    while (func_8003BDFC(0) != 0) {
+    mode_wave_bank_5 = sound_load_wave_bank(waves, 0);
+    while (sound_sync_transfer(0) != 0) {
         func_800BE790();
     }
-    func_800320E8(waves);
-    func_800320E8(D_800D39C8);
+    heap_free(waves);
+    heap_free(D_800D39C8);
     BATTLE_AREA.field8DA8 = 0;
 }
 
@@ -322,32 +322,32 @@ void func_800B8774(void) {
     for (slot = 0; slot != 11; slot++) {
         func_800BADD4(slot);
     }
-    func_80024FB8();
-    func_8001C8DC();
-    func_8003852C((SoundBank *)D_8005919C);
-    func_800320E8(D_8005919C);
-    D_800591AD = 0;
+    sprite_free_queues();
+    task_destroy_all();
+    sound_remove_effect_bank((SoundBank *)sprite_script_sound_bank);
+    heap_free(sprite_script_sound_bank);
+    sprite_in_battle = 0;
     DrawSync(0);
     func_800A9F94();
     func_800A4820();
-    func_800320E8(*(void **)D_800D2D54); /* a heap block here */
+    heap_free(*(void **)D_800D2D54); /* a heap block here */
 }
 
 /* Reset the battle's frame state, sprites, camera and effects. */
 void func_800B8840(void) {
-    D_800591AD = 1;
-    D_80059464 = 0;
-    D_800591AC = 0;
-    D_800591A8 = 0x2000;
+    sprite_in_battle = 1;
+    task_active_main_count = 0;
+    task_new_tasks_active = 0;
+    sprite_default_scale = 0x2000;
     func_800BED30();
     func_800BE108();
-    func_8001C944();
+    task_clear_lists();
     func_800BB7F8();
-    func_80024F64(0x5000, 0);
+    sprite_alloc_queues(0x5000, 0);
     func_800BCD8C();
     func_800B7C28();
     func_800B89F4();
-    D_80050104 = 0;
+    model_box_test_mode = 0;
 }
 
 /* Start the first frame: the frame skip from the gear enemies present,
@@ -363,14 +363,14 @@ void func_800B88C4(void) {
             D_800C3D58++;
         }
     }
-    D_80059198 = D_800C3D58 / 2 - 1;
-    if (D_80059198 < 0) {
-        D_80059198 = 0;
+    sprite_frame_skip = D_800C3D58 / 2 - 1;
+    if (sprite_frame_skip < 0) {
+        sprite_frame_skip = 0;
     }
-    skip = D_80059198;
+    skip = sprite_frame_skip;
     BATTLE_AREA.frameTicks = skip;
-    D_80059198 = 0;
-    D_80050100 = 2;
+    sprite_frame_skip = 0;
+    model_ot_depth_shift = 2;
     buffer = &BATTLE_AREA.buffers[0];
     if (BATTLE_AREA.current == buffer) {
         buffer = &BATTLE_AREA.buffers[1];
@@ -422,7 +422,7 @@ void func_800B89FC(s32 mode, s32 slot, s32 targets, s32 arg3) {
         func_800C0F70();
         D_800C3620 = 0;
         func_800BC454(0xC0);
-        if (!func_8001EE68(*(u8 **)sprite->image)) {
+        if (!sprite_is_cell_directory(*(u8 **)sprite->image)) {
             D_800C3622 = 0;
             if (D_800C3618 == NULL || SPRITE_SLOT(sprite) != D_800C361C) {
                 func_800BF2B8(sprite);
@@ -430,16 +430,16 @@ void func_800B89FC(s32 mode, s32 slot, s32 targets, s32 arg3) {
         } else {
             if (!D_800C3622) {
                 func_800B8354();
-                func_80028470(0x2C, 0);
-                waves = func_80031BDC(func_800288EC(7), 0);
-                func_800295D8(7, waves, 0, 0x80);
+                cd_select_directory(0x2C, 0);
+                waves = heap_alloc(cd_get_aligned_file_size(7), 0);
+                cd_read_file(7, waves, 0, 0x80);
                 func_800B8354();
                 func_800C0F70();
-                D_800C3A6C = func_80037FD8(waves, 0);
-                while (func_8003BDFC(0) != 0) {
+                D_800C3A6C = sound_load_wave_bank(waves, 0);
+                while (sound_sync_transfer(0) != 0) {
                     func_800BE790();
                 }
-                func_800320E8(waves);
+                heap_free(waves);
             }
             D_800C3622 = 1;
         }
@@ -454,7 +454,7 @@ void func_800B89FC(s32 mode, s32 slot, s32 targets, s32 arg3) {
         if (BATTLE_AREA.slots[slot].gear) {
             func_800BEE2C(slot, BATTLE_AREA.events[D_800C360C].targetMask, 2);
         } else {
-            func_80021BF8(sprite, func_800B9B30);
+            sprite_set_completion_callback(sprite, func_800B9B30);
             func_800BF0C4(sprite);
         }
     } else {
@@ -463,24 +463,24 @@ void func_800B89FC(s32 mode, s32 slot, s32 targets, s32 arg3) {
 }
 
 /* Finish the battle's loads: wait for the disc (800B8354), start the
- * requested loads (800BF9EC), run frames until D_80059464 is reached,
+ * requested loads (800BF9EC), run frames until task_active_main_count is reached,
  * then free the command file. */
 void func_800B8D04(void) {
     func_800B8354();
     func_800BF9EC();
-    while (D_80059464 != func_800BF720()) {
+    while (task_active_main_count != func_800BF720()) {
         func_800BE790();
     }
     func_800BF3A4();
     if (D_800C3618 != NULL) {
-        func_800320E8(D_800C3618);
+        heap_free(D_800C3618);
         D_800C3618 = NULL;
     }
 }
 
 /* Stop 8002A498 and finish the loads (800B8D04). */
 void func_800B8D7C(void) {
-    func_8002A498(0);
+    cd_stop_read(0);
     func_800B8D04();
 }
 
@@ -500,8 +500,8 @@ void func_800B8DA4(void) {
             sprite->z = (u16)BATTLE_AREA.slots[D_800C3610->slot].z << 16;
             func_800BA8F4(sprite);
             sprite->y = sprite->ground << 16;
-            func_800245D8(sprite, (s8)sprite->b0.byteb0);
-            func_80021BF8(sprite, NULL);
+            sprite_start_animation(sprite, (s8)sprite->b0.byteb0);
+            sprite_set_completion_callback(sprite, NULL);
         }
         func_800BEDE8();
     }
@@ -522,9 +522,9 @@ void func_800B8EBC(void) {
         func_80080BD0();
         DrawSync(0);
         slot = D_800C3610->field40;
-        func_80021BF8(sprite, NULL);
+        sprite_set_completion_callback(sprite, NULL);
         func_800C0314();
-        while (D_80059464 != func_800BF720()) {
+        while (task_active_main_count != func_800BF720()) {
             func_800BE790();
         }
         func_800C0564();
@@ -538,7 +538,7 @@ void func_800B8EBC(void) {
         func_800BEDE8();
         func_800BA4E0(slot);
         if (D_800C35D4) {
-            func_8003A89C((SoundSeq *)D_800C3E54, 0x7F, 0x50);
+            sound_set_seq_fade((SoundSeq *)D_800C3E54, 0x7F, 0x50);
         }
         D_800C35D4 = 0;
         for (i = 0; i != 11; i++) {
@@ -551,8 +551,8 @@ void func_800B8EBC(void) {
 
 /* Return the sprite to its idle motion. */
 void func_800B9020(Sprite *sprite) {
-    func_800245D8(sprite, (s8)sprite->b0.byteb0);
-    func_80021BF8(sprite, NULL);
+    sprite_start_animation(sprite, (s8)sprite->b0.byteb0);
+    sprite_set_completion_callback(sprite, NULL);
 }
 
 /* Start the current event: its actor acts, facing its first target. For
@@ -618,17 +618,17 @@ void func_800B9284(Sprite *sprite, s32 type) {
     switch (type) {
     case 0xFA:
         D_800C3610->field48 = 1;
-        func_80021BF8(sprite, NULL);
+        sprite_set_completion_callback(sprite, NULL);
         func_80079E18(BATTLE_AREA.events[D_800C360C].parameter);
         break;
     case 0xF8:
         D_800C3610->field48 = 1;
-        func_80021BF8(sprite, NULL);
+        sprite_set_completion_callback(sprite, NULL);
         func_80079E4C(BATTLE_AREA.events[D_800C360C].parameter);
         break;
     case 0xF7:
         D_800C3610->field48 = 1;
-        func_80021BF8(sprite, NULL);
+        sprite_set_completion_callback(sprite, NULL);
         D_800C3614 = BATTLE_AREA.events[D_800C360C].parameter;
         break;
     case 0xF5:
@@ -638,7 +638,7 @@ void func_800B9284(Sprite *sprite, s32 type) {
         sprite->motion.bytes[3] = 0x11;
         func_800BF600(parameter & 0x1FF, sprite);
         func_800BF730((s32)sprite);
-        func_800245D8(sprite, 0x13);
+        sprite_start_animation(sprite, 0x13);
         D_800C3623 = 1;
         break;
     case 0xF4:
@@ -687,15 +687,15 @@ void func_800B9508(Sprite *sprite) {
         func_800B9284(sprite, type);
         break;
     case 0xF9:
-        func_800245D8(sprite, 5);
+        sprite_start_animation(sprite, 5);
         func_800BC404(0);
         return;
     case 0xFF:
-        func_80021BF8(sprite, NULL);
+        sprite_set_completion_callback(sprite, NULL);
         D_800C3610->field48 = 1;
         if (func_800C0314() == 0) {
             if (sprite->frame_bits.field28 == 0 && !BATTLE_AREA.slots[SPRITE_SLOT(sprite)].hidden) {
-                func_800245D8(sprite, (s8)sprite->b0.byteb0);
+                sprite_start_animation(sprite, (s8)sprite->b0.byteb0);
             }
             return;
         }
@@ -703,7 +703,7 @@ void func_800B9508(Sprite *sprite) {
         D_800C3610->field48 = 0;
         sprite = func_800BEFF4(D_800C3610->turnSlot);
         func_800BF3E8(sprite);
-        func_80021BF8(sprite, func_800B9B30);
+        sprite_set_completion_callback(sprite, func_800B9B30);
         func_800BF0B4(5);
         if (FIXED_WHOLE(sprite->x) == (u16)BATTLE_AREA.slots[D_800C3610->slot].x
             && FIXED_WHOLE(sprite->z) == (u16)BATTLE_AREA.slots[D_800C3610->slot].z) {
@@ -712,7 +712,7 @@ void func_800B9508(Sprite *sprite) {
             sprite->target_x = BATTLE_AREA.slots[D_800C3610->slot].x;
             sprite->target_z = BATTLE_AREA.slots[D_800C3610->slot].z;
             sprite->target_y = 0;
-            func_800245D8(sprite, 4);
+            sprite_start_animation(sprite, 4);
         }
         return;
     case 0xFD:
@@ -720,34 +720,34 @@ void func_800B9508(Sprite *sprite) {
         if (BATTLE_AREA.events[D_800C360C].parameter == 0) {
             D_800C3610->field48 = 0;
             func_800BF0C4(sprite);
-            func_80021BF8(sprite, func_800B9B30);
+            sprite_set_completion_callback(sprite, func_800B9B30);
         }
         D_800C360C++;
         return;
     case 0xFC:
         D_800C3610->field48 = 1;
-        func_80021BF8(sprite, NULL);
-        func_80021FB8(sprite, BATTLE_AREA.events[D_800C360C].parameter);
+        sprite_set_completion_callback(sprite, NULL);
+        sprite_set_idle_animation(sprite, BATTLE_AREA.events[D_800C360C].parameter);
         D_800C360C++;
         return;
     case 0xFB:
         D_800C3610->field48 = 1;
-        func_80021BF8(sprite, NULL);
+        sprite_set_completion_callback(sprite, NULL);
         other = BATTLE_AREA.sprites[BATTLE_AREA.events[D_800C360C].parameter];
         sprite->image = other->image;
         ((SpriteSequencer *)sprite->sequencer)->size = ((SpriteSequencer *)other->sequencer)->size;
         sprite->render.word |= 0x40000000;
-        func_800320E8(sprite->renderer->parts[0]);
-        sprite->renderer->parts[1] = sprite->renderer->parts[0] = func_80031BDC(func_80031894((u8 *)other->renderer->parts[0]), 0);
+        heap_free(sprite->renderer->parts[0]);
+        sprite->renderer->parts[1] = sprite->renderer->parts[0] = heap_alloc(heap_get_block_size((u8 *)other->renderer->parts[0]), 0);
         D_800C360C++;
         return;
     default:
         partner = sprite->partner;
         D_800C3626 = 0;
         func_800B8048(sprite);
-        func_80021BF8(sprite, func_800B9B30);
+        sprite_set_completion_callback(sprite, func_800B9B30);
         ((SpriteSequencer *)sprite->sequencer)->word8 = BATTLE_AREA.events[D_800C360C].codes[SPRITE_SLOT(partner)];
-        if (!func_8001EE68(*(u8 **)sprite->image)) {
+        if (!sprite_is_cell_directory(*(u8 **)sprite->image)) {
             if (type >= 0x10) {
                 command = type - 0x10;
                 command += D_800C3630[BATTLE_AREA.slots[SPRITE_SLOT(sprite)].field2];
@@ -763,17 +763,17 @@ void func_800B9508(Sprite *sprite) {
                 if (!D_800D3350 && D_800C3618 != NULL) {
                     func_800B8354();
                     sprite->word50 = func_800BF354();
-                    func_80021BF0(sprite, (s32)D_800C3618);
+                    sprite_set_alternate_resource(sprite, (s32)D_800C3618);
                 }
                 if (D_800C3610->turnSlot == SPRITE_SLOT(sprite)) {
                     motion = ~motion;
-                    func_800245D8(sprite, motion);
+                    sprite_start_animation(sprite, motion);
                 } else {
-                    func_800245D8(sprite, motion);
+                    sprite_start_animation(sprite, motion);
                 }
             }
         } else {
-            func_800245D8(sprite, type);
+            sprite_start_animation(sprite, type);
             func_800BC460((1 << SPRITE_SLOT(sprite)) | (1 << SPRITE_SLOT(sprite->partner)));
         }
         D_800C3610->field48 = 0;
@@ -793,11 +793,11 @@ void func_800B9B30(void) {
  * mode is 0x15). */
 void func_800B9B54(Sprite *sprite, Sprite *other) {
     if (sprite != other) {
-        func_800223B0(sprite, func_800BEF24(sprite, other));
-        func_80021FE0(sprite, func_800BEF24(sprite, other));
+        sprite_set_facing(sprite, func_800BEF24(sprite, other));
+        sprite_set_direction(sprite, func_800BEF24(sprite, other));
         if ((s8)other->motion.bytes[3] != 0x15) {
-            func_800223B0(other, func_800BEF24(other, sprite));
-            func_80021FE0(other, func_800BEF24(other, sprite));
+            sprite_set_facing(other, func_800BEF24(other, sprite));
+            sprite_set_direction(other, func_800BEF24(other, sprite));
         }
     }
 }
@@ -812,7 +812,7 @@ void func_800B9C00(sprite, other)
     sprite->z = sprite->target_z << 16;
     D_800C3610->field48 = 1;
     func_800BF0B4(4);
-    func_800245D8(sprite, (s8)sprite->b0.byteb0);
+    sprite_start_animation(sprite, (s8)sprite->b0.byteb0);
     func_800B9B54(sprite, other);
 }
 
@@ -919,13 +919,13 @@ void func_800B9F78(BattleMenu *menu) {
     if (D_800C3628 != 0) {
         D_800C3628 = 0;
         if (func_800B7E94()) {
-            func_80021BF8(sprite, func_800B9B30);
+            sprite_set_completion_callback(sprite, func_800B9B30);
         } else {
             if (SPRITE_SLOT(sprite) < 3) {
                 if (D_800C3623) {
-                    func_800245D8(sprite, 0x13);
+                    sprite_start_animation(sprite, 0x13);
                 } else {
-                    func_800245D8(sprite, 0x12);
+                    sprite_start_animation(sprite, 0x12);
                 }
                 D_800C3623 = 0;
             }
@@ -945,7 +945,7 @@ void func_800B9F78(BattleMenu *menu) {
             if (SPRITE_SLOT(first) < 3 && !BATTLE_AREA.slots[SPRITE_SLOT(first)].gear
                 && BATTLE_AREA.events[D_800C360C - 1].codes[SPRITE_SLOT(first)] == 7) {
                 func_800B8048(first);
-                func_800245D8(first, 0x1B);
+                sprite_start_animation(first, 0x1B);
                 while ((s8)first->motion.bytes[3] == 0x1B) {
                     func_800BE790();
                 }
@@ -959,7 +959,7 @@ void func_800B9F78(BattleMenu *menu) {
             break;
         case 5:
             if (!BATTLE_AREA.slots[SPRITE_SLOT(sprite)].hidden) {
-                func_800245D8(sprite, (s8)sprite->b0.byteb0);
+                sprite_start_animation(sprite, (s8)sprite->b0.byteb0);
             }
             func_800BAEB8(D_800C3610->slot);
             func_800BF0B4(10);
@@ -969,14 +969,14 @@ void func_800B9F78(BattleMenu *menu) {
     }
     switch (D_800C3610->state) {
     case 7:
-        if (D_80059464 == func_800BF720()) {
+        if (task_active_main_count == func_800BF720()) {
             func_800BF0B4(4);
             D_800C3610->field48 = 1;
             func_800BF9EC();
         }
         break;
     case 10:
-        if (D_80059464 == func_800BF720()) {
+        if (task_active_main_count == func_800BF720()) {
             func_800B8EBC();
         }
         break;
@@ -984,7 +984,7 @@ void func_800B9F78(BattleMenu *menu) {
         func_800B9C78();
         break;
     case 8:
-        if (D_800C362C && D_80059464 == func_800BF720()) {
+        if (D_800C362C && task_active_main_count == func_800BF720()) {
             if (!D_800C3624) {
                 break;
             }
@@ -1031,8 +1031,8 @@ void func_800B9F78(BattleMenu *menu) {
  * restore the view (800B8D7C) and, for a gear, 800BFBA0; for a party member
  * on foot its sprite's state (800BF2B8). */
 void func_800BA4E0(s32 slot) {
-    D_80059464 = 0;
-    D_800591AC = 0;
+    task_active_main_count = 0;
+    task_new_tasks_active = 0;
     func_800B136C();
     if (BATTLE_AREA.slots[slot].gear) {
         func_800B8D7C();
@@ -1054,8 +1054,8 @@ void func_800BA59C(Sprite *sprite, s16 direction) {
 
     sprite->direction = direction;
     speed = sprite->speed >> 3;
-    sprite->speed_x = (func_8003F8CC(direction) >> 1) * speed >> 8;
-    sprite->speed_z = -((func_8003F8B0(sprite->direction) >> 1) * speed) >> 8;
+    sprite->speed_x = (gpu_get_cos(direction) >> 1) * speed >> 8;
+    sprite->speed_z = -((gpu_get_sin(sprite->direction) >> 1) * speed) >> 8;
 }
 
 /* Aim sprite's jump at its target: turn it towards the target and set the
@@ -1070,7 +1070,7 @@ void func_800BA614(Sprite *sprite) {
     s16 angle;
     s32 distance;
 
-    func_80021B04(&point, sprite->target_x, sprite->target_y, sprite->target_z);
+    sprite_set_svector(&point, sprite->target_x, sprite->target_y, sprite->target_z);
     triangle = func_800A5914(&point, sprite->word78, 4);
     if (triangle < 0) {
         triangle = func_800A579C(&point);
@@ -1117,7 +1117,7 @@ void func_800BA768(Sprite *sprite) {
     } else {
         sprite->speed = 0;
     }
-    func_80021B04(&point, sprite->target_x, sprite->target_y, sprite->target_z);
+    sprite_set_svector(&point, sprite->target_x, sprite->target_y, sprite->target_z);
     triangle = func_800A5914(&point, sprite->word78, 4);
     if (triangle < 0) {
         triangle = func_800A579C(&point);
@@ -1131,7 +1131,7 @@ void func_800BA768(Sprite *sprite) {
         sprite->speed_y += height / frames;
     }
     func_800BA59C(sprite, angle);
-    func_80022B2C(sprite);
+    sprite_move_vertically(sprite);
 }
 
 /* Put sprite on the scene's ground: its triangle and ground height. */
@@ -1160,12 +1160,12 @@ SpriteTask *func_800BA984(s32 resource, s16 clut_x, s16 clut_y, s16 texture_x, s
     SpriteTask *task;
     Sprite *sprite;
 
-    task = (SpriteTask *)func_8001D1D8(0x19C, NULL, func_800BAC50, func_800BAB0C, func_800BABDC);
+    task = (SpriteTask *)task_alloc_two_node_task(0x19C, NULL, func_800BAC50, func_800BAB0C, func_800BABDC);
     sprite = &task->sprite;
     task->task.data = sprite;
     task->auxiliary.data = sprite;
     task->auxiliary.owner = NULL;
-    func_800242F4(sprite, resource, clut_x, clut_y, texture_x, texture_y, unused5, palette_bank);
+    sprite_construct_with_palette_bank(sprite, resource, clut_x, clut_y, texture_x, texture_y, unused5, palette_bank);
     sprite->block = task;
     sprite->x = x << 16;
     sprite->y = y << 16;
@@ -1173,10 +1173,10 @@ SpriteTask *func_800BA984(s32 resource, s16 clut_x, s16 clut_y, s16 texture_x, s
     sprite->b0.byteb0 = animation;
     sprite->render.word |= 4;
     sprite->direction = direction;
-    func_80022000(sprite, 0x2000);
+    sprite_set_scale(sprite, 0x2000);
     sprite->word82 = 0x2000;
     sprite->word78 = 0;
-    func_800245D8(sprite, animation);
+    sprite_start_animation(sprite, animation);
     return task;
 }
 
@@ -1195,13 +1195,13 @@ void func_800BAB0C(Task *task) {
         point.vz = sprite->z >> 16;
         SetRotMatrix(&D_800D30BC);
         SetTransMatrix(&D_800D30BC);
-        depth = (RotTransPers(&point, &result[0], &result[0], &result[1]) >> D_80050100) + sprite->half30;
+        depth = (RotTransPers(&point, &result[0], &result[0], &result[1]) >> model_ot_depth_shift) + sprite->half30;
         if (result[1] & 0x8000) {
             depth = 0;
         }
         sprite->depth = depth;
         if ((u32)(depth - 1) < 0xFFF) {
-            func_8001E298(sprite, (u_long *)D_8005956C + depth);
+            sprite_draw(sprite, (u_long *)sprite_ot + depth);
         }
     }
 }
@@ -1213,13 +1213,13 @@ void func_800BABDC(Task *node) {
     void *parts = sprite->renderer->parts[0];
 
     if (parts != NULL) {
-        func_800320E8(parts);
+        heap_free(parts);
     }
-    func_8001CE74(&task->task);
-    func_8001D3F4(sprite);
-    func_8001CB48(&task->auxiliary);
-    func_8001CD94(&task->task);
-    func_800320E8(task);
+    task_destroy_owned_by(&task->task);
+    sprite_remove_pending(sprite);
+    task_unlink_draw_node(&task->auxiliary);
+    task_unlink_main_node(&task->task);
+    heap_free(task);
 }
 
 /* Update a sprite task (twice with double steps) unless paused. */
@@ -1227,11 +1227,11 @@ void func_800BAC50(Task *task) {
     Sprite *sprite = task->data;
 
     if (D_800C3664 == 0) {
-        func_80023210(sprite);
-        func_80022CDC(sprite);
+        sprite_vm_tick(sprite);
+        sprite_move(sprite);
         if (sprite->motion.bits.double_step) {
-            func_80023210(sprite);
-            func_80022CDC(sprite);
+            sprite_vm_tick(sprite);
+            sprite_move(sprite);
         }
     }
 }
@@ -1267,12 +1267,12 @@ void func_800BADD4(s32 slot) {
         func_800BFC80((Sprite *)task, 0, 2); /* the slot's task where a sprite is taken */
         if (slot < 3) {
             if (BATTLE_AREA.sources[slot].data != NULL) {
-                func_800320E8(BATTLE_AREA.sources[slot].data);
+                heap_free(BATTLE_AREA.sources[slot].data);
             }
             BATTLE_AREA.sources[slot].data = NULL;
         }
         task->task.destroy(&task->task);
-        func_8001CE74(&task->task);
+        task_destroy_owned_by(&task->task);
         BATTLE_AREA.sprites[slot] = NULL;
         BATTLE_AREA.tasks[slot] = NULL;
     }
@@ -1286,8 +1286,8 @@ void func_800BAEB8(s32 slot) {
 
     if ((s8)sprite->motion.bytes[3] != 0x15) {
         direction = (BATTLE_AREA.slots[slot].targetCode != 0) << 11;
-        func_800223B0(sprite, direction);
-        func_80021FE0(sprite, direction);
+        sprite_set_facing(sprite, direction);
+        sprite_set_direction(sprite, direction);
     }
 }
 
@@ -1305,14 +1305,14 @@ void func_800BAF48(s32 slot) {
 
     func_800BC404(1 << slot);
     func_800BC404(0);
-    tasks = D_80059188;
+    tasks = task_main_count;
     sprite = BATTLE_AREA.sprites[slot];
     func_800B8D7C();
-    func_800245D8(sprite, 0x16);
+    sprite_start_animation(sprite, 0x16);
     while (sprite->countdown != 0 && (s8)sprite->motion.bytes[3] == 0x16) {
         func_800BE790();
     }
-    while (D_80059188 != tasks) {
+    while (task_main_count != tasks) {
         func_800BE790();
     }
     func_800BADD4(slot);
@@ -1356,11 +1356,11 @@ void func_800BB13C(Task *task) {
             sprite->script = 0;
         }
         if (sprite->script != 0) {
-            func_80023210(sprite);
-            func_80022CDC(sprite);
+            sprite_vm_tick(sprite);
+            sprite_move(sprite);
             if (sprite->motion.bits.double_step) {
-                func_80023210(sprite);
-                func_80022CDC(sprite);
+                sprite_vm_tick(sprite);
+                sprite_move(sprite);
             }
         }
         sprite->x = object->hierarchy->translation[0] << 16;
@@ -1386,7 +1386,7 @@ void func_800BB248(Task *task) {
     point.vz = sprite->z >> 16;
     SetRotMatrix(&D_800D30BC);
     SetTransMatrix(&D_800D30BC);
-    depth = (RotTransPers(&point, &result[0], &result[0], &result[1]) >> D_80050100) + sprite->half30;
+    depth = (RotTransPers(&point, &result[0], &result[0], &result[1]) >> model_ot_depth_shift) + sprite->half30;
     if (result[1] & 0x8000) {
         depth = 0;
     }
@@ -1397,9 +1397,9 @@ void func_800BB248(Task *task) {
 void func_800BB314(Task *task) {
     SVECTOR unused; /* unused in the original; reserves 8 bytes */
 
-    func_8001CB48(task + 1);
-    func_8001CD94(task);
-    func_800320E8(task);
+    task_unlink_draw_node(task + 1);
+    task_unlink_main_node(task);
+    heap_free(task);
 }
 
 /* Create slot's sprite following its stage object (800BB13C, 800BB248),
@@ -1410,35 +1410,35 @@ void func_800BB350(u32 slot) {
     u8 saved;
 
     if (BATTLE_AREA.sprites[slot] == NULL) {
-        saved = D_800591AC;
-        D_800591AC = 0;
-        task = (SpriteTask *)func_8001D1D8(0x19C, NULL, func_800BB13C, func_800BB248, func_800BB314);
+        saved = task_new_tasks_active;
+        task_new_tasks_active = 0;
+        task = (SpriteTask *)task_alloc_two_node_task(0x19C, NULL, func_800BB13C, func_800BB248, func_800BB314);
         sprite = &task->sprite;
         sprite->block = task;
         task->task.data = sprite;
         task->auxiliary.data = sprite;
-        func_80023804(sprite);
-        func_800239A0(sprite);
+        sprite_reset_defaults(sprite);
+        sprite_attach_inline_storage(sprite);
         ((SpriteFlagBits *)&sprite->flags)->type = 4;
         sprite->block = task;
         sprite->render.word &= ~3;
         sprite->frame_bits.sequencer_owned = 0;
         ((SpriteSequencer *)sprite->sequencer)->word8 = 0;
         ((SpriteSequencer *)sprite->sequencer)->halfc = 0;
-        sprite->word82 = D_800591A8;
+        sprite->word82 = sprite_default_scale;
         sprite->x = (u16)BATTLE_AREA.slots[slot].x << 16;
         sprite->z = (u16)BATTLE_AREA.slots[slot].z << 16;
         sprite->y = 0;
         sprite->height = func_800AA600(slot);
         sprite->word82 = 0x2000;
         sprite->extent_depth = sprite->height >> 1;
-        func_80022000(sprite, 0x2000);
-        sprite->image = D_8006BE10;
+        sprite_set_scale(sprite, 0x2000);
+        sprite->image = sprite_shared_source;
         BATTLE_AREA.sprites[slot] = sprite;
         BATTLE_AREA.tasks[slot] = task;
         sprite->resource = 0;
         sprite->animations = 0;
-        D_800591AC = saved;
+        task_new_tasks_active = saved;
         sprite->frame_bits.unknown30 = slot;
         sprite->motion.bits.unknown0 = slot >> 2;
     }
@@ -1470,12 +1470,12 @@ void func_800BB540(SlotTask *task) {
 void func_800BB620(SlotTask *task) {
     u8 *stack;
 
-    if (func_800286CC() == 0) {
-        stack = func_80031BDC(0x1000, 1);
+    if (cd_get_pending_read_count() == 0) {
+        stack = heap_alloc(0x1000, 1);
         STACK_ENTER(stack + 0xF00);
         func_800BB540(task);
         STACK_LEAVE();
-        func_800320E8(stack);
+        heap_free(stack);
     }
 }
 
@@ -1484,7 +1484,7 @@ void func_800BB620(SlotTask *task) {
 void func_800BB690(SlotTask *task) {
     func_800A9540(task->slot);
     D_800C3CB8++;
-    func_8001CD6C(&task->task, (void (*)(Task *))func_800BB620);
+    task_set_update_callback(&task->task, (void (*)(Task *))func_800BB620);
 }
 
 /* Task step: once the disc and the file reads are idle, run 800BB690 on a
@@ -1492,28 +1492,28 @@ void func_800BB690(SlotTask *task) {
 void func_800BB6E0(SlotTask *task) {
     u8 *stack;
 
-    if (func_800286CC() == 0 && D_800C3CB8 == 0) {
-        stack = func_80031BDC(0x1000, 1);
+    if (cd_get_pending_read_count() == 0 && D_800C3CB8 == 0) {
+        stack = heap_alloc(0x1000, 1);
         STACK_ENTER(stack + 0xF00);
         func_800BB690(task);
         STACK_LEAVE();
-        func_800320E8(stack);
+        heap_free(stack);
     }
 }
 
 /* Start a task loading slot's gear object (800BB6E0). */
 void func_800BB760(s32 slot) {
-    u8 saved = D_800591AC;
+    u8 saved = task_new_tasks_active;
     SlotTask *task;
 
-    D_800591AC = 0;
-    D_800591AF = 1;
-    task = (SlotTask *)func_8001CD08(NULL, 4);
-    func_8001CD6C(&task->task, (void (*)(Task *))func_800BB6E0);
+    task_new_tasks_active = 0;
+    task_alloc_mode = 1;
+    task = (SlotTask *)task_alloc_main_task(NULL, 4);
+    task_set_update_callback(&task->task, (void (*)(Task *))func_800BB6E0);
     task->slot = slot;
-    D_800591AF = 0;
+    task_alloc_mode = 0;
     D_800C35D8++;
-    D_800591AC = saved;
+    task_new_tasks_active = saved;
 }
 
 /* Reset the camera modes. */
@@ -1532,7 +1532,7 @@ void func_800BB844(MATRIX *m, SVECTOR *eye, SVECTOR *target, SVECTOR *up) {
     VECTOR right;
     VECTOR upward;
 
-    func_80021B14(&v, target->vx - eye->vx, target->vy - eye->vy, target->vz - eye->vz);
+    sprite_set_vector(&v, target->vx - eye->vx, target->vy - eye->vy, target->vz - eye->vz);
     upward.vx = up->vx;
     upward.vy = up->vy;
     upward.vz = up->vz;
@@ -1590,21 +1590,21 @@ void func_800BBAB8(void) {
         func_800BC460(D_800C3678);
         break;
     case 2:
-        D_800D30A0[0].vx = D_8006F99C.vx >> 16;
-        D_800D30A0[0].vy = D_8006F99C.vy >> 16;
-        D_800D30A0[0].vz = D_8006F99C.vz >> 16;
+        D_800D30A0[0].vx = sprite_camera_eye.vx >> 16;
+        D_800D30A0[0].vy = sprite_camera_eye.vy >> 16;
+        D_800D30A0[0].vz = sprite_camera_eye.vz >> 16;
         point = &D_800D30A0[1];
-        point->vx = D_8006F9AC.vx >> 16;
-        point->vy = D_8006F9AC.vy >> 16;
-        point->vz = D_8006F9AC.vz >> 16;
+        point->vx = sprite_camera_look_at.vx >> 16;
+        point->vy = sprite_camera_look_at.vy >> 16;
+        point->vz = sprite_camera_look_at.vz >> 16;
         break;
     case 3:
         /* step holds the wanted look-at, then eye point */
         ((SVECTOR *)&step)[1].vx = ((SVECTOR *)&step)[0].vx = D_800D39EC->x >> 16;
         ((SVECTOR *)&step)[0].vy = D_800D39EC->y >> 16;
         ((SVECTOR *)&step)[0].vz = D_800D39EC->z >> 16;
-        ((SVECTOR *)&step)[1].vz = ((SVECTOR *)&step)[0].vz - func_8003F8CC(D_800C373C) * D_800C3738 / 4096;
-        ((SVECTOR *)&step)[1].vy = ((SVECTOR *)&step)[0].vy - func_8003F8B0(D_800C373C) * D_800C3738 / 4096;
+        ((SVECTOR *)&step)[1].vz = ((SVECTOR *)&step)[0].vz - gpu_get_cos(D_800C373C) * D_800C3738 / 4096;
+        ((SVECTOR *)&step)[1].vy = ((SVECTOR *)&step)[0].vy - gpu_get_sin(D_800C373C) * D_800C3738 / 4096;
         D_800D309C.eye = ((SVECTOR *)&step)[1];
         D_800D309C.target = ((SVECTOR *)&step)[0];
         break;
@@ -1684,11 +1684,11 @@ void func_800BBEE0(Task *node) {
         }
     }
     if (sprite->motion.bits.owns_children) {
-        func_8001CE74(&task->task);
+        task_destroy_owned_by(&task->task);
     }
-    func_8001CD94(&task->task);
-    func_8001CB48(&task->auxiliary);
-    func_800320E8(task);
+    task_unlink_main_node(&task->task);
+    task_unlink_draw_node(&task->auxiliary);
+    heap_free(task);
     if (--D_800C3CC4 == 0) {
         func_800BC2F0(D_800C367C);
     }
@@ -1700,29 +1700,29 @@ void func_800BBEE0(Task *node) {
 void func_800BC018(Task *task) {
     Sprite *sprite = task->data;
 
-    func_80023210(sprite);
-    func_80022CDC(sprite);
+    sprite_vm_tick(sprite);
+    sprite_move(sprite);
     if (((SpriteFlagBits *)&sprite->flags)->type == 0xA) {
-        D_8006F99C.vx = sprite->x;
-        D_8006F99C.vy = sprite->y;
-        D_8006F99C.vz = sprite->z;
+        sprite_camera_eye.vx = sprite->x;
+        sprite_camera_eye.vy = sprite->y;
+        sprite_camera_eye.vz = sprite->z;
     } else {
-        D_8006F9AC.vx = sprite->x;
-        D_8006F9AC.vy = sprite->y;
-        D_8006F9AC.vz = sprite->z;
+        sprite_camera_look_at.vx = sprite->x;
+        sprite_camera_look_at.vy = sprite->y;
+        sprite_camera_look_at.vz = sprite->z;
     }
     if (sprite->script != 0) {
         if (sprite->motion.bits.double_step) {
-            func_80023210(sprite);
-            func_80022CDC(sprite);
+            sprite_vm_tick(sprite);
+            sprite_move(sprite);
             if (((SpriteFlagBits *)&sprite->flags)->type == 0xA) {
-                D_8006F99C.vx = sprite->x;
-                D_8006F99C.vy = sprite->y;
-                D_8006F99C.vz = sprite->z;
+                sprite_camera_eye.vx = sprite->x;
+                sprite_camera_eye.vy = sprite->y;
+                sprite_camera_eye.vz = sprite->z;
             } else {
-                D_8006F9AC.vx = sprite->x;
-                D_8006F9AC.vy = sprite->y;
-                D_8006F9AC.vz = sprite->z;
+                sprite_camera_look_at.vx = sprite->x;
+                sprite_camera_look_at.vy = sprite->y;
+                sprite_camera_look_at.vz = sprite->z;
             }
             if (sprite->script == 0) {
                 task->destroy(task);
@@ -1776,8 +1776,8 @@ void func_800BC158(SpriteTask *task) {
     } else {
         sprite->direction = 0;
     }
-    func_8001CD74(&task->task, func_800BBEE0);
-    func_8001CD6C(&task->task, func_800BC018);
+    task_set_destroy_callback(&task->task, func_800BBEE0);
+    task_set_update_callback(&task->task, func_800BC018);
     func_800BC2F0(2);
 }
 
@@ -1793,13 +1793,13 @@ void func_800BC2F0(s32 mode) {
         D_800C3CBC = 5;
         break;
     case 2:
-        D_8006F99C.vx = D_800D30A0[0].vx << 16;
-        D_8006F99C.vy = D_800D30A0[0].vy << 16;
-        D_8006F99C.vz = D_800D30A0[0].vz << 16;
+        sprite_camera_eye.vx = D_800D30A0[0].vx << 16;
+        sprite_camera_eye.vy = D_800D30A0[0].vy << 16;
+        sprite_camera_eye.vz = D_800D30A0[0].vz << 16;
         point = &D_800D30A0[1];
-        D_8006F9AC.vx = point->vx << 16;
-        D_8006F9AC.vy = point->vy << 16;
-        D_8006F9AC.vz = point->vz << 16;
+        sprite_camera_look_at.vx = point->vx << 16;
+        sprite_camera_look_at.vy = point->vy << 16;
+        sprite_camera_look_at.vz = point->vz << 16;
         break;
     default:
         if (D_800C3680 != NULL) {
@@ -1819,13 +1819,13 @@ void func_800BC3F8(s32 value) {
     D_800C367C = value;
 }
 
-/* Start camera move (800BC460) unless effects are off; restore D_80059454. */
+/* Start camera move (800BC460) unless effects are off; restore mode_battle_camera_range. */
 void func_800BC404(s32 mask) {
     if (D_800C37C8 == 0) {
         func_800BC2F0(1);
         func_800BC460(mask);
     }
-    D_80059454 = D_800C3CDC;
+    mode_battle_camera_range = D_800C3CDC;
 }
 
 /* Set the camera framing pitch. */
@@ -2034,7 +2034,7 @@ void func_800BCAD0(void) {
 /* Shade the sprite by the cosine of angle (0x80 plus half, at most 0xFF)
  * and update it (8001F6B0). */
 void func_800BCAFC(Sprite *sprite, s32 angle) {
-    s32 level = func_8003F8B0(angle << 6) + 0x1000;
+    s32 level = gpu_get_sin(angle << 6) + 0x1000;
 
     level >>= 6;
     level += 0x80;
@@ -2044,7 +2044,7 @@ void func_800BCAFC(Sprite *sprite, s32 angle) {
     sprite->red = level;
     sprite->green = level;
     sprite->blue = level;
-    func_8001F6B0(sprite);
+    sprite_recolor_parts(sprite);
 }
 
 /* End the acting slot's pulse: restore its sprite's colour. */
@@ -2053,8 +2053,8 @@ void func_800BCB54(Task *task) {
 
     if (pulse != NULL) {
         pulse->sprite->colour_flags |= 1;
-        func_8001CD94(&pulse->task);
-        func_800320E8(pulse);
+        task_unlink_main_node(&pulse->task);
+        heap_free(pulse);
         D_800C3748 = NULL;
     }
 }
@@ -2067,14 +2067,14 @@ void func_800BCBB4(Task *task) {
     Sprite *sprite = pulse->sprite;
     s32 level;
 
-    level = func_8003F8B0(angle) + 0x1000;
+    level = gpu_get_sin(angle) + 0x1000;
     level >>= 6;
     level += 0x80;
     if (level >= 0x100) {
         level = 0xFF;
     }
     sprite->red = level;
-    level = func_8003F8CC(angle) + 0x1000;
+    level = gpu_get_cos(angle) + 0x1000;
     level >>= 6;
     level += 0x80;
     if (level >= 0x100) {
@@ -2082,7 +2082,7 @@ void func_800BCBB4(Task *task) {
     }
     sprite->green = level;
     sprite->blue = level;
-    func_8001F6B0(sprite);
+    sprite_recolor_parts(sprite);
     pulse->tick++;
 }
 
@@ -2100,12 +2100,12 @@ void func_800BCC60(void) {
     if (BATTLE_AREA.tasks[AREA_ACTING_SLOT] == NULL) {
         return;
     }
-    pulse = (SlotPulse *)func_8001CD08(&BATTLE_AREA.tasks[AREA_ACTING_SLOT]->task, sizeof(SlotPulse) - sizeof(Task));
+    pulse = (SlotPulse *)task_alloc_main_task(&BATTLE_AREA.tasks[AREA_ACTING_SLOT]->task, sizeof(SlotPulse) - sizeof(Task));
     D_800C3748 = pulse;
-    func_8001CD6C(&pulse->task, func_800BCBB4);
-    func_8001CD74(&pulse->task, func_800BCB54);
-    if (D_800591AC) {
-        D_80059464--;
+    task_set_update_callback(&pulse->task, func_800BCBB4);
+    task_set_destroy_callback(&pulse->task, func_800BCB54);
+    if (task_new_tasks_active) {
+        task_active_main_count--;
     }
     pulse->task.link.word &= 0x7FFFFFFF;
     pulse->sprite = sprite = BATTLE_AREA.sprites[AREA_ACTING_SLOT];
@@ -2135,13 +2135,13 @@ void func_800BCD98(u16 mask) {
     for (slot = 0; slot != 11; slot++, mask >>= 1) {
         if (mask & 1) {
             task = BATTLE_AREA.tasks[slot];
-            if (task != NULL && func_8001D0A4(&task->task, func_800BCFAC) == NULL) {
+            if (task != NULL && task_find_owned_with_update(&task->task, func_800BCFAC) == NULL) {
                 func_800BD098(task);
             }
         } else {
             task = BATTLE_AREA.tasks[slot];
             if (task != NULL) {
-                ring = func_8001D0A4(&task->task, func_800BCFAC);
+                ring = task_find_owned_with_update(&task->task, func_800BCFAC);
                 if (ring != NULL) {
                     ring->destroy(ring);
                 }
@@ -2159,18 +2159,18 @@ void func_800BCEAC(Task *draw) {
     s32 size;
 
     TransMatrix(&m, &ring->pos);
-    func_8003F738(&ring->angle, &m);
-    CompMatrix(&D_8004FBB8, &m, &m);
+    gpu_build_rotation_matrix(&ring->angle, &m);
+    CompMatrix(&sprite_view_matrix, &m, &m);
     size = ReadGeomScreen() << 12;
     if (m.t[2] != 0) {
         size /= m.t[2];
     }
     size = 0x1000000 / size / 2;
-    func_80021B14(&scale, size, size, size);
+    sprite_set_vector(&scale, size, size, size);
     ScaleMatrixL(&m, &scale);
     SetRotMatrix(&m);
     SetTransMatrix(&m);
-    func_800B1F6C(ring->script, ring->vertices[BATTLE_AREA.buffer], (u32 *)D_8005956C, 0, 0, 0);
+    func_800B1F6C(ring->script, ring->vertices[BATTLE_AREA.buffer], (u32 *)sprite_ot, 0, 0, 0);
 }
 
 /* Ring update: follow the sprite (0x20 above its top), shade it and spin. */
@@ -2192,36 +2192,36 @@ void func_800BD024(Task *task) {
     Sprite *sprite = ring->sprite;
 
     sprite->colour_flags |= 1;
-    func_8001F6B0(sprite);
-    func_80025180((u32)ring->vertices[0]);
-    func_8001CE74(task);
-    func_8001CD94(task);
-    func_800320E8(ring);
+    sprite_recolor_parts(sprite);
+    sprite_queue_free_later((u32)ring->vertices[0]);
+    task_destroy_owned_by(task);
+    task_unlink_main_node(task);
+    heap_free(ring);
 }
 
 /* Give an actor task's sprite a ring. */
 void func_800BD098(SpriteTask *owner) {
     Sprite *sprite = owner->task.data;
-    SlotRing *ring = (SlotRing *)func_8001D1D8(sizeof(SlotRing), &owner->task, func_800BCFAC, func_800BCEAC, func_800BD024);
+    SlotRing *ring = (SlotRing *)task_alloc_two_node_task(sizeof(SlotRing), &owner->task, func_800BCFAC, func_800BCEAC, func_800BD024);
     s32 size;
     u8 *vertices;
 
     ring->sprite = sprite;
     ring->height = sprite->height;
-    if (D_800591AC) {
-        D_80059464--;
+    if (task_new_tasks_active) {
+        task_active_main_count--;
     }
     ring->task.link.word &= 0x7FFFFFFF;
-    func_80021B04(&ring->angle, 0, 0, 0);
-    size = func_800B16A4((ScriptEntry *)func_800B168C(D_8001C76C, 0));
-    vertices = func_80031BDC(size * 2, 0);
-    func_800B1720(func_800B168C(D_8001C76C, 0), vertices, 0, 1);
+    sprite_set_svector(&ring->angle, 0, 0, 0);
+    size = func_800B16A4((ScriptEntry *)func_800B168C(model_slot_ring_tmd, 0));
+    vertices = heap_alloc(size * 2, 0);
+    func_800B1720(func_800B168C(model_slot_ring_tmd, 0), vertices, 0, 1);
     memcpy(vertices + size, vertices, size);
     ring->vertices[0] = vertices;
     ring->vertices[1] = vertices + size;
-    ring->script = func_800B168C(D_8001C76C, 0);
+    ring->script = func_800B168C(model_slot_ring_tmd, 0);
     sprite->colour_flags &= ~1;
-    func_8001F6B0(sprite);
+    sprite_recolor_parts(sprite);
     func_800BCFAC(&ring->task);
 }
 

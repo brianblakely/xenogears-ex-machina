@@ -55,9 +55,9 @@ s32 func_8008E190(s32 index) {
     actor->unk68 = -0x280000;
     actor->unk70 = 0;
     actor->unk6C = 0;
-    actor->heading = D_8006EE66;
+    actor->heading = game_data_flying_vehicle_heading;
     scratch = (ActorScratch *)0x1F800000;
-    switch (D_8006D634.worldmap.flags & 0x1FFF) {
+    switch (game_data.worldmap.flags & 0x1FFF) {
     case 0:
         result = 3;
         break;
@@ -112,7 +112,7 @@ s32 func_8008E190(s32 index) {
     RotMatrixYXZ(&scratch->position, &D_8009C620[0].matrix);
     RotMatrixYXZ(&scratch->position, &D_8009C620[1].matrix);
     func_8008E034(&actor->position);
-    D_8006D634.worldmap.vehicle_heading = actor->heading;
+    game_data.worldmap.vehicle_heading = actor->heading;
     switch (D_8009C5A8) {
     case 2:
         actor->state = 0x24;
@@ -146,7 +146,7 @@ s32 func_8008E4F4(s32 index) {
     D_8009C620[0].position = actor->position;
     result = 1;
     D_8009C620[0].visible = actor->unk24;
-    if (!(D_8006D634.worldmap.flags & 0x1FFF)) {
+    if (!(game_data.worldmap.flags & 0x1FFF)) {
         result = 3;
     }
     switch (D_8009BE10) {
@@ -187,7 +187,7 @@ s32 func_8008E680(s32 index) {
     actor = &D_8009BE24[index];
     func_8008DFF4(&actor->position);
     actor->position.vy = 0x80000;
-    actor->heading = D_8006D634.worldmap.vehicle_heading;
+    actor->heading = game_data.worldmap.vehicle_heading;
     actor->turn = 0x20;
     actor->unk74 = 3;
     actor->unk68 = -0x280000;
@@ -213,7 +213,7 @@ s32 func_8008E680(s32 index) {
  * from the heading it had last frame (worldmap.vehicle_heading). */
 #define VEHICLE_TURN(goal, step)                                               \
     {                                                                          \
-        delta = (goal) - D_8006D634.worldmap.vehicle_heading;                  \
+        delta = (goal) - game_data.worldmap.vehicle_heading;                  \
         if (ABS(delta) > 0x800) {                                              \
             if (delta < 0) {                                                   \
                 delta += 0x1000;                                               \
@@ -223,9 +223,9 @@ s32 func_8008E680(s32 index) {
         }                                                                      \
         if (ABS(delta) > (step)) {                                             \
             if (delta < 0) {                                                   \
-                actor->heading = D_8006D634.worldmap.vehicle_heading - (step); \
+                actor->heading = game_data.worldmap.vehicle_heading - (step); \
             } else {                                                           \
-                actor->heading = D_8006D634.worldmap.vehicle_heading + (step); \
+                actor->heading = game_data.worldmap.vehicle_heading + (step); \
             }                                                                  \
         }                                                                      \
         actor->heading &= 0xFFF;                                               \
@@ -301,8 +301,8 @@ s32 func_8008E76C(s32 index) {
         if (D_8009C170 == ++actor->unk74) {
             func_80097770(8, 9);
             VEHICLE_CAMERA();
-            D_8006D634.worldmap.flags |= 0x4000;
-            kind = D_8006D634.worldmap.flags & 0x1FFF;
+            game_data.worldmap.flags |= 0x4000;
+            kind = game_data.worldmap.flags & 0x1FFF;
             switch (kind) {
             case 1:
                 actor->state = 0xC;
@@ -327,7 +327,7 @@ s32 func_8008E76C(s32 index) {
                 D_8009BD04 = 0;
                 break;
             case 3:
-                func_8003A89C((SoundSeq *)D_80062528, 0, 0xF0);
+                sound_set_seq_fade((SoundSeq *)mode_music_seq, 0, 0xF0);
                 VEHICLE_SCRATCH->rotation.vx = actor->position.vx >> 12;
                 VEHICLE_SCRATCH->rotation.vy = actor->position.vy >> 12;
                 VEHICLE_SCRATCH->rotation.vz = actor->position.vz >> 12;
@@ -343,12 +343,12 @@ s32 func_8008E76C(s32 index) {
                 D_8009BD04 = 0;
                 break;
             }
-            D_8006D634.inGear[0] = 1;
-            if (D_8006D634.party[1] != 0xFF) {
-                D_8006D634.inGear[1] = 1;
+            game_data.inGear[0] = 1;
+            if (game_data.party[1] != 0xFF) {
+                game_data.inGear[1] = 1;
             }
-            if (D_8006D634.party[2] != 0xFF) {
-                D_8006D634.inGear[2] = 1;
+            if (game_data.party[2] != 0xFF) {
+                game_data.inGear[2] = 1;
             }
             func_80075228();
             D_8009D7D8 = (PathRegion *)-1;
@@ -376,7 +376,7 @@ s32 func_8008E76C(s32 index) {
                     actor->unk78 = hit;
                     actor->unk68 = func_80093978(actor->position.vx, actor->position.vz);
                     func_80097770(0xB, 0xA);
-                    func_8003A89C((SoundSeq *)D_80062528, 0, 0xF0);
+                    sound_set_seq_fade((SoundSeq *)mode_music_seq, 0, 0xF0);
                     actor->unk7C = 1;
                     func_800894C8(0x3C);
                     func_800894C8(0x3F);
@@ -607,19 +607,19 @@ s32 func_8008E76C(s32 index) {
             func_80097770(0xA, 0xA);
             func_80097770(4, 3);
             func_80097770(1, 3);
-            D_8006D634.inGear[0] = 1;
-            if (D_8006D634.party[1] != 0xFF) {
+            game_data.inGear[0] = 1;
+            if (game_data.party[1] != 0xFF) {
                 func_80097770(5, 3);
                 func_80097770(2, 3);
-                D_8006D634.inGear[1] = 1;
+                game_data.inGear[1] = 1;
             }
-            if (D_8006D634.party[2] != 0xFF) {
+            if (game_data.party[2] != 0xFF) {
                 func_80097770(6, 3);
                 func_80097770(3, 3);
-                D_8006D634.inGear[2] = 1;
+                game_data.inGear[2] = 1;
             }
             VEHICLE_STOP();
-            D_8006EE68 &= 0x3FFF;
+            game_data_worldmap_return_flags &= 0x3FFF;
             func_800894C8(0);
             func_800894C8(1);
             func_80075228();
@@ -641,19 +641,19 @@ s32 func_8008E76C(s32 index) {
             func_80097770(8, 0xA);
             func_80097770(1, 3);
             func_80097770(4, 3);
-            D_8006D634.inGear[0] = 1;
-            if (D_8006D634.party[1] != 0xFF) {
+            game_data.inGear[0] = 1;
+            if (game_data.party[1] != 0xFF) {
                 func_80097770(2, 3);
                 func_80097770(5, 3);
-                D_8006D634.inGear[1] = 1;
+                game_data.inGear[1] = 1;
             }
-            if (D_8006D634.party[2] != 0xFF) {
+            if (game_data.party[2] != 0xFF) {
                 func_80097770(3, 3);
                 func_80097770(6, 3);
-                D_8006D634.inGear[2] = 1;
+                game_data.inGear[2] = 1;
             }
             VEHICLE_STOP();
-            D_8006EE68 &= 0x3FFF;
+            game_data_worldmap_return_flags &= 0x3FFF;
             D_8009C620[3].visible = 0;
             D_8009C620[2].visible = 0;
             D_8009C620[1].visible = 0;
@@ -768,12 +768,12 @@ s32 func_8008E76C(s32 index) {
         break;
     case 0x2A:
         if (--actor->wait < 0) {
-            D_8006D634.map = 0x50;
-            D_8006D634.entry[2] = 1;
+            game_data.map = 0x50;
+            game_data.entry[2] = 1;
             D_8009D554 = 0;
             D_8009D7CC = 0;
             D_8009BBC4 = 1;
-            D_8006D634.entry[0] = D_8009BD38.vy;
+            game_data.entry[0] = D_8009BD38.vy;
         }
         goto circle;
     case 0x30:
@@ -812,12 +812,12 @@ s32 func_8008E76C(s32 index) {
         break;
     case 0x32:
         if (--actor->wait < 0) {
-            D_8006D634.map = 0x120;
-            D_8006D634.entry[2] = 6;
+            game_data.map = 0x120;
+            game_data.entry[2] = 6;
             D_8009D554 = 0;
             D_8009D7CC = 0;
             D_8009BBC4 = 1;
-            D_8006D634.entry[0] = D_8009BD38.vy;
+            game_data.entry[0] = D_8009BD38.vy;
         }
         goto walk;
     case 0x34:
@@ -825,8 +825,8 @@ s32 func_8008E76C(s32 index) {
         func_80097770(0xA, 0x11);
         actor->position.vy = -0x100000;
         actor->heading = 0x200;
-        actor->motion.vx = func_8003F8B0(0x200);
-        actor->motion.vz = -func_8003F8CC(actor->heading);
+        actor->motion.vx = gpu_get_sin(0x200);
+        actor->motion.vz = -gpu_get_cos(actor->heading);
         actor->wait = 0x5A;
         actor->unk78 = 0;
         VEHICLE_ORIENT();
@@ -841,7 +841,7 @@ s32 func_8008E76C(s32 index) {
         if (--actor->wait < 0) {
             actor->wait = 0x78;
             actor->state++;
-            func_80039E60((D_8006259C->id << 16) | 0x38);
+            sound_play_effect((sound_effect_bank->id << 16) | 0x38);
         }
     depart:
         actor->position.vx += actor->motion.vx * 12;
@@ -891,12 +891,12 @@ s32 func_8008E76C(s32 index) {
         goto glide;
     case 0x39:
         if (--actor->wait < 0) {
-            D_8006D634.map = 0x1F0;
+            game_data.map = 0x1F0;
             D_8009D554 = 0;
             D_8009D7CC = 0;
-            D_8006D634.entry[2] = 0;
+            game_data.entry[2] = 0;
             D_8009BBC4 = 1;
-            D_8006D634.entry[0] = D_8009BD38.vy;
+            game_data.entry[0] = D_8009BD38.vy;
         }
     glide:
         actor->position.vx += actor->motion.vx * 8;
@@ -910,7 +910,7 @@ s32 func_8008E76C(s32 index) {
     D_8009C620[0].position.vy = D_8009C620[1].position.vy = actor->position.vy >> 12;
     D_8009C620[0].position.vz = D_8009C620[1].position.vz = actor->position.vz >> 12;
     func_8008E034(&actor->position);
-    D_8006D634.worldmap.vehicle_heading = actor->heading;
+    game_data.worldmap.vehicle_heading = actor->heading;
     switch (actor->state) {
     case 2:
     case 8:

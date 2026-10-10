@@ -83,8 +83,8 @@ s32 func_80090A84(WorldmapActor *actor) {
         break;
     }
     if (D_8009CD4C & 0xF000) {
-        actor->motion.vx = func_8003F8B0(actor->heading);
-        actor->motion.vz = -func_8003F8CC(actor->heading);
+        actor->motion.vx = gpu_get_sin(actor->heading);
+        actor->motion.vz = -gpu_get_cos(actor->heading);
     }
     if (D_8009BD10 & 0x20) {
         if (D_8009D738 != 0) {
@@ -132,8 +132,8 @@ s32 func_80090C68(WorldmapActor *actor) {
         break;
     }
     if (D_8009CD4C & 0xF000) {
-        actor->motion.vx = func_8003F8B0(actor->heading);
-        actor->motion.vz = -func_8003F8CC(actor->heading);
+        actor->motion.vx = gpu_get_sin(actor->heading);
+        actor->motion.vz = -gpu_get_cos(actor->heading);
     }
     if (D_8009BD10 & 0x20) {
         if (D_8009D738 != 0) {
@@ -179,8 +179,8 @@ s32 func_80090E14(WorldmapActor *actor) {
         break;
     }
     if (D_8009CD4C & 0xF000) {
-        actor->motion.vx = func_8003F8B0(actor->heading);
-        actor->motion.vz = -func_8003F8CC(actor->heading);
+        actor->motion.vx = gpu_get_sin(actor->heading);
+        actor->motion.vz = -gpu_get_cos(actor->heading);
     }
     if (D_8009BD10 & 0x20) {
         if (D_8009BD24 != -1) {
@@ -334,9 +334,9 @@ s32 func_80090FB4(WorldmapActor *actor) {
             actor->unk60 -= 0x1000;
         }
     }
-    actor->motion.vx = func_8003F8B0(D_8009BD38.vy);
-    actor->motion.vy = func_8003F8B0(actor->unk70 >> 12);
-    actor->motion.vz = -func_8003F8CC(D_8009BD38.vy);
+    actor->motion.vx = gpu_get_sin(D_8009BD38.vy);
+    actor->motion.vy = gpu_get_sin(actor->unk70 >> 12);
+    actor->motion.vz = -gpu_get_cos(D_8009BD38.vy);
     VectorNormal(&actor->motion, &actor->motion);
     if (D_8009BD10 & 0x20) {
         if (D_8009BD24 != -1) {
@@ -947,10 +947,10 @@ end:
 /* Open the path name window. */
 s32 func_80092BE4(void) {
     D_8009BD24 = -1;
-    func_80032F54(&D_8009D498, 0x3C0, 0x180, 0xA0, 0x78, 0x20, 1);
+    window_open(&D_8009D498, 0x3C0, 0x180, 0xA0, 0x78, 0x20, 1);
     D_8009D498.unk68 = 8;
     D_8009D498.flags |= 2;
-    func_80034614(&D_8009D498);
+    window_reset_if_idle(&D_8009D498);
     return 1;
 }
 
@@ -962,39 +962,39 @@ s32 func_80092C70(s32 index) {
     switch (actor->state) {
     case 0:
         if (D_8009BD24 != -1) {
-            func_80034614(&D_8009D498);
-            func_80034714(&D_8009D498, func_80033728(D_8009D784, D_8009BD24));
+            window_reset_if_idle(&D_8009D498);
+            window_queue_message(&D_8009D498, text_get_resource_entry(D_8009D784, D_8009BD24));
             actor->state = 1;
             actor->u.step = D_8009BD24;
         }
         break;
     case 1:
         if (D_8009BD24 == -1) {
-            func_80034614(&D_8009D498);
+            window_reset_if_idle(&D_8009D498);
             actor->state = 0;
         } else if (D_8009BD24 != actor->u.step) {
-            func_80034614(&D_8009D498);
-            func_80034714(&D_8009D498, func_80033728(D_8009D784, D_8009BD24));
+            window_reset_if_idle(&D_8009D498);
+            window_queue_message(&D_8009D498, text_get_resource_entry(D_8009D784, D_8009BD24));
             actor->u.step = D_8009BD24;
         }
         break;
     }
-    func_80034888(&D_8009D498, D_8009BE3C->ot, D_8009D7F0);
+    window_draw_frame(&D_8009D498, D_8009BE3C->ot, D_8009D7F0);
     return 1;
 }
 
 /* Close the path name window. */
 void func_80092DD0(void) {
-    func_800346D4(&D_8009D498);
+    window_close(&D_8009D498);
 }
 
 /* Open the destination-name window and build its marker quad (both display copies). */
 s32 func_80092DF8(void) {
     D_8009CE68 = -1;
-    func_80032F54(&D_8009BD64, 0x3C0, 0x18D, 0xA0, 0x78, 0x20, 4);
+    window_open(&D_8009BD64, 0x3C0, 0x18D, 0xA0, 0x78, 0x20, 4);
     D_8009BD64.unk68 = 8;
     D_8009D498.flags |= 2;
-    func_80034614(&D_8009BD64);
+    window_reset_if_idle(&D_8009BD64);
     setlen(&D_8009D2B8[0], 9);
     D_8009D2B8[0].code = 0x2C;
     setXY4(&D_8009D2B8[0], 0x98, 0x70, 0x128, 0x70, 0x98, 0xB4, 0x128, 0xB4);
@@ -1022,24 +1022,24 @@ s32 func_80092FD8(s32 index) {
     switch (actor->state) {
     case 0:
         if (D_8009CE68 != -1) {
-            func_80034614(&D_8009BD64);
-            func_80034714(&D_8009BD64, func_80033728(D_8009D784, D_8009CE68));
+            window_reset_if_idle(&D_8009BD64);
+            window_queue_message(&D_8009BD64, text_get_resource_entry(D_8009D784, D_8009CE68));
             actor->state = 1;
             actor->u.step = D_8009CE68;
         }
         break;
     case 1:
         if (D_8009CE68 == -1) {
-            func_80034614(&D_8009BD64);
+            window_reset_if_idle(&D_8009BD64);
             actor->state = 0;
         } else if (D_8009CE68 != actor->u.step) {
-            func_80034614(&D_8009BD64);
-            func_80034714(&D_8009BD64, func_80033728(D_8009D784, D_8009CE68));
+            window_reset_if_idle(&D_8009BD64);
+            window_queue_message(&D_8009BD64, text_get_resource_entry(D_8009D784, D_8009CE68));
             actor->u.step = D_8009CE68;
         }
         break;
     }
-    func_80034888(&D_8009BD64, D_8009BE3C->ot, D_8009D7F0);
+    window_draw_frame(&D_8009BD64, D_8009BE3C->ot, D_8009D7F0);
     if (actor->state == 1) {
         addPrim(D_8009BE3C->ot, &D_8009D2B8[D_8009D7F0]);
     }
@@ -1048,7 +1048,7 @@ s32 func_80092FD8(s32 index) {
 
 /* Close the destination name window. */
 void func_800931B0(void) {
-    func_800346D4(&D_8009BD64);
+    window_close(&D_8009BD64);
 }
 
 /* Build `steps` fades of 256 CLUT entries towards `colour`; zero entries stay
@@ -1274,22 +1274,22 @@ s32 func_80093A5C(s32 x, s32 z) {
     z0 = iz << 9;
     phase_x = D_8009C5BC + x0;
     phase_z = D_8009C618 + z0;
-    amplitude = (func_8003F8B0(phase_z) << 4) >> 3;
-    scratch->corners[0].vy = (func_8003F8B0(phase_x) * amplitude >> 20) + ((s8 *)cell)[0] * 8;
+    amplitude = (gpu_get_sin(phase_z) << 4) >> 3;
+    scratch->corners[0].vy = (gpu_get_sin(phase_x) * amplitude >> 20) + ((s8 *)cell)[0] * 8;
     x1 = (ix + 1) << 9;
     phase_x = D_8009C5BC + x1;
     phase_z = D_8009C618 + z0;
-    amplitude = (func_8003F8B0(phase_z) << 4) >> 3;
-    scratch->corners[1].vy = (func_8003F8B0(phase_x) * amplitude >> 20) + ((s8 *)cell)[4] * 8;
+    amplitude = (gpu_get_sin(phase_z) << 4) >> 3;
+    scratch->corners[1].vy = (gpu_get_sin(phase_x) * amplitude >> 20) + ((s8 *)cell)[4] * 8;
     z1 = (iz + 1) << 9;
     phase_x = D_8009C5BC + x0;
     phase_z = D_8009C618 + z1;
-    amplitude = (func_8003F8B0(phase_z) << 4) >> 3;
-    scratch->corners[2].vy = (func_8003F8B0(phase_x) * amplitude >> 20) + ((s8 *)cell)[0x24] * 8;
+    amplitude = (gpu_get_sin(phase_z) << 4) >> 3;
+    scratch->corners[2].vy = (gpu_get_sin(phase_x) * amplitude >> 20) + ((s8 *)cell)[0x24] * 8;
     phase_x = D_8009C5BC + x1;
     phase_z = D_8009C618 + z1;
-    amplitude = (func_8003F8B0(phase_z) << 4) >> 3;
-    scratch->corners[3].vy = (func_8003F8B0(phase_x) * amplitude >> 20) + ((s8 *)cell)[0x28] * 8;
+    amplitude = (gpu_get_sin(phase_z) << 4) >> 3;
+    scratch->corners[3].vy = (gpu_get_sin(phase_x) * amplitude >> 20) + ((s8 *)cell)[0x28] * 8;
     cx = (u16)(x / 8);
     cz = (u16)(z / 8);
     if (cell[1] & 0x80) {
@@ -1438,8 +1438,8 @@ void func_800941C4(VECTOR *from, VECTOR *to, VECTOR *direction, s16 *heading) {
 
     x = to->vx;
     *heading = (ratan2(to->vz - from->vz, x - from->vx) + 0x400) & 0xFFF;
-    direction->vx = func_8003F8B0(*heading);
-    direction->vz = -func_8003F8CC(*heading);
+    direction->vx = gpu_get_sin(*heading);
+    direction->vz = -gpu_get_cos(*heading);
 }
 
 /* Find the region of path table `table` containing the position: a path becomes current, a destination (kind 4) is recorded. */

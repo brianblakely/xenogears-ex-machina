@@ -7,15 +7,15 @@ semantics. [sprite_vm.py](../../tools/analysis/sprite_vm.py) decodes the scripts
 with opcode tables read from those cases, and its tests check the tables against
 the `decomp/src` switch labels and the C length table.
 
-- **Interpreters:** resident `func_800248D4` (`sprite_800248D4.c`) runs commands
-  until one takes time. Resident `func_80023210` calls it once the halfword countdown
-  (`+9e`) reaches 0, ticking skip + 1 times per frame. While `D_800591AD` is set
+- **Interpreters:** resident `sprite_vm_run` (`sprite_vm_draw.c`) runs commands
+  until one takes time. Resident `sprite_vm_tick` calls it once the halfword countdown
+  (`+9e`) reaches 0, ticking skip + 1 times per frame. While `sprite_in_battle` is set
   (battle `800B8840` to `800B8774`), it hands every sprite to the battle overlay's
-  copy `func_800C11CC` (`battle_800C11CC.c`). Resident `func_80022660`
-  (`sprite_80022090.c`) replays frame commands untimed when the facing group changes.
+  copy `func_800C11CC` (`battle_800C11CC.c`). Resident `sprite_vm_replay_frames`
+  (`sprite_construction.c`) replays frame commands untimed when the facing group changes.
 - **Dispatch:** 800248d4's switch table is at `800186e0` (80-fa) and 800c11cc's at
   `80070c14` (80-fb, then the 10 `f8` conditions). Both fall back to the generic
-  commands `func_8001FBE4` (`sprite.c`, 8a-fc), which `c8` also runs and which holds
+  commands `sprite_vm_run_generic_command` (`sprite.c`, 8a-fc), which `c8` also runs and which holds
   the 39 `bc` selectors. `func_800B3F04` (`battle_800B3F04.c`, table `80070850`)
   implements battle commands 01-6b (all but 39) for `c3`, `ec`, `f9` and `e8`.
 - **Format:** a command is one opcode byte followed by little-endian operands.
@@ -24,8 +24,8 @@ the `decomp/src` switch labels and the C length table.
     the frame. Each waits `(op & f) + 1` frames scaled by the sprite's divisor.
     `40`-`7f` set no duration; the original reads a stale register.
   - A handler at `80`-`ff` that keeps the script pointer then advances it by the
-    resident length table `D_8004FCC0[op - 0x80]` (`sprite_80022090.c`; the battle
-    copy reads the same bytes as `D_8004FC40[op]`): `80`-`9f` 1, `a0`-`c7` 2,
+    resident length table `sprite_vm_command_lengths[op - 0x80]` (`sprite_construction.c`; the battle
+    copy reads the same bytes as `sprite_vm_command_lengths_by_opcode[op]`): `80`-`9f` 1, `a0`-`c7` 2,
     `c8`-`f0` 3, `f1`-`ff` 4.
   - Jumps (`d4`, `e1`, `e2`, `e4`, `fa`, battle `f8` and `fb`), `cc` and `e3` count
     from the command's first byte. `e0`, `ca`, `cb` and the 24-bit offsets (`f3`,
@@ -61,7 +61,7 @@ the `decomp/src` switch labels and the C length table.
     file raw and unpacked, and the packed entries of offset tables.
   - 800248d4 runs the blocks in directories 4 and 36 (field and world map).
     800c11cc runs those the battle overlay reads (13, 14, 32, 42, 44 and 45,
-    through `func_80028470` groups `0c`, `10`, `20`, `28` and `2c`). The boot
+    through `cd_select_directory` groups `0c`, `10`, `20`, `28` and `2c`). The boot
     executables hold none.
 - **Coverage** (both discs, 2026-10-08):
 

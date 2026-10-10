@@ -1,21 +1,21 @@
 # Text control codes
 
-- Interpreter: `func_80033DF0` (decomp/src/resident/main2.c), the reveal step
-  of message windows (`func_80034888`) and one-line layouts (`func_80034EAC`).
+- Interpreter: `window_reveal_text` (decomp/src/resident/main2.c), the reveal step
+  of message windows (`window_draw_frame`) and one-line layouts (`window_render_text_line`).
 - Dispatch: bytes 00, 01, 02, 03 and 0F are controls; 0F takes a sub-code
   through the 16-entry jump table at 0x80018A7C (cases 0-15). Other bytes are
-  glyphs, two bytes long from the font's threshold `D_8005934C` (font halfword
+  glyphs, two bytes long from the font's threshold `text_font_two_byte_threshold` (font halfword
   2, 0xFE on both discs) up.
 - Controls: 20 defined (4 bytes, 16 sub-codes), each commented in
-  `func_80033DF0` and listed in `tools/analysis/text_control.py`. A sub-code of
+  `window_reveal_text` and listed in `tools/analysis/text_control.py`. A sub-code of
   16 or more matches no case and leaves the pointer on the 0F: the window
   stalls, so the parser reports it as undecodable.
-- Sources: windows get text only through `func_80034714` (queue),
-  `func_80034EAC` (one-line layout) and the insertions (`func_80033DD4`). The
+- Sources: windows get text only through `window_queue_message` (queue),
+  `window_render_text_line` (one-line layout) and the insertions (`window_insert_text`). The
   122 calls in decomp/src pass entries of the tables below or text built at
   run time; no function still linked as assembly calls them.
 - Tables (a count, 0, count + 1 offsets and count (columns, rows) pairs, read
-  by `func_80033728`): field messages (map bundle component 7, D_800ADBF0),
+  by `text_get_resource_entry`): field messages (map bundle component 7, D_800ADBF0),
   system data (`MES SYSDATA`, except the character pairs of resource 27), menu
   labels and menu data (directory 0x10 files 1 and 2; the world map loads the
   menu resources from its own file 0x26, byte-identical to file 1 on both
@@ -23,10 +23,10 @@
   battle event scripts (ovl3087) and world map areas.
 - Run-time text (numbers, names, name entry, saved names) comes from
   character codes through the byte pairs of system resource 27
-  (`func_80033ABC`/`func_80033B34`). Of its 0x144 codes, 95 give a one-byte
+  (`text_decode_codes_to_buffer`/`text_decode_codes`). Of its 0x144 codes, 95 give a one-byte
   glyph and 229 an empty pair that writes 00 and ends the text, so such text
   holds only glyphs. The initial names (directory 0x10 file 3, decoded by
-  `func_8001B970`) use codes inside the table.
+  `mode_load_initial_game_data`) use codes inside the table.
 
 ```sh
 python3 -m tools.analysis.text_control --sweep    # aggregate, both discs
@@ -46,7 +46,7 @@ characters and every other glyph as its hex code in braces (`{58}Whoa{57}`). A l
 at the top names the characters. The tool holds no font map; `character_map` reads
 it from three sources:
 
-- The number code. `func_80033CF0` writes a number's digits as the codes
+- The number code. `text_format_number` writes a number's digits as the codes
   palette × 16 + digit and its sign as palette × 16 + 10 (negative) or + 11. The
   window controls pass palettes 0 and 1. The menus write the blank of a number's
   leading zeros as code 0xC3 (slot39 `func_801DC3D8`, ovl2601 `func_801CDD14`,
@@ -128,7 +128,7 @@ Notes from the handler:
   control. Once the file's bytes are used up (`D_800AF780`), every further
   line is blank.
 - Source: directory (4, 0) files 0xAB and 0xAC, loaded by `func_800AC308`
-  from `func_800ACC58` when `D_8004F300` is set. Only field ext `be`
+  from `func_800ACC58` when `mode_staff_roll_enabled` is set. Only field ext `be`
   (`enable_movie_overlay`, `func_80087C0C`) sets it, and no reachable field
   script on either disc uses that event (`python3 -m tools.analysis.events
   --sweep`).

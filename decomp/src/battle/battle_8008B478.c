@@ -553,7 +553,7 @@ u8 func_8008C81C(u8 member) {
     }
     n = 0;
     for (i = 0; i < 7; i++) {
-        if (func_80089C6C(D_8006D634.skills[D_80059468[member]].counterSkills, i)) {
+        if (func_80089C6C(game_data.skills[mode_battle_party_ids[member]].counterSkills, i)) {
             steps[n] = i;
             costs[n] = D_800CCCE8.partyCommands[member][i + 7].apCost;
             n++;

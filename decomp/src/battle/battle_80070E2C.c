@@ -320,7 +320,7 @@ void func_80070E2C(void) {
         block = func_8008ABB8(4, 1);
         D_800D3284 = block;
         D_800D328C = func_8008ABB8(block - 0x801E5000, 1);
-        func_800295D8(1, (void *)0x801E5000, 0, 0x80);
+        cd_read_file(1, (void *)0x801E5000, 0, 0x80);
         func_8008AC50();
         func_801E5160();
     }
@@ -342,13 +342,13 @@ void func_80070EDC(void) {
         handled = func_801E563C();
     }
     if ((handled & 0xFF) == 0 && D_800C48EA == 0x81) {
-        func_8003A89C((SoundSeq *)D_800C3E54, 0, 0xF0);
+        sound_set_seq_fade((SoundSeq *)D_800C3E54, 0, 0xF0);
     }
 }
 
 /* The battle: allocate the battle state, load the modules and the scene,
  * run turns until an outcome or an exit is set, then settle the outcome
- * (result code in D_800594D0) and hand over to the 801de000 module. */
+ * (result code in mode_result_code) and hand over to the 801de000 module. */
 void func_80070F40(void) {
     s32 span;
     s32 block;
@@ -364,43 +364,43 @@ void func_80070F40(void) {
     bzero((u_char *)D_800C3EA4, 0xA2B4);
     bzero((u_char *)D_800D2D28, 0x10C);
     bzero((u_char *)D_800C3EAC, 0x2F8);
-    D_8005959C = 0;
+    mode_battle_debug_page = 0;
     D_800C3E28[1] = 0xFF;
     D_800C3E28[0] = 0xFF;
     D_800D366C = 0;
-    D_800C3E54 = D_80062528;
-    if (D_8005947C != 0) {
-        D_80059508 = D_8005947C - 1;
-        if (D_80059180 != 0) {
-            D_80059180 = 0;
-            func_8003A89C((SoundSeq *)D_80062528, 0x7F, 0x3C);
+    D_800C3E54 = mode_music_seq;
+    if (mode_pending_battle_formation != 0) {
+        formation_selected_index = mode_pending_battle_formation - 1;
+        if (mode_result_fanfare_started != 0) {
+            mode_result_fanfare_started = 0;
+            sound_set_seq_fade((SoundSeq *)mode_music_seq, 0x7F, 0x3C);
         }
-        if (D_800594F8 == 0) {
-            D_8005947C = 0;
+        if (mode_battle_standalone == 0) {
+            mode_pending_battle_formation = 0;
         }
     }
-    if (D_800594F8 != 0) {
-        func_80028470(0x10, 2);
+    if (mode_battle_standalone != 0) {
+        cd_select_directory(0x10, 2);
         block = func_8008ABB8(4, 1);
         span = func_8008ABB8(block - 0x801E0000, 1);
-        func_800295D8(1, (void *)0x801E0000, 0, 0x80);
-        func_80028A60(0);
-        func_800320E8((void *)block);
-        func_800320E8((void *)span);
-        if (D_8005947C == 0) {
+        cd_read_file(1, (void *)0x801E0000, 0, 0x80);
+        cd_sync_reads(0);
+        heap_free((void *)block);
+        heap_free((void *)span);
+        if (mode_pending_battle_formation == 0) {
             func_801E0A34();
         } else {
-            D_80059508 = D_8005947C - 1;
-            D_8005947C = 0;
+            formation_selected_index = mode_pending_battle_formation - 1;
+            mode_pending_battle_formation = 0;
         }
     }
-    if (*D_8005917C != -1) {
-        func_80028470(0x10, 2);
-        func_800295D8(6, (void *)0x80280000, 0, 0x80);
-        func_80028A60(0);
+    if (*mode_disc_mode_pointer != -1) {
+        cd_select_directory(0x10, 2);
+        cd_read_file(6, (void *)0x80280000, 0, 0x80);
+        cd_sync_reads(0);
     }
-    memmove(&D_8006F9DC, &D_800658DC.formations[D_80059508], sizeof(BattleFormation));
-    func_800B8098(D_8005954C);
+    memmove(&formation_active, &formation_encounter_set.formations[formation_selected_index], sizeof(BattleFormation));
+    func_800B8098(mode_battle_kind);
     func_8007252C();
     D_800C3E4C = 2;
     func_800B81BC(D_800C3DEC);
@@ -408,11 +408,11 @@ void func_80070F40(void) {
     if (D_800C3D48 == 0) {
         func_800B39C0(0x14, 2, 0, 0, 0);
     }
-    if (D_800594F8 != 0) {
-        D_800C3E54 = func_800397FC(D_80062648, 0x7F, 0);
+    if (mode_battle_standalone != 0) {
+        D_800C3E54 = sound_create_and_play_seq(mode_music_buffer, 0x7F, 0);
     }
-    D_800D3364 = (Formation *)D_8005949C;
-    D_800C3EB0.formation = (Formation *)D_8005949C;
+    D_800D3364 = (Formation *)mode_battle_scene_file;
+    D_800C3EB0.formation = (Formation *)mode_battle_scene_file;
     func_80077990();
     D_800D3298 = 1;
     func_800BC404(D_800D39DC);
@@ -421,13 +421,13 @@ void func_80070F40(void) {
     while (D_800CCC58 == 0) {
         func_800716D8();
     }
-    func_800320E8(D_800595D0);
-    if (D_8005954C != 4) {
-        func_8003A094(D_800595D0);
+    heap_free(mode_battle_effect_bank);
+    if (mode_battle_kind != 4) {
+        sound_stop_bank_effects(mode_battle_effect_bank);
     }
-    func_8003852C(D_800595D0);
-    func_800320E8(D_80059480);
-    func_800320E8(D_800594AC);
+    sound_remove_effect_bank(mode_battle_effect_bank);
+    heap_free(mode_battle_heap_marker);
+    heap_free(mode_battle_heap_reservation);
     func_80070E2C();
     func_80070EB0(1);
     if (D_800D2FC4 == 0) {
@@ -436,8 +436,8 @@ void func_80070F40(void) {
     func_8009892C();
     for (i = 0; i < 3; i++) {
         if (D_800D2D24[i] != 0x7F) {
-            D_800C3E0C[i].counterSkills = D_8006D634.skills[D_800D2D24[i]].counterSkills;
-            D_800C3E0C[i].levelSkills = D_8006D634.skills[D_800D2D24[i]].levelSkills;
+            D_800C3E0C[i].counterSkills = game_data.skills[D_800D2D24[i]].counterSkills;
+            D_800C3E0C[i].levelSkills = game_data.skills[D_800D2D24[i]].levelSkills;
         }
     }
     while (D_800C48EA == 0 && D_800D2FC4 == 0) {
@@ -455,12 +455,12 @@ void func_80070F40(void) {
         result = 2;
     } else if (D_800C3D5C != 0) {
         result = 3;
-        D_800594D0 = result;
+        mode_result_code = result;
         *state = 1;
     }
     switch (result) {
     case 0:
-        D_800594D0 = 0;
+        mode_result_code = 0;
         mode = 0;
     case 3:
         if (D_800C3D48 != 0) {
@@ -482,11 +482,11 @@ void func_80070F40(void) {
         }
         break;
     case 1:
-        D_800594D0 = 2;
+        mode_result_code = 2;
         mode = 2;
         break;
     case 2:
-        D_800594D0 = 1;
+        mode_result_code = 1;
         mode = 1;
         break;
     }
@@ -494,27 +494,27 @@ void func_80070F40(void) {
     if (D_800D2D50 != 0) {
         mode = 1;
     }
-    func_80028470(0x10, 0);
+    cd_select_directory(0x10, 0);
     D_800D2D3C = func_8008ABB8(4, 1);
     D_800D2F60 = func_8008ABB8(D_800D2D3C - 0x801DE000, 1);
-    func_800295D8(4, (void *)0x801DE000, 0, 0x80);
+    cd_read_file(4, (void *)0x801DE000, 0, 0x80);
     func_800B853C(mode);
     while (D_800CCC58 != 0) {
         func_800716D8();
     }
-    if (D_800C3D48 == 0 && !(D_800C48EA & 0x40) && !(D_8006F9DC.flags & 8)) {
+    if (D_800C3D48 == 0 && !(D_800C48EA & 0x40) && !(formation_active.flags & 8)) {
         func_800B39C0(0x40, 2, 0x40, 0x40, 0x40);
     }
     func_80070EDC();
     func_801E252C();
-    func_800320E8((void *)D_800D2D3C);
-    func_800320E8((void *)D_800D2F60);
+    heap_free((void *)D_800D2D3C);
+    heap_free((void *)D_800D2F60);
 }
 
 /* One battle frame: the 80280000 module's hook when present, then the task
  * runner. */
 s32 func_800716D8(void) {
-    if (*D_8005917C != -1) {
+    if (*mode_disc_mode_pointer != -1) {
         func_8028022C();
     }
     func_800BE790();
@@ -587,7 +587,7 @@ void func_80071964(void) {
 
     if (D_800D2C94.message != 0 && (D_800D2C94.targets & D_800C48E8) == 0) {
         frames = 3;
-        D_800D39B8.width = func_80034EAC(func_80033728(D_800D39F0, D_800D2C94.message),
+        D_800D39B8.width = window_render_text_line(text_get_resource_entry(D_800D39F0, D_800D2C94.message),
                                          D_800D39B8.pixels, 0x39, 1);
         LoadImage(&D_800D39B8.rect, (u_long *)D_800D39B8.pixels);
         do {
@@ -687,7 +687,7 @@ void func_80071B94(u8 mode) {
             actor = D_800C3EAC->actor;
             if (!(D_800C3EB4[actor].hidden & 0x80) && !(D_800CCCE8.records[actor].pilot.flags34 & 0x400)) {
                 D_800D2D28->windows[5] = 1;
-                D_800D36C8[0].width = func_80034EAC(func_80033728(D_800C3DDC, D_800C3E40[D_800C3EAC->actor - 3]),
+                D_800D36C8[0].width = window_render_text_line(text_get_resource_entry(D_800C3DDC, D_800C3E40[D_800C3EAC->actor - 3]),
                                                     D_800D36C8[0].pixels, 0x39, 0);
                 func_800769E8(&D_800D36C8[0].rect, D_800D36C8[0].pixels);
                 D_800D36C8[0].shown = 1;
@@ -722,7 +722,7 @@ void func_80071B94(u8 mode) {
                     func_80080C94(actor);
                 }
                 if (D_800C3EAC->unk2EA != 0) {
-                    D_8005941C++;
+                    mode_battle_turn_count++;
                 }
                 D_800D36C0 = D_800C3EAC->actor;
                 D_800D2D28->unk97 = 0;
@@ -1154,11 +1154,11 @@ void func_80073538(void) {
             D_800D2D28->unkCC[member] = 1;
             break;
         case 1:
-            D_800D2D28->statusParts[3] = func_80025FA8(D_800D2F5C, 0x52, D_800C3EA4->status[3][0], D_800CCB04.buffer,
+            D_800D2D28->statusParts[3] = sprite_sheet_draw_rotated(D_800D2F5C, 0x52, D_800C3EA4->status[3][0], D_800CCB04.buffer,
                                             0x10, 0x98, 0x1000, 0x1000, 0xC00);
             first = D_800D2D28->statusParts[3];
             start = first * 2;
-            D_800D2D28->statusParts[3] += func_80025FA8(D_800D2F5C, 0x53, D_800C3EA4->status[3][first],
+            D_800D2D28->statusParts[3] += sprite_sheet_draw_rotated(D_800D2F5C, 0x53, D_800C3EA4->status[3][first],
                                              D_800CCB04.buffer, 0x10, 0x98, 0x1000, 0x1000, 0xC00);
             for (part = start; part < D_800D2D28->statusParts[3] * 2; part += 2) {
                 func_80076C34(&D_800C3EA4->status[3][0][part + D_800CCB04.buffer]);
@@ -1486,7 +1486,7 @@ void func_80074F70(void) {
         AddPrim(D_800CCB04.ot + 1, &D_800D3278->quads[D_800D3278->portraitBuffer]);
     }
     if (D_800D2D28->messageShown != 0) {
-        func_80034888(D_800D2DAC, (u_long *)D_800CCB04.ot + 1, D_800CCB04.buffer);
+        window_draw_frame(D_800D2DAC, (u_long *)D_800CCB04.ot + 1, D_800CCB04.buffer);
     }
 }
 
@@ -1652,7 +1652,7 @@ void func_80076418(void) {
 /* Battle end, outcome state 0: leave the result screens (8008fad8), run the
  * post-battle module's exit and release the battle display. */
 void func_800764B4(void) {
-    D_8005959C = 0;
+    mode_battle_debug_page = 0;
     func_8008FAD8();
     func_801DE594();
     func_80073FB8();
@@ -1741,11 +1741,11 @@ void func_80076710(s32 member) {
     }
     D_800D2D28->unkA9 = 0;
     D_800D2D28->statusParts[3] = 0;
-    D_800D2D28->statusParts[3] = func_80025FA8(D_800D2F5C, 0x52, D_800C3EA4->status[3][0], D_800CCB04.buffer, x[0], y[0],
+    D_800D2D28->statusParts[3] = sprite_sheet_draw_rotated(D_800D2F5C, 0x52, D_800C3EA4->status[3][0], D_800CCB04.buffer, x[0], y[0],
                                        D_800D2D28->unk104, D_800D2D28->unk104, D_800D2D28->unk106);
     first = D_800D2D28->statusParts[3];
     start = first * 2;
-    D_800D2D28->statusParts[3] += func_80025FA8(D_800D2F5C, 0x53, D_800C3EA4->status[3][first],
+    D_800D2D28->statusParts[3] += sprite_sheet_draw_rotated(D_800D2F5C, 0x53, D_800C3EA4->status[3][first],
                                         D_800CCB04.buffer, x[0], y[0], D_800D2D28->unk104, D_800D2D28->unk104,
                                         D_800D2D28->unk106);
     for (part = start; part < D_800D2D28->statusParts[3] * 2; part += 2) {
@@ -1773,12 +1773,12 @@ void func_800769E8(RECT *rect, u32 *pixels) {
 
 /* Build glyph `id` as primitives at `prims`, full scale. */
 s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y) {
-    return func_8002675C(D_800D2F5C, id, prims, D_800CCB04.buffer, x, y, 0x1000);
+    return sprite_sheet_draw_scaled(D_800D2F5C, id, prims, D_800CCB04.buffer, x, y, 0x1000);
 }
 
 /* Build glyph `id` as primitives at `prims`, half scale. */
 s32 func_80076A6C(s32 id, POLY_FT4 *prims, s16 x, s16 y) {
-    return func_8002675C(D_800D2F5C, id, prims, D_800CCB04.buffer, x, y, 0x800);
+    return sprite_sheet_draw_scaled(D_800D2F5C, id, prims, D_800CCB04.buffer, x, y, 0x800);
 }
 
 /* Initialise a textured quad: raw texture, opaque. */
@@ -1794,7 +1794,7 @@ void func_80076B00(POLY_FT4 *prim) {
     prim->r0 = 0x80;
     prim->g0 = 0x80;
     prim->b0 = 0x80;
-    if (D_800595A0 != 0) {
+    if (window_semi_transparency_mode != 0) {
         prim->tpage |= 0x40;
     } else {
         prim->tpage &= ~0x40;
@@ -1904,7 +1904,7 @@ void func_80076D58(POLY_FT4 *prims, u8 alternate, u8 page) {
             prims[i].tpage = GetTPage(0, 0, 0x3C0, 0);
             break;
         }
-        prims[i].clut = alternate != 0 ? D_80059414 : D_800595D4;
+        prims[i].clut = alternate != 0 ? text_plane1_clut : text_plane0_clut;
     }
 }
 
@@ -1922,8 +1922,8 @@ void func_80076EA4(void) {
         image = (u32 *)func_8008AC00(0x1B);
         images[i].pixels = image;
         bzero((u_char *)image, 0x30C);
-        D_800D2F68[i].w = func_80034EAC(func_800338D8(i + 10), images[i].pixels, 0x1B, 0);
-        D_800D2F68[i + 11].w = func_80034EAC(func_800338D8(i + 21), images[i].pixels, 0x1B, 1);
+        D_800D2F68[i].w = window_render_text_line(text_get_battle_message(i + 10), images[i].pixels, 0x1B, 0);
+        D_800D2F68[i + 11].w = window_render_text_line(text_get_battle_message(i + 21), images[i].pixels, 0x1B, 1);
         D_800D2F68[i].u = D_800D2F68[i + 11].u = 0x78;
         D_800D2F68[i].v = D_800D2F68[i + 11].v = i * 0xD + 0xD;
         D_800D2F68[i].alternate = 0;
@@ -1935,7 +1935,7 @@ void func_80076EA4(void) {
         func_800769E8(&rect, images[i].pixels);
     }
     for (i = 0; i < 11; i++) {
-        func_800320E8(images[i].pixels);
+        heap_free(images[i].pixels);
     }
     for (i = 0; i < 10; i++) {
         rect.x = i * 2 + 0x3DE;
@@ -2000,21 +2000,21 @@ void func_80077454(u8 window) {
     block = D_800D2E38[window];
     for (i = 0; i < 2; i++) {
         SetPolyG4(&block->shade[i]);
-        (block->shade + i)->r0 = D_800594D4[0];
-        (block->shade + i)->g0 = D_800594D4[1];
-        (block->shade + i)->b0 = D_800594D4[2];
-        (block->shade + i)->r1 = D_800594D4[0];
-        (block->shade + i)->g1 = D_800594D4[1];
-        (block->shade + i)->b1 = D_800594D4[2];
-        (block->shade + i)->r2 = D_800594D4[0];
-        (block->shade + i)->g2 = D_800594D4[1];
-        (block->shade + i)->b2 = D_800594D4[2];
-        (block->shade + i)->r3 = D_800594D4[0];
-        (block->shade + i)->g3 = D_800594D4[1];
-        (block->shade + i)->b3 = D_800594D4[2];
+        (block->shade + i)->r0 = window_color[0];
+        (block->shade + i)->g0 = window_color[1];
+        (block->shade + i)->b0 = window_color[2];
+        (block->shade + i)->r1 = window_color[0];
+        (block->shade + i)->g1 = window_color[1];
+        (block->shade + i)->b1 = window_color[2];
+        (block->shade + i)->r2 = window_color[0];
+        (block->shade + i)->g2 = window_color[1];
+        (block->shade + i)->b2 = window_color[2];
+        (block->shade + i)->r3 = window_color[0];
+        (block->shade + i)->g3 = window_color[1];
+        (block->shade + i)->b3 = window_color[2];
         SetSemiTrans(&block->shade[i], 1);
         SetDrawMode(&block->mode[i], 0, 0,
-                    GetTPage(0, D_800595A0, D_800C3EA4->sprites[1].pageX, D_800C3EA4->sprites[1].pageY),
+                    GetTPage(0, window_semi_transparency_mode, D_800C3EA4->sprites[1].pageX, D_800C3EA4->sprites[1].pageY),
                     (RECT *)D_800D2D28);
     }
     func_80077364(block->frame[0], 1);
@@ -2035,7 +2035,7 @@ void func_80077610(void) {
 /* Wait a frame, then release the graphics block. */
 void func_8007765C(void) {
     func_800716D8();
-    func_800320E8(D_800C3EA4->unkA230);
+    heap_free(D_800C3EA4->unkA230);
 }
 
 /* Set up the four direction arrows (down, left, up, right triangles, red
@@ -2119,16 +2119,16 @@ void func_80077990(void) {
     StoreImage(&D_800C3EA4->unk8950[1], strip1 + 0x63 * 3);
     StoreImage(&D_800C3EA4->unk8950[2], strip2 + 0x63 * 3);
     StoreImage(&D_800C3EA4->unk8950[3], strip3 + 0x63 * 3);
-    func_80026338(D_800D2F5C, 0x4B, &D_800C3EA4->sprites[1].unk0, &D_800C3EA4->sprites[1].tpageMode,
+    sprite_sheet_get_texture(D_800D2F5C, 0x4B, &D_800C3EA4->sprites[1].unk0, &D_800C3EA4->sprites[1].tpageMode,
                   &D_800C3EA4->sprites[1].clutX, &D_800C3EA4->sprites[1].clutY,
                   &D_800C3EA4->sprites[1].pageX, &D_800C3EA4->sprites[1].pageY);
-    func_80026338(D_800D2F5C, 0x50, &D_800C3EA4->sprites[2].unk0, &D_800C3EA4->sprites[2].tpageMode,
+    sprite_sheet_get_texture(D_800D2F5C, 0x50, &D_800C3EA4->sprites[2].unk0, &D_800C3EA4->sprites[2].tpageMode,
                   &D_800C3EA4->sprites[2].clutX, &D_800C3EA4->sprites[2].clutY,
                   &D_800C3EA4->sprites[2].pageX, &D_800C3EA4->sprites[2].pageY);
-    func_80026338(D_800D2F5C, 0x4D, &D_800C3EA4->sprites[3].unk0, &D_800C3EA4->sprites[3].tpageMode,
+    sprite_sheet_get_texture(D_800D2F5C, 0x4D, &D_800C3EA4->sprites[3].unk0, &D_800C3EA4->sprites[3].tpageMode,
                   &D_800C3EA4->sprites[3].clutX, &D_800C3EA4->sprites[3].clutY,
                   &D_800C3EA4->sprites[3].pageX, &D_800C3EA4->sprites[3].pageY);
-    func_80026338(D_800D2F5C, 0x4E, &D_800C3EA4->sprites[4].unk0, &D_800C3EA4->sprites[4].tpageMode,
+    sprite_sheet_get_texture(D_800D2F5C, 0x4E, &D_800C3EA4->sprites[4].unk0, &D_800C3EA4->sprites[4].tpageMode,
                   &D_800C3EA4->sprites[4].clutX, &D_800C3EA4->sprites[4].clutY,
                   &D_800C3EA4->sprites[4].pageX, &D_800C3EA4->sprites[4].pageY);
     D_800D2D28->textureWindows[0].y = 0;
@@ -2190,7 +2190,7 @@ void func_800780A8(BattleMessage *message, u32 row) {
         SetSemiTrans(&message->prims[i], 0);
         SetShadeTex(&message->prims[i], 1);
         message->alternate = row & 1;
-        message->prims[i].clut = message->alternate ? D_80059414 : D_800595D4;
+        message->prims[i].clut = message->alternate ? text_plane1_clut : text_plane0_clut;
         message->prims[i].tpage = GetTPage(0, 0, 0x3C0, (s32)row / 2 * 13);
     }
     message->shown = 0;
@@ -2218,7 +2218,7 @@ void func_8007819C(void) {
 /* Upload each present member's portrait TIM (0x460 bytes per character in
  * `portraits`; character 0xb for the second and third member when 800d3294
  * is set) to the texture and CLUT places of sprite `glyph + member`, the
- * image moved 6 per member. `sprites` holds the six func_80026338 outputs
+ * image moved 6 per member. `sprites` holds the six sprite_sheet_get_texture outputs
  * (SpriteInfo order) per member; the outputs are passed through a pointer
  * set before the loop and read back from the array, indexed flat. */
 void func_80078310(u8 *portraits, u8 glyph) {
@@ -2236,7 +2236,7 @@ void func_80078310(u8 *portraits, u8 glyph) {
             }
             OpenTIM((u_long *)(portraits + character * 0x460));
             ReadTIM(&tim);
-            func_80026338(D_800D2F5C, glyph + i, info + i * 6, info + (i * 6 + 1), info + (i * 6 + 2),
+            sprite_sheet_get_texture(D_800D2F5C, glyph + i, info + i * 6, info + (i * 6 + 1), info + (i * 6 + 2),
                           info + (i * 6 + 3), info + (i * 6 + 4), info + (i * 6 + 5));
             tim.crect->x = sprites[i * 6 + 2];
             tim.crect->y = sprites[i * 6 + 3];
@@ -2282,7 +2282,7 @@ void func_800785D4(u8 actor, u8 index) {
 void func_80078658(u8 index, u8 actor) {
     if (D_800C3E8C < 9) {
         D_800D36C8[D_800C3E8C].width =
-            func_80034EAC(func_80033728(D_800C3DDC, D_800D2E5C[index].named), D_800D36C8[D_800C3E8C].pixels, 0x39,
+            window_render_text_line(text_get_resource_entry(D_800C3DDC, D_800D2E5C[index].named), D_800D36C8[D_800C3E8C].pixels, 0x39,
                           D_800C3E8C & 1);
         func_800769E8(&D_800D36C8[D_800C3E8C].rect, D_800D36C8[D_800C3E8C].pixels);
         D_800C3FE8[D_800C3EAC->eventCount].actor = actor;

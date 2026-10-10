@@ -353,14 +353,14 @@ def listing(machine: Machine, disc: int) -> None:
 #                        actor slot s, dropped while that actor has one
 #                        pending (Director.slots; slot 0 is the screen fade,
 #                        func_800925A0: 13 fades out, 12 fades in)
-#   ("sound", n)         func_80039E60: area-bank effect n on two free voices
-#   ("sound_12", n)      func_80039E18: area-bank effect n on voices 12-13
-#   ("ambient", k)       func_80039E60 of D_8009A5A0[D_8009D3D4][k]
+#   ("sound", n)         sound_play_effect: area-bank effect n on two free voices
+#   ("sound_12", n)      sound_play_effect_on_channels_12_13: area-bank effect n on voices 12-13
+#   ("ambient", k)       sound_play_effect of D_8009A5A0[D_8009D3D4][k]
 #   ("emitters", g)      func_80089160(g, NULL, NULL): start emitter group g
 #                        at position 0 unless one of its emitters is live
 #   ("emitters_at_target", g)  the same at the camera target's x, z (y 0)
 #   ("stop_effects", g)  func_80089514(g): stop group g's live effects
-#   ("music_fade", a, b) func_8003A89C(D_80062528, a, b): music to level a
+#   ("music_fade", a, b) sound_set_seq_fade(mode_music_seq, a, b): music to level a
 #                        over b frames
 #   ("fade_rate", v)     D_8009CCA4 = v: the fade quad's semi-transparency
 #                        rate (1 adds it, fading to white; 2 subtracts it)
@@ -972,7 +972,7 @@ def model_file(data: bytes) -> ModelFile:
 
 def loaded(disc: Disc, slot: int) -> bytes:
     """The bytes func_800891C0 reads into memory: the file's size rounded up
-    to words (func_800288EC); the rest of its last sector is not copied."""
+    to words (cd_get_aligned_file_size); the rest of its last sector is not copied."""
     return disc.sectors(slot)[: (disc.entries[slot]["size"] + 3) & ~3]
 
 
@@ -1156,7 +1156,7 @@ def event_listing(number: int, root: Path = ROOT) -> None:
 # entry from there whose frame plus the movie's sound start
 # (FIELD_MOVIE.sound_start) the movie frame D_800B06A0 has reached (the frame
 # callback func_800A7120 stores it): the bank's effect in the low byte on the voice
-# pair in bits 8-10 (func_80039EC4 gets pair * 2). Neither tests the run's end
+# pair in bits 8-10 (sound_play_effect_on_channel gets pair * 2). Neither tests the run's end
 # itself: frame 0xFFFF lies past every movie. Event fe a0 (func_8008EA58)
 # names the bank in operand 9; 0xFF (FIELD_MOVIE.sound_bank's reset value)
 # loads none and plays nothing.
@@ -1164,7 +1164,7 @@ def event_listing(number: int, root: Path = ROOT) -> None:
 MOVIE_SOUNDS = 0x800AE060
 MOVIE_SOUND_ENTRIES = 0x60  # the INCLUDE_ASSET size 0x180, four bytes per entry
 MOVIE_SOUND_END = 0xFFFF
-MOVIE_SOUND_DIRECTORY = (0x1C, 0)  # func_80028470(0x1C, 0) before the bank is read
+MOVIE_SOUND_DIRECTORY = (0x1C, 0)  # cd_select_directory(0x1C, 0) before the bank is read
 MOVIE_SOUND_FILE = 0x115  # + bank
 MOVIE_SOUND_NONE = 0xFF
 MOVIE_SOUND_REQUEST = (0xFE, 0xA0, 9)  # event fe a0, its bank operand's offset
@@ -1246,8 +1246,8 @@ def movie_sound_step(
 
 
 def movie_sound_bank_file(disc: Disc, bank: int) -> tuple[int, int]:
-    """(slot, effect count) of bank `bank`'s file, which func_80038428 opens
-    in place: func_8003F614 wants magic "seds", a zero word sum and version
+    """(slot, effect count) of bank `bank`'s file, which sound_add_effect_bank opens
+    in place: sound_check_file wants magic "seds", a zero word sum and version
     0x101 at +0xC; the effect count is at +0x12 (sound_sequence.parse_bank)."""
     from tools.analysis.sound_sequence import SequenceError, parse_bank, word_sum
 
@@ -1261,7 +1261,7 @@ def movie_sound_bank_file(disc: Disc, bank: int) -> tuple[int, int]:
     except SequenceError as error:
         raise ScriptError(f"movie sound bank {bank} (slot {slot}): {error}") from error
     if struct.unpack_from("<H", data, 0xC)[0] != 0x101 or word_sum(data, len(data)):
-        raise ScriptError(f"movie sound bank {bank} (slot {slot}): func_8003F614 rejects it")
+        raise ScriptError(f"movie sound bank {bank} (slot {slot}): sound_check_file rejects it")
     return slot, struct.unpack_from("<H", data, 0x12)[0]
 
 

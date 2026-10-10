@@ -63,7 +63,7 @@ FIRST, COUNT = 50, 48  # slot39 func_801DE5CC ids >= 50; ovl2615 func_801E5384 r
 BATTLE_END = 73  # ovl2615 func_801E4CD0: weapon ids 50..72 enter the battle's list
 BATTLE_RECORDS = 0x25  # func_801E5384: archive[0x25] + 0x320, 0x300 bytes, to +0x5818
 ITEM_BASE, GEAR_BASE = 0x2286, 0x22B6  # D_8006F8BA, D_8006F8EA as game data offsets
-GAME_DATA, GAME_DATA_SIZE = 0x8006D634, 0x2358  # D_8006D634, sizeof(GameData)
+GAME_DATA, GAME_DATA_SIZE = 0x8006D634, 0x2358  # game_data, sizeof(GameData)
 # The game data around the arrays (gamedata.h): (offset, size, member).
 LAYOUT = (
     (0x221A, 150, "gearAccessoryIds"),
@@ -78,7 +78,7 @@ LAYOUT = (
     (0x231C, 6, "entry"),
 )
 FLAGS, LOCKED = 0x22B6, 0x2318
-NEW_GAME = (0x10, 0, 3)  # func_8001B970 loads it whole into D_8006D634
+NEW_GAME = (0x10, 0, 3)  # mode_load_initial_game_data loads it whole into game_data
 # 11 records: CharacterRecord.weapons (5) and entryItems (5)
 CHARACTERS, CHARACTER, CHARACTER_WEAPONS, ENTRY_ITEMS = 0x26C, 0xA4, 0x6A, 0x6F
 # 20 records: GearRecord.partItems (4) and weapons (4)
@@ -93,9 +93,9 @@ TABLES = {
     "weapon": (WEAPONS, 0x10, 0x0, 2, 0x3, 0x6),
     "gear weapon": (GEAR_WEAPONS, 0x14, 0x4, 4, 0xC, 0xF),
 }
-# D_8005945C, the shops' resource archive: field func_800799D4 loads file 1 of
+# menu_state_resource_file, the shops' resource archive: field func_800799D4 loads file 1 of
 # directory 0x10 with the menu overlay, and so does the resident's debug start
-# (func_8001C1A8).
+# (menu_state_run_screen).
 RESOURCES = (0x10, 0, 1)
 SHOPS, SHOP, SHOP_WEAPONS = 6, 0x5C, 30  # ovl2601: files[6], kind 0 (ids 0-29) weapons
 GEAR_SHOPS, GEAR_SHOP, GEAR_PARTS = 7, 0x64, (0x3C, 0x50)  # ovl2602: files[7], stock[4]

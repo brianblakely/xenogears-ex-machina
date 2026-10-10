@@ -6,10 +6,10 @@ import unittest
 from pathlib import Path
 
 from tools.analysis.sound_sequence import (
-    D_80050A94,
-    D_800509B0,
-    D_80050624,
-    D_80050824,
+    sound_note_semitones,
+    sound_note_durations,
+    sound_seq_opcode_handlers,
+    sound_seq_opcode_lengths,
     DURATIONS,
     END,
     JUMP,
@@ -96,12 +96,12 @@ class OpcodeTableTests(unittest.TestCase):
         handlers = [
             OPCODES[c].handler if c in OPCODES else UNUSED_HANDLER for c in range(0x80, 0x100)
         ]
-        put(D_80050624, struct.pack("<128I", *handlers))
-        put(D_80050824, bytes(lookahead_length(c) for c in range(0x80, 0x100)))
-        put(D_800509B0, bytes(DURATIONS[k % 19] for k in range(NOTE_KEYS)))
-        put(D_80050A94, bytes(k // 19 for k in range(NOTE_KEYS)))
+        put(sound_seq_opcode_handlers, struct.pack("<128I", *handlers))
+        put(sound_seq_opcode_lengths, bytes(lookahead_length(c) for c in range(0x80, 0x100)))
+        put(sound_note_durations, bytes(DURATIONS[k % 19] for k in range(NOTE_KEYS)))
+        put(sound_note_semitones, bytes(k // 19 for k in range(NOTE_KEYS)))
         self.assertEqual(check_driver_tables(bytes(exe)), [])
-        put(D_80050824 + 0x1D, b"\3")
+        put(sound_seq_opcode_lengths + 0x1D, b"\3")
         self.assertEqual(len(check_driver_tables(bytes(exe))), 1)
 
 
@@ -209,7 +209,7 @@ class ScriptTests(unittest.TestCase):
 
     def test_wave_and_modulator_counts_follow_the_c(self):
         resident = Path(__file__).resolve().parents[1] / "decomp/src/resident"
-        self.assertIn(f"D_800508A4[{WAVE_SLOTS}])", (resident / "sound.c").read_text())
+        self.assertIn(f"sound_modulator_waves[{WAVE_SLOTS}])", (resident / "sound.c").read_text())
         self.assertIn(
             f"SoundModulator modulator[{MODULATORS}];",
             (resident.parents[1] / "include/resident/sound.h").read_text(),

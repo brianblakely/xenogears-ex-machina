@@ -53,7 +53,7 @@ void func_800BA614(Sprite *sprite);  /* aim a sprite's jump at its target */
 void func_800BA768(Sprite *sprite);  /* the same, keeping its rising speed */
 void func_800BA8F4(Sprite *sprite);  /* put a sprite on the scene's ground */
 /* A sprite task's callbacks (func_800BA984 creates one; the event script
- * overlay its script slots' models): func_8001D1D8's update, second update
+ * overlay its script slots' models): task_alloc_two_node_task's update, second update
  * and destroy. */
 void func_800BAB0C(Task *task);      /* second update: depth in the view, draw the parts */
 void func_800BABDC(Task *task);      /* destroy: part block, children, sprite and node */

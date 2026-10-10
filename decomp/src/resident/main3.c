@@ -1,7 +1,7 @@
 /* The handwritten rotation object and the PsyQ libraries up to libgte's
  * MSC00 data (8003f738-80048bbc). The rotation matrix and the table sine
- * and cosine lookups (8003f738-8003f8e8; func_8003F738.s, func_8003F8B0.s,
- * func_8003F8CC.s) are handwritten, and their table opens the .data after
+ * and cosine lookups (8003f738-8003f8e8; gpu_build_rotation_matrix.s, gpu_get_sin.s,
+ * gpu_get_cos.s) are handwritten, and their table opens the .data after
  * the game units' (800523f0), ahead of every library's. The library code
  * that follows (libc, libapi, libds, libcd, libgpu, libgte) is the original
  * assembly, classified sdk (decomp/targets/resident/classification.txt);
@@ -12,7 +12,7 @@
 /* Sine and cosine of the 4096 angles of a turn (4.12 fixed point): the table
  * of the handwritten rotation routines below (8003f738, 8003f8b0, 8003f8cc),
  * which libgte's RotMatrixX/Y/Z/YXZ/ZYX read as rcossin_tbl. */
-s16 D_800523F0[4096][2] = {
+s16 rcossin_tbl[4096][2] = { /* 800523F0 */
     {0, 4096}, {6, 4096}, {13, 4096}, {19, 4096}, {25, 4096}, {31, 4096},
     {38, 4096}, {44, 4096}, {50, 4096}, {57, 4096}, {63, 4096}, {69, 4095},
     {75, 4095}, {82, 4095}, {88, 4095}, {94, 4095}, {101, 4095}, {107, 4095},
@@ -698,11 +698,14 @@ s16 D_800523F0[4096][2] = {
     {-25, 4096}, {-19, 4096}, {-13, 4096}, {-6, 4096},
 };
 
-INCLUDE_ASM("decomp/src/resident", func_8003F738);
+/* 8003F738 */
+INCLUDE_ASM("decomp/src/resident", gpu_build_rotation_matrix);
 
-INCLUDE_ASM("decomp/src/resident", func_8003F8B0);
+/* 8003F8B0 */
+INCLUDE_ASM("decomp/src/resident", gpu_get_sin);
 
-INCLUDE_ASM("decomp/src/resident", func_8003F8CC);
+/* 8003F8CC */
+INCLUDE_ASM("decomp/src/resident", gpu_get_cos);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", bzero);
 

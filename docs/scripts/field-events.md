@@ -196,7 +196,7 @@ maps are identical to Disc 1's.
   (with a number they step in `v0016` without a bound, map 488
   `+1998`-`+19f3`) and the resident's debug start (`8001c1a8`, which also
   wraps below 0 to 0xff) open it. The same openers reach every shop number to
-  255 (the u8 `D_80059171`), and a shop past its table reads the memory after
+  255 (the u8 `menu_state_screen_parameter`), and a shop past its table reads the memory after
   the unpacked table (ovl2601 `801c6a6c`, ovl2602 `801c6e74`; open).
   take_item (`8d`, field `8009640c`) leaves the id of a slot it empties at
   0xff. Map 701 takes gear part 43 (`+116`) and gives 42 (`+11a`) on both
@@ -235,9 +235,9 @@ maps are identical to Disc 1's.
   kind of its gear weapon record, not by its count; for 0xff that is record
   255, 5100 bytes into the 2003-byte table that `801c72bc` unpacks into a heap
   block of its own, so whether 0xff is offered depends on the heap. Loaded, it
-  would set byte 0x0D of the resident's battle formation `D_8006F9DC`
+  would set byte 0x0D of the resident's battle formation `formation_active`
   (`enemyIds[5]`, resident/formation.h; `0x8006f9e9`) to 100 (`801df0d4`).
-  Every battle copies its formation over `D_8006F9DC` before its turns (battle
+  Every battle copies its formation over `formation_active` before its turns (battle
   `func_80070F40`), so it would read and lower that formation's enemy id byte
   as the rounds, not the 100.
 - The stock of the shop numbers past the tables, weapon shops 40-255 and gear

@@ -1,7 +1,7 @@
 /* debug595: the field debug monitor (disc 1 file 595, disc 2 file 590), a
  * development tool linked for the dev kit's 8 MB RAM at 0x80280000. The field
  * overlay's setup (80077e88) reads it as directory 4 file 0xad into 0x80280000
- * when D_800C268C and D_8004F370 are clear; on a retail 2 MB unit the image
+ * when D_800C268C and mode_field_standalone are clear; on a retail 2 MB unit the image
  * would alias low RAM, so only development hardware runs it. Its screens
  * print player/scene/camera/event/memory/CPU-time state, edit particle
  * emitters, the encounter timer and fog colours, play sound banks, and draw
@@ -85,7 +85,7 @@ void func_802812A4(void) {
 void func_80281400(void) {
     D_80285988 = 0;
     if (func_80281B90(D_800C426C + 0x34) != 0) {
-        func_80037324(D_800C426C + 0x34);
+        console_flush(D_800C426C + 0x34);
     }
     D_802859A4 = 0;
 }
@@ -125,7 +125,7 @@ void func_802815B0(void) {
 
     if (D_800C268C == 0) {
         for (i = 0; i < 16; i++) {
-            func_8003F738(&D_80285B48[i].rot, &D_80285B48[i].matrix);
+            gpu_build_rotation_matrix(&D_80285B48[i].rot, &D_80285B48[i].matrix);
             PushMatrix();
             MulMatrix2(&D_800AFA64, &D_80285B48[i].matrix);
             PopMatrix();
@@ -193,30 +193,30 @@ void func_80281678(DebugActor *actor) {
 /* Print a four-component record. */
 void func_80281994(s16 *v) {
     if (D_800C268C != 1) {
-        func_800379C8("REC %07d %07d %07d %07d\n", v[0], v[1], v[2], v[3]);
+        console_report_printf("REC %07d %07d %07d %07d\n", v[0], v[1], v[2], v[3]);
     }
 }
 
 /* Print a matrix row by row with its translation. */
 void func_802819DC(MATRIX *m) {
     if (D_800C268C != 1) {
-        func_800379C8("MTX %06d %06d %06d %06d\n", m->m[0][0], m->m[0][1], m->m[0][2], m->t[0]);
-        func_800379C8("    %06d %06d %06d %06d\n", m->m[1][0], m->m[1][1], m->m[1][2], m->t[1]);
-        func_800379C8("    %06d %06d %06d %06d\n", m->m[2][0], m->m[2][1], m->m[2][2], m->t[2]);
+        console_report_printf("MTX %06d %06d %06d %06d\n", m->m[0][0], m->m[0][1], m->m[0][2], m->t[0]);
+        console_report_printf("    %06d %06d %06d %06d\n", m->m[1][0], m->m[1][1], m->m[1][2], m->t[1]);
+        console_report_printf("    %06d %06d %06d %06d\n", m->m[2][0], m->m[2][1], m->m[2][2], m->t[2]);
     }
 }
 
 /* Print a long vector. */
 void func_80281A78(VECTOR *v) {
     if (D_800C268C != 1) {
-        func_800379C8("VEC  %d %d %d\n", v->vx, v->vy, v->vz);
+        console_report_printf("VEC  %d %d %d\n", v->vx, v->vy, v->vz);
     }
 }
 
 /* Print a short vector. */
 void func_80281ABC(SVECTOR *v) {
     if (D_800C268C != 1) {
-        func_800379C8("SVEC %d %d %d\n", v->vx, v->vy, v->vz);
+        console_report_printf("SVEC %d %d %d\n", v->vx, v->vy, v->vz);
     }
 }
 
@@ -258,17 +258,17 @@ s32 func_80281B90(u_long *ot) {
     for (i = 0; i < D_800AFB0C.count; i++) {
         if (D_800AFB0C.descriptors[i].flags & 0x2000) {
             if (D_800AFB0C.descriptors[i].instance->loaded == 0) {
-                func_800379C8("MIME ERROR %d\n", i);
+                console_report_printf("MIME ERROR %d\n", i);
             }
         }
     }
-    seq = D_80059558;
+    seq = sound_wave_bank_list;
 sequences:
     if (seq != NULL) {
         seq = ((SoundSequence *)seq)->next;
         goto sequences;
     }
-    seq = D_80059440;
+    seq = sound_effect_bank_list;
 channels:
     if (seq != NULL) {
         seq = ((SoundBank *)seq)->next;
@@ -306,14 +306,14 @@ channels:
     }
     switch (D_80285984) {
     case 12:
-        func_800379C8("\nCPU=%04d GPU=%04d\n", D_800ADBA0, D_800ADBA4);
-        func_800379C8("PolyCount %d / %d\n", D_80059578, D_800595C0);
-        func_800379C8("Pos X%6d Z=%6d Y=%6d\n", D_800AFB0C.descriptors[D_800B226C].actor->pos[0].part.whole,
+        console_report_printf("\nCPU=%04d GPU=%04d\n", D_800ADBA0, D_800ADBA4);
+        console_report_printf("PolyCount %d / %d\n", model_drawn_primitive_count, model_submitted_primitive_count);
+        console_report_printf("Pos X%6d Z=%6d Y=%6d\n", D_800AFB0C.descriptors[D_800B226C].actor->pos[0].part.whole,
                       D_800AFB0C.descriptors[D_800B226C].actor->pos[2].part.whole,
                       D_800AFB0C.descriptors[D_800B226C].actor->pos[1].part.whole);
         goto free_size;
     case 13:
-        func_800379C8("RGB CALC\n\n");
+        console_report_printf("RGB CALC\n\n");
         if (D_800C3900 & 2) {
             if (--D_8028597C < 0) {
                 D_8028597C = 3;
@@ -324,34 +324,34 @@ channels:
                 D_8028597C = 0;
             }
         }
-        if (D_80065848[2] != 8) {
+        if (mode_field_pointer_state[2] != 8) {
             step = 0;
         } else {
-            step = D_80065848[4];
+            step = mode_field_pointer_state[4];
         }
         if (D_8028597C == 0) {
             D_80285978 += step;
-            func_800379C8(">MODE %d\n", (D_80285978 >> 4) & 3);
+            console_report_printf(">MODE %d\n", (D_80285978 >> 4) & 3);
         } else {
-            func_800379C8(" MODE %d\n", (D_80285978 >> 4) & 3);
+            console_report_printf(" MODE %d\n", (D_80285978 >> 4) & 3);
         }
         if (D_8028597C == 1) {
             D_8028596C = (D_8028596C + step) & 0xFF;
-            func_800379C8(">R %d\n", D_8028596C);
+            console_report_printf(">R %d\n", D_8028596C);
         } else {
-            func_800379C8(" R %d\n", D_8028596C);
+            console_report_printf(" R %d\n", D_8028596C);
         }
         if (D_8028597C == 2) {
             D_80285970 = (D_80285970 + step) & 0xFF;
-            func_800379C8(">G %d\n", D_80285970);
+            console_report_printf(">G %d\n", D_80285970);
         } else {
-            func_800379C8(" G %d\n", D_80285970);
+            console_report_printf(" G %d\n", D_80285970);
         }
         if (D_8028597C == 3) {
             D_80285974 = (D_80285974 + step) & 0xFF;
-            func_800379C8(">B %d\n", D_80285974);
+            console_report_printf(">B %d\n", D_80285974);
         } else {
-            func_800379C8(" B %d\n", D_80285974);
+            console_report_printf(" B %d\n", D_80285974);
         }
         func_80071D08(1, 1, D_8028596C, D_80285970, D_80285974, (D_80285978 >> 4) & 3);
         break;
@@ -366,89 +366,89 @@ channels:
                 D_8028597C = 0;
             }
         }
-        if (D_80065848[2] != 8) {
+        if (mode_field_pointer_state[2] != 8) {
             step = 0;
         } else {
-            step = D_80065848[4];
+            step = mode_field_pointer_state[4];
         }
         if (D_8028597C == 0) {
-            func_800379C8(">NearColor R=%d\n", D_800B2190[0] += step);
+            console_report_printf(">NearColor R=%d\n", D_800B2190[0] += step);
         } else {
-            func_800379C8(" NearColor R=%d\n", D_800B2190[0]);
+            console_report_printf(" NearColor R=%d\n", D_800B2190[0]);
         }
         if (D_8028597C == 1) {
-            func_800379C8(">          G=%d\n", D_800B2190[1] += step);
+            console_report_printf(">          G=%d\n", D_800B2190[1] += step);
         } else {
-            func_800379C8("           G=%d\n", D_800B2190[1]);
+            console_report_printf("           G=%d\n", D_800B2190[1]);
         }
         if (D_8028597C == 2) {
-            func_800379C8(">          B=%d\n", D_800B2190[2] += step);
+            console_report_printf(">          B=%d\n", D_800B2190[2] += step);
         } else {
-            func_800379C8("           B=%d\n", D_800B2190[2]);
+            console_report_printf("           B=%d\n", D_800B2190[2]);
         }
         if (D_8028597C == 3) {
-            func_800379C8(">FarColor  R=%d\n", D_800B2194[0] += step);
+            console_report_printf(">FarColor  R=%d\n", D_800B2194[0] += step);
         } else {
-            func_800379C8(" FarColor  R=%d\n", D_800B2194[0]);
+            console_report_printf(" FarColor  R=%d\n", D_800B2194[0]);
         }
         if (D_8028597C == 4) {
-            func_800379C8(">          G=%d\n", D_800B2194[1] += step);
+            console_report_printf(">          G=%d\n", D_800B2194[1] += step);
         } else {
-            func_800379C8("           G=%d\n", D_800B2194[1]);
+            console_report_printf("           G=%d\n", D_800B2194[1]);
         }
         if (D_8028597C == 5) {
-            func_800379C8(">          B=%d\n", D_800B2194[2] += step);
+            console_report_printf(">          B=%d\n", D_800B2194[2] += step);
         } else {
-            func_800379C8("           B=%d\n", D_800B2194[2]);
+            console_report_printf("           B=%d\n", D_800B2194[2]);
         }
         if (D_8028597C == 6) {
-            func_800379C8(">Near        %d\n", D_800B2198[0] += step * 10);
+            console_report_printf(">Near        %d\n", D_800B2198[0] += step * 10);
         } else {
-            func_800379C8(" Near        %d\n", D_800B2198[0]);
+            console_report_printf(" Near        %d\n", D_800B2198[0]);
         }
         if (D_8028597C == 7) {
-            func_800379C8(">Far         %d\n", D_800B2198[1] += step * 10);
+            console_report_printf(">Far         %d\n", D_800B2198[1] += step * 10);
         } else {
-            func_800379C8(" Far         %d\n", D_800B2198[1]);
+            console_report_printf(" Far         %d\n", D_800B2198[1]);
         }
         break;
     case 1:
-        func_800379C8("---------- Player Info -----\n");
-        func_800379C8("Pos X%6d Z%6d Y%6d\n", D_800AFB0C.descriptors[D_800B226C].actor->pos[0].part.whole,
+        console_report_printf("---------- Player Info -----\n");
+        console_report_printf("Pos X%6d Z%6d Y%6d\n", D_800AFB0C.descriptors[D_800B226C].actor->pos[0].part.whole,
                       D_800AFB0C.descriptors[D_800B226C].actor->pos[2].part.whole,
                       D_800AFB0C.descriptors[D_800B226C].actor->pos[1].part.whole);
         actor = D_800AFB0C.descriptors[D_800B226C].actor;
-        func_800379C8("Pol=%d Pri=%d ID=%x:%x\n", actor->triangle[actor->layer], actor->layer,
+        console_report_printf("Pol=%d Pri=%d ID=%x:%x\n", actor->triangle[actor->layer], actor->layer,
                       D_800AFB0C.triangles[actor->layer][actor->triangle[actor->layer]].attribute, actor->id);
-        func_800379C8("P0=%d P1=%d P2=%d C=%d\n", D_800AFB0C.descriptors[D_800B226C].actor->triangle[0],
+        console_report_printf("P0=%d P1=%d P2=%d C=%d\n", D_800AFB0C.descriptors[D_800B226C].actor->triangle[0],
                       D_800AFB0C.descriptors[D_800B226C].actor->triangle[1],
                       D_800AFB0C.descriptors[D_800B226C].actor->triangle[2], D_800ADB02);
-        func_800379C8("MFflag=%x MFlag2=%x N=%d\n", D_800AFB0C.descriptors[D_800B226C].actor->flags,
+        console_report_printf("MFflag=%x MFlag2=%x N=%d\n", D_800AFB0C.descriptors[D_800B226C].actor->flags,
                       D_800AFB0C.descriptors[D_800B226C].actor->flags2, D_800AFB0C.descriptors[D_800B226C].actor->count);
-        func_800379C8("\n---------- Scene Info ------\n");
-        func_800379C8("SCRZ=%d DIP=%d Scale=%d\n", D_800AF9F8, D_800AF9FC, (s16)D_800AF9FE);
+        console_report_printf("\n---------- Scene Info ------\n");
+        console_report_printf("SCRZ=%d DIP=%d Scale=%d\n", D_800AF9F8, D_800AF9FC, (s16)D_800AF9FE);
         a = func_8009A514() & 0xFFFF;
-        func_800379C8("CamDIR=%d ChrDIR=%d MapNum=%d\n\n", a, func_8009744C() & 0xFFFF,
-                      D_8004F34C & 0x3FFF);
-        func_800379C8("Cam AT   X%6d Z%6d Y%6d\n", D_800AF890[0].part.whole, D_800AF890[2].part.whole,
+        console_report_printf("CamDIR=%d ChrDIR=%d MapNum=%d\n\n", a, func_8009744C() & 0xFFFF,
+                      mode_field_map_id & 0x3FFF);
+        console_report_printf("Cam AT   X%6d Z%6d Y%6d\n", D_800AF890[0].part.whole, D_800AF890[2].part.whole,
                       D_800AF890[1].part.whole);
-        func_800379C8("Cam EYE  X%6d Z%6d Y%6d\n", D_800AF880[0].part.whole, D_800AF880[2].part.whole,
+        console_report_printf("Cam EYE  X%6d Z%6d Y%6d\n", D_800AF880[0].part.whole, D_800AF880[2].part.whole,
                       D_800AF880[1].part.whole);
-        func_800379C8("Cam AT2  X%6d Z%6d Y%6d\n", D_800AF8C0[0].part.whole, D_800AF8C0[2].part.whole,
+        console_report_printf("Cam AT2  X%6d Z%6d Y%6d\n", D_800AF8C0[0].part.whole, D_800AF8C0[2].part.whole,
                       D_800AF8C0[1].part.whole);
-        func_800379C8("Cam EYE2 X%6d Z%6d Y%6d\n", D_800AF8B0[0].part.whole, D_800AF8B0[2].part.whole,
+        console_report_printf("Cam EYE2 X%6d Z%6d Y%6d\n", D_800AF8B0[0].part.whole, D_800AF8B0[2].part.whole,
                       D_800AF8B0[1].part.whole);
-        func_800379C8("DollySet=%02x DollyStop=%02x\n", D_800AF9F4, D_800AF9F5);
-        func_800379C8("Angle=%d\n", D_800AF9E6);
+        console_report_printf("DollySet=%02x DollyStop=%02x\n", D_800AF9F4, D_800AF9F5);
+        console_report_printf("Angle=%d\n", D_800AF9E6);
         length = D_800AF9F8 * (s16)D_800AF9FE;
-        func_800379C8("Length=%d (%d)\n", length >> 12, (length * 2) >> 12);
-        func_800379C8("Wave=%02x Music=%02x\n", D_8004F33C, D_8004F338);
-        func_800379C8("Total Aactor =%d\n", D_800ADBFC);
-        func_800379C8("Total Object =%d\n", D_800AFB0C.count);
+        console_report_printf("Length=%d (%d)\n", length >> 12, (length * 2) >> 12);
+        console_report_printf("Wave=%02x Music=%02x\n", mode_music_loaded_wave, mode_music_loaded_track);
+        console_report_printf("Total Aactor =%d\n", D_800ADBFC);
+        console_report_printf("Total Object =%d\n", D_800AFB0C.count);
         break;
     case 2:
-        func_800379C8("---------- Memory Info -----\n");
-        func_8003278C(0, D_8028597C, 0xF, 0xDC);
+        console_report_printf("---------- Memory Info -----\n");
+        heap_print_report(0, D_8028597C, 0xF, 0xDC);
         if (D_800C3900 & 1) {
             D_8028597C += 4;
         }
@@ -456,122 +456,122 @@ channels:
             D_8028597C -= 4;
         }
 free_size:
-        func_800379C8("Free Size=%x\n", func_80032340());
+        console_report_printf("Free Size=%x\n", heap_get_free_total());
         break;
     case 3:
         i = 0;
-        func_800379C8("---------- Event Info ------\n");
-        func_800379C8("Event  Time=%d:%d\n", func_800A3018(10) >> 8, func_800A3018(10) & 0xFF);
-        func_800379C8("System Time=%d:%d:%d\n", func_800A3018(14), func_800A3018(12) >> 8,
+        console_report_printf("---------- Event Info ------\n");
+        console_report_printf("Event  Time=%d:%d\n", func_800A3018(10) >> 8, func_800A3018(10) & 0xFF);
+        console_report_printf("System Time=%d:%d:%d\n", func_800A3018(14), func_800A3018(12) >> 8,
                       func_800A3018(12) & 0xFF);
         for (; i < 11; i++) {
-            func_800379C8("Num=%x HP=%3d MP=%2d\n", i, D_8005A39C->characters[i].hp, D_8005A39C->characters[i].ep);
+            console_report_printf("Num=%x HP=%3d MP=%2d\n", i, game_current_data->characters[i].hp, game_current_data->characters[i].ep);
         }
-        func_800379C8("Gold=%d\n", D_8005A39C->gold);
-        func_800379C8("SinarioFlag=%d\n", (u16)D_800C3A68[0]);
-        func_800379C8("Party=%d %d %d\n", D_80062590[0], D_80062590[1], D_80062590[2]);
-        n = D_8005A39C->joined;
-        func_800379C8("Member ");
+        console_report_printf("Gold=%d\n", game_current_data->gold);
+        console_report_printf("SinarioFlag=%d\n", (u16)D_800C3A68[0]);
+        console_report_printf("Party=%d %d %d\n", mode_party_members[0], mode_party_members[1], mode_party_members[2]);
+        n = game_current_data->joined;
+        console_report_printf("Member ");
         i = 0;
         while (i < 11) {
             if (n & 1) {
-                func_800379C8("%d ", i);
+                console_report_printf("%d ", i);
             }
             n >>= 1;
             i++;
         }
-        func_800379C8("\n");
-        n = D_8005A39C->available;
-        func_800379C8("FrMask ");
+        console_report_printf("\n");
+        n = game_current_data->available;
+        console_report_printf("FrMask ");
         i = 0;
         while (i < 11) {
             if (!(n & 1)) {
-                func_800379C8("%d ", i);
+                console_report_printf("%d ", i);
             }
             n >>= 1;
             i++;
         }
-        func_800379C8("\n");
-        n = D_8005A39C->locked;
-        func_800379C8("FrLock ");
+        console_report_printf("\n");
+        n = game_current_data->locked;
+        console_report_printf("FrLock ");
         i = 0;
         while (i < 11) {
             if (n & 1) {
-                func_800379C8("%d ", i);
+                console_report_printf("%d ", i);
             }
             n >>= 1;
             i++;
         }
-        func_800379C8("\n");
-        func_800379C8("GearRide=%d %d %d\n", D_8005A39C->inGear[0], D_8005A39C->inGear[1], D_8005A39C->inGear[2]);
-        func_800379C8("GearNum=");
+        console_report_printf("\n");
+        console_report_printf("GearRide=%d %d %d\n", game_current_data->inGear[0], game_current_data->inGear[1], game_current_data->inGear[2]);
+        console_report_printf("GearNum=");
         for (i = 0; i < 3; i++) {
-            party = D_80062590[i];
+            party = mode_party_members[i];
             if (party == 0xFF) {
                 break;
             }
-            func_800379C8(" %d", D_8005A39C->characters[party].gearId);
+            console_report_printf(" %d", game_current_data->characters[party].gearId);
         }
-        func_800379C8("\nTYPE=");
+        console_report_printf("\nTYPE=");
         for (i = 0; i < 3; i++) {
-            if (D_80062590[i] == 0xFF) {
+            if (mode_party_members[i] == 0xFF) {
                 break;
             }
-            if (D_8005A444[i] == 0xFF) {
+            if (mode_party_actors[i] == 0xFF) {
                 break;
             }
-            switch ((D_800AFB0C.descriptors[D_8005A444[i]].actor->flags >> 8) & 7) {
+            switch ((D_800AFB0C.descriptors[mode_party_actors[i]].actor->flags >> 8) & 7) {
             case 1:
-                func_800379C8("People ");
+                console_report_printf("People ");
                 break;
             case 2:
-                func_800379C8("Robo ");
+                console_report_printf("Robo ");
                 break;
             case 4:
-                func_800379C8("Play ");
+                console_report_printf("Play ");
                 break;
             default:
-                func_800379C8("?%d ", (D_800AFB0C.descriptors[D_8005A444[i]].actor->flags >> 8) & 7);
+                console_report_printf("?%d ", (D_800AFB0C.descriptors[mode_party_actors[i]].actor->flags >> 8) & 7);
                 break;
             }
         }
-        func_800379C8(" ID=");
+        console_report_printf(" ID=");
         id = D_800AFB0C.descriptors[D_800B226C].actor->id;
         if (!(id & 0x80)) {
-            func_800379C8("C");
+            console_report_printf("C");
         } else {
-            func_800379C8("-");
+            console_report_printf("-");
         }
         if (!(id & 0x40)) {
-            func_800379C8("G");
+            console_report_printf("G");
         } else {
-            func_800379C8("-");
+            console_report_printf("-");
         }
         if (!(id & 0x20)) {
-            func_800379C8("P");
+            console_report_printf("P");
         } else {
-            func_800379C8("-");
+            console_report_printf("-");
         }
         break;
     case 4:
-        func_800379C8("---------- Event DEBUG -----\n");
+        console_report_printf("---------- Event DEBUG -----\n");
         for (i = D_8028597C, n = 0; i < D_800ADBFC; i++, n++) {
-            func_800379C8("ActNum=%3d RUN=%04x\n", i,
+            console_report_printf("ActNum=%3d RUN=%04x\n", i,
                           D_800AFB0C.descriptors[i].actor->threads[D_800AFB0C.descriptors[i].actor->thread].pc);
-            func_800379C8("P0=%d P1=%d P2=%d P=%d I=%x:%x\n", D_800AFB0C.descriptors[i].actor->triangle[0],
+            console_report_printf("P0=%d P1=%d P2=%d P=%d I=%x:%x\n", D_800AFB0C.descriptors[i].actor->triangle[0],
                           D_800AFB0C.descriptors[i].actor->triangle[1], D_800AFB0C.descriptors[i].actor->triangle[2],
                           D_800AFB0C.descriptors[i].actor->layer,
                           D_800AFB0C.triangles[D_800AFB0C.descriptors[i].actor->layer]
                                     [D_800AFB0C.descriptors[i].actor->triangle[D_800AFB0C.descriptors[i].actor->layer]]
                                         .attribute,
                           D_800AFB0C.descriptors[i].actor->id);
-            func_800379C8("Pos X%6d Z%6d Y%6d\n", D_800AFB0C.descriptors[i].actor->pos[0].part.whole,
+            console_report_printf("Pos X%6d Z%6d Y%6d\n", D_800AFB0C.descriptors[i].actor->pos[0].part.whole,
                           D_800AFB0C.descriptors[i].actor->pos[2].part.whole, D_800AFB0C.descriptors[i].actor->pos[1].part.whole);
-            func_800379C8("M1=%x M2=%x", D_800AFB0C.descriptors[i].actor->flags, D_800AFB0C.descriptors[i].actor->flags2);
+            console_report_printf("M1=%x M2=%x", D_800AFB0C.descriptors[i].actor->flags, D_800AFB0C.descriptors[i].actor->flags2);
             if (!(D_800AFB0C.descriptors[i].actor->flags2 & 0x4000000)) {
-                func_800379C8("\n\n");
+                console_report_printf("\n\n");
             } else {
-                func_800379C8(" TALK OFF\n\n");
+                console_report_printf(" TALK OFF\n\n");
             }
             if (n >= 6) {
                 break;
@@ -585,17 +585,17 @@ free_size:
         }
         break;
     case 5:
-        func_800379C8("---------- CPU Time --------\n");
+        console_report_printf("---------- CPU Time --------\n");
         for (i = 0; i < D_802859A4; i++) {
-            func_800379C8("%s = %6d\n", D_802859A8[i].name, D_802859A8[i].time);
+            console_report_printf("%s = %6d\n", D_802859A8[i].name, D_802859A8[i].time);
         }
-        func_800379C8("\nCPU=%6d GPU=%6d\n", D_800ADBA0, D_800ADBA4);
-        func_800379C8("PolyCount %d / %d\n", D_80059578, D_800595C0);
+        console_report_printf("\nCPU=%6d GPU=%6d\n", D_800ADBA0, D_800ADBA4);
+        console_report_printf("PolyCount %d / %d\n", model_drawn_primitive_count, model_submitted_primitive_count);
         break;
     case 6:
-        func_800379C8("---------- RAM MAP ---------\n");
+        console_report_printf("---------- RAM MAP ---------\n");
         for (i = D_8028597C, n = 0; i < 0x400; i++, n++) {
-            func_800379C8("ADD %04x:%08x %06d\n", i * 2, func_800A3018(i * 2), func_800A3018(i * 2));
+            console_report_printf("ADD %04x:%08x %06d\n", i * 2, func_800A3018(i * 2), func_800A3018(i * 2));
             if (n >= 16) {
                 break;
             }
@@ -608,7 +608,7 @@ free_size:
         }
         break;
     case 7:
-        func_800379C8("---------- PARTICLE -----------\n");
+        console_report_printf("---------- PARTICLE -----------\n");
         if (D_800C3908 & 0x100) {
             player = &D_800B226C;
             func_800A98E8(*player, 1);
@@ -624,13 +624,13 @@ free_size:
         func_802835E0();
         break;
     case 8:
-        func_800379C8("---------- ITEM -------------\n");
+        console_report_printf("---------- ITEM -------------\n");
         for (i = D_8028597C, n = 0; i < 0x96; i += 4, n++) {
-            func_800379C8("%03d=%03d %03d=%03d %03d=%03d %03d=%03d\n", D_8005A39C->itemIds[i],
-                          D_8005A39C->itemCounts[i], D_8005A39C->itemIds[i + 1],
-                          D_8005A39C->itemCounts[i + 1], D_8005A39C->itemIds[i + 2],
-                          D_8005A39C->itemCounts[i + 2], D_8005A39C->itemIds[i + 3],
-                          D_8005A39C->itemCounts[i + 3]);
+            console_report_printf("%03d=%03d %03d=%03d %03d=%03d %03d=%03d\n", game_current_data->itemIds[i],
+                          game_current_data->itemCounts[i], game_current_data->itemIds[i + 1],
+                          game_current_data->itemCounts[i + 1], game_current_data->itemIds[i + 2],
+                          game_current_data->itemCounts[i + 2], game_current_data->itemIds[i + 3],
+                          game_current_data->itemCounts[i + 3]);
             if (n >= 16) {
                 break;
             }
@@ -643,13 +643,13 @@ free_size:
         }
         break;
     case 9:
-        func_800379C8("---------- ACC --------------\n");
+        console_report_printf("---------- ACC --------------\n");
         for (i = D_8028597C, n = 0; i < 0xC8; i += 4, n++) {
-            func_800379C8("%03d=%03d %03d=%03d %03d=%03d %03d=%03d\n", D_8005A39C->accessoryIds[i],
-                          D_8005A39C->accessoryCounts[i], D_8005A39C->accessoryIds[i + 1],
-                          D_8005A39C->accessoryCounts[i + 1], D_8005A39C->accessoryIds[i + 2],
-                          D_8005A39C->accessoryCounts[i + 2], D_8005A39C->accessoryIds[i + 3],
-                          D_8005A39C->accessoryCounts[i + 3]);
+            console_report_printf("%03d=%03d %03d=%03d %03d=%03d %03d=%03d\n", game_current_data->accessoryIds[i],
+                          game_current_data->accessoryCounts[i], game_current_data->accessoryIds[i + 1],
+                          game_current_data->accessoryCounts[i + 1], game_current_data->accessoryIds[i + 2],
+                          game_current_data->accessoryCounts[i + 2], game_current_data->accessoryIds[i + 3],
+                          game_current_data->accessoryCounts[i + 3]);
             if (n >= 16) {
                 break;
             }
@@ -662,23 +662,23 @@ free_size:
         }
         break;
     case 10:
-        func_800379C8("---------- ENCOUNT -------------\n");
+        console_report_printf("---------- ENCOUNT -------------\n");
         if (D_800C3900 & 1) {
             D_8028597C++;
         }
         if (D_800C3900 & 2) {
             D_8028597C--;
         }
-        rate = D_80065ADC;
+        rate = formation_encounter_weights;
         for (i = 0; i < 16; i++) {
-            func_800379C8("%2d %3d %d\n", i, rate[i], D_80285B28[i]);
+            console_report_printf("%2d %3d %d\n", i, rate[i], D_80285B28[i]);
         }
         switch (D_8028597C & 3) {
         case 0:
             player = &D_800B2298;
-            func_800379C8(">TIME   =%d\n", *player);
-            func_800379C8(" ENCOUNT=%d\n", D_800B229C);
-            func_800379C8(" SET");
+            console_report_printf(">TIME   =%d\n", *player);
+            console_report_printf(" ENCOUNT=%d\n", D_800B229C);
+            console_report_printf(" SET");
             if (D_800C3900 & 4) {
                 (*player)++;
             }
@@ -687,9 +687,9 @@ free_size:
             }
             break;
         case 1:
-            func_800379C8(" TIME   =%d\n", D_800B2298);
-            func_800379C8(">ENCOUNT=%d\n", D_800B229C);
-            func_800379C8(" SET");
+            console_report_printf(" TIME   =%d\n", D_800B2298);
+            console_report_printf(">ENCOUNT=%d\n", D_800B229C);
+            console_report_printf(" SET");
             if (D_800C3900 & 4) {
                 D_800B229C++;
             }
@@ -699,9 +699,9 @@ free_size:
             D_800B229C &= 0x1F;
             break;
         case 2:
-            func_800379C8(" TIME   =%d\n", D_800B2298);
-            func_800379C8(" ENCOUNT=%d\n", D_800B229C);
-            func_800379C8(">SET");
+            console_report_printf(" TIME   =%d\n", D_800B2298);
+            console_report_printf(" ENCOUNT=%d\n", D_800B229C);
+            console_report_printf(">SET");
             func_8008E718();
             break;
         }
@@ -709,7 +709,7 @@ free_size:
             if (--D_80285990 == 0) {
                 D_8028598C = 0;
             }
-            func_800379C8("COUNT=%d NUM=%d\n", D_80285994, D_80285998);
+            console_report_printf("COUNT=%d NUM=%d\n", D_80285994, D_80285998);
         } else {
             D_80285990 = 60;
         }
@@ -737,147 +737,147 @@ void func_802835E0(void) {
     column = D_802859A0;
     if (cursor < 22) {
         row = func_8028439C(0, cursor, &selected);
-        func_800379C8("BANK    = %d\n", D_800B0044);
+        console_report_printf("BANK    = %d\n", D_800B0044);
         row = func_8028439C(row, cursor, &selected);
-        func_800379C8("MAX     = %d\n", D_800B02CC[D_800B0044].max);
+        console_report_printf("MAX     = %d\n", D_800B02CC[D_800B0044].max);
         row = func_8028439C(row, cursor, &selected);
-        func_800379C8("SWAIT   = %d\n", D_800B02CC[D_800B0044].start_wait);
+        console_report_printf("SWAIT   = %d\n", D_800B02CC[D_800B0044].start_wait);
         row = func_8028439C(row, cursor, &selected);
-        func_800379C8("EWAIT   = %d\n", D_800B02CC[D_800B0044].end_wait);
+        console_report_printf("EWAIT   = %d\n", D_800B02CC[D_800B0044].end_wait);
         row = func_8028439C(row, cursor, &selected);
-        func_800379C8("SPOS    =");
+        console_report_printf("SPOS    =");
         func_80284354(0, column, selected);
-        func_800379C8("%d", D_800B02CC[D_800B0044].start_pos.vx);
+        console_report_printf("%d", D_800B02CC[D_800B0044].start_pos.vx);
         func_80284354(1, column, selected);
-        func_800379C8("%d", D_800B02CC[D_800B0044].start_pos.vy);
+        console_report_printf("%d", D_800B02CC[D_800B0044].start_pos.vy);
         func_80284354(2, column, selected);
-        func_800379C8("%d\n", D_800B02CC[D_800B0044].start_pos.vz);
+        console_report_printf("%d\n", D_800B02CC[D_800B0044].start_pos.vz);
         row = func_8028439C(row, cursor, &selected);
-        func_800379C8("EPOS    =");
+        console_report_printf("EPOS    =");
         func_80284354(0, column, selected);
-        func_800379C8("%d", D_800B02CC[D_800B0044].end_pos.vx);
+        console_report_printf("%d", D_800B02CC[D_800B0044].end_pos.vx);
         func_80284354(1, column, selected);
-        func_800379C8("%d", D_800B02CC[D_800B0044].end_pos.vy);
+        console_report_printf("%d", D_800B02CC[D_800B0044].end_pos.vy);
         func_80284354(2, column, selected);
-        func_800379C8("%d\n", D_800B02CC[D_800B0044].end_pos.vz);
+        console_report_printf("%d\n", D_800B02CC[D_800B0044].end_pos.vz);
         row = func_8028439C(row, cursor, &selected);
-        func_800379C8("SPEED   = ");
+        console_report_printf("SPEED   = ");
         func_80284354(0, column, selected);
-        func_800379C8("%d * ", D_800B02CC[D_800B0044].speed);
+        console_report_printf("%d * ", D_800B02CC[D_800B0044].speed);
         func_80284354(1, column, selected);
-        func_800379C8("%d\n", D_800B02CC[D_800B0044].speed_scale);
+        console_report_printf("%d\n", D_800B02CC[D_800B0044].speed_scale);
         row = func_8028439C(row, cursor, &selected);
-        func_800379C8("GRAVITE =");
+        console_report_printf("GRAVITE =");
         func_80284354(0, column, selected);
-        func_800379C8("%d", D_800B02CC[D_800B0044].gravity.vx);
+        console_report_printf("%d", D_800B02CC[D_800B0044].gravity.vx);
         func_80284354(1, column, selected);
-        func_800379C8("%d", D_800B02CC[D_800B0044].gravity.vy);
+        console_report_printf("%d", D_800B02CC[D_800B0044].gravity.vy);
         func_80284354(2, column, selected);
-        func_800379C8("%d\n", D_800B02CC[D_800B0044].gravity.vz);
+        console_report_printf("%d\n", D_800B02CC[D_800B0044].gravity.vz);
         row = func_8028439C(row, cursor, &selected);
-        func_800379C8("SRANGE  = %d\n", D_800B02CC[D_800B0044].start_range);
+        console_report_printf("SRANGE  = %d\n", D_800B02CC[D_800B0044].start_range);
         row = func_8028439C(row, cursor, &selected);
-        func_800379C8("ERANGE  = %d\n", D_800B02CC[D_800B0044].end_range);
+        console_report_printf("ERANGE  = %d\n", D_800B02CC[D_800B0044].end_range);
         row = func_8028439C(row, cursor, &selected);
-        func_800379C8("PSWAIT  = %d\n", D_800B02CC[D_800B0044].particle_start_wait);
+        console_report_printf("PSWAIT  = %d\n", D_800B02CC[D_800B0044].particle_start_wait);
         row = func_8028439C(row, cursor, &selected);
-        func_800379C8("PEWAIT  = %d\n", D_800B02CC[D_800B0044].particle_end_wait);
+        console_report_printf("PEWAIT  = %d\n", D_800B02CC[D_800B0044].particle_end_wait);
         row = func_8028439C(row, cursor, &selected);
-        func_800379C8("SHAPE   = %d\n", D_800B02CC[D_800B0044].shape);
+        console_report_printf("SHAPE   = %d\n", D_800B02CC[D_800B0044].shape);
         row = func_8028439C(row, cursor, &selected);
-        func_800379C8("SCALE   =");
+        console_report_printf("SCALE   =");
         func_80284354(0, column, selected);
-        func_800379C8("%d", D_800B02CC[D_800B0044].scale.vx);
+        console_report_printf("%d", D_800B02CC[D_800B0044].scale.vx);
         func_80284354(1, column, selected);
-        func_800379C8("%d\n", D_800B02CC[D_800B0044].scale.vy);
+        console_report_printf("%d\n", D_800B02CC[D_800B0044].scale.vy);
         row = func_8028439C(row, cursor, &selected);
-        func_800379C8("SCALEOFS=");
+        console_report_printf("SCALEOFS=");
         func_80284354(0, column, selected);
-        func_800379C8("%d", D_800B02CC[D_800B0044].scale_offset.vx);
+        console_report_printf("%d", D_800B02CC[D_800B0044].scale_offset.vx);
         func_80284354(1, column, selected);
-        func_800379C8("%d\n", D_800B02CC[D_800B0044].scale_offset.vy);
+        console_report_printf("%d\n", D_800B02CC[D_800B0044].scale_offset.vy);
         row = func_8028439C(row, cursor, &selected);
-        func_800379C8("COLOR   =");
+        console_report_printf("COLOR   =");
         func_80284354(0, column, selected);
-        func_800379C8("%d", D_800B02CC[D_800B0044].color[0]);
+        console_report_printf("%d", D_800B02CC[D_800B0044].color[0]);
         func_80284354(1, column, selected);
-        func_800379C8("%d", D_800B02CC[D_800B0044].color[1]);
+        console_report_printf("%d", D_800B02CC[D_800B0044].color[1]);
         func_80284354(2, column, selected);
-        func_800379C8("%d\n", D_800B02CC[D_800B0044].color[2]);
+        console_report_printf("%d\n", D_800B02CC[D_800B0044].color[2]);
         row = func_8028439C(row, cursor, &selected);
-        func_800379C8("COLOROFS=");
+        console_report_printf("COLOROFS=");
         func_80284354(0, column, selected);
-        func_800379C8("%d", D_800B02CC[D_800B0044].color_offset[0]);
+        console_report_printf("%d", D_800B02CC[D_800B0044].color_offset[0]);
         func_80284354(1, column, selected);
-        func_800379C8("%d", D_800B02CC[D_800B0044].color_offset[1]);
+        console_report_printf("%d", D_800B02CC[D_800B0044].color_offset[1]);
         func_80284354(2, column, selected);
-        func_800379C8("%d\n", D_800B02CC[D_800B0044].color_offset[2]);
+        console_report_printf("%d\n", D_800B02CC[D_800B0044].color_offset[2]);
         row = func_8028439C(row, cursor, &selected);
         if (!D_800B02CC[D_800B0044].flags.bits.randrot) {
-            func_800379C8("RANDROT = OFF\n");
+            console_report_printf("RANDROT = OFF\n");
         } else {
-            func_800379C8("RANDROT = ON\n");
+            console_report_printf("RANDROT = ON\n");
         }
         row = func_8028439C(row, cursor, &selected);
-        func_800379C8("SORT    = ");
+        console_report_printf("SORT    = ");
         switch (D_800B02CC[D_800B0044].flags.bits.sort) {
         case 0:
-            func_800379C8("TOP\n");
+            console_report_printf("TOP\n");
             break;
         case 1:
-            func_800379C8("MID\n");
+            console_report_printf("MID\n");
             break;
         case 2:
-            func_800379C8("NORMAL\n");
+            console_report_printf("NORMAL\n");
             break;
         case 3:
-            func_800379C8("BACK\n");
+            console_report_printf("BACK\n");
             break;
         }
         row = func_8028439C(row, cursor, &selected);
-        func_800379C8("COLMODE = ");
+        console_report_printf("COLMODE = ");
         switch (D_800B02CC[D_800B0044].flags.bits.colmode) {
         case 0:
-            func_800379C8("1.0*Bk + 1.0*Fw\n");
+            console_report_printf("1.0*Bk + 1.0*Fw\n");
             break;
         case 1:
-            func_800379C8("1.0*Bk - 1.0*Fw\n");
+            console_report_printf("1.0*Bk - 1.0*Fw\n");
             break;
         case 2:
-            func_800379C8("1.0*Bk + 0.25*Fw\n");
+            console_report_printf("1.0*Bk + 0.25*Fw\n");
             break;
         case 3:
-            func_800379C8("0.5*Bk + 0.5*Fw\n");
+            console_report_printf("0.5*Bk + 0.5*Fw\n");
             break;
         }
         row = func_8028439C(row, cursor, &selected);
-        func_800379C8("ROTANGLE= %d\n", D_800B02CC[D_800B0044].rot_angle);
+        console_report_printf("ROTANGLE= %d\n", D_800B02CC[D_800B0044].rot_angle);
         func_8028439C(row, cursor, &selected);
-        func_800379C8("RANGEMOD= ");
+        console_report_printf("RANGEMOD= ");
         switch (D_800B02CC[D_800B0044].flags.bits.rangemod) {
         case 0:
-            func_800379C8("RANDUM (0)");
+            console_report_printf("RANDUM (0)");
             break;
         case 2:
-            func_800379C8("CIRCLE (1)");
+            console_report_printf("CIRCLE (1)");
             break;
         case 1:
-            func_800379C8("LINE (2)");
+            console_report_printf("LINE (2)");
             break;
         }
-        func_800379C8("ROTANGLE= %d\n", D_800B02CC[D_800B0044].rot_angle);
+        console_report_printf("ROTANGLE= %d\n", D_800B02CC[D_800B0044].rot_angle);
     } else {
         row = 22;
         for (i = 0; i < 8; i++) {
             row = func_8028439C(row, cursor, &selected);
-            func_800379C8("ANGOFFS%d=", i);
+            console_report_printf("ANGOFFS%d=", i);
             func_80284354(0, column, selected);
-            func_800379C8("%d", D_800B02CC[D_800B0044].angle_offsets[i][0]);
+            console_report_printf("%d", D_800B02CC[D_800B0044].angle_offsets[i][0]);
             func_80284354(1, column, selected);
-            func_800379C8("%d\n", D_800B02CC[D_800B0044].angle_offsets[i][1]);
+            console_report_printf("%d\n", D_800B02CC[D_800B0044].angle_offsets[i][1]);
         }
     }
-    func_80036DC8(0xFF, 0xFF, 0xFF);
+    console_set_color(0xFF, 0xFF, 0xFF);
     if (D_800C3908 & 0x4000) {
         column = 0;
         if (cursor < 29) {
@@ -910,9 +910,9 @@ void func_802835E0(void) {
 /* Print the cursor mark for `row` when it is the selected row and `blink` is 1. */
 void func_80284354(s32 row, s32 cursor, s32 blink) {
     if (cursor == row && blink == 1) {
-        func_800379C8(">");
+        console_report_printf(">");
     } else {
-        func_800379C8(" ");
+        console_report_printf(" ");
     }
 }
 
@@ -920,12 +920,12 @@ void func_80284354(s32 row, s32 cursor, s32 blink) {
  * returns the next row. */
 s32 func_8028439C(s32 row, s32 cursor, s32 *selected) {
     if (cursor == row) {
-        func_80036DC8(0, 0xFF, 0xFF);
-        func_800379C8(">");
+        console_set_color(0, 0xFF, 0xFF);
+        console_report_printf(">");
         *selected = 1;
     } else {
-        func_80036DC8(0x40, 0x40, 0x40);
-        func_800379C8(" ");
+        console_set_color(0x40, 0x40, 0x40);
+        console_report_printf(" ");
         *selected = 0;
     }
     return ++row;
@@ -1189,20 +1189,20 @@ void func_80284EA4(void) {
     s32 zoom;
 
     if ((D_800AFE9C & 1) && (D_800AFE9C & 0x40)) {
-        if (D_80065848[2] == 4) {
+        if (mode_field_pointer_state[2] == 4) {
             D_800ADB98 = 1;
-            D_800ADB94 += D_80065848[4];
-        } else if (D_80065848[2] == 8) {
+            D_800ADB94 += mode_field_pointer_state[4];
+        } else if (mode_field_pointer_state[2] == 8) {
             zoom = D_800AF9FC;
-            zoom += ((u32)D_80065848[4] << 4) >> 5;
+            zoom += ((u32)mode_field_pointer_state[4] << 4) >> 5;
             D_800AF9FC = zoom;
             D_800AF984 = 1;
             D_800AF988 = 1;
         } else {
             D_800AF984 = 1;
             D_800AF988 = 1;
-            D_800AF9FE += D_80065848[4] << 4;
-            D_800AF9F0 += D_80065848[3] << 18;
+            D_800AF9FE += mode_field_pointer_state[4] << 4;
+            D_800AF9F0 += mode_field_pointer_state[3] << 18;
             D_800AF9E6 = D_800AF9F0 >> 16;
         }
     }
@@ -1277,364 +1277,364 @@ s32 func_80284FB4(u32 *archive, s16 mode0, s16 x0, s16 y0, s16 mode1, u16 x1, u1
 void func_802851B0(s32 bank) {
     switch (bank) {
     case 0:
-        func_800379C8("main_se");
+        console_report_printf("main_se");
         break;
     case 1:
-        func_800379C8("bat_se");
+        console_report_printf("bat_se");
         break;
     case 2:
-        func_800379C8("gear_se");
+        console_report_printf("gear_se");
         break;
     case 3:
-        func_800379C8("ambi");
+        console_report_printf("ambi");
         break;
     case 4:
-        func_800379C8("ambi2");
+        console_report_printf("ambi2");
         break;
     case 5:
-        func_800379C8("ambi3");
+        console_report_printf("ambi3");
         break;
     case 6:
-        func_800379C8("ambi4");
+        console_report_printf("ambi4");
         break;
     case 32:
-        func_800379C8("minato");
+        console_report_printf("minato");
         break;
     case 33:
-        func_800379C8("lahan");
+        console_report_printf("lahan");
         break;
     case 34:
-        func_800379C8("jyukai");
+        console_report_printf("jyukai");
         break;
     case 35:
-        func_800379C8("shitan");
+        console_report_printf("shitan");
         break;
     case 36:
-        func_800379C8("musi");
+        console_report_printf("musi");
         break;
     case 37:
-        func_800379C8("church");
+        console_report_printf("church");
         break;
     case 38:
-        func_800379C8("battle2");
+        console_report_printf("battle2");
         break;
     case 39:
-        func_800379C8("chuchu");
+        console_report_printf("chuchu");
         break;
     case 40:
-        func_800379C8("over");
+        console_report_printf("over");
         break;
     case 41:
-        func_800379C8("orgel");
+        console_report_printf("orgel");
         break;
     case 42:
-        func_800379C8("battle3");
+        console_report_printf("battle3");
         break;
     case 43:
-        func_800379C8("ajito");
+        console_report_printf("ajito");
         break;
     case 44:
-        func_800379C8("emerada");
+        console_report_printf("emerada");
         break;
     case 45:
-        func_800379C8("ellie");
+        console_report_printf("ellie");
         break;
     case 46:
-        func_800379C8("world");
+        console_report_printf("world");
         break;
     case 47:
-        func_800379C8("sad");
+        console_report_printf("sad");
         break;
     case 48:
-        func_800379C8("ave");
+        console_report_printf("ave");
         break;
     case 49:
-        func_800379C8("ellie2");
+        console_report_printf("ellie2");
         break;
     case 50:
-        func_800379C8("balto");
+        console_report_printf("balto");
         break;
     case 51:
-        func_800379C8("dajil");
+        console_report_printf("dajil");
         break;
     case 52:
-        func_800379C8("maria1");
+        console_report_printf("maria1");
         break;
     case 53:
-        func_800379C8("maria2");
+        console_report_printf("maria2");
         break;
     case 54:
-        func_800379C8("heshu");
+        console_report_printf("heshu");
         break;
     case 55:
-        func_800379C8("kaisou");
+        console_report_printf("kaisou");
         break;
     case 56:
-        func_800379C8("pinch");
+        console_report_printf("pinch");
         break;
     case 57:
-        func_800379C8("porgan");
+        console_report_printf("porgan");
         break;
     case 58:
-        func_800379C8("babel");
+        console_report_printf("babel");
         break;
     case 59:
-        func_800379C8("solachu");
+        console_report_printf("solachu");
         break;
     case 60:
-        func_800379C8("shinnyu");
+        console_report_printf("shinnyu");
         break;
     case 61:
-        func_800379C8("inbou");
+        console_report_printf("inbou");
         break;
     case 62:
-        func_800379C8("ido");
+        console_report_printf("ido");
         break;
     case 63:
-        func_800379C8("takeoff");
+        console_report_printf("takeoff");
         break;
     case 64:
-        func_800379C8("glaerf");
+        console_report_printf("glaerf");
         break;
     case 65:
-        func_800379C8("last");
+        console_report_printf("last");
         break;
     case 66:
-        func_800379C8("shebat");
+        console_report_printf("shebat");
         break;
     case 67:
-        func_800379C8("dungeon");
+        console_report_printf("dungeon");
         break;
     case 68:
-        func_800379C8("lastbat");
+        console_report_printf("lastbat");
         break;
     case 69:
-        func_800379C8("solaris");
+        console_report_printf("solaris");
         break;
     case 181:
-        func_800379C8("vomaria");
+        console_report_printf("vomaria");
         break;
     case 182:
-        func_800379C8("melmv");
+        console_report_printf("melmv");
         break;
     case 183:
-        func_800379C8("yugumv");
+        console_report_printf("yugumv");
         break;
     case 184:
-        func_800379C8("zoharumv");
+        console_report_printf("zoharumv");
         break;
     case 185:
-        func_800379C8("vomagic5");
+        console_report_printf("vomagic5");
         break;
     case 186:
-        func_800379C8("vomagic4");
+        console_report_printf("vomagic4");
         break;
     case 187:
-        func_800379C8("vomagic3");
+        console_report_printf("vomagic3");
         break;
     case 188:
-        func_800379C8("voivent3");
+        console_report_printf("voivent3");
         break;
     case 189:
-        func_800379C8("voivent2");
+        console_report_printf("voivent2");
         break;
     case 190:
-        func_800379C8("vobossm");
+        console_report_printf("vobossm");
         break;
     case 191:
-        func_800379C8("vobossl");
+        console_report_printf("vobossl");
         break;
     case 192:
-        func_800379C8("vochu6");
+        console_report_printf("vochu6");
         break;
     case 193:
-        func_800379C8("vomagic2");
+        console_report_printf("vomagic2");
         break;
     case 194:
-        func_800379C8("vomagic1");
+        console_report_printf("vomagic1");
         break;
     case 7:
-        func_800379C8("movie14");
+        console_report_printf("movie14");
         break;
     case 195:
-        func_800379C8("movie15");
+        console_report_printf("movie15");
         break;
     case 196:
-        func_800379C8("movie16");
+        console_report_printf("movie16");
         break;
     case 197:
-        func_800379C8("movie18");
+        console_report_printf("movie18");
         break;
     case 198:
-        func_800379C8("voivent");
+        console_report_printf("voivent");
         break;
     case 199:
-        func_800379C8("damage");
+        console_report_printf("damage");
         break;
     case 200:
-        func_800379C8("vofei");
+        console_report_printf("vofei");
         break;
     case 201:
-        func_800379C8("vofei1");
+        console_report_printf("vofei1");
         break;
     case 202:
-        func_800379C8("vofei2");
+        console_report_printf("vofei2");
         break;
     case 203:
-        func_800379C8("vofei3");
+        console_report_printf("vofei3");
         break;
     case 204:
-        func_800379C8("vofei4");
+        console_report_printf("vofei4");
         break;
     case 205:
-        func_800379C8("vofei5");
+        console_report_printf("vofei5");
         break;
     case 206:
-        func_800379C8("vofei6");
+        console_report_printf("vofei6");
         break;
     case 207:
-        func_800379C8("voellie");
+        console_report_printf("voellie");
         break;
     case 208:
-        func_800379C8("voellie1");
+        console_report_printf("voellie1");
         break;
     case 209:
-        func_800379C8("voellie2");
+        console_report_printf("voellie2");
         break;
     case 210:
-        func_800379C8("voellie3");
+        console_report_printf("voellie3");
         break;
     case 211:
-        func_800379C8("voellie4");
+        console_report_printf("voellie4");
         break;
     case 212:
-        func_800379C8("voellie5");
+        console_report_printf("voellie5");
         break;
     case 213:
-        func_800379C8("voellie6");
+        console_report_printf("voellie6");
         break;
     case 214:
-        func_800379C8("voellie7");
+        console_report_printf("voellie7");
         break;
     case 215:
-        func_800379C8("voellie8");
+        console_report_printf("voellie8");
         break;
     case 216:
-        func_800379C8("voshita");
+        console_report_printf("voshita");
         break;
     case 217:
-        func_800379C8("voshita1");
+        console_report_printf("voshita1");
         break;
     case 218:
-        func_800379C8("voshita2");
+        console_report_printf("voshita2");
         break;
     case 219:
-        func_800379C8("voshita3");
+        console_report_printf("voshita3");
         break;
     case 220:
-        func_800379C8("voshita4");
+        console_report_printf("voshita4");
         break;
     case 221:
-        func_800379C8("voshita5");
+        console_report_printf("voshita5");
         break;
     case 222:
-        func_800379C8("voshita6");
+        console_report_printf("voshita6");
         break;
     case 223:
-        func_800379C8("vobaluto");
+        console_report_printf("vobaluto");
         break;
     case 224:
-        func_800379C8("vobalu1");
+        console_report_printf("vobalu1");
         break;
     case 225:
-        func_800379C8("vobalu2");
+        console_report_printf("vobalu2");
         break;
     case 226:
-        func_800379C8("vobalu3");
+        console_report_printf("vobalu3");
         break;
     case 227:
-        func_800379C8("vobalu4");
+        console_report_printf("vobalu4");
         break;
     case 228:
-        func_800379C8("vobalu5");
+        console_report_printf("vobalu5");
         break;
     case 229:
-        func_800379C8("vobalu6");
+        console_report_printf("vobalu6");
         break;
     case 230:
-        func_800379C8("vobalu7");
+        console_report_printf("vobalu7");
         break;
     case 231:
-        func_800379C8("vorico");
+        console_report_printf("vorico");
         break;
     case 232:
-        func_800379C8("vorico1");
+        console_report_printf("vorico1");
         break;
     case 233:
-        func_800379C8("vorico2");
+        console_report_printf("vorico2");
         break;
     case 234:
-        func_800379C8("vorico3");
+        console_report_printf("vorico3");
         break;
     case 235:
-        func_800379C8("vorico4");
+        console_report_printf("vorico4");
         break;
     case 236:
-        func_800379C8("vorico5");
+        console_report_printf("vorico5");
         break;
     case 237:
-        func_800379C8("vobilly");
+        console_report_printf("vobilly");
         break;
     case 238:
-        func_800379C8("vobilly1");
+        console_report_printf("vobilly1");
         break;
     case 239:
-        func_800379C8("vobilly2");
+        console_report_printf("vobilly2");
         break;
     case 240:
-        func_800379C8("vobilly3");
+        console_report_printf("vobilly3");
         break;
     case 241:
-        func_800379C8("vobilly4");
+        console_report_printf("vobilly4");
         break;
     case 242:
-        func_800379C8("vobilly5");
+        console_report_printf("vobilly5");
         break;
     case 243:
-        func_800379C8("voeme");
+        console_report_printf("voeme");
         break;
     case 244:
-        func_800379C8("voeme1");
+        console_report_printf("voeme1");
         break;
     case 245:
-        func_800379C8("voeme2");
+        console_report_printf("voeme2");
         break;
     case 246:
-        func_800379C8("voeme3");
+        console_report_printf("voeme3");
         break;
     case 247:
-        func_800379C8("voeme4");
+        console_report_printf("voeme4");
         break;
     case 248:
-        func_800379C8("voeme5");
+        console_report_printf("voeme5");
         break;
     case 249:
-        func_800379C8("vochu");
+        console_report_printf("vochu");
         break;
     case 250:
-        func_800379C8("vochu1");
+        console_report_printf("vochu1");
         break;
     case 251:
-        func_800379C8("vochu2");
+        console_report_printf("vochu2");
         break;
     case 252:
-        func_800379C8("vochu3");
+        console_report_printf("vochu3");
         break;
     case 253:
-        func_800379C8("vochu4");
+        console_report_printf("vochu4");
         break;
     case 254:
-        func_800379C8("vochu5");
+        console_report_printf("vochu5");
         break;
     }
 }

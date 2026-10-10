@@ -18,7 +18,7 @@
 
 /* Callers convert arguments/result differently from the resident definition
  * (u8 there): the resident read mode. */
-void func_8002A428(s32 mode);
+void cd_set_mode(s32 mode);
 
 /* A movie sector's header (the first 32 bytes of each STR sector). */
 typedef struct MovieSectorHeader {
@@ -68,6 +68,6 @@ extern s32 movie_stall_count;      /* polls without a ring frame */
 /* libcd's StCdIntrFlag: a ring interrupt waits for the MDEC DMA. */
 extern s32 movie_stream_deferred;
 
-extern s16 D_80062514;      /* -1 stopped, 0 closed, 1, 2 */
+extern s16 cd_movie_request_last_frame;      /* -1 stopped, 0 closed, 1, 2 */
 
 #endif

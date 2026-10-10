@@ -583,8 +583,8 @@ void func_8007B614(VECTOR *out, s32 distance, s32 angle) {
     distance *= 16;
     distance = (distance * D_800B2078.scale) >> 12;
     heading = angle & 0xFFF;
-    out->vx = func_8003F8CC(heading) * distance;
-    out->vz = -(func_8003F8B0(heading) * distance);
+    out->vx = gpu_get_cos(heading) * distance;
+    out->vz = -(gpu_get_sin(heading) * distance);
     out->vy = 0;
 }
 
@@ -651,8 +651,8 @@ s32 func_8007B814(VECTOR *delta, FieldActor *actor, SVECTOR *edge, s16 heading) 
     s32 angle;
 
     angle = heading & 0xFFF;
-    probe.vx = delta->vx + (func_8003F8CC(angle) << 6);
-    probe.vz = delta->vz - (func_8003F8B0(angle) << 6);
+    probe.vx = delta->vx + (gpu_get_cos(angle) << 6);
+    probe.vz = delta->vz - (gpu_get_sin(angle) << 6);
     if (func_8007C694(&probe, actor->position, actor, edge, &floor, -1) == -1) {
         probe.vx = delta->vx;
         probe.vy = delta->vy;
@@ -661,8 +661,8 @@ s32 func_8007B814(VECTOR *delta, FieldActor *actor, SVECTOR *edge, s16 heading) 
     } else {
         angle = heading - 0x100;
         angle &= 0xFFF;
-        probe.vx = delta->vx + (func_8003F8CC(angle) << 6);
-        probe.vz = delta->vz - (func_8003F8B0(angle) << 6);
+        probe.vx = delta->vx + (gpu_get_cos(angle) << 6);
+        probe.vz = delta->vz - (gpu_get_sin(angle) << 6);
         if (func_8007C694(&probe, actor->position, actor, edge, &floor, -1) == -1) {
             probe.vx = delta->vx;
             probe.vy = delta->vy;
@@ -671,8 +671,8 @@ s32 func_8007B814(VECTOR *delta, FieldActor *actor, SVECTOR *edge, s16 heading) 
         } else {
             angle = heading + 0x100;
             angle &= 0xFFF;
-            probe.vx = delta->vx + (func_8003F8CC(angle) << 6);
-            probe.vz = delta->vz - (func_8003F8B0(angle) << 6);
+            probe.vx = delta->vx + (gpu_get_cos(angle) << 6);
+            probe.vz = delta->vz - (gpu_get_sin(angle) << 6);
             if (func_8007C694(&probe, actor->position, actor, edge, &floor, -1) == -1) {
                 probe.vx = delta->vx;
                 probe.vy = delta->vy;
@@ -726,8 +726,8 @@ s32 func_8007BAC0(VECTOR *delta, FieldActor *actor, SVECTOR *edge, s16 heading) 
 
     angle = heading - 0x100;
     angle &= 0xFFF;
-    probe.vx = delta->vx + (func_8003F8CC(angle) << 6);
-    probe.vz = delta->vz - (func_8003F8B0(angle) << 6);
+    probe.vx = delta->vx + (gpu_get_cos(angle) << 6);
+    probe.vz = delta->vz - (gpu_get_sin(angle) << 6);
     if (func_8007BEF4(&probe, actor->position, actor, edge, &floor, -1, &attribute) == -1) {
         probe.vx = delta->vx;
         probe.vy = delta->vy;
@@ -736,8 +736,8 @@ s32 func_8007BAC0(VECTOR *delta, FieldActor *actor, SVECTOR *edge, s16 heading) 
     } else {
         angle = heading + 0x100;
         angle &= 0xFFF;
-        probe.vx = delta->vx + (func_8003F8CC(angle) << 6);
-        probe.vz = delta->vz - (func_8003F8B0(angle) << 6);
+        probe.vx = delta->vx + (gpu_get_cos(angle) << 6);
+        probe.vz = delta->vz - (gpu_get_sin(angle) << 6);
         if (func_8007BEF4(&probe, actor->position, actor, edge, &floor, -1, &attribute) == -1) {
             probe.vx = delta->vx;
             probe.vy = delta->vy;
@@ -745,8 +745,8 @@ s32 func_8007BAC0(VECTOR *delta, FieldActor *actor, SVECTOR *edge, s16 heading) 
             func_8007B6C4(heading, edge, &probe, attribute);
         } else {
             angle = heading & 0xFFF;
-            probe.vx = delta->vx + (func_8003F8CC(angle) << 6);
-            probe.vz = delta->vz - (func_8003F8B0(angle) << 6);
+            probe.vx = delta->vx + (gpu_get_cos(angle) << 6);
+            probe.vz = delta->vz - (gpu_get_sin(angle) << 6);
             if (func_8007BEF4(&probe, actor->position, actor, edge, &floor, -1, &attribute) == -1) {
                 probe.vx = delta->vx;
                 probe.vy = delta->vy;
@@ -1544,9 +1544,9 @@ void func_8007DCF8(s32 window, u_long *ot, s32 buffer) {
                     D_800C2698[window].choice.index = D_800C2698[window].choice.count - 1;
                 }
             }
-            func_80034874(&D_800C2698[window].text, D_800C2698[window].choice.index + D_800C2698[window].choice.first);
+            window_highlight_line(&D_800C2698[window].text, D_800C2698[window].choice.index + D_800C2698[window].choice.first);
         } else {
-            func_8003487C(&D_800C2698[window].text);
+            window_clear_highlight(&D_800C2698[window].text);
         }
     }
 }
@@ -1680,8 +1680,8 @@ void func_8007E1C0(u_long *ot, s32 buffer, s32 w) {
     if (D_800C2698[w].prompt.status == 0 && D_800C2698[w].age == 0 && D_800C2698[w].timer == 0
         && !(D_800C2698[w].style & 0x40) && D_800C2698[w].choice.status != 0) {
         if (D_800C2698[w].prompt_delay == 0) {
-            prompt_x = func_800347AC(&D_800C2698[w].text);
-            prompt_y = func_800347C0(&D_800C2698[w].text);
+            prompt_x = window_get_cursor_x(&D_800C2698[w].text);
+            prompt_y = window_get_cursor_line_y(&D_800C2698[w].text);
             area.x = D_800ADE9C[D_800ADE94 * 4 + 52];
             area.y = D_800ADE9C[D_800ADE94 * 4 + 53];
             area.w = D_800ADE9C[D_800ADE94 * 4 + 54];
@@ -1787,7 +1787,7 @@ void func_8007EE0C(s32 w) {
     SetDrawMode(&D_800C2698[w].frame.back_modes[0], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), NULL);
     SetDrawMode(&D_800C2698[w].frame.back_modes[1], 0, 0, GetTPage(0, 2, 0x280, 0x1F0), NULL);
     SetTile(&D_800C2698[w].frame.back[0]);
-    setRGB0(&D_800C2698[w].frame.back[0], D_800594D4[0], D_800594D4[1], D_800594D4[2]);
+    setRGB0(&D_800C2698[w].frame.back[0], window_color[0], window_color[1], window_color[2]);
     SetSemiTrans(&D_800C2698[w].frame.back[0], 1);
     D_800C2698[w].frame.back[1] = D_800C2698[w].frame.back[0];
     area.x = D_800ADE9C[52];
@@ -1881,9 +1881,9 @@ void func_8007F5AC(s32 window, s32 frame) {
 /* Close dialogue window `window` unless it is busy; -1 when busy. */
 s32 func_8007F6F8(s16 window) {
     if (D_800C2698[window].busy == 0) {
-        func_80034614(&D_800C2698[window].text);
-        func_800345E0(&D_800C2698[window].text);
-        func_800346D4(&D_800C2698[window].text);
+        window_reset_if_idle(&D_800C2698[window].text);
+        window_end_wait(&D_800C2698[window].text);
+        window_close(&D_800C2698[window].text);
         D_800C2698[window].choice.status = -1;
         D_800C2698[window].busy = -1;
         D_800C2698[window].cleared = -1;
@@ -1987,7 +1987,7 @@ s32 func_8007F8DC(s16 x, s16 y, s32 message, s32 w, s32 columns, s32 rows, s32 o
     if (D_800AF880.components.descriptors[owner].actor->character != 0xFF) {
         extra = (style & 0x402) == 0 ? 0x44 : 0;
     }
-    func_80032F54(&D_800C2698[w].text, D_800ADF54[slot][0], D_800ADF54[slot][1], x + 8 + extra, y + 8, columns,
+    window_open(&D_800C2698[w].text, D_800ADF54[slot][0], D_800ADF54[slot][1], x + 8 + extra, y + 8, columns,
                   rows);
     if (style & 0x400) {
         D_800C2698[w].style |= 0x20;
@@ -1997,7 +1997,7 @@ s32 func_8007F8DC(s16 x, s16 y, s32 message, s32 w, s32 columns, s32 rows, s32 o
     } else {
         D_800C2698[w].text.unk68 = 2;
     }
-    D_800C2698[w].message = func_80033728(D_800ADBF0, message);
+    D_800C2698[w].message = text_get_resource_entry(D_800ADBF0, message);
     D_800C2698[w].busy = 0;
     D_800C2698[w].text.flags |= 2;
     D_800C2698[w].timer = D_800B2078.text_speed;
@@ -2072,19 +2072,19 @@ void func_8008004C(u_long *ot, s32 buffer) {
             text = &D_800C2698[i].text;
             D_800C2698[i].prompt.status = -1;
             if (D_800C2698[i].timer == 0) {
-                if (func_80033CD0(text) != 0 && D_800C2698[i].choice.status != 0) {
+                if (window_get_wait_state(text) != 0 && D_800C2698[i].choice.status != 0) {
                     D_800C2698[i].prompt.status = 0;
                 }
                 if (D_800C2694 & 0x20) {
                     D_800C2698[i].choice.status = -1;
                     D_800AF880.components.descriptors[D_800C2698[i].owner].actor->unk081 =
                         D_800C2698[i].choice.index + D_800C2698[i].choice.first;
-                    func_800345E0(text);
+                    window_end_wait(text);
                 }
                 if (text->queued == 0) {
-                    func_80034714(text, D_800C2698[i].message);
+                    window_queue_message(text, D_800C2698[i].message);
                 }
-                func_80034888(text, ot, buffer);
+                window_draw_frame(text, ot, buffer);
             }
             addPrim(ot, &D_800C2698[i].modes[buffer]);
             func_8007E1C0(ot, buffer, i);
@@ -2103,13 +2103,13 @@ void func_8008004C(u_long *ot, s32 buffer) {
                             D_800C2698[i].choice.status = -1;
                             D_800AF880.components.descriptors[D_800C2698[i].owner].actor->unk081 =
                                 D_800C2698[i].choice.index + D_800C2698[i].choice.first;
-                            func_800345E0(text);
+                            window_end_wait(text);
                         }
                         if (text->queued == 0) {
-                            func_80034714(text, D_800C2698[i].message);
+                            window_queue_message(text, D_800C2698[i].message);
                         }
-                        func_80034888(text, ot, buffer);
-                        if (func_80033CD0(text) != 0 && D_800C2698[i].choice.status != 0) {
+                        window_draw_frame(text, ot, buffer);
+                        if (window_get_wait_state(text) != 0 && D_800C2698[i].choice.status != 0) {
                             D_800C2698[i].prompt.status = 0;
                         }
                     }
@@ -2215,20 +2215,20 @@ void func_8008083C(s32 index) {
     if (index < D_800ADBFC) {
         actor = D_800AF880.components.descriptors[index].actor;
         if (actor->unk134 & 0x80) {
-            func_800320E8(actor->link);
+            heap_free(actor->link);
         }
         if (actor->state.word & 0x1000) {
-            func_800320E8(actor->unk114);
+            heap_free(actor->unk114);
         }
         if (D_800AF880.components.descriptors[index].flags & 0x2000) {
-            func_800320E8(actor->list);
+            heap_free(actor->list);
         }
         if (actor->unk124 != -1) {
-            func_800320E8(actor->unk120);
+            heap_free(actor->unk120);
         }
-        func_800320E8(actor);
-        func_800320E8(D_800AF880.components.descriptors[index].shadow);
-        func_800230A8(D_800AF880.components.descriptors[index].model);
+        heap_free(actor);
+        heap_free(D_800AF880.components.descriptors[index].shadow);
+        sprite_destroy(D_800AF880.components.descriptors[index].model);
     }
 }
 
@@ -2402,7 +2402,7 @@ void func_80080F44(s32 index) {
 
     if (index < D_800ADBFC) {
         D_800B2078.unk2180++;
-        D_800AF880.components.descriptors[index].actor = func_80031BDC(0x138, 0);
+        D_800AF880.components.descriptors[index].actor = heap_alloc(0x138, 0);
         word = (s32 *)D_800AF880.components.descriptors[index].actor;
         for (i = 0; i < words; i++) {
             *word++ = 0;
@@ -2411,7 +2411,7 @@ void func_80080F44(s32 index) {
         D_800AF880.components.descriptors[index].unk5A = 0;
         if (D_800AF880.components.descriptors[index].flags & 0x2000) {
             instance = D_800AF880.components.descriptors[index].instance;
-            actor->list = func_80031BDC(0x80, 0);
+            actor->list = heap_alloc(0x80, 0);
             if (instance->anims != NULL) {
                 for (i = 0; i < instance->anims->count; i++) {
                     instance->anims->channels[i].update = func_80080A18;
@@ -2420,7 +2420,7 @@ void func_80080F44(s32 index) {
             }
         }
         func_80080A74(index);
-        D_800AF880.components.descriptors[index].shadow = func_80031BDC(0x70, 0);
+        D_800AF880.components.descriptors[index].shadow = heap_alloc(0x70, 0);
         func_8007AA44(D_800AF880.components.descriptors[index].shadow);
     }
 }
@@ -2460,7 +2460,7 @@ void func_8008110C(void) {
                 if (actor->unkE8 != actor->unk0EA) {
                     actor->unk0EA = 2;
                     D_800AF880.components.descriptors[i].actor->unkE8 = D_800AF880.components.descriptors[i].actor->unk0EA;
-                    func_800245D8(D_800AF880.components.descriptors[i].model, actor->unk0EA);
+                    sprite_start_animation(D_800AF880.components.descriptors[i].model, actor->unk0EA);
                 }
             } else if (actor->layer_flags & 0x200000) {
                 if (D_800AF880.components.descriptors[i].actor->unkE8 != D_800AF880.components.descriptors[i].actor->unk0EA) {
@@ -2687,8 +2687,8 @@ void func_80081F80(Sprite *sprite, s16 heading, FieldDescriptor *descriptor) {
         speed = ((0x40000 / (u16)descriptor->actor->unk76) >> 8) << 5;
         angle = heading & 0xFFF;
         if (!(heading & 0x8000)) {
-            sprite->speed_x = ((func_8003F8CC(angle) * speed) >> 12) * descriptor->actor->scale[0];
-            sprite->speed_z = (-(func_8003F8B0(angle) * speed) >> 12) * descriptor->actor->scale[2];
+            sprite->speed_x = ((gpu_get_cos(angle) * speed) >> 12) * descriptor->actor->scale[0];
+            sprite->speed_z = (-(gpu_get_sin(angle) * speed) >> 12) * descriptor->actor->scale[2];
         } else {
             sprite->speed_x = 0;
             sprite->speed_z = 0;
@@ -2697,19 +2697,19 @@ void func_80081F80(Sprite *sprite, s16 heading, FieldDescriptor *descriptor) {
         actor = descriptor->actor;
         if (!(actor->layer_flags & 0x2000)) {
             if (!(actor->layer_flags & 0x80000)) {
-                func_80021FE0(sprite, heading);
+                sprite_set_direction(sprite, heading);
             } else {
                 speed = ((0x40000 / (u16)actor->unk76) >> 8) << 5;
                 angle = heading & 0xFFF;
-                sprite->speed_x = ((func_8003F8CC(angle) * speed) >> 12) * descriptor->actor->scale[0];
-                sprite->speed_z = (-(func_8003F8B0(angle) * speed) >> 12) * descriptor->actor->scale[2];
+                sprite->speed_x = ((gpu_get_cos(angle) * speed) >> 12) * descriptor->actor->scale[0];
+                sprite->speed_z = (-(gpu_get_sin(angle) * speed) >> 12) * descriptor->actor->scale[2];
                 sprite->speed = 0x4000000 / (u16)descriptor->actor->unk76;
             }
         } else if (!(actor->layer_flags & 0x20000)) {
             speed = ((0x80000 / (u16)actor->unk76) >> 8) << 5;
             angle = heading & 0xFFF;
-            sprite->speed_x = ((func_8003F8CC(angle) * speed) >> 12) * descriptor->actor->scale[0];
-            sprite->speed_z = (-(func_8003F8B0(angle) * speed) >> 12) * descriptor->actor->scale[2];
+            sprite->speed_x = ((gpu_get_cos(angle) * speed) >> 12) * descriptor->actor->scale[0];
+            sprite->speed_z = (-(gpu_get_sin(angle) * speed) >> 12) * descriptor->actor->scale[2];
         } else {
             layer = actor->state.bits.layer;
             sprite->speed_x = -D_801E8670[layer]->moved[0] << 16;
@@ -2742,7 +2742,7 @@ void func_800821F4(void *model, s32 animation, FieldDescriptor *descriptor) {
     }
     if (!(descriptor->actor->layer_flags & 0x2000)) {
         if (!(descriptor->actor->layer_flags & 0x1000000)) {
-            func_800245D8(model, animation);
+            sprite_start_animation(model, animation);
         }
     } else if (animation < 0x10) {
         func_801E8330(descriptor->actor->state.bits.layer, 0, D_800ADFB8[animation]);
@@ -2930,7 +2930,7 @@ conveyed:
     linked:
         if ((D_800AF880.components.descriptors[actor->unk074].actor->layer_flags & 0xC0) == 0xC0) {
             if (!(actor->unk134 & 0x80)) {
-                actor->link = func_80031BDC(sizeof(PlatformLink), 0);
+                actor->link = heap_alloc(sizeof(PlatformLink), 0);
                 actor->unk134 |= 0x80;
             }
             turn.vx = D_800AF880.components.descriptors[actor->unk074].rotation.vx - actor->link->rotation.vx;
@@ -2949,8 +2949,8 @@ conveyed:
             radius = actor->link->radius;
             motion_value = (s16)ratan2(other_z - self_z, other_x - self_x) - angle;
             dir = motion_value - 0x800;
-            actor->unk40[0] += other_x + func_8003F8CC(dir) * radius * 16 - self_x;
-            actor->unk40[2] += other_z + func_8003F8B0(dir) * radius * 16 - self_z;
+            actor->unk40[0] += other_x + gpu_get_cos(dir) * radius * 16 - self_x;
+            actor->unk40[2] += other_z + gpu_get_sin(dir) * radius * 16 - self_z;
         }
     }
     if ((actor->layer_flags & 0x22000) == 0x22000) {
@@ -2968,12 +2968,12 @@ conveyed:
     do {                                                                                                \
         (saved) = (actor)->flags;                                                                       \
         if ((index) == D_800B2078.controlled) {                                                         \
-            if (D_8005A444[1] != 0xFF) {                                                                \
+            if (mode_party_actors[1] != 0xFF) {                                                                \
                 (actor)->flags =                                                                        \
-                    (saved) | (D_800AF880.components.descriptors[D_8005A444[1]].actor->flags & 0x600);  \
+                    (saved) | (D_800AF880.components.descriptors[mode_party_actors[1]].actor->flags & 0x600);  \
             }                                                                                           \
-            if (D_8005A444[2] != 0xFF) {                                                                \
-                (actor)->flags |= D_800AF880.components.descriptors[D_8005A444[2]].actor->flags & 0x600; \
+            if (mode_party_actors[2] != 0xFF) {                                                                \
+                (actor)->flags |= D_800AF880.components.descriptors[mode_party_actors[2]].actor->flags & 0x600; \
             }                                                                                           \
         }                                                                                               \
         if (!((actor)->flags & 0x41800) && (actor)->unk074 == 0xFF && D_800ADB98 == 0) {                \
@@ -3002,7 +3002,7 @@ void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
 
     heading = actor->heading;
     model = descriptor->model;
-    D_80065B08 = index;
+    mode_field_last_moved_actor = index;
     if (actor->flags & 0x1000000) {
         return;
     }
@@ -3204,7 +3204,7 @@ s32 func_80083288(s32 index, SpriteModel *model, s32 x, s32 z, s32 *height, VECT
         work->angles.vy = 0;
         work->angles.vz = D_800AF880.components.descriptors[index].actor->unk70;
     local:
-        func_8003F738(&work->angles, &work->local);
+        gpu_build_rotation_matrix(&work->angles, &work->local);
         MulMatrix2(&D_800AF880.components.descriptors[index].matrix, &work->local);
         work->local.t[0] = D_800AF880.components.descriptors[index].matrix.t[0];
         work->local.t[1] = D_800AF880.components.descriptors[index].matrix.t[1];
@@ -3536,7 +3536,7 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
                 continue;
             }
             if (D_800C268C == 0) {
-                func_800379C8("POLYCHECK %d\n", u);
+                console_report_printf("POLYCHECK %d\n", u);
             }
             other->layer_flags |= 0x100;
             bottom = top + (u16)other->height;
@@ -3565,7 +3565,7 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
             }
             if (actor->unk014 & 0x400000) {
                 if (D_800C268C == 0) {
-                    func_800379C8("HITOFF\n");
+                    console_report_printf("HITOFF\n");
                 }
                 continue;
             }
@@ -3653,7 +3653,7 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
         D_800AF880.components.descriptors[actor->unk074].actor->layer_flags |= 0x8000;
         if (link == 0xFF) {
             if (!(actor->unk134 & 0x80)) {
-                actor->link = func_80031BDC(sizeof(PlatformLink), 0);
+                actor->link = heap_alloc(sizeof(PlatformLink), 0);
                 actor->unk134 |= 0x80;
             }
             actor->link->rotation.vx = D_800AF880.components.descriptors[actor->unk074].rotation.vx;
@@ -3666,7 +3666,7 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
         func_80084A40(index, lowest, descriptor, actor, status);
     }
     if ((u16)SPRITE_SEQUENCER(D_800AF880.components.descriptors[index].model)->halfc == 1) {
-        func_80035DB0();
+        pad_clear_queue();
         actor->flags &= ~0x800;
     }
     func_8007CD60(0x20);
@@ -3810,12 +3810,12 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
         layers = (actor->flags >> 8) & 7;
         if (layers & (attributes >> 5)) {
             if (D_800C268C == 0) {
-                func_800379C8("ERROR ID1 ACT=%d\n", index);
+                console_report_printf("ERROR ID1 ACT=%d\n", index);
             }
             goto blocked;
         } else if (attributes & 0x800000) {
             if (D_800C268C == 0) {
-                func_800379C8(D_8006FC74, index);
+                console_report_printf(D_8006FC74, index);
             }
         blocked:
             if (index == D_800B2078.controlled) {

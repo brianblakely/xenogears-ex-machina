@@ -121,25 +121,25 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
     case 0x6A:
         D_800C492A = 1;
         D_800C35D4 = 0;
-        func_8003A89C((SoundSeq *)D_800C3E54, 0, 0x78);
+        sound_set_seq_fade((SoundSeq *)D_800C3E54, 0, 0x78);
         break;
     /* 69: rebind the block idle bit 10 names: +4c when set, else +48 (bit 10 kept). */
     case 0x69:
         if ((sprite->b0.wordb0 >> 10) & 1) {
-            func_800222BC(sprite, (s32 *)sprite->resource);
+            sprite_bind_resource(sprite, (s32 *)sprite->resource);
             sprite->b0.wordb0 |= 0x400;
         } else {
-            func_800222BC(sprite, sprite->animations);
+            sprite_bind_resource(sprite, sprite->animations);
             sprite->b0.wordb0 &= ~0x400;
         }
         break;
     /* 68: bind +4c (idle bit 10 set) for a negative animation, else +48. */
     case 0x68:
         if ((s8)sprite->motion.bytes[3] < 0) {
-            func_800222BC(sprite, (s32 *)sprite->resource);
+            sprite_bind_resource(sprite, (s32 *)sprite->resource);
             sprite->b0.wordb0 |= 0x400;
         } else {
-            func_800222BC(sprite, sprite->animations);
+            sprite_bind_resource(sprite, sprite->animations);
             sprite->b0.wordb0 &= ~0x400;
         }
         break;
@@ -152,8 +152,8 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         sprite->b0.wordb0 |= 0x200;
     /* 63: when (s16)80059454 > 0x200: field3a = it, facing group 3, render bit 28. */
     case 0x63:
-        if ((s16)D_80059454 > 0x200) {
-            sprite->rate = D_80059454;
+        if ((s16)mode_battle_camera_range > 0x200) {
+            sprite->rate = mode_battle_camera_range;
             sprite->flags = (sprite->flags & ~0x1F00) | 0x300;
             sprite->render.word |= 0x10000000;
         }
@@ -225,7 +225,7 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
             played = D_800C3626;
             if (!((played >> slot) & 1)) {
                 D_800C3626 = played | (1 << slot);
-                func_80039E60((kind + 0x52) | (D_8005919C->bank << 16));
+                sound_play_effect((kind + 0x52) | (sprite_script_sound_bank->bank << 16));
             }
         }
         break;
@@ -237,25 +237,25 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
     /* 4f u8: play sound u8 of the sprite's bank on the last two effect voices (80039db8). */
     case 0x4F:
         if (sprite->word50 != 0) {
-            func_80039DB8(args[0] | (((SoundBank *)sprite->word50)->id << 16));
+            sound_play_effect_on_last_channels(args[0] | (((SoundBank *)sprite->word50)->id << 16));
         }
         break;
     /* 52 u8 v: play sound u8 of the sprite's bank on effect voices (v & fe) ^ 8 (80039ec4). */
     case 0x52:
         if (sprite->word50 != 0) {
-            func_80039EC4(args[0] | (((SoundBank *)sprite->word50)->id << 16), args[1]);
+            sound_play_effect_on_channel(args[0] | (((SoundBank *)sprite->word50)->id << 16), args[1]);
         }
         break;
     /* 4d u8: stop effect u8 of the sprite's bank (8003a14c). */
     case 0x4D:
         if (sprite->word50 != 0) {
-            func_8003A14C(args[0] | (((SoundBank *)sprite->word50)->id << 16));
+            sound_stop_effect(args[0] | (((SoundBank *)sprite->word50)->id << 16));
         }
         break;
     /* 4e u8: stop effect u8 of the scripts' bank (8003a14c). */
     case 0x4E:
-        if (D_8005919C != NULL) {
-            func_8003A14C(args[0] | (D_8005919C->bank << 16));
+        if (sprite_script_sound_bank != NULL) {
+            sound_stop_effect(args[0] | (sprite_script_sound_bank->bank << 16));
         }
         break;
     /* 4c: flags bit 1 (a lit model). */
@@ -352,12 +352,12 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
     /* 34 s8: gravity = (s8 * 2 * (+82) / 4096 << 5) * (skip + 1)^2. */
     case 0x34:
         sprite->gravity = (((s8)args[0] << 1) * (s16)sprite->word82 / 4096) << 5;
-        sprite->gravity *= (D_80059198 + 1) * (D_80059198 + 1);
+        sprite->gravity *= (sprite_frame_skip + 1) * (sprite_frame_skip + 1);
         break;
     /* 33 u8: with an animation block (+48), play animation u8. */
     case 0x33:
         if (sprite->animations != 0) {
-            func_800245D8(sprite, args[0]);
+            sprite_start_animation(sprite, args[0]);
         }
         break;
     /* 31: geometry offset 160, 112. */
@@ -460,7 +460,7 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         break;
     /* 1a: destroy the tasks the sprite's task created (8001ce74). */
     case 0x1A:
-        func_8001CE74(sprite->block);
+        task_destroy_owned_by(sprite->block);
         break;
     /* 2d s16: position = the three s16 at the arguments + s16 (800b6930). */
     case 0x2D:
@@ -576,11 +576,11 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         sprite->motion.word &= ~4;
         sprite->render.word &= ~8;
         sprite->render.word &= ~0x10;
-        func_80021FE0(sprite, 0);
+        sprite_set_direction(sprite, 0);
         break;
     /* 0e s8: direction = s8 * 16. */
     case 0xE:
-        func_80021FE0(sprite, (s8)args[0] * 16);
+        sprite_set_direction(sprite, (s8)args[0] * 16);
         break;
     /* 0d s8: turn the velocity about z by s8 * 16 (800b6e84). */
     case 0xD:
@@ -628,8 +628,8 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         break;
     /* 01 var: a trail in the colours at the variable (a count first, 0: 4) (800b572c). */
     case 0x1:
-        func_8001D4E8(sprite);
-        func_800B572C(sprite, func_8001FBA4(sprite, args));
+        sprite_alloc_group_entries(sprite);
+        func_800B572C(sprite, sprite_vm_resolve_variable(sprite, args));
         break;
     /* 24: the loaded battle module's 801fc7b0 (ovl3385: hold the sprite in place under its
      * effect). */
@@ -643,7 +643,7 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         break;
     /* 02: end the trail (the child task running 800b5588). */
     case 0x2:
-        task = func_8001D0A4(sprite->block, func_800B5588);
+        task = task_find_owned_with_update(sprite->block, func_800B5588);
         if (task != NULL) {
             task->destroy(task);
         }
@@ -655,7 +655,7 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         break;
     /* 04: end every link (the tasks running 800b5b3c). */
     case 0x4:
-        while ((task = func_8001D164(func_800B5B3C)) != NULL) {
+        while ((task = task_find_by_update(func_800B5B3C)) != NULL) {
             task->destroy(task);
         }
         break;
@@ -747,7 +747,7 @@ void func_800B4F88(Sprite *sprite, s32 index, MATRIX *m) {
         angles.vx = anchor->half2;
         angles.vy = sprite->renderer->pointer34[index].half4;
         angles.vz = sprite->renderer->pointer34[index].half6;
-        func_8003F738(&angles, m);
+        gpu_build_rotation_matrix(&angles, m);
         m->t[0] = sprite->renderer->matrix.t[0] + x;
         m->t[1] = sprite->renderer->matrix.t[1] + y;
         m->t[2] = sprite->renderer->matrix.t[2];
@@ -806,11 +806,11 @@ void func_800B51B0(VECTOR *a, VECTOR *b) {
     to.vx = b->vx;
     to.vy = b->vy;
     to.vz = b->vz;
-    if ((u8 *)D_80059580 + sizeof(LINE_F2) >= D_80059534) {
+    if ((u8 *)sprite_queue_next_free + sizeof(LINE_F2) >= sprite_queue_block_end) {
         return;
     }
-    line = (LINE_F2 *)D_80059580;
-    D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(LINE_F2));
+    line = (LINE_F2 *)sprite_queue_next_free;
+    sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + sizeof(LINE_F2));
     SetLineF2(line);
     abr = D_800C3D4C;
     if (abr != 0) {
@@ -836,13 +836,13 @@ void func_800B51B0(VECTOR *a, VECTOR *b) {
     dy = line->y1 - line->y0;
     width = D_800C3E9C;
     angle = ratan2(dy, dx) + 0x400; /* across the line */
-    dx = func_8003F8CC(angle) * width / 8192;
-    dy = func_8003F8B0(angle) * width / 8192;
-    if ((u8 *)D_80059580 + sizeof(POLY_FT4) >= D_80059534) {
+    dx = gpu_get_cos(angle) * width / 8192;
+    dy = gpu_get_sin(angle) * width / 8192;
+    if ((u8 *)sprite_queue_next_free + sizeof(POLY_FT4) >= sprite_queue_block_end) {
         return;
     }
-    quad = (POLY_FT4 *)D_80059580;
-    D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(POLY_FT4));
+    quad = (POLY_FT4 *)sprite_queue_next_free;
+    sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + sizeof(POLY_FT4));
     SetPolyFT4(quad);
     SetShadeTex(quad, 1);
     quad->u0 = 0xC0 + (D_800D2FCC & 7);
@@ -873,7 +873,7 @@ void func_800B51B0(VECTOR *a, VECTOR *b) {
     D_800C3CA6 = quad->y2 = line->y1 - dy;
     D_800C3CA8 = quad->x3 = line->x1 + dx;
     D_800C3CAA = quad->y3 = line->y1 + dy;
-    AddPrim((u32 *)D_8005956C + depth, quad);
+    AddPrim((u32 *)sprite_ot + depth, quad);
     D_800D2FCC++;
 }
 
@@ -914,14 +914,14 @@ void func_800B5588(Task *task) {
 void func_800B56E4(Task *draw) {
     SpriteTrail *trail = draw->data;
 
-    func_8001E148(trail->sprite);
+    sprite_set_draw_matrix(trail->sprite);
     func_800C08CC(5, trail->trail, func_800B51B0);
 }
 
 /* Give sprite a trail in colours (the first byte the colour count, 0 for
  * 4). */
 void func_800B572C(Sprite *sprite, u8 *colours) {
-    SpriteTrail *trail = (SpriteTrail *)func_8001D1D8(0xB8, sprite->block, func_800B5588, func_800B56E4, NULL);
+    SpriteTrail *trail = (SpriteTrail *)task_alloc_two_node_task(0xB8, sprite->block, func_800B5588, func_800B56E4, NULL);
 
     trail->sprite = sprite;
     trail->frame = sprite->frame;
@@ -980,9 +980,9 @@ void func_800B5854(Task *task) {
 
 /* Watch sprite approach its target (800B5854), resuming at the given script. */
 SpriteApproach *func_800B5924(Sprite *sprite, s32 near, u8 *resume) {
-    SpriteApproach *approach = (SpriteApproach *)func_8001CD08(sprite->block, sizeof(SpriteApproach) - sizeof(Task));
+    SpriteApproach *approach = (SpriteApproach *)task_alloc_main_task(sprite->block, sizeof(SpriteApproach) - sizeof(Task));
 
-    func_8001CD6C(&approach->task, func_800B5854);
+    task_set_update_callback(&approach->task, func_800B5854);
     approach->sprite = sprite;
     approach->distance = func_800B57E4(sprite);
     approach->near = near;
@@ -1041,9 +1041,9 @@ void func_800B5B3C(SpriteLink *link) {
 /* Link sprite's partner to it at anchors (low nibble the sprite's, high
  * nibble the partner's). */
 SpriteLink *func_800B5C18(Sprite *sprite, u8 *anchors) {
-    SpriteLink *link = (SpriteLink *)func_8001CD08(sprite->block, sizeof(SpriteLink) - sizeof(Task));
+    SpriteLink *link = (SpriteLink *)task_alloc_main_task(sprite->block, sizeof(SpriteLink) - sizeof(Task));
 
-    func_8001CD6C(&link->task, (void (*)(Task *))func_800B5B3C);
+    task_set_update_callback(&link->task, (void (*)(Task *))func_800B5B3C);
     link->sprite = sprite;
     link->partner = sprite->partner;
     link->frame = sprite->frame;
@@ -1063,14 +1063,14 @@ void func_800B5CC0(Task *task) {
     SVECTOR angles;
     VECTOR position;
 
-    func_80023210(sprite);
+    sprite_vm_tick(sprite);
     angles.vy = sprite->speed_y >> 13;
     angles.vz = sprite->speed_z >> 13;
     angles.vx = 0;
-    offset.vx = func_80022CAC(sprite, sprite->speed_x >> 13);
+    offset.vx = sprite_scale_by_rate(sprite, sprite->speed_x >> 13);
     offset.vy = 0;
     offset.vz = 0;
-    func_8003F738(&angles, &m);
+    gpu_build_rotation_matrix(&angles, &m);
     ApplyMatrix(&m, &offset, &position);
     position.vx += sprite->target_x;
     position.vy += sprite->target_y;
@@ -1086,7 +1086,7 @@ void func_800B5CC0(Task *task) {
 /* Start sprite's orbit (800B5CC0). */
 void func_800B5DC4(Sprite *sprite) {
     sprite->frame = 1;
-    func_8001CD6C(sprite->block, func_800B5CC0);
+    task_set_update_callback(sprite->block, func_800B5CC0);
 }
 
 /* Draw the sprite as a streak: a line in its colour from its position back
@@ -1106,23 +1106,23 @@ void func_800B5DF4(Task *draw) {
     if (sprite->frame != 0) {
         return;
     }
-    cursor = (u8 *)D_80059580;
-    if (cursor + sizeof(LINE_F2) >= D_80059534) {
+    cursor = (u8 *)sprite_queue_next_free;
+    if (cursor + sizeof(LINE_F2) >= sprite_queue_block_end) {
         return;
     }
     position.vx = sprite->x >> 16;
     position.vy = sprite->y >> 16;
-    D_80059580 = (SpriteQueueEntry *)(cursor + sizeof(LINE_F2));
+    sprite_queue_next_free = (SpriteQueueEntry *)(cursor + sizeof(LINE_F2));
     position.vz = sprite->z >> 16;
     line = (LINE_F2 *)cursor;
     if (((u8 *)&sprite->render)[3] & 1) {
         SetRotMatrix(&D_800C3574);
         SetTransMatrix(&D_800C3574);
     } else {
-        SetRotMatrix(&D_8004FBB8);
-        SetTransMatrix(&D_8004FBB8);
+        SetRotMatrix(&sprite_view_matrix);
+        SetTransMatrix(&sprite_view_matrix);
     }
-    depth = RotTransPers(&position, (long *)&line->x0, &p, &p) >> D_80050100;
+    depth = RotTransPers(&position, (long *)&line->x0, &p, &p) >> model_ot_depth_shift;
     shift = sprite->height + 8;
     sprite->depth = depth;
     position.vx -= sprite->speed_x >> shift;
@@ -1131,15 +1131,15 @@ void func_800B5DF4(Task *draw) {
     RotTransPers(&position, (long *)&line->x1, &p, &p);
     setlen(line, 3);
     *(u32 *)&line->r0 = *(u32 *)&sprite->red;
-    AddPrim((u32 *)D_8005956C + depth, line);
-    tpage = (DR_TPAGE *)D_80059580;
-    if ((u8 *)D_80059580 + sizeof(DR_TPAGE) < D_80059534) {
+    AddPrim((u32 *)sprite_ot + depth, line);
+    tpage = (DR_TPAGE *)sprite_queue_next_free;
+    if ((u8 *)sprite_queue_next_free + sizeof(DR_TPAGE) < sprite_queue_block_end) {
         blend = ((u8 *)&sprite->render)[0] >> 5;
         if (blend != 0) {
-            D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(DR_TPAGE));
+            sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + sizeof(DR_TPAGE));
             setlen(tpage, 1);
             tpage->code[0] = 0xE1000000 | (((blend - 1) & 3) << 5);
-            AddPrim((u32 *)D_8005956C + depth, tpage);
+            AddPrim((u32 *)sprite_ot + depth, tpage);
         }
     }
 }
@@ -1148,7 +1148,7 @@ void func_800B5DF4(Task *draw) {
  * (LINE_F2). */
 void func_800B5FBC(Sprite *sprite) {
     sprite->frame = 1;
-    func_8001CD64(&((SpriteTask *)sprite->block)->auxiliary, func_800B5DF4);
+    task_set_draw_callback(&((SpriteTask *)sprite->block)->auxiliary, func_800B5DF4);
     sprite->colour_flags = 0x40;
 }
 
@@ -1167,18 +1167,18 @@ void func_800B6004(Task *draw) {
     if (sprite->frame != 0) {
         return;
     }
-    line = (LINE_F2 *)D_80059580;
+    line = (LINE_F2 *)sprite_queue_next_free;
     parent = sprite->parent;
-    if ((u8 *)(line + 1) >= D_80059534) {
+    if ((u8 *)(line + 1) >= sprite_queue_block_end) {
         return;
     }
     position.vx = sprite->x >> 16;
     position.vy = sprite->y >> 16;
     position.vz = sprite->z >> 16;
-    D_80059580 = (SpriteQueueEntry *)(line + 1);
-    SetRotMatrix(&D_8004FBB8);
-    SetTransMatrix(&D_8004FBB8);
-    depth = RotTransPers(&position, (long *)&line->x0, &p, &p) >> D_80050100;
+    sprite_queue_next_free = (SpriteQueueEntry *)(line + 1);
+    SetRotMatrix(&sprite_view_matrix);
+    SetTransMatrix(&sprite_view_matrix);
+    depth = RotTransPers(&position, (long *)&line->x0, &p, &p) >> model_ot_depth_shift;
     sprite->depth = depth;
     position.vx = sprite->x >> 16;
     position.vy = sprite->y >> 16;
@@ -1189,15 +1189,15 @@ void func_800B6004(Task *draw) {
     RotTransPers(&position, (long *)&line->x1, &p, &p);
     setlen(line, 3);
     *(u32 *)&line->r0 = *(u32 *)&sprite->red;
-    AddPrim((u32 *)D_8005956C + depth, line);
-    tpage = (DR_TPAGE *)D_80059580;
-    if ((u8 *)D_80059580 + sizeof(DR_TPAGE) < D_80059534) {
+    AddPrim((u32 *)sprite_ot + depth, line);
+    tpage = (DR_TPAGE *)sprite_queue_next_free;
+    if ((u8 *)sprite_queue_next_free + sizeof(DR_TPAGE) < sprite_queue_block_end) {
         blend = ((u8 *)&sprite->render)[0] >> 5;
         if (blend != 0) {
-            D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(DR_TPAGE));
+            sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + sizeof(DR_TPAGE));
             setlen(tpage, 1);
             tpage->code[0] = 0xE1000000 | (((blend - 1) & 3) << 5);
-            AddPrim((u32 *)D_8005956C + depth, tpage);
+            AddPrim((u32 *)sprite_ot + depth, tpage);
         }
     }
 }
@@ -1206,37 +1206,37 @@ void func_800B6004(Task *draw) {
  * (LINE_F2). */
 void func_800B61B0(Sprite *sprite) {
     sprite->frame = 1;
-    func_8001CD64(&((SpriteTask *)sprite->block)->auxiliary, func_800B6004);
+    task_set_draw_callback(&((SpriteTask *)sprite->block)->auxiliary, func_800B6004);
     sprite->colour_flags = 0x40;
 }
 
 /* Script command: reset D_800D36BC and load sound bank set args[0]
  * (800A96B4, on a stack in a heap block). */
 void func_800B61F8(Sprite *sprite, u8 *args) {
-    u8 *stack = func_80031BDC(0x4000, 1);
+    u8 *stack = heap_alloc(0x4000, 1);
 
     STACK_ENTER(stack + 0x3E00);
     D_800D36BC = 0;
     func_800A96B4(args[0]);
     STACK_LEAVE();
-    func_800320E8(stack);
+    heap_free(stack);
 }
 
 /* Script command: free stage object 11 (800A9FF0, on a stack in a heap
  * block). */
 void func_800B626C(void) {
-    u8 *stack = func_80031BDC(0x4000, 1);
+    u8 *stack = heap_alloc(0x4000, 1);
 
     STACK_ENTER(stack + 0x3E00);
     func_800A9FF0(0xB);
     STACK_LEAVE();
-    func_800320E8(stack);
+    heap_free(stack);
 }
 
 /* Script command: show stage object 11 in mode args[0] (800BEE2C); mode 2
  * first places it and shows it to the side of D_800C3E1C only. */
 void func_800B62C8(Sprite *sprite, u8 *args) {
-    u8 *stack = func_80031BDC(0x4000, 1);
+    u8 *stack = heap_alloc(0x4000, 1);
     u32 frame_bits;
 
     STACK_ENTER(stack + 0x3E00);
@@ -1248,7 +1248,7 @@ void func_800B62C8(Sprite *sprite, u8 *args) {
         func_800BEE2C(0xB, D_800D3634, args[0]);
     }
     STACK_LEAVE();
-    func_800320E8(stack);
+    heap_free(stack);
 }
 
 /* Script command: fade the lights (800B3CD4) with the parameters at the
@@ -1261,12 +1261,12 @@ void func_800B639C(Sprite *sprite, u8 *args) {
 
 /* Script command: upload the images at the relative offset in args. */
 void func_800B63F0(Sprite *sprite, u8 *args) {
-    func_8002DDE4(SCRIPT_DATA(args), 0, 0, 0, 0, 0, 0);
+    model_load_image_list(SCRIPT_DATA(args), 0, 0, 0, 0, 0, 0);
 }
 
 /* Script command: draw sprite with the resident sprite drawer (80025A88). */
 void func_800B6438(Sprite *sprite) {
-    func_8001CD64(&((SpriteTask *)sprite->block)->auxiliary, func_80025A88);
+    task_set_draw_callback(&((SpriteTask *)sprite->block)->auxiliary, sprite_task_draw_unlit_tmd);
 }
 
 /* Script command: move the CLUTs of the sprite's parts by (args[0],
@@ -1293,7 +1293,7 @@ void func_800B6464(Sprite *sprite, u8 *args) {
 
 /* Script command: set battle sprite args[1]'s value (800245D8) to args[0]. */
 void func_800B64D4(Sprite *sprite, u8 *args) {
-    func_800245D8(BATTLE_AREA.sprites[args[1]], args[0]);
+    sprite_start_animation(BATTLE_AREA.sprites[args[1]], args[0]);
 }
 
 /* Script command: turn the sprite towards its target (on the x-z plane). */
@@ -1306,9 +1306,9 @@ void func_800B6518(Sprite *sprite) {
     position.z = sprite->z >> 16;
     target.x = sprite->target_x;
     target.z = sprite->target_z;
-    direction = func_80023124(target, position);
-    func_80021FE0(sprite, direction);
-    func_800223B0(sprite, direction);
+    direction = sprite_get_ground_direction(target, position);
+    sprite_set_direction(sprite, direction);
+    sprite_set_facing(sprite, direction);
 }
 
 /* Script command: turn the sprite's speed towards its target by at most
@@ -1366,8 +1366,8 @@ void func_800B65B0(Sprite *sprite, u8 *args) {
         }
     }
     angles.vz += turn;
-    func_80021B04(length_vector, speedLength, 0, 0);
-    func_8003F738(&angles, &m);
+    sprite_set_svector(length_vector, speedLength, 0, 0);
+    gpu_build_rotation_matrix(&angles, &m);
     ApplyMatrix(&m, length_vector, &speed);
     sprite->speed_x = speed.vx << 7;
     sprite->speed_y = speed.vy << 7;
@@ -1394,8 +1394,8 @@ void func_800B6808(Sprite *sprite) {
     angles.vz = ratan2(delta.vy, distance);
     angles.vx = 0;
     sprite->direction = angles.vy;
-    func_80021B04(&length, (sprite->speed << 9) >> 16, 0, 0);
-    func_8003F738(&angles, &m);
+    sprite_set_svector(&length, (sprite->speed << 9) >> 16, 0, 0);
+    gpu_build_rotation_matrix(&angles, &m);
     ApplyMatrix(&m, &length, &speed);
     sprite->speed_x = speed.vx << 7;
     sprite->speed_y = speed.vy << 7;
@@ -1457,9 +1457,9 @@ void func_800B6A7C(Sprite *sprite, u8 *args) {
     SpriteRenderer *view;
 
     if (sprite->rate != 0) {
-        a = func_80022CAC(sprite, (((s8 *)data)[1] << 3) | data[0]) << 8;
-        b = func_80022CAC(sprite, data[2]) << 16;
-        c = func_80022CAC(sprite, data[3]) << 16;
+        a = sprite_scale_by_rate(sprite, (((s8 *)data)[1] << 3) | data[0]) << 8;
+        b = sprite_scale_by_rate(sprite, data[2]) << 16;
+        c = sprite_scale_by_rate(sprite, data[3]) << 16;
     } else {
         a = ((((s8 *)data)[1] << 3) | data[0]) << 5;
         b = data[2] << 13;
@@ -1548,8 +1548,8 @@ void func_800B6E84(Sprite *sprite, s8 *args) {
     MATRIX m;
     VECTOR velocity;
 
-    func_80021B04(&angles, 0, 0, args[0] * 16);
-    func_8003F738(&angles, &m);
+    sprite_set_svector(&angles, 0, 0, args[0] * 16);
+    gpu_build_rotation_matrix(&angles, &m);
     ApplyMatrixLV(&m, (VECTOR *)&sprite->speed_x, &velocity);
     sprite->speed_x = velocity.vx;
     sprite->speed_y = velocity.vy;
@@ -1576,9 +1576,9 @@ void func_800B6F0C(Task *task) {
                     shard->delay--;
                 } else {
                     poly = &shard->poly[BATTLE_AREA.buffer];
-                    poly->r0 = func_80021AD8(poly->r0, -6);
-                    poly->g0 = func_80021AD8(poly->g0, -6);
-                    poly->b0 = func_80021AD8(poly->b0, -6);
+                    poly->r0 = sprite_add_clamp_byte(poly->r0, -6);
+                    poly->g0 = sprite_add_clamp_byte(poly->g0, -6);
+                    poly->b0 = sprite_add_clamp_byte(poly->b0, -6);
                     step.vx = shard->velocity.vx >> 16;
                     step.vy = shard->velocity.vy >> 16;
                     step.vz = shard->velocity.vz >> 16;

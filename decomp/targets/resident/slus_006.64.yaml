@@ -61,23 +61,23 @@ segments:
       - [0x804, rodatabin, disc_files]
       - [0x8804, rodatabin, disc_directories]
       - [0x8880, .rodata, main]
-      - [0x8B3C, .rodata, main_8001B6C4]
+      - [0x8B3C, .rodata, mode_battle_and_menu]
       # Sprite/actor engine unit (8001C8DC-8002709C): its jump tables and
       # constants open at 0x800183D8.
       - [0x8BD8, .rodata, sprite]
       # Second sprite unit: its identity matrix constant (80022090) follows
       # the first unit's jump tables (8001FBE4); a -G8 CDK unit emits its
       # constants ahead of its jump tables, so the two are separate units.
-      - [0x8E44, .rodata, sprite_80022090]
+      - [0x8E44, .rodata, sprite_construction]
       # Third sprite unit: its interpreter's jump table (800186E0) follows
       # the second unit's 15-entry table (800186A4) with no `.align 3` pad.
-      - [0x8EE0, .rodata, sprite_800248D4]
+      - [0x8EE0, .rodata, sprite_vm_draw]
       # Fourth sprite unit: the identity matrix constant of 80025FA8.
-      - [0x90CC, .rodata, sprite_80025C04]
-      - [0x90EC, .rodata, main_8002709C]
+      - [0x90CC, .rodata, sprite_sheet]
+      - [0x90EC, .rodata, cd_reads_and_streams]
       # Model unit (GCC 2.7.2): 8002C700's jump table at 0 mod 8 follows
-      # main_8002709C's CD and stream tables at 4 mod 8.
-      - [0x9180, .rodata, main_8002C3E8]
+      # cd_reads_and_streams's CD and stream tables at 4 mod 8.
+      - [0x9180, .rodata, model_renderer]
       # Heap unit (80031894-80032E7C): its allocation-name strings open the
       # rodata (0x80018998 "DelayFree"), its $gp-relative accesses need -G8.
       - [0x9198, .rodata, heap]
@@ -87,7 +87,7 @@ segments:
       # between them: at 800365FC or later (its strings from 80018AE0) and
       # no later than 80036718 (its strings at 80018B30). 800366E0, the
       # formatter's output hook, is chosen.
-      - [0x9330, .rodata, main2_800366E0]
+      - [0x9330, .rodata, console_and_sound_driver]
       # Sound driver unit (GCC 2.6.3): its opcode-table jump table.
       - [0x93DC, .rodata, sound]
       # Hand-written rotation helpers and the PsyQ library objects.
@@ -102,7 +102,7 @@ segments:
       - [0xBEC4, c, battle_mode]
       # Menu support (GCC 2.6.3): 8001BF38 and 8001C1A8 match only so;
       # its rodata opens at 0x8001833C.
-      - [0xC044, c, main_8001B6C4]
+      - [0xC044, c, mode_battle_and_menu]
       # Battle effect-script table embedded in .text; keep the private data
       # at its original position rather than classify it as a function.
       - start: 0xCF6C
@@ -116,39 +116,39 @@ segments:
       # Second sprite unit (same build): it starts after 8001FBE4's jump
       # tables and by 80022090, whose constant opens its rodata; 80022090 is
       # chosen.
-      - [0x12890, c, sprite_80022090]
+      - [0x12890, c, sprite_construction]
       # Third sprite unit (same build) from the script interpreter 800248D4,
       # whose jump table opens its rodata; the $gp globals of the image
       # queues are addressed only from here.
-      - [0x150D4, c, sprite_800248D4]
+      - [0x150D4, c, sprite_vm_draw]
       # Fourth sprite unit (same build): its constant follows the third
       # unit's jump table, and it addresses the queue globals absolutely.
-      - [0x16404, c, sprite_80025C04]
+      - [0x16404, c, sprite_sheet]
       # Texture-scroll, disc, CD read callback, stream and model buffer unit
       # (GCC 2.6.3, inline division checks): 80027D64/80027EAC/80028808/
       # 80029AFC match only so, and 8002BB50 only under 2.6.3. The code
       # from 8002A260 on has no division, and the functions on both sides
       # of 8002A260 read the same statics (800596f8-80059f64, the .bss
       # below), so it is one unit up to the model unit.
-      - [0x1789C, c, main_8002709C]
+      - [0x1789C, c, cd_reads_and_streams]
       # Model unit (GCC 2.7.2): 8002C700's jump table (0x80018980, 0 mod 8)
       # follows 8002A68C's tables at 4 mod 8, so a unit starts after
-      # 8002C310, the last user of main_8002709C's rodata (its report
+      # 8002C310, the last user of cd_reads_and_streams's rodata (its report
       # strings end at 0x80018980). 8002C700 matches only under 2.7.2 (mflo
       # into $t0), as do 8002CCC8, 8002CD24 and 8002CD64; 8002C3E8, 8002C4BC
       # and 8002C59C add the relocation base second, as 2.7.2 does and 2.6.3
       # does not. 8002C3E8, the first model relocation function, is chosen
       # (8002C3D8 compiles identically under both).
-      - [0x1CBE8, c, main_8002C3E8]
+      - [0x1CBE8, c, model_renderer]
       - [0x22094, c, heap]
-      # Heap report file unit: 80032E04 stores D_800592B8 absolutely, which
+      # Heap report file unit: 80032E04 stores heap_report_output absolutely, which
       # the heap unit (80032BDC) loads through $gp, so a unit starts after
       # 80032C18 (its own $gp stores); 80032DCC, the first user of the
-      # report file handle D_80059348, is chosen (80032CB8/80032D60 address
+      # report file handle heap_report_file, is chosen (80032CB8/80032D60 address
       # no small globals and compile identically either way).
-      - [0x235CC, c, heap_80032DCC]
+      - [0x235CC, c, heap_host_report]
       - [0x2367C, c, main2]
-      - [0x26EE0, c, main2_800366E0]
+      - [0x26EE0, c, console_and_sound_driver]
       # Sound driver unit (GCC 2.6.3) to 8003F738. Its start lies in
       # 80039E18-8003A094: 80039DB8 needs 2.7.2, 8003A094 and later match
       # only under 2.6.3, and the functions between compile identically.
@@ -167,21 +167,21 @@ segments:
         type: data
         name: libcard_end_data
         linker_section_order: .text
-      # The game units' .data in link order. main_8002709C's is the disc and
+      # The game units' .data in link order. cd_reads_and_streams's is the disc and
       # stream state that its code from 8002A260 on defines. main3's is the
       # handwritten rotation object's sine/cosine table, linked ahead of
       # every library.
       - [0x3F2A0, .data, main]
-      - [0x3FB88, .data, main_8001B6C4]
+      - [0x3FB88, .data, mode_battle_and_menu]
       - [0x402B8, .data, sprite]
-      - [0x404C0, .data, sprite_80022090]
-      - [0x40540, .data, sprite_800248D4]
-      - [0x405C0, .data, sprite_80025C04]
-      - [0x405E0, .data, main_8002709C]
-      - [0x40650, .data, main_8002C3E8]
+      - [0x404C0, .data, sprite_construction]
+      - [0x40540, .data, sprite_vm_draw]
+      - [0x405C0, .data, sprite_sheet]
+      - [0x405E0, .data, cd_reads_and_streams]
+      - [0x40650, .data, model_renderer]
       - [0x40910, .data, heap]
       - [0x40990, .data, main2]
-      - [0x40A40, .data, main2_800366E0]
+      - [0x40A40, .data, console_and_sound_driver]
       - [0x40E24, .data, sound]
       - [0x42BF0, .data, main3]
       # PsyQ library .data in link order (libc2 SPRINTF ... libspu S_SRMT);
@@ -196,13 +196,13 @@ segments:
       - [0x49970, .sdata, kernel_settings]
       - [0x49984, .sdata, sprite]
       - [0x49998, .sdata, sprite_settings]
-      - [0x499B8, .sdata, sprite_80022090]
+      - [0x499B8, .sdata, sprite_construction]
       - [0x499C4, .sdata, heap]
       # The uninitialized variables (not in the file): the BSS the entry
       # point clears, 800592bc through the word at 8006faec (bss_size).
       # The original assembler gave each unit's own variables (statics) of
       # up to 8 bytes the unit's .sbss and the larger ones its .bss, except
-      # the GCC 2.6.3 unit main_8002709C, which keeps one .bss in
+      # the GCC 2.6.3 unit cd_reads_and_streams, which keeps one .bss in
       # declaration order. The linker then laid out every unit's .sbss in
       # link order, the small commons, every unit's .bss in link order and
       # the other commons, each object in a slot of whole words
@@ -211,40 +211,40 @@ segments:
       # libraries' generated statics and commons (psyq_*). Listing every
       # subsegment keeps their names out of undefined_syms_auto.txt: the
       # link places each variable from its definition.
-      # The GCC 2.7.2 units compiled at -G0 (main, main_8002C3E8, main2,
-      # main2_800366E0) address all their variables absolutely; the build
+      # The GCC 2.7.2 units compiled at -G0 (main, model_renderer, main2,
+      # console_and_sound_driver) address all their variables absolutely; the build
       # divides them by size as their assembler did (SBSS in the .mk).
       - { start: 0x49ABC, type: .sbss, vram: 0x800592BC, name: main, linker_section_order: .bss }
       - { start: 0x49ABC, type: .sbss, vram: 0x800592E4, name: sprite, linker_section_order: .bss }
-      - { start: 0x49ABC, type: .sbss, vram: 0x800592EC, name: sprite_80022090, linker_section_order: .bss }
-      - { start: 0x49ABC, type: .sbss, vram: 0x800592F8, name: sprite_800248D4, linker_section_order: .bss }
-      - { start: 0x49ABC, type: .sbss, vram: 0x80059308, name: main_8002C3E8, linker_section_order: .bss }
+      - { start: 0x49ABC, type: .sbss, vram: 0x800592EC, name: sprite_construction, linker_section_order: .bss }
+      - { start: 0x49ABC, type: .sbss, vram: 0x800592F8, name: sprite_vm_draw, linker_section_order: .bss }
+      - { start: 0x49ABC, type: .sbss, vram: 0x80059308, name: model_renderer, linker_section_order: .bss }
       - { start: 0x49ABC, type: .sbss, vram: 0x80059318, name: heap, linker_section_order: .bss }
-      - { start: 0x49ABC, type: .sbss, vram: 0x80059348, name: heap_80032DCC, linker_section_order: .bss }
+      - { start: 0x49ABC, type: .sbss, vram: 0x80059348, name: heap_host_report, linker_section_order: .bss }
       - { start: 0x49ABC, type: .sbss, vram: 0x8005934C, name: main2, linker_section_order: .bss }
-      - { start: 0x49ABC, type: .sbss, vram: 0x80059394, name: main2_800366E0, linker_section_order: .bss }
+      - { start: 0x49ABC, type: .sbss, vram: 0x80059394, name: console_and_sound_driver, linker_section_order: .bss }
       # The libraries' small statics: libapi's controller patches (main3),
       # libgte's and libcard's patches (psyq_libgte_to_libcard).
       - { start: 0x49ABC, type: bss, vram: 0x800593A4, name: psyq_sbss }
-      - { start: 0x49ABC, type: .bss, vram: 0x80059404, name: commons/common_80059404 }
+      - { start: 0x49ABC, type: .bss, vram: 0x80059404, name: commons/commons_small }
       - { start: 0x49ABC, type: .bss, vram: 0x800595E8, name: main }
-      - { start: 0x49ABC, type: .bss, vram: 0x800596F8, name: main_8002709C }
-      - { start: 0x49ABC, type: .bss, vram: 0x80059F64, name: main_8002C3E8 }
+      - { start: 0x49ABC, type: .bss, vram: 0x800596F8, name: cd_reads_and_streams }
+      - { start: 0x49ABC, type: .bss, vram: 0x80059F64, name: model_renderer }
       - { start: 0x49ABC, type: .bss, vram: 0x80059FA4, name: heap }
       - { start: 0x49ABC, type: .bss, vram: 0x80059FD8, name: main2 }
-      - { start: 0x49ABC, type: .bss, vram: 0x8005A1CC, name: main2_800366E0 }
+      - { start: 0x49ABC, type: .bss, vram: 0x8005A1CC, name: console_and_sound_driver }
       # The libraries' other statics: libc rand and putchar, libapi's patch
       # table, libcd, libgpu's state and its TIM/TMD readers (main3).
       - { start: 0x49ABC, type: bss, vram: 0x8005A1FC, name: psyq_bss }
-      - { start: 0x49ABC, type: .bss, vram: 0x8005A39C, name: commons/common_8005A39C }
+      - { start: 0x49ABC, type: .bss, vram: 0x8005A39C, name: commons/commons_before_libspu }
       # The libraries' commons where the linker placed them among the
       # game's: libspu's (_spu_init), libds's callbacks, libgpu's queue.
       - { start: 0x49ABC, type: bss, vram: 0x8005A4C8, name: psyq_spu_commons }
-      - { start: 0x49ABC, type: .bss, vram: 0x8005A4DC, name: commons/common_8005A4DC }
+      - { start: 0x49ABC, type: .bss, vram: 0x8005A4DC, name: commons/commons_before_libds }
       - { start: 0x49ABC, type: bss, vram: 0x80062640, name: psyq_ds_commons }
-      - { start: 0x49ABC, type: .bss, vram: 0x80062648, name: commons/common_80062648 }
+      - { start: 0x49ABC, type: .bss, vram: 0x80062648, name: commons/commons_before_libgpu }
       - { start: 0x49ABC, type: bss, vram: 0x8006BE34, name: psyq_gpu_commons }
-      - { start: 0x49ABC, type: .bss, vram: 0x8006D634, name: commons/common_8006D634 }
+      - { start: 0x49ABC, type: .bss, vram: 0x8006D634, name: commons/commons_after_libgpu }
   - [0x49ABC]
   # Zero file padding is reproduced by objcopy --pad-to 0x4A000. It is
   # outside the resident segment and does not extend its BSS.

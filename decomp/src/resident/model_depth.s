@@ -1,13 +1,13 @@
 # Model renderers that sort by one vertex depth instead of the average:
-# func_8002E448/func_8002E64C use the farthest vertex (largest SZ),
-# func_8002E8B4/func_8002EAB8 the nearest (smallest SZ). Each pair shares
+# model_draw_gt3_far/model_draw_gt4_far use the farthest vertex (largest SZ),
+# model_draw_gt3_near/model_draw_gt4_near the nearest (smallest SZ). Each pair shares
 # its body. `keep` is the branch, after slt of candidate < current, that
 # keeps the current depth: bnez keeps the largest, beqz the smallest. The
 # comparisons are signed. With InitGeom's ZSF3/ZSF4 (0x155, 0x100) an
-# AVSZ OTZ is the average SZ / 4, so one SZ is shifted by D_80050100 + 2.
+# AVSZ OTZ is the average SZ / 4, so one SZ is shifted by model_ot_depth_shift + 2.
 # Packets keep their prepared colours.
 # See model_draw.s for the records, packet slots, pipelining, register use
-# and bounds test, and func_8002E010.s, whose projection and culling
+# and bounds test, and model_draw_gt3_avg.s, whose projection and culling
 # these routines repeat. a0 = records, a1 = count; the same globals are
 # read and written. Handwritten for the same reasons: no frame, four entry
 # points per body (selecting the packet format) and the exit in another

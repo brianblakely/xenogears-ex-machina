@@ -5,7 +5,7 @@
 # are already loaded in the GTE. Scratchpad holds right/left row limits
 # at 0x000/0x080, four SVector corners at 0x100 and MapTable at 0x120.
 # Rows 0..126 use the following row's heights. Each accepted span adds
-# its cell count to D_800595C0; emitted packets add to D_80059578.
+# its cell count to model_submitted_primitive_count; emitted packets add to model_drawn_primitive_count.
 # Return the emitted triangle count. No OT bounds or GTE flag test is made.
 # Handwritten: callee saves below the unchanged sp without a frame, a
 # trapping add and GTE stores (swc2) in branch delay slots.
@@ -58,12 +58,12 @@ glabel func_80072D18
     subu    $v1, $t0, $a2       # row z, in 256-unit cells
     sll     $t0, $t1, 8
     subu    $v0, $t0, $a1       # first cell x
-    lui     $t0, %hi(D_800595C0)
-    lw      $t0, %lo(D_800595C0)($t0)
+    lui     $t0, %hi(model_submitted_primitive_count)
+    lw      $t0, %lo(model_submitted_primitive_count)($t0)
     nop
     addu    $t0, $t0, $s1
-    lui     $at, %hi(D_800595C0)
-    sw      $t0, %lo(D_800595C0)($at)
+    lui     $at, %hi(model_submitted_primitive_count)
+    sw      $t0, %lo(model_submitted_primitive_count)($at)
     sll     $t0, $t7, 7
     addu    $t0, $t0, $t1
     sll     $t0, $t0, 2
@@ -147,13 +147,13 @@ glabel func_80072D18
     lw      $t0, 0($t0)
     and     $s4, $s4, $s5
     and     $t0, $t0, $s5
-    lui     $t1, %hi(D_80059578)
-    lw      $t1, %lo(D_80059578)($t1)
+    lui     $t1, %hi(model_drawn_primitive_count)
+    lw      $t1, %lo(model_drawn_primitive_count)($t1)
     subu    $t0, $s4, $t0
     srl     $v0, $t0, 5
     addu    $t1, $t1, $v0
-    lui     $at, %hi(D_80059578)
-    sw      $t1, %lo(D_80059578)($at)
+    lui     $at, %hi(model_drawn_primitive_count)
+    sw      $t1, %lo(model_drawn_primitive_count)($at)
     lw      $s0, -4($sp)
     lw      $s1, -8($sp)
     lw      $s2, -16($sp)

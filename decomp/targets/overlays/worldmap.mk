@@ -6,7 +6,7 @@ ORIGINAL_SHA256 := 4c15fd32b3a03d7cd5ea4403dcaabc70abaf99b6aaca65d63d6866803edaa
 # Its uninitialized data ends at 8009d810: the resident's mode table entry 3
 # (800180bc) clears the words after 8009bbb0 through 8009d80c (80019560).
 BSS_END := 0x8009D810
-# Mode 3 enters func_80070CFC (main.c D_8001808C); after every target links,
+# Mode 3 enters func_80070CFC (main.c mode_table); after every target links,
 # tools/cross_image.py compares the entry and the BSS bounds with this link.
 MODE := 3
 MODE_ENTRY := func_80070CFC

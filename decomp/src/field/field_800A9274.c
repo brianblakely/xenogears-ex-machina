@@ -79,11 +79,11 @@ void func_800A92AC(s32 slot) {
         emitter = D_800C3918[slot];
         for (i = 0; i < 8; i++) {
             if (emitter->count != 0) {
-                func_800320E8(emitter->particles);
+                heap_free(emitter->particles);
             }
             emitter++;
         }
-        func_800320E8(D_800C3918[slot]);
+        heap_free(D_800C3918[slot]);
     }
     D_800B14B0[slot] = 0;
     D_800B0108[slot] = -1;
@@ -289,17 +289,17 @@ s32 func_800A99A8(s32 owner) {
     if (slot == -1) {
         return -1;
     }
-    func_80032498(8, 0);
+    heap_select_owner_tag(8, 0);
     D_800ADB44 = owner;
     D_800B14B0[slot] = 1;
     D_800B0108[slot] = owner;
-    emitters = func_80031BDC(0x3C0, 0);
+    emitters = heap_alloc(0x3C0, 0);
     D_800C3918[slot] = emitters;
     *(EmitterSet *)emitters = *(EmitterSet *)D_800B02CC;
     emitter = emitters;
     for (slot = 0; slot < 8; slot++) {
         if (emitter->count != 0) {
-            emitter->particles = func_80031BDC(emitter->count * sizeof(Particle), 0);
+            emitter->particles = heap_alloc(emitter->count * sizeof(Particle), 0);
             for (j = 0; j < emitter->count; j++) {
                 emitter->particles[j].unk00 = 0;
                 func_800A8EAC(&emitter->particles[j], emitter->unk54, ((s16)emitter->flags >> 8) + 1 & 3);
@@ -342,7 +342,7 @@ void func_800A9B54(Particle *particle, MATRIX *view, s16 angle, s32 depth_mode, 
     rotation.vx = 0;
     rotation.vy = 0;
     rotation.vz = angle;
-    func_8003F738(&rotation, &local);
+    gpu_build_rotation_matrix(&rotation, &local);
     local.t[0] = particle->position.vx >> 12;
     local.t[1] = particle->position.vy >> 12;
     local.t[2] = particle->position.vz >> 12;
@@ -376,7 +376,7 @@ void func_800A9B54(Particle *particle, MATRIX *view, s16 angle, s32 depth_mode, 
     otz = RotAverage4(&particle->corners[0], &particle->corners[1], &particle->corners[2], &particle->corners[3],
                       (long *)&particle->quads[D_800ADB08].x0, (long *)&particle->quads[D_800ADB08].x1,
                       (long *)&particle->quads[D_800ADB08].x2, (long *)&particle->quads[D_800ADB08].x3, &p, &p) >>
-          D_80050100;
+          model_ot_depth_shift;
     switch (depth_mode) {
     case 0:
         p = 1;
@@ -421,7 +421,7 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
                 sv.vx = 0;
                 sv.vy = D_800AF880.components.descriptors[emitter->unk52].actor->unk108;
                 sv.vz = 0;
-                func_8003F738(&sv, &m);
+                gpu_build_rotation_matrix(&sv, &m);
                 origin.vx = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[0]);
                 origin.vy = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[1]);
                 origin.vz = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[2]);
@@ -432,7 +432,7 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
                 sv.vx = 0;
                 sv.vy = D_800AF880.components.descriptors[emitter->unk52].actor->unk108;
                 sv.vz = 0;
-                func_8003F738(&sv, &m);
+                gpu_build_rotation_matrix(&sv, &m);
                 origin.vx = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[0]);
                 origin.vy = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[1]);
                 origin.vz = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[2]);
@@ -558,9 +558,9 @@ void func_800AA6B4(Record78 *emitter, Particle *particle, s32 *spawned) {
         radius = emitter->unk26;
     }
     angle = func_800A987C(0xFFF);
-    start.vx = func_8003F8CC(angle) * radius >> 12;
+    start.vx = gpu_get_cos(angle) * radius >> 12;
     if (!(emitter->flags & 0x40)) {
-        start.vz = func_8003F8B0(angle) * radius >> 12;
+        start.vz = gpu_get_sin(angle) * radius >> 12;
     } else {
         start.vz = 0;
     }
@@ -573,8 +573,8 @@ void func_800AA6B4(Record78 *emitter, Particle *particle, s32 *spawned) {
     particle->position.vz = start.vz;
     particle->position.vy = start.vy;
     radius = func_800A987C(emitter->unk28);
-    end.vx = emitter->unk14.vx + (func_8003F8CC(angle) * radius >> 12);
-    end.vz = emitter->unk14.vz + (func_8003F8B0(angle) * radius >> 12);
+    end.vx = emitter->unk14.vx + (gpu_get_cos(angle) * radius >> 12);
+    end.vz = emitter->unk14.vz + (gpu_get_sin(angle) * radius >> 12);
     end.vy = emitter->unk14.vy;
     particle->velocity.vx = end.vx - start.vx;
     particle->velocity.vy = end.vy - start.vy;
@@ -660,7 +660,7 @@ s32 func_800AAA74(FieldInstance *instance) {
 
 /* Release the sprite block. */
 void func_800AABD8(void) {
-    func_800320E8(D_800AFC68);
+    heap_free(D_800AFC68);
     DrawSync(0);
 }
 
@@ -672,7 +672,7 @@ void func_800AAC08(void) {
     SPRT *copy;
     s32 i;
 
-    D_800AFC68 = func_80031BDC(0x840, 0);
+    D_800AFC68 = heap_alloc(0x840, 0);
     window.x = 0;
     window.y = 0;
     window.w = 0xFF;
@@ -742,8 +742,8 @@ void func_800AAF80(void) {
     POLY_FT4 *quad_copy;
     s32 i;
 
-    D_800C3A3C = func_80031BDC(sizeof(ScreenPieces), 0);
-    D_800B1DF0 = func_80031BDC(sizeof(PictureMarks), 0);
+    D_800C3A3C = heap_alloc(sizeof(ScreenPieces), 0);
+    D_800B1DF0 = heap_alloc(sizeof(PictureMarks), 0);
     setRECT(&window, 0, 0, 0xFF, 0xFF);
     for (i = 0; i < 4; i++) {
         SetDrawMode(&D_800B1DF0->modes[i][0], 0, 0, GetTPage(0, 0, 0x3C0, 0x140), &window);
@@ -805,7 +805,7 @@ s32 func_800AB328(s32 item) {
     s32 i;
 
     for (i = 0; i < 150; i++) {
-        if (D_8005A39C->itemIds[i] == item && D_8005A39C->itemCounts[i] != 0) {
+        if (game_current_data->itemIds[i] == item && game_current_data->itemCounts[i] != 0) {
             return 0;
         }
     }
@@ -850,27 +850,27 @@ void func_800AB378(s32 level) {
 s32 func_800AB748(u32 which) {
     switch (which) {
     case 0:
-        if (D_8005A39C->vars[0x73] & 8) {
+        if (game_current_data->vars[0x73] & 8) {
             return 0;
         }
         break;
     case 1:
-        if (D_8005A39C->vars[0x73] & 0x10) {
+        if (game_current_data->vars[0x73] & 0x10) {
             return 0;
         }
         break;
     case 2:
-        if (D_8005A39C->vars[0x73] & 0x20) {
+        if (game_current_data->vars[0x73] & 0x20) {
             return 0;
         }
         break;
     case 3:
-        if (D_8005A39C->vars[0x73] & 0x40) {
+        if (game_current_data->vars[0x73] & 0x40) {
             return 0;
         }
         break;
     case 4:
-        if (!(D_8005A39C->vars[0x73] & 0x80)) {
+        if (!(game_current_data->vars[0x73] & 0x80)) {
             return 0;
         }
         break;
@@ -900,10 +900,10 @@ void func_800AB808(void) {
     s32 column;
     const s16 *height_base;
 
-    file = func_80031BDC(func_800288EC(0x802), 0);
-    func_800295D8(0x802, file, 0, 0x80);
-    func_80028A60(0);
-    pixels = func_80031BDC(0xF20, 0);
+    file = heap_alloc(cd_get_aligned_file_size(0x802), 0);
+    cd_read_file(0x802, file, 0, 0x80);
+    cd_sync_reads(0);
+    pixels = heap_alloc(0xF20, 0);
     OpenTIM(file);
     if (ReadTIM(&tim) != NULL) {
         height_base = &D_800AF5C0[0].h;
@@ -930,8 +930,8 @@ void func_800AB808(void) {
             }
         }
     }
-    func_800320E8(file);
-    func_800320E8(pixels);
+    heap_free(file);
+    heap_free(pixels);
 }
 
 /* Show the current map's picture while its item is held: park the VRAM
@@ -948,7 +948,7 @@ void func_800ABA98(void) {
         if (D_800AF47C[i * PICTURE_WORDS + PICTURE_MAP] == 0xFFFF) {
             return;
         }
-        if ((D_8004F34C & 0x3FFF) == D_800AF47C[i * PICTURE_WORDS + PICTURE_MAP]) {
+        if ((mode_field_map_id & 0x3FFF) == D_800AF47C[i * PICTURE_WORDS + PICTURE_MAP]) {
             break;
         }
     }
@@ -961,16 +961,16 @@ void func_800ABA98(void) {
     D_800AFE78 = D_800AF47C[i * PICTURE_WORDS + PICTURE_X];
     D_800AFE7C = D_800AF47C[i * PICTURE_WORDS + PICTURE_Y];
     setRECT(&rect, 0x300, 0x100, 0xA0, 0x100);
-    saved = func_80031BDC(0x14000, 0);
+    saved = heap_alloc(0x14000, 0);
     StoreImage(&rect, (u_long *)saved);
     DrawSync(0);
-    func_80028A60(0);
-    func_80028470(4, 0);
-    file = func_80031BDC(func_800288EC(picture + 0x7FB), 0);
-    func_800295D8(picture + 0x7FB, file, 0, 0x80);
-    func_80028A60(0);
+    cd_sync_reads(0);
+    cd_select_directory(4, 0);
+    file = heap_alloc(cd_get_aligned_file_size(picture + 0x7FB), 0);
+    cd_read_file(picture + 0x7FB, file, 0, 0x80);
+    cd_sync_reads(0);
     func_80070340(file, 0x300, 0x100, 0, 0xF6, 0, 0);
-    func_800320E8(file);
+    heap_free(file);
     if (D_800AF47C[i * PICTURE_WORDS + PICTURE_PIECES] == 1) {
         func_800AB808();
     }
@@ -992,11 +992,11 @@ void func_800ABA98(void) {
         func_800A6924();
     }
     DrawSync(0);
-    func_800320E8(D_800C3A3C);
-    func_800320E8(D_800B1DF0);
+    heap_free(D_800C3A3C);
+    heap_free(D_800B1DF0);
     LoadImage(&rect, (u_long *)saved);
     DrawSync(0);
-    func_800320E8(saved);
+    heap_free(saved);
 }
 
 /* Set up the five 128x224 overlay sprites (8-bit pages from x 280) with
@@ -1155,14 +1155,14 @@ u8 *func_800AC0F0(u8 *text, s32 left, s32 row) {
 
 /* Load files 0xab and 0xac. */
 void func_800AC308(void) {
-    func_80028470(4, 0);
-    D_800AF780 = func_80028738(0xAB);
-    D_800AF76C = func_80031BDC(func_800288EC(0xAB), 1);
-    func_800295D8(0xAB, D_800AF76C, 0, 0x80);
-    func_80028A60(0);
-    D_800AF784 = func_80031BDC(func_800288EC(0xAC), 1);
-    func_800295D8(0xAC, D_800AF784, 0, 0x80);
-    func_80028A60(0);
+    cd_select_directory(4, 0);
+    D_800AF780 = cd_get_file_size(0xAB);
+    D_800AF76C = heap_alloc(cd_get_aligned_file_size(0xAB), 1);
+    cd_read_file(0xAB, D_800AF76C, 0, 0x80);
+    cd_sync_reads(0);
+    D_800AF784 = heap_alloc(cd_get_aligned_file_size(0xAC), 1);
+    cd_read_file(0xAC, D_800AF784, 0, 0x80);
+    cd_sync_reads(0);
 }
 
 /* Set up the text roll: the white top and bottom fades (640 wide, 24
@@ -1201,7 +1201,7 @@ void func_800AC3AC(void) {
     SetSemiTrans(&D_800AF788[1][0], 1);
     D_800AF788[0][1] = D_800AF788[0][0];
     D_800AF788[1][1] = D_800AF788[1][0];
-    D_800AF770 = func_80031BDC(16 * sizeof(TextRollLine), 1);
+    D_800AF770 = heap_alloc(16 * sizeof(TextRollLine), 1);
     for (i = 0; i < 16; i++) {
         sprite = &D_800AF770[i].sprites[0][0];
         SetSprt(sprite);
@@ -1265,8 +1265,8 @@ void func_800ACB90(void) {
 
     func_80070340(D_800AF784, 0x380, 0x100, 0, 0x1FF, 0, 0);
     DrawSync(0);
-    func_800320E8(D_800AF784);
-    pixels = func_80031BDC(0x200, 1);
+    heap_free(D_800AF784);
+    pixels = heap_alloc(0x200, 1);
     for (i = 0; i < 0x80; i++) {
         pixels[i] = -1;
     }
@@ -1276,7 +1276,7 @@ void func_800ACB90(void) {
     rect.h = 4;
     LoadImage(&rect, pixels);
     DrawSync(0);
-    func_800320E8(pixels);
+    heap_free(pixels);
 }
 
 void func_800AC3AC(void);
@@ -1285,7 +1285,7 @@ void func_800AC3AC(void);
 void func_800ACC58(void) {
     RECT unused; /* the original frame reserves an unused 8-byte local */
 
-    if (D_8004F300 != 0) {
+    if (mode_staff_roll_enabled != 0) {
         func_800AC308();
         func_800AC3AC();
         D_800AF77C = 0;
@@ -1296,16 +1296,16 @@ void func_800ACC58(void) {
 
 /* Release the sequence buffers when enabled. */
 void func_800ACCB0(void) {
-    if (D_8004F300 != 0) {
-        func_800320E8(D_800AF76C);
-        func_800320E8(D_800AF770);
+    if (mode_staff_roll_enabled != 0) {
+        heap_free(D_800AF76C);
+        heap_free(D_800AF770);
     }
 }
 
 /* Advance the sequence one pass; every 16th pass, from the first, draw the
  * next line of file 0xab at x 0x300 into VRAM row D_800AF778 & 15 (from 15). */
 void func_800ACCF4(void) {
-    if (D_8004F300 != 0) {
+    if (mode_staff_roll_enabled != 0) {
         if ((D_800AF77C & 0xF) == 0) {
             D_800AF774 = func_800AC0F0(D_800AF774, 0x300, D_800AF778 & 0xF);
             D_800AF778++;
@@ -1349,10 +1349,10 @@ void func_800ACE24(void) {
     s32 i;
 
     for (i = 0; i < 3; i++) {
-        if (D_8006BE2C[i] == D_8005A39C->inGear[i]) {
-            D_8006BE2C[i] = 0;
+        if (mode_party_gear_refresh_flags[i] == game_current_data->inGear[i]) {
+            mode_party_gear_refresh_flags[i] = 0;
         } else {
-            D_8006BE2C[i] = 1;
+            mode_party_gear_refresh_flags[i] = 1;
         }
     }
     func_800AD978(0);
@@ -1363,17 +1363,17 @@ void func_800ACE24(void) {
 void func_800ACE90(void) {
     s32 i;
 
-    D_8006BE2C[0] = D_8006BE2C[1] = D_8006BE2C[2] = 0;
-    if (D_8005A39C->inGear[0] == 0) {
+    mode_party_gear_refresh_flags[0] = mode_party_gear_refresh_flags[1] = mode_party_gear_refresh_flags[2] = 0;
+    if (game_current_data->inGear[0] == 0) {
         for (i = 0; i < 3; i++) {
-            if (D_8005A39C->inGear[i] == 0 && func_8001ACF0(D_80062590[i]) != 0xFF) {
-                D_8006BE2C[i] = 1;
+            if (game_current_data->inGear[i] == 0 && mode_get_character_gear_id(mode_party_members[i]) != 0xFF) {
+                mode_party_gear_refresh_flags[i] = 1;
             }
         }
     } else {
         for (i = 0; i < 3; i++) {
-            if (D_8005A39C->inGear[i] == 1 && func_8001ACF0(D_80062590[i]) != 0xFF) {
-                D_8006BE2C[i] = 1;
+            if (game_current_data->inGear[i] == 1 && mode_get_character_gear_id(mode_party_members[i]) != 0xFF) {
+                mode_party_gear_refresh_flags[i] = 1;
             }
         }
     }
@@ -1388,31 +1388,31 @@ void func_800ACFD0(s32 slot) {
     Sprite *stand_in;
     Sprite *model;
 
-    D_8005A39C->inGear[slot] = 0;
-    stand_in = DESCRIPTOR(D_8006F990[slot])->model;
-    model = DESCRIPTOR(D_8005A444[slot])->model;
-    DESCRIPTOR(D_8005A444[slot])->model = stand_in;
-    DESCRIPTOR(D_8006F990[slot])->model = model;
-    DESCRIPTOR(D_8006F990[slot])->flags = (DESCRIPTOR(D_8006F990[slot])->flags & 0xF07F) | 0x200;
-    DESCRIPTOR(D_8006F990[slot])->flags &= 0xFFDF;
-    DESCRIPTOR(D_8006F990[slot])->actor->flags &= ~1;
-    func_800A0524(D_8006F990[slot], D_8005A444[slot]);
-    DESCRIPTOR(D_8005A444[slot])->model->x = DESCRIPTOR(D_8005A444[slot])->actor->position[0];
-    DESCRIPTOR(D_8005A444[slot])->model->y = DESCRIPTOR(D_8005A444[slot])->actor->position[1];
-    DESCRIPTOR(D_8005A444[slot])->model->z = DESCRIPTOR(D_8005A444[slot])->actor->position[2];
-    DESCRIPTOR(D_8005A444[slot])->actor->flags |= 0x400;
-    DESCRIPTOR(D_8005A444[slot])->actor->flags &= ~0x300;
-    DESCRIPTOR(D_8006F990[slot])->actor->flags &= ~0x1800;
-    DESCRIPTOR(D_8005A444[slot])->actor->flags &= ~0x1800;
-    DESCRIPTOR(D_8006F990[slot])->actor->unk108 = DESCRIPTOR(D_8005A444[slot])->actor->unk108;
-    DESCRIPTOR(D_8006F990[slot])->actor->heading_goal = DESCRIPTOR(D_8005A444[slot])->actor->heading_goal;
-    DESCRIPTOR(D_8006F990[slot])->actor->unkE8 = DESCRIPTOR(D_8006F990[slot])->actor->unkE6;
-    DESCRIPTOR(D_8005A444[slot])->actor->unkE8 = DESCRIPTOR(D_8005A444[slot])->actor->unkE6;
-    func_800821F4(DESCRIPTOR(D_8006F990[slot])->model, 6, DESCRIPTOR(D_8006F990[slot]));
-    func_800821F4(DESCRIPTOR(D_8005A444[slot])->model, DESCRIPTOR(D_8005A444[slot])->actor->unkE6,
-                  DESCRIPTOR(D_8005A444[slot]));
+    game_current_data->inGear[slot] = 0;
+    stand_in = DESCRIPTOR(mode_party_stand_in_actors[slot])->model;
+    model = DESCRIPTOR(mode_party_actors[slot])->model;
+    DESCRIPTOR(mode_party_actors[slot])->model = stand_in;
+    DESCRIPTOR(mode_party_stand_in_actors[slot])->model = model;
+    DESCRIPTOR(mode_party_stand_in_actors[slot])->flags = (DESCRIPTOR(mode_party_stand_in_actors[slot])->flags & 0xF07F) | 0x200;
+    DESCRIPTOR(mode_party_stand_in_actors[slot])->flags &= 0xFFDF;
+    DESCRIPTOR(mode_party_stand_in_actors[slot])->actor->flags &= ~1;
+    func_800A0524(mode_party_stand_in_actors[slot], mode_party_actors[slot]);
+    DESCRIPTOR(mode_party_actors[slot])->model->x = DESCRIPTOR(mode_party_actors[slot])->actor->position[0];
+    DESCRIPTOR(mode_party_actors[slot])->model->y = DESCRIPTOR(mode_party_actors[slot])->actor->position[1];
+    DESCRIPTOR(mode_party_actors[slot])->model->z = DESCRIPTOR(mode_party_actors[slot])->actor->position[2];
+    DESCRIPTOR(mode_party_actors[slot])->actor->flags |= 0x400;
+    DESCRIPTOR(mode_party_actors[slot])->actor->flags &= ~0x300;
+    DESCRIPTOR(mode_party_stand_in_actors[slot])->actor->flags &= ~0x1800;
+    DESCRIPTOR(mode_party_actors[slot])->actor->flags &= ~0x1800;
+    DESCRIPTOR(mode_party_stand_in_actors[slot])->actor->unk108 = DESCRIPTOR(mode_party_actors[slot])->actor->unk108;
+    DESCRIPTOR(mode_party_stand_in_actors[slot])->actor->heading_goal = DESCRIPTOR(mode_party_actors[slot])->actor->heading_goal;
+    DESCRIPTOR(mode_party_stand_in_actors[slot])->actor->unkE8 = DESCRIPTOR(mode_party_stand_in_actors[slot])->actor->unkE6;
+    DESCRIPTOR(mode_party_actors[slot])->actor->unkE8 = DESCRIPTOR(mode_party_actors[slot])->actor->unkE6;
+    func_800821F4(DESCRIPTOR(mode_party_stand_in_actors[slot])->model, 6, DESCRIPTOR(mode_party_stand_in_actors[slot]));
+    func_800821F4(DESCRIPTOR(mode_party_actors[slot])->model, DESCRIPTOR(mode_party_actors[slot])->actor->unkE6,
+                  DESCRIPTOR(mode_party_actors[slot]));
     func_8009FEE4(slot);
-    func_800A98E8(D_8006F990[slot], 0);
+    func_800A98E8(mode_party_stand_in_actors[slot], 0);
 }
 
 /* Put the current actor in for party slot `slot`: swap its model with the
@@ -1421,24 +1421,24 @@ void func_800AD4D4(s32 slot) {
     Sprite *model;
 
     model = DESCRIPTOR(D_800AFD1C)->model;
-    DESCRIPTOR(D_800AFD1C)->model = DESCRIPTOR(D_8005A444[slot])->model;
-    DESCRIPTOR(D_8005A444[slot])->model = model;
-    DESCRIPTOR(D_8005A444[slot])->model->x = DESCRIPTOR(D_8005A444[slot])->actor->position[0];
-    DESCRIPTOR(D_8005A444[slot])->model->y = DESCRIPTOR(D_8005A444[slot])->actor->position[1];
-    DESCRIPTOR(D_8005A444[slot])->model->z = DESCRIPTOR(D_8005A444[slot])->actor->position[2];
+    DESCRIPTOR(D_800AFD1C)->model = DESCRIPTOR(mode_party_actors[slot])->model;
+    DESCRIPTOR(mode_party_actors[slot])->model = model;
+    DESCRIPTOR(mode_party_actors[slot])->model->x = DESCRIPTOR(mode_party_actors[slot])->actor->position[0];
+    DESCRIPTOR(mode_party_actors[slot])->model->y = DESCRIPTOR(mode_party_actors[slot])->actor->position[1];
+    DESCRIPTOR(mode_party_actors[slot])->model->z = DESCRIPTOR(mode_party_actors[slot])->actor->position[2];
     DESCRIPTOR(D_800AFD1C)->flags |= 0x20;
-    DESCRIPTOR(D_8005A444[slot])->actor->flags |= 0x200;
-    DESCRIPTOR(D_8005A444[slot])->actor->flags &= ~0x500;
-    D_8005A39C->inGear[slot] = 1;
-    DESCRIPTOR(D_8006F990[slot])->actor->flags &= ~0x1800;
-    DESCRIPTOR(D_8005A444[slot])->actor->flags &= ~0x1800;
-    DESCRIPTOR(D_8006F990[slot])->actor->unkE8 = DESCRIPTOR(D_8006F990[slot])->actor->unkE6;
-    DESCRIPTOR(D_8005A444[slot])->actor->unkE8 = DESCRIPTOR(D_8005A444[slot])->actor->unkE6;
-    func_800821F4(DESCRIPTOR(D_8006F990[slot])->model, DESCRIPTOR(D_8006F990[slot])->actor->unkE6,
-                  DESCRIPTOR(D_8006F990[slot]));
-    func_800821F4(DESCRIPTOR(D_8005A444[slot])->model, DESCRIPTOR(D_8005A444[slot])->actor->unkE6,
-                  DESCRIPTOR(D_8005A444[slot]));
-    func_800A98E8(D_8006F990[slot], 0);
+    DESCRIPTOR(mode_party_actors[slot])->actor->flags |= 0x200;
+    DESCRIPTOR(mode_party_actors[slot])->actor->flags &= ~0x500;
+    game_current_data->inGear[slot] = 1;
+    DESCRIPTOR(mode_party_stand_in_actors[slot])->actor->flags &= ~0x1800;
+    DESCRIPTOR(mode_party_actors[slot])->actor->flags &= ~0x1800;
+    DESCRIPTOR(mode_party_stand_in_actors[slot])->actor->unkE8 = DESCRIPTOR(mode_party_stand_in_actors[slot])->actor->unkE6;
+    DESCRIPTOR(mode_party_actors[slot])->actor->unkE8 = DESCRIPTOR(mode_party_actors[slot])->actor->unkE6;
+    func_800821F4(DESCRIPTOR(mode_party_stand_in_actors[slot])->model, DESCRIPTOR(mode_party_stand_in_actors[slot])->actor->unkE6,
+                  DESCRIPTOR(mode_party_stand_in_actors[slot]));
+    func_800821F4(DESCRIPTOR(mode_party_actors[slot])->model, DESCRIPTOR(mode_party_actors[slot])->actor->unkE6,
+                  DESCRIPTOR(mode_party_actors[slot]));
+    func_800A98E8(mode_party_stand_in_actors[slot], 0);
     func_8009FEE4(slot);
 }
 
@@ -1449,9 +1449,9 @@ void func_800AD898(void) {
 
     if (D_800B2078.unk2268 != 0) {
         for (i = 0; i < 3; i++) {
-            if (D_8005A444[i] != 0xFF && D_8005A39C->inGear[i] == 1) {
-                D_800AF880.components.descriptors[D_8005A444[i]].actor->flags |= 0x200;
-                D_800AF880.components.descriptors[D_8005A444[i]].actor->flags &= ~0x500;
+            if (mode_party_actors[i] != 0xFF && game_current_data->inGear[i] == 1) {
+                D_800AF880.components.descriptors[mode_party_actors[i]].actor->flags |= 0x200;
+                D_800AF880.components.descriptors[mode_party_actors[i]].actor->flags &= ~0x500;
             }
         }
     }
@@ -1464,9 +1464,9 @@ void func_800AD978(s32 mode) {
 
     if (D_800B2078.unk2268 != 0) {
         for (i = 0; i < 3; i++) {
-            if (D_8005A444[i] != 0xFF && D_8006BE2C[i] == 1) {
-                D_800AFD1C = D_8006F990[i];
-                if ((D_8005A39C->inGear[i] == 0 && mode != 0) || (D_8005A39C->inGear[i] != 0 && mode == 0)) {
+            if (mode_party_actors[i] != 0xFF && mode_party_gear_refresh_flags[i] == 1) {
+                D_800AFD1C = mode_party_stand_in_actors[i];
+                if ((game_current_data->inGear[i] == 0 && mode != 0) || (game_current_data->inGear[i] != 0 && mode == 0)) {
                     func_800AD4D4(i);
                 } else {
                     func_800ACFD0(i);

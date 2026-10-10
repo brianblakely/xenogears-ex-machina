@@ -6,3 +6,5 @@ D_801D70EE = 0x801D70EE; // defined:True
 D_801D70F2 = 0x801D70F2; // defined:True
 D_801D70F4 = 0x801D70F4; // size:0x14
 D_801D9050 = 0x801D9050; // size:0x34
+// Names tools/names.py gave these addresses (docs/matching.md, Names).
+game_data_party_state = 0x8006F364;

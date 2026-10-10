@@ -32,108 +32,108 @@ typedef struct {
     u32 xy;
 } LifeTile;
 
-extern s32 D_8004F2D8;           /* kernel menu cursor */
-extern s32 *D_8005917C;
-extern u8 *D_80059470;  /* the battle stage file (func_800379D8; ovl2615 func_801E7210) */
-extern s32 D_80059520;
-extern u8 *D_8005949C;  /* the battle scene data (func_800379D8; ovl2615 func_801E7210) */
+extern s32 mode_kernel_menu_cursor;           /* kernel menu cursor */
+extern s32 *mode_disc_mode_pointer;
+extern u8 *mode_battle_stage_file;  /* the battle stage file (mode_load_battle_stage; ovl2615 func_801E7210) */
+extern s32 mode_battle_stage_unused_word;
+extern u8 *mode_battle_scene_file;  /* the battle scene data (mode_load_battle_stage; ovl2615 func_801E7210) */
 
 /* Game state reset by 8001aadc. */
-extern s32 D_8004F2F4, D_8004F2F8, D_8004F2FC, D_8004F300, D_8004F304, D_8004F308;
-extern s32 D_8004F30C, D_8004F310, D_8004F314, D_8004F318, D_8004F31C, D_8004F320;
-extern s32 D_8004F324, D_8004F328, D_8004F32C, D_8004F330, D_8004F334, D_8004F338;
-extern s32 D_8004F33C, D_8004F340, D_8004F344, D_8004F348, D_8004F34C, D_8004F350;
-extern s32 D_8004F354, D_8004F358, D_8004F35C, D_8004F360, D_8004F364, D_8004F368;
-extern s32 D_8004F36C, D_8004F370, D_8004F374, D_8004F378, D_8004F37C, D_8004F380;
-extern s16 D_8004F384;
-extern u8 D_8005942C;
-extern u8 D_800594D0;
-extern s32 D_8005A444[3];
-extern s32 D_80062518[4]; /* loaded wave bank per slot */
-extern s32 D_80062590[3];
-extern s32 D_8006F990[3];
-extern s32 D_8006FABC[3];
-extern FileRequest D_800625A4[4]; /* party file list, zero-terminated */
-extern FileRequest D_8006F9BC[4]; /* the battle mode's sound files (8001bbac) */
-extern void *D_80065AFC[3];       /* party character file blocks */
-extern void *D_8005A4A0;          /* file 0xa7 block */
-extern void *D_8005A4BC;          /* file 0xa8 block */
-extern void *D_8005A414[3];       /* party field sprite blocks */
-extern s32 D_8005A4C0;            /* map read-ahead size */
-extern void *D_8005A4E0;          /* map read-ahead block */
-extern s32 D_80062528;            /* the active sequence */
-extern struct SoundSequence *D_8006258C; /* the transferred wave bank */
+extern s32 mode_unread_play_record_word, mode_field_entered_once, mode_music_cached_seq, mode_staff_roll_enabled, mode_worldmap_area_load_count, mode_music_load_pending;
+extern s32 mode_field_return_pending, mode_unread_arena_departure_count, mode_unread_reset_word, mode_play_clock_frame_count, mode_party_file_kind, mode_party_uses_gear_files;
+extern s32 mode_music_selected_track, mode_play_clock_flags, mode_effect_bank_not_preloaded, mode_read_ahead_map, mode_read_ahead_slot, mode_music_loaded_track;
+extern s32 mode_music_loaded_wave, mode_music_start_full_volume, mode_text_images_preloaded, mode_music_reuse_seq, mode_field_map_id, mode_menu_request_count;
+extern s32 mode_music_wave_streaming, mode_music_seq_read_pending, mode_music_seq_active, mode_music_wave_bank_loaded, mode_shared_wave_bank_state, mode_shared_wave_bank_released;
+extern s32 mode_music_started, mode_field_standalone, mode_party_files_pending, mode_debug_hide_compass, mode_debug_hide_sprites, mode_debug_hide_layer;
+extern s16 mode_shared_wave_bank_needs_reload;
+extern u8 mode_battle_return_fade;
+extern u8 mode_result_code;
+extern s32 mode_party_actors[3];
+extern s32 mode_wave_bank_slots[4]; /* loaded wave bank per slot */
+extern s32 mode_party_members[3];
+extern s32 mode_party_stand_in_actors[3];
+extern s32 mode_party_file_ids[3];
+extern FileRequest mode_party_file_list[4]; /* party file list, zero-terminated */
+extern FileRequest mode_battle_file_list[4]; /* the battle mode's sound files (8001bbac) */
+extern void *mode_party_file_blocks[3];       /* party character file blocks */
+extern void *mode_preloaded_text_images;          /* file 0xa7 block */
+extern void *mode_preloaded_effect_bank;          /* file 0xa8 block */
+extern void *mode_party_sprite_blocks[3];       /* party field sprite blocks */
+extern s32 mode_read_ahead_size;            /* map read-ahead size */
+extern void *mode_read_ahead_block;          /* map read-ahead block */
+extern s32 mode_music_seq;            /* the active sequence */
+extern struct SoundSequence *mode_music_wave_bank; /* the transferred wave bank */
 
-extern u8 *const D_80018084; /* overlay decode destination */
-extern u8 D_8006FAEC[];      /* the last word below the overlay area */
-extern s32 D_80018088;       /* next mode */
-extern ModeEntry D_8001808C[];
-extern s32 D_8004EAA0[];     /* each mode's overlay file in directory 1 */
-extern struct SoundSequence *D_80059560; /* resident wave banks */
-extern struct SoundSequence *D_800595AC;
-extern s32 D_80010000;
-extern u8 D_8004EABC[];      /* compressed boot logo image */
-extern char *D_8004F2C0[];   /* messages of the fatal errors 0x80-0x85 */
-extern s32 D_8004F2BC;       /* fatal error count */
-extern u8 D_80010004[];
-extern u16 D_80018004[];
+extern u8 *const mode_overlay_decode_destination; /* overlay decode destination */
+extern u8 boot_bss_last_word[];      /* the last word below the overlay area */
+extern s32 mode_next_mode;       /* next mode */
+extern ModeEntry mode_table[];
+extern s32 mode_overlay_files[];     /* each mode's overlay file in directory 1 */
+extern struct SoundSequence *mode_shared_wave_bank; /* resident wave banks */
+extern struct SoundSequence *mode_wave_bank_5;
+extern s32 mode_disc_mode;
+extern u8 boot_packed_logo[];      /* compressed boot logo image */
+extern char *mode_fatal_error_messages[];   /* messages of the fatal errors 0x80-0x85 */
+extern s32 mode_fatal_error_count;       /* fatal error count */
+extern u8 cd_disc_files[];
+extern u16 cd_disc_directories[];
 
 /* Original hand-written startup code. */
-void func_80019524(void);               /* entry: clear the BSS, reset the stack, boot */
-void func_80019548(void);               /* sp = fp = 0x80200000, gp = _gp */
-void func_80019560(u8 *start, u8 *end); /* zero the words after start through end */
+void boot_entry_point(void);               /* entry: clear the BSS, reset the stack, boot */
+void boot_reset_stack_and_gp(void);               /* sp = fp = 0x80200000, gp = _gp */
+void boot_clear_bss_range(u8 *start, u8 *end); /* zero the words after start through end */
 
-void func_8001A4B4(void); /* mode 0, the kernel menu */
-void func_8001B6C4(void); /* mode 2 */
-void func_8001B844(void); /* the battle's display buffers and projection */
-void func_8001C634(void); /* mode 5 */
-void func_8001996C(s32 mode);
-void *func_800199CC(s32 mode);
-void func_80019ACC(s32 error) __attribute__((noreturn));
-void func_80019C7C(void);
-void func_80019CD0(void);
-void func_80019D48(void);
-void func_80019EF8(s32 error, u32 caller);
-void func_8001A250(void);
-void func_8001AADC(void);
-void func_8001B6BC(void);
-void func_8001B158(s32 extra);
-void func_8001B3A8(void);
-void func_8001B53C(s32 map);
-void func_8001AD4C(void);
-void func_8001AEB8(void);
-void func_8001AD1C(void);
-s32 func_8001ACF0(s32 index);
-void func_8001BB50(void);
-void func_80024F20(void);
+void mode_run_kernel_menu(void); /* mode 0, the kernel menu */
+void mode_run_battle(void); /* mode 2 */
+void mode_battle_init_display(void); /* the battle's display buffers and projection */
+void mode_run_menu(void); /* mode 5 */
+void mode_select_next_mode(s32 mode);
+void *mode_load_overlay_block(s32 mode);
+void mode_dispatch(s32 error) __attribute__((noreturn));
+void mode_select_default_heap_tag(void);
+void boot_restart(void);
+void boot_show_logo(void);
+void mode_show_fatal_error(s32 error, u32 caller);
+void mode_kernel_menu_init(void);
+void mode_reset_game_state(void);
+void boot_empty_step(void);
+void mode_reload_party_files(s32 extra);
+void mode_unpack_party_files(void);
+void mode_start_map_read(s32 map);
+void mode_load_party_character_files(void);
+void mode_load_party_gear_files(void);
+void mode_wait_for_disc_idle(void);
+s32 mode_get_character_gear_id(s32 index);
+void mode_init_game_data(void);
+void sprite_reset_engine(void);
 
 /* More of the mode dispatcher's calls and state. */
 /* An empty debug print: the menu passes it a message. */
-void func_80019964();
-void func_80019CA0(void);
-void func_8001AC94(void);
-void func_8001ACA4(void);
-void func_8001B044(void);
-s32 func_8001B484(s32 map, s32 slot);
-void func_8001B66C(void);
-void func_8001B970(void);
-void func_8001BB0C(void);
-void func_8001BBAC(void);
-extern u8 D_80059430;
-extern u8 D_80059434;
-extern u8 D_80059438;
-extern u8 D_8005943C;
-extern s32 *D_800594F0;
-extern u8 D_800594F8;
-extern u8 D_8005959C;
-extern void *D_8005A420[4];
-extern void *D_8005A450[4];
-extern s32 D_80065B08;
-extern u8 D_80062648[0x3200]; /* a work buffer of the field, the world map, battle and its overlays */
-extern s32 D_80065848[5];
-extern u8 D_8005947C; /* the next battle's formation + 1 (formation.h) */
-extern u8 D_80059179; /* the battle-entry flag (the field and world map set it) */
-extern s16 D_8006BE2C[3]; /* per party slot (the field) */
-extern u8 D_80059180; /* battle music playing */
+void mode_empty_debug_print();
+void boot_check_soft_reset(void);
+void mode_clear_field_return(void);
+void mode_preload_field_files(void);
+void mode_sync_party_files(void);
+s32 mode_read_map_ahead(s32 map, s32 slot);
+void mode_stop_music(void);
+void mode_load_initial_game_data(void);
+void mode_load_current_battle_stage(void);
+void mode_battle_load_files(void);
+extern u8 pad_port0_left_stick_x;
+extern u8 pad_port1_left_stick_x;
+extern u8 pad_port0_left_stick_y;
+extern u8 pad_port1_left_stick_y;
+extern s32 *mode_battle_action_command_file;
+extern u8 mode_battle_standalone;
+extern u8 mode_battle_debug_page;
+extern void *mode_field_layer_script_files[4];
+extern void *mode_field_layer_model_files[4];
+extern s32 mode_field_last_moved_actor;
+extern u8 mode_music_buffer[0x3200]; /* a work buffer of the field, the world map, battle and its overlays */
+extern s32 mode_field_pointer_state[5];
+extern u8 mode_pending_battle_formation; /* the next battle's formation + 1 (formation.h) */
+extern u8 mode_gear_riding_lock; /* the battle-entry flag (the field and world map set it) */
+extern s16 mode_party_gear_refresh_flags[3]; /* per party slot (the field) */
+extern u8 mode_result_fanfare_started; /* battle music playing */
 
 #endif

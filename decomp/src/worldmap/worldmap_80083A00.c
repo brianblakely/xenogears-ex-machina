@@ -367,15 +367,15 @@ void func_8008440C(void) {
     void *source;
     void *faded;
 
-    source = func_80032E88(D_8009BD20, 1);
+    source = text_unpack_lzss_alloc(D_8009BD20, 1);
     i = 0;
-    func_8002DD20(source);
+    model_load_tim_list(source);
     DrawSync(0);
-    func_800320E8(source);
+    heap_free(source);
     clut = D_8009BCE0;
-    func_800320E8(D_8009BD20);
-    source = func_80031BDC(0x200, 1);
-    faded = func_80031BDC(0x2000, 1);
+    heap_free(D_8009BD20);
+    source = heap_alloc(0x200, 1);
+    faded = heap_alloc(0x2000, 1);
     rect.x = 0;
     rect.y = 0x1F0;
     rect.w = 0x100;
@@ -395,8 +395,8 @@ void func_8008440C(void) {
         rect.y++;
         clut++;
     } while (i < 0x10);
-    func_800320E8(faded);
-    func_800320E8(source);
+    heap_free(faded);
+    heap_free(source);
 }
 
 /* Scene object placement (16 bytes; the list follows a count halfword). */
@@ -424,7 +424,7 @@ void func_80084580(void) {
     s32 i;
 
     i = 0;
-    D_8009BD28 = func_8002C3E8(D_8009CD48);
+    D_8009BD28 = model_relocate_group(D_8009CD48);
     base = D_8009D308;
     offsets = base + 1;
     D_8009D308 = offsets;
@@ -432,7 +432,7 @@ void func_80084580(void) {
         offsets[i] = (s32)base + offsets[i];
     }
     D_8009D7E0 = *(s16 *)D_8009BD30;
-    D_8009C620 = func_80031BDC(D_8009D7E0 * sizeof(SceneObject), 0);
+    D_8009C620 = heap_alloc(D_8009D7E0 * sizeof(SceneObject), 0);
     placement = (ScenePlacement *)((u8 *)D_8009BD30 + 2);
     SetColorMatrix(&D_8009A140);
     SetLightMatrix(&D_8009A160);
@@ -448,14 +448,14 @@ void func_80084580(void) {
         D_8009C620[i].angle.vz = placement->az;
         RotMatrixYXZ(&D_8009C620[i].angle, &D_8009C620[i].matrix);
         D_8009C620[i].def = &((SpriteDefTable *)D_8009CD48)->defs[D_8009C620[i].unk2];
-        func_8002CB54(D_8009C620[i].def, &D_8009C620[i].prims, &D_8009C620[i].prims2, &D_8009C620[i]);
-        func_8002C8CC(D_8009C620[i].def, D_8009C620[i].prims, 1);
+        model_alloc_packet_buffers(D_8009C620[i].def, &D_8009C620[i].prims, &D_8009C620[i].prims2, &D_8009C620[i]);
+        model_build_packets(D_8009C620[i].def, D_8009C620[i].prims, 1);
         memcpy(D_8009C620[i].prims2, D_8009C620[i].prims, D_8009C620[i].def->packet_size);
         D_8009C620[i].unk44 = ((s32 *)D_8009D308)[D_8009C620[i].unk2];
         ((s32 *)D_8009C620[i].unk44)[1] = D_8009C620[i].unk44 + ((s32 *)D_8009C620[i].unk44)[1];
         D_8009C620[i].parent = NULL;
     }
-    D_80050100 = 2;
+    model_ot_depth_shift = 2;
     D_8009C16C = -1;
     D_8009C840 = -1;
     D_8009C620[4].visible = 1;
@@ -466,10 +466,10 @@ void func_80084818(void) {
     s32 i;
 
     for (i = 0; i < D_8009D7E0; i++) {
-        func_800320E8(D_8009C620[i].prims);
-        func_8002CBBC((ModelBuffer *)D_8009C620[i].def);
+        heap_free(D_8009C620[i].prims);
+        model_free_owned_block((ModelBuffer *)D_8009C620[i].def);
     }
-    func_800320E8(D_8009C620);
+    heap_free(D_8009C620);
 }
 
 /* Link scene object `child` to `parent`. */
@@ -505,11 +505,11 @@ void func_800848F4(void) {
     scratch->scale.vz = 0x800;
     scratch->scale.vy = 0x800;
     scratch->scale.vx = 0x800;
-    D_80050104 = 3;
+    model_box_test_mode = 3;
     x = D_8009BE28.target.vx >> 12;
     z = D_8009BE28.target.vz >> 12;
-    D_800595C0 = 0;
-    D_80059578 = 0;
+    model_submitted_primitive_count = 0;
+    model_drawn_primitive_count = 0;
     scratch->origin.vz = 0;
     scratch->origin.vy = 0;
     scratch->origin.vx = 0;
@@ -542,7 +542,7 @@ void func_800848F4(void) {
             if (scratch->flag >= 0) {
                 gte_stsz(&scratch->sz);
                 if (scratch->sz < 0xD80) {
-                    func_8002C700(D_8009C620[i].def, (&D_8009C620[i].prims)[D_8009D7F0],
+                    model_draw_sprite_model(D_8009C620[i].def, (&D_8009C620[i].prims)[D_8009D7F0],
                                   (u32 *)D_8009BE3C->ot, D_8009AD2C[(s16)D_8009C620[i].flags]);
                 }
             }
@@ -940,11 +940,11 @@ void func_80085CDC(void) {
             gte_stsz(&scratch->depth[i]);
         }
     }
-    func_80024FF4(&D_8009C808);
+    sprite_set_view_matrix(&D_8009C808);
     actor = D_8009BE24;
     for (i = 0; i < 0x40; i++, actor++) {
         if ((actor->unk24 == 0) & (actor->handle != NULL) & (scratch->depth[i] < 0xB00)) {
-            func_8001E298(actor->handle, &D_8009BE3C->ot[scratch->depth[i] >> 4]);
+            sprite_draw(actor->handle, &D_8009BE3C->ot[scratch->depth[i] >> 4]);
             heading = actor->heading;
             facing = actor->unk5C;
             diff = heading - facing;
@@ -967,8 +967,8 @@ void func_80085CDC(void) {
                 }
             }
             actor->unk5C = diff;
-            func_800223B0(actor->handle, (diff - (u16)D_8009BD38.vy - 0x400) & 0xFFF);
-            func_80023210(actor->handle);
+            sprite_set_facing(actor->handle, (diff - (u16)D_8009BD38.vy - 0x400) & 0xFFF);
+            sprite_vm_tick(actor->handle);
         }
     }
 }
@@ -1000,8 +1000,8 @@ void func_80085FE0(void) {
     POLY_FT4 *quad;
     s32 i;
 
-    D_8009D7E8[0] = func_80031BDC(sizeof(QuadBlock512), 1);
-    D_8009D7E8[1] = func_80031BDC(sizeof(QuadBlock512), 1);
+    D_8009D7E8[0] = heap_alloc(sizeof(QuadBlock512), 1);
+    D_8009D7E8[1] = heap_alloc(sizeof(QuadBlock512), 1);
     quad = D_8009D7E8[0];
     for (i = 0; i < 0x200; i++, quad++) {
         setPolyFT4(quad);
@@ -1022,8 +1022,8 @@ void func_80085FE0(void) {
 
 /* Free the two billboard quad buffers. */
 void func_80086124(void) {
-    func_800320E8(D_8009D7E8[1]);
-    func_800320E8(D_8009D7E8[0]);
+    heap_free(D_8009D7E8[1]);
+    heap_free(D_8009D7E8[0]);
 }
 
 /* Scratchpad work area of the billboard pass. */
@@ -1089,8 +1089,8 @@ void func_800863E0(void) {
     s32 column;
     s32 i;
 
-    D_8009D150 = func_80031BDC(0x50 * sizeof(Drift), 0);
-    D_8009CEB4 = func_80031BDC(0x50 * sizeof(DriftVelocity), 0);
+    D_8009D150 = heap_alloc(0x50 * sizeof(Drift), 0);
+    D_8009CEB4 = heap_alloc(0x50 * sizeof(DriftVelocity), 0);
     drift = D_8009D150;
     for (row = 0; row < 4; row++) {
         for (column = 0; column < 4; column++) {
@@ -1113,8 +1113,8 @@ void func_800863E0(void) {
 
 /* Free the clouds' positions and velocities. */
 void func_80086568(void) {
-    func_800320E8(D_8009CEB4);
-    func_800320E8(D_8009D150);
+    heap_free(D_8009CEB4);
+    heap_free(D_8009D150);
 }
 
 /* The cloud quads, copied between display buffers as a whole. */
@@ -1131,8 +1131,8 @@ void func_800865A0(void) {
     s32 colour;
     s32 length;
 
-    D_8009D7F8[0] = func_80031BDC(sizeof(QuadBlock288), 1);
-    D_8009D7F8[1] = func_80031BDC(sizeof(QuadBlock288), 1);
+    D_8009D7F8[0] = heap_alloc(sizeof(QuadBlock288), 1);
+    D_8009D7F8[1] = heap_alloc(sizeof(QuadBlock288), 1);
     colour = 0x26;
     i = 0;
     quad = D_8009D7F8[0];
@@ -1151,8 +1151,8 @@ void func_800865A0(void) {
 
 /* Free the two cloud quad buffers. */
 void func_800866C8(void) {
-    func_800320E8(D_8009D7F8[1]);
-    func_800320E8(D_8009D7F8[0]);
+    heap_free(D_8009D7F8[1]);
+    heap_free(D_8009D7F8[0]);
 }
 
 /* Move the 80 drifting positions, wrapping them on the 0x2000-unit world. */
@@ -1287,10 +1287,10 @@ void func_80086798(void) {
     RotMatrixY(D_8009BD38.vy, &scratch->turn);
     MulMatrix0(&scratch->local, &scratch->screen, &scratch->work);
     MulMatrix0(&scratch->turn, &scratch->work, &scratch->local);
-    scratch->edge[0] = (func_8003F8CC(D_8009BD38.vy - 0x169) << 16) | (func_8003F8B0(D_8009BD38.vy - 0x169) & 0xFFFF);
-    scratch->edge[1] = (func_8003F8CC(D_8009BD38.vy + 0x169) << 16) | (func_8003F8B0(D_8009BD38.vy + 0x169) & 0xFFFF);
-    scratch->view.vx = VIEW_VECTORS[0].vx * 2 + (-func_8003F8B0(D_8009BD38.vy) >> 1);
-    scratch->view.vz = VIEW_VECTORS[0].vz * 2 + (-func_8003F8CC(D_8009BD38.vy) >> 1);
+    scratch->edge[0] = (gpu_get_cos(D_8009BD38.vy - 0x169) << 16) | (gpu_get_sin(D_8009BD38.vy - 0x169) & 0xFFFF);
+    scratch->edge[1] = (gpu_get_cos(D_8009BD38.vy + 0x169) << 16) | (gpu_get_sin(D_8009BD38.vy + 0x169) & 0xFFFF);
+    scratch->view.vx = VIEW_VECTORS[0].vx * 2 + (-gpu_get_sin(D_8009BD38.vy) >> 1);
+    scratch->view.vz = VIEW_VECTORS[0].vz * 2 + (-gpu_get_cos(D_8009BD38.vy) >> 1);
     quad = D_8009D7F8[D_8009D7F0];
     scratch->quads = 0;
     scratch->count = 0;
@@ -1535,8 +1535,8 @@ s32 func_80087734(s32 index) {
     first->vy = objects[12].angle.vy;
     second->vy = objects[14].angle.vy;
     first->vz = second->vz = actor->u.step;
-    func_8003F738(first, &objects[12].matrix);
-    func_8003F738(second, &objects[14].matrix);
+    gpu_build_rotation_matrix(first, &objects[12].matrix);
+    gpu_build_rotation_matrix(second, &objects[14].matrix);
     return 1;
 }
 
@@ -1572,8 +1572,8 @@ s32 func_80087804(s32 index) {
     second = &objects[second_id];
     SCRIPT_VECTOR[1].vy = second->angle.vy;
     SCRIPT_VECTOR[0].vz = SCRIPT_VECTOR[1].vz = actor->u.step;
-    func_8003F738(&SCRIPT_VECTOR[0], &first->matrix);
-    func_8003F738(&SCRIPT_VECTOR[1], &second->matrix);
+    gpu_build_rotation_matrix(&SCRIPT_VECTOR[0], &first->matrix);
+    gpu_build_rotation_matrix(&SCRIPT_VECTOR[1], &second->matrix);
     return 1;
 }
 
@@ -1636,8 +1636,8 @@ s32 func_80087A8C(s32 index) {
     SCRIPT_VECTOR[0].vx = 0;
     SCRIPT_VECTOR[0].vy = SCRIPT_VECTOR[1].vy = actor->u.step;
     second = &objects[second_id];
-    func_8003F738(&SCRIPT_VECTOR[0], &first->matrix);
-    func_8003F738(&SCRIPT_VECTOR[1], &second->matrix);
+    gpu_build_rotation_matrix(&SCRIPT_VECTOR[0], &first->matrix);
+    gpu_build_rotation_matrix(&SCRIPT_VECTOR[1], &second->matrix);
     return 1;
 }
 
@@ -1700,21 +1700,21 @@ s32 func_80087C6C(s32 index) {
     actor->turn = 0x4000;
     actor->state = 0;
     object = &D_8009C620[id];
-    if (D_8006D634.vars[0] < 0xCD) {
+    if (game_data.vars[0] < 0xCD) {
         actor->position.vx = 0xD80000;
         actor->position.vz = 0x7280000;
         object->matrix = D_8009A180;
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     } else {
-        if (D_8006D634.unk184A == 0) {
-            D_8006D634.unk184A++;
+        if (game_data.unk184A == 0) {
+            game_data.unk184A++;
             actor->u.step = 0;
             actor->position.vx = D_8009AF80[actor->u.step] << 12;
             z = D_8009AF90[actor->u.step];
         } else {
-            actor->u.step = D_8006D634.unk1844[2];
-            actor->position.vx = D_8006D634.unk1844[0] << 12;
-            z = D_8006D634.unk1844[1];
+            actor->u.step = game_data.unk1844[2];
+            actor->position.vx = game_data.unk1844[0] << 12;
+            z = game_data.unk1844[1];
         }
         actor->position.vz = z << 12;
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
@@ -1772,7 +1772,7 @@ s32 func_80087FD0(s32 index) {
     scratch = FERRY_SCRATCH;
     actor = &D_8009BE24[index];
     object = &D_8009C620[D_8009B674[D_8009C610]];
-    if (D_8006D634.vars[0] < 0xCD) {
+    if (game_data.vars[0] < 0xCD) {
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
         object->position.vx = actor->position.vx >> 12;
         object->position.vy = actor->position.vy >> 12;
@@ -1811,9 +1811,9 @@ s32 func_80087FD0(s32 index) {
         object->position.vx = actor->position.vx >> 12;
         object->position.vy = actor->position.vy >> 12;
         object->position.vz = actor->position.vz >> 12;
-        scratch->work.vx = D_8006D634.worldmap.unk60 - (actor->position.vx >> 12);
-        scratch->work.vz = D_8006D634.worldmap.unk64 - (actor->position.vz >> 12);
-        scratch->work.vy = (s16)D_8006D634.worldmap.unk62;
+        scratch->work.vx = game_data.worldmap.unk60 - (actor->position.vx >> 12);
+        scratch->work.vz = game_data.worldmap.unk64 - (actor->position.vz >> 12);
+        scratch->work.vy = (s16)game_data.worldmap.unk62;
         func_80093534(&scratch->work);
         dock = SquareRoot0(scratch->work.vx * scratch->work.vx + scratch->work.vz * scratch->work.vz);
         if (dock < 0x100 && scratch->work.vy >= -0xBF) {
@@ -1840,9 +1840,9 @@ s32 func_80087FD0(s32 index) {
             func_800894C8(0x13);
         }
     }
-    D_8006D634.unk1844[0] = actor->position.vx >> 12;
-    D_8006D634.unk1844[1] = actor->position.vz >> 12;
-    D_8006D634.unk1844[2] = actor->u.step;
+    game_data.unk1844[0] = actor->position.vx >> 12;
+    game_data.unk1844[1] = actor->position.vz >> 12;
+    game_data.unk1844[2] = actor->u.step;
     scratch->work.vx = actor->position.vx;
     scratch->work.vy = actor->position.vy + 0x30000;
     scratch->work.vz = actor->position.vz;
@@ -1862,24 +1862,24 @@ s32 func_80088570(s32 index) {
     actor->u.step = 0;
     actor->unk58 = 0;
     actor->unk5C = 0xC;
-    if (D_8006D634.flight.count == 0) {
-        D_8006D634.flight.count++;
+    if (game_data.flight.count == 0) {
+        game_data.flight.count++;
         actor->position.vy = -0x280000;
         actor->position.vx = 0;
         actor->position.vz = 0x4800000;
     } else {
-        actor->position.vx = (D_8006D634.flight.x << 12) + D_8006D634.flight.x_frac;
+        actor->position.vx = (game_data.flight.x << 12) + game_data.flight.x_frac;
         actor->position.vy = -0x280000;
-        actor->position.vz = (D_8006D634.flight.z << 12) + D_8006D634.flight.z_frac;
+        actor->position.vz = (game_data.flight.z << 12) + game_data.flight.z_frac;
     }
     actor->motion.vz = 0xB50;
     actor->motion.vx = 0xB50;
     actor->motion.vy = 0;
     actor->turn = 1;
-    D_8006D634.flight.x_frac = actor->position.vx;
-    D_8006D634.flight.x = actor->position.vx >> 12;
-    D_8006D634.flight.z_frac = actor->position.vz;
-    D_8006D634.flight.z = actor->position.vz >> 12;
+    game_data.flight.x_frac = actor->position.vx;
+    game_data.flight.x = actor->position.vx >> 12;
+    game_data.flight.z_frac = actor->position.vz;
+    game_data.flight.z = actor->position.vz >> 12;
     return 1;
 }
 
@@ -1929,9 +1929,9 @@ s32 func_80088720(s32 index) {
     scratch = FLIGHT_SCRATCH;
     D_8009C620[base].matrix = D_8009C620[base + 1].matrix = D_8009C620[base + 2].matrix =
         D_8009C620[base + 3].matrix = FLIGHT_SCRATCH->tail_matrix;
-    scratch->work.vx = D_8006D634.worldmap.unk60 - (actor->position.vx >> 12);
-    scratch->work.vz = D_8006D634.worldmap.unk64 - (actor->position.vz >> 12);
-    scratch->work.vy = (s16)D_8006D634.worldmap.unk62;
+    scratch->work.vx = game_data.worldmap.unk60 - (actor->position.vx >> 12);
+    scratch->work.vz = game_data.worldmap.unk64 - (actor->position.vz >> 12);
+    scratch->work.vy = (s16)game_data.worldmap.unk62;
     func_80093534(&scratch->work);
     if (SquareRoot0(scratch->work.vx * scratch->work.vx + scratch->work.vz * scratch->work.vz) < 0x300 && scratch->work.vy < -0x240) {
         actor->turn = 0;
@@ -1946,10 +1946,10 @@ s32 func_80088720(s32 index) {
     scratch->work.vz = actor->position.vz >> 12;
     D_8009C620[base + 12].position = scratch->work;
     func_8008BFD4(index, &actor->position, 0x180, 0xC0);
-    D_8006D634.flight.x_frac = actor->position.vx;
-    D_8006D634.flight.x = actor->position.vx >> 12;
-    D_8006D634.flight.z_frac = actor->position.vz;
-    D_8006D634.flight.z = actor->position.vz >> 12;
+    game_data.flight.x_frac = actor->position.vx;
+    game_data.flight.x = actor->position.vx >> 12;
+    game_data.flight.z_frac = actor->position.vz;
+    game_data.flight.z = actor->position.vz >> 12;
     return 1;
 }
 
@@ -1967,7 +1967,7 @@ s32 func_80088B40(s32 index) {
     actor = &D_8009BE24[index];
     object = D_8009C620;
     actor->state = 0;
-    if (D_8006D634.vars[0] == 0x99) {
+    if (game_data.vars[0] == 0x99) {
         result = 1;
         actor->position.vx = 0x2000000;
         actor->position.vz = 0x4120000;
@@ -2007,7 +2007,7 @@ s32 func_80088D00(s32 index) {
     object = D_8009C620;
     actor = &D_8009BE24[index];
     object += 69;
-    if (D_8006D634.vars[0] == 0x99) {
+    if (game_data.vars[0] == 0x99) {
         object->position.vx = actor->position.vx >> 12;
         object->position.vy = actor->position.vy >> 12;
         object->position.vz = actor->position.vz >> 12;
@@ -2099,7 +2099,7 @@ void func_80088F64(void) {
         object->angle.vx = 0;
         object++;
     }
-    D_8009BDF4 = slot = func_80031BDC(0x4C00, 0);
+    D_8009BDF4 = slot = heap_alloc(0x4C00, 0);
     for (i = 0xFF; i != -1; i--) {
         EFFECT_ENABLED(slot) = 0;
         EFFECT_COUNT(slot) = 0;
@@ -2109,7 +2109,7 @@ void func_80088F64(void) {
 
 /* Free the effect table. */
 void func_80088FF4(void) {
-    func_800320E8(D_8009BDF4);
+    heap_free(D_8009BDF4);
 }
 
 /* The particle quads, copied between display buffers as a whole. */
@@ -2123,8 +2123,8 @@ void func_8008901C(void) {
     POLY_FT4 *quad;
     s32 i;
 
-    D_8009BE1C[0] = func_80031BDC(sizeof(EffectQuads), 1);
-    D_8009BE1C[1] = func_80031BDC(sizeof(EffectQuads), 1);
+    D_8009BE1C[0] = heap_alloc(sizeof(EffectQuads), 1);
+    D_8009BE1C[1] = heap_alloc(sizeof(EffectQuads), 1);
     quad = D_8009BE1C[0];
     for (i = 0xFF; i != -1; i--) {
         setPolyFT4(quad);
@@ -2138,8 +2138,8 @@ void func_8008901C(void) {
 
 /* Free the two particle quad buffers. */
 void func_80089128(void) {
-    func_800320E8(D_8009BE1C[0]);
-    func_800320E8(D_8009BE1C[1]);
+    heap_free(D_8009BE1C[0]);
+    heap_free(D_8009BE1C[1]);
 }
 
 /* Short vectors handled as a word (vx, vy) plus vz. */
@@ -2588,13 +2588,13 @@ s32 func_8008A2C8(s32 index) {
     s32 i;
 
     actor = &D_8009BE24[index];
-    actor->handle = func_80024524(D_8009CD34[0], 0x100, 0x1E0, 0x140, 0x100, 0x40);
-    func_800245D8(actor->handle, 0);
-    func_80022000(actor->handle, 0x1800);
+    actor->handle = sprite_create(D_8009CD34[0], 0x100, 0x1E0, 0x140, 0x100, 0x40);
+    sprite_start_animation(actor->handle, 0);
+    sprite_set_scale(actor->handle, 0x1800);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
     actor->unk24 = 0;
-    actor->position.vx = D_8006D634.vars[0] << 12;
-    actor->position.vz = D_8006D634.vars[1] << 12;
+    actor->position.vx = game_data.vars[0] << 12;
+    actor->position.vz = game_data.vars[1] << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     actor->motion.vz = 0;
     actor->motion.vy = 0;
@@ -2606,7 +2606,7 @@ s32 func_8008A2C8(s32 index) {
     case 1:
     case 2:
     case 3:
-        if (D_8006D634.inGear[0] == 0) {
+        if (game_data.inGear[0] == 0) {
             actor->position.vx = D_8009C5AC.vx;
             actor->position.vz = D_8009C5AC.vz;
             actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
@@ -2623,15 +2623,15 @@ s32 func_8008A2C8(s32 index) {
     case 6:
         actor->state = 3;
         actor->unk24 = 1;
-        if (D_8006D634.party[0] != 0xFF) {
-            D_8006D634.inGear[0] = 1;
+        if (game_data.party[0] != 0xFF) {
+            game_data.inGear[0] = 1;
         }
         break;
     case 7:
         actor->state = 2;
         actor->unk24 = 1;
-        if (D_8006D634.party[0] != 0xFF) {
-            D_8006D634.inGear[0] = 1;
+        if (game_data.party[0] != 0xFF) {
+            game_data.inGear[0] = 1;
         }
         break;
     case 8:
@@ -2651,9 +2651,9 @@ s32 func_8008A2C8(s32 index) {
         point->heading = actor->heading;
         point++;
     } while (i < 0x20);
-    D_8006D634.worldmap.x = actor->position.vx >> 12;
-    D_8006D634.worldmap.z = actor->position.vz >> 12;
-    D_8006D634.worldmap.heading = actor->heading;
+    game_data.worldmap.x = actor->position.vx >> 12;
+    game_data.worldmap.z = actor->position.vz >> 12;
+    game_data.worldmap.heading = actor->heading;
     return 1;
 }
 
@@ -2662,9 +2662,9 @@ s32 func_8008A52C(s32 index) {
     WorldmapActor *actor;
 
     actor = &D_8009BE24[index];
-    actor->handle = func_80024524(D_8009CD34[0], 0x100, 0x1E0, 0x140, 0x100, 0x40);
-    func_800245D8(actor->handle, 0);
-    func_80022000(actor->handle, 0x1800);
+    actor->handle = sprite_create(D_8009CD34[0], 0x100, 0x1E0, 0x140, 0x100, 0x40);
+    sprite_start_animation(actor->handle, 0);
+    sprite_set_scale(actor->handle, 0x1800);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
     return 1;
 }
@@ -2678,16 +2678,16 @@ s32 func_8008A5B8(s32 index) {
     s16 heading;
 
     actor = &D_8009BE24[index];
-    actor->handle = func_80024524(D_8009CD34[0], 0x100, 0x1E0, 0x140, 0x100, 0x40);
-    func_800245D8(actor->handle, 0);
-    func_80022000(actor->handle, 0x1800);
+    actor->handle = sprite_create(D_8009CD34[0], 0x100, 0x1E0, 0x140, 0x100, 0x40);
+    sprite_start_animation(actor->handle, 0);
+    sprite_set_scale(actor->handle, 0x1800);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
-    actor->position.vx = D_8006D634.worldmap.x << 12;
-    actor->position.vz = D_8006D634.worldmap.z << 12;
+    actor->position.vx = game_data.worldmap.x << 12;
+    actor->position.vz = game_data.worldmap.z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     i = 0;
     point = D_8009CEC4;
-    heading = D_8006D634.worldmap.heading;
+    heading = game_data.worldmap.heading;
     actor->unk24 = 1;
     actor->turn = 8;
     actor->motion.vz = 0;
@@ -2753,7 +2753,7 @@ s32 func_8008A72C(s32 index) {
     switch (actor->state) {
     case 0:
     case 1:
-        if (D_8006D634.inGear[0] == 0) {
+        if (game_data.inGear[0] == 0) {
             switch (func_80090A84(actor)) {
             case 2:
             case 4:
@@ -2775,12 +2775,12 @@ s32 func_8008A72C(s32 index) {
             default:
                 if ((actor->motion.vx == 0) & (actor->motion.vy == 0) & (actor->motion.vz == 0)) {
                     if (SPRITE_ANIMATION(actor->handle) != 0) {
-                        func_800245D8(actor->handle, 0);
+                        sprite_start_animation(actor->handle, 0);
                         func_800894C8(0x2F);
                     }
                 } else {
                     if (SPRITE_ANIMATION(actor->handle) != 1) {
-                        func_800245D8(actor->handle, 1);
+                        sprite_start_animation(actor->handle, 1);
                     }
                     func_8008C1DC(0x2F, actor, (ActorScratch *)scratch);
                 }
@@ -2843,8 +2843,8 @@ s32 func_8008A72C(s32 index) {
         actor->heading = D_8009BE24[7].heading;
         break;
     case 8:
-        if (D_8006D634.party[1] != 0xFF) {
-            if (D_8006D634.inGear[1] == 0) {
+        if (game_data.party[1] != 0xFF) {
+            if (game_data.inGear[1] == 0) {
                 func_80097770(2, 1);
                 actor[1].unk6 = D_8009BD60;
                 func_80097770(5, 8);
@@ -2856,8 +2856,8 @@ s32 func_8008A72C(s32 index) {
         actor->state++;
         break;
     case 9:
-        if (D_8006D634.party[2] != 0xFF) {
-            if (D_8006D634.inGear[2] == 0) {
+        if (game_data.party[2] != 0xFF) {
+            if (game_data.inGear[2] == 0) {
                 func_80097770(3, 1);
                 actor[2].unk6 = D_8009BD60;
                 func_80097770(6, 8);
@@ -2869,7 +2869,7 @@ s32 func_8008A72C(s32 index) {
         actor->state++;
         break;
     case 10:
-        if (D_8006D634.party[0] != 0xFF) {
+        if (game_data.party[0] != 0xFF) {
             if (func_80097770(4, 8) != 0) {
                 actor->state = 0xD;
             }
@@ -2882,7 +2882,7 @@ s32 func_8008A72C(s32 index) {
         target = (WorldmapActor *)((D_8009BD60 * sizeof(*target)) + (u32)D_8009BE24);
         actor->u.step = target->position.vx >> 12;
         actor->unk54 = target->position.vz >> 12;
-        func_800245D8(actor->handle, 1);
+        sprite_start_animation(actor->handle, 1);
         actor->state++;
         /* fallthrough */
     case 0xE:
@@ -2901,7 +2901,7 @@ s32 func_8008A72C(s32 index) {
         }
         break;
     case 0x10:
-        if (D_8006D634.party[1] != 0xFF) {
+        if (game_data.party[1] != 0xFF) {
             if (func_80097770(2, 1) != 0) {
                 actor[1].unk6 = 5;
                 actor->state++;
@@ -2911,7 +2911,7 @@ s32 func_8008A72C(s32 index) {
         }
         break;
     case 0x11:
-        if (D_8006D634.party[2] != 0xFF) {
+        if (game_data.party[2] != 0xFF) {
             if (func_80097770(3, 1) != 0) {
                 actor[2].unk6 = 6;
                 actor->state++;
@@ -2926,7 +2926,7 @@ s32 func_8008A72C(s32 index) {
         scratch->start.vx = VEHICLE_SPOTS[0].x << 12;
         scratch->start.vz = VEHICLE_SPOTS[0].z << 12;
         scratch->start.vy = func_80093978(scratch->start.vx, scratch->start.vz);
-        scratch->heading = D_8006D634.worldmap.unk5A;
+        scratch->heading = game_data.worldmap.unk5A;
         value = 0x1F;
         do {
             point->position = scratch->start;
@@ -2939,21 +2939,21 @@ s32 func_8008A72C(s32 index) {
         actor->position.vx = VEHICLE_SPOTS[0].x << 12;
         actor->position.vz = VEHICLE_SPOTS[0].z << 12;
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
-        heading = D_8006D634.worldmap.unk5A;
+        heading = game_data.worldmap.unk5A;
         actor->unk5C = heading;
         actor->heading = heading;
-        scratch->target.vx = actor->position.vx + func_8003F8B0(actor->heading) * 0x30;
-        scratch->target.vz = actor->position.vz + -func_8003F8CC(actor->heading) * 0x30;
+        scratch->target.vx = actor->position.vx + gpu_get_sin(actor->heading) * 0x30;
+        scratch->target.vz = actor->position.vz + -gpu_get_cos(actor->heading) * 0x30;
         func_800941C4(&actor->position, &scratch->target, &actor->motion, &actor->heading);
         actor->u.step = scratch->target.vx >> 12;
         actor->unk54 = scratch->target.vz >> 12;
         actor->unk24 = 0;
-        func_800245D8(actor->handle, 1);
+        sprite_start_animation(actor->handle, 1);
         actor->state++;
         break;
     case 0x29:
         if (func_8008BEC8(actor) == 3) {
-            func_800245D8(actor->handle, 0);
+            sprite_start_animation(actor->handle, 0);
             actor->motion.vz = 0;
             actor->motion.vy = 0;
             actor->motion.vx = 0;
@@ -2964,7 +2964,7 @@ s32 func_8008A72C(s32 index) {
         break;
     case 0x2A:
         point = D_8009CEC4;
-        D_8006D634.inGear[0] = 0;
+        game_data.inGear[0] = 0;
         actor->unk58 = 1;
         D_8009D154 = 0;
         scratch->target = actor->position;
@@ -2983,19 +2983,19 @@ s32 func_8008A72C(s32 index) {
             actor->state = 1;
             break;
         case 2:
-            if (D_8006D634.inGear[1] == 0) {
+            if (game_data.inGear[1] == 0) {
                 actor->state++;
             }
             break;
         case 3:
-            if ((D_8006D634.inGear[1] | D_8006D634.inGear[2]) == 0) {
+            if ((game_data.inGear[1] | game_data.inGear[2]) == 0) {
                 actor->state++;
             }
             break;
         }
         break;
     case 0x2C:
-        if (D_8006D634.party[1] != 0xFF) {
+        if (game_data.party[1] != 0xFF) {
             if (func_80097770(2, 5) != 0) {
                 actor->state++;
             }
@@ -3004,16 +3004,16 @@ s32 func_8008A72C(s32 index) {
         }
         break;
     case 0x2D:
-        if (D_8006D634.party[2] == 0xFF || func_80097770(3, 5) != 0) {
+        if (game_data.party[2] == 0xFF || func_80097770(3, 5) != 0) {
             actor->state = 0x40;
         }
         break;
     case 0x40:
         break;
     }
-    D_8006D634.worldmap.x = actor->position.vx >> 12;
-    D_8006D634.worldmap.z = actor->position.vz >> 12;
-    D_8006D634.worldmap.heading = actor->heading;
+    game_data.worldmap.x = actor->position.vx >> 12;
+    game_data.worldmap.z = actor->position.vz >> 12;
+    game_data.worldmap.heading = actor->heading;
     if (actor->unk24 == 0) {
         func_80074794(0, &actor->position);
     }
@@ -3028,23 +3028,23 @@ s32 func_8008B2BC(s32 index) {
 
     actor = &D_8009BE24[index];
     result = 1;
-    if (D_8006D634.party[1] != 0xFF) {
-        actor->handle = func_80024524(D_8009CD34[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
-        func_800245D8(actor->handle, 0);
-        func_80022000(actor->handle, 0x1800);
+    if (game_data.party[1] != 0xFF) {
+        actor->handle = sprite_create(D_8009CD34[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
+        sprite_start_animation(actor->handle, 0);
+        sprite_set_scale(actor->handle, 0x1800);
         actor->handle->render.word &= ~SPRITE_HIDDEN;
         actor->unk24 = 0;
     } else {
         actor->unk24 = 1;
         result = 3;
     }
-    actor->position.vx = D_8006D634.worldmap.x << 12;
-    actor->position.vz = D_8006D634.worldmap.z << 12;
+    actor->position.vx = game_data.worldmap.x << 12;
+    actor->position.vz = game_data.worldmap.z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
-    actor->heading = D_8006D634.worldmap.heading;
+    actor->heading = game_data.worldmap.heading;
     actor->turn = 8;
     actor->unk58 = 0xF;
     actor->unk5C = actor->heading;
@@ -3052,7 +3052,7 @@ s32 func_8008B2BC(s32 index) {
     case 1:
     case 2:
     case 3:
-        if (D_8006D634.inGear[1] == 0) {
+        if (game_data.inGear[1] == 0) {
             actor->position.vx = D_8009C5AC.vx;
             actor->position.vz = D_8009C5AC.vz;
             actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
@@ -3067,15 +3067,15 @@ s32 func_8008B2BC(s32 index) {
     case 6:
         actor->state = 3;
         actor->unk24 = 1;
-        if (D_8006D634.party[1] != 0xFF) {
-            D_8006D634.inGear[1] = 1;
+        if (game_data.party[1] != 0xFF) {
+            game_data.inGear[1] = 1;
         }
         break;
     case 7:
         actor->state = 2;
         actor->unk24 = 1;
-        if (D_8006D634.party[1] != 0xFF) {
-            D_8006D634.inGear[1] = 1;
+        if (game_data.party[1] != 0xFF) {
+            game_data.inGear[1] = 1;
         }
         break;
     case 8:
@@ -3096,10 +3096,10 @@ s32 func_8008B498(s32 index) {
 
     actor = &D_8009BE24[index];
     result = 1;
-    if (D_8006D634.party[1] != 0xFF) {
-        actor->handle = func_80024524(D_8009CD34[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
-        func_800245D8(actor->handle, 0);
-        func_80022000(actor->handle, 0x1800);
+    if (game_data.party[1] != 0xFF) {
+        actor->handle = sprite_create(D_8009CD34[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
+        sprite_start_animation(actor->handle, 0);
+        sprite_set_scale(actor->handle, 0x1800);
         actor->handle->render.word &= ~SPRITE_HIDDEN;
     } else {
         result = 3;
@@ -3113,14 +3113,14 @@ s32 func_8008B54C(s32 index) {
     s16 heading;
 
     actor = &D_8009BE24[index];
-    actor->handle = func_80024524(D_8009CD34[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
-    func_800245D8(actor->handle, 0);
-    func_80022000(actor->handle, 0x1800);
+    actor->handle = sprite_create(D_8009CD34[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
+    sprite_start_animation(actor->handle, 0);
+    sprite_set_scale(actor->handle, 0x1800);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
-    actor->position.vx = D_8006D634.worldmap.x << 12;
-    actor->position.vz = D_8006D634.worldmap.z << 12;
+    actor->position.vx = game_data.worldmap.x << 12;
+    actor->position.vz = game_data.worldmap.z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
-    heading = D_8006D634.worldmap.heading;
+    heading = game_data.worldmap.heading;
     actor->unk24 = 1;
     actor->turn = 8;
     actor->state = 2;
@@ -3170,17 +3170,17 @@ s32 func_8008B644(s32 index) {
     switch (actor->state) {
     case 0:
     case 1:
-        if (D_8006D634.inGear[index - 1] == 0) {
+        if (game_data.inGear[index - 1] == 0) {
             point = &D_8009CEC4[(D_8009D154 - actor->unk58) & 0x1F];
             if ((actor->position.vx == point->position.vx) & (actor->position.vy == point->position.vy) &
                 (actor->position.vz == point->position.vz)) {
                 if (((s8 *)actor->handle)[0xAF] != 0) {
-                    func_800245D8(actor->handle, 0);
+                    sprite_start_animation(actor->handle, 0);
                     func_800894C8(index + 0x2E);
                 }
             } else {
                 if (((s8 *)actor->handle)[0xAF] != 1) {
-                    func_800245D8(actor->handle, 1);
+                    sprite_start_animation(actor->handle, 1);
                 }
                 func_8008C1DC(index + 0x2E, actor, (ActorScratch *)work);
             }
@@ -3209,7 +3209,7 @@ s32 func_8008B644(s32 index) {
         func_800941C4(&actor->position, &target->position, &actor->motion, &actor->heading);
         actor->u.step = target->position.vx >> 12;
         actor->unk54 = target->position.vz >> 12;
-        func_800245D8(actor->handle, 1);
+        sprite_start_animation(actor->handle, 1);
         actor->state++;
         /* fallthrough */
     case 9:
@@ -3226,30 +3226,30 @@ s32 func_8008B644(s32 index) {
         }
         break;
     case 0x28:
-        actor->position.vx = D_8006EF8A[index].x << 12;
-        actor->position.vz = D_8006EF8A[index].z << 12;
+        actor->position.vx = game_data_vehicle_spots_by_follower[index].x << 12;
+        actor->position.vz = game_data_vehicle_spots_by_follower[index].z << 12;
         actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
-        heading = (&D_8006D634.worldmap.unk5A)[index - 1];
+        heading = (&game_data.worldmap.unk5A)[index - 1];
         actor->unk5C = heading;
         actor->heading = heading;
-        work->vx = actor->position.vx + func_8003F8B0(actor->heading) * 0x30;
-        work->vz = actor->position.vz + -func_8003F8CC(actor->heading) * 0x30;
+        work->vx = actor->position.vx + gpu_get_sin(actor->heading) * 0x30;
+        work->vz = actor->position.vz + -gpu_get_cos(actor->heading) * 0x30;
         func_800941C4(&actor->position, work, &actor->motion, &actor->heading);
         actor->u.step = work->vx >> 12;
         actor->unk54 = work->vz >> 12;
         actor->unk24 = 0;
-        func_800245D8(actor->handle, 1);
+        sprite_start_animation(actor->handle, 1);
         actor->state++;
         goto walk;
     case 0x2A:
-        D_8006D634.inGear[index - 1] = 0;
+        game_data.inGear[index - 1] = 0;
         actor->state = 0x40;
         break;
     case 0x30:
         func_800941C4(&actor->position, &D_8009BE24[1].position, &actor->motion, &actor->heading);
         actor->u.step = D_8009BE24[1].position.vx >> 12;
         actor->unk54 = D_8009BE24[1].position.vz >> 12;
-        func_800245D8(actor->handle, 1);
+        sprite_start_animation(actor->handle, 1);
         actor->state++;
         /* fallthrough */
     case 0x29:
@@ -3281,23 +3281,23 @@ s32 func_8008BB40(s32 index) {
 
     actor = &D_8009BE24[index];
     result = 1;
-    if (D_8006D634.party[2] != 0xFF) {
-        actor->handle = func_80024524(D_8009CD34[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
-        func_800245D8(actor->handle, 0);
-        func_80022000(actor->handle, 0x1800);
+    if (game_data.party[2] != 0xFF) {
+        actor->handle = sprite_create(D_8009CD34[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
+        sprite_start_animation(actor->handle, 0);
+        sprite_set_scale(actor->handle, 0x1800);
         actor->handle->render.word &= ~SPRITE_HIDDEN;
         actor->unk24 = 0;
     } else {
         actor->unk24 = 1;
         result = 3;
     }
-    actor->position.vx = D_8006D634.worldmap.x << 12;
-    actor->position.vz = D_8006D634.worldmap.z << 12;
+    actor->position.vx = game_data.worldmap.x << 12;
+    actor->position.vz = game_data.worldmap.z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
-    actor->heading = D_8006D634.worldmap.heading;
+    actor->heading = game_data.worldmap.heading;
     actor->turn = 8;
     actor->unk58 = 0x1E;
     actor->unk5C = actor->heading;
@@ -3305,7 +3305,7 @@ s32 func_8008BB40(s32 index) {
     case 1:
     case 2:
     case 3:
-        if (D_8006D634.inGear[2] == 0) {
+        if (game_data.inGear[2] == 0) {
             actor->position.vx = D_8009C5AC.vx;
             actor->position.vz = D_8009C5AC.vz;
             actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
@@ -3320,15 +3320,15 @@ s32 func_8008BB40(s32 index) {
     case 6:
         actor->state = 3;
         actor->unk24 = 1;
-        if (D_8006D634.party[2] != 0xFF) {
-            D_8006D634.inGear[2] = 1;
+        if (game_data.party[2] != 0xFF) {
+            game_data.inGear[2] = 1;
         }
         break;
     case 7:
         actor->state = 2;
         actor->unk24 = 1;
-        if (D_8006D634.party[2] != 0xFF) {
-            D_8006D634.inGear[2] = 1;
+        if (game_data.party[2] != 0xFF) {
+            game_data.inGear[2] = 1;
         }
         break;
     case 8:
@@ -3349,10 +3349,10 @@ s32 func_8008BD1C(s32 index) {
 
     actor = &D_8009BE24[index];
     result = 1;
-    if (D_8006D634.party[2] != 0xFF) {
-        actor->handle = func_80024524(D_8009CD34[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
-        func_800245D8(actor->handle, 0);
-        func_80022000(actor->handle, 0x1800);
+    if (game_data.party[2] != 0xFF) {
+        actor->handle = sprite_create(D_8009CD34[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
+        sprite_start_animation(actor->handle, 0);
+        sprite_set_scale(actor->handle, 0x1800);
         actor->handle->render.word &= ~SPRITE_HIDDEN;
     } else {
         result = 3;
@@ -3366,14 +3366,14 @@ s32 func_8008BDD0(s32 index) {
     s16 heading;
 
     actor = &D_8009BE24[index];
-    actor->handle = func_80024524(D_8009CD34[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
-    func_800245D8(actor->handle, 0);
-    func_80022000(actor->handle, 0x1800);
+    actor->handle = sprite_create(D_8009CD34[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
+    sprite_start_animation(actor->handle, 0);
+    sprite_set_scale(actor->handle, 0x1800);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
-    actor->position.vx = D_8006D634.worldmap.x << 12;
-    actor->position.vz = D_8006D634.worldmap.z << 12;
+    actor->position.vx = game_data.worldmap.x << 12;
+    actor->position.vz = game_data.worldmap.z << 12;
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
-    heading = D_8006D634.worldmap.heading;
+    heading = game_data.worldmap.heading;
     actor->unk24 = 1;
     actor->turn = 8;
     actor->state = 2;
@@ -3493,13 +3493,13 @@ void func_8008C1DC(s32 effect, WorldmapActor *actor, ActorScratch *scratch) {
 
 /* Create a party member's gear sprite for the actor. */
 void func_8008C28C(WorldmapActor *actor, s32 member) {
-    actor->handle = func_80024524(D_8009BDF8[member], D_8009B18C[member], D_8009B194[member],
+    actor->handle = sprite_create(D_8009BDF8[member], D_8009B18C[member], D_8009B194[member],
                                   D_8009B19C[member], D_8009B1A4[member], 0x40);
-    if (D_8006D634.inGear[member] == 1) {
-        func_800245D8(actor->handle, 0);
+    if (game_data.inGear[member] == 1) {
+        sprite_start_animation(actor->handle, 0);
     } else {
-        func_800245D8(actor->handle, 3);
+        sprite_start_animation(actor->handle, 3);
     }
-    func_80022000(actor->handle, 0x2000);
+    sprite_set_scale(actor->handle, 0x2000);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
 }

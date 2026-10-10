@@ -163,8 +163,8 @@ void func_8007E634(MenuImageFile *files) {
     s16 *palette;
     s32 i;
 
-    D_800926D4[0] = func_80031BDC(0xFA0, 0);
-    D_800926D4[1] = func_80031BDC(0xFA0, 0);
+    D_800926D4[0] = heap_alloc(0xFA0, 0);
+    D_800926D4[1] = heap_alloc(0xFA0, 0);
     for (i = 0; i < 100; i++) {
         ((u8 *)&D_800926D4[0][i].tag)[3] = 0;
         ((u8 *)&D_800926D4[1][i].tag)[3] = 0;
@@ -347,7 +347,7 @@ void func_8007ED84(u8 *text, s32 offset) {
 /* Set the text colour: highlighted (fading red) or plain white. */
 void func_8007EE08(s32 highlight) {
     if (highlight) {
-        D_800926F0 = D_80059488 * 20;
+        D_800926F0 = pad_vblank_count * 20;
         D_800926F4 = 0xFF;
         D_800926F8 = 0;
     } else {
@@ -361,8 +361,8 @@ void func_8007EE08(s32 highlight) {
  * Sample the VBlank counter separately for the red and green channels. */
 void func_8007EE68(s32 highlight) {
     if (highlight) {
-        s32 red = 0xFF - D_80059488 * 20;
-        s32 green = 0xFF - D_80059488 * 20;
+        s32 red = 0xFF - pad_vblank_count * 20;
+        s32 green = 0xFF - pad_vblank_count * 20;
 
         D_800926F8 = 0xFF;
         D_800926F0 = red;
@@ -377,8 +377,8 @@ void func_8007EE68(s32 highlight) {
 /* Build the list of the 49 entries (or, when filtering, of those whose
  * required level the current level reaches) and order it when filtering. */
 void func_8007EEE8(s32 filter) {
-    s32 level = D_8006D634.vars[0];
-    ListEntry **list = func_80031BDC(0xC4, 1);
+    s32 level = game_data.vars[0];
+    ListEntry **list = heap_alloc(0xC4, 1);
     MoveList *source;
     s32 i;
 
@@ -405,7 +405,7 @@ void func_8007EFB4(void) {
     s32 col;
     s16 top;
 
-    cell = D_8009270C = func_80031BDC(0x3D4, 0);
+    cell = D_8009270C = heap_alloc(0x3D4, 0);
     id = 0x1FF;
     for (row = 0; row < 7; row++) {
         top = row * 0x20 + 0x1A0;
@@ -692,7 +692,7 @@ void func_8007FBEC(void) {
         D_8009272C = 0;
     }
     func_8007E894(0x50, 0x8C);
-    if (func_80035734(0) == 4 && D_80099D98.com1 == 0) {
+    if (pad_get_controller_kind(0) == 4 && D_80099D98.com1 == 0) {
         if (active) {
             func_8007F948(page, 1);
         }
@@ -716,7 +716,7 @@ void func_8007FBEC(void) {
         D_80092730 = 0;
     }
     func_8007E894(0xF0, 0x8C);
-    if (func_80035734(1) == 4 && D_80099D98.driven == 0) {
+    if (pad_get_controller_kind(1) == 4 && D_80099D98.driven == 0) {
         if (active) {
             func_8007F948(page, 1);
         }
@@ -853,7 +853,7 @@ void func_80080268(void) {
 void func_800802A4(void) {
     s32 same;
 
-    if (D_80091364 == 0 && (D_8005948C & 0x40)) {
+    if (D_80091364 == 0 && (pad_port0_pressed & 0x40)) {
         D_80092710 &= ~1;
         func_80085134(0);
         func_8008EB4C(0x22);
@@ -863,7 +863,7 @@ void func_800802A4(void) {
         do {
             D_80092700 = func_8007FF70(D_80092700, D_80092888 - 1, 3);
         } while (D_80092700 == D_80092704 && !(D_80092748 & 1) && !same);
-        if (D_80091364 == 0 && (D_8005948C & 0x20)) {
+        if (D_80091364 == 0 && (pad_port0_pressed & 0x20)) {
             D_80092710 |= 1;
             func_8008EB4C(0x21);
             func_8008509C(0, D_800928EC[D_80092700]->id);
@@ -928,26 +928,26 @@ void func_80080570(void) {
 /* Load both picks' portraits (palette and image) into their VRAM slots and
  * mark both sides confirmed. */
 void func_80080644(s32 first, s32 second) {
-    u8 *data = func_80031BDC(0x2000, 0);
+    u8 *data = heap_alloc(0x2000, 0);
     u8 *other;
     GridCell *cell;
 
-    func_8002954C(func_800289D0(6) + first * 2, data, 0x1000, 0, 0);
+    cd_read_raw_sectors(cd_get_file_sector(6) + first * 2, data, 0x1000, 0, 0);
     other = data + 0x1000;
-    func_8002954C(func_800289D0(6) + second * 2, other, 0x1000, 0, 0);
+    cd_read_raw_sectors(cd_get_file_sector(6) + second * 2, other, 0x1000, 0, 0);
     D_80092700 = first;
     D_80092704 = second;
     D_80092714 = first;
     D_80092720 = second;
     D_80092710 = 3;
-    func_80028A60(0);
+    cd_sync_reads(0);
     cell = &D_8009270C[first];
     LoadImage(&cell->clut, (u_long *)data);
     LoadImage(&cell->image, (u_long *)(data + 0x100));
     cell = &D_8009270C[second];
     LoadImage(&cell->clut, (u_long *)other);
     LoadImage(&cell->image, (u_long *)(data + 0x1100));
-    func_80032C18(data, 2);
+    heap_delay_free(data, 2);
 }
 
 /* Enter the selection screen in a mode: upload every portrait once, set
@@ -957,13 +957,13 @@ void func_80080780(s32 mode) {
     s32 i;
 
     if (D_80092940 == 0) {
-        func_80028A60(0);
+        cd_sync_reads(0);
         cell = D_8009270C;
         for (i = 0; i < 49; i++, cell++) {
             LoadImage(&cell->clut, (u_long *)(D_800928D8 + (i << 12)));
             LoadImage(&cell->image, (u_long *)(D_800928D8 + (i << 12) + 0x100));
         }
-        func_800320E8(D_800928D8);
+        heap_free(D_800928D8);
         D_80092940 = 1;
     }
     D_800928C8 = mode;
@@ -1026,7 +1026,7 @@ s32 func_800809BC(void) {
 
 /* Enter the settings/system menu at page 3 with every state reset. */
 void func_800809D8(void) {
-    func_80039FF8();
+    sound_stop_all_effects();
     D_80092734 = NULL;
     func_80080964(3);
     D_800915AC[3].cursor = 0;
@@ -1043,8 +1043,8 @@ void func_800809D8(void) {
 /* Release the loaded portraits unless they were uploaded (once). */
 void func_80080A58(void) {
     if (D_80092940 == 0) {
-        func_80028A60(0);
-        func_800320E8(D_800928D8);
+        cd_sync_reads(0);
+        heap_free(D_800928D8);
         D_80092940 = 1;
     }
 }
@@ -1055,7 +1055,7 @@ void func_80080AA0(s32 forget) {
         D_80092760 = NULL;
     }
     if (D_80092760 != NULL) {
-        func_800320E8(D_80092760);
+        heap_free(D_80092760);
         D_80092760 = NULL;
     }
 }
@@ -1081,9 +1081,9 @@ void func_80080B58(void) {
     RECT area;
 
     if (D_80092760 == NULL) {
-        func_80031BB4(1);
-        D_80092760 = func_80031BDC(0x22100, 0);
-        func_80031BB4(0);
+        heap_set_quiet_failures(1);
+        D_80092760 = heap_alloc(0x22100, 0);
+        heap_set_quiet_failures(0);
     }
     DrawSync(0);
     area = D_8009A0D8[(D_800928A0 + 1) & 1].draw.clip;
@@ -1096,7 +1096,7 @@ void func_80080B58(void) {
 
 /* Open the system menu: mode 1 at page 0, mode 2 at page 7, else close. */
 void func_80080C48(s32 mode) {
-    func_80039FF8();
+    sound_stop_all_effects();
     func_8008EB4C(0x1F);
     if (mode == 1) {
         D_80092734 = NULL;
@@ -1158,7 +1158,7 @@ void func_80080D20(void *ot) {
 /* Set up the two semi-transparent sprite strips (at y 180 and 195) sharing
  * one pixel buffer, and their texture page. */
 void func_80080F04(void) {
-    u8 *pixels = func_80031BDC(0x6B4, 0);
+    u8 *pixels = heap_alloc(0x6B4, 0);
 
     D_80095510[0].image = D_80095510[1].image = pixels;
     *(u32 *)&D_80095510[0].sprite[0].x0 = 0xB40000;
@@ -1166,14 +1166,14 @@ void func_80080F04(void) {
     SetSprt(&D_80095510[0].sprite[0]);
     SetShadeTex(&D_80095510[0].sprite[0], 1);
     D_80095510[0].sprite[0].h = 0xD;
-    D_80095510[0].sprite[0].clut = D_800595D4;
+    D_80095510[0].sprite[0].clut = text_plane0_clut;
     D_80095510[0].sprite[1] = D_80095510[0].sprite[0];
     *(u32 *)&D_80095510[1].sprite[0].x0 = 0xC30000;
     *(u16 *)&D_80095510[1].sprite[0].u0 = 0x3000;
     SetSprt(&D_80095510[1].sprite[0]);
     SetShadeTex(&D_80095510[1].sprite[0], 1);
     D_80095510[1].sprite[0].h = 0xD;
-    D_80095510[1].sprite[0].clut = D_80059414;
+    D_80095510[1].sprite[0].clut = text_plane1_clut;
     D_80095510[1].sprite[1] = D_80095510[1].sprite[0];
     SetDrawTPage(&D_80095570[0], 0, 0, GetTPage(0, 0, 0x140, 0x30));
     D_80095570[1] = D_80095570[0];
@@ -1183,7 +1183,7 @@ void func_80080F04(void) {
 void func_80081094(Caption *caption, s32 text, s32 arg) {
     s32 width;
 
-    width = func_80034EAC(func_80033728(D_80092880, text), caption->image, 0x3F, arg);
+    width = window_render_text_line(text_get_resource_entry(D_80092880, text), caption->image, 0x3F, arg);
     caption->width = width;
     caption->x = (0x140 - width) / 2;
 }
@@ -1332,19 +1332,19 @@ s32 func_8008162C(Menu *menu, s32 port) {
     D_80091364 = port;
     type = 0;
     if (port == 1) {
-        D_80092748 = D_80059574;
-        D_8009274C = D_800594A8;
-        D_80092750 = D_80059490;
-        type = func_80035734(1);
-        x = D_8005943C - 0x80;
-        y = D_80059434 - 0x80;
+        D_80092748 = pad_port1_held;
+        D_8009274C = pad_port1_repeated;
+        D_80092750 = pad_port1_pressed;
+        type = pad_get_controller_kind(1);
+        x = pad_port1_left_stick_y - 0x80;
+        y = pad_port1_left_stick_x - 0x80;
     } else if (port == 0) {
-        D_80092748 = D_80059570;
-        D_8009274C = D_800594A4;
-        D_80092750 = D_8005948C;
-        type = func_80035734(0);
-        x = D_80059438 - 0x80;
-        y = D_80059430 - 0x80;
+        D_80092748 = pad_port0_held;
+        D_8009274C = pad_port0_repeated;
+        D_80092750 = pad_port0_pressed;
+        type = pad_get_controller_kind(0);
+        x = pad_port0_left_stick_y - 0x80;
+        y = pad_port0_left_stick_x - 0x80;
     }
     if (type == 3 || type == 4) {
         if (SquareRoot0(x * x + y * y) > 0x40) {
@@ -1587,14 +1587,14 @@ void func_80081D2C(void) {
         func_80080AE8();
         D_8009275C = 0;
     }
-    func_80036420();
+    pad_merge_queued_states();
     menu = D_80092734;
     if (menu == &D_800915AC[5]) {
         func_80081A44();
         return;
     }
     if (menu != NULL) {
-        if ((D_8005948C & 1) && D_800926FC < 5) {
+        if ((pad_port0_pressed & 1) && D_800926FC < 5) {
             D_800926FC++;
             func_80080AE8();
         }

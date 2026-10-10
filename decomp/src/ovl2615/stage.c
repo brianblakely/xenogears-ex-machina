@@ -20,7 +20,7 @@ s32 func_801E70E8(s32 *images) {
     s16 width;
     s16 height;
 
-    func_8003342C(images);
+    text_relocate_offset_table(images);
     left = 0x800;
     top = 0x800;
     right = -0x800;
@@ -93,7 +93,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     if (stage == NULL || scene == NULL || data == NULL) {
         return 0;
     }
-    func_80032498(4, 0);
+    heap_select_owner_tag(4, 0);
     D_800C3E38 = NULL;
     D_800C3EA0 = NULL;
     D_800D3344 = NULL;
@@ -107,7 +107,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     }
     D_800D361A = 0;
     if (stage != NULL) {
-        func_800320B8(stage);
+        heap_unprotect_block(stage);
         func_800A8BF0(0x1F, 0xC4, stage, stage, 0, 0, 0, 0, 0);
         func_801E70E8(stage->images);
         position = stage->positions;
@@ -123,14 +123,14 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     }
     table = (s32 *)data;
     size = table[-1];
-    data = func_80031BDC(size, 0);
-    D_800658C8 = (u8 *)data;
+    data = heap_alloc(size, 0);
+    mode_battle_scene_data = (u8 *)data;
     if (data == NULL) {
         return; /* no value: v0 still holds the NULL block */
     }
     memcpy(data, table, size);
-    func_800320B8(table - 1);
-    func_800320E8(table - 1);
+    heap_unprotect_block(table - 1);
+    heap_free(table - 1);
     made = 0;
     placed = 0;
     size = data->points;
@@ -149,7 +149,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     /* Reset from the list payload, then use its first relocated entry. */
     size = data->motion;
     pointer = (u8 *)data + size;
-    func_8003342C(pointer);
+    text_relocate_offset_table(pointer);
     info = &data->info;
     table = (s32 *)((s32 *)pointer)[1];
     if (stage != NULL) {
@@ -195,7 +195,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
             break;
         case 1:
             if (D_800C3D50[made] == NULL && made < 2) {
-                D_800C3D50[made] = func_8002709C(object->v10, object->v12, object->v14, object->v16,
+                D_800C3D50[made] = gpu_create_panorama(object->v10, object->v12, object->v14, object->v16,
                     object->v1A, object->v1C, object->v1E, object->v20, object, NULL, 0,
                     object->v24, object->v26);
             }
@@ -203,7 +203,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
             break;
         case 2:
             if (D_800C3D50[made] == NULL && made < 2) {
-                D_800C3D50[made] = func_8002709C(object->v10, object->v12, object->v14, object->v16,
+                D_800C3D50[made] = gpu_create_panorama(object->v10, object->v12, object->v14, object->v16,
                     object->v1A, object->v1C, object->v1E, object->v20, object, info->fogColour,
                     object->v22, object->v24, object->v26);
             }
@@ -222,7 +222,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
             break;
         case 7:
             if (D_800C3DA0[placed].phases == NULL && placed < 2 && i + 1 < 4) {
-                func_80027D64(&D_800C3DA0[placed], object->v10, object->v12, object->v14,
+                gpu_init_texture_scroll(&D_800C3DA0[placed], object->v10, object->v12, object->v14,
                     object->v16, object->v20, object->v1A, object->v1C, motions[i + 1]);
             }
             placed++;
@@ -239,10 +239,10 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
         func_801E7EC4(points, triangles, *triangle_count);
     }
     for (i = 0; i < 4; i++) {
-        D_800D2D10[i] = ((BattleScene *)D_800658C8)->info.flags[i];
+        D_800D2D10[i] = ((BattleScene *)mode_battle_scene_data)->info.flags[i];
     }
     DrawSync(0);
-    func_800320E8(stage);
+    heap_free(stage);
     *scene = data;
     return fog;
 }
@@ -260,8 +260,8 @@ StageBackdrop *func_801E7914(s16 texX, s16 texY, s16 width, s16 height, s16 size
     s32 j;
     s32 k;
 
-    func_80032498(4, 0);
-    backdrop = func_80031BDC(sizeof(StageBackdrop), 0);
+    heap_select_owner_tag(4, 0);
+    backdrop = heap_alloc(sizeof(StageBackdrop), 0);
     if (backdrop != NULL) {
         GetDrawEnv(&env);
         backdrop->x = 0;

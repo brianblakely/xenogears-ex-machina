@@ -1,9 +1,9 @@
 /* ovl3384: a battle module at 0x801fc000. The battle overlay's 800beb04 loads
  * the current battle's module into 0x801fc000..0x80200000 (the slot above the
- * resident heap, which the boot code bounds at 0x801fc000): file (D_800591B3
- * + 2) of the battle directory, D_800591B3 being the platform bits (6..11) of
+ * resident heap, which the boot code bounds at 0x801fc000): file (sprite_requested_battle_module
+ * + 2) of the battle directory, sprite_requested_battle_module being the platform bits (6..11) of
  * the directory header of battle file 2, whenever they differ from the loaded
- * module's (D_800591B2). Battle script opcodes call fixed entry addresses in
+ * module's (sprite_loaded_battle_module). Battle script opcodes call fixed entry addresses in
  * the loaded module: this one provides 801fc4c4, called by the opcode handler
  * 800b6a7c, which breaks a model into flying pieces.
  *
@@ -30,11 +30,11 @@ SVECTOR D_801FCE14 = {0, 0, 0};
 void func_801FC074(Task *node) {
     DebrisTask *debris = node->data;
 
-    func_800320E8(debris->pieces);
-    func_80025180((u32)debris->prims[0]);
-    func_8001CB48(&debris->draw);
-    func_8001CD94(&debris->task);
-    func_800320E8(debris);
+    heap_free(debris->pieces);
+    sprite_queue_free_later((u32)debris->prims[0]);
+    task_unlink_draw_node(&debris->draw);
+    task_unlink_main_node(&debris->task);
+    heap_free(debris);
 }
 
 /* Move and spin every piece under gravity; the effect ends when its life
@@ -78,7 +78,7 @@ void func_801FC1A8(Task *node) {
     s32 i;
 
     debris = node->data;
-    CompMatrix(&D_8004FBB8, &debris->matrix, &camera);
+    CompMatrix(&sprite_view_matrix, &debris->matrix, &camera);
     piece = debris->pieces;
     prim = debris->prims[D_800C3EB0.buffer];
     desc = (ScriptCommand *)(debris->model->commands + (s32)debris->model);
@@ -88,7 +88,7 @@ void func_801FC1A8(Task *node) {
         position[1] = piece->position[1] >> 16;
         position[2] = piece->position[2] >> 16;
         TransMatrix(&m, (VECTOR *)position);
-        func_8003F738(&piece->rotation, &m);
+        gpu_build_rotation_matrix(&piece->rotation, &m);
         CompMatrix(&camera, &m, &m);
         SetTransMatrix(&m);
         SetRotMatrix(&m);
@@ -96,11 +96,11 @@ void func_801FC1A8(Task *node) {
         if (kind & 8) {
             RotTransPers4(&piece->vertex[0], &piece->vertex[1], &piece->vertex[2], &piece->vertex[3],
                           &sxy[0], &sxy[1], &sxy[2], &sxy[3], &p, &flag);
-            AddPrim((u32 *)D_8005956C, prim);
+            AddPrim((u32 *)sprite_ot, prim);
         } else {
             RotTransPers3(&piece->vertex[0], &piece->vertex[1], &piece->vertex[2], &sxy[0], &sxy[1],
                           &sxy[2], &p, &flag);
-            AddPrim((u32 *)D_8005956C, prim);
+            AddPrim((u32 *)sprite_ot, prim);
         }
         /* The corners' places in POLY_F3/F4/FT3/G3/GT3/FT4/G4/GT4. */
         switch (kind) {
@@ -176,18 +176,18 @@ void func_801FC4C4(ScriptEntry *model, u8 *prims, MATRIX *matrix, s32 gravity, s
     u8 *buffer;
     ScriptEntry *source;
 
-    debris = (DebrisTask *)func_8001D1D8(sizeof(DebrisTask), NULL, func_801FC0CC, func_801FC1A8, func_801FC074);
+    debris = (DebrisTask *)task_alloc_two_node_task(sizeof(DebrisTask), NULL, func_801FC0CC, func_801FC1A8, func_801FC074);
     debris->model = model;
     count = model->count;
     debris->count = count;
-    piece = func_80031BDC(count * sizeof(Piece), 0);
+    piece = heap_alloc(count * sizeof(Piece), 0);
     debris->pieces = piece;
     debris->matrix = *matrix;
     debris->life = life;
     source = model;
     size = func_800B16A4(source);
     if (prims == NULL) {
-        buffer = func_80031BDC(size * 2, 0);
+        buffer = heap_alloc(size * 2, 0);
         func_800B1720(source, buffer, 0, 1);
         memcpy(buffer + size, buffer, size);
     } else {
@@ -334,7 +334,7 @@ void func_801FC4C4(ScriptEntry *model, u8 *prims, MATRIX *matrix, s32 gravity, s
         velocity.vy = 0;
         velocity.vz = 0;
         func_800C0828(&centre, &D_801FCE14, &angles);
-        func_8003F738(&angles, &m);
+        gpu_build_rotation_matrix(&angles, &m);
         ApplyMatrixLV(&m, &velocity, &velocity);
         piece->velocity[0] = velocity.vx;
         piece->velocity[1] = velocity.vy;

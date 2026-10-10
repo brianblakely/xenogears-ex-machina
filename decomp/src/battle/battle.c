@@ -688,8 +688,8 @@ void func_800826CC(u8 member) {
     D_800C3EB4[member].gear = 1;
     D_800C3EAC->reaction[member] = 1;
     for (i = 0; i < 3; i++) {
-        if (D_8006D634.party[i] == D_800D2D24[member] && D_80059179 == 0) {
-            D_8006D634.inGear[i] = 1;
+        if (game_data.party[i] == D_800D2D24[member] && mode_gear_riding_lock == 0) {
+            game_data.inGear[i] = 1;
         }
     }
 }
@@ -2238,7 +2238,7 @@ u8 func_80085EB4(u8 mode, u8 member) {
         case 11:
             i++;
         case 12:
-            if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].counterSkills,
+            if (func_80089C6C(game_data.skills[D_800D2D24[member]].counterSkills,
                               D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i])) {
                 result = 1;
             }
@@ -2268,7 +2268,7 @@ u8 offset;
     cell = index / 2;
     odd = index % 2;
     func_80076D58(&D_800D2DB4->list11[index * 2], odd, 3);
-    width = func_80034EAC(func_80033784(D_800D2D24[member], id), *pixels, 0x1B, odd);
+    width = window_render_text_line(text_get_system_resource_entry(D_800D2D24[member], id), *pixels, 0x1B, odd);
     rect.x = cell * 30 + 0x3C0;
     rect.y = 0x1A;
     rect.w = 0x1E;
@@ -2368,7 +2368,7 @@ void func_800861D0(u8 code, u8 member) {
     case 11:
         i++;
     case 12:
-        if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].counterSkills, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i]) &&
+        if (func_80089C6C(game_data.skills[D_800D2D24[member]].counterSkills, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i]) &&
             D_800C3EAC->slots[member].items[2] == 0) {
             if (D_800C3EAC->unk2E1[3] == 0) {
                 D_800D2DB4->counts[12] +=
@@ -2388,7 +2388,7 @@ void func_800861D0(u8 code, u8 member) {
         D_800D2D28->unkA8 = 1;
         func_800716D8();
         for (block = 0; block < (s32)(3 * sizeof(u32 *)); block += sizeof(u32 *)) {
-            func_800320E8(*((u32 **)((u8 *)D_800C3A70 + block)));
+            heap_free(*((u32 **)((u8 *)D_800C3A70 + block)));
         }
         return;
     }
@@ -2408,7 +2408,7 @@ void func_800861D0(u8 code, u8 member) {
     case 5:
         i++;
     case 8:
-        if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].counterSkills, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][19 - i]) &&
+        if (func_80089C6C(game_data.skills[D_800D2D24[member]].counterSkills, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][19 - i]) &&
             D_800C3EAC->slots[member].items[0] == 0 && D_800C3EAC->slots[member].items[2] == 0) {
             D_800D2DB4->counts[12] +=
                 func_80076A10(8, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x54 + combo * 16, 0xD0 - index * 16);
@@ -2429,7 +2429,7 @@ void func_800861D0(u8 code, u8 member) {
     case 1:
         i++;
     case 3:
-        if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].counterSkills, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][22 - i]) &&
+        if (func_80089C6C(game_data.skills[D_800D2D24[member]].counterSkills, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][22 - i]) &&
             D_800C3EAC->slots[member].items[1] == 0 && D_800C3EAC->slots[member].items[2] == 0) {
             D_800D2DB4->counts[12] +=
                 func_80076A10(9, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x58 + combo * 16, 0xD0 - index * 16);
@@ -2444,7 +2444,7 @@ void func_800861D0(u8 code, u8 member) {
     D_800D2D28->unkA8 = 1;
     func_800716D8();
     for (block = 0; block < (s32)(3 * sizeof(u32 *)); block += sizeof(u32 *)) {
-        func_800320E8(*((u32 **)((u8 *)D_800C3A70 + block)));
+        heap_free(*((u32 **)((u8 *)D_800C3A70 + block)));
     }
 }
 
@@ -2461,7 +2461,7 @@ s32 func_80086B88(s32 step, u8 member) {
         if (D_800CCCE8.gearHud.level == 4) {
             index = step + 12;
         }
-        if (!func_80089C6C(D_8006D634.skills[D_800D2D24[member]].unlocksA, D_800C34CC[index])) {
+        if (!func_80089C6C(game_data.skills[D_800D2D24[member]].unlocksA, D_800C34CC[index])) {
             result = 0;
         } else if (D_800C3EAC->unk2CC[0] != 0xFF && D_800CCCE8.gearHud.level != 4 &&
                    D_800CCCE8.gearHud.level < D_800C3EAC->unk2CC[0] + 1) {
@@ -2504,7 +2504,7 @@ s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
     cell = index / 2;
     odd = index % 2;
     func_80076D58(&D_800D2DB4->list11[index * 2], odd, 3);
-    width = func_80034EAC(func_800339C8(D_800CCCE8.records[member].pilot.gearId, D_800C34CC[step]), *pixels, 0x1B, odd);
+    width = window_render_text_line(text_get_gear_resource_entry(D_800CCCE8.records[member].pilot.gearId, D_800C34CC[step]), *pixels, 0x1B, odd);
     rect.x = cell * 30 + 0x3C0;
     rect.y = 0x1A;
     rect.w = 0x1E;
@@ -2592,7 +2592,7 @@ u8 func_80086F98(u8 step, u8 member) {
                 flag = step + 12;
             }
         }
-        if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].unlocksA, D_800C34CC[flag])) {
+        if (func_80089C6C(game_data.skills[D_800D2D24[member]].unlocksA, D_800C34CC[flag])) {
             if (D_800C3EAC->unk2E1[3] == 0) {
                 if (D_800C3EAC->slots[member].items[0] == 0) {
                     D_800D2DB4->counts[12] +=
@@ -2617,7 +2617,7 @@ u8 func_80086F98(u8 step, u8 member) {
             D_800D2D28->unkA8 = 1;
             func_800716D8();
             for (block = 0; block < (s32)(3 * sizeof(u32 *)); block += sizeof(u32 *)) {
-                func_800320E8(*((u32 **)((u8 *)D_800C3A70 + block)));
+                heap_free(*((u32 **)((u8 *)D_800C3A70 + block)));
             }
             goto done;
         }
@@ -2627,7 +2627,7 @@ u8 func_80086F98(u8 step, u8 member) {
         } else {
             next = 13;
         }
-        if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].unlocksA, D_800C34CC[next]) &&
+        if (func_80089C6C(game_data.skills[D_800D2D24[member]].unlocksA, D_800C34CC[next]) &&
             D_800C3EAC->slots[member].items[1] == 0) {
             D_800D2DB4->counts[12] +=
                 func_80076A10(9, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x84 + i * 16, 0xD0 - index * 16);
@@ -2639,7 +2639,7 @@ u8 func_80086F98(u8 step, u8 member) {
         } else {
             next = 14;
         }
-        if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].unlocksA, D_800C34CC[next]) &&
+        if (func_80089C6C(game_data.skills[D_800D2D24[member]].unlocksA, D_800C34CC[next]) &&
             D_800C3EAC->slots[member].items[2] == 0) {
             D_800D2DB4->counts[12] +=
                 func_80076A10(7, &D_800D2DB4->list12[D_800D2DB4->counts[12] * 2], 0x88 + i * 16, 0xD0 - index * 16);
@@ -2652,7 +2652,7 @@ u8 func_80086F98(u8 step, u8 member) {
         D_800D2D28->unkA8 = 1;
         func_800716D8();
         for (block = 0; block < (s32)(3 * sizeof(u32 *)); block += sizeof(u32 *)) {
-            func_800320E8(*((u32 **)((u8 *)D_800C3A70 + block)));
+            heap_free(*((u32 **)((u8 *)D_800C3A70 + block)));
         }
     } else {
         D_800C3EAC->unk2DC = step;
@@ -2756,7 +2756,7 @@ u8 func_80087AF0(u8 member, u8 cost) {
         if (D_800C3EAC->unk2DC < 8) {
             payment = cost;
             D_800C3EAC->unk2DC = D_800C34B3[D_800C3EAC->unk2DC][payment];
-        } else if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].counterSkills, D_800C3EAC->unk2DC - 8)) {
+        } else if (func_80089C6C(game_data.skills[D_800D2D24[member]].counterSkills, D_800C3EAC->unk2DC - 8)) {
             reacted = 1;
         } else {
             D_800C3EAC->unk2DC = 7;
@@ -2967,7 +2967,7 @@ void func_8008887C(s32 x0, s32 y0, s32 x1, s32 y1) {
         }
         D_800C2080 = 0;
         D_800C2084 = 0;
-        D_800C3A9C = func_8001BD40(1, 8);
+        D_800C3A9C = mode_get_random_byte_in_range(1, 8);
         D_800C207C = 0;
     }
 }
@@ -3017,9 +3017,9 @@ void func_80088B80(void) {
     s32 n;
 
     if (D_800D2D28->unkAD != 0) {
-        if (D_800C207C != 0 && func_8001BD40(0, 99) >= 0x60) {
-            func_8008887C(D_800D2DB4->lineX, D_800D2DB4->lineY, D_800C2054[0][func_8001BD40(0, 4)],
-                          D_800C2054[1][func_8001BD40(0, 4)]);
+        if (D_800C207C != 0 && mode_get_random_byte_in_range(0, 99) >= 0x60) {
+            func_8008887C(D_800D2DB4->lineX, D_800D2DB4->lineY, D_800C2054[0][mode_get_random_byte_in_range(0, 4)],
+                          D_800C2054[1][mode_get_random_byte_in_range(0, 4)]);
         }
         if (D_800C207C == 0) {
             func_80088990();
@@ -3051,7 +3051,7 @@ void func_80088B80(void) {
             for (i = 0; i < 2; i++) {
                 for (j = 0; j < 10; j++) {
                     n = i * 10 + j;
-                    func_80076A10(func_8001BD40(0, 9) + 0xBA, &D_800D2DB4->unk46A0[n * 2], 0x82 + j * 6, 0xA + i * 0xBD);
+                    func_80076A10(mode_get_random_byte_in_range(0, 9) + 0xBA, &D_800D2DB4->unk46A0[n * 2], 0x82 + j * 6, 0xA + i * 0xBD);
                     func_80076B68(&D_800D2DB4->unk46A0[n * 2 + D_800CCB04.buffer]);
                 }
             }
@@ -3356,81 +3356,81 @@ void func_80089CCC(s32 mode) {
     u8 *outcome;
 
     do {
-        if (func_80035734(0) == 0) {
+        if (pad_get_controller_kind(0) == 0) {
             if (paused == 0) {
-                func_8001FAB4(0x88, 0x64);
-                func_8001FAB4(0x88, 0x144);
+                sprite_upload_pause_image(0x88, 0x64);
+                sprite_upload_pause_image(0x88, 0x144);
                 paused++;
-                func_80037EE4();
-                vsyncs = D_80059488;
+                sound_silence_voices();
+                vsyncs = pad_vblank_count;
             }
         } else {
             waiting = 0;
             if (paused) {
-                func_80037E8C();
-                D_80059488 = vsyncs;
+                sound_restore_voices();
+                pad_vblank_count = vsyncs;
             }
         }
     } while (waiting);
     directions = D_800C3E28;
     outcome = &D_800C48EA;
     do {
-        if (func_80036410()) {
-            func_80035DB0();
+        if (pad_has_queue_overflowed()) {
+            pad_clear_queue();
         } else {
-            while (func_80035CDC()) {
+            while (pad_dequeue_state()) {
                 if (*outcome != 0 || D_800C3EAC->eventsDone != 0) {
                     code = 0xFF;
                     break;
                 }
                 if (D_800C3444 != 0) {
-                    if (*D_8005917C != -1 && (D_800594A4 & 4) && (D_800594A4 & 8)) {
+                    if (*mode_disc_mode_pointer != -1 && (pad_port0_repeated & 4) && (pad_port0_repeated & 8)) {
                         *outcome = 1;
                         goto resume;
                     }
-                } else if (D_800594A4 & 0x2000) {
+                } else if (pad_port0_repeated & 0x2000) {
                     func_8008AA74(0x4C);
                     code = 0;
                     directions[0] = directions[1];
                     directions[1] = code;
                     break;
-                } else if (D_800594A4 & 0x4000) {
+                } else if (pad_port0_repeated & 0x4000) {
                     func_8008AA74(0x4C);
                     code = 1;
                     directions[0] = directions[1];
                     directions[1] = code;
                     break;
-                } else if (D_800594A4 & 0x8000) {
+                } else if (pad_port0_repeated & 0x8000) {
                     func_8008AA74(0x4C);
                     code = 2;
                     directions[0] = directions[1];
                     directions[1] = code;
                     break;
-                } else if (D_800594A4 & 0x1000) {
+                } else if (pad_port0_repeated & 0x1000) {
                     func_8008AA74(0x4C);
                     code = 3;
                     directions[0] = directions[1];
                     directions[1] = code;
                     break;
-                } else if (D_8005948C & 0x20) {
+                } else if (pad_port0_pressed & 0x20) {
                     code = 4;
                     func_8008AA74(0x4D);
                     break;
-                } else if (D_8005948C & 0x40) {
+                } else if (pad_port0_pressed & 0x40) {
                     code = 5;
                     func_8008AA74(0x4E);
                     break;
-                } else if (D_8005948C & 0x80) {
+                } else if (pad_port0_pressed & 0x80) {
                     code = 6;
                     func_8008AA74(0x4D);
                     break;
-                } else if (D_8005948C & 0x10) {
+                } else if (pad_port0_pressed & 0x10) {
                     code = 7;
                     func_8008AA74(0x4D);
                     break;
-                } else if (D_8005948C & 1) {
+                } else if (pad_port0_pressed & 1) {
                     code = 0xC;
-                    if (*D_8005917C != -1) {
+                    if (*mode_disc_mode_pointer != -1) {
                         D_800D32A0[0].unk0 = 28;
                         D_800D32A0[1].unk0 = 28;
                         D_800D32A0[2].unk0 = 28;
@@ -3442,36 +3442,36 @@ void func_80089CCC(s32 mode) {
                         D_800CCCE8.records[2].statusTimers[6] = 0xFF;
                     }
                     break;
-                } else if (D_8005948C & 2) {
-                    if (*D_8005917C != -1) {
+                } else if (pad_port0_pressed & 2) {
+                    if (*mode_disc_mode_pointer != -1) {
                         code = 0xB;
-                        if (++D_8005959C >= 5) {
-                            D_8005959C = 0;
+                        if (++mode_battle_debug_page >= 5) {
+                            mode_battle_debug_page = 0;
                         }
                         if (D_800C3AA0 == 0) {
-                            func_8003747C(0x80200000);
-                            func_800374E8(0x10, 0x10, 0x140, 0x100, 0x3E8, 0, 0x340, 0, 0x340, 0x20, 0);
+                            console_set_external_block(0x80200000);
+                            console_open(0x10, 0x10, 0x140, 0x100, 0x3E8, 0, 0x340, 0, 0x340, 0x20, 0);
                             D_800C3AA0++;
                         }
                     }
                     break;
-                } else if (D_8005948C & 0x100) {
+                } else if (pad_port0_pressed & 0x100) {
                     code = 0xD;
                     break;
                 }
-                if (D_8005948C & 0x800) {
+                if (pad_port0_pressed & 0x800) {
                     code = 0xE;
                     if (D_800CCC58 != 0) {
                         if (D_800C3444 == 0) {
-                            func_8001FAB4(0x88, 0x64);
-                            func_8001FAB4(0x88, 0x144);
-                            func_80037EE4();
-                            vsyncs = D_80059488;
+                            sprite_upload_pause_image(0x88, 0x64);
+                            sprite_upload_pause_image(0x88, 0x144);
+                            sound_silence_voices();
+                            vsyncs = pad_vblank_count;
                             D_800C3444 = 1;
                         } else {
                         resume:
-                            func_80037E8C();
-                            D_80059488 = vsyncs;
+                            sound_restore_voices();
+                            pad_vblank_count = vsyncs;
                             D_800C3444 = 0;
                         }
                     }
@@ -3552,19 +3552,19 @@ void func_8008A3EC(u8 member) {
     s32 i;
 
     do {
-        if (func_80035734(0) == 0) {
+        if (pad_get_controller_kind(0) == 0) {
             if (paused == 0) {
-                func_8001FAB4(0x88, 0x64);
-                func_8001FAB4(0x88, 0x144);
+                sprite_upload_pause_image(0x88, 0x64);
+                sprite_upload_pause_image(0x88, 0x144);
                 paused++;
-                func_80037EE4();
-                vsyncs = D_80059488;
+                sound_silence_voices();
+                vsyncs = pad_vblank_count;
             }
         } else {
             waiting = 0;
             if (paused) {
-                func_80037E8C();
-                D_80059488 = vsyncs;
+                sound_restore_voices();
+                pad_vblank_count = vsyncs;
             }
         }
     } while (waiting);
@@ -3582,31 +3582,31 @@ void func_8008A3EC(u8 member) {
         if (D_800D2D28->waitingCross == 0) {
             D_800D3014 = 0xFF;
         }
-        if (func_80036410()) {
-            func_80035DB0();
+        if (pad_has_queue_overflowed()) {
+            pad_clear_queue();
         } else {
-            while (func_80035CDC()) {
+            while (pad_dequeue_state()) {
                 if (D_800C3444 != 0) {
-                    if (*D_8005917C != -1 && (D_800594A4 & 4) && (D_800594A4 & 8)) {
+                    if (*mode_disc_mode_pointer != -1 && (pad_port0_repeated & 4) && (pad_port0_repeated & 8)) {
                         D_800C48EA = 1;
                         goto resume;
                     }
-                } else if (D_8005948C & 0x20) {
+                } else if (pad_port0_pressed & 0x20) {
                     D_800D3014 = 4;
                     break;
                 }
-                if (D_8005948C & 0x800) {
+                if (pad_port0_pressed & 0x800) {
                     if (D_800CCC58 != 0) {
                         if (D_800C3444 == 0) {
-                            func_80037EE4();
-                            func_8001FAB4(0x88, 0x64);
-                            func_8001FAB4(0x88, 0x144);
-                            vsyncs = D_80059488;
+                            sound_silence_voices();
+                            sprite_upload_pause_image(0x88, 0x64);
+                            sprite_upload_pause_image(0x88, 0x144);
+                            vsyncs = pad_vblank_count;
                             D_800C3444 = 1;
                         } else {
                         resume:
-                            func_80037E8C();
-                            D_80059488 = vsyncs;
+                            sound_restore_voices();
+                            pad_vblank_count = vsyncs;
                             D_800C3444 = 0;
                         }
                     }
@@ -3631,19 +3631,19 @@ void func_8008A684(u8 member) {
     s32 i;
 
     do {
-        if (func_80035734(0) == 0) {
+        if (pad_get_controller_kind(0) == 0) {
             if (paused == 0) {
-                func_8001FAB4(0x88, 0x64);
-                func_8001FAB4(0x88, 0x144);
+                sprite_upload_pause_image(0x88, 0x64);
+                sprite_upload_pause_image(0x88, 0x144);
                 paused++;
-                func_80037EE4();
-                vsyncs = D_80059488;
+                sound_silence_voices();
+                vsyncs = pad_vblank_count;
             }
         } else {
             waiting = 0;
             if (paused) {
-                func_80037E8C();
-                D_80059488 = vsyncs;
+                sound_restore_voices();
+                pad_vblank_count = vsyncs;
             }
         }
     } while (waiting);
@@ -3651,24 +3651,24 @@ void func_8008A684(u8 member) {
         D_800D3014 = 0xFF;
     }
     do {
-        if (func_80036410()) {
-            func_80035DB0();
+        if (pad_has_queue_overflowed()) {
+            pad_clear_queue();
         } else {
-            while (func_80035CDC()) {
-                if (D_8005948C & 0x20) {
+            while (pad_dequeue_state()) {
+                if (pad_port0_pressed & 0x20) {
                     D_800D3014 = 4;
                     break;
                 }
-                if (D_8005948C & 0x800) {
+                if (pad_port0_pressed & 0x800) {
                     if (D_800C3444 == 0) {
-                        func_80037EE4();
-                        func_8001FAB4(0x88, 0x64);
-                        func_8001FAB4(0x88, 0x144);
-                        vsyncs = D_80059488;
+                        sound_silence_voices();
+                        sprite_upload_pause_image(0x88, 0x64);
+                        sprite_upload_pause_image(0x88, 0x144);
+                        vsyncs = pad_vblank_count;
                         D_800C3444 = 1;
                     } else {
-                        func_80037E8C();
-                        D_80059488 = vsyncs;
+                        sound_restore_voices();
+                        pad_vblank_count = vsyncs;
                         D_800C3444 = 0;
                     }
                     break;
@@ -3725,7 +3725,7 @@ void func_8008A9C0(u8 member) {
 
 /* Play menu sound effect `id` of the system effect bank. */
 void func_8008AA40(u8 id) {
-    func_80039DB8((D_8005919C->bank << 16) | id);
+    sound_play_effect_on_last_channels((sprite_script_sound_bank->bank << 16) | id);
 }
 
 /* Play menu sound effect `id` while menu effects are enabled. */
@@ -3758,34 +3758,34 @@ void func_8008AAA0(u32 value) {
 
 /* Heap mode 0x20/0. */
 void func_8008AB4C(void) {
-    func_80028470(0x20, 0);
+    cd_select_directory(0x20, 0);
 }
 
 /* Heap mode 0x20/2. */
 void func_8008AB70(void) {
-    func_80028470(0x20, 2);
+    cd_select_directory(0x20, 2);
 }
 
 /* Heap mode 0x20/3. */
 void func_8008AB94(void) {
-    func_80028470(0x20, 3);
+    cd_select_directory(0x20, 3);
 }
 
 /* Allocate a battle heap block (owner tag 2). */
 s32 func_8008ABB8(s32 size, s32 mode) {
-    func_80032498(2, 0);
-    return (s32)func_80031BDC(size, mode);
+    heap_select_owner_tag(2, 0);
+    return (s32)heap_alloc(size, mode);
 }
 
 /* Allocate a text image block for `count` characters. */
 s32 func_8008AC00(s32 count) {
-    func_80032498(2, 0);
-    return (s32)func_80031BDC((count + 3) * 26, 0);
+    heap_select_owner_tag(2, 0);
+    return (s32)heap_alloc((count + 3) * 26, 0);
 }
 
 /* Wait frames until the disc reads finish. */
 void func_8008AC50(void) {
-    while (func_800286CC() != 0) {
+    while (cd_get_pending_read_count() != 0) {
         func_800716D8();
     }
 }
@@ -3896,11 +3896,11 @@ u8 func_8008B224(u8 member, u8 column, u8 row) {
     if (D_800D32A0[member].unk1 == 0) {
         command = D_800CCCE8.partyCommands[member][row * 2 + column + 22].state;
         cost = D_800CCCE8.partyCommands[member][row * 2 + column + 22].cost;
-        allowed = func_80089C6C(D_8006D634.skills[D_800D2D24[member]].levelSkills, column + row * 2) != 0;
+        allowed = func_80089C6C(game_data.skills[D_800D2D24[member]].levelSkills, column + row * 2) != 0;
     } else {
         command = D_800CCCE8.gearCommands[member][row * 2 + column + 21].state;
         cost = D_800CCCE8.gearCommands[member][row * 2 + column + 21].cost;
-        if (func_80089C6C(D_8006D634.skills[D_800D2D24[member]].unlocksB, column + row * 2) != 0) {
+        if (func_80089C6C(game_data.skills[D_800D2D24[member]].unlocksB, column + row * 2) != 0) {
             allowed = 1;
         }
     }

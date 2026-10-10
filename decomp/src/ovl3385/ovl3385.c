@@ -1,9 +1,9 @@
 /* ovl3385: a battle module at 0x801fc000. The battle overlay's 800beb04 loads
  * the current battle's module into 0x801fc000..0x80200000 (the slot above the
- * resident heap, which the boot code bounds at 0x801fc000): file (D_800591B3
- * + 2) of the battle directory, D_800591B3 being the platform bits (6..11) of
+ * resident heap, which the boot code bounds at 0x801fc000): file (sprite_requested_battle_module
+ * + 2) of the battle directory, sprite_requested_battle_module being the platform bits (6..11) of
  * the directory header of battle file 2, whenever they differ from the loaded
- * module's (D_800591B2). Battle script opcodes call fixed entry addresses in
+ * module's (sprite_loaded_battle_module). Battle script opcodes call fixed entry addresses in
  * the loaded module: this one provides 801fc7b0, called by the opcode handler
  * 800b3f04, which makes an effect hold an actor in place.
  *
@@ -87,12 +87,12 @@ void func_801FC168(SpritePart *cell, s32 count, s32 dx, s32 dy, s32 depth, Sprit
     u16 du, dv;
 
     memset(quad, 0, sizeof(quad));
-    if ((u8 *)D_80059580 + count * sizeof(POLY_FT4) >= D_80059534) {
+    if ((u8 *)sprite_queue_next_free + count * sizeof(POLY_FT4) >= sprite_queue_block_end) {
         return;
     }
     for (i = 0; i != count; i++, cell++) {
-        prim = (POLY_FT4 *)D_80059580;
-        D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(POLY_FT4));
+        prim = (POLY_FT4 *)sprite_queue_next_free;
+        sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + sizeof(POLY_FT4));
         ((P_TAG *)prim)->len = 9;
         *(u32 *)&prim->r0 = cell->colour;
         prim->tpage = cell->tpage;
@@ -153,7 +153,7 @@ void func_801FC168(SpritePart *cell, s32 count, s32 dx, s32 dy, s32 depth, Sprit
         prim->v2 = v + dv;
         prim->u3 = u + du;
         prim->v3 = v + dv;
-        addPrim((u32 *)D_8005956C + depth, prim);
+        addPrim((u32 *)sprite_ot + depth, prim);
     }
 }
 
@@ -177,15 +177,15 @@ void func_801FC508(Task *node) {
     pos.vx = actor->x >> 16;
     pos.vy = actor->y >> 16;
     pos.vz = actor->z >> 16;
-    SetRotMatrix(&D_8004FBB8);
-    SetTransMatrix(&D_8004FBB8);
-    depth = (RotTransPers(&pos, &p, &p, &flag) >> D_80050100) + actor->half30;
+    SetRotMatrix(&sprite_view_matrix);
+    SetTransMatrix(&sprite_view_matrix);
+    depth = (RotTransPers(&pos, &p, &p, &flag) >> model_ot_depth_shift) + actor->half30;
     if (flag & 0x8000) {
         depth = 0;
     }
     actor->depth = depth;
     if ((actor->render.word >> 24) & 1) {
-        func_80022038(actor);
+        sprite_update_orientation(actor);
         trans.vx = actor->x >> 16;
         trans.vy = actor->y >> 16;
         trans.vz = actor->z >> 16;
@@ -208,7 +208,7 @@ void func_801FC508(Task *node) {
         if ((u32)(depth - 1) >= 0xFFF) {
             return;
         }
-        func_8001E148(actor);
+        sprite_set_draw_matrix(actor);
     }
     count = func_801FC000(actor, &width, &height, &bounds);
     cells = actor->renderer->parts[1];
@@ -239,7 +239,7 @@ void func_801FC508(Task *node) {
 void func_801FC7B0(Sprite *actor) {
     HoldTask *hold;
 
-    hold = (HoldTask *)func_8001D1D8(sizeof(HoldTask), actor->block, func_801FC0EC, func_801FC508, NULL);
+    hold = (HoldTask *)task_alloc_two_node_task(sizeof(HoldTask), actor->block, func_801FC0EC, func_801FC508, NULL);
     hold->actor = actor;
     actor->motion.word |= 0x20;
     hold->moved[0] = 0;

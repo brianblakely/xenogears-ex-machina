@@ -74,14 +74,14 @@ and table, and how each table's index is chosen, is listed in
 
 ## Model primitives
 
-- Dispatch (`decomp/src/resident/main_8002C3E8.c`): `func_8002C8CC` builds and
-  `func_8002C700` draws a model's primitive groups, `{u8 type, u8, s16 count}`
-  and count records each, through `D_8004FE50[type]` (17 types): the prepare
+- Dispatch (`decomp/src/resident/model_renderer.c`): `model_build_packets` builds and
+  `model_draw_sprite_model` draws a model's primitive groups, `{u8 type, u8, s16 count}`
+  and count records each, through `model_primitive_types[type]` (17 types): the prepare
   routine, the record stride, the auxiliary bytes per record, the packet size and
   six draw routines by sort mode. The textured types (odd, not 16) first consume
-  texture page (c4) and CLUT (c8) words of the auxiliary data (`func_8002CD64`).
+  texture page (c4) and CLUT (c8) words of the auxiliary data (`model_apply_override_command`).
   The table's comments name each type's packet.
-- Data: every model of each group a loader relocates (`func_8002C3E8`; a
+- Data: every model of each group a loader relocates (`model_relocate_group`; a
   hierarchy may build only some): field map geometry (component 2, `func_80070CC8`),
   ovl2143 actor files (4, 0) 0x6bb + 2k, battle object model files (stages
   (12, 3) 6 + 2s, enemy set model entries, object sets (0x28, 0) 2s + 1, gears and
@@ -100,7 +100,7 @@ and table, and how each table's index is chosen, is listed in
 ## World map arrival modes
 
 - Dispatch (`decomp/src/worldmap/worldmap.c`): the world map's entry runs mode
-  `D_8006F954[0] & 0x7fff` of `D_8009A058` (19 rows of enter, start and leave
+  `game_data_worldmap_flag_word[0] & 0x7fff` of `D_8009A058` (19 rows of enter, start and leave
   handlers) without a bound check. The word is the game data's +0x2320.
 - Data: field `56` (`change_map`, `func_80093014`) stores operand 7 there as the
   field leaves for the world map. Battle event opcode 26 (ovl3087
@@ -123,14 +123,14 @@ and table, and how each table's index is chosen, is listed in
 
 ## Sprite kinds
 
-- Dispatch (`decomp/src/resident/sprite_800248D4.c`): a new sprite task's
-  auxiliary node takes the update `D_8004FD40[kind]` (16 entries,
-  `func_80025224`); entries 3, 4 and 10-13 are NULL, which the task loop skips
-  (`func_8001C964`).
+- Dispatch (`decomp/src/resident/sprite_vm_draw.c`): a new sprite task's
+  auxiliary node takes the update `sprite_draw_callbacks[kind]` (16 entries,
+  `sprite_task_set_draw_by_kind`); entries 3, 4 and 10-13 are NULL, which the task loop skips
+  (`task_run_main_list`).
 - Data: the kind is bits 8-10 of the animation header's flags plus 8 for bit 14
-  (`func_80023440`). Effect sprites take it from a directory animation
-  (`func_80023FD8`), children from the header a command spawns (`func_80023B84`;
-  kind 3 takes the parent's). `func_80024730` turns camera markers 12 and 13 into
+  (`sprite_get_header_kind`). Effect sprites take it from a directory animation
+  (`sprite_create_effect`), children from the header a command spawns (`sprite_create_child`;
+  kind 3 takes the parent's). `sprite_task_init_by_kind` turns camera markers 12 and 13 into
   10 and 11.
 - Results: the field is four bits, so no kind is past the table. Disc 1's 922
   distinct sprite blocks hold directory headers of kinds 0, 5, 6 and 15 and spawn
@@ -146,7 +146,7 @@ and table, and how each table's index is chosen, is listed in
   census checks what each kind needs instead: it reads from the C each kind's
   packet (the POLY type the drawer's mode switch writes) and the primitive bytes
   the two functions read.
-- Data: object 0 of the resident `D_8001C76C` (the slot-highlight ring) and of
+- Data: object 0 of the resident `model_slot_ring_tmd` (the slot-highlight ring) and of
   every model a battle sprite command `f3` binds as its parts (which ovl3384 can
   break into pieces).
 - Results (both discs, identical): 497 models (the resident one and 496 bound by
@@ -159,5 +159,5 @@ and table, and how each table's index is chosen, is listed in
 
 `python3 -m tools.analysis.sound_sequence --sweep` counts the sound VM's two
 operand-indexed tables (see [sound-sequence.md](sound-sequence.md)): the
-modulator waves `D_800508A4[mode & 0xF]` (16 slots, always in range) and F0's
+modulator waves `sound_modulator_waves[mode & 0xF]` (16 slots, always in range) and F0's
 modulator index (`modulator[4]`, indices 0-3 used, none past the array).

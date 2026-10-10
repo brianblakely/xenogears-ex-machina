@@ -43,13 +43,13 @@
 /* Callers convert arguments/result differently from the resident definition
  * (a narrow result, u16 coordinates or another parameter count there):
  * random numbers, text rendering and the text palettes. */
-s32 func_8001BD40(s32 low, s32 high); /* random number in [low, high] */
-void func_80034EAC(void *text, void *image, s32 mode, s32 flags);
-void func_80033698(s32 x, s32 y);     /* upload the text palettes */
+s32 mode_get_random_byte_in_range(s32 low, s32 high); /* random number in [low, high] */
+void window_render_text_line(void *text, void *image, s32 mode, s32 flags);
+void text_load_palette(s32 x, s32 y);     /* upload the text palettes */
 
 /* The game data's inGear bytes (+0x22B1) as the setup reads them, one per
  * slot: past the three party entries they are the bytes that follow. */
-extern u8 D_8006F8E5[SLOT_COUNT];
+extern u8 game_data_slot_in_gear[SLOT_COUNT];
 /* The work area as the setup declares it: BattleWork, then (past it) the
  * battle overlay's item lists and more, to the party's character ids at
  * 0x603C (D_800D2D24, 0x7F none). The setup addresses the ids as members of
@@ -116,15 +116,15 @@ void func_8009B098(void); /* demo battle members */
  * 0x170-byte combatant records from +0x32. */
 extern u8 *D_800C3DD0;
 
-/* The battle's formation (D_8006F9DC, resident/formation.h), as the setup
+/* The battle's formation (formation_active, resident/formation.h), as the setup
  * reads it. FORMATION_FLAG6 indexes the enemy groups by slot (3-10), not by
  * enemy: slots 8-10 read the three bytes after the record. */
-#define FORMATION_FLAGS D_8006F9DC.flags
-#define FORMATION_PARTY_GROUP(member) D_8006F9DC.partyGroups[member]
-#define FORMATION_ENEMY_ID(enemy) D_8006F9DC.enemyIds[enemy]
-#define FORMATION_ENEMY_FLAGS(enemy) D_8006F9DC.enemyFlags[enemy]
-#define FORMATION_ENEMY_GROUP(enemy) D_8006F9DC.enemyGroups[enemy]
-#define FORMATION_FLAG6(slot) D_8006F9DC.enemyGroups[slot]
+#define FORMATION_FLAGS formation_active.flags
+#define FORMATION_PARTY_GROUP(member) formation_active.partyGroups[member]
+#define FORMATION_ENEMY_ID(enemy) formation_active.enemyIds[enemy]
+#define FORMATION_ENEMY_FLAGS(enemy) formation_active.enemyFlags[enemy]
+#define FORMATION_ENEMY_GROUP(enemy) formation_active.enemyGroups[enemy]
+#define FORMATION_FLAG6(slot) formation_active.enemyGroups[slot]
 extern u8 *D_800C20F0[];        /* command menu layouts */
 extern u8 *D_800C2130;          /* command menu sources */
 extern u8 *D_800C2134;

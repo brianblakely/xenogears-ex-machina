@@ -823,32 +823,32 @@ void func_80075060(s32 lost) {
 
     if (lost) {
         if (func_8008F4F4(player, 0xE0)) {
-            D_80050622 = 2;
+            mode_arena_bout_outcome = 2;
         } else if (func_8008F4F4(player, 0x10)) {
-            D_80050622 = 1;
+            mode_arena_bout_outcome = 1;
         } else {
-            D_80050622 = 3;
+            mode_arena_bout_outcome = 3;
         }
     } else if (D_8009872C.unk1660 == 0 && D_8009872C.unk165C == 0) {
-        D_80050622 = 0x88;
+        mode_arena_bout_outcome = 0x88;
     } else if (D_8009872C.unk165C == 0) {
-        D_80050622 = 0x82;
+        mode_arena_bout_outcome = 0x82;
     } else {
         limit = player->max_hp * 0xB0 / 255;
         if (limit < player->unk1654) {
-            D_80050622 = 0x83;
+            mode_arena_bout_outcome = 0x83;
         } else if (player->max_hp * 0xA0 / 255 < player->unk1658) {
-            D_80050622 = 0x84;
+            mode_arena_bout_outcome = 0x84;
         } else if (limit < player->unk1658 + player->unk1654) {
-            D_80050622 = 0x85;
+            mode_arena_bout_outcome = 0x85;
         } else {
             player = player->opponent;
             if (func_8008F4F4(player, 0xE0)) {
-                D_80050622 = 0x86;
+                mode_arena_bout_outcome = 0x86;
             } else if (func_8008F4F4(player, 0x10)) {
-                D_80050622 = 0x81;
+                mode_arena_bout_outcome = 0x81;
             } else {
-                D_80050622 = 0x87;
+                mode_arena_bout_outcome = 0x87;
             }
         }
     }
@@ -873,9 +873,9 @@ void func_800751C8(Actor *first, Actor *second) {
     if (D_80092638 != 0) {
         if (D_80092640++ >= 0x3D) {
             func_80083C0C(D_80092890 == 2 ? 2 : 4);
-            func_80019964("gm");
-            func_80031BDC(1, 0);
-            func_80019964(" fin\n");
+            mode_empty_debug_print("gm");
+            heap_alloc(1, 0);
+            mode_empty_debug_print(" fin\n");
         }
         if (D_80092890 == 2) {
             func_8007EC54("DRAW GAME");
@@ -908,13 +908,13 @@ void func_800751C8(Actor *first, Actor *second) {
         D_800928FC = 0;
         func_80075060(1);
         if ((second->flags & 0x40) && D_800928C8 != 3) {
-            func_80019964("00");
-            func_80031BDC(1, 2);
-            func_80019964(" fin\n");
+            mode_empty_debug_print("00");
+            heap_alloc(1, 2);
+            mode_empty_debug_print(" fin\n");
             func_80088BD4(second->model_id);
-            func_80019964("11");
-            func_80031BDC(1, 2);
-            func_80019964(" ctrl\n");
+            mode_empty_debug_print("11");
+            heap_alloc(1, 2);
+            mode_empty_debug_print(" ctrl\n");
         }
     }
     if (D_8009263C != 0) {
@@ -1266,11 +1266,11 @@ void func_80076438(Actor *actor) {
     s32 i;
     s32 index = actor->input_tail;
 
-    func_800379C8("%s:");
+    console_report_printf("%s:");
     for (i = 0; i < actor->input_count; i++) {
-        func_800379C8("%d", actor->inputs[index++ & 0x1F]);
+        console_report_printf("%d", actor->inputs[index++ & 0x1F]);
     }
-    func_800379C8("\n");
+    console_report_printf("\n");
 }
 
 /* Name of each combo number. GCC emits an initializer's string literals last
@@ -1408,26 +1408,26 @@ s32 func_80076884(Actor *actor) {
     s32 speed;
 
     if (actor->flags & 0x8000000) {
-        analog = (u32)(func_80035734(1) - 3) < 2;
-        held = D_80059574;
-        pressed = D_80059490;
+        analog = (u32)(pad_get_controller_kind(1) - 3) < 2;
+        held = pad_port1_held;
+        pressed = pad_port1_pressed;
         if (analog) {
-            stick_y = D_80059434;
-            stick_x = D_8005943C;
+            stick_y = pad_port1_left_stick_x;
+            stick_x = pad_port1_left_stick_y;
         } else {
-            stick_y = func_80035884(held);
-            stick_x = func_800358A0(D_80059574);
+            stick_y = pad_get_dpad_stick_x(held);
+            stick_x = pad_get_dpad_stick_y(pad_port1_held);
         }
     } else {
-        analog = (u32)(func_80035734(0) - 3) < 2;
-        held = D_80059570;
-        pressed = D_8005948C;
+        analog = (u32)(pad_get_controller_kind(0) - 3) < 2;
+        held = pad_port0_held;
+        pressed = pad_port0_pressed;
         if (analog) {
-            stick_y = D_80059430;
-            stick_x = D_80059438;
+            stick_y = pad_port0_left_stick_x;
+            stick_x = pad_port0_left_stick_y;
         } else {
-            stick_y = func_80035884(held);
-            stick_x = func_800358A0(D_80059570);
+            stick_y = pad_get_dpad_stick_x(held);
+            stick_x = pad_get_dpad_stick_y(pad_port0_held);
         }
     }
     if (actor->flags & 0x40) {
@@ -1678,11 +1678,11 @@ s32 func_80077038(Actor *actor) {
         actor->flags |= 0x400;
         actor->velocity.vy -= 0x50;
         if (actor->flags & 0x08000000) {
-            actor->push.vx -= func_8003F8B0(D_80092934) >> 9;
-            actor->push.vz -= func_8003F8CC(D_80092934) >> 9;
+            actor->push.vx -= gpu_get_sin(D_80092934) >> 9;
+            actor->push.vz -= gpu_get_cos(D_80092934) >> 9;
         } else {
-            actor->push.vx += func_8003F8B0(D_80092934) >> 9;
-            actor->push.vz += func_8003F8CC(D_80092934) >> 9;
+            actor->push.vx += gpu_get_sin(D_80092934) >> 9;
+            actor->push.vz += gpu_get_cos(D_80092934) >> 9;
         }
         actor->flags |= 0x800000;
         func_800776A8(actor, 0x14);
@@ -1693,8 +1693,8 @@ s32 func_80077038(Actor *actor) {
 /* Push an actor along an angle (scaled down by shift) and let it rise by
  * lift, never faster than 0x82 upward. */
 s32 func_80077584(Actor *actor, s32 angle, s32 shift, s32 lift) {
-    actor->push.vx += func_8003F8B0(angle) >> shift;
-    actor->push.vz += func_8003F8CC(angle) >> shift;
+    actor->push.vx += gpu_get_sin(angle) >> shift;
+    actor->push.vz += gpu_get_cos(angle) >> shift;
     if (actor->velocity.vy >= -0x8B) {
         actor->velocity.vy -= lift;
     }
@@ -1727,10 +1727,10 @@ s32 func_800776A8(Actor *actor, s32 arg) {
     }
     if (actor->flags & 0x8000000) {
         if ((D_800928C8 == 2 || D_800928C8 == 4) && (D_80099D98.option5 & 1) && !(actor->flags & 0x40)) {
-            func_80036258(1, arg);
+            pad_run_actuator(1, arg);
         }
     } else if ((D_80099D98.option4 & 1) && !(actor->flags & 0x40)) {
-        func_80036258(0, arg);
+        pad_run_actuator(0, arg);
     }
 }
 
@@ -2090,16 +2090,16 @@ void func_80078194(Actor *actor) {
         actor->flags = actor->flags & ~0x100;
     }
     if (actor->flags & 0x40000) {
-        actor->velocity.vx = -(func_8003F8B0(actor->unk648 + actor->unkFC) * speed) >> 12;
-        actor->velocity.vz = -(func_8003F8CC(actor->unk648 + actor->unkFC) * speed) >> 12;
+        actor->velocity.vx = -(gpu_get_sin(actor->unk648 + actor->unkFC) * speed) >> 12;
+        actor->velocity.vz = -(gpu_get_cos(actor->unk648 + actor->unkFC) * speed) >> 12;
     } else {
         actor->flags &= ~0x80000;
     }
     actor->velocity.vy += 0xA;
     if (actor->unk44 != 0 && actor->pos.vy == actor->floor_y) {
         actor->unk44 = actor->unk44 * 0xA0 / 256;
-        actor->unk30.vx = -(func_8003F8B0(facing) * actor->unk44) >> 12;
-        actor->unk30.vz = -(func_8003F8CC(facing) * actor->unk44) >> 12;
+        actor->unk30.vx = -(gpu_get_sin(facing) * actor->unk44) >> 12;
+        actor->unk30.vz = -(gpu_get_cos(facing) * actor->unk44) >> 12;
         actor->velocity.vx += actor->unk30.vx;
         actor->velocity.vy += actor->unk30.vy;
         actor->velocity.vz += actor->unk30.vz;
@@ -2265,10 +2265,10 @@ s32 func_80078920(Actor *first, Actor *second) {
             }
             speed_a = (speed_a * dist << 8) / sum;
             speed_b = (speed_b * dist << 8) / sum;
-            first->pos.vx += (func_8003F8B0(angle) * speed_b) >> 20;
-            first->pos.vz += (func_8003F8CC(angle) * speed_b) >> 20;
-            second->pos.vx -= (func_8003F8B0(angle) * speed_a) >> 20;
-            second->pos.vz -= (func_8003F8CC(angle) * speed_a) >> 20;
+            first->pos.vx += (gpu_get_sin(angle) * speed_b) >> 20;
+            first->pos.vz += (gpu_get_cos(angle) * speed_b) >> 20;
+            second->pos.vx -= (gpu_get_sin(angle) * speed_a) >> 20;
+            second->pos.vz -= (gpu_get_cos(angle) * speed_a) >> 20;
         }
     }
 }
@@ -2520,10 +2520,10 @@ void func_800796B8(Actor *first, Actor *second) {
     D_8009867C.vx = (first->pos.vx + second->pos.vx) / 2;
     D_8009867C.vy = (first->pos.vy + second->pos.vy) / 2 - 0xA0;
     D_8009867C.vz = (first->pos.vz + second->pos.vz) / 2;
-    eye.vx = D_8009867C.vx + ((func_8003F8B0(angle - 0x400) * radius) >> 12);
-    eye.vz = D_8009867C.vz + ((func_8003F8CC(angle - 0x400) * radius) >> 12);
-    step.vx = D_8009867C.vx + ((func_8003F8B0(angle + 0x400) * radius) >> 12);
-    step.vz = D_8009867C.vz + ((func_8003F8CC(angle + 0x400) * radius) >> 12);
+    eye.vx = D_8009867C.vx + ((gpu_get_sin(angle - 0x400) * radius) >> 12);
+    eye.vz = D_8009867C.vz + ((gpu_get_cos(angle - 0x400) * radius) >> 12);
+    step.vx = D_8009867C.vx + ((gpu_get_sin(angle + 0x400) * radius) >> 12);
+    step.vz = D_8009867C.vz + ((gpu_get_cos(angle + 0x400) * radius) >> 12);
     eye.vx -= D_8009871C.vx;
     eye.vy -= D_8009871C.vy;
     eye.vz -= D_8009871C.vz;
@@ -2543,8 +2543,8 @@ void func_800796B8(Actor *first, Actor *second) {
         dist = 0x300;
     }
     eye.vy = D_8009867C.vy - 0x40 - dist;
-    eye.vx = D_8009867C.vx + ((func_8003F8B0(angle + D_8009290C) * radius) >> 12);
-    eye.vz = D_8009867C.vz + ((func_8003F8CC(angle + D_8009290C) * radius) >> 12);
+    eye.vx = D_8009867C.vx + ((gpu_get_sin(angle + D_8009290C) * radius) >> 12);
+    eye.vz = D_8009867C.vz + ((gpu_get_cos(angle + D_8009290C) * radius) >> 12);
     step.vx = (eye.vx - D_8009871C.vx) / D_8009287C;
     step.vz = (eye.vz - D_8009871C.vz) / D_8009287C;
     func_800828F8(&D_8009871C, &step, 0x3A00);
@@ -2608,7 +2608,7 @@ s32 func_80079B44(void) {
     D_8009294C = 0;
     D_80092648 = 0;
     func_8007F834();
-    D_80050622 = 0;
+    mode_arena_bout_outcome = 0;
     func_8008E620();
     func_800720C4();
     D_800928D4 = 0;
@@ -2617,9 +2617,9 @@ s32 func_80079B44(void) {
     D_80091130[10].next = 0;
     D_80092664 = 0;
     D_80092950++;
-    func_800346A4(&D_8009868C);
+    window_reset(&D_8009868C);
     D_80099D98.rate = 0;
-    if (D_8005061C != 0) {
+    if (mode_arena_task_parameters != 0) {
         switch ((D_80092950 - 1) % 5) {
         case 3:
             D_800928B4 = 1;
@@ -2680,17 +2680,17 @@ void func_80079DF0(Actor *first, Actor *second) {
     D_80092648 = 0;
     func_80075B50(first);
     func_80075B50(second);
-    func_8003708C(0xA, 0x60);
+    console_place_cursor_and_line_start(0xA, 0x60);
     func_8007E528(0);
     if (D_800928D4 != 0) {
-        if (func_80036410()) {
-            func_80035DB0();
+        if (pad_has_queue_overflowed()) {
+            pad_clear_queue();
         } else {
         poll:
-            if (func_80035CDC()) {
-                if ((((D_8005948C | D_80059490) & 0x800) && D_8009263C < 0x14) || !func_80035734(0) ||
-                    (!func_80035734(1) && D_800928C8 == 2)) {
-                    if ((D_8005948C & 0x800) || !func_80035734(0)) {
+            if (pad_dequeue_state()) {
+                if ((((pad_port0_pressed | pad_port1_pressed) & 0x800) && D_8009263C < 0x14) || !pad_get_controller_kind(0) ||
+                    (!pad_get_controller_kind(1) && D_800928C8 == 2)) {
+                    if ((pad_port0_pressed & 0x800) || !pad_get_controller_kind(0)) {
                         D_800928FC = 0;
                     } else {
                         if (second->flags & 0x40) {
@@ -2709,7 +2709,7 @@ void func_80079DF0(Actor *first, Actor *second) {
             }
         }
     } else {
-        func_80036420();
+        pad_merge_queued_states();
     }
     if (D_800928D4 != 0) {
         if (D_80092944 != 0x2BF1F) {
@@ -2731,11 +2731,11 @@ void func_80079DF0(Actor *first, Actor *second) {
     func_800751C8(first, second);
     func_80077038(first);
     func_80077038(second);
-    func_8003708C(0x4A, 0);
+    console_place_cursor_and_line_start(0x4A, 0);
     func_80077A9C(first);
-    func_8003708C(0x6A, 0);
+    console_place_cursor_and_line_start(0x6A, 0);
     func_80077A9C(second);
-    func_8003708C(0xA, 0x80);
+    console_place_cursor_and_line_start(0xA, 0x80);
     func_80078194(first);
     func_80078194(second);
     func_80078D20(second);
@@ -2808,17 +2808,17 @@ void func_8007A344(Actor *first, Actor *second) {
     if (D_8009287C >= 2) {
         D_8009287C = 1;
     }
-    func_80036420();
+    pad_merge_queued_states();
     if (D_800928FC == 1) {
-        if (D_80059490 & 0x20) {
+        if (pad_port1_pressed & 0x20) {
             func_80083C0C(8);
         }
-        func_800832C0(D_80059574);
+        func_800832C0(pad_port1_held);
     } else {
-        if (D_8005948C & 0x20) {
+        if (pad_port0_pressed & 0x20) {
             func_80083C0C(8);
         }
-        func_800832C0(D_80059570);
+        func_800832C0(pad_port0_held);
     }
     func_80074AB4(first);
     func_80074AB4(second);
@@ -2889,8 +2889,8 @@ void func_8007A768(Actor *actor) {
     D_8009867C.vz = actor->pos.vz;
     y = D_8009867C.vy - 0x400;
     D_8009871C.vy = y - D_80092670;
-    D_8009871C.vx = D_8009867C.vx + (((func_8003F8B0(angle) << 2) * D_80092674) >> 12);
-    D_8009871C.vz = D_8009867C.vz + (((func_8003F8CC(angle) << 2) * D_80092674) >> 12);
+    D_8009871C.vx = D_8009867C.vx + (((gpu_get_sin(angle) << 2) * D_80092674) >> 12);
+    D_8009871C.vz = D_8009867C.vz + (((gpu_get_cos(angle) << 2) * D_80092674) >> 12);
 }
 
 /* End the bout's effects and pick the next stage from the winner's move
@@ -2930,7 +2930,7 @@ void func_8007A958(Actor *actor) {
     u16 held;
 
     if (D_800911D4 != 0) {
-        held = D_80059570;
+        held = pad_port0_held;
         if (held & 0x1000) {
             D_8009266C += 4;
         }
@@ -2955,17 +2955,17 @@ void func_8007A958(Actor *actor) {
         if (held & 2) {
             D_80092674 += 0x10;
         }
-        func_800379C8("ANG %x\n", D_80092668 & 0xFFF);
-        func_800379C8("REF %x\n", D_8009266C);
-        func_800379C8("CAM %x\n", D_80092670);
-        func_800379C8("LEN %x\n", D_80092674);
+        console_report_printf("ANG %x\n", D_80092668 & 0xFFF);
+        console_report_printf("REF %x\n", D_8009266C);
+        console_report_printf("CAM %x\n", D_80092670);
+        console_report_printf("LEN %x\n", D_80092674);
     }
     target = actor->core;
     target.vy = actor->pos.vy - D_8009266C;
     func_80070808(&target, 8);
     target.vy = actor->pos.vy - D_80092670;
-    target.vx = actor->pos.vx + ((func_8003F8B0(actor->angle + D_80092668) * D_80092674) >> 12);
-    target.vz = actor->pos.vz + ((func_8003F8CC(actor->angle + D_80092668) * D_80092674) >> 12);
+    target.vx = actor->pos.vx + ((gpu_get_sin(actor->angle + D_80092668) * D_80092674) >> 12);
+    target.vz = actor->pos.vz + ((gpu_get_cos(actor->angle + D_80092668) * D_80092674) >> 12);
     func_800708C4(&target, 0x10);
     while (func_800887A4(&D_8009871C, &actor->pos) < 0x200) {
         D_8009871C.vy -= 2;
@@ -3014,11 +3014,11 @@ void func_8007AE10(Actor *first, Actor *second) {
     func_800764CC(first);
     func_800764CC(second);
     D_80092648 = 0;
-    func_80036420();
+    pad_merge_queued_states();
     if (D_800928FC == 1) {
-        held = D_80059490 & 0x20;
+        held = pad_port1_pressed & 0x20;
     } else {
-        held = D_8005948C & 0x20;
+        held = pad_port0_pressed & 0x20;
     }
     if (held != 0) {
         func_80083C0C(2);
@@ -3927,9 +3927,9 @@ void func_8007D6B8(void) {
     SceneCell10 *cell;
     s32 i;
 
-    D_800926BC = func_80031BDC(0x9F6, 0);
-    D_800926C0[0] = func_80031BDC(0xBF4, 0);
-    D_800926C0[1] = func_80031BDC(0xBF4, 0);
+    D_800926BC = heap_alloc(0x9F6, 0);
+    D_800926C0[0] = heap_alloc(0xBF4, 0);
+    D_800926C0[1] = heap_alloc(0xBF4, 0);
     cell = D_800926BC;
     for (i = 0; i < 0xFF; i++) {
         D_800926C0[0][i].len = 2;
@@ -4025,10 +4025,10 @@ void func_8007DB28(void) {
     TileWords *tile;
     s32 i;
 
-    D_800926C8 = func_80031BDC(0x1950, 0);
-    tile = func_80031BDC(0x21C0, 0);
+    D_800926C8 = heap_alloc(0x1950, 0);
+    tile = heap_alloc(0x21C0, 0);
     D_800926CC[0] = tile;
-    D_800926CC[1] = func_80031BDC(0x21C0, 0);
+    D_800926CC[1] = heap_alloc(0x21C0, 0);
     cell = D_800926C8;
     for (i = 0; i < 540; i++, cell++, tile++) {
         tile->len = 3;

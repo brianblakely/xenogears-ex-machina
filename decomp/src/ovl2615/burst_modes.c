@@ -86,7 +86,7 @@ void func_801E8A64(Task *node) {
     {
         MATRIX m;
 
-        func_8003F738(&burst->rot, &m);
+        gpu_build_rotation_matrix(&burst->rot, &m);
         TransMatrix(&m, &burst->trans);
         SetRotMatrix(&m);
         SetTransMatrix(&m);
@@ -100,10 +100,10 @@ void func_801E8A64(Task *node) {
                 for (k = 0; k != 3; k++) {
                     if (D_801E9680 != 0) {
                         twist = burst->twist;
-                        wave = func_8003F8B0(burst->angle + cell->distance[k]);
+                        wave = gpu_get_sin(burst->angle + cell->distance[k]);
                     } else {
                         twist = burst->twist;
-                        wave = func_8003F8CC(cell->distance[k]);
+                        wave = gpu_get_cos(cell->distance[k]);
                     }
                     wave = wave * twist / 4096;
                     corner[k].vz = wave >> 2;
@@ -143,19 +143,19 @@ void func_801E8A64(Task *node) {
 /* Release the burst task after the drawing finishes. */
 void func_801E8D48(void *block) {
     DrawSync(0);
-    func_800320E8(block);
+    heap_free(block);
 }
 
 /* Unlink a task-registered burst and release it after the frame. */
 void func_801E8D7C(Task *node) {
-    func_8001CB48(node + 1);
-    func_8001CD94(node);
-    func_80025180((u32)node);
+    task_unlink_draw_node(node + 1);
+    task_unlink_main_node(node);
+    sprite_queue_free_later((u32)node);
 }
 
 /* Allocate and set up the burst. */
 BurstTask *func_801E8DB8(void) {
-    BurstTask *task = func_80031BDC(sizeof(BurstTask), 1);
+    BurstTask *task = heap_alloc(sizeof(BurstTask), 1);
 
     task->task.data = task;
     task->draw.data = task;
@@ -270,10 +270,10 @@ void func_801E91E8(void) {
     s32 i;
 
     frames = 0x52;
-    func_8001C944();
+    task_clear_lists();
     state = 1;
     phase = 0;
-    screen = func_80031BDC(0x30000, 1);
+    screen = heap_alloc(0x30000, 1);
     pixel = screen;
     rect.w = 0x140;
     rect.x = 0;
@@ -290,7 +290,7 @@ void func_801E91E8(void) {
     rect.h = 0xE0;
     LoadImage(&rect, (u_long *)screen);
     DrawSync(0);
-    func_800320E8(screen);
+    heap_free(screen);
     work = &D_800C3EB0;
     /* Flip as swap_buffers() does, remembering the first buffer. */
     next = &work->buffers[0];
@@ -318,13 +318,13 @@ void func_801E91E8(void) {
         swap_buffers();
         D_800C3EB0.buffer = 1 - D_800C3EB0.buffer;
         D_801E96BC = D_800C3EB0.ot;
-        if (func_800286CC() == 0) {
+        if (cd_get_pending_read_count() == 0) {
             switch (state) {
             case 0:
                 break;
             case 2:
                 state++;
-                func_8001BB0C();
+                mode_load_current_battle_stage();
                 break;
             case 1:
             case 3:
@@ -335,13 +335,13 @@ void func_801E91E8(void) {
                 break;
             }
         }
-        func_80019CA0();
+        boot_check_soft_reset();
         D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0 =
-            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0, -12);
+            sprite_add_clamp_byte(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0, -12);
         D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0 =
-            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0, -12);
+            sprite_add_clamp_byte(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0, -12);
         D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0 =
-            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0, -12);
+            sprite_add_clamp_byte(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0, -12);
         /* Run the burst on a stack at the top of the scratchpad. */
         STACK_ENTER(0x1F8003FC);
         func_801E8964(&burst->task);
@@ -355,7 +355,7 @@ void func_801E91E8(void) {
     }
     func_801E8D48(burst);
     SetDispMask(0);
-    func_80028A60(0);
+    cd_sync_reads(0);
     func_801E5840(3);
 }
 

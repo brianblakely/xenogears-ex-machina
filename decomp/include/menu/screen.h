@@ -141,7 +141,7 @@ typedef struct MenuCursor {
 /* The resident's vertical blank count (resident/pad.h says why it is declared
  * here): the screens keep it while they wait with the sound paused, and slot39
  * saves and restores it as the play time in frames. */
-extern s32 D_80059488;
+extern s32 pad_vblank_count;
 
 LAYOUT_CHECK(MenuScreenSizes, sizeof(MenuFlags) == 0x6C && sizeof(MenuPrims) == 0x15C &&
                                   sizeof(MenuImages) == 0x1194 && sizeof(MenuSpriteLists) == 0x140C &&

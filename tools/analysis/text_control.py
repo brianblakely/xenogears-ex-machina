@@ -1,8 +1,8 @@
 """Message text and its control codes, from the recovered window code.
 
-func_80033DF0 (decomp/src/resident/main2.c) reveals a window's text. A byte
-below the font's two-byte threshold (D_8005934C, font halfword 2, installed by
-func_80033558) is a one-byte glyph and a byte at or above it starts a two-byte
+window_reveal_text (decomp/src/resident/main2.c) reveals a window's text. A byte
+below the font's two-byte threshold (text_font_two_byte_threshold, font halfword 2, installed by
+text_install_font) is a one-byte glyph and a byte at or above it starts a two-byte
 glyph, unless it is one of the controls 00, 01, 02, 03 or 0F; 0F takes a
 sub-code dispatched through the 16-entry jump table at 0x80018A7C (switch cases
 0-15). A sub-code of 16 or more matches no case and leaves the pointer on the
@@ -10,16 +10,16 @@ sub-code dispatched through the 16-entry jump table at 0x80018A7C (switch cases
 insert text (0F 03-08, 09/0A/0C, 0F) set the window's resume pointer to their
 last operand; the inserted text's 00 returns to the byte after it.
 
-Text lives in tables read by func_80033728: entry n starts at the u16 offset
+Text lives in tables read by text_get_resource_entry: entry n starts at the u16 offset
 at byte 4 + 2n. Every located table also holds its count at +0, 0 at +2, count
 + 1 offsets (the last ends the text) and count (columns, rows) byte pairs
-after them (func_8003373C/func_80033760 read the pairs). Windows get text only
-through func_80034714 (queue), func_80034EAC (one-line layout) and the
+after them (text_get_message_columns/text_get_message_rows read the pairs). Windows get text only
+through window_queue_message (queue), window_render_text_line (one-line layout) and the
 insertions; their callers pass entries of these tables, or text built at run
 time from character codes through the byte pairs of system resource 27
-(func_80033ABC/func_80033B34: numbers, names, name entry). The sweep reads
+(text_decode_codes_to_buffer/text_decode_codes: numbers, names, name entry). The sweep reads
 every table those callers use, classifies the pairs and decodes the initial
-names (func_8001B970).
+names (mode_load_initial_game_data).
 
     python3 -m tools.analysis.text_control --sweep    # both discs, aggregate only
     python3 -m tools.analysis.text_control --list field --item 3 --disc 2
@@ -68,7 +68,7 @@ CONTROLS = {
         "end",
         (),
         1,
-        "func_80033DF0 byte 0",
+        "window_reveal_text byte 0",
         "end of text: return after an inserted text's control; else state 1 (unk6B), flag 8 "
         "(wait) and unk6C, so once the wait ends the window moves on to its next queued "
         "text; the pointer stays on the 00",
@@ -78,7 +78,7 @@ CONTROLS = {
         "newline",
         (),
         1,
-        "func_80033DF0 byte 1",
+        "window_reveal_text byte 1",
         "x = 100 and end this step, so the next step starts a new line",
     ),
     0x02: Control(
@@ -86,11 +86,11 @@ CONTROLS = {
         "page",
         (),
         1,
-        "func_80033DF0 byte 2",
+        "window_reveal_text byte 2",
         "state 2, flags 0x48: wait, then clear the window; a following 01 is skipped",
     ),
     0x03: Control(
-        0x03, "pause", (), 1, "func_80033DF0 byte 3", "state 3, flag 8: wait, keeping the lines"
+        0x03, "pause", (), 1, "window_reveal_text byte 3", "state 3, flag 8: wait, keeping the lines"
     ),
 }
 _EXTENDED = (
@@ -172,15 +172,15 @@ _EXTENDED = (
         "insert_button",
         ("action",),
         3,
-        "insert the name of the button assigned to `action` (D_80050238) from resource 49",
+        "insert the name of the button assigned to `action` (pad_button_assignment) from resource 49",
     ),
 )
 for _sub, _name, _operands, _length, _effect in _EXTENDED:
     CONTROLS[0x0F00 | _sub] = Control(
-        0x0F00 | _sub, _name, _operands, _length, f"func_80033DF0 0F case {_sub}", _effect
+        0x0F00 | _sub, _name, _operands, _length, f"window_reveal_text 0F case {_sub}", _effect
     )
 EXTENDED_TABLE = 0x80018A7C  # jump table of the 0F sub-codes
-INTERPRETER = (0x80033DF0, 0x800345E0)  # func_80033DF0 up to func_800345E0
+INTERPRETER = (0x80033DF0, 0x800345E0)  # window_reveal_text up to window_end_wait
 
 
 def check_jump_table(exe: bytes) -> list[str]:
@@ -189,7 +189,7 @@ def check_jump_table(exe: bytes) -> list[str]:
     offset = EXTENDED_TABLE - base + 0x800
     targets = struct.unpack_from("<17I", exe, offset)
     problems = [
-        f"0F case {sub} target {target:08x} outside func_80033DF0"
+        f"0F case {sub} target {target:08x} outside window_reveal_text"
         for sub, target in enumerate(targets[:16])
         if not INTERPRETER[0] <= target < INTERPRETER[1]
     ]
@@ -269,19 +269,19 @@ def text_table(data: bytes) -> tuple[tuple[int, ...], int]:
 
 
 def font_threshold(font: bytes) -> int:
-    """D_8005934C: the font block's halfword 2 (func_80033558)."""
+    """text_font_two_byte_threshold: the font block's halfword 2 (text_install_font)."""
     return struct.unpack_from("<H", font, 4)[0]
 
 
 # Text built at run time (numbers, names, name entry) comes from character
-# codes through the byte pairs of system resource 27; func_80033BAC searches
+# codes through the byte pairs of system resource 27; text_find_char_code searches
 # its first 0x144 pairs.
 PAIR_CODES = 0x144
-NAME_SLOTS = 31  # D_8006D634.names: twenty bytes each, decoded by func_8001B970
+NAME_SLOTS = 31  # game_data.names: twenty bytes each, decoded by mode_load_initial_game_data
 
 
 def code_text(pairs: bytes, codes) -> bytes:
-    """func_80033B34: the text of character codes (a pair with first byte 0
+    """text_decode_codes: the text of character codes (a pair with first byte 0
     gives its second byte alone), then 00."""
     out = bytearray()
     for code in codes:
@@ -293,7 +293,7 @@ def code_text(pairs: bytes, codes) -> bytes:
 
 
 def pair_kind(first: int, second: int, threshold: int) -> str:
-    """What func_80033DF0 reads in the text bytes of one character pair."""
+    """What window_reveal_text reads in the text bytes of one character pair."""
     if first:
         return "two-byte glyph" if first >= threshold else "two separate tokens"
     if second == 0:
@@ -304,7 +304,7 @@ def pair_kind(first: int, second: int, threshold: int) -> str:
 
 
 def initial_names(game: bytes, pairs: bytes) -> list[bytes]:
-    """The name texts func_8001B970 makes from the game data file: up to ten
+    """The name texts mode_load_initial_game_data makes from the game data file: up to ten
     u16 character codes per twenty-byte slot, ending at code 0x000F."""
     names = []
     for slot in range(NAME_SLOTS):
@@ -379,7 +379,7 @@ WORLD_AREA_FILES = (
 
 
 def system_data(disc: Disc) -> bytes:
-    """ "MES SYSDATA", installed by func_800335F4 (D_80059360[n] = entry n)."""
+    """ "MES SYSDATA", installed by text_install_system_data (text_system_resources[n] = entry n)."""
     return unpack(disc.sectors(disc.slot(0, 1, 7)))
 
 
@@ -389,7 +389,7 @@ def text_tables(disc: Disc):
     it cannot be unpacked."""
     system = system_data(disc)
     for index in range(struct.unpack_from("<I", system, 0)[0]):
-        if index != 27:  # D_80059360[27]: character code pairs (func_80033ABC), not text
+        if index != 27:  # text_system_resources[27]: character code pairs (text_decode_codes_to_buffer), not text
             yield "system data", index, archive_entry(system, index)
     marker = disc.entries.get(disc.slot(4, 0, 0xB7))  # sub-directory of the map files
     for file in range(0xB8, 0xB8 + (-marker["size"] if marker else 0), 2):
@@ -410,16 +410,16 @@ def text_tables(disc: Disc):
         yield group, field_number, messages
     # Packed archive entries may read their last flag byte past the file's
     # declared size: unpack them from whole sectors.
-    menu = disc.sectors(disc.slot(0x10, 0, 1))  # D_8005945C; labels = files[3] (801c65f4)
+    menu = disc.sectors(disc.slot(0x10, 0, 1))  # menu_state_resource_file; labels = files[3] (801c65f4)
     yield "menu labels", 3, archive_entry(menu, 3, packed=True)
-    world = disc.sectors(disc.slot(0x24, 0, 0x26))  # the world map's D_8005945C (80071fec)
+    world = disc.sectors(disc.slot(0x24, 0, 0x26))  # the world map's menu_state_resource_file (80071fec)
     yield "menu labels (world map file 0x26)", 3, archive_entry(world, 3, packed=True)
     data = disc.sectors(disc.slot(0x10, 0, 2))  # 801c72bc MenuDataArchive +3C/+40/+54/+58/+D4..;
     for index in (14, 15, 20, 21, 52, 53, 54, 55, 0x27, 0x28, 0x29, *range(0x2C, 0x34)):
         yield "menu data", index, archive_entry(data, index, packed=True)  # shops 801c6828/801c6a54
     mode = unpack(disc.sectors(disc.slot(0x30, 0, 3)))  # menu mode file 3: D_80092880 = entry 0
     yield "menu mode", 0, archive_entry(mode, 0)
-    battle = disc.sectors(disc.slot(12, 0, 3))  # D_800595A8 (8001bbac)
+    battle = disc.sectors(disc.slot(12, 0, 3))  # mode_battle_setup_archive (8001bbac)
     for index in (0x0F, 0x25):  # archive[0x10] D_800D329C, archive[0x26] D_800D39F0 (ovl2615)
         yield "battle archive", index, archive_entry(battle, index, packed=True)
     marker = disc.entries.get(disc.slot(12, 1, 1))  # enemy data: file 2n + 2 (D_800C3DD0)
@@ -438,7 +438,7 @@ def text_tables(disc: Disc):
 
 # Characters for --chars, read from each disc's own data.
 #
-# The number code: func_80033CF0 writes a number's digits as the character
+# The number code: text_format_number writes a number's digits as the character
 # codes palette * 16 + digit and its sign as palette * 16 + 10 (negative) or
 # + 11, and the window controls pass palettes 0 and 1 (0F 09, 0F 0A, 0F 0C).
 # The menus write the blank that replaces a number's leading zeros as code 0xC3
@@ -901,7 +901,7 @@ def sweep() -> Sweep:
         result.pairs[disc.number] = Counter(
             pair_kind(pairs[2 * code], pairs[2 * code + 1], threshold) for code in range(PAIR_CODES)
         )
-        try:  # directory 0x10 file 3, read by func_8001B970
+        try:  # directory 0x10 file 3, read by mode_load_initial_game_data
             names = initial_names(disc.data(disc.slot(0x10, 0, 3)), pairs)
         except TextError as error:
             result.unknown.append(f"disc{disc.number} initial names: {error}")

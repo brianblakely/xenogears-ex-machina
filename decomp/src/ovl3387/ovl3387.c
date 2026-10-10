@@ -1,9 +1,9 @@
 /* ovl3387: a battle module at 0x801fc000. The battle overlay's 800beb04 loads
  * the current battle's module into 0x801fc000..0x80200000 (the slot above the
- * resident heap, which the boot code bounds at 0x801fc000): file (D_800591B3
- * + 2) of the battle directory, D_800591B3 being the platform bits (6..11) of
+ * resident heap, which the boot code bounds at 0x801fc000): file (sprite_requested_battle_module
+ * + 2) of the battle directory, sprite_requested_battle_module being the platform bits (6..11) of
  * the directory header of battle file 2, whenever they differ from the loaded
- * module's (D_800591B2). Battle script opcodes call fixed entry addresses in
+ * module's (sprite_loaded_battle_module). Battle script opcodes call fixed entry addresses in
  * the loaded module: this one provides 801fc898, called by the opcode handler
  * 800b3f04, which plays a full-screen effect in its own frame loop on a
  * private stack.
@@ -83,7 +83,7 @@ void func_801FC11C(Task *node) {
     screen = ReadGeomScreen();
     SetGeomOffset(0xA0, 0x70);
     SetGeomScreen(0x200);
-    func_8003F738(&burst->rot, &m);
+    gpu_build_rotation_matrix(&burst->rot, &m);
     TransMatrix(&m, &burst->trans);
     SetRotMatrix(&m);
     SetTransMatrix(&m);
@@ -96,10 +96,10 @@ void func_801FC11C(Task *node) {
                 for (k = 0; k != 3; k++) {
                     if (D_801FCE14 != 0) {
                         twist = burst->twist;
-                        wave = func_8003F8B0(burst->angle + cell->distance[k]);
+                        wave = gpu_get_sin(burst->angle + cell->distance[k]);
                     } else {
                         twist = burst->twist;
-                        wave = func_8003F8CC(cell->distance[k]);
+                        wave = gpu_get_cos(cell->distance[k]);
                     }
                     wave = wave * twist / 4096;
                     corner[k].vz = wave >> 2;
@@ -139,19 +139,19 @@ void func_801FC11C(Task *node) {
 /* Wait for drawing to finish and release the effect. */
 void func_801FC400(BurstTask *burst) {
     DrawSync(0);
-    func_800320E8(burst);
+    heap_free(burst);
 }
 
 /* Unlink a task-registered effect and release it after the frame. */
 void func_801FC434(Task *node) {
-    func_8001CB48(node + 1);
-    func_8001CD94(node);
-    func_80025180((u32)node);
+    task_unlink_draw_node(node + 1);
+    task_unlink_main_node(node);
+    sprite_queue_free_later((u32)node);
 }
 
 /* Allocate and set up the effect's state. */
 BurstTask *func_801FC470(void) {
-    BurstTask *burst = func_80031BDC(sizeof(BurstTask), 1);
+    BurstTask *burst = heap_alloc(sizeof(BurstTask), 1);
 
     burst->task.data = burst;
     burst->draw.data = burst;
@@ -258,7 +258,7 @@ BurstTask *func_801FC4A8(BurstTask *burst) {
 /* Opcode entry: run the effect on a private 8 KB stack (its frame loop needs
  * more than the battle's). */
 void func_801FC898(void) {
-    u8 *stack = func_80031BDC(0x2000, 0);
+    u8 *stack = heap_alloc(0x2000, 0);
 
     /* Push the caller's sp at the new stack top and switch to it. */
     __asm__ volatile("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8"
@@ -267,7 +267,7 @@ void func_801FC898(void) {
                      : "$8", "memory");
     func_801FC8F4();
     __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory");
-    func_800320E8(stack);
+    heap_free(stack);
 }
 
 /* The effect's own frame loop (164 frames): keep the battle's texture pages,
@@ -297,8 +297,8 @@ void func_801FC8F4(void) {
     s32 frames = 0xA4;
     s32 i;
 
-    saved.pages[0] = func_80031BDC(0x8000, 1);
-    saved.pages[1] = func_80031BDC(0x8000, 1);
+    saved.pages[0] = heap_alloc(0x8000, 1);
+    saved.pages[1] = heap_alloc(0x8000, 1);
     rect.x = D_800C3668[1].x;
     rect.y = D_800C3668[1].y;
     rect.w = 0x40;
@@ -310,7 +310,7 @@ void func_801FC8F4(void) {
     rect.h = 0x100;
     StoreImage(&rect, saved.pages[1]);
     DrawSync(0);
-    screen = func_80031BDC(0x30000, 1);
+    screen = heap_alloc(0x30000, 1);
     p = screen;
     rect.x = 0;
     rect.y = 0;
@@ -327,7 +327,7 @@ void func_801FC8F4(void) {
     rect.h = 0xE0;
     LoadImage(&rect, (u_long *)screen);
     DrawSync(0);
-    func_800320E8(screen);
+    heap_free(screen);
     work = &D_800C3EB0;
     back = &work->buffers[0];
     shown = work->current;
@@ -358,11 +358,11 @@ void func_801FC8F4(void) {
             frames--;
         }
         D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0 =
-            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0, -12);
+            sprite_add_clamp_byte(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0, -12);
         D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0 =
-            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0, -12);
+            sprite_add_clamp_byte(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0, -12);
         D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0 =
-            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0, -12);
+            sprite_add_clamp_byte(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0, -12);
         next = &D_800C3EB0.buffers[0];
         if (D_800C3EB0.current == next) {
             next = &D_800C3EB0.buffers[1];
@@ -395,8 +395,8 @@ void func_801FC8F4(void) {
     rect.w = 0x40;
     rect.h = 0x100;
     LoadImage(&rect, saved.pages[1]);
-    func_800320E8(saved.pages[0]);
-    func_800320E8(saved.pages[1]);
+    heap_free(saved.pages[0]);
+    heap_free(saved.pages[1]);
     DrawSync(0);
     rect.x = 0;
     rect.y = 0;
@@ -405,8 +405,8 @@ void func_801FC8F4(void) {
     ClearImage(&rect, 0, 0, 0);
     DrawSync(0);
     VSync(2);
-    prim = (POLY_F4 *)D_80059580;
-    D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(POLY_F4));
+    prim = (POLY_F4 *)sprite_queue_next_free;
+    sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + sizeof(POLY_F4));
     SetPolyF4(prim);
     prim->r0 = 0;
     prim->g0 = 0;

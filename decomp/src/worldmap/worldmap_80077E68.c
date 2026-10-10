@@ -121,7 +121,7 @@ s32 func_80077E68(s32 index) {
         break;
     case 5:
         if (actor->u.step > 0x83FF) {
-            func_8003A3B8((D_8006259C->id << 16) | 0xA4, 0, 0x100);
+            sound_slide_effect_volume((sound_effect_bank->id << 16) | 0xA4, 0, 0x100);
             func_80097770(0, 0xD);
             D_8009CCA4 = 2;
             D_8009D3CC = 4;
@@ -147,7 +147,7 @@ s32 func_80077E68(s32 index) {
         scratch->eye.vz = VIEW.eye.vz << 12;
         distance = func_80094154(&scratch->at, &scratch->eye) >> 3;
         scratch->distance = distance;
-        func_8003A2E4((D_8006259C->id << 16) | 0xA4, 0x87 - distance);
+        sound_set_effect_volume((sound_effect_bank->id << 16) | 0xA4, 0x87 - distance);
     }
     return 1;
 }
@@ -274,7 +274,7 @@ void func_80078A60(void) {
     MoveImage(&rect, 0x2C0, 0x100);
     DrawSync(0);
     func_80072DB4(0x40, 0, 4, 2);
-    while (func_800286CC() >= 3) {
+    while (cd_get_pending_read_count() >= 3) {
     }
     func_80076954();
     func_8009766C();
@@ -285,7 +285,7 @@ void func_80078A60(void) {
     D_8009D144 = 0;
     D_8009CD40 = func_80086700;
     func_80098044();
-    func_80028A60(0);
+    cd_sync_reads(0);
     func_800721E4();
     D_8009C5AC.vx = 0x2000000;
     D_8009C5AC.vy = -0x300000;
@@ -299,9 +299,9 @@ void func_80078A60(void) {
     func_80075030();
     func_800739B8();
     func_80088F64();
-    func_80028A60(0);
-    func_80038428(D_8006259C);
-    func_80028470(0x24, 0);
+    cd_sync_reads(0);
+    sound_add_effect_bank(sound_effect_bank);
+    cd_select_directory(0x24, 0);
     func_80097BC0(&D_8009C5AC);
     do {
         func_800967E4();
@@ -323,9 +323,9 @@ void func_80078A60(void) {
 
 /* Leave the scene: release its resources and continue in scene 0x110. */
 void func_80078D24(void) {
-    func_80039FF8();
-    func_8003852C(D_8006259C);
-    func_800320E8(D_8006259C);
+    sound_stop_all_effects();
+    sound_remove_effect_bank(sound_effect_bank);
+    heap_free(sound_effect_bank);
     func_80084818();
     func_80086568();
     func_800866C8();
@@ -334,16 +334,16 @@ void func_80078D24(void) {
     func_80088FF4();
     func_80089128();
     func_80097D64();
-    func_800320E8(D_8009BBC8[0].ot);
-    func_800320E8(D_8009BBC8[1].ot);
-    func_800320E8(D_8009BBC8[0].packets);
-    func_800320E8(D_8009BBC8[1].packets);
-    func_800320E8(D_8009C180);
+    heap_free(D_8009BBC8[0].ot);
+    heap_free(D_8009BBC8[1].ot);
+    heap_free(D_8009BBC8[0].packets);
+    heap_free(D_8009BBC8[1].packets);
+    heap_free(D_8009C180);
     func_800976A0();
-    D_8006D634.map = 0x110;
-    D_8006D634.entry[2] = 0;
+    game_data.map = 0x110;
+    game_data.entry[2] = 0;
     D_8009BBC4 = 1;
-    D_8006D634.entry[0] = D_8009BD38.vy;
+    game_data.entry[0] = D_8009BD38.vy;
 }
 
 /* Start a scripted camera looking down from yaw 0x680. */
@@ -381,8 +381,8 @@ s32 func_80078EA4(s32 index) {
             actor->wait = 0x20;
             actor->state++;
             func_80097770(5, 1);
-            func_80039E60((D_8006259C->id << 16) | 0x62);
-            func_80039E60((D_8006259C->id << 16) | 0x63);
+            sound_play_effect((sound_effect_bank->id << 16) | 0x62);
+            sound_play_effect((sound_effect_bank->id << 16) | 0x63);
         }
         break;
     case 1:
@@ -419,9 +419,9 @@ s32 func_80078EA4(s32 index) {
         if (actor->wait <= 0) {
             actor->wait = 0x78;
             actor->state++;
-            func_80039E60((D_8006259C->id << 16) | 0x79);
-            func_8003A3B8((D_8006259C->id << 16) | 0x62, 0, 0x100);
-            func_8003A3B8((D_8006259C->id << 16) | 0x63, 0, 0x100);
+            sound_play_effect((sound_effect_bank->id << 16) | 0x79);
+            sound_slide_effect_volume((sound_effect_bank->id << 16) | 0x62, 0, 0x100);
+            sound_slide_effect_volume((sound_effect_bank->id << 16) | 0x63, 0, 0x100);
         }
         break;
     case 5:
@@ -443,7 +443,7 @@ s32 func_80078EA4(s32 index) {
             actor->wait = 0x50;
             actor->state++;
             func_80097770(0, 0xD);
-            func_8003A3B8((D_8006259C->id << 16) | 0x79, 0, 0x100);
+            sound_slide_effect_volume((sound_effect_bank->id << 16) | 0x79, 0, 0x100);
             D_8009CCA4 = 2;
             D_8009D3CC = 4;
         }
@@ -458,7 +458,7 @@ s32 func_80078EA4(s32 index) {
     case 16:
         trigger = actor->unk4;
         if (trigger == 1) {
-            func_8003A3B8((D_8006259C->id << 16) | 0x36, 0, 8);
+            sound_slide_effect_volume((sound_effect_bank->id << 16) | 0x36, 0, 8);
             func_80097770(0, 0xD);
             D_8009D3CC = 0x20;
             D_8009CCA4 = trigger;
@@ -556,7 +556,7 @@ s32 func_800795E4(s32 index) {
     D_8009C620[0].angle.vx = -0x100;
     D_8009C620[0].angle.vy = 0;
     D_8009C620[0].angle.vz = -0x40;
-    func_80039E60((D_8006259C->id << 16) | 0x36);
+    sound_play_effect((sound_effect_bank->id << 16) | 0x36);
     return 1;
 }
 
@@ -583,7 +583,7 @@ s32 func_80079778(s32 index) {
             actor->motion.vy = -0x4000;
             actor->state++;
             func_80089160(0xC, &scratch->angle[0], NULL);
-            func_80039E60((D_8006259C->id << 16) | 0x71);
+            sound_play_effect((sound_effect_bank->id << 16) | 0x71);
             actor->wait = 0x20;
         }
         break;
@@ -606,7 +606,7 @@ s32 func_80079778(s32 index) {
             actor->motion.vz = -0x8000;
             actor->state++;
             func_80089160(0xC, &scratch->angle[0], NULL);
-            func_80039E60((D_8006259C->id << 16) | 0x71);
+            sound_play_effect((sound_effect_bank->id << 16) | 0x71);
         }
         break;
     case 2:
@@ -811,7 +811,7 @@ void func_8007A5DC(void) {
     MoveImage(&rect, 0x2C0, 0x100);
     DrawSync(0);
     func_80072DB4(0x40, 0, 4, 2);
-    while (func_800286CC() >= 3) {
+    while (cd_get_pending_read_count() >= 3) {
     }
     func_80076954();
     func_8009766C();
@@ -822,7 +822,7 @@ void func_8007A5DC(void) {
     D_8009D144 = 0;
     D_8009CD40 = func_80086700;
     func_80098044();
-    func_80028A60(0);
+    cd_sync_reads(0);
     func_800721E4();
     D_8009C5AC.vx = 0x5BED000;
     D_8009C5AC.vy = -0xA0000;
@@ -836,9 +836,9 @@ void func_8007A5DC(void) {
     func_80075030();
     func_800739B8();
     func_80088F64();
-    func_80028A60(0);
-    func_80038428(D_8006259C);
-    func_80028470(0x24, 0);
+    cd_sync_reads(0);
+    sound_add_effect_bank(sound_effect_bank);
+    cd_select_directory(0x24, 0);
     func_80097BC0(&D_8009C5AC);
     do {
         func_800967E4();
@@ -860,9 +860,9 @@ void func_8007A5DC(void) {
 
 /* Leave the scene: release its resources and continue in scene 0x11A. */
 void func_8007A8AC(void) {
-    func_80039FF8();
-    func_8003852C(D_8006259C);
-    func_800320E8(D_8006259C);
+    sound_stop_all_effects();
+    sound_remove_effect_bank(sound_effect_bank);
+    heap_free(sound_effect_bank);
     func_80084818();
     func_80086568();
     func_800866C8();
@@ -871,16 +871,16 @@ void func_8007A8AC(void) {
     func_80088FF4();
     func_80089128();
     func_80097D64();
-    func_800320E8(D_8009BBC8[0].ot);
-    func_800320E8(D_8009BBC8[1].ot);
-    func_800320E8(D_8009BBC8[0].packets);
-    func_800320E8(D_8009BBC8[1].packets);
-    func_800320E8(D_8009C180);
+    heap_free(D_8009BBC8[0].ot);
+    heap_free(D_8009BBC8[1].ot);
+    heap_free(D_8009BBC8[0].packets);
+    heap_free(D_8009BBC8[1].packets);
+    heap_free(D_8009C180);
     func_800976A0();
-    D_8006D634.map = 0x11A;
-    D_8006D634.entry[2] = 0;
+    game_data.map = 0x11A;
+    game_data.entry[2] = 0;
     D_8009BBC4 = 1;
-    D_8006D634.entry[0] = D_8009BD38.vy;
+    game_data.entry[0] = D_8009BD38.vy;
 }
 
 /* Restart an actor's timed sequence at its first step. */

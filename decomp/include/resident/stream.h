@@ -26,33 +26,33 @@ typedef struct {
     u16 word8;   /* +0x8 */
 } StreamFrame;
 
-extern StreamRing *D_8004FE30; /* the ring */
-extern StreamSlot *D_8004FE2C; /* its slots */
-extern s32 D_8004FE40;         /* its slot count */
-extern u16 D_8004FE24;
-extern u16 D_8004FE26;
-extern u16 D_8004FE28;
-extern u16 D_8005A4B8;
+extern StreamRing *stream_current_ring; /* the ring */
+extern StreamSlot *stream_slots; /* its slots */
+extern s32 stream_slot_count;         /* its slot count */
+extern u16 stream_next_chunk_sequence;
+extern u16 stream_next_store_sequence;
+extern u16 stream_next_complete_sequence;
+extern u16 stream_frame_number;
 
-StreamRing *func_80028A94(StreamRing *ring);
-s32 func_80028AAC(void);
-void func_8002B084(u8 intr, u8 *result);
-void func_8002B2F0(u8 intr, u8 *result);
-void func_8002BA58(void);
-void func_8002B5D0(u8 intr, u8 *result);
-void func_8002BB50(void);
+StreamRing *stream_select_ring(StreamRing *ring);
+s32 stream_reset_ring(void);
+void cd_copy_file_sector(u8 intr, u8 *result);
+void stream_store_sector(u8 intr, u8 *result);
+void stream_mark_sector_complete(void);
+void stream_store_image_sector(u8 intr, u8 *result);
+void stream_load_image_strip(void);
 /* Defined without parameters; 80029EB0 calls it with the (0, 0) of a CD
  * callback. */
-void func_8002B8B0();
+void stream_read_pc_sector();
 /* Defined without parameters; 80029EB0 calls it like a CD callback. */
-void func_8002BF38();
-void func_8002A68C(u8 intr, u8 *result);
-void func_8002AC24(u8 intr, u8 *result);
-void func_8002BA40(void);
+void stream_load_pc_image_strip();
+void cd_advance_command_state(u8 intr, u8 *result);
+void cd_copy_list_sector(u8 intr, u8 *result);
+void cd_update_pending_read_count(void);
 
 /* More of the stream services. */
-s32 func_8002C3D8(void);
-s32 func_80028F30(u8 **data, StreamFrame **frame);
-StreamRing *func_8002A260(s32 count, s32 mode);
+s32 cd_has_pc_file_server(void);
+s32 stream_get_next_movie_frame(u8 **data, StreamFrame **frame);
+StreamRing *stream_create_ring(s32 count, s32 mode);
 
 #endif

@@ -149,7 +149,7 @@ void func_800704E8(void) {
     MovieBuffer *buffer;
     u_long *ot;
 
-    func_80028A94(NULL);
+    stream_select_ring(NULL);
     func_80074B58();
     D_80076EA0 = NULL;
     D_80076EB8 = 1;
@@ -162,7 +162,7 @@ void func_800704E8(void) {
     SetDefDispEnv(&D_80077124[1].disp, 0, 0, 640, 240);
     D_80077124[0].draw.isbg = 1;
     D_80077124[1].draw.isbg = 1;
-    func_80028470(0xC, 3);
+    cd_select_directory(0xC, 3);
     for (;;) {
         if (D_80077120 == &D_80077124[0]) {
             buffer = &D_80077124[1];
@@ -177,79 +177,79 @@ void func_800704E8(void) {
         func_800747AC(0, 0, &button);
         func_80070DCC();
         if (D_80076EBC != 0) {
-            func_8003700C("Random Mode\n");
+            console_printf("Random Mode\n");
         }
         if (D_80076EB8 == 0) {
-            func_8003700C("Stream Pause\n");
+            console_printf("Stream Pause\n");
         }
-        func_8003700C("Read %3d Error %3d VSync %8d EC %2d ST %2d ", D_80076E48, D_80076E4C,
-                      D_80076E5C, D_8005A4DC, D_8004FE1C);
+        console_printf("Read %3d Error %3d VSync %8d EC %2d ST %2d ", D_80076E48, D_80076E4C,
+                      D_80076E5C, cd_error_count, cd_command_state);
         switch (D_80076E64) {
         case 0:
-            func_8003700C("Waiting\n");
+            console_printf("Waiting\n");
             break;
         case 1:
-            func_8003700C("Reading\n");
+            console_printf("Reading\n");
             break;
         case 2:
-            func_8003700C("Verifing\n");
+            console_printf("Verifing\n");
             break;
         }
-        func_8003700C("C1 %3d C2 %3d C3 %3d C4 %3d C5 %3d C6 %3d C7 %3d C8 %3d C9 %3d\n",
-                      D_8005A488, D_8005A48C, D_8005A490, D_8005A494, D_8005A498, D_8005A49C,
-                      D_8005A4A4, D_8005A4A8, D_8005A4B4);
-        func_8003700C("RestFile %7d RestSize %7d N1 %4d N2 %4d N3 %4d R%3d D%3d\n",
-                      func_800286CC(), func_800286BC(), D_8004FDE4, D_8004FDE8, D_8004FDEC,
-                      D_8004FE26, D_8004FE28);
-        func_8003700C("ErrorAddress %8x ErrorSize %8x N%3d N%3d N%3d\n", D_80076E68, D_80076E6C,
+        console_printf("C1 %3d C2 %3d C3 %3d C4 %3d C5 %3d C6 %3d C7 %3d C8 %3d C9 %3d\n",
+                      cd_stat_setloc_count, cd_stat_command_ok_count, cd_stat_command_fail_count, cd_stat_retry_setloc_count, cd_stat_retry_fail_count, cd_stat_lesmem_count,
+                      cd_stat_error_limit_count, cd_stat_stop_ok_count, cd_stat_stop_fail_count);
+        console_printf("RestFile %7d RestSize %7d N1 %4d N2 %4d N3 %4d R%3d D%3d\n",
+                      cd_get_pending_read_count(), cd_get_read_bytes_left(), cd_file_out_of_order_count, cd_list_out_of_order_count, cd_stream_out_of_order_count,
+                      stream_next_store_sequence, stream_next_complete_sequence);
+        console_printf("ErrorAddress %8x ErrorSize %8x N%3d N%3d N%3d\n", D_80076E68, D_80076E6C,
                       D_80076E70, D_80076E74, D_80076E78);
-        func_8003700C("FrdPtr1 %8x FrdPtr2 %8x Buf1 %8x Buf2 %8x\n", D_80076E7C, D_80076E80,
+        console_printf("FrdPtr1 %8x FrdPtr2 %8x Buf1 %8x Buf2 %8x\n", D_80076E7C, D_80076E80,
                       D_80076E88, D_80076E8C);
         if (D_80076E48 >= 11 || D_80076E94 > 0) {
-            func_8003700C("S %8x Adrs %8x Write %8x Rest %8x\n", D_80076E98, D_80076E9C,
+            console_printf("S %8x Adrs %8x Write %8x Rest %8x\n", D_80076E98, D_80076E9C,
                           D_80076E84, D_80076E94);
             for (i = 0; i < 7; i++) {
-                func_8003700C("%08x ", ((s32 *)D_80076E98)[i]);
+                console_printf("%08x ", ((s32 *)D_80076E98)[i]);
             }
-            func_8003700C((char *)D_8006FC6C);
+            console_printf((char *)D_8006FC6C);
             for (i = 0; i < 7; i++) {
-                func_8003700C("%08x ", ((s32 *)D_80076E98)[i + 7]);
+                console_printf("%08x ", ((s32 *)D_80076E98)[i + 7]);
             }
-            func_8003700C((char *)D_8006FC6C);
+            console_printf((char *)D_8006FC6C);
             for (i = 0; i < 7; i++) {
-                func_8003700C("%08x ", ((s32 *)D_80076E98)[i + 14]);
+                console_printf("%08x ", ((s32 *)D_80076E98)[i + 14]);
             }
-            func_8003700C((char *)D_8006FC6C);
+            console_printf((char *)D_8006FC6C);
             for (i = 0; i < 7; i++) {
-                func_8003700C("%08x ", ((s32 *)D_80076E98)[i + 21]);
+                console_printf("%08x ", ((s32 *)D_80076E98)[i + 21]);
             }
-            func_8003700C((char *)D_8006FC6C);
+            console_printf((char *)D_8006FC6C);
             if (D_80076E7C != NULL) {
-                func_8003700C((char *)D_8006FC70, D_80076E7C[0].data, D_80076E7C[1].data,
+                console_printf((char *)D_8006FC70, D_80076E7C[0].data, D_80076E7C[1].data,
                               D_80076E7C[2].data, D_80076E7C[3].data);
             }
         }
         D_80076EA8 = 0;
-        func_8003700C((char *)D_8006FC8C, D_80076EA4);
+        console_printf((char *)D_8006FC8C, D_80076EA4);
         for (i = 0; i < 13; i++) {
-            func_8003700C((char *)D_8006FC98, i, D_80076F3C[i]);
+            console_printf((char *)D_8006FC98, i, D_80076F3C[i]);
             D_80076EA8 += D_80076F3C[i];
             if (D_80076EB0 == i) {
-                func_8003700C((char *)D_8006FCA4);
+                console_printf((char *)D_8006FCA4);
             }
             if (D_80076EAC == i) {
-                func_8003700C((char *)D_8006FCAC);
+                console_printf((char *)D_8006FCAC);
             }
-            func_8003700C((char *)D_8006FC6C);
+            console_printf((char *)D_8006FC6C);
         }
         hours = D_80076EC8 / 3600;
-        func_8003700C((char *)D_8006FCB4, D_80076EA8, hours, D_80076EC8 / 60 - hours * 60,
+        console_printf((char *)D_8006FCB4, D_80076EA8, hours, D_80076EC8 / 60 - hours * 60,
                       D_80076EC8 % 60);
-        func_8003700C((char *)D_8006FCD8);
+        console_printf((char *)D_8006FCD8);
         if (D_80077394 > 0) {
-            func_8003278C(1, 0, 6, 0x808D);
+            heap_print_report(1, 0, 6, 0x808D);
         }
-        func_80037324(D_80077120->ot);
+        console_flush(D_80077120->ot);
         func_80072F98(D_80077120->ot, (POLY_G4 *)D_80077120->box, 8, 12, 624, 216);
         func_800734B8(D_80077120->ot, (POLY_G4 *)D_80077120->frame, 7, 11, 626, 218);
         DrawSync(0);
@@ -260,14 +260,14 @@ void func_800704E8(void) {
         cursor = D_80077118;
         if (!(D_800773B4 & 0x800) && (D_800773AC & 0x800) && D_80076E48 == 0) {
             D_80077394 = 0;
-            func_8002A498(0);
-            func_80028A60(0);
+            cd_stop_read(0);
+            cd_sync_reads(0);
             if (D_80076EA0 != NULL) {
-                func_800320E8(D_80076EA0);
+                heap_free(D_80076EA0);
             }
             D_80076EA0 = NULL;
             if (D_80076E98 != NULL) {
-                func_800320E8(D_80076E98);
+                heap_free(D_80076E98);
             }
             D_80076E98 = NULL;
             func_80074B58();
@@ -310,7 +310,7 @@ void func_80070DCC(void) {
     }
     if (!(D_800773B4 & 0x40) && (D_800773AC & 0x40)) {
         D_80076EA4++;
-        func_8002A498(0);
+        cd_stop_read(0);
     }
     if (!(D_800773B4 & 0x1000) && (D_800773AC & 0x1000)) {
         func_80071C34(7);
@@ -325,7 +325,7 @@ void func_80070DCC(void) {
         func_80071BA0();
     }
     if (D_80076EB8 == 1) {
-        D_80076E9C = (s32 *)func_80028B14();
+        D_80076E9C = (s32 *)stream_get_next_chunk();
         if (D_80076E9C != NULL) {
             i = 0;
             if (D_80076E94 > 0x800) {
@@ -341,15 +341,15 @@ void func_80070DCC(void) {
             if (D_80076E94 <= 0 && D_80076E48 == 12) {
                 i = D_80076E7C[++D_80076EB4].id;
                 if (i != 0) {
-                    D_80076E94 = func_800288EC(i);
+                    D_80076E94 = cd_get_aligned_file_size(i);
                 }
                 D_80076E84 = D_80076E7C[D_80076EB4].data;
             }
-            func_8002945C((u8 *)D_80076E9C);
+            stream_release_chunk((u8 *)D_80076E9C);
         }
     }
-    if (D_80076EB8 == 2 && func_80028F30(&D_80076F7C, &D_80076F80) == 0) {
-        func_800294B4((u8 *)D_80076F80);
+    if (D_80076EB8 == 2 && stream_get_next_movie_frame(&D_80076F7C, &D_80076F80) == 0) {
+        stream_release_movie_frame((u8 *)D_80076F80);
     }
     if (!(D_800773B4 & 0x2000) && (D_800773AC & 0x2000)) {
         func_80071C34(11);
@@ -396,9 +396,9 @@ const char D_8006FCD8[] = "\nPUSH START BUTTON TO MENU.";
         if (D_80076E4C == 0) {             \
             D_80076E68 = (offset);         \
             D_80076E6C = (size);           \
-            D_80076E70 = D_8004FDE4;       \
-            D_80076E74 = D_8004FDE8;       \
-            D_80076E78 = D_8004FDEC;       \
+            D_80076E70 = cd_file_out_of_order_count;       \
+            D_80076E74 = cd_list_out_of_order_count;       \
+            D_80076E78 = cd_stream_out_of_order_count;       \
         }                                  \
         D_80076E4C++;                      \
     }
@@ -418,24 +418,24 @@ void func_800712C4(void) {
     if (D_80076E64 == 0) {
         return;
     }
-    if (func_800286CC() == 0 && D_80076E64 == 1) {
+    if (cd_get_pending_read_count() == 0 && D_80076E64 == 1) {
         D_80076E64 = 2;
         switch (D_80076E48) {
         case 1:
             D_80076E90 = 0x2000;
-            D_80076E8C = buffer = func_80031BDC(0x2000, 0);
+            D_80076E8C = buffer = heap_alloc(0x2000, 0);
             FILL_WORDS(buffer, D_80076E90, i, -1);
-            func_8002954C(0x40, D_80076E8C, D_80076E90, 0, 0);
+            cd_read_raw_sectors(0x40, D_80076E8C, D_80076E90, 0, 0);
             break;
         case 2:
-            D_80076E90 = func_800288EC(7);
-            D_80076E8C = buffer = func_80031BDC(D_80076E90, 0);
+            D_80076E90 = cd_get_aligned_file_size(7);
+            D_80076E8C = buffer = heap_alloc(D_80076E90, 0);
             FILL_WORDS(buffer, D_80076E90, i, -1);
-            func_800295D8(7, D_80076E8C, 0, 0);
+            cd_read_file(7, D_80076E8C, 0, 0);
             break;
         case 3:
         case 12:
-            D_80076E80 = func_8002A57C(2, 0);
+            D_80076E80 = cd_alloc_directory_file_table(2, 0);
             if (D_80076E80 == NULL) {
                 D_80076E64 = 0;
                 D_80076E48 = 0;
@@ -443,25 +443,25 @@ void func_800712C4(void) {
             }
             for (index = 0; (file = D_80076E80[index].id) > 0; index++) {
                 copy = D_80076E80[index].data;
-                D_80076E90 = func_800288EC(file);
+                D_80076E90 = cd_get_aligned_file_size(file);
                 FILL_WORDS(copy, D_80076E90, i, -1);
             }
-            func_80029AFC((FileRequest *)D_80076E80, 0, 0);
+            cd_read_file_list((FileRequest *)D_80076E80, 0, 0);
             break;
         case 4:
             D_80076E90 = 0x2000;
-            D_80076E8C = buffer = func_80031BDC(0x2000, 0);
+            D_80076E8C = buffer = heap_alloc(0x2000, 0);
             FILL_WORDS(buffer, D_80076E90, i, -1);
-            func_8002954C(0x40, D_80076E8C, D_80076E90, 0, 0);
+            cd_read_raw_sectors(0x40, D_80076E8C, D_80076E90, 0, 0);
             break;
         case 5:
-            D_80076E90 = func_800288EC(7);
-            D_80076E8C = buffer = func_80031BDC(D_80076E90, 0);
+            D_80076E90 = cd_get_aligned_file_size(7);
+            D_80076E8C = buffer = heap_alloc(D_80076E90, 0);
             FILL_WORDS(buffer, D_80076E90, i, -1);
-            func_800295D8(7, D_80076E8C, 1, 0);
+            cd_read_file(7, D_80076E8C, 1, 0);
             break;
         case 6:
-            D_80076E80 = func_8002A57C(2, 0);
+            D_80076E80 = cd_alloc_directory_file_table(2, 0);
             if (D_80076E80 == NULL) {
                 D_80076E64 = 0;
                 D_80076E48 = 0;
@@ -469,10 +469,10 @@ void func_800712C4(void) {
             }
             for (index = 0; (file = D_80076E80[index].id) > 0; index++) {
                 copy = D_80076E80[index].data;
-                D_80076E90 = func_800288EC(file);
+                D_80076E90 = cd_get_aligned_file_size(file);
                 FILL_WORDS(copy, D_80076E90, i, -1);
             }
-            func_80029AFC((FileRequest *)D_80076E80, 1, 0);
+            cd_read_file_list((FileRequest *)D_80076E80, 1, 0);
             break;
         case 7:
         case 8:
@@ -480,14 +480,14 @@ void func_800712C4(void) {
             D_80076E48 = 0;
             break;
         case 11:
-            D_80076E90 = func_800288EC(6);
-            D_80076E8C = buffer = func_80031BDC(D_80076E90, 0);
+            D_80076E90 = cd_get_aligned_file_size(6);
+            D_80076E8C = buffer = heap_alloc(D_80076E90, 0);
             FILL_WORDS(buffer, D_80076E90, i, -1);
-            func_800295D8(6, D_80076E8C, 0, 0);
+            cd_read_file(6, D_80076E8C, 0, 0);
             break;
         }
     }
-    if (func_800286CC() == 0 && D_80076E64 == 2) {
+    if (cd_get_pending_read_count() == 0 && D_80076E64 == 2) {
         D_80076E64 = 0;
         switch (D_80076E48) {
         case 1:
@@ -498,21 +498,21 @@ void func_800712C4(void) {
                     break;
                 }
             }
-            func_800320E8(D_80076E88);
-            func_800320E8(D_80076E8C);
+            heap_free(D_80076E88);
+            heap_free(D_80076E8C);
             D_80076E64 = 0;
             break;
         case 2:
         case 5:
-            D_80076E90 = func_800288EC(7);
+            D_80076E90 = cd_get_aligned_file_size(7);
             for (i = 0; i < D_80076E90 / 4; i++) {
                 if (D_80076E88[i] != D_80076E8C[i]) {
-                    VERIFY_ERROR(i * 4, func_800288EC(7));
+                    VERIFY_ERROR(i * 4, cd_get_aligned_file_size(7));
                     break;
                 }
             }
-            func_800320E8(D_80076E88);
-            func_800320E8(D_80076E8C);
+            heap_free(D_80076E88);
+            heap_free(D_80076E8C);
             D_80076E64 = 0;
             break;
         case 3:
@@ -524,19 +524,19 @@ void func_800712C4(void) {
                 do {
                     copy = D_80076E80[index].data;
                     dest = D_80076E7C[index].data;
-                    D_80076E90 = func_800288EC(file);
+                    D_80076E90 = cd_get_aligned_file_size(file);
                     for (i = 0; i < D_80076E90 / 4; i++) {
                         if (dest[i] != copy[i]) {
-                            VERIFY_ERROR(i * 4, func_800288EC(file));
+                            VERIFY_ERROR(i * 4, cd_get_aligned_file_size(file));
                             break;
                         }
                     }
                 } while ((file = D_80076E7C[++index].id) > 0);
             }
-            func_8002A524(D_80076E7C);
-            func_8002A524(D_80076E80);
-            func_800320E8(D_80076E7C);
-            func_800320E8(D_80076E80);
+            cd_free_file_table(D_80076E7C);
+            cd_free_file_table(D_80076E80);
+            heap_free(D_80076E7C);
+            heap_free(D_80076E80);
             D_80076E64 = 0;
             break;
         case 7:
@@ -549,15 +549,15 @@ void func_800712C4(void) {
             if (D_80076E94 > 0) {
                 D_80076E64 = 2;
             } else {
-                D_80076E90 = func_800288EC(6);
+                D_80076E90 = cd_get_aligned_file_size(6);
                 for (i = 0; i < D_80076E90 / 4; i++) {
                     if (D_80076E88[i] != D_80076E8C[i]) {
-                        VERIFY_ERROR(i * 4, func_800288EC(6));
+                        VERIFY_ERROR(i * 4, cd_get_aligned_file_size(6));
                         break;
                     }
                 }
-                func_800320E8(D_80076E88);
-                func_800320E8(D_80076E8C);
+                heap_free(D_80076E88);
+                heap_free(D_80076E8C);
             }
             D_80076E64 = 0;
             break;
@@ -572,10 +572,10 @@ void func_80071BA0(void) {
     s32 tally;
 
     if (D_80076EA0 == NULL) {
-        D_80076EA0 = func_80031BDC(0x2000, 0);
+        D_80076EA0 = heap_alloc(0x2000, 0);
     }
     if (D_80076EA0 != NULL) {
-        func_8002954C(0x40, D_80076EA0, 0x2000, 0, 0);
+        cd_read_raw_sectors(0x40, D_80076EA0, 0x2000, 0, 0);
     }
     D_80076F3C[0]++;
     if (D_80076E4C == 0) {
@@ -610,27 +610,27 @@ void func_80071C34(s32 command) {
     if (D_80076E48 != 0 || D_80076E64 != 0) {
         return;
     }
-    func_80028470(0xC, 3);
+    cd_select_directory(0xC, 3);
     D_80076E64 = 1;
     D_80076E48 = command;
     switch (command) {
     case 1:
         D_80076E90 = 0x2000;
         D_80076F3C[1]++;
-        D_80076E88 = func_80031BDC(0x2000, 0);
+        D_80076E88 = heap_alloc(0x2000, 0);
         ZERO_WORDS(D_80076E88, D_80076E90, i);
-        func_8002954C(0x40, D_80076E88, D_80076E90, 0, 0);
+        cd_read_raw_sectors(0x40, D_80076E88, D_80076E90, 0, 0);
         break;
     case 2:
         D_80076F3C[2]++;
-        D_80076E90 = func_800288EC(7);
-        D_80076E88 = func_80031BDC(D_80076E90, 0);
+        D_80076E90 = cd_get_aligned_file_size(7);
+        D_80076E88 = heap_alloc(D_80076E90, 0);
         ZERO_WORDS(D_80076E88, D_80076E90, i);
-        func_800295D8(7, D_80076E88, 0, 0);
+        cd_read_file(7, D_80076E88, 0, 0);
         break;
     case 3:
         D_80076F3C[3]++;
-        D_80076E7C = func_8002A57C(2, 0);
+        D_80076E7C = cd_alloc_directory_file_table(2, 0);
         if (D_80076E7C == NULL) {
             D_80076E64 = 0;
             D_80076E48 = 0;
@@ -638,28 +638,28 @@ void func_80071C34(s32 command) {
         }
         for (index = 0; (file = D_80076E7C[index].id) > 0; index++) {
             dest = D_80076E7C[index].data;
-            D_80076E90 = func_800288EC(file);
+            D_80076E90 = cd_get_aligned_file_size(file);
             ZERO_WORDS(dest, D_80076E90, i);
         }
-        func_80029AFC((FileRequest *)D_80076E7C, 0, 0);
+        cd_read_file_list((FileRequest *)D_80076E7C, 0, 0);
         break;
     case 4:
         D_80076E90 = 0x2000;
         D_80076F3C[4]++;
-        D_80076E88 = func_80031BDC(0x2000, 0);
+        D_80076E88 = heap_alloc(0x2000, 0);
         ZERO_WORDS(D_80076E88, D_80076E90, i);
-        func_8002954C(0x40, D_80076E88, D_80076E90, 0, 0);
+        cd_read_raw_sectors(0x40, D_80076E88, D_80076E90, 0, 0);
         break;
     case 5:
         D_80076F3C[5]++;
-        D_80076E90 = func_800288EC(7);
-        D_80076E88 = func_80031BDC(D_80076E90, 0);
+        D_80076E90 = cd_get_aligned_file_size(7);
+        D_80076E88 = heap_alloc(D_80076E90, 0);
         ZERO_WORDS(D_80076E88, D_80076E90, i);
-        func_800295D8(7, D_80076E88, 1, 0);
+        cd_read_file(7, D_80076E88, 1, 0);
         break;
     case 6:
         D_80076F3C[6]++;
-        D_80076E7C = func_8002A57C(2, 0);
+        D_80076E7C = cd_alloc_directory_file_table(2, 0);
         if (D_80076E7C == NULL) {
             D_80076E64 = 0;
             D_80076E48 = 0;
@@ -667,24 +667,24 @@ void func_80071C34(s32 command) {
         }
         for (index = 0; (file = D_80076E7C[index].id) > 0; index++) {
             dest = D_80076E7C[index].data;
-            D_80076E90 = func_800288EC(file);
+            D_80076E90 = cd_get_aligned_file_size(file);
             ZERO_WORDS(dest, D_80076E90, i);
         }
-        func_80029AFC((FileRequest *)D_80076E7C, 1, 0);
+        cd_read_file_list((FileRequest *)D_80076E7C, 1, 0);
         break;
     case 7:
         D_80076F3C[7]++;
         if (D_80076E98 == NULL) {
-            D_80076E98 = func_8002A260(4, 0);
+            D_80076E98 = stream_create_ring(4, 0);
         }
-        func_80029EB0(1, D_80076E98, 0, 0, 1, 0, 0, 0, 0, 0);
+        stream_start_image_load(1, D_80076E98, 0, 0, 1, 0, 0, 0, 0, 0);
         break;
     case 8:
         D_80076F3C[8]++;
         if (D_80076E98 == NULL) {
-            D_80076E98 = func_8002A260(4, 0);
+            D_80076E98 = stream_create_ring(4, 0);
         }
-        func_80029EB0(1, D_80076E98, 1, 0, 1, 0, 0, 0, 0, 0);
+        stream_start_image_load(1, D_80076E98, 1, 0, 1, 0, 0, 0, 0, 0);
         break;
     case 11:
         if (D_80076EB8 == 2) {
@@ -692,12 +692,12 @@ void func_80071C34(s32 command) {
         }
         D_80076F3C[11]++;
         if (D_80076E98 == NULL) {
-            D_80076E98 = func_8002A260(4, 0);
+            D_80076E98 = stream_create_ring(4, 0);
         }
-        D_80076E94 = D_80076E90 = func_800288EC(6);
-        D_80076E84 = D_80076E88 = func_80031BDC(D_80076E90, 0);
+        D_80076E94 = D_80076E90 = cd_get_aligned_file_size(6);
+        D_80076E84 = D_80076E88 = heap_alloc(D_80076E90, 0);
         ZERO_WORDS(D_80076E88, D_80076E90, i);
-        func_800295D8(6, D_80076E98, 1, 0x100);
+        cd_read_file(6, D_80076E98, 1, 0x100);
         break;
     case 12:
         if (D_80076EB8 == 2) {
@@ -705,35 +705,35 @@ void func_80071C34(s32 command) {
         }
         D_80076F3C[12]++;
         if (D_80076E98 == NULL) {
-            D_80076E98 = func_8002A260(4, 0);
+            D_80076E98 = stream_create_ring(4, 0);
         }
-        D_80076E7C = func_8002A57C(2, 0);
+        D_80076E7C = cd_alloc_directory_file_table(2, 0);
         if (D_80076E7C == NULL) {
             D_80076E64 = 0;
             D_80076E48 = 0;
             break;
         }
         file = D_80076E7C[0].id;
-        D_80076E94 = func_800288EC(file);
+        D_80076E94 = cd_get_aligned_file_size(file);
         D_80076EB4 = 0;
         D_80076E84 = D_80076E7C[0].data;
         for (index = 0; file > 0; file = D_80076E7C[++index].id) {
             dest = D_80076E7C[index].data;
-            D_80076E90 = func_800288EC(file);
+            D_80076E90 = cd_get_aligned_file_size(file);
             ZERO_WORDS(dest, D_80076E90, i);
         }
-        func_80028A94(D_80076E98);
-        func_80029AFC((FileRequest *)D_80076E7C, 1, 0x100);
+        stream_select_ring(D_80076E98);
+        cd_read_file_list((FileRequest *)D_80076E7C, 1, 0x100);
         break;
     case 13:
         D_80076EB8 = 2;
         D_80076F3C[13]++;
         if (D_80076E98 != NULL) {
-            func_800320E8(D_80076E98);
+            heap_free(D_80076E98);
         }
-        D_80076E98 = func_8002A260(0x40, 0);
-        func_80028470(0x18, 0);
-        func_800295D8(3, D_80076E98, 0, 0x200);
+        D_80076E98 = stream_create_ring(0x40, 0);
+        cd_select_directory(0x18, 0);
+        cd_read_file(3, D_80076E98, 0, 0x200);
         break;
     }
     if (D_80076E4C == 0) {
@@ -779,68 +779,68 @@ void func_80072480(void) {
         D_80077120 = buffer;
         D_8007744C = 1 - D_8007744C;
         ClearOTagR(ot, 32);
-        func_8003700C("\n[ DISC CHANGE TEST NOW DISC %2d ]\n\n", func_80028530());
+        console_printf("\n[ DISC CHANGE TEST NOW DISC %2d ]\n\n", cd_get_disc_number());
         func_800747AC(0, 0, &button);
-        func_8003700C("  STATUS ");
+        console_printf("  STATUS ");
         if (error == 1) {
-            func_8003700C("[ IT IS NOT PLAY STATION DISC ]\n");
+            console_printf("[ IT IS NOT PLAY STATION DISC ]\n");
         } else if (error == 2) {
-            func_8003700C("[ NOT XENOGEARS DISC ]\n");
+            console_printf("[ NOT XENOGEARS DISC ]\n");
         } else if (error == 3) {
-            func_8003700C("[ NO CHANGE DISC ]\n");
+            console_printf("[ NO CHANGE DISC ]\n");
         } else if (error == 4) {
-            func_8003700C("[ RETRY SET DISC ]\n");
+            console_printf("[ RETRY SET DISC ]\n");
         } else {
-            func_8003700C("[ NOP ]\n");
+            console_printf("[ NOP ]\n");
         }
-        func_8003700C((char *)D_8006FC6C);
+        console_printf((char *)D_8006FC6C);
         for (step = 0; step < 9; step++) {
             if (step < state) {
                 switch (step) {
                 case 0:
-                    func_8003700C("  1 : NORMAL SPEED\n");
+                    console_printf("  1 : NORMAL SPEED\n");
                     break;
                 case 1:
-                    func_8003700C("  2 : CD STOPED\n");
+                    console_printf("  2 : CD STOPED\n");
                     break;
                 case 2:
-                    func_8003700C("  3 : CD OPENED\n");
+                    console_printf("  3 : CD OPENED\n");
                     break;
                 case 3:
-                    func_8003700C("  4 : CD CLOSED\n");
+                    console_printf("  4 : CD CLOSED\n");
                     break;
                 case 4:
-                    func_8003700C("  5 : SPINDLE OK\n");
+                    console_printf("  5 : SPINDLE OK\n");
                     break;
                 case 5:
-                    func_8003700C("  6 : TOC OK\n");
+                    console_printf("  6 : TOC OK\n");
                     break;
                 case 6:
-                    func_8003700C("  7 : SET LOCATION OK\n");
+                    console_printf("  7 : SET LOCATION OK\n");
                     break;
                 case 7:
-                    func_8003700C("  8 : PLAY STATION DISC OK\n");
+                    console_printf("  8 : PLAY STATION DISC OK\n");
                     break;
                 case 8:
-                    func_8003700C("  9 : XENOGEARS %2d DISC OK\n", func_80028530());
+                    console_printf("  9 : XENOGEARS %2d DISC OK\n", cd_get_disc_number());
                     break;
                 }
             } else {
-                func_8003700C(" %2d :\n", step + 1);
+                console_printf(" %2d :\n", step + 1);
             }
         }
         if (done) {
-            func_8003700C("\n MODE %1d : NO ERROR  COUNT %6d\n", state, frames);
+            console_printf("\n MODE %1d : NO ERROR  COUNT %6d\n", state, frames);
         } else {
-            func_8003700C("\n MODE %1d : %2d ERROR COUNT %6d\n", state, done, frames);
+            console_printf("\n MODE %1d : %2d ERROR COUNT %6d\n", state, done, frames);
         }
-        func_8003700C(" RESULT %02x %02x %02x %02x %02x %02x %02x %02x\n", D_80076F84[0],
+        console_printf(" RESULT %02x %02x %02x %02x %02x %02x %02x %02x\n", D_80076F84[0],
                       D_80076F84[1], D_80076F84[2], D_80076F84[3], D_80076F84[4], D_80076F84[5],
                       D_80076F84[6], D_80076F84[7]);
-        func_8003700C("\n\n PUSH START TO TEST.\n");
-        func_8003700C(" PUSH CIRCLE BUTTON TO MENU.\n");
+        console_printf("\n\n PUSH START TO TEST.\n");
+        console_printf(" PUSH CIRCLE BUTTON TO MENU.\n");
         if (state > 0) {
-            state = func_80072A08(3 - func_80028530(), state, &error, &done);
+            state = func_80072A08(3 - cd_get_disc_number(), state, &error, &done);
         }
         if ((D_800773AC & 0x40) && !(D_800773B4 & 0x40) && state > 0 && state < 8) {
             state++;
@@ -854,7 +854,7 @@ void func_80072480(void) {
         if (D_80077394 > 0) {
             D_80077394 = 0;
         }
-        func_80037324(D_80077120->ot);
+        console_flush(D_80077120->ot);
         func_80072F98(D_80077120->ot, (POLY_G4 *)D_80077120->box, 8, 20, 304, 192);
         func_800734B8(D_80077120->ot, (POLY_G4 *)D_80077120->frame, 7, 19, 306, 194);
         DrawSync(0);
@@ -871,11 +871,11 @@ void func_80072480(void) {
 
 /* Stop the resident disc read and wait until the drive reports its status. */
 void func_8007293C(void) {
-    if (func_8002C3D8() == 0) {
-        func_8002A498(0);
-        func_80028A60(0);
-        func_8002A428(0);
-        func_80028A60(0);
+    if (cd_has_pc_file_server() == 0) {
+        cd_stop_read(0);
+        cd_sync_reads(0);
+        cd_set_mode(0);
+        cd_sync_reads(0);
         VSync(3);
         while (CdControlB(8, NULL, D_80076F84) == 0) {
         }
@@ -905,15 +905,15 @@ s32 func_80072A08(s32 disc, s32 state, s32 *error, s32 *done) {
     CdIntToPos(0, &loc);
     result = 1;
     if (*error == 0) {
-        if (func_8002C3D8() != 0 && state < 9) {
+        if (cd_has_pc_file_server() != 0 && state < 9) {
             if (disc == 1) {
-                func_800729A8("c:\\work\\cdrom.mdg", D_8004FDF0, 0x8000);
-                func_800729A8("c:\\work\\cdrom.fid", D_8004FDF4, 0x7A);
-                func_800729A8("c:\\work\\cdrom.fnd", D_8004FE48, 0x40000);
+                func_800729A8("c:\\work\\cdrom.mdg", cd_file_index, 0x8000);
+                func_800729A8("c:\\work\\cdrom.fid", cd_directory_table, 0x7A);
+                func_800729A8("c:\\work\\cdrom.fnd", cd_pc_file_names, 0x40000);
             } else {
-                func_800729A8("c:\\work\\cdrom2.mdg", D_8004FDF0, 0x8000);
-                func_800729A8("c:\\work\\cdrom2.fid", D_8004FDF4, 0x7A);
-                func_800729A8("c:\\work\\cdrom2.fnd", D_8004FE48, 0x40000);
+                func_800729A8("c:\\work\\cdrom2.mdg", cd_file_index, 0x8000);
+                func_800729A8("c:\\work\\cdrom2.fid", cd_directory_table, 0x7A);
+                func_800729A8("c:\\work\\cdrom2.fnd", cd_pc_file_names, 0x40000);
             }
             state = 9;
         } else {
@@ -968,18 +968,18 @@ s32 func_80072A08(s32 disc, s32 state, s32 *error, s32 *done) {
                 }
                 break;
             case 8:
-                func_8002A428(0xA0);
-                func_80028A60(0);
+                cd_set_mode(0xA0);
+                cd_sync_reads(0);
                 VSync(3);
-                func_8002954C(0x17, label, 0x10, 0, 0);
-                func_80028A60(0);
+                cd_read_raw_sectors(0x17, label, 0x10, 0, 0);
+                cd_sync_reads(0);
                 if (label[1] == 0x4E45585F) { /* "_XEN" */
                     if (((u8 *)label)[3] == disc + '0') {
-                        func_8002954C(0x18, D_8004FDF0, 0x8000, 0, 0);
+                        cd_read_raw_sectors(0x18, cd_file_index, 0x8000, 0, 0);
                         state++;
-                        func_80028A60(0);
-                        func_8002954C(0x28, D_8004FDF4, 0x7A, 0, 0);
-                        func_80028A60(0);
+                        cd_sync_reads(0);
+                        cd_read_raw_sectors(0x28, cd_directory_table, 0x7A, 0, 0);
+                        cd_sync_reads(0);
                         *error = 0;
                     } else {
                         *error = 3;
@@ -1231,19 +1231,19 @@ void func_800737EC(void) {
     MovieBuffer *buffer;
     u_long *ot;
 
-    func_80032498(4, 0);
-    func_80028470(0x18, 0);
-    func_80038D18(0, 0);
+    heap_select_owner_tag(4, 0);
+    cd_select_directory(0x18, 0);
+    sound_set_cd_volume(0, 0);
     DrawSync(0);
     VSync(0);
     SetDispMask(0);
-    top = func_80031BDC(4, 1);
-    library = func_80031BDC(((u32)top & 0xFFFFFF) - 0x1D3008, 1);
-    func_800320E8(top);
-    func_800295D8(1, library, 0, 0);
-    func_80028A60(0);
+    top = heap_alloc(4, 1);
+    library = heap_alloc(((u32)top & 0xFFFFFF) - 0x1D3008, 1);
+    heap_free(top);
+    cd_read_file(1, library, 0, 0);
+    cd_sync_reads(0);
     movie_open(320, 256, 128, 16, 32, 0x800, 3);
-    D_80077450 = func_8002C3D8();
+    D_80077450 = cd_has_pc_file_server();
     D_80077394 = 0;
     D_800773B0 = 0;
     D_80077454 = 1;
@@ -1287,7 +1287,7 @@ void func_800737EC(void) {
     PutDispEnv(&D_80077120->disp);
     if (D_80077450 != 0) {
         VSync(2);
-        D_800773AC = func_8003569C(0);
+        D_800773AC = pad_read_buttons(0);
     } else {
         D_800773AC = 0;
     }
@@ -1298,19 +1298,19 @@ void func_800737EC(void) {
         D_80077448 = D_8004FE44_request[0] & 0x7F;
         D_8007711C = D_8004FE44_request[1];
         if (D_8004FE44_request[0] & 0x80) {
-            D_8007739C = D_80062514;
+            D_8007739C = cd_movie_request_last_frame;
         } else {
             D_8007739C = 0xE9;
         }
         func_800763BC(D_8004FE44_request[3]);
         movie_close();
-        func_800320E8(library);
-        func_8001996C(D_8004FE44_request[2]);
-        func_80019ACC(0);
+        heap_free(library);
+        mode_select_next_mode(D_8004FE44_request[2]);
+        mode_dispatch(0);
     }
     func_80072D84((POLY_G4 *)D_80077124[0].box, (POLY_G4 *)D_80077124[1].box, 0, 0, 0, 0);
     func_80073328((POLY_G4 *)D_80077124[0].frame, (POLY_G4 *)D_80077124[1].frame, 0, 0, 0, 0);
-    func_800374E8(16, 16, 640, 240, 0x400, 0, 640, 0, 640, 256, 0);
+    console_open(16, 16, 640, 240, 0x400, 0, 640, 0, 640, 256, 0);
     D_80077440 = 1;
     SetDispMask(1);
     for (;;) {
@@ -1324,17 +1324,17 @@ void func_800737EC(void) {
         D_8007744C = 1 - D_8007744C;
         ClearOTagR(ot, 32);
         if (D_80077450 == 0) {
-            func_8003700C("  [ MOVIE CD-ROM MODE1 DISK %1d ]  \n\n", func_80028530());
+            console_printf("  [ MOVIE CD-ROM MODE1 DISK %1d ]  \n\n", cd_get_disc_number());
         } else if (D_80077450 == -1) {
-            func_8003700C("  [ MOVIE CD-ROM MODE2 DISK %1d ]  \n\n", func_80028530());
+            console_printf("  [ MOVIE CD-ROM MODE2 DISK %1d ]  \n\n", cd_get_disc_number());
         } else {
-            func_8003700C("  [ MOVIE PC HDD MODE  DISK %1d ]  \n\n", func_80028530());
+            console_printf("  [ MOVIE PC HDD MODE  DISK %1d ]  \n\n", cd_get_disc_number());
         }
-        func_8003700C("    ERROR %2d Sect %2d:%2d FM%3d\n", D_8005A4DC, D_8005A4A8, D_8005A4B4,
-                      (s16)D_8005A4B8);
+        console_printf("    ERROR %2d Sect %2d:%2d FM%3d\n", cd_error_count, cd_stat_stop_ok_count, cd_stat_stop_fail_count,
+                      (s16)stream_frame_number);
         step = 1;
-        func_8003700C("    LesMem%2d NoMem%2d Skp%3d\n", D_8005A49C, D_8005A4A4,
-                      movie_skipped_frames, D_80062514);
+        console_printf("    LesMem%2d NoMem%2d Skp%3d\n", cd_stat_lesmem_count, cd_stat_error_limit_count,
+                      movie_skipped_frames, cd_movie_request_last_frame);
         dir = func_800747AC(0, 13, &button);
         if (D_800773AC & 0x10) {
             step = 32;
@@ -1439,91 +1439,91 @@ void func_800737EC(void) {
             D_80077438 = 1 - D_80077438;
         }
         for (line = 0; line < 14; line++) {
-            func_8003700C(D_80077118 == line ? "  >" : "   ");
+            console_printf(D_80077118 == line ? "  >" : "   ");
             switch (line) {
             case 0:
-                func_8003700C(" MOVIE TYPE   ");
+                console_printf(" MOVIE TYPE   ");
                 if (D_80077448 == 0) {
-                    func_8003700C("PICTURE ONLY\n");
+                    console_printf("PICTURE ONLY\n");
                 } else if (D_80077448 == 1) {
-                    func_8003700C("PICTURE+ADPCM\n");
+                    console_printf("PICTURE+ADPCM\n");
                 } else if (D_80077448 == 2) {
-                    func_8003700C("ADPCM ONLY\n");
+                    console_printf("ADPCM ONLY\n");
                 }
                 break;
             case 1:
-                func_8003700C(" MOVIE NUMBER %4d\n\n", D_8007711C);
+                console_printf(" MOVIE NUMBER %4d\n\n", D_8007711C);
                 break;
             case 2:
-                func_8003700C(" START FRAME  %4d ", D_800773A4);
+                console_printf(" START FRAME  %4d ", D_800773A4);
                 if (D_80077444 == 1) {
-                    func_8003700C("SET");
+                    console_printf("SET");
                 }
                 if (D_80077444 == 2) {
                     if (D_800773A8 < 0) {
-                        func_8003700C("EOF");
+                        console_printf("EOF");
                     } else {
-                        func_8003700C("+%4dSECT", D_800773A8);
+                        console_printf("+%4dSECT", D_800773A8);
                     }
                 }
-                func_8003700C("\n");
+                console_printf("\n");
                 break;
             case 3:
-                func_8003700C(" END   FRAME  %4d ", D_8007739C);
+                console_printf(" END   FRAME  %4d ", D_8007739C);
                 if (D_8007743C == 0) {
-                    func_8003700C("SET");
+                    console_printf("SET");
                 }
                 if (D_8007743C == 2) {
-                    func_8003700C("???");
+                    console_printf("???");
                 }
-                func_8003700C("\n");
+                console_printf("\n");
                 break;
             case 4:
-                func_8003700C(" MOVIE CHANNEL %3d\n", D_80077398);
+                console_printf(" MOVIE CHANNEL %3d\n", D_80077398);
                 break;
             case 5:
-                func_8003700C(" SCREEN MODE  ");
-                func_8003700C(D_80077454 ? "24 BIT COLOR" : "16 BIT COLOR");
-                func_8003700C("\n");
+                console_printf(" SCREEN MODE  ");
+                console_printf(D_80077454 ? "24 BIT COLOR" : "16 BIT COLOR");
+                console_printf("\n");
                 break;
             case 6:
-                func_8003700C(" SCREEN DRAW  ");
+                console_printf(" SCREEN DRAW  ");
                 if (D_800773A0 < 0) {
-                    func_8003700C("ALL");
+                    console_printf("ALL");
                 } else {
-                    func_8003700C("%3d", D_800773A0);
+                    console_printf("%3d", D_800773A0);
                 }
-                func_8003700C("\n");
+                console_printf("\n");
                 break;
             case 7:
-                func_8003700C(" REWIND       ");
-                func_8003700C(D_80077438 ? "ON" : "OFF");
-                func_8003700C("\n\n");
+                console_printf(" REWIND       ");
+                console_printf(D_80077438 ? "ON" : "OFF");
+                console_printf("\n\n");
                 break;
             case 8:
-                func_8003700C(" MOVIE START.\n\n");
+                console_printf(" MOVIE START.\n\n");
                 break;
             case 9:
-                func_8003700C(" CD-ROM MONITOR.\n\n");
+                console_printf(" CD-ROM MONITOR.\n\n");
                 break;
             case 10:
-                func_8003700C(" CD-ROM CHECK.\n");
+                console_printf(" CD-ROM CHECK.\n");
                 break;
             case 11:
-                func_8003700C(" FAT CHECK.\n\n");
+                console_printf(" FAT CHECK.\n\n");
                 break;
             case 12:
-                func_8003700C(" [DISC CHANGE.]\n");
+                console_printf(" [DISC CHANGE.]\n");
                 break;
             case 13:
-                func_8003700C(" [RETURN TO KERNEL.]\n");
+                console_printf(" [RETURN TO KERNEL.]\n");
                 break;
             }
         }
         if (D_80077394 > 0) {
-            func_8003278C(1, 0, 6, 0x808D);
+            heap_print_report(1, 0, 6, 0x808D);
         }
-        func_80037324(D_80077120->ot);
+        console_flush(D_80077120->ot);
         func_80072F98(D_80077120->ot, (POLY_G4 *)D_80077120->box, 20, 12, 284, 198);
         func_800734B8(D_80077120->ot, (POLY_G4 *)D_80077120->frame, 19, 11, 286, 200);
         DrawSync(0);
@@ -1535,10 +1535,10 @@ void func_800737EC(void) {
         if ((cursor == 0 || cursor == 1 || cursor == 4 || cursor == 5 || cursor == 7 ||
              cursor == 8) &&
             button == 2) {
-            D_8005A49C = 0;
-            D_8005A4A4 = 0;
-            D_8005A4A8 = 0;
-            D_8005A4B4 = 0;
+            cd_stat_lesmem_count = 0;
+            cd_stat_error_limit_count = 0;
+            cd_stat_stop_ok_count = 0;
+            cd_stat_stop_fail_count = 0;
             func_8007625C();
             D_800773AC = -1;
         }
@@ -1555,11 +1555,11 @@ void func_800737EC(void) {
             func_80072480();
         }
         if (D_80077118 == 13 && button == 2) {
-            func_800320E8(library);
-            func_80019ACC(0);
+            heap_free(library);
+            mode_dispatch(0);
         }
         D_80077118 = cursor;
-        func_80019CA0();
+        boot_check_soft_reset();
     }
 }
 
@@ -1569,7 +1569,7 @@ void func_800737EC(void) {
  * the statistics. Returns 1 for Right, -1 for Left, else 0. */
 s32 func_800747AC(s32 first, s32 last, s32 *button) {
     D_800773B4 = D_800773AC;
-    D_800773AC = func_8003569C(0);
+    D_800773AC = pad_read_buttons(0);
     if (D_800773B4 == D_800773AC && D_800773B4 != 0) {
         D_80076EEC++;
         if (D_80076EF0 < D_80076EEC) {
@@ -1665,22 +1665,22 @@ s32 func_80074BA4(s32 frame) {
 
     lower = 0;
     if (D_80077448 == 0) {
-        func_80028470(0x18, 0);
-        if (D_8007711C >= func_80028928(2)) {
+        cd_select_directory(0x18, 0);
+        if (D_8007711C >= cd_get_directory_file_count(2)) {
             return;
         }
         file = D_8007711C + 3;
-        name = func_80028998(file);
+        name = cd_get_pc_file_name(file);
         sector_size = 0x800;
         read_size = 0x20;
         header = 0;
     } else if (D_80077448 == 1) {
-        func_80028470(0x18, 1);
-        if (D_8007711C >= func_80028928(1)) {
+        cd_select_directory(0x18, 1);
+        if (D_8007711C >= cd_get_directory_file_count(1)) {
             return;
         }
         file = D_8007711C + 2;
-        name = func_80028998(file);
+        name = cd_get_pc_file_name(file);
         sector_size = 0x920;
         read_size = 0x28;
         header = 8;
@@ -1690,7 +1690,7 @@ s32 func_80074BA4(s32 frame) {
     if (frame < 2) {
         return 0;
     }
-    if (func_8002C3D8() != 0) {
+    if (cd_has_pc_file_server() != 0) {
         fd = PCopen(name, 0, 0);
         PClseek(fd, 0, 2);
         PClseek(fd, 0, 0);
@@ -1749,14 +1749,14 @@ s32 func_80074BA4(s32 frame) {
         PCclose(fd);
         return pos;
     }
-    func_8002954C(func_800289D0(file), buffer, 0x800, 0, 0);
-    func_80028A60(0);
+    cd_read_raw_sectors(cd_get_file_sector(file), buffer, 0x800, 0, 0);
+    cd_sync_reads(0);
     h = (MovieSector *)buffer;
     per_frame = h->sectors;
-    total = (func_800288EC(file) + sector_size - 1) / sector_size;
+    total = (cd_get_aligned_file_size(file) + sector_size - 1) / sector_size;
     pos = (frame - 1) * per_frame - (frame - 1) / 4;
-    func_8002954C(func_800289D0(file) + pos, buffer, 0x800, 0, 0);
-    func_80028A60(0);
+    cd_read_raw_sectors(cd_get_file_sector(file) + pos, buffer, 0x800, 0, 0);
+    cd_sync_reads(0);
     if (h->frame == frame && pos < total) {
         if (h->sector == 0) {
             goto end;
@@ -1769,8 +1769,8 @@ s32 func_80074BA4(s32 frame) {
         }
         pos = (frame - 1) * per_frame - (frame - 1) / 4;
         pos += pos / 7;
-        func_8002954C(func_800289D0(file) + pos, buffer, 0x800, 0, 0);
-        func_80028A60(0);
+        cd_read_raw_sectors(cd_get_file_sector(file) + pos, buffer, 0x800, 0, 0);
+        cd_sync_reads(0);
         if (h->frame == frame && pos < total) {
             if (h->sector == 0) {
                 goto end;
@@ -1789,8 +1789,8 @@ s32 func_80074BA4(s32 frame) {
     }
     do {
         pos = next;
-        func_8002954C(func_800289D0(file) + pos, buffer, 0x800, 0, 0);
-        func_80028A60(0);
+        cd_read_raw_sectors(cd_get_file_sector(file) + pos, buffer, 0x800, 0, 0);
+        cd_sync_reads(0);
         h = (MovieSector *)buffer;
         if (h->magic == 0x160) {
             next = pos + (h->sectors - h->sector);
@@ -1822,29 +1822,29 @@ s32 func_8007519C(void) {
 
     frames = -1;
     if (D_80077448 == 0) {
-        func_80028470(0x18, 0);
-        if (D_8007711C >= func_80028928(2)) {
+        cd_select_directory(0x18, 0);
+        if (D_8007711C >= cd_get_directory_file_count(2)) {
             return;
         }
         file = D_8007711C + 3;
-        name = func_80028998(file);
+        name = cd_get_pc_file_name(file);
         sector_size = 0x800;
         read_size = 0x20;
         header = 0;
     } else if (D_80077448 == 1) {
-        func_80028470(0x18, 1);
-        if (D_8007711C >= func_80028928(1)) {
+        cd_select_directory(0x18, 1);
+        if (D_8007711C >= cd_get_directory_file_count(1)) {
             return;
         }
         file = D_8007711C + 2;
-        name = func_80028998(file);
+        name = cd_get_pc_file_name(file);
         sector_size = 0x920;
         read_size = 0x28;
         header = 8;
     } else if (D_80077448 == 2) {
         return -1;
     }
-    if (func_8002C3D8() != 0) {
+    if (cd_has_pc_file_server() != 0) {
         fd = PCopen(name, 0, 0);
         size = PClseek(fd, 0, 2);
         PClseek(fd, 0, 0);
@@ -1855,9 +1855,9 @@ s32 func_8007519C(void) {
         }
         PCclose(fd);
     } else {
-        size = (func_800288EC(file) + sector_size - 1) / sector_size;
-        func_8002954C(func_800289D0(file) + size - 1, buffer, 0x800, 0, 0);
-        func_80028A60(0);
+        size = (cd_get_aligned_file_size(file) + sector_size - 1) / sector_size;
+        cd_read_raw_sectors(cd_get_file_sector(file) + size - 1, buffer, 0x800, 0, 0);
+        cd_sync_reads(0);
         if (((MovieSector *)buffer)->magic == 0x160) {
             frames = ((MovieSector *)buffer)->frame;
         }
@@ -1870,21 +1870,21 @@ s32 func_8007519C(void) {
 void func_800753B8(void) {
     void *bank;
 
-    bank = func_80028570("c:\\work\\cdrom\\sound\\wave\\main_se.wd", 0);
-    func_80037FD8(bank, 0);
-    while (func_8003BDFC(0) != 0) {
+    bank = cd_load_pc_file("c:\\work\\cdrom\\sound\\wave\\main_se.wd", 0);
+    sound_load_wave_bank(bank, 0);
+    while (sound_sync_transfer(0) != 0) {
     }
-    func_800320E8(bank);
-    bank = func_80028570("c:\\work\\cdrom\\sound\\wave\\bat_se.wd", 0);
-    func_80037FD8(bank, 0);
-    while (func_8003BDFC(0) != 0) {
+    heap_free(bank);
+    bank = cd_load_pc_file("c:\\work\\cdrom\\sound\\wave\\bat_se.wd", 0);
+    sound_load_wave_bank(bank, 0);
+    while (sound_sync_transfer(0) != 0) {
     }
-    func_800320E8(bank);
-    bank = func_80028570("c:\\work\\cdrom\\sound\\wave\\gear_se.wd", 0);
-    func_80037FD8(bank, 0);
-    while (func_8003BDFC(0) != 0) {
+    heap_free(bank);
+    bank = cd_load_pc_file("c:\\work\\cdrom\\sound\\wave\\gear_se.wd", 0);
+    sound_load_wave_bank(bank, 0);
+    while (sound_sync_transfer(0) != 0) {
     }
-    func_800320E8(bank);
+    heap_free(bank);
 }
 
 /* Two strings of this unit linked as original rodata below their users
@@ -1897,12 +1897,12 @@ extern char D_800704D4[];
 void func_8007548C(void) {
     void *bank;
 
-    bank = func_80028570("c:\\work\\cdrom\\sound\\wave\\battle2.wd", 0);
-    func_80037FD8(bank, 0);
-    while (func_8003BDFC(0) != 0) {
+    bank = cd_load_pc_file("c:\\work\\cdrom\\sound\\wave\\battle2.wd", 0);
+    sound_load_wave_bank(bank, 0);
+    while (sound_sync_transfer(0) != 0) {
     }
-    func_800320E8(bank);
-    D_8007700C = func_80039850(func_80028570(D_80070394, 0));
+    heap_free(bank);
+    D_8007700C = sound_create_seq(cd_load_pc_file(D_80070394, 0));
 }
 
 /* "c:\\work\\cdrom\\sound\\music\\battle2.smd". The original assembler left a
@@ -1912,7 +1912,7 @@ INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_80070394);
 /* Play the battle music sequence (8007548c loads it) from its start at full
  * volume. */
 void func_80075508(void) {
-    func_80039A80(D_8007700C, 0x7F, 0);
+    sound_play_seq(D_8007700C, 0x7F, 0);
 }
 
 /* The menu's sector monitor: at 640x240, dump 192 bytes of the current
@@ -1936,7 +1936,7 @@ void func_80075534(void) {
     u_long *ot;
 
     func_80074B58();
-    buffer = func_80031BDC(0x800, 0);
+    buffer = heap_alloc(0x800, 0);
     if (buffer == NULL) {
         return;
     }
@@ -1954,8 +1954,8 @@ void func_80075534(void) {
     D_80077124[1].disp.screen.y = 10;
     D_80077124[1].disp.screen.w = 256;
     D_80077124[1].disp.screen.h = 216;
-    func_8002954C(D_80076EFC, buffer, 0x800, 0, 0);
-    func_80028A60(0);
+    cd_read_raw_sectors(D_80076EFC, buffer, 0x800, 0, 0);
+    cd_sync_reads(0);
     for (;;) {
         if (D_80077120 == &D_80077124[0]) {
             draw = &D_80077124[1];
@@ -1966,7 +1966,7 @@ void func_80075534(void) {
         D_80077120 = draw;
         D_8007744C = 1 - D_8007744C;
         ClearOTagR(ot, 32);
-        func_8003700C("\n[ MONITOR ]\n");
+        console_printf("\n[ MONITOR ]\n");
         func_800747AC(0, 0, &button);
         sector = D_80076EFC;
         if (!(D_800773B4 & 0x1000) && (D_800773AC & 0x1000) && D_80076F00 > 0) {
@@ -2012,39 +2012,39 @@ void func_80075534(void) {
             D_80076EFC += 4500;
         }
         if (sector != D_80076EFC) {
-            func_8002954C(D_80076EFC, buffer, 0x800, 0, 0);
-            func_80028A60(0);
+            cd_read_raw_sectors(D_80076EFC, buffer, 0x800, 0, 0);
+            cd_sync_reads(0);
         }
         CdIntToPos(D_80076EFC, &loc);
-        func_8003700C("ABSPOS %8d POS %04x\nMINUTE %02x SECOND %02x SECTOR %02x\n\n", D_80076EFC,
+        console_printf("ABSPOS %8d POS %04x\nMINUTE %02x SECOND %02x SECTOR %02x\n\n", D_80076EFC,
                       D_80076F00 * 16, loc.minute, loc.second, loc.sector);
         text = buffer + D_80076F00 * 16;
         hex = text;
         for (row = 0; row < 12; row++) {
-            func_8003700C("%03x:", (row + D_80076F00) * 16);
+            console_printf("%03x:", (row + D_80076F00) * 16);
             for (i = 0; i < 15; i++) {
-                func_8003700C("%02x ", *hex);
+                console_printf("%02x ", *hex);
                 hex++;
             }
-            func_8003700C("%02x", *hex);
+            console_printf("%02x", *hex);
             hex++;
-            func_8003700C(":");
+            console_printf(":");
             for (i = 0; i < 16; i++) {
                 c = *text;
                 if (c >= 0x20 && c < 0x7E) {
-                    func_8003700C("%c", c);
+                    console_printf("%c", c);
                 } else {
-                    func_8003700C(" ");
+                    console_printf(" ");
                 }
                 text++;
             }
-            func_8003700C((char *)D_8007042C);
+            console_printf((char *)D_8007042C);
         }
-        func_8003700C((char *)D_80070430);
+        console_printf((char *)D_80070430);
         if (D_80077394 > 0) {
-            func_8003278C(1, 0, 6, 0x808D);
+            heap_print_report(1, 0, 6, 0x808D);
         }
-        func_80037324(D_80077120->ot);
+        console_flush(D_80077120->ot);
         func_80072F98(D_80077120->ot, (POLY_G4 *)D_80077120->box, 8, 20, 624, 160);
         func_800734B8(D_80077120->ot, (POLY_G4 *)D_80077120->frame, 7, 19, 626, 162);
         DrawSync(0);
@@ -2058,7 +2058,7 @@ void func_80075534(void) {
         }
         D_80077118 = cursor;
     }
-    func_800320E8(buffer);
+    heap_free(buffer);
     func_80074B58();
     SetDefDrawEnv(&D_80077124[0].draw, 0, 0, 320, 240);
     SetDefDispEnv(&D_80077124[0].disp, 0, 240, 320, 240);
@@ -2085,7 +2085,7 @@ const char D_80070430[] = "\nPUSH CIRCLE BUTTON TO MENU.";
 u32 func_80075D4C(s32 index) {
     u8 *record;
 
-    record = D_8004FDF0 + index * 7;
+    record = cd_file_index + index * 7;
     return ((record[6] << 24) + (record[5] << 16) + (record[4] << 8)) | record[3];
 }
 
@@ -2109,8 +2109,8 @@ void func_80075D8C(void) {
 
     func_80074B58();
     top = 0;
-    func_800284B4(&directory, &offset);
-    func_80028470(0, 0);
+    cd_get_selected_directory(&directory, &offset);
+    cd_select_directory(0, 0);
     hex = 0;
     names = 0;
     do {
@@ -2124,8 +2124,8 @@ void func_80075D8C(void) {
         D_80077120 = buffer;
         D_8007744C = 1 - D_8007744C;
         ClearOTagR(ot, 32);
-        func_8003700C("\n[ FAT CHECK MODE ");
-        func_8003700C(hex ? "HEX ]\n" : "DEC ]\n");
+        console_printf("\n[ FAT CHECK MODE ");
+        console_printf(hex ? "HEX ]\n" : "DEC ]\n");
         func_800747AC(0, 0, &button);
         if (!(D_800773B4 & 0x1000) && (D_800773AC & 0x1000) && top > 0) {
             top--;
@@ -2155,24 +2155,24 @@ void func_80075D8C(void) {
         do {
             if (func_80075D4C(index) == 0) {
                 if (hex) {
-                    func_8003700C("No %4x NullFile\n", index);
+                    console_printf("No %4x NullFile\n", index);
                     index++;
                 } else {
-                    func_8003700C("No %4d NullFile\n", index);
+                    console_printf("No %4d NullFile\n", index);
                     index++;
                 }
             } else {
                 if (hex) {
-                    func_8003700C("No %4x Sect%6x ", index, func_800289D0(index + 1));
+                    console_printf("No %4x Sect%6x ", index, cd_get_file_sector(index + 1));
                 } else {
-                    func_8003700C("No %4d Sect%6d ", index, func_800289D0(index + 1));
+                    console_printf("No %4d Sect%6d ", index, cd_get_file_sector(index + 1));
                 }
                 if (names) {
                     if ((s32)func_80075D4C(index) < 0) {
-                        func_8003700C("[P%3d]\n", -func_80075D4C(index));
+                        console_printf("[P%3d]\n", -func_80075D4C(index));
                         index++;
                     } else {
-                        name = func_80028998(index + 1);
+                        name = cd_get_pc_file_name(index + 1);
                         if (name != NULL) {
                             if (*name != 0) {
                                 p = name;
@@ -2183,26 +2183,26 @@ void func_80075D8C(void) {
                                     p++;
                                 } while (*p != 0);
                             }
-                            func_8003700C("%s\n", name);
+                            console_printf("%s\n", name);
                         } else {
-                            func_8003700C((char *)D_8007042C);
+                            console_printf((char *)D_8007042C);
                         }
                         index++;
                     }
                 } else if (hex) {
-                    func_8003700C("Size%9x\n", func_80075D4C(index));
+                    console_printf("Size%9x\n", func_80075D4C(index));
                     index++;
                 } else {
-                    func_8003700C((char *)D_800704D4, func_80075D4C(index));
+                    console_printf((char *)D_800704D4, func_80075D4C(index));
                     index++;
                 }
             }
         } while (index < top + 20);
-        func_8003700C((char *)D_80070430);
+        console_printf((char *)D_80070430);
         if (D_80077394 > 0) {
-            func_8003278C(1, 0, 6, 0x808D);
+            heap_print_report(1, 0, 6, 0x808D);
         }
-        func_80037324(D_80077120->ot);
+        console_flush(D_80077120->ot);
         func_80072F98(D_80077120->ot, (POLY_G4 *)D_80077120->box, 8, 20, 304, 192);
         func_800734B8(D_80077120->ot, (POLY_G4 *)D_80077120->frame, 7, 19, 306, 194);
         DrawSync(0);
@@ -2211,7 +2211,7 @@ void func_80075D8C(void) {
         PutDispEnv(&D_80077120->disp);
         DrawOTag(&D_80077120->ot[31]);
     } while (button != 2);
-    func_80028470(directory, offset);
+    cd_select_directory(directory, offset);
 }
 
 /* "Size%9d\n". The original assembler left stray bytes (0x94, 0x08) in its
@@ -2229,14 +2229,14 @@ void func_8007625C(void) {
     D_80077028 = 0;
     D_800773AC = -1;
     if (D_80077448 == 0) {
-        func_80028470(0x18, 0);
-        if (D_8007711C >= func_80028928(2)) {
+        cd_select_directory(0x18, 0);
+        if (D_8007711C >= cd_get_directory_file_count(2)) {
             return;
         }
         SetDispMask(0);
     } else if (D_80077448 == 1) {
-        func_80028470(0x18, 1);
-        if (D_8007711C >= func_80028928(1)) {
+        cd_select_directory(0x18, 1);
+        if (D_8007711C >= cd_get_directory_file_count(1)) {
             return;
         }
         SetDispMask(0);
@@ -2271,13 +2271,13 @@ s32 func_800763BC(u8 keep) {
     D_80077028 = keep;
     D_800773AC = -1;
     if (D_80077448 == 0) {
-        func_80028470(0x18, 0);
-        if (D_8007711C >= func_80028928(2)) {
+        cd_select_directory(0x18, 0);
+        if (D_8007711C >= cd_get_directory_file_count(2)) {
             return;
         }
     } else if (D_80077448 == 1) {
-        func_80028470(0x18, 1);
-        if (D_8007711C >= func_80028928(1)) {
+        cd_select_directory(0x18, 1);
+        if (D_8007711C >= cd_get_directory_file_count(1)) {
             return;
         }
     } else if (D_80077448 == 2) {
@@ -2317,7 +2317,7 @@ s32 func_80076488(void) {
         select = 1;
         file = D_8007711C + 2;
     }
-    if (func_80028738(file) == 0x18) {
+    if (cd_get_file_size(file) == 0x18) {
         SetDispMask(1);
         D_8004FE44_request[2] = 0;
     } else {
@@ -2361,7 +2361,7 @@ s32 func_80076488(void) {
             }
             budget += 30;
             func_800769A4();
-            func_80019CA0();
+            boot_check_soft_reset();
             VSync(0);
             PutDispEnv(&D_80077124[D_8007701C].disp);
             D_8007701C = D_80077018;
@@ -2415,7 +2415,7 @@ void func_800768D8(u16 frame, u16 x, u16 y) {
  * ends the movie in five frames, fading the CD volume, unless it is kept. */
 void func_800769A4(void) {
     D_800773B4 = D_800773AC;
-    D_800773AC = func_8003569C(0);
+    D_800773AC = pad_read_buttons(0);
     if (D_800773B4 == D_800773AC && D_800773B4 != 0) {
         D_80076F04++;
         if (D_80076F08 < D_80076F04) {
@@ -2428,11 +2428,11 @@ void func_800769A4(void) {
         D_80076F04 = 0;
     }
     if (!(D_800773B4 & 0x40) && (D_800773AC & 0x40) && D_80077028 == 0) {
-        func_80038D18(0, 10);
+        sound_set_cd_volume(0, 10);
         D_80077014 = 5;
     }
     if (!(D_800773B4 & 0x800) && (D_800773AC & 0x800) && D_80077028 == 0) {
-        func_80038D18(0, 10);
+        sound_set_cd_volume(0, 10);
         D_80077014 = 5;
     }
 }
@@ -2507,7 +2507,7 @@ void func_80076CA4(void) {
     dy = D_8007703C.vy - D_8007702C.vy;
     D_800770B0.vx = ratan2(dy, SquareRoot0(dz2 + dx2));
     D_800770B0.vy = -ratan2(dx, dz);
-    func_8003F738(&D_800770B0, &D_800770D8);
+    gpu_build_rotation_matrix(&D_800770B0, &D_800770D8);
     RotMatrixZ(D_8007704C, &D_800770D8);
     MulMatrix2(&D_800770F8, &D_800770D8);
     D_800770D8.t[0] = 0;

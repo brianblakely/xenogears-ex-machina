@@ -24,7 +24,7 @@ s32 func_8009FEE4(s32 slot);              /* record a slot's map and position */
 extern s16 D_800AEA34[8];      /* heading per direction (8009aee0) */
 void func_80077268(void);      /* place the party at the controlled actor */
 
-/* A party member's sprite data (D_8005A414 per slot), copied whole. */
+/* A party member's sprite data (mode_party_sprite_blocks per slot), copied whole. */
 typedef struct {
     s32 data[0x14000 / 4];
 } PartySprite;

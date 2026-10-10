@@ -6,7 +6,7 @@
  * sound file checks; its .data (0x80050624) holds the opcode handler table,
  * the note and reverb tables and the built-in error sound. The rest of the
  * driver (its start-up, banks, SPU memory and volumes) is in the preceding
- * unit, main2_800366E0.c: this unit starts in 80039e18-8003a094, since
+ * unit, console_and_sound_driver.c: this unit starts in 80039e18-8003a094, since
  * 80039db8 needs GCC 2.7.2, 8003a094 and later match only under 2.6.3 and
  * the functions between compile identically. */
 #include "common.h"
@@ -18,151 +18,151 @@
 
 /* The sequence opcode handlers (8003cd00-8003e54c): each takes the position
  * after the opcode and returns the position after its arguments. */
-u8 *func_8003CD00(u8 *data);
-u8 *func_8003CD08(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003CD30(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003CD4C(u8 *data);
-u8 *func_8003CD54(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003CD7C(u8 *data);
-u8 *func_8003CD84(u8 *data);
-u8 *func_8003CD8C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003CE04(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003CE18(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003CE38(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003CE50(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003CE68(u8 *data, SoundSeq *seq);
-u8 *func_8003CE9C(u8 *data, SoundSeq *seq);
-u8 *func_8003CEC0(u8 *data, SoundSeq *seq);
-u8 *func_8003CED4(u8 *data, SoundSeq *seq);
-u8 *func_8003CEF0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003CF38(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003CFA4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003CFF0(u8 *data);
-u8 *func_8003D034(u8 *data);
-u8 *func_8003D070(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D0E8(u8 *data, SoundSeq *seq);
-u8 *func_8003D110(s8 *data, SoundSeq *seq);
-u8 *func_8003D13C(u8 *data, SoundSeq *seq);
-u8 *func_8003D17C(u8 *data, SoundSeq *seq);
-u8 *func_8003D1BC(u8 *data, SoundSeq *seq);
-u8 *func_8003D208(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D21C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D298(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D2D0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D300(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D328(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D340(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D358(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D370(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D3A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D3D8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D438(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D4A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D4C4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D4E4(u8 *data, SoundSeq *seq);
-u8 *func_8003D53C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D59C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D5BC(u8 *data);
-u8 *func_8003D5C4(u8 *data);
-u8 *func_8003D5CC(u8 *data);
-u8 *func_8003D5D4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D60C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D640(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D65C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D678(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D694(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D6B4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D6D0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D6F8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D714(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D730(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D74C(s8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D770(s8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D79C(s8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D7C8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D7FC(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D854(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D86C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D884(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D8B8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003D9A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003DAB0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003DAEC(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003DB0C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003DB2C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003DB58(s8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003DB98(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003DBE4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003DC50(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003DD24(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003DE18(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003DE54(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003DE74(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003DE94(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003DEB4(s8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003DEE4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003DF3C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003DF78(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003E04C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003E140(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003E160(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003E180(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003E1F8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003E308(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003E358(u8 *data);
-u8 *func_8003E360(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003E40C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003E44C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003E4BC(u8 *data, SoundSeq *seq);
-u8 *func_8003E4F0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-u8 *func_8003E54C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
-s32 func_8003F1A4(SoundModulator *modulator);
-s32 func_8003F1EC(SoundModulator *modulator);
-s32 func_8003F240(SoundModulator *modulator);
-s32 func_8003F2A0(SoundModulator *modulator);
-s32 func_8003F308(SoundModulator *modulator);
-s32 func_8003F354(SoundModulator *modulator);
-s32 func_8003F3C0(SoundModulator *modulator);
-void func_8003F190(SoundModulator *modulator);
+u8 *sound_seq_unused_opcode(u8 *data);
+u8 *sound_seq_rest(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_tie(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_nop_8a(u8 *data);
+u8 *sound_seq_loop_point_if(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_skip3_8e(u8 *data);
+u8 *sound_seq_nop_8f(u8 *data);
+u8 *sound_seq_end(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_loop_point(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_octave(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_octave_up(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_octave_down(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_time_signature(u8 *data, SoundSeq *seq);
+u8 *sound_seq_position(u8 *data, SoundSeq *seq);
+u8 *sound_seq_set_1a(u8 *data, SoundSeq *seq);
+u8 *sound_seq_add_1a(u8 *data, SoundSeq *seq);
+u8 *sound_seq_repeat(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_repeat_end(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_repeat_break(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_play_effect(u8 *data);
+u8 *sound_seq_stop_effect(u8 *data);
+u8 *sound_seq_goto_effect(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_rate(u8 *data, SoundSeq *seq);
+u8 *sound_seq_rate_add(s8 *data, SoundSeq *seq);
+u8 *sound_seq_rate_slide(u8 *data, SoundSeq *seq);
+u8 *sound_seq_fade_level(u8 *data, SoundSeq *seq);
+u8 *sound_seq_fade_slide(u8 *data, SoundSeq *seq);
+u8 *sound_seq_gate(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_voice(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_instrument(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_duration_adjust(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_drum_on(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_drum_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_legato_on(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_legato_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_pitch_mod_on(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_pitch_mod_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_noise_clock(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_noise_clock_add(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_noise_on(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_noise_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_reverb_settings(u8 *data, SoundSeq *seq);
+u8 *sound_seq_reverb_on(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_reverb_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_skip3_bc(u8 *data);
+u8 *sound_seq_nop_bd(u8 *data);
+u8 *sound_seq_nop_be(u8 *data);
+u8 *sound_seq_instrument_reload(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_envelope_modes(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_attack_rate(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_decay_rate(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_sustain_rate(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_release_rate(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_sustain_level(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_decay_sustain(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_attack_mode(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_sustain_mode(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_release_mode(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_detune(s8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_detune_add(s8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_detune_add_fine(s8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_detune_add_word(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_pitch_slide(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_pitch_slide_hold(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_pitch_slide_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_portamento(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_vibrato(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_vibrato_wave(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_vibrato_period(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_vibrato_on(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_vibrato_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_level(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_level_add(s8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_level_slide(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_level_sweep(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_tremolo(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_tremolo_wave(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_tremolo_period(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_tremolo_on(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_tremolo_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_pan(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_pan_add(s8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_pan_slide(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_autopan_period(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_autopan(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_autopan_wave(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_autopan_on(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_autopan_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_modulator_select(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_modulator_depth(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_modulator_timing(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_nop_f5(u8 *data);
+u8 *sound_seq_modulator_on(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_modulator_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_wave_bank_instrument(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_tempo(u8 *data, SoundSeq *seq);
+u8 *sound_seq_wave_bank(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+u8 *sound_seq_stop_when_silent(u8 *data, SoundSeq *seq, SoundSeqChannel *channel);
+s32 sound_step_pulse_wave(SoundModulator *modulator);
+s32 sound_step_square_wave(SoundModulator *modulator);
+s32 sound_step_sawtooth_wave(SoundModulator *modulator);
+s32 sound_step_triangle_wave(SoundModulator *modulator);
+s32 sound_step_ramp_wave(SoundModulator *modulator);
+s32 sound_step_random_wave(SoundModulator *modulator);
+s32 sound_step_signed_random_wave(SoundModulator *modulator);
+void sound_switch_modulator_off(SoundModulator *modulator);
 
 /* Handlers of the sequence opcodes 0x80-0xff. */
-u8 *(*D_80050624[128])() = {
-    func_8003CD08, func_8003CD30, func_8003CD00, func_8003CD00,
-    func_8003CD00, func_8003CD00, func_8003CD00, func_8003CD00,
-    func_8003CD00, func_8003CD00, func_8003CD4C, func_8003CD00,
-    func_8003CD00, func_8003CD54, func_8003CD7C, func_8003CD84,
-    func_8003CD8C, func_8003CE04, func_8003CD00, func_8003CD00,
-    func_8003CE18, func_8003CE38, func_8003CE50, func_8003CE68,
-    func_8003CEF0, func_8003CF38, func_8003CFA4, func_8003CD00,
-    func_8003CFF0, func_8003D034, func_8003D070, func_8003CD00,
-    func_8003D0E8, func_8003D110, func_8003D13C, func_8003CD00,
-    func_8003CEC0, func_8003CED4, func_8003D17C, func_8003D1BC,
-    func_8003CD00, func_8003D208, func_8003D21C, func_8003CD00,
-    func_8003D298, func_8003D2D0, func_8003D300, func_8003D328,
-    func_8003D340, func_8003D358, func_8003D370, func_8003D3A4,
-    func_8003D3D8, func_8003D438, func_8003D4A4, func_8003D4C4,
-    func_8003D4E4, func_8003CD00, func_8003D53C, func_8003D59C,
-    func_8003D5BC, func_8003D5C4, func_8003D5CC, func_8003CD00,
-    func_8003D5D4, func_8003D60C, func_8003D640, func_8003D65C,
-    func_8003D678, func_8003D694, func_8003D6B4, func_8003D6D0,
-    func_8003D6F8, func_8003D714, func_8003D730, func_8003CD00,
-    func_8003CD00, func_8003CD00, func_8003CD00, func_8003CD00,
-    func_8003D74C, func_8003D770, func_8003D79C, func_8003D7C8,
-    func_8003D7FC, func_8003D854, func_8003D884, func_8003DAB0,
-    func_8003D8B8, func_8003D9A4, func_8003DAEC, func_8003DB0C,
-    func_8003D86C, func_8003CD00, func_8003CD00, func_8003CD00,
-    func_8003DB2C, func_8003DB58, func_8003DB98, func_8003DE18,
-    func_8003DC50, func_8003DD24, func_8003DE54, func_8003DE74,
-    func_8003DE94, func_8003DEB4, func_8003DEE4, func_8003DF3C,
-    func_8003DF78, func_8003E04C, func_8003E140, func_8003E160,
-    func_8003E180, func_8003E1F8, func_8003E308, func_8003CD00,
-    func_8003CD00, func_8003E358, func_8003E360, func_8003E40C,
-    func_8003DBE4, func_8003CE9C, func_8003CD00, func_8003CD00,
-    func_8003E44C, func_8003E4BC, func_8003E4F0, func_8003E54C,
+u8 *(*sound_seq_opcode_handlers[128])() = { /* 80050624 */
+    sound_seq_rest, sound_seq_tie, sound_seq_unused_opcode, sound_seq_unused_opcode,
+    sound_seq_unused_opcode, sound_seq_unused_opcode, sound_seq_unused_opcode, sound_seq_unused_opcode,
+    sound_seq_unused_opcode, sound_seq_unused_opcode, sound_seq_nop_8a, sound_seq_unused_opcode,
+    sound_seq_unused_opcode, sound_seq_loop_point_if, sound_seq_skip3_8e, sound_seq_nop_8f,
+    sound_seq_end, sound_seq_loop_point, sound_seq_unused_opcode, sound_seq_unused_opcode,
+    sound_seq_octave, sound_seq_octave_up, sound_seq_octave_down, sound_seq_time_signature,
+    sound_seq_repeat, sound_seq_repeat_end, sound_seq_repeat_break, sound_seq_unused_opcode,
+    sound_seq_play_effect, sound_seq_stop_effect, sound_seq_goto_effect, sound_seq_unused_opcode,
+    sound_seq_rate, sound_seq_rate_add, sound_seq_rate_slide, sound_seq_unused_opcode,
+    sound_seq_set_1a, sound_seq_add_1a, sound_seq_fade_level, sound_seq_fade_slide,
+    sound_seq_unused_opcode, sound_seq_gate, sound_seq_voice, sound_seq_unused_opcode,
+    sound_seq_instrument, sound_seq_duration_adjust, sound_seq_drum_on, sound_seq_drum_off,
+    sound_seq_legato_on, sound_seq_legato_off, sound_seq_pitch_mod_on, sound_seq_pitch_mod_off,
+    sound_seq_noise_clock, sound_seq_noise_clock_add, sound_seq_noise_on, sound_seq_noise_off,
+    sound_seq_reverb_settings, sound_seq_unused_opcode, sound_seq_reverb_on, sound_seq_reverb_off,
+    sound_seq_skip3_bc, sound_seq_nop_bd, sound_seq_nop_be, sound_seq_unused_opcode,
+    sound_seq_instrument_reload, sound_seq_envelope_modes, sound_seq_attack_rate, sound_seq_decay_rate,
+    sound_seq_sustain_rate, sound_seq_release_rate, sound_seq_sustain_level, sound_seq_decay_sustain,
+    sound_seq_attack_mode, sound_seq_sustain_mode, sound_seq_release_mode, sound_seq_unused_opcode,
+    sound_seq_unused_opcode, sound_seq_unused_opcode, sound_seq_unused_opcode, sound_seq_unused_opcode,
+    sound_seq_detune, sound_seq_detune_add, sound_seq_detune_add_fine, sound_seq_detune_add_word,
+    sound_seq_pitch_slide, sound_seq_pitch_slide_hold, sound_seq_portamento, sound_seq_vibrato_period,
+    sound_seq_vibrato, sound_seq_vibrato_wave, sound_seq_vibrato_on, sound_seq_vibrato_off,
+    sound_seq_pitch_slide_off, sound_seq_unused_opcode, sound_seq_unused_opcode, sound_seq_unused_opcode,
+    sound_seq_level, sound_seq_level_add, sound_seq_level_slide, sound_seq_tremolo_period,
+    sound_seq_tremolo, sound_seq_tremolo_wave, sound_seq_tremolo_on, sound_seq_tremolo_off,
+    sound_seq_pan, sound_seq_pan_add, sound_seq_pan_slide, sound_seq_autopan_period,
+    sound_seq_autopan, sound_seq_autopan_wave, sound_seq_autopan_on, sound_seq_autopan_off,
+    sound_seq_modulator_select, sound_seq_modulator_depth, sound_seq_modulator_timing, sound_seq_unused_opcode,
+    sound_seq_unused_opcode, sound_seq_nop_f5, sound_seq_modulator_on, sound_seq_modulator_off,
+    sound_seq_level_sweep, sound_seq_position, sound_seq_unused_opcode, sound_seq_unused_opcode,
+    sound_seq_wave_bank_instrument, sound_seq_tempo, sound_seq_wave_bank, sound_seq_stop_when_silent,
 };
 
 /* Lengths of the sequence opcodes 0x80-0xff, including the opcode byte. */
-u8 D_80050824[128] = {
+u8 sound_seq_opcode_lengths[128] = { /* 80050824 */
     2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 4, 1, 1, 1, 0, 0, 2, 1, 1, 3, 2, 1, 1, 0, 4, 4, 4, 0,
     2, 2, 3, 0, 2, 2, 2, 3, 0, 2, 2, 0, 2, 2, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1, 4, 0, 1, 1, 4, 1, 1, 0,
     1, 4, 2, 2, 2, 2, 2, 3, 2, 2, 2, 0, 0, 0, 0, 0, 2, 2, 2, 3, 3, 1, 2, 2, 4, 4, 1, 1, 1, 0, 0, 0,
@@ -172,32 +172,32 @@ u8 D_80050824[128] = {
 /* Modulator waves by shape, indexed by mode & 0xF (D9/E5/ED/F0); shapes 8-15
  * only switch the modulator off. tools/analysis/sound_sequence.py counts the
  * shapes the data install. */
-s32 (*D_800508A4[16])(SoundModulator *modulator) = {
-    func_8003F1A4, func_8003F1EC, func_8003F240, func_8003F2A0,
-    func_8003F308, func_8003F308, func_8003F354, func_8003F3C0,
-    (s32 (*)(SoundModulator *))func_8003F190, (s32 (*)(SoundModulator *))func_8003F190,
-    (s32 (*)(SoundModulator *))func_8003F190, (s32 (*)(SoundModulator *))func_8003F190,
-    (s32 (*)(SoundModulator *))func_8003F190, (s32 (*)(SoundModulator *))func_8003F190,
-    (s32 (*)(SoundModulator *))func_8003F190, (s32 (*)(SoundModulator *))func_8003F190,
+s32 (*sound_modulator_waves[16])(SoundModulator *modulator) = { /* 800508A4 */
+    sound_step_pulse_wave, sound_step_square_wave, sound_step_sawtooth_wave, sound_step_triangle_wave,
+    sound_step_ramp_wave, sound_step_ramp_wave, sound_step_random_wave, sound_step_signed_random_wave,
+    (s32 (*)(SoundModulator *))sound_switch_modulator_off, (s32 (*)(SoundModulator *))sound_switch_modulator_off,
+    (s32 (*)(SoundModulator *))sound_switch_modulator_off, (s32 (*)(SoundModulator *))sound_switch_modulator_off,
+    (s32 (*)(SoundModulator *))sound_switch_modulator_off, (s32 (*)(SoundModulator *))sound_switch_modulator_off,
+    (s32 (*)(SoundModulator *))sound_switch_modulator_off, (s32 (*)(SoundModulator *))sound_switch_modulator_off,
 };
 
-SpuRegs *D_800508E4 = (SpuRegs *)0x1F801C00; /* the SPU registers */
+SpuRegs *sound_spu_registers = (SpuRegs *)0x1F801C00; /* 800508E4: the SPU registers */
 
 /* Reverb work area size of each reverb type (80038934). */
-s32 D_800508E8[10] = {
+s32 sound_reverb_work_area_sizes[10] = { /* 800508E8 */
     0x80, 0x26C0, 0x1F40, 0x4840, 0x6FE0, 0xADE0, 0xF6C0, 0x18040, 0x18040, 0x3C00,
 };
 
 /* The built-in error sound (8003f6b0): an effect bank ("seds", used in place
  * as a SoundBank with id 0x7f04) and its wave bank ("wds "). */
-extern u8 D_80050910[];
-INCLUDE_ASSET(".data", D_80050910, 0x80050910, 0x30);
-extern u8 D_80050940[];
-INCLUDE_ASSET(".data", D_80050940, 0x80050940, 0x70);
+extern u8 sound_error_effect_bank[];
+INCLUDE_ASSET(".data", sound_error_effect_bank, 0x80050910, 0x30);
+extern u8 sound_error_wave_bank[];
+INCLUDE_ASSET(".data", sound_error_wave_bank, 0x80050940, 0x70);
 
 /* Encoded notes: 12 semitones of 19 durations (0: a duration byte follows).
  * Each note's duration, then its semitone. */
-u8 D_800509B0[228] = {
+u8 sound_note_durations[228] = { /* 800509B0 */
     0, 192, 144, 96, 72, 64, 48, 36, 32, 24, 18, 16, 12, 9, 8, 6, 4, 3, 2,
     0, 192, 144, 96, 72, 64, 48, 36, 32, 24, 18, 16, 12, 9, 8, 6, 4, 3, 2,
     0, 192, 144, 96, 72, 64, 48, 36, 32, 24, 18, 16, 12, 9, 8, 6, 4, 3, 2,
@@ -211,7 +211,7 @@ u8 D_800509B0[228] = {
     0, 192, 144, 96, 72, 64, 48, 36, 32, 24, 18, 16, 12, 9, 8, 6, 4, 3, 2,
     0, 192, 144, 96, 72, 64, 48, 36, 32, 24, 18, 16, 12, 9, 8, 6, 4, 3, 2,
 };
-u8 D_80050A94[228] = {
+u8 sound_note_semitones[228] = { /* 80050A94 */
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -227,7 +227,7 @@ u8 D_80050A94[228] = {
 };
 
 /* Octave (high nibble) and pitch row (low nibble) of each semitone. */
-u8 D_80050B78[120] = {
+u8 sound_semitone_octave_rows[120] = { /* 80050B78 */
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 16, 17, 18, 19,
     20, 21, 22, 23, 24, 25, 26, 27, 32, 33, 34, 35, 36, 37, 38, 39,
     40, 41, 42, 43, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
@@ -239,7 +239,7 @@ u8 D_80050B78[120] = {
 };
 
 /* SPU pitch per 1/256 semitone over one octave: 12 rows of 256. */
-s16 D_80050BF0[3072] = {
+s16 sound_pitch_table[3072] = { /* 80050BF0 */
     8192, 8194, 8196, 8198, 8199, 8201, 8203, 8205, 8207, 8209, 8211, 8212,
     8214, 8216, 8218, 8220, 8222, 8223, 8225, 8227, 8229, 8231, 8233, 8235,
     8236, 8238, 8240, 8242, 8244, 8246, 8248, 8250, 8251, 8253, 8255, 8257,
@@ -498,78 +498,78 @@ s16 D_80050BF0[3072] = {
     16340, 16343, 16347, 16351, 16354, 16358, 16362, 16366, 16369, 16373, 16377, 16380,
 };
 
-/* Effect requests, while effects are on (driver flag 0x800): each plays
+/* 80039E18: Effect requests, while effects are on (driver flag 0x800): each plays
  * `effect` (its bank id in the high half) on two effect channels
- * (D_80059404) through 8003b644, at volume 0x6000 and centre pan 0x4000
+ * (sound_channels_per_effect) through 8003b644, at volume 0x6000 and centre pan 0x4000
  * unless given (as 0-0x7f, shifted into the high byte). This one uses
  * channels 12-13 with priority 0x60. */
-void func_80039E18(s32 effect) {
-    if (D_8005957C & 0x800) {
-        D_80059404 = 2;
-        func_8003B644(0x600C, effect, 0x6000, 0x4000);
+void sound_play_effect_on_channels_12_13(s32 effect) {
+    if (sound_driver_flags & 0x800) {
+        sound_channels_per_effect = 2;
+        sound_start_effect(0x600C, effect, 0x6000, 0x4000);
     }
 }
 
-/* On the two channels 8003a65c frees for it, with priority 0x20. */
-void func_80039E60(s32 effect) {
-    if (D_8005957C & 0x800) {
-        s32 id = func_8003A65C(effect, 2);
+/* 80039E60: On the two channels 8003a65c frees for it, with priority 0x20. */
+void sound_play_effect(s32 effect) {
+    if (sound_driver_flags & 0x800) {
+        s32 id = sound_find_effect_channels(effect, 2);
 
-        D_80059404 = 2;
-        func_8003B644(id | 0x2000, effect, 0x6000, 0x4000);
+        sound_channels_per_effect = 2;
+        sound_start_effect(id | 0x2000, effect, 0x6000, 0x4000);
     }
 }
 
-/* On the channel pair of `channel` in the other half (its even index with
+/* 80039EC4: On the channel pair of `channel` in the other half (its even index with
  * bit 3 flipped), with priority 0x20. */
-void func_80039EC4(s32 effect, s32 channel) {
-    if (D_8005957C & 0x800) {
-        D_80059404 = 2;
-        func_8003B644(((channel & 0xFE) ^ 8) | 0x2000, effect, 0x6000, 0x4000);
+void sound_play_effect_on_channel(s32 effect, s32 channel) {
+    if (sound_driver_flags & 0x800) {
+        sound_channels_per_effect = 2;
+        sound_start_effect(((channel & 0xFE) ^ 8) | 0x2000, effect, 0x6000, 0x4000);
     }
 }
 
-/* As 80039e60, at `volume` and `pan`. */
-void func_80039F18(s32 effect, s32 volume, s32 pan) {
-    if (D_8005957C & 0x800) {
-        s32 id = func_8003A65C(effect, 2);
+/* 80039F18: As 80039e60, at `volume` and `pan`. */
+void sound_play_effect_volume_pan(s32 effect, s32 volume, s32 pan) {
+    if (sound_driver_flags & 0x800) {
+        s32 id = sound_find_effect_channels(effect, 2);
 
-        D_80059404 = 2;
-        func_8003B644(id | 0x2000, effect, volume << 8, pan << 8);
+        sound_channels_per_effect = 2;
+        sound_start_effect(id | 0x2000, effect, volume << 8, pan << 8);
     }
 }
 
-/* As 80039ec4, at `volume` and `pan`. */
-void func_80039F9C(s32 effect, s32 channel, s32 volume, s32 pan) {
-    if (D_8005957C & 0x800) {
-        D_80059404 = 2;
-        func_8003B644(((channel & 0xFE) ^ 8) | 0x2000, effect, volume << 8, pan << 8);
+/* 80039F9C: As 80039ec4, at `volume` and `pan`. */
+void sound_play_effect_on_channel_volume_pan(s32 effect, s32 channel, s32 volume, s32 pan) {
+    if (sound_driver_flags & 0x800) {
+        sound_channels_per_effect = 2;
+        sound_start_effect(((channel & 0xFE) ^ 8) | 0x2000, effect, volume << 8, pan << 8);
     }
 }
 
-/* Stop every sound effect channel and release its voice. */
-void func_80039FF8(void) {
-    s32 count = D_80059478;
-    SoundSeq *effects = D_800595D8;
+/* 80039FF8: Stop every sound effect channel and release its voice. */
+void sound_stop_all_effects(void) {
+    s32 count = sound_effect_channel_count;
+    SoundSeq *effects = sound_effect_channels;
     SoundSeqChannel *channel = effects->channel;
 
-    DisableEvent(D_800595BC);
+    DisableEvent(sound_tick_event);
     do {
         count--;
         if (channel->flags & 1) {
             channel->flags = 0;
-            func_8003E83C(&channel->state, channel->voice);
+            sound_release_voice(&channel->state, channel->voice);
         }
         channel++;
     } while (count != 0);
     effects->voices = 0;
-    EnableEvent(D_800595BC);
+    EnableEvent(sound_tick_event);
 }
 
-/* Stop the effect channels playing effects of `bank`. */
-void func_8003A094(SoundBank *bank) {
-    s32 count = D_80059478;
-    SoundSeq *effects = D_800595D8;
+/* 8003A094: Stop the effect channels playing effects of `bank`. */
+void sound_stop_bank_effects(SoundBank *bank) {
+    s32 count = sound_effect_channel_count;
+    SoundSeq *effects = sound_effect_channels;
     s16 id = bank->id;
     SoundSeqChannel *channel = effects->channel;
 
@@ -578,16 +578,16 @@ void func_8003A094(SoundBank *bank) {
         if ((channel->flags & 1) && channel->id.part.bank == id) {
             channel->flags = 0;
             effects->voices &= ~(1 << channel->voice_bit);
-            func_8003E83C(&channel->state, channel->voice);
+            sound_release_voice(&channel->state, channel->voice);
         }
         channel++;
     } while (count != 0);
 }
 
-/* Stop the effect channels playing effect `id`. */
-void func_8003A14C(s32 id) {
-    SoundSeq *effects = D_800595D8;
-    s32 count = D_80059478;
+/* 8003A14C: Stop the effect channels playing effect `id`. */
+void sound_stop_effect(s32 id) {
+    SoundSeq *effects = sound_effect_channels;
+    s32 count = sound_effect_channel_count;
     SoundSeqChannel *channel = effects->channel;
 
     do {
@@ -595,15 +595,15 @@ void func_8003A14C(s32 id) {
         if ((channel->flags & 1) && channel->id.full == id) {
             channel->flags = 0;
             effects->voices &= ~(1 << channel->voice_bit);
-            func_8003E83C(&channel->state, channel->voice);
+            sound_release_voice(&channel->state, channel->voice);
         }
         channel++;
     } while (count != 0);
 }
 
-/* Stop the two effect channels of `sound`. */
-void func_8003A20C(s32 sound) {
-    SoundSeq *effects = D_800595D8;
+/* 8003A20C: Stop the two effect channels of `sound`. */
+void sound_stop_effect_on_channel(s32 sound) {
+    SoundSeq *effects = sound_effect_channels;
     SoundSeqChannel *channel;
     s32 count;
 
@@ -617,23 +617,24 @@ void func_8003A20C(s32 sound) {
         if (channel->flags & 1) {
             channel->flags = 0;
             effects->voices &= ~(1 << channel->voice_bit);
-            func_8003E83C(&channel->state, channel->voice);
+            sound_release_voice(&channel->state, channel->voice);
         }
         channel++;
     } while (count != 0);
 }
 
-/* Two empty driver entries. */
-void func_8003A2D4(void) {
+/* 8003A2D4: Two empty driver entries. */
+void sound_empty_entry_after_effect_stops(void) {
 }
 
-void func_8003A2DC(void) {
+/* 8003A2DC */
+void sound_empty_entry_before_effect_volume(void) {
 }
 
-/* Set the volume of the effect channels playing effect `id`. */
-void func_8003A2E4(s32 id, s32 volume) {
-    s32 count = D_80059478;
-    SoundSeqChannel *channel = D_800595D8->channel;
+/* 8003A2E4: Set the volume of the effect channels playing effect `id`. */
+void sound_set_effect_volume(s32 id, s32 volume) {
+    s32 count = sound_effect_channel_count;
+    SoundSeqChannel *channel = sound_effect_channels->channel;
 
     do {
         if ((channel->flags & 1) && channel->id.full == id) {
@@ -645,14 +646,14 @@ void func_8003A2E4(s32 id, s32 volume) {
     } while (count != 0);
 }
 
-/* Set the volume of the two effect channels of `sound`. */
-void func_8003A344(s32 sound, s32 volume) {
+/* 8003A344: Set the volume of the two effect channels of `sound`. */
+void sound_set_effect_volume_on_channel(s32 sound, s32 volume) {
     SoundSeqChannel *channel;
     s32 count;
 
     sound &= 0xFE;
     sound ^= 8;
-    channel = &D_800595D8->channel[sound];
+    channel = &sound_effect_channels->channel[sound];
     count = 2;
 
     do {
@@ -665,11 +666,11 @@ void func_8003A344(s32 sound, s32 volume) {
     } while (count != 0);
 }
 
-/* Slide the volume of the effect channels playing effect `id` over
+/* 8003A3B8: Slide the volume of the effect channels playing effect `id` over
  * `frames` (at least one). */
-void func_8003A3B8(s32 id, s32 volume, s32 frames) {
-    s32 count = D_80059478;
-    SoundSeqChannel *channel = D_800595D8->channel;
+void sound_slide_effect_volume(s32 id, s32 volume, s32 frames) {
+    s32 count = sound_effect_channel_count;
+    SoundSeqChannel *channel = sound_effect_channels->channel;
     s32 delta;
 
     volume <<= 8;
@@ -691,15 +692,15 @@ void func_8003A3B8(s32 id, s32 volume, s32 frames) {
     } while (count != 0);
 }
 
-/* Slide the volume of the two effect channels of `sound`. */
-void func_8003A450(s32 sound, s32 volume, s32 frames) {
+/* 8003A450: Slide the volume of the two effect channels of `sound`. */
+void sound_slide_effect_volume_on_channel(s32 sound, s32 volume, s32 frames) {
     SoundSeqChannel *channel;
     s32 count;
     s32 delta;
 
     sound &= 0xFE;
     sound ^= 8;
-    channel = &D_800595D8->channel[sound];
+    channel = &sound_effect_channels->channel[sound];
     count = 2;
     volume <<= 8;
     do {
@@ -720,10 +721,10 @@ void func_8003A450(s32 sound, s32 volume, s32 frames) {
     } while (count != 0);
 }
 
-/* Set the pan of the effect channels playing effect `id`. */
-void func_8003A4FC(s32 id, s32 pan) {
-    s32 count = D_80059478;
-    SoundSeqChannel *channel = D_800595D8->channel;
+/* 8003A4FC: Set the pan of the effect channels playing effect `id`. */
+void sound_set_effect_pan(s32 id, s32 pan) {
+    s32 count = sound_effect_channel_count;
+    SoundSeqChannel *channel = sound_effect_channels->channel;
 
     do {
         if ((channel->flags & 1) && channel->id.full == id) {
@@ -735,14 +736,14 @@ void func_8003A4FC(s32 id, s32 pan) {
     } while (count != 0);
 }
 
-/* Set the pan of the two effect channels of `sound`. */
-void func_8003A55C(s32 sound, s32 pan) {
+/* 8003A55C: Set the pan of the two effect channels of `sound`. */
+void sound_set_effect_pan_on_channel(s32 sound, s32 pan) {
     SoundSeqChannel *channel;
     s32 count;
 
     sound &= 0xFE;
     sound ^= 8;
-    channel = &D_800595D8->channel[sound];
+    channel = &sound_effect_channels->channel[sound];
     count = 2;
 
     do {
@@ -756,11 +757,11 @@ void func_8003A55C(s32 sound, s32 pan) {
 }
 
 
-/* Mask of the active effect channels (playing effect `id`, or any for -1). */
-s32 func_8003A5D0(s32 id) {
+/* 8003A5D0: Mask of the active effect channels (playing effect `id`, or any for -1). */
+s32 sound_get_active_effect_mask(s32 id) {
     s32 bit = 1;
-    s32 count = D_80059478;
-    SoundSeqChannel *channel = D_800595D8->channel;
+    s32 count = sound_effect_channel_count;
+    SoundSeqChannel *channel = sound_effect_channels->channel;
     s32 mask = 0;
 
     if (id == -1) {
@@ -785,12 +786,12 @@ s32 func_8003A5D0(s32 id) {
     return mask;
 }
 
-/* Stop the effect channels playing effect `id`, then choose `width`
+/* 8003A65C: Stop the effect channels playing effect `id`, then choose `width`
  * adjacent effect channels for it: the highest free group below the
  * reserved top pair, else the oldest channel of low priority seen. */
-u32 func_8003A65C(s32 id, s32 width) {
-    SoundSeq *effects = D_800595D8;
-    s32 count = D_80059478;
+u32 sound_find_effect_channels(s32 id, s32 width) {
+    SoundSeq *effects = sound_effect_channels;
+    s32 count = sound_effect_channel_count;
     u32 reserved = 0;
     SoundSeqChannel *channel = effects->channel;
     u32 limit;
@@ -807,15 +808,15 @@ u32 func_8003A65C(s32 id, s32 width) {
         if ((channel->flags & 1) && channel->id.full == id) {
             channel->flags = 0;
             effects->voices &= ~(1 << channel->voice_bit);
-            func_8003E83C(&channel->state, channel->voice);
+            sound_release_voice(&channel->state, channel->voice);
         }
         channel++;
     } while (count != 0);
 
     span = width + 2;
-    limit = effects->channels - D_80059544;
-    index = D_80059478 - span;
-    effects = D_800595D8;
+    limit = effects->channels - sound_effect_voice_count;
+    index = sound_effect_channel_count - span;
+    effects = sound_effect_channels;
     group = 0xFFFFFFFF >> (32 - width);
     mask = group << index;
     channel = &effects->channel[index];
@@ -839,13 +840,13 @@ u32 func_8003A65C(s32 id, s32 width) {
     return index;
 }
 
-/* Whether a sequence is playing (flag bit 15). */
-u32 func_8003A82C(SoundSeq *seq) {
+/* 8003A82C: Whether a sequence is playing (flag bit 15). */
+u32 sound_is_seq_playing(SoundSeq *seq) {
     return seq->flags >> 15;
 }
 
-/* Set a sequence's tempo (0 means 0x100), at once or over `frames`. */
-void func_8003A838(SoundSeq *seq, s32 tempo, s32 frames) {
+/* 8003A838: Set a sequence's tempo (0 means 0x100), at once or over `frames`. */
+void sound_set_seq_tempo(SoundSeq *seq, s32 tempo, s32 frames) {
     s32 delta;
 
     if (tempo == 0) {
@@ -865,18 +866,18 @@ void func_8003A838(SoundSeq *seq, s32 tempo, s32 frames) {
     }
 }
 
-void func_8003AA30(SoundSeq *seq);
+void sound_resume_seq(SoundSeq *seq);
 
-/* Set a sequence's fade level, at once or over `frames`; raising the level
+/* 8003A89C: Set a sequence's fade level, at once or over `frames`; raising the level
  * of a sequence a fade stopped resumes it. */
-void func_8003A89C(SoundSeq *seq, s32 fade, s32 frames) {
+void sound_set_seq_fade(SoundSeq *seq, s32 fade, s32 frames) {
     s32 delta;
 
     seq->fade_target = fade << 8;
     if (frames == 0) {
         seq->fade.value = fade << 24;
         seq->fade_frames = 0;
-        func_8003E680(0x100, seq);
+        sound_request_seq_channel_updates(0x100, seq);
     } else {
         delta = (fade << 16) - (seq->fade.value >> 8);
         if (delta == 0) {
@@ -886,19 +887,19 @@ void func_8003A89C(SoundSeq *seq, s32 fade, s32 frames) {
         seq->fade_step = (delta / frames) << 8;
     }
     if ((seq->flags & 0x100) && fade != 0) {
-        func_8003AA30(seq);
+        sound_resume_seq(seq);
     }
 }
 
-/* Set a sequence's pitch shift (semitones), at once or over `frames`. */
-void func_8003A948(SoundSeq *seq, s32 pitch, s32 frames) {
+/* 8003A948: Set a sequence's pitch shift (semitones), at once or over `frames`. */
+void sound_set_seq_pitch(SoundSeq *seq, s32 pitch, s32 frames) {
     s32 delta;
 
     seq->pitch_target = pitch << 8;
     if (frames == 0) {
         seq->pitch.value = pitch << 24;
         seq->pitch_frames = 0;
-        func_8003E680(0x200, seq);
+        sound_request_seq_channel_updates(0x200, seq);
         return;
     }
     delta = (pitch << 16) - (seq->pitch.value >> 8);
@@ -908,15 +909,15 @@ void func_8003A948(SoundSeq *seq, s32 pitch, s32 frames) {
     }
 }
 
-/* Set a sequence's pan, at once or over `frames`. */
-void func_8003A9BC(SoundSeq *seq, s32 pan, s32 frames) {
+/* 8003A9BC: Set a sequence's pan, at once or over `frames`. */
+void sound_set_seq_pan(SoundSeq *seq, s32 pan, s32 frames) {
     s32 delta;
 
     seq->pan_target = pan << 8;
     if (frames == 0) {
         seq->pan.value = pan << 24;
         seq->pan_frames = 0;
-        func_8003E680(0x100, seq);
+        sound_request_seq_channel_updates(0x100, seq);
         return;
     }
     delta = (pan << 16) - (seq->pan.value >> 8);
@@ -926,30 +927,30 @@ void func_8003A9BC(SoundSeq *seq, s32 pan, s32 frames) {
     }
 }
 
-void func_8003E6C0(SoundSeq *seq, s32 voices);
-void func_8003AFA0(SoundSeq *seq);
+void sound_request_seq_voice_updates(SoundSeq *seq, s32 voices);
+void sound_request_seq_key_on(SoundSeq *seq);
 
-/* Resume a sequence: apply its reverb (when the driver owns the reverb),
+/* 8003AA30: Resume a sequence: apply its reverb (when the driver owns the reverb),
  * refresh all its voices and mark it playing. */
-void func_8003AA30(SoundSeq *seq) {
-    DisableEvent(D_800595BC);
-    if (D_8005957C & 0x1000) {
-        func_80038934(seq->reverb_type, seq->reverb_depth, seq->reverb_delay,
+void sound_resume_seq(SoundSeq *seq) {
+    DisableEvent(sound_tick_event);
+    if (sound_driver_flags & 0x1000) {
+        sound_set_reverb(seq->reverb_type, seq->reverb_depth, seq->reverb_delay,
                       seq->reverb_feedback);
     }
-    func_8003E6C0(seq, 0xFFFF);
-    func_8003AFA0(seq);
+    sound_request_seq_voice_updates(seq, 0xFFFF);
+    sound_request_seq_key_on(seq);
     seq->flags = (seq->flags & ~0x100) | 0x8000;
-    EnableEvent(D_800595BC);
+    EnableEvent(sound_tick_event);
 }
 
-void func_8003EFA0(SoundChannel *state, u32 voice);
-void func_8003EF04(SoundChannel *state, u32 voice);
+void sound_request_key_off(SoundChannel *state, u32 voice);
+void sound_key_on_voice(SoundChannel *state, u32 voice);
 
-/* Mute the channels of a sequence whose bit is set in `mask` (keying their
+/* 8003AAC4: Mute the channels of a sequence whose bit is set in `mask` (keying their
  * voices off while it plays) and unmute the others (keying on the ones
  * still sounding). The unmute test reads the flag word as 32 bits. */
-void func_8003AAC4(SoundSeq *seq, u32 mask) {
+void sound_set_seq_mute_mask(SoundSeq *seq, u32 mask) {
     SoundSeqChannel *channel;
     s32 count;
 
@@ -965,14 +966,14 @@ void func_8003AAC4(SoundSeq *seq, u32 mask) {
                 if (!(channel->flags & 0x20)) {
                     channel->flags |= 0x20;
                     if ((s16)seq->flags & 0x8000) {
-                        func_8003EFA0(&channel->state, channel->voice);
+                        sound_request_key_off(&channel->state, channel->voice);
                     }
                 }
             } else if (channel->flags & 0x20) {
                 channel->flags &= ~0x20;
                 if ((SEQ_CHANNEL_FLAGS32(channel) & 0x110) == 0x100 &&
                     ((s16)seq->flags & 0x8000)) {
-                    func_8003EF04(&channel->state, channel->voice);
+                    sound_key_on_voice(&channel->state, channel->voice);
                 }
             }
         }
@@ -982,14 +983,14 @@ void func_8003AAC4(SoundSeq *seq, u32 mask) {
     } while (count != 0);
 }
 
-/* Set a sequence's byte 0x1b. */
-void func_8003ABE8(SoundSeq *seq, u8 value) {
+/* 8003ABE8: Set a sequence's byte 0x1b. */
+void sound_set_seq_loop_selector(SoundSeq *seq, u8 value) {
     seq->unk1B = value;
 }
 
-/* A sequence's position: its first word, then frames, seconds and minutes
+/* 8003ABF0: A sequence's position: its first word, then frames, seconds and minutes
  * of its tick counter. */
-void func_8003ABF0(SoundSeq *seq, SoundTime *time) {
+void sound_get_seq_time(SoundSeq *seq, SoundTime *time) {
     u32 ticks = seq->ticks >> 8;
     u32 seconds = ticks / 240;
 
@@ -999,9 +1000,9 @@ void func_8003ABF0(SoundSeq *seq, SoundTime *time) {
     time->minutes = seconds / 60;
 }
 
-/* Store (and return a pointer to) the lowest `unk20` of the active channels
+/* 8003AC58: Store (and return a pointer to) the lowest `unk20` of the active channels
  * of a sequence, 0 when none is active. */
-u16 *func_8003AC58(SoundSeq *seq) {
+u16 *sound_get_seq_loop_count(SoundSeq *seq) {
     SoundSeqChannel *channel = seq->channel;
     u16 count = seq->channels;
     u16 *out = &seq->unk30;
@@ -1020,10 +1021,10 @@ u16 *func_8003AC58(SoundSeq *seq) {
     return out;
 }
 
-/* The block at header offset `unk1E` of a playing sequence (the first one when
+/* 8003ACC8: The block at header offset `unk1E` of a playing sequence (the first one when
  * `seq` is NULL); NULL when it is not playing. */
-u8 *func_8003ACC8(SoundSeq *seq) {
-    SoundSeq *it = D_80059564;
+u8 *sound_get_seq_header_block(SoundSeq *seq) {
+    SoundSeq *it = sound_playing_seq_list;
 
     if (seq != NULL) {
         while (it != NULL) {
@@ -1039,95 +1040,95 @@ u8 *func_8003ACC8(SoundSeq *seq) {
     return (u8 *)it->header + it->header->unk1E;
 }
 
-void func_8003AD98(SoundSeq *seq);
-void func_8003ADCC(SoundSeq *seq);
-void func_8003AE84(SoundSeq *seq);
+void sound_discard_seq_snapshot(SoundSeq *seq);
+void sound_take_seq_snapshot(SoundSeq *seq);
+void sound_restore_seq_snapshot(SoundSeq *seq);
 
-/* Snapshot operations: 0 discards, 1 takes, 2 restores. */
-void func_8003AD20(SoundSeq *seq, s32 op) {
+/* 8003AD20: Snapshot operations: 0 discards, 1 takes, 2 restores. */
+void sound_run_seq_snapshot_op(SoundSeq *seq, s32 op) {
     switch (op) {
     case 0:
-        func_8003AD98(seq);
+        sound_discard_seq_snapshot(seq);
         break;
     case 1:
-        func_8003ADCC(seq);
+        sound_take_seq_snapshot(seq);
         break;
     case 2:
-        func_8003AE84(seq);
+        sound_restore_seq_snapshot(seq);
         break;
     }
 }
 
 
-/* Discard a sequence's snapshot. */
-void func_8003AD98(SoundSeq *seq) {
+/* 8003AD98: Discard a sequence's snapshot. */
+void sound_discard_seq_snapshot(SoundSeq *seq) {
     if (seq->flags & 0x10) {
         seq->flags &= ~0x10;
-        func_8003B930(seq);
+        sound_free_seq_snapshots(seq);
     }
 }
 
 
-/* Save a copy of a sequence to restart from (reusing an earlier one). The
+/* 8003ADCC: Save a copy of a sequence to restart from (reusing an earlier one). The
  * original leaves the copy pointer unset when one already exists. */
-void func_8003ADCC(SoundSeq *seq) {
+void sound_take_seq_snapshot(SoundSeq *seq) {
     s32 size;
     SoundSeq *snapshot;
 
-    DisableEvent(D_800595BC);
-    size = func_8003BB40(seq->channels);
+    DisableEvent(sound_tick_event);
+    size = sound_get_seq_size(seq->channels);
     if (seq->snapshot == NULL) {
-        snapshot = func_80038F18(size);
+        snapshot = sound_alloc_memory_low(size);
     }
     if (snapshot == NULL) {
-        EnableEvent(D_800595BC);
+        EnableEvent(sound_tick_event);
         return;
     }
     seq->snapshot = snapshot;
     seq->flags |= 0x10;
-    func_80039248(snapshot, seq, size);
+    sound_copy_memory(snapshot, seq, size);
     snapshot->next = NULL;
     snapshot->snapshot = NULL;
     seq->unk2C = 0;
-    EnableEvent(D_800595BC);
+    EnableEvent(sound_tick_event);
 }
 
-void func_8003B97C(SoundSeq *seq, SoundSeq *snapshot);
+void sound_copy_seq_snapshot(SoundSeq *seq, SoundSeq *snapshot);
 
-/* Restart a sequence from its snapshot. */
-void func_8003AE84(SoundSeq *seq) {
+/* 8003AE84: Restart a sequence from its snapshot. */
+void sound_restore_seq_snapshot(SoundSeq *seq) {
     s32 position;
 
     if (seq->snapshot != NULL && (seq->flags & 0x10)) {
-        DisableEvent(D_800595BC);
-        func_8003B060(seq);
+        DisableEvent(sound_tick_event);
+        sound_release_seq_voices(seq);
         position = seq->unk24;
-        func_8003B97C(seq, seq->snapshot);
+        sound_copy_seq_snapshot(seq, seq->snapshot);
         seq->unk2C = position;
-        func_8003E6C0(seq, 0xFFFF);
-        func_8003AFA0(seq);
-        EnableEvent(D_800595BC);
+        sound_request_seq_voice_updates(seq, 0xFFFF);
+        sound_request_seq_key_on(seq);
+        EnableEvent(sound_tick_event);
     }
 }
 
-/* Stop a sequence's voices and reset its tempo slide to 0x7F00, keeping
+/* 8003AF24: Stop a sequence's voices and reset its tempo slide to 0x7F00, keeping
  * `value` in `unk1E`. */
-void func_8003AF24(SoundSeq *seq, u16 value) {
+void sound_skip_seq_to_bar(SoundSeq *seq, u16 value) {
     s32 tempo = 0x7F00;
 
     seq->unk1E = value;
     seq->flags |= 0x20;
-    DisableEvent(D_800595BC);
-    func_8003B060(seq);
-    EnableEvent(D_800595BC);
+    DisableEvent(sound_tick_event);
+    sound_release_seq_voices(seq);
+    EnableEvent(sound_tick_event);
     seq->tempo_target = tempo;
     seq->tempo_frames = 0;
     seq->tempo.value = tempo << 16;
     seq->tick_step = seq->rate.part.whole * tempo;
 }
 
-/* Request key-on for the unmuted channels that hold a sounding note. */
-void func_8003AFA0(SoundSeq *seq) {
+/* 8003AFA0: Request key-on for the unmuted channels that hold a sounding note. */
+void sound_request_seq_key_on(SoundSeq *seq) {
     s32 count = seq->channels;
     SoundSeqChannel *channel = seq->channel;
 
@@ -1140,38 +1141,38 @@ void func_8003AFA0(SoundSeq *seq) {
     } while (count != 0);
 }
 
-void func_8003E8A4(SoundChannel *state, u32 voice);
+void sound_request_fast_key_off(SoundChannel *state, u32 voice);
 
-/* Apply 8003e8a4 to the voice of every active channel of a sequence. */
-void func_8003AFFC(SoundSeq *seq) {
+/* 8003AFFC: Apply 8003e8a4 to the voice of every active channel of a sequence. */
+void sound_fast_key_off_seq_voices(SoundSeq *seq) {
     s32 count = seq->channels;
     SoundSeqChannel *channel = seq->channel;
 
     do {
         if (channel->flags != 0) {
-            func_8003E8A4(&channel->state, channel->voice);
+            sound_request_fast_key_off(&channel->state, channel->voice);
         }
         channel++;
         count--;
     } while (count != 0);
 }
 
-/* Release the voices of every channel of a sequence. */
-void func_8003B060(SoundSeq *seq) {
+/* 8003B060: Release the voices of every channel of a sequence. */
+void sound_release_seq_voices(SoundSeq *seq) {
     SoundSeqChannel *channel = seq->channel;
     s32 count = seq->channels;
 
     do {
-        func_8003E83C(&channel->state, channel->voice);
+        sound_release_voice(&channel->state, channel->voice);
         channel++;
         count--;
     } while (count != 0);
 }
 
-/* Fill a sequence's table (placed after its channels) from the 5-byte
+/* 8003B0AC: Fill a sequence's table (placed after its channels) from the 5-byte
  * (index, little-endian word) entries of its header. */
-void func_8003B0AC(SoundSeq *seq, SoundSeqHeader *header) {
-    u32 *table = (u32 *)((u8 *)seq + func_8003BB40(header->channels));
+void sound_load_seq_table(SoundSeq *seq, SoundSeqHeader *header) {
+    u32 *table = (u32 *)((u8 *)seq + sound_get_seq_size(header->channels));
     s32 count;
     u8 *entry;
 
@@ -1188,11 +1189,11 @@ void func_8003B0AC(SoundSeq *seq, SoundSeqHeader *header) {
     } while (count != 0);
 }
 
-void func_8003B32C(SoundSeq *seq);
+void sound_init_effect_channels(SoundSeq *seq);
 
-/* Create the sound effect channel set with `count` (made even) channels on
+/* 8003B148: Create the sound effect channel set with `count` (made even) channels on
  * the top hardware voices. */
-SoundSeq *func_8003B148(s32 count) {
+SoundSeq *sound_create_effect_channels(s32 count) {
     SoundSeq *effects;
     SoundSeqChannel *channel;
     s32 i;
@@ -1200,13 +1201,13 @@ SoundSeq *func_8003B148(s32 count) {
     s32 voice;
 
     count &= ~1;
-    D_80059478 = count;
-    effects = func_80038F18(func_8003BB40(count));
+    sound_effect_channel_count = count;
+    effects = sound_alloc_memory_low(sound_get_seq_size(count));
     if (effects == NULL) {
-        func_8003F6B0(0x1E);
+        sound_report_error(0x1E);
         return NULL;
     }
-    func_8003B32C(effects);
+    sound_init_effect_channels(effects);
     channel = effects->channel;
     voice = 24 - count;
     i = count;
@@ -1219,26 +1220,26 @@ SoundSeq *func_8003B148(s32 count) {
         i--;
         voice++;
     } while (i != 0);
-    func_8003B9E4(effects);
+    sound_link_seq(effects);
     return effects;
 }
 
 
-/* Unlink a sequence from the playing list (stopping it) and release it. */
-void func_8003B1FC(SoundSeq *seq) {
-    func_8003BA38(seq);
-    func_80039144(seq);
+/* 8003B1FC: Unlink a sequence from the playing list (stopping it) and release it. */
+void sound_destroy_seq(SoundSeq *seq) {
+    sound_unlink_seq(seq);
+    sound_free_memory(seq);
 }
 
-void func_8003B370(SoundSeq *seq);
+void sound_reset_seq_playback(SoundSeq *seq);
 
-/* Read a sequence's header: channel count, reverb settings (applied when
+/* 8003B22C: Read a sequence's header: channel count, reverb settings (applied when
  * the driver owns the reverb), then reset its playback state. */
-void func_8003B22C(SoundSeq *seq) {
+void sound_read_seq_header(SoundSeq *seq) {
     SoundSeqHeader *header = seq->header;
 
-    if (func_8003F67C(header) != 0) {
-        func_8003F6B0(0xA);
+    if (sound_check_seq_header(header) != 0) {
+        sound_report_error(0xA);
         return;
     }
     seq->flags |= 1;
@@ -1250,27 +1251,27 @@ void func_8003B22C(SoundSeq *seq) {
     seq->reverb_depth = header->reverb_depth << 8;
     seq->reverb_delay = header->reverb_delay;
     seq->reverb_feedback = header->reverb_feedback;
-    if (D_8005957C & 0x1000) {
-        func_80038934((s8)seq->reverb_type, seq->reverb_depth, seq->reverb_delay,
+    if (sound_driver_flags & 0x1000) {
+        sound_set_reverb((s8)seq->reverb_type, seq->reverb_depth, seq->reverb_delay,
                       seq->reverb_feedback);
     }
-    func_8003B370(seq);
+    sound_reset_seq_playback(seq);
 }
 
-/* Initialise the sound effect channel set. */
-void func_8003B32C(SoundSeq *seq) {
+/* 8003B32C: Initialise the sound effect channel set. */
+void sound_init_effect_channels(SoundSeq *seq) {
     seq->flags = 2;
     seq->unk12 = 0x7FFF;
     seq->unk16 = 0;
     seq->unk18 = 0x7F;
-    seq->channels = D_80059478;
-    func_8003B370(seq);
+    seq->channels = sound_effect_channel_count;
+    sound_reset_seq_playback(seq);
 }
 
-/* Reset a sequence's playback state: 4/4 time, tempo 1, rate 0x66, full
+/* 8003B370: Reset a sequence's playback state: 4/4 time, tempo 1, rate 0x66, full
  * fade level, no snapshot. */
-void func_8003B370(SoundSeq *seq) {
-    func_8003B930(seq);
+void sound_reset_seq_playback(SoundSeq *seq) {
+    sound_free_seq_snapshots(seq);
     seq->unk1A = 0;
     seq->unk1B = 0;
     seq->unk30 = 0;
@@ -1300,15 +1301,15 @@ void func_8003B370(SoundSeq *seq) {
     seq->unk50 = 0x10000;
 }
 
-void func_8003E5BC(s16 index, SoundSeqChannel *channel);
-void func_8003E724(SoundChannel *state, u32 voice);
+void sound_select_instrument(s16 index, SoundSeqChannel *channel);
+void sound_claim_voice(SoundChannel *state, u32 voice);
 
-/* Start the channels of a sequence at the data offsets listed in its
+/* 8003B424: Start the channels of a sequence at the data offsets listed in its
  * header: default note, volume, pan and modulators, muted when the
  * sequence's mute mask says so. The voice index is stored before the
  * channel offset is reread, and the data pointers (start, position and
  * repeat return) are set together. */
-void func_8003B424(SoundSeq *seq) {
+void sound_start_seq_channels(SoundSeq *seq) {
     s32 count = seq->channels;
     SoundSeqChannel *channel = seq->channel;
     SoundSeqHeader *header;
@@ -1328,9 +1329,9 @@ void func_8003B424(SoundSeq *seq) {
     voices = 0;
     header = seq->header;
     offset = header->channel;
-    instruments = func_800383EC(seq->unk16);
+    instruments = sound_find_wave_bank(seq->unk16);
     if (instruments == NULL) {
-        instruments = D_80059558;
+        instruments = sound_wave_bank_list;
     }
     do {
         if (*offset != 0) {
@@ -1377,12 +1378,12 @@ void func_8003B424(SoundSeq *seq) {
             channel->unk25 = seq->unk16;
             channel->instruments = instruments;
             if (instruments != NULL) {
-                func_8003E5BC(0, channel);
+                sound_select_instrument(0, channel);
             }
             channel->voice = voice;
             channel->state.mode = 0;
             channel->state.priority = 0x100;
-            func_8003E724(&channel->state, voice);
+            sound_claim_voice(&channel->state, voice);
         } else {
             channel->flags = 0;
         }
@@ -1395,14 +1396,14 @@ void func_8003B424(SoundSeq *seq) {
     seq->voices = voices;
 }
 
-/* Start effect `id` (bank in the high half) on the effect channels from
+/* 8003B644: Start effect `id` (bank in the high half) on the effect channels from
  * index `code & 0xFF` with priority `code >> 8`, at `volume` (scaled by
  * the bank's per-effect volume) and `pan`.
  * The level replaces the volume (16-bit store; clamped when bit 15 is set). */
-void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
-    SoundBank *bank = D_80059440;
+void sound_start_effect(s16 code, s32 id, s16 volume, s16 pan) {
+    SoundBank *bank = sound_effect_bank_list;
     s32 bank_id = id >> 16;
-    SoundSeq *effects = D_800595D8;
+    SoundSeq *effects = sound_effect_channels;
     SoundSequence *instruments;
     u16 *offset;
     SoundSeqChannel *channel;
@@ -1417,9 +1418,9 @@ void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
             return;
         }
     }
-    instruments = func_800383EC(bank->unk16);
+    instruments = sound_find_wave_bank(bank->unk16);
     if (instruments == NULL) {
-        instruments = D_80059558;
+        instruments = sound_wave_bank_list;
     }
     volumes = (u8 *)bank + bank->volumes;
     volume = (u32)(volume * volumes[id & 0xFFFF]) >> 7;
@@ -1429,11 +1430,11 @@ void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
     offset = &bank->effect[(id & 0xFFFF) * 2];
     priority = code >> 8;
     channel = &effects->channel[code & 0xFF];
-    count = D_80059404;
-    DisableEvent(D_800595BC);
+    count = sound_channels_per_effect;
+    DisableEvent(sound_tick_event);
     do {
         channel->id.full = id;
-        channel->stamp = D_80059504;
+        channel->stamp = sound_tick_count;
         channel->priority = priority;
         if (*offset != 0) {
             effects->voices |= 1 << channel->voice_bit;
@@ -1471,60 +1472,60 @@ void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
             channel->unk25 = bank->unk16;
             channel->instruments = instruments;
             if (instruments != NULL) {
-                func_8003E5BC(0, channel);
+                sound_select_instrument(0, channel);
             }
             channel->state.mode = 0;
             channel->state.priority = 0x200;
-            func_8003E724(&channel->state, channel->voice);
+            sound_claim_voice(&channel->state, channel->voice);
         } else {
             effects->voices &= ~(1 << channel->voice_bit);
             channel->flags = 0;
-            func_8003E83C(&channel->state, channel->voice);
+            sound_release_voice(&channel->state, channel->voice);
         }
         offset++;
         channel++;
         count--;
     } while (count != 0);
     effects->flags |= 0x8000;
-    EnableEvent(D_800595BC);
+    EnableEvent(sound_tick_event);
 }
 
-/* Free a sequence's snapshot chain. */
-void func_8003B930(SoundSeq *seq) {
+/* 8003B930: Free a sequence's snapshot chain. */
+void sound_free_seq_snapshots(SoundSeq *seq) {
     SoundSeq *snapshot = seq->snapshot;
 
     if (snapshot != NULL) {
         seq->snapshot = NULL;
         do {
             seq = snapshot->snapshot;
-            func_80039144(snapshot);
+            sound_free_memory(snapshot);
             snapshot = seq;
         } while (seq != NULL);
     }
 }
 
-/* Copy a snapshot over a sequence, keeping its list and snapshot links. */
-void func_8003B97C(SoundSeq *seq, SoundSeq *snapshot) {
+/* 8003B97C: Copy a snapshot over a sequence, keeping its list and snapshot links. */
+void sound_copy_seq_snapshot(SoundSeq *seq, SoundSeq *snapshot) {
     SoundSeq *next = seq->next;
     SoundSeq *saved = seq->snapshot;
 
-    func_80039248(seq, snapshot, func_8003BB40(seq->channels));
+    sound_copy_memory(seq, snapshot, sound_get_seq_size(seq->channels));
     seq->next = next;
     seq->snapshot = saved;
 }
 
-/* Link a sequence at the head of the playing list. */
-void func_8003B9E4(SoundSeq *seq) {
-    DisableEvent(D_800595BC);
-    seq->next = D_80059564;
-    D_80059564 = seq;
-    EnableEvent(D_800595BC);
+/* 8003B9E4: Link a sequence at the head of the playing list. */
+void sound_link_seq(SoundSeq *seq) {
+    DisableEvent(sound_tick_event);
+    seq->next = sound_playing_seq_list;
+    sound_playing_seq_list = seq;
+    EnableEvent(sound_tick_event);
 }
 
-/* Unlink a sequence from the playing list, stopping it first; -1 when it
+/* 8003BA38: Unlink a sequence from the playing list, stopping it first; -1 when it
  * is not listed. */
-s32 func_8003BA38(SoundSeq *seq) {
-    SoundSeq *it = D_80059564;
+s32 sound_unlink_seq(SoundSeq *seq) {
+    SoundSeq *it = sound_playing_seq_list;
     SoundSeq *prev = NULL;
 
     while (it != NULL && it != seq) {
@@ -1532,27 +1533,27 @@ s32 func_8003BA38(SoundSeq *seq) {
         it = it->next;
     }
     if (it == NULL) {
-        func_8003F6B0(0xF);
+        sound_report_error(0xF);
         return -1;
     }
     if ((s16)seq->flags & 0x8000) {
         if (seq == NULL) {
-            func_8003F6B0(5);
+            sound_report_error(5);
         } else {
             seq->flags &= 0x7FFF;
-            func_8003B060(seq);
+            sound_release_seq_voices(seq);
         }
     }
     if (prev != NULL) {
         prev->next = seq->next;
     } else {
-        D_80059564 = seq->next;
+        sound_playing_seq_list = seq->next;
     }
     return 0;
 }
 
-/* Set `bits` in every active channel of a sequence. */
-void func_8003BB08(s32 bits, SoundSeq *seq) {
+/* 8003BB08: Set `bits` in every active channel of a sequence. */
+void sound_set_seq_channel_flags(s32 bits, SoundSeq *seq) {
     SoundSeqChannel *channel = seq->channel;
     s32 count = seq->channels;
 
@@ -1565,125 +1566,128 @@ void func_8003BB08(s32 bits, SoundSeq *seq) {
     } while (count != 0);
 }
 
-/* Byte offset of channel `index` in a sequence. */
-s32 func_8003BB40(s32 index) {
+/* 8003BB40: Byte offset of channel `index` in a sequence. */
+s32 sound_get_seq_size(s32 index) {
     return index * sizeof(SoundSeqChannel) + 0x94;
 }
 
-void func_8003BE68(void);
+void sound_start_next_transfer(void);
 
-/* SPU transfer completion: run the finished transfer's callback (flagged
+/* 8003BB64: SPU transfer completion: run the finished transfer's callback (flagged
  * busy), then start the next queued transfer. */
-void func_8003BB64(void) {
-    void (*callback)(void) = D_80059458[D_80059510].callback;
+void sound_complete_transfer(void) {
+    void (*callback)(void) = sound_transfer_ring[sound_transfer_ring_read_index].callback;
 
-    D_8005957C |= 4;
+    sound_driver_flags |= 4;
     if (callback != NULL) {
         callback();
     }
-    D_8005957C &= ~0x10;
-    if (D_80059510 != D_800594F4) {
-        func_8003BE68();
+    sound_driver_flags &= ~0x10;
+    if (sound_transfer_ring_read_index != sound_transfer_ring_write_index) {
+        sound_start_next_transfer();
     }
-    D_8005957C &= ~4;
+    sound_driver_flags &= ~4;
 }
 
 
-/* SPU transfers of each type: 1 write, 2 read, 3 and 4 decoded CD data. */
-void func_8003BC10(u32 address, u8 *data, s32 size, void (*callback)(void)) {
-    func_8003BCA0(address, data, size, callback, 1);
+/* 8003BC10: SPU transfers of each type: 1 write, 2 read, 3 and 4 decoded CD data. */
+void sound_queue_spu_write(u32 address, u8 *data, s32 size, void (*callback)(void)) {
+    sound_queue_transfer(address, data, size, callback, 1);
 }
 
-void func_8003BC34(u32 address, u8 *data, s32 size, void (*callback)(void)) {
-    func_8003BCA0(address, data, size, callback, 2);
+/* 8003BC34 */
+void sound_queue_spu_read(u32 address, u8 *data, s32 size, void (*callback)(void)) {
+    sound_queue_transfer(address, data, size, callback, 2);
 }
 
-void func_8003BC58(u32 address, u8 *data, s32 size, void (*callback)(void)) {
-    func_8003BCA0(address, data, size, callback, 3);
+/* 8003BC58 */
+void sound_queue_decoded_read(u32 address, u8 *data, s32 size, void (*callback)(void)) {
+    sound_queue_transfer(address, data, size, callback, 3);
 }
 
-void func_8003BC7C(u32 address, u8 *data, s32 size, void (*callback)(void)) {
-    func_8003BCA0(address, data, size, callback, 4);
+/* 8003BC7C */
+void sound_queue_decoded_read_flag5(u32 address, u8 *data, s32 size, void (*callback)(void)) {
+    sound_queue_transfer(address, data, size, callback, 4);
 }
 
-s32 func_8003BDBC(void);
+s32 sound_is_transfer_ring_full(void);
 
-/* Queue an SPU transfer of `size` bytes between `data` and SPU address
+/* 8003BCA0: Queue an SPU transfer of `size` bytes between `data` and SPU address
  * `address` (8-byte aligned), starting it when the SPU is idle. Outside a
  * transfer callback, waits for ring space and runs in a critical section. */
-void func_8003BCA0(u32 address, u8 *data, s32 size, void (*callback)(void), u16 type) {
-    u16 flags = D_8005957C;
+void sound_queue_transfer(u32 address, u8 *data, s32 size, void (*callback)(void), u16 type) {
+    u16 flags = sound_driver_flags;
     u16 index;
     SoundTransfer *transfer;
 
     if (!(flags & 4)) {
-        while (func_8003BDBC() != 0) {
+        while (sound_is_transfer_ring_full() != 0) {
         }
         EnterCriticalSection();
     }
-    index = D_800594F4 + 1;
+    index = sound_transfer_ring_write_index + 1;
     if (index >= 8) {
         index = 0;
     }
-    D_800594F4 = index;
-    transfer = &D_80059458[index];
+    sound_transfer_ring_write_index = index;
+    transfer = &sound_transfer_ring[index];
     transfer->type = type & 0xF;
     transfer->unk2 = 0;
     transfer->data = data;
     transfer->address = address & 0x7FFF8;
     transfer->size = size;
     transfer->callback = callback;
-    if (!(D_8005957C & 0x10)) {
-        func_8003BE68();
+    if (!(sound_driver_flags & 0x10)) {
+        sound_start_next_transfer();
     }
     if (!(flags & 4)) {
         ExitCriticalSection();
     }
 }
 
-/* Whether the eight-entry command ring has at least six entries queued. */
-s32 func_8003BDBC(void) {
-    u16 write = D_800594F4;
+/* 8003BDBC: Whether the eight-entry command ring has at least six entries queued. */
+s32 sound_is_transfer_ring_full(void) {
+    u16 write = sound_transfer_ring_write_index;
 
-    if (write < D_80059510) {
+    if (write < sound_transfer_ring_read_index) {
         write += 8;
     }
-    return write - D_80059510 >= 6;
+    return write - sound_transfer_ring_read_index >= 6;
 }
 
-/* An empty driver entry. */
-void func_8003BDF4(void) {
+/* 8003BDF4: An empty driver entry. */
+void sound_empty_entry_after_transfer_queue(void) {
 }
 
-/* The type of the transfer in progress (0 when idle), after waiting for it
+/* 8003BDFC: The type of the transfer in progress (0 when idle), after waiting for it
  * to finish when `wait` has bit 4. */
-s32 func_8003BDFC(s32 wait) {
+s32 sound_sync_transfer(s32 wait) {
     if (wait & 0x10) {
     busy:
-        if (D_8005957C & 0x10) {
+        if (sound_driver_flags & 0x10) {
             goto busy;
         }
     }
-    if (D_8005957C & 0x10) {
-        return (s16)D_80059458[D_80059510].type;
+    if (sound_driver_flags & 0x10) {
+        return (s16)sound_transfer_ring[sound_transfer_ring_read_index].type;
     }
     return 0;
 }
 
-/* Start the next queued SPU transfer; its completion callback continues
+/* 8003BE68: Start the next queued SPU transfer; its completion callback continues
  * the ring. */
-void func_8003BE68(void) {
-    u16 index = D_80059510 + 1;
+void sound_start_next_transfer(void) {
+    u16 index = sound_transfer_ring_read_index + 1;
     SoundTransfer *transfer;
     SpuTransferCallbackProc previous;
 
     if (index >= 8) {
         index = 0;
     }
-    D_80059510 = index;
-    D_8005957C |= 0x10;
-    transfer = &D_80059458[index];
-    previous = SpuSetTransferCallback(func_8003BB64);
+    sound_transfer_ring_read_index = index;
+    sound_driver_flags |= 0x10;
+    transfer = &sound_transfer_ring[index];
+    previous = SpuSetTransferCallback(sound_complete_transfer);
     SpuSetTransferMode(0);
     SpuSetTransferStartAddr(transfer->address);
     switch (transfer->type) {
@@ -1696,42 +1700,42 @@ void func_8003BE68(void) {
         SpuRead(transfer->data, transfer->size);
         break;
     case 3:
-        D_80059548 = SpuReadDecodedData(transfer->data, 0);
+        sound_unread_decoded_read_result = SpuReadDecodedData(transfer->data, 0);
         break;
     case 4:
-        D_80059548 = SpuReadDecodedData(transfer->data, 5);
+        sound_unread_decoded_read_result = SpuReadDecodedData(transfer->data, 5);
         break;
     }
-    if (previous != func_8003BB64) {
-        func_8003F6B0(0x26);
+    if (previous != sound_complete_transfer) {
+        sound_report_error(0x26);
     }
 }
 
-/* SPU interrupt callback (80037b88 installs it): count the interrupt and run
+/* 8003BFA0: SPU interrupt callback (80037b88 installs it): count the interrupt and run
  * the hook, flagged busy. */
-void func_8003BFA0(void) {
-    D_8005957C |= 4;
-    D_80059514++;
-    if (D_8005950C != NULL) {
-        D_8005950C();
+void sound_dispatch_spu_irq(void) {
+    sound_driver_flags |= 4;
+    sound_unread_spu_irq_count++;
+    if (sound_spu_irq_hook != NULL) {
+        sound_spu_irq_hook();
     }
-    D_8005957C &= ~4;
+    sound_driver_flags &= ~4;
 }
 
-/* Install the SPU interrupt hook 8003bfa0 runs. */
-void func_8003C010(void (*callback)(void)) {
-    D_8005950C = callback;
+/* 8003C010: Install the SPU interrupt hook 8003bfa0 runs. */
+void sound_set_spu_irq_hook(void (*callback)(void)) {
+    sound_spu_irq_hook = callback;
 }
 
-void func_8003C484(SoundSlide *slide);
-void func_8003C4C4(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
-void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
-void func_8003E900(void);
-void func_8003EB5C(void);
-void func_8003EBF0(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
-void func_8003EFE4(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
+void sound_step_slide(SoundSlide *slide);
+void sound_step_seq_slides(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
+void sound_seq_interpret_channels(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
+void sound_flush_voice_registers(void);
+void sound_key_off_voices(void);
+void sound_stage_seq_voices(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
+void sound_run_seq_modulators(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
 
-/* The sound driver tick. Every other tick it steps the master and CD
+/* 8003C020: The sound driver tick. Every other tick it steps the master and CD
  * volume fades; the master volume goes through 80038e6c, which gives it
  * the Wide mode's inverted right channel at every step. Then it writes
  * the staged voice registers, advances every playing sequence (tempo,
@@ -1739,7 +1743,7 @@ void func_8003EFE4(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
  * voice registers (modulators, then volumes and pitches, where the
  * Mono/Stereo pan law applies). Each slide's new value is read through a
  * copy of its 16.16 value. */
-s32 func_8003C020(void) {
+s32 sound_run_tick(void) {
     u32 start;
     u32 end;
     SoundSeq *seq;
@@ -1748,54 +1752,54 @@ s32 func_8003C020(void) {
     s16 volume;
     Fixed value;
 
-    if (D_8005957C & 0x40) {
+    if (sound_driver_flags & 0x40) {
         return 0;
     }
     start = GetRCnt(0xF2000002);
-    if (D_80059504++ & 1) {
-        if (D_8005A3C0.master_slide.frames != 0) {
-            func_8003C484(&D_8005A3C0.master_slide);
-            value = D_8005A3C0.master_slide.value;
+    if (sound_tick_count++ & 1) {
+        if (sound_volumes.master_slide.frames != 0) {
+            sound_step_slide(&sound_volumes.master_slide);
+            value = sound_volumes.master_slide.value;
             volume = value.part.whole;
-            D_8005A3C0.master = volume;
-            func_80038E6C(volume, &D_8005A3C0.attr.mvol, 0);
-            D_8005A3C0.attr.mask |= 3;
+            sound_volumes.master = volume;
+            sound_set_stereo_volume(volume, &sound_volumes.attr.mvol, 0);
+            sound_volumes.attr.mask |= 3;
         }
-        if (D_8005A3C0.cd_slide.frames != 0) {
-            func_8003C484(&D_8005A3C0.cd_slide);
-            value = D_8005A3C0.cd_slide.value;
+        if (sound_volumes.cd_slide.frames != 0) {
+            sound_step_slide(&sound_volumes.cd_slide);
+            value = sound_volumes.cd_slide.value;
             volume = value.part.whole;
-            D_8005A3C0.attr.cd.volume.left = D_8005A3C0.attr.cd.volume.right = D_8005A3C0.cd = volume;
-            D_8005A3C0.attr.mask |= 0xC0;
+            sound_volumes.attr.cd.volume.left = sound_volumes.attr.cd.volume.right = sound_volumes.cd = volume;
+            sound_volumes.attr.mask |= 0xC0;
         }
-        if (D_8005A3C0.attr.mask != 0) {
-            SpuSetCommonAttr(&D_8005A3C0.attr);
-            D_8005A3C0.attr.mask = 0;
+        if (sound_volumes.attr.mask != 0) {
+            SpuSetCommonAttr(&sound_volumes.attr);
+            sound_volumes.attr.mask = 0;
         }
     }
-    func_8003E900();
-    for (seq = D_80059564; seq != NULL; seq = seq->next) {
+    sound_flush_voice_registers();
+    for (seq = sound_playing_seq_list; seq != NULL; seq = seq->next) {
         if ((s16)seq->flags >= 0) {
             continue;
         }
         if (seq->unk2C != 0 && seq->unk24 >= seq->unk2C) {
-            func_8003AE84(seq);
+            sound_restore_seq_snapshot(seq);
         }
         if (seq->tempo_frames != 0) {
-            func_8003C484((SoundSlide *)&seq->tempo);
+            sound_step_slide((SoundSlide *)&seq->tempo);
             seq->tick_step = seq->rate.part.whole * seq->tempo.part.whole;
         }
         if (seq->fade_frames != 0) {
-            func_8003C484((SoundSlide *)&seq->fade);
-            func_8003E680(0x100, seq);
+            sound_step_slide((SoundSlide *)&seq->fade);
+            sound_request_seq_channel_updates(0x100, seq);
         }
         if (seq->pitch_frames != 0) {
-            func_8003C484((SoundSlide *)&seq->pitch);
-            func_8003E680(0x200, seq);
+            sound_step_slide((SoundSlide *)&seq->pitch);
+            sound_request_seq_channel_updates(0x200, seq);
         }
         if (seq->pan_frames != 0) {
-            func_8003C484((SoundSlide *)&seq->pan);
-            func_8003E680(0x100, seq);
+            sound_step_slide((SoundSlide *)&seq->pan);
+            sound_request_seq_channel_updates(0x100, seq);
         }
         seq->unk20++;
         seq->ticks += seq->tempo.part.whole;
@@ -1812,18 +1816,18 @@ s32 func_8003C020(void) {
             count = seq->channels;
             channels = seq->channel;
             if (count != 0) {
-                func_8003C4C4(seq, channels, count);
-                func_8003C6E8(seq, channels, count);
+                sound_step_seq_slides(seq, channels, count);
+                sound_seq_interpret_channels(seq, channels, count);
             }
             if (seq->voices != 0) {
                 seq->unk24++;
                 if (seq->fade.value == 0) {
-                    func_80039C4C(seq);
+                    sound_stop_seq(seq);
                     seq->flags |= 0x100;
                 }
                 if (seq->unk32 == seq->unk1E) {
                     seq->flags &= ~0x20;
-                    func_8003A838(seq, 0, 0);
+                    sound_set_seq_tempo(seq, 0, 0);
                     seq->unk1E = 0;
                 }
             } else {
@@ -1832,31 +1836,31 @@ s32 func_8003C020(void) {
             }
         }
     }
-    for (seq = D_80059564; seq != NULL; seq = seq->next) {
+    for (seq = sound_playing_seq_list; seq != NULL; seq = seq->next) {
         if ((s16)seq->flags < 0) {
             count = seq->channels;
             channels = seq->channel;
             if (count != 0) {
-                func_8003EFE4(seq, channels, count);
-                func_8003EBF0(seq, channels, count);
+                sound_run_seq_modulators(seq, channels, count);
+                sound_stage_seq_voices(seq, channels, count);
             }
         }
     }
-    func_8003EB5C();
-    if (D_8005955C & 1) {
-        D_8005955C &= ~1;
+    sound_key_off_voices();
+    if (sound_pending_irq_enable & 1) {
+        sound_pending_irq_enable &= ~1;
         SpuSetIRQ(1);
     }
     end = GetRCnt(0xF2000002);
     if (end >= start) {
-        D_800595C4 += end - start;
-        D_80059540++;
+        sound_unread_tick_time_total += end - start;
+        sound_unread_timed_tick_count++;
     }
     return 0;
 }
 
-/* Step a linear slide; on its last frame land exactly on the target. */
-void func_8003C484(SoundSlide *slide) {
+/* 8003C484: Step a linear slide; on its last frame land exactly on the target. */
+void sound_step_slide(SoundSlide *slide) {
     if (--slide->frames != 0) {
         slide->value.value += slide->step;
     } else {
@@ -1864,11 +1868,11 @@ void func_8003C484(SoundSlide *slide) {
     }
 }
 
-/* Advance a sequence's rate slide and `count` channels' slides (note,
+/* 8003C4C4: Advance a sequence's rate slide and `count` channels' slides (note,
  * level, pan and volume) and timers by one tick. One tick before the
  * next note, change the release rate when flagged; when the gate timer
  * expires, request key off and remember it for the next note. */
-void func_8003C4C4(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
+void sound_step_seq_slides(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
     u16 frames;
     u16 flags;
     u16 flags2;
@@ -1950,9 +1954,9 @@ void func_8003C4C4(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
     } while (--count != 0);
 }
 
-void func_8003CC84(SoundSeq *seq, SoundSeqChannel *channel, s32 index);
+void sound_seq_apply_table_entry(SoundSeq *seq, SoundSeqChannel *channel, s32 index);
 
-/* Decode channels whose note timer expired. Bytes below 0x80 give a volume
+/* 8003C6E8: Decode channels whose note timer expired. Bytes below 0x80 give a volume
  * followed by an encoded note/duration; the other bytes dispatch sequence
  * opcodes. Look ahead through opcodes and repeats to decide whether to
  * release the note, without executing that future data or advancing the
@@ -1965,7 +1969,7 @@ void func_8003CC84(SoundSeq *seq, SoundSeqChannel *channel, s32 index);
  * (the original copies the byte for the two table indexes). The duration
  * bias is stored before the duration is extended; the extension rereads
  * unk5C. */
-void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
+void sound_seq_interpret_channels(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
     s16 remaining_channels;
     SoundSeqChannel *channel;
     u8 *position;
@@ -1998,8 +2002,8 @@ void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
                     }
                     channel->flags2 |= 0x100;
                     duration = *position++;
-                    note = channel->current_note = (u8)channel->transpose + D_80050A94[duration];
-                    duration = D_800509B0[duration];
+                    note = channel->current_note = (u8)channel->transpose + sound_note_semitones[duration];
+                    duration = sound_note_durations[duration];
                     if (duration == 0) {
                         duration = *position++;
                     }
@@ -2007,7 +2011,7 @@ void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
                     channel->state.envelope.release_rate = channel->unk28;
                     channel->state.flags |= 0x80;
                     if (channel->flags & 0x10) {
-                        func_8003CC84(seq, channel, note);
+                        sound_seq_apply_table_entry(seq, channel, note);
                     } else {
                         channel->note.value = ((note << 8) + channel->detune + channel->unk6C) << 16;
                     }
@@ -2023,7 +2027,7 @@ void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
                         channel->flags2 |= 0x300;
                     }
                 } else {
-                    position = D_80050624[(s16)(opcode - 0x80)](position, seq, channel);
+                    position = sound_seq_opcode_handlers[(s16)(opcode - 0x80)](position, seq, channel);
                     if (channel->flags == 0) {
                         seq->voices &= ~(1 << channel->voice_bit);
                         break;
@@ -2073,7 +2077,7 @@ void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
                     position = loop->end;
                     loop--;
                 } else {
-                    position += D_80050824[(s16)(opcode - 0x80)];
+                    position += sound_seq_opcode_lengths[(s16)(opcode - 0x80)];
                 }
             }
             if (opcode < 0x80) {
@@ -2145,14 +2149,14 @@ void func_8003C6E8(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
     } while (--remaining_channels != 0);
 }
 
-/* Apply entry `index` of the sequence's table to a channel: instrument,
+/* 8003CC84: Apply entry `index` of the sequence's table to a channel: instrument,
  * note offset and pan. */
-void func_8003CC84(SoundSeq *seq, SoundSeqChannel *channel, s32 index) {
+void sound_seq_apply_table_entry(SoundSeq *seq, SoundSeqChannel *channel, s32 index) {
     u8 *entry = (u8 *)&seq->table[index & 0xFF];
 
     u8 pan;
 
-    func_8003E5BC(entry[0], channel);
+    sound_select_instrument(entry[0], channel);
     channel->note.value = ((entry[1] << 8) + channel->detune + channel->unk6C) << 16;
     pan = entry[3];
     channel->flags2 |= 0x100;
@@ -2161,26 +2165,26 @@ void func_8003CC84(SoundSeq *seq, SoundSeqChannel *channel, s32 index) {
 
 /* Sequence opcode handlers: each takes the opcode's operands, the sequence
  * and the channel, and returns the position after the operands. Each comment
- * gives the opcode (D_80050624[op - 0x80]), its operands and its effect;
+ * gives the opcode (sound_seq_opcode_handlers[op - 0x80]), its operands and its effect;
  * tools/analysis/sound_sequence.py decodes the sequences with them. */
 
-/* The 31 unused opcode slots: no operands, no effect. D_80050824 gives them
+/* 8003CD00: The 31 unused opcode slots: no operands, no effect. sound_seq_opcode_lengths gives them
  * length 0, so the look-ahead of 8003c6e8 would never step past one. */
-u8 *func_8003CD00(u8 *data) {
+u8 *sound_seq_unused_opcode(u8 *data) {
     return data;
 }
 
-/* 80 rest(u8 ticks): wait `ticks` with the key released (unk5C; flags 0x400
+/* 8003CD08: 80 rest(u8 ticks): wait `ticks` with the key released (unk5C; flags 0x400
  * and flags2 2, the key-off request of an expired gate). */
-u8 *func_8003CD08(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_rest(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->unk5C = *data++;
     channel->flags |= 0x400;
     channel->flags2 |= 2;
     return data;
 }
 
-/* 81 tie(u8 ticks): wait `ticks` holding the note (unk5C, flags 0x100). */
-u8 *func_8003CD30(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003CD30: 81 tie(u8 ticks): wait `ticks` holding the note (unk5C, flags 0x100). */
+u8 *sound_seq_tie(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->flags |= 0x100;
@@ -2188,15 +2192,15 @@ u8 *func_8003CD30(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* 8A nop_8a(): no effect. */
-u8 *func_8003CD4C(u8 *data) {
+/* 8003CD4C: 8A nop_8a(): no effect. */
+u8 *sound_seq_nop_8a(u8 *data) {
     return data;
 }
 
-/* 8D loop_point_if(u8 selector): mark the loop point after the operand (and
+/* 8003CD54: 8D loop_point_if(u8 selector): mark the loop point after the operand (and
  * the transpose) when `selector` equals sequence byte 0x1B (set by
  * 8003abe8). */
-u8 *func_8003CD54(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_loop_point_if(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     if (*data++ == seq->unk1B) {
         channel->loop = data;
         channel->unk23 = channel->transpose;
@@ -2204,61 +2208,61 @@ u8 *func_8003CD54(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* 8E skip3_8e(unused byte, unused byte, unused byte): skip three operand
+/* 8003CD7C: 8E skip3_8e(unused byte, unused byte, unused byte): skip three operand
  * bytes; no effect. */
-u8 *func_8003CD7C(u8 *data) {
+u8 *sound_seq_skip3_8e(u8 *data) {
     return data + 3;
 }
 
-/* 8F nop_8f(): no effect. */
-u8 *func_8003CD84(u8 *data) {
+/* 8003CD84: 8F nop_8f(): no effect. */
+u8 *sound_seq_nop_8f(u8 *data) {
     return data;
 }
 
-/* 90 end(): continue at the loop point (counting the pass, restoring its
+/* 8003CD8C: 90 end(): continue at the loop point (counting the pass, restoring its
  * transpose); without one release the voice and stop the channel. */
-u8 *func_8003CD8C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_end(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     if (channel->loop != NULL) {
         data = channel->loop;
         channel->unk20++;
         channel->transpose = channel->unk23;
     } else {
         channel->flags2 &= ~3;
-        func_8003E83C(&channel->state, channel->voice);
+        sound_release_voice(&channel->state, channel->voice);
         channel->flags = 0;
     }
     return data;
 }
 
-/* 91 loop_point(): mark the loop point here and save the transpose. */
-u8 *func_8003CE04(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003CE04: 91 loop_point(): mark the loop point here and save the transpose. */
+u8 *sound_seq_loop_point(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->loop = data;
     channel->unk23 = channel->transpose;
     return data;
 }
 
-/* 94 octave(u8 octave): transpose = octave * 12. */
-u8 *func_8003CE18(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003CE18: 94 octave(u8 octave): transpose = octave * 12. */
+u8 *sound_seq_octave(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->transpose = *data * 12;
     return data + 1;
 }
 
-/* 95 octave_up(): transpose += 12. */
-u8 *func_8003CE38(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003CE38: 95 octave_up(): transpose += 12. */
+u8 *sound_seq_octave_up(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->transpose += 12;
     return data;
 }
 
-/* 96 octave_down(): transpose -= 12. */
-u8 *func_8003CE50(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003CE50: 96 octave_down(): transpose -= 12. */
+u8 *sound_seq_octave_down(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->transpose -= 12;
     return data;
 }
 
-/* 97 time_signature(u8 beats, u8 unit): `beats` beats per bar of 0xC0 / unit
+/* 8003CE68: 97 time_signature(u8 beats, u8 unit): `beats` beats per bar of 0xC0 / unit
  * ticks each (the bar and beat counters 8003c020 advances); restart the
  * current beat's ticks. */
-u8 *func_8003CE68(u8 *data, SoundSeq *seq) {
+u8 *sound_seq_time_signature(u8 *data, SoundSeq *seq) {
     s16 beats = data[0];
     s16 unit = data[1];
 
@@ -2270,9 +2274,9 @@ u8 *func_8003CE68(u8 *data, SoundSeq *seq) {
     return data + 2;
 }
 
-/* F9 position(u8 bar, u8 beat): set the bar and beat counters and restart
+/* 8003CE9C: F9 position(u8 bar, u8 beat): set the bar and beat counters and restart
  * the beat's ticks. */
-u8 *func_8003CE9C(u8 *data, SoundSeq *seq) {
+u8 *sound_seq_position(u8 *data, SoundSeq *seq) {
     u16 length;
 
     seq->unk32 = data[0];
@@ -2282,22 +2286,22 @@ u8 *func_8003CE9C(u8 *data, SoundSeq *seq) {
     return data + 2;
 }
 
-/* A4 set_1a(u8 value): sequence byte 0x1A = value (no recovered code reads
+/* 8003CEC0: A4 set_1a(u8 value): sequence byte 0x1A = value (no recovered code reads
  * it). */
-u8 *func_8003CEC0(u8 *data, SoundSeq *seq) {
+u8 *sound_seq_set_1a(u8 *data, SoundSeq *seq) {
     seq->unk1A = *data;
     return data + 1;
 }
 
-/* A5 add_1a(u8 value): sequence byte 0x1A += value. */
-u8 *func_8003CED4(u8 *data, SoundSeq *seq) {
+/* 8003CED4: A5 add_1a(u8 value): sequence byte 0x1A += value. */
+u8 *sound_seq_add_1a(u8 *data, SoundSeq *seq) {
     seq->unk1A += *data;
     return data + 1;
 }
 
-/* 98 repeat(u8 count): open a repeat of `count` passes one level deeper,
+/* 8003CEF0: 98 repeat(u8 count): open a repeat of `count` passes one level deeper,
  * saving its start and transpose. */
-u8 *func_8003CEF0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_repeat(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     SoundLoop *loop;
 
     channel->loop_depth++;
@@ -2308,10 +2312,10 @@ u8 *func_8003CEF0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* 99 repeat_end(): while passes remain go back to the repeat start
+/* 8003CF38: 99 repeat_end(): while passes remain go back to the repeat start
  * (recording this end, restoring the start transpose); else close the
  * repeat. */
-u8 *func_8003CF38(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_repeat_end(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     SoundLoop *loop = &channel->loops[channel->loop_depth];
 
     if (--loop->count != 0xFF) {
@@ -2325,9 +2329,9 @@ u8 *func_8003CF38(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* 9A repeat_break(): on the last pass jump to the recorded repeat end and
+/* 8003CFA4: 9A repeat_break(): on the last pass jump to the recorded repeat end and
  * close the repeat. */
-u8 *func_8003CFA4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_repeat_break(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     SoundLoop *loop = &channel->loops[channel->loop_depth];
 
     if (loop->count == 0) {
@@ -2338,26 +2342,26 @@ u8 *func_8003CFA4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* 9C play_effect(u16 effect, unused byte): play effect `effect` of bank 0 at
+/* 8003CFF0: 9C play_effect(u16 effect, unused byte): play effect `effect` of bank 0 at
  * volume 0x7F, pan 0x40 (80039f18). */
-u8 *func_8003CFF0(u8 *data) {
-    func_80039F18(data[0] | (data[1] << 8), 0x7F, 0x40);
+u8 *sound_seq_play_effect(u8 *data) {
+    sound_play_effect_volume_pan(data[0] | (data[1] << 8), 0x7F, 0x40);
     return data + 3;
 }
 
-/* 9D stop_effect(u16 effect): stop the effect channels playing id `effect`
- * (8003a14c). The look-ahead (D_80050824) steps 4 bytes over it. */
-u8 *func_8003D034(u8 *data) {
-    func_8003A14C(data[0] | (data[1] << 8));
+/* 8003D034: 9D stop_effect(u16 effect): stop the effect channels playing id `effect`
+ * (8003a14c). The look-ahead (sound_seq_opcode_lengths) steps 4 bytes over it. */
+u8 *sound_seq_stop_effect(u8 *data) {
+    sound_stop_effect(data[0] | (data[1] << 8));
     return data + 2;
 }
 
-/* 9E goto_effect(u16 effect, u8 part): continue three bytes into channel
+/* 8003D070: 9E goto_effect(u16 effect, u8 part): continue three bytes into channel
  * `part` of effect `effect` of the channel's bank (the first bank when it
  * has none); with no loaded bank of that id it returns the operand pointer,
  * so the operands are executed as opcodes. */
-u8 *func_8003D070(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
-    SoundBank *bank = D_80059440;
+u8 *sound_seq_goto_effect(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    SoundBank *bank = sound_effect_bank_list;
     s16 effect = data[0] | (data[1] << 8);
     s16 id = channel->id.part.bank;
     u8 part = data[2];
@@ -2374,17 +2378,17 @@ u8 *func_8003D070(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-/* A0 rate(u8 rate): tick rate = rate; ticks per frame = rate * tempo. */
-u8 *func_8003D0E8(u8 *data, SoundSeq *seq) {
+/* 8003D0E8: A0 rate(u8 rate): tick rate = rate; ticks per frame = rate * tempo. */
+u8 *sound_seq_rate(u8 *data, SoundSeq *seq) {
     u8 rate = *data++;
     seq->rate.value = rate << 16;
     seq->tick_step = rate * seq->tempo.part.whole;
     return data;
 }
 
-/* A1 rate_add(s8 delta): tick rate += delta; zero the ticks per frame until
+/* 8003D110: A1 rate_add(s8 delta): tick rate += delta; zero the ticks per frame until
  * a rate or tempo opcode or slide recomputes them. */
-u8 *func_8003D110(s8 *data, SoundSeq *seq) {
+u8 *sound_seq_rate_add(s8 *data, SoundSeq *seq) {
     u8 reserved[4]; /* Retain the original unused eight-byte stack frame. */
     s32 rate = *data;
     s32 old_rate = seq->rate.value;
@@ -2394,9 +2398,9 @@ u8 *func_8003D110(s8 *data, SoundSeq *seq) {
     return data + 1;
 }
 
-/* A2 rate_slide(u8 frames, u8 target): slide the tick rate to `target` over
+/* 8003D13C: A2 rate_slide(u8 frames, u8 target): slide the tick rate to `target` over
  * `frames`. */
-u8 *func_8003D13C(u8 *data, SoundSeq *seq) {
+u8 *sound_seq_rate_slide(u8 *data, SoundSeq *seq) {
     s16 frames = data[0];
     u8 target = data[1];
     s32 delta;
@@ -2410,17 +2414,17 @@ u8 *func_8003D13C(u8 *data, SoundSeq *seq) {
     return data + 2;
 }
 
-/* A6 fade_level(u8 level): sequence level = level << 24; flag every
+/* 8003D17C: A6 fade_level(u8 level): sequence level = level << 24; flag every
  * channel's volume. */
-u8 *func_8003D17C(u8 *data, SoundSeq *seq) {
+u8 *sound_seq_fade_level(u8 *data, SoundSeq *seq) {
     seq->fade.value = *data++ << 24;
-    func_8003E680(0x100, seq);
+    sound_request_seq_channel_updates(0x100, seq);
     return data;
 }
 
-/* A7 fade_slide(u8 units, u8 target): slide the sequence level to `target`
+/* 8003D1BC: A7 fade_slide(u8 units, u8 target): slide the sequence level to `target`
  * over units * 32 frames. */
-u8 *func_8003D1BC(u8 *data, SoundSeq *seq) {
+u8 *sound_seq_fade_slide(u8 *data, SoundSeq *seq) {
     s16 frames = data[0] << 5;
     u8 target = data[1];
     s32 delta = (target << 24) - seq->fade.value;
@@ -2433,34 +2437,34 @@ u8 *func_8003D1BC(u8 *data, SoundSeq *seq) {
     return data + 2;
 }
 
-/* A9 gate(u8 sixteenths): release point of each note in sixteenths of its
+/* 8003D208: A9 gate(u8 sixteenths): release point of each note in sixteenths of its
  * ticks (15: ticks - 1, 16: all). */
-u8 *func_8003D208(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_gate(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->gate_fraction = *data;
     return data + 1;
 }
 
-/* AA voice(u8 voice): move the channel to hardware voice `voice` (< 25). */
-u8 *func_8003D21C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D21C: AA voice(u8 voice): move the channel to hardware voice `voice` (< 25). */
+u8 *sound_seq_voice(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 voice = *data++;
 
     if (voice < 25) {
-        func_8003E83C(&channel->state, channel->voice);
-        func_8003E724(&channel->state, channel->voice = voice);
+        sound_release_voice(&channel->state, channel->voice);
+        sound_claim_voice(&channel->state, channel->voice = voice);
     }
     return data;
 }
 
-/* AC instrument(u8 instrument): select an instrument of the wave bank
+/* 8003D298: AC instrument(u8 instrument): select an instrument of the wave bank
  * (8003e5bc). */
-u8 *func_8003D298(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
-    func_8003E5BC(*data++, channel);
+u8 *sound_seq_instrument(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    sound_select_instrument(*data++, channel);
     return data;
 }
 
-/* AD duration_adjust(u8 ticks): add to the signed note-length bias (0 resets
+/* 8003D2D0: AD duration_adjust(u8 ticks): add to the signed note-length bias (0 resets
  * it). */
-u8 *func_8003D2D0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_duration_adjust(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     if (value != 0) {
@@ -2471,36 +2475,36 @@ u8 *func_8003D2D0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* AE drum_on(): notes select entries of the sequence table (8003cc84), when
+/* 8003D300: AE drum_on(): notes select entries of the sequence table (8003cc84), when
  * the sequence has one. */
-u8 *func_8003D300(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_drum_on(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     if (seq->table != NULL) {
         channel->flags |= 0x10;
     }
     return data;
 }
 
-/* AF drum_off(): notes play the channel's instrument. */
-u8 *func_8003D328(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D328: AF drum_off(): notes play the channel's instrument. */
+u8 *sound_seq_drum_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->flags &= ~0x10;
     return data;
 }
 
-/* B0 legato_on(): channel flag 0x800: notes keep the key held (no gate
+/* 8003D340: B0 legato_on(): channel flag 0x800: notes keep the key held (no gate
  * release). */
-u8 *func_8003D340(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_legato_on(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->flags |= 0x800;
     return data;
 }
 
-/* B1 legato_off(): clear channel flag 0x800. */
-u8 *func_8003D358(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D358: B1 legato_off(): clear channel flag 0x800. */
+u8 *sound_seq_legato_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->flags &= ~0x800;
     return data;
 }
 
-/* B2 pitch_mod_on(): SPU pitch modulation on (odd hardware voices). */
-u8 *func_8003D370(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D370: B2 pitch_mod_on(): SPU pitch modulation on (odd hardware voices). */
+u8 *sound_seq_pitch_mod_on(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     if (channel->voice & 1) {
         channel->state.flags |= 0x1000;
         channel->state.mode |= 0x10;
@@ -2508,8 +2512,8 @@ u8 *func_8003D370(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* B3 pitch_mod_off(): SPU pitch modulation off (odd hardware voices). */
-u8 *func_8003D3A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D3A4: B3 pitch_mod_off(): SPU pitch modulation off (odd hardware voices). */
+u8 *sound_seq_pitch_mod_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     if (channel->voice & 1) {
         channel->state.flags |= 0x1000;
         channel->state.mode &= ~0x10;
@@ -2517,8 +2521,8 @@ u8 *func_8003D3A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* B4 noise_clock(u8 clock): noise on at SPU noise clock `clock`. */
-u8 *func_8003D3D8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D3D8: B4 noise_clock(u8 clock): noise on at SPU noise clock `clock`. */
+u8 *sound_seq_noise_clock(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     seq->noise_clock = *data++;
     SpuSetNoiseClock(seq->noise_clock);
     channel->state.flags |= 0x2000;
@@ -2526,8 +2530,8 @@ u8 *func_8003D3D8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* B5 noise_clock_add(u8 delta): noise on, clock += delta (modulo 64). */
-u8 *func_8003D438(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D438: B5 noise_clock_add(u8 delta): noise on, clock += delta (modulo 64). */
+u8 *sound_seq_noise_clock_add(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     seq->noise_clock = (*data++ + seq->noise_clock) & 0x3F;
     SpuSetNoiseClock(seq->noise_clock);
     channel->state.flags |= 0x2000;
@@ -2535,23 +2539,23 @@ u8 *func_8003D438(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* B6 noise_on(): noise on. */
-u8 *func_8003D4A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D4A4: B6 noise_on(): noise on. */
+u8 *sound_seq_noise_on(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->state.flags |= 0x2000;
     channel->state.mode |= 0x20;
     return data;
 }
 
-/* B7 noise_off(): noise off. */
-u8 *func_8003D4C4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D4C4: B7 noise_off(): noise off. */
+u8 *sound_seq_noise_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->state.flags |= 0x2000;
     channel->state.mode &= ~0x20;
     return data;
 }
 
-/* B8 reverb_settings(u8 depth, s8 delay, s8 feedback): reverb depth (<< 8),
+/* 8003D4E4: B8 reverb_settings(u8 depth, s8 delay, s8 feedback): reverb depth (<< 8),
  * delay and feedback through 80038934, keeping the type. */
-u8 *func_8003D4E4(u8 *data, SoundSeq *seq) {
+u8 *sound_seq_reverb_settings(u8 *data, SoundSeq *seq) {
     s16 depth = data[0] << 8;
     s32 delay;
     s32 feedback;
@@ -2559,14 +2563,14 @@ u8 *func_8003D4E4(u8 *data, SoundSeq *seq) {
     seq->reverb_depth = depth;
     seq->reverb_delay = delay = ((s8 *)data)[1];
     seq->reverb_feedback = feedback = ((s8 *)data)[2];
-    func_80038934(-1, depth, delay, feedback);
+    sound_set_reverb(-1, depth, delay, feedback);
     return data + 3;
 }
 
-/* BA reverb_on(): reverb on, unless an effect set's channel stays dry
+/* 8003D53C: BA reverb_on(): reverb on, unless an effect set's channel stays dry
  * (driver flag 0x2000 clear or channel flag 2). */
-u8 *func_8003D53C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
-    if ((seq->flags & 6) && (!(D_8005957C & 0x2000) || (channel->flags & 2))) {
+u8 *sound_seq_reverb_on(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    if ((seq->flags & 6) && (!(sound_driver_flags & 0x2000) || (channel->flags & 2))) {
         return data;
     }
     channel->state.flags |= 0x4000;
@@ -2574,38 +2578,38 @@ u8 *func_8003D53C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* BB reverb_off(): reverb off. */
-u8 *func_8003D59C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D59C: BB reverb_off(): reverb off. */
+u8 *sound_seq_reverb_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->state.flags |= 0x4000;
     channel->state.mode &= ~0x40;
     return data;
 }
 
-/* BC skip3_bc(unused byte, unused byte, unused byte): skip three operand
+/* 8003D5BC: BC skip3_bc(unused byte, unused byte, unused byte): skip three operand
  * bytes; no effect. */
-u8 *func_8003D5BC(u8 *data) {
+u8 *sound_seq_skip3_bc(u8 *data) {
     return data + 3;
 }
 
-/* BD nop_bd(): no effect. */
-u8 *func_8003D5C4(u8 *data) {
+/* 8003D5C4: BD nop_bd(): no effect. */
+u8 *sound_seq_nop_bd(u8 *data) {
     return data;
 }
 
-/* BE nop_be(): no effect. */
-u8 *func_8003D5CC(u8 *data) {
+/* 8003D5CC: BE nop_be(): no effect. */
+u8 *sound_seq_nop_be(u8 *data) {
     return data;
 }
 
-/* C0 instrument_reload(): reselect the current instrument. */
-u8 *func_8003D5D4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
-    func_8003E5BC(channel->instrument, channel);
+/* 8003D5D4: C0 instrument_reload(): reselect the current instrument. */
+u8 *sound_seq_instrument_reload(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    sound_select_instrument(channel->instrument, channel);
     return data;
 }
 
-/* C1 envelope_modes(u8 attack, u8 sustain, u8 release): ADSR attack, sustain
+/* 8003D60C: C1 envelope_modes(u8 attack, u8 sustain, u8 release): ADSR attack, sustain
  * and release modes. */
-u8 *func_8003D60C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_envelope_modes(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value;
 
     channel->state.envelope.attack_mode = data[0];
@@ -2616,8 +2620,8 @@ u8 *func_8003D60C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-/* C2 attack_rate(u8 rate): ADSR attack rate. */
-u8 *func_8003D640(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D640: C2 attack_rate(u8 rate): ADSR attack rate. */
+u8 *sound_seq_attack_rate(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x10;
@@ -2625,8 +2629,8 @@ u8 *func_8003D640(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* C3 decay_rate(u8 rate): ADSR decay rate. */
-u8 *func_8003D65C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D65C: C3 decay_rate(u8 rate): ADSR decay rate. */
+u8 *sound_seq_decay_rate(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x20;
@@ -2634,8 +2638,8 @@ u8 *func_8003D65C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* C4 sustain_rate(u8 rate): ADSR sustain rate. */
-u8 *func_8003D678(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D678: C4 sustain_rate(u8 rate): ADSR sustain rate. */
+u8 *sound_seq_sustain_rate(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x40;
@@ -2643,8 +2647,8 @@ u8 *func_8003D678(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* C5 release_rate(u8 rate): ADSR release rate, also each note's default. */
-u8 *func_8003D694(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D694: C5 release_rate(u8 rate): ADSR release rate, also each note's default. */
+u8 *sound_seq_release_rate(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data;
 
     channel->state.flags |= 0x80;
@@ -2653,8 +2657,8 @@ u8 *func_8003D694(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 1;
 }
 
-/* C6 sustain_level(u8 level): ADSR sustain level. */
-u8 *func_8003D6B4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D6B4: C6 sustain_level(u8 level): ADSR sustain level. */
+u8 *sound_seq_sustain_level(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x100;
@@ -2662,8 +2666,8 @@ u8 *func_8003D6B4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* C7 decay_sustain(u8 decay, u8 level): ADSR decay rate and sustain level. */
-u8 *func_8003D6D0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D6D0: C7 decay_sustain(u8 decay, u8 level): ADSR decay rate and sustain level. */
+u8 *sound_seq_decay_sustain(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value;
 
     channel->state.envelope.decay_rate = data[0];
@@ -2673,8 +2677,8 @@ u8 *func_8003D6D0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 2;
 }
 
-/* C8 attack_mode(u8 mode): ADSR attack mode. */
-u8 *func_8003D6F8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D6F8: C8 attack_mode(u8 mode): ADSR attack mode. */
+u8 *sound_seq_attack_mode(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x10;
@@ -2682,8 +2686,8 @@ u8 *func_8003D6F8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* C9 sustain_mode(u8 mode): ADSR sustain mode. */
-u8 *func_8003D714(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D714: C9 sustain_mode(u8 mode): ADSR sustain mode. */
+u8 *sound_seq_sustain_mode(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x40;
@@ -2691,8 +2695,8 @@ u8 *func_8003D714(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* CA release_mode(u8 mode): ADSR release mode. */
-u8 *func_8003D730(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D730: CA release_mode(u8 mode): ADSR release mode. */
+u8 *sound_seq_release_mode(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x80;
@@ -2700,30 +2704,30 @@ u8 *func_8003D730(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* D0 detune(s8 eighths): detune (1/256 semitones) = eighths << 5. */
-u8 *func_8003D74C(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D74C: D0 detune(s8 eighths): detune (1/256 semitones) = eighths << 5. */
+u8 *sound_seq_detune(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->detune = *data << 5;
     channel->flags2 |= 0x200;
     return data + 1;
 }
 
-/* D1 detune_add(s8 eighths): detune += eighths << 5. */
-u8 *func_8003D770(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D770: D1 detune_add(s8 eighths): detune += eighths << 5. */
+u8 *sound_seq_detune_add(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->detune += *data << 5;
     channel->flags2 |= 0x200;
     return data + 1;
 }
 
-/* D2 detune_add_fine(s8 steps): detune += steps << 3. */
-u8 *func_8003D79C(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D79C: D2 detune_add_fine(s8 steps): detune += steps << 3. */
+u8 *sound_seq_detune_add_fine(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->detune += *data << 3;
     channel->flags2 |= 0x200;
     return data + 1;
 }
 
-/* D3 detune_add_word(s16 big-endian delta): detune += a big-endian signed
+/* 8003D7C8: D3 detune_add_word(s16 big-endian delta): detune += a big-endian signed
  * halfword. */
-u8 *func_8003D7C8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_detune_add_word(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 delta = data[1] + (s16)(data[0] << 8);
 
     channel->detune += delta;
@@ -2731,9 +2735,9 @@ u8 *func_8003D7C8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 2;
 }
 
-/* D4 pitch_slide(u8 frames, s8 semitones): slide the pitch by `semitones`
+/* 8003D7FC: D4 pitch_slide(u8 frames, s8 semitones): slide the pitch by `semitones`
  * over `frames` (either zero: stop the slide). */
-u8 *func_8003D7FC(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_pitch_slide(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u16 frames = data[0];
     s32 delta = ((s8 *)data)[1] << 24;
 
@@ -2747,22 +2751,22 @@ u8 *func_8003D7FC(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 2;
 }
 
-/* D5 pitch_slide_hold(): toggle flags3 bit 1: the pitch slide keeps going
+/* 8003D854: D5 pitch_slide_hold(): toggle flags3 bit 1: the pitch slide keeps going
  * without counting frames. */
-u8 *func_8003D854(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_pitch_slide_hold(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->flags3 ^= 2;
     return data;
 }
 
-/* DC pitch_slide_off(): stop the pitch slide. */
-u8 *func_8003D86C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003D86C: DC pitch_slide_off(): stop the pitch slide. */
+u8 *sound_seq_pitch_slide_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->flags3 &= ~1;
     return data;
 }
 
-/* D6 portamento(u8 frames): each new note slides from the previous one over
+/* 8003D884: D6 portamento(u8 frames): each new note slides from the previous one over
  * `frames` (0: off). */
-u8 *func_8003D884(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_portamento(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->unk70 = value;
@@ -2775,13 +2779,13 @@ u8 *func_8003D884(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
 }
 
 /* Declared without a prototype: callers pass the rate as an int. */
-s32 func_8003E290();
-void func_8003E3E0(SoundModulator *modulator);
+s32 sound_compute_modulator_step();
+void sound_restart_modulator(SoundModulator *modulator);
 
-/* D8 vibrato(u8 rate, s8 depth, u8 delay): pitch modulator on: signed
+/* 8003D8B8: D8 vibrato(u8 rate, s8 depth, u8 delay): pitch modulator on: signed
  * squared depth << 14, rate + rate*rate/64, delay * 4 frames, wave 3
  * (8003f2a0), restarted by each note; nothing when rate or depth is 0. */
-u8 *func_8003D8B8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_vibrato(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 depth = ((s8 *)data)[1];
     s16 rate = data[0];
     SoundModulator *modulator;
@@ -2794,26 +2798,26 @@ u8 *func_8003D8B8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
         }
         rate += rate * rate / 64;
         modulator = &channel->modulator[0];
-        modulator->step = func_8003E290(depth << 14, rate, 3);
+        modulator->step = sound_compute_modulator_step(depth << 14, rate, 3);
         modulator->rate = rate;
         modulator->delay = data[2] * 4;
         modulator->period = 0x400;
-        modulator->wave = func_8003F2A0;
+        modulator->wave = sound_step_triangle_wave;
         modulator->shape = 3;
         modulator->flags = 3;
         modulator->target = 0;
         channel->modulators |= 1;
-        func_8003E3E0(modulator);
+        sound_restart_modulator(modulator);
     }
     return data + 3;
 }
 
 
-/* D9 vibrato_wave(u8 rate, s8 depth, u8 mode): as vibrato without delay,
+/* 8003D9A4: D9 vibrato_wave(u8 rate, s8 depth, u8 mode): as vibrato without delay,
  * wave mode & 0xF (800508a4); mode bit 4 keeps it running across notes. The
  * mode is a halfword: the masked shape is computed for the call and copied
  * back into it, like the rate. */
-u8 *func_8003D9A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_vibrato_wave(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s16 rate = data[0];
     s32 depth = ((s8 *)data)[1];
     s16 mode = data[2];
@@ -2831,23 +2835,23 @@ u8 *func_8003D9A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
         flags = ((mode & 0x10) == 0) * 2;
         mode &= 0xF;
         modulator = &channel->modulator[0];
-        modulator->step = func_8003E290(depth, rate, mode);
+        modulator->step = sound_compute_modulator_step(depth, rate, mode);
         modulator->period = 0x400;
         modulator->rate = rate;
         modulator->delay = 0;
-        modulator->wave = D_800508A4[(u16)mode];
+        modulator->wave = sound_modulator_waves[(u16)mode];
         modulator->shape = mode;
         modulator->target = 0;
         modulator->flags = flags + 1;
         channel->modulators |= 1;
-        func_8003E3E0(modulator);
+        sound_restart_modulator(modulator);
     }
     return data + 3;
 }
 
-/* D7 vibrato_period(u8 period): fade the pitch modulator in over (period +
+/* 8003DAB0: D7 vibrato_period(u8 period): fade the pitch modulator in over (period +
  * 1) * 4 frames (step 0x400 / that; 0xFF changes nothing). */
-u8 *func_8003DAB0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_vibrato_period(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 period = *data++ + 1;
 
     if (period != 0) {
@@ -2856,39 +2860,39 @@ u8 *func_8003DAB0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* DA vibrato_on(): pitch modulator on. */
-u8 *func_8003DAEC(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003DAEC: DA vibrato_on(): pitch modulator on. */
+u8 *sound_seq_vibrato_on(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->modulators |= 1;
     channel->modulator[0].flags |= 1;
     return data;
 }
 
-/* DB vibrato_off(): pitch modulator off. */
-u8 *func_8003DB0C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003DB0C: DB vibrato_off(): pitch modulator off. */
+u8 *sound_seq_vibrato_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->modulators &= ~1;
     channel->modulator[0].flags &= ~1;
     return data;
 }
 
-/* E0 level(u8 level): channel level = level << 24; stop level slides. */
-u8 *func_8003DB2C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003DB2C: E0 level(u8 level): channel level = level << 24; stop level slides. */
+u8 *sound_seq_level(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->level.value = *data << 24;
     channel->flags2 |= 0x100;
     channel->flags3 &= ~0x108;
     return data + 1;
 }
 
-/* E1 level_add(s8 delta): channel level += delta << 24; stop level slides. */
-u8 *func_8003DB58(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003DB58: E1 level_add(s8 delta): channel level += delta << 24; stop level slides. */
+u8 *sound_seq_level_add(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->level.value = ((*data << 24) + channel->level.value) & 0x7FFFFFFF;
     channel->flags2 |= 0x100;
     channel->flags3 &= ~0x108;
     return data + 1;
 }
 
-/* E2 level_slide(u8 frames, s8 target): slide the channel level to `target`
+/* 8003DB98: E2 level_slide(u8 frames, s8 target): slide the channel level to `target`
  * over `frames`. */
-u8 *func_8003DB98(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_level_slide(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u16 frames = data[0];
     s32 delta = (((s8 *)data)[1] << 24) - channel->level.value;
 
@@ -2900,9 +2904,9 @@ u8 *func_8003DB98(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 2;
 }
 
-/* F8 level_sweep(u8 from, u8 frames, u8 to): each note sweeps the channel
+/* 8003DBE4: F8 level_sweep(u8 from, u8 frames, u8 to): each note sweeps the channel
  * level from `from` to `to` over `frames` (equal levels or 0 frames: off). */
-u8 *func_8003DBE4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_level_sweep(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 from = data[0] << 24;
     s16 frames = data[1];
     s32 delta = (data[2] << 24) - from;
@@ -2918,10 +2922,10 @@ u8 *func_8003DBE4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-/* E4 tremolo(u8 rate, s8 depth, u8 delay): volume modulator on: depth << 24,
+/* 8003DC50: E4 tremolo(u8 rate, s8 depth, u8 delay): volume modulator on: depth << 24,
  * rate + rate*rate/64, delay * 4 frames, wave 2 (8003f240), restarted by
  * each note; nothing when rate or depth is 0. */
-u8 *func_8003DC50(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_tremolo(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 depth = ((s8 *)data)[1];
     s16 rate = data[0];
     SoundModulator *modulator;
@@ -2929,23 +2933,23 @@ u8 *func_8003DC50(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     if (depth != 0 && rate != 0) {
         rate += rate * rate / 64;
         modulator = &channel->modulator[1];
-        modulator->step = func_8003E290(depth << 24, rate, 2);
+        modulator->step = sound_compute_modulator_step(depth << 24, rate, 2);
         modulator->rate = rate;
         modulator->delay = data[2] * 4;
         modulator->period = 0x400;
-        modulator->wave = func_8003F240;
+        modulator->wave = sound_step_sawtooth_wave;
         modulator->shape = 2;
         modulator->target = 1;
         modulator->flags = 3;
         channel->modulators |= 2;
-        func_8003E3E0(modulator);
+        sound_restart_modulator(modulator);
     }
     return data + 3;
 }
 
-/* E5 tremolo_wave(u8 rate, s8 depth, u8 mode): as tremolo without delay,
+/* 8003DD24: E5 tremolo_wave(u8 rate, s8 depth, u8 mode): as tremolo without delay,
  * wave mode & 0xF; mode bit 4 keeps it running across notes. */
-u8 *func_8003DD24(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_tremolo_wave(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s16 rate = data[0];
     s32 depth = ((s8 *)data)[1];
     s16 mode = data[2];
@@ -2958,23 +2962,23 @@ u8 *func_8003DD24(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
         flags = ((mode & 0x10) == 0) * 2;
         mode &= 0xF;
         modulator = &channel->modulator[1];
-        modulator->step = func_8003E290(depth, rate, mode);
+        modulator->step = sound_compute_modulator_step(depth, rate, mode);
         modulator->rate = rate;
         modulator->period = 0x400;
         modulator->delay = 0;
-        modulator->wave = D_800508A4[(u16)mode];
+        modulator->wave = sound_modulator_waves[(u16)mode];
         modulator->shape = mode;
         modulator->target = 1;
         modulator->flags = flags + 1;
         channel->modulators |= 2;
-        func_8003E3E0(modulator);
+        sound_restart_modulator(modulator);
     }
     return data + 3;
 }
 
-/* E3 tremolo_period(u8 period): fade the volume modulator in over (period +
+/* 8003DE18: E3 tremolo_period(u8 period): fade the volume modulator in over (period +
  * 1) * 4 frames (step 0x400 / that; 0xFF changes nothing). */
-u8 *func_8003DE18(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_tremolo_period(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 period = *data++ + 1;
 
     if (period != 0) {
@@ -2983,38 +2987,38 @@ u8 *func_8003DE18(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* E6 tremolo_on(): volume modulator on. */
-u8 *func_8003DE54(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003DE54: E6 tremolo_on(): volume modulator on. */
+u8 *sound_seq_tremolo_on(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->modulators |= 2;
     channel->modulator[1].flags |= 1;
     return data;
 }
 
-/* E7 tremolo_off(): volume modulator off. */
-u8 *func_8003DE74(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003DE74: E7 tremolo_off(): volume modulator off. */
+u8 *sound_seq_tremolo_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->modulators &= ~2;
     channel->modulator[1].flags &= ~1;
     return data;
 }
 
-/* E8 pan(u8 pan): pan = pan << 8 (0 left, 0x40 centre, 0x7F right). */
-u8 *func_8003DE94(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003DE94: E8 pan(u8 pan): pan = pan << 8 (0 left, 0x40 centre, 0x7F right). */
+u8 *sound_seq_pan(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->pan = *data << 8;
     channel->flags2 |= 0x100;
     return data + 1;
 }
 
-/* E9 pan_add(s8 delta): pan += delta << 8 (wrapping in 15 bits). */
-u8 *func_8003DEB4(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003DEB4: E9 pan_add(s8 delta): pan += delta << 8 (wrapping in 15 bits). */
+u8 *sound_seq_pan_add(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->pan = (channel->pan + (s16)(*data << 8)) & 0x7FFF;
     channel->flags2 |= 0x100;
     return data + 1;
 }
 
-/* EA pan_slide(u8 frames, s8 target): step the pan toward `target` over
+/* 8003DEE4: EA pan_slide(u8 frames, s8 target): step the pan toward `target` over
  * `frames`; the last frame sets it to the stored difference (target - start)
  * << 8. */
-u8 *func_8003DEE4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_pan_slide(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u16 frames = data[0];
     s32 delta = ((s8 *)data)[1] - (channel->pan >> 8);
 
@@ -3027,9 +3031,9 @@ u8 *func_8003DEE4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 2;
 }
 
-/* EB autopan_period(u8 period): fade the pan modulator in over (period + 1)
+/* 8003DF3C: EB autopan_period(u8 period): fade the pan modulator in over (period + 1)
  * * 4 frames (step 0x400 / that; 0xFF changes nothing). */
-u8 *func_8003DF3C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_autopan_period(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 period = *data++ + 1;
 
     if (period != 0) {
@@ -3038,10 +3042,10 @@ u8 *func_8003DF3C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-/* EC autopan(u8 rate, s8 depth, u8 delay): pan modulator on: depth << 24,
+/* 8003DF78: EC autopan(u8 rate, s8 depth, u8 delay): pan modulator on: depth << 24,
  * rate + rate*rate/64, delay * 4 frames, wave 3, restarted by each note;
  * nothing when rate or depth is 0. */
-u8 *func_8003DF78(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_autopan(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 depth = ((s8 *)data)[1];
     s16 rate = data[0];
     SoundModulator *modulator;
@@ -3049,23 +3053,23 @@ u8 *func_8003DF78(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     if (depth != 0 && rate != 0) {
         rate += rate * rate / 64;
         modulator = &channel->modulator[2];
-        modulator->step = func_8003E290(depth << 24, rate, 3);
+        modulator->step = sound_compute_modulator_step(depth << 24, rate, 3);
         modulator->rate = rate;
         modulator->delay = data[2] * 4;
         modulator->period = 0x400;
-        modulator->wave = func_8003F2A0;
+        modulator->wave = sound_step_triangle_wave;
         modulator->shape = 3;
         modulator->target = 2;
         modulator->flags = 3;
         channel->modulators |= 4;
-        func_8003E3E0(modulator);
+        sound_restart_modulator(modulator);
     }
     return data + 3;
 }
 
-/* ED autopan_wave(u8 rate, s8 depth, u8 mode): as autopan without delay,
+/* 8003E04C: ED autopan_wave(u8 rate, s8 depth, u8 mode): as autopan without delay,
  * wave mode & 0xF; mode bit 4 keeps it running across notes. */
-u8 *func_8003E04C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_autopan_wave(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s16 rate = data[0];
     s32 depth = ((s8 *)data)[1];
     s16 mode = data[2];
@@ -3078,38 +3082,38 @@ u8 *func_8003E04C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
         flags = ((mode & 0x10) == 0) * 2;
         mode &= 0xF;
         modulator = &channel->modulator[2];
-        modulator->step = func_8003E290(depth, rate, mode);
+        modulator->step = sound_compute_modulator_step(depth, rate, mode);
         modulator->rate = rate;
         modulator->period = 0x400;
         modulator->delay = 0;
-        modulator->wave = D_800508A4[(u16)mode];
+        modulator->wave = sound_modulator_waves[(u16)mode];
         modulator->shape = mode;
         modulator->target = 2;
         modulator->flags = flags + 1;
         channel->modulators |= 4;
-        func_8003E3E0(modulator);
+        sound_restart_modulator(modulator);
     }
     return data + 3;
 }
 
-/* EE autopan_on(): pan modulator on. */
-u8 *func_8003E140(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003E140: EE autopan_on(): pan modulator on. */
+u8 *sound_seq_autopan_on(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->modulators |= 4;
     channel->modulator[2].flags |= 1;
     return data;
 }
 
-/* EF autopan_off(): pan modulator off. */
-u8 *func_8003E160(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003E160: EF autopan_off(): pan modulator off. */
+u8 *sound_seq_autopan_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     channel->modulators &= ~4;
     channel->modulator[2].flags &= ~1;
     return data;
 }
 
-/* F0 modulator_select(u8 index, u8 mode, u8 target): select modulator
+/* 8003E180: F0 modulator_select(u8 index, u8 mode, u8 target): select modulator
  * `index` and set its wave (mode & 0xF), target (0 pitch, 1 level, 2 pan),
  * no delay; left off; mode bit 4 keeps it running across notes. */
-u8 *func_8003E180(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_modulator_select(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     SoundModulator *modulator;
     u8 mode;
     u8 target;
@@ -3118,7 +3122,7 @@ u8 *func_8003E180(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     mode = data[1];
     modulator = &channel->modulator[channel->modulator_index];
     modulator->shape = mode & 0xF;
-    modulator->wave = D_800508A4[modulator->shape];
+    modulator->wave = sound_modulator_waves[modulator->shape];
     if (!(mode & 0x10)) {
         modulator->flags = 2;
     } else {
@@ -3131,22 +3135,22 @@ u8 *func_8003E180(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-/* F1 modulator_depth(u8 rate, s8 depth_high, u8 depth_low): selected
+/* 8003E1F8: F1 modulator_depth(u8 rate, s8 depth_high, u8 depth_low): selected
  * modulator: rate + rate*rate/64 and a 16-bit depth. */
-u8 *func_8003E1F8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_modulator_depth(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 square = data[0] * data[0];
     SoundModulator *modulator = &channel->modulator[channel->modulator_index];
     s16 rate = square / 64 + data[0];
 
-    modulator->step = func_8003E290((((s8 *)data)[1] << 24) | (data[2] << 16), rate,
+    modulator->step = sound_compute_modulator_step((((s8 *)data)[1] << 24) | (data[2] << 16), rate,
                                     modulator->shape);
     modulator->rate = rate;
     return data + 3;
 }
 
-/* A modulator's step for a depth: shapes 2-3 cover the depth once per
+/* 8003E290: A modulator's step for a depth: shapes 2-3 cover the depth once per
  * rate, shape 4 once per rate - 1; others use the depth itself. */
-s32 func_8003E290(depth, rate, shape)
+s32 sound_compute_modulator_step(depth, rate, shape)
     s32 depth;
     s16 rate;
     s16 shape;
@@ -3167,10 +3171,10 @@ s32 func_8003E290(depth, rate, shape)
     return depth;
 }
 
-/* F2 modulator_timing(u8 delay, u8 period): selected modulator: delay * 4
+/* 8003E308: F2 modulator_timing(u8 delay, u8 period): selected modulator: delay * 4
  * frames, fade-in over (period + 1) * 4 frames (period 0xFF: neither
  * changes). */
-u8 *func_8003E308(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_modulator_timing(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     SoundModulator *modulator = &channel->modulator[channel->modulator_index];
     u8 period = data[1] + 1;
 
@@ -3181,24 +3185,24 @@ u8 *func_8003E308(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 2;
 }
 
-/* F5 nop_f5(): no effect. The look-ahead (D_80050824) steps 2 bytes over it. */
-u8 *func_8003E358(u8 *data) {
+/* 8003E358: F5 nop_f5(): no effect. The look-ahead (sound_seq_opcode_lengths) steps 2 bytes over it. */
+u8 *sound_seq_nop_f5(u8 *data) {
     return data;
 }
 
-/* F6 modulator_on(u8 index): restart modulator `index` and switch it on. */
-u8 *func_8003E360(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003E360: F6 modulator_on(u8 index): restart modulator `index` and switch it on. */
+u8 *sound_seq_modulator_on(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     s32 index = *data++;
     SoundModulator *modulator = &channel->modulator[index];
 
-    func_8003E3E0(modulator);
+    sound_restart_modulator(modulator);
     modulator->flags |= 1;
     channel->modulators |= 1 << index;
     return data;
 }
 
-/* Restart a modulator: counters reloaded, phase 0. */
-void func_8003E3E0(SoundModulator *modulator) {
+/* 8003E3E0: Restart a modulator: counters reloaded, phase 0. */
+void sound_restart_modulator(SoundModulator *modulator) {
     modulator->count = 1;
     modulator->phase = 0;
     modulator->flags &= ~0xC;
@@ -3206,8 +3210,8 @@ void func_8003E3E0(SoundModulator *modulator) {
     modulator->period_count = modulator->period;
 }
 
-/* F7 modulator_off(u8 index): switch modulator `index` off. */
-u8 *func_8003E40C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+/* 8003E40C: F7 modulator_off(u8 index): switch modulator `index` off. */
+u8 *sound_seq_modulator_off(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 index = *data;
 
     channel->modulator[index].flags &= ~1;
@@ -3215,26 +3219,26 @@ u8 *func_8003E40C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 1;
 }
 
-/* FC wave_bank_instrument(u8 key, u8 instrument): select the wave bank with
+/* 8003E44C: FC wave_bank_instrument(u8 key, u8 instrument): select the wave bank with
  * `key` (the first loaded wave bank when none has it) and an instrument of
  * it. */
-u8 *func_8003E44C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_wave_bank_instrument(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 key = data[0];
     u8 instrument = data[1];
     SoundSequence *bank;
 
     channel->unk25 = key;
-    bank = func_800383EC(key);
+    bank = sound_find_wave_bank(key);
     if (bank == NULL) {
-        bank = D_80059558;
+        bank = sound_wave_bank_list;
     }
     channel->instruments = bank;
-    func_8003E5BC(instrument, channel);
+    sound_select_instrument(instrument, channel);
     return data + 2;
 }
 
-/* FD tempo(u8 tempo): tempo = tempo << 24 unless 0. */
-u8 *func_8003E4BC(u8 *data, SoundSeq *seq) {
+/* 8003E4BC: FD tempo(u8 tempo): tempo = tempo << 24 unless 0. */
+u8 *sound_seq_tempo(u8 *data, SoundSeq *seq) {
     s32 tempo = *data++;
 
     if (tempo != 0) {
@@ -3244,39 +3248,39 @@ u8 *func_8003E4BC(u8 *data, SoundSeq *seq) {
     return data;
 }
 
-/* FE wave_bank(u8 key): select the wave bank with `key` (the first loaded
+/* 8003E4F0: FE wave_bank(u8 key): select the wave bank with `key` (the first loaded
  * wave bank when none has it). */
-u8 *func_8003E4F0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_wave_bank(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 key = *data++;
     SoundSequence *bank;
 
     channel->unk25 = key;
-    bank = func_800383EC(key);
+    bank = sound_find_wave_bank(key);
     if (bank == NULL) {
-        bank = D_80059558;
+        bank = sound_wave_bank_list;
     }
     channel->instruments = bank;
     return data;
 }
 
-/* FF stop_when_silent(): stop the channel when its voice's envelope level is
+/* 8003E54C: FF stop_when_silent(): stop the channel when its voice's envelope level is
  * 0; else continue. */
-u8 *func_8003E54C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+u8 *sound_seq_stop_when_silent(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     long status;
     short level;
 
     SpuGetVoiceEnvelopeAttr(channel->voice, &status, &level);
     if (level == 0) {
         channel->flags2 &= ~3;
-        func_8003E83C(&channel->state, channel->voice);
+        sound_release_voice(&channel->state, channel->voice);
         channel->flags = 0;
     }
     return data;
 }
 
-/* Select instrument `index` of the channel's wave bank: sample and loop
+/* 8003E5BC: Select instrument `index` of the channel's wave bank: sample and loop
  * addresses, envelope and note offset. */
-void func_8003E5BC(s16 index, SoundSeqChannel *channel) {
+void sound_select_instrument(s16 index, SoundSeqChannel *channel) {
     SoundSequence *bank;
     SoundInstrument *instrument;
     u32 start;
@@ -3302,8 +3306,8 @@ void func_8003E5BC(s16 index, SoundSeqChannel *channel) {
     channel->flags |= 0x8000;
 }
 
-/* Set `bits` in flags2 of every active channel of a sequence. */
-void func_8003E680(s32 bits, SoundSeq *seq) {
+/* 8003E680: Set `bits` in flags2 of every active channel of a sequence. */
+void sound_request_seq_channel_updates(s32 bits, SoundSeq *seq) {
     SoundSeqChannel *channel = seq->channel;
     s32 count = seq->channels;
 
@@ -3316,9 +3320,9 @@ void func_8003E680(s32 bits, SoundSeq *seq) {
     } while (count != 0);
 }
 
-/* Request an update of the `bits` voice registers of every active
+/* 8003E6C0: Request an update of the `bits` voice registers of every active
  * channel of a sequence. */
-void func_8003E6C0(SoundSeq *seq, s32 bits) {
+void sound_request_seq_voice_updates(SoundSeq *seq, s32 bits) {
     SoundSeqChannel *channel = seq->channel;
     s32 count = seq->channels;
 
@@ -3331,19 +3335,19 @@ void func_8003E6C0(SoundSeq *seq, s32 bits) {
     } while (count != 0);
 }
 
-/* Free every hardware voice (the original steps a byte offset). */
-void func_8003E700(void) {
+/* 8003E700: Free every hardware voice (the original steps a byte offset). */
+void sound_clear_voice_owners(void) {
     s32 offset;
 
     for (offset = 23 * 4; offset >= 0; offset -= 4) {
-        *(SoundChannel **)((u8 *)D_8006252C + offset) = NULL;
+        *(SoundChannel **)((u8 *)sound_voice_owners + offset) = NULL;
     }
 }
 
-/* Claim hardware voice `voice` for a channel unless its holder has a
+/* 8003E724: Claim hardware voice `voice` for a channel unless its holder has a
  * higher priority. */
-void func_8003E724(SoundChannel *state, u32 voice) {
-    SoundChannel **owner = &D_8006252C[voice];
+void sound_claim_voice(SoundChannel *state, u32 voice) {
+    SoundChannel **owner = &sound_voice_owners[voice];
     SoundChannel *holder;
     u32 bit;
 
@@ -3352,22 +3356,22 @@ void func_8003E724(SoundChannel *state, u32 voice) {
     }
     holder = *owner;
     if (holder == state) {
-        D_80059554 |= 1 << voice;
+        sound_changed_voice_mask |= 1 << voice;
         return;
     }
     if (holder == NULL || holder->priority <= state->priority) {
         state->flags = 0xFFFF;
         bit = 1 << voice;
         state->voice = voice;
-        D_8006252C[voice] = state;
-        D_80059554 |= bit;
-        D_800594FC &= ~bit;
+        sound_voice_owners[voice] = state;
+        sound_changed_voice_mask |= bit;
+        sound_pending_key_on_mask &= ~bit;
     }
 }
 
-/* Claim hardware voice `voice` without requesting a register update. */
-void func_8003E7E0(SoundChannel *state, u32 voice) {
-    SoundChannel **owner = &D_8006252C[voice];
+/* 8003E7E0: Claim hardware voice `voice` without requesting a register update. */
+void sound_claim_voice_no_update(SoundChannel *state, u32 voice) {
+    SoundChannel **owner = &sound_voice_owners[voice];
     SoundChannel *holder;
 
     if (voice >= 24) {
@@ -3380,41 +3384,41 @@ void func_8003E7E0(SoundChannel *state, u32 voice) {
     }
 }
 
-/* Release hardware voice `voice` if the channel holds it. */
-void func_8003E83C(SoundChannel *state, u32 voice) {
-    SoundChannel **owner = &D_8006252C[voice];
+/* 8003E83C: Release hardware voice `voice` if the channel holds it. */
+void sound_release_voice(SoundChannel *state, u32 voice) {
+    SoundChannel **owner = &sound_voice_owners[voice];
     u32 bit;
 
     if (voice < 24 && *owner == state) {
         *owner = NULL;
         bit = 1 << voice;
-        D_80059554 |= bit;
-        D_800594FC &= ~bit;
+        sound_changed_voice_mask |= bit;
+        sound_pending_key_on_mask &= ~bit;
     }
 }
 
-/* Request a register update (and key-on) of hardware voice `voice` if the
+/* 8003E8A4: Request a register update (and key-on) of hardware voice `voice` if the
  * channel holds it. */
-void func_8003E8A4(SoundChannel *state, u32 voice) {
+void sound_request_fast_key_off(SoundChannel *state, u32 voice) {
     u32 bit;
 
-    if (voice < 24 && D_8006252C[voice] == state) {
+    if (voice < 24 && sound_voice_owners[voice] == state) {
         bit = 1 << voice;
-        D_80059554 |= bit;
-        D_800594FC &= ~bit;
+        sound_changed_voice_mask |= bit;
+        sound_pending_key_on_mask &= ~bit;
     }
 }
 
-/* Write the staged registers of every claimed hardware voice to the SPU
+/* 8003E900: Write the staged registers of every claimed hardware voice to the SPU
  * (volume, pitch, sample addresses, envelope parts), then the pitch
  * modulation, noise and reverb voice masks and the pending key-ons. */
-void func_8003E900(void) {
-    SoundChannel **owner = D_8006252C;
+void sound_flush_voice_registers(void) {
+    SoundChannel **owner = sound_voice_owners;
     u32 reverb = 0;
     u32 noise = 0;
     u32 modulation = 0;
     u16 masks = 0;
-    SpuVoice *regs = D_800508E4->voice;
+    SpuVoice *regs = sound_spu_registers->voice;
     s32 voice = 0;
     SoundChannel *state;
     u16 flags;
@@ -3478,7 +3482,7 @@ void func_8003E900(void) {
         owner++;
     } while (voice < 24);
     /* The same register variable addresses the voice masks. */
-    regs = D_800508E4->voice;
+    regs = sound_spu_registers->voice;
     if (masks != 0) {
         if (masks & 0x1000) {
             ((SpuRegs *)regs)->pitch_mod[0] = modulation;
@@ -3493,19 +3497,19 @@ void func_8003E900(void) {
             ((SpuRegs *)regs)->reverb[1] = reverb >> 16;
         }
     }
-    on = D_800594FC;
+    on = sound_pending_key_on_mask;
     if (on != 0) {
         ((SpuRegs *)regs)->key_on[0] = on;
         ((SpuRegs *)regs)->key_on[1] = on >> 16;
-        D_800594FC = 0;
+        sound_pending_key_on_mask = 0;
     }
 }
 
-/* Key off the requested voices; voices whose registers changed are first
+/* 8003EB5C: Key off the requested voices; voices whose registers changed are first
  * switched to a fast linear release (release rate 6). */
-void func_8003EB5C(void) {
-    u32 mask = D_80059554;
-    SpuRegs *regs = D_800508E4;
+void sound_key_off_voices(void) {
+    u32 mask = sound_changed_voice_mask;
+    SpuRegs *regs = sound_spu_registers;
     s32 voice;
     s32 bit;
     u16 *adsr;
@@ -3521,18 +3525,18 @@ void func_8003EB5C(void) {
             adsr = (u16 *)((u8 *)adsr + sizeof(SpuVoice));
         } while (voice < 24);
     }
-    mask = D_80059550 | D_80059554;
+    mask = sound_pending_key_off_mask | sound_changed_voice_mask;
     if (mask != 0) {
         regs->key_off[0] = mask;
         regs->key_off[1] = mask >> 16;
-        D_80059554 = 0;
-        D_80059550 = 0;
+        sound_changed_voice_mask = 0;
+        sound_pending_key_off_mask = 0;
     }
 }
 
-s16 func_8003EEA0(s16 note);
+s16 sound_get_note_pitch(s16 note);
 
-/* Stage the voice registers of `count` channels from their pending
+/* 8003EBF0: Stage the voice registers of `count` channels from their pending
  * changes (flags2): volume/pan (0x100), pitch (0x200), key on (1) and key
  * off (2). This is where the sound mode acts on every voice:
  *   Stereo and Wide (driver flag 0x100): the pan law gives each side two
@@ -3542,7 +3546,7 @@ s16 func_8003EEA0(s16 note);
  *     the pan.
  * Wide differs from Stereo only in the master and reverb volume signs
  * (80038e6c), not here. */
-void func_8003EBF0(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
+void sound_stage_seq_voices(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
     SoundSeqChannel *channel;
     u16 changes;
     s32 pan;
@@ -3577,7 +3581,7 @@ void func_8003EBF0(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
                 if (pan < 0) {
                     pan = 0;
                 }
-                if (D_8005957C & 0x100) {
+                if (sound_driver_flags & 0x100) {
                     /* Stereo/Wide pan law. */
                     if (pan < 0x4000) {
                         right = (pan * 0x5A00) >> 14;
@@ -3599,14 +3603,14 @@ void func_8003EBF0(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
             }
             if (changes & 0x200) {
                 note = channel->note.part.whole + channel->pitch_mod + seq->pitch.part.whole;
-                channel->state.pitch = func_8003EEA0(note) & 0x3FFF;
+                channel->state.pitch = sound_get_note_pitch(note) & 0x3FFF;
                 channel->state.flags |= 4;
             }
             if ((changes & 1) && !(channel->flags & 0x20)) {
-                func_8003EF04(&channel->state, channel->voice);
+                sound_key_on_voice(&channel->state, channel->voice);
             }
             if (changes & 2) {
-                func_8003EFA0(&channel->state, channel->voice);
+                sound_request_key_off(&channel->state, channel->voice);
             }
             channel->flags2 = 0;
         }
@@ -3615,11 +3619,11 @@ void func_8003EBF0(SoundSeq *seq, SoundSeqChannel *channels, s16 count) {
 }
 
 
-/* SPU pitch of an 8.8 note: a table lookup scaled by octave. */
-s16 func_8003EEA0(s16 note) {
-    s32 entry = D_80050B78[(note & 0x7FFF) >> 8];
+/* 8003EEA0: SPU pitch of an 8.8 note: a table lookup scaled by octave. */
+s16 sound_get_note_pitch(s16 note) {
+    s32 entry = sound_semitone_octave_rows[(note & 0x7FFF) >> 8];
     s32 shift = 6 - (entry >> 4);
-    s32 pitch = D_80050BF0[(note & 0xFF) + ((entry & 0xF) << 8)];
+    s32 pitch = sound_pitch_table[(note & 0xFF) + ((entry & 0xF) << 8)];
 
     if (shift < 0) {
         pitch <<= -shift;
@@ -3629,10 +3633,10 @@ s16 func_8003EEA0(s16 note) {
     return pitch;
 }
 
-/* Claim hardware voice `voice` (unless a holder has a higher priority)
+/* 8003EF04: Claim hardware voice `voice` (unless a holder has a higher priority)
  * and key it on. */
-void func_8003EF04(SoundChannel *state, u32 voice) {
-    SoundChannel **owner = &D_8006252C[voice];
+void sound_key_on_voice(SoundChannel *state, u32 voice) {
+    SoundChannel **owner = &sound_voice_owners[voice];
     SoundChannel *holder;
 
     if (voice >= 24) {
@@ -3645,23 +3649,23 @@ void func_8003EF04(SoundChannel *state, u32 voice) {
         }
         state->flags = 0xFFFF;
         state->voice = voice;
-        D_8006252C[voice] = state;
-        D_80059554 |= 1 << voice;
+        sound_voice_owners[voice] = state;
+        sound_changed_voice_mask |= 1 << voice;
     }
-    D_800594FC |= 1 << voice;
+    sound_pending_key_on_mask |= 1 << voice;
 }
 
-/* Request a key off of hardware voice `voice` if the channel holds it. */
-void func_8003EFA0(SoundChannel *state, u32 voice) {
-    if (voice < 24 && D_8006252C[voice] == state) {
-        D_80059550 |= 1 << voice;
+/* 8003EFA0: Request a key off of hardware voice `voice` if the channel holds it. */
+void sound_request_key_off(SoundChannel *state, u32 voice) {
+    if (voice < 24 && sound_voice_owners[voice] == state) {
+        sound_pending_key_off_mask |= 1 << voice;
     }
 }
 
-/* Run the modulators of `count` channels: after its delay each running
+/* 8003EFE4: Run the modulators of `count` channels: after its delay each running
  * modulator adds its wave (faded in over its period) to the pitch, level
  * or pan offset of its channel and flags the update. */
-void func_8003EFE4(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
+void sound_run_seq_modulators(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
     SoundModulator *modulator;
     u16 changes;
     s32 value;
@@ -3714,14 +3718,14 @@ void func_8003EFE4(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
     } while (--count != 0);
 }
 
-/* Switch a modulator off. */
-void func_8003F190(SoundModulator *modulator) {
+/* 8003F190: Switch a modulator off. */
+void sound_switch_modulator_off(SoundModulator *modulator) {
     modulator->flags &= ~1;
 }
 
-/* Modulator waves: each advances one frame and returns the output.
+/* 8003F1A4: Modulator waves: each advances one frame and returns the output.
  * Pulse: alternates between 0 and the depth every `rate` frames. */
-s32 func_8003F1A4(SoundModulator *modulator) {
+s32 sound_step_pulse_wave(SoundModulator *modulator) {
     s32 phase;
 
     if (--modulator->count == 0) {
@@ -3735,8 +3739,8 @@ s32 func_8003F1A4(SoundModulator *modulator) {
     return modulator->phase;
 }
 
-/* Square: alternates between +depth and -depth. */
-s32 func_8003F1EC(SoundModulator *modulator) {
+/* 8003F1EC: Square: alternates between +depth and -depth. */
+s32 sound_step_square_wave(SoundModulator *modulator) {
     s32 phase;
 
     if (--modulator->count == 0) {
@@ -3751,8 +3755,8 @@ s32 func_8003F1EC(SoundModulator *modulator) {
     return modulator->phase;
 }
 
-/* Sawtooth-like: the slope flips sign every `rate` frames. */
-s32 func_8003F240(SoundModulator *modulator) {
+/* 8003F240: Sawtooth-like: the slope flips sign every `rate` frames. */
+s32 sound_step_sawtooth_wave(SoundModulator *modulator) {
     s32 slope;
 
     if (--modulator->count == 0) {
@@ -3767,9 +3771,9 @@ s32 func_8003F240(SoundModulator *modulator) {
     return modulator->phase += modulator->slope;
 }
 
-/* Triangle: the slope flips sign after `rate` frames, then every
+/* 8003F2A0: Triangle: the slope flips sign after `rate` frames, then every
  * 2 * `rate` frames. */
-s32 func_8003F2A0(SoundModulator *modulator) {
+s32 sound_step_triangle_wave(SoundModulator *modulator) {
     s32 count;
     u16 flags;
     s32 step;
@@ -3793,8 +3797,8 @@ s32 func_8003F2A0(SoundModulator *modulator) {
     return modulator->phase += modulator->slope;
 }
 
-/* Ramp: rises by the step each frame, back to 0 every `rate` frames. */
-s32 func_8003F308(SoundModulator *modulator) {
+/* 8003F308: Ramp: rises by the step each frame, back to 0 every `rate` frames. */
+s32 sound_step_ramp_wave(SoundModulator *modulator) {
     if (--modulator->count == 0) {
         modulator->phase = 0;
         modulator->count = modulator->rate;
@@ -3804,138 +3808,143 @@ s32 func_8003F308(SoundModulator *modulator) {
     return modulator->phase;
 }
 
-s32 func_8003F43C(void);
+s32 sound_generate_random(void);
 
-/* Random: a new random level (0..depth) every `rate` frames. */
-s32 func_8003F354(SoundModulator *modulator) {
-    func_8003F43C();
+/* 8003F354: Random: a new random level (0..depth) every `rate` frames. */
+s32 sound_step_random_wave(SoundModulator *modulator) {
+    sound_generate_random();
     if (--modulator->count == 0) {
         modulator->count = modulator->rate;
-        modulator->phase = (modulator->step >> 15) * func_8003F43C();
+        modulator->phase = (modulator->step >> 15) * sound_generate_random();
     }
     return modulator->phase;
 }
 
-/* Random: a new random level (-depth..depth) every `rate` frames. */
-s32 func_8003F3C0(SoundModulator *modulator) {
+/* 8003F3C0: Random: a new random level (-depth..depth) every `rate` frames. */
+s32 sound_step_signed_random_wave(SoundModulator *modulator) {
     if (--modulator->count == 0) {
         modulator->count = modulator->rate;
-        modulator->phase = (modulator->step >> 14) * func_8003F43C() - modulator->step;
+        modulator->phase = (modulator->step >> 14) * sound_generate_random() - modulator->step;
     }
     return modulator->phase;
 }
 
-/* Seed the driver's random generator. */
-void func_8003F42C(s32 seed) {
-    D_800594E4 = seed;
+/* 8003F42C: Seed the driver's random generator. */
+void sound_seed_random(s32 seed) {
+    sound_random_state = seed;
 }
 
-/* Next random number (0-0x7FFF) of a xorshift generator. */
-s32 func_8003F43C(void) {
-    s32 x = D_800594E4;
+/* 8003F43C: Next random number (0-0x7FFF) of a xorshift generator. */
+s32 sound_generate_random(void) {
+    s32 x = sound_random_state;
 
     x ^= x << 17;
     x ^= x >> 15;
-    D_800594E4 = x;
+    sound_random_state = x;
     return x & 0x7FFF;
 }
 
-/* Direct SPU writes: key on, key off and reverb voice masks. */
-void func_8003F468(u32 voices) {
-    D_800508E4->key_on[0] = voices;
-    D_800508E4->key_on[1] = voices >> 16;
+/* 8003F468: Direct SPU writes: key on, key off and reverb voice masks. */
+void sound_write_key_on(u32 voices) {
+    sound_spu_registers->key_on[0] = voices;
+    sound_spu_registers->key_on[1] = voices >> 16;
 }
 
-void func_8003F484(u32 voices) {
-    D_800508E4->key_off[0] = voices;
-    D_800508E4->key_off[1] = voices >> 16;
+/* 8003F484 */
+void sound_write_key_off(u32 voices) {
+    sound_spu_registers->key_off[0] = voices;
+    sound_spu_registers->key_off[1] = voices >> 16;
 }
 
-void func_8003F4A0(u32 voices) {
-    D_800508E4->reverb[0] = voices;
-    D_800508E4->reverb[1] = voices >> 16;
+/* 8003F4A0 */
+void sound_write_reverb_voices(u32 voices) {
+    sound_spu_registers->reverb[0] = voices;
+    sound_spu_registers->reverb[1] = voices >> 16;
 }
 
-/* An empty driver entry. */
-void func_8003F4BC(void) {
+/* 8003F4BC: An empty driver entry. */
+void sound_empty_entry_after_voice_masks(void) {
 }
 
-/* Direct SPU voice writes: sample start and loop addresses, volume,
+/* 8003F4C4: Direct SPU voice writes: sample start and loop addresses, volume,
  * pitch and envelope parts. */
-void func_8003F4C4(s32 voice, s32 address) {
-    (voice + D_800508E4->voice)->address = address >> 3;
+void sound_write_voice_start_address(s32 voice, s32 address) {
+    (voice + sound_spu_registers->voice)->address = address >> 3;
 }
 
-void func_8003F4E0(s32 voice, s32 address) {
-    (voice + D_800508E4->voice)->repeat = address >> 3;
+/* 8003F4E0 */
+void sound_write_voice_loop_address(s32 voice, s32 address) {
+    (voice + sound_spu_registers->voice)->repeat = address >> 3;
 }
 
-void func_8003F4FC(s32 voice, s16 left, s16 right) {
-    SpuVoice *regs = &D_800508E4->voice[voice];
+/* 8003F4FC */
+void sound_write_voice_volume(s32 voice, s16 left, s16 right) {
+    SpuVoice *regs = &sound_spu_registers->voice[voice];
 
     regs->volume_left = left;
     regs->volume_right = right;
 }
 
-void func_8003F518(s32 voice, u16 pitch) {
-    (voice + D_800508E4->voice)->pitch = pitch;
+/* 8003F518 */
+void sound_write_voice_pitch(s32 voice, u16 pitch) {
+    (voice + sound_spu_registers->voice)->pitch = pitch;
 }
 
-/* Attack rate and mode (ADSR1 bits 8-15). */
-void func_8003F530(s32 voice, s32 rate, s32 mode) {
-    SpuVoice *regs = &D_800508E4->voice[voice];
+/* 8003F530: Attack rate and mode (ADSR1 bits 8-15). */
+void sound_write_voice_attack(s32 voice, s32 rate, s32 mode) {
+    SpuVoice *regs = &sound_spu_registers->voice[voice];
 
     regs->adsr1 = (regs->adsr1 & 0xFF) + (rate << 8) + ((mode >> 2) << 15);
 }
 
-/* Decay rate (ADSR1 bits 4-7). */
-void func_8003F560(s32 voice, s32 rate) {
-    SpuVoice *regs = &D_800508E4->voice[voice];
+/* 8003F560: Decay rate (ADSR1 bits 4-7). */
+void sound_write_voice_decay(s32 voice, s32 rate) {
+    SpuVoice *regs = &sound_spu_registers->voice[voice];
 
     regs->adsr1 = (regs->adsr1 & 0xFF0F) + (rate << 4);
 }
 
-/* Sustain rate, direction and mode (ADSR2 bits 6-15). */
-void func_8003F588(s32 voice, s32 rate, s32 mode) {
-    SpuVoice *regs = &D_800508E4->voice[voice];
+/* 8003F588: Sustain rate, direction and mode (ADSR2 bits 6-15). */
+void sound_write_voice_sustain(s32 voice, s32 rate, s32 mode) {
+    SpuVoice *regs = &sound_spu_registers->voice[voice];
 
     regs->adsr2 = (regs->adsr2 & 0x3F) + (rate << 6) + ((mode >> 1) << 14);
 }
 
-/* Release rate and mode (ADSR2 bits 0-5). */
-void func_8003F5BC(s32 voice, s32 rate, s32 mode) {
-    SpuVoice *regs = &D_800508E4->voice[voice];
+/* 8003F5BC: Release rate and mode (ADSR2 bits 0-5). */
+void sound_write_voice_release(s32 voice, s32 rate, s32 mode) {
+    SpuVoice *regs = &sound_spu_registers->voice[voice];
 
     regs->adsr2 = (regs->adsr2 & 0xFFC0) + (rate + ((mode >> 2) << 5));
 }
 
-/* Sustain level (ADSR1 bits 0-3). */
-void func_8003F5EC(s32 voice, s32 level) {
-    SpuVoice *regs = &D_800508E4->voice[voice];
+/* 8003F5EC: Sustain level (ADSR1 bits 0-3). */
+void sound_write_voice_sustain_level(s32 voice, s32 level) {
+    SpuVoice *regs = &sound_spu_registers->voice[voice];
 
     regs->adsr1 = (regs->adsr1 & 0xFFF0) + level;
 }
 
-s32 func_8003F684(u32 *data);
+s32 sound_sum_file_words(u32 *data);
 
-/* Check a sound file: 1 wrong magic, 2 bad checksum, 4 wrong id, 0 good. */
-s32 func_8003F614(u32 *data, u32 magic, s32 id) {
+/* 8003F614: Check a sound file: 1 wrong magic, 2 bad checksum, 4 wrong id, 0 good. */
+s32 sound_check_file(u32 *data, u32 magic, s32 id) {
     if (data[0] != magic) {
         return 1;
     }
-    if (func_8003F684(data) != 0) {
+    if (sound_sum_file_words(data) != 0) {
         return 2;
     }
     return (*(u16 *)&data[3] != (id & 0xFFFF)) * 4;
 }
 
-/* Sequence header check: always passes. */
-s16 func_8003F67C(SoundSeqHeader *header) {
+/* 8003F67C: Sequence header check: always passes. */
+s16 sound_check_seq_header(SoundSeqHeader *header) {
     return 0;
 }
 
-/* Sum of the words of a sound file (its byte size at word 2). */
-s32 func_8003F684(u32 *data) {
+/* 8003F684: Sum of the words of a sound file (its byte size at word 2). */
+s32 sound_sum_file_words(u32 *data) {
     s32 sum = 0;
     u32 count = (data[2] + 3) >> 2;
 
@@ -3946,17 +3955,17 @@ s32 func_8003F684(u32 *data) {
     return sum;
 }
 
-/* Report a driver error once (until cleared): remember the code, load the
+/* 8003F6B0: Report a driver error once (until cleared): remember the code, load the
  * built-in error bank and play its beep. */
-void func_8003F6B0(s32 error) {
-    if (D_8005957C & 0x88) {
+void sound_report_error(s32 error) {
+    if (sound_driver_flags & 0x88) {
         return;
     }
-    D_8005957C |= 8;
-    D_80059500 = error;
-    func_800396E0(0x10000);
-    func_80037FD8((SoundSequence *)D_80050940, 0);
-    func_80038428((SoundBank *)D_80050910);
-    func_8003BDFC(0x10);
-    func_80039E60((((SoundBank *)D_80050910)->id << 16) | 1);
+    sound_driver_flags |= 8;
+    sound_unread_last_error = error;
+    sound_free_spu_memory(0x10000);
+    sound_load_wave_bank((SoundSequence *)sound_error_wave_bank, 0);
+    sound_add_effect_bank((SoundBank *)sound_error_effect_bank);
+    sound_sync_transfer(0x10);
+    sound_play_effect((((SoundBank *)sound_error_effect_bank)->id << 16) | 1);
 }

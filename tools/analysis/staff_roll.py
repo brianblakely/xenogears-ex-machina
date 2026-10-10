@@ -1,7 +1,7 @@
 """The staff-roll text of field file 0xAB, as the recovered field code reads it.
 
 Field extended event BE (func_80087C0C, decomp/src/field/field_800854D0.c) is
-the only store of 1 to D_8004F300; no reachable field script uses it (the
+the only store of 1 to mode_staff_roll_enabled; no reachable field script uses it (the
 tools.analysis.events sweep). With it set, the field movie player loads
 directory (4, 0) files 0xAB (the text) and 0xAC (a font image) (func_800ACC58,
 func_800AC308) and draws a text roll over movie frames 0x687-0x18E1
@@ -170,7 +170,7 @@ def count(text: bytes, tim: bytes) -> TextCount:
 
 
 def disc_files(disc: Disc) -> tuple[bytes, bytes]:
-    """Files 0xAB and 0xAC of directory (4, 0), at their index sizes (func_80028738)."""
+    """Files 0xAB and 0xAC of directory (4, 0), at their index sizes (cd_get_file_size)."""
     return tuple(disc.data(disc.slot(*DIRECTORY, file)) for file in (TEXT_FILE, FONT_FILE))
 
 

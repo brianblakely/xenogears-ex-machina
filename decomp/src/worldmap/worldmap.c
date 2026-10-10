@@ -51,40 +51,40 @@ void func_80070CFC(void) {
     func_800762FC();
     DrawSync(0);
     VSync(0);
-    VSyncCallback(func_8003634C);
+    VSyncCallback(pad_vblank_callback);
     InitGeom();
-    D_800591AE = 1;
-    if (D_8006F954[0] == 0) {
-        D_8006D634.map = 0x400;
-        D_8006D634.entry[1] = 0xFFF;
-        D_8006D634.entry[0] = 0xC00;
-        D_8006F954[0] = 1;
-        D_8006D634.worldmap.flags = 0x4003;
-        D_8006D634.worldmap.unk6A = 1;
-        D_8006D634.worldmap.unk60 = 0x6680;
-        D_8006D634.worldmap.unk62 = 0xFF00;
-        D_8006D634.worldmap.unk64 = 0x2A00;
-        D_8006D634.worldmap.vehicle_heading = 0;
-        D_8006D634.worldmap.x = 0x7580;
-        D_8006D634.worldmap.z = 0x2C00;
-        D_8006D634.worldmap.heading = 0;
-        D_8006D634.party[1] = 0xA;
-        D_8006D634.party[2] = 5;
-        D_8006D634.party[0] = 0;
-        D_8006D634.inGear[0] = 0;
-        D_8006D634.inGear[1] = 0;
-        D_8006D634.inGear[2] = 0;
-        D_8006D634.characters[0].gearId = 0xF;
-        D_8006D634.characters[1].gearId = 2;
-        D_8006D634.characters[2].gearId = 3;
-        D_8006D634.characters[3].gearId = 4;
-        D_8006D634.characters[4].gearId = 5;
-        D_8006D634.characters[5].gearId = 6;
-        D_8006D634.characters[6].gearId = 9;
-        D_8006D634.characters[7].gearId = 7;
-        D_8006D634.characters[8].gearId = 8;
-        D_8006D634.characters[9].gearId = 3;
-        D_8006D634.characters[10].gearId = 9;
+    sprite_in_worldmap = 1;
+    if (game_data_worldmap_flag_word[0] == 0) {
+        game_data.map = 0x400;
+        game_data.entry[1] = 0xFFF;
+        game_data.entry[0] = 0xC00;
+        game_data_worldmap_flag_word[0] = 1;
+        game_data.worldmap.flags = 0x4003;
+        game_data.worldmap.unk6A = 1;
+        game_data.worldmap.unk60 = 0x6680;
+        game_data.worldmap.unk62 = 0xFF00;
+        game_data.worldmap.unk64 = 0x2A00;
+        game_data.worldmap.vehicle_heading = 0;
+        game_data.worldmap.x = 0x7580;
+        game_data.worldmap.z = 0x2C00;
+        game_data.worldmap.heading = 0;
+        game_data.party[1] = 0xA;
+        game_data.party[2] = 5;
+        game_data.party[0] = 0;
+        game_data.inGear[0] = 0;
+        game_data.inGear[1] = 0;
+        game_data.inGear[2] = 0;
+        game_data.characters[0].gearId = 0xF;
+        game_data.characters[1].gearId = 2;
+        game_data.characters[2].gearId = 3;
+        game_data.characters[3].gearId = 4;
+        game_data.characters[4].gearId = 5;
+        game_data.characters[5].gearId = 6;
+        game_data.characters[6].gearId = 9;
+        game_data.characters[7].gearId = 7;
+        game_data.characters[8].gearId = 8;
+        game_data.characters[9].gearId = 3;
+        game_data.characters[10].gearId = 9;
         VEHICLE_SPOTS[0].flags = 0x400;
         VEHICLE_SPOTS[0].x = 0x7500;
         VEHICLE_SPOTS[0].z = 0x2E58;
@@ -94,29 +94,29 @@ void func_80070CFC(void) {
         VEHICLE_SPOTS[2].flags = 0x400;
         VEHICLE_SPOTS[2].x = 0x7600;
         VEHICLE_SPOTS[2].z = 0x2E58;
-        D_8006D634.unk1844[2] = 1;
-        D_8006D634.unk1844[0] = D_8009AF80[D_8006D634.unk1844[1]];
-        D_8006D634.unk1844[1] = D_8009AF90[D_8006D634.unk1844[1]];
+        game_data.unk1844[2] = 1;
+        game_data.unk1844[0] = D_8009AF80[game_data.unk1844[1]];
+        game_data.unk1844[1] = D_8009AF90[game_data.unk1844[1]];
         MAP_FLAGS = 0x7FFFFFF;
     }
-    func_80032498(3, 0);
-    func_80028470(0x24, 0);
+    heap_select_owner_tag(3, 0);
+    cd_select_directory(0x24, 0);
     func_80095F78();
     func_8007369C();
     func_80073300();
-    if (D_8006F954[0] & 0x8000) {
+    if (game_data_worldmap_flag_word[0] & 0x8000) {
         D_8009C894 = 1;
     } else {
         D_8009C894 = 0;
     }
     D_8009BBC4 = 0;
-    mode = D_8006F954[0] & 0x7FFF;
-    D_8009BD0C = (D_8006D634.map & 0x3FFF) - 0x400;
-    D_8009D3D4 = D_8006D634.entry[1];
-    D_8009C584 = D_8006D634.entry[0];
+    mode = game_data_worldmap_flag_word[0] & 0x7FFF;
+    D_8009BD0C = (game_data.map & 0x3FFF) - 0x400;
+    D_8009D3D4 = game_data.entry[1];
+    D_8009C584 = game_data.entry[0];
     D_8009C5A8 = mode;
-    D_8006D634.entry[2] = mode;
-    func_80071B9C(mode, D_8006D634.vars[0]);
+    game_data.entry[2] = mode;
+    func_80071B9C(mode, game_data.vars[0]);
     step = D_8009A058[D_8009C5A8].enter;
     if (step != NULL) {
         step();
@@ -126,7 +126,7 @@ void func_80070CFC(void) {
         func_80097800();
         DrawSync(0);
         VSync(0);
-        func_80035DB0();
+        pad_clear_queue();
         D_8009C894 = D_8009D7CC;
         func_800712D0();
         step = D_8009A058[D_8009C5A8].leave;
@@ -134,34 +134,34 @@ void func_80070CFC(void) {
     }
     switch (D_8009D7CC) {
     case 0:
-        func_800199CC(1);
-        func_8001996C(1);
+        mode_load_overlay_block(1);
+        mode_select_next_mode(1);
         if (D_8009BBC4 == 0) {
             if (D_8009D7D8->kind == 3) {
-                func_80094364(&D_8009D55C.target, 3, D_8006D634.vars[0]);
+                func_80094364(&D_8009D55C.target, 3, game_data.vars[0]);
             }
-            D_8006D634.map = D_8009D7D8->scene;
-            D_8006D634.entry[0] = D_8009BD38.vy;
-            D_8006D634.entry[2] = D_8009D7D8->entry;
+            game_data.map = D_8009D7D8->scene;
+            game_data.entry[0] = D_8009BD38.vy;
+            game_data.entry[2] = D_8009D7D8->entry;
         }
-        D_8006D634.vars[2] = D_8009BD0C + 0x400;
+        game_data.vars[2] = D_8009BD0C + 0x400;
         break;
     case 1:
-        func_800199CC(2);
-        func_8001996C(2);
-        D_800594F8 = 0;
+        mode_load_overlay_block(2);
+        mode_select_next_mode(2);
+        mode_battle_standalone = 0;
         for (i = 0; i < 3; i++) {
-            (&D_8006D634.worldmap.unk70)[i] = D_8006D634.inGear[i];
+            (&game_data.worldmap.unk70)[i] = game_data.inGear[i];
         }
-        func_80039CC4();
+        sound_stop_all_seqs();
         data = D_8009C614;
-        memcpy(D_80062648, data, func_800288EC(D_8009BCC8));
-        D_8004F2FC = D_80062528;
-        D_80062528 = (s32)func_80039850((SoundSeqHeader *)D_80062648);
-        func_80039A80((SoundSeq *)D_80062528, 0x7F, 0);
+        memcpy(mode_music_buffer, data, cd_get_aligned_file_size(D_8009BCC8));
+        mode_music_cached_seq = mode_music_seq;
+        mode_music_seq = (s32)sound_create_seq((SoundSeqHeader *)mode_music_buffer);
+        sound_play_seq((SoundSeq *)mode_music_seq, 0x7F, 0);
         break;
     default:
-        func_8001996C(0);
+        mode_select_next_mode(0);
         rect.x = 0;
         rect.y = 0;
         rect.w = 0x13F;
@@ -170,9 +170,9 @@ void func_80070CFC(void) {
         DrawSync(0);
         break;
     }
-    D_800591AE = 0;
+    sprite_in_worldmap = 0;
     func_800762FC();
-    func_80019ACC(0);
+    mode_dispatch(0);
 }
 
 /* The world-map main loop: gather input, flip the display buffers, run the
@@ -181,7 +181,7 @@ void func_80070CFC(void) {
 void func_800712D0(void) {
     DisplayBuffer *view;
     /* The live gear-byte base also reaches the party IDs 0x57D bytes earlier. */
-    u8 *gear_state = D_8006D634.inGear;
+    u8 *gear_state = game_data.inGear;
     RECT rect;
     s32 i;
     s32 found;
@@ -196,13 +196,13 @@ void func_800712D0(void) {
         D_8009BD18 = 0;
         D_8009BD10 = 0;
         D_8009CD4C = 0;
-        while (func_80035CDC() != 0) {
-            D_8009CD4C |= D_80059570;
-            D_8009CD50 |= D_80059574;
-            D_8009BD10 |= D_8005948C;
-            D_8009BD14 |= D_80059490;
-            D_8009BD18 |= D_800594A4;
-            D_8009BD1C |= D_800594A8;
+        while (pad_dequeue_state() != 0) {
+            D_8009CD4C |= pad_port0_held;
+            D_8009CD50 |= pad_port1_held;
+            D_8009BD10 |= pad_port0_pressed;
+            D_8009BD14 |= pad_port1_pressed;
+            D_8009BD18 |= pad_port0_repeated;
+            D_8009BD1C |= pad_port1_repeated;
         }
         while (func_800967E4() == 3) {
             VSync(0);
@@ -215,33 +215,33 @@ void func_800712D0(void) {
         D_8009BE3C = view;
         D_8009D7F0 = D_8009D7F0 == 0;
         ClearOTagR(view->ot, 0x400);
-        func_800250E0(D_8009D7F0);
-        func_8001D468();
+        sprite_queue_start_fill(D_8009D7F0);
+        sprite_build_pending_frames();
         func_80097800();
         DrawSync(0);
         VSync(2);
-        func_80019CA0();
+        boot_check_soft_reset();
         PutDispEnv(&D_8009BE3C->disp);
         PutDrawEnv(&D_8009BE3C->draw);
-        if (D_80059179 == 0 && D_8009BD34 != 0 && D_8009C178 == 0 && D_8009D804 == 0 &&
+        if (mode_gear_riding_lock == 0 && D_8009BD34 != 0 && D_8009C178 == 0 && D_8009D804 == 0 &&
             D_8009BD24 == -1 && D_8009CE68 == D_8009BD24 && D_8009D554 != 0 && D_8009D80C == 0) {
             D_8009BD34 = 0;
             if (func_80093F18(&D_8009D55C.target) != 4) {
                 for (i = 0; i < 3; i++) {
-                    (&D_8006D634.worldmap.unk70)[i] = D_8006D634.inGear[i];
+                    (&game_data.worldmap.unk70)[i] = game_data.inGear[i];
                 }
                 if (gear_state[0] != 0) {
                     gear_state[2] = 0;
                     gear_state[1] = 0;
                     gear_state[0] = 0;
                 } else {
-                    if (D_8006D634.characters[(gear_state - 0x57D)[0]].gearId != 0xFF) {
+                    if (game_data.characters[(gear_state - 0x57D)[0]].gearId != 0xFF) {
                         gear_state[0] = 1;
                     }
-                    if (D_8006D634.characters[(gear_state - 0x57D)[1]].gearId != 0xFF) {
+                    if (game_data.characters[(gear_state - 0x57D)[1]].gearId != 0xFF) {
                         gear_state[1] = 1;
                     }
-                    if (D_8006D634.characters[(gear_state - 0x57D)[2]].gearId != 0xFF) {
+                    if (game_data.characters[(gear_state - 0x57D)[2]].gearId != 0xFF) {
                         gear_state[2] = 1;
                     }
                 }
@@ -255,50 +255,50 @@ void func_800712D0(void) {
                 func_8007634C();
             }
             if (D_8009C178 == 0) {
-                if (D_8009D804 == 0 && D_8009D554 != 0 && D_8009D80C == 0 && func_80035734(0) == 0) {
+                if (D_8009D804 == 0 && D_8009D554 != 0 && D_8009D80C == 0 && pad_get_controller_kind(0) == 0) {
                     func_80076594();
                 }
                 if (D_8009C178 == 0 && D_8009D804 == 0 && D_8009BD24 == -1 &&
                     D_8009CE68 == D_8009BD24 && D_8009D554 != 0 && D_8009D80C != 0) {
-                    found = func_80075E7C(&D_8009D55C.target, D_8006D634.vars[0]);
+                    found = func_80075E7C(&D_8009D55C.target, game_data.vars[0]);
                     if (found == 1) {
                         D_8009D554 = 0;
                         D_8009D7CC = found;
-                        D_8005954C = 0;
-                        D_8006D634.worldmap.unk70 = D_8006D634.inGear[0];
-                        D_8006D634.worldmap.unk72 = D_8006D634.inGear[1];
-                        D_8006D634.worldmap.unk74 = D_8006D634.inGear[2];
+                        mode_battle_kind = 0;
+                        game_data.worldmap.unk70 = game_data.inGear[0];
+                        game_data.worldmap.unk72 = game_data.inGear[1];
+                        game_data.worldmap.unk74 = game_data.inGear[2];
                     }
                 }
             }
         }
         D_8009D80C = 0;
         if (D_8009BD10 & 0x100) {
-            u16 *camera_mode = &D_8006D634.worldmap.unk76;
+            u16 *camera_mode = &game_data.worldmap.unk76;
             *camera_mode ^= 1;
         }
         if (D_8009C178 == 0 && D_8009D804 != 0 && D_8009D554 != 0) {
             if (D_8009BE10 > 0) {
                 if (D_8009BE10 < 4) {
                     func_800758C0();
-                    D_80059460 = 0;
-                    D_80059178 = 0;
-                    D_80059171 = 1;
+                    menu_state_screen = 0;
+                    menu_state_debug_start = 0;
+                    menu_state_screen_parameter = 1;
                     func_800762FC();
-                    func_8001C634();
+                    mode_run_menu();
                     func_800762FC();
                     func_80075B58();
                 } else if (D_8009BE10 < 8) {
                     D_8009D554 = 0;
                     D_8009D7CC = 0;
                     D_8009D7D8 = &D_8009B6C4[2];
-                    D_8006D634.worldmap.flags |= 0x2000;
+                    game_data.worldmap.flags |= 0x2000;
                 }
             }
         } else {
             D_8009D804 = 0;
         }
-        func_80025044();
+        sprite_queue_run_uploads();
         func_80074F2C();
         func_80075104();
         SetGeomOffset(0xA0, D_8009BE0C);
@@ -350,7 +350,7 @@ s32 func_80071A58(void) {
     func_80073B04();
     func_800737EC();
     func_80086798();
-    if (D_8006D634.worldmap.unk76 == 0) {
+    if (game_data.worldmap.unk76 == 0) {
         func_800740B8();
     }
     return 1;
@@ -394,12 +394,12 @@ void func_80071CDC(void) {
     u8 gear;
 
     for (i = 0; i < 3; i++) {
-        member = D_8006D634.party[i];
+        member = game_data.party[i];
         if (member != 0xFF) {
-            D_8009CD34[i] = func_80031BDC(func_800288EC(member + 2), 0);
-            j = D_8006D634.characters[member].gearId;
+            D_8009CD34[i] = heap_alloc(cd_get_aligned_file_size(member + 2), 0);
+            j = game_data.characters[member].gearId;
             if (j != 0xFF) {
-                D_8009BDF8[i] = func_80031BDC(func_800288EC(j + 0x13), 0);
+                D_8009BDF8[i] = heap_alloc(cd_get_aligned_file_size(j + 0x13), 0);
             } else {
                 D_8009BDF8[i] = NULL;
             }
@@ -411,13 +411,13 @@ void func_80071CDC(void) {
     i = 0;
     D_8009C170 = 0;
     for (j = 0; j < 3; j++) {
-        member = D_8006D634.party[j];
+        member = game_data.party[j];
         if (member != 0xFF) {
             D_8009D3F8[i].file = member + 2;
             D_8009D3F8[i].destination = D_8009CD34[j];
             i++;
             D_8009C170++;
-            gear = D_8006D634.characters[member].gearId;
+            gear = game_data.characters[member].gearId;
             if (gear != 0xFF) {
                 D_8009D3F8[i].file = gear + 0x13;
                 D_8009D3F8[i].destination = D_8009BDF8[j];
@@ -427,14 +427,14 @@ void func_80071CDC(void) {
     }
     D_8009D3F8[i].file = 0;
     D_8009D3F8[i].destination = NULL;
-    func_80029AFC(D_8009D3F8, 0, 0);
+    cd_read_file_list(D_8009D3F8, 0, 0);
 }
 
 /* Allocate and read the three area files into their resident buffers. */
 void func_80071EF0(void) {
-    D_8009C59C = func_80031BDC(func_800288EC(D_8009C17C), 1);
-    D_8009BD20 = func_80031BDC(func_800288EC(D_8009C174), 1);
-    D_8009C180 = func_80031BDC(func_800288EC(D_8009D3C4), 1);
+    D_8009C59C = heap_alloc(cd_get_aligned_file_size(D_8009C17C), 1);
+    D_8009BD20 = heap_alloc(cd_get_aligned_file_size(D_8009C174), 1);
+    D_8009C180 = heap_alloc(cd_get_aligned_file_size(D_8009D3C4), 1);
     D_8009D3F8[0].file = D_8009D3C4;
     D_8009D3F8[1].file = D_8009C17C;
     D_8009D3F8[2].file = D_8009C174;
@@ -443,42 +443,42 @@ void func_80071EF0(void) {
     D_8009D3F8[1].destination = D_8009C59C;
     D_8009D3F8[2].destination = D_8009BD20;
     D_8009D3F8[3].destination = NULL;
-    func_80029AFC(D_8009D3F8, 0, 0);
+    cd_read_file_list(D_8009D3F8, 0, 0);
 }
 
 /* Allocate and read the two shared world-map files (0x25, 0x26). */
 void func_80071FEC(void) {
-    D_8005945C = func_80031BDC(func_800288EC(0x26), 1);
-    D_8009D528 = func_80031BDC(func_800288EC(0x25), 1);
+    menu_state_resource_file = heap_alloc(cd_get_aligned_file_size(0x26), 1);
+    D_8009D528 = heap_alloc(cd_get_aligned_file_size(0x25), 1);
     D_8009D3F8[0].file = 0x25;
     D_8009D3F8[0].destination = D_8009D528;
     D_8009D3F8[1].file = 0x26;
-    D_8009D3F8[1].destination = D_8005945C;
+    D_8009D3F8[1].destination = menu_state_resource_file;
     D_8009D3F8[2].file = 0;
     D_8009D3F8[2].destination = NULL;
-    func_80029AFC(WORLD_READ_LIST, 0, 0);
+    cd_read_file_list(WORLD_READ_LIST, 0, 0);
 }
 
 /* Allocate the area's five file buffers and read the zero-terminated list. */
 void func_80072090(void) {
-    D_8004F304++;
+    mode_worldmap_area_load_count++;
     D_8009D3F8[0].file = D_8009CC98;
-    D_8009D3F8[0].destination = D_8009C88C = func_80031BDC(func_800288EC(D_8009CC98), 1);
+    D_8009D3F8[0].destination = D_8009C88C = heap_alloc(cd_get_aligned_file_size(D_8009CC98), 1);
     D_8009D3F8[1].file = D_8009D3D0;
-    D_8009D3F8[1].destination = D_8009C884 = func_80031BDC(func_800288EC(D_8009D3D0), 0);
+    D_8009D3F8[1].destination = D_8009C884 = heap_alloc(cd_get_aligned_file_size(D_8009D3D0), 0);
     D_8009D3F8[2].file = D_8009D3C8;
-    D_8009D3F8[2].destination = D_8006259C = func_80031BDC(func_800288EC(D_8009D3C8), 0);
+    D_8009D3F8[2].destination = sound_effect_bank = heap_alloc(cd_get_aligned_file_size(D_8009D3C8), 0);
     D_8009D3F8[3].file = D_8009D800;
-    D_8009D3F8[3].destination = D_8009C888 = func_80031BDC(func_800288EC(D_8009D800), 0);
+    D_8009D3F8[3].destination = D_8009C888 = heap_alloc(cd_get_aligned_file_size(D_8009D800), 0);
     D_8009D3F8[4].file = D_8009BCC8;
-    D_8009D3F8[4].destination = D_8009C614 = func_80031BDC(func_800288EC(D_8009BCC8), 0);
+    D_8009D3F8[4].destination = D_8009C614 = heap_alloc(cd_get_aligned_file_size(D_8009BCC8), 0);
     D_8009D3F8[5].file = 0;
     D_8009D3F8[5].destination = NULL;
-    func_80029AFC(WORLD_READ_LIST, 0, 0);
+    cd_read_file_list(WORLD_READ_LIST, 0, 0);
 }
 
 /* Allocate and read the area's sixth file (kept, mode 0). */
 void func_800721E4(void) {
-    D_8006259C = func_80031BDC(func_800288EC(D_8009D3C8), 0);
-    func_800295D8(D_8009D3C8, D_8006259C, 0, 0);
+    sound_effect_bank = heap_alloc(cd_get_aligned_file_size(D_8009D3C8), 0);
+    cd_read_file(D_8009D3C8, sound_effect_bank, 0, 0);
 }

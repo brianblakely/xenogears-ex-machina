@@ -142,9 +142,9 @@ class SourceTests(unittest.TestCase):
         self.assertIn("D_800AF780 -= used;", line)
         self.assertIn("code = text[1] | (text[0] << 8);", function(path, "s32 func_800ABFDC("))
         loader = function(path, "void func_800AC308(")
-        self.assertIn(f"func_80028470({DIRECTORY[0]}, {DIRECTORY[1]});", loader)
-        self.assertIn(f"D_800AF780 = func_80028738(0x{TEXT_FILE:X});", loader)
-        self.assertIn(f"func_800295D8(0x{FONT_FILE:X}, D_800AF784, 0, 0x80);", loader)
+        self.assertIn(f"cd_select_directory({DIRECTORY[0]}, {DIRECTORY[1]});", loader)
+        self.assertIn(f"D_800AF780 = cd_get_file_size(0x{TEXT_FILE:X});", loader)
+        self.assertIn(f"cd_read_file(0x{FONT_FILE:X}, D_800AF784, 0, 0x80);", loader)
         self.assertIn(
             "func_80070340(D_800AF784, 0x380, 0x100, 0, 0x1FF, 0, 0);",
             function(path, "void func_800ACB90("),

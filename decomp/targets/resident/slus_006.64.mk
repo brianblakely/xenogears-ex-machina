@@ -6,12 +6,12 @@ SPLAT_CONFIG := decomp/targets/resident/slus_006.64.yaml
 ORIGINAL := .local/extract/disc1/SLUS_006.64
 ORIGINAL_SHA256 := dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119
 # Its uninitialized data ends at 8006faf0: the entry point (80019524) clears
-# the words after D_800592B8 through D_8006FAEC, the bounds of the mode
+# the words after heap_report_output through boot_bss_last_word, the bounds of the mode
 # table's entries 0 and 5.
 BSS_END := 0x8006FAF0
 # The mode table (main.c), whose overlay entries and BSS bounds
 # tools/cross_image.py compares with the mode overlays' links (their MODE).
-MODE_TABLE := D_8001808C
+MODE_TABLE := mode_table
 BUILD := .local/decomp/build/resident
 IMAGE := .local/decomp/build/SLUS_006.64
 LINKER_SCRIPT := .local/decomp/resident/slus_006.64.ld
@@ -44,12 +44,12 @@ GP_kernel_settings := 8
 GP_sprite_settings := 8
 # The heap report file unit (80032DCC-80032E7C) owns its file handle as a
 # $gp small common but addresses other units' small globals absolutely
-# (80032E04's stores of D_800592B8 match only so). GCC 2.6.3 and 2.7.2 build
+# (80032E04's stores of heap_report_output match only so). GCC 2.6.3 and 2.7.2 build
 # identical objects for it (2.7.2-cdk does not); it keeps the target's 2.7.2
 # of the heap unit before it.
-GP_heap_80032DCC := 8
-MASPSX_heap_80032DCC := --aspsx-version=2.34 --use-comm-section
-EXTERN_heap_80032DCC := absolute
+GP_heap_host_report := 8
+MASPSX_heap_host_report := --aspsx-version=2.34 --use-comm-section
+EXTERN_heap_host_report := absolute
 # The sound driver unit is compiled by GCC 2.6.3.
 CC_sound := 2.6.3
 # The sprite unit (8001C8DC-8002709C) is compiled by the Cygnus CDK GCC
@@ -67,23 +67,23 @@ MASPSX_sprite := --aspsx-version=2.79 --use-comm-section
 EXTERN_sprite := absolute
 # The second (80022090-800248D4), third (800248D4-80025C04) and fourth
 # (80025C04-8002709C) sprite units are built the same way.
-CC_sprite_80022090 := 2.7.2-cdk
-GP_sprite_80022090 := 8
-MASPSX_sprite_80022090 := --aspsx-version=2.79 --use-comm-section
-EXTERN_sprite_80022090 := absolute
-CC_sprite_800248D4 := 2.7.2-cdk
-GP_sprite_800248D4 := 8
-MASPSX_sprite_800248D4 := --aspsx-version=2.79 --use-comm-section
-EXTERN_sprite_800248D4 := absolute
-CC_sprite_80025C04 := 2.7.2-cdk
-GP_sprite_80025C04 := 8
-MASPSX_sprite_80025C04 := --aspsx-version=2.79 --use-comm-section
-EXTERN_sprite_80025C04 := absolute
+CC_sprite_construction := 2.7.2-cdk
+GP_sprite_construction := 8
+MASPSX_sprite_construction := --aspsx-version=2.79 --use-comm-section
+EXTERN_sprite_construction := absolute
+CC_sprite_vm_draw := 2.7.2-cdk
+GP_sprite_vm_draw := 8
+MASPSX_sprite_vm_draw := --aspsx-version=2.79 --use-comm-section
+EXTERN_sprite_vm_draw := absolute
+CC_sprite_sheet := 2.7.2-cdk
+GP_sprite_sheet := 8
+MASPSX_sprite_sheet := --aspsx-version=2.79 --use-comm-section
+EXTERN_sprite_sheet := absolute
 # The texture-scroll, disc, CD read callback, stream and model buffer unit
 # (8002709C-8002C3E8) is compiled by GCC 2.6.3 with inline division checks
 # (its code from 8002A260 on has no division).
-CC_main_8002709C := 2.6.3
-MASPSX_main_8002709C := --aspsx-version=2.34 --expand-div
+CC_cd_reads_and_streams := 2.6.3
+MASPSX_cd_reads_and_streams := --aspsx-version=2.34 --expand-div
 # The battle-mode entry owns 8005959C, while its setup flags are owned by
 # the following menu-support unit. This split preserves those GP/absolute
 # accesses with that unit's small-common pipeline. GCC 2.6.3 and 2.7.2 build
@@ -96,19 +96,19 @@ EXTERN_battle_mode := absolute
 # The menu-support unit (8001B844-8001C76C) is compiled by GCC 2.6.3.
 # Its own small commons use $gp; other units' small externs and every
 # address taken with `la` are absolute, as in the sprite units above.
-CC_main_8001B6C4 := 2.6.3
-GP_main_8001B6C4 := 8
-MASPSX_main_8001B6C4 := --aspsx-version=2.34 --use-comm-section
-EXTERN_main_8001B6C4 := absolute
+CC_mode_battle_and_menu := 2.6.3
+GP_mode_battle_and_menu := 8
+MASPSX_mode_battle_and_menu := --aspsx-version=2.34 --use-comm-section
+EXTERN_mode_battle_and_menu := absolute
 # The assembler of the GCC 2.7.2 -G0 units placed each one's own variables of
 # up to 8 bytes in its .sbss and the larger ones in its .bss (decomp/Makefile):
 # all of them link among the units' small variables (800592bc-800593a4) or
 # their larger ones (800595e8-8005a1fc) in unit order, and the code addresses
 # every one absolutely.
 SBSS_main := 8
-SBSS_main_8002C3E8 := 8
+SBSS_model_renderer := 8
 SBSS_main2 := 8
-SBSS_main2_800366E0 := 8
+SBSS_console_and_sound_driver := 8
 # Embedded media stay user-supplied: INCLUDE_ASSET reads them from ORIGINAL,
 # whose file offset 0 (the 2 KiB PS-X EXE header) is VRAM 0x8000F800.
 TARGET_CPPFLAGS += -DORIGINAL_BASE=0x8000F800

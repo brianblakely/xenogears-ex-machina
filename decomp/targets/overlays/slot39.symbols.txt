@@ -8,3 +8,5 @@ D_801EA568 = 0x801EA568; // size:0xC
 D_801EA8E4 = 0x801EA8E4; // size:0x8
 D_801EA8EC = 0x801EA8EC; // size:0x8
 D_801EA8F4 = 0x801EA8F4; // size:0x8
+// Names tools/names.py gave these addresses (docs/matching.md, Names).
+game_data_party_state = 0x8006F364;

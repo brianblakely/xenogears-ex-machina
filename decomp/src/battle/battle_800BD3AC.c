@@ -96,7 +96,7 @@ void func_800BD3AC(Sprite *sprite, s32 value, s32 kind) {
             popup->task.destroy(&popup->task);
         }
     }
-    popup = (DamagePopup *)func_8001D1D8(sizeof(DamagePopup), NULL, (void (*)(Task *))func_800BDC78, func_800BDA1C,
+    popup = (DamagePopup *)task_alloc_two_node_task(sizeof(DamagePopup), NULL, (void (*)(Task *))func_800BDC78, func_800BDA1C,
                                          func_800BD7A0);
     popup->sprite = sprite;
     popup->timer = 8;
@@ -124,9 +124,9 @@ void func_800BD3AC(Sprite *sprite, s32 value, s32 kind) {
     switch (kind) {
     case 4:
         popup->timer = 0x40;
-        popup->glyphCount = func_80026DCC(D_800D2F5C, 0x7C, popup->glyphs, -0x14, -0x10);
+        popup->glyphCount = sprite_sheet_fill_parts(D_800D2F5C, 0x7C, popup->glyphs, -0x14, -0x10);
         popup->colour.rgbc[3] = (popup->colour.rgbc[3] & ~1) | 2;
-        func_8001CD6C(&popup->task, (void (*)(Task *))func_800BDB08);
+        task_set_update_callback(&popup->task, (void (*)(Task *))func_800BDB08);
         break;
     case 5:
         popup->colour.rgbc[0] = 0x80;
@@ -135,21 +135,21 @@ void func_800BD3AC(Sprite *sprite, s32 value, s32 kind) {
         popup->colour.rgbc[3] &= ~1;
         break;
     case 10:
-        popup->glyphCount += func_80026DCC(D_800D2F5C, 0x7F, &popup->glyphs[popup->glyphCount], x, 0);
+        popup->glyphCount += sprite_sheet_fill_parts(D_800D2F5C, 0x7F, &popup->glyphs[popup->glyphCount], x, 0);
         break;
     case 11:
-        popup->glyphCount += func_80026DCC(D_800D2F5C, 0x91, &popup->glyphs[popup->glyphCount], x, 0);
+        popup->glyphCount += sprite_sheet_fill_parts(D_800D2F5C, 0x91, &popup->glyphs[popup->glyphCount], x, 0);
         popup->colour.rgbc[2] = 0x80;
         popup->colour.rgbc[0] = 0;
         popup->colour.rgbc[1] = 0;
         popup->colour.rgbc[3] &= ~1;
         break;
     case 1:
-        popup->glyphCount += func_80026DCC(D_800D2F5C, 0x80, &popup->glyphs[popup->glyphCount], x, -0x10);
+        popup->glyphCount += sprite_sheet_fill_parts(D_800D2F5C, 0x80, &popup->glyphs[popup->glyphCount], x, -0x10);
         x += 0x20;
         break;
     case 3:
-        popup->glyphCount += func_80026DCC(D_800D2F5C, 0x80, &popup->glyphs[popup->glyphCount], x, -0x10);
+        popup->glyphCount += sprite_sheet_fill_parts(D_800D2F5C, 0x80, &popup->glyphs[popup->glyphCount], x, -0x10);
         popup->colour.rgbc[0] = 0x80;
         popup->colour.rgbc[2] = 0x80;
         popup->colour.rgbc[1] = 0;
@@ -165,7 +165,7 @@ void func_800BD3AC(Sprite *sprite, s32 value, s32 kind) {
     }
     if (kind != 4) {
         for (i = 0; i != text[0]; i++, x += 10) {
-            popup->glyphCount += func_80026DCC(D_800D2F5C, text[i + 1] + 0x72, &popup->glyphs[popup->glyphCount], x, -0x10);
+            popup->glyphCount += sprite_sheet_fill_parts(D_800D2F5C, text[i + 1] + 0x72, &popup->glyphs[popup->glyphCount], x, -0x10);
         }
     }
 }
@@ -187,14 +187,14 @@ void func_800BD7A0(Task *task) {
         }
         previous = entry;
     }
-    func_8001D19C(task);
+    task_destroy_two_node_task(task);
 }
 
 /* Draw a popup glyph as a textured quad in colour (its word also sets the
  * primitive code) through the current matrices, added to the ordering
  * table's first entry, while the primitive buffer has room. */
 void func_800BD810(SpritePart *glyph, s32 colour) {
-    POLY_FT4 *poly = (POLY_FT4 *)D_80059580;
+    POLY_FT4 *poly = (POLY_FT4 *)sprite_queue_next_free;
     long p;
     long flag;
     u16 x, y;
@@ -202,8 +202,8 @@ void func_800BD810(SpritePart *glyph, s32 colour) {
     u8 u, v;
     u8 uw, vh;
 
-    if ((u8 *)D_80059580 + sizeof(POLY_FT4) < D_80059534) {
-        D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(POLY_FT4));
+    if ((u8 *)sprite_queue_next_free + sizeof(POLY_FT4) < sprite_queue_block_end) {
+        sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + sizeof(POLY_FT4));
         setlen(poly, 9);
         *(s32 *)&poly->r0 = colour;
         poly->tpage = glyph->tpage;
@@ -212,15 +212,15 @@ void func_800BD810(SpritePart *glyph, s32 colour) {
         h = glyph->h;
         x = glyph->x;
         y = glyph->y;
-        D_8004FB98[0].vx = x;
-        D_8004FB98[0].vy = y;
-        D_8004FB98[1].vx = x + w;
-        D_8004FB98[1].vy = y;
-        D_8004FB98[2].vx = x + w;
-        D_8004FB98[2].vy = y + h;
-        D_8004FB98[3].vx = x;
-        D_8004FB98[3].vy = y + h;
-        RotTransPers4(&D_8004FB98[0], &D_8004FB98[1], &D_8004FB98[2], &D_8004FB98[3], (long *)&poly->x0,
+        sprite_quad_corners[0].vx = x;
+        sprite_quad_corners[0].vy = y;
+        sprite_quad_corners[1].vx = x + w;
+        sprite_quad_corners[1].vy = y;
+        sprite_quad_corners[2].vx = x + w;
+        sprite_quad_corners[2].vy = y + h;
+        sprite_quad_corners[3].vx = x;
+        sprite_quad_corners[3].vy = y + h;
+        RotTransPers4(&sprite_quad_corners[0], &sprite_quad_corners[1], &sprite_quad_corners[2], &sprite_quad_corners[3], (long *)&poly->x0,
                       (long *)&poly->x1, (long *)&poly->x3, (long *)&poly->x2, &p, &flag);
         u = glyph->u;
         v = glyph->v;
@@ -234,7 +234,7 @@ void func_800BD810(SpritePart *glyph, s32 colour) {
         poly->v2 = v + vh;
         poly->u3 = u + uw;
         poly->v3 = v + vh;
-        addPrim((u32 *)D_8005956C, poly);
+        addPrim((u32 *)sprite_ot, poly);
     }
 }
 
@@ -272,7 +272,7 @@ void func_800BDA1C(Task *draw) {
     point.vy = popup->y >> 16;
     point.vz = popup->z >> 16;
     func_800BD974(&point, &offset);
-    func_8003F738(&popup->angles, &m);
+    gpu_build_rotation_matrix(&popup->angles, &m);
     TransMatrix(&m, &offset);
     CompMatrix(&D_800C3760, &m, &m);
     ScaleMatrix(&m, &popup->scale);
@@ -300,9 +300,9 @@ void func_800BDB74(Task *task) {
     DamagePopup *popup = (DamagePopup *)task;
 
     func_800BDF1C();
-    popup->colour.rgbc[0] = func_80021AD8(popup->colour.rgbc[0], -8);
-    popup->colour.rgbc[1] = func_80021AD8(popup->colour.rgbc[0], -8);
-    popup->colour.rgbc[2] = func_80021AD8(popup->colour.rgbc[0], -8);
+    popup->colour.rgbc[0] = sprite_add_clamp_byte(popup->colour.rgbc[0], -8);
+    popup->colour.rgbc[1] = sprite_add_clamp_byte(popup->colour.rgbc[0], -8);
+    popup->colour.rgbc[2] = sprite_add_clamp_byte(popup->colour.rgbc[0], -8);
     if (--popup->timer < 0 || (popup->colour.rgbc[0] | popup->colour.rgbc[1] | popup->colour.rgbc[2]) == 0) {
         popup->task.destroy(&popup->task);
     }
@@ -314,7 +314,7 @@ void func_800BDC14(DamagePopup *popup) {
     if (--popup->timer < 0) {
         popup->timer = 16;
         popup->colour.rgbc[3] = (popup->colour.rgbc[3] | 2) & ~1;
-        func_8001CD6C(&popup->task, func_800BDB74);
+        task_set_update_callback(&popup->task, func_800BDB74);
     }
 }
 
@@ -329,15 +329,15 @@ void func_800BDC78(DamagePopup *popup) {
     }
     if (--popup->timer < 0) {
         popup->timer = 16;
-        func_8001CD6C(&popup->task, (void (*)(Task *))func_800BDC14);
+        task_set_update_callback(&popup->task, (void (*)(Task *))func_800BDC14);
     }
 }
 
 /* Running total destroy: end its draw task and itself. */
 void func_800BDCF8(TotalPopup *total) {
     D_800D2D68 = NULL;
-    func_8001CB48(&total->draw);
-    func_8001CD94(&total->task);
+    task_unlink_draw_node(&total->draw);
+    task_unlink_main_node(&total->task);
 }
 
 /* The running total's empty update (800BDE58 starts its task with it). */
@@ -357,12 +357,12 @@ void func_800BDD3C(Task *draw) {
     SpritePart *glyph;
 
     ReadGeomOffset(&x, &y);
-    func_80026BA4(D_800D2F5C, 0x81, total->x, total->y, (u_long *)D_8005956C);
+    sprite_sheet_queue_quads(D_800D2F5C, 0x81, total->x, total->y, (u_long *)sprite_ot);
     offset.vx = (0xA0 - x) * 2;
     offset.vy = (0x46 - y) * 2;
     offset.vz = ReadGeomScreen();
     D_800C3760.t[2] = ReadGeomScreen();
-    func_8003F738(&total->angles, &m);
+    gpu_build_rotation_matrix(&total->angles, &m);
     TransMatrix(&m, &offset);
     CompMatrix(&D_800C3760, &m, &m);
     ScaleMatrix(&m, &total->scale);
@@ -378,11 +378,11 @@ void func_800BDD3C(Task *draw) {
 void func_800BDE58(void) {
     if (D_800D2D68 == NULL && D_800C3780 == 0) {
         D_800D2D68 = &D_800D30EC;
-        func_8001CC18(NULL, &D_800D30EC.task);
-        func_8001CA58(&D_800D30EC.task, &D_800D30EC.draw);
-        func_8001CD6C(&D_800D30EC.task, (void (*)(Task *))func_800BDD34);
-        func_8001CD64(&D_800D30EC.draw, func_800BDD3C);
-        func_8001CD74(&D_800D30EC.task, (void (*)(Task *))func_800BDCF8);
+        task_link_main_node(NULL, &D_800D30EC.task);
+        task_link_draw_node(&D_800D30EC.task, &D_800D30EC.draw);
+        task_set_update_callback(&D_800D30EC.task, (void (*)(Task *))func_800BDD34);
+        task_set_draw_callback(&D_800D30EC.draw, func_800BDD3C);
+        task_set_destroy_callback(&D_800D30EC.task, (void (*)(Task *))func_800BDCF8);
         D_800D30EC.x = 0x90;
         D_800D30EC.y = 0x2A;
         D_800D30EC.task.data = &D_800D30EC;
@@ -441,7 +441,7 @@ void func_800BDF1C(void) {
             x = D_800C3754[text[0] - 1];
             total->glyphCount = 0;
             for (i = 0; i != text[0]; x += 10) {
-                total->glyphCount += func_80026DCC(D_800D2F5C, text[i + 1] + 0x72, &total->glyphs[total->glyphCount], x, -8);
+                total->glyphCount += sprite_sheet_fill_parts(D_800D2F5C, text[i + 1] + 0x72, &total->glyphs[total->glyphCount], x, -8);
                 i++;
             }
         }
@@ -467,9 +467,9 @@ void func_800BE11C(NumberPopup *popup) {
     popup->scale.vx += 0x330;
     popup->scale.vy += 0x330;
     popup->scale.vz += 0x330;
-    popup->colour.rgbc[0] = func_80021AD8(popup->colour.rgbc[0], -4);
-    popup->colour.rgbc[1] = func_80021AD8(popup->colour.rgbc[1], -4);
-    popup->colour.rgbc[2] = func_80021AD8(popup->colour.rgbc[2], -4);
+    popup->colour.rgbc[0] = sprite_add_clamp_byte(popup->colour.rgbc[0], -4);
+    popup->colour.rgbc[1] = sprite_add_clamp_byte(popup->colour.rgbc[1], -4);
+    popup->colour.rgbc[2] = sprite_add_clamp_byte(popup->colour.rgbc[2], -4);
     if (--popup->life == 0) {
         popup->destroy(popup);
     }
@@ -495,12 +495,12 @@ void func_800BE1C4(PopupTask *task) {
     offset.vy = (0x46 - y) * 2;
     offset.vz = ReadGeomScreen();
     D_800C3760.t[2] = ReadGeomScreen();
-    func_80021B24(&angle, &popup->angle);
+    sprite_copy_svector(&angle, &popup->angle);
     scale.vx = popup->scale.vx;
     scale.vy = popup->scale.vy;
     scale.vz = popup->scale.vz;
     for (i = 0; i != 6; i++) {
-        func_8003F738(&angle, &m);
+        gpu_build_rotation_matrix(&angle, &m);
         TransMatrix(&m, &offset);
         CompMatrix(&D_800C3760, &m, &m);
         ScaleMatrix(&m, &scale);
@@ -524,7 +524,7 @@ void func_800BE330(s32 value) {
     s32 i;
     s32 x;
 
-    popup = (NumberPopup *)func_8001D1D8(sizeof(NumberPopup), NULL, (void (*)(Task *))func_800BE11C,
+    popup = (NumberPopup *)task_alloc_two_node_task(sizeof(NumberPopup), NULL, (void (*)(Task *))func_800BE11C,
                                          (void (*)(Task *))func_800BE1C4, NULL);
     popup->spin = -(((rand() & 3) - 2) * 8);
     if (popup->spin == 0) {
@@ -565,7 +565,7 @@ void func_800BE330(s32 value) {
     x = D_800C3754[text[0] - 1];
     popup->glyphCount = 0;
     for (i = 0; i != text[0]; x += 10) {
-        popup->glyphCount += func_80026DCC(D_800D2F5C, text[i + 1] + 0x72, &popup->glyphs[popup->glyphCount], x, -8);
+        popup->glyphCount += sprite_sheet_fill_parts(D_800D2F5C, text[i + 1] + 0x72, &popup->glyphs[popup->glyphCount], x, -8);
         i++;
     }
     for (i = 0; i != popup->glyphCount; i++) {
@@ -581,13 +581,13 @@ void func_800BE538(s32 slot, s32 first, s32 second, s32 third) {
     s32 mode;
     BattleMenu *menu;
 
-    D_80059464 = 0;
-    D_800591AC = 1;
+    task_active_main_count = 0;
+    task_new_tasks_active = 1;
     sprite = BATTLE_AREA.sprites[slot];
     D_800C3780 = 1;
     if (sprite != NULL) {
         mode = (s8)sprite->motion.bytes[3];
-        func_800245D8(sprite, 10);
+        sprite_start_animation(sprite, 10);
         menu = D_800C3610;
         D_800C3610 = (BattleMenu *)1;
         if (first) {
@@ -606,12 +606,12 @@ void func_800BE538(s32 slot, s32 first, s32 second, s32 third) {
         while ((s8)sprite->motion.bytes[3] == 10) {
             func_800BE790();
         }
-        func_800245D8(sprite, mode);
+        sprite_start_animation(sprite, mode);
     }
     D_800C3780 = 0;
     func_800BE0DC();
-    D_80059464 = 0;
-    D_800591AC = 0;
+    task_active_main_count = 0;
+    task_new_tasks_active = 0;
 }
 
 /* Write value as digits hexadecimal glyphs (D_800C3784, plus base) after
@@ -671,7 +671,7 @@ void func_800BE790(void) {
     s32 skipped;
 
     D_800C37D0++;
-    func_80019CA0();
+    boot_check_soft_reset();
     D_800D309C.start = VSync(-1);
     frame = &BATTLE_AREA;
     buffer = &frame->buffers[0];
@@ -682,67 +682,67 @@ void func_800BE790(void) {
     frame->ot = buffer->ot;
     ClearOTagR((u_long *)buffer->ot, 0x1000);
     frame->buffer = 1 - frame->buffer;
-    if (D_80010000 != -1) {
+    if (mode_disc_mode != -1) {
         func_800BEBC4();
         __asm__ volatile(".word 0x0001000D"); /* break 1: the debugger breakpoint */
         func_80280A9C();
     }
-    func_800250E0(frame->buffer);
+    sprite_queue_start_fill(frame->buffer);
     func_800BBAB8();
     func_800BB9D4();
-    func_80024FF4(&D_800D309C.matrix);
-    func_80024FE4((s32)frame->ot);
-    if (D_80010000 != -1) {
-        func_80037324((u_long *)frame->ot);
+    sprite_set_view_matrix(&D_800D309C.matrix);
+    sprite_set_ot((s32)frame->ot);
+    if (mode_disc_mode != -1) {
+        console_flush((u_long *)frame->ot);
     }
-    func_800A9A50(&D_800D309C.matrix, (s32)D_800CCB94, (u32 *)D_8005956C, frame->buffer);
+    func_800A9A50(&D_800D309C.matrix, (s32)D_800CCB94, (u32 *)sprite_ot, frame->buffer);
     SPAD_STACK_ENTER();
-    func_8001D468();
-    func_8001C9F8();
-    func_8001C964();
-    skipped = D_80059494;
+    sprite_build_pending_frames();
+    task_run_draw_list();
+    task_run_main_list();
+    skipped = task_catch_up_frame_count;
     while (--skipped != -1) {
         func_800BBAB8();
-        func_8001C964();
+        task_run_main_list();
     }
     SPAD_STACK_LEAVE();
     func_80076544();
     func_8008A9C0(0);
-    while (--D_80059494 != -1) {
+    while (--task_catch_up_frame_count != -1) {
         func_8008A9C0(1);
     }
     D_800D309C.cpu = VSync(1);
     DrawSync(0);
     D_800D309C.gpu = VSync(1);
-    D_80059494 = VSync(-1) - D_800D309C.start - D_80059198;
-    if (D_80059494 < 0) {
-        D_80059494 = 0;
+    task_catch_up_frame_count = VSync(-1) - D_800D309C.start - sprite_frame_skip;
+    if (task_catch_up_frame_count < 0) {
+        task_catch_up_frame_count = 0;
     }
-    if (D_80059494 >= 5) {
-        D_80059494 = 4;
+    if (task_catch_up_frame_count >= 5) {
+        task_catch_up_frame_count = 4;
     }
-    BATTLE_AREA.frameTicks = D_80059494 + D_80059198;
-    if (D_80059198 != 0) {
-        VSync(D_80059198 + 1);
+    BATTLE_AREA.frameTicks = task_catch_up_frame_count + sprite_frame_skip;
+    if (sprite_frame_skip != 0) {
+        VSync(sprite_frame_skip + 1);
     } else {
         VSync(0);
     }
     PutDispEnv(&BATTLE_AREA.current->dispEnv);
     PutDrawEnv(&BATTLE_AREA.current->drawEnv);
-    func_80025044();
+    sprite_queue_run_uploads();
     DrawOTag((u_long *)&BATTLE_AREA.current->ot[0xFFF]);
     func_800BEB04();
     if (D_800C37D0 == 1) {
         if (D_800C3610 != NULL) {
             D_800C3610->update(D_800C3610);
         }
-        if (D_800591B4 != 0) {
-            s32 action = D_800591B4;
+        if (sprite_single_action_request != 0) {
+            s32 action = sprite_single_action_request;
 
-            D_800591B4 = 0;
+            sprite_single_action_request = 0;
             func_800B8068(action);
         }
-        if (D_800C37CC != 0 && func_800286CC() == 0) {
+        if (D_800C37CC != 0 && cd_get_pending_read_count() == 0) {
             D_800C37CC = 0;
             func_800B136C();
         }
@@ -750,28 +750,28 @@ void func_800BE790(void) {
     D_800C37D0--;
 }
 
-/* Load the requested battle module (D_800591B3) into 0x801FC000 when it
+/* Load the requested battle module (sprite_requested_battle_module) into 0x801FC000 when it
  * changed, around the module switch 800B8354, and mark it loaded. */
 void func_800BEB04(void) {
     s32 saved0;
     s32 saved1;
     u8 module;
 
-    if (D_800591B2 != (module = D_800591B3)) {
-        D_800591B2 = D_800591B3;
+    if (sprite_loaded_battle_module != (module = sprite_requested_battle_module)) {
+        sprite_loaded_battle_module = sprite_requested_battle_module;
         func_800B8354();
-        func_800284B4(&saved0, &saved1);
-        func_80028470(0xC, 2);
-        func_800295D8(module + 2, (void *)0x801FC000, 0, 0x80);
+        cd_get_selected_directory(&saved0, &saved1);
+        cd_select_directory(0xC, 2);
+        cd_read_file(module + 2, (void *)0x801FC000, 0, 0x80);
         func_800B8354();
-        func_80028470(saved0, saved1);
+        cd_select_directory(saved0, saved1);
         DrawSync(0);
         VSync(0);
         EnterCriticalSection();
         FlushCache();
         ExitCriticalSection();
     }
-    D_800591B0 = 1;
+    sprite_battle_module_loaded = 1;
 }
 
 /* Read the controllers; holding select (0x100) slows the frame down. */
@@ -779,7 +779,7 @@ void func_800BEBC4(void) {
     func_800BEC18();
     if (BATTLE_AREA.held & 0x100) {
         VSync(8);
-        D_80059494 = 0;
+        task_catch_up_frame_count = 0;
     }
 }
 
@@ -789,12 +789,12 @@ void func_800BEC18(void) {
     s32 held;
     u16 old;
 
-    held = func_8003569C(0) & 0xFFFF;
+    held = pad_read_buttons(0) & 0xFFFF;
     old = BATTLE_AREA.held;
     BATTLE_AREA.held = held;
     BATTLE_AREA.pressed = ~old & held;
     BATTLE_AREA.released = old & ~held;
-    held = func_8003569C(1);
+    held = pad_read_buttons(1);
     BATTLE_AREA.pressed2 = ~BATTLE_AREA.held2 & held;
     BATTLE_AREA.held2 = held;
     BATTLE_AREA.heldOnly = BATTLE_AREA.held & ~held;
@@ -818,7 +818,7 @@ void func_800BED30(void) {
 
 /* Open the battle menu (800B9F78 its update). */
 BattleMenu *func_800BED4C(void) {
-    BattleMenu *menu = func_80031BDC(sizeof(BattleMenu), 0);
+    BattleMenu *menu = heap_alloc(sizeof(BattleMenu), 0);
 
     D_800C3610 = menu;
     menu->update = func_800B9F78;
@@ -831,27 +831,27 @@ BattleMenu *func_800BED4C(void) {
     D_800C3610->field49 = 0;
     D_800C3610->field34 = 0;
     func_800BF0B4(0);
-    D_80059464 = 0;
-    D_800591AC = 1;
+    task_active_main_count = 0;
+    task_new_tasks_active = 1;
     return D_800C3610;
 }
 
 /* Close the battle menu. */
 void func_800BEDE8(void) {
-    func_800320E8(D_800C3610);
-    D_80059464 = 0;
+    heap_free(D_800C3610);
+    task_active_main_count = 0;
     D_800C3610 = NULL;
-    D_800591AC = 0;
+    task_new_tasks_active = 0;
 }
 
 /* Run 800AA320 on a 4 KB stack of its own. */
 void func_800BEE2C(s32 index, s32 mask, s32 arg2) {
-    u8 *stack = func_80031BDC(0x1000, 1);
+    u8 *stack = heap_alloc(0x1000, 1);
 
     STACK_ENTER(stack + 0xF9C);
     func_800AA320(index, mask, arg2);
     STACK_LEAVE();
-    func_800320E8(stack);
+    heap_free(stack);
 }
 
 /* List the slot sprites of the slots in mask (up to 11, NULL-terminated),
@@ -887,7 +887,7 @@ s16 func_800BEF24(Sprite *from, Sprite *to) {
     a.z = from->z >> 16;
     b.x = to->x >> 16;
     b.z = to->z >> 16;
-    return func_80023124(b, a);
+    return sprite_get_ground_direction(b, a);
 }
 
 /* The direction from sprite to its target point on the ground. */
@@ -899,7 +899,7 @@ s16 func_800BEF8C(Sprite *sprite) {
     a.z = sprite->z >> 16;
     b.x = sprite->target_x;
     b.z = sprite->target_z;
-    return func_80023124(b, a);
+    return sprite_get_ground_direction(b, a);
 }
 
 /* Make slot the acting slot, returning the previous acting sprite to idle. */
@@ -907,7 +907,7 @@ void func_800BEFF4(s32 slot) {
     Sprite *sprite = D_800C3610->sprite;
 
     if (sprite != NULL && D_800C3610->slot != slot && !BATTLE_AREA.slots[SPRITE_SLOT(sprite)].hidden) {
-        func_800245D8(sprite, (s8)sprite->b0.byteb0);
+        sprite_start_animation(sprite, (s8)sprite->b0.byteb0);
     }
     D_800C3610->slot = slot;
     D_800C3610->sprite = BATTLE_AREA.sprites[slot];
@@ -944,9 +944,9 @@ void func_800BF1EC(Sprite *sprite, s32 mode) {
     to.x = sprite->target_x;
     to.z = sprite->target_z;
     D_800C3610->field44 = func_800C07CC(from, to);
-    func_80021FE0(sprite, func_800BEF8C(sprite));
-    func_800223B0(sprite, func_800BEF8C(sprite));
-    func_800245D8(sprite, mode);
+    sprite_set_direction(sprite, func_800BEF8C(sprite));
+    sprite_set_facing(sprite, func_800BEF8C(sprite));
+    sprite_start_animation(sprite, mode);
     func_800BF0B4(6);
 }
 
@@ -956,10 +956,10 @@ void func_800BF2B8(Sprite *sprite) {
     void *block;
 
     func_800B8D7C();
-    func_80028470(0x2C, 1);
+    cd_select_directory(0x2C, 1);
     file = ((SpriteSequencer *)sprite->sequencer)->word0;
-    block = func_80031BDC(func_800288EC(file), 1);
-    func_800295D8(file, block, 0, 0x80);
+    block = heap_alloc(cd_get_aligned_file_size(file), 1);
+    cd_read_file(file, block, 0, 0x80);
     D_800C3618 = block;
     D_800C361C = SPRITE_SLOT(sprite);
 }
@@ -1000,9 +1000,9 @@ void func_800BF3E8(Sprite *sprite) {
     slot = SPRITE_SLOT(target);
     D_800C3610->target = first;
     D_800C3610->targetSlot = slot;
-    func_800223B0(sprite, func_800BEF24(sprite, sprite->partner));
+    sprite_set_facing(sprite, func_800BEF24(sprite, sprite->partner));
     if ((s8)target->motion.bytes[3] != 0x15) {
-        func_800223B0(target, func_800BEF24(sprite->partner, sprite));
+        sprite_set_facing(target, func_800BEF24(sprite->partner, sprite));
     }
 }
 
@@ -1041,15 +1041,15 @@ void func_800BF600(s32 command, Sprite *sprite) {
     }
     D_800C3CE8 = 0;
     if ((s8)sprite->motion.bytes[3] != 0) {
-        func_80021BF8(sprite, func_800BF5E8);
-        func_800245D8(sprite, (s8)sprite->motion.bytes[3]);
+        sprite_set_completion_callback(sprite, func_800BF5E8);
+        sprite_start_animation(sprite, (s8)sprite->motion.bytes[3]);
     }
     func_800B7C34(command);
     if ((s8)sprite->motion.bytes[3] != 0) {
         while (D_800C3CE8 == 0) {
             func_800BE790();
         }
-        func_80021BF8(sprite, NULL);
+        sprite_set_completion_callback(sprite, NULL);
     }
 }
 
@@ -1060,9 +1060,9 @@ void func_800BF6CC(void) {
     }
 }
 
-/* D_80059464 less one while a number popup shows. */
+/* task_active_main_count less one while a number popup shows. */
 s32 func_800BF6F8(void) {
-    return D_80059464 - func_800BF720();
+    return task_active_main_count - func_800BF720();
 }
 
 /* Whether a number popup shows. */
@@ -1090,9 +1090,9 @@ void func_800BF73C(Task *task) {
 
 /* Start watching sprite's value against threshold with callback. */
 void func_800BF7C8(Sprite *sprite, s32 threshold, void (*callback)(Sprite *sprite)) {
-    SlotWatch *watch = (SlotWatch *)func_8001CD08(sprite->block, sizeof(SlotWatch) - 0x1C);
+    SlotWatch *watch = (SlotWatch *)task_alloc_main_task(sprite->block, sizeof(SlotWatch) - 0x1C);
 
-    func_8001CD6C((Task *)watch, func_800BF73C);
+    task_set_update_callback((Task *)watch, func_800BF73C);
     watch->callback = callback;
     watch->sprite = sprite;
     watch->mode = (s8)sprite->motion.bytes[3];
@@ -1157,13 +1157,13 @@ void func_800BF9EC(void) {
 
     if (D_800C3621 != 0) {
         func_800B8354();
-        func_80028470(0x2C, 0);
-        file = func_80031BDC(func_800288EC(1), 0);
-        func_800295D8(1, file, 0, 0x80);
+        cd_select_directory(0x2C, 0);
+        file = heap_alloc(cd_get_aligned_file_size(1), 0);
+        cd_read_file(1, file, 0, 0x80);
         func_800B8354();
-        func_8002DDE4(file, 0, 0, 0, 0, 0, 0);
+        model_load_image_list(file, 0, 0, 0, 0, 0, 0);
         func_800BE790();
-        func_800320E8(file);
+        heap_free(file);
         D_800C3621 = 0;
     }
 }
@@ -1197,20 +1197,20 @@ void func_800BFBA0(void) {
 
     if (D_800C3620 == 0) {
         func_800B8354();
-        func_80028470(0x2C, 0);
-        file = func_80031BDC(func_800288EC(5), 0);
-        func_800295D8(5, file, 0, 0x80);
+        cd_select_directory(0x2C, 0);
+        file = heap_alloc(cd_get_aligned_file_size(5), 0);
+        cd_read_file(5, file, 0, 0x80);
         func_800B8354();
-        if (func_800383EC(*(u16 *)(file + 0x20)) == 0) {
+        if (sound_find_wave_bank(*(u16 *)(file + 0x20)) == 0) {
             func_800C0F70();
-            D_800C3A6C = func_80037FD8((SoundSequence *)file, 0);
-            while (func_8003BDFC(0) != 0) {
+            D_800C3A6C = sound_load_wave_bank((SoundSequence *)file, 0);
+            while (sound_sync_transfer(0) != 0) {
                 func_800BE790();
             }
             D_800C3620 = 1;
             D_800C3622 = 0;
         }
-        func_800320E8(file);
+        heap_free(file);
     }
 }
 
@@ -1221,11 +1221,11 @@ Sprite *func_800BFC80(Sprite *sprite, s32 mode, s32 action) {
     Task *task;
     Sprite *child;
 
-    for (task = D_8005958C; task != NULL; task = task->next) {
+    for (task = task_main_list; task != NULL; task = task->next) {
         if (task->owner == owner && (task->link.word & 0x1FFFFFFF) == (owner->id.word & 0x1FFFFFFF)
             && (task->link.word >> 29 & 1)) {
             child = task->data;
-            if (child->image == D_8006BE10) {
+            if (child->image == sprite_shared_source) {
                 if (action != 2) {
                     if ((s8)child->motion.bytes[3] != mode) {
                         continue;
@@ -1253,12 +1253,12 @@ void func_800BFDA8(Sprite *sprite, s32 mode) {
 
     if (sprite->animations != 0 && func_800BFC80(sprite, mode, 0) == NULL) {
         void *motion = (void *)(SPRITE_SOURCE->animations[mode + 1] + (s32)SPRITE_SOURCE->animations);
-        saved = D_800591AC;
-        D_800591AC = 0;
-        child = func_80023B84(sprite, motion, (SpriteSource *)D_8006BE10);
+        saved = task_new_tasks_active;
+        task_new_tasks_active = 0;
+        child = sprite_create_child(sprite, motion, (SpriteSource *)sprite_shared_source);
         child->motion.bytes[3] = mode;
         child->partner = sprite;
-        D_800591AC = saved;
+        task_new_tasks_active = saved;
         child->b0.wordb0 |= 0x100;
     }
 }

@@ -9,3 +9,5 @@ movie_poll = 0x801D3F7C; // type:func
 movie_close = 0x801D43B0; // type:func
 movie_split_display = 0x801D68B4; // size:0x4
 movie_load_restart = 0x801E89E0; // size:0x4
+// Names tools/names.py gave these addresses (docs/matching.md, Names).
+game_data_worldmap_flag_word = 0x8006F954;

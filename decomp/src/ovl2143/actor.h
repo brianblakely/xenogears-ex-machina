@@ -20,10 +20,10 @@
  * definition (s16 angles and ids there, its result a bank pointer; s16
  * modes): turn a sprite and set its angle, the loaded bank with `bank`'s id
  * (nonzero when there is one) and an image list upload. */
-void func_80021FE0(Sprite *sprite, s32 direction);
-void func_800223B0(Sprite *sprite, s32 angle);
-s32 func_8003864C(SoundBank *bank, s32 id);
-void func_8002DDE4(void *images, s32 on, s32 a, s32 b, s32 c, s32 d, s32 e);
+void sprite_set_direction(Sprite *sprite, s32 direction);
+void sprite_set_facing(Sprite *sprite, s32 angle);
+s32 sound_find_effect_bank(SoundBank *bank, s32 id);
+void model_load_image_list(void *images, s32 on, s32 a, s32 b, s32 c, s32 d, s32 e);
 
 /* This overlay's link of a sprite to an actor node. */
 typedef struct {

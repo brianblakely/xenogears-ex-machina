@@ -175,10 +175,10 @@ void func_800A476C(s32 x, s32 y) {
 void func_800A47D4(void) {
     D_800B2078.unk2078 = 0;
     if (D_800ADB24 != 0) {
-        func_800320E8(D_800B2078.effect_buffers[0]);
-        func_800320E8(D_800B2078.effect_buffers[1]);
-        func_800320E8(D_800B2078.effect_buffers[2]);
-        func_800320E8(D_800B2078.effect_buffers[3]);
+        heap_free(D_800B2078.effect_buffers[0]);
+        heap_free(D_800B2078.effect_buffers[1]);
+        heap_free(D_800B2078.effect_buffers[2]);
+        heap_free(D_800B2078.effect_buffers[3]);
         D_800ADB24 = 0;
     }
 }
@@ -200,10 +200,10 @@ void func_800A484C(s32 resume) {
 
     D_800B2078.unk2078 = 1;
     if (D_800ADB24 == 0) {
-        D_800B2078.effect_buffers[0] = func_80031BDC(0x180, 0);
-        D_800B2078.effect_buffers[1] = func_80031BDC(0x180, 0);
-        D_800B2078.effect_buffers[2] = func_80031BDC(0x3840, 0);
-        D_800B2078.effect_buffers[3] = func_80031BDC(0x3840, 0);
+        D_800B2078.effect_buffers[0] = heap_alloc(0x180, 0);
+        D_800B2078.effect_buffers[1] = heap_alloc(0x180, 0);
+        D_800B2078.effect_buffers[2] = heap_alloc(0x3840, 0);
+        D_800B2078.effect_buffers[3] = heap_alloc(0x3840, 0);
         D_800ADB24 = 1;
         for (row = 0; row < 17; row++) {
             for (column = 0; column < 20; column++) {
@@ -371,11 +371,11 @@ void func_800A4DAC(void) {
     /* Rows 14-16 (the saved strips) continue the wave below the screen. */
     phase_y = EFFECT_PHASE[1] + frequency_y * 11;
     for (row = 14; row < 17; row++) {
-        wave_y = (func_8003F8CC(phase_y) * amplitude_y) >> 12;
+        wave_y = (gpu_get_cos(phase_y) * amplitude_y) >> 12;
         phase_x = EFFECT_PHASE[0];
         phase_y += frequency_y;
         for (column = 0; column < 20; column++) {
-            wave_x = (func_8003F8CC(phase_x) * amplitude_x) >> 12;
+            wave_x = (gpu_get_cos(phase_x) * amplitude_x) >> 12;
             phase_x += frequency_x;
             poly = &EFFECT_QUAD(row, column);
             if (column != 0) {
@@ -402,11 +402,11 @@ void func_800A4DAC(void) {
     /* Rows 0-13: the screen itself. */
     phase_y = EFFECT_PHASE[1];
     for (row = 0; row < 14; row++) {
-        wave_y = (func_8003F8CC(phase_y) * amplitude_y) >> 12;
+        wave_y = (gpu_get_cos(phase_y) * amplitude_y) >> 12;
         phase_x = EFFECT_PHASE[0];
         phase_y += frequency_y;
         for (column = 0; column < 20; column++) {
-            wave_x = (func_8003F8CC(phase_x) * amplitude_x) >> 12;
+            wave_x = (gpu_get_cos(phase_x) * amplitude_x) >> 12;
             phase_x += frequency_x;
             poly = &EFFECT_QUAD(row, column);
             if (row != 0) {
@@ -414,7 +414,7 @@ void func_800A4DAC(void) {
                     EFFECT_QUAD(row - 1, column).y2 = EFFECT_QUAD(row - 1, column).y3 =
                         EFFECT_QUAD(row, column).y0 = EFFECT_QUAD(row, column).y1 =
                             row * 16 + wave_y + 0x20;
-                    wave_y = (func_8003F8CC(phase_y) * amplitude_y) >> 12;
+                    wave_y = (gpu_get_cos(phase_y) * amplitude_y) >> 12;
                     EFFECT_QUAD(row, column).y2 = EFFECT_QUAD(row, column).y3 =
                         row * 16 + wave_y + 0x20;
                 } else {
@@ -453,8 +453,8 @@ void func_800A55B8(s32 *object, s32 a, s32 b, s32 c) {
 
 /* Release the two blocks at 800afe80 and 800b069c. */
 void func_800A55C8(void) {
-    func_800320E8(D_800AFE80);
-    func_800320E8(D_800B069C);
+    heap_free(D_800AFE80);
+    heap_free(D_800B069C);
 }
 
 /* Set the five screen pieces of the next draw buffer to grey `shade`. */
@@ -502,7 +502,7 @@ void func_800A5774(s32 x, s32 y, s32 h) {
     rect.y = y;
     rect.w = 0x40;
     rect.h = h;
-    pixels = func_80031BDC(h << 7, 1);
+    pixels = heap_alloc(h << 7, 1);
     StoreImage(&rect, pixels);
     DrawSync(0);
     p = pixels;
@@ -519,7 +519,7 @@ void func_800A5774(s32 x, s32 y, s32 h) {
     }
     LoadImage(&rect, pixels);
     DrawSync(0);
-    func_800320E8(pixels);
+    heap_free(pixels);
 }
 
 void func_800A663C(s32 semitrans, s32 abr);
@@ -557,7 +557,7 @@ void func_800A5924(void) {
     s32 level;
 
     if (D_800ADB38 != 0) {
-        func_8003748C();
+        console_close();
         func_80070C84();
         func_800A915C();
         if (D_800ADB38 == 1 || D_800ADB38 == 4) {
@@ -647,7 +647,7 @@ void func_800A5C40(void) {
     s32 level;
     s32 i;
 
-    func_8003748C();
+    console_close();
     func_800A9460();
     func_800864F0();
     func_8007FFE8();
@@ -661,17 +661,17 @@ void func_800A5C40(void) {
     func_80073FE0();
     func_800775F8();
     func_800700B0();
-    ahead = func_80031BDC(D_8005A4C0, 0);
-    memcpy(ahead, D_8005A4E0, D_8005A4C0);
-    func_800320B8(D_8005A4E0);
-    func_800320E8(D_8005A4E0);
+    ahead = heap_alloc(mode_read_ahead_size, 0);
+    memcpy(ahead, mode_read_ahead_block, mode_read_ahead_size);
+    heap_unprotect_block(mode_read_ahead_block);
+    heap_free(mode_read_ahead_block);
     if (D_800B0048 != 6) {
         func_800A90B4(1);
     }
-    D_8005A4E0 = func_80031BDC(D_8005A4C0, 1);
-    memcpy(D_8005A4E0, ahead, D_8005A4C0);
-    func_800320A4(D_8005A4E0);
-    func_800320E8(ahead);
+    mode_read_ahead_block = heap_alloc(mode_read_ahead_size, 1);
+    memcpy(mode_read_ahead_block, ahead, mode_read_ahead_size);
+    heap_protect_block(mode_read_ahead_block);
+    heap_free(ahead);
     switch (D_800B0048) {
     case 6:
         func_80071DCC(D_800AFD14);
@@ -693,8 +693,8 @@ void func_800A5C40(void) {
     reload:
         func_80073FE0();
         func_800A6924();
-        func_8001B044();
-        func_8001B3A8();
+        mode_sync_party_files();
+        mode_unpack_party_files();
         kind = D_800B0048;
         frames = D_800AFD14;
         func_80070CC8();
@@ -702,8 +702,8 @@ void func_800A5C40(void) {
         func_80070508();
         D_800B0048 = kind;
         D_800AFD14 = frames;
-        if (D_8004F308 == -1) {
-            func_80085B20(D_8004F324, 0);
+        if (mode_music_load_pending == -1) {
+            func_80085B20(mode_music_selected_track, 0);
         }
         func_80071E58(D_800AFD14);
         break;
@@ -717,8 +717,8 @@ void func_800A5C40(void) {
             func_800A6924();
         }
         func_800775F8();
-        func_8001B044();
-        func_8001B3A8();
+        mode_sync_party_files();
+        mode_unpack_party_files();
         kind = D_800B0048;
         frames = D_800AFD14;
         func_80070CC8();
@@ -726,22 +726,22 @@ void func_800A5C40(void) {
         func_80070508();
         D_800B0048 = kind;
         D_800AFD14 = frames;
-        if (D_8004F308 == -1) {
-            func_80085B20(D_8004F324, 0);
+        if (mode_music_load_pending == -1) {
+            func_80085B20(mode_music_selected_track, 0);
         }
         func_800A56A8(D_800AFD14);
         break;
     case 2:
     case 4:
         func_800A5884(1, 1);
-        func_8001B044();
-        func_8001B3A8();
+        mode_sync_party_files();
+        mode_unpack_party_files();
         kind = D_800B0048;
         frames = D_800AFD14;
         func_80070CC8();
         func_80070488();
         if (D_800ADB60 == 1) {
-            while (func_800286CC() != 0) {
+            while (cd_get_pending_read_count() != 0) {
                 func_80073FE0();
                 func_800A6408();
                 func_800A6924();
@@ -749,15 +749,15 @@ void func_800A5C40(void) {
                     D_800C2684 += 0x20;
                 }
             }
-            func_800320E8(D_800ADC14);
+            heap_free(D_800ADC14);
             D_800ADB60 = 0;
             func_80078C5C();
         }
         D_800AFD04 = 1;
         D_800B0048 = kind;
         D_800AFD14 = frames;
-        if (D_8004F308 == -1) {
-            func_80085B20(D_8004F324, 0);
+        if (mode_music_load_pending == -1) {
+            func_80085B20(mode_music_selected_track, 0);
         }
         level = 0x800000;
         func_80071E58(D_800AFD14);
@@ -782,8 +782,8 @@ void func_800A5C40(void) {
         func_80073FE0();
         func_800A6408();
         func_800A6924();
-        func_8001B044();
-        func_8001B3A8();
+        mode_sync_party_files();
+        mode_unpack_party_files();
         kind = D_800B0048;
         frames = D_800AFD14;
         D_800AFD04 = 1;
@@ -791,8 +791,8 @@ void func_800A5C40(void) {
         func_80070508();
         D_800B0048 = kind;
         D_800AFD14 = frames;
-        if (D_8004F308 == -1) {
-            func_80085B20(D_8004F324, 0);
+        if (mode_music_load_pending == -1) {
+            func_80085B20(mode_music_selected_track, 0);
         }
         for (i = 0; i < 4; i++) {
             func_80077DAC();
@@ -807,8 +807,8 @@ void func_800A5C40(void) {
         func_80073FE0();
         func_800A6408();
         func_800A6924();
-        func_8001B044();
-        func_8001B3A8();
+        mode_sync_party_files();
+        mode_unpack_party_files();
         kind = D_800B0048;
         frames = D_800AFD14;
         D_800AFD04 = 1;
@@ -818,8 +818,8 @@ void func_800A5C40(void) {
         D_800B0048 = kind;
         D_800AFD14 = frames;
         MoveImage(&rect, 0x140, 0xFF);
-        if (D_8004F308 == -1) {
-            func_80085B20(D_8004F324, 0);
+        if (mode_music_load_pending == -1) {
+            func_80085B20(mode_music_selected_track, 0);
         }
         for (i = 0; i < 4; i++) {
             func_80077DAC();
@@ -836,7 +836,7 @@ void func_800A5C40(void) {
     D_800AFD14 = 0x20;
     D_800AFD04 = 0;
     func_80077544();
-    func_80031FF8();
+    heap_coalesce();
 }
 
 /* Rotate and scale the screen pieces (when scaled) into their quads and
@@ -848,7 +848,7 @@ void func_800A6408(void) {
     long flag;
     s32 i;
 
-    func_8003F738(&D_800B00B8, &m);
+    gpu_build_rotation_matrix(&D_800B00B8, &m);
     m.t[2] = 0;
     m.t[1] = 0;
     m.t[0] = 0;
@@ -1042,7 +1042,7 @@ void func_800A6E70(void) {
     s32 column;
     s32 k;
 
-    D_800B00C4 = func_80031BDC(sizeof(ScreenGrid), 1);
+    D_800B00C4 = heap_alloc(sizeof(ScreenGrid), 1);
     for (row = 0; row < GRID_ROWS; row++) {
         for (column = 0; column < GRID_COLUMNS; column++) {
             k = row * GRID_COLUMNS + column;
@@ -1088,12 +1088,12 @@ void func_800A6E70(void) {
 
 /* Release the screen grid. */
 void func_800A7064(void) {
-    func_800320E8(D_800B00C4);
+    heap_free(D_800B00C4);
 }
 
 /* Set up the movie player for a 320x224 picture. */
 void func_800A708C(void) {
-    func_80032498(4, 0);
+    heap_select_owner_tag(4, 0);
     if (D_800ADB74 == 2) {
         movie_split_display = 1;
     } else {
@@ -1101,7 +1101,7 @@ void func_800A708C(void) {
     }
     movie_open(0x140, 0xE0, 0x80, 0x10, 0x20, 0x800, FIELD_MOVIE.depth24);
     D_800ADB6C = 0;
-    func_80032498(8, 0);
+    heap_select_owner_tag(8, 0);
 }
 
 /* Movie frame callback: record the frame, select the draw block for the
@@ -1128,9 +1128,9 @@ void func_800A7218(void) {
     s32 mode;
 
     D_800B06A0 = 0;
-    func_80032498(4, 0);
+    heap_select_owner_tag(4, 0);
     if (D_800ADB6C == 0) {
-        func_80028470(0x18, 1);
+        cd_select_directory(0x18, 1);
         mode = 1;
         if (FIELD_MOVIE.sound_bank != 0xFF || (D_800ADB80 & 0x40)) {
             mode = 3;
@@ -1138,16 +1138,16 @@ void func_800A7218(void) {
         movie_start(FIELD_MOVIE.file + 2, FIELD_MOVIE.unk2A, FIELD_MOVIE.sound_start,
                     FIELD_MOVIE.unk2E, 1, mode, FIELD_MOVIE.unk3A, FIELD_MOVIE.x, FIELD_MOVIE.y,
                     FIELD_MOVIE.source_x, FIELD_MOVIE.source_y, 0xE0, func_800A7120);
-        func_80028470(4, 0);
+        cd_select_directory(4, 0);
     }
-    func_80032498(8, 0);
+    heap_select_owner_tag(8, 0);
 }
 
 /* Run `frames` movie frames (with field sound) unless the movie stopped. */
 void func_800A732C(s32 frames) {
     s32 i;
 
-    func_80019CA0();
+    boot_check_soft_reset();
     if (D_800ADB6C == 0) {
         for (i = 0; i < frames; i++) {
             movie_poll();
@@ -1163,7 +1163,7 @@ void func_800A7394(void) {
         do {
             func_80077DAC();
             func_8007554C();
-        } while (func_800286CC() != 0);
+        } while (cd_get_pending_read_count() != 0);
     } while (D_800ADB08 != 0);
     CdDataSync(0);
 }
@@ -1174,21 +1174,21 @@ void func_800A73E8(void) {
     RECT rect;
 
     if (D_800ADB74 == 2) {
-        func_800320B8(D_8005A414[1]);
-        func_800320B8(D_8005A414[2]);
-        func_800320E8(D_8005A414[1]);
-        func_800320E8(D_8005A414[2]);
+        heap_unprotect_block(mode_party_sprite_blocks[1]);
+        heap_unprotect_block(mode_party_sprite_blocks[2]);
+        heap_free(mode_party_sprite_blocks[1]);
+        heap_free(mode_party_sprite_blocks[2]);
     } else {
         setRECT(&rect, 0x200, 0, 0x140, 0x80);
-        LoadImage(&rect, D_8005A414[1]);
+        LoadImage(&rect, mode_party_sprite_blocks[1]);
         DrawSync(0);
         setRECT(&rect, 0x200, 0x80, 0x140, 0x80);
-        LoadImage(&rect, D_8005A414[2]);
+        LoadImage(&rect, mode_party_sprite_blocks[2]);
         DrawSync(0);
-        func_800320B8(D_8005A414[1]);
-        func_800320B8(D_8005A414[2]);
-        func_800320E8(D_8005A414[1]);
-        func_800320E8(D_8005A414[2]);
+        heap_unprotect_block(mode_party_sprite_blocks[1]);
+        heap_unprotect_block(mode_party_sprite_blocks[2]);
+        heap_free(mode_party_sprite_blocks[1]);
+        heap_free(mode_party_sprite_blocks[2]);
     }
 }
 
@@ -1202,40 +1202,40 @@ void func_800A74F8(void) {
     s32 i;
 
     if (D_800ADB74 == 2) {
-        D_8005A414[1] = func_80031BDC(0x14000, 0);
-        D_8005A414[2] = func_80031BDC(0x14000, 0);
-        func_800320A4(D_8005A414[1]);
-        func_800320A4(D_8005A414[2]);
-        func_80028470(4, 0);
+        mode_party_sprite_blocks[1] = heap_alloc(0x14000, 0);
+        mode_party_sprite_blocks[2] = heap_alloc(0x14000, 0);
+        heap_protect_block(mode_party_sprite_blocks[1]);
+        heap_protect_block(mode_party_sprite_blocks[2]);
+        cd_select_directory(4, 0);
         count = 0;
         for (i = 1; i < 3; i++) {
-            if (D_8006FABC[i] != 0xFF) {
-                requests[count].file = D_8006FABC[i] + 5;
-                requests[count].destination = D_80065AFC[i] = func_80031BDC(func_800288EC(D_8006FABC[i] + 5), 1);
+            if (mode_party_file_ids[i] != 0xFF) {
+                requests[count].file = mode_party_file_ids[i] + 5;
+                requests[count].destination = mode_party_file_blocks[i] = heap_alloc(cd_get_aligned_file_size(mode_party_file_ids[i] + 5), 1);
                 count++;
             }
         }
         requests[count].destination = NULL;
         requests[count].file = 0;
-        func_80029AFC(requests, 0, 0);
-        func_80028A60(0);
+        cd_read_file_list(requests, 0, 0);
+        cd_sync_reads(0);
         for (i = 1; i < 3; i++) {
-            if (D_80062590[i] != 0xFF) {
-                func_80032EB4(D_80065AFC[i], D_8005A414[i]);
-                func_800320E8(D_80065AFC[i]);
+            if (mode_party_members[i] != 0xFF) {
+                text_unpack_lzss(mode_party_file_blocks[i], mode_party_sprite_blocks[i]);
+                heap_free(mode_party_file_blocks[i]);
             }
         }
         return;
     }
-    D_8005A414[1] = func_80031BDC(0x14000, 0);
-    D_8005A414[2] = func_80031BDC(0x14000, 0);
-    func_800320A4(D_8005A414[1]);
-    func_800320A4(D_8005A414[2]);
+    mode_party_sprite_blocks[1] = heap_alloc(0x14000, 0);
+    mode_party_sprite_blocks[2] = heap_alloc(0x14000, 0);
+    heap_protect_block(mode_party_sprite_blocks[1]);
+    heap_protect_block(mode_party_sprite_blocks[2]);
     setRECT(&rect, 0x200, 0, 0x140, 0x80);
-    StoreImage(&rect, D_8005A414[1]);
+    StoreImage(&rect, mode_party_sprite_blocks[1]);
     DrawSync(0);
     setRECT(&rect, 0x200, 0x80, 0x140, 0x80);
-    StoreImage(&rect, D_8005A414[2]);
+    StoreImage(&rect, mode_party_sprite_blocks[2]);
     DrawSync(0);
 }
 
@@ -1270,8 +1270,8 @@ void func_800A77C4(s32 unused) {
     s32 i;
     s32 j;
 
-    packed = func_80031BDC(0xA800, 0);
-    pixels = func_80031BDC(0x7000, 0);
+    packed = heap_alloc(0xA800, 0);
+    pixels = heap_alloc(0x7000, 0);
     for (i = 0; i < 5; i++) {
         rect.x = i * 0x60;
         rect.y = 0;
@@ -1299,8 +1299,8 @@ void func_800A77C4(s32 unused) {
         LoadImage(&rect, (u_long *)pixels);
         DrawSync(0);
     }
-    func_800320E8(packed);
-    func_800320E8(pixels);
+    heap_free(packed);
+    heap_free(pixels);
 }
 
 /* While movie frames 687..18e2 play (when the sequence is enabled),
@@ -1310,7 +1310,7 @@ void func_800A77C4(s32 unused) {
 s32 func_800A7948(void) {
     RECT rect;
 
-    if (D_8004F300 == 0 || D_800B06A0 < 0x687) {
+    if (mode_staff_roll_enabled == 0 || D_800B06A0 < 0x687) {
         return;
     }
     if (D_800B06A0 < 0x18E2) {
@@ -1334,7 +1334,7 @@ s32 func_800A7948(void) {
         VSync(0);
         DrawSync(0);
         while (D_800B06A0 < 0x18E2) {
-            func_80019CA0();
+            boot_check_soft_reset();
             func_80073F50();
             if (D_800B06A0 < 0x18DE) {
                 func_800AC99C();
@@ -1379,44 +1379,44 @@ void func_800A7C58(void) {
     D_800ADB84 = 0;
     D_800B00E4 = 0;
     D_800ADB78 = 0;
-    data = func_80031BDC(func_800288EC(0xA9), 0);
-    func_800295D8(0xA9, data, 0, 0x80);
+    data = heap_alloc(cd_get_aligned_file_size(0xA9), 0);
+    cd_read_file(0xA9, data, 0, 0x80);
     D_800B06A0 = 0;
     D_800AFE74 = 0;
     func_800A7394();
-    func_80028470(0x18, 0);
-    func_8002A2D0(FIELD_MOVIE.file);
-    func_80028470(4, 0);
+    cd_select_directory(0x18, 0);
+    cd_seek_or_pause_if_idle(FIELD_MOVIE.file);
+    cd_select_directory(4, 0);
     func_800A7394();
     if (D_800B2078.unk2264 != 0) {
         func_801E7FD4();
         func_8007999C();
         func_800775F8();
-        func_800320E8(D_800ADB20);
+        heap_free(D_800ADB20);
     }
     func_800A9460();
     if (D_800ADB74 != 2) {
         setRECT(&rect, 0x140, 0, 0xC0, 0x100);
         LoadImage(&rect, (u_long *)data);
         DrawSync(0);
-        func_800320E8(data);
-        data = func_80031BDC(0x18000, 0);
+        heap_free(data);
+        data = heap_alloc(0x18000, 0);
         StoreImage(&rect, (u_long *)data);
     }
     top = D_800ADB30;
-    if (D_8004F370 == 0) {
-        library = func_80031BDC((top & 0xFFFFFF) - 0x1D3008, 1);
-        memcpy(library, data, func_800288EC(0xA9));
+    if (mode_field_standalone == 0) {
+        library = heap_alloc((top & 0xFFFFFF) - 0x1D3008, 1);
+        memcpy(library, data, cd_get_aligned_file_size(0xA9));
     } else {
-        library = func_80031BDC(8, 1);
+        library = heap_alloc(8, 1);
     }
-    func_800320E8(data);
+    heap_free(data);
     func_80085788();
     func_800ACC58();
     D_800B00E4 = 1;
     func_800A73E8();
     func_8007999C();
-    func_80031FF8();
+    heap_coalesce();
     func_800A708C();
     func_800A7218();
     D_800ADB7C = 1;
@@ -1464,7 +1464,7 @@ void func_800A7C58(void) {
         } else if (D_800ADB80 & 0x80) {
             func_80074700();
             if (D_800C3900 & 0x20) {
-                func_80038D18(0, 10);
+                sound_set_cd_volume(0, 10);
                 for (i = 0; i < 5; i++) {
                     VSync(0);
                 }
@@ -1483,8 +1483,8 @@ void func_800A7C58(void) {
     PutDrawEnv(&D_800C426C->draw);
     VSync(0);
     DrawSync(0);
-    func_800320E8(library);
-    func_80031FF8();
+    heap_free(library);
+    heap_coalesce();
     func_800A74F8();
     func_80077884();
     setRECT(&rect, 0, D_800ADB78 << 8, 0x1E0, 0xE0);
@@ -1517,8 +1517,8 @@ void func_800A7C58(void) {
     }
     func_80077AB4();
     if (D_800ADB74 != 2) {
-        func_80028470(4, 0);
-        func_80032498(8, 0);
+        cd_select_directory(4, 0);
+        heap_select_owner_tag(8, 0);
         D_800ADB60 = 0;
         func_80070488();
         func_80070508();
@@ -1541,14 +1541,14 @@ void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s
 void func_800A8314(void) {
     u32 *data;
 
-    func_80032498(8, 0);
-    func_80028470(4, 0);
-    data = func_80031BDC(func_800288EC(0xAA), 1);
-    func_800295D8(0xAA, data, 0, 0x80);
-    func_80028A60(0);
+    heap_select_owner_tag(8, 0);
+    cd_select_directory(4, 0);
+    data = heap_alloc(cd_get_aligned_file_size(0xAA), 1);
+    cd_read_file(0xAA, data, 0, 0x80);
+    cd_sync_reads(0);
     func_80070340(data, 0x380, 0, 0, 0xE8, 0, 0);
     DrawSync(0);
-    func_800320E8(data);
+    heap_free(data);
 }
 
 /* Release the two primitive buffers once allocated. */
@@ -1556,8 +1556,8 @@ void func_800A83B4(void) {
     if (D_800AF278 != 0) {
         D_800AF278 = 0;
         DrawSync(0);
-        func_800320E8(D_800AFC60[0]);
-        func_800320E8(D_800AFC60[1]);
+        heap_free(D_800AFC60[0]);
+        heap_free(D_800AFC60[1]);
     }
 }
 
@@ -1675,10 +1675,10 @@ void func_800A8BA4(void) {
     func_800A8314();
     mode = 0;
     D_800AEB64 = 0;
-    func_80032498(8, 0);
+    heap_select_owner_tag(8, 0);
     prims = D_800AFC60;
-    prims[0] = func_80031BDC(PANEL_PIECES * sizeof(POLY_FT4), 0);
-    prims[1] = func_80031BDC(PANEL_PIECES * sizeof(POLY_FT4), 0);
+    prims[0] = heap_alloc(PANEL_PIECES * sizeof(POLY_FT4), 0);
+    prims[1] = heap_alloc(PANEL_PIECES * sizeof(POLY_FT4), 0);
     page_piece = piece = flip_piece = 0;
     i = 0;
     for (;;) {
@@ -1782,10 +1782,10 @@ void func_800A90B4(s32 flags) {
     ScreenColumn *copy;
 
     if (D_800ADB34 == 1) {
-        func_80032498(8, 0);
-        copy = func_80031BDC(0x8000, flags);
+        heap_select_owner_tag(8, 0);
+        copy = heap_alloc(0x8000, flags);
         *copy = *D_800AFC70;
-        func_800320E8(D_800AFC70);
+        heap_free(D_800AFC70);
         D_800AFC70 = copy;
     }
 }
@@ -1794,8 +1794,8 @@ void func_800A90B4(s32 flags) {
 void func_800A915C(void) {
     if (D_800ADB34 != 1) {
         D_800ADB34 = 1;
-        func_80032498(8, 0);
-        D_800AFC70 = func_80031BDC(0x8000, 1);
+        heap_select_owner_tag(8, 0);
+        D_800AFC70 = heap_alloc(0x8000, 1);
         D_800AFC28.x = 0x3C0;
         D_800AFC28.y = 0x100;
         D_800AFC28.w = 0x40;
@@ -1815,6 +1815,6 @@ void func_800A91F0(void) {
         D_800AFC28.h = 0x100;
         LoadImage(&D_800AFC28, D_800AFC70->words);
         DrawSync(0);
-        func_800320E8(D_800AFC70);
+        heap_free(D_800AFC70);
     }
 }

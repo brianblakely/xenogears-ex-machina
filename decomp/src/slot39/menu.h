@@ -58,20 +58,20 @@ extern s32 D_801E9F70[];      /* label y (mode 6) */
 
 /* Resident calls declared here: these callers convert arguments or results
  * differently from the resident definitions (decomp/src/resident/own_declarations.h). */
-void func_8002A428(s32 arg0);
-void func_8001BD40(s32 arg0, s32 arg1);
-void func_800263E4(void *sheet, s32 image, void *dst, s32 buffer, s32 x, s32 y, s32 scale, s32 flipX, s32 flipY);
-s32 func_8002675C(void *sheet, s32 image, void *dst, s32 buffer, s32 x, s32 y, s32 scale);
-void func_80033698(s32 x, s32 y);
-void func_80039DB8(s32 id, s32 sound); /* play a sound effect */
-u8 *func_800337E8(u8 id);
-u8 *func_80033848(u8 id);  /* weapon name */
-u8 *func_80033A2C(u8 id);  /* gear accessory name */
-u8 *func_80033A5C(u8 id);  /* gear part name */
-u8 *func_80033728(u8 *table, s32 index); /* message of a table */
-u8 *func_80033818(u8 item);  /* item name text */
-u8 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text line; its width */
-s32 func_80033B34(u8 *codes, u8 *text, s32 count); /* decode a name */
+void cd_set_mode(s32 mode);
+void mode_get_random_byte_in_range(s32 low, s32 high);
+void sprite_sheet_draw_scaled_flip(void *sheet, s32 image, void *dst, s32 buffer, s32 x, s32 y, s32 scale, s32 flipX, s32 flipY);
+s32 sprite_sheet_draw_scaled(void *sheet, s32 image, void *dst, s32 buffer, s32 x, s32 y, s32 scale);
+void text_load_palette(s32 x, s32 y);
+void sound_play_effect_on_last_channels(s32 id, s32 sound); /* play a sound effect */
+u8 *text_get_accessory_name(u8 id);
+u8 *text_get_weapon_name(u8 id);  /* weapon name */
+u8 *text_get_gear_accessory_name(u8 id);  /* gear accessory name */
+u8 *text_get_gear_part_name(u8 id);  /* gear part name */
+u8 *text_get_resource_entry(u8 *table, s32 index); /* message of a table */
+u8 *text_get_item_name(u8 item);  /* item name text */
+u8 window_render_text_line(u8 *text, void *pixels, s32 width, s32 line); /* render a text line; its width */
+s32 text_decode_codes(u8 *codes, u8 *text, s32 count); /* decode a name */
 
 /* The framework's functions that another unit calls, or its own before
  * defining them. */

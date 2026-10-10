@@ -118,9 +118,9 @@ class SourceTests(unittest.TestCase):
             (PARTY_COMMANDS, GEAR_COMMANDS, ENEMY_COMMANDS),
             ((5, 0x5F0, 0x10), (0x11, 0x690, 0x24), (4, 0x1F40, 5)),
         )
-        entry = source("resident/main_8001B6C4.c")
-        self.assertIn("func_80028470(12, 0);", entry)
-        self.assertIn("file = func_80031BDC(func_800288EC(3), 1);", entry)
+        entry = source("resident/mode_battle_and_menu.c")
+        self.assertIn("cd_select_directory(12, 0);", entry)
+        self.assertIn("file = heap_alloc(cd_get_aligned_file_size(3), 1);", entry)
 
     def test_enemy_command_is_the_act_entrys_arg1(self):
         executor = function_body(source("battle/battle_800792F8.c"), "func_800793F0")
@@ -134,7 +134,7 @@ class SourceTests(unittest.TestCase):
         menu = function_body(source("battle/battle.c"), "func_8008B224")
         self.assertIn(f"gearCommands[member][row * 2 + column + {TECHNIQUE_BASE}]", menu)
         self.assertIn(
-            "func_80089C6C(D_8006D634.skills[D_800D2D24[member]].unlocksB, column + row * 2)",
+            "func_80089C6C(game_data.skills[D_800D2D24[member]].unlocksB, column + row * 2)",
             menu,
         )
         battle = source("battle/battle.c")  # func_8008ADD0 is defined K&R
@@ -156,28 +156,28 @@ class SourceTests(unittest.TestCase):
         self.assertIn(f"D_800CCCE8_setup.partyIds[1] = {character};", loader)
         self.assertIn(f"D_800CCCE8_setup.work.records[i].pilot.gearId = 0x{gear:X};", loader)
         results = function_body(source("ovl2596/ovl2596.c"), "func_801E211C")
-        self.assertIn("func_80028470(0x10, 2);", results)
-        self.assertIn("D_800D2C08[0] = func_80032E88(archive->items[0], 0);", results)
+        self.assertIn("cd_select_directory(0x10, 2);", results)
+        self.assertIn("D_800D2C08[0] = text_unpack_lzss_alloc(archive->items[0], 0);", results)
 
     def test_world_modes_follow_the_entry_and_their_writers(self):
         self.assertEqual(len(world_modes()), 19)
         entry = function_body(source("worldmap/worldmap.c"), "func_80070CFC")
-        self.assertIn("mode = D_8006F954[0] & 0x7FFF;", entry)
+        self.assertIn("mode = game_data_worldmap_flag_word[0] & 0x7FFF;", entry)
         self.assertIn("step = D_8009A058[D_8009C5A8].enter;", entry)
         leave = function_body(source("field/field_800854D0.c"), "func_80093014")
-        self.assertIn("D_8005A39C->entry[2] = func_8009D044(7, EVENT_OPERAND_BYTE(9));", leave)
-        self.assertIn("D_8006D634.entry[2] = D_800D3278->operands[3];", source("ovl3087/ovl3087.c"))
+        self.assertIn("game_current_data->entry[2] = func_8009D044(7, EVENT_OPERAND_BYTE(9));", leave)
+        self.assertIn("game_data.entry[2] = D_800D3278->operands[3];", source("ovl3087/ovl3087.c"))
         results = function_body(source("ovl2596/ovl2596.c"), "func_801E252C")
         self.assertIn(
-            "} else if ((D_8006D634.map & 0x7FF) >= 0x400) {\n            func_800199CC(3);",
+            "} else if ((game_data.map & 0x7FF) >= 0x400) {\n            mode_load_overlay_block(3);",
             results,
         )
 
     def test_scripted_exits_are_the_world_maps_map_stores(self):
         entry = function_body(source("worldmap/worldmap.c"), "func_80070CFC")
-        self.assertIn("D_8006D634.map = 0x400;", entry)  # a new world state
+        self.assertIn("game_data.map = 0x400;", entry)  # a new world state
         leave = function_body(source("worldmap/worldmap_80072238.c"), "func_80077480")
-        self.assertIn("D_8006D634.map = 0x11;", leave)
+        self.assertIn("game_data.map = 0x11;", leave)
         self.assertEqual(
             scripted_exits(),
             (0x11, 0x50, 0x84, 0x10E, 0x110, 0x111, 0x11A, 0x120, 0x1A1, 0x1F0, 0x1FA, 0x269, 0x400),
@@ -189,13 +189,13 @@ class SourceTests(unittest.TestCase):
         self.assertEqual(
             [k for k, c in enumerate(callbacks) if c == "NULL"], [3, 4, 10, 11, 12, 13]
         )
-        kind = function_body(source("resident/sprite_80022090.c"), "func_80023440")
+        kind = function_body(source("resident/sprite_construction.c"), "sprite_get_header_kind")
         self.assertIn("s32 index = (*entry >> 8) & 7;", kind)
         self.assertIn("if ((*entry >> 14) & 1) {\n        index += 8;", kind)
         self.assertEqual([sprite_kind(f) for f in (0x0700, 0x4100, 0x47FF)], [7, 9, 15])
-        dispatch = function_body(source("resident/sprite_800248D4.c"), "func_80025224")
-        self.assertIn("func_8001CD64(task, D_8004FD40[kind]);", dispatch)
-        loop = function_body(source("resident/sprite.c"), "func_8001C964")
+        dispatch = function_body(source("resident/sprite_vm_draw.c"), "sprite_task_set_draw_by_kind")
+        self.assertIn("task_set_draw_callback(task, sprite_draw_callbacks[kind]);", dispatch)
+        loop = function_body(source("resident/sprite.c"), "task_run_main_list")
         self.assertIn("if (task->update != NULL) {", loop)
 
     def test_tmd_kinds_follow_both_switches(self):
@@ -224,8 +224,8 @@ class SourceTests(unittest.TestCase):
             [k for k, t in enumerate(table.types) if t.overrides], list(range(1, 16, 2))
         )
         self.assertEqual([len(t.draw) for t in table.types], [6] * 17)
-        renderer = function_body(source("resident/main_8002C3E8.c"), "func_8002C700")
-        self.assertIn("type = &D_8004FE50[group->type];", renderer)
+        renderer = function_body(source("resident/model_renderer.c"), "model_draw_sprite_model")
+        self.assertIn("type = &model_primitive_types[group->type];", renderer)
 
     def test_loader_tables(self):
         gears = gear_files()
@@ -251,16 +251,26 @@ class InventoryTests(unittest.TestCase):
             r"\b(D_[0-9A-F]{8}|[a-z]\w*)\s*(?:\[[^\]=]*\])*\s*(?:\)\s*\([^)]*\))?"
             r"\s*(?:__attribute__\(\([^)]*\)\)\)\s*)?=\s*\{"
         )
+        declared = re.compile(
+            r"^(?!#)(?:[A-Za-z_]\w*[ \t*]+)+\**([A-Za-z_]\w*)\(|INCLUDE_ASM\([^,]*,\s*(\w+)\)",
+            re.M,
+        )
+        texts = {
+            path: re.sub(r"/\*.*?\*/", "", path.read_text(), flags=re.S)
+            for path in sorted((ROOT / "decomp").rglob("*.[ch]"))
+        }
+        functions = {a or b for text in texts.values() for a, b in declared.findall(text)}
         tables = set()
-        for path in sorted((ROOT / "decomp/src").rglob("*.c")):
-            text = re.sub(r"/\*.*?\*/", "", path.read_text(), flags=re.S)
+        for path, text in texts.items():
+            if path.suffix != ".c" or "src" not in path.parts:
+                continue
             for match in definition.finditer(text):
                 depth, end = 0, match.end() - 1
                 for end in range(match.end() - 1, len(text)):
                     depth += {"{": 1, "}": -1}.get(text[end], 0)
                     if depth == 0:
                         break
-                if re.search(r"\bfunc_[0-9A-F]{8}\b", text[match.end() : end]):
+                if set(re.findall(r"[A-Za-z_]\w*", text[match.end() : end])) & functions:
                     tables.add(match.group(1))
         self.assertIn("D_80088BFC", tables)  # the .text table menu6 places by attribute
         self.assertGreaterEqual(len(tables), 31)

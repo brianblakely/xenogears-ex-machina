@@ -1,8 +1,8 @@
 # Battle formations and encounter sets
 
 A battle starts from one **formation**, 0x20 bytes that the battle overlay copies
-from the **encounter set** `D_800658DC` into `D_8006F9DC` as it starts (battle
-`func_80070F40`: formation `D_80059508`, or `D_8005947C - 1` when that is set). The
+from the **encounter set** `formation_encounter_set` into `formation_active` as it starts (battle
+`func_80070F40`: formation `formation_selected_index`, or `mode_pending_battle_formation - 1` when that is set). The
 layout is `BattleFormation` and `EncounterSet` in
 [`decomp/include/resident/formation.h`](../../decomp/include/resident/formation.h),
 whose member comments name their readers; every unit that reads a formation or a set
@@ -17,23 +17,23 @@ Party members take battle slots 0-2 and enemies slots 3-10 (`BattleSlot`,
 | --- | --- | --- |
 | 0x00 | `battle` | n: enemy file (12, 1) 2n + 2 and enemy set file 2n + 3 (ovl2615 `func_801E5384`); [battle-ai.md](battle-ai.md) decodes the enemy file. |
 | 0x01 | `flags` | 0x08: no result screens (ovl2596 `func_801E2280` skips `func_801E1FB8`, whose spoils list adds the drops, `func_801E1690`) and no fade after them (battle `func_80070F40`). 0x10: ovl2615 `func_801E5384` sets `D_800D3294`: the party is party slot 0's character and character 10 twice, members 1 and 2 with gear 17. Every member then fights in a gear (`func_801E4048`), so `partyGroups` is not read (`func_801E4160`); members 1 and 2 get fixed HP and stats (battle `func_8009B098`, from `func_801E4AC0`), character 11's portrait (battle `func_80078310`) and no place in the results (ovl2596 `func_801E2280`). 0x20: the battle event script runs (`func_801E5014` sets `D_800C3D48`; [battle-event-vm.md](battle-event-vm.md)). 0x40, 0x80: every member gets command 7, 8 (`func_801E5014`). No reader tests 0x01, 0x02 or 0x04. |
-| 0x02 | `stage` | s, the battle stage: resident `func_8001BB0C` passes it to `func_800379D8`, which loads the stage file (12, 3) 6 + 2s into `D_80059470` and the scene data 7 + 2s, after its size word, into `D_8005949C` and `D_800658C8` (s must be below half the file count of entry 5). ovl2615 `func_801E7210` takes them as its `stage` and `scene`. The scene data holds each formation group's standing places (ovl2615 `BattleScene.group`, read by `func_801E4160`; battle's `Formation`) and the cameras (`func_800B81BC`). |
+| 0x02 | `stage` | s, the battle stage: resident `mode_load_current_battle_stage` passes it to `mode_load_battle_stage`, which loads the stage file (12, 3) 6 + 2s into `mode_battle_stage_file` and the scene data 7 + 2s, after its size word, into `mode_battle_scene_file` and `mode_battle_scene_data` (s must be below half the file count of entry 5). ovl2615 `func_801E7210` takes them as its `stage` and `scene`. The scene data holds each formation group's standing places (ovl2615 `BattleScene.group`, read by `func_801E4160`; battle's `Formation`) and the cameras (`func_800B81BC`). |
 | 0x03 | `scriptSet` | the battle event script set, read only under flag 0x20 (ovl3087 `func_801E5160`). |
 | 0x04 | `partyGroups[3]` | per member, & 0x7f: its formation group, unless it fights in its gear, as every member does under flag 0x10 (then its slot number; ovl2615 `func_801E4160`). |
 | 0x07 | `unk7` | no reader. |
 | 0x08 | `enemyIds[8]` | per enemy, & 0x7f: its id in the enemy file (0x7f none); bit 7: it fights in a gear, slot byte 4 (`func_801E4160`). |
 | 0x10 | `enemyFlags[8]` | bit 7 to slot byte 3 (`BattleSlot.hidden`, which targeting tests and AI action 63 and condition 9b write and read); bit 0 to slot byte 5 (`func_801E4160`). |
-| 0x18 | `enemyGroups[8]` | & 0x7f: the enemy's formation group (`func_801E4160`). Bit 7 of byte 0x18 + s goes to slot byte 6 for slots s = 3-10, so the last three reads take the three bytes after the record (the SPU memory map `D_8006F9FC`). Setup phase 2 (`func_801E5014`) sets every slot's byte 6 anew from `func_80085310` before the slot sprites that read it are made (`func_800B81BC` runs after the setup phases in `func_80070F40`). |
+| 0x18 | `enemyGroups[8]` | & 0x7f: the enemy's formation group (`func_801E4160`). Bit 7 of byte 0x18 + s goes to slot byte 6 for slots s = 3-10, so the last three reads take the three bytes after the record (the SPU memory map `sound_spu_memory_map`). Setup phase 2 (`func_801E5014`) sets every slot's byte 6 anew from `func_80085310` before the slot sprites that read it are made (`func_800B81BC` runs after the setup phases in `func_80070F40`). |
 
 ## Encounter sets
 
-`EncounterSet` is 16 formations (0x200 bytes). Three loaders fill `D_800658DC`:
+`EncounterSet` is 16 formations (0x200 bytes). Three loaders fill `formation_encounter_set`:
 
 - **Field maps.** Map bundle component 6, which `func_80070CC8` decodes into
-  `D_800658DC` itself: the set, then the 16 weights `D_80065ADC` of the random draw.
+  `formation_encounter_set` itself: the set, then the 16 weights `formation_encounter_weights` of the random draw.
   `func_80079288` picks a formation with a nonzero weight by a random number against
   the weights' running sums. Every component 6 that is not empty is 0x210 bytes; the
-  packed stream ends 0-7 bytes later, in `D_80065AEC`, which no code reads. A map
+  packed stream ends 0-7 bytes later, in `commons_unused_4_words_b`, which no code reads. A map
   whose component 6 is empty leaves the set that was loaded before. The debug monitor
   prints the weights with its per-formation counts (debug595 page 10).
 
@@ -56,7 +56,7 @@ Party members take battle slots 0-2 and enemies slots 3-10 (`BattleSlot`,
   (`func_80094028`, or its substitute `D_8009A3A0` when `func_80093F18` returns 4), the
   weight row of the bracket the scene id (variable 0) falls in (`D_8009B578`: 0-53,
   54-200, 201-339, 340 and up), draws a formation by those 16 weights and copies the
-  kind's 0x200 bytes into `D_800658DC`. A table is the set and four weight rows; the
+  kind's 0x200 bytes into `formation_encounter_set`. A table is the set and four weight rows; the
   next table follows 0x20 bytes later, bytes no reader reads. The area files 143,
   154, 165, 176 and 187 (modes 9, 10 and 12-15) hold no tables: their header ends at
   0x30, so words 12-26 are section data, and word 11 leaves no room for a table.
@@ -65,12 +65,12 @@ Party members take battle slots 0-2 and enemies slots 3-10 (`BattleSlot`,
   0x210 bytes, 32 of them a field map's set, and 15 of 0x260 bytes whose sets are world
   map tables'. File 53 starts a sub-directory.
 
-`D_80059508` names the formation. The field's draw and the world map's roll set it,
+`formation_selected_index` names the formation. The field's draw and the world map's roll set it,
 and so do field events 71 and fe 84 from operand 1 (`func_80093568`, `func_800933F8`:
 an immediate when bit 15 is set, else a variable) and the debug selector's SceneNo.
-Battle event opcode 24 (ovl3087 `func_801E7700`) sets `D_8005947C` to its operand + 1.
+Battle event opcode 24 (ovl3087 `func_801E7700`) sets `mode_pending_battle_formation` to its operand + 1.
 When that battle ends with outcome 1, 0x40 or 0x21, the resident battle mode
-(`func_8001B6C4`) runs another battle (unless `D_800D3338` is set), which takes that
+(`mode_run_battle`) runs another battle (unless `D_800D3338` is set), which takes that
 formation of the same set.
 
 ## Census and cross-check
@@ -139,6 +139,6 @@ bundles, area files and discs. On the user's discs:
   (`func_8007528C`) are not traced.
 - The draws' other gates. "Can be drawn" means the weights, the arming and player
   control do not rule a formation out. `func_80079288` also returns while other field
-  states are set (`D_800ADBDC`, `D_800ADBE4`, `D_800ADBEC`, `D_8004F308`, `D_800ADB2C`,
+  states are set (`D_800ADBDC`, `D_800ADBE4`, `D_800ADBEC`, `mode_music_load_pending`, `D_800ADB2C`,
   `D_800ADB04`, `encounter_inhibition`), and the world map loop has its own
   (`func_800712D0`); when scripts set them is not traced.

@@ -8,7 +8,7 @@
  * normal and primitive tables with their counts and a scale; its commands are
  * TMD primitives (not bytecode of the battle's effect VM, 800AAD54). The
  * battle draws them (800B168C-800B2AEC), the battle module ovl3384 breaks one
- * into pieces, and the resident's D_8001C76C (0x170 bytes, one entry) is
+ * into pieces, and the resident's model_slot_ring_tmd (0x170 bytes, one entry) is
  * one. */
 
 /* An entry (0x1C bytes); the table offsets are from the entry until

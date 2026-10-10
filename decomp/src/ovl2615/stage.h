@@ -27,10 +27,10 @@
  * a panorama (u16 arguments where it takes words and the reverse, and the
  * stage object, which starts with its VECTOR position), and a texture scroll
  * of `count` bands (words where it takes s16 and u16). */
-Panorama *func_8002709C(u16 tex_x, u16 tex_y, u16 width, u16 height, u16 clut_x, u16 clut_y,
+Panorama *gpu_create_panorama(u16 tex_x, u16 tex_y, u16 width, u16 height, u16 clut_x, u16 clut_y,
                         u16 mode, u16 turn, StageObject *object, void *colours, s32 fill_scale,
                         s32 fade_range, s32 fade_start);
-void func_80027D64(TextureScroll *scroll, s32 x, s32 y, s32 w, s32 h, s32 count, s32 source_x,
+void gpu_init_texture_scroll(TextureScroll *scroll, s32 x, s32 y, s32 w, s32 h, s32 count, s32 source_x,
                    s32 source_y, void *speeds);
 
 /* The battle object list's last entry (D_800D3368) is the stage model. */

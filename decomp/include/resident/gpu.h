@@ -42,24 +42,24 @@ typedef struct Panorama {
     s16 fade_start;
 } Panorama;
 
-s32 func_800273C4(Panorama *panorama, SVECTOR *eye, SVECTOR *target, MATRIX *view, u_long *ot,
+s32 gpu_draw_panorama(Panorama *panorama, SVECTOR *eye, SVECTOR *target, MATRIX *view, u_long *ot,
                   s32 buffer);
-void func_800278F8(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *ot, s32 buffer);
+void gpu_draw_panorama_strip(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *ot, s32 buffer);
 
-MATRIX *func_8003F738(SVECTOR *angles, MATRIX *m); /* Rx * Ry * Rz of three angles */
+MATRIX *gpu_build_rotation_matrix(SVECTOR *angles, MATRIX *m); /* Rx * Ry * Rz of three angles */
 
 /* More of the display services. */
-void func_80027D40(void *block);
-void func_80027EAC(TextureScroll *scroll);
-void func_8002800C(TextureScroll *scroll);
+void gpu_free_panorama(void *block);
+void gpu_update_texture_scroll(TextureScroll *scroll);
+void gpu_free_texture_scroll(TextureScroll *scroll);
 
 /* Link a primitive at the head of an ordering table entry (handwritten,
- * func_80031678.s and its kin: the word count after the tag is the
+ * gpu_ot_link_poly_g4.s and its kin: the word count after the tag is the
  * primitive's). */
-void func_80031678(u_long *ot, POLY_G4 *prim);
-void func_800316C0(u_long *ot, LINE_F2 *prim);
-void func_80031708(u_long *ot, LINE_F3 *prim);
-void func_80031750(u_long *ot, LINE_F4 *prim);
-void func_80031870(u_long *ot, TILE_1 *prim);
+void gpu_ot_link_poly_g4(u_long *ot, POLY_G4 *prim);
+void gpu_ot_link_line_f2(u_long *ot, LINE_F2 *prim);
+void gpu_ot_link_line_f3(u_long *ot, LINE_F3 *prim);
+void gpu_ot_link_line_f4(u_long *ot, LINE_F4 *prim);
+void gpu_ot_link_tile_1(u_long *ot, TILE_1 *prim);
 
 #endif

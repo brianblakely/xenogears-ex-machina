@@ -23,7 +23,7 @@
 /* Callers convert arguments/result differently from the resident definition
  * (u16 colours there): build the console font CLUTs from a foreground and a
  * background colour. */
-void func_80036E4C(s32 foreground, s32 background);
+void console_load_font_cluts(s32 foreground, s32 background);
 
 /* The bound object of a kind 15 sprite's model renderer: its polygon count. */
 typedef struct {

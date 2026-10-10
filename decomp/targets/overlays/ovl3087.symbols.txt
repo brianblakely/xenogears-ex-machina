@@ -4,3 +4,5 @@ func_800B9B30 = 0x800B9B30; // type:func
 func_800BAB0C = 0x800BAB0C; // type:func
 func_800BABDC = 0x800BABDC; // type:func
 func_800BAC50 = 0x800BAC50; // type:func
+// Names tools/names.py gave these addresses (docs/matching.md, Names).
+game_data_worldmap_flag_word = 0x8006F954;

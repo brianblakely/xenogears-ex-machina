@@ -15,7 +15,7 @@ record has +0x15a bit 0x80 (fighting in a gear), or a descriptor with flagsA bit
 0x10, goes to func_8009C198 instead: it selects a party member's gear descriptor
 (an enemy keeps its own) and calls D_800C34DC[formula](). The 0x28-byte
 descriptors come from the battle setup archive, directory (12, 0) file 3
-(resident func_8001BBAC), an offset table of packed blocks that ovl2615
+(resident mode_battle_load_files), an offset table of packed blocks that ovl2615
 func_801E5384 unpacks: archive[4] holds the enemy commands, archive[5 + character]
 a party member's and archive[0x11 + gear] its gear's (copies of 0x1f40, 0x5f0
 and 0x690 bytes). An enemy's command is the arg1 byte of its AI's type-1
@@ -24,21 +24,21 @@ which commands the enemy data files' AI scripts select (tools.analysis.battle_ai
 and whether each enemy fights in a gear (its record's +0x15a, copied by ovl2615
 func_801E4870).
 
-Model primitives (decomp/src/resident/main_8002C3E8.c). func_8002C8CC builds and
-func_8002C700 draws a model's primitive groups, a header {u8 type, u8, s16 count}
-and count records each, through D_8004FE50[type]: a prepare routine per record,
+Model primitives (decomp/src/resident/model_renderer.c). model_build_packets builds and
+model_draw_sprite_model draws a model's primitive groups, a header {u8 type, u8, s16 count}
+and count records each, through model_primitive_types[type]: a prepare routine per record,
 the record stride, the auxiliary bytes per record and the packet size, and six
-draw routines by sort mode. Prepare routines that call func_8002CD64 first take
+draw routines by sort mode. Prepare routines that call model_apply_override_command first take
 texture page (c4) and CLUT (c8) override words from the auxiliary data. The
-models (0x38-byte headers; groups of them relocated by func_8002C3E8, single
-ones by func_8002C59C) come from these loaders:
+models (0x38-byte headers; groups of them relocated by model_relocate_group, single
+ones by model_relocate_sprite_model) come from these loaders:
 
 * field map bundles, directory (4, 0) file 0xb8 + 2 * map: every model group of
   the geometry component (component 2, field func_80070CC8);
 * ovl2143 actors, the model file of each pair after ovl2143 in (4, 0), files
   0x6bb + 2k (field func_80077884, the gear shop's func_801CF9BC);
 * battle objects (func_800A8BF0: the group between the model file's entries 2
-  and 3): stage files (12, 3) 6 + 2s (resident func_800379D8), the model entries
+  and 3): stage files (12, 3) 6 + 2s (resident mode_load_battle_stage), the model entries
   of enemy set files (12, 1) 2n + 3 (ovl2615 func_801E6314), object sets
   (0x28, 0) 2s + 1 (func_800A96B4), gears (0x28, 1) base + 1 and their part
   files base + 2 + v by D_800C3508 (func_800A9540, func_800A979C);
@@ -48,7 +48,7 @@ ones by func_8002C59C) come from these loaders:
 * world map area files (0x24, 0) area + 1 for the area sets of D_8009B584
   (func_80071B9C, func_80073530: the group at header +8, func_80084580);
 * sprite commands f5 (a model), f6 and f7 (a model group) in the sprite blocks
-  tools.analysis.sprite_vm decodes (resident func_8001FBE4).
+  tools.analysis.sprite_vm decodes (resident sprite_vm_run_generic_command).
 
 The census walks every model of each group a loader relocates, also those a
 hierarchy or placement list never builds.
@@ -76,10 +76,10 @@ from tools.analysis.packed import PackedError, decode_block
 ROOT = Path(__file__).resolve().parents[2]
 FORMULA_UNIT = "battle/battle_8008CCCC.c"  # D_800C348C, D_800C34DC
 GEAR_FILE_UNIT = "battle/battle_8009E53C.c"  # D_800C3508
-MODEL_UNIT = "resident/main_8002C3E8.c"  # D_8004FE50 and its prepare routines
+MODEL_UNIT = "resident/model_renderer.c"  # model_primitive_types and its prepare routines
 AREA_UNIT = "worldmap/worldmap_80094A5C.c"  # D_8009B584
 MODE_UNIT = "worldmap/worldmap_80072238.c"  # D_8009A058, the world map modes
-SPRITE_UNIT = "resident/sprite_800248D4.c"  # D_8004FD40, the sprite task callbacks
+SPRITE_UNIT = "resident/sprite_vm_draw.c"  # sprite_draw_callbacks, the sprite task callbacks
 TMD_UNIT = "battle/battle_800B15D8.c"  # func_800B1720 packets, func_800B1F6C draws
 FORMULA_TABLES = (("D_800C348C", "func_800941A4"), ("D_800C34DC", "func_8009C198"))
 
@@ -156,31 +156,31 @@ class PrimitiveType:
     stride: int  # record bytes
     aux_stride: int  # auxiliary bytes per record
     packet_size: int
-    overrides: bool  # prepare calls func_8002CD64 before the record
+    overrides: bool  # prepare calls model_apply_override_command before the record
 
 
 @dataclass(frozen=True)
 class PrimitiveTable:
     types: tuple[PrimitiveType, ...]
-    override_codes: frozenset[int]  # command[3] values func_8002CD64 consumes
+    override_codes: frozenset[int]  # command[3] values model_apply_override_command consumes
 
 
 @cache
 def primitive_table(root: Path = ROOT) -> PrimitiveTable:
     text = unit(MODEL_UNIT, root)
-    length, body = initializer(text, "D_8004FE50")
+    length, body = initializer(text, "model_primitive_types")
     rows = re.findall(r"\{\{([^}]*)\},\s*(\w+),\s*(\w+),\s*(\w+),\s*(\w+)\}", body)
     if length != len(rows):
-        raise CensusError(f"D_8004FE50[{length}] has {len(rows)} rows")
+        raise CensusError(f"model_primitive_types[{length}] has {len(rows)} rows")
     types = []
     for draw, prepare, stride, aux_stride, packet_size in rows:
         routines = tuple(name.strip() for name in draw.split(","))
         if len(routines) != 6:
-            raise CensusError(f"a D_8004FE50 row lists {len(routines)} draw routines")
-        overrides = "func_8002CD64(" in function_body(text, prepare)
+            raise CensusError(f"a model_primitive_types row lists {len(routines)} draw routines")
+        overrides = "model_apply_override_command(" in function_body(text, prepare)
         values = (int(stride, 0), int(aux_stride, 0), int(packet_size, 0))
         types.append(PrimitiveType(routines, prepare, *values, overrides))
-    cases = re.findall(r"case (0x[0-9A-Fa-f]+):", function_body(text, "func_8002CD64"))
+    cases = re.findall(r"case (0x[0-9A-Fa-f]+):", function_body(text, "model_apply_override_command"))
     return PrimitiveTable(tuple(types), frozenset(int(code, 16) for code in cases))
 
 
@@ -207,7 +207,7 @@ DESCRIPTOR = 0x28
 FORMULA = 0x16  # CommandDescriptor.formula
 FLAGS_A = 0x0A  # CommandDescriptor.flagsA
 GEAR_DESCRIPTOR = 0x10  # flagsA bit func_800941A4 hands to func_8009C198
-SETUP_ARCHIVE = (12, 0, 3)  # func_8001BBAC: 80028470(12, 0), file 3 into D_800595A8
+SETUP_ARCHIVE = (12, 0, 3)  # mode_battle_load_files: 80028470(12, 0), file 3 into mode_battle_setup_archive
 # func_801E5384: archive entry, bytes copied, and the first entry after the run
 # (archive[0x10] and archive[0x24] are loaded for other uses).
 ENEMY_COMMANDS = (4, 0x1F40, 5)
@@ -220,7 +220,7 @@ ACT = 1  # action-list entry type func_800793F0 hands to func_80078998
 
 
 def archive_entries(data: bytes) -> list[bytes]:
-    """Entries 1..count of the setup archive unpacked (func_8003342C turns the
+    """Entries 1..count of the setup archive unpacked (text_relocate_offset_table turns the
     offsets into archive[1..count]); index 0 stands for the count word."""
     count = struct.unpack_from("<I", data, 0)[0]
     if not 0 < count < 0x100 or 4 + 4 * count > len(data):
@@ -387,7 +387,7 @@ def enemy_commands(census: FormulaCensus, root: Path, disc: int) -> None:
 # offers it, func_8008ADD0 commits it), offered only while bit 0x8000 >> k of
 # the pilot's CharacterBattleData.mask6 is set (func_80089C6C reads bits 0-15).
 TECHNIQUE_BASE = 21
-NEW_GAME = (0x10, 0, 3)  # func_8001B970: the game data a new game starts from
+NEW_GAME = (0x10, 0, 3)  # mode_load_initial_game_data: the game data a new game starts from
 CHARACTER, CHARACTERS, GEAR_ID = 0x26C, 11, 0xA0  # 0xa4-byte records, +0xa0 the gear
 SKILLS, MASK6 = 0x16C0, 6  # 0x20-byte CharacterBattleData per character
 RESULTS = (0x10, 2, 2)  # ovl2596 func_801E211C: item 0 is the growth table (+0x5f20)
@@ -540,15 +540,15 @@ GROUP_HEADER = 0x10
 class ModelWalk:
     groups: list[tuple[int, int]] = field(default_factory=list)  # (type, records)
     overrides: Counter = field(default_factory=Counter)
-    other_cx: int = 0  # cx command bytes func_8002CD64 passes on as the record's own
+    other_cx: int = 0  # cx command bytes model_apply_override_command passes on as the record's own
     packet_bytes: int = 0
     errors: list[str] = field(default_factory=list)
     differences: list[str] = field(default_factory=list)  # header fields against the walk
 
 
 def walk_model(data: bytes, model: int, base: int, table: PrimitiveTable) -> ModelWalk:
-    """func_8002C8CC over the model header at data[model], whose offsets count
-    from data[base] (its group, or the model itself after func_8002C59C)."""
+    """model_build_packets over the model header at data[model], whose offsets count
+    from data[base] (its group, or the model itself after model_relocate_sprite_model)."""
     walk = ModelWalk()
     if not 0 <= model <= len(data) - MODEL:
         walk.errors.append("model header outside its data")
@@ -596,7 +596,7 @@ def walk_model(data: bytes, model: int, base: int, table: PrimitiveTable) -> Mod
 
 
 def group_models(data: bytes, group: int) -> list[int]:
-    """func_8002C3E8: the group's model count at +0, then models from +0x10."""
+    """model_relocate_group: the group's model count at +0, then models from +0x10."""
     if not 0 <= group <= len(data) - GROUP_HEADER:
         raise CensusError(f"model group at 0x{group:x} outside its data")
     count, flags = struct.unpack_from("<iI", data, group)
@@ -672,7 +672,7 @@ def actor_models(disc: Disc) -> Iterator[ModelRef]:
 
 
 def battle_models(disc: Disc) -> Iterator[ModelRef]:
-    for s in range(record_count(disc, 12, 3, 5) // 2):  # func_800379D8: scene < file 5's count / 2
+    for s in range(record_count(disc, 12, 3, 5) // 2):  # mode_load_battle_stage: scene < file 5's count / 2
         yield from object_refs(f"stage {s}", file_bytes(disc, disc.slot(12, 3, 6 + 2 * s)))
     for n in range((record_count(disc, 12, 1, 1) - 1) // 2):
         data = file_bytes(disc, disc.slot(12, 1, 2 * n + 3))
@@ -703,7 +703,7 @@ def menu_models(disc: Disc) -> Iterator[ModelRef]:
         # func_8008B38C relocates the model group at +4.
         models, base = struct.unpack_from("<I", data, 4)[0], struct.unpack_from("<I", data, 0x1C)[0]
         yield from group_refs(f"arena model {number - 2}", data, models - base)
-    model = 0x80091FB0 - BASE  # func_800852C4: func_8002C59C(D_80091FB0)
+    model = 0x80091FB0 - BASE  # func_800852C4: model_relocate_sprite_model(D_80091FB0)
     yield ModelRef("D_80091FB0", disc_image("menu", disc.number), model, model)
 
 
@@ -714,8 +714,8 @@ def worldmap_models(disc: Disc) -> Iterator[ModelRef]:
         yield from group_refs(f"area {area}", data, group)
 
 
-# func_8001FBE4: f5 binds the model at its target (relocated by func_8002C59C);
-# f6 and f7 relocate the group there (func_8002C3E8) and build its first model.
+# sprite_vm_run_generic_command: f5 binds the model at its target (relocated by model_relocate_sprite_model);
+# f6 and f7 relocate the group there (model_relocate_group) and build its first model.
 SPRITE_MODEL_COMMANDS = {0xF5: 0, 0xF6: GROUP_HEADER, 0xF7: GROUP_HEADER}
 
 
@@ -811,7 +811,7 @@ def primitive_census(disc: Disc) -> PrimitiveCensus:
 # ---------------------------------------------------------------------------
 #
 # The world map overlay's entry (worldmap.c func_80070CFC) runs mode
-# D_8006F954[0] & 0x7fff of D_8009A058 (its enter, then start and leave each
+# game_data_worldmap_flag_word[0] & 0x7fff of D_8009A058 (its enter, then start and leave each
 # frame) without a bound check. The word is the game data's +0x2320. The world
 # map sets it to 1 for a new world state and keeps it across its own battles
 # (bit 0x8000 marks the return); its exits store a field's entry there. Field
@@ -840,7 +840,7 @@ def world_modes(root: Path = ROOT) -> tuple[str, ...]:
 # The world map leaves for a field (exit 0, worldmap.c func_80070CFC) with the
 # scene and entry of the current path region (D_8009D7D8, a PathRegion) or,
 # from a scripted mode, constants its code stores in the game data's map
-# (D_8006D634.map, 0x8006f94e). func_80094238 makes a region current for a
+# (game_data.map, 0x8006f94e). func_80094238 makes a region current for a
 # path table (it tests every region with a link; kind 4 regions only record a
 # destination) and func_80094364 for table 3. The area files (0x24, 0) area + 1
 # of D_8009B584 hold the four path tables (func_80073530: AreaHeader.spots,
@@ -854,7 +854,7 @@ DESTINATION = 4  # a kind-4 region records a destination, not a current path
 def scripted_exits(root: Path = ROOT) -> tuple[int, ...]:
     """The scenes the world map's scripted modes store before leaving."""
     text = "".join(path.read_text() for path in sorted((root / "decomp/src/worldmap").glob("*.c")))
-    values = re.findall(r"D_8006D634\.map = (0x[0-9A-Fa-f]+|\d+);", _strip_comments(text))
+    values = re.findall(r"game_data\.map = (0x[0-9A-Fa-f]+|\d+);", _strip_comments(text))
     return tuple(sorted({int(value, 0) for value in values}))
 
 
@@ -946,24 +946,24 @@ def mode_census(disc: Disc, root: Path = ROOT) -> ModeCensus:
 # ---------------------------------------------------------------------------
 #
 # A new sprite's kind is bits 8-10 of its animation header's flags plus 8 for
-# bit 14 (func_80023440): effect sprites take it from a directory animation
-# (func_80023FD8), children from the header a command spawns (func_80023B84;
-# kind 3 takes the parent's). func_80024730 rewrites camera markers 12 and 13
-# to 10 and 11 and hands the auxiliary task D_8004FD40[kind] (func_80025224);
-# the task loop skips a NULL update (func_8001C964).
+# bit 14 (sprite_get_header_kind): effect sprites take it from a directory animation
+# (sprite_create_effect), children from the header a command spawns (sprite_create_child;
+# kind 3 takes the parent's). sprite_task_init_by_kind rewrites camera markers 12 and 13
+# to 10 and 11 and hands the auxiliary task sprite_draw_callbacks[kind] (sprite_task_set_draw_by_kind);
+# the task loop skips a NULL update (task_run_main_list).
 
 
 @cache
 def sprite_callbacks(root: Path = ROOT) -> tuple[str, ...]:
-    length, body = initializer(unit(SPRITE_UNIT, root), "D_8004FD40")
+    length, body = initializer(unit(SPRITE_UNIT, root), "sprite_draw_callbacks")
     entries = tuple(entry.strip() for entry in body.split(",") if entry.strip())
     if length != len(entries):
-        raise CensusError(f"D_8004FD40[{length}] lists {len(entries)} callbacks")
+        raise CensusError(f"sprite_draw_callbacks[{length}] lists {len(entries)} callbacks")
     return entries
 
 
 def sprite_kind(flags: int) -> int:
-    """func_80023440: header flags bits 8-10, plus 8 for bit 14."""
+    """sprite_get_header_kind: header flags bits 8-10, plus 8 for bit 14."""
     return ((flags >> 8) & 7) + (8 if flags >> 14 & 1 else 0)
 
 
@@ -1019,7 +1019,7 @@ def kind_census(disc: Disc, root: Path = ROOT) -> KindCensus:
 # ---------------------------------------------------------------------------
 #
 # Battle draws PlayStation TMD models (battle/effect_script.h's "effect script
-# file"): the resident D_8001C76C (the slot-highlight ring, func_800BD098) and the model a
+# file"): the resident model_slot_ring_tmd (the slot-highlight ring, func_800BD098) and the model a
 # battle sprite command f3 binds as its parts (func_800C11CC), which ovl3384
 # func_801FC4C4 can also break into pieces. Both read object 0
 # (func_800B168C: 0x1c-byte entries after a 0xc-byte header); each primitive
@@ -1169,7 +1169,7 @@ def tmd_census(disc: Disc, root: Path = ROOT) -> TmdCensus:
     kinds = tmd_kinds(root)
     boot = disc.boot
     text = struct.unpack_from("<I", boot, 0x18)[0]  # PS-X EXE text address, after a 0x800 header
-    walk_tmd(census, "D_8001C76C", boot, RESIDENT_TMD - text + 0x800, kinds)
+    walk_tmd(census, "model_slot_ring_tmd", boot, RESIDENT_TMD - text + 0x800, kinds)
     census.models["resident"] += 1
     for data, block, dialect in sprite_blocks(disc, root):
         if dialect != sprite_vm.BATTLE:
@@ -1296,8 +1296,8 @@ def formula_report(results: list[FormulaCensus]) -> list[str]:
 def primitive_report(results: list[PrimitiveCensus]) -> list[str]:
     table = primitive_table()
     out = [
-        f"model primitives: D_8004FE50 {len(table.types)} types (func_8002C8CC prepare, "
-        "func_8002C700 draw by sort mode 0-5)",
+        f"model primitives: model_primitive_types {len(table.types)} types (model_build_packets prepare, "
+        "model_draw_sprite_model draw by sort mode 0-5)",
     ]
     for n, result in enumerate(results, 1):
         sources = ", ".join(
@@ -1339,7 +1339,7 @@ def mode_report(results: list[ModeCensus]) -> list[str]:
     modes = world_modes()
     out = [
         f"world map arrival modes: D_8009A058 {len(modes)} modes (worldmap.c func_80070CFC,"
-        " D_8006F954[0] & 0x7fff)"
+        " game_data_worldmap_flag_word[0] & 0x7fff)"
     ]
     for n, result in enumerate(results, 1):
         out.append(
@@ -1365,8 +1365,8 @@ def kind_report(results: list[KindCensus]) -> list[str]:
     callbacks = sprite_callbacks()
     empty = [k for k, name in enumerate(callbacks) if name == "NULL"]
     out = [
-        f"sprite kinds: D_8004FD40 {len(callbacks)} callbacks (func_80025224), NULL for"
-        f" {' '.join(map(str, empty))}; header bits 8-10 and 14 (func_80023440)"
+        f"sprite kinds: sprite_draw_callbacks {len(callbacks)} callbacks (sprite_task_set_draw_by_kind), NULL for"
+        f" {' '.join(map(str, empty))}; header bits 8-10 and 14 (sprite_get_header_kind)"
     ]
     for n, result in enumerate(results, 1):
         out.append(

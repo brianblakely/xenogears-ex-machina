@@ -47,8 +47,8 @@ It does not prove:
 
 - That names and comments are right. A match proves a switch's case labels, not
   its comments ([matching.md](matching.md), Script instructions). For example,
-  `func_80024FF4` (sprite_800248D4.c) is commented as copying light settings,
-  but it stores the view matrix `D_8004FBB8` that `func_8001E148` applies to
+  `sprite_set_view_matrix` (sprite_vm_draw.c) is commented as copying light settings,
+  but it stores the view matrix `sprite_view_matrix` that `sprite_set_draw_matrix` applies to
   sprite positions. Some shared views still disagree (Open questions).
 - That the C means the same under another compiler. It relies on GCC 2.x's
   choices for unspecified and undefined behaviour
@@ -112,80 +112,80 @@ It does not prove:
 ### Images and their numbers
 
 [original-boundaries.md](original-boundaries.md) (Control flow and state) gives
-the mode table `D_8001808C` with each mode's entry, BSS, overlay file and the
+the mode table `mode_table` with each mode's entry, BSS, overlay file and the
 word at 0x8006FAF0 that identifies the loaded image, and the secondary overlay
 slots. Two more numberings name the same images: the kernel menu's labels
-(`func_8001A344`, main.c) and the disc slots (`OVERLAYS`,
+(`mode_kernel_menu_update`, main.c) and the disc slots (`OVERLAYS`,
 tools/extraction/overlays.py).
 
 | Mode | Kernel menu label | Target | Disc 1 / 2 slot |
 | --- | --- | --- | --- |
-| 0 | (the kernel menu itself) | resident `func_8001A4B4` | none |
+| 0 | (the kernel menu itself) | resident `mode_run_kernel_menu` | none |
 | 1 | Field | `field` | 36 / 31 |
-| 2 | Battle | `battle`, entered via resident `func_8001B6C4` | 38 / 33 |
+| 2 | Battle | `battle`, entered via resident `mode_run_battle` | 38 / 33 |
 | 3 | Worldmap | `worldmap` | 37 / 32 |
 | 4 | Battling | `menu` (the Battling arena, not the game menu) | 35 / 30 |
-| 5 | Menu | resident `func_8001C634` and the 0x801C5000 tenants `slot39`, `ovl2598`, `ovl2600`, `ovl2601`, `ovl2602` | 39 / 34, not loaded |
+| 5 | Menu | resident `mode_run_menu` and the 0x801C5000 tenants `slot39`, `ovl2598`, `ovl2600`, `ovl2601`, `ovl2602` | 39 / 34, not loaded |
 | 6 | Movie | `movie` (with `mdec` at 0x801D3000) | 40 / 35 |
 
 Every overlay has a disc 2 slot five lower (tools/extraction/overlays.py). Slot
 39 holds a packed copy of the `slot39` image; the game loads its menu screens
-from directory (0x10, 0), file kind + 5 (`func_800799D4`, `func_8001C1A8`). The
+from directory (0x10, 0), file kind + 5 (`func_800799D4`, `menu_state_run_screen`). The
 two discs carry byte-identical overlays; only the disc index embedded in the
 resident differs.
 
 ### Boot
 
-From `func_80019578` (main.c):
+From `boot_main` (main.c):
 
-1. The handwritten entry `func_80019524` clears the resident BSS
-   0x800592BC-0x8006FAEC, then `func_80019548` sets `$sp` = `$fp` = 0x80200000
+1. The handwritten entry `boot_entry_point` clears the resident BSS
+   0x800592BC-0x8006FAEC, then `boot_reset_stack_and_gp` sets `$sp` = `$fp` = 0x80200000
    and `$gp` = `_gp`.
 2. Library start-up: `ResetCallback`, `SetVideoMode(0)` (NTSC), `ResetGraph`,
-   a 384x480 VRAM clear, `InitGeom`; pads (`func_80036288`); `InitCARD(1)`,
-   `StartCARD`, `_bu_init`; the vblank handler `func_8003634C`.
-3. The heap over [0x8006FAF0, 0x801FC000) (`func_80031A68`), then `SpuInit`.
-4. The disc index: `func_80028230(D_80010004, D_80018004, D_80010000)` with the
+   a 384x480 VRAM clear, `InitGeom`; pads (`pad_start_controllers`); `InitCARD(1)`,
+   `StartCARD`, `_bu_init`; the vblank handler `pad_vblank_callback`.
+3. The heap over [0x8006FAF0, 0x801FC000) (`heap_init`), then `SpuInit`.
+4. The disc index: `cd_init_disc_access(cd_disc_files, cd_disc_directories, mode_disc_mode)` with the
    tables embedded in the executable.
-5. The sound driver and its 240 Hz tick (`func_80037B88`).
-6. Directory (0, 1) files 2-5 (sound banks), 6 (font, `func_80033558`) and
-   7 (system data, `func_800335F4`).
-7. Cross-mode words reset (`func_8001AADC`). New-game data loaded:
-   `func_8001BB50` calls `func_8001B970`, which copies directory (0x10, 0)
-   file 3 whole into `D_8006D634`.
-8. The boot logo (`func_80019D48`), then mode 6 with the movie request
-   `D_8004FE44` = {kind 1, entry 0x10 when the directory reports disc 1, else 7,
+5. The sound driver and its 240 Hz tick (`sound_start_driver`).
+6. Directory (0, 1) files 2-5 (sound banks), 6 (font, `text_install_font`) and
+   7 (system data, `text_install_system_data`).
+7. Cross-mode words reset (`mode_reset_game_state`). New-game data loaded:
+   `mode_init_game_data` calls `mode_load_initial_game_data`, which copies directory (0x10, 0)
+   file 3 whole into `game_data`.
+8. The boot logo (`boot_show_logo`), then mode 6 with the movie request
+   `cd_movie_request_kind` = {kind 1, entry 0x10 when the directory reports disc 1, else 7,
    next mode 1, 0}. The movie mode reads it in `func_800737EC` (movie.c) and then
    selects the field.
 
-The only outside inputs are the boot word `D_80010000`, the disc index, pads and
+The only outside inputs are the boot word `mode_disc_mode`, the disc index, pads and
 cards. The boot word is -1 in both retail executables
 (`decomp/targets/resident/classification.txt`, range 80010000). Any other value
 switches on the development paths, such as the debug595 load to 0x80280000
 (field.c `func_80077E88`) and the debugger breaks. A pointer value also selects
-the PC file server (`func_80028230`). `D_8005917C` points at the word
+the PC file server (`cd_init_disc_access`). `mode_disc_mode_pointer` points at the word
 (kernel_settings.c).
 
 ### Mode dispatcher
 
-`func_80019ACC` (main.c) runs each mode and never returns. Its steps, the
+`mode_dispatch` (main.c) runs each mode and never returns. Its steps, the
 never-returning sites that call it from deep frames and what survives it are
 in [original-boundaries.md](original-boundaries.md) (Control flow and state).
 Three details matter for a native loop:
 
 - The heap restarts twice: at the row's BSS end + 0x800 before the overlay is
-  decoded (`func_80031B10`, which releases every block not marked keep), and at
+  decoded (`heap_move_start`, which releases every block not marked keep), and at
   BSS end + 4 after the stack reset, when the allocation defaults and the pad
   queue are reset too.
 - The packed overlay file is read into a top-of-heap block with tag 6, quietly
-  (`func_800199CC`). The field's encounter draw, the world map and the battle
+  (`mode_load_overlay_block`). The field's encounter draw, the world map and the battle
   results call it for the next mode before they leave (field.c `func_80079288`,
   worldmap.c `func_80070CFC`, ovl2596.c `func_801E252C`), so the read overlaps
-  their last frames; the dispatcher waits for it (`func_80028A60(0)`) and
+  their last frames; the dispatcher waits for it (`cd_sync_reads(0)`) and
   decodes the block to 0x8006FAF0. A block read ahead like this has already
   been released by the first heap restart, so the decode reads a released
   block: a native heap must not scrub released blocks. Selecting mode 0 before
-  `entry()` ends the cache (`func_8001996C`). The overlay's `.data` is decoded
+  `entry()` ends the cache (`mode_select_next_mode`). The overlay's `.data` is decoded
   afresh on every entry.
 - No game stack frame survives the call. That makes the dispatch boundary the
   natural snapshot keyframe and the place for the host's top-level loop.
@@ -194,7 +194,7 @@ Three details matter for a native loop:
 
 - Each mode runs its own blocking frame loops, nested inside one another. The
   field loop `func_80077E88` runs the menu (`func_800799D4` calls
-  `func_8001C634`), movies (`func_800A7C58`) and transitions from inside its
+  `mode_run_menu`), movies (`func_800A7C58`) and transitions from inside its
   loop. Battle rules call the frame function from inside turn logic
   (`func_800716D8`, battle_80070E2C.c). There is no draw-free update in any mode
   ([Presentation](#presentation)).
@@ -213,26 +213,26 @@ Three details matter for a native loop:
 
 | Scheduler | Where | State | Runs |
 | --- | --- | --- | --- |
-| Sprite engine tasks | resident sprite.c (`func_8001CA58` links, `func_8001CAF0` allocates); `Task` in resident/sprite.h | heap nodes with `update`/`destroy` function pointers, lists `D_8005958C` (main) and `D_80059594` (second) | `func_8001C9F8` runs the second list, `func_8001C964` the main list (paused while `D_80059428` counts down); battle reruns the main list for measured lag (`func_800BE790`) |
+| Sprite engine tasks | resident sprite.c (`task_link_draw_node` links, `task_alloc_draw_task` allocates); `Task` in resident/sprite.h | heap nodes with `update`/`destroy` function pointers, lists `task_main_list` (main) and `task_draw_list` (second) | `task_run_draw_list` runs the second list, `task_run_main_list` the main list (paused while `task_main_pause_timer` counts down); battle reruns the main list for measured lag (`func_800BE790`) |
 | Field event VM | field_800854D0.c `func_800A2030` schedules, `func_800A1EC8` interprets | per actor: u16 PCs into the map's bytecode, 8 slots | each frame in the move phase of `func_8007554C` ([field-events.md](scripts/field-events.md)) |
 | Battle event VM | ovl3087 `func_801E879C` | 16 threads | at battle start and between turns; each pass runs one battle frame per thread (`func_800716D8`), then up to four of its instructions, until opcode 22 ends the run: an outer blocking loop around battle frames ([battle-event-vm.md](scripts/battle-event-vm.md)) |
 | World map actors | worldmap_80094A5C.c `func_80097800` | 64 slots `D_8009BE24` whose `kind` and `update` hold function addresses as integers | each world map frame |
 | Arena coroutine | created by menu7.c `func_8008BA2C` on a 0x400-word stack at 0x801FE000 (menu6.c `func_80088E90`); `func_8008BB3C` resumes and `func_8008BC04` yields (handwritten) | the task's registers and stack | resumed once per arena frame; yields at 7 sites (menu2.c 1, menu5.c 6) |
-| Sound sequencer | sound.c `func_8003C6E8`, called by the tick `func_8003C020` | sequence channels in data | 240 Hz on root counter 2 ([sound-sequence.md](scripts/sound-sequence.md)) |
+| Sound sequencer | sound.c `sound_seq_interpret_channels`, called by the tick `sound_run_tick` | sequence channels in data | 240 Hz on root counter 2 ([sound-sequence.md](scripts/sound-sequence.md)) |
 
 ### Heap
 
 - Every block has an 8-byte `HeapHeader` {next, caller:21, tag:4, keep:1,
-  kind:6} (resident/heap.h). `func_80031BDC(size, mode)` takes the first fit
+  kind:6} (resident/heap.h). `heap_alloc(size, mode)` takes the first fit
   (mode 0), the smallest fit (2) or carves from the top (1). Exhaustion is fatal
-  (error 0x82) unless quiet mode is on (`func_80031BB4`); then it returns NULL.
-- Owner tags select the blocks a subsystem releases (`func_8003218C`).
-  `func_800320A4` keeps a block across heap restarts. `func_80032C18` defers a
-  release by frames, and `func_80032CB8` drains the delayed releases once per
+  (error 0x82) unless quiet mode is on (`heap_set_quiet_failures`); then it returns NULL.
+- Owner tags select the blocks a subsystem releases (`heap_free_tag`).
+  `heap_protect_block` keeps a block across heap restarts. `heap_delay_free` defers a
+  release by frames, and `heap_update_delayed_frees` drains the delayed releases once per
   frame.
 - Secondary overlays are placed by allocating a 4-byte marker at the top and
-  then a top block that reaches the slot address (`func_8001C1A8`,
-  main_8001B6C4.c). Placement, capacity and quiet-failure fallbacks are
+  then a top block that reaches the slot address (`menu_state_run_screen`,
+  mode_battle_and_menu.c). Placement, capacity and quiet-failure fallbacks are
   therefore heap state. A port that changes allocation order or sizes changes
   later addresses and which allocations fail.
 - The `caller` field holds the allocating return address (`GET_RA`, heap.c),
@@ -244,18 +244,18 @@ Three details matter for a native loop:
 | --- | --- | --- |
 | not loaded | the PS-X EXE header, file offset 0-0x7FF; the vram 0x8000F800 the split gives it is a splat convenience that nothing addresses | `decomp/targets/resident/slus_006.64.yaml` |
 | 0x80010000-0x80018080 | embedded disc data: boot word, file index, directory table; the only bytes that differ between the two executables | resident `classification.txt` |
-| 0x80018080-0x80019524 | resident rodata, including the mode table `D_8001808C` | main.c |
+| 0x80018080-0x80019524 | resident rodata, including the mode table `mode_table` | main.c |
 | 0x80019524-0x8003F8E8 | game code (the entry point first) | resident `classification.txt` |
 | 0x8003F8E8-0x8004EAA0 | PsyQ SDK code | resident `classification.txt` |
 | 0x8004EAA0-0x80059170 | `.data`, SDK data from 0x800563F0 | resident `classification.txt` |
 | 0x80059170-0x800592BC | `.sdata`, `_gp` = 0x80059170 | [matching.md](matching.md) |
 | 0x800592BC-0x8006FAF0 | resident BSS, including the game data 0x8006D634-0x8006F98C | `decomp/targets/resident/link.ld` |
-| 0x8006FAF0-0x801FC000 | the mode overlay image, its BSS (mode table), then the heap up to 0x801FC000 | main.c `D_8001808C`, `func_80019578` |
+| 0x8006FAF0-0x801FC000 | the mode overlay image, its BSS (mode table), then the heap up to 0x801FC000 | main.c `mode_table`, `boot_main` |
 | 0x801C5000-0x801EA908 | secondary overlays, placed inside the heap (extents below) | [original-boundaries.md](original-boundaries.md) (Control flow and state) |
-| 0x801FC000-0x80200000 | battle modules from 0x801FC000 (the largest, ovl3387, ends at 0x801FCE4C); the stack, top 0x80200000; the arena task stack 0x801FE000-0x801FF000 | `func_80019548`, menu6.c `func_80088E90` |
+| 0x801FC000-0x80200000 | battle modules from 0x801FC000 (the largest, ovl3387, ends at 0x801FCE4C); the stack, top 0x80200000; the arena task stack 0x801FE000-0x801FF000 | `boot_reset_stack_and_gp`, menu6.c `func_80088E90` |
 | 0x80200000- | development-kit RAM: debug595 at 0x80280000-0x802861C8, debug2611 at 0x80280000-0x802820F0 | [original-boundaries.md](original-boundaries.md) |
 | 0x1F800000-0x1F8003FF | scratchpad: work memory and a temporary stack | [original-boundaries.md](original-boundaries.md) |
-| 0x1F801C00 | SPU registers, written through `D_800508E4` | resident/sound.h |
+| 0x1F801C00 | SPU registers, written through `sound_spu_registers` | resident/sound.h |
 
 The secondary overlays' extents, from the sizes of the images (the rebuilt
 images equal the decoded originals, and none has BSS past its image in its link
@@ -278,7 +278,7 @@ A snapshot holds 2 MB of RAM, 1 KB of scratchpad, 1 MB of VRAM and 512 KB of SPU
 RAM, and the device state outside them: GTE registers (the handwritten
 renderers project with the rotation, translation and projection their callers
 left there, as `func_8009980C.s` states), GPU drawing and display settings, SPU
-voice and control registers (written through `D_800508E4`), the CD drive's
+voice and control registers (written through `sound_spu_registers`), the CD drive's
 position, mode and any command or read in progress, root counters (the sound
 tick runs on counter 2) and pending interrupts, and the memory cards' contents.
 
@@ -293,26 +293,26 @@ schema, not the view.
 | Header | Subsystem | Key entries and state |
 | --- | --- | --- |
 | `psyq/*.h` | SDK types and prototypes; unnamed SDK members under their `func_` names | libgpu, libgte, libcd, libspu, libapi, libetc, libpress, libsn, `inline_c.h` (GTE macros) |
-| `resident/mode.h` | start-up, dispatcher, cross-mode words | `ModeEntry D_8001808C[]`, `func_80019ACC`, `func_8001996C`, `D_8004F2F4`-`D_8004F384` (reset by `func_8001AADC`) |
-| `resident/gamedata.h` | the saved game data | `GameData D_8006D634` (0x2358 bytes, with `LAYOUT_CHECK`s) |
-| `resident/heap.h` | heap | `HeapHeader`, `func_80031BDC`, `func_800320E8`, `func_80032C18` |
-| `resident/cd.h` | disc index, file reads, CD state, PC file server | `func_80028470`, `func_80028738`, `func_800295D8`, `func_80029AFC`, `func_800286CC`, `D_8004FE48` |
-| `resident/stream.h` | disc stream ring, image streams | `StreamRing`, `func_8002A260`, `func_8002BB50` |
-| `resident/pad.h` | controllers | `PadBuffer D_800625FC[]`, held/pressed/repeat words, `func_80035CDC` |
-| `resident/sound.h` | sound driver, SPU voices, banks, sequences | `SpuRegs` through `D_800508E4`, driver state `D_8005A3C0` |
-| `resident/gpu.h` | texture scroll, panorama, OT link helpers | `func_80027EAC`, `func_800273C4`, `func_80031678` |
-| `resident/model.h` | model renderer | `ModelGroup`, `SpriteModel`, `D_8004FE50`, `func_8002C700` |
+| `resident/mode.h` | start-up, dispatcher, cross-mode words | `ModeEntry mode_table[]`, `mode_dispatch`, `mode_select_next_mode`, `mode_unread_play_record_word`-`mode_shared_wave_bank_needs_reload` (reset by `mode_reset_game_state`) |
+| `resident/gamedata.h` | the saved game data | `GameData game_data` (0x2358 bytes, with `LAYOUT_CHECK`s) |
+| `resident/heap.h` | heap | `HeapHeader`, `heap_alloc`, `heap_free`, `heap_delay_free` |
+| `resident/cd.h` | disc index, file reads, CD state, PC file server | `cd_select_directory`, `cd_get_file_size`, `cd_read_file`, `cd_read_file_list`, `cd_get_pending_read_count`, `cd_pc_file_names` |
+| `resident/stream.h` | disc stream ring, image streams | `StreamRing`, `stream_create_ring`, `stream_load_image_strip` |
+| `resident/pad.h` | controllers | `PadBuffer pad_receive_buffers[]`, held/pressed/repeat words, `pad_dequeue_state` |
+| `resident/sound.h` | sound driver, SPU voices, banks, sequences | `SpuRegs` through `sound_spu_registers`, driver state `sound_volumes` |
+| `resident/gpu.h` | texture scroll, panorama, OT link helpers | `gpu_update_texture_scroll`, `gpu_draw_panorama`, `gpu_ot_link_poly_g4` |
+| `resident/model.h` | model renderer | `ModelGroup`, `SpriteModel`, `model_primitive_types`, `model_draw_sprite_model` |
 | `resident/sprite.h` | sprite engine and tasks | `Task`, `Sprite`, task lists |
 | `resident/text.h`, `resident/window.h` | message text and windows | font and system data resources, `Window` |
-| `resident/menu.h` | resident side of mode 5 | `MenuState D_800625A0`, the 0x801C5000 entries |
-| `resident/console.h` | debug console, report printf | `func_8003700C`, `func_800379C8` |
+| `resident/menu.h` | resident side of mode 5 | `MenuState menu_state_current`, the 0x801C5000 entries |
+| `resident/console.h` | debug console, report printf | `console_printf`, `console_report_printf` |
 | `battle/area.h`, `battle/work.h` | battle area `D_800C3EB0` and work area `D_800CCCE8` | `BattleArea`, `BattleWork`, `Combatant` |
 
 Some resident functions are declared differently by callers in other targets:
 narrow parameters or results, another parameter count, or a by-value structure
 split another way. The shared headers leave these out. The resident keeps its
 own declarations in `decomp/src/resident/own_declarations.h`, and each target
-declares its own. For example, `func_8003BDFC` returns `s32` in the resident,
+declares its own. For example, `sound_sync_transfer` returns `s32` in the resident,
 `s16` in battle/resident_views.h and `void` in field/field_resident.h. A single
 native link needs one canonical prototype per function, plus adapters where
 callers depend on narrowing.
@@ -321,15 +321,15 @@ callers depend on narrowing.
 
 | State | Where | Notes |
 | --- | --- | --- |
-| Game data | `D_8006D634`, resident/gamedata.h | pointer-free; new game copies (0x10, 0) file 3 whole (`func_8001B970`); save layout in [original-boundaries.md](original-boundaries.md) |
-| Cross-mode words and flags | `D_8004F2F4`-`D_8004F384` (mode.h), small data 0x80059170-0x800591B8 (kernel_settings.c, sprite_settings.c) | map, music, battle module and entry requests |
-| Field state across battle and the arena | `D_8005A4E4` (0x22FC-byte resident common): field `func_800A3F4C` writes it on those exits (`func_80077E88`), `func_800A3474` restores it; the world map parks its actors there (`func_80075460`) | holds raw actor pointers and world map function addresses |
+| Game data | `game_data`, resident/gamedata.h | pointer-free; new game copies (0x10, 0) file 3 whole (`mode_load_initial_game_data`); save layout in [original-boundaries.md](original-boundaries.md) |
+| Cross-mode words and flags | `mode_unread_play_record_word`-`mode_shared_wave_bank_needs_reload` (mode.h), small data 0x80059170-0x800591B8 (kernel_settings.c, sprite_settings.c) | map, music, battle module and entry requests |
+| Field state across battle and the arena | `mode_snapshot_block` (0x22FC-byte resident common): field `func_800A3F4C` writes it on those exits (`func_80077E88`), `func_800A3474` restores it; the world map parks its actors there (`func_80075460`) | holds raw actor pointers and world map function addresses |
 | Field event variables | `D_800C3A68[0x400]`: the lower half comes from game data `vars` at map load (`func_800705DC`) and returns each frame (`func_800A30FC`); the upper half is per map | game data is stale until the frame ends |
 | Battle party | `BattleWork D_800CCCE8` (battle/work.h): ovl2615 `func_801E5384` copies the party in, ovl2596 `func_801E2888` writes it back | game data is stale during battle |
 | RNG seed | `libc_rand_seed`: libc `rand` (8003fa38) computes `seed = seed * 0x41C64E6D + 0x3039` and returns `(seed >> 16) & 0x7FFF` | cleared with the BSS at boot and soft reset; `srand` has no caller in `decomp/src` |
-| Clocks | `D_80059488` (vblank count, the saved play time) and the vblank h:m:s clock | the field copies the clock into event variables 0xC/0xE each frame (`func_800A31E8`) |
+| Clocks | `pad_vblank_count` (vblank count, the saved play time) and the vblank h:m:s clock | the field copies the clock into event variables 0xC/0xE each frame (`func_800A31E8`) |
 | Draw-buffer parity | field `D_800ADB08` | gates field exits (Presentation) |
-| Patched renderer fields | `func_80030988` rewrites shifts and offsets inside `func_80030750` | persists across modes |
+| Patched renderer fields | `model_set_envmap_mapping` rewrites shifts and offsets inside `model_draw_ft3_envmap` | persists across modes |
 | VRAM, SPU RAM, GPU/CD/SPU driver state | hardware | survive mode changes; the saved screen at VRAM (0x2C0, 0x100) carries across modes |
 
 ## Boundaries a port replaces
@@ -337,10 +337,10 @@ callers depend on narrowing.
 | Boundary | Original interface | Documented in | Port notes |
 | --- | --- | --- | --- |
 | Disc and files | resident cd.h API over libcd; world map stream reader; mdec `St*` ring; disc swap in slot39 | [below](#disc-and-files); [original-boundaries.md](original-boundaries.md#disc-and-files) | cut at the resident API plus the direct libcd users listed below, over raw sectors; key files by (directory, file) and content hash from the index, not by slot, and serve streams and raw reads by LBA ([Importing the discs](#importing-the-discs)) |
-| Controllers | `PadBuffer D_800625FC`, vblank handler `func_8003634C`, 16-entry queue | [original-boundaries.md](original-boundaries.md), Controllers | inject one pad state per vblank; a disconnected pad starts the game's pause loops |
+| Controllers | `PadBuffer pad_receive_buffers`, vblank handler `pad_vblank_callback`, 16-entry queue | [original-boundaries.md](original-boundaries.md), Controllers | inject one pad state per vblank; a disconnected pad starts the game's pause loops |
 | Memory card and saves | BIOS `bu00:`/`bu10:` file calls, card events, slot39 save/load | Memory card and saves | the commit point is the rename of `__tmp_file`; names for slots 10-14 end in `:;<=>` |
 | Game data layout | resident/gamedata.h; payload in slot39/file.h `SaveData` | Memory card and saves | a load finishes in field scripts (event variables 0x46 and 4); copying game data directly is not a load |
-| Sound and SPU | sound.c driver, tick `func_8003C020`, register writes through `D_800508E4` | Sound output modes; [sound-sequence.md](scripts/sound-sequence.md) | software SPU (ADPCM, ADSR, reverb, CD input); the driver tick stays in the simulation |
+| Sound and SPU | sound.c driver, tick `sound_run_tick`, register writes through `sound_spu_registers` | Sound output modes; [sound-sequence.md](scripts/sound-sequence.md) | software SPU (ADPCM, ADSR, reverb, CD input); the driver tick stays in the simulation |
 | GPU and VRAM | libgpu, ordering tables, VRAM transfers, readbacks | Presentation | readable 1024x512 VRAM; framebuffer feedback ([Presentation](#presentation)) |
 | Timing and pacing | `VSync`, root counters, `DrawSync`, polls | Timing | virtual clock; [consequences below](#timing-consequences-for-a-port) |
 | Interrupt work | vblank, sound tick, SPU, CD, MDEC, DrawSync callbacks, card events | Interrupt-context work | fixed delivery points, recorded for replay |
@@ -362,16 +362,16 @@ takes from it:
   request lists, the movie ring and the swap's disc check with the imported
   discs, and the raw sector reads with them: the arena's portraits and the
   swap's label and index ([Importing the discs](#importing-the-discs)).
-- **Report counts, not only busy.** `func_800286CC` counts the files of a list
+- **Report counts, not only busy.** `cd_get_pending_read_count` counts the files of a list
   still to come, and the world map goes on once fewer than three are left
-  (`while (func_800286CC() >= 3)`, eleven sites).
+  (`while (cd_get_pending_read_count() >= 3)`, eleven sites).
 - **Present the swap.** The drive shows the sequence that section gives for
   `func_801E93A0`: the lid opening and closing, a running motor, GetTN, Setloc
   and SeekL, the label at sector 0x17 and the other disc's index and directory
   at sectors 0x18 and 0x28. RAM is kept.
 - **The host-file path is an original seam, with gaps.** It finishes sizes,
   whole files, file lists and image streams inside the call, reads a ring
-  stream a sector per poll and refuses raw sector reads (`func_8002954C`
+  stream a sector per poll and refuses raw sector reads (`cd_read_raw_sectors`
   returns -1). A port that backs these calls with its asset store must still
   serve raw reads by LBA (the arena) and the ring streams sector by sector.
   Reads that end inside the call also change how many frames run during a load
@@ -387,11 +387,11 @@ sectors addressable by LBA, each with its header, subheader and payload, Form 1
 or Form 2. An import of 2048-byte file data cannot serve:
 
 - the resident and world-map sector callbacks. Reads run in Setmode 0xA0
-  (`func_80028230` sets it at start-up), whose bit 0x20 delivers whole
+  (`cd_init_disc_access` sets it at start-up), whose bit 0x20 delivers whole
   0x924-byte sectors (psx-spx). Each callback copies the 4-byte header and the
   8-byte subheader (`CdGetSector(..., 3)`) before the 2048 data bytes, and drops
   a sector whose header position is not the one it expects (`CdPosToInt` in
-  main_8002709C.c `func_8002AC24` and `func_8002B084`, worldmap_80094A5C.c
+  cd_reads_and_streams.c `cd_copy_list_sector` and `cd_copy_file_sector`, worldmap_80094A5C.c
   `func_80096C0C`);
 - movies. Their sizes in the index count 2336 bytes per sector, the subheader
   and the rest of the raw sector, and their sectors hold video, XA audio or
@@ -400,13 +400,13 @@ or Form 2. An import of 2048-byte file data cannot serve:
   filtered to file 1 and the movie's channel (`movie_start`). The original's
   host-file path keeps these records too: it seeks a movie by 0x920 bytes per
   sector (mdec.c `movie_restart`), reads each record's 8-byte subheader and
-  skips a record whose file byte is 1 (main_8002709C.c `func_80028F30`). Decode
+  skips a record whose file byte is 1 (cd_reads_and_streams.c `stream_get_next_movie_frame`). Decode
   XA ADPCM from the Form 2 audio sectors that the file and channel select;
 - raw reads by LBA: the arena's portraits, and the swap's label, index and
   directory at sectors 0x17, 0x18 and 0x28.
 
 Derive the (directory, file) keys and content hashes from the disc's own index
-(`func_80028470`, `func_800289D0`; `tools/analysis/disc_index.py`), but serve
+(`cd_select_directory`, `cd_get_file_sector`; `tools/analysis/disc_index.py`), but serve
 streams, header checks and raw reads at sector level.
 
 ### Timing consequences for a port
@@ -415,14 +415,14 @@ streams, header checks and raw reads at sector level.
 pacing, the battle catch-up and what consumes it, the interrupt work and the
 waits. What follows for a port:
 
-- **Lag is battle state.** The battle frame measures its overrun, `D_80059494`
+- **Lag is battle state.** The battle frame measures its overrun, `task_catch_up_frame_count`
   (0-4), and the next frame reruns the camera step, the main sprite-task list
   and the battle step that many more times (`func_800BE790`). `frameTicks`
   (`D_800CCC5C`) also scales the stage steps and the image animations of every
   drawn object (`func_8009F844`) and of the stage object (`func_800A4654`),
   both through `func_800A3E98` (battle_8009E53C.c). The rerun list holds the
-  sprite tasks (`func_80022DF4`), whose scripts run through `func_800248D4`,
-  and their command `c1` draws from `rand()` (sprite.c `func_8001FBE4`), so lag
+  sprite tasks (`sprite_task_update`), whose scripts run through `sprite_vm_run`,
+  and their command `c1` draws from `rand()` (sprite.c `sprite_vm_run_generic_command`), so lag
   also moves the random stream. A lag-free port diverges from a lagging original
   unless it replays the recorded per-frame overrun
   ([Open questions](#open-questions)).
@@ -435,19 +435,19 @@ waits. What follows for a port:
 - **A headless runtime must run the sound driver.** Field event `fe 64`
   (`func_8008F5E4`) and battle event opcode 48 (battle `func_800B838C`) wait
   for sound effects to end, and boot, the field's music loader and battle wait
-  for SPU transfers (`func_8003BDFC`). Without the 240 Hz tick and the transfer
+  for SPU transfers (`sound_sync_transfer`). Without the 240 Hz tick and the transfer
   callback they never return.
-- **One wait is not a wait.** The world map's `while (D_8005957C & 0x10) {}`
+- **One wait is not a wait.** The world map's `while (sound_driver_flags & 0x10) {}`
   (`func_80072238`) compiled to one test and a branch to itself (0x80072584): if
   a transfer is still running there, it hangs. Code the intended behaviour
   explicitly; a modern compiler may re-read the flag, keep the hang or delete
   the loop.
 - **Sprite and script time follow the field's frame.** Sprite scripts tick
-  `D_80059198 + 1` = 2 times per update in the field and the world map, a field
+  `sprite_frame_skip + 1` = 2 times per update in the field and the world map, a field
   frame lasts 2, 3 or 4 vblanks (event `d6`), and the field timer in event
   variable 0xA steps every 31 field frames (`func_800A31E8`), not per vblank.
 - **The sound tick excludes the main loop** through `DisableEvent` on its event
-  `D_800595BC` around driver updates (main2_800366E0.c, sound.c). A port that
+  `sound_tick_event` around driver updates (console_and_sound_driver.c, sound.c). A port that
   runs the tick on another thread must keep each such section exclusive with
   it.
 
@@ -472,14 +472,14 @@ task-switch storage shares its routines' row):
 
 | Range | Routines | Contract | Native form |
 | --- | --- | --- | --- |
-| resident 80019524-80019578 | entry, stack reset, word clear | `func_80019524.s`, `func_80019548.s`, `func_80019560.s` | runtime service: start-up, dispatcher loop with a non-local mode exit, per-mode BSS clear from the link; soft reset keeps modified `.data` |
-| resident 80026f44-8002709c | GTE pixel darken and blend loops | `func_80026F44.s`, `func_80026FE8.s` | portable C on the software GTE |
-| resident 8002e010-8003014c | model primitive renderers, with alternate entries per packet format, run through `D_8004FE50` | `model_draw.s`, `model_depth.s`, each `func_8002*.s` | portable C, and the capture point for pre-projection geometry; keep their culling separable |
-| resident 80030750-80030a30 | environment-mapped renderer and its self-modifying patcher `func_80030988` | `func_80030750.s`, `func_80030988.s` | four persistent globals (u/v shift and offset, image default 6, 6, 0x40, 0x40) |
+| resident 80019524-80019578 | entry, stack reset, word clear | `boot_entry_point.s`, `boot_reset_stack_and_gp.s`, `boot_clear_bss_range.s` | runtime service: start-up, dispatcher loop with a non-local mode exit, per-mode BSS clear from the link; soft reset keeps modified `.data` |
+| resident 80026f44-8002709c | GTE pixel darken and blend loops | `sprite_darken_pixels.s`, `sprite_blend_pixels.s` | portable C on the software GTE |
+| resident 8002e010-8003014c | model primitive renderers, with alternate entries per packet format, run through `model_primitive_types` | `model_draw.s`, `model_depth.s`, each `func_8002*.s` | portable C, and the capture point for pre-projection geometry; keep their culling separable |
+| resident 80030750-80030a30 | environment-mapped renderer and its self-modifying patcher `model_set_envmap_mapping` | `model_draw_ft3_envmap.s`, `model_set_envmap_mapping.s` | four persistent globals (u/v shift and offset, image default 6, 6, 0x40, 0x40) |
 | resident 800315a0-80031894 | ordering-table link helpers | `ot_link.s` | the OT adapter |
-| resident 80032e88-80032f54 | LZSS decoder and its allocate-and-decode entry | `func_80032EB4.s`, `func_80032E88.s` | portable C with bounds; `tools/analysis/packed.py` and `tools/packed_container.py` are the format |
-| resident 800379b4-800379d0 | arena task index store; report printf tail-jump | `func_800379B4.s`, `func_800379C8.s` | C with a `va_list` printf |
-| resident 8003f738-8003f8e8 | rotation matrix and sin/cos lookups (table `D_800523F0`, main3.c) | `func_8003F738.s`, `func_8003F8B0.s`, `func_8003F8CC.s` | portable C with 32-bit wrapping |
+| resident 80032e88-80032f54 | LZSS decoder and its allocate-and-decode entry | `text_unpack_lzss.s`, `text_unpack_lzss_alloc.s` | portable C with bounds; `tools/analysis/packed.py` and `tools/packed_container.py` are the format |
+| resident 800379b4-800379d0 | arena task index store; report printf tail-jump | `mode_set_arena_task.s`, `console_report_printf.s` | C with a `va_list` printf |
+| resident 8003f738-8003f8e8 | rotation matrix and sin/cos lookups (table `rcossin_tbl`, main3.c) | `gpu_build_rotation_matrix.s`, `gpu_get_sin.s`, `gpu_get_cos.s` | portable C with 32-bit wrapping |
 | menu 80072d18-800732cc | ground triangle batch; GTE vector, colour and matrix helpers | `func_80072D18.s`, `ground_packet.s`, `vector_scale.s`, `func_8007313C.s`, `func_800731F8.s`, `func_800732AC.s` | portable C on the software GTE |
 | menu 8008bb00-8008bcc8, storage 80096d88 | task context switch (resume, yield, nested-scheduler save and restore) | `func_8008BB3C.s`, `func_8008BC04.s`, `func_8008BB00.s`, `func_8008BB1C.s`; `TaskContext` in menu/task.h | the nested fiber service |
 | menu 8008c3a8-8008c7c0 | mesh shadow projection, flat packet builders | `func_8008C3A8.s`, `func_8008C4B0.s`, `func_8008C620.s`, `mesh_packet.s` | portable C |
@@ -560,15 +560,15 @@ instruction on either disc. For Phases 7, 11 and 12:
 | Format | Read by | Tool or document | Not yet decoded |
 | --- | --- | --- | --- |
 | Disc index and directories | resident cd.h | `tools/extraction/disc_files.py`, `tools/analysis/disc_index.py` | none |
-| LZSS blocks, offset archives | `func_80032EB4`, `func_8003342C` | `tools/analysis/packed.py`, `tools/packed_container.py` | none |
+| LZSS blocks, offset archives | `text_unpack_lzss`, `text_relocate_offset_table` | `tools/analysis/packed.py`, `tools/packed_container.py` | none |
 | Field bundle (nine components) | field.c `func_80070CC8`; header `FieldBundle` in field_load.h | `tools/analysis/field.py` (components, event package, collision) | palettes, images, trigger zones and the header's view block (+0x154, lights and background) |
 | Field event bytecode | field_800854D0.c | [field-events.md](scripts/field-events.md), `events.py` | see its Open items |
-| Messages and text controls | resident main2.c `func_80033DF0` | [text-control.md](scripts/text-control.md), `text_control.py` | the characters of punctuation and two-byte glyphs (its Open line) |
-| Models (`ModelGroup`, `SpriteModel`, TMD) | `func_8002C3E8`, `func_8002C700`; battle `func_800B1F6C` | [dispatch-tables.md](scripts/dispatch-tables.md) (primitive census) | no mesh exporter |
+| Messages and text controls | resident main2.c `window_reveal_text` | [text-control.md](scripts/text-control.md), `text_control.py` | the characters of punctuation and two-byte glyphs (its Open line) |
+| Models (`ModelGroup`, `SpriteModel`, TMD) | `model_relocate_group`, `model_draw_sprite_model`; battle `func_800B1F6C` | [dispatch-tables.md](scripts/dispatch-tables.md) (primitive census) | no mesh exporter |
 | Sprite blocks | resident sprite units | [sprite-vm.md](scripts/sprite-vm.md), `sprite_vm.py` | none |
-| Sound: `smds`, `seds`, `wds ` | sound.c, main2_800366E0.c | [sound-sequence.md](scripts/sound-sequence.md), `sound_sequence.py` | no ADPCM sample decoder |
+| Sound: `smds`, `seds`, `wds ` | sound.c, console_and_sound_driver.c | [sound-sequence.md](scripts/sound-sequence.md), `sound_sequence.py` | no ADPCM sample decoder |
 | Battle enemy, AI, effect and event files | battle, ovl2615, ovl3087 | [battle-ai.md](scripts/battle-ai.md), [battle-effect-vm.md](scripts/battle-effect-vm.md), [battle-event-vm.md](scripts/battle-event-vm.md) | none |
-| Formations and encounter sets | field component 6 into `D_800658DC`, world map `D_8009D73C`, battle `func_80070F40`, ovl2615, ovl3087; `BattleFormation` and `EncounterSet` in resident/formation.h | [formations.md](scripts/formations.md), `formations.py` | see its Open items |
+| Formations and encounter sets | field component 6 into `formation_encounter_set`, world map `D_8009D73C`, battle `func_80070F40`, ovl2615, ovl3087; `BattleFormation` and `EncounterSet` in resident/formation.h | [formations.md](scripts/formations.md), `formations.py` | see its Open items |
 | World map actor and scene scripts, arena scripts | worldmap, menu | [worldmap-actor.md](scripts/worldmap-actor.md), [worldmap-scene.md](scripts/worldmap-scene.md), [arena-scene.md](scripts/arena-scene.md), `overlay_scripts.py` | none |
 | Cue timelines: field movie sounds, world map terrain texture animations | field `func_80085678`; world map `func_80074F2C`, `func_80075104` | [timelines.md](scripts/timelines.md), `overlay_scripts.py` | see its Open item |
 | Save files | slot39 `func_801CBD90`, `func_801CB304` | [original-boundaries.md](original-boundaries.md), `menu_save_file.py` | none |
@@ -583,15 +583,15 @@ place.
 - **The discs**, as raw sectors ([Importing the discs](#importing-the-discs)).
 - **Every `asset` range** of the targets' classifications, not only the
   `INCLUDE_ASSET` blobs. In the resident: the embedded disc data
-  0x80010000-0x80018080 (below); the TMD model `D_8001C76C` (0x170 bytes), a
+  0x80010000-0x80018080 (below); the TMD model `model_slot_ring_tmd` (0x170 bytes), a
   splat data segment inside `.text` (`battle_effect_script` in
   `slus_006.64.yaml`) that only the battle overlay reads, for the slot-highlight
-  ring; and, through `INCLUDE_ASSET`, the boot logo `D_8004EABC`, a packed image
-  `D_8004FBD8`, the glyph `D_800501D0` of the character pair 0xFF 0xFF, the
-  console font `D_80050240`, and the error sound banks `D_80050910` (used in
-  place as a `SoundBank`) and `D_80050940`. In the field: the movie sound
+  ring; and, through `INCLUDE_ASSET`, the boot logo `boot_packed_logo`, a packed image
+  `sprite_packed_pause_image`, the glyph `text_special_glyph_rows` of the character pair 0xFF 0xFF, the
+  console font `console_packed_font`, and the error sound banks `sound_error_effect_bank` (used in
+  place as a `SoundBank`) and `sound_error_wave_bank`. In the field: the movie sound
   timelines `D_800AE060`. In the menu: the sprite model `D_80091FB0` (relocated
-  in place by `func_8002C59C`) and the arena scene and setup scripts. In the
+  in place by `model_relocate_sprite_model`) and the arena scene and setup scripts. In the
   world map: the terrain texture animation sequences, the actor scripts and the
   scene directors' cue tables ([timelines.md](scripts/timelines.md) and the
   classification lines give each format and reader).
@@ -624,8 +624,8 @@ well:
   frame (field.c `func_8007554C`) these are the sprite task lists inside the
   character pass (`func_800752C8`), the effect slots that spawn particles
   (`func_800A9688`), the fades (`func_80071CB4`), the dialogue timers
-  (`func_800805F4`), the delayed frees (`func_80032CB8`) and the VRAM upload
-  queue (`func_80025044`). In battle, the stage step that draws the objects
+  (`func_800805F4`), the delayed frees (`heap_update_delayed_frees`) and the VRAM upload
+  queue (`sprite_queue_run_uploads`). In battle, the stage step that draws the objects
   (`func_800A9A50`) also pushes them apart and animates them. Presentation must
   consume the output of the original frame, never call game draw code per eye,
   per repaint or for a spectator.
@@ -659,14 +659,14 @@ well:
   captured render targets.
 - **Ordering is more than depth.** The field links its background table into
   the main one at a far cutoff (`unk21D4`). Sprites draw with depth biases and
-  split parts (`func_80075B44`, sprite.c `func_8001E3D8`). Model types sort by
+  split parts (`func_80075B44`, sprite.c `sprite_draw_parts`). Model types sort by
   average, farthest or nearest vertex (`model_depth.s`). A plain depth buffer
   breaks these intentional masks.
-- **Primitives.** 3D models use the 17 types of `D_8004FE50` (main_8002C3E8.c):
+- **Primitives.** 3D models use the 17 types of `model_primitive_types` (model_renderer.c):
   POLY_F3, FT3, G3, GT3, flat quads, FT4, G4, GT4 and the environment-mapped FT3
   of type 16. Shipped models use 13 of them
   ([dispatch-tables.md](scripts/dispatch-tables.md)). Their packets are built
-  once at load (`func_8002C8CC`). Each frame the renderers rewrite only screen
+  once at load (`model_build_packets`). Each frame the renderers rewrite only screen
   coordinates and some colours or UVs, and link the packets (`model_draw.s`).
   Other code builds SPRT, TILE, LINE and the DR_* environment packets inline,
   with the libgpu setters and the OT helpers (`ot_link.s`, resident/gpu.h,
@@ -674,13 +674,13 @@ well:
 
 | Pre-projection seam | Where | Captures |
 | --- | --- | --- |
-| 3D models of every mode | `func_8002C700` (main_8002C3E8.c), 11 call sites in battle, field, menu, ovl2143, resident sprites and the world map | mesh, GTE rotation/translation, H, offset, depth cue, sort mode, OT |
-| Sprites | `func_8001E148` (position through the view matrix `D_8004FBB8`), `func_8001E3D8` (part corners through `RotTransPers4`) | world position, scale, facing, frame parts |
+| 3D models of every mode | `model_draw_sprite_model` (model_renderer.c), 11 call sites in battle, field, menu, ovl2143, resident sprites and the world map | mesh, GTE rotation/translation, H, offset, depth cue, sort mode, OT |
+| Sprites | `sprite_set_draw_matrix` (position through the view matrix `sprite_view_matrix`), `sprite_draw_parts` (part corners through `RotTransPers4`) | world position, scale, facing, frame parts |
 | World map terrain | `func_8009932C` calls `func_80099708`, which calls `func_8009980C.s`; billboards `func_8008615C` call `func_80099BFC.s` | the 9x9 vertex grid on the scratchpad, cell words |
 | Cameras | field `FieldView D_800AF880` (look-at `func_80073750`); battle eye/target (`func_800BBAB8`); world map camera (`func_80097244`) | read-only inputs to stereo, diorama and VR views; head pose must never write them, because the player control (event `a7`, `func_8009F5F4`) subtracts the field camera's `angle` from the pad direction |
 
 Text is rasterised on the CPU into the window's 4-bit line image, two glyph
-planes per nibble (`func_80034FFC`, main2.c), and drawn as sprites
+planes per nibble (`text_draw_glyph`, main2.c), and drawn as sprites
 (resident/window.h). Intercept text at character level for HD text. Agents read
 it from the window state, not from pixels.
 
@@ -726,14 +726,14 @@ revision:
 | integer to pointer casts | 320 (+34 to `void *`) | same | 321 (+34) | 2 | pointers rebuilt from 32-bit words |
 | non-constant static initializers | 17 in 3 files | same | 18 in 4 files | 0 | function addresses stored as `s32` (world map `D_80099E8C`; menu3.c, menu4.c); on Windows also header.c's EXE header |
 | failed `LAYOUT_CHECK` | 13 in 12 headers (battle/area.h, effect.h, scene.h, ui.h, work.h twice; menu/card.h, panel.h, screen.h, shop.h, tables.h; ovl2143/actors.h; resident/menu.h) | same | 10 in 9 (all but battle/ui.h, menu/panel.h and menu/screen.h) | 0 | asserted offsets of structures with pointers; under LP64 also of the three whose PsyQ packets' `u_long` words widen (they hold with `-Dlong=int`) |
-| rejected `section` attributes | 0 | 3 in 2 files | 0 | 0 | Mach-O section names need a segment (main.c `D_80018088`, `D_8001808C`; menu6.c `D_80088BFC`) |
+| rejected `section` attributes | 0 | 3 in 2 files | 0 | 0 | Mach-O section names need a segment (main.c `mode_next_mode`, `mode_table`; menu6.c `D_80088BFC`) |
 | asm with MIPS register names | 150 in 24 files | same | same | same | GTE macros, stack switches, `GET_RA` |
 | non-prototype declarations | 258 in 47 files | same | same | same | K&R definitions and calls |
 | incompatible pointer types | 2 in 2 files | same | same | same | one object read through two types: a `VECTOR`'s `long` passed as `s32 *` (field_8007A44C.c `func_80082BB8` to `func_80082494`), an `s32` buffer as `SaveData *` (slot39.c to `func_801E4D10`) |
 | `return;` in a non-void function | 45 in 13 files | same | same | same | implicit-int functions; see below |
 | conflicting types | 2 in 2 files | same | same | same | a prototype after a call implicitly declared the function (field_800A9274.c `func_80070340`), and slot39_801DBE54.c's `memcpy` prototype, which drops the built-in ([matching.md](matching.md)) |
 | arrays of incomplete struct type | 34 in 6 files | same | same | same | commons units define their variables before the headers complete the types ([matching.md](matching.md), Recovering data) |
-| incompatible function-pointer types | 2 in 2 files | same | same | same | a function stored under another prototype: the variadic report printf `func_800379C8` in the heap report's `void (*)(char *)` output hook (heap_80032DCC.c), a primitive type's unprototyped `prepare` in a prototyped local (main_8002C3E8.c `func_8002C8CC`) |
+| incompatible function-pointer types | 2 in 2 files | same | same | same | a function stored under another prototype: the variadic report printf `console_report_printf` in the heap report's `void (*)(char *)` output hook (heap_host_report.c), a primitive type's unprototyped `prepare` in a prototyped local (model_renderer.c `model_build_packets`) |
 | unsequenced modifications | 6 in 2 files | same | same | same | several `*pc++` in one call's arguments |
 | shift of a negative value | 14 in 5 files | same | same | same | `-x << n` |
 | array index -1 | 4 (battle.c, through `STEP_FUEL`) | same | same | same | tables read through an offset base |
@@ -746,24 +746,24 @@ therefore the first Phase 2 decision.
 
 | Hazard | Evidence | Handling |
 | --- | --- | --- |
-| 32-bit pointers in data | world map actor slots and spawn tables hold function addresses as integers (`func_80097800`, `D_80099E8C`); sprite tasks, sound modulators and hooks hold function pointers; models and archives are relocated in place (`func_8002C3E8`, `func_8002C59C`, `func_8003342C`); `D_8005A4E4` parks raw pointers across modes | keep game memory a contiguous 32-bit arena and map code addresses to stable ids; never serialise host pointers |
+| 32-bit pointers in data | world map actor slots and spawn tables hold function addresses as integers (`func_80097800`, `D_80099E8C`); sprite tasks, sound modulators and hooks hold function pointers; models and archives are relocated in place (`model_relocate_group`, `model_relocate_sprite_model`, `text_relocate_offset_table`); `mode_snapshot_block` parks raw pointers across modes | keep game memory a contiguous 32-bit arena and map code addresses to stable ids; never serialise host pointers |
 | 24-bit ordering-table links | `AddPrim` and the OT helpers store packet addresses masked to 0x00FFFFFF; the arena rebuilds pointers as `(tag & 0xFFFFFF) - 0x80000000` (menu7.c `func_8008ACB8`) | links as offsets into the arena, below 16 MB |
 | Punned views | the same bytes read through several types: through explicit casts, which the census does not report (the SDK calls' among them: [matching.md](matching.md), Converting a function), and its 2 incompatible pointer types; the `link.ld`, `battle.data.ld`, `menu.bss.ld` and `worldmap.data.ld` views name parts of objects ([matching.md](matching.md)) | `-fno-strict-aliasing`; one canonical type per address for schemas |
 | Signedness and width | plain `char` is unsigned (`-D__CHAR_UNSIGNED__`, `lbu`; [matching.md](matching.md), Qualified configuration); `long` is 32 bits in the PsyQ structures (`VECTOR`, `MATRIX`, packet tags); event variables are 16-bit and read signed or unsigned by the map's event package bits (`func_800A3018`) | `-funsigned-char`; 32-bit `long` in native SDK headers |
-| Unspecified evaluation order | `func_80021B04(&angles, rand(), rand(), 0)` (sprite.c, case c1): the matched code draws the first `rand()` into the second argument (0x80020244-0x8002026c); the 6 unsequenced `*pc++` calls in battle_8009E53C.c and ovl2143.c | read operands into locals in the order the matched disassembly shows |
-| Values left in `$v0` | `func_800BEFF4` is defined `void`, but callers use the acting sprite left in `$v0` (0x800bf094; battle_800B8098.c); `func_8008FACC` falls off the end (menu7.c); `func_8008B730` returns the header pointer with zero frames (0x8008b770); `func_800381F4` returns its allocator's result implicitly; `func_8003F190` sits in the `s32` modulator table, and its value always scales to 0; `func_801E7210` returns the allocator's NULL into `drawEnv.isbg`; the movie test menu stores what `func_80074BA4` and `func_8007519C` leave for an index past the list | return the PS1 value explicitly; check every other `return;` site's callers before declaring it `void` |
+| Unspecified evaluation order | `sprite_set_svector(&angles, rand(), rand(), 0)` (sprite.c, case c1): the matched code draws the first `rand()` into the second argument (0x80020244-0x8002026c); the 6 unsequenced `*pc++` calls in battle_8009E53C.c and ovl2143.c | read operands into locals in the order the matched disassembly shows |
+| Values left in `$v0` | `func_800BEFF4` is defined `void`, but callers use the acting sprite left in `$v0` (0x800bf094; battle_800B8098.c); `func_8008FACC` falls off the end (menu7.c); `func_8008B730` returns the header pointer with zero frames (0x8008b770); `sound_alloc_wave_bank_spu_memory` returns its allocator's result implicitly; `sound_switch_modulator_off` sits in the `s32` modulator table, and its value always scales to 0; `func_801E7210` returns the allocator's NULL into `drawEnv.isbg`; the movie test menu stores what `func_80074BA4` and `func_8007519C` leave for an index past the list | return the PS1 value explicitly; check every other `return;` site's callers before declaring it `void` |
 | Uninitialized reads | `chance` in `func_8009A2D4` (gear boost, battle_8008CCCC.c); `actions` in `func_80072324` zeroes 0x100 bytes at an unset pointer; unset `parts` entries in `func_80096FBC`; the call event (type 8) of ovl2143 `func_801E5D44`; `owner` in ovl3383 `func_801FC020` and ovl3385 `func_801FC508`; `hold` (menu5.c `func_800852C4`), `last` (menu6.c `func_80088E90`); sprite opcodes 40-7f and f7 (resident and battle sprite VMs) | an optimising compiler treats these as undefined; give each an explicit native value and record whether it can diverge (Open questions) |
-| Division | units built with maspsx `--expand-div` (ovl2615, mdec, movie, ovl2143, worldmap, resident `main_8002709C`, battle `battle_8009E53C`; see the `.mk` files) trap on zero with `break 7` and on overflow with `break 6`; other units use bare `div`, which does not trap on the R3000 | a source-correlated division adapter where a zero divisor can occur (`func_8009A2D4` divides by `maxHp / 10`); keep the field script divide `func_8009D768`, which already maps 0 to 1 |
+| Division | units built with maspsx `--expand-div` (ovl2615, mdec, movie, ovl2143, worldmap, resident `cd_reads_and_streams`, battle `battle_8009E53C`; see the `.mk` files) trap on zero with `break 7` and on overflow with `break 6`; other units use bare `div`, which does not trap on the R3000 | a source-correlated division adapter where a zero divisor can occur (`func_8009A2D4` divides by `maxHp / 10`); keep the field script divide `func_8009D768`, which already maps 0 to 1 |
 | Signed overflow and shifts | the handwritten trig and renderers rely on 32-bit wrapping; 14 shifts of negative values | `-fwrapv` and arithmetic-shift helpers |
 | Overruns and offset bases | `STEP_FUEL` is `&gearHud.commands[-1]` (battle/command.h); `battle.data.ld` names `D_800C34B3` and `D_800C31D4` before their tables; menu5.c `func_80085EC8` writes `arrows[1][3..5]` past its array | explicit range-checked index arithmetic natively |
 | Decompressors read past files | the overlay LZSS decoder reads its final flag byte past the file (tools/extraction/overlays.py); arena model files and map 145's messages read past their bytes ([arena-frame-events.md](scripts/arena-frame-events.md), [text-control.md](scripts/text-control.md)) | zero-pad imported files to whole sectors; bound the decoder |
 | Scratchpad | work memory and stack switches ([original-boundaries.md](original-boundaries.md)); `TerrainDrawScratch` in worldmap_80094A5C.c and the layout func_80099BFC.s describes | a 1 KB static buffer behind one accessor |
-| Fixed cross-image addresses | the mode table holds overlay entries and BSS bounds as numbers (main.c `D_8001808C`); slot tenants are called by address (`func_8001C1A8`); cross-image names come from the original's addresses (splat's `undefined_syms_auto.txt`, `*.resident.ld`, `debug595.field.ld`), outside the strict linker-script check; all-verify's cross-image step compares them, and the mode table, with the rebuilt targets ([matching.md](matching.md)) | a per-slot registry that rejects calls into an absent image; 45 function names are defined by two or more targets' C, so give them per-image namespaces |
-| Section placement and asm labels | `__attribute__((section(".rodata")))` on main.c `D_80018088` (which `func_8001996C` writes) and `D_8001808C`, and `section(".text")` on the menu6.c table `D_80088BFC`, place data where the original had it. Mach-O rejects both names (the census above), and in a one-line clang 21.1.8 probe wasm32's code generator refuses data in `.text` ("data symbols must live in a data section"); ELF and COFF accept both. ovl2615's battle_setup.h declares `D_800CCCE8_setup __asm__("D_800CCCE8")` (movie_mode.h and worldmap.h one such view each): where C names take a leading underscore (Mach-O, 32-bit Windows), that label names another symbol than the definition `D_800CCCE8` | keep both behind the PS1-only build macro; natively, plain definitions and one name per object |
+| Fixed cross-image addresses | the mode table holds overlay entries and BSS bounds as numbers (main.c `mode_table`); slot tenants are called by address (`menu_state_run_screen`); cross-image names come from the original's addresses (splat's `undefined_syms_auto.txt`, `*.resident.ld`, `debug595.field.ld`), outside the strict linker-script check; all-verify's cross-image step compares them, and the mode table, with the rebuilt targets ([matching.md](matching.md)) | a per-slot registry that rejects calls into an absent image; 45 function names are defined by two or more targets' C, so give them per-image namespaces |
+| Section placement and asm labels | `__attribute__((section(".rodata")))` on main.c `mode_next_mode` (which `mode_select_next_mode` writes) and `mode_table`, and `section(".text")` on the menu6.c table `D_80088BFC`, place data where the original had it. Mach-O rejects both names (the census above), and in a one-line clang 21.1.8 probe wasm32's code generator refuses data in `.text` ("data symbols must live in a data section"); ELF and COFF accept both. ovl2615's battle_setup.h declares `D_800CCCE8_setup __asm__("D_800CCCE8")` (movie_mode.h and worldmap.h one such view each): where C names take a leading underscore (Mach-O, 32-bit Windows), that label names another symbol than the definition `D_800CCCE8` | keep both behind the PS1-only build macro; natively, plain definitions and one name per object |
 | K&R calls and per-target prototypes | unprototyped calls pass unpromoted arguments ([matching.md](matching.md)); targets declare shared functions differently (`own_declarations.h`) | canonical prototypes and thunks in native-only headers; in WebAssembly a mismatched indirect call traps |
-| Non-volatile polling | `while (D_8005957C & 0x10)` was compiled to test once (world map); other polls re-read through calls (`func_80028A60` loops on `func_800286CC`) | deliver interrupts at yield points inside polls; do not rely on the host compiler re-reading globals |
+| Non-volatile polling | `while (sound_driver_flags & 0x10)` was compiled to test once (world map); other polls re-read through calls (`cd_sync_reads` loops on `cd_get_pending_read_count`) | deliver interrupts at yield points inside polls; do not rely on the host compiler re-reading globals |
 | GTE fixed point | gameplay calls libgte: field movement and collision use `ratan2` (field_8007A44C.c), as does the arena AI (menu7.c); culling reads GTE registers (LZCR in `model_draw.s`) | one bit-exact software GTE whose state is in snapshots |
-| Debug paths | the boot word is tested in the resident, field, battle, arena and menu screens (`D_80010000`, `*D_8005917C`, `*(s32 *)0x80010000`); the field caches the test in `D_800C268C` | build with the retail value -1; never leave the word zero |
+| Debug paths | the boot word is tested in the resident, field, battle, arena and menu screens (`mode_disc_mode`, `*mode_disc_mode_pointer`, `*(s32 *)0x80010000`); the field caches the test in `D_800C268C` | build with the retail value -1; never leave the word zero |
 
 ## Original quirks and bugs a port keeps
 
@@ -774,14 +774,14 @@ in replays.
 | Quirk | Where | Effect |
 | --- | --- | --- |
 | The field timer counts 0-60 seconds and never saturates | `func_800A31E8` (`seconds != 0xFF3B` is never false; `> 60` wraps) | 61 seconds per minute; minutes wrap with the u16 variable |
-| Sound `EA` ends its pan slide at the difference | sound.c `func_8003DEE4`; [sound-sequence.md](scripts/sound-sequence.md) | the last frame sets pan to `(target - start) << 8` |
-| Sprite replay steps `be` by 2 | `func_80022660`; [sprite-vm.md](scripts/sprite-vm.md) | the interpreters take 3 bytes, so the replay reads `be`'s last byte as the next command |
+| Sound `EA` ends its pan slide at the difference | sound.c `sound_seq_pan_slide`; [sound-sequence.md](scripts/sound-sequence.md) | the last frame sets pan to `(target - start) << 8` |
+| Sprite replay steps `be` by 2 | `sprite_vm_replay_frames`; [sprite-vm.md](scripts/sprite-vm.md) | the interpreters take 3 bytes, so the replay reads `be`'s last byte as the next command |
 | Battle 70's targeted script runs into enemy id 1's table | [battle-ai.md](scripts/battle-ai.md) | id 1's turn rule runs |
 | Three effect commands count one event short; some name unused or out-of-range animations | [battle-effect-vm.md](scripts/battle-effect-vm.md) | an 8-byte sound event never plays; the animation lookups (800AF518, 801E6910) do not check bounds |
 | One random stream for effects and gameplay | `rand` (8003fa38): 228 call sites in 28 files; the battle shatter setup `func_800B7424` draws 3,920 values (2 x 14 x 20 shards, 7 each) | skipping, adding or reordering a visual effect changes later rolls |
 | Lag changes battle | `func_800BE790` | see [Timing consequences](#timing-consequences-for-a-port) |
 | Model renderers never reject overflowed faces | `model_draw.s` (reads LZCR, not FLAG) | oversized triangles reach the GPU ([original-boundaries.md](original-boundaries.md)) |
-| Soft reset keeps modified `.data` | `func_80019CD0` jumps to the entry | not equivalent to restarting the process |
+| Soft reset keeps modified `.data` | `boot_restart` jumps to the entry | not equivalent to restarting the process |
 | Unreachable content stays off | the staff roll needs field ext `be` (`enable_movie_overlay`), which no shipped script uses ([original-boundaries.md](original-boundaries.md), Services: BIOS Kanji ROM); the field's debug key into map 0 needs the development word ([field-events.md](scripts/field-events.md)) | optional content, not default behaviour |
 
 ## Open questions
@@ -789,8 +789,8 @@ in replays.
 | Question | Evidence so far | What would settle it |
 | --- | --- | --- |
 | What the uninitialized reads that can change gameplay compute on hardware | the `func_8009A2D4`, `func_80072324`, `func_80096FBC` and ovl2143 `func_801E5D44` (event type 8) sites above | a targeted capture per site, or a census showing shipped data never reaches the unset path |
-| How often battle frames overrun on hardware | `D_80059494` is measured at run time; all captures are emulator runs ([original-boundaries.md](original-boundaries.md)) | per-frame `D_80059494` from captures, or an accepted lag-free definition for Phase 3 parity |
-| Conflicting shared views | the battle and slot39 read the ammo bytes as `ammo` and `gearAmmo` and `D_8006F8EA` as the u16 `flags` (resident/gamedata.h; [field-events.md](scripts/field-events.md)), but targets still keep partial views of the game data beside resident/gamedata.h (ovl2615's `D_8006F8E5`, the world map's `D_8006F954` and the party and vehicle spots in worldmap/party.h) | reconcile from the readers, then one canonical type per address |
+| How often battle frames overrun on hardware | `task_catch_up_frame_count` is measured at run time; all captures are emulator runs ([original-boundaries.md](original-boundaries.md)) | per-frame `task_catch_up_frame_count` from captures, or an accepted lag-free definition for Phase 3 parity |
+| Conflicting shared views | the battle and slot39 read the ammo bytes as `ammo` and `gearAmmo` and `D_8006F8EA` as the u16 `flags` (resident/gamedata.h; [field-events.md](scripts/field-events.md)), but targets still keep partial views of the game data beside resident/gamedata.h (ovl2615's `game_data_slot_in_gear`, the world map's `game_data_worldmap_flag_word` and the party and vehicle spots in worldmap/party.h) | reconcile from the readers, then one canonical type per address |
 | The disc and stream boundary | the code ([Disc and files](#disc-and-files)); no retained capture covers a disc swap, disc 2 media or the CD callback order ([matching.md](matching.md) lists the routes) | a disc-swap and streaming capture on both discs |
 | Wide on hardware | emulator recordings only ([original-boundaries.md](original-boundaries.md)) | a hardware recording before Phase 10 |
 | World map, Gear battle and arena presentation | no packets observed ([original-boundaries.md](original-boundaries.md)) | `tools/analysis/gpu_packets.py` on captures of those modes |
@@ -823,7 +823,7 @@ captures on both discs.
 4. **Headless slice (Phase 3).** Run plan.md's Phase 3 route with an SPU and GPU
    that keep state but produce no output: boot, movie (with a logical movie
    clock), the field and its dialogue, the encounter and the battle path
-   (resident `func_8001B6C4`, ovl2615's setup, the battle overlay and its
+   (resident `mode_run_battle`, ovl2615's setup, the battle overlay and its
    modules at 0x801FC000 through the per-slot registry, ovl2596's results and
    rewards), the return to the field, the menu and save/load. Choose the battle
    lag policy here ([Open questions](#open-questions)). Compare game data, event

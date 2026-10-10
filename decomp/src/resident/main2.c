@@ -1,13 +1,13 @@
 /* Text, message windows and controllers (80032e7c-800366e0), GCC 2.7.2 at
  * -G0 (80032f54 matches only under 2.7.2): the handwritten packed-data
- * decoder (func_80032E88.s), the font and system data resources, character
+ * decoder (text_unpack_lzss_alloc.s), the font and system data resources, character
  * code decoding and encoding, the message windows and their glyph drawing,
  * then the controllers (buttons, sticks, state queue, actuators), the play
  * time, VRAM dumps to the PC file server and the vertical-blank callback. It
- * starts after the heap report unit (heap_80032DCC.c) and ends where
+ * starts after the heap report unit (heap_host_report.c) and ends where
  * 80036718's jump table (0x80018b58, 0 mod 8) follows this unit's tables at
  * 4 mod 8: the next unit starts between 800365fc and 80036718, at the
- * console's output hook 800366e0 (main2_800366E0.c). */
+ * console's output hook 800366e0 (console_and_sound_driver.c). */
 #include "common.h"
 #include "psyq/libapi.h"
 #include "psyq/libc.h"
@@ -26,82 +26,84 @@
  * (8005934c), the larger window, text and controller queue buffers in its
  * .bss (80059fd8), as the original assembler placed them (SBSS_main2 in
  * slus_006.64.mk). */
-static s32 D_8005934C;  /* font: first byte of a two-byte character */
-static s32 D_80059350;
-static s32 D_80059354;
-static s32 D_80059358;
-static u8 *D_8005935C;  /* font glyph data */
-static u8 **D_80059360; /* system data: resource table */
-static s32 D_80059364;
-static u8 *D_80059368;  /* system data block */
-static u16 *D_8005936C; /* font block: halfword 1 glyph offset, 2 first
+static s32 text_font_two_byte_threshold;  /* 8005934C: font: first byte of a two-byte character */
+static s32 text_font_two_byte_glyph_offset; /* 80059350 */
+static s32 text_font_narrow_one_byte_count; /* 80059354 */
+static s32 text_font_narrow_two_byte_limit; /* 80059358 */
+static u8 *text_font_glyphs;  /* 8005935C: font glyph data */
+static u8 **text_system_resources; /* 80059360: system data: resource table */
+static s32 text_font_first_one_byte_code; /* 80059364 */
+static u8 *text_system_data;  /* 80059368: system data block */
+static u16 *text_font; /* 8005936C: font block: halfword 1 glyph offset, 2 first
                          * byte of a two-byte character */
-static u8 D_80059370;   /* play time frames */
-static u32 D_80059374;  /* held pad buttons of the last frame */
-static u32 D_80059378;
-static u32 D_8005937C;  /* queued controller states */
-static u32 D_80059380;  /* queue write index */
-static u32 D_80059384;  /* queue read index */
-static u8 D_80059388;   /* kind of the last read controller */
-static u8 D_8005938C;
-static s32 D_80059390;  /* the vertical-blank callback polls the host */
+static u8 pad_play_time_frames;   /* 80059370: play time frames */
+static u32 pad_port0_last_held;  /* 80059374: held pad buttons of the last frame */
+static u32 pad_port1_last_held; /* 80059378 */
+static u32 pad_queue_count;  /* 8005937C: queued controller states */
+static u32 pad_queue_write_index;  /* 80059380: queue write index */
+static u32 pad_queue_read_index;  /* 80059384: queue read index */
+static u8 pad_last_read_type;   /* 80059388: kind of the last read controller */
+static u8 pad_unread_byte; /* 8005938C */
+static s32 pad_vblank_polls_host;  /* 80059390: the vertical-blank callback polls the host */
 /* The one-line layout window and its line. */
-static Window D_80059FD8;
-static WindowLine D_8005A068;
+static Window window_single_line_window; /* 80059FD8 */
+static WindowLine window_single_line_layout; /* 8005A068 */
 /* Number character codes: color, 10 digits, 0xFFFF, and two that nothing
  * addresses (a word of its own would be a small variable, in .sbss). */
-static u16 D_8005A0C8[14];
-static u8 D_8005A0E4[0x18]; /* decoded text */
+static u16 text_number_codes[14]; /* 8005A0C8 */
+static u8 text_decoded_buffer[0x18]; /* 8005A0E4: decoded text */
 /* Queued controller states (16 entries of the six state words). */
-static u16 D_8005A0FC[16];
-static u16 D_8005A11C[16];
-static u16 D_8005A13C[16];
-static u16 D_8005A15C[16];
-static u16 D_8005A17C[16];
-static u16 D_8005A19C[16];
-static Actuator D_8005A1BC[2];
+static u16 pad_queue_port0_held[16]; /* 8005A0FC */
+static u16 pad_queue_port1_held[16]; /* 8005A11C */
+static u16 pad_queue_port0_pressed[16]; /* 8005A13C */
+static u16 pad_queue_port1_pressed[16]; /* 8005A15C */
+static u16 pad_queue_port0_repeated[16]; /* 8005A17C */
+static u16 pad_queue_port1_repeated[16]; /* 8005A19C */
+static Actuator pad_actuators[2]; /* 8005A1BC */
 
 /* The text palette: two 16-colour CLUTs. */
-u16 D_80050190[32] = {
+u16 text_palette[32] = { /* 80050190 */
     0x0000, 0xF7BD, 0xC086, 0xF7BD, 0x0000, 0xF7BD, 0xC086, 0xF7BD,
     0x0000, 0xF7BD, 0xC086, 0xF7BD, 0x0000, 0xF7BD, 0xC086, 0xF7BD,
     0x0000, 0x0000, 0x0000, 0x0000, 0xF7BD, 0xF7BD, 0xF7BD, 0xF7BD,
     0xC086, 0xC086, 0xC086, 0xC086, 0xF7BD, 0xF7BD, 0xF7BD, 0xF7BD,
 };
 /* The glyph of character pair 0xFF 0xFF: eleven rows of 12 bits, the
- * font block's 22-byte glyph format, which func_80034FFC draws in place
+ * font block's 22-byte glyph format, which text_draw_glyph draws in place
  * of a font glyph. */
-INCLUDE_ASSET(".data", D_800501D0, 0x800501D0, 0x16);
-u16 D_800501E8[8] = {0x20, 0x40, 0x10, 0x80, 0x4, 0x1, 0x8, 0x2}; /* button bits */
-u8 D_800501F8 = 0;              /* play time stopped at 100 hours */
-void (*D_800501FC)(void) = NULL; /* vertical-blank hook */
-s32 D_80050200 = 1;
-s32 D_80050204 = 0;
-s32 D_80050208 = 0; /* queue overflowed */
-u8 D_8005020C[16] = {
+INCLUDE_ASSET(".data", text_special_glyph_rows, 0x800501D0, 0x16);
+u16 pad_button_bits[8] = {0x20, 0x40, 0x10, 0x80, 0x4, 0x1, 0x8, 0x2}; /* 800501E8: button bits */
+u8 pad_play_time_stopped = 0;              /* 800501F8: play time stopped at 100 hours */
+void (*pad_vblank_hook)(void) = NULL; /* 800501FC: vertical-blank hook */
+s32 pad_unread_reset_word = 1; /* 80050200 */
+s32 pad_unread_init_word = 0; /* 80050204 */
+s32 pad_queue_overflowed = 0; /* 80050208: queue overflowed */
+u8 pad_dpad_stick_x_table[16] = { /* 8005020C */
     0x80, 0x80, 0xFF, 0xFF, 0x80, 0x80, 0xFF, 0x80, 0x00, 0x00, 0x80, 0x80, 0x00, 0x80, 0x80, 0x80,
 };
-u8 D_8005021C[16] = {
+u8 pad_dpad_stick_y_table[16] = { /* 8005021C */
     0x80, 0x00, 0x80, 0x00, 0xFF, 0x80, 0xFF, 0x80, 0x80, 0x00, 0x80, 0x80, 0xFF, 0x80, 0x80, 0x80,
 };
-s32 D_8005022C = 0; /* frames the held buttons have not changed */
-s32 D_80050230 = 0;
-s32 D_80050234 = 0; /* nothing reads it */
-u8 D_80050238[8] = {0, 1, 2, 3, 4, 5, 6, 7}; /* button assignment */
+s32 pad_port0_unchanged_frame_count = 0; /* 8005022C: frames the held buttons have not changed */
+s32 pad_port1_unchanged_frame_count = 0; /* 80050230 */
+s32 pad_unreferenced_word = 0; /* 80050234: nothing reads it */
+u8 pad_button_assignment[8] = {0, 1, 2, 3, 4, 5, 6, 7}; /* 80050238: button assignment */
 
-/* Unpacked size of packed data (its first word). */
-s32 func_80032E7C(s32 *packed) {
+/* 80032E7C: Unpacked size of packed data (its first word). */
+s32 text_get_lzss_unpacked_size(s32 *packed) {
     return *packed;
 }
 
-INCLUDE_ASM("decomp/src/resident", func_80032E88);
+/* 80032E88 */
+INCLUDE_ASM("decomp/src/resident", text_unpack_lzss_alloc);
 
-INCLUDE_ASM("decomp/src/resident", func_80032EB4);
+/* 80032EB4 */
+INCLUDE_ASM("decomp/src/resident", text_unpack_lzss);
 
-/* Build a message window's two texture halves for each line and display
+/* 80032F54: Build a message window's two texture halves for each line and display
  * buffer. Lines share a glyph image in pairs, using alternating CLUTs;
  * two draw modes select the texture pages either side of the 256-pixel split. */
-void func_80032F54(Window *window, s16 vram_x, s16 vram_y, s16 x, u16 y,
+void window_open(Window *window, s16 vram_x, s16 vram_y, s16 x, u16 y,
                    u16 columns, u16 rows) {
     s32 i;
     s32 half_row;
@@ -130,10 +132,10 @@ void func_80032F54(Window *window, s16 vram_x, s16 vram_y, s16 x, u16 y,
     window->width |= 1;
     window->unk8 = (u16)window->width * 4;
     window->stride = (u16)window->width + 3;
-    func_800324B8(0x29);
-    window->layout = func_80031BDC(window->lines * sizeof(WindowLine), 2);
-    func_800324B8(0x28);
-    window->image = func_80031BDC(window->stride * 28, 2);
+    heap_set_next_class(0x29);
+    window->layout = heap_alloc(window->lines * sizeof(WindowLine), 2);
+    heap_set_next_class(0x28);
+    window->image = heap_alloc(window->stride * 28, 2);
     setlen(&window->tile[0], 3);
     *(u32 *)&window->tile[0].r0 = 0x60000000;
     *(u32 *)&window->tile[0].x0 = (window->unk4 - 7) | ((window->unk6 - 5) << 16);
@@ -169,7 +171,7 @@ void func_80032F54(Window *window, s16 vram_x, s16 vram_y, s16 x, u16 y,
         window->layout[i].rect.w = window->stride;
         window->layout[i].rect.h = 13;
         window->layout[i].width = 0;
-        window->layout[i].clut = plane == 0 ? D_800595D4 : D_80059414;
+        window->layout[i].clut = plane == 0 ? text_plane0_clut : text_plane1_clut;
         window->layout[i].row = vram_y + half_row * 13;
         window->layout[i].plane = plane;
         window->layout[i].slot = i;
@@ -178,9 +180,9 @@ void func_80032F54(Window *window, s16 vram_x, s16 vram_y, s16 x, u16 y,
     SetDrawMode((DR_MODE *)window->unk3C, 0, 0, GetTPage(0, 0, vram_x + 64, vram_y), NULL);
 }
 
-/* Turn a resource's offset table (count, then offsets) into pointers.
+/* 8003342C: Turn a resource's offset table (count, then offsets) into pointers.
  * Returns the count. */
-u32 func_8003342C(void *data) {
+u32 text_relocate_offset_table(void *data) {
     u32 *table = data;
     u32 i;
 
@@ -190,8 +192,8 @@ u32 func_8003342C(void *data) {
     return table[0];
 }
 
-/* As 8003342c, without returning the count. */
-void func_80033474(void *data) {
+/* 80033474: As 8003342c, without returning the count. */
+void text_relocate_offset_table_no_count(void *data) {
     u32 *table = data;
     u32 i;
 
@@ -200,180 +202,197 @@ void func_80033474(void *data) {
     }
 }
 
-/* The installed font block and system data block. */
-u16 *func_800334B8(void) {
-    return D_8005936C;
+/* 800334B8: The installed font block and system data block. */
+u16 *text_get_font(void) {
+    return text_font;
 }
 
-u8 *func_800334C8(void) {
-    return D_80059368;
+/* 800334C8 */
+u8 *text_get_system_data(void) {
+    return text_system_data;
 }
 
-/* Release the font. */
-void func_800334D8(void) {
-    func_800320B8(D_8005936C);
-    func_800320E8(D_8005936C);
-    D_8005936C = NULL;
+/* 800334D8: Release the font. */
+void text_release_font(void) {
+    heap_unprotect_block(text_font);
+    heap_free(text_font);
+    text_font = NULL;
 }
 
-/* Release the system data. */
-void func_80033518(void) {
-    func_800320B8(D_80059368);
-    func_800320E8(D_80059368);
-    D_80059368 = NULL;
+/* 80033518: Release the system data. */
+void text_release_system_data(void) {
+    heap_unprotect_block(text_system_data);
+    heap_free(text_system_data);
+    text_system_data = NULL;
 }
 
-/* Install a loaded font block (protected from release): its header
+/* 80033558: Install a loaded font block (protected from release): its header
  * halfwords are read in turn (glyph offset, then the character ranges). */
-void func_80033558(u16 *font) {
+void text_install_font(u16 *font) {
     u16 *p;
     s32 offset;
 
     if (font == NULL) {
-        func_800324B8(0x20);
+        heap_set_next_class(0x20);
         return;
     }
-    func_800320A4(font);
-    D_8005936C = font;
-    D_8005935C = (u8 *)font;
+    heap_protect_block(font);
+    text_font = font;
+    text_font_glyphs = (u8 *)font;
     p = font + 1;
     offset = *p++;
-    D_8005934C = *p++;
-    D_80059350 = *p++;
-    D_80059354 = *p++;
-    D_80059358 = *p++;
-    D_80059364 = *p;
-    D_8005935C = (u8 *)font + offset;
+    text_font_two_byte_threshold = *p++;
+    text_font_two_byte_glyph_offset = *p++;
+    text_font_narrow_one_byte_count = *p++;
+    text_font_narrow_two_byte_limit = *p++;
+    text_font_first_one_byte_code = *p;
+    text_font_glyphs = (u8 *)font + offset;
 }
 
-/* Install a loaded system data block (protected from release). */
-void func_800335F4(u8 *data) {
+/* 800335F4: Install a loaded system data block (protected from release). */
+void text_install_system_data(u8 *data) {
     if (data == NULL) {
-        func_800324B8(0x20);
+        heap_set_next_class(0x20);
         return;
     }
-    func_800320A4(data);
-    D_80059368 = data;
-    D_80059360 = (u8 **)data;
-    func_8003342C(data);
-    D_80059360++;
+    heap_protect_block(data);
+    text_system_data = data;
+    text_system_resources = (u8 **)data;
+    text_relocate_offset_table(data);
+    text_system_resources++;
 }
 
-/* Install a font block and a system data block. */
-void func_80033668(u16 *font, u8 *data) {
-    func_80033558(font);
-    func_800335F4(data);
+/* 80033668: Install a font block and a system data block. */
+void text_install_font_and_system_data(u16 *font, u8 *data) {
+    text_install_font(font);
+    text_install_system_data(data);
 }
 
-/* Upload the text palette to (x, y) and record its two CLUTs. */
-void func_80033698(s16 x, s16 y) {
+/* 80033698: Upload the text palette to (x, y) and record its two CLUTs. */
+void text_load_palette(s16 x, s16 y) {
     RECT rect;
 
     rect.w = 32;
     rect.x = x;
     rect.y = y;
     rect.h = 1;
-    LoadImage(&rect, (u_long *)D_80050190);
-    D_800595D4 = GetClut(x, y);
-    D_80059414 = GetClut(x + 16, y);
+    LoadImage(&rect, (u_long *)text_palette);
+    text_plane0_clut = GetClut(x, y);
+    text_plane1_clut = GetClut(x + 16, y);
 }
 
-/* Entry `index` of a resource whose u16 offsets start at byte 4. */
-u8 *func_80033728(u8 *resource, s32 index) {
+/* 80033728: Entry `index` of a resource whose u16 offsets start at byte 4. */
+u8 *text_get_resource_entry(u8 *resource, s32 index) {
     return resource + ((u16 *)resource)[index + 2];
 }
 
-/* First byte of entry `index` in a table of byte pairs after a header of
+/* 8003373C: First byte of entry `index` in a table of byte pairs after a header of
  * (count + 3) halfwords. */
-u8 func_8003373C(u16 *table, s32 index) {
+u8 text_get_message_columns(u16 *table, s32 index) {
     u8 *entries = (u8 *)table;
     entries += *table * 2 + 6;
     entries += index * 2;
     return entries[0];
 }
 
-/* Its second byte. */
-u8 func_80033760(u16 *table, s32 index) {
+/* 80033760: Its second byte. */
+u8 text_get_message_rows(u16 *table, s32 index) {
     u8 *entries = (u8 *)table;
     entries += *table * 2 + 6;
     entries += index * 2;
     return entries[1];
 }
 
-/* Entry `index` of a resource table of the system data (8003373c's
+/* 80033784: Entry `index` of a resource table of the system data (8003373c's
  * form): of table `table`, or of the fixed table each of these names. */
-u8 *func_80033784(s32 table, s32 index) {
-    return func_80033728(D_80059360[table], index);
+u8 *text_get_system_resource_entry(s32 table, s32 index) {
+    return text_get_resource_entry(text_system_resources[table], index);
 }
 
-u8 *func_800337B8(s32 index) {
-    return func_80033728(D_80059360[16], index);
+/* 800337B8 */
+u8 *text_get_resource16_entry(s32 index) {
+    return text_get_resource_entry(text_system_resources[16], index);
 }
 
-u8 *func_800337E8(s32 index) {
-    return func_80033728(D_80059360[17], index);
+/* 800337E8 */
+u8 *text_get_accessory_name(s32 index) {
+    return text_get_resource_entry(text_system_resources[17], index);
 }
 
-u8 *func_80033818(s32 index) {
-    return func_80033728(D_80059360[22], index);
+/* 80033818 */
+u8 *text_get_item_name(s32 index) {
+    return text_get_resource_entry(text_system_resources[22], index);
 }
 
-u8 *func_80033848(s32 index) {
-    return func_80033728(D_80059360[23], index);
+/* 80033848 */
+u8 *text_get_weapon_name(s32 index) {
+    return text_get_resource_entry(text_system_resources[23], index);
 }
 
-u8 *func_80033878(s32 index) {
-    return func_80033728(D_80059360[24], index);
+/* 80033878 */
+u8 *text_get_resource24_entry(s32 index) {
+    return text_get_resource_entry(text_system_resources[24], index);
 }
 
-u8 *func_800338A8(s32 index) {
-    return func_80033728(D_80059360[25], index);
+/* 800338A8 */
+u8 *text_get_resource25_entry(s32 index) {
+    return text_get_resource_entry(text_system_resources[25], index);
 }
 
-u8 *func_800338D8(s32 index) {
-    return func_80033728(D_80059360[18], index);
+/* 800338D8 */
+u8 *text_get_battle_message(s32 index) {
+    return text_get_resource_entry(text_system_resources[18], index);
 }
 
-u8 *func_80033908(s32 index) {
-    return func_80033728(D_80059360[20], index);
+/* 80033908 */
+u8 *text_get_character_art_name(s32 index) {
+    return text_get_resource_entry(text_system_resources[20], index);
 }
 
-u8 *func_80033938(s32 index) {
-    return func_80033728(D_80059360[19], index);
+/* 80033938 */
+u8 *text_get_resource19_entry(s32 index) {
+    return text_get_resource_entry(text_system_resources[19], index);
 }
 
-u8 *func_80033968(s32 index) {
-    return func_80033728(D_80059360[21], index);
+/* 80033968 */
+u8 *text_get_resource21_entry(s32 index) {
+    return text_get_resource_entry(text_system_resources[21], index);
 }
 
-u8 *func_80033998(s32 index) {
-    return func_80033728(D_80059360[27], index);
+/* 80033998 */
+u8 *text_get_resource27_entry(s32 index) {
+    return text_get_resource_entry(text_system_resources[27], index);
 }
 
-u8 *func_800339C8(s32 table, s32 index) {
-    return func_80033728(D_80059360[table + 28], index);
+/* 800339C8 */
+u8 *text_get_gear_resource_entry(s32 table, s32 index) {
+    return text_get_resource_entry(text_system_resources[table + 28], index);
 }
 
-u8 *func_800339FC(s32 index) {
-    return func_80033728(D_80059360[48], index);
+/* 800339FC */
+u8 *text_get_gear_art_name(s32 index) {
+    return text_get_resource_entry(text_system_resources[48], index);
 }
 
-u8 *func_80033A2C(s32 index) {
-    return func_80033728(D_80059360[50], index);
+/* 80033A2C */
+u8 *text_get_gear_accessory_name(s32 index) {
+    return text_get_resource_entry(text_system_resources[50], index);
 }
 
-u8 *func_80033A5C(s32 index) {
-    return func_80033728(D_80059360[51], index);
+/* 80033A5C */
+u8 *text_get_gear_part_name(s32 index) {
+    return text_get_resource_entry(text_system_resources[51], index);
 }
 
-u8 *func_80033A8C(s32 index) {
-    return func_80033728(D_80059360[52], index);
+/* 80033A8C */
+u8 *text_get_gear_fuel_art_name(s32 index) {
+    return text_get_resource_entry(text_system_resources[52], index);
 }
 
-/* Decode 0xFFFF-terminated character codes into text bytes (D_8005A0E4). */
-void func_80033ABC(u16 *codes) {
-    u8 *out = D_8005A0E4;
-    CharPair *pairs = (CharPair *)D_80059360[27];
+/* 80033ABC: Decode 0xFFFF-terminated character codes into text bytes (text_decoded_buffer). */
+void text_decode_codes_to_buffer(u16 *codes) {
+    u8 *out = text_decoded_buffer;
+    CharPair *pairs = (CharPair *)text_system_resources[27];
     CharPair *pair;
     u16 code;
 
@@ -390,9 +409,9 @@ void func_80033ABC(u16 *codes) {
     *out = 0;
 }
 
-/* Decode `count` character codes into text bytes at `out`. */
-void func_80033B34(u16 *codes, u8 *out, u32 count) {
-    CharPair *pairs = (CharPair *)D_80059360[27];
+/* 80033B34: Decode `count` character codes into text bytes at `out`. */
+void text_decode_codes(u16 *codes, u8 *out, u32 count) {
+    CharPair *pairs = (CharPair *)text_system_resources[27];
     CharPair *pair;
 
     while (count--) {
@@ -408,9 +427,9 @@ void func_80033B34(u16 *codes, u8 *out, u32 count) {
     *out = 0;
 }
 
-/* Character code of a byte pair, or 0x8000 when there is none. */
-s32 func_80033BAC(u8 first, u8 second) {
-    CharPair *pairs = (CharPair *)D_80059360[27];
+/* 80033BAC: Character code of a byte pair, or 0x8000 when there is none. */
+s32 text_find_char_code(u8 first, u8 second) {
+    CharPair *pairs = (CharPair *)text_system_resources[27];
     CharPair *pair;
     s16 code;
 
@@ -423,22 +442,22 @@ s32 func_80033BAC(u8 first, u8 second) {
     return 0x8000;
 }
 
-/* Encode text into character codes. Returns -1 for a byte pair with no
+/* 80033C20: Encode text into character codes. Returns -1 for a byte pair with no
  * code, else 0. */
-s32 func_80033C20(u8 *text, u16 *codes) {
+s32 text_encode(u8 *text, u16 *codes) {
     u8 c;
     u8 first;
     u8 second;
 
     while ((c = *text++) != 0) {
         first = 0;
-        if (c < D_8005934C) {
+        if (c < text_font_two_byte_threshold) {
             second = c;
         } else {
             first = c;
             second = *text++;
         }
-        *codes = func_80033BAC(first, second);
+        *codes = text_find_char_code(first, second);
         if (*codes++ == 0x8000) {
             return -1;
         }
@@ -446,16 +465,16 @@ s32 func_80033C20(u8 *text, u16 *codes) {
     return 0;
 }
 
-/* A window's byte 0x6b while its flag 8 is set, else 0. */
-u8 func_80033CD0(u8 *window) {
+/* 80033CD0: A window's byte 0x6b while its flag 8 is set, else 0. */
+u8 window_get_wait_state(u8 *window) {
     return (*(u16 *)(window + 0x10) & 8) ? window[0x6B] : 0;
 }
 
-/* Decode `value` as ten decimal digit codes in palette `color` (with a
+/* 80033CF0: Decode `value` as ten decimal digit codes in palette `color` (with a
  * sign code when `sign` is set) into text; leading zeros are dropped for
  * plain palettes. The leading-zero scan tests its end first in an
  * unrotated loop, as the original does. */
-void func_80033CF0(u32 value, s32 color, s32 sign) {
+void text_format_number(u32 value, s32 color, s32 sign) {
     u32 divisor = 1000000000;
     u32 remaining = value;
     u16 *p;
@@ -470,16 +489,16 @@ void func_80033CF0(u32 value, s32 color, s32 sign) {
         }
     }
     for (i = 0; i < 10; i++) {
-        D_8005A0C8[i + 1] = remaining / divisor + color;
+        text_number_codes[i + 1] = remaining / divisor + color;
         remaining %= divisor;
         divisor /= 10;
     }
-    D_8005A0C8[11] = 0xFFFF;
-    p = D_8005A0C8;
-    D_8005A0C8[0] = color;
+    text_number_codes[11] = 0xFFFF;
+    p = text_number_codes;
+    text_number_codes[0] = color;
     if ((color & 0xFFF0) == color) {
         while (1) {
-            if (p == &D_8005A0C8[10]) {
+            if (p == &text_number_codes[10]) {
                 break;
             }
             if (*++p != color) {
@@ -490,12 +509,12 @@ void func_80033CF0(u32 value, s32 color, s32 sign) {
     if (sign != 0) {
         *--p = sign + color;
     }
-    func_80033ABC(p);
+    text_decode_codes_to_buffer(p);
 }
 
-/* Insert `text` into a window's message: it continues there and returns
+/* 80033DD4: Insert `text` into a window's message: it continues there and returns
  * to the current position afterwards (flag 0x80). */
-void func_80033DD4(Window *window, u8 *text) {
+void window_insert_text(Window *window, u8 *text) {
     u8 *previous = window->text;
 
     window->text = text;
@@ -503,13 +522,13 @@ void func_80033DD4(Window *window, u8 *text) {
     window->flags |= 0x80;
 }
 
-/* Reveal a window's next text bytes. Line images alternate between two glyph
+/* 80033DF0: Reveal a window's next text bytes. Line images alternate between two glyph
  * planes; text controls pause, change reveal speed, insert resource/name/number
  * text and return to the byte after an inserted message's saved position.
  * Pointer increments below retain the control stream's original resume slots.
  * The control parameter reuses `first`. Resource controls resolve their
  * entries before sharing the text insertion and budget update. */
-void func_80033DF0(Window *window) {
+void window_reveal_text(Window *window) {
     s32 remaining = window->unk69;
     s32 line_slot;
     s32 current_line;
@@ -544,7 +563,7 @@ void func_80033DF0(Window *window) {
         current_line = window->y;
         line_slot = window->unk18 % (window->lines + 1);
         window->layout[current_line].row = (line_slot / 2) * 13 + window->unkE;
-        window->layout[current_line].clut = !(line_slot & 1) ? D_800595D4 : D_80059414;
+        window->layout[current_line].clut = !(line_slot & 1) ? text_plane0_clut : text_plane1_clut;
         window->layout[current_line].plane = line_slot & 1;
         window->layout[current_line].slot = line_slot;
         window->layout[current_line].rect.y = window->unkE + (line_slot / 2) * 13;
@@ -620,9 +639,9 @@ void func_80033DF0(Window *window) {
                 first = window->text[2];
                 second = window->text[3];
                 window->text += 3;
-                resource = D_80059360[first];
+                resource = text_system_resources[first];
                 remaining++;
-                resource = func_80033728(resource, second);
+                resource = text_get_resource_entry(resource, second);
                 goto resource_ready;
             /* 0F 04 insert_selection(), 2 bytes: insert entry selection & 0xFF
              * of resource 22, 23, 17, 51 or 50 for selection kinds 0x000-0x400
@@ -636,29 +655,29 @@ void func_80033DF0(Window *window) {
                 window->text = cursor;
                 switch (category) {
                 case 0x000:
-                    resource = D_80059360[22];
+                    resource = text_system_resources[22];
                     second &= 0xFF;
-                    resource = func_80033728(resource, second);
+                    resource = text_get_resource_entry(resource, second);
                     goto resource_ready;
                 case 0x100:
-                    resource = D_80059360[23];
+                    resource = text_system_resources[23];
                     second &= 0xFF;
-                    resource = func_80033728(resource, second);
+                    resource = text_get_resource_entry(resource, second);
                     goto resource_ready;
                 case 0x200:
-                    resource = D_80059360[17];
+                    resource = text_system_resources[17];
                     second &= 0xFF;
-                    resource = func_80033728(resource, second);
+                    resource = text_get_resource_entry(resource, second);
                     goto resource_ready;
                 case 0x300:
-                    resource = D_80059360[51];
+                    resource = text_system_resources[51];
                     second &= 0xFF;
-                    resource = func_80033728(resource, second);
+                    resource = text_get_resource_entry(resource, second);
                     goto resource_ready;
                 case 0x400:
-                    resource = D_80059360[50];
+                    resource = text_system_resources[50];
                     second &= 0xFF;
-                    resource = func_80033728(resource, second);
+                    resource = text_get_resource_entry(resource, second);
                     goto resource_ready;
                 }
                 break;
@@ -669,14 +688,14 @@ void func_80033DF0(Window *window) {
                 window->text += 2;
                 index = first;
                 if (first >= 0x80) {
-                    index = D_8006D634.party[first - 0x80];
+                    index = game_data.party[first - 0x80];
                     if (index == 0xFF) {
-                        func_80033DD4(window, func_80033728(D_80059360[26], 0));
+                        window_insert_text(window, text_get_resource_entry(text_system_resources[26], 0));
                     } else {
-                        func_80033DD4(window, D_8006D634.names[index]);
+                        window_insert_text(window, game_data.names[index]);
                     }
                 } else {
-                    func_80033DD4(window, D_8006D634.names[index]);
+                    window_insert_text(window, game_data.names[index]);
                 }
                 remaining++;
                 break;
@@ -686,8 +705,8 @@ void func_80033DF0(Window *window) {
                 remaining++;
                 first = window->text[2];
                 window->text += 2;
-                resource = D_80059360[23];
-                resource = func_80033728(resource, first);
+                resource = text_system_resources[23];
+                resource = text_get_resource_entry(resource, first);
                 goto resource_ready;
             /* 0F 07 insert_24(entry), 3 bytes: insert entry `entry` of system
              * resource 24. */
@@ -695,8 +714,8 @@ void func_80033DF0(Window *window) {
                 remaining++;
                 first = window->text[2];
                 window->text += 2;
-                resource = D_80059360[24];
-                resource = func_80033728(resource, first);
+                resource = text_system_resources[24];
+                resource = text_get_resource_entry(resource, first);
                 goto resource_ready;
             /* 0F 08 insert_25(entry), 3 bytes: insert entry `entry` of system
              * resource 25. */
@@ -704,8 +723,8 @@ void func_80033DF0(Window *window) {
                 remaining++;
                 first = window->text[2];
                 window->text += 2;
-                resource = D_80059360[25];
-                resource = func_80033728(resource, first);
+                resource = text_system_resources[25];
+                resource = text_get_resource_entry(resource, first);
                 goto resource_ready;
             /* 0F 09 insert_number(value), 3 bytes: insert window value `value`
              * in decimal, palette 0. */
@@ -738,8 +757,8 @@ insert_number:
                 cursor += 2;
                 window->text = cursor;
                 remaining++;
-                func_80033CF0(window->values[first], palette, sign);
-                func_80033DD4(window, D_8005A0E4);
+                text_format_number(window->values[first], palette, sign);
+                window_insert_text(window, text_decoded_buffer);
                 break;
             /* 0F 0D wait_done_skippable(frames), 3 bytes: as wait_done, also
              * setting window flag 0x200 (800345e0 then drops the wait and the
@@ -761,17 +780,17 @@ insert_number:
                 window->text += 3;
                 return;
             /* 0F 0F insert_button(action), 3 bytes: insert the name of the
-             * button assigned to `action` (D_80050238) from resource 49. */
+             * button assigned to `action` (pad_button_assignment) from resource 49. */
             case 15:
                 first = window->text[2];
                 window->text += 2;
-                resource = D_80059360[49];
-                second = D_80050238[first];
+                resource = text_system_resources[49];
+                second = pad_button_assignment[first];
                 remaining++;
-                resource = func_80033728(resource, second);
+                resource = text_get_resource_entry(resource, second);
 resource_ready:
                 remaining--;
-                func_80033DD4(window, resource);
+                window_insert_text(window, resource);
                 goto check_budget;
             }
         } else if (first == 2) {
@@ -791,22 +810,22 @@ resource_ready:
             window->text++;
             return;
         } else {
-            /* A glyph: one byte below D_8005934C (the font's two-byte
+            /* A glyph: one byte below text_font_two_byte_threshold (the font's two-byte
              * threshold), else that byte and the next. */
             text_bytes = 1;
-            if (first < D_8005934C) {
+            if (first < text_font_two_byte_threshold) {
                 first = 0;
                 second = byte;
             } else {
                 second = window->text[1];
                 text_bytes = 2;
             }
-            glyph_width = func_80034F98(first, second);
+            glyph_width = text_get_glyph_width(first, second);
             if (window->x + glyph_width > window->width) {
                 window->x += glyph_width;
                 return;
             }
-            func_80034FFC(first, second, (u16 *)window->image + window->x,
+            text_draw_glyph(first, second, (u16 *)window->image + window->x,
                          window->stride, window->layout[window->y].plane);
             window->text = (u8 *)(text_bytes + (u32)window->text);
             window->x += glyph_width;
@@ -819,8 +838,8 @@ check_budget:
     }
 }
 
-/* Clear flag 8; a window with flag 0x200 also drops its pending state. */
-void func_800345E0(Window *window) {
+/* 800345E0: Clear flag 8; a window with flag 0x200 also drops its pending state. */
+void window_end_wait(Window *window) {
     u16 flags = window->flags;
 
     window->flags = flags & ~8;
@@ -831,16 +850,16 @@ void func_800345E0(Window *window) {
     }
 }
 
-/* Unless it is busy, reset a window to flag 2 only. */
-void func_80034614(Window *window) {
+/* 80034614: Unless it is busy, reset a window to flag 2 only. */
+void window_reset_if_idle(Window *window) {
     if (window->unk84 == 0) {
         window->unk6C = 0;
         window->flags &= 2;
     }
 }
 
-/* Unless it is busy, release a window's queued messages. */
-void func_8003463C(Window *window) {
+/* 8003463C: Unless it is busy, release a window's queued messages. */
+void window_release_queue_if_idle(Window *window) {
     WindowQueue *entry;
     WindowQueue *current;
 
@@ -849,37 +868,37 @@ void func_8003463C(Window *window) {
         while (entry != NULL) {
             current = entry;
             entry = entry->next;
-            func_800320E8(current);
+            heap_free(current);
         }
         window->queue = NULL;
         window->queued = 0;
     }
 }
 
-/* Reset a window and release its queue. */
-void func_800346A4(Window *window) {
+/* 800346A4: Reset a window and release its queue. */
+void window_reset(Window *window) {
     window->unk6C = 0;
     window->unk84 = 0;
     window->flags &= 2;
-    func_8003463C(window);
+    window_release_queue_if_idle(window);
 }
 
-/* Close a window: reset it and release its layout and image. */
-void func_800346D4(Window *window) {
-    func_800346A4(window);
-    func_800320E8(window->layout);
-    func_800320E8(window->image);
+/* 800346D4: Close a window: reset it and release its layout and image. */
+void window_close(Window *window) {
+    window_reset(window);
+    heap_free(window->layout);
+    heap_free(window->image);
 }
 
-/* Queue `message` after the window's current one. Returns the queue
+/* 80034714: Queue `message` after the window's current one. Returns the queue
  * length. */
-s16 func_80034714(Window *window, s32 message) {
+s16 window_queue_message(Window *window, s32 message) {
     WindowQueue *last = window->queue;
     WindowQueue *entry;
 
     window->queued++;
-    func_800324B8(0x2A);
-    entry = func_80031BDC(sizeof(WindowQueue), 2);
+    heap_set_next_class(0x2A);
+    entry = heap_alloc(sizeof(WindowQueue), 2);
     entry->message = message;
     entry->next = NULL;
     if (last == NULL) {
@@ -893,13 +912,13 @@ s16 func_80034714(Window *window, s32 message) {
     return window->queued;
 }
 
-/* Screen x of the cursor. */
-s32 func_800347AC(Window *window) {
+/* 800347AC: Screen x of the cursor. */
+s32 window_get_cursor_x(Window *window) {
     return window->unk4 + window->x * 4;
 }
 
-/* Image row of the cursor line (wrapping to the last line). */
-s32 func_800347C0(Window *window) {
+/* 800347C0: Image row of the cursor line (wrapping to the last line). */
+s32 window_get_cursor_line_y(Window *window) {
     s32 row = window->y - window->unk16;
 
     if (row < 0) {
@@ -908,8 +927,8 @@ s32 func_800347C0(Window *window) {
     return window->unk6 + row * window->unk14;
 }
 
-/* Set the colour of every line's sprites. */
-void func_80034800(Window *window, u8 r, u8 g, u8 b) {
+/* 80034800: Set the colour of every line's sprites. */
+void window_set_color(Window *window, u8 r, u8 g, u8 b) {
     WindowLine *line;
     s32 i;
 
@@ -921,20 +940,21 @@ void func_80034800(Window *window, u8 r, u8 g, u8 b) {
     }
 }
 
-/* Highlight line `value` of a window (drawn unshaded); 8003487c clears it. */
-void func_80034874(Window *window, u8 value) {
+/* 80034874: Highlight line `value` of a window (drawn unshaded); 8003487c clears it. */
+void window_highlight_line(Window *window, u8 value) {
     window->unk6E = value;
 }
 
-void func_8003487C(Window *window) {
+/* 8003487C */
+void window_clear_highlight(Window *window) {
     window->unk6E = 0xFF;
 }
 
-/* Draw a window into `ot` for draw buffer `buffer`: start its next queued
+/* 80034888: Draw a window into `ot` for draw buffer `buffer`: start its next queued
  * message when the current one is done, link each line's two sprites
  * (from the first shown line, the highlighted line lit), reveal the next
  * glyphs when the wait is over and link its background. */
-void func_80034888(Window *window, u_long *ot, s32 buffer) {
+void window_draw_frame(Window *window, u_long *ot, s32 buffer) {
     WindowQueue *entry;
     s32 i;
     s32 line;
@@ -946,7 +966,7 @@ void func_80034888(Window *window, u_long *ot, s32 buffer) {
         entry = window->queue;
         window->text = (u8 *)entry->message;
         window->queue = window->queue->next;
-        func_800320E8(entry);
+        heap_free(entry);
         window->queued--;
         window->flags = (window->flags & 2) | 0x24;
         if (window->unk6A != 0) {
@@ -974,7 +994,7 @@ void func_80034888(Window *window, u_long *ot, s32 buffer) {
         window->y = 0;
         window->x = 0;
         window->layout[0].row = window->unkE;
-        window->layout[0].clut = D_800595D4;
+        window->layout[0].clut = text_plane0_clut;
         window->layout[0].plane = 0;
         window->layout[0].rect.y = window->unkE;
         for (line = 0; line < window->lines; line++) {
@@ -994,7 +1014,7 @@ void func_80034888(Window *window, u_long *ot, s32 buffer) {
             window->layout[line].sprite[buffer][1].clut = window->layout[line].clut;
             window->layout[line].sprite[buffer][1].y0 = window->unk6 + window->unk14 * i;
             window->layout[line].sprite[buffer][1].w = (window->layout[line].width - 0x40) * 4;
-            func_80031798(ot, &window->layout[line].sprite[buffer][1]);
+            gpu_ot_link_sprt(ot, &window->layout[line].sprite[buffer][1]);
         }
     }
     AddPrim(ot, window->unk3C);
@@ -1013,7 +1033,7 @@ void func_80034888(Window *window, u_long *ot, s32 buffer) {
             } else {
                 window->layout[line].sprite[buffer][0].w = window->layout[line].width * 4;
             }
-            func_80031798(ot, &window->layout[line].sprite[buffer][0]);
+            gpu_ot_link_sprt(ot, &window->layout[line].sprite[buffer][0]);
         }
     }
 
@@ -1024,7 +1044,7 @@ void func_80034888(Window *window, u_long *ot, s32 buffer) {
     } else {
         window->unk86 = window->unk88;
         if (!(window->flags & 0x58)) {
-            func_80033DF0(window);
+            window_reveal_text(window);
             LoadImage(&window->layout[window->y].rect, window->image);
         }
     }
@@ -1043,10 +1063,10 @@ void func_80034888(Window *window, u_long *ot, s32 buffer) {
     AddPrim(ot, window->unk30);
 }
 
-/* Lay out one line of `text` into `image` in the layout window, `width`
+/* 80034EAC: Lay out one line of `text` into `image` in the layout window, `width`
  * made odd. Returns the laid-out width in pixels. */
-s32 func_80034EAC(u8 *text, void *image, s16 width, s32 flags) {
-    Window *window = &D_80059FD8;
+s32 window_render_text_line(u8 *text, void *image, s16 width, s32 flags) {
+    Window *window = &window_single_line_window;
 
     window->width = width;
     width |= 1;
@@ -1064,22 +1084,22 @@ s32 func_80034EAC(u8 *text, void *image, s16 width, s32 flags) {
     window->y = 0;
     window->x = 0;
     window->unk69 = 100;
-    window->layout = &D_8005A068;
-    D_8005A068.width = 0;
-    D_8005A068.plane = flags & 1;
-    func_80033DF0(window);
+    window->layout = &window_single_line_layout;
+    window_single_line_layout.width = 0;
+    window_single_line_layout.plane = flags & 1;
+    window_reveal_text(window);
     return window->layout->width * 4;
 }
 
-/* Draw class of a character: 2 for a narrow glyph, else 3. */
-s32 func_80034F98(u16 first, u16 second) {
+/* 80034F98: Draw class of a character: 2 for a narrow glyph, else 3. */
+s32 text_get_glyph_width(u16 first, u16 second) {
     if (first == 0) {
-        if ((s32)((u32)second - (u32)D_80059364) < D_80059354) {
+        if ((s32)((u32)second - (u32)text_font_first_one_byte_code) < text_font_narrow_one_byte_count) {
             return 2;
         }
         return 3;
     }
-    if (first == D_8005934C && second < D_80059358) {
+    if (first == text_font_two_byte_threshold && second < text_font_narrow_two_byte_limit) {
         return 2;
     }
     return 3;
@@ -1167,10 +1187,10 @@ s32 func_80034F98(u16 first, u16 second) {
     } while (row < 11); \
 } while (0)
 
-/* Draw the glyph of a character (a one-byte code when `first` is 0, the
+/* 80034FFC: Draw the glyph of a character (a one-byte code when `first` is 0, the
  * special glyph for 0xff 0xff) into glyph plane `plane` of the line image at
  * `image`, `stride` halfwords per row, with its outline. */
-void func_80034FFC(s32 first, u16 second, u16 *image, s16 stride, s32 plane) {
+void text_draw_glyph(s32 first, u16 second, u16 *image, s16 stride, s32 plane) {
     u16 *glyph;
     u16 bits;
     u16 previous;
@@ -1181,12 +1201,12 @@ void func_80034FFC(s32 first, u16 second, u16 *image, s16 stride, s32 plane) {
     s32 row;
 
     if ((u16)first == 0) {
-        glyph = (u16 *)(D_8005935C + (second - D_80059364) * 22);
+        glyph = (u16 *)(text_font_glyphs + (second - text_font_first_one_byte_code) * 22);
     } else if ((u16)first == 0xFF && second == 0xFF) {
-        glyph = D_800501D0;
+        glyph = text_special_glyph_rows;
     } else {
-        glyph = (u16 *)(D_8005935C + second * 22 + D_80059350 +
-                       ((u16)first - D_8005934C) * 0x1600);
+        glyph = (u16 *)(text_font_glyphs + second * 22 + text_font_two_byte_glyph_offset +
+                       ((u16)first - text_font_two_byte_threshold) * 0x1600);
     }
     row = 0;
     if (plane == 0) {
@@ -1199,29 +1219,29 @@ void func_80034FFC(s32 first, u16 second, u16 *image, s16 stride, s32 plane) {
 #undef DRAW_GLYPH_PLANE
 
 
-/* Buttons held on controller `port` (active high), or 0 without a digital
+/* 8003569C: Buttons held on controller `port` (active high), or 0 without a digital
  * or analog pad. */
-s32 func_8003569C(s32 port) {
-    PadBuffer *pad = &D_800625FC[port];
+s32 pad_read_buttons(s32 port) {
+    PadBuffer *pad = &pad_receive_buffers[port];
 
-    D_80059388 = 0;
+    pad_last_read_type = 0;
     if (pad->status != 0) {
         return 0;
     }
-    D_80059388 = pad->type & 0xF0;
-    if (D_80059388 == 0x40 || D_80059388 == 0x50 || D_80059388 == 0x70) {
+    pad_last_read_type = pad->type & 0xF0;
+    if (pad_last_read_type == 0x40 || pad_last_read_type == 0x50 || pad_last_read_type == 0x70) {
         return (u8)~pad->buttons[1] | ((pad->buttons[0] << 8) ^ 0xFF00);
     }
     return 0;
 }
 
-/* Kind of controller on `port`: 0 none, 1 digital, 2 mouse, 3 analog stick,
+/* 80035734: Kind of controller on `port`: 0 none, 1 digital, 2 mouse, 3 analog stick,
  * 4 analog pad, -1 other. */
-s32 func_80035734(s32 port) {
-    if (D_800625FC[port].status == 0xFF) {
+s32 pad_get_controller_kind(s32 port) {
+    if (pad_receive_buffers[port].status == 0xFF) {
         return 0;
     }
-    switch (D_800625FC[port].type & 0xF0) {
+    switch (pad_receive_buffers[port].type & 0xF0) {
     case 0x40:
         return 1;
     case 0x10:
@@ -1234,22 +1254,22 @@ s32 func_80035734(s32 port) {
     return -1;
 }
 
-/* Remap the low button byte through the configured assignment. */
-s16 func_800357C0(s32 buttons) {
+/* 800357C0: Remap the low button byte through the configured assignment. */
+s16 pad_remap_buttons(s32 buttons) {
     s32 held = buttons;
     s32 i;
 
     buttons &= 0xFF00;
     for (i = 0; i < 8; i++) {
-        if (held & D_800501E8[i]) {
-            buttons |= D_800501E8[D_80050238[i]];
+        if (held & pad_button_bits[i]) {
+            buttons |= pad_button_bits[pad_button_assignment[i]];
         }
     }
     return buttons;
 }
 
-/* Swap the shoulder and face button bits between the two layouts. */
-s16 func_8003582C(s32 buttons) {
+/* 8003582C: Swap the shoulder and face button bits between the two layouts. */
+s16 pad_swap_button_layout(s32 buttons) {
     s16 result = buttons & ~0x9E;
 
     if (buttons & 8) {
@@ -1270,193 +1290,194 @@ s16 func_8003582C(s32 buttons) {
     return result;
 }
 
-/* Stick positions (x, then y) of the directional buttons in `buttons`. */
-u8 func_80035884(s32 buttons) {
-    return D_8005020C[(buttons >> 12) & 0xF];
+/* 80035884: Stick positions (x, then y) of the directional buttons in `buttons`. */
+u8 pad_get_dpad_stick_x(s32 buttons) {
+    return pad_dpad_stick_x_table[(buttons >> 12) & 0xF];
 }
 
-u8 func_800358A0(s32 buttons) {
-    return D_8005021C[(buttons >> 12) & 0xF];
+/* 800358A0 */
+u8 pad_get_dpad_stick_y(s32 buttons) {
+    return pad_dpad_stick_y_table[(buttons >> 12) & 0xF];
 }
 
 /* The vertical blank count: the menu declares it volatile, so the shared
  * headers leave it out. */
-extern s32 D_80059488;
+extern s32 pad_vblank_count;
 
-/* Read both controllers: held buttons (remapped; an analog stick's layout
+/* 800358BC: Read both controllers: held buttons (remapped; an analog stick's layout
  * swapped), the stick positions (the directional buttons' on a digital
  * pad), newly pressed buttons and the auto-repeating buttons (the newly
  * pressed ones; once the held buttons have not changed for 32 frames, all
  * held buttons every fourth frame). */
-void func_800358BC(void) {
-    D_80059570 = func_8003569C(0);
-    D_80059570 = func_800357C0((s16)D_80059570);
-    if (D_80059388 != 0) {
-        if (D_80059388 == 0x50) {
-            D_80059570 = func_8003582C((s16)D_80059570);
+void pad_read_controllers(void) {
+    pad_port0_held = pad_read_buttons(0);
+    pad_port0_held = pad_remap_buttons((s16)pad_port0_held);
+    if (pad_last_read_type != 0) {
+        if (pad_last_read_type == 0x50) {
+            pad_port0_held = pad_swap_button_layout((s16)pad_port0_held);
             goto analog0;
         }
-        if (D_80059388 == 0x70) {
+        if (pad_last_read_type == 0x70) {
         analog0:
-            D_80059444 = D_800625FC[0].data[0];
-            D_8005944C = D_800625FC[0].data[1];
-            D_80059430 = D_800625FC[0].data[2];
-            D_80059438 = D_800625FC[0].data[3];
+            pad_port0_right_stick_x = pad_receive_buffers[0].data[0];
+            pad_port0_right_stick_y = pad_receive_buffers[0].data[1];
+            pad_port0_left_stick_x = pad_receive_buffers[0].data[2];
+            pad_port0_left_stick_y = pad_receive_buffers[0].data[3];
         } else {
-            D_8005944C = 0;
-            D_80059444 = 0;
-            D_80059430 = D_8005020C[D_80059570 >> 12];
-            D_80059438 = D_8005021C[D_80059570 >> 12];
+            pad_port0_right_stick_y = 0;
+            pad_port0_right_stick_x = 0;
+            pad_port0_left_stick_x = pad_dpad_stick_x_table[pad_port0_held >> 12];
+            pad_port0_left_stick_y = pad_dpad_stick_y_table[pad_port0_held >> 12];
         }
     } else {
-        D_8005944C = 0;
-        D_80059444 = 0;
-        D_80059438 = 0;
-        D_80059430 = 0;
+        pad_port0_right_stick_y = 0;
+        pad_port0_right_stick_x = 0;
+        pad_port0_left_stick_y = 0;
+        pad_port0_left_stick_x = 0;
     }
-    D_8005948C = D_80059570 ^ D_80059374;
-    D_8005948C &= D_80059570;
-    D_80059374 = D_80059570;
-    if (D_8005948C) {
-        D_8005022C = 0;
+    pad_port0_pressed = pad_port0_held ^ pad_port0_last_held;
+    pad_port0_pressed &= pad_port0_held;
+    pad_port0_last_held = pad_port0_held;
+    if (pad_port0_pressed) {
+        pad_port0_unchanged_frame_count = 0;
     }
-    D_800594A4 = D_80059570;
-    if (D_8005022C < 0x20) {
-        D_8005022C++;
-        D_800594A4 = D_8005948C;
-    } else if (D_80059488 & 3) {
-        D_800594A4 = D_8005948C;
+    pad_port0_repeated = pad_port0_held;
+    if (pad_port0_unchanged_frame_count < 0x20) {
+        pad_port0_unchanged_frame_count++;
+        pad_port0_repeated = pad_port0_pressed;
+    } else if (pad_vblank_count & 3) {
+        pad_port0_repeated = pad_port0_pressed;
     }
 
-    D_80059574 = func_8003569C(1);
-    D_80059574 = func_800357C0((s16)D_80059574);
-    if (D_80059388 != 0) {
-        if (D_80059388 == 0x50) {
-            D_80059574 = func_8003582C((s16)D_80059574);
+    pad_port1_held = pad_read_buttons(1);
+    pad_port1_held = pad_remap_buttons((s16)pad_port1_held);
+    if (pad_last_read_type != 0) {
+        if (pad_last_read_type == 0x50) {
+            pad_port1_held = pad_swap_button_layout((s16)pad_port1_held);
             goto analog1;
         }
-        if (D_80059388 == 0x70) {
+        if (pad_last_read_type == 0x70) {
         analog1:
-            D_80059448 = D_800625FC[1].data[0];
-            D_80059450 = D_800625FC[1].data[1];
-            D_80059434 = D_800625FC[1].data[2];
-            D_8005943C = D_800625FC[1].data[3];
+            pad_port1_right_stick_x = pad_receive_buffers[1].data[0];
+            pad_port1_right_stick_y = pad_receive_buffers[1].data[1];
+            pad_port1_left_stick_x = pad_receive_buffers[1].data[2];
+            pad_port1_left_stick_y = pad_receive_buffers[1].data[3];
         } else {
-            D_80059450 = 0;
-            D_80059448 = 0;
-            D_80059434 = D_8005020C[D_80059574 >> 12];
-            D_8005943C = D_8005021C[D_80059574 >> 12];
+            pad_port1_right_stick_y = 0;
+            pad_port1_right_stick_x = 0;
+            pad_port1_left_stick_x = pad_dpad_stick_x_table[pad_port1_held >> 12];
+            pad_port1_left_stick_y = pad_dpad_stick_y_table[pad_port1_held >> 12];
         }
     } else {
-        D_80059450 = 0;
-        D_80059448 = 0;
-        D_8005943C = 0;
-        D_80059434 = 0;
+        pad_port1_right_stick_y = 0;
+        pad_port1_right_stick_x = 0;
+        pad_port1_left_stick_y = 0;
+        pad_port1_left_stick_x = 0;
     }
-    D_80059490 = D_80059574 ^ D_80059378;
-    D_80059490 &= D_80059574;
-    D_80059378 = D_80059574;
-    if (D_80059490) {
-        D_80050230 = 0;
+    pad_port1_pressed = pad_port1_held ^ pad_port1_last_held;
+    pad_port1_pressed &= pad_port1_held;
+    pad_port1_last_held = pad_port1_held;
+    if (pad_port1_pressed) {
+        pad_port1_unchanged_frame_count = 0;
     }
-    D_800594A8 = D_80059574;
-    if (D_80050230 < 0x20) {
-        D_80050230++;
-        D_800594A8 = D_80059490;
-    } else if (D_80059488 & 3) {
-        D_800594A8 = D_80059490;
+    pad_port1_repeated = pad_port1_held;
+    if (pad_port1_unchanged_frame_count < 0x20) {
+        pad_port1_unchanged_frame_count++;
+        pad_port1_repeated = pad_port1_pressed;
+    } else if (pad_vblank_count & 3) {
+        pad_port1_repeated = pad_port1_pressed;
     }
 }
 
-/* Queue the current controller state (flag an overflow when full). */
-void func_80035C0C(void) {
+/* 80035C0C: Queue the current controller state (flag an overflow when full). */
+void pad_queue_state(void) {
     s32 i;
 
-    if (D_8005937C < 16) {
-        D_8005937C++;
-        i = D_80059380 & 0xF;
-        D_8005A0FC[i] = D_80059570;
-        D_8005A11C[i] = D_80059574;
-        D_8005A13C[i] = D_8005948C;
-        D_8005A15C[i] = D_80059490;
-        D_8005A17C[i] = D_800594A4;
-        D_8005A19C[i] = D_800594A8;
-        D_80059380++;
+    if (pad_queue_count < 16) {
+        pad_queue_count++;
+        i = pad_queue_write_index & 0xF;
+        pad_queue_port0_held[i] = pad_port0_held;
+        pad_queue_port1_held[i] = pad_port1_held;
+        pad_queue_port0_pressed[i] = pad_port0_pressed;
+        pad_queue_port1_pressed[i] = pad_port1_pressed;
+        pad_queue_port0_repeated[i] = pad_port0_repeated;
+        pad_queue_port1_repeated[i] = pad_port1_repeated;
+        pad_queue_write_index++;
         return;
     }
-    D_80050208 = 1;
+    pad_queue_overflowed = 1;
 }
 
-/* Take the oldest queued controller state as the current one. Returns the
+/* 80035CDC: Take the oldest queued controller state as the current one. Returns the
  * count before, 0 when empty. */
-u32 func_80035CDC(void) {
-    u32 count = D_8005937C;
+u32 pad_dequeue_state(void) {
+    u32 count = pad_queue_count;
     s32 i;
 
     if (count == 0) {
         return 0;
     }
-    D_8005937C = count - 1;
-    i = D_80059384 & 0xF;
-    D_80059384++;
-    D_80059570 = D_8005A0FC[i];
-    D_80059574 = D_8005A11C[i];
-    D_8005948C = D_8005A13C[i];
-    D_80059490 = D_8005A15C[i];
-    D_800594A4 = D_8005A17C[i];
-    D_800594A8 = D_8005A19C[i];
+    pad_queue_count = count - 1;
+    i = pad_queue_read_index & 0xF;
+    pad_queue_read_index++;
+    pad_port0_held = pad_queue_port0_held[i];
+    pad_port1_held = pad_queue_port1_held[i];
+    pad_port0_pressed = pad_queue_port0_pressed[i];
+    pad_port1_pressed = pad_queue_port1_pressed[i];
+    pad_port0_repeated = pad_queue_port0_repeated[i];
+    pad_port1_repeated = pad_queue_port1_repeated[i];
     return count;
 }
 
-/* Number of queued controller states. */
-u32 func_80035DA0(void) {
-    return D_8005937C;
+/* 80035DA0: Number of queued controller states. */
+u32 pad_get_queue_count(void) {
+    return pad_queue_count;
 }
 
-/* Clear the controller queue and states. */
-void func_80035DB0(void) {
-    D_8005937C = 0;
-    D_80059380 = 0;
-    D_80059384 = 0;
-    D_80050208 = 0;
-    D_80050200 = 1;
-    D_800594EC = 0;
-    D_800594E8 = 0;
-    D_800594E0 = 0;
-    D_800594DC = 0;
-    D_800595CC = 0;
-    D_800595C8 = 0;
-    D_800594A8 = 0;
-    D_800594A4 = 0;
-    D_80059490 = 0;
-    D_8005948C = 0;
-    D_80059574 = 0;
-    D_80059570 = 0;
+/* 80035DB0: Clear the controller queue and states. */
+void pad_clear_queue(void) {
+    pad_queue_count = 0;
+    pad_queue_write_index = 0;
+    pad_queue_read_index = 0;
+    pad_queue_overflowed = 0;
+    pad_unread_reset_word = 1;
+    pad_port1_unread_buttons_b = 0;
+    pad_port0_unread_buttons_b = 0;
+    pad_port1_unread_buttons_a = 0;
+    pad_port0_unread_buttons_a = 0;
+    pad_port1_unread_buttons_c = 0;
+    pad_port0_unread_buttons_c = 0;
+    pad_port1_repeated = 0;
+    pad_port0_repeated = 0;
+    pad_port1_pressed = 0;
+    pad_port0_pressed = 0;
+    pad_port1_held = 0;
+    pad_port0_held = 0;
 }
 
-/* Advance the play time by one frame. */
-void func_80035E44(void) {
-    if (D_800501F8 == 0) {
-        if (++D_80059370 == 60) {
-            D_80059370 = 0;
-            D_80059418++;
+/* 80035E44: Advance the play time by one frame. */
+void pad_advance_play_time(void) {
+    if (pad_play_time_stopped == 0) {
+        if (++pad_play_time_frames == 60) {
+            pad_play_time_frames = 0;
+            pad_play_time_seconds++;
         }
-        if (D_80059418 == 60) {
-            D_80059418 = 0;
-            D_80059420++;
+        if (pad_play_time_seconds == 60) {
+            pad_play_time_seconds = 0;
+            pad_play_time_minutes++;
         }
-        if (D_80059420 == 60) {
-            D_80059420 = 0;
-            D_80059484++;
+        if (pad_play_time_minutes == 60) {
+            pad_play_time_minutes = 0;
+            pad_play_time_hours++;
         }
-        if (D_80059484 == 100) {
-            D_800501F8 = 1;
+        if (pad_play_time_hours == 100) {
+            pad_play_time_stopped = 1;
         }
     }
 }
 
-/* Save a VRAM rectangle as a 16-bit TIM file on the PC file server. */
-void func_80035F1C(RECT *rect, char *name) {
+/* 80035F1C: Save a VRAM rectangle as a 16-bit TIM file on the PC file server. */
+void console_save_vram_as_tim(RECT *rect, char *name) {
     TimHeader header;
     s32 fd;
 
@@ -1474,9 +1495,9 @@ void func_80035F1C(RECT *rect, char *name) {
     PCclose(fd);
 }
 
-/* Save a VRAM rectangle as a PPM (P6) image on the PC file server.
+/* 80035FF8: Save a VRAM rectangle as a PPM (P6) image on the PC file server.
  * Returns 0, or -1 when the file cannot be created. */
-s32 func_80035FF8(RECT *rect, char *name) {
+s32 console_save_vram_as_ppm(RECT *rect, char *name) {
     char header[256];
     u16 *src;
     u8 *dst;
@@ -1506,18 +1527,18 @@ s32 func_80035FF8(RECT *rect, char *name) {
     return 0;
 }
 
-/* Stop both controllers' actuators and register their data with libpad. */
-void func_8003611C(void) {
-    D_8005A1BC[0].act[0] = 0;
-    D_8005A1BC[0].timer = 0;
-    D_8005A1BC[0].state = 0;
-    D_8005A1BC[0].disabled = 0;
-    D_8005A1BC[1] = D_8005A1BC[0];
-    libapi_register_pad_send_buffers(D_8005A1BC[0].act, 4, D_8005A1BC[1].act, 4);
+/* 8003611C: Stop both controllers' actuators and register their data with libpad. */
+void pad_init_actuators(void) {
+    pad_actuators[0].act[0] = 0;
+    pad_actuators[0].timer = 0;
+    pad_actuators[0].state = 0;
+    pad_actuators[0].disabled = 0;
+    pad_actuators[1] = pad_actuators[0];
+    libapi_register_pad_send_buffers(pad_actuators[0].act, 4, pad_actuators[1].act, 4);
 }
 
-/* Step one actuator: run while its timer lasts, then wind down. */
-void func_80036188(Actuator *actuator) {
+/* 80036188: Step one actuator: run while its timer lasts, then wind down. */
+void pad_step_actuator(Actuator *actuator) {
     if (actuator->disabled == 0) {
         if (actuator->timer != 0) {
             actuator->act[0] = 1;
@@ -1539,142 +1560,145 @@ void func_80036188(Actuator *actuator) {
     }
 }
 
-/* Step both controllers' actuators. */
-void func_80036220(void) {
-    func_80036188(&D_8005A1BC[0]);
-    func_80036188(&D_8005A1BC[1]);
+/* 80036220: Step both controllers' actuators. */
+void pad_step_actuators(void) {
+    pad_step_actuator(&pad_actuators[0]);
+    pad_step_actuator(&pad_actuators[1]);
 }
 
-/* Run the actuator of `port` for `frames` frames. */
-void func_80036258(s32 port, s16 frames) {
-    D_8005A1BC[port].timer = frames;
+/* 80036258: Run the actuator of `port` for `frames` frames. */
+void pad_run_actuator(s32 port, s16 frames) {
+    pad_actuators[port].timer = frames;
 }
 
-/* Disable or enable the actuator of `port`. */
-void func_80036270(s32 port, u8 disabled) {
-    D_8005A1BC[port].disabled = disabled;
+/* 80036270: Disable or enable the actuator of `port`. */
+void pad_set_actuator_disabled(s32 port, u8 disabled) {
+    pad_actuators[port].disabled = disabled;
 }
 
-/* Start the controllers and reset the queue, actuators and assignment. */
-void func_80036288(void) {
+/* 80036288: Start the controllers and reset the queue, actuators and assignment. */
+void pad_start_controllers(void) {
     u8 *entry;
     s32 i;
 
-    InitPAD((char *)&D_800625FC[0], 0x22, (char *)&D_800625FC[1], 0x22);
+    InitPAD((char *)&pad_receive_buffers[0], 0x22, (char *)&pad_receive_buffers[1], 0x22);
     StartPAD();
     ChangeClearPAD(0);
-    func_80035DB0();
-    func_8003611C();
-    D_80050204 = 0;
-    D_8005938C = 1;
-    D_80059390 = 0;
-    for (i = 7, entry = &D_80050238[7]; i >= 0; i--) {
+    pad_clear_queue();
+    pad_init_actuators();
+    pad_unread_init_word = 0;
+    pad_unread_byte = 1;
+    pad_vblank_polls_host = 0;
+    for (i = 7, entry = &pad_button_assignment[7]; i >= 0; i--) {
         *entry-- = i;
     }
-    D_80050238[0] = 1;
-    D_80050238[2] = 3;
-    D_80050238[1] = 0;
-    D_80050238[3] = 2;
+    pad_button_assignment[0] = 1;
+    pad_button_assignment[2] = 3;
+    pad_button_assignment[1] = 0;
+    pad_button_assignment[3] = 2;
 }
 
-/* Set a controller byte that 80036288 sets to 1 (the field clears it); no
+/* 8003633C: Set a controller byte that 80036288 sets to 1 (the field clears it); no
  * resident code reads it. */
-void func_8003633C(u8 value) {
-    D_8005938C = value;
+void pad_set_unread_byte(u8 value) {
+    pad_unread_byte = value;
 }
 
-/* Vertical-blank callback: counts frames, polls the controllers, input queue
+/* 8003634C: Vertical-blank callback: counts frames, polls the controllers, input queue
  * and play clock, runs the installed hook, and on a development (host)
  * configuration with the debugger request set traps into the debugger.
  * The frame holds 40 bytes of locals that the code never touches. */
-void func_8003634C(void) {
+void pad_vblank_callback(void) {
     u8 unused[40];
 
-    D_80059488++;
-    func_800358BC();
-    func_80035C0C();
-    func_80035E44();
-    func_80036220();
-    if (D_800501FC != NULL) {
-        D_800501FC();
+    pad_vblank_count++;
+    pad_read_controllers();
+    pad_queue_state();
+    pad_advance_play_time();
+    pad_step_actuators();
+    if (pad_vblank_hook != NULL) {
+        pad_vblank_hook();
     }
-    if (D_80010000 != -1 && D_80059390 != 0) {
+    if (mode_disc_mode != -1 && pad_vblank_polls_host != 0) {
         pollhost();
     }
 }
 
-/* Set whether the vertical-blank callback polls the host and its hook, set
+/* 800363E0: Set whether the vertical-blank callback polls the host and its hook, set
  * the word 80035db0 resets to 1 (no resident code reads it), and read the
  * queue overflow flag. */
-void func_800363E0(s32 value) {
-    D_80059390 = value;
+void pad_set_host_polling(s32 value) {
+    pad_vblank_polls_host = value;
 }
 
-void func_800363F0(void (*value)(void)) {
-    D_800501FC = value;
+/* 800363F0 */
+void pad_set_vblank_hook(void (*value)(void)) {
+    pad_vblank_hook = value;
 }
 
-void func_80036400(s32 value) {
-    D_80050200 = value;
+/* 80036400 */
+void pad_set_unread_reset_word(s32 value) {
+    pad_unread_reset_word = value;
 }
 
-s32 func_80036410(void) {
-    return D_80050208;
+/* 80036410 */
+s32 pad_has_queue_overflowed(void) {
+    return pad_queue_overflowed;
 }
 
-/* Merge every queued controller state into the current one (or reset
+/* 80036420: Merge every queued controller state into the current one (or reset
  * after an overflow). */
-void func_80036420(void) {
+void pad_merge_queued_states(void) {
     u16 s0, s1, s2, s3, s4, s5;
 
     s0 = s1 = s2 = s3 = s4 = s5 = 0;
 
-    if (func_80036410() != 0) {
-        func_80035DB0();
+    if (pad_has_queue_overflowed() != 0) {
+        pad_clear_queue();
     } else {
-        while (func_80035CDC() != 0) {
-            s0 |= D_80059570;
-            s1 |= D_80059574;
-            s2 |= D_8005948C;
-            s3 |= D_80059490;
-            s4 |= D_800594A4;
-            s5 |= D_800594A8;
+        while (pad_dequeue_state() != 0) {
+            s0 |= pad_port0_held;
+            s1 |= pad_port1_held;
+            s2 |= pad_port0_pressed;
+            s3 |= pad_port1_pressed;
+            s4 |= pad_port0_repeated;
+            s5 |= pad_port1_repeated;
         }
     }
-    D_80059570 = s0;
-    D_80059574 = s1;
-    D_8005948C = s2;
-    D_80059490 = s3;
-    D_800594A4 = s4;
-    D_800594A8 = s5;
+    pad_port0_held = s0;
+    pad_port1_held = s1;
+    pad_port0_pressed = s2;
+    pad_port1_pressed = s3;
+    pad_port0_repeated = s4;
+    pad_port1_repeated = s5;
 }
 
-/* Print a controller receive buffer in hex, and a digital pad's buttons. */
-void func_80036528(PadBuffer *pad) {
+/* 80036528: Print a controller receive buffer in hex, and a digital pad's buttons. */
+void pad_print_buffer(PadBuffer *pad) {
     s32 count = (pad->type & 0xF) * 2 + 2;
     s32 i;
 
     for (i = 0; i < count; i++) {
-        func_8003700C("%02x ", ((u8 *)pad)[i]);
+        console_printf("%02x ", ((u8 *)pad)[i]);
     }
-    func_8003700C("\n");
+    console_printf("\n");
     if (pad->status == 0 && (pad->type & 0xF0) == 0x40) {
-        func_8003700C("%04x\n", (~pad->buttons[1] & 0xFF) | ((pad->buttons[0] << 8) ^ 0xFF00));
+        console_printf("%04x\n", (~pad->buttons[1] & 0xFF) | ((pad->buttons[0] << 8) ^ 0xFF00));
     }
 }
 
-/* Print both controller buffers, the actuator values, the held buttons and
+/* 800365FC: Print both controller buffers, the actuator values, the held buttons and
  * every queued pad entry. The final format occupies a full word-aligned
  * slot before the formatter's digit tables. */
-void func_800365FC(void) {
-    func_80036528(&D_800625FC[0]);
-    func_80036528(&D_800625FC[1]);
-    func_8003700C("vect0 %02x %02x\n", D_80059430, D_80059438);
-    func_8003700C("vect1 %02x %02x\n", D_80059434, D_8005943C);
-    func_8003700C("PADD %04x %04x\n", D_80059570, D_80059574);
-    while (func_80035CDC() != 0) {
+void pad_print_state(void) {
+    pad_print_buffer(&pad_receive_buffers[0]);
+    pad_print_buffer(&pad_receive_buffers[1]);
+    console_printf("vect0 %02x %02x\n", pad_port0_left_stick_x, pad_port0_left_stick_y);
+    console_printf("vect1 %02x %02x\n", pad_port1_left_stick_x, pad_port1_left_stick_y);
+    console_printf("PADD %04x %04x\n", pad_port0_held, pad_port1_held);
+    while (pad_dequeue_state() != 0) {
         static const char queued_format[24] = "%04x %04x %04x %04x\n";
 
-        func_8003700C((char *)queued_format, func_8003569C(0), D_80059570, D_8005948C, D_800594A4);
+        console_printf((char *)queued_format, pad_read_buttons(0), pad_port0_held, pad_port0_pressed, pad_port0_repeated);
     }
 }

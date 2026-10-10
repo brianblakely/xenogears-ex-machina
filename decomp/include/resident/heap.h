@@ -26,49 +26,49 @@ typedef struct DelayedFree {
     s32 frames;
 } DelayedFree;
 
-extern void (*D_800592B8)(char *line); /* heap report output */
+extern void (*heap_report_output)(char *line); /* heap report output */
 
 /* Heap blocks (0x80031894-0x80032e7c). */
-s32 func_80031894(u8 *data);
-s32 func_800318A8(u8 *data);
-u32 func_800318BC(u8 *data);
-s32 func_800318DC(u8 *data);
-void func_800318F0(void);
-s32 func_800318F8(char *name);
-void func_80031A30(void);
-void func_80031A68(HeapHeader *first, u8 *end);
-void func_80031B10(HeapHeader *first);
-s32 func_80031B9C(void);
-void func_80031BA8(s32 tag);
-s32 func_80031BB4(s32 quiet);
-void func_80031BC4(s32 *caller, s32 *size);
-void *func_80031BDC(s32 size, s32 mode); /* allocate `size` bytes */
-HeapHeader *func_80031F70(u8 *data, s32 size);
-void func_80031FF8(void);
-void func_800320A4(void *data); /* keep the block across heap restarts */
-void func_800320B8(void *data); /* stop keeping the block */
-void func_800320D0(void *data);
-s32 func_800320E8(void *data);  /* release a block */
-void func_8003223C(void);
-void func_800322B4(void);
-s32 func_80032340(void);
-s32 func_800323B4(void);
-u32 func_80032404(void);
-void func_80032498(s32 tag, char **names);
-void func_800324C4(u32 address, char *out);
-void func_8003278C(s32 mode, s32 skip, s32 count, s32 flags);
-void *func_80032B0C(s32 size);
-void *func_80032B64(s32 count, s32 size);
-void func_80032BAC(void *data);
+s32 heap_get_block_size(u8 *data);
+s32 heap_get_block_tag(u8 *data);
+u32 heap_get_block_caller(u8 *data);
+s32 heap_is_block_protected(u8 *data);
+void heap_empty_entry(void);
+s32 heap_load_host_symbols(char *name);
+void heap_reset_defaults(void);
+void heap_init(HeapHeader *first, u8 *end);
+void heap_move_start(HeapHeader *first);
+s32 heap_get_owner_tag(void);
+void heap_set_owner_tag(s32 tag);
+s32 heap_set_quiet_failures(s32 quiet);
+void heap_get_last_request(s32 *caller, s32 *size);
+void *heap_alloc(s32 size, s32 mode); /* allocate `size` bytes */
+HeapHeader *heap_shrink_block(u8 *data, s32 size);
+void heap_coalesce(void);
+void heap_protect_block(void *data); /* keep the block across heap restarts */
+void heap_unprotect_block(void *data); /* stop keeping the block */
+void heap_unprotect_block_copy(void *data);
+s32 heap_free(void *data);  /* release a block */
+void heap_free_all(void);
+void heap_force_free_all(void);
+s32 heap_get_free_total(void);
+s32 heap_walk_blocks(void);
+u32 heap_get_largest_free(void);
+void heap_select_owner_tag(s32 tag, char **names);
+void heap_find_symbol_name(u32 address, char *out);
+void heap_print_report(s32 mode, s32 skip, s32 count, s32 flags);
+void *heap_alloc_sound_block(s32 size);
+void *heap_fake_calloc(s32 count, s32 size);
+void heap_force_free(void *data);
 /* Original calls pass the format alone or one argument word. The shim
  * forwards incoming a1 to sprintf; preserve this C89 unspecified arity. */
-void func_80032BDC();
-void func_80032C18(void *data, s32 frames);
-void func_80032CB8(void);
-void func_80032D60(void);
-void func_80032DCC(char *line);
-void func_80032E04(char *name);
-extern void *D_800594AC; /* the reservation below the heap marker */
-extern void *D_80059480; /* the heap marker for the high-memory reservation */
+void heap_report_printf();
+void heap_delay_free(void *data, s32 frames);
+void heap_update_delayed_frees(void);
+void heap_flush_delayed_frees(void);
+void heap_write_report_line(char *line);
+void heap_write_report_file(char *name);
+extern void *mode_battle_heap_reservation; /* the reservation below the heap marker */
+extern void *mode_battle_heap_marker; /* the heap marker for the high-memory reservation */
 
 #endif

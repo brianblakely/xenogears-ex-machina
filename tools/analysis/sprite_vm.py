@@ -184,8 +184,8 @@ def advance_sprite_timer(
 # The command language, read from the recovered handlers in decomp/src
 # ---------------------------------------------------------------------------
 
-FIELD = "field"  # resident 800248d4 (D_800591AD clear: field, world map, other modes)
-BATTLE = "battle"  # 800c11cc, which 800248d4 calls while D_800591AD is set (battle)
+FIELD = "field"  # resident 800248d4 (sprite_in_battle clear: field, world map, other modes)
+BATTLE = "battle"  # 800c11cc, which 800248d4 calls while sprite_in_battle is set (battle)
 DIALECTS = (FIELD, BATTLE)
 INTERPRETERS = {FIELD: "800248d4", BATTLE: "800c11cc"}
 
@@ -231,11 +231,11 @@ class Spec:
 
 
 def table_width(opcode: int) -> int:
-    """D_8004FCC0[opcode - 0x80], the length of command 80-ff (resident data).
+    """sprite_vm_command_lengths[opcode - 0x80], the length of command 80-ff (resident data).
 
     The interpreters add it to the script pointer after every handler that
-    keeps the pointer (the battle copy indexes the same bytes as D_8004FC40).
-    A test checks it against the C table in sprite_80022090.c; the sweep checks
+    keeps the pointer (the battle copy indexes the same bytes as sprite_vm_command_lengths_by_opcode).
+    A test checks it against the C table in sprite_construction.c; the sweep checks
     it against each disc's resident executable.
     """
     if not 0x80 <= opcode <= 0xFF:
@@ -986,16 +986,16 @@ def unlisted_headers(view: bytes, block: ResourceBlock, listing: Listing) -> tup
 
 ROOT = Path(__file__).resolve().parents[2]
 RESIDENT_BASE = 0x80010000 - 0x800  # file offset of an address in the boot executable
-WIDTH_TABLE = 0x8004FCC0  # D_8004FCC0, the lengths of commands 80-ff
+WIDTH_TABLE = 0x8004FCC0  # sprite_vm_command_lengths, the lengths of commands 80-ff
 FIELD_ARCHIVES = {1: 606, 2: 601}  # slot of field 0's archive (verify_field.load_sources)
 FIELD_MAPS = 730
 FIELD_SPRITE_COMPONENT = 3  # the sprite bundle (field_load.cpp adopt_loaded_field)
 FIELD_HEADER = 0x154
-# Directory groups (func_80028470 group + index) the battle overlay reads its
+# Directory groups (cd_select_directory group + index) the battle overlay reads its
 # files from: 0c+0 battle_mode.c, 0c+1 ovl2615 (enemy sets), 0c+2
 # battle_800B7134, 10+0/2 battle_80070E2C, 20+0/2/3 battle.c, 28+0/1/2
 # battle_8009E53C, 2c+0/1 battle_800B8098 and ovl2615 battle_loader.c. Their
-# sprites run while D_800591AD is set (battle 800B8840 to 800B8774); all
+# sprites run while sprite_in_battle is set (battle 800B8840 to 800B8774); all
 # other data runs under 800248d4 itself.
 BATTLE_DIRECTORIES = frozenset({12, 13, 14, 16, 18, 32, 34, 35, 40, 41, 42, 44, 45})
 
@@ -1008,7 +1008,7 @@ class View:
 
 
 def directory_starts(raw_track: Path) -> list[tuple[int, int]]:
-    """(first slot, directory) pairs from sector 40 (D_8004FDF4, 1-based)."""
+    """(first slot, directory) pairs from sector 40 (cd_directory_table, 1-based)."""
     with raw_track.open("rb") as stream:
         stream.seek(40 * 2352 + 24)
         sector = stream.read(122)

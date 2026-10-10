@@ -22,7 +22,7 @@ typedef struct {
 extern SlotPulse *D_800C3748;
 
 /* A highlighted slot's ring (0x68 bytes): a task and a draw task, drawn
- * from object 0 of the resident TMD model D_8001C76C with double-buffered
+ * from object 0 of the resident TMD model model_slot_ring_tmd with double-buffered
  * packets. */
 typedef struct {
     Task task;            /* 0x00 */

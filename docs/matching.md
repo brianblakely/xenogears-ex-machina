@@ -38,7 +38,7 @@ code unit's version is the one that alone reproduces some of its functions
 omits its empty 8-byte frame). Rebuilt under each pinned cc1, 79 of the 106 C
 units match only under their own. Three small code units build identical objects
 under 2.6.3 and 2.7.2 and follow a neighbour (resident battle_mode and
-heap_80032DCC, debug2611 pages; their .mk comments say which). The 24 data-only
+heap_host_report, debug2611 pages; their .mk comments say which). The 24 data-only
 or INCLUDE_ASM-only units (overlay numbers, commons, the resident header, settings
 and SDK units) are identical under all three, so their setting is immaterial.
 Targets set `CC_VERSION`; `CC_<file> := 2.7.2` overrides. ASPSX below 2.50 expands
@@ -139,7 +139,7 @@ The link reads splat's `undefined_syms_auto.txt` and `undefined_funcs_auto.txt` 
 `PROVIDE` (decomp/Makefile): an address splat gave a name defines it only where no
 linked object defines it, so an object's own definition stands (GNU ld lets a plain
 script assignment win silently and makes the name absolute; 63 names were so bound
-before, the resident's D_800308D0 among them). The resident pads its file to the
+before, the resident's model_envmap_patch_base among them). The resident pads its file to the
 link's `__exe_file_size` (`PAD_TO_SYMBOL`), the sectors its header declares.
 
 `verify` then fails on each name a linker script defines (a used `PROVIDE`, a
@@ -161,7 +161,7 @@ commons that the units, CDK ones too, address by names of their own, and the tim
 reload and combo step tables from before them), the resident's (`link.ld`, 8: the
 window colour's green and blue bytes, the CD mix bytes and a base for the name
 slots' second bytes, which compile differently as members, the BSS's last word
-D_8006FAEC from the link's BSS end, for the entry point and the mode table, and `_gp`
+boot_bss_last_word from the link's BSS end, for the entry point and the mode table, and `_gp`
 from the start of the small data, where the original's 80059170 lies),
 the menu's (`menu.bss.ld`: the opponent's command byte D_80099DA2, which
 func_8008F280 loads absolutely at each of its three reads) and the world map's
@@ -184,7 +184,7 @@ any other, the authored (handwritten) assembly's too, only by a
 a class's range and must cover a reported word. No target needs one. Each resident's
 21 such words lie in its asset ranges (its disc file index, the packed boot logo and
 console font), and the mode table's overlay entries and BSS bounds (main.c
-D_8001808C) are other images' addresses, past the resident's BSS end 8006faf0; its
+mode_table) are other images' addresses, past the resident's BSS end 8006faf0; its
 own entries there carry relocations. The one such address in the 26 links was mdec's:
 splat had emitted DecDCTvlcSize2 (801d5030, VLC_C.OBJ) as raw words after its
 object's leading decode-call limit, so its `lui`/`addiu` of that word carried none.
@@ -204,7 +204,7 @@ other target that defines the name defines it there, each that exports it wherev
 the copied value points and one holding the value also by a local symbol (2318 of
 2376 at present); where none does, a fragment may give it as a view, another name
 plus a constant that agrees by name, and the value must lie in the object holding
-that name in its definer (4: battle's game data member `D_8006F364 = D_8006D634 +
+that name in its definer (4: battle's game data member `game_data_party_state = game_data +
 0x1D30` and debug595's three camera vectors of the field view D_800AF880);
 otherwise a target holding the value has a symbol there (none: the movie library's
 entries and variable that field and movie use, the battle functions ovl3087 passes
@@ -222,12 +222,12 @@ address the C spells as a number, which neither this check nor the relocation sc
 `python3 tools/cross_image.py decomp/targets/*/*.mk --numbers` lists those (each
 other target's address a link holds without a relocation, outside asset and
 included bytes and the mode table); in the 26 links they are battle's three reads of
-the boot word D_80010000 (battle_800B3F04.c func_800B3F04 sprite commands 0x44/0x45,
+the boot word mode_disc_mode (battle_800B3F04.c func_800B3F04 sprite commands 0x44/0x45,
 battle_800BFE48.c func_800C0FAC), a number in the original too: its CDK units load
 it with one register (`lui v1,0x8001; lw v1,0(v1)` at 800b44b8), while by name they
-compile `lui v0,%hi(D_80010000); lw v1,%lo(D_80010000)(v0)` and the battle link
+compile `lui v0,%hi(mode_disc_mode); lw v1,%lo(mode_disc_mode)(v0)` and the battle link
 fails its BSS bounds; and the load addresses of overlays and the heap's end
-(resident main.c:87, main_8001B6C4.c:189/437/445; battle_80070E2C.c:323/386/399/500,
+(resident main.c:87, mode_battle_and_menu.c:189/437/445; battle_80070E2C.c:323/386/399/500,
 battle_800BD3AC.c:765; field.c:2906), which no check ties to the images loaded
 there. In data the only such words are the mode table's, compared below, and five
 in each resident's packed boot logo and console font, asset bytes that merely look
@@ -235,11 +235,11 @@ like addresses. It also compares each resident's mode table (`MODE_TABLE`) with 
 mode overlays (`MODE`, `MODE_ENTRY` in field 1, world map 3, menu 4 and movie 6;
 battle's mode 2 enters resident code and declares only `MODE`): the entry must be the
 overlay's entry symbol, and the words after bss_start through bss_end, which the
-dispatcher clears (func_80019560), must be the overlay's linked .sbss/.bss. The check
+dispatcher clears (boot_clear_bss_range), must be the overlay's linked .sbss/.bss. The check
 found one resident byte that other images use outside every object: the arena bout's
 outcome at 80050622, which the menu writes and a field event reads, lay in the
-alignment fill after D_8005061C[6]; main2_800366E0.c now defines it (D_80050622),
-whether apart or as part of D_8005061C left open.
+alignment fill after mode_arena_task_parameters[6]; console_and_sound_driver.c now defines it (mode_arena_bout_outcome),
+whether apart or as part of mode_arena_task_parameters left open.
 
 ```sh
 # the user's CHD images to raw MODE2/2352 tracks (and likewise disc 2); chdman
@@ -339,7 +339,7 @@ small headers beside the source; what several targets share has one definition i
 `decomp/include`: `psyq/` (the SDK's types, prototypes and macros, the inline GTE
 ones in `inline_c.h`; members no library signature names under the PsyQ name their
 callers give them, else their library's prefix, `libgte_rotate_vector`), `resident/` (one header per resident subsystem with its types, variables and
-calls; `gamedata.h` holds the game data D_8006D634), `battle/` (one header per
+calls; `gamedata.h` holds the game data game_data), `battle/` (one header per
 battle overlay subsystem whose types, variables or calls its modules and overlays
 use, with the battle area D_800C3EB0 and its work area D_800CCCE8; each function
 sits in the header of the subsystem that defines it; also the screen burst that
@@ -363,7 +363,7 @@ target declares with another qualifier (the vertical blank count, volatile in th
 mode 4 menu), and a target keeps its own view of an object whose members its code
 reads with other types (ovl2615 reads the scene data's positions unsigned); a second
 declaration of one object takes its assembler name (the world map's sequence header
-over D_80062648, whose address cse would otherwise keep from the copy before it). A
+over mode_music_buffer, whose address cse would otherwise keep from the copy before it). A
 shared header's `extern` sets the order of the defining unit's tentative
 definitions, so that unit defines them ahead of the header (ovl2143.c's state before
 `ovl2143/actors.h`, as the commons units do). A unit declares what only it uses
@@ -570,9 +570,9 @@ every placeholder (7797 rows, 390 files) kept all 26 images, cross-image and cov
   its reader. Never commit their bytes as C initializers. Media is image, glyph,
   sound and model data in a format that a generic loader or renderer of the game
   parses for whichever file supplies it (LZSS-packed data, TIM images, the font
-  block's 22-byte glyphs of eleven 12-bit rows that `func_80034FFC` draws, seds/wds
+  block's 22-byte glyphs of eleven 12-bit rows that `text_draw_glyph` draws, seds/wds
   banks, TMD and SpriteModel models), also where the code picks one record itself
-  (the resident's glyph `D_800501D0`, which `func_80034FFC` draws for the character
+  (the resident's glyph `text_special_glyph_rows`, which `text_draw_glyph` draws for the character
   pair 0xFF 0xFF); a bare palette the code uploads is source where the code builds
   or rewrites it before the upload, where it decodes pixel values the code writes
   or computes, or where it is a formula's ramp, and otherwise media, the colours of
@@ -605,13 +605,13 @@ every placeholder (7797 rows, 390 files) kept all 26 images, cross-image and cov
   1,020 named objects, 565 of them not scalars) followed each object into its
   readers: the calls it reaches itself or through a local pointer set from it, the
   other values that pointer takes, and where its address is stored. It found one
-  more asset, the glyph `D_800501D0` (22 bytes), which `func_80034FFC` takes in
+  more asset, the glyph `text_special_glyph_rows` (22 bytes), which `text_draw_glyph` takes in
   place of a 22-byte record of the loaded font. No other object reaches a media
   reader as the data it parses (they give it file numbers, sound and character
   codes, VRAM places, draw modes, colours or a destination), except the four
   palettes below. None remains: the others are lookups by a key the code computes,
   also where an end value closes them (the picture table `D_800AF47C` searched by
-  map, the battle modes' sound programs `D_8004F388`, the gear shop lamps' frames
+  map, the battle modes' sound programs `mode_battle_sound_programs`, the gear shop lamps' frames
   `D_801D6FE0` on the code's timing), lists one call processes whole (the battle
   panel glyph sets ended by 0xFFFF, the world map's object links `D_8009AFA0`),
   geometry the code interpolates or steps through on its own count (the world
@@ -620,11 +620,11 @@ every placeholder (7797 rows, 390 files) kept all 26 images, cross-image and cov
   waypoints, whose counts `func_8008E76C` fixes, never reading their -1 ends),
   texture layouts (the menu font's glyph rectangles `D_80091230`), and masks and
   thresholds. The four bare palettes passed to LoadImage are source: the text
-  palette `D_80050190` decodes the 2-bit codes `func_80034FFC` writes into either
+  palette `text_palette` decodes the 2-bit codes `text_draw_glyph` writes into either
   half of each 4-bit pixel (1 the glyph, 2 its outline), entry i of its first CLUT
   being the colour of code i & 3 and of its second that of code i >> 2, and
-  `func_80032F54` gives each line the CLUT of its plane; `func_80036E4C` rebuilds
-  all 64 entries of the console font CLUTs `D_80050598` before their only upload;
+  `window_open` gives each line the CLUT of its plane; `console_load_font_cluts` rebuilds
+  all 64 entries of the console font CLUTs `console_font_cluts` before their only upload;
   the gauge palette `D_80091814` is the grey ramp 0x8000 | 0x421 * i (i = 1..14,
   opaque black at 0 and 15); and menu7's glow ramp `D_80091CE0` colours the heat
   values `func_8008E120` computes, with bit 15 set on every entry by
@@ -772,7 +772,7 @@ converted to C per unit. What converting the targets' `.data` established:
   touches (`wide`), or whose string holds bytes after its terminator (`string`).
   It reports `2301 C data objects, 244 to review; objects per flag: tail 209, tail read 8,
   unref 42` (222 distinct, 195 with a tail and 33 unreferenced; the second executable
-  repeats the resident's; the resident's zero byte D_80050622 is an object in each
+  repeats the resident's; the resident's zero byte mode_arena_bout_outcome is an object in each
   executable and is not flagged), each reviewed against its readers. None other
   spells stray fill: the tails are read (masks `& 7` and `& 3`, the frame counts 0x10,
   the count passed with each label list, the 18-, 7- and 16-entry glyph label loops
@@ -784,7 +784,7 @@ converted to C per unit. What converting the targets' `.data` established:
   separators by AP and list size (D_800C31EC, D_800C3214: each row holds one value
   more than the row before), the field compass grid's (rows 4-8 alike or stepping
   on), the menu wheel's offsets (the second row's slide -0x24 mirrors the first's)
-  and the resident's sound programs per battle mode (D_8004F388, 0xff absent as for
+  and the resident's sound programs per battle mode (mode_battle_sound_programs, 0xff absent as for
   modes 0 and 4); and the last members of whole records, battle's 26 command panel
   pages D_800C2F98-D_800C2FFC (the lists each fills, 0xff none, and their glyph
   sets, read through D_800C3000) and sound banks D_800C35DC, the field's panel
@@ -940,9 +940,9 @@ converted to C per unit. What converting the targets' `.data` established:
   at the next word, and 800B8098's SVECTORs lie at 4 mod 8. Any other version
   rejects a sub-word object (decomp/Makefile); no target or unit setting selects a
   slot rule. Variables that share a word are therefore one object, also in the
-  resident's `.bss`: the sprite position D_800592E8 is a DVECTOR. The window colour
-  D_800594D4, the overlays' `u8[3]` (a common of common_80059404.c), is declared a
-  `u8` in main_8001B6C4.c, which writes the other two bytes through `link.ld` names:
+  resident's `.bss`: the sprite position sprite_image_list_position is a DVECTOR. The window colour
+  window_color, the overlays' `u8[3]` (a common of commons_small.c), is declared a
+  `u8` in mode_battle_and_menu.c, which writes the other two bytes through `link.ld` names:
   ASPSX 2.34 addressed a common at an offset absolutely (maspsx models it), but GNU
   as moves a small common's offset accesses to `$gp`.
 - A unit's own variables come first, in unit order, as statics where the commons
@@ -965,12 +965,12 @@ converted to C per unit. What converting the targets' `.data` established:
   defines them ahead of the headers that declare them, structures by their tag: GCC
   2.6.3 lays out such a tentative definition once a header completes the type.
   Functions on both sides of a supposed unit boundary that read the same statics
-  are one unit: the resident's main_8002709C.c runs from 8002709C to 8002C3E8.
+  are one unit: the resident's cd_reads_and_streams.c runs from 8002709C to 8002C3E8.
   One declaration then serves every user, which leaves one accepted compromise
-  there: the CD mode byte D_80059F18 is a `u8` (80028f30's tests match only with a
+  there: the CD mode byte cd_setmode_parameter is a `u8` (80028f30's tests match only with a
   scalar; a `u8[4]`, a union or a word read bytewise keep its address in a
   register), while 80029690 and 8002a428 clear and pass all four bytes of the
-  CdlSetmode parameter in its word slot through `&D_80059F18 + 3`.
+  CdlSetmode parameter in its word slot through `&cd_setmode_parameter + 3`.
   Zeros a packer added past the program are file padding (Compressed containers).
 - Code shows where an object starts and how far it reaches. A member at a nonzero
   offset is addressed through a pseudo holding `sym+off`, which cse reuses and relates
@@ -1006,17 +1006,17 @@ converted to C per unit. What converting the targets' `.data` established:
   same four parts, the PsyQ libraries' statics after the game units' own and their
   commons among the game's: every unit's variables of up to 8 bytes in link order
   (800592bc-800593a4: the `-G8` units' `.sbss` and, by `SBSS_<file> := 8`, that of
-  the GCC 2.7.2 `-G0` units main, main_8002C3E8, main2 and main2_800366E0), the
-  libraries' small statics, the small commons (common_80059404.c), every unit's
-  larger variables (800595e8-8005a1fc; the GCC 2.6.3 unit main_8002709C keeps all
+  the GCC 2.7.2 `-G0` units main, model_renderer, main2 and console_and_sound_driver), the
+  libraries' small statics, the small commons (commons_small.c), every unit's
+  larger variables (800595e8-8005a1fc; the GCC 2.6.3 unit cd_reads_and_streams keeps all
   its statics there in declaration order), the libraries' other statics, and the
-  other commons (common_8005A39C.c to common_8006D634.c; GameData D_8006D634 with
+  other commons (commons_before_libspu.c to commons_after_libgpu.c; GameData game_data with
   its full 0x2358 bytes). Each unit defines its own as statics. Where nothing
   addresses the end of a `-G0` unit's larger object, a word of its own would be
   small and lie in the unit's `.sbss`, so the object reaches to the next one (the
-  number codes D_8005A0C8[14], the stage file list D_8005A1DC[4]). The SPU malloc
-  table D_8006FAC8, 8 * (4 + 1) bytes, ends the BSS; link.ld names its last word
-  D_8006FAEC from the BSS end for the entry point and the mode table and asserts
+  number codes text_number_codes[14], the stage file list mode_battle_stage_file_list[4]). The SPU malloc
+  table sound_spu_malloc_table, 8 * (4 + 1) bytes, ends the BSS; link.ld names its last word
+  boot_bss_last_word from the BSS end for the entry point and the mode table and asserts
   the span.
 - GCC writes a `-G8` unit's data, commons and `.extern`s ahead of its code, also a
   definition placed after its use: `extern int late_var; int g(void) { return

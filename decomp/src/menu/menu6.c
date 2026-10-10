@@ -30,7 +30,7 @@ static s32 D_800927F0;
 static s32 D_800927F4;
 static s32 D_800927F8[2]; /* unreferenced */
 
-/* The mode's tasks, indexed by the resident mode word D_80050618; the only
+/* The mode's tasks, indexed by the resident mode word mode_arena_task; the only
  * entry is the menu task. The table is stored in .text, ahead of the code. */
 void (*D_80088BFC[])(s32) __attribute__((section(".text"))) = { func_800852C4 };
 
@@ -94,7 +94,7 @@ ListEntry D_80091964[49] = {
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu6", D_800705F0);
 
-/* Names of the menu's heap block kinds (owner tag 6, func_80032498); their
+/* Names of the menu's heap block kinds (owner tag 6, heap_select_owner_tag); their
  * literals follow "ply_01", also last to first. */
 char *D_80091BB0[] = {
     "", "OBJECT", "CAMEPOS", "TASK", "ROOT", "SHPRIM", "SHROOT", "SHADOW", "ELEM",
@@ -110,7 +110,7 @@ void func_80088C00(void) {
 /* Debug counter: pad bits 0x4/0x1 step it up/down (not below zero), then
  * print it. */
 void func_80088C28(void) {
-    u16 pad = D_80059570;
+    u16 pad = pad_port0_held;
 
     if (pad & 4) {
         D_800927F4++;
@@ -121,7 +121,7 @@ void func_80088C28(void) {
     if (D_800927F4 < 0) {
         D_800927F4 = 0;
     }
-    func_8003278C(1, D_800927F4, 10, 0x80AD);
+    heap_print_report(1, D_800927F4, 10, 0x80AD);
 }
 
 /* Set up the given window record's defaults. */
@@ -141,12 +141,12 @@ void func_80088D1C(void) {
 
     DrawSyncCallback(func_80088C00);
     InitGeom();
-    func_80032498(6, D_80091BB0);
-    func_80028470(0x30, 0);
-    func_800374E8(4, 2, 0x138, 0xDA, 0x14, 1, 0x3C0, 0x1F0, 0x3C0, 0x1EF, 0);
+    heap_select_owner_tag(6, D_80091BB0);
+    cd_select_directory(0x30, 0);
+    console_open(4, 2, 0x138, 0xDA, 0x14, 1, 0x3C0, 0x1F0, 0x3C0, 0x1EF, 0);
     func_80088CBC(0);
     func_80088CBC(1);
-    switch (D_80010000) {
+    switch (mode_disc_mode) {
     case -1:
         D_800928CC = 2;
         break;
@@ -187,11 +187,11 @@ void func_80088E90(void) {
     u8 index;
 
     func_80088D1C();
-    task = func_8008BA2C(D_80088BFC[D_80050618], 0, (u32 *)0x801FE000, 0x400);
-    D_80059488;
+    task = func_8008BA2C(D_80088BFC[mode_arena_task], 0, (u32 *)0x801FE000, 0x400);
+    pad_vblank_count;
 frame:
-    D_800595C0 = 0;
-    D_80059578 = 0;
+    model_submitted_primitive_count = 0;
+    model_drawn_primitive_count = 0;
     /* Keep the byte written to the draw-buffer selector for this frame. */
     index = D_800928A0 = (D_800928E8 + 1) & 1;
     D_80092870 = &D_8009A0D8[D_800928E8 & 1];
@@ -199,34 +199,34 @@ frame:
     D_80092868 = &D_8009A0D8[index];
     D_80092938 = &D_80092868->ot;
     disp = D_80092868->disp;
-    func_80019CA0();
+    boot_check_soft_reset();
     TermPrim(D_80092938);
     if ((D_800928D0 & 0x10) && D_80092930 != NULL) {
         D_80092930(D_80092938);
     }
-    func_80037324((u_long *)D_80092938);
+    console_flush((u_long *)D_80092938);
     func_8008BB3C(task);
     func_8008EADC();
-    func_80032CB8();
+    heap_update_delayed_frees();
     if (D_80092920 & 1) {
         AddPrim(D_80092938, &D_80092868->background);
     }
     load = VSync(1);
-    fps = 60 / (u32)(D_80059488 - last);
-    last = D_80059488;
+    fps = 60 / (u32)(pad_vblank_count - last);
+    last = pad_vblank_count;
     if (D_800928D0 & 8) {
         func_80088C28();
     }
     if (D_800928D0 & 1) {
-        func_8003700C("POLYGON:%4d/%4d\n", D_80059578, D_800595C0);
+        console_printf("POLYGON:%4d/%4d\n", model_drawn_primitive_count, model_submitted_primitive_count);
     }
     if (D_800928D0 & 2) {
-        func_8003700C("CPU/GPU:%4d/%3d\n", load, D_800927F0);
+        console_printf("CPU/GPU:%4d/%3d\n", load, D_800927F0);
     }
     if (D_800928D0 & 4) {
-        func_8003700C(D_800706D4, fps);
+        console_printf(D_800706D4, fps);
     }
-    func_80036DC8(0xFF, 0xFF, 0xFF);
+    console_set_color(0xFF, 0xFF, 0xFF);
     func_8008ACB8(D_80092898);
     VSync(D_80092898);
     func_8008AC8C();

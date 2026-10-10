@@ -59,10 +59,10 @@ void func_8007954C(s32 kind);  /* leave the field for another mode */
 void func_800A2714(void);      /* reload the actors' extra blocks after a return */
 void func_800931F8(void);      /* empty; the map-change events call it */
 void func_800A24C4(void);      /* after a return to the field */
-void func_800A28D4(void);      /* rebuild the actors after a return (D_8004F30C set) */
+void func_800A28D4(void);      /* rebuild the actors after a return (mode_field_return_pending set) */
 
 /* The field state the field writes to the resident's snapshot block
- * (D_8005A4E4) when it leaves (800a3f4c) and reads back on return
+ * (mode_snapshot_block) when it leaves (800a3f4c) and reads back on return
  * (800a3474), through a cursor. */
 extern u8 *D_800AFC50;         /* the snapshot cursor */
 void func_800A3474(void);      /* read it back (the write, func_800A3F4C, is in

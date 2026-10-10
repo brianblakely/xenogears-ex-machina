@@ -163,7 +163,7 @@ void func_8006FDEC(s16 *record) {
     long flag;
 
     func_80073750(&D_800AF880.previous_view, &D_800AF880.eye, &D_800AF880.target, &D_800AF880.up);
-    func_8003F738(&D_800AF880.world_angles, &D_800AF880.scaled_world);
+    gpu_build_rotation_matrix(&D_800AF880.world_angles, &D_800AF880.scaled_world);
     MulMatrix2(&D_800AF880.previous_view, &D_800AF880.scaled_world);
 
     D_800AF880.lights[0].vx = *record++;
@@ -174,7 +174,7 @@ void func_8006FDEC(s16 *record) {
     D_800AF880.lights[0].g = *record++ << 3;
     D_800AF880.lights[0].b = *record << 3;
     record += 2;
-    func_80030A30(0, &D_800AF880.lights[0]);
+    model_set_light(0, &D_800AF880.lights[0]);
 
     D_800AF880.lights[1].vx = *record++;
     D_800AF880.lights[1].vy = *record++;
@@ -184,7 +184,7 @@ void func_8006FDEC(s16 *record) {
     D_800AF880.lights[1].g = *record++ << 3;
     D_800AF880.lights[1].b = *record << 3;
     record += 2;
-    func_80030A30(1, &D_800AF880.lights[1]);
+    model_set_light(1, &D_800AF880.lights[1]);
 
     D_800AF880.lights[2].vx = *record++;
     D_800AF880.lights[2].vy = *record++;
@@ -196,7 +196,7 @@ void func_8006FDEC(s16 *record) {
     D_800AF880.lights[1] = D_800AF880.lights[0];
     D_800AF880.lights[2] = D_800AF880.lights[0];
     record += 2;
-    func_80030A30(2, &D_800AF880.lights[2]);
+    model_set_light(2, &D_800AF880.lights[2]);
 
     D_800AF880.back_color[0] = record[0] << 4;
     D_800AF880.back_color[1] = record[1] << 4;
@@ -204,14 +204,14 @@ void func_8006FDEC(s16 *record) {
     SetRotMatrix(&D_800AF880.previous_view);
     SetTransMatrix(&D_800AF880.previous_view);
     RotTrans(&D_800AF880.anchor, (VECTOR *)D_800AF880.scaled_world.t, &flag);
-    func_80030B14(&D_800AF880.scaled_world);
+    model_load_light_matrix(&D_800AF880.scaled_world);
     SetRotMatrix(&D_800AF880.scaled_world);
     SetTransMatrix(&D_800AF880.scaled_world);
 }
 
 /* Decode compressed `source` data into `destination`. */
 void func_8007008C(s32 unused, void *source, void *destination) {
-    func_80032EB4(source, destination);
+    text_unpack_lzss(source, destination);
 }
 
 /* Tear the field down: reset the GPU, flush both draw buffers, then release
@@ -224,16 +224,16 @@ void func_800700B0(void) {
     s32 *module_loaded;
 
     ResetGraph(1);
-    func_8001C8DC();
+    task_destroy_all();
     for (i = 0; i < 2;) {
-        func_80025044();
+        sprite_queue_run_uploads();
         DrawSync(0);
         next = i + 1;
-        func_800250E0((D_800ADB08 + next) & 1);
+        sprite_queue_start_fill((D_800ADB08 + next) & 1);
         i = next;
-        func_80025044();
+        sprite_queue_run_uploads();
         DrawSync(0);
-        func_80024FB8();
+        sprite_free_queues();
     }
 
     for (i = 0; i < D_800AF880.components.descriptor_count; i++) {
@@ -241,39 +241,39 @@ void func_800700B0(void) {
         if (!(D_800AF880.components.descriptors[i].flags & 0x40)) {
             instance = D_800AF880.components.descriptors[i].instance;
             if (D_800AF880.components.descriptors[i].flags & 0x2000) {
-                func_800306D0(instance->anims);
+                model_stop_morph(instance->anims);
             }
-            func_8002CBBC((ModelBuffer *)instance->mesh);
-            func_800320E8(instance->packets[0]);
-            func_800320E8(D_800AF880.components.descriptors[i].instance);
+            model_free_owned_block((ModelBuffer *)instance->mesh);
+            heap_free(instance->packets[0]);
+            heap_free(D_800AF880.components.descriptors[i].instance);
         }
     }
     func_800A47D4();
-    func_800320E8(D_800AF880.components.descriptors);
-    func_800320E8(D_800ADBF4);
-    func_800320E8(D_800ADBF0);
-    func_800320E8(D_800ADBF8);
-    func_800320E8(D_800AF880.components.collision);
-    func_800320E8(D_800AF880.components.geometry);
-    func_800320E8(D_800AF880.components.sprites);
+    heap_free(D_800AF880.components.descriptors);
+    heap_free(D_800ADBF4);
+    heap_free(D_800ADBF0);
+    heap_free(D_800ADBF8);
+    heap_free(D_800AF880.components.collision);
+    heap_free(D_800AF880.components.geometry);
+    heap_free(D_800AF880.components.sprites);
     if (D_800B0080.enabled != 0) {
-        func_80027D40(D_800B007C);
+        gpu_free_panorama(D_800B007C);
     }
     for (i = 0; i < D_800AFEA8.count; i++) {
-        func_8002800C(D_800AFEA8.scrolls[i]);
-        func_800320E8(D_800AFEA8.buffers[i]);
-        func_800320E8(D_800AFEA8.scrolls[i]);
+        gpu_free_texture_scroll(D_800AFEA8.scrolls[i]);
+        heap_free(D_800AFEA8.buffers[i]);
+        heap_free(D_800AFEA8.scrolls[i]);
     }
-    func_8003748C();
+    console_close();
     module_loaded = &D_800B2078.unk2264;
     D_800AFEA8.count = 0;
     if (*module_loaded != 0) {
         func_801E7FD4();
-        func_800320E8(D_800ADB20);
+        heap_free(D_800ADB20);
         func_8007999C();
     }
     *module_loaded = 0;
-    func_8003218C(3);
+    heap_free_tag(3);
     func_800A83B4();
 }
 
@@ -313,17 +313,17 @@ void func_80070488(void) {
 
     if (D_800ADB60 == 0) {
         D_800ADB60 = 1;
-        D_800ADC14 = ring = func_8002A260(4, 1);
-        func_80029EB0((D_8004F34C & 0xFFF) * 2 + 0xB9, ring, 0, 0, 0, 0, 0, 0, 0, 0);
+        D_800ADC14 = ring = stream_create_ring(4, 1);
+        stream_start_image_load((mode_field_map_id & 0xFFF) * 2 + 0xB9, ring, 0, 0, 0, 0, 0, 0, 0, 0);
     }
 }
 
 /* Stop the field stream and release its ring, then continue with 80078c5c. */
 void func_80070508(void) {
     if (D_800ADB60 == 1) {
-        func_80028A60(0);
+        cd_sync_reads(0);
         DrawSync(0);
-        func_800320E8(D_800ADC14);
+        heap_free(D_800ADC14);
         D_800ADB60 = 0;
     }
     func_80078C5C();
@@ -343,7 +343,7 @@ void func_80070594(MATRIX *m) {
     angles.vx = 0;
     angles.vy = 0;
     angles.vz = 0;
-    func_8003F738(&angles, m);
+    gpu_build_rotation_matrix(&angles, m);
     m->t[2] = 0;
     m->t[1] = 0;
     m->t[0] = 0;
@@ -361,7 +361,7 @@ void func_800705DC(void) {
         func_8028125C();
     }
     func_80071F64(0, 0, 0x140, 0xE0);
-    func_80035DB0();
+    pad_clear_queue();
     D_800ADB00 = 0xFFFF;
     D_800AFE9C = 0;
     D_800AFEA0 = 0;
@@ -457,7 +457,7 @@ void func_800705DC(void) {
     angles.vx = 0;
     angles.vy = 0;
     angles.vz = 0;
-    func_8003F738(&angles, &D_800B00E8);
+    gpu_build_rotation_matrix(&angles, &D_800B00E8);
     for (i = 0; i < 3; i++) {
         D_800B2078.emitter_descriptor[i] = -1;
     }
@@ -503,10 +503,10 @@ void func_800705DC(void) {
     D_800B2078.unk217C = 0;
     D_800B2078.sprite_gate = 0;
     D_800B2078.text_speed = 8;
-    if (D_8004F30C == 0) {
+    if (mode_field_return_pending == 0) {
         for (i = 0; i < 3; i++) {
-            D_8005A444[i] = 0xFF;
-            D_8006F990[i] = 0xFF;
+            mode_party_actors[i] = 0xFF;
+            mode_party_stand_in_actors[i] = 0xFF;
         }
     }
     for (i = 0; i < 32; i++) {
@@ -514,9 +514,9 @@ void func_800705DC(void) {
     }
     D_800B2078.unk229C = 0;
     D_800B2078.unk2298 = 0;
-    D_80050100 = 2;
+    model_ot_depth_shift = 2;
     for (i = 0; i < 0x200; i++) {
-        D_800C3A68[i] = D_8005A39C->vars[i];
+        D_800C3A68[i] = game_current_data->vars[i];
         D_800C3A68[i + 0x200] = 0;
     }
     SetGeomScreen(0x200);
@@ -531,7 +531,7 @@ void func_800705DC(void) {
     D_800AF880.anchor.vy = 0;
     D_800AF880.anchor.vz = 0;
     D_800AF880.scale = 0x3000;
-    func_8003F738(&D_800AF880.world_angles, &D_800AF880.scaled_world);
+    gpu_build_rotation_matrix(&D_800AF880.world_angles, &D_800AF880.scaled_world);
     D_800C426C = &D_800B249C[0];
     func_8007254C();
     func_80070C84();
@@ -554,7 +554,7 @@ void func_80070C84(void) {
 /* Load the field from the map bundle read ahead: reset the field state, take
  * the sprite slot table, build the compass quads, decode each component
  * (palettes, images, models, encounter set, events, zones, collision,
- * sprites) into heap blocks, the encounter set into D_800658DC, place the
+ * sprites) into heap blocks, the encounter set into formation_encounter_set, place the
  * view, create every descriptor's model instance and actor, then initialise
  * the event layer, the camera goals and the actors' facings.
  * One word pointer serves as the palette block and then walks the model
@@ -595,7 +595,7 @@ void func_80070CC8(void) {
     func_8007A5C4();
 
     size = BUNDLE_SIZE(BUNDLE_PALETTES) + 0x10;
-    data = func_80031BDC(size, 1);
+    data = heap_alloc(size, 1);
     func_8007008C(size, BUNDLE_COMPONENT(BUNDLE_PALETTES), data);
     entry = data;
     count = *entry;
@@ -605,7 +605,7 @@ void func_80070CC8(void) {
     }
 
     size = BUNDLE_SIZE(BUNDLE_IMAGES) + 0x10;
-    images = func_80031BDC(size, 0);
+    images = heap_alloc(size, 0);
     func_8007008C(size, BUNDLE_COMPONENT(BUNDLE_IMAGES), images);
     entry = images;
     count = *entry;
@@ -614,42 +614,42 @@ void func_80070CC8(void) {
         y = D_800B1F78.slot[i].y;
         entry++;
         if (D_800B1F78.slot[i].shared == 0) {
-            func_80022A70((void *)(*entry + (s32)images), x, y);
+            sprite_upload_images_side_by_side((void *)(*entry + (s32)images), x, y);
         }
     }
     DrawSync(0);
-    func_800320E8(data);
-    func_800320E8(images);
+    heap_free(data);
+    heap_free(images);
 
     size = BUNDLE_SIZE(BUNDLE_MODELS) + 0x10;
-    D_800AF880.components.geometry = func_80031BDC(size, 0);
+    D_800AF880.components.geometry = heap_alloc(size, 0);
     func_8007008C(size, BUNDLE_COMPONENT(BUNDLE_MODELS), D_800AF880.components.geometry);
     data = D_800AF880.components.geometry;
     for (i = 0; i < *D_800AF880.components.geometry; i++) {
         data++;
-        func_8002C3E8((void *)(*data + (s32)D_800AF880.components.geometry));
+        model_relocate_group((void *)(*data + (s32)D_800AF880.components.geometry));
     }
 
     func_8007008C(BUNDLE_SIZE(BUNDLE_ENCOUNTERS) + 0x10,
-                  BUNDLE_COMPONENT(BUNDLE_ENCOUNTERS), &D_800658DC);
+                  BUNDLE_COMPONENT(BUNDLE_ENCOUNTERS), &formation_encounter_set);
 
     size = BUNDLE_SIZE(BUNDLE_EVENTS) + 0x10;
-    D_800ADBF8 = func_80031BDC(size, 0);
+    D_800ADBF8 = heap_alloc(size, 0);
     func_8007008C(size, BUNDLE_COMPONENT(BUNDLE_EVENTS), D_800ADBF8);
     D_800ADBFC = D_800ADBF8->count;
     D_800ADC00 = (u8 *)D_800ADBF8->entries;
     D_800ADC00 += D_800ADBFC * 64;
 
     size = BUNDLE_SIZE(BUNDLE_ZONES) + 0x10;
-    D_800ADBF4 = func_80031BDC(size, 0);
+    D_800ADBF4 = heap_alloc(size, 0);
     func_8007008C(size, BUNDLE_COMPONENT(BUNDLE_ZONES), D_800ADBF4);
 
     size = BUNDLE_SIZE(BUNDLE_MESSAGES) + 0x10;
-    D_800ADBF0 = func_80031BDC(size, 0);
+    D_800ADBF0 = heap_alloc(size, 0);
     func_8007008C(size, BUNDLE_COMPONENT(BUNDLE_MESSAGES), D_800ADBF0);
 
     size = BUNDLE_SIZE(BUNDLE_COLLISION) + 0x10;
-    D_800AF880.components.collision = func_80031BDC(size, 0);
+    D_800AF880.components.collision = heap_alloc(size, 0);
     func_8007008C(size, BUNDLE_COMPONENT(BUNDLE_COLLISION), D_800AF880.components.collision);
     D_800AF880.components.layer_count = *D_800AF880.components.collision;
     data = D_800AF880.components.collision;
@@ -666,7 +666,7 @@ void func_80070CC8(void) {
     D_800AFD10 = (Attribute *)D_800AF880.components.collision_triangles[0] - D_800AF880.components.collision_attributes;
 
     size = BUNDLE_SIZE(BUNDLE_SPRITES) + 0x10;
-    D_800AF880.components.sprites = func_80031BDC(size, 0);
+    D_800AF880.components.sprites = heap_alloc(size, 0);
     func_8007008C(size, BUNDLE_COMPONENT(BUNDLE_SPRITES), D_800AF880.components.sprites);
 
     D_800AF880.bounds[0] = 1;
@@ -678,7 +678,7 @@ void func_80070CC8(void) {
     count = FIELD_BUNDLE->descriptor_count;
     record = FIELD_BUNDLE->descriptors;
     D_800AF880.components.descriptor_count = count;
-    table = func_80031BDC(count * sizeof(FieldDescriptor), 0);
+    table = heap_alloc(count * sizeof(FieldDescriptor), 0);
     D_800AF880.components.descriptors = (FieldDescriptor *)table;
     size = count * (s32)(sizeof(FieldDescriptor) / sizeof(s32));
     for (i = 0; i < size; i++) {
@@ -695,21 +695,21 @@ void func_80070CC8(void) {
         D_800AF880.components.descriptors[i].transform.t[2] = D_800AF880.components.descriptors[i].matrix.t[2] = record[2];
         record += 3;
         if (!(D_800AF880.components.descriptors[i].flags & 0x40)) {
-            instance = func_80031BDC(0x24, 0);
+            instance = heap_alloc(0x24, 0);
             D_800AF880.components.descriptors[i].instance = instance;
             offset = *record;
             entry = (s32 *)(offset * 4 + (s32)D_800AF880.components.geometry);
             offset = entry[1] + (s32)D_800AF880.components.geometry;
             instance->mesh = (SpriteModel *)(offset + 0x10);
-            func_8002CB54(instance->mesh, &instance->packets[0], &instance->packets[1]);
-            func_8002C8CC(instance->mesh, instance->packets[0], (D_800AF880.components.descriptors[i].flags & 0xC) >> 2);
+            model_alloc_packet_buffers(instance->mesh, &instance->packets[0], &instance->packets[1]);
+            model_build_packets(instance->mesh, instance->packets[0], (D_800AF880.components.descriptors[i].flags & 0xC) >> 2);
             memcpy(instance->packets[1], instance->packets[0], instance->mesh->packet_size);
             if (D_800AF880.components.descriptors[i].flags & 0x2000) {
-                func_80032498(3, 0);
-                instance->anims = func_800303C8(instance->mesh, 0);
-                func_80032498(8, 0);
+                heap_select_owner_tag(3, 0);
+                instance->anims = model_start_morph(instance->mesh, 0);
+                heap_select_owner_tag(8, 0);
             }
-            func_8002C644((ModelGroup *)instance->mesh);
+            model_trim_group((ModelGroup *)instance->mesh);
             func_80080F44(i);
         } else {
             D_800AF880.components.descriptors[i].flags |= 0x20;
@@ -725,12 +725,12 @@ void func_80070CC8(void) {
     }
     func_8007DECC();
     func_80071A64();
-    func_800320B8(D_8005A4E0);
-    func_800320E8(D_8005A4E0);
-    func_80032498(5, 0);
-    func_80024F64(0x3C00, 0);
-    func_8001C944();
-    func_80032498(8, 0);
+    heap_unprotect_block(mode_read_ahead_block);
+    heap_free(mode_read_ahead_block);
+    heap_select_owner_tag(5, 0);
+    sprite_alloc_queues(0x3C00, 0);
+    task_clear_lists();
+    heap_select_owner_tag(8, 0);
     func_80077844((MATRIX *)D_800B2078.unk223C, 0x800, 0, 0, 0x800, 0, 0, 0x800, 0, 0);
     func_80077844((MATRIX *)D_800B2078.unk221C, 0x1F8, -0xFC1, -0x1F8, 0, 0, 0, 0, 0, 0);
     D_800B2078.unk225C[2] = 0x1E;
@@ -762,28 +762,28 @@ void func_80070CC8(void) {
     D_800ADB1C = 0;
     func_800A28D4();
     D_800ADB1C = 1;
-    func_8003F738(&D_800B2078.sprite_angles, &D_800AFC30);
+    gpu_build_rotation_matrix(&D_800B2078.sprite_angles, &D_800AFC30);
     D_800AFC30.t[2] = 0;
     D_800AFC30.t[1] = 0;
     D_800AFC30.t[0] = 0;
     if (D_800B0080.enabled != 0) {
-        D_800B007C = func_8002709C(D_800B0080.unk80[0], D_800B0080.unk80[1], D_800B0080.unk80[2], D_800B0080.unk80[3],
+        D_800B007C = gpu_create_panorama(D_800B0080.unk80[0], D_800B0080.unk80[1], D_800B0080.unk80[2], D_800B0080.unk80[3],
                                    D_800B0080.unk80[4], D_800B0080.unk80[5], D_800B0080.unk80[6], D_800B0080.unk80[7],
                                    &D_800B0080.unk90, D_800B0080.unkA0, D_800B0080.unkAC, D_800B0080.unkAE,
                                    D_800B0080.unkB0);
     }
-    func_80032498(8, 0);
+    heap_select_owner_tag(8, 0);
     D_800AF880.target_goal.vx = D_800AF880.components.descriptors[D_800B2078.unk233E].matrix.t[0] << 16;
     D_800AF880.target_goal.vy = D_800AF880.components.descriptors[D_800B2078.unk233E].matrix.t[1] << 16;
     D_800AF880.target_goal.vz = D_800AF880.components.descriptors[D_800B2078.unk233E].matrix.t[2] << 16;
     for (i = 0; i < D_800AF880.components.descriptor_count; i++) {
-        func_8003F738(&D_800AF880.components.descriptors[i].rotation, &D_800AF880.components.descriptors[i].matrix);
+        gpu_build_rotation_matrix(&D_800AF880.components.descriptors[i].rotation, &D_800AF880.components.descriptors[i].matrix);
         D_800AF880.components.descriptors[i].transform = D_800AF880.components.descriptors[i].matrix;
     }
     func_80077C60();
     func_800A2714();
-    D_8004F334 = -1;
-    D_8004F330 = -1;
+    mode_read_ahead_slot = -1;
+    mode_read_ahead_map = -1;
     func_80073E38();
     func_80077268();
     if (D_800B0080.enabled == 0) {
@@ -794,10 +794,10 @@ void func_80070CC8(void) {
     for (i = 0; i < D_800ADBFC; i++) {
         if (D_800AF880.components.descriptors[i].flags & 0x40) {
             if (!(D_800AF880.components.descriptors[i].actor->layer_flags & 0x01000000)) {
-                func_800223B0(D_800AF880.components.descriptors[i].model,
+                sprite_set_facing(D_800AF880.components.descriptors[i].model,
                               D_800AF880.view_angle + D_800AF880.components.descriptors[i].actor->unk108);
             } else {
-                func_80021FE0(D_800AF880.components.descriptors[i].model,
+                sprite_set_direction(D_800AF880.components.descriptors[i].model,
                               D_800AF880.components.descriptors[i].actor->unk108);
             }
         }
@@ -906,7 +906,7 @@ void func_80071E58(s32 steps) {
 
 /* Pointer setup: pad buffers, divisors 3 and 4, bounds, both ports' starts. */
 void func_80071EE8(void) {
-    func_8007AD8C(&D_800625FC[0], &D_800625FC[1]);
+    func_8007AD8C(&pad_receive_buffers[0], &pad_receive_buffers[1]);
     func_8007AE14(3, 4);
     func_8007ADA4(0, 0x140, 0, 0xE0);
     func_8007AE2C(0, 0x50, 0x64);
@@ -930,7 +930,7 @@ void func_80071F64(s32 x, s32 y, s32 w, s32 h) {
  * environments, clip areas and screens, black backgrounds, then show the
  * second block and set the renderer's limits. */
 void func_80071FB0(void) {
-    D_80059198 = 1;
+    sprite_frame_skip = 1;
     DrawSync(0);
     VSync(0);
     InitGeom();
@@ -954,7 +954,7 @@ void func_80071FB0(void) {
     VSync(0);
     PutDispEnv(&D_800B249C[1].disp);
     PutDrawEnv(&D_800B249C[1].draw);
-    func_8002DFF0(0x140, 0xF0);
+    model_set_screen_bounds(0x140, 0xF0);
 }
 
 /* Clear a matrix's translation. */
@@ -972,13 +972,13 @@ void func_80072150(void) {
     MATRIX composed;
     long flag;
 
-    func_8003F738(&D_800AF880.orbit_angles, &D_800AF880.orbit);
+    gpu_build_rotation_matrix(&D_800AF880.orbit_angles, &D_800AF880.orbit);
     func_80072140(&D_800AF880.orbit);
     CompMatrix(&D_800AF880.orbit, &D_800AF880.previous_view, &composed);
     func_80074038(&D_800AF880.previous_view, &composed);
-    func_8003F738(&D_800AF880.world_angles, &D_800AF880.world_matrix);
+    gpu_build_rotation_matrix(&D_800AF880.world_angles, &D_800AF880.world_matrix);
     func_80072140(&D_800AF880.world_matrix);
-    func_8003F738(&D_800AF880.world_angles, &D_800AF880.scaled_world);
+    gpu_build_rotation_matrix(&D_800AF880.world_angles, &D_800AF880.scaled_world);
     MulMatrix2(&D_800AF880.previous_view, &D_800AF880.scaled_world);
     SetRotMatrix(&D_800AF880.previous_view);
     SetTransMatrix(&D_800AF880.previous_view);
@@ -998,7 +998,7 @@ void func_80072254(s32 index) {
     scale.vx = D_800AF880.components.descriptors[index].actor->scale[0];
     scale.vy = D_800AF880.components.descriptors[index].actor->scale[1];
     scale.vz = D_800AF880.components.descriptors[index].actor->scale[2];
-    func_8003F738(&D_800AF880.components.descriptors[index].rotation, &D_800AF880.components.descriptors[index].matrix);
+    gpu_build_rotation_matrix(&D_800AF880.components.descriptors[index].rotation, &D_800AF880.components.descriptors[index].matrix);
     ScaleMatrix(&D_800AF880.components.descriptors[index].matrix, &scale);
 }
 
@@ -1230,11 +1230,11 @@ s32 func_80072A38(VECTOR *position, s32 floor) {
         D_800AF880.target_goal.vy -= 0x200000;
     }
     D_800AF880.eye_goal.vy =
-        ((-((func_8003F8CC((((s16)D_800AF880.elevation * 0x5B) >> 3) + 0xC00) * D_800AF880.projection) << 5)) >> 16) *
+        ((-((gpu_get_cos((((s16)D_800AF880.elevation * 0x5B) >> 3) + 0xC00) * D_800AF880.projection) << 5)) >> 16) *
             D_800AF880.distance * 16 +
         D_800AF880.target_goal.vy;
     D_800AF880.eye_goal.vz =
-        (((func_8003F8B0((((s16)D_800AF880.elevation * 0x5B) >> 3) + 0xC00) * D_800AF880.projection) << 5) >> 16) *
+        (((gpu_get_sin((((s16)D_800AF880.elevation * 0x5B) >> 3) + 0xC00) * D_800AF880.projection) << 5) >> 16) *
             D_800AF880.distance * 16 +
         D_800AF880.target_goal.vz;
     D_800AF880.eye_goal.vx = D_800AF880.target_goal.vx;
@@ -1461,7 +1461,7 @@ void func_80073684(VECTOR *point, VECTOR *center) {
     VECTOR rotated;
 
     PushMatrix();
-    func_8003F738(&D_800AF880.heading_angles, &m);
+    gpu_build_rotation_matrix(&D_800AF880.heading_angles, &m);
     offset.vx = center->vx - point->vx;
     offset.vy = center->vy - point->vy;
     offset.vz = center->vz - point->vz;
@@ -1561,7 +1561,7 @@ void func_800739C0(void) {
     s32 step;
 
     func_8008110C();
-    func_8003F738(&D_800B2078.sprite_angles, &D_800AFC30);
+    gpu_build_rotation_matrix(&D_800B2078.sprite_angles, &D_800AFC30);
     D_800AFC30.t[2] = 0;
     D_800AFC30.t[1] = 0;
     D_800AFC30.t[0] = 0;
@@ -1614,10 +1614,10 @@ void func_800739C0(void) {
                 }
                 if (D_800ADB05 == 0) {
                     if (!(actor->layer_flags & 0x01000000)) {
-                        func_800223B0(D_800AF880.components.descriptors[i].model,
+                        sprite_set_facing(D_800AF880.components.descriptors[i].model,
                                       D_800AF880.view_angle + D_800AF880.components.descriptors[i].actor->unk108);
                     } else {
-                        func_80021FE0(D_800AF880.components.descriptors[i].model,
+                        sprite_set_direction(D_800AF880.components.descriptors[i].model,
                                       D_800AF880.components.descriptors[i].actor->unk108);
                     }
                 }
@@ -1767,11 +1767,11 @@ void func_80074108(void) {
     angles.vy = D_800ADB48;
     angles.vz = 0;
     func_80072140(&turn);
-    func_8003F738(&angles, &turn);
+    gpu_build_rotation_matrix(&angles, &turn);
     MulMatrix2(&look, &turn);
     turn.t[2] = 0x1000;
     CompMatrix(&base, &turn, &placed);
-    if (D_800B2078.script_control[1] == 0 && D_800ADC18 == 0 && D_8004F378 == 0) {
+    if (D_800B2078.script_control[1] == 0 && D_800ADC18 == 0 && mode_debug_hide_compass == 0) {
         for (i = 20; i < 21; i++) {
             func_8007AB6C(D_800C426C->overlay_ot, &D_800B06BC[i], &placed, D_800ADB08);
         }
@@ -1791,8 +1791,8 @@ void func_80074108(void) {
     angles.vx = 0x400;
     angles.vy = 0;
     angles.vz = 0;
-    func_8003F738(&angles, &tilt);
-    if (D_800B2078.script_control[1] == 0 && D_800ADC18 == 0 && D_8004F378 == 0) {
+    gpu_build_rotation_matrix(&angles, &tilt);
+    if (D_800B2078.script_control[1] == 0 && D_800ADC18 == 0 && mode_debug_hide_compass == 0) {
         for (i = 16; i < 20; i++) {
             func_80070594(&turn);
             offset_x = &D_800ADC34[i - 16].vx;
@@ -1841,19 +1841,19 @@ void func_80074700(void) {
     D_800C38F8 = 0;
     D_800C3900 = 0;
     D_800C3908 = 0;
-    while (func_80035CDC() != 0) {
-        D_800AFE9C |= D_80059570 & D_800B2078.input_mask;
-        D_800AFEA0 |= D_80059574;
-        D_800C2694 |= D_8005948C & D_800B2078.input_mask;
-        D_800C38F8 |= D_80059490;
-        D_800C3900 |= D_800594A4 & D_800B2078.input_mask;
-        D_800C3908 |= D_800594A8;
+    while (pad_dequeue_state() != 0) {
+        D_800AFE9C |= pad_port0_held & D_800B2078.input_mask;
+        D_800AFEA0 |= pad_port1_held;
+        D_800C2694 |= pad_port0_pressed & D_800B2078.input_mask;
+        D_800C38F8 |= pad_port1_pressed;
+        D_800C3900 |= pad_port0_repeated & D_800B2078.input_mask;
+        D_800C3908 |= pad_port1_repeated;
     }
     D_800AFE9C &= D_800ADB00;
     D_800C2694 &= D_800ADB00;
     D_800C3900 &= D_800ADB00;
-    func_80035DB0();
-    func_8007AE78(1, D_80065848);
+    pad_clear_queue();
+    func_8007AE78(1, mode_field_pointer_state);
     if (D_800ADC18 != 0) {
         D_800AFE9C = 0;
         D_800AFEA0 = 0;
@@ -1887,10 +1887,10 @@ void func_800748E8(void) {
     s32 i;
     s32 orient;
 
-    D_80059578 = 0;
-    D_800595C0 = 0;
+    model_drawn_primitive_count = 0;
+    model_submitted_primitive_count = 0;
     if (D_800B2078.sprite_gate != 0) {
-        func_8002C6E0(D_800B2078.fog_color[0], D_800B2078.fog_color[1], D_800B2078.fog_color[2]);
+        model_set_color(D_800B2078.fog_color[0], D_800B2078.fog_color[1], D_800B2078.fog_color[2]);
         SetFarColor(D_800B2078.far_color[0], D_800B2078.far_color[1], D_800B2078.far_color[2]);
         SetFogNearFar(D_800B2078.fog_range[0], D_800B2078.fog_range[1], D_800AF880.projection);
     }
@@ -1902,7 +1902,7 @@ void func_800748E8(void) {
     scale.vz = D_800AF880.scale;
     ScaleMatrix(&D_800AF880.unk204, &scale);
     CompMatrix(&D_800AF880.scaled_world, &D_800AFC30, &view);
-    D_80050104 = 0;
+    model_box_test_mode = 0;
     D_800B2078.unk21BC[0] += D_800B2078.piece_drift[0];
     D_800B2078.unk21BC[1] += D_800B2078.piece_drift[2];
     D_800B2078.unk21BC[2] += D_800B2078.piece_drift[1];
@@ -1930,7 +1930,7 @@ void func_800748E8(void) {
                 angles.vy = 0;
                 angles.vz = descriptor->actor->unk70;
             turn:
-                func_8003F738(&angles, &work);
+                gpu_build_rotation_matrix(&angles, &work);
                 MulMatrix2(&D_800AF880.components.descriptors[i].matrix, &work);
                 work.t[0] = D_800AF880.components.descriptors[i].matrix.t[0];
                 work.t[1] = D_800AF880.components.descriptors[i].matrix.t[1];
@@ -1992,15 +1992,15 @@ void func_800748E8(void) {
         if (instance->mode == 1) {
             work = placed;
             ScaleMatrix(&work, &half);
-            func_80030B14(&work);
-            func_80030C40(D_800AF880.back_color[0], D_800AF880.back_color[1], D_800AF880.back_color[2]);
+            model_load_light_matrix(&work);
+            model_set_back_color_16bit(D_800AF880.back_color[0], D_800AF880.back_color[1], D_800AF880.back_color[2]);
         }
-        D_80050104 = 0;
+        model_box_test_mode = 0;
         if (!(D_800AF880.components.descriptors[i].flags & 0x20)) {
             if ((descriptor->flags & 0x2000) && instance->anims != NULL) {
                 D_800ADB58 = i;
                 D_800ADB5C = 0;
-                func_800305D8(instance->anims);
+                model_update_morph(instance->anims);
             }
             gte_SetRotMatrix(&placed);
             gte_SetTransMatrix(&placed);
@@ -2008,9 +2008,9 @@ void func_800748E8(void) {
                 gte_SetRotMatrix(&placed);
                 gte_SetTransMatrix(&placed);
                 if (!(descriptor->flags & 0x8000)) {
-                    func_8002C700(instance->mesh, instance->packets[D_800ADB08], (u32 *)D_800C426C->ot, instance->mode);
+                    model_draw_sprite_model(instance->mesh, instance->packets[D_800ADB08], (u32 *)D_800C426C->ot, instance->mode);
                 } else {
-                    func_8002C700(instance->mesh, instance->packets[D_800ADB08], (u32 *)D_800C426C->ot2, instance->mode);
+                    model_draw_sprite_model(instance->mesh, instance->packets[D_800ADB08], (u32 *)D_800C426C->ot2, instance->mode);
                 }
             }
         }
@@ -2023,7 +2023,7 @@ void func_800748E8(void) {
 /* Draw the 801e module's layer (with the emitters updated and its back
  * colour set) when enabled, then the debug "GEAR" timer. */
 void func_8007520C(void) {
-    if (D_8004F380 == 0) {
+    if (mode_debug_hide_layer == 0) {
         if (D_800B2078.unk2264 != 0) {
             func_80086BA8();
             SetBackColor(D_800B2078.unk225C[0], D_800B2078.unk225C[1], D_800B2078.unk225C[2]);
@@ -2048,22 +2048,22 @@ void func_800752C8(void) {
     if (D_800ADB05 == 1) {
         return;
     }
-    func_800250E0(D_800ADB08);
-    func_80024FE4((s32)D_800C426C->ot);
-    func_80024FF4(&D_800AF880.scaled_world);
-    func_8001D468();
-    func_8001C9F8();
-    func_8001C964();
+    sprite_queue_start_fill(D_800ADB08);
+    sprite_set_ot((s32)D_800C426C->ot);
+    sprite_set_view_matrix(&D_800AF880.scaled_world);
+    sprite_build_pending_frames();
+    task_run_draw_list();
+    task_run_main_list();
     func_80075B44(D_800C426C->ot, D_800ADB08);
     for (i = 0; i < D_800ADBFC; i++) {
         if ((*(u32 *)&D_800AF880.components.descriptors[i].flags & 0x60) == 0x40) {
             if ((D_800AF880.components.descriptors[i].actor->layer_flags & 0x600) != 0x200
                 && !(D_800AF880.components.descriptors[i].actor->layer_flags & 0x1000)
                 && !(D_800AF880.components.descriptors[i].actor->flags & 1)) {
-                func_80023210(D_800AF880.components.descriptors[i].model);
+                sprite_vm_tick(D_800AF880.components.descriptors[i].model);
             }
         } else if (D_800AF880.components.descriptors[i].actor->layer_flags & 0x1000000) {
-            func_80023210(D_800AF880.components.descriptors[i].model);
+            sprite_vm_tick(D_800AF880.components.descriptors[i].model);
         }
     }
     func_800764B4(D_800C426C->ot, D_800ADB08);
@@ -2090,7 +2090,7 @@ void func_80075484(void) {
         target.vx = D_800AF880.target.vx >> 16;
         target.vy = D_800AF880.target.vy >> 16;
         target.vz = D_800AF880.target.vz >> 16;
-        func_800273C4(D_800B007C, &eye, &target, &D_800AF880.scaled_world,
+        gpu_draw_panorama(D_800B007C, &eye, &target, &D_800AF880.scaled_world,
                       D_800C426C->ot + D_800B2078.unk21D4 + 0x1000, D_800ADB08);
     }
 }
@@ -2139,7 +2139,7 @@ void func_8007554C(void) {
     func_800805F4();
     func_8008004C(D_800C426C->overlay_ot, D_800ADB08);
     VSync(0);
-    func_80032CB8();
+    heap_update_delayed_frees();
     if (D_800ADC18 == 0) {
         ClearImage(&D_800C426C->draw2.clip, D_800B2078.clear_color[0], D_800B2078.clear_color[1],
                    D_800B2078.clear_color[2]);
@@ -2157,7 +2157,7 @@ void func_8007554C(void) {
     if (D_800C268C == 0) {
         D_800ADB9C = VSync(1);
     }
-    func_80025044();
+    sprite_queue_run_uploads();
     if (D_800C268C == 0) {
         func_80281B00("ShapeTrans");
     }
@@ -2228,7 +2228,7 @@ void func_800759E4(MATRIX *m, VECTOR *axis) {
 /* Pass a colour on to resident 80021b98 unless 800b218e is set. */
 void func_80075B08(void *target, u8 *color) {
     if (D_800B2078.sprite_gate == 0) {
-        func_80021B98(target, color[0], color[1], color[2]);
+        sprite_set_part_color(target, color[0], color[1], color[2]);
     }
 }
 
@@ -2289,7 +2289,7 @@ void func_80075B44(u_long *ot, s32 buffer) {
             } else {
                 actor->layer_flags |= 0x200;
             }
-            if (D_8004F37C != 0 || (kind & 0x20) || flag < 0) {
+            if (mode_debug_hide_sprites != 0 || (kind & 0x20) || flag < 0) {
                 continue;
             }
             scale.vx = actor->scale[0] * 3 >> 2;
@@ -2321,54 +2321,54 @@ void func_80075B44(u_long *ot, s32 buffer) {
                 }
             }
             if (D_800B2078.unk2357 == 0 && D_800B2078.sprite_gate != 0) {
-                gte_ldrgb(&D_80059598);
+                gte_ldrgb(&model_color);
                 gte_dpcs();
                 gte_strgb(&color);
-                func_80021B98(D_800AF880.components.descriptors[i].model, color.r, color.g, color.b);
+                sprite_set_part_color(D_800AF880.components.descriptors[i].model, color.r, color.g, color.b);
             }
-            depth >>= D_80050100;
+            depth >>= model_ot_depth_shift;
             if (depth >= 2) {
                 depth -= 2;
             }
             if ((u16)(actor->unkE8 + 0x22) < 2) {
                 if (!(actor->layer_flags & 0x02000000)) {
-                    func_80021B98(sprite, actor->color0[0], actor->color0[1], actor->color0[2]);
+                    sprite_set_part_color(sprite, actor->color0[0], actor->color0[1], actor->color0[2]);
                     sprite->render.bytes[1] = 0xEF;
-                    func_8001E298(sprite, ot + depth - 0x10);
+                    sprite_draw(sprite, ot + depth - 0x10);
                     v.vx = 0;
                     v.vy = 300;
                     v.vz = 0;
-                    upper = RotTransPers(&v, (long *)&sxy, (long *)&interpolation, (long *)&flag) >> D_80050100;
-                    func_80021B98(sprite, actor->color1[0], actor->color1[1], actor->color1[2]);
+                    upper = RotTransPers(&v, (long *)&sxy, (long *)&interpolation, (long *)&flag) >> model_ot_depth_shift;
+                    sprite_set_part_color(sprite, actor->color1[0], actor->color1[1], actor->color1[2]);
                     sprite->render.bytes[1] = 0xF7;
-                    func_8001E298(sprite, ot + upper);
+                    sprite_draw(sprite, ot + upper);
                 }
             } else {
                 sprite->render.bytes[1] = 0;
                 if (!(actor->layer_flags & 0x02000000)) {
                     if (!(actor->unk134 & 0x60)) {
                         func_80075B08(sprite, actor->color0);
-                        func_8001E298(sprite, ot + depth);
+                        sprite_draw(sprite, ot + depth);
                     } else {
                         if ((actor->unk134 >> 5) & 1) {
                             func_80075B08(sprite, actor->color0);
                             v.vx = 0;
                             v.vy = (actor->unkEE - elevation / 3) * 2;
                             v.vz = 0;
-                            upper = RotTransPers(&v, (long *)&sxy, (long *)&interpolation, (long *)&flag) >> D_80050100;
+                            upper = RotTransPers(&v, (long *)&sxy, (long *)&interpolation, (long *)&flag) >> model_ot_depth_shift;
                             if (upper >= 2) {
                                 upper -= 2;
                             }
-                            func_8001E2F8(sprite, ot + upper, actor->unkEE);
+                            sprite_draw_cut_below(sprite, ot + upper, actor->unkEE);
                         }
                         if ((actor->unk134 >> 5) & 2) {
                             func_80075B08(sprite, actor->color1);
-                            func_8001E368(sprite, ot + depth, actor->unkEE);
+                            sprite_draw_cut_above(sprite, ot + depth, actor->unkEE);
                         }
                     }
                 }
             }
-        } else if (D_8004F380 == 0) {
+        } else if (mode_debug_hide_layer == 0) {
             if (!(actor->flags & 0x10000) && !(actor->unk014 & 0x200002) && !(actor->layer_flags & 0x800)) {
                 D_801E8670[party]->flags &= 0xFFFE;
             } else {
@@ -2417,7 +2417,7 @@ void func_800764B4(u_long *ot, s32 buffer) {
     s32 sz;
 
     world = D_800AF880.scaled_world; /* an unused copy */
-    if (D_8004F37C != 0) {
+    if (mode_debug_hide_sprites != 0) {
         return;
     }
     for (i = 0; i < D_800ADBFC; i++) {
@@ -2477,7 +2477,7 @@ void func_800764B4(u_long *ot, s32 buffer) {
                         (long *)&descriptor->shadow->poly[buffer].x0, (long *)&descriptor->shadow->poly[buffer].x1,
                         (long *)&descriptor->shadow->poly[buffer].x2, (long *)&descriptor->shadow->poly[buffer].x3,
                         &interpolation, &flag);
-        depth >>= D_80050100;
+        depth >>= model_ot_depth_shift;
         addPrim(ot + depth, &descriptor->shadow->poly[buffer]);
     }
 }
@@ -2500,7 +2500,7 @@ void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk,
     s32 y;
     s32 x;
 
-    func_80032498(8, 0);
+    heap_select_owner_tag(8, 0);
     D_800AF880.components.descriptors[index].actor->unk127 = slot;
     D_800AF880.components.descriptors[index].actor->unk126 = unk;
     D_800AF880.components.descriptors[index].actor->unk134 =
@@ -2513,39 +2513,39 @@ void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk,
         x = D_800B1F78.slot[slot].x;
         if (bank == 0) {
             if (D_800AF880.components.descriptors[index].unk5A & 1) {
-                func_800230A8(D_800AF880.components.descriptors[index].model);
+                sprite_destroy(D_800AF880.components.descriptors[index].model);
             }
-            sprite = func_80024524(data, 0x100, slot + 0x1E0, x, y, 0x40);
+            sprite = sprite_create(data, 0x100, slot + 0x1E0, x, y, 0x40);
             D_800AF880.components.descriptors[index].model = sprite;
         } else {
             if (D_800AF880.components.descriptors[index].unk5A & 1) {
-                func_800230A8(D_800AF880.components.descriptors[index].model);
+                sprite_destroy(D_800AF880.components.descriptors[index].model);
             }
-            sprite = func_80024294(data, bank * 16 + 0x100, slot + 0x1E0, x, y, 0x40, bank);
+            sprite = sprite_create_with_palette_bank(data, bank * 16 + 0x100, slot + 0x1E0, x, y, 0x40, bank);
             D_800AF880.components.descriptors[index].model = sprite;
         }
     } else {
         if (D_800AF880.components.descriptors[index].unk5A & 1) {
-            func_800230A8(D_800AF880.components.descriptors[index].model);
+            sprite_destroy(D_800AF880.components.descriptors[index].model);
         }
         if (kind == 1) {
             y = (slot << 6) + 0x100;
-            sprite = func_80024524(data, 0x100, slot + 0xE0, 0x280, y, 8);
+            sprite = sprite_create(data, 0x100, slot + 0xE0, 0x280, y, 8);
             D_800AF880.components.descriptors[index].model = sprite;
-            func_80023340(sprite, 0x20);
+            sprite_realloc_parts_from_bottom(sprite, 0x20);
         } else {
             y = (slot << 6) + 0x100;
-            sprite = func_80024524(data, 0x100, slot + 0xE3, 0x2A0, y, 8);
+            sprite = sprite_create(data, 0x100, slot + 0xE3, 0x2A0, y, 8);
             D_800AF880.components.descriptors[index].model = sprite;
-            func_80023340(sprite, 0x20);
+            sprite_realloc_parts_from_bottom(sprite, 0x20);
         }
     }
     D_800AF880.components.descriptors[index].unk5A |= 1;
-    func_8001F5BC(sprite, 0, &width, &height, &depth);
-    func_80021C00(sprite, 3);
+    sprite_get_extent(sprite, 0, &width, &height, &depth);
+    sprite_set_scale_shift(sprite, 3);
     sprite->scale = 0xC00;
     sprite->word82 = 0x2000;
-    if (D_8004F30C == 0) {
+    if (mode_field_return_pending == 0) {
         sprite->x = D_800AF880.components.descriptors[index].actor->position[0];
         sprite->y = D_800AF880.components.descriptors[index].actor->position[1];
         sprite->z = D_800AF880.components.descriptors[index].actor->position[2];
@@ -2564,14 +2564,14 @@ void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk,
     if (D_800B2078.sprite_gate != 0) {
         sprite->flags |= 0x40000;
     }
-    func_800245D8(sprite, 0);
-    func_80021FE0(sprite, 0);
-    func_80032498(8, 0);
+    sprite_start_animation(sprite, 0);
+    sprite_set_direction(sprite, 0);
+    heap_select_owner_tag(8, 0);
     SPRITE_SEQUENCER(sprite)->actor = index;
-    func_80021BF8(sprite, func_80076A74);
+    sprite_set_completion_callback(sprite, func_80076A74);
     if (flag == 0) {
-        func_80023210(sprite);
-        func_8001C964();
+        sprite_vm_tick(sprite);
+        task_run_main_list();
         if ((u16)SPRITE_SEQUENCER(sprite)->halfc == 0xFF) {
             D_800AF880.components.descriptors[index].actor->unk0EA = 0xFF;
             D_800AF880.components.descriptors[index].actor->layer_flags |= 0x01000000;
@@ -2668,16 +2668,16 @@ void func_80077268(void) {
 /* Load the text palette, with the debug font first when enabled. */
 void func_80077544(void) {
     if (D_800C268C == 0) {
-        func_8003747C(0x80270000);
-        func_800374E8(0x10, 0x10, 0x130, 0xE0, 0x400, 4, 0x3C0, 0x100, 0x100, 0x1FF, 0);
+        console_set_external_block(0x80270000);
+        console_open(0x10, 0x10, 0x130, 0xE0, 0x400, 4, 0x3C0, 0x100, 0x100, 0x1FF, 0);
     }
-    func_80033698(0x100, 0xF0);
+    text_load_palette(0x100, 0xF0);
 }
 
 /* Select the field's heap tag and directory, then set up the pointer. */
 void func_800775C0(void) {
-    func_80032498(8, 0);
-    func_80028470(4, 0);
+    heap_select_owner_tag(8, 0);
+    cd_select_directory(4, 0);
     func_80071EE8();
 }
 
@@ -2695,20 +2695,20 @@ void func_80077620(void) {
     u32 **tim;
     s32 i;
 
-    if (D_8004F344 == 0) {
-        D_8005A4A0 = func_80031BDC(func_800288EC(0xA7), 1);
-        func_800320A4(D_8005A4A0);
-        func_800295D8(0xA7, D_8005A4A0, 0, 0x80);
-        func_80028A60(0);
+    if (mode_text_images_preloaded == 0) {
+        mode_preloaded_text_images = heap_alloc(cd_get_aligned_file_size(0xA7), 1);
+        heap_protect_block(mode_preloaded_text_images);
+        cd_read_file(0xA7, mode_preloaded_text_images, 0, 0x80);
+        cd_sync_reads(0);
     }
-    func_800320B8(D_8005A4A0);
-    D_8004F344 = 0;
+    heap_unprotect_block(mode_preloaded_text_images);
+    mode_text_images_preloaded = 0;
     D_800C2690[1] = 0;
     D_800C2690[0] = 0;
     D_800C38FC[1] = 0;
     D_800C38FC[0] = 0;
-    func_8003342C(D_8005A4A0);
-    tim = (u32 **)D_8005A4A0;
+    text_relocate_offset_table(mode_preloaded_text_images);
+    tim = (u32 **)mode_preloaded_text_images;
     for (i = 0; i < 8; i++) {
         func_80070340(*++tim, D_800ADC44[i * 6], D_800ADC44[i * 6 + 1], D_800ADC44[i * 6 + 2],
                       D_800ADC44[i * 6 + 3], D_800ADC44[i * 6 + 4], D_800ADC44[i * 6 + 5]);
@@ -2720,13 +2720,13 @@ void func_80077620(void) {
     D_800B004C.h = 1;
     StoreImage(&D_800B004C, (u_long *)D_800AFC08);
     DrawSync(0);
-    func_800320E8(D_8005A4A0);
+    heap_free(mode_preloaded_text_images);
 }
 
 /* Stop the stream, then read the map's data ahead until it is in. */
 void func_800777DC(void) {
-    func_80028A60(0);
-    while (func_8001B484((D_8004F34C & 0xFFF) * 2, 0) != 0) {
+    cd_sync_reads(0);
+    while (mode_read_map_ahead((mode_field_map_id & 0xFFF) * 2, 0) != 0) {
     }
 }
 
@@ -2758,31 +2758,31 @@ void func_80077884(void) {
 
     if (D_800B2078.unk2264 != 0) {
         func_8008A520();
-        func_80028470(4, 0);
+        cd_select_directory(4, 0);
         func_800A90B4(0);
         end = D_800ADB30;
-        if (D_8004F370 == 0) {
-            D_800ADB20 = func_80031BDC((end & 0xFFFFFF) - 0x1DC008, 1);
+        if (mode_field_standalone == 0) {
+            D_800ADB20 = heap_alloc((end & 0xFFFFFF) - 0x1DC008, 1);
         } else {
-            D_800ADB20 = func_80031BDC(func_800288EC(0x6B9), 1);
+            D_800ADB20 = heap_alloc(cd_get_aligned_file_size(0x6B9), 1);
         }
         func_800A90B4(1);
         for (i = 0; i < D_800B2078.unk2264; i++) {
             D_800B2394[i * 2 + 1].file = D_800B2078.unk21DC[i] + 0x6BB;
-            D_8005A450[i] = func_80031BDC(func_800288EC(D_800B2078.unk21DC[i] + 0x6BB), 1);
-            D_800B2394[i * 2 + 1].destination = D_8005A450[i];
+            mode_field_layer_model_files[i] = heap_alloc(cd_get_aligned_file_size(D_800B2078.unk21DC[i] + 0x6BB), 1);
+            D_800B2394[i * 2 + 1].destination = mode_field_layer_model_files[i];
         }
         for (i = 0; i < D_800B2078.unk2264; i++) {
             D_800B2394[i * 2].file = D_800B2078.unk21DC[i] + 0x6BA;
-            D_8005A420[i] = func_80031BDC(func_800288EC(D_800B2078.unk21DC[i] + 0x6BA), 0);
-            D_800B2394[i * 2].destination = D_8005A420[i];
+            mode_field_layer_script_files[i] = heap_alloc(cd_get_aligned_file_size(D_800B2078.unk21DC[i] + 0x6BA), 0);
+            D_800B2394[i * 2].destination = mode_field_layer_script_files[i];
         }
         D_800B2394[i * 2].file = 0x6B9;
         D_800B2394[i * 2].destination = D_800ADB20;
         D_800B2394[i * 2 + 1].file = 0;
         D_800B2394[i * 2 + 1].destination = 0;
         func_8008A520();
-        func_80029AFC(D_800B2394, 0, 0);
+        cd_read_file_list(D_800B2394, 0, 0);
     }
 }
 
@@ -2806,13 +2806,13 @@ void func_80077AB4(void) {
             position->vy = 0;
             position->vz = 0;
             row = D_800B2078.unk225F[i];
-            func_801E742C(i, 0, D_8005A420[i], D_8005A450[i],
+            func_801E742C(i, 0, mode_field_layer_script_files[i], mode_field_layer_model_files[i],
                           (s16)(0x240 - ((i + row) << 6)), 0x100, 0, (s16)(i + 0xFC),
                           &position->vx);
-            func_800320E8(D_8005A450[i]);
+            heap_free(mode_field_layer_model_files[i]);
             D_800B2078.layer_scales[i] = D_801E8670[i]->scale;
         }
-        func_80032498(8, 0);
+        heap_select_owner_tag(8, 0);
     }
 }
 
@@ -2824,23 +2824,23 @@ void func_80077C60(void) {
 
 /* Allocate and keep the three party sprite blocks (0x14000 bytes each). */
 void func_80077C88(void) {
-    func_80032498(8, 0);
-    D_8005A414[0] = func_80031BDC(0x14000, 0);
-    D_8005A414[1] = func_80031BDC(0x14000, 0);
-    D_8005A414[2] = func_80031BDC(0x14000, 0);
-    func_800320A4(D_8005A414[0]);
-    func_800320A4(D_8005A414[1]);
-    func_800320A4(D_8005A414[2]);
+    heap_select_owner_tag(8, 0);
+    mode_party_sprite_blocks[0] = heap_alloc(0x14000, 0);
+    mode_party_sprite_blocks[1] = heap_alloc(0x14000, 0);
+    mode_party_sprite_blocks[2] = heap_alloc(0x14000, 0);
+    heap_protect_block(mode_party_sprite_blocks[0]);
+    heap_protect_block(mode_party_sprite_blocks[1]);
+    heap_protect_block(mode_party_sprite_blocks[2]);
 }
 
 /* Unlink, then release, the three blocks at 8005a414..8005a41c. */
 void func_80077D2C(void) {
-    func_800320B8(D_8005A414[0]);
-    func_800320B8(D_8005A414[1]);
-    func_800320B8(D_8005A414[2]);
-    func_800320E8(D_8005A414[0]);
-    func_800320E8(D_8005A414[1]);
-    func_800320E8(D_8005A414[2]);
+    heap_unprotect_block(mode_party_sprite_blocks[0]);
+    heap_unprotect_block(mode_party_sprite_blocks[1]);
+    heap_unprotect_block(mode_party_sprite_blocks[2]);
+    heap_free(mode_party_sprite_blocks[0]);
+    heap_free(mode_party_sprite_blocks[1]);
+    heap_free(mode_party_sprite_blocks[2]);
 }
 
 /* "Clear OTAG". A stray byte (0x6b) follows the string at the end of the
@@ -2889,7 +2889,7 @@ void func_80077E88(void) {
     u16 pressed;
     u16 buttons;
 
-    if (D_80010000 != -1) {
+    if (mode_disc_mode != -1) {
         D_800C268C = 0;
     } else {
         D_800C268C = 1;
@@ -2898,19 +2898,19 @@ void func_80077E88(void) {
     if (D_800C268C == 0) {
         DrawSyncCallback(func_8007781C);
     }
-    D_80062518[1] = (s32)D_80059560;
-    D_80062518[3] = (s32)D_800595AC;
-    func_80032498(8, 0);
-    if (D_800C268C == 0 && D_8004F370 == 0) {
-        func_80028470(4, 0);
-        func_800295D8(0xAD, (void *)0x80280000, 0, 0x80);
-        func_80028A60(0);
+    mode_wave_bank_slots[1] = (s32)mode_shared_wave_bank;
+    mode_wave_bank_slots[3] = (s32)mode_wave_bank_5;
+    heap_select_owner_tag(8, 0);
+    if (D_800C268C == 0 && mode_field_standalone == 0) {
+        cd_select_directory(4, 0);
+        cd_read_file(0xAD, (void *)0x80280000, 0, 0x80);
+        cd_sync_reads(0);
         func_8007999C();
     }
-    if (D_8004F30C == 0) {
-        D_8006FABC[2] = 0xFF;
-        D_8006FABC[1] = 0xFF;
-        D_8006FABC[0] = 0xFF;
+    if (mode_field_return_pending == 0) {
+        mode_party_file_ids[2] = 0xFF;
+        mode_party_file_ids[1] = 0xFF;
+        mode_party_file_ids[0] = 0xFF;
     }
     func_80085890(0);
     held = 0;
@@ -2920,8 +2920,8 @@ void func_80077E88(void) {
     D_800ADBE0 = -1;
     D_800ADBDC = -1;
     D_800ADBD8 = -1;
-    D_8004F358 = 0;
-    D_8004F354 = 0;
+    mode_music_seq_read_pending = 0;
+    mode_music_wave_streaming = 0;
     D_800ADC10 = 0;
     D_800ADB60 = 0;
     D_800ADB34 = 0;
@@ -2931,25 +2931,25 @@ void func_80077E88(void) {
         func_802811EC();
     }
     func_800775C0();
-    D_8005A39C = &D_8006D634;
-    D_8004F34C = D_8006D634.map;
-    D_8006D634.vars[1] = D_8006D634.entry[2];
-    D_8006D634.vars[4] = D_8006D634.entry[0] >> 9;
-    if (D_8004F2F8 == 0) {
-        D_800594D0 = 0;
-        D_8004F324 = 0xFF;
+    game_current_data = &game_data;
+    mode_field_map_id = game_data.map;
+    game_data.vars[1] = game_data.entry[2];
+    game_data.vars[4] = game_data.entry[0] >> 9;
+    if (mode_field_entered_once == 0) {
+        mode_result_code = 0;
+        mode_music_selected_track = 0xFF;
     } else {
-        D_8004F324 = D_8006D634.flagWords[0];
+        mode_music_selected_track = game_data.flagWords[0];
     }
     if (D_800C268C == 1) {
-        D_8005A39C->vars[0x28] = 1;
+        game_current_data->vars[0x28] = 1;
         func_800A3074(0x50, 1);
     }
     func_80077620();
-    D_8004F320 = 0;
-    func_8001B044();
-    func_8001B3A8();
-    D_800ADB30 = (u32)func_80031BDC(4, 1);
+    mode_party_uses_gear_files = 0;
+    mode_sync_party_files();
+    mode_unpack_party_files();
+    D_800ADB30 = (u32)heap_alloc(4, 1);
     if (D_800C268C == 0) {
         pollhost();
         func_800A94A4(D_800B2078.controlled);
@@ -2960,130 +2960,130 @@ void func_80077E88(void) {
     func_80078D44();
     D_800ADB04 = 1;
     for (;;) {
-        if (func_80035734(0) == 0) {
-            saved = D_80059488;
-            func_80037EE4();
-            func_8001FAB4(0x88, (((D_800ADB08 + 1) & 1) << 8) | 0x64);
+        if (pad_get_controller_kind(0) == 0) {
+            saved = pad_vblank_count;
+            sound_silence_voices();
+            sprite_upload_pause_image(0x88, (((D_800ADB08 + 1) & 1) << 8) | 0x64);
             do {
                 DrawSync(0);
                 VSync(2);
                 func_80074700();
-                func_80019CA0();
-            } while (func_80035734(0) == 0);
-            func_80037E8C();
-            D_80059488 = saved;
+                boot_check_soft_reset();
+            } while (pad_get_controller_kind(0) == 0);
+            sound_restore_voices();
+            pad_vblank_count = saved;
         }
         if ((D_800C3900 & 0x800) && !(D_800AFE9C & 0x40) && D_800B2078.unk2358 == 0) {
-            saved = D_80059488;
-            func_80037EE4();
-            func_8001FAB4(0x88, (((D_800ADB08 + 1) & 1) << 8) | 0x64);
+            saved = pad_vblank_count;
+            sound_silence_voices();
+            sprite_upload_pause_image(0x88, (((D_800ADB08 + 1) & 1) << 8) | 0x64);
             do {
                 DrawSync(0);
                 VSync(2);
                 func_80074700();
-                func_80019CA0();
+                boot_check_soft_reset();
             } while (!(D_800C3900 & 0x800));
-            func_80037E8C();
-            D_80059488 = saved;
+            sound_restore_voices();
+            pad_vblank_count = saved;
         }
         if (D_800C268C == 1) {
             func_800A3074(0x50, 1);
         }
-        func_80019CA0();
+        boot_check_soft_reset();
         func_80077DAC();
         func_8007554C();
         func_800A5924();
         if (D_800ADB08 == 1 && D_800ADBDC == 0 && func_80078BC8() == 0 && func_80077E10() == 0) {
-            if (D_8004F334 != -1) {
-                func_800320B8(D_8005A4E0);
-                func_800320E8(D_8005A4E0);
+            if (mode_read_ahead_slot != -1) {
+                heap_unprotect_block(mode_read_ahead_block);
+                heap_free(mode_read_ahead_block);
             }
             if (entered == 0) {
                 entered = 1;
-                D_800AFC78 = D_8004F324;
+                D_800AFC78 = mode_music_selected_track;
             }
             func_8007FFE8();
             if (D_800ADBD0 == 1) {
-                D_8005954C = D_800B2078.unk2355;
-                D_800AFC78 = D_8004F324;
-                if (D_8004F338 != D_800B2078.battle_music) {
-                    if (D_8004F338 != -1) {
-                        D_8004F348 = 1;
+                mode_battle_kind = D_800B2078.unk2355;
+                D_800AFC78 = mode_music_selected_track;
+                if (mode_music_loaded_track != D_800B2078.battle_music) {
+                    if (mode_music_loaded_track != -1) {
+                        mode_music_reuse_seq = 1;
                     }
-                    func_8001B66C();
-                    D_8004F324 = D_800B2078.battle_music;
-                    D_8004F308 = -1;
+                    mode_stop_music();
+                    mode_music_selected_track = D_800B2078.battle_music;
+                    mode_music_load_pending = -1;
                     func_80085B20(D_800B2078.battle_music, 1);
                 }
                 D_800ADBD0 = 0;
                 D_800ADBD4 = 1;
             } else {
                 if (D_800ADB18 == 0) {
-                    D_8004F30C++;
+                    mode_field_return_pending++;
                     func_800A3F4C();
                 }
                 exit = 0;
                 if (D_800ADBD4 == 1) {
-                    func_8003A89C((SoundSeq *)D_80062528, 0x7F, 0);
+                    sound_set_seq_fade((SoundSeq *)mode_music_seq, 0x7F, 0);
                 }
                 D_800ADBD4 = 0;
                 break;
             }
         }
-        if (D_800ADBEC == 0 && D_8004F308 == 0 && D_800ADBC4 == 0xFF && D_800ADB90 == 0
-            && func_8001B484((D_8004F34C & 0xFFF) * 2, 0) == 0 && func_800286CC() == 0
+        if (D_800ADBEC == 0 && mode_music_load_pending == 0 && D_800ADBC4 == 0xFF && D_800ADB90 == 0
+            && mode_read_map_ahead((mode_field_map_id & 0xFFF) * 2, 0) == 0 && cd_get_pending_read_count() == 0
             && D_800B2078.fades[0].steps == 0) {
             D_800ADB04 = 0;
             func_800A30FC();
-            func_80028A60(0);
+            cd_sync_reads(0);
             func_800A5C40();
-            func_80035DB0();
+            pad_clear_queue();
             D_800ADB04 = 1;
         }
         if (D_800ADB08 == 1 && D_800ADBE4 == 0 && func_80078BC8() == 0) {
-            func_80028A60(0);
+            cd_sync_reads(0);
             exit = 1;
-            if (D_8004F334 != -1) {
-                func_800320B8(D_8005A4E0);
-                func_800320E8(D_8005A4E0);
+            if (mode_read_ahead_slot != -1) {
+                heap_unprotect_block(mode_read_ahead_block);
+                heap_free(mode_read_ahead_block);
             }
             break;
         }
         if (D_800ADB08 == 1 && D_800ADBE8 == 0 && func_80078BC8() == 0) {
-            func_80028A60(0);
-            if (D_8004F334 != -1) {
-                func_800320B8(D_8005A4E0);
-                func_800320E8(D_8005A4E0);
+            cd_sync_reads(0);
+            if (mode_read_ahead_slot != -1) {
+                heap_unprotect_block(mode_read_ahead_block);
+                heap_free(mode_read_ahead_block);
             }
-            D_8004F310++;
+            mode_unread_arena_departure_count++;
             exit = 2;
             func_800A3F4C();
             break;
         }
         if (D_800ADB08 == 1 && D_800ADBD8 == 0 && func_80078BC8() == 0) {
-            func_80028A60(0);
-            if (D_8004F334 != -1) {
-                func_800320B8(D_8005A4E0);
-                func_800320E8(D_8005A4E0);
+            cd_sync_reads(0);
+            if (mode_read_ahead_slot != -1) {
+                heap_unprotect_block(mode_read_ahead_block);
+                heap_free(mode_read_ahead_block);
             }
             exit = 3;
-            func_8001B66C();
+            mode_stop_music();
             break;
         }
         if (D_800C268C == 0) {
             pressed = D_800C3908;
             if (pressed & 0x40) {
-                D_8004F378 = (D_8004F378 + 1) & 1;
+                mode_debug_hide_compass = (mode_debug_hide_compass + 1) & 1;
             }
             if (pressed & 0x10) {
-                D_8004F37C = (D_8004F37C + 1) & 1;
+                mode_debug_hide_sprites = (mode_debug_hide_sprites + 1) & 1;
             }
             if (pressed & 0x80) {
-                D_8004F380 = (D_8004F380 + 1) & 1;
+                mode_debug_hide_layer = (mode_debug_hide_layer + 1) & 1;
             }
-            if ((D_800AFE9C & 0x40) && (D_800C3900 & 0x100) && D_800ADBEC == -1 && D_8004F308 == 0
+            if ((D_800AFE9C & 0x40) && (D_800C3900 & 0x100) && D_800ADBEC == -1 && mode_music_load_pending == 0
                 && D_800ADB34 == 0) {
-                D_8004F34C = 0;
+                mode_field_map_id = 0;
                 D_800ADBEC = 0;
                 func_800A3074(2, 0);
             }
@@ -3099,7 +3099,7 @@ void func_80077E88(void) {
                 func_800798BC();
                 if (D_800ADB64 == 0xFF
                     && !(D_800AF880.components.descriptors[D_800B2078.controlled].actor->flags & 0x1800)
-                    && D_80059179 == 0) {
+                    && mode_gear_riding_lock == 0) {
                     func_800ACE90();
                 }
             }
@@ -3119,7 +3119,7 @@ void func_80077E88(void) {
             if ((D_800C3900 & 0x10) && D_800B2078.script_control[0] == 0 && D_800ADB64 == 0xFF
                 && D_800ADB68 == 1) {
                 D_800ADB64 = 0x80;
-                D_80059171 = D_800B236C;
+                menu_state_screen_parameter = D_800B236C;
             }
         }
         func_80078B5C();
@@ -3135,8 +3135,8 @@ void func_80077E88(void) {
     func_800700B0();
     func_80077D2C();
     func_80085988();
-    D_8004F31C = 0;
-    func_800320E8((void *)D_800ADB30);
+    mode_party_file_kind = 0;
+    heap_free((void *)D_800ADB30);
     func_8007954C(exit);
 }
 
@@ -3145,8 +3145,8 @@ void func_80077E88(void) {
  * stays live, so the final branch keeps an empty delay slot). */
 s32 func_80078B5C(void) {
     rand();
-    if (D_8004F308 == -1) {
-        D_8004F308 = func_80085C90(D_8004F324);
+    if (mode_music_load_pending == -1) {
+        mode_music_load_pending = func_80085C90(mode_music_selected_track);
     }
     if (D_800ADC18 != 0) {
         D_800ADC18--;
@@ -3159,7 +3159,7 @@ s32 func_80078BC8(void) {
     if (D_800ADB2C != 0) {
         return -1;
     }
-    if (func_800286CC() == 0 && D_8004F308 == 0 && D_800ADB90 == 0 && D_800ADB34 == 0
+    if (cd_get_pending_read_count() == 0 && mode_music_load_pending == 0 && D_800ADB90 == 0 && D_800ADB34 == 0
         && D_800ADBC4 == 0xFF) {
         return 0;
     }
@@ -3177,7 +3177,7 @@ void func_80078C5C(void) {
     if (D_800B2078.jump_mode != 0) {
         D_800B249C[0].draw.dtd = 0;
         D_800B249C[1].draw.dtd = 0;
-        pixels = func_80031BDC(0x4000, 0);
+        pixels = heap_alloc(0x4000, 0);
         rect.y = 0x1E0;
         rect.w = 0x100;
         rect.x = 0;
@@ -3194,7 +3194,7 @@ void func_80078C5C(void) {
         }
         LoadImage(&rect, pixels);
         DrawSync(0);
-        func_800320E8(pixels);
+        heap_free(pixels);
     }
 }
 
@@ -3213,14 +3213,14 @@ void func_80078D44(void) {
 
     func_80077544();
     func_800A915C();
-    func_80028470(4, 0);
+    cd_select_directory(4, 0);
     func_800777DC();
     func_800775F8();
-    if (D_8004F2F8 == 0) {
+    if (mode_field_entered_once == 0) {
         func_800A77C4(0);
     }
     func_80071FB0();
-    if (D_8004F2F8 == 0) {
+    if (mode_field_entered_once == 0) {
         rect.y = 0x100;
         rect.w = 0x140;
         rect.x = 0;
@@ -3233,21 +3233,21 @@ void func_80078D44(void) {
     DrawSync(0);
     func_80073FE0();
     func_800775F8();
-    if (D_800594D0 == 1 || D_8005942C == 1) {
+    if (mode_result_code == 1 || mode_battle_return_fade == 1) {
         func_800A5884(0, 0);
     } else {
         func_800A5884(1, 1);
     }
-    D_8004F2F8 = 1;
-    func_80028A60(0);
-    func_80028470(4, 0);
+    mode_field_entered_once = 1;
+    cd_sync_reads(0);
+    cd_select_directory(4, 0);
     func_80070CC8();
     func_80070488();
     D_800AFD04 = 1;
     if (D_800B2078.unk2264 != 0) {
         func_801E7378(1);
     }
-    if (D_800594D0 == 1 || D_8005942C == 1) {
+    if (mode_result_code == 1 || mode_battle_return_fade == 1) {
         grow = 0;
     } else {
         grow = 0x20;
@@ -3258,7 +3258,7 @@ void func_80078D44(void) {
             func_80073FE0();
             func_800A6408();
             func_800A6924();
-            if (D_8005942C != 1) {
+            if (mode_battle_return_fade != 1) {
                 if (D_800C2684 < 0x22C0) {
                     D_800C2684 += grow;
                 }
@@ -3269,15 +3269,15 @@ void func_80078D44(void) {
                     shade = 0;
                 }
             }
-        if (func_800286CC() != 0) {
+        if (cd_get_pending_read_count() != 0) {
             goto stream;
         }
         DrawSync(0);
-        func_800320E8(D_800ADC14);
+        heap_free(D_800ADC14);
         D_800ADB60 = 0;
         func_80078C5C();
     }
-    if (D_8005942C == 1) {
+    if (mode_battle_return_fade == 1) {
         do {
             func_80073FE0();
             func_800A6408();
@@ -3286,42 +3286,42 @@ void func_80078D44(void) {
             shade -= 0x40000;
         } while (shade >= 0);
     }
-    if (D_800594D0 == 1) {
+    if (mode_result_code == 1) {
         rect.w = 0x140;
         rect.y = 0;
         rect.x = 0;
         rect.h = 0xE0;
         MoveImage(&rect, 0x200, 0);
     }
-    if (D_8004F304 != 0) {
-        func_80039C4C((SoundSeq *)D_80062528);
-        func_800399D4((SoundSeq *)D_80062528);
-        func_80038310(D_8006258C);
-        D_8004F304 = 0;
+    if (mode_worldmap_area_load_count != 0) {
+        sound_stop_seq((SoundSeq *)mode_music_seq);
+        sound_release_seq((SoundSeq *)mode_music_seq);
+        sound_release_wave_bank(mode_music_wave_bank);
+        mode_worldmap_area_load_count = 0;
     }
     func_800A24C4();
-    D_8004F310 = 0;
-    D_8004F30C = 0;
+    mode_unread_arena_departure_count = 0;
+    mode_field_return_pending = 0;
     func_800775F8();
-    func_80035DB0();
-    D_8004F308 = 0;
-    if (D_800594D0 == 1) {
-        D_8004F324 = 0xE;
+    pad_clear_queue();
+    mode_music_load_pending = 0;
+    if (mode_result_code == 1) {
+        mode_music_selected_track = 0xE;
         func_80085EEC();
     }
-    if (D_8004F338 != D_8004F324) {
-        func_8001B66C();
-        D_8004F308 = -1;
-        if (D_8004F2FC != 0) {
-            D_8004F348 = 1;
+    if (mode_music_loaded_track != mode_music_selected_track) {
+        mode_stop_music();
+        mode_music_load_pending = -1;
+        if (mode_music_cached_seq != 0) {
+            mode_music_reuse_seq = 1;
         }
-        func_80085B20(D_8004F324, 1);
+        func_80085B20(mode_music_selected_track, 1);
     } else {
         func_80085EEC();
     }
     func_800A31E8();
-    if (D_800594D0 != 1) {
-        if (D_8005942C != 1) {
+    if (mode_result_code != 1) {
+        if (mode_battle_return_fade != 1) {
             func_80071E58(0x20);
             shade = 0x800000;
             for (i = 0; i < 0x20; i++) {
@@ -3329,7 +3329,7 @@ void func_80078D44(void) {
                 func_800A6408();
                 func_8007554C();
                 func_80078B5C();
-                if (D_800594D0 != 1) {
+                if (mode_result_code != 1) {
                     func_800A5600(shade >> 16);
                     shade -= 0x40000;
                     if (shade < 0) {
@@ -3355,15 +3355,15 @@ void func_80078D44(void) {
         func_801E7378(0);
     }
     func_800A91F0();
-    func_80031FF8();
-    func_8003748C();
+    heap_coalesce();
+    console_close();
     func_80077544();
     D_800AFD04 = 0;
 }
 
 /* Count down the random-encounter steps while encounters are possible; on a
  * step whose drawn number (800b22a0) reaches zero, pick a formation of the
- * map's set by the weights D_80065ADC (resident/formation.h) and request
+ * map's set by the weights formation_encounter_weights (resident/formation.h) and request
  * battle with its music. The original is an int function (implicit int)
  * that returns no value: its epilogue keeps $v0 live, so no delay slot is
  * filled with a $v0 write. */
@@ -3375,7 +3375,7 @@ s32 func_80079288(void) {
     s32 found;
     s32 i;
 
-    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADBEC == 0 || D_8004F308 == -1 || D_800B2078.unk2298 == 0
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADBEC == 0 || mode_music_load_pending == -1 || D_800B2078.unk2298 == 0
         || D_800B2078.encounter_inhibition == -1 || D_800ADB2C == 1 || D_800ADB04 == 0) {
         return;
     }
@@ -3395,7 +3395,7 @@ s32 func_80079288(void) {
     }
     return;
 draw:
-    weights = D_80065ADC;
+    weights = formation_encounter_weights;
     total = 0;
     for (i = 0; i < 16; i++) {
         total += weights[i];
@@ -3414,11 +3414,11 @@ draw:
         }
     }
     if (found != 0) {
-        D_80059508 = i;
-        D_800594F8 = 0;
+        formation_selected_index = i;
+        mode_battle_standalone = 0;
         D_800B2078.battle_music = D_800B2078.encounter_music[i];
-        if (D_8004F370 == 0) {
-            func_800199CC(2);
+        if (mode_field_standalone == 0) {
+            mode_load_overlay_block(2);
         }
         D_800ADBDC = 0;
         D_800ADBD0 = 1;
@@ -3434,53 +3434,53 @@ draw:
  * stream work while 8004f384 is 1), kind 2 mode 4, kind 3 the mode in 800b0064's low bits (bit 7 runs
  * 8001bb50 first). Nothing is selected while 8004f370 is set. */
 void func_8007954C(s32 kind) {
-    D_8005942C = 0;
+    mode_battle_return_fade = 0;
     switch (kind) {
     case 0:
         func_800A30FC();
-        D_8004F324 = D_800AFC78;
-        D_8005A39C->flagWords[0] = D_800AFC78;
-        D_8005A39C->entry[2] = D_8005A39C->vars[1];
-        if (D_8004F370 != 0) {
+        mode_music_selected_track = D_800AFC78;
+        game_current_data->flagWords[0] = D_800AFC78;
+        game_current_data->entry[2] = game_current_data->vars[1];
+        if (mode_field_standalone != 0) {
             return;
         }
-        func_8001996C(2);
+        mode_select_next_mode(2);
         break;
     case 1:
-        if (D_8004F384 == kind) {
-            func_8001B66C();
+        if (mode_shared_wave_bank_needs_reload == kind) {
+            mode_stop_music();
             func_80085FB8();
-            func_80028A60(0);
+            cd_sync_reads(0);
             func_80085F30();
-            func_8001B66C();
+            mode_stop_music();
         }
-        if (D_8004F370 != 0) {
+        if (mode_field_standalone != 0) {
             return;
         }
-        func_8001996C(3);
+        mode_select_next_mode(3);
         break;
     case 2:
-        D_8005A39C->flagWords[0] = D_8004F324;
-        D_8005A39C->entry[2] = D_8005A39C->vars[1];
-        if (D_8004F370 != 0) {
+        game_current_data->flagWords[0] = mode_music_selected_track;
+        game_current_data->entry[2] = game_current_data->vars[1];
+        if (mode_field_standalone != 0) {
             return;
         }
-        func_8001996C(4);
-        D_8004F30C++;
+        mode_select_next_mode(4);
+        mode_field_return_pending++;
         break;
     case 3:
-        D_8004F310 = 0;
-        D_8004F30C = 0;
-        if (D_8004F370 != 0) {
+        mode_unread_arena_departure_count = 0;
+        mode_field_return_pending = 0;
+        if (mode_field_standalone != 0) {
             return;
         }
         if (D_800B0064 & 0x80) {
-            func_8001BB50();
+            mode_init_game_data();
         }
-        func_8001996C(D_800B0064 & 0x7F);
+        mode_select_next_mode(D_800B0064 & 0x7F);
         break;
     }
-    func_80019ACC(0);
+    mode_dispatch(0);
 }
 
 /* Empty; nothing calls it. */
@@ -3514,12 +3514,12 @@ void func_80079784(s32 level) {
  * actor has neither bit 0x40 nor 0x80 of +14; 800b234c overrides it. */
 void func_800798BC(void) {
     if (D_800B2078.unk2268 != 0 && !(D_800AF880.components.descriptors[D_800B2078.controlled].actor->unk014 & 0xC0)) {
-        D_80059179 = 0;
+        mode_gear_riding_lock = 0;
     } else {
-        D_80059179 = 1;
+        mode_gear_riding_lock = 1;
     }
     if (D_800B2078.battle_override != 0xFF) {
-        D_80059179 = D_800B2078.battle_override;
+        mode_gear_riding_lock = D_800B2078.battle_override;
     }
 }
 
@@ -3580,34 +3580,34 @@ void func_800799D4(void) {
     SetDrawMode(&D_800AFE24[1], 0, 0, GetTPage(0, 2, 0, 0), NULL);
     func_80077D2C();
     if (D_800B2078.unk2264 != 0) {
-        func_80028470(4, 0);
-        module = func_80031BDC(func_800288EC(0x6B9), 0);
+        cd_select_directory(4, 0);
+        module = heap_alloc(cd_get_aligned_file_size(0x6B9), 0);
         source = D_800ADB20;
-        memcpy(module, source, func_800288EC(0x6B9));
-        func_800320E8(D_800ADB20);
+        memcpy(module, source, cd_get_aligned_file_size(0x6B9));
+        heap_free(D_800ADB20);
     }
     end = D_800ADB30;
-    func_80028470(0x10, 0);
-    if (D_8004F370 == 1) {
-        menu = func_80031BDC(func_800288EC((D_800ADB64 + 5) & 0x7F), 1);
+    cd_select_directory(0x10, 0);
+    if (mode_field_standalone == 1) {
+        menu = heap_alloc(cd_get_aligned_file_size((D_800ADB64 + 5) & 0x7F), 1);
     } else {
-        menu = func_80031BDC((end & 0xFFFFFF) - 0x1C5008, 1);
+        menu = heap_alloc((end & 0xFFFFFF) - 0x1C5008, 1);
     }
     files[2].file = 0;
     files[2].destination = NULL;
     files[3].file = 0;
     files[3].destination = NULL;
     files[0].file = 1;
-    files[0].destination = D_8005945C = func_80031BDC(func_800288EC(1), 1);
+    files[0].destination = menu_state_resource_file = heap_alloc(cd_get_aligned_file_size(1), 1);
     files[1].destination = menu;
     files[1].file = (D_800ADB64 & 0x7F) + 5;
-    if ((D_800ADB64 & 0x7F) == 5 && D_8004F370 == 0) {
+    if ((D_800ADB64 & 0x7F) == 5 && mode_field_standalone == 0) {
         files[2].file = 0xC;
         files[2].destination = (void *)0x1DC000;
     }
-    func_80028A60(0);
-    func_80029AFC(files, 0, 0);
-    func_80028470(4, 0);
+    cd_sync_reads(0);
+    cd_read_file_list(files, 0, 0);
+    cd_select_directory(4, 0);
     rect.w = 0x40;
     rect.h = 0x20;
     for (i = 0; i < 6; i++) {
@@ -3632,38 +3632,38 @@ void func_800799D4(void) {
     D_800AFE4C.x = 0;
     D_800AFE4C.y = 0;
     func_800796FC();
-    func_8003748C();
+    console_close();
     MoveImage(&D_800AFE4C, 0, 0xE0);
     func_800775F8();
-    func_80028A60(0);
-    D_800594D0 = 0;
-    D_80059178 = 0;
-    D_80059460 = D_800ADB64 & 0x7F;
+    cd_sync_reads(0);
+    mode_result_code = 0;
+    menu_state_debug_start = 0;
+    menu_state_screen = D_800ADB64 & 0x7F;
     for (i = 0; i < 3; i++) {
-        D_8006BE2C[i] = D_8005A39C->inGear[i];
+        mode_party_gear_refresh_flags[i] = game_current_data->inGear[i];
     }
     func_800798BC();
-    D_8005A4AC[0] = (u32 *)D_800B249C[0].ot;
-    D_8005A4AC[1] = (u32 *)D_800B249C[1].ot;
+    menu_state_big_ots[0] = (u32 *)D_800B249C[0].ot;
+    menu_state_big_ots[1] = (u32 *)D_800B249C[1].ot;
     func_8007999C();
-    func_8001C634();
+    mode_run_menu();
     func_8007999C();
-    D_80050100 = 2;
-    if (D_800594D0 == 0 && (D_800ADB64 & 0x7F) == 2) {
+    model_ot_depth_shift = 2;
+    if (mode_result_code == 0 && (D_800ADB64 & 0x7F) == 2) {
         D_800B02C8 = 1;
         func_800A3074(0x46, 0);
         func_800A3074(4, 4);
-        D_8004F34C = 4;
-        D_8005A39C->entry[2] = 0;
-        D_8005A39C->vars[1] = 0;
-        D_8005A39C->map = 4;
+        mode_field_map_id = 4;
+        game_current_data->entry[2] = 0;
+        game_current_data->vars[1] = 0;
+        game_current_data->map = 4;
     }
-    if (D_800594D0 == 2) {
+    if (mode_result_code == 2) {
         D_800B02C8 = 1;
         func_800A3074(0x46, 2);
-        func_800A3074(4, D_8005A39C->map & 0x3FFF);
-        if ((D_8005A39C->map & 0x3FFF) < 0x400) {
-            D_8005A39C->entry[2] = D_8005A39C->vars[0x2A];
+        func_800A3074(4, game_current_data->map & 0x3FFF);
+        if ((game_current_data->map & 0x3FFF) < 0x400) {
+            game_current_data->entry[2] = game_current_data->vars[0x2A];
         }
     }
     func_800775F8();
@@ -3688,14 +3688,14 @@ void func_800799D4(void) {
     rect.h = 0x100;
     rect.x = 0x300;
     rect.y = 0;
-    saved_a = func_80031BDC(0x8000, 1);
+    saved_a = heap_alloc(0x8000, 1);
     StoreImage(&rect, saved_a);
     DrawSync(0);
     rect.w = 0x40;
     rect.h = 0x100;
     rect.x = 0x280;
     rect.y = 0;
-    saved_b = func_80031BDC(0x8000, 1);
+    saved_b = heap_alloc(0x8000, 1);
     StoreImage(&rect, saved_b);
     DrawSync(0);
     for (i = 0; i < 6; i++) {
@@ -3706,8 +3706,8 @@ void func_800799D4(void) {
         MoveImage(&rect, D_800ADCB0[i * 2], D_800ADCB0[i * 2 + 1]);
         DrawSync(0);
     }
-    func_80028470(4, 0);
-    func_80032498(8, 0);
+    cd_select_directory(4, 0);
+    heap_select_owner_tag(8, 0);
     D_800ADB60 = 0;
     func_80070488();
     if (D_800AFE84 != 0) {
@@ -3733,42 +3733,42 @@ void func_800799D4(void) {
     rect.x = 0x3C0;
     LoadImage(&rect, saved_a);
     DrawSync(0);
-    func_800320E8(saved_b);
-    func_800320E8(saved_a);
-    func_800320E8(menu);
-    func_80028470(4, 0);
+    heap_free(saved_b);
+    heap_free(saved_a);
+    heap_free(menu);
+    cd_select_directory(4, 0);
     if (D_800B2078.unk2264 != 0) {
-        if (D_8004F370 == 0) {
-            D_800ADB20 = func_80031BDC((end & 0xFFFFFF) - 0x1DC008, 1);
+        if (mode_field_standalone == 0) {
+            D_800ADB20 = heap_alloc((end & 0xFFFFFF) - 0x1DC008, 1);
         } else {
-            D_800ADB20 = func_80031BDC(func_800288EC(0x6B9), 1);
+            D_800ADB20 = heap_alloc(cd_get_aligned_file_size(0x6B9), 1);
         }
         source = D_800ADB20;
-        memcpy(source, module, func_800288EC(0x6B9));
-        func_800320E8(module);
+        memcpy(source, module, cd_get_aligned_file_size(0x6B9));
+        heap_free(module);
     }
     SetGeomOffset(0xA0, 0x70);
     SetGeomScreen(D_800AF880.projection);
     func_80077C88();
     if (D_800ADB64 == 1) {
-        D_8006FABC[2] = 0xFF;
-        D_8006FABC[1] = 0xFF;
-        D_8006FABC[0] = 0xFF;
-        D_8004F320 = 0;
-        D_8004F31C = 0;
-        func_8001B044();
-        func_8001B3A8();
+        mode_party_file_ids[2] = 0xFF;
+        mode_party_file_ids[1] = 0xFF;
+        mode_party_file_ids[0] = 0xFF;
+        mode_party_uses_gear_files = 0;
+        mode_party_file_kind = 0;
+        mode_sync_party_files();
+        mode_unpack_party_files();
         func_800775F8();
         D_800ADBEC = 0;
         D_800ADB05 = 1;
     } else {
         for (i = 0; i < 3; i++) {
-            if (D_8006FABC[i] != 0xFF) {
-                sprites = func_80031BDC(func_800288EC(D_8006FABC[i] + 5), 1);
-                func_800295D8(D_8006FABC[i] + 5, sprites, 0, 0x80);
-                func_80028A60(0);
-                func_80032EB4(sprites, D_8005A414[i]);
-                func_800320E8(sprites);
+            if (mode_party_file_ids[i] != 0xFF) {
+                sprites = heap_alloc(cd_get_aligned_file_size(mode_party_file_ids[i] + 5), 1);
+                cd_read_file(mode_party_file_ids[i] + 5, sprites, 0, 0x80);
+                cd_sync_reads(0);
+                text_unpack_lzss(sprites, mode_party_sprite_blocks[i]);
+                heap_free(sprites);
             }
         }
         func_800A2488();
@@ -3776,5 +3776,5 @@ void func_800799D4(void) {
     }
     D_800ADB64 = 0xFF;
     func_80077544();
-    D_8004F350 = 0;
+    mode_menu_request_count = 0;
 }

@@ -7,7 +7,7 @@
 /* Resident sprite/actor engine (the four sprite units, 0x8001c8dc-0x8002709c;
  * the task lists they run on are in task.h). Only the fields the recovered
  * functions use are named. */
-extern struct Sprite *D_80059190; /* sprites awaiting a frame (through renderer->next_pending) */
+extern struct Sprite *sprite_pending_list; /* sprites awaiting a frame (through renderer->next_pending) */
 
 /* One drawn part of a sprite (0x18 bytes; the renderer's part list). */
 typedef struct {
@@ -246,14 +246,14 @@ typedef struct {
 
 /* Small globals of other units: this unit addresses them absolutely (its
  * assembler ignored the `.extern` sizes GCC gives them). */
-extern s32 D_800591A8;
-extern u8 D_800591AD;
-extern u8 D_800591AE;
-extern u8 D_800591B0;
-extern u8 D_800591B3;
-extern u8 D_8005A474[];
-extern u8 *D_800594B8; /* end of the queue entry block */
-extern s32 D_800591B8;    /* extra argument of 80024524/8002435c for one call */
+extern s32 sprite_default_scale;
+extern u8 sprite_in_battle;
+extern u8 sprite_in_worldmap;
+extern u8 sprite_battle_module_loaded;
+extern u8 sprite_requested_battle_module;
+extern u8 sprite_effect_source[];
+extern u8 *sprite_queue_second_entry_block; /* end of the queue entry block */
+extern s32 sprite_palette_bank;    /* extra argument of 80024524/8002435c for one call */
 
 /* A queued VRAM upload (LoadImage, or ClearImage without pixels), from the
  * queue block; 80025044 runs the list of the queue being filled. */
@@ -282,52 +282,52 @@ typedef struct SpriteQueueEntry {
     u32 value;
     struct SpriteQueueEntry *next;
 } SpriteQueueEntry;
-extern u8 D_8006BE10[];
-extern s32 D_8005956C;
+extern u8 sprite_shared_source[];
+extern s32 sprite_ot;
 
 /* The view matrix sprites are placed with (80024ff4 sets it). */
-extern MATRIX D_8004FBB8;
-extern u8 D_8004FBD8[]; /* packed image uploaded by 8001fab4 */
-extern void (*D_8004FD40[])(Task *); /* task update callbacks by kind */
-void func_80022DF4(Task *task);
-void func_80022EB8(Task *task);
-void func_80025180(u32 value);
-void func_8001D3F4(Sprite *sprite);
-s32 func_8001EE74(u16 *header); /* the part count of a frame header */
-void func_80022000(Sprite *sprite, s32 scale);
-void func_800239A0(Sprite *sprite);
-void func_80023804(Sprite *sprite);
-void func_8002393C(SpriteRenderer *renderer);
+extern MATRIX sprite_view_matrix;
+extern u8 sprite_packed_pause_image[]; /* packed image uploaded by 8001fab4 */
+extern void (*sprite_draw_callbacks[])(Task *); /* task update callbacks by kind */
+void sprite_task_update(Task *task);
+void sprite_task_destroy(Task *task);
+void sprite_queue_free_later(u32 value);
+void sprite_remove_pending(Sprite *sprite);
+s32 sprite_get_part_count(u16 *header); /* the part count of a frame header */
+void sprite_set_scale(Sprite *sprite, s32 scale);
+void sprite_attach_inline_storage(Sprite *sprite);
+void sprite_reset_defaults(Sprite *sprite);
+void sprite_reset_renderer(SpriteRenderer *renderer);
 
-void func_8001F6B0(Sprite *sprite); /* recolour the parts */
-void func_80022090(Sprite *sprite); /* rebuild the orientation */
-void func_800222BC(Sprite *sprite, s32 *data);
-void func_80022660(Sprite *sprite, u8 *target, s32 count);
-void func_80023538(Sprite *sprite, u16 *animation);
-void func_80022974(Sprite *sprite); /* velocity from speed and direction */
-void func_80023210(Sprite *sprite);
-void func_800245D8(Sprite *sprite, s32 value);
-void func_8001D2B0(Sprite *sprite, s32 frame);
-void func_8001D53C(Sprite *sprite, s32 frame, SpriteSource *source);
-void func_8001DAE8(Sprite *sprite, s32 frame, SpriteSource *source);
-DVECTOR func_8001F530(s32 width);
-void func_8001E148(Sprite *sprite);
-void func_80022038(Sprite *sprite);
-void func_8001E3D8(Sprite *sprite, u_long *ot);
-void func_8001E9BC(Sprite *sprite, u_long *ot);
-void func_8001EE88(Sprite *sprite, u_long *ot, s32 height);
-void func_8001F1D4(Sprite *sprite, u_long *ot, s32 height);
-void func_8001F750(Sprite *sprite, s32 frame, SpriteSource *source);
-void func_8001F8E8(Sprite *sprite, s32 frame, SpriteSource *source);
-void func_800234AC(Sprite *sprite);
-s32 func_8003F8B0(s32 angle); /* sine (4096 = 1.0) */
-s32 func_8003F8CC(s32 angle); /* cosine (4096 = 1.0) */
-void func_800248D4(Sprite *sprite); /* run the next script command */
-extern s32 D_80059198; /* extra frames per update */
-void func_80022B2C(Sprite *sprite);
-Sprite *func_8002435C(Sprite *sprite, s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused);
-s32 func_80022CAC(Sprite *sprite, s32 value);
-void func_80022CDC(Sprite *sprite);
+void sprite_recolor_parts(Sprite *sprite); /* recolour the parts */
+void sprite_rebuild_orientation(Sprite *sprite); /* rebuild the orientation */
+void sprite_bind_resource(Sprite *sprite, s32 *data);
+void sprite_vm_replay_frames(Sprite *sprite, u8 *target, s32 count);
+void sprite_apply_animation_header(Sprite *sprite, u16 *animation);
+void sprite_update_velocity(Sprite *sprite); /* velocity from speed and direction */
+void sprite_vm_tick(Sprite *sprite);
+void sprite_start_animation(Sprite *sprite, s32 value);
+void sprite_request_frame(Sprite *sprite, s32 frame);
+void sprite_build_cell_frame(Sprite *sprite, s32 frame, SpriteSource *source);
+void sprite_build_frame(Sprite *sprite, s32 frame, SpriteSource *source);
+DVECTOR sprite_reserve_texture_columns(s32 width);
+void sprite_set_draw_matrix(Sprite *sprite);
+void sprite_update_orientation(Sprite *sprite);
+void sprite_draw_parts(Sprite *sprite, u_long *ot);
+void sprite_draw_shadow(Sprite *sprite, u_long *ot);
+void sprite_draw_parts_cut_below(Sprite *sprite, u_long *ot, s32 height);
+void sprite_draw_parts_cut_above(Sprite *sprite, u_long *ot, s32 height);
+void sprite_apply_cell_frame_controls(Sprite *sprite, s32 frame, SpriteSource *source);
+void sprite_apply_frame_controls(Sprite *sprite, s32 frame, SpriteSource *source);
+void sprite_clear_group_entries(Sprite *sprite);
+s32 gpu_get_sin(s32 angle); /* sine (4096 = 1.0) */
+s32 gpu_get_cos(s32 angle); /* cosine (4096 = 1.0) */
+void sprite_vm_run(Sprite *sprite); /* run the next script command */
+extern s32 sprite_frame_skip; /* extra frames per update */
+void sprite_move_vertically(Sprite *sprite);
+Sprite *sprite_construct(Sprite *sprite, s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused);
+s32 sprite_scale_by_rate(Sprite *sprite, s32 value);
+void sprite_move(Sprite *sprite);
 
 /* An image cell of a sprite source (its pixels follow). */
 typedef struct {
@@ -335,7 +335,7 @@ typedef struct {
     u16 kind;              /* +0x2: bit 0: 8-bit texture */
 } SpriteCell;
 
-void func_800251C8(u_long *pixels, s16 x, s16 y, s16 w, s16 h); /* queue an image upload */
+void sprite_queue_upload(u_long *pixels, s16 x, s16 y, s16 w, s16 h); /* queue an image upload */
 
 /* A model sprite's alternate renderer view ((render.word & 3) == 2).
  * Resident F5-F7 bind a SpriteModel; battle F3 binds a ScriptEntry. */
@@ -354,29 +354,29 @@ typedef struct {
 } SpriteVoice;
 
 /* Positions of other modes the script can place a sprite at. */
-extern SpriteVoice *D_8005919C;
-extern VECTOR D_8006F99C;       /* positions (16.16) of two field points */
-extern VECTOR D_8006F9AC;
+extern SpriteVoice *sprite_script_sound_bank;
+extern VECTOR sprite_camera_eye;       /* positions (16.16) of two field points */
+extern VECTOR sprite_camera_look_at;
 
-void func_80023290(Sprite *sprite, s32 rate);
-Sprite *func_80023B84(Sprite *sprite, u16 *animation, SpriteSource *image);
-void func_80021B14(VECTOR *vector, s32 x, s32 y, s32 z);
-void func_80021CA0(Sprite *sprite, u8 value);
-void func_8001D4E8(Sprite *sprite);
-void func_8001FB30(void);
-u8 *func_8001FBA4(Sprite *sprite, u8 *code);
+void sprite_set_blend_rate(Sprite *sprite, s32 rate);
+Sprite *sprite_create_child(Sprite *sprite, u16 *animation, SpriteSource *image);
+void sprite_set_vector(VECTOR *vector, s32 x, s32 y, s32 z);
+void sprite_stack_push_byte(Sprite *sprite, u8 value);
+void sprite_alloc_group_entries(Sprite *sprite);
+void sprite_upload_image_list(void);
+u8 *sprite_vm_resolve_variable(Sprite *sprite, u8 *code);
 
-extern SpriteQueueEntry *D_80059580; /* the next free queue entry */
-extern u8 *D_80059534;                /* its end */
-extern u16 D_8004FAF8[16]; /* bit masks; the facing groups test render byte 1 */
-extern SVECTOR D_8004FB98[4]; /* the corners of the quad being drawn */
-extern SVECTOR D_8004FAD8[4]; /* the corners of the shadow quad being drawn */
+extern SpriteQueueEntry *sprite_queue_next_free; /* the next free queue entry */
+extern u8 *sprite_queue_block_end;                /* its end */
+extern u16 sprite_halfword_bit_masks[16]; /* bit masks; the facing groups test render byte 1 */
+extern SVECTOR sprite_quad_corners[4]; /* the corners of the quad being drawn */
+extern SVECTOR sprite_shadow_corners[4]; /* the corners of the shadow quad being drawn */
 
 /* Texture positions of the resident cell pages (two-byte cell kinds). */
 typedef struct {
     s16 x, y;
 } TexturePosition;
-extern TexturePosition D_8004FAB8[8];
+extern TexturePosition sprite_cell_page_positions[8];
 /* Second sprite unit (80022090-8002709c). */
 /* The bits of a sprite's flags word (+0x40) that the original writes as fields
  * (the battle modules read part_bytes and shift as fields too). */
@@ -388,17 +388,17 @@ typedef struct {
     unsigned flag18 : 1;     /* inherited by child sprites (80023b84) */
     unsigned unknown19 : 13;
 } SpriteFlagBits;
-extern u8 D_8004FCC0[0x80]; /* lengths of the frame commands 0x80-0xff */
-void func_80021CF8(Sprite *sprite, s32 value); /* push three bytes */
-void func_80022D44(Sprite *sprite);
-s32 func_80023440(u16 *entry);
-s32 func_80023468(s32 kind, s32 fallback);
-SpriteTask *func_80023A48(s32 kind, s32 mode, SpriteSource *source, s32 extra, Task *owner);
-void func_80024730(SpriteTask *task);
-void func_80022E8C(Task *task);
-void func_80025224(Task *task, s32 kind);
-s32 func_80021C6C(Sprite *sprite);
-void func_8001E298(Sprite *sprite, u_long *ot); /* draw into the ordering table entry at `ot` */
+extern u8 sprite_vm_command_lengths[0x80]; /* lengths of the frame commands 0x80-0xff */
+void sprite_stack_push_three_bytes(Sprite *sprite, s32 value); /* push three bytes */
+void sprite_show_indexed_frame(Sprite *sprite);
+s32 sprite_get_header_kind(u16 *entry);
+s32 sprite_get_render_kind(s32 kind, s32 fallback);
+SpriteTask *sprite_task_create(s32 kind, s32 mode, SpriteSource *source, s32 extra, Task *owner);
+void sprite_task_init_by_kind(SpriteTask *task);
+void sprite_task_update_counted(Task *task);
+void sprite_task_set_draw_by_kind(Task *task, s32 kind);
+s32 sprite_stack_pop_three_bytes(Sprite *sprite);
+void sprite_draw(Sprite *sprite, u_long *ot); /* draw into the ordering table entry at `ot` */
 /* The scratchpad work area of the pixel colour scaling (80025c04). */
 typedef struct {
     u16 colour;     /* +0x0: the scaled pixel */
@@ -407,52 +407,52 @@ typedef struct {
     VECTOR out;     /* +0x14 */
 } ColourScratch;
 #define COLOUR_SCRATCH ((ColourScratch *)0x1F800000)
-extern SVECTOR D_8004FDC0[4]; /* corners of a sheet part being drawn */
-extern MATRIX D_8004FD80; /* light colour matrix of lit sprite models */
-extern MATRIX D_8004FDA0; /* light direction matrix of lit sprite models */
+extern SVECTOR sprite_sheet_corners[4]; /* corners of a sheet part being drawn */
+extern MATRIX sprite_light_color_matrix; /* light colour matrix of lit sprite models */
+extern MATRIX sprite_light_direction_matrix; /* light direction matrix of lit sprite models */
 
 /* More of the sprite services and their state. */
-void func_8001D468(void);
-void func_8001E2F8(Sprite *sprite, u_long *ot, s32 height);
-void func_8001E368(Sprite *sprite, u_long *ot, s32 height);
-s32 func_8001EE68(u8 *frame);
-void func_8001F5BC(Sprite *sprite, s32 unused, s32 *width, s32 *height, s32 *depth);
-void func_8001FAB4(s32 x, s32 y);
-void func_80021B24(SVECTOR *to, SVECTOR *from);
-void func_80021BF0(Sprite *sprite, s32 resource);
-void func_80021BF8(Sprite *sprite, void *callback);
-void func_80021C00(Sprite *sprite, s32 group);
-void func_80021D50(Sprite *sprite, SpriteState *state);
-void func_80021EBC(Sprite *sprite, SpriteState *state);
-void func_80021FC0(Sprite *sprite, s32 speed);
-s32 func_80022A00(s32 *word);
-void func_8002303C(Sprite *sprite, s32 count, s32 mode);
-void func_800230A8(Sprite *sprite);
-void func_80023340(Sprite *sprite, s32 count);
-SpriteTask *func_80023FD8(s32 index, SpriteSource *source, SVECTOR *position, s32 extra);
-void func_80024F64(s32 size, s32 mode);
-void func_80024FB8(void);
-void func_80024FE4(s32 value);
-void func_80024FF4(MATRIX *view);
-void func_80025044(void);
-void func_800250E0(s32 queue);
-void func_80025A88(Task *task);
-void func_80025D4C(s32 count, u16 *src, u16 *base, u16 *dst, s32 red, s32 green, s32 blue, s32 mode, s32 factor);
-void func_80026338(u16 *sheet, s32 id, s32 *first, s32 *mode, s32 *clut_x, s32 *clut_y, s32 *x, s32 *y);
-void func_80026BA4(u16 *sheet, s32 id, s32 x, s32 y, u_long *ot);
-extern u8 D_800591B1;
-extern u8 D_800591B2;
-extern u16 D_800591B4;
-extern u8 D_80059468[3];
-extern void *D_800594BC;
-extern u8 D_800594CC;
-extern s32 D_800595A0;
-extern void *D_800595A8;
+void sprite_build_pending_frames(void);
+void sprite_draw_cut_below(Sprite *sprite, u_long *ot, s32 height);
+void sprite_draw_cut_above(Sprite *sprite, u_long *ot, s32 height);
+s32 sprite_is_cell_directory(u8 *frame);
+void sprite_get_extent(Sprite *sprite, s32 unused, s32 *width, s32 *height, s32 *depth);
+void sprite_upload_pause_image(s32 x, s32 y);
+void sprite_copy_svector(SVECTOR *to, SVECTOR *from);
+void sprite_set_alternate_resource(Sprite *sprite, s32 resource);
+void sprite_set_completion_callback(Sprite *sprite, void *callback);
+void sprite_set_scale_shift(Sprite *sprite, s32 group);
+void sprite_restore_state(Sprite *sprite, SpriteState *state);
+void sprite_save_state(Sprite *sprite, SpriteState *state);
+void sprite_set_walk_speed(Sprite *sprite, s32 speed);
+s32 sprite_read_word(s32 *word);
+void sprite_alloc_sequencer_buffer(Sprite *sprite, s32 count, s32 mode);
+void sprite_destroy(Sprite *sprite);
+void sprite_realloc_parts_from_bottom(Sprite *sprite, s32 count);
+SpriteTask *sprite_create_effect(s32 index, SpriteSource *source, SVECTOR *position, s32 extra);
+void sprite_alloc_queues(s32 size, s32 mode);
+void sprite_free_queues(void);
+void sprite_set_ot(s32 value);
+void sprite_set_view_matrix(MATRIX *view);
+void sprite_queue_run_uploads(void);
+void sprite_queue_start_fill(s32 queue);
+void sprite_task_draw_unlit_tmd(Task *task);
+void sprite_tint_blend_pixels(s32 count, u16 *src, u16 *base, u16 *dst, s32 red, s32 green, s32 blue, s32 mode, s32 factor);
+void sprite_sheet_get_texture(u16 *sheet, s32 id, s32 *first, s32 *mode, s32 *clut_x, s32 *clut_y, s32 *x, s32 *y);
+void sprite_sheet_queue_quads(u16 *sheet, s32 id, s32 x, s32 y, u_long *ot);
+extern u8 sprite_single_action_done;
+extern u8 sprite_loaded_battle_module;
+extern u16 sprite_single_action_request;
+extern u8 mode_battle_party_ids[3];
+extern void *mode_battle_action_stream_ring;
+extern u8 menu_state_saved_cursor;
+extern s32 window_semi_transparency_mode;
+extern void *mode_battle_setup_archive;
 
 /* Darken `count` RGB555 pixels of `source` into `out` by level / 32, and
  * blend them from `base` towards `target` by level / 32, through the GTE
  * (handwritten). */
-void func_80026F44(s32 count, s32 level, u16 *out, u16 *source);
-void func_80026FE8(s32 count, s32 level, u16 *out, u16 *base, u16 *target);
+void sprite_darken_pixels(s32 count, s32 level, u16 *out, u16 *source);
+void sprite_blend_pixels(s32 count, s32 level, u16 *out, u16 *base, u16 *target);
 
 #endif

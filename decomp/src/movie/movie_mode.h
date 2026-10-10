@@ -24,19 +24,19 @@
 
 /* Callers convert arguments/result differently from the resident definition
  * (u8 mode; u16 stream parameters; the result read as s16). */
-void func_8002A428(s32 mode); /* resident read mode */
-void func_80029EB0(s32 file, void *ring, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6, s32 a7, s32 a8,
-                   s32 a9); /* stream a file through a ring */
-s16 func_8003BDFC(s32 wait);  /* sound transfer busy */
+void cd_set_mode(s32 mode); /* resident read mode */
+void stream_start_image_load(s32 file, void *ring, s32 mode, s32 unused, s32 mode_1200, s32 base_x_1200, s32 base_y_1200, s32 mode_1201, s32 base_x_1201,
+                   s32 base_y_1201); /* stream a file through a ring */
+s16 sound_sync_transfer(s32 wait);  /* sound transfer busy */
 
-extern u16 D_80062514; /* the requested movie's last frame */
+extern u16 cd_movie_request_last_frame; /* the requested movie's last frame */
 
-/* The movie request bytes 8004fe44-8004fe47 (cd.h's D_8004FE44-D_8004FE47):
+/* The movie request bytes 8004fe44-8004fe47 (cd.h's cd_movie_request_kind-cd_movie_request_unskippable):
  * kind (bit 7: last frame from 80062514), index, the next mode, and whether
  * buttons do not end the movie. This unit indexes them as one array, loading
  * [0] through the array's address in a register, which the four scalars do
  * not reproduce. */
-extern u8 D_8004FE44_request[4] __asm__("D_8004FE44");
+extern u8 D_8004FE44_request[4] __asm__("cd_movie_request_kind");
 
 /* One display buffer: its drawing and display environments, the ordering
  * table and the two frame primitives drawn over it. */

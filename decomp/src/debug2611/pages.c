@@ -18,96 +18,96 @@ void func_8028022C(void) {
     s32 x;
     s32 hp;
 
-    switch (D_8005959C) {
+    switch (mode_battle_debug_page) {
     case 1:
-        func_80037058(0, 0);
+        console_place_cursor(0, 0);
         for (i = 3; i < 11; i++) {
             if (D_800C3EB0.slots[i].gear == 0) {
                 hp = D_800CCCE8.records[i].pilot.hp;
             } else {
                 hp = D_800CCCE8.records[i].gear.hp;
             }
-            func_8003700C("%d,", hp);
+            console_printf("%d,", hp);
         }
-        func_8003700C("\n");
-        func_8003700C("No  Cd  Cl  An  P1  P2  P3  Tg\n");
+        console_printf("\n");
+        console_printf("No  Cd  Cl  An  P1  P2  P3  Tg\n");
         for (i = 0; i < 23; i++) {
-            func_80037058(0, (i + 2) * 8);
-            func_8003700C("%X", i);
-            func_80037058(0x24, (i + 2) * 8);
-            func_8003700C("%X", D_800D2E5C[i].type);
-            func_80037058(0x48, (i + 2) * 8);
-            func_8003700C("%X", D_800D2E5C[i].arg1);
-            func_80037058(0x6C, (i + 2) * 8);
-            func_8003700C("%X", D_800D2E5C[i].animation);
-            func_80037058(0x90, (i + 2) * 8);
-            func_8003700C("%X", D_800D2E5C[i].named);
-            func_80037058(0xB4, (i + 2) * 8);
-            func_8003700C("%X", D_800D2E5C[i].param);
-            func_80037058(0xD8, (i + 2) * 8);
-            func_8003700C("%X", D_800D2E5C[i].unk5);
-            func_80037058(0xFC, (i + 2) * 8);
-            func_8003700C("%X", D_800D2E5C[i].targets);
+            console_place_cursor(0, (i + 2) * 8);
+            console_printf("%X", i);
+            console_place_cursor(0x24, (i + 2) * 8);
+            console_printf("%X", D_800D2E5C[i].type);
+            console_place_cursor(0x48, (i + 2) * 8);
+            console_printf("%X", D_800D2E5C[i].arg1);
+            console_place_cursor(0x6C, (i + 2) * 8);
+            console_printf("%X", D_800D2E5C[i].animation);
+            console_place_cursor(0x90, (i + 2) * 8);
+            console_printf("%X", D_800D2E5C[i].named);
+            console_place_cursor(0xB4, (i + 2) * 8);
+            console_printf("%X", D_800D2E5C[i].param);
+            console_place_cursor(0xD8, (i + 2) * 8);
+            console_printf("%X", D_800D2E5C[i].unk5);
+            console_place_cursor(0xFC, (i + 2) * 8);
+            console_printf("%X", D_800D2E5C[i].targets);
         }
         break;
     case 2:
-        func_80037058(0, 0x20);
-        func_8003700C("No  An  Sb  Tg  No  An  Sb  Tg  \n");
+        console_place_cursor(0, 0x20);
+        console_printf("No  An  Sb  Tg  No  An  Sb  Tg  \n");
         for (i = 0; i < 32; i++) {
             x = (i % 2) * 0x90;
-            func_80037058(x, (i / 2 + 5) * 8);
-            func_8003700C("%X", i);
-            func_80037058(x + 0x24, (i / 2 + 5) * 8);
-            func_8003700C("%X", D_800C3EB0.events[i].type);
-            func_80037058(x + 0x48, (i / 2 + 5) * 8);
-            func_8003700C("%X", D_800C3EB0.events[i].parameter);
-            func_80037058(x + 0x6C, (i / 2 + 5) * 8);
-            func_8003700C("%X", D_800C3EB0.events[i].targetMask);
+            console_place_cursor(x, (i / 2 + 5) * 8);
+            console_printf("%X", i);
+            console_place_cursor(x + 0x24, (i / 2 + 5) * 8);
+            console_printf("%X", D_800C3EB0.events[i].type);
+            console_place_cursor(x + 0x48, (i / 2 + 5) * 8);
+            console_printf("%X", D_800C3EB0.events[i].parameter);
+            console_place_cursor(x + 0x6C, (i / 2 + 5) * 8);
+            console_printf("%X", D_800C3EB0.events[i].targetMask);
         }
         break;
     case 3:
         if (D_800C3EAC->actor < 3) {
             break;
         }
-        func_80037058(0, 0x50);
-        func_8003700C("bFlag\n");
+        console_place_cursor(0, 0x50);
+        console_printf("bFlag\n");
         for (i = 0; i < 8; i++) {
-            func_8003700C("%X ", D_800D3400[D_800C3EAC->actor - 3].bytes[i]);
+            console_printf("%X ", D_800D3400[D_800C3EAC->actor - 3].bytes[i]);
         }
-        func_8003700C("\n");
+        console_printf("\n");
         for (i = 0; i < 8; i++) {
-            func_8003700C("%X ", D_800D3400[D_800C3EAC->actor - 3].bytes[i + 8]);
+            console_printf("%X ", D_800D3400[D_800C3EAC->actor - 3].bytes[i + 8]);
         }
-        func_8003700C("\nhFlag\n");
+        console_printf("\nhFlag\n");
         for (i = 0; i < 4; i++) {
-            func_8003700C("%X ", D_800D3400[D_800C3EAC->actor - 3].vars[i]);
+            console_printf("%X ", D_800D3400[D_800C3EAC->actor - 3].vars[i]);
         }
-        func_8003700C("\n");
+        console_printf("\n");
         for (i = 0; i < 4; i++) {
-            func_8003700C("%X ", D_800D3400[D_800C3EAC->actor - 3].vars[i + 4]);
+            console_printf("%X ", D_800D3400[D_800C3EAC->actor - 3].vars[i + 4]);
         }
-        func_8003700C("\nlFlag\n");
+        console_printf("\nlFlag\n");
         for (i = 0; i < 2; i++) {
-            func_8003700C("%X ", D_800D3400[D_800C3EAC->actor - 3].longs[i]);
+            console_printf("%X ", D_800D3400[D_800C3EAC->actor - 3].longs[i]);
         }
-        func_8003700C("\n");
+        console_printf("\n");
         for (i = 0; i < 2; i++) {
-            func_8003700C("%X ", D_800D3400[D_800C3EAC->actor - 3].longs[i + 2]);
+            console_printf("%X ", D_800D3400[D_800C3EAC->actor - 3].longs[i + 2]);
         }
         break;
     case 4:
-        func_80037058(0, 0x20);
+        console_place_cursor(0, 0x20);
         for (i = 0; i < 3; i++) {
-            func_8003700C("\nWork#%d:", i);
+            console_printf("\nWork#%d:", i);
             for (j = 0; j < 7; j++) {
-                func_8003700C(" %d", D_800CCCE8.records[i].pilot.useCounts[j]);
+                console_printf(" %d", D_800CCCE8.records[i].pilot.useCounts[j]);
             }
         }
-        func_8003700C("\n");
+        console_printf("\n");
         for (i = 0; i < 11; i++) {
-            func_8003700C(D_8028007C, i);
+            console_printf(D_8028007C, i);
             for (j = 0; j < 7; j++) {
-                func_8003700C(" %d", D_8006D634.characters[i].useCounts[j]);
+                console_printf(" %d", game_data.characters[i].useCounts[j]);
             }
         }
         break;

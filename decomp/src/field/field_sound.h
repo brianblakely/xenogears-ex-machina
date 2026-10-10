@@ -39,7 +39,7 @@ void func_8008A520(void);                /* wait until the disc and the stream a
 
 /* Sound effects. */
 void func_80085890();                    /* load the field's bank; called with an argument it ignores */
-/* Instruction 0xb0 loads a wave bank into a resident slot (D_80062518). */
+/* Instruction 0xb0 loads a wave bank into a resident slot (mode_wave_bank_slots). */
 extern void *D_800AFD08;                 /* bank file being loaded */
 extern s32 D_800AFD0C;                   /* bank file number */
 extern s32 D_800AFD18;                   /* bank slot being loaded */

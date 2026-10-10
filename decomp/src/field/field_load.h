@@ -46,13 +46,13 @@ typedef struct {
     u16 descriptors[1];    /* 190: flags, rotation[3], position[3], model */
 } FieldBundle;
 
-/* The map bundle as the field load reads it (mode.h's block D_8005A4E0). */
-#define FIELD_BUNDLE ((FieldBundle *)D_8005A4E0)
+/* The map bundle as the field load reads it (mode.h's block mode_read_ahead_block). */
+#define FIELD_BUNDLE ((FieldBundle *)mode_read_ahead_block)
 
 /* The size and the data of component k, read as words at their byte offsets
  * in the header (the field load reads them so, not as struct members). */
-#define BUNDLE_SIZE(k) (*(s32 *)((u8 *)D_8005A4E0 + 0x10C + (k) * 4))
-#define BUNDLE_COMPONENT(k) ((void *)(*(s32 *)((u8 *)D_8005A4E0 + 0x130 + (k) * 4) + (s32)D_8005A4E0))
+#define BUNDLE_SIZE(k) (*(s32 *)((u8 *)mode_read_ahead_block + 0x10C + (k) * 4))
+#define BUNDLE_COMPONENT(k) ((void *)(*(s32 *)((u8 *)mode_read_ahead_block + 0x130 + (k) * 4) + (s32)mode_read_ahead_block))
 
 extern SpriteSlotTable D_800B1F78; /* the bundle's sprite slots, kept by the load */
 extern s32 D_800AFD10;         /* attributes before the first triangle */

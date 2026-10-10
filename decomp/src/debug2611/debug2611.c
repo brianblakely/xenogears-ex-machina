@@ -77,7 +77,7 @@ void func_80280844(s32 buttons) {
     if (buttons & 0x2000) {
         step.vz = -speed;
     }
-    func_8003F738(&D_800D309C.rot, &m);
+    gpu_build_rotation_matrix(&D_800D309C.rot, &m);
     ApplyMatrix(&m, &step, &moved);
     D_800D3354.vx += moved.vx;
     D_800D3354.vy += moved.vy;
@@ -125,7 +125,7 @@ void func_80280960(s32 buttons) {
     rot.vy = D_800D30B0.vy;
     rot.vz = D_800D30B0.vz;
     rot.vx = 0;
-    func_8003F738(&rot, &m);
+    gpu_build_rotation_matrix(&rot, &m);
     ApplyMatrix(&m, &step, &moved);
     D_800D335C.vx += moved.vx;
     D_800D335C.vy += moved.vy;
@@ -164,11 +164,11 @@ void func_80280A9C(void) {
         D_80282038 = 1 - D_80282038;
     }
     if (D_80282038 != 0) {
-        func_8003700C("CPU       %d\n", D_800D309C.cpu);
-        func_8003700C("GPU       %d\n", D_800D309C.gpu);
-        func_8003700C("tasks     %d\n", D_80059188);
-        func_8003700C("polys     %d%%\n", (D_80059534 - (u8 *)D_80059580) * 100 / 20480);
-        func_8003700C("frameRate %d\n", D_800C3EB0.frameTicks + 1);
+        console_printf("CPU       %d\n", D_800D309C.cpu);
+        console_printf("GPU       %d\n", D_800D309C.gpu);
+        console_printf("tasks     %d\n", task_main_count);
+        console_printf("polys     %d%%\n", (sprite_queue_block_end - (u8 *)sprite_queue_next_free) * 100 / 20480);
+        console_printf("frameRate %d\n", D_800C3EB0.frameTicks + 1);
         {
             /* Unreferenced bitmap format retained in the original rodata. */
             static const char bitmap_format[] = "bitmap: %x\n";
@@ -183,8 +183,8 @@ void func_80280A9C(void) {
         }
     }
     if (D_80282040 != 0) {
-        page = (POLY_FT4 *)D_80059580;
-        D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(POLY_FT4));
+        page = (POLY_FT4 *)sprite_queue_next_free;
+        sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + sizeof(POLY_FT4));
         SetPolyFT4(page);
         SetShadeTex(page, 1);
         page->x0 = 0;
@@ -205,9 +205,9 @@ void func_80280A9C(void) {
         page->v3 = 0xFF;
         page->tpage = GetTPage(1, 0, 0x3C0, 0);
         page->clut = GetClut(0, 0x1CC);
-        AddPrim((u_long *)D_8005956C, page);
-        page2 = (POLY_FT4 *)D_80059580;
-        D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(POLY_FT4));
+        AddPrim((u_long *)sprite_ot, page);
+        page2 = (POLY_FT4 *)sprite_queue_next_free;
+        sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + sizeof(POLY_FT4));
         SetPolyFT4(page2);
         SetShadeTex(page2, 1);
         page2->x0 = 0x40;
@@ -228,13 +228,13 @@ void func_80280A9C(void) {
         page2->v3 = 0xFF;
         page2->tpage = GetTPage(1, 0, 0x340, 0x100);
         page2->clut = GetClut(0, 0x1CC);
-        AddPrim((u_long *)D_8005956C, page2);
-        func_8003700C("lenge:  %d\n", D_800D309C.range);
-        func_8003700C("camera: %d,%d,%d\n", D_800D3354.vx, D_800D3354.vy, D_800D3354.vz);
-        func_8003700C("watch:  %d,%d,%d\n", D_800D335C.vx, D_800D335C.vy, D_800D335C.vz);
+        AddPrim((u_long *)sprite_ot, page2);
+        console_printf("lenge:  %d\n", D_800D309C.range);
+        console_printf("camera: %d,%d,%d\n", D_800D3354.vx, D_800D3354.vy, D_800D3354.vz);
+        console_printf("watch:  %d,%d,%d\n", D_800D335C.vx, D_800D335C.vy, D_800D335C.vz);
         angle.vx = yaw = (D_800D309C.rot.vx & 0xFFF) * 360 / 4096;
         angle.vy = pitch = (D_800D309C.rot.vy & 0xFFF) * 360 / 4096;
-        func_8003700C("angle:  %d,%d(%d)\n", yaw, pitch, (pitch + 90) % 360);
+        console_printf("angle:  %d,%d(%d)\n", yaw, pitch, (pitch + 90) % 360);
         D_802820EC++;
         SetRotMatrix(&D_800D309C.matrix);
         SetTransMatrix(&D_800D309C.matrix);
@@ -242,8 +242,8 @@ void func_80280A9C(void) {
         target = &watch;
         watch.vy = D_800D335C.vy;
         watch.vz = D_800D335C.vz;
-        mark = (TILE_1 *)D_80059580;
-        D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(TILE_1));
+        mark = (TILE_1 *)sprite_queue_next_free;
+        sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + sizeof(TILE_1));
         ((u8 *)mark)[3] = 2;
         mark->code = 0x70;
         mark->r0 = 0xFF;
@@ -252,9 +252,9 @@ void func_80280A9C(void) {
         RotTransPers(target, (long *)&mark->x0, &z, &z);
         mark->x0 -= 4;
         mark->y0 -= 4;
-        AddPrim((u_long *)D_8005956C, mark);
+        AddPrim((u_long *)sprite_ot, mark);
         if ((D_802820EC & 7) == 0) {
-            func_80023FD8(2, (SpriteSource *)D_8006BE10, target, 0);
+            sprite_create_effect(2, (SpriteSource *)sprite_shared_source, target, 0);
         }
         if (D_800C3EB0.pressed2 & 0x80) {
             if (++D_80282044 & 1) {
@@ -280,9 +280,9 @@ void func_8028103C(void) {
     s32 unused[12]; /* unused in the original; reserves 48 bytes */
 
     if (D_800C3EB0.pressed2 != 0) {
-        func_8003748C();
-        func_800374E8(0x10, 0x10, 0x140, 0x100, 0x3E8, 0, 0x340, 0, 0x340, 0x20, 0);
-        func_80036E4C(0x7FFF, 0x8000);
+        console_close();
+        console_open(0x10, 0x10, 0x140, 0x100, 0x3E8, 0, 0x340, 0, 0x340, 0x20, 0);
+        console_load_font_cluts(0x7FFF, 0x8000);
     }
 }
 
@@ -319,7 +319,7 @@ void func_802810C4(void) {
             D_80282068 = 0;
         }
     }
-    func_8003700C("\t\t\tdebug heap\n");
+    console_printf("\t\t\tdebug heap\n");
     if (D_800C3EB0.held2 & 0x5000) {
         if (++D_80282064 >= 9) {
             D_80282064 = 8;
@@ -342,7 +342,7 @@ void func_802810C4(void) {
     if ((D_80282060 += scroll) < 0) {
         D_80282060 = 0;
     }
-    func_8003278C(3, D_80282060, D_80282068, D_8028205C);
+    heap_print_report(3, D_80282060, D_80282068, D_8028205C);
 }
 
 /* Load meter update: ease the averages toward this frame's CPU and GPU times
@@ -374,9 +374,9 @@ void func_80281330(Task *task) {
 void func_802813F4(SVECTOR *v, u8 r, u8 g, u8 b) {
     SVECTOR xy0, xy1, xy2;
     long flag;
-    POLY_F3 *prim = (POLY_F3 *)D_80059580;
+    POLY_F3 *prim = (POLY_F3 *)sprite_queue_next_free;
 
-    D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(POLY_F3));
+    sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + sizeof(POLY_F3));
     SetPolyF3(prim);
     prim->r0 = r;
     prim->g0 = g;
@@ -390,7 +390,7 @@ void func_802813F4(SVECTOR *v, u8 r, u8 g, u8 b) {
     prim->y1 = xy1.vy;
     prim->x2 = xy2.vx;
     prim->y2 = xy2.vy;
-    AddPrim((u_long *)D_8005956C, prim);
+    AddPrim((u_long *)sprite_ot, prim);
 }
 
 /* Draw a dial tick (30 to 35 along the rotated x axis). */
@@ -398,9 +398,9 @@ void func_802814F8(u8 r, u8 g, u8 b) {
     SVECTOR from, to;
     SVECTOR xy0, xy1;
     long flag;
-    LINE_F2 *prim = (LINE_F2 *)D_80059580;
+    LINE_F2 *prim = (LINE_F2 *)sprite_queue_next_free;
 
-    D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + 0x18); /* more than the 0x10-byte LINE_F2 */
+    sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + 0x18); /* more than the 0x10-byte LINE_F2 */
     SetLineF2(prim);
     from.vx = 30;
     from.vy = 0;
@@ -417,7 +417,7 @@ void func_802814F8(u8 r, u8 g, u8 b) {
     prim->y0 = xy0.vy;
     prim->x1 = xy1.vx;
     prim->y1 = xy1.vy;
-    AddPrim((u_long *)D_8005956C, prim);
+    AddPrim((u_long *)sprite_ot, prim);
 }
 
 /* Draw a peak mark: a line from the dial centre `length` along the rotated
@@ -426,9 +426,9 @@ void func_802815E8(s16 length, u8 r, u8 g, u8 b) {
     SVECTOR tip;
     SVECTOR xy;
     long flag;
-    LINE_F2 *prim = (LINE_F2 *)D_80059580;
+    LINE_F2 *prim = (LINE_F2 *)sprite_queue_next_free;
 
-    D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + 0x18); /* more than the 0x10-byte LINE_F2 */
+    sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + 0x18); /* more than the 0x10-byte LINE_F2 */
     SetLineF2(prim);
     tip.vx = length;
     tip.vy = 0;
@@ -441,7 +441,7 @@ void func_802815E8(s16 length, u8 r, u8 g, u8 b) {
     prim->y0 = 0xC8;
     prim->x1 = xy.vx;
     prim->y1 = xy.vy;
-    AddPrim((u_long *)D_8005956C, prim);
+    AddPrim((u_long *)sprite_ot, prim);
 }
 
 /* Load meter drawing: the GPU (blue) and CPU (red) needles with their peak
@@ -462,25 +462,25 @@ void func_802816AC(Task *task) {
     rot.vx = 0;
     rot.vy = 0;
     rot.vz = meter->gpu - 0x400;
-    func_8003F738(&rot, &m);
+    gpu_build_rotation_matrix(&rot, &m);
     SetRotMatrix(&m);
     func_802813F4(D_8028206C[0], 0, 0, 0xFF);
     rot.vx = 0;
     rot.vy = 0;
     rot.vz = meter->gpu_peak - 0x400;
-    func_8003F738(&rot, &m);
+    gpu_build_rotation_matrix(&rot, &m);
     SetRotMatrix(&m);
     func_802815E8(20, 0, 0, 0xFF);
     rot.vx = 0;
     rot.vy = 0;
     rot.vz = meter->cpu - 0x400;
-    func_8003F738(&rot, &m);
+    gpu_build_rotation_matrix(&rot, &m);
     SetRotMatrix(&m);
     func_802813F4(D_8028206C[1], 0xFF, 0, 0);
     rot.vx = 0;
     rot.vy = 0;
     rot.vz = meter->cpu_peak - 0x400;
-    func_8003F738(&rot, &m);
+    gpu_build_rotation_matrix(&rot, &m);
     SetRotMatrix(&m);
     func_802815E8(30, 0xFF, 0, 0);
     count = meter->cpu / 1024 + 1;
@@ -488,7 +488,7 @@ void func_802816AC(Task *task) {
         rot.vx = 0;
         rot.vy = 0;
         rot.vz = angle;
-        func_8003F738(&rot, &m);
+        gpu_build_rotation_matrix(&rot, &m);
         SetRotMatrix(&m);
         func_802814F8(0xFF, 0, 0);
     }
@@ -497,7 +497,7 @@ void func_802816AC(Task *task) {
         rot.vx = 0;
         rot.vy = 0;
         rot.vz = angle;
-        func_8003F738(&rot, &m);
+        gpu_build_rotation_matrix(&rot, &m);
         SetRotMatrix(&m);
         func_802814F8(0, 0, 0xFF);
     }
@@ -505,7 +505,7 @@ void func_802816AC(Task *task) {
 
 /* Start the load meter task. */
 void func_802818C4(void) {
-    LoadMeter *meter = (LoadMeter *)func_8001D1D8(sizeof(LoadMeter), 0, func_80281330, func_802816AC, 0);
+    LoadMeter *meter = (LoadMeter *)task_alloc_two_node_task(sizeof(LoadMeter), 0, func_80281330, func_802816AC, 0);
 
     meter->gpu_hold = 1;
     meter->cpu_hold = 1;
@@ -518,9 +518,9 @@ void func_802818C4(void) {
 }
 
 /* List the loaded wave banks after the first (the sound driver's list at
- * D_80059558) on the debug console. */
+ * sound_wave_bank_list) on the debug console. */
 void func_8028191C(void) {
-    SoundSequence *bank = D_80059558;
+    SoundSequence *bank = sound_wave_bank_list;
     s32 i = 0;
 
     for (;;) {
@@ -529,7 +529,7 @@ void func_8028191C(void) {
         if (next == NULL) {
             break;
         }
-        func_800379C8("%d W=%x\n", i, next);
+        console_report_printf("%d W=%x\n", i, next);
         bank = bank->next;
         i++;
     }
@@ -554,36 +554,36 @@ s32 func_80281980(void) {
     if ((D_800C3EB0.pressed2 & 8) && ++D_802820BB >= 7) {
         D_802820BB = 0;
     }
-    func_8003700C("shifts mode: %x\n", D_802820BB);
+    console_printf("shifts mode: %x\n", D_802820BB);
     if ((D_800C3EB0.pressed2 & 2) && ++D_802820BC >= 5) {
         D_802820BC = 0;
     }
-    func_8003700C("control mode: %s\n", D_802820C0[D_802820BC]);
+    console_printf("control mode: %s\n", D_802820C0[D_802820BC]);
     v.vx = actor->x >> 16;
     v.vy = actor->y >> 16;
     v.vz = actor->z >> 16;
     SetRotMatrix(&D_800D309C.matrix);
     SetTransMatrix(&D_800D309C.matrix);
     otz = RotTransPers(&v, &sxy, &p, &flag);
-    func_8003700C("shapeno %x\n", actor->frame);
-    func_8003700C("otz     %x\n", otz);
-    func_8003700C("pos xyz %d,%d,%d\n", actor->x >> 17, actor->y >> 17, actor->z >> 17);
-    func_8003700C("vec xyz %x,%x,%x\n", actor->speed_x >> 1, actor->speed_y >> 1, actor->speed_z >> 1);
+    console_printf("shapeno %x\n", actor->frame);
+    console_printf("otz     %x\n", otz);
+    console_printf("pos xyz %d,%d,%d\n", actor->x >> 17, actor->y >> 17, actor->z >> 17);
+    console_printf("vec xyz %x,%x,%x\n", actor->speed_x >> 1, actor->speed_y >> 1, actor->speed_z >> 1);
     v.vz = (actor->renderer->angle_z & 0xFFF) * 360 / 4096;
     v.vx = (actor->renderer->angle_x & 0xFFF) * 360 / 4096;
     v.vy = (actor->renderer->angle_y & 0xFFF) * 360 / 4096;
-    func_8003700C("rot:    %d,%d,%d\n", v.vx, v.vy, v.vz);
-    func_8003700C("scale:  %d,%d,%d\n", actor->renderer->scale_x >> 1, actor->renderer->scale_y >> 1,
+    console_printf("rot:    %d,%d,%d\n", v.vx, v.vy, v.vz);
+    console_printf("scale:  %d,%d,%d\n", actor->renderer->scale_x >> 1, actor->renderer->scale_y >> 1,
                   actor->renderer->scale_z >> 1);
     if ((actor->render.word & 3) == 2) {
-        func_8003700C("lgtang: %d,%d,%d\n", actor->renderer->light_angles.vx, actor->renderer->light_angles.vy,
+        console_printf("lgtang: %d,%d,%d\n", actor->renderer->light_angles.vx, actor->renderer->light_angles.vy,
                       actor->renderer->light_angles.vz);
-        func_8003700C("lgtcol: %d,%d,%d\n", (s16)actor->renderer->light_colour[0],
+        console_printf("lgtcol: %d,%d,%d\n", (s16)actor->renderer->light_colour[0],
                       (s16)actor->renderer->light_colour[1], (s16)actor->renderer->light_colour[2]);
     }
-    func_8003700C("gravity %x\n", actor->gravity);
+    console_printf("gravity %x\n", actor->gravity);
     if (((actor->flags >> 13) & 0xF) == 0xF) {
-        func_8003700C("polys %d\n", ((DebugShape *)((SpriteModelRenderer *)actor->renderer)->model)->polys);
+        console_printf("polys %d\n", ((DebugShape *)((SpriteModelRenderer *)actor->renderer)->model)->polys);
     }
     step.vx = 0;
     step.vy = 0;
@@ -654,16 +654,16 @@ s32 func_80281980(void) {
 void func_80281F98(void) {
     D_802820D4++;
     D_802820D8[15] = D_802820D4 + '0';
-    func_80032E04(D_802820D8);
+    heap_write_report_file(D_802820D8);
 }
 
 /* Run the memory dump on a private 16 KB stack. */
 void func_80281FD8(void) {
-    u8 *stack = func_80031BDC(0x4000, 1);
+    u8 *stack = heap_alloc(0x4000, 1);
 
     /* Push the caller's sp at the new stack top and switch to it. */
     STACK_ENTER(stack + 0x3FC0);
     func_80281F98();
     STACK_LEAVE();
-    func_800320E8(stack);
+    heap_free(stack);
 }

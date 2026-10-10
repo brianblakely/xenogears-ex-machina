@@ -7,18 +7,18 @@
 # t8 = ordering-table slot, v0 = packed y limit, v1 = unsigned x limit.
 # t9 is the DMA packet word count in the tag's high byte.
 .macro mesh_packet_state words
-    lui     $a2, %hi(D_8005953C)
-    lw      $a2, %lo(D_8005953C)($a2)
-    lui     $a3, %hi(D_80059578)
-    lw      $a3, %lo(D_80059578)($a3)
-    lui     $t7, %hi(D_80059424)
-    lw      $t7, %lo(D_80059424)($t7)
-    lui     $t8, %hi(D_80059568)
-    lw      $t8, %lo(D_80059568)($t8)
-    lui     $v0, %hi(D_800500FC)
-    lw      $v0, %lo(D_800500FC)($v0)
-    lui     $v1, %hi(D_800500F8)
-    lw      $v1, %lo(D_800500F8)($v1)
+    lui     $a2, %hi(model_current_vertices)
+    lw      $a2, %lo(model_current_vertices)($a2)
+    lui     $a3, %hi(model_drawn_primitive_count)
+    lw      $a3, %lo(model_drawn_primitive_count)($a3)
+    lui     $t7, %hi(model_current_packet)
+    lw      $t7, %lo(model_current_packet)($t7)
+    lui     $t8, %hi(model_ot)
+    lw      $t8, %lo(model_ot)($t8)
+    lui     $v0, %hi(model_screen_y_limit)
+    lw      $v0, %lo(model_screen_y_limit)($v0)
+    lui     $v1, %hi(model_screen_x_limit)
+    lw      $v1, %lo(model_screen_x_limit)($v1)
     lui     $t9, \words*0x100
 .endm
 
@@ -80,10 +80,10 @@
 
 .macro mesh_packet_finish bytes
     addiu   $t7, $t7, \bytes
-    lui     $at, %hi(D_80059578)
-    sw      $a3, %lo(D_80059578)($at)
-    lui     $at, %hi(D_80059424)
-    sw      $t7, %lo(D_80059424)($at)
+    lui     $at, %hi(model_drawn_primitive_count)
+    sw      $a3, %lo(model_drawn_primitive_count)($at)
+    lui     $at, %hi(model_current_packet)
+    sw      $t7, %lo(model_current_packet)($at)
     jr      $ra
      nop
 .endm

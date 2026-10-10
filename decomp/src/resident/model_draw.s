@@ -1,11 +1,11 @@
 # Shared operations of the resident model primitive renderers: the draw
-# routines that the primitive type table D_8004FE50 lists per type and
-# draw mode, called by func_8002C700 as draw(records, count).
+# routines that the primitive type table model_primitive_types lists per type and
+# draw mode, called by model_draw_sprite_model as draw(records, count).
 # These macros emit no code until a renderer uses them.
 #
 # Every renderer walks `count` eight-byte face records (u16 vertex indices
 # 0..2, and index 3 for quads) and owns one packet slot per face, in order,
-# in the packet buffer at D_80059424 that func_8002C8CC prepared through
+# in the packet buffer at model_current_packet that model_build_packets prepared through
 # the types' prepare routines. It writes the screen coordinates (and some
 # colours or UVs) of the accepted faces and links them into the ordering
 # table; other packet words stay as prepared. Rotation, translation,
@@ -20,19 +20,19 @@
 #
 # Register use common to the renderers (variants are noted per routine):
 #   a0 = face record, a1 = faces left, a3 = packet size in bytes,
-#   s0 = vertex array (D_8005953C, eight-byte SVECTORs),
-#   s2 = primitives drawn (D_80059578), s3 = packet slot,
-#   s4 = ordering table (D_80059568), s6 = 0x00FFFFFF DMA address mask,
-#   v0 = packed y limit (D_800500FC), v1 = x limit (D_800500F8),
+#   s0 = vertex array (model_current_vertices, eight-byte SVECTORs),
+#   s2 = primitives drawn (model_drawn_primitive_count), s3 = packet slot,
+#   s4 = ordering table (model_ot), s6 = 0x00FFFFFF DMA address mask,
+#   v0 = packed y limit (model_screen_y_limit), v1 = x limit (model_screen_x_limit),
 #   t1..t4 = packed SXY of the face, t4/t5 = record words being decoded,
-#   t7 = OT depth shift (D_80050100), t8 = DMA tag length (words << 24),
+#   t7 = OT depth shift (model_ot_depth_shift), t8 = DMA tag length (words << 24),
 #   t9 = byte step between the packet's XY words.
 # On the culling path s3 is reduced to its 24-bit DMA address (main RAM is
 # mirrored at 0) and stays so. A linked packet's tag is the old OT word
 # ORed with the tag length, without masking, and the OT word becomes the
 # packet's address. All renderers leave through the exit in
-# func_8002E010.s with a3 = packet size: it stores s2 and the slot pointer
-# advanced past the last face to D_80059578 and D_80059424 and restores
+# model_draw_gt3_avg.s with a3 = packet size: it stores s2 and the slot pointer
+# advanced past the last face to model_drawn_primitive_count and model_current_packet and restores
 # the s registers. Other registers, at and the GTE state are clobbered.
 .ifndef RESIDENT_MODEL_DRAW_MACROS
 .set RESIDENT_MODEL_DRAW_MACROS, 1
@@ -47,7 +47,7 @@
 
 # The renderers keep no frame. They save all eight s registers below the
 # caller's unchanged stack pointer, leaving sp-12 unused; the shared exit
-# in func_8002E010.s restores them.
+# in model_draw_gt3_avg.s restores them.
 .macro model_draw_save
     sw      $s0, -4($sp)
     sw      $s1, -8($sp)
@@ -60,26 +60,26 @@
 .endm
 
 # Load the drawing state; `shift` receives the OT depth shift. With
-# normals=1, a3 also receives the vertex normal array (D_8005952C).
+# normals=1, a3 also receives the vertex normal array (model_current_normals).
 .macro model_draw_state shift, normals=0
-    lui     $s0, %hi(D_8005953C)
-    lw      $s0, %lo(D_8005953C)($s0)
+    lui     $s0, %hi(model_current_vertices)
+    lw      $s0, %lo(model_current_vertices)($s0)
 .if \normals
-    lui     $a3, %hi(D_8005952C)
-    lw      $a3, %lo(D_8005952C)($a3)
+    lui     $a3, %hi(model_current_normals)
+    lw      $a3, %lo(model_current_normals)($a3)
 .endif
-    lui     $s2, %hi(D_80059578)
-    lw      $s2, %lo(D_80059578)($s2)
-    lui     $s3, %hi(D_80059424)
-    lw      $s3, %lo(D_80059424)($s3)
-    lui     $s4, %hi(D_80059568)
-    lw      $s4, %lo(D_80059568)($s4)
-    lui     $v0, %hi(D_800500FC)
-    lw      $v0, %lo(D_800500FC)($v0)
-    lui     $v1, %hi(D_800500F8)
-    lw      $v1, %lo(D_800500F8)($v1)
-    lui     \shift, %hi(D_80050100)
-    lw      \shift, %lo(D_80050100)(\shift)
+    lui     $s2, %hi(model_drawn_primitive_count)
+    lw      $s2, %lo(model_drawn_primitive_count)($s2)
+    lui     $s3, %hi(model_current_packet)
+    lw      $s3, %lo(model_current_packet)($s3)
+    lui     $s4, %hi(model_ot)
+    lw      $s4, %lo(model_ot)($s4)
+    lui     $v0, %hi(model_screen_y_limit)
+    lw      $v0, %lo(model_screen_y_limit)($v0)
+    lui     $v1, %hi(model_screen_x_limit)
+    lw      $v1, %lo(model_screen_x_limit)($v1)
+    lui     \shift, %hi(model_ot_depth_shift)
+    lw      \shift, %lo(model_ot_depth_shift)(\shift)
 .endm
 
 # Vertex addresses of the record whose first word is in t4 (indices 0 and

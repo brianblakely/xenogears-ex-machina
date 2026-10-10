@@ -77,7 +77,7 @@ animation id (13 tweens, 11 animations, 10 poses). One 13 in model file 0x6BA
 names id 44 of a 29-entry table. Neither lookup (800AF518, 801E6910) checks
 its bounds.
 
-The resident's `D_8001C76C` (0x170 bytes) is not an effect script. It is a
+The resident's `model_slot_ring_tmd` (0x170 bytes) is not an effect script. It is a
 TMD model (id 0x41: one object, 6 vertices, 13 normals, 8 primitives) for the
 slot-highlight ring, built by 800B15D8-800B2AEC. The battle headers call that
 format an "effect script file".

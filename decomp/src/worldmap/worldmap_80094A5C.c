@@ -844,8 +844,8 @@ void func_80095F78(void) {
     s32 i;
     s8 *flag;
 
-    first = func_8002C3D8();
-    second = func_8002C3D8();
+    first = cd_has_pc_file_server();
+    second = cd_has_pc_file_server();
     if ((first == 0) | (second == -1)) {
         D_8009BCB8 = 0;
         D_8009BE44 = 0;
@@ -853,8 +853,8 @@ void func_80095F78(void) {
         for (i = 0xF; i >= 0; i--) {
             D_8009D788[i] = NULL;
         }
-        D_8009BE08 = func_80031BDC(0x4200, 0);
-        D_8009D7D4 = func_80031BDC(0x800, 0);
+        D_8009BE08 = heap_alloc(0x4200, 0);
+        D_8009D7D4 = heap_alloc(0x800, 0);
         D_8009D808 = 0;
         for (i = 7, flag = &D_8009C588[7]; i >= 0; i--) {
             *flag-- = 0;
@@ -866,8 +866,8 @@ void func_80095F78(void) {
         for (i = 0xF; i >= 0; i--) {
             D_8009C624[i] = NULL;
         }
-        D_8009D3C0 = func_80031BDC(0x5800, 0);
-        D_8009D7D4 = func_80031BDC(0x800, 0);
+        D_8009D3C0 = heap_alloc(0x5800, 0);
+        D_8009D7D4 = heap_alloc(0x800, 0);
         D_8009D808 = 0;
         for (i = 7, flag = &D_8009C588[7]; i >= 0; i--) {
             *flag-- = 0;
@@ -880,14 +880,14 @@ void func_800960BC(void) {
     s32 first;
     s32 second;
 
-    first = func_8002C3D8();
-    second = func_8002C3D8();
+    first = cd_has_pc_file_server();
+    second = cd_has_pc_file_server();
     if ((first == 0) | (second == -1)) {
-        func_800320E8(D_8009BE08);
+        heap_free(D_8009BE08);
     } else {
-        func_800320E8(D_8009D3C0);
+        heap_free(D_8009D3C0);
     }
-    func_800320E8(D_8009D7D4);
+    heap_free(D_8009D7D4);
 }
 
 /* Wait until the current write slot of the stream queue is free. */
@@ -895,8 +895,8 @@ void func_80096130(void) {
     s32 first;
     s32 second;
 
-    first = func_8002C3D8();
-    second = func_8002C3D8();
+    first = cd_has_pc_file_server();
+    second = cd_has_pc_file_server();
     if ((first == 0) | (second == -1)) {
         while (D_8009D788[D_8009BE44] != NULL) {
             VSync(0);
@@ -1098,8 +1098,8 @@ s32 func_800967E4(void) {
     s32 status;
 
     status = 0;
-    first = func_8002C3D8();
-    second = func_8002C3D8();
+    first = cd_has_pc_file_server();
+    second = cd_has_pc_file_server();
     if ((first == 0) | (second == -1)) {
         status = func_800968E0();
         if (status == 0 && D_8009D788[D_8009BCB8] != NULL) {
@@ -1401,13 +1401,13 @@ void func_80097440(void *arg) {
 
 /* Allocate and clear the 64 actor slots. */
 void func_8009766C(void) {
-    D_8009BE24 = func_80031BDC(0x2000, 0);
+    D_8009BE24 = heap_alloc(0x2000, 0);
     func_800976C8();
 }
 
 /* Free the actor slots. */
 void func_800976A0(void) {
-    func_800320E8(D_8009BE24);
+    heap_free(D_8009BE24);
 }
 
 /* Mark every actor slot free. */
@@ -1512,7 +1512,7 @@ void func_80097800(void) {
                 break;
             case 4:
                 if (actor->handle != NULL) {
-                    func_800230A8(actor->handle);
+                    sprite_destroy(actor->handle);
                 }
                 break;
             }
@@ -1530,8 +1530,8 @@ void func_800978FC(void) {
     POLY_FT3 *prim;
     s32 i;
 
-    D_8009BBC8[0].packets = func_80031BDC(0x10000, 1);
-    D_8009BBC8[1].packets = func_80031BDC(0x10000, 1);
+    D_8009BBC8[0].packets = heap_alloc(0x10000, 1);
+    D_8009BBC8[1].packets = heap_alloc(0x10000, 1);
     prim = D_8009BBC8[0].packets;
     for (i = 0; i < 0x800; i++, prim++) {
         setlen(prim, 7);
@@ -1552,13 +1552,13 @@ void func_800979C8(void) {
     s32 x;
     s32 y;
 
-    cluts = func_80032E88(D_8009C59C, 1);
-    func_8002DD20((u32 *)cluts);
+    cluts = text_unpack_lzss_alloc(D_8009C59C, 1);
+    model_load_tim_list((u32 *)cluts);
     DrawSync(0);
-    func_800320E8(cluts);
-    func_800320E8(D_8009C59C);
-    cluts = func_80031BDC(0x400, 1);
-    faded = func_80031BDC(0x8000, 1);
+    heap_free(cluts);
+    heap_free(D_8009C59C);
+    cluts = heap_alloc(0x400, 1);
+    faded = heap_alloc(0x8000, 1);
     rect.x = 0;
     rect.y = 0x1E0;
     rect.w = 0x100;
@@ -1585,8 +1585,8 @@ void func_800979C8(void) {
         D_8009CD54[i] = GetTPage(1, 0, x, y);
         x += 0x80;
     }
-    func_800320E8(faded);
-    func_800320E8(cluts);
+    heap_free(faded);
+    heap_free(cluts);
 }
 
 /* Reset the terrain loader around a position. */
@@ -1629,7 +1629,7 @@ void func_80097D64(void) {
 
     for (i = 0; i < 0x100; i++) {
         if (D_8009C184[i] != NULL) {
-            func_800320E8(D_8009C184[i]);
+            heap_free(D_8009C184[i]);
         }
     }
 }
@@ -1646,15 +1646,15 @@ void func_80097DC0(void) {
     s32 sector;
     char *path;
 
-    first = func_8002C3D8();
-    second = func_8002C3D8();
+    first = cd_has_pc_file_server();
+    second = cd_has_pc_file_server();
     if ((first == 0) | (second == -1)) {
-        sector = func_800289D0(D_8009BCD8);
+        sector = cd_get_file_sector(D_8009BCD8);
         for (row = 3; row < 6; row++) {
             for (column = 3; column < 6; column++) {
                 block = D_8009D570.cells[row * 9 + column];
                 if (D_8009C184[block] == NULL) {
-                    buffer = func_80031BDC(0x710, 0);
+                    buffer = heap_alloc(0x710, 0);
                     D_8009C184[block] = buffer;
                     func_8009623C(sector + block, 0x710, buffer);
                 }
@@ -1666,7 +1666,7 @@ void func_80097DC0(void) {
             for (column = 0; column < 9; column++) {
                 block = D_8009D570.cells[row * 9 + column];
                 if (D_8009C184[block] == NULL) {
-                    buffer = func_80031BDC(0x710, 0);
+                    buffer = heap_alloc(0x710, 0);
                     D_8009C184[block] = buffer;
                     func_8009623C(sector + block, 0x710, buffer);
                 }
@@ -1675,12 +1675,12 @@ void func_80097DC0(void) {
         func_8009623C(0, 0, NULL);
         func_80096328();
     } else {
-        path = func_80028998(D_8009BCD8);
+        path = cd_get_pc_file_name(D_8009BCD8);
         for (row = 0; row < 9; row++) {
             for (column = 0; column < 9; column++) {
                 block = D_8009D570.cells[row * 9 + column];
                 if (D_8009C184[block] == NULL) {
-                    buffer = func_80031BDC(0x710, 0);
+                    buffer = heap_alloc(0x710, 0);
                     D_8009C184[block] = buffer;
                     func_800962B0(path, block << 11, 0x710, buffer);
                 }
@@ -2027,27 +2027,27 @@ void func_80098CC0(void) {
                 }
             }
             if (j == 81) {
-                func_800320E8(D_8009C184[block]);
+                heap_free(D_8009C184[block]);
                 D_8009C184[block] = NULL;
             }
         }
     }
     changed = 0;
-    first = func_8002C3D8();
-    second = func_8002C3D8();
+    first = cd_has_pc_file_server();
+    second = cd_has_pc_file_server();
     n = first == 0;
     n |= second == -1;
     if (n) {
         s32 rows;
         s32 cols;
 
-        sector = func_800289D0(D_8009BCD8);
+        sector = cd_get_file_sector(D_8009BCD8);
         n = 1;
         for (j = 1; j != -1; j--) {
             for (k = 6; k != -1; k--, n++) {
                 block = D_8009D570.cells[n];
                 if (D_8009C184[block] == NULL) {
-                    buffer = func_80031BDC(0x710, 0);
+                    buffer = heap_alloc(0x710, 0);
                     D_8009C184[block] = buffer;
                     func_8009623C(sector + block, 0x710, buffer);
                     changed |= 2;
@@ -2055,13 +2055,13 @@ void func_80098CC0(void) {
             }
             n = 0x49;
         }
-        sector = func_800289D0(D_8009BD08);
+        sector = cd_get_file_sector(D_8009BD08);
         n = 9;
         for (j = 1; j != -1; j--) {
             for (k = 6; k != -1; k--, n += 9) {
                 block = D_8009D570.cells[n];
                 if (D_8009C184[block] == NULL) {
-                    buffer = func_80031BDC(0x710, 0);
+                    buffer = heap_alloc(0x710, 0);
                     D_8009C184[block] = buffer;
                     func_8009623C(sector + ((block % D_8009D160) * D_8009D2B4 + block / D_8009D160),
                                   0x710, buffer);
@@ -2075,12 +2075,12 @@ void func_80098CC0(void) {
             rows = changed & 2;
             cols = changed & 1;
             if (D_8009C184[j] == NULL) {
-                D_8009C184[j] = func_80031BDC(0x710, 0);
+                D_8009C184[j] = heap_alloc(0x710, 0);
                 if (rows) {
-                    sector = func_800289D0(D_8009BCD8);
+                    sector = cd_get_file_sector(D_8009BCD8);
                     func_8009623C(sector + j, 0x710, D_8009C184[j]);
                 } else if (cols) {
-                    sector = func_800289D0(D_8009BD08);
+                    sector = cd_get_file_sector(D_8009BD08);
                     func_8009623C(sector + ((j % D_8009D160) * D_8009D2B4 + j / D_8009D160), 0x710,
                                   D_8009C184[j]);
                 }
@@ -2092,13 +2092,13 @@ void func_80098CC0(void) {
         s32 rows;
         s32 cols;
 
-        path = func_80028998(D_8009BCD8);
+        path = cd_get_pc_file_name(D_8009BCD8);
         n = 1;
         for (j = 1; j != -1; j--) {
             for (k = 6; k != -1; k--, n++) {
                 block = D_8009D570.cells[n];
                 if (D_8009C184[block] == NULL) {
-                    buffer = func_80031BDC(0x710, 0);
+                    buffer = heap_alloc(0x710, 0);
                     D_8009C184[block] = buffer;
                     func_800962B0(path, block << 11, 0x710, buffer);
                     changed |= 2;
@@ -2106,13 +2106,13 @@ void func_80098CC0(void) {
             }
             n = 0x49;
         }
-        path = func_80028998(D_8009BD08);
+        path = cd_get_pc_file_name(D_8009BD08);
         n = 9;
         for (j = 1; j != -1; j--) {
             for (k = 6; k != -1; k--, n += 9) {
                 block = D_8009D570.cells[n];
                 if (D_8009C184[block] == NULL) {
-                    buffer = func_80031BDC(0x710, 0);
+                    buffer = heap_alloc(0x710, 0);
                     D_8009C184[block] = buffer;
                     func_800962B0(path,
                                   ((block % D_8009D160) << 11) * D_8009D2B4 + ((block / D_8009D160) << 11),
@@ -2127,12 +2127,12 @@ void func_80098CC0(void) {
             cols = changed & 1;
             j = D_8009D570.cells[D_8009BBAC[k]];
             if (D_8009C184[j] == NULL) {
-                D_8009C184[j] = func_80031BDC(0x710, 0);
+                D_8009C184[j] = heap_alloc(0x710, 0);
                 if (rows) {
-                    path = func_80028998(D_8009BCD8);
+                    path = cd_get_pc_file_name(D_8009BCD8);
                     func_800962B0(path, j << 11, 0x710, D_8009C184[j]);
                 } else if (cols) {
-                    path = func_80028998(D_8009BD08);
+                    path = cd_get_pc_file_name(D_8009BD08);
                     func_800962B0(path,
                                   ((j % D_8009D160) << 11) * D_8009D2B4 + ((j / D_8009D160) << 11),
                                   0x710, D_8009C184[j]);
@@ -2243,7 +2243,7 @@ void func_80099708(u32 *heights, u_long *ot, s32 packets, SVECTOR *origin) {
     vertex = (SVECTOR *)0x1F800000;
     cell = heights;
     j = 8;
-    sine = D_800523F0;
+    sine = rcossin_tbl;
     row_phase = D_8009C618;
     left = origin->vx;
     z = origin->vz;

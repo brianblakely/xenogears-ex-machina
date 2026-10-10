@@ -46,7 +46,7 @@ void func_800848F4(void); /* draw them */
 
 /* A resident model call the world map declares itself: it passes the scene
  * object as a fourth argument the resident's definition does not take. */
-void func_8002CB54(SpriteModel *def, void **prims, void **prims2, SceneObject *object);
+void model_alloc_packet_buffers(SpriteModel *def, void **prims, void **prims2, SceneObject *object);
 
 /* Collision mesh of a scene object (behind SceneObject.unk44). */
 typedef struct {
@@ -90,7 +90,7 @@ s32 func_80087F60(s32 index);
 s32 func_8008868C(void);
 s32 func_80088C90(void);
 
-/* The ferry's saved route state is D_8006D634.unk1844 (x, z in world units,
+/* The ferry's saved route state is game_data.unk1844 (x, z in world units,
  * next waypoint), and unk184A counts its runs started (func_80087C6C). */
 extern u16 D_8009AF80[8], D_8009AF90[8]; /* ferry waypoints (x, z) */
 
@@ -168,7 +168,7 @@ void func_8008355C(void), func_800837DC(void); /* mode 18 */
 /* A resident sound call the world map declares itself (the camera flight's
  * engine volume): the shared headers leave it out, since other targets'
  * calls convert its arguments differently. */
-void func_8003A2E4(s32 sound, s32 volume);
+void sound_set_effect_volume(s32 sound, s32 volume);
 
 /* Their actors (start, update), by mode. The frame steps that end each
  * mode's list draw the scene. */

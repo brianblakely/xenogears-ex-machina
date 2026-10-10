@@ -50,7 +50,7 @@ typedef struct {
     u8 parts[2];              /* +0x1E2 glyph parts of value and gear */
 } MemberPanel;
 
-/* The six outputs of func_80026338 for one sprite (0x18 bytes). */
+/* The six outputs of sprite_sheet_get_texture for one sprite (0x18 bytes). */
 typedef struct {
     s32 unk0;
     s32 tpageMode;

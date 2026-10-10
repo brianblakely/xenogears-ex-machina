@@ -22,23 +22,23 @@ typedef struct {
     u16 z;
 } VehicleSpot;
 
-#define VEHICLE_SPOTS ((VehicleSpot *)&D_8006D634.vars[21])
+#define VEHICLE_SPOTS ((VehicleSpot *)&game_data.vars[21])
 
 /* A halfword of the game data at an offset from the world map's return
- * state (D_8006D634.worldmap). */
-#define STATE_U16(offset) (*(u16 *)((u8 *)&D_8006D634.worldmap + (offset)))
+ * state (game_data.worldmap). */
+#define STATE_U16(offset) (*(u16 *)((u8 *)&game_data.worldmap + (offset)))
 
 /* Game data words that some movers address by names of their own: as members
- * of D_8006D634 they compile differently there. The parked vehicles'
+ * of game_data they compile differently there. The parked vehicles'
  * headings (worldmap.unk5A-unk5E; func_8008C75C, func_8008D590, func_8008DF0C)
  * and spots (func_8008C364), the flying vehicle's heading where it starts
  * (worldmap.vehicle_heading; func_8008E190) and the return flags it masks
  * on its two landings (worldmap.flags; func_8008E76C), and the spots
  * seen four bytes early, so that the followers' actor slots 1-3 index the x
  * and z of party slots 0-2 (func_8008B644). */
-extern u16 D_8006EE5A, D_8006EE5C, D_8006EE5E;
-extern VehicleSpot D_8006EF8E[3];
-extern u16 D_8006EE66, D_8006EE68;
+extern u16 game_data_parked_vehicle0_heading, game_data_parked_vehicle1_heading, game_data_parked_vehicle2_heading;
+extern VehicleSpot game_data_vehicle_spots[3];
+extern u16 game_data_flying_vehicle_heading, game_data_worldmap_return_flags;
 
 typedef struct {
     u16 x;
@@ -46,7 +46,7 @@ typedef struct {
     u16 flags;
 } PartySpot;
 
-extern PartySpot D_8006EF8A[];
+extern PartySpot game_data_vehicle_spots_by_follower[];
 
 /* Queued actor placement (0x18 bytes, ring of 32). */
 typedef struct PlaceRequest {

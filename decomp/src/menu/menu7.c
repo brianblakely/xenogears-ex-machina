@@ -195,9 +195,9 @@ INCLUDE_ORIGINAL(".data", D_800925A4, 0x800925A4, 0x30);
 
 /* Load a whole file into a new allocation and return it. */
 void *func_800891C0(s32 file) {
-    void *data = func_80031BDC(func_80028738(file), 1);
+    void *data = heap_alloc(cd_get_file_size(file), 1);
 
-    func_800295D8(file, data, 0, 0);
+    cd_read_file(file, data, 0, 0);
     return data;
 }
 
@@ -260,7 +260,7 @@ void func_80089330(s32 width, s32 height) {
 void func_80089534(s32 width, s32 height) {
     SetGeomOffset(width / 2, height / 2);
     SetGeomScreen(0x180);
-    func_8002DFF0(width, height);
+    model_set_screen_bounds(width, height);
     if (height > 256) {
         SetDefDrawEnv(&D_8009A0D8[0].draw, 0, 0, width, height);
         SetDefDrawEnv(&D_8009A0D8[1].draw, 0, 0, width, height);
@@ -285,7 +285,7 @@ void func_80089534(s32 width, s32 height) {
 void func_800896C4(s32 width, s32 height) {
     SetGeomOffset(width / 2, height / 2);
     SetGeomScreen((width << 8) / width);
-    func_8002DFF0(width, height);
+    model_set_screen_bounds(width, height);
     func_80089210(width, height);
 }
 
@@ -403,8 +403,8 @@ Node *func_80089B44(Node *node) {
 
 /* Allocate a reset scene node. */
 Node *func_80089C54(void) {
-    func_800324B8(8);
-    return func_80089B44(func_80031BDC(sizeof(Node), 0));
+    heap_set_next_class(8);
+    return func_80089B44(heap_alloc(sizeof(Node), 0));
 }
 
 /* Append child as the last child of parent. */
@@ -472,9 +472,9 @@ void func_80089D5C(Node *node) {
         break;
     }
     if (node->data != NULL) {
-        func_800320E8(node->data);
+        heap_free(node->data);
     }
-    func_800320E8(node);
+    heap_free(node);
 }
 
 /* Make a node a model node. */
@@ -509,8 +509,8 @@ void func_80089E64(Node *node, void *data) {
 ModelSet *func_80089E74(void) {
     ModelSet *set;
 
-    func_800324B8(4);
-    set = func_80031BDC(sizeof(ModelSet), 0);
+    heap_set_next_class(4);
+    set = heap_alloc(sizeof(ModelSet), 0);
     set->scale[2] = 0x1000;
     set->scale[1] = 0x1000;
     set->scale[0] = 0x1000;
@@ -525,18 +525,18 @@ void func_80089EB4(ModelSet *set) {
     s32 i;
 
     if (set->nodes != NULL) {
-        func_800320E8(set->nodes);
+        heap_free(set->nodes);
     }
     if (set->players != NULL) {
         if (!D_80091C2C) {
             i = set->count;
             while (--i != -1) {
                 if (set->players[i].header != NULL) {
-                    func_800320E8(set->players[i].keys);
+                    heap_free(set->players[i].keys);
                 }
             }
         }
-        func_800320E8(set->players);
+        heap_free(set->players);
     }
 }
 
@@ -557,25 +557,25 @@ NodeModel *func_80089F8C(NodeModel *model) {
 
 /* Allocate a reset model payload. */
 NodeModel *func_80089FC4(void) {
-    func_800324B8(1);
-    return func_80089F8C(func_80031BDC(sizeof(NodeModel), 0));
+    heap_set_next_class(1);
+    return func_80089F8C(heap_alloc(sizeof(NodeModel), 0));
 }
 
 /* Release a model payload's resources. */
 void func_80089FF8(NodeModel *model) {
     if (model->packets[0] != NULL) {
-        func_80032C18(model->packets[0], 2);
+        heap_delay_free(model->packets[0], 2);
     }
-    func_8002CBBC((ModelBuffer *)model->file);
+    model_free_owned_block((ModelBuffer *)model->file);
 }
 
 /* Pass the model texture page and CLUT positions to target, or zeros when
  * no texture page is set. */
 void func_8008A040(void *target) {
     if (D_80092800 > 0) {
-        func_8002DDE4(target, 1, D_80092800, D_80092804, 1, D_80092808, D_8009280C);
+        model_load_image_list(target, 1, D_80092800, D_80092804, 1, D_80092808, D_8009280C);
     } else {
-        func_8002DDE4(target, 0, 0, 0, 0, 0, 0);
+        model_load_image_list(target, 0, 0, 0, 0, 0, 0);
     }
 }
 
@@ -621,15 +621,15 @@ void func_8008A168(void) {
  * CLUT overrides. */
 void func_8008A184(NodeModel *model, SpriteModel *file) {
     model->file = file;
-    model->morph = func_800303C8(file, 1);
-    func_8002CB54(model->file, &model->packets[0], &model->packets[1]);
+    model->morph = model_start_morph(file, 1);
+    model_alloc_packet_buffers(model->file, &model->packets[0], &model->packets[1]);
     if (D_80092800 >= 0) {
-        func_8002CC54(GetTPage(0, 1, D_80092800, D_80092804));
+        model_set_raw_tpage_override(GetTPage(0, 1, D_80092800, D_80092804));
     }
     if (D_80092808 >= 0) {
-        func_8002CC74(D_80092808, D_8009280C);
+        model_set_clut_override(D_80092808, D_8009280C);
     }
-    func_8002C8CC(model->file, model->packets[0], 2);
+    model_build_packets(model->file, model->packets[0], 2);
     func_800732AC(model->packets[1], model->packets[0], model->file->packet_size);
     model->flags |= 2;
 }
@@ -638,8 +638,8 @@ void func_8008A184(NodeModel *model, SpriteModel *file) {
 Light *func_8008A254(void) {
     Light *light;
 
-    func_800324B8(0xB);
-    light = func_80031BDC(sizeof(Light), 0);
+    heap_set_next_class(0xB);
+    light = heap_alloc(sizeof(Light), 0);
     light->direction[0] = light->direction[1] = light->direction[2] = 0x10;
     light->colour[0] = light->colour[1] = light->colour[2] = 0;
     return light;
@@ -647,7 +647,7 @@ Light *func_8008A254(void) {
 
 /* Free a payload. */
 void func_8008A298(void *p) {
-    func_800320E8(p);
+    heap_free(p);
 }
 
 /* Allocate an ordering table pair of the given length and its depth
@@ -657,10 +657,10 @@ OtPair *func_8008A2B8(u16 length) {
     u32 *ot;
     s32 bit;
 
-    func_800324B8(0xC);
-    pair = func_80031BDC(sizeof(OtPair), 0);
-    func_800324B8(0xC);
-    ot = func_80031BDC(length * 8, 0);
+    heap_set_next_class(0xC);
+    pair = heap_alloc(sizeof(OtPair), 0);
+    heap_set_next_class(0xC);
+    ot = heap_alloc(length * 8, 0);
     pair->ot[0] = ot;
     pair->ot[1] = ot + length;
     pair->flags = 1;
@@ -686,8 +686,8 @@ void func_8008A3A0(void) {
 
 /* Free a holder and its resource. */
 void func_8008A3A8(OtPair *layer) {
-    func_80032C18(layer->ot[0], 3);
-    func_800320E8(layer);
+    heap_delay_free(layer->ot[0], 3);
+    heap_free(layer);
 }
 
 /* Allocate a light rig: a root and three light nodes (key light turned
@@ -695,8 +695,8 @@ void func_8008A3A8(OtPair *layer) {
 LightRig *func_8008A3E0(OtPair *layer) {
     LightRig *rig;
 
-    func_800324B8(9);
-    rig = func_80031BDC(sizeof(LightRig), 0);
+    heap_set_next_class(9);
+    rig = heap_alloc(sizeof(LightRig), 0);
     rig->unk0 = 0;
     rig->camera = &rig->storage[0];
     rig->lights[0] = &rig->storage[1];
@@ -730,11 +730,11 @@ LightRig *func_8008A3E0(OtPair *layer) {
 
 /* Free a light rig, its lights and its holder. */
 void func_8008A5BC(LightRig *rig) {
-    func_800320E8(rig->storage[1].data);
-    func_800320E8(rig->storage[2].data);
-    func_800320E8(rig->storage[3].data);
+    heap_free(rig->storage[1].data);
+    heap_free(rig->storage[2].data);
+    heap_free(rig->storage[3].data);
     func_8008A3A8(rig->layer);
-    func_800320E8(rig);
+    heap_free(rig);
 }
 
 /* Enable model colour overrides. */
@@ -750,7 +750,7 @@ void func_8008A62C(void) {
 /* Draw a model into the current ordering table, with its colour override
  * (or grey) as the GTE back colour when overrides are enabled. */
 void func_8008A63C(NodeModel *model) {
-    D_80050104 = 0;
+    model_box_test_mode = 0;
     if (D_80092810) {
         if (model->flags & 0x10) {
             gte_SetBackColor(model->r, model->g, model->b);
@@ -758,7 +758,7 @@ void func_8008A63C(NodeModel *model) {
             gte_SetBackColor(0x40, 0x40, 0x40);
         }
     }
-    func_8002C700(model->file, model->packets[D_800928A0], D_800928E4, model->unk4);
+    model_draw_sprite_model(model->file, model->packets[D_800928A0], D_800928E4, model->unk4);
 }
 
 /* Set the current buffer's colour, noting whether it changed. */
@@ -796,7 +796,7 @@ void func_8008A7E0(Node *node) {
     }
     switch (node->type) {
     case 2:
-        func_8003F738(&node->angles, &node->view);
+        gpu_build_rotation_matrix(&node->angles, &node->view);
         if (D_8009289C) {
             MulMatrix0(&node->parent->view, &node->view, &node->unk6C);
         } else {
@@ -816,14 +816,14 @@ void func_8008A7E0(Node *node) {
             node->position.vx = node->offset.vx;
             node->position.vy = node->offset.vy;
             node->position.vz = node->offset.vz;
-            func_8003F738(&node->angles, &node->view);
+            gpu_build_rotation_matrix(&node->angles, &node->view);
             TransMatrix(&node->view, &node->position);
             MulMatrix0(&node->parent->unk6C, &node->view, &node->unk6C);
             CompMatrix(&node->parent->unk4C, &node->view, &node->unk4C);
             CompMatrix(&node->parent->view, &node->view, &node->view);
         }
         if (node->type == 1 && !(((NodeModel *)node->data)->flags & 1)) {
-            func_80030B14(&node->unk6C);
+            model_load_light_matrix(&node->unk6C);
             gte_SetRotMatrix(&node->view);
             gte_SetTransMatrix(&node->view);
             func_8008A63C(node->data);
@@ -851,9 +851,9 @@ void func_8008A7E0(Node *node) {
 
 /* Load the three rig lights into the light slots. */
 void func_8008ABAC(Node **lights) {
-    func_80030A30(0, lights[0]->data);
-    func_80030A30(1, lights[1]->data);
-    func_80030A30(2, lights[2]->data);
+    model_set_light(0, lights[0]->data);
+    model_set_light(1, lights[1]->data);
+    model_set_light(2, lights[2]->data);
 }
 
 /* Clear the current buffer's ordering table of a pair and make it the one
@@ -861,7 +861,7 @@ void func_8008ABAC(Node **lights) {
 void func_8008AC0C(OtPair *pair) {
     ClearOTagR((u_long *)pair->ot[D_800928A0], pair->length);
     D_800928E4 = pair->ot[D_800928A0];
-    D_80050100 = pair->shift;
+    model_ot_depth_shift = pair->shift;
 }
 
 /* Choose the ordering table pair to compact at the end of the frame. */
@@ -969,10 +969,10 @@ ModelFile *func_8008AF6C(ModelFile *file) {
 ModelFile *func_8008B070(s32 file) {
     ModelFile *scene;
 
-    func_800324B8(0xA);
-    scene = func_80031BDC(func_80028738(file), 0);
-    func_800295D8(file, scene, 0, 0);
-    func_80028A60(0);
+    heap_set_next_class(0xA);
+    scene = heap_alloc(cd_get_file_size(file), 0);
+    cd_read_file(file, scene, 0, 0);
+    cd_sync_reads(0);
     return func_8008AF6C(scene);
 }
 
@@ -1011,8 +1011,8 @@ void func_8008B13C(AnimRecord *record, Player *player, Node *root) {
     anim = (AnimHeader *)record;
     player->header = anim;
     record = anim->records;
-    func_800324B8(0x10);
-    key = func_80031BDC(anim->keys * sizeof(Key) + anim->channels * sizeof(Channel), 0);
+    heap_set_next_class(0x10);
+    key = heap_alloc(anim->keys * sizeof(Key) + anim->channels * sizeof(Channel), 0);
     player->keys = key;
     channel = (Channel *)(key + anim->keys);
     player->channels = channel;
@@ -1103,9 +1103,9 @@ Node *func_8008B38C(ModelFile *file) {
     NodeModel *model;
     Player *player;
 
-    func_8002C3E8((ModelGroup *)data);
-    func_800324B8(0x12);
-    nodes = func_80031BDC(count * 4, 0);
+    model_relocate_group((ModelGroup *)data);
+    heap_set_next_class(0x12);
+    nodes = heap_alloc(count * 4, 0);
     set = func_80089E74();
     root = func_80089C54();
     func_80089E54(root, set);
@@ -1134,8 +1134,8 @@ Node *func_8008B38C(ModelFile *file) {
     }
     if (animations != NULL) {
         data = animations;
-        func_800324B8(0x11);
-        player = set->players = func_80031BDC(data[0] * sizeof(Player), 0);
+        heap_set_next_class(0x11);
+        player = set->players = heap_alloc(data[0] * sizeof(Player), 0);
         set->count = data[0];
         for (i = 0; i < data[0]; i++) {
             if (data[i + 1] != 0) {
@@ -1288,8 +1288,8 @@ TaskContext *func_8008BA2C(void (*entry)(s32), s32 arg, u32 *stack, s32 words) {
     TaskContext *task;
     s32 i;
 
-    func_800324B8(3);
-    task = func_80031BDC(sizeof(TaskContext), 2);
+    heap_set_next_class(3);
+    task = heap_alloc(sizeof(TaskContext), 2);
     for (i = 0; i < 32; i++) {
         task->regs[i] = 0;
     }
@@ -1304,7 +1304,7 @@ TaskContext *func_8008BA2C(void (*entry)(s32), s32 arg, u32 *stack, s32 words) {
 
 /* Free a task. */
 void func_8008BAE0(TaskContext *task) {
-    func_800320E8(task);
+    heap_free(task);
 }
 
 INCLUDE_ASM("decomp/src/menu", func_8008BB00);
@@ -1337,20 +1337,20 @@ void func_8008BD70(SpriteModel *mesh, ModelPrim *prims, u32 *ot, u8 *work) {
     PrimitiveGroup *group;
     s32 groups = mesh->group_count;
 
-    D_80059528 = (PrimitiveGroup *)mesh->unk10;
-    D_80059424 = (RenderPacket *)prims;
-    D_80059568 = ot;
-    D_8005953C = (SVECTOR *)work;
-    D_800595C0 += mesh->primitive_count;
+    model_current_primitive_group = (PrimitiveGroup *)mesh->unk10;
+    model_current_packet = (RenderPacket *)prims;
+    model_ot = ot;
+    model_current_vertices = (SVECTOR *)work;
+    model_submitted_primitive_count += mesh->primitive_count;
     while (--groups != -1) {
-        group = D_80059528;
-        D_80059528 = group + 1;
+        group = model_current_primitive_group;
+        model_current_primitive_group = group + 1;
         if (group->type & 8) {
-            func_8008C620((u8 *)D_80059528, group->count);
+            func_8008C620((u8 *)model_current_primitive_group, group->count);
         } else {
-            func_8008C4B0((u8 *)D_80059528, group->count);
+            func_8008C4B0((u8 *)model_current_primitive_group, group->count);
         }
-        D_80059528 = (PrimitiveGroup *)((u8 *)D_80059528 + group->count * 8);
+        model_current_primitive_group = (PrimitiveGroup *)((u8 *)model_current_primitive_group + group->count * 8);
     }
 }
 
@@ -1371,37 +1371,37 @@ void func_8008BE4C(ModelPrims *mp, SpriteModel *mesh) {
     mp->count = mesh->primitive_count;
     mp->vertexData = mesh->vertices;
     mp->mesh = mesh;
-    D_80059528 = (PrimitiveGroup *)mesh->unk10;
-    func_800324B8(0x13);
-    vertex = mp->work = func_80031BDC(mp->vertices * 8, 2);
+    model_current_primitive_group = (PrimitiveGroup *)mesh->unk10;
+    heap_set_next_class(0x13);
+    vertex = mp->work = heap_alloc(mp->vertices * 8, 2);
     n = mp->vertices;
     while (--n != -1) {
         ((s16 *)vertex)[1] = 0;
         vertex += 8;
     }
-    func_800324B8(5);
+    heap_set_next_class(5);
     triangles = 0;
     quads = 0;
     n = mesh->group_count;
     while (--n != -1) {
-        group = D_80059528;
-        D_80059528 = group + 1;
+        group = model_current_primitive_group;
+        model_current_primitive_group = group + 1;
         if (group->type & 8) {
             quads += group->count;
         } else {
             triangles += group->count;
         }
-        D_80059528 = (PrimitiveGroup *)((u8 *)D_80059528 + group->count * 8);
+        model_current_primitive_group = (PrimitiveGroup *)((u8 *)model_current_primitive_group + group->count * 8);
     }
     n = triangles * 0x14 + quads * 0x18;
-    packet = func_80031BDC(n * 2, 2);
+    packet = heap_alloc(n * 2, 2);
     mp->prims[0] = (ModelPrim *)packet;
     mp->prims[1] = (ModelPrim *)(packet + n);
     i = mesh->group_count;
-    D_80059528 = (PrimitiveGroup *)mesh->unk10;
+    model_current_primitive_group = (PrimitiveGroup *)mesh->unk10;
     while (--i != -1) {
-        group = D_80059528;
-        D_80059528 = group + 1;
+        group = model_current_primitive_group;
+        model_current_primitive_group = group + 1;
         if (group->type & 8) {
             j = group->count;
             while (--j != -1) {
@@ -1417,7 +1417,7 @@ void func_8008BE4C(ModelPrims *mp, SpriteModel *mesh) {
                 packet += 0x14;
             }
         }
-        D_80059528 = (PrimitiveGroup *)((u8 *)D_80059528 + group->count * 8);
+        model_current_primitive_group = (PrimitiveGroup *)((u8 *)model_current_primitive_group + group->count * 8);
     }
     func_800732AC(mp->prims[1], mp->prims[0], n);
 }
@@ -1432,8 +1432,8 @@ void func_8008C0BC(Node *node, Instance *instance) {
 Instance *func_8008C0CC(Node *source) {
     Instance *instance;
 
-    func_800324B8(7);
-    instance = func_80031BDC(sizeof(Instance), 2);
+    heap_set_next_class(7);
+    instance = heap_alloc(sizeof(Instance), 2);
     instance->type = source->type;
     instance->unk8 = (s32)D_80092828;
     instance->source = source;
@@ -1447,12 +1447,12 @@ void func_8008C120(Instance *instance) {
 
     if (prims != NULL) {
         if (prims->work != NULL) {
-            func_800320E8(prims->work);
+            heap_free(prims->work);
         }
         if (prims->prims[0] != NULL) {
-            func_80032C18(prims->prims[0], 2);
+            heap_delay_free(prims->prims[0], 2);
         }
-        func_800320E8(prims);
+        heap_free(prims);
     }
 }
 
@@ -1463,14 +1463,14 @@ Node *func_8008C188(Node *source, Node *parent) {
     Instance *instance;
     SpriteModel *mesh;
 
-    func_800324B8(6);
+    heap_set_next_class(6);
     node = func_80089C54();
     instance = func_8008C0CC(source);
     func_8008C0BC(node, instance);
     if (instance->type == 1) {
         mesh = ((NodeModel *)source->data)->file;
-        func_800324B8(5);
-        instance->prims = func_80031BDC(sizeof(ModelPrims), 2);
+        heap_set_next_class(5);
+        instance->prims = heap_alloc(sizeof(ModelPrims), 2);
         func_8008BE4C(instance->prims, mesh);
     }
     D_80092824++;
@@ -1549,7 +1549,7 @@ void func_8008C8B4(SparkLine4 *spark, u32 *ot) {
     spark->trail[2] = spark->trail[1];
     spark->trail[1] = spark->trail[0];
     spark->trail[0] = spark->pos;
-    func_80031750((u_long *)(ot + (otz >> 2)), line);
+    gpu_ot_link_line_f4((u_long *)(ot + (otz >> 2)), line);
 }
 
 /* Collapse a three-point spark line's trail onto its position. */
@@ -1592,7 +1592,7 @@ void func_8008CA84(SparkLine3 *spark, u32 *ot) {
     spark->trail[0] = spark->pos;
     gte_stsxy3(&line->x0, &line->x1, &line->x2);
     gte_stszotz(&otz);
-    func_80031708((u_long *)(ot + (otz >> 2)), line);
+    gpu_ot_link_line_f3((u_long *)(ot + (otz >> 2)), line);
 }
 
 /* Collapse a two-point spark line's trail onto its position. */
@@ -1621,7 +1621,7 @@ void func_8008CCB0(SparkLine2 *spark, u32 *ot) {
     otz = RotTransPers3(&spark->pos, &spark->trail[0], (SVECTOR *)&depth, (long *)&line->x0,
                         (long *)&line->x1, &depth, &depth, &depth);
     spark->trail[0] = spark->pos;
-    func_800316C0((u_long *)(ot + (otz >> 2)), line);
+    gpu_ot_link_line_f2((u_long *)(ot + (otz >> 2)), line);
 }
 
 /* Reset a tile spark: it keeps no trail. */
@@ -1654,7 +1654,7 @@ void func_8008CE0C(SparkTile *spark, u32 *ot) {
     tile = &spark->tile[D_800928A0];
     gte_stsxy(&tile->x0);
     gte_stszotz(&otz);
-    func_80031804((u_long *)(ot + (otz >> 2)), tile);
+    gpu_ot_link_tile((u_long *)(ot + (otz >> 2)), tile);
 }
 
 /* Reset a dot spark: it keeps no trail. */
@@ -1675,7 +1675,7 @@ void func_8008CF30(SparkDot *spark, u32 *ot) {
     TILE_1 *dot = &spark->dot[D_800928A0];
     long depth;
 
-    func_80031870(
+    gpu_ot_link_tile_1(
         (u_long *)(ot + (RotTransPers(&spark->pos, (long *)&dot->x0, &depth, &depth) >> 2)), dot);
 }
 
@@ -1729,9 +1729,9 @@ void func_8008D208(Emitter *source, SVECTOR *pos) {
     s32 angle = rand();
     s32 radius = rand();
 
-    v.vx = (func_8003F8B0(angle) * (radius % source->range.vx)) >> 13;
+    v.vx = (gpu_get_sin(angle) * (radius % source->range.vx)) >> 13;
     v.vy = 0;
-    v.vz = (func_8003F8CC(angle) * (radius % source->range.vz)) >> 13;
+    v.vz = (gpu_get_cos(angle) * (radius % source->range.vz)) >> 13;
     libgte_rotate_svector(&v, &r);
     pos->vx = source->origin.vx + r.vx;
     pos->vy = source->origin.vy + r.vy;
@@ -1745,9 +1745,9 @@ void func_8008D304(Emitter *source, SVECTOR *pos) {
     VECTOR r;
     s32 angle;
 
-    v.vx = (func_8003F8B0(angle) * source->range.vx) >> 12;
+    v.vx = (gpu_get_sin(angle) * source->range.vx) >> 12;
     v.vy = rand() % source->range.vy - source->range.vy / 2;
-    v.vz = (func_8003F8CC(angle) * source->range.vz) >> 12;
+    v.vz = (gpu_get_cos(angle) * source->range.vz) >> 12;
     libgte_rotate_svector(&v, &r);
     pos->vx = source->origin.vx + r.vx;
     pos->vy = source->origin.vy + r.vy;
@@ -1760,8 +1760,8 @@ Emitter *func_8008D3F4(s32 shape, s32 placement) {
     Emitter *emitter;
     SparkShape *kind;
 
-    func_800324B8(0x15);
-    emitter = func_80031BDC(0x7C, 0);
+    heap_set_next_class(0x15);
+    emitter = heap_alloc(0x7C, 0);
     emitter->range.vx = 0x1000;
     emitter->range.vy = 0x1000;
     emitter->range.vz = 0x1000;
@@ -1822,11 +1822,11 @@ void func_8008D5C0(Emitter *emitter, s32 count) {
     s32 i;
 
     if (emitter->sparks != NULL) {
-        func_80032C18(emitter->sparks, 3);
+        heap_delay_free(emitter->sparks, 3);
     }
     emitter->count = count;
-    func_800324B8(0x14);
-    emitter->sparks = func_80031BDC(emitter->size * emitter->count, 0);
+    heap_set_next_class(0x14);
+    emitter->sparks = heap_alloc(emitter->size * emitter->count, 0);
     spark = emitter->sparks;
     setup = emitter->setup;
     for (i = 0; i < emitter->count; i++) {
@@ -1859,9 +1859,9 @@ void func_8008D680(Emitter *emitter, MATRIX *rotation, s32 count) {
     emitter->origin.vx = emitter->base.vx + rotation->t[0];
     emitter->origin.vy = emitter->base.vy + rotation->t[1];
     emitter->origin.vz = emitter->base.vz + rotation->t[2];
-    func_8003F738(&emitter->angles, &local);
+    gpu_build_rotation_matrix(&emitter->angles, &local);
     libgte_multiply_matrix_in_place(&world, &local);
-    func_8003F738(&emitter->turn, &turned);
+    gpu_build_rotation_matrix(&emitter->turn, &turned);
     libgte_multiply_matrix_in_place(&turned, &world);
     SetRotMatrix(&turned);
     left = count;
@@ -1873,10 +1873,10 @@ void func_8008D680(Emitter *emitter, MATRIX *rotation, s32 count) {
             }
             angle = rand() % emitter->spread;
             heading = rand();
-            dir.vy = -func_8003F8CC(angle);
-            angle = func_8003F8B0(angle);
-            dir.vx = (func_8003F8B0(heading) * angle) >> 12;
-            dir.vz = (func_8003F8CC(heading) * angle) >> 12;
+            dir.vy = -gpu_get_cos(angle);
+            angle = gpu_get_sin(angle);
+            dir.vx = (gpu_get_sin(heading) * angle) >> 12;
+            dir.vz = (gpu_get_cos(heading) * angle) >> 12;
             heading = emitter->speed + rand() % emitter->speed_range; /* now the speed */
             gte_ldv0(&dir);
             gte_rtv0();
@@ -2032,9 +2032,9 @@ void func_8008DF50(void) {
     s32 i;
 
     if (D_80092844 == NULL) {
-        D_80092844 = func_80031BDC(0x1500, 1);
-        D_8009283C = func_80031BDC(0x2BC0, 1);
-        D_80092840 = func_80031BDC(0x2BC0, 1);
+        D_80092844 = heap_alloc(0x1500, 1);
+        D_8009283C = heap_alloc(0x2BC0, 1);
+        D_80092840 = heap_alloc(0x2BC0, 1);
     }
     for (i = 0x1570; i != -1; i--) {
         D_80092840[i] = 0;
@@ -2056,9 +2056,9 @@ void func_8008DF50(void) {
 /* Release the glow buffers. */
 void func_8008E064(void) {
     if (D_80092844 != NULL) {
-        func_80032C18(D_80092844, 2);
-        func_80032C18(D_8009283C, 2);
-        func_80032C18(D_80092840, 2);
+        heap_delay_free(D_80092844, 2);
+        heap_delay_free(D_8009283C, 2);
+        heap_delay_free(D_80092840, 2);
         D_80092844 = NULL;
         D_8009283C = NULL;
         D_80092840 = NULL;
@@ -2210,7 +2210,7 @@ void func_8008E620(void) {
     SoundVoice *voice;
     u32 i;
 
-    func_80039FF8();
+    sound_stop_all_effects();
     for (i = 0; i < 4; i++) {
         voice = &D_80096EA0[i];
         voice->mask = mask;
@@ -2293,7 +2293,7 @@ void func_8008E78C(s32 sound, s32 mode, VECTOR *pos, s32 arg3) {
     }
     voice->age = 0;
     if (mode == 0) {
-        func_80039F9C(voice->sound, voice->voice, 0x7F, 0x40);
+        sound_play_effect_on_channel_volume_pan(voice->sound, voice->voice, 0x7F, 0x40);
     }
 }
 
@@ -2344,10 +2344,10 @@ void func_8008E8B0(void) {
             }
             pan = x * 0x7F / 0x140;
             if (voice->age != 0) {
-                func_8003A55C(voice->voice, pan);
-                func_8003A344(voice->voice, volume);
+                sound_set_effect_pan_on_channel(voice->voice, pan);
+                sound_set_effect_volume_on_channel(voice->voice, volume);
             } else {
-                func_80039F9C(voice->sound, voice->voice, volume, pan);
+                sound_play_effect_on_channel_volume_pan(voice->sound, voice->voice, volume, pan);
             }
         }
     }
@@ -2361,7 +2361,7 @@ void func_8008EADC(void) {
 
     for (i = 0; i < 4; i++) {
         voice = &D_80096EA0[i];
-        if (!(func_8003A5D0(voice->sound) & voice->mask)) {
+        if (!(sound_get_active_effect_mask(voice->sound) & voice->mask)) {
             voice->active = 0;
         }
     }
@@ -2371,7 +2371,7 @@ void func_8008EADC(void) {
 /* Play a menu sound effect (unpositioned). */
 void func_8008EB4C(s32 id) {
     if (id != 0) {
-        func_8008E78C(0x60000 + id, 0, NULL, D_80059488);
+        func_8008E78C(0x60000 + id, 0, NULL, pad_vblank_count);
     }
 }
 
@@ -2411,7 +2411,7 @@ void func_8008ECEC(u8 tag) {
     for (i = 0; i < 4; i++) {
         voice = &D_80096EA0[i];
         if (voice->active && voice->unk3 == tag) {
-            func_8003A20C(voice->voice);
+            sound_stop_effect_on_channel(voice->voice);
             voice->active = 0;
         }
     }

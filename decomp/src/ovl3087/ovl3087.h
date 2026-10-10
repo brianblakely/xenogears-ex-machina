@@ -53,16 +53,16 @@ extern ModelArchive *D_801E9C38;
 
 /* Resident data no shared header declares: the movie's last frame, which
  * the script sets for the movie it starts. */
-extern u16 D_80062514;
+extern u16 cd_movie_request_last_frame;
 
 /* Resident functions whose callers convert arguments/result differently
  * from the resident definition (decomp/src/resident/own_declarations.h). */
-void func_80032F54(Window *window, s32 vramX, s32 vramY, s32 x, s32 y, s32 columns, s32 lines);
-void *func_80033728(void *messages, u16 message);
-s32 func_800397FC(u8 *sequence, u8 volume, s32 arg2);
-void func_80039F18(s32 sound, s16 arg1, s16 arg2);
-void func_8003A2E4(s32 sound, u16 arg1);
-void func_8003BDFC(s32 arg);
+void window_open(Window *window, s32 vramX, s32 vramY, s32 x, s32 y, s32 columns, s32 lines);
+void *text_get_resource_entry(void *messages, u16 message);
+s32 sound_create_and_play_seq(u8 *sequence, u8 volume, s32 frames);
+void sound_play_effect_volume_pan(s32 sound, s16 volume, s16 pan);
+void sound_set_effect_volume(s32 sound, u16 volume);
+void sound_sync_transfer(s32 arg);
 
 /* Battle functions the shared battle headers leave out: those whose callers
  * convert arguments/result differently from the battle's definition

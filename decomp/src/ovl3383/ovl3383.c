@@ -1,9 +1,9 @@
 /* ovl3383: a battle module at 0x801fc000. The battle overlay's 800beb04 loads
  * the current battle's module into 0x801fc000..0x80200000 (the slot above the
- * resident heap, which the boot code bounds at 0x801fc000): file (D_800591B3
- * + 2) of the battle directory, D_800591B3 being the platform bits (6..11) of
+ * resident heap, which the boot code bounds at 0x801fc000): file (sprite_requested_battle_module
+ * + 2) of the battle directory, sprite_requested_battle_module being the platform bits (6..11) of
  * the directory header of battle file 2, whenever they differ from the loaded
- * module's (D_800591B2). Battle script opcodes call fixed entry addresses in
+ * module's (sprite_loaded_battle_module). Battle script opcodes call fixed entry addresses in
  * the loaded module: this one provides 801fc53c, called by the opcode handler
  * 800b6b98, which starts an effect circling an actor.
  *
@@ -47,15 +47,15 @@ void func_801FC020(Task *node) {
     pos.vx = actor->x >> 16;
     pos.vy = actor->y >> 16;
     pos.vz = actor->z >> 16;
-    SetRotMatrix(&D_8004FBB8);
-    SetTransMatrix(&D_8004FBB8);
-    depth = (RotTransPers(&pos, &sxy, &sxy, &flag) >> D_80050100) + actor->half30;
+    SetRotMatrix(&sprite_view_matrix);
+    SetTransMatrix(&sprite_view_matrix);
+    depth = (RotTransPers(&pos, &sxy, &sxy, &flag) >> model_ot_depth_shift) + actor->half30;
     if (flag & 0x8000) {
         depth = 0;
     }
     actor->depth = depth;
     if ((actor->render.word >> 24) & 1) {
-        func_80022038(actor);
+        sprite_update_orientation(actor);
         trans.vx = FIXED_WHOLE(actor->x);
         trans.vy = FIXED_WHOLE(actor->y);
         trans.vz = FIXED_WHOLE(actor->z);
@@ -78,10 +78,10 @@ void func_801FC020(Task *node) {
         if ((u32)(depth - 1) >= 0xFFF) {
             return;
         }
-        func_8001E148(actor);
+        sprite_set_draw_matrix(actor);
     }
     angle = spin->angle;
-    shift_prev = func_8003F8B0(angle) * spin->radius / 4096;
+    shift_prev = gpu_get_sin(angle) * spin->radius / 4096;
     swing = spin->radius << 8;
     part = actor->renderer->parts[1];
     angle_step = spin->arg4 << 8;
@@ -93,35 +93,35 @@ void func_801FC020(Task *node) {
         return;
     }
     do {
-        s32 shift = func_8003F8B0(angle) * (swing >> 8) / 4096;
-        prim = (POLY_FT4 *)D_80059580;
-        if (!((u8 *)D_80059580 + sizeof(POLY_FT4) < D_80059534)) {
+        s32 shift = gpu_get_sin(angle) * (swing >> 8) / 4096;
+        prim = (POLY_FT4 *)sprite_queue_next_free;
+        if (!((u8 *)sprite_queue_next_free + sizeof(POLY_FT4) < sprite_queue_block_end)) {
             return;
         }
-        D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(POLY_FT4));
+        sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + sizeof(POLY_FT4));
         ((u8 *)prim)[3] = 9;
         *(u32 *)&prim->r0 = part->colour;
         prim->tpage = part->tpage;
         prim->clut = part->clut;
         x = part->x;
-        D_8004FB98[0].vx = x + shift;
-        D_8004FB98[1].vx = x + w + shift;
-        D_8004FB98[2].vx = x + w + shift_prev;
-        D_8004FB98[3].vx = x + shift_prev;
+        sprite_quad_corners[0].vx = x + shift;
+        sprite_quad_corners[1].vx = x + w + shift;
+        sprite_quad_corners[2].vx = x + w + shift_prev;
+        sprite_quad_corners[3].vx = x + shift_prev;
         y = part->y + part->h + row;
-        D_8004FB98[0].vy = y;
-        D_8004FB98[1].vy = y;
-        D_8004FB98[2].vy = y + 4;
-        D_8004FB98[3].vy = y + 4;
-        D_8004FB98[0].vx <<= (actor->flags >> 8) & 0x1F;
-        D_8004FB98[1].vx <<= (actor->flags >> 8) & 0x1F;
-        D_8004FB98[2].vx <<= (actor->flags >> 8) & 0x1F;
-        D_8004FB98[3].vx <<= (actor->flags >> 8) & 0x1F;
-        D_8004FB98[0].vy <<= (actor->flags >> 8) & 0x1F;
-        D_8004FB98[1].vy <<= (actor->flags >> 8) & 0x1F;
-        D_8004FB98[2].vy <<= (actor->flags >> 8) & 0x1F;
-        D_8004FB98[3].vy <<= (actor->flags >> 8) & 0x1F;
-        RotTransPers4(&D_8004FB98[0], &D_8004FB98[1], &D_8004FB98[2], &D_8004FB98[3],
+        sprite_quad_corners[0].vy = y;
+        sprite_quad_corners[1].vy = y;
+        sprite_quad_corners[2].vy = y + 4;
+        sprite_quad_corners[3].vy = y + 4;
+        sprite_quad_corners[0].vx <<= (actor->flags >> 8) & 0x1F;
+        sprite_quad_corners[1].vx <<= (actor->flags >> 8) & 0x1F;
+        sprite_quad_corners[2].vx <<= (actor->flags >> 8) & 0x1F;
+        sprite_quad_corners[3].vx <<= (actor->flags >> 8) & 0x1F;
+        sprite_quad_corners[0].vy <<= (actor->flags >> 8) & 0x1F;
+        sprite_quad_corners[1].vy <<= (actor->flags >> 8) & 0x1F;
+        sprite_quad_corners[2].vy <<= (actor->flags >> 8) & 0x1F;
+        sprite_quad_corners[3].vy <<= (actor->flags >> 8) & 0x1F;
+        RotTransPers4(&sprite_quad_corners[0], &sprite_quad_corners[1], &sprite_quad_corners[2], &sprite_quad_corners[3],
                       (long *)&prim->x0, (long *)&prim->x1, (long *)&prim->x3, (long *)&prim->x2,
                       &sxy, &flag);
         prim->u0 = u;
@@ -134,7 +134,7 @@ void func_801FC020(Task *node) {
         prim->v3 = part->v + part->h + row + 4;
         shift_prev = shift;
         if (!(flag & 0x8000) && depth < 0x1000) {
-            AddPrim((u32 *)D_8005956C + depth, prim);
+            AddPrim((u32 *)sprite_ot + depth, prim);
         }
         row -= 4;
         angle += angle_step >> 8;
@@ -148,7 +148,7 @@ void func_801FC020(Task *node) {
 void func_801FC53C(Sprite *actor, s32 angle, s32 radius, s32 arg3, s32 arg4, s32 arg5, s32 step) {
     SpinTask *spin;
 
-    spin = (SpinTask *)func_8001D1D8(sizeof(SpinTask), actor->block, func_801FC000, func_801FC020, NULL);
+    spin = (SpinTask *)task_alloc_two_node_task(sizeof(SpinTask), actor->block, func_801FC000, func_801FC020, NULL);
     spin->actor = actor;
     spin->radius = radius;
     spin->arg3 = arg3;

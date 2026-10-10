@@ -226,9 +226,9 @@ void func_80072238(void) {
     MoveImage(&rect, 0x2C0, 0x100);
     DrawSync(0);
     func_80072DB4(0x40, 0, 4, 2);
-    func_80028A60(0);
+    cd_sync_reads(0);
     func_80071EF0();
-    while (func_800286CC() >= 3) {
+    while (cd_get_pending_read_count() >= 3) {
     }
     func_80073530();
     func_8009766C();
@@ -238,22 +238,22 @@ void func_80072238(void) {
     D_8009C7E8 = 0;
     D_8009BD34 = 0;
     D_8009D144 = 0;
-    D_80059198 = 1;
+    sprite_frame_skip = 1;
     D_8009CCA4 = 2;
     D_8009D3CC = 4;
     D_8009C178 = 1;
     D_8009CD40 = func_80086700;
     func_80098044();
     if (D_8009C894 == 0) {
-        func_8001B66C();
+        mode_stop_music();
     } else {
-        func_80039CC4();
-        func_800399D4((SoundSeq *)D_80062528);
-        seq = (SoundSeq *)D_8004F2FC;
-        D_8004F2FC = 0;
-        D_80062528 = (s32)seq;
+        sound_stop_all_seqs();
+        sound_release_seq((SoundSeq *)mode_music_seq);
+        seq = (SoundSeq *)mode_music_cached_seq;
+        mode_music_cached_seq = 0;
+        mode_music_seq = (s32)seq;
     }
-    if ((u16)D_8006D634.worldmap.unk6A != 0) {
+    if ((u16)game_data.worldmap.unk6A != 0) {
         func_80073398();
     } else if (D_8009C894 == 0) {
         func_80073448(D_8009D3D4);
@@ -261,7 +261,7 @@ void func_80072238(void) {
         func_8007565C();
         func_80075D4C();
     }
-    func_80028A60(0);
+    cd_sync_reads(0);
     func_8008440C();
     func_800979C8();
     func_80084580();
@@ -269,18 +269,18 @@ void func_80072238(void) {
     func_800736DC();
     func_80073E30();
     func_80085F58();
-    func_80024F64(0x1400, 0);
+    sprite_alloc_queues(0x1400, 0);
     func_80074594();
     func_800863E0();
     func_80074E58();
     func_80075030();
     func_800739B8();
     func_80088F64();
-    func_80028A60(0);
+    cd_sync_reads(0);
     if (D_8009C894 == 0) {
-        D_8006258C = func_80037FD8(D_8009C88C, 0);
+        mode_music_wave_bank = sound_load_wave_bank(D_8009C88C, 0);
     }
-    func_80028470(0x24, 0);
+    cd_select_directory(0x24, 0);
     if (D_8009C894 == 0) {
         func_80097BC0(&D_8009C5AC);
         do {
@@ -293,10 +293,10 @@ void func_80072238(void) {
     }
     if (D_8009C894 == 0) {
         /* The original debug halt tests this flag once and then spins. */
-        while (D_8005957C & 0x10) {
+        while (sound_driver_flags & 0x10) {
         }
-        func_800320E8(D_8009C88C);
-        func_80038428(D_8006259C);
+        heap_free(D_8009C88C);
+        sound_add_effect_bank(sound_effect_bank);
         if (D_8009BE10 == 7) {
             file = D_8009D800;
             data = D_8009C888;
@@ -304,13 +304,13 @@ void func_80072238(void) {
             file = D_8009D3D0;
             data = D_8009C884;
         }
-        memcpy(D_80062648, data, func_800288EC(file));
-        seq = func_80039850(&D_80062648_sequence);
-        D_80062528 = (s32)seq;
-        func_80039A80((SoundSeq *)D_80062528, 0x7F, 0);
+        memcpy(mode_music_buffer, data, cd_get_aligned_file_size(file));
+        seq = sound_create_seq(&D_80062648_sequence);
+        mode_music_seq = (s32)seq;
+        sound_play_seq((SoundSeq *)mode_music_seq, 0x7F, 0);
     } else {
-        func_800320E8(D_8009C88C);
-        func_80038428(D_8006259C);
+        heap_free(D_8009C88C);
+        sound_add_effect_bank(sound_effect_bank);
         if (D_8009BE10 == 7) {
             file = D_8009D800;
             data = D_8009C888;
@@ -318,8 +318,8 @@ void func_80072238(void) {
             file = D_8009D3D0;
             data = D_8009C884;
         }
-        memcpy(D_80062648, data, func_800288EC(file));
-        func_80039B68((SoundSeq *)D_80062528, 0x7F, 0xF0);
+        memcpy(mode_music_buffer, data, cd_get_aligned_file_size(file));
+        sound_restart_seq((SoundSeq *)mode_music_seq, 0x7F, 0xF0);
     }
     switch (D_8009C894) {
     case 0:
@@ -370,10 +370,10 @@ void func_80072238(void) {
         }
         break;
     }
-    D_80059179 = 0;
+    mode_gear_riding_lock = 0;
     if (D_8009C610 == 0) {
         func_80089160(0xE, NULL, NULL);
-        D_80059179 = 1;
+        mode_gear_riding_lock = 1;
     }
     func_800978FC();
     func_8008901C();
@@ -382,7 +382,7 @@ void func_80072238(void) {
     if (D_8009C894 == 0) {
         func_80075228();
     }
-    func_80033698(0x130, 0x1E0);
+    text_load_palette(0x130, 0x1E0);
 }
 
 
@@ -392,26 +392,26 @@ void func_8007299C(void) {
     s32 i;
 
     if (D_8009D7CC == 0) {
-        func_8003A89C((SoundSeq *)D_80062528, 0, 0xF0);
+        sound_set_seq_fade((SoundSeq *)mode_music_seq, 0, 0xF0);
     }
-    func_80039FF8();
-    func_8003852C(D_8006259C);
-    func_800320E8(D_8006259C);
+    sound_stop_all_effects();
+    sound_remove_effect_bank(sound_effect_bank);
+    heap_free(sound_effect_bank);
     for (i = 0; i < 0x40; i++) {
         if (D_8009BE24[i].handle != NULL) {
-            func_800230A8(D_8009BE24[i].handle);
+            sprite_destroy(D_8009BE24[i].handle);
             D_8009BE24[i].handle = NULL;
         }
     }
     if (D_8009D7CC == 1) {
         func_80075460();
-        D_8006D634.entry[2] |= 0x8000;
+        game_data.entry[2] |= 0x8000;
     }
     func_80092DD0();
     func_800931B0();
     func_80084818();
     func_80086124();
-    func_80024FB8();
+    sprite_free_queues();
     func_80086568();
     func_800866C8();
     func_8007474C();
@@ -420,17 +420,17 @@ void func_8007299C(void) {
     func_80088FF4();
     func_80089128();
     func_80097D64();
-    func_800320E8(D_8009BBC8[0].ot);
-    func_800320E8(D_8009BBC8[1].ot);
-    func_800320E8(D_8009BBC8[0].packets);
-    func_800320E8(D_8009BBC8[1].packets);
-    func_800320E8(D_8009C180);
+    heap_free(D_8009BBC8[0].ot);
+    heap_free(D_8009BBC8[1].ot);
+    heap_free(D_8009BBC8[0].packets);
+    heap_free(D_8009BBC8[1].packets);
+    heap_free(D_8009C180);
     for (i = 0; i < 3; i++) {
         if (D_8009CD34[i] != NULL) {
-            func_800320E8(D_8009CD34[i]);
+            heap_free(D_8009CD34[i]);
         }
         if (D_8009BDF8[i] != NULL) {
-            func_800320E8(D_8009BDF8[i]);
+            heap_free(D_8009BDF8[i]);
         }
     }
     func_800976A0();
@@ -473,7 +473,7 @@ void func_80072BB0(void) {
     D_8009BBC8[0].disp.screen.x = 0;
     D_8009BBC8[1].disp.screen.h = 0xD8;
     D_8009BBC8[0].disp.screen.h = 0xD8;
-    func_8002C6E0(0x80, 0x80, 0x80);
+    model_set_color(0x80, 0x80, 0x80);
     SetBackColor(0x80, 0x80, 0x80);
     SetFarColor(D_8009BB48[0], D_8009BB48[1], D_8009BB48[2]);
     SetFogNearFar(D_8009D7CC == 2 ? 0xB00 : 0x800, 0xE80, D_8009BCDC);
@@ -491,9 +491,9 @@ void func_80072DB4(s32 frames, s32 level, s32 step, s32 abr) {
     s32 side;
     s32 i;
 
-    quads = func_80031BDC(3 * sizeof(POLY_FT4), 1);
-    shades = func_80031BDC(2 * sizeof(POLY_G4), 1);
-    mode = func_80031BDC(sizeof(DR_TPAGE), 1);
+    quads = heap_alloc(3 * sizeof(POLY_FT4), 1);
+    shades = heap_alloc(2 * sizeof(POLY_G4), 1);
+    mode = heap_alloc(sizeof(DR_TPAGE), 1);
     for (i = 0; i < 3; i++) {
         setPolyFT4(&quads[i]);
         setRGB0(&quads[i], 0x80, 0x80, 0x80);
@@ -549,16 +549,16 @@ void func_80072DB4(s32 frames, s32 level, s32 step, s32 abr) {
     DrawSync(0);
     VSync(0);
     PutDispEnv(&D_8009BBC8[1].disp);
-    func_800320E8(quads);
-    func_800320E8(shades);
-    func_800320E8(mode);
+    heap_free(quads);
+    heap_free(shades);
+    heap_free(mode);
 }
 
 /* Choose the movement mode from the saved state: a vehicle kind, or on foot
  * (1 when no party flag is set, else 2). */
 void func_80073300(void) {
-    if (D_8006D634.worldmap.flags & 0x4000) {
-        switch (D_8006D634.worldmap.flags & 0x1FFF) {
+    if (game_data.worldmap.flags & 0x4000) {
+        switch (game_data.worldmap.flags & 0x1FFF) {
         case 0:
             break;
         case 1:
@@ -574,7 +574,7 @@ void func_80073300(void) {
             D_8009BE10 = 7;
             break;
         }
-    } else if ((D_8006D634.inGear[0] | D_8006D634.inGear[1] | D_8006D634.inGear[2]) == 0) {
+    } else if ((game_data.inGear[0] | game_data.inGear[1] | game_data.inGear[2]) == 0) {
         D_8009BE10 = 1;
     } else {
         D_8009BE10 = 2;
@@ -583,19 +583,19 @@ void func_80073300(void) {
 
 /* Restore the player position and heading for the current movement mode. */
 void func_80073398(void) {
-    D_8006D634.worldmap.unk6A = 0;
+    game_data.worldmap.unk6A = 0;
     switch (D_8009BE10) {
     case 1:
     case 2:
-        D_8009C5AC.vx = D_8006D634.worldmap.x << 12;
-        D_8009C5AC.vz = D_8006D634.worldmap.z << 12;
-        D_8009C584 = D_8006D634.worldmap.heading;
+        D_8009C5AC.vx = game_data.worldmap.x << 12;
+        D_8009C5AC.vz = game_data.worldmap.z << 12;
+        D_8009C584 = game_data.worldmap.heading;
         break;
     case 4:
     case 5:
     case 7:
         func_8008DFF4(&D_8009C5AC);
-        D_8009C584 = D_8006D634.worldmap.vehicle_heading;
+        D_8009C584 = game_data.worldmap.vehicle_heading;
         break;
     }
 }
@@ -606,10 +606,10 @@ void func_80073448(s32 id) {
     s32 unused; /* unreferenced; the original frame reserves it */
     WorldmapSpot *spot;
 
-    if (D_8006D634.worldmap.flags & 0x2000) {
-        D_8006D634.worldmap.flags &= ~0x2000;
+    if (game_data.worldmap.flags & 0x2000) {
+        game_data.worldmap.flags &= ~0x2000;
         func_8008DFF4(&D_8009C5AC);
-        D_8009C584 = D_8006D634.worldmap.vehicle_heading;
+        D_8009C584 = game_data.worldmap.vehicle_heading;
         return;
     }
     for (spot = D_8009D3F4; spot->id != -1; spot++) {
@@ -634,8 +634,8 @@ void func_80073530(void) {
     s32 i;
 
     block = D_8009C180;
-    D_8009C180 = func_80032E88(block, 0);
-    func_800320E8(block);
+    D_8009C180 = text_unpack_lzss_alloc(block, 0);
+    heap_free(block);
     base = D_8009C180;
     area = (AreaHeader *)base;
     block = base + area->spots;
@@ -660,8 +660,8 @@ void func_80073530(void) {
 
 /* Allocate the two display buffers' ordering tables (4 KiB each). */
 void func_8007369C(void) {
-    D_8009BBC8[0].ot = func_80031BDC(0x1000, 0);
-    D_8009BBC8[1].ot = func_80031BDC(0x1000, 0);
+    D_8009BBC8[0].ot = heap_alloc(0x1000, 0);
+    D_8009BBC8[1].ot = heap_alloc(0x1000, 0);
 }
 
 /* Initialise the sky gradient: four bands of Gouraud quads in both buffers. */
@@ -721,7 +721,7 @@ void func_800737EC(void) {
         otz = RotTransPers4(&corners[0], &corners[1], &corners[2], &corners[3], &band->xy0, &band->xy1,
                             &band->xy2, &band->xy3, &scratch->p, &scratch->flag);
         if (scratch->flag >= 0) {
-            addPrim(&D_8009BE3C->ot[otz >> D_80050100], band);
+            addPrim(&D_8009BE3C->ot[otz >> model_ot_depth_shift], band);
         }
     }
 }
@@ -818,7 +818,7 @@ void func_80073B04(void) {
                             &scratch->flag);
     }
     if (scratch->flag >= 0) {
-        ot = &D_8009BE3C->ot[otz >> D_80050100];
+        ot = &D_8009BE3C->ot[otz >> model_ot_depth_shift];
         addPrim(ot, &D_8009D3D8[1]);
         addPrim(ot, &D_8009C744[0][D_8009D7F0]);
         addPrim(ot, &D_8009C744[1][D_8009D7F0]);
@@ -891,7 +891,7 @@ void func_800740B8(void) {
         scratch->angle.vy = 0;
         scratch->angle.vx = 0;
         scratch->angle.vz = D_8009BD38.vy;
-        func_8003F738(&scratch->angle, matrix);
+        gpu_build_rotation_matrix(&scratch->angle, matrix);
         scratch->matrix.t[0] = (target->vx >> 12) / 315 + 0x30;
         scratch->matrix.t[2] = D_8009BCDC;
         scratch->matrix.t[1] = 0x78 - D_8009BE0C + (target->vz >> 12) / 341;
@@ -915,16 +915,16 @@ void func_800740B8(void) {
         if (bits & 1) {
             switch (i) {
             case 24:
-                dot->x0 = D_8006D634.worldmap.unk60 / 315 + 0xCF;
-                dot->y0 = D_8006D634.worldmap.unk64 / 341 + 0x77;
+                dot->x0 = game_data.worldmap.unk60 / 315 + 0xCF;
+                dot->y0 = game_data.worldmap.unk64 / 341 + 0x77;
                 break;
             case 25:
-                dot->x0 = (u16)D_8006D634.flight.x / 315 + 0xCF;
-                dot->y0 = (u16)D_8006D634.flight.z / 341 + 0x77;
+                dot->x0 = (u16)game_data.flight.x / 315 + 0xCF;
+                dot->y0 = (u16)game_data.flight.z / 341 + 0x77;
                 break;
             case 26:
-                dot->x0 = D_8006D634.unk1844[0] / 315 + 0xCF;
-                dot->y0 = D_8006D634.unk1844[1] / 341 + 0x77;
+                dot->x0 = game_data.unk1844[0] / 315 + 0xCF;
+                dot->y0 = game_data.unk1844[1] / 341 + 0x77;
                 break;
             default:
                 dot->x0 = position_x[i * 2] + 0xD0;
@@ -950,9 +950,9 @@ void func_80074594(void) {
     POLY_FT4 *quad;
     s32 i;
 
-    D_8009D30C = func_80031BDC(0x80, 0);
-    D_8009BE14 = func_80031BDC(0x280, 0);
-    D_8009BE18 = func_80031BDC(0x280, 0);
+    D_8009D30C = heap_alloc(0x80, 0);
+    D_8009BE14 = heap_alloc(0x280, 0);
+    D_8009BE18 = heap_alloc(0x280, 0);
     spot = D_8009D30C;
     for (i = 15; i != -1; i--) {
         spot->z = 0;
@@ -983,9 +983,9 @@ void func_80074594(void) {
 
 /* Free the footprint ring and its two quad buffers. */
 void func_8007474C(void) {
-    func_800320E8(D_8009BE18);
-    func_800320E8(D_8009BE14);
-    func_800320E8(D_8009D30C);
+    heap_free(D_8009BE18);
+    heap_free(D_8009BE14);
+    heap_free(D_8009D30C);
 }
 
 /* Record a position (in world units) with an id in the 16-entry ring. */
@@ -1078,7 +1078,7 @@ void func_800747DC(void) {
                 break;
             case 2:
                 scratch->heading = D_8009A180;
-                RotMatrixY(D_8006D634.worldmap.vehicle_heading, &scratch->heading);
+                RotMatrixY(game_data.worldmap.vehicle_heading, &scratch->heading);
                 libgte_multiply_matrix_in_place(&scratch->local, &scratch->heading);
                 scratch->scale.vx = 0x1800;
                 scratch->scale.vy = 0x1000;
@@ -1131,7 +1131,7 @@ void func_80074E58(void) {
 
     count = *D_8009D77C;
     D_8009CC9C = count;
-    D_8009D780 = anim = func_80031BDC(count * sizeof(TexAnim), 0);
+    D_8009D780 = anim = heap_alloc(count * sizeof(TexAnim), 0);
     for (i = 0; i < D_8009CC9C; i++, anim++) {
         anim->images = (u8 *)D_8009D77C + D_8009D77C[i + 1];
         anim->slot = &D_8009A1E8[i];
@@ -1142,7 +1142,7 @@ void func_80074E58(void) {
 
 /* Free the terrain texture animations. */
 void func_80074F04(void) {
-    func_800320E8(D_8009D780);
+    heap_free(D_8009D780);
 }
 
 /* Advance the terrain texture animations, uploading each new image. */
@@ -1173,7 +1173,7 @@ void func_80075030(void) {
 
     count = *D_8009D7C8;
     D_8009CD64 = count;
-    D_8009D7D0 = anim = func_80031BDC(count * sizeof(TexAnim), 0);
+    D_8009D7D0 = anim = heap_alloc(count * sizeof(TexAnim), 0);
     for (i = 0; i < D_8009CD64; i++, anim++) {
         anim->images = (u8 *)D_8009D7C8 + D_8009D7C8[i + 1];
         anim->slot = &D_8009A250[i];
@@ -1184,7 +1184,7 @@ void func_80075030(void) {
 
 /* Free the second set of texture animations. */
 void func_800750DC(void) {
-    func_800320E8(D_8009D7D0);
+    heap_free(D_8009D7D0);
 }
 
 /* Advance the second texture animations; images are rect-sized. */
@@ -1219,7 +1219,7 @@ void func_80075228(void) {
         D_8009C854[i] = 0;
     }
     D_8009D64C = 1;
-    if (D_8006D634.worldmap.flags & 0x4000) {
+    if (game_data.worldmap.flags & 0x4000) {
         D_8009BE40 = 0x300;
     } else {
         D_8009BE40 = 0x180;
@@ -1265,7 +1265,7 @@ void func_8007528C(void) {
 void func_80075460(void) {
     WorldmapSave *save;
 
-    save = &D_8005A4E4;
+    save = &mode_snapshot_block;
     save->actors = *(ActorSet *)D_8009BE24;
     save->position.vx = D_8009D55C.target.vx;
     save->position.vy = D_8009D55C.target.vy;
@@ -1295,7 +1295,7 @@ void func_80075460(void) {
 void func_8007565C(void) {
     WorldmapSave *save;
 
-    save = &D_8005A4E4;
+    save = &mode_snapshot_block;
     *(ActorSet *)D_8009BE24 = save->actors;
     D_8009C5AC = save->position;
     D_8009D55C.target = save->position;
@@ -1321,28 +1321,28 @@ void func_800758C0(void) {
     void *block;
     s32 i;
 
-    D_8006D634.worldmap.unk6A = 1;
-    D_8006D634.entry[0] = (D_8009BD38.vy + 0x2000) & 0x3FFF;
+    game_data.worldmap.unk6A = 1;
+    game_data.entry[0] = (D_8009BD38.vy + 0x2000) & 0x3FFF;
     for (i = 0; i < 3; i++) {
-        (&D_8006D634.worldmap.unk70)[i] = D_8006D634.inGear[i];
+        (&game_data.worldmap.unk70)[i] = game_data.inGear[i];
     }
-    D_8009D14C = D_80059179;
+    D_8009D14C = mode_gear_riding_lock;
     if (func_80093F18(&D_8009D55C.target) == 4) {
-        D_80059179 = 1;
+        mode_gear_riding_lock = 1;
     }
     func_80096694();
     func_80086124();
     func_800866C8();
     func_80089128();
-    func_800320E8(D_8009BBC8[0].packets);
-    func_800320E8(D_8009BBC8[1].packets);
-    block = func_80031BDC(4, 1);
-    func_800320E8(block);
+    heap_free(D_8009BBC8[0].packets);
+    heap_free(D_8009BBC8[1].packets);
+    block = heap_alloc(4, 1);
+    heap_free(block);
     block = (void *)((u32)block & 0xFFFFFF);
-    D_8009C7E4 = func_80031BDC((u32)block - 0x1C4FFC, 1);
+    D_8009C7E4 = heap_alloc((u32)block - 0x1C4FFC, 1);
     func_80071FEC();
-    D_8009C800 = func_80031BDC(0x10000, 0);
-    D_8009C890 = func_80031BDC(0xC800, 0);
+    D_8009C800 = heap_alloc(0x10000, 0);
+    D_8009C890 = heap_alloc(0xC800, 0);
     rect.x = 0x180;
     rect.y = 0x100;
     rect.w = 0x80;
@@ -1367,17 +1367,17 @@ void func_800758C0(void) {
     MoveImage(&rect, 0x2C0, 0x100);
     DrawSync(0);
     func_80072DB4(0x10, 0, 8, 2);
-    while (func_800286CC() >= 2) {
+    while (cd_get_pending_read_count() >= 2) {
     }
-    func_80032EB4(D_8009D528, D_8009C7E4);
-    func_800320E8(D_8009D528);
+    text_unpack_lzss(D_8009D528, D_8009C7E4);
+    heap_free(D_8009D528);
     rect.x = 0;
     rect.y = 0;
     rect.w = 0x140;
     rect.h = 0xD8;
     MoveImage(&rect, 0, 0xE0);
     DrawSync(0);
-    func_80028A60(0);
+    cd_sync_reads(0);
 }
 
 /* Resume the world map after another scene: reload the area, restore the saved
@@ -1385,13 +1385,13 @@ void func_800758C0(void) {
 void func_80075B58(void) {
     RECT rect;
 
-    func_80032498(3, 0);
-    func_80028470(0x24, 0);
-    func_800320E8(D_8005945C);
-    func_800320E8(D_8009C7E4);
+    heap_select_owner_tag(3, 0);
+    cd_select_directory(0x24, 0);
+    heap_free(menu_state_resource_file);
+    heap_free(D_8009C7E4);
     func_80072BB0();
-    D_8009BD20 = func_80031BDC(func_800288EC(D_8009C174), 1);
-    func_800295D8(D_8009C174, D_8009BD20, 0, 0);
+    D_8009BD20 = heap_alloc(cd_get_aligned_file_size(D_8009C174), 1);
+    cd_read_file(D_8009C174, D_8009BD20, 0, 0);
     func_80072DB4(0x10, 0x80, -8, 2);
     rect.x = 0x2C0;
     rect.y = 0x100;
@@ -1400,7 +1400,7 @@ void func_80075B58(void) {
     MoveImage(&rect, 0, 0);
     MoveImage(&rect, 0, 0xD8);
     ClearOTagR(D_8009BE3C->ot, 0x400);
-    func_80028A60(0);
+    cd_sync_reads(0);
     func_8008440C();
     rect.x = 0x180;
     rect.y = 0x100;
@@ -1413,18 +1413,18 @@ void func_80075B58(void) {
     rect.h = 0x50;
     LoadImage(&rect, D_8009C890);
     DrawSync(0);
-    func_800320E8(D_8009C800);
-    func_800320E8(D_8009C890);
+    heap_free(D_8009C800);
+    heap_free(D_8009C890);
     func_800978FC();
     func_8008901C();
     func_800865A0();
     func_80085FE0();
-    func_80033698(0x130, 0x1E0);
+    text_load_palette(0x130, 0x1E0);
     VSync(0);
-    func_80035DB0();
+    pad_clear_queue();
     D_8009D804 = 0;
-    D_8006D634.worldmap.unk6A = 0;
-    D_80059179 = D_8009D14C;
+    game_data.worldmap.unk6A = 0;
+    mode_gear_riding_lock = D_8009D14C;
     func_80075D4C();
 }
 
@@ -1442,9 +1442,9 @@ void func_80075D4C(void) {
 
     i = 0;
     actors = D_8009BE24;
-    applied = (u8 *)&D_8006D634.worldmap.unk70;
+    applied = (u8 *)&game_data.worldmap.unk70;
     do {
-        state = D_8006D634.inGear[i];
+        state = game_data.inGear[i];
         if (state != applied[i * 2]) {
             if (state == 0) {
                 actors[i + 1].position.vx = actors[i + 4].position.vx;
@@ -1464,11 +1464,11 @@ void func_80075D4C(void) {
     } while (i < 3);
     count = 0;
     for (i = 0; i < 3; i++) {
-        if (D_8006D634.party[i] != 0xFF && D_8006D634.inGear[i] == 1) {
+        if (game_data.party[i] != 0xFF && game_data.inGear[i] == 1) {
             count++;
         }
     }
-    if (!(D_8006D634.worldmap.flags & 0x4000)) {
+    if (!(game_data.worldmap.flags & 0x4000)) {
         D_8009BE10 = count != 0 ? 2 : 1;
     }
 }
@@ -1517,8 +1517,8 @@ s32 func_80075E7C(VECTOR *position, s32 scene) {
             }
             weights[formation]--;
         } while (roll > 0);
-        D_800658DC = *(EncounterSet *)D_8009D73C[kind];
-        D_80059508 = formation;
+        formation_encounter_set = *(EncounterSet *)D_8009D73C[kind];
+        formation_selected_index = formation;
         result = 1;
     }
     return result;
@@ -1605,7 +1605,7 @@ void func_8007634C(void) {
     RECT rect;
     s32 saved;
 
-    saved = D_80059488;
+    saved = pad_vblank_count;
     DrawSync(0);
     VSync(0);
     if (D_8009D7F0 == 0) {
@@ -1617,27 +1617,27 @@ void func_8007634C(void) {
     }
     PutDispEnv(&D_8009BBC8[1].disp);
     PutDrawEnv(&D_8009BBC8[1].draw);
-    func_80037EE4();
+    sound_silence_voices();
     do {
         DrawSync(0);
         VSync(0);
-        func_8001FAB4(0x88, 0x64);
+        sprite_upload_pause_image(0x88, 0x64);
         D_8009BD1C = 0;
         D_8009BD14 = 0;
         D_8009CD50 = 0;
         D_8009BD18 = 0;
         D_8009BD10 = 0;
         D_8009CD4C = 0;
-        while (func_80035CDC() != 0) {
-            D_8009CD4C |= D_80059570;
-            D_8009CD50 |= D_80059574;
-            D_8009BD10 |= D_8005948C;
-            D_8009BD14 |= D_80059490;
-            D_8009BD18 |= D_800594A4;
-            D_8009BD1C |= D_800594A8;
+        while (pad_dequeue_state() != 0) {
+            D_8009CD4C |= pad_port0_held;
+            D_8009CD50 |= pad_port1_held;
+            D_8009BD10 |= pad_port0_pressed;
+            D_8009BD14 |= pad_port1_pressed;
+            D_8009BD18 |= pad_port0_repeated;
+            D_8009BD1C |= pad_port1_repeated;
         }
     } while (!(D_8009BD10 & 0x800));
-    func_80037E8C();
+    sound_restore_voices();
     DrawSync(0);
     VSync(0);
     rect.x = 0;
@@ -1647,16 +1647,16 @@ void func_8007634C(void) {
     MoveImage(&rect, 0, 0xD8);
     PutDispEnv(&D_8009BBC8[D_8009D7F0].disp);
     PutDrawEnv(&D_8009BBC8[D_8009D7F0].draw);
-    D_80059488 = saved;
+    pad_vblank_count = saved;
 }
 
-/* Wait on the other buffer until the pad check (func_80035734) succeeds,
+/* Wait on the other buffer until the pad check (pad_get_controller_kind) succeeds,
  * then restore the display. */
 void func_80076594(void) {
     RECT rect;
     s32 saved;
 
-    saved = D_80059488;
+    saved = pad_vblank_count;
     DrawSync(0);
     VSync(0);
     if (D_8009D7F0 == 0) {
@@ -1668,27 +1668,27 @@ void func_80076594(void) {
     }
     PutDispEnv(&D_8009BBC8[1].disp);
     PutDrawEnv(&D_8009BBC8[1].draw);
-    func_80037EE4();
+    sound_silence_voices();
     do {
         DrawSync(0);
         VSync(0);
-        func_8001FAB4(0x88, 0x64);
+        sprite_upload_pause_image(0x88, 0x64);
         D_8009BD1C = 0;
         D_8009BD14 = 0;
         D_8009CD50 = 0;
         D_8009BD18 = 0;
         D_8009BD10 = 0;
         D_8009CD4C = 0;
-        while (func_80035CDC() != 0) {
-            D_8009CD4C |= D_80059570;
-            D_8009CD50 |= D_80059574;
-            D_8009BD10 |= D_8005948C;
-            D_8009BD14 |= D_80059490;
-            D_8009BD18 |= D_800594A4;
-            D_8009BD1C |= D_800594A8;
+        while (pad_dequeue_state() != 0) {
+            D_8009CD4C |= pad_port0_held;
+            D_8009CD50 |= pad_port1_held;
+            D_8009BD10 |= pad_port0_pressed;
+            D_8009BD14 |= pad_port1_pressed;
+            D_8009BD18 |= pad_port0_repeated;
+            D_8009BD1C |= pad_port1_repeated;
         }
-    } while (func_80035734(0) == 0);
-    func_80037E8C();
+    } while (pad_get_controller_kind(0) == 0);
+    sound_restore_voices();
     DrawSync(0);
     VSync(0);
     rect.x = 0;
@@ -1698,17 +1698,17 @@ void func_80076594(void) {
     MoveImage(&rect, 0, 0xD8);
     PutDispEnv(&D_8009BBC8[D_8009D7F0].disp);
     PutDrawEnv(&D_8009BBC8[D_8009D7F0].draw);
-    D_80059488 = saved;
+    pad_vblank_count = saved;
 }
 
 /* Replace the music: stop the current sequence and start `data` (the
  * contents of disc file `file`). */
 void func_800767D4(void *data, s32 file) {
-    func_80039CC4();
-    func_800399D4((SoundSeq *)D_80062528);
-    memcpy(D_80062648, data, func_800288EC(file));
-    D_80062528 = (s32)func_80039850((SoundSeqHeader *)D_80062648);
-    func_80039A80((SoundSeq *)D_80062528, 0x7F, 0);
+    sound_stop_all_seqs();
+    sound_release_seq((SoundSeq *)mode_music_seq);
+    memcpy(mode_music_buffer, data, cd_get_aligned_file_size(file));
+    mode_music_seq = (s32)sound_create_seq((SoundSeqHeader *)mode_music_buffer);
+    sound_play_seq((SoundSeq *)mode_music_seq, 0x7F, 0);
 }
 
 /* Quadratic Bezier point at t (0..0x1000) through three control points. */
@@ -1733,8 +1733,8 @@ void func_80076954(void) {
     void *block;
 
     block = D_8009C180;
-    D_8009C180 = func_80032E88(block, 0);
-    func_800320E8(block);
+    D_8009C180 = text_unpack_lzss_alloc(block, 0);
+    heap_free(block);
     D_8009CD48 = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->models;
     D_8009D308 = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->meshes;
     D_8009BD30 = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->placements;
@@ -1868,25 +1868,25 @@ s32 func_80076CD4(WorldmapActor *actor, s32 a) {
 }
 
 /* Script opcode 8 (4 halfwords: level a, frames b, unused): fade the music
- * sequence D_80062528 to level a over b frames, at once when b is 0
- * (func_8003A89C). */
+ * sequence mode_music_seq to level a over b frames, at once when b is 0
+ * (sound_set_seq_fade). */
 s32 func_80076CF4(WorldmapActor *actor, s32 a, s32 b) {
-    func_8003A89C((SoundSeq *)D_80062528, a, b);
+    sound_set_seq_fade((SoundSeq *)mode_music_seq, a, b);
     return 4;
 }
 
 /* Script opcode 9 (2 halfwords: sound): play effect `sound` of the area
- * sound bank at the default volume and pan (func_80039E60). */
+ * sound bank at the default volume and pan (sound_play_effect). */
 s32 func_80076D1C(WorldmapActor *actor, s32 sound) {
-    func_80039E60((D_8006259C->id << 16) | sound);
+    sound_play_effect((sound_effect_bank->id << 16) | sound);
     return 2;
 }
 
 /* Script opcode 10 (4 halfwords: sound, volume b, frames c): slide the volume
  * of the channels playing area-bank effect `sound` to b over c frames
- * (func_8003A3B8). */
+ * (sound_slide_effect_volume). */
 s32 func_80076D50(WorldmapActor *actor, s32 sound, s32 b, s32 c) {
-    func_8003A3B8((D_8006259C->id << 16) | sound, b, c);
+    sound_slide_effect_volume((sound_effect_bank->id << 16) | sound, b, c);
     return 4;
 }
 
@@ -2013,7 +2013,7 @@ void func_80077214(void) {
     MoveImage(&rect, 0x2C0, 0x100);
     DrawSync(0);
     func_80072DB4(0x40, 0, 4, 2);
-    while (func_800286CC() >= 3) {
+    while (cd_get_pending_read_count() >= 3) {
     }
     func_80073530();
     func_8009766C();
@@ -2024,7 +2024,7 @@ void func_80077214(void) {
     D_8009D144 = 0;
     D_8009CD40 = func_80086700;
     func_80098044();
-    func_80028A60(0);
+    cd_sync_reads(0);
     D_8009C5AC.vx = 0x7702000;
     D_8009C5AC.vy = -0x300000;
     D_8009C5AC.vz = 0x27C0000;
@@ -2038,7 +2038,7 @@ void func_80077214(void) {
     func_80075030();
     func_800739B8();
     func_80088F64();
-    func_80028470(0x24, 0);
+    cd_select_directory(0x24, 0);
     func_80097BC0(&D_8009C5AC);
     do {
         func_800967E4();
@@ -2067,16 +2067,16 @@ void func_80077480(void) {
     func_80088FF4();
     func_80089128();
     func_80097D64();
-    func_800320E8(D_8009BBC8[0].ot);
-    func_800320E8(D_8009BBC8[1].ot);
-    func_800320E8(D_8009BBC8[0].packets);
-    func_800320E8(D_8009BBC8[1].packets);
-    func_800320E8(D_8009C180);
+    heap_free(D_8009BBC8[0].ot);
+    heap_free(D_8009BBC8[1].ot);
+    heap_free(D_8009BBC8[0].packets);
+    heap_free(D_8009BBC8[1].packets);
+    heap_free(D_8009C180);
     func_800976A0();
-    D_8006D634.map = 0x11;
-    D_8006D634.entry[2] = 7;
+    game_data.map = 0x11;
+    game_data.entry[2] = 7;
     D_8009BBC4 = 1;
-    D_8006D634.entry[0] = D_8009BD38.vy;
+    game_data.entry[0] = D_8009BD38.vy;
 }
 
 /* Start a scripted camera looking along the player's heading from above. */
@@ -2191,7 +2191,7 @@ void func_80077A64(void) {
     MoveImage(&rect, 0x2C0, 0x100);
     DrawSync(0);
     func_80072DB4(0x40, 0, 4, 1);
-    while (func_800286CC() >= 3) {
+    while (cd_get_pending_read_count() >= 3) {
     }
     func_80076954();
     func_8009766C();
@@ -2202,7 +2202,7 @@ void func_80077A64(void) {
     D_8009D144 = 0;
     D_8009CD40 = func_80086700;
     func_80098044();
-    func_80028A60(0);
+    cd_sync_reads(0);
     func_800721E4();
     D_8009C5AC.vx = 0x2000000;
     D_8009C5AC.vy = -0x200000;
@@ -2216,9 +2216,9 @@ void func_80077A64(void) {
     func_80075030();
     func_800739B8();
     func_80088F64();
-    func_80028A60(0);
-    func_80038428(D_8006259C);
-    func_80028470(0x24, 0);
+    cd_sync_reads(0);
+    sound_add_effect_bank(sound_effect_bank);
+    cd_select_directory(0x24, 0);
     func_80097BC0(&D_8009C5AC);
     do {
         func_800967E4();
@@ -2235,9 +2235,9 @@ void func_80077A64(void) {
 
 /* Leave for scene 0x10E: stop the sound bank, shut down and free the area. */
 void func_80077CC0(void) {
-    func_80039FF8();
-    func_8003852C(D_8006259C);
-    func_800320E8(D_8006259C);
+    sound_stop_all_effects();
+    sound_remove_effect_bank(sound_effect_bank);
+    heap_free(sound_effect_bank);
     func_80084818();
     func_80086568();
     func_800866C8();
@@ -2246,16 +2246,16 @@ void func_80077CC0(void) {
     func_80088FF4();
     func_80089128();
     func_80097D64();
-    func_800320E8(D_8009BBC8[0].ot);
-    func_800320E8(D_8009BBC8[1].ot);
-    func_800320E8(D_8009BBC8[0].packets);
-    func_800320E8(D_8009BBC8[1].packets);
-    func_800320E8(D_8009C180);
+    heap_free(D_8009BBC8[0].ot);
+    heap_free(D_8009BBC8[1].ot);
+    heap_free(D_8009BBC8[0].packets);
+    heap_free(D_8009BBC8[1].packets);
+    heap_free(D_8009C180);
     func_800976A0();
-    D_8006D634.map = 0x10E;
-    D_8006D634.entry[2] = 0;
+    game_data.map = 0x10E;
+    game_data.entry[2] = 0;
     D_8009BBC4 = 1;
-    D_8006D634.entry[0] = D_8009BD38.vy;
+    game_data.entry[0] = D_8009BD38.vy;
 }
 
 /* Start a scripted camera: reset the actor and camera, play a sound. */
@@ -2273,7 +2273,7 @@ s32 func_80077DC8(s32 index) {
     D_8009BD38.vy = 0;
     D_8009BD38.vx = 0;
     D_8009D144 = 1;
-    func_80039E60((D_8006259C->id << 16) | 0xA4);
+    sound_play_effect((sound_effect_bank->id << 16) | 0xA4);
     actor->wait = 0x18;
     return 1;
 }

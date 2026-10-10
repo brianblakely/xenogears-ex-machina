@@ -36,16 +36,16 @@ void func_801E8070(u8 count, MenuLabel *labels, u8 *table, s32 *offsets, u8 *fla
     switch (mode) {
     case 0:
         func_801E8044(count, flags);
-        (labels[selected].polys + D_800625A0->buffer_index)->x0 = D_801E9A00[row + selected] + 0x16 + offsets[selected];
-        (labels[selected].polys + D_800625A0->buffer_index)->y0 = D_801E9A2C[row + selected] - 0x22;
-        (labels[selected].polys + D_800625A0->buffer_index)->x1 =
+        (labels[selected].polys + menu_state_current->buffer_index)->x0 = D_801E9A00[row + selected] + 0x16 + offsets[selected];
+        (labels[selected].polys + menu_state_current->buffer_index)->y0 = D_801E9A2C[row + selected] - 0x22;
+        (labels[selected].polys + menu_state_current->buffer_index)->x1 =
             D_801E9A00[row + selected] + 0x16 + offsets[selected] + labels[selected].width;
-        (labels[selected].polys + D_800625A0->buffer_index)->y1 = D_801E9A2C[row + selected] - 0x22;
-        (labels[selected].polys + D_800625A0->buffer_index)->x2 = D_801E9A00[row + selected] + 0x16 + offsets[selected];
-        (labels[selected].polys + D_800625A0->buffer_index)->y2 = D_801E9A2C[row + selected] - 0x15;
-        (labels[selected].polys + D_800625A0->buffer_index)->x3 =
+        (labels[selected].polys + menu_state_current->buffer_index)->y1 = D_801E9A2C[row + selected] - 0x22;
+        (labels[selected].polys + menu_state_current->buffer_index)->x2 = D_801E9A00[row + selected] + 0x16 + offsets[selected];
+        (labels[selected].polys + menu_state_current->buffer_index)->y2 = D_801E9A2C[row + selected] - 0x15;
+        (labels[selected].polys + menu_state_current->buffer_index)->x3 =
             D_801E9A00[row + selected] + 0x16 + offsets[selected] + labels[selected].width;
-        (labels[selected].polys + D_800625A0->buffer_index)->y3 = D_801E9A2C[row + selected] - 0x15;
+        (labels[selected].polys + menu_state_current->buffer_index)->y3 = D_801E9A2C[row + selected] - 0x15;
         break;
     case 1:
         func_801C851C(labels[selected].verts, D_801E9EC4[selected], D_801E9EE4, labels[selected].width, 0xd);
@@ -60,20 +60,20 @@ void func_801E8070(u8 count, MenuLabel *labels, u8 *table, s32 *offsets, u8 *fla
         func_801C851C(labels[selected].verts, 0x18, D_801E9F30[row], labels[selected].width, 0xd);
         break;
     case 4:
-        (labels[selected].polys + D_800625A0->buffer_index)->x0 = 0x4c;
-        (labels[selected].polys + D_800625A0->buffer_index)->y0 = 0x12;
-        (labels[selected].polys + D_800625A0->buffer_index)->x1 = labels->width + 0x4c;
-        (labels[selected].polys + D_800625A0->buffer_index)->y1 = 0x12;
-        (labels[selected].polys + D_800625A0->buffer_index)->x2 = 0x4c;
-        (labels[selected].polys + D_800625A0->buffer_index)->y2 = 0x1f;
-        (labels[selected].polys + D_800625A0->buffer_index)->x3 = labels->width + 0x4c;
-        (labels[selected].polys + D_800625A0->buffer_index)->y3 = 0x1f;
+        (labels[selected].polys + menu_state_current->buffer_index)->x0 = 0x4c;
+        (labels[selected].polys + menu_state_current->buffer_index)->y0 = 0x12;
+        (labels[selected].polys + menu_state_current->buffer_index)->x1 = labels->width + 0x4c;
+        (labels[selected].polys + menu_state_current->buffer_index)->y1 = 0x12;
+        (labels[selected].polys + menu_state_current->buffer_index)->x2 = 0x4c;
+        (labels[selected].polys + menu_state_current->buffer_index)->y2 = 0x1f;
+        (labels[selected].polys + menu_state_current->buffer_index)->x3 = labels->width + 0x4c;
+        (labels[selected].polys + menu_state_current->buffer_index)->y3 = 0x1f;
         break;
     case 6:
         func_801C851C(labels[selected].verts, D_801E9F68[selected], D_801E9F70[selected], labels[selected].width, 0xd);
         break;
     }
-    labels[selected].buffer = D_800625A0->buffer_index;
+    labels[selected].buffer = menu_state_current->buffer_index;
     flags[selected] = 1;
 }
 
@@ -83,29 +83,29 @@ void func_801E8474(s32 count, MenuCommandImages *images) {
     s32 n;
     s32 i;
 
-    D_800625A0->images->dim = 0;
-    D_800625A0->images->dimmed = 0;
-    D_800625A0->flags->images_shown = 1;
+    menu_state_current->images->dim = 0;
+    menu_state_current->images->dimmed = 0;
+    menu_state_current->flags->images_shown = 1;
     for (n = 1; n <= count; n++) {
         if (n != count) {
-            D_800625A0->images->count = 0;
+            menu_state_current->images->count = 0;
             for (i = 0; i < n; i++) {
-                D_800625A0->images->count +=
-                    func_8002675C(D_800625A0->sheet, images[i].cursor,
-                                  &D_800625A0->images->packets[D_800625A0->images->count * 2],
-                                  D_800625A0->buffer_index, 0xa0, 0x96, 0x1000);
+                menu_state_current->images->count +=
+                    sprite_sheet_draw_scaled(menu_state_current->sheet, images[i].cursor,
+                                  &menu_state_current->images->packets[menu_state_current->images->count * 2],
+                                  menu_state_current->buffer_index, 0xa0, 0x96, 0x1000);
             }
-            D_800625A0->images->buffer = D_800625A0->buffer_index;
+            menu_state_current->images->buffer = menu_state_current->buffer_index;
         }
-        D_800625A0->images->count2 = 0;
+        menu_state_current->images->count2 = 0;
         if (n != 1) {
             for (i = 0; i < n - 1; i++) {
-                D_800625A0->images->count2 +=
-                    func_8002675C(D_800625A0->sheet, images[i].label,
-                                  &D_800625A0->images->packets2[D_800625A0->images->count2 * 2],
-                                  D_800625A0->buffer_index, 0xa0, 0x96, 0x1000);
+                menu_state_current->images->count2 +=
+                    sprite_sheet_draw_scaled(menu_state_current->sheet, images[i].label,
+                                  &menu_state_current->images->packets2[menu_state_current->images->count2 * 2],
+                                  menu_state_current->buffer_index, 0xa0, 0x96, 0x1000);
             }
-            D_800625A0->images->buffer2 = D_800625A0->buffer_index;
+            menu_state_current->images->buffer2 = menu_state_current->buffer_index;
         }
         for (i = 0; i < 2; i++) {
             func_801C7BF4();
@@ -118,7 +118,7 @@ void func_801E8474(s32 count, MenuCommandImages *images) {
  * hoisted to the function entry as in the original. */
 #define ADD_SPRITES(count, list, text)                                                                  \
     do {                                                                                                \
-        (count) += func_8002675C(D_800625A0->sheet, (text), &(list)[(count) * 2], D_800625A0->buffer_index, \
+        (count) += sprite_sheet_draw_scaled(menu_state_current->sheet, (text), &(list)[(count) * 2], menu_state_current->buffer_index, \
                                  0xa0, 0x96, 0x1000);                                                   \
     } while (0)
 
@@ -130,36 +130,36 @@ void func_801E86C8(u8 offset) {
     s32 i;
     s32 growing;
 
-    D_800625A0->lists->first_count = 0;
-    D_800625A0->lists->second_count = 0;
-    D_800625A0->flags->lists_shown = 1;
+    menu_state_current->lists->first_count = 0;
+    menu_state_current->lists->second_count = 0;
+    menu_state_current->flags->lists_shown = 1;
     growing = 1;
     for (n = 1; n < 5; n++) {
-        D_800625A0->lists->first_count = 0;
-        D_800625A0->choice_count = 0;
+        menu_state_current->lists->first_count = 0;
+        menu_state_current->choice_count = 0;
         for (i = 0; i < n; i++) {
-            if (D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2] != 0xffff) {
-                ADD_SPRITES(D_800625A0->lists->first_count, D_800625A0->lists->first,
-                            D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2]);
-                D_800625A0->choice_count++;
+            if (D_801EA1EC[(offset + menu_state_current->cursor) * 8 + i * 2] != 0xffff) {
+                ADD_SPRITES(menu_state_current->lists->first_count, menu_state_current->lists->first,
+                            D_801EA1EC[(offset + menu_state_current->cursor) * 8 + i * 2]);
+                menu_state_current->choice_count++;
             } else {
                 growing = 0;
             }
         }
-        D_800625A0->lists->first_buffer = D_800625A0->buffer_index;
+        menu_state_current->lists->first_buffer = menu_state_current->buffer_index;
         if (growing) {
             for (i = 0; i < 2; i++) {
                 func_801C7BF4();
             }
         }
-        D_800625A0->lists->second_count = 0;
+        menu_state_current->lists->second_count = 0;
         for (i = 0; i < n; i++) {
-            if (D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2] != 0xffff) {
-                ADD_SPRITES(D_800625A0->lists->second_count, D_800625A0->lists->second,
-                            D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2 + 1]);
+            if (D_801EA1EC[(offset + menu_state_current->cursor) * 8 + i * 2] != 0xffff) {
+                ADD_SPRITES(menu_state_current->lists->second_count, menu_state_current->lists->second,
+                            D_801EA1EC[(offset + menu_state_current->cursor) * 8 + i * 2 + 1]);
             }
         }
-        D_800625A0->lists->second_buffer = D_800625A0->buffer_index;
+        menu_state_current->lists->second_buffer = menu_state_current->buffer_index;
         if (growing) {
             for (i = 0; i < 2; i++) {
                 func_801C7BF4();
@@ -175,27 +175,27 @@ void func_801E8978(u8 count, u8 cursor, MenuCommandImages *images) {
     s32 i;
     s32 image;
 
-    D_800625A0->images->count = 0;
-    D_800625A0->images->count2 = 0;
+    menu_state_current->images->count = 0;
+    menu_state_current->images->count2 = 0;
     for (i = 0; i < count; i++) {
         if (i == cursor) {
             image = images[i].cursor + 0xd;
         } else {
             image = images[i].cursor;
         }
-        D_800625A0->images->count +=
-            func_8002675C(D_800625A0->sheet, image,
-                          &D_800625A0->images->packets[D_800625A0->images->count * 2],
-                          D_800625A0->buffer_index, 0xa0, 0x96, 0x1000);
-        D_800625A0->images->count2 +=
-            func_8002675C(D_800625A0->sheet, images[i].label,
-                          &D_800625A0->images->packets2[D_800625A0->images->count2 * 2],
-                          D_800625A0->buffer_index, 0xa0, 0x96, 0x1000);
+        menu_state_current->images->count +=
+            sprite_sheet_draw_scaled(menu_state_current->sheet, image,
+                          &menu_state_current->images->packets[menu_state_current->images->count * 2],
+                          menu_state_current->buffer_index, 0xa0, 0x96, 0x1000);
+        menu_state_current->images->count2 +=
+            sprite_sheet_draw_scaled(menu_state_current->sheet, images[i].label,
+                          &menu_state_current->images->packets2[menu_state_current->images->count2 * 2],
+                          menu_state_current->buffer_index, 0xa0, 0x96, 0x1000);
     }
-    D_800625A0->images->buffer = D_800625A0->buffer_index;
-    D_800625A0->images->buffer2 = D_800625A0->buffer_index;
+    menu_state_current->images->buffer = menu_state_current->buffer_index;
+    menu_state_current->images->buffer2 = menu_state_current->buffer_index;
     func_801D1EE0(cursor, 1);
-    D_800625A0->flags->sprite_shown = 1;
+    menu_state_current->flags->sprite_shown = 1;
 }
 
 /* Lay out the choice cursor sprites of the command at `offset` past the top
@@ -204,27 +204,27 @@ void func_801E8B4C(u8 offset) {
     s32 i;
     s32 image;
 
-    D_800625A0->lists->first_count = 0;
-    D_800625A0->lists->second_count = 0;
-    for (i = 0; i < D_800625A0->choice_count; i++) {
-        if (i == D_800625A0->choice) {
-            image = D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2] + 0xd;
+    menu_state_current->lists->first_count = 0;
+    menu_state_current->lists->second_count = 0;
+    for (i = 0; i < menu_state_current->choice_count; i++) {
+        if (i == menu_state_current->choice) {
+            image = D_801EA1EC[(offset + menu_state_current->cursor) * 8 + i * 2] + 0xd;
         } else {
-            image = D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2];
+            image = D_801EA1EC[(offset + menu_state_current->cursor) * 8 + i * 2];
         }
-        D_800625A0->lists->first_count +=
-            func_8002675C(D_800625A0->sheet, image,
-                          &D_800625A0->lists->first[D_800625A0->lists->first_count * 2],
-                          D_800625A0->buffer_index, 0xa0, 0x96, 0x1000);
-        D_800625A0->lists->second_count +=
-            func_8002675C(D_800625A0->sheet, D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2 + 1],
-                          &D_800625A0->lists->second[D_800625A0->lists->second_count * 2],
-                          D_800625A0->buffer_index, 0xa0, 0x96, 0x1000);
+        menu_state_current->lists->first_count +=
+            sprite_sheet_draw_scaled(menu_state_current->sheet, image,
+                          &menu_state_current->lists->first[menu_state_current->lists->first_count * 2],
+                          menu_state_current->buffer_index, 0xa0, 0x96, 0x1000);
+        menu_state_current->lists->second_count +=
+            sprite_sheet_draw_scaled(menu_state_current->sheet, D_801EA1EC[(offset + menu_state_current->cursor) * 8 + i * 2 + 1],
+                          &menu_state_current->lists->second[menu_state_current->lists->second_count * 2],
+                          menu_state_current->buffer_index, 0xa0, 0x96, 0x1000);
     }
-    D_800625A0->lists->first_buffer = D_800625A0->buffer_index;
-    D_800625A0->lists->second_buffer = D_800625A0->buffer_index;
-    func_801D1EE0(D_800625A0->choice + 7, 1);
-    D_800625A0->flags->sprite_shown = 1;
+    menu_state_current->lists->first_buffer = menu_state_current->buffer_index;
+    menu_state_current->lists->second_buffer = menu_state_current->buffer_index;
+    func_801D1EE0(menu_state_current->choice + 7, 1);
+    menu_state_current->flags->sprite_shown = 1;
 }
 
 /* Render the two name lines of name pair `image` (ff: blank) and upload them
@@ -233,11 +233,11 @@ void func_801E8DA8(u8 image, u8 row) {
     RECT rect;
     u8 *pixels;
 
-    pixels = func_80031BDC(0x3f6, 0);
+    pixels = heap_alloc(0x3f6, 0);
     bzero(pixels, 0x3f6);
     if (image != 0xff) {
-        func_80034EAC(D_8006D634.names[(image >> 1) * 2], pixels, 0x24, 0);
-        func_80034EAC(D_8006D634.names[(image >> 1) * 2 + 1], pixels, 0x24, 1);
+        window_render_text_line(game_data.names[(image >> 1) * 2], pixels, 0x24, 0);
+        window_render_text_line(game_data.names[(image >> 1) * 2 + 1], pixels, 0x24, 1);
     }
     rect.x = D_801EA578[row >> 1] + 0x180;
     rect.y = D_801EA5C4[row >> 1];
@@ -245,7 +245,7 @@ void func_801E8DA8(u8 image, u8 row) {
     rect.h = 0xd;
     LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
-    func_800320E8(pixels);
+    heap_free(pixels);
 }
 
 /* Set `poly`'s blending for `mode`: 0 opaque, 1 additive-dim, 2 plain,
@@ -288,24 +288,24 @@ void func_801E8F60(u8 index, u8 mode) {
         mode = 2;
     }
     for (i = 0; i < 4; i++) {
-        func_801E8EAC(&D_800625A0->panels[index]->corner[i * 2 + D_800625A0->panels[index]->buffer], mode);
+        func_801E8EAC(&menu_state_current->panels[index]->corner[i * 2 + menu_state_current->panels[index]->buffer], mode);
     }
     for (i = 0; i < 4; i++) {
-        func_801E8EAC(&D_800625A0->panels[index]->edge[0][i * 2 + D_800625A0->panels[index]->buffer], mode);
+        func_801E8EAC(&menu_state_current->panels[index]->edge[0][i * 2 + menu_state_current->panels[index]->buffer], mode);
     }
     for (i = 0; i < 4; i++) {
-        func_801E8EAC(&D_800625A0->panels[index]->edge[1][i * 2 + D_800625A0->panels[index]->buffer], mode);
+        func_801E8EAC(&menu_state_current->panels[index]->edge[1][i * 2 + menu_state_current->panels[index]->buffer], mode);
     }
     for (i = 0; i < 4; i++) {
-        func_801E8EAC(&D_800625A0->panels[index]->edge[2][i * 2 + D_800625A0->panels[index]->buffer], mode);
+        func_801E8EAC(&menu_state_current->panels[index]->edge[2][i * 2 + menu_state_current->panels[index]->buffer], mode);
     }
     for (i = 0; i < 4; i++) {
-        func_801E8EAC(&D_800625A0->panels[index]->edge[3][i * 2 + D_800625A0->panels[index]->buffer], mode);
+        func_801E8EAC(&menu_state_current->panels[index]->edge[3][i * 2 + menu_state_current->panels[index]->buffer], mode);
     }
     for (i = 0; i < 2; i++) {
-        func_801E8EAC(&D_800625A0->panels[index]->bar_ends[i * 2 + D_800625A0->panels[index]->buffer], mode);
+        func_801E8EAC(&menu_state_current->panels[index]->bar_ends[i * 2 + menu_state_current->panels[index]->buffer], mode);
     }
-    func_801E8EAC(&D_800625A0->panels[index]->bar_side[D_800625A0->panels[index]->buffer], mode);
+    func_801E8EAC(&menu_state_current->panels[index]->bar_side[menu_state_current->panels[index]->buffer], mode);
 }
 
 /* Make `poly` semi-transparent, textured without shading, at neutral colour. */
@@ -351,11 +351,11 @@ void func_801E927C(POLY_FT4 *poly) {
  * normal speed (CdlSetmode 0, then a pause) and repeat CdlStop every
  * VSync(3) until it succeeds. */
 void func_801E92CC(void) {
-    if (func_8002C3D8() == 0) {
-        func_8002A498(0);
-        func_80028A60(0);
-        func_8002A428(0);
-        func_80028A60(0);
+    if (cd_has_pc_file_server() == 0) {
+        cd_stop_read(0);
+        cd_sync_reads(0);
+        cd_set_mode(0);
+        cd_sync_reads(0);
         VSync(3);
         do {
             VSync(3);
@@ -384,17 +384,17 @@ s32 func_801E93A0(s32 disc) {
     s32 result;
     s32 ok;
 
-    func_80028A60(0);
-    if (func_8002C3D8() != 0) {
+    cd_sync_reads(0);
+    if (cd_has_pc_file_server() != 0) {
         result = 0;
         if (disc == 1) {
-            func_801E9340("c:\\work\\cdrom.mdg", D_8004FDF0, 0x8000);
-            func_801E9340("c:\\work\\cdrom.fid", D_8004FDF4, 0x7a);
-            func_801E9340("c:\\work\\cdrom.fnd", D_8004FE48, 0x40000);
+            func_801E9340("c:\\work\\cdrom.mdg", cd_file_index, 0x8000);
+            func_801E9340("c:\\work\\cdrom.fid", cd_directory_table, 0x7a);
+            func_801E9340("c:\\work\\cdrom.fnd", cd_pc_file_names, 0x40000);
         } else {
-            func_801E9340("c:\\work\\cdrom2.mdg", D_8004FDF0, 0x8000);
-            func_801E9340("c:\\work\\cdrom2.fid", D_8004FDF4, 0x7a);
-            func_801E9340("c:\\work\\cdrom2.fnd", D_8004FE48, 0x40000);
+            func_801E9340("c:\\work\\cdrom2.mdg", cd_file_index, 0x8000);
+            func_801E9340("c:\\work\\cdrom2.fid", cd_directory_table, 0x7a);
+            func_801E9340("c:\\work\\cdrom2.fnd", cd_pc_file_names, 0x40000);
         }
         return result;
     }
@@ -426,19 +426,19 @@ retry:
     } else if (ok == 0) {
         goto retry;
     }
-    func_8002A428(0xa0);
-    func_80028A60(0);
+    cd_set_mode(0xa0);
+    cd_sync_reads(0);
     VSync(3);
     VSync(3);
-    func_8002954C(0x17, &label, 0x10, 0, 0);
-    func_80028A60(0);
+    cd_read_raw_sectors(0x17, &label, 0x10, 0, 0);
+    cd_sync_reads(0);
     if (label.tag == 0x4e45585f) {
         if (label.disc == disc + '0') {
-            func_8002954C(0x18, D_8004FDF0, 0x8000, 0, 0);
+            cd_read_raw_sectors(0x18, cd_file_index, 0x8000, 0, 0);
             result = 0;
-            func_80028A60(0);
-            func_8002954C(0x28, D_8004FDF4, 0x7a, 0, 0);
-            func_80028A60(0);
+            cd_sync_reads(0);
+            cd_read_raw_sectors(0x28, cd_directory_table, 0x7a, 0, 0);
+            cd_sync_reads(0);
         } else {
             result = 3;
         }

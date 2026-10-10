@@ -36,8 +36,8 @@ void func_800931B0(void);     /* close it */
 /* Resident text calls the world map declares itself: its calls pass words
  * where the resident's definitions take halfwords, and it reads the text's
  * address as a word. */
-void func_80032F54(Window *window, s32 vram_x, s32 vram_y, s32 x, s32 y, s32 columns, s32 rows);
-s32 func_80033728(void *table, s32 id); /* text by id */
+void window_open(Window *window, s32 vram_x, s32 vram_y, s32 x, s32 y, s32 columns, s32 rows);
+s32 text_get_resource_entry(void *table, s32 id); /* text by id */
 
 void func_800931D8(u16 *clut, u16 *out, s32 steps, u8 *colour); /* fade a palette */
 

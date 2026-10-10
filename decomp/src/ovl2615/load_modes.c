@@ -29,9 +29,9 @@ void func_801E7F4C(Task *node) {
             for (col = 0; col != 10; col++) {
                 cell = &task->cells[half][row][col];
                 prim = &cell->prim[D_800C3EB0.buffer];
-                prim->r0 = func_80021AD8(prim->r0, -3);
-                prim->g0 = func_80021AD8(prim->g0, -3);
-                prim->b0 = func_80021AD8(prim->b0, -3);
+                prim->r0 = sprite_add_clamp_byte(prim->r0, -3);
+                prim->g0 = sprite_add_clamp_byte(prim->g0, -3);
+                prim->b0 = sprite_add_clamp_byte(prim->b0, -3);
                 if (D_801E963C == 0) {
                     cell->trans.vz -= 0x40;
                 }
@@ -42,7 +42,7 @@ void func_801E7F4C(Task *node) {
 
 /* Shatter drawing callback: into the current ordering table. */
 void func_801E8088(Task *node) {
-    D_801E96B8 = (u32 *)D_8005956C;
+    D_801E96B8 = (u32 *)sprite_ot;
     func_801E80B4(node);
 }
 
@@ -72,7 +72,7 @@ void func_801E80B4(Task *node) {
                     long p, flag;
                     s32 otz;
 
-                    func_8003F738(&cell->rot, &m);
+                    gpu_build_rotation_matrix(&cell->rot, &m);
                     TransMatrix(&m, &cell->trans);
                     SetRotMatrix(&m);
                     SetTransMatrix(&m);
@@ -92,19 +92,19 @@ void func_801E80B4(Task *node) {
 /* Release the shatter task after the drawing finishes. */
 void func_801E827C(void *block) {
     DrawSync(0);
-    func_800320E8(block);
+    heap_free(block);
 }
 
 /* Unlink a task-registered shatter and release it after the frame. */
 void func_801E82B0(Task *node) {
-    func_8001CB48(node + 1);
-    func_8001CD94(node);
-    func_80025180((u32)node);
+    task_unlink_draw_node(node + 1);
+    task_unlink_main_node(node);
+    sprite_queue_free_later((u32)node);
 }
 
 /* Allocate and set up the shatter. */
 ShatterTask *func_801E82EC(void) {
-    ShatterTask *task = func_80031BDC(sizeof(ShatterTask), 1);
+    ShatterTask *task = heap_alloc(sizeof(ShatterTask), 1);
 
     task->task.data = task;
     task->draw.data = task;
@@ -196,10 +196,10 @@ void func_801E8588(void) {
     s32 i;
 
     frames = 0x52;
-    func_8001C944();
+    task_clear_lists();
     state = 1;
     phase = 0;
-    screen = func_80031BDC(0x30000, 1);
+    screen = heap_alloc(0x30000, 1);
     pixel = screen;
     rect.w = 0x140;
     rect.x = 0;
@@ -216,7 +216,7 @@ void func_801E8588(void) {
     rect.h = 0xE0;
     LoadImage(&rect, (u_long *)screen);
     DrawSync(0);
-    func_800320E8(screen);
+    heap_free(screen);
     work = &D_800C3EB0;
     next = &work->buffers[0];
     if (work->current == (first = next)) {
@@ -243,13 +243,13 @@ void func_801E8588(void) {
         swap_buffers();
         D_800C3EB0.buffer = 1 - D_800C3EB0.buffer;
         D_801E96B8 = D_800C3EB0.ot;
-        if (func_800286CC() == 0) {
+        if (cd_get_pending_read_count() == 0) {
             switch (state) {
             case 0:
                 break;
             case 2:
                 state++;
-                func_8001BB0C();
+                mode_load_current_battle_stage();
                 break;
             case 1:
             case 3:
@@ -260,7 +260,7 @@ void func_801E8588(void) {
                 break;
             }
         }
-        func_80019CA0();
+        boot_check_soft_reset();
         /* Run the shatter on a stack at the top of the scratchpad. */
         STACK_ENTER(0x1F8003FC);
         func_801E7F4C(&shatter->task);
@@ -269,18 +269,18 @@ void func_801E8588(void) {
         DrawSync(0);
         VSync(2);
         D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0 =
-            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0, -12);
+            sprite_add_clamp_byte(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.r0, -12);
         D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0 =
-            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0, -12);
+            sprite_add_clamp_byte(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.g0, -12);
         D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0 =
-            func_80021AD8(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0, -12);
+            sprite_add_clamp_byte(D_800C3EB0.buffers[D_800C3EB0.buffer].drawEnv.b0, -12);
         PutDispEnv(&D_800C3EB0.current->dispEnv);
         PutDrawEnv(&D_800C3EB0.current->drawEnv);
         DrawOTag((u_long *)&D_800C3EB0.current->ot[0xFFF]);
     }
     func_801E827C(shatter);
     SetDispMask(0);
-    func_80028A60(0);
+    cd_sync_reads(0);
     func_801E5840(3);
 }
 

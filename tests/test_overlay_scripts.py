@@ -238,7 +238,7 @@ def movie_bytes(*runs: list) -> bytes:
 
 
 def seds(effects: int, size: int = 0x40) -> bytes:
-    """An effect bank func_8003F614 accepts: magic, version 0x101 at +0xC,
+    """An effect bank sound_check_file accepts: magic, version 0x101 at +0xC,
     the effect count at +0x12, and a last word that zeroes the word sum."""
     data = bytearray(size)
     data[:4] = b"seds"
@@ -533,10 +533,17 @@ def code(text: str) -> str:
     return re.sub(r"/\*.*?\*/", "", text, flags=re.S)
 
 
+def asset(text: str, address: int) -> tuple[str, int]:
+    """The name and size of the INCLUDE_ASSET that links `address` from the
+    user's image."""
+    pattern = rf'INCLUDE_ASSET\("\.data", (\w+), 0x{address:08X}, (0x[0-9A-F]+)\);'
+    found = re.search(pattern, code(text))
+    return found.group(1), int(found.group(2), 16)
+
+
 def asset_size(text: str, address: int) -> int:
-    """The size of the INCLUDE_ASSET that links D_<address> from the user's image."""
-    pattern = rf'INCLUDE_ASSET\("\.data", D_{address:08X}, 0x{address:08X}, (0x[0-9A-F]+)\);'
-    return int(re.search(pattern, code(text)).group(1), 16)
+    """The size of the INCLUDE_ASSET that links `address` from the user's image."""
+    return asset(text, address)[1]
 
 
 def asset_ranges(overlay: str) -> list[tuple[int, int]]:
@@ -563,9 +570,9 @@ class AssetTests(unittest.TestCase):
         ranges = asset_ranges(overlay)
         for address in addresses:
             with self.subTest(overlay=overlay, address=f"{address:08x}"):
-                size = asset_size(sources, address)
+                name, size = asset(sources, address)
                 self.assertTrue(any(s <= address and address + size <= e for s, e in ranges))
-                self.assertNotRegex(code(sources), rf"\bD_{address:08X}(\[\w*\])+ = ")
+                self.assertNotRegex(code(sources), rf"\b{name}(\[\w*\])+ = ")
 
     def test_world_map_scripts_and_cue_tables(self):
         tables = [a for d in DIRECTORS for s in d.sequences for a in (s.states, s.durations)]
@@ -614,13 +621,13 @@ def cases(body: str, switch: str) -> dict[int, str]:
 # A director case's statements, as the cue actions of overlay_scripts.py.
 ACTIONS = (
     (r"func_80097770\((\w+), (\w+)\);", "request"),
-    (r"func_80039E60\(\(D_8006259C->id << 16\) \| D_8009A5A0\[D_8009D3D4\]\[(\d)\]\);", "ambient"),
-    (r"func_80039E60\(\(D_8006259C->id << 16\) \| (\w+)\);", "sound"),
-    (r"func_80039E18\(\(D_8006259C->id << 16\) \| (\w+)\);", "sound_12"),
+    (r"sound_play_effect\(\(sound_effect_bank->id << 16\) \| D_8009A5A0\[D_8009D3D4\]\[(\d)\]\);", "ambient"),
+    (r"sound_play_effect\(\(sound_effect_bank->id << 16\) \| (\w+)\);", "sound"),
+    (r"sound_play_effect_on_channels_12_13\(\(sound_effect_bank->id << 16\) \| (\w+)\);", "sound_12"),
     (r"func_80089160\((\w+), NULL, NULL\);", "emitters"),
     (r"func_80089160\((\w+), &scratch->position, NULL\);", "emitters_at_target"),
     (r"func_80089514\((\w+)\);", "stop_effects"),
-    (r"func_8003A89C\(\(SoundSeq \*\)D_80062528, (\w+), (\w+)\);", "music_fade"),
+    (r"sound_set_seq_fade\(\(SoundSeq \*\)mode_music_seq, (\w+), (\w+)\);", "music_fade"),
     (r"D_8009CCA4 = (\w+);", "fade_rate"),
     (r"D_8009D3CC = (\w+);", "fade_step"),
     (r"D_8009D554 = 0;", "exit_worldmap"),
@@ -834,7 +841,7 @@ class MovieSoundSourceTests(unittest.TestCase):
     def test_the_seek_loads_file_0x115_plus_bank_and_skips_bank_plus_one_ends(self):
         body = function(self.text, "func_80085788")
         group, index = MOVIE_SOUND_DIRECTORY
-        self.assertIn(f"func_80028470(0x{group:X}, {index});", body)
+        self.assertIn(f"cd_select_directory(0x{group:X}, {index});", body)
         self.assertIn(f"file = bank + 0x{MOVIE_SOUND_FILE:X};", body)
         self.assertIn("for (i = 0; i < bank + 1; i++) {", body)
         self.assertIn(f"[pos * 2] == 0x{MOVIE_SOUND_END:X}) {{", body)
@@ -844,7 +851,7 @@ class MovieSoundSourceTests(unittest.TestCase):
         body = function(self.text, "func_80085678")
         self.assertIn("if (D_800B06A0 < times[D_800C3A64 * 2] + FIELD_MOVIE.sound_start) {", body)
         self.assertIn(
-            "func_80039EC4((sound & 0xFF) | (D_800B235C->id << 16), ((sound >> 8) & 7) * 2);", body
+            "sound_play_effect_on_channel((sound & 0xFF) | (D_800B235C->id << 16), ((sound >> 8) & 7) * 2);", body
         )
         self.assertIn("D_800C3A64++;", body)
         full = MovieSound(0, 0, 0xFFFF)

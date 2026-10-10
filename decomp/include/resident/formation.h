@@ -4,12 +4,12 @@
 #include "common.h"
 
 /* Battle formations and encounter sets (docs/scripts/formations.md). The
- * battle overlay copies formation D_80059508 of the encounter set D_800658DC
- * into D_8006F9DC as it starts (battle func_80070F40); the battle setup, event
+ * battle overlay copies formation formation_selected_index of the encounter set formation_encounter_set
+ * into formation_active as it starts (battle func_80070F40); the battle setup, event
  * script and results overlays read it there. Party members take battle slots
  * 0-2, enemies slots 3-10 (battle/area.h BattleSlot); "slot byte n" below is
  * byte n of a slot's BattleSlot record. The places of each formation group
- * come from the stage's scene data (D_8005949C), not from here. */
+ * come from the stage's scene data (mode_battle_scene_file), not from here. */
 
 /* A battle formation (0x20 bytes). */
 typedef struct BattleFormation {
@@ -30,8 +30,8 @@ typedef struct BattleFormation {
                         * member command 7 and 8 (func_801E5014). No reader tests
                         * 0x01, 0x02 or 0x04. */
     u8 stage;          /* 0x02: s, the battle stage: its stage file (12, 3) 6 + 2s
-                        * and scene data 7 + 2s (resident func_8001BB0C,
-                        * func_800379D8; ovl2615 func_801E7210 sets them up) */
+                        * and scene data 7 + 2s (resident mode_load_current_battle_stage,
+                        * mode_load_battle_stage; ovl2615 func_801E7210 sets them up) */
     u8 scriptSet;      /* 0x03: the event script set, read under flag 0x20 (ovl3087
                         * func_801E5160) */
     u8 partyGroups[3]; /* 0x04: per member, & 0x7f: its formation group unless it
@@ -50,7 +50,7 @@ typedef struct BattleFormation {
 } BattleFormation;
 
 /* An encounter set: 16 formations. The field decodes a map's set from map
- * bundle component 6 (0x210 bytes: the set, then the 16 weights D_80065ADC;
+ * bundle component 6 (0x210 bytes: the set, then the 16 weights formation_encounter_weights;
  * field func_80070CC8), the world map copies a terrain kind's set from its area
  * file's tables (D_8009D73C, worldmap func_80075E7C) and the debug battle
  * selector the first 0x200 bytes of a (0x20, 3) file (ovl2606 func_801E0A34). */
@@ -65,15 +65,15 @@ LAYOUT_CHECK(BattleFormationLayout, sizeof(BattleFormation) == 0x20 &&
                                         OFFSET_OF(BattleFormation, enemyGroups) == 0x18 &&
                                         sizeof(EncounterSet) == 0x200);
 
-extern EncounterSet D_800658DC;    /* the set of the next battle */
-extern u8 D_80065ADC[16];          /* the field's random-encounter weight per formation
+extern EncounterSet formation_encounter_set;    /* the set of the next battle */
+extern u8 formation_encounter_weights[16];          /* the field's random-encounter weight per formation
                                     * (field func_80079288, which draws only after a
                                     * script of the map arms it with event f7,
                                     * func_8008E85C) */
-extern u8 D_80059508;              /* the formation the battle copies: drawn by the field
+extern u8 formation_selected_index;              /* the formation the battle copies: drawn by the field
                                     * (func_80079288) or the world map (func_80075E7C),
                                     * named by a field script (events 71, fe 84), or
-                                    * D_8005947C - 1 (battle func_80070F40) */
-extern BattleFormation D_8006F9DC; /* the battle's formation */
+                                    * mode_pending_battle_formation - 1 (battle func_80070F40) */
+extern BattleFormation formation_active; /* the battle's formation */
 
 #endif

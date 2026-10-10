@@ -22,7 +22,7 @@ ExeFileHeader exe_header = {
         0,
         0,
         {
-            (unsigned long)func_80019524,
+            (unsigned long)boot_entry_point,
             0, /* $gp is set by the entry code (0x80059170) */
             (unsigned long)main_VRAM,
             (unsigned long)__exe_text_size,

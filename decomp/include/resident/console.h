@@ -49,7 +49,7 @@ typedef struct {
 } Console;
 
 
-/* A conversion's settings (defaults at D_8005A1CC). */
+/* A conversion's settings (defaults at console_format_defaults). */
 typedef struct {
     union {
         s32 flags;     /* 1 left-justified, 2 plus sign, 4 zero padded, 8 precision set */
@@ -60,29 +60,29 @@ typedef struct {
     u32 base;
 } FormatSpec;
 
-s32 func_80036718(s32 target, const char *format, va_list args); /* the console printf core */
-void func_8003700C(char *format, ...); /* printf to the console */
-void func_80037324(u_long *ot);            /* flush the debug text into ot */
-void func_8003747C(s32 value);
-Console *func_800374E8(s32 left, s32 top, s32 width, s32 height, s32 capacity, u32 flags,
+s32 console_vprintf(s32 target, const char *format, va_list args); /* the console printf core */
+void console_printf(char *format, ...); /* printf to the console */
+void console_flush(u_long *ot);            /* flush the debug text into ot */
+void console_set_external_block(s32 value);
+Console *console_open(s32 left, s32 top, s32 width, s32 height, s32 capacity, u32 flags,
                        s32 tex_x, s32 tex_y, s32 clut_x, s32 clut_y, void *font); /* open */
-void func_800379B4(s32 task); /* set D_80050618, the menu overlay's task index */
-void func_800379C8(char *format, ...); /* report printf */
-s32 func_800379D8(s32 stage, s32 variant, u8 **stage_file, s32 *unused, u8 **scene); /* load a battle stage */
-void func_80037B88(s32 a0);
+void mode_set_arena_task(s32 task); /* set mode_arena_task, the menu overlay's task index */
+void console_report_printf(char *format, ...); /* report printf */
+s32 mode_load_battle_stage(s32 stage, s32 variant, u8 **stage_file, s32 *unused, u8 **scene); /* load a battle stage */
+void sound_start_driver(s32 flags);
 
 /* Hand-written ordering table link helpers (800315a0-80031894). */
-void func_800317E0(u_long *ot, void *prim); /* link a SPRT_8 */
-void func_80031804(u_long *ot, void *prim); /* link a TILE */
-void func_80037DC0(void);
+void gpu_ot_link_sprt_8(u_long *ot, void *prim); /* link a SPRT_8 */
+void gpu_ot_link_tile(u_long *ot, void *prim); /* link a TILE */
+void sound_stop_driver(void);
 
 /* More of the debug console and the system screens' services. */
-void func_80036DC8(s32 r, s32 g, s32 b);
-void func_80037058(s32 x, s32 y);
-void func_8003708C(s32 x, s32 y);
-void func_8003748C(void);
-void func_80037E8C(void);
-void func_80037EE4(void);
-extern s32 D_80050618; /* the menu's mode (800379b4) */
+void console_set_color(s32 r, s32 g, s32 b);
+void console_place_cursor(s32 x, s32 y);
+void console_place_cursor_and_line_start(s32 x, s32 y);
+void console_close(void);
+void sound_restore_voices(void);
+void sound_silence_voices(void);
+extern s32 mode_arena_task; /* the menu's mode (800379b4) */
 
 #endif

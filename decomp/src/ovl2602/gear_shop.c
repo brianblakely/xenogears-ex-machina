@@ -156,106 +156,106 @@ void func_801CE1D0(void) {
     s32 i;
 
     for (i = 0; i < 2; i++) {
-        func_8002675C(D_800625A0->sheet, i + 0x164, &D_800625A0->marks->polys[i * 4],
-                      D_800625A0->buffer_index, D_801D6FD0[i], 0x64, 0x1000);
+        sprite_sheet_draw_scaled(menu_state_current->sheet, i + 0x164, &menu_state_current->marks->polys[i * 4],
+                      menu_state_current->buffer_index, D_801D6FD0[i], 0x64, 0x1000);
     }
     for (i = 0; i < 4; i++) {
-        marks = D_800625A0->marks;
-        poly = &marks->polys[i * 2 + D_800625A0->buffer_index];
-        func_801C7604(&D_800625A0->marks->verts[i * 4], poly->x0, poly->y0, poly->x1 - poly->x0,
+        marks = menu_state_current->marks;
+        poly = &marks->polys[i * 2 + menu_state_current->buffer_index];
+        func_801C7604(&menu_state_current->marks->verts[i * 4], poly->x0, poly->y0, poly->x1 - poly->x0,
                       poly->y3 - poly->y0);
     }
-    D_800625A0->marks->buffer = D_800625A0->buffer_index;
+    menu_state_current->marks->buffer = menu_state_current->buffer_index;
 }
 
 /* Hide the second marker block, let a frame pass, and release it. */
 void func_801CE2E8(void) {
-    D_800625A0->flags->marks_shown = 0;
+    menu_state_current->flags->marks_shown = 0;
     func_801CC1C4();
-    func_800320E8(D_800625A0->marks);
+    heap_free(menu_state_current->marks);
 }
 
 /* Draw the shop's detail packets: member bars, portraits, headings, list rows, labels, numbers and prices. */
 void func_801CE32C(void) {
     s32 i;
 
-    if (D_800625A0->flags->unknown5a[0] != 0) {
+    if (menu_state_current->flags->unknown5a[0] != 0) {
         for (i = 0; i < 9; i++) {
-            if (D_800625A0->details->bar_shown[i] != 0) {
-                AddPrim(&D_800625A0->current->ot[4],
-                        &D_800625A0->details->bar_upper[i * 2 + D_800625A0->buffer_index]);
-                AddPrim(&D_800625A0->current->ot[4],
-                        &D_800625A0->details->bar_lower[i * 2 + D_800625A0->buffer_index]);
+            if (menu_state_current->details->bar_shown[i] != 0) {
+                AddPrim(&menu_state_current->current->ot[4],
+                        &menu_state_current->details->bar_upper[i * 2 + menu_state_current->buffer_index]);
+                AddPrim(&menu_state_current->current->ot[4],
+                        &menu_state_current->details->bar_lower[i * 2 + menu_state_current->buffer_index]);
             }
         }
-        func_801C94CC(D_800625A0->details->heading_count, D_800625A0->details->heading,
-                      D_800625A0->details->heading_buffer);
-        func_801C94CC(D_800625A0->details->group2D0_count, D_800625A0->details->group2D0,
-                      D_800625A0->details->group2D0_buffer);
-        func_801C94CC(D_800625A0->details->members_count, D_800625A0->details->members,
-                      D_800625A0->details->members_buffer);
+        func_801C94CC(menu_state_current->details->heading_count, menu_state_current->details->heading,
+                      menu_state_current->details->heading_buffer);
+        func_801C94CC(menu_state_current->details->group2D0_count, menu_state_current->details->group2D0,
+                      menu_state_current->details->group2D0_buffer);
+        func_801C94CC(menu_state_current->details->members_count, menu_state_current->details->members,
+                      menu_state_current->details->members_buffer);
         for (i = 0; i < 8; i++) {
-            if (D_800625A0->details->name_shown[i] != 0) {
-                func_801C93B0(1, D_800625A0->details->names_a[i].verts, D_800625A0->details->names_a[i].polys,
-                              D_800625A0->details->names_a[i].buffer);
-                func_801C93B0(1, D_800625A0->details->names_b[i].verts, D_800625A0->details->names_b[i].polys,
-                              D_800625A0->details->names_b[i].buffer);
+            if (menu_state_current->details->name_shown[i] != 0) {
+                func_801C93B0(1, menu_state_current->details->names_a[i].verts, menu_state_current->details->names_a[i].polys,
+                              menu_state_current->details->names_a[i].buffer);
+                func_801C93B0(1, menu_state_current->details->names_b[i].verts, menu_state_current->details->names_b[i].polys,
+                              menu_state_current->details->names_b[i].buffer);
             }
         }
-        if (D_800625A0->details->label4530_shown != 0) {
-            func_801C93B0(1, D_800625A0->details->label4530.verts, D_800625A0->details->label4530.polys,
-                          D_800625A0->details->label4530.buffer);
+        if (menu_state_current->details->label4530_shown != 0) {
+            func_801C93B0(1, menu_state_current->details->label4530.verts, menu_state_current->details->label4530.polys,
+                          menu_state_current->details->label4530.buffer);
         }
-        if (D_800625A0->details->label4430_shown != 0) {
-            func_801C93B0(1, D_800625A0->details->label4430.verts, D_800625A0->details->label4430.polys,
-                          D_800625A0->details->label4430.buffer);
+        if (menu_state_current->details->label4430_shown != 0) {
+            func_801C93B0(1, menu_state_current->details->label4430.verts, menu_state_current->details->label4430.polys,
+                          menu_state_current->details->label4430.buffer);
         }
-        if (D_800625A0->details->label44B0_shown != 0) {
-            func_801C93B0(1, D_800625A0->details->label44B0.verts, D_800625A0->details->label44B0.polys,
-                          D_800625A0->details->label44B0.buffer);
+        if (menu_state_current->details->label44B0_shown != 0) {
+            func_801C93B0(1, menu_state_current->details->label44B0.verts, menu_state_current->details->label44B0.polys,
+                          menu_state_current->details->label44B0.buffer);
         }
-        if (D_800625A0->details->label45B0_shown != 0) {
-            func_801C93B0(1, D_800625A0->details->label45B0.verts, D_800625A0->details->label45B0.polys,
-                          D_800625A0->details->label45B0.buffer);
+        if (menu_state_current->details->label45B0_shown != 0) {
+            func_801C93B0(1, menu_state_current->details->label45B0.verts, menu_state_current->details->label45B0.polys,
+                          menu_state_current->details->label45B0.buffer);
         }
-        if (D_800625A0->details->digits_shown != 0) {
-            AddPrim(&D_800625A0->current->ot[4], &D_800625A0->details->frame[D_800625A0->buffer_index]);
-            func_801C94CC(D_800625A0->details->digits1_count, D_800625A0->details->digits1,
-                          D_800625A0->details->digits1_buffer);
-            func_801C94CC(D_800625A0->details->digits2_count, D_800625A0->details->digits2,
-                          D_800625A0->details->digits2_buffer);
-            func_801C94CC(D_800625A0->details->digits3_count, D_800625A0->details->digits3,
-                          D_800625A0->details->digits3_buffer);
-            if (D_800625A0->details->digits4_shown != 0) {
-                func_801C94CC(D_800625A0->details->digits4_count, D_800625A0->details->digits4,
-                              D_800625A0->details->digits4_buffer);
+        if (menu_state_current->details->digits_shown != 0) {
+            AddPrim(&menu_state_current->current->ot[4], &menu_state_current->details->frame[menu_state_current->buffer_index]);
+            func_801C94CC(menu_state_current->details->digits1_count, menu_state_current->details->digits1,
+                          menu_state_current->details->digits1_buffer);
+            func_801C94CC(menu_state_current->details->digits2_count, menu_state_current->details->digits2,
+                          menu_state_current->details->digits2_buffer);
+            func_801C94CC(menu_state_current->details->digits3_count, menu_state_current->details->digits3,
+                          menu_state_current->details->digits3_buffer);
+            if (menu_state_current->details->digits4_shown != 0) {
+                func_801C94CC(menu_state_current->details->digits4_count, menu_state_current->details->digits4,
+                              menu_state_current->details->digits4_buffer);
             }
         }
         for (i = 0; i < 8; i++) {
-            func_801C94CC(D_800625A0->details->row_count[i], D_800625A0->details->rows[i],
-                          D_800625A0->details->row_buffer[i]);
+            func_801C94CC(menu_state_current->details->row_count[i], menu_state_current->details->rows[i],
+                          menu_state_current->details->row_buffer[i]);
         }
         for (i = 0; i < 9; i++) {
-            func_801C94CC(D_800625A0->details->cells_a_count[i], D_800625A0->details->cells_a[i],
-                          D_800625A0->details->cells_a_buffer[i]);
-            func_801C94CC(D_800625A0->details->cells_b_count[i], D_800625A0->details->cells_b[i],
-                          D_800625A0->details->cells_b_buffer[i]);
+            func_801C94CC(menu_state_current->details->cells_a_count[i], menu_state_current->details->cells_a[i],
+                          menu_state_current->details->cells_a_buffer[i]);
+            func_801C94CC(menu_state_current->details->cells_b_count[i], menu_state_current->details->cells_b[i],
+                          menu_state_current->details->cells_b_buffer[i]);
         }
     }
-    if (D_800625A0->flags->unknown5a[1] == 1) {
-        func_801C94CC(D_800625A0->details->group1220_count, D_800625A0->details->group1220,
-                      D_800625A0->details->group1220_buffer);
+    if (menu_state_current->flags->unknown5a[1] == 1) {
+        func_801C94CC(menu_state_current->details->group1220_count, menu_state_current->details->group1220,
+                      menu_state_current->details->group1220_buffer);
     }
-    if (D_800625A0->flags->price_shown != 0) {
-        func_801C94CC(D_800625A0->details->price_count, D_800625A0->details->price,
-                      D_800625A0->details->price_buffer);
+    if (menu_state_current->flags->price_shown != 0) {
+        func_801C94CC(menu_state_current->details->price_count, menu_state_current->details->price,
+                      menu_state_current->details->price_buffer);
     }
 }
 
 /* Draw the separately loaded model when shown. */
 void func_801CE7E0(void) {
-    if (D_800625A0->flags->model_shown != 0) {
-        func_801E7D14(&D_800625A0->matrix2, &D_800625A0->light, D_800625A0->current->ot_big, D_800625A0->buffer_index);
+    if (menu_state_current->flags->model_shown != 0) {
+        func_801E7D14(&menu_state_current->matrix2, &menu_state_current->light, menu_state_current->current->ot_big, menu_state_current->buffer_index);
     }
 }
 
@@ -263,39 +263,39 @@ void func_801CE7E0(void) {
 void func_801CE82C(void) {
     s32 i;
 
-    if (D_800625A0->flags->gear_shown != 0) {
-        if (D_800625A0->gear_screen->flicker_shown != 0) {
-            func_801C94CC(D_800625A0->gear_screen->flicker_count, D_800625A0->gear_screen->flicker[0],
-                          D_800625A0->gear_screen->flicker_buffer);
-            func_801C94CC(D_800625A0->gear_screen->flicker_count, D_800625A0->gear_screen->flicker[1],
-                          D_800625A0->gear_screen->flicker_buffer);
-            func_801C94CC(D_800625A0->gear_screen->flicker_count, D_800625A0->gear_screen->flicker[2],
-                          D_800625A0->gear_screen->flicker_buffer);
+    if (menu_state_current->flags->gear_shown != 0) {
+        if (menu_state_current->gear_screen->flicker_shown != 0) {
+            func_801C94CC(menu_state_current->gear_screen->flicker_count, menu_state_current->gear_screen->flicker[0],
+                          menu_state_current->gear_screen->flicker_buffer);
+            func_801C94CC(menu_state_current->gear_screen->flicker_count, menu_state_current->gear_screen->flicker[1],
+                          menu_state_current->gear_screen->flicker_buffer);
+            func_801C94CC(menu_state_current->gear_screen->flicker_count, menu_state_current->gear_screen->flicker[2],
+                          menu_state_current->gear_screen->flicker_buffer);
         }
         for (i = 0; i < 2; i++) {
-            if (D_800625A0->gear_screen->lamp_state[i] != 0) {
-                func_801C94CC(D_800625A0->gear_screen->lamp_count[i], &D_800625A0->gear_screen->lamps[i * 22],
-                              D_800625A0->gear_screen->lamp_buffer[i]);
+            if (menu_state_current->gear_screen->lamp_state[i] != 0) {
+                func_801C94CC(menu_state_current->gear_screen->lamp_count[i], &menu_state_current->gear_screen->lamps[i * 22],
+                              menu_state_current->gear_screen->lamp_buffer[i]);
             }
         }
-        if (D_800625A0->gear_screen->lamp_state[2] != 0) {
-            func_801C94CC(D_800625A0->gear_screen->lamp_count[2], D_800625A0->gear_screen->indicator,
-                          D_800625A0->gear_screen->lamp_buffer[2]);
+        if (menu_state_current->gear_screen->lamp_state[2] != 0) {
+            func_801C94CC(menu_state_current->gear_screen->lamp_count[2], menu_state_current->gear_screen->indicator,
+                          menu_state_current->gear_screen->lamp_buffer[2]);
         }
     }
-    if (D_800625A0->flags->gear_parts_shown != 0) {
-        func_801C94CC(1, D_800625A0->gear_screen->backdrop, D_800625A0->buffer_index);
-        func_801C94CC(0xE, D_800625A0->gear_screen->frame, D_800625A0->gear_screen->parts_buffer);
-        func_801C94CC(D_800625A0->gear_screen->part_count[0], D_800625A0->gear_screen->parts[0],
-                      D_800625A0->gear_screen->parts_buffer);
-        func_801C94CC(D_800625A0->gear_screen->part_count[1], D_800625A0->gear_screen->parts[1],
-                      D_800625A0->gear_screen->parts_buffer);
-        func_801C94CC(D_800625A0->gear_screen->part_count[2], D_800625A0->gear_screen->parts[2],
-                      D_800625A0->gear_screen->parts_buffer);
-        func_801C94CC(D_800625A0->gear_screen->part_count[3], D_800625A0->gear_screen->parts[3],
-                      D_800625A0->gear_screen->parts_buffer);
-        func_801C94CC(D_800625A0->gear_screen->part_count[4], D_800625A0->gear_screen->parts[4],
-                      D_800625A0->gear_screen->parts_buffer);
+    if (menu_state_current->flags->gear_parts_shown != 0) {
+        func_801C94CC(1, menu_state_current->gear_screen->backdrop, menu_state_current->buffer_index);
+        func_801C94CC(0xE, menu_state_current->gear_screen->frame, menu_state_current->gear_screen->parts_buffer);
+        func_801C94CC(menu_state_current->gear_screen->part_count[0], menu_state_current->gear_screen->parts[0],
+                      menu_state_current->gear_screen->parts_buffer);
+        func_801C94CC(menu_state_current->gear_screen->part_count[1], menu_state_current->gear_screen->parts[1],
+                      menu_state_current->gear_screen->parts_buffer);
+        func_801C94CC(menu_state_current->gear_screen->part_count[2], menu_state_current->gear_screen->parts[2],
+                      menu_state_current->gear_screen->parts_buffer);
+        func_801C94CC(menu_state_current->gear_screen->part_count[3], menu_state_current->gear_screen->parts[3],
+                      menu_state_current->gear_screen->parts_buffer);
+        func_801C94CC(menu_state_current->gear_screen->part_count[4], menu_state_current->gear_screen->parts[4],
+                      menu_state_current->gear_screen->parts_buffer);
     }
 }
 
@@ -309,62 +309,62 @@ void func_801CEA68(void) {
 
     for (i = 0; i < 2; i++) {
         moved = 0;
-        if (D_800625A0->gear_screen->lamp_state[i] == 0) {
+        if (menu_state_current->gear_screen->lamp_state[i] == 0) {
             continue;
         }
-        switch (D_800625A0->gear_screen->lamp_state[i]) {
+        switch (menu_state_current->gear_screen->lamp_state[i]) {
         case 1:
             at[0][i] = D_801D7040[i];
-            at[1][i] = D_801D7044[i * 6 + D_801D7030[D_800625A0->cursor * 4 + D_800625A0->choice]];
+            at[1][i] = D_801D7044[i * 6 + D_801D7030[menu_state_current->cursor * 4 + menu_state_current->choice]];
             moved = 1;
             break;
         case 2:
-            if (func_8001BD40(0, 0xFF) < 0x10) {
+            if (mode_get_random_byte_in_range(0, 0xFF) < 0x10) {
                 at[0][i] = D_801D7040[i];
-                at[1][i] = D_801D7044[i * 6 + func_8001BD40(0, 5)];
+                at[1][i] = D_801D7044[i * 6 + mode_get_random_byte_in_range(0, 5)];
                 moved = 1;
             }
             break;
         }
         if (moved) {
-            D_800625A0->gear_screen->lamp_x[i] = at[0][i];
-            D_800625A0->gear_screen->lamp_y[i] = at[1][i];
+            menu_state_current->gear_screen->lamp_x[i] = at[0][i];
+            menu_state_current->gear_screen->lamp_y[i] = at[1][i];
         }
-        if (D_800625A0->gear_screen->lamp_timer[i] != 0) {
-            D_800625A0->gear_screen->lamp_timer[i]--;
+        if (menu_state_current->gear_screen->lamp_timer[i] != 0) {
+            menu_state_current->gear_screen->lamp_timer[i]--;
             continue;
         }
-        D_800625A0->gear_screen->lamp_count[i] = 0;
+        menu_state_current->gear_screen->lamp_count[i] = 0;
         for (j = 0; j < 4; j++) {
-            id = D_801D6FE0[i * 20 + (D_800625A0->gear_screen->lamp_frame[i] * 4 + j)];
+            id = D_801D6FE0[i * 20 + (menu_state_current->gear_screen->lamp_frame[i] * 4 + j)];
             if (id != 0xFFFF) {
-                D_800625A0->gear_screen->lamp_count[i] +=
-                    func_8002675C(D_800625A0->sheet, id,
-                                  &D_800625A0->gear_screen->lamps[i * 22 + D_800625A0->gear_screen->lamp_count[i] * 2],
-                                  D_800625A0->buffer_index, D_800625A0->gear_screen->lamp_x[i],
-                                  D_800625A0->gear_screen->lamp_y[i], 0x1000);
+                menu_state_current->gear_screen->lamp_count[i] +=
+                    sprite_sheet_draw_scaled(menu_state_current->sheet, id,
+                                  &menu_state_current->gear_screen->lamps[i * 22 + menu_state_current->gear_screen->lamp_count[i] * 2],
+                                  menu_state_current->buffer_index, menu_state_current->gear_screen->lamp_x[i],
+                                  menu_state_current->gear_screen->lamp_y[i], 0x1000);
             }
         }
-        D_800625A0->gear_screen->lamp_buffer[i] = D_800625A0->buffer_index;
-        switch (D_800625A0->gear_screen->lamp_state[i]) {
+        menu_state_current->gear_screen->lamp_buffer[i] = menu_state_current->buffer_index;
+        switch (menu_state_current->gear_screen->lamp_state[i]) {
         case 1:
-            if (++D_800625A0->gear_screen->lamp_frame[i] == 4) {
-                D_800625A0->gear_screen->lamp_state[i] = 2;
+            if (++menu_state_current->gear_screen->lamp_frame[i] == 4) {
+                menu_state_current->gear_screen->lamp_state[i] = 2;
             }
-            D_800625A0->gear_screen->lamp_timer[i] = 2;
+            menu_state_current->gear_screen->lamp_timer[i] = 2;
             break;
         case 2:
-            if (++D_800625A0->gear_screen->lamp_frame[i] >= 5) {
-                D_800625A0->gear_screen->lamp_frame[i] = 3;
+            if (++menu_state_current->gear_screen->lamp_frame[i] >= 5) {
+                menu_state_current->gear_screen->lamp_frame[i] = 3;
             }
-            D_800625A0->gear_screen->lamp_timer[i] = 8;
+            menu_state_current->gear_screen->lamp_timer[i] = 8;
             break;
         case 3:
-            if (--D_800625A0->gear_screen->lamp_frame[i] < 0) {
-                D_800625A0->gear_screen->lamp_state[i] = 0;
-                D_800625A0->gear_screen->flicker_shown = 0;
+            if (--menu_state_current->gear_screen->lamp_frame[i] < 0) {
+                menu_state_current->gear_screen->lamp_state[i] = 0;
+                menu_state_current->gear_screen->flicker_shown = 0;
             }
-            D_800625A0->gear_screen->lamp_timer[i] = 2;
+            menu_state_current->gear_screen->lamp_timer[i] = 2;
             break;
         }
     }
@@ -377,55 +377,55 @@ void func_801CEEA8(void) {
     u16 y;
     s32 index;
 
-    if (D_800625A0->gear_screen->lamp_state[2] != 0) {
-        if (D_800625A0->gear_screen->lamp_timer[2] != 0) {
-            D_800625A0->gear_screen->lamp_timer[2]--;
+    if (menu_state_current->gear_screen->lamp_state[2] != 0) {
+        if (menu_state_current->gear_screen->lamp_timer[2] != 0) {
+            menu_state_current->gear_screen->lamp_timer[2]--;
             return;
         }
         moved = 0;
-        switch (D_800625A0->gear_screen->lamp_state[2]) {
+        switch (menu_state_current->gear_screen->lamp_state[2]) {
         case 1:
-            index = D_801D7030[D_800625A0->cursor * 4 + D_800625A0->choice];
+            index = D_801D7030[menu_state_current->cursor * 4 + menu_state_current->choice];
             x = D_801D705C[index];
             moved = 1;
             y = D_801D7068[index];
             break;
         case 2:
-            if (func_8001BD40(0, 0xFF) < 4) {
-                x = D_801D705C[func_8001BD40(0, 5)];
-                y = D_801D7068[func_8001BD40(0, 5)];
+            if (mode_get_random_byte_in_range(0, 0xFF) < 4) {
+                x = D_801D705C[mode_get_random_byte_in_range(0, 5)];
+                y = D_801D7068[mode_get_random_byte_in_range(0, 5)];
                 moved = 1;
             }
             break;
         }
         if (moved) {
-            D_800625A0->gear_screen->indicator_x = x;
-            D_800625A0->gear_screen->indicator_y = y;
+            menu_state_current->gear_screen->indicator_x = x;
+            menu_state_current->gear_screen->indicator_y = y;
         }
-        D_800625A0->gear_screen->lamp_count[2] =
-            func_8002675C(D_800625A0->sheet, D_800625A0->gear_screen->indicator_frame + 0x172,
-                          D_800625A0->gear_screen->indicator, D_800625A0->buffer_index, D_800625A0->gear_screen->indicator_x,
-                          D_800625A0->gear_screen->indicator_y, 0x1000);
-        D_800625A0->gear_screen->lamp_buffer[2] = D_800625A0->buffer_index;
-        D_800625A0->gear_screen->lamp_timer[2] = 1;
-        switch (D_800625A0->gear_screen->lamp_state[2]) {
+        menu_state_current->gear_screen->lamp_count[2] =
+            sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->gear_screen->indicator_frame + 0x172,
+                          menu_state_current->gear_screen->indicator, menu_state_current->buffer_index, menu_state_current->gear_screen->indicator_x,
+                          menu_state_current->gear_screen->indicator_y, 0x1000);
+        menu_state_current->gear_screen->lamp_buffer[2] = menu_state_current->buffer_index;
+        menu_state_current->gear_screen->lamp_timer[2] = 1;
+        switch (menu_state_current->gear_screen->lamp_state[2]) {
         case 1:
-            if (++D_800625A0->gear_screen->indicator_frame >= 3) {
-                D_800625A0->gear_screen->lamp_state[2] = 2;
+            if (++menu_state_current->gear_screen->indicator_frame >= 3) {
+                menu_state_current->gear_screen->lamp_state[2] = 2;
             }
             break;
         case 2:
-            if (++D_800625A0->gear_screen->indicator_frame >= 11) {
-                D_800625A0->gear_screen->indicator_frame = 3;
+            if (++menu_state_current->gear_screen->indicator_frame >= 11) {
+                menu_state_current->gear_screen->indicator_frame = 3;
             }
             break;
         case 3:
-            D_800625A0->gear_screen->indicator_frame = 2;
-            D_800625A0->gear_screen->lamp_state[2] = 4;
+            menu_state_current->gear_screen->indicator_frame = 2;
+            menu_state_current->gear_screen->lamp_state[2] = 4;
             break;
         case 4:
-            if (--D_800625A0->gear_screen->indicator_frame < 0) {
-                D_800625A0->gear_screen->lamp_state[2] = 0;
+            if (--menu_state_current->gear_screen->indicator_frame < 0) {
+                menu_state_current->gear_screen->lamp_state[2] = 0;
             }
             break;
         }
@@ -438,33 +438,33 @@ void func_801CF184(void) {
     u16 y;
     s32 i;
 
-    if (D_800625A0->gear_screen->flicker_shown != 0) {
-        if (D_800625A0->gear_screen->flicker_timer != 0) {
-            D_800625A0->gear_screen->flicker_timer--;
+    if (menu_state_current->gear_screen->flicker_shown != 0) {
+        if (menu_state_current->gear_screen->flicker_timer != 0) {
+            menu_state_current->gear_screen->flicker_timer--;
             return;
         }
-        if (func_8001BD40(0, 0xFF) < 8) {
-            x = D_801D7074[func_8001BD40(0, 5)];
-            y = D_801D7080[func_8001BD40(0, 5)];
-            D_800625A0->gear_screen->flicker_x = x;
-            D_800625A0->gear_screen->flicker_y = y;
+        if (mode_get_random_byte_in_range(0, 0xFF) < 8) {
+            x = D_801D7074[mode_get_random_byte_in_range(0, 5)];
+            y = D_801D7080[mode_get_random_byte_in_range(0, 5)];
+            menu_state_current->gear_screen->flicker_x = x;
+            menu_state_current->gear_screen->flicker_y = y;
         }
         for (i = 0; i < 3; i++) {
-            D_800625A0->gear_screen->flicker_count =
-                func_8002675C(D_800625A0->sheet, D_800625A0->gear_screen->flicker_frame + 0x167,
-                              D_800625A0->gear_screen->flicker[i], D_800625A0->buffer_index,
-                              D_800625A0->gear_screen->flicker_x + i * 8, D_800625A0->gear_screen->flicker_y + i * 10,
+            menu_state_current->gear_screen->flicker_count =
+                sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->gear_screen->flicker_frame + 0x167,
+                              menu_state_current->gear_screen->flicker[i], menu_state_current->buffer_index,
+                              menu_state_current->gear_screen->flicker_x + i * 8, menu_state_current->gear_screen->flicker_y + i * 10,
                               0x1000);
         }
-        D_800625A0->gear_screen->flicker_frame ^= 1;
-        D_800625A0->gear_screen->flicker_buffer = D_800625A0->buffer_index;
-        D_800625A0->gear_screen->flicker_timer = 4;
+        menu_state_current->gear_screen->flicker_frame ^= 1;
+        menu_state_current->gear_screen->flicker_buffer = menu_state_current->buffer_index;
+        menu_state_current->gear_screen->flicker_timer = 4;
     }
 }
 
 /* Build the gear screen's packets when shown. */
 void func_801CF33C(void) {
-    if (D_800625A0->flags->gear_shown != 0) {
+    if (menu_state_current->flags->gear_shown != 0) {
         func_801CEA68();
         func_801CEEA8();
         func_801CF184();
@@ -475,16 +475,16 @@ void func_801CF33C(void) {
 void func_801CF38C(u8 index) {
     RECT rect;
 
-    D_801D9088 = func_80031BDC(0x3F6, 0);
+    D_801D9088 = heap_alloc(0x3F6, 0);
     bzero(D_801D9088, 0x3F6);
-    func_80034EAC(D_8006D634.names[index], D_801D9088, 0x24, 0);
+    window_render_text_line(game_data.names[index], D_801D9088, 0x24, 0);
     rect.x = 0x180;
     rect.y = 0x48;
     rect.w = 0x28;
     rect.h = 13;
     LoadImage(&rect, (u_long *)D_801D9088);
     DrawSync(0);
-    func_800320E8(D_801D9088);
+    heap_free(D_801D9088);
 }
 
 /* Build the gear parts panel: its fourteen frame sprites, five of the gear's values in decimal, and the gear's name. */
@@ -493,75 +493,75 @@ void func_801CF448(void) {
     s32 j;
 
     for (j = 0; j < 14; j++) {
-        func_8002675C(D_800625A0->sheet, D_801D708C[j], &D_800625A0->gear_screen->frame[j * 2],
-                      D_800625A0->buffer_index, D_801D70A8[j], D_801D70C4[j], 0x1000);
+        sprite_sheet_draw_scaled(menu_state_current->sheet, D_801D708C[j], &menu_state_current->gear_screen->frame[j * 2],
+                      menu_state_current->buffer_index, D_801D70A8[j], D_801D70C4[j], 0x1000);
     }
-    func_801C5298(D_8006D634.gears[D_801D9084].hp);
-    D_800625A0->gear_screen->part_count[0] = 0;
+    func_801C5298(game_data.gears[D_801D9084].hp);
+    menu_state_current->gear_screen->part_count[0] = 0;
     for (i = 0; i < 5; i++) {
-        if (D_800625A0->digits[i + 4] != 0xFF) {
-            D_800625A0->gear_screen->part_count[0] +=
-                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i + 4],
-                              &D_800625A0->gear_screen->parts[0][D_800625A0->gear_screen->part_count[0] * 2],
-                              D_800625A0->buffer_index, D_801D70E0 + i * 8, D_801D70E2, 0x1000);
+        if (menu_state_current->digits[i + 4] != 0xFF) {
+            menu_state_current->gear_screen->part_count[0] +=
+                sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i + 4],
+                              &menu_state_current->gear_screen->parts[0][menu_state_current->gear_screen->part_count[0] * 2],
+                              menu_state_current->buffer_index, D_801D70E0 + i * 8, D_801D70E2, 0x1000);
         }
     }
-    func_801C5298(D_8006D634.gears[D_801D9084].maxHp);
-    D_800625A0->gear_screen->part_count[1] = 0;
+    func_801C5298(game_data.gears[D_801D9084].maxHp);
+    menu_state_current->gear_screen->part_count[1] = 0;
     for (i = 0, j = 0; i < 5; i++) {
-        if (D_800625A0->digits[i + 4] != 0xFF) {
-            D_800625A0->gear_screen->part_count[1] +=
-                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i + 4],
-                              &D_800625A0->gear_screen->parts[1][D_800625A0->gear_screen->part_count[1] * 2],
-                              D_800625A0->buffer_index, D_801D70E4 + j * 8, D_801D70E6, 0x1000);
+        if (menu_state_current->digits[i + 4] != 0xFF) {
+            menu_state_current->gear_screen->part_count[1] +=
+                sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i + 4],
+                              &menu_state_current->gear_screen->parts[1][menu_state_current->gear_screen->part_count[1] * 2],
+                              menu_state_current->buffer_index, D_801D70E4 + j * 8, D_801D70E6, 0x1000);
             j++;
         }
     }
-    func_801C5298(D_8006D634.gears[D_801D9084].fuel);
-    D_800625A0->gear_screen->part_count[2] = 0;
+    func_801C5298(game_data.gears[D_801D9084].fuel);
+    menu_state_current->gear_screen->part_count[2] = 0;
     for (i = 0; i < 4; i++) {
-        if (D_800625A0->digits[i + 5] != 0xFF) {
-            D_800625A0->gear_screen->part_count[2] +=
-                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i + 5],
-                              &D_800625A0->gear_screen->parts[2][D_800625A0->gear_screen->part_count[2] * 2],
-                              D_800625A0->buffer_index, D_801D70E8 + i * 8, D_801D70EA, 0x1000);
+        if (menu_state_current->digits[i + 5] != 0xFF) {
+            menu_state_current->gear_screen->part_count[2] +=
+                sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i + 5],
+                              &menu_state_current->gear_screen->parts[2][menu_state_current->gear_screen->part_count[2] * 2],
+                              menu_state_current->buffer_index, D_801D70E8 + i * 8, D_801D70EA, 0x1000);
         }
     }
-    func_801C5298(D_8006D634.gears[D_801D9084].maxFuel);
-    D_800625A0->gear_screen->part_count[3] = 0;
+    func_801C5298(game_data.gears[D_801D9084].maxFuel);
+    menu_state_current->gear_screen->part_count[3] = 0;
     for (i = 0, j = 0; i < 4; i++) {
-        if (D_800625A0->digits[i + 5] != 0xFF) {
-            D_800625A0->gear_screen->part_count[3] +=
-                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i + 5],
-                              &D_800625A0->gear_screen->parts[3][D_800625A0->gear_screen->part_count[3] * 2],
-                              D_800625A0->buffer_index, D_801D70EC + j * 8, D_801D70EE, 0x1000);
+        if (menu_state_current->digits[i + 5] != 0xFF) {
+            menu_state_current->gear_screen->part_count[3] +=
+                sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i + 5],
+                              &menu_state_current->gear_screen->parts[3][menu_state_current->gear_screen->part_count[3] * 2],
+                              menu_state_current->buffer_index, D_801D70EC + j * 8, D_801D70EE, 0x1000);
             j++;
         }
     }
-    func_801C5298(D_8006D634.gears[D_801D9084].field68);
-    D_800625A0->gear_screen->part_count[4] = 0;
+    func_801C5298(game_data.gears[D_801D9084].field68);
+    menu_state_current->gear_screen->part_count[4] = 0;
     for (i = 0; i < 5; i++) {
-        if (D_800625A0->digits[i + 4] != 0xFF) {
-            D_800625A0->gear_screen->part_count[4] +=
-                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i + 4],
-                              &D_800625A0->gear_screen->parts[4][D_800625A0->gear_screen->part_count[4] * 2],
-                              D_800625A0->buffer_index, D_801D70F0 + i * 8, D_801D70F2, 0x1000);
+        if (menu_state_current->digits[i + 4] != 0xFF) {
+            menu_state_current->gear_screen->part_count[4] +=
+                sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i + 4],
+                              &menu_state_current->gear_screen->parts[4][menu_state_current->gear_screen->part_count[4] * 2],
+                              menu_state_current->buffer_index, D_801D70F0 + i * 8, D_801D70F2, 0x1000);
         }
     }
     func_801CF38C(D_801D9084 + 0xB);
-    D_800625A0->gear_screen->parts_buffer = D_800625A0->buffer_index;
+    menu_state_current->gear_screen->parts_buffer = menu_state_current->buffer_index;
 }
 
 /* Load model `model`'s two files (ids from the model table) into part block `slot`. */
 void func_801CF9BC(u8 model, u8 slot) {
-    func_80028470(4, 0);
-    D_800625A0->model_parts[slot]->data0 = func_80031BDC(func_800288EC(D_801D6D7C[model]), 0);
-    func_800295D8(D_801D6D7C[model], D_800625A0->model_parts[slot]->data0, 0, 0x80);
-    func_80028A60(0);
-    D_800625A0->model_parts[slot]->data1 = func_80031BDC(func_800288EC(D_801D6D7C[model] + 1), 0);
-    func_800295D8(D_801D6D7C[model] + 1, D_800625A0->model_parts[slot]->data1, 0, 0x80);
-    func_80028A60(0);
-    func_80028470(0x10, 0);
+    cd_select_directory(4, 0);
+    menu_state_current->model_parts[slot]->data0 = heap_alloc(cd_get_aligned_file_size(D_801D6D7C[model]), 0);
+    cd_read_file(D_801D6D7C[model], menu_state_current->model_parts[slot]->data0, 0, 0x80);
+    cd_sync_reads(0);
+    menu_state_current->model_parts[slot]->data1 = heap_alloc(cd_get_aligned_file_size(D_801D6D7C[model] + 1), 0);
+    cd_read_file(D_801D6D7C[model] + 1, menu_state_current->model_parts[slot]->data1, 0, 0x80);
+    cd_sync_reads(0);
+    cd_select_directory(0x10, 0);
 }
 
 /*
@@ -574,21 +574,21 @@ void func_801CFAB8(u8 slot, u8 gear) {
     u8 variant;
 
     variant = 0;
-    func_801E742C(slot, 0, D_800625A0->model_parts[slot]->data0, D_800625A0->model_parts[slot]->data1,
-                  slot * 64 + 0x200, 0, 0, slot + 0x1C0, D_800625A0->model_parts[slot]->position);
+    func_801E742C(slot, 0, menu_state_current->model_parts[slot]->data0, menu_state_current->model_parts[slot]->data1,
+                  slot * 64 + 0x200, 0, 0, slot + 0x1C0, menu_state_current->model_parts[slot]->position);
     D_801E8670[slot]->groundY = D_801D6DB4[gear];
     D_801E8670[slot]->scale = D_801D6DD8[gear];
     D_801E8670[1]->parts->rotation.vy -= 0x400;
-    D_80050100 = 0;
+    model_ot_depth_shift = 0;
     D_801E8670[1]->parts->rotation.vx -= 0x20;
     if (gear != 0xFF) {
         variant = D_801D6DA0[gear];
     }
     func_801E8330(slot, 0, variant);
-    func_800320E8(D_800625A0->model_parts[slot]->data1);
-    D_800625A0->model_parts[slot]->unk12 = 1;
+    heap_free(menu_state_current->model_parts[slot]->data1);
+    menu_state_current->model_parts[slot]->unk12 = 1;
     func_801CF448();
-    D_800625A0->flags->gear_parts_shown = 1;
+    menu_state_current->flags->gear_parts_shown = 1;
 }
 
 /*
@@ -605,43 +605,43 @@ void func_801CFC60(void) {
     D_801D9050.from[2] = D_801D9050.to[2];
     D_801D9050.to[0] = D_801D6DFC[D_801D9084];
     row = D_801D9084 * 3;
-    D_801D9050.to[1] = D_801D6E20[(D_800625A0->cursor + row - 1) * 4 + D_800625A0->choice];
-    D_801D9050.to[2] = D_801D6FB8[(D_800625A0->cursor - 1) * 4 + D_800625A0->choice];
+    D_801D9050.to[1] = D_801D6E20[(menu_state_current->cursor + row - 1) * 4 + menu_state_current->choice];
+    D_801D9050.to[2] = D_801D6FB8[(menu_state_current->cursor - 1) * 4 + menu_state_current->choice];
     func_801CB690();
-    D_800625A0->view_motion = 7;
-    D_800625A0->gear_screen->flicker_shown = 1;
-    D_800625A0->gear_screen->lamp_state[0] = 1;
-    D_800625A0->gear_screen->lamp_state[1] = 1;
-    D_800625A0->gear_screen->lamp_state[2] = 1;
-    D_800625A0->gear_screen->flicker_timer = 0;
-    D_800625A0->gear_screen->lamp_timer[0] = 0;
-    D_800625A0->gear_screen->lamp_timer[1] = 0;
-    D_800625A0->gear_screen->lamp_timer[2] = 0;
-    D_800625A0->gear_screen->flicker_frame = 0;
-    D_800625A0->gear_screen->lamp_frame[0] = 0;
-    D_800625A0->gear_screen->lamp_frame[1] = 0;
-    D_800625A0->gear_screen->indicator_frame = 0;
-    D_800625A0->gear_screen->flicker_x = 0x18;
-    D_800625A0->gear_screen->flicker_y = 0x6E;
-    D_800625A0->flags->gear_shown = 1;
-    while (D_800625A0->gear_screen->lamp_state[0] != 2) {
+    menu_state_current->view_motion = 7;
+    menu_state_current->gear_screen->flicker_shown = 1;
+    menu_state_current->gear_screen->lamp_state[0] = 1;
+    menu_state_current->gear_screen->lamp_state[1] = 1;
+    menu_state_current->gear_screen->lamp_state[2] = 1;
+    menu_state_current->gear_screen->flicker_timer = 0;
+    menu_state_current->gear_screen->lamp_timer[0] = 0;
+    menu_state_current->gear_screen->lamp_timer[1] = 0;
+    menu_state_current->gear_screen->lamp_timer[2] = 0;
+    menu_state_current->gear_screen->flicker_frame = 0;
+    menu_state_current->gear_screen->lamp_frame[0] = 0;
+    menu_state_current->gear_screen->lamp_frame[1] = 0;
+    menu_state_current->gear_screen->indicator_frame = 0;
+    menu_state_current->gear_screen->flicker_x = 0x18;
+    menu_state_current->gear_screen->flicker_y = 0x6E;
+    menu_state_current->flags->gear_shown = 1;
+    while (menu_state_current->gear_screen->lamp_state[0] != 2) {
         func_801CC1C4();
     }
-    while (D_800625A0->gear_screen->lamp_state[2] != 2) {
+    while (menu_state_current->gear_screen->lamp_state[2] != 2) {
         func_801CC1C4();
     }
 }
 
 /* Show the gear screen: close its lamps and indicator, swing the camera and start its motion (7). */
 void func_801CFF18(void) {
-    D_800625A0->gear_screen->lamp_state[0] = 3;
-    D_800625A0->gear_screen->lamp_state[1] = 3;
-    D_800625A0->gear_screen->lamp_state[2] = 3;
-    D_800625A0->gear_screen->flicker_timer = 0;
-    D_800625A0->gear_screen->lamp_timer[0] = 0;
-    D_800625A0->gear_screen->lamp_timer[1] = 0;
-    D_800625A0->gear_screen->lamp_timer[2] = 0;
-    D_800625A0->flags->gear_shown = 1;
+    menu_state_current->gear_screen->lamp_state[0] = 3;
+    menu_state_current->gear_screen->lamp_state[1] = 3;
+    menu_state_current->gear_screen->lamp_state[2] = 3;
+    menu_state_current->gear_screen->flicker_timer = 0;
+    menu_state_current->gear_screen->lamp_timer[0] = 0;
+    menu_state_current->gear_screen->lamp_timer[1] = 0;
+    menu_state_current->gear_screen->lamp_timer[2] = 0;
+    menu_state_current->flags->gear_shown = 1;
     D_801D9050.from[0] = D_801D9050.to[0];
     D_801D9050.from[1] = D_801D9050.to[1];
     D_801D9050.from[2] = D_801D9050.to[2];
@@ -649,7 +649,7 @@ void func_801CFF18(void) {
     D_801D9050.to[1] = 0;
     D_801D9050.to[2] = -0x400;
     func_801CB690();
-    D_800625A0->view_motion = 7;
+    menu_state_current->view_motion = 7;
 }
 
 /* Tint `count` packet pairs of this buffer red (0) or blue (1). */
@@ -657,17 +657,17 @@ void func_801D0054(s32 count, POLY_FT4 *packets, u8 color) {
     s32 i;
 
     for (i = 0; i < count; i++) {
-        SetShadeTex(&packets[i * 2 + D_800625A0->buffer_index], 0);
+        SetShadeTex(&packets[i * 2 + menu_state_current->buffer_index], 0);
         switch (color) {
         case 0:
-            (packets + (i * 2 + D_800625A0->buffer_index))->r0 = 0x80;
-            (packets + (i * 2 + D_800625A0->buffer_index))->g0 = 0x40;
-            (packets + (i * 2 + D_800625A0->buffer_index))->b0 = 0x40;
+            (packets + (i * 2 + menu_state_current->buffer_index))->r0 = 0x80;
+            (packets + (i * 2 + menu_state_current->buffer_index))->g0 = 0x40;
+            (packets + (i * 2 + menu_state_current->buffer_index))->b0 = 0x40;
             break;
         case 1:
-            (packets + (i * 2 + D_800625A0->buffer_index))->r0 = 0x40;
-            (packets + (i * 2 + D_800625A0->buffer_index))->g0 = 0x40;
-            (packets + (i * 2 + D_800625A0->buffer_index))->b0 = 0x80;
+            (packets + (i * 2 + menu_state_current->buffer_index))->r0 = 0x40;
+            (packets + (i * 2 + menu_state_current->buffer_index))->g0 = 0x40;
+            (packets + (i * 2 + menu_state_current->buffer_index))->b0 = 0x80;
             break;
         }
     }
@@ -679,19 +679,19 @@ void func_801D0220(void) {
     s32 shown;
     s32 i;
 
-    D_800625A0->flags->unknown5a[0] = 1;
+    menu_state_current->flags->unknown5a[0] = 1;
     for (step = 1; step < 12; step++) {
         shown = 0;
-        D_800625A0->details->members_count = 0;
+        menu_state_current->details->members_count = 0;
         for (i = 0; i < step; i++) {
-            if (D_800625A0->present[i] != 0) {
-                D_800625A0->details->members_count +=
-                    func_8002675C(D_800625A0->sheet, i + 0x14E, &D_800625A0->details->members[shown * 2],
-                                  D_800625A0->buffer_index, D_801D6C44[shown], 0xA6, 0x1000);
+            if (menu_state_current->present[i] != 0) {
+                menu_state_current->details->members_count +=
+                    sprite_sheet_draw_scaled(menu_state_current->sheet, i + 0x14E, &menu_state_current->details->members[shown * 2],
+                                  menu_state_current->buffer_index, D_801D6C44[shown], 0xA6, 0x1000);
                 shown++;
             }
         }
-        D_800625A0->details->members_buffer = D_800625A0->buffer_index;
+        menu_state_current->details->members_buffer = menu_state_current->buffer_index;
         func_801CC1C4();
     }
 }
@@ -701,7 +701,7 @@ void func_801D0348(void) {
     s32 i;
 
     for (i = 0; i < 11; i++) {
-        if (D_800625A0->present[i] != 0) {
+        if (menu_state_current->present[i] != 0) {
             D_801D6FD8++;
         }
     }
@@ -712,7 +712,7 @@ void func_801D0398(u8 back) {
     s32 next;
     s32 member;
 
-    if (D_800625A0->view_motion == 0 && D_801D6FD8 >= 2) {
+    if (menu_state_current->view_motion == 0 && D_801D6FD8 >= 2) {
         next = D_801D6FDC;
         if (!back) {
             if (++next >= D_801D6FD8) {
@@ -728,17 +728,17 @@ void func_801D0398(u8 back) {
         member = -1;
         while (next != 0) {
             member++;
-            if (D_800625A0->present[member] != 0) {
+            if (menu_state_current->present[member] != 0) {
                 next--;
             }
         }
         func_801CC1C4();
-        D_800625A0->model_parts[1]->unk12 = 0;
+        menu_state_current->model_parts[1]->unk12 = 0;
         func_801E8030(1);
         func_801CC1C4();
-        func_801CF9BC(D_8006D634.characters[member].gearId, 1);
-        D_801D9084 = D_8006D634.characters[member].gearId;
-        func_801CFAB8(1, D_8006D634.characters[member].gearId);
+        func_801CF9BC(game_data.characters[member].gearId, 1);
+        D_801D9084 = game_data.characters[member].gearId;
+        func_801CFAB8(1, game_data.characters[member].gearId);
         func_801CC1C4();
     }
 }
@@ -747,28 +747,28 @@ void func_801D0398(u8 back) {
 void func_801D04E8(u8 set) {
     s32 i;
 
-    D_800625A0->details->heading_count = 0;
+    menu_state_current->details->heading_count = 0;
     for (i = 0; i < 4; i++) {
-        D_800625A0->details->heading_count +=
-            func_8002675C(D_800625A0->sheet, D_801D6D08[set * 4 + i],
-                          D_800625A0->details->heading + D_800625A0->details->heading_count * 2,
-                          D_800625A0->buffer_index, D_801D6D14[set * 4 + i], D_801D6D3C[set * 4 + i], 0x1000);
+        menu_state_current->details->heading_count +=
+            sprite_sheet_draw_scaled(menu_state_current->sheet, D_801D6D08[set * 4 + i],
+                          menu_state_current->details->heading + menu_state_current->details->heading_count * 2,
+                          menu_state_current->buffer_index, D_801D6D14[set * 4 + i], D_801D6D3C[set * 4 + i], 0x1000);
     }
-    D_800625A0->details->heading_buffer = D_800625A0->buffer_index;
+    menu_state_current->details->heading_buffer = menu_state_current->buffer_index;
 }
 
 /* Draw the two alternative heading sprites. */
 void func_801D05EC(void) {
     s32 i;
 
-    D_800625A0->details->heading_count = 0;
+    menu_state_current->details->heading_count = 0;
     for (i = 0; i < 2; i++) {
-        D_800625A0->details->heading_count +=
-            func_8002675C(D_800625A0->sheet, D_801D6D10[i],
-                          D_800625A0->details->heading + D_800625A0->details->heading_count * 2,
-                          D_800625A0->buffer_index, D_801D6D34[i], D_801D6D5C[i], 0x1000);
+        menu_state_current->details->heading_count +=
+            sprite_sheet_draw_scaled(menu_state_current->sheet, D_801D6D10[i],
+                          menu_state_current->details->heading + menu_state_current->details->heading_count * 2,
+                          menu_state_current->buffer_index, D_801D6D34[i], D_801D6D5C[i], 0x1000);
     }
-    D_800625A0->details->heading_buffer = D_800625A0->buffer_index;
+    menu_state_current->details->heading_buffer = menu_state_current->buffer_index;
 }
 
 /* Show the number panel: its two frame lines and three numbers, plus a fourth when `lower` (shifted left and up by `lower`). */
@@ -776,68 +776,68 @@ void func_801D06D8(u32 first, u32 second, u32 third, u32 fourth, u8 lower) {
     s32 i;
 
     for (i = 0; i < 2; i++) {
-        SetLineF2(&D_800625A0->details->frame[i]);
-        (D_800625A0->details->frame + i)->r0 = 0xFF;
-        (D_800625A0->details->frame + i)->g0 = 0xFF;
-        (D_800625A0->details->frame + i)->b0 = 0xFF;
-        (D_800625A0->details->frame + i)->x0 = D_801D6D6C - 8 - lower * 16;
-        (D_800625A0->details->frame + i)->y0 = D_801D6D70 + 9 - lower * 8;
-        (D_800625A0->details->frame + i)->x1 = D_801D6D6C + 0x4E - lower * 16;
-        (D_800625A0->details->frame + i)->y1 = D_801D6D70 + 9 - lower * 8;
+        SetLineF2(&menu_state_current->details->frame[i]);
+        (menu_state_current->details->frame + i)->r0 = 0xFF;
+        (menu_state_current->details->frame + i)->g0 = 0xFF;
+        (menu_state_current->details->frame + i)->b0 = 0xFF;
+        (menu_state_current->details->frame + i)->x0 = D_801D6D6C - 8 - lower * 16;
+        (menu_state_current->details->frame + i)->y0 = D_801D6D70 + 9 - lower * 8;
+        (menu_state_current->details->frame + i)->x1 = D_801D6D6C + 0x4E - lower * 16;
+        (menu_state_current->details->frame + i)->y1 = D_801D6D70 + 9 - lower * 8;
     }
     func_801C5298(first);
-    D_800625A0->details->digits1_count = 0;
+    menu_state_current->details->digits1_count = 0;
     for (i = 0; i < 9; i++) {
-        if (D_800625A0->digits[i] != 0xFF) {
-            D_800625A0->details->digits1_count +=
-                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i],
-                              &D_800625A0->details->digits1[D_800625A0->details->digits1_count * 2],
-                              D_800625A0->buffer_index, D_801D6D64 + i * 8 - lower * 16, D_801D6D68 - lower * 16,
+        if (menu_state_current->digits[i] != 0xFF) {
+            menu_state_current->details->digits1_count +=
+                sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i],
+                              &menu_state_current->details->digits1[menu_state_current->details->digits1_count * 2],
+                              menu_state_current->buffer_index, D_801D6D64 + i * 8 - lower * 16, D_801D6D68 - lower * 16,
                               0x1000);
         }
     }
-    D_800625A0->details->digits1_buffer = D_800625A0->buffer_index;
+    menu_state_current->details->digits1_buffer = menu_state_current->buffer_index;
     func_801C5298(second);
-    D_800625A0->details->digits2_count = 0;
+    menu_state_current->details->digits2_count = 0;
     for (i = 0; i < 9; i++) {
-        if (D_800625A0->digits[i] != 0xFF) {
-            D_800625A0->details->digits2_count +=
-                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i],
-                              &D_800625A0->details->digits2[D_800625A0->details->digits2_count * 2],
-                              D_800625A0->buffer_index, D_801D6D6C + i * 8 - lower * 16, D_801D6D70 - lower * 16,
+        if (menu_state_current->digits[i] != 0xFF) {
+            menu_state_current->details->digits2_count +=
+                sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i],
+                              &menu_state_current->details->digits2[menu_state_current->details->digits2_count * 2],
+                              menu_state_current->buffer_index, D_801D6D6C + i * 8 - lower * 16, D_801D6D70 - lower * 16,
                               0x1000);
         }
     }
-    D_800625A0->details->digits2_buffer = D_800625A0->buffer_index;
+    menu_state_current->details->digits2_buffer = menu_state_current->buffer_index;
     func_801C5298(third);
-    D_800625A0->details->digits3_count = 0;
+    menu_state_current->details->digits3_count = 0;
     for (i = 0; i < 9; i++) {
-        if (D_800625A0->digits[i] != 0xFF) {
-            D_800625A0->details->digits3_count +=
-                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i],
-                              &D_800625A0->details->digits3[D_800625A0->details->digits3_count * 2],
-                              D_800625A0->buffer_index, D_801D6D74 + i * 8 - lower * 16, D_801D6D78 - lower * 8,
+        if (menu_state_current->digits[i] != 0xFF) {
+            menu_state_current->details->digits3_count +=
+                sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i],
+                              &menu_state_current->details->digits3[menu_state_current->details->digits3_count * 2],
+                              menu_state_current->buffer_index, D_801D6D74 + i * 8 - lower * 16, D_801D6D78 - lower * 8,
                               0x1000);
         }
     }
-    D_800625A0->details->digits3_buffer = D_800625A0->buffer_index;
-    D_800625A0->details->digits4_count = 0;
-    D_800625A0->details->digits4_shown = 0;
+    menu_state_current->details->digits3_buffer = menu_state_current->buffer_index;
+    menu_state_current->details->digits4_count = 0;
+    menu_state_current->details->digits4_shown = 0;
     if (lower) {
         func_801C5298(fourth);
         for (i = 0; i < 9; i++) {
-            if (D_800625A0->digits[i] != 0xFF) {
-                D_800625A0->details->digits4_count +=
-                    func_8002675C(D_800625A0->sheet, D_800625A0->digits[i],
-                                  &D_800625A0->details->digits4[D_800625A0->details->digits4_count * 2],
-                                  D_800625A0->buffer_index, D_801D6D6C + i * 8 - lower * 16, D_801D6D70 - lower * 8,
+            if (menu_state_current->digits[i] != 0xFF) {
+                menu_state_current->details->digits4_count +=
+                    sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i],
+                                  &menu_state_current->details->digits4[menu_state_current->details->digits4_count * 2],
+                                  menu_state_current->buffer_index, D_801D6D6C + i * 8 - lower * 16, D_801D6D70 - lower * 8,
                                   0x1000);
             }
         }
-        D_800625A0->details->digits4_buffer = D_800625A0->buffer_index;
-        D_800625A0->details->digits4_shown = 1;
+        menu_state_current->details->digits4_buffer = menu_state_current->buffer_index;
+        menu_state_current->details->digits4_shown = 1;
     }
-    D_800625A0->details->digits_shown = 1;
+    menu_state_current->details->digits_shown = 1;
 }
 
 /* Draw a nine-digit number (the party's gold) at (6bh, 54h), or lower at (53h, 64h). */
@@ -854,17 +854,17 @@ void func_801D0C20(u32 value, u8 lower) {
     }
     func_801C5298(value);
     i = 0;
-    D_800625A0->details->group1220_count = 0;
+    menu_state_current->details->group1220_count = 0;
     for (; i < 9; i++, x += 8) {
-        if (D_800625A0->digits[i] != 0xFF) {
-            D_800625A0->details->group1220_count +=
-                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i],
-                              D_800625A0->details->group1220 + D_800625A0->details->group1220_count * 2,
-                              D_800625A0->buffer_index, x + 3, y, 0x1000);
+        if (menu_state_current->digits[i] != 0xFF) {
+            menu_state_current->details->group1220_count +=
+                sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i],
+                              menu_state_current->details->group1220 + menu_state_current->details->group1220_count * 2,
+                              menu_state_current->buffer_index, x + 3, y, 0x1000);
         }
     }
-    D_800625A0->details->group1220_buffer = D_800625A0->buffer_index;
-    D_800625A0->flags->unknown5a[1] = 2;
+    menu_state_current->details->group1220_buffer = menu_state_current->buffer_index;
+    menu_state_current->flags->unknown5a[1] = 2;
 }
 
 /* Draw a nine-digit price and its unit sprite at (aah, aeh). */
@@ -875,44 +875,44 @@ void func_801D0D4C(u32 value) {
     func_801C5298(value);
     i = 0;
     x = 0xAA;
-    D_800625A0->details->price_count = 0;
+    menu_state_current->details->price_count = 0;
     for (; i < 9; i++, x += 8) {
-        if (D_800625A0->digits[i] != 0xFF) {
-            D_800625A0->details->price_count +=
-                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i],
-                              D_800625A0->details->price + D_800625A0->details->price_count * 2,
-                              D_800625A0->buffer_index, x, 0xAE, 0x1000);
+        if (menu_state_current->digits[i] != 0xFF) {
+            menu_state_current->details->price_count +=
+                sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i],
+                              menu_state_current->details->price + menu_state_current->details->price_count * 2,
+                              menu_state_current->buffer_index, x, 0xAE, 0x1000);
         }
     }
-    D_800625A0->details->price_count +=
-        func_8002675C(D_800625A0->sheet, 0x10,
-                      D_800625A0->details->price + D_800625A0->details->price_count * 2, D_800625A0->buffer_index,
+    menu_state_current->details->price_count +=
+        sprite_sheet_draw_scaled(menu_state_current->sheet, 0x10,
+                      menu_state_current->details->price + menu_state_current->details->price_count * 2, menu_state_current->buffer_index,
                       0xF2, 0xAE, 0x1000);
-    D_800625A0->details->price_buffer = D_800625A0->buffer_index;
-    D_800625A0->flags->price_shown = 1;
+    menu_state_current->details->price_buffer = menu_state_current->buffer_index;
+    menu_state_current->flags->price_shown = 1;
 }
 
 /* Hide the shop list's packets; with `close` also close its panels, scroll bar and marker. */
 void func_801D0EC8(u8 close) {
     s32 i;
 
-    D_800625A0->flags->unknown5a[0] = 0;
-    D_800625A0->details->label4430_shown = 0;
-    D_800625A0->details->label44B0_shown = 0;
-    D_800625A0->details->digits_shown = 0;
-    D_800625A0->details->heading_count = 0;
-    D_800625A0->details->group2D0_count = 0;
-    D_800625A0->details->members_count = 0;
+    menu_state_current->flags->unknown5a[0] = 0;
+    menu_state_current->details->label4430_shown = 0;
+    menu_state_current->details->label44B0_shown = 0;
+    menu_state_current->details->digits_shown = 0;
+    menu_state_current->details->heading_count = 0;
+    menu_state_current->details->group2D0_count = 0;
+    menu_state_current->details->members_count = 0;
     for (i = 0; i < 9; i++) {
-        D_800625A0->details->bar_shown[i] = 0;
-        D_800625A0->details->cells_a_count[i] = 0;
-        D_800625A0->details->cells_b_count[i] = 0;
+        menu_state_current->details->bar_shown[i] = 0;
+        menu_state_current->details->cells_a_count[i] = 0;
+        menu_state_current->details->cells_b_count[i] = 0;
     }
     for (i = 0; i < 8; i++) {
-        D_800625A0->details->name_shown[i] = 0;
-        D_800625A0->details->row_count[i] = 0;
+        menu_state_current->details->name_shown[i] = 0;
+        menu_state_current->details->row_count[i] = 0;
     }
-    D_800625A0->details->label4530_shown = 0;
+    menu_state_current->details->label4530_shown = 0;
     if (close) {
         func_801C9054(2);
         func_801C9054(3);
@@ -932,31 +932,31 @@ u32 func_801D1078(u8 item, u8 kind) {
     if (item != 0) {
         for (i = 0; i < 16; i++) {
             found = 0;
-            if (D_800625A0->present[i] != 0) {
+            if (menu_state_current->present[i] != 0) {
                 switch (kind) {
                 case 1:
-                    if (D_8006D634.gears[D_8006D634.characters[i].gearId].engine == item) {
+                    if (game_data.gears[game_data.characters[i].gearId].engine == item) {
                         found = 1;
                     }
                     break;
                 case 0:
-                    if (D_8006D634.gears[D_8006D634.characters[i].gearId].frame == item) {
+                    if (game_data.gears[game_data.characters[i].gearId].frame == item) {
                         found = 1;
                     }
                     break;
                 case 2:
-                    if (D_8006D634.gears[D_8006D634.characters[i].gearId].field3 == item) {
+                    if (game_data.gears[game_data.characters[i].gearId].field3 == item) {
                         found = 1;
                     }
                     break;
                 case 4:
                     for (k = 0; k < 4; k++) {
                         if (item < 0x32) {
-                            if (D_8006D634.gears[D_8006D634.characters[i].gearId].weapons[k] == item) {
+                            if (game_data.gears[game_data.characters[i].gearId].weapons[k] == item) {
                                 found = 1;
                                 break;
                             }
-                        } else if (D_8006D634.gears[D_8006D634.characters[i].gearId].partItems[k] == item) {
+                        } else if (game_data.gears[game_data.characters[i].gearId].partItems[k] == item) {
                             found = 1;
                             break;
                         }
@@ -964,7 +964,7 @@ u32 func_801D1078(u8 item, u8 kind) {
                     break;
                 case 3:
                     for (k = 0; k < 3; k++) {
-                        if (D_8006D634.gears[D_8006D634.characters[i].gearId].parts[k] == item) {
+                        if (game_data.gears[game_data.characters[i].gearId].parts[k] == item) {
                             found = 1;
                             break;
                         }
@@ -973,7 +973,7 @@ u32 func_801D1078(u8 item, u8 kind) {
                 }
             }
             if (found) {
-                members |= func_801C5260(D_8006D634.characters[i].gearId);
+                members |= func_801C5260(game_data.characters[i].gearId);
             }
         }
     }
@@ -1008,20 +1008,20 @@ u32 func_801D1304(u8 id, u8 kind) {
     divisors[2] = 100;
     divisors[3] = 1000;
     divisors[4] = 10000;
-    pixels = func_80031BDC(0x618, 0);
+    pixels = heap_alloc(0x618, 0);
     bzero(pixels, 0x618);
     bzero(codes, 14);
     switch (kind) {
     case 4:
-        D_800625A0->details->label4430.width = func_80034EAC(func_80033A5C(id), pixels, 0x39, 0);
-        users = D_800625A0->tables->gear_weapons[id].users;
-        price = D_800625A0->tables->gear_weapons[id].price >> 1;
+        menu_state_current->details->label4430.width = window_render_text_line(text_get_gear_part_name(id), pixels, 0x39, 0);
+        users = menu_state_current->tables->gear_weapons[id].users;
+        price = menu_state_current->tables->gear_weapons[id].price >> 1;
         value = price;
         break;
     case 3:
-        D_800625A0->details->label4430.width = func_80034EAC(func_80033A2C(id), pixels, 0x39, 0);
-        users = D_800625A0->tables->gear_accessories[id].users;
-        price = D_800625A0->tables->gear_accessories[id].price >> 1;
+        menu_state_current->details->label4430.width = window_render_text_line(text_get_gear_accessory_name(id), pixels, 0x39, 0);
+        users = menu_state_current->tables->gear_accessories[id].users;
+        price = menu_state_current->tables->gear_accessories[id].price >> 1;
         value = price;
         break;
     }
@@ -1038,54 +1038,54 @@ u32 func_801D1304(u8 id, u8 kind) {
         }
     }
     codes[8] = value % 10 + 0x10;
-    func_80033B34(codes, text, 5);
-    D_800625A0->details->label44B0.width = func_80034EAC(text, pixels, 0x39, 1);
+    text_decode_codes(codes, text, 5);
+    menu_state_current->details->label44B0.width = window_render_text_line(text, pixels, 0x39, 1);
     rect.x = 0x140;
     rect.y = 0x4E;
     rect.w = 0x3C;
     rect.h = 13;
     LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
-    func_801C5CA8(&D_800625A0->details->label4430, 0, 0, 0);
-    func_801C5CA8(&D_800625A0->details->label44B0, 0, 0, 0);
-    D_800625A0->details->label44B0.polys[D_800625A0->buffer_index].clut = D_80059414;
-    func_801C51B8(&D_800625A0->details->label4430.polys[D_800625A0->buffer_index], 0x2C, 0x12, 0, 0x4E,
-                  D_800625A0->details->label4430.width, 13);
-    func_801C51B8(&D_800625A0->details->label44B0.polys[D_800625A0->buffer_index], 0x98, 0x12, 0, 0x4E,
-                  D_800625A0->details->label44B0.width, 13);
-    func_801C7604(D_800625A0->details->label4430.verts, 0x2C, 0x12, D_800625A0->details->label4430.width, 13);
-    func_801C7604(D_800625A0->details->label44B0.verts, 0x98, 0x12, D_800625A0->details->label44B0.width, 13);
-    D_800625A0->details->label4430.buffer = D_800625A0->buffer_index;
-    D_800625A0->details->label44B0.buffer = D_800625A0->buffer_index;
-    func_800320E8(pixels);
+    func_801C5CA8(&menu_state_current->details->label4430, 0, 0, 0);
+    func_801C5CA8(&menu_state_current->details->label44B0, 0, 0, 0);
+    menu_state_current->details->label44B0.polys[menu_state_current->buffer_index].clut = text_plane1_clut;
+    func_801C51B8(&menu_state_current->details->label4430.polys[menu_state_current->buffer_index], 0x2C, 0x12, 0, 0x4E,
+                  menu_state_current->details->label4430.width, 13);
+    func_801C51B8(&menu_state_current->details->label44B0.polys[menu_state_current->buffer_index], 0x98, 0x12, 0, 0x4E,
+                  menu_state_current->details->label44B0.width, 13);
+    func_801C7604(menu_state_current->details->label4430.verts, 0x2C, 0x12, menu_state_current->details->label4430.width, 13);
+    func_801C7604(menu_state_current->details->label44B0.verts, 0x98, 0x12, menu_state_current->details->label44B0.width, 13);
+    menu_state_current->details->label4430.buffer = menu_state_current->buffer_index;
+    menu_state_current->details->label44B0.buffer = menu_state_current->buffer_index;
+    heap_free(pixels);
     if (id) {
-        D_800625A0->details->label4430_shown = 1;
-        D_800625A0->details->label44B0_shown = 1;
+        menu_state_current->details->label4430_shown = 1;
+        menu_state_current->details->label44B0_shown = 1;
     } else {
-        D_800625A0->details->label4430_shown = 0;
-        D_800625A0->details->label44B0_shown = 0;
+        menu_state_current->details->label4430_shown = 0;
+        menu_state_current->details->label44B0_shown = 0;
     }
     i = 0;
     j = 0;
-    D_800625A0->details->group2D0_count = 0;
+    menu_state_current->details->group2D0_count = 0;
     for (; i < 16; i++) {
-        if (D_800625A0->present[i] != 0) {
-            gear = D_8006D634.characters[i].gearId;
+        if (menu_state_current->present[i] != 0) {
+            gear = game_data.characters[i].gearId;
             if (func_801C527C(users, gear)) {
-                D_800625A0->details->bar_shown[j] = 1;
+                menu_state_current->details->bar_shown[j] = 1;
             } else {
-                D_800625A0->details->bar_shown[j] = 0;
+                menu_state_current->details->bar_shown[j] = 0;
             }
             if (func_801C527C(holders, gear)) {
-                D_800625A0->details->group2D0_count +=
-                    func_8002675C(D_800625A0->sheet, 0xE,
-                                  &D_800625A0->details->group2D0[D_800625A0->details->group2D0_count * 2],
-                                  D_800625A0->buffer_index, D_801D6C44[j] + 0xE, 0xB4, 0x1000);
+                menu_state_current->details->group2D0_count +=
+                    sprite_sheet_draw_scaled(menu_state_current->sheet, 0xE,
+                                  &menu_state_current->details->group2D0[menu_state_current->details->group2D0_count * 2],
+                                  menu_state_current->buffer_index, D_801D6C44[j] + 0xE, 0xB4, 0x1000);
             }
             j++;
         }
     }
-    D_800625A0->details->group2D0_buffer = D_800625A0->buffer_index;
+    menu_state_current->details->group2D0_buffer = menu_state_current->buffer_index;
     return price;
 }
 
@@ -1112,20 +1112,20 @@ void func_801D18F8(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
     divisors[2] = 100;
     divisors[3] = 1000;
     divisors[4] = 10000;
-    pixels = func_80031BDC(0x3F6, 0);
+    pixels = heap_alloc(0x3F6, 0);
     for (row = 0; row < 8; row++) {
         bzero(codes, 14);
-        D_800625A0->details->row_count[row] = 0;
+        menu_state_current->details->row_count[row] = 0;
         if (ids[top + row] != 0) {
             value = held[top + row];
             switch (kinds[top + row]) {
             case 4:
-                D_800625A0->details->names_a[row].width =
-                    func_80034EAC(func_80033A5C(ids[top + row]), pixels, 0x24, 0);
+                menu_state_current->details->names_a[row].width =
+                    window_render_text_line(text_get_gear_part_name(ids[top + row]), pixels, 0x24, 0);
                 break;
             case 3:
-                D_800625A0->details->names_a[row].width =
-                    func_80034EAC(func_80033A2C(ids[top + row]), pixels, 0x24, 0);
+                menu_state_current->details->names_a[row].width =
+                    window_render_text_line(text_get_gear_accessory_name(ids[top + row]), pixels, 0x24, 0);
                 break;
             }
             started = 0;
@@ -1140,50 +1140,50 @@ void func_801D18F8(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
                 }
             }
             codes[i * 2] = value % 10 + 0x10;
-            func_80033B34(codes, text, 5);
-            D_800625A0->details->names_b[row].width = func_80034EAC(text, pixels, 0x24, 1);
+            text_decode_codes(codes, text, 5);
+            menu_state_current->details->names_b[row].width = window_render_text_line(text, pixels, 0x24, 1);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = (row / 2) * 13 + 0x80;
             rect.w = 0x28;
             rect.h = 13;
             LoadImage(&rect, (u_long *)pixels);
-            func_801C5CA8(&D_800625A0->details->names_a[row], row, 0x80, 0x81);
-            func_801C7604(D_800625A0->details->names_a[row].verts, 0x24, row * 13 + 0x32,
-                          D_800625A0->details->names_a[row].width, 13);
+            func_801C5CA8(&menu_state_current->details->names_a[row], row, 0x80, 0x81);
+            func_801C7604(menu_state_current->details->names_a[row].verts, 0x24, row * 13 + 0x32,
+                          menu_state_current->details->names_a[row].width, 13);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = (row / 2) * 13 + 0x80;
             rect.w = 0x28;
             rect.h = 13;
             LoadImage(&rect, (u_long *)pixels);
             DrawSync(0);
-            func_801C5CA8(&D_800625A0->details->names_b[row], row, 0x80, 0x82);
-            func_801C7604(D_800625A0->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
-                          D_800625A0->details->names_b[row].width, 13);
-            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer_index;
-            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer_index;
-            D_800625A0->details->name_shown[row] = 1;
+            func_801C5CA8(&menu_state_current->details->names_b[row], row, 0x80, 0x82);
+            func_801C7604(menu_state_current->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
+                          menu_state_current->details->names_b[row].width, 13);
+            menu_state_current->details->names_a[row].buffer = menu_state_current->buffer_index;
+            menu_state_current->details->names_a[row].buffer = menu_state_current->buffer_index;
+            menu_state_current->details->name_shown[row] = 1;
             if (chosen[top + row] != 0) {
-                D_800625A0->details->row_count[row] +=
-                    func_8002675C(D_800625A0->sheet, 0xE5, D_800625A0->details->rows[row],
-                                  D_800625A0->buffer_index, 0xB4, row * 13 + 0x36, 0x1000);
+                menu_state_current->details->row_count[row] +=
+                    sprite_sheet_draw_scaled(menu_state_current->sheet, 0xE5, menu_state_current->details->rows[row],
+                                  menu_state_current->buffer_index, 0xB4, row * 13 + 0x36, 0x1000);
                 tens = chosen[top + row] / 10;
                 if (tens != 0) {
-                    D_800625A0->details->row_count[row] +=
-                        func_8002675C(D_800625A0->sheet, tens,
-                                      &D_800625A0->details->rows[row][D_800625A0->details->row_count[row] * 2],
-                                      D_800625A0->buffer_index, 0xBC, row * 13 + 0x36, 0x1000);
+                    menu_state_current->details->row_count[row] +=
+                        sprite_sheet_draw_scaled(menu_state_current->sheet, tens,
+                                      &menu_state_current->details->rows[row][menu_state_current->details->row_count[row] * 2],
+                                      menu_state_current->buffer_index, 0xBC, row * 13 + 0x36, 0x1000);
                 }
-                D_800625A0->details->row_count[row] +=
-                    func_8002675C(D_800625A0->sheet, (u8)(chosen[top + row] % 10),
-                                  &D_800625A0->details->rows[row][D_800625A0->details->row_count[row] * 2],
-                                  D_800625A0->buffer_index, 0xC4, row * 13 + 0x36, 0x1000);
-                D_800625A0->details->row_buffer[row] = D_800625A0->buffer_index;
+                menu_state_current->details->row_count[row] +=
+                    sprite_sheet_draw_scaled(menu_state_current->sheet, (u8)(chosen[top + row] % 10),
+                                  &menu_state_current->details->rows[row][menu_state_current->details->row_count[row] * 2],
+                                  menu_state_current->buffer_index, 0xC4, row * 13 + 0x36, 0x1000);
+                menu_state_current->details->row_buffer[row] = menu_state_current->buffer_index;
             }
         } else {
-            D_800625A0->details->name_shown[row] = 0;
+            menu_state_current->details->name_shown[row] = 0;
         }
     }
-    func_800320E8(pixels);
+    heap_free(pixels);
 }
 
 /* Set the party's gold (capped at 9999999) and, with `remove`, take the chosen amounts out of the inventory. */
@@ -1194,7 +1194,7 @@ void func_801D1F20(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_c
     s32 j;
 
     func_801CB498(0xD1);
-    party_gold = &D_8006D634.gold;
+    party_gold = &game_data.gold;
     *party_gold = gold;
     if (gold > 9999999) {
         *party_gold = 9999999;
@@ -1234,7 +1234,7 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_ki
     u8 chosen[n];
     u8 selectable[n];
     u8 *held;
-    u32 gold = D_8006D634.gold;
+    u32 gold = game_data.gold;
     u8 held_storage[n];
     u32 total;
     u32 new_gold;
@@ -1276,7 +1276,7 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_ki
             last_row = row;
             price = func_801D1304(sell_ids[top + row], sell_kinds[top + row]);
             last_top = top;
-            D_800625A0->flags->unknown5a[0] = 1;
+            menu_state_current->flags->unknown5a[0] = 1;
         }
         func_801C78EC(row, top, 0, 0);
         if (first) {
@@ -1290,28 +1290,28 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_ki
             func_801D06D8(gold, total, new_gold, 0, 0);
             redraw = 0;
         }
-        switch (D_800625A0->input) {
+        switch (menu_state_current->input) {
         case 4:
             if (total != 0) {
                 func_801CB498(2);
-                D_800625A0->flags->unknown5a[0] = 0;
-                D_800625A0->flags->panels_shown[2] = 0;
-                D_800625A0->flags->panels_shown[3] = 0;
-                D_800625A0->flags->scroll_shown = 0;
+                menu_state_current->flags->unknown5a[0] = 0;
+                menu_state_current->flags->panels_shown[2] = 0;
+                menu_state_current->flags->panels_shown[3] = 0;
+                menu_state_current->flags->scroll_shown = 0;
                 running = 0;
-                D_800625A0->flags->cursors_shown[0] = 0;
+                menu_state_current->flags->cursors_shown[0] = 0;
                 func_801CC31C(0);
                 func_801D0C20(total, 0);
                 if (func_801CCC18(0x95, 0xFF, 1)) {
                     func_801D1F20(new_gold, sell_ids, chosen, n, ids, counts, sell_kinds, remove, member);
                 } else {
                     running = 1;
-                    D_800625A0->flags->panels_shown[2] = 1;
-                    D_800625A0->flags->panels_shown[3] = 1;
-                    D_800625A0->flags->scroll_shown = 1;
+                    menu_state_current->flags->panels_shown[2] = 1;
+                    menu_state_current->flags->panels_shown[3] = 1;
+                    menu_state_current->flags->scroll_shown = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->cursors_shown[0] = running;
+                    menu_state_current->flags->cursors_shown[0] = running;
                 }
                 func_801CC4DC();
             } else {
@@ -1321,20 +1321,20 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_ki
         case 5:
             running = 0;
             if (total != 0) {
-                D_800625A0->flags->unknown5a[0] = 0;
-                D_800625A0->flags->panels_shown[2] = 0;
-                D_800625A0->flags->panels_shown[3] = 0;
-                D_800625A0->flags->scroll_shown = 0;
-                D_800625A0->flags->cursors_shown[0] = 0;
+                menu_state_current->flags->unknown5a[0] = 0;
+                menu_state_current->flags->panels_shown[2] = 0;
+                menu_state_current->flags->panels_shown[3] = 0;
+                menu_state_current->flags->scroll_shown = 0;
+                menu_state_current->flags->cursors_shown[0] = 0;
                 func_801CC31C(0);
                 if (!func_801CCC18(0x92, 0xFF, 1)) {
                     running = 1;
-                    D_800625A0->flags->panels_shown[2] = 1;
-                    D_800625A0->flags->panels_shown[3] = 1;
-                    D_800625A0->flags->scroll_shown = 1;
+                    menu_state_current->flags->panels_shown[2] = 1;
+                    menu_state_current->flags->panels_shown[3] = 1;
+                    menu_state_current->flags->scroll_shown = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->cursors_shown[0] = running;
+                    menu_state_current->flags->cursors_shown[0] = running;
                 }
                 func_801CC4DC();
             }
@@ -1384,24 +1384,24 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_ki
 
 /* Run the sell list for inventory 3 (150 entries). */
 void func_801D2784(void) {
-    func_801D2054(150, D_8006D634.gearAccessoryIds, D_8006D634.gearAccessoryIds - 150, 3, 1, D_8006D634.gearAccessoryIds - 150, 0);
+    func_801D2054(150, game_data.gearAccessoryIds, game_data.gearAccessoryIds - 150, 3, 1, game_data.gearAccessoryIds - 150, 0);
 }
 
 /* Run the sell list for inventory 4 (100 entries). */
 void func_801D27C4(void) {
-    func_801D2054(100, D_8006D634.gearPartIds, D_8006D634.gearPartIds - 100, 4, 1, D_8006D634.gearPartIds - 100, 0);
+    func_801D2054(100, game_data.gearPartIds, game_data.gearPartIds - 100, 4, 1, game_data.gearPartIds - 100, 0);
 }
 
 /* Run sell list `page` * 3 + cursor (3 and 4 are the two inventories), then restore the list labels. */
 void func_801D2804(u8 page) {
     u8 close;
 
-    D_800625A0->flags->sprite_shown = 0;
-    D_800625A0->flags->cursor_shown = 0;
-    D_800625A0->flags->lists_shown = 0;
-    func_801CCEBC(4, D_800625A0->flags->list_labels_shown);
+    menu_state_current->flags->sprite_shown = 0;
+    menu_state_current->flags->cursor_shown = 0;
+    menu_state_current->flags->lists_shown = 0;
+    func_801CCEBC(4, menu_state_current->flags->list_labels_shown);
     close = 1;
-    switch (D_800625A0->choice + page * 3) {
+    switch (menu_state_current->choice + page * 3) {
     case 3:
         func_801D2784();
         break;
@@ -1410,10 +1410,10 @@ void func_801D2804(u8 page) {
         break;
     }
     func_801D0EC8(close);
-    D_800625A0->flags->lists_shown = 1;
-    D_800625A0->flags->sprite_shown = 1;
-    D_800625A0->flags->cursor_shown = 1;
-    func_801CCE90(4, D_800625A0->list_labels, D_801D6A24, D_800625A0->flags->list_labels_shown);
+    menu_state_current->flags->lists_shown = 1;
+    menu_state_current->flags->sprite_shown = 1;
+    menu_state_current->flags->cursor_shown = 1;
+    func_801CCE90(4, menu_state_current->list_labels, D_801D6A24, menu_state_current->flags->list_labels_shown);
 }
 
 /* Render the edited gear's part name of list `kind` (0 frame, 1 engine, 2 armour) into its label and show it. */
@@ -1421,19 +1421,19 @@ void func_801D2950(u8 kind) {
     RECT rect;
     u8 *pixels;
 
-    pixels = func_80031BDC(0x3F6, 0);
+    pixels = heap_alloc(0x3F6, 0);
     switch (kind) {
     case 0:
-        D_800625A0->details->label4530.width = func_80034EAC(
-            func_80033728(D_800625A0->details->resources[6], D_8006D634.gears[D_801D9084].frame), pixels, 0x24, 0);
+        menu_state_current->details->label4530.width = window_render_text_line(
+            text_get_resource_entry(menu_state_current->details->resources[6], game_data.gears[D_801D9084].frame), pixels, 0x24, 0);
         break;
     case 1:
-        D_800625A0->details->label4530.width = func_80034EAC(
-            func_80033728(D_800625A0->details->resources[7], D_8006D634.gears[D_801D9084].engine), pixels, 0x24, 0);
+        menu_state_current->details->label4530.width = window_render_text_line(
+            text_get_resource_entry(menu_state_current->details->resources[7], game_data.gears[D_801D9084].engine), pixels, 0x24, 0);
         break;
     case 2:
-        D_800625A0->details->label4530.width = func_80034EAC(
-            func_80033728(D_800625A0->details->resources[8], D_8006D634.gears[D_801D9084].field3), pixels, 0x24, 0);
+        menu_state_current->details->label4530.width = window_render_text_line(
+            text_get_resource_entry(menu_state_current->details->resources[8], game_data.gears[D_801D9084].field3), pixels, 0x24, 0);
         break;
     }
     rect.x = 0x198;
@@ -1441,12 +1441,12 @@ void func_801D2950(u8 kind) {
     rect.w = 0x28;
     rect.h = 0xD;
     LoadImage(&rect, (u_long *)pixels);
-    func_801C5CA8(&D_800625A0->details->label4530, 9, 0x80, 0x81);
-    func_801C7604(D_800625A0->details->label4530.verts, 0xD4, 0x8E, D_800625A0->details->label4530.width, 0xD);
+    func_801C5CA8(&menu_state_current->details->label4530, 9, 0x80, 0x81);
+    func_801C7604(menu_state_current->details->label4530.verts, 0xD4, 0x8E, menu_state_current->details->label4530.width, 0xD);
     DrawSync(0);
-    D_800625A0->details->label4530.buffer = D_800625A0->buffer_index;
-    D_800625A0->details->label4530_shown = 1;
-    func_800320E8(pixels);
+    menu_state_current->details->label4530.buffer = menu_state_current->buffer_index;
+    menu_state_current->details->label4530_shown = 1;
+    heap_free(pixels);
 }
 
 /*
@@ -1481,54 +1481,54 @@ u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
     divisors[2] = 100;
     divisors[3] = 1000;
     divisors[4] = 10000;
-    pixels = func_80031BDC(0x3F6, 0);
+    pixels = heap_alloc(0x3F6, 0);
     for (row = 0; row < 8; row++) {
         dims[row] = 0;
         bzero(codes, 14);
-        D_800625A0->details->row_count[row] = 0;
-        if (D_800625A0->shop_items[top + row] != 0) {
-            switch (D_800625A0->shop_kinds[top + row]) {
+        menu_state_current->details->row_count[row] = 0;
+        if (menu_state_current->shop_items[top + row] != 0) {
+            switch (menu_state_current->shop_kinds[top + row]) {
             case 0:
-                frame = &D_800625A0->tables->frames[D_8006D634.gears[D_801D9084].frame];
+                frame = &menu_state_current->tables->frames[game_data.gears[D_801D9084].frame];
                 trade = frame->price >> 1;
-                D_800625A0->details->names_a[row].width = func_80034EAC(
-                    func_80033728(D_800625A0->details->resources[6], D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                frame = &D_800625A0->tables->frames[D_800625A0->shop_items[top + row]];
+                menu_state_current->details->names_a[row].width = window_render_text_line(
+                    text_get_resource_entry(menu_state_current->details->resources[6], menu_state_current->shop_items[top + row]), pixels, 0x24, 0);
+                frame = &menu_state_current->tables->frames[menu_state_current->shop_items[top + row]];
                 value = frame->price;
                 price = value;
                 users = frame->users;
                 break;
             case 1:
-                engine = &D_800625A0->tables->engines[D_8006D634.gears[D_801D9084].engine];
+                engine = &menu_state_current->tables->engines[game_data.gears[D_801D9084].engine];
                 trade = engine->price >> 1;
-                D_800625A0->details->names_a[row].width = func_80034EAC(
-                    func_80033728(D_800625A0->details->resources[7], D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                engine = &D_800625A0->tables->engines[D_800625A0->shop_items[top + row]];
+                menu_state_current->details->names_a[row].width = window_render_text_line(
+                    text_get_resource_entry(menu_state_current->details->resources[7], menu_state_current->shop_items[top + row]), pixels, 0x24, 0);
+                engine = &menu_state_current->tables->engines[menu_state_current->shop_items[top + row]];
                 value = engine->price;
                 price = value;
                 users = engine->users;
                 break;
             case 2:
-                armour = &D_800625A0->tables->parts[D_8006D634.gears[D_801D9084].field3];
+                armour = &menu_state_current->tables->parts[game_data.gears[D_801D9084].field3];
                 trade = armour->price >> 1;
-                D_800625A0->details->names_a[row].width = func_80034EAC(
-                    func_80033728(D_800625A0->details->resources[8], D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                armour = &D_800625A0->tables->parts[D_800625A0->shop_items[top + row]];
+                menu_state_current->details->names_a[row].width = window_render_text_line(
+                    text_get_resource_entry(menu_state_current->details->resources[8], menu_state_current->shop_items[top + row]), pixels, 0x24, 0);
+                armour = &menu_state_current->tables->parts[menu_state_current->shop_items[top + row]];
                 value = armour->price;
                 price = value;
                 users = armour->users;
                 break;
             case 4:
-                D_800625A0->details->names_a[row].width =
-                    func_80034EAC(func_80033A5C(D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                value = D_800625A0->tables->gear_weapons[D_800625A0->shop_items[top + row]].price;
+                menu_state_current->details->names_a[row].width =
+                    window_render_text_line(text_get_gear_part_name(menu_state_current->shop_items[top + row]), pixels, 0x24, 0);
+                value = menu_state_current->tables->gear_weapons[menu_state_current->shop_items[top + row]].price;
                 price = value;
                 users = -1;
                 break;
             case 3:
-                D_800625A0->details->names_a[row].width =
-                    func_80034EAC(func_80033A2C(D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                value = D_800625A0->tables->gear_accessories[D_800625A0->shop_items[top + row]].price;
+                menu_state_current->details->names_a[row].width =
+                    window_render_text_line(text_get_gear_accessory_name(menu_state_current->shop_items[top + row]), pixels, 0x24, 0);
+                value = menu_state_current->tables->gear_accessories[menu_state_current->shop_items[top + row]].price;
                 price = value;
                 users = -1;
                 break;
@@ -1550,50 +1550,50 @@ u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
                 }
             }
             codes[i * 2] = value % 10 + 0x10;
-            func_80033B34(codes, text, 5);
-            D_800625A0->details->names_b[row].width = func_80034EAC(text, pixels, 0x24, 1);
+            text_decode_codes(codes, text, 5);
+            menu_state_current->details->names_b[row].width = window_render_text_line(text, pixels, 0x24, 1);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = (row / 2) * 13 + 0x80;
             rect.w = 0x28;
             rect.h = 13;
             LoadImage(&rect, (u_long *)pixels);
-            func_801C5CA8(&D_800625A0->details->names_a[row], row, 0x80, dims[row] + 1);
-            func_801C7604(D_800625A0->details->names_a[row].verts, 0x24, row * 13 + 0x32,
-                          D_800625A0->details->names_a[row].width, 13);
+            func_801C5CA8(&menu_state_current->details->names_a[row], row, 0x80, dims[row] + 1);
+            func_801C7604(menu_state_current->details->names_a[row].verts, 0x24, row * 13 + 0x32,
+                          menu_state_current->details->names_a[row].width, 13);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = (row / 2) * 13 + 0x80;
             rect.w = 0x28;
             rect.h = 13;
             LoadImage(&rect, (u_long *)pixels);
             DrawSync(0);
-            func_801C5CA8(&D_800625A0->details->names_b[row], row, 0x80, dims[row] + 2);
-            func_801C7604(D_800625A0->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
-                          D_800625A0->details->names_b[row].width, 13);
-            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer_index;
-            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer_index;
-            D_800625A0->details->name_shown[row] = 1;
-            if (D_800625A0->details->amounts[top + row] != 0) {
-                D_800625A0->details->row_count[row] +=
-                    func_8002675C(D_800625A0->sheet, 0xF1, D_800625A0->details->rows[row],
-                                  D_800625A0->buffer_index, 0xB4, row * 13 + 0x36, 0x1000);
-                tens = D_800625A0->details->amounts[top + row] / 10;
+            func_801C5CA8(&menu_state_current->details->names_b[row], row, 0x80, dims[row] + 2);
+            func_801C7604(menu_state_current->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
+                          menu_state_current->details->names_b[row].width, 13);
+            menu_state_current->details->names_a[row].buffer = menu_state_current->buffer_index;
+            menu_state_current->details->names_a[row].buffer = menu_state_current->buffer_index;
+            menu_state_current->details->name_shown[row] = 1;
+            if (menu_state_current->details->amounts[top + row] != 0) {
+                menu_state_current->details->row_count[row] +=
+                    sprite_sheet_draw_scaled(menu_state_current->sheet, 0xF1, menu_state_current->details->rows[row],
+                                  menu_state_current->buffer_index, 0xB4, row * 13 + 0x36, 0x1000);
+                tens = menu_state_current->details->amounts[top + row] / 10;
                 if (tens != 0) {
-                    D_800625A0->details->row_count[row] +=
-                        func_8002675C(D_800625A0->sheet, tens,
-                                      &D_800625A0->details->rows[row][D_800625A0->details->row_count[row] * 2],
-                                      D_800625A0->buffer_index, 0xBC, row * 13 + 0x36, 0x1000);
+                    menu_state_current->details->row_count[row] +=
+                        sprite_sheet_draw_scaled(menu_state_current->sheet, tens,
+                                      &menu_state_current->details->rows[row][menu_state_current->details->row_count[row] * 2],
+                                      menu_state_current->buffer_index, 0xBC, row * 13 + 0x36, 0x1000);
                 }
-                D_800625A0->details->row_count[row] +=
-                    func_8002675C(D_800625A0->sheet, (u8)(D_800625A0->details->amounts[top + row] % 10),
-                                  &D_800625A0->details->rows[row][D_800625A0->details->row_count[row] * 2],
-                                  D_800625A0->buffer_index, 0xC4, row * 13 + 0x36, 0x1000);
-                D_800625A0->details->row_buffer[row] = D_800625A0->buffer_index;
+                menu_state_current->details->row_count[row] +=
+                    sprite_sheet_draw_scaled(menu_state_current->sheet, (u8)(menu_state_current->details->amounts[top + row] % 10),
+                                  &menu_state_current->details->rows[row][menu_state_current->details->row_count[row] * 2],
+                                  menu_state_current->buffer_index, 0xC4, row * 13 + 0x36, 0x1000);
+                menu_state_current->details->row_buffer[row] = menu_state_current->buffer_index;
             }
         } else {
-            D_800625A0->details->name_shown[row] = 0;
+            menu_state_current->details->name_shown[row] = 0;
         }
     }
-    func_800320E8(pixels);
+    heap_free(pixels);
     return trade;
 }
 
@@ -1616,57 +1616,57 @@ void func_801D3558(s32 *change, u8 *decrease, u8 part, u8 kind, u8 member) {
     s32 slot;
     s32 k;
 
-    gear = D_8006D634.characters[member].gearId;
-    saved[0] = D_8006D634.gears[gear].weapons[0];
-    saved[1] = D_8006D634.gears[gear].partItems[0];
-    saved[2] = D_8006D634.gears[gear].partItems[1];
-    saved[3] = D_8006D634.gears[gear].partItems[2];
-    saved[4] = D_8006D634.gears[gear].partItems[3];
-    saved[5] = D_8006D634.gears[gear].parts[0];
-    saved[6] = D_8006D634.gears[gear].parts[1];
-    saved[7] = D_8006D634.gears[gear].parts[2];
+    gear = game_data.characters[member].gearId;
+    saved[0] = game_data.gears[gear].weapons[0];
+    saved[1] = game_data.gears[gear].partItems[0];
+    saved[2] = game_data.gears[gear].partItems[1];
+    saved[3] = game_data.gears[gear].partItems[2];
+    saved[4] = game_data.gears[gear].partItems[3];
+    saved[5] = game_data.gears[gear].parts[0];
+    saved[6] = game_data.gears[gear].parts[1];
+    saved[7] = game_data.gears[gear].parts[2];
     switch (kind) {
     case 4:
         if (part < 0x32) {
-            D_8006D634.gears[gear].weapons[0] = part;
+            game_data.gears[gear].weapons[0] = part;
         } else {
-            weapon = &D_800625A0->tables->gear_weapons[part];
+            weapon = &menu_state_current->tables->gear_weapons[part];
             for (k = 0; k < 4; k++) {
-                if (D_800625A0->tables->gear_weapons[D_8006D634.gears[gear].partItems[k]].kind == weapon->kind) {
-                    D_8006D634.gears[gear].partItems[k] = part;
+                if (menu_state_current->tables->gear_weapons[game_data.gears[gear].partItems[k]].kind == weapon->kind) {
+                    game_data.gears[gear].partItems[k] = part;
                 }
             }
         }
         break;
     case 3:
         replace = 1;
-        fitted = &D_800625A0->tables->gear_accessories[part];
+        fitted = &menu_state_current->tables->gear_accessories[part];
         for (k = 0; k < 3; k++) {
-            current = &D_800625A0->tables->gear_accessories[saved[5 + k]];
+            current = &menu_state_current->tables->gear_accessories[saved[5 + k]];
             if (current->groups != 0 && current->groups == fitted->groups) {
                 replace = 0;
-                D_8006D634.gears[gear].parts[k] = part;
+                game_data.gears[gear].parts[k] = part;
             }
         }
         if (replace) {
             lowest = 0xFF;
             for (k = 0; k < 3; k++) {
-                current = &D_800625A0->tables->gear_accessories[saved[5 + k]];
+                current = &menu_state_current->tables->gear_accessories[saved[5 + k]];
                 if (lowest >= current->unkD) {
                     lowest = current->unkD;
                     slot = k;
                 }
             }
-            D_8006D634.gears[gear].parts[slot] = part;
+            game_data.gears[gear].parts[slot] = part;
         }
         break;
     }
-    func_801D6150(D_800625A0->tables, D_8006D634.characters[member].gearId);
-    func_801D5F94(D_800625A0->tables, D_8006D634.characters[member].gearId);
-    values[0][0] = D_800625A0->tables->gear.attack;
-    values[0][1] = D_800625A0->tables->gear.defense;
-    values[1][0] = D_800625A0->details->attack[member];
-    values[1][1] = D_800625A0->details->defense[member];
+    func_801D6150(menu_state_current->tables, game_data.characters[member].gearId);
+    func_801D5F94(menu_state_current->tables, game_data.characters[member].gearId);
+    values[0][0] = menu_state_current->tables->gear.attack;
+    values[0][1] = menu_state_current->tables->gear.defense;
+    values[1][0] = menu_state_current->details->attack[member];
+    values[1][1] = menu_state_current->details->defense[member];
     for (k = 0; k < 2; k++) {
         if (values[0][k] >= values[1][k]) {
             change[k] = values[0][k] - values[1][k];
@@ -1676,15 +1676,15 @@ void func_801D3558(s32 *change, u8 *decrease, u8 part, u8 kind, u8 member) {
             decrease[k] = 1;
         }
     }
-    D_8006D634.gears[gear].weapons[0] = saved[0];
-    D_8006D634.gears[gear].partItems[0] = saved[1];
-    D_8006D634.gears[gear].partItems[1] = saved[2];
-    D_8006D634.gears[gear].partItems[2] = saved[3];
-    D_8006D634.gears[gear].partItems[3] = saved[4];
-    D_8006D634.gears[gear].parts[0] = saved[5];
-    D_8006D634.gears[gear].parts[1] = saved[6];
-    D_8006D634.gears[gear].parts[2] = saved[7];
-    func_801D6150(D_800625A0->tables, D_8006D634.characters[member].gearId);
+    game_data.gears[gear].weapons[0] = saved[0];
+    game_data.gears[gear].partItems[0] = saved[1];
+    game_data.gears[gear].partItems[1] = saved[2];
+    game_data.gears[gear].partItems[2] = saved[3];
+    game_data.gears[gear].partItems[3] = saved[4];
+    game_data.gears[gear].parts[0] = saved[5];
+    game_data.gears[gear].parts[1] = saved[6];
+    game_data.gears[gear].parts[2] = saved[7];
+    func_801D6150(menu_state_current->tables, game_data.characters[member].gearId);
 }
 
 /* The count held of item `id` in an inventory of `n` ids and counts (0 if absent). */
@@ -1717,13 +1717,13 @@ void func_801D3A80(u8 kind, u8 id) {
     known = 0;
     switch (kind) {
     case 4:
-        ids = D_8006D634.gearPartIds;
+        ids = game_data.gearPartIds;
         counts = ids - 100;
         n = 100;
         known = 1;
         break;
     case 3:
-        ids = D_8006D634.gearAccessoryIds;
+        ids = game_data.gearAccessoryIds;
         counts = ids - 150;
         n = 150;
         known = 1;
@@ -1734,7 +1734,7 @@ void func_801D3A80(u8 kind, u8 id) {
     }
     count = func_801D3A3C(ids, counts, n, id);
     D_801D904C = count;
-    pixels = func_80031BDC(0x3F6, 0);
+    pixels = heap_alloc(0x3F6, 0);
     codes[1] = 0;
     codes[3] = 0;
     if (count / 10) {
@@ -1743,20 +1743,20 @@ void func_801D3A80(u8 kind, u8 id) {
         codes[0] = 0xC3;
     }
     codes[2] = count % 10 + 0x10;
-    func_80033B34(codes, text, 2);
-    D_800625A0->details->label45B0.width = func_80034EAC(text, pixels, 0x24, 1);
+    text_decode_codes(codes, text, 2);
+    menu_state_current->details->label45B0.width = window_render_text_line(text, pixels, 0x24, 1);
     rect.x = 0x198;
     rect.y = 0xB4;
     rect.w = 0x28;
     rect.h = 13;
     LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
-    func_801C5CA8(&D_800625A0->details->label45B0, 9, 0x80, 0x82);
-    func_801C7604(D_800625A0->details->label45B0.verts, 0xF8, 0x8E, D_800625A0->details->label45B0.width,
+    func_801C5CA8(&menu_state_current->details->label45B0, 9, 0x80, 0x82);
+    func_801C7604(menu_state_current->details->label45B0.verts, 0xF8, 0x8E, menu_state_current->details->label45B0.width,
                   13);
-    D_800625A0->details->label45B0.buffer = D_800625A0->buffer_index;
-    D_800625A0->details->label45B0_shown = 1;
-    func_800320E8(pixels);
+    menu_state_current->details->label45B0.buffer = menu_state_current->buffer_index;
+    menu_state_current->details->label45B0_shown = 1;
+    heap_free(pixels);
 }
 
 /*
@@ -1783,41 +1783,41 @@ u32 func_801D3C78(s32 row, s32 top, u8 *dims) {
     s32 xa;
     s32 xb;
 
-    id = D_800625A0->shop_items[top + row];
-    kind = D_800625A0->shop_kinds[top + row];
-    pixels = func_80031BDC(0x618, 0);
+    id = menu_state_current->shop_items[top + row];
+    kind = menu_state_current->shop_kinds[top + row];
+    pixels = heap_alloc(0x618, 0);
     bzero(pixels, 0x618);
     users = 0;
     switch (kind) {
     case 0:
-        D_800625A0->details->label4430.width =
-            func_80034EAC(func_80033728(D_800625A0->details->resources[3], id), pixels, 0x39, 0);
-        price = D_800625A0->tables->frames[id].price;
-        users = D_800625A0->tables->frames[id].users;
+        menu_state_current->details->label4430.width =
+            window_render_text_line(text_get_resource_entry(menu_state_current->details->resources[3], id), pixels, 0x39, 0);
+        price = menu_state_current->tables->frames[id].price;
+        users = menu_state_current->tables->frames[id].users;
         break;
     case 1:
-        D_800625A0->details->label4430.width =
-            func_80034EAC(func_80033728(D_800625A0->details->resources[4], id), pixels, 0x39, 0);
-        price = D_800625A0->tables->engines[id].price;
-        users = D_800625A0->tables->engines[id].users;
+        menu_state_current->details->label4430.width =
+            window_render_text_line(text_get_resource_entry(menu_state_current->details->resources[4], id), pixels, 0x39, 0);
+        price = menu_state_current->tables->engines[id].price;
+        users = menu_state_current->tables->engines[id].users;
         break;
     case 2:
-        D_800625A0->details->label4430.width =
-            func_80034EAC(func_80033728(D_800625A0->details->resources[5], id), pixels, 0x39, 0);
-        price = D_800625A0->tables->parts[id].price;
-        users = D_800625A0->tables->parts[id].users;
+        menu_state_current->details->label4430.width =
+            window_render_text_line(text_get_resource_entry(menu_state_current->details->resources[5], id), pixels, 0x39, 0);
+        price = menu_state_current->tables->parts[id].price;
+        users = menu_state_current->tables->parts[id].users;
         break;
     case 4:
-        D_800625A0->details->label4430.width =
-            func_80034EAC(func_80033728(D_800625A0->details->resources[1], id), pixels, 0x39, 0);
-        price = D_800625A0->tables->gear_weapons[id].price;
-        users = D_800625A0->tables->gear_weapons[id].users;
+        menu_state_current->details->label4430.width =
+            window_render_text_line(text_get_resource_entry(menu_state_current->details->resources[1], id), pixels, 0x39, 0);
+        price = menu_state_current->tables->gear_weapons[id].price;
+        users = menu_state_current->tables->gear_weapons[id].users;
         break;
     case 3:
-        D_800625A0->details->label4430.width =
-            func_80034EAC(func_80033728(D_800625A0->details->resources[2], id), pixels, 0x39, 0);
-        price = D_800625A0->tables->gear_accessories[id].price;
-        users = D_800625A0->tables->gear_accessories[id].users;
+        menu_state_current->details->label4430.width =
+            window_render_text_line(text_get_resource_entry(menu_state_current->details->resources[2], id), pixels, 0x39, 0);
+        price = menu_state_current->tables->gear_accessories[id].price;
+        users = menu_state_current->tables->gear_accessories[id].users;
         break;
     }
     holders = func_801D1078(id, kind);
@@ -1827,73 +1827,73 @@ u32 func_801D3C78(s32 row, s32 top, u8 *dims) {
     rect.h = 13;
     LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
-    func_801C5CA8(&D_800625A0->details->label4430, 0, 0, 0);
-    func_801C51B8(&D_800625A0->details->label4430.polys[D_800625A0->buffer_index], 0x2C, 0x12, 0, 0x4E,
-                  D_800625A0->details->label4430.width, 13);
-    func_801C7604(D_800625A0->details->label4430.verts, 0x2C, 0x12, D_800625A0->details->label4430.width, 13);
-    D_800625A0->details->label4430.buffer = D_800625A0->buffer_index;
-    func_800320E8(pixels);
+    func_801C5CA8(&menu_state_current->details->label4430, 0, 0, 0);
+    func_801C51B8(&menu_state_current->details->label4430.polys[menu_state_current->buffer_index], 0x2C, 0x12, 0, 0x4E,
+                  menu_state_current->details->label4430.width, 13);
+    func_801C7604(menu_state_current->details->label4430.verts, 0x2C, 0x12, menu_state_current->details->label4430.width, 13);
+    menu_state_current->details->label4430.buffer = menu_state_current->buffer_index;
+    heap_free(pixels);
     if (id) {
-        D_800625A0->details->label4430_shown = 1;
+        menu_state_current->details->label4430_shown = 1;
     } else {
-        D_800625A0->details->label4430_shown = 0;
+        menu_state_current->details->label4430_shown = 0;
     }
     i = 0;
     shown = 0;
-    D_800625A0->details->group2D0_count = 0;
+    menu_state_current->details->group2D0_count = 0;
     for (; i < 16; i++) {
-        if (D_800625A0->present[i] != 0) {
-            gear = D_8006D634.characters[i].gearId;
+        if (menu_state_current->present[i] != 0) {
+            gear = game_data.characters[i].gearId;
             if (func_801C527C(users, gear)) {
-                D_800625A0->details->bar_shown[shown] = 1;
+                menu_state_current->details->bar_shown[shown] = 1;
             } else {
-                D_800625A0->details->bar_shown[shown] = 0;
+                menu_state_current->details->bar_shown[shown] = 0;
             }
             if (func_801C527C(holders, gear)) {
-                D_800625A0->details->group2D0_count +=
-                    func_8002675C(D_800625A0->sheet, 0xE,
-                                  &D_800625A0->details->group2D0[D_800625A0->details->group2D0_count * 2],
-                                  D_800625A0->buffer_index, D_801D6C44[shown] + 0xE, 0xB4, 0x1000);
+                menu_state_current->details->group2D0_count +=
+                    sprite_sheet_draw_scaled(menu_state_current->sheet, 0xE,
+                                  &menu_state_current->details->group2D0[menu_state_current->details->group2D0_count * 2],
+                                  menu_state_current->buffer_index, D_801D6C44[shown] + 0xE, 0xB4, 0x1000);
             }
-            D_800625A0->details->cells_a_count[shown] = 0;
-            D_800625A0->details->cells_b_count[shown] = 0;
-            if ((kind == 3 || kind == 4) && D_800625A0->details->bar_shown[shown] != 0) {
+            menu_state_current->details->cells_a_count[shown] = 0;
+            menu_state_current->details->cells_b_count[shown] = 0;
+            if ((kind == 3 || kind == 4) && menu_state_current->details->bar_shown[shown] != 0) {
                 diffs[1] = 0;
                 diffs[0] = 0;
                 func_801D3558(diffs, worse, id, kind, i);
                 if (diffs[0] != 0) {
                     func_801C5298(diffs[0]);
                     for (k = 0, xa = shown * 26 + 0x49; k < 3; k++) {
-                        if (D_800625A0->digits[k + 6] != 0xFF) {
-                            D_800625A0->details->cells_a_count[shown] += func_8002675C(
-                                D_800625A0->sheet, D_800625A0->digits[k + 6],
-                                &D_800625A0->details->cells_a[shown][D_800625A0->details->cells_a_count[shown] * 2],
-                                D_800625A0->buffer_index, xa + k * 8, 0xBE, 0x1000);
+                        if (menu_state_current->digits[k + 6] != 0xFF) {
+                            menu_state_current->details->cells_a_count[shown] += sprite_sheet_draw_scaled(
+                                menu_state_current->sheet, menu_state_current->digits[k + 6],
+                                &menu_state_current->details->cells_a[shown][menu_state_current->details->cells_a_count[shown] * 2],
+                                menu_state_current->buffer_index, xa + k * 8, 0xBE, 0x1000);
                         }
                     }
-                    func_801D0054(D_800625A0->details->cells_a_count[shown], D_800625A0->details->cells_a[shown],
+                    func_801D0054(menu_state_current->details->cells_a_count[shown], menu_state_current->details->cells_a[shown],
                                   worse[0]);
-                    D_800625A0->details->cells_a_buffer[shown] = D_800625A0->buffer_index;
+                    menu_state_current->details->cells_a_buffer[shown] = menu_state_current->buffer_index;
                 }
                 if (diffs[1] != 0) {
                     func_801C5298(diffs[1]);
                     for (k = 0, xb = shown * 26 + 0x49; k < 3; k++) {
-                        if (D_800625A0->digits[k + 6] != 0xFF) {
-                            D_800625A0->details->cells_b_count[shown] += func_8002675C(
-                                D_800625A0->sheet, D_800625A0->digits[k + 6],
-                                &D_800625A0->details->cells_b[shown][D_800625A0->details->cells_b_count[shown] * 2],
-                                D_800625A0->buffer_index, xb + k * 8, 0xC6, 0x1000);
+                        if (menu_state_current->digits[k + 6] != 0xFF) {
+                            menu_state_current->details->cells_b_count[shown] += sprite_sheet_draw_scaled(
+                                menu_state_current->sheet, menu_state_current->digits[k + 6],
+                                &menu_state_current->details->cells_b[shown][menu_state_current->details->cells_b_count[shown] * 2],
+                                menu_state_current->buffer_index, xb + k * 8, 0xC6, 0x1000);
                         }
                     }
-                    func_801D0054(D_800625A0->details->cells_b_count[shown], D_800625A0->details->cells_b[shown],
+                    func_801D0054(menu_state_current->details->cells_b_count[shown], menu_state_current->details->cells_b[shown],
                                   worse[1]);
-                    D_800625A0->details->cells_b_buffer[shown] = D_800625A0->buffer_index;
+                    menu_state_current->details->cells_b_buffer[shown] = menu_state_current->buffer_index;
                 }
             }
             shown++;
         }
     }
-    D_800625A0->details->group2D0_buffer = D_800625A0->buffer_index;
+    menu_state_current->details->group2D0_buffer = menu_state_current->buffer_index;
     func_801D3A80(kind, id);
     return price;
 }
@@ -1911,38 +1911,38 @@ void func_801D44FC(u32 gold) {
     u8 new_item;
 
     func_801CB498(0xD1);
-    party_gold = &D_8006D634.gold;
+    party_gold = &game_data.gold;
     *party_gold = gold;
     if (gold > 9999999) {
         *party_gold = 9999999;
     }
     for (i = 0; i < 0x30; i++) {
-        if (D_800625A0->shop_items[i] != 0 && D_800625A0->details->amounts[i] != 0) {
-            switch (D_800625A0->shop_kinds[i]) {
+        if (menu_state_current->shop_items[i] != 0 && menu_state_current->details->amounts[i] != 0) {
+            switch (menu_state_current->shop_kinds[i]) {
             case 0:
-                D_8006D634.gears[D_801D9084].frame = D_800625A0->shop_items[i];
+                game_data.gears[D_801D9084].frame = menu_state_current->shop_items[i];
                 break;
             case 1:
-                D_8006D634.gears[D_801D9084].engine = D_800625A0->shop_items[i];
+                game_data.gears[D_801D9084].engine = menu_state_current->shop_items[i];
                 break;
             case 2:
-                D_8006D634.gears[D_801D9084].field3 = D_800625A0->shop_items[i];
+                game_data.gears[D_801D9084].field3 = menu_state_current->shop_items[i];
                 break;
             case 4:
                 new_item = 1;
                 for (j = 0; j < 100; j++) {
-                    if (D_8006D634.gearPartIds[j] == D_800625A0->shop_items[i]) {
+                    if (game_data.gearPartIds[j] == menu_state_current->shop_items[i]) {
                         new_item = 0;
-                        if ((D_8006D634.gearPartCounts[j] += D_800625A0->details->amounts[i]) >= 100) {
-                            D_8006D634.gearPartCounts[j] = 99;
+                        if ((game_data.gearPartCounts[j] += menu_state_current->details->amounts[i]) >= 100) {
+                            game_data.gearPartCounts[j] = 99;
                         }
                     }
                 }
                 if (new_item) {
                     for (j = 0; j < 100; j++) {
-                        if (D_8006D634.gearPartIds[j] == 0) {
-                            D_8006D634.gearPartIds[j] = D_800625A0->shop_items[i];
-                            D_8006D634.gearPartCounts[j] = D_800625A0->details->amounts[i];
+                        if (game_data.gearPartIds[j] == 0) {
+                            game_data.gearPartIds[j] = menu_state_current->shop_items[i];
+                            game_data.gearPartCounts[j] = menu_state_current->details->amounts[i];
                             break;
                         }
                     }
@@ -1951,18 +1951,18 @@ void func_801D44FC(u32 gold) {
             case 3:
                 new_item = 1;
                 for (j = 0; j < 150; j++) {
-                    if (D_8006D634.gearAccessoryIds[j] == D_800625A0->shop_items[i]) {
+                    if (game_data.gearAccessoryIds[j] == menu_state_current->shop_items[i]) {
                         new_item = 0;
-                        if ((D_8006D634.gearAccessoryCounts[j] += D_800625A0->details->amounts[i]) >= 100) {
-                            D_8006D634.gearAccessoryCounts[j] = 99;
+                        if ((game_data.gearAccessoryCounts[j] += menu_state_current->details->amounts[i]) >= 100) {
+                            game_data.gearAccessoryCounts[j] = 99;
                         }
                     }
                 }
                 if (new_item) {
                     for (j = 0; j < 150; j++) {
-                        if (D_8006D634.gearAccessoryIds[j] == 0) {
-                            D_8006D634.gearAccessoryIds[j] = D_800625A0->shop_items[i];
-                            D_8006D634.gearAccessoryCounts[j] = D_800625A0->details->amounts[i];
+                        if (game_data.gearAccessoryIds[j] == 0) {
+                            game_data.gearAccessoryIds[j] = menu_state_current->shop_items[i];
+                            game_data.gearAccessoryCounts[j] = menu_state_current->details->amounts[i];
                             break;
                         }
                     }
@@ -1978,19 +1978,19 @@ u8 func_801D4888(s32 index) {
     u8 wanted;
 
     wanted = 1;
-    switch (D_800625A0->shop_kinds[index]) {
+    switch (menu_state_current->shop_kinds[index]) {
     case 0:
-        if (D_8006D634.gears[D_801D9084].frame >= D_800625A0->shop_items[index]) {
+        if (game_data.gears[D_801D9084].frame >= menu_state_current->shop_items[index]) {
             wanted = 0;
         }
         break;
     case 1:
-        if (D_8006D634.gears[D_801D9084].engine >= D_800625A0->shop_items[index]) {
+        if (game_data.gears[D_801D9084].engine >= menu_state_current->shop_items[index]) {
             wanted = 0;
         }
         break;
     case 2:
-        if (D_8006D634.gears[D_801D9084].field3 >= D_800625A0->shop_items[index]) {
+        if (game_data.gears[D_801D9084].field3 >= menu_state_current->shop_items[index]) {
             wanted = 0;
         }
         break;
@@ -2028,7 +2028,7 @@ u8 func_801D498C(u8 page, u8 fit) {
     s32 held_next;
     u8 *stock;
 
-    gold = D_8006D634.gold;
+    gold = game_data.gold;
     running = 1;
     first = 1;
     redraw = 1;
@@ -2045,24 +2045,24 @@ u8 func_801D498C(u8 page, u8 fit) {
     new_gold = gold;
     funds = new_gold;
     for (i = 0; i < 11; i++) {
-        if (D_8006D634.characters[i].gearId != 0xFF) {
-            func_801D6150(D_800625A0->tables, D_8006D634.characters[i].gearId);
-            func_801D5F94(D_800625A0->tables, D_8006D634.characters[i].gearId);
-            D_800625A0->details->attack[i] = D_800625A0->tables->gear.attack;
-            D_800625A0->details->defense[i] = D_800625A0->tables->gear.defense;
+        if (game_data.characters[i].gearId != 0xFF) {
+            func_801D6150(menu_state_current->tables, game_data.characters[i].gearId);
+            func_801D5F94(menu_state_current->tables, game_data.characters[i].gearId);
+            menu_state_current->details->attack[i] = menu_state_current->tables->gear.attack;
+            menu_state_current->details->defense[i] = menu_state_current->tables->gear.defense;
         }
     }
-    bzero(D_800625A0->shop_items, 0x30);
-    bzero(D_800625A0->shop_kinds, 0x30);
-    bzero(D_800625A0->details->amounts, 0x30);
+    bzero(menu_state_current->shop_items, 0x30);
+    bzero(menu_state_current->shop_kinds, 0x30);
+    bzero(menu_state_current->details->amounts, 0x30);
     for (i = 0; i < 20; i++) {
-        stock = (u8 *)D_800625A0->details->stock;
-        stock += (page * 3 + D_800625A0->choice) * 20 + i;
-        D_800625A0->shop_items[i] = *stock;
-        D_800625A0->shop_kinds[i] = page * 3 + D_800625A0->choice;
+        stock = (u8 *)menu_state_current->details->stock;
+        stock += (page * 3 + menu_state_current->choice) * 20 + i;
+        menu_state_current->shop_items[i] = *stock;
+        menu_state_current->shop_kinds[i] = page * 3 + menu_state_current->choice;
     }
-    count = D_801D908C[page * 3 + D_800625A0->choice];
-    D_800625A0->images->dim = 1;
+    count = D_801D908C[page * 3 + menu_state_current->choice];
+    menu_state_current->images->dim = 1;
     func_801C7870(0);
     while (running) {
         func_801CC1C4();
@@ -2078,7 +2078,7 @@ u8 func_801D498C(u8 page, u8 fit) {
             price = func_801D3C78(row, top, dims);
             last_row = row;
             last_top = top;
-            D_800625A0->flags->unknown5a[0] = 1;
+            menu_state_current->flags->unknown5a[0] = 1;
             if (fit) {
                 panel_x = 0xC8;
                 panel_w = 0x70;
@@ -2099,11 +2099,11 @@ u8 func_801D498C(u8 page, u8 fit) {
             func_801C90E0(2, 0xC, 0x2A, 0xC4 - fit * 0x14, 0x74, 0, 1, 4, 1);
             func_801C90E0(3, 0x20, 0xE, 0xFC, 0x14, 0, 1, 4, 0);
             func_801C90E0(5, panel_x, 0x7A, panel_w, 0x24, 0, 1, 4, 0);
-            func_801CCE90(2, D_800625A0->list_labels, D_801D6A2C, D_800625A0->flags->list_labels_shown);
-            func_801CCEE8(2, D_800625A0->list_labels, D_801D6A2C, D_801D6A40, D_800625A0->flags->list_labels_shown,
+            func_801CCE90(2, menu_state_current->list_labels, D_801D6A2C, menu_state_current->flags->list_labels_shown);
+            func_801CCEE8(2, menu_state_current->list_labels, D_801D6A2C, D_801D6A40, menu_state_current->flags->list_labels_shown,
                           fit, 0, 1);
             if (fit) {
-                func_801D2950(D_800625A0->choice + page * 3);
+                func_801D2950(menu_state_current->choice + page * 3);
             }
             func_801D0220();
             func_801D04E8(fit);
@@ -2113,18 +2113,18 @@ u8 func_801D498C(u8 page, u8 fit) {
             func_801D06D8(gold, total, new_gold, credit, fit);
             redraw = 0;
         }
-        switch (D_800625A0->input) {
+        switch (menu_state_current->input) {
         case 4:
             if (total != 0) {
                 func_801CB498(2);
-                D_800625A0->flags->unknown5a[0] = 0;
-                D_800625A0->flags->panels_shown[2] = 0;
-                D_800625A0->flags->panels_shown[3] = 0;
-                D_800625A0->flags->scroll_shown = 0;
-                D_800625A0->flags->cursors_shown[0] = 0;
-                D_800625A0->flags->panels_shown[5] = 0;
+                menu_state_current->flags->unknown5a[0] = 0;
+                menu_state_current->flags->panels_shown[2] = 0;
+                menu_state_current->flags->panels_shown[3] = 0;
+                menu_state_current->flags->scroll_shown = 0;
+                menu_state_current->flags->cursors_shown[0] = 0;
+                menu_state_current->flags->panels_shown[5] = 0;
                 running = 0;
-                D_800625A0->flags->list_labels_shown[fit] = 0;
+                menu_state_current->flags->list_labels_shown[fit] = 0;
                 if (fit) {
                     if (func_801D4888(top + row)) {
                         message = 0xA3;
@@ -2138,19 +2138,19 @@ u8 func_801D498C(u8 page, u8 fit) {
                 func_801CC31C(0);
                 if (func_801CCC18(message, confirm, 1)) {
                     if (fit) {
-                        D_800625A0->details->amounts[top + row] = 1;
+                        menu_state_current->details->amounts[top + row] = 1;
                     }
                     func_801D44FC(new_gold);
                 } else {
                     running = 1;
-                    D_800625A0->flags->panels_shown[2] = 1;
-                    D_800625A0->flags->panels_shown[3] = 1;
-                    D_800625A0->flags->panels_shown[5] = 1;
-                    D_800625A0->flags->list_labels_shown[fit] = 1;
-                    D_800625A0->flags->scroll_shown = 1;
+                    menu_state_current->flags->panels_shown[2] = 1;
+                    menu_state_current->flags->panels_shown[3] = 1;
+                    menu_state_current->flags->panels_shown[5] = 1;
+                    menu_state_current->flags->list_labels_shown[fit] = 1;
+                    menu_state_current->flags->scroll_shown = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->cursors_shown[0] = 1;
+                    menu_state_current->flags->cursors_shown[0] = 1;
                 }
                 func_801CC4DC();
                 confirm = 0xFF;
@@ -2159,26 +2159,26 @@ u8 func_801D498C(u8 page, u8 fit) {
             }
             break;
         case 5:
-            D_800625A0->flags->panels_shown[5] = 0;
+            menu_state_current->flags->panels_shown[5] = 0;
             running = 0;
-            D_800625A0->flags->list_labels_shown[fit] = 0;
+            menu_state_current->flags->list_labels_shown[fit] = 0;
             if (total != 0 && !fit) {
-                D_800625A0->flags->unknown5a[0] = 0;
-                D_800625A0->flags->panels_shown[2] = 0;
-                D_800625A0->flags->panels_shown[3] = 0;
-                D_800625A0->flags->scroll_shown = 0;
-                D_800625A0->flags->cursors_shown[0] = 0;
+                menu_state_current->flags->unknown5a[0] = 0;
+                menu_state_current->flags->panels_shown[2] = 0;
+                menu_state_current->flags->panels_shown[3] = 0;
+                menu_state_current->flags->scroll_shown = 0;
+                menu_state_current->flags->cursors_shown[0] = 0;
                 func_801CC31C(0);
                 if (!func_801CCC18(0x8C, 0xFF, 1)) {
                     running = 1;
-                    D_800625A0->flags->panels_shown[2] = 1;
-                    D_800625A0->flags->panels_shown[3] = 1;
-                    D_800625A0->flags->panels_shown[5] = 1;
-                    D_800625A0->flags->list_labels_shown[0] = 1;
-                    D_800625A0->flags->scroll_shown = 1;
+                    menu_state_current->flags->panels_shown[2] = 1;
+                    menu_state_current->flags->panels_shown[3] = 1;
+                    menu_state_current->flags->panels_shown[5] = 1;
+                    menu_state_current->flags->list_labels_shown[0] = 1;
+                    menu_state_current->flags->scroll_shown = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->cursors_shown[0] = 1;
+                    menu_state_current->flags->cursors_shown[0] = 1;
                 }
                 func_801CC4DC();
             }
@@ -2205,26 +2205,26 @@ u8 func_801D498C(u8 page, u8 fit) {
             break;
         case 0:
             if (dims[row] != 0 && !fit &&
-                D_800625A0->details->amounts[top + row] + (held_next = D_801D904C + 1) < 100) {
+                menu_state_current->details->amounts[top + row] + (held_next = D_801D904C + 1) < 100) {
                 total += price;
                 new_gold -= price;
                 redraw = 1;
-                D_800625A0->details->amounts[top + row]++;
+                menu_state_current->details->amounts[top + row]++;
             }
             break;
         case 2:
-            if (!fit && D_800625A0->details->amounts[top + row] != 0) {
+            if (!fit && menu_state_current->details->amounts[top + row] != 0) {
                 total -= price;
                 new_gold += price;
                 redraw = 1;
-                D_800625A0->details->amounts[top + row] -= 1;
+                menu_state_current->details->amounts[top + row] -= 1;
             }
             break;
         }
     }
-    D_800625A0->details->label45B0_shown = 0;
+    menu_state_current->details->label45B0_shown = 0;
     func_801C9054(5);
-    func_801CCEBC(2, D_800625A0->flags->list_labels_shown);
+    func_801CCEBC(2, menu_state_current->flags->list_labels_shown);
     func_801D0EC8(1);
     return 1;
 }
@@ -2246,9 +2246,9 @@ void func_801D5398(void) {
     message = 0xA6;
     mode = 1;
     confirm = 1;
-    if (D_8006D634.gears[D_801D9084].maxFuel == D_8006D634.gears[D_801D9084].fuel) {
+    if (game_data.gears[D_801D9084].maxFuel == game_data.gears[D_801D9084].fuel) {
         message = 0xB5;
-        if (D_8006D634.gears[D_801D9084].hp == D_8006D634.gears[D_801D9084].maxHp) {
+        if (game_data.gears[D_801D9084].hp == game_data.gears[D_801D9084].maxHp) {
             message = 0xB8;
             mode = 0;
             confirm = 0;
@@ -2256,37 +2256,37 @@ void func_801D5398(void) {
             mode = 2;
         }
     }
-    units = (D_8006D634.gears[D_801D9084].maxFuel - D_8006D634.gears[D_801D9084].fuel) / 100;
+    units = (game_data.gears[D_801D9084].maxFuel - game_data.gears[D_801D9084].fuel) / 100;
     if (units == 0) {
         units = 1;
     }
     price = units * 10;
     func_801C90E0(5, 0xA2, 0xA6, 0x60, 0x14, 0, 1, 4, 0);
-    func_801D0D4C(D_8006D634.gold);
+    func_801D0D4C(game_data.gold);
     if (mode != 0) {
         func_801D0C20(price, 1);
     }
     func_801CC1C4();
     func_801CC31C(0);
     if (func_801CCC18(message, 0xFF, confirm) != 0) {
-        D_800625A0->flags->unknown5a[1] = 0;
+        menu_state_current->flags->unknown5a[1] = 0;
         switch (mode) {
         case 1:
-            if (D_8006D634.gold < price) {
+            if (game_data.gold < price) {
                 if (func_801CCC18(0xA9, 0xFF, 1) != 0) {
-                    if (D_8006D634.gold != 0) {
+                    if (game_data.gold != 0) {
                         done = 1;
                     }
-                    price = D_8006D634.gold / 10;
-                    D_8006D634.gears[D_801D9084].fuel += price * 100;
-                    D_8006D634.gold %= 10;
-                    if (D_8006D634.gears[D_801D9084].maxFuel < D_8006D634.gears[D_801D9084].fuel) {
-                        D_8006D634.gears[D_801D9084].fuel = D_8006D634.gears[D_801D9084].maxFuel;
+                    price = game_data.gold / 10;
+                    game_data.gears[D_801D9084].fuel += price * 100;
+                    game_data.gold %= 10;
+                    if (game_data.gears[D_801D9084].maxFuel < game_data.gears[D_801D9084].fuel) {
+                        game_data.gears[D_801D9084].fuel = game_data.gears[D_801D9084].maxFuel;
                     }
                 }
             } else {
-                D_8006D634.gold -= price;
-                D_8006D634.gears[D_801D9084].fuel = D_8006D634.gears[D_801D9084].maxFuel;
+                game_data.gold -= price;
+                game_data.gears[D_801D9084].fuel = game_data.gears[D_801D9084].maxFuel;
                 done = 1;
             }
             break;
@@ -2296,31 +2296,31 @@ void func_801D5398(void) {
         }
     }
     if (done) {
-        D_8006D634.gears[D_801D9084].hp = D_8006D634.gears[D_801D9084].maxHp;
+        game_data.gears[D_801D9084].hp = game_data.gears[D_801D9084].maxHp;
         func_801CB498(0xD1);
     }
     func_801CC4DC(0);
-    D_800625A0->flags->price_shown = 0;
+    menu_state_current->flags->price_shown = 0;
     func_801C9054(5);
 }
 
 /* Leave the gear list: hide the cursor and labels and the shop list packets. */
 u8 func_801D573C(void) {
-    D_800625A0->flags->sprite_shown = 0;
-    D_800625A0->flags->cursor_shown = 0;
-    func_801CCEBC(4, D_800625A0->flags->list_labels_shown);
+    menu_state_current->flags->sprite_shown = 0;
+    menu_state_current->flags->cursor_shown = 0;
+    func_801CCEBC(4, menu_state_current->flags->list_labels_shown);
     func_801D0EC8(0);
     return 2;
 }
 
 /* Redraw the current gear list: parts (0-2) or the fourth list. */
 void func_801D57A8(void) {
-    switch (D_800625A0->choice) {
+    switch (menu_state_current->choice) {
     case 0:
     case 1:
     case 2:
         func_801D498C(0, 1);
-        func_801D6150(D_800625A0->tables, D_801D9084);
+        func_801D6150(menu_state_current->tables, D_801D9084);
         break;
     case 3:
         func_801D5398();
@@ -2341,46 +2341,46 @@ u8 func_801D5828(void) {
     running = 1;
     first = 1;
     base = 0;
-    if (D_800625A0->cursor == 3 && !func_801D573C()) {
+    if (menu_state_current->cursor == 3 && !func_801D573C()) {
         return 1;
     }
-    D_800625A0->choice = 0;
-    D_800625A0->choice_shown = 0xFF;
-    if (D_800625A0->cursor == 3) {
-        D_800625A0->choice = 3;
+    menu_state_current->choice = 0;
+    menu_state_current->choice_shown = 0xFF;
+    if (menu_state_current->cursor == 3) {
+        menu_state_current->choice = 3;
         base = 4;
     }
     while (running) {
         func_801CC1C4();
-        if (D_800625A0->view_motion == 0 && D_801D6FD8 >= 2) {
-            D_800625A0->flags->marks_shown = 1;
+        if (menu_state_current->view_motion == 0 && D_801D6FD8 >= 2) {
+            menu_state_current->flags->marks_shown = 1;
         }
         if (first) {
-            func_801CCE90(4, D_800625A0->list_labels, &D_801D6A24[base], D_800625A0->flags->list_labels_shown);
+            func_801CCE90(4, menu_state_current->list_labels, &D_801D6A24[base], menu_state_current->flags->list_labels_shown);
             func_801CD564(0);
             first = 0;
         }
-        if (D_800625A0->choice != D_800625A0->choice_shown) {
-            func_801CCEE8(4, D_800625A0->list_labels, &D_801D6A24[base], &D_801D6A40[base],
-                          D_800625A0->flags->list_labels_shown, D_800625A0->choice, 4, 0);
+        if (menu_state_current->choice != menu_state_current->choice_shown) {
+            func_801CCEE8(4, menu_state_current->list_labels, &D_801D6A24[base], &D_801D6A40[base],
+                          menu_state_current->flags->list_labels_shown, menu_state_current->choice, 4, 0);
             func_801CDA0C(0);
-            D_800625A0->choice_shown = D_800625A0->choice;
+            menu_state_current->choice_shown = menu_state_current->choice;
         }
-        if (D_800625A0->gear_screen->lamp_state[0] == 0) {
-            D_800625A0->flags->gear_parts_shown = 1;
-            D_800625A0->flags->gear_shown = 0;
+        if (menu_state_current->gear_screen->lamp_state[0] == 0) {
+            menu_state_current->flags->gear_parts_shown = 1;
+            menu_state_current->flags->gear_shown = 0;
         }
-        switch (D_800625A0->input) {
+        switch (menu_state_current->input) {
         case 4:
-            D_800625A0->flags->sprite_shown = 0;
-            D_800625A0->flags->cursor_shown = 0;
-            D_800625A0->flags->lists_shown = 0;
-            D_800625A0->flags->gear_parts_shown = 0;
-            func_801CCEBC(4, D_800625A0->flags->list_labels_shown);
+            menu_state_current->flags->sprite_shown = 0;
+            menu_state_current->flags->cursor_shown = 0;
+            menu_state_current->flags->lists_shown = 0;
+            menu_state_current->flags->gear_parts_shown = 0;
+            func_801CCEBC(4, menu_state_current->flags->list_labels_shown);
             func_801CB498(2);
             func_801CFC60();
-            D_800625A0->flags->marks_shown = 0;
-            switch (D_800625A0->cursor) {
+            menu_state_current->flags->marks_shown = 0;
+            switch (menu_state_current->cursor) {
             case 1:
                 func_801D2804(1);
                 break;
@@ -2395,25 +2395,25 @@ u8 func_801D5828(void) {
             func_801CC1C4();
             func_801CF448();
             func_801CC1C4();
-            D_800625A0->flags->sprite_shown = 1;
-            D_800625A0->flags->cursor_shown = 1;
-            D_800625A0->flags->lists_shown = 1;
-            func_801CCE90(4, D_800625A0->list_labels, &D_801D6A24[base], D_800625A0->flags->list_labels_shown);
-            D_800625A0->choice_shown = 0xFF;
+            menu_state_current->flags->sprite_shown = 1;
+            menu_state_current->flags->cursor_shown = 1;
+            menu_state_current->flags->lists_shown = 1;
+            func_801CCE90(4, menu_state_current->list_labels, &D_801D6A24[base], menu_state_current->flags->list_labels_shown);
+            menu_state_current->choice_shown = 0xFF;
             break;
         case 5:
             running = 0;
             break;
         case 1:
-            if (D_800625A0->choice != 0) {
-                D_800625A0->choice--;
+            if (menu_state_current->choice != 0) {
+                menu_state_current->choice--;
             } else {
-                D_800625A0->choice = D_800625A0->choice_count - 1;
+                menu_state_current->choice = menu_state_current->choice_count - 1;
             }
             break;
         case 3:
-            if (++D_800625A0->choice >= D_800625A0->choice_count) {
-                D_800625A0->choice = 0;
+            if (++menu_state_current->choice >= menu_state_current->choice_count) {
+                menu_state_current->choice = 0;
             }
             break;
         case 9:
@@ -2424,9 +2424,9 @@ u8 func_801D5828(void) {
             break;
         }
     }
-    D_800625A0->flags->sprite_shown = 0;
-    D_800625A0->flags->cursor_shown = 0;
-    func_801CCEBC(4, D_800625A0->flags->list_labels_shown);
+    menu_state_current->flags->sprite_shown = 0;
+    menu_state_current->flags->cursor_shown = 0;
+    func_801CCEBC(4, menu_state_current->flags->list_labels_shown);
     return 1;
 }
 
@@ -2436,53 +2436,53 @@ void func_801D5D38(void) {
 
     i = 0;
     func_801E738C(0x40);
-    D_800625A0->light.direction.vx = 0x546;
-    D_800625A0->light.direction.vy = -0xE39;
-    D_800625A0->light.direction.vz = 0x546;
-    D_800625A0->light.direction.pad = 0;
-    D_800625A0->light.unknown8[0] = 0;
-    D_800625A0->light.unknown8[1] = 0;
-    D_800625A0->light.unknown8[2] = 0;
-    D_800625A0->light.unknown8[3] = 0;
-    D_800625A0->light.unknown8[4] = 0;
-    D_800625A0->light.colour.m[0][0] = 0x600;
-    D_800625A0->light.colour.m[0][1] = 0;
-    D_800625A0->light.colour.m[0][2] = 0;
-    D_800625A0->light.colour.m[1][0] = 0x600;
-    D_800625A0->light.colour.m[1][1] = 0;
-    D_800625A0->light.colour.m[1][2] = 0;
-    D_800625A0->light.colour.m[2][0] = 0x600;
-    D_800625A0->light.colour.m[2][1] = 0;
-    D_800625A0->light.colour.m[2][2] = 0;
-    D_801E8644 = &D_800625A0->light.colour;
+    menu_state_current->light.direction.vx = 0x546;
+    menu_state_current->light.direction.vy = -0xE39;
+    menu_state_current->light.direction.vz = 0x546;
+    menu_state_current->light.direction.pad = 0;
+    menu_state_current->light.unknown8[0] = 0;
+    menu_state_current->light.unknown8[1] = 0;
+    menu_state_current->light.unknown8[2] = 0;
+    menu_state_current->light.unknown8[3] = 0;
+    menu_state_current->light.unknown8[4] = 0;
+    menu_state_current->light.colour.m[0][0] = 0x600;
+    menu_state_current->light.colour.m[0][1] = 0;
+    menu_state_current->light.colour.m[0][2] = 0;
+    menu_state_current->light.colour.m[1][0] = 0x600;
+    menu_state_current->light.colour.m[1][1] = 0;
+    menu_state_current->light.colour.m[1][2] = 0;
+    menu_state_current->light.colour.m[2][0] = 0x600;
+    menu_state_current->light.colour.m[2][1] = 0;
+    menu_state_current->light.colour.m[2][2] = 0;
+    D_801E8644 = &menu_state_current->light.colour;
     SetBackColor(0x3C, 0x3C, 0x3C);
-    D_800625A0->buffers[0].ot_big = D_8005A4AC[0];
-    D_800625A0->buffers[1].ot_big = D_8005A4AC[1];
-    D_800625A0->model_parts[0] = func_80031BDC(sizeof(ModelParts), 0);
-    bzero((u_char *)D_800625A0->model_parts[0], sizeof(ModelParts));
-    D_800625A0->model_parts[1] = func_80031BDC(sizeof(ModelParts), 0);
-    bzero((u_char *)D_800625A0->model_parts[1], sizeof(ModelParts));
-    while (D_800625A0->present[i] == 0) {
+    menu_state_current->buffers[0].ot_big = menu_state_big_ots[0];
+    menu_state_current->buffers[1].ot_big = menu_state_big_ots[1];
+    menu_state_current->model_parts[0] = heap_alloc(sizeof(ModelParts), 0);
+    bzero((u_char *)menu_state_current->model_parts[0], sizeof(ModelParts));
+    menu_state_current->model_parts[1] = heap_alloc(sizeof(ModelParts), 0);
+    bzero((u_char *)menu_state_current->model_parts[1], sizeof(ModelParts));
+    while (menu_state_current->present[i] == 0) {
         i++;
     }
-    D_801D9084 = D_8006D634.characters[i].gearId;
+    D_801D9084 = game_data.characters[i].gearId;
     func_801CF9BC(D_801D9084, 1);
     func_801D0348();
 }
 
 /* Close the gear model once the view has stopped moving, and release its two blocks. */
 void func_801D5EB8(void) {
-    while (D_800625A0->view_motion != 0) {
+    while (menu_state_current->view_motion != 0) {
         func_801CC1C4();
     }
     D_801D697C = 0;
-    D_800625A0->flags->model_shown = 0;
+    menu_state_current->flags->model_shown = 0;
     func_801CC1C4();
     func_801E7FD4();
-    D_800625A0->model_parts[0]->unk12 = 0;
-    D_800625A0->model_parts[1]->unk12 = 0;
-    func_800320E8(D_800625A0->model_parts[0]);
-    func_800320E8(D_800625A0->model_parts[1]);
+    menu_state_current->model_parts[0]->unk12 = 0;
+    menu_state_current->model_parts[1]->unk12 = 0;
+    heap_free(menu_state_current->model_parts[0]);
+    heap_free(menu_state_current->model_parts[1]);
 }
 
 /*
@@ -2494,11 +2494,11 @@ void func_801D5F94(MenuTables *table, u8 id) {
     CharacterRecord *pilot;
     s32 bonus;
 
-    if (D_8006D634.flags & 0x1000) {
+    if (game_data.flags & 0x1000) {
         D_801D70F4[9] = 10; /* gear 9's pilot */
     }
-    gear = &D_8006D634.gears[id];
-    pilot = &D_8006D634.characters[D_801D70F4[id]];
+    gear = &game_data.gears[id];
+    pilot = &game_data.characters[D_801D70F4[id]];
     table->gear.hp = gear->hp;
     table->gear.max_hp = gear->maxHp;
     table->gear.defense = gear->bodyDefense + gear->equipBodyDefense;
@@ -2534,7 +2534,7 @@ void func_801D61B8(MenuTables *table, u8 id) {
     GearRecord *gear;
     GearEngineInfo *record;
 
-    gear = &D_8006D634.gears[id];
+    gear = &game_data.gears[id];
     record = table->engines;
     record += gear->engine;
     gear->maxHp = record->unk4;
@@ -2553,7 +2553,7 @@ void func_801D6250(MenuTables *table, u8 id) {
     GearRecord *gear;
     GearFrameInfo *entry;
 
-    gear = &D_8006D634.gears[id];
+    gear = &game_data.gears[id];
     entry = table->frames;
     entry += gear->frame;
     gear->bodyDefense = entry->unk8;
@@ -2566,7 +2566,7 @@ void func_801D62A4(MenuTables *table, u8 id) {
     GearPartInfo *record;
     u16 limit;
 
-    gear = &D_8006D634.gears[id];
+    gear = &game_data.gears[id];
     record = table->parts;
     limit = gear->fuel;
     record += gear->field3;
@@ -2589,9 +2589,9 @@ void func_801D6334(MenuTables *table, u8 id) {
     u8 i;
     u8 k;
 
-    gear = &D_8006D634.gears[id];
-    abilities = &D_8006D634.skills[D_801D70F4[id]].unlocksA;
-    status = &D_8006D634.skills[D_801D70F4[id]].flags1A;
+    gear = &game_data.gears[id];
+    abilities = &game_data.skills[D_801D70F4[id]].unlocksA;
+    status = &game_data.skills[D_801D70F4[id]].flags1A;
     gear->equipBodyDefense = 0;
     gear->equipArmor = 0;
     gear->equip68a = 0;
@@ -2676,7 +2676,7 @@ void func_801D6334(MenuTables *table, u8 id) {
     gear->speedPenalty = func_801D690C(id);
     if (gear->field4F != 0) {
         *status |= 0x8000;
-    } else if (id == D_8006D634.characters[D_801D70F4[id]].gearId) {
+    } else if (id == game_data.characters[D_801D70F4[id]].gearId) {
         *status &= 0x7FFF;
     }
 }
@@ -2686,7 +2686,7 @@ void func_801D6738(MenuTables *table, u8 id) {
     GearRecord *gear;
     GearWeaponInfo *weapon;
 
-    gear = &D_8006D634.gears[id];
+    gear = &game_data.gears[id];
     weapon = table->gear_weapons;
     weapon += gear->weapons[0];
     gear->entries[0].valueE = weapon->unkE;
@@ -2731,7 +2731,7 @@ u8 func_801D690C(u8 id) {
     GearRecord *gear;
     s16 value;
 
-    gear = &D_8006D634.gears[id];
+    gear = &game_data.gears[id];
     value = ((u16)(gear->equip68a / 120) - gear->field75) / 2;
     if (value < 0) {
         value = 0;

@@ -1,9 +1,9 @@
 /* ovl3386: a battle module at 0x801fc000. The battle overlay's 800beb04 loads
  * the current battle's module into 0x801fc000..0x80200000 (the slot above the
- * resident heap, which the boot code bounds at 0x801fc000): file (D_800591B3
- * + 2) of the battle directory, D_800591B3 being the platform bits (6..11) of
+ * resident heap, which the boot code bounds at 0x801fc000): file (sprite_requested_battle_module
+ * + 2) of the battle directory, sprite_requested_battle_module being the platform bits (6..11) of
  * the directory header of battle file 2, whenever they differ from the loaded
- * module's (D_800591B2). Battle script opcodes call fixed entry addresses in
+ * module's (sprite_loaded_battle_module). Battle script opcodes call fixed entry addresses in
  * the loaded module: this one provides 801fc6fc, called by the opcode handler
  * 800b3f04, which holds an actor in place and draws its sprite as a scrolling
  * row.
@@ -86,12 +86,12 @@ u8 func_801FC110(SpritePart *cell, s32 count, s32 x, s32 y, Sprite *actor) {
     s32 i;
 
     memset(quad, 0, sizeof(quad));
-    if ((u8 *)D_80059580 + count * sizeof(POLY_FT4) >= D_80059534) {
+    if ((u8 *)sprite_queue_next_free + count * sizeof(POLY_FT4) >= sprite_queue_block_end) {
         return; /* no value (a bug in the original: v0 keeps the failed test's 0) */
     }
     for (i = 0; i != count; i++, cell++) {
-        prim = (POLY_FT4 *)D_80059580;
-        D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(POLY_FT4));
+        prim = (POLY_FT4 *)sprite_queue_next_free;
+        sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + sizeof(POLY_FT4));
         ((P_TAG *)prim)->len = 9;
         *(u32 *)&prim->r0 = cell->colour;
         prim->tpage = cell->tpage;
@@ -147,7 +147,7 @@ u8 func_801FC110(SpritePart *cell, s32 count, s32 x, s32 y, Sprite *actor) {
         }
         depth = RotAverage4(&quad[0], &quad[1], &quad[2], &quad[3], (long *)&prim->x0,
                             (long *)&prim->x1, (long *)&prim->x3, (long *)&prim->x2, &p, &flag) >>
-                D_80050100;
+                model_ot_depth_shift;
         depth += actor->half30;
         if (flag & 0x8000) {
             continue;
@@ -167,7 +167,7 @@ u8 func_801FC110(SpritePart *cell, s32 count, s32 x, s32 y, Sprite *actor) {
         prim->v2 = v + dv;
         prim->u3 = u + du;
         prim->v3 = v + dv;
-        addPrim((u32 *)D_8005956C + depth, prim);
+        addPrim((u32 *)sprite_ot + depth, prim);
         if (((u16)(prim->x0 - 1) < 319 && (u16)(prim->y0 - 1) < 223) ||
             ((u16)(prim->x1 - 1) < 319 && (u16)(prim->y1 - 1) < 223) ||
             ((u16)(prim->x2 - 1) < 319 && (u16)(prim->y2 - 1) < 223) ||
@@ -198,12 +198,12 @@ void func_801FC5C4(Task *node) {
     actor->y = scroll->position[1];
     actor->z = scroll->position[2];
     count = func_801FC000(actor, &width, &height, &bounds);
-    func_80022038(actor);
+    sprite_update_orientation(actor);
     position.vx = actor->x >> 16;
     position.vy = actor->y >> 16;
     position.vz = actor->z >> 16;
     TransMatrix(&actor->renderer->matrix, &position);
-    CompMatrix(&D_8004FBB8, &actor->renderer->matrix, &matrix);
+    CompMatrix(&sprite_view_matrix, &actor->renderer->matrix, &matrix);
     SetRotMatrix(&matrix);
     SetTransMatrix(&matrix);
     x = (s16)(scroll->scroll >> 16) % width - width;
@@ -218,7 +218,7 @@ void func_801FC5C4(Task *node) {
 void func_801FC6FC(Sprite *actor) {
     ScrollTask *scroll;
 
-    scroll = (ScrollTask *)func_8001D1D8(sizeof(ScrollTask), actor->block, func_801FC0EC, func_801FC5C4, NULL);
+    scroll = (ScrollTask *)task_alloc_two_node_task(sizeof(ScrollTask), actor->block, func_801FC0EC, func_801FC5C4, NULL);
     scroll->actor = actor;
     actor->motion.word |= 0x20;
     scroll->scroll = 0;

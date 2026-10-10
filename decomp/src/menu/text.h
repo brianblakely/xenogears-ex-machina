@@ -24,7 +24,7 @@ typedef struct {
 
 extern Glyph D_80091230[]; /* menu font glyphs: digits, capitals, punctuation */
 extern s32 D_800912DC;     /* text width scale (0x100 = 1) */
-extern s32 D_80092880;     /* the menu's message table (func_80033728) */
+extern s32 D_80092880;     /* the menu's message table (text_get_resource_entry) */
 
 void func_8007E528(s32 state);
 void func_8007E574(void *ot);

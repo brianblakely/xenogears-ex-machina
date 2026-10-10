@@ -15,8 +15,8 @@
  * (800C06E4-800C08CC, 800C0F70-800C11CC). The late units address the battle
  * area from D_800C3EB0 as one aggregate, BattleArea (battle/area.h). */
 
-/* The battle's sprite source (resident D_8006BE10). */
-#define SPRITE_SOURCE ((SpriteSource *)D_8006BE10)
+/* The battle's sprite source (resident sprite_shared_source). */
+#define SPRITE_SOURCE ((SpriteSource *)sprite_shared_source)
 
 extern s32 D_800C37D0;    /* frame loop nesting */
 extern u8 D_800C3780;     /* a slot's sprite commands run */

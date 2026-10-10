@@ -94,21 +94,21 @@ void func_801E5160(void) {
 
     func_800716D8();
     func_8008AB4C();
-    archive = func_8008ABB8(func_800288EC(2), 1);
+    archive = func_8008ABB8(cd_get_aligned_file_size(2), 1);
     files[0].file = 2;
     files[0].destination = archive;
-    D_801E9C38 = func_8008ABB8(func_800288EC(3), 0);
+    D_801E9C38 = func_8008ABB8(cd_get_aligned_file_size(3), 0);
     files[1].file = 3;
     files[1].destination = D_801E9C38;
     files[2].file = 0;
     files[2].destination = NULL;
-    func_80029AFC(files, 0, 0x80);
+    cd_read_file_list(files, 0, 0x80);
     func_8008AC50();
-    func_8003342C(archive);
-    func_8003342C(D_801E9C38);
-    script = func_80032E88(((ScriptSet *)((u8 *)archive + D_8006F9DC.scriptSet * 8))->script, 0);
-    D_800D3340 = func_80032E88(((ScriptSet *)((u8 *)archive + D_8006F9DC.scriptSet * 8))->data, 0);
-    func_800320E8(archive);
+    text_relocate_offset_table(archive);
+    text_relocate_offset_table(D_801E9C38);
+    script = text_unpack_lzss_alloc(((ScriptSet *)((u8 *)archive + formation_active.scriptSet * 8))->script, 0);
+    D_800D3340 = text_unpack_lzss_alloc(((ScriptSet *)((u8 *)archive + formation_active.scriptSet * 8))->data, 0);
+    heap_free(archive);
     D_800D3278 = func_8008ABB8(sizeof(ScriptState), 0);
     bzero((u8 *)D_800D3278, sizeof(ScriptState));
     D_800D2DAC = func_8008ABB8(0x98, 0);
@@ -153,11 +153,11 @@ void func_801E5160(void) {
     }
     D_800D3278->musicPlaying = 0;
     func_8008AB4C();
-    D_800D3278->soundBank = func_8008ABB8(func_800288EC(4), 0);
-    func_800295D8(4, D_800D3278->soundBank, 0, 0x80);
+    D_800D3278->soundBank = func_8008ABB8(cd_get_aligned_file_size(4), 0);
+    cd_read_file(4, D_800D3278->soundBank, 0, 0x80);
     func_8008AC50();
-    func_80038428(D_800D3278->soundBank);
-    func_8003BDFC(0x10);
+    sound_add_effect_bank(D_800D3278->soundBank);
+    sound_sync_transfer(0x10);
     D_800D3278->soundBankLoaded = 1;
     D_800C4924 = D_800D3278->soundBank;
     func_800BFBA0();
@@ -168,24 +168,24 @@ void func_801E5160(void) {
 s32 func_801E563C(void) {
     s32 musicWasPlaying;
 
-    func_800320E8(D_800D3278);
+    heap_free(D_800D3278);
     musicWasPlaying = 0;
-    func_800320E8(D_800D2DAC);
-    func_800320E8(D_800D39D0);
-    func_800320E8(D_800D3340);
-    func_800320E8(D_801E9C38);
+    heap_free(D_800D2DAC);
+    heap_free(D_800D39D0);
+    heap_free(D_800D3340);
+    heap_free(D_801E9C38);
     if (D_800D3278->musicPlaying != 0) {
         musicWasPlaying = 1;
-        func_80039C4C((SoundSeq *)D_800C3E54);
+        sound_stop_seq((SoundSeq *)D_800C3E54);
         func_800716D8();
-        func_800399D4((SoundSeq *)D_800C3E54);
+        sound_release_seq((SoundSeq *)D_800C3E54);
         func_800716D8();
     }
     if (D_800D3278->soundBankLoaded != 0) {
-        func_8003A094(D_800D3278->soundBank);
-        func_8003852C(D_800D3278->soundBank);
+        sound_stop_bank_effects(D_800D3278->soundBank);
+        sound_remove_effect_bank(D_800D3278->soundBank);
         func_800716D8();
-        func_800320E8(D_800D3278->soundBank);
+        heap_free(D_800D3278->soundBank);
         D_800D3278->soundBankLoaded = 0;
     }
     return musicWasPlaying;
@@ -585,9 +585,9 @@ void func_801E6750(u8 actor, s32 flags, s32 x, s32 y, s32 width) {
     s32 file = D_801E9B5C[actor * 2 + mirrored] + 0x46;
     void *data;
 
-    func_80028470(4, 0);
-    data = func_8008ABB8(func_800288EC(file), 1);
-    func_800295D8(file, data, 0, 0x80);
+    cd_select_directory(4, 0);
+    data = func_8008ABB8(cd_get_aligned_file_size(file), 1);
+    cd_read_file(file, data, 0, 0x80);
     func_8008AC50();
     OpenTIM(data);
     ReadTIM(&tim);
@@ -598,7 +598,7 @@ void func_801E6750(u8 actor, s32 flags, s32 x, s32 y, s32 width) {
     LoadImage(tim.crect, tim.caddr);
     LoadImage(tim.prect, tim.paddr);
     DrawSync(0);
-    func_800320E8(data);
+    heap_free(data);
     if (mirrored) {
         setXY4(&D_800D3278->quads[D_800CCB04.buffer], x + width - 4, y + 4, x + width - 0x44, y + 4,
                x + width - 4, y + 0x44, x + width - 0x44, y + 0x44);
@@ -676,12 +676,12 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
         }
         D_801E9C34 = y + 8;
         D_801E9C30 = x + 12;
-        func_80032F54(D_800D2DAC, 0x380, 0x100, D_801E9C30, D_801E9C34, D_800D3278->window[2] * 3,
+        window_open(D_800D2DAC, 0x380, 0x100, D_801E9C30, D_801E9C34, D_800D3278->window[2] * 3,
                       D_800D3278->window[3]);
         *(u8 *)&D_800D2DAC->tile[1] = 4;
         D_800D2DAC->flags |= 2;
-        func_80034614(D_800D2DAC);
-        func_80034714(D_800D2DAC, (s32)func_80033728(D_800D3340, message));
+        window_reset_if_idle(D_800D2DAC);
+        window_queue_message(D_800D2DAC, (s32)text_get_resource_entry(D_800D3340, message));
         D_800D2D28->messageShown = 1;
         D_800D3278->windowOpen = 1;
         func_800716D8();
@@ -692,14 +692,14 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
         }
         D_800D2D28->waitingCross = 1;
         if (D_800D3014 == 4) {
-            func_800345E0(D_800D2DAC);
+            window_end_wait(D_800D2DAC);
             D_800D2D28->waitingCross = 0;
             D_800D2D28->cursorShown = 0;
         }
     }
     if (!(D_800D2DAC->flags & 4)) {
         D_800D2D28->messageShown = 0;
-        func_800346D4(D_800D2DAC);
+        window_close(D_800D2DAC);
         func_800716D8();
         D_800D2D28->scriptPortraitShown = 0;
         if (!(flags & 8)) {
@@ -786,7 +786,7 @@ s32 func_801E73D4(s32 thread, u8 *insn) {
 /* Opcode 49 (3 bytes): 8005942c = signed operand a. */
 s32 func_801E7424(s32 thread, u8 *insn) {
     func_801E57F8(insn, 1, 0, 1);
-    D_8005942C = D_800D3278->operands[0];
+    mode_battle_return_fade = D_800D3278->operands[0];
     return 3;
 }
 
@@ -872,8 +872,8 @@ s32 func_801E7684(s32 thread, u8 *insn) {
  * 8001b6c4) takes formation a of the same encounter set (80070f40). */
 s32 func_801E7700(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, 0, 1);
-    D_8005947C = D_800D3278->operands[0] + 1;
-    D_8005954C = D_800D3278->operands[1];
+    mode_pending_battle_formation = D_800D3278->operands[0] + 1;
+    mode_battle_kind = D_800D3278->operands[1];
     return 5;
 }
 
@@ -887,11 +887,11 @@ s32 func_801E775C(s32 thread, u8 *insn) {
  * state word 8004f30c (8001ac94). */
 s32 func_801E7770(s32 thread, u8 *insn) {
     func_801E57F8(insn, 4, 0, 1);
-    D_8006D634.map = D_800D3278->operands[0];
-    D_8006D634.entry[0] = D_800D3278->operands[1];
-    D_8006D634.entry[1] = D_800D3278->operands[2];
-    D_8006D634.entry[2] = D_800D3278->operands[3];
-    func_8001AC94();
+    game_data.map = D_800D3278->operands[0];
+    game_data.entry[0] = D_800D3278->operands[1];
+    game_data.entry[1] = D_800D3278->operands[2];
+    game_data.entry[2] = D_800D3278->operands[3];
+    mode_clear_field_return();
     return 9;
 }
 
@@ -899,12 +899,12 @@ s32 func_801E7770(s32 thread, u8 *insn) {
  * 800d3338 = 1; 80062514 = d. */
 s32 func_801E77E4(s32 thread, u8 *insn) {
     func_801E57F8(insn, 4, 0, 1);
-    (&D_8004FE44)[0] = D_800D3278->operands[0] | 0x80;
-    (&D_8004FE44)[1] = D_800D3278->operands[1];
-    (&D_8004FE44)[2] = 1;
-    (&D_8004FE44)[3] = D_800D3278->operands[2];
+    (&cd_movie_request_kind)[0] = D_800D3278->operands[0] | 0x80;
+    (&cd_movie_request_kind)[1] = D_800D3278->operands[1];
+    (&cd_movie_request_kind)[2] = 1;
+    (&cd_movie_request_kind)[3] = D_800D3278->operands[2];
     D_800D3338 = 1;
-    D_80062514 = D_800D3278->operands[3];
+    cd_movie_request_last_frame = D_800D3278->operands[3];
     return 9;
 }
 
@@ -938,7 +938,7 @@ s32 func_801E7914(s32 thread, u8 *insn) {
     func_801E57F8(insn, 2, 0, 1);
     slot = (u8)(D_800D3278->operands[0] + 13);
     if (D_800D3278->threads[slot].modelLoaded == 0) {
-        file = func_80032E88(D_801E9C38->entries[D_800D3278->operands[1]], 0);
+        file = text_unpack_lzss_alloc(D_801E9C38->entries[D_800D3278->operands[1]], 0);
         D_800D3278->threads[slot].modelFile = file;
         D_800D3278->threads[slot].model = func_801E9978(file, info);
         D_800D3278->threads[slot].modelLoaded = 1;
@@ -967,7 +967,7 @@ void func_801E7A5C(s32 thread, u8 *insn) {
     slot = (u8)(D_800D3278->operands[0] + 13);
     if (D_800D3278->threads[slot].modelLoaded != 0) {
         func_801E9AD4(D_800D3278->threads[slot].model);
-        func_800320E8(D_800D3278->threads[slot].modelFile);
+        heap_free(D_800D3278->threads[slot].modelFile);
         D_800D3278->threads[slot].modelLoaded = 0;
     }
 }
@@ -1031,26 +1031,26 @@ s32 func_801E7C0C(s32 thread, u8 *insn) {
 void func_801E7CD0(s16 music, u8 volume) {
     s32 size;
 
-    func_8001B66C();
+    mode_stop_music();
     if (D_800D3278->musicPlaying != 0) {
-        func_800399D4((SoundSeq *)D_800C3E54);
+        sound_release_seq((SoundSeq *)D_800C3E54);
         func_800716D8();
     }
     func_8008AB70();
-    size = func_800288EC(music + 4);
-    D_800D3278->music = D_80062648;
-    func_800295D8(music + 4, D_80062648, 0, 0x80);
+    size = cd_get_aligned_file_size(music + 4);
+    D_800D3278->music = mode_music_buffer;
+    cd_read_file(music + 4, mode_music_buffer, 0, 0x80);
     func_8008AC50();
-    memmove(D_80062648, D_800D3278->music, size);
+    memmove(mode_music_buffer, D_800D3278->music, size);
     D_800D3278->musicPlaying = 1;
     D_800D3278->musicId = music;
     D_800D3278->musicVolume = volume;
-    D_800C3E54 = func_800397FC(D_80062648, volume, 0);
+    D_800C3E54 = sound_create_and_play_seq(mode_music_buffer, volume, 0);
 }
 
 /* Fade the music to a volume. */
 void func_801E7DE4(s32 volume, s32 time) {
-    func_8003A89C((SoundSeq *)D_800C3E54, volume, time);
+    sound_set_seq_fade((SoundSeq *)D_800C3E54, volume, time);
 }
 
 /* Opcode 2d (3 bytes): start music a (file a + 4; signed operand) at full
@@ -1099,9 +1099,9 @@ s32 func_801E7F70(s32 thread, u8 *insn) {
     if (D_800D3278->operands[3] == 0) {
         bank = D_800D3278->soundBank;
     } else {
-        bank = (SoundBank *)D_8005919C;
+        bank = (SoundBank *)sprite_script_sound_bank;
     }
-    func_80039F18((bank->id << 16) | D_800D3278->operands[0], D_800D3278->operands[1],
+    sound_play_effect_volume_pan((bank->id << 16) | D_800D3278->operands[0], D_800D3278->operands[1],
                   D_800D3278->operands[2]);
     return 9;
 }
@@ -1115,9 +1115,9 @@ s32 func_801E7FF4(s32 thread, u8 *insn) {
     if (D_800D3278->operands[2] == 0) {
         bank = D_800D3278->soundBank;
     } else {
-        bank = (SoundBank *)D_8005919C;
+        bank = (SoundBank *)sprite_script_sound_bank;
     }
-    func_8003A2E4((bank->id << 16) | D_800D3278->operands[0], D_800D3278->operands[1]);
+    sound_set_effect_volume((bank->id << 16) | D_800D3278->operands[0], D_800D3278->operands[1]);
     return 7;
 }
 
@@ -1129,9 +1129,9 @@ s32 func_801E8074(s32 thread, u8 *insn) {
 /* Opcode 33 (1 byte): stop the music. */
 s32 func_801E807C(s32 thread, u8 *insn) {
     if (D_800D3278->musicPlaying != 0) {
-        func_80039C4C((SoundSeq *)D_800C3E54);
+        sound_stop_seq((SoundSeq *)D_800C3E54);
         func_800716D8();
-        func_800399D4((SoundSeq *)D_800C3E54);
+        sound_release_seq((SoundSeq *)D_800C3E54);
         D_800D3278->musicPlaying = 0;
     }
     return 1;
@@ -1149,7 +1149,7 @@ s32 func_801E80E8(s32 thread, u8 *insn) {
  * bytes. */
 s32 func_801E80F0(s32 thread, u8 *insn) {
     D_800CCCE8.records[0].pilot.gearId = 0;
-    D_8006D634.characters[0].gearId = 0;
+    game_data.characters[0].gearId = 0;
     func_80088490(0);
     func_800BAF48(0);
     D_800C3EAC->reaction[0] = 1;
@@ -1247,7 +1247,7 @@ s32 func_801E84A4(s32 thread, u8 *insn) {
         D_800D3278->actionRunning[attacker] = 1;
         D_801E9C20[attacker] = 1;
         func_801E9894(attacker, target);
-        while (func_800286CC() != 0) {
+        while (cd_get_pending_read_count() != 0) {
             func_800716D8();
         }
         func_801E9430(attacker, D_800D3278->operands[2]);

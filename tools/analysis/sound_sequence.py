@@ -1,23 +1,23 @@
 """Sound sequence bytecode of the resident sound driver, from the recovered C.
 
-The interpreter is func_8003C6E8 (decomp/src/resident/sound.c). A byte below
+The interpreter is sound_seq_interpret_channels (decomp/src/resident/sound.c). A byte below
 0x80 is a note: it sets the channel volume (byte << 8) and is followed by an
-encoded key byte k, indexing D_80050A94 (semitone, k // 19) and D_800509B0
+encoded key byte k, indexing sound_note_semitones (semitone, k // 19) and sound_note_durations
 (ticks, DURATIONS[k % 19]; 0 means a third byte holds the ticks). Bytes
-0x80-0xFF call D_80050624[op - 0x80](position, sequence, channel), which
+0x80-0xFF call sound_seq_opcode_handlers[op - 0x80](position, sequence, channel), which
 returns the next position. The look-ahead that decides whether the note before
-the next one is released steps over opcodes by D_80050824 instead of executing
+the next one is released steps over opcodes by sound_seq_opcode_lengths instead of executing
 them; LOOKAHEAD records that table where it differs from what the handler
 consumes. Every entry of OPCODES names the handler it was read from.
 
 Scripts: music sequences ("smds", SoundSeqHeader: channel data offsets at
-+0x22, read by func_8003B424) and sound effect banks ("seds", SoundBank: two
-channel offsets per effect at +0x20, read by func_8003B644; func_8003F614
++0x22, read by sound_start_seq_channels) and sound effect banks ("seds", SoundBank: two
+channel offsets per effect at +0x20, read by sound_start_effect; sound_check_file
 accepts a bank only with a zero word sum and version 0x101 at +0xC). The
-driver never validates sequence headers (func_8003F67C returns 0).
+driver never validates sequence headers (sound_check_seq_header returns 0).
 
 The sweep also counts the operand-indexed tables of this machine: the
-modulator waves D_800508A4[mode & 0xF] that D9/E5/ED (with a nonzero rate and
+modulator waves sound_modulator_waves[mode & 0xF] that D9/E5/ED (with a nonzero rate and
 depth) and F0 install, and F0's index into the channel's modulator[4].
 
     python3 -m tools.analysis.sound_sequence --sweep      # both discs, aggregate only
@@ -47,10 +47,10 @@ REPEAT = "repeat"  # 0x98: opens a repeat
 REPEAT_END = "repeat_end"  # 0x99: back to the repeat start while passes remain
 REPEAT_BREAK = "repeat_break"  # 0x9A: to the repeat end on the last pass
 
-UNUSED_HANDLER = 0x8003CD00  # func_8003CD00 returns its argument; D_80050824 gives 0
-# Note ticks: D_800509B0[k] = DURATIONS[k % 19] for k < 228 (0: a third byte).
+UNUSED_HANDLER = 0x8003CD00  # sound_seq_unused_opcode returns its argument; sound_seq_opcode_lengths gives 0
+# Note ticks: sound_note_durations[k] = DURATIONS[k % 19] for k < 228 (0: a third byte).
 DURATIONS = (0, 192, 144, 96, 72, 64, 48, 36, 32, 24, 18, 16, 12, 9, 8, 6, 4, 3, 2)
-NOTE_KEYS = 12 * len(DURATIONS)  # 228 entries in D_800509B0 and D_80050A94
+NOTE_KEYS = 12 * len(DURATIONS)  # 228 entries in sound_note_durations and sound_note_semitones
 
 KINDS = {"u8": 1, "s8": 1, "x8": 1, "u16": 2, "s16be": 2}
 
@@ -60,7 +60,7 @@ class Opcode:
     code: int
     mnemonic: str
     operands: tuple[str, ...]  # "name:kind"; u16 is little-endian, x8 is ignored
-    handler: int  # D_80050624 entry
+    handler: int  # sound_seq_opcode_handlers entry
     effect: str
     flow: str = NEXT
 
@@ -73,7 +73,7 @@ def _op(code, mnemonic, operands, handler, effect, flow=NEXT):
     return Opcode(code, mnemonic, tuple(operands), handler, effect, flow)
 
 
-# Each entry: the handler (D_80050624[code - 0x80]) and what its C does.
+# Each entry: the handler (sound_seq_opcode_handlers[code - 0x80]) and what its C does.
 OPCODES = {
     op.code: op
     for op in (
@@ -551,7 +551,7 @@ OPCODES = {
     )
 }
 
-# D_80050824 where the look-ahead steps differently from the handler: the
+# sound_seq_opcode_lengths where the look-ahead steps differently from the handler: the
 # unused slots step 0 (the look-ahead would never leave them), 9D and F5 one
 # byte more than they consume.
 LOOKAHEAD = {0x9D: 4, 0xF5: 2}
@@ -563,7 +563,7 @@ def lookahead_length(code: int) -> int:
     return LOOKAHEAD.get(code, OPCODES[code].length)
 
 
-# D_800508A4 (sound.c): the modulator wave of each shape, 16 slots indexed by
+# sound_modulator_waves (sound.c): the modulator wave of each shape, 16 slots indexed by
 # mode & 0xF (8-15 switch the modulator off). D9/E5/ED install one only with a
 # nonzero rate and depth; F0 always, in modulator[index] of the channel
 # (SoundSeqChannel.modulator[4], sound.h).
@@ -573,7 +573,7 @@ MODULATORS = 4
 
 
 def installed_wave(instruction) -> int | None:
-    """The D_800508A4 index the instruction's handler installs, if any."""
+    """The sound_modulator_waves index the instruction's handler installs, if any."""
     if instruction.code not in WAVE_OPCODES:
         return None
     values = dict(instruction.operands)
@@ -664,7 +664,7 @@ def _u16(data: bytes, offset: int) -> int:
 
 
 def word_sum(data: bytes, size: int) -> int:
-    """func_8003F684: the sum of the file's (size + 3) / 4 words."""
+    """sound_sum_file_words: the sum of the file's (size + 3) / 4 words."""
     count = (size + 3) // 4
     return sum(struct.unpack_from(f"<{count}I", data.ljust(count * 4, b"\0"))) & 0xFFFFFFFF
 
@@ -712,7 +712,7 @@ def parse_bank(data: bytes) -> Script:
 
 def locate(container: bytes) -> tuple[list[tuple[int, Script]], Counter]:
     """Scripts at word-aligned magics: banks the driver would accept
-    (func_8003F614), sequences whose header fits."""
+    (sound_check_file), sequences whose header fits."""
     found, rejected = [], Counter()
     for magic in (b"smds", b"seds"):
         position = container.find(magic)
@@ -736,10 +736,10 @@ def locate(container: bytes) -> tuple[list[tuple[int, Script]], Counter]:
 
 
 # Original tables in the boot program, checked against this module.
-D_80050624 = 0x80050624  # opcode handlers
-D_80050824 = 0x80050824  # look-ahead lengths
-D_800509B0 = 0x800509B0  # key -> ticks
-D_80050A94 = 0x80050A94  # key -> semitone
+sound_seq_opcode_handlers = 0x80050624  # opcode handlers
+sound_seq_opcode_lengths = 0x80050824  # look-ahead lengths
+sound_note_durations = 0x800509B0  # key -> ticks
+sound_note_semitones = 0x80050A94  # key -> semitone
 
 
 def exe_bytes(exe: bytes, address: int, size: int) -> bytes:
@@ -750,19 +750,19 @@ def exe_bytes(exe: bytes, address: int, size: int) -> bytes:
 def check_driver_tables(exe: bytes) -> list[str]:
     """Differences between the boot program's tables and this module."""
     problems = []
-    handlers = struct.unpack("<128I", exe_bytes(exe, D_80050624, 512))
-    lengths = exe_bytes(exe, D_80050824, 128)
+    handlers = struct.unpack("<128I", exe_bytes(exe, sound_seq_opcode_handlers, 512))
+    lengths = exe_bytes(exe, sound_seq_opcode_lengths, 128)
     for code in range(0x80, 0x100):
         expected = OPCODES[code].handler if code in OPCODES else UNUSED_HANDLER
         if handlers[code - 0x80] != expected:
             problems.append(
-                f"D_80050624[{code:#x}] = {handlers[code - 0x80]:08x}, module {expected:08x}"
+                f"sound_seq_opcode_handlers[{code:#x}] = {handlers[code - 0x80]:08x}, module {expected:08x}"
             )
         if lengths[code - 0x80] != lookahead_length(code):
             problems.append(
-                f"D_80050824[{code:#x}] = {lengths[code - 0x80]}, module {lookahead_length(code)}"
+                f"sound_seq_opcode_lengths[{code:#x}] = {lengths[code - 0x80]}, module {lookahead_length(code)}"
             )
-    ticks, semitones = exe_bytes(exe, D_800509B0, NOTE_KEYS), exe_bytes(exe, D_80050A94, NOTE_KEYS)
+    ticks, semitones = exe_bytes(exe, sound_note_durations, NOTE_KEYS), exe_bytes(exe, sound_note_semitones, NOTE_KEYS)
     for key in range(NOTE_KEYS):
         if ticks[key] != DURATIONS[key % 19] or semitones[key] != key // 19:
             problems.append(f"note tables differ at key {key:#x}")
@@ -784,7 +784,7 @@ class Sweep:
     unreferenced_errors: list = field(default_factory=list)
     table_problems: list = field(default_factory=list)
     disc_codes: dict = field(default_factory=dict)  # disc -> opcodes its scripts use
-    waves: Counter = field(default_factory=Counter)  # (opcode, D_800508A4 index) installed
+    waves: Counter = field(default_factory=Counter)  # (opcode, sound_modulator_waves index) installed
     modulators: Counter = field(default_factory=Counter)  # F0's modulator indices
 
     def add(self, where: str, script: Script) -> set:
@@ -916,7 +916,7 @@ def sweep() -> Sweep:
 def report(result: Sweep) -> str:
     lines = ["sound sequence sweep (both discs)"]
     lines.append(
-        "  driver tables (D_80050624/D_80050824/D_800509B0/D_80050A94) vs module: "
+        "  driver tables (sound_seq_opcode_handlers/sound_seq_opcode_lengths/sound_note_durations/sound_note_semitones) vs module: "
         + ("match" if not result.table_problems else f"{len(result.table_problems)} differences")
     )
     lines += [f"    {p}" for p in result.table_problems]
@@ -945,7 +945,7 @@ def report(result: Sweep) -> str:
         lines.append(f"    {code:02x} {OPCODES[code].mnemonic}: {result.uses[code]}")
     unused = [f"{code:02x}" for code in sorted(OPCODES) if code not in result.uses]
     lines.append(f"  defined but unused: {' '.join(unused)}")
-    lines.append(f"  modulator waves installed (D_800508A4[mode & 0xf], {WAVE_SLOTS} slots):")
+    lines.append(f"  modulator waves installed (sound_modulator_waves[mode & 0xf], {WAVE_SLOTS} slots):")
     for code in WAVE_OPCODES:
         shapes = {shape: n for (op, shape), n in sorted(result.waves.items()) if op == code}
         text = " ".join(f"{shape}:{n}" for shape, n in shapes.items()) or "none"

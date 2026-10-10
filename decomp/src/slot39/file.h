@@ -162,12 +162,12 @@ typedef struct SaveData {
 } SaveData;
 
 /* The 31 names at the start of the game data (encoded in the save). */
-#define GAME_NAMES ((u8 *)&D_8006D634)
+#define GAME_NAMES ((u8 *)&game_data)
 
 /* The battle script variables (a resident common): the save keeps them
  * in its flag words. No shared header declares them; battle reads them
  * signed. */
-extern u16 D_8005A3A0[16];
+extern u16 mode_battle_ai_variables[16];
 extern u8 D_801EA8FC;    /* the last choice was cancelled */
 extern u16 D_801EA610[96]; /* two-byte codes of the ASCII characters 0x20-0x7F */
 extern s16 D_801E9894[32][2];    /* image block x */

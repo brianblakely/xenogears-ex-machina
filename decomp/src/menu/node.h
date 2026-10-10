@@ -227,8 +227,8 @@ void func_8008C2E8(Node *node);
  * count must be positive. Reads the next vertex even on the last iteration. */
 void func_8008C3A8(void *vertices, u8 *work, s32 count);
 /* Mesh packet builders consume eight-byte u16 index records and preload one
- * beyond count. They advance D_80059424 past culled packet slots too, and
- * prepend accepted packets to D_80059568 without a depth sort. */
+ * beyond count. They advance model_current_packet past culled packet slots too, and
+ * prepend accepted packets to model_ot without a depth sort. */
 void func_8008C4B0(u8 *prims, s32 count); /* triangles */
 void func_8008C620(u8 *prims, s32 count); /* quads */
 

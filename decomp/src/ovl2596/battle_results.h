@@ -38,15 +38,15 @@
 /* Callers convert arguments/result differently from the resident definition
  * (u8 tags, ids and codes passed where the resident takes words, or the
  * reverse): heap tag reset, sound effect, text rendering and item names. */
-void func_8003218C(s32 arg);
-void func_80039DB8(s32 code);
-s32 func_80034EAC(void *text, void *image, s32 mode, s32 flags); /* render text */
-void *func_80033784(u8 id, s32 k);              /* counter skill names */
-void *func_800337E8(u8 id);                     /* item names per list */
-void *func_80033818(u8 id);
-void *func_80033848(u8 id);
-void *func_80033A2C(u8 id);
-void *func_80033A5C(u8 id);
+void heap_free_tag(s32 arg);
+void sound_play_effect_on_last_channels(s32 code);
+s32 window_render_text_line(void *text, void *image, s32 mode, s32 flags); /* render text */
+void *text_get_system_resource_entry(u8 id, s32 k);              /* counter skill names */
+void *text_get_accessory_name(u8 id);                     /* item names per list */
+void *text_get_item_name(u8 id);
+void *text_get_weapon_name(u8 id);
+void *text_get_gear_accessory_name(u8 id);
+void *text_get_gear_part_name(u8 id);
 
 /* --- The result screens --------------------------------------------------- */
 

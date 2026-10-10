@@ -324,10 +324,10 @@ void func_800B1EA0(VertexList *list, s32 shift) {
 /* Add a copy of the draw mode primitive D_800C3BF8 to the ordering table
  * entry ot. */
 void func_800B1F0C(u32 *ot) {
-    DR_TPAGE *prim = (DR_TPAGE *)D_80059580;
+    DR_TPAGE *prim = (DR_TPAGE *)sprite_queue_next_free;
 
-    if ((u8 *)D_80059580 + sizeof(DR_TPAGE) < D_80059534) {
-        D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(DR_TPAGE));
+    if ((u8 *)sprite_queue_next_free + sizeof(DR_TPAGE) < sprite_queue_block_end) {
+        sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + sizeof(DR_TPAGE));
         *prim = D_800C3BF8;
         AddPrim(ot, prim);
     }
@@ -353,7 +353,7 @@ void func_800B1F0C(u32 *ot) {
 /* Draw script entry's commands with their built primitives packets (800B1720,
  * one set per display buffer) into ordering table ot: transform each
  * polygon's vertices, cull back faces and add the facing ones at their
- * average depth (shifted by D_80050100, plus bias, at least 5); untextured
+ * average depth (shifted by model_ot_depth_shift, plus bias, at least 5); untextured
  * ones in blend mode blend (1-4) also get the blend mode's texture page.
  * Commands with flag bit 0 clear (kind 0x100) carry normal indices: F3, F4
  * and FT3 primitives are coloured from one normal, GT3 from three, keeping
@@ -513,7 +513,7 @@ void func_800B1F6C(entry, packets, ot, unused, bias, blend)
                     gte_avsz3();
                     if (opz > 0) {
                         gte_stotz(&otz);
-                        otz = (otz >> D_80050100) + bias;
+                        otz = (otz >> model_ot_depth_shift) + bias;
                         if (otz < 5) {
                             otz = 5;
                         }
@@ -541,7 +541,7 @@ void func_800B1F6C(entry, packets, ot, unused, bias, blend)
                     gte_avsz3();
                     if (opz > 0) {
                         gte_stotz(&otz);
-                        otz = (otz >> D_80050100) + bias;
+                        otz = (otz >> model_ot_depth_shift) + bias;
                         if (otz < 5) {
                             otz = 5;
                         }
@@ -569,7 +569,7 @@ void func_800B1F6C(entry, packets, ot, unused, bias, blend)
                     gte_avsz3();
                     if (opz > 0) {
                         gte_stotz(&otz);
-                        otz = (otz >> D_80050100) + bias;
+                        otz = (otz >> model_ot_depth_shift) + bias;
                         if (otz < 5) {
                             otz = 5;
                         }
@@ -594,7 +594,7 @@ void func_800B1F6C(entry, packets, ot, unused, bias, blend)
                     gte_avsz3();
                     if (opz > 0) {
                         gte_stotz(&otz);
-                        otz = (otz >> D_80050100) + bias;
+                        otz = (otz >> model_ot_depth_shift) + bias;
                         if (otz < 5) {
                             otz = 5;
                         }
@@ -610,7 +610,7 @@ void func_800B1F6C(entry, packets, ot, unused, bias, blend)
             opz = libgte_project_front_quad(v0, v1, v2, v3, (long *)&((POLY_F4 *)prims)->x0, (long *)&((POLY_F4 *)prims)->x1,
                                 (long *)&((POLY_F4 *)prims)->x2, (long *)&((POLY_F4 *)prims)->x3, &p, &otz, &flag);
             if (opz > 0) {
-                otz = (otz >> D_80050100) + bias;
+                otz = (otz >> model_ot_depth_shift) + bias;
                 if (otz < 5) {
                     otz = 5;
                 }
@@ -626,7 +626,7 @@ void func_800B1F6C(entry, packets, ot, unused, bias, blend)
             opz = libgte_project_front_quad(v0, v1, v2, v3, (long *)&((POLY_G4 *)prims)->x0, (long *)&((POLY_G4 *)prims)->x1,
                                 (long *)&((POLY_G4 *)prims)->x2, (long *)&((POLY_G4 *)prims)->x3, &p, &otz, &flag);
             if (opz > 0) {
-                otz = (otz >> D_80050100) + bias;
+                otz = (otz >> model_ot_depth_shift) + bias;
                 if (otz < 5) {
                     otz = 5;
                 }
@@ -642,7 +642,7 @@ void func_800B1F6C(entry, packets, ot, unused, bias, blend)
             opz = libgte_project_front_quad(v0, v1, v2, v3, (long *)&((POLY_FT4 *)prims)->x0, (long *)&((POLY_FT4 *)prims)->x1,
                                 (long *)&((POLY_FT4 *)prims)->x2, (long *)&((POLY_FT4 *)prims)->x3, &p, &otz, &flag);
             if (opz > 0) {
-                otz = (otz >> D_80050100) + bias;
+                otz = (otz >> model_ot_depth_shift) + bias;
                 if (otz < 5) {
                     otz = 5;
                 }
@@ -655,7 +655,7 @@ void func_800B1F6C(entry, packets, ot, unused, bias, blend)
             opz = libgte_project_front_quad(v0, v1, v2, v3, (long *)&((POLY_GT4 *)prims)->x0, (long *)&((POLY_GT4 *)prims)->x1,
                                 (long *)&((POLY_GT4 *)prims)->x2, (long *)&((POLY_GT4 *)prims)->x3, &p, &otz, &flag);
             if (opz > 0) {
-                otz = (otz >> D_80050100) + bias;
+                otz = (otz >> model_ot_depth_shift) + bias;
                 if (otz < 5) {
                     otz = 5;
                 }
@@ -698,23 +698,23 @@ void func_800B2AEC(entry, packets0, packets1, red, green, blue)
         kind |= ((cmd[2] ^ 1) & 1) << 8;
         switch (kind) {
         case 0x0:
-            ((POLY_F3 *)packets0)->r0 = func_80021AD8(cmd[0x4], red);
-            ((POLY_F3 *)packets0)->g0 = func_80021AD8(cmd[0x5], green);
-            ((POLY_F3 *)packets0)->b0 = func_80021AD8(cmd[0x6], blue);
+            ((POLY_F3 *)packets0)->r0 = sprite_add_clamp_byte(cmd[0x4], red);
+            ((POLY_F3 *)packets0)->g0 = sprite_add_clamp_byte(cmd[0x5], green);
+            ((POLY_F3 *)packets0)->b0 = sprite_add_clamp_byte(cmd[0x6], blue);
             ((POLY_F3 *)packets1)->r0 = ((POLY_F3 *)packets0)->r0;
             ((POLY_F3 *)packets1)->g0 = ((POLY_F3 *)packets0)->g0;
             ((POLY_F3 *)packets1)->b0 = ((POLY_F3 *)packets0)->b0;
             break;
         case 0x10:
-            ((POLY_G3 *)packets0)->r0 = func_80021AD8(cmd[0x4], red);
-            ((POLY_G3 *)packets0)->g0 = func_80021AD8(cmd[0x5], green);
-            ((POLY_G3 *)packets0)->b0 = func_80021AD8(cmd[0x6], blue);
-            ((POLY_G3 *)packets0)->r1 = func_80021AD8(cmd[0x8], red);
-            ((POLY_G3 *)packets0)->g1 = func_80021AD8(cmd[0x9], green);
-            ((POLY_G3 *)packets0)->b1 = func_80021AD8(cmd[0xA], blue);
-            ((POLY_G3 *)packets0)->r2 = func_80021AD8(cmd[0xC], red);
-            ((POLY_G3 *)packets0)->g2 = func_80021AD8(cmd[0xD], green);
-            ((POLY_G3 *)packets0)->b2 = func_80021AD8(cmd[0xE], blue);
+            ((POLY_G3 *)packets0)->r0 = sprite_add_clamp_byte(cmd[0x4], red);
+            ((POLY_G3 *)packets0)->g0 = sprite_add_clamp_byte(cmd[0x5], green);
+            ((POLY_G3 *)packets0)->b0 = sprite_add_clamp_byte(cmd[0x6], blue);
+            ((POLY_G3 *)packets0)->r1 = sprite_add_clamp_byte(cmd[0x8], red);
+            ((POLY_G3 *)packets0)->g1 = sprite_add_clamp_byte(cmd[0x9], green);
+            ((POLY_G3 *)packets0)->b1 = sprite_add_clamp_byte(cmd[0xA], blue);
+            ((POLY_G3 *)packets0)->r2 = sprite_add_clamp_byte(cmd[0xC], red);
+            ((POLY_G3 *)packets0)->g2 = sprite_add_clamp_byte(cmd[0xD], green);
+            ((POLY_G3 *)packets0)->b2 = sprite_add_clamp_byte(cmd[0xE], blue);
             ((POLY_G3 *)packets1)->r0 = ((POLY_G3 *)packets0)->r0;
             ((POLY_G3 *)packets1)->g0 = ((POLY_G3 *)packets0)->g0;
             ((POLY_G3 *)packets1)->b0 = ((POLY_G3 *)packets0)->b0;
@@ -726,18 +726,18 @@ void func_800B2AEC(entry, packets0, packets1, red, green, blue)
             ((POLY_G3 *)packets1)->b2 = ((POLY_G3 *)packets0)->b2;
             break;
         case 0x18:
-            ((POLY_G4 *)packets0)->r0 = func_80021AD8(cmd[0x4], red);
-            ((POLY_G4 *)packets0)->g0 = func_80021AD8(cmd[0x5], green);
-            ((POLY_G4 *)packets0)->b0 = func_80021AD8(cmd[0x6], blue);
-            ((POLY_G4 *)packets0)->r1 = func_80021AD8(cmd[0x8], red);
-            ((POLY_G4 *)packets0)->g1 = func_80021AD8(cmd[0x9], green);
-            ((POLY_G4 *)packets0)->b1 = func_80021AD8(cmd[0xA], blue);
-            ((POLY_G4 *)packets0)->r2 = func_80021AD8(cmd[0xC], red);
-            ((POLY_G4 *)packets0)->g2 = func_80021AD8(cmd[0xD], green);
-            ((POLY_G4 *)packets0)->b2 = func_80021AD8(cmd[0xE], blue);
-            ((POLY_G4 *)packets0)->r3 = func_80021AD8(cmd[0x10], red);
-            ((POLY_G4 *)packets0)->g3 = func_80021AD8(cmd[0x11], green);
-            ((POLY_G4 *)packets0)->b3 = func_80021AD8(cmd[0x12], blue);
+            ((POLY_G4 *)packets0)->r0 = sprite_add_clamp_byte(cmd[0x4], red);
+            ((POLY_G4 *)packets0)->g0 = sprite_add_clamp_byte(cmd[0x5], green);
+            ((POLY_G4 *)packets0)->b0 = sprite_add_clamp_byte(cmd[0x6], blue);
+            ((POLY_G4 *)packets0)->r1 = sprite_add_clamp_byte(cmd[0x8], red);
+            ((POLY_G4 *)packets0)->g1 = sprite_add_clamp_byte(cmd[0x9], green);
+            ((POLY_G4 *)packets0)->b1 = sprite_add_clamp_byte(cmd[0xA], blue);
+            ((POLY_G4 *)packets0)->r2 = sprite_add_clamp_byte(cmd[0xC], red);
+            ((POLY_G4 *)packets0)->g2 = sprite_add_clamp_byte(cmd[0xD], green);
+            ((POLY_G4 *)packets0)->b2 = sprite_add_clamp_byte(cmd[0xE], blue);
+            ((POLY_G4 *)packets0)->r3 = sprite_add_clamp_byte(cmd[0x10], red);
+            ((POLY_G4 *)packets0)->g3 = sprite_add_clamp_byte(cmd[0x11], green);
+            ((POLY_G4 *)packets0)->b3 = sprite_add_clamp_byte(cmd[0x12], blue);
             ((POLY_G4 *)packets1)->r0 = ((POLY_G4 *)packets0)->r0;
             ((POLY_G4 *)packets1)->g0 = ((POLY_G4 *)packets0)->g0;
             ((POLY_G4 *)packets1)->b0 = ((POLY_G4 *)packets0)->b0;
@@ -752,39 +752,39 @@ void func_800B2AEC(entry, packets0, packets1, red, green, blue)
             ((POLY_G4 *)packets1)->b3 = ((POLY_G4 *)packets0)->b3;
             break;
         case 0x8:
-            ((POLY_F4 *)packets0)->r0 = func_80021AD8(cmd[0x4], red);
-            ((POLY_F4 *)packets0)->g0 = func_80021AD8(cmd[0x5], green);
-            ((POLY_F4 *)packets0)->b0 = func_80021AD8(cmd[0x6], blue);
+            ((POLY_F4 *)packets0)->r0 = sprite_add_clamp_byte(cmd[0x4], red);
+            ((POLY_F4 *)packets0)->g0 = sprite_add_clamp_byte(cmd[0x5], green);
+            ((POLY_F4 *)packets0)->b0 = sprite_add_clamp_byte(cmd[0x6], blue);
             ((POLY_F4 *)packets1)->r0 = ((POLY_F4 *)packets0)->r0;
             ((POLY_F4 *)packets1)->g0 = ((POLY_F4 *)packets0)->g0;
             ((POLY_F4 *)packets1)->b0 = ((POLY_F4 *)packets0)->b0;
             break;
         case 0x104:
-            ((POLY_FT3 *)packets0)->r0 = func_80021AD8(0x80, red);
-            ((POLY_FT3 *)packets0)->g0 = func_80021AD8(0x80, green);
-            ((POLY_FT3 *)packets0)->b0 = func_80021AD8(0x80, blue);
+            ((POLY_FT3 *)packets0)->r0 = sprite_add_clamp_byte(0x80, red);
+            ((POLY_FT3 *)packets0)->g0 = sprite_add_clamp_byte(0x80, green);
+            ((POLY_FT3 *)packets0)->b0 = sprite_add_clamp_byte(0x80, blue);
             ((POLY_FT3 *)packets1)->r0 = ((POLY_FT3 *)packets0)->r0;
             ((POLY_FT3 *)packets1)->g0 = ((POLY_FT3 *)packets0)->g0;
             ((POLY_FT3 *)packets1)->b0 = ((POLY_FT3 *)packets0)->b0;
             break;
         case 0x4:
-            ((POLY_FT3 *)packets0)->r0 = func_80021AD8(cmd[0x10], red);
-            ((POLY_FT3 *)packets0)->g0 = func_80021AD8(cmd[0x11], green);
-            ((POLY_FT3 *)packets0)->b0 = func_80021AD8(cmd[0x12], blue);
+            ((POLY_FT3 *)packets0)->r0 = sprite_add_clamp_byte(cmd[0x10], red);
+            ((POLY_FT3 *)packets0)->g0 = sprite_add_clamp_byte(cmd[0x11], green);
+            ((POLY_FT3 *)packets0)->b0 = sprite_add_clamp_byte(cmd[0x12], blue);
             ((POLY_FT3 *)packets1)->r0 = ((POLY_FT3 *)packets0)->r0;
             ((POLY_FT3 *)packets1)->g0 = ((POLY_FT3 *)packets0)->g0;
             ((POLY_FT3 *)packets1)->b0 = ((POLY_FT3 *)packets0)->b0;
             break;
         case 0x114:
-            ((POLY_GT3 *)packets0)->r0 = func_80021AD8(0x80, red);
-            ((POLY_GT3 *)packets0)->g0 = func_80021AD8(0x80, green);
-            ((POLY_GT3 *)packets0)->b0 = func_80021AD8(0x80, blue);
-            ((POLY_GT3 *)packets0)->r1 = func_80021AD8(0x80, red);
-            ((POLY_GT3 *)packets0)->g1 = func_80021AD8(0x80, green);
-            ((POLY_GT3 *)packets0)->b1 = func_80021AD8(0x80, blue);
-            ((POLY_GT3 *)packets0)->r2 = func_80021AD8(0x80, red);
-            ((POLY_GT3 *)packets0)->g2 = func_80021AD8(0x80, green);
-            ((POLY_GT3 *)packets0)->b2 = func_80021AD8(0x80, blue);
+            ((POLY_GT3 *)packets0)->r0 = sprite_add_clamp_byte(0x80, red);
+            ((POLY_GT3 *)packets0)->g0 = sprite_add_clamp_byte(0x80, green);
+            ((POLY_GT3 *)packets0)->b0 = sprite_add_clamp_byte(0x80, blue);
+            ((POLY_GT3 *)packets0)->r1 = sprite_add_clamp_byte(0x80, red);
+            ((POLY_GT3 *)packets0)->g1 = sprite_add_clamp_byte(0x80, green);
+            ((POLY_GT3 *)packets0)->b1 = sprite_add_clamp_byte(0x80, blue);
+            ((POLY_GT3 *)packets0)->r2 = sprite_add_clamp_byte(0x80, red);
+            ((POLY_GT3 *)packets0)->g2 = sprite_add_clamp_byte(0x80, green);
+            ((POLY_GT3 *)packets0)->b2 = sprite_add_clamp_byte(0x80, blue);
             ((POLY_GT3 *)packets1)->r0 = ((POLY_GT3 *)packets0)->r0;
             ((POLY_GT3 *)packets1)->g0 = ((POLY_GT3 *)packets0)->g0;
             ((POLY_GT3 *)packets1)->b0 = ((POLY_GT3 *)packets0)->b0;
@@ -796,15 +796,15 @@ void func_800B2AEC(entry, packets0, packets1, red, green, blue)
             ((POLY_GT3 *)packets1)->b2 = ((POLY_GT3 *)packets0)->b2;
             break;
         case 0x14:
-            ((POLY_GT3 *)packets0)->r0 = func_80021AD8(cmd[0x10], red);
-            ((POLY_GT3 *)packets0)->g0 = func_80021AD8(cmd[0x11], green);
-            ((POLY_GT3 *)packets0)->b0 = func_80021AD8(cmd[0x12], blue);
-            ((POLY_GT3 *)packets0)->r1 = func_80021AD8(cmd[0x14], red);
-            ((POLY_GT3 *)packets0)->g1 = func_80021AD8(cmd[0x15], green);
-            ((POLY_GT3 *)packets0)->b1 = func_80021AD8(cmd[0x16], blue);
-            ((POLY_GT3 *)packets0)->r2 = func_80021AD8(cmd[0x18], red);
-            ((POLY_GT3 *)packets0)->g2 = func_80021AD8(cmd[0x19], green);
-            ((POLY_GT3 *)packets0)->b2 = func_80021AD8(cmd[0x1A], blue);
+            ((POLY_GT3 *)packets0)->r0 = sprite_add_clamp_byte(cmd[0x10], red);
+            ((POLY_GT3 *)packets0)->g0 = sprite_add_clamp_byte(cmd[0x11], green);
+            ((POLY_GT3 *)packets0)->b0 = sprite_add_clamp_byte(cmd[0x12], blue);
+            ((POLY_GT3 *)packets0)->r1 = sprite_add_clamp_byte(cmd[0x14], red);
+            ((POLY_GT3 *)packets0)->g1 = sprite_add_clamp_byte(cmd[0x15], green);
+            ((POLY_GT3 *)packets0)->b1 = sprite_add_clamp_byte(cmd[0x16], blue);
+            ((POLY_GT3 *)packets0)->r2 = sprite_add_clamp_byte(cmd[0x18], red);
+            ((POLY_GT3 *)packets0)->g2 = sprite_add_clamp_byte(cmd[0x19], green);
+            ((POLY_GT3 *)packets0)->b2 = sprite_add_clamp_byte(cmd[0x1A], blue);
             ((POLY_GT3 *)packets1)->r0 = ((POLY_GT3 *)packets0)->r0;
             ((POLY_GT3 *)packets1)->g0 = ((POLY_GT3 *)packets0)->g0;
             ((POLY_GT3 *)packets1)->b0 = ((POLY_GT3 *)packets0)->b0;
@@ -816,34 +816,34 @@ void func_800B2AEC(entry, packets0, packets1, red, green, blue)
             ((POLY_GT3 *)packets1)->b2 = ((POLY_GT3 *)packets0)->b2;
             break;
         case 0x10C:
-            ((POLY_FT4 *)packets0)->r0 = func_80021AD8(0x80, red);
-            ((POLY_FT4 *)packets0)->g0 = func_80021AD8(0x80, green);
-            ((POLY_FT4 *)packets0)->b0 = func_80021AD8(0x80, blue);
+            ((POLY_FT4 *)packets0)->r0 = sprite_add_clamp_byte(0x80, red);
+            ((POLY_FT4 *)packets0)->g0 = sprite_add_clamp_byte(0x80, green);
+            ((POLY_FT4 *)packets0)->b0 = sprite_add_clamp_byte(0x80, blue);
             ((POLY_FT4 *)packets1)->r0 = ((POLY_FT4 *)packets0)->r0;
             ((POLY_FT4 *)packets1)->g0 = ((POLY_FT4 *)packets0)->g0;
             ((POLY_FT4 *)packets1)->b0 = ((POLY_FT4 *)packets0)->b0;
             break;
         case 0xC:
-            ((POLY_FT4 *)packets0)->r0 = func_80021AD8(cmd[0x14], red);
-            ((POLY_FT4 *)packets0)->g0 = func_80021AD8(cmd[0x15], green);
-            ((POLY_FT4 *)packets0)->b0 = func_80021AD8(cmd[0x16], blue);
+            ((POLY_FT4 *)packets0)->r0 = sprite_add_clamp_byte(cmd[0x14], red);
+            ((POLY_FT4 *)packets0)->g0 = sprite_add_clamp_byte(cmd[0x15], green);
+            ((POLY_FT4 *)packets0)->b0 = sprite_add_clamp_byte(cmd[0x16], blue);
             ((POLY_FT4 *)packets1)->r0 = ((POLY_FT4 *)packets0)->r0;
             ((POLY_FT4 *)packets1)->g0 = ((POLY_FT4 *)packets0)->g0;
             ((POLY_FT4 *)packets1)->b0 = ((POLY_FT4 *)packets0)->b0;
             break;
         case 0x11C:
-            ((POLY_GT4 *)packets0)->r0 = func_80021AD8(0x80, red);
-            ((POLY_GT4 *)packets0)->g0 = func_80021AD8(0x80, green);
-            ((POLY_GT4 *)packets0)->b0 = func_80021AD8(0x80, blue);
-            ((POLY_GT4 *)packets0)->r1 = func_80021AD8(0x80, red);
-            ((POLY_GT4 *)packets0)->g1 = func_80021AD8(0x80, green);
-            ((POLY_GT4 *)packets0)->b1 = func_80021AD8(0x80, blue);
-            ((POLY_GT4 *)packets0)->r2 = func_80021AD8(0x80, red);
-            ((POLY_GT4 *)packets0)->g2 = func_80021AD8(0x80, green);
-            ((POLY_GT4 *)packets0)->b2 = func_80021AD8(0x80, blue);
-            ((POLY_GT4 *)packets0)->r3 = func_80021AD8(0x80, red);
-            ((POLY_GT4 *)packets0)->g3 = func_80021AD8(0x80, green);
-            ((POLY_GT4 *)packets0)->b3 = func_80021AD8(0x80, blue);
+            ((POLY_GT4 *)packets0)->r0 = sprite_add_clamp_byte(0x80, red);
+            ((POLY_GT4 *)packets0)->g0 = sprite_add_clamp_byte(0x80, green);
+            ((POLY_GT4 *)packets0)->b0 = sprite_add_clamp_byte(0x80, blue);
+            ((POLY_GT4 *)packets0)->r1 = sprite_add_clamp_byte(0x80, red);
+            ((POLY_GT4 *)packets0)->g1 = sprite_add_clamp_byte(0x80, green);
+            ((POLY_GT4 *)packets0)->b1 = sprite_add_clamp_byte(0x80, blue);
+            ((POLY_GT4 *)packets0)->r2 = sprite_add_clamp_byte(0x80, red);
+            ((POLY_GT4 *)packets0)->g2 = sprite_add_clamp_byte(0x80, green);
+            ((POLY_GT4 *)packets0)->b2 = sprite_add_clamp_byte(0x80, blue);
+            ((POLY_GT4 *)packets0)->r3 = sprite_add_clamp_byte(0x80, red);
+            ((POLY_GT4 *)packets0)->g3 = sprite_add_clamp_byte(0x80, green);
+            ((POLY_GT4 *)packets0)->b3 = sprite_add_clamp_byte(0x80, blue);
             ((POLY_GT4 *)packets1)->r0 = ((POLY_GT4 *)packets0)->r0;
             ((POLY_GT4 *)packets1)->g0 = ((POLY_GT4 *)packets0)->g0;
             ((POLY_GT4 *)packets1)->b0 = ((POLY_GT4 *)packets0)->b0;
@@ -858,18 +858,18 @@ void func_800B2AEC(entry, packets0, packets1, red, green, blue)
             ((POLY_GT4 *)packets1)->b3 = ((POLY_GT4 *)packets0)->b3;
             break;
         case 0x1C:
-            ((POLY_GT4 *)packets0)->r0 = func_80021AD8(cmd[0x14], red);
-            ((POLY_GT4 *)packets0)->g0 = func_80021AD8(cmd[0x15], green);
-            ((POLY_GT4 *)packets0)->b0 = func_80021AD8(cmd[0x16], blue);
-            ((POLY_GT4 *)packets0)->r1 = func_80021AD8(cmd[0x18], red);
-            ((POLY_GT4 *)packets0)->g1 = func_80021AD8(cmd[0x19], green);
-            ((POLY_GT4 *)packets0)->b1 = func_80021AD8(cmd[0x1A], blue);
-            ((POLY_GT4 *)packets0)->r2 = func_80021AD8(cmd[0x1C], red);
-            ((POLY_GT4 *)packets0)->g2 = func_80021AD8(cmd[0x1D], green);
-            ((POLY_GT4 *)packets0)->b2 = func_80021AD8(cmd[0x1E], blue);
-            ((POLY_GT4 *)packets0)->r3 = func_80021AD8(cmd[0x20], red);
-            ((POLY_GT4 *)packets0)->g3 = func_80021AD8(cmd[0x21], green);
-            ((POLY_GT4 *)packets0)->b3 = func_80021AD8(cmd[0x22], blue);
+            ((POLY_GT4 *)packets0)->r0 = sprite_add_clamp_byte(cmd[0x14], red);
+            ((POLY_GT4 *)packets0)->g0 = sprite_add_clamp_byte(cmd[0x15], green);
+            ((POLY_GT4 *)packets0)->b0 = sprite_add_clamp_byte(cmd[0x16], blue);
+            ((POLY_GT4 *)packets0)->r1 = sprite_add_clamp_byte(cmd[0x18], red);
+            ((POLY_GT4 *)packets0)->g1 = sprite_add_clamp_byte(cmd[0x19], green);
+            ((POLY_GT4 *)packets0)->b1 = sprite_add_clamp_byte(cmd[0x1A], blue);
+            ((POLY_GT4 *)packets0)->r2 = sprite_add_clamp_byte(cmd[0x1C], red);
+            ((POLY_GT4 *)packets0)->g2 = sprite_add_clamp_byte(cmd[0x1D], green);
+            ((POLY_GT4 *)packets0)->b2 = sprite_add_clamp_byte(cmd[0x1E], blue);
+            ((POLY_GT4 *)packets0)->r3 = sprite_add_clamp_byte(cmd[0x20], red);
+            ((POLY_GT4 *)packets0)->g3 = sprite_add_clamp_byte(cmd[0x21], green);
+            ((POLY_GT4 *)packets0)->b3 = sprite_add_clamp_byte(cmd[0x22], blue);
             ((POLY_GT4 *)packets1)->r0 = ((POLY_GT4 *)packets0)->r0;
             ((POLY_GT4 *)packets1)->g0 = ((POLY_GT4 *)packets0)->g0;
             ((POLY_GT4 *)packets1)->b0 = ((POLY_GT4 *)packets0)->b0;
@@ -948,8 +948,8 @@ void func_800B3358(Quake *quake) {
 
 /* End the quake task. */
 void func_800B3588(Quake *quake) {
-    func_8001CD94(&quake->task);
-    func_800320E8(quake);
+    task_unlink_main_node(&quake->task);
+    heap_free(quake);
     D_800C3548 = NULL;
 }
 
@@ -958,9 +958,9 @@ Quake *func_800B35C0(void) {
     Quake *quake;
 
     if (D_800C3548 == NULL) {
-        quake = (Quake *)func_8001CD08(NULL, sizeof(Quake) - sizeof(Task));
-        func_8001CD6C(&quake->task, (void (*)(Task *))func_800B3358);
-        func_8001CD74(&quake->task, (void (*)(Task *))func_800B3588);
+        quake = (Quake *)task_alloc_main_task(NULL, sizeof(Quake) - sizeof(Task));
+        task_set_update_callback(&quake->task, (void (*)(Task *))func_800B3358);
+        task_set_destroy_callback(&quake->task, (void (*)(Task *))func_800B3588);
         quake->from.vx = 0;
         quake->from.vy = 0;
         quake->from.vz = 0;
@@ -1019,19 +1019,19 @@ void func_800B36BC(Task *task) {
 
 /* End the screen fade tasks. */
 void func_800B383C(ScreenFade *fade) {
-    func_8001CB48(&fade->draw);
-    func_8001CD94(&fade->task);
+    task_unlink_draw_node(&fade->draw);
+    task_unlink_main_node(&fade->task);
     D_800C3558 = NULL;
 }
 
 /* Draw the screen fade: a blended rectangle over the whole screen. */
 void func_800B3878(Task *draw) {
-    POLY_F4 *poly = (POLY_F4 *)D_80059580;
+    POLY_F4 *poly = (POLY_F4 *)sprite_queue_next_free;
     ScreenFade *fade = draw->data;
     DR_MODE *mode;
 
-    if ((u8 *)D_80059580 + 0x50 < D_80059534) {
-        D_80059580 = (SpriteQueueEntry *)((u8 *)D_80059580 + sizeof(POLY_F4) + sizeof(DR_MODE));
+    if ((u8 *)sprite_queue_next_free + 0x50 < sprite_queue_block_end) {
+        sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + sizeof(POLY_F4) + sizeof(DR_MODE));
         SetPolyF4(poly);
         SetSemiTrans(poly, 1);
         poly->r0 = fade->colour[0];
@@ -1047,8 +1047,8 @@ void func_800B3878(Task *draw) {
         poly->y3 = 240;
         mode = (DR_MODE *)(poly + 1);
         SetDrawMode(mode, 0, 0, GetTPage(0, fade->blend, 0, 0), NULL);
-        AddPrim((u32 *)D_8005956C + 2, poly);
-        AddPrim((u32 *)D_8005956C + 2, mode);
+        AddPrim((u32 *)sprite_ot + 2, poly);
+        AddPrim((u32 *)sprite_ot + 2, mode);
     }
 }
 
@@ -1094,15 +1094,15 @@ void func_800B39C0(frames, blend, r, g, b)
             goto resume;
         }
     }
-    func_8001CC18(NULL, &fade->task);
-    func_8001CA58(&fade->task, &fade->draw);
+    task_link_main_node(NULL, &fade->task);
+    task_link_draw_node(&fade->task, &fade->draw);
     fade->task.link.word &= 0x7FFFFFFF;
-    if (D_800591AC != 0) {
-        D_80059464--;
+    if (task_new_tasks_active != 0) {
+        task_active_main_count--;
     }
-    func_8001CD6C(&fade->task, func_800B36BC);
-    func_8001CD64(&fade->draw, func_800B3878);
-    func_8001CD74(&fade->task, (void (*)(Task *))func_800B383C);
+    task_set_update_callback(&fade->task, func_800B36BC);
+    task_set_draw_callback(&fade->draw, func_800B3878);
+    task_set_destroy_callback(&fade->task, (void (*)(Task *))func_800B383C);
     fade->task.data = fade;
     fade->draw.data = fade;
     fade->field40 = 0;
@@ -1158,9 +1158,9 @@ void func_800B3B94(Task *task) {
 
 /* End the light fade tasks and restore the stage lights (800A6F98). */
 void func_800B3C2C(LightFade *fade) {
-    func_8001CB48(&fade->draw);
-    func_8001CD94(&fade->task);
-    func_800320E8(fade);
+    task_unlink_draw_node(&fade->draw);
+    task_unlink_main_node(&fade->task);
+    heap_free(fade);
     D_800C3560 = NULL;
     func_800A6F98();
 }
@@ -1191,13 +1191,13 @@ void func_800B3CD4(to, frames, red, blue, field4C, field4E)
     u8 *stack;
 
     if (D_800C3560 == NULL) {
-        D_800C3560 = fade = (LightFade *)func_8001D1D8(sizeof(LightFade), NULL, func_800B3B94, func_800B3C74,
+        D_800C3560 = fade = (LightFade *)task_alloc_two_node_task(sizeof(LightFade), NULL, func_800B3B94, func_800B3C74,
                                                     (void (*)(Task *))func_800B3C2C);
-        stack = func_80031BDC(0x1000, 1);
+        stack = heap_alloc(0x1000, 1);
         STACK_ENTER(stack + 0xC00);
         func_800A5EB4();
         STACK_LEAVE();
-        func_800320E8(stack);
+        heap_free(stack);
         fade->from = 0;
         fade->applied = 0;
         fade->level = 0;
@@ -1218,7 +1218,7 @@ void func_800B3CD4(to, frames, red, blue, field4C, field4E)
 /* Copy the three 64 x 256 VRAM columns at x 0x280, 0x240 and 0x200 to the
  * places in D_800C3668 (on a stack in a heap block). */
 void func_800B3E04(void) {
-    u8 *stack = func_80031BDC(0x1000, 0);
+    u8 *stack = heap_alloc(0x1000, 0);
 
     STACK_ENTER(stack + 0xF00);
     D_800C3C9C.x = 0x280;
@@ -1237,5 +1237,5 @@ void func_800B3E04(void) {
     D_800C3C9C.h = 0x100;
     MoveImage(&D_800C3C9C, D_800C3668[2].x, D_800C3668[2].y);
     STACK_LEAVE();
-    func_800320E8(stack);
+    heap_free(stack);
 }

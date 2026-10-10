@@ -166,7 +166,7 @@ typedef struct {
     u8 absolute;   /* 0x0D: the angle is not relative to the object's */
     s16 angle;     /* 0x0E */
     s16 scale;     /* 0x10 */
-    u8 resource;   /* 0x12: 0 D_8006BE10, else D_8005A474 */
+    u8 resource;   /* 0x12: 0 sprite_shared_source, else sprite_effect_source */
     u8 follow;     /* 0x13 */
 } SpriteCommand;
 

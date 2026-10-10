@@ -47,7 +47,7 @@ typedef struct Settings {
     s16 unkC;
 } Settings;
 
-extern void (*D_80088BFC[])(s32);  /* mode tasks, by D_80050618 */
+extern void (*D_80088BFC[])(s32);  /* mode tasks, by mode_arena_task */
 extern FileRequest D_800917C0[6];  /* sequence, sound bank, messages, map, scene; zero file */
 extern s32 D_800917F0;             /* nonzero: the menu plays its own sequence */
 extern char *D_80091BB0[];         /* names of the menu's heap block kinds */

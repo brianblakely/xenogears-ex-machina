@@ -133,7 +133,7 @@ asm_filter_of = $(if $(filter-out 0,$(call gp_of,$(1))),| sed -E $(call extern_o
 # at its original address, each of up to 8 bytes among the small variables in
 # unit order (800592bc-800593a4, 800925d4-80092954) and each larger one among
 # the larger (800595e8-8005a1fc, 80092954-8009b558), while the GCC 2.6.3 unit
-# between them keeps one .bss (resident main_8002709C: a 2048-byte static, then
+# between them keeps one .bss (resident cd_reads_and_streams: a 2048-byte static, then
 # 4- and 8-byte ones, at 800596f8-80059f64).
 WORD_SLOT_ASPSX := --aspsx-version=2.34 --aspsx-version=2.79
 SIZE_ALIGNED_ASPSX := --aspsx-version=2.56

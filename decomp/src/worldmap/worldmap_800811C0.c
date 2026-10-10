@@ -123,9 +123,9 @@ s32 func_800811C0(s32 index) {
         break;
     /* 8: area sounds 0x2E-0x30. */
     case 0x8:
-        func_80039E60((D_8006259C->id << 16) | 0x2E);
-        func_80039E60((D_8006259C->id << 16) | 0x2F);
-        func_80039E60((D_8006259C->id << 16) | 0x30);
+        sound_play_effect((sound_effect_bank->id << 16) | 0x2E);
+        sound_play_effect((sound_effect_bank->id << 16) | 0x2F);
+        sound_play_effect((sound_effect_bank->id << 16) | 0x30);
         actor->state = 1;
         break;
     /* 0x10: slots 3 and 4 request 1. */
@@ -142,7 +142,7 @@ s32 func_800811C0(s32 index) {
     /* 0x3F: fade the music out over 0xF0 frames; fade out at rate 2, 4 per
      * frame. */
     case 0x3F:
-        func_8003A89C((SoundSeq *)D_80062528, 0, 0xF0);
+        sound_set_seq_fade((SoundSeq *)mode_music_seq, 0, 0xF0);
         func_80097770(0, 0xD);
         D_8009CCA4 = 2;
         D_8009D3CC = 4;
@@ -372,9 +372,9 @@ s32 func_80081C3C(void) {
     s32 i;
     s16 *flags;
 
-    D_8009D158[0] = func_80031BDC(sizeof(QuadBuffer), 0);
-    D_8009D158[1] = func_80031BDC(sizeof(QuadBuffer), 0);
-    D_8009D148 = func_80031BDC(0xC0 * sizeof(s16), 0);
+    D_8009D158[0] = heap_alloc(sizeof(QuadBuffer), 0);
+    D_8009D158[1] = heap_alloc(sizeof(QuadBuffer), 0);
+    D_8009D148 = heap_alloc(0xC0 * sizeof(s16), 0);
     quads = D_8009D158[0]->quads;
     for (i = 0; i < 0xC0; i++) {
         setPolyFT4(quads);
@@ -555,7 +555,7 @@ void func_80082324(void) {
     MoveImage(&rect, 0x2C0, 0x100);
     DrawSync(0);
     func_80072DB4(0x40, 0, 4, 2);
-    while (func_800286CC() >= 3) {
+    while (cd_get_pending_read_count() >= 3) {
     }
     func_80076954();
     func_8009766C();
@@ -566,8 +566,8 @@ void func_80082324(void) {
     D_8009D144 = 0;
     D_8009CD40 = func_80086700;
     func_80098044();
-    func_80028A60(0);
-    func_8001B66C();
+    cd_sync_reads(0);
+    mode_stop_music();
     D_8009C5AC.vx = 0x70A9000;
     D_8009C5AC.vy = -0x148000;
     D_8009C5AC.vz = 0x42AA000;
@@ -582,26 +582,26 @@ void func_80082324(void) {
     func_80075030();
     func_800739B8();
     func_80088F64();
-    func_80028A60(0);
-    D_8006258C = func_80037FD8(D_8009C88C, 0);
-    func_80028470(0x24, 0);
+    cd_sync_reads(0);
+    mode_music_wave_bank = sound_load_wave_bank(D_8009C88C, 0);
+    cd_select_directory(0x24, 0);
     func_80097BC0(&D_8009C5AC);
     do {
         func_800967E4();
         VSync(0);
     } while (func_80096668() > 0);
-    debug = D_8005957C & 0x10;
+    debug = sound_driver_flags & 0x10;
     if (debug) {
         while (debug) {
         }
     }
-    func_800320E8(D_8009C88C);
-    func_80038428(D_8006259C);
+    heap_free(D_8009C88C);
+    sound_add_effect_bank(sound_effect_bank);
     data = D_8009C884;
-    memcpy(D_80062648, data, func_800288EC(D_8009D3D0));
-    sequence = func_80039850((SoundSeqHeader *)D_80062648);
-    D_80062528 = (s32)sequence;
-    func_80039A80(sequence, 0x7F, 0);
+    memcpy(mode_music_buffer, data, cd_get_aligned_file_size(D_8009D3D0));
+    sequence = sound_create_seq((SoundSeqHeader *)mode_music_buffer);
+    mode_music_seq = (s32)sequence;
+    sound_play_seq(sequence, 0x7F, 0);
     func_80097718((s32)func_800923A8, (s32)func_800925A0);
     func_80097718((s32)func_800827C8, (s32)func_80076B34);
     func_80097718((s32)func_800827EC, (s32)func_800828DC);
@@ -621,9 +621,9 @@ void func_80082324(void) {
 
 /* Leave the world map for scene 0x269 (flag word 2). */
 void func_800826B4(void) {
-    func_80039FF8();
-    func_8003852C(D_8006259C);
-    func_800320E8(D_8006259C);
+    sound_stop_all_effects();
+    sound_remove_effect_bank(sound_effect_bank);
+    heap_free(sound_effect_bank);
     func_80084818();
     func_80086124();
     func_80086568();
@@ -633,16 +633,16 @@ void func_800826B4(void) {
     func_80088FF4();
     func_80089128();
     func_80097D64();
-    func_800320E8(D_8009BBC8[0].ot);
-    func_800320E8(D_8009BBC8[1].ot);
-    func_800320E8(D_8009BBC8[0].packets);
-    func_800320E8(D_8009BBC8[1].packets);
-    func_800320E8(D_8009C180);
+    heap_free(D_8009BBC8[0].ot);
+    heap_free(D_8009BBC8[1].ot);
+    heap_free(D_8009BBC8[0].packets);
+    heap_free(D_8009BBC8[1].packets);
+    heap_free(D_8009C180);
     func_800976A0();
-    D_8006D634.map = 0x269;
-    D_8006D634.entry[2] = 2;
+    game_data.map = 0x269;
+    game_data.entry[2] = 2;
     D_8009BBC4 = 1;
-    D_8006D634.entry[0] = D_8009BD38.vy;
+    game_data.entry[0] = D_8009BD38.vy;
 }
 
 /* Give an actor its script. */
@@ -855,8 +855,8 @@ void func_80082F64(WorldmapActor *actor, SceneObject *object, ScaleScratch *scra
         scratch->angle.vy = actor->unk68;
         scratch->scale[0].vx = actor->unk70 & 0x7FFF;
         scratch->scale[0].vy = 0x1000;
-        scratch->scale[0].vz = func_8003F8B0(actor->unk6C) * 6;
-        func_8003F738(&scratch->angle, &scratch->matrix[0]);
+        scratch->scale[0].vz = gpu_get_sin(actor->unk6C) * 6;
+        gpu_build_rotation_matrix(&scratch->angle, &scratch->matrix[0]);
         ScaleMatrix(&scratch->matrix[0], &scratch->scale[0]);
         object->matrix = scratch->matrix[0];
         actor->u.step += actor->unk5C;
@@ -1008,7 +1008,7 @@ void func_8008355C(void) {
     MoveImage(&rect, 0x2C0, 0x100);
     DrawSync(0);
     func_80072DB4(0x40, 0, 4, 2);
-    while (func_800286CC() >= 3) {
+    while (cd_get_pending_read_count() >= 3) {
     }
     func_80076954();
     func_8009766C();
@@ -1019,7 +1019,7 @@ void func_8008355C(void) {
     D_8009D144 = 0;
     D_8009CD40 = func_80086700;
     func_80098044();
-    func_80028A60(0);
+    cd_sync_reads(0);
     func_800721E4();
     D_8009C5AC.vx = 0x1800000;
     D_8009C5AC.vy = -0x100000;
@@ -1033,9 +1033,9 @@ void func_8008355C(void) {
     func_80075030();
     func_800739B8();
     func_80088F64();
-    func_80028A60(0);
-    func_80038428(D_8006259C);
-    func_80028470(0x24, 0);
+    cd_sync_reads(0);
+    sound_add_effect_bank(sound_effect_bank);
+    cd_select_directory(0x24, 0);
     func_80097BC0(&D_8009C5AC);
     do {
         func_800967E4();
@@ -1054,9 +1054,9 @@ void func_8008355C(void) {
 
 /* Leave the world map for scene 0x269 (flag word 4). */
 void func_800837DC(void) {
-    func_80039FF8();
-    func_8003852C(D_8006259C);
-    func_800320E8(D_8006259C);
+    sound_stop_all_effects();
+    sound_remove_effect_bank(sound_effect_bank);
+    heap_free(sound_effect_bank);
     func_80084818();
     func_80086568();
     func_800866C8();
@@ -1065,16 +1065,16 @@ void func_800837DC(void) {
     func_80088FF4();
     func_80089128();
     func_80097D64();
-    func_800320E8(D_8009BBC8[0].ot);
-    func_800320E8(D_8009BBC8[1].ot);
-    func_800320E8(D_8009BBC8[0].packets);
-    func_800320E8(D_8009BBC8[1].packets);
-    func_800320E8(D_8009C180);
+    heap_free(D_8009BBC8[0].ot);
+    heap_free(D_8009BBC8[1].ot);
+    heap_free(D_8009BBC8[0].packets);
+    heap_free(D_8009BBC8[1].packets);
+    heap_free(D_8009C180);
     func_800976A0();
-    D_8006D634.map = 0x269;
-    D_8006D634.entry[2] = 4;
+    game_data.map = 0x269;
+    game_data.entry[2] = 4;
     D_8009BBC4 = 1;
-    D_8006D634.entry[0] = D_8009BD38.vy;
+    game_data.entry[0] = D_8009BD38.vy;
 }
 
 /* Give an actor its script. */

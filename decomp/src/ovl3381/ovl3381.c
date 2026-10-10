@@ -1,10 +1,10 @@
 /* ovl3381: the default battle module at 0x801fc000 (27 identical copies on
  * the disc). The battle overlay's 800beb04 loads the module of the current
  * battle into 0x801fc000..0x80200000 (the slot above the resident heap, which
- * the boot code bounds at 0x801fc000): file (D_800591B3 + 2) of the battle
- * directory, D_800591B3 being the platform bits (6..11) of the directory
+ * the boot code bounds at 0x801fc000): file (sprite_requested_battle_module + 2) of the battle
+ * directory, sprite_requested_battle_module being the platform bits (6..11) of the directory
  * header of battle file 2, whenever they differ from the loaded module's
- * (D_800591B2). Battle script opcodes call fixed entry addresses in the
+ * (sprite_loaded_battle_module). Battle script opcodes call fixed entry addresses in the
  * loaded module. This one provides the battle-entry effect: the captured
  * screen broken into triangles (func_801FC2C0 starts it; no caller is known
  * from the overlays, so it is reached by address).
@@ -71,7 +71,7 @@ void func_801FC064(Task *node) {
                     prim->y1 = tile->spread[1].vy + offset.vy;
                     prim->x2 = tile->spread[2].vx + offset.vx;
                     prim->y2 = tile->spread[2].vy + offset.vy;
-                    AddPrim((u32 *)D_8005956C, prim);
+                    AddPrim((u32 *)sprite_ot, prim);
                 }
             }
         }
@@ -82,10 +82,10 @@ void func_801FC064(Task *node) {
 
 /* Unlink the effect's nodes, release it and restore the depth shift. */
 void func_801FC278(Task *node) {
-    func_8001CB48((Task *)((u8 *)node + 0x1C));
-    func_8001CD94(node);
-    func_80025180((u32)node);
-    D_80050100 = 4;
+    task_unlink_draw_node((Task *)((u8 *)node + 0x1C));
+    task_unlink_main_node(node);
+    sprite_queue_free_later((u32)node);
+    model_ot_depth_shift = 4;
 }
 
 /* Start the effect: build both triangle halves of every 8x8 cell of the
@@ -100,8 +100,8 @@ void func_801FC2C0(void) {
     s32 radius, angle;
     u8 u;
 
-    D_80050100 = 0;
-    task = (TileTask *)func_8001D1D8(sizeof(TileTask), NULL, func_801FC000, func_801FC064, func_801FC278);
+    model_ot_depth_shift = 0;
+    task = (TileTask *)task_alloc_two_node_task(sizeof(TileTask), NULL, func_801FC000, func_801FC064, func_801FC278);
     task->frame = 0;
     for (half = 0; half != 2; half++) {
         for (row = 0; row < 16; row++) {
@@ -133,8 +133,8 @@ void func_801FC2C0(void) {
                                      ? tile->corner[i].vx
                                      : tile->corner[i].vy);
                     angle = ratan2(tile->corner[i].vy, tile->corner[i].vx);
-                    tile->spread[i].vx = func_8003F8CC(angle) * radius / 4096;
-                    tile->spread[i].vy = func_8003F8B0(angle) * radius / 4096;
+                    tile->spread[i].vx = gpu_get_cos(angle) * radius / 4096;
+                    tile->spread[i].vy = gpu_get_sin(angle) * radius / 4096;
                 }
                 for (i = 0; i != 2; i++) {
                     prim = &tile->prim[i];

@@ -77,20 +77,20 @@ u8 D_800AE294[11] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 2, 6};
 /* One music-wave stream step: pass arrivals to the chunk callback; -1 once
  * the stream finished and its ring is released. */
 s32 func_800854D0(void) {
-    s32 arrived = (s32)func_80028B14();
+    s32 arrived = (s32)stream_get_next_chunk();
 
     D_800ADBBC = arrived;
     if (arrived != 0) {
         D_800AFEA4(arrived);
         return 0;
     }
-    if (func_800286CC() != 0) {
+    if (cd_get_pending_read_count() != 0) {
         return 0;
     }
     if (D_800ADBBC != 0) {
         return 0;
     }
-    func_800320E8(D_800ADBB8);
+    heap_free(D_800ADBB8);
     D_800ADB2C = 0;
     return -1;
 }
@@ -101,16 +101,16 @@ void func_80085560(s32 file, s32 unused, void (*callback)(s32)) {
     void *ring;
 
     D_800ADB2C = 1;
-    D_800ADBB8 = ring = func_8002A260(8, unused);
-    func_800295D8(file, ring, 0, 0x100);
+    D_800ADBB8 = ring = stream_create_ring(8, unused);
+    cd_read_file(file, ring, 0, 0x100);
     D_800AFEA4 = callback;
 }
 
 /* Play sound effect `id` on voice pair `channel` at a volume and pan. */
 void func_800855C8(s32 id, s32 volume, s32 pan, s32 channel) {
     channel &= 7;
-    func_8003A20C(channel * 2);
-    func_80039F9C(id, channel * 2, volume, pan);
+    sound_stop_effect_on_channel(channel * 2);
+    sound_play_effect_on_channel_volume_pan(id, channel * 2, volume, pan);
 }
 
 /* Play sound effect `id` on `channel` at full volume and centre pan; id 0
@@ -118,7 +118,7 @@ void func_800855C8(s32 id, s32 volume, s32 pan, s32 channel) {
 void func_80085634(s32 id, s32 channel) {
     channel &= 7;
     if (id == 0) {
-        func_8003A20C(channel * 2);
+        sound_stop_effect_on_channel(channel * 2);
     } else {
         D_800B2078.last_sound_effect = id;
         func_800855C8(id, 0x7F, 0x40, channel);
@@ -143,7 +143,7 @@ void func_80085678(void) {
             return;
         }
         sound = sounds[D_800C3A64 * 2];
-        func_80039EC4((sound & 0xFF) | (D_800B235C->id << 16), ((sound >> 8) & 7) * 2);
+        sound_play_effect_on_channel((sound & 0xFF) | (D_800B235C->id << 16), ((sound >> 8) & 7) * 2);
         D_800C3A64++;
     }
 }
@@ -151,9 +151,9 @@ void func_80085678(void) {
 /* Release a movie's sound-effect bank, when one is loaded. */
 void func_80085738(void) {
     if (FIELD_MOVIE.sound_bank != 0xFF) {
-        func_80039FF8();
-        func_8003852C(D_800B235C);
-        func_800320E8(D_800B235C);
+        sound_stop_all_effects();
+        sound_remove_effect_bank(D_800B235C);
+        heap_free(D_800B235C);
     }
 }
 
@@ -172,15 +172,15 @@ void func_80085788(void) {
     file = FIELD_MOVIE.sound_bank;
     if (file != 0xFF) {
         bank = file;
-        func_80039FF8();
-        func_80028470(0x1C, 0);
+        sound_stop_all_effects();
+        cd_select_directory(0x1C, 0);
         file = bank + 0x115;
-        D_800B235C = func_80031BDC(func_800288EC(file), 1);
-        func_800295D8(file, D_800B235C, 0, 0x80);
-        func_80028A60(0);
-        func_80038428(D_800B235C);
-        func_8003BDFC(0x10);
-        func_80028470(4, 0);
+        D_800B235C = heap_alloc(cd_get_aligned_file_size(file), 1);
+        cd_read_file(file, D_800B235C, 0, 0x80);
+        cd_sync_reads(0);
+        sound_add_effect_bank(D_800B235C);
+        sound_sync_transfer(0x10);
+        cd_select_directory(4, 0);
         pos = 0;
         for (i = 0; i < bank + 1; i++) {
             while (1) {
@@ -200,30 +200,30 @@ void func_80085788(void) {
 void func_80085890(void) {
     s32 size;
 
-    func_80028470(4, 0);
-    size = func_800288EC(0xA8);
-    D_8006259C = func_80031BDC(size, 0);
-    func_800320A4(D_8006259C);
-    if (D_8004F32C == -1) {
-        func_800295D8(0xA8, D_8006259C, 0, 0x80);
-        func_80028A60(0);
+    cd_select_directory(4, 0);
+    size = cd_get_aligned_file_size(0xA8);
+    sound_effect_bank = heap_alloc(size, 0);
+    heap_protect_block(sound_effect_bank);
+    if (mode_effect_bank_not_preloaded == -1) {
+        cd_read_file(0xA8, sound_effect_bank, 0, 0x80);
+        cd_sync_reads(0);
     } else {
-        memcpy(D_8006259C, D_8005A4BC, size);
-        func_800320B8(D_8005A4BC);
-        func_800320E8(D_8005A4BC);
+        memcpy(sound_effect_bank, mode_preloaded_effect_bank, size);
+        heap_unprotect_block(mode_preloaded_effect_bank);
+        heap_free(mode_preloaded_effect_bank);
     }
-    func_80038428(D_8006259C);
-    func_8003BDFC(0x10);
-    func_80028470(4, 0);
-    D_8004F32C = -1;
+    sound_add_effect_bank(sound_effect_bank);
+    sound_sync_transfer(0x10);
+    cd_select_directory(4, 0);
+    mode_effect_bank_not_preloaded = -1;
 }
 
 /* Unlink and release the field's sound-effect bank. */
 void func_80085988(void) {
-    func_8003852C(D_8006259C);
-    func_800320B8(D_8006259C);
-    func_800320E8(D_8006259C);
-    D_8004F32C = -1;
+    sound_remove_effect_bank(sound_effect_bank);
+    heap_unprotect_block(sound_effect_bank);
+    heap_free(sound_effect_bank);
+    mode_effect_bank_not_preloaded = -1;
 }
 
 /* Music-wave chunk callback: gather four 2 KiB chunks and open them as a
@@ -236,16 +236,16 @@ void func_800859DC(WaveChunk *chunk) {
     case 3:
         ((WaveChunk *)D_800C3A1C)[D_800B2370] = *chunk;
         D_800B2370++;
-        func_8002945C((u8 *)chunk);
+        stream_release_chunk((u8 *)chunk);
         if (D_800B2370 == 4) {
-            D_8006258C = func_800380D0(D_800C3A1C, 0x2000, 0);
+            mode_music_wave_bank = sound_start_wave_bank_stream(D_800C3A1C, 0x2000, 0);
         }
         break;
     case 4:
-        func_8003BDFC(0x10);
+        sound_sync_transfer(0x10);
         *(WaveChunk *)D_800C3A1C = *chunk;
-        func_8003827C(D_800C3A1C, 0x800);
-        func_8002945C((u8 *)chunk);
+        sound_transfer_wave_bank_part(D_800C3A1C, 0x800);
+        stream_release_chunk((u8 *)chunk);
         break;
     }
 }
@@ -256,28 +256,28 @@ void func_80085B20(s32 music, s32 unused) {
     u8 wave;
     s32 file;
 
-    func_80028A60(0);
-    func_8001B66C();
+    cd_sync_reads(0);
+    mode_stop_music();
     if (music == 0xFF) {
-        D_8004F308 = 0;
+        mode_music_load_pending = 0;
         return;
     }
-    func_80028470(0x1C, 0);
+    cd_select_directory(0x1C, 0);
     if (D_800ADFCC[music * 2 + 1] == 1) {
         func_80086024();
     }
     wave = D_800ADFCC[music * 2];
     if (wave != 0xFF) {
         file = wave * 2 + 0x13;
-        if (D_8004F33C != wave) {
+        if (mode_music_loaded_wave != wave) {
             func_80085560(file, 1, (void (*)(s32))func_800859DC);
-            D_8004F354 = 1;
+            mode_music_wave_streaming = 1;
             D_800B2370 = 0;
-            D_800C3A1C = func_80031BDC(0x2000, 1);
+            D_800C3A1C = heap_alloc(0x2000, 1);
         }
     }
-    func_80028470(4, 0);
-    D_8004F308 = -1;
+    cd_select_directory(4, 0);
+    mode_music_load_pending = -1;
     D_800AFC54 = 1;
 }
 
@@ -299,69 +299,69 @@ s32 func_80085C3C(void) {
 s32 func_80085C90(s32 music) {
     s32 sequence;
 
-    if (D_8004F354 == 1) {
+    if (mode_music_wave_streaming == 1) {
         if (func_80085C3C() == -1) {
             return -1;
         }
-        func_8003BDFC(0x10);
-        func_800320E8(D_800C3A1C);
-        D_8004F354 = 0;
-        D_8004F360 = 1;
-        D_8004F33C = D_800ADFCC[music * 2];
+        sound_sync_transfer(0x10);
+        heap_free(D_800C3A1C);
+        mode_music_wave_streaming = 0;
+        mode_music_wave_bank_loaded = 1;
+        mode_music_loaded_wave = D_800ADFCC[music * 2];
     }
     if (D_800ADFCC[music * 2 + 1] == 0) {
-        if (D_8004F364 == 0) {
+        if (mode_shared_wave_bank_state == 0) {
             func_80085FB8();
             return -1;
         }
-        if ((D_8004F364 & 0x80) && func_80085F30() == -1) {
+        if ((mode_shared_wave_bank_state & 0x80) && func_80085F30() == -1) {
             return -1;
         }
     }
     if (D_800AFC54 == 1) {
-        if (D_8004F338 != music) {
-            func_80028470(0x1C, 0);
-            func_800295D8(music * 2 + 0x14, D_80062648, 0, 0x80);
-            D_8004F358 = 1;
-            func_80028470(4, 0);
+        if (mode_music_loaded_track != music) {
+            cd_select_directory(0x1C, 0);
+            cd_read_file(music * 2 + 0x14, mode_music_buffer, 0, 0x80);
+            mode_music_seq_read_pending = 1;
+            cd_select_directory(4, 0);
         }
         D_800AFC54 = 0;
         return -1;
     }
-    if (func_800286CC() != 0) {
+    if (cd_get_pending_read_count() != 0) {
         return -1;
     }
-    if (D_8004F358 == 1) {
-        if (D_8004F348 == 0) {
-            sequence = (s32)func_80039850((SoundSeqHeader *)D_80062648);
-            D_80062528 = sequence;
-            if (D_8004F340 == -1) {
-                func_80039A80((SoundSeq *)sequence, 0x7F, 0);
+    if (mode_music_seq_read_pending == 1) {
+        if (mode_music_reuse_seq == 0) {
+            sequence = (s32)sound_create_seq((SoundSeqHeader *)mode_music_buffer);
+            mode_music_seq = sequence;
+            if (mode_music_start_full_volume == -1) {
+                sound_play_seq((SoundSeq *)sequence, 0x7F, 0);
             } else {
-                func_80039A80((SoundSeq *)D_80062528, 0, 0);
-                func_8003A89C((SoundSeq *)D_80062528, 0, 0);
+                sound_play_seq((SoundSeq *)mode_music_seq, 0, 0);
+                sound_set_seq_fade((SoundSeq *)mode_music_seq, 0, 0);
             }
         } else {
-            D_80062528 = D_8004F2FC;
-            func_80039B68((SoundSeq *)D_8004F2FC, 0x7F, 0xF0);
-            D_8004F348 = 0;
-            D_8004F2FC = 0;
+            mode_music_seq = mode_music_cached_seq;
+            sound_restart_seq((SoundSeq *)mode_music_cached_seq, 0x7F, 0xF0);
+            mode_music_reuse_seq = 0;
+            mode_music_cached_seq = 0;
         }
-        D_8004F358 = 0;
-        D_8004F35C = 1;
-        D_8004F338 = music;
+        mode_music_seq_read_pending = 0;
+        mode_music_seq_active = 1;
+        mode_music_loaded_track = music;
     }
-    D_8004F340 = -1;
-    D_8004F36C = 1;
+    mode_music_start_full_volume = -1;
+    mode_music_started = 1;
     return 0;
 }
 
 /* Stop and release the cached sequence. */
 void func_80085EEC(void) {
-    if (D_8004F2FC != 0) {
-        func_80039C4C((SoundSeq *)D_8004F2FC);
-        func_800399D4((SoundSeq *)D_8004F2FC);
-        D_8004F2FC = 0;
+    if (mode_music_cached_seq != 0) {
+        sound_stop_seq((SoundSeq *)mode_music_cached_seq);
+        sound_release_seq((SoundSeq *)mode_music_cached_seq);
+        mode_music_cached_seq = 0;
     }
 }
 
@@ -370,17 +370,17 @@ void func_80085EEC(void) {
 s32 func_80085F30(void) {
     s32 bank;
 
-    if (func_800286CC() != 0) {
+    if (cd_get_pending_read_count() != 0) {
         return -1;
     }
-    bank = (s32)func_80037FD8(D_800B00E0, 0);
-    D_80062518[1] = bank;
-    D_80059560 = (SoundSequence *)bank;
-    func_8003BDFC(0x10);
-    func_800320E8(D_800B00E0);
-    D_8004F364 = 1;
-    D_8004F384 = 0;
-    D_8004F368 = 0;
+    bank = (s32)sound_load_wave_bank(D_800B00E0, 0);
+    mode_wave_bank_slots[1] = bank;
+    mode_shared_wave_bank = (SoundSequence *)bank;
+    sound_sync_transfer(0x10);
+    heap_free(D_800B00E0);
+    mode_shared_wave_bank_state = 1;
+    mode_shared_wave_bank_needs_reload = 0;
+    mode_shared_wave_bank_released = 0;
     return 0;
 }
 
@@ -388,21 +388,21 @@ s32 func_80085F30(void) {
 void func_80085FB8(void) {
     void *buffer;
 
-    func_80028470(0x1C, 0);
-    D_800B00E0 = buffer = func_80031BDC(func_800288EC(3), 1);
-    func_800295D8(3, buffer, 0, 0x80);
-    func_80028470(4, 0);
-    D_8004F364 = 0x80;
+    cd_select_directory(0x1C, 0);
+    D_800B00E0 = buffer = heap_alloc(cd_get_aligned_file_size(3), 1);
+    cd_read_file(3, buffer, 0, 0x80);
+    cd_select_directory(4, 0);
+    mode_shared_wave_bank_state = 0x80;
 }
 
 /* Release the shared wave bank once and mark it unloaded. */
 void func_80086024(void) {
-    if (D_8004F368 == 0) {
-        D_8004F384 = 1;
-        func_80038310((SoundSequence *)D_80062518[1]);
-        D_8004F368 = 1;
+    if (mode_shared_wave_bank_released == 0) {
+        mode_shared_wave_bank_needs_reload = 1;
+        sound_release_wave_bank((SoundSequence *)mode_wave_bank_slots[1]);
+        mode_shared_wave_bank_released = 1;
     }
-    D_8004F364 = 0;
+    mode_shared_wave_bank_state = 0;
 }
 
 /* A positional emitter's volume at `distance`: full at the source, falling
@@ -439,8 +439,8 @@ void func_800860F0(s32 unused0, s32 volume, s32 unused2, s32 distance, s32 id) {
                 x = 0;
             }
             pan = (x * 0x6666) >> 16;
-            func_8003A344(voice, level);
-            func_8003A55C(voice, pan);
+            sound_set_effect_volume_on_channel(voice, level);
+            sound_set_effect_pan_on_channel(voice, pan);
         }
     }
 }
@@ -488,8 +488,8 @@ void func_800862CC(s32 sound, s32 volume, s32 unused, s32 distance, s32 actor) {
                 x = 0;
             }
             pan = (x * 0x6666) >> 16;
-            func_8003A20C(i * 2);
-            func_80039F9C(sound, i * 2, level, pan);
+            sound_stop_effect_on_channel(i * 2);
+            sound_play_effect_on_channel_volume_pan(sound, i * 2, level, pan);
             return;
         }
     }
@@ -501,7 +501,7 @@ void func_800863E8(s32 id) {
 
     for (i = 0; i < 3; i++) {
         if (D_800AFE88[i].actor == id) {
-            func_8003A20C(i * 2);
+            sound_stop_effect_on_channel(i * 2);
             D_800AFE88[i].sound = 0xFFFF;
             D_800AFE88[i].actor = 0xFFFF;
             return;
@@ -544,7 +544,7 @@ void func_800864F0(void) {
     }
     for (i = 0; i < 4; i++) {
         if (!(D_800B2078.effects_kept & 1)) {
-            func_8003A20C(i * 2);
+            sound_stop_effect_on_channel(i * 2);
         }
         D_800B2078.effects_kept >>= 1;
     }
@@ -614,7 +614,7 @@ void func_80086590(VECTOR *listener) {
     }
     for (i = 0; i < 3; i++) {
         if (near.matched[i] == 0 && D_800AFE88[i].sound != 0xFFFF) {
-            func_8003A20C(i * 2);
+            sound_stop_effect_on_channel(i * 2);
             D_800AFE88[i].sound = 0xFFFF;
             D_800AFE88[i].actor = 0xFFFF;
         }
@@ -721,7 +721,7 @@ void func_80086C34(void) {
 /* Event opcode e2: resident 80019cd0 shuts the libraries down and restarts from
  * the entry point; then yield and advance one byte. */
 void func_80086D4C(void) {
-    func_80019CD0();
+    boot_restart();
     D_800B00C0 = 1;
     D_800B0078->pc++;
 }
@@ -817,7 +817,7 @@ void func_80087148(void) {
     s32 record = func_800ACDEC(1);
     s32 bits = func_800ACDEC(3);
 
-    D_8005A39C->skills[record].flags1A |= bits;
+    game_current_data->skills[record].flags1A |= bits;
     D_800B0078->pc += 5;
 }
 
@@ -837,8 +837,8 @@ void func_800871B0(void) {
         D_800AFC7C += 0x20;
         y = func_800ACDEC(2);
         h = func_800ACDEC(4);
-        D_800C3A48 = func_80031BDC(h << 9, 0);
-        D_800AF87C = func_80031BDC(h << 9, 0);
+        D_800C3A48 = heap_alloc(h << 9, 0);
+        D_800AF87C = heap_alloc(h << 9, 0);
         D_800AFC58.x = 0;
         D_800AFC58.y = y;
         D_800AFC58.w = 0x100;
@@ -851,13 +851,13 @@ void func_800871B0(void) {
         D_800AFC7C += 0x20;
         row = func_800ACDEC(2);
         h = func_800ACDEC(4);
-        func_80026F44(0x100, h, D_800AF87C + (row << 8), D_800C3A48 + (row << 8));
+        sprite_darken_pixels(0x100, h, D_800AF87C + (row << 8), D_800C3A48 + (row << 8));
         D_800ADBB4 = 1;
         D_800B0078->pc += 6;
         break;
     case 2:
-        func_800320E8(D_800C3A48);
-        func_800320E8(D_800AF87C);
+        heap_free(D_800C3A48);
+        heap_free(D_800AF87C);
         D_800B00C0 = 1;
         D_800B0078->pc += 2;
         break;
@@ -902,7 +902,7 @@ void func_8008752C(void) {
 
 /* Event: set game flag 0x4000 of +22b6. */
 void func_8008754C(void) {
-    D_8005A39C->flags |= 0x4000;
+    game_current_data->flags |= 0x4000;
     D_800B0078->pc++;
 }
 
@@ -911,7 +911,7 @@ void func_8008754C(void) {
 void func_80087580(void) {
     s32 from = func_800ACDEC(1);
 
-    D_8005A39C->gears[func_800ACDEC(3)] = D_8005A39C->gears[from];
+    game_current_data->gears[func_800ACDEC(3)] = game_current_data->gears[from];
     D_800B0078->pc += 5;
 }
 
@@ -922,17 +922,17 @@ void func_8008764C(void) {
     s32 from = func_800ACDEC(1);
     s32 to = func_800ACDEC(3);
 
-    D_8005A39C->characters[to] = D_8005A39C->characters[from];
-    D_8005A39C->skills[to] = D_8005A39C->skills[from];
+    game_current_data->characters[to] = game_current_data->characters[from];
+    game_current_data->skills[to] = game_current_data->skills[from];
     {
-        GameData *state = D_8005A39C;
+        GameData *state = game_current_data;
 
         if (to == 9) {
             state->flags |= 0x2000;
         }
     }
     if (to == 10) {
-        D_8005A39C->flags |= 0x1000;
+        game_current_data->flags |= 0x1000;
     }
     D_800B0078->pc += 5;
 }
@@ -941,7 +941,7 @@ void func_8008764C(void) {
  * parameters ext bf sets; menu3 func_80075060 writes it) in variable
  * operand 1. */
 void func_80087800(void) {
-    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_80050622);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, mode_arena_bout_outcome);
     D_800B0078->pc += 3;
 }
 
@@ -951,18 +951,18 @@ void func_80087800(void) {
  * operands 1-11 and request leaving the field: 800adb88 set, 800adbe8 cleared,
  * so the field loop ends with kind 2 (game mode 4, 8007954c). */
 void func_80087848(void) {
-    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || D_8004F308 == -1) {
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || mode_music_load_pending == -1) {
         D_800B00C0 = 1;
         D_800B0078->pc--;
         return;
     }
-    func_800379B4(0);
-    D_8005061C[0] = func_800ACDEC(1);
-    D_8005061C[1] = func_800ACDEC(3);
-    D_8005061C[2] = func_800ACDEC(5);
-    D_8005061C[3] = func_800ACDEC(7);
-    D_8005061C[4] = func_800ACDEC(9);
-    D_8005061C[5] = func_800ACDEC(11);
+    mode_set_arena_task(0);
+    mode_arena_task_parameters[0] = func_800ACDEC(1);
+    mode_arena_task_parameters[1] = func_800ACDEC(3);
+    mode_arena_task_parameters[2] = func_800ACDEC(5);
+    mode_arena_task_parameters[3] = func_800ACDEC(7);
+    mode_arena_task_parameters[4] = func_800ACDEC(9);
+    mode_arena_task_parameters[5] = func_800ACDEC(11);
     D_800ADB88 = 1;
     D_800ADBE8 = 0;
     D_800B0078->pc += 13;
@@ -971,8 +971,8 @@ void func_80087848(void) {
 /* Event: store the world map ferry's saved x and z (+1844, +1846;
  * D_8006EE78) in variables op1 and op3. */
 void func_80087960(void) {
-    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->unk1844[0]);
-    func_800A3074(func_800ACDB8(3) & 0xFFFF, D_8005A39C->unk1844[1]);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, game_current_data->unk1844[0]);
+    func_800A3074(func_800ACDB8(3) & 0xFFFF, game_current_data->unk1844[1]);
     D_800B0078->pc += 5;
 }
 
@@ -980,8 +980,8 @@ void func_80087960(void) {
  * D_8006EE80) in variables op1 and op3, read unsigned (the world map's
  * halves are signed). */
 void func_800879D0(void) {
-    func_800A3074(func_800ACDB8(1) & 0xFFFF, (u16)D_8005A39C->flight.x);
-    func_800A3074(func_800ACDB8(3) & 0xFFFF, (u16)D_8005A39C->flight.z);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, (u16)game_current_data->flight.x);
+    func_800A3074(func_800ACDB8(3) & 0xFFFF, (u16)game_current_data->flight.z);
     D_800B0078->pc += 5;
 }
 
@@ -1003,28 +1003,28 @@ void func_80087A7C(void) {
  * from operands 1 and 3, immediate by flags 0x80/0x40 of byte 9 (past the
  * instruction's 6 bytes), clear +1850 and +1854 and set +1856 to 1. */
 void func_80087AB8(void) {
-    D_8005A39C->flight.x = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 9]);
-    D_8005A39C->flight.z = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 9]);
-    D_8005A39C->flight.count = 0;
-    D_8005A39C->flight.z_frac = 0;
-    D_8005A39C->unk1856 = 1;
+    game_current_data->flight.x = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 9]);
+    game_current_data->flight.z = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 9]);
+    game_current_data->flight.count = 0;
+    game_current_data->flight.z_frac = 0;
+    game_current_data->unk1856 = 1;
     D_800B0078->pc += 6;
 }
 
 /* Event: store the world map vehicle's saved position (game +182c-+1830)
  * and heading (+1832; WorldmapReturn) in variables op1..op7. */
 void func_80087B5C(void) {
-    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->worldmap.unk60);
-    func_800A3074(func_800ACDB8(3) & 0xFFFF, D_8005A39C->worldmap.unk62);
-    func_800A3074(func_800ACDB8(5) & 0xFFFF, D_8005A39C->worldmap.unk64);
-    func_800A3074(func_800ACDB8(7) & 0xFFFF, D_8005A39C->worldmap.vehicle_heading);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, game_current_data->worldmap.unk60);
+    func_800A3074(func_800ACDB8(3) & 0xFFFF, game_current_data->worldmap.unk62);
+    func_800A3074(func_800ACDB8(5) & 0xFFFF, game_current_data->worldmap.unk64);
+    func_800A3074(func_800ACDB8(7) & 0xFFFF, game_current_data->worldmap.vehicle_heading);
     D_800B0078->pc += 9;
 }
 
 /* Event: set 8004f300, which enables the file 0xab sequence (800acc58) that
  * 800a7948 draws over movie frames 0x687-0x18e1. */
 void func_80087C0C(void) {
-    D_8004F300 = 1;
+    mode_staff_roll_enabled = 1;
     D_800B0078->pc++;
 }
 
@@ -1032,24 +1032,24 @@ void func_80087C0C(void) {
  * (+182c-+1832) from operands 1..7 (immediate by flags 0x80/0x40/0x20/0x10
  * of byte 9). */
 void func_80087C34(void) {
-    D_8005A39C->worldmap.unk60 = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 9]);
-    D_8005A39C->worldmap.unk62 = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 9]);
-    D_8005A39C->worldmap.unk64 = func_8009D000(5, D_800ADC00[D_800B0078->pc + 9]);
-    D_8005A39C->worldmap.vehicle_heading = func_8009D044(7, D_800ADC00[D_800B0078->pc + 9]);
+    game_current_data->worldmap.unk60 = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 9]);
+    game_current_data->worldmap.unk62 = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 9]);
+    game_current_data->worldmap.unk64 = func_8009D000(5, D_800ADC00[D_800B0078->pc + 9]);
+    game_current_data->worldmap.vehicle_heading = func_8009D044(7, D_800ADC00[D_800B0078->pc + 9]);
     D_800B0078->pc += 10;
 }
 
 /* Event: store the world map vehicle's flags (+1834, WorldmapReturn.flags)
  * in variable op1. */
 void func_80087D30(void) {
-    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->worldmap.flags);
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, game_current_data->worldmap.flags);
     D_800B0078->pc += 3;
 }
 
 /* Event: set the world map vehicle's flags (+1834) from operand 1
  * (immediate when flag 0x80 of byte 3 is set). */
 void func_80087D80(void) {
-    D_8005A39C->worldmap.flags = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 3]);
+    game_current_data->worldmap.flags = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 3]);
     D_800B0078->pc += 4;
 }
 
@@ -1082,7 +1082,7 @@ void func_80087E98(void) {
     s32 i;
 
     if (index != 0xFF) {
-        if (index == D_8005A444[0]) {
+        if (index == mode_party_actors[0]) {
             D_800B2078.followers_idle = 0;
         } else {
             D_800B2078.followers_idle = 1;
@@ -1142,7 +1142,7 @@ void func_8008800C(void) {
  * records at +978). */
 void func_80088198(void) {
     s32 i;
-    GameData *state = D_8005A39C;
+    GameData *state = game_current_data;
 
     for (i = 0; i < 20; i++) {
         state->gears[i].hp = state->gears[i].maxHp;
@@ -1166,7 +1166,7 @@ void func_800881E8(void) {
  * (8004f308 == -1, set by 8008f7b8 when it changes the track); then advance,
  * yielding. */
 void func_8008825C(void) {
-    if (D_8004F308 == -1) {
+    if (mode_music_load_pending == -1) {
         D_800B0078->pc--;
     } else {
         D_800B0078->pc++;
@@ -1180,7 +1180,7 @@ void func_800882B8(void) {
     s32 character = func_8008CF3C(func_800ACDEC(1));
 
     if (character != 0xFF) {
-        func_800A3074(func_800ACDB8(3) & 0xFFFF, D_8005A39C->characters[character].gearId);
+        func_800A3074(func_800ACDB8(3) & 0xFFFF, game_current_data->characters[character].gearId);
     } else {
         func_800A3074(func_800ACDB8(3) & 0xFFFF, 0xFF);
     }
@@ -1192,7 +1192,7 @@ void func_800882B8(void) {
 void func_80088360(void) {
     s32 slot = func_800ACDEC(1);
 
-    D_8005A39C->characters[slot].gearId = func_800ACDEC(3);
+    game_current_data->characters[slot].gearId = func_800ACDEC(3);
     D_800B0078->pc += 5;
 }
 
@@ -1202,9 +1202,9 @@ void func_800883D4(void) {
 
     if (character != 0xFF) {
         if (D_800ADC00[D_800B0078->pc + 1] == 0) {
-            D_8005A39C->locked |= 1 << character;
+            game_current_data->locked |= 1 << character;
         } else {
-            D_8005A39C->locked &= ~(1 << character);
+            game_current_data->locked &= ~(1 << character);
         }
     }
     D_800B0078->pc += 4;
@@ -1229,7 +1229,7 @@ void func_80088508(void) {
     s32 member;
     Sprite *model;
 
-    member = D_8005A444[func_800ACDEC(5)];
+    member = mode_party_actors[func_800ACDEC(5)];
     D_800AFC7C += 4;
     if (member != 0xFF) {
         model = D_800AF880.components.descriptors[member].model;
@@ -1333,7 +1333,7 @@ void func_800888A4(void) {
     model = D_800AF880.components.descriptors[D_800AFD1C].model;
     low = func_800ACDEC(1) & 0xF;
     frame = ((func_800ACDEC(1) >> 4) << 8) + func_800ACDEC(3);
-    func_8002303C(model, 2, 0);
+    sprite_alloc_sequencer_buffer(model, 2, 0);
     SPRITE_SEQUENCER(model)->buffer[2] = low << 6;
     D_800B0078->state.bits.unk18 = low << 6;
     SPRITE_SEQUENCER(model)->buffer[3] = frame;
@@ -1356,7 +1356,7 @@ void func_800889BC(void) {
     frame0 = ((func_800ACDEC(1) >> 4) << 8) + func_800ACDEC(3);
     low1 = func_800ACDEC(5) & 0xF;
     frame1 = ((func_800ACDEC(5) >> 4) << 8) + func_800ACDEC(7);
-    func_8002303C(model, 3, 0);
+    sprite_alloc_sequencer_buffer(model, 3, 0);
     SPRITE_SEQUENCER(model)->buffer[2] = low0 << 6;
     D_800B0078->state.bits.unk18 = low0 << 6;
     SPRITE_SEQUENCER(model)->buffer[3] = frame0;
@@ -1542,7 +1542,7 @@ void func_80089B54(void) {
     s32 i;
 
     for (i = 0; i < 3; i++) {
-        if (D_8005A444[i] == D_800AFD1C) {
+        if (mode_party_actors[i] == D_800AFD1C) {
             func_800A3074(func_800ACDB8(1) & 0xFFFF, i);
             goto done;
         }
@@ -1707,11 +1707,11 @@ void func_8008A2E8(void) {
     }
     if (EVENT_OPERAND_BYTE(1) == 0) {
         index = func_8009CF78(5, EVENT_OPERAND_BYTE(0xD));
-        func_80028470(4, 0);
+        cd_select_directory(4, 0);
         file = index + 0x7FB;
-        image = func_80031BDC(func_800288EC(file), 0);
+        image = heap_alloc(cd_get_aligned_file_size(file), 0);
         D_800B1F74 = image;
-        func_800295D8(file, image, 0, 0x80);
+        cd_read_file(file, image, 0, 0x80);
         D_800B0078->pc += 2;
     } else if (EVENT_OPERAND_BYTE(1) == 1) {
         row = func_8009D044(8, EVENT_OPERAND_BYTE(0xA));
@@ -1727,7 +1727,7 @@ void func_8008A2E8(void) {
         func_80070340(D_800B1F74, x, y, 0, clut_y, 0, 0);
         D_800B0078->pc += 0xB;
     } else {
-        func_800320E8(D_800B1F74);
+        heap_free(D_800B1F74);
         D_800B0078->pc += 2;
     }
     D_800B00C0 = 1;
@@ -1788,8 +1788,8 @@ void func_8008A520(void) {
  * while busy. */
 s32 func_8008A558(void) {
     if (D_800ADB2C == 0) {
-        if (func_800286CC() == 0) {
-            func_80028A60(0);
+        if (cd_get_pending_read_count() == 0) {
+            cd_sync_reads(0);
             return 0;
         }
     }
@@ -1801,7 +1801,7 @@ s32 func_8008A558(void) {
  * controller start sets it to 1); advance 1. */
 void func_8008A5A0(void) {
     if (D_800ADC00[D_800B0078->pc + 1] == 0) {
-        func_8003633C(0);
+        pad_set_unread_byte(0);
     }
     D_800B0078->pc++;
 }
@@ -1821,11 +1821,11 @@ void func_8008A640(void) {
     s32 value;
 
     if (character != 0xFF) {
-        value = func_800ACDEC(1) - D_8005A39C->characters[character].field77;
+        value = func_800ACDEC(1) - game_current_data->characters[character].field77;
         if (value < 0) {
             value = 0;
         }
-        D_8005A39C->characters[character].field78 = value;
+        game_current_data->characters[character].field78 = value;
     }
     D_800B0078->pc += 5;
 }
@@ -1837,7 +1837,7 @@ void func_8008A6E0(void) {
     s32 sum;
 
     if (character != 0xFF) {
-        sum = D_8005A39C->characters[character].field77 + D_8005A39C->characters[character].field78;
+        sum = game_current_data->characters[character].field77 + game_current_data->characters[character].field78;
         func_800A3074(func_800ACDB8(1) & 0xFFFF, sum);
     } else {
         func_800A3074(func_800ACDB8(1) & 0xFFFF, 0);
@@ -1851,10 +1851,10 @@ s32 func_8008A790(s32 id, s32 *slot) {
     s32 i;
 
     for (i = 0; i < 3; i++) {
-        if (D_80062590[i] == id) {
+        if (mode_party_members[i] == id) {
             break;
         }
-        if (D_80062590[i] == 0xFF) {
+        if (mode_party_members[i] == 0xFF) {
             *slot = i;
             return 0;
         }
@@ -1871,29 +1871,29 @@ void func_8008A7DC(s32 member, s32 slot) {
 
     D_800ADBCC = slot;
     D_800ADBC8 = member;
-    func_80028470(4, 0);
+    cd_select_directory(4, 0);
     if (D_800ADB1C == 0) {
-        func_80028A60(0);
+        cd_sync_reads(0);
     }
-    if (!(D_8004F34C & 0xC000)) {
+    if (!(mode_field_map_id & 0xC000)) {
         file = member + 5;
-        size = func_800288EC(file);
-        D_8006FABC[D_800ADBCC] = member;
-        D_800ADBC0 = func_80031BDC(size, 0);
-        func_800295D8(file, D_800ADBC0, 0, 0x80);
+        size = cd_get_aligned_file_size(file);
+        mode_party_file_ids[D_800ADBCC] = member;
+        D_800ADBC0 = heap_alloc(size, 0);
+        cd_read_file(file, D_800ADBC0, 0, 0x80);
     } else {
-        sprite = func_8001ACF0(member);
+        sprite = mode_get_character_gear_id(member);
         if (sprite == 0xFF) {
             sprite = 0;
         }
         sprite += 0x10;
         file = sprite + 5;
-        D_800ADBC0 = func_80031BDC(func_800288EC(file), 0);
-        D_8006FABC[D_800ADBCC] = sprite;
-        func_800295D8(file, D_800ADBC0, 0, 0x80);
+        D_800ADBC0 = heap_alloc(cd_get_aligned_file_size(file), 0);
+        mode_party_file_ids[D_800ADBCC] = sprite;
+        cd_read_file(file, D_800ADBC0, 0, 0x80);
     }
     if (D_800ADB1C == 0) {
-        func_80028A60(0);
+        cd_sync_reads(0);
     }
     D_800ADBC4 = 1;
 }
@@ -1923,7 +1923,7 @@ void func_8008A974(void) {
 void func_8008A9AC(void) {
     if (func_8008A558() == 0) {
         D_800ADB90 = 0;
-        func_80021BF0(D_800AF880.components.descriptors[D_800AFD1C].model, (s32)D_800B0078->unk120);
+        sprite_set_alternate_resource(D_800AF880.components.descriptors[D_800AFD1C].model, (s32)D_800B0078->unk120);
         D_800B0078->pc++;
     } else {
         D_800B0078->pc--;
@@ -1934,7 +1934,7 @@ void func_8008A9AC(void) {
 /* Event: release the actor's block at +120 once, then yield. */
 void func_8008AA60(void) {
     if (D_800B0078->unk124 != -1) {
-        func_800320E8(D_800B0078->unk120);
+        heap_free(D_800B0078->unk120);
         D_800B0078->unk124 = -1;
     }
     D_800B00C0 = 1;
@@ -1956,35 +1956,35 @@ void func_8008AACC(void) {
 
     if (func_8008A558() == 0) {
         if (EVENT_OPERAND_BYTE(1) == 1) {
-            D_80062518[D_800AFD18] = (s32)func_80037FD8(D_800AFD08, 0);
-            func_8003BDFC(0x10);
-            func_800320E8(D_800AFD08);
+            mode_wave_bank_slots[D_800AFD18] = (s32)sound_load_wave_bank(D_800AFD08, 0);
+            sound_sync_transfer(0x10);
+            heap_free(D_800AFD08);
             if (D_800AFD18 == 3) {
-                D_800595AC = (SoundSequence *)D_80062518[3];
+                mode_wave_bank_5 = (SoundSequence *)mode_wave_bank_slots[3];
             }
             D_800B00C0 = 1;
             D_800B0078->pc += 2;
         } else {
             slot = func_800ACDEC(2);
             D_800AFD18 = slot;
-            func_80038310((SoundSequence *)D_80062518[slot]);
+            sound_release_wave_bank((SoundSequence *)mode_wave_bank_slots[slot]);
             file = func_800ACDEC(4);
             D_800AFD0C = file;
             if (!(file & 0x80)) {
             standard:
-                func_80028470(0x1C, 0);
+                cd_select_directory(0x1C, 0);
                 D_800AFD0C += 2;
-            } else if (D_8004F370 == 1) {
+            } else if (mode_field_standalone == 1) {
                 D_800AFD0C = 4;
                 goto standard;
             } else {
                 D_800AFD0C = (file & 0x7F) + 0x1F;
-                func_80028470(0x2C, 1);
+                cd_select_directory(0x2C, 1);
             }
-            data = func_80031BDC(func_800288EC(D_800AFD0C), 0);
+            data = heap_alloc(cd_get_aligned_file_size(D_800AFD0C), 0);
             D_800AFD08 = data;
-            func_800295D8(D_800AFD0C, data, 0, 0x80);
-            func_80028470(4, 0);
+            cd_read_file(D_800AFD0C, data, 0, 0x80);
+            cd_select_directory(4, 0);
             D_800B0078->pc += 6;
         }
     } else {
@@ -2007,18 +2007,18 @@ void func_8008ACE8(void) {
             return;
         }
         if (D_800B0078->unk124 != -1) {
-            func_800320E8(D_800B0078->unk120);
+            heap_free(D_800B0078->unk120);
             D_800B0078->unk124 = -1;
         }
         number = func_800ACDEC(1);
-        func_80028470(4, 0);
+        cd_select_directory(4, 0);
         file = number + 0x77A;
-        size = func_800288EC(file) + 8;
+        size = cd_get_aligned_file_size(file) + 8;
         D_800B0078->unk124 = file;
-        D_800B0078->unk120 = func_80031BDC(size, 0);
-        func_800295D8(file, D_800B0078->unk120, 0, 0x80);
+        D_800B0078->unk120 = heap_alloc(size, 0);
+        cd_read_file(file, D_800B0078->unk120, 0, 0x80);
         if (D_800ADB1C == 0) {
-            func_80028A60(0);
+            cd_sync_reads(0);
         }
         D_800ADB90 = 1;
         D_800B0078->pc += 3;
@@ -2273,10 +2273,10 @@ void func_8008B5D4(void) {
  * pending load and advance. Otherwise wait (pc-- to the fe), also when no load
  * is pending. Yields. */
 void func_8008B894(void) {
-    if (D_800ADBC4 != 0xFF && func_800286CC() == 0) {
-        func_80028A60(0);
-        func_80032EB4(D_800ADBC0, D_8005A414[D_800ADBCC]);
-        func_800320E8(D_800ADBC0);
+    if (D_800ADBC4 != 0xFF && cd_get_pending_read_count() == 0) {
+        cd_sync_reads(0);
+        text_unpack_lzss(D_800ADBC0, mode_party_sprite_blocks[D_800ADBCC]);
+        heap_free(D_800ADBC0);
         func_8008B978(D_800ADBC8);
         D_800ADBC4 = 0xFF;
         D_800B00C0 = 1;
@@ -2305,7 +2305,7 @@ void func_8008B978(s32 member) {
     u8 *code;
     s32 pc_new;
 
-    D_8005A39C->joined |= 1 << D_800ADBC8;
+    game_current_data->joined |= 1 << D_800ADBC8;
     descriptor = D_800B06B8;
     actor = D_800B0078;
     if (D_800ADB1C != 0) {
@@ -2329,14 +2329,14 @@ void func_8008B978(s32 member) {
                 func_8008D380(i, D_800B2078.controlled);
                 func_800A1EC8(0xFFFF);
                 func_80077268();
-                D_8005A39C->joined |= 1 << D_800ADBC8;
-                if (D_8004F34C & 0xC000) {
-                    D_800B06B8 = &D_800AF880.components.descriptors[D_8006F990[D_800ADBCC]];
+                game_current_data->joined |= 1 << D_800ADBC8;
+                if (mode_field_map_id & 0xC000) {
+                    D_800B06B8 = &D_800AF880.components.descriptors[mode_party_stand_in_actors[D_800ADBCC]];
                     D_800B0078 = D_800B06B8->actor;
-                    func_80080A74(D_8006F990[D_800ADBCC]);
+                    func_80080A74(mode_party_stand_in_actors[D_800ADBCC]);
                     D_800AF880.components.descriptors[i].actor->pc = entry;
-                    D_800AFD1C = D_8006F990[D_800ADBCC];
-                    pc_new = func_800A3090(D_8006F990[D_800ADBCC], 0);
+                    D_800AFD1C = mode_party_stand_in_actors[D_800ADBCC];
+                    pc_new = func_800A3090(mode_party_stand_in_actors[D_800ADBCC], 0);
                     D_800AFFEC = 0;
                     D_800B0078->pc = pc_new;
                     func_800A1EC8(0xFFFF);
@@ -2364,17 +2364,17 @@ void func_8008BC80(void) {
     s32 slot;
 
     if (pending == 0xFF && D_800ADB2C == 0 && func_8008A558() == 0) {
-        func_80028A60(0);
+        cd_sync_reads(0);
         member = func_800ACDEC(1);
         if (member != pending) {
             if (func_8008A790(member, &slot) == 0) {
-                D_8005A39C->inGear[slot] = 0;
-                D_80062590[slot] = member;
+                game_current_data->inGear[slot] = 0;
+                mode_party_members[slot] = member;
                 func_8008A7DC(member, slot);
                 D_800B0078->pc += 3;
                 return;
             }
-            D_8005A39C->joined |= 1 << member;
+            game_current_data->joined |= 1 << member;
             D_800B0078->pc += 5;
             return;
         }
@@ -2396,16 +2396,16 @@ void func_8008BDD8(void) {
     s32 member;
 
     if (D_800ADBC4 == 0xFF && D_800ADB2C == 0 && func_8008A558() == 0) {
-        func_80028A60(0);
+        cd_sync_reads(0);
         if (func_8008A790(D_800ADC00[D_800B0078->pc + 1], &slot) == 0) {
-            D_8005A39C->inGear[slot] = 0;
+            game_current_data->inGear[slot] = 0;
             member = D_800ADC00[D_800B0078->pc + 1];
-            D_80062590[slot] = member;
+            mode_party_members[slot] = member;
             func_8008A7DC(member, slot);
             D_800B0078->pc += 2;
             return;
         }
-        D_8005A39C->joined |= 1 << D_800ADC00[D_800B0078->pc + 1];
+        game_current_data->joined |= 1 << D_800ADC00[D_800B0078->pc + 1];
         D_800B0078->pc += 4;
         return;
     }
@@ -2421,23 +2421,23 @@ void func_8008BF38(s32 slot) {
     s32 kind;
     s32 *sprites;
 
-    member = D_8005A444[slot + 1];
+    member = mode_party_actors[slot + 1];
     if (member == 0xFF) {
-        D_8006FABC[slot] = D_8006FABC[slot + 1];
-        D_80062590[slot] = D_80062590[slot + 1];
-        D_8005A444[slot] = D_8005A444[slot + 1];
-        D_80062590[slot + 1] = member;
-        D_8006FABC[slot + 1] = member;
-        D_8005A444[slot + 1] = member;
+        mode_party_file_ids[slot] = mode_party_file_ids[slot + 1];
+        mode_party_members[slot] = mode_party_members[slot + 1];
+        mode_party_actors[slot] = mode_party_actors[slot + 1];
+        mode_party_members[slot + 1] = member;
+        mode_party_file_ids[slot + 1] = member;
+        mode_party_actors[slot + 1] = member;
         return;
     }
-    *(PartySprite *)D_8005A414[slot] = *(PartySprite *)D_8005A414[slot + 1];
-    D_8006FABC[slot] = D_8006FABC[slot + 1];
-    D_80062590[slot] = D_80062590[slot + 1];
-    D_8005A444[slot] = D_8005A444[slot + 1];
+    *(PartySprite *)mode_party_sprite_blocks[slot] = *(PartySprite *)mode_party_sprite_blocks[slot + 1];
+    mode_party_file_ids[slot] = mode_party_file_ids[slot + 1];
+    mode_party_members[slot] = mode_party_members[slot + 1];
+    mode_party_actors[slot] = mode_party_actors[slot + 1];
     kind = D_800AF880.components.descriptors[member].actor->unk126;
     if (!(kind & 0x80)) {
-        func_80076AC0(member, slot, D_8005A414[slot], 1, 0, slot, 1);
+        func_80076AC0(member, slot, mode_party_sprite_blocks[slot], 1, 0, slot, 1);
     } else {
         sprites = D_800AF880.components.sprites;
         func_80076AC0(member, D_800AF880.components.descriptors[member].actor->unk127,
@@ -2447,9 +2447,9 @@ void func_8008BF38(s32 slot) {
                       D_800AF880.components.descriptors[member].actor->unk126,
                       (D_800AF880.components.descriptors[member].actor->unk134 >> 4) & 1);
     }
-    D_80062590[slot + 1] = 0xFF;
-    D_8006FABC[slot + 1] = 0xFF;
-    D_8005A444[slot + 1] = 0xFF;
+    mode_party_members[slot + 1] = 0xFF;
+    mode_party_file_ids[slot + 1] = 0xFF;
+    mode_party_actors[slot + 1] = 0xFF;
 }
 
 /* Take party slot `slot`'s member out of the party: its actor gets the
@@ -2468,9 +2468,9 @@ void func_8008C180(s32 slot) {
     FieldDescriptor **table;
     FieldDescriptor *member_descriptor;
 
-    if (D_8005A444[slot] == 0xFF) {
-        D_80062590[slot] = 0xFF;
-        D_8006FABC[slot] = 0xFF;
+    if (mode_party_actors[slot] == 0xFF) {
+        mode_party_members[slot] = 0xFF;
+        mode_party_file_ids[slot] = 0xFF;
         return;
     }
     table = &D_800AF880.components.descriptors;
@@ -2478,14 +2478,14 @@ void func_8008C180(s32 slot) {
     actor = D_800B0078;
     current = D_800AFD1C;
     pc = actor->pc;
-    D_800B06B8 = &(*table)[D_8005A444[slot]];
+    D_800B06B8 = &(*table)[mode_party_actors[slot]];
     D_800B0078 = D_800B06B8->actor;
-    func_80080A74(D_8005A444[slot]);
-    index = D_8005A444[slot];
+    func_80080A74(mode_party_actors[slot]);
+    index = mode_party_actors[slot];
     D_800AFD1C = index;
     member_descriptor = &(*table)[index];
     member_descriptor->flags = (member_descriptor->flags & 0xF07F) | 0x200;
-    func_80076AC0(index, 0, D_8005A414[0], 1, 0, 0, 1);
+    func_80076AC0(index, 0, mode_party_sprite_blocks[0], 1, 0, 0, 1);
     member = D_800B0078;
     member->flags |= 1;
     member->layer_flags |= 0x100000;
@@ -2496,9 +2496,9 @@ void func_8008C180(s32 slot) {
     member->pc = pc;
     member->flags |= 0x20000;
     member->layer_flags |= 0x400;
-    D_8005A444[slot] = 0xFF;
-    D_80062590[slot] = 0xFF;
-    D_8006FABC[slot] = 0xFF;
+    mode_party_actors[slot] = 0xFF;
+    mode_party_members[slot] = 0xFF;
+    mode_party_file_ids[slot] = 0xFF;
 }
 
 /* Event 0x19: remove character op1 from the party once no sprite load is
@@ -2519,73 +2519,73 @@ void func_8008C334(void) {
         if (D_800ADB1C == 0) {
             switch (slot) {
             case 0:
-                if (D_80062590[1] == 0xFF) {
-                    D_80062590[0] = 0xFF;
-                    D_8006FABC[0] = 0xFF;
-                    D_8005A39C->inGear[0] = 0;
+                if (mode_party_members[1] == 0xFF) {
+                    mode_party_members[0] = 0xFF;
+                    mode_party_file_ids[0] = 0xFF;
+                    game_current_data->inGear[0] = 0;
                 } else {
-                    *(PartySprite *)D_8005A414[0] = *(PartySprite *)D_8005A414[1];
-                    D_80062590[0] = D_80062590[1];
-                    D_8006FABC[0] = D_8006FABC[1];
-                    D_80062590[1] = 0xFF;
-                    D_8006FABC[1] = 0xFF;
-                    D_8005A39C->inGear[0] = D_8005A39C->inGear[1];
-                    if (D_80062590[2] != 0xFF) {
-                        *(PartySprite *)D_8005A414[1] = *(PartySprite *)D_8005A414[2];
-                        D_80062590[1] = D_80062590[2];
-                        D_8006FABC[1] = D_8006FABC[2];
-                        D_80062590[2] = 0xFF;
-                        D_8006FABC[2] = 0xFF;
-                        D_8005A39C->inGear[1] = D_8005A39C->inGear[2];
+                    *(PartySprite *)mode_party_sprite_blocks[0] = *(PartySprite *)mode_party_sprite_blocks[1];
+                    mode_party_members[0] = mode_party_members[1];
+                    mode_party_file_ids[0] = mode_party_file_ids[1];
+                    mode_party_members[1] = 0xFF;
+                    mode_party_file_ids[1] = 0xFF;
+                    game_current_data->inGear[0] = game_current_data->inGear[1];
+                    if (mode_party_members[2] != 0xFF) {
+                        *(PartySprite *)mode_party_sprite_blocks[1] = *(PartySprite *)mode_party_sprite_blocks[2];
+                        mode_party_members[1] = mode_party_members[2];
+                        mode_party_file_ids[1] = mode_party_file_ids[2];
+                        mode_party_members[2] = 0xFF;
+                        mode_party_file_ids[2] = 0xFF;
+                        game_current_data->inGear[1] = game_current_data->inGear[2];
                     }
                 }
                 break;
             case 1:
-                if (D_80062590[2] == 0xFF) {
-                    D_80062590[1] = 0xFF;
-                    D_8006FABC[1] = 0xFF;
-                    D_8005A39C->inGear[1] = 0;
+                if (mode_party_members[2] == 0xFF) {
+                    mode_party_members[1] = 0xFF;
+                    mode_party_file_ids[1] = 0xFF;
+                    game_current_data->inGear[1] = 0;
                 } else {
-                    *(PartySprite *)D_8005A414[1] = *(PartySprite *)D_8005A414[2];
-                    D_80062590[1] = D_80062590[2];
-                    D_8006FABC[1] = D_8006FABC[2];
-                    D_80062590[2] = 0xFF;
-                    D_8006FABC[2] = 0xFF;
-                    D_8005A39C->inGear[1] = D_8005A39C->inGear[2];
-                    D_8005A39C->inGear[2] = 0;
+                    *(PartySprite *)mode_party_sprite_blocks[1] = *(PartySprite *)mode_party_sprite_blocks[2];
+                    mode_party_members[1] = mode_party_members[2];
+                    mode_party_file_ids[1] = mode_party_file_ids[2];
+                    mode_party_members[2] = 0xFF;
+                    mode_party_file_ids[2] = 0xFF;
+                    game_current_data->inGear[1] = game_current_data->inGear[2];
+                    game_current_data->inGear[2] = 0;
                 }
                 break;
             case 2:
-                D_80062590[2] = 0xFF;
-                D_8006FABC[2] = 0xFF;
-                D_8005A39C->inGear[2] = 0;
+                mode_party_members[2] = 0xFF;
+                mode_party_file_ids[2] = 0xFF;
+                game_current_data->inGear[2] = 0;
                 break;
             }
         } else {
             switch (slot) {
             case 0:
-                D_8005A39C->inGear[0] = D_8005A39C->inGear[1];
-                D_8005A39C->inGear[1] = D_8005A39C->inGear[2];
-                D_8005A39C->inGear[2] = 0;
+                game_current_data->inGear[0] = game_current_data->inGear[1];
+                game_current_data->inGear[1] = game_current_data->inGear[2];
+                game_current_data->inGear[2] = 0;
                 func_8008C180(0);
                 func_8008BF38(0);
                 func_8008BF38(1);
                 break;
             case 1:
-                D_8005A39C->inGear[1] = D_8005A39C->inGear[2];
-                D_8005A39C->inGear[2] = 0;
+                game_current_data->inGear[1] = game_current_data->inGear[2];
+                game_current_data->inGear[2] = 0;
                 func_8008C180(1);
                 func_8008BF38(1);
                 break;
             case 2:
-                D_8005A39C->inGear[2] = 0;
+                game_current_data->inGear[2] = 0;
                 func_8008C180(2);
                 break;
             }
-            if (D_80062590[0] != 0xFF && D_8005A444[0] != 0xFF) {
-                D_800B2078.controlled = D_8005A444[0];
-                D_800AF880.components.descriptors[D_8005A444[0]].actor->flags =
-                    (D_800AF880.components.descriptors[D_8005A444[0]].actor->flags | 0x4400) & ~0x80;
+            if (mode_party_members[0] != 0xFF && mode_party_actors[0] != 0xFF) {
+                D_800B2078.controlled = mode_party_actors[0];
+                D_800AF880.components.descriptors[mode_party_actors[0]].actor->flags =
+                    (D_800AF880.components.descriptors[mode_party_actors[0]].actor->flags | 0x4400) & ~0x80;
             } else {
                 D_800B2078.controlled = 0;
             }
@@ -2598,7 +2598,7 @@ void func_8008C334(void) {
  * allocated by opcode 17 and marked by +12c bit 12) when it holds one. */
 void func_8008C7D8(void) {
     if (D_800B0078->state.word & 0x1000) {
-        func_800320E8(D_800B0078->unk114);
+        heap_free(D_800B0078->unk114);
         D_800B0078->state.word &= ~0x1000;
     }
     D_800B0078->pc++;
@@ -2612,11 +2612,11 @@ void func_8008C7D8(void) {
 void func_8008C84C(void) {
     s32 a;
 
-    if (D_8004F36C != 0) {
+    if (mode_music_started != 0) {
         a = func_800ACDEC(1);
-        func_8003A89C((SoundSeq *)D_80062528, a, func_800ACDEC(3));
+        sound_set_seq_fade((SoundSeq *)mode_music_seq, a, func_800ACDEC(3));
         D_800B0078->pc += 5;
-    } else if (D_8004F324 == 0xFF) {
+    } else if (mode_music_selected_track == 0xFF) {
         D_800B0078->pc += 5;
     } else if (D_800ADB1C == 0) {
         D_800B0078->pc += 5;
@@ -2633,11 +2633,11 @@ void func_8008C84C(void) {
 void func_8008C938(void) {
     s32 a;
 
-    if (D_8004F36C != 0) {
+    if (mode_music_started != 0) {
         a = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 5]);
-        func_8003A948((SoundSeq *)D_80062528, a, func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 5]));
+        sound_set_seq_pitch((SoundSeq *)mode_music_seq, a, func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 5]));
         D_800B0078->pc += 6;
-    } else if (D_8004F324 == 0xFF) {
+    } else if (mode_music_selected_track == 0xFF) {
         D_800B0078->pc += 6;
     } else if (D_800ADB1C == 0) {
         D_800B0078->pc += 6;
@@ -2653,11 +2653,11 @@ void func_8008C938(void) {
 void func_8008CA60(void) {
     s32 a;
 
-    if (D_8004F36C != 0) {
+    if (mode_music_started != 0) {
         a = func_800ACDEC(1);
-        func_8003A838((SoundSeq *)D_80062528, a, func_800ACDEC(3));
+        sound_set_seq_tempo((SoundSeq *)mode_music_seq, a, func_800ACDEC(3));
         D_800B0078->pc += 5;
-    } else if (D_8004F324 == 0xFF) {
+    } else if (mode_music_selected_track == 0xFF) {
         D_800B0078->pc += 5;
     } else if (D_800ADB1C == 0) {
         D_800B0078->pc += 5;
@@ -2674,11 +2674,11 @@ void func_8008CA60(void) {
 void func_8008CB4C(void) {
     s32 a;
 
-    if (D_8004F36C != 0) {
+    if (mode_music_started != 0) {
         a = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 5]);
-        func_8003A9BC((SoundSeq *)D_80062528, a, func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 5]));
+        sound_set_seq_pan((SoundSeq *)mode_music_seq, a, func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 5]));
         D_800B0078->pc += 6;
-    } else if (D_8004F324 == 0xFF) {
+    } else if (mode_music_selected_track == 0xFF) {
         D_800B0078->pc += 6;
     } else if (D_800ADB1C == 0) {
         D_800B0078->pc += 6;
@@ -2692,10 +2692,10 @@ void func_8008CB4C(void) {
  * sequence whose bit is set in operand 1 and unmute the others (8003aac4) and
  * advance; otherwise advance or wait (pc-- to the fe) as fe 0e. Yields. */
 void func_8008CC74(void) {
-    if (D_8004F36C != 0) {
-        func_8003AAC4((SoundSeq *)D_80062528, func_800ACDEC(1));
+    if (mode_music_started != 0) {
+        sound_set_seq_mute_mask((SoundSeq *)mode_music_seq, func_800ACDEC(1));
         D_800B0078->pc += 3;
-    } else if (D_8004F324 == 0xFF) {
+    } else if (mode_music_selected_track == 0xFF) {
         D_800B0078->pc += 3;
     } else if (D_800ADB1C == 0) {
         D_800B0078->pc += 3;
@@ -2742,7 +2742,7 @@ void func_8008CE64(void) {
     s32 member = func_8008CF3C(func_800ACDEC(1));
 
     if (member != 0xFF) {
-        D_8005A39C->available &= ~(1 << member);
+        game_current_data->available &= ~(1 << member);
     }
     D_800B0078->pc += 3;
 }
@@ -2754,7 +2754,7 @@ void func_8008CED0(void) {
     s32 member = func_8008CF3C(func_800ACDEC(1));
 
     if (member != 0xFF) {
-        D_8005A39C->available |= 1 << member;
+        game_current_data->available |= 1 << member;
     }
     D_800B0078->pc += 3;
 }
@@ -2763,13 +2763,13 @@ void func_8008CED0(void) {
  * (0xff). */
 s32 func_8008CF3C(s32 id) {
     if (id == 0xFF) {
-        return D_80062590[2];
+        return mode_party_members[2];
     }
     if (id == 0xFE) {
-        return D_80062590[1];
+        return mode_party_members[1];
     }
     if (id == 0xFD) {
-        return D_80062590[0];
+        return mode_party_members[0];
     }
     if (id == 0xFC) {
         return 0xFF;
@@ -2901,7 +2901,7 @@ void func_8008D570(void) {
     s32 i;
 
     for (i = 0; i < 3; i++) {
-        if (D_8005A444[i] == D_800AFD1C) {
+        if (mode_party_actors[i] == D_800AFD1C) {
             D_800B2078.party_bits &= ~(1 << i);
         }
     }
@@ -3008,12 +3008,12 @@ void func_8008DB2C(void) {
 /* Add to party member `member`'s points, capped at its maximum. Declared
  * int but returns nothing. */
 s32 func_8008DB68(s32 member, s32 amount) {
-    s32 character = func_8001ACF0(D_80062590[member]);
+    s32 character = mode_get_character_gear_id(mode_party_members[member]);
 
     if (character != 0xFF) {
-        D_8005A39C->gears[character].hp += amount;
-        if (D_8005A39C->gears[character].maxHp < D_8005A39C->gears[character].hp) {
-            D_8005A39C->gears[character].hp = D_8005A39C->gears[character].maxHp;
+        game_current_data->gears[character].hp += amount;
+        if (game_current_data->gears[character].maxHp < game_current_data->gears[character].hp) {
+            game_current_data->gears[character].hp = game_current_data->gears[character].maxHp;
         }
     }
 }
@@ -3021,15 +3021,15 @@ s32 func_8008DB68(s32 member, s32 amount) {
 /* Take from party member `member`'s points, leaving at least one. Declared
  * int but returns nothing. */
 s32 func_8008DBF0(s32 member, s32 amount) {
-    s32 character = func_8001ACF0(D_80062590[member]);
+    s32 character = mode_get_character_gear_id(mode_party_members[member]);
     s32 points;
 
     if (character != 0xFF) {
-        points = D_8005A39C->gears[character].hp - amount;
+        points = game_current_data->gears[character].hp - amount;
         if (points <= 0) {
             points = 1;
         }
-        D_8005A39C->gears[character].hp = points;
+        game_current_data->gears[character].hp = points;
     }
 }
 
@@ -3042,7 +3042,7 @@ void func_8008DC74(void) {
     s32 mask = D_800AEA2C[D_800ADC00[D_800B0078->pc + 3] & 3];
 
     for (i = 0; i < 3; i++) {
-        if (D_80062590[i] != 0xFF && (mask & 1)) {
+        if (mode_party_members[i] != 0xFF && (mask & 1)) {
             func_8008DB68(i, amount);
         }
         mask >>= 1;
@@ -3059,7 +3059,7 @@ void func_8008DD6C(void) {
     s32 mask = D_800AEA2C[D_800ADC00[D_800B0078->pc + 3] & 3];
 
     for (i = 0; i < 3; i++) {
-        if (D_80062590[i] != 0xFF && (mask & 1)) {
+        if (mode_party_members[i] != 0xFF && (mask & 1)) {
             func_8008DBF0(i, amount);
         }
         mask >>= 1;
@@ -3577,7 +3577,7 @@ void func_8008F1C8(void) {
 void func_8008F2D8(void) {
     s32 value = func_800ACDEC(1);
 
-    func_80023290(D_800AF880.components.descriptors[D_800AFD1C].model, value);
+    sprite_set_blend_rate(D_800AF880.components.descriptors[D_800AFD1C].model, value);
     D_800B0078->pc += 3;
 }
 
@@ -3606,7 +3606,7 @@ void func_8008F3D0(void) {
 
     a = func_800ACDEC(3) * 2;
     b = func_800ACDEC(1);
-    func_8003A450(a, b, func_800ACDEC(5));
+    sound_slide_effect_volume_on_channel(a, b, func_800ACDEC(5));
     D_800B0078->pc += 7;
 }
 
@@ -3617,7 +3617,7 @@ void func_8008F444(void) {
     s32 a;
 
     a = func_800ACDEC(3) * 2;
-    func_8003A344(a, func_800ACDEC(1));
+    sound_set_effect_volume_on_channel(a, func_800ACDEC(1));
     D_800B0078->pc += 5;
 }
 
@@ -3628,7 +3628,7 @@ void func_8008F4A0(void) {
     s32 a;
 
     a = func_800ACDEC(3) * 2;
-    func_8003A55C(a, func_800ACDEC(1));
+    sound_set_effect_pan_on_channel(a, func_800ACDEC(1));
     D_800B0078->pc += 5;
 }
 
@@ -3663,7 +3663,7 @@ void func_8008F558(void) {
 void func_8008F5E4(void) {
     s32 buttons;
 
-    buttons = func_8003A5D0(-1);
+    buttons = sound_get_active_effect_mask(-1);
     if (!(buttons & (func_800ACDEC(1) << 8))) {
         D_800B0078->pc += 3;
     } else {
@@ -3704,7 +3704,7 @@ void func_8008F724(void) {
         D_800B00C0 = 1;
         return;
     }
-    D_8004F340 = 0;
+    mode_music_start_full_volume = 0;
     func_8008F7B8();
 }
 
@@ -3715,7 +3715,7 @@ void func_8008F76C(void) {
         D_800B00C0 = 1;
         return;
     }
-    D_8004F340 = -1;
+    mode_music_start_full_volume = -1;
     func_8008F7B8();
 }
 
@@ -3729,21 +3729,21 @@ void func_8008F7B8(void) {
     track = func_800ACDEC(1);
     if (D_800ADB1C == 0) {
         func_80085EEC();
-        if (track != D_8004F324) {
-            func_8001B66C();
-            D_8004F308 = -1;
+        if (track != mode_music_selected_track) {
+            mode_stop_music();
+            mode_music_load_pending = -1;
         }
-        D_8004F324 = track;
+        mode_music_selected_track = track;
         D_800B0078->pc += 3;
     } else if (func_8008A558() != 0 || D_800ADBDC == 0) {
         D_800B00C0 = 1;
-    } else if (D_8004F354 == 1) {
+    } else if (mode_music_wave_streaming == 1) {
         D_800B00C0 = 1;
-    } else if (D_8004F308 != -1) {
-        if (track != D_8004F324) {
-            func_8001B66C();
-            D_8004F324 = track;
-            D_8004F308 = -1;
+    } else if (mode_music_load_pending != -1) {
+        if (track != mode_music_selected_track) {
+            mode_stop_music();
+            mode_music_selected_track = track;
+            mode_music_load_pending = -1;
             func_80085B20(track, 0);
         }
         D_800B0078->pc += 3;
@@ -4211,7 +4211,7 @@ void func_80091008(VECTOR *point, VECTOR *center, s32 angle) {
     angles.vy = angle;
     angles.vz = 0;
     PushMatrix();
-    func_8003F738(&angles, &m);
+    gpu_build_rotation_matrix(&angles, &m);
     offset.vx = center->vx - point->vx;
     offset.vy = center->vy - point->vy;
     offset.vz = center->vz - point->vz;
@@ -4241,8 +4241,8 @@ void func_800910C0(void) {
     elevation = func_8009D088(9, EVENT_OPERAND_BYTE(13));
     distance = func_8009D0CC(11, EVENT_OPERAND_BYTE(13));
     angle = ((elevation * 0xB60) >> 8) + 0xC00;
-    point.vy = ((-((func_8003F8CC(angle) * distance) << 5)) >> 16) * D_800AF880.scripted_scale * 16 + center.vy;
-    point.vz = (((func_8003F8B0(angle) * distance) << 5) >> 16) * D_800AF880.scripted_scale * 16 + center.vz;
+    point.vy = ((-((gpu_get_cos(angle) * distance) << 5)) >> 16) * D_800AF880.scripted_scale * 16 + center.vy;
+    point.vz = (((gpu_get_sin(angle) * distance) << 5) >> 16) * D_800AF880.scripted_scale * 16 + center.vz;
     point.vx = center.vx;
     func_80091008(&point, &center, heading);
     func_800A3074(func_800ACDB8(14) & 0xFFFF, WHOLE(point.vx));
@@ -4289,8 +4289,8 @@ void func_80091318(void) {
     elevation = func_8009CFBC(4, EVENT_OPERAND_BYTE(8));
     distance = func_8009D000(6, EVENT_OPERAND_BYTE(8));
     angle = ((elevation * 0xB60) >> 8) + 0xC00;
-    point.vy = ((-((func_8003F8CC(angle) * distance) << 5)) >> 16) * D_800AF880.scripted_scale * 16 + center.vy;
-    point.vz = (((func_8003F8B0(angle) * distance) << 5) >> 16) * D_800AF880.scripted_scale * 16 + center.vz;
+    point.vy = ((-((gpu_get_cos(angle) * distance) << 5)) >> 16) * D_800AF880.scripted_scale * 16 + center.vy;
+    point.vz = (((gpu_get_sin(angle) * distance) << 5) >> 16) * D_800AF880.scripted_scale * 16 + center.vz;
     point.vx = center.vx;
     func_80091008(&point, &center, heading);
     func_800A3074(func_800ACDB8(9) & 0xFFFF, WHOLE(point.vx));
@@ -4533,7 +4533,7 @@ void func_800920D8(void) {
     s32 i;
 
     for (i = 0; i < D_800AFEA8.count; i++) {
-        func_80027EAC(D_800AFEA8.scrolls[i]);
+        gpu_update_texture_scroll(D_800AFEA8.scrolls[i]);
     }
 }
 
@@ -4571,8 +4571,8 @@ void func_800921E8(void) {
     if (D_800ADB8C == 0 && D_800AFEA8.count < 32) {
         length = func_800ACDB8(9) & 0xFFFF;
         D_800AFEA8.lengths[D_800AFEA8.count] = length;
-        D_800AFEA8.buffers[D_800AFEA8.count] = func_80031BDC(length + 1, 0);
-        D_800AFEA8.scrolls[D_800AFEA8.count] = func_80031BDC(0x18, 0);
+        D_800AFEA8.buffers[D_800AFEA8.count] = heap_alloc(length + 1, 0);
+        D_800AFEA8.scrolls[D_800AFEA8.count] = heap_alloc(0x18, 0);
         fill = func_800ACDB8(15) & 0xFFFF;
         for (i = 0; i < length; i++) {
             D_800AFEA8.buffers[D_800AFEA8.count][i] = fill;
@@ -4582,7 +4582,7 @@ void func_800921E8(void) {
         width = (s16)func_800ACDB8(5);
         height = (s16)func_800ACDB8(7);
         a = (s16)func_800ACDB8(11);
-        func_80027D64(D_800AFEA8.scrolls[D_800AFEA8.count], x, y, width, height, length, a,
+        gpu_init_texture_scroll(D_800AFEA8.scrolls[D_800AFEA8.count], x, y, width, height, length, a,
                       func_800ACDB8(13), D_800AFEA8.buffers[D_800AFEA8.count]);
         D_800AFEA8.count++;
     }
@@ -4697,8 +4697,8 @@ void func_80092808(void) {
     FieldActor *actor;
     s32 step;
 
-    D_800B0078->unk60 = (func_8003F8CC(D_800B06B8->rotation.vy) * 36) >> 12;
-    step = -(func_8003F8B0(D_800B06B8->rotation.vy) * 36) >> 12;
+    D_800B0078->unk60 = (gpu_get_cos(D_800B06B8->rotation.vy) * 36) >> 12;
+    step = -(gpu_get_sin(D_800B06B8->rotation.vy) * 36) >> 12;
     actor = D_800B0078;
     actor->unk64 = step;
     actor->layer_flags |= 0x800;
@@ -4743,11 +4743,11 @@ s32 func_80092894(s32 angle, s32 mode, s32 x, s32 z) {
             func_80092F44();
             D_800ADBEC = 0;
             func_800A3074(2, value);
-            D_8004F34C = field;
+            mode_field_map_id = field;
         }
         direction = D_800B06B8->rotation.vy + angle - 0x400;
-        goal_x = D_800B0078->unk60 + WHOLE(D_800B0078->position[0]) + ((func_8003F8CC(direction) * 40) >> 12);
-        goal_z = D_800B0078->unk64 + WHOLE(D_800B0078->position[2]) + (-(func_8003F8B0(direction) * 40) >> 12);
+        goal_x = D_800B0078->unk60 + WHOLE(D_800B0078->position[0]) + ((gpu_get_cos(direction) * 40) >> 12);
+        goal_z = D_800B0078->unk64 + WHOLE(D_800B0078->position[2]) + (-(gpu_get_sin(direction) * 40) >> 12);
     } else {
         goal_x = x;
         goal_z = z;
@@ -4805,7 +4805,7 @@ void func_80092C20(void) {
     s32 x;
     s32 z;
 
-    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || D_8004F308 == -1 || D_800ADB90 != 0) {
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || mode_music_load_pending == -1 || D_800ADB90 != 0) {
         D_800B00C0 = 1;
         D_800B0078->pc--;
         return;
@@ -4833,7 +4833,7 @@ s32 func_80092894(s32 a, s32 b, s32 c, s32 d);
  * continue (pc + 6). With 800adbec set it first records the departure as
  * 98 does (field operand 2, entry operand 4). */
 void func_80092DFC(void) {
-    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || D_8004F308 == -1 || D_800ADB90 != 0) {
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || mode_music_load_pending == -1 || D_800ADB90 != 0) {
         D_800B00C0 = 1;
     } else {
         func_800A0C4C();
@@ -4848,7 +4848,7 @@ void func_80092DFC(void) {
  * pending (800adbec); yields while walking and continues at +6 on arrival or
  * once stuck for more than 64 frames. Byte 1 is not read. */
 void func_80092EA0(void) {
-    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || D_8004F308 == -1 || D_800ADB90 != 0) {
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || mode_music_load_pending == -1 || D_800ADB90 != 0) {
         D_800B00C0 = 1;
     } else {
         func_800A0C4C();
@@ -4859,7 +4859,7 @@ void func_80092EA0(void) {
 /* Publish the current field id and two values in variables 4, 6 and 8 and
  * count variable 0x12 up. */
 void func_80092F44(void) {
-    func_800A3074(4, D_8004F34C & 0x3FFF);
+    func_800A3074(4, mode_field_map_id & 0x3FFF);
     func_800A3074(6, func_8009744C() & 0xFFFF);
     func_800A3074(8, func_8009A514() & 0xFFFF);
     func_800A3074(0x12, (s16)(func_800A3018(0x12) + 1));
@@ -4887,22 +4887,22 @@ void func_80092FB4(void) {
 void func_80093014(void) {
     s32 heading;
 
-    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || D_8004F308 == -1 || D_800ADB90 != 0) {
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || mode_music_load_pending == -1 || D_800ADB90 != 0) {
         D_800B00C0 = 1;
         return;
     }
     func_800A31E8();
     D_800B2078.encounter_inhibition = -1;
     D_800ADBE4 = 0;
-    D_8005A39C->map = func_8009CF78(1, EVENT_OPERAND_BYTE(9));
-    D_8005A39C->entry[1] = func_8009CFBC(3, EVENT_OPERAND_BYTE(9));
+    game_current_data->map = func_8009CF78(1, EVENT_OPERAND_BYTE(9));
+    game_current_data->entry[1] = func_8009CFBC(3, EVENT_OPERAND_BYTE(9));
     heading = func_8009D000(5, EVENT_OPERAND_BYTE(9));
     if (((heading & 0xFFFF) == 0xFFFF) | (heading == -1)) {
-        D_8005A39C->entry[0] = (D_800AF880.heading_angles.vy + 0x800) & 0xFFF;
+        game_current_data->entry[0] = (D_800AF880.heading_angles.vy + 0x800) & 0xFFF;
     } else {
-        D_8005A39C->entry[0] = (heading + 0x800) & 0xFFF;
+        game_current_data->entry[0] = (heading + 0x800) & 0xFFF;
     }
-    D_8005A39C->entry[2] = func_8009D044(7, EVENT_OPERAND_BYTE(9));
+    game_current_data->entry[2] = func_8009D044(7, EVENT_OPERAND_BYTE(9));
     func_800931F8();
     D_800B02C8 = 1;
     D_800B00C0 = 1;
@@ -4922,7 +4922,7 @@ void func_800932D0(void);
  * requests nor advances, so these reads come from +0/+2 and the PC advances by
  * 4 only. */
 void func_80093200(void) {
-    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || D_8004F308 == -1 || D_800ADB90 != 0) {
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || mode_music_load_pending == -1 || D_800ADB90 != 0) {
         D_800B00C0 = 1;
     } else {
         func_800932D0();
@@ -4943,7 +4943,7 @@ void func_800932D0(void) {
     s32 entry;
     s32 field;
 
-    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || D_8004F308 == -1 || D_800ADB90 != 0 ||
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADB2C != 0 || mode_music_load_pending == -1 || D_800ADB90 != 0 ||
         D_800ADB70 != 0) {
         D_800B00C0 = 1;
     } else {
@@ -4954,7 +4954,7 @@ void func_800932D0(void) {
             func_80092F44();
             D_800ADBEC = 0;
             func_800A3074(2, entry);
-            D_8004F34C = field;
+            mode_field_map_id = field;
             func_800931F8();
         }
         D_800B00C0 = 1;
@@ -4973,15 +4973,15 @@ void func_800933F8(void) {
     s32 field;
     s32 entry;
 
-    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADBEC == 0 || D_800ADB2C != 0 || D_8004F308 == -1 ||
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADBEC == 0 || D_800ADB2C != 0 || mode_music_load_pending == -1 ||
         D_800ADB90 != 0) {
         D_800B00C0 = 1;
         D_800B0078->pc -= 1;
         return;
     }
-    D_8005954C = D_800B2078.unk2356;
-    D_80059508 = func_800ACDEC(1);
-    D_800594F8 = 0;
+    mode_battle_kind = D_800B2078.unk2356;
+    formation_selected_index = func_800ACDEC(1);
+    mode_battle_standalone = 0;
     D_800ADBDC = 0;
     D_800ADBE0 = 0;
     D_800ADB88 = 1;
@@ -4990,7 +4990,7 @@ void func_800933F8(void) {
         entry = func_800ACDEC(7);
         func_80092F44();
         func_800A3074(2, entry);
-        D_8004F34C = field;
+        mode_field_map_id = field;
         D_800ADB18 = 1;
     }
     D_800B00C0 = 1;
@@ -5002,13 +5002,13 @@ void func_800933F8(void) {
  * 800b2356, 800594f8 = 0; clear 800adbdc/800adbe0 and set 800adb88 (which ext
  * 7f waits on), then yield and continue at +3. */
 void func_80093568(void) {
-    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADBEC == 0 || D_800ADB2C != 0 || D_8004F308 == -1 ||
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0 || D_800ADBEC == 0 || D_800ADB2C != 0 || mode_music_load_pending == -1 ||
         D_800ADB90 != 0) {
         D_800B00C0 = 1;
     } else {
-        D_8005954C = D_800B2078.unk2356;
-        D_80059508 = func_800ACDEC(1);
-        D_800594F8 = 0;
+        mode_battle_kind = D_800B2078.unk2356;
+        formation_selected_index = func_800ACDEC(1);
+        mode_battle_standalone = 0;
         D_800ADBDC = 0;
         D_800ADBE0 = 0;
         D_800ADB88 = 1;
@@ -5031,7 +5031,7 @@ void func_80093664(void) {
  * requested by ext 55-5a, cf and da (800adb64) have been run by 800799d4, which
  * clears it. */
 void func_800936E4(void) {
-    if (D_8004F350 == 0) {
+    if (mode_menu_request_count == 0) {
         D_800B0078->pc += 1;
     } else {
         D_800B0078->pc -= 1;
@@ -5044,18 +5044,18 @@ void func_800936E4(void) {
 void func_80093740(void) {
     D_800B00C0 = 1;
     D_800ADB64 = 0;
-    D_80059171 = D_800B236C;
-    D_8004F350 += 1;
+    menu_state_screen_parameter = D_800B236C;
+    mode_menu_request_count += 1;
     D_800B0078->pc += 1;
 }
 
 /* Request menu kind 6 (800adb64, run by 800799d4) with parameter 1 (80059171),
  * count 8004f350 up and yield. */
 void func_80093790(void) {
-    D_80059171 = 1;
+    menu_state_screen_parameter = 1;
     D_800ADB64 = 6;
     D_800B00C0 = 1;
-    D_8004F350 += 1;
+    mode_menu_request_count += 1;
     D_800B0078->pc += 1;
 }
 
@@ -5063,17 +5063,17 @@ void func_80093790(void) {
 void func_800937E0(void) {
     D_800ADB64 = 2;
     D_800B00C0 = 1;
-    D_8004F350 += 1;
+    mode_menu_request_count += 1;
     D_800B0078->pc += 1;
 }
 
 /* Event fe 58: request menu kind 3 (800adb64) with parameter operand 1
  * (80059171); count 8004f350 up and yield. */
 void func_80093824(void) {
-    D_80059171 = func_800ACDEC(1);
+    menu_state_screen_parameter = func_800ACDEC(1);
     D_800ADB64 = 3;
     D_800B00C0 = 1;
-    D_8004F350 += 1;
+    mode_menu_request_count += 1;
     D_800B0078->pc += 3;
 }
 
@@ -5089,11 +5089,11 @@ void func_80093888(void) {
     field = func_800ACDEC(1);
     func_80092F44();
     func_800A3074(2, entry);
-    D_8004F34C = field;
+    mode_field_map_id = field;
     func_800931F8();
     D_800ADB64 = 1;
     D_800B00C0 = 1;
-    D_8004F350 += 1;
+    mode_menu_request_count += 1;
     D_800B0078->pc += 5;
 }
 
@@ -5106,30 +5106,30 @@ void func_80093930(void) {
     entry = func_800ACDEC(1);
     D_800ADB64 = 1;
     D_800B00C0 = 1;
-    D_8005A39C->vars[1] = entry;
-    D_8005A39C->entry[2] = entry;
+    game_current_data->vars[1] = entry;
+    game_current_data->entry[2] = entry;
     D_800C3A68[1] = entry;
-    D_8004F350 += 1;
+    mode_menu_request_count += 1;
     D_800B0078->pc += 3;
 }
 
 /* Event fe 59: request menu kind 4 (800adb64) with parameter operand 1
  * (80059171); count 8004f350 up and yield. */
 void func_800939A0(void) {
-    D_80059171 = func_800ACDEC(1);
+    menu_state_screen_parameter = func_800ACDEC(1);
     D_800ADB64 = 4;
     D_800B00C0 = 1;
-    D_8004F350 += 1;
+    mode_menu_request_count += 1;
     D_800B0078->pc += 3;
 }
 
 /* Event fe 5a: request menu kind 5 (800adb64) with parameter operand 1
  * (80059171); count 8004f350 up and yield. */
 void func_80093A04(void) {
-    D_80059171 = func_800ACDEC(1);
+    menu_state_screen_parameter = func_800ACDEC(1);
     D_800ADB64 = 5;
     D_800B00C0 = 1;
-    D_8004F350 += 1;
+    mode_menu_request_count += 1;
     D_800B0078->pc += 3;
 }
 
@@ -5344,9 +5344,9 @@ void func_80094158(void) {
                     break;
                 default:
                     angle = D_800B06B8->rotation.vy + func_800ACDEC(5) - 0x400;
-                    sine = func_8003F8CC(angle);
+                    sine = gpu_get_cos(angle);
                     D_800B0078->target[0] += sine * func_800ACDEC(1);
-                    cosine = func_8003F8B0(angle);
+                    cosine = gpu_get_sin(angle);
                     D_800B0078->target[2] -= cosine * func_800ACDEC(1);
                     D_800B06B8->matrix.t[0] = WHOLE(D_800B0078->target[0]);
                     D_800B06B8->matrix.t[2] = WHOLE(D_800B0078->target[2]);
@@ -5399,9 +5399,9 @@ void func_800943AC(void) {
                     break;
                 default:
                     angle = D_800B06B8->rotation.vy + func_800ACDEC(5) - 0x400;
-                    sine = func_8003F8CC(angle);
+                    sine = gpu_get_cos(angle);
                     D_800B0078->target[0] -= sine * func_800ACDEC(1);
-                    cosine = func_8003F8B0(angle);
+                    cosine = gpu_get_sin(angle);
                     D_800B0078->target[2] += cosine * func_800ACDEC(1);
                     D_800B06B8->matrix.t[0] = WHOLE(D_800B0078->target[0]);
                     D_800B06B8->matrix.t[2] = WHOLE(D_800B0078->target[2]);
@@ -5427,8 +5427,8 @@ void func_800943AC(void) {
 void func_800945D4(void) {
     s32 high;
 
-    D_8004F318 = 0;
-    D_8004F328 = 0xFF;
+    mode_play_clock_frame_count = 0;
+    mode_play_clock_flags = 0xFF;
     high = func_800ACDEC(1);
     func_800A3074(10, ((high << 8) & 0xFF00) | (func_800ACDEC(3) & 0xFF));
     D_800B0078->pc += 5;
@@ -5437,15 +5437,15 @@ void func_800945D4(void) {
 /* Set the play clock mode 8004f328 to byte 1 (800a31e8: bit 2 counts the
  * clock in variable 0x0a down, bit 7 stops it). */
 void func_80094650(void) {
-    D_8004F328 = EVENT_OPERAND_BYTE(1);
+    mode_play_clock_flags = EVENT_OPERAND_BYTE(1);
     D_800B0078->pc += 2;
 }
 
 /* Restart the play clock's frame count (8004f318) and stop the clock
  * (8004f328 = 0xff). */
 void func_8009468C(void) {
-    D_8004F318 = 0;
-    D_8004F328 = 0xFF;
+    mode_play_clock_frame_count = 0;
+    mode_play_clock_flags = 0xFF;
     D_800B0078->pc += 1;
 }
 
@@ -5598,7 +5598,7 @@ s32 func_80094CFC(void) {
     s32 i;
 
     for (i = 0; i < 150; i++) {
-        if (D_8005A39C->itemCounts[i] == 0 || D_8005A39C->itemIds[i] == 0) {
+        if (game_current_data->itemCounts[i] == 0 || game_current_data->itemIds[i] == 0) {
             return i;
         }
     }
@@ -5610,7 +5610,7 @@ s32 func_80094D4C(void) {
     s32 i;
 
     for (i = 0; i < 100; i++) {
-        if (D_8005A39C->weaponCounts[i] == 0 || D_8005A39C->weaponIds[i] == 0) {
+        if (game_current_data->weaponCounts[i] == 0 || game_current_data->weaponIds[i] == 0) {
             return i;
         }
     }
@@ -5622,7 +5622,7 @@ s32 func_80094D9C(void) {
     s32 i;
 
     for (i = 0; i < 200; i++) {
-        if (D_8005A39C->accessoryCounts[i] == 0 || D_8005A39C->accessoryIds[i] == 0) {
+        if (game_current_data->accessoryCounts[i] == 0 || game_current_data->accessoryIds[i] == 0) {
             return i;
         }
     }
@@ -5634,7 +5634,7 @@ s32 func_80094DEC(void) {
     s32 i;
 
     for (i = 0; i < 100; i++) {
-        if (D_8005A39C->gearPartCounts[i] == 0 || D_8005A39C->gearPartIds[i] == 0) {
+        if (game_current_data->gearPartCounts[i] == 0 || game_current_data->gearPartIds[i] == 0) {
             return i;
         }
     }
@@ -5646,7 +5646,7 @@ s32 func_80094E3C(void) {
     s32 i;
 
     for (i = 0; i < 150; i++) {
-        if (D_8005A39C->gearAccessoryCounts[i] == 0 || D_8005A39C->gearAccessoryIds[i] == 0) {
+        if (game_current_data->gearAccessoryCounts[i] == 0 || game_current_data->gearAccessoryIds[i] == 0) {
             return i;
         }
     }
@@ -5658,7 +5658,7 @@ s32 func_80094E8C(s32 id) {
     s32 i;
 
     for (i = 0; i < 150; i++) {
-        if (D_8005A39C->itemIds[i] == id && D_8005A39C->itemCounts[i] != 0) {
+        if (game_current_data->itemIds[i] == id && game_current_data->itemCounts[i] != 0) {
             return i;
         }
     }
@@ -5670,7 +5670,7 @@ s32 func_80094EDC(s32 id) {
     s32 i;
 
     for (i = 0; i < 200; i++) {
-        if (D_8005A39C->accessoryIds[i] == id && D_8005A39C->accessoryCounts[i] != 0) {
+        if (game_current_data->accessoryIds[i] == id && game_current_data->accessoryCounts[i] != 0) {
             return i;
         }
     }
@@ -5682,7 +5682,7 @@ s32 func_80094F2C(s32 id) {
     s32 i;
 
     for (i = 0; i < 100; i++) {
-        if (D_8005A39C->weaponIds[i] == id && D_8005A39C->weaponCounts[i] != 0) {
+        if (game_current_data->weaponIds[i] == id && game_current_data->weaponCounts[i] != 0) {
             return i;
         }
     }
@@ -5694,7 +5694,7 @@ s32 func_80094F7C(s32 id) {
     s32 i;
 
     for (i = 0; i < 100; i++) {
-        if (D_8005A39C->gearPartIds[i] == id && D_8005A39C->gearPartCounts[i] != 0) {
+        if (game_current_data->gearPartIds[i] == id && game_current_data->gearPartCounts[i] != 0) {
             return i;
         }
     }
@@ -5706,7 +5706,7 @@ s32 func_80094FCC(s32 id) {
     s32 i;
 
     for (i = 0; i < 150; i++) {
-        if (D_8005A39C->gearAccessoryIds[i] == id && D_8005A39C->gearAccessoryCounts[i] != 0) {
+        if (game_current_data->gearAccessoryIds[i] == id && game_current_data->gearAccessoryCounts[i] != 0) {
             return i;
         }
     }
@@ -5717,15 +5717,15 @@ s32 func_80094FCC(s32 id) {
 u8 *func_8009501C(s32 item) {
     switch (item >> 8) {
     case 0:
-        return D_8005A39C->itemIds;
+        return game_current_data->itemIds;
     case 1:
-        return D_8005A39C->weaponIds;
+        return game_current_data->weaponIds;
     case 2:
-        return D_8005A39C->accessoryIds;
+        return game_current_data->accessoryIds;
     case 3:
-        return D_8005A39C->gearPartIds;
+        return game_current_data->gearPartIds;
     case 4:
-        return D_8005A39C->gearAccessoryIds;
+        return game_current_data->gearAccessoryIds;
     }
     return NULL;
 }
@@ -5734,15 +5734,15 @@ u8 *func_8009501C(s32 item) {
 u8 *func_800950A0(s32 item) {
     switch (item >> 8) {
     case 0:
-        return D_8005A39C->itemCounts;
+        return game_current_data->itemCounts;
     case 1:
-        return D_8005A39C->weaponCounts;
+        return game_current_data->weaponCounts;
     case 2:
-        return D_8005A39C->accessoryCounts;
+        return game_current_data->accessoryCounts;
     case 3:
-        return D_8005A39C->gearPartCounts;
+        return game_current_data->gearPartCounts;
     case 4:
-        return D_8005A39C->gearAccessoryCounts;
+        return game_current_data->gearAccessoryCounts;
     }
     return NULL;
 }
@@ -6076,7 +6076,7 @@ void func_80095F24(void) {
     u8 *operand;
 
     operand = &D_800ADC00[D_800B0078->pc];
-    if (D_8005A39C->gold >=
+    if (game_current_data->gold >=
         operand[1] + (operand[2] << 8) + (operand[3] << 16) + (operand[4] << 24)) {
         D_800B0078->pc += 7;
         return;
@@ -6088,11 +6088,11 @@ void func_80095F24(void) {
 void func_80095FB8(void) {
     s32 gold;
 
-    gold = D_8005A39C->gold + func_800ACDEC(1);
+    gold = game_current_data->gold + func_800ACDEC(1);
     if (gold > 9999999) {
         gold = 9999999;
     }
-    D_8005A39C->gold = gold;
+    game_current_data->gold = gold;
     D_800B0078->pc += 3;
 }
 
@@ -6102,12 +6102,12 @@ void func_8009601C(void) {
     s32 gold;
 
     amount = func_800ACDEC(1);
-    gold = D_8005A39C->gold;
+    gold = game_current_data->gold;
     gold -= amount;
     if (gold < 0) {
         gold = 0;
     }
-    D_8005A39C->gold = gold;
+    game_current_data->gold = gold;
     D_800B0078->pc += 3;
 }
 
@@ -6256,7 +6256,7 @@ void func_800964B0(void) {
     s32 i;
 
     for (i = 0; i < 3; i++) {
-        if (EVENT_OPERAND_BYTE(1) == D_80062590[i]) {
+        if (EVENT_OPERAND_BYTE(1) == mode_party_members[i]) {
             D_800B0078->pc += 4;
             return;
         }
@@ -6267,7 +6267,7 @@ void func_800964B0(void) {
 /* Continue when game flag bit operand 1 (of unk1D30) is set, otherwise
  * jump to operand 2. */
 void func_80096534(void) {
-    if ((D_8005A39C->joined >> EVENT_OPERAND_BYTE(1)) & 1) {
+    if ((game_current_data->joined >> EVENT_OPERAND_BYTE(1)) & 1) {
         D_800B0078->pc += 4;
         return;
     }
@@ -6276,13 +6276,13 @@ void func_80096534(void) {
 
 /* Set game flag bit operand 1 of unk1D30. */
 void func_800965A8(void) {
-    D_8005A39C->joined |= 1 << EVENT_OPERAND_BYTE(1);
+    game_current_data->joined |= 1 << EVENT_OPERAND_BYTE(1);
     D_800B0078->pc += 2;
 }
 
 /* Clear game flag bit operand 1 of unk1D30. */
 void func_800965F4(void) {
-    D_8005A39C->joined &= ~(1 << EVENT_OPERAND_BYTE(1));
+    game_current_data->joined &= ~(1 << EVENT_OPERAND_BYTE(1));
     D_800B0078->pc += 2;
 }
 
@@ -6343,9 +6343,9 @@ void func_800967E8(void) {
 
 /* Restore HP of party slot `slot`, up to its maximum. */
 void func_80096844(s32 slot, s32 amount) {
-    D_8005A39C->characters[D_80062590[slot]].hp += amount;
-    if (D_8005A39C->characters[D_80062590[slot]].maxHp < D_8005A39C->characters[D_80062590[slot]].hp) {
-        D_8005A39C->characters[D_80062590[slot]].hp = D_8005A39C->characters[D_80062590[slot]].maxHp;
+    game_current_data->characters[mode_party_members[slot]].hp += amount;
+    if (game_current_data->characters[mode_party_members[slot]].maxHp < game_current_data->characters[mode_party_members[slot]].hp) {
+        game_current_data->characters[mode_party_members[slot]].hp = game_current_data->characters[mode_party_members[slot]].maxHp;
     }
 }
 
@@ -6353,18 +6353,18 @@ void func_80096844(s32 slot, s32 amount) {
 void func_800968CC(s32 slot, s32 amount) {
     s32 hp;
 
-    hp = D_8005A39C->characters[D_80062590[slot]].hp - amount;
+    hp = game_current_data->characters[mode_party_members[slot]].hp - amount;
     if (hp <= 0) {
         hp = 1;
     }
-    D_8005A39C->characters[D_80062590[slot]].hp = hp;
+    game_current_data->characters[mode_party_members[slot]].hp = hp;
 }
 
 /* Restore EP of party slot `slot`, up to its maximum. */
 void func_80096920(s32 slot, s32 amount) {
-    D_8005A39C->characters[D_80062590[slot]].ep += amount;
-    if (D_8005A39C->characters[D_80062590[slot]].maxEp < D_8005A39C->characters[D_80062590[slot]].ep) {
-        D_8005A39C->characters[D_80062590[slot]].ep = D_8005A39C->characters[D_80062590[slot]].maxEp;
+    game_current_data->characters[mode_party_members[slot]].ep += amount;
+    if (game_current_data->characters[mode_party_members[slot]].maxEp < game_current_data->characters[mode_party_members[slot]].ep) {
+        game_current_data->characters[mode_party_members[slot]].ep = game_current_data->characters[mode_party_members[slot]].maxEp;
     }
 }
 
@@ -6372,11 +6372,11 @@ void func_80096920(s32 slot, s32 amount) {
 void func_800969A8(s32 slot, s32 amount) {
     s32 ep;
 
-    ep = D_8005A39C->characters[D_80062590[slot]].ep - amount;
+    ep = game_current_data->characters[mode_party_members[slot]].ep - amount;
     if (ep <= 0) {
         ep = 1;
     }
-    D_8005A39C->characters[D_80062590[slot]].ep = ep;
+    game_current_data->characters[mode_party_members[slot]].ep = ep;
 }
 
 /* Reduce the HP of the party members masked by entry byte 3 & 3 of 800aea2c (7
@@ -6391,7 +6391,7 @@ void func_800969FC(void) {
     slot = 0;
     mask = D_800AEA2C[EVENT_OPERAND_BYTE(3) & 3];
     do {
-        if (D_80062590[slot] != 0xFF && (mask & 1)) {
+        if (mode_party_members[slot] != 0xFF && (mask & 1)) {
             func_800968CC(slot, amount);
         }
         mask >>= 1;
@@ -6414,8 +6414,8 @@ void func_80096AF4(void) {
 /* Store the HP of the character in party slot byte 3 in variable operand 1
  * (nothing when the slot is empty). */
 void func_80096B58(void) {
-    if (D_80062590[EVENT_OPERAND_BYTE(3)] != 0xFF) {
-        func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(3)]].hp);
+    if (mode_party_members[EVENT_OPERAND_BYTE(3)] != 0xFF) {
+        func_800A3074(func_800ACDB8(1) & 0xFFFF, game_current_data->characters[mode_party_members[EVENT_OPERAND_BYTE(3)]].hp);
     }
     D_800B0078->pc += 4;
 }
@@ -6423,8 +6423,8 @@ void func_80096B58(void) {
 /* Store the EP of the character in party slot byte 3 in variable operand 1
  * (nothing when the slot is empty). */
 void func_80096C40(void) {
-    if (D_80062590[EVENT_OPERAND_BYTE(3)] != 0xFF) {
-        func_800A3074(func_800ACDB8(1) & 0xFFFF, D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(3)]].ep);
+    if (mode_party_members[EVENT_OPERAND_BYTE(3)] != 0xFF) {
+        func_800A3074(func_800ACDB8(1) & 0xFFFF, game_current_data->characters[mode_party_members[EVENT_OPERAND_BYTE(3)]].ep);
     }
     D_800B0078->pc += 4;
 }
@@ -6435,12 +6435,12 @@ void func_80096C40(void) {
 void func_80096D28(void) {
     s32 hp;
 
-    if (D_80062590[EVENT_OPERAND_BYTE(3)] != 0xFF) {
+    if (mode_party_members[EVENT_OPERAND_BYTE(3)] != 0xFF) {
         hp = func_800ACDEC(2);
-        if (D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].maxHp < hp) {
-            hp = D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].maxHp;
+        if (game_current_data->characters[mode_party_members[EVENT_OPERAND_BYTE(1)]].maxHp < hp) {
+            hp = game_current_data->characters[mode_party_members[EVENT_OPERAND_BYTE(1)]].maxHp;
         }
-        D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].hp = hp;
+        game_current_data->characters[mode_party_members[EVENT_OPERAND_BYTE(1)]].hp = hp;
     }
     D_800B0078->pc += 4;
 }
@@ -6451,12 +6451,12 @@ void func_80096D28(void) {
 void func_80096E20(void) {
     s32 ep;
 
-    if (D_80062590[EVENT_OPERAND_BYTE(3)] != 0xFF) {
+    if (mode_party_members[EVENT_OPERAND_BYTE(3)] != 0xFF) {
         ep = func_800ACDEC(2);
-        if (D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].maxEp < ep) {
-            ep = D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].maxEp;
+        if (game_current_data->characters[mode_party_members[EVENT_OPERAND_BYTE(1)]].maxEp < ep) {
+            ep = game_current_data->characters[mode_party_members[EVENT_OPERAND_BYTE(1)]].maxEp;
         }
-        D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].ep = ep;
+        game_current_data->characters[mode_party_members[EVENT_OPERAND_BYTE(1)]].ep = ep;
     }
     D_800B0078->pc += 4;
 }
@@ -6473,7 +6473,7 @@ void func_80096F18(void) {
     slot = 0;
     mask = D_800AEA2C[EVENT_OPERAND_BYTE(3) & 3];
     do {
-        if (D_80062590[slot] != 0xFF && (mask & 1)) {
+        if (mode_party_members[slot] != 0xFF && (mask & 1)) {
             func_80096920(slot, amount);
         }
         mask >>= 1;
@@ -6493,7 +6493,7 @@ void func_80097010(void) {
     slot = 0;
     mask = D_800AEA2C[EVENT_OPERAND_BYTE(3) & 3];
     do {
-        if (D_80062590[slot] != 0xFF && (mask & 1)) {
+        if (mode_party_members[slot] != 0xFF && (mask & 1)) {
             func_800969A8(slot, amount);
         }
         mask >>= 1;
@@ -6513,7 +6513,7 @@ void func_80097108(void) {
     slot = 0;
     mask = D_800AEA2C[EVENT_OPERAND_BYTE(3) & 3];
     do {
-        if (D_80062590[slot] != 0xFF && (mask & 1)) {
+        if (mode_party_members[slot] != 0xFF && (mask & 1)) {
             func_80096920(slot, amount);
         }
         mask >>= 1;
@@ -6527,8 +6527,8 @@ void func_80097200(void) {
     s32 id;
 
     id = func_800ACDEC(1);
-    D_8005A39C->characters[id].hp = D_8005A39C->characters[id].maxHp;
-    D_8005A39C->characters[id].ep = D_8005A39C->characters[id].maxEp;
+    game_current_data->characters[id].hp = game_current_data->characters[id].maxHp;
+    game_current_data->characters[id].ep = game_current_data->characters[id].maxEp;
     D_800B0078->pc += 3;
 }
 
@@ -6537,7 +6537,7 @@ void func_80097264(void) {
     s32 i;
 
     for (i = 0; i < 11; i++) {
-        D_8005A39C->characters[i].hp = D_8005A39C->characters[i].maxHp;
+        game_current_data->characters[i].hp = game_current_data->characters[i].maxHp;
     }
     D_800B0078->pc += 1;
 }
@@ -6547,7 +6547,7 @@ void func_800972AC(void) {
     s32 i;
 
     for (i = 0; i < 11; i++) {
-        D_8005A39C->characters[i].ep = D_8005A39C->characters[i].maxEp;
+        game_current_data->characters[i].ep = game_current_data->characters[i].maxEp;
     }
     D_800B0078->pc += 1;
 }
@@ -6579,7 +6579,7 @@ void func_80097364(void) {
  * data (resident 8001b484, slot byte 1); retried without yielding until that
  * read is under way or done, then continue at +4. */
 void func_800973A4(void) {
-    if (func_8001B484(func_800ACDB8(2) & 0xFFFF, EVENT_OPERAND_BYTE(1)) == 0) {
+    if (mode_read_map_ahead(func_800ACDB8(2) & 0xFFFF, EVENT_OPERAND_BYTE(1)) == 0) {
         D_800B0078->pc += 4;
     }
 }
@@ -6772,8 +6772,8 @@ s32 func_80097A50(s32 speed) {
         break;
     case 3:
         angle = func_800ACDEC(1) & 0xFFF;
-        x = (D_800B0078->target[0] + (func_8003F8CC(angle) << 5)) >> 12;
-        z = D_800B0078->target[2] + (-(func_8003F8B0(angle) << 5) >> 12);
+        x = (D_800B0078->target[0] + (gpu_get_cos(angle) << 5)) >> 12;
+        z = D_800B0078->target[2] + (-(gpu_get_sin(angle) << 5) >> 12);
         y = D_800B0078->target[1] + func_8009CF78(3, EVENT_OPERAND_BYTE(7));
         break;
     }
@@ -6936,7 +6936,7 @@ void func_800985BC(void) {
 
     if (D_800C268C == 0) {
         value = func_800A3018(func_800ACDB8(1) & 0xFFFF);
-        func_800379C8("DEB=%xh %d \n", value, value);
+        console_report_printf("DEB=%xh %d \n", value, value);
     }
     D_800B0078->pc += 3;
 }
@@ -7407,8 +7407,8 @@ s32 func_80099AC0(s32 speed) {
         break;
     case 3:
         angle = func_800ACDEC(1) & 0xFFF;
-        x = D_800B0078->target[0] + ((func_8003F8CC(angle) << 12) >> 12);
-        z = D_800B0078->target[2] + (-(func_8003F8B0(angle) << 12) >> 12);
+        x = D_800B0078->target[0] + ((gpu_get_cos(angle) << 12) >> 12);
+        z = D_800B0078->target[2] + (-(gpu_get_sin(angle) << 12) >> 12);
         break;
     case 0:
     case 4:
@@ -7521,7 +7521,7 @@ void func_8009A1E4(void) {
     FieldActor *other;
     s16 facing;
 
-    index = D_8005A444[EVENT_OPERAND_BYTE(1)];
+    index = mode_party_actors[EVENT_OPERAND_BYTE(1)];
     if (index != 0xFF) {
         other = D_800AF880.components.descriptors[index].actor;
         facing = -ratan2(other->position[2] - D_800B0078->position[2],
@@ -7642,7 +7642,7 @@ void func_8009A6AC(void) {
     reference = func_800ACDB8(1) & 0xFFFF;
     angle = func_8009CFBC(3, EVENT_OPERAND_BYTE(7));
     length = func_8009D000(5, EVENT_OPERAND_BYTE(7));
-    func_800A3074(reference & 0xFFFF, (func_8003F8B0(angle) * length) >> 12);
+    func_800A3074(reference & 0xFFFF, (gpu_get_sin(angle) * length) >> 12);
     D_800B0078->pc += 8;
 }
 
@@ -7656,7 +7656,7 @@ void func_8009A768(void) {
     reference = func_800ACDB8(1) & 0xFFFF;
     angle = func_8009CFBC(3, EVENT_OPERAND_BYTE(7));
     length = func_8009D000(5, EVENT_OPERAND_BYTE(7));
-    func_800A3074(reference & 0xFFFF, (func_8003F8CC(angle) * length) >> 12);
+    func_800A3074(reference & 0xFFFF, (gpu_get_cos(angle) * length) >> 12);
     D_800B0078->pc += 8;
 }
 
@@ -7855,7 +7855,7 @@ s32 func_8009AEE0(s32 slot, s32 x, s32 z, s32 facing) {
     s32 dz;
     VECTOR delta;
 
-    member = D_8005A444[slot];
+    member = mode_party_actors[slot];
     if (member == 0xFF) {
         return 0;
     }
@@ -7904,7 +7904,7 @@ s32 func_8009AEE0(s32 slot, s32 x, s32 z, s32 facing) {
         saved = D_800B0078;
         saved_index = D_800AFD1C;
         D_800B0078 = actor;
-        D_800AFD1C = D_8005A444[slot];
+        D_800AFD1C = mode_party_actors[slot];
         func_8009E574(x, z);
         D_800B0078 = saved;
         D_800AFD1C = saved_index;
@@ -7953,7 +7953,7 @@ void func_8009B210(void) {
     s32 z;
     s32 near;
 
-    leader = D_800AF880.components.descriptors[D_8005A444[0]].actor;
+    leader = D_800AF880.components.descriptors[mode_party_actors[0]].actor;
     x = WHOLE(leader->position[0]);
     z = WHOLE(leader->position[2]);
     near = func_8009AEE0(0, x, z, 0xFF) == 0;
@@ -8008,8 +8008,8 @@ void func_8009B398(void) {
         D_800B2078.preserve_nonplayer_motion = 1;
         i = 0;
         do {
-            if (D_8005A444[i] != 0xFF) {
-                actor = D_800AF880.components.descriptors[D_8005A444[i]].actor;
+            if (mode_party_actors[i] != 0xFF) {
+                actor = D_800AF880.components.descriptors[mode_party_actors[i]].actor;
                 actor->heading_goal = actor->heading = actor->heading_goal | 0x8000;
             }
             i++;
@@ -8221,7 +8221,7 @@ void func_8009BC98(void) {
 
     if (func_8009CD18(&window) == 0) {
         D_800AFC7C += 8;
-        if (func_80033CD0(&D_800C2698[window].text) == 1 ||
+        if (window_get_wait_state(&D_800C2698[window].text) == 1 ||
             ((&D_800C2698[window].text)->unk84 != 0 && (&D_800C2698[window].text)->unk6C != 0)) {
             D_800C2698[window].choice.status = 0;
             D_800B0078->unk081 = 0xFF;
@@ -8229,7 +8229,7 @@ void func_8009BC98(void) {
             D_800C2698[window].choice.first = first;
             D_800C2698[window].choice.count = (EVENT_OPERAND_BYTE(1) & 0xF) - first + 1;
             D_800C2698[window].choice.index = 0;
-            func_80034800(&D_800C2698[window].text, 0xEF, 0x1E, 0xF0);
+            window_set_color(&D_800C2698[window].text, 0xEF, 0x1E, 0xF0);
             D_800B0078->pc += 2;
         }
     } else {
@@ -8352,7 +8352,7 @@ s32 func_8009C154(s32 character) {
 
     for (i = 0; i < 3; i++) {
         if (D_800B06A4[i].b == 1) {
-            if (func_80028A60(1) == 0) {
+            if (cd_sync_reads(1) == 0) {
                 D_800B06A4[i].b = 2;
                 func_80070340(D_800ADB10, PLACE(i, 0), PLACE(i, 1), PLACE(i, 2),
                               PLACE(i, 3), 0x100, 1);
@@ -8368,9 +8368,9 @@ s32 func_8009C154(s32 character) {
         }
         if (D_800B06A4[i].b == 2) {
             D_800B06A4[i].b = 0;
-            func_800320E8(D_800ADB10);
+            heap_free(D_800ADB10);
             if (D_800B06A4[i].c == 1) {
-                func_800320E8(D_800ADB14);
+                heap_free(D_800ADB14);
             }
             return -1;
         }
@@ -8396,25 +8396,25 @@ s32 func_8009C154(s32 character) {
         return -1;
     }
     D_800B0078->state.bits.unk2 = D_800ADB0C;
-    func_80028470(4, 0);
+    cd_select_directory(4, 0);
     D_800B06A4[D_800ADB0C].a = character;
     D_800B06A4[D_800ADB0C].b = 1;
     D_800B06A4[D_800ADB0C].c = 0;
     i = 0;
     file = FILES(character, 0);
     D_800B00C8[i].file = file + 0x46;
-    D_800B00C8[i].destination = D_800ADB10 = func_80031BDC(func_800288EC(file + 0x46), 0);
+    D_800B00C8[i].destination = D_800ADB10 = heap_alloc(cd_get_aligned_file_size(file + 0x46), 0);
     i++;
     if (FILES(character, 1) != FILES(character, 0)) {
         D_800B06A4[D_800ADB0C].c = 1;
         file = FILES(character, 1);
         D_800B00C8[i].file = file + 0x46;
-        D_800B00C8[i].destination = D_800ADB14 = func_80031BDC(func_800288EC(file + 0x46), 0);
+        D_800B00C8[i].destination = D_800ADB14 = heap_alloc(cd_get_aligned_file_size(file + 0x46), 0);
         i++;
     }
     D_800B00C8[i].file = 0;
     D_800B00C8[i].destination = NULL;
-    func_80029AFC(D_800B00C8, 0, 0);
+    cd_read_file_list(D_800B00C8, 0, 0);
     return -1;
 }
 
@@ -8489,8 +8489,8 @@ s32 func_8009C5A8(s32 speaker, s32 mode) {
                 combined |= (s16)D_800C2698[i].style;
             }
         }
-        columns = func_8003373C(D_800ADBF0, message);
-        rows = func_80033760(D_800ADBF0, message);
+        columns = text_get_message_columns(D_800ADBF0, message);
+        rows = text_get_message_rows(D_800ADBF0, message);
         if (mode == 0 || mode == 3) {
             if (D_800B0078->unk82 != 0) {
                 columns = D_800B0078->unk82;
@@ -8653,7 +8653,7 @@ s32 func_8009CD7C(s32 offset) {
 
     index = func_8009CDB4(offset);
     if (index == 0xFF) {
-        return D_8005A444[0];
+        return mode_party_actors[0];
     }
     return index;
 }
@@ -8665,11 +8665,11 @@ s32 func_8009CDB4(s32 offset) {
 
     index = D_800ADC00[D_800B0078->pc + offset];
     if (index == 0xFF) {
-        index = D_8005A444[0];
+        index = mode_party_actors[0];
     } else if (index == 0xFE) {
-        index = D_8005A444[1];
+        index = mode_party_actors[1];
     } else if (index == 0xFD) {
-        index = D_8005A444[2];
+        index = mode_party_actors[2];
     } else if (index == 0xFB) {
         index = D_800AFD1C;
     }
@@ -9168,7 +9168,7 @@ void func_8009E094(void) {
 
     value = func_800ACDEC(1);
     D_800B0078->unk76 = value;
-    func_80021BCC(D_800AF880.components.descriptors[D_800AFD1C].model, value);
+    sprite_set_gravity_divisor(D_800AF880.components.descriptors[D_800AFD1C].model, value);
     D_800B0078->pc += 3;
 }
 
@@ -9375,7 +9375,7 @@ void func_8009E83C(void) {
  * byte 17, bits 0x80 down to 0x01). */
 void func_8009E91C(void) {
     if (!(D_800B0078->state.word & 0x1000)) {
-        D_800B0078->unk114 = func_80031BDC(0x10, 0);
+        D_800B0078->unk114 = heap_alloc(0x10, 0);
     }
     D_800B0078->state.word |= 0x1000;
     ((ActorBoundary *)D_800B0078->unk114)->corners[0].x = func_8009CF78(1, EVENT_OPERAND_BYTE(17));
@@ -9686,10 +9686,10 @@ s32 func_8009FA00(s32 id) {
         return -1;
     }
     for (i = 0; i < 3; i++) {
-        if (D_80062590[i] == 0xFF) {
+        if (mode_party_members[i] == 0xFF) {
             return -1;
         }
-        if (D_80062590[i] == id) {
+        if (mode_party_members[i] == id) {
             return i;
         }
     }
@@ -9738,10 +9738,10 @@ s32 func_8009FA54(s32 entry) {
  * the party sprite blocks (8001b3a8); record byte 1 as the alternate sprite set
  * (800b2268) that opcode 16 uses. */
 void func_8009FB98(void) {
-    D_8004F34C |= 0xC000;
-    func_8001AD1C();
-    func_8001B044();
-    func_8001B3A8();
+    mode_field_map_id |= 0xC000;
+    mode_wait_for_disc_idle();
+    mode_sync_party_files();
+    mode_unpack_party_files();
     D_800B2078.unk2268 = EVENT_OPERAND_BYTE(1);
     D_800B0078->pc += 2;
 }
@@ -9751,7 +9751,7 @@ s32 func_8009FC10(s32 index) {
     s32 i;
 
     for (i = 0; i < 3; i++) {
-        if (D_8006F990[i] == index) {
+        if (mode_party_stand_in_actors[i] == index) {
             return i;
         }
     }
@@ -9770,7 +9770,7 @@ void func_8009FC48(void) {
     if (slot >= 3) {
         slot = 2;
     }
-    D_8005A39C->inGear[slot] = 1;
+    game_current_data->inGear[slot] = 1;
     func_8009FD10(slot);
     D_800B0078->pc += 3;
 }
@@ -9785,7 +9785,7 @@ void func_8009FCAC(void) {
     if (slot >= 3) {
         slot = 2;
     }
-    D_8005A39C->inGear[slot] = 0;
+    game_current_data->inGear[slot] = 0;
     func_8009FD10(slot);
     D_800B0078->pc += 3;
 }
@@ -9794,17 +9794,17 @@ void func_8009FCAC(void) {
 void func_8009FD10(s32 slot) {
     switch (slot) {
     case 0:
-        func_800A3074(0x2A, D_8004F34C & 0xFFF);
+        func_800A3074(0x2A, mode_field_map_id & 0xFFF);
         func_800A3074(0x2C, 0);
         func_800A3074(0x2E, 0);
         break;
     case 1:
-        func_800A3074(0x30, D_8004F34C & 0xFFF);
+        func_800A3074(0x30, mode_field_map_id & 0xFFF);
         func_800A3074(0x32, 0);
         func_800A3074(0x34, 0);
         break;
     case 2:
-        func_800A3074(0x36, D_8004F34C & 0xFFF);
+        func_800A3074(0x36, mode_field_map_id & 0xFFF);
         func_800A3074(0x38, 0);
         func_800A3074(0x3A, 0);
         break;
@@ -9819,7 +9819,7 @@ void func_8009FDD4(void) {
     s32 slot;
 
     slot = func_8009FC10(D_800AFD1C);
-    if (slot != 0xFF && D_8005A39C->inGear[slot] == 0) {
+    if (slot != 0xFF && game_current_data->inGear[slot] == 0) {
         func_800AD4D4(slot);
     }
     D_800B0078->pc += 1;
@@ -9832,7 +9832,7 @@ void func_8009FE4C(void) {
     u8 slot;
 
     slot = EVENT_OPERAND_BYTE(1);
-    if (D_80062590[slot] != 0xFF && D_8005A39C->inGear[slot] != 0) {
+    if (mode_party_members[slot] != 0xFF && game_current_data->inGear[slot] != 0) {
         func_800ACFD0(slot);
     }
     D_800B0078->pc += 2;
@@ -9844,23 +9844,23 @@ void func_8009FE4C(void) {
 s32 func_8009FEE4(s32 slot) {
     s32 layer;
 
-    if (D_8005A444[slot] != 0xFF) {
-        layer = D_800AF880.components.descriptors[D_8005A444[slot]].actor->layer << 14;
+    if (mode_party_actors[slot] != 0xFF) {
+        layer = D_800AF880.components.descriptors[mode_party_actors[slot]].actor->layer << 14;
         switch (slot) {
         case 0:
-            func_800A3074(0x2A, (D_8004F34C & 0xFFF) | layer);
-            func_800A3074(0x2C, WHOLE(D_800AF880.components.descriptors[D_8005A444[slot]].actor->position[0]));
-            func_800A3074(0x2E, WHOLE(D_800AF880.components.descriptors[D_8005A444[slot]].actor->position[2]));
+            func_800A3074(0x2A, (mode_field_map_id & 0xFFF) | layer);
+            func_800A3074(0x2C, WHOLE(D_800AF880.components.descriptors[mode_party_actors[slot]].actor->position[0]));
+            func_800A3074(0x2E, WHOLE(D_800AF880.components.descriptors[mode_party_actors[slot]].actor->position[2]));
             break;
         case 1:
-            func_800A3074(0x30, (D_8004F34C & 0xFFF) | layer);
-            func_800A3074(0x32, WHOLE(D_800AF880.components.descriptors[D_8005A444[slot]].actor->position[0]));
-            func_800A3074(0x34, WHOLE(D_800AF880.components.descriptors[D_8005A444[slot]].actor->position[2]));
+            func_800A3074(0x30, (mode_field_map_id & 0xFFF) | layer);
+            func_800A3074(0x32, WHOLE(D_800AF880.components.descriptors[mode_party_actors[slot]].actor->position[0]));
+            func_800A3074(0x34, WHOLE(D_800AF880.components.descriptors[mode_party_actors[slot]].actor->position[2]));
             break;
         case 2:
-            func_800A3074(0x36, (D_8004F34C & 0xFFF) | layer);
-            func_800A3074(0x38, WHOLE(D_800AF880.components.descriptors[D_8005A444[slot]].actor->position[0]));
-            func_800A3074(0x3A, WHOLE(D_800AF880.components.descriptors[D_8005A444[slot]].actor->position[2]));
+            func_800A3074(0x36, (mode_field_map_id & 0xFFF) | layer);
+            func_800A3074(0x38, WHOLE(D_800AF880.components.descriptors[mode_party_actors[slot]].actor->position[0]));
+            func_800A3074(0x3A, WHOLE(D_800AF880.components.descriptors[mode_party_actors[slot]].actor->position[2]));
             break;
         }
     }
@@ -9906,25 +9906,25 @@ void func_800A0228(void) {
         slot = 2;
     }
     shown = 1;
-    D_8006F990[slot] = D_800AFD1C;
-    if (D_80062590[slot] != 0xFF && func_8001ACF0(D_80062590[slot]) != 0xFF) {
+    mode_party_stand_in_actors[slot] = D_800AFD1C;
+    if (mode_party_members[slot] != 0xFF && mode_get_character_gear_id(mode_party_members[slot]) != 0xFF) {
         func_800A0158(slot, &map, &x, &z);
         D_800B0078->layer = (map >> 14) & 3;
-        if ((D_8004F34C & 0xFFF) != (map & 0x3FFF)) {
+        if ((mode_field_map_id & 0xFFF) != (map & 0x3FFF)) {
             shown = 0;
             x = 0;
             z = 0;
             D_800B0078->layer = 0;
         }
-        if (D_8005A39C->inGear[slot] != 0) {
+        if (game_current_data->inGear[slot] != 0) {
             shown = 0;
-        } else if (D_80062590[slot] == 7) {
+        } else if (mode_party_members[slot] == 7) {
             shown = 0;
         }
         descriptor->flags = (descriptor->flags & 0xF07F) | 0x200;
-        func_80076AC0(D_800AFD1C, slot, D_8005A414[slot], 1, 0, slot, 1);
+        func_80076AC0(D_800AFD1C, slot, mode_party_sprite_blocks[slot], 1, 0, slot, 1);
         D_800AF880.components.descriptors[D_800AFD1C].flags &= 0xFFDF;
-        if ((D_8004F34C & 0xFFF) != (map & 0x3FFF)) {
+        if ((mode_field_map_id & 0xFFF) != (map & 0x3FFF)) {
             D_800B0078->layer = 0;
         }
         func_8009E574(x, z);
@@ -9985,14 +9985,14 @@ void func_800A06E8(void) {
     slot = func_8009FA00(func_8008CF3C(func_800ACDEC(1)));
     descriptor->flags = (descriptor->flags & 0xF07F) | 0x200;
     if (slot != -1) {
-        func_80076AC0(D_800AFD1C, slot, D_8005A414[slot], 2, 0, slot, 1);
+        func_80076AC0(D_800AFD1C, slot, mode_party_sprite_blocks[slot], 2, 0, slot, 1);
         D_800AFD20 = -0xC0;
         D_800AF880.components.descriptors[D_800AFD1C].flags &= 0xFFDF;
         func_800A0C94();
         D_800B0078->flags = (D_800B0078->flags | 0x100) & ~0x80;
         D_800AF880.components.descriptors[D_800AFD1C].flags &= 0xFFDF;
     } else {
-        func_80076AC0(D_800AFD1C, 0, D_8005A414[0], 1, 0, 0, 1);
+        func_80076AC0(D_800AFD1C, 0, mode_party_sprite_blocks[0], 1, 0, 0, 1);
         D_800B0078->flags |= 1;
         D_800AFFEC = 1;
         D_800B00C0 = 1;
@@ -10022,21 +10022,21 @@ void func_800A08B8(void) {
             D_800B2078.unk233E = D_800AFD1C;
             D_800B0078->flags = (D_800B0078->flags | 0x4400) & ~0x80;
         }
-        D_8005A444[slot] = D_800AFD1C;
+        mode_party_actors[slot] = D_800AFD1C;
         if (D_800B2078.unk2268 != 0) {
             sprites = D_800AF880.components.sprites;
             entry = &sprites[D_800AE294[character] + 1] + D_800B2078.unk2268;
             func_80076AC0(D_800AFD1C, D_800AE294[character] + D_800B2078.unk2268, (u8 *)(*entry + (s32)sprites),
                           0, 0, (D_800AE294[character] + D_800B2078.unk2268) | 0x80, 1);
             D_800B0078->flags = (D_800B0078->flags | 0x400) & ~0x300;
-            if (D_8005A39C->inGear[slot] != 0) {
+            if (game_current_data->inGear[slot] != 0) {
                 model = D_800AF880.components.descriptors[D_800AFD1C].model;
-                D_800AF880.components.descriptors[D_800AFD1C].model = D_800AF880.components.descriptors[D_8006F990[slot]].model;
-                D_800AF880.components.descriptors[D_8006F990[slot]].model = model;
+                D_800AF880.components.descriptors[D_800AFD1C].model = D_800AF880.components.descriptors[mode_party_stand_in_actors[slot]].model;
+                D_800AF880.components.descriptors[mode_party_stand_in_actors[slot]].model = model;
                 D_800B0078->flags = (D_800B0078->flags | 0x200) & ~0x500;
             }
         } else {
-            func_80076AC0(D_800AFD1C, slot, D_8005A414[slot], 1, 0, slot, 1);
+            func_80076AC0(D_800AFD1C, slot, mode_party_sprite_blocks[slot], 1, 0, slot, 1);
             D_800B0078->flags = (D_800B0078->flags | 0x400) & ~0x300;
         }
         D_800AFD20 = -0xC0;
@@ -10045,7 +10045,7 @@ void func_800A08B8(void) {
         func_800A0C94();
         D_800B0078->layer_flags &= ~0x800;
     } else {
-        func_80076AC0(D_800AFD1C, 0, D_8005A414[0], 1, 0, 0, 1);
+        func_80076AC0(D_800AFD1C, 0, mode_party_sprite_blocks[0], 1, 0, 0, 1);
         D_800B0078->flags |= 1;
         D_800AFFEC = 1;
         D_800B00C0 = 1;
@@ -10109,7 +10109,7 @@ void func_800A0DFC(void) {
     s32 reference;
 
     reference = func_800ACDB8(1) & 0xFFFF;
-    func_800A3074(reference & 0xFFFF, func_80028530());
+    func_800A3074(reference & 0xFFFF, cd_get_disc_number());
     D_800B0078->pc += 3;
 }
 
@@ -10176,7 +10176,7 @@ void func_800A0FD8(void) {
     }
     layer = D_800B0078->state.bits.layer;
     D_800B0078->layer_flags &= ~0x2000;
-    func_80028470(4, 0);
+    cd_select_directory(4, 0);
     switch (D_800ADC00[D_800B0078->pc + 1]) {
     case 0:
         D_801E8670[layer]->active = 0;
@@ -10186,22 +10186,22 @@ void func_800A0FD8(void) {
         func_801E8030(D_800B0078->state.bits.layer);
         D_800B2078.unk21DC[layer] = func_800ACDEC(5) * 2;
         D_800B2394[0].file = D_800B2078.unk21DC[layer] + 0x6BA;
-        D_800B2394[0].destination = D_8005A420[layer] = func_80031BDC(func_800288EC(D_800B2078.unk21DC[layer] + 0x6BA), 0);
+        D_800B2394[0].destination = mode_field_layer_script_files[layer] = heap_alloc(cd_get_aligned_file_size(D_800B2078.unk21DC[layer] + 0x6BA), 0);
         D_800B2394[1].file = D_800B2078.unk21DC[layer] + 0x6BB;
-        D_800B2394[1].destination = D_8005A450[layer] = func_80031BDC(func_800288EC(D_800B2078.unk21DC[layer] + 0x6BB), 1);
+        D_800B2394[1].destination = mode_field_layer_model_files[layer] = heap_alloc(cd_get_aligned_file_size(D_800B2078.unk21DC[layer] + 0x6BB), 1);
         D_800B2394[2].file = 0;
         D_800B2394[2].destination = 0;
-        func_80029AFC(D_800B2394, 0, 0);
+        cd_read_file_list(D_800B2394, 0, 0);
         D_800B0078->pc += 2;
         break;
     case 2:
-        if (func_80028A60(1) == 0) {
+        if (cd_sync_reads(1) == 0) {
             func_800ACDEC(2);
-            func_801E742C(layer, 0, D_8005A420[layer], D_8005A450[layer],
+            func_801E742C(layer, 0, mode_field_layer_script_files[layer], mode_field_layer_model_files[layer],
                           (s16)(0x240 - (layer + D_800B2078.unk225F[layer]) * 64), 0x100, 0,
                           (s16)(layer + 0xFC), &D_800B2078.layer_positions[layer].vx);
             D_800B2078.layer_scales[layer] = D_801E8670[layer]->scale;
-            func_800320E8(D_8005A450[layer]);
+            heap_free(mode_field_layer_model_files[layer]);
             D_800B0078->pc += 4;
             D_800B0078->layer_flags |= 0x2000;
             D_801E8670[layer]->scale = (D_800B0078->scale[0] * 5) >> 6;
@@ -10305,7 +10305,7 @@ void func_800A1730(void) {
         D_800B0078->state.word = (D_800B0078->state.word & ~0x1C0) | ((((D_800B0078->state.word >> 6) & 7) + 1) & 7) << 6;
     } else {
         if (D_800C268C == 0) {
-            func_800379C8("STACKERR ACT=%d\n", D_800AFD1C);
+            console_report_printf("STACKERR ACT=%d\n", D_800AFD1C);
         }
         D_800B00C0 = 1;
     }
@@ -10324,7 +10324,7 @@ void func_800A17F4(void) {
         D_800B0078->state.word = (D_800B0078->state.word & ~0x1C0) | ((((D_800B0078->state.word >> 6) & 7) + 1) & 7) << 6;
     } else {
         if (D_800C268C == 0) {
-            func_800379C8("STACKERR ACT=%d\n", D_800AFD1C);
+            console_report_printf("STACKERR ACT=%d\n", D_800AFD1C);
         }
         D_800B00C0 = 1;
     }
@@ -10338,7 +10338,7 @@ void func_800A18B8(void) {
     actor = D_800B0078;
     if ((actor->state.word & 0x1C0) == 0) {
         if (D_800C268C == 0) {
-            func_800379C8("STACKERR ACT=%d\n", D_800AFD1C);
+            console_report_printf("STACKERR ACT=%d\n", D_800AFD1C);
         }
         D_800B0078->slots[D_800B0078->slot].priority = 15;
         D_800B0078->slots[D_800B0078->slot].tag = 0xFF;
@@ -10526,7 +10526,7 @@ s32 func_800A1EC8(s32 limit) {
     for (count = 0; count < D_800AFC7C; count++) {
         if (count > 0x400) {
             if (D_800C268C == 0) {
-                func_800379C8("EVENTLOOP ERROR ACT=%d\n", D_800AFD1C);
+                console_report_printf("EVENTLOOP ERROR ACT=%d\n", D_800AFD1C);
             }
             return;
         }
@@ -10580,7 +10580,7 @@ s32 func_800A2030(void) {
         priority = 0xF;
         if (D_800B2078.party_processing_mode != 0) {
             for (i = 0; i < 3; i++) {
-                if (D_8005A444[i] != 0xFF && D_8005A444[i] == index) {
+                if (mode_party_actors[i] != 0xFF && mode_party_actors[i] == index) {
                     goto next;
                 }
             }
@@ -10613,7 +10613,7 @@ void func_800A22AC(s32 event) {
     s32 i;
 
     D_800B0078 = (D_800B06B8 = D_800AF880.components.descriptors)->actor;
-    saved = func_80031BDC(sizeof(FieldActor), 1);
+    saved = heap_alloc(sizeof(FieldActor), 1);
     *saved = *D_800B06B8->actor;
     for (i = 0; i < 8; i++) {
         D_800B0078->slots[i].countdown = 0;
@@ -10632,7 +10632,7 @@ void func_800A22AC(s32 event) {
     func_800A1EC8(0xFFFF);
     D_800ADB1C = 1;
     *D_800B06B8->actor = *saved;
-    func_800320E8(saved);
+    heap_free(saved);
 }
 
 void func_800A22AC(s32 mode);
@@ -10654,7 +10654,7 @@ void func_800A24C4(void) {
     u8 unused[0x10]; /* the original frame holds 0x10 unused bytes */
     s32 i;
 
-    if (D_8004F30C != 0) {
+    if (mode_field_return_pending != 0) {
         func_800A22AC(2);
         func_800AD898();
         for (i = 0; i < D_800B2078.unk2264; i++) {
@@ -10691,20 +10691,20 @@ void func_800A2714(void) {
     FieldActor *actor;
     s32 i;
 
-    if (D_8004F30C != 0) {
+    if (mode_field_return_pending != 0) {
         for (i = 0; i < D_800ADBFC; i++) {
-            func_80028470(4, 0);
+            cd_select_directory(4, 0);
             actor = D_800AF880.components.descriptors[i].actor;
             if (actor->unk124 != -1) {
                 D_800B0078 = actor;
-                D_800B0078->unk120 = func_80031BDC(func_800288EC(actor->unk124) + 8, 0);
-                func_800295D8(D_800B0078->unk124, D_800B0078->unk120, 0, 0x80);
-                func_80028A60(0);
+                D_800B0078->unk120 = heap_alloc(cd_get_aligned_file_size(actor->unk124) + 8, 0);
+                cd_read_file(D_800B0078->unk124, D_800B0078->unk120, 0, 0x80);
+                cd_sync_reads(0);
             }
         }
         for (i = 0; i < D_800ADBFC; i++) {
             if (D_800AF880.components.descriptors[i].actor->unk124 != -1) {
-                func_80021BF0(D_800AF880.components.descriptors[i].model,
+                sprite_set_alternate_resource(D_800AF880.components.descriptors[i].model,
                               (s32)D_800AF880.components.descriptors[i].actor->unk120);
             }
         }
@@ -10720,7 +10720,7 @@ void func_800A2714(void) {
     }
 }
 
-/* When D_8004F30C is set: rebuild every actor's sprite and animation state,
+/* When mode_field_return_pending is set: rebuild every actor's sprite and animation state,
  * swap in the party models and rerun the actors' setup scripts. Each sprite
  * table pointer is a block-local variable. */
 void func_800A28D4(void) {
@@ -10728,12 +10728,12 @@ void func_800A28D4(void) {
     Sprite *model;
     FieldActor *actor;
 
-    if (D_8004F30C != 0) {
+    if (mode_field_return_pending != 0) {
         func_800A3474();
         for (i = 0; i < D_800ADBFC; i++) {
             actor = D_800AF880.components.descriptors[i].actor;
             if (!(actor->unk126 & 0x80)) {
-                func_80076AC0(i, actor->unk127, D_8005A414[actor->unk126], actor->sprite_kind & 3,
+                func_80076AC0(i, actor->unk127, mode_party_sprite_blocks[actor->unk126], actor->sprite_kind & 3,
                               actor->unk134 & 0xF, D_800AF880.components.descriptors[i].actor->unk126,
                               (D_800AF880.components.descriptors[i].actor->unk134 >> 4) & 1);
             } else {
@@ -10745,12 +10745,12 @@ void func_800A28D4(void) {
                               (D_800AF880.components.descriptors[i].actor->unk134 >> 4) & 1);
                 switch (D_800AF880.components.descriptors[i].actor->state.bits.unk16) {
                 case 1:
-                    func_8002303C(D_800AF880.components.descriptors[i].model, 2, 0);
+                    sprite_alloc_sequencer_buffer(D_800AF880.components.descriptors[i].model, 2, 0);
                     SPRITE_SEQUENCER(D_800AF880.components.descriptors[i].model)->buffer[2] = D_800AF880.components.descriptors[i].actor->state.bits.unk18;
                     SPRITE_SEQUENCER(D_800AF880.components.descriptors[i].model)->buffer[3] = D_800AF880.components.descriptors[i].actor->unk130;
                     break;
                 case 2:
-                    func_8002303C(D_800AF880.components.descriptors[i].model, 3, 0);
+                    sprite_alloc_sequencer_buffer(D_800AF880.components.descriptors[i].model, 3, 0);
                     SPRITE_SEQUENCER(D_800AF880.components.descriptors[i].model)->buffer[2] = D_800AF880.components.descriptors[i].actor->state.bits.unk18;
                     SPRITE_SEQUENCER(D_800AF880.components.descriptors[i].model)->buffer[3] = D_800AF880.components.descriptors[i].actor->unk130;
                     SPRITE_SEQUENCER(D_800AF880.components.descriptors[i].model)->buffer[4] = D_800AF880.components.descriptors[i].actor->unk130_9;
@@ -10761,17 +10761,17 @@ void func_800A28D4(void) {
         }
         if (D_800B2078.unk2268 != 0) {
             for (i = 0; i < 3; i++) {
-                if (D_8005A444[i] != 0xFF) {
-                    if (D_8005A39C->inGear[i] != 0) {
-                        model = D_800AF880.components.descriptors[D_8005A444[i]].model;
-                        D_800AF880.components.descriptors[D_8005A444[i]].model = D_800AF880.components.descriptors[D_8006F990[i]].model;
-                        D_800AF880.components.descriptors[D_8006F990[i]].model = model;
-                        D_800AF880.components.descriptors[D_8006F990[i]].actor->flags |= 0x200;
-                        D_800AF880.components.descriptors[D_8006F990[i]].actor->flags &= ~0x500;
-                        D_800AF880.components.descriptors[D_8006F990[i]].flags |= 0x20;
+                if (mode_party_actors[i] != 0xFF) {
+                    if (game_current_data->inGear[i] != 0) {
+                        model = D_800AF880.components.descriptors[mode_party_actors[i]].model;
+                        D_800AF880.components.descriptors[mode_party_actors[i]].model = D_800AF880.components.descriptors[mode_party_stand_in_actors[i]].model;
+                        D_800AF880.components.descriptors[mode_party_stand_in_actors[i]].model = model;
+                        D_800AF880.components.descriptors[mode_party_stand_in_actors[i]].actor->flags |= 0x200;
+                        D_800AF880.components.descriptors[mode_party_stand_in_actors[i]].actor->flags &= ~0x500;
+                        D_800AF880.components.descriptors[mode_party_stand_in_actors[i]].flags |= 0x20;
                     } else {
-                        D_800AF880.components.descriptors[D_8006F990[i]].actor->flags |= 0x400;
-                        D_800AF880.components.descriptors[D_8006F990[i]].actor->flags &= ~0x300;
+                        D_800AF880.components.descriptors[mode_party_stand_in_actors[i]].actor->flags |= 0x400;
+                        D_800AF880.components.descriptors[mode_party_stand_in_actors[i]].actor->flags &= ~0x300;
                     }
                 }
             }
@@ -10852,9 +10852,9 @@ s32 func_800A3090(s32 actor, s32 event) {
 
 /* Store the three party members in variables 3e, 40, 42. */
 void func_800A30B4(void) {
-    func_800A3074(0x3E, D_80062590[0]);
-    func_800A3074(0x40, D_80062590[1]);
-    func_800A3074(0x42, D_80062590[2]);
+    func_800A3074(0x3E, mode_party_members[0]);
+    func_800A3074(0x40, mode_party_members[1]);
+    func_800A3074(0x42, mode_party_members[2]);
 }
 
 /* Record the current map and camera in the game state and variables and
@@ -10862,19 +10862,19 @@ void func_800A30B4(void) {
 void func_800A30FC(void) {
     s32 i;
 
-    D_8005A39C->map = D_8004F34C;
-    D_8005A39C->flagWords[0] = D_8004F324;
-    D_8005A39C->entry[2] = D_8005A39C->vars[1];
-    D_8005A39C->entry[0] = D_8005A39C->vars[4] << 9;
-    func_800A3074(0x44, D_8005941C);
-    func_800A3074(0x46, D_800594D0);
+    game_current_data->map = mode_field_map_id;
+    game_current_data->flagWords[0] = mode_music_selected_track;
+    game_current_data->entry[2] = game_current_data->vars[1];
+    game_current_data->entry[0] = game_current_data->vars[4] << 9;
+    func_800A3074(0x44, mode_battle_turn_count);
+    func_800A3074(0x46, mode_result_code);
     func_800A3074(6, func_8009744C() & 0xFFFF);
     func_800A3074(8, func_8009A514() & 0xFFFF);
     func_800A3074(0x24, (s16)D_800AF880.elevation);
-    func_800A3074(0x3C, D_8004F34C);
+    func_800A3074(0x3C, mode_field_map_id);
     func_800A30B4();
     for (i = 0; i < 0x200; i++) {
-        D_8005A39C->vars[i] = D_800C3A68[i];
+        game_current_data->vars[i] = D_800C3A68[i];
     }
 }
 
@@ -10894,23 +10894,23 @@ void func_800A31E8(void) {
     }
     D_800AFC6C |= D_800AFE9C;
     for (i = 0; i < 3; i++) {
-        D_8005A39C->party[i] = D_80062590[i];
+        game_current_data->party[i] = mode_party_members[i];
     }
     func_800A30FC();
-    D_8004F2F4 = 0;
-    D_8004F318++;
+    mode_unread_play_record_word = 0;
+    mode_play_clock_frame_count++;
     for (i = 0; i < 3; i++) {
-        if (D_8005A39C->inGear[i] == 1) {
+        if (game_current_data->inGear[i] == 1) {
             func_8009FEE4(i);
         }
     }
-    if (D_8004F318 > 30) {
-        D_8004F318 = 0;
-        if (!(D_8004F328 & 0x80)) {
+    if (mode_play_clock_frame_count > 30) {
+        mode_play_clock_frame_count = 0;
+        if (!(mode_play_clock_flags & 0x80)) {
             value = func_800A3018(0xA);
             seconds = value & 0xFF;
             minutes = (value >> 8) & 0xFF;
-            if (!(D_8004F328 & 4)) {
+            if (!(mode_play_clock_flags & 4)) {
                 if (seconds != 0xFF3B) { /* never equal: the original's limit check */
                     seconds++;
                     if (seconds > 60) {
@@ -10929,14 +10929,14 @@ void func_800A31E8(void) {
             func_800A3074(0xA, (minutes << 8) | (seconds & 0xFF));
         }
     }
-    func_800A3074(0xC, D_80059418 | (D_80059420 << 8));
-    func_800A3074(0xE, D_80059484);
+    func_800A3074(0xC, pad_play_time_seconds | (pad_play_time_minutes << 8));
+    func_800A3074(0xE, pad_play_time_hours);
     func_800A3074(0x1E, WHOLE(D_800AF880.components.descriptors[D_800B2078.controlled].actor->position[0]));
     func_800A3074(0x20, WHOLE(D_800AF880.components.descriptors[D_800B2078.controlled].actor->position[2]));
     func_800A3074(0x22, WHOLE(D_800AF880.components.descriptors[D_800B2078.controlled].actor->position[1]));
 }
 
-/* Read the field state block at D_8005A4E4 back (the inverse of
+/* Read the field state block at mode_snapshot_block back (the inverse of
  * func_800A3F4C): descriptor count, view, collision attributes, D_800B2078
  * and the per-actor records, keeping each actor's list pointer and
  * allocating its link and unk114 blocks as the record says. */
@@ -10946,7 +10946,7 @@ void func_800A3474(void) {
     s32 flags;
     s32 *list;
 
-    D_800AFC50 = D_8005A4E4;
+    D_800AFC50 = mode_snapshot_block;
     D_800AF880.components.descriptor_count = *D_800AFC50;
     D_800AFC50 += 4;
     COPY_BLOCK(&D_800B007C, D_800AFC50, 0x38);
@@ -10972,12 +10972,12 @@ void func_800A3474(void) {
         D_800AF880.components.descriptors[i].actor->list = list;
         D_800AFC50 += 0x138;
         if (D_800AF880.components.descriptors[i].actor->unk134 & 0x80) {
-            D_800AF880.components.descriptors[i].actor->link = func_80031BDC(0xC, 0);
+            D_800AF880.components.descriptors[i].actor->link = heap_alloc(0xC, 0);
             COPY_BLOCK(D_800AF880.components.descriptors[i].actor->link, D_800AFC50, 0xC);
             D_800AFC50 += 0xC;
         }
         if (D_800AF880.components.descriptors[i].actor->state.word & 0x1000) {
-            D_800AF880.components.descriptors[i].actor->unk114 = func_80031BDC(0x10, 0);
+            D_800AF880.components.descriptors[i].actor->unk114 = heap_alloc(0x10, 0);
             COPY_BLOCK(D_800AF880.components.descriptors[i].actor->unk114, D_800AFC50, 0x10);
             D_800AFC50 += 0x10;
         }
@@ -10987,20 +10987,20 @@ void func_800A3474(void) {
 }
 
 /* Read the descriptor count, view block and per-actor records from the
- * block at D_8005A4E4, passing each model its record (func_80021D50). */
+ * block at mode_snapshot_block, passing each model its record (sprite_restore_state). */
 void func_800A3C8C(void) {
     s32 changed;
     s32 i;
     u8 *record;
 
-    D_800AFC50 = D_8005A4E4;
+    D_800AFC50 = mode_snapshot_block;
     D_800AF880.components.descriptor_count = *D_800AFC50;
     D_800AFC50 += 0x3C;
     *(ViewSnapshot *)&D_800AF880.world_angles = *(ViewSnapshot *)D_800AFC50;
     D_800AFC50 += 0x920;
     changed = 0;
     for (i = 0; i < 3; i++) {
-        if (D_8005A408[i] != D_8005A39C->inGear[i]) {
+        if (mode_snapshot_party_in_gear[i] != game_current_data->inGear[i]) {
             changed++;
         }
     }
@@ -11012,9 +11012,9 @@ void func_800A3C8C(void) {
         }
         if (!(D_800AF880.components.descriptors[i].actor->layer_flags & 0x1000000)) {
             if (D_800B2078.unk2268 == 0 || !(D_800AF880.components.descriptors[i].actor->flags & 0x600)) {
-                func_80021D50(D_800AF880.components.descriptors[i].model, (SpriteState *)D_800AFC50);
+                sprite_restore_state(D_800AF880.components.descriptors[i].model, (SpriteState *)D_800AFC50);
             } else if (changed == 0) {
-                func_80021D50(D_800AF880.components.descriptors[i].model, (SpriteState *)D_800AFC50);
+                sprite_restore_state(D_800AF880.components.descriptors[i].model, (SpriteState *)D_800AFC50);
             }
         }
         record = D_800AFC50;
@@ -11028,7 +11028,7 @@ void func_800A3C8C(void) {
     }
 }
 
-/* Write the field state block at D_8005A4E4 (descriptor count, view,
+/* Write the field state block at mode_snapshot_block (descriptor count, view,
  * collision attributes, D_800B2078, per-actor records and D_800C3A68) and
  * print its size. The counter variable is reused for the block address. */
 void func_800A3F4C(void) {
@@ -11037,7 +11037,7 @@ void func_800A3F4C(void) {
     s32 size;
     FieldDescriptor *descriptor;
 
-    D_800AFC50 = D_8005A4E4;
+    D_800AFC50 = mode_snapshot_block;
     *D_800AFC50 = D_800AF880.components.descriptor_count;
     D_800AFC50 += 4;
     COPY_BLOCK(D_800AFC50, &D_800B007C, 0x38);
@@ -11057,7 +11057,7 @@ void func_800A3F4C(void) {
         flags = D_800AF880.components.descriptors[i].flags;
         COPY_BLOCK(D_800AFC50, &flags, 4);
         D_800AFC50 += 4;
-        func_80021EBC(D_800AF880.components.descriptors[i].model, (SpriteState *)D_800AFC50);
+        sprite_save_state(D_800AF880.components.descriptors[i].model, (SpriteState *)D_800AFC50);
         D_800AFC50 += 0x30;
         COPY_BLOCK(D_800AFC50, D_800AF880.components.descriptors[i].actor, 0x138);
         D_800AFC50 += 0x138;
@@ -11073,13 +11073,13 @@ void func_800A3F4C(void) {
     COPY_BLOCK(D_800AFC50, D_800C3A68, 0x800);
     D_800AFC50 += 0x800;
     for (i = 0; i < 3; i++) {
-        D_8005A408[i] = D_8005A39C->inGear[i];
+        mode_snapshot_party_in_gear[i] = game_current_data->inGear[i];
     }
     size = (s32)D_800AFC50;
-    i = (s32)D_8005A4E4;
+    i = (s32)mode_snapshot_block;
     if (D_800C268C == 0) {
         size -= i;
-        func_800379C8("SAVESIZE=%d %x\n", size, size);
+        console_report_printf("SAVESIZE=%d %x\n", size, size);
     }
 }
 

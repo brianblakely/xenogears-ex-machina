@@ -18,7 +18,7 @@ void func_801E5840(u8 phase);
 /* Callers convert arguments differently from the resident definition (s16
  * modes and u16 positions there): upload an image list (ovl2615.c,
  * battle_loader.c). */
-void func_8002DDE4(void *images, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6);
+void model_load_image_list(void *images, s32 mode, s32 x, s32 y, s32 mode2, s32 x2, s32 y2);
 
 /* The battle overlay's model setup (stage.c places the stage model with it,
  * battle_loader.c the enemy models). */

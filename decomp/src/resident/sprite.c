@@ -16,272 +16,272 @@
 #include "battle_overlay.h"
 #include "own_declarations.h"
 
-TexturePosition D_8004FAB8[8] = {
+TexturePosition sprite_cell_page_positions[8] = { /* 8004FAB8 */
     {0x300, 0}, {0x340, 0}, {0x380, 0}, {0x3C0, 0},
     {0x300, 0x100}, {0x340, 0x100}, {0x380, 0x100}, {0x3C0, 0x100},
 };
-SVECTOR D_8004FAD8[4] = {0};
+SVECTOR sprite_shadow_corners[4] = {0}; /* 8004FAD8 */
 /* Single-bit masks: halfwords (the facing group masks) and words. */
-u16 D_8004FAF8[16] = {
+u16 sprite_halfword_bit_masks[16] = { /* 8004FAF8 */
     0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
     0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000,
 };
-u32 D_8004FB18[32] = {
+u32 sprite_word_bit_masks[32] = { /* 8004FB18 */
     0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
     0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000,
     0x10000, 0x20000, 0x40000, 0x80000, 0x100000, 0x200000, 0x400000, 0x800000,
     0x1000000, 0x2000000, 0x4000000, 0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000,
 };
-SVECTOR D_8004FB98[4] = {0};
+SVECTOR sprite_quad_corners[4] = {0}; /* 8004FB98 */
 /* The sprite camera: identity rotation, no translation. */
-MATRIX D_8004FBB8 = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}};
+MATRIX sprite_view_matrix = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}}; /* 8004FBB8 */
 /* The packed image 8001fab4 uploads: its unpacked size (664 bytes) and the
  * LZSS stream 80032e88 decodes. */
-INCLUDE_ASSET(".data", D_8004FBD8, 0x8004FBD8, 0xE8);
+INCLUDE_ASSET(".data", sprite_packed_pause_image, 0x8004FBD8, 0xE8);
 
 /* The unit's own small data, statics and small commons, all $gp-relative.
  * The statics take the unit's .sbss (800592e4); the commons merge with
- * commons/common_80059404.c's definitions. */
-u32 D_80059184 = 0;
-s32 D_80059188 = 0;
-s32 D_8005918C = 0;
-Sprite *D_80059190 = NULL;
-s16 D_80059194 = 0; /* texture area row (0-2) of the next image */
-s16 D_80059196 = 0; /* texture area column of the next image */
-static s32 *D_800592E4;       /* image list for 8001fb30 */
-static DVECTOR D_800592E8;    /* its position */
-Task *D_800594C0;
-Task *D_8005958C;
-Task *D_80059590;
-Task *D_80059594;
+ * commons/commons_small.c's definitions. */
+u32 task_next_serial = 0; /* 80059184 */
+s32 task_main_count = 0; /* 80059188 */
+s32 task_draw_count = 0; /* 8005918C */
+Sprite *sprite_pending_list = NULL; /* 80059190 */
+s16 sprite_texture_area_row = 0; /* 80059194: texture area row (0-2) of the next image */
+s16 sprite_texture_area_column = 0; /* 80059196: texture area column of the next image */
+static s32 *sprite_image_list;       /* 800592E4: image list for 8001fb30 */
+static DVECTOR sprite_image_list_position;    /* 800592E8: its position */
+Task *task_current_node;
+Task *task_main_list;
+Task *task_next_node;
+Task *task_draw_list;
 
-/* Destroy every task of both lists. */
-void func_8001C8DC(void) {
+/* 8001C8DC: Destroy every task of both lists. */
+void task_destroy_all(void) {
     Task *task;
 
-    while ((task = D_8005958C) != NULL) {
+    while ((task = task_main_list) != NULL) {
         task->destroy(task);
     }
-    while ((task = D_80059594) != NULL) {
+    while ((task = task_draw_list) != NULL) {
         task->destroy(task);
     }
 }
 
-/* Empty both task lists. */
-void func_8001C944(void) {
-    D_8005958C = NULL;
-    D_80059594 = NULL;
-    D_80059188 = 0;
-    D_8005918C = 0;
-    D_80059428 = 0;
+/* 8001C944: Empty both task lists. */
+void task_clear_lists(void) {
+    task_main_list = NULL;
+    task_draw_list = NULL;
+    task_main_count = 0;
+    task_draw_count = 0;
+    task_main_pause_timer = 0;
 }
 
-/* Run the main task list, unless it is paused (count the pause down). */
-void func_8001C964(void) {
+/* 8001C964: Run the main task list, unless it is paused (count the pause down). */
+void task_run_main_list(void) {
     Task *task;
 
-    if (D_80059428 != 0) {
-        if (--D_80059428 == 0) {
-            D_80059494 = 0;
+    if (task_main_pause_timer != 0) {
+        if (--task_main_pause_timer == 0) {
+            task_catch_up_frame_count = 0;
         }
         return;
     }
-    D_80059590 = D_8005958C;
-    while (D_80059590 != NULL) {
-        task = D_80059590;
-        D_800594C0 = task;
-        D_80059590 = task->next;
+    task_next_node = task_main_list;
+    while (task_next_node != NULL) {
+        task = task_next_node;
+        task_current_node = task;
+        task_next_node = task->next;
         if (task->update != NULL) {
             task->update(task);
         }
     }
 }
 
-/* Run the second task list. */
-void func_8001C9F8(void) {
+/* 8001C9F8: Run the second task list. */
+void task_run_draw_list(void) {
     Task *task;
 
-    D_80059590 = D_80059594;
-    while (D_80059590 != NULL) {
-        task = D_80059590;
-        D_800594C0 = task;
-        D_80059590 = task->next;
+    task_next_node = task_draw_list;
+    while (task_next_node != NULL) {
+        task = task_next_node;
+        task_current_node = task;
+        task_next_node = task->next;
         if (task->update != NULL) {
             task->update(task);
         }
     }
 }
 
-/* Link `node` at the head of the second task list under `owner`. */
-void func_8001CA58(Task *owner, Task *node) {
+/* 8001CA58: Link `node` at the head of the second task list under `owner`. */
+void task_link_draw_node(Task *owner, Task *node) {
     TaskLink link;
-    Task *head = D_80059594;
+    Task *head = task_draw_list;
 
     node->owner = owner;
     node->next = head;
-    D_80059594 = node;
+    task_draw_list = node;
     link.word = node->link.word;
     link.bits.owner_serial = owner->id.bits.serial;
-    node->id.bits.serial = D_80059184++;
+    node->id.bits.serial = task_next_serial++;
     link.bits.flag29 = 0;
     link.bits.flag30 = 0;
     link.bits.active = 0;
     node->link = link;
     node->update = NULL;
-    node->destroy = func_8001CB48;
-    D_8005918C++;
+    node->destroy = task_unlink_draw_node;
+    task_draw_count++;
 }
 
-/* Allocate a task with `size` bytes after its node on the second list. */
-Task *func_8001CAF0(Task *owner, s32 size) {
-    Task *node = func_80031BDC(size + sizeof(Task), D_800591AF);
+/* 8001CAF0: Allocate a task with `size` bytes after its node on the second list. */
+Task *task_alloc_draw_task(Task *owner, s32 size) {
+    Task *node = heap_alloc(size + sizeof(Task), task_alloc_mode);
 
-    func_8001CA58(owner, node);
-    node->destroy = func_8001CBE8;
+    task_link_draw_node(owner, node);
+    node->destroy = task_destroy_draw_task;
     return node;
 }
 
-/* Unlink a task from the second list. */
-void func_8001CB48(Task *task) {
+/* 8001CB48: Unlink a task from the second list. */
+void task_unlink_draw_node(Task *task) {
     Task *prev = NULL;
     Task *current;
 
-    for (current = D_80059594; current != NULL; current = current->next) {
+    for (current = task_draw_list; current != NULL; current = current->next) {
         if (current == task) {
             if (prev != NULL) {
                 prev->next = current->next;
             } else {
-                D_80059594 = current->next;
+                task_draw_list = current->next;
             }
-            if (D_80059590 == task) {
-                D_80059590 = task->next;
+            if (task_next_node == task) {
+                task_next_node = task->next;
             }
             break;
         }
         prev = current;
     }
     if (current == NULL) {
-        D_8005918C++;
+        task_draw_count++;
     }
-    D_8005918C--;
+    task_draw_count--;
 }
 
-/* Destroy callback of an allocated second-list task: unlink and free it. */
-void func_8001CBE8(Task *task) {
-    func_8001CB48(task);
-    func_800320E8(task);
+/* 8001CBE8: Destroy callback of an allocated second-list task: unlink and free it. */
+void task_destroy_draw_task(Task *task) {
+    task_unlink_draw_node(task);
+    heap_free(task);
 }
 
-/* Link `node` at the head of the main task list under `owner`; it counts as
+/* 8001CC18: Link `node` at the head of the main task list under `owner`; it counts as
  * active while the active flag (800591ac) is set. */
 /* The node is written through a second pointer to it (the original keeps
  * the node in $t3 and the inactive branch's copy in $v1); the owner's
  * serial is read once the owner is linked. */
-void func_8001CC18(Task *owner, Task *node) {
+void task_link_main_node(Task *owner, Task *node) {
     Task *self = &node[0];
     u32 serial;
 
     self->owner = owner;
     serial = owner->id.bits.serial;
-    self->destroy = func_8001CD94;
+    self->destroy = task_unlink_main_node;
     self->update = NULL;
-    self->next = D_8005958C;
-    D_8005958C = self;
+    self->next = task_main_list;
+    task_main_list = self;
     self->link.bits.owner_serial = serial;
     self->link.bits.flag29 = 0;
     self->link.bits.flag30 = 0;
     self->link.bits.active = 0;
-    self->id.bits.serial = D_80059184++;
-    if (D_800591AC != 0) {
-        D_80059464++;
+    self->id.bits.serial = task_next_serial++;
+    if (task_new_tasks_active != 0) {
+        task_active_main_count++;
         self->link.bits.active = 1;
     } else {
         self->link.bits.active = 0;
     }
-    D_80059188++;
+    task_main_count++;
 }
 
-/* Allocate a task with `size` bytes after its node on the main list. */
-Task *func_8001CD08(Task *owner, s32 size) {
-    Task *node = func_80031BDC(size + sizeof(Task), D_800591AF);
+/* 8001CD08: Allocate a task with `size` bytes after its node on the main list. */
+Task *task_alloc_main_task(Task *owner, s32 size) {
+    Task *node = heap_alloc(size + sizeof(Task), task_alloc_mode);
 
-    func_8001CC18(owner, node);
-    node->destroy = func_8001CE44;
+    task_link_main_node(owner, node);
+    node->destroy = task_destroy_main_task;
     node->data = NULL;
     return node;
 }
 
-/* Set a task's update callback. */
-void func_8001CD64(Task *task, void (*update)(Task *)) {
+/* 8001CD64: Set a task's update callback. */
+void task_set_draw_callback(Task *task, void (*update)(Task *)) {
     task->update = update;
 }
 
-/* Set a task's update callback (second entry). */
-void func_8001CD6C(Task *task, void (*update)(Task *)) {
+/* 8001CD6C: Set a task's update callback (second entry). */
+void task_set_update_callback(Task *task, void (*update)(Task *)) {
     task->update = update;
 }
 
-/* Set a task's destroy callback. */
-void func_8001CD74(Task *task, void (*destroy)(Task *)) {
+/* 8001CD74: Set a task's destroy callback. */
+void task_set_destroy_callback(Task *task, void (*destroy)(Task *)) {
     task->destroy = destroy;
 }
 
-/* A task's update callback. */
-void *func_8001CD7C(Task *task) {
+/* 8001CD7C: A task's update callback. */
+void *task_get_update_callback(Task *task) {
     return task->update;
 }
 
-/* A task's destroy callback. */
-void *func_8001CD88(Task *task) {
+/* 8001CD88: A task's destroy callback. */
+void *task_get_destroy_callback(Task *task) {
     return task->destroy;
 }
 
-/* Unlink a task from the main list. */
-void func_8001CD94(Task *task) {
+/* 8001CD94: Unlink a task from the main list. */
+void task_unlink_main_node(Task *task) {
     Task *prev = NULL;
     Task *current;
 
-    for (current = D_8005958C; current != NULL; current = current->next) {
+    for (current = task_main_list; current != NULL; current = current->next) {
         if (current == task) {
             if (prev != NULL) {
                 prev->next = task->next;
             } else {
-                D_8005958C = task->next;
+                task_main_list = task->next;
             }
-            if (D_80059590 == task) {
-                D_80059590 = task->next;
+            if (task_next_node == task) {
+                task_next_node = task->next;
             }
             break;
         }
         prev = current;
     }
     if (task->link.bits.active) {
-        D_80059464--;
+        task_active_main_count--;
     }
-    D_80059188--;
+    task_main_count--;
 }
 
-/* Destroy callback of an allocated main-list task: unlink and free it. */
-void func_8001CE44(Task *task) {
-    func_8001CD94(task);
-    func_800320E8(task);
+/* 8001CE44: Destroy callback of an allocated main-list task: unlink and free it. */
+void task_destroy_main_task(Task *task) {
+    task_unlink_main_node(task);
+    heap_free(task);
 }
 
-/* Destroy every task `owner` created (both lists). */
-void func_8001CE74(Task *owner) {
+/* 8001CE74: Destroy every task `owner` created (both lists). */
+void task_destroy_owned_by(Task *owner) {
     Task *prev;
     Task *task;
 
     prev = NULL;
-    for (task = D_80059594; task != NULL; task = task->next) {
+    for (task = task_draw_list; task != NULL; task = task->next) {
         if (task->owner == owner && !((task->link.word >> 30) & 1) && task->link.bits.owner_serial == owner->id.bits.serial) {
             if (prev != NULL) {
                 prev->next = task->next;
             } else {
-                D_80059594 = task->next;
+                task_draw_list = task->next;
             }
-            if (D_80059590 == task) {
-                D_80059590 = task->next;
+            if (task_next_node == task) {
+                task_next_node = task->next;
             }
             if (task->destroy != NULL) {
                 task->destroy(task);
@@ -291,15 +291,15 @@ void func_8001CE74(Task *owner) {
         }
     }
     prev = NULL;
-    for (task = D_8005958C; task != NULL; task = task->next) {
+    for (task = task_main_list; task != NULL; task = task->next) {
         if (task->owner == owner && !((task->link.word >> 30) & 1) && task->link.bits.owner_serial == owner->id.bits.serial) {
             if (prev != NULL) {
                 prev->next = task->next;
             } else {
-                D_8005958C = task->next;
+                task_main_list = task->next;
             }
-            if (D_80059590 == task) {
-                D_80059590 = task->next;
+            if (task_next_node == task) {
+                task_next_node = task->next;
             }
             if (task->destroy != NULL) {
                 task->destroy(task);
@@ -310,22 +310,22 @@ void func_8001CE74(Task *owner) {
     }
 }
 
-/* Clear word 0x70 of the sprite of every flag-29 task `owner` created. */
-void func_8001D034(Task *owner) {
+/* 8001D034: Clear word 0x70 of the sprite of every flag-29 task `owner` created. */
+void task_clear_child_sprite_parents(Task *owner) {
     Task *task;
 
-    for (task = D_8005958C; task != NULL; task = task->next) {
+    for (task = task_main_list; task != NULL; task = task->next) {
         if (task->owner == owner && task->link.bits.owner_serial == owner->id.bits.serial && ((task->link.word >> 29) & 1)) {
             ((Sprite *)task->data)->parent = NULL;
         }
     }
 }
 
-/* The main-list task `owner` created with update callback `update`, or NULL. */
-Task *func_8001D0A4(Task *owner, void (*update)(Task *)) {
+/* 8001D0A4: The main-list task `owner` created with update callback `update`, or NULL. */
+Task *task_find_owned_with_update(Task *owner, void (*update)(Task *)) {
     Task *task;
 
-    for (task = D_8005958C; task != NULL; task = task->next) {
+    for (task = task_main_list; task != NULL; task = task->next) {
         if (task->owner == owner && task->link.bits.owner_serial == owner->id.bits.serial && task->update == update) {
             return task;
         }
@@ -333,11 +333,11 @@ Task *func_8001D0A4(Task *owner, void (*update)(Task *)) {
     return NULL;
 }
 
-/* The first main-list task `owner` created, or NULL. */
-Task *func_8001D10C(Task *owner) {
+/* 8001D10C: The first main-list task `owner` created, or NULL. */
+Task *task_find_first_owned_by(Task *owner) {
     Task *task;
 
-    for (task = D_8005958C; task != NULL; task = task->next) {
+    for (task = task_main_list; task != NULL; task = task->next) {
         if (task->owner == owner && task->link.bits.owner_serial == owner->id.bits.serial) {
             return task;
         }
@@ -345,11 +345,11 @@ Task *func_8001D10C(Task *owner) {
     return NULL;
 }
 
-/* The first main-list task with update callback `update`, or NULL. */
-Task *func_8001D164(void (*update)(Task *)) {
+/* 8001D164: The first main-list task with update callback `update`, or NULL. */
+Task *task_find_by_update(void (*update)(Task *)) {
     Task *task;
 
-    for (task = D_8005958C; task != NULL; task = task->next) {
+    for (task = task_main_list; task != NULL; task = task->next) {
         if (task->update == update) {
             return task;
         }
@@ -357,47 +357,48 @@ Task *func_8001D164(void (*update)(Task *)) {
     return NULL;
 }
 
-/* Destroy callback of a two-node task: unlink both nodes and free it. */
-void func_8001D19C(Task *task) {
-    func_8001CB48(task + 1);
-    func_8001CD94(task);
-    func_800320E8(task);
+/* 8001D19C: Destroy callback of a two-node task: unlink both nodes and free it. */
+void task_destroy_two_node_task(Task *task) {
+    task_unlink_draw_node(task + 1);
+    task_unlink_main_node(task);
+    heap_free(task);
 }
 
-/* Allocate a `size`-byte task that starts with two nodes: the first on the main
+/* 8001D1D8: Allocate a `size`-byte task that starts with two nodes: the first on the main
  * list under `owner` with `update`, the second on the second list with
  * `update2`; both nodes' data is the task itself. */
-Task *func_8001D1D8(s32 size, Task *owner, void (*update)(Task *), void (*update2)(Task *),
+Task *task_alloc_two_node_task(s32 size, Task *owner, void (*update)(Task *), void (*update2)(Task *),
                     void (*destroy)(Task *)) {
-    Task *node = func_80031BDC(size, D_800591AF);
+    Task *node = heap_alloc(size, task_alloc_mode);
 
-    func_8001CC18(owner, node);
-    func_8001CA58(node, node + 1);
-    func_8001CD6C(node, update);
-    func_8001CD64(node + 1, update2);
+    task_link_main_node(owner, node);
+    task_link_draw_node(node, node + 1);
+    task_set_update_callback(node, update);
+    task_set_draw_callback(node + 1, update2);
     if (destroy != NULL) {
-        func_8001CD74(node, destroy);
+        task_set_destroy_callback(node, destroy);
     } else {
-        func_8001CD74(node, func_8001D19C);
+        task_set_destroy_callback(node, task_destroy_two_node_task);
     }
     node->data = node;
     node[1].data = node;
     return node;
 }
 
-/* Empty the pending sprite list (the sprite queues' set-up 80024f64 and
+/* 8001D298: Empty the pending sprite list (the sprite queues' set-up 80024f64 and
  * release 80024fb8 call one each). */
-void func_8001D298(void) {
-    D_80059190 = NULL;
+void sprite_clear_pending_list(void) {
+    sprite_pending_list = NULL;
 }
 
-void func_8001D2A4(void) {
-    D_80059190 = NULL;
+/* 8001D2A4 */
+void sprite_clear_pending_list_on_release(void) {
+    sprite_pending_list = NULL;
 }
 
-/* Request frame `frame` for a one-sided sprite: it joins the pending list
+/* 8001D2B0: Request frame `frame` for a one-sided sprite: it joins the pending list
  * (drawn by 8001d468), or, already pending, first draws its previous one. */
-void func_8001D2B0(Sprite *sprite, s32 frame) {
+void sprite_request_frame(Sprite *sprite, s32 frame) {
     Sprite *pending;
 
     if ((sprite->render.word & 3) != 1) {
@@ -407,14 +408,14 @@ void func_8001D2B0(Sprite *sprite, s32 frame) {
     if ((sprite->flags >> 20) & 1) {
         sprite->flags &= ~0x100000;
         if (sprite->renderer->pointer34 != NULL) {
-            func_800234AC(sprite);
+            sprite_clear_group_entries(sprite);
         }
     }
     if ((sprite->flags >> 17) & 1) {
-        for (pending = D_80059190; pending != NULL; pending = pending->renderer->next_pending) {
+        for (pending = sprite_pending_list; pending != NULL; pending = pending->renderer->next_pending) {
             if (pending == sprite) {
-                if (sprite->image != D_8005A474 && sprite->image != D_8006BE10 && !((sprite->flags >> 19) & 1)) {
-                    func_8001F8E8(sprite, sprite->frame, sprite->image);
+                if (sprite->image != sprite_effect_source && sprite->image != sprite_shared_source && !((sprite->flags >> 19) & 1)) {
+                    sprite_apply_frame_controls(sprite, sprite->frame, sprite->image);
                 }
                 sprite->frame = frame;
                 return;
@@ -423,21 +424,21 @@ void func_8001D2B0(Sprite *sprite, s32 frame) {
     }
     sprite->frame = frame;
     sprite->flags |= 0x20000;
-    sprite->renderer->next_pending = D_80059190;
-    D_80059190 = sprite;
+    sprite->renderer->next_pending = sprite_pending_list;
+    sprite_pending_list = sprite;
 }
 
-/* Remove a sprite from the pending list. */
-void func_8001D3F4(Sprite *sprite) {
+/* 8001D3F4: Remove a sprite from the pending list. */
+void sprite_remove_pending(Sprite *sprite) {
     Sprite *prev = NULL;
     Sprite *pending;
 
-    for (pending = D_80059190; pending != NULL; pending = pending->renderer->next_pending) {
+    for (pending = sprite_pending_list; pending != NULL; pending = pending->renderer->next_pending) {
         if (pending == sprite) {
             if (prev != NULL) {
                 prev->renderer->next_pending = pending->renderer->next_pending;
             } else {
-                D_80059190 = pending->renderer->next_pending;
+                sprite_pending_list = pending->renderer->next_pending;
             }
         } else {
             prev = pending;
@@ -445,35 +446,35 @@ void func_8001D3F4(Sprite *sprite) {
     }
 }
 
-/* Draw the pending frame of every pending sprite and empty the list. */
-void func_8001D468(void) {
+/* 8001D468: Draw the pending frame of every pending sprite and empty the list. */
+void sprite_build_pending_frames(void) {
     Sprite *sprite;
     s32 frame;
 
-    for (sprite = D_80059190; sprite != NULL; sprite = sprite->renderer->next_pending) {
+    for (sprite = sprite_pending_list; sprite != NULL; sprite = sprite->renderer->next_pending) {
         frame = sprite->frame;
         if (frame == 0) {
             sprite->flags &= ~0xFC;
         } else {
-            func_8001DAE8(sprite, frame, sprite->image);
+            sprite_build_frame(sprite, frame, sprite->image);
         }
     }
-    D_80059190 = NULL;
+    sprite_pending_list = NULL;
 }
 
-/* Give a sprite's renderer its 0x40-byte block (once). */
-void func_8001D4E8(Sprite *sprite) {
+/* 8001D4E8: Give a sprite's renderer its 0x40-byte block (once). */
+void sprite_alloc_group_entries(Sprite *sprite) {
     if (sprite->renderer->pointer34 == NULL) {
-        sprite->renderer->pointer34 = func_80031BDC(0x40, 0);
-        func_800234AC(sprite);
+        sprite->renderer->pointer34 = heap_alloc(0x40, 0);
+        sprite_clear_group_entries(sprite);
     }
 }
 
-/* Build frame `frame` of a cell-directory source (directory bit 15): each
+/* 8001D53C: Build frame `frame` of a cell-directory source (directory bit 15): each
  * part takes a cell already in VRAM with its own texture position and size,
  * from the page of a resident cell kind (two-byte kinds), of the sprite's
  * sequencer or of the source, after the control bytes before it. */
-void func_8001D53C(Sprite *sprite, s32 frame, SpriteSource *source) {
+void sprite_build_cell_frame(Sprite *sprite, s32 frame, SpriteSource *source) {
     u16 *table;
     u8 *record;
     u16 *cells;
@@ -521,8 +522,8 @@ void func_8001D53C(Sprite *sprite, s32 frame, SpriteSource *source) {
             if (control & 0x40) {
                 group = control & 7;
                 if (sprite->renderer->pointer34 == NULL) {
-                    sprite->renderer->pointer34 = func_80031BDC(0x40, 0);
-                    func_800234AC(sprite);
+                    sprite->renderer->pointer34 = heap_alloc(0x40, 0);
+                    sprite_clear_group_entries(sprite);
                 }
                 if (control & 0x20) {
                     sprite->renderer->pointer34[group].byte0 = *p++;
@@ -571,7 +572,7 @@ void func_8001D53C(Sprite *sprite, s32 frame, SpriteSource *source) {
 
             cell++;
             kind |= *cell << 8;
-            resident_pages = D_8004FAB8;
+            resident_pages = sprite_cell_page_positions;
             resident_page = (TexturePosition *)(((kind << 1) & 0x1C) + (s32)resident_pages);
             parts[i].tpage = GetTPage(kind & 1, rate, resident_page->x, resident_page->y);
             parts[i].clut = GetClut((kind >> 1) & 0xF0, ((kind >> 9) & 0xF) + 0x1CC);
@@ -605,11 +606,11 @@ void func_8001D53C(Sprite *sprite, s32 frame, SpriteSource *source) {
     sprite->flags = (sprite->flags & ~0xFC) | ((i & 0x3F) << 2);
 }
 
-/* Build frame `frame` of a sprite's source into its parts and queue the
+/* 8001DAE8: Build frame `frame` of a sprite's source into its parts and queue the
  * uploads of the cells it uses (to the source's texture position, or a
  * reserved texture area column for facing group 14), after its palette
  * when the render flag asks for it; cell-directory sources go to 8001d53c. */
-void func_8001DAE8(Sprite *sprite, s32 frame, SpriteSource *source) {
+void sprite_build_frame(Sprite *sprite, s32 frame, SpriteSource *source) {
     u16 *table;
     SpritePart *parts;
     u16 *palette;
@@ -648,18 +649,18 @@ void func_8001DAE8(Sprite *sprite, s32 frame, SpriteSource *source) {
                 rect.y = source->clut_y;
                 rect.w = *palette * 16;
                 rect.h = 1;
-                func_800251C8((u_long *)(palette + (*palette * ((sprite->render.word >> 16) & 0xF0) + 2)),
+                sprite_queue_upload((u_long *)(palette + (*palette * ((sprite->render.word >> 16) & 0xF0) + 2)),
                               source->clut_x, source->clut_y, *palette * 16, 1);
             }
         }
         if (*table & 0x8000) {
-            func_8001D53C(sprite, frame, source);
+            sprite_build_cell_frame(sprite, frame, source);
             return;
         }
         record = (u8 *)(table[frame] + (s32)table);
         position = ((SpriteSource *)sprite->image)->origin;
         if (((sprite->flags >> 13) & 0xF) == 0xE) {
-            position = func_8001F530(record[4]);
+            position = sprite_reserve_texture_columns(record[4]);
         }
         cells = (u16 *)(record + 6);
         wide = *record & 0x80;
@@ -683,8 +684,8 @@ void func_8001DAE8(Sprite *sprite, s32 frame, SpriteSource *source) {
                 p++;
                 if (control & 0x40) {
                     if (sprite->renderer->pointer34 == NULL) {
-                        sprite->renderer->pointer34 = func_80031BDC(0x40, 0);
-                        func_800234AC(sprite);
+                        sprite->renderer->pointer34 = heap_alloc(0x40, 0);
+                        sprite_clear_group_entries(sprite);
                     }
                     group = control & 7;
                     if (control & 0x20) {
@@ -740,7 +741,7 @@ void func_8001DAE8(Sprite *sprite, s32 frame, SpriteSource *source) {
             }
             parts[i].tpage = getTPage(kind & 1, rate, position.vx, position.vy);
             parts[i].clut = GetClut(source->clut_x + clut * 16, source->clut_y);
-            func_800251C8((u_long *)(cell + 1), position.vx + rect.x, position.vy + rect.y, words, cell->h);
+            sprite_queue_upload((u_long *)(cell + 1), position.vx + rect.x, position.vy + rect.y, words, cell->h);
             if (wide) {
                 parts[i].x = p[1] | ((s8)p[2] << 8);
                 parts[i].y = p[3] | ((s8)p[4] << 8);
@@ -751,13 +752,13 @@ void func_8001DAE8(Sprite *sprite, s32 frame, SpriteSource *source) {
             }
         }
         sprite->flags = (sprite->flags & ~0xFC) | ((i & 0x3F) << 2);
-        func_800251C8(NULL, position.vx, position.vy, record[4], record[5]);
+        sprite_queue_upload(NULL, position.vx, position.vy, record[4], record[5]);
     }
 }
 
-/* Set the GTE rotation and translation for drawing a sprite: its position
+/* 8001E148: Set the GTE rotation and translation for drawing a sprite: its position
  * through the view matrix plus its scaled screen offset. */
-void func_8001E148(Sprite *sprite) {
+void sprite_set_draw_matrix(Sprite *sprite) {
     SVECTOR position;
     VECTOR view;
     s32 shift;
@@ -765,8 +766,8 @@ void func_8001E148(Sprite *sprite) {
     s32 offset_x;
     MATRIX *matrix;
 
-    if (D_800591AD != 0 || D_800591AE != 0) {
-        func_80022038(sprite);
+    if (sprite_in_battle != 0 || sprite_in_worldmap != 0) {
+        sprite_update_orientation(sprite);
     }
     shift = (sprite->flags >> 8) & 0x1F;
     offset_y = sprite->renderer->offset.y;
@@ -781,48 +782,48 @@ void func_8001E148(Sprite *sprite) {
     position.vx = sprite->x >> 16;
     position.vy = sprite->y >> 16;
     position.vz = sprite->z >> 16;
-    ApplyMatrix(&D_8004FBB8, &position, &view);
+    ApplyMatrix(&sprite_view_matrix, &position, &view);
     matrix = &sprite->renderer->matrix;
-    matrix->t[0] = D_8004FBB8.t[0] + view.vx + offset_x;
-    matrix->t[1] = D_8004FBB8.t[1] + view.vy + offset_y;
-    matrix->t[2] = D_8004FBB8.t[2] + view.vz;
+    matrix->t[0] = sprite_view_matrix.t[0] + view.vx + offset_x;
+    matrix->t[1] = sprite_view_matrix.t[1] + view.vy + offset_y;
+    matrix->t[2] = sprite_view_matrix.t[2] + view.vz;
     SetRotMatrix(matrix);
     SetTransMatrix(matrix);
 }
 
-/* Draw a sprite's parts at `ot` with 8001e3d8 (and 8001e9bc for render flag 2). */
-void func_8001E298(Sprite *sprite, u_long *ot) {
-    func_8001E148(sprite);
-    func_8001E3D8(sprite, ot);
+/* 8001E298: Draw a sprite's parts at `ot` with 8001e3d8 (and 8001e9bc for render flag 2). */
+void sprite_draw(Sprite *sprite, u_long *ot) {
+    sprite_set_draw_matrix(sprite);
+    sprite_draw_parts(sprite, ot);
     if ((sprite->render.word >> 2) & 1) {
-        func_8001E9BC(sprite, ot);
+        sprite_draw_shadow(sprite, ot);
     }
 }
 
-/* Draw a sprite's parts at `ot` with 8001ee88 (and 8001e9bc for render flag 2). */
-void func_8001E2F8(Sprite *sprite, u_long *ot, s32 height) {
-    func_8001E148(sprite);
-    func_8001EE88(sprite, ot, height);
+/* 8001E2F8: Draw a sprite's parts at `ot` with 8001ee88 (and 8001e9bc for render flag 2). */
+void sprite_draw_cut_below(Sprite *sprite, u_long *ot, s32 height) {
+    sprite_set_draw_matrix(sprite);
+    sprite_draw_parts_cut_below(sprite, ot, height);
     if ((sprite->render.word >> 2) & 1) {
-        func_8001E9BC(sprite, ot);
+        sprite_draw_shadow(sprite, ot);
     }
 }
 
-/* Draw a sprite's parts at `ot` with 8001f1d4 (and 8001e9bc for render flag 2). */
-void func_8001E368(Sprite *sprite, u_long *ot, s32 height) {
-    func_8001E148(sprite);
-    func_8001F1D4(sprite, ot, height);
+/* 8001E368: Draw a sprite's parts at `ot` with 8001f1d4 (and 8001e9bc for render flag 2). */
+void sprite_draw_cut_above(Sprite *sprite, u_long *ot, s32 height) {
+    sprite_set_draw_matrix(sprite);
+    sprite_draw_parts_cut_above(sprite, ot, height);
     if ((sprite->render.word >> 2) & 1) {
-        func_8001E9BC(sprite, ot);
+        sprite_draw_shadow(sprite, ot);
     }
 }
 
-/* Draw a sprite's parts as textured quads (POLY_FT4 from the queue block)
+/* 8001E3D8: Draw a sprite's parts as textured quads (POLY_FT4 from the queue block)
  * linked at `ot` (or, with render bit 27, at `ot` minus the part's group).
  * Parts of one group share a matrix: the renderer's, or its product with the
  * group entry's rotation and offset; groups masked by render byte 1
  * (8004faf8) are skipped. */
-void func_8001E3D8(Sprite *sprite, u_long *ot) {
+void sprite_draw_parts(Sprite *sprite, u_long *ot) {
     SpriteRenderer *renderer;
     u32 flags;
     s32 mirror;
@@ -859,11 +860,11 @@ void func_8001E3D8(Sprite *sprite, u_long *ot) {
     }
     count = (flags >> 2) & 0x3F;
     group = -1;
-    if ((u8 *)D_80059580 + count * sizeof(POLY_FT4) < D_80059534) {
+    if ((u8 *)sprite_queue_next_free + count * sizeof(POLY_FT4) < sprite_queue_block_end) {
         for (i = 0; i != (sprite->flags >> 2 & 0x3F); i++) {
             if (group != (parts[i].flags & 7)) {
                 group = parts[i].flags & 7;
-                visible = (D_8004FAF8[group] & ((u8 *)&sprite->render)[1]) == 0;
+                visible = (sprite_halfword_bit_masks[group] & ((u8 *)&sprite->render)[1]) == 0;
                 if (sprite->renderer->pointer34 != NULL &&
                     (*(u16 *)&sprite->renderer->pointer34[group] != 0 ||
                      sprite->renderer->pointer34[group].half6 != 0)) {
@@ -882,7 +883,7 @@ void func_8001E3D8(Sprite *sprite, u_long *ot) {
                     if ((sprite->render.word >> 3) & 1) {
                         angles.vz = -angles.vz;
                     }
-                    func_8003F738(&angles, &m);
+                    gpu_build_rotation_matrix(&angles, &m);
                     m.t[0] = sprite->renderer->matrix.t[0] + offset_x;
                     m.t[1] = sprite->renderer->matrix.t[1] + offset_y;
                     m.t[2] = sprite->renderer->matrix.t[2];
@@ -894,8 +895,8 @@ void func_8001E3D8(Sprite *sprite, u_long *ot) {
                 }
             }
             if (visible) {
-                poly = (POLY_FT4 *)D_80059580;
-                D_80059580 = (SpriteQueueEntry *)(poly + 1);
+                poly = (POLY_FT4 *)sprite_queue_next_free;
+                sprite_queue_next_free = (SpriteQueueEntry *)(poly + 1);
                 setlen(poly, 9);
                 *(u32 *)&poly->r0 = parts[i].colour;
                 poly->tpage = parts[i].tpage;
@@ -915,36 +916,36 @@ void func_8001E3D8(Sprite *sprite, u_long *ot) {
                     y = -y;
                 }
                 if (!((parts[i].flags >> 4) & 1)) {
-                    D_8004FB98[0].vx = x;
-                    D_8004FB98[1].vx = x + w;
-                    D_8004FB98[2].vx = x + w;
-                    D_8004FB98[3].vx = x;
+                    sprite_quad_corners[0].vx = x;
+                    sprite_quad_corners[1].vx = x + w;
+                    sprite_quad_corners[2].vx = x + w;
+                    sprite_quad_corners[3].vx = x;
                 } else {
-                    D_8004FB98[0].vx = x + w;
-                    D_8004FB98[1].vx = x;
-                    D_8004FB98[2].vx = x;
-                    D_8004FB98[3].vx = x + w;
+                    sprite_quad_corners[0].vx = x + w;
+                    sprite_quad_corners[1].vx = x;
+                    sprite_quad_corners[2].vx = x;
+                    sprite_quad_corners[3].vx = x + w;
                 }
                 if (!((parts[i].flags >> 5) & 1)) {
-                    D_8004FB98[0].vy = y;
-                    D_8004FB98[1].vy = y;
-                    D_8004FB98[2].vy = y + h;
-                    D_8004FB98[3].vy = y + h;
+                    sprite_quad_corners[0].vy = y;
+                    sprite_quad_corners[1].vy = y;
+                    sprite_quad_corners[2].vy = y + h;
+                    sprite_quad_corners[3].vy = y + h;
                 } else {
-                    D_8004FB98[0].vy = y + h;
-                    D_8004FB98[1].vy = y + h;
-                    D_8004FB98[2].vy = y;
-                    D_8004FB98[3].vy = y;
+                    sprite_quad_corners[0].vy = y + h;
+                    sprite_quad_corners[1].vy = y + h;
+                    sprite_quad_corners[2].vy = y;
+                    sprite_quad_corners[3].vy = y;
                 }
-                D_8004FB98[0].vy -= origin_y;
-                D_8004FB98[1].vy -= origin_y;
-                D_8004FB98[2].vy -= origin_y;
-                D_8004FB98[3].vy -= origin_y;
-                D_8004FB98[0].vx -= origin_x;
-                D_8004FB98[1].vx -= origin_x;
-                D_8004FB98[2].vx -= origin_x;
-                D_8004FB98[3].vx -= origin_x;
-                RotTransPers4(&D_8004FB98[0], &D_8004FB98[1], &D_8004FB98[2], &D_8004FB98[3], (long *)&poly->x0,
+                sprite_quad_corners[0].vy -= origin_y;
+                sprite_quad_corners[1].vy -= origin_y;
+                sprite_quad_corners[2].vy -= origin_y;
+                sprite_quad_corners[3].vy -= origin_y;
+                sprite_quad_corners[0].vx -= origin_x;
+                sprite_quad_corners[1].vx -= origin_x;
+                sprite_quad_corners[2].vx -= origin_x;
+                sprite_quad_corners[3].vx -= origin_x;
+                RotTransPers4(&sprite_quad_corners[0], &sprite_quad_corners[1], &sprite_quad_corners[2], &sprite_quad_corners[3], (long *)&poly->x0,
                               (long *)&poly->x1, (long *)&poly->x3, (long *)&poly->x2, &depth.pad, &flag);
                 u = parts[i].u;
                 v = parts[i].v;
@@ -970,10 +971,10 @@ void func_8001E3D8(Sprite *sprite, u_long *ot) {
     }
 }
 
-/* Draw a sprite's shadow: its parts as black quads (POLY_FT4 from the queue
+/* 8001E9BC: Draw a sprite's shadow: its parts as black quads (POLY_FT4 from the queue
  * block) flattened onto its floor height, the view matrix scaled by the
  * sprite scale (half height), linked at `ot`. */
-void func_8001E9BC(Sprite *sprite, u_long *ot) {
+void sprite_draw_shadow(Sprite *sprite, u_long *ot) {
     MATRIX m;
     SVECTOR position;
     VECTOR view;
@@ -990,7 +991,7 @@ void func_8001E9BC(Sprite *sprite, u_long *ot) {
     POLY_FT4 *poly;
     s16 w, h, x, y;
 
-    m = D_8004FBB8;
+    m = sprite_view_matrix;
     position.vx = sprite->x >> 16;
     position.vy = sprite->y >> 16;
     position.vz = sprite->z >> 16;
@@ -999,7 +1000,7 @@ void func_8001E9BC(Sprite *sprite, u_long *ot) {
     scale.vz = 0;
     ScaleMatrixL(&m, &scale);
     position.vy = sprite->ground;
-    ApplyMatrix(&D_8004FBB8, &position, &view);
+    ApplyMatrix(&sprite_view_matrix, &position, &view);
     m.t[0] += view.vx;
     m.t[1] += view.vy;
     m.t[2] += view.vz;
@@ -1008,12 +1009,12 @@ void func_8001E9BC(Sprite *sprite, u_long *ot) {
     count = (u8)sprite->flags >> 2;
     group = -1;
     parts = sprite->renderer->parts[1];
-    if ((u8 *)D_80059580 + count * sizeof(POLY_FT4) < D_80059534) {
+    if ((u8 *)sprite_queue_next_free + count * sizeof(POLY_FT4) < sprite_queue_block_end) {
         for (i = 0; i != (u8)sprite->flags >> 2; i++) {
             part_flags = parts[i].flags;
             if (group != (part_flags & 7)) {
                 group = part_flags & 7;
-                visible = (D_8004FAF8[group] & ((u8 *)&sprite->render)[1]) == 0;
+                visible = (sprite_halfword_bit_masks[group] & ((u8 *)&sprite->render)[1]) == 0;
             }
             if (visible) {
                 w = parts[i].w + (s8)parts[i].byte8;
@@ -1032,35 +1033,35 @@ void func_8001E9BC(Sprite *sprite, u_long *ot) {
                     y = -y;
                 }
                 if (!((part_flags >> 4) & 1)) {
-                    D_8004FAD8[0].vx = x;
-                    D_8004FAD8[1].vx = x + w;
-                    D_8004FAD8[2].vx = x + w;
-                    D_8004FAD8[3].vx = x;
+                    sprite_shadow_corners[0].vx = x;
+                    sprite_shadow_corners[1].vx = x + w;
+                    sprite_shadow_corners[2].vx = x + w;
+                    sprite_shadow_corners[3].vx = x;
                 } else {
-                    D_8004FAD8[0].vx = x + w;
-                    D_8004FAD8[1].vx = x;
-                    D_8004FAD8[2].vx = x;
-                    D_8004FAD8[3].vx = x + w;
+                    sprite_shadow_corners[0].vx = x + w;
+                    sprite_shadow_corners[1].vx = x;
+                    sprite_shadow_corners[2].vx = x;
+                    sprite_shadow_corners[3].vx = x + w;
                 }
                 if (!((parts[i].flags >> 5) & 1)) {
-                    D_8004FAD8[2].vz = y + h;
-                    D_8004FAD8[3].vz = y + h;
-                    D_8004FAD8[0].vz = y;
-                    D_8004FAD8[1].vz = y;
+                    sprite_shadow_corners[2].vz = y + h;
+                    sprite_shadow_corners[3].vz = y + h;
+                    sprite_shadow_corners[0].vz = y;
+                    sprite_shadow_corners[1].vz = y;
                 } else {
-                    D_8004FAD8[2].vz = y;
-                    D_8004FAD8[3].vz = y;
-                    D_8004FAD8[0].vz = y + h;
-                    D_8004FAD8[1].vz = y + h;
+                    sprite_shadow_corners[2].vz = y;
+                    sprite_shadow_corners[3].vz = y;
+                    sprite_shadow_corners[0].vz = y + h;
+                    sprite_shadow_corners[1].vz = y + h;
                 }
-                poly = (POLY_FT4 *)D_80059580;
-                D_80059580 = (SpriteQueueEntry *)(poly + 1);
+                poly = (POLY_FT4 *)sprite_queue_next_free;
+                sprite_queue_next_free = (SpriteQueueEntry *)(poly + 1);
                 setlen(poly, 9);
                 poly->code = 0x2C;
                 poly->r0 = 0;
                 poly->g0 = 0;
                 poly->b0 = 0;
-                RotAverage4(&D_8004FAD8[0], &D_8004FAD8[1], &D_8004FAD8[2], &D_8004FAD8[3], (long *)&poly->x0,
+                RotAverage4(&sprite_shadow_corners[0], &sprite_shadow_corners[1], &sprite_shadow_corners[2], &sprite_shadow_corners[3], (long *)&poly->x0,
                             (long *)&poly->x1, (long *)&poly->x3, (long *)&poly->x2, &depth, &flag);
                 poly->y0 = poly->y1 = (s16)(poly->y0 + poly->y1) / 2;
                 poly->y2 = poly->y3 = (s16)(poly->y2 + poly->y3) / 2;
@@ -1080,21 +1081,21 @@ void func_8001E9BC(Sprite *sprite, u_long *ot) {
     }
 }
 
-/* Whether a frame table entry takes its image from the sequencer (second byte bit 7). */
-s32 func_8001EE68(u8 *frame) {
+/* 8001EE68: Whether a frame table entry takes its image from the sequencer (second byte bit 7). */
+s32 sprite_is_cell_directory(u8 *frame) {
     return frame[1] >> 7;
 }
 
-/* The part count of a frame header (bits 9-14). */
-s32 func_8001EE74(u16 *header) {
+/* 8001EE74: The part count of a frame header (bits 9-14). */
+s32 sprite_get_part_count(u16 *header) {
     return (*header >> 9) & 0x3F;
 }
 
-/* Draw a sprite's parts as textured quads (POLY_FT4 from the queue block)
+/* 8001EE88: Draw a sprite's parts as textured quads (POLY_FT4 from the queue block)
  * cut off below `height` (in the parts' units before the sprite's shift):
  * parts entirely past it are skipped, parts crossing it lose the rows past
  * it, texture included. Linked at `ot`. */
-void func_8001EE88(Sprite *sprite, u_long *ot, s32 height) {
+void sprite_draw_parts_cut_below(Sprite *sprite, u_long *ot, s32 height) {
     u32 flags;
     s32 count;
     SpritePart *parts;
@@ -1111,10 +1112,10 @@ void func_8001EE88(Sprite *sprite, u_long *ot, s32 height) {
     height <<= (sprite->flags >> 8) & 0x1F;
     count = (sprite->flags >> 2) & 0x3F;
     parts = sprite->renderer->parts[1];
-    if ((u8 *)D_80059580 + count * sizeof(POLY_FT4) < D_80059534) {
+    if ((u8 *)sprite_queue_next_free + count * sizeof(POLY_FT4) < sprite_queue_block_end) {
         for (i = 0; i != ((sprite->flags >> 2) & 0x3F); i++) {
-            poly = (POLY_FT4 *)D_80059580;
-            D_80059580 = (SpriteQueueEntry *)(poly + 1);
+            poly = (POLY_FT4 *)sprite_queue_next_free;
+            sprite_queue_next_free = (SpriteQueueEntry *)(poly + 1);
             setlen(poly, 9);
             *(u32 *)&poly->r0 = parts[i].colour;
             poly->tpage = parts[i].tpage;
@@ -1136,15 +1137,15 @@ void func_8001EE88(Sprite *sprite, u_long *ot, s32 height) {
                 y = -y;
             }
             if (!((parts[i].flags >> 4) & 1)) {
-                D_8004FB98[0].vx = x;
-                D_8004FB98[1].vx = x + w;
-                D_8004FB98[2].vx = x + w;
-                D_8004FB98[3].vx = x;
+                sprite_quad_corners[0].vx = x;
+                sprite_quad_corners[1].vx = x + w;
+                sprite_quad_corners[2].vx = x + w;
+                sprite_quad_corners[3].vx = x;
             } else {
-                D_8004FB98[0].vx = x + w;
-                D_8004FB98[1].vx = x;
-                D_8004FB98[2].vx = x;
-                D_8004FB98[3].vx = x + w;
+                sprite_quad_corners[0].vx = x + w;
+                sprite_quad_corners[1].vx = x;
+                sprite_quad_corners[2].vx = x;
+                sprite_quad_corners[3].vx = x + w;
             }
             if (h > 0) {
                 top = y;
@@ -1165,17 +1166,17 @@ void func_8001EE88(Sprite *sprite, u_long *ot, s32 height) {
                 y -= cut;
             }
             if (!((parts[i].flags >> 5) & 1)) {
-                D_8004FB98[0].vy = y;
-                D_8004FB98[1].vy = y;
-                D_8004FB98[2].vy = y + h;
-                D_8004FB98[3].vy = y + h;
+                sprite_quad_corners[0].vy = y;
+                sprite_quad_corners[1].vy = y;
+                sprite_quad_corners[2].vy = y + h;
+                sprite_quad_corners[3].vy = y + h;
             } else {
-                D_8004FB98[0].vy = y + h;
-                D_8004FB98[1].vy = y + h;
-                D_8004FB98[2].vy = y;
-                D_8004FB98[3].vy = y;
+                sprite_quad_corners[0].vy = y + h;
+                sprite_quad_corners[1].vy = y + h;
+                sprite_quad_corners[2].vy = y;
+                sprite_quad_corners[3].vy = y;
             }
-            RotAverage4(&D_8004FB98[0], &D_8004FB98[1], &D_8004FB98[2], &D_8004FB98[3], (long *)&poly->x0,
+            RotAverage4(&sprite_quad_corners[0], &sprite_quad_corners[1], &sprite_quad_corners[2], &sprite_quad_corners[3], (long *)&poly->x0,
                         (long *)&poly->x1, (long *)&poly->x3, (long *)&poly->x2, &depth, &flag);
             cut >>= (sprite->flags >> 8) & 0x1F;
             v = parts[i].v;
@@ -1203,10 +1204,10 @@ void func_8001EE88(Sprite *sprite, u_long *ot, s32 height) {
     }
 }
 
-/* Draw a sprite's parts as 8001ee88 does, cut off above `height` instead:
+/* 8001F1D4: Draw a sprite's parts as 8001ee88 does, cut off above `height` instead:
  * parts entirely above it are skipped, parts crossing it lose the rows
  * above it, texture included. Linked at `ot`. */
-void func_8001F1D4(Sprite *sprite, u_long *ot, s32 height) {
+void sprite_draw_parts_cut_above(Sprite *sprite, u_long *ot, s32 height) {
     u32 flags;
     s32 count;
     SpritePart *parts;
@@ -1223,10 +1224,10 @@ void func_8001F1D4(Sprite *sprite, u_long *ot, s32 height) {
     height <<= (sprite->flags >> 8) & 0x1F;
     count = (sprite->flags >> 2) & 0x3F;
     parts = sprite->renderer->parts[1];
-    if ((u8 *)D_80059580 + count * sizeof(POLY_FT4) < D_80059534) {
+    if ((u8 *)sprite_queue_next_free + count * sizeof(POLY_FT4) < sprite_queue_block_end) {
         for (i = 0; i != ((sprite->flags >> 2) & 0x3F); i++) {
-            poly = (POLY_FT4 *)D_80059580;
-            D_80059580 = (SpriteQueueEntry *)(poly + 1);
+            poly = (POLY_FT4 *)sprite_queue_next_free;
+            sprite_queue_next_free = (SpriteQueueEntry *)(poly + 1);
             setlen(poly, 9);
             *(u32 *)&poly->r0 = parts[i].colour;
             poly->tpage = parts[i].tpage;
@@ -1248,15 +1249,15 @@ void func_8001F1D4(Sprite *sprite, u_long *ot, s32 height) {
                 y = -y;
             }
             if (!((parts[i].flags >> 4) & 1)) {
-                D_8004FB98[0].vx = x;
-                D_8004FB98[1].vx = x + w;
-                D_8004FB98[2].vx = x + w;
-                D_8004FB98[3].vx = x;
+                sprite_quad_corners[0].vx = x;
+                sprite_quad_corners[1].vx = x + w;
+                sprite_quad_corners[2].vx = x + w;
+                sprite_quad_corners[3].vx = x;
             } else {
-                D_8004FB98[0].vx = x + w;
-                D_8004FB98[1].vx = x;
-                D_8004FB98[2].vx = x;
-                D_8004FB98[3].vx = x + w;
+                sprite_quad_corners[0].vx = x + w;
+                sprite_quad_corners[1].vx = x;
+                sprite_quad_corners[2].vx = x;
+                sprite_quad_corners[3].vx = x + w;
             }
             if (h > 0) {
                 top = y;
@@ -1280,17 +1281,17 @@ void func_8001F1D4(Sprite *sprite, u_long *ot, s32 height) {
                 h += cut;
             }
             if (!((parts[i].flags >> 5) & 1)) {
-                D_8004FB98[0].vy = y;
-                D_8004FB98[1].vy = y;
-                D_8004FB98[2].vy = y + h;
-                D_8004FB98[3].vy = y + h;
+                sprite_quad_corners[0].vy = y;
+                sprite_quad_corners[1].vy = y;
+                sprite_quad_corners[2].vy = y + h;
+                sprite_quad_corners[3].vy = y + h;
             } else {
-                D_8004FB98[0].vy = y + h;
-                D_8004FB98[1].vy = y + h;
-                D_8004FB98[2].vy = y;
-                D_8004FB98[3].vy = y;
+                sprite_quad_corners[0].vy = y + h;
+                sprite_quad_corners[1].vy = y + h;
+                sprite_quad_corners[2].vy = y;
+                sprite_quad_corners[3].vy = y;
             }
-            RotAverage4(&D_8004FB98[0], &D_8004FB98[1], &D_8004FB98[2], &D_8004FB98[3], (long *)&poly->x0,
+            RotAverage4(&sprite_quad_corners[0], &sprite_quad_corners[1], &sprite_quad_corners[2], &sprite_quad_corners[3], (long *)&poly->x0,
                         (long *)&poly->x1, (long *)&poly->x3, (long *)&poly->x2, &depth, &flag);
             cut >>= (sprite->flags >> 8) & 0x1F;
             if (h > 0) {
@@ -1322,27 +1323,27 @@ void func_8001F1D4(Sprite *sprite, u_long *ot, s32 height) {
     }
 }
 
-/* Reserve `width` columns of the sprite texture area (three 64-line rows from
+/* 8001F530: Reserve `width` columns of the sprite texture area (three 64-line rows from
  * (0x300, 0x140), 0x40 columns each) and return their position. */
-DVECTOR func_8001F530(s32 width) {
+DVECTOR sprite_reserve_texture_columns(s32 width) {
     DVECTOR position;
 
-    if (D_80059196 + width > 0x40) {
-        D_80059196 = 0;
-        if (++D_80059194 >= 3) {
-            D_80059194 = 0;
+    if (sprite_texture_area_column + width > 0x40) {
+        sprite_texture_area_column = 0;
+        if (++sprite_texture_area_row >= 3) {
+            sprite_texture_area_row = 0;
         }
     }
-    position.vx = D_80059196 + 0x300;
-    position.vy = D_80059194 * 64 + 0x140;
-    D_80059196 += width;
+    position.vx = sprite_texture_area_column + 0x300;
+    position.vy = sprite_texture_area_row * 64 + 0x140;
+    sprite_texture_area_column += width;
     return position;
 }
 
-/* A sprite's extent (width, height, depth) at its scale, from the frame
+/* 8001F5BC: A sprite's extent (width, height, depth) at its scale, from the frame
  * record its first animation's byte 4 selects (less one; the first record
  * when the directory entry is below the index). */
-void func_8001F5BC(Sprite *sprite, s32 unused, s32 *width, s32 *height, s32 *depth) {
+void sprite_get_extent(Sprite *sprite, s32 unused, s32 *width, s32 *height, s32 *depth) {
     SpriteSource *source = sprite->image;
     u8 *block = (u8 *)(source->animations[1] + (s32)source->animations);
     u8 *animation = (u8 *)(((u16 *)block)[2] + (s32)block);
@@ -1362,9 +1363,9 @@ void func_8001F5BC(Sprite *sprite, s32 unused, s32 *width, s32 *height, s32 *dep
     *width = record[2] * sprite->scale / 4096;
 }
 
-/* Recolour a one-sided sprite's parts: the sprite's colour word and blend
+/* 8001F6B0: Recolour a one-sided sprite's parts: the sprite's colour word and blend
  * mode (its blend rate - 1). */
-void func_8001F6B0(Sprite *sprite) {
+void sprite_recolor_parts(Sprite *sprite) {
     SpriteImageSize size; /* copied, unused */
     SpritePart *part;
     u32 colour;
@@ -1387,12 +1388,12 @@ void func_8001F6B0(Sprite *sprite) {
     }
 }
 
-/* Apply the control bytes of frame `frame`'s parts: for each part, bytes
+/* 8001F750: Apply the control bytes of frame `frame`'s parts: for each part, bytes
  * with bit 7 set precede it; with bit 6 they set entry (bits 0-2) of the
  * renderer's 0x40-byte block (bit 5: two bytes, bit 4: a depth byte * 16,
  * else depth 0), otherwise bits 0-1 skip a byte each. Parts are 3 bytes (5
  * when the frame's bit 7 is set). */
-void func_8001F750(Sprite *sprite, s32 frame, SpriteSource *source) {
+void sprite_apply_cell_frame_controls(Sprite *sprite, s32 frame, SpriteSource *source) {
     u16 *frames = source->frames;
     u8 *record = (u8 *)(frames[frame] + (s32)frames);
     u8 wide = *record & 0x80;
@@ -1410,8 +1411,8 @@ void func_8001F750(Sprite *sprite, s32 frame, SpriteSource *source) {
             if (control & 0x40) {
                 slot = control & 7;
                 if (sprite->renderer->pointer34 == NULL) {
-                    sprite->renderer->pointer34 = func_80031BDC(0x40, 0);
-                    func_800234AC(sprite);
+                    sprite->renderer->pointer34 = heap_alloc(0x40, 0);
+                    sprite_clear_group_entries(sprite);
                 }
                 if (control & 0x20) {
                     sprite->renderer->pointer34[slot].byte0 = *p++;
@@ -1441,11 +1442,11 @@ void func_8001F750(Sprite *sprite, s32 frame, SpriteSource *source) {
     }
 }
 
-/* Apply the control bytes of frame `frame`'s parts (as 8001f750 does, which
+/* 8001F8E8: Apply the control bytes of frame `frame`'s parts (as 8001f750 does, which
  * handles directories with bit 15 set): here the part count is followed by
  * four bytes per part. Frames beyond the directory's count (bits 0-8) are
  * ignored. */
-void func_8001F8E8(Sprite *sprite, s32 frame, SpriteSource *source) {
+void sprite_apply_frame_controls(Sprite *sprite, s32 frame, SpriteSource *source) {
     u16 *frames = source->frames;
     u8 *record;
     u8 wide;
@@ -1460,7 +1461,7 @@ void func_8001F8E8(Sprite *sprite, s32 frame, SpriteSource *source) {
         return;
     }
     if (*frames & 0x8000) {
-        func_8001F750(sprite, frame, source);
+        sprite_apply_cell_frame_controls(sprite, frame, source);
         return;
     }
     record = (u8 *)(frames[frame] + (s32)frames);
@@ -1474,8 +1475,8 @@ void func_8001F8E8(Sprite *sprite, s32 frame, SpriteSource *source) {
             p++;
             if (control & 0x40) {
                 if (sprite->renderer->pointer34 == NULL) {
-                    sprite->renderer->pointer34 = func_80031BDC(0x40, 0);
-                    func_800234AC(sprite);
+                    sprite->renderer->pointer34 = heap_alloc(0x40, 0);
+                    sprite_clear_group_entries(sprite);
                 }
                 slot = control & 7;
                 if (control & 0x20) {
@@ -1506,28 +1507,28 @@ void func_8001F8E8(Sprite *sprite, s32 frame, SpriteSource *source) {
     }
 }
 
-/* Unpack and upload the image at 8004fbd8 to (x, y). */
-void func_8001FAB4(s32 x, s32 y) {
-    void *image = func_80032E88(D_8004FBD8, 0);
+/* 8001FAB4: Unpack and upload the image at 8004fbd8 to (x, y). */
+void sprite_upload_pause_image(s32 x, s32 y) {
+    void *image = text_unpack_lzss_alloc(sprite_packed_pause_image, 0);
 
-    func_8002DDE4(image, 1, x, y, 0, 0, 0);
+    model_load_image_list(image, 1, x, y, 0, 0, 0);
     DrawSync(0);
-    func_800320E8(image);
+    heap_free(image);
 }
 
-/* Upload the image list at D_800592E4 to D_800592E8, running
+/* 8001FB30: Upload the image list at sprite_image_list to sprite_image_list_position, running
  * the upload on an 8 KB heap block as its stack. */
-void func_8001FB30(void) {
-    u8 *stack = func_80031BDC(0x2000, 1);
+void sprite_upload_image_list(void) {
+    u8 *stack = heap_alloc(0x2000, 1);
 
     STACK_ENTER(stack + 0x1F00);
-    func_8002DDE4(D_800592E4, 1, D_800592E8.vx, D_800592E8.vy, 0, 0, 0);
+    model_load_image_list(sprite_image_list, 1, sprite_image_list_position.vx, sprite_image_list_position.vy, 0, 0, 0);
     STACK_LEAVE();
-    func_800320E8(stack);
+    heap_free(stack);
 }
 
-/* The operand a script byte names: a frame table entry (bit 7 set) or a byte on the sprite's stack. */
-u8 *func_8001FBA4(Sprite *sprite, u8 *code) {
+/* 8001FBA4: The operand a script byte names: a frame table entry (bit 7 set) or a byte on the sprite's stack. */
+u8 *sprite_vm_resolve_variable(Sprite *sprite, u8 *code) {
     u8 *operand;
     s32 offset;
 
@@ -1543,13 +1544,13 @@ u8 *func_8001FBA4(Sprite *sprite, u8 *code) {
 /* Apply the script's direction offset, in units of sixteen angle steps. */
 #define SPRITE_OFFSET_DIRECTION(sprite_, offset_) \
     do { \
-        func_80021FE0((sprite_), (sprite_)->direction + (offset_) * 16); \
+        sprite_set_direction((sprite_), (sprite_)->direction + (offset_) * 16); \
     } while (0)
 
-/* Run the script command `op` (0x8a-0xfc) of a sprite on its operand bytes
+/* 8001FBE4: Run the script command `op` (0x8a-0xfc) of a sprite on its operand bytes
  * `code`: motion, placement, colour, renderer angles and scales, byte
  * arithmetic on the sprite's stack and frame variables, sounds, models. */
-void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
+void sprite_vm_run_generic_command(Sprite *sprite, u8 op, u8 *code) {
     SVECTOR vector;
     VECTOR sum;
     SVECTOR angles;
@@ -1579,7 +1580,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     /* 8d: model texture pages take the page at the image origin (8002cc10). */
     case 0x8D:
         /* called without a prototype: the coordinates pass as ints */
-        func_8002CC10(((SpriteSource *)sprite->image)->origin.vx, ((SpriteSource *)sprite->image)->origin.vy);
+        model_set_tpage_override(((SpriteSource *)sprite->image)->origin.vx, ((SpriteSource *)sprite->image)->origin.vy);
         break;
     /* c6 u8: sequencer value (+c) = u8 when the sequencer is the sprite's own. */
     case 0xC6:
@@ -1602,22 +1603,22 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         s32 n;
 
         n = code[0];
-        n /= D_80059198 + 1;
+        n /= sprite_frame_skip + 1;
         while (--n != -1) {
-            func_80022CDC(sprite);
+            sprite_move(sprite);
         }
         break;
     }
     /* b9 u8: play sound u8 of the sprite's own bank (+50), if it has one. */
     case 0xB9:
         if ((SpriteVoice *)sprite->word50 != NULL) {
-            func_80039E60(code[0] | (((SpriteVoice *)sprite->word50)->bank << 16));
+            sound_play_effect(code[0] | (((SpriteVoice *)sprite->word50)->bank << 16));
         }
         break;
     /* b0 u8: play sound u8 of the scripts' bank (8005919c), if any. */
     case 0xB0:
-        if (D_8005919C != NULL) {
-            func_80039E60(code[0] | (D_8005919C->bank << 16));
+        if (sprite_script_sound_bank != NULL) {
+            sound_play_effect(code[0] | (sprite_script_sound_bank->bank << 16));
         }
         break;
     /* cc s16: variable table (+88) = this command + s16. */
@@ -1631,9 +1632,9 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         from.vy = sprite->z >> 16;
         to.vx = other->x >> 16;
         to.vy = other->z >> 16;
-        direction = func_80023124(to, from);
-        func_80021FE0(sprite, direction);
-        func_800223B0(sprite, direction);
+        direction = sprite_get_ground_direction(to, from);
+        sprite_set_direction(sprite, direction);
+        sprite_set_facing(sprite, direction);
         break;
     /* 94: model sprites (render kind 2): renderer y angle = the creator's direction. */
     case 0x94:
@@ -1650,7 +1651,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
 
         if (code[0] & 0x80) {
             n = (code[0] & 0x7F) + 1;
-            D_80059428 = n;
+            task_main_pause_timer = n;
         } else {
             n = (code[0] + 1) * sprite->motion.bits.divisor / 256;
             if (n == 0) {
@@ -1663,20 +1664,20 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     /* fc s24: upload the image list at the operand + s24 at the image origin (8001fb30, on
      * an 8 KB heap stack). */
     case 0xFC:
-        stack = func_80031BDC(0x2000, 0);
+        stack = heap_alloc(0x2000, 0);
         STACK_ENTER(stack + 0x1F00);
         {
             s32 image_x, image_y;
 
-            D_800592E4 = (s32 *)((((s8)code[2] << 16) + (code[1] << 8) + code[0]) + (s32)code);
+            sprite_image_list = (s32 *)((((s8)code[2] << 16) + (code[1] << 8) + code[0]) + (s32)code);
             image_x = ((SpriteSource *)sprite->image)->origin.vx;
             image_y = ((SpriteSource *)sprite->image)->origin.vy;
-            D_800592E8.vx = image_x;
-            D_800592E8.vy = image_y;
+            sprite_image_list_position.vx = image_x;
+            sprite_image_list_position.vy = image_y;
         }
-        func_8001FB30();
+        sprite_upload_image_list();
         STACK_LEAVE();
-        func_800320E8(stack);
+        heap_free(stack);
         break;
     /* bf u8: height (+36) = u8. */
     case 0xBF:
@@ -1684,9 +1685,9 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         break;
     /* 96: destroy the tasks the sprite's block created (8001ce74). */
     case 0x96:
-        func_8001CE74(sprite->block);
+        task_destroy_owned_by(sprite->block);
         break;
-    /* a2 u8: render byte 1 = u8: the part groups not drawn (their D_8004FAF8 bits). */
+    /* a2 u8: render byte 1 = u8: the part groups not drawn (their sprite_halfword_bit_masks bits). */
     case 0xA2:
         ((u8 *)&sprite->render)[1] = code[0];
         break;
@@ -1803,8 +1804,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         distance >>= 8;
         distance = distance * sprite->scale / 4096;
         angle = rand();
-        sprite->x += func_80022CAC(sprite, func_8003F8CC(angle)) * distance * 16;
-        sprite->z -= func_80022CAC(sprite, func_8003F8B0(angle)) * distance * 16;
+        sprite->x += sprite_scale_by_rate(sprite, gpu_get_cos(angle)) * distance * 16;
+        sprite->z -= sprite_scale_by_rate(sprite, gpu_get_sin(angle)) * distance * 16;
         break;
     }
     /* c1 u8: move to a random point a random distance below u8 (scaled) away. */
@@ -1815,12 +1816,12 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         distance *= code[0];
         distance >>= 8;
         distance = distance * sprite->scale / 4096;
-        func_80021B04(&vector, func_80022CAC(sprite, distance), 0, 0);
-        func_80021B04(&angles, rand(), rand(), 0);
-        func_80021B14(&sum, sprite->x >> 16, sprite->y >> 16, sprite->z >> 16);
+        sprite_set_svector(&vector, sprite_scale_by_rate(sprite, distance), 0, 0);
+        sprite_set_svector(&angles, rand(), rand(), 0);
+        sprite_set_vector(&sum, sprite->x >> 16, sprite->y >> 16, sprite->z >> 16);
         TransMatrix(&m, &sum);
         SetTransMatrix(&m);
-        func_8003F738(&angles, &m);
+        gpu_build_rotation_matrix(&angles, &m);
         SetRotMatrix(&m);
         RotTransSV(&vector, &vector, &flag);
         sprite->x = vector.vx << 16;
@@ -1937,14 +1938,14 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 break;
             /* 6, 7: the points 8006f99c and 8006f9ac. */
             case 6:
-                vector.vx = D_8006F99C.vx >> 16;
-                vector.vy = D_8006F99C.vy >> 16;
-                vector.vz = D_8006F99C.vz >> 16;
+                vector.vx = sprite_camera_eye.vx >> 16;
+                vector.vy = sprite_camera_eye.vy >> 16;
+                vector.vz = sprite_camera_eye.vz >> 16;
                 break;
             case 7:
-                vector.vx = D_8006F9AC.vx >> 16;
-                vector.vy = D_8006F9AC.vy >> 16;
-                vector.vz = D_8006F9AC.vz >> 16;
+                vector.vx = sprite_camera_look_at.vx >> 16;
+                vector.vy = sprite_camera_look_at.vy >> 16;
+                vector.vz = sprite_camera_look_at.vz >> 16;
                 break;
             /* 1: the acting sprite's position. */
             case 1:
@@ -1996,7 +1997,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 }
                 x = x * other->scale / 4096;
                 y = y * other->scale / 4096;
-                func_80021B04(&vector, x + (other->x >> 16), y + (other->y >> 16), other->z >> 16);
+                sprite_set_svector(&vector, x + (other->x >> 16), y + (other->y >> 16), other->z >> 16);
                 break;
             /* 25-31: the acting sprite's part offsets 1-7. */
             case 25:
@@ -2021,7 +2022,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             case 2: {
                 s32 members;
 
-                func_80021B14(&sum, 0, 0, 0);
+                sprite_set_vector(&sum, 0, 0, 0);
                 for (members = 0; (other = D_800D363C[members]) != NULL; members++) {
                     sum.vx += other->x;
                     sum.vy += other->y;
@@ -2055,7 +2056,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             case 4: {
                 s32 members;
 
-                func_80021B14(&sum, 0, 0, 0);
+                sprite_set_vector(&sum, 0, 0, 0);
                 for (members = 0; (other = D_800D363C[members]) != NULL; members++) {
                     sum.vx += other->x;
                     sum.vy += other->y;
@@ -2075,7 +2076,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             }
             /* 5: a zero sum divided by an unset count. */
             case 5:
-                func_80021B14(&sum, 0, 0, 0);
+                sprite_set_vector(&sum, 0, 0, 0);
                 sum.vx /= count;
                 sum.vy /= count;
                 sum.vz /= count;
@@ -2085,10 +2086,10 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
                 break;
             }
             if (transform) {
-                ApplyMatrixSV(&D_8004FBB8, &vector, &vector);
-                vector.vx += D_8004FBB8.t[0];
-                vector.vy += D_8004FBB8.t[1];
-                vector.vz += D_8004FBB8.t[2];
+                ApplyMatrixSV(&sprite_view_matrix, &vector, &vector);
+                vector.vx += sprite_view_matrix.t[0];
+                vector.vy += sprite_view_matrix.t[1];
+                vector.vz += sprite_view_matrix.t[2];
             }
             if (arg & 0x40) {
                 sprite->target_x = vector.vx;
@@ -2125,42 +2126,42 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     }
     /* d1 var var: a *= b (bytes, 8001fba4). */
     case 0xD1:
-        *func_8001FBA4(sprite, code) *= *func_8001FBA4(sprite, code + 1);
+        *sprite_vm_resolve_variable(sprite, code) *= *sprite_vm_resolve_variable(sprite, code + 1);
         break;
     /* d2, d5 var var: a /= b. */
     case 0xD2:
     case 0xD5:
-        *func_8001FBA4(sprite, code) /= *func_8001FBA4(sprite, code + 1);
+        *sprite_vm_resolve_variable(sprite, code) /= *sprite_vm_resolve_variable(sprite, code + 1);
         break;
     /* e5 var u8: a = (rand & ff) * u8 >> 8. */
     case 0xE5:
-        p = func_8001FBA4(sprite, code);
+        p = sprite_vm_resolve_variable(sprite, code);
         *p = (s32)((rand() & 0xFF) * code[1]) >> 8;
         break;
     /* d6 var u8: a += u8. */
     case 0xD6:
-        *func_8001FBA4(sprite, code) += code[1];
+        *sprite_vm_resolve_variable(sprite, code) += code[1];
         break;
     /* d7 var s8: a *= s8. */
     case 0xD7:
-        *func_8001FBA4(sprite, code) *= (s8)code[1];
+        *sprite_vm_resolve_variable(sprite, code) *= (s8)code[1];
         break;
     /* d8 var s8: a /= s8. */
     case 0xD8:
-        *func_8001FBA4(sprite, code) /= (s8)code[1];
+        *sprite_vm_resolve_variable(sprite, code) /= (s8)code[1];
         break;
     /* d9 var s8: a <<= s8. */
     case 0xD9:
-        *func_8001FBA4(sprite, code) <<= (s8)code[1];
+        *sprite_vm_resolve_variable(sprite, code) <<= (s8)code[1];
         break;
     /* da var s8: a >>= s8, signed. */
     case 0xDA:
-        *(s8 *)func_8001FBA4(sprite, code) >>= (s8)code[1];
+        *(s8 *)sprite_vm_resolve_variable(sprite, code) >>= (s8)code[1];
         break;
     /* db var s8: the halfword at a <<= s8. */
     case 0xDB:
         {
-            u8 *half = func_8001FBA4(sprite, code);
+            u8 *half = sprite_vm_resolve_variable(sprite, code);
             s32 value;
 
             value = ((half[1] << 8) | half[0]) << (s8)code[1];
@@ -2171,7 +2172,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     /* dc var s8: the halfword at a >>= s8. */
     case 0xDC:
         {
-            u8 *half = func_8001FBA4(sprite, code);
+            u8 *half = sprite_vm_resolve_variable(sprite, code);
             s32 value;
 
             value = ((half[1] << 8) | half[0]) >> (s8)code[1];
@@ -2184,20 +2185,20 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     case 0xD3:
     case 0xDD:
     case 0xDE:
-        *func_8001FBA4(sprite, code) += *func_8001FBA4(sprite, code + 1);
+        *sprite_vm_resolve_variable(sprite, code) += *sprite_vm_resolve_variable(sprite, code + 1);
         break;
     /* a4 s8: the target (+74) plays animation s8 (800245d8). */
     case 0xA4:
-        func_800245D8(sprite->partner, (s8)code[0]);
+        sprite_start_animation(sprite->partner, (s8)code[0]);
         break;
     /* df var u8: a = u8. */
     case 0xDF:
-        *func_8001FBA4(sprite, code) = code[1];
+        *sprite_vm_resolve_variable(sprite, code) = code[1];
         break;
     /* e6 var u8: the halfword at a = u8. */
     case 0xE6:
         {
-            u8 *half = func_8001FBA4(sprite, code);
+            u8 *half = sprite_vm_resolve_variable(sprite, code);
 
             half[0] = code[1];
             half[1] = 0;
@@ -2206,12 +2207,12 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     /* 91: coloured parts (colour flag off, 8001f6b0). */
     case 0x91:
         sprite->colour_flags &= ~1;
-        func_8001F6B0(sprite);
+        sprite_recolor_parts(sprite);
         break;
     /* 92: uncoloured parts (colour flag on, 8001f6b0). */
     case 0x92:
         sprite->colour_flags |= 1;
-        func_8001F6B0(sprite);
+        sprite_recolor_parts(sprite);
         break;
     /* bb s8: depth bias (+30) += s8. */
     case 0xBB:
@@ -2225,23 +2226,23 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
 
         other = sprite->parent;
         if (other != NULL && (sprite->render.word & 3)) {
-            if (func_8001EE68((u8 *)((SpriteSource *)sprite->image)->frames) == 0) {
+            if (sprite_is_cell_directory((u8 *)((SpriteSource *)sprite->image)->frames) == 0) {
                 sprite->flags = (sprite->flags & ~0x1E000) | 0x1C000;
             }
             if (sprite->renderer != NULL && other->renderer->pointer34 != NULL) {
-                func_8001D4E8(sprite);
+                sprite_alloc_group_entries(sprite);
                 for (i = 0; i != 8; i++) {
                     sprite->renderer->pointer34[i] = other->renderer->pointer34[i];
                 }
                 sprite->renderer->offset = other->renderer->offset;
             }
-            func_8001D2B0(sprite, sprite->frame);
+            sprite_request_frame(sprite, sprite->frame);
         }
         break;
     }
     /* ba u8: blend rate u8 (80023290). */
     case 0xBA:
-        func_80023290(sprite, code[0]);
+        sprite_set_blend_rate(sprite, code[0]);
         break;
     /* f1 r g b: colour = r, g, b (model sprites: the model's too); one-sided parts are
      * recoloured. */
@@ -2258,7 +2259,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             model->blue = code[2];
         }
         if ((sprite->render.word & 3) == 1) {
-            func_8001F6B0(sprite);
+            sprite_recolor_parts(sprite);
         }
         break;
     }
@@ -2266,16 +2267,16 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
      * and, as type f with an unlit model, tint it (800b2aec). */
     case 0xF2:
         model = (SpriteModelRenderer *)sprite->renderer;
-        sprite->red = func_80021AD8(sprite->red, (s8)code[0]);
-        sprite->green = func_80021AD8(sprite->green, (s8)code[1]);
-        sprite->blue = func_80021AD8(sprite->blue, (s8)code[2]);
+        sprite->red = sprite_add_clamp_byte(sprite->red, (s8)code[0]);
+        sprite->green = sprite_add_clamp_byte(sprite->green, (s8)code[1]);
+        sprite->blue = sprite_add_clamp_byte(sprite->blue, (s8)code[2]);
         if ((sprite->render.word & 3) == 2) {
             model->red += (s8)code[0];
             model->green += (s8)code[1];
             model->blue += (s8)code[2];
         }
         if ((sprite->render.word & 3) == 1) {
-            func_8001F6B0(sprite);
+            sprite_recolor_parts(sprite);
         }
         if (((sprite->flags >> 13) & 0xF) == 0xF && ((SpriteModelRenderer *)sprite->renderer)->model != NULL &&
             !((sprite->flags >> 1) & 1)) {
@@ -2288,10 +2289,10 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
      * block (+48) is bound, else back to the animation block. */
     case 0x90:
         if (sprite->resource_block == sprite->animations) {
-            func_800222BC(sprite, (s32 *)sprite->resource);
+            sprite_bind_resource(sprite, (s32 *)sprite->resource);
             sprite->b0.wordb0 |= 0x400;
         } else {
-            func_800222BC(sprite, sprite->animations);
+            sprite_bind_resource(sprite, sprite->animations);
             sprite->b0.wordb0 &= ~0x400;
         }
         break;
@@ -2301,20 +2302,20 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         s32 offset;
         ModelBuffer *data;
 
-        func_80032498(5, 0);
+        heap_select_owner_tag(5, 0);
         offset = (s8)code[2];
         offset <<= 16;
         offset += code[1] << 8;
         offset += code[0];
         offset += (s32)code;
         data = (ModelBuffer *)offset;
-        func_8002C59C((SpriteModel *)offset);
+        model_relocate_sprite_model((SpriteModel *)offset);
         if (((SpriteModelRenderer *)sprite->renderer)->packets[0] != NULL) {
-            func_800320E8(((SpriteModelRenderer *)sprite->renderer)->packets[0]);
+            heap_free(((SpriteModelRenderer *)sprite->renderer)->packets[0]);
         }
-        func_8002CB54(data, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
+        model_alloc_packet_buffers(data, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
                       &((SpriteModelRenderer *)sprite->renderer)->packets[1]);
-        func_8002C8CC((SpriteModel *)data, (RenderPacket *)((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
+        model_build_packets((SpriteModel *)data, (RenderPacket *)((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
         memcpy(((SpriteModelRenderer *)sprite->renderer)->packets[1],
                ((SpriteModelRenderer *)sprite->renderer)->packets[0], data->size);
         ((SpriteModelRenderer *)sprite->renderer)->model = data;
@@ -2322,20 +2323,20 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     }
     /* f6 s24: as f5 for the model group at the operand + s24, its model 16 bytes on. */
     case 0xF6:
-        func_80032498(5, 0);
+        heap_select_owner_tag(5, 0);
         buffer = (s8)code[2];
         buffer <<= 16;
         buffer += code[1] << 8;
         buffer += code[0];
         buffer += (s32)code;
-        func_8002C3E8((ModelGroup *)buffer);
+        model_relocate_group((ModelGroup *)buffer);
         buffer += 0x10;
         if (((SpriteModelRenderer *)sprite->renderer)->packets[0] != NULL) {
-            func_800320E8(((SpriteModelRenderer *)sprite->renderer)->packets[0]);
+            heap_free(((SpriteModelRenderer *)sprite->renderer)->packets[0]);
         }
-        func_8002CB54((ModelBuffer *)buffer, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
+        model_alloc_packet_buffers((ModelBuffer *)buffer, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
                       &((SpriteModelRenderer *)sprite->renderer)->packets[1]);
-        func_8002C8CC((SpriteModel *)buffer, (RenderPacket *)((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
+        model_build_packets((SpriteModel *)buffer, (RenderPacket *)((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
         memcpy(((SpriteModelRenderer *)sprite->renderer)->packets[1],
                ((SpriteModelRenderer *)sprite->renderer)->packets[0], ((ModelBuffer *)buffer)->size);
         ((SpriteModelRenderer *)sprite->renderer)->model = (ModelBuffer *)buffer;
@@ -2347,14 +2348,14 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         buffer += code[1] << 8;
         buffer += code[0];
         buffer += (s32)code;
-        func_8002C3E8((ModelGroup *)buffer);
+        model_relocate_group((ModelGroup *)buffer);
         buffer += 0x10;
         if (((SpriteModelRenderer *)sprite->renderer)->packets[0] != NULL) {
-            func_800320E8(((SpriteModelRenderer *)sprite->renderer)->packets[0]);
+            heap_free(((SpriteModelRenderer *)sprite->renderer)->packets[0]);
         }
-        func_8002CB54((ModelBuffer *)buffer, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
+        model_alloc_packet_buffers((ModelBuffer *)buffer, &((SpriteModelRenderer *)sprite->renderer)->packets[0],
                       &((SpriteModelRenderer *)sprite->renderer)->packets[1]);
-        func_8002C8CC((SpriteModel *)buffer, (RenderPacket *)((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
+        model_build_packets((SpriteModel *)buffer, (RenderPacket *)((SpriteModelRenderer *)sprite->renderer)->packets[0], 0);
         memcpy(((SpriteModelRenderer *)sprite->renderer)->packets[1],
                ((SpriteModelRenderer *)sprite->renderer)->packets[0], ((ModelBuffer *)buffer)->size);
         *(s32 *)(loaded->unk10 + 4) = 0;
@@ -2369,13 +2370,13 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             scale = angle << 8;
 
             if (sprite->render.word & 3) {
-                func_80022000(sprite, scale);
+                sprite_set_scale(sprite, scale);
             }
         }
         break;
     /* e7 s16: scale += s16 * 2 (80022000). */
     case 0xE7:
-        func_80022000(sprite, sprite->scale + (s16)((code[0] | (s16)(code[1] << 8)) * 2));
+        sprite_set_scale(sprite, sprite->scale + (s16)((code[0] | (s16)(code[1] << 8)) * 2));
         break;
     /* e9 s16: renderer x scale += s16 * 2. */
     case 0xE9: {
@@ -2413,15 +2414,15 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     /* bd u8: child sprite running animation u8 of the shared block (8006be10) with this
      * sprite's image (80023b84). */
     case 0xBD: {
-        SpriteSource *source = (SpriteSource *)D_8006BE10;
+        SpriteSource *source = (SpriteSource *)sprite_shared_source;
 
-        func_80023B84(sprite, (u16 *)(source->animations[code[0] + 1] + (s32)source->animations), sprite->image);
+        sprite_create_child(sprite, (u16 *)(source->animations[code[0] + 1] + (s32)source->animations), sprite->image);
         break;
     }
     /* e0 s16: child sprite running the animation header at the operand + s16 with this
      * sprite's image (80023b84). */
     case 0xE0:
-        func_80023B84(sprite, (u16 *)(code + (((s8)code[1] << 8) + code[0])), sprite->image);
+        sprite_create_child(sprite, (u16 *)(code + (((s8)code[1] << 8) + code[0])), sprite->image);
         break;
     /* ad u8: bounce (frame bits 1-10) = u8. */
     case 0xAD:
@@ -2429,7 +2430,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         break;
     /* b4 u8: push u8 (an e4 loop count). */
     case 0xB4:
-        func_80021CA0(sprite, code[0]);
+        sprite_stack_push_byte(sprite, code[0]);
         break;
     /* b8 s8: stack index -= s8 (reserves s8 variable bytes; negative releases). */
     case 0xB8:
@@ -2482,8 +2483,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
 
         offset = (rand() & 0xFF) * code[0] / 256;
         offset -= code[0] >> 1;
-        func_80021B04(&vector, 0, 0, offset * 16);
-        func_8003F738(&vector, &m);
+        sprite_set_svector(&vector, 0, 0, offset * 16);
+        gpu_build_rotation_matrix(&vector, &m);
         ApplyMatrixLV(&m, (VECTOR *)&sprite->speed_x, &sum);
         sprite->speed_x = sum.vx;
         sprite->speed_y = sum.vy;
@@ -2501,7 +2502,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     }
     /* a9 s8: x += s8 * scale / 4096 (by the speed factor), negated when mirrored. */
     case 0xA9:
-        value = func_80022CAC(sprite, (s8)code[0] * sprite->scale / 4096) << 16;
+        value = sprite_scale_by_rate(sprite, (s8)code[0] * sprite->scale / 4096) << 16;
         if ((sprite->motion.word >> 2) & 1) {
             value = -value;
         }
@@ -2509,16 +2510,16 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         break;
     /* aa s8: y += s8 * scale / 4096 (by the speed factor). */
     case 0xAA:
-        sprite->y += func_80022CAC(sprite, (s8)code[0] * sprite->scale / 4096) << 16;
+        sprite->y += sprite_scale_by_rate(sprite, (s8)code[0] * sprite->scale / 4096) << 16;
         break;
     /* ab s8: z += s8 * scale / 4096 (by the speed factor). */
     case 0xAB:
-        sprite->z += func_80022CAC(sprite, (s8)code[0] * sprite->scale / 4096) << 16;
+        sprite->z += sprite_scale_by_rate(sprite, (s8)code[0] * sprite->scale / 4096) << 16;
         break;
     /* a8 s8: direction += s8 * 16; the velocity follows (80022974). */
     case 0xA8:
         sprite->direction += (s16)(code[0] << 8) >> 4;
-        func_80022974(sprite);
+        sprite_update_velocity(sprite);
         break;
     /* 8a: stop: x, z and walking speeds 0. */
     case 0x8A:
@@ -2536,28 +2537,28 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
             n = 0x10000 / sprite->motion.bits.divisor;
             sprite->gravity *= n * n / 256;
             sprite->gravity /= 256;
-            sprite->gravity *= (D_80059198 + 1) * (D_80059198 + 1);
+            sprite->gravity *= (sprite_frame_skip + 1) * (sprite_frame_skip + 1);
         }
         break;
     /* a5 s8: walking speed += s8 * 16 * (skip + 1) * (+82) / 4096 << 8; the velocity
      * follows. */
     case 0xA5:
-        sprite->speed += (((s8)code[0] << 4) * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 8;
-        func_80022974(sprite);
+        sprite->speed += (((s8)code[0] << 4) * (sprite_frame_skip + 1) * (s16)sprite->word82 / 4096) << 8;
+        sprite_update_velocity(sprite);
         break;
     /* a6 s8: vertical speed += (s8 * 16 * (skip + 1) * (+82) / 4096 << 16) / divisor,
      * unless the sequencer is the sprite's own. */
     case 0xA6:
         if (sprite->frame_bits.sequencer_owned != 1) {
             sprite->speed_y +=
-                ((((s8)code[0] << 4) * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 16) / sprite->motion.bits.divisor;
+                ((((s8)code[0] << 4) * (sprite_frame_skip + 1) * (s16)sprite->word82 / 4096) << 16) / sprite->motion.bits.divisor;
         }
         break;
     /* a0 s8: walking speed = s8 * 16 * (skip + 1) * (+82) / 4096 << 8; the velocity
      * follows. */
     case 0xA0:
-        sprite->speed = (((s8)code[0] << 4) * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 8;
-        func_80022974(sprite);
+        sprite->speed = (((s8)code[0] << 4) * (sprite_frame_skip + 1) * (s16)sprite->word82 / 4096) << 8;
+        sprite_update_velocity(sprite);
         break;
     /* a1 s8: vertical speed = s8 * 16 * (skip + 1) * (+82) / 4096 << 8 (or the own
      * sequencer's word 0 when nonzero), then << 8 / divisor. */
@@ -2565,7 +2566,7 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
         if (sprite->frame_bits.sequencer_owned == 1 && ((SpriteSequencer *)sprite->sequencer)->word0 != 0) {
             sprite->speed_y = ((SpriteSequencer *)sprite->sequencer)->word0;
         } else {
-            sprite->speed_y = (((s8)code[0] << 4) * (D_80059198 + 1) * (s16)sprite->word82 / 4096) << 8;
+            sprite->speed_y = (((s8)code[0] << 4) * (sprite_frame_skip + 1) * (s16)sprite->word82 / 4096) << 8;
         }
         sprite->speed_y <<= 8;
         sprite->speed_y /= sprite->motion.bits.divisor;
@@ -2585,8 +2586,8 @@ void func_8001FBE4(Sprite *sprite, u8 op, u8 *code) {
     }
 }
 
-/* `value + delta` clamped to 0-255. */
-s32 func_80021AD8(s32 value, s32 delta) {
+/* 80021AD8: `value + delta` clamped to 0-255. */
+s32 sprite_add_clamp_byte(s32 value, s32 delta) {
     value += delta;
     if (value >= 0x100) {
         value = 0xFF;
@@ -2596,84 +2597,87 @@ s32 func_80021AD8(s32 value, s32 delta) {
     return value;
 }
 
-/* Vector helpers: set a short or a long vector, copy one. */
-void func_80021B04(SVECTOR *vector, s16 x, s16 y, s16 z) {
+/* 80021B04: Vector helpers: set a short or a long vector, copy one. */
+void sprite_set_svector(SVECTOR *vector, s16 x, s16 y, s16 z) {
     vector->vx = x;
     vector->vy = y;
     vector->vz = z;
 }
 
-void func_80021B14(VECTOR *vector, s32 x, s32 y, s32 z) {
+/* 80021B14 */
+void sprite_set_vector(VECTOR *vector, s32 x, s32 y, s32 z) {
     vector->vx = x;
     vector->vy = y;
     vector->vz = z;
 }
 
-void func_80021B24(SVECTOR *to, SVECTOR *from) {
+/* 80021B24 */
+void sprite_copy_svector(SVECTOR *to, SVECTOR *from) {
     to->vx = from->vx;
     to->vy = from->vy;
     to->vz = from->vz;
 }
 
-void func_80021B48(VECTOR *to, VECTOR *from) {
+/* 80021B48 */
+void sprite_copy_vector(VECTOR *to, VECTOR *from) {
     to->vx = from->vx;
     to->vy = from->vy;
     to->vz = from->vz;
 }
 
-/* Drop a sprite's part colour. */
-void func_80021B6C(Sprite *sprite) {
+/* 80021B6C: Drop a sprite's part colour. */
+void sprite_disable_part_color(Sprite *sprite) {
     sprite->colour_flags |= 1;
-    func_8001F6B0(sprite);
+    sprite_recolor_parts(sprite);
 }
 
-/* Colour a sprite's one-sided parts. */
-void func_80021B98(Sprite *sprite, u8 red, u8 green, u8 blue) {
+/* 80021B98: Colour a sprite's one-sided parts. */
+void sprite_set_part_color(Sprite *sprite, u8 red, u8 green, u8 blue) {
     sprite->red = red;
     sprite->green = green;
     sprite->blue = blue;
     sprite->colour_flags &= ~1;
-    func_8001F6B0(sprite);
+    sprite_recolor_parts(sprite);
 }
 
-/* Set a sprite's gravity divisor. */
-void func_80021BCC(Sprite *sprite, s32 divisor) {
+/* 80021BCC: Set a sprite's gravity divisor. */
+void sprite_set_gravity_divisor(Sprite *sprite, s32 divisor) {
     sprite->motion.bits.divisor = divisor;
 }
 
-/* Set a sprite's resource word (+0x4c). */
-void func_80021BF0(Sprite *sprite, s32 resource) {
+/* 80021BF0: Set a sprite's resource word (+0x4c). */
+void sprite_set_alternate_resource(Sprite *sprite, s32 resource) {
     sprite->resource = resource;
 }
 
-/* Set a sprite's completion callback. */
-void func_80021BF8(Sprite *sprite, void *callback) {
+/* 80021BF8: Set a sprite's completion callback. */
+void sprite_set_completion_callback(Sprite *sprite, void *callback) {
     sprite->callback = callback;
 }
 
-/* Set a sprite's facing group (flags bits 8-12). */
-void func_80021C00(Sprite *sprite, s32 group) {
+/* 80021C00: Set a sprite's facing group (flags bits 8-12). */
+void sprite_set_scale_shift(Sprite *sprite, s32 group) {
     sprite->flags = (sprite->flags & ~0x1F00) | ((group & 0x1F) << 8);
 }
 
-/* Pop a byte from a sprite's stack. */
-u8 func_80021C20(Sprite *sprite) {
+/* 80021C20: Pop a byte from a sprite's stack. */
+u8 sprite_stack_pop_byte(Sprite *sprite) {
     u8 value = sprite->stack[sprite->stack_top];
 
     sprite->stack_top += 1;
     return value;
 }
 
-/* Pop a halfword from a sprite's stack. */
-s16 func_80021C3C(Sprite *sprite) {
+/* 80021C3C: Pop a halfword from a sprite's stack. */
+s16 sprite_stack_pop_halfword(Sprite *sprite) {
     s16 value = sprite->stack[sprite->stack_top] + (sprite->stack[sprite->stack_top + 1] << 8);
 
     sprite->stack_top += 2;
     return value;
 }
 
-/* Pop three bytes from a sprite's stack. */
-s32 func_80021C6C(Sprite *sprite) {
+/* 80021C6C: Pop three bytes from a sprite's stack. */
+s32 sprite_stack_pop_three_bytes(Sprite *sprite) {
     s32 value = sprite->stack[sprite->stack_top] + (sprite->stack[sprite->stack_top + 1] << 8) +
                 (sprite->stack[sprite->stack_top + 2] << 16);
 
@@ -2681,39 +2685,39 @@ s32 func_80021C6C(Sprite *sprite) {
     return value;
 }
 
-/* Push a byte onto a sprite's stack. */
-void func_80021CA0(Sprite *sprite, u8 value) {
+/* 80021CA0: Push a byte onto a sprite's stack. */
+void sprite_stack_push_byte(Sprite *sprite, u8 value) {
     sprite->stack[--sprite->stack_top] = value;
 }
 
-/* Push a halfword onto a sprite's stack. */
-void func_80021CC4(Sprite *sprite, u16 value) {
+/* 80021CC4: Push a halfword onto a sprite's stack. */
+void sprite_stack_push_halfword(Sprite *sprite, u16 value) {
     sprite->stack_top -= 2;
     sprite->stack[sprite->stack_top] = value;
     sprite->stack[sprite->stack_top + 1] = value >> 8;
 }
 
-/* Push three bytes onto a sprite's stack. */
-void func_80021CF8(Sprite *sprite, s32 value) {
+/* 80021CF8: Push three bytes onto a sprite's stack. */
+void sprite_stack_push_three_bytes(Sprite *sprite, s32 value) {
     sprite->stack_top -= 3;
     sprite->stack[sprite->stack_top] = value;
     sprite->stack[sprite->stack_top + 1] = value >> 8;
     sprite->stack[sprite->stack_top + 2] = value >> 16;
 }
 
-/* Set a position's x and z from whole units (16.16). */
-void func_80021D3C(VECTOR *position, s32 x, s32 z) {
+/* 80021D3C: Set a position's x and z from whole units (16.16). */
+void sprite_set_position_xz(VECTOR *position, s32 x, s32 z) {
     position->vz = z << 16;
     position->vx = x << 16;
 }
 
-/* Restore a sprite from a snapshot: its state, then advance its animation
+/* 80021D50: Restore a sprite from a snapshot: its state, then advance its animation
  * (moving it) until the saved step, then its saved position; frame skipping
  * is off meanwhile. */
-void func_80021D50(Sprite *sprite, SpriteState *state) {
-    s32 skip = D_80059198;
+void sprite_restore_state(Sprite *sprite, SpriteState *state) {
+    s32 skip = sprite_frame_skip;
 
-    D_80059198 = 0;
+    sprite_frame_skip = 0;
     sprite->word80 = state->word80;
     sprite->motion.bytes[3] = state->byteaf;
     sprite->b0.byteb0 = state->byteb0;
@@ -2722,9 +2726,9 @@ void func_80021D50(Sprite *sprite, SpriteState *state) {
     sprite->renderer->scale_z = state->scale_z;
     sprite->word82 = state->word82;
     sprite->scale = state->scale;
-    func_800245D8(sprite, (s8)sprite->motion.bytes[3]);
+    sprite_start_animation(sprite, (s8)sprite->motion.bytes[3]);
     while (sprite->frame_bits.field22 != state->field22) {
-        func_80023210(sprite);
+        sprite_vm_tick(sprite);
         sprite->x += sprite->speed_x;
         sprite->z += sprite->speed_z;
         sprite->y += sprite->speed_y;
@@ -2735,11 +2739,11 @@ void func_80021D50(Sprite *sprite, SpriteState *state) {
     sprite->z = state->z;
     ((SpriteSequencer *)sprite->sequencer)->word0 = state->sequencer0;
     ((SpriteSequencer *)sprite->sequencer)->word4 = state->sequencer4;
-    D_80059198 = skip;
+    sprite_frame_skip = skip;
 }
 
-/* Save a sprite's position and animation state. */
-void func_80021EBC(Sprite *sprite, SpriteState *state) {
+/* 80021EBC: Save a sprite's position and animation state. */
+void sprite_save_state(Sprite *sprite, SpriteState *state) {
     state->x = sprite->x;
     state->y = sprite->y;
     state->z = sprite->z;
@@ -2757,25 +2761,25 @@ void func_80021EBC(Sprite *sprite, SpriteState *state) {
     state->scale = sprite->scale;
 }
 
-/* Set the low byte of a sprite's word +0xb0. */
-void func_80021FB8(Sprite *sprite, u8 value) {
+/* 80021FB8: Set the low byte of a sprite's word +0xb0. */
+void sprite_set_idle_animation(Sprite *sprite, u8 value) {
     sprite->b0.byteb0 = value;
 }
 
-/* Set a sprite's walking speed (its velocity follows). */
-void func_80021FC0(Sprite *sprite, s32 speed) {
+/* 80021FC0: Set a sprite's walking speed (its velocity follows). */
+void sprite_set_walk_speed(Sprite *sprite, s32 speed) {
     sprite->speed = speed;
-    func_80022974(sprite);
+    sprite_update_velocity(sprite);
 }
 
-/* Turn a sprite (its speed follows the direction). */
-void func_80021FE0(Sprite *sprite, s16 direction) {
+/* 80021FE0: Turn a sprite (its speed follows the direction). */
+void sprite_set_direction(Sprite *sprite, s16 direction) {
     sprite->direction = direction;
-    func_80022974(sprite);
+    sprite_update_velocity(sprite);
 }
 
-/* Set a sprite's uniform scale (and its renderer's), marking the orientation dirty. */
-void func_80022000(Sprite *sprite, s32 scale) {
+/* 80022000: Set a sprite's uniform scale (and its renderer's), marking the orientation dirty. */
+void sprite_set_scale(Sprite *sprite, s32 scale) {
     SpriteRenderer *renderer = sprite->renderer;
 
     if (renderer != NULL) {
@@ -2784,10 +2788,10 @@ void func_80022000(Sprite *sprite, s32 scale) {
     }
 }
 
-/* Rebuild a sprite's orientation if it is marked dirty. */
-void func_80022038(Sprite *sprite) {
+/* 80022038: Rebuild a sprite's orientation if it is marked dirty. */
+void sprite_update_orientation(Sprite *sprite) {
     if ((sprite->render.word >> 28) & 1) {
-        func_80022090(sprite);
+        sprite_rebuild_orientation(sprite);
         sprite->render.bits.dirty = 0;
     }
 }

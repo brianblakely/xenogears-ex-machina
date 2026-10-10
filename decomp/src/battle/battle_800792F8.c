@@ -40,14 +40,14 @@ u8 number;
     }
     frames = 0;
     column = 0;
-    if (*D_8005917C != -1) {
+    if (*mode_disc_mode_pointer != -1) {
         while (1) {
             for (i = 0; i < column; i++) {
-                func_8003700C(" ");
+                console_printf(" ");
             }
             frames++;
-            func_8003700C("\n\n\n\n\n\nLanguage Error\n");
-            func_8003700C("\t\t\tActor%X\t\tNo%x\n\n", actor, number);
+            console_printf("\n\n\n\n\n\nLanguage Error\n");
+            console_printf("\t\t\tActor%X\t\tNo%x\n\n", actor, number);
             func_800716D8();
             if (frames >= 3) {
                 column++;

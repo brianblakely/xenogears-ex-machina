@@ -1,1 +1,3 @@
 D_800C3508 = 0x800C3508;
+// Names tools/names.py gave these addresses (docs/matching.md, Names).
+sprite_vm_command_lengths_by_opcode = 0x8004FC40;

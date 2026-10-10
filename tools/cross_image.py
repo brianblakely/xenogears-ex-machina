@@ -16,7 +16,7 @@ address (splat's D_, func_ and jtbl_ names) must hold that address; then
   target whose ELF exports it (a global or weak symbol) wherever the value
   points, and a target holding the value also by a local symbol;
 * by view, where none defines the name: the script gives it as another name
-  plus or minus a constant (``D_8006D8A0 = D_8006D634 + 0x26C``), that name
+  plus or minus a constant (``D_8006D8A0 = game_data + 0x26C``), that name
   agrees by name, and the value lies in the object that holds that name in
   each target defining it (up to the next symbol its link places in a
   section, or its end): a member of a named object;
@@ -39,8 +39,8 @@ records of decomp/include/resident/mode.h, an entry, the BSS bounds and a decode
 flag) must hold at each mode overlay's index (MODE in the overlay's
 configuration) the overlay's entry symbol (MODE_ENTRY) and the bounds of its
 uninitialized data as its rebuilt link places them. The dispatcher (main.c
-func_80019ACC) clears the words after bss_start through bss_end
-(func_80019560), so bss_start + 4 and bss_end + 4 must be the start and end
+mode_dispatch) clears the words after bss_start through bss_end
+(boot_clear_bss_range), so bss_start + 4 and bss_end + 4 must be the start and end
 of the overlay's .sbss/.bss input sections. A mode whose entry is resident
 code (battle) declares only MODE.
 

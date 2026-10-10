@@ -68,22 +68,22 @@ typedef struct Window {
     WindowQueue *queue;
 } Window;
 
-void func_80033DF0(Window *window);
-void func_80034888(Window *window, u_long *ot, s32 buffer); /* draw */
+void window_reveal_text(Window *window);
+void window_draw_frame(Window *window, u_long *ot, s32 buffer); /* draw */
 
 /* Hand-written ordering table link helper (800315a0-80031894). */
-void func_80031798(u_long *ot, void *prim); /* link a SPRT */
+void gpu_ot_link_sprt(u_long *ot, void *prim); /* link a SPRT */
 
 /* More of the window services. */
-void func_800345E0(Window *window);
-void func_80034614(Window *window);
-void func_8003463C(Window *window);
-void func_800346A4(Window *window);
-void func_800346D4(Window *window);
-s16 func_80034714(Window *window, s32 message);
-s32 func_800347AC(Window *window);
-s32 func_800347C0(Window *window);
-void func_8003487C(Window *window);
-extern u8 D_800594D4[3]; /* the window colour */
+void window_end_wait(Window *window);
+void window_reset_if_idle(Window *window);
+void window_release_queue_if_idle(Window *window);
+void window_reset(Window *window);
+void window_close(Window *window);
+s16 window_queue_message(Window *window, s32 message);
+s32 window_get_cursor_x(Window *window);
+s32 window_get_cursor_line_y(Window *window);
+void window_clear_highlight(Window *window);
+extern u8 window_color[3]; /* the window colour */
 
 #endif

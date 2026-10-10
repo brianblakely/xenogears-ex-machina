@@ -21,7 +21,7 @@
  * remove the callback. */
 void func_801E93E8(Sprite *actor) {
     D_800D3278->actionRunning[SPRITE_SLOT(actor)] = 0;
-    func_80021BF8(actor, 0);
+    sprite_set_completion_callback(actor, 0);
 }
 
 /* Start an animation on actor n and report its completion; a negative
@@ -34,10 +34,10 @@ void func_801E9430(s32 actor, s32 animation) {
     if (animation < 0 && D_800D3350 == 0 && D_800C3618 != 0) {
         func_800B8354();
         self->word50 = func_800BF354();
-        func_80021BF0(self, (s32)D_800C3618);
+        sprite_set_alternate_resource(self, (s32)D_800C3618);
     }
-    func_800245D8(self, animation);
-    func_80021BF8(self, func_801E93E8);
+    sprite_start_animation(self, animation);
+    sprite_set_completion_callback(self, func_801E93E8);
     if (animation == 1) {
         SPRITE_NEXT_MOTION(self) = animation;
     } else {
@@ -49,7 +49,7 @@ void func_801E9430(s32 actor, s32 animation) {
 void func_801E950C(s32 actor) {
     Sprite *self = D_800C3EB0.sprites[actor];
 
-    func_800245D8(self, (s8)self->motion.bytes[3]);
+    sprite_start_animation(self, (s8)self->motion.bytes[3]);
 }
 
 /* Stop actor n's commands: clear its command countdown, its pending frame
@@ -75,7 +75,7 @@ void func_801E95B0(Sprite *actor) {
     if (animation < 0) {
         animation = 1;
     }
-    func_800245D8(actor, animation);
+    sprite_start_animation(actor, animation);
 }
 
 /* Move actor n to (x, y, z) with animation 2 and report the completion. */
@@ -85,11 +85,11 @@ void func_801E95E4(s16 actor, s16 x, s16 y, s16 z) {
     self->target_x = x;
     self->target_y = y;
     self->target_z = z;
-    func_80021FE0(self, func_800BEF8C(self));
-    func_800223B0(self, func_800BEF8C(self));
-    func_800245D8(self, 2);
+    sprite_set_direction(self, func_800BEF8C(self));
+    sprite_set_facing(self, func_800BEF8C(self));
+    sprite_start_animation(self, 2);
     func_800BF7C8(self, 8, func_801E95B0);
-    func_80021BF8(self, func_801E93E8);
+    sprite_set_completion_callback(self, func_801E93E8);
 }
 
 /* Run actor n's action 3 with (x, y, z) and report the completion. */
@@ -99,8 +99,8 @@ void func_801E9694(s16 actor, s16 x, s16 y, s16 z) {
     self->target_x = x;
     self->target_y = y;
     self->target_z = z;
-    func_800245D8(self, 3);
-    func_80021BF8(self, func_801E93E8);
+    sprite_start_animation(self, 3);
+    sprite_set_completion_callback(self, func_801E93E8);
 }
 
 /* Set actor n's idle animation (0, or 0x11 while a frame is pending) and run
@@ -128,24 +128,24 @@ void func_801E9760(s32 actor, s32 target) {
         D_800D363C[0] = self;
     }
     self->partner = D_800D363C[0];
-    while (D_80059464 != func_800BF720()) {
+    while (task_active_main_count != func_800BF720()) {
         func_800BE790();
     }
-    D_80059464 = 0;
-    D_800591AC = 1;
+    task_active_main_count = 0;
+    task_new_tasks_active = 1;
     if (func_800B7E94() != 0) {
-        func_80021BF8(self, func_800B9B30);
+        sprite_set_completion_callback(self, func_800B9B30);
     } else {
         if (self->frame != 0) {
-            func_800245D8(self, 0x12);
+            sprite_start_animation(self, 0x12);
         }
         func_800BC404(D_800D3634);
     }
-    while (D_80059464 != func_800BF720()) {
+    while (task_active_main_count != func_800BF720()) {
         func_800BE790();
     }
-    D_80059464 = 0;
-    D_800591AC = 0;
+    task_active_main_count = 0;
+    task_new_tasks_active = 0;
 }
 
 /* Turn actor n towards actor m and make m its target. */
@@ -157,8 +157,8 @@ void func_801E9894(s32 actor, u16 target) {
     search[1] = NULL;
     search[0] = other;
     self->partner = other;
-    func_800223B0(self, func_800BEF24(self, other));
-    func_80021FE0(self, func_800BEF24(self, other));
+    sprite_set_facing(self, func_800BEF24(self, other));
+    sprite_set_direction(self, func_800BEF24(self, other));
     if (actor < 3) {
         func_800BF2B8(self);
     }
@@ -166,34 +166,34 @@ void func_801E9894(s32 actor, u16 target) {
 
 /* Play an animation on a script slot model. */
 void func_801E9958(SpriteTask *model, s32 animation) {
-    func_800245D8(&model->sprite, animation);
+    sprite_start_animation(&model->sprite, animation);
 }
 
 /* Create a script slot model from model data at a position. */
 SpriteTask *func_801E9978(void *file, s16 *position) {
     SpriteTask *model;
     Sprite *body;
-    s32 frame = D_80059464;
+    s32 frame = task_active_main_count;
 
-    model = (SpriteTask *)func_8001D1D8(0x19C, 0, func_800BAC50, func_800BAB0C, func_800BABDC);
+    model = (SpriteTask *)task_alloc_two_node_task(0x19C, 0, func_800BAC50, func_800BAB0C, func_800BABDC);
     body = &model->sprite;
-    D_80059464 = frame;
+    task_active_main_count = frame;
     model->task.link.word &= 0x7FFFFFFF;
     body->block = model;
     model->task.data = body;
     model->auxiliary.data = body;
-    func_80023804(body);
-    func_800239A0(body);
+    sprite_reset_defaults(body);
+    sprite_attach_inline_storage(body);
     body->animations = file;
     body->flags = (body->flags & 0xFFFE1FFF) | 0x8000;
     body->render.word &= ~3;
-    func_800222BC(body, file);
+    sprite_bind_resource(body, file);
     model->sprite.x = position[0] << 16;
     body->y = position[1] << 16;
     body->z = position[2] << 16;
     body->b0.byteb0 = 0;
     body->direction = 0;
-    func_80022000(body, 0x2000);
+    sprite_set_scale(body, 0x2000);
     body->word82 = 0x2000;
     body->countdown = 0;
     func_800BC3F8(0);
@@ -204,10 +204,10 @@ SpriteTask *func_801E9978(void *file, s16 *position) {
 
 /* Release a script slot model. */
 void func_801E9AD4(SpriteTask *model) {
-    func_8001CE74(&model->task);
-    func_8001CB48(&model->auxiliary);
-    func_8001CD94(&model->task);
-    func_800320E8(model);
+    task_destroy_owned_by(&model->task);
+    task_unlink_draw_node(&model->auxiliary);
+    task_unlink_main_node(&model->task);
+    heap_free(model);
     func_800BC3F8(1);
     func_800BC2F0(1);
     D_800C37C8 = 0;

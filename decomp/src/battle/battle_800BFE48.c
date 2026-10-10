@@ -88,7 +88,7 @@ void func_800BFE48(void) {
         case 15:
         case 21:
             if ((s8)sprite->motion.bytes[3] != D_800C37D4[func_8009A0DC(slot)]) {
-                func_800245D8(sprite, 0x10);
+                sprite_start_animation(sprite, 0x10);
                 D_800D2E54 &= ~(1 << SPRITE_SLOT(sprite));
             }
             break;
@@ -115,7 +115,7 @@ void func_800BFE48(void) {
         sprite->target_x = BATTLE_AREA.slots[slot].x;
         sprite->target_z = BATTLE_AREA.slots[slot].z;
         sprite->target_y = 0;
-        func_800245D8(sprite, 3);
+        sprite_start_animation(sprite, 3);
     }
     func_800C0564();
 
@@ -145,7 +145,7 @@ void func_800BFE48(void) {
                     motion = (s8)sprite->b0.byteb0;
                 }
                 if (!BATTLE_AREA.slots[slot].hidden && (s8)sprite->motion.bytes[3] != motion) {
-                    func_800245D8(sprite, motion);
+                    sprite_start_animation(sprite, motion);
                 }
             }
         }
@@ -237,7 +237,7 @@ s32 func_800C0314(void) {
                 D_800D3368[slot]->field38 = gear;
                 func_800BEE2C(SPRITE_SLOT(sprite), SPRITE_SLOT(sprite), 0x15);
             } else if ((s8)sprite->motion.bytes[3] != 0x15) {
-                func_800245D8(sprite, 0x15);
+                sprite_start_animation(sprite, 0x15);
             }
             downed++;
             D_800D2E54 |= 1 << SPRITE_SLOT(sprite);
@@ -510,7 +510,7 @@ void func_800C0D18(s32 row, s32 column, SVECTOR *points, VECTOR *out) {
 /* Release the transferred sound bank. */
 void func_800C0F70(void) {
     if (D_800C3A6C != NULL) {
-        func_80038310(D_800C3A6C);
+        sound_release_wave_bank(D_800C3A6C);
     }
     D_800C3A6C = NULL;
 }
@@ -533,7 +533,7 @@ SoundBank *func_800C0FAC(s32 *file) {
         switch (*entry) {
         case 0x73646573: /* "seds" */
             bank = (SoundBank *)entry;
-            func_80038428(bank);
+            sound_add_effect_bank(bank);
             break;
         case 0x20736477: /* "wds " */
             func_800C0F70();
@@ -542,15 +542,15 @@ SoundBank *func_800C0FAC(s32 *file) {
             {
                 SoundSequence **waves = &D_800C3A6C;
 
-                *waves = func_80037FD8((SoundSequence *)entry, 0);
+                *waves = sound_load_wave_bank((SoundSequence *)entry, 0);
             }
-            while (func_8003BDFC(0) != 0) {
+            while (sound_sync_transfer(0) != 0) {
                 if (*(s32 *)0x80010000 != -1) {
                     __asm__ volatile(".word 0x0001000D"); /* break 1 */
                 }
             }
             if (n == 1) {
-                func_80031F70((u8 *)file, *offsets);
+                heap_shrink_block((u8 *)file, *offsets);
             }
             break;
         default:
@@ -558,7 +558,7 @@ SoundBank *func_800C0FAC(s32 *file) {
             image.y = 0x100;
             clut.x = 0;
             clut.y = 0x1F4;
-            func_80022224(D_8005A474, entry, image, clut, 0);
+            sprite_resolve_resource(sprite_effect_source, entry, image, clut, 0);
             break;
         }
     }
@@ -574,7 +574,7 @@ void func_800C1140(s32 *file) {
     for (n = *offsets - 3, offsets += 4; n > 0; n--, offsets++) {
         entry = (s32 *)(*offsets + (s32)file);
         if (*entry == 0x73646573) { /* "seds" */
-            func_8003852C((SoundBank *)entry);
+            sound_remove_effect_bank((SoundBank *)entry);
         }
     }
 }

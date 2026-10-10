@@ -87,7 +87,7 @@ extern VECTOR D_8009C7F0, D_8009C828, D_8009C844, D_8009C874; /* horizon plane n
 extern u16 D_8009CCB4[0x40];
 extern u16 D_8009CD54[7];
 
-extern s16 D_800523F0[0x1000][2]; /* PsyQ rcossin_tbl: sine, cosine */
+extern s16 rcossin_tbl[0x1000][2]; /* PsyQ rcossin_tbl: sine, cosine */
 
 void func_800978FC(void); /* allocate the terrain packets */
 void func_800979C8(void); /* upload the terrain image, build its palettes */

@@ -140,10 +140,10 @@ typedef struct {
     SVECTOR centre; /* 0x4DC */
 } BattleSceneData;
 
-/* The battle scene data, which the resident's stage loader func_800379D8
+/* The battle scene data, which the resident's stage loader mode_load_battle_stage
  * reads (ovl2615 func_801E7210 sets it up), held in the resident pointer
- * D_800658C8 (resident/sound.h). */
-#define SCENE_DATA ((BattleSceneData *)D_800658C8)
+ * mode_battle_scene_data (resident/sound.h). */
+#define SCENE_DATA ((BattleSceneData *)mode_battle_scene_data)
 
 /* A triangle of the scene's light geometry (0xE bytes). */
 typedef struct SceneTriangle {

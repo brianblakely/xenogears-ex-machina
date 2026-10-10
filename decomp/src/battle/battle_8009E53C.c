@@ -146,10 +146,10 @@ s16 D_800C3546 = -1;
 s32 func_8009E53C(u8 index) {
     BattlePart *part = &D_800C34B0->lists.parts.members[index];
 
-    if (D_8006D634.gears[D_8006D634.characters[4].gearId].entries[0].id == part->id || D_8006D634.gears[D_8006D634.characters[4].gearId].entries[1].id == part->id) {
+    if (game_data.gears[game_data.characters[4].gearId].entries[0].id == part->id || game_data.gears[game_data.characters[4].gearId].entries[1].id == part->id) {
         return 1;
     }
-    return D_8006D634.gears[D_8006D634.characters[4].gearId].entries[2].id == part->id;
+    return game_data.gears[game_data.characters[4].gearId].entries[2].id == part->id;
 }
 
 /* Put battle gear part index into character 4's gear entry holding its id
@@ -159,24 +159,24 @@ s32 func_8009E53C(u8 index) {
  * battle copies of character 4's gear. No image calls it or 8009e53c. */
 void func_8009E5C8(u8 index, u8 k) {
     BattlePart *part = &D_800C34B0->lists.parts.list[index];
-    u8 gearId = D_8006D634.characters[4].gearId;
+    u8 gearId = game_data.characters[4].gearId;
     u8 i;
 
-    if (D_8006D634.gears[gearId].entries[0].id == part->id) {
+    if (game_data.gears[gearId].entries[0].id == part->id) {
         k = 0;
     }
-    if (D_8006D634.gears[gearId].entries[1].id == part->id) {
+    if (game_data.gears[gearId].entries[1].id == part->id) {
         k = 1;
     }
-    if (D_8006D634.gears[gearId].entries[2].id == part->id) {
+    if (game_data.gears[gearId].entries[2].id == part->id) {
         k = 3;
     }
-    D_8006D634.gears[gearId].entries[k].valueE = part->valueE;
-    D_8006D634.gears[gearId].entries[k].value11 = part->value11;
-    D_8006D634.gears[gearId].entries[k].value10 = part->value10;
-    D_8006D634.gears[gearId].entries[k].value11 = part->value11;
-    D_8006D634.gears[gearId].partItems[k] = index;
-    D_8006D634.ammo[index - 50] = part->rounds;
+    game_data.gears[gearId].entries[k].valueE = part->valueE;
+    game_data.gears[gearId].entries[k].value11 = part->value11;
+    game_data.gears[gearId].entries[k].value10 = part->value10;
+    game_data.gears[gearId].entries[k].value11 = part->value11;
+    game_data.gears[gearId].partItems[k] = index;
+    game_data.ammo[index - 50] = part->rounds;
     for (i = 0; i < 3; i++) {
         if ((D_800C34B0->records + i)->pilot.characterId == 4) {
             D_800C34B0->records[i].gear.entries[k].valueE = part->valueE;
@@ -194,8 +194,8 @@ void func_8009E5C8(u8 index, u8 k) {
 void func_8009E788(void) {
     switch (D_800C34B0->commandIndex) {
     case 0:
-        if (D_8006D634.gearAmmo[D_800D2D6C->partItems[0] - 50] != 0) {
-            D_8006D634.gearAmmo[D_800D2D6C->partItems[0] - 50] += -1;
+        if (game_data.gearAmmo[D_800D2D6C->partItems[0] - 50] != 0) {
+            game_data.gearAmmo[D_800D2D6C->partItems[0] - 50] += -1;
         }
         break;
     case 3:
@@ -210,22 +210,22 @@ void func_8009E788(void) {
     case 12:
     case 13:
     case 14:
-        if (D_8006D634.gearAmmo[D_800D2D6C->partItems[0] - 50] != 0) {
-            D_8006D634.gearAmmo[D_800D2D6C->partItems[0] - 50] += -1;
+        if (game_data.gearAmmo[D_800D2D6C->partItems[0] - 50] != 0) {
+            game_data.gearAmmo[D_800D2D6C->partItems[0] - 50] += -1;
         }
-        if (D_8006D634.gearAmmo[D_800D2D6C->partItems[3] - 50] != 0) {
-            D_8006D634.gearAmmo[D_800D2D6C->partItems[3] - 50] += -1;
+        if (game_data.gearAmmo[D_800D2D6C->partItems[3] - 50] != 0) {
+            game_data.gearAmmo[D_800D2D6C->partItems[3] - 50] += -1;
         }
         break;
     case 15:
-        if (D_8006D634.gearAmmo[D_800D2D6C->partItems[0] - 50] != 0) {
-            D_8006D634.gearAmmo[D_800D2D6C->partItems[0] - 50] += -1;
+        if (game_data.gearAmmo[D_800D2D6C->partItems[0] - 50] != 0) {
+            game_data.gearAmmo[D_800D2D6C->partItems[0] - 50] += -1;
         }
         break;
     case 2:
     case 17:
-        if (D_8006D634.gearAmmo[D_800D2D6C->partItems[3] - 50] != 0) {
-            D_8006D634.gearAmmo[D_800D2D6C->partItems[3] - 50] += -1;
+        if (game_data.gearAmmo[D_800D2D6C->partItems[3] - 50] != 0) {
+            game_data.gearAmmo[D_800D2D6C->partItems[3] - 50] += -1;
         }
         break;
     }
@@ -326,9 +326,9 @@ ModelTable *func_8009EBA8(u8 *group, ModelTable *list) {
     u32 count;
     u32 i;
 
-    func_80032498(4, 0);
-    count = func_8002C3E8((ModelGroup *)group);
-    list->models = func_80031BDC(count * 4, 0);
+    heap_select_owner_tag(4, 0);
+    count = model_relocate_group((ModelGroup *)group);
+    list->models = heap_alloc(count * 4, 0);
     list->count = count;
     if (list->models != NULL) {
         for (i = 0; i < count; i++) {
@@ -352,7 +352,7 @@ ModelPart *func_8009EC4C(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset,
     u16 id;
     u16 parent;
 
-    func_80032498(4, 0);
+    heap_select_owner_tag(4, 0);
     pair = hierarchy;
     count = 0;
     while (pair[0] < list->count || pair[0] == 0xFFFF) {
@@ -363,7 +363,7 @@ ModelPart *func_8009EC4C(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset,
         return NULL;
     }
     count++;
-    root = func_80031BDC(count * sizeof(ModelPart), 0);
+    root = heap_alloc(count * sizeof(ModelPart), 0);
     pair = hierarchy;
     if (root == NULL) {
         return NULL;
@@ -411,16 +411,16 @@ ModelPart *func_8009EC4C(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset,
         part->field52 = 0;
         part->modelId = id;
         if (id != 0xFFFF) {
-            func_8002CB54(list->models[id], &part->packets[0], &part->packets[1]);
+            model_alloc_packet_buffers(list->models[id], &part->packets[0], &part->packets[1]);
             if (part->packets[0] == NULL) {
                 func_8009F708(root);
                 return NULL;
             }
             if (offset) {
-                func_8002CC10(x0, y0);
-                func_8002CC74(x1, y1);
+                model_set_tpage_override(x0, y0);
+                model_set_clut_override(x1, y1);
             }
-            func_8002C8CC(list->models[id], part->packets[0], mode);
+            model_build_packets(list->models[id], part->packets[0], mode);
             memcpy(part->packets[1], part->packets[0], list->models[id]->packet_size);
             part->rotation.vx = 0;
         } else {
@@ -461,7 +461,7 @@ u16 func_8009EF3C(ModelPart *part, s32 scale) {
     if (root->yxz) {
         RotMatrixYXZ(&root->rotation, &root->world);
     } else {
-        func_8003F738(&root->rotation, &root->world);
+        gpu_build_rotation_matrix(&root->rotation, &root->world);
     }
     diagonal->m[0][0] = scale * part->scale[0] >> 12;
     diagonal->m[0][1] = 0;
@@ -482,7 +482,7 @@ u16 func_8009EF3C(ModelPart *part, s32 scale) {
             if (part->yxz) {
                 RotMatrixYXZ(&part->rotation, &part->transform);
             } else {
-                func_8003F738(&part->rotation, &part->transform);
+                gpu_build_rotation_matrix(&part->rotation, &part->transform);
             }
             part->rotate = 0;
         }
@@ -527,7 +527,7 @@ u16 func_8009F1C4(ModelPart *part, s32 scale) {
     if (root->yxz) {
         RotMatrixYXZ(&root->rotation, &root->world);
     } else {
-        func_8003F738(&root->rotation, &root->world);
+        gpu_build_rotation_matrix(&root->rotation, &root->world);
     }
     product = scale * part->scale[0];
     product >>= 12;
@@ -563,7 +563,7 @@ u16 func_8009F1C4(ModelPart *part, s32 scale) {
             if (part->yxz) {
                 RotMatrixYXZ(&part->rotation, &part->transform);
             } else {
-                func_8003F738(&part->rotation, &part->transform);
+                gpu_build_rotation_matrix(&part->rotation, &part->transform);
             }
             scratch->m[0][0] = part->scale[0];
             scratch->m[0][1] = 0;
@@ -633,7 +633,7 @@ void func_8009F5B8(ModelTable *list, ModelPart *part, MATRIX *view, MATRIX *ligh
             CompMatrix(camera, &part->world, scratch);
             SetRotMatrix(scratch);
             SetTransMatrix(scratch);
-            func_8002C700(list->models[part->modelId], part->packets[buffer], ot, mode);
+            model_draw_sprite_model(list->models[part->modelId], part->packets[buffer], ot, mode);
         }
     }
 }
@@ -647,13 +647,13 @@ void func_8009F708(ModelPart *root) {
         part = root;
         for (i = 0; i < root->index; i++, part++) {
             if (part->packets[0] != NULL) {
-                func_800320E8(part->packets[0]);
+                heap_free(part->packets[0]);
                 part->packets[0] = NULL;
                 part->packets[1] = NULL;
             }
         }
         root->index = 0;
-        func_800320E8(root);
+        heap_free(root);
     }
 }
 
@@ -665,11 +665,11 @@ void func_8009F794(ModelTable *list, s32 release) {
     if (list != NULL) {
         for (i = 0; i < list->count; i++) {
             if (list->models != NULL && list->models[i] != NULL && release) {
-                func_8002CBBC((ModelBuffer *)list->models[i]);
+                model_free_owned_block((ModelBuffer *)list->models[i]);
             }
         }
         if (list->models != NULL) {
-            func_800320E8(list->models);
+            heap_free(list->models);
             list->models = NULL;
         }
     }
@@ -758,7 +758,7 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
             point.vy = -ratan2(forward.vz - origin.vz, forward.vx - origin.vx);
             point.vx = 0;
             point.vz = 0;
-            func_8003F738(&point, lighting);
+            gpu_build_rotation_matrix(&point, lighting);
             lighting->t[0] = origin.vx;
             lighting->t[1] = object->groundY;
             lighting->t[2] = origin.vz;
@@ -812,7 +812,7 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
             if (nextDepth < depth) {
                 depth = nextDepth;
             }
-            depth >>= D_80050100;
+            depth >>= model_ot_depth_shift;
             addPrim(ot + depth, &object->shadow[buffer]);
             if (depth >= 0x2D9) {
                 depth = 0x2D8;
@@ -845,7 +845,7 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
                 }
                 SetRotMatrix(scratch);
                 SetTransMatrix(scratch);
-                func_8002C700(models->models[part->modelId], part->packets[buffer], ot, mode);
+                model_draw_sprite_model(models->models[part->modelId], part->packets[buffer], ot, mode);
             }
         }
         surface = object->surfaces;
@@ -854,8 +854,8 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
                 VECTOR transformed;
                 SVECTOR wind;
 
-                wind.vx = -D_800D39E8 * func_8003F8CC(root->rotation.vy + 0x400) / 0x1000;
-                wind.vz = D_800D39E8 * func_8003F8B0(root->rotation.vy + 0x400) / 0x1000;
+                wind.vx = -D_800D39E8 * gpu_get_cos(root->rotation.vy + 0x400) / 0x1000;
+                wind.vz = D_800D39E8 * gpu_get_sin(root->rotation.vy + 0x400) / 0x1000;
                 wind.vy = OBJECT_FIELD3E(object);
                 CompMatrix(&root->transform, &root[(s16)surface->h0].world, scratch);
                 SetRotMatrix(scratch);
@@ -1622,8 +1622,8 @@ EffectPool *func_800A2234(EffectPool *pool, s32 count) {
         return NULL;
     }
     pool->count = count;
-    func_80032498(4, 0);
-    pool->entries = func_80031BDC(count * sizeof(EffectEntry), 0);
+    heap_select_owner_tag(4, 0);
+    pool->entries = heap_alloc(count * sizeof(EffectEntry), 0);
     if (pool->entries != NULL) {
         func_800A22E8(pool);
         return pool;
@@ -1635,7 +1635,7 @@ EffectPool *func_800A2234(EffectPool *pool, s32 count) {
 void func_800A22A8(EffectPool *pool) {
     pool->next = 0;
     if (pool->entries != NULL) {
-        func_800320E8(pool->entries);
+        heap_free(pool->entries);
     }
     pool->entries = NULL;
 }
@@ -1960,10 +1960,10 @@ void func_800A2BB8(EffectPool *pool, ModelPart *part, u8 tag) {
 
 /* Create a pool of count sprite records (and a spare). */
 SpritePool *func_800A2CA4(SpritePool *pool, s32 count) {
-    func_80032498(4, 0);
+    heap_select_owner_tag(4, 0);
     pool->count = count;
     pool->next = 0;
-    pool->records = func_80031BDC((count + 1) * sizeof(EffectSprite), 0);
+    pool->records = heap_alloc((count + 1) * sizeof(EffectSprite), 0);
     if (pool->records != NULL) {
         func_800A2D5C(pool);
         return pool;
@@ -1976,7 +1976,7 @@ void func_800A2D1C(SpritePool *pool) {
     pool->count = 0;
     pool->next = 0;
     if (pool->records != NULL) {
-        func_800320E8(pool->records);
+        heap_free(pool->records);
     }
     pool->records = NULL;
 }
@@ -2079,7 +2079,7 @@ void func_800A2FD8(SpritePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer) 
             gte_rtpt();
             gte_stsxy3(&sprite->packets[buffer].x0, &sprite->packets[buffer].x1, &sprite->packets[buffer].x2);
             gte_stszotz(&otz);
-            otz >>= D_80050100;
+            otz >>= model_ot_depth_shift;
             gte_ldv0(&sprite->x3);
             gte_rtps();
             gte_stsxy(&sprite->packets[buffer].x3);
@@ -2142,7 +2142,7 @@ void func_800A3484(ColorFade *fade, s32 arg1) {
 
 /* A frame curve: base + (cos(angle) + 1.0) / divisor. */
 s16 func_800A3490(s16 angle, s16 divisor, s32 base) {
-    return base + (func_8003F8CC(angle) + 0x1000) / divisor;
+    return base + (gpu_get_cos(angle) + 0x1000) / divisor;
 }
 
 /* A frame curve: base + value / divisor, or -1 past 32. */
@@ -2195,7 +2195,7 @@ ImageAnim *func_800A3640(anim, target, mode, flags, colors, x, y, z, x2, y2, z2,
     if (anim->active != 0) {
         return NULL;
     }
-    func_80032498(4, 0);
+    heap_select_owner_tag(4, 0);
     anim->active = 1;
     anim->mode = mode;
     anim->dirty = 0;
@@ -2230,13 +2230,13 @@ ImageAnim *func_800A3640(anim, target, mode, flags, colors, x, y, z, x2, y2, z2,
         anim->rect.h = h;
         anim->size = w * h;
         if (flags & 0x100) {
-            anim->work = func_80031BDC((s16)(half * 2) * h * 2, 0);
+            anim->work = heap_alloc((s16)(half * 2) * h * 2, 0);
         }
         if (flags & 0x200) {
-            anim->pixels2 = func_80031BDC((s16)(half * 2) * h * 2, 0);
+            anim->pixels2 = heap_alloc((s16)(half * 2) * h * 2, 0);
         }
         if (flags & 0x400) {
-            anim->pixels = func_80031BDC((s16)(half * 2) * h * 2, 0);
+            anim->pixels = heap_alloc((s16)(half * 2) * h * 2, 0);
         }
         switch (flags & 0xF) {
         case 1:
@@ -2279,13 +2279,13 @@ ImageAnim *func_800A3640(anim, target, mode, flags, colors, x, y, z, x2, y2, z2,
         anim->rect.h = h;
         anim->size = w * h;
         if (flags & 0x100) {
-            anim->work = func_80031BDC(w * h * 2, 0);
+            anim->work = heap_alloc(w * h * 2, 0);
         }
         if (flags & 0x200) {
-            anim->pixels2 = func_80031BDC(w * h * 2, 0);
+            anim->pixels2 = heap_alloc(w * h * 2, 0);
         }
         if (flags & 0x400) {
-            anim->pixels = func_80031BDC(w * h * 2, 0);
+            anim->pixels = heap_alloc(w * h * 2, 0);
         }
         switch (flags & 0xF) {
         case 1:
@@ -2377,13 +2377,13 @@ s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
         anim->frame = result;
         switch (anim->mode) {
         case 0:
-            func_80026F44(anim->size, frame, anim->work, anim->pixels);
+            sprite_darken_pixels(anim->size, frame, anim->work, anim->pixels);
             if (anim->target == NULL) {
                 LoadImage(&anim->rect, (u_long *)anim->work);
             }
             break;
         case 1:
-            func_80026FE8(anim->size, frame, anim->work, anim->pixels2, anim->pixels);
+            sprite_blend_pixels(anim->size, frame, anim->work, anim->pixels2, anim->pixels);
             if (anim->target == NULL) {
                 LoadImage(&anim->rect, (u_long *)anim->work);
             }
@@ -2449,15 +2449,15 @@ void func_800A429C(ImageAnim *anim) {
             if (anim->mode < 4) {
                 LoadImage(&anim->rect, (u_long *)anim->pixels);
             }
-            func_800320E8(anim->pixels);
+            heap_free(anim->pixels);
             anim->pixels = NULL;
         }
         if (anim->pixels2 != NULL) {
-            func_800320E8(anim->pixels2);
+            heap_free(anim->pixels2);
             anim->pixels2 = NULL;
         }
         if (anim->work != NULL) {
-            func_800320E8(anim->work);
+            heap_free(anim->work);
             anim->work = NULL;
         }
         anim->active = 0;
@@ -2552,13 +2552,13 @@ void func_800A4654(MATRIX *view, MATRIX *light, s32 arg2, u32 *ot, s32 buffer, S
     func_800A6AE8();
     SPAD_STACK_LEAVE();
     for (i = 0; i < 2; i++) {
-        func_80027EAC(&D_800C3DA0[i]);
+        gpu_update_texture_scroll(&D_800C3DA0[i]);
     }
     if (D_800C3E38 != 0) {
         func_800A48EC(D_800C3E48, D_800C3E38, view, (s32)light, arg2, ot, buffer, depth);
     }
     for (i = 0; i < 2; i++) {
-        func_800273C4(D_800C3D50[i], eye, target, view, (u_long *)(ot + depth - 1), buffer);
+        gpu_draw_panorama(D_800C3D50[i], eye, target, view, (u_long *)(ot + depth - 1), buffer);
     }
     func_800A4DB8(D_800C3EA0, eye, target, view, ot + depth - 1, buffer);
 }
@@ -2571,22 +2571,22 @@ void func_800A4820(void) {
 
     func_800A9FF0(31);
     D_800C3E38 = 0;
-    if (D_800658C8 != NULL) {
-        func_800320E8(D_800658C8);
+    if (mode_battle_scene_data != NULL) {
+        heap_free(mode_battle_scene_data);
     }
-    D_800658C8 = NULL;
+    mode_battle_scene_data = NULL;
     for (i = 0; i < 2; i++) {
         if (D_800C3D50[i] != NULL) {
-            func_80027D40(D_800C3D50[i]);
+            gpu_free_panorama(D_800C3D50[i]);
         }
         D_800C3D50[i] = NULL;
     }
     if (D_800C3EA0 != NULL) {
-        func_800320E8(D_800C3EA0);
+        heap_free(D_800C3EA0);
     }
     D_800C3EA0 = NULL;
     for (i = 0; i < 2; i++) {
-        func_8002800C(&D_800C3DA0[i]);
+        gpu_free_texture_scroll(&D_800C3DA0[i]);
     }
 }
 
@@ -2604,7 +2604,7 @@ void func_800A48EC(ModelTable *models, ModelPart *part, MATRIX *view, s32 arg3, 
 
     m = (MATRIX *)0x1F800040;
     count = part++->index - 1;
-    shift = D_80050100;
+    shift = model_ot_depth_shift;
     for (i = 0; i < count; i++, part++) {
         if (part->modelId != 0xFFFF && part->visible) {
             CompMatrix(view, &part->world, m);
@@ -2645,15 +2645,15 @@ void func_800A48EC(ModelTable *models, ModelPart *part, MATRIX *view, s32 arg3, 
                 break;
             }
             if ((s16)part->field52 == 0) {
-                D_80050100 = 16;
-                func_8002C700(models->models[part->modelId], part->packets[buffer], ot + depth - 1, mode);
+                model_ot_depth_shift = 16;
+                model_draw_sprite_model(models->models[part->modelId], part->packets[buffer], ot + depth - 1, mode);
             } else {
-                D_80050100 = shift;
-                func_8002C700(models->models[part->modelId], part->packets[buffer], ot, mode);
+                model_ot_depth_shift = shift;
+                model_draw_sprite_model(models->models[part->modelId], part->packets[buffer], ot, mode);
             }
         }
     }
-    D_80050100 = shift;
+    model_ot_depth_shift = shift;
 }
 
 /* Push point (relative to origin, in the ground plane) out of the first
@@ -2808,7 +2808,7 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
     angles.vx = 0;
     angles.vy = -ratan2(delta.vx, delta.vz);
     angles.vz = 0;
-    func_8003F738(&angles, &turn);
+    gpu_build_rotation_matrix(&angles, &turn);
     turn.t[0] = 0;
     turn.t[1] = 0;
     turn.t[2] = 0;
@@ -3060,8 +3060,8 @@ void func_800A5EB4(void) {
     func_800A3640(&D_800D3600, NULL, 1, 0x601, NULL, D_800D2D30, D_800D2D34, 0, 0, 0, 0, D_800D2D30, D_800D2D34,
                   D_800D2D2C, D_800C3EA8, 0, 0, 0, NULL);
     D_800D3600.work = NULL;
-    D_800C3AC4 = func_80031BDC(sizeof(StageColors), 1);
-    D_800C3AC8 = func_80031BDC(sizeof(StageColors), 1);
+    D_800C3AC4 = heap_alloc(sizeof(StageColors), 1);
+    D_800C3AC8 = heap_alloc(sizeof(StageColors), 1);
     color = (CVECTOR *)D_800C3AC4;
     for (i = 0; i < 4; i++) {
         if (D_800C3EA0 != NULL) {
@@ -3308,12 +3308,12 @@ void func_800A6AE8(void) {
                 case 1:
                 case 2:
                 case 3:
-                    func_80025D4C(D_800D2D2C * D_800C3EA8, D_800D3600.pixels2, D_800D3600.pixels2,
+                    sprite_tint_blend_pixels(D_800D2D2C * D_800C3EA8, D_800D3600.pixels2, D_800D3600.pixels2,
                                   D_800D3600.pixels2, (s8)D_800C3AAC[i].b, (s8)D_800C3AAC[i].field4,
                                   (s8)D_800C3AAC[i].field5, D_800C3AAC[i].r, D_800C3AAC[i].g);
                     break;
                 case 4:
-                    func_80026F44(D_800D2D2C * D_800C3EA8, D_800C3AAC[i].g, D_800D3600.pixels2,
+                    sprite_darken_pixels(D_800D2D2C * D_800C3EA8, D_800C3AAC[i].g, D_800D3600.pixels2,
                                   D_800D3600.pixels);
                     break;
                 }
@@ -3371,8 +3371,8 @@ void func_800A6F98(void) {
         func_800A429C(&D_800D3600);
     }
     func_800A64E4();
-    func_800320E8(D_800C3AC4);
-    func_800320E8(D_800C3AC8);
+    heap_free(D_800C3AC4);
+    heap_free(D_800C3AC8);
 }
 
 /* Build a surface from `table`: a scaled centre per ring (offset by
@@ -3412,9 +3412,9 @@ void func_800A7064(Surface *surface, u16 *table, s32 angle_base, s32 scale, s16 
 
     surface->rings = *table++;
     surface->polys = *table * 2;
-    func_80032498(4, 0);
+    heap_select_owner_tag(4, 0);
     table++;
-    centre = func_80031BDC(surface->rings * sizeof(SVECTOR), 0);
+    centre = heap_alloc(surface->rings * sizeof(SVECTOR), 0);
     if (centre == NULL) {
         surface->centres = NULL;
         return;
@@ -3428,21 +3428,21 @@ void func_800A7064(Surface *surface, u16 *table, s32 angle_base, s32 scale, s16 
     }
     total = table[surface->rings];
     surface->points = total + surface->rings;
-    rings = func_80031BDC(surface->rings * sizeof(SurfacePoint *), 0);
+    rings = heap_alloc(surface->rings * sizeof(SurfacePoint *), 0);
     if (rings == NULL) {
         surface->centres = NULL;
-        func_800320E8(NULL);
+        heap_free(NULL);
         return;
     }
     surface->strands = rings;
     counts = table;
     radii = table + surface->rings + 1;
     angles = (u8 *)(radii + total);
-    point = func_80031BDC((total + surface->rings) * sizeof(SurfacePoint), 0);
+    point = heap_alloc((total + surface->rings) * sizeof(SurfacePoint), 0);
     if (point == NULL) {
         surface->centres = NULL;
-        func_800320E8(NULL);
-        func_800320E8(surface->strands);
+        heap_free(NULL);
+        heap_free(surface->strands);
         return;
     }
     centre = surface->centres;
@@ -3465,12 +3465,12 @@ void func_800A7064(Surface *surface, u16 *table, s32 angle_base, s32 scale, s16 
         point++;
     }
     counts = table;
-    polys = func_80031BDC(surface->polys * sizeof(SurfacePoly), 0);
+    polys = heap_alloc(surface->polys * sizeof(SurfacePoly), 0);
     if (polys == NULL) {
         surface->centres = NULL;
-        func_800320E8(NULL);
-        func_800320E8(surface->strands);
-        func_800320E8(points_base);
+        heap_free(NULL);
+        heap_free(surface->strands);
+        heap_free(points_base);
         return;
     }
     surface->polyList = polys;
@@ -3532,7 +3532,7 @@ void func_800A7064(Surface *surface, u16 *table, s32 angle_base, s32 scale, s16 
     surface->b[5] = b5;
     surface->entryCount = count;
     if ((s16)count > 0) {
-        entry = func_80031BDC((s16)count * sizeof(SurfaceEntry), 0);
+        entry = heap_alloc((s16)count * sizeof(SurfaceEntry), 0);
         if (entry == NULL) {
             surface->entryCount = 0;
         }
@@ -3709,7 +3709,7 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
         gte_stsxy3(&poly->prim[buffer].x0, &poly->prim[buffer].x1, &poly->prim[buffer].x2);
         gte_avsz3();
         gte_stotz(&otz);
-        otz >>= D_80050100;
+        otz >>= model_ot_depth_shift;
         if (opz < 0) {
             rgb[0] = surface->b[0];
             rgb[1] = surface->b[1];
@@ -3761,12 +3761,12 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
 /* Free a surface's buffers (once). */
 void func_800A8A88(Surface *surface) {
     if (surface->centres != NULL) {
-        func_800320E8(surface->centres);
-        func_800320E8(surface->strands[0]);
-        func_800320E8(surface->strands);
-        func_800320E8(surface->polyList);
+        heap_free(surface->centres);
+        heap_free(surface->strands[0]);
+        heap_free(surface->strands);
+        heap_free(surface->polyList);
         if (surface->entries != NULL) {
-            func_800320E8(surface->entries);
+            heap_free(surface->entries);
         }
         surface->centres = NULL;
     }
@@ -3825,24 +3825,24 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *script_file, ObjectMo
     u8 *copy;
     s32 copySize;
 
-    func_80032498(4, 0);
+    heap_select_owner_tag(4, 0);
     if (index < 32 && D_800D3368[index] == NULL) {
-        object = func_80031BDC(sizeof(BattleObject), 0);
+        object = heap_alloc(sizeof(BattleObject), 0);
         if (!(flags & 1)) {
-            func_8003342C(model_file);
-            func_8003342C(model_file->header);
+            text_relocate_offset_table(model_file);
+            text_relocate_offset_table(model_file->header);
         }
         object->ownSounds = 0;
         object->extraSounds = 0;
         if (!(flags & 4)) {
-            func_8003342C(script_file);
-            func_8003342C(script_file->data);
+            text_relocate_offset_table(script_file);
+            text_relocate_offset_table(script_file->data);
             scripts = script_file->scripts;
-            func_8003342C(scripts);
-            func_8003342C(scripts->animations);
+            text_relocate_offset_table(scripts);
+            text_relocate_offset_table(scripts->animations);
             data = script_file->data;
-            if (data->soundsEnd != data->sounds && func_8003864C(data->sounds, 0) == 0) {
-                func_80038428(data->sounds);
+            if (data->soundsEnd != data->sounds && sound_find_effect_bank(data->sounds, 0) == 0) {
+                sound_add_effect_bank(data->sounds);
                 object->ownSounds = 1;
             }
         }
@@ -3859,7 +3859,7 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *script_file, ObjectMo
         object->flags4A = OBJECT_DESC(stream)->flags;
         size = (u8 *)hierarchy - models;
         if (object->flags4A & 0x200) {
-            func_80030988(2, 2, 0x40, 0x40);
+            model_set_envmap_mapping(2, 2, 0x40, 0x40);
         }
         if (!(flags & 1)) {
             i = 0; /* the images' on flag (the original reuses the loop counter) */
@@ -3868,8 +3868,8 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *script_file, ObjectMo
 
                 i = !bit;
             }
-            func_8002DDE4(images, i, x, y, i, z, w);
-            D_800C3B70 = func_80031BDC(size, 1);
+            model_load_image_list(images, i, x, y, i, z, w);
+            D_800C3B70 = heap_alloc(size, 1);
             memcpy(D_800C3B70, models, size);
             for (D_800C3B6C = 0; D_800C3B6C < 20; D_800C3B6C++) {
                 if (D_800C3ACC[D_800C3B6C].models == NULL) {
@@ -3932,7 +3932,7 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *script_file, ObjectMo
         func_800AA6E0(object);
         object->imageCount = OBJECT_DESC(stream)->imageAnimCount;
         if (object->imageCount != 0) {
-            object->images = func_80031BDC(object->imageCount * sizeof(ImageAnim), 0);
+            object->images = heap_alloc(object->imageCount * sizeof(ImageAnim), 0);
             for (i = 0; i < object->imageCount; i++) {
                 object->images[i].active = 0;
                 object->images[i].pixels = NULL;
@@ -3943,7 +3943,7 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *script_file, ObjectMo
         object->surfaceCount = OBJECT_DESC(stream)->meshCount;
         if (object->surfaceCount != 0) {
             stream = OBJECT_DESC(stream)->meshes;
-            surface = func_80031BDC(object->surfaceCount * sizeof(Surface), 0);
+            surface = heap_alloc(object->surfaceCount * sizeof(Surface), 0);
             object->surfaces = surface;
             for (i = 0; i < object->surfaceCount; i++, surface++) {
                 keyCount = stream[17];
@@ -3976,12 +3976,12 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *script_file, ObjectMo
             func_800AFF9C(object);
         }
         if (!(flags & 2)) {
-            func_8002C644((ModelGroup *)D_800C3B70);
-            func_8002C4BC((ModelGroup *)D_800C3B70);
-            copySize = func_80031894(D_800C3B70);
-            copy = func_80031BDC(copySize, 0);
+            model_trim_group((ModelGroup *)D_800C3B70);
+            model_unrelocate_group((ModelGroup *)D_800C3B70);
+            copySize = heap_get_block_size(D_800C3B70);
+            copy = heap_alloc(copySize, 0);
             memcpy(copy, D_800C3B70, copySize);
-            func_800320E8(D_800C3B70);
+            heap_free(D_800C3B70);
             func_8009F794(object->field0, 0);
             func_8009EBA8(copy, object->field0);
             object->modelBlock = copy;
@@ -4004,36 +4004,36 @@ void func_800A9540(s32 slot) {
     s32 base;
     s32 file;
 
-    func_800284B4(&saved0, &saved1);
-    func_80028470(0x28, 1);
-    func_80032498(4, 0);
+    cd_get_selected_directory(&saved0, &saved1);
+    cd_select_directory(0x28, 1);
+    heap_select_owner_tag(4, 0);
     gearId = D_800CCCE8.records[slot].pilot.gearId;
     variant = D_800CCCE8.records[slot].gear.fileVariant;
     if (D_800C3508[gearId * 2 + 1] < variant) {
         variant = 0;
     }
-    files = func_80031BDC(sizeof(FileRequest) * 4, 1);
+    files = heap_alloc(sizeof(FileRequest) * 4, 1);
     D_800C3B78 = files;
     base = D_800C3508[gearId * 2];
     file = base + 1;
     entry = files;
     entry->file = file;
-    entry->destination = func_80031BDC(func_800288EC(file), 1);
+    entry->destination = heap_alloc(cd_get_aligned_file_size(file), 1);
     entry++;
     file = base + 2;
     entry->file = file;
-    entry->destination = func_80031BDC(func_800288EC(file), 0);
+    entry->destination = heap_alloc(cd_get_aligned_file_size(file), 0);
     entry++;
     if (variant != 0) {
         file += variant;
         entry->file = file;
-        entry->destination = func_80031BDC(func_800288EC(file), 1);
+        entry->destination = heap_alloc(cd_get_aligned_file_size(file), 1);
         entry++;
     }
     entry->file = 0;
     entry->destination = NULL;
-    func_80029AFC(D_800C3B78, 0, 0);
-    func_80028470(saved0, saved1);
+    cd_read_file_list(D_800C3B78, 0, 0);
+    cd_select_directory(saved0, saved1);
 }
 
 /* Load the battle's sound banks for set: banks 2 * set + 1 and 2 * set + 2,
@@ -4044,23 +4044,23 @@ void func_800A96B4(s32 set) {
     FileRequest *banks;
     s32 bank;
 
-    func_800284B4(&saved0, &saved1);
-    func_80028470(0x28, 0);
-    func_80032498(4, 0);
-    banks = func_80031BDC(sizeof(FileRequest) * 3, 1);
+    cd_get_selected_directory(&saved0, &saved1);
+    cd_select_directory(0x28, 0);
+    heap_select_owner_tag(4, 0);
+    banks = heap_alloc(sizeof(FileRequest) * 3, 1);
     set *= 2;
     bank = set + 1;
     D_800C3B78 = banks;
-    func_80028998(bank);
+    cd_get_pc_file_name(bank);
     banks[0].file = bank;
-    banks[0].destination = func_80031BDC(func_800288EC(bank), 1);
+    banks[0].destination = heap_alloc(cd_get_aligned_file_size(bank), 1);
     bank = set + 2;
     banks[1].file = bank;
-    banks[1].destination = func_80031BDC(func_800288EC(bank), 1);
+    banks[1].destination = heap_alloc(cd_get_aligned_file_size(bank), 1);
     banks[2].file = 0;
     banks[2].destination = NULL;
-    func_80029AFC(D_800C3B78, 0, 0);
-    func_80028470(saved0, saved1);
+    cd_read_file_list(D_800C3B78, 0, 0);
+    cd_select_directory(saved0, saved1);
 }
 
 /* Create stage gear object index from the files read by 800A9540, using
@@ -4087,13 +4087,13 @@ void func_800A979C(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut
     D_800D3368[index]->field22 = 1;
     parts = D_800C3B78[2].destination;
     if (parts != NULL) {
-        func_8003342C(parts);
+        text_relocate_offset_table(parts);
         entry = parts->table;
         count = *entry;
         if (count != 0) {
             entry += 2;
             size = parts->end - parts->model;
-            model = func_80031BDC(size, 0);
+            model = heap_alloc(size, 0);
             memcpy(model, parts->model, size);
             for (k = 0; k < count; k++) {
                 flags = 7;
@@ -4115,13 +4115,13 @@ void func_800A979C(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut
                 D_800D3368[slot]->offset2[2] = *entry++;
             }
         } else {
-            func_8002DDE4(parts->model, 1, texture_x, texture_y, 1, clut_x, clut_y);
+            model_load_image_list(parts->model, 1, texture_x, texture_y, 1, clut_x, clut_y);
         }
-        func_800320E8(parts);
+        heap_free(parts);
     }
-    func_800320E8(D_800C3B78);
+    heap_free(D_800C3B78);
     DrawSync(0);
-    func_800320E8(D_800C3B78[0].destination);
+    heap_free(D_800C3B78[0].destination);
 }
 
 /* Run the stage for the elapsed frames (two frames per step, at most three
@@ -4151,9 +4151,9 @@ void func_800A9A50(MATRIX *m, s32 arg1, u32 *ot, s32 buffer) {
         steps++;
     }
     D_800C3CF0 += steps * 56;
-    D_800D39E8 = (func_8003F8CC(D_800C3CF0) + 0x1000) / 800 + 4;
+    D_800D39E8 = (gpu_get_cos(D_800C3CF0) + 0x1000) / 800 + 4;
     D_800C3B7C += 0x80;
-    D_800C3B80 = (func_8003F8CC(D_800C3B7C) + 0x1000) / 32;
+    D_800C3B80 = (gpu_get_cos(D_800C3B7C) + 0x1000) / 32;
     pulse[0] = func_800AA514(D_800C3B80, 32, SCENE_DATA->ambient[0]);
     pulse[1] = func_800AA514(D_800C3B80, 32, SCENE_DATA->ambient[1]);
     pulse[2] = func_800AA514(D_800C3B80, 32, SCENE_DATA->ambient[2]);
@@ -4203,12 +4203,12 @@ void func_800A9A50(MATRIX *m, s32 arg1, u32 *ot, s32 buffer) {
                     SetBackColor(SCENE_DATA->ambient[0], SCENE_DATA->ambient[1], SCENE_DATA->ambient[2]);
                 }
                 if ((*objects)->flags4A & 0x40) {
-                    D_80050104 = 0;
+                    model_box_test_mode = 0;
                 } else {
-                    D_80050104 = 1;
+                    model_box_test_mode = 1;
                 }
                 func_8009F844(*objects, m, (MATRIX *)arg1, 1, D_800CCC5C, ot, buffer);
-                D_80050104 = 0;
+                model_box_test_mode = 0;
             }
         }
     }
@@ -4237,14 +4237,14 @@ void func_800A9FF0(s32 index) {
 
     if (*slot != NULL) {
         if ((*slot)->modelBlock != NULL) {
-            func_800320E8((*slot)->modelBlock);
+            heap_free((*slot)->modelBlock);
             func_8009F794((*slot)->field0, 1);
         }
         if ((*slot)->ownSounds) {
-            func_8003852C((*slot)->model->sounds);
+            sound_remove_effect_bank((*slot)->model->sounds);
         }
         if ((*slot)->scriptFile != NULL) {
-            func_800320E8((*slot)->scriptFile);
+            heap_free((*slot)->scriptFile);
         }
         if ((u32)(index - 19) >= 12) {
             if ((*slot)->hierarchy != NULL) {
@@ -4258,24 +4258,24 @@ void func_800A9FF0(s32 index) {
         } else if ((*slot)->hierarchy != NULL) {
             func_800A2ACC(&D_800C3D0C, (*slot)->hierarchy);
             func_800A2BB8(&D_800C3D0C, (*slot)->hierarchy, 0xFF);
-            func_800320E8((*slot)->hierarchy);
+            heap_free((*slot)->hierarchy);
         }
         if (D_800D3368[index]->channelCount) {
-            func_800320E8(D_800D3368[index]->channels);
+            heap_free(D_800D3368[index]->channels);
         }
         if (D_800D3368[index]->imageCount != 0) {
             for (i = 0; i < D_800D3368[index]->imageCount; i++) {
                 func_800A429C(&D_800D3368[index]->images[i]);
             }
-            func_800320E8(D_800D3368[index]->images);
+            heap_free(D_800D3368[index]->images);
         }
         if (D_800D3368[index]->surfaceCount != 0) {
             for (i = 0; i < D_800D3368[index]->surfaceCount; i++) {
                 func_800A8A88(&D_800D3368[index]->surfaces[i]);
             }
-            func_800320E8(D_800D3368[index]->surfaces);
+            heap_free(D_800D3368[index]->surfaces);
         }
-        func_800320E8(D_800D3368[index]);
+        heap_free(D_800D3368[index]);
         D_800D3368[index] = NULL;
     }
     if (index < 3) {
@@ -4307,8 +4307,8 @@ void func_800AA384(u16 index, u16 mask, s32 arg2) {
     D_800C3E30 = mask;
     D_800C3D68 = 1;
     object->field35 = 1;
-    D_80059464 = 0;
-    D_800591AC = 1;
+    task_active_main_count = 0;
+    task_new_tasks_active = 1;
     func_800BF85C(index, func_800AF400());
     D_800C360C = 1;
     D_800C4000[func_800AF400()] = 0;
@@ -4395,7 +4395,7 @@ void func_800AA6E0(BattleObject *object) {
     s32 i;
 
     if (object->channelCount != 0) {
-        channels = func_80031BDC(object->channelCount * sizeof(ColorFade), 0);
+        channels = heap_alloc(object->channelCount * sizeof(ColorFade), 0);
         for (i = 0; i < object->channelCount; i++) {
             channels[i].id = -1;
             channels[i].sprite = NULL;
@@ -4646,7 +4646,7 @@ void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps,
     if (steps == 0 || object->script == NULL) {
         return;
     }
-    func_80032498(4, 0);
+    heap_select_owner_tag(4, 0);
     reloadScene = 0;
     self = object;
     for (i = 0; i < substeps + 1; i++) {
@@ -4735,8 +4735,8 @@ chosen:
                     running = 0;
                     break;
                 }
-                D_80059464 = 0;
-                D_800591AC = 0;
+                task_active_main_count = 0;
+                task_new_tasks_active = 0;
                 object->field35 = 0;
                 func_80080C6C(object->slot);
             } else {
@@ -4750,8 +4750,8 @@ chosen:
                     running = 0;
                     break;
                 }
-                D_80059464 = 0;
-                D_800591AC = 0;
+                task_active_main_count = 0;
+                task_new_tasks_active = 0;
                 object->field35 = 0;
                 func_80080C6C(object->slot);
             }
@@ -4761,51 +4761,51 @@ chosen:
             if (object->extra == NULL) {
                 s32 file;
 
-                func_800284B4(&savedA, &savedB);
-                func_80028470(0x28, 2);
+                cd_get_selected_directory(&savedA, &savedB);
+                cd_select_directory(0x28, 2);
                 file = arg + D_800C3530[(s16)word];
-                object->extra = func_80031BDC(func_800288EC(file), 0);
-                func_800295D8(file, object->extra, 0, 0);
-                func_80028470(savedA, savedB);
+                object->extra = heap_alloc(cd_get_aligned_file_size(file), 0);
+                cd_read_file(file, object->extra, 0, 0);
+                cd_select_directory(savedA, savedB);
             }
             break;
         case 0x05: /* set up the extra file once loaded */
             if (object->field23 == 0) {
                 if (object->extra != NULL && object->moreAnimations == NULL) {
-                    if (func_800286CC() == 0) {
+                    if (cd_get_pending_read_count() == 0) {
                         struct ObjectData *data;
                         ObjectScripts *scripts;
                         u8 **animations;
                         DVECTOR image;
                         DVECTOR clut;
 
-                        func_8003342C(object->extra);
+                        text_relocate_offset_table(object->extra);
                         data = ((ObjectScriptFile *)object->extra)->data;
-                        func_8003342C(data);
+                        text_relocate_offset_table(data);
                         object->extraData = data;
                         if (data->imagesEnd != data->images) {
-                            func_8002DDE4(data->images, 1, 0x380, 0x100, 1, 0, 0x1D0);
+                            model_load_image_list(data->images, 1, 0x380, 0x100, 1, 0, 0x1D0);
                         }
                         if (object->extraData->soundsEnd != object->extraData->sounds
-                            && func_8003864C(object->extraData->sounds, 0) == 0) {
-                            func_80038428(object->extraData->sounds);
+                            && sound_find_effect_bank(object->extraData->sounds, 0) == 0) {
+                            sound_add_effect_bank(object->extraData->sounds);
                             object->extraSounds = 1;
                         } else {
                             object->extraSounds = 0;
                         }
                         scripts = ((ObjectScriptFile *)object->extra)->scripts;
-                        func_8003342C(scripts);
+                        text_relocate_offset_table(scripts);
                         animations = scripts->animations;
-                        func_8003342C(animations);
+                        text_relocate_offset_table(animations);
                         object->moreAnimations = animations;
                         DrawSync(0);
-                        func_80031F70((u8 *)object->extra, (u8 *)object->extraData->soundsEnd - (u8 *)object->extra);
+                        heap_shrink_block((u8 *)object->extra, (u8 *)object->extraData->soundsEnd - (u8 *)object->extra);
                         if (object->extraData->sounds != object->extraData->image) {
                             image.vx = 0x380;
                             image.vy = 0x100;
                             clut.vx = 0;
                             clut.vy = 0x1D0;
-                            func_80022224(D_8005A474, object->extraData->image, image, clut, 0);
+                            sprite_resolve_resource(sprite_effect_source, object->extraData->image, image, clut, 0);
                         }
                         object->field23 = 1;
                     }
@@ -4814,7 +4814,7 @@ chosen:
                     break;
                 }
             } else {
-                if (func_800286CC() != 0) {
+                if (cd_get_pending_read_count() != 0) {
                     pc = start;
                     running = 0;
                     break;
@@ -4826,7 +4826,7 @@ chosen:
             func_800B0060(object);
             break;
         case 0x07:
-            func_8002A498(0);
+            cd_stop_read(0);
             break;
         case 0x08:
             func_800A2ACC(pool, object->hierarchy);
@@ -4955,7 +4955,7 @@ chosen:
                 word = *pc++;
                 for (i = 0x13; i < 0x1F; i++) {
                     if (D_800D3368[i] == NULL) {
-                        created = func_80031BDC(sizeof(BattleObject), 1);
+                        created = heap_alloc(sizeof(BattleObject), 1);
                         break;
                     }
                 }
@@ -4977,7 +4977,7 @@ chosen:
                 created->surfaceCount = 0;
                 created->imageCount = 0;
                 func_800AA6E0(created);
-                parts = func_80031BDC(object->hierarchy->index * sizeof(ModelPart), 1);
+                parts = heap_alloc(object->hierarchy->index * sizeof(ModelPart), 1);
                 created->hierarchy = parts;
                 for (i = 0; i < object->hierarchy->index; i++) {
                     parts[i] = object->hierarchy[i];
@@ -5442,7 +5442,7 @@ chosen:
             word = *pc++;
             b0 = word;
             b1 = word >> 8;
-            func_8003A3B8(b0 + func_800AE220(object, arg), 0, b1);
+            sound_slide_effect_volume(b0 + func_800AE220(object, arg), 0, b1);
             break;
         case 0x3D: /* replay the queued scripts when one is arg */
             word = object->queueCount;
@@ -5932,7 +5932,7 @@ chosen:
             object->hierarchy[(s16)word].yxz = arg;
             break;
         case 0x6C:
-            if (func_800286CC() != 0) {
+            if (cd_get_pending_read_count() != 0) {
                 pc = start;
                 running = 0;
             }
@@ -5974,7 +5974,7 @@ chosen:
             }
             break;
         case 0x72:
-            if (D_800591B1 == 0) {
+            if (sprite_single_action_done == 0) {
                 pc = start;
             }
             running = 0;
@@ -6118,7 +6118,7 @@ void func_800AE1BC(BattleObject *object, Animation *animation, s32 loop) {
  * object's model data, 2 its extra data, 3 the bank D_800C4924. */
 s32 func_800AE220(BattleObject *object, s32 source) {
     if (source == 0) {
-        return D_8005919C->bank << 16;
+        return sprite_script_sound_bank->bank << 16;
     }
     if (source == 1) {
         return object->model->sounds->id << 16;
@@ -6241,10 +6241,10 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
 
                             angle = object->hierarchy->rotation.vy + relative;
                         }
-                        resource = D_8006BE10;
+                        resource = sprite_shared_source;
                         scale = sprite->scale * object->scale1C >> 8;
                         if (sprite->resource) {
-                            resource = D_8005A474;
+                            resource = sprite_effect_source;
                         }
                         if (func_800B12D0(func_800AF400(), sprite->flags)) {
                             func_800AFB4C(resource, kind, &point, angle, scale, sprite, object);
@@ -6301,23 +6301,23 @@ void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
                     if (func_800B12D0(func_800AF400(), sound->flags)) {
                         variant = 0;
                         if (sound->kind == one && SCENE_DATA->soundMode != 0) {
-                            func_80039E60((object->model->sounds->id << 16) | (SCENE_DATA->soundMode + 10));
+                            sound_play_effect((object->model->sounds->id << 16) | (SCENE_DATA->soundMode + 10));
                         }
                         base = func_800AE220(object, sound->source);
                         if (SCENE_DATA->soundMode == 3 && sound->kind == 2) {
                             variant = 8;
                         }
-                        func_80039E60(base + sound->sound + variant);
+                        sound_play_effect(base + sound->sound + variant);
                         if (sound->sound2 != 0) {
-                            func_80039E60(base + sound->sound2 + variant);
+                            sound_play_effect(base + sound->sound2 + variant);
                         }
                         volume = object->field39;
                         if (SCENE_DATA->soundMode == 3 && sound->kind != 2) {
                             volume = volume * 60 / 107;
                         }
-                        func_8003A2E4(base + sound->sound + variant, volume);
+                        sound_set_effect_volume(base + sound->sound + variant, volume);
                         if (sound->sound2 != 0) {
-                            func_8003A2E4(base + sound->sound2 + variant, volume);
+                            sound_set_effect_volume(base + sound->sound2 + variant, volume);
                         }
                     }
                     object->animationStart += sizeof(SoundEvent);
@@ -6774,16 +6774,16 @@ void func_800AFB4C(void *resource, s32 kind, SVECTOR *position, s16 direction, s
     SpriteTask *task;
     SpriteFollow *follow;
 
-    task = func_80023FD8(kind, resource, position, sizeof(SpriteFollow));
-    func_80021FE0(&task->sprite, direction);
-    func_800223B0(&task->sprite, direction);
-    func_80022000(&task->sprite, scale);
+    task = sprite_create_effect(kind, resource, position, sizeof(SpriteFollow));
+    sprite_set_direction(&task->sprite, direction);
+    sprite_set_facing(&task->sprite, direction);
+    sprite_set_scale(&task->sprite, scale);
     follow = (SpriteFollow *)((u8 *)task + (s16)task->sprite.size);
     follow->object = object;
     follow->part = command->part;
     if (command->follow) {
-        follow->update = func_8001CD7C(&task->task);
-        func_8001CD6C(&task->task, func_800AFC68);
+        follow->update = task_get_update_callback(&task->task);
+        task_set_update_callback(&task->task, func_800AFC68);
         follow->offset.vx = command->offset[0];
         follow->offset.vy = command->offset[1];
         follow->offset.vz = command->offset[2];
@@ -6892,10 +6892,10 @@ void func_800AFF9C(BattleObject *object) {
 void func_800B0060(BattleObject *object) {
     if (object->extra != NULL) {
         if (object->extraSounds) {
-            func_8003852C(object->extraData->sounds);
+            sound_remove_effect_bank(object->extraData->sounds);
             object->extraSounds = 0;
         }
-        func_800320E8(object->extra);
+        heap_free(object->extra);
         object->extra = NULL;
         object->moreAnimations = NULL;
     }
@@ -7026,15 +7026,15 @@ void func_800B026C(EffectPool *pool, s32 steps, s32 arg2, s32 key) {
             }
             if (i == 7) {
                 y -= D_800C3BA8;
-                x += -D_800C3BA4 * func_8003F8B0(D_800C3BA0) / 4096;
-                z += -D_800C3BA4 * func_8003F8CC(D_800C3BA0) / 4096;
+                x += -D_800C3BA4 * gpu_get_sin(D_800C3BA0) / 4096;
+                z += -D_800C3BA4 * gpu_get_cos(D_800C3BA0) / 4096;
             }
             if (i == 8) {
-                vertical = D_800C3B98 * func_8003F8B0(D_800C3B94) / 4096;
-                horizontal = D_800C3B98 * func_8003F8CC(D_800C3B94) / 4096;
-                x += -horizontal * func_8003F8B0(D_800C3B90) / 4096;
+                vertical = D_800C3B98 * gpu_get_sin(D_800C3B94) / 4096;
+                horizontal = D_800C3B98 * gpu_get_cos(D_800C3B94) / 4096;
+                x += -horizontal * gpu_get_sin(D_800C3B90) / 4096;
                 y += -vertical - D_800C3B9C;
-                z += -horizontal * func_8003F8CC(D_800C3B90) / 4096;
+                z += -horizontal * gpu_get_cos(D_800C3B90) / 4096;
                 point.vx = x;
                 point.vy = y;
                 point.vz = z;
@@ -7268,8 +7268,8 @@ void func_800B10EC(s32 index, s32 x, s32 z, s32 distance) {
             angle += 0x800;
         }
         gap = distance - length;
-        (*slot)->hierarchy->translation[0] = x - dx * distance / length - func_8003F8B0(angle) * gap / 4096;
-        (*slot)->hierarchy->translation[2] = z - dz * distance / length - func_8003F8CC(angle) * gap / 4096;
+        (*slot)->hierarchy->translation[0] = x - dx * distance / length - gpu_get_sin(angle) * gap / 4096;
+        (*slot)->hierarchy->translation[2] = z - dz * distance / length - gpu_get_cos(angle) * gap / 4096;
     }
 }
 
@@ -7338,10 +7338,10 @@ void func_800B136C(void) {
         func_800BE790();
     }
     if (loaded) {
-        func_8002A498(0);
+        cd_stop_read(0);
         busy = 1;
         for (;;) {
-            if (func_800286CC() == 0) {
+            if (cd_get_pending_read_count() == 0) {
                 for (i = 0; i < 11; i++) {
                     if (D_800D3368[i] != NULL && D_800D3368[i]->extra != NULL) {
                         func_800B0060(D_800D3368[i]);

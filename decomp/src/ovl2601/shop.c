@@ -44,7 +44,7 @@ void func_801C6E90();
 void func_801CCE1C(MenuTables *view, u8 id) {
     CharacterRecord *c;
 
-    c = &D_8006D634.characters[id];
+    c = &game_data.characters[id];
     if (c->characterId == 4) {
         view->stats[0] = c->entries[0].value4 + c->entries[3].value4;
     } else {
@@ -92,64 +92,64 @@ void func_801CCE1C(MenuTables *view, u8 id) {
 void func_801CCFF4(void) {
     s32 i;
 
-    if (D_800625A0->flags->unknown5a[0] != 0) {
+    if (menu_state_current->flags->unknown5a[0] != 0) {
         for (i = 0; i < 9; i++) {
-            if (D_800625A0->details->bar_shown[i] != 0) {
-                AddPrim(&D_800625A0->current->ot[4],
-                        &D_800625A0->details->bar_upper[i * 2 + D_800625A0->buffer_index]);
-                AddPrim(&D_800625A0->current->ot[4],
-                        &D_800625A0->details->bar_lower[i * 2 + D_800625A0->buffer_index]);
+            if (menu_state_current->details->bar_shown[i] != 0) {
+                AddPrim(&menu_state_current->current->ot[4],
+                        &menu_state_current->details->bar_upper[i * 2 + menu_state_current->buffer_index]);
+                AddPrim(&menu_state_current->current->ot[4],
+                        &menu_state_current->details->bar_lower[i * 2 + menu_state_current->buffer_index]);
             }
         }
-        func_801C8D58(D_800625A0->details->heading_count, D_800625A0->details->heading,
-                      D_800625A0->details->heading_buffer);
-        func_801C8D58(D_800625A0->details->group2D0_count, D_800625A0->details->group2D0,
-                      D_800625A0->details->group2D0_buffer);
-        func_801C8D58(D_800625A0->details->members_count, D_800625A0->details->members,
-                      D_800625A0->details->members_buffer);
+        func_801C8D58(menu_state_current->details->heading_count, menu_state_current->details->heading,
+                      menu_state_current->details->heading_buffer);
+        func_801C8D58(menu_state_current->details->group2D0_count, menu_state_current->details->group2D0,
+                      menu_state_current->details->group2D0_buffer);
+        func_801C8D58(menu_state_current->details->members_count, menu_state_current->details->members,
+                      menu_state_current->details->members_buffer);
         for (i = 0; i < 8; i++) {
-            if (D_800625A0->details->name_shown[i] != 0) {
-                func_801C8C3C(1, D_800625A0->details->names_a[i].verts, D_800625A0->details->names_a[i].polys,
-                              D_800625A0->details->names_a[i].buffer);
-                func_801C8C3C(1, D_800625A0->details->names_b[i].verts, D_800625A0->details->names_b[i].polys,
-                              D_800625A0->details->names_b[i].buffer);
+            if (menu_state_current->details->name_shown[i] != 0) {
+                func_801C8C3C(1, menu_state_current->details->names_a[i].verts, menu_state_current->details->names_a[i].polys,
+                              menu_state_current->details->names_a[i].buffer);
+                func_801C8C3C(1, menu_state_current->details->names_b[i].verts, menu_state_current->details->names_b[i].polys,
+                              menu_state_current->details->names_b[i].buffer);
             }
         }
-        if (D_800625A0->details->label4430_shown != 0) {
-            func_801C8C3C(1, D_800625A0->details->label4430.verts, D_800625A0->details->label4430.polys,
-                          D_800625A0->details->label4430.buffer);
+        if (menu_state_current->details->label4430_shown != 0) {
+            func_801C8C3C(1, menu_state_current->details->label4430.verts, menu_state_current->details->label4430.polys,
+                          menu_state_current->details->label4430.buffer);
         }
-        if (D_800625A0->details->label44B0_shown != 0) {
-            func_801C8C3C(1, D_800625A0->details->label44B0.verts, D_800625A0->details->label44B0.polys,
-                          D_800625A0->details->label44B0.buffer);
+        if (menu_state_current->details->label44B0_shown != 0) {
+            func_801C8C3C(1, menu_state_current->details->label44B0.verts, menu_state_current->details->label44B0.polys,
+                          menu_state_current->details->label44B0.buffer);
         }
-        if (D_800625A0->details->label45B0_shown != 0) {
-            func_801C8C3C(1, D_800625A0->details->label45B0.verts, D_800625A0->details->label45B0.polys,
-                          D_800625A0->details->label45B0.buffer);
+        if (menu_state_current->details->label45B0_shown != 0) {
+            func_801C8C3C(1, menu_state_current->details->label45B0.verts, menu_state_current->details->label45B0.polys,
+                          menu_state_current->details->label45B0.buffer);
         }
-        if (D_800625A0->details->digits_shown != 0) {
-            AddPrim(&D_800625A0->current->ot[4], &D_800625A0->details->frame[D_800625A0->buffer_index]);
-            func_801C8D58(D_800625A0->details->digits1_count, D_800625A0->details->digits1,
-                          D_800625A0->details->digits1_buffer);
-            func_801C8D58(D_800625A0->details->digits2_count, D_800625A0->details->digits2,
-                          D_800625A0->details->digits2_buffer);
-            func_801C8D58(D_800625A0->details->digits3_count, D_800625A0->details->digits3,
-                          D_800625A0->details->digits3_buffer);
+        if (menu_state_current->details->digits_shown != 0) {
+            AddPrim(&menu_state_current->current->ot[4], &menu_state_current->details->frame[menu_state_current->buffer_index]);
+            func_801C8D58(menu_state_current->details->digits1_count, menu_state_current->details->digits1,
+                          menu_state_current->details->digits1_buffer);
+            func_801C8D58(menu_state_current->details->digits2_count, menu_state_current->details->digits2,
+                          menu_state_current->details->digits2_buffer);
+            func_801C8D58(menu_state_current->details->digits3_count, menu_state_current->details->digits3,
+                          menu_state_current->details->digits3_buffer);
         }
         for (i = 0; i < 8; i++) {
-            func_801C8D58(D_800625A0->details->row_count[i], D_800625A0->details->rows[i],
-                          D_800625A0->details->row_buffer[i]);
+            func_801C8D58(menu_state_current->details->row_count[i], menu_state_current->details->rows[i],
+                          menu_state_current->details->row_buffer[i]);
         }
         for (i = 0; i < 9; i++) {
-            func_801C8D58(D_800625A0->details->cells_a_count[i], D_800625A0->details->cells_a[i],
-                          D_800625A0->details->cells_a_buffer[i]);
-            func_801C8D58(D_800625A0->details->cells_b_count[i], D_800625A0->details->cells_b[i],
-                          D_800625A0->details->cells_b_buffer[i]);
+            func_801C8D58(menu_state_current->details->cells_a_count[i], menu_state_current->details->cells_a[i],
+                          menu_state_current->details->cells_a_buffer[i]);
+            func_801C8D58(menu_state_current->details->cells_b_count[i], menu_state_current->details->cells_b[i],
+                          menu_state_current->details->cells_b_buffer[i]);
         }
     }
-    if (D_800625A0->flags->unknown5a[1] == 1) {
-        func_801C8D58(D_800625A0->details->group1220_count, D_800625A0->details->group1220,
-                      D_800625A0->details->group1220_buffer);
+    if (menu_state_current->flags->unknown5a[1] == 1) {
+        func_801C8D58(menu_state_current->details->group1220_count, menu_state_current->details->group1220,
+                      menu_state_current->details->group1220_buffer);
     }
 }
 
@@ -158,17 +158,17 @@ void func_801CD404(s32 count, POLY_FT4 *packets, u8 color) {
     s32 i;
 
     for (i = 0; i < count; i++) {
-        SetShadeTex(&packets[i * 2 + D_800625A0->buffer_index], 0);
+        SetShadeTex(&packets[i * 2 + menu_state_current->buffer_index], 0);
         switch (color) {
         case 0:
-            (packets + (i * 2 + D_800625A0->buffer_index))->r0 = 0x80;
-            (packets + (i * 2 + D_800625A0->buffer_index))->g0 = 0x40;
-            (packets + (i * 2 + D_800625A0->buffer_index))->b0 = 0x40;
+            (packets + (i * 2 + menu_state_current->buffer_index))->r0 = 0x80;
+            (packets + (i * 2 + menu_state_current->buffer_index))->g0 = 0x40;
+            (packets + (i * 2 + menu_state_current->buffer_index))->b0 = 0x40;
             break;
         case 1:
-            (packets + (i * 2 + D_800625A0->buffer_index))->r0 = 0x40;
-            (packets + (i * 2 + D_800625A0->buffer_index))->g0 = 0x40;
-            (packets + (i * 2 + D_800625A0->buffer_index))->b0 = 0x80;
+            (packets + (i * 2 + menu_state_current->buffer_index))->r0 = 0x40;
+            (packets + (i * 2 + menu_state_current->buffer_index))->g0 = 0x40;
+            (packets + (i * 2 + menu_state_current->buffer_index))->b0 = 0x80;
             break;
         }
     }
@@ -180,19 +180,19 @@ void func_801CD5D0(void) {
     s32 shown;
     s32 i;
 
-    D_800625A0->flags->unknown5a[0] = 1;
+    menu_state_current->flags->unknown5a[0] = 1;
     for (step = 1; step < 12; step++) {
         shown = 0;
-        D_800625A0->details->members_count = 0;
+        menu_state_current->details->members_count = 0;
         for (i = 0; i < step; i++) {
-            if (D_800625A0->present[i] != 0) {
-                D_800625A0->details->members_count +=
-                    func_8002675C(D_800625A0->sheet, i + 0x14E, &D_800625A0->details->members[shown * 2],
-                                  D_800625A0->buffer_index, D_801D21CC[shown], 0xA6, 0x1000);
+            if (menu_state_current->present[i] != 0) {
+                menu_state_current->details->members_count +=
+                    sprite_sheet_draw_scaled(menu_state_current->sheet, i + 0x14E, &menu_state_current->details->members[shown * 2],
+                                  menu_state_current->buffer_index, D_801D21CC[shown], 0xA6, 0x1000);
                 shown++;
             }
         }
-        D_800625A0->details->members_buffer = D_800625A0->buffer_index;
+        menu_state_current->details->members_buffer = menu_state_current->buffer_index;
         func_801CB014();
     }
 }
@@ -201,28 +201,28 @@ void func_801CD5D0(void) {
 void func_801CD6F8(void) {
     s32 i;
 
-    D_800625A0->details->heading_count = 0;
+    menu_state_current->details->heading_count = 0;
     for (i = 0; i < 4; i++) {
-        D_800625A0->details->heading_count +=
-            func_8002675C(D_800625A0->sheet, D_801D2210[i],
-                          D_800625A0->details->heading + D_800625A0->details->heading_count * 2,
-                          D_800625A0->buffer_index, D_801D2218[i], D_801D2230[i], 0x1000);
+        menu_state_current->details->heading_count +=
+            sprite_sheet_draw_scaled(menu_state_current->sheet, D_801D2210[i],
+                          menu_state_current->details->heading + menu_state_current->details->heading_count * 2,
+                          menu_state_current->buffer_index, D_801D2218[i], D_801D2230[i], 0x1000);
     }
-    D_800625A0->details->heading_buffer = D_800625A0->buffer_index;
+    menu_state_current->details->heading_buffer = menu_state_current->buffer_index;
 }
 
 /* Draw the two alternative heading sprites. */
 void func_801CD7E4(void) {
     s32 i;
 
-    D_800625A0->details->heading_count = 0;
+    menu_state_current->details->heading_count = 0;
     for (i = 0; i < 2; i++) {
-        D_800625A0->details->heading_count +=
-            func_8002675C(D_800625A0->sheet, D_801D2214[i],
-                          D_800625A0->details->heading + D_800625A0->details->heading_count * 2,
-                          D_800625A0->buffer_index, D_801D2228[i], D_801D2240[i], 0x1000);
+        menu_state_current->details->heading_count +=
+            sprite_sheet_draw_scaled(menu_state_current->sheet, D_801D2214[i],
+                          menu_state_current->details->heading + menu_state_current->details->heading_count * 2,
+                          menu_state_current->buffer_index, D_801D2228[i], D_801D2240[i], 0x1000);
     }
-    D_800625A0->details->heading_buffer = D_800625A0->buffer_index;
+    menu_state_current->details->heading_buffer = menu_state_current->buffer_index;
 }
 
 /* Draw three nine-digit numbers (leading zeros blank) at their three positions. */
@@ -230,39 +230,39 @@ void func_801CD8D0(u32 first, u32 second, u32 third) {
     s32 i;
 
     func_801C50E8(first);
-    D_800625A0->details->digits1_count = 0;
+    menu_state_current->details->digits1_count = 0;
     for (i = 0; i < 9; i++) {
-        if (D_800625A0->digits[i] != 0xFF) {
-            D_800625A0->details->digits1_count +=
-                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i],
-                              D_800625A0->details->digits1 + D_800625A0->details->digits1_count * 2,
-                              D_800625A0->buffer_index, i * 8 + D_801D2248, D_801D224C, 0x1000);
+        if (menu_state_current->digits[i] != 0xFF) {
+            menu_state_current->details->digits1_count +=
+                sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i],
+                              menu_state_current->details->digits1 + menu_state_current->details->digits1_count * 2,
+                              menu_state_current->buffer_index, i * 8 + D_801D2248, D_801D224C, 0x1000);
         }
     }
-    D_800625A0->details->digits1_buffer = D_800625A0->buffer_index;
+    menu_state_current->details->digits1_buffer = menu_state_current->buffer_index;
     func_801C50E8(second);
-    D_800625A0->details->digits2_count = 0;
+    menu_state_current->details->digits2_count = 0;
     for (i = 0; i < 9; i++) {
-        if (D_800625A0->digits[i] != 0xFF) {
-            D_800625A0->details->digits2_count +=
-                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i],
-                              D_800625A0->details->digits2 + D_800625A0->details->digits2_count * 2,
-                              D_800625A0->buffer_index, i * 8 + D_801D2250, D_801D2254, 0x1000);
+        if (menu_state_current->digits[i] != 0xFF) {
+            menu_state_current->details->digits2_count +=
+                sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i],
+                              menu_state_current->details->digits2 + menu_state_current->details->digits2_count * 2,
+                              menu_state_current->buffer_index, i * 8 + D_801D2250, D_801D2254, 0x1000);
         }
     }
-    D_800625A0->details->digits2_buffer = D_800625A0->buffer_index;
+    menu_state_current->details->digits2_buffer = menu_state_current->buffer_index;
     func_801C50E8(third);
-    D_800625A0->details->digits3_count = 0;
+    menu_state_current->details->digits3_count = 0;
     for (i = 0; i < 9; i++) {
-        if (D_800625A0->digits[i] != 0xFF) {
-            D_800625A0->details->digits3_count +=
-                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i],
-                              D_800625A0->details->digits3 + D_800625A0->details->digits3_count * 2,
-                              D_800625A0->buffer_index, i * 8 + D_801D2258, D_801D225C, 0x1000);
+        if (menu_state_current->digits[i] != 0xFF) {
+            menu_state_current->details->digits3_count +=
+                sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i],
+                              menu_state_current->details->digits3 + menu_state_current->details->digits3_count * 2,
+                              menu_state_current->buffer_index, i * 8 + D_801D2258, D_801D225C, 0x1000);
         }
     }
-    D_800625A0->details->digits3_buffer = D_800625A0->buffer_index;
-    D_800625A0->details->digits_shown = 1;
+    menu_state_current->details->digits3_buffer = menu_state_current->buffer_index;
+    menu_state_current->details->digits_shown = 1;
 }
 
 /* Party bits of the available members holding item `item` in their gear (kind 0) or accessories (kind 1). */
@@ -276,16 +276,16 @@ u16 func_801CDBA0(u8 item, u8 kind) {
     if (item != 0 && kind != 2) {
         for (i = 0; i < 16; i++) {
             found = 0;
-            if (D_800625A0->present[i] != 0) {
+            if (menu_state_current->present[i] != 0) {
                 switch (kind) {
                 case 0:
                     for (k = 0; k < 5; k++) {
                         if (item < 0x32) {
-                            if (D_8006D634.characters[i].weapons[k] == item) {
+                            if (game_data.characters[i].weapons[k] == item) {
                                 found = 1;
                                 break;
                             }
-                        } else if (D_8006D634.characters[i].entryItems[k] == item) {
+                        } else if (game_data.characters[i].entryItems[k] == item) {
                             found = 1;
                             break;
                         }
@@ -293,7 +293,7 @@ u16 func_801CDBA0(u8 item, u8 kind) {
                     break;
                 case 1:
                     for (k = 0; k < 3; k++) {
-                        if (D_8006D634.characters[i].accessories[k] == item) {
+                        if (game_data.characters[i].accessories[k] == item) {
                             found = 1;
                             break;
                         }
@@ -334,29 +334,29 @@ void func_801CDD14(s32 top, s32 gold, u8 *dims) {
     divisors[2] = 100;
     divisors[3] = 1000;
     divisors[4] = 10000;
-    pixels = func_80031BDC(0x3F6, 0);
+    pixels = heap_alloc(0x3F6, 0);
     for (row = 0; row < 8; row++) {
         dims[row] = 0;
         bzero(codes, 14);
-        D_800625A0->details->row_count[row] = 0;
-        if (D_800625A0->shop_items[top + row] != 0) {
-            switch (D_800625A0->shop_kinds[top + row]) {
+        menu_state_current->details->row_count[row] = 0;
+        if (menu_state_current->shop_items[top + row] != 0) {
+            switch (menu_state_current->shop_kinds[top + row]) {
             case 0:
-                D_800625A0->details->names_a[row].width =
-                    func_80034EAC(func_80033848(D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                value = D_800625A0->tables->equipment[D_800625A0->shop_items[top + row]].price;
+                menu_state_current->details->names_a[row].width =
+                    window_render_text_line(text_get_weapon_name(menu_state_current->shop_items[top + row]), pixels, 0x24, 0);
+                value = menu_state_current->tables->equipment[menu_state_current->shop_items[top + row]].price;
                 price = value;
                 break;
             case 1:
-                D_800625A0->details->names_a[row].width =
-                    func_80034EAC(func_800337E8(D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                value = D_800625A0->tables->accessories[D_800625A0->shop_items[top + row]].price;
+                menu_state_current->details->names_a[row].width =
+                    window_render_text_line(text_get_accessory_name(menu_state_current->shop_items[top + row]), pixels, 0x24, 0);
+                value = menu_state_current->tables->accessories[menu_state_current->shop_items[top + row]].price;
                 price = value;
                 break;
             case 2:
-                D_800625A0->details->names_a[row].width =
-                    func_80034EAC(func_80033818(D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                value = D_800625A0->tables->items[D_800625A0->shop_items[top + row]].price;
+                menu_state_current->details->names_a[row].width =
+                    window_render_text_line(text_get_item_name(menu_state_current->shop_items[top + row]), pixels, 0x24, 0);
+                value = menu_state_current->tables->items[menu_state_current->shop_items[top + row]].price;
                 price = value;
                 break;
             }
@@ -377,50 +377,50 @@ void func_801CDD14(s32 top, s32 gold, u8 *dims) {
                 }
             }
             codes[i * 2] = value % 10 + 0x10;
-            func_80033B34(codes, text, 5);
-            D_800625A0->details->names_b[row].width = func_80034EAC(text, pixels, 0x24, 1);
+            text_decode_codes(codes, text, 5);
+            menu_state_current->details->names_b[row].width = window_render_text_line(text, pixels, 0x24, 1);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = (row / 2) * 13 + 0x80;
             rect.w = 0x28;
             rect.h = 13;
             LoadImage(&rect, (u_long *)pixels);
-            func_801C5A7C(&D_800625A0->details->names_a[row], row, 0x80, dims[row] + 1);
-            func_801C6E90(D_800625A0->details->names_a[row].verts, 0x24, row * 13 + 0x32,
-                          D_800625A0->details->names_a[row].width, 13);
+            func_801C5A7C(&menu_state_current->details->names_a[row], row, 0x80, dims[row] + 1);
+            func_801C6E90(menu_state_current->details->names_a[row].verts, 0x24, row * 13 + 0x32,
+                          menu_state_current->details->names_a[row].width, 13);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = (row / 2) * 13 + 0x80;
             rect.w = 0x28;
             rect.h = 13;
             LoadImage(&rect, (u_long *)pixels);
             DrawSync(0);
-            func_801C5A7C(&D_800625A0->details->names_b[row], row, 0x80, dims[row] + 2);
-            func_801C6E90(D_800625A0->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
-                          D_800625A0->details->names_b[row].width, 13);
-            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer_index;
-            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer_index;
-            D_800625A0->details->name_shown[row] = 1;
-            if (D_800625A0->details->amounts[top + row] != 0) {
-                D_800625A0->details->row_count[row] +=
-                    func_8002675C(D_800625A0->sheet, 0xF1, D_800625A0->details->rows[row],
-                                  D_800625A0->buffer_index, 0xB4, row * 13 + 0x36, 0x1000);
-                tens = D_800625A0->details->amounts[top + row] / 10;
+            func_801C5A7C(&menu_state_current->details->names_b[row], row, 0x80, dims[row] + 2);
+            func_801C6E90(menu_state_current->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
+                          menu_state_current->details->names_b[row].width, 13);
+            menu_state_current->details->names_a[row].buffer = menu_state_current->buffer_index;
+            menu_state_current->details->names_a[row].buffer = menu_state_current->buffer_index;
+            menu_state_current->details->name_shown[row] = 1;
+            if (menu_state_current->details->amounts[top + row] != 0) {
+                menu_state_current->details->row_count[row] +=
+                    sprite_sheet_draw_scaled(menu_state_current->sheet, 0xF1, menu_state_current->details->rows[row],
+                                  menu_state_current->buffer_index, 0xB4, row * 13 + 0x36, 0x1000);
+                tens = menu_state_current->details->amounts[top + row] / 10;
                 if (tens != 0) {
-                    D_800625A0->details->row_count[row] +=
-                        func_8002675C(D_800625A0->sheet, tens,
-                                      &D_800625A0->details->rows[row][D_800625A0->details->row_count[row] * 2],
-                                      D_800625A0->buffer_index, 0xBC, row * 13 + 0x36, 0x1000);
+                    menu_state_current->details->row_count[row] +=
+                        sprite_sheet_draw_scaled(menu_state_current->sheet, tens,
+                                      &menu_state_current->details->rows[row][menu_state_current->details->row_count[row] * 2],
+                                      menu_state_current->buffer_index, 0xBC, row * 13 + 0x36, 0x1000);
                 }
-                D_800625A0->details->row_count[row] +=
-                    func_8002675C(D_800625A0->sheet, (u8)(D_800625A0->details->amounts[top + row] % 10),
-                                  &D_800625A0->details->rows[row][D_800625A0->details->row_count[row] * 2],
-                                  D_800625A0->buffer_index, 0xC4, row * 13 + 0x36, 0x1000);
-                D_800625A0->details->row_buffer[row] = D_800625A0->buffer_index;
+                menu_state_current->details->row_count[row] +=
+                    sprite_sheet_draw_scaled(menu_state_current->sheet, (u8)(menu_state_current->details->amounts[top + row] % 10),
+                                  &menu_state_current->details->rows[row][menu_state_current->details->row_count[row] * 2],
+                                  menu_state_current->buffer_index, 0xC4, row * 13 + 0x36, 0x1000);
+                menu_state_current->details->row_buffer[row] = menu_state_current->buffer_index;
             }
         } else {
-            D_800625A0->details->name_shown[row] = 0;
+            menu_state_current->details->name_shown[row] = 0;
         }
     }
-    func_800320E8(pixels);
+    heap_free(pixels);
 }
 
 /*
@@ -449,18 +449,18 @@ void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
     switch (kind) {
     case 0:
         if (member != 4) {
-            current = &D_800625A0->tables->equipment[D_8006D634.characters[member].weapons[0]];
-            before[0] = current->power + D_8006D634.characters[member].attack;
-            current = &D_800625A0->tables->equipment[id];
-            after[0] = current->power + D_8006D634.characters[member].attack;
+            current = &menu_state_current->tables->equipment[game_data.characters[member].weapons[0]];
+            before[0] = current->power + game_data.characters[member].attack;
+            current = &menu_state_current->tables->equipment[id];
+            after[0] = current->power + game_data.characters[member].attack;
         } else {
             for (k = 0; k < 4; k++) {
-                current = &D_800625A0->tables->equipment[D_8006D634.characters[member].entryItems[k]];
+                current = &menu_state_current->tables->equipment[game_data.characters[member].entryItems[k]];
                 before[0] += current->power;
             }
-            fitted = &D_800625A0->tables->equipment[id];
+            fitted = &menu_state_current->tables->equipment[id];
             for (k = 0; k < 4; k++) {
-                current = &D_800625A0->tables->equipment[D_8006D634.characters[member].entryItems[k]];
+                current = &menu_state_current->tables->equipment[game_data.characters[member].entryItems[k]];
                 if (current->kind == fitted->kind && current->kind != 5) {
                     after[0] += fitted->power;
                 } else {
@@ -471,14 +471,14 @@ void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
         break;
     case 1:
         replace = 1;
-        before[1] = after[1] = D_8006D634.characters[member].defense;
+        before[1] = after[1] = game_data.characters[member].defense;
         for (k = 0; k < 3; k++) {
-            accessory = &D_800625A0->tables->accessories[D_8006D634.characters[member].accessories[k]];
+            accessory = &menu_state_current->tables->accessories[game_data.characters[member].accessories[k]];
             before[1] += accessory->amount;
         }
-        fitted_accessory = &D_800625A0->tables->accessories[id];
+        fitted_accessory = &menu_state_current->tables->accessories[id];
         for (k = 0; k < 3; k++) {
-            accessory = &D_800625A0->tables->accessories[D_8006D634.characters[member].accessories[k]];
+            accessory = &menu_state_current->tables->accessories[game_data.characters[member].accessories[k]];
             if (accessory->groups != 0 && accessory->groups == fitted_accessory->groups) {
                 after[1] += fitted_accessory->amount;
                 replace = 0;
@@ -489,16 +489,16 @@ void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
         if (replace) {
             lowest = 0xFF;
             for (k = 0; k < 3; k++) {
-                accessory = &D_800625A0->tables->accessories[D_8006D634.characters[member].accessories[k]];
+                accessory = &menu_state_current->tables->accessories[game_data.characters[member].accessories[k]];
                 if (lowest >= accessory->amount) {
                     lowest = accessory->amount;
                     weakest = k;
                 }
             }
-            after[1] = D_8006D634.characters[member].defense + fitted_accessory->amount;
+            after[1] = game_data.characters[member].defense + fitted_accessory->amount;
             for (k = 0; k < 3; k++) {
                 if (k != weakest) {
-                    accessory = &D_800625A0->tables->accessories[D_8006D634.characters[member].accessories[k]];
+                    accessory = &menu_state_current->tables->accessories[game_data.characters[member].accessories[k]];
                     after[1] += accessory->amount;
                 }
             }
@@ -544,24 +544,24 @@ void func_801CE91C(u8 kind, u8 id) {
 
     switch (kind) {
     case 0:
-        ids = D_8006D634.weaponIds;
+        ids = game_data.weaponIds;
         counts = ids - 100;
         n = 100;
         break;
     case 1:
-        ids = D_8006D634.accessoryIds;
+        ids = game_data.accessoryIds;
         counts = ids - 200;
         n = 200;
         break;
     case 2:
-        ids = D_8006D634.itemIds;
+        ids = game_data.itemIds;
         counts = ids - 150;
         n = 150;
         break;
     }
     count = func_801CE8D8(ids, counts, n, id);
     D_801D2260 = count;
-    pixels = func_80031BDC(0x3F6, 0);
+    pixels = heap_alloc(0x3F6, 0);
     codes[1] = 0;
     codes[3] = 0;
     if (count / 10) {
@@ -570,20 +570,20 @@ void func_801CE91C(u8 kind, u8 id) {
         codes[0] = 0xC3;
     }
     codes[2] = count % 10 + 0x10;
-    func_80033B34(codes, text, 2);
-    D_800625A0->details->label45B0.width = func_80034EAC(text, pixels, 0x24, 1);
+    text_decode_codes(codes, text, 2);
+    menu_state_current->details->label45B0.width = window_render_text_line(text, pixels, 0x24, 1);
     rect.x = 0x198;
     rect.y = 0xB4;
     rect.w = 0x28;
     rect.h = 13;
     LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
-    func_801C5A7C(&D_800625A0->details->label45B0, 9, 0x80, 0x82);
-    func_801C6E90(D_800625A0->details->label45B0.verts, 0xF8, 0x8E, D_800625A0->details->label45B0.width,
+    func_801C5A7C(&menu_state_current->details->label45B0, 9, 0x80, 0x82);
+    func_801C6E90(menu_state_current->details->label45B0.verts, 0xF8, 0x8E, menu_state_current->details->label45B0.width,
                   13);
-    D_800625A0->details->label45B0.buffer = D_800625A0->buffer_index;
-    D_800625A0->details->label45B0_shown = 1;
-    func_800320E8(pixels);
+    menu_state_current->details->label45B0.buffer = menu_state_current->buffer_index;
+    menu_state_current->details->label45B0_shown = 1;
+    heap_free(pixels);
 }
 
 /*
@@ -609,27 +609,27 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
     s32 xb;
 
     users = 0;
-    id = D_800625A0->shop_items[top + row];
-    kind = D_800625A0->shop_kinds[top + row];
-    pixels = func_80031BDC(0x618, 0);
+    id = menu_state_current->shop_items[top + row];
+    kind = menu_state_current->shop_kinds[top + row];
+    pixels = heap_alloc(0x618, 0);
     bzero(pixels, 0x618);
     switch (kind) {
     case 0:
-        D_800625A0->details->label4430.width =
-            func_80034EAC(func_80033728(D_800625A0->details->resources[1], id), pixels, 0x39, 0);
-        price = D_800625A0->tables->equipment[id].price;
-        users = D_800625A0->tables->equipment[id].users;
+        menu_state_current->details->label4430.width =
+            window_render_text_line(text_get_resource_entry(menu_state_current->details->resources[1], id), pixels, 0x39, 0);
+        price = menu_state_current->tables->equipment[id].price;
+        users = menu_state_current->tables->equipment[id].users;
         break;
     case 1:
-        D_800625A0->details->label4430.width =
-            func_80034EAC(func_80033728(D_800625A0->details->resources[2], id), pixels, 0x39, 0);
-        price = D_800625A0->tables->accessories[id].price;
-        users = D_800625A0->tables->accessories[id].users;
+        menu_state_current->details->label4430.width =
+            window_render_text_line(text_get_resource_entry(menu_state_current->details->resources[2], id), pixels, 0x39, 0);
+        price = menu_state_current->tables->accessories[id].price;
+        users = menu_state_current->tables->accessories[id].users;
         break;
     case 2:
-        D_800625A0->details->label4430.width =
-            func_80034EAC(func_80033728(D_800625A0->details->resources[0], id), pixels, 0x39, 0);
-        price = D_800625A0->tables->items[id].price;
+        menu_state_current->details->label4430.width =
+            window_render_text_line(text_get_resource_entry(menu_state_current->details->resources[0], id), pixels, 0x39, 0);
+        price = menu_state_current->tables->items[id].price;
         break;
     }
     holders = func_801CDBA0(id, kind);
@@ -639,72 +639,72 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
     rect.h = 13;
     LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
-    func_801C5A7C(&D_800625A0->details->label4430, 0, 0, 0);
-    func_801C5040(&D_800625A0->details->label4430.polys[D_800625A0->buffer_index], 0x2C, 0x12, 0, 0x4E,
-                  D_800625A0->details->label4430.width, 13);
-    func_801C6E90(D_800625A0->details->label4430.verts, 0x2C, 0x12, D_800625A0->details->label4430.width, 13);
-    D_800625A0->details->label4430.buffer = D_800625A0->buffer_index;
-    func_800320E8(pixels);
+    func_801C5A7C(&menu_state_current->details->label4430, 0, 0, 0);
+    func_801C5040(&menu_state_current->details->label4430.polys[menu_state_current->buffer_index], 0x2C, 0x12, 0, 0x4E,
+                  menu_state_current->details->label4430.width, 13);
+    func_801C6E90(menu_state_current->details->label4430.verts, 0x2C, 0x12, menu_state_current->details->label4430.width, 13);
+    menu_state_current->details->label4430.buffer = menu_state_current->buffer_index;
+    heap_free(pixels);
     if (id) {
-        D_800625A0->details->label4430_shown = 1;
+        menu_state_current->details->label4430_shown = 1;
     } else {
-        D_800625A0->details->label4430_shown = 0;
+        menu_state_current->details->label4430_shown = 0;
     }
     i = 0;
     shown = 0;
-    D_800625A0->details->group2D0_count = 0;
+    menu_state_current->details->group2D0_count = 0;
     for (; i < 16; i++) {
-        if (D_800625A0->present[i] != 0) {
+        if (menu_state_current->present[i] != 0) {
             if (func_801C50B0(users, i)) {
-                D_800625A0->details->bar_shown[shown] = 1;
+                menu_state_current->details->bar_shown[shown] = 1;
             } else {
-                D_800625A0->details->bar_shown[shown] = 0;
+                menu_state_current->details->bar_shown[shown] = 0;
             }
             if (func_801C50B0(holders, i)) {
-                D_800625A0->details->group2D0_count +=
-                    func_8002675C(D_800625A0->sheet, 0xE,
-                                  &D_800625A0->details->group2D0[D_800625A0->details->group2D0_count * 2],
-                                  D_800625A0->buffer_index, D_801D21CC[shown] + 0xE, 0xB4, 0x1000);
+                menu_state_current->details->group2D0_count +=
+                    sprite_sheet_draw_scaled(menu_state_current->sheet, 0xE,
+                                  &menu_state_current->details->group2D0[menu_state_current->details->group2D0_count * 2],
+                                  menu_state_current->buffer_index, D_801D21CC[shown] + 0xE, 0xB4, 0x1000);
             }
-            D_800625A0->details->cells_a_count[shown] = 0;
-            D_800625A0->details->cells_b_count[shown] = 0;
-            if (D_800625A0->details->bar_shown[shown] != 0) {
+            menu_state_current->details->cells_a_count[shown] = 0;
+            menu_state_current->details->cells_b_count[shown] = 0;
+            if (menu_state_current->details->bar_shown[shown] != 0) {
                 diffs[1] = 0;
                 diffs[0] = 0;
                 func_801CE480(diffs, worse, id, kind, i);
                 if (diffs[0] != 0) {
                     func_801C50E8(diffs[0]);
                     for (k = 0, xa = shown * 26 + 0x49; k < 3; k++) {
-                        if (D_800625A0->digits[k + 6] != 0xFF) {
-                            D_800625A0->details->cells_a_count[shown] += func_8002675C(
-                                D_800625A0->sheet, D_800625A0->digits[k + 6],
-                                &D_800625A0->details->cells_a[shown][D_800625A0->details->cells_a_count[shown] * 2],
-                                D_800625A0->buffer_index, xa + k * 8, 0xBE, 0x1000);
+                        if (menu_state_current->digits[k + 6] != 0xFF) {
+                            menu_state_current->details->cells_a_count[shown] += sprite_sheet_draw_scaled(
+                                menu_state_current->sheet, menu_state_current->digits[k + 6],
+                                &menu_state_current->details->cells_a[shown][menu_state_current->details->cells_a_count[shown] * 2],
+                                menu_state_current->buffer_index, xa + k * 8, 0xBE, 0x1000);
                         }
                     }
-                    func_801CD404(D_800625A0->details->cells_a_count[shown], D_800625A0->details->cells_a[shown],
+                    func_801CD404(menu_state_current->details->cells_a_count[shown], menu_state_current->details->cells_a[shown],
                                   worse[0]);
-                    D_800625A0->details->cells_a_buffer[shown] = D_800625A0->buffer_index;
+                    menu_state_current->details->cells_a_buffer[shown] = menu_state_current->buffer_index;
                 }
                 if (diffs[1] != 0) {
                     func_801C50E8(diffs[1]);
                     for (k = 0, xb = shown * 26 + 0x49; k < 3; k++) {
-                        if (D_800625A0->digits[k + 6] != 0xFF) {
-                            D_800625A0->details->cells_b_count[shown] += func_8002675C(
-                                D_800625A0->sheet, D_800625A0->digits[k + 6],
-                                &D_800625A0->details->cells_b[shown][D_800625A0->details->cells_b_count[shown] * 2],
-                                D_800625A0->buffer_index, xb + k * 8, 0xC6, 0x1000);
+                        if (menu_state_current->digits[k + 6] != 0xFF) {
+                            menu_state_current->details->cells_b_count[shown] += sprite_sheet_draw_scaled(
+                                menu_state_current->sheet, menu_state_current->digits[k + 6],
+                                &menu_state_current->details->cells_b[shown][menu_state_current->details->cells_b_count[shown] * 2],
+                                menu_state_current->buffer_index, xb + k * 8, 0xC6, 0x1000);
                         }
                     }
-                    func_801CD404(D_800625A0->details->cells_b_count[shown], D_800625A0->details->cells_b[shown],
+                    func_801CD404(menu_state_current->details->cells_b_count[shown], menu_state_current->details->cells_b[shown],
                                   worse[1]);
-                    D_800625A0->details->cells_b_buffer[shown] = D_800625A0->buffer_index;
+                    menu_state_current->details->cells_b_buffer[shown] = menu_state_current->buffer_index;
                 }
             }
             shown++;
         }
     }
-    D_800625A0->details->group2D0_buffer = D_800625A0->buffer_index;
+    menu_state_current->details->group2D0_buffer = menu_state_current->buffer_index;
     func_801CE91C(kind, id);
     return price;
 }
@@ -721,29 +721,29 @@ void func_801CF2A0(u32 gold) {
     u8 new_item;
 
     func_801CAC7C(0xD1);
-    party_gold = &D_8006D634.gold;
+    party_gold = &game_data.gold;
     *party_gold = gold;
     if (gold > 9999999) {
         *party_gold = 9999999;
     }
     for (i = 0; i < 0x30; i++) {
-        if (D_800625A0->shop_items[i] != 0 && D_800625A0->details->amounts[i] != 0) {
-            switch (D_800625A0->shop_kinds[i]) {
+        if (menu_state_current->shop_items[i] != 0 && menu_state_current->details->amounts[i] != 0) {
+            switch (menu_state_current->shop_kinds[i]) {
             case 0:
                 new_item = 1;
                 for (j = 0; j < 100; j++) {
-                    if (D_8006D634.weaponIds[j] == D_800625A0->shop_items[i]) {
+                    if (game_data.weaponIds[j] == menu_state_current->shop_items[i]) {
                         new_item = 0;
-                        if ((D_8006D634.weaponCounts[j] += D_800625A0->details->amounts[i]) >= 100) {
-                            D_8006D634.weaponCounts[j] = 99;
+                        if ((game_data.weaponCounts[j] += menu_state_current->details->amounts[i]) >= 100) {
+                            game_data.weaponCounts[j] = 99;
                         }
                     }
                 }
                 if (new_item) {
                     for (j = 0; j < 100; j++) {
-                        if (D_8006D634.weaponIds[j] == 0) {
-                            D_8006D634.weaponIds[j] = D_800625A0->shop_items[i];
-                            D_8006D634.weaponCounts[j] = D_800625A0->details->amounts[i];
+                        if (game_data.weaponIds[j] == 0) {
+                            game_data.weaponIds[j] = menu_state_current->shop_items[i];
+                            game_data.weaponCounts[j] = menu_state_current->details->amounts[i];
                             break;
                         }
                     }
@@ -752,18 +752,18 @@ void func_801CF2A0(u32 gold) {
             case 1:
                 new_item = 1;
                 for (j = 0; j < 200; j++) {
-                    if (D_8006D634.accessoryIds[j] == D_800625A0->shop_items[i]) {
+                    if (game_data.accessoryIds[j] == menu_state_current->shop_items[i]) {
                         new_item = 0;
-                        if ((D_8006D634.accessoryCounts[j] += D_800625A0->details->amounts[i]) >= 100) {
-                            D_8006D634.accessoryCounts[j] = 99;
+                        if ((game_data.accessoryCounts[j] += menu_state_current->details->amounts[i]) >= 100) {
+                            game_data.accessoryCounts[j] = 99;
                         }
                     }
                 }
                 if (new_item) {
                     for (j = 0; j < 200; j++) {
-                        if (D_8006D634.accessoryIds[j] == 0) {
-                            D_8006D634.accessoryIds[j] = D_800625A0->shop_items[i];
-                            D_8006D634.accessoryCounts[j] = D_800625A0->details->amounts[i];
+                        if (game_data.accessoryIds[j] == 0) {
+                            game_data.accessoryIds[j] = menu_state_current->shop_items[i];
+                            game_data.accessoryCounts[j] = menu_state_current->details->amounts[i];
                             break;
                         }
                     }
@@ -772,18 +772,18 @@ void func_801CF2A0(u32 gold) {
             case 2:
                 new_item = 1;
                 for (j = 0; j < 150; j++) {
-                    if (D_8006D634.itemIds[j] == D_800625A0->shop_items[i]) {
+                    if (game_data.itemIds[j] == menu_state_current->shop_items[i]) {
                         new_item = 0;
-                        if ((D_8006D634.itemCounts[j] += D_800625A0->details->amounts[i]) >= 100) {
-                            D_8006D634.itemCounts[j] = 99;
+                        if ((game_data.itemCounts[j] += menu_state_current->details->amounts[i]) >= 100) {
+                            game_data.itemCounts[j] = 99;
                         }
                     }
                 }
                 if (new_item) {
                     for (j = 0; j < 150; j++) {
-                        if (D_8006D634.itemIds[j] == 0) {
-                            D_8006D634.itemIds[j] = D_800625A0->shop_items[i];
-                            D_8006D634.itemCounts[j] = D_800625A0->details->amounts[i];
+                        if (game_data.itemIds[j] == 0) {
+                            game_data.itemIds[j] = menu_state_current->shop_items[i];
+                            game_data.itemCounts[j] = menu_state_current->details->amounts[i];
                             break;
                         }
                     }
@@ -802,17 +802,17 @@ void func_801CF678(u32 value) {
     func_801C50E8(value);
     i = 0;
     x = 0x6B;
-    D_800625A0->details->group1220_count = 0;
+    menu_state_current->details->group1220_count = 0;
     for (; i < 9; i++, x += 8) {
-        if (D_800625A0->digits[i] != 0xFF) {
-            D_800625A0->details->group1220_count +=
-                func_8002675C(D_800625A0->sheet, D_800625A0->digits[i],
-                              D_800625A0->details->group1220 + D_800625A0->details->group1220_count * 2,
-                              D_800625A0->buffer_index, x, 0x54, 0x1000);
+        if (menu_state_current->digits[i] != 0xFF) {
+            menu_state_current->details->group1220_count +=
+                sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i],
+                              menu_state_current->details->group1220 + menu_state_current->details->group1220_count * 2,
+                              menu_state_current->buffer_index, x, 0x54, 0x1000);
         }
     }
-    D_800625A0->details->group1220_buffer = D_800625A0->buffer_index;
-    D_800625A0->flags->unknown5a[1] = 2;
+    menu_state_current->details->group1220_buffer = menu_state_current->buffer_index;
+    menu_state_current->flags->unknown5a[1] = 2;
 }
 
 /*
@@ -836,7 +836,7 @@ u8 func_801CF780(void) {
     s32 i;
     s32 held_next;
 
-    gold = D_8006D634.gold;
+    gold = game_data.gold;
     first = 1;
     running = 1;
     redraw = 1;
@@ -847,12 +847,12 @@ u8 func_801CF780(void) {
     total = 0;
     new_gold = gold;
     for (i = 0; i < 11; i++) {
-        func_801CCE1C(D_800625A0->tables, i);
-        D_800625A0->details->attack[i] = D_800625A0->tables->stats[0];
-        D_800625A0->details->defense[i] = D_800625A0->tables->stats[2];
+        func_801CCE1C(menu_state_current->tables, i);
+        menu_state_current->details->attack[i] = menu_state_current->tables->stats[0];
+        menu_state_current->details->defense[i] = menu_state_current->tables->stats[2];
     }
-    bzero(D_800625A0->details->amounts, 0x30);
-    D_800625A0->images->dim = 1;
+    bzero(menu_state_current->details->amounts, 0x30);
+    menu_state_current->images->dim = 1;
     func_801C70FC(0);
     while (running) {
         func_801CB014();
@@ -864,14 +864,14 @@ u8 func_801CF780(void) {
             price = func_801CEB3C(row, top, dims);
             last_row = row;
             last_top = top;
-            D_800625A0->flags->unknown5a[0] = 1;
+            menu_state_current->flags->unknown5a[0] = 1;
         }
         func_801C7178(row, top, 0, 0);
         if (first) {
-            func_801CBC88(1, 2, D_800625A0->list_labels, D_801D1FD4, D_800625A0->flags->list_labels_shown);
-            func_801CBCF0(2, D_800625A0->list_labels, D_801D1FD4, D_801D1FE8, D_800625A0->flags->list_labels_shown, 0,
+            func_801CBC88(1, 2, menu_state_current->list_labels, D_801D1FD4, menu_state_current->flags->list_labels_shown);
+            func_801CBCF0(2, menu_state_current->list_labels, D_801D1FD4, D_801D1FE8, menu_state_current->flags->list_labels_shown, 0,
                           0, 1);
-            D_800625A0->flags->list_labels_shown[0] = 0;
+            menu_state_current->flags->list_labels_shown[0] = 0;
             func_801C896C(2, 0xC, 0x2A, 0xC4, 0x74, 0, 1, 4, 1);
             func_801C896C(3, 0x20, 0xE, 0xFC, 0x14, 0, 1, 4, 0);
             func_801C896C(5, 0xE0, 0x7A, 0x40, 0x24, 0, 1, 4, 0);
@@ -879,41 +879,41 @@ u8 func_801CF780(void) {
             func_801CD5D0();
             func_801CD6F8();
             first = 0;
-            while (D_800625A0->view_motion != 0) {
+            while (menu_state_current->view_motion != 0) {
                 func_801CB014();
             }
-            D_800625A0->flags->list_labels_shown[0] = 1;
+            menu_state_current->flags->list_labels_shown[0] = 1;
         }
         if (redraw) {
             func_801CD8D0(gold, total, new_gold);
             redraw = 0;
         }
-        switch (D_800625A0->input) {
+        switch (menu_state_current->input) {
         case 4:
             if (total != 0) {
                 func_801CAC7C(2);
-                D_800625A0->flags->unknown5a[0] = 0;
-                D_800625A0->flags->panels_shown[2] = 0;
-                D_800625A0->flags->panels_shown[3] = 0;
-                D_800625A0->flags->panels_shown[5] = 0;
-                D_800625A0->flags->scroll_shown = 0;
-                D_800625A0->flags->cursors_shown[0] = 0;
+                menu_state_current->flags->unknown5a[0] = 0;
+                menu_state_current->flags->panels_shown[2] = 0;
+                menu_state_current->flags->panels_shown[3] = 0;
+                menu_state_current->flags->panels_shown[5] = 0;
+                menu_state_current->flags->scroll_shown = 0;
+                menu_state_current->flags->cursors_shown[0] = 0;
                 running = 0;
-                D_800625A0->flags->list_labels_shown[0] = 0;
+                menu_state_current->flags->list_labels_shown[0] = 0;
                 func_801CB13C(0);
                 func_801CF678(total);
                 if (func_801CBA50(0x8F, 0xFF, 1)) {
                     func_801CF2A0(new_gold);
                 } else {
                     running = 1;
-                    D_800625A0->flags->panels_shown[2] = 1;
-                    D_800625A0->flags->panels_shown[3] = 1;
-                    D_800625A0->flags->panels_shown[5] = 1;
-                    D_800625A0->flags->scroll_shown = 1;
-                    D_800625A0->flags->cursors_shown[0] = 1;
+                    menu_state_current->flags->panels_shown[2] = 1;
+                    menu_state_current->flags->panels_shown[3] = 1;
+                    menu_state_current->flags->panels_shown[5] = 1;
+                    menu_state_current->flags->scroll_shown = 1;
+                    menu_state_current->flags->cursors_shown[0] = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->list_labels_shown[0] = 1;
+                    menu_state_current->flags->list_labels_shown[0] = 1;
                 }
                 func_801CB2FC();
             } else {
@@ -922,25 +922,25 @@ u8 func_801CF780(void) {
             break;
         case 5:
             running = 0;
-            D_800625A0->flags->list_labels_shown[0] = 0;
+            menu_state_current->flags->list_labels_shown[0] = 0;
             if (total != 0) {
-                D_800625A0->flags->unknown5a[0] = 0;
-                D_800625A0->flags->panels_shown[2] = 0;
-                D_800625A0->flags->panels_shown[3] = 0;
-                D_800625A0->flags->panels_shown[5] = 0;
-                D_800625A0->flags->scroll_shown = 0;
-                D_800625A0->flags->cursors_shown[0] = 0;
+                menu_state_current->flags->unknown5a[0] = 0;
+                menu_state_current->flags->panels_shown[2] = 0;
+                menu_state_current->flags->panels_shown[3] = 0;
+                menu_state_current->flags->panels_shown[5] = 0;
+                menu_state_current->flags->scroll_shown = 0;
+                menu_state_current->flags->cursors_shown[0] = 0;
                 func_801CB13C(0);
                 if (!func_801CBA50(0x8C, 0xFF, 1)) {
                     running = 1;
-                    D_800625A0->flags->panels_shown[2] = 1;
-                    D_800625A0->flags->panels_shown[3] = 1;
-                    D_800625A0->flags->panels_shown[5] = 1;
-                    D_800625A0->flags->scroll_shown = 1;
-                    D_800625A0->flags->cursors_shown[0] = 1;
+                    menu_state_current->flags->panels_shown[2] = 1;
+                    menu_state_current->flags->panels_shown[3] = 1;
+                    menu_state_current->flags->panels_shown[5] = 1;
+                    menu_state_current->flags->scroll_shown = 1;
+                    menu_state_current->flags->cursors_shown[0] = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->list_labels_shown[0] = 1;
+                    menu_state_current->flags->list_labels_shown[0] = 1;
                 }
                 func_801CB2FC();
             }
@@ -967,24 +967,24 @@ u8 func_801CF780(void) {
             }
             break;
         case 0:
-            if (dims[row] != 0 && D_800625A0->details->amounts[top + row] + (held_next = D_801D2260 + 1) < 100) {
+            if (dims[row] != 0 && menu_state_current->details->amounts[top + row] + (held_next = D_801D2260 + 1) < 100) {
                 total += price;
                 new_gold -= price;
-                D_800625A0->details->amounts[top + row] += 1;
+                menu_state_current->details->amounts[top + row] += 1;
                 redraw = 1;
             }
             break;
         case 2:
-            if (D_800625A0->details->amounts[top + row] != 0) {
+            if (menu_state_current->details->amounts[top + row] != 0) {
                 total -= price;
                 new_gold += price;
-                D_800625A0->details->amounts[top + row] -= 1;
+                menu_state_current->details->amounts[top + row] -= 1;
                 redraw = 1;
             }
             break;
         }
     }
-    D_800625A0->details->label45B0_shown = 0;
+    menu_state_current->details->label45B0_shown = 0;
     return 1;
 }
 
@@ -1015,25 +1015,25 @@ u32 func_801CFF58(u8 id, u8 kind) {
     divisors[2] = 100;
     divisors[3] = 1000;
     divisors[4] = 10000;
-    pixels = func_80031BDC(0x618, 0);
+    pixels = heap_alloc(0x618, 0);
     bzero(pixels, 0x618);
     bzero(codes, 14);
     switch (kind) {
     case 0:
-        D_800625A0->details->label4430.width = func_80034EAC(func_80033848(id), pixels, 0x39, 0);
-        users = D_800625A0->tables->equipment[id].users;
-        price = D_800625A0->tables->equipment[id].price >> 1;
+        menu_state_current->details->label4430.width = window_render_text_line(text_get_weapon_name(id), pixels, 0x39, 0);
+        users = menu_state_current->tables->equipment[id].users;
+        price = menu_state_current->tables->equipment[id].price >> 1;
         value = price;
         break;
     case 1:
-        D_800625A0->details->label4430.width = func_80034EAC(func_800337E8(id), pixels, 0x39, 0);
-        users = D_800625A0->tables->accessories[id].users;
-        price = D_800625A0->tables->accessories[id].price >> 1;
+        menu_state_current->details->label4430.width = window_render_text_line(text_get_accessory_name(id), pixels, 0x39, 0);
+        users = menu_state_current->tables->accessories[id].users;
+        price = menu_state_current->tables->accessories[id].price >> 1;
         value = price;
         break;
     case 2:
-        D_800625A0->details->label4430.width = func_80034EAC(func_80033818(id), pixels, 0x39, 0);
-        price = D_800625A0->tables->items[id].price >> 1;
+        menu_state_current->details->label4430.width = window_render_text_line(text_get_item_name(id), pixels, 0x39, 0);
+        price = menu_state_current->tables->items[id].price >> 1;
         value = price;
         break;
     }
@@ -1050,53 +1050,53 @@ u32 func_801CFF58(u8 id, u8 kind) {
         }
     }
     codes[8] = value % 10 + 0x10;
-    func_80033B34(codes, text, 5);
-    D_800625A0->details->label44B0.width = func_80034EAC(text, pixels, 0x39, 1);
+    text_decode_codes(codes, text, 5);
+    menu_state_current->details->label44B0.width = window_render_text_line(text, pixels, 0x39, 1);
     rect.x = 0x140;
     rect.y = 0x4E;
     rect.w = 0x3C;
     rect.h = 13;
     LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
-    func_801C5A7C(&D_800625A0->details->label4430, 0, 0, 0);
-    func_801C5A7C(&D_800625A0->details->label44B0, 0, 0, 0);
-    D_800625A0->details->label44B0.polys[D_800625A0->buffer_index].clut = D_80059414;
-    func_801C5040(&D_800625A0->details->label4430.polys[D_800625A0->buffer_index], 0x2C, 0x12, 0, 0x4E,
-                  D_800625A0->details->label4430.width, 13);
-    func_801C5040(&D_800625A0->details->label44B0.polys[D_800625A0->buffer_index], 0x98, 0x12, 0, 0x4E,
-                  D_800625A0->details->label44B0.width, 13);
-    func_801C6E90(D_800625A0->details->label4430.verts, 0x2C, 0x12, D_800625A0->details->label4430.width, 13);
-    func_801C6E90(D_800625A0->details->label44B0.verts, 0x98, 0x12, D_800625A0->details->label44B0.width, 13);
-    D_800625A0->details->label4430.buffer = D_800625A0->buffer_index;
-    D_800625A0->details->label44B0.buffer = D_800625A0->buffer_index;
-    func_800320E8(pixels);
+    func_801C5A7C(&menu_state_current->details->label4430, 0, 0, 0);
+    func_801C5A7C(&menu_state_current->details->label44B0, 0, 0, 0);
+    menu_state_current->details->label44B0.polys[menu_state_current->buffer_index].clut = text_plane1_clut;
+    func_801C5040(&menu_state_current->details->label4430.polys[menu_state_current->buffer_index], 0x2C, 0x12, 0, 0x4E,
+                  menu_state_current->details->label4430.width, 13);
+    func_801C5040(&menu_state_current->details->label44B0.polys[menu_state_current->buffer_index], 0x98, 0x12, 0, 0x4E,
+                  menu_state_current->details->label44B0.width, 13);
+    func_801C6E90(menu_state_current->details->label4430.verts, 0x2C, 0x12, menu_state_current->details->label4430.width, 13);
+    func_801C6E90(menu_state_current->details->label44B0.verts, 0x98, 0x12, menu_state_current->details->label44B0.width, 13);
+    menu_state_current->details->label4430.buffer = menu_state_current->buffer_index;
+    menu_state_current->details->label44B0.buffer = menu_state_current->buffer_index;
+    heap_free(pixels);
     if (id) {
-        D_800625A0->details->label4430_shown = 1;
-        D_800625A0->details->label44B0_shown = 1;
+        menu_state_current->details->label4430_shown = 1;
+        menu_state_current->details->label44B0_shown = 1;
     } else {
-        D_800625A0->details->label4430_shown = 0;
-        D_800625A0->details->label44B0_shown = 0;
+        menu_state_current->details->label4430_shown = 0;
+        menu_state_current->details->label44B0_shown = 0;
     }
     i = 0;
     j = 0;
-    D_800625A0->details->group2D0_count = 0;
+    menu_state_current->details->group2D0_count = 0;
     for (; i < 16; i++) {
-        if (D_800625A0->present[i] != 0) {
+        if (menu_state_current->present[i] != 0) {
             if (func_801C50B0(users, i)) {
-                D_800625A0->details->bar_shown[j] = 1;
+                menu_state_current->details->bar_shown[j] = 1;
             } else {
-                D_800625A0->details->bar_shown[j] = 0;
+                menu_state_current->details->bar_shown[j] = 0;
             }
             if (func_801C50B0(holders, i)) {
-                D_800625A0->details->group2D0_count +=
-                    func_8002675C(D_800625A0->sheet, 0xE,
-                                  &D_800625A0->details->group2D0[D_800625A0->details->group2D0_count * 2],
-                                  D_800625A0->buffer_index, D_801D21CC[j] + 0xE, 0xB4, 0x1000);
+                menu_state_current->details->group2D0_count +=
+                    sprite_sheet_draw_scaled(menu_state_current->sheet, 0xE,
+                                  &menu_state_current->details->group2D0[menu_state_current->details->group2D0_count * 2],
+                                  menu_state_current->buffer_index, D_801D21CC[j] + 0xE, 0xB4, 0x1000);
             }
             j++;
         }
     }
-    D_800625A0->details->group2D0_buffer = D_800625A0->buffer_index;
+    menu_state_current->details->group2D0_buffer = menu_state_current->buffer_index;
     return price;
 }
 
@@ -1123,24 +1123,24 @@ void func_801D05BC(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
     divisors[2] = 100;
     divisors[3] = 1000;
     divisors[4] = 10000;
-    pixels = func_80031BDC(0x3F6, 0);
+    pixels = heap_alloc(0x3F6, 0);
     for (row = 0; row < 8; row++) {
         bzero(codes, 14);
-        D_800625A0->details->row_count[row] = 0;
+        menu_state_current->details->row_count[row] = 0;
         if (ids[top + row] != 0) {
             value = held[top + row];
             switch (kinds[top + row]) {
             case 0:
-                D_800625A0->details->names_a[row].width =
-                    func_80034EAC(func_80033848(ids[top + row]), pixels, 0x24, 0);
+                menu_state_current->details->names_a[row].width =
+                    window_render_text_line(text_get_weapon_name(ids[top + row]), pixels, 0x24, 0);
                 break;
             case 1:
-                D_800625A0->details->names_a[row].width =
-                    func_80034EAC(func_800337E8(ids[top + row]), pixels, 0x24, 0);
+                menu_state_current->details->names_a[row].width =
+                    window_render_text_line(text_get_accessory_name(ids[top + row]), pixels, 0x24, 0);
                 break;
             case 2:
-                D_800625A0->details->names_a[row].width =
-                    func_80034EAC(func_80033818(ids[top + row]), pixels, 0x24, 0);
+                menu_state_current->details->names_a[row].width =
+                    window_render_text_line(text_get_item_name(ids[top + row]), pixels, 0x24, 0);
                 break;
             }
             started = 0;
@@ -1155,50 +1155,50 @@ void func_801D05BC(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
                 }
             }
             codes[i * 2] = value % 10 + 0x10;
-            func_80033B34(codes, text, 5);
-            D_800625A0->details->names_b[row].width = func_80034EAC(text, pixels, 0x24, 1);
+            text_decode_codes(codes, text, 5);
+            menu_state_current->details->names_b[row].width = window_render_text_line(text, pixels, 0x24, 1);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = (row / 2) * 13 + 0x80;
             rect.w = 0x28;
             rect.h = 13;
             LoadImage(&rect, (u_long *)pixels);
-            func_801C5A7C(&D_800625A0->details->names_a[row], row, 0x80, 0x81);
-            func_801C6E90(D_800625A0->details->names_a[row].verts, 0x24, row * 13 + 0x32,
-                          D_800625A0->details->names_a[row].width, 13);
+            func_801C5A7C(&menu_state_current->details->names_a[row], row, 0x80, 0x81);
+            func_801C6E90(menu_state_current->details->names_a[row].verts, 0x24, row * 13 + 0x32,
+                          menu_state_current->details->names_a[row].width, 13);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = (row / 2) * 13 + 0x80;
             rect.w = 0x28;
             rect.h = 13;
             LoadImage(&rect, (u_long *)pixels);
             DrawSync(0);
-            func_801C5A7C(&D_800625A0->details->names_b[row], row, 0x80, 0x82);
-            func_801C6E90(D_800625A0->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
-                          D_800625A0->details->names_b[row].width, 13);
-            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer_index;
-            D_800625A0->details->names_a[row].buffer = D_800625A0->buffer_index;
-            D_800625A0->details->name_shown[row] = 1;
+            func_801C5A7C(&menu_state_current->details->names_b[row], row, 0x80, 0x82);
+            func_801C6E90(menu_state_current->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
+                          menu_state_current->details->names_b[row].width, 13);
+            menu_state_current->details->names_a[row].buffer = menu_state_current->buffer_index;
+            menu_state_current->details->names_a[row].buffer = menu_state_current->buffer_index;
+            menu_state_current->details->name_shown[row] = 1;
             if (chosen[top + row] != 0) {
-                D_800625A0->details->row_count[row] +=
-                    func_8002675C(D_800625A0->sheet, 0xE5, D_800625A0->details->rows[row],
-                                  D_800625A0->buffer_index, 0xB4, row * 13 + 0x36, 0x1000);
+                menu_state_current->details->row_count[row] +=
+                    sprite_sheet_draw_scaled(menu_state_current->sheet, 0xE5, menu_state_current->details->rows[row],
+                                  menu_state_current->buffer_index, 0xB4, row * 13 + 0x36, 0x1000);
                 tens = chosen[top + row] / 10;
                 if (tens != 0) {
-                    D_800625A0->details->row_count[row] +=
-                        func_8002675C(D_800625A0->sheet, tens,
-                                      &D_800625A0->details->rows[row][D_800625A0->details->row_count[row] * 2],
-                                      D_800625A0->buffer_index, 0xBC, row * 13 + 0x36, 0x1000);
+                    menu_state_current->details->row_count[row] +=
+                        sprite_sheet_draw_scaled(menu_state_current->sheet, tens,
+                                      &menu_state_current->details->rows[row][menu_state_current->details->row_count[row] * 2],
+                                      menu_state_current->buffer_index, 0xBC, row * 13 + 0x36, 0x1000);
                 }
-                D_800625A0->details->row_count[row] +=
-                    func_8002675C(D_800625A0->sheet, (u8)(chosen[top + row] % 10),
-                                  &D_800625A0->details->rows[row][D_800625A0->details->row_count[row] * 2],
-                                  D_800625A0->buffer_index, 0xC4, row * 13 + 0x36, 0x1000);
-                D_800625A0->details->row_buffer[row] = D_800625A0->buffer_index;
+                menu_state_current->details->row_count[row] +=
+                    sprite_sheet_draw_scaled(menu_state_current->sheet, (u8)(chosen[top + row] % 10),
+                                  &menu_state_current->details->rows[row][menu_state_current->details->row_count[row] * 2],
+                                  menu_state_current->buffer_index, 0xC4, row * 13 + 0x36, 0x1000);
+                menu_state_current->details->row_buffer[row] = menu_state_current->buffer_index;
             }
         } else {
-            D_800625A0->details->name_shown[row] = 0;
+            menu_state_current->details->name_shown[row] = 0;
         }
     }
-    func_800320E8(pixels);
+    heap_free(pixels);
 }
 
 /*
@@ -1213,7 +1213,7 @@ void func_801D0C18(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_c
     s32 j;
 
     func_801CAC7C(0xD1);
-    party_gold = &D_8006D634.gold;
+    party_gold = &game_data.gold;
     *party_gold = gold;
     if (gold > 9999999) {
         *party_gold = 9999999;
@@ -1237,11 +1237,11 @@ void func_801D0C18(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_c
                 switch (kinds[i]) {
                 case 0:
                     if (ids[i] < 0x32) {
-                        D_8006D634.characters[member].weapons[0] = 0;
+                        game_data.characters[member].weapons[0] = 0;
                     } else {
                         for (j = 0; j < 4; j++) {
-                            if (ids[i] == D_8006D634.characters[member].entryItems[j]) {
-                                D_8006D634.characters[member].entryItems[j] = 0;
+                            if (ids[i] == game_data.characters[member].entryItems[j]) {
+                                game_data.characters[member].entryItems[j] = 0;
                                 break;
                             }
                         }
@@ -1249,8 +1249,8 @@ void func_801D0C18(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_c
                     break;
                 case 1:
                     for (j = 0; j < 3; j++) {
-                        if (ids[i] == D_8006D634.characters[member].accessories[j]) {
-                            D_8006D634.characters[member].accessories[j] = 0;
+                        if (ids[i] == game_data.characters[member].accessories[j]) {
+                            game_data.characters[member].accessories[j] = 0;
                             break;
                         }
                     }
@@ -1281,7 +1281,7 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
     u8 chosen[n];
     u8 selectable[n];
     u8 *held;
-    u32 gold = D_8006D634.gold;
+    u32 gold = game_data.gold;
     u8 held_storage[n];
     u32 total;
     u32 new_gold;
@@ -1313,7 +1313,7 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
         if (ids[i] != 0 && counts[i] != 0) {
             ok = 1;
             if (sell_kinds[i] == 2) {
-                if (D_800625A0->tables->items[ids[i]].use & 0x10) {
+                if (menu_state_current->tables->items[ids[i]].use & 0x10) {
                     ok = 0;
                 }
             }
@@ -1336,7 +1336,7 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
             last_row = row;
             price = func_801CFF58(sell_ids[top + row], sell_kinds[top + row]);
             last_top = top;
-            D_800625A0->flags->unknown5a[0] = 1;
+            menu_state_current->flags->unknown5a[0] = 1;
         }
         func_801C7178(row, top, 0, 0);
         if (first) {
@@ -1346,7 +1346,7 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
             if (same_kind) {
                 func_801CD5D0();
             }
-            while (D_800625A0->view_motion != 0) {
+            while (menu_state_current->view_motion != 0) {
                 func_801CB014();
             }
             func_801CD7E4();
@@ -1356,28 +1356,28 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
             func_801CD8D0(gold, total, new_gold);
             redraw = 0;
         }
-        switch (D_800625A0->input) {
+        switch (menu_state_current->input) {
         case 4:
             if (total != 0) {
                 func_801CAC7C(2);
-                D_800625A0->flags->unknown5a[0] = 0;
-                D_800625A0->flags->panels_shown[2] = 0;
-                D_800625A0->flags->panels_shown[3] = 0;
-                D_800625A0->flags->scroll_shown = 0;
+                menu_state_current->flags->unknown5a[0] = 0;
+                menu_state_current->flags->panels_shown[2] = 0;
+                menu_state_current->flags->panels_shown[3] = 0;
+                menu_state_current->flags->scroll_shown = 0;
                 running = 0;
-                D_800625A0->flags->cursors_shown[0] = 0;
+                menu_state_current->flags->cursors_shown[0] = 0;
                 func_801CB13C(0);
                 func_801CF678(total);
                 if (func_801CBA50(0x95, 0xFF, 1)) {
                     func_801D0C18(new_gold, sell_ids, chosen, n, ids, counts, sell_kinds, same_kind, member);
                 } else {
                     running = 1;
-                    D_800625A0->flags->panels_shown[2] = 1;
-                    D_800625A0->flags->panels_shown[3] = 1;
-                    D_800625A0->flags->scroll_shown = 1;
+                    menu_state_current->flags->panels_shown[2] = 1;
+                    menu_state_current->flags->panels_shown[3] = 1;
+                    menu_state_current->flags->scroll_shown = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->cursors_shown[0] = running;
+                    menu_state_current->flags->cursors_shown[0] = running;
                 }
                 func_801CB2FC();
             } else {
@@ -1387,20 +1387,20 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
         case 5:
             running = 0;
             if (total != 0) {
-                D_800625A0->flags->unknown5a[0] = 0;
-                D_800625A0->flags->panels_shown[2] = 0;
-                D_800625A0->flags->panels_shown[3] = 0;
-                D_800625A0->flags->scroll_shown = 0;
-                D_800625A0->flags->cursors_shown[0] = 0;
+                menu_state_current->flags->unknown5a[0] = 0;
+                menu_state_current->flags->panels_shown[2] = 0;
+                menu_state_current->flags->panels_shown[3] = 0;
+                menu_state_current->flags->scroll_shown = 0;
+                menu_state_current->flags->cursors_shown[0] = 0;
                 func_801CB13C(0);
                 if (!func_801CBA50(0x92, 0xFF, 1)) {
                     running = 1;
-                    D_800625A0->flags->panels_shown[2] = 1;
-                    D_800625A0->flags->panels_shown[3] = 1;
-                    D_800625A0->flags->scroll_shown = 1;
+                    menu_state_current->flags->panels_shown[2] = 1;
+                    menu_state_current->flags->panels_shown[3] = 1;
+                    menu_state_current->flags->scroll_shown = 1;
                     last_top = 0xFF;
                     last_row = 0xFF;
-                    D_800625A0->flags->cursors_shown[0] = running;
+                    menu_state_current->flags->cursors_shown[0] = running;
                 }
                 func_801CB2FC();
             }
@@ -1470,7 +1470,7 @@ u8 func_801D1658(void) {
     func_801CB384(0x98);
     do {
         func_801CB014();
-        switch (D_800625A0->input) {
+        switch (menu_state_current->input) {
         case 5:
             result = 0;
             break;
@@ -1481,19 +1481,19 @@ u8 func_801D1658(void) {
         case 2:
             cursor--;
             if (cursor < 0) {
-                cursor = D_800625A0->details->members_count - 1;
+                cursor = menu_state_current->details->members_count - 1;
             }
             break;
         case 0:
             cursor++;
-            if (cursor >= D_800625A0->details->members_count) {
+            if (cursor >= menu_state_current->details->members_count) {
                 cursor = 0;
             }
             break;
         }
         if (cursor != shown) {
-            D_800625A0->details->bar_shown[cursor] = 1;
-            D_800625A0->details->bar_shown[shown] = 0;
+            menu_state_current->details->bar_shown[cursor] = 1;
+            menu_state_current->details->bar_shown[shown] = 0;
             shown = cursor;
         }
     } while (result == 2);
@@ -1502,7 +1502,7 @@ u8 func_801D1658(void) {
         member = 0;
         while (cursor != 0) {
             member++;
-            if (D_800625A0->present[member] != 0) {
+            if (menu_state_current->present[member] != 0) {
                 cursor--;
             }
         }
@@ -1512,8 +1512,8 @@ u8 func_801D1658(void) {
         }
         n = 0;
         for (i = 0; i < 3; i++) {
-            if (D_8006D634.characters[member].accessories[i] != 0) {
-                ids[n] = D_8006D634.characters[member].accessories[i];
+            if (game_data.characters[member].accessories[i] != 0) {
+                ids[n] = game_data.characters[member].accessories[i];
                 kinds[n] = 1;
                 n++;
             }
@@ -1525,38 +1525,38 @@ u8 func_801D1658(void) {
 
 /* Run the sell list for inventory 1 (200 entries). */
 void func_801D18A8(void) {
-    func_801D0E68(200, D_8006D634.accessoryIds, D_8006D634.accessoryIds - 200, 1, 1, D_8006D634.accessoryIds - 200, 0);
+    func_801D0E68(200, game_data.accessoryIds, game_data.accessoryIds - 200, 1, 1, game_data.accessoryIds - 200, 0);
 }
 
 /* Run the sell list for inventory 0 (100 entries). */
 void func_801D18E8(void) {
-    func_801D0E68(100, D_8006D634.weaponIds, D_8006D634.weaponIds - 100, 0, 1, D_8006D634.weaponIds - 100, 0);
+    func_801D0E68(100, game_data.weaponIds, game_data.weaponIds - 100, 0, 1, game_data.weaponIds - 100, 0);
 }
 
 /* Run the sell list for inventory 2 (150 entries). */
 void func_801D1928(void) {
-    func_801D0E68(150, D_8006D634.itemIds, D_8006D634.itemIds - 150, 2, 1, D_8006D634.itemIds - 150, 0);
+    func_801D0E68(150, game_data.itemIds, game_data.itemIds - 150, 2, 1, game_data.itemIds - 150, 0);
 }
 
 /* Hide the shop list's packets; with `close` also close its panels (5 too with `all`), scroll bar and marker. */
 void func_801D1968(u8 close, u8 all) {
     s32 i;
 
-    D_800625A0->flags->unknown5a[0] = 0;
-    D_800625A0->details->label4430_shown = 0;
-    D_800625A0->details->label44B0_shown = 0;
-    D_800625A0->details->digits_shown = 0;
-    D_800625A0->details->heading_count = 0;
-    D_800625A0->details->group2D0_count = 0;
-    D_800625A0->details->members_count = 0;
+    menu_state_current->flags->unknown5a[0] = 0;
+    menu_state_current->details->label4430_shown = 0;
+    menu_state_current->details->label44B0_shown = 0;
+    menu_state_current->details->digits_shown = 0;
+    menu_state_current->details->heading_count = 0;
+    menu_state_current->details->group2D0_count = 0;
+    menu_state_current->details->members_count = 0;
     for (i = 0; i < 9; i++) {
-        D_800625A0->details->bar_shown[i] = 0;
-        D_800625A0->details->cells_a_count[i] = 0;
-        D_800625A0->details->cells_b_count[i] = 0;
+        menu_state_current->details->bar_shown[i] = 0;
+        menu_state_current->details->cells_a_count[i] = 0;
+        menu_state_current->details->cells_b_count[i] = 0;
     }
     for (i = 0; i < 8; i++) {
-        D_800625A0->details->name_shown[i] = 0;
-        D_800625A0->details->row_count[i] = 0;
+        menu_state_current->details->name_shown[i] = 0;
+        menu_state_current->details->row_count[i] = 0;
     }
     if (close) {
         func_801C88E0(2);
@@ -1573,12 +1573,12 @@ void func_801D1968(u8 close, u8 all) {
 void func_801D1B18(void) {
     u8 close;
 
-    D_800625A0->flags->sprite_shown = 0;
-    D_800625A0->flags->cursor_shown = 0;
-    D_800625A0->flags->lists_shown = 0;
-    func_801CBC88(0, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_labels_shown);
+    menu_state_current->flags->sprite_shown = 0;
+    menu_state_current->flags->cursor_shown = 0;
+    menu_state_current->flags->lists_shown = 0;
+    func_801CBC88(0, 4, menu_state_current->list_labels, D_801D1FD0, menu_state_current->flags->list_labels_shown);
     close = 1;
-    switch (D_800625A0->choice) {
+    switch (menu_state_current->choice) {
     case 0:
         close = func_801D1658();
         break;
@@ -1593,10 +1593,10 @@ void func_801D1B18(void) {
         break;
     }
     func_801D1968(close, 0);
-    D_800625A0->flags->lists_shown = 1;
-    D_800625A0->flags->sprite_shown = 1;
-    D_800625A0->flags->cursor_shown = 1;
-    func_801CBC88(1, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_labels_shown);
+    menu_state_current->flags->lists_shown = 1;
+    menu_state_current->flags->sprite_shown = 1;
+    menu_state_current->flags->cursor_shown = 1;
+    func_801CBC88(1, 4, menu_state_current->list_labels, D_801D1FD0, menu_state_current->flags->list_labels_shown);
 }
 
 /* Command 1 (sell): choose one of the sell lists until cancelled. */
@@ -1606,54 +1606,54 @@ u8 func_801D1CA4(void) {
 
     running = 1;
     first = 1;
-    D_800625A0->choice = 3;
-    D_800625A0->choice_shown = 0xFF;
+    menu_state_current->choice = 3;
+    menu_state_current->choice_shown = 0xFF;
     do {
         func_801CB014();
         if (first) {
-            func_801CBC88(1, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_labels_shown);
+            func_801CBC88(1, 4, menu_state_current->list_labels, D_801D1FD0, menu_state_current->flags->list_labels_shown);
             first = 0;
             func_801CB340();
             func_801CC278(0);
         }
-        if (D_800625A0->choice != D_800625A0->choice_shown) {
-            func_801CBCF0(4, D_800625A0->list_labels, D_801D1FD0, D_801D1FE8,
-                          D_800625A0->flags->list_labels_shown, D_800625A0->choice, 3, 0);
+        if (menu_state_current->choice != menu_state_current->choice_shown) {
+            func_801CBCF0(4, menu_state_current->list_labels, D_801D1FD0, D_801D1FE8,
+                          menu_state_current->flags->list_labels_shown, menu_state_current->choice, 3, 0);
             func_801CC720(0);
-            D_800625A0->choice_shown = D_800625A0->choice;
+            menu_state_current->choice_shown = menu_state_current->choice;
         }
-        switch (D_800625A0->input) {
+        switch (menu_state_current->input) {
         case 4:
             func_801CAC7C(2);
             func_801D1B18();
-            D_800625A0->choice_shown = 0xFF;
+            menu_state_current->choice_shown = 0xFF;
             break;
         case 5:
             running = 0;
             break;
         case 1:
-            if (D_800625A0->choice != 0) {
-                D_800625A0->choice--;
+            if (menu_state_current->choice != 0) {
+                menu_state_current->choice--;
             } else {
-                D_800625A0->choice = D_800625A0->choice_count - 1;
+                menu_state_current->choice = menu_state_current->choice_count - 1;
             }
             break;
         case 3:
-            if (++D_800625A0->choice >= D_800625A0->choice_count) {
-                D_800625A0->choice = 0;
+            if (++menu_state_current->choice >= menu_state_current->choice_count) {
+                menu_state_current->choice = 0;
             }
             break;
         }
     } while (running);
-    D_800625A0->flags->sprite_shown = 0;
-    D_800625A0->flags->cursor_shown = 0;
-    func_801CBC88(0, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_labels_shown);
+    menu_state_current->flags->sprite_shown = 0;
+    menu_state_current->flags->cursor_shown = 0;
+    func_801CBC88(0, 4, menu_state_current->list_labels, D_801D1FD0, menu_state_current->flags->list_labels_shown);
     return 1;
 }
 
 /* Follow-up after a command returns: command 2 redraws its screen. */
 void func_801D1F10(void) {
-    switch (D_800625A0->cursor) {
+    switch (menu_state_current->cursor) {
     case 1:
         break;
     case 2:
