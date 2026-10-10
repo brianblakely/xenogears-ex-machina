@@ -50,11 +50,13 @@ Applying twice changes nothing more.
 A label splat writes inside another symbol's generated file (alabel) takes
 its name as `type:label` in the symbol file: a plain name would split it out
 into a file no INCLUDE_ASM includes, a label stays in that file (its users
-are that unit's). An SDK member (in an sdk range of the classification, or
-defined in the generated assembly the units include and named only by SDK
-functions: the libraries' strings and jump tables) keeps its PsyQ name or
-takes its library's prefix. An alias given its definer's name where one unit
-sees both names is refused.
+are that unit's). One directly after the function's end is refused: splat
+drops a label there with the words after it, so it takes a `type:u32` line
+and an INCLUDE_ASM of its own (mdec's D_801D4C94). An SDK member (in an sdk
+range of the classification, or defined in the generated assembly the units
+include and named only by SDK functions: the libraries' strings and jump
+tables) keeps its PsyQ name or takes its library's prefix. An alias given
+its definer's name where one unit sees both names is refused.
 """
 
 from __future__ import annotations
@@ -112,6 +114,9 @@ CONDITIONAL = re.compile(r"\s*#\s*(?:if|ifdef|ifndef|else|elif|endif)\b")
 ASM_LABEL = re.compile(r"^\s*(?:glabel|alabel|dlabel|jlabel)\s+(\w+)|^\s*(\w+):")
 # A label splat writes inside another symbol's generated file (data in text).
 ASM_INNER = re.compile(r"^\s*alabel\s+(\w+)", re.M)
+# ... directly after its file's function end: a label there splat drops with
+# the words after it, a data label of its own needs an INCLUDE_ASM of its own.
+ASM_END_LABEL = re.compile(r"^\s*endlabel\s+\w+\s*\n\s*alabel\s+(\w+)", re.M)
 ASM_MACRO = re.compile(r"^\s*\.macro\s+(\w+)", re.M)
 ASM_INCLUDE = re.compile(r'^\s*\.include\s+"([^"]+)"', re.M)
 INCLUDE_CALL = re.compile(r'\b(INCLUDE_ASM|INCLUDE_RODATA)\(\s*"([^"]*)"\s*,\s*(\w+)\s*\)')
@@ -547,6 +552,7 @@ class Repository:
     units: dict[str, list[Path]]  # image -> its linked units
     # (image, name) -> the generated file splat keeps the label in (alabel)
     inner: dict[tuple[str, str], Path] = field(default_factory=dict)
+    at_end: set[tuple[str, str]] = field(default_factory=set)  # those after a function's end
     # labels the generated files the units include define, and for each name
     # the INCLUDE_ASM'd functions whose generated file names it
     generated: set[tuple[str, str]] = field(default_factory=set)
@@ -658,6 +664,7 @@ def load() -> Repository:
     sdk: dict[str, list[tuple[int, int]]] = defaultdict(list)
     units: dict[str, list[Path]] = defaultdict(list)
     inner: dict[tuple[str, str], Path] = {}
+    at_end: set[tuple[str, str]] = set()
     generated_labels: set[tuple[str, str]] = set()
     users: dict[tuple[str, str], set[str]] = defaultdict(set)
     includes = include_paths()
@@ -705,6 +712,8 @@ def load() -> Repository:
                         text = file_text(generated)
                         for label in ASM_INNER.findall(text):
                             inner[(name, label)] = generated
+                        for label in ASM_END_LABEL.findall(text):
+                            at_end.add((name, label))
                         for found in re.finditer(ASM_LABEL.pattern, text, re.M):
                             generated_labels.add((name, found.group(1) or found.group(2)))
                         if macro == "INCLUDE_ASM":
@@ -716,7 +725,7 @@ def load() -> Repository:
         targets, image, dict(images), symbol_files, auto, dict(scopes), deps, dict(sdk), dict(units)
     )
     repo.by_name = {t.name: t for t in targets}
-    repo.inner = inner
+    repo.inner, repo.at_end = inner, at_end
     repo.generated, repo.users = generated_labels, dict(users)
     repo.partners = {t.name: partners(repo, t) for t in targets}
     inventory(repo)
@@ -881,7 +890,8 @@ def inventory(repo: Repository) -> None:
                 )
     for key, generated in repo.inner.items():
         if key in entries:
-            entries[key].binding, entries[key].file = "label", str(generated)
+            binding = "end-label" if key in repo.at_end else "label"
+            entries[key].binding, entries[key].file = binding, str(generated)
     describe(repo)
     for (img, name), entry in list(entries.items()):
         if entry.kind in SYMBOL_KINDS:
@@ -1403,6 +1413,13 @@ def check_symbol(
         return
     if cross_image.ADDRESS_NAME.fullmatch(new):
         plan.errors.append(f"{where}: {new} is still a placeholder")
+        return
+    if entry.binding == "end-label":
+        plan.errors.append(
+            f"{where}: {row.old} follows the function's end in {entry.file}: splat drops a"
+            " label there with the words after it; name it by a type:u32 line and an"
+            " INCLUDE_ASM of its own after the function's (as mdec's D_801D4C94)"
+        )
         return
     if entry.binding == f"alias:{new}":
         return  # the name its image already gives the address

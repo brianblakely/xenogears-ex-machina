@@ -24,7 +24,7 @@ ASSEMBLY = {
         ".globl func_80010020\n.type func_80010020, @function\nfunc_80010020:\njr $31\nnop\n"
         ".size func_80010020, . - func_80010020\n.space 0x8\n"
         ".globl D_80010030\n.type D_80010030, @object\nD_80010030:\n.word 0\n"
-        ".size D_80010030, 4\n.space 0xC\n"
+        ".size D_80010030, 4\n.space 0x4\n.globl D_80010038\nD_80010038:\n.space 0x8\n"
         ".globl D_80010040\n.type D_80010040, @object\nD_80010040:\n.word 1, 2\n"
         ".size D_80010040, 8\n",
     ),
@@ -62,6 +62,7 @@ LISTS = {
 GENERATED = {
     ".local/decomp/resident/asm/nonmatchings/main_80010000/func_80010028.s": (
         "glabel func_80010028\n    nop\n  alabel D_80010030\n    nop\n"
+        "endlabel func_80010028\n  alabel D_80010038\n    nop\n"
     ),
 }
 FRAGMENTS = {"ovl3": "decomp/targets/overlays/ovl3.resident.ld"}
@@ -309,6 +310,7 @@ class NamesTests(unittest.TestCase):
             "resident\tthing\tfunc_80010000\tcd_x\t\thigh\tx\n"
             "resident\tfunc\tfunc_80010000\n"
             "resident\tdata\tD_80010030\tcd_word\t\thigh\tx\n"
+            "resident\tdata\tD_80010038\tcd_tail\t\thigh\tx\n"
             "resident\tfunc\tD_80010000\tCdStart\t\thigh\tx\n"
         )
         result = self.names("check", "bad.tsv")
@@ -332,7 +334,9 @@ class NamesTests(unittest.TestCase):
             "bad.tsv:17: no image 'nowhere'",
             "bad.tsv:18: kind 'thing' is none of",
             "bad.tsv:19: 3 columns, not the seven",
-            "bad.tsv:21: D_80010000 and func_80010000 (resident) meet in decomp/src/ovl3/ovl3.c",
+            "bad.tsv:22: D_80010000 and func_80010000 (resident) meet in decomp/src/ovl3/ovl3.c",
+            "bad.tsv:21: D_80010038 follows the function's end in .local/decomp/resident/asm/"
+            "nonmatchings/main_80010000/func_80010028.s",
         ):
             self.assertIn(message, result.stderr)
         (self.root / "good.tsv").write_text(MAPPING)
@@ -342,13 +346,14 @@ class NamesTests(unittest.TestCase):
             "check: 16 rows (9 symbols, 2 units, 1 .s files, 1 parameters, 3 prefixes)",
             result.stdout,
         )
-        self.assertIn("unnamed: 4 placeholders", result.stdout)
+        self.assertIn("unnamed: 5 placeholders", result.stdout)
         unnamed = self.read(".local/names/unnamed.tsv")
         for name in (
             "func_80200000",
             "decomp/src/ovl2/ovl2.c",
             "decomp/src/ovl3/ovl3.c",
             "D_80010000",
+            "D_80010038",
         ):
             self.assertIn(name, unnamed)
         self.assertNotIn("D_80010030", unnamed)
