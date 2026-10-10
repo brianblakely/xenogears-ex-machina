@@ -2,7 +2,8 @@
 """Run an original-environment scenario program on the native runtime and
 compare its state with the original capture.
 
-    python3 tools/native_scenario.py CAPTURE_DIR OUT_DIR [--disc DISC] [--headless BIN]
+    python3 tools/native_scenario.py OUT_DIR --capture CAPTURE_DIR [--disc DISC] [--card1 ...]
+    python3 tools/native_scenario.py OUT_DIR --scenario SCENARIO.json
 
 CAPTURE_DIR is a tools/reference/observe.py capture made with --program: its
 observation.json holds the program, the frames each step started and
@@ -22,8 +23,10 @@ Reported per capture: the frame (reference/native), whether game_data,
 the RNG seed and the field event variables equal the reference's, game_data
 again without the name padding the original filled from uninitialized stack
 (without_name_padding), and the number of differing RAM bytes. The step
-timing (completed frames) is compared for every step. Nothing is written into
-game state beyond the program's own writes.
+timing (completed frames) is compared for every step. --scenario compiles a
+scenario as tools/reference/scenario.py does and runs it without a
+comparison. Nothing is written into game state beyond the program's own
+writes.
 """
 
 import argparse
@@ -135,13 +138,47 @@ def state_regions(schema_path):
     return regions
 
 
-def run(program_json, headless, out):
+MODE_FIELD, MODE_BATTLE = 1, 2
+# --fight-random-battles: a battle is fought with Cross held 4 of every 12
+# frames, and the program waits until the field has run this long again.
+BATTLE_SETTLE_FRAMES = 90
+
+
+def run(program_json, headless, out, sampling=None, fight=False, dump_vram=False):
     program = ScenarioProgram(program_json)
     memory = RemoteMemory(headless)
     out.mkdir(parents=True, exist_ok=True)
     captures = {}
-    frame = 0
+    # `frame` counts the program's frames (frames spent fighting a random
+    # battle are not the program's); `vblank` counts every frame run.
+    frame = vblank = 0
+    battles, battle_settle = [], None
+    trace = (out / "memory-trace.jsonl").open("w") if sampling else None
     while True:
+        if fight:
+            mode = headless({"cmd": "readiness"}).get("mode")
+            if mode == MODE_BATTLE and battle_settle is None:
+                battles.append({"started": vblank, "program_frame": frame})
+                battle_settle = 0
+            if battle_settle is not None:
+                battle_settle = battle_settle + 1 if mode == MODE_FIELD else 0
+                if battle_settle < BATTLE_SETTLE_FRAMES:
+                    cross = ["cross"] if vblank % 12 < 4 and mode == MODE_BATTLE else []
+                    headless({"cmd": "pad", "port": 0, "buttons": cross})
+                    headless({"cmd": "frames", "count": 1})
+                    vblank += 1
+                    continue
+                battles[-1]["ended"] = vblank
+                battle_settle = None
+        # As the reference's sampler: after the previous frame, before the tick.
+        if trace and frame >= sampling["start_frame"]:
+            index, phase = divmod(frame - sampling["start_frame"], sampling["every_frames"])
+            if phase == 0 and index < sampling["max_samples"]:
+                ranges = [
+                    {**r, "hex": headless.read(r["offset"], r["size"]).hex()}
+                    for r in sampling["ranges"]
+                ]
+                trace.write(json.dumps({"frame": frame, "ranges": ranges}) + "\n")
 
         def write(offset, data):
             patch = CODE_PATCHES.get((offset, data.hex()))
@@ -155,6 +192,9 @@ def run(program_json, headless, out):
             ram = headless.read(0, RAM)
             (out / f"ram-{frame:06d}.bin").write_bytes(ram)
             headless({"cmd": "screenshot", "path": str(out / f"frame-{frame:06d}.png")})
+            if dump_vram:
+                headless({"cmd": "vram", "path": str(out / f"vram-{frame:06d}.png")})
+                headless({"cmd": "vram", "path": str(out / f"vram-{frame:06d}.bin")})
             for label in labels:
                 captures[label] = frame
         if program.complete:
@@ -164,13 +204,22 @@ def run(program_json, headless, out):
         if isinstance(reply, dict) and reply.get("blocked"):
             raise RuntimeError("a native disc read blocked")
         frame += 1
+        vblank += 1
+    if battles:
+        (out / "battles.json").write_text(json.dumps(battles) + "\n")
     return program.events, captures
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("capture", type=Path)
     parser.add_argument("out", type=Path)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--capture", type=Path, help="an observe.py --program capture to compare")
+    source.add_argument(
+        "--scenario",
+        type=Path,
+        help="a scenario JSON, compiled as tools/reference/scenario.py does",
+    )
     parser.add_argument("--disc", type=Path, default=ROOT / "discs" / "Xenogears disc 1.chd")
     parser.add_argument(
         "--headless",
@@ -181,16 +230,44 @@ def main():
     parser.add_argument(
         "--compare-only", action="store_true", help="compare an earlier run in OUT_DIR"
     )
+    parser.add_argument("--vram", action="store_true", help="also save VRAM at every capture")
+    parser.add_argument(
+        "--fight-random-battles",
+        action="store_true",
+        help="as an agent: fight any battle with Cross and resume the program after it",
+    )
+    parser.add_argument(
+        "--sample-memory",
+        type=Path,
+        help="a tools/reference sampling spec (direct offsets): memory-trace.jsonl in OUT_DIR",
+    )
+    for slot in (1, 2):
+        parser.add_argument(
+            f"--card{slot}",
+            help="the card's initial image: a file, or 'unformatted' (default: freshly formatted)",
+        )
     args = parser.parse_args()
 
-    observation = json.loads((args.capture / "observation.json").read_text())
-    reference = observation["scenario"]
+    if args.capture:
+        observation = json.loads((args.capture / "observation.json").read_text())
+        reference = observation["scenario"]
+        program = reference["program"]
+    else:
+        from scenario import compile_scenario
+
+        availability = json.loads((ROOT / "analysis/coverage/field-pairs.json").read_text())
+        program, _ = compile_scenario(json.loads(args.scenario.read_text()), availability)
     if args.compare_only:
         saved = json.loads((args.out / "run.json").read_text())
         events, captures = saved["events"], saved["captures"]
     else:
         cards = args.out / "cards"
         cards.mkdir(parents=True, exist_ok=True)
+        for slot in (1, 2):
+            source = getattr(args, f"card{slot}")
+            if source:
+                image = bytes(0x20000) if source == "unformatted" else Path(source).read_bytes()
+                (cards / f"card{slot}.mcd").write_bytes(image)
         headless = Headless(
             [
                 str(args.headless),
@@ -204,12 +281,19 @@ def main():
             ]
         )
         try:
-            events, captures = run(reference["program"], headless, args.out)
+            sampling = json.loads(args.sample_memory.read_text()) if args.sample_memory else None
+            events, captures = run(
+                program, headless, args.out, sampling, args.fight_random_battles, args.vram
+            )
         finally:
             headless.close()
         (args.out / "run.json").write_text(
             json.dumps({"events": events, "captures": captures}) + "\n"
         )
+    if not args.capture:
+        for event in events:
+            print(f"{event['step']:24} {event['started_frame']:6} {event.get('completed_frame')}")
+        return
 
     regions = state_regions(args.schema)
     reference_frames = {}

@@ -85,8 +85,9 @@ original address.
   absent or overwritten image traps.
 - **Unprototyped calls.** A direct call whose types differ from the
   definition goes through a generated adapter (`build/game/adapters.txt`
-  lists each): integer arguments are truncated or extended, a missing
-  argument is 0 and an extra one is dropped. Where the PS1 callee read the
+  lists each): integer arguments are truncated or extended by the caller's
+  type (an unsigned char is zero-extended, as MIPS widens it into the register
+  the callee reads), a missing argument is 0 and an extra one is dropped. Where the PS1 callee read the
   register or stack word the caller left, or the caller used the `$v0` a void
   function left, `src/port/adapters.c` defines `xem_adapt_<function>` with the
   call's types and the matched code's value, and the build calls it instead.
@@ -162,7 +163,10 @@ input.
   only there (a frame wait to the next vertical blank, a poll to the next
   interrupt), and every loop back-edge of the game polls now and then
   (`xem_loop_poll`), so waits that spin on memory an interrupt writes reach the
-  clock. Headless runs are unlocked (as fast as the host computes) and
+  clock. The field paces its frames by spinning on `VSync(-1)`: the port's
+  `VSync(-1)`, read again with no wait in between, waits for the next
+  interrupt at once (`xem_spin_waiting`) instead of after the poll's 65536
+  iterations, which took about 12 ms of host time per game frame. Headless runs are unlocked (as fast as the host computes) and
   reproducible. A frame ends just before its vertical blank interrupt, as an
   emulator's frame ends at the blank before the CPU takes it; the next frame
   delivers it first. Pad input a host sets between frames is therefore what
@@ -175,6 +179,15 @@ input.
   one (`xem_wait`, `src/port/boot.c`) asks the host to deliver what is due now
   (`xem.poll_now`) instead of yielding, and the runtime traps if a handler
   suspends anyway.
+- **GPU transfers.** libgpu (`src/port/libgpu.c`) keeps the SDK's queue: work
+  runs at once when DMA2 is free, else waits for its completion interrupt.
+  A DMA2 transfer moves its words when it starts and has ended by the next
+  CHCR read (`xem_core::devices::gpu`), as a block transfer ends on the
+  console long before the CPU reuses what it read: the battle's HUD sheet
+  uploads go out before the heap reuses their buffer. A packet or image on
+  the port's stack, which is outside PS1 RAM where the original's stack was,
+  goes through the GP0 and GPUREAD ports by the CPU instead (`PutDrawEnv` of
+  a local environment, as the boot logo does).
 - **Boot mode.** `boot_mode {mode}` (before the first dispatch) makes boot
   leave into `mode` instead of the opening movie: the value main's
   `mode_select_next_mode(6)` chose is replaced when main's `mode_dispatch`
@@ -193,14 +206,20 @@ input.
   and the reference emulator (`tools/reference/observe.py`); the captures of
   the original environment stay in `.local/scenarios`. `tools/compare_frames.py
   RUN_DIR CAPTURE_DIR` scores checkpoint frames against a capture at the best
-  vertical offset. `tools/native_scenario.py CAPTURE_DIR OUT_DIR` runs a
+  vertical offset. `tools/native_scenario.py OUT_DIR --capture CAPTURE_DIR` runs a
   scenario program capture (tools/reference/observe.py `--program`) on the
   runtime with the reference's own executor (`tools/reference/scenario_program.py`:
   the same conditions, fingerprint-guarded writes, held buttons and capture
-  labels, over `xem-headless --control`, whose `screenshot {path}` writes the
-  display) and compares, at every labelled capture, `game_data`, the RNG seed,
+  labels, over `xem-headless --control`, whose `screenshot {path}` and
+  `vram {path}` write the display and VRAM, raw halfwords for a `.bin`) and
+  compares, at every labelled capture, `game_data`, the RNG seed,
   the field event variables and the whole RAM, and the frame each step
-  completed. `src/runtime/crates/xem-headless/tests/route.rs` (local, it
+  completed. `--scenario FILE` runs a scenario JSON compiled as
+  tools/reference/scenario.py does, without a comparison; `--card1/--card2`
+  give the cards' first images (`unformatted` for a blank one);
+  `--sample-memory` records the reference sampler's ranges every frame;
+  `--fight-random-battles` makes it an agent that fights any battle with
+  Cross and resumes the program after it. `src/runtime/crates/xem-headless/tests/route.rs` (local, it
   needs disc 1) checks that the new-game route's RAM and scratchpad do not
   depend on presentation capture or on a snapshot restored on the way, and
   the browser suite checks the same route's `memory_hash` against

@@ -3,7 +3,7 @@
 //!
 //! `--frames N` runs N frames and reports; `--control` reads one JSON command
 //! per line from stdin and answers each on stdout (xem_core::control), plus
-//! `screenshot {path}`, which writes the display as a PNG.
+//! `screenshot {path}` and `vram {path}`, which write the display and VRAM as PNGs.
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -134,6 +134,26 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
                     None => serde_json::json!({ "error": "screenshot needs path" }),
+                },
+                // The whole VRAM (1024x512) as a PNG file.
+                Ok(command) if command["cmd"] == "vram" => match command["path"].as_str() {
+                    // Raw little-endian halfwords for a .bin path.
+                    Some(path) if path.ends_with(".bin") => {
+                        let raw: Vec<u8> =
+                            session.runtime.services().gpu.vram().iter().flat_map(|p| p.to_le_bytes()).collect();
+                        match std::fs::write(path, raw) {
+                            Ok(()) => serde_json::json!({ "width": 1024, "height": 512 }),
+                            Err(error) => serde_json::json!({ "error": error.to_string() }),
+                        }
+                    }
+                    Some(path) => {
+                        let rgba = session.runtime.services().gpu.vram_rgba8();
+                        match write_png(std::path::Path::new(path), 1024, 512, &rgba) {
+                            Ok(()) => serde_json::json!({ "width": 1024, "height": 512 }),
+                            Err(error) => serde_json::json!({ "error": error.to_string() }),
+                        }
+                    }
+                    None => serde_json::json!({ "error": "vram needs path" }),
                 },
                 Ok(command) => session.execute(&command),
                 Err(error) => serde_json::json!({ "error": format!("bad json: {error}") }),
