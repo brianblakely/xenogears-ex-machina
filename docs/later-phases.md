@@ -313,9 +313,9 @@ narrow parameters or results, another parameter count, or a by-value structure
 split another way. The shared headers leave these out. The resident keeps its
 own declarations in `decomp/src/resident/own_declarations.h`, and each target
 declares its own. For example, `func_8003BDFC` returns `s32` in the resident,
-`s16` in battle/frame.h and `void` in field/field.h. A single native link needs
-one canonical prototype per function, plus adapters where callers depend on
-narrowing.
+`s16` in battle/resident_views.h and `void` in field/field_resident.h. A single
+native link needs one canonical prototype per function, plus adapters where
+callers depend on narrowing.
 
 ### Authoritative state
 
@@ -669,8 +669,8 @@ well:
   once at load (`func_8002C8CC`). Each frame the renderers rewrite only screen
   coordinates and some colours or UVs, and link the packets (`model_draw.s`).
   Other code builds SPRT, TILE, LINE and the DR_* environment packets inline,
-  with the libgpu setters and the OT helpers (`ot_link.s`, resident/console.h and
-  window.h).
+  with the libgpu setters and the OT helpers (`ot_link.s`, resident/gpu.h,
+  console.h and window.h).
 
 | Pre-projection seam | Where | Captures |
 | --- | --- | --- |

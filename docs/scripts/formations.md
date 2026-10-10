@@ -133,7 +133,7 @@ bundles, area files and discs. On the user's discs:
   from `v0420`, `v0426` and `v042a` before them (`python3 -m tools.analysis.events
   --list 480`), and those are not traced.
 - Slot byte 5 (`enemyFlags` bit 0, never set): no unit reads it through `BattleSlot`
-  or ovl2615's `SlotInfo`, whose only accesses are the writes in `func_801E4048` and
+  (`field5`), whose only accesses are ovl2615's writes in `func_801E4048` and
   `func_801E4160`. A read through another view is not ruled out.
 - Whether the modes that load the five tableless area files can roll: their timers
   (`func_8007528C`) are not traced.

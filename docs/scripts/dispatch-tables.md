@@ -139,8 +139,8 @@ and table, and how each table's index is chosen, is listed in
 ## TMD primitives
 
 - Dispatch (`decomp/src/battle/battle_800B15D8.c`): `func_800B1720` builds and
-  `func_800B1F6C` draws each primitive of a TMD object (`objects.h`'s effect
-  script file) by kind: mode & 0x1c, plus 0x100 when flag bit 0 (no lighting) is
+  `func_800B1F6C` draws each primitive of a TMD object
+  (`battle/effect_script.h`'s effect script file) by kind: mode & 0x1c, plus 0x100 when flag bit 0 (no lighting) is
   clear. Both switches, and ovl3384 `func_801FC4C4`'s, have all 16 kinds, and a
   switch is bounds-checked, so the census checks what each kind needs instead: it
   reads from the C each kind's packet (the POLY type the drawer's mode switch

@@ -506,7 +506,7 @@ VSync(-1) 4, and VSync(8), VSync(D_80092898), VSync(D_80059198 + 1).
 | 4 Battling arena (`menu` target, func_80088E90) | VSync(D_80092898) | 1 or 2 | the arena task sets D_80092898 to 0 or 2 (menu5.c func_800852C4); the arena coroutine runs once per frame (Control flow) |
 | 5 in-game menu (resident func_8001C634; frames func_8001C074, slot39 func_801C7BF4) | DrawSync, VSync(0) | 1 | also the ovl2598/2600/2601/2602 screens; card and disc-change waits inside |
 | 5 menu missing pad (slot39 func_801C7D78; ovl2598 func_801C92AC, ovl2600 func_801C98E8, ovl2601 func_801CACC8, ovl2602 func_801CB4E4) | none: spins | — | each screen's input reader spins on func_80035734(0), with no VSync, until the first pad answers; voices and tick suspended, D_80059488 restored |
-| 6 movie (func_800737EC, player func_80076488) | VSync(0) per pass, three decode steps per frame (func_801D3F7C) | 1 | mdec's DecDCTout callback delivers frames |
+| 6 movie (func_800737EC, player func_80076488) | VSync(0) per pass, three decode steps per frame (movie_poll) | 1 | mdec's DecDCTout callback delivers frames |
 | battle screen effects (ovl2615 load/burst modes, ovl3387) | DrawSync, VSync(2) | 2 | |
 
 Battle alone measures its frames and scales logic by the result. The field's
@@ -524,7 +524,7 @@ The next frame consumes them:
   (while D_800CCC58 is set). The ATB therefore advances once per blank of the
   previous frame, up to five times a frame. func_8001C964 zeroes D_80059494
   when its pause count D_80059428 runs out.
-- Stage steps (battle_8009E53C.c func_800A9A50, 4060-4068). D_800C3E88 += 1 +
+- Stage steps (battle_8009E53C.c:4144-4152, func_800A9A50). D_800C3E88 += 1 +
   frameTicks, capped at 6, yields up to three steps of two blanks, and the
   remainder carries over. The steps advance:
   - the wave phase (D_800C3CF0 += 56 each);
@@ -785,11 +785,11 @@ GTE with H 0x1000 (sprite_80025C04.c).
   - SetDrawTPage passes 0 at 16 of 21.
   - The linked images hold 62 and 20 such calls, because the two branches of
     arena func_8008E2B8 and of world map func_800925A0 each share one call.
-  - Dither 1 goes to the arena's screen fades (menu7.c func_8008E2B8 at 2118
-    and 2120, func_8008E3CC at 2167), its HUD packets (menu5.c func_80085EC8
-    at 1565 and 1635, func_800868E0 at 1792 and 1794) and the world map's
-    dithered saved-screen fade (worldmap_80072238.c:511 in func_80072DB4, a
-    DR_TPAGE drawn before its translucent black quad).
+  - Dither 1 goes to the arena's screen fades (func_8008E2B8 at menu7.c:2154
+    and 2156, func_8008E3CC at menu7.c:2203), its HUD packets (func_80085EC8
+    at menu5.c:1605 and 1675, func_800868E0 at menu5.c:1832 and 1834) and the
+    world map's dithered saved-screen fade (worldmap_80072238.c:511 in
+    func_80072DB4, a DR_TPAGE drawn before its translucent black quad).
   - ovl2615's stage backdrops copy the draw environment's dfe and dtd
     (stage.c func_801E7914, two sites, after GetDrawEnv).
 
