@@ -4,7 +4,7 @@
 
     stray_padding.py [CONFIG.mk ...]     # default: every target
 
-Run inside the matching Nix shell after `make -C decomp all-verify`. The
+Run inside the matching Nix shell after `make -C src/decomp all-verify`. The
 originals hold stray bytes in some alignment fill and after some units' last
 object; C cannot emit them, so an object they follow is linked with
 INCLUDE_ORIGINAL. A C initializer can still spell such bytes as invented
@@ -343,7 +343,7 @@ def load(path: Path) -> dict:
 def element_size(label: str, unit: str, elements: list[int], cache: dict) -> int:
     """The bytes one more initializer element adds (see the module)."""
     n = sum(w or 1 for w in elements)
-    count = outer_count(label, (ROOT / "decomp/src" / unit).parent, cache)
+    count = outer_count(label, (ROOT / "src/decomp/src" / unit).parent, cache)
     if count is None:  # no definition found: by directive width
         return min([w for w in elements if w] or [1])
     if count == 0:  # a scalar or struct object
@@ -358,7 +358,7 @@ def target_objects(t: dict, tmp: Path, cache: dict) -> list[dict]:
     units: dict[str, tuple] = {}
     for name, address, _size, obj in t["map"]:
         unit = obj.split("/decomp/src/", 1)[-1]
-        source = (ROOT / "decomp/src" / unit).with_suffix(".c")
+        source = (ROOT / "src/decomp/src" / unit).with_suffix(".c")
         if name not in DATA or "/decomp/src/" not in obj or not source.exists():
             continue
         if obj not in units:
@@ -417,7 +417,7 @@ def attribute(targets: list[dict], objects: list[dict]) -> None:
 
 
 def main() -> None:
-    paths = sorted((ROOT / "decomp/targets").glob("*/*.mk"))
+    paths = sorted((ROOT / "src/decomp/targets").glob("*/*.mk"))
     wanted = {Path(a).stem for a in sys.argv[1:]} or {p.stem for p in paths}
     targets = [load(path) for path in paths]
     objects, cache = [], {}

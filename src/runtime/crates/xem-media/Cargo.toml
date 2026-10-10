@@ -1,0 +1,10 @@
+[package]
+name = "xem-media"
+description = "The PS1 MDEC and CD-XA ADPCM audio as deterministic host services, with a reference BS v2/v3 bitstream decoder"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]

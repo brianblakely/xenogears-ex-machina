@@ -1,6 +1,6 @@
 # Battle enemy AI scripts
 
-**Interpreter** (battle overlay, `decomp/src/battle/battle_ai_runners.c` and
+**Interpreter** (battle overlay, `src/decomp/src/battle/battle_ai_runners.c` and
 `battle_ai_opcodes.c`):
 
 - Runners stop at `fd` or `ff`: `800799c8` runs an enemy's turn script,

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>XEM WebXR test scene</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    body { margin: 0; background: #101318; color: #dde3ea; }
+    main { max-width: 980px; margin: 0 auto; padding: 16px; }
+    canvas { display: block; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+    #controls { position: relative; z-index: 2147483647; display: flex; gap: 8px; margin: 12px 0; }
+    button { font: inherit; padding: 8px 16px; border-radius: 6px; border: 1px solid #4a5563; background: #222a35; color: inherit; }
+    button:disabled { opacity: 0.5; }
+    #overlay { position: relative; z-index: 2147483647; margin: 0; padding: 8px; background: rgba(0, 0, 0, 0.6);
+      font: 12px/1.35 ui-monospace, monospace; white-space: pre-wrap; }
+    /* While IWER shows the emulated headset, keep the controls and overlay above it. */
+    body.immersive #controls, body.immersive #overlay { position: fixed; left: 8px; }
+    body.immersive #controls { top: 8px; }
+    body.immersive #overlay { top: 56px; max-width: 40%; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>XEM WebXR test scene</h1>
+    <!-- Its own parent: IWER re-appends the canvas there after a session. -->
+    <div><canvas id="scene" width="960" height="540"></canvas></div>
+    <div id="controls">
+      <button id="enter" disabled>Enter VR</button>
+      <button id="exit" disabled>Exit VR</button>
+      <button id="pause">Pause</button>
+    </div>
+    <pre id="overlay">loading…</pre>
+  </main>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

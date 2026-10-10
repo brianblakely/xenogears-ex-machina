@@ -3,7 +3,7 @@
 Every table is read from the recovered interpreter, not inferred from the
 data:
 
-* World map actor scripts, worldmap_actor_script_run (decomp/src/worldmap/worldmap_open_map.c).
+* World map actor scripts, worldmap_actor_script_run (src/decomp/src/worldmap/worldmap_open_map.c).
   The script is a stream of signed halfwords. The interpreter reads the 32-bit word at the
   actor's script position: its low halfword indexes the twelve handlers of
   worldmap_actor_script_handlers (unchecked) and its high halfword and the next two halfwords
@@ -11,7 +11,7 @@ data:
   until the actor's next update. Only worldmap_scene17_script_start
   (worldmap_scene17_actor_script) and worldmap_scene18_script_start
   (worldmap_scene18_actor_script) give an actor a script.
-* Arena scene scripts, arena_scene_run_script (decomp/src/menu/arena_camera_and_scenes.c).
+* Arena scene scripts, arena_scene_run_script (src/decomp/src/menu/arena_camera_and_scenes.c).
   Bytes; switch cases 1-34 take one to three bytes, except 16 and 17, which never advance and
   never return. 0 and every value without a case return without advancing.
   arena_scene_start_script starts the scripts: arena_scene_scripts[scene] (arena_scene_enter,
@@ -27,16 +27,16 @@ data:
   ends the world-map loop (worldmap_run_frame_loop) after that frame, so the director never runs
   again.
 * Arena move frame events, arena_frame_event_run
-  (decomp/src/menu/arena_fighters_bout_and_effects.c). A gear model file (directory 0x30/1)
+  (src/decomp/src/menu/arena_fighters_bout_and_effects.c). A gear model file (directory 0x30/1)
   holds per animation a list of FrameEvent records {first, last, spec} ending in first 0xFF;
   each record whose frame range holds the frame runs the HitSpec at header + spec through a
   switch on its kind byte (cases 0-5), and kinds 0 and 2 dispatch again on its type.
-* Field movie sound timelines, field_movie_play_due_sounds (decomp/src/field/
+* Field movie sound timelines, field_movie_play_due_sounds (src/decomp/src/field/
   field_event.c). u16 (frame, sound) pairs, one run per movie sound-effect
   bank, each ended by frame 0xFFFF; field_movie_load_sound_bank seeks the bank's run and the
   player plays its entries in order as the movie's frames reach them.
 * World map terrain texture animations, worldmap_texture_anim_advance and
-  worldmap_texture_anim2_advance (decomp/src/worldmap/worldmap_open_map.c). Runs of (image,
+  worldmap_texture_anim2_advance (src/decomp/src/worldmap/worldmap_open_map.c). Runs of (image,
   duration) frames ended by a negative duration, one per slot of worldmap_texture_anim_slots and
   worldmap_texture_anim2_slots; each update steps a slot's frame when its timer runs out and
   uploads the image.
@@ -69,7 +69,7 @@ from tools.analysis.packed import PackedError, PackedTruncated, decode_block
 from tools.extraction.overlays import OVERLAYS, image
 
 ROOT = Path(__file__).resolve().parents[2]
-BASE = 0x8006FAF0  # load address of the three overlays (decomp/targets/overlays/*.yaml)
+BASE = 0x8006FAF0  # load address of the three overlays (src/decomp/targets/overlays/*.yaml)
 
 
 class ScriptError(ValueError):
@@ -122,7 +122,7 @@ class Instruction:
         return f"{self.spec.mnemonic} {', '.join(values)}".rstrip()
 
 
-# Handlers of worldmap_actor_script_handlers in decomp/src/worldmap/worldmap_open_map.c. Each
+# Handlers of worldmap_actor_script_handlers in src/decomp/src/worldmap/worldmap_open_map.c. Each
 # operand is a signed halfword; sizes are the halfwords each handler returns
 # (exit_worldmap never advances: its word is the one the interpreter reads).
 WORLDMAP = Machine(
@@ -159,8 +159,8 @@ WORLDMAP_HANDLER_ADDRESSES = (
     0x80076CB4, 0x80076CD4, 0x80076CF4, 0x80076D1C, 0x80076D50, 0x80076D8C,
 )  # fmt: skip
 
-# Switch cases of arena_scene_run_script in decomp/src/menu/arena_camera_and_scenes.c. Operands are
-# unsigned bytes. Headings are relative to the facing toward the opponent.
+# Switch cases of arena_scene_run_script in src/decomp/src/menu/arena_camera_and_scenes.c.
+# Operands are unsigned bytes. Headings are relative to the facing toward the opponent.
 ARENA = Machine(
     name="arena",
     overlay="menu",
@@ -306,7 +306,7 @@ def sweep(machine: Machine, data: bytes, base: int = BASE) -> Sweep:
 
 
 def expected_sha256(overlay: str) -> str:
-    text = (ROOT / f"decomp/targets/overlays/{overlay}.mk").read_text()
+    text = (ROOT / f"src/decomp/targets/overlays/{overlay}.mk").read_text()
     return re.search(r"^ORIGINAL_SHA256 := ([0-9a-f]{64})$", text, re.M).group(1)
 
 
@@ -486,7 +486,7 @@ class Director:
 DIRECTORS = (
     Director(
         "worldmap_scene14_director_update",
-        "decomp/src/worldmap/worldmap_scene14.c",
+        "src/decomp/src/worldmap/worldmap_scene14.c",
         "worldmap_scene14_director_start",
         False,
         14,
@@ -518,7 +518,7 @@ DIRECTORS = (
     ),
     Director(
         "worldmap_scene12_director_update",
-        "decomp/src/worldmap/worldmap_scene12.c",
+        "src/decomp/src/worldmap/worldmap_scene12.c",
         "worldmap_scene12_director_start",
         True,
         12,
@@ -563,7 +563,7 @@ DIRECTORS = (
     ),
     Director(
         "worldmap_scene15_director_update",
-        "decomp/src/worldmap/worldmap_scene15.c",
+        "src/decomp/src/worldmap/worldmap_scene15.c",
         "worldmap_scene15_director_start",
         True,
         15,
@@ -621,7 +621,7 @@ DIRECTORS = (
     ),
     Director(
         "worldmap_scene13_director_update",
-        "decomp/src/worldmap/worldmap_scene13.c",
+        "src/decomp/src/worldmap/worldmap_scene13.c",
         "worldmap_scene13_director_start",
         False,
         13,
@@ -650,7 +650,7 @@ DIRECTORS = (
     ),
     Director(
         "worldmap_scene16_director_update",
-        "decomp/src/worldmap/worldmap_scenes_16_18.c",
+        "src/decomp/src/worldmap/worldmap_scenes_16_18.c",
         "worldmap_scene16_director_start",
         True,
         16,
@@ -854,7 +854,7 @@ def scene_listing(disc: int) -> None:
 
 # Arena move frame events -----------------------------------------------------
 #
-# Layouts from decomp/src/menu/actor.h, as (offset, size, signed).
+# Layouts from src/decomp/src/menu/actor.h, as (offset, size, signed).
 FRAME_EVENT = {"first": (0, 1, False), "last": (1, 1, False), "spec": (2, 2, True)}
 HIT_SPEC = {
     "unk0": (0, 1, False),  # the kind
@@ -1214,7 +1214,7 @@ def event_listing(number: int, root: Path = ROOT) -> None:
 
 # Field movie sound timelines -------------------------------------------------
 #
-# field_movie_sound_timelines (decomp/src/field/field_event.c) holds u16 (frame, sound) pairs: a
+# field_movie_sound_timelines (src/decomp/src/field/field_event.c) holds u16 (frame, sound) pairs: a
 # leading end, then one run per movie sound-effect bank, each ended by an entry whose frame is
 # 0xFFFF. field_movie_load_sound_bank loads the movie's bank, file 0x115 + bank of directory (0x1C,
 # 0), and leaves field_movie_sound_timeline_index past bank + 1 ends. After each movie step
@@ -1460,7 +1460,7 @@ def movie_sound_listing(number: int) -> None:
 # World map terrain texture animations ----------------------------------------
 #
 # worldmap_texture_anim_slots[2] and worldmap_texture_anim2_slots[3]
-# (decomp/src/worldmap/worldmap_open_map.c) are TexAnimSlot rows {RECT rect; s32; TexAnimFrame
+# (src/decomp/src/worldmap/worldmap_open_map.c) are TexAnimSlot rows {RECT rect; s32; TexAnimFrame
 # *frames}; a TexAnimFrame run {s16 image; s16 duration} ends with a negative duration.
 # worldmap_texture_anim_create and worldmap_texture_anim2_create give animation i of the area file's
 # two animation sections (+0x20 and +0x24: a count, then image offsets) slot i, frame 0 and timer 1.

@@ -77,30 +77,32 @@ class SourceTests(unittest.TestCase):
     """The bit tables and records follow the recovered field menu (slot39)."""
 
     def test_item_bits_follow_menu_use_item_on_character(self):
-        body = function("decomp/src/slot39/menu_member_screens.c", "u8 menu_use_item_on_character(")
+        body = function(
+            "src/decomp/src/slot39/menu_member_screens.c", "u8 menu_use_item_on_character("
+        )
         self.assertIn(f"if (record->flags & {RAISES_STATS}) {{", body)
         pairs = re.findall(r"if \(record->stats & (0x[0-9A-F]+)\) \{\s+chara->(\w+) \+= record->amount;", body)
         self.assertEqual({int(bit, 16): member for bit, member in pairs}, ITEM_BITS)
 
     def test_accessory_bits_follow_menu_compute_character_equipment(self):
-        body = function("decomp/src/slot39/menu_member_screens.c", "void menu_compute_character_equipment(")
+        body = function("src/decomp/src/slot39/menu_member_screens.c", "void menu_compute_character_equipment(")
         self.assertIn("amount = accessory->stats;", body)
         pairs = re.findall(r"if \(accessory->stats & (0x[0-9A-F]+)\) \{\s+chara->(\w+) \+= amount;", body)
         self.assertEqual({int(bit, 16): member for bit, member in pairs}, ACCESSORY_BITS)
 
     def test_tables_follow_the_loader_and_the_records(self):
-        loader = function("decomp/src/slot39/menu_framework.c", "void menu_load_or_release_data_set(")
+        loader = function("src/decomp/src/slot39/menu_framework.c", "void menu_load_or_release_data_set(")
         self.assertIn(f"cd_select_directory(0x{MENU_DATA[0]:X}, {MENU_DATA[1]});", loader)
         self.assertIn(f"cd_read_file({MENU_DATA[2]}, archive, 0, 0x80);", loader)
         self.assertIn("tables->items = text_unpack_lzss_alloc(archive->items, 0);", loader)
         self.assertIn("tables->accessories = text_unpack_lzss_alloc(archive->accessories, 0);", loader)
-        archive = (ROOT / "decomp/src/slot39/menu.h").read_text()
+        archive = (ROOT / "src/decomp/src/slot39/menu.h").read_text()
         self.assertIn(f"void *items; /* {4 * (ITEMS + 1):X} */", archive)
         self.assertIn(f"void *accessories; /* {4 * (ACCESSORIES + 1):X} */", archive)
-        tables = (ROOT / "decomp/include/menu/tables.h").read_text()
+        tables = (ROOT / "src/decomp/include/menu/tables.h").read_text()
         self.assertIn(f"sizeof(ItemInfo) == 0x{RECORD:X}", tables)
         self.assertIn(f"sizeof(AccessoryInfo) == 0x{RECORD:X}", tables)
-        text = (ROOT / "decomp/src/resident/text_windows_and_pads.c").read_text()
+        text = (ROOT / "src/decomp/src/resident/text_windows_and_pads.c").read_text()
         for name, index in (("item", ITEM_NAMES), ("accessory", ACCESSORY_NAMES)):
             self.assertIn(
                 f"u8 *text_get_{name}_name(s32 index) {{\n"

@@ -11,7 +11,7 @@ concurrency:
 jobs:
   public:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -20,7 +20,7 @@ jobs:
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
-      - name: Public build, standalone headers, and regressions
-        run: nix develop path:./nix -c python3 tools/repository/check.py --preset debug
+      - name: Validator, Python tests, ruff and the Rust workspace
+        run: nix develop path:./nix/runtime -c python3 tools/repository/check.py
       - name: Actual matching toolchain and exact synthetic image
-        run: nix develop path:./nix/ghidra#matching -c make -C decomp smoke
+        run: nix develop path:./nix/ghidra#matching -c make -C src/decomp smoke

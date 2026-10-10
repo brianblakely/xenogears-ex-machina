@@ -4,7 +4,7 @@
     code_census.py [--jobs N]
 
 Code is any aligned `jr $ra` word (0x03E00008), a leaf's return as well as a
-framed one. The targets are the ORIGINAL_SHA256 images of decomp/targets/*/*.mk;
+framed one. The targets are the ORIGINAL_SHA256 images of src/decomp/targets/*/*.mk;
 each must occur on a disc, and on each disc:
 
 - Every indexed file except movie streams, and the ISO 9660 boot program, is
@@ -164,7 +164,7 @@ def stream_sector(sector: bytes) -> str:
 
 def target_images() -> dict[str, str]:
     targets = {}
-    for config in sorted((ROOT / "decomp/targets").glob("*/*.mk")):
+    for config in sorted((ROOT / "src/decomp/targets").glob("*/*.mk")):
         match = re.search(r"^ORIGINAL_SHA256 := ([0-9a-f]{64})$", config.read_text(), re.M)
         if not match:
             raise SystemExit(f"{config}: no ORIGINAL_SHA256")

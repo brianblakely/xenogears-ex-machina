@@ -1,5 +1,5 @@
 """Invented effect scripts exercise the effect VM's lengths, flow and containers;
-the tables are checked against the recovered interpreters in decomp/src."""
+the tables are checked against the recovered interpreters in src/decomp/src."""
 
 import re
 import struct
@@ -220,7 +220,7 @@ CASE = r"\n {8}(?:case 0x([0-9A-F]{2})|default):"
 
 
 class SourceTests(unittest.TestCase):
-    """The tables follow the recovered interpreters in decomp/src."""
+    """The tables follow the recovered interpreters in src/decomp/src."""
 
     def check_parameter_words(self, path, head, table):
         cases = case_bodies(path, head, CASE)
@@ -233,19 +233,19 @@ class SourceTests(unittest.TestCase):
 
     def test_battle_commands_read_their_parameter_words(self):
         self.check_parameter_words(
-            "decomp/src/battle/battle_scene.c", "void battle_run_effect_script(", BATTLE
+            "src/decomp/src/battle/battle_scene.c", "void battle_run_effect_script(", BATTLE
         )
 
     def test_model_viewer_commands_read_their_parameter_words(self):
         self.check_parameter_words(
-            "decomp/src/ovl2143/gear_model_scene.c",
+            "src/decomp/src/ovl2143/gear_model_scene.c",
             "void gear_model_run_effect_script(",
             MODEL_VIEWER,
         )
 
     def test_event_records_follow_the_runners(self):
         viewer = case_bodies(
-            "decomp/src/ovl2143/gear_model_scene.c",
+            "src/decomp/src/ovl2143/gear_model_scene.c",
             "void gear_model_run_animation_events(",
             r"\n {8}case (\d):",
         )
@@ -257,7 +257,7 @@ class SourceTests(unittest.TestCase):
         records = {1: "SpriteCommand", 2: "LightEvent", 3: "ChannelEvent", 4: "ChannelEvent"}
         records.update({5: "SoundEvent", 8: "SlotEvent", 9: "ImageEvent"})
         battle = case_bodies(
-            "decomp/src/battle/battle_scene.c",
+            "src/decomp/src/battle/battle_scene.c",
             "void battle_run_animation_events(",
             r"\n {16}case (\d):",
         )

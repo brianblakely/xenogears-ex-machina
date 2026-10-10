@@ -513,10 +513,10 @@ class FrameEventTests(unittest.TestCase):
 
 
 class SourceTests(unittest.TestCase):
-    """The opcode tables follow the recovered interpreters in decomp/src."""
+    """The opcode tables follow the recovered interpreters in src/decomp/src."""
 
     def test_worldmap_entries_follow_the_handler_table_and_returns(self):
-        text = (ROOT / "decomp/src/worldmap/worldmap_open_map.c").read_text()
+        text = (ROOT / "src/decomp/src/worldmap/worldmap_open_map.c").read_text()
         table = re.search(
             r"ScriptOp worldmap_actor_script_handlers\[12\] = \{(.*?)\};", text, re.S
         ).group(1)
@@ -531,7 +531,7 @@ class SourceTests(unittest.TestCase):
             self.assertEqual(advances, expected, code_)
 
     def test_arena_entries_follow_the_switch_cases_and_their_advances(self):
-        text = (ROOT / "decomp/src/menu/arena_camera_and_scenes.c").read_text()
+        text = (ROOT / "src/decomp/src/menu/arena_camera_and_scenes.c").read_text()
         body = text[
             text.index("s32 arena_scene_run_script(void) {") : text.index(
                 "void arena_scene_draw_marker("
@@ -593,7 +593,7 @@ def asset_ranges(overlay: str) -> list[tuple[int, int]]:
         if overlay == "resident"
         else f"overlays/{overlay}.classification.txt"
     )
-    lines = (ROOT / "decomp/targets" / name).read_text()
+    lines = (ROOT / "src/decomp/targets" / name).read_text()
     return [
         (int(start, 16), int(end, 16))
         for start, end, kind in re.findall(r"^(\w+) (\w+) (\w+) ", lines, re.M)
@@ -609,7 +609,7 @@ class AssetTests(unittest.TestCase):
 
     def check(self, overlay: str, addresses: list[int]) -> None:
         sources = "".join(
-            path.read_text() for path in sorted((ROOT / f"decomp/src/{overlay}").glob("*.c"))
+            path.read_text() for path in sorted((ROOT / f"src/decomp/src/{overlay}").glob("*.c"))
         )
         ranges = asset_ranges(overlay)
         for address in addresses:
@@ -623,7 +623,7 @@ class AssetTests(unittest.TestCase):
         self.check("worldmap", [0x8009A758, 0x8009AC60, *tables])
 
     def test_arena_scripts(self):
-        text = code((ROOT / "decomp/src/menu/arena_camera_and_scenes.c").read_text())
+        text = code((ROOT / "src/decomp/src/menu/arena_camera_and_scenes.c").read_text())
         table = re.search(r"u8 \*arena_scene_scripts\[\] = \{(.*?)\};", text, re.S).group(1)
         linked = asset_addresses(text)
         scenes = [linked[name] for name in re.findall(r"\w+", table)]
@@ -727,7 +727,7 @@ class SceneSourceTests(unittest.TestCase):
         and, unless one is pending, unk4 to the argument. Every request names an
         argument its receiver takes, except two."""
         sources = "".join(
-            path.read_text() for path in sorted((ROOT / "decomp/src/worldmap").glob("*.c"))
+            path.read_text() for path in sorted((ROOT / "src/decomp/src/worldmap").glob("*.c"))
         )
         sender = function(sources, "worldmap_actor_request")
         self.assertIn("actor->command = 1;\n        actor->unk4 = argument;", sender)
@@ -772,7 +772,7 @@ class SceneSourceTests(unittest.TestCase):
 
     def test_every_case_of_each_director_is_its_cue(self):
         sources = "".join(
-            path.read_text() for path in sorted((ROOT / "decomp/src/worldmap").glob("*.c"))
+            path.read_text() for path in sorted((ROOT / "src/decomp/src/worldmap").glob("*.c"))
         )
         named = {address: name for name, address in asset_addresses(sources).items()}
         for each in DIRECTORS:
@@ -797,7 +797,7 @@ class SceneSourceTests(unittest.TestCase):
 
     def test_starters_tables_and_setups_follow_their_definitions(self):
         sources = "".join(
-            path.read_text() for path in sorted((ROOT / "decomp/src/worldmap").glob("*.c"))
+            path.read_text() for path in sorted((ROOT / "src/decomp/src/worldmap").glob("*.c"))
         )
         modes = re.search(
             r"WorldmapMode worldmap_mode_handlers\[19\] = \{(.*?)\n\};", sources, re.S
@@ -860,11 +860,11 @@ def struct_fields(text: str, name: str) -> dict:
 class FrameEventSourceTests(unittest.TestCase):
     def setUp(self):
         self.arena_fighters_bout_and_effects = (
-            ROOT / "decomp/src/menu/arena_fighters_bout_and_effects.c"
+            ROOT / "src/decomp/src/menu/arena_fighters_bout_and_effects.c"
         ).read_text()
 
     def test_layouts_follow_actor_h(self):
-        header = (ROOT / "decomp/src/menu/actor.h").read_text()
+        header = (ROOT / "src/decomp/src/menu/actor.h").read_text()
         self.assertEqual(struct_fields(header, "FrameEvent"), FRAME_EVENT)
         self.assertEqual(struct_fields(header, "HitSpec"), HIT_SPEC)
 
@@ -939,7 +939,7 @@ class MovieSoundSourceTests(unittest.TestCase):
     event fe a0."""
 
     def setUp(self):
-        self.text = (ROOT / "decomp/src/field/field_event.c").read_text()
+        self.text = (ROOT / "src/decomp/src/field/field_event.c").read_text()
 
     def test_the_seek_loads_file_0x115_plus_bank_and_skips_bank_plus_one_ends(self):
         body = function(self.text, "field_movie_load_sound_bank")
@@ -986,7 +986,7 @@ class MovieSoundSourceTests(unittest.TestCase):
         self.assertEqual(asset_size(self.text, MOVIE_SOUNDS), 4 * MOVIE_SOUND_ENTRIES)
 
 
-TEXTURE_SOURCE = ROOT / "decomp/src/worldmap/worldmap_open_map.c"
+TEXTURE_SOURCE = ROOT / "src/decomp/src/worldmap/worldmap_open_map.c"
 
 
 def texture_runs() -> list[int]:
@@ -1034,7 +1034,7 @@ class TextureSourceTests(unittest.TestCase):
                     self.assertIn(line, body)
 
     def test_layouts_follow_worldmap_h(self):
-        header = (ROOT / "decomp/src/worldmap/worldmap.h").read_text()
+        header = (ROOT / "src/decomp/src/worldmap/worldmap.h").read_text()
         self.assertEqual(
             struct_fields(header, "TexAnimFrame"),
             {"image": (0, 2, True), "duration": (2, 2, True)},

@@ -1,7 +1,7 @@
 # Arena scene scripts
 
 - **Interpreter:** `arena_scene_run_script`
-  (`decomp/src/menu/arena_camera_and_scenes.c`) in the `menu` overlay (Disc 1 file 35,
+  (`src/decomp/src/menu/arena_camera_and_scenes.c`) in the `menu` overlay (Disc 1 file 35,
   Disc 2 file 30), run each frame by `arena_scene_update` (scenes) and
   `arena_scene_update_bout_end` (bout end).
 - **Dispatch:** a `switch` on the command byte, each case commented with its operands
@@ -14,7 +14,7 @@
   (`arena_scene_start_bout_end`). `arena_scene_unreferenced_script` has the same
   form, but nothing starts it. All of them lie in `arena_camera_and_scenes.c`'s data and stay
   user-supplied: the unit links them from the user's image (`INCLUDE_ASSET`; `asset`
-  lines in `decomp/targets/overlays/menu.classification.txt`), and only the pointer
+  lines in `src/decomp/targets/overlays/menu.classification.txt`), and only the pointer
   table `arena_scene_scripts` is C.
 - **Coverage:** 35 cases defined (0-34), 31 used; 4, 9, 16 and 17 are unused. Each
   disc decodes 12 scripts, 217 instructions, none undecodable.

@@ -1,14 +1,14 @@
 """The staff-roll text of field file 0xAB, as the recovered field code reads it.
 
-Field extended event BE (field_event_enable_movie_overlay, decomp/src/field/field_event.c) is
+Field extended event BE (field_event_enable_movie_overlay, src/decomp/src/field/field_event.c) is
 the only store of 1 to mode_staff_roll_enabled; no reachable field script uses it (the
 tools.analysis.events sweep). With it set, the field movie player loads
 directory (4, 0) files 0xAB (the text) and 0xAC (a font image) (field_staff_roll_start,
 field_staff_roll_load_files) and draws a text roll over movie frames 0x687-0x18E1
-(field_staff_roll_run_over_movie, decomp/src/field/field_screen.c). Of that loop's passes,
+(field_staff_roll_run_over_movie, src/decomp/src/field/field_screen.c). Of that loop's passes,
 field_staff_roll_advance draws the next line on every 16th, at x 0x300 into VRAM row
 n & 15 from row 15, and field_staff_roll_draw scrolls the sixteen rows up a pixel on
-each (decomp/src/field/field_effect.c).
+each (src/decomp/src/field/field_effect.c).
 
 field_staff_roll_write_line reads a line as up to 28 (GLYPH_LINE_CELLS) big-endian two-byte
 glyph codes ending at a CR byte (0x0D), which the line consumes. The CR test
@@ -44,7 +44,7 @@ DIRECTORY = (4, 0)  # 80028470(4, 0) in field_staff_roll_load_files
 TEXT_FILE = 0xAB
 FONT_FILE = 0xAC
 CR = 0x0D  # field_staff_roll_write_line: line[used] == '\r'
-LINE_CODES = 28  # GLYPH_LINE_CELLS (decomp/src/field/field_glyph.h)
+LINE_CODES = 28  # GLYPH_LINE_CELLS (src/decomp/src/field/field_glyph.h)
 FONT_FIRST = 0x8540  # GLYPH_OWN_FIRST
 FONT_COUNT = 0x340  # GLYPH_OWN_COUNT
 # field_staff_roll_write_line's MoveImage source; field_staff_roll_upload_font's upload

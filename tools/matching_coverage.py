@@ -6,7 +6,7 @@ Each function symbol counts once, with its bytes and its static MIPS
 instructions (the four-byte words of its range, nops and branch delay slots
 included):
 
-* ``c``            cc1 emitted it (``.ent NAME``) in its decomp/src unit
+* ``c``            cc1 emitted it (``.ent NAME``) in its src/decomp/src unit
 * ``nonmatching``  assembly a C unit includes, named as the INCLUDE_ASM fallback
                    of a reviewed ``#ifdef NON_MATCHING`` candidate (found by the
                    only source scan; does not satisfy the exit)
@@ -14,7 +14,7 @@ included):
 * ``handwritten``  other assembly inside a range classified as original
                    hand-written asm; the report fails on a handwritten byte
                    outside such a range, also of an authored .s unit under
-                   decomp/src
+                   src/decomp/src
 * ``asm``          other assembly (remaining work)
 
 The .text bytes outside every function (alignment padding and data words of an
@@ -54,14 +54,14 @@ where the target declares the end its loader clears) counts apart, in
 every byte no input section holds, a variable placed only by a linker-script
 name (``remaining_bss_placeholder_bytes``).
 
-* ``c``            emitted by cc1 in a data section of its decomp/src unit
+* ``c``            emitted by cc1 in a data section of its src/decomp/src unit
 * ``bss``          the same in .bss/.sbss (uninitialized, zero in the file)
 * ``included``     original bytes a C unit links with INCLUDE_RODATA (a .s file)
                    or INCLUDE_ORIGINAL/INCLUDE_ASSET (``.incbin`` of the image)
 * ``nonmatching``/``asm``/``sdk``/``handwritten``  the other bytes an
                    INCLUDE_ASM'd file puts in a C unit (splat moves rodata only
                    one function uses into its file), under that function's class
-* ``handwritten``  an authored assembly unit under decomp/src
+* ``handwritten``  an authored assembly unit under src/decomp/src
 * ``sdk``/``asset``/``handwritten``  inside a classified range, which takes
                    precedence (``asset``: user-supplied game data/bytecode)
 * ``placeholder``  generated data or loaded .bss from the original image
@@ -85,7 +85,7 @@ data range with its section and object (an included one with its label);
 ``bss_placeholder`` ranges are split at each symbol, so each placeholder
 variable shows with its extent.
 
-``--script-symbols warn|strict`` checks the link instead (decomp/Makefile runs
+``--script-symbols warn|strict`` checks the link instead (src/decomp/Makefile runs
 it in ``verify``): a symbol a linker script given with ``--script`` assigns
 (splat's undefined_syms_auto.txt as PROVIDE, where the link used it, a
 ``.data.ld`` or any other fragment) must not lie inside the target's own
@@ -982,7 +982,7 @@ def classify(statement: Asm) -> None:
 
 
 def coverage_build(obj: str) -> Unit:
-    """Attribute a C unit's object by its coverage build (decomp/Makefile)."""
+    """Attribute a C unit's object by its coverage build (src/decomp/Makefile)."""
     side = obj[:-2] + ".cov.o"
     try:
         cc1, gas, marked_cc1, marked_gas = (
@@ -1167,10 +1167,10 @@ def main() -> None:
 
     def unit_of(obj: str) -> tuple[str, Unit | None]:
         """("c", attribution) for a C unit; ("handwritten", None) for an authored
-        assembly unit under decomp/src; ("generated", None) otherwise."""
+        assembly unit under src/decomp/src; ("generated", None) otherwise."""
         if "/decomp/src/" not in obj:
             return "generated", None
-        source = Path("decomp/src/" + obj.split("/decomp/src/", 1)[1]).with_suffix(".c")
+        source = Path("src/decomp/src/" + obj.split("/decomp/src/", 1)[1]).with_suffix(".c")
         if not source.exists():
             return "handwritten", None
         if obj not in units:

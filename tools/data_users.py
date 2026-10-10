@@ -4,7 +4,7 @@
     data_users.py CONFIG.mk [--end ADDR]     # a target's uninitialized variables
     data_users.py --range START:END [CONFIG.mk ...]   # users across images
 
-Run after `make -C decomp all-verify`: it reads each target's rebuilt image
+Run after `make -C src/decomp all-verify`: it reads each target's rebuilt image
 (byte-identical to the original), link map and ELF. It scans code only:
 each function's instructions, for the data addresses they form, with the
 base tracking of tools/service_calls.py (`constant_bases`): `lui` bases and
@@ -169,7 +169,7 @@ def main() -> None:
     configs = [c.resolve() for c in args.configs]
     if args.range:
         lo, hi = (int(x, 16) for x in args.range.split(":"))
-        configs = configs or sorted((ROOT / "decomp/targets").glob("*/*.mk"))
+        configs = configs or sorted((ROOT / "src/decomp/targets").glob("*/*.mk"))
         print("\n".join(users_in(configs, lo, hi)))
     elif len(configs) == 1:
         print("\n".join(ownership(configs[0], args.end)))

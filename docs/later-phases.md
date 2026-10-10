@@ -3,7 +3,7 @@
 This handbook is for the engineer of plan.md Phases 2-5. It covers what the
 Phase 1 decomp gives them: how to use it as an oracle, how the program is built,
 what a port replaces, and what it must keep. Every statement cites the recovered
-source (`decomp/src`, by the names [Navigating the code](#navigating-the-code)
+source (`src/decomp/src`, by the names [Navigating the code](#navigating-the-code)
 explains, with original addresses where they help), matched disassembly, a
 committed tool or the document that records it. Existing documents are
 summarised and linked, not repeated. Anything not established is listed under
@@ -16,7 +16,7 @@ flow, display and sound modes) and
 [scripts/interpreters.md](scripts/interpreters.md) (every bytecode machine and
 data-indexed table).
 
-Scale: `make -C decomp all-coverage` prints one report per target, 26 in all.
+Scale: `make -C src/decomp all-coverage` prints one report per target, 26 in all.
 Summed over the 25 distinct images, leaving out SLUS_006.69's report, which
 repeats SLUS_006.64's, they give 4,436 functions (1,545,260 bytes) of compiled
 C, 68 (16,028 bytes) of handwritten assembly and 458 (71,168 bytes) of PsyQ SDK
@@ -28,15 +28,15 @@ rather than copying them.
 [matching.md](matching.md#names) gives the naming convention, how to find a
 symbol and how to rename one. What it means when reading the code for a port:
 
-- **Directories are targets; names carry owners.** `decomp/src/<target>` holds
-  an image's units, `decomp/include` the shared types
-  ([The resident API](#the-resident-api)) and `decomp/targets` each target's
+- **Directories are targets; names carry owners.** `src/decomp/src/<target>` holds
+  an image's units, `src/decomp/include` the shared types
+  ([The resident API](#the-resident-api)) and `src/decomp/targets` each target's
   split, build settings, classification and symbol files. Directory and prefix
-  can differ (`decomp/src/menu` holds mode 4's `arena_` code, the `menu_`
+  can differ (`src/decomp/src/menu` holds mode 4's `arena_` code, the `menu_`
   names are slot39's and `menu_state_` ones the resident's), so search for a
   whole name rather than a directory or a prefix. In this handbook a header path
-  such as `resident/cd.h` or `menu/card.h` is under `decomp/include`; an image's
-  own headers are written from `decomp/src` (`decomp/src/menu/task.h`) or by
+  such as `resident/cd.h` or `menu/card.h` is under `src/decomp/include`; an image's
+  own headers are written from `src/decomp/src` (`src/decomp/src/menu/task.h`) or by
   file name beside their unit.
 - **SDK and VM names are contracts.** PsyQ functions keep PsyQ's names, so a
   native SDK implements them by name and documented behaviour; a script
@@ -46,9 +46,9 @@ symbol and how to rename one. What it means when reading the code for a port:
 - **Addresses tie old evidence to current names.** Definitions keep their
   original addresses in comments (SDK labels in symbol-file lines), so the eight
   hex digits of a splat name from history, a capture or an older report find
-  today's definition: `git grep -i -n 80031bdc decomp` gives `heap_alloc`.
+  today's definition: `git grep -i -n 80031bdc src/decomp` gives `heap_alloc`.
   Where overlays share a load address, narrow the search to the image's
-  `decomp/src/<image>` or `decomp/targets/overlays/<image>.symbols.txt`.
+  `src/decomp/src/<image>` or `src/decomp/targets/overlays/<image>.symbols.txt`.
 - **Renames go through one tool.** `tools/names.py` checks a mapping against
   the convention and applies it to sources, symbol files, linker fragments and
   documents; run `all-split`, `all-verify` and
@@ -63,9 +63,9 @@ Commands and inputs are in [matching.md](matching.md).
 
 | Check | What it establishes |
 | --- | --- |
-| `make -C decomp all-split all-verify` | every rebuilt image is byte-identical to the user's original (26 targets); a linker-script name inside an image fails it, and so does an own address the link did not relocate; then every address a link takes from another image must agree with that image's rebuilt symbols, and the resident's mode table with the mode overlays' links (`tools/cross_image.py`) |
-| `make -C decomp all-coverage` | which class produced each byte: C, sdk, handwritten, asset, included, text_data |
-| `make -C decomp all-container` | every packed container (`CONTAINERS` in the target `.mk` files, 14 across both discs) is reproduced from the rebuilt images |
+| `make -C src/decomp all-split all-verify` | every rebuilt image is byte-identical to the user's original (26 targets); a linker-script name inside an image fails it, and so does an own address the link did not relocate; then every address a link takes from another image must agree with that image's rebuilt symbols, and the resident's mode table with the mode overlays' links (`tools/cross_image.py`) |
+| `make -C src/decomp all-coverage` | which class produced each byte: C, sdk, handwritten, asset, included, text_data |
+| `make -C src/decomp all-container` | every packed container (`CONTAINERS` in the target `.mk` files, 14 across both discs) is reproduced from the rebuilt images |
 | `python3 tools/matching_ram.py CAPTURE --targets` | which rebuilt images an original RAM capture holds unchanged |
 | `python3 -m tools.analysis.<decoder> --sweep` | every shipped script decodes with opcode tables that tests tie to the C |
 | `python3 -m unittest discover -s tests` | decoders and build tools against the C, on synthetic inputs |
@@ -99,21 +99,21 @@ It does not prove:
 
 ### Keeping the reference while porting
 
-- `make -C decomp all-verify` must stay at 26/26 after any change to
-  `decomp/src` or `decomp/include`. Public CI runs the host build checks and the
+- `make -C src/decomp all-verify` must stay at 26/26 after any change to
+  `src/decomp/src` or `src/decomp/include`. Public CI runs the host build checks and the
   toolchain smoke test, not `all-verify` (`.github/workflows/ci.yml`), because
   the comparison needs the user's discs, so the gate is local.
 - A cheap guard that needs no discs: the build pipes `psx-cpp` into `psx-cc1`
-  with per-unit flags recorded in `<unit>.cflags` (`cc1_of`, decomp/Makefile).
+  with per-unit flags recorded in `<unit>.cflags` (`cc1_of`, src/decomp/Makefile).
   No source uses `__LINE__`, `__FILE__`, `__DATE__`, `__TIME__` or
   `__COUNTER__`. So when a unit's preprocessed text and flags are unchanged, and
-  so are the authored `.s` files and `decomp/include/macro.inc` it includes, so
+  so are the authored `.s` files and `src/decomp/include/macro.inc` it includes, so
   is its object, given the same split and original images. The assembler reads
   those files through `.include` (`INCLUDE_ASM` and the end of
-  `decomp/include/include_asm.h`), so their contents are not in the preprocessed
+  `src/decomp/include/include_asm.h`), so their contents are not in the preprocessed
   text.
 - Put native adaptations under a macro that the PS1 build never defines. The PS1
-  build defines `__psx__` and `_PSYQ` (decomp/Makefile `CPPFLAGS`). Do not reuse
+  build defines `__psx__` and `_PSYQ` (src/decomp/Makefile `CPPFLAGS`). Do not reuse
   `NON_MATCHING`: the coverage report counts such code as nonmatching drafts.
   Keep native-only headers (GTE, canonical prototypes, thunks) off the PS1
   include path. The coverage report rejects any asm statement that is not in
@@ -132,16 +132,10 @@ It does not prove:
 
 | Asset | Gives | Where |
 | --- | --- | --- |
-| Host reconstruction | C++ models of recovered paths and services at original addresses, with synthetic tests; unrecovered paths stop with `MissingDependency`; a reference, not the implementation | `src/reconstruction`, [executable-reconstruction.md](executable-reconstruction.md) |
-| Software GTE | the COP2 commands with MAC overflow and FLAG saturation, from general hardware documentation | `src/reconstruction/gte.cpp` |
-| libgpu command stream | clear/load/store/move image, packet draws and GP1 control as a command list | `src/reconstruction/gpu_queue.cpp`, `include/xem/reconstruction/gpu.hpp` |
-| Disc read and stream models | the resident read path and its CD interrupt side | `src/reconstruction/disc_read.cpp`, `disc_stream.cpp` |
-| Card BIOS interface and replay double | the card service surface | `include/xem/reconstruction/menu_overlay.hpp` (`CardBios`), `src/analysis/recorded_card.hpp` |
-| MDEC VLC decoder | libpress's variable-length stage only, with no IDCT or colour conversion | `src/analysis/mdec_codec.hpp` |
+| Retired host reconstruction | C++ models of recovered paths and services at original addresses (software GTE, libgpu command stream, disc read and stream models, card BIOS replay double, MDEC VLC decoder), with synthetic tests; a reference, not the implementation | commit b969b11: `src/reconstruction`, `src/analysis`, `include/xem/reconstruction`, [executable-reconstruction.md](executable-reconstruction.md) |
 | GPU packet walker | decodes ordering tables and GP0 commands in RAM images | `tools/analysis/gpu_packets.py` |
 | Service census | SDK calls, SPU and scratchpad use per function | `tools/service_calls.py` ([original-boundaries.md](original-boundaries.md)) |
 | Data ownership | which code forms each data address (a heuristic scan of each function's instructions; its docstring gives the limits) | `tools/data_users.py` |
-| Save serialisation check | the save payload against a card image a capture wrote | `tools/analysis/menu_save_file.py` |
 
 ## Program architecture
 
@@ -177,7 +171,7 @@ from another copy: it reads file 0x25 of its directory (0x24, 0), a packed
 (`worldmap_read_shared_files`), and decodes it before it calls
 `mode_run_menu` (worldmap_open_map.c `worldmap_suspend_open_map`). `CONTAINERS`
 in slot39.mk lists both packed copies (file 0x11 at slots 39 / 34 and this
-one), and `make -C decomp all-container` reproduces them from the rebuilt
+one), and `make -C src/decomp all-container` reproduces them from the rebuilt
 image. The extractor's `OVERLAYS`
 (tools/extraction/overlays.py) reads `slot39` from slot 2597 / 2592 and every
 other overlay from its own slot, five lower on disc 2, and checks that the two
@@ -221,7 +215,7 @@ From `boot_main` (main.c):
 Boot's only outside inputs are the boot word `mode_disc_mode`, the disc index,
 the disc files of steps 6 and 7 (directory (0, 1) files 2-7 and (0x10, 0) file
 3), pads and cards. The boot word is -1 in both retail executables
-(`decomp/targets/resident/classification.txt`, range 80010000). Any other value
+(`src/decomp/targets/resident/classification.txt`, range 80010000). Any other value
 switches on the development paths, such as the debug595 load to 0x80280000
 (field.c `field_main`) and the debugger breaks. A pointer value also selects the
 PC file server (`cd_init_disc_access`). `mode_disc_mode_pointer` points at the
@@ -327,14 +321,14 @@ Four details matter for a native loop:
 
 | Range | Holds | Source |
 | --- | --- | --- |
-| not loaded | the PS-X EXE header, file offset 0-0x7FF; the vram 0x8000F800 the split gives it is a splat convenience that nothing addresses | `decomp/targets/resident/slus_006.64.yaml` |
+| not loaded | the PS-X EXE header, file offset 0-0x7FF; the vram 0x8000F800 the split gives it is a splat convenience that nothing addresses | `src/decomp/targets/resident/slus_006.64.yaml` |
 | 0x80010000-0x80018080 | embedded disc data: boot word, file index, directory table; the only bytes that differ between the two executables | resident `classification.txt` |
 | 0x80018080-0x80019524 | resident rodata, including the mode table `mode_table` | main.c |
 | 0x80019524-0x8003F8E8 | game code (the entry point first) | resident `classification.txt` |
 | 0x8003F8E8-0x8004EAA0 | PsyQ SDK code | resident `classification.txt` |
 | 0x8004EAA0-0x80059170 | `.data`, SDK data from 0x800563F0 | resident `classification.txt` |
 | 0x80059170-0x800592BC | `.sdata`, `_gp` = 0x80059170 | [matching.md](matching.md) |
-| 0x800592BC-0x8006FAF0 | resident BSS, including the game data 0x8006D634-0x8006F98C | `decomp/targets/resident/link.ld` |
+| 0x800592BC-0x8006FAF0 | resident BSS, including the game data 0x8006D634-0x8006F98C | `src/decomp/targets/resident/link.ld` |
 | 0x8006FAF0-0x801FC000 | the mode overlay image, its BSS (mode table), then the heap up to 0x801FC000 | main.c `mode_table`, `boot_main` |
 | 0x801C5000-0x801EA908 | secondary overlays, placed inside the heap (extents below) | [original-boundaries.md](original-boundaries.md) (Control flow and state) |
 | 0x801FC000-0x80200000 | battle modules from 0x801FC000 (the largest, ovl3387, ends at 0x801FCE4C); the stack, top 0x80200000; the arena task stack 0x801FE000-0x801FF000 | `boot_reset_stack_and_gp`, arena_mode_entry.c `arena_mode_main` |
@@ -370,7 +364,7 @@ interrupts, and the memory cards' contents.
 
 ### The resident API
 
-The shared headers under `decomp/include` hold one definition per object that
+The shared headers under `src/decomp/include` hold one definition per object that
 several targets use ([matching.md](matching.md), Converting a function). They
 are the starting schema for introspection and snapshots. Where a target still
 declares its own partial view of a shared object, the shared header is the
@@ -399,10 +393,10 @@ schema, not the view.
 Some resident functions are declared differently by callers in other targets:
 narrow parameters or results, another parameter count, or a by-value structure
 split another way. The shared headers leave these out. The resident keeps its
-own declarations in `decomp/src/resident/own_declarations.h`, and each target
+own declarations in `src/decomp/src/resident/own_declarations.h`, and each target
 declares its own. For example, `sound_sync_transfer` returns `s32` in the
-resident, `s16` in decomp/src/battle/resident_views.h and `void` in
-decomp/src/field/field_resident.h. A single native link needs one canonical
+resident, `s16` in src/decomp/src/battle/resident_views.h and `void` in
+src/decomp/src/field/field_resident.h. A single native link needs one canonical
 prototype per function, plus adapters where callers depend on narrowing.
 
 ### Authoritative state
@@ -415,7 +409,7 @@ prototype per function, plus adapters where callers depend on narrowing.
 | Field event variables | `field_event_variables[0x400]`: the lower half comes from game data `vars` at map load (`field_reset_state`) and returns each frame (`field_event_save_map_and_variables`); the upper half is per map | game data is stale until the frame ends |
 | Battle party | `BattleWork battle_work_area` (battle/work.h): ovl2615 `battle_setup_load_party_and_enemy_files` copies the party in, ovl2596 `battle_results_write_party_to_game_data` writes it back | game data is stale during battle |
 | Battle-AI variables | `mode_battle_ai_variables[16]` in resident BSS (commons_before_libspu.c), which the battle AI scripts read and write | a save copies them into `game_data.flagWords[1..16]` (slot39 `menu_save_build_payload`) and a load copies them back (`menu_apply_loaded_save`); otherwise game data holds a stale copy |
-| RNG seed | `libc_rand_seed`: libc `rand` (8003fa38) computes `seed = seed * 0x41C64E6D + 0x3039` and returns `(seed >> 16) & 0x7FFF` | cleared with the BSS at boot and soft reset; `srand` has no caller in `decomp/src` |
+| RNG seed | `libc_rand_seed`: libc `rand` (8003fa38) computes `seed = seed * 0x41C64E6D + 0x3039` and returns `(seed >> 16) & 0x7FFF` | cleared with the BSS at boot and soft reset; `srand` has no caller in `src/decomp/src` |
 | Clocks | `pad_vblank_count` (vblank count, the saved play time) and the vblank h:m:s clock | the field copies the clock into event variables 0xC/0xE each frame (`field_update_play_record`) |
 | Draw-buffer parity | field `field_draw_buffer_index` | gates field exits (Presentation) |
 | Patched renderer fields | `model_set_envmap_mapping` rewrites shifts and offsets inside `model_draw_ft3_envmap` | persists across modes |
@@ -428,7 +422,7 @@ prototype per function, plus adapters where callers depend on narrowing.
 | Disc and files | resident cd.h API over libcd; world map stream reader; mdec `St*` ring; disc swap in slot39 | [below](#disc-and-files); [original-boundaries.md](original-boundaries.md#disc-and-files) | cut at the resident API plus the direct libcd users listed below, over raw sectors; key files by (directory, file) and content hash from the index, not by slot, and serve streams and raw reads by LBA ([Importing the discs](#importing-the-discs)) |
 | Controllers | `PadBuffer pad_receive_buffers`, vblank handler `pad_vblank_callback`, 16-entry queue | [original-boundaries.md](original-boundaries.md#controllers) | inject one pad state per vblank; a disconnected pad starts the game's pause loops |
 | Memory card and saves | BIOS `bu00:`/`bu10:` file calls, card events, slot39 save/load | [original-boundaries.md](original-boundaries.md#memory-card-and-saves) | the commit point is the rename of `__tmp_file`; names for slots 10-14 end in `:;<=>` |
-| Game data layout | resident/gamedata.h; payload in decomp/src/slot39/file.h `SaveData` | [original-boundaries.md](original-boundaries.md#memory-card-and-saves) | a load finishes in field scripts (event variables 0x46 and 4); copying game data directly is not a load |
+| Game data layout | resident/gamedata.h; payload in src/decomp/src/slot39/file.h `SaveData` | [original-boundaries.md](original-boundaries.md#memory-card-and-saves) | a load finishes in field scripts (event variables 0x46 and 4); copying game data directly is not a load |
 | Sound and SPU | sound.c driver, tick `sound_run_tick`, register writes through `sound_spu_registers` | [original-boundaries.md](original-boundaries.md#sound-output-modes); [sound-sequence.md](scripts/sound-sequence.md) | software SPU (ADPCM, ADSR, reverb, CD input); the driver tick stays in the simulation |
 | GPU and VRAM | libgpu, ordering tables, VRAM transfers, readbacks | [original-boundaries.md](original-boundaries.md#presentation) | readable 1024x512 VRAM; framebuffer feedback ([Presentation](#presentation)) |
 | Timing and pacing | `VSync`, root counters, `DrawSync`, polls | [original-boundaries.md](original-boundaries.md#timing) | virtual clock; [consequences below](#timing-consequences-for-a-port) |
@@ -554,8 +548,8 @@ routines cannot be byte-matched, so they need behavioural differential tests
 ### Handwritten routines
 
 These are the 15 `handwritten` lines of
-`decomp/targets/resident/classification.txt` and
-`decomp/targets/overlays/*.classification.txt`, in 14 rows (the menu's
+`src/decomp/targets/resident/classification.txt` and
+`src/decomp/targets/overlays/*.classification.txt`, in 14 rows (the menu's
 task-switch storage shares its routines' row):
 
 | Range | Routines | Contract | Native form |
@@ -563,15 +557,15 @@ task-switch storage shares its routines' row):
 | resident 80019524-80019578 | entry, stack reset, word clear | `boot_entry_point.s`, `boot_reset_stack_and_gp.s`, `boot_clear_bss_range.s` | runtime service: start-up, dispatcher loop with a non-local mode exit, per-mode BSS clear from the link; soft reset keeps modified `.data` |
 | resident 80026f44-8002709c | GTE pixel darken and blend loops | `sprite_darken_pixels.s`, `sprite_blend_pixels.s` | portable C on the software GTE |
 | resident 8002e010-8003014c | model primitive renderers, with alternate entries per packet format, run through `model_primitive_types` | each routine's `model_draw_*.s` (15; `model_draw_ft3_envmap.s` is the next row's), over the shared macros of `model_draw.s` and, for the GT3 and GT4 far and near sorts, `model_depth.s` (the two cued far renderers sort inline) | portable C, and the capture point for pre-projection geometry; keep their culling separable |
-| resident 80030750-80030a30 | environment-mapped renderer and its self-modifying patcher `model_set_envmap_mapping` | `model_draw_ft3_envmap.s`, `model_set_envmap_mapping.s` | four persistent globals (u/v shift and offset, image default 6, 6, 0x40, 0x40) |
+| resident 80030750-80030a30 | environment-mapped renderer and its self-modifying patcher `model_set_envmap_mapping` | `model_draw_ft3_envmap.s`, `model_set_envmap_mapping.s` | the patched instruction words themselves, in game memory, read back by the renderer on each call (image default 6, 6, 0x40, 0x40; `src/port/model_draw.c`) |
 | resident 800315a0-80031894 | ordering-table link helpers | `ot_link.s`, which each helper's `gpu_ot_link_*.s` includes (21) | the OT adapter |
 | resident 80032e88-80032f54 | LZSS decoder and its allocate-and-decode entry | `text_unpack_lzss.s`, `text_unpack_lzss_alloc.s` | portable C with bounds; `tools/analysis/packed.py` and `tools/packed_container.py` are the format |
 | resident 800379b4-800379d0 | arena task index store; report printf tail-jump | `mode_set_arena_task.s`, `console_report_printf.s` | C with a `va_list` printf |
 | resident 8003f738-8003f8e8 | rotation matrix and sin/cos lookups (table `rcossin_tbl`, gpu_rotation_and_psyq_libraries.c) | `gpu_build_rotation_matrix.s`, `gpu_get_sin.s`, `gpu_get_cos.s` | portable C with 32-bit wrapping |
 | menu 80072d18-800732cc | ground triangle batch; GTE vector, colour and matrix helpers | `arena_stage_draw_ground_cells.s` with `ground_packet.s`; `arena_gte_scale_svector.s`, `arena_gte_multiply_svector.s` and `arena_gte_scale_vector_low_halves.s` with `vector_scale.s`; `arena_box_filter_rgb555.s`, `arena_gte_scale_matrix_columns.s`, `arena_copy_words.s` | portable C on the software GTE |
-| menu 8008bb00-8008bcc8, storage 80096d88 | task context switch (resume, yield, nested-scheduler save and restore) | `arena_task_resume.s`, `arena_task_yield.s`, `arena_task_save_scheduler.s`, `arena_task_restore_scheduler.s`; `TaskContext` in decomp/src/menu/task.h | the nested fiber service |
+| menu 8008bb00-8008bcc8, storage 80096d88 | task context switch (resume, yield, nested-scheduler save and restore) | `arena_task_resume.s`, `arena_task_yield.s`, `arena_task_save_scheduler.s`, `arena_task_restore_scheduler.s`; `TaskContext` in src/decomp/src/menu/task.h | the nested fiber service |
 | menu 8008c3a8-8008c7c0 | mesh shadow projection, flat packet builders | `arena_mesh_project_shadow.s`, `arena_mesh_draw_flat_triangles.s`, `arena_mesh_draw_flat_quads.s`, `mesh_packet.s` | portable C |
-| menu 8008ddfc-8008df30 | GTE vector transform; a stub that never restores `$sp` | `arena_gte_rotate_scale_svector.s`, `arena_spark_link_tile_packet_unreferenced.s` | port the transform; the stub has no reference in `decomp/src` |
+| menu 8008ddfc-8008df30 | GTE vector transform; a stub that never restores `$sp` | `arena_gte_rotate_scale_svector.s`, `arena_spark_link_tile_packet_unreferenced.s` | port the transform; the stub has no reference in `src/decomp/src` |
 | worldmap 8009980c-80099bfc | terrain quarter-block renderer | `worldmap_terrain_draw_quarter_block.s`, `screen_bounds.s` | portable C; the terrain's pre-projection seam |
 | worldmap 80099bfc-80099e8c | terrain billboards | `worldmap_billboards_draw_block.s`, which also includes `screen_bounds.s` | portable C |
 
@@ -601,8 +595,8 @@ and pollhost, the stack switches, `GET_RA` and `addPrimLen9`. Natively:
 
 - **GTE macros.** One native header maps the macro names onto the software GTE.
   The PS1 build keeps `psyq/inline_c.h` and the few per-target macros it lacks
-  or spells otherwise (`decomp/src/battle/gte.h` and `decomp/src/ovl2143/gte.h`:
-  gte_rtv0tr; `decomp/src/menu/gte.h`, `decomp/src/worldmap/gte.h`), because
+  or spells otherwise (`src/decomp/src/battle/gte.h` and `src/decomp/src/ovl2143/gte.h`:
+  gte_rtv0tr; `src/decomp/src/menu/gte.h`, `src/decomp/src/worldmap/gte.h`), because
   their instruction orders are what match.
 - **Stack switches.** These move `$sp` to the scratchpad or a heap block for a
   few calls (for example field.c `field_run_frame`). They become no-ops, but the
@@ -661,7 +655,7 @@ undecodable on either disc. For Phases 7, 11 and 12:
 | World map actor and scene scripts, arena scripts | worldmap, menu | [worldmap-actor.md](scripts/worldmap-actor.md), [worldmap-scene.md](scripts/worldmap-scene.md), [arena-scene.md](scripts/arena-scene.md), `overlay_scripts.py` | none |
 | Cue timelines: field movie sounds, world map terrain texture animations | field `field_movie_play_due_sounds`; world map `worldmap_texture_anim_advance`, `worldmap_texture_anim2_advance` | [timelines.md](scripts/timelines.md), `overlay_scripts.py` | see its Open item |
 | Save files | slot39 `menu_save_command_run`, `menu_load_command_run` | [original-boundaries.md](original-boundaries.md), `menu_save_file.py` | none |
-| Movies (STR, XA) | mdec, movie, field `field_movie_play` | VLC only (`src/analysis/mdec_codec.hpp`) | IDCT, colour conversion and XA ADPCM |
+| Movies (STR, XA) | mdec, movie, field `field_movie_play` | BS v2/v3, MDEC and XA ADPCM in `src/runtime/crates/xem-media` | comparison with captured frames and audio |
 
 ### Original bytes the port must import
 
@@ -810,13 +804,13 @@ software SPU:
 ## Portability hazards
 
 A syntax-only host compile of all 106 recovered C files (`FILE.c` below, each
-file `git ls-files 'decomp/src/*.c'` lists, the `commons/` units included)
+file `git ls-files 'src/decomp/src/*.c'` lists, the `commons/` units included)
 measures the data-model and compiler hazards. Run it with clang 21.1.8 from
 `nix develop path:./nix`, for each `--target`:
 
 ```sh
 NIX_HARDENING_ENABLE= clang --target=TRIPLE -fsyntax-only -std=gnu89 -undef -nostdinc \
-  -Idecomp/include -Dmips -D__mips__ -D__mips -Dpsx -D__psx__ -D__psx -D_PSYQ -D_MIPSEL \
+  -Isrc/decomp/include -Dmips -D__mips__ -D__mips -Dpsx -D__psx__ -D__psx -D_PSYQ -D_MIPSEL \
   -D__CHAR_UNSIGNED__ -D_LANGUAGE_C -DLANGUAGE_C -funsigned-char -fno-wrapv \
   -DORIGINAL_IMAGE='"x"' -DORIGINAL_BASE=0 -ferror-limit=0 FILE.c
 ```
@@ -880,13 +874,13 @@ therefore the first Phase 2 decision.
 | Uninitialized reads | `chance` in `battle_gear_hud_fill` (gear boost, battle_menus_and_resolver.c); `actions` in `battle_run_joint_turns` zeroes 0x100 bytes at an unset pointer; unset `parts` entries in `battle_resolve_attack_value`; the call event (type 8) of ovl2143 `gear_model_run_animation_events`; `owner` in ovl3383 `battle_module_spin_draw` and ovl3385 `battle_module_hold_draw`; `hold` (arena_stage_views_and_hud.c `arena_mode_task`), `last` (arena_mode_entry.c `arena_mode_main`); sprite opcodes 40-7f and f7 (resident and battle sprite VMs) | an optimising compiler treats these as undefined; give each an explicit native value and record whether it can diverge (Open questions) |
 | Division | units built with maspsx `--expand-div` (ovl2615 but for its CDK units battle_loader, load_modes and burst_modes, mdec, movie, ovl2143, worldmap, resident `cd_reads_and_streams`, battle `battle_scene`; see the `.mk` files) trap on zero with `break 7` and on overflow with `break 6`; other units use bare `div`, which does not trap on the R3000 | a source-correlated division adapter where a zero divisor can occur (`battle_gear_hud_fill` divides by `maxHp / 10`); keep the field script divide `field_event_divide_variable`, which already maps 0 to 1 |
 | Signed overflow and shifts | the handwritten trig and renderers rely on 32-bit wrapping; 14 shifts of negative values | `-fwrapv` and arithmetic-shift helpers |
-| Overruns and offset bases | `STEP_FUEL` is `&gearHud.commands[-1]` (battle/command.h); `battle.data.ld` names `battle_combo_next_step_table_by_paid` and `battle_ap_timer_reload_table_by_max_ap` before their tables; arena_stage_views_and_hud.c `arena_hud_build_overlay_buffer` writes `arrows[1][3..5]` past its array; every boot clears `mode_battle_ai_variables[0..19]`, whose last four lie past its 16 in the first 8 bytes of `sound_volumes` (`mode_load_initial_game_data`, [Boot](#boot) step 7); `cd_start_read` and `cd_set_mode` clear four bytes from the one-byte `cd_setmode_parameter` (cd_reads_and_streams.c); ovl2615 reads `game_data_slot_in_gear[0..10]`, past the three in-gear bytes (decomp/src/ovl2615/battle_setup.h, `battle_setup_reset_outcome_and_slots`); `battle_setup_place_formation` reads the group bit of slots 8-10 past the formation record (resident/formation.h) | explicit range-checked index arithmetic natively; until then, a contiguous arena in the original layout gives each overrun its original target |
+| Overruns and offset bases | `STEP_FUEL` is `&gearHud.commands[-1]` (battle/command.h); `battle.data.ld` names `battle_combo_next_step_table_by_paid` and `battle_ap_timer_reload_table_by_max_ap` before their tables; arena_stage_views_and_hud.c `arena_hud_build_overlay_buffer` writes `arrows[1][3..5]` past its array; every boot clears `mode_battle_ai_variables[0..19]`, whose last four lie past its 16 in the first 8 bytes of `sound_volumes` (`mode_load_initial_game_data`, [Boot](#boot) step 7); `cd_start_read` and `cd_set_mode` clear four bytes from the one-byte `cd_setmode_parameter` (cd_reads_and_streams.c); ovl2615 reads `game_data_slot_in_gear[0..10]`, past the three in-gear bytes (src/decomp/src/ovl2615/battle_setup.h, `battle_setup_reset_outcome_and_slots`); `battle_setup_place_formation` reads the group bit of slots 8-10 past the formation record (resident/formation.h) | explicit range-checked index arithmetic natively; until then, a contiguous arena in the original layout gives each overrun its original target |
 | Decompressors read past files | the overlay LZSS decoder reads its final flag byte past the file (tools/extraction/overlays.py); arena model files and map 145's messages read past their bytes ([arena-frame-events.md](scripts/arena-frame-events.md), [text-control.md](scripts/text-control.md)) | zero-pad imported files to whole sectors; bound the decoder |
 | Scratchpad | work memory and stack switches ([original-boundaries.md](original-boundaries.md)); `TerrainDrawScratch` in worldmap_movement_terrain.c and the layout worldmap_billboards_draw_block.s describes | a 1 KB static buffer behind one accessor |
 | Fixed cross-image addresses | the mode table holds overlay entries and BSS bounds as numbers (main.c `mode_table`); slot tenants are called by address (`menu_state_run_screen`); cross-image names take the original's addresses from the symbol files a split reads (every split reads the resident's `symbol_addrs.txt`; splat lists such names in `undefined_syms_auto.txt`) and from `*.resident.ld` and `debug595.field.ld`, outside the strict linker-script check; all-verify's cross-image step compares them, and the mode table, with the rebuilt targets ([matching.md](matching.md)) | a per-slot registry that rejects calls into an absent image, resets a tenant's image (its `.data` and in-image variables) from a pristine copy at each load, as the original reads the file again, except ovl2143's across the field menu ([Mode dispatcher](#mode-dispatcher)), and marks absent every tenant whose range a load overlaps; no name is defined by two images, counting the two executables once ([matching.md](matching.md#names)), so the images need no namespaces of their own |
 | Section placement and asm labels | `__attribute__((section(".rodata")))` on main.c `mode_next_mode` (which `mode_select_next_mode` writes) and `mode_table`, and `section(".text")` on the arena_mode_entry.c table `arena_mode_tasks`, place data where the original had it. Mach-O rejects both names (the census above), and in a one-line clang 21.1.8 probe wasm32's code generator refuses data in `.text` ("data symbols must live in a data section"); ELF and COFF accept both. ovl2615's battle_setup.h declares `battle_setup_work_area __asm__("battle_work_area")` (movie_mode.h and worldmap.h one such view each): where C names take a leading underscore (Mach-O, 32-bit Windows), that label names another symbol than the definition `battle_work_area` | keep both behind the PS1-only build macro; natively, plain definitions and one name per object |
 | K&R calls and per-target prototypes | unprototyped calls pass unpromoted arguments ([matching.md](matching.md)); targets declare shared functions differently (`own_declarations.h`) | canonical prototypes in native-only headers |
-| Calls through another function type | `git grep -nE -e '\(\*[a-z_]*\)\([^)]*\)\) ?[a-z_]+' -e '\(\*[a-z_]*(\[[^]]*\])*\)\(\)' decomp/src decomp/include` lists the function casts and the unprototyped function pointer types. Stored and called with another parameter list or result: the variadic `console_printf` (heap.c's default and `console_close`'s reset) and `console_report_printf` (heap_host_report.c) as the heap report's `void (*)(char *)` hook; `sound_switch_modulator_off`, which returns nothing, in slots 8-15 of the `s32` table `sound_modulator_waves`, of which shipped scripts select shapes 8, 9, 10, 12 and 15 ([sound-sequence.md](scripts/sound-sequence.md)); the 20 sequence handlers (and the unused slots' handler) in `sound_seq_opcode_handlers` that take one or two of the three arguments `sound_seq_interpret_channels` passes, shipped sequences using five of them (opcodes 97, a0, a2, b8 and f9); 16 of the 18 arena menu handlers, which take none, in `MenuItem`'s unprototyped `handler`, which `arena_menu_apply_pad_input` calls with the item's argument (menus.h; the title menu's EXIT, `arena_mode_exit`, among them); each primitive type's `prepare`, with 0-3 parameters, called with 3 (model_renderer.c `model_build_packets`); battle's `battle_total_popup_empty_update(void)` as a `void (*)(Task *)` task update. Called directly through a cast with one argument fewer, so that the callee reads whatever the caller left in `$a1`: `battle_seal_deathblow_commands`, `battle_put_item_in_character4_entry` and `sprite_get_render_kind` (twice); with one more: `battle_try_escape` (twice) and `battle_command_menu_load_file3_block` | a thunk of the stored type for each stored function (in WebAssembly an indirect call through another signature traps); an explicit value for each missing argument, as for the uninitialized reads |
+| Calls through another function type | `git grep -nE -e '\(\*[a-z_]*\)\([^)]*\)\) ?[a-z_]+' -e '\(\*[a-z_]*(\[[^]]*\])*\)\(\)' src/decomp/src src/decomp/include` lists the function casts and the unprototyped function pointer types. Stored and called with another parameter list or result: the variadic `console_printf` (heap.c's default and `console_close`'s reset) and `console_report_printf` (heap_host_report.c) as the heap report's `void (*)(char *)` hook; `sound_switch_modulator_off`, which returns nothing, in slots 8-15 of the `s32` table `sound_modulator_waves`, of which shipped scripts select shapes 8, 9, 10, 12 and 15 ([sound-sequence.md](scripts/sound-sequence.md)); the 20 sequence handlers (and the unused slots' handler) in `sound_seq_opcode_handlers` that take one or two of the three arguments `sound_seq_interpret_channels` passes, shipped sequences using five of them (opcodes 97, a0, a2, b8 and f9); 16 of the 18 arena menu handlers, which take none, in `MenuItem`'s unprototyped `handler`, which `arena_menu_apply_pad_input` calls with the item's argument (menus.h; the title menu's EXIT, `arena_mode_exit`, among them); each primitive type's `prepare`, with 0-3 parameters, called with 3 (model_renderer.c `model_build_packets`); battle's `battle_total_popup_empty_update(void)` as a `void (*)(Task *)` task update. Called directly through a cast with one argument fewer, so that the callee reads whatever the caller left in `$a1`: `battle_seal_deathblow_commands`, `battle_put_item_in_character4_entry` and `sprite_get_render_kind` (twice); with one more: `battle_try_escape` (twice) and `battle_command_menu_load_file3_block` | a thunk of the stored type for each stored function (in WebAssembly an indirect call through another signature traps); an explicit value for each missing argument, as for the uninitialized reads |
 | Non-volatile polling | four world map waits on `sound_driver_flags & 0x10` were compiled to test once (`worldmap_open_map_start`, `worldmap_scene15_start`, `worldmap_scene16_start`, `worldmap_scene17_start`; [original-boundaries.md](original-boundaries.md#interrupt-context-work)); other polls re-read through calls (`cd_sync_reads` loops on `cd_get_pending_read_count`) | deliver interrupts at yield points inside polls; do not rely on the host compiler re-reading globals |
 | GTE fixed point | gameplay calls libgte: field movement and collision use `ratan2` (field_motion.c), as does the arena AI (arena_scene_graph_and_opponent.c); culling reads GTE registers (LZCR in `model_draw.s`) | one bit-exact software GTE whose state is in snapshots |
 | Debug paths | the boot word is tested in the resident, field, battle, arena and menu screens (`mode_disc_mode`, `*mode_disc_mode_pointer`, `*(s32 *)0x80010000`); the field caches the test in `field_monitor_absent` | build with the retail value -1; never leave the word zero |
@@ -919,11 +913,11 @@ record.
 | --- | --- | --- |
 | What the uninitialized reads that can change gameplay compute on hardware | the `battle_gear_hud_fill`, `battle_run_joint_turns`, `battle_resolve_attack_value` and ovl2143 `gear_model_run_animation_events` (event type 8) sites above | a targeted capture per site, or a census showing shipped data never reaches the unset path |
 | How often battle frames overrun on hardware | `task_catch_up_frame_count` is measured at run time; all captures are emulator runs ([original-boundaries.md](original-boundaries.md)) | per-frame `task_catch_up_frame_count` from captures, or an accepted lag-free definition for Phase 3 parity |
-| Conflicting shared views | the battle and slot39 read the ammo bytes as `ammo` and `gearAmmo` and 8006f8ea as the u16 `flags` (resident/gamedata.h; [field-events.md](scripts/field-events.md)), but targets still keep partial views of the game data beside resident/gamedata.h (ovl2615's `game_data_slot_in_gear`, the world map's `game_data_worldmap_flag_word` and the party and vehicle spots in decomp/src/worldmap/party.h) | reconcile from the readers, then one canonical type per address |
+| Conflicting shared views | the battle and slot39 read the ammo bytes as `ammo` and `gearAmmo` and 8006f8ea as the u16 `flags` (resident/gamedata.h; [field-events.md](scripts/field-events.md)), but targets still keep partial views of the game data beside resident/gamedata.h (ovl2615's `game_data_slot_in_gear`, the world map's `game_data_worldmap_flag_word` and the party and vehicle spots in src/decomp/src/worldmap/party.h) | reconcile from the readers, then one canonical type per address |
 | The disc and stream boundary | the code ([Disc and files](#disc-and-files)); no retained capture covers a disc swap, disc 2 media or the CD callback order ([matching.md](matching.md) lists the routes) | a disc-swap and streaming capture on both discs |
 | Wide on hardware | emulator recordings only ([original-boundaries.md](original-boundaries.md)) | a hardware recording before Phase 10 |
 | World map, Gear battle and arena presentation | no packets observed ([original-boundaries.md](original-boundaries.md)) | `tools/analysis/gpu_packets.py` on captures of those modes |
-| Missing media decoders | no IDCT, colour conversion, XA ADPCM or SPU ADPCM in the repository | implementations in Phase 2, tested against captured frames and audio |
+| Missing media decoders | no SPU ADPCM in the repository; `src/runtime/crates/xem-media` implements the MDEC (dequantization, IDCT, colour conversion) and XA ADPCM with its resampler from psx-spx, whose IDCT rounding, colour fixed point, 15-bit truncation and 18900 Hz resampling are approximations, untested against captured frames and audio | SPU ADPCM in Phase 2; compare xem-media with captured MDEC output and CD audio |
 | BIOS font source | `Krom2RawAdd` users in slot39 and field | a user BIOS import or a labelled substitute |
 | Script data open items | the Open lines of [field-events.md](scripts/field-events.md), [text-control.md](scripts/text-control.md), [battle-ai.md](scripts/battle-ai.md), [battle-effect-vm.md](scripts/battle-effect-vm.md), [battle-event-vm.md](scripts/battle-event-vm.md), [arena-frame-events.md](scripts/arena-frame-events.md), [formations.md](scripts/formations.md), [timelines.md](scripts/timelines.md) | as stated there |
 

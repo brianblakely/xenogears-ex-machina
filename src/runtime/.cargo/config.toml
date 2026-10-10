@@ -1,0 +1,3 @@
+# The WebXR bindings of web-sys are behind its unstable-API flag.
+[target.wasm32-unknown-unknown]
+rustflags = ["--cfg=web_sys_unstable_apis"]

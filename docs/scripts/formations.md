@@ -5,14 +5,14 @@ the **encounter set** `formation_encounter_set` into `formation_active` as it st
 (battle `battle_main`: formation `formation_selected_index`, or
 `mode_pending_battle_formation - 1` when that is set). The layout is `BattleFormation`
 and `EncounterSet` in
-[`decomp/include/resident/formation.h`](../../decomp/include/resident/formation.h),
+[`src/decomp/include/resident/formation.h`](../../src/decomp/include/resident/formation.h),
 whose member comments name their readers; every unit that reads a formation or a set
 uses it, and its `LAYOUT_CHECK` fixes the offsets.
 
 ## Formation
 
 Party members take battle slots 0-2 and enemies slots 3-10 (`BattleSlot`,
-`decomp/include/battle/area.h`); "slot byte n" is byte n of a slot's record.
+`src/decomp/include/battle/area.h`); "slot byte n" is byte n of a slot's record.
 
 | Offset | Member | Readers and effect |
 | --- | --- | --- |

@@ -208,7 +208,7 @@ class ScriptTests(unittest.TestCase):
         self.assertEqual(result.modulators, {3: 1})
 
     def test_wave_and_modulator_counts_follow_the_c(self):
-        resident = Path(__file__).resolve().parents[1] / "decomp/src/resident"
+        resident = Path(__file__).resolve().parents[1] / "src/decomp/src/resident"
         self.assertIn(f"sound_modulator_waves[{WAVE_SLOTS}])", (resident / "sound.c").read_text())
         self.assertIn(
             f"SoundModulator modulator[{MODULATORS}];",

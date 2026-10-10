@@ -1,6 +1,13 @@
 # Host-reference validation
 
-This is the retained host reconstruction harness, not the Phase 1 source-recovery
+The host C++ reconstruction (`src/reconstruction`, `src/analysis`, `include/xem`,
+`tests/*.cpp`), its runners and the tools that drove them
+(`tools/analysis/execution.py`, `memory_case.py`, `movie_chain.py`,
+`menu_save_file.py`) were retired; this page records the harness as of commit
+b969b11, where every file it names can be read (`git show b969b11:<path>`). Its
+capture policy below still applies to original captures.
+
+This was the retained host reconstruction harness, not the Phase 1 source-recovery
 workflow or exit gate. Use matching.md for new PS1-target work. Preserve existing
 C++ algorithms, regression tests and qualified captures; do not expand artificial
 stack/service ownership solely to validate a function that can be binary-matched.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compare the addresses each target's link takes from other targets with
-those targets' rebuilt links, once every target has linked (decomp/Makefile:
-all-verify runs it last; `make -C decomp cross-image` runs it alone).
+those targets' rebuilt links, once every target has linked (src/decomp/Makefile:
+all-verify runs it last; `make -C src/decomp cross-image` runs it alone).
 
 Each target links alone. A name one of its linker scripts assigns (splat's
 undefined_syms_auto.txt and undefined_funcs_auto.txt, read as PROVIDE where
@@ -38,7 +38,7 @@ relocation (a lui and the instruction completing it, or a data word),
 outside asset and included bytes and the mode table (docs/matching.md).
 
 The resident's mode table (MODE_TABLE in its configuration: the ModeEntry
-records of decomp/include/resident/mode.h, an entry, the BSS bounds and a decode
+records of src/decomp/include/resident/mode.h, an entry, the BSS bounds and a decode
 flag) must hold at each mode overlay's index (MODE in the overlay's
 configuration) the overlay's entry symbol (MODE_ENTRY) and the bounds of its
 uninitialized data as its rebuilt link places them. The dispatcher (main.c
@@ -88,7 +88,7 @@ from matching_coverage import (  # noqa: E402
 )
 from matching_diff import config  # noqa: E402
 
-# ModeEntry (decomp/include/resident/mode.h): entry, bss_start, bss_end, loaded.
+# ModeEntry (src/decomp/include/resident/mode.h): entry, bss_start, bss_end, loaded.
 MODE_ENTRY_SIZE = 16
 # A name that gives its address (splat's names for addresses it found used).
 ADDRESS_NAME = re.compile(r"(?:D|func|jtbl)_([0-9A-Fa-f]{8})(?:_\w+)?")
@@ -124,7 +124,7 @@ def load(path: Path) -> Target:
     for built in (elf, map_path):
         if not built.exists():
             raise SystemExit(f"{built}: missing; link the target first"
-                             f" (make -C decomp CONFIG={path} verify)")
+                             f" (make -C src/decomp CONFIG={path} verify)")
     sections, symbols = read_elf(elf)
     bss_end = int(values["BSS_END"], 0) if values.get("BSS_END") else None
     lo, _hi, end = extent(sections, bss_end)

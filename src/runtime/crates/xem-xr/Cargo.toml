@@ -1,0 +1,22 @@
+[package]
+name = "xem-xr"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+ash = { workspace = true, features = ["loaded"] }
+glam.workspace = true
+openxr = { workspace = true, features = ["loaded"] }
+wgpu = { workspace = true, features = ["vulkan"] }
+xem-render = { path = "../xem-render" }
+
+[dev-dependencies]
+png.workspace = true
+xem-settings = { path = "../xem-settings" }
+xem-ui = { path = "../xem-ui" }
+
+[[example]]
+name = "xem-xr-demo"

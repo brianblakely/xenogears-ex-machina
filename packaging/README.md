@@ -1,9 +1,8 @@
 # Distribution boundary
 
-Phase 0 packages only an explicitly allowlisted source baseline and installs the
-small `xem-baseline` executable plus the project license. It is not a playable
-release. Arch PKGBUILD, Windows release, and macOS app bundle implementation is
-reserved for Phase 13. Editors must be included in those eventual packages.
+The source archive packages only an explicitly allowlisted source baseline and
+the project license. It is not a playable release. Arch PKGBUILD, Windows
+release, and macOS app bundle implementation is reserved for Phase 13. Editors must be included in those eventual packages.
 
 `python3 tools/repository/source_archive.py` produces a deterministic source
 archive from `packaging/source-files.txt`. It rejects symlinks, unsafe paths,

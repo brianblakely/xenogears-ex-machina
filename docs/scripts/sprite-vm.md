@@ -5,7 +5,7 @@ timing, motion, placement, colour and child sprites, and in battle also effects 
 camera cues. Each case in the recovered handlers carries a comment with its
 semantics. [sprite_vm.py](../../tools/analysis/sprite_vm.py) decodes the scripts
 with opcode tables read from those cases, and its tests check the tables against
-the `decomp/src` switch labels and the C length table.
+the `src/decomp/src` switch labels and the C length table.
 
 - **Interpreters:** resident `sprite_vm_run` (`sprite_vm_draw.c`) runs commands
   until one takes time. Resident `sprite_vm_tick` calls it once the halfword countdown

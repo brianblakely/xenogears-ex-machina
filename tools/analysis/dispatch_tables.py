@@ -9,7 +9,7 @@ recovered C at run time, and `--sweep` reads every record the game's loaders
 hand to them on both discs and prints aggregate counts only. The world map
 modes, sprite kinds and TMD primitives are described with their sections below.
 
-Battle formulas (decomp/src/battle/battle_menus_and_resolver.c). For each target in the mask,
+Battle formulas (src/decomp/src/battle/battle_menus_and_resolver.c). For each target in the mask,
 battle_resolve_action calls battle_formula_table[battle_current_command->formula](). An
 attacker whose record has +0x15a bit 0x80 (fighting in a gear), or a descriptor with flagsA
 bit 0x10, goes to battle_resolve_gear_action instead: it selects a party member's gear
@@ -24,7 +24,7 @@ commands the enemy data files' AI scripts select (tools.analysis.battle_ai) and 
 enemy fights in a gear (its record's +0x15a, copied by ovl2615
 battle_setup_copy_enemy_records_and_ai).
 
-Model primitives (decomp/src/resident/model_renderer.c). model_build_packets builds and
+Model primitives (src/decomp/src/resident/model_renderer.c). model_build_packets builds and
 model_draw_sprite_model draws a model's primitive groups, a header {u8 type, u8, s16 count}
 and count records each, through model_primitive_types[type]: a prepare routine per record,
 the record stride, the auxiliary bytes per record and the packet size, and six
@@ -130,7 +130,7 @@ def function_body(text: str, name: str) -> str:
 
 
 def unit(path: str, root: Path = ROOT) -> str:
-    return (root / "decomp/src" / path).read_text()
+    return (root / "src/decomp/src" / path).read_text()
 
 
 @dataclass(frozen=True)
@@ -867,7 +867,8 @@ DESTINATION = 4  # a kind-4 region records a destination, not a current path
 @cache
 def scripted_exits(root: Path = ROOT) -> tuple[int, ...]:
     """The scenes the world map's scripted modes store before leaving."""
-    text = "".join(path.read_text() for path in sorted((root / "decomp/src/worldmap").glob("*.c")))
+    folder = root / "src/decomp/src/worldmap"
+    text = "".join(path.read_text() for path in sorted(folder.glob("*.c")))
     values = re.findall(r"game_data\.map = (0x[0-9A-Fa-f]+|\d+);", _strip_comments(text))
     return tuple(sorted({int(value, 0) for value in values}))
 
@@ -1437,7 +1438,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not args.sweep:
         parser.error("choose --sweep")
     both = discs()
-    lines = ["dispatch tables (both discs; tables read from decomp/src)"]
+    lines = ["dispatch tables (both discs; tables read from src/decomp/src)"]
     failures = 0
     if args.only in (None, "formulas"):
         formulas = [formula_census(disc) for disc in both]

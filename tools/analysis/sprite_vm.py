@@ -8,7 +8,7 @@ original-format analysis, not a native tick scheduler or a complete sprite VM.
 
 The second part decodes every command of both interpreters: the resident one
 (800248d4 with the generic commands of 8001fbe4) and the battle overlay's copy
-(800c11cc with the battle commands of 800b3f04), as recovered in decomp/src.
+(800c11cc with the battle commands of 800b3f04), as recovered in src/decomp/src.
 `python3 -m tools.analysis.sprite_vm --sweep` finds the sprite resource blocks
 of both extracted discs and prints aggregate decoding results only, with the
 animation headers that nothing recovered starts reported apart.
@@ -181,7 +181,7 @@ def advance_sprite_timer(
 
 
 # ---------------------------------------------------------------------------
-# The command language, read from the recovered handlers in decomp/src
+# The command language, read from the recovered handlers in src/decomp/src
 # ---------------------------------------------------------------------------
 
 FIELD = "field"  # resident 800248d4 (sprite_in_battle clear: field, world map, other modes)
@@ -989,7 +989,7 @@ RESIDENT_BASE = 0x80010000 - 0x800  # file offset of an address in the boot exec
 WIDTH_TABLE = 0x8004FCC0  # sprite_vm_command_lengths, the lengths of commands 80-ff
 FIELD_ARCHIVES = {1: 606, 2: 601}  # slot of field 0's archive (verify_field.load_sources)
 FIELD_MAPS = 730
-FIELD_SPRITE_COMPONENT = 3  # the sprite bundle (field_load.cpp adopt_loaded_field)
+FIELD_SPRITE_COMPONENT = 3  # the sprite bundle (field_load.cpp adopt_loaded_field at b969b11)
 FIELD_HEADER = 0x154
 # Directory groups (cd_select_directory group + index) the battle overlay reads its
 # files from: 0c+0 battle_mode.c, 0c+1 ovl2615 (enemy sets), 0c+2

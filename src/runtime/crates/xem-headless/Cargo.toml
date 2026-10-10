@@ -1,0 +1,18 @@
+[package]
+name = "xem-headless"
+description = "Run the game without window, GPU, audio or input devices"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+xem-core = { path = "../xem-core" }
+xem-disc = { path = "../xem-disc" }
+xem-game = { path = "../xem-game" }
+serde_json.workspace = true
+png.workspace = true
+
+[dev-dependencies]
+xem-media = { path = "../xem-media" }

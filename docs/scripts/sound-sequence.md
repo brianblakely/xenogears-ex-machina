@@ -1,6 +1,6 @@
 # Sound sequence VM
 
-- Interpreter: `sound_seq_interpret_channels` (decomp/src/resident/sound.c), run per tick by
+- Interpreter: `sound_seq_interpret_channels` (src/decomp/src/resident/sound.c), run per tick by
   `sound_run_tick` for every playing sequence and the effect channel set.
 - Dispatch: a byte below 0x80 is a note (volume byte, encoded key k: semitone
   `sound_note_semitones[k]` = k / 19, ticks `sound_note_durations[k]` = one of

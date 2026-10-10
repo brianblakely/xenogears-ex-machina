@@ -10,7 +10,7 @@ names and argument numbers abstracted) and, for warnings about a call's
 argument, by callee and argument. Build every unit first, for instance with a
 forced rebuild that keeps each recipe's output together:
 
-    make -B -j8 -O -C decomp all-verify > .local/build.log 2>&1
+    make -B -j8 -O -C src/decomp all-verify > .local/build.log 2>&1
     python3 tools/compiler_warnings.py .local/build.log
 """
 

@@ -2,7 +2,7 @@
 
 The battle overlay copies formation formation_selected_index of the encounter set
 formation_encounter_set into formation_active as it starts (battle battle_main). A set is 16
-formations of 0x20 bytes, BattleFormation in decomp/include/resident/formation.h, whose member
+formations of 0x20 bytes, BattleFormation in src/decomp/include/resident/formation.h, whose member
 comments name their readers; FIELDS follows that struct (the tests compare the two) and FLAGS names
 the flag bits its readers test. Sets come from:
 

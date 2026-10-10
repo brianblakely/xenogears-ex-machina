@@ -14,8 +14,8 @@ creating new adventures.
 | Milestone | Status | Scope |
 | --- | --- | --- |
 | Original-game decompilation | **Complete** | Both [supported North American discs](analysis/reference-profiles.json); all 26 program components rebuild byte for byte. |
-| Modern platform foundation | **Next** | Shared native and browser runtime. |
-| First playable section | Planned | Exploration, dialogue, battle, menus, saving and media playback. |
+| Modern platform foundation | **Complete** | Shared native and browser runtime: desktop, browser, Android and XR (verified on emulators). |
+| First playable section | **Next** | Exploration, dialogue, battle, menus, saving and media playback. |
 | Complete game | Planned | Both-disc story, optional content and minigames. |
 | Enhanced play and creation tools | Planned | Modern visuals, VR, conveniences, mods and desktop editors. |
 | Playable release | **Not yet available** | Tested native downloads and browser play. |

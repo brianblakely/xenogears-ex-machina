@@ -8,7 +8,7 @@ regression scenario, not the scope boundary. See ../plan.md for the phase exit.
 
 ```sh
 nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra#matching
-make -C decomp smoke
+make -C src/decomp smoke
 m2c --help
 spimdisasm --help
 psx-objdump --version
@@ -119,7 +119,7 @@ located with `tools/psyq_signatures.py` and classified, not decompiled.
 
 `CC1FLAGS_<file>` adds unit-specific cc1 options; no unit needs one yet.
 
-Targets (`decomp/targets/`): both resident executables (SLUS_006.64/69 share all
+Targets (`src/decomp/targets/`): both resident executables (SLUS_006.64/69 share all
 source; only the embedded disc index differs) and 24 decoded overlay images,
 byte-identical on both discs. `tools/extraction/disc_files.py` and
 `tools/extraction/overlays.py` write the local inputs; splat writes the local
@@ -128,7 +128,7 @@ code on both discs. It counts every aligned `jr $ra`, leaf returns too, in each
 file's raw bytes and in every packed block the original decoder completes from
 any byte offset, checks that each movie stream's sectors are video, XA audio or
 empty and that no sector outside the files holds code, and fails unless every
-form holding code is the image of a `decomp/targets` .mk and all 26 occur. On the
+form holding code is the image of a `src/decomp/targets` .mk and all 26 occur. On the
 user's discs it decodes 74,925 (Disc 1) and 42,383 (Disc 2) packed blocks and
 finds code only in the targets (116 file entries and the boot programs); the
 other `jr $ra` words are compressed bytes inside packed blocks (the world map
@@ -137,7 +137,7 @@ containers, Disc 1 file 732) and samples of the `wds ` wave bank in Disc 1 file
 targets and symbol files.
 
 The link reads splat's `undefined_syms_auto.txt` and `undefined_funcs_auto.txt` as
-`PROVIDE` (decomp/Makefile): an address splat gave a name defines it only where no
+`PROVIDE` (src/decomp/Makefile): an address splat gave a name defines it only where no
 linked object defines it, so an object's own definition stands (GNU ld lets a plain
 script assignment win silently and makes the name absolute; 63 names were so bound
 before, the resident's model_envmap_patch_base among them). The resident pads its file to the
@@ -205,7 +205,7 @@ DecDCTvlcSize/DecDCTvlcSize2 at +4; mdec.symbols.txt makes the two words data la
 (libpress_vlc_max_size, libpress_vlc2_max_size, counted `sdk` bytes outside every function) and
 DecDCTvlcSize2 a function, relocated against libpress_vlc2_max_size.
 
-After every target links, `all-verify` runs `make -C decomp cross-image`
+After every target links, `all-verify` runs `make -C src/decomp cross-image`
 (`tools/cross_image.py` over every configuration). Each name a target's linker scripts
 assign (the `PROVIDE`s its link used, ovl2602's names in ovl2143 among them, and the
 fragments: `*.resident.ld`, `debug595.field.ld`) whose value lies in another target's
@@ -237,7 +237,7 @@ would pass) and one inside an object that no name ties it to, which a fragment g
 a view of that object instead. Values outside every target (the resident's sizes, a
 constant) are not checked, nor is an address the C spells as a number, which neither
 this check nor the relocation scan (a target's own range only) sees.
-`python3 tools/cross_image.py decomp/targets/*/*.mk --numbers` lists those (each other
+`python3 tools/cross_image.py src/decomp/targets/*/*.mk --numbers` lists those (each other
 target's address a link holds without a relocation, outside asset and included bytes and
 the mode table); in the 26 links they are battle's three reads of the boot word
 mode_disc_mode (80010000; battle_sprite_commands.c battle_sprite_command_run sprite
@@ -274,16 +274,16 @@ nix --extra-experimental-features 'nix-command flakes' develop path:./nix#analys
 nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra#matching
 python3 tools/extraction/disc_files.py .local/discs/disc1.bin .local/extract/disc1  # and disc2
 python3 tools/extraction/overlays.py
-make -C decomp all-split all-verify all-coverage
-make -C decomp CONFIG=targets/overlays/field.mk verify
-python3 tools/matching_diff.py decomp/targets/overlays/field.mk [-f func_8007xxxx]
+make -C src/decomp all-split all-verify all-coverage
+make -C src/decomp CONFIG=targets/overlays/field.mk verify
+python3 tools/matching_diff.py src/decomp/targets/overlays/field.mk [-f func_8007xxxx]
 ```
 
 ## Compressed containers
 
 The seven packed overlay files of each disc (14 in all: the mode overlays in slots
 35-40 and the slot-39 image's second copy) are reproduced from the rebuilt images by
-`tools/packed_container.py` (`make -C decomp all-container`). The packer is
+`tools/packed_container.py` (`make -C src/decomp all-container`). The packer is
 Okumura's LZSS binary-tree encoder without preset-ring matches; it completes the
 last eight-token group with zero literals, which count in the decoded length.
 The plain encoding of the program plus those literals is every container's
@@ -353,12 +353,12 @@ python3 tools/matching_ram.py .local/scenarios/<capture>/capture/final.ram --tar
 ## Converting a function
 
 Replace one `INCLUDE_ASM(...)` in the target's C file with C. Start from m2c (`m2c
---target mipsel-gcc-c <asm file>`), existing findings and the host reconstruction
-(search `src/reconstruction` for the address), then compile, `make verify`, and read
+--target mipsel-gcc-c <asm file>`), existing findings and the retired host reconstruction
+(`git grep <address> b969b11 -- src/reconstruction`), then compile, `make verify`, and read
 `matching_diff.py -f` for the first difference. Keep functions in original order; the
 function's jump tables and strings move with it (splat migrated them into the function's
 assembly). A unit's structures go in small headers beside the source; what several
-targets share has one definition in `decomp/include`: `psyq/` (the SDK's types,
+targets share has one definition in `src/decomp/include`: `psyq/` (the SDK's types,
 prototypes and macros, the inline GTE ones in `inline_c.h`; members no library signature
 names under the PsyQ name their callers give them, else their library's prefix,
 `libgte_rotate_vector`), `resident/` (one header per resident subsystem with its types,
@@ -429,7 +429,7 @@ passing the length in a variable instead keeps the built-in and gives the same c
 without the warning, and nothing in the bytes decides between the two. No other
 unit's code depends on how libc.h declares them. To count the warnings, rebuild
 every unit and read the log:
-`make -B -j8 -O -C decomp all-verify > .local/build.log 2>&1`, then
+`make -B -j8 -O -C src/decomp all-verify > .local/build.log 2>&1`, then
 `python3 tools/compiler_warnings.py .local/build.log` (`--list` prints each one).
 
 A new file (a split or data-only unit, an overlay-number unit, a `.data.ld` alias
@@ -450,8 +450,8 @@ NON_MATCHING drafts into a side build and ranks them by remaining instruction
 differences. It compares relocated instructions without their immediates, so a wrong
 struct offset or symbol offset scores as equal; confirm near misses in the real image.
 
-For actual differing-instruction counts, use `make -C decomp all-audit` (or
-`make -C decomp CONFIG=targets/overlays/menu.mk audit` for one target).
+For actual differing-instruction counts, use `make -C src/decomp all-audit` (or
+`make -C src/decomp CONFIG=targets/overlays/menu.mk audit` for one target).
 Alongside source coverage, this runs `nonmatching_score.py <config.mk> --exact`:
 it verifies the pristine baseline, compiles all reviewed C drafts with
 `NON_MATCHING` in an isolated local build, and links them with the target's layout
@@ -472,11 +472,11 @@ owns it, and finds it with one grep:
 
 - Game code and data are lower snake_case. PsyQ functions and library variables
   keep the SDK's spelling (`LoadImage`, `CdRead`, `longjmp`, `_card_info`); an SDK
-  member gets its PsyQ name only where its comment or decomp/include/psyq says the
+  member gets its PsyQ name only where its comment or src/decomp/include/psyq says the
   code is that routine, else its library as prefix and what the code does
   (`libgte_rotate_vector`, `libcd_timeout_message`).
 - Every game name starts with its owner's prefix: one per overlay image, one per
-  resident subsystem. The resident's subsystems are those of decomp/include/resident
+  resident subsystem. The resident's subsystems are those of src/decomp/include/resident
   (`cd_`, `console_`, `gpu_`, `heap_`, `menu_state_`, `mode_`, `model_`, `pad_`,
   `sound_`, `sprite_`, `stream_`, `text_`, `window_`, `game_` for GameData,
   `formation_`, `task_`), with `boot_` for the entry point and boot, `commons_` for
@@ -495,9 +495,9 @@ owns it, and finds it with one grep:
   follow (`field_event_`, `sound_seq_`). A shorter prefix's grep therefore also
   finds the longer ones' names (`battle_` finds `battle_results_` and
   `battle_setup_`); grep the whole name to find a symbol. An image's sources are in
-  decomp/src/<target>, named after the target, not the prefix: decomp/src/menu holds
-  the arena (`arena_`), decomp/src/slot39 the in-game menu (`menu_`), decomp/src/movie
-  the movie mode and decomp/src/mdec the movie library (`movie_`).
+  src/decomp/src/<target>, named after the target, not the prefix: src/decomp/src/menu holds
+  the arena (`arena_`), src/decomp/src/slot39 the in-game menu (`menu_`), src/decomp/src/movie
+  the movie mode and src/decomp/src/mdec the movie library (`movie_`).
 - Functions are verb phrases (`cd_select_directory`, `heap_alloc`), predicates
   `is_`/`has_`/`can_` (`battle_can_use_combo_step`). A script VM's handlers are the
   prefix, the VM and the mnemonic its decoder prints, so the C and the decoder
@@ -543,13 +543,13 @@ owns it, and finds it with one grep:
   comment (`/* 80031BDC: Allocate ...` above `heap_alloc`), a variable's or an
   INCLUDE_ASM statement's trailing or leading one, a symbol-file line's value for
   the SDK functions and labels the generated assembly defines. To find the symbol at
-  an address, grep the address in decomp (`git grep -i -n 80031bdc decomp`):
+  an address, grep the address in decomp (`git grep -i -n 80031bdc src/decomp`):
   definitions spell it in upper case, prose in lower case, and a symbol file
-  (decomp/targets) holds each name the splits give. Overlays that share a load
+  (src/decomp/targets) holds each name the splits give. Overlays that share a load
   address give one address several symbols (`801c5040` is ovl2600's
   `name_entry_test_bit` and ovl2601's `item_shop_quad_place`; `801fc000` starts six
-  battle modules): narrow the grep to the image's decomp/src directory or its
-  decomp/targets/overlays/<image>.symbols.txt. A tool, a test or a doc that needs an
+  battle modules): narrow the grep to the image's src/decomp/src directory or its
+  src/decomp/targets/overlays/<image>.symbols.txt. A tool, a test or a doc that needs an
   address keeps it beside the name or reads it from the definition (the world map
   actor script handlers' table in overlay_scripts.py, test_battle_event_vm.py).
 
@@ -559,8 +559,8 @@ establishes; write it into the C definition with the address in its comment
 image's symbol file as `name = 0xADDR;` (`// type:func` for a function). To
 rename a symbol and every reference to it, write a mapping of its row and the
 prefix rows of the images involved (`resident prefix - cd_
-decomp/include/resident/cd.h high ...`), run `names.py check` and `apply`. Then
-run `make -C decomp all-split`, `make -j8 -C decomp all-verify` and `python3 -m
+src/decomp/include/resident/cd.h high ...`), run `names.py check` and `apply`. Then
+run `make -C src/decomp all-split`, `make -j8 -C src/decomp all-verify` and `python3 -m
 unittest tests.test_names`.
 
 `tools/names.py` (module docstring) applied the mapping in the matching shell, one
@@ -578,7 +578,7 @@ python3 tools/names.py inventory               # placeholders left: .local/names
 python3 tools/names.py check names.tsv         # the rules above; what stays unnamed
 python3 tools/names.py apply names.tsv --dry-run [--overrides overrides.tsv]
 python3 tools/names.py apply names.tsv [--overrides overrides.tsv]
-make -C decomp all-split && make -j8 -C decomp all-verify && make -j8 -C decomp all-coverage
+make -C src/decomp all-split && make -j8 -C src/decomp all-verify && make -j8 -C src/decomp all-coverage
 ```
 
 A mapping row is `image kind old new unit confidence evidence`: kind func, data,
@@ -1087,7 +1087,7 @@ converted to C per unit. What converting the targets' `.data` established:
   800B3F04's four s16 statics lie two bytes apart at 800c3ca4-800c3cab (four symbols:
   the CDK compiler addresses one object's members from a single `%hi`), its u8 is
   followed by a u8[3] at the next word, and 800B8098's SVECTORs lie at 4 mod 8. Any
-  other version rejects a sub-word object (decomp/Makefile); no target or unit setting
+  other version rejects a sub-word object (src/decomp/Makefile); no target or unit setting
   selects a slot rule. Variables that share a word are therefore one object, also in the
   resident's `.bss`: the sprite position sprite_image_list_position is a DVECTOR. The window colour
   window_color, the overlays' `u8[3]` (a common of commons_small.c), is declared a
@@ -1135,7 +1135,7 @@ converted to C per unit. What converting the targets' `.data` established:
   eight bytes, each unit's own in unit order then the commons, fill 800925d4-80092954
   and end the program; the larger ones follow past it in the same order, each unit's
   own to 80096fa8, then the large commons up to the mode table's BSS end 8009b558
-  (`tools/data_users.py decomp/targets/overlays/menu.mk --end 80096fa8`: no
+  (`tools/data_users.py src/decomp/targets/overlays/menu.mk --end 80096fa8`: no
   INVERSION, and the one FOREIGN address above). The GCC 2.6.3 images keep one
   `.bss` in declaration order (menu_member_screens's 2-, 200-, 200- and 1-byte statics at
   801ea72c-801ea8c0; mdec's 64-byte movie_decoder among 4-byte statics), so the split
@@ -1143,7 +1143,7 @@ converted to C per unit. What converting the targets' `.data` established:
   GCC emits after a `-G0` unit's code, with the linker's small commons. The code,
   assembled before them, addresses every one absolutely (maspsx's own `-G8` would
   move those accesses to `$gp`), so the build keeps `-G0` and `SBSS_<file> := 8`
-  (decomp/Makefile) moves each object of at most 8 bytes, by the size GCC declares,
+  (src/decomp/Makefile) moves each object of at most 8 bytes, by the size GCC declares,
   from the `.bss` maspsx appends to a `.sbss`, the slot rule applying to both. menu.mk
   sets it for every unit with variables, commons unit included; menu.yaml links each
   unit's `.sbss` into the file (data entries with `linker_section: .sbss`) and its
@@ -1322,11 +1322,10 @@ result; a new elaborate finding and emulator capture are not additional mandator
 gates. Capture the original when it answers an unresolved semantic, format,
 service or integration question. Do not rewrite expectations or hide uncertainty.
 
-Existing original findings, captures and the host reconstruction remain valid only
+Existing original findings, captures and the retired host reconstruction remain valid only
 within their recorded scope. They are especially useful for the later native port,
 where pointer widths, arithmetic, memory layout and platform services change.
 [original-boundaries.md](original-boundaries.md) records the services, timing,
 control-flow, display and sound-mode boundaries the recovered source shows, with
 the scan that inventories them (`tools/service_calls.py`) and each observation's
-limits. Use docs/executable-reconstruction.md only when working on that reference
-harness.
+limits. docs/executable-reconstruction.md records that retired reference harness.

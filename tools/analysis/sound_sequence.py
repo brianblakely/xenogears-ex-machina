@@ -1,6 +1,6 @@
 """Sound sequence bytecode of the resident sound driver, from the recovered C.
 
-The interpreter is sound_seq_interpret_channels (decomp/src/resident/sound.c). A byte below
+The interpreter is sound_seq_interpret_channels (src/decomp/src/resident/sound.c). A byte below
 0x80 is a note: it sets the channel volume (byte << 8) and is followed by an
 encoded key byte k, indexing sound_note_semitones (semitone, k // 19) and sound_note_durations
 (ticks, DURATIONS[k % 19]; 0 means a third byte holds the ticks). Bytes

@@ -13,9 +13,9 @@ subsystem; Phase 7 implements Lua. Acceptance gates list their initial owner and
 separate later regression tasks. Unavailable families are explicit errors, not
 empty successful implementations. No later checklist is an earlier phase exit.
 
-This is the Phase 0 architecture specification. `xem-baseline` still implements
-only help/version; no native game, agent server, debug service or spectator is
-implemented. The schemas and public tests below validate this contract, not
+This is the Phase 0 architecture specification. The Phase 0 `xem-baseline`
+implemented only help/version (retired with the host C++ reference; see commit
+b969b11); no agent server, debug service or spectator is implemented. The schemas and public tests below validate this contract, not
 gameplay. Phase 2 implements it and Phase 3 must demonstrate it before expansion.
 
 The [method catalog](methods.json), [wire schema](protocol.schema.json),

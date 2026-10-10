@@ -45,6 +45,15 @@ native infrastructure and narrow, source-correlated portability adapters. Do not
 require a wholesale Rust rewrite or a second independently updated game-state
 model. These choices add no work to Phase 1's original-compatible matching exit.
 
+The decomp stays a pure, byte-identical implementation of the original game.
+It remains the runtime's game-logic provider, compiled unchanged into the
+native and browser builds, but it is never edited for native client
+integration: no port-only conditionals, hooks, prototypes, renames or layout
+changes in `src/decomp/`. Everything integration needs lives in the separate port
+layer (`src/port/`) and the build tooling around the unmodified sources
+([runtime.md](docs/runtime.md)). Changes to `src/decomp/` serve the original game
+only and must keep every target byte-identical.
+
 - **SDL3:** Default desktop/Android platform layer for game windows/surfaces,
   keyboard/mouse/touch/controllers, audio-device I/O and lifecycle integration.
   Reuse applicable services on Horizon OS; use native APIs only for demonstrated
@@ -165,55 +174,55 @@ matches exactly. A hash pass built mostly from original assembly is only a build
 baseline. Matching proves original-target code, not historical source spelling,
 semantic understanding of every name, or portability to a new compiler.
 
-The existing host reconstruction and captures remain regression/reference assets.
-They are not the required implementation path or acceptance gate for new Phase 1
-functions. Do not grow its artificial stack/heap/service model merely to validate
-code that can instead be compiled and compared on the original target.
+The original-environment captures remain regression/reference assets. The host
+C++ reconstruction that accompanied Phase 1 was retired once the decomp matched
+(it remains readable at commit b969b11); it was never the implementation path or
+acceptance gate for Phase 1 functions.
 
 ## Phase 2 — Shared runtime and platform foundation
 
 **Goal:** Adapt the recovered program through thin platform boundaries, without a
 second independently maintained game-rules implementation.
 
-- [ ] Establish Rust/C integration, local asset import and native storage, input,
+- [x] Establish Rust/C integration, local asset import and native storage, input,
   graphics, audio and timing through the boundaries above. Preserve source
   correlation; isolate pointer-width, arithmetic, layout and PS1-specific
   adaptations. Keep a narrow C ABI with explicit ownership, buffer bounds and
   error/unwind rules; do not mirror game logic in Rust or serialize native pointers
   and device handles as game state.
-- [ ] Separate authoritative simulation from presentation and host pacing. One
+- [x] Separate authoritative simulation from presentation and host pacing. One
   runtime serves humans, agents, tests and editor previews; no CPU emulator ships.
   Expose read-only presentation data, retaining pre-projection geometry/transforms,
   cameras and recovered ordering/masking semantics needed for multiple views;
   a final 2D framebuffer must not be the only presentation interface.
-- [ ] Implement direct typed engine actions and structured full introspection,
+- [x] Implement direct typed engine actions and structured full introspection,
   semantic readiness/valid actions, exact stepping, bounded run-until, unlocked
   speed, debugging, snapshots/replay and typed go-anywhere scenario setup.
-- [ ] Build/run the headless target without the graphical stack, a window, display
+- [x] Build/run the headless target without the graphical stack, a window, display
   server, GPU, input device or audio device. Advance logical audio/media progress
   even without output devices; optional screenshots/spectator streams are read-only
   and independent of simulation time.
-- [ ] Prove the integration risks with small working paths: a live SDL/wgpu game
+- [x] Prove the integration risks with small working paths: a live SDL/wgpu game
   surface with a Slint settings panel rendered on the same wgpu device; Android
   startup, asset access and suspend/resume; and an actual Horizon headset rendering
   a stereo test scene and a Slint panel through wgpu/OpenXR. Verify swapchain/
   device ownership and synchronization, frame scheduling and head tracking while
   simulation is paused. These are foundation checks, not the full UX or VR feature
   work of Phases 5, 6 and 10.
-- [ ] Prove the browser Rust/C WebAssembly build with a real execution path, canvas
+- [x] Prove the browser Rust/C WebAssembly build with a real execution path, canvas
   rendering, user-activated audio, asynchronous local asset import and persisted
   settings/save round-trip. Bound memory and stream/cache assets rather than
   requiring both discs to fit in memory. Keep imported game data local; the hosted
   application must neither bundle original assets nor upload users' images/saves.
-- [ ] Render an actual stereo test scene through WebXR on a target headset browser.
+- [x] Render an actual stereo test scene through WebXR on a target headset browser.
   Qualify graphics-device/render-target ownership, projections, synchronization,
   session entry/exit and paused head tracking, including the chosen WebGPU or
   WebGL2 submission path. Neither cross-compilation nor a flat canvas closes this.
-- [ ] Expose the same direct commands, full introspection, stepping, bounded
+- [x] Expose the same direct commands, full introspection, stepping, bounded
   run-until and snapshots to browser clients/automation without DOM-input simulation
   or privileged host services. Verify native/WebAssembly authoritative outcomes;
   browser scheduling limits must not weaken the native unlocked headless contract.
-- [ ] Demonstrate a small original-game execution path through the real native
+- [x] Demonstrate a small original-game execution path through the real native
   services, including direct commands, inspection and snapshot/restore. Compare
   authoritative outcomes with presentation attached and absent; use the retained
   behavioral tests to detect portability regressions.

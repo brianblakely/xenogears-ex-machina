@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Triage aid: score each NON_MATCHING draft of a target against its original function.
 
-    nonmatching_score.py decomp/targets/overlays/field.mk [func_8007XXXX ...]
+    nonmatching_score.py src/decomp/targets/overlays/field.mk [func_8007XXXX ...]
 
 Compiles every source file holding a selected draft with -DNON_MATCHING into a side
 build (.local/decomp/nmscore/<target>/), then prints, per function,
@@ -37,7 +37,9 @@ from pathlib import Path
 import rabbitizer
 
 ROOT = (
-    Path.cwd() if (Path.cwd() / "decomp/Makefile").exists() else Path(__file__).resolve().parents[1]
+    Path.cwd()
+    if (Path.cwd() / "src/decomp/Makefile").exists()
+    else Path(__file__).resolve().parents[1]
 )
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from matching import compare  # noqa: E402
@@ -96,7 +98,10 @@ def audit_drafts(config_path: Path, values: dict[str, str], selected: list[str])
             "TARGET_CPPFLAGS += -DNON_MATCHING\n",
         )
         subprocess.run(
-            ["make", "-s", "-C", str(ROOT / "decomp"), f"CONFIG={fragment}", str(ROOT / candidate)],
+            [
+                "make", "-s", "-C", str(ROOT / "src" / "decomp"), f"CONFIG={fragment}",
+                str(ROOT / candidate),
+            ],
             check=True,
             capture_output=True,
             text=True,
@@ -246,8 +251,8 @@ def main() -> None:
                 "make",
                 "-s",
                 "-C",
-                str(ROOT / "decomp"),
-                f"CONFIG={config_path.relative_to(ROOT / 'decomp')}",
+                str(ROOT / "src" / "decomp"),
+                f"CONFIG={config_path.relative_to(ROOT / 'src' / 'decomp')}",
                 f"BUILD={side}",
                 "TARGET_CPPFLAGS=-DNON_MATCHING",
                 str(obj),

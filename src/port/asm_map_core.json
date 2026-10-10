@@ -1,0 +1,37 @@
+[
+ {
+  "template": "move $$8, $0\\0A\\09sw $$29, 0($$8)\\0A\\09addiu $$8, $$8, -4\\0A\\09move $$29, $$8",
+  "constraints": "r,~{$8},~{memory},~{$1}",
+  "function": "xem_asm_stack_enter"
+ },
+ {
+  "template": "addiu $$29, $$29, 4\\0A\\09lw $$29, 0($$29)",
+  "constraints": "~{memory},~{$1}",
+  "function": "xem_asm_stack_leave"
+ },
+ {
+  "template": ".word 0x0001000D",
+  "constraints": "~{$1}",
+  "function": "xem_asm_break_1"
+ },
+ {
+  "template": "break 1024",
+  "constraints": "~{$1}",
+  "function": "xem_asm_break_1024"
+ },
+ {
+  "template": "break 0x400",
+  "constraints": "~{$1}",
+  "function": "xem_asm_break_1024"
+ },
+ {
+  "template": "lw $$12, 0($0);lui $$13, 0x0900;or $$12, $$12, $$13;lui $$13, 0x00FF;ori $$13, $$13, 0xFFFF;and $$13, $1, $$13;sw $$13, 0($0);sw $$12, 0($1)",
+  "constraints": "r,r,~{$12},~{$13},~{memory},~{$1}",
+  "function": "xem_asm_link_9_words"
+ },
+ {
+  "template": "move $$15, $0\\0A\\09sw $$31, 0($$15)",
+  "constraints": "r,~{$15},~{memory},~{$1}",
+  "function": "xem_asm_get_return_address"
+ }
+]

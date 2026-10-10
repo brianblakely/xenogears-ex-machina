@@ -13,7 +13,7 @@ from tools.analysis import battle_ai, dispatch_tables
 from tools.analysis import formations as fm
 
 ROOT = Path(__file__).resolve().parents[1]
-HEADER = ROOT / "decomp/include/resident/formation.h"
+HEADER = ROOT / "src/decomp/include/resident/formation.h"
 
 
 def packed(data: bytes) -> bytes:

@@ -11,7 +11,7 @@ data and BSS change while the game runs). A match shows the rebuilt code is
 what the original loader placed and executed in that run; the byte-exact image
 comparison (make verify) remains the build acceptance.
 
-With --targets, every decomp/targets/*/*.mk image built in the matching shell is
+With --targets, every src/decomp/targets/*/*.mk image built in the matching shell is
 compared over its linked function range; images whose code is resident (at
 least --min-agreement of the words agree) are reported with the addresses of the
 words that differ (e.g. the harness's startup guard at 0x80019930).
@@ -33,7 +33,7 @@ def loaded_targets(ram: bytes, min_agreement: float) -> list[dict]:
     from matching_diff import config, functions, load_offset
 
     results = []
-    for path in sorted((ROOT / "decomp/targets").glob("*/*.mk")):
+    for path in sorted((ROOT / "src/decomp/targets").glob("*/*.mk")):
         values = config(path)
         image = ROOT / values["IMAGE"]
         elf = Path(str(image) + ".elf")

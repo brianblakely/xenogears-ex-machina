@@ -1,7 +1,7 @@
 # Arena move frame events
 
 - **Interpreter:** `arena_frame_event_run`
-  (`decomp/src/menu/arena_fighters_bout_and_effects.c`) in the `menu` overlay (Disc 1
+  (`src/decomp/src/menu/arena_fighters_bout_and_effects.c`) in the `menu` overlay (Disc 1
   file 35, Disc 2 file 30). It is called with a frame and a count for an arena actor's
   current animation and covers count frames from that frame, once per frame. It is the
   arena counterpart of the battle animation events.

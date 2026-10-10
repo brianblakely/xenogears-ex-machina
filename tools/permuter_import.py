@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Set up a decomp-permuter directory for one NON_MATCHING function (debugging aid).
 
-    permuter_import.py decomp/targets/overlays/field.mk func_8007XXXX [--out DIR]
+    permuter_import.py src/decomp/targets/overlays/field.mk func_8007XXXX [--out DIR]
     permuter -j8 --best-only DIR
 
 The directory holds base.c (the unit preprocessed with -DNON_MATCHING, retaining
 inline helpers and reducing other bodies to prototypes), compile.sh (the unit's qualified GCC
-version, -G value and maspsx flags, exactly as decomp/Makefile builds it) and
+version, -G value and maspsx flags, exactly as src/decomp/Makefile builds it) and
 target.o (the original function's private assembly). A permuter score of zero is
 only a candidate: copy the source back and accept it with `make verify`.
 Run inside the matching shell from the repository root.
@@ -23,10 +23,10 @@ import sys
 from pathlib import Path
 
 # The checkout being worked on: the current directory when it is one (worktrees).
-ROOT = Path.cwd() if (Path.cwd() / "decomp/Makefile").exists() else Path(__file__).resolve().parents[1]
+ROOT = Path.cwd() if (Path.cwd() / "src/decomp/Makefile").exists() else Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
-# Kept identical to decomp/Makefile CPPFLAGS/CC1FLAGS/ASFLAGS.
+# Kept identical to src/decomp/Makefile CPPFLAGS/CC1FLAGS/ASFLAGS.
 CPPFLAGS = (
     "-undef -D__GNUC__=2 -Dmips -D__mips__ -D__mips -Dpsx -D__psx__ -D__psx -D_PSYQ "
     "-D__EXTENSIONS__ -D_MIPSEL -D__CHAR_UNSIGNED__ -D_LANGUAGE_C -DLANGUAGE_C "
@@ -132,7 +132,7 @@ def main() -> None:
         shutil.rmtree(out)
     out.mkdir(parents=True)
 
-    includes = ["-I" + str(ROOT / "decomp/include")] + values.get("TARGET_CPPFLAGS", "").split()
+    includes = ["-I" + str(ROOT / "src/decomp/include")] + values.get("TARGET_CPPFLAGS", "").split()
     pre = subprocess.run(
         [f"psx-cpp-{version}", *CPPFLAGS, *includes, "-DNON_MATCHING", "-P", str(source)],
         check=True, capture_output=True, text=True, cwd=ROOT,
@@ -149,7 +149,7 @@ def main() -> None:
     compile_sh = out / "compile.sh"
     compile_sh.write_text(
         "#!/usr/bin/env bash\n"
-        "# Same pipeline as decomp/Makefile for this unit.\n"
+        "# Same pipeline as src/decomp/Makefile for this unit.\n"
         "set -eo pipefail\n"
         'IN="$1"; OUT="$3"\n'
         f"psx-cc1-{version} {' '.join(CC1FLAGS + extra)} -G{gp} -o \"$OUT.cc1.s\" \"$IN\"\n"
@@ -165,7 +165,7 @@ def main() -> None:
         f'.include "{asm}"\n'
     )
     subprocess.run(
-        ["psx-as", *ASFLAGS, "-G0", "-I", str(ROOT / "decomp/include"), "-I", str(ROOT),
+        ["psx-as", *ASFLAGS, "-G0", "-I", str(ROOT / "src/decomp/include"), "-I", str(ROOT),
          "-o", str(out / "target.o"), str(out / "target.s")],
         check=True, cwd=ROOT,
     )

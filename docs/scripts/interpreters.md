@@ -4,7 +4,7 @@ Every bytecode interpreter and every dispatch whose index comes from game data i
 the 26 targets, with the document and decoder for each. They were found from the
 recovered C: every file-scope initializer that names functions (the
 function-pointer tables, listed below; `tests/test_dispatch_tables.py` fails
-when one is missing here) and the 621 `switch` statements in `decomp/src`.
+when one is missing here) and the 621 `switch` statements in `src/decomp/src`.
 
 A `switch` cannot dispatch out of range: GCC's jump-table code compares the
 index with the case range first and takes the default (or leaves the switch)

@@ -1,6 +1,6 @@
 """Battle event-script VM (ovl3087): opcode table, decoder and both-disc sweep.
 
-ovl3087 (decomp/src/ovl3087/battle_event_script_vm.c, matching) runs a battle's event
+ovl3087 (src/decomp/src/ovl3087/battle_event_script_vm.c, matching) runs a battle's event
 script when the formation sets 800c3d48. 801e879c dispatches code[pc] (u8)
 through a 76-case switch (00-4b) to one handler per opcode; each returns the
 instruction length, or 0 while it waits. Operands are little-endian: 801e57f8

@@ -14,7 +14,7 @@ from tools.analysis import events as ev
 from tools.analysis.field import FieldError
 
 ROOT = Path(__file__).resolve().parents[1]
-FIELD = ROOT / "decomp/src/field"
+FIELD = ROOT / "src/decomp/src/field"
 DEFINITION = re.compile(
     r"^(?:s32|void|u32|s16|u16|u8|int) ([A-Za-z_]\w*)\([^;]*?\)\s*(?:\n[^{]*)?\{(.*?)\n\}",
     re.M | re.S,
