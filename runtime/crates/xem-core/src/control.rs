@@ -286,6 +286,24 @@ impl<M: GameModule> Session<M> {
                     })).collect::<Vec<_>>(),
                 }))
             }
+            "readiness" => {
+                // What the game is doing now: the mode the dispatcher entered,
+                // what it waits for, whether it consumed pad input last frame.
+                let stopped = self.stopped.clone();
+                let services = self.runtime.services();
+                const MODES: [&str; 7] = ["kernel menu", "field", "battle", "world map", "battling", "menu", "movie"];
+                Ok(json!({
+                    "mode": services.mode,
+                    "mode_name": services.mode.and_then(|m| MODES.get(m as usize)).copied(),
+                    "dispatches": services.dispatches,
+                    "waiting_for": services.last_wait.map(|w| format!("{w:?}")),
+                    "input_reads_last_frame": services.input_reads_last_frame,
+                    "accepts_input": services.input_reads_last_frame > 0,
+                    "stopped": stopped,
+                    "valid_commands": ["pad", "press", "frames", "run_until", "inspect", "write", "snapshot",
+                                        "restore", "scenario", "record", "replay"],
+                }))
+            }
             "memory_hash" => Ok(json!(format!("{:016x}", self.memory_hash()?))),
             "record" => {
                 let vblank = self.vblank();
