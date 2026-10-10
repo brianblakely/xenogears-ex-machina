@@ -56,7 +56,7 @@ s32 MDEC_in_sync(void) {
             timeout("MDEC_in_sync");
             return -1;
         }
-        xem_host_yield(XEM_YIELD_POLL);
+        xem_wait(XEM_YIELD_POLL);
     }
     return 0;
 }
@@ -70,7 +70,7 @@ s32 MDEC_out_sync(void) {
             timeout("MDEC_out_sync");
             return -1;
         }
-        xem_host_yield(XEM_YIELD_POLL);
+        xem_wait(XEM_YIELD_POLL);
     }
     return 0;
 }

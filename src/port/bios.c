@@ -22,7 +22,7 @@
  * in its file calls. */
 static long xem_card_result(long result) {
     while (xem_host_card_busy()) {
-        xem_host_yield(XEM_YIELD_POLL);
+        xem_wait(XEM_YIELD_POLL);
     }
     return result;
 }
@@ -87,7 +87,7 @@ long delete(char *name) {
 /* B(0Ah): wait until the event is ready, then clear it. */
 long WaitEvent(long event) {
     while (!TestEvent(event)) {
-        xem_host_yield(XEM_YIELD_POLL);
+        xem_wait(XEM_YIELD_POLL);
     }
     return 1;
 }

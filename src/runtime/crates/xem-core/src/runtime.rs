@@ -160,6 +160,7 @@ impl ImportHandler for Services {
         let arg = |i: usize| import.args.get(i).copied().unwrap_or(0);
         match import.name {
             "yield" => {
+                self.last_wait = Some(YieldReason::from_raw(arg(0)));
                 self.pending = Some(Pending::Stop(Stop::Yield(YieldReason::from_raw(arg(0)))));
                 Action::Unwind
             }
@@ -191,6 +192,21 @@ impl ImportHandler for Services {
                     Action::Trap
                 }
             },
+            "poll_now" => {
+                // A wait inside an interrupt handler: the earliest device event
+                // happens now (time passes as the hardware's does while a
+                // handler spins); its interrupts stay pending until the
+                // handler returns.
+                match self.next_device_event() {
+                    Some(at) => {
+                        self.clock.now = self.clock.now.max(at);
+                        self.each_device(memory, |device, context| device.advance(context));
+                        self.run_device_events(memory);
+                        Action::Return(1)
+                    }
+                    None => Action::Return(0),
+                }
+            }
             "mode" => {
                 self.mode = Some(arg(0));
                 self.dispatches += 1;
@@ -398,6 +414,14 @@ impl<M: GameModule> Runtime<M> {
     pub fn interrupt(&mut self, irq: u32, detail: u32) -> Result<(), Trap> {
         let sp = self.module.stack_pointer();
         let result = self.module.interrupt(irq, detail);
+        if result.is_ok() && self.module.async_state() == AsyncState::Unwinding {
+            // An interrupt handler cannot wait: on the console it runs with
+            // interrupts off and never returns to the game's waits.
+            self.module.stop_unwind();
+            self.module.set_stack_pointer(sp);
+            let what = format!("{:?}", self.services().pending.take());
+            return Err(Trap::Host(format!("interrupt {irq} handler suspended ({what})")));
+        }
         self.module.set_stack_pointer(sp);
         self.sync_devices();
         result.map_err(|trap| self.host_trap(trap))

@@ -51,8 +51,12 @@ SKIPPED_TARGETS = {"debug595", "debug2611", "slus_006.69"}
 PORT_DIR = ROOT / "src" / "port"
 # Game memory: RAM at KSEG0 and the scratchpad keep their PS1 addresses.
 MEMORY_BYTES = 0x80200000
-# The port's shadow stack, then its own data, lie below the scratchpad.
 STACK_BYTES = 0x100000
+# The port's own data, shadow stack and asyncify areas start here, far from
+# every address the game forms: KUSEG 0x00000000-0x007FFFFF mirrors RAM on the
+# PS1, and game code that stores through a bare 24-bit address (an ordering
+# table link) must not reach the host side's state.
+PORT_BASE = 0x10000000
 FINGERPRINT_BYTES = 32
 # Host imports that suspend the game or abandon its stack (asyncify unwinds
 # through them).
@@ -840,6 +844,7 @@ def generate_dispatchers(rewriter, addresses):
         # called with its fixed parameters.
         candidates.setdefault(signature_key(def_ret, def_params), []).append(
             (address, length, fingerprint, target, def_ret, def_ret_attrs, def_params, image, variadic))
+    dropped = []
     sharers = {}
     for items in candidates.values():
         for item in items:
@@ -851,7 +856,17 @@ def generate_dispatchers(rewriter, addresses):
         lines.append(f'define hidden {ret} @"xem.icall.{key_name(key)}.{variant}"({params}) {{')
         lines.append("entry:")
         lines.append("  %addr = ptrtoint ptr %f to i32")
-        items = sorted(candidates.get(key, []))
+        # Functions taking a prefix of the call's parameters (same result)
+        # are reached too, their extra arguments dropped as MIPS ignores the
+        # argument registers a callee does not read (model_build_packets
+        # calls every primitive type's prepare with three arguments).
+        call_wasm = [wasm_type(t) for t in arg_tys]
+        prefix = [item for k, group in candidates.items() if k != key for item in group
+                  if wasm_type(item[4]) == wasm_type(ret) and len(item[6]) < len(arg_tys)
+                  and [wasm_type(t) for t, _ in item[6]] == call_wasm[:len(item[6])]]
+        dropped.extend(f"dispatch drops arguments: {name_of(item[3])} takes {len(item[6])} of {len(arg_tys)}"
+                       for item in prefix)
+        items = sorted(candidates.get(key, []) + prefix)
         by_address = {}
         for item in items:
             by_address.setdefault(item[0], []).append(item)
@@ -882,7 +897,7 @@ def generate_dispatchers(rewriter, addresses):
         lines.append("")
         for item in items:
             declared.add((item[3], item[4], tuple(t for t, _ in item[6]) + (("...",) if item[8] else ())))
-    report = []
+    report = sorted(set(dropped))
     for adapter, (target, call_ret, call_params, head, source) in sorted(rewriter.adapters.items()):
         _, token, def_ret, def_ret_attrs, def_params, _, _ = head
         params = ", ".join(f"{t} %a{i}" for i, (t, _) in enumerate(call_params))
@@ -1030,7 +1045,7 @@ def link(out, objects, args, units):
     raw = out / "game.raw.wasm"
     cmd = [os.environ["XEM_WASM_LD"], "--no-entry", "--error-limit=0",
            f"--initial-memory={MEMORY_BYTES}", f"--max-memory={MEMORY_BYTES}",
-           "-z", f"stack-size={STACK_BYTES}", "--stack-first",
+           "-z", f"stack-size={STACK_BYTES}", f"--global-base={PORT_BASE}",
            "--export=__stack_pointer", *(f"--export={name}" for name in EXPORTS), "-o", str(raw)]
     if args.stubs:
         # wasm-ld reports some undefined symbols only once others resolve.
@@ -1062,7 +1077,10 @@ def link(out, objects, args, units):
         raise SystemExit(f"signature mismatches: {', '.join(mismatches)}")
     final = out / "game.wasm"
     imports = ",".join(YIELD_IMPORTS)
-    run(["wasm-opt", "-O2", "--asyncify", f"--pass-arg=asyncify-imports@{imports}",
+    # -g keeps the name section: wasm2c and native backtraces name game functions.
+    # XEM_WASM_OPT=-O0 keeps every function separate (wasm-opt -O2 merges
+    # identical functions and inlines, which makes backtraces misleading).
+    run(["wasm-opt", os.environ.get("XEM_WASM_OPT", "-O2"), "-g", "--asyncify", f"--pass-arg=asyncify-imports@{imports}",
          "--enable-bulk-memory", "--enable-sign-ext", "--enable-mutable-globals", "--enable-nontrapping-float-to-int",
          str(raw), "-o", str(final)])
     print(f"wrote {final} ({final.stat().st_size} bytes)")

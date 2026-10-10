@@ -51,6 +51,11 @@ const BUTTONS: [(&str, u16); 16] = [
     ("square", button::SQUARE),
 ];
 
+/// A button's bit by its control name ("cross", "start", ...).
+pub fn button_bit(name: &str) -> Option<u16> {
+    BUTTONS.iter().find(|(n, _)| *n == name).map(|(_, b)| *b)
+}
+
 fn buttons_of(value: &Value) -> Result<u16, String> {
     let mut bits = 0;
     for name in value.as_array().ok_or("buttons must be a list of names")? {

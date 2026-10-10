@@ -74,7 +74,7 @@ static u32 xem_hblank_counter(void) {
 /* Wait until the vertical blank count reaches `target`. */
 static void xem_vsync_wait(s32 target) {
     while (libetc_vsync_count < target) {
-        xem_host_yield(XEM_YIELD_VSYNC);
+        xem_wait(XEM_YIELD_VSYNC);
     }
 }
 
@@ -102,7 +102,60 @@ int VSync(int mode) {
 /* Set while an interrupt handler runs: it cannot suspend (xem_loop_poll). */
 s32 xem_in_interrupt;
 
+/* The interrupt mask (I_MASK): a masked interrupt stays pending, as I_STAT
+ * holds it, and runs when SetIntrMask enables it again (libgpu masks every
+ * interrupt while it runs its queue). */
+static u32 xem_interrupt_mask = 0xFFFFFFFF;
+static u32 xem_pending_interrupts;
+static u32 xem_pending_dma_channels;
+
+static void xem_dispatch(u32 irq, u32 detail);
+
+static void xem_run_pending(void) {
+    u32 irq, channel;
+
+    for (irq = 0; irq < 11; irq++) {
+        if (!(xem_pending_interrupts & xem_interrupt_mask & (1 << irq))) {
+            continue;
+        }
+        xem_pending_interrupts &= ~(1 << irq);
+        if (irq == XEM_IRQ_DMA) {
+            for (channel = 0; channel < 7; channel++) {
+                if (xem_pending_dma_channels & (1 << channel)) {
+                    xem_pending_dma_channels &= ~(1 << channel);
+                    xem_dispatch(irq, channel);
+                }
+            }
+        } else {
+            xem_dispatch(irq, 0);
+        }
+    }
+}
+
+int SetIntrMask(int mask) {
+    u32 previous = xem_interrupt_mask;
+
+    xem_interrupt_mask = mask;
+    if (xem_pending_interrupts & xem_interrupt_mask) {
+        xem_run_pending();
+    }
+    return previous;
+}
+
 void xem_interrupt(u32 irq, u32 detail) {
+    if (!(xem_interrupt_mask & (1 << irq))) {
+        xem_pending_interrupts |= 1 << irq;
+        if (irq == XEM_IRQ_DMA) {
+            xem_pending_dma_channels |= 1 << detail;
+        }
+        return;
+    }
+    xem_dispatch(irq, detail);
+}
+
+static void xem_dispatch(u32 irq, u32 detail) {
+    s32 nested = xem_in_interrupt;
+
     xem_in_interrupt = 1;
     switch (irq) {
     case XEM_IRQ_VBLANK:
@@ -145,5 +198,5 @@ void xem_interrupt(u32 irq, u32 detail) {
         }
         break;
     }
-    xem_in_interrupt = 0;
+    xem_in_interrupt = nested;
 }

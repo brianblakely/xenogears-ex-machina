@@ -94,6 +94,22 @@ void xem_unmapped_asm(s32 number) {
     xem_host_missing(0x10000 + number);
 }
 
+void xem_wait(int reason) {
+    extern s32 xem_in_interrupt;
+    static u32 idle_polls;
+
+    if (!xem_in_interrupt) {
+        xem_host_yield(reason);
+        return;
+    }
+    if (xem_host_poll_now()) {
+        idle_polls = 0;
+    } else if (++idle_polls >= 0x100000) {
+        /* Nothing can end this wait: the handler would hang the console. */
+        xem_host_bad_call(0xFFFFFFFF, reason);
+    }
+}
+
 /* Loop iterations since the game last suspended. */
 static u32 xem_loop_iterations;
 

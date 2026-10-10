@@ -196,7 +196,7 @@ static s32 libcd_wait(void) {
         libcd_dispatch();
         return 1;
     }
-    xem_host_yield(XEM_YIELD_POLL);
+    xem_wait(XEM_YIELD_POLL);
     return 1;
 }
 

@@ -13,9 +13,11 @@ use crate::pad::{Pad, Pads};
 const MAGIC: &[u8; 8] = b"XEMSNAP\0";
 const VERSION: u32 = 1;
 
-/// The linear-memory regions a snapshot keeps: the module's low memory (port
-/// data, shadow stack, asyncify area), the scratchpad and I/O pages, main RAM.
-pub const REGIONS: [(u32, u32); 3] = [(0, 0x0100_0000), (0x1F80_0000, 0x3000), (0x8000_0000, 0x20_0000)];
+/// The linear-memory regions a snapshot keeps: KUSEG below 8 MB (where stray
+/// game stores land), the port's data, shadow stack and asyncify areas
+/// (tools/game_module.py PORT_BASE), the scratchpad and I/O pages, main RAM.
+pub const REGIONS: [(u32, u32); 4] =
+    [(0, 0x80_0000), (0x1000_0000, 0x0100_0000), (0x1F80_0000, 0x3000), (0x8000_0000, 0x20_0000)];
 
 #[derive(Debug)]
 pub enum SnapshotError {

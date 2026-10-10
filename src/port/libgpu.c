@@ -89,6 +89,7 @@ extern long libetc_video_mode;
 
 void _exeque(void);
 int _reset(int mode);
+int SetIntrMask(int mask);
 int _sync(int mode);
 void SetDrawEnv2(DR_ENV *dr_env, DRAWENV *env);
 
@@ -99,7 +100,7 @@ static s32 xem_gpu_dma_busy(void) {
 /* The SDK's spin loops on the GPU and DMA: the transfer ends at a wait. */
 static void xem_gpu_wait_ready(void) {
     while (!(xem_host_gpu_status() & XEM_GPU_READY)) {
-        xem_host_yield(XEM_YIELD_DRAWSYNC);
+        xem_wait(XEM_YIELD_DRAWSYNC);
     }
 }
 
@@ -294,7 +295,7 @@ int _drs(RECT *rect, u_long pixels) {
     xem_host_gpu_gp0(*(u_long *)&rect->x);
     xem_host_gpu_gp0(*(u_long *)&rect->w);
     while (!(xem_host_gpu_status() & 0x08000000)) {
-        xem_host_yield(XEM_YIELD_DRAWSYNC);
+        xem_wait(XEM_YIELD_DRAWSYNC);
     }
     while (rest-- > 0) {
         *p++ = xem_host_gpu_read();
@@ -333,6 +334,8 @@ int _version(int mode) {
  * DMA2, acknowledge the GPU interrupt and drop a partly sent command. Mode 0
  * returns the GPU type. */
 int _reset(int mode) {
+    int mask = SetIntrMask(0);
+
     libgpu_queue_read_index = 0;
     libgpu_queue_write_index = libgpu_queue_read_index;
     switch (mode & 7) {
@@ -350,6 +353,7 @@ int _reset(int mode) {
         xem_host_gpu_gp1(0x01000000);
         break;
     }
+    SetIntrMask(mask);
     if ((mode & 7) != 0) {
         return 0;
     }
@@ -364,10 +368,14 @@ int _reset(int mode) {
  * port's has no result, as DMACallback calls it. */
 void _exeque(void) {
     XemGpuQueueEntry *entry;
+    int mask;
 
     if (xem_gpu_dma_busy()) {
         return;
     }
+    /* No interrupt (the DMA2 completion runs _exeque) reaches the queue while
+     * it runs. */
+    mask = SetIntrMask(0);
     while (!xem_gpu_queue_empty() && !xem_gpu_dma_busy()) {
         if (((libgpu_queue_read_index + 1) & (XEM_GPU_QUEUE_LENGTH - 1)) == libgpu_queue_write_index &&
             libgpu_graph_type.draw_sync_callback == NULL) {
@@ -386,6 +394,7 @@ void _exeque(void) {
         libgpu_graph_type.draw_sync_pending = 0;
         libgpu_graph_type.draw_sync_callback();
     }
+    SetIntrMask(mask);
 }
 
 /* Run func(argument, parameter) now when nothing is queued or running and no
@@ -393,13 +402,15 @@ void _exeque(void) {
  * `size` bytes of the argument, and let the DMA2 interrupt run it. */
 int _addque2(XemGpuQueueFunction func, u_long *argument, int size, u_long parameter) {
     XemGpuQueueEntry *entry;
+    int mask;
 
     while (((libgpu_queue_write_index + 1) & (XEM_GPU_QUEUE_LENGTH - 1)) == libgpu_queue_read_index) {
         _exeque();
         if (((libgpu_queue_write_index + 1) & (XEM_GPU_QUEUE_LENGTH - 1)) == libgpu_queue_read_index) {
-            xem_host_yield(XEM_YIELD_DRAWSYNC);
+            xem_wait(XEM_YIELD_DRAWSYNC);
         }
     }
+    mask = SetIntrMask(0);
     libgpu_graph_type.draw_sync_pending = 1;
     if (libgpu_graph_type.queue_mode == 0 ||
         (xem_gpu_queue_empty() && !xem_gpu_dma_busy() && libgpu_graph_type.draw_sync_callback == NULL)) {
@@ -408,6 +419,7 @@ int _addque2(XemGpuQueueFunction func, u_long *argument, int size, u_long parame
         libgpu_last_call_function = func;
         libgpu_last_call_argument = argument;
         libgpu_last_call_parameter = parameter;
+        SetIntrMask(mask);
         return 0;
     }
     DMACallback(2, _exeque);
@@ -421,6 +433,7 @@ int _addque2(XemGpuQueueFunction func, u_long *argument, int size, u_long parame
     entry->parameter = parameter;
     entry->function = func;
     libgpu_queue_write_index = (libgpu_queue_write_index + 1) & (XEM_GPU_QUEUE_LENGTH - 1);
+    SetIntrMask(mask);
     _exeque();
     return (libgpu_queue_write_index - libgpu_queue_read_index) & (XEM_GPU_QUEUE_LENGTH - 1);
 }
@@ -438,11 +451,11 @@ int _sync(int mode) {
         while (!xem_gpu_queue_empty()) {
             _exeque();
             if (!xem_gpu_queue_empty()) {
-                xem_host_yield(XEM_YIELD_DRAWSYNC);
+                xem_wait(XEM_YIELD_DRAWSYNC);
             }
         }
         while (xem_gpu_dma_busy() || !(xem_host_gpu_status() & XEM_GPU_READY)) {
-            xem_host_yield(XEM_YIELD_DRAWSYNC);
+            xem_wait(XEM_YIELD_DRAWSYNC);
         }
         return 0;
     }

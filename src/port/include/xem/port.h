@@ -27,6 +27,15 @@ enum {
  * and the host resumes it from the same point. */
 void xem_host_yield(int reason);
 
+/* Wait for `reason`: suspend the game (xem_host_yield), or inside an
+ * interrupt handler, which cannot suspend, let the devices' next event happen
+ * at once (as the hardware goes on while a handler spins). Port code waits
+ * only through this. */
+void xem_wait(int reason);
+
+/* Run the devices' earliest scheduled event now; 0 when none is scheduled. */
+unsigned int xem_host_poll_now(void);
+
 /* Abandon the whole game stack and continue with xem_run(kind, arg): the
  * original resets the stack pointer and jumps (the mode dispatcher, soft
  * reset). Does not return. */

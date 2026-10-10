@@ -12,6 +12,10 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(has_game_module)");
     println!("cargo::rerun-if-env-changed=XEM_GAME_WASM");
     println!("cargo::rerun-if-env-changed=XEM_WASM2C_RUNTIME");
+    // XEM_GAME_OPT=0 compiles the translated module unoptimised, for
+    // backtraces that name every game function.
+    println!("cargo::rerun-if-env-changed=XEM_GAME_OPT");
+    println!("cargo::rerun-if-env-changed=XEM_GAME_DEBUG");
     let manifest = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let wasm = env::var_os("XEM_GAME_WASM")
         .map(PathBuf::from)
@@ -41,7 +45,8 @@ fn main() {
     rust.push_str("];\n");
     fs::write(out.join("imports.rs"), rust).unwrap();
 
-    cc::Build::new()
+    let mut build = cc::Build::new();
+    build
         .files([out.join("game.c"), out.join("glue.c")])
         .file(format!("{runtime}/wasm-rt-impl.c"))
         .file(format!("{runtime}/wasm-rt-mem-impl.c"))
@@ -51,8 +56,18 @@ fn main() {
         .include(&runtime)
         .define("WASM_RT_MEMCHECK_BOUNDS_CHECK", "1")
         .define("WASM_RT_SKIP_SIGNAL_RECOVERY", "1")
-        .opt_level(2)
-        .warnings(false)
+        .opt_level(env::var("XEM_GAME_OPT").ok().and_then(|v| v.parse().ok()).unwrap_or(2))
+        // Debug information for the translated module is large and makes GCC's
+        // variable tracking fail on it; the game's debugging goes through the
+        // schema and commands instead.
+        .debug(false)
+        .warnings(false);
+    // XEM_GAME_DEBUG=1: line tables (no variable tracking), so backtraces name
+    // the file-static functions of the translated module.
+    if env::var_os("XEM_GAME_DEBUG").is_some() {
+        build.flag("-g1").flag("-fno-var-tracking");
+    }
+    build
         .compile("xem_game");
     println!("cargo::rustc-cfg=has_game_module");
     // Dependents (crates with `xem-game` as a dependency) see DEP_XEM_GAME_MODULE.

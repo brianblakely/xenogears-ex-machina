@@ -26,6 +26,12 @@ struct Options {
     screenshot: Option<PathBuf>,
     /// Report the drive's data sectors at the end (cd_trace.rs).
     cd_trace: bool,
+    /// Pad 1 input by frame: the retained routes' format,
+    /// [{"start": F, "end": F, "buttons": ["start", ...]}], held start <= frame < end.
+    inputs: Option<PathBuf>,
+    /// Every N frames write frame-NNNNNN.png (the display) and .ram (2 MB).
+    checkpoint_every: u64,
+    checkpoint_dir: Option<PathBuf>,
 }
 
 fn main() -> ExitCode {
@@ -40,6 +46,9 @@ fn main() -> ExitCode {
         wav: None,
         screenshot: None,
         cd_trace: false,
+        inputs: None,
+        checkpoint_every: 0,
+        checkpoint_dir: None,
     };
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -53,6 +62,9 @@ fn main() -> ExitCode {
             "--bios" => options.bios = args.next().map(PathBuf::from),
             "--wav" => options.wav = args.next().map(PathBuf::from),
             "--screenshot" => options.screenshot = args.next().map(PathBuf::from),
+            "--inputs" => options.inputs = args.next().map(PathBuf::from),
+            "--checkpoint-every" => options.checkpoint_every = args.next().and_then(|v| v.parse().ok()).unwrap_or(0),
+            "--checkpoint-dir" => options.checkpoint_dir = args.next().map(PathBuf::from),
             "--cd-trace" => options.cd_trace = true,
             _ => {
                 eprintln!(
@@ -133,7 +145,18 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
     let mut audio = Vec::new();
+    let inputs = match &options.inputs {
+        Some(path) => input_route(&std::fs::read_to_string(path)?)?,
+        None => Vec::new(),
+    };
+    if let Some(dir) = &options.checkpoint_dir {
+        std::fs::create_dir_all(dir)?;
+    }
     for frame in 0..options.frames {
+        if !inputs.is_empty() {
+            let held = inputs.iter().filter(|(start, end, _)| (*start..*end).contains(&frame)).fold(0, |a, i| a | i.2);
+            session.runtime.services().pads.0[0].buttons = held;
+        }
         // A native disc source never blocks.
         let result = session.frame();
         let spu = &mut session.runtime.services().spu;
@@ -143,6 +166,16 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
         if let Err(trap) = result {
             println!("frame {frame}: {trap}");
             break;
+        }
+        if let (Some(dir), true) = (&options.checkpoint_dir, options.checkpoint_every > 0) {
+            if (frame + 1) % options.checkpoint_every == 0 {
+                let name = format!("frame-{:06}", frame + 1);
+                let (width, height, rgba) = session.runtime.services().gpu.display_rgba8();
+                write_png(&dir.join(format!("{name}.png")), width, height, &rgba)?;
+                let mut ram = vec![0; 0x20_0000];
+                session.runtime.memory().read(0x8000_0000, &mut ram)?;
+                std::fs::write(dir.join(format!("{name}.ram")), ram)?;
+            }
         }
     }
     if let Some(log) = session.runtime.services().cd.sector_log.take() {
@@ -173,6 +206,25 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// The displayed picture as an RGBA PNG (an empty display area gives 1x1).
+/// The retained routes' input format (tests/reference-inputs): pad 1 button holds.
+#[cfg(has_game_module)]
+fn input_route(text: &str) -> Result<Vec<(u64, u64, u16)>, Box<dyn std::error::Error>> {
+    let route: serde_json::Value = serde_json::from_str(text)?;
+    let mut out = Vec::new();
+    for hold in route.as_array().ok_or("an input route is a list")? {
+        let start = hold["start"].as_u64().ok_or("start")?;
+        let end = hold["end"].as_u64().ok_or("end")?;
+        let names = hold["buttons"].as_array().ok_or("buttons")?;
+        let mut bits = 0;
+        for name in names {
+            let name = name.as_str().ok_or("button names are strings")?;
+            bits |= xem_core::control::button_bit(name).ok_or_else(|| format!("unknown button {name}"))?;
+        }
+        out.push((start, end, bits));
+    }
+    Ok(out)
+}
+
 #[cfg(has_game_module)]
 fn write_png(path: &std::path::Path, width: u32, height: u32, rgba: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
     let (width, height, rgba) =
