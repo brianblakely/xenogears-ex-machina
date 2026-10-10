@@ -23,7 +23,7 @@ BattleWork *battle_results_work_ptr = &battle_work_area; /* 801E44C8 */
  * in the file: commons, which the original linker allocated each in a slot
  * of whole words (decomp/Makefile). */
 s32 battle_results_gauge_start_value;               /* 801E44CC: gauge: start value */
-s32 battle_results_gauge_unread_end_value;                 /* 801E44D0: end value */
+s32 battle_results_gauge_unread_end_value;          /* 801E44D0: end value (never read) */
 s32 battle_results_gauge_change;                    /* 801E44D4: distance */
 s32 battle_results_gauge_start_length;              /* 801E44D8: start length */
 s32 battle_results_gauge_change_length;             /* 801E44DC: distance length */

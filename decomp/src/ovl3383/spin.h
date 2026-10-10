@@ -7,15 +7,15 @@
 /* The effect task battle_module_spin_start creates (0x54 bytes; resident tasks: the
  * update node, then the drawing node, both with the task as their data). */
 typedef struct {
-    Task task;      /* +00 */
-    Task draw;      /* +1c */
-    Sprite *actor;  /* +38: the battle sprite the effect circles */
-    s32 radius;     /* +3c: horizontal swing of the rows */
+    Task task;             /* +00 */
+    Task draw;             /* +1c */
+    Sprite *actor;         /* +38: the battle sprite the effect circles */
+    s32 radius;            /* +3c: horizontal swing of the rows */
     s32 swing_growth;      /* +40: added to the swing each row (8.8) */
     s32 row_angle_step;    /* +44: angle step between rows (8.8) */
     s32 angle_step_growth; /* +48: added to the angle step each row */
-    s32 angle;      /* +4c: advanced by step every frame */
-    s32 step;       /* +50 */
+    s32 angle;             /* +4c: advanced by step every frame */
+    s32 step;              /* +50 */
 } SpinTask;
 
 void battle_module_spin_update(Task *node);

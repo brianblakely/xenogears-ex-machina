@@ -48,7 +48,7 @@ void battle_create_object(s32 index, u16 flags, ObjectScriptFile *script_file, O
 void battle_reset_object(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **animations);
 
 /* battle/screen.h's. */
-void battle_quake_start(SVECTOR *amplitude, s32 frames);          /* quake the view towards amplitude */
+void battle_quake_start(SVECTOR *amplitude, s32 frames);                   /* quake the view towards amplitude */
 void battle_screen_fade_start(s32 frames, s32 blend, s32 r, s32 g, s32 b); /* fade the screen to a colour */
 
 /* battle/action_file.h's. */

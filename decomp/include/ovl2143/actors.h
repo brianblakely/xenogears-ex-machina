@@ -166,7 +166,7 @@ extern Actor *gear_model_actors[10]; /* the actors */
  * node 0). */
 void gear_model_get_node_matrix(MATRIX *out, MATRIX *unused, s32 index, s32 node);
 void gear_model_set_instant_keyframes(s32 value); /* while on, tweens to keyframes apply at once (801E39F0 op 0x13) */
-void gear_model_init(s32 slot_count); /* reset the module and its pools */
+void gear_model_init(s32 slot_count);             /* reset the module and its pools */
 void gear_model_create_actor(s32 index, u16 flags, ActorScript *script, ObjectModelFile *file, s16 x, s16 y,
                    s16 z, s16 w, s16 *pos); /* create actor `index` from its files */
 void gear_model_shut_down(void);       /* release every actor and both pools */

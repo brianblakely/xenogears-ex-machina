@@ -31,22 +31,22 @@ Panorama *gpu_create_panorama(s32 tex_x, s32 tex_y, s32 width, s32 height, s32 c
                         s32 turn, s32 *position, u8 *colours, s32 fill_scale, s32 fade_range,
                         s32 fade_start); /* create the panorama */
 void gpu_init_texture_scroll(TextureScroll *scroll, s16 x, s16 y, s16 w, s16 h, s16 count, s16 source_x, s16 source_y,
-                   u8 *speeds); /* set a texture scroll up */
+                   u8 *speeds);                                                             /* set a texture scroll up */
 void stream_start_image_load(s32 file, void *ring, s32, s32, s32, s32, s32, s32, s32, s32); /* start a stream */
 
 /* model.h: callers convert arguments/result differently from the resident definition. */
-void model_set_color(s32 r, s32 g, s32 b);                                        /* the model (fog) colour */
+void model_set_color(s32 r, s32 g, s32 b);                                         /* the model (fog) colour */
 void model_alloc_packet_buffers(SpriteModel *buffer, void **first, void **second); /* allocate its packets */
-void model_set_light(s32 index, ModelLight *light);                               /* set a light */
-void model_set_back_color_16bit(s32 r, s32 g, s32 b);                             /* the background colour */
+void model_set_light(s32 index, ModelLight *light);                                /* set a light */
+void model_set_back_color_16bit(s32 r, s32 g, s32 b);                              /* the background colour */
 
 /* heap.h, text.h and window.h: callers convert arguments/result differently from the resident definition. */
 void heap_free_tag(s32 tag);                                /* release the blocks with `tag` */
 void window_open(Window *window, s32 vram_x, s32 vram_y, s32 x, s32 y, s32 columns, s32 rows);
 void text_load_palette(s32 x, s32 y);                       /* upload the text palette */
-s32 text_get_resource_entry(void *resource, s32 index);   /* a message of a resource */
-s32 text_get_message_columns(void *table, s32 index);     /* message columns */
-s32 text_get_message_rows(void *table, s32 index);        /* message rows */
+s32 text_get_resource_entry(void *resource, s32 index);     /* a message of a resource */
+s32 text_get_message_columns(void *table, s32 index);       /* message columns */
+s32 text_get_message_rows(void *table, s32 index);          /* message rows */
 s32 window_get_wait_state(Window *window);                  /* chosen answer, 0 while open */
 void window_set_color(Window *window, s32 r, s32 g, s32 b); /* colour the lines */
 void window_highlight_line(Window *window, s32 value);
@@ -54,7 +54,7 @@ void pad_set_unread_byte(s32 value);
 
 /* sound.h: callers convert arguments/result differently from the resident definition. */
 void sound_play_effect_on_channel_volume_pan(s32 effect, s16 channel, s16 volume, s16 pan); /* play a sound effect */
-void sound_sync_transfer(s32 wait);                                                   /* wait for the SPU transfer */
+void sound_sync_transfer(s32 wait);                                                         /* wait for the SPU transfer */
 
 /* Resident objects the shared headers do not declare. */
 extern s32 pad_vblank_count;             /* vertical blank count (text_windows_and_pads.c) */

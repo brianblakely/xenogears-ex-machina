@@ -93,13 +93,13 @@ typedef struct {
 extern s32 (*battle_curve_cell_weights)[4]; /* four weights per cell, 8 cells a row */
 
 /* The frame loop and the battle menu. */
-void battle_show_status_drain_amounts(s32 slot, s32 first, s32 second, s32 third);                              /* run commands on a slot's sprite and wait */
+void battle_show_status_drain_amounts(s32 slot, s32 first, s32 second, s32 third);                 /* run commands on a slot's sprite and wait */
 void battle_run_frame(void);                                                                       /* run one battle frame */
 void battle_load_module(void);                                                                     /* load the requested battle module */
 void battle_menu_clear(void);                                                                      /* clear the battle menu state */
 BattleMenu *battle_menu_open(void);                                                                /* open the battle menu */
 void battle_menu_close(void);                                                                      /* close the battle menu */
-void battle_start_object_script_on_own_stack(s32 index, s32 mask, s32 script);                           /* 800AA320 on a stack of its own */
+void battle_start_object_script_on_own_stack(s32 index, s32 mask, s32 script);                     /* 800AA320 on a stack of its own */
 s32 battle_list_slot_sprites(u32 mask, Sprite **list, Sprite *target);                             /* list the sprites of the slots in mask */
 s16 battle_get_sprite_direction(Sprite *from, Sprite *to);                                         /* the direction between two sprites */
 s16 battle_get_target_direction(Sprite *sprite);                                                   /* the direction to a sprite's target point */

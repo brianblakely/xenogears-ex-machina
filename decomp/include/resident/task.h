@@ -37,11 +37,11 @@ typedef struct Task {
 } Task;
 
 /* Task lists: the main list runs first each frame, then the second list. */
-extern Task *task_main_list;    /* main task list */
-extern Task *task_draw_list;    /* second task list */
-extern Task *task_next_node;    /* the next task of the running pass */
-extern Task *task_unread_current_node; /* the running task */
-extern u32 task_next_serial;    /* next task serial */
+extern Task *task_main_list;           /* main task list */
+extern Task *task_draw_list;           /* second task list */
+extern Task *task_next_node;           /* the next task of the running pass */
+extern Task *task_unread_current_node; /* the running task (never read) */
+extern u32 task_next_serial;           /* next task serial */
 extern s32 task_main_count;
 extern s32 task_draw_count;     /* live tasks */
 

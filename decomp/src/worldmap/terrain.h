@@ -34,7 +34,7 @@ s32 worldmap_path_select_region_of_kind(VECTOR *position, s32 table, s32 kind);
 /* Terrain queries (worldmap_steering_camera_terrain). */
 void worldmap_wrap_position(VECTOR *position);                  /* wrap a position (20.12) onto the area */
 void worldmap_wrap_offset(VECTOR *offset);                      /* wrap an offset (20.12) */
-void worldmap_wrap_world_offset(VECTOR *offset);                 /* wrap a world-unit offset */
+void worldmap_wrap_world_offset(VECTOR *offset);                /* wrap a world-unit offset */
 void worldmap_set_height_on_plane(VECTOR *point, VECTOR *origin, VECTOR *normal);
 u8 *worldmap_terrain_get_cell(s32 x, s32 z);                    /* terrain cell at a position */
 void worldmap_terrain_get_normal(VECTOR *normal, s32 x, s32 z); /* ground normal */

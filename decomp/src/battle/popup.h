@@ -90,7 +90,7 @@ extern u8 battle_hex_digits[];                        /* hexadecimal digit glyph
 extern u32 battle_powers_of_ten[];                    /* powers of ten */
 
 void battle_damage_popup_show(Sprite *sprite, s32 value, s32 kind); /* show a value over a sprite */
-void battle_total_popup_hide(void); /* hide the running total */
+void battle_total_popup_hide(void);                                 /* hide the running total */
 void battle_total_popup_reset(void);
 
 #endif

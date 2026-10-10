@@ -64,7 +64,7 @@ s32 sound_find_effect_bank(SoundBank *bank, s32 id); /* whether a sound bank is 
 s32 sound_create_and_play_seq(u8 *header, s32 fade, s32 frames); /* start the battle music */
 void sound_play_effect_on_last_channels(s32 effect);
 void sound_set_effect_volume(s32 id, s32 volume); /* set its volume */
-s16 sound_sync_transfer(s32 wait); /* sound transfer busy */
+s16 sound_sync_transfer(s32 wait);                /* sound transfer busy */
 
 /* Resident data no shared header declares. */
 extern u8 model_slot_ring_tmd[];                 /* a TMD model (an effect script file, battle/effect_script.h) */

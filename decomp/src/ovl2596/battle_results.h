@@ -133,7 +133,7 @@ extern s16 battle_member_card_label_y[18];
 void battle_window_open(s32 window, u16 x, u16 y, u16 w, u16 h, s32 animate, s32 wait); /* open a window */
 void battle_window_close(s32 window);                                                          /* close a window */
 void battle_init_text_quad_pair(POLY_FT4 *prims, s32 alternate, s32 page);
-void *battle_heap_alloc_text_image(s32 count);                                              /* allocate a text image */
+void *battle_heap_alloc_text_image(s32 count);                                             /* allocate a text image */
 void battle_wait_frame(void);                                                              /* run one battle frame */
 
 extern u8 battle_spoils_icon_cells[8];        /* two icon records: width, -, u, v */

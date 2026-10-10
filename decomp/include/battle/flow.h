@@ -41,7 +41,7 @@ extern s16 battle_single_action_base_table[]; /* per target code: its first comm
 extern s16 battle_single_action_split_table[]; /* per target code: its commands from here play motion 0x11 */
 
 void battle_start_intro(s32 mode);                                          /* start the battle in a mode */
-void battle_enter(s32 enemy_set);                                                   /* enter the battle */
+void battle_enter(s32 enemy_set);                                           /* enter the battle */
 void battle_wait_for_disc(void);                                            /* run frames while the disc is busy */
 void battle_close(s32 mode);                                                /* close the battle */
 void battle_menu_open_turn(s32 mode, s32 slot, s32 targets, s32 next_slot); /* open the battle menu for a turn */

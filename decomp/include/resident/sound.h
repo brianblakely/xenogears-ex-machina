@@ -397,7 +397,7 @@ void sound_start_seq_channels(SoundSeq *seq);
 void sound_free_seq_snapshots(SoundSeq *seq);
 void sound_link_seq(SoundSeq *seq);
 s32 sound_unlink_seq(SoundSeq *seq);
-s32 sound_get_seq_size(s32 index);                                                /* size of a sequence with `channels` */
+s32 sound_get_seq_size(s32 index);                                                   /* size of a sequence with `channels` */
 s16 sound_check_seq_header(SoundSeqHeader *header);                                  /* error code of sequence data, 0 when valid */
 s32 sound_check_file(u32 *data, u32 magic, s32 id);                                  /* check a sound file */
 void sound_stop_bank_effects(SoundBank *bank);

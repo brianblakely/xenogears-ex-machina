@@ -16,7 +16,7 @@ extern s16 battle_acting_sprite_command_motion; /* the acting sprite's command m
 
 void battle_run_intro_swirl(void);                   /* the battle's intro swirl */
 void battle_single_action_clear_loaded(void);
-void battle_single_action_load(s32 index);         /* load a single action's command file and stream */
+void battle_single_action_load(s32 index);           /* load a single action's command file and stream */
 void battle_single_action_set_actor(Sprite *sprite); /* set the acting sprite of a single action */
 void battle_single_action_request(s32 action);       /* request single action `action` (800b8068 runs it) */
 void battle_single_action_run(s32 action);           /* run a requested single action */

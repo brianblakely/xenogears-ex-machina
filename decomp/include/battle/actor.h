@@ -49,7 +49,7 @@ extern s32 battle_camera_circle_distance;      /* its distance from it */
 extern s16 battle_camera_circle_angle;         /* its angle round it */
 
 /* The slots' sprites. */
-void battle_end_turn_and_preload_slot(s32 slot);       /* end a slot's turn presentation */
+void battle_end_turn_and_preload_slot(s32 slot);        /* end a slot's turn presentation */
 void battle_sprite_aim_jump(Sprite *sprite);            /* aim a sprite's jump at its target */
 void battle_sprite_aim_jump_keep_rise(Sprite *sprite);  /* the same, keeping its rising speed */
 void battle_sprite_update_ground(Sprite *sprite);       /* put a sprite on the scene's ground */
