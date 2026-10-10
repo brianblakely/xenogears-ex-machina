@@ -36,6 +36,7 @@ from tools.analysis.dispatch_tables import (
     kr_body,
     object_model_group,
     primitive_table,
+    scripted_exits,
     sprite_callbacks,
     sprite_kind,
     techniques,
@@ -170,6 +171,16 @@ class SourceTests(unittest.TestCase):
         self.assertIn(
             "} else if ((D_8006D634.map & 0x7FF) >= 0x400) {\n            func_800199CC(3);",
             results,
+        )
+
+    def test_scripted_exits_are_the_world_maps_map_stores(self):
+        entry = function_body(source("worldmap/worldmap.c"), "func_80070CFC")
+        self.assertIn("D_8006D634.map = 0x400;", entry)  # a new world state
+        leave = function_body(source("worldmap/worldmap_80072238.c"), "func_80077480")
+        self.assertIn("D_8006D634.map = 0x11;", leave)
+        self.assertEqual(
+            scripted_exits(),
+            (0x11, 0x50, 0x84, 0x10E, 0x110, 0x111, 0x11A, 0x120, 0x1A1, 0x1F0, 0x1FA, 0x269, 0x400),
         )
 
     def test_sprite_kinds_follow_the_header_and_the_callback_table(self):

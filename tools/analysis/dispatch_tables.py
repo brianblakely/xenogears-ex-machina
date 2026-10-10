@@ -839,7 +839,8 @@ def world_modes(root: Path = ROOT) -> tuple[str, ...]:
 
 # The world map leaves for a field (exit 0, worldmap.c func_80070CFC) with the
 # scene and entry of the current path region (D_8009D7D8, a PathRegion) or,
-# from a scripted mode, constants its code stores in D_8006F94E.scene. func_80094238 makes a region current for a
+# from a scripted mode, constants its code stores in the game data's map
+# (D_8006D634.map, 0x8006f94e). func_80094238 makes a region current for a
 # path table (it tests every region with a link; kind 4 regions only record a
 # destination) and func_80094364 for table 3. The area files (0x24, 0) area + 1
 # of D_8009B584 hold the four path tables (func_80073530: AreaHeader.spots,
@@ -853,7 +854,7 @@ DESTINATION = 4  # a kind-4 region records a destination, not a current path
 def scripted_exits(root: Path = ROOT) -> tuple[int, ...]:
     """The scenes the world map's scripted modes store before leaving."""
     text = "".join(path.read_text() for path in sorted((root / "decomp/src/worldmap").glob("*.c")))
-    values = re.findall(r"D_8006F94E\.scene = (0x[0-9A-Fa-f]+|\d+);", _strip_comments(text))
+    values = re.findall(r"D_8006D634\.map = (0x[0-9A-Fa-f]+|\d+);", _strip_comments(text))
     return tuple(sorted({int(value, 0) for value in values}))
 
 
