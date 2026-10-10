@@ -370,8 +370,9 @@ def zero_of(ty):
     return "null" if ty == "ptr" else ("0.0" if ty in ("float", "double") else "0")
 
 
-def adapter_body(target, call_ret, call_params, def_ret, def_ret_attrs, def_params):
-    """Body lines calling `target` (defined with def types) from params %a0.. of call types."""
+def adapter_body(target, call_ret, call_params, def_ret, def_ret_attrs, def_params, variadic=False):
+    """Body lines calling `target` (defined with def types) from params %a0.. of call types.
+    A variadic target gets its fixed arguments and an empty variable list."""
     lines, args = [], []
     for i, (ty, attrs) in enumerate(def_params):
         if i < len(call_params):
@@ -381,7 +382,8 @@ def adapter_body(target, call_ret, call_params, def_ret, def_ret_attrs, def_para
             args.append(f"{ty} {' '.join(attrs) + ' ' if attrs else ''}{value}")
         else:
             args.append(f"{ty} {zero_of(ty)}")
-    call = f"call {def_ret} {target}({', '.join(args)})"
+    fnty = f"{def_ret} ({''.join(t + ', ' for t, _ in def_params)}...) " if variadic else ""
+    call = f"call {fnty or def_ret + ' '}{target}({', '.join(args)})"
     if def_ret == "void":
         lines.append(f"  {call}")
         lines.append("  ret void" if call_ret == "void" else f"  ret {call_ret} {zero_of(call_ret)}")
@@ -677,12 +679,13 @@ def generate_dispatchers(rewriter, addresses):
             continue
         unit, head = found
         _, token, def_ret, def_ret_attrs, def_params, variadic, _ = head
-        if variadic:
-            continue
         name = name_of(token)
         target = "@" + (rewriter.mangle(unit, name) if ":" in key else name)
+        # A variadic function stored as a fixed-parameter pointer (the heap
+        # report hook holds console_printf and console_report_printf) is
+        # called with its fixed parameters.
         candidates.setdefault(signature_key(def_ret, def_params), []).append(
-            (address, length, fingerprint, target, def_ret, def_ret_attrs, def_params, image))
+            (address, length, fingerprint, target, def_ret, def_ret_attrs, def_params, image, variadic))
     sharers = {}
     for items in candidates.values():
         for item in items:
@@ -702,7 +705,8 @@ def generate_dispatchers(rewriter, addresses):
         lines.append(f"  switch i32 %addr, label %miss [ {cases} ]")
         for address, group in by_address.items():
             lines.append(f"at{address:x}:")
-            for index, (_, length, fingerprint, target, def_ret, def_ret_attrs, def_params, image) in enumerate(group):
+            for index, (_, length, fingerprint, target, def_ret, def_ret_attrs, def_params, image, variadic) \
+                    in enumerate(group):
                 if index:
                     lines.append(f"c{address:x}_{index}:")
                 label = f"b{address:x}_{index}"
@@ -716,14 +720,14 @@ def generate_dispatchers(rewriter, addresses):
                     lines.append(f"  %t{label} = icmp ne i32 %m{label}, 0")
                     lines.append(f"  br i1 %t{label}, label %{label}, label %{nxt}")
                 lines.append(f"{label}:")
-                lines += adapter_body(target, ret, call_params, def_ret, def_ret_attrs, def_params)
+                lines += adapter_body(target, ret, call_params, def_ret, def_ret_attrs, def_params, variadic)
         lines.append("miss:")
         lines.append(f"  call void @xem_bad_call(i32 %addr, i32 {number})")
         lines.append("  unreachable")
         lines.append("}")
         lines.append("")
         for item in items:
-            declared.add((item[3], item[4], tuple(t for t, _ in item[6])))
+            declared.add((item[3], item[4], tuple(t for t, _ in item[6]) + (("...",) if item[8] else ())))
     report = []
     for adapter, (target, call_ret, call_params, head, source) in sorted(rewriter.adapters.items()):
         _, token, def_ret, def_ret_attrs, def_params, _, _ = head
