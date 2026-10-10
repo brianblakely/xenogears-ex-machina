@@ -1419,49 +1419,49 @@ stick_done:
 /* Vibration choices per port; the selected one's caption is set at run
  * time. */
 MenuItem arena_menu_port1_items[2] = { /* 80091368 */
-    { 1, 0x25, { 0 }, (s32)"", arena_select_step_first_pick },
-    { 1, 0x29, { 0 }, (s32)"", arena_menu_toggle_port1_vibration },
+    { 1, 0x25, { 0 }, "", arena_select_step_first_pick },
+    { 1, 0x29, { 0 }, "", arena_menu_toggle_port1_vibration },
 };
 MenuItem arena_menu_port2_items[2] = { /* 80091390 */
-    { 1, 0x26, { 0 }, (s32)"", arena_select_step_second_pick },
-    { 1, 0x29, { 0 }, (s32)"", arena_menu_toggle_port2_vibration },
+    { 1, 0x26, { 0 }, "", arena_select_step_second_pick },
+    { 1, 0x29, { 0 }, "", arena_menu_toggle_port2_vibration },
 };
 MenuItem arena_menu_title_items[] = { /* 800913B8 */
-    { 0, 1, { 0 }, (s32)"BONUS BATTLING", arena_menu_show_page, 4 },
-    { 4, 0, { 0 }, (s32)"" },
-    { 0, 2, { 0 }, (s32)"PRACTICE", arena_select_enter, 4 },
-    { 0, 3, { 0 }, (s32)"TUTORIAL", arena_menu_choose_tutorial },
-    { 0, 5, { 0 }, (s32)"EXIT", (void (*)(s32))arena_mode_exit },
+    { 0, 1, { 0 }, "BONUS BATTLING", arena_menu_show_page, 4 },
+    { 4, 0, { 0 }, "" },
+    { 0, 2, { 0 }, "PRACTICE", arena_select_enter, 4 },
+    { 0, 3, { 0 }, "TUTORIAL", arena_menu_choose_tutorial },
+    { 0, 5, { 0 }, "EXIT", (void (*)(s32))arena_mode_exit },
 };
 MenuItem arena_menu_bonus_battling_items[] = { /* 8009141C */
-    { 0, 7, { 0 }, (s32)"PLAYER1 VS COM", arena_select_enter, 1 },
-    { 0, 8, { 0 }, (s32)"PLAYER1 VS PLAYER2", arena_select_enter, 2 },
-    { 0, 9, { 0 }, (s32)"COM VS COM", arena_select_enter, 3 },
-    { 4, 0, { 0 }, (s32)"" },
-    { 3, 0xA, { 0 }, (s32)"NUM OF MATCHES", arena_menu_step_match_count },
-    { 3, 0xB, { 0 }, (s32)"COM LEVEL", arena_menu_step_level },
-    { 3, 0xC, { 0 }, (s32)"RUBBER BAND", arena_menu_toggle_rubber_band },
+    { 0, 7, { 0 }, "PLAYER1 VS COM", arena_select_enter, 1 },
+    { 0, 8, { 0 }, "PLAYER1 VS PLAYER2", arena_select_enter, 2 },
+    { 0, 9, { 0 }, "COM VS COM", arena_select_enter, 3 },
+    { 4, 0, { 0 }, "" },
+    { 3, 0xA, { 0 }, "NUM OF MATCHES", arena_menu_step_match_count },
+    { 3, 0xB, { 0 }, "COM LEVEL", arena_menu_step_level },
+    { 3, 0xC, { 0 }, "RUBBER BAND", arena_menu_toggle_rubber_band },
 };
 MenuItem arena_menu_pause_items[] = { /* 800914A8 */
-    { 0, 0xD, { 0 }, (s32)"CONTINUE BOUT", arena_menu_resume_bout },
-    { 0, 0xE, { 0 }, (s32)"GIVE UP", arena_menu_show_page, 2 },
+    { 0, 0xD, { 0 }, "CONTINUE BOUT", arena_menu_resume_bout },
+    { 0, 0xE, { 0 }, "GIVE UP", arena_menu_show_page, 2 },
 };
 MenuItem arena_menu_settings_items[] = { /* 800914D0 */
-    { 1, 0xB, { 0 }, (s32)"GAME LEVEL", arena_menu_step_level },
-    { 1, 0x13, { 0 }, (s32)"MOTION SPEED", arena_menu_step_motion_speed },
-    { 1, 0x14, { 0 }, (s32)"FRAME RATE", arena_menu_step_frame_rate },
-    { 1, 0x23, { 0 }, (s32)"GEAR 1", arena_menu_toggle_first_actor_com },
-    { 1, 0x24, { 0 }, (s32)"GEAR 2", arena_menu_toggle_second_actor_com },
+    { 1, 0xB, { 0 }, "GAME LEVEL", arena_menu_step_level },
+    { 1, 0x13, { 0 }, "MOTION SPEED", arena_menu_step_motion_speed },
+    { 1, 0x14, { 0 }, "FRAME RATE", arena_menu_step_frame_rate },
+    { 1, 0x23, { 0 }, "GEAR 1", arena_menu_toggle_first_actor_com },
+    { 1, 0x24, { 0 }, "GEAR 2", arena_menu_toggle_second_actor_com },
 };
 MenuItem arena_menu_give_up_items[] = { /* 80091534 */
-    { 0, 0x2A, { 0 }, (s32)"YES", arena_menu_give_up },
-    { 0, 0x2A, { 0 }, (s32)"NO", arena_menu_show_page },
+    { 0, 0x2A, { 0 }, "YES", arena_menu_give_up },
+    { 0, 0x2A, { 0 }, "NO", arena_menu_show_page },
 };
 MenuItem arena_menu_practice_items[] = { /* 8009155C */
-    { 0, 0x10, { 0 }, (s32)"RETURN TO PRACTICE", arena_menu_resume_bout },
-    { 1, 0x12, { 0 }, (s32)"AI", arena_menu_step_ai_command },
-    { 1, 0x14, { 0 }, (s32)"FRAME RATE", arena_menu_step_frame_rate },
-    { 0, 0x11, { 0 }, (s32)"EXIT PRACTICE MODE", arena_menu_give_up },
+    { 0, 0x10, { 0 }, "RETURN TO PRACTICE", arena_menu_resume_bout },
+    { 1, 0x12, { 0 }, "AI", arena_menu_step_ai_command },
+    { 1, 0x14, { 0 }, "FRAME RATE", arena_menu_step_frame_rate },
+    { 0, 0x11, { 0 }, "EXIT PRACTICE MODE", arena_menu_give_up },
 };
 
 /* The menus: lines, line count, menu returned to on cancel, extra drawing. */

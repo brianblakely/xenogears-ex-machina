@@ -425,7 +425,7 @@ void sprite_task_draw(Task *task) {
             depth = sprite->half30;
         }
         if (depth > 0 && depth < 0x1000) {
-            sprite_draw_parts(sprite, sprite_ot + depth * 4);
+            sprite_draw_parts(sprite, (u_long *)(sprite_ot + depth * 4));
         }
     } else {
         if ((sprite->render.word >> 29) & 1) {

@@ -2796,7 +2796,7 @@ s32 field_actor_is_outside_box(s32 x, s32 z, FieldBox *box, s32 margin) {
 
 /* 80082494: 0 when the actor has no quad (state bit 12); else -1 unless its position
  * plus `offset` lies inside the quad at +114. */
-s32 field_actor_is_outside_boundary(s32 *offset, FieldActor *actor) {
+s32 field_actor_is_outside_boundary(VECTOR *offset, FieldActor *actor) {
     s16 *quad;
     s32 point;
     s32 a;
@@ -2807,7 +2807,7 @@ s32 field_actor_is_outside_boundary(s32 *offset, FieldActor *actor) {
     if (!(actor->state.word & 0x1000)) {
         return 0;
     }
-    point = (((actor->position[0] + offset[0]) >> 16) << 16) + ((actor->position[2] + offset[2]) >> 16);
+    point = (((actor->position[0] + offset->vx) >> 16) << 16) + ((actor->position[2] + offset->vz) >> 16);
     quad = actor->unk114;
     a = (quad[0] << 16) + quad[1];
     b = (quad[2] << 16) + quad[3];
@@ -3046,7 +3046,7 @@ void field_actor_move(s32 index, FieldDescriptor *descriptor, FieldActor *actor)
         move.vy = actor->unk40[1];
         move.vz = actor->unk40[2];
     }
-    if (field_actor_is_outside_boundary(&move.vx, actor) != 0) {
+    if (field_actor_is_outside_boundary(&move, actor) != 0) {
         goto stop;
     }
     if (move.vx != 0 || move.vz != 0) {

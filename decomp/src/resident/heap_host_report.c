@@ -23,6 +23,6 @@ void heap_write_report_file(char *name) {
     heap_report_file = PCcreat(name, 0);
     heap_report_output = heap_write_report_line;
     heap_print_report(1, 0, 0, -1);
-    heap_report_output = console_report_printf;
+    heap_report_output = (void (*)(char *))console_report_printf;
     PCclose(heap_report_file);
 }

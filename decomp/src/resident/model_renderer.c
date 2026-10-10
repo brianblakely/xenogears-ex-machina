@@ -357,7 +357,7 @@ void model_build_packets(SpriteModel *model, RenderPacket *packets, s32 mode) {
         count = group->count;
         model_current_primitive_group = group + 1;
         type = &model_primitive_types[group->type];
-        prepare = type->prepare;
+        prepare = (s32 (*)(u8 *, u8 *, s16))type->prepare;
         for (count--; count != -1; count--) {
             if (prepare(model_current_aux_data, (u8 *)model_current_primitive_group, kind)) {
                 model_current_primitive_group = (PrimitiveGroup *)((u8 *)model_current_primitive_group + type->stride);

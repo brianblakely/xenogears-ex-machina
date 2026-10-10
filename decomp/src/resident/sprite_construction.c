@@ -992,7 +992,7 @@ void sprite_create_with_palette_bank(void *data, s16 clut_x, s16 clut_y, s16 tex
 }
 
 /* 800242F4: 8002435c with `extra` in 800591b8 for the call. */
-void sprite_construct_with_palette_bank(void *sprite, s32 data, s16 clut_x, s16 clut_y, s16 texture_x, s16 texture_y, s16 unused, s32 extra) {
+void sprite_construct_with_palette_bank(void *sprite, s32 *data, s16 clut_x, s16 clut_y, s16 texture_x, s16 texture_y, s16 unused, s32 extra) {
     sprite_palette_bank = extra;
     sprite_construct(sprite, data, clut_x, clut_y, texture_x, texture_y, unused);
     sprite_palette_bank = 0;
