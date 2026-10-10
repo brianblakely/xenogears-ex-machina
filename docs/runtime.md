@@ -306,6 +306,10 @@ each frame and the SPU's output is queued to an SDL3 audio stream at the
 master volume and audio output (`xem_host::Game`; `AudioOutput::mix` is the
 browser's mix too). Memory cards default to `cards/` beside the settings file.
 
+`./play.sh [DISC] [xem-desktop options]` (repository root) builds what is
+missing or stale (the matched images, the game module, `xem-desktop`) and plays
+disc 1 by default on the host's NVIDIA driver.
+
 From `src/runtime/` in `nix develop path:./nix/runtime`:
 
 - tests on lavapipe: `VK_ICD_FILENAMES=$XEM_LAVAPIPE_ICD cargo test -p xem-settings -p xem-render -p xem-ui`
