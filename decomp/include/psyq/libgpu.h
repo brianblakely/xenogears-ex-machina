@@ -318,6 +318,7 @@ void TermPrim(void *p);
 int MargePrim(void *p0, void *p1);
 void SetPolyF3(POLY_F3 *p);
 void SetPolyF4(POLY_F4 *p);
+void SetPolyG3(POLY_G3 *p);
 void SetPolyG4(POLY_G4 *p);
 void SetPolyGT3(POLY_GT3 *p);
 void SetPolyFT3(POLY_FT3 *p);

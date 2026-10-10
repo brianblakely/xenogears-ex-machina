@@ -8,7 +8,7 @@
 /* The battle command menu: a party member's turn in the menu, the attack
  * page and its combos, target selection, automatic turns and the gear, item
  * and escape commands (80079ED8's unit 8007FB70-80080C94, battle.c
- * 800826CC-8008B108, 8008B478's 8008C4A8, 8008CCCC's 8008CFB8-8009BAC4 and
+ * 8008115C-8008B108, 8008B478's 8008C4A8, 8008CCCC's 8008CFB8-8009BAC4 and
  * 800B8098's turn cancel 800B8DA4). */
 
 /* The menu's state. */
@@ -54,6 +54,28 @@ void battle_command_menu_load_file3_block(void);       /* load the file 3 block 
 void battle_command_menu_run(u8 member);               /* run a party member's command menu */
 void battle_mark_actor_events_done(void);              /* events done: refresh the actor's menu state */
 void battle_take_automatic_turn(u8 member);            /* an automatic turn */
+
+/* The menu's pages (battle.c 8008115C-80083948), each run for the page shown,
+ * and the reset of the combo input history (80085E78) on entering the menu. */
+void battle_command_menu_page_01_attack(u8 member);
+void battle_command_menu_page_02_item(u8 member);
+void battle_command_menu_page_03_defend(u8 member);
+void battle_command_menu_page_04_art(u8 member);
+s32 battle_command_menu_page_05_attack_inputs(u8 member);
+void battle_command_menu_page_07_combo(u8 member);
+void battle_command_menu_page_08_item(u8 member);
+void battle_command_menu_page_09_escape(u8 member);
+void battle_command_menu_page_0a_board_gear(u8 member);
+void battle_command_menu_page_10_gear_attack(u8 member);
+void battle_command_menu_page_11_gear_item(u8 member);
+void battle_command_menu_page_12_gear_charge(u8 member);
+void battle_command_menu_page_13_gear_art(u8 member);
+void battle_command_menu_page_15_gear_haste(u8 member);
+void battle_command_menu_page_16_gear_item(u8 member);
+void battle_command_menu_page_17_gear_escape(u8 member);
+void battle_command_menu_page_18_gear_menu(u8 member);
+s32 battle_command_menu_page_19_gear_attack_inputs(u8 member);
+void battle_combo_reset_history(void);
 
 /* The attack page, targets and commands (battle.c). */
 void battle_board_gear(u8 member);                        /* the member boards its gear */

@@ -374,7 +374,7 @@ counts it separately.
 
 Callers pass the types of the shared prototypes. Those in `psyq/` follow PsyQ 4.6's
 headers (`.local/original-sdk-evidence/headers/Psy-Q_46.zip`, the only release at
-hand; the game's own is not identified) for 184 of the 202 functions both declare,
+hand; the game's own is not identified) for 185 of the 203 functions both declare,
 compared by cc1 `-aux-info` (and, for the 15 libgte, libsn and libspu members that
 took their PsyQ names with the renaming, against LIBGTE.H, LIBSN.H and LIBSPU.H by
 reading). The other 18 differ in parameter types (memmove and memchr take `void *`

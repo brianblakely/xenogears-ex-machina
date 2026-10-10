@@ -44,6 +44,10 @@
 /* Declared here only: menu_member_screens.c calls it without a prototype. */
 void menu_detail_layout_tabs(u8 slot, u8 shown, u8 second);
 
+/* menu_member_screens.c's item use, which this unit calls without a prototype:
+ * its u8 result is tested unmasked. */
+s32 menu_use_item_on_character();
+
 /* The overlay's initialized data: all of it is defined here, ahead of the
  * units' uninitialized variables. */
 u8 menu_save_command_stays_open = 0; /* 801E96A4: the file screen saves (nonzero) or loads */

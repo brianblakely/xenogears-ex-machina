@@ -41,11 +41,9 @@
 #include "scene.h"
 
 /* Callers convert arguments/result differently from the resident definition
- * (a narrow result, u16 coordinates or another parameter count there):
- * random numbers, text rendering and the text palettes. */
+ * (a narrow result or parameter there): random numbers and text rendering. */
 s32 mode_get_random_byte_in_range(s32 low, s32 high); /* random number in [low, high] */
 void window_render_text_line(void *text, void *image, s32 width, s32 flags);
-void text_load_palette(s32 x, s32 y);                 /* upload the text palettes */
 
 /* The game data's inGear bytes (+0x22B1) as the setup reads them, one per
  * slot: past the three party entries they are the bytes that follow. */

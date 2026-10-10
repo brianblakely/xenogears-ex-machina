@@ -20,11 +20,6 @@
 #include "resident/sound.h"
 #include "resident/sprite.h"
 
-/* Callers convert arguments/result differently from the resident definition
- * (u16 colours there): build the console font CLUTs from a foreground and a
- * background colour. */
-void console_load_font_cluts(s32 foreground, s32 background);
-
 /* The bound object of a kind 15 sprite's model renderer: its polygon count. */
 typedef struct {
     u8 unk0[0x14];

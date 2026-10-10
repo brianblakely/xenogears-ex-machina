@@ -41,7 +41,6 @@
 void heap_free_tag(s32 tag);
 void sound_play_effect_on_last_channels(s32 effect);
 s32 window_render_text_line(void *text, void *image, s32 width, s32 flags); /* render text */
-void *text_get_system_resource_entry(u8 table, s32 index);                        /* counter skill names */
 void *text_get_accessory_name(u8 index);                                      /* item names per list */
 void *text_get_item_name(u8 index);
 void *text_get_weapon_name(u8 index);

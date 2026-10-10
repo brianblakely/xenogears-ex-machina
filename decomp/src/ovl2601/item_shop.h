@@ -14,7 +14,6 @@
  * differently from the resident definitions
  * (decomp/src/resident/own_declarations.h). */
 void sound_play_effect_on_last_channels(s32 effect);                                                   /* play a sound effect */
-void text_load_palette(s32 x, s32 y);                                                                  /* text palettes */
 u8 *text_get_resource_entry(void *resource, s32 index);                                                /* entry of a text table */
 u8 *text_get_weapon_name(s32 index);                                                                   /* equipment name */
 u8 *text_get_accessory_name(s32 index);                                                                /* accessory name */
@@ -31,9 +30,13 @@ extern u8 item_shop_sell_label_ids[];        /* sell list label text ids */
 extern u8 item_shop_buy_label_ids[];         /* buy list label text ids */
 extern s32 item_shop_sell_label_x_offsets[]; /* sell list label x offsets */
 extern s32 item_shop_portrait_x_table[];     /* member portrait x */
+void item_shop_quad_place(POLY_FT4 *poly, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h);
 void item_shop_split_digits(u32 value);
 void item_shop_label_init_quads(MenuLabel *label, s32 index, s32 row, s32 mode);
+void item_shop_scroll_bar_show(s32 x, s32 y, s32 height, s32 count, s32 top);
 void item_shop_scroll_bar_hide(void);
+void item_shop_list_cursor_alloc(u8 index);
+void item_shop_list_cursor_place(s32 row, s32 unused, u8 fixed, u8 index);
 void item_shop_list_cursor_free(u8 index);
 void item_shop_panel_close(u8 index);
 void item_shop_panel_open(u8 index, s16 x, s16 y, s16 w, u16 h, u8 grow, u8 flat, s32 ot_entry, u8 has_bar);
@@ -41,6 +44,8 @@ void item_shop_draw_projected_quads(s32 count, SVECTOR *quads, POLY_FT4 *packets
 void item_shop_draw_quads(s32 count, POLY_FT4 *packets, s32 first);
 void item_shop_play_sound(u8 sound);
 void item_shop_run_frame(void);
+void item_shop_markers_open(u8 mode);
+void item_shop_markers_close(void);
 void item_shop_view_start_zoom_in(void);
 void item_shop_notice_open(u8 first);
 void item_shop_notice_close(void);

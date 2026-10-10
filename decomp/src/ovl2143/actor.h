@@ -60,6 +60,7 @@ void gear_model_update_linked_sprite(Task *node);
 void gear_model_set_node_transform(Actor *actor, ModelPart *part, u8 flags, s16 x, s16 y, s16 z);
 void gear_model_apply_root_height(Actor *actor);
 void gear_model_select_and_call_source_entry(Actor *source, u16 index, u16 mask, s32 entry);
+s32 gear_model_get_target_distance(Actor *actor);
 s32 gear_model_get_actor_width(s32 index);
 void gear_model_alloc_channels(Actor *actor);
 

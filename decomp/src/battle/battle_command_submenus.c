@@ -29,6 +29,10 @@ void battle_empty_commit_step(u8 slot, s32 mode);
 /* This unit's functions, declared before their first use. */
 u8 battle_combo_menu_run(u8 member);          /* run the combo menu */
 
+/* 8008CCCC's unit's art page quads as this unit calls them: unprototyped (the row
+ * offset is a u8 there; the art menu passes its scroll word unnarrowed). */
+void battle_art_menu_point_list();
+
 /* 8008B478: Run the member's technique menu: four windows, a two-column list of
  * twelve visible cells scrolled by rows (800d3288 in pixels, 800d39d4 the
  * scroll request), until a technique is committed (1, its index in the
