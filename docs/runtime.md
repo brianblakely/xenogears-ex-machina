@@ -74,6 +74,10 @@ original address.
   the executable as the BIOS did, the game decodes its overlays), so heap
   placement, overlay slots, overruns into neighbouring objects and pointer-laden
   data behave as on the console, and game RAM compares directly with captures.
+  The port's own data (shadow stacks, asyncify areas, port statics) starts at
+  0x10000000 (`PORT_BASE` in tools/game_module.py), outside RAM, the
+  scratchpad, I/O and every mirror the game or its DMA addresses reach. The
+  linear memory ends at 0x80200000.
 - **Code addresses.** A function's address, wherever C takes it, is its original
   address. Indirect calls go through generated dispatchers that select the
   function by address and check, from a fingerprint of its original code bytes in
@@ -160,6 +164,32 @@ input.
   (`xem_loop_poll`), so waits that spin on memory an interrupt writes reach the
   clock. Headless runs are unlocked (as fast as the host computes) and
   reproducible.
+- **Interrupts.** The host delivers device interrupts in time order through
+  the export `xem_interrupt` (`src/port/libetc.c`), between the game's steps
+  and at its waits. `SetIntrMask` is modelled: a masked interrupt stays pending,
+  as I_STAT holds it, and runs when the mask enables it again (libgpu masks
+  everything while it runs its queue). A handler cannot suspend: a wait inside
+  one (`xem_wait`, `src/port/boot.c`) asks the host to deliver what is due now
+  (`xem.poll_now`) instead of yielding, and the runtime traps if a handler
+  suspends anyway.
+- **Go anywhere.** `enter_field {map, entry?}` enters a field map the way the
+  original's development kernel menu does: once the boot reaches the opening
+  movie request, it restarts the dispatcher into mode 0 (the kernel menu),
+  writes the map (and entry) into `game_data`, selects mode 1 and lets the
+  menu finish into the original dispatcher. `enter_field {map: 23}` reaches the
+  forest map's opening dialogue (`tests/route.rs`) and matches the original
+  capture of the same recipe (tools/reference/scenario.py) within 0.013 mean
+  colour difference.
+- **Routes and regression.** `tests/reference-inputs/*.json` are pad routes
+  (frame ranges and buttons) played identically by `xem-headless --inputs`
+  and the reference emulator (`tools/reference/observe.py`); the captures of
+  the original environment stay in `.local/scenarios`. `tools/compare_frames.py
+  RUN_DIR CAPTURE_DIR` scores checkpoint frames against a capture at the best
+  vertical offset. `src/runtime/crates/xem-headless/tests/route.rs` (local, it
+  needs disc 1) checks that the new-game route's RAM and scratchpad do not
+  depend on presentation capture or on a snapshot restored on the way, and
+  the browser suite checks the same route's `memory_hash` against
+  `xem-headless --control`.
 
 ## Sound and memory cards
 
@@ -260,14 +290,19 @@ deciding gameplay (on-screen tests, culling).
 ## Desktop host and settings panel
 
 `xem-desktop` opens an SDL3 window (Wayland or X11), presents through wgpu with
-FIFO vsync and draws the test scene as the stand-in game image, placed by the
-presentation settings, under the Slint settings panel (F1, Escape or a
+FIFO vsync and draws the game (`--disc DISC [--cards DIR] [--bios FILE]`; the
+test scene without a disc), placed by the presentation settings, under the Slint settings panel (F1, Escape or a
 gamepad's Start/Back toggles it). One `xem_render::Gpu` (instance, adapter,
 device, queue) serves `SceneRenderer`, `Compositor` and `xem_ui::SettingsUi`;
 Slint runs as a custom platform under the host loop and renders into a texture
 only when it asks for a redraw. Settings live in
 `xem_settings::SettingsService` (`$XDG_CONFIG_HOME/xenogears-ex-machina/settings.json`
 on the desktop); the panel and agents change them only through `apply`.
+With a disc, the game runs paced by the wall clock at 60 frames a second (a
+stalled host drops time rather than catching up), pad 1 follows the keyboard
+and the first gamepad, the GPU's display is uploaded as the game image after
+each frame and the SPU's output is queued to an SDL3 audio stream at the
+master volume. Memory cards default to `cards/` beside the settings file.
 
 From `src/runtime/` in `nix develop path:./nix/runtime`:
 
