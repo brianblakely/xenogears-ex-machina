@@ -249,12 +249,11 @@ entry symbol, and the words after bss_start through bss_end, which the dispatche
 set, so that the dispatcher decodes the overlay file to the overlay area
 (mode_overlay_decode_destination, main.c mode_dispatch), and the overlay must link its
 image at the resident's `MODE_AREA` and define a symbol of its own there (its number,
-such as field_overlay_number). The check found one
-resident byte that other images use outside every object: the arena bout's outcome at
-80050622, which the menu writes and a field event reads, lay in the alignment fill after
-mode_arena_task_parameters[6]; console_and_sound_driver.c now defines it
-(mode_arena_bout_outcome), whether apart or as part of mode_arena_task_parameters left
-open.
+such as field_overlay_number). The check found one resident byte that other images use
+outside every object: the arena bout's outcome at 80050622, which the menu writes and a
+field event reads, lay in the alignment fill after mode_arena_task_parameters[6];
+console_and_sound_driver.c now defines it (mode_arena_bout_outcome), whether apart or as
+part of mode_arena_task_parameters left open.
 
 ```sh
 # the user's CHD images to raw MODE2/2352 tracks (and likewise disc 2); chdman
