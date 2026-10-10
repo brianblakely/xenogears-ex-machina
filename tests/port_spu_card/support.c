@@ -56,7 +56,7 @@ struct {
     u32 mask;
     u16 regs[32];
 } libspu_reverb_mode_parameters[10];
-void *console_current;
+u8 _gp;
 
 /* libspu_voice_attribute_end is the last of the halfwords. */
 __asm__(".globl libspu_voice_attribute_end\n.set libspu_voice_attribute_end, test_voice_attributes + 50");

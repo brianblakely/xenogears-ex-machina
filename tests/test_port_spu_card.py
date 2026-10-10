@@ -344,6 +344,10 @@ class Card(unittest.TestCase):
         self.assertEqual(LIB.WaitEvent(0xF1000003), 1)
         self.assertEqual(var(ctypes.c_int, "test_yields").value, 1)
 
+    def test_get_gp_is_the_linkers_gp(self):
+        LIB.GetGp.restype = ctypes.c_uint32
+        self.assertEqual(LIB.GetGp(), ctypes.addressof(var(ctypes.c_uint8, "_gp")) & 0xFFFFFFFF)
+
     def test_pc_file_server_is_absent(self):
         name = ctypes.create_string_buffer(b"core")
         self.assertEqual(LIB.PCinit(), -1)

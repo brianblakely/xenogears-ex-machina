@@ -6,6 +6,7 @@
  *   devices "bu00:" and "bu10:" go to the host's card service; they block as
  *   the BIOS does, here by suspending until the card's access time passed.
  * - WaitEvent B(0Ah) waits for a ready-mode event (libspu's reverb clear).
+ * - GetGp: the game's $gp.
  * - Krom2RawAdd B(51h): the address of a 16x15 Shift-JIS glyph in the BIOS
  *   ROM's Kanji font (docs/original-boundaries.md, Services).
  * - libsn's PC file server (PCinit ... PCwrite) traps into a development host
@@ -89,6 +90,14 @@ long WaitEvent(long event) {
         xem_host_yield(XEM_YIELD_POLL);
     }
     return 1;
+}
+
+/* The value of $gp, which game code always holds at the linker's _gp
+ * (boot_reset_stack_and_gp); the arena stores it in its task context. */
+extern u8 _gp;
+
+unsigned long GetGp(void) {
+    return (u32)(&_gp - (u8 *)NULL);
 }
 
 /* The Kanji font: 16x15 glyphs of 30 bytes, one per assigned JIS X 0208
