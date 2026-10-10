@@ -15,11 +15,13 @@ from tools.analysis.staff_roll import (
     TEXT_FILE,
     Line,
     StaffRollError,
+    character,
     count,
     decode,
     font_cell,
     glyph,
     inside,
+    line_text,
     report,
     tim_image,
 )
@@ -96,6 +98,18 @@ class GlyphTests(unittest.TestCase):
         self.assertEqual([c for c in range(FONT_COUNT) if inside(c, 64, 256)], list(range(112)))
         self.assertEqual(sum(inside(c, 62, 32) for c in range(FONT_COUNT)), 12)
 
+    def test_rom_codes_read_as_their_shift_jis_characters(self):
+        self.assertEqual(character(0x82A0), "あ")  # hiragana a
+        self.assertEqual(character(0x8140), "　")  # ideographic space
+        self.assertIsNone(character(0x81AD))  # unassigned in JIS X 0208
+        self.assertIsNone(character(0x4142))  # two one-byte characters, "AB"
+        self.assertIsNone(character(0xB1B2))  # two half-width katakana
+
+    def test_lines_read_as_text_with_font_cells_in_braces(self):
+        (line,) = decode(codes(0x8140, 0x82A0, 0x8541, 0x887F, 0x81AD, 0x4142) + b"\r")
+        self.assertEqual(line_text(line), "　あ{f:1}{f:831}{81ad}{4142}")
+        self.assertEqual(line_text(Line(0, (), 1, True)), "")
+
     def test_tim_image(self):
         self.assertEqual(tim_image(tim(64, 256)), (0, 0, 64, 256))
         self.assertEqual(tim_image(tim(8, 4, clut=False)), (0, 0, 8, 4))
@@ -112,6 +126,13 @@ class SweepTests(unittest.TestCase):
         self.assertEqual((result.font, result.rom), ({0: 1, 112: 1}, {0x8140: 1}))
         self.assertEqual(result.outside, ["cell 112 (code 85b0)"])
         self.assertIn("used cells outside it: 1", report({1: result}, {b""}))
+
+    def test_the_sweep_counts_rom_codes_that_name_a_character(self):
+        result = count(codes(0x82A0, 0x82A0, 0x81AD, 0x8540) + b"\r", tim(64, 256))
+        self.assertIn(
+            "kanji ROM codes 3 (2 distinct, 2 of them Shift-JIS characters)",
+            report({1: result}, {b""}),
+        )
 
     def test_undecodable_text_is_reported(self):
         result = count(b"\x81", tim(64, 256))

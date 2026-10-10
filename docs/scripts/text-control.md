@@ -136,11 +136,18 @@ Notes from the handler:
 
 ```sh
 python3 -m tools.analysis.staff_roll --sweep    # aggregate, both discs
+python3 -m tools.analysis.staff_roll --list --disc 1 > .local/staff-roll.txt
 ```
+
+`--list` prints each line as text: a kanji ROM code as the character its two
+bytes name in Shift-JIS (Python's `shift_jis` codec, JIS X 0208), a font cell as
+`{f:N}` (the font image's cells have no characters in the data) and a code that
+names no single character as hex in braces. Disc 1's line +004d reads
+`企画・開発・制作　{f:7}{f:8}...`.
 
 Sweep of both discs: one text each, byte-identical (9522 bytes). Each decodes
 as 571 lines: 570 end at a CR and one stops at 28 codes. 155 lines are empty.
 The 4476 glyph codes are 90 font cells (85 distinct, highest 94, inside the
 112 cells of file 0xAC's 64x256 image) and 4386 kanji ROM codes (575
-distinct). Unknown or undecodable: 0. `tests/test_staff_roll.py` checks the
-reader against the C.
+distinct), every one a Shift-JIS character. Unknown or undecodable: 0.
+`tests/test_staff_roll.py` checks the reader against the C.

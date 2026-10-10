@@ -21,8 +21,13 @@ PsyQ prototype names its argument a Shift-JIS code. CR is the only control. A
 line is read only while the bytes left (field_staff_roll_bytes_left: file 0xAB's size less what
 earlier lines used) are above 0; every line after that is blank.
 
+The listing prints each kanji ROM code as the character its two bytes name in
+Shift-JIS (Python's shift_jis codec, JIS X 0208), each font cell as {f:N} and a
+code that names no single character as {hex}; the sweep counts the codes that
+name one.
+
     python3 -m tools.analysis.staff_roll --sweep            # both discs, aggregate only
-    python3 -m tools.analysis.staff_roll --list [--disc N]  # one disc's lines, codes in hex
+    python3 -m tools.analysis.staff_roll --list [--disc N]  # one disc's lines as text
 """
 
 from __future__ import annotations
@@ -96,6 +101,28 @@ def glyph(code: int) -> tuple[str, int]:
     if 0 <= code - FONT_FIRST < FONT_COUNT:
         return "font", code - FONT_FIRST
     return "rom", code
+
+
+def character(code: int) -> str | None:
+    """The one character a kanji ROM code's two bytes name in Shift-JIS, or None
+    (an unassigned code, or bytes that decode as two one-byte characters)."""
+    try:
+        text = code.to_bytes(2, "big").decode("shift_jis")
+    except UnicodeDecodeError:
+        return None
+    return text if len(text) == 1 else None
+
+
+def line_text(line: Line) -> str:
+    """A line as text: kanji ROM codes as their characters, font cells as {f:N},
+    any other code as {hex}."""
+    parts = []
+    for kind, value in map(glyph, line.codes):
+        if kind == "font":
+            parts.append(f"{{f:{value}}}")
+        else:
+            parts.append(character(value) or f"{{{value:04x}}}")
+    return "".join(parts)
 
 
 def font_cell(cell: int) -> tuple[int, int]:
@@ -188,11 +215,12 @@ def report(results: dict[int, TextCount], digests: set[bytes]) -> str:
             f"{LINE_CODES} codes before it), {r.empty} empty, longest {r.longest} codes"
         )
         cells = sum(inside(cell, *r.image) for cell in range(FONT_COUNT))
+        named = sum(uses for code, uses in r.rom.items() if character(code))
         lines.append(
             f"    glyph codes: {sum(r.font.values()) + sum(r.rom.values())}; font cells "
             f"{sum(r.font.values())} ({len(r.font)} distinct, highest "
             f"{max(r.font, default='none')}), kanji ROM codes {sum(r.rom.values())} "
-            f"({len(r.rom)} distinct)"
+            f"({len(r.rom)} distinct, {named} of them Shift-JIS characters)"
         )
         lines.append(
             f"    file 0xac image {r.image[0]}x{r.image[1]} at (380, 100) holds {cells} of the "
@@ -206,14 +234,10 @@ def report(results: dict[int, TextCount], digests: set[bytes]) -> str:
 
 
 def listing(disc: Disc) -> None:
-    """Print one disc's lines: offset, then each code (font cells as f:cell)."""
+    """Print one disc's lines: offset, then the line as text (line_text)."""
     text, _ = disc_files(disc)
     for line in decode(text):
-        codes = " ".join(
-            f"f:{value}" if kind == "font" else f"{value:04x}"
-            for kind, value in map(glyph, line.codes)
-        )
-        print(f"+{line.offset:04x}: {codes}" + ("" if line.cr else " (no CR)"))
+        print(f"+{line.offset:04x}: {line_text(line)}" + ("" if line.cr else " (no CR)"))
 
 
 def main(argv: list[str] | None = None) -> int:
