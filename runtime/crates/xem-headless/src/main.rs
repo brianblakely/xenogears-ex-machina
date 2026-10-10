@@ -7,6 +7,9 @@
 use std::path::PathBuf;
 use std::process::ExitCode;
 
+#[cfg(has_game_module)]
+mod cd_trace;
+
 struct Options {
     disc: PathBuf,
     frames: u64,
@@ -21,6 +24,8 @@ struct Options {
     /// Write the SPU's output as a 16-bit stereo 44.1 kHz WAV file.
     wav: Option<PathBuf>,
     screenshot: Option<PathBuf>,
+    /// Report the drive's data sectors at the end (cd_trace.rs).
+    cd_trace: bool,
 }
 
 fn main() -> ExitCode {
@@ -34,6 +39,7 @@ fn main() -> ExitCode {
         bios: None,
         wav: None,
         screenshot: None,
+        cd_trace: false,
     };
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -47,10 +53,11 @@ fn main() -> ExitCode {
             "--bios" => options.bios = args.next().map(PathBuf::from),
             "--wav" => options.wav = args.next().map(PathBuf::from),
             "--screenshot" => options.screenshot = args.next().map(PathBuf::from),
+            "--cd-trace" => options.cd_trace = true,
             _ => {
                 eprintln!(
                     "usage: xem-headless --disc <chd|cue|bin> [--frames N | --control] [--stubs FILE] [--schema FILE] \
-                     [--screenshot out.png] [--cards DIR] [--bios FILE] [--wav FILE]"
+                     [--screenshot out.png] [--cd-trace] [--cards DIR] [--bios FILE] [--wav FILE]"
                 );
                 return ExitCode::FAILURE;
             }
@@ -103,6 +110,10 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
     runtime.services().spu.set_output(options.wav.is_some());
     // The BIOS copies the executable's text to its address and jumps to pc0.
     runtime.memory().write(header.text_address, exe::text(&identity.executable, &header))?;
+    runtime.services().insert_disc(source);
+    if options.cd_trace {
+        runtime.services().cd.sector_log = Some(Vec::new());
+    }
     let schema = std::fs::read_to_string(&options.schema).ok().map(|t| Schema::parse(&t)).transpose()?;
     let mut session = Session::new(runtime, schema);
 
@@ -132,6 +143,12 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
             println!("frame {frame}: {trap}");
             break;
         }
+    }
+    if let Some(log) = session.runtime.services().cd.sector_log.take() {
+        let index = xem_disc::game_index(&identity.executable)?;
+        let mut disc = xem_disc::open_path(&options.disc)?;
+        cd_trace::report(&log, &index, disc.as_mut(), session.runtime.memory());
+        println!("cd: {} XA audio sectors played", session.runtime.services().cd.xa_sectors);
     }
     let services = session.runtime.services();
     for line in &services.log {

@@ -8,6 +8,7 @@ use crate::module::Action;
 pub mod card;
 pub mod cd;
 pub mod gpu;
+pub mod mdec;
 pub mod spu;
 
 /// What a device needs while it answers an import or runs an event.
@@ -35,9 +36,6 @@ pub trait Device {
     /// Game code ran (a step or an interrupt): pick up what it wrote to
     /// memory-mapped registers.
     fn sync(&mut self, _context: &mut Context<'_>) {}
-    /// Move the CD audio decoded so far (44.1 kHz, interleaved L/R) to `out`:
-    /// the runtime feeds it to the SPU's CD input before the SPU advances.
-    fn take_cd_audio(&mut self, _out: &mut Vec<i16>) {}
     /// The device's whole state, for snapshots (deterministic bytes).
     fn save(&self) -> Vec<u8> {
         Vec::new()

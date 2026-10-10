@@ -68,8 +68,18 @@ pub struct Services {
     pub clock: Clock,
     pub pads: Pads,
     pub presentation: crate::presentation::Presentation,
+    /// The mode the dispatcher last entered, and how many times it dispatched.
+    pub mode: Option<u32>,
+    pub dispatches: u64,
+    /// The game's pad queue reads (pad_dequeue_state) in the current and the
+    /// last complete frame.
+    pub input_reads: u32,
+    pub input_reads_last_frame: u32,
+    /// What the game last waited for.
+    pub last_wait: Option<YieldReason>,
     pub gpu: devices::gpu::Gpu,
     pub cd: devices::cd::Cd,
+    pub mdec: devices::mdec::Mdec,
     pub spu: devices::spu::Spu,
     pub card: devices::card::Card,
     pub missing: Vec<u32>,
@@ -82,14 +92,25 @@ pub struct Services {
 }
 
 impl Services {
-    fn devices(&mut self) -> [(&'static str, &mut dyn Device); 4] {
-        [("gpu_", &mut self.gpu), ("cd_", &mut self.cd), ("spu_", &mut self.spu), ("card_", &mut self.card)]
+    fn devices(&mut self) -> [(&'static str, &mut dyn Device); 5] {
+        [
+            ("gpu_", &mut self.gpu),
+            ("cd_", &mut self.cd),
+            ("mdec_", &mut self.mdec),
+            ("spu_", &mut self.spu),
+            ("card_", &mut self.card),
+        ]
+    }
+
+    /// Put the user's disc in the drive.
+    pub fn insert_disc(&mut self, disc: Box<dyn xem_disc::SectorSource>) {
+        self.cd.insert_disc(disc);
     }
 
     /// Feed the CD device's decoded audio to the SPU's CD input.
     fn route_cd_audio(&mut self) {
         let mut pcm = Vec::new();
-        self.cd.take_cd_audio(&mut pcm);
+        self.cd.take_audio(&mut pcm);
         if !pcm.is_empty() {
             self.spu.push_cd_audio(&pcm);
         }
@@ -170,6 +191,15 @@ impl ImportHandler for Services {
                     Action::Trap
                 }
             },
+            "mode" => {
+                self.mode = Some(arg(0));
+                self.dispatches += 1;
+                Action::Return(0)
+            }
+            "input_read" => {
+                self.input_reads += 1;
+                Action::Return(0)
+            }
             "present" => {
                 if self.presentation.enabled {
                     let mut bytes = vec![0; arg(2).min(0x1000) as usize];
@@ -412,7 +442,9 @@ impl<M: GameModule> Runtime<M> {
             self.advance_devices();
             match tick {
                 Tick::VBlank => {
-                    self.services().presentation.end_frame();
+                    let services = self.services();
+                    services.presentation.end_frame();
+                    services.input_reads_last_frame = std::mem::take(&mut services.input_reads);
                     self.interrupt(IRQ_VBLANK, 0)?
                 }
                 Tick::RootCounter(n) => self.interrupt(IRQ_RCNT0 + n as u32, 0)?,

@@ -12,6 +12,9 @@ extern void (*heap_report_output)(char *line);
 extern u8 boot_bss_last_word[];
 
 void boot_main(void);
+void xem_host_mode(int mode);
+u32 xem_original_pad_dequeue_state(void);
+void xem_host_input_read(unsigned int state);
 void xem_original_mode_dispatch(s32 error);
 
 /* Set while xem_run enters the dispatcher on an empty stack. */
@@ -42,6 +45,9 @@ void boot_reset_stack_and_gp(void) {
 void mode_dispatch(s32 error) {
     if (xem_dispatch_on_empty_stack) {
         xem_dispatch_on_empty_stack = 0;
+        /* The dispatcher clears mode_next_mode before it enters the mode: tell
+         * the host which mode runs (readiness, introspection). */
+        xem_host_mode(mode_next_mode);
         xem_original_mode_dispatch(error);
     }
     xem_host_restart(XEM_RESTART_DISPATCH, error);
@@ -104,4 +110,13 @@ void xem_loop_poll(void) {
         xem_loop_iterations = 0;
         xem_host_yield(XEM_YIELD_POLL);
     }
+}
+
+/* The game takes one queued pad state (resident pad_dequeue_state): the host
+ * counts reads per frame, which tells agents whether input is consumed now. */
+u32 pad_dequeue_state(void) {
+    u32 state = xem_original_pad_dequeue_state();
+
+    xem_host_input_read(state);
+    return state;
 }

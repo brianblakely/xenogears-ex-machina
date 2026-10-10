@@ -179,7 +179,7 @@ input.
   into an output ring when a host plays audio (`Spu::set_output`,
   `take_audio`); headless runs advance the same state without output. CD
   audio reaches the SPU's CD input from the CD device
-  (`Device::take_cd_audio`) before the SPU advances.
+  (`Cd::take_audio`, `Services::route_cd_audio`) before the SPU advances.
 - **Memory cards** (`xem_core::devices::card`) are two raw 128 KB images
   (the `.mcd` layout) in a `CardStorage`: files natively (`xem-headless
   --cards DIR` keeps `card1.mcd`, `card2.mcd`; a missing file is a fresh
