@@ -5,9 +5,9 @@ and so does the gear it pilots (GearRecord.partItems): weapon and gear part ids
 from 50, 0 for an empty slot. They are its ammo: system texts 23 and 51 name
 ids 50-72 "... Ammo" (docs/scripts/field-events.md). The field menu offers the
 inventory's ids from 50 of the slot's weapon kind (slot39 menu_equip_screen_build_candidates); the
-battle lists weapon ids 50-72 (ovl2615 func_801E4CD0) and copies the 48 weapon
+battle lists weapon ids 50-72 (ovl2615 battle_setup_build_item_lists) and copies the 48 weapon
 records 50-97 (0x300 bytes from +0x320 of the setup archive's entry 0x25,
-func_801E5384). Each id's rounds are GameData.ammo[id - 50] (+0x22B8, character
+battle_setup_load_party_and_enemy_files). Each id's rounds are GameData.ammo[id - 50] (+0x22B8, character
 4) or gearAmmo[id - 50] (+0x22E8, its gears), 48 bytes each
 (decomp/include/resident/gamedata.h): the code forms the address from 50 bytes
 before the array (0x8006F8BA; 0x8006F8EA, the flag word +0x22B6), so an index
@@ -33,8 +33,8 @@ or the gear part list:
   it prints: a shop number past them reads the memory after the unpacked
   table, which the sweep cannot see;
 * the enemies' two drops (combatant record +0x150 chances, +0x152 ids, +0x154
-  categories, 0 weapons and 3 gear parts; ovl2596 func_801E42C4,
-  func_801E1444) and the AI's set_drop (3c, the first) and set_second_drop (3b, the
+  categories, 0 weapons and 3 gear parts; ovl2596 battle_results_roll_drops,
+  battle_results_add_drops_to_inventory) and the AI's set_drop (3c, the first) and set_second_drop (3b, the
   second: +0x155, +0x153, +0x151).
 
 It also lists every field take_item (8d) from the weapon or gear part list,
@@ -59,9 +59,9 @@ from tools.analysis.dispatch_tables import SETUP_ARCHIVE, archive_entries
 from tools.analysis.text_control import archive_entry
 
 ROOT = Path(__file__).resolve().parents[2]
-FIRST, COUNT = 50, 48  # slot39 menu_equip_screen_build_candidates ids >= 50; ovl2615 func_801E5384 records 50-97
-BATTLE_END = 73  # ovl2615 func_801E4CD0: weapon ids 50..72 enter the battle's list
-BATTLE_RECORDS = 0x25  # func_801E5384: archive[0x25] + 0x320, 0x300 bytes, to +0x5818
+FIRST, COUNT = 50, 48  # slot39 menu_equip_screen_build_candidates ids >= 50; ovl2615 battle_setup_load_party_and_enemy_files records 50-97
+BATTLE_END = 73  # ovl2615 battle_setup_build_item_lists: weapon ids 50..72 enter the battle's list
+BATTLE_RECORDS = 0x25  # battle_setup_load_party_and_enemy_files: archive[0x25] + 0x320, 0x300 bytes, to +0x5818
 ITEM_BASE, GEAR_BASE = 0x2286, 0x22B6  # D_8006F8BA, D_8006F8EA as game data offsets
 GAME_DATA, GAME_DATA_SIZE = 0x8006D634, 0x2358  # game_data, sizeof(GameData)
 # The game data around the arrays (gamedata.h): (offset, size, member).
@@ -105,9 +105,9 @@ EMPTIED = 0xFF  # the id take_item leaves in a slot whose count reaches 0
 CAMERA_STORES = ("af", "b0", "b1")  # u16@1 a variable when u8@3 is 0
 WEAPON_LIST, GEAR_PART_LIST = 1, 3  # field item code lists
 LOCAL_VARIABLES = 0x400  # byte offsets of field_event_variables[0x200..0x3ff]
-RECORDS, RECORD, ENEMIES = 0x32, 0x170, 8  # ovl2615 func_801E4870
+RECORDS, RECORD, ENEMIES = 0x32, 0x170, 8  # ovl2615 battle_setup_copy_enemy_records_and_ai
 DROPS = ((0x150, 0x152, 0x154), (0x151, 0x153, 0x155))  # (chance, id, category)
-DROP_LISTS = {0: "weapon list", 3: "gear part list"}  # ovl2596 func_801E1444
+DROP_LISTS = {0: "weapon list", 3: "gear part list"}  # ovl2596 battle_results_add_drops_to_inventory
 AI_DROPS = {0x3C: 0, 0x3B: 1}  # set_drop, set_second_drop: b1 category, b2 id
 ENEMY_PART_ITEMS = 0xA4 + PART_ITEMS  # the combatant's gear record
 

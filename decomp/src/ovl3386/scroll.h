@@ -18,9 +18,9 @@ typedef struct {
     Sprite *actor;    /* +58 */
 } ScrollTask;
 
-s32 func_801FC000(Sprite *actor, s32 *width, s32 *height, SpriteBounds *bounds);
-void func_801FC0EC(Task *node);
-u8 func_801FC110(SpritePart *cell, s32 count, s32 x, s32 y, Sprite *actor);
-void func_801FC5C4(Task *node);
+s32 battle_module_scroll_get_cell_bounds(Sprite *actor, s32 *width, s32 *height, SpriteBounds *bounds);
+void battle_module_scroll_update(Task *node);
+u8 battle_module_scroll_queue_cells(SpritePart *cell, s32 count, s32 x, s32 y, Sprite *actor);
+void battle_module_scroll_draw(Task *node);
 
 #endif

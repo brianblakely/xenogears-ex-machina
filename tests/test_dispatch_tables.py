@@ -101,15 +101,15 @@ class SourceTests(unittest.TestCase):
         header = (ROOT / "decomp/include/battle/work.h").read_text()
         self.assertIn("u8 formula; /* 0x16", header)
         self.assertIn("u16 flagsA;   /* 0x0A */", header)
-        loader = " ".join(function_body(source("ovl2615/ovl2615.c"), "func_801E5384").split())
+        loader = " ".join(function_body(source("ovl2615/battle_setup_phases.c"), "battle_setup_load_party_and_enemy_files").split())
         for entry, member, size in (
-            ("5 + D_800CCCE8_setup.partyIds[i]", "partyCommands[i]", 0x5F0),
+            ("5 + battle_setup_work_area.partyIds[i]", "partyCommands[i]", 0x5F0),
             ("0x11 + gear", "gearCommands[i]", 0x690),
             ("4", "enemyCommands", 0x1F40),
         ):
             copy = (
                 f"archive[{entry}], 1); "
-                f"memmove(D_800CCCE8_setup.work.{member}, block, 0x{size:X});"
+                f"memmove(battle_setup_work_area.work.{member}, block, 0x{size:X});"
             )
             self.assertIn(copy, loader)
         self.assertIn("archive[0x10]", loader)  # the runs end at entries loaded otherwise
@@ -144,18 +144,18 @@ class SourceTests(unittest.TestCase):
         bits = initializer(source("battle/battle_turns_and_hud.c"), "battle_flag_bits")[1]
         values = [int(v, 0) for v in bits.split(",") if v.strip()]
         self.assertEqual(values, [0x8000 >> i for i in range(16)])
-        learn = function_body(source("ovl2596/ovl2596.c"), "func_801E3F28")
+        learn = function_body(source("ovl2596/battle_results_screens.c"), "battle_results_unlock_by_known_arts")
         self.assertIn(f"for (k = 0; k < {LEARNED_SLOTS}; k++)", learn)
         self.assertIn("skills[id].unlocksB |= 0x8000 >> k;", learn)
         growth = source("ovl2596/battle_results.h")
         self.assertIn(f"u8 unlocksB[16];          /* 0x{UNLOCKS_B:X}: 0 ends */", growth)
         self.assertIn("Growth characters[11];", growth)
         self.assertIn(f"(0x{GROWTH:x} each;", growth)
-        loader = function_body(source("ovl2615/ovl2615.c"), "func_801E5384")
+        loader = function_body(source("ovl2615/battle_setup_phases.c"), "battle_setup_load_party_and_enemy_files")
         gear, character = FORCED_GEAR
-        self.assertIn(f"D_800CCCE8_setup.partyIds[1] = {character};", loader)
-        self.assertIn(f"D_800CCCE8_setup.work.records[i].pilot.gearId = 0x{gear:X};", loader)
-        results = function_body(source("ovl2596/ovl2596.c"), "func_801E211C")
+        self.assertIn(f"battle_setup_work_area.partyIds[1] = {character};", loader)
+        self.assertIn(f"battle_setup_work_area.work.records[i].pilot.gearId = 0x{gear:X};", loader)
+        results = function_body(source("ovl2596/battle_results_screens.c"), "battle_results_load_resources")
         self.assertIn("cd_select_directory(0x10, 2);", results)
         self.assertIn("battle_work_growth_file[0] = text_unpack_lzss_alloc(archive->items[0], 0);", results)
 
@@ -167,7 +167,7 @@ class SourceTests(unittest.TestCase):
         leave = function_body(source("field/field_event.c"), "field_event_change_map")
         self.assertIn("game_current_data->entry[2] = field_event_read_selected_operand_10(7, EVENT_OPERAND_BYTE(9));", leave)
         self.assertIn("game_data.entry[2] = battle_state_of_event_script->operands[3];", source("ovl3087/battle_event_script_vm.c"))
-        results = function_body(source("ovl2596/ovl2596.c"), "func_801E252C")
+        results = function_body(source("ovl2596/battle_results_screens.c"), "battle_results_leave_battle")
         self.assertIn(
             "} else if ((game_data.map & 0x7FF) >= 0x400) {\n            mode_load_overlay_block(3);",
             results,

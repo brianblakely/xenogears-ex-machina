@@ -2,4 +2,4 @@
 # unit links from the original image (INCLUDE_ORIGINAL) at its place among the
 # unit's .data, with the reason: C cannot emit the stray bytes after it, which
 # nothing reads, here before the next unit's data (docs/matching.md).
-801e9638 801e963c included D_801E9638 u16 0, the next member image column (battle_loader.c), ending the unit's data before load_modes.c's; then 00 e0
+801e9638 801e963c included battle_setup_next_member_image_column u16 0, the next member image column (battle_loader.c), ending the unit's data before load_modes.c's; then 00 e0

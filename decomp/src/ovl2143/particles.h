@@ -9,12 +9,12 @@
 #include "psyq/libgte.h"
 #include "battle/effect.h"
 
-SpritePool *func_801E0064(SpritePool *pool, s32 capacity);
-void func_801E00DC(SpritePool *pool);
-void func_801E011C(SpritePool *pool);
-EffectSprite *func_801E0248(SpritePool *pool, s16 semi_trans);
-s32 func_801E0354(SpritePool *pool, EffectSprite *particle);
-void func_801E0398(SpritePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer);
-void func_801E0844(ColorFade *fade, s32 unused);
+SpritePool *gear_model_alloc_particle_pool(SpritePool *pool, s32 capacity);
+void gear_model_free_particle_pool(SpritePool *pool);
+void gear_model_reset_particle_pool(SpritePool *pool);
+EffectSprite *gear_model_take_particle(SpritePool *pool, s16 semi_trans);
+s32 gear_model_free_particle(SpritePool *pool, EffectSprite *particle);
+void gear_model_draw_particles(SpritePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer);
+void gear_model_mark_record_free(ColorFade *fade, s32 unused);
 
 #endif

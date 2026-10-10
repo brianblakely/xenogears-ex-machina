@@ -11,45 +11,45 @@
 
 /* Tool statics, in the original's definition order. The words this code
  * never reads (8028203c, 80282048-8028205b) are kept as they were defined. */
-s32 D_80282034 = 0;          /* heap monitor shown */
-s32 D_80282038 = 0;          /* performance counters shown */
-s32 D_8028203C = 0;          /* unreferenced */
-s32 D_80282040 = 0;          /* camera tool shown */
-s32 D_80282044 = 0;          /* geometry offset toggle */
-s32 D_80282048 = 0;          /* unreferenced */
-char D_8028204C[] = "mem_0"; /* unreferenced dump file name */
-s32 D_80282054 = 0;          /* unreferenced */
-s32 D_80282058 = 10;         /* unreferenced */
-s32 D_8028205C = 0x808D;     /* heap monitor flags */
-s32 D_80282060 = 0;          /* heap monitor first block */
-s32 D_80282064 = 0;          /* heap monitor scroll repeat delay */
-s32 D_80282068 = 1;          /* heap monitor step */
+s32 battle_debug_heap_monitor_shown = 0;          /* 80282034: heap monitor shown */
+s32 battle_debug_performance_counters_shown = 0;          /* 80282038: performance counters shown */
+s32 battle_debug_unused_word_1 = 0;          /* 8028203C: unreferenced */
+s32 battle_debug_camera_tool_shown = 0;          /* 80282040: camera tool shown */
+s32 battle_debug_geometry_offset_toggle = 0;          /* 80282044: geometry offset toggle */
+s32 battle_debug_unused_word_2 = 0;          /* 80282048: unreferenced */
+char battle_debug_unused_file_name[] = "mem_0"; /* 8028204C: unreferenced dump file name */
+s32 battle_debug_unused_word_3 = 0;          /* 80282054: unreferenced */
+s32 battle_debug_unused_word_4 = 10;         /* 80282058: unreferenced */
+s32 battle_debug_heap_monitor_column_flags = 0x808D;     /* 8028205C: heap monitor flags */
+s32 battle_debug_heap_monitor_first_row = 0;          /* 80282060: heap monitor first block */
+s32 battle_debug_heap_monitor_repeat_timer = 0;          /* 80282064: heap monitor scroll repeat delay */
+s32 battle_debug_heap_monitor_row_count = 1;          /* 80282068: heap monitor step */
 
 /* The load meter's needles: a triangle across the dial centre reaching 20
  * (GPU) or 30 (CPU) along the rotated x axis. */
-SVECTOR D_8028206C[2][3] = {
+SVECTOR battle_debug_load_meter_needles[2][3] = { /* 8028206C */
     {{0, -3, 0}, {0, 3, 0}, {20, 0, 0}},
     {{0, -3, 0}, {0, 3, 0}, {30, 0, 0}},
 };
 
 /* The actor tool's control modes. */
-char D_8028209C[] = "pos";
-char D_802820A0[] = "rot";
-char D_802820A4[] = "scale";
-char D_802820AC[] = "lgtang";
-char D_802820B4[] = "lgtcol";
-u8 D_802820BB = 0; /* actor tool shift (right after the 7-byte name) */
-u8 D_802820BC = 0; /* actor tool control mode */
-char *D_802820C0[] = {D_8028209C, D_802820A0, D_802820A4, D_802820AC, D_802820B4};
+char battle_debug_actor_tool_pos_name[] = "pos"; /* 8028209C */
+char battle_debug_actor_tool_rot_name[] = "rot"; /* 802820A0 */
+char battle_debug_actor_tool_scale_name[] = "scale"; /* 802820A4 */
+char battle_debug_actor_tool_lgtang_name[] = "lgtang"; /* 802820AC */
+char battle_debug_actor_tool_lgtcol_name[] = "lgtcol"; /* 802820B4 */
+u8 battle_debug_actor_tool_shift = 0; /* 802820BB: actor tool shift (right after the 7-byte name) */
+u8 battle_debug_actor_tool_mode = 0; /* 802820BC: actor tool control mode */
+char *battle_debug_actor_tool_mode_names[] = {battle_debug_actor_tool_pos_name, battle_debug_actor_tool_rot_name, battle_debug_actor_tool_scale_name, battle_debug_actor_tool_lgtang_name, battle_debug_actor_tool_lgtcol_name}; /* 802820C0 */
 
-s32 D_802820D4 = 0;                         /* memory dump count */
-char D_802820D8[] = "c:\\btlmem\\mem_00"; /* memory dump file name */
-s32 D_802820EC = 0;                         /* frame counter */
+s32 battle_debug_heap_report_count = 0;                         /* 802820D4: memory dump count */
+char battle_debug_heap_report_file_name[] = "c:\\btlmem\\mem_00"; /* 802820D8: memory dump file name */
+s32 battle_debug_camera_tool_frame_count = 0;                         /* 802820EC: frame counter */
 
-/* Move the camera position with the pad: the directional buttons move it in
+/* 80280844: Move the camera position with the pad: the directional buttons move it in
  * the camera's frame, R1/L1 (bits 0 and 2) raise and lower it; bit 1 slows
  * and bit 3 speeds the step. */
-void func_80280844(s32 buttons) {
+void battle_debug_move_camera_position(s32 buttons) {
     VECTOR moved;
     SVECTOR step;
     MATRIX m;
@@ -90,9 +90,9 @@ void func_80280844(s32 buttons) {
     }
 }
 
-/* Move the look-at point like the camera position, in the frame of the
+/* 80280960: Move the look-at point like the camera position, in the frame of the
  * camera's heading only. */
-void func_80280960(s32 buttons) {
+void battle_debug_move_look_at_point(s32 buttons) {
     VECTOR moved;
     SVECTOR step;
     SVECTOR rot;
@@ -138,12 +138,12 @@ void func_80280960(s32 buttons) {
     }
 }
 
-/* The tools' frame: the actor tool, then buttons toggle the heap monitor
+/* 80280A9C: The tools' frame: the actor tool, then buttons toggle the heap monitor
  * (0x800), the performance counters (0x20) and the camera tool (0x100, which
  * also switches the battle's display mode). The camera tool shows the
  * palette pages, prints the camera, marks the look-at point, emits a marker
  * effect there every 8 frames and moves the camera or look-at point. */
-void func_80280A9C(void) {
+void battle_debug_run_tools_frame(void) {
     SVECTOR angle;
     SVECTOR watch;
     long z;
@@ -153,17 +153,17 @@ void func_80280A9C(void) {
     SVECTOR *target;
     s32 yaw, pitch;
 
-    func_80281980();
+    battle_debug_run_actor_tool();
     if (battle_area.pressed2 & 0x800) {
-        D_80282034 = 1 - D_80282034;
+        battle_debug_heap_monitor_shown = 1 - battle_debug_heap_monitor_shown;
     }
-    if (D_80282034 != 0) {
-        func_802810C4();
+    if (battle_debug_heap_monitor_shown != 0) {
+        battle_debug_run_heap_monitor();
     }
     if (battle_area.pressed2 & 0x20) {
-        D_80282038 = 1 - D_80282038;
+        battle_debug_performance_counters_shown = 1 - battle_debug_performance_counters_shown;
     }
-    if (D_80282038 != 0) {
+    if (battle_debug_performance_counters_shown != 0) {
         console_printf("CPU       %d\n", battle_camera.cpu);
         console_printf("GPU       %d\n", battle_camera.gpu);
         console_printf("tasks     %d\n", task_main_count);
@@ -175,14 +175,14 @@ void func_80280A9C(void) {
         }
     }
     if (battle_area.pressed2 & 0x100) {
-        D_80282040 = 1 - D_80282040;
-        if (D_80282040 == 0) {
+        battle_debug_camera_tool_shown = 1 - battle_debug_camera_tool_shown;
+        if (battle_debug_camera_tool_shown == 0) {
             battle_camera_set_mode(1);
         } else {
             battle_camera_set_mode(4);
         }
     }
-    if (D_80282040 != 0) {
+    if (battle_debug_camera_tool_shown != 0) {
         page = (POLY_FT4 *)sprite_queue_next_free;
         sprite_queue_next_free = (SpriteQueueEntry *)((u8 *)sprite_queue_next_free + sizeof(POLY_FT4));
         SetPolyFT4(page);
@@ -235,7 +235,7 @@ void func_80280A9C(void) {
         angle.vx = yaw = (battle_camera.rot.vx & 0xFFF) * 360 / 4096;
         angle.vy = pitch = (battle_camera.rot.vy & 0xFFF) * 360 / 4096;
         console_printf("angle:  %d,%d(%d)\n", yaw, pitch, (pitch + 90) % 360);
-        D_802820EC++;
+        battle_debug_camera_tool_frame_count++;
         SetRotMatrix(&battle_camera.matrix);
         SetTransMatrix(&battle_camera.matrix);
         watch.vx = battle_camera_view_target.vx;
@@ -253,30 +253,30 @@ void func_80280A9C(void) {
         mark->x0 -= 4;
         mark->y0 -= 4;
         AddPrim((u_long *)sprite_ot, mark);
-        if ((D_802820EC & 7) == 0) {
+        if ((battle_debug_camera_tool_frame_count & 7) == 0) {
             sprite_create_effect(2, (SpriteSource *)sprite_shared_source, target, 0);
         }
         if (battle_area.pressed2 & 0x80) {
-            if (++D_80282044 & 1) {
+            if (++battle_debug_geometry_offset_toggle & 1) {
                 SetGeomOffset(0xA0, 0x70);
             } else {
                 SetGeomOffset(0xA0, 0xA5);
             }
         }
         if (battle_area.held2 & 0x40) {
-            func_80280960(battle_area.held2);
-            func_80280844(battle_area.held2);
+            battle_debug_move_look_at_point(battle_area.held2);
+            battle_debug_move_camera_position(battle_area.held2);
         } else if (battle_area.held2 & 0x20) {
-            func_80280960(battle_area.held2);
+            battle_debug_move_look_at_point(battle_area.held2);
         } else {
-            func_80280844(battle_area.held2);
+            battle_debug_move_camera_position(battle_area.held2);
         }
     }
-    func_8028103C();
+    battle_debug_open_text_window();
 }
 
-/* Open the debug text window while any button is pressed. */
-void func_8028103C(void) {
+/* 8028103C: Open the debug text window while any button is pressed. */
+void battle_debug_open_text_window(void) {
     s32 unused[12]; /* unused in the original; reserves 48 bytes */
 
     if (battle_area.pressed2 != 0) {
@@ -286,51 +286,51 @@ void func_8028103C(void) {
     }
 }
 
-/* The heap monitor: buttons toggle its display flags and step, left/right
+/* 802810C4: The heap monitor: buttons toggle its display flags and step, left/right
  * (repeating after 8 frames) scroll its first block. */
-void func_802810C4(void) {
+void battle_debug_run_heap_monitor(void) {
     s32 scroll;
 
-    func_8028191C();
+    battle_debug_print_wave_banks();
     scroll = 0;
     if (battle_area.pressed2 & 2) {
-        D_8028205C ^= 0x10;
+        battle_debug_heap_monitor_column_flags ^= 0x10;
     }
     if (battle_area.pressed2 & 8) {
-        D_8028205C ^= 0x20;
+        battle_debug_heap_monitor_column_flags ^= 0x20;
     }
     if (battle_area.pressed2 & 0x10) {
-        D_8028205C ^= 0x40;
+        battle_debug_heap_monitor_column_flags ^= 0x40;
     }
     if (battle_area.pressed2 & 0x20) {
-        D_8028205C ^= 0x80;
+        battle_debug_heap_monitor_column_flags ^= 0x80;
     }
     if (battle_area.pressed2 & 0x80) {
-        D_8028205C ^= 2;
+        battle_debug_heap_monitor_column_flags ^= 2;
     }
     if (battle_area.pressed2 & 0x40) {
-        D_8028205C ^= 0x8000;
+        battle_debug_heap_monitor_column_flags ^= 0x8000;
     }
     if (battle_area.pressed2 & 4) {
-        D_80282068++;
+        battle_debug_heap_monitor_row_count++;
     }
     if (battle_area.pressed2 & 1) {
-        if (--D_80282068 < 0) {
-            D_80282068 = 0;
+        if (--battle_debug_heap_monitor_row_count < 0) {
+            battle_debug_heap_monitor_row_count = 0;
         }
     }
     console_printf("\t\t\tdebug heap\n");
     if (battle_area.held2 & 0x5000) {
-        if (++D_80282064 >= 9) {
-            D_80282064 = 8;
+        if (++battle_debug_heap_monitor_repeat_timer >= 9) {
+            battle_debug_heap_monitor_repeat_timer = 8;
         }
     } else {
-        D_80282064 = 0;
+        battle_debug_heap_monitor_repeat_timer = 0;
     }
-    if ((battle_area.held2 & 0x1000) && D_80282064 >= 8) {
+    if ((battle_area.held2 & 0x1000) && battle_debug_heap_monitor_repeat_timer >= 8) {
         scroll--;
     }
-    if ((battle_area.held2 & 0x4000) && D_80282064 >= 8) {
+    if ((battle_area.held2 & 0x4000) && battle_debug_heap_monitor_repeat_timer >= 8) {
         scroll++;
     }
     if (battle_area.pressed2 & 0x1000) {
@@ -339,15 +339,15 @@ void func_802810C4(void) {
     if (battle_area.pressed2 & 0x4000) {
         scroll++;
     }
-    if ((D_80282060 += scroll) < 0) {
-        D_80282060 = 0;
+    if ((battle_debug_heap_monitor_first_row += scroll) < 0) {
+        battle_debug_heap_monitor_first_row = 0;
     }
-    heap_print_report(3, D_80282060, D_80282068, D_8028205C);
+    heap_print_report(3, battle_debug_heap_monitor_first_row, battle_debug_heap_monitor_row_count, battle_debug_heap_monitor_column_flags);
 }
 
-/* Load meter update: ease the averages toward this frame's CPU and GPU times
+/* 80281330: Load meter update: ease the averages toward this frame's CPU and GPU times
  * and hold each peak for 80 frames. */
-void func_80281330(Task *task) {
+void battle_debug_load_meter_update(Task *task) {
     LoadMeter *meter = task->data;
 
     meter->cpu_avg += (battle_camera.cpu * 16 - meter->cpu_avg) >> 3;
@@ -370,8 +370,8 @@ void func_80281330(Task *task) {
     }
 }
 
-/* Draw a flat triangle through the current matrices. */
-void func_802813F4(SVECTOR *v, u8 r, u8 g, u8 b) {
+/* 802813F4: Draw a flat triangle through the current matrices. */
+void battle_debug_draw_flat_triangle(SVECTOR *v, u8 r, u8 g, u8 b) {
     SVECTOR xy0, xy1, xy2;
     long flag;
     POLY_F3 *prim = (POLY_F3 *)sprite_queue_next_free;
@@ -393,8 +393,8 @@ void func_802813F4(SVECTOR *v, u8 r, u8 g, u8 b) {
     AddPrim((u_long *)sprite_ot, prim);
 }
 
-/* Draw a dial tick (30 to 35 along the rotated x axis). */
-void func_802814F8(u8 r, u8 g, u8 b) {
+/* 802814F8: Draw a dial tick (30 to 35 along the rotated x axis). */
+void battle_debug_load_meter_draw_tick(u8 r, u8 g, u8 b) {
     SVECTOR from, to;
     SVECTOR xy0, xy1;
     long flag;
@@ -420,9 +420,9 @@ void func_802814F8(u8 r, u8 g, u8 b) {
     AddPrim((u_long *)sprite_ot, prim);
 }
 
-/* Draw a peak mark: a line from the dial centre `length` along the rotated
+/* 802815E8: Draw a peak mark: a line from the dial centre `length` along the rotated
  * x axis. */
-void func_802815E8(s16 length, u8 r, u8 g, u8 b) {
+void battle_debug_load_meter_draw_peak(s16 length, u8 r, u8 g, u8 b) {
     SVECTOR tip;
     SVECTOR xy;
     long flag;
@@ -444,9 +444,9 @@ void func_802815E8(s16 length, u8 r, u8 g, u8 b) {
     AddPrim((u_long *)sprite_ot, prim);
 }
 
-/* Load meter drawing: the GPU (blue) and CPU (red) needles with their peak
+/* 802816AC: Load meter drawing: the GPU (blue) and CPU (red) needles with their peak
  * marks, and a tick every 0x100 up to each needle. */
-void func_802816AC(Task *task) {
+void battle_debug_load_meter_draw(Task *task) {
     MATRIX m;
     SVECTOR rot;
     VECTOR centre;
@@ -464,25 +464,25 @@ void func_802816AC(Task *task) {
     rot.vz = meter->gpu - 0x400;
     gpu_build_rotation_matrix(&rot, &m);
     SetRotMatrix(&m);
-    func_802813F4(D_8028206C[0], 0, 0, 0xFF);
+    battle_debug_draw_flat_triangle(battle_debug_load_meter_needles[0], 0, 0, 0xFF);
     rot.vx = 0;
     rot.vy = 0;
     rot.vz = meter->gpu_peak - 0x400;
     gpu_build_rotation_matrix(&rot, &m);
     SetRotMatrix(&m);
-    func_802815E8(20, 0, 0, 0xFF);
+    battle_debug_load_meter_draw_peak(20, 0, 0, 0xFF);
     rot.vx = 0;
     rot.vy = 0;
     rot.vz = meter->cpu - 0x400;
     gpu_build_rotation_matrix(&rot, &m);
     SetRotMatrix(&m);
-    func_802813F4(D_8028206C[1], 0xFF, 0, 0);
+    battle_debug_draw_flat_triangle(battle_debug_load_meter_needles[1], 0xFF, 0, 0);
     rot.vx = 0;
     rot.vy = 0;
     rot.vz = meter->cpu_peak - 0x400;
     gpu_build_rotation_matrix(&rot, &m);
     SetRotMatrix(&m);
-    func_802815E8(30, 0xFF, 0, 0);
+    battle_debug_load_meter_draw_peak(30, 0xFF, 0, 0);
     count = meter->cpu / 1024 + 1;
     for (angle = -0x400; count != 0; count--, angle += 0x100) {
         rot.vx = 0;
@@ -490,7 +490,7 @@ void func_802816AC(Task *task) {
         rot.vz = angle;
         gpu_build_rotation_matrix(&rot, &m);
         SetRotMatrix(&m);
-        func_802814F8(0xFF, 0, 0);
+        battle_debug_load_meter_draw_tick(0xFF, 0, 0);
     }
     count = meter->gpu / 1024 + 1;
     for (angle = 0x400; count != 0; count--, angle += 0x100) {
@@ -499,13 +499,13 @@ void func_802816AC(Task *task) {
         rot.vz = angle;
         gpu_build_rotation_matrix(&rot, &m);
         SetRotMatrix(&m);
-        func_802814F8(0, 0, 0xFF);
+        battle_debug_load_meter_draw_tick(0, 0, 0xFF);
     }
 }
 
-/* Start the load meter task. */
-void func_802818C4(void) {
-    LoadMeter *meter = (LoadMeter *)task_alloc_two_node_task(sizeof(LoadMeter), 0, func_80281330, func_802816AC, 0);
+/* 802818C4: Start the load meter task. */
+void battle_debug_load_meter_start(void) {
+    LoadMeter *meter = (LoadMeter *)task_alloc_two_node_task(sizeof(LoadMeter), 0, battle_debug_load_meter_update, battle_debug_load_meter_draw, 0);
 
     meter->gpu_hold = 1;
     meter->cpu_hold = 1;
@@ -517,9 +517,9 @@ void func_802818C4(void) {
     meter->cpu_avg = 0;
 }
 
-/* List the loaded wave banks after the first (the sound driver's list at
+/* 8028191C: List the loaded wave banks after the first (the sound driver's list at
  * sound_wave_bank_list) on the debug console. */
-void func_8028191C(void) {
+void battle_debug_print_wave_banks(void) {
     SoundSequence *bank = sound_wave_bank_list;
     s32 i = 0;
 
@@ -535,13 +535,13 @@ void func_8028191C(void) {
     }
 }
 
-/* The actor tool: for the selected battle actor print its model state, and
+/* 80281980: The actor tool: for the selected battle actor print its model state, and
  * with the pad move its position, rotation, scale or light (the control
  * mode, cycled by button 2; button 8 cycles the step shift). Declared
  * int-returning (old implicit int) without a value: $v0 stays live at exit,
  * so the switch's default branch slot takes the index shift, not the table
  * address. */
-s32 func_80281980(void) {
+s32 battle_debug_run_actor_tool(void) {
     Sprite *actor = battle_sprite_for_debugger;
     SVECTOR v;
     VECTOR step;
@@ -551,14 +551,14 @@ s32 func_80281980(void) {
     if (actor == NULL) {
         return;
     }
-    if ((battle_area.pressed2 & 8) && ++D_802820BB >= 7) {
-        D_802820BB = 0;
+    if ((battle_area.pressed2 & 8) && ++battle_debug_actor_tool_shift >= 7) {
+        battle_debug_actor_tool_shift = 0;
     }
-    console_printf("shifts mode: %x\n", D_802820BB);
-    if ((battle_area.pressed2 & 2) && ++D_802820BC >= 5) {
-        D_802820BC = 0;
+    console_printf("shifts mode: %x\n", battle_debug_actor_tool_shift);
+    if ((battle_area.pressed2 & 2) && ++battle_debug_actor_tool_mode >= 5) {
+        battle_debug_actor_tool_mode = 0;
     }
-    console_printf("control mode: %s\n", D_802820C0[D_802820BC]);
+    console_printf("control mode: %s\n", battle_debug_actor_tool_mode_names[battle_debug_actor_tool_mode]);
     v.vx = actor->x >> 16;
     v.vy = actor->y >> 16;
     v.vz = actor->z >> 16;
@@ -606,10 +606,10 @@ s32 func_80281980(void) {
     if (battle_area.held2 & 0x2000) {
         step.vx++;
     }
-    step.vx <<= D_802820BB;
-    step.vy <<= D_802820BB;
-    step.vz <<= D_802820BB;
-    switch (D_802820BC) {
+    step.vx <<= battle_debug_actor_tool_shift;
+    step.vy <<= battle_debug_actor_tool_shift;
+    step.vz <<= battle_debug_actor_tool_shift;
+    switch (battle_debug_actor_tool_mode) {
     case 0:
         step.vx <<= 17;
         step.vy <<= 17;
@@ -650,20 +650,20 @@ s32 func_80281980(void) {
     }
 }
 
-/* Dump main memory to the next numbered host file (mem_0, mem_1, ...). */
-void func_80281F98(void) {
-    D_802820D4++;
-    D_802820D8[15] = D_802820D4 + '0';
-    heap_write_report_file(D_802820D8);
+/* 80281F98: Dump main memory to the next numbered host file (mem_0, mem_1, ...). */
+void battle_debug_write_heap_report_file(void) {
+    battle_debug_heap_report_count++;
+    battle_debug_heap_report_file_name[15] = battle_debug_heap_report_count + '0';
+    heap_write_report_file(battle_debug_heap_report_file_name);
 }
 
-/* Run the memory dump on a private 16 KB stack. */
-void func_80281FD8(void) {
+/* 80281FD8: Run the memory dump on a private 16 KB stack. */
+void battle_debug_write_heap_report_on_own_stack(void) {
     u8 *stack = heap_alloc(0x4000, 1);
 
     /* Push the caller's sp at the new stack top and switch to it. */
     STACK_ENTER(stack + 0x3FC0);
-    func_80281F98();
+    battle_debug_write_heap_report_file();
     STACK_LEAVE();
     heap_free(stack);
 }

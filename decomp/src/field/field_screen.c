@@ -1389,7 +1389,7 @@ void field_movie_play(void) {
     cd_select_directory(4, 0);
     field_movie_wait_disc_idle();
     if (field_work.unk2264 != 0) {
-        func_801E7FD4();
+        gear_model_shut_down();
         field_sync_and_flush_cache();
         field_sync_draw_and_vsync();
         heap_free(field_layer_module);

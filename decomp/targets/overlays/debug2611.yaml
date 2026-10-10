@@ -45,8 +45,8 @@ segments:
       # Two units: the state pages (8028022C) keep positive li as ori
       # (ASPSX 2.34), the rest expands it as addiu.
       - [0x0, .rodata, pages]
-      - [0x88, .rodata, debug2611]
+      - [0x88, .rodata, battle_debug_tools]
       - [0x22c, c, pages]
-      - [0x844, c, debug2611]
-      - [0x2034, .data, debug2611]
+      - [0x844, c, battle_debug_tools]
+      - [0x2034, .data, battle_debug_tools]
   - [0x20f0]

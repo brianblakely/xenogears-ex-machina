@@ -14,33 +14,33 @@
 
 /* The row labels and character names, each in a 256-byte text buffer, and
  * the tables of pointers to them that the screen prints. */
-char D_801E0D40[4][0x100] = {"SceneNo ", "Party   ", "Robo    ", "FileNo  "};
-char D_801E1140[12][0x100] = {
+char battle_scene_select_row_label_buffers[4][0x100] = {"SceneNo ", "Party   ", "Robo    ", "FileNo  "}; /* 801E0D40 */
+char battle_scene_select_character_name_buffers[12][0x100] = { /* 801E1140 */
     "Fei", "Elly", "Shitan", "Baltho", "Billy", "Lico",
     "Emerada", "Chuchu", "Maria", "Shitan2", "Emerada2", "",
 };
-char *D_801E1D40[4] = {D_801E0D40[0], D_801E0D40[1], D_801E0D40[2], D_801E0D40[3]};
-char *D_801E1D50[12] = {
-    D_801E1140[0], D_801E1140[1], D_801E1140[2], D_801E1140[3],
-    D_801E1140[4], D_801E1140[5], D_801E1140[6], D_801E1140[7],
-    D_801E1140[8], D_801E1140[9], D_801E1140[10], D_801E1140[11],
+char *battle_scene_select_row_labels[4] = {battle_scene_select_row_label_buffers[0], battle_scene_select_row_label_buffers[1], battle_scene_select_row_label_buffers[2], battle_scene_select_row_label_buffers[3]}; /* 801E1D40 */
+char *battle_scene_select_character_names[12] = { /* 801E1D50 */
+    battle_scene_select_character_name_buffers[0], battle_scene_select_character_name_buffers[1], battle_scene_select_character_name_buffers[2], battle_scene_select_character_name_buffers[3],
+    battle_scene_select_character_name_buffers[4], battle_scene_select_character_name_buffers[5], battle_scene_select_character_name_buffers[6], battle_scene_select_character_name_buffers[7],
+    battle_scene_select_character_name_buffers[8], battle_scene_select_character_name_buffers[9], battle_scene_select_character_name_buffers[10], battle_scene_select_character_name_buffers[11],
 };
 
 /* Gear ids for the gear columns Nml and Bar, indexed by character (ff
  * none). */
-u8 D_801E1D80[16] = {0, 2, 3, 4, 5, 6, 9, 7, 8, 16, 15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-u8 D_801E1D90[16] = {1, 2, 11, 12, 13, 14, 9, 7, 8, 11, 18, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+u8 battle_scene_select_nml_gear_ids[16] = {0, 2, 3, 4, 5, 6, 9, 7, 8, 16, 15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; /* 801E1D80 */
+u8 battle_scene_select_bar_gear_ids[16] = {1, 2, 11, 12, 13, 14, 9, 7, 8, 11, 18, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; /* 801E1D90 */
 
-/* The selector's values, set by func_801E0124: row 0 the scene (enemy set,
+/* The selector's values, set by battle_scene_select_init: row 0 the scene (enemy set,
  * 0-15), row 1 the three party characters (0-11, ff none), row 2 their gear
  * mode (Off, Nml, Bar), row 3 the file number (253-255 the three event
  * files); and the columns shown on each row. */
-s32 D_801E1DA0[4][3] = {0};
-u8 D_801E1DD0[4][3] = {0};
+s32 battle_scene_select_values[4][3] = {0}; /* 801E1DA0 */
+u8 battle_scene_select_shown_columns[4][3] = {0}; /* 801E1DD0 */
 
-/* Put the first frame's environments, enable the display and reset the
+/* 801E0124: Put the first frame's environments, enable the display and reset the
  * selector: party order 0/1/2, default values and every digit visible. */
-void func_801E0124(void) {
+void battle_scene_select_init(void) {
     s32 i;
     s32 j;
 
@@ -51,31 +51,31 @@ void func_801E0124(void) {
     SetDispMask(1);
     game_data.party[1] = 1;
     game_data.party[2] = 2;
-    D_801E1DA0[0][0] = 3;
-    D_801E1DA0[1][1] = 1;
+    battle_scene_select_values[0][0] = 3;
+    battle_scene_select_values[1][1] = 1;
     game_data.party[0] = 0;
-    D_801E1DA0[1][0] = 0;
-    D_801E1DA0[1][2] = 2;
-    D_801E1DA0[2][2] = 0;
-    D_801E1DA0[2][1] = 0;
-    D_801E1DA0[2][0] = 0;
-    D_801E1DA0[3][0] = 0;
+    battle_scene_select_values[1][0] = 0;
+    battle_scene_select_values[1][2] = 2;
+    battle_scene_select_values[2][2] = 0;
+    battle_scene_select_values[2][1] = 0;
+    battle_scene_select_values[2][0] = 0;
+    battle_scene_select_values[3][0] = 0;
     for (i = 0; i < 4; i++) {
         for (j = 2; j >= 0; j--) {
-            D_801E1DD0[i][j] = 1;
+            battle_scene_select_shown_columns[i][j] = 1;
         }
     }
-    D_801E1DD0[3][2] = 0;
-    D_801E1DD0[3][1] = 0;
-    D_801E1DD0[0][2] = 0;
-    D_801E1DD0[0][1] = 0;
+    battle_scene_select_shown_columns[3][2] = 0;
+    battle_scene_select_shown_columns[3][1] = 0;
+    battle_scene_select_shown_columns[0][2] = 0;
+    battle_scene_select_shown_columns[0][1] = 0;
 }
 
-/* The selector screen, one frame per pass until Start: the directions move
+/* 801E0238: The selector screen, one frame per pass until Start: the directions move
  * the cursor over the shown columns, Circle/Cross step the value (wrapping
  * per row), Triangle adds ten to the file number; then the rows are printed
  * with the resident debug text and the frame is shown. */
-void func_801E0238(void) {
+void battle_scene_select_run_screen(void) {
     u8 running;
     s32 row;
     s32 col;
@@ -105,7 +105,7 @@ void func_801E0238(void) {
             if (++row >= 4) {
                 row = 0;
             }
-            if (!D_801E1DD0[row][col]) {
+            if (!battle_scene_select_shown_columns[row][col]) {
                 col = 0;
             }
             break;
@@ -113,7 +113,7 @@ void func_801E0238(void) {
             if (--row < 0) {
                 row = 3;
             }
-            if (!D_801E1DD0[row][col]) {
+            if (!battle_scene_select_shown_columns[row][col]) {
                 col = 0;
             }
             break;
@@ -121,7 +121,7 @@ void func_801E0238(void) {
             if (++col >= 3) {
                 col = 0;
             }
-            if (!D_801E1DD0[row][col]) {
+            if (!battle_scene_select_shown_columns[row][col]) {
                 col = 0;
             }
             break;
@@ -129,76 +129,76 @@ void func_801E0238(void) {
             if (--col < 0) {
                 col = 0;
             }
-            if (!D_801E1DD0[row][col]) {
+            if (!battle_scene_select_shown_columns[row][col]) {
                 col = 0;
             }
             break;
         case 5: /* Cross: decrement, wrapping to the row's top value */
-            if (--D_801E1DA0[row][col] < 0) {
+            if (--battle_scene_select_values[row][col] < 0) {
                 switch (row) {
                 case 0:
-                    D_801E1DA0[row][col] = 15;
+                    battle_scene_select_values[row][col] = 15;
                     break;
                 case 1:
                 case 3:
-                    D_801E1DA0[row][col] = 0xFF;
+                    battle_scene_select_values[row][col] = 0xFF;
                     break;
                 case 2:
-                    D_801E1DA0[row][col] = 2;
+                    battle_scene_select_values[row][col] = 2;
                     break;
                 }
             }
             break;
         case 4: /* Circle: increment, wrapping to zero */
-            D_801E1DA0[row][col]++;
+            battle_scene_select_values[row][col]++;
             switch (row) {
             case 0:
-                if (D_801E1DA0[row][col] >= 16) {
-                    D_801E1DA0[row][col] = 0;
+                if (battle_scene_select_values[row][col] >= 16) {
+                    battle_scene_select_values[row][col] = 0;
                 }
                 break;
             case 1:
-                if (D_801E1DA0[row][col] >= 12) {
-                    D_801E1DA0[row][col] = 0;
+                if (battle_scene_select_values[row][col] >= 12) {
+                    battle_scene_select_values[row][col] = 0;
                 }
                 break;
             case 2:
-                if (D_801E1DA0[row][col] >= 3) {
-                    D_801E1DA0[row][col] = 0;
+                if (battle_scene_select_values[row][col] >= 3) {
+                    battle_scene_select_values[row][col] = 0;
                 }
                 break;
             case 3:
-                if (D_801E1DA0[row][col] >= 0x100) {
-                    D_801E1DA0[row][col] = 0;
+                if (battle_scene_select_values[row][col] >= 0x100) {
+                    battle_scene_select_values[row][col] = 0;
                 }
                 break;
             }
             break;
         case 7: /* Triangle: file number + 10 */
             if (row == 3) {
-                D_801E1DA0[row][col] += 10;
-                if (D_801E1DA0[row][col] >= 0x100) {
-                    D_801E1DA0[row][col] = 0;
+                battle_scene_select_values[row][col] += 10;
+                if (battle_scene_select_values[row][col] >= 0x100) {
+                    battle_scene_select_values[row][col] = 0;
                 }
             }
             break;
         }
         console_printf("\n\n");
         for (i = 0; i < 4; i++) {
-            console_printf("\n\n%s", D_801E1D40[i]);
+            console_printf("\n\n%s", battle_scene_select_row_labels[i]);
             for (j = 0; j < 3; j++) {
-                if (D_801E1DD0[i][j]) {
+                if (battle_scene_select_shown_columns[i][j]) {
                     switch (i) {
                     case 0:
                         if (row == i && j == col) {
-                            console_printf("[%d] ", D_801E1DA0[row][col]);
+                            console_printf("[%d] ", battle_scene_select_values[row][col]);
                         } else {
-                            console_printf("%d ", D_801E1DA0[i][j]);
+                            console_printf("%d ", battle_scene_select_values[i][j]);
                         }
                         break;
                     case 2:
                         if (row == i && j == col) {
-                            switch (D_801E1DA0[row][col]) {
+                            switch (battle_scene_select_values[row][col]) {
                             case 0:
                                 console_printf("[Off] ");
                                 break;
@@ -210,7 +210,7 @@ void func_801E0238(void) {
                                 break;
                             }
                         } else {
-                            switch (D_801E1DA0[i][j]) {
+                            switch (battle_scene_select_values[i][j]) {
                             case 0:
                                 console_printf("Off ");
                                 break;
@@ -225,7 +225,7 @@ void func_801E0238(void) {
                         break;
                     case 3:
                         if (row == i && j == col) {
-                            value = D_801E1DA0[row][col];
+                            value = battle_scene_select_values[row][col];
                             if (value < 253) {
                                 console_printf("[%d] ", value);
                             } else {
@@ -242,7 +242,7 @@ void func_801E0238(void) {
                                 }
                             }
                         } else {
-                            value = D_801E1DA0[i][j];
+                            value = battle_scene_select_values[i][j];
                             if (value < 253) {
                                 console_printf("%d ", value);
                             } else {
@@ -262,13 +262,13 @@ void func_801E0238(void) {
                         break;
                     case 1:
                         if (row == i && j == col) {
-                            if (D_801E1DA0[row][col] >= 12) {
-                                console_printf("[%s] ", D_801E1D50[11]);
+                            if (battle_scene_select_values[row][col] >= 12) {
+                                console_printf("[%s] ", battle_scene_select_character_names[11]);
                             } else {
-                                console_printf("[%s] ", D_801E1D50[D_801E1DA0[row][col]]);
+                                console_printf("[%s] ", battle_scene_select_character_names[battle_scene_select_values[row][col]]);
                             }
                         } else {
-                            name = D_801E1DA0[i][j] >= 12 ? D_801E1D50[11] : D_801E1D50[D_801E1DA0[i][j]];
+                            name = battle_scene_select_values[i][j] >= 12 ? battle_scene_select_character_names[11] : battle_scene_select_character_names[battle_scene_select_values[i][j]];
                             console_printf("%s ", name);
                         }
                         break;
@@ -288,34 +288,34 @@ void func_801E0238(void) {
     } while (running);
 }
 
-/* Entry: run the selector, then set up the chosen battle: the party and
+/* 801E0A34: Entry: run the selector, then set up the chosen battle: the party and
  * whether each member starts in a gear, the enemy set, the chosen file's
  * formation table and event data from disc, full HP/EP for every character
  * and every member joined. */
-void func_801E0A34(void) {
+void battle_scene_select_main(void) {
     s32 i;
     s32 member;
     s32 size;
     void *data;
 
-    func_801E0124();
-    func_801E0238();
+    battle_scene_select_init();
+    battle_scene_select_run_screen();
     member = 0;
     for (i = 0; i < 3; i++) {
         game_data.inGear[i] = 0;
         game_data.party[i] = 0xFF;
-        if (D_801E1DA0[1][i] < 11) {
-            game_data.party[member] = D_801E1DA0[1][i];
-            switch (D_801E1DA0[2][i]) {
+        if (battle_scene_select_values[1][i] < 11) {
+            game_data.party[member] = battle_scene_select_values[1][i];
+            switch (battle_scene_select_values[2][i]) {
             case 0:
                 game_data.inGear[member] = 0;
                 break;
             case 2:
-                game_data.characters[game_data.party[member]].gearId = D_801E1D90[game_data.party[member]];
+                game_data.characters[game_data.party[member]].gearId = battle_scene_select_bar_gear_ids[game_data.party[member]];
                 game_data.inGear[member] = 1;
                 break;
             case 1:
-                game_data.characters[game_data.party[member]].gearId = D_801E1D80[game_data.party[member]];
+                game_data.characters[game_data.party[member]].gearId = battle_scene_select_nml_gear_ids[game_data.party[member]];
                 game_data.inGear[member] = 1;
                 break;
             }
@@ -323,12 +323,12 @@ void func_801E0A34(void) {
         }
     }
     cd_select_directory(0x20, 3);
-    if (D_801E1DA0[3][0] < 0xFD) {
-        i = D_801E1DA0[3][0] + 7;
+    if (battle_scene_select_values[3][0] < 0xFD) {
+        i = battle_scene_select_values[3][0] + 7;
     } else {
-        i = D_801E1DA0[3][0] - 0xF9;
+        i = battle_scene_select_values[3][0] - 0xF9;
     }
-    formation_selected_index = D_801E1DA0[0][0];
+    formation_selected_index = battle_scene_select_values[0][0];
     if (formation_selected_index == 0xF && i == 7) {
         formation_selected_index = 3;
         mode_pending_battle_formation = 3;

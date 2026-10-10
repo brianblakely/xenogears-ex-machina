@@ -1,4 +1,4 @@
-D_801E1DD0 = 0x801E1DD0; // size:0xC
+battle_scene_select_shown_columns = 0x801E1DD0; // size:0xC
 // Names tools/names.py gave these addresses (docs/matching.md, Names).
 game_data_party_state = 0x8006F364;
 battle_read_input = 0x80089CCC; // type:func
@@ -7,3 +7,13 @@ battle_heap_alloc = 0x8008ABB8; // type:func
 battle_grant_debug_items_and_skills = 0x8009B1E4; // type:func
 battle_pressed_key = 0x800D3014;
 battle_music_file_block = 0x800D39D8;
+battle_scene_select_init = 0x801E0124; // type:func
+battle_scene_select_run_screen = 0x801E0238; // type:func
+battle_scene_select_main = 0x801E0A34; // type:func
+battle_scene_select_row_label_buffers = 0x801E0D40;
+battle_scene_select_character_name_buffers = 0x801E1140;
+battle_scene_select_row_labels = 0x801E1D40;
+battle_scene_select_character_names = 0x801E1D50;
+battle_scene_select_nml_gear_ids = 0x801E1D80;
+battle_scene_select_bar_gear_ids = 0x801E1D90;
+battle_scene_select_values = 0x801E1DA0;

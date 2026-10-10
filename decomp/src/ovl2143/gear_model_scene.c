@@ -1,14 +1,14 @@
 /* ovl2143 (Disc 1 slot 2143 / Disc 2 slot 2138), the actor module linked at
  * 0x801dc000; ovl2143/actors.h has its records and the entries its callers
  * use, and says who loads it (the field, for its layers, and the Gear parts
- * shop, menu screen 5). Up to ten actors (D_801E8670), each a model hierarchy
+ * shop, menu screen 5). Up to ten actors (gear_model_actors), each a model hierarchy
  * (0x7c-byte parts built from a relocated model group, 8002c3e8/8002cb54/
  * 8002c8cc) with rotation/movement tweens from an effect pool, a 16-sprite
  * pool of textured quads, and actor effect scripts (801e39f0,
  * docs/scripts/battle-effect-vm.md). It drives the GTE directly (RotMatrix/
  * CompMatrix/MulMatrix0, RTPS/RTPT in 801dcec8 and 801e0398) and uses the
  * resident heap (80031bdc/800320e8, tag 4), libgpu and sound effect banks
- * (8003852c). It has no strings. Built with GCC 2.6.3 (see func_801DF7A8)
+ * (8003852c). It has no strings. Built with GCC 2.6.3 (see gear_model_free_tween_slot)
  * and ASPSX-style checked divisions.
  *
  * Most of its functions are the battle's model and effect library (8009E53C's
@@ -62,36 +62,36 @@
  * them. The table ends the unit's data with 66 00 where battle's has 0, 0: a
  * twentieth pair, or stray bytes after 19 (open, docs/matching.md), so it
  * stays original data (ovl2143.classification.txt). */
-u8 D_801E8590[] = {1, 108, 164, 99, 94, 220, 22, 123, 151, 158, 161, 143, 139, 141, 40, 214, 219, 0};
-INCLUDE_ORIGINAL(".data", D_801E85A4, 0x801E85A4, 40);
+u8 gear_model_battle_extra_file_bases[] = {1, 108, 164, 99, 94, 220, 22, 123, 151, 158, 161, 143, 139, 141, 40, 214, 219, 0}; /* 801E8590 */
+INCLUDE_ORIGINAL(".data", gear_model_battle_gear_file_table, 0x801E85A4, 40);
 
 /* The module state, zero in the file (its .bss, loaded), each object in a
- * slot of whole words (decomp/Makefile): D_801E869C starts its own slot
- * after D_801E8698, and the file ends with the rest of D_801E86B0's. GCC
+ * slot of whole words (decomp/Makefile): gear_model_wind_phase starts its own slot
+ * after gear_model_wind_strength, and the file ends with the rest of gear_model_current_actor_index's. GCC
  * emits tentative definitions in the order of their first declaration, so
  * the state is defined ahead of ovl2143/actors.h, which declares two of
  * them for the module's callers (the actors by their structure's tag). */
-s32 D_801E85CC;
-u8 D_801E85D0[36]; /* never read */
-ModelTable D_801E85F4[8];
-s32 D_801E8634;
-u8 *D_801E8638;
-u16 D_801E863C;
-s32 D_801E8640;
-MATRIX *D_801E8644;
-Tracker D_801E8648[2];
-struct Actor *D_801E8670[10];
-s16 D_801E8698;
-s16 D_801E869C;
-SpritePool D_801E86A0;
-EffectPool D_801E86A8;
-u16 D_801E86B0;
+s32 gear_model_instant_keyframes; /* 801E85CC */
+u8 gear_model_unread_bytes[36]; /* 801E85D0: never read */
+ModelTable gear_model_model_lists[8]; /* 801E85F4 */
+s32 gear_model_model_list_index; /* 801E8634 */
+u8 *gear_model_group_copy; /* 801E8638 */
+u16 gear_model_current_actor_mask; /* 801E863C */
+s32 gear_model_pending_half_frames; /* 801E8640 */
+MATRIX *gear_model_color_matrix; /* 801E8644 */
+Tracker gear_model_anchors[2]; /* 801E8648 */
+struct Actor *gear_model_actors[10]; /* 801E8670 */
+s16 gear_model_wind_strength; /* 801E8698 */
+s16 gear_model_wind_phase; /* 801E869C */
+SpritePool gear_model_particle_pool; /* 801E86A0 */
+EffectPool gear_model_tween_pool; /* 801E86A8 */
+u16 gear_model_current_actor_index; /* 801E86B0 */
 
 #include "actor.h"
 
-/* Relocate a model group and list its model records (0x38 bytes each after the
+/* 801DC22C: Relocate a model group and list its model records (0x38 bytes each after the
  * 0x10-byte header) in a new block. */
-ModelTable *func_801DC22C(u8 *group, ModelTable *list) {
+ModelTable *gear_model_build_model_list(u8 *group, ModelTable *list) {
     u32 count;
     u32 i;
 
@@ -107,11 +107,11 @@ ModelTable *func_801DC22C(u8 *group, ModelTable *list) {
     return list;
 }
 
-/* Build a model hierarchy from (model, parent) pairs, up to the first pair
+/* 801DC2D0: Build a model hierarchy from (model, parent) pairs, up to the first pair
  * naming neither a listed model nor 0xFFFF: a root part, then one part per
  * pair with its packets for both buffers (built with mode; offset by (x0, y0)
  * and (x1, y1) when offset is set). Returns the root, NULL on failure. */
-ModelPart *func_801DC2D0(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset, s16 x0, s16 y0,
+ModelPart *gear_model_build_hierarchy(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset, s16 x0, s16 y0,
                          s16 x1, s16 y1) {
     ModelPart *root;
     ModelPart *part;
@@ -182,7 +182,7 @@ ModelPart *func_801DC2D0(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset,
         if (id != 0xFFFF) {
             model_alloc_packet_buffers(list->models[id], &part->packets[0], &part->packets[1]);
             if (part->packets[0] == NULL) {
-                func_801DCD8C(root);
+                gear_model_free_hierarchy(root);
                 return NULL;
             }
             if (offset) {
@@ -213,11 +213,11 @@ ModelPart *func_801DC2D0(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset,
     return root;
 }
 
-/* Recompose a hierarchy's matrices: the root's world matrix from its rotation
+/* 801DC5C0: Recompose a hierarchy's matrices: the root's world matrix from its rotation
  * and position, its transform scaled by `scale`; each other node's transform
  * from its rotation when flagged and its world matrix from its parent when it
  * or its parent changed. Returns the node count. */
-u32 func_801DC5C0(ModelPart *parts, s32 scale) {
+u32 gear_model_compose_hierarchy(ModelPart *parts, s32 scale) {
     MATRIX *scaling = (MATRIX *)0x1F800000;
     ModelPart *part;
     s32 product;
@@ -286,10 +286,10 @@ u32 func_801DC5C0(ModelPart *parts, s32 scale) {
     return count;
 }
 
-/* Like func_801DC5C0, with scaled nodes: a rebuilt transform takes the
+/* 801DC848: Like gear_model_compose_hierarchy, with scaled nodes: a rebuilt transform takes the
  * node's own scale and the inverse of its parent's, and a parent's rebuild or
  * change propagates to its children. Clears both flags afterwards. */
-u32 func_801DC848(ModelPart *parts, s32 scale) {
+u32 gear_model_compose_scaled_hierarchy(ModelPart *parts, s32 scale) {
     MATRIX *scaling = (MATRIX *)0x1F800000;
     MATRIX *scratch;
     ModelPart *part;
@@ -386,15 +386,15 @@ u32 func_801DC848(ModelPart *parts, s32 scale) {
     return count;
 }
 
-/* An empty function, kept in its place. */
-void func_801DCC34(void) {
+/* 801DCC34: An empty function, kept in its place. */
+void gear_model_empty_after_compose(void) {
 }
 
-/* Draw a hierarchy's model nodes: each node's world matrix is combined with the
+/* 801DCC3C: Draw a hierarchy's model nodes: each node's world matrix is combined with the
  * root's light and view transforms (MulMatrix0 into the light matrix,
  * CompMatrix into the rotation/translation) before its buffer's packets are
  * drawn (8002c700). */
-void func_801DCC3C(ModelTable *group, ModelPart *parts, MATRIX *view, MATRIX *light, s32 mode,
+void gear_model_draw_hierarchy(ModelTable *group, ModelPart *parts, MATRIX *view, MATRIX *light, s32 mode,
                    u32 *ot, s32 buffer) {
     MATRIX *light_root = (MATRIX *)0x1F800020;
     MATRIX *view_root = (MATRIX *)0x1F800040;
@@ -419,8 +419,8 @@ void func_801DCC3C(ModelTable *group, ModelPart *parts, MATRIX *view, MATRIX *li
     }
 }
 
-/* Release a hierarchy: every node's packet buffers, then the nodes. */
-void func_801DCD8C(ModelPart *parts) {
+/* 801DCD8C: Release a hierarchy: every node's packet buffers, then the nodes. */
+void gear_model_free_hierarchy(ModelPart *parts) {
     ModelPart *part;
     s32 i;
 
@@ -439,9 +439,9 @@ void func_801DCD8C(ModelPart *parts) {
     }
 }
 
-/* Release a model list; with `release_models` each model's own packets too
+/* 801DCE18: Release a model list; with `release_models` each model's own packets too
  * (8002cbbc). */
-void func_801DCE18(ModelTable *list, s32 release_models) {
+void gear_model_free_model_list(ModelTable *list, s32 release_models) {
     u32 i;
 
     if (list != NULL) {
@@ -465,13 +465,13 @@ void func_801DCE18(ModelTable *list, s32 release_models) {
         (mat)->m[2][1] = (z);                                                  \
     } while (0)
 
-/* Draw an active actor under the camera `m`: its shadow quad at its ground
+/* 801DCEC8: Draw an active actor under the camera `m`: its shadow quad at its ground
  * height (unless flags bit 0; the depth also sets b39), every visible model
  * node (lit by `light`; billboard nodes face the view), its surfaces, its
  * image animations (advanced by `ticks`) and its colour fades' ribbons. A
  * channel whose frame count wraps to 0 leaves the channel pointer where it
  * is, so the next channel index redraws it (as the original). */
-void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, u32 *ot, s32 buffer) {
+void gear_model_draw_actor(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, u32 *ot, s32 buffer) {
     MATRIX *scratch = (MATRIX *)0x1F800000;
     MATRIX *placed = (MATRIX *)0x1F800020;
     SVECTOR v;
@@ -615,8 +615,8 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
         if ((s16)record->h0 < 0) {
             continue;
         }
-        sun.vx = -D_801E8698 * gpu_get_cos(parts->rotation.vy + 0x400) / 4096;
-        sun.vz = D_801E8698 * gpu_get_sin(parts->rotation.vy + 0x400) / 4096;
+        sun.vx = -gear_model_wind_strength * gpu_get_cos(parts->rotation.vy + 0x400) / 4096;
+        sun.vz = gear_model_wind_strength * gpu_get_sin(parts->rotation.vy + 0x400) / 4096;
         sun.vy = actor->h3E;
         CompMatrix(&parts->transform, &parts[(s16)record->h0].world, scratch);
         SetRotMatrix(scratch);
@@ -641,11 +641,11 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
             entry->hA = out.vy;
             entry->hC = out.vz;
         }
-        func_801E22F8(record, &sun, m, ot, buffer, scale, actor->groundY);
+        gear_model_simulate_and_draw_surface(record, &sun, m, ot, buffer, scale, actor->groundY);
     }
     anim = actor->images;
     for (i = 0; i < actor->imageCount; i++, anim++) {
-        func_801E1258(anim, ticks);
+        gear_model_step_image_anim(anim, ticks);
     }
     ch = actor->channels;
     for (i = 0; i < actor->channel_count; i++) {
@@ -669,7 +669,7 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
             }
             if (ch->max < ch->count || ch->sprite == NULL) {
                 ch->count = 1;
-                ch->sprite = func_801E0248(ch->pool, ch->semiTrans);
+                ch->sprite = gear_model_take_particle(ch->pool, ch->semiTrans);
                 ch->sprite->projected = 0;
                 ch->sprite->age = 0;
                 ch->sprite->lifetime = ch->duration;
@@ -707,7 +707,7 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
             }
             if (ch->max < ch->count || ch->sprite == NULL) {
                 ch->count = 1;
-                ch->sprite = func_801E0248(ch->pool, ch->semiTrans);
+                ch->sprite = gear_model_take_particle(ch->pool, ch->semiTrans);
                 ch->sprite->projected = 1;
                 ch->sprite->age = 0;
                 ch->sprite->lifetime = ch->duration;
@@ -751,7 +751,7 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
         }                                   \
     }
 
-/* Step the tweens attached to each node of a hierarchy: its rotation
+/* 801DDBF8: Step the tweens attached to each node of a hierarchy: its rotation
  * (attachment 0: set, delta or add from a track, interpolate, approach,
  * spin, or turn toward a point within a growing limit), position
  * (attachment 1: the same, or a move in the node's frame scaled by `scale`)
@@ -760,7 +760,7 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
  * flags: 0x100/0x200/0x400 some tween ran/ended/looped (1/2/4 when it has
  * `tag`). As in the original, the "spin" stop clears the step of the last
  * slot a computing kind used, which may belong to an earlier node. */
-s32 func_801DDBF8(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
+s32 gear_model_step_tweens(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
     Tween *slot;
     Tween *last;
     u8 *track;
@@ -905,7 +905,7 @@ s32 func_801DDBF8(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                         result |= 2;
                     }
                     result |= 0x200;
-                    func_801DF7A8(pool, (EffectEntry *)slot);
+                    gear_model_free_tween_slot(pool, (EffectEntry *)slot);
                     parts->effects[0] = NULL;
                 } else {
                     if (slot->tag == tag) {
@@ -1038,7 +1038,7 @@ s32 func_801DDBF8(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                         result |= 2;
                     }
                     result |= 0x200;
-                    func_801DF7A8(pool, (EffectEntry *)slot);
+                    gear_model_free_tween_slot(pool, (EffectEntry *)slot);
                     parts->effects[1] = NULL;
                 } else {
                     if (slot->tag == tag) {
@@ -1114,7 +1114,7 @@ s32 func_801DDBF8(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
                         result |= 2;
                     }
                     result |= 0x200;
-                    func_801DF7A8(pool, (EffectEntry *)slot);
+                    gear_model_free_tween_slot(pool, (EffectEntry *)slot);
                     parts->effects[2] = NULL;
                 } else {
                     if (slot->tag == tag) {
@@ -1141,13 +1141,13 @@ s32 func_801DDBF8(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale) {
     return result;
 }
 
-/* Apply an animation frame to a hierarchy's parts: the listed rotations (unless
+/* 801DEF10: Apply an animation frame to a hierarchy's parts: the listed rotations (unless
  * flag 1) and translations (unless flag 2), marking each changed part; parts
  * with a kept tween (tag 0xFF) keep theirs. The frame holds halfwords: [2]
  * flags, [3] base flag, [6] rotation count, [7] translation count, then from
  * [12] (x, y, z) triples, after the base rotations when [3] is 0. Returns the
  * part count less the root. */
-u16 func_801DEF10(ModelPart *root, s16 *data) {
+u16 gear_model_apply_keyframe(ModelPart *root, s16 *data) {
     u16 rotations;
     u16 translations;
     u16 rotationCount;
@@ -1205,13 +1205,13 @@ u16 func_801DEF10(ModelPart *root, s16 *data) {
     return count;
 }
 
-/* Tween the parts after the root towards an animation frame over `duration`
+/* 801DF0B4: Tween the parts after the root towards an animation frame over `duration`
  * ticks (at least 1): each changed rotation gets a tween (kind mode + 3) of
  * the shortest angle differences (mode 1: to the absolute angles), each
  * changed translation one of its movement (mode 1: to the absolute
  * translation); kept tweens (tag 0xFF) stay, other parts lose theirs. The
  * frame is read as 801DEF10 reads it. Returns the part count less the root. */
-u16 func_801DF0B4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s32 mode, s32 smooth,
+u16 gear_model_tween_to_keyframe(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s32 mode, s32 smooth,
                   s32 tag) {
     EffectEntry *entry;
     u16 rotationCount;
@@ -1255,7 +1255,7 @@ u16 func_801DF0B4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s3
                         goto translation;
                     }
                 } else {
-                    entry = func_801DF6F0(pool);
+                    entry = gear_model_take_tween_slot(pool);
                 }
                 if (entry != NULL) {
                     entry->used = 1;
@@ -1293,7 +1293,7 @@ u16 func_801DF0B4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s3
             }
         }
         if (part->effects[0] != NULL && part->effects[0]->tag != 0xFF) {
-            func_801DF7A8(pool, part->effects[0]);
+            gear_model_free_tween_slot(pool, part->effects[0]);
             part->effects[0] = NULL;
         }
     translation:
@@ -1309,7 +1309,7 @@ u16 func_801DF0B4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s3
                         continue;
                     }
                 } else {
-                    entry = func_801DF6F0(pool);
+                    entry = gear_model_take_tween_slot(pool);
                 }
                 if (entry != NULL) {
                     entry->used = 1;
@@ -1336,46 +1336,46 @@ u16 func_801DF0B4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s3
             }
         }
         if (part->effects[1] != NULL && part->effects[1]->tag != 0xFF) {
-            func_801DF7A8(pool, part->effects[1]);
+            gear_model_free_tween_slot(pool, part->effects[1]);
             part->effects[1] = NULL;
         }
     }
     return count;
 }
 
-/* Release the attachments of node `index` selected by `mask` (bit 0: w70,
+/* 801DF52C: Release the attachments of node `index` selected by `mask` (bit 0: w70,
  * bit 1: w74, bit 2: w78) back to `pool`. */
-void func_801DF52C(EffectPool *pool, ModelPart *part, s32 index, s32 mask) {
+void gear_model_release_node_tweens(EffectPool *pool, ModelPart *part, s32 index, s32 mask) {
     if (index < part->index) {
         part += index;
         if (part->effects[0] != NULL && (mask & 1)) {
-            func_801DF7A8(pool, part->effects[0]);
+            gear_model_free_tween_slot(pool, part->effects[0]);
             part->effects[0] = NULL;
         }
         if (part->effects[1] != NULL && (mask & 2)) {
-            func_801DF7A8(pool, part->effects[1]);
+            gear_model_free_tween_slot(pool, part->effects[1]);
             part->effects[1] = NULL;
         }
         if (part->effects[2] != NULL && (mask & 4)) {
-            func_801DF7A8(pool, part->effects[2]);
+            gear_model_free_tween_slot(pool, part->effects[2]);
             part->effects[2] = NULL;
         }
     }
 }
 
-/* Allocate `capacity` 0x14-byte slots for a pool, all free. */
-EffectPool *func_801DF5F4(EffectPool *pool, s32 capacity) {
+/* 801DF5F4: Allocate `capacity` 0x14-byte slots for a pool, all free. */
+EffectPool *gear_model_alloc_tween_pool(EffectPool *pool, s32 capacity) {
     if (capacity <= 0 ||
         (pool->count = capacity, heap_select_owner_tag(4, 0),
          (pool->entries = heap_alloc(capacity * sizeof(EffectEntry), 0)) == NULL)) {
         return NULL;
     }
-    func_801DF6A8(pool);
+    gear_model_clear_tween_pool(pool);
     return pool;
 }
 
-/* Release a pool's slots. */
-void func_801DF668(EffectPool *pool) {
+/* 801DF668: Release a pool's slots. */
+void gear_model_free_tween_pool(EffectPool *pool) {
     pool->next = 0;
     if (pool->entries != NULL) {
         heap_free(pool->entries);
@@ -1383,8 +1383,8 @@ void func_801DF668(EffectPool *pool) {
     pool->entries = NULL;
 }
 
-/* Mark every slot of a pool free. */
-void func_801DF6A8(EffectPool *pool) {
+/* 801DF6A8: Mark every slot of a pool free. */
+void gear_model_clear_tween_pool(EffectPool *pool) {
     EffectEntry *slot;
     s32 i;
 
@@ -1398,9 +1398,9 @@ void func_801DF6A8(EffectPool *pool) {
     }
 }
 
-/* Take the first free slot (the caller marks it used) and advance the search
+/* 801DF6F0: Take the first free slot (the caller marks it used) and advance the search
  * position past used slots; NULL when the pool is full. */
-EffectEntry *func_801DF6F0(EffectPool *pool) {
+EffectEntry *gear_model_take_tween_slot(EffectPool *pool) {
     EffectEntry *slot;
     u32 capacity;
 
@@ -1419,9 +1419,9 @@ EffectEntry *func_801DF6F0(EffectPool *pool) {
     return NULL;
 }
 
-/* Free a slot, moving the search position back to it; returns its index or
+/* 801DF7A8: Free a slot, moving the search position back to it; returns its index or
  * -1 without a slot. */
-s32 func_801DF7A8(EffectPool *pool, EffectEntry *slot) {
+s32 gear_model_free_tween_slot(EffectPool *pool, EffectEntry *slot) {
     s32 index;
 
     if (slot == NULL) {
@@ -1435,11 +1435,11 @@ s32 func_801DF7A8(EffectPool *pool, EffectEntry *slot) {
     return index;
 }
 
-/* Start a keyframe on a hierarchy through track tweens (a packed keyframe
+/* 801DF7F4: Start a keyframe on a hierarchy through track tweens (a packed keyframe
  * is applied at once): each node with a track gets a tween (unless it holds
  * a kept one), a node without one loses its tween. The keyframe is walked
  * with a u16 cursor. */
-s32 func_801DF7F4(EffectPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag) {
+s32 gear_model_start_keyframe_tracks(EffectPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag) {
     AnimationFrame *key;
     u8 *kind;
     Tween *tween;
@@ -1453,8 +1453,8 @@ s32 func_801DF7F4(EffectPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 t
 
     key = (AnimationFrame *)data;
     if (key->packed != 0) {
-        func_801DFE8C(pool, parts);
-        func_801DEF10(parts, (s16 *)key);
+        gear_model_release_unkept_tweens(pool, parts);
+        gear_model_apply_keyframe(parts, (s16 *)key);
         return 1;
     }
     rot_count = key->rotationCount;
@@ -1486,7 +1486,7 @@ s32 func_801DF7F4(EffectPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 t
                     goto kept0; /* a kept tween stays */
                 }
             } else {
-                tween = (Tween *)func_801DF6F0(pool);
+                tween = (Tween *)gear_model_take_tween_slot(pool);
             }
             if (tween != NULL) {
                 tween->used = 1;
@@ -1500,7 +1500,7 @@ s32 func_801DF7F4(EffectPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 t
             }
         } else {
             if (parts->effects[0] != NULL && i != 0 && parts->effects[0]->tag != 0xFF) {
-                func_801DF7A8(pool, parts->effects[0]);
+                gear_model_free_tween_slot(pool, parts->effects[0]);
                 parts->effects[0] = NULL;
             }
         }
@@ -1513,7 +1513,7 @@ s32 func_801DF7F4(EffectPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 t
                     goto kept1; /* a kept tween stays */
                 }
             } else {
-                tween = (Tween *)func_801DF6F0(pool);
+                tween = (Tween *)gear_model_take_tween_slot(pool);
             }
             if (tween != NULL) {
                 tween->used = 1;
@@ -1527,7 +1527,7 @@ s32 func_801DF7F4(EffectPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 t
             }
         } else {
             if (parts->effects[1] != NULL && i != 0 && parts->effects[1]->tag != 0xFF) {
-                func_801DF7A8(pool, parts->effects[1]);
+                gear_model_free_tween_slot(pool, parts->effects[1]);
                 parts->effects[1] = NULL;
             }
         }
@@ -1538,9 +1538,9 @@ s32 func_801DF7F4(EffectPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 t
     return 0;
 }
 
-/* Like func_801DF7F4, but each node after the root first takes the
+/* 801DFAC4: Like gear_model_start_keyframe_tracks, but each node after the root first takes the
  * keyframe's start values for the tracks that are started. */
-s32 func_801DFAC4(EffectPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag) {
+s32 gear_model_start_keyframe_tracks_at_start(EffectPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag) {
     AnimationFrame *key;
     u8 *kind;
     Tween *tween;
@@ -1557,8 +1557,8 @@ s32 func_801DFAC4(EffectPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 t
 
     key = (AnimationFrame *)data;
     if (key->packed != 0) {
-        func_801DFE8C(pool, parts);
-        func_801DEF10(parts, (s16 *)key);
+        gear_model_release_unkept_tweens(pool, parts);
+        gear_model_apply_keyframe(parts, (s16 *)key);
         return 1;
     }
     mode &= 1;
@@ -1593,7 +1593,7 @@ s32 func_801DFAC4(EffectPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 t
                     goto skip0; /* a kept tween stays */
                 }
             } else {
-                tween = (Tween *)func_801DF6F0(pool);
+                tween = (Tween *)gear_model_take_tween_slot(pool);
             }
             if (!(flags & 1) && i != 0 && rotations < rot_count) {
                 parts->rotation.vx = *values++;
@@ -1628,7 +1628,7 @@ s32 func_801DFAC4(EffectPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 t
                     goto skip1; /* a kept tween stays */
                 }
             } else {
-                tween = (Tween *)func_801DF6F0(pool);
+                tween = (Tween *)gear_model_take_tween_slot(pool);
             }
             if (!(flags & 2) && i != 0 && positions < pos_count) {
                 parts->translation[0] = *values++;
@@ -1660,66 +1660,66 @@ s32 func_801DFAC4(EffectPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 t
     return 0;
 }
 
-/* Release every node's attachments except those tagged 0xff. */
-void func_801DFE8C(EffectPool *pool, ModelPart *parts) {
+/* 801DFE8C: Release every node's attachments except those tagged 0xff. */
+void gear_model_release_unkept_tweens(EffectPool *pool, ModelPart *parts) {
     u16 count;
     s32 i;
 
     count = parts->index;
     for (i = 0; i < count; i++, parts++) {
         if (parts->effects[0] != NULL && parts->effects[0]->tag != 0xFF) {
-            func_801DF7A8(pool, parts->effects[0]);
+            gear_model_free_tween_slot(pool, parts->effects[0]);
             parts->effects[0] = NULL;
         }
         if (parts->effects[1] != NULL && parts->effects[1]->tag != 0xFF) {
-            func_801DF7A8(pool, parts->effects[1]);
+            gear_model_free_tween_slot(pool, parts->effects[1]);
             parts->effects[1] = NULL;
         }
         if (parts->effects[2] != NULL && parts->effects[2]->tag != 0xFF) {
-            func_801DF7A8(pool, parts->effects[2]);
+            gear_model_free_tween_slot(pool, parts->effects[2]);
             parts->effects[2] = NULL;
         }
     }
 }
 
-/* Release every node's attachments tagged `tag`. */
-void func_801DFF78(EffectPool *pool, ModelPart *parts, u8 tag) {
+/* 801DFF78: Release every node's attachments tagged `tag`. */
+void gear_model_release_tagged_tweens(EffectPool *pool, ModelPart *parts, u8 tag) {
     u16 count;
     s32 i;
 
     count = parts->index;
     for (i = 0; i < count; i++, parts++) {
         if (parts->effects[0] != NULL && parts->effects[0]->tag == tag) {
-            func_801DF7A8(pool, parts->effects[0]);
+            gear_model_free_tween_slot(pool, parts->effects[0]);
             parts->effects[0] = NULL;
         }
         if (parts->effects[1] != NULL && parts->effects[1]->tag == tag) {
-            func_801DF7A8(pool, parts->effects[1]);
+            gear_model_free_tween_slot(pool, parts->effects[1]);
             parts->effects[1] = NULL;
         }
         if (parts->effects[2] != NULL && parts->effects[2]->tag == tag) {
-            func_801DF7A8(pool, parts->effects[2]);
+            gear_model_free_tween_slot(pool, parts->effects[2]);
             parts->effects[2] = NULL;
         }
     }
 }
 
-/* Allocate a particle pool of `capacity` effect sprites plus a spare one
+/* 801E0064: Allocate a particle pool of `capacity` effect sprites plus a spare one
  * returned when the pool is full, and initialise them. */
-SpritePool *func_801E0064(SpritePool *pool, s32 capacity) {
+SpritePool *gear_model_alloc_particle_pool(SpritePool *pool, s32 capacity) {
     heap_select_owner_tag(4, 0);
     pool->count = capacity;
     pool->next = 0;
     pool->records = heap_alloc((capacity + 1) * sizeof(EffectSprite), 0);
     if (pool->records != NULL) {
-        func_801E011C(pool);
+        gear_model_reset_particle_pool(pool);
         return pool;
     }
     return NULL;
 }
 
-/* Release a particle pool. */
-void func_801E00DC(SpritePool *pool) {
+/* 801E00DC: Release a particle pool. */
+void gear_model_free_particle_pool(SpritePool *pool) {
     pool->count = 0;
     pool->next = 0;
     if (pool->records != NULL) {
@@ -1728,9 +1728,9 @@ void func_801E00DC(SpritePool *pool) {
     pool->records = NULL;
 }
 
-/* Mark every particle free and set up both buffers' semi-transparent textured
+/* 801E011C: Mark every particle free and set up both buffers' semi-transparent textured
  * quads (a 16x1 texel strip at v=0xbd of page (0x340, 0x100), clut (0, 0x1cd)). */
-void func_801E011C(SpritePool *pool) {
+void gear_model_reset_particle_pool(SpritePool *pool) {
     EffectSprite *particle;
     POLY_FT4 *poly;
     s32 i;
@@ -1759,9 +1759,9 @@ void func_801E011C(SpritePool *pool) {
     }
 }
 
-/* Take the next free particle, setting both quads' semi-transparency; when the
+/* 801E0248: Take the next free particle, setting both quads' semi-transparency; when the
  * pool is full, the spare particle past its end. */
-EffectSprite *func_801E0248(SpritePool *pool, s16 semi_trans) {
+EffectSprite *gear_model_take_particle(SpritePool *pool, s16 semi_trans) {
     EffectSprite *particle;
 
     if (pool->next < pool->count) {
@@ -1782,8 +1782,8 @@ EffectSprite *func_801E0248(SpritePool *pool, s16 semi_trans) {
     return &pool->records[pool->count];
 }
 
-/* Free a particle, moving the search position back to it; returns its index. */
-s32 func_801E0354(SpritePool *pool, EffectSprite *particle) {
+/* 801E0354: Free a particle, moving the search position back to it; returns its index. */
+s32 gear_model_free_particle(SpritePool *pool, EffectSprite *particle) {
     s32 index;
 
     index = ((u32)particle - (u32)pool->records) / sizeof(EffectSprite);
@@ -1794,10 +1794,10 @@ s32 func_801E0354(SpritePool *pool, EffectSprite *particle) {
     return index;
 }
 
-/* Draw the live particles into the ordering table (3D ones projected with
+/* 801E0398: Draw the live particles into the ordering table (3D ones projected with
  * the GTE at their depth, 2D ones at the front), free the expired ones and
  * fade the rest by `steps` ticks. */
-void func_801E0398(SpritePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer) {
+void gear_model_draw_particles(SpritePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer) {
     EffectSprite *particle;
     s32 otz;
     s32 i;
@@ -1810,7 +1810,7 @@ void func_801E0398(SpritePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer) 
             continue;
         }
         if (particle->age >= particle->lifetime) {
-            func_801E0354(pool, particle);
+            gear_model_free_particle(pool, particle);
             continue;
         }
         particle->packets[buffer].r0 = particle->color[0] >> 6;
@@ -1844,9 +1844,9 @@ void func_801E0398(SpritePool *pool, MATRIX *m, s32 steps, u32 *ot, s32 buffer) 
     }
 }
 
-/* Set up a colour fade from (r0, g0, b0) to (r1, g1, b1) over `duration`
+/* 801E0698: Set up a colour fade from (r0, g0, b0) to (r1, g1, b1) over `duration`
  * ticks. */
-s32 func_801E0698(ColorFade *fade, s32 pool, s16 id, u8 solid, s16 max, s16 duration, u8 r0, u8 g0,
+s32 gear_model_start_color_fade(ColorFade *fade, s32 pool, s16 id, u8 solid, s16 max, s16 duration, u8 r0, u8 g0,
                   u8 b0, u8 r1, u8 g1, u8 b1, u16 x0, u16 y0, u16 z0, u16 x1, u16 y1, u16 z1,
                   u16 semiTrans) {
     if (fade != NULL) {
@@ -1879,18 +1879,18 @@ s32 func_801E0698(ColorFade *fade, s32 pool, s16 id, u8 solid, s16 max, s16 dura
     }
 }
 
-/* Mark a colour fade idle. */
-void func_801E0844(ColorFade *fade, s32 unused) {
+/* 801E0844: Mark a colour fade idle. */
+void gear_model_mark_record_free(ColorFade *fade, s32 unused) {
     fade->id = -1;
 }
 
-/* base + (cos(angle) + 1.0) / divisor. */
-s16 func_801E0850(s16 angle, s16 divisor, s32 base) {
+/* 801E0850: base + (cos(angle) + 1.0) / divisor. */
+s16 gear_model_frame_curve_cosine(s16 angle, s16 divisor, s32 base) {
     return base + (gpu_get_cos(angle) + 0x1000) / divisor;
 }
 
-/* base + value / divisor, or -1 past 32. */
-s16 func_801E08D4(s16 value, s16 divisor, s16 base) {
+/* 801E08D4: base + value / divisor, or -1 past 32. */
+s16 gear_model_frame_curve_rising(s16 value, s16 divisor, s16 base) {
     base += value / divisor;
     if (base > 0x20) {
         return -1;
@@ -1898,13 +1898,13 @@ s16 func_801E08D4(s16 value, s16 divisor, s16 base) {
     return base;
 }
 
-/* base - value / divisor. */
-s16 func_801E0938(s16 value, s16 divisor, s32 base) {
+/* 801E0938: base - value / divisor. */
+s16 gear_model_frame_curve_falling(s16 value, s16 divisor, s32 base) {
     return base - value / divisor;
 }
 
-/* 32 - value / divisor, at least `minimum`. */
-s16 func_801E0988(s16 value, s16 divisor, s16 minimum) {
+/* 801E0988: 32 - value / divisor, at least `minimum`. */
+s16 gear_model_frame_curve_falling_clamped(s16 value, s16 divisor, s16 minimum) {
     s16 result;
 
     result = 0x20 - value / divisor;
@@ -1914,13 +1914,13 @@ s16 func_801E0988(s16 value, s16 divisor, s16 minimum) {
     return result;
 }
 
-/* Start an image animation (once): its target, curve and timing, the w x h
+/* 801E0A00: Start an image animation (once): its target, curve and timing, the w x h
  * VRAM rectangle at (x3, y3) (256 by default; modes 0/1 use an even width),
  * the work and frame buffers `flags` bits 8-10 ask for, and each frame
  * buffer's first contents (flags nibbles 0 and 1): 1 the VRAM rectangle at
  * (x, y) / (x2, y2) (modes 4/5: rows of `colors` from there), 2 one colour
  * (modes 4/5: the three values cycling by row). */
-ImageAnim *func_801E0A00(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags, ColorRow *colors,
+ImageAnim *gear_model_start_image_anim(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags, ColorRow *colors,
                          s16 x, s16 y, s16 z, s16 x2, s16 y2, s16 z2, s16 x3, s16 y3, s16 w, s16 h,
                          s16 speed, s16 divisor, s16 base, FrameCurve curve) {
     RECT rect;
@@ -2082,11 +2082,11 @@ ImageAnim *func_801E0A00(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags
     return anim;
 }
 
-/* Advance an image animation by `ticks` + 1: when its curve selects another
+/* 801E1258: Advance an image animation by `ticks` + 1: when its curve selects another
  * frame, rebuild the image (resident decoders or fades) and copy the
  * overlap into its target image. Returns the frame, or a negative value
  * once the animation ended. */
-s16 func_801E1258(ImageAnim *anim, s32 ticks) {
+s16 gear_model_step_image_anim(ImageAnim *anim, s32 ticks) {
     RECT src;
     RECT dst;
     ImageAnim *target;
@@ -2105,7 +2105,7 @@ s16 func_801E1258(ImageAnim *anim, s32 ticks) {
     value = result = anim->curve(anim->time, anim->divisor, anim->base);
     frame = value;
     if (frame < 0) {
-        func_801E165C(anim);
+        gear_model_stop_image_anim(anim);
         return frame;
     }
     value = anim->frame;
@@ -2125,10 +2125,10 @@ s16 func_801E1258(ImageAnim *anim, s32 ticks) {
             }
             break;
         case 4:
-            func_801E1708(anim, frame);
+            gear_model_fade_image_anim(anim, frame);
             break;
         case 5:
-            func_801E17B8(anim, frame);
+            gear_model_blend_image_anim(anim, frame);
             break;
         }
         target = anim->target;
@@ -2177,9 +2177,9 @@ s16 func_801E1258(ImageAnim *anim, s32 ticks) {
     return frame;
 }
 
-/* Stop an image animation: restore its original pixels to VRAM (resident
+/* 801E165C: Stop an image animation: restore its original pixels to VRAM (resident
  * decoder modes) and release its blocks. */
-void func_801E165C(ImageAnim *anim) {
+void gear_model_stop_image_anim(ImageAnim *anim) {
     if (anim->active) {
         if (anim->pixels != NULL) {
             if (anim->mode < 4) {
@@ -2200,8 +2200,8 @@ void func_801E165C(ImageAnim *anim) {
     }
 }
 
-/* Fade an image animation's colours to `level` / 32 of its pixels. */
-void func_801E1708(ImageAnim *anim, s16 level) {
+/* 801E1708: Fade an image animation's colours to `level` / 32 of its pixels. */
+void gear_model_fade_image_anim(ImageAnim *anim, s16 level) {
     u16 *pixel;
     s32 x;
     s32 y;
@@ -2217,9 +2217,9 @@ void func_801E1708(ImageAnim *anim, s16 level) {
     }
 }
 
-/* Blend an image animation's colours from its second pixels towards its
+/* 801E17B8: Blend an image animation's colours from its second pixels towards its
  * first by `level` / 32. */
-void func_801E17B8(ImageAnim *anim, s16 level) {
+void gear_model_blend_image_anim(ImageAnim *anim, s16 level) {
     u16 *pixel;
     u16 *from;
     s32 x;
@@ -2238,9 +2238,9 @@ void func_801E17B8(ImageAnim *anim, s16 level) {
     }
 }
 
-/* Place each active anchor: its offset through its actor node's matrix, or
+/* 801E1880: Place each active anchor: its offset through its actor node's matrix, or
  * the offset itself without an actor. */
-void func_801E1880(Actor **actors) {
+void gear_model_place_anchors(Actor **actors) {
     VECTOR world;
     MATRIX *m;
     Actor *actor;
@@ -2248,27 +2248,27 @@ void func_801E1880(Actor **actors) {
 
     m = SCRATCH_MATRIX;
     for (i = 0; i < 2; i++) {
-        if (D_801E8648[i].active) {
-            if (D_801E8648[i].object >= 0 && (actor = actors[D_801E8648[i].object]) != NULL) {
-                CompMatrix(&actor->parts->transform, &actor->parts[D_801E8648[i].part + 1].world, m);
+        if (gear_model_anchors[i].active) {
+            if (gear_model_anchors[i].object >= 0 && (actor = actors[gear_model_anchors[i].object]) != NULL) {
+                CompMatrix(&actor->parts->transform, &actor->parts[gear_model_anchors[i].part + 1].world, m);
                 SetRotMatrix(m);
                 SetTransMatrix(m);
-                gte_ldv0(&D_801E8648[i].offset);
+                gte_ldv0(&gear_model_anchors[i].offset);
                 gte_rtv0tr();
                 gte_stlvnl(&world);
-                D_801E8648[i].x = world.vx;
-                D_801E8648[i].y = world.vy;
-                D_801E8648[i].z = world.vz;
+                gear_model_anchors[i].x = world.vx;
+                gear_model_anchors[i].y = world.vy;
+                gear_model_anchors[i].z = world.vz;
             } else {
-                D_801E8648[i].x = D_801E8648[i].offset.vx;
-                D_801E8648[i].y = D_801E8648[i].offset.vy;
-                D_801E8648[i].z = D_801E8648[i].offset.vz;
+                gear_model_anchors[i].x = gear_model_anchors[i].offset.vx;
+                gear_model_anchors[i].y = gear_model_anchors[i].offset.vy;
+                gear_model_anchors[i].z = gear_model_anchors[i].offset.vz;
             }
         }
     }
 }
 
-/* Build a record's surface from `table`: a scaled centre per ring (offset by
+/* 801E1A14: Build a record's surface from `table`: a scaled centre per ring (offset by
  * ox/oy/oz), each strand's points (segment length and sag), and two textured
  * triangles per point pair between neighbouring rings, their texture
  * spanning u_span x v_span from (tx, ty) with the CLUT at (clut_x, clut_y);
@@ -2277,7 +2277,7 @@ void func_801E1880(Actor **actors) {
  * halfwords, and the cells between two strands use the smaller of their
  * point counts. On an allocation failure the record is left empty. The same
  * code as the battle overlay's battle_build_surface. */
-void func_801E1A14(Surface *record, u16 *table, s32 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
+void gear_model_build_surface(Surface *record, u16 *table, s32 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
                    s32 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
                    u8 b1, u8 b2, u8 b3, u8 b4, u8 b5) {
     SVECTOR *centre;
@@ -2443,7 +2443,7 @@ void func_801E1A14(Surface *record, u16 *table, s32 angle_base, s32 scale, s16 o
     }
 }
 
-/* Simulate and draw a surface (hair or cloth): each strand's
+/* 801E22F8: Simulate and draw a surface (hair or cloth): each strand's
  * segments hang from their start pulled by `wind` (plus each point's sag),
  * keep their length, stay above `floor` and are pushed out of the record's
  * collision spheres; then the points' normals are averaged from their
@@ -2451,7 +2451,7 @@ void func_801E1A14(Surface *record, u16 *table, s32 angle_base, s32 scale, s16 o
  * queued. As in the original, a triangle the GTE flags as off screen does
  * not advance the triangle pointer, and one variable is both the collision
  * loop's counter and the GTE flag store. */
-void func_801E22F8(Surface *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
+void gear_model_simulate_and_draw_surface(Surface *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
                    s16 floor) {
     VECTOR d;
     SVECTOR normal;
@@ -2641,8 +2641,8 @@ void func_801E22F8(Surface *record, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buffe
     }
 }
 
-/* Release a record's heap blocks. */
-void func_801E3438(Surface *record) {
+/* 801E3438: Release a record's heap blocks. */
+void gear_model_free_surface(Surface *record) {
     if (record->centres != NULL) {
         heap_free(record->centres);
         heap_free(*record->strands);
@@ -2655,18 +2655,18 @@ void func_801E3438(Surface *record) {
     }
 }
 
-/* The frame curve of mode: 801E08D4, 801E0938 or 801E0988 for 1-3, any other
+/* 801E34BC: The frame curve of mode: 801E08D4, 801E0938 or 801E0988 for 1-3, any other
  * the cosine curve 801E0850. */
-FrameCurve func_801E34BC(s32 mode) {
+FrameCurve gear_model_get_frame_curve(s32 mode) {
     switch (mode) {
     case 1:
-        return (FrameCurve)func_801E08D4;
+        return (FrameCurve)gear_model_frame_curve_rising;
     case 2:
-        return (FrameCurve)func_801E0938;
+        return (FrameCurve)gear_model_frame_curve_falling;
     case 3:
-        return (FrameCurve)func_801E0988;
+        return (FrameCurve)gear_model_frame_curve_falling_clamped;
     default:
-        return (FrameCurve)func_801E0850;
+        return (FrameCurve)gear_model_frame_curve_cosine;
     }
 }
 
@@ -2709,17 +2709,17 @@ FrameCurve func_801E34BC(s32 mode) {
         (a)->h1E = (none);           \
     } while (0)
 
-/* Reset an actor's script state to run `entries` with the tables `locals`. */
-void func_801E3534(Actor *actor, EffectPool *pool, s32 *entries, s32 *locals) {
+/* 801E3534: Reset an actor's script state to run `entries` with the tables `locals`. */
+void gear_model_reset_actor_script(Actor *actor, EffectPool *pool, s32 *entries, s32 *locals) {
     s16 none;
 
     none = -1;
     RESET_SCRIPT(actor, entries, locals, none);
 }
 
-/* Call script entry `entry` of `source` in `actor`: queued while the actor is
+/* 801E35D0: Call script entry `entry` of `source` in `actor`: queued while the actor is
  * already in a call, else run at once from the entry. */
-void func_801E35D0(Actor *actor, Actor *source, EffectPool *pool, s32 entry) {
+void gear_model_call_entry(Actor *actor, Actor *source, EffectPool *pool, s32 entry) {
     if (actor != NULL && source != NULL) {
         if (actor->depth != 0) {
             if (actor->depth < 5) {
@@ -2739,65 +2739,65 @@ void func_801E35D0(Actor *actor, Actor *source, EffectPool *pool, s32 entry) {
         actor->w50 = 0;
         actor->w54 = 0;
         actor->w4C = 0;
-        actor->mask = D_801E863C;
+        actor->mask = gear_model_current_actor_mask;
         actor->b23 = 0;
-        func_801E39F0(actor, pool, -1, 1, 0);
+        gear_model_run_effect_script(actor, pool, -1, 1, 0);
     }
 }
 
-/* Run `ticks` steps of an actor: its hierarchy matrices, node tweens and
+/* 801E36BC: Run `ticks` steps of an actor: its hierarchy matrices, node tweens and
  * animation, then its script. Returns the tween changes. */
-s32 func_801E36BC(Actor *actor, EffectPool *pool, s32 ticks, s32 arg3, s32 arg4) {
+s32 gear_model_step_actor(Actor *actor, EffectPool *pool, s32 ticks, s32 unused_buffer, s32 unused_substeps) {
     s32 changed;
     s32 i;
 
     if (actor->models != NULL) {
         changed = 0;
         if (actor->active) {
-            func_801E7298(actor);
+            gear_model_apply_root_height(actor);
             if (actor->scaled) {
-                func_801DC848(actor->parts, actor->scale);
+                gear_model_compose_scaled_hierarchy(actor->parts, actor->scale);
             } else {
-                func_801DC5C0(actor->parts, actor->scale);
+                gear_model_compose_hierarchy(actor->parts, actor->scale);
             }
             for (i = 0; i < ticks; i++) {
-                changed |= func_801DDBF8(pool, actor->parts, actor->h3C, actor->scale);
-                func_801E5D44(actor, pool, arg3);
+                changed |= gear_model_step_tweens(pool, actor->parts, actor->h3C, actor->scale);
+                gear_model_run_animation_events(actor, pool, unused_buffer);
             }
         }
-        func_801E39F0(actor, pool, changed, ticks, arg4);
+        gear_model_run_effect_script(actor, pool, changed, ticks, unused_substeps);
     }
     return changed;
 }
 
-/* Carry an actor on its carrier's node: optionally take the node's rotation,
+/* 801E37D0: Carry an actor on its carrier's node: optionally take the node's rotation,
  * then place its root at its offset in the node's space. Without a carrier
  * the link is dropped. */
-void func_801E37D0(Actor *actor) {
+void gear_model_carry_actor(Actor *actor) {
     SVECTOR offset;
     MATRIX *m;
 
     m = SCRATCH_MATRIX;
-    if (D_801E8670[actor->parent] != NULL) {
+    if (gear_model_actors[actor->parent] != NULL) {
         if (!(actor->flags & 0x10)) {
-            actor->active = D_801E8670[actor->parent]->active;
+            actor->active = gear_model_actors[actor->parent]->active;
         }
         if (actor->active) {
             if (actor->inherit) {
                 if (actor->parent_node != 0) {
-                    MulMatrix0(&D_801E8670[actor->parent]->parts->world,
-                               &D_801E8670[actor->parent]->parts[actor->parent_node].world, SCRATCH_MATRIX);
+                    MulMatrix0(&gear_model_actors[actor->parent]->parts->world,
+                               &gear_model_actors[actor->parent]->parts[actor->parent_node].world, SCRATCH_MATRIX);
                 } else {
-                    m = &D_801E8670[actor->parent]->parts->world;
+                    m = &gear_model_actors[actor->parent]->parts->world;
                 }
                 MulMatrix2(m, &actor->parts->transform);
                 MulMatrix2(m, &actor->parts->world);
             }
             if (actor->parent_node != 0) {
-                CompMatrix(&D_801E8670[actor->parent]->parts->transform,
-                           &D_801E8670[actor->parent]->parts[actor->parent_node].world, m);
+                CompMatrix(&gear_model_actors[actor->parent]->parts->transform,
+                           &gear_model_actors[actor->parent]->parts[actor->parent_node].world, m);
             } else {
-                m = &D_801E8670[actor->parent]->parts->transform;
+                m = &gear_model_actors[actor->parent]->parts->transform;
             }
             SetRotMatrix(m);
             SetTransMatrix(m);
@@ -2814,7 +2814,7 @@ void func_801E37D0(Actor *actor) {
     }
 }
 
-/* Run an actor's script for `ticks` frames: integrate its spin and drift
+/* 801E39F0: Run an actor's script for `ticks` frames: integrate its spin and drift
  * with their accelerations that many times, take a pending jump (w4C after the
  * distance to the target falls to h48, w54 on landing at the root height, w50
  * after h46 frames), then execute opcodes (low byte; the high byte is the
@@ -2847,7 +2847,7 @@ void func_801E37D0(Actor *actor) {
  * offsets survive the norm call for the heading. Case 0x6E consumes its
  * word even when the resolved actor is absent, and keeps the observed
  * actor pointer local to that wait. */
-void func_801E39F0(Actor *actor, EffectPool *pool, s32 changed, s32 ticks, s32 arg4) {
+void gear_model_run_effect_script(Actor *actor, EffectPool *pool, s32 changed, s32 ticks, s32 unused_substeps) {
     Actor *self;
     Actor *other;
     ModelPart *part;
@@ -2901,7 +2901,7 @@ void func_801E39F0(Actor *actor, EffectPool *pool, s32 changed, s32 ticks, s32 a
     }
     running = 1;
     pc = (u16 *)actor->pc;
-    if (actor->w4C != 0 && func_801E6338(actor) <= actor->h48) {
+    if (actor->w4C != 0 && gear_model_get_target_distance(actor) <= actor->h48) {
         pc = (u16 *)actor->w4C;
         actor->w4C = 0;
     } else {
@@ -2930,7 +2930,7 @@ void func_801E39F0(Actor *actor, EffectPool *pool, s32 changed, s32 ticks, s32 a
     }
 aim:
     if (actor->aim_actor != 0) {
-        func_801E63A8(actor);
+        gear_model_update_aim_target(actor);
     }
     while (running) {
         start = pc;
@@ -2965,17 +2965,17 @@ aim:
             redraw = 1;
             break;
         case 0x08: /* drop the node tweens and the animation */
-            func_801DFE8C(pool, actor->parts);
-            func_801E632C(actor);
+            gear_model_release_unkept_tweens(pool, actor->parts);
+            gear_model_stop_animation(actor);
             break;
         case 0x0A: /* release node `arg`'s attachments 0-2 */
-            func_801DF52C(pool, actor->parts, arg, 7);
+            gear_model_release_node_tweens(pool, actor->parts, arg, 7);
             break;
         case 0x0B: { /* drop the tweens and reset every node below the root */
             s32 j, count;
 
             part = actor->parts;
-            func_801DFE8C(pool, part);
+            gear_model_release_unkept_tweens(pool, part);
             count = part->index - 1;
             for (j = 0; j < count; j++) {
                 part++;
@@ -3005,27 +3005,27 @@ aim:
             actor->drift_accel[2] = 0;
             break;
         case 0x0D: /* release node `arg`'s rotation attachment */
-            func_801DF52C(pool, actor->parts, arg, 1);
+            gear_model_release_node_tweens(pool, actor->parts, arg, 1);
             break;
         case 0x0E: /* release node `arg`'s position attachment */
-            func_801DF52C(pool, actor->parts, arg, 2);
+            gear_model_release_node_tweens(pool, actor->parts, arg, 2);
             break;
         case 0x10: /* apply keyframe `arg` */
-            func_801DEF10(actor->parts, (s16 *)func_801E6910(actor, arg, &n));
+            gear_model_apply_keyframe(actor->parts, (s16 *)gear_model_get_actor_animation(actor, arg, &n));
             break;
         case 0x11: { /* start animation `arg` (word: loop high, tag low byte) */
             s32 size;
 
-            key = func_801E6910(actor, arg, &n);
+            key = gear_model_get_actor_animation(actor, arg, &n);
             operand = *pc++;
             word = operand;
             if (n == 0) {
                 entry = operand >> 8;
-                func_801DF7F4(pool, actor->parts, (u16 *)key, entry, (u8)word);
+                gear_model_start_keyframe_tracks(pool, actor->parts, (u16 *)key, entry, (u8)word);
                 changed = -1;
                 size = (s16)((u16 *)key)[8] * (actor->scale * actor->parts->scale[2] >> 12) >> 12;
                 actor->h8E = size < 0 ? -size : size;
-                func_801E5C74(actor, (Animation *)key, entry);
+                gear_model_start_animation(actor, (Animation *)key, entry);
             }
             break;
         }
@@ -3038,23 +3038,23 @@ aim:
             /* op and depth double as the second word's bytes */
             op = word >> 8;
             depth = (u8)word;
-            key = func_801E6910(actor, reference, &n);
-            if (D_801E85CC != 0) {
-                func_801DEF10(actor->parts, (s16 *)key);
+            key = gear_model_get_actor_animation(actor, reference, &n);
+            if (gear_model_instant_keyframes != 0) {
+                gear_model_apply_keyframe(actor->parts, (s16 *)key);
             } else {
-                func_801DF0B4(pool, actor->parts, (s16 *)key, op, arg, depth,
+                gear_model_tween_to_keyframe(pool, actor->parts, (s16 *)key, op, arg, depth,
                               entry);
             }
             changed = -1;
-            func_801E632C(actor);
+            gear_model_stop_animation(actor);
             break;
         case 0x14: /* call entry (word high byte) of a source (low byte; 0xff each
                     * actor's own) in the actors of code `arg`; 0xfd hands over */
             word = *pc++;
             reference = (u8)word;
             entry = word >> 8;
-            op = func_801E6830(actor, reference, &word);
-            func_801E6830(actor, arg, &word);
+            op = gear_model_resolve_actor_reference(actor, reference, &word);
+            gear_model_resolve_actor_reference(actor, arg, &word);
             depth = actor->depth;
             if (arg == 0xFD) {
                 actor->depth = 0;
@@ -3062,9 +3062,9 @@ aim:
             for (n = 0; n < 8; n++) {
                 if (((s16)word >> n) & 1) {
                     if (reference == 0xFF) {
-                        func_801E35D0(D_801E8670[n], D_801E8670[n], pool, entry);
+                        gear_model_call_entry(gear_model_actors[n], gear_model_actors[n], pool, entry);
                     } else {
-                        func_801E35D0(D_801E8670[n], D_801E8670[op], pool, entry);
+                        gear_model_call_entry(gear_model_actors[n], gear_model_actors[op], pool, entry);
                     }
                 }
             }
@@ -3079,13 +3079,13 @@ aim:
 
             word = *pc++;
             for (n = 8; n < 10; n++) {
-                if (D_801E8670[n] == NULL) {
+                if (gear_model_actors[n] == NULL) {
                     copy = heap_alloc(sizeof(Actor), 1);
                     break;
                 }
             }
             *copy = *actor;
-            D_801E8670[n] = copy;
+            gear_model_actors[n] = copy;
             copy->anim_state = -1;
             copy->h3C = 0xFFFF;
             copy->parent = 0xFF;
@@ -3101,7 +3101,7 @@ aim:
             copy->index = n;
             copy->surfaceCount = 0;
             copy->imageCount = 0;
-            func_801E8510(copy);
+            gear_model_alloc_channels(copy);
             parts = heap_alloc(actor->parts->index * sizeof(ModelPart), 1);
             copy->parts = parts;
             for (n = 0; n < actor->parts->index; n++) {
@@ -3114,28 +3114,28 @@ aim:
                 parts[n].effects[0] = NULL;
                 parts[n].effects[1] = NULL;
             }
-            func_801E6578(pool, word, actor->parts, parts);
+            gear_model_transfer_subtree(pool, word, actor->parts, parts);
             if (arg != 0xFF) {
-                func_801E35D0(copy, copy, pool, arg);
+                gear_model_call_entry(copy, copy, pool, arg);
             }
             break;
         }
         case 0x16: /* merge back into the actor this one was cloned from */
-            func_801E6668(actor->parts, D_801E8670[actor->b21]->parts);
-            func_801E8030(actor->index);
+            gear_model_transfer_visible_nodes(actor->parts, gear_model_actors[actor->b21]->parts);
+            gear_model_free_actor(actor->index);
             if (arg != 0xFF) {
-                func_801E35D0(D_801E8670[actor->b21], D_801E8670[actor->b21], pool, arg);
+                gear_model_call_entry(gear_model_actors[actor->b21], gear_model_actors[actor->b21], pool, arg);
             }
             return;
         case 0x17: /* release this actor */
-            func_801E8030(actor->index);
+            gear_model_free_actor(actor->index);
             return;
         case 0x18: /* start animation `arg`, looping when the word is set */
-            key = func_801E6910(actor, arg, &n);
-            func_801E5C74(actor, (Animation *)key, (s16)*pc++);
+            key = gear_model_get_actor_animation(actor, arg, &n);
+            gear_model_start_animation(actor, (Animation *)key, (s16)*pc++);
             break;
         case 0x19: /* stop the animation */
-            func_801E632C(actor);
+            gear_model_stop_animation(actor);
             break;
         case 0x1A: { /* move a VRAM rectangle (words x, y, dst x, dst y, w, h;
                       * arg bit 0: by the actor's image offset) */
@@ -3166,7 +3166,7 @@ aim:
             entry = word >> 8;
             reference = (u8)word;
             word = *pc++;
-            func_801E6974(actor, pool, &actor->parts[arg], reference, entry, (u8)word, word >> 8,
+            gear_model_start_node_tween(actor, pool, &actor->parts[arg], reference, entry, (u8)word, word >> 8,
                           *pc++, *pc++, *pc++, *pc++, *pc++, *pc++, *pc++);
             changed = -1;
             break;
@@ -3174,7 +3174,7 @@ aim:
             actor->scaled = arg;
             break;
         case 0x1F: /* continue in another actor */
-            other = D_801E8670[func_801E6830(self, arg, &word) & 0xFF];
+            other = gear_model_actors[gear_model_resolve_actor_reference(self, arg, &word) & 0xFF];
             if (other != NULL) {
                 actor = other;
             }
@@ -3238,7 +3238,7 @@ aim:
             }
             break;
         case 0x23: /* show or hide node (word) by flags `arg` (801e6d94) */
-            func_801E6D94(actor, &actor->parts[(s16)*pc++], arg);
+            gear_model_show_node(actor, &actor->parts[(s16)*pc++], arg);
             break;
         case 0x24: /* show or hide */
             if (actor != NULL) {
@@ -3255,18 +3255,18 @@ aim:
 
             word = *pc++;
             entry = word >> 8;
-            func_801E6830(actor, (u8)word, &word);
+            gear_model_resolve_actor_reference(actor, (u8)word, &word);
             c0 = *pc++;
             c1 = *pc++;
             c2 = *pc++;
             for (n = 0; n < 8; n++) {
-                if (!(((s16)word >> n) & 1) || D_801E8670[n] == NULL) {
+                if (!(((s16)word >> n) & 1) || gear_model_actors[n] == NULL) {
                     continue;
                 }
-                D_801E8670[n]->parent_node = entry;
-                D_801E8670[n]->parent = actor->index;
-                D_801E8670[n]->inherit = arg & 2;
-                D_801E8670[n]->b36 = 1;
+                gear_model_actors[n]->parent_node = entry;
+                gear_model_actors[n]->parent = actor->index;
+                gear_model_actors[n]->inherit = arg & 2;
+                gear_model_actors[n]->b36 = 1;
                 if (arg & 1) {
                     node = &actor->parts[entry];
                     SetRotMatrix(&node->world);
@@ -3290,16 +3290,16 @@ aim:
                     gte_ldv0(&v);
                     gte_rtv0tr();
                     gte_stlvnl(&ez);
-                    d.vx = D_801E8670[n]->parts->translation[0] - node->world.t[0];
-                    d.vy = D_801E8670[n]->parts->translation[1] - node->world.t[1];
-                    d.vz = D_801E8670[n]->parts->translation[2] - node->world.t[2];
-                    D_801E8670[n]->offset[0] = func_801E66BC(&d, &ey, &ez, actor->scale);
-                    D_801E8670[n]->offset[1] = func_801E66BC(&d, &ez, &ex, actor->scale);
-                    D_801E8670[n]->offset[2] = func_801E66BC(&d, &ex, &ey, actor->scale);
+                    d.vx = gear_model_actors[n]->parts->translation[0] - node->world.t[0];
+                    d.vy = gear_model_actors[n]->parts->translation[1] - node->world.t[1];
+                    d.vz = gear_model_actors[n]->parts->translation[2] - node->world.t[2];
+                    gear_model_actors[n]->offset[0] = gear_model_project_on_cross_axis(&d, &ey, &ez, actor->scale);
+                    gear_model_actors[n]->offset[1] = gear_model_project_on_cross_axis(&d, &ez, &ex, actor->scale);
+                    gear_model_actors[n]->offset[2] = gear_model_project_on_cross_axis(&d, &ex, &ey, actor->scale);
                 } else {
-                    D_801E8670[n]->offset[0] = c0;
-                    D_801E8670[n]->offset[1] = c1;
-                    D_801E8670[n]->offset[2] = c2;
+                    gear_model_actors[n]->offset[0] = c0;
+                    gear_model_actors[n]->offset[1] = c1;
+                    gear_model_actors[n]->offset[2] = c2;
                 }
             }
             break;
@@ -3307,19 +3307,19 @@ aim:
         case 0x26: { /* detach the masked actors */
             u8 none;
 
-            func_801E6830(actor, arg, &word);
+            gear_model_resolve_actor_reference(actor, arg, &word);
             for (n = 0, none = 0xFF; n < 8; n++) {
-                if ((((s16)word >> n) & 1) && D_801E8670[n] != NULL) {
-                    D_801E8670[n]->parent = none;
+                if ((((s16)word >> n) & 1) && gear_model_actors[n] != NULL) {
+                    gear_model_actors[n]->parent = none;
                 }
             }
             break;
         }
         case 0x27: /* recompose the hierarchy */
             if (actor->scaled) {
-                func_801DC848(actor->parts, actor->scale);
+                gear_model_compose_scaled_hierarchy(actor->parts, actor->scale);
             } else {
-                func_801DC5C0(actor->parts, actor->scale);
+                gear_model_compose_hierarchy(actor->parts, actor->scale);
             }
             break;
         case 0x28:
@@ -3327,7 +3327,7 @@ aim:
                     * node (low byte) tweens with the given time */
             ModelPart *tween;
 
-            dist = func_801E6338(actor);
+            dist = gear_model_get_target_distance(actor);
             if (actor->h8E == 0) {
                 actor->h8E = 1;
             }
@@ -3358,13 +3358,13 @@ aim:
             break;
         }
         case 0x2A: /* wait while nearer than h8e */
-            if (func_801E6338(actor) >= actor->h8E) {
+            if (gear_model_get_target_distance(actor) >= actor->h8E) {
                 pc = start;
                 running = 0;
             }
             break;
         case 0x2B: /* wait while farther than h8e */
-            if (func_801E6338(actor) <= actor->h8E) {
+            if (gear_model_get_target_distance(actor) <= actor->h8E) {
                 pc = start;
                 running = 0;
             }
@@ -3413,12 +3413,12 @@ aim:
         case 0x38: /* turn the root toward the target each frame within a limit from
                     * `arg` (801e5b50 kind 7; gain the word's low byte, rate its high) */
             word = *pc++;
-            func_801E5B50(pool, actor->parts, 0, arg, (u8)word, (u8)(word >> 8),
+            gear_model_start_homing_turn(pool, actor->parts, 0, arg, (u8)word, (u8)(word >> 8),
                           actor->target[0], actor->target[1], actor->target[2]);
             break;
         case 0x39: /* the same, heading only (kind 8) */
             word = *pc++;
-            func_801E5B50(pool, actor->parts, 1, arg, (u8)word, (u8)(word >> 8),
+            gear_model_start_homing_turn(pool, actor->parts, 1, arg, (u8)word, (u8)(word >> 8),
                           actor->target[0], actor->target[1], actor->target[2]);
             break;
         case 0x33: /* the battle's conditional jumps: consume the word */
@@ -3431,7 +3431,7 @@ aim:
             word = *pc++;
             reference = word;
             entry = word >> 8;
-            sound_slide_effect_volume(reference + func_801E5CD8(actor, arg), 0, entry);
+            sound_slide_effect_volume(reference + gear_model_get_sound_bank_base(actor, arg), 0, entry);
             break;
         case 0x3D: /* run the queued calls once `arg` is among them */
             word = actor->depth;
@@ -3450,7 +3450,7 @@ aim:
             rx = *pc++;
             ry = *pc++;
             rz = *pc++;
-            func_801E59D4(pool, actor->parts, arg, rx, ry, rz);
+            gear_model_turn_node_to(pool, actor->parts, arg, rx, ry, rz);
             changed = -1;
             break;
         }
@@ -3465,7 +3465,7 @@ aim:
             rx = (s16)(root->rotation.vx + rx);
             ry = (s16)(root->rotation.vy + ry);
             rz = (s16)(root->rotation.vz + rz);
-            func_801E59D4(pool, actor->parts, arg, (s16)rx, (s16)ry, (s16)rz);
+            gear_model_turn_node_to(pool, actor->parts, arg, (s16)rx, (s16)ry, (s16)rz);
             changed = -1;
             break;
         }
@@ -3485,7 +3485,7 @@ aim:
             if (offset2 == 0 && offset1 == 0 && offset0 == 0) {
                 break;
             }
-            func_801E59D4(pool, actor->parts, arg, (s16)pitch, (s16)yaw, (s16)roll);
+            gear_model_turn_node_to(pool, actor->parts, arg, (s16)pitch, (s16)yaw, (s16)roll);
             changed = -1;
             break;
         case 0x44: /* spin = three words */
@@ -3583,8 +3583,8 @@ aim:
             actor->h8E += *pc++;
             break;
         case 0x57: /* h8e += the width of the actor of code `arg` */
-            n = func_801E6830(actor, arg, &word) & 0xFF;
-            actor->h8E += func_801E8480(n);
+            n = gear_model_resolve_actor_reference(actor, arg, &word) & 0xFF;
+            actor->h8E += gear_model_get_actor_width(n);
             break;
         case 0x5B: /* set the call depth; 2 runs the queued calls */
             word = actor->depth;
@@ -3601,7 +3601,7 @@ aim:
                 break;
             }
             for (n = 1; n < (s16)word; n++) {
-                func_801E35D0(actor, D_801E8670[actor->queue_source[n - 1]], pool,
+                gear_model_call_entry(actor, gear_model_actors[actor->queue_source[n - 1]], pool,
                               actor->queue_entry[n - 1]);
             }
             return;
@@ -3627,7 +3627,7 @@ aim:
         case 0x62: /* set or add node (word 0)'s transform to words 1-3 (801e7094,
                     * flags `arg`) */
             /* The operands are read in order. */
-            func_801E7094(actor, &actor->parts[(s16)*pc++], arg, (s16)*pc++, (s16)*pc++, (s16)*pc++);
+            gear_model_set_node_transform(actor, &actor->parts[(s16)*pc++], arg, (s16)*pc++, (s16)*pc++, (s16)*pc++);
             break;
         case 0x63: /* start an event animation and jump */
             word = *pc++;
@@ -3657,9 +3657,9 @@ aim:
         case 0x6E: { /* wait while an actor's b38 equals the word's bit 0 */
             Actor *observed;
 
-            entry = func_801E6830(actor, arg, &word);
+            entry = gear_model_resolve_actor_reference(actor, arg, &word);
             word = *pc++;
-            observed = D_801E8670[entry & 0xFF];
+            observed = gear_model_actors[entry & 0xFF];
             if (observed != NULL && observed->b38 == (word & 1)) {
                 pc = start;
                 running = 0;
@@ -3667,11 +3667,11 @@ aim:
             break;
         }
         case 0x6F: /* h3a = the current mask (801e863c), or -1 for `arg` 0 */
-            actor->h3A = arg ? D_801E863C : -1;
+            actor->h3A = arg ? gear_model_current_actor_mask : -1;
             break;
         case 0x70: /* jump and stop when h3a is the current value */
             word = *pc++;
-            if (actor->h3A == D_801E863C) {
+            if (actor->h3A == gear_model_current_actor_mask) {
                 pc = (u16 *)((u8 *)start + (s16)word);
                 running = 0;
             }
@@ -3718,10 +3718,10 @@ aim:
     }
 }
 
-/* Turn a node to (rx, ry, rz): at once when `duration` is below 2, else
+/* 801E59D4: Turn a node to (rx, ry, rz): at once when `duration` is below 2, else
  * through its first attachment (a kind-3 tween of the shortest angle
  * differences over `duration` ticks), taking a pool slot if it has none. */
-void func_801E59D4(EffectPool *pool, ModelPart *part, s32 duration, s32 rx, s32 ry, s32 rz) {
+void gear_model_turn_node_to(EffectPool *pool, ModelPart *part, s32 duration, s32 rx, s32 ry, s32 rz) {
     EffectEntry *tween;
 
     if (duration < 2) {
@@ -3735,7 +3735,7 @@ void func_801E59D4(EffectPool *pool, ModelPart *part, s32 duration, s32 rx, s32 
         if (part->effects[0] != NULL) {
             tween = part->effects[0];
         } else {
-            tween = func_801DF6F0(pool);
+            tween = gear_model_take_tween_slot(pool);
         }
         if (tween != NULL) {
             tween->used = 1;
@@ -3767,11 +3767,11 @@ void func_801E59D4(EffectPool *pool, ModelPart *part, s32 duration, s32 rx, s32 
     }
 }
 
-/* Start a homing turn (kind `type` + 7: 7 pitch and yaw, 8 yaw) of a node
+/* 801E5B50: Start a homing turn (kind `type` + 7: 7 pitch and yaw, 8 yaw) of a node
  * towards (x, y, z) in its first attachment: each tick it turns by at most
  * value 1 + (distance + time) * value 2 / value 0 (the first distance + 1),
  * time growing by `duration`, until released. */
-void func_801E5B50(EffectPool *pool, ModelPart *part, s32 type, s32 arg3, s32 arg4, s32 duration,
+void gear_model_start_homing_turn(EffectPool *pool, ModelPart *part, s32 type, s32 limit, s32 gain, s32 duration,
                    s32 x, s32 y, s32 z) {
     EffectEntry *tween;
     s32 dx;
@@ -3781,7 +3781,7 @@ void func_801E5B50(EffectPool *pool, ModelPart *part, s32 type, s32 arg3, s32 ar
     if (part->effects[0] != NULL) {
         tween = part->effects[0];
     } else {
-        tween = func_801DF6F0(pool);
+        tween = gear_model_take_tween_slot(pool);
     }
     if (tween != NULL) {
         tween->used = 1;
@@ -3792,8 +3792,8 @@ void func_801E5B50(EffectPool *pool, ModelPart *part, s32 type, s32 arg3, s32 ar
         dy = y - part->translation[1];
         dz = z - part->translation[2];
         tween->params[0] = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
-        tween->params[1] = arg3;
-        tween->params[2] = arg4;
+        tween->params[1] = limit;
+        tween->params[2] = gain;
         tween->params[3] = x;
         tween->params[4] = y;
         tween->params[5] = z;
@@ -3803,9 +3803,9 @@ void func_801E5B50(EffectPool *pool, ModelPart *part, s32 type, s32 arg3, s32 ar
     }
 }
 
-/* Start an animation (looping to its loop frame when `loop`); none without
+/* 801E5C74: Start an animation (looping to its loop frame when `loop`); none without
  * frames. */
-void func_801E5C74(Actor *actor, Animation *anim, s32 loop) {
+void gear_model_start_animation(Actor *actor, Animation *anim, s32 loop) {
     if (anim->length != 0) {
         actor->anim_state = 0;
         if (loop) {
@@ -3821,10 +3821,10 @@ void func_801E5C74(Actor *actor, Animation *anim, s32 loop) {
     actor->anim_state = -1;
 }
 
-/* The sound bank id (in the high half) of source: 0 the system bank, 1 and 2
+/* 801E5CD8: The sound bank id (in the high half) of source: 0 the system bank, 1 and 2
  * those of the actor's sound blocks (800AE220 without its source 3, the bank
  * battle_sound_bank_of_event_script). */
-s32 func_801E5CD8(Actor *actor, s32 source) {
+s32 gear_model_get_sound_bank_base(Actor *actor, s32 source) {
     if (source == 0) {
         return sprite_script_sound_bank->bank << 16;
     } else if (source != 1) {
@@ -3836,14 +3836,14 @@ s32 func_801E5CD8(Actor *actor, s32 source) {
     }
 }
 
-/* Run an actor's animation events of the current frame (anchors and their
+/* 801E5D44: Run an actor's animation events of the current frame (anchors and their
  * light columns, channel stops, node visibility, calls into the masked
  * actors and image animations), then advance the frame, looping at the
  * loop frame. The events are the battle's records (800AE2A4); anim_frame
  * counts them and anim_state is the frame. The call event (type 8) reads a
  * local the original never sets; it is spilled, so it is loaded from its
  * stack slot. */
-void func_801E5D44(Actor *actor, EffectPool *pool, s32 arg2) {
+void gear_model_run_animation_events(Actor *actor, EffectPool *pool, s32 unused_buffer) {
     u16 unset;
     AnimEvent *event;
     AnimEvent *call;
@@ -3881,28 +3881,28 @@ void func_801E5D44(Actor *actor, EffectPool *pool, s32 arg2) {
                 if (event->light.light < 2) {
                     anchor = event;
                     if (anchor->light.free) {
-                        D_801E8648[anchor->light.light].object = -1;
+                        gear_model_anchors[anchor->light.light].object = -1;
                     } else {
-                        D_801E8648[anchor->light.light].object = actor->index;
+                        gear_model_anchors[anchor->light.light].object = actor->index;
                     }
-                    D_801E8648[anchor->light.light].part = anchor->light.part;
-                    D_801E8644->m[0][anchor->light.light + 1] = anchor->light.r << 4;
-                    D_801E8644->m[1][anchor->light.light + 1] = anchor->light.g << 4;
-                    D_801E8644->m[2][anchor->light.light + 1] = anchor->light.b << 4;
-                    D_801E8648[anchor->light.light].offset.vx = anchor->light.offset[0];
-                    D_801E8648[anchor->light.light].offset.vy = anchor->light.offset[1];
-                    D_801E8648[anchor->light.light].offset.vz = anchor->light.offset[2];
-                    D_801E8648[anchor->light.light].active = anchor->light.active;
+                    gear_model_anchors[anchor->light.light].part = anchor->light.part;
+                    gear_model_color_matrix->m[0][anchor->light.light + 1] = anchor->light.r << 4;
+                    gear_model_color_matrix->m[1][anchor->light.light + 1] = anchor->light.g << 4;
+                    gear_model_color_matrix->m[2][anchor->light.light + 1] = anchor->light.b << 4;
+                    gear_model_anchors[anchor->light.light].offset.vx = anchor->light.offset[0];
+                    gear_model_anchors[anchor->light.light].offset.vy = anchor->light.offset[1];
+                    gear_model_anchors[anchor->light.light].offset.vz = anchor->light.offset[2];
+                    gear_model_anchors[anchor->light.light].active = anchor->light.active;
                 }
                 actor->anim_pos += 0x12;
             } else {
-                D_801E8648[event->light.light].active = 0;
+                gear_model_anchors[event->light.light].active = 0;
                 actor->anim_pos += 6;
             }
             break;
         case 3:
         case 4: /* stop a channel (the battle's colour fade events) */
-            func_801E0844(&actor->channels[event->channel.channel], arg2);
+            gear_model_mark_record_free(&actor->channels[event->channel.channel], unused_buffer);
             if (event->channel.on) {
                 actor->anim_pos += 0x1C;
             } else {
@@ -3923,23 +3923,23 @@ void func_801E5D44(Actor *actor, EffectPool *pool, s32 arg2) {
             /* The original tests a local it never sets. */
             call = event;
             state = unset;
-            saved_index = D_801E86B0;
-            saved_mask = D_801E863C;
+            saved_index = gear_model_current_actor_index;
+            saved_mask = gear_model_current_actor_mask;
             bit = 1 << saved_index;
-            for (i = 0, other = D_801E8670; i < 8; i++, other++) {
+            for (i = 0, other = gear_model_actors; i < 8; i++, other++) {
                 if ((actor->mask >> i) & 1) {
                     entry = call->slots.scripts[0];
                     if (*other != NULL && entry > 0) {
                         if (state != 0) {
-                            func_801E8394(actor, i, bit, entry);
+                            gear_model_select_and_call_source_entry(actor, i, bit, entry);
                         } else {
-                            func_801E8330(i, bit, entry);
+                            gear_model_select_and_call_entry(i, bit, entry);
                         }
                     }
                 }
             }
-            D_801E86B0 = saved_index;
-            D_801E863C = saved_mask;
+            gear_model_current_actor_index = saved_index;
+            gear_model_current_actor_mask = saved_mask;
             actor->anim_pos += 0xA;
             break;
         case 9: /* start or stop (6 bytes) an image animation */
@@ -3952,9 +3952,9 @@ void func_801E5D44(Actor *actor, EffectPool *pool, s32 arg2) {
                     }
                     m = NULL;
                     if ((event->image.mode & 0x7F) >= 4) {
-                        m = D_801E8644;
+                        m = gear_model_color_matrix;
                     }
-                    curve = func_801E34BC(event->image.curve);
+                    curve = gear_model_get_frame_curve(event->image.curve);
                     x = event->image.x;
                     y = event->image.y;
                     x2 = event->image.x2;
@@ -3971,14 +3971,14 @@ void func_801E5D44(Actor *actor, EffectPool *pool, s32 arg2) {
                             y2 += actor->shift_y;
                         }
                     }
-                    func_801E0A00(&actor->images[event->image.anim], target, event->image.mode & 0x7F,
+                    gear_model_start_image_anim(&actor->images[event->image.anim], target, event->image.mode & 0x7F,
                                   event->image.field12 | 0x700, (ColorRow *)m, x, y, 0, x2, y2, z2,
                                   x, y, event->image.field13, event->image.field14, event->image.field16,
                                   event->image.field18, event->image.field1A, curve);
                 }
                 actor->anim_pos += 0x1C;
             } else {
-                func_801E165C(&actor->images[event->image.anim]);
+                gear_model_stop_image_anim(&actor->images[event->image.anim]);
                 actor->anim_pos += 6;
             }
             break;
@@ -3993,13 +3993,13 @@ void func_801E5D44(Actor *actor, EffectPool *pool, s32 arg2) {
     }
 }
 
-/* Stop an actor's animation. */
-void func_801E632C(Actor *actor) {
+/* 801E632C: Stop an actor's animation. */
+void gear_model_stop_animation(Actor *actor) {
     actor->anim_state = -1;
 }
 
-/* Distance from an actor's root to its target. */
-s32 func_801E6338(Actor *actor) {
+/* 801E6338: Distance from an actor's root to its target. */
+s32 gear_model_get_target_distance(Actor *actor) {
     ModelPart *root;
     s32 dx;
     s32 dy;
@@ -4012,10 +4012,10 @@ s32 func_801E6338(Actor *actor) {
     return SquareRoot0(dx * dx + dy * dy + dz * dz);
 }
 
-/* Aim an actor at a point of another actor's node (`aim_actor` is a
+/* 801E63A8: Aim an actor at a point of another actor's node (`aim_actor` is a
  * reference: 0xff the mask's lowest actor, 0xfe the current one, 1-0x7f an
  * index + 1), updating its target and a running movement tween. */
-void func_801E63A8(Actor *actor) {
+void gear_model_update_aim_target(Actor *actor) {
     VECTOR world;
     EffectEntry *tween;
     Actor *other;
@@ -4031,7 +4031,7 @@ void func_801E63A8(Actor *actor) {
         }
     }
     if (actor->aim_actor == 0xFE) {
-        index = D_801E86B0;
+        index = gear_model_current_actor_index;
     }
     if (actor->aim_actor == 0xFD) {
         index = actor->index;
@@ -4045,7 +4045,7 @@ void func_801E63A8(Actor *actor) {
     if (actor->aim_actor > 0 && actor->aim_actor < 0x80) {
         index = actor->aim_actor - 1;
     }
-    other = D_801E8670[index];
+    other = gear_model_actors[index];
     if (other != NULL && index != actor->index) {
         m = SCRATCH_MATRIX;
         if (actor->aim_node != 0) {
@@ -4070,9 +4070,9 @@ void func_801E63A8(Actor *actor) {
     }
 }
 
-/* Hide node `index` of `parts` and its descendants, showing the same nodes of
+/* 801E6578: Hide node `index` of `parts` and its descendants, showing the same nodes of
  * `other`, and release their attachments. */
-void func_801E6578(EffectPool *pool, s32 index, ModelPart *parts, ModelPart *other) {
+void gear_model_transfer_subtree(EffectPool *pool, s32 index, ModelPart *parts, ModelPart *other) {
     ModelPart *child;
     s32 count;
     s32 i;
@@ -4081,24 +4081,24 @@ void func_801E6578(EffectPool *pool, s32 index, ModelPart *parts, ModelPart *oth
     count = parts->index;
     parts[index].visible = 0;
     other[index].visible = 1;
-    func_801DF7A8(pool, parts[index].effects[0]);
+    gear_model_free_tween_slot(pool, parts[index].effects[0]);
     parts[index].effects[0] = NULL;
-    func_801DF7A8(pool, parts[index].effects[1]);
+    gear_model_free_tween_slot(pool, parts[index].effects[1]);
     parts[index].effects[1] = NULL;
-    func_801DF7A8(pool, parts[index].effects[2]);
+    gear_model_free_tween_slot(pool, parts[index].effects[2]);
     parts[index].effects[2] = NULL;
     for (i = 1; i < count;) {
         child++;
         i++;
         if (child->parent == &parts[index]) {
-            func_801E6578(pool, child->index, parts, other);
+            gear_model_transfer_subtree(pool, child->index, parts, other);
         }
     }
 }
 
-/* Move the visibility of every shown node of `parts` to the same node of
+/* 801E6668: Move the visibility of every shown node of `parts` to the same node of
  * `other`. */
-void func_801E6668(ModelPart *parts, ModelPart *other) {
+void gear_model_transfer_visible_nodes(ModelPart *parts, ModelPart *other) {
     u16 count;
     s32 i;
 
@@ -4113,9 +4113,9 @@ void func_801E6668(ModelPart *parts, ModelPart *other) {
     }
 }
 
-/* The cosine-like ratio of `dir` to the vector made from `a` and `b`, scaled
+/* 801E66BC: The cosine-like ratio of `dir` to the vector made from `a` and `b`, scaled
  * by 16 * 256 and divided by `divisor`. */
-s16 func_801E66BC(VECTOR *dir, void *a, void *b, s32 divisor) {
+s16 gear_model_project_on_cross_axis(VECTOR *dir, void *a, void *b, s32 divisor) {
     VECTOR v;
     s32 dot;
     s32 length;
@@ -4126,25 +4126,25 @@ s16 func_801E66BC(VECTOR *dir, void *a, void *b, s32 divisor) {
     return (((dot * 16) / length) << 8) / divisor;
 }
 
-/* The lowest set bit of D_801E863C's low byte (8 when none). */
-s32 func_801E67F8(void) {
+/* 801E67F8: The lowest set bit of gear_model_current_actor_mask's low byte (8 when none). */
+s32 gear_model_find_lowest_masked_actor(void) {
     s32 i;
 
     for (i = 0; i < 8; i++) {
-        if ((D_801E863C >> i) & 1) {
+        if ((gear_model_current_actor_mask >> i) & 1) {
             break;
         }
     }
     return i;
 }
 
-/* The actor index (returned) and bit mask of reference `ref` (0xff: the mask's lowest actor,
+/* 801E6830: The actor index (returned) and bit mask of reference `ref` (0xff: the mask's lowest actor,
  * 0xfe: the current actor, 0xfd/0xf9: this actor, ...). */
-s32 func_801E6830(Actor *actor, u8 ref, u16 *mask) {
+s32 gear_model_resolve_actor_reference(Actor *actor, u8 ref, u16 *mask) {
     if (ref == 0xFF) {
-        ref = func_801E67F8();
+        ref = gear_model_find_lowest_masked_actor();
     } else if (ref == 0xFE) {
-        ref = D_801E86B0;
+        ref = gear_model_current_actor_index;
     } else if (ref == 0xFD || ref == 0xF9) {
         ref = actor->index;
     } else if (ref == 0xFC) {
@@ -4160,9 +4160,9 @@ s32 func_801E6830(Actor *actor, u8 ref, u16 *mask) {
     return ref;
 }
 
-/* Script variable `ref` (0xfe/0xff: the actor's default reference, whose bit
+/* 801E6910: Script variable `ref` (0xfe/0xff: the actor's default reference, whose bit
  * 7 is returned in `*flag`): a local below 0x40, else a global. */
-s32 func_801E6910(Actor *actor, u8 ref, s32 *flag) {
+s32 gear_model_get_actor_animation(Actor *actor, u8 ref, s32 *flag) {
     *flag = 0;
     if (ref >= 0xFE) {
         ref = actor->reference & 0x7F;
@@ -4174,12 +4174,12 @@ s32 func_801E6910(Actor *actor, u8 ref, s32 *flag) {
     return actor->globals[ref - 0x3F];
 }
 
-/* Start a tween (kind `mode` + 3) of a node's rotation (flags & 7 = 0),
+/* 801E6974: Start a tween (kind `mode` + 3) of a node's rotation (flags & 7 = 0),
  * position (1) or scale from (x0, y0, z0) to (x1, y1, z1), both optionally
  * relative to the current values (flag bits 5 and 6; mode 0: the end is a
  * target, else a delta); modes below 2 also set the start at once. With
  * flag bit 7 the node's descendants get the same tween. */
-void func_801E6974(Actor *actor, EffectPool *pool, ModelPart *part, u8 flags, u8 mode, u8 tag,
+void gear_model_start_node_tween(Actor *actor, EffectPool *pool, ModelPart *part, u8 flags, u8 mode, u8 tag,
                    u8 smooth, s16 x0, s16 y0, s16 z0, s16 x1, s16 y1, s16 z1, s16 duration) {
     EffectEntry *tween;
     ModelPart *child;
@@ -4200,7 +4200,7 @@ void func_801E6974(Actor *actor, EffectPool *pool, ModelPart *part, u8 flags, u8
     } else {
         tween = part->effects[2];
     }
-    if (tween != NULL || (tween = func_801DF6F0(pool)) != NULL) {
+    if (tween != NULL || (tween = gear_model_take_tween_slot(pool)) != NULL) {
         tween->used = 1;
         tween->field1 = smooth;
         tween->kind = mode + 3;
@@ -4285,15 +4285,15 @@ void func_801E6974(Actor *actor, EffectPool *pool, ModelPart *part, u8 flags, u8
         for (i = 1; i < actor->parts->index; i++) {
             child++;
             if (child->parent == part) {
-                func_801E6974(actor, pool, child, flags, mode, tag, smooth, x0, y0, z0, x1, y1, z1,
+                gear_model_start_node_tween(actor, pool, child, flags, mode, tag, smooth, x0, y0, z0, x1, y1, z1,
                               duration);
             }
         }
     }
 }
 
-/* Show or hide (flag bit 0) a node, and with bit 7 its descendants. */
-void func_801E6D94(Actor *actor, ModelPart *part, s32 flags) {
+/* 801E6D94: Show or hide (flag bit 0) a node, and with bit 7 its descendants. */
+void gear_model_show_node(Actor *actor, ModelPart *part, s32 flags) {
     ModelPart *child;
     s32 i;
 
@@ -4303,14 +4303,14 @@ void func_801E6D94(Actor *actor, ModelPart *part, s32 flags) {
         for (i = 1; i < actor->parts->index; i++) {
             child++;
             if (child->parent == part) {
-                func_801E6D94(actor, child, flags);
+                gear_model_show_node(actor, child, flags);
             }
         }
     }
 }
 
-/* Create a resident sprite linked to an actor node. */
-void func_801E6E48(SpriteSource *source, s32 index, SVECTOR *position, s16 value, s16 scale,
+/* 801E6E48: Create a resident sprite linked to an actor node. */
+void gear_model_create_linked_sprite(SpriteSource *source, s32 index, SVECTOR *position, s16 value, s16 scale,
                    SpriteCommand *command, Actor *actor) {
     SpriteTask *sprite;
     SpriteLink *link;
@@ -4324,7 +4324,7 @@ void func_801E6E48(SpriteSource *source, s32 index, SVECTOR *position, s16 value
     link->node = command->part;
     if (command->follow) {
         link->update = task_get_update_callback(&sprite->task);
-        task_set_update_callback(&sprite->task, func_801E6F64);
+        task_set_update_callback(&sprite->task, gear_model_update_linked_sprite);
         link->offset.vx = command->offset[0];
         link->offset.vy = command->offset[1];
         link->offset.vz = command->offset[2];
@@ -4332,9 +4332,9 @@ void func_801E6E48(SpriteSource *source, s32 index, SVECTOR *position, s16 value
     }
 }
 
-/* Sprite update: place the sprite at its offset through its actor node,
+/* 801E6F64: Sprite update: place the sprite at its offset through its actor node,
  * then run its own update. */
-void func_801E6F64(Task *node) {
+void gear_model_update_linked_sprite(Task *node) {
     SpriteTask *sprite = (SpriteTask *)node;
     SpriteLink *link = (SpriteLink *)((u8 *)sprite + (s16)sprite->sprite.size);
     MATRIX *m = SCRATCH_MATRIX;
@@ -4359,9 +4359,9 @@ void func_801E6F64(Task *node) {
     link->update(&sprite->task);
 }
 
-/* Set or (flag bit 5) add to a node's rotation (mode 0), position (1) or
+/* 801E7094: Set or (flag bit 5) add to a node's rotation (mode 0), position (1) or
  * scale, and with bit 7 its descendants'. */
-void func_801E7094(Actor *actor, ModelPart *part, u8 flags, s16 x, s16 y, s16 z) {
+void gear_model_set_node_transform(Actor *actor, ModelPart *part, u8 flags, s16 x, s16 y, s16 z) {
     ModelPart *child;
     s32 i;
 
@@ -4403,14 +4403,14 @@ void func_801E7094(Actor *actor, ModelPart *part, u8 flags, s16 x, s16 y, s16 z)
         for (i = 1; i < actor->parts->index; i++) {
             child++;
             if (child->parent == part) {
-                func_801E7094(actor, child, flags, x, y, z);
+                gear_model_set_node_transform(actor, child, flags, x, y, z);
             }
         }
     }
 }
 
-/* Put an actor's root at its ground height unless it is held (b36). */
-void func_801E7298(Actor *actor) {
+/* 801E7298: Put an actor's root at its ground height unless it is held (b36). */
+void gear_model_apply_root_height(Actor *actor) {
     VECTOR unused;
     SVECTOR pos;
 
@@ -4420,13 +4420,13 @@ void func_801E7298(Actor *actor) {
     }
 }
 
-/* The world matrix of node `node` of actor `index` (its root's transform for
+/* 801E72CC: The world matrix of node `node` of actor `index` (its root's transform for
  * node 0). */
-void func_801E72CC(MATRIX *out, MATRIX *unused, s32 index, s32 node) {
+void gear_model_get_node_matrix(MATRIX *out, MATRIX *unused, s32 index, s32 node) {
     MATRIX m;
     Actor *actor;
 
-    actor = D_801E8670[index];
+    actor = gear_model_actors[index];
     if (actor != NULL) {
         if (node != 0) {
             CompMatrix(&actor->parts->transform, &actor->parts[node].world, out);
@@ -4436,41 +4436,41 @@ void func_801E72CC(MATRIX *out, MATRIX *unused, s32 index, s32 node) {
     }
 }
 
-/* Set flag D_801E85CC from bit 0. */
-void func_801E7378(s32 value) {
-    D_801E85CC = value & 1;
+/* 801E7378: Set flag gear_model_instant_keyframes from bit 0. */
+void gear_model_set_instant_keyframes(s32 value) {
+    gear_model_instant_keyframes = value & 1;
 }
 
-/* Reset the module state: the tween pool of `slot_count` slots, the 16-particle
+/* 801E738C: Reset the module state: the tween pool of `slot_count` slots, the 16-particle
  * pool and the state tables. */
-void func_801E738C(s32 slot_count) {
+void gear_model_init(s32 slot_count) {
     s32 i;
     s32 j;
     s32 offset;
 
-    D_801E8640 = 0;
-    D_801E869C = 0;
-    func_801DF5F4(&D_801E86A8, slot_count);
-    func_801E0064(&D_801E86A0, 0x10);
+    gear_model_pending_half_frames = 0;
+    gear_model_wind_phase = 0;
+    gear_model_alloc_tween_pool(&gear_model_tween_pool, slot_count);
+    gear_model_alloc_particle_pool(&gear_model_particle_pool, 0x10);
     for (i = 9; i >= 0; i--) {
-        D_801E8670[i] = 0;
+        gear_model_actors[i] = 0;
     }
     for (j = 7; j >= 0; j--) {
-        D_801E85F4[j].models = NULL;
+        gear_model_model_lists[j].models = NULL;
     }
     /* Both anchors' active flags, by byte offset. */
     for (offset = sizeof(Tracker); offset >= 0; offset -= sizeof(Tracker)) {
-        *(s16 *)((u8 *)&D_801E8648[0].active + offset) = 0;
+        *(s16 *)((u8 *)&gear_model_anchors[0].active + offset) = 0;
     }
 }
 
-/* Create actor `index` (when its slot is free) from its files: relocate them
+/* 801E742C: Create actor `index` (when its slot is free) from its files: relocate them
  * (unless `flags` bit 0), load its sound bank (unless bit 2), copy its model
  * group into a free model list and build the hierarchy at `pos`, set up its
  * shadow quads, image animations and surfaces, reset its script (unless bit
  * 6) and keep a compacted copy of its model group (unless bit 1).
  * The model list is attached even when the files were already relocated. */
-void func_801E742C(s32 index, u16 flags, ActorScript *script, ObjectModelFile *file, s16 x, s16 y,
+void gear_model_create_actor(s32 index, u16 flags, ActorScript *script, ObjectModelFile *file, s16 x, s16 y,
                    s16 z, s16 w, s16 *pos) {
     Actor *actor;
     ObjectHeader *info;
@@ -4493,7 +4493,7 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ObjectModelFile *f
     POLY_FT4 *prim;
 
     heap_select_owner_tag(4, 0);
-    if (index >= 10 || D_801E8670[index] != NULL) {
+    if (index >= 10 || gear_model_actors[index] != NULL) {
         return;
     }
     actor = heap_alloc(sizeof(Actor), 0);
@@ -4520,7 +4520,7 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ObjectModelFile *f
     images = file->images;
     group = file->models;
     hierarchy = file->hierarchy;
-    D_801E8670[index] = actor;
+    gear_model_actors[index] = actor;
     actor->size[0] = desc.header->size[0];
     actor->size[1] = desc.header->size[1];
     actor->size[2] = desc.header->size[2];
@@ -4537,24 +4537,24 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ObjectModelFile *f
             i = 1;
         }
         model_load_image_list(images, (s16)i, x, y, (s16)i, z, w);
-        D_801E8638 = heap_alloc(size, 1);
-        memcpy(D_801E8638, group, size);
-        for (D_801E8634 = 0; D_801E8634 < 8; D_801E8634++) {
-            if (D_801E85F4[D_801E8634].models == NULL) {
+        gear_model_group_copy = heap_alloc(size, 1);
+        memcpy(gear_model_group_copy, group, size);
+        for (gear_model_model_list_index = 0; gear_model_model_list_index < 8; gear_model_model_list_index++) {
+            if (gear_model_model_lists[gear_model_model_list_index].models == NULL) {
                 break;
             }
         }
-        func_801DC22C(D_801E8638, &D_801E85F4[D_801E8634]);
+        gear_model_build_model_list(gear_model_group_copy, &gear_model_model_lists[gear_model_model_list_index]);
     }
-    actor->models = &D_801E85F4[D_801E8634];
+    actor->models = &gear_model_model_lists[gear_model_model_list_index];
     if (!(flags & 0x40)) {
         if (actor->flags & 4) {
-            actor->parts = func_801DC2D0(actor->models, hierarchy, 2, 0, 0, 0, 0, 0);
+            actor->parts = gear_model_build_hierarchy(actor->models, hierarchy, 2, 0, 0, 0, 0, 0);
         } else {
-            actor->parts = func_801DC2D0(actor->models, hierarchy, 2, 1, x, y, z, w);
+            actor->parts = gear_model_build_hierarchy(actor->models, hierarchy, 2, 1, x, y, z, w);
         }
     } else {
-        actor->parts = func_801DC2D0(actor->models, hierarchy, 0, 0, 0, 0, 0, 0);
+        actor->parts = gear_model_build_hierarchy(actor->models, hierarchy, 0, 0, 0, 0, 0, 0);
     }
     if (pos != NULL) {
         actor->parts->translation[0] = pos[0];
@@ -4594,7 +4594,7 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ObjectModelFile *f
     }
     actor->scale = desc.header->scale;
     actor->channel_count = desc.header->channelCount;
-    func_801E8510(actor);
+    gear_model_alloc_channels(actor);
     actor->imageCount = desc.header->imageAnimCount;
     if (actor->imageCount != 0) {
         actor->images = heap_alloc(actor->imageCount * sizeof(ImageAnim), 0);
@@ -4614,7 +4614,7 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ObjectModelFile *f
             count = desc.p[17];
             record->h0 = *desc.p++;
             /* The parameters are read in order. */
-            func_801E1A14(record, info->meshData[i], *desc.p++, *desc.p++, *desc.p++,
+            gear_model_build_surface(record, info->meshData[i], *desc.p++, *desc.p++, *desc.p++,
                           *desc.p++, *desc.p++, count, x + *desc.p++, y + *desc.p++, *desc.p++,
                           *desc.p++, z + *desc.p++, w, *desc.p++, *desc.p++, *desc.p++, *desc.p++,
                           *desc.p++, *desc.p);
@@ -4634,178 +4634,178 @@ void func_801E742C(s32 index, u16 flags, ActorScript *script, ObjectModelFile *f
     if (!(flags & 0x40)) {
         block = script->script;
         actor->ownerB0 = script->owner;
-        func_801E3534(actor, &D_801E86A8, block->entries, block->locals);
-        func_801E35D0(actor, actor, &D_801E86A8, 0);
+        gear_model_reset_actor_script(actor, &gear_model_tween_pool, block->entries, block->locals);
+        gear_model_call_entry(actor, actor, &gear_model_tween_pool, 0);
     }
     if (!(flags & 2)) {
-        model_trim_group((ModelGroup *)D_801E8638);
-        model_unrelocate_group((ModelGroup *)D_801E8638);
-        size = heap_get_block_size(D_801E8638);
+        model_trim_group((ModelGroup *)gear_model_group_copy);
+        model_unrelocate_group((ModelGroup *)gear_model_group_copy);
+        size = heap_get_block_size(gear_model_group_copy);
         compact = heap_alloc(size, 0);
-        memcpy(compact, D_801E8638, size);
-        heap_free(D_801E8638);
-        func_801DCE18(actor->models, 0);
-        func_801DC22C(compact, actor->models);
+        memcpy(compact, gear_model_group_copy, size);
+        heap_free(gear_model_group_copy);
+        gear_model_free_model_list(actor->models, 0);
+        gear_model_build_model_list(compact, actor->models);
         actor->group = compact;
     } else {
         actor->group = NULL;
     }
 }
 
-/* Advance the scene by the elapsed half-frames: step every actor, carry the
+/* 801E7D14: Advance the scene by the elapsed half-frames: step every actor, carry the
  * carried ones, place the anchors, then draw the actors and particles. */
-void func_801E7D14(MATRIX *m, MATRIX *light, u32 *ot, s32 buffer, s32 elapsed) {
+void gear_model_step_and_draw(MATRIX *m, MATRIX *light, u32 *ot, s32 buffer, s32 elapsed) {
     SVECTOR unused;
     Actor *actor;
     s32 steps;
     s32 i;
 
     steps = 0;
-    D_801E8640 += elapsed + 1;
-    if (D_801E8640 >= 7) {
-        D_801E8640 = 6;
+    gear_model_pending_half_frames += elapsed + 1;
+    if (gear_model_pending_half_frames >= 7) {
+        gear_model_pending_half_frames = 6;
     }
-    while (D_801E8640 >= 2) {
-        D_801E8640 -= 2;
+    while (gear_model_pending_half_frames >= 2) {
+        gear_model_pending_half_frames -= 2;
         steps++;
     }
-    D_801E869C += steps * 56;
-    D_801E8698 = (gpu_get_cos(D_801E869C) + 0x1000) / 800 + 4;
+    gear_model_wind_phase += steps * 56;
+    gear_model_wind_strength = (gpu_get_cos(gear_model_wind_phase) + 0x1000) / 800 + 4;
     for (i = 0; i < 10; i++) {
-        if (D_801E8670[i] != NULL) {
-            D_801E8670[i]->previous[0] = D_801E8670[i]->parts->translation[0];
-            D_801E8670[i]->previous[1] = D_801E8670[i]->parts->translation[1];
-            D_801E8670[i]->previous[2] = D_801E8670[i]->parts->translation[2];
-            func_801E36BC(D_801E8670[i], &D_801E86A8, steps, buffer, 1);
+        if (gear_model_actors[i] != NULL) {
+            gear_model_actors[i]->previous[0] = gear_model_actors[i]->parts->translation[0];
+            gear_model_actors[i]->previous[1] = gear_model_actors[i]->parts->translation[1];
+            gear_model_actors[i]->previous[2] = gear_model_actors[i]->parts->translation[2];
+            gear_model_step_actor(gear_model_actors[i], &gear_model_tween_pool, steps, buffer, 1);
         }
     }
     for (i = 0; i < 10; i++) {
-        actor = D_801E8670[i];
+        actor = gear_model_actors[i];
         if (actor != NULL && actor->parent < 0xFF) {
-            func_801E37D0(actor);
+            gear_model_carry_actor(actor);
         }
     }
-    func_801E1880(D_801E8670);
-    SetColorMatrix(D_801E8644);
+    gear_model_place_anchors(gear_model_actors);
+    SetColorMatrix(gear_model_color_matrix);
     for (i = 0; i < 10; i++) {
-        if (D_801E8670[i] != NULL) {
-            D_801E8670[i]->moved[0] = D_801E8670[i]->previous[0] - D_801E8670[i]->parts->translation[0];
-            D_801E8670[i]->moved[1] = D_801E8670[i]->previous[1] - D_801E8670[i]->parts->translation[1];
-            D_801E8670[i]->moved[2] = D_801E8670[i]->previous[2] - D_801E8670[i]->parts->translation[2];
-            func_801DCEC8(D_801E8670[i], m, light, 1, 1, ot, buffer);
+        if (gear_model_actors[i] != NULL) {
+            gear_model_actors[i]->moved[0] = gear_model_actors[i]->previous[0] - gear_model_actors[i]->parts->translation[0];
+            gear_model_actors[i]->moved[1] = gear_model_actors[i]->previous[1] - gear_model_actors[i]->parts->translation[1];
+            gear_model_actors[i]->moved[2] = gear_model_actors[i]->previous[2] - gear_model_actors[i]->parts->translation[2];
+            gear_model_draw_actor(gear_model_actors[i], m, light, 1, 1, ot, buffer);
         }
     }
-    func_801E0398(&D_801E86A0, m, steps, ot, buffer);
+    gear_model_draw_particles(&gear_model_particle_pool, m, steps, ot, buffer);
 }
 
-/* Release every actor and both pools. */
-void func_801E7FD4(void) {
+/* 801E7FD4: Release every actor and both pools. */
+void gear_model_shut_down(void) {
     s32 i;
 
     for (i = 0; i < 10; i++) {
-        func_801E8030(i);
+        gear_model_free_actor(i);
     }
-    func_801DF668(&D_801E86A8);
-    func_801E00DC(&D_801E86A0);
+    gear_model_free_tween_pool(&gear_model_tween_pool);
+    gear_model_free_particle_pool(&gear_model_particle_pool);
 }
 
-/* Release actor `index`: its model group, sound bank, hierarchy (actors 8
+/* 801E8030: Release actor `index`: its model group, sound bank, hierarchy (actors 8
  * and 9 share their models), channels and records. */
-void func_801E8030(s32 index) {
+void gear_model_free_actor(s32 index) {
     s32 i;
 
-    if (D_801E8670[index] != NULL) {
-        if (D_801E8670[index]->group != NULL) {
-            heap_free(D_801E8670[index]->group);
-            func_801DCE18(D_801E8670[index]->models, 1);
+    if (gear_model_actors[index] != NULL) {
+        if (gear_model_actors[index]->group != NULL) {
+            heap_free(gear_model_actors[index]->group);
+            gear_model_free_model_list(gear_model_actors[index]->models, 1);
         }
-        if (D_801E8670[index]->b62) {
-            sound_remove_effect_bank(D_801E8670[index]->ownerB0->bank);
+        if (gear_model_actors[index]->b62) {
+            sound_remove_effect_bank(gear_model_actors[index]->ownerB0->bank);
         }
-        if (D_801E8670[index]->blockAC != NULL) {
-            heap_free(D_801E8670[index]->blockAC);
+        if (gear_model_actors[index]->blockAC != NULL) {
+            heap_free(gear_model_actors[index]->blockAC);
         }
         if (index != 8 && index != 9) {
-            if (D_801E8670[index]->parts != NULL) {
-                func_801DFE8C(&D_801E86A8, D_801E8670[index]->parts);
-                func_801DFF78(&D_801E86A8, D_801E8670[index]->parts, 0xFF);
-                func_801DCD8C(D_801E8670[index]->parts);
-                D_801E8670[index]->models = NULL;
-                D_801E8670[index]->parts = NULL;
+            if (gear_model_actors[index]->parts != NULL) {
+                gear_model_release_unkept_tweens(&gear_model_tween_pool, gear_model_actors[index]->parts);
+                gear_model_release_tagged_tweens(&gear_model_tween_pool, gear_model_actors[index]->parts, 0xFF);
+                gear_model_free_hierarchy(gear_model_actors[index]->parts);
+                gear_model_actors[index]->models = NULL;
+                gear_model_actors[index]->parts = NULL;
             }
-        } else if (D_801E8670[index]->parts != NULL) {
-            func_801DFE8C(&D_801E86A8, D_801E8670[index]->parts);
-            func_801DFF78(&D_801E86A8, D_801E8670[index]->parts, 0xFF);
-            heap_free(D_801E8670[index]->parts);
+        } else if (gear_model_actors[index]->parts != NULL) {
+            gear_model_release_unkept_tweens(&gear_model_tween_pool, gear_model_actors[index]->parts);
+            gear_model_release_tagged_tweens(&gear_model_tween_pool, gear_model_actors[index]->parts, 0xFF);
+            heap_free(gear_model_actors[index]->parts);
         }
-        if (D_801E8670[index]->channel_count != 0) {
-            heap_free(D_801E8670[index]->channels);
+        if (gear_model_actors[index]->channel_count != 0) {
+            heap_free(gear_model_actors[index]->channels);
         }
-        if (D_801E8670[index]->imageCount != 0) {
-            for (i = 0; i < D_801E8670[index]->imageCount; i++) {
-                func_801E165C(&D_801E8670[index]->images[i]);
+        if (gear_model_actors[index]->imageCount != 0) {
+            for (i = 0; i < gear_model_actors[index]->imageCount; i++) {
+                gear_model_stop_image_anim(&gear_model_actors[index]->images[i]);
             }
-            heap_free(D_801E8670[index]->images);
+            heap_free(gear_model_actors[index]->images);
         }
-        if (D_801E8670[index]->surfaceCount != 0) {
-            for (i = 0; i < D_801E8670[index]->surfaceCount; i++) {
-                func_801E3438(&D_801E8670[index]->surfaces[i]);
+        if (gear_model_actors[index]->surfaceCount != 0) {
+            for (i = 0; i < gear_model_actors[index]->surfaceCount; i++) {
+                gear_model_free_surface(&gear_model_actors[index]->surfaces[i]);
             }
-            heap_free(D_801E8670[index]->surfaces);
+            heap_free(gear_model_actors[index]->surfaces);
         }
-        heap_free(D_801E8670[index]);
-        D_801E8670[index] = NULL;
+        heap_free(gear_model_actors[index]);
+        gear_model_actors[index] = NULL;
     }
 }
 
-/* Select actor `index` and bit mask `mask`, then run its script step
- * (func_801E35D0) with itself as the source. */
-void func_801E8330(u16 index, u16 mask, s32 entry) {
+/* 801E8330: Select actor `index` and bit mask `mask`, then run its script step
+ * (gear_model_call_entry) with itself as the source. */
+void gear_model_select_and_call_entry(u16 index, u16 mask, s32 entry) {
     Actor *actor;
 
-    actor = D_801E8670[index];
-    D_801E86B0 = index;
-    D_801E863C = mask;
+    actor = gear_model_actors[index];
+    gear_model_current_actor_index = index;
+    gear_model_current_actor_mask = mask;
     actor->b35 = 0;
-    if (D_801E8670[index] != NULL) {
-        func_801E35D0(D_801E8670[index], D_801E8670[index], &D_801E86A8, entry);
+    if (gear_model_actors[index] != NULL) {
+        gear_model_call_entry(gear_model_actors[index], gear_model_actors[index], &gear_model_tween_pool, entry);
     }
 }
 
-/* Select actor `index` and bit mask `mask`, then run its script step with
+/* 801E8394: Select actor `index` and bit mask `mask`, then run its script step with
  * `source` unless it is the actor of the mask's lowest bit. */
-void func_801E8394(Actor *source, u16 index, u16 mask, s32 arg3) {
+void gear_model_select_and_call_source_entry(Actor *source, u16 index, u16 mask, s32 entry) {
     Actor *actor;
 
-    actor = D_801E8670[index];
-    D_801E86B0 = index;
-    D_801E863C = mask;
+    actor = gear_model_actors[index];
+    gear_model_current_actor_index = index;
+    gear_model_current_actor_mask = mask;
     actor->b35 = 0;
-    if (D_801E8670[index] != NULL && index != func_801E67F8()) {
-        func_801E35D0(D_801E8670[index], source, &D_801E86A8, arg3);
+    if (gear_model_actors[index] != NULL && index != gear_model_find_lowest_masked_actor()) {
+        gear_model_call_entry(gear_model_actors[index], source, &gear_model_tween_pool, entry);
     }
 }
 
-/* Actor `index`'s height: its size scaled by its scale and the root's y
+/* 801E8430: Actor `index`'s height: its size scaled by its scale and the root's y
  * scale; 0 without an actor. */
-s32 func_801E8430(s32 index) {
+s32 gear_model_get_actor_height(s32 index) {
     Actor *actor;
 
-    actor = D_801E8670[index];
+    actor = gear_model_actors[index];
     if (actor != NULL) {
         return (actor->size[0] * ((actor->scale * actor->parts->scale[1]) >> 12)) >> 12;
     }
     return 0;
 }
 
-/* Actor `index`'s width: its x or (flag 8 clear) z size scaled like
- * func_801E8430; 0 without an actor. */
-s32 func_801E8480(s32 index) {
+/* 801E8480: Actor `index`'s width: its x or (flag 8 clear) z size scaled like
+ * gear_model_get_actor_height; 0 without an actor. */
+s32 gear_model_get_actor_width(s32 index) {
     Actor *actor;
     s32 size;
     s32 root_scale;
 
-    actor = D_801E8670[index];
+    actor = gear_model_actors[index];
     if (actor != NULL) {
         if (actor->flags & 8) {
             size = actor->size[1];
@@ -4814,13 +4814,13 @@ s32 func_801E8480(s32 index) {
             size = actor->size[2];
             root_scale = actor->parts->scale[2];
         }
-        return (size * ((D_801E8670[index]->scale * root_scale) >> 12)) >> 12;
+        return (size * ((gear_model_actors[index]->scale * root_scale) >> 12)) >> 12;
     }
     return 0;
 }
 
-/* Allocate an actor's 0x70-byte channel records, each marked unused. */
-void func_801E8510(Actor *actor) {
+/* 801E8510: Allocate an actor's 0x70-byte channel records, each marked unused. */
+void gear_model_alloc_channels(Actor *actor) {
     ColorFade *channels;
     s32 i;
 

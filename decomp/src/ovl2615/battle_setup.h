@@ -1,7 +1,7 @@
 #ifndef OVL2615_BATTLE_SETUP_H
 #define OVL2615_BATTLE_SETUP_H
 
-/* The battle setup unit (ovl2615.c): the battle overlay's objects the setup
+/* The battle setup unit (battle_setup_phases.c): the battle overlay's objects the setup
  * fills come from the shared battle headers (the area and work area, the
  * turn, menu, AI, graphics and UI state, the item lists and the set-up
  * flags); here are the setup's own views where its code reads an object
@@ -61,7 +61,7 @@ typedef struct {
     u8 pad5FC8[0x603C - 0x5FC8];
     u8 partyIds[3];            /* 0x603C */
 } SetupWork;
-extern SetupWork D_800CCCE8_setup __asm__("battle_work_area");
+extern SetupWork battle_setup_work_area __asm__("battle_work_area");
 
 extern u8 battle_unread_setup_flag;
 
@@ -69,20 +69,20 @@ extern u8 battle_unread_setup_flag;
 void *battle_heap_alloc_text_image(s32 kind);
 void *battle_heap_alloc(s32 size, s32 flags); /* heap allocation */
 
-void func_801E4048(void);
-void func_801E4160(void);
-void func_801E4870(void);
-void func_801E4AC0(void);
-void func_801E4CD0(void);
-void func_801E4E7C(void);
-void func_801E5014(void);
-void func_801E5384(void);
-void func_801E5924(void);
-void func_801E5D2C(void);
-void func_801E5E78(void);
-void func_801E5EE8(void);
-void func_801E6290(void);
-void func_801E62B8(void);
+void battle_setup_reset_outcome_and_slots(void);
+void battle_setup_place_formation(void);
+void battle_setup_copy_enemy_records_and_ai(void);
+void battle_setup_derive_stats_and_slot_states(void);
+void battle_setup_build_item_lists(void);
+void battle_setup_init_turn_order_and_timers(void);
+void battle_setup_init_command_menus(void);
+void battle_setup_load_party_and_enemy_files(void);
+void battle_setup_init_atb_gauges(void);
+void battle_setup_init_panel_quads(void);
+void battle_setup_render_digit_text_images(void);
+void battle_setup_build_party_panel_glyphs(void);
+void battle_setup_init_gauges_and_panel_glyphs(void);
+void battle_setup_init_panel_quads_and_digits(void);
 
 /* The game data's inventory as the item lists read it, and the battle's item
  * lists (0x30 entries, battle/actions.h). */

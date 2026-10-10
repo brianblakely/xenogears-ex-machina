@@ -37,34 +37,34 @@ typedef struct {
 
 void field_layer_redraw_hook(void);
 
-void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, u32 *ot, s32 buffer);
-void func_801E1880(Actor **actors);
-void func_801E3534(Actor *actor, EffectPool *pool, s32 *entries, s32 *locals);
-void func_801E35D0(Actor *actor, Actor *source, EffectPool *pool, s32 entry);
-s32 func_801E36BC(Actor *actor, EffectPool *pool, s32 ticks, s32 arg3, s32 arg4);
-void func_801E37D0(Actor *actor);
-void func_801E39F0(Actor *actor, EffectPool *pool, s32 arg2, s32 arg3, s32 arg4);
-void func_801E5C74(Actor *actor, Animation *anim, s32 loop);
-s32 func_801E5CD8(Actor *actor, s32 source);
-void func_801E5D44(Actor *actor, EffectPool *pool, s32 arg2);
-void func_801E632C(Actor *actor);
-void func_801E63A8(Actor *actor);
-s16 func_801E66BC(VECTOR *dir, void *a, void *b, s32 divisor);
-s32 func_801E67F8(void);
-s32 func_801E6830(Actor *actor, u8 ref, u16 *mask);
-s32 func_801E6910(Actor *actor, u8 ref, s32 *flag);
-void func_801E6974(Actor *actor, EffectPool *pool, ModelPart *part, u8 flags, u8 mode, u8 tag,
+void gear_model_draw_actor(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, u32 *ot, s32 buffer);
+void gear_model_place_anchors(Actor **actors);
+void gear_model_reset_actor_script(Actor *actor, EffectPool *pool, s32 *entries, s32 *locals);
+void gear_model_call_entry(Actor *actor, Actor *source, EffectPool *pool, s32 entry);
+s32 gear_model_step_actor(Actor *actor, EffectPool *pool, s32 ticks, s32 unused_buffer, s32 unused_substeps);
+void gear_model_carry_actor(Actor *actor);
+void gear_model_run_effect_script(Actor *actor, EffectPool *pool, s32 changed, s32 ticks, s32 unused_substeps);
+void gear_model_start_animation(Actor *actor, Animation *anim, s32 loop);
+s32 gear_model_get_sound_bank_base(Actor *actor, s32 source);
+void gear_model_run_animation_events(Actor *actor, EffectPool *pool, s32 unused_buffer);
+void gear_model_stop_animation(Actor *actor);
+void gear_model_update_aim_target(Actor *actor);
+s16 gear_model_project_on_cross_axis(VECTOR *dir, void *a, void *b, s32 divisor);
+s32 gear_model_find_lowest_masked_actor(void);
+s32 gear_model_resolve_actor_reference(Actor *actor, u8 ref, u16 *mask);
+s32 gear_model_get_actor_animation(Actor *actor, u8 ref, s32 *flag);
+void gear_model_start_node_tween(Actor *actor, EffectPool *pool, ModelPart *part, u8 flags, u8 mode, u8 tag,
                    u8 smooth, s16 x0, s16 y0, s16 z0, s16 x1, s16 y1, s16 z1, s16 duration);
-void func_801E6D94(Actor *actor, ModelPart *part, s32 flags);
-void func_801E6F64(Task *node);
-void func_801E7094(Actor *actor, ModelPart *part, u8 flags, s16 x, s16 y, s16 z);
-void func_801E7298(Actor *actor);
-void func_801E8394(Actor *source, u16 index, u16 mask, s32 arg3);
-s32 func_801E8480(s32 index);
-void func_801E8510(Actor *actor);
+void gear_model_show_node(Actor *actor, ModelPart *part, s32 flags);
+void gear_model_update_linked_sprite(Task *node);
+void gear_model_set_node_transform(Actor *actor, ModelPart *part, u8 flags, s16 x, s16 y, s16 z);
+void gear_model_apply_root_height(Actor *actor);
+void gear_model_select_and_call_source_entry(Actor *source, u16 index, u16 mask, s32 entry);
+s32 gear_model_get_actor_width(s32 index);
+void gear_model_alloc_channels(Actor *actor);
 
 /* The draw entry, which each target declares itself (ovl2143/actors.h says
  * why). */
-void func_801E7D14(MATRIX *m, MATRIX *light, u32 *ot, s32 buffer, s32 elapsed);
+void gear_model_step_and_draw(MATRIX *m, MATRIX *light, u32 *ot, s32 buffer, s32 elapsed);
 
 #endif

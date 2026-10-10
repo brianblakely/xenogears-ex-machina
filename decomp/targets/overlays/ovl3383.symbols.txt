@@ -1,0 +1,4 @@
+// Names tools/names.py gave these addresses (docs/matching.md, Names).
+battle_module_spin_update = 0x801FC000; // type:func
+battle_module_spin_draw = 0x801FC020; // type:func
+battle_module_spin_start = 0x801FC53C; // type:func

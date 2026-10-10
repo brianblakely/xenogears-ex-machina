@@ -305,7 +305,7 @@ void worldmap_open_map_start(void) {
             data = worldmap_music;
         }
         memcpy(mode_music_buffer, data, cd_get_aligned_file_size(file));
-        seq = sound_create_seq(&D_80062648_sequence);
+        seq = sound_create_seq(&mode_music_buffer_header);
         mode_music_seq = (s32)seq;
         sound_play_seq((SoundSeq *)mode_music_seq, 0x7F, 0);
     } else {
@@ -1542,7 +1542,7 @@ typedef struct {
 
 /* The actor module's draw, which each target declares itself
  * (ovl2143/actors.h says why). */
-void func_801E7D14(MATRIX *m, MATRIX *light, u_long *ot, s32 buffer, s32 elapsed);
+void gear_model_step_and_draw(MATRIX *m, MATRIX *light, u_long *ot, s32 buffer, s32 elapsed);
 
 /* 80076098: Place the distant landmark model (actor 0 of the actor module, ovl2143)
  * relative to the camera and draw it when it is in front and nearer than
@@ -1556,14 +1556,14 @@ void worldmap_draw_distant_landmark(void) {
     LANDMARK_SCRATCH->position.vx = 0x4E0E - (worldmap_camera.target.vx >> 12);
     LANDMARK_SCRATCH->position.vz = 0x1B68 - (worldmap_camera.target.vz >> 12);
     worldmap_wrap_world_offset(&LANDMARK_SCRATCH->position);
-    D_801E8670[0]->parts->translation[0] = LANDMARK_SCRATCH->position.vx;
-    D_801E8670[0]->parts->translation[1] = 0;
-    D_801E8670[0]->parts->translation[2] = -LANDMARK_SCRATCH->position.vz;
-    D_801E8670[0]->parts->rotation.vx = D_801E8670[0]->parts->rotation.vy = D_801E8670[0]->parts->rotation.vz = 0;
+    gear_model_actors[0]->parts->translation[0] = LANDMARK_SCRATCH->position.vx;
+    gear_model_actors[0]->parts->translation[1] = 0;
+    gear_model_actors[0]->parts->translation[2] = -LANDMARK_SCRATCH->position.vz;
+    gear_model_actors[0]->parts->rotation.vx = gear_model_actors[0]->parts->rotation.vy = gear_model_actors[0]->parts->rotation.vz = 0;
     /* The carrier byte and its rotation flag are stored as one halfword (sh):
      * the bytes 0 and 0xFF, as two members two stores. */
-    *(s16 *)&D_801E8670[0]->parent = -0x100;
-    D_801E8670[0]->scale = 0x40;
+    *(s16 *)&gear_model_actors[0]->parent = -0x100;
+    gear_model_actors[0]->scale = 0x40;
     LANDMARK_SCRATCH->local = worldmap_identity_matrix;
     LANDMARK_SCRATCH->local.t[0] = LANDMARK_SCRATCH->position.vx;
     LANDMARK_SCRATCH->local.t[1] = LANDMARK_SCRATCH->position.vy;
@@ -1580,9 +1580,9 @@ void worldmap_draw_distant_landmark(void) {
         depth = &LANDMARK_SCRATCH->depth;
         gte_stsz(depth);
         if (*depth < 0xD00) {
-            D_801E8644 = &worldmap_light_color_matrix;
+            gear_model_color_matrix = &worldmap_light_color_matrix;
             SetBackColor(0x40, 0x40, 0x40);
-            func_801E7D14(&worldmap_camera_matrix, &worldmap_light_direction_matrix, worldmap_current_display_buffer->ot, worldmap_display_buffer_index, 1);
+            gear_model_step_and_draw(&worldmap_camera_matrix, &worldmap_light_direction_matrix, worldmap_current_display_buffer->ot, worldmap_display_buffer_index, 1);
         }
     }
 }

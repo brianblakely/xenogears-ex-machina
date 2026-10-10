@@ -55,7 +55,7 @@ extern s16 battle_stage_image_anim_active;
 void battle_reset_object(BattleObject *object, EffectPool *pool, void *motion, s32 animations);
 void battle_pose_model_hierarchy(ModelPart *parts, s32 scale);
 
-/* The stage backdrop (func_801E7914, 0x17cc bytes): a floor grid of 9 x 9
+/* The stage backdrop (battle_setup_create_stage_sky, 0x17cc bytes): a floor grid of 9 x 9
  * vertices and 128 tiles, and the fills and fades around it. */
 typedef struct {
     s16 x;                    /* 0x00 */
@@ -78,9 +78,9 @@ typedef struct {
     POLY_G4 fades[4];         /* 0x173C */
 } StageBackdrop;
 
-StageBackdrop *func_801E7914(s16 texX, s16 texY, s16 width, s16 height, s16 size, s16 step,
+StageBackdrop *battle_setup_create_stage_sky(s16 texX, s16 texY, s16 width, s16 height, s16 size, s16 step,
                              s16 v0A, s16 clutX, s16 clutY, s16 v10, s16 v12, VECTOR *position,
                              CVECTOR *colour, s16 v0C, s16 v0E);
-void func_801E7EC4(SVECTOR *points, SceneTriangle *triangles, s32 count);
+void battle_setup_register_scene_ground(SVECTOR *points, SceneTriangle *triangles, s32 count);
 
 #endif

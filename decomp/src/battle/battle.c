@@ -3700,8 +3700,8 @@ void battle_tick_result_screens(u8 member) {
             }
         }
         if (!done) {
-            func_801DF270();
-            func_801DF4C0();
+            battle_results_build_card_exp_totals();
+            battle_results_build_card_exp_to_count();
         } else {
             battle_member_cards[0]->counting = 0;
         }

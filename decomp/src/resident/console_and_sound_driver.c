@@ -717,7 +717,7 @@ void console_empty_debug_hook(void) {
 
 /* 800379D8: Load battle stage `stage` from directory 12/3: its stage file (file
  * 6 + 2 * stage) and its scene data (file 7 + 2 * stage + `variant`, whose
- * first word is its size), which ovl2615 func_801E7210 sets up as its
+ * first word is its size), which ovl2615 battle_setup_build_stage sets up as its
  * `stage` and `scene`. Returns 0 with the stage file, 0 and the scene data
  * after its first word (also in mode_battle_scene_data), or -1 with zeros when the
  * directory has no such stage. */

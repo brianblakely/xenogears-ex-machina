@@ -5,7 +5,7 @@
 # data, bytes before the next unit's (docs/matching.md).
 800c204c 800c2050 included battle_in_automatic_turn u8 flag 0 (battle/actions.h), then 08 00 71: GCC leaves no fill before the byte flag battle_applying_item_results, so a unit's data ends there, the bytes are unreferenced data, or battle_applying_item_results is a word-aligned object
 800c2050 800c2054 included battle_applying_item_results u8 flag 0 (item_command.h, read with lbu); padding 08 00 00
-800c3488 800c348c included battle_unreferenced_stray_byte 00 04 77 68, unreferenced (no code in any image forms its address, tools/data_users.py --range), the last data before battle_menus_and_resolver.c's: taken as a byte object followed by stray bytes, as ovl2596's D_801E44C0 (00 04)
+800c3488 800c348c included battle_unreferenced_stray_byte 00 04 77 68, unreferenced (no code in any image forms its address, tools/data_users.py --range), the last data before battle_menus_and_resolver.c's: taken as a byte object followed by stray bytes, as ovl2596's battle_results_fanfare_started (00 04)
 800c34cc 800c34dc included battle_combo_step_flags u8[15] combo flag of each combo step index 0-14 (battle/command.h; battle_can_use_combo_step, battle_combo_chain_add_gear_step and battle_combo_record_gear_step index it up to 14); padding 35 ("5")
 800c35d4 800c35d8 included battle_music_lowered u8 sound fade flag 0 (battle/action_file.h), the last data before battle_flow.c's; then 38 36 66
 800c3780 800c3784 included battle_showing_status_drains u8 flag 0 (frame.h); padding 0b 6d 6f

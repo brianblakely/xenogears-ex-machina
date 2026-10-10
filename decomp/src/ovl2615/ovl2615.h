@@ -10,13 +10,13 @@
 #define SLOT_COUNT 11
 #define NO_COMBATANT 0x7F
 
-/* Run one setup phase (ovl2615.c); the load modes (load_modes.c,
+/* Run one setup phase (battle_setup_phases.c); the load modes (load_modes.c,
  * burst_modes.c) run them between their frames. The prototype keeps the
  * callers' u8 conversion. */
-void func_801E5840(u8 phase);
+void battle_setup_run_phase(u8 phase);
 
 /* Callers convert arguments differently from the resident definition (s16
- * modes and u16 positions there): upload an image list (ovl2615.c,
+ * modes and u16 positions there): upload an image list (battle_setup_phases.c,
  * battle_loader.c). */
 void model_load_image_list(void *images, s32 mode, s32 x, s32 y, s32 mode2, s32 x2, s32 y2);
 

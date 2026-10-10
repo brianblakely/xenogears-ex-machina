@@ -15,15 +15,15 @@ Party members take battle slots 0-2 and enemies slots 3-10 (`BattleSlot`,
 
 | Offset | Member | Readers and effect |
 | --- | --- | --- |
-| 0x00 | `battle` | n: enemy file (12, 1) 2n + 2 and enemy set file 2n + 3 (ovl2615 `func_801E5384`); [battle-ai.md](battle-ai.md) decodes the enemy file. |
-| 0x01 | `flags` | 0x08: no result screens (ovl2596 `func_801E2280` skips `func_801E1FB8`, whose spoils list adds the drops, `func_801E1690`) and no fade after them (battle `battle_main`). 0x10: ovl2615 `func_801E5384` sets `battle_uses_fixed_party`: the party is party slot 0's character and character 10 twice, members 1 and 2 with gear 17. Every member then fights in a gear (`func_801E4048`), so `partyGroups` is not read (`func_801E4160`); members 1 and 2 get fixed HP and stats (battle `battle_set_debug_party_stats`, from `func_801E4AC0`), character 11's portrait (battle `battle_upload_party_portraits`) and no place in the results (ovl2596 `func_801E2280`). 0x20: the battle event script runs (`func_801E5014` sets `battle_uses_event_script`; [battle-event-vm.md](battle-event-vm.md)). 0x40, 0x80: every member gets command 7, 8 (`func_801E5014`). No reader tests 0x01, 0x02 or 0x04. |
-| 0x02 | `stage` | s, the battle stage: resident `mode_load_current_battle_stage` passes it to `mode_load_battle_stage`, which loads the stage file (12, 3) 6 + 2s into `mode_battle_stage_file` and the scene data 7 + 2s, after its size word, into `mode_battle_scene_file` and `mode_battle_scene_data` (s must be below half the file count of entry 5). ovl2615 `func_801E7210` takes them as its `stage` and `scene`. The scene data holds each formation group's standing places (ovl2615 `BattleScene.group`, read by `func_801E4160`; battle's `Formation`) and the cameras (`battle_enter`). |
+| 0x00 | `battle` | n: enemy file (12, 1) 2n + 2 and enemy set file 2n + 3 (ovl2615 `battle_setup_load_party_and_enemy_files`); [battle-ai.md](battle-ai.md) decodes the enemy file. |
+| 0x01 | `flags` | 0x08: no result screens (ovl2596 `battle_results_grant_rewards` skips `battle_results_run_screens`, whose spoils list adds the drops, `battle_results_build_spoils_item_list`) and no fade after them (battle `battle_main`). 0x10: ovl2615 `battle_setup_load_party_and_enemy_files` sets `battle_uses_fixed_party`: the party is party slot 0's character and character 10 twice, members 1 and 2 with gear 17. Every member then fights in a gear (`battle_setup_reset_outcome_and_slots`), so `partyGroups` is not read (`battle_setup_place_formation`); members 1 and 2 get fixed HP and stats (battle `battle_set_debug_party_stats`, from `battle_setup_derive_stats_and_slot_states`), character 11's portrait (battle `battle_upload_party_portraits`) and no place in the results (ovl2596 `battle_results_grant_rewards`). 0x20: the battle event script runs (`battle_setup_init_command_menus` sets `battle_uses_event_script`; [battle-event-vm.md](battle-event-vm.md)). 0x40, 0x80: every member gets command 7, 8 (`battle_setup_init_command_menus`). No reader tests 0x01, 0x02 or 0x04. |
+| 0x02 | `stage` | s, the battle stage: resident `mode_load_current_battle_stage` passes it to `mode_load_battle_stage`, which loads the stage file (12, 3) 6 + 2s into `mode_battle_stage_file` and the scene data 7 + 2s, after its size word, into `mode_battle_scene_file` and `mode_battle_scene_data` (s must be below half the file count of entry 5). ovl2615 `battle_setup_build_stage` takes them as its `stage` and `scene`. The scene data holds each formation group's standing places (ovl2615 `BattleScene.group`, read by `battle_setup_place_formation`; battle's `Formation`) and the cameras (`battle_enter`). |
 | 0x03 | `scriptSet` | the battle event script set, read only under flag 0x20 (ovl3087 `battle_event_script_load`). |
-| 0x04 | `partyGroups[3]` | per member, & 0x7f: its formation group, unless it fights in its gear, as every member does under flag 0x10 (then its slot number; ovl2615 `func_801E4160`). |
+| 0x04 | `partyGroups[3]` | per member, & 0x7f: its formation group, unless it fights in its gear, as every member does under flag 0x10 (then its slot number; ovl2615 `battle_setup_place_formation`). |
 | 0x07 | `unk7` | no reader. |
-| 0x08 | `enemyIds[8]` | per enemy, & 0x7f: its id in the enemy file (0x7f none); bit 7: it fights in a gear, slot byte 4 (`func_801E4160`). |
-| 0x10 | `enemyFlags[8]` | bit 7 to slot byte 3 (`BattleSlot.hidden`, which targeting tests and AI action 63 and condition 9b write and read); bit 0 to slot byte 5 (`func_801E4160`). |
-| 0x18 | `enemyGroups[8]` | & 0x7f: the enemy's formation group (`func_801E4160`). Bit 7 of byte 0x18 + s goes to slot byte 6 for slots s = 3-10, so the last three reads take the three bytes after the record (the SPU memory map `sound_spu_memory_map`). Setup phase 2 (`func_801E5014`) sets every slot's byte 6 anew from `battle_is_target_at_lower_x` before the slot sprites that read it are made (`battle_enter` runs after the setup phases in `battle_main`). |
+| 0x08 | `enemyIds[8]` | per enemy, & 0x7f: its id in the enemy file (0x7f none); bit 7: it fights in a gear, slot byte 4 (`battle_setup_place_formation`). |
+| 0x10 | `enemyFlags[8]` | bit 7 to slot byte 3 (`BattleSlot.hidden`, which targeting tests and AI action 63 and condition 9b write and read); bit 0 to slot byte 5 (`battle_setup_place_formation`). |
+| 0x18 | `enemyGroups[8]` | & 0x7f: the enemy's formation group (`battle_setup_place_formation`). Bit 7 of byte 0x18 + s goes to slot byte 6 for slots s = 3-10, so the last three reads take the three bytes after the record (the SPU memory map `sound_spu_memory_map`). Setup phase 2 (`battle_setup_init_command_menus`) sets every slot's byte 6 anew from `battle_is_target_at_lower_x` before the slot sprites that read it are made (`battle_enter` runs after the setup phases in `battle_main`). |
 
 ## Encounter sets
 
@@ -60,7 +60,7 @@ Party members take battle slots 0-2 and enemies slots 3-10 (`BattleSlot`,
   next table follows 0x20 bytes later, bytes no reader reads. The area files 143,
   154, 165, 176 and 187 (modes 9, 10 and 12-15) hold no tables: their header ends at
   0x30, so words 12-26 are section data, and word 11 leaves no room for a table.
-- **The debug battle selector.** ovl2606 `func_801E0A34` copies the first 0x200 bytes
+- **The debug battle selector.** ovl2606 `battle_scene_select_main` copies the first 0x200 bytes
   of (0x20, 3) file 7 + n (FileNo n) or 4-6 (Event1-3). Files 4-52 hold sets: 34 of
   0x210 bytes, 32 of them a field map's set, and 15 of 0x260 bytes whose sets are world
   map tables'. File 53 starts a sub-directory.
@@ -133,8 +133,8 @@ bundles, area files and discs. On the user's discs:
   from `v0420`, `v0426` and `v042a` before them (`python3 -m tools.analysis.events
   --list 480`), and those are not traced.
 - Slot byte 5 (`enemyFlags` bit 0, never set): no unit reads it through `BattleSlot`
-  (`field5`), whose only accesses are ovl2615's writes in `func_801E4048` and
-  `func_801E4160`. A read through another view is not ruled out.
+  (`field5`), whose only accesses are ovl2615's writes in `battle_setup_reset_outcome_and_slots` and
+  `battle_setup_place_formation`. A read through another view is not ruled out.
 - Whether the modes that load the five tableless area files can roll: their timers
   (`worldmap_encounter_update_timers`) are not traced.
 - The draws' other gates. "Can be drawn" means the weights, the arming and player

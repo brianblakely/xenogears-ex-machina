@@ -685,7 +685,7 @@ void battle_run_frame(void) {
     if (mode_disc_mode != -1) {
         battle_read_pads_with_slowdown();
         __asm__ volatile(".word 0x0001000D"); /* break 1: the debugger breakpoint */
-        func_80280A9C();
+        battle_debug_run_tools_frame();
     }
     sprite_queue_start_fill(frame->buffer);
     battle_camera_step();

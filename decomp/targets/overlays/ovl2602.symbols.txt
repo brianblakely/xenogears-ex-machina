@@ -8,3 +8,11 @@ D_801D70F4 = 0x801D70F4; // size:0x14
 D_801D9050 = 0x801D9050; // size:0x34
 // Names tools/names.py gave these addresses (docs/matching.md, Names).
 game_data_party_state = 0x8006F364;
+gear_model_init = 0x801E738C; // type:func
+gear_model_create_actor = 0x801E742C; // type:func
+gear_model_step_and_draw = 0x801E7D14; // type:func
+gear_model_shut_down = 0x801E7FD4; // type:func
+gear_model_free_actor = 0x801E8030; // type:func
+gear_model_select_and_call_entry = 0x801E8330; // type:func
+gear_model_color_matrix = 0x801E8644;
+gear_model_actors = 0x801E8670;

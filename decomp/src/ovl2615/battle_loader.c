@@ -2,37 +2,37 @@
  * enemy set loader (801e6314: sprite rows and image lists of the enemy set
  * file): text 801E62E0-801E70E8, data 801E95BC-801E963C, its pointer at
  * 801E96B4. A separate unit built by the Cygnus CDK GCC 2.7.2 with a later
- * ASPSX, between the GCC 2.6.3 units ovl2615.c and stage.c (ovl2615.mk). */
+ * ASPSX, between the GCC 2.6.3 units battle_setup_phases.c and stage.c (ovl2615.mk). */
 #include "loader.h"
 
 /* The sprite file and sequencer word of each party member type. */
-MemberFile D_801E95BC[] = {
+MemberFile battle_setup_member_sprite_files[] = { /* 801E95BC */
     {1, 0x12}, {2, 0x13}, {4, 0x15},  {3, 0x14},  {5, 0x16}, {6, 0x17}, {7, 0x18},
     {8, 0x19}, {9, 0x1A}, {10, 0x1B}, {11, 0x1C}, {1, 0x12}, {1, 0x12}, {1, 0x12},
 };
-u8 D_801E962C[] = {16, 16, 16, 16, 16, 24, 16, 16, 16, 24, 16, 16};
-/* D_801E9638 (u16 0, the next member image column) ends the unit's data
+u8 battle_setup_member_image_widths[] = {16, 16, 16, 16, 16, 24, 16, 16, 16, 24, 16, 16}; /* 801E962C */
+/* battle_setup_next_member_image_column (u16 0, the next member image column) ends the unit's data
  * before stray bytes (0x00 0xe0), so it stays original data. */
-INCLUDE_ORIGINAL(".data", D_801E9638, 0x801E9638, 4);
-extern u16 D_801E9638; /* the next member image column */
+INCLUDE_ORIGINAL(".data", battle_setup_next_member_image_column, 0x801E9638, 4);
+extern u16 battle_setup_next_member_image_column; /* the next member image column */
 /* Uninitialized: the overlay's file holds each unit's .bss after all .data. */
-void *D_801E96B4;
+void *battle_setup_images_to_upload; /* 801E96B4 */
 
-/* Start the loading task for the enemy set file `data` while flagging the
+/* 801E62E0: Start the loading task for the enemy set file `data` while flagging the
  * battle setup as running. */
-void func_801E62E0(u8 *data) {
+void battle_setup_loader_start(u8 *data) {
     task_alloc_mode = 1;
-    func_801E7098(data);
+    battle_setup_loader_create(data);
     task_alloc_mode = 0;
 }
 
-/* The enemy set file's sprite rows (slots 3..): its table is a count, a
+/* 801E6314: The enemy set file's sprite rows (slots 3..): its table is a count, a
  * first image column, then 12-byte entries. The data after the table is
  * copied; sprite entries upload their image list (or reuse an earlier one)
  * and fill their slot's row; model entries place the model on every enemy
  * slot of their type, and of later model entries sharing their data.
  * The placement mode reuses j (its unknown bits keep the andi 0xffff). */
-void func_801E6314(u8 *data) {
+void battle_setup_build_enemy_sources_and_models(u8 *data) {
     s32 count;
     s32 k;
     s32 images;
@@ -129,23 +129,23 @@ void func_801E6314(u8 *data) {
     }
 }
 
-/* Each enemy slot's sprite from its type's row, when that row has data
+/* 801E6710: Each enemy slot's sprite from its type's row, when that row has data
  * (`data`, the enemy set file, is passed but unused). */
-void func_801E6710(u8 *data) {
+void battle_setup_create_enemy_sprites(u8 *data) {
     s32 slot;
     s32 type;
 
     for (slot = 3; slot != SLOT_COUNT; slot++) {
         type = battle_area.slots[slot].field2;
         if (type < 8 && battle_area.sources[type + 3].data != NULL) {
-            func_801E67A4(slot, type + 3, 1);
+            battle_setup_create_slot_sprite(slot, type + 3, 1);
         }
     }
 }
 
-/* Create `slot`'s sprite task from sprite row `row` showing `animation`,
+/* 801E67A4: Create `slot`'s sprite task from sprite row `row` showing `animation`,
  * placed and facing as its placement record says. */
-void func_801E67A4(s32 slot, s32 row, s32 animation) {
+void battle_setup_create_slot_sprite(s32 slot, s32 row, s32 animation) {
     Task *task;
     BattleSprite *sprite;
     s32 angle;
@@ -170,9 +170,9 @@ void func_801E67A4(s32 slot, s32 row, s32 animation) {
     }
 }
 
-/* Read the party members' sprite files (directory 2c, file by type) into new
+/* 801E693C: Read the party members' sprite files (directory 2c, file by type) into new
  * blocks, recording them in the members' rows, by the file list `list`. */
-void func_801E693C(FileRequest *list) {
+void battle_setup_read_member_sprite_files(FileRequest *list) {
     s32 member, entries;
     s32 file;
     s32 type;
@@ -182,7 +182,7 @@ void func_801E693C(FileRequest *list) {
     for (entries = member = 0; member != 3; member++) {
         type = battle_area.slots[member].field2;
         if (type < 0x11 && battle_area.slots[member].gear == 0) {
-            file = D_801E95BC[type].file;
+            file = battle_setup_member_sprite_files[type].file;
             list[entries].file = file;
             block = heap_alloc(cd_get_aligned_file_size(file), 0);
             list[entries].destination = block;
@@ -196,8 +196,8 @@ void func_801E693C(FileRequest *list) {
     cd_read_file_list(list, 0, 0);
 }
 
-/* Set up the members placed with a model (800bb760). */
-void func_801E6A4C(void) {
+/* 801E6A4C: Set up the members placed with a model (800bb760). */
+void battle_setup_start_member_gear_loads(void) {
     s32 member;
     s32 x, y, z;
     s32 type;
@@ -210,10 +210,10 @@ void func_801E6A4C(void) {
     }
 }
 
-/* Each party member's sprite: its row takes the next image columns at row
+/* 801E6AC4: Each party member's sprite: its row takes the next image columns at row
  * 1c0, its sequencer word and a fresh 0x300-byte part block; then (unless
  * 800d36b8) the members are put on the stage floor facing their home. */
-void func_801E6AC4(void) {
+void battle_setup_create_member_sprites(void) {
     BattleSprite *sprite;
     s32 member;
     s32 x, y, z;
@@ -223,11 +223,11 @@ void func_801E6AC4(void) {
         type = battle_area.slots[member].field2;
         if (type < 0x11 && battle_area.slots[member].gear == 0) {
             battle_area.sources[member].y = 0x1C0;
-            battle_area.sources[member].x = D_801E9638 + 0x100;
-            D_801E9638 += D_801E962C[type];
-            func_801E67A4(member, member, 1);
+            battle_area.sources[member].x = battle_setup_next_member_image_column + 0x100;
+            battle_setup_next_member_image_column += battle_setup_member_image_widths[type];
+            battle_setup_create_slot_sprite(member, member, 1);
             sprite = (BattleSprite *)battle_area.sprites[member];
-            *sprite->sequencer = D_801E95BC[type].sequence;
+            *sprite->sequencer = battle_setup_member_sprite_files[type].sequence;
             heap_free(sprite->renderer->parts[0]);
             sprite->renderer->parts[0] = heap_alloc(0x300, 0);
         }
@@ -249,9 +249,9 @@ void func_801E6AC4(void) {
     }
 }
 
-/* Loading state: after the delay, wait until every member sprite has
+/* 801E6C80: Loading state: after the delay, wait until every member sprite has
  * reached the ground, then mark loading done and end the task. */
-void func_801E6C80(Task *node) {
+void battle_setup_loader_wait_members_grounded(Task *node) {
     LoaderTask *task = (LoaderTask *)node;
     BattleSprite *sprite;
     s32 member;
@@ -271,47 +271,47 @@ void func_801E6C80(Task *node) {
     }
 }
 
-/* Loading state: once the members stop moving, wait 16 frames and settle. */
-void func_801E6D34(Task *node) {
+/* 801E6D34: Loading state: once the members stop moving, wait 16 frames and settle. */
+void battle_setup_loader_wait_gear_loads(Task *node) {
     if (battle_gear_object_load_count == 0) {
         ((LoaderTask *)node)->timer = 0x10;
-        task_set_update_callback(node, func_801E6C80);
+        task_set_update_callback(node, battle_setup_loader_wait_members_grounded);
     }
 }
 
-/* Loading state: once the sound transfer is done, release the battle images
+/* 801E6D6C: Loading state: once the sound transfer is done, release the battle images
  * file and set up the members with models. */
-void func_801E6D6C(Task *node) {
+void battle_setup_loader_start_gear_loads(Task *node) {
     if (sound_sync_transfer(0) == 0) {
         heap_free(((LoaderTask *)node)->images);
-        func_801E6A4C();
-        task_set_update_callback(node, func_801E6D34);
+        battle_setup_start_member_gear_loads();
+        task_set_update_callback(node, battle_setup_loader_wait_gear_loads);
     }
 }
 
-/* Upload the battle images (D_801E96B4) on a private 8 KB stack. */
-void func_801E6DC8(void) {
+/* 801E6DC8: Upload the battle images (battle_setup_images_to_upload) on a private 8 KB stack. */
+void battle_setup_upload_images_on_own_stack(void) {
     u8 *stack = heap_alloc(0x2000, 1);
 
     /* Push the caller's sp at the new stack top and switch to it. */
     STACK_ENTER(stack + 0x1F00);
-    model_load_image_list(D_801E96B4, 0, 0, 0, 0, 0, 0);
+    model_load_image_list(battle_setup_images_to_upload, 0, 0, 0, 0, 0, 0);
     DrawSync(0);
     STACK_LEAVE();
     heap_free(stack);
 }
 
-/* Loading state: once the disc is idle, upload the battle images, bind the
+/* 801E6E48: Loading state: once the disc is idle, upload the battle images, bind the
  * shared battle file (image 380,0, palette row 1d1) and link the effect
  * bank. */
-void func_801E6E48(Task *node) {
+void battle_setup_loader_install_battle_files(Task *node) {
     LoaderTask *task = (LoaderTask *)node;
     DVECTOR image;
     DVECTOR clut;
 
     if (cd_get_pending_read_count() == 0) {
-        D_801E96B4 = task->images;
-        func_801E6DC8();
+        battle_setup_images_to_upload = task->images;
+        battle_setup_upload_images_on_own_stack();
         image.vx = 0x380;
         image.vy = 0;
         clut.vx = 0;
@@ -319,14 +319,14 @@ void func_801E6E48(Task *node) {
         sprite_resolve_resource(sprite_shared_source, task->shared, image, clut, 0);
         sound_add_effect_bank(task->effects);
         sprite_script_sound_bank = task->effects;
-        task_set_update_callback(node, func_801E6D6C);
+        task_set_update_callback(node, battle_setup_loader_start_gear_loads);
         battle_enable_shadows();
     }
 }
 
-/* Loading state: once the member files are read, create the member sprites
+/* 801E6F00: Loading state: once the member files are read, create the member sprites
  * and read battle files 1-3 (images, shared data, effects). */
-void func_801E6F00(Task *node) {
+void battle_setup_loader_create_members(Task *node) {
     LoaderTask *task = (LoaderTask *)node;
     FileRequest *files;
     s32 busy;
@@ -334,7 +334,7 @@ void func_801E6F00(Task *node) {
     busy = cd_get_pending_read_count();
     cd_select_directory(0x2C, 0);
     if (busy == 0) {
-        func_801E6AC4();
+        battle_setup_create_member_sprites();
         files = task->files;
         task->images = files[0].destination = heap_alloc(cd_get_aligned_file_size(1), 1);
         files[0].file = 1;
@@ -345,35 +345,35 @@ void func_801E6F00(Task *node) {
         files[3].destination = NULL;
         files[3].file = 0;
         cd_read_file_list(files, 0, 0);
-        task_set_update_callback(node, func_801E6E48);
+        task_set_update_callback(node, battle_setup_loader_install_battle_files);
     }
 }
 
-/* Loading state: once the disc is idle, build the enemy rows and sprites on
+/* 801E6FEC: Loading state: once the disc is idle, build the enemy rows and sprites on
  * a private 16 KB stack, release the enemy set file and read the member
  * sprite files. */
-void func_801E6FEC(Task *node) {
+void battle_setup_loader_build_enemies(Task *node) {
     LoaderTask *task = (LoaderTask *)node;
     u8 *stack;
 
     if (cd_get_pending_read_count() == 0) {
         stack = heap_alloc(0x4000, 1);
         STACK_ENTER(stack + 0x3FFC);
-        func_801E6314(task->data);
-        func_801E6710(task->data);
+        battle_setup_build_enemy_sources_and_models(task->data);
+        battle_setup_create_enemy_sprites(task->data);
         STACK_LEAVE();
         heap_free(stack);
         DrawSync(0);
         heap_free(task->data);
-        task_set_update_callback(node, func_801E6F00);
-        func_801E693C(task->members);
+        task_set_update_callback(node, battle_setup_loader_create_members);
+        battle_setup_read_member_sprite_files(task->members);
     }
 }
 
-/* Create the loading task for the enemy set file `data`. */
-void func_801E7098(u8 *data) {
+/* 801E7098: Create the loading task for the enemy set file `data`. */
+void battle_setup_loader_create(u8 *data) {
     LoaderTask *task = (LoaderTask *)task_alloc_main_task(0, 0x78);
 
-    task_set_update_callback(&task->task, func_801E6FEC);
+    task_set_update_callback(&task->task, battle_setup_loader_build_enemies);
     task->data = data;
 }

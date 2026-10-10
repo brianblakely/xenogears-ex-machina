@@ -1,4 +1,4 @@
 # START END CLASS NAME NOTE (hex VRAM, END exclusive). included: an object a C
 # unit links from the original image (INCLUDE_ORIGINAL) at its place among the
 # unit's .data, with the reason it stays original.
-801e85a4 801e85cc included D_801E85A4 copy of battle's gear file table battle_gear_file_table (base and variant count per gear), which this module never reads, ending the unit's data before its .bss: byte for byte battle's but for the last pair, 66 00 where battle's is 00 00, a twentieth pair or stray bytes after 19 pairs that C cannot emit (open, docs/matching.md)
+801e85a4 801e85cc included gear_model_battle_gear_file_table copy of battle's gear file table battle_gear_file_table (base and variant count per gear), which this module never reads, ending the unit's data before its .bss: byte for byte battle's but for the last pair, 66 00 where battle's is 00 00, a twentieth pair or stray bytes after 19 pairs that C cannot emit (open, docs/matching.md)

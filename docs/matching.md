@@ -365,7 +365,7 @@ reads with other types (ovl2615 reads the scene data's positions unsigned); a se
 declaration of one object takes its assembler name (the world map's sequence header
 over mode_music_buffer, whose address cse would otherwise keep from the copy before it). A
 shared header's `extern` sets the order of the defining unit's tentative
-definitions, so that unit defines them ahead of the header (ovl2143.c's state before
+definitions, so that unit defines them ahead of the header (gear_model_scene.c's state before
 `ovl2143/actors.h`, as the commons units do). A unit declares what only it uses
 itself, before the first use. A function that is understood but does not yet match
 stays linked as assembly inside
@@ -499,7 +499,7 @@ plan.md, and changes nothing more when run again; `.local/names/apply.tsv` lists
 every change. `check` refuses two names a split could not keep: a label splat writes
 inside another symbol's generated file (`alabel`: twelve SDK words in text), which a
 name of its own would split out of the file INCLUDE_ASM includes, and an alias given
-its definer's name where one unit sees both (worldmap.h's `D_80062648_sequence`). A
+its definer's name where one unit sees both (worldmap.h's `mode_music_buffer_header`). A
 41-row trial over 170 files passed all-split, all-verify (26/26 and cross-image),
 all-coverage, the unit tests and `source_archive.py --check`; a mechanical name for
 every placeholder (7797 rows, 390 files) kept all 26 images, cross-image and coverage.
@@ -803,7 +803,7 @@ converted to C per unit. What converting the targets' `.data` established:
   menu_save_command_stays_open and menu_saving_at_cd_change and the u16 masks menu_bit_masks (GCC 2.6.3 emits consecutive
   byte scalars back to back and aligns the arrays to a word), are taken as the flag's
   padding by analogy with the flags closure D links with theirs, battle's battle_applying_item_results
-  (08 00 00) and ovl2596's D_801E44C0 (04 00 00): menu_saving_at_cd_change is linked with them, with
+  (08 00 00) and ovl2596's battle_results_fanfare_started (04 00 00): menu_saving_at_cd_change is linked with them, with
   INCLUDE_ORIGINAL_UNALIGNED (it follows menu_save_command_stays_open directly). Neither the bytes nor
   the vendor tools decide it, here or for those two, which could as well each be a
   flag, an unreferenced byte 8 or 4 and zero fill: nothing in any image reaches
@@ -818,10 +818,10 @@ converted to C per unit. What converting the targets' `.data` established:
   word-aligned next flag.
 - An object that ends its unit's section can be followed by stray bytes up to the
   next unit's. In the targets' links eleven included objects end their unit's section
-  so: the strings field_clear_otag_label and field_error_id0_format (field), arena_debug_rate_format (menu6), D_8028007C
+  so: the strings field_clear_otag_label and field_error_id0_format (field), arena_debug_rate_format (menu6), battle_debug_state_page_char_format
   (debug2611's pages.c) and D_801C5000 (ovl2601) and the .data objects arena_actor_combo_inputs
   (menu7, `ind` before menu2's .sbss) and battle_unreferenced_stray_byte (battle), all of ASPSX 2.34
-  units, and battle_music_lowered (battle) and D_801E9638 (ovl2615) of 2.56 units and the world
+  units, and battle_music_lowered (battle) and battle_setup_next_member_image_column (ovl2615) of 2.56 units and the world
   map's worldmap_scene15_flame_sizes and worldmap_gear_sprite_height of 2.79 units; so does the world map's cue sequence
   asset worldmap_scene13_cue_waits. Psy-Q 3.5's ASPSX 2.34 pads no section's end under DOSBox: a 6-byte
   .data or a 5-byte .rdata stays that long, also when another section follows, and a
@@ -835,8 +835,8 @@ converted to C per unit. What converting the targets' `.data` established:
   wrote any of these is open. The nine gaps GNU ld leaves between input sections in
   the targets' links (resident 6, menu 1, slot39 2) are zero in the originals; the
   non-zero ones lie inside the included objects and the asset above.
-- One table's extent stays open. ovl2143's unread copy D_801E85A4 of battle's gear
-  file table battle_gear_file_table is battle's byte for byte, as its copy D_801E8590 of the
+- One table's extent stays open. ovl2143's unread copy gear_model_battle_gear_file_table of battle's gear
+  file table battle_gear_file_table is battle's byte for byte, as its copy gear_model_battle_extra_file_bases of the
   18-byte extra file bases battle_extra_file_bases is, but for the last pair: 66 00 where battle's
   has 00 00. The bases of gears 0-18 chain (each is the previous gear's base plus 2
   plus that gear's variant count, the files battle_read_gear_files reads) and fill directory

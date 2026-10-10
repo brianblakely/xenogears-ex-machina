@@ -687,3 +687,6 @@ worldmap_flight_music_file = 0x8009D800;
 worldmap_menu_requested = 0x8009D804;
 worldmap_stream_request_count = 0x8009D808;
 worldmap_encounter_expired_count = 0x8009D80C;
+gear_model_step_and_draw = 0x801E7D14; // type:func
+gear_model_color_matrix = 0x801E8644;
+gear_model_actors = 0x801E8670;

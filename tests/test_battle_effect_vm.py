@@ -238,12 +238,12 @@ class SourceTests(unittest.TestCase):
 
     def test_model_viewer_commands_read_their_parameter_words(self):
         self.check_parameter_words(
-            "decomp/src/ovl2143/ovl2143.c", "void func_801E39F0(", MODEL_VIEWER
+            "decomp/src/ovl2143/gear_model_scene.c", "void gear_model_run_effect_script(", MODEL_VIEWER
         )
 
     def test_event_records_follow_the_runners(self):
         viewer = case_bodies(
-            "decomp/src/ovl2143/ovl2143.c", "void func_801E5D44(", r"\n {8}case (\d):"
+            "decomp/src/ovl2143/gear_model_scene.c", "void gear_model_run_animation_events(", r"\n {8}case (\d):"
         )
         self.assertEqual(sorted(map(int, viewer)), sorted(MODEL_VIEWER_EVENTS))
         for kind, body in viewer.items():

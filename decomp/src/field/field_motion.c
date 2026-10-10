@@ -2712,8 +2712,8 @@ void field_actor_set_planar_velocity(Sprite *sprite, s16 heading, FieldDescripto
             sprite->speed_z = (-(gpu_get_sin(angle) * speed) >> 12) * descriptor->actor->scale[2];
         } else {
             layer = actor->state.bits.layer;
-            sprite->speed_x = -D_801E8670[layer]->moved[0] << 16;
-            sprite->speed_z = -D_801E8670[layer]->moved[2] << 16;
+            sprite->speed_x = -gear_model_actors[layer]->moved[0] << 16;
+            sprite->speed_z = -gear_model_actors[layer]->moved[2] << 16;
         }
     } else {
         sprite->speed_x = 0;
@@ -2745,11 +2745,11 @@ void field_actor_start_animation(void *model, s32 animation, FieldDescriptor *de
             sprite_start_animation(model, animation);
         }
     } else if (animation < 0x10) {
-        func_801E8330(descriptor->actor->state.bits.layer, 0, field_layer_animation_frames[animation]);
+        gear_model_select_and_call_entry(descriptor->actor->state.bits.layer, 0, field_layer_animation_frames[animation]);
         field_work.unk21E4[descriptor->actor->state.bits.layer] = field_layer_animation_frames[animation];
     } else {
         animation -= 0x10;
-        func_801E8330(descriptor->actor->state.bits.layer, 0, animation);
+        gear_model_select_and_call_entry(descriptor->actor->state.bits.layer, 0, animation);
         field_work.unk21E4[descriptor->actor->state.bits.layer] = animation;
     }
 }
@@ -2954,7 +2954,7 @@ conveyed:
         }
     }
     if ((actor->layer_flags & 0x22000) == 0x22000) {
-        entry = &D_801E8670[field_layer_next_index];
+        entry = &gear_model_actors[field_layer_next_index];
         actor->unk40[0] -= (((*entry)->moved[0] << 16) / (u16)actor->unk76) << 8;
         actor->unk40[2] -= (((*entry)->moved[2] << 16) / (u16)actor->unk76) << 8;
         field_layer_next_index++;

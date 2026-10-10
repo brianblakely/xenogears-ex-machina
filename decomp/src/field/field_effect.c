@@ -439,7 +439,7 @@ void field_effect_step_particle(Record78 *emitter, Particle *particle, MATRIX *v
                 emitter->unk50 = 0x1000;
                 break;
             case 1:
-                func_801E72CC(&m, &camera, emitter->unk72, emitter->unk74);
+                gear_model_get_node_matrix(&m, &camera, emitter->unk72, emitter->unk74);
                 SetRotMatrix(&m);
                 SetTransMatrix(&m);
                 sv.vx = emitter->unk0C.vx;

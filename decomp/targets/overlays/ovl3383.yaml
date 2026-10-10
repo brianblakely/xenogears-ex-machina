@@ -42,5 +42,5 @@ segments:
     start: 0x0
     vram: 0x801fc000
     subsegments:
-      - [0x0, c, ovl3383]
+      - [0x0, c, battle_module_spin_effect]
   - [0x5e4]

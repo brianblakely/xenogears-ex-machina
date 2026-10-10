@@ -268,7 +268,7 @@ void field_teardown(void) {
     module_loaded = &field_work.unk2264;
     field_texture_scrolls.count = 0;
     if (*module_loaded != 0) {
-        func_801E7FD4();
+        gear_model_shut_down();
         heap_free(field_layer_module);
         field_sync_and_flush_cache();
     }
@@ -1941,7 +1941,7 @@ void field_draw_models(void) {
                 actor = descriptor->actor;
                 pose = actor->unk128;
                 if (pose != 0xFFFF) {
-                    func_801E72CC(&field_view.components.descriptors[i].transform,
+                    gear_model_get_node_matrix(&field_view.components.descriptors[i].transform,
                                   &field_view.components.descriptors[i].transform, pose >> 12, pose & 0xFFF);
                     CompMatrix(&field_view.scaled_world, &field_view.components.descriptors[i].transform, &work);
                     CompMatrix(&work, &field_view.components.descriptors[i].matrix, &placed);
@@ -2027,7 +2027,7 @@ void field_layer_draw(void) {
         if (field_work.unk2264 != 0) {
             field_layer_update_emitter_lights();
             SetBackColor(field_work.unk225C[0], field_work.unk225C[1], field_work.unk225C[2]);
-            func_801E7D14(&field_view.scaled_world, field_work.unk221C, field_current_draw_block->ot, field_draw_buffer_index, 1);
+            gear_model_step_and_draw(&field_view.scaled_world, field_work.unk221C, field_current_draw_block->ot, field_draw_buffer_index, 1);
         }
         if (field_monitor_absent == 0) {
             field_debug_mark_cpu_time("GEAR      ");
@@ -2370,24 +2370,24 @@ void field_draw_sprite_actors(u_long *ot, s32 buffer) {
             }
         } else if (mode_debug_hide_layer == 0) {
             if (!(actor->flags & 0x10000) && !(actor->unk014 & 0x200002) && !(actor->layer_flags & 0x800)) {
-                D_801E8670[party]->flags &= 0xFFFE;
+                gear_model_actors[party]->flags &= 0xFFFE;
             } else {
-                D_801E8670[party]->flags |= 1;
+                gear_model_actors[party]->flags |= 1;
             }
             if (!(kind & 0x20)) {
-                D_801E8670[party]->active = 1;
+                gear_model_actors[party]->active = 1;
             } else {
-                D_801E8670[party]->active = 0;
+                gear_model_actors[party]->active = 0;
             }
             if (!(actor->layer_flags & 0x20000)) {
-                D_801E8670[party]->parts->rotation.vy = actor->unk108 + 0xC00;
+                gear_model_actors[party]->parts->rotation.vy = actor->unk108 + 0xC00;
             } else {
-                actor->heading_goal = actor->unk108 = D_801E8670[party]->parts->rotation.vy - 0xC00;
+                actor->heading_goal = actor->unk108 = gear_model_actors[party]->parts->rotation.vy - 0xC00;
             }
-            D_801E8670[party]->scale = (actor->scale[0] * field_work.layer_scales[party]) >> 12;
-            D_801E8670[party]->groundY = actor->position[1] >> 16;
-            D_801E8670[party]->parts->translation[0] = actor->position[0] >> 16;
-            D_801E8670[party]->parts->translation[2] = actor->position[2] >> 16;
+            gear_model_actors[party]->scale = (actor->scale[0] * field_work.layer_scales[party]) >> 12;
+            gear_model_actors[party]->groundY = actor->position[1] >> 16;
+            gear_model_actors[party]->parts->translation[0] = actor->position[0] >> 16;
+            gear_model_actors[party]->parts->translation[2] = actor->position[2] >> 16;
             party++;
             actor->layer_flags &= ~0x200;
         }
@@ -2797,8 +2797,8 @@ void field_layer_start(void) {
     if (field_work.unk2264 != 0) {
         field_music_wait_stream_and_disc_idle();
         field_sync_and_flush_cache();
-        func_801E738C(field_work.unk234A);
-        D_801E8644 = (MATRIX *)field_work.unk223C;
+        gear_model_init(field_work.unk234A);
+        gear_model_color_matrix = (MATRIX *)field_work.unk223C;
         SetBackColor(field_work.unk225C[0], field_work.unk225C[1], field_work.unk225C[2]);
         for (i = 0; i < field_work.unk2264; i++) {
             position = &field_work.layer_positions[i];
@@ -2806,11 +2806,11 @@ void field_layer_start(void) {
             position->vy = 0;
             position->vz = 0;
             row = field_work.unk225F[i];
-            func_801E742C(i, 0, mode_field_layer_script_files[i], mode_field_layer_model_files[i],
+            gear_model_create_actor(i, 0, mode_field_layer_script_files[i], mode_field_layer_model_files[i],
                           (s16)(0x240 - ((i + row) << 6)), 0x100, 0, (s16)(i + 0xFC),
                           &position->vx);
             heap_free(mode_field_layer_model_files[i]);
-            field_work.layer_scales[i] = D_801E8670[i]->scale;
+            field_work.layer_scales[i] = gear_model_actors[i]->scale;
         }
         heap_select_owner_tag(8, 0);
     }
@@ -3245,7 +3245,7 @@ void field_enter_map(void) {
     field_map_stream_start();
     field_dialogue_open_blocked = 1;
     if (field_work.unk2264 != 0) {
-        func_801E7378(1);
+        gear_model_set_instant_keyframes(1);
     }
     if (mode_result_code == 1 || mode_battle_return_fade == 1) {
         grow = 0;
@@ -3352,7 +3352,7 @@ void field_enter_map(void) {
         }
     }
     if (field_work.unk2264 != 0) {
-        func_801E7378(0);
+        gear_model_set_instant_keyframes(0);
     }
     field_vram_column_restore();
     heap_coalesce();

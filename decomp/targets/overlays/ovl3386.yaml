@@ -42,5 +42,5 @@ segments:
     start: 0x0
     vram: 0x801fc000
     subsegments:
-      - [0x0, c, ovl3386]
+      - [0x0, c, battle_module_scroll_effect]
   - [0x784]

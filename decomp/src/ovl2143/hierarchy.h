@@ -23,30 +23,30 @@ void model_alloc_packet_buffers(SpriteModel *model, void **packets0, void **pack
 void model_set_tpage_override(s16 x, s16 y);
 void model_set_clut_override(s16 x, s16 y);
 
-ModelTable *func_801DC22C(u8 *group, ModelTable *list);
-ModelPart *func_801DC2D0(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset, s16 x0, s16 y0,
+ModelTable *gear_model_build_model_list(u8 *group, ModelTable *list);
+ModelPart *gear_model_build_hierarchy(ModelTable *list, u16 *hierarchy, s32 mode, s32 offset, s16 x0, s16 y0,
                          s16 x1, s16 y1);
-u32 func_801DC5C0(ModelPart *parts, s32 scale);
-u32 func_801DC848(ModelPart *parts, s32 scale);
-void func_801DCD8C(ModelPart *parts);
-void func_801DCE18(ModelTable *list, s32 release_models);
-s32 func_801DDBF8(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale);
-u16 func_801DEF10(ModelPart *root, s16 *data);
-u16 func_801DF0B4(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s32 mode, s32 smooth,
+u32 gear_model_compose_hierarchy(ModelPart *parts, s32 scale);
+u32 gear_model_compose_scaled_hierarchy(ModelPart *parts, s32 scale);
+void gear_model_free_hierarchy(ModelPart *parts);
+void gear_model_free_model_list(ModelTable *list, s32 release_models);
+s32 gear_model_step_tweens(EffectPool *pool, ModelPart *parts, s32 tag, s32 scale);
+u16 gear_model_apply_keyframe(ModelPart *root, s16 *data);
+u16 gear_model_tween_to_keyframe(EffectPool *pool, ModelPart *part, s16 *data, s32 duration, s32 mode, s32 smooth,
                   s32 tag);
-void func_801DF52C(EffectPool *pool, ModelPart *part, s32 index, s32 mask);
-EffectPool *func_801DF5F4(EffectPool *pool, s32 capacity);
-void func_801DF668(EffectPool *pool);
-void func_801DF6A8(EffectPool *pool);
-EffectEntry *func_801DF6F0(EffectPool *pool);
-s32 func_801DF7A8(EffectPool *pool, EffectEntry *entry);
-s32 func_801DF7F4(EffectPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag);
-void func_801DFE8C(EffectPool *pool, ModelPart *parts);
-void func_801DFF78(EffectPool *pool, ModelPart *parts, u8 tag);
-void func_801E59D4(EffectPool *pool, ModelPart *part, s32 duration, s32 rx, s32 ry, s32 rz);
-void func_801E5B50(EffectPool *pool, ModelPart *part, s32 type, s32 arg3, s32 arg4, s32 duration,
+void gear_model_release_node_tweens(EffectPool *pool, ModelPart *part, s32 index, s32 mask);
+EffectPool *gear_model_alloc_tween_pool(EffectPool *pool, s32 capacity);
+void gear_model_free_tween_pool(EffectPool *pool);
+void gear_model_clear_tween_pool(EffectPool *pool);
+EffectEntry *gear_model_take_tween_slot(EffectPool *pool);
+s32 gear_model_free_tween_slot(EffectPool *pool, EffectEntry *entry);
+s32 gear_model_start_keyframe_tracks(EffectPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag);
+void gear_model_release_unkept_tweens(EffectPool *pool, ModelPart *parts);
+void gear_model_release_tagged_tweens(EffectPool *pool, ModelPart *parts, u8 tag);
+void gear_model_turn_node_to(EffectPool *pool, ModelPart *part, s32 duration, s32 rx, s32 ry, s32 rz);
+void gear_model_start_homing_turn(EffectPool *pool, ModelPart *part, s32 type, s32 limit, s32 gain, s32 duration,
                    s32 x, s32 y, s32 z);
-void func_801E6578(EffectPool *pool, s32 index, ModelPart *parts, ModelPart *other);
-void func_801E6668(ModelPart *parts, ModelPart *other);
+void gear_model_transfer_subtree(EffectPool *pool, s32 index, ModelPart *parts, ModelPart *other);
+void gear_model_transfer_visible_nodes(ModelPart *parts, ModelPart *other);
 
 #endif

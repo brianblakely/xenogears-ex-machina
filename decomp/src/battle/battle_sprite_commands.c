@@ -232,7 +232,7 @@ void battle_sprite_command_run(Sprite *sprite, s32 command, u8 *args) {
     }
     /* 54: the loaded battle module's 801fc898 (ovl3387: its effect on an 8 KB stack). */
     case 0x54:
-        func_801FC898();
+        battle_module_burst_play();
         break;
     /* 4f u8: play sound u8 of the sprite's bank on the last two effect voices (80039db8). */
     case 0x4F:
@@ -634,12 +634,12 @@ void battle_sprite_command_run(Sprite *sprite, s32 command, u8 *args) {
     /* 24: the loaded battle module's 801fc7b0 (ovl3385: hold the sprite in place under its
      * effect). */
     case 0x24:
-        func_801FC7B0(sprite, args);
+        battle_module_hold_start(sprite, args);
         break;
     /* 25: the loaded battle module's 801fc6fc (ovl3386: hold the sprite where it is under
      * the scrolling effect). */
     case 0x25:
-        func_801FC6FC(sprite, args);
+        battle_module_scroll_start(sprite, args);
         break;
     /* 02: end the trail (the child task running 800b5588). */
     case 0x2:
@@ -1466,7 +1466,7 @@ void battle_sprite_command_break_image(Sprite *sprite, u8 *args) {
         c = data[3] << 13;
     }
     view = sprite->renderer;
-    func_801FC4C4(view->pointer34, view->parts[0], &view->matrix, a, b, c, data[4] * 16, data[5] * 4);
+    battle_module_debris_start(view->pointer34, view->parts[0], &view->matrix, a, b, c, data[4] * 16, data[5] * 4);
     sprite->renderer->pointer34 = NULL;
     sprite->renderer->parts[0] = NULL;
     sprite->renderer->parts[1] = NULL;
@@ -1477,7 +1477,7 @@ void battle_sprite_command_break_image(Sprite *sprite, u8 *args) {
 void battle_sprite_command_spin(Sprite *sprite, u8 *args) {
     u8 *data = SCRIPT_DATA(args);
 
-    func_801FC53C(sprite, data[0] * 16, data[1], ((s8 *)data)[2] * 8, data[3] * 8, ((s8 *)data)[4] * 8, data[5]);
+    battle_module_spin_start(sprite, data[0] * 16, data[1], ((s8 *)data)[2] * 8, data[3] * 8, ((s8 *)data)[4] * 8, data[5]);
 }
 
 /* 800B6BFC: Script command: copy the screen to VRAM (0x2C0, 0x100) and shatter it

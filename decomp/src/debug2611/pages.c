@@ -6,14 +6,14 @@
 #include "pages.h"
 
 /* "\nChar#%d:", linked as original rodata below its user (INCLUDE_RODATA). */
-extern char D_8028007C[];
+extern char battle_debug_state_page_char_format[];
 
-/* Print the battle state page chosen by the resident debug page number:
+/* 8028022C: Print the battle state page chosen by the resident debug page number:
  * 1 the enemies' HP (their gear's when they fight in one) and the action
  * list, 2 the presentation events (type, parameter, target mask), 3 the
  * acting enemy's AI flags, 4 the party's and the characters' progress
  * counters. The action list's row y is computed from the index, (i + 2) * 8. */
-void func_8028022C(void) {
+void battle_debug_print_state_page(void) {
     s32 i, j;
     s32 x;
     s32 hp;
@@ -105,7 +105,7 @@ void func_8028022C(void) {
         }
         console_printf("\n");
         for (i = 0; i < 11; i++) {
-            console_printf(D_8028007C, i);
+            console_printf(battle_debug_state_page_char_format, i);
             for (j = 0; j < 7; j++) {
                 console_printf(" %d", game_data.characters[i].useCounts[j]);
             }
@@ -116,4 +116,4 @@ void func_8028022C(void) {
 
 /* "\nChar#%d:". A stray byte (0x2c) follows the string at the end of the
  * unit's rodata, so the literal is linked as original rodata. */
-INCLUDE_RODATA(".local/decomp/debug2611/asm/nonmatchings/pages", D_8028007C);
+INCLUDE_RODATA(".local/decomp/debug2611/asm/nonmatchings/pages", battle_debug_state_page_char_format); /* 8028007C */

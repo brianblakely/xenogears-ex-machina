@@ -2,14 +2,14 @@
  * and 3: 801e91e8, 801e9594) and their helpers (rodata 801E4034-801E4048,
  * text 801E8964-801E95BC, data 801E9680-801E96B4, its pointer at 801E96BC).
  * A unit of its own after load_modes: its jump table follows
- * func_801E8588's at 4 mod 8 without the pad one unit would give it. Built
+ * battle_setup_run_shatter_load_mode's at 4 mod 8 without the pad one unit would give it. Built
  * by the Cygnus CDK GCC 2.7.2 like load_modes (see ovl2615.mk). */
 #include "transitions.h"
 
-u8 D_801E9680 = 0;
-SVECTOR D_801E9684[3] = {{-80, -80, 0}, {176, -80, 0}, {-80, 176, 0}};
-SVECTOR D_801E969C[3] = {{80, -176, 0}, {80, 80, 0}, {-176, 80, 0}};
-u32 *D_801E96BC;
+u8 battle_setup_burst_variant = 0; /* 801E9680 */
+SVECTOR battle_setup_burst_upper_left_triangle[3] = {{-80, -80, 0}, {176, -80, 0}, {-80, 176, 0}}; /* 801E9684 */
+SVECTOR battle_setup_burst_lower_right_triangle[3] = {{80, -176, 0}, {80, 80, 0}, {-176, 80, 0}}; /* 801E969C */
+u32 *battle_setup_burst_current_ot; /* 801E96BC */
 
 /* Advance the two burst variants, keeping the twist variant's current speed
  * for the translation that follows. */
@@ -28,10 +28,10 @@ u32 *D_801E96BC;
         (speed_out) = (burst)->speed;                     \
     } while (0)
 
-/* Burst update: variant 1 turns faster and faster, rising and fading after
+/* 801E8964: Burst update: variant 1 turns faster and faster, rising and fading after
  * 67 frames; variant 0 twists and rises, fading after 25 frames. The empty
  * loops over the 2x14x20 grid are left from removed work. */
-void func_801E8964(Task *node) {
+void battle_setup_burst_update(Task *node) {
     SVECTOR unused; /* unused in the original; reserves 8 bytes */
     BurstTask *burst = node->data;
     s32 frame;
@@ -39,7 +39,7 @@ void func_801E8964(Task *node) {
     s32 speed;
     s32 i, j, k;
 
-    if (D_801E9680 != 0) {
+    if (battle_setup_burst_variant != 0) {
         BURST_ROTATE_STEP(burst, frame);
         burst->trans.vz -= 0x3C;
         growing = frame < 0x43;
@@ -64,10 +64,10 @@ void func_801E8964(Task *node) {
     }
 }
 
-/* Burst drawing: each corner rises by the sine (variant 1: of the angle
+/* 801E8A64: Burst drawing: each corner rises by the sine (variant 1: of the angle
  * plus its distance; otherwise the cosine of its distance) scaled by the
  * twist and lights up with it; projected with a 512 screen distance. */
-void func_801E8A64(Task *node) {
+void battle_setup_burst_draw(Task *node) {
     BurstTask *burst = node->data;
     BurstCell *cell;
     POLY_GT3 *prim;
@@ -98,7 +98,7 @@ void func_801E8A64(Task *node) {
                 corner = cell->corner;
                 prim = &cell->prim[battle_area.buffer];
                 for (k = 0; k != 3; k++) {
-                    if (D_801E9680 != 0) {
+                    if (battle_setup_burst_variant != 0) {
                         twist = burst->twist;
                         wave = gpu_get_sin(burst->angle + cell->distance[k]);
                     } else {
@@ -131,7 +131,7 @@ void func_801E8A64(Task *node) {
                                     (long *)&prim->x1, (long *)&prim->x2, &p, &flag);
                 otz >>= 6;
                 if (!(flag & 0x8000)) {
-                    AddPrim(D_801E96BC + otz, prim);
+                    AddPrim(battle_setup_burst_current_ot + otz, prim);
                 }
             }
         }
@@ -140,34 +140,34 @@ void func_801E8A64(Task *node) {
     SetGeomScreen(screen);
 }
 
-/* Release the burst task after the drawing finishes. */
-void func_801E8D48(void *block) {
+/* 801E8D48: Release the burst task after the drawing finishes. */
+void battle_setup_burst_release(void *block) {
     DrawSync(0);
     heap_free(block);
 }
 
-/* Unlink a task-registered burst and release it after the frame. */
-void func_801E8D7C(Task *node) {
+/* 801E8D7C: Unlink a task-registered burst and release it after the frame. */
+void battle_setup_burst_destroy_task(Task *node) {
     task_unlink_draw_node(node + 1);
     task_unlink_main_node(node);
     sprite_queue_free_later((u32)node);
 }
 
-/* Allocate and set up the burst. */
-BurstTask *func_801E8DB8(void) {
+/* 801E8DB8: Allocate and set up the burst. */
+BurstTask *battle_setup_burst_create(void) {
     BurstTask *task = heap_alloc(sizeof(BurstTask), 1);
 
     task->task.data = task;
     task->draw.data = task;
-    return func_801E8DF0(task);
+    return battle_setup_burst_init(task);
 }
 
-/* Set up the burst: the screen as two triangles per 16x16 cell over a
+/* 801E8DF0: Set up the burst: the screen as two triangles per 16x16 cell over a
  * 320x224 grid (textured from the copy at 0x2c0,0x100), each corner's
  * distance from the centre (variant 1: twice it; otherwise 3/5 of it). The
  * corners sit around the triangles' centroids: (x + 5 - 160, v + 5 - 112) * 16
  * for the first half, (x + 11 - 160, v + 11 - 112) * 16 for the second. */
-BurstTask *func_801E8DF0(BurstTask *burst) {
+BurstTask *battle_setup_burst_init(BurstTask *burst) {
     SVECTOR *triangle;
     POLY_GT3 *prim;
     VECTOR square;
@@ -175,7 +175,7 @@ BurstTask *func_801E8DF0(BurstTask *burst) {
     BurstCell *cell;
     s32 v, u, u_right, v_bottom, x, y;
 
-    if (D_801E9680 != 0) {
+    if (battle_setup_burst_variant != 0) {
         burst->frame = 0;
         burst->twist = 0x400;
         burst->brightness = 0x80;
@@ -201,7 +201,7 @@ BurstTask *func_801E8DF0(BurstTask *burst) {
                 v = row * 16;
                 x = col * 16;
                 cell = &burst->cells[half][row][col];
-                triangle = half == 0 ? D_801E9684 : D_801E969C;
+                triangle = half == 0 ? battle_setup_burst_upper_left_triangle : battle_setup_burst_lower_right_triangle;
                 for (k = 0; k != 3; k++) {
                     copyVector(&cell->corner[k], &triangle[k]);
                     if (half == 0) {
@@ -214,7 +214,7 @@ BurstTask *func_801E8DF0(BurstTask *burst) {
                     }
                     copyVector(&square, &cell->corner[k]);
                     Square0(&square, &square);
-                    if (D_801E9680 != 0) {
+                    if (battle_setup_burst_variant != 0) {
                         cell->distance[k] = SquareRoot0(square.vx + square.vy) * 2;
                     } else {
                         cell->distance[k] = SquareRoot0(square.vx + square.vy) * 3 / 5;
@@ -254,9 +254,9 @@ BurstTask *func_801E8DF0(BurstTask *burst) {
     return burst;
 }
 
-/* Load mode (burst): like the shatter mode, but the background fades before
+/* 801E91E8: Load mode (burst): like the shatter mode, but the background fades before
  * the burst runs on the scratchpad stack. */
-void func_801E91E8(void) {
+void battle_setup_run_burst_load_mode(void) {
     RECT rect;
     u16 *screen;
     u16 *pixel;
@@ -310,14 +310,14 @@ void func_801E91E8(void) {
     work->buffers[1].drawEnv.g0 = 0;
     work->buffers[0].drawEnv.b0 = 0;
     work->buffers[1].drawEnv.b0 = 0;
-    burst = func_801E8DB8();
+    burst = battle_setup_burst_create();
     while (frames != 0 || state != 5) {
         if (frames > 0) {
             frames--;
         }
         swap_buffers();
         battle_area.buffer = 1 - battle_area.buffer;
-        D_801E96BC = battle_area.ot;
+        battle_setup_burst_current_ot = battle_area.ot;
         if (cd_get_pending_read_count() == 0) {
             switch (state) {
             case 0:
@@ -329,7 +329,7 @@ void func_801E91E8(void) {
             case 1:
             case 3:
             case 4:
-                func_801E5840(phase);
+                battle_setup_run_phase(phase);
                 phase++;
                 state++;
                 break;
@@ -344,8 +344,8 @@ void func_801E91E8(void) {
             sprite_add_clamp_byte(battle_area.buffers[battle_area.buffer].drawEnv.b0, -12);
         /* Run the burst on a stack at the top of the scratchpad. */
         STACK_ENTER(0x1F8003FC);
-        func_801E8964(&burst->task);
-        func_801E8A64(&burst->task);
+        battle_setup_burst_update(&burst->task);
+        battle_setup_burst_draw(&burst->task);
         STACK_LEAVE();
         DrawSync(0);
         VSync(2);
@@ -353,14 +353,14 @@ void func_801E91E8(void) {
         PutDrawEnv(&battle_area.current->drawEnv);
         DrawOTag((u_long *)&battle_area.current->ot[0xFFF]);
     }
-    func_801E8D48(burst);
+    battle_setup_burst_release(burst);
     SetDispMask(0);
     cd_sync_reads(0);
-    func_801E5840(3);
+    battle_setup_run_phase(3);
 }
 
-/* Load mode: the burst's variant 1. */
-void func_801E9594(void) {
-    D_801E9680 = 1;
-    func_801E91E8();
+/* 801E9594: Load mode: the burst's variant 1. */
+void battle_setup_run_burst_variant1_load_mode(void) {
+    battle_setup_burst_variant = 1;
+    battle_setup_run_burst_load_mode();
 }

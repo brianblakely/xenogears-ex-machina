@@ -21,13 +21,13 @@
 #include "battle/frame.h"
 #include "debris.h"
 
-SVECTOR D_801FCE14 = {0, 0, 0};
+SVECTOR battle_module_debris_origin = {0, 0, 0}; /* 801FCE14 */
 
 /* The vertex named by the primitive's n-th halfword. */
 #define VERTEX(n) ((SVECTOR *)(((u16 *)desc)[n] * sizeof(SVECTOR) + (s32)vertices))
 
-/* Release the pieces, their primitives and the task. */
-void func_801FC074(Task *node) {
+/* 801FC074: Release the pieces, their primitives and the task. */
+void battle_module_debris_destroy(Task *node) {
     DebrisTask *debris = node->data;
 
     heap_free(debris->pieces);
@@ -37,9 +37,9 @@ void func_801FC074(Task *node) {
     heap_free(debris);
 }
 
-/* Move and spin every piece under gravity; the effect ends when its life
+/* 801FC0CC: Move and spin every piece under gravity; the effect ends when its life
  * runs out. */
-void func_801FC0CC(Task *node) {
+void battle_module_debris_update(Task *node) {
     DebrisTask *debris = node->data;
     Piece *piece = debris->pieces;
     s32 count = debris->count;
@@ -59,11 +59,11 @@ void func_801FC0CC(Task *node) {
     }
 }
 
-/* Draw every piece: place it by its position and rotation under the model's
+/* 801FC1A8: Draw every piece: place it by its position and rotation under the model's
  * matrix and the camera, project its corners into its primitive and queue it.
  * Each primitive kind has its own case (the compiler merges the identical
  * ones afterwards). */
-void func_801FC1A8(Task *node) {
+void battle_module_debris_draw(Task *node) {
     DebrisTask *debris;
     Piece *piece;
     ScriptCommand *desc;
@@ -154,14 +154,14 @@ void func_801FC1A8(Task *node) {
     }
 }
 
-/* Opcode entry: break `model` (placed by `matrix`) into one piece per
+/* 801FC4C4: Opcode entry: break `model` (placed by `matrix`) into one piece per
  * primitive. Each piece keeps its corners about its centre and flies from the
  * model's origin outward at `speed` plus a random part of `speed_range`,
  * spinning by a random part of `spin_range`, falling under `gravity`, for
  * `life` frames. `prims` holds the model's primitives, or 0 to build them
  * (twice: one copy per display buffer). The primitives are read through
  * `source`, a copy of `model` (the original keeps the two apart). */
-void func_801FC4C4(ScriptEntry *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 speed, s32 speed_range,
+void battle_module_debris_start(ScriptEntry *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 speed, s32 speed_range,
                    s32 spin_range, s32 life) {
     DebrisTask *debris;
     Piece *piece;
@@ -176,7 +176,7 @@ void func_801FC4C4(ScriptEntry *model, u8 *prims, MATRIX *matrix, s32 gravity, s
     u8 *buffer;
     ScriptEntry *source;
 
-    debris = (DebrisTask *)task_alloc_two_node_task(sizeof(DebrisTask), NULL, func_801FC0CC, func_801FC1A8, func_801FC074);
+    debris = (DebrisTask *)task_alloc_two_node_task(sizeof(DebrisTask), NULL, battle_module_debris_update, battle_module_debris_draw, battle_module_debris_destroy);
     debris->model = model;
     count = model->count;
     debris->count = count;
@@ -333,7 +333,7 @@ void func_801FC4C4(ScriptEntry *model, u8 *prims, MATRIX *matrix, s32 gravity, s
         velocity.vx = speed + r;
         velocity.vy = 0;
         velocity.vz = 0;
-        battle_get_direction_angles(&centre, &D_801FCE14, &angles);
+        battle_get_direction_angles(&centre, &battle_module_debris_origin, &angles);
         gpu_build_rotation_matrix(&angles, &m);
         ApplyMatrixLV(&m, &velocity, &velocity);
         piece->velocity[0] = velocity.vx;

@@ -33,10 +33,10 @@ typedef struct {
     Piece *pieces;      /* +70 */
 } DebrisTask;
 
-extern SVECTOR D_801FCE14; /* origin */
+extern SVECTOR battle_module_debris_origin; /* origin */
 
-void func_801FC074(Task *node);
-void func_801FC0CC(Task *node);
-void func_801FC1A8(Task *node);
+void battle_module_debris_destroy(Task *node);
+void battle_module_debris_update(Task *node);
+void battle_module_debris_draw(Task *node);
 
 #endif

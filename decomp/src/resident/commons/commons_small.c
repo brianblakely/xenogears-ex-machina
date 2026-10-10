@@ -43,7 +43,7 @@ u8 menu_state_screen; /* 80059460: menu screen */
 s32 task_active_main_count; /* 80059464: active main-list tasks */
 u8 mode_battle_party_ids[3]; /* 80059468: battle */
 u8 mode_unread_battle_setup_byte; /* 8005946C */
-u8 *mode_battle_stage_file; /* 80059470: the battle stage file (mode_load_battle_stage; ovl2615 func_801E7210) */
+u8 *mode_battle_stage_file; /* 80059470: the battle stage file (mode_load_battle_stage; ovl2615 battle_setup_build_stage) */
 s32 commons_unused_word_a; /* 80059474: unreferenced */
 s32 sound_effect_channel_count; /* 80059478: voice count of the effect channels */
 u8 mode_pending_battle_formation; /* 8005947C: the next battle's formation + 1 (resident/mode.h) */
@@ -54,7 +54,7 @@ u16 pad_port0_pressed; /* 8005948C: pad buttons pressed */
 u16 pad_port1_pressed; /* 80059490: pad buttons pressed, second port */
 s16 task_catch_up_frame_count; /* 80059494 */
 s32 *model_lit_color_cache; /* 80059498: lit-color cache */
-u8 *mode_battle_scene_file; /* 8005949C: the battle scene data (mode_load_battle_stage; ovl2615 func_801E7210) */
+u8 *mode_battle_scene_file; /* 8005949C: the battle scene data (mode_load_battle_stage; ovl2615 battle_setup_build_stage) */
 s32 commons_unused_word_b; /* 800594A0: unreferenced */
 u16 pad_port0_repeated; /* 800594A4: pad buttons repeated */
 u16 pad_port1_repeated; /* 800594A8: pad buttons repeated, second port */

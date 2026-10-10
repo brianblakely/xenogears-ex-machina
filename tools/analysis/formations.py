@@ -19,7 +19,7 @@ from:
   (worldmap_encounter_roll) draws by the 16 weights at +0x200 + 16 * bracket, the bracket
   from the scene id (variable 0) against worldmap_encounter_level_brackets, and copies the kind's set.
 - the debug battle selector: the first 0x200 bytes of (0x20, 3) file 4-6 or
-  7 + n (ovl2606 func_801E0A34).
+  7 + n (ovl2606 battle_scene_select_main).
 
 A field script names formation n of its map's set for a battle (events 71 and
 fe 84, operand 1, an immediate when bit 15 is set: field_event_request_battle,
@@ -73,14 +73,14 @@ FIELDS = (
 )
 # The flag bits a reader tests (formation.h); no reader tests 0x01-0x04.
 FLAGS = {
-    0x08: "noresults",  # ovl2596 func_801E2280, battle battle_main
-    0x10: "party10",  # ovl2615 func_801E5384 (battle_uses_fixed_party), battle battle_upload_party_portraits, ovl2596
-    0x20: "event",  # ovl2615 func_801E5014 (battle_uses_event_script), ovl3087 battle_event_script_load
-    0x40: "cmd7",  # ovl2615 func_801E5014
-    0x80: "cmd8",  # ovl2615 func_801E5014
+    0x08: "noresults",  # ovl2596 battle_results_grant_rewards, battle battle_main
+    0x10: "party10",  # ovl2615 battle_setup_load_party_and_enemy_files (battle_uses_fixed_party), battle battle_upload_party_portraits, ovl2596
+    0x20: "event",  # ovl2615 battle_setup_init_command_menus (battle_uses_event_script), ovl3087 battle_event_script_load
+    0x40: "cmd7",  # ovl2615 battle_setup_init_command_menus
+    0x80: "cmd8",  # ovl2615 battle_setup_init_command_menus
 }
 EVENT = 0x20
-NO_ENEMY = 0x7F  # enemyIds & 0x7f (ovl2615 func_801E4160)
+NO_ENEMY = 0x7F  # enemyIds & 0x7f (ovl2615 battle_setup_place_formation)
 GEAR = 0x80  # enemyIds: slot byte 4
 HIDDEN, BYTE5 = 0x80, 0x01  # enemyFlags: slot bytes 3 and 5
 FIRST_ENEMY_SLOT = 3
@@ -92,7 +92,7 @@ AREA_DIRECTORY = (0x24, 0)  # the world map's (80028470(0x24, 0))
 AREA_TABLES = 0x2C  # AreaHeader word 11: the 16 terrain tables (worldmap_unpack_area_data)
 KINDS = 16
 BRACKET_UNIT = "worldmap/worldmap_movement_terrain.c"  # worldmap_encounter_level_brackets
-DEBUG_DIRECTORY = (0x20, 3)  # ovl2606 func_801E0A34: 80028470(0x20, 3)
+DEBUG_DIRECTORY = (0x20, 3)  # ovl2606 battle_scene_select_main: 80028470(0x20, 3)
 DEBUG_FIRST = 4  # Event1-3 are files 4-6, FileNo n file 7 + n
 STAGE_DIRECTORY = (12, 3)  # mode_load_battle_stage: 80028470(12, 3)
 STAGE_COUNT = 5  # mode_load_battle_stage: scene < the file count of entry 5 / 2

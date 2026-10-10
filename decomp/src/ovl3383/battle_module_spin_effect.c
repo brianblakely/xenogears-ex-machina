@@ -17,17 +17,17 @@
 #include "battle/sprite.h"
 #include "spin.h"
 
-/* Advance the effect's angle by its step. */
-void func_801FC000(Task *node) {
+/* 801FC000: Advance the effect's angle by its step. */
+void battle_module_spin_update(Task *node) {
     SpinTask *spin = node->data;
 
     spin->angle += spin->step;
 }
 
-/* Draw the actor's first sprite part as 4-pixel rows from the bottom up, each
+/* 801FC020: Draw the actor's first sprite part as 4-pixel rows from the bottom up, each
  * row's top edge shifted by the sine of an angle that advances (with a growing
  * step and swing) from row to row, so the sprite twists around its axis. */
-void func_801FC020(Task *node) {
+void battle_module_spin_draw(Task *node) {
     SpinTask *spin = node->data;
     Sprite *actor = spin->actor;
     Sprite *owner; /* never set before its use below (a bug in the original) */
@@ -143,17 +143,17 @@ void func_801FC020(Task *node) {
     } while (top < row);
 }
 
-/* Opcode entry: start the effect circling `actor` from `angle`, advancing by
+/* 801FC53C: Opcode entry: start the effect circling `actor` from `angle`, advancing by
  * `step` each frame (operands from the battle script, see 800b6b98). */
-void func_801FC53C(Sprite *actor, s32 angle, s32 radius, s32 arg3, s32 arg4, s32 arg5, s32 step) {
+void battle_module_spin_start(Sprite *actor, s32 angle, s32 radius, s32 swing_growth, s32 row_angle_step, s32 angle_step_growth, s32 step) {
     SpinTask *spin;
 
-    spin = (SpinTask *)task_alloc_two_node_task(sizeof(SpinTask), actor->block, func_801FC000, func_801FC020, NULL);
+    spin = (SpinTask *)task_alloc_two_node_task(sizeof(SpinTask), actor->block, battle_module_spin_update, battle_module_spin_draw, NULL);
     spin->actor = actor;
     spin->radius = radius;
-    spin->arg3 = arg3;
-    spin->arg4 = arg4;
-    spin->arg5 = arg5;
+    spin->arg3 = swing_growth;
+    spin->arg4 = row_angle_step;
+    spin->arg5 = angle_step_growth;
     spin->angle = angle;
     spin->step = step;
 }

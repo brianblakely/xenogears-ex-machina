@@ -308,7 +308,7 @@ void battle_run_intro_swirl(void) {
             case 1:
             case 3:
             case 4:
-                func_801E5840(phase);
+                battle_setup_run_phase(phase);
                 phase++;
                 step++;
                 break;
@@ -331,7 +331,7 @@ void battle_run_intro_swirl(void) {
     battle_free_after_drawsync(shatter);
     SetDispMask(0);
     cd_sync_reads(0);
-    func_801E5840(3);
+    battle_setup_run_phase(3);
 }
 
 /* 800B7C28: Clear battle_unread_single_action_loaded. */

@@ -255,7 +255,7 @@ void func_801CE32C(void) {
 /* Draw the separately loaded model when shown. */
 void func_801CE7E0(void) {
     if (menu_state_current->flags->model_shown != 0) {
-        func_801E7D14(&menu_state_current->matrix2, &menu_state_current->light, menu_state_current->current->ot_big, menu_state_current->buffer_index);
+        gear_model_step_and_draw(&menu_state_current->matrix2, &menu_state_current->light, menu_state_current->current->ot_big, menu_state_current->buffer_index);
     }
 }
 
@@ -574,17 +574,17 @@ void func_801CFAB8(u8 slot, u8 gear) {
     u8 variant;
 
     variant = 0;
-    func_801E742C(slot, 0, menu_state_current->model_parts[slot]->data0, menu_state_current->model_parts[slot]->data1,
+    gear_model_create_actor(slot, 0, menu_state_current->model_parts[slot]->data0, menu_state_current->model_parts[slot]->data1,
                   slot * 64 + 0x200, 0, 0, slot + 0x1C0, menu_state_current->model_parts[slot]->position);
-    D_801E8670[slot]->groundY = D_801D6DB4[gear];
-    D_801E8670[slot]->scale = D_801D6DD8[gear];
-    D_801E8670[1]->parts->rotation.vy -= 0x400;
+    gear_model_actors[slot]->groundY = D_801D6DB4[gear];
+    gear_model_actors[slot]->scale = D_801D6DD8[gear];
+    gear_model_actors[1]->parts->rotation.vy -= 0x400;
     model_ot_depth_shift = 0;
-    D_801E8670[1]->parts->rotation.vx -= 0x20;
+    gear_model_actors[1]->parts->rotation.vx -= 0x20;
     if (gear != 0xFF) {
         variant = D_801D6DA0[gear];
     }
-    func_801E8330(slot, 0, variant);
+    gear_model_select_and_call_entry(slot, 0, variant);
     heap_free(menu_state_current->model_parts[slot]->data1);
     menu_state_current->model_parts[slot]->unk12 = 1;
     func_801CF448();
@@ -734,7 +734,7 @@ void func_801D0398(u8 back) {
         }
         func_801CC1C4();
         menu_state_current->model_parts[1]->unk12 = 0;
-        func_801E8030(1);
+        gear_model_free_actor(1);
         func_801CC1C4();
         func_801CF9BC(game_data.characters[member].gearId, 1);
         D_801D9084 = game_data.characters[member].gearId;
@@ -2435,7 +2435,7 @@ void func_801D5D38(void) {
     s32 i;
 
     i = 0;
-    func_801E738C(0x40);
+    gear_model_init(0x40);
     menu_state_current->light.direction.vx = 0x546;
     menu_state_current->light.direction.vy = -0xE39;
     menu_state_current->light.direction.vz = 0x546;
@@ -2454,7 +2454,7 @@ void func_801D5D38(void) {
     menu_state_current->light.colour.m[2][0] = 0x600;
     menu_state_current->light.colour.m[2][1] = 0;
     menu_state_current->light.colour.m[2][2] = 0;
-    D_801E8644 = &menu_state_current->light.colour;
+    gear_model_color_matrix = &menu_state_current->light.colour;
     SetBackColor(0x3C, 0x3C, 0x3C);
     menu_state_current->buffers[0].ot_big = menu_state_big_ots[0];
     menu_state_current->buffers[1].ot_big = menu_state_big_ots[1];
@@ -2478,7 +2478,7 @@ void func_801D5EB8(void) {
     D_801D697C = 0;
     menu_state_current->flags->model_shown = 0;
     func_801CC1C4();
-    func_801E7FD4();
+    gear_model_shut_down();
     menu_state_current->model_parts[0]->unk12 = 0;
     menu_state_current->model_parts[1]->unk12 = 0;
     heap_free(menu_state_current->model_parts[0]);

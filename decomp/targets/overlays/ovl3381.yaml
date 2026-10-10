@@ -42,6 +42,6 @@ segments:
     start: 0x0
     vram: 0x801fc000
     subsegments:
-      - [0x0, c, ovl3381]
-      - [0x6f8, .data, ovl3381]
+      - [0x0, c, battle_module_tiles_effect]
+      - [0x6f8, .data, battle_module_tiles_effect]
   - [0x728]

@@ -34,9 +34,9 @@ typedef struct {
 
 extern s32 mode_kernel_menu_cursor;           /* kernel menu cursor */
 extern s32 *mode_disc_mode_pointer;
-extern u8 *mode_battle_stage_file;  /* the battle stage file (mode_load_battle_stage; ovl2615 func_801E7210) */
+extern u8 *mode_battle_stage_file;  /* the battle stage file (mode_load_battle_stage; ovl2615 battle_setup_build_stage) */
 extern s32 mode_battle_stage_unused_word;
-extern u8 *mode_battle_scene_file;  /* the battle scene data (mode_load_battle_stage; ovl2615 func_801E7210) */
+extern u8 *mode_battle_scene_file;  /* the battle scene data (mode_load_battle_stage; ovl2615 battle_setup_build_stage) */
 
 /* Game state reset by 8001aadc. */
 extern s32 mode_unread_play_record_word, mode_field_entered_once, mode_music_cached_seq, mode_staff_roll_enabled, mode_worldmap_area_load_count, mode_music_load_pending;

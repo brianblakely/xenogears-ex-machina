@@ -21,6 +21,6 @@ void field_layer_load_and_start(void);          /* load, then start */
 
 /* The module's draw, which each target declares itself (ovl2143/actors.h
  * says why); the field's light matrix is its work block's s16 rows. */
-void func_801E7D14(MATRIX *m, s16 (*light)[3], u_long *ot, s32 buffer, s32 elapsed);
+void gear_model_step_and_draw(MATRIX *m, s16 (*light)[3], u_long *ot, s32 buffer, s32 elapsed);
 
 #endif

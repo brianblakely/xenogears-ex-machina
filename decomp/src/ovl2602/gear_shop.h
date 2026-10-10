@@ -89,7 +89,7 @@ u8 mode_get_random_byte_in_range(u8 low, u8 high); /* random number in [low, hig
  * arguments where the module takes five (the fifth, the frames elapsed, is
  * read from a stack slot this call does not write), with its light record,
  * whose first 0x20 bytes the module reads as the light matrix. */
-void func_801E7D14(MATRIX *m, MenuLight *light, u32 *ot, s32 buffer);
+void gear_model_step_and_draw(MATRIX *m, MenuLight *light, u32 *ot, s32 buffer);
 
 /* The screen code's data and calls the Gear screen uses (ovl2602.c). */
 extern u8 D_801D697C;    /* the model values debug display is on */

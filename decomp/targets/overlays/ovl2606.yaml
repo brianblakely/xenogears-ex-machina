@@ -42,7 +42,7 @@ segments:
     start: 0x0
     vram: 0x801e0000
     subsegments:
-      - [0x0, .rodata, ovl2606]
-      - [0x124, c, ovl2606]
-      - [0xd40, .data, ovl2606]
+      - [0x0, .rodata, battle_scene_select_screen]
+      - [0x124, c, battle_scene_select_screen]
+      - [0xd40, .data, battle_scene_select_screen]
   - [0x1ddc]

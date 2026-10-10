@@ -5,9 +5,9 @@
  * (ovl2615.mk); its rodata opens the image. */
 #include "stage.h"
 
-/* Relocate the stage image list and take the bounds of its pixel sections
+/* 801E70E8: Relocate the stage image list and take the bounds of its pixel sections
  * (kind 0x1101: position, offset, size); returns the bounds' area. */
-s32 func_801E70E8(s32 *images) {
+s32 battle_setup_compute_stage_image_bounds(s32 *images) {
     s32 left;
     s32 top;
     s32 right;
@@ -59,7 +59,7 @@ s32 func_801E70E8(s32 *images) {
     return width * height;
 }
 
-/* Set up the battle stage: register the stage model and place its parts,
+/* 801E7210: Set up the battle stage: register the stage model and place its parts,
  * move the scene data into its own block, start the stage motion, take the
  * origin and colour matrix, build the stage objects (panoramas, backdrop,
  * fog, texture scrolls) and publish the scene's points and triangles. Returns whether
@@ -67,7 +67,7 @@ s32 func_801E70E8(s32 *images) {
 /* The relocated section pointers stay NULL for a zero offset (the original
  * converts these tests to masks), and a failed allocation returns without a
  * value: the original leaves the allocator's NULL in v0. */
-u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin, s16 *colours,
+u8 battle_setup_build_stage(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin, s16 *colours,
                  u8 *tint) {
     BattleScene *data;
     StageInfo *info;
@@ -109,7 +109,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     if (stage != NULL) {
         heap_unprotect_block(stage);
         battle_create_object(0x1F, 0xC4, stage, stage, 0, 0, 0, 0, 0);
-        func_801E70E8(stage->images);
+        battle_setup_compute_stage_image_bounds(stage->images);
         position = stage->positions;
         part = battle_objects[STAGE_MODEL]->hierarchy;
         battle_stage_model_parts = part;
@@ -211,7 +211,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
             break;
         case 3:
             if (battle_stage_sky == NULL) {
-                battle_stage_sky = func_801E7914(object->v10, object->v12, info->backdrop[2],
+                battle_stage_sky = battle_setup_create_stage_sky(object->v10, object->v12, info->backdrop[2],
                     info->backdrop[3], object->v14, object->v1E, object->v16, object->v1A,
                     object->v1C, info->backdrop[0], info->backdrop[1], (VECTOR *)object,
                     (CVECTOR *)info->fogColour, object->v20, object->v22);
@@ -236,7 +236,7 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
         tint[2] = info->fogColour[2];
     }
     if (points != NULL && triangles != NULL) {
-        func_801E7EC4(points, triangles, *triangle_count);
+        battle_setup_register_scene_ground(points, triangles, *triangle_count);
     }
     for (i = 0; i < 4; i++) {
         battle_scene_part_speeds[i] = ((BattleScene *)mode_battle_scene_data)->info.flags[i];
@@ -247,10 +247,10 @@ u8 func_801E7210(BattleScene **scene, s32 unused, StageFile *stage, s16 *origin,
     return fog;
 }
 
-/* Build the stage backdrop: its placement, the 9 x 9 floor grid spaced by
+/* 801E7914: Build the stage backdrop: its placement, the 9 x 9 floor grid spaced by
  * step, the tiles' texture page and palette, the fills and fades in the
  * given colours, and the draw modes. Returns NULL without memory. */
-StageBackdrop *func_801E7914(s16 texX, s16 texY, s16 width, s16 height, s16 size, s16 step,
+StageBackdrop *battle_setup_create_stage_sky(s16 texX, s16 texY, s16 width, s16 height, s16 size, s16 step,
                              s16 v0A, s16 clutX, s16 clutY, s16 v10, s16 v12, VECTOR *position,
                              CVECTOR *colour, s16 v0C, s16 v0E) {
     DRAWENV env;
@@ -378,10 +378,10 @@ StageBackdrop *func_801E7914(s16 texX, s16 texY, s16 width, s16 height, s16 size
     return backdrop;
 }
 
-/* Register the scene's points and triangles (the battle's ground geometry,
+/* 801E7EC4: Register the scene's points and triangles (the battle's ground geometry,
  * battle/scene.h); clear each triangle's visit stamp. Without triangles both
  * pointers are cleared. */
-void func_801E7EC4(SVECTOR *points, SceneTriangle *triangles, s32 count) {
+void battle_setup_register_scene_ground(SVECTOR *points, SceneTriangle *triangles, s32 count) {
     s32 i;
 
     battle_scene_points = points;

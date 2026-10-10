@@ -49,7 +49,7 @@ void menu_detail_layout_tabs(u8 slot, u8 mode, u8 second);
 u8 menu_save_command_stays_open = 0; /* 801E96A4: the file screen saves (nonzero) or loads */
 /* The flag menu_saving_at_cd_change (0), then 08 00 before the word-aligned masks, which
  * nothing reads: taken as its padding, holding stray bytes, by analogy with
- * battle's flag battle_applying_item_results (08 00 00) and ovl2596's D_801E44C0 (04 00 00);
+ * battle's flag battle_applying_item_results (08 00 00) and ovl2596's battle_results_fanfare_started (04 00 00);
  * neither the bytes nor the vendor tools tell it from an unreferenced byte 8
  * (docs/matching.md). It stays original data (slot39.classification.txt). */
 INCLUDE_ORIGINAL_UNALIGNED(".data", menu_saving_at_cd_change, 0x801E96A5, 3);

@@ -89,7 +89,7 @@ segments:
       # the main unit (80070E2C). Objects followed by stray bytes
       # (battle_in_automatic_turn, battle_applying_item_results, battle_combo_step_flags, battle_music_lowered, battle_showing_status_drains,
       # battle_effects_disabled, battle_condition_idle_motions, and 800C3488, unreferenced, whose object and
-      # padding are inferred by analogy with ovl2596's D_801E44C0) are
+      # padding are inferred by analogy with ovl2596's battle_results_fanfare_started) are
       # included from the original in their units (INCLUDE_ORIGINAL).
       - [0x52558, .data, battle_turns_and_hud]
       - [0x5399C, .data, battle_menus_and_resolver]

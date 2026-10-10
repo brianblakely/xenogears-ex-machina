@@ -1,2 +1,8 @@
 // Names tools/names.py gave these addresses (docs/matching.md, Names).
 battle_area = 0x800C3EB0;
+battle_module_tiles_update = 0x801FC000; // type:func
+battle_module_tiles_draw = 0x801FC064; // type:func
+battle_module_tiles_destroy = 0x801FC278; // type:func
+battle_module_tiles_start = 0x801FC2C0; // type:func
+battle_module_tiles_unused_upper_left_triangle = 0x801FC6F8;
+battle_module_tiles_unused_lower_right_triangle = 0x801FC710;

@@ -16,13 +16,13 @@ record has +0x15a bit 0x80 (fighting in a gear), or a descriptor with flagsA bit
 (an enemy keeps its own) and calls battle_gear_formula_table[formula](). The 0x28-byte
 descriptors come from the battle setup archive, directory (12, 0) file 3
 (resident mode_battle_load_files), an offset table of packed blocks that ovl2615
-func_801E5384 unpacks: archive[4] holds the enemy commands, archive[5 + character]
+battle_setup_load_party_and_enemy_files unpacks: archive[4] holds the enemy commands, archive[5 + character]
 a party member's and archive[0x11 + gear] its gear's (copies of 0x1f40, 0x5f0
 and 0x690 bytes). An enemy's command is the arg1 byte of its AI's type-1
 action-list entries (battle_action_list_act -> battle_commit_action), so the census also reads
 which commands the enemy data files' AI scripts select (tools.analysis.battle_ai)
 and whether each enemy fights in a gear (its record's +0x15a, copied by ovl2615
-func_801E4870).
+battle_setup_copy_enemy_records_and_ai).
 
 Model primitives (decomp/src/resident/model_renderer.c). model_build_packets builds and
 model_draw_sprite_model draws a model's primitive groups, a header {u8 type, u8, s16 count}
@@ -39,7 +39,7 @@ ones by model_relocate_sprite_model) come from these loaders:
   0x6bb + 2k (field field_layer_load, the gear shop's func_801CF9BC);
 * battle objects (battle_create_object: the group between the model file's entries 2
   and 3): stage files (12, 3) 6 + 2s (resident mode_load_battle_stage), the model entries
-  of enemy set files (12, 1) 2n + 3 (ovl2615 func_801E6314), object sets
+  of enemy set files (12, 1) 2n + 3 (ovl2615 battle_setup_build_enemy_sources_and_models), object sets
   (0x28, 0) 2s + 1 (battle_read_object_set_files), gears (0x28, 1) base + 1 and their part
   files base + 2 + v by battle_gear_file_table (battle_read_gear_files, battle_create_object_from_files);
 * arena model files (0x30, 1) id + 2 (menu arena_actor_load_model; relocated against the
@@ -208,7 +208,7 @@ FORMULA = 0x16  # CommandDescriptor.formula
 FLAGS_A = 0x0A  # CommandDescriptor.flagsA
 GEAR_DESCRIPTOR = 0x10  # flagsA bit battle_resolve_action hands to battle_resolve_gear_action
 SETUP_ARCHIVE = (12, 0, 3)  # mode_battle_load_files: 80028470(12, 0), file 3 into mode_battle_setup_archive
-# func_801E5384: archive entry, bytes copied, and the first entry after the run
+# battle_setup_load_party_and_enemy_files: archive entry, bytes copied, and the first entry after the run
 # (archive[0x10] and archive[0x24] are loaded for other uses).
 ENEMY_COMMANDS = (4, 0x1F40, 5)
 PARTY_COMMANDS = (5, 0x5F0, 0x10)  # archive[5 + character]
@@ -390,16 +390,16 @@ TECHNIQUE_BASE = 21
 NEW_GAME = (0x10, 0, 3)  # mode_load_initial_game_data: the game data a new game starts from
 CHARACTER, CHARACTERS, GEAR_ID = 0x26C, 11, 0xA0  # 0xa4-byte records, +0xa0 the gear
 SKILLS, MASK6 = 0x16C0, 6  # 0x20-byte CharacterBattleData per character
-RESULTS = (0x10, 2, 2)  # ovl2596 func_801E211C: item 0 is the growth table (+0x5f20)
-GROWTH, UNLOCKS_B, LEARNED_SLOTS = 0x110, 0xE0, 13  # func_801E3F28: k < 13, 0 ends
-FORCED_GEAR = (17, 10)  # func_801E5384: formation flag 0x10 puts character 10 in gear 17
+RESULTS = (0x10, 2, 2)  # ovl2596 battle_results_load_resources: item 0 is the growth table (+0x5f20)
+GROWTH, UNLOCKS_B, LEARNED_SLOTS = 0x110, 0xE0, 13  # battle_results_unlock_by_known_arts: k < 13, 0 ends
+FORCED_GEAR = (17, 10)  # battle_setup_load_party_and_enemy_files: formation flag 0x10 puts character 10 in gear 17
 
 
 @dataclass
 class Techniques:
     """Which characters can pilot each gear and which technique bits their
     mask6 can hold: the new-game state, battle-results learning (ovl2596
-    func_801E3F28), field ext d0 (a character's records copied over another's,
+    battle_results_unlock_by_known_arts), field ext d0 (a character's records copied over another's,
     gear and masks) and ext a1 (set_gear). Only the debug battle selector
     (ovl2606 battle_grant_debug_items_and_skills) writes the masks otherwise."""
 
@@ -819,7 +819,7 @@ def primitive_census(disc: Disc) -> PrimitiveCensus:
 # the world map (exit kind 1, mode 3). Battle event opcode 26 (ovl3087
 # battle_event_script_set_saved_map) sets the scene (a) and the word (d); after the battle the
 # world map runs only when the scene & 0x7ff is 0x400 or more (ovl2596
-# func_801E252C), otherwise d is a field's entry.
+# battle_results_leave_battle), otherwise d is a field's entry.
 
 MODE_FIELD_OPERAND = 3  # 56's operands: scene 1, +231e 3, heading 5, arrival 7
 MODE_EVENT_OPERAND = 3  # 26's operands: scene a, heading b, area c, arrival d
@@ -1021,7 +1021,7 @@ def kind_census(disc: Disc, root: Path = ROOT) -> KindCensus:
 # Battle draws PlayStation TMD models (battle/effect_script.h's "effect script
 # file"): the resident model_slot_ring_tmd (the slot-highlight ring, battle_slot_ring_create) and the model a
 # battle sprite command f3 binds as its parts (battle_sprite_vm_run), which ovl3384
-# func_801FC4C4 can also break into pieces. Both read object 0
+# battle_module_debris_start can also break into pieces. Both read object 0
 # (battle_tmd_get_object: 0x1c-byte entries after a 0xc-byte header); each primitive
 # is olen (packet words - 1), ilen (data words - 1), flag and mode bytes and
 # its data. battle_tmd_build_packets builds a packet and battle_tmd_draw_object draws it by kind

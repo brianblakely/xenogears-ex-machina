@@ -42,7 +42,7 @@ segments:
     start: 0x0
     vram: 0x801fc000
     subsegments:
-      - [0x0, .rodata, ovl3384]
-      - [0x74, c, ovl3384]
-      - [0xe14, .data, ovl3384]
+      - [0x0, .rodata, battle_module_debris_effect]
+      - [0x74, c, battle_module_debris_effect]
+      - [0xe14, .data, battle_module_debris_effect]
   - [0xe1c]

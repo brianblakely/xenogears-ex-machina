@@ -26,12 +26,12 @@ and table, and how each table's index is chosen, is listed in
   handlers). Each handler's comment names its slot.
 - Data: the 0x28-byte descriptors (`CommandDescriptor`, formula at +0x16) of the
   battle setup archive, directory (12, 0) file 3, an offset table of packed
-  blocks that ovl2615 `func_801E5384` unpacks: archive[5 + character] (copies
+  blocks that ovl2615 `battle_setup_load_party_and_enemy_files` unpacks: archive[5 + character] (copies
   0x5f0 bytes, 38 descriptors), archive[0x11 + gear] (0x690, 42) and archive[4]
   for the enemies (0x1f40, 200). An enemy's command is the arg1 byte of its AI's
   type-1 action-list entries (`battle_action_list_act` -> `battle_commit_action`); the census reads
   those from the enemy data files with `tools.analysis.battle_ai`, with the
-  enemy's in-gear bit from its record (+0x15a, copied by `func_801E4870`).
+  enemy's in-gear bit from its record (+0x15a, copied by `battle_setup_copy_enemy_records_and_ai`).
 - Results (both discs, identical archives):
   - Party: 11 sets, 418 descriptors, formulas 0 1 2 5 6; none past
     `battle_formula_table`.
@@ -59,11 +59,11 @@ and table, and how each table's index is chosen, is listed in
     record from +0x26c), field ext `a1` (`set_gear`; Bart is given gear 18 in maps
     198 and 728), ext `d0` (a character's record copied over another's), and
     character 10 put in gear 17 for party slots 1 and 2 when the formation has
-    flag 0x10 (ovl2615 `func_801E5384`; [formations.md](formations.md)). The world
+    flag 0x10 (ovl2615 `battle_setup_load_party_and_enemy_files`; [formations.md](formations.md)). The world
     map's new-world setup gives gears 2-9 and 15 only. Gear 17's pilot is character
     10; gear 18's are characters 3 and 10.
   - masks: the new-game state (+0x16c0 + 0x20 per character, +6), battle results'
-    learning (ovl2596 `func_801E3F28`: slot k for each of the character's growth
+    learning (ovl2596 `battle_results_unlock_by_known_arts`: slot k for each of the character's growth
     `unlocksB` entries, k < 13; the growth table is item 0 of directory (0x10, 2)
     file 2), and ext `d0`'s copies. Only the debug battle selector (ovl2606
     `battle_grant_debug_items_and_skills`) writes them otherwise, and it gives characters 3 and 10
@@ -105,7 +105,7 @@ and table, and how each table's index is chosen, is listed in
 - Data: field `56` (`change_map`, `field_event_change_map`) stores operand 7 there as the
   field leaves for the world map. Battle event opcode 26 (ovl3087
   `battle_event_script_set_saved_map`) stores operand d with scene a; the world map runs after the
-  battle only when the scene & 0x7ff is 0x400 or more (ovl2596 `func_801E252C`),
+  battle only when the scene & 0x7ff is 0x400 or more (ovl2596 `battle_results_leave_battle`),
   otherwise d is a field's entry. The world map itself stores 1 for a new world
   state and keeps the word across its own battles (bit 0x8000 marks the return);
   its exits store a field's entry.
@@ -142,7 +142,7 @@ and table, and how each table's index is chosen, is listed in
   `battle_tmd_draw_object` draws each primitive of a TMD object
   (`battle/effect_script.h`'s effect script file) by kind: mode & 0x1c, plus
   0x100 when flag bit 0 (no lighting) is clear. Both switches, and ovl3384
-  `func_801FC4C4`'s, have all 16 kinds, and a switch is bounds-checked, so the
+  `battle_module_debris_start`'s, have all 16 kinds, and a switch is bounds-checked, so the
   census checks what each kind needs instead: it reads from the C each kind's
   packet (the POLY type the drawer's mode switch writes) and the primitive bytes
   the two functions read.

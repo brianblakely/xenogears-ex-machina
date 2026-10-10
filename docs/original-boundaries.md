@@ -54,7 +54,7 @@ The scan finds 4436 compiled game functions and these library entries
 
 | Library | Entries the game calls |
 | --- | --- |
-| libgpu | DrawSync (159), AddPrim (135), GetTPage (114), LoadImage (109), SetSemiTrans (76), GetClut (69), SetShadeTex (59), MoveImage (40), PutDispEnv/PutDrawEnv (38/37), SetDrawMode (30), DrawOTag (27), ClearOTagR (25), StoreImage (23), ClearImage (17), OpenTIM/ReadTIM (17), SetDefDrawEnv/SetDefDispEnv (15), SetDispMask (13), SetDrawTPage (13), ResetGraph (8), DrawSyncCallback (5), AddPrims (3), TermPrim (3: kernel menu mode_run_kernel_menu, the debug console's flush console_flush, arena arena_mode_main), GetDrawEnv (2: the resident panorama gpu_create_panorama, ovl2615's stage backdrop func_801E7914), MargePrim (arena HUD arena_hud_build_overlay_buffer), LoadClut2 (arena palette arena_effect_load_side_palette), SetGraphDebug(0) (boot boot_main), SetDrawMove, SetDrawArea, SetDrawOffset, SetDrawEnv, SetTexWindow, DrawOTagEnv, DrawPrim, and the primitive setters SetPolyFT4 (37), SetPolyG4 (21), SetPolyF4 (13), SetLineF3, SetLineF2, SetSprt, SetPolyFT3, SetPolyGT3, SetPolyGT4, SetPolyF3, SetTile, SetLineG2, SetPolyG3 |
+| libgpu | DrawSync (159), AddPrim (135), GetTPage (114), LoadImage (109), SetSemiTrans (76), GetClut (69), SetShadeTex (59), MoveImage (40), PutDispEnv/PutDrawEnv (38/37), SetDrawMode (30), DrawOTag (27), ClearOTagR (25), StoreImage (23), ClearImage (17), OpenTIM/ReadTIM (17), SetDefDrawEnv/SetDefDispEnv (15), SetDispMask (13), SetDrawTPage (13), ResetGraph (8), DrawSyncCallback (5), AddPrims (3), TermPrim (3: kernel menu mode_run_kernel_menu, the debug console's flush console_flush, arena arena_mode_main), GetDrawEnv (2: the resident panorama gpu_create_panorama, ovl2615's stage backdrop battle_setup_create_stage_sky), MargePrim (arena HUD arena_hud_build_overlay_buffer), LoadClut2 (arena palette arena_effect_load_side_palette), SetGraphDebug(0) (boot boot_main), SetDrawMove, SetDrawArea, SetDrawOffset, SetDrawEnv, SetTexWindow, DrawOTagEnv, DrawPrim, and the primitive setters SetPolyFT4 (37), SetPolyG4 (21), SetPolyF4 (13), SetLineF3, SetLineF2, SetSprt, SetPolyFT3, SetPolyGT3, SetPolyGT4, SetPolyF3, SetTile, SetLineG2, SetPolyG3 |
 | libgte | SetRotMatrix (94), SetTransMatrix (92), SquareRoot0 (61), ratan2 (56), RotTransPers4 (51), CompMatrix (47), VectorNormal (36), ScaleMatrix/TransMatrix (29 each), SetGeomScreen (24), ApplyMatrix (22), MulMatrix0 (20), RotTransPers (19), SetGeomOffset (19), Push/PopMatrix (15), ReadGeomScreen (12), MulMatrix2, ReadGeomOffset, RotAverage4, RotTransPers3, ApplyMatrixLV/ApplyMatrixSV, SetBackColor, SetColorMatrix, SetLightMatrix, OuterProduct0, VectorNormalS/VectorNormalSS, InitGeom, RotTransSV, RotMatrixZ, ScaleMatrixL, SetMulMatrix, lighting (NormalColor, NormalColor3, NormalColorCol, NormalColorCol3), SetFogNearFar, and 16 entries without a signature name (below) |
 | libcd | CdSyncCallback (17), CdIntToPos (16), CdControlF (14), CdReadyCallback (14), CdDataCallback (10), CdControlB (8), CdPosToInt, CdGetSector, CdInit, CdControl and CdSetDebug (cd_init_disc_access only: Standby and debug level 0 at start-up), CdSync, CdDataSync, CdFlush, CdReadCallback, CdMix (dormant, see Sound); mdec: CdRead2 and the streaming ring's StSetRing, StSetStream, StGetNext, StFreeRing, StGetBackloc, StCdInterrupt and StUnSetRing (Disc and files) |
 | libapi | events (Open/Close/Enable/Disable/Test/UnDeliverEvent; Enable/DisableEvent 18/17, the sound driver's tick guard, Interrupt-context work), root counters (Set/Get/Start/StopRCnt), critical sections (11 each), SwEnterCriticalSection/SwExitCriticalSection (the soft reset boot_restart), FlushCache, InitPAD/StartPAD/StopPAD/ChangeClearPAD, BIOS file calls open B(32h), read B(34h), write B(35h), close B(36h), format B(41h), firstfile B(42h), nextfile B(43h), rename B(44h) and delete B(45h) (Memory card and saves), Krom2RawAdd B(51h), GetGp (the arena task's gp, menu arena_task_create) |
@@ -117,12 +117,12 @@ Outside the libraries the game itself uses:
     composition field_camera_compose_and_load_view) and field_run_frame (the frame); battle
     battle_run_frame (the frame), battle_draw_stage (the stage update) and
     battle_run_intro_swirl (the intro swirl); and ovl2615's shatter and burst load
-    modes func_801E8588 and func_801E91E8. In the C they are the
+    modes battle_setup_run_shatter_load_mode and battle_setup_run_burst_load_mode. In the C they are the
     `SPAD_STACK_ENTER()` and `"r"(0x1F8003FC)` sites.
   - The other 15 go to the top of a heap block: the 11
     `STACK_ENTER(stack + size)` sites of the resident sprite code (3) and
-    battle (8), and the private stacks of debug2611 func_80281FD8, ovl2615
-    func_801E6DC8/func_801E6FEC and ovl3387 func_801FC898.
+    battle (8), and the private stacks of debug2611 battle_debug_write_heap_report_on_own_stack, ovl2615
+    battle_setup_upload_images_on_own_stack/battle_setup_loader_build_enemies and ovl3387 battle_module_burst_play.
 
   The arena coroutine switches stacks its own way (Control flow).
 - **BIOS Kanji ROM**: Krom2RawAdd returns a ROM glyph address for a Shift-JIS
@@ -632,7 +632,7 @@ callback never leaves these:
     battle_install_command_file_parts (battle_settle.c:547), trapping to the debugger on each
     pass on a development kit, and in movie.c's unreferenced host-PC loaders
     movie_mode_load_host_effect_wave_banks and movie_mode_load_host_battle_music.
-  - ovl2615 func_801E6D6C polls the flag once per task step.
+  - ovl2615 battle_setup_loader_start_gear_loads polls the flag once per task step.
   - Outside a transfer callback, sound_queue_transfer spins while at least six of the
     eight ring entries are queued (sound_is_transfer_ring_full).
   - Not a wait: the world map's `while (sound_driver_flags & 0x10) {}` in
@@ -667,7 +667,7 @@ Blocking waits deep in call stacks:
 
 Development only:
 
-- The ovl2606 battle-scene selector func_801E0238 loops DrawSync and VSync(0)
+- The ovl2606 battle-scene selector battle_scene_select_run_screen loops DrawSync and VSync(0)
   until Start. Battle battle_main runs it only while mode_battle_standalone is set
   (battle_turns_and_hud.c:382), and the field's and world map's battle requests
   clear that flag (field.c:3418, field_event.c:4984 and 5011,
@@ -685,7 +685,7 @@ Development only:
 | fatal error mode_show_fatal_error | dispatcher with a nonzero error (the heap's 0x82 and 0x83) | — | — | on retail (mode_disc_mode = -1) it clears VRAM red and loops forever; the 384x240 report only runs on the PC host |
 | soft reset boot_check_soft_reset -> boot_restart | held 0x90C, checked at 18 call sites in 14 files; field extended event e2 (field_event_soft_reset), unused by shipped scripts | resident .data/.sdata | with interrupts enabled (SwExitCriticalSection) stops the graphics (ResetGraph), the CD (cd_shutdown_disc_access, CdFlush), sound (sound_stop_driver), SPU, the vblank hook, the DrawSync and VSync callbacks and the pads, disables interrupts (SwEnterCriticalSection), then calls the entry, which clears BSS | reset that keeps modified initialised data; the sound mode returns to Stereo |
 | arena coroutine arena_task_resume (resume) / arena_task_yield (yield) (handwritten, menu) | task made by arena_task_create on a 0x1000-byte stack at 0x801FE000 with gp from GetGp, resumed once per frame (menu6.c arena_mode_main); yields at 7 sites (menu2.c 1, menu5.c 6); arena_task_caller_stack/arena_current_task hold the suspended caller; arena_task_save_scheduler/arena_task_restore_scheduler (nested schedulers) are unreferenced | the task's registers and stack | — | a fiber nested in the game fiber (Asyncify, JSPI or stack switching in WebAssembly); snapshots only outside the task or at its yields |
-| environment-map patcher model_set_envmap_mapping (handwritten) | rewrites the six `srl` shift fields and six `addiu` offsets of model_draw_ft3_envmap at fixed offsets from model_envmap_patch_base; image default (6, 6, 0x40, 0x40); callers arena menu2.c arena_winner_open_screen (5, 4), arena_winner_close_screen and menu5.c arena_mode_task (1, 1), battle battle_reset_scene and ovl2143 func_801E738C (2, 2); no I-cache flush | persists across modes in resident code | — | four resident globals read by the C renderer, kept in snapshots |
+| environment-map patcher model_set_envmap_mapping (handwritten) | rewrites the six `srl` shift fields and six `addiu` offsets of model_draw_ft3_envmap at fixed offsets from model_envmap_patch_base; image default (6, 6, 0x40, 0x40); callers arena menu2.c arena_winner_open_screen (5, 4), arena_winner_close_screen and menu5.c arena_mode_task (1, 1), battle battle_reset_scene and ovl2143 gear_model_init (2, 2); no I-cache flush | persists across modes in resident code | — | four resident globals read by the C renderer, kept in snapshots |
 
 Mode table mode_table (rows {entry, BSS start, BSS end, loaded}; overlay files
 mode_overlay_files in directory (0, 1)):
@@ -750,7 +750,7 @@ isrgb24 0. The game changes only what the table lists.
 | field, 640 wide | 640x224 at y 0 and 256 | (0, 10, 256, 216) | 0 | 0 | as field | 2-4 | event fe df operand 0 (field_event_display_mode), used once, field map 41 on both discs; the staff roll field_staff_roll_run_over_movie also switches to it but needs field ext `be` (enable_movie_overlay, field_event_enable_movie_overlay), which no shipped script uses (Services, BIOS Kanji ROM) |
 | world map | 320x216 at y 0 and 216 | (0, 10, 256, 216) | 0 | 0 | isbg (0, 0, 0x70), black in mode 2 | 2 | worldmap_open_map.c worldmap_init_display |
 | battle (resident preparation) | 320x224 at y 0 and 224 | default | 0 | 0 | isbg (0x3C, 0x78, 0x78) | — | mode_battle_and_menu.c mode_battle_init_display |
-| battle | 320x224 at y 0 and 224 | (0, 10, 256, 216) | 0 | 0 | isbg from the stage (func_801E7210) | 1 + catch-up | battle_flow.c battle_init_display_buffers |
+| battle | 320x224 at y 0 and 224 | (0, 10, 256, 216) | 0 | 0 | isbg from the stage (battle_setup_build_stage) | 1 + catch-up | battle_flow.c battle_init_display_buffers |
 | Battling arena | 640x218 for scenes (menu2.c arena_winner_open_screen), 320x218 for its menus (arena_winner_close_screen, menu5.c arena_mode_task), at y 0 and 256 | (0, 10, 256, 218) | 0 | 0; the interlaced branch for heights above 256 (both buffers at y 0, screen (0, 16, 256, 212)) has no caller | dtd 1, isbg 0, tpage GetTPage(0, 2, 0x280, 0); DR_AREA/DR_OFFSET per layer | 1 or 2 | menu7.c arena_display_set_disp_envs, arena_display_set_draw_envs |
 | in-game menu | 320x224 at y 0 and 224 | (0, 10, 256, 216) | 0 | 0 | dtd 1, isbg 0; the saved screen is copied into the back buffer every frame | 1 | mode_battle_and_menu.c menu_state_init_display, menu_state_init_buffer; menu_framework.c menu_run_frame |
 | movie | 320x240 at y 0 and 240 | (0, 10, 256, 216) | 1 while a movie plays | 0 | isbg 1 (0 during playback) | 1 | movie.c movie_mode_main, movie_mode_play_requested_movie; its CD-ROM and sector monitors (debug) use 640x240 |
@@ -792,7 +792,7 @@ GTE with H 0x1000 (sprite_sheet.c).
     world map's dithered saved-screen fade (worldmap_open_map.c:511 in
     worldmap_fade_saved_screen, a DR_TPAGE drawn before its translucent black quad).
   - ovl2615's stage backdrops copy the draw environment's dfe and dtd
-    (stage.c func_801E7914, two sites, after GetDrawEnv).
+    (stage.c battle_setup_create_stage_sky, two sites, after GetDrawEnv).
 
   Observed: rendering-behavior.md, Dithering.
 - Semi-transparency: SetSemiTrans (76 functions) with the rate from GetTPage's

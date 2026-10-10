@@ -1,7 +1,7 @@
 #ifndef DEBUG2611_BATTLE_DEBUG_H
 #define DEBUG2611_BATTLE_DEBUG_H
 
-/* The battle debug tools (debug2611.c): the battle overlay's objects come
+/* The battle debug tools (battle_debug_tools.c): the battle overlay's objects come
  * from the shared battle headers (the area, the camera and the slots'
  * sprites in battle/actor.h, the camera's points in battle/objects.h, the
  * followed sprite in battle/sprite_script.h); the tools' load meter and
@@ -46,17 +46,17 @@ typedef struct {
     s32 gpu_hold;   /* +54 */
 } LoadMeter;        /* 0x58 */
 
-void func_80280844(s32 buttons);
-void func_80280960(s32 buttons);
-void func_8028103C(void);
-void func_802810C4(void);
-void func_80281330(Task *task);
-void func_802813F4(SVECTOR *v, u8 r, u8 g, u8 b);
-void func_802814F8(u8 r, u8 g, u8 b);
-void func_802815E8(s16 length, u8 r, u8 g, u8 b);
-void func_802816AC(Task *task);
-void func_8028191C(void);
-s32 func_80281980(void);
-void func_80281F98(void);
+void battle_debug_move_camera_position(s32 buttons);
+void battle_debug_move_look_at_point(s32 buttons);
+void battle_debug_open_text_window(void);
+void battle_debug_run_heap_monitor(void);
+void battle_debug_load_meter_update(Task *task);
+void battle_debug_draw_flat_triangle(SVECTOR *v, u8 r, u8 g, u8 b);
+void battle_debug_load_meter_draw_tick(u8 r, u8 g, u8 b);
+void battle_debug_load_meter_draw_peak(s16 length, u8 r, u8 g, u8 b);
+void battle_debug_load_meter_draw(Task *task);
+void battle_debug_print_wave_banks(void);
+s32 battle_debug_run_actor_tool(void);
+void battle_debug_write_heap_report_file(void);
 
 #endif

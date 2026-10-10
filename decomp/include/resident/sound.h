@@ -435,7 +435,7 @@ void sound_set_seq_mute_mask(SoundSeq *seq, u32 mask);
 extern u16 mode_battle_camera_range;
 extern u8 mode_battle_kind;
 extern s32 mode_snapshot_party_in_gear[3];
-extern u8 *mode_battle_scene_data; /* the battle scene data (mode_load_battle_stage, ovl2615 func_801E7210) */
+extern u8 *mode_battle_scene_data; /* the battle scene data (mode_load_battle_stage, ovl2615 battle_setup_build_stage) */
 extern struct SoundBank *mode_battle_effect_bank;
 
 extern struct SoundBank *sound_effect_bank; /* the effect sound bank of the field, the world map and the menus */

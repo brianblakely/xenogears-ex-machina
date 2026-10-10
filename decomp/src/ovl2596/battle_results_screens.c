@@ -11,32 +11,32 @@
  * order of this unit's address arithmetic (e.g. 801de5c4, 801de1c4). */
 #include "battle_results.h"
 
-/* The module's data opens with D_801E44C0 (the fanfare flag, u8 0): the
+/* The module's data opens with battle_results_fanfare_started (the fanfare flag, u8 0): the
  * padding after it holds a byte (0x04) that nothing reads, which a C
  * definition cannot leave, so it stays original data. */
-INCLUDE_ORIGINAL(".data", D_801E44C0, 0x801E44C0, 4);
-extern u8 D_801E44C0; /* the result fanfare has started */
-GameData *D_801E44C4 = &game_data;
-BattleWork *D_801E44C8 = &battle_work_area;
+INCLUDE_ORIGINAL(".data", battle_results_fanfare_started, 0x801E44C0, 4);
+extern u8 battle_results_fanfare_started; /* the result fanfare has started */
+GameData *battle_results_game_data_ptr = &game_data; /* 801E44C4 */
+BattleWork *battle_results_work_ptr = &battle_work_area; /* 801E44C8 */
 /* The module's uninitialized variables (the level gauge animation, the
  * growth data and the record being processed, the experience pools), zero
  * in the file: commons, which the original linker allocated each in a slot
  * of whole words (decomp/Makefile). */
-s32 D_801E44CC;               /* gauge: start value */
-s32 D_801E44D0;               /* end value */
-s32 D_801E44D4;               /* distance */
-s32 D_801E44D8;               /* start length */
-s32 D_801E44DC;               /* distance length */
-u8 D_801E44E0;                /* bar colour */
-u8 D_801E44E4;                /* arrow glyph */
-GrowthFile *D_801E44E8;       /* the growth data file */
-CharacterRecord *D_801E44EC;  /* the record being processed: a combatant's or the game data's */
-u32 D_801E44F0;               /* experience pool for level A */
-u32 D_801E44F4;               /* and level B */
-u8 D_801E44F8[3][2];          /* each slot's levels A and B before the experience */
+s32 battle_results_gauge_start_value;               /* 801E44CC: gauge: start value */
+s32 battle_results_gauge_end_value;               /* 801E44D0: end value */
+s32 battle_results_gauge_change;               /* 801E44D4: distance */
+s32 battle_results_gauge_start_length;               /* 801E44D8: start length */
+s32 battle_results_gauge_change_length;               /* 801E44DC: distance length */
+u8 battle_results_gauge_change_color;                /* 801E44E0: bar colour */
+u8 battle_results_gauge_arrow_glyph;                /* 801E44E4: arrow glyph */
+GrowthFile *battle_results_growth_file;       /* 801E44E8: the growth data file */
+CharacterRecord *battle_results_current_record;  /* 801E44EC: the record being processed: a combatant's or the game data's */
+u32 battle_results_exp_pool_a;               /* 801E44F0: experience pool for level A */
+u32 battle_results_exp_pool_b;               /* 801E44F4: and level B */
+u8 battle_results_levels_before[3][2];          /* 801E44F8: each slot's levels A and B before the experience */
 
-/* Queue every member card's glyph runs while the cards are shown. */
-void func_801DE048(void) {
+/* 801DE048: Queue every member card's glyph runs while the cards are shown. */
+void battle_results_queue_member_cards(void) {
     s32 i;
 
     if (battle_ui->showCards != 0) {
@@ -57,8 +57,8 @@ void func_801DE048(void) {
     }
 }
 
-/* Queue the summary window's glyphs and bars, and the 8F panel. */
-void func_801DE1C4(void) {
+/* 801DE1C4: Queue the summary window's glyphs and bars, and the 8F panel. */
+void battle_results_queue_summary_and_new_skill(void) {
     s32 i;
 
     if (battle_ui->showSummary != 0) {
@@ -84,8 +84,8 @@ void func_801DE1C4(void) {
     }
 }
 
-/* Queue the spoils window's glyphs and item list. */
-void func_801DE408(void) {
+/* 801DE408: Queue the spoils window's glyphs and item list. */
+void battle_results_queue_spoils_window(void) {
     s32 i;
 
     if (battle_ui->showSpoils != 0) {
@@ -102,15 +102,15 @@ void func_801DE408(void) {
     }
 }
 
-/* Queue the result screens' primitives. */
-void func_801DE594(void) {
-    func_801DE048();
-    func_801DE1C4();
-    func_801DE408();
+/* 801DE594: Queue the result screens' primitives. */
+void battle_results_queue_screens(void) {
+    battle_results_queue_member_cards();
+    battle_results_queue_summary_and_new_skill();
+    battle_results_queue_spoils_window();
 }
 
-/* Build each present member's portrait glyphs. */
-void func_801DE5C4(void) {
+/* 801DE5C4: Build each present member's portrait glyphs. */
+void battle_results_build_card_portraits(void) {
     s32 i;
 
     for (i = 0; i < 3; i++) {
@@ -122,9 +122,9 @@ void func_801DE5C4(void) {
     }
 }
 
-/* Build each present member's card labels; with the first card's flag, add
+/* 801DE69C: Build each present member's card labels; with the first card's flag, add
  * the two marker glyphs, shaded red and green. */
-void func_801DE69C(void) {
+void battle_results_build_card_labels(void) {
     s32 i;
     s32 j;
 
@@ -147,9 +147,9 @@ void func_801DE69C(void) {
     }
 }
 
-/* Build each present member's four numbers as digit glyphs: two stats (three
+/* 801DEA18: Build each present member's four numbers as digit glyphs: two stats (three
  * and two digits) and two further values beside them. */
-void func_801DEA18(void) {
+void battle_results_build_card_hp_and_ep(void) {
     s32 i;
     s32 j;
     s32 n;
@@ -201,10 +201,10 @@ void func_801DEA18(void) {
     }
 }
 
-/* Build each present member's level glyphs, from the battle slots or (with
+/* 801DEDC0: Build each present member's level glyphs, from the battle slots or (with
  * fromGameData) the game data; with the first card's flag also the second
  * level, and shade the two numbers red and green. */
-void func_801DEDC0(u8 fromGameData) {
+void battle_results_build_card_levels(u8 fromGameData) {
     s32 i;
     s32 j;
     s32 n;
@@ -254,9 +254,9 @@ void func_801DEDC0(u8 fromGameData) {
     }
 }
 
-/* Build each present member's first eight-digit number (and with the first
+/* 801DF270: Build each present member's first eight-digit number (and with the first
  * card's flag the second) as glyphs. */
-void func_801DF270(void) {
+void battle_results_build_card_exp_totals(void) {
     s32 i;
     s32 j;
     s32 n;
@@ -290,8 +290,8 @@ void func_801DF270(void) {
     }
 }
 
-/* Build each present member's seven-digit numbers as glyphs, like 801df270. */
-void func_801DF4C0(void) {
+/* 801DF4C0: Build each present member's seven-digit numbers as glyphs, like 801df270. */
+void battle_results_build_card_exp_to_count(void) {
     s32 i;
     s32 j;
     s32 n;
@@ -325,9 +325,9 @@ void func_801DF4C0(void) {
     }
 }
 
-/* Set up a gauge bar's two primitives: a gradient from colour (0 pink,
+/* 801DF710: Set up a gauge bar's two primitives: a gradient from colour (0 pink,
  * 1 light green, 2 red, 3 blue) at the top to black. */
-void func_801DF710(POLY_G4 *bar, u8 colour) {
+void battle_results_init_gauge_bar(POLY_G4 *bar, u8 colour) {
     u8 rgb[3];
     s32 i;
 
@@ -370,8 +370,8 @@ void func_801DF710(POLY_G4 *bar, u8 colour) {
     }
 }
 
-/* Shade count glyph parts from the given draw buffer red (or blue). */
-void func_801DF840(POLY_FT4 *prims, u8 blue, u8 count, u8 buffer) {
+/* 801DF840: Shade count glyph parts from the given draw buffer red (or blue). */
+void battle_results_shade_glyphs(POLY_FT4 *prims, u8 blue, u8 count, u8 buffer) {
     u8 rgb[3];
     s32 i;
 
@@ -389,26 +389,26 @@ void func_801DF840(POLY_FT4 *prims, u8 blue, u8 count, u8 buffer) {
     }
 }
 
-/* Start the level gauge animation from one value to another out of max:
+/* 801DF910: Start the level gauge animation from one value to another out of max:
  * lengths on a 64-pixel scale, the colour and arrow for up or down. */
-void func_801DF910(u8 from, u8 to, s32 max) {
-    D_801E44CC = from;
-    D_801E44D0 = to;
-    D_801E44D4 = to - from;
-    D_801E44D8 = from * 100 / max * 0x1900 / 10000;
-    if (D_801E44D4 >= 0) {
-        D_801E44E0 = 2;
-        D_801E44E4 = 0xE3;
+void battle_results_compute_gauge(u8 from, u8 to, s32 max) {
+    battle_results_gauge_start_value = from;
+    battle_results_gauge_end_value = to;
+    battle_results_gauge_change = to - from;
+    battle_results_gauge_start_length = from * 100 / max * 0x1900 / 10000;
+    if (battle_results_gauge_change >= 0) {
+        battle_results_gauge_change_color = 2;
+        battle_results_gauge_arrow_glyph = 0xE3;
     } else {
-        D_801E44E0 = 3;
-        D_801E44E4 = 0xE5;
-        D_801E44D4 = from - to;
+        battle_results_gauge_change_color = 3;
+        battle_results_gauge_arrow_glyph = 0xE5;
+        battle_results_gauge_change = from - to;
     }
-    D_801E44DC = D_801E44D4 * 100 / max * 0x1900 / 10000;
+    battle_results_gauge_change_length = battle_results_gauge_change * 100 / max * 0x1900 / 10000;
 }
 
-/* The highest of a slot's seven entries in both byte tables. */
-s32 func_801DFA38(u8 slot) {
+/* 801DFA38: The highest of a slot's seven entries in both byte tables. */
+s32 battle_results_get_highest_stat(u8 slot) {
     u8 best = 0;
     s32 i;
 
@@ -423,9 +423,9 @@ s32 func_801DFA38(u8 slot) {
     return best;
 }
 
-/* Build the summary window: the member's portrait title and the 27 text
+/* 801DFAA8: Build the summary window: the member's portrait title and the 27 text
  * glyphs, shading the marked ones with their colour. */
-void func_801DFAA8(u8 member) {
+void battle_results_build_summary_text(u8 member) {
     s16 colours[6]; /* two RGB shading colours */
     s32 i;
     s32 start;
@@ -456,9 +456,9 @@ void func_801DFAA8(u8 member) {
     battle_summary_window_prims->runs[1].buffer = battle_area.buffer;
 }
 
-/* Build the summary's first member value (three digits); clear the other
+/* 801DFD58: Build the summary's first member value (three digits); clear the other
  * summary number runs. */
-void func_801DFD58(u8 member) {
+void battle_results_build_summary_max_hp(u8 member) {
     s32 j;
     s32 n;
     s32 digit;
@@ -478,8 +478,8 @@ void func_801DFD58(u8 member) {
     battle_summary_window_prims->runs[2].buffer = battle_area.buffer;
 }
 
-/* Build the summary's second member value (two digits). */
-void func_801DFE6C(u8 member) {
+/* 801DFE6C: Build the summary's second member value (two digits). */
+void battle_results_build_summary_max_ep(u8 member) {
     s32 j;
     s32 n;
     s32 digit;
@@ -495,9 +495,9 @@ void func_801DFE6C(u8 member) {
     battle_summary_window_prims->runs[4].buffer = battle_area.buffer;
 }
 
-/* Build the summary's change of the member's first stat since the battle
+/* 801DFF50: Build the summary's change of the member's first stat since the battle
  * began: an up or down arrow and the difference, shaded red. */
-void func_801DFF50(u8 member) {
+void battle_results_build_summary_max_hp_change(u8 member) {
     s32 before;
     s32 after;
     s32 difference;
@@ -533,8 +533,8 @@ void func_801DFF50(u8 member) {
     }
 }
 
-/* Build the summary's change of the member's second stat, like 801dff50. */
-void func_801E0184(u8 member) {
+/* 801E0184: Build the summary's change of the member's second stat, like 801dff50. */
+void battle_results_build_summary_max_ep_change(u8 member) {
     s32 before;
     s32 after;
     s32 difference;
@@ -570,19 +570,19 @@ void func_801E0184(u8 member) {
     }
 }
 
-/* Build the summary's member numbers and their changes. */
-void func_801E03B8(u8 member) {
-    func_801DFD58(member);
-    func_801DFE6C(member);
-    func_801DFF50(member);
-    func_801E0184(member);
+/* 801E03B8: Build the summary's member numbers and their changes. */
+void battle_results_build_summary_numbers(u8 member) {
+    battle_results_build_summary_max_hp(member);
+    battle_results_build_summary_max_ep(member);
+    battle_results_build_summary_max_hp_change(member);
+    battle_results_build_summary_max_ep_change(member);
 }
 
-/* Build the member's seven gauge rows: for each, the value before and after
+/* 801E03FC: Build the member's seven gauge rows: for each, the value before and after
  * the battle out of the highest (801dfa38) as a bar and its change bar, the
  * value, and when it changed an arrow and the change shaded by direction.
  * The value's digits are entries 23-25 of battle_split_decimal_digits's digit buffer. */
-void func_801E03FC(u8 member) {
+void battle_results_build_summary_stat_gauges(u8 member) {
     s32 max;
     s32 i;
     s32 j;
@@ -593,38 +593,38 @@ void func_801E03FC(u8 member) {
     s32 top;
     s32 bottom;
 
-    max = func_801DFA38(member);
+    max = battle_results_get_highest_stat(member);
     for (i = 0; i < 7; i++) {
         battle_summary_window_prims->rowACount[i] = 0;
         battle_summary_window_prims->rowBCount[i] = 0;
-        func_801DF910(battle_work_area.savedStats[member][i], battle_work_area.resultStats[member][i], max);
-        func_801DF710(battle_summary_window_prims->barA[i], 0);
-        func_801DF710(battle_summary_window_prims->barB[i], D_801E44E0);
+        battle_results_compute_gauge(battle_work_area.savedStats[member][i], battle_work_area.resultStats[member][i], max);
+        battle_results_init_gauge_bar(battle_summary_window_prims->barA[i], 0);
+        battle_results_init_gauge_bar(battle_summary_window_prims->barB[i], battle_results_gauge_change_color);
         top = i * 8 + 0x92;
         bottom = i * 8 + 0x98;
         (battle_summary_window_prims->barA[i] + battle_area.buffer)->x0 = 0x78;
         (battle_summary_window_prims->barA[i] + battle_area.buffer)->y0 = top;
-        (battle_summary_window_prims->barA[i] + battle_area.buffer)->x1 = D_801E44D8 + 0x78;
+        (battle_summary_window_prims->barA[i] + battle_area.buffer)->x1 = battle_results_gauge_start_length + 0x78;
         (battle_summary_window_prims->barA[i] + battle_area.buffer)->y1 = top;
         (battle_summary_window_prims->barA[i] + battle_area.buffer)->x2 = 0x78;
         (battle_summary_window_prims->barA[i] + battle_area.buffer)->y2 = bottom;
-        (battle_summary_window_prims->barA[i] + battle_area.buffer)->x3 = D_801E44D8 + 0x78;
+        (battle_summary_window_prims->barA[i] + battle_area.buffer)->x3 = battle_results_gauge_start_length + 0x78;
         (battle_summary_window_prims->barA[i] + battle_area.buffer)->y3 = bottom;
-        if (D_801E44E0 == 2) {
-            left = D_801E44D8 + 0x78;
+        if (battle_results_gauge_change_color == 2) {
+            left = battle_results_gauge_start_length + 0x78;
         } else {
-            left = D_801E44D8 + 0x78 - D_801E44DC;
+            left = battle_results_gauge_start_length + 0x78 - battle_results_gauge_change_length;
         }
         (battle_summary_window_prims->barB[i] + battle_area.buffer)->x0 = left;
         (battle_summary_window_prims->barB[i] + battle_area.buffer)->y0 = top;
-        (battle_summary_window_prims->barB[i] + battle_area.buffer)->x1 = left + D_801E44DC;
+        (battle_summary_window_prims->barB[i] + battle_area.buffer)->x1 = left + battle_results_gauge_change_length;
         (battle_summary_window_prims->barB[i] + battle_area.buffer)->y1 = top;
         (battle_summary_window_prims->barB[i] + battle_area.buffer)->x2 = left;
         (battle_summary_window_prims->barB[i] + battle_area.buffer)->y2 = bottom;
-        (battle_summary_window_prims->barB[i] + battle_area.buffer)->x3 = left + D_801E44DC;
+        (battle_summary_window_prims->barB[i] + battle_area.buffer)->x3 = left + battle_results_gauge_change_length;
         (battle_summary_window_prims->barB[i] + battle_area.buffer)->y3 = bottom;
         battle_summary_window_prims->barBuffer[i] = battle_area.buffer;
-        battle_split_decimal_digits(D_801E44CC);
+        battle_split_decimal_digits(battle_results_gauge_start_value);
         for (j = 0; j < 3; j++) {
             k = j + 23;
             digit = battle_decimal_digits_minus_17[k];
@@ -633,9 +633,9 @@ void func_801E03FC(u8 member) {
             }
         }
         battle_summary_window_prims->rowABuffer[i] = battle_area.buffer;
-        if (D_801E44D4 != 0) {
-            battle_summary_window_prims->rowBCount[i] = battle_build_glyph(D_801E44E4, battle_summary_window_prims->rowB[i], 0xD8, i * 8 + 0x90);
-            battle_split_decimal_digits(D_801E44D4);
+        if (battle_results_gauge_change != 0) {
+            battle_summary_window_prims->rowBCount[i] = battle_build_glyph(battle_results_gauge_arrow_glyph, battle_summary_window_prims->rowB[i], 0xD8, i * 8 + 0x90);
+            battle_split_decimal_digits(battle_results_gauge_change);
             n = 0;
             for (j = 0; j < 3; j++) {
                 digit = battle_decimal_digits_plus_6[j];
@@ -644,31 +644,31 @@ void func_801E03FC(u8 member) {
                     n++;
                 }
             }
-            func_801DF840(battle_summary_window_prims->rowB[i], D_801E44E0 - 2, battle_summary_window_prims->rowBCount[i], battle_area.buffer);
+            battle_results_shade_glyphs(battle_summary_window_prims->rowB[i], battle_results_gauge_change_color - 2, battle_summary_window_prims->rowBCount[i], battle_area.buffer);
             battle_summary_window_prims->rowBBuffer[i] = battle_area.buffer;
         }
     }
 }
 
-/* Play effect id of the system effect bank. */
-void func_801E09C0(u8 id) {
+/* 801E09C0: Play effect id of the system effect bank. */
+void battle_results_play_sound_effect(u8 id) {
     sound_play_effect((sprite_script_sound_bank->bank << 16) | id);
 }
 
-/* Start the result fanfare's three effects once. */
-void func_801E09F4(void) {
-    if (D_801E44C0 == 0) {
+/* 801E09F4: Start the result fanfare's three effects once. */
+void battle_results_start_fanfare(void) {
+    if (battle_results_fanfare_started == 0) {
         mode_result_fanfare_started = 1;
-        func_801E09C0(0x5C);
-        func_801E09C0(0x5D);
-        func_801E09C0(0x5E);
-        D_801E44C0 = 1;
+        battle_results_play_sound_effect(0x5C);
+        battle_results_play_sound_effect(0x5D);
+        battle_results_play_sound_effect(0x5E);
+        battle_results_fanfare_started = 1;
     }
 }
 
-/* Start the fanfare and run battle frames until Cross is pressed. */
-void func_801E0A4C(void) {
-    func_801E09F4();
+/* 801E0A4C: Start the fanfare and run battle frames until Cross is pressed. */
+void battle_results_wait_for_cross_with_fanfare(void) {
+    battle_results_start_fanfare();
     battle_wait_frame();
     battle_ui->waitingCross = 1;
     while (battle_pressed_key != 4) {
@@ -677,10 +677,10 @@ void func_801E0A4C(void) {
     battle_ui->waitingCross = 0;
 }
 
-/* Show the skills the member learnt in the battle, one at a time: the
+/* 801E0ACC: Show the skills the member learnt in the battle, one at a time: the
  * summary title, then each new counter skill and each new level skill's
  * name with its mark, waiting for Cross after each. */
-void func_801E0ACC(u8 member) {
+void battle_results_show_new_deathblows_and_arts(u8 member) {
     u16 newCounter;
     u16 newLevel;
     s32 i;
@@ -719,7 +719,7 @@ void func_801E0ACC(u8 member) {
             battle_quad_place_text_row(&battle_summary_window_prims->glyphs34B0[0][*buffer], width + 0x5A, 0x9C, battle_skill_mark_icon_cell[2], battle_skill_mark_icon_cell[3], battle_skill_mark_icon_cell[0]);
             battle_summary_window_prims->buffer34B0[0] = *buffer;
             battle_ui->showSkill = 1;
-            func_801E0A4C();
+            battle_results_wait_for_cross_with_fanfare();
         }
     }
     for (i = 0; i < 16; i++) {
@@ -739,15 +739,15 @@ void func_801E0ACC(u8 member) {
             battle_quad_place_text_row(&battle_summary_window_prims->glyphs34B0[0][*buffer], width + 0x5A, 0x9C, battle_skill_mark_icon_cell[2], battle_skill_mark_icon_cell[3], battle_skill_mark_icon_cell[0]);
             battle_summary_window_prims->buffer34B0[0] = *buffer;
             battle_ui->showSkill = 1;
-            func_801E0A4C();
+            battle_results_wait_for_cross_with_fanfare();
         }
     }
     battle_ui->showSkill = 0;
 }
 
 
-/* Lay out the summary's seven-glyph label (2d30). */
-void func_801E1044(void) {
+/* 801E1044: Lay out the summary's seven-glyph label (2d30). */
+void battle_results_build_spoils_label(void) {
     s32 i;
 
     for (i = 0; i < 7; i++) {
@@ -756,9 +756,9 @@ void func_801E1044(void) {
     battle_summary_window_prims->buffer2D30 = battle_area.buffer;
 }
 
-/* Build the spoils window's numbers: the experience (six digits) and the
+/* 801E10F8: Build the spoils window's numbers: the experience (six digits) and the
  * party gold (nine digits). */
-void func_801E10F8(u32 experience) {
+void battle_results_build_spoils_exp_and_gold(u32 experience) {
     s32 i;
     s32 n;
     s32 digit;
@@ -783,8 +783,8 @@ void func_801E10F8(u32 experience) {
     battle_summary_window_prims->run3140.buffer = battle_area.buffer;
 }
 
-/* Build the spoils window's two icons. */
-void func_801E126C(void) {
+/* 801E126C: Build the spoils window's two icons. */
+void battle_results_build_spoils_icons(void) {
     s32 *buffer;
 
     battle_init_text_quad_pair(battle_summary_window_prims->glyphs3410[0], 0, 2);
@@ -795,10 +795,10 @@ void func_801E126C(void) {
     battle_summary_window_prims->buffer3410 = *buffer;
 }
 
-/* Add count of item id to an inventory list of size entries (ids and
+/* 801E1370: Add count of item id to an inventory list of size entries (ids and
  * counts): stack onto the item (at most 99) or take the first free entry;
  * a full list drops the item. */
-void func_801E1370(u8 id, u8 count, u8 *ids, u8 *counts, u8 size) {
+void battle_results_add_to_inventory_list(u8 id, u8 count, u8 *ids, u8 *counts, u8 size) {
     s32 i;
 
     for (i = 0; i < size; i++) {
@@ -822,37 +822,37 @@ void func_801E1370(u8 id, u8 count, u8 *ids, u8 *counts, u8 size) {
     }
 }
 
-/* Add eight drops (ids, counts and inventory list categories) to the
+/* 801E1444: Add eight drops (ids, counts and inventory list categories) to the
  * inventory. */
-void func_801E1444(u8 *ids, u8 *counts, u8 *categories) {
+void battle_results_add_drops_to_inventory(u8 *ids, u8 *counts, u8 *categories) {
     s32 i;
 
     for (i = 0; i < 8; i++) {
         if (ids[i] != 0) {
             switch (categories[i]) {
             case 0:
-                func_801E1370(ids[i], counts[i], game_data.weaponIds, game_data.weaponCounts, 100);
+                battle_results_add_to_inventory_list(ids[i], counts[i], game_data.weaponIds, game_data.weaponCounts, 100);
                 break;
             case 1:
-                func_801E1370(ids[i], counts[i], game_data.accessoryIds, game_data.accessoryCounts, 200);
+                battle_results_add_to_inventory_list(ids[i], counts[i], game_data.accessoryIds, game_data.accessoryCounts, 200);
                 break;
             case 2:
-                func_801E1370(ids[i], counts[i], game_data.itemIds, game_data.itemCounts, 150);
+                battle_results_add_to_inventory_list(ids[i], counts[i], game_data.itemIds, game_data.itemCounts, 150);
                 break;
             case 3:
-                func_801E1370(ids[i], counts[i], game_data.gearPartIds, game_data.gearPartCounts, 100);
+                battle_results_add_to_inventory_list(ids[i], counts[i], game_data.gearPartIds, game_data.gearPartCounts, 100);
                 break;
             case 4:
-                func_801E1370(ids[i], counts[i], game_data.gearAccessoryIds, game_data.gearAccessoryCounts, 150);
+                battle_results_add_to_inventory_list(ids[i], counts[i], game_data.gearAccessoryIds, game_data.gearAccessoryCounts, 150);
                 break;
             }
         }
     }
 }
 
-/* Collect the rolled drops into eight distinct (category, id) entries
+/* 801E1590: Collect the rolled drops into eight distinct (category, id) entries
  * with their counts. */
-void func_801E1590(u8 *ids, u8 *counts, u8 *categories) {
+void battle_results_collect_drops(u8 *ids, u8 *counts, u8 *categories) {
     s32 i;
     s32 j;
     s32 k;
@@ -880,10 +880,10 @@ void func_801E1590(u8 *ids, u8 *counts, u8 *categories) {
     }
 }
 
-/* Build the spoils window's item list: collect the drops, render each
+/* 801E1690: Build the spoils window's item list: collect the drops, render each
  * item's name into VRAM with its count, then add the drops to the
  * inventory. */
-void func_801E1690(void) {
+void battle_results_build_spoils_item_list(void) {
     u8 ids[8];
     u8 categories[8];
     u8 counts[8];
@@ -894,7 +894,7 @@ void func_801E1690(void) {
     s32 count;
     s32 width;
 
-    func_801E1590(ids, counts, categories);
+    battle_results_collect_drops(ids, counts, categories);
     names = text;
     for (i = 0, count = 0; i < 8; i++) {
         if (ids[i] != 0) {
@@ -928,7 +928,7 @@ void func_801E1690(void) {
             count++;
         }
     }
-    func_801E1444(ids, counts, categories);
+    battle_results_add_drops_to_inventory(ids, counts, categories);
     for (i = 0; i < count; i++) {
         heap_free(text[i]);
     }
@@ -936,8 +936,8 @@ void func_801E1690(void) {
     battle_summary_window_prims->listBuffer = battle_area.buffer;
 }
 
-/* Show the member cards over six frames, then wait for Cross. */
-void func_801E196C(void) {
+/* 801E196C: Show the member cards over six frames, then wait for Cross. */
+void battle_results_show_member_cards(void) {
     u32 step;
     u8 building;
 
@@ -947,24 +947,24 @@ void func_801E196C(void) {
         battle_wait_frame();
         switch (step) {
         case 0:
-            func_801DE5C4();
+            battle_results_build_card_portraits();
             battle_ui->showCards = 1;
             battle_turn_state->eventsDone = 0;
             break;
         case 1:
-            func_801DE69C();
+            battle_results_build_card_labels();
             break;
         case 2:
-            func_801DEA18();
+            battle_results_build_card_hp_and_ep();
             break;
         case 3:
-            func_801DEDC0(0);
+            battle_results_build_card_levels(0);
             break;
         case 4:
-            func_801DF270();
+            battle_results_build_card_exp_totals();
             break;
         case 5:
-            func_801DF4C0();
+            battle_results_build_card_exp_to_count();
             building = 0;
             break;
         }
@@ -977,10 +977,10 @@ void func_801E196C(void) {
     battle_ui->waitingCross = 0;
 }
 
-/* Wait for Cross on the first member card (repeating the prompt sound),
+/* 801E1AA4: Wait for Cross on the first member card (repeating the prompt sound),
  * then take each member's two values from the game data and rebuild the
  * summary rows. */
-void func_801E1AA4(void) {
+void battle_results_count_card_exp(void) {
     s32 i;
 
     battle_wait_frame();
@@ -990,7 +990,7 @@ void func_801E1AA4(void) {
         if (battle_pressed_key == 4) {
             break;
         }
-        func_801E09C0(0x5B);
+        battle_results_play_sound_effect(0x5B);
         battle_wait_frame();
     }
     battle_ui->waitingCross = 0;
@@ -1001,18 +1001,18 @@ void func_801E1AA4(void) {
         battle_work_area.toCount[i][0] = 0;
         battle_work_area.toCount[i][1] = 0;
     }
-    func_801DF270();
-    func_801DF4C0();
+    battle_results_build_card_exp_totals();
+    battle_results_build_card_exp_to_count();
 }
 
-/* After Cross, show each present member's summary window when a stat
+/* 801E1C10: After Cross, show each present member's summary window when a stat
  * changed (waiting for Cross), then its skill results (801e0acc). */
-void func_801E1C10(void) {
+void battle_results_show_level_up_summaries(void) {
     s32 i;
     u8 shown;
     u8 member;
 
-    func_801DEDC0(1);
+    battle_results_build_card_levels(1);
     battle_wait_frame();
     battle_ui->waitingCross = 1;
     while (battle_pressed_key != 4) {
@@ -1028,11 +1028,11 @@ void func_801E1C10(void) {
             if (battle_work_area.levelGains[i][0] != 0) {
                 member = i;
                 battle_ui->windows[1] = 1;
-                func_801DFAA8(member);
-                func_801E03B8(member);
-                func_801E03FC(member);
+                battle_results_build_summary_text(member);
+                battle_results_build_summary_numbers(member);
+                battle_results_build_summary_stat_gauges(member);
                 battle_ui->showSummary = 1;
-                func_801E09F4();
+                battle_results_start_fanfare();
                 battle_ui->waitingCross = 0;
                 shown = 1;
                 battle_wait_frame();
@@ -1043,15 +1043,15 @@ void func_801E1C10(void) {
             }
             battle_ui->showSummary = 0;
             battle_wait_frame();
-            func_801E0ACC(i);
+            battle_results_show_new_deathblows_and_arts(i);
             battle_ui->waitingCross = 0;
             battle_ui->windows[1] = 0;
         }
     }
 }
 
-/* Show the spoils window (experience, gold, items) until Cross. */
-void func_801E1E10(u32 experience) {
+/* 801E1E10: Show the spoils window (experience, gold, items) until Cross. */
+void battle_results_show_spoils_window(u32 experience) {
     battle_ui->showCards = 0;
     battle_ui->showSummary = 0;
     battle_ui->showSkill = 0;
@@ -1059,10 +1059,10 @@ void func_801E1E10(u32 experience) {
     battle_window_open(0, 0x18, 0x18, 0x90, 0xA0, 0, 1);
     battle_window_open(2, 0xB0, 0x38, 0x70, 0x38, 0, 1);
     battle_wait_frame();
-    func_801E1044();
-    func_801E10F8(experience);
-    func_801E126C();
-    func_801E1690();
+    battle_results_build_spoils_label();
+    battle_results_build_spoils_exp_and_gold(experience);
+    battle_results_build_spoils_icons();
+    battle_results_build_spoils_item_list();
     battle_ui->showSpoils = 1;
     sound_play_effect_on_last_channels((sprite_script_sound_bank->bank << 16) | 0x5B);
     battle_ui->waitingCross = 1;
@@ -1080,9 +1080,9 @@ void func_801E1E10(u32 experience) {
     battle_window_close(2);
 }
 
-/* The battle results: allocate the member cards and the summary, show the
+/* 801E1FB8: The battle results: allocate the member cards and the summary, show the
  * cards, the summaries and the spoils, then release them. */
-void func_801E1FB8(u32 experience) {
+void battle_results_run_screens(u32 experience) {
     u8 saved;
     s32 i;
 
@@ -1097,10 +1097,10 @@ void func_801E1FB8(u32 experience) {
     battle_member_cards[0]->secondValue = (game_data.flags >> 15) ^ 1;
     battle_wait_frame();
     battle_area.outcome = 0;
-    func_801E196C();
-    func_801E1AA4();
-    func_801E1C10();
-    func_801E1E10(experience);
+    battle_results_show_member_cards();
+    battle_results_count_card_exp();
+    battle_results_show_level_up_summaries();
+    battle_results_show_spoils_window(experience);
     battle_ui->showCards = 0;
     battle_ui->showSummary = 0;
     battle_ui->showSkill = 0;
@@ -1113,10 +1113,10 @@ void func_801E1FB8(u32 experience) {
     sound_stop_all_effects();
 }
 
-/* Hide the battle windows and reload the results resources: archive file
+/* 801E211C: Hide the battle windows and reload the results resources: archive file
  * 2 of directory 0x10 (its items 1-4: text, a table, the glyph sprites and
  * the portraits). */
-void func_801E211C(void) {
+void battle_results_load_resources(void) {
     u8 unused[0x60]; /* unused in the original; reserves 96 bytes */
     ResultArchive *archive;
     void *data;
@@ -1147,10 +1147,10 @@ void func_801E211C(void) {
     battle_upload_command_name_images();
 }
 
-/* Total the experience and gold of the defeated enemies, add the gold (up
+/* 801E2280: Total the experience and gold of the defeated enemies, add the gold (up
  * to 9999999), clear empty party slots, grant the rewards and run the
  * result screens. */
-void func_801E2280(void) {
+void battle_results_grant_rewards(void) {
     s32 i;
     u32 gold;
     u32 *partyGold;
@@ -1183,14 +1183,14 @@ void func_801E2280(void) {
         battle_party_character_ids[1] = battle_party_character_ids[2] = 0xFF;
         battle_area.slots[1].field2 = battle_area.slots[2].field2 = 0x7F;
     }
-    func_801E2794();
+    battle_results_grant_exp_skills_and_drops();
     if (battle_skip_result_screens == 0 && !(formation_active.flags & 8)) {
-        func_801E1FB8(gold);
+        battle_results_run_screens(gold);
     }
 }
 
-/* Write the battle item counts back to inventory list 2. */
-void func_801E24B0(void) {
+/* 801E24B0: Write the battle item counts back to inventory list 2. */
+void battle_results_write_back_item_counts(void) {
     s32 i;
     s32 j;
     u8 *item;
@@ -1207,14 +1207,14 @@ void func_801E24B0(void) {
     }
 }
 
-/* Leave the battle: reload the resources, pick the next mode, write the
+/* 801E252C: Leave the battle: reload the resources, pick the next mode, write the
  * items back, grant the rewards (unless the battle was escaped or they are
  * skipped), release the battle's blocks and windows and reset the sound. */
-void func_801E252C(void) {
+void battle_results_leave_battle(void) {
     s32 i;
     u8 *outcome;
 
-    func_801E211C();
+    battle_results_load_resources();
     if (battle_uses_event_script != 0) {
         heap_free((void *)battle_heap_mark_for_event_script);
         heap_free((void *)battle_heap_reserve_for_event_script);
@@ -1233,11 +1233,11 @@ void func_801E252C(void) {
         }
     }
     battle_cd_wait_for_reads();
-    func_801E24B0();
+    battle_results_write_back_item_counts();
     outcome = &battle_area.outcome;
     if (!(*outcome & 0xC0) && *outcome != 0x21 && battle_exit_requested == 0 && mode_result_code != 3) {
         battle_load_wave_bank_5();
-        func_801E2280();
+        battle_results_grant_rewards();
     }
     for (i = 0; i < 8; i += 2) {
         heap_free(battle_message_pixel_blocks[i].data);
@@ -1263,10 +1263,10 @@ void func_801E252C(void) {
     battle_leave();
 }
 
-/* Grant the battle rewards unless the whole party is knocked out; then, when
+/* 801E2794: Grant the battle rewards unless the whole party is knocked out; then, when
  * character 3 pilots gear 0x12, set his skill flags 1A to 0x4000, with 0x8000
  * too when gear 12 has a part kind 5 amount. */
-void func_801E2794(void) {
+void battle_results_grant_exp_skills_and_drops(void) {
     u8 slot;
     u8 knockedOut;
     u8 extra;
@@ -1278,13 +1278,13 @@ void func_801E2794(void) {
         }
     }
     if (knockedOut != 3) {
-        D_801E44E8 = D_801E44C8->growth;
-        func_801E2ACC();
-        func_801E3A18();
-        func_801E403C();
-        func_801E41B4();
-        func_801E2888();
-        func_801E42C4();
+        battle_results_growth_file = battle_results_work_ptr->growth;
+        battle_results_distribute_exp();
+        battle_results_learn_skills();
+        battle_results_advance_tiers();
+        battle_results_unlock_at_levels_50_60_70();
+        battle_results_write_party_to_game_data();
+        battle_results_roll_drops();
         if (game_data.characters[3].gearId == 0x12) {
             extra = game_data.gears[12].field4F;
             game_data.skills[3].flags1A = 0x4000;
@@ -1295,10 +1295,10 @@ void func_801E2794(void) {
     }
 }
 
-/* Write each party member's HP, EP, counters and gear HP and fuel back to
+/* 801E2888: Write each party member's HP, EP, counters and gear HP and fuel back to
  * the game data, clamped to their maximums (HP 1 when knocked out, gear HP a
  * tenth of the maximum when destroyed). */
-void func_801E2888(void) {
+void battle_results_write_party_to_game_data(void) {
     s32 unused[2]; /* unused in the original; reserves 8 bytes */
     u8 slot;
     u8 k;
@@ -1311,9 +1311,9 @@ void func_801E2888(void) {
         if (battle_party_character_ids[slot] == 0xFF) {
             continue;
         }
-        record = &D_801E44C8->records[slot];
-        character = &D_801E44C4->characters[record->pilot.characterId];
-        gear = &D_801E44C4->gears[record->pilot.gearId];
+        record = &battle_results_work_ptr->records[slot];
+        character = &battle_results_game_data_ptr->characters[record->pilot.characterId];
+        gear = &battle_results_game_data_ptr->gears[record->pilot.gearId];
         block = &record->gear;
         if (record->pilot.characterId == 7 && (battle_work_area.records[slot].flags15A & 0x80)) {
             record->pilot.hp = (block->hp + 1) / 50;
@@ -1355,10 +1355,10 @@ void func_801E2888(void) {
     }
 }
 
-/* Distribute the experience won: party members that stand share it (less
+/* 801E2ACC: Distribute the experience won: party members that stand share it (less
  * the penalty), every other character gets a reserve share of a third;
  * then record each slot's level gains and result stats. */
-void func_801E2ACC(void) {
+void battle_results_distribute_exp(void) {
     s16 slots[11];
     u16 i;
     u16 absent;
@@ -1373,198 +1373,198 @@ void func_801E2ACC(void) {
             absent++;
             continue;
         }
-        D_801E44EC = &D_801E44C8->records[i].pilot;
-        if (D_801E44EC->status7C & 0xC000) {
+        battle_results_current_record = &battle_results_work_ptr->records[i].pilot;
+        if (battle_results_current_record->status7C & 0xC000) {
             absent++;
-            slots[D_801E44EC->characterId] = 0xFF;
+            slots[battle_results_current_record->characterId] = 0xFF;
         } else {
-            slots[D_801E44EC->characterId] = i;
+            slots[battle_results_current_record->characterId] = i;
         }
-        D_801E44F8[i][0] = D_801E44EC->level;
-        D_801E44F8[i][1] = D_801E44EC->level2;
+        battle_results_levels_before[i][0] = battle_results_current_record->level;
+        battle_results_levels_before[i][1] = battle_results_current_record->level2;
     }
-    experience = D_801E44C8->experience;
-    if (D_801E44C8->penalty != 0) {
-        experience -= (experience / 4) * D_801E44C8->penalty;
+    experience = battle_results_work_ptr->experience;
+    if (battle_results_work_ptr->penalty != 0) {
+        experience -= (experience / 4) * battle_results_work_ptr->penalty;
     }
     for (i = 0; i < 11; i++) {
         if (slots[i] == 0xFF) {
             continue;
         }
-        D_801E44EC = &D_801E44C4->characters[i];
+        battle_results_current_record = &battle_results_game_data_ptr->characters[i];
         if (slots[i] < 3) {
-            func_801E2EB0(experience / (3 - absent), slots[i], 0);
+            battle_results_split_exp_into_pools(experience / (3 - absent), slots[i], 0);
         } else {
-            func_801E2EB0(experience / 3, 0xFF, 1);
+            battle_results_split_exp_into_pools(experience / 3, 0xFF, 1);
         }
-        func_801E308C();
+        battle_results_add_exp_and_level_up();
     }
     for (i = 0; i < 3; i++) {
         if (battle_party_character_ids[i] == 0xFF) {
             continue;
         }
-        D_801E44EC = &D_801E44C4->characters[battle_party_character_ids[i]];
-        D_801E44C8->levelGains[i][0] = D_801E44EC->level - D_801E44F8[i][0];
-        D_801E44C8->levelGains[i][1] = D_801E44EC->level2 - D_801E44F8[i][1];
-        if (D_801E44EC->characterId == 4) {
-            D_801E44C8->resultStats[i][0] = D_801E44EC->entries[0].value4 + D_801E44EC->entries[3].value4;
+        battle_results_current_record = &battle_results_game_data_ptr->characters[battle_party_character_ids[i]];
+        battle_results_work_ptr->levelGains[i][0] = battle_results_current_record->level - battle_results_levels_before[i][0];
+        battle_results_work_ptr->levelGains[i][1] = battle_results_current_record->level2 - battle_results_levels_before[i][1];
+        if (battle_results_current_record->characterId == 4) {
+            battle_results_work_ptr->resultStats[i][0] = battle_results_current_record->entries[0].value4 + battle_results_current_record->entries[3].value4;
         } else {
-            D_801E44C8->resultStats[i][0] = D_801E44EC->attack + D_801E44EC->entries[0].value4;
+            battle_results_work_ptr->resultStats[i][0] = battle_results_current_record->attack + battle_results_current_record->entries[0].value4;
         }
-        D_801E44C8->resultStats[i][1] = D_801E44EC->field5E;
-        D_801E44C8->resultStats[i][2] = D_801E44EC->defense + D_801E44EC->bodyDefense;
-        D_801E44C8->resultStats[i][3] = D_801E44EC->field5F;
-        D_801E44C8->resultStats[i][4] = D_801E44EC->accuracy;
-        D_801E44C8->resultStats[i][5] = D_801E44EC->etherDefense;
-        D_801E44C8->resultStats[i][6] = D_801E44EC->speed;
+        battle_results_work_ptr->resultStats[i][1] = battle_results_current_record->field5E;
+        battle_results_work_ptr->resultStats[i][2] = battle_results_current_record->defense + battle_results_current_record->bodyDefense;
+        battle_results_work_ptr->resultStats[i][3] = battle_results_current_record->field5F;
+        battle_results_work_ptr->resultStats[i][4] = battle_results_current_record->accuracy;
+        battle_results_work_ptr->resultStats[i][5] = battle_results_current_record->etherDefense;
+        battle_results_work_ptr->resultStats[i][6] = battle_results_current_record->speed;
     }
 }
 
-/* Split a slot's experience into the level A and B pools by the record's
+/* 801E2EB0: Split a slot's experience into the level A and B pools by the record's
  * weights (three quarters each for a reserve member, all of it with option
  * 0x8000), at least 1, raised by half by flags 0x2000/0x1000; kept per slot. */
-void func_801E2EB0(u32 experience, s16 slot, s16 reserve) {
+void battle_results_split_exp_into_pools(u32 experience, s16 slot, s16 reserve) {
     s16 weightA;
     s16 weightB;
 
     if (reserve == 1) {
         experience = experience * 3 / 4;
-        D_801E44F0 = experience;
-        D_801E44F4 = experience;
+        battle_results_exp_pool_a = experience;
+        battle_results_exp_pool_b = experience;
         return;
     }
-    weightA = D_801E44C8->records[slot].expWeightA;
-    weightB = D_801E44C8->records[slot].expWeightB;
+    weightA = battle_results_work_ptr->records[slot].expWeightA;
+    weightB = battle_results_work_ptr->records[slot].expWeightB;
     if (weightA < 2) {
         weightA = 1;
     }
     if (weightB < 2) {
         weightB = 1;
     }
-    D_801E44F0 = experience * weightA / (weightA + weightB);
-    D_801E44F4 = experience * weightB / (weightA + weightB);
-    if (D_801E44C4->flags & 0x8000) {
-        D_801E44F0 = experience;
-        D_801E44F4 = experience;
+    battle_results_exp_pool_a = experience * weightA / (weightA + weightB);
+    battle_results_exp_pool_b = experience * weightB / (weightA + weightB);
+    if (battle_results_game_data_ptr->flags & 0x8000) {
+        battle_results_exp_pool_a = experience;
+        battle_results_exp_pool_b = experience;
     }
-    if (D_801E44F0 == 0) {
-        D_801E44F0 = 1;
+    if (battle_results_exp_pool_a == 0) {
+        battle_results_exp_pool_a = 1;
     }
-    if (D_801E44F4 == 0) {
-        D_801E44F4 = 1;
+    if (battle_results_exp_pool_b == 0) {
+        battle_results_exp_pool_b = 1;
     }
-    if (D_801E44EC->flags32 & 0x2000) {
-        D_801E44F0 += D_801E44F0 >> 1;
-        D_801E44F4 += D_801E44F4 >> 1;
+    if (battle_results_current_record->flags32 & 0x2000) {
+        battle_results_exp_pool_a += battle_results_exp_pool_a >> 1;
+        battle_results_exp_pool_b += battle_results_exp_pool_b >> 1;
     }
-    if (D_801E44EC->flags32 & 0x1000) {
-        D_801E44F4 += D_801E44F4 >> 1;
+    if (battle_results_current_record->flags32 & 0x1000) {
+        battle_results_exp_pool_b += battle_results_exp_pool_b >> 1;
     }
-    D_801E44C8->toCount[slot][0] = D_801E44F0;
-    D_801E44C8->toCount[slot][1] = D_801E44F4;
+    battle_results_work_ptr->toCount[slot][0] = battle_results_exp_pool_a;
+    battle_results_work_ptr->toCount[slot][1] = battle_results_exp_pool_b;
 }
 
-/* Add the experience pools to the current record's totals and gain levels
+/* 801E308C: Add the experience pools to the current record's totals and gain levels
  * A and B while the pools reach the next level (none past 99 with option
  * 0x8000, and nothing more at 99). */
-void func_801E308C(void) {
+void battle_results_add_exp_and_level_up(void) {
     s32 rest;
 
-    D_801E44EC->expTotalA += D_801E44F0;
-    D_801E44EC->expTotalB += D_801E44F4;
-    if (D_801E44EC->level == 99 && (D_801E44C4->flags & 0x8000)) {
-        D_801E44F0 = 0;
+    battle_results_current_record->expTotalA += battle_results_exp_pool_a;
+    battle_results_current_record->expTotalB += battle_results_exp_pool_b;
+    if (battle_results_current_record->level == 99 && (battle_results_game_data_ptr->flags & 0x8000)) {
+        battle_results_exp_pool_a = 0;
     }
-    if (D_801E44EC->level2 == 99 && (D_801E44C4->flags & 0x8000)) {
-        D_801E44F4 = 0;
+    if (battle_results_current_record->level2 == 99 && (battle_results_game_data_ptr->flags & 0x8000)) {
+        battle_results_exp_pool_b = 0;
     }
-    if (D_801E44EC->level == 99) {
-        D_801E44F0 = 0;
+    if (battle_results_current_record->level == 99) {
+        battle_results_exp_pool_a = 0;
     }
-    if (D_801E44EC->level2 == 99) {
-        D_801E44F4 = 0;
+    if (battle_results_current_record->level2 == 99) {
+        battle_results_exp_pool_b = 0;
     }
-    rest = D_801E44EC->expNextA - D_801E44F0;
+    rest = battle_results_current_record->expNextA - battle_results_exp_pool_a;
     if (rest > 0) {
-        D_801E44EC->expNextA = rest;
+        battle_results_current_record->expNextA = rest;
     } else {
         do {
-            if (++D_801E44EC->level >= 100 && (D_801E44C4->flags & 0x8000)) {
-                D_801E44EC->level--;
+            if (++battle_results_current_record->level >= 100 && (battle_results_game_data_ptr->flags & 0x8000)) {
+                battle_results_current_record->level--;
             }
-            D_801E44EC->expNextA = D_801E44E8->experience[D_801E44EC->level - 1];
-            func_801E335C();
-            rest += D_801E44EC->expNextA;
+            battle_results_current_record->expNextA = battle_results_growth_file->experience[battle_results_current_record->level - 1];
+            battle_results_grow_level_a_stats();
+            rest += battle_results_current_record->expNextA;
         } while (rest <= 0);
     }
-    D_801E44EC->expNextA = rest;
-    rest = D_801E44EC->expNextB - D_801E44F4;
+    battle_results_current_record->expNextA = rest;
+    rest = battle_results_current_record->expNextB - battle_results_exp_pool_b;
     if (rest > 0) {
-        D_801E44EC->expNextB = rest;
+        battle_results_current_record->expNextB = rest;
     } else {
         do {
-            if (++D_801E44EC->level2 >= 100 && (D_801E44C4->flags & 0x8000)) {
-                D_801E44EC->level2--;
+            if (++battle_results_current_record->level2 >= 100 && (battle_results_game_data_ptr->flags & 0x8000)) {
+                battle_results_current_record->level2--;
             }
-            D_801E44EC->expNextB = D_801E44E8->experience[D_801E44EC->level2 - 1];
-            func_801E3500();
-            rest += D_801E44EC->expNextB;
+            battle_results_current_record->expNextB = battle_results_growth_file->experience[battle_results_current_record->level2 - 1];
+            battle_results_grow_level_b_stats();
+            rest += battle_results_current_record->expNextB;
         } while (rest <= 0);
     }
-    D_801E44EC->expNextB = rest;
+    battle_results_current_record->expNextB = rest;
 }
 
-/* Level A growth of the current record: max HP, then stats 58, 59, 5e
+/* 801E335C: Level A growth of the current record: max HP, then stats 58, 59, 5e
  * and 5f toward the growth data's targets for its level range. */
-void func_801E335C(void) {
+void battle_results_grow_level_a_stats(void) {
     u8 high;
     u8 cap;
     u8 level;
 
     high = 0;
     cap = 100;
-    if (D_801E44EC->level >= 100) {
+    if (battle_results_current_record->level >= 100) {
         high = 1;
         cap = 200;
     }
-    level = D_801E44EC->level;
-    D_801E44EC->maxHp = func_801E3700(D_801E44EC->maxHp, D_801E44EC->level);
-    D_801E44EC->attack = func_801E3610(D_801E44EC->attack,
-        D_801E44E8->characters[D_801E44EC->characterId].statTargets[0][high], cap, level);
-    D_801E44EC->defense = func_801E3610(D_801E44EC->defense,
-        D_801E44E8->characters[D_801E44EC->characterId].statTargets[1][high], cap, level);
-    D_801E44EC->field5E = func_801E3610(D_801E44EC->field5E,
-        D_801E44E8->characters[D_801E44EC->characterId].statTargets[2][high], cap, level);
-    D_801E44EC->field5F = func_801E3610(D_801E44EC->field5F,
-        D_801E44E8->characters[D_801E44EC->characterId].statTargets[3][high], cap, level);
+    level = battle_results_current_record->level;
+    battle_results_current_record->maxHp = battle_results_grow_max_hp(battle_results_current_record->maxHp, battle_results_current_record->level);
+    battle_results_current_record->attack = battle_results_grow_stat(battle_results_current_record->attack,
+        battle_results_growth_file->characters[battle_results_current_record->characterId].statTargets[0][high], cap, level);
+    battle_results_current_record->defense = battle_results_grow_stat(battle_results_current_record->defense,
+        battle_results_growth_file->characters[battle_results_current_record->characterId].statTargets[1][high], cap, level);
+    battle_results_current_record->field5E = battle_results_grow_stat(battle_results_current_record->field5E,
+        battle_results_growth_file->characters[battle_results_current_record->characterId].statTargets[2][high], cap, level);
+    battle_results_current_record->field5F = battle_results_grow_stat(battle_results_current_record->field5F,
+        battle_results_growth_file->characters[battle_results_current_record->characterId].statTargets[3][high], cap, level);
 }
 
-/* Level B growth of the current record: max EP, then stats 5b and 5c
+/* 801E3500: Level B growth of the current record: max EP, then stats 5b and 5c
  * toward the growth data's targets for its level range. */
-void func_801E3500(void) {
+void battle_results_grow_level_b_stats(void) {
     u8 high;
     u8 cap;
     u8 level;
 
     high = 0;
     cap = 100;
-    if (D_801E44EC->level2 >= 100) {
+    if (battle_results_current_record->level2 >= 100) {
         high = 1;
         cap = 200;
     }
-    level = D_801E44EC->level2;
-    D_801E44EC->maxEp = func_801E38CC(D_801E44EC->maxEp, D_801E44EC->level2);
-    D_801E44EC->accuracy = func_801E3610(D_801E44EC->accuracy,
-        D_801E44E8->characters[D_801E44EC->characterId].statTargets[4][high], cap, level);
-    D_801E44EC->etherDefense = func_801E3610(D_801E44EC->etherDefense,
-        D_801E44E8->characters[D_801E44EC->characterId].statTargets[5][high], cap, level);
+    level = battle_results_current_record->level2;
+    battle_results_current_record->maxEp = battle_results_grow_max_ep(battle_results_current_record->maxEp, battle_results_current_record->level2);
+    battle_results_current_record->accuracy = battle_results_grow_stat(battle_results_current_record->accuracy,
+        battle_results_growth_file->characters[battle_results_current_record->characterId].statTargets[4][high], cap, level);
+    battle_results_current_record->etherDefense = battle_results_grow_stat(battle_results_current_record->etherDefense,
+        battle_results_growth_file->characters[battle_results_current_record->characterId].statTargets[5][high], cap, level);
 }
 
-/* Grow a stat by 0 or 1: the chance is the share of the distance to the
+/* 801E3610: Grow a stat by 0 or 1: the chance is the share of the distance to the
  * target left over the levels to the cap. Capped at 200. */
 /* Grow a stat by 0 or 1: the chance is the share of the distance to the
  * target left over the levels to the cap. Capped at 200. */
-u8 func_801E3610(u8 stat, u8 target, u8 cap, u8 level) {
+u8 battle_results_grow_stat(u8 stat, u8 target, u8 cap, u8 level) {
     s32 random;
     s32 share;
     u8 grow;
@@ -1579,9 +1579,9 @@ u8 func_801E3610(u8 stat, u8 target, u8 cap, u8 level) {
     return stat;
 }
 
-/* Grow max HP by a random share of the distance to the growth data's
+/* 801E3700: Grow max HP by a random share of the distance to the growth data's
  * target for the level range, at least 2. Capped at 999. */
-u16 func_801E3700(u16 maxHp, u8 level) {
+u16 battle_results_grow_max_hp(u16 maxHp, u8 level) {
     s16 gain;
     u16 hp;
     u16 result;
@@ -1589,7 +1589,7 @@ u16 func_801E3700(u16 maxHp, u8 level) {
 
     hp = maxHp;
     if (level < 100) {
-        gain = rand() % 100 * (D_801E44E8->characters[D_801E44EC->characterId].maxHpTargets[0] - (level - top) - hp)
+        gain = rand() % 100 * (battle_results_growth_file->characters[battle_results_current_record->characterId].maxHpTargets[0] - (level - top) - hp)
             / ((100 - level) * 100) + 2;
         if (gain < 0) {
             result = hp;
@@ -1597,7 +1597,7 @@ u16 func_801E3700(u16 maxHp, u8 level) {
             result = gain + maxHp;
         }
     } else {
-        gain = rand() % 100 * ((D_801E44E8->characters[D_801E44EC->characterId].maxHpTargets[1] - hp)
+        gain = rand() % 100 * ((battle_results_growth_file->characters[battle_results_current_record->characterId].maxHpTargets[1] - hp)
             / ((201 - level) * 100)) * 2 + 2;
         if (gain < 0) {
             result = hp;
@@ -1611,9 +1611,9 @@ u16 func_801E3700(u16 maxHp, u8 level) {
     return result;
 }
 
-/* Grow max EP by 0 or 1 toward the growth data's target for the level
- * range (as func_801E3610). Capped at 99. */
-u8 func_801E38CC(u8 maxEp, u8 level) {
+/* 801E38CC: Grow max EP by 0 or 1 toward the growth data's target for the level
+ * range (as battle_results_grow_stat). Capped at 99. */
+u8 battle_results_grow_max_ep(u8 maxEp, u8 level) {
     u8 target;
     u8 cap;
     s32 random;
@@ -1621,10 +1621,10 @@ u8 func_801E38CC(u8 maxEp, u8 level) {
     u8 grow;
 
     if (level < 100) {
-        target = D_801E44E8->characters[D_801E44EC->characterId].maxEpTargets[0];
+        target = battle_results_growth_file->characters[battle_results_current_record->characterId].maxEpTargets[0];
         cap = 99;
     } else {
-        target = D_801E44E8->characters[D_801E44EC->characterId].maxEpTargets[1];
+        target = battle_results_growth_file->characters[battle_results_current_record->characterId].maxEpTargets[1];
         cap = 200;
     }
     random = rand();
@@ -1637,67 +1637,67 @@ u8 func_801E38CC(u8 maxEp, u8 level) {
     return maxEp;
 }
 
-/* Learn skills for each party slot that is not knocked out: a counter skill
+/* 801E3A18: Learn skills for each party slot that is not knocked out: a counter skill
  * (not characters 7 and 8), a level skill (not 10), the unlocks, and the
  * special cases of characters 8 and 7. */
-void func_801E3A18(void) {
+void battle_results_learn_skills(void) {
     u8 slot;
     u8 learnt;
 
     for (slot = 0; slot < 3; slot++) {
-        D_801E44EC = &D_801E44C8->records[slot].pilot;
-        if (D_801E44EC->status7C & 0x8000) {
+        battle_results_current_record = &battle_results_work_ptr->records[slot].pilot;
+        if (battle_results_current_record->status7C & 0x8000) {
             continue;
         }
-        switch (D_801E44EC->characterId) {
+        switch (battle_results_current_record->characterId) {
         case 7:
         case 8:
             break;
         default:
-            learnt = func_801E3BE0(D_801E44EC->characterId);
+            learnt = battle_results_learn_deathblow(battle_results_current_record->characterId);
             if (learnt != 0) {
-                D_801E44C8->learntCounter[slot] = learnt;
+                battle_results_work_ptr->learntCounter[slot] = learnt;
             }
             break;
         }
-        if (D_801E44EC->characterId != 10) {
-            learnt = func_801E3D54(D_801E44EC->characterId);
+        if (battle_results_current_record->characterId != 10) {
+            learnt = battle_results_learn_art(battle_results_current_record->characterId);
             if (learnt != 0) {
-                D_801E44C8->learntLevel[slot] = learnt;
+                battle_results_work_ptr->learntLevel[slot] = learnt;
             }
         }
-        switch (D_801E44EC->characterId) {
+        switch (battle_results_current_record->characterId) {
         case 7:
         case 8:
         case 10:
             break;
         default:
-            func_801E3E14(D_801E44EC->characterId);
+            battle_results_unlock_by_known_deathblows(battle_results_current_record->characterId);
             break;
         }
-        switch (D_801E44EC->characterId) {
+        switch (battle_results_current_record->characterId) {
         case 8:
         case 9:
         case 10:
             break;
         default:
-            func_801E3F28(D_801E44EC->characterId);
+            battle_results_unlock_by_known_arts(battle_results_current_record->characterId);
             break;
         }
-        if (D_801E44EC->characterId == 8) {
-            func_801E3EA4();
+        if (battle_results_current_record->characterId == 8) {
+            battle_results_unlock_character8_by_level();
         }
-        if (D_801E44EC->characterId == 7) {
-            func_801E3FB0();
+        if (battle_results_current_record->characterId == 7) {
+            battle_results_derive_character7_gear_stats();
         }
     }
 }
 
-/* Learn the first unknown counter skill (of 7, or 13 with option 0x4000)
+/* 801E3BE0: Learn the first unknown counter skill (of 7, or 13 with option 0x4000)
  * whose level is reached and whose seven counter requirements the current
  * record meets; stop at the first whose level is not reached. Returns its
  * index, or 0. */
-u8 func_801E3BE0(u8 id) {
+u8 battle_results_learn_deathblow(u8 id) {
     u8 count;
     u8 learnt;
     u8 j;
@@ -1714,11 +1714,11 @@ u8 func_801E3BE0(u8 id) {
         if (game_data.skills[id].counterSkills & (bit >> j)) {
             continue;
         }
-        if (D_801E44E8->characters[id].counterLevels[j] > game_data.characters[id].level) {
+        if (battle_results_growth_file->characters[id].counterLevels[j] > game_data.characters[id].level) {
             break;
         }
         for (k = 0; k < 7; k++) {
-            if (D_801E44E8->characters[id].requirements[j][k] > D_801E44EC->useCounts[k]) {
+            if (battle_results_growth_file->characters[id].requirements[j][k] > battle_results_current_record->useCounts[k]) {
                 break;
             }
         }
@@ -1734,9 +1734,9 @@ u8 func_801E3BE0(u8 id) {
     return learnt;
 }
 
-/* Learn the first of the character's twelve level skills whose level is
+/* 801E3D54: Learn the first of the character's twelve level skills whose level is
  * reached and which is not yet known. Returns its number (1-12), or 0. */
-u8 func_801E3D54(u8 id) {
+u8 battle_results_learn_art(u8 id) {
     u32 bit;
     u8 k;
     u8 level;
@@ -1744,14 +1744,14 @@ u8 func_801E3D54(u8 id) {
 
     bit = 0x8000;
     for (k = 0; k < 12; k++, bit >>= 1) {
-        level = D_801E44E8->characters[id].levelSkills[k];
+        level = battle_results_growth_file->characters[id].levelSkills[k];
         if (level == 0xFF) {
             return 0;
         }
         if (game_data.characters[id].level >= level) {
-            known = D_801E44C4->skills[id].levelSkills;
+            known = battle_results_game_data_ptr->skills[id].levelSkills;
             if (!(bit & known)) {
-                D_801E44C4->skills[id].levelSkills = bit | known;
+                battle_results_game_data_ptr->skills[id].levelSkills = bit | known;
                 return k + 1;
             }
         }
@@ -1759,99 +1759,99 @@ u8 func_801E3D54(u8 id) {
     return 0;
 }
 
-/* For each of the character's nine unlock entries whose counter skill is
+/* 801E3E14: For each of the character's nine unlock entries whose counter skill is
  * known, set the matching unlock bit (from bit 3). */
-void func_801E3E14(u8 id) {
+void battle_results_unlock_by_known_deathblows(u8 id) {
     u8 k;
     u8 entry;
 
     for (k = 0; k < 9; k++) {
-        entry = D_801E44E8->characters[id].unlocksA[k];
+        entry = battle_results_growth_file->characters[id].unlocksA[k];
         if (entry == 0xFF) {
             return;
         }
-        if (D_801E44C4->skills[id].counterSkills & (0x8000 >> (entry - 1))) {
-            D_801E44C4->skills[id].unlocksA |= 0x8000 >> (k + 3);
+        if (battle_results_game_data_ptr->skills[id].counterSkills & (0x8000 >> (entry - 1))) {
+            battle_results_game_data_ptr->skills[id].unlocksA |= 0x8000 >> (k + 3);
         }
     }
 }
 
-/* Character 8's nine level entries: learn each one its level reaches. */
-void func_801E3EA4(void) {
+/* 801E3EA4: Character 8's nine level entries: learn each one its level reaches. */
+void battle_results_unlock_character8_by_level(void) {
     u8 k;
     u8 level;
     u32 known;
     s32 bit;
 
     for (k = 0; k < 9; k++) {
-        level = D_801E44E8->characters[8].unlocksA[k];
+        level = battle_results_growth_file->characters[8].unlocksA[k];
         if (level == 0xFF) {
             return;
         }
         if (game_data.characters[8].level >= level) {
-            known = D_801E44C4->skills[8].unlocksA;
+            known = battle_results_game_data_ptr->skills[8].unlocksA;
             bit = 0x1000 >> k;
             if (!(known & bit)) {
-                D_801E44C4->skills[8].unlocksA = bit | known;
+                battle_results_game_data_ptr->skills[8].unlocksA = bit | known;
             }
         }
     }
 }
 
-/* For each of the character's thirteen second unlock entries whose level
+/* 801E3F28: For each of the character's thirteen second unlock entries whose level
  * skill is known, set the matching unlock bit. */
-void func_801E3F28(u8 id) {
+void battle_results_unlock_by_known_arts(u8 id) {
     u8 k;
     u8 entry;
 
     for (k = 0; k < 13; k++) {
-        entry = D_801E44E8->characters[id].unlocksB[k];
+        entry = battle_results_growth_file->characters[id].unlocksB[k];
         if (entry == 0) {
             return;
         }
-        if (D_801E44C4->skills[id].levelSkills & (0x8000 >> (entry - 1))) {
-            D_801E44C4->skills[id].unlocksB |= 0x8000 >> k;
+        if (battle_results_game_data_ptr->skills[id].levelSkills & (0x8000 >> (entry - 1))) {
+            battle_results_game_data_ptr->skills[id].unlocksB |= 0x8000 >> k;
         }
     }
 }
 
-/* Character 7's derived values from the current record's max HP and
+/* 801E3FB0: Character 7's derived values from the current record's max HP and
  * attack. */
-void func_801E3FB0(void) {
-    GameData *game = D_801E44C4;
+void battle_results_derive_character7_gear_stats(void) {
+    GameData *game = battle_results_game_data_ptr;
 
-    game->gears[7].maxHp = D_801E44EC->maxHp * 200;
-    game->gears[7].attack = D_801E44EC->attack / 5 + 1;
-    game->gears[7].bodyDefense = D_801E44EC->maxHp * 10;
-    game->gears[7].armor = D_801E44EC->maxHp * 10;
+    game->gears[7].maxHp = battle_results_current_record->maxHp * 200;
+    game->gears[7].attack = battle_results_current_record->attack / 5 + 1;
+    game->gears[7].bodyDefense = battle_results_current_record->maxHp * 10;
+    game->gears[7].armor = battle_results_current_record->maxHp * 10;
 }
 
-/* Advance each character's tier: 3, 4 and 5 at the growth data's tier
+/* 801E403C: Advance each character's tier: 3, 4 and 5 at the growth data's tier
  * levels, 6 to 7 at level 50 with option 0x4000. */
-void func_801E403C(void) {
+void battle_results_advance_tiers(void) {
     u8 id;
     CharacterRecord *character;
     CharacterSkills *skills;
 
     for (id = 0; id < 11; id++) {
-        character = &D_801E44C4->characters[id];
-        skills = &D_801E44C4->skills[id];
+        character = &battle_results_game_data_ptr->characters[id];
+        skills = &battle_results_game_data_ptr->skills[id];
         if (skills->tier == 7) {
             continue;
         }
         switch (skills->tier) {
         case 3:
-            if (character->level >= D_801E44E8->characters[id].tierLevels[0]) {
+            if (character->level >= battle_results_growth_file->characters[id].tierLevels[0]) {
                 skills->tier = 4;
             }
             break;
         case 4:
-            if (character->level >= D_801E44E8->characters[id].tierLevels[1]) {
+            if (character->level >= battle_results_growth_file->characters[id].tierLevels[1]) {
                 skills->tier = 5;
             }
             break;
         case 5:
-            if (character->level >= D_801E44E8->characters[id].tierLevels[2]) {
+            if (character->level >= battle_results_growth_file->characters[id].tierLevels[2]) {
                 skills->tier = 6;
             }
             break;
@@ -1864,8 +1864,8 @@ void func_801E403C(void) {
     }
 }
 
-/* Levels 50, 60 and 70 set unlock bits 8, 4 and 2 of each party member. */
-void func_801E41B4(void) {
+/* 801E41B4: Levels 50, 60 and 70 set unlock bits 8, 4 and 2 of each party member. */
+void battle_results_unlock_at_levels_50_60_70(void) {
     u8 slot;
     u8 id;
 
@@ -1883,9 +1883,9 @@ void func_801E41B4(void) {
     }
 }
 
-/* Roll one drop per defeated enemy: the first at its chance (always when a
+/* 801E42C4: Roll one drop per defeated enemy: the first at its chance (always when a
  * party member has flag 0x800), else the second at its chance. */
-void func_801E42C4(void) {
+void battle_results_roll_drops(void) {
     u8 i;
     u8 forced;
     s32 low_bit;
@@ -1894,26 +1894,26 @@ void func_801E42C4(void) {
 
     forced = 0;
     for (i = 0; i < 3; i++) {
-        D_801E44EC = &D_801E44C8->records[i].pilot;
-        if (D_801E44EC->flags32 & 0x800) {
+        battle_results_current_record = &battle_results_work_ptr->records[i].pilot;
+        if (battle_results_current_record->flags32 & 0x800) {
             forced = 1;
         }
     }
     low_bit = 1;
     for (i = 0; i < 8; i++) {
-        D_801E44C8->dropIds[i] = 0;
+        battle_results_work_ptr->dropIds[i] = 0;
         bit = low_bit << i;
-        if (!(D_801E44C8->defeated & bit)) {
+        if (!(battle_results_work_ptr->defeated & bit)) {
             continue;
         }
-        enemy = &D_801E44C8->records[i + 3];
-        D_801E44EC = &enemy->pilot;
+        enemy = &battle_results_work_ptr->records[i + 3];
+        battle_results_current_record = &enemy->pilot;
         if (rand() % 100 < enemy->field150[0] || forced == 1) {
-            D_801E44C8->dropCategories[i] = enemy->field150[4];
-            D_801E44C8->dropIds[i] = enemy->field150[2];
+            battle_results_work_ptr->dropCategories[i] = enemy->field150[4];
+            battle_results_work_ptr->dropIds[i] = enemy->field150[2];
         } else if (rand() % 100 < enemy->field150[1]) {
-            D_801E44C8->dropCategories[i] = enemy->field150[5];
-            D_801E44C8->dropIds[i] = enemy->field150[3];
+            battle_results_work_ptr->dropCategories[i] = enemy->field150[5];
+            battle_results_work_ptr->dropIds[i] = enemy->field150[3];
         }
     }
 }

@@ -306,7 +306,7 @@ u16 battle_flag_bits[16] = { /* 800C3468 */
 };
 /* 00 04 77 68: no code in any image forms an address in this word
  * (tools/data_users.py --range), so its object and padding are inferred, by
- * analogy with ovl2596's D_801E44C0 (a byte 0 then a stray 04): a byte
+ * analogy with ovl2596's battle_results_fanfare_started (a byte 0 then a stray 04): a byte
  * object followed by stray bytes. Which unit it ends is not known; the units
  * up to 8008CCCC have no other data. */
 INCLUDE_ORIGINAL(".data", battle_unreferenced_stray_byte, 0x800C3488, 4);
@@ -388,7 +388,7 @@ void battle_main(void) {
         heap_free((void *)block);
         heap_free((void *)span);
         if (mode_pending_battle_formation == 0) {
-            func_801E0A34();
+            battle_scene_select_main();
         } else {
             formation_selected_index = mode_pending_battle_formation - 1;
             mode_pending_battle_formation = 0;
@@ -506,7 +506,7 @@ void battle_main(void) {
         battle_screen_fade_start(0x40, 2, 0x40, 0x40, 0x40);
     }
     battle_release_script_and_fade_music();
-    func_801E252C();
+    battle_results_leave_battle();
     heap_free((void *)battle_heap_mark_for_post_battle_module);
     heap_free((void *)battle_heap_reserve_for_post_battle_module);
 }
@@ -515,7 +515,7 @@ void battle_main(void) {
  * runner. */
 s32 battle_wait_frame(void) {
     if (*mode_disc_mode_pointer != -1) {
-        func_8028022C();
+        battle_debug_print_state_page();
     }
     battle_run_frame();
     return 0;
@@ -1654,7 +1654,7 @@ void battle_draw_hud_for_turns(void) {
 void battle_draw_hud_for_result_screens(void) {
     mode_battle_debug_page = 0;
     battle_window_grow_opening();
-    func_801DE594();
+    battle_results_queue_screens();
     battle_draw_gauge_bars_and_windows();
 }
 

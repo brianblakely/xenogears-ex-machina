@@ -6,7 +6,7 @@
  * header of battle file 2, whenever they differ from the loaded module's
  * (sprite_loaded_battle_module). Battle script opcodes call fixed entry addresses in the
  * loaded module. This one provides the battle-entry effect: the captured
- * screen broken into triangles (func_801FC2C0 starts it; no caller is known
+ * screen broken into triangles (battle_module_tiles_start starts it; no caller is known
  * from the overlays, so it is reached by address).
  *
  * The module is one unit, its whole file (801fc000-801fc728), built by the
@@ -23,21 +23,21 @@
 
 /* The two triangles of a cell (as in ovl3387's burst effect); this module
  * keeps them but never reads them. */
-SVECTOR D_801FC6F8[3] = {{-2, -2, 0}, {6, -2, 0}, {-2, 6, 0}};
-SVECTOR D_801FC710[3] = {{2, -6, 0}, {2, 2, 0}, {-6, 2, 0}};
+SVECTOR battle_module_tiles_unused_upper_left_triangle[3] = {{-2, -2, 0}, {6, -2, 0}, {-2, 6, 0}}; /* 801FC6F8 */
+SVECTOR battle_module_tiles_unused_lower_right_triangle[3] = {{2, -6, 0}, {2, 2, 0}, {-6, 2, 0}}; /* 801FC710 */
 
-/* Count the effect's frames; select (0x100) newly pressed on the second
+/* 801FC000: Count the effect's frames; select (0x100) newly pressed on the second
  * controller ends it. */
-void func_801FC000(Task *node) {
+void battle_module_tiles_update(Task *node) {
     ((TileTask *)node->data)->frame++;
     if (battle_area.pressed2 & 0x100) {
         node->destroy(node);
     }
 }
 
-/* Queue every triangle of the current display buffer at a fixed 64,64
+/* 801FC064: Queue every triangle of the current display buffer at a fixed 64,64
  * offset. */
-void func_801FC064(Task *node) {
+void battle_module_tiles_draw(Task *node) {
     TileTask *task;
     Tile *tile;
     POLY_FT3 *prim;
@@ -80,19 +80,19 @@ void func_801FC064(Task *node) {
     SetGeomScreen(h);
 }
 
-/* Unlink the effect's nodes, release it and restore the depth shift. */
-void func_801FC278(Task *node) {
+/* 801FC278: Unlink the effect's nodes, release it and restore the depth shift. */
+void battle_module_tiles_destroy(Task *node) {
     task_unlink_draw_node((Task *)((u8 *)node + 0x1C));
     task_unlink_main_node(node);
     sprite_queue_free_later((u32)node);
     model_ot_depth_shift = 4;
 }
 
-/* Start the effect: build both triangle halves of every 8x8 cell of the
+/* 801FC2C0: Start the effect: build both triangle halves of every 8x8 cell of the
  * 128x128 area around the screen centre, textured from the displayed buffer,
  * with each corner also pushed out onto the circle of its larger coordinate
  * (the square grid mapped onto a disc). */
-void func_801FC2C0(void) {
+void battle_module_tiles_start(void) {
     TileTask *task;
     Tile *tile;
     POLY_FT3 *prim;
@@ -101,7 +101,7 @@ void func_801FC2C0(void) {
     u8 u;
 
     model_ot_depth_shift = 0;
-    task = (TileTask *)task_alloc_two_node_task(sizeof(TileTask), NULL, func_801FC000, func_801FC064, func_801FC278);
+    task = (TileTask *)task_alloc_two_node_task(sizeof(TileTask), NULL, battle_module_tiles_update, battle_module_tiles_draw, battle_module_tiles_destroy);
     task->frame = 0;
     for (half = 0; half != 2; half++) {
         for (row = 0; row < 16; row++) {

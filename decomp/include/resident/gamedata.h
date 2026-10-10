@@ -275,7 +275,7 @@ typedef struct GameData {
     u16 flags;                    /* 0x22B6: option flags (0x4000 battle's boost, ext d1;
                                    * 0x2000/0x1000 a copy to character 9/10, ext d0) */
     /* The rounds left of each ammo id, by id - 50 for ids 50-97 (the 48 weapon
-     * records ovl2615 func_801E5384 copies for the battle). The special parts
+     * records ovl2615 battle_setup_load_party_and_enemy_files copies for the battle). The special parts
      * are ammo: system texts 23 and 51 name ids 50-72 "... Ammo", and only
      * character 4 and its gears 5 and 13 may use them
      * (docs/scripts/field-events.md). The field menu sets an id's byte to 100

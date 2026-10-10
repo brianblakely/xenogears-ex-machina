@@ -19,9 +19,9 @@
 #include "battle/sprite.h"
 #include "scroll.h"
 
-/* The bounds of the actor's sprite cells; returns the cell count and stores
+/* 801FC000: The bounds of the actor's sprite cells; returns the cell count and stores
  * the width and height (the same code as ovl3385's). */
-s32 func_801FC000(Sprite *actor, s32 *width, s32 *height, SpriteBounds *bounds) {
+s32 battle_module_scroll_get_cell_bounds(Sprite *actor, s32 *width, s32 *height, SpriteBounds *bounds) {
     SpritePart *cell;
     u32 count;
     s32 i;
@@ -61,19 +61,19 @@ s32 func_801FC000(Sprite *actor, s32 *width, s32 *height, SpriteBounds *bounds) 
     return count;
 }
 
-/* Scroll the row by the actor's speed. */
-void func_801FC0EC(Task *node) {
+/* 801FC0EC: Scroll the row by the actor's speed. */
+void battle_module_scroll_update(Task *node) {
     ScrollTask *scroll = node->data;
 
     scroll->scroll -= scroll->actor->speed;
 }
 
-/* Queue `count` sprite cells as textured quads offset by (x, y) through the
+/* 801FC110: Queue `count` sprite cells as textured quads offset by (x, y) through the
  * loaded matrices, mirrored or flipped per cell with the actor's sprite
  * scale; cells right of the screen's left edge are clipped to it, cells
  * wholly left of it skipped. Returns how many cells have a corner inside
  * the screen. */
-u8 func_801FC110(SpritePart *cell, s32 count, s32 x, s32 y, Sprite *actor) {
+u8 battle_module_scroll_queue_cells(SpritePart *cell, s32 count, s32 x, s32 y, Sprite *actor) {
     SVECTOR quad[4];
     long p, flag;
     POLY_FT4 *prim;
@@ -178,9 +178,9 @@ u8 func_801FC110(SpritePart *cell, s32 count, s32 x, s32 y, Sprite *actor) {
     return visible;
 }
 
-/* Keep the actor at its held position and draw its sprite sixteen times in a
+/* 801FC5C4: Keep the actor at its held position and draw its sprite sixteen times in a
  * row, offset by the scroll (wrapped to the sprite's width). */
-void func_801FC5C4(Task *node) {
+void battle_module_scroll_draw(Task *node) {
     ScrollTask *scroll;
     Sprite *actor;
     SVECTOR unused; /* unused in the original; reserves 8 bytes */
@@ -197,7 +197,7 @@ void func_801FC5C4(Task *node) {
     actor->x = scroll->position[0];
     actor->y = scroll->position[1];
     actor->z = scroll->position[2];
-    count = func_801FC000(actor, &width, &height, &bounds);
+    count = battle_module_scroll_get_cell_bounds(actor, &width, &height, &bounds);
     sprite_update_orientation(actor);
     position.vx = actor->x >> 16;
     position.vy = actor->y >> 16;
@@ -209,16 +209,16 @@ void func_801FC5C4(Task *node) {
     x = (s16)(scroll->scroll >> 16) % width - width;
     cells = actor->renderer->parts[1];
     for (i = 0; i != 16; i++) {
-        func_801FC110(cells, count, x, 0, actor);
+        battle_module_scroll_queue_cells(cells, count, x, 0, actor);
         x += width;
     }
 }
 
-/* Opcode entry: hold `actor` where it is under the scrolling effect. */
-void func_801FC6FC(Sprite *actor) {
+/* 801FC6FC: Opcode entry: hold `actor` where it is under the scrolling effect. */
+void battle_module_scroll_start(Sprite *actor) {
     ScrollTask *scroll;
 
-    scroll = (ScrollTask *)task_alloc_two_node_task(sizeof(ScrollTask), actor->block, func_801FC0EC, func_801FC5C4, NULL);
+    scroll = (ScrollTask *)task_alloc_two_node_task(sizeof(ScrollTask), actor->block, battle_module_scroll_update, battle_module_scroll_draw, NULL);
     scroll->actor = actor;
     actor->motion.word |= 0x20;
     scroll->scroll = 0;

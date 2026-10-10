@@ -40,18 +40,18 @@ typedef struct {
     ShatterCell cells[2][7][10]; /* +3c: two triangles per 32x32 cell */
 } ShatterTask;           /* 0x440c */
 
-void func_801E7F4C(Task *node);
-void func_801E80B4(Task *node);
-void func_801E827C(void *block);
-ShatterTask *func_801E82EC(void);
-ShatterTask *func_801E8320(ShatterTask *task);
-void func_801E8588(void);
-void func_801E8964(Task *node);
-void func_801E8A64(Task *node);
-void func_801E8D48(void *block);
-BurstTask *func_801E8DB8(void);
-BurstTask *func_801E8DF0(BurstTask *task);
-void func_801E91E8(void);
+void battle_setup_shatter_update(Task *node);
+void battle_setup_shatter_draw(Task *node);
+void battle_setup_shatter_release(void *block);
+ShatterTask *battle_setup_shatter_create(void);
+ShatterTask *battle_setup_shatter_init(ShatterTask *task);
+void battle_setup_run_shatter_load_mode(void);
+void battle_setup_burst_update(Task *node);
+void battle_setup_burst_draw(Task *node);
+void battle_setup_burst_release(void *block);
+BurstTask *battle_setup_burst_create(void);
+BurstTask *battle_setup_burst_init(BurstTask *task);
+void battle_setup_run_burst_load_mode(void);
 
 /* Flip to the other display buffer and clear its ordering table. */
 static inline void swap_buffers(void) {

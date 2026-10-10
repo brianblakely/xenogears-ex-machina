@@ -100,7 +100,7 @@ void worldmap_read_area_sound_bank(void); /* read its sound bank (file 6) */
  * same symbol: worldmap_open_map_start forms the address anew rather than from the
  * destination of the copy before it, which cse keeps in a saved register
  * when both are mode_music_buffer. */
-extern struct SoundSeqHeader D_80062648_sequence __asm__("mode_music_buffer");
+extern struct SoundSeqHeader mode_music_buffer_header __asm__("mode_music_buffer");
 
 /* The area data's header (file 1): section offsets from its start. */
 typedef struct {

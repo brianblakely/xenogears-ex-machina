@@ -141,7 +141,7 @@ typedef struct {
 } BattleSceneData;
 
 /* The battle scene data, which the resident's stage loader mode_load_battle_stage
- * reads (ovl2615 func_801E7210 sets it up), held in the resident pointer
+ * reads (ovl2615 battle_setup_build_stage sets it up), held in the resident pointer
  * mode_battle_scene_data (resident/sound.h). */
 #define SCENE_DATA ((BattleSceneData *)mode_battle_scene_data)
 

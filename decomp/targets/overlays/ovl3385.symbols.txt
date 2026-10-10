@@ -1,0 +1,6 @@
+// Names tools/names.py gave these addresses (docs/matching.md, Names).
+battle_module_hold_get_cell_bounds = 0x801FC000; // type:func
+battle_module_hold_update = 0x801FC0EC; // type:func
+battle_module_hold_queue_cells = 0x801FC168; // type:func
+battle_module_hold_draw = 0x801FC508; // type:func
+battle_module_hold_start = 0x801FC7B0; // type:func

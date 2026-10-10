@@ -11,19 +11,19 @@
  * add, clamped to 0..255 (the module passes and takes a byte). */
 u8 sprite_add_clamp_byte(u8 value, s32 delta);
 
-/* The screen burst (battle/burst.h), which func_801FC8F4 runs in its own
+/* The screen burst (battle/burst.h), which battle_module_burst_run_frame_loop runs in its own
  * frame loop. */
-extern SVECTOR D_801FCE18[3]; /* first triangle of a cell */
-extern SVECTOR D_801FCE30[3]; /* second triangle */
-extern u32 *D_801FCE48;       /* ordering table being filled */
+extern SVECTOR battle_module_burst_upper_left_triangle[3]; /* first triangle of a cell */
+extern SVECTOR battle_module_burst_lower_right_triangle[3]; /* second triangle */
+extern u32 *battle_module_burst_current_ot;       /* ordering table being filled */
 
-extern u8 D_801FCE14; /* the effect's variant (1 in the module's data) */
+extern u8 battle_module_burst_variant; /* the effect's variant (1 in the module's data) */
 
-void func_801FC000(Task *node);
-void func_801FC11C(Task *node);
-void func_801FC400(BurstTask *burst);
-BurstTask *func_801FC470(void);
-BurstTask *func_801FC4A8(BurstTask *burst);
-void func_801FC8F4(void);
+void battle_module_burst_update(Task *node);
+void battle_module_burst_draw(Task *node);
+void battle_module_burst_release(BurstTask *burst);
+BurstTask *battle_module_burst_create(void);
+BurstTask *battle_module_burst_init(BurstTask *burst);
+void battle_module_burst_run_frame_loop(void);
 
 #endif

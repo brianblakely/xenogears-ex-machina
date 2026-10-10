@@ -42,18 +42,18 @@ segments:
     start: 0x0
     vram: 0x801de000
     subsegments:
-      - [0x0, .rodata, ovl2596]
-      - [0x48, c, ovl2596]
-      # The .data opens with D_801E44C0 (u8 0): the padding after it holds a
+      - [0x0, .rodata, battle_results_screens]
+      - [0x48, c, battle_results_screens]
+      # The .data opens with battle_results_fanfare_started (u8 0): the padding after it holds a
       # byte (0x04) that nothing reads, as the original assembler left in
-      # string padding elsewhere; ovl2596.c includes it from the original
+      # string padding elsewhere; battle_results_screens.c includes it from the original
       # (INCLUDE_ORIGINAL).
-      - [0x64c0, .data, ovl2596]
+      - [0x64c0, .data, battle_results_screens]
       # From 801e44cc the file holds the module's uninitialized variables
       # (its .bss, loaded) as zeros. All are commons, which the original
       # linker allocated each in a slot of whole words (decomp/Makefile): the
       # u8 at 801e44e4 follows the u8 at 801e44e0 four bytes on. The image
       # ends two bytes after the last, the u8[3][2] at 801e44f8, as a
       # word-rounded section or file would.
-      - [0x64cc, .bss, ovl2596]
+      - [0x64cc, .bss, battle_results_screens]
   - [0x6500]

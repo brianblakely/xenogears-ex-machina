@@ -1125,7 +1125,7 @@ void field_event_transform_vector(void) {
 
     m.t[0] = m.t[1] = m.t[2] = 0;
     a = field_event_read_selected_operand_80(1, EVENT_OPERAND_BYTE(0xB));
-    func_801E72CC(&m, &work, a, field_event_read_selected_operand_40(3, EVENT_OPERAND_BYTE(0xB)));
+    gear_model_get_node_matrix(&m, &work, a, field_event_read_selected_operand_40(3, EVENT_OPERAND_BYTE(0xB)));
     SetRotMatrix(&m);
     SetTransMatrix(&m);
     in.vx = field_event_read_selected_operand_20(5, EVENT_OPERAND_BYTE(0xB));
@@ -2087,7 +2087,7 @@ void field_event_call_layer_script(void) {
 
     if (field_event_runs_per_frame != 0) {
         index = field_event_read_imm_or_var(1) & 0xFFFF;
-        func_801E8330(index, 0, field_event_read_imm_or_var(3));
+        gear_model_select_and_call_entry(index, 0, field_event_read_imm_or_var(3));
         field_work.unk21E4[field_event_read_imm_or_var(1)] = field_event_read_imm_or_var(3);
     }
     field_current_event_actor->pc += 5;
@@ -10145,11 +10145,11 @@ void field_event_layer(void) {
     actor->layer_flags &= ~0x2000;
     switch (field_event_bytecode[actor->pc + 1]) {
     case 0:
-        D_801E8670[layer]->active = 0;
+        gear_model_actors[layer]->active = 0;
         field_current_event_actor->pc += 2;
         break;
     case 1:
-        func_801E8030(actor->state.bits.layer);
+        gear_model_free_actor(actor->state.bits.layer);
         field_work.unk2264--;
         field_current_event_actor->pc += 2;
         break;
@@ -10179,11 +10179,11 @@ void field_event_layer_model(void) {
     cd_select_directory(4, 0);
     switch (field_event_bytecode[field_current_event_actor->pc + 1]) {
     case 0:
-        D_801E8670[layer]->active = 0;
+        gear_model_actors[layer]->active = 0;
         field_current_event_actor->pc += 2;
         break;
     case 1:
-        func_801E8030(field_current_event_actor->state.bits.layer);
+        gear_model_free_actor(field_current_event_actor->state.bits.layer);
         field_work.unk21DC[layer] = field_event_read_imm_or_var(5) * 2;
         field_layer_file_requests[0].file = field_work.unk21DC[layer] + 0x6BA;
         field_layer_file_requests[0].destination = mode_field_layer_script_files[layer] = heap_alloc(cd_get_aligned_file_size(field_work.unk21DC[layer] + 0x6BA), 0);
@@ -10197,17 +10197,17 @@ void field_event_layer_model(void) {
     case 2:
         if (cd_sync_reads(1) == 0) {
             field_event_read_imm_or_var(2);
-            func_801E742C(layer, 0, mode_field_layer_script_files[layer], mode_field_layer_model_files[layer],
+            gear_model_create_actor(layer, 0, mode_field_layer_script_files[layer], mode_field_layer_model_files[layer],
                           (s16)(0x240 - (layer + field_work.unk225F[layer]) * 64), 0x100, 0,
                           (s16)(layer + 0xFC), &field_work.layer_positions[layer].vx);
-            field_work.layer_scales[layer] = D_801E8670[layer]->scale;
+            field_work.layer_scales[layer] = gear_model_actors[layer]->scale;
             heap_free(mode_field_layer_model_files[layer]);
             field_current_event_actor->pc += 4;
             field_current_event_actor->layer_flags |= 0x2000;
-            D_801E8670[layer]->scale = (field_current_event_actor->scale[0] * 5) >> 6;
-            D_801E8670[layer]->groundY = field_current_event_actor->position[1] >> 16;
-            D_801E8670[layer]->parts->translation[0] = WHOLE(field_current_event_actor->position[0]);
-            D_801E8670[layer]->parts->translation[2] = WHOLE(field_current_event_actor->position[2]);
+            gear_model_actors[layer]->scale = (field_current_event_actor->scale[0] * 5) >> 6;
+            gear_model_actors[layer]->groundY = field_current_event_actor->position[1] >> 16;
+            gear_model_actors[layer]->parts->translation[0] = WHOLE(field_current_event_actor->position[0]);
+            gear_model_actors[layer]->parts->translation[2] = WHOLE(field_current_event_actor->position[2]);
         } else {
             field_current_event_actor->pc--;
         }
@@ -10658,7 +10658,7 @@ void field_finish_return_to_field(void) {
         field_event_run_actor0_event(2);
         field_party_set_gear_rider_flags();
         for (i = 0; i < field_work.unk2264; i++) {
-            func_801E8330((u16)i, 0, field_work.unk21E4[i]);
+            gear_model_select_and_call_entry((u16)i, 0, field_work.unk21E4[i]);
         }
         i = field_view.components.descriptors[field_work.controlled].actor->unk074;
         if (i != 0xFF) {

@@ -6,7 +6,7 @@ objects, 3D enemies and their copies) run effect scripts.
 - Interpreter: battle `battle_run_effect_script` (`decomp/src/battle/battle_scene.c`,
   matching; switch on `jtbl_8007056C`, 118 cases 00-75). Each case's operands
   and effect are listed in `decomp/src/battle/effect_vm.h`.
-- Sibling: ovl2143 `func_801E39F0` (`decomp/src/ovl2143/ovl2143.c`, matching;
+- Sibling: ovl2143 `gear_model_run_effect_script` (`decomp/src/ovl2143/gear_model_scene.c`, matching;
   113 cases 00-70) runs the same format for the field and menu gear models.
   Its cases 04-07, 09, 0F, 12, 1B, 1C, 2C, 2D, 2F, 3A, 3E, 3F, 51-53, 58-5A,
   60, 61 and 65-6A do nothing and take no parameter words. Cases 33, 34 and 3B

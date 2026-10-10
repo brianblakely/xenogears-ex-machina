@@ -104,19 +104,19 @@ Task *battle_sprite_task_create(void *resource, s32 clut_x, s32 clut_y, s16 text
 void battle_object_follower_create(s32 slot);
 void battle_enable_shadows(void);
 
-void func_801E6314(u8 *data);
-void func_801E6710(u8 *data);
-void func_801E67A4(s32 slot, s32 row, s32 animation);
-void func_801E693C(FileRequest *list);
-void func_801E6A4C(void);
-void func_801E6AC4(void);
-void func_801E6C80(Task *node);
-void func_801E6D34(Task *node);
-void func_801E6D6C(Task *node);
-void func_801E6DC8(void);
-void func_801E6E48(Task *node);
-void func_801E6F00(Task *node);
-void func_801E6FEC(Task *node);
-void func_801E7098(u8 *data);
+void battle_setup_build_enemy_sources_and_models(u8 *data);
+void battle_setup_create_enemy_sprites(u8 *data);
+void battle_setup_create_slot_sprite(s32 slot, s32 row, s32 animation);
+void battle_setup_read_member_sprite_files(FileRequest *list);
+void battle_setup_start_member_gear_loads(void);
+void battle_setup_create_member_sprites(void);
+void battle_setup_loader_wait_members_grounded(Task *node);
+void battle_setup_loader_wait_gear_loads(Task *node);
+void battle_setup_loader_start_gear_loads(Task *node);
+void battle_setup_upload_images_on_own_stack(void);
+void battle_setup_loader_install_battle_files(Task *node);
+void battle_setup_loader_create_members(Task *node);
+void battle_setup_loader_build_enemies(Task *node);
+void battle_setup_loader_create(u8 *data);
 
 #endif

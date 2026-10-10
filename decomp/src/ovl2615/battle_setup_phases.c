@@ -10,9 +10,9 @@
  * 801e62e0 ends this unit (ovl2615.mk). */
 #include "battle_setup.h"
 
-/* Clear the battle outcome flags, publish the party ids and reset every
+/* 801E4048: Clear the battle outcome flags, publish the party ids and reset every
  * slot's flags (demo battles place everyone alone). */
-void func_801E4048(void) {
+void battle_setup_reset_outcome_and_slots(void) {
     s32 i;
 
     battle_continue_to_movie_mode = 0;
@@ -25,8 +25,8 @@ void func_801E4048(void) {
     mode_battle_turn_count = 0;
     mode_battle_return_fade = 0;
     for (i = 0; i < 3; i++) {
-        mode_battle_party_ids[i] = D_800CCCE8_setup.partyIds[i];
-        battle_area.slots[i].field2 = D_800CCCE8_setup.partyIds[i];
+        mode_battle_party_ids[i] = battle_setup_work_area.partyIds[i];
+        battle_area.slots[i].field2 = battle_setup_work_area.partyIds[i];
     }
     for (i = 0; i < SLOT_COUNT; i++) {
         battle_area.slots[i].hidden = 0;
@@ -41,10 +41,10 @@ void func_801E4048(void) {
     battle_forced_next_turn = 0;
 }
 
-/* Place the formation: party and enemy presence, ids and groups from the
+/* 801E4160: Place the formation: party and enemy presence, ids and groups from the
  * formation record, group membership and each member's standing position
  * from the battle scene data. The eight enemies take slots 3-10. */
-void func_801E4160(void) {
+void battle_setup_place_formation(void) {
     s32 i;
     u8 id;
 
@@ -75,8 +75,8 @@ void func_801E4160(void) {
             battle_turn_queue.present[i + 3] = 1;
             battle_area.slots[i + 3].group = FORMATION_ENEMY_GROUP(i) & 0x7F;
         } else {
-            D_800CCCE8_setup.work.records[i + 3].pilot.maxHp = 0;
-            D_800CCCE8_setup.work.records[i + 3].pilot.hp = 0;
+            battle_setup_work_area.work.records[i + 3].pilot.maxHp = 0;
+            battle_setup_work_area.work.records[i + 3].pilot.hp = 0;
             battle_area.slots[i + 3].field2 = NO_COMBATANT;
             battle_area.slots[i + 3].hidden = 0;
             battle_area.slots[i + 3].gear = 0;
@@ -144,9 +144,9 @@ void func_801E4160(void) {
     }
 }
 
-/* Copy each present enemy's combatant record from the enemy data file and
+/* 801E4870: Copy each present enemy's combatant record from the enemy data file and
  * point its AI state at its scripts (absent enemies are cleared). */
-void func_801E4870(void) {
+void battle_setup_copy_enemy_records_and_ai(void) {
     u8 *records;
     u16 *scripts;
     s32 i;
@@ -159,7 +159,7 @@ void func_801E4870(void) {
     for (i = 3; i < SLOT_COUNT; i++) {
         battle_enemy_reactions[i - 3].unk3 = 0;
         if (battle_area.slots[i].field2 != NO_COMBATANT) {
-            memmove(&D_800CCCE8_setup.work.records[i], records + battle_area.slots[i].field2 * sizeof(Combatant),
+            memmove(&battle_setup_work_area.work.records[i], records + battle_area.slots[i].field2 * sizeof(Combatant),
                           sizeof(Combatant));
             scripts = (u16 *)(battle_enemy_data_file + ((u16 *)battle_enemy_data_file)[battle_area.slots[i].field2]);
             battle_enemy_ai_blocks[i - 3].script = (u8 *)scripts + scripts[0];
@@ -186,16 +186,16 @@ void func_801E4870(void) {
                 battle_enemy_ai_blocks[i - 3].bytes[j] = 0;
             }
         } else {
-            bzero((u8 *)&D_800CCCE8_setup.work.records[i], sizeof(Combatant));
+            bzero((u8 *)&battle_setup_work_area.work.records[i], sizeof(Combatant));
             battle_enemy_reactions[i - 3].armed = 0;
             battle_enemy_reactions[i - 3].unk1[0] = 0;
         }
     }
 }
 
-/* Derive the party's stats, then each slot's placed-alone flags and the
+/* 801E4AC0: Derive the party's stats, then each slot's placed-alone flags and the
  * party members' panel states. */
-void func_801E4AC0(void) {
+void battle_setup_derive_stats_and_slot_states(void) {
     s32 i;
 
     battle_derive_party_stats();
@@ -207,17 +207,17 @@ void func_801E4AC0(void) {
             battle_graphics->panels[i].state = 1;
             if (battle_area.slots[i].gear != 0) {
                 battle_slot_states.party[i].in_gear = 1;
-                D_800CCCE8_setup.work.records[i].flags15A |= 0x80;
+                battle_setup_work_area.work.records[i].flags15A |= 0x80;
                 if (battle_area.slots[i].field2 != 7) {
                     battle_graphics->panels[i].state = 2;
                 }
             } else {
                 battle_slot_states.party[i].in_gear = 0;
-                D_800CCCE8_setup.work.records[i].flags15A &= 0x7F;
+                battle_setup_work_area.work.records[i].flags15A &= 0x7F;
             }
         } else {
             battle_slot_states.party[i].in_gear = 0;
-            D_800CCCE8_setup.work.records[i].flags15A &= 0x7F;
+            battle_setup_work_area.work.records[i].flags15A &= 0x7F;
             battle_graphics->panels[i].state = 0;
         }
     }
@@ -233,8 +233,8 @@ void func_801E4AC0(void) {
         }
     }
     for (i = 0; i < 3; i++) {
-        battle_slot_states.party[i].stat62 = D_800CCCE8_setup.work.records[i].pilot.level;
-        battle_slot_states.party[i].stat63 = D_800CCCE8_setup.work.records[i].pilot.level2;
+        battle_slot_states.party[i].stat62 = battle_setup_work_area.work.records[i].pilot.level;
+        battle_slot_states.party[i].stat63 = battle_setup_work_area.work.records[i].pilot.level2;
     }
 }
 
@@ -248,9 +248,9 @@ void func_801E4AC0(void) {
         (list)[n] = (id);            \
     } while (0)
 
-/* Build the battle item lists from the inventory (counts capped at 99, empty
+/* 801E4CD0: Build the battle item lists from the inventory (counts capped at 99, empty
  * slots cleared) and the special item list from ids 50..72. */
-void func_801E4CD0(void) {
+void battle_setup_build_item_lists(void) {
     s32 i;
     u8 *count;
     u8 listed;
@@ -291,10 +291,10 @@ void func_801E4CD0(void) {
     }
 }
 
-/* Start the turn timers, draw a random turn order of the eleven slots, let
+/* 801E4E7C: Start the turn timers, draw a random turn order of the eleven slots, let
  * enemies flagged 0x200 act first, then rebase every present timer so the
  * smallest becomes 1. */
-void func_801E4E7C(void) {
+void battle_setup_init_turn_order_and_timers(void) {
     u8 drawn[SLOT_COUNT];
     s32 i;
     s32 least;
@@ -314,7 +314,7 @@ void func_801E4E7C(void) {
     } while (i < SLOT_COUNT);
     battle_turn_queue.cursor = 0;
     for (i = 3; i < SLOT_COUNT; i++) {
-        if (battle_turn_queue.present[i] != 0 && (D_800CCCE8_setup.work.records[i].pilot.flags34 & 0x200)) {
+        if (battle_turn_queue.present[i] != 0 && (battle_setup_work_area.work.records[i].pilot.flags34 & 0x200)) {
             battle_turn_queue.timers[0][i] = battle_turn_queue.timers[1][i] = 1;
         }
     }
@@ -335,10 +335,10 @@ void func_801E4E7C(void) {
     }
 }
 
-/* Set up each slot's command menu: the party's layouts, menu sources and
+/* 801E5014: Set up each slot's command menu: the party's layouts, menu sources and
  * command masks (commands 7 and 8 forced by the formation), and every slot's
  * default target and facing. */
-void func_801E5014(void) {
+void battle_setup_init_command_menus(void) {
     s32 i;
     s32 j;
     u8 k;
@@ -347,12 +347,12 @@ void func_801E5014(void) {
         battle_uses_event_script = 1;
     }
     for (i = 0; i < 3; i++) {
-        battle_slot_states.party[i].character_b = game_data.skills[D_800CCCE8_setup.partyIds[i]].tier;
+        battle_slot_states.party[i].character_b = game_data.skills[battle_setup_work_area.partyIds[i]].tier;
         for (j = 0; j < 8; j++) {
-            battle_turn_state->slots[i].layout[j] = battle_command_layouts_by_character[D_800CCCE8_setup.work.records[i].pilot.characterId][j];
+            battle_turn_state->slots[i].layout[j] = battle_command_layouts_by_character[battle_setup_work_area.work.records[i].pilot.characterId][j];
         }
         for (j = 0; j < 4; j++) {
-            if (D_800CCCE8_setup.partyIds[i] != 7) {
+            if (battle_setup_work_area.partyIds[i] != 7) {
                 battle_turn_state->slots[i].digits[0][j] = battle_command_layout_gear_ptr[j];
             } else {
                 battle_turn_state->slots[i].digits[0][j] = battle_command_layout_gear_character7_ptr[j];
@@ -362,15 +362,15 @@ void func_801E5014(void) {
         battle_turn_state->slots[i].defaultTarget = battle_order_attack_candidates(i);
         battle_area.slots[i].targetCode = battle_is_target_at_lower_x(i, battle_turn_state->slots[i].defaultTarget);
         for (k = 0; k < 16; k++) {
-            battle_turn_state->slots[i].items[k] = D_800CCCE8_setup.work.records[i].pilot.status7A & battle_command_seal_bits[k];
+            battle_turn_state->slots[i].items[k] = battle_setup_work_area.work.records[i].pilot.status7A & battle_command_seal_bits[k];
         }
-        if (D_800CCCE8_setup.work.records[i].pilot.gearId == 0xFF || (FORMATION_FLAGS & 0x40)) {
+        if (battle_setup_work_area.work.records[i].pilot.gearId == 0xFF || (FORMATION_FLAGS & 0x40)) {
             battle_turn_state->slots[i].items[7] = battle_command_seal_bits[7];
-            D_800CCCE8_setup.work.records[i].pilot.status7A |= battle_command_seal_bits[7];
+            battle_setup_work_area.work.records[i].pilot.status7A |= battle_command_seal_bits[7];
         }
         if (FORMATION_FLAGS & 0x80) {
             battle_turn_state->slots[i].items[8] = battle_command_seal_bits[8];
-            D_800CCCE8_setup.work.records[i].pilot.status7A |= battle_command_seal_bits[8];
+            battle_setup_work_area.work.records[i].pilot.status7A |= battle_command_seal_bits[8];
         }
     }
     for (i = 3; i < SLOT_COUNT; i++) {
@@ -379,10 +379,10 @@ void func_801E5014(void) {
     }
 }
 
-/* Setup phase 0: choose the party (or the demo party), copy each member's
+/* 801E5384: Setup phase 0: choose the party (or the demo party), copy each member's
  * character and gear records and battle data from the setup archive, load
  * its images and tables, then start reading the formation's enemy files. */
-void func_801E5384(void) {
+void battle_setup_load_party_and_enemy_files(void) {
     s32 count;
     s32 i;
     void **archive;
@@ -401,36 +401,36 @@ void func_801E5384(void) {
         count = 0;
         for (i = 0; i < 3; i++) {
             if (battle_is_slot_in_mask(mask, game_data.party[i])) {
-                D_800CCCE8_setup.partyIds[count] = game_data.party[i] & 0x7F;
+                battle_setup_work_area.partyIds[count] = game_data.party[i] & 0x7F;
                 count++;
             }
         }
         for (; count < 3; count++) {
-            D_800CCCE8_setup.partyIds[count] = NO_COMBATANT;
+            battle_setup_work_area.partyIds[count] = NO_COMBATANT;
         }
     } else {
-        D_800CCCE8_setup.partyIds[1] = 10;
-        D_800CCCE8_setup.partyIds[2] = 10;
-        D_800CCCE8_setup.partyIds[0] = game_data.party[0] & 0x7F;
+        battle_setup_work_area.partyIds[1] = 10;
+        battle_setup_work_area.partyIds[2] = 10;
+        battle_setup_work_area.partyIds[0] = game_data.party[0] & 0x7F;
     }
     text_relocate_offset_table(mode_battle_setup_archive);
     archive = mode_battle_setup_archive;
     for (i = 0; i < 3; i++) {
-        if (D_800CCCE8_setup.partyIds[i] != NO_COMBATANT) {
-            memmove(&D_800CCCE8_setup.work.records[i].pilot, &game_data.characters[D_800CCCE8_setup.partyIds[i]], 0xA4);
+        if (battle_setup_work_area.partyIds[i] != NO_COMBATANT) {
+            memmove(&battle_setup_work_area.work.records[i].pilot, &game_data.characters[battle_setup_work_area.partyIds[i]], 0xA4);
             if (battle_uses_fixed_party != 0 && (u32)(i - 1) < 2) {
-                D_800CCCE8_setup.work.records[i].pilot.gearId = 0x11;
+                battle_setup_work_area.work.records[i].pilot.gearId = 0x11;
             }
-            gear = D_800CCCE8_setup.work.records[i].pilot.gearId;
+            gear = battle_setup_work_area.work.records[i].pilot.gearId;
             if (gear == 0xFF) {
                 gear = 0;
             }
-            memmove(&D_800CCCE8_setup.work.records[i].gear, &game_data.gears[gear], 0xA4);
-            block = text_unpack_lzss_alloc(archive[5 + D_800CCCE8_setup.partyIds[i]], 1);
-            memmove(D_800CCCE8_setup.work.partyCommands[i], block, 0x5F0);
+            memmove(&battle_setup_work_area.work.records[i].gear, &game_data.gears[gear], 0xA4);
+            block = text_unpack_lzss_alloc(archive[5 + battle_setup_work_area.partyIds[i]], 1);
+            memmove(battle_setup_work_area.work.partyCommands[i], block, 0x5F0);
             heap_free(block);
             block = text_unpack_lzss_alloc(archive[0x11 + gear], 1);
-            memmove(D_800CCCE8_setup.work.gearCommands[i], block, 0x690);
+            memmove(battle_setup_work_area.work.gearCommands[i], block, 0x690);
             heap_free(block);
         }
     }
@@ -438,10 +438,10 @@ void func_801E5384(void) {
      * (0x35D8, 0x1F40 bytes of item 4) to 0x5B18 (items 3 and 0x25 at 0x5518
      * and 0x5818). */
     block = text_unpack_lzss_alloc(archive[4], 1);
-    memmove(D_800CCCE8_setup.work.enemyCommands, block, 0x1F40);
+    memmove(battle_setup_work_area.work.enemyCommands, block, 0x1F40);
     heap_free(block);
     block = text_unpack_lzss_alloc(archive[3], 1);
-    memmove((u8 *)&D_800CCCE8_setup + 0x5518, block, 0x300);
+    memmove((u8 *)&battle_setup_work_area + 0x5518, block, 0x300);
     heap_free(block);
     block = text_unpack_lzss_alloc(archive[2], 1);
     model_load_image_list(block, 0, 0, 0, 0, 0, 0);
@@ -453,7 +453,7 @@ void func_801E5384(void) {
     battle_upload_party_portraits(block, 0x61);
     heap_free(block);
     block = text_unpack_lzss_alloc(archive[0x25], 1);
-    memmove((u8 *)&D_800CCCE8_setup + 0x5818, (u8 *)block + 0x320, 0x300);
+    memmove((u8 *)&battle_setup_work_area + 0x5818, (u8 *)block + 0x320, 0x300);
     heap_free(block);
     battle_message_table = text_unpack_lzss_alloc(archive[0x26], 0);
     heap_free(mode_battle_setup_archive);
@@ -470,36 +470,36 @@ void func_801E5384(void) {
     cd_read_file_list((FileRequest *)list, 0, 0x80);
 }
 
-/* Run one battle setup phase: 0 the party, 1 the formation and combatant
+/* 801E5840: Run one battle setup phase: 0 the party, 1 the formation and combatant
  * records, 2 the items, turn timers and turn tables, 3 the gauges and texts. */
-void func_801E5840(u8 phase) {
+void battle_setup_run_phase(u8 phase) {
     switch (phase) {
     case 0:
-        func_801E5384();
+        battle_setup_load_party_and_enemy_files();
         break;
     case 1:
-        func_801E4048();
-        func_801E4160();
-        func_801E4870();
-        func_801E4AC0();
+        battle_setup_reset_outcome_and_slots();
+        battle_setup_place_formation();
+        battle_setup_copy_enemy_records_and_ai();
+        battle_setup_derive_stats_and_slot_states();
         break;
     case 2:
-        func_801E4CD0();
-        func_801E4E7C();
-        func_801E5014();
+        battle_setup_build_item_lists();
+        battle_setup_init_turn_order_and_timers();
+        battle_setup_init_command_menus();
         battle_direction_arrows = battle_heap_alloc(0xEC, 0);
         bzero((u8 *)battle_direction_arrows, 0xEC);
         break;
     case 3:
-        func_801E6290();
-        func_801E62B8();
+        battle_setup_init_gauges_and_panel_glyphs();
+        battle_setup_init_panel_quads_and_digits();
         break;
     }
 }
 
-/* Prepare the ATB gauge primitives: textured bars lit at the top, grey
+/* 801E5924: Prepare the ATB gauge primitives: textured bars lit at the top, grey
  * shades and white lines, on the gauge glyph's texture page and palettes. */
-void func_801E5924(void) {
+void battle_setup_init_atb_gauges(void) {
     s32 i;
 
     battle_ui->reaction[0] = 1;
@@ -545,9 +545,9 @@ void func_801E5924(void) {
     }
 }
 
-/* Prepare the two white semi-transparent panel quads and their draw modes
+/* 801E5D2C: Prepare the two white semi-transparent panel quads and their draw modes
  * (blend mode 2 on the effect texture page). */
-void func_801E5D2C(void) {
+void battle_setup_init_panel_quads(void) {
     RECT window;
     s32 i;
 
@@ -569,9 +569,9 @@ void func_801E5D2C(void) {
     battle_graphics->unk6416 = 0;
 }
 
-/* Render the ten battle messages 0-9 into text images. The original frame
+/* 801E5E78: Render the ten battle messages 0-9 into text images. The original frame
  * reserves eight bytes that no instruction touches. */
-void func_801E5E78(void) {
+void battle_setup_render_digit_text_images(void) {
     SVECTOR unused; /* unused in the original; reserves 8 bytes */
     s32 i;
 
@@ -581,9 +581,9 @@ void func_801E5E78(void) {
     }
 }
 
-/* Draw each present member's gauge glyphs (the second set dimmed), its
+/* 801E5EE8: Draw each present member's gauge glyphs (the second set dimmed), its
  * portrait and its two digit glyphs, placed by the party layout's columns. */
-void func_801E5EE8(void) {
+void battle_setup_build_party_panel_glyphs(void) {
     s32 i;
     s32 part;
     s32 first; /* first dimmed glyph: two prims per part */
@@ -617,14 +617,14 @@ void func_801E5EE8(void) {
     battle_ui->portraitBuffer = battle_area.buffer;
 }
 
-/* Setup phase 3, first frame: the gauge panels and each member's glyphs. */
-void func_801E6290(void) {
-    func_801E5924();
-    func_801E5EE8();
+/* 801E6290: Setup phase 3, first frame: the gauge panels and each member's glyphs. */
+void battle_setup_init_gauges_and_panel_glyphs(void) {
+    battle_setup_init_atb_gauges();
+    battle_setup_build_party_panel_glyphs();
 }
 
-/* Setup phase 3, second frame: the panel backdrops and the message images. */
-void func_801E62B8(void) {
-    func_801E5D2C();
-    func_801E5E78();
+/* 801E62B8: Setup phase 3, second frame: the panel backdrops and the message images. */
+void battle_setup_init_panel_quads_and_digits(void) {
+    battle_setup_init_panel_quads();
+    battle_setup_render_digit_text_images();
 }

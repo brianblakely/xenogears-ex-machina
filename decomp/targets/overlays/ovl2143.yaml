@@ -42,12 +42,12 @@ segments:
     start: 0x0
     vram: 0x801dc000
     subsegments:
-      - [0x0, .rodata, ovl2143]
-      - [0x22c, c, ovl2143]
-      - [0xc590, .data, ovl2143]
+      - [0x0, .rodata, gear_model_scene]
+      - [0x22c, c, gear_model_scene]
+      - [0xc590, .data, gear_model_scene]
       # The file ends with the module state (its .bss, loaded) as zeros,
-      # each object in a slot of whole words (decomp/Makefile): D_801E869C
-      # starts its own slot after the s16 D_801E8698, and the file ends with
-      # the rest of D_801E86B0's.
-      - [0xc5cc, .bss, ovl2143]
+      # each object in a slot of whole words (decomp/Makefile): gear_model_wind_phase
+      # starts its own slot after the s16 gear_model_wind_strength, and the file ends with
+      # the rest of gear_model_current_actor_index's.
+      - [0xc5cc, .bss, gear_model_scene]
   - [0xc6b4]

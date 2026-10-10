@@ -6,7 +6,7 @@
  * positions of each formation group and of the members placed alone, the
  * stage description, its origin and colours, and the offsets of the scene's
  * points and triangles (battle/scene.h) and motion. The setup places the
- * formation from it (ovl2615.c) and builds the stage (stage.c). */
+ * formation from it (battle_setup_phases.c) and builds the stage (stage.c). */
 
 #include "common.h"
 

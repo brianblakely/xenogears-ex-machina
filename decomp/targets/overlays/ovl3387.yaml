@@ -42,6 +42,6 @@ segments:
     start: 0x0
     vram: 0x801fc000
     subsegments:
-      - [0x0, c, ovl3387]
-      - [0xe14, .data, ovl3387]
+      - [0x0, c, battle_module_burst_effect]
+      - [0xe14, .data, battle_module_burst_effect]
   - [0xe4c]

@@ -142,19 +142,19 @@ void battle_start_intro(s32 mode) {
     switch (mode) {
     case 1:
         cd_sync_reads(0);
-        func_801E8588();
+        battle_setup_run_shatter_load_mode();
         break;
     case 2:
         cd_sync_reads(0);
-        func_801E91E8();
+        battle_setup_run_burst_load_mode();
         break;
     case 3:
         cd_sync_reads(0);
-        func_801E9594();
+        battle_setup_run_burst_variant1_load_mode();
         break;
     case 4:
         cd_sync_reads(0);
-        func_801E893C();
+        battle_setup_run_shatter_in_place_load_mode();
         break;
     case 0:
     case 5:
@@ -164,7 +164,7 @@ void battle_start_intro(s32 mode) {
     }
     cd_sync_reads(0);
     battle_reset_scene();
-    BATTLE_AREA.buffers[0].drawEnv.isbg = func_801E7210(&mode_battle_scene_file, mode_battle_stage_unused_word, mode_battle_stage_file, battle_light_matrix,
+    BATTLE_AREA.buffers[0].drawEnv.isbg = battle_setup_build_stage(&mode_battle_scene_file, mode_battle_stage_unused_word, mode_battle_stage_file, battle_light_matrix,
                                                         battle_light_matrix + 0x20, &battle_area_buffer0_background_color);
     battle_set_background_color_ptrs(&battle_area_buffer0_background_color, &BATTLE_AREA.buffers[1].drawEnv.r0);
 }
@@ -174,7 +174,7 @@ void battle_start_intro(s32 mode) {
 void battle_enter(s32 enemy_set) {
     battle_start_first_frame();
     battle_reset_frame_state();
-    func_801E62E0(enemy_set);
+    battle_setup_loader_start(enemy_set);
     sound_release_wave_bank(mode_wave_bank_5);
     sprite_set_svector(&battle_camera_wanted_points[0], SCENE_DATA->cameras[0].eye[0], SCENE_DATA->cameras[0].eye[1], SCENE_DATA->cameras[0].eye[2]);
     sprite_set_svector(&battle_camera_view_eye, SCENE_DATA->cameras[0].eye[0], SCENE_DATA->cameras[0].eye[1], SCENE_DATA->cameras[0].eye[2]);

@@ -18,9 +18,9 @@
 #include "battle/sprite.h"
 #include "hold.h"
 
-/* The bounds of a sprite frame's cells; returns the cell count and stores
+/* 801FC000: The bounds of a sprite frame's cells; returns the cell count and stores
  * the width and height. */
-s32 func_801FC000(Sprite *actor, s32 *width, s32 *height, SpriteBounds *bounds) {
+s32 battle_module_hold_get_cell_bounds(Sprite *actor, s32 *width, s32 *height, SpriteBounds *bounds) {
     SpritePart *cell;
     u32 count;
     s32 i;
@@ -60,8 +60,8 @@ s32 func_801FC000(Sprite *actor, s32 *width, s32 *height, SpriteBounds *bounds) 
     return count;
 }
 
-/* Hold the actor in place, keeping the movement it would have made. */
-void func_801FC0EC(Task *node) {
+/* 801FC0EC: Hold the actor in place, keeping the movement it would have made. */
+void battle_module_hold_update(Task *node) {
     HoldTask *hold = node->data;
     Sprite *actor = hold->actor;
 
@@ -73,10 +73,10 @@ void func_801FC0EC(Task *node) {
     actor->z -= actor->speed_z;
 }
 
-/* Queue `count` sprite cells as textured quads offset by (dx, dy) in the
+/* 801FC168: Queue `count` sprite cells as textured quads offset by (dx, dy) in the
  * sprite frame, mirrored or flipped per cell, projected with the actor's
  * sprite scale and linked at `depth`. Nothing is drawn unless all fit. */
-void func_801FC168(SpritePart *cell, s32 count, s32 dx, s32 dy, s32 depth, Sprite *actor) {
+void battle_module_hold_queue_cells(SpritePart *cell, s32 count, s32 dx, s32 dy, s32 depth, Sprite *actor) {
     SVECTOR quad[4];
     long p, flag;
     POLY_FT4 *prim;
@@ -157,10 +157,10 @@ void func_801FC168(SpritePart *cell, s32 count, s32 dx, s32 dy, s32 depth, Sprit
     }
 }
 
-/* Draw the held actor's sprite repeated side by side across the screen: from
+/* 801FC508: Draw the held actor's sprite repeated side by side across the screen: from
  * the place it would have moved to rightward until off screen (x 320), then
  * leftward until off screen. */
-void func_801FC508(Task *node) {
+void battle_module_hold_draw(Task *node) {
     HoldTask *hold = node->data;
     Sprite *actor = hold->actor;
     Sprite *owner; /* never set before its use below (a bug in the original) */
@@ -210,7 +210,7 @@ void func_801FC508(Task *node) {
         }
         sprite_set_draw_matrix(actor);
     }
-    count = func_801FC000(actor, &width, &height, &bounds);
+    count = battle_module_hold_get_cell_bounds(actor, &width, &height, &bounds);
     cells = actor->renderer->parts[1];
     pos.vz = 0;
     pos.vy = bounds.y0;
@@ -221,7 +221,7 @@ void func_801FC508(Task *node) {
         if (screen.vx > 320) {
             break;
         }
-        func_801FC168(cells, count, x, y, depth, actor);
+        battle_module_hold_queue_cells(cells, count, x, y, depth, actor);
     }
     pos.vy = bounds.y0;
     y = hold->moved[1] >> 16;
@@ -231,15 +231,15 @@ void func_801FC508(Task *node) {
         if (screen.vx < 0) {
             break;
         }
-        func_801FC168(cells, count, x, y, depth, actor);
+        battle_module_hold_queue_cells(cells, count, x, y, depth, actor);
     }
 }
 
-/* Opcode entry: hold `actor` in place under the effect. */
-void func_801FC7B0(Sprite *actor) {
+/* 801FC7B0: Opcode entry: hold `actor` in place under the effect. */
+void battle_module_hold_start(Sprite *actor) {
     HoldTask *hold;
 
-    hold = (HoldTask *)task_alloc_two_node_task(sizeof(HoldTask), actor->block, func_801FC0EC, func_801FC508, NULL);
+    hold = (HoldTask *)task_alloc_two_node_task(sizeof(HoldTask), actor->block, battle_module_hold_update, battle_module_hold_draw, NULL);
     hold->actor = actor;
     actor->motion.word |= 0x20;
     hold->moved[0] = 0;

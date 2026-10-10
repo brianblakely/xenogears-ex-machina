@@ -2,9 +2,9 @@
 #define OVL2143_ACTORS_H
 
 /* ovl2143, the actor module linked at 0x801DC000: up to ten actors
- * (D_801E8670), each a model hierarchy (battle/model.h) posed by tweens and
+ * (gear_model_actors), each a model hierarchy (battle/model.h) posed by tweens and
  * run by effect scripts and animation events with the battle's records
- * (battle/effect.h; decomp/src/ovl2143/ovl2143.c pairs its code with the
+ * (battle/effect.h; decomp/src/ovl2143/gear_model_scene.c pairs its code with the
  * battle's). Each disc holds three byte-identical copies: directory (4, 0)
  * file 0x6B9 (Disc 1 slot 2143, Disc 2 slot 2138), directory (0x10, 0) file
  * 0xC (2604/2599) and directory (0x24, 0) file 0x28 (3960/3955). Loaders:
@@ -23,8 +23,8 @@
  *
  * The field calls 801E72CC, 801E7378, 801E738C, 801E742C, 801E7D14,
  * 801E7FD4, 801E8030 and 801E8330; ovl2602 801E738C, 801E742C, 801E7D14,
- * 801E7FD4, 801E8030 and 801E8330; both set D_801E8644 and read actors of
- * D_801E8670, as does the world map's 80076098 (801E7D14). Declared here are
+ * 801E7FD4, 801E8030 and 801E8330; both set gear_model_color_matrix and read actors of
+ * gear_model_actors, as does the world map's 80076098 (801E7D14). Declared here are
  * the entries every caller converts as the definition does (the field's
  * calls of 801E8330 pass values that already fit its halfwords); each target
  * declares 801E7D14 itself, since ovl2602 calls it with four arguments. */
@@ -63,7 +63,7 @@ typedef struct Actor {
     s32 *globals;           /* +18: [0] count, then entries 0x40- */
     s16 scale;              /* +1c */
     s16 h1E;                /* +1e */
-    u8 index;               /* +20: slot in D_801E8670 */
+    u8 index;               /* +20: slot in gear_model_actors */
     u8 b21;                 /* +21 */
     u8 b22;                 /* +22 */
     u8 b23;                 /* +23 */
@@ -159,19 +159,19 @@ typedef struct ActorScript {
 
 /* The actors' colour matrix: the callers set it, 801E7D14 loads it and the
  * light events write its columns (801E5D44). */
-extern MATRIX *D_801E8644;
-extern Actor *D_801E8670[10]; /* the actors */
+extern MATRIX *gear_model_color_matrix;
+extern Actor *gear_model_actors[10]; /* the actors */
 
 /* The world matrix of node `node` of actor `index` (its root's transform for
  * node 0). */
-void func_801E72CC(MATRIX *out, MATRIX *unused, s32 index, s32 node);
-void func_801E7378(s32 on); /* while on, tweens to keyframes apply at once (801E39F0 op 0x13) */
-void func_801E738C(s32 slot_count); /* reset the module and its pools */
-void func_801E742C(s32 index, u16 flags, ActorScript *script, ObjectModelFile *file, s16 x, s16 y,
+void gear_model_get_node_matrix(MATRIX *out, MATRIX *unused, s32 index, s32 node);
+void gear_model_set_instant_keyframes(s32 on); /* while on, tweens to keyframes apply at once (801E39F0 op 0x13) */
+void gear_model_init(s32 slot_count); /* reset the module and its pools */
+void gear_model_create_actor(s32 index, u16 flags, ActorScript *script, ObjectModelFile *file, s16 x, s16 y,
                    s16 z, s16 w, s16 *pos); /* create actor `index` from its files */
-void func_801E7FD4(void);   /* release every actor and both pools */
-void func_801E8030(s32 index); /* release actor `index` */
+void gear_model_shut_down(void);   /* release every actor and both pools */
+void gear_model_free_actor(s32 index); /* release actor `index` */
 /* Select actor `index` and mask `mask` and run its script entry `entry`. */
-void func_801E8330(u16 index, u16 mask, s32 entry);
+void gear_model_select_and_call_entry(u16 index, u16 mask, s32 entry);
 
 #endif

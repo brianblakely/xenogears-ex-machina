@@ -1883,17 +1883,17 @@ void func_801CBA2C(void) {
         D_801D9050.offset[2] += D_801D9050.step[2];
         if (D_801D9050.negative[2] == 0) {
             if (D_801D9050.offset[2] / 0x10000 + D_801D9050.from[2] >= D_801D9050.to[2]) {
-                D_801E8670[1]->parts->rotation.vy = D_801D9050.to[2];
+                gear_model_actors[1]->parts->rotation.vy = D_801D9050.to[2];
                 menu_state_current->view_motion &= 3;
             } else {
-                D_801E8670[1]->parts->rotation.vy = D_801D9050.offset[2] / 0x10000 + D_801D9050.from[2];
+                gear_model_actors[1]->parts->rotation.vy = D_801D9050.offset[2] / 0x10000 + D_801D9050.from[2];
             }
         } else {
             if (D_801D9050.to[2] >= D_801D9050.from[2] - D_801D9050.offset[2] / 0x10000) {
-                D_801E8670[1]->parts->rotation.vy = D_801D9050.to[2];
+                gear_model_actors[1]->parts->rotation.vy = D_801D9050.to[2];
                 menu_state_current->view_motion &= 3;
             } else {
-                D_801E8670[1]->parts->rotation.vy = D_801D9050.from[2] - D_801D9050.offset[2] / 0x10000;
+                gear_model_actors[1]->parts->rotation.vy = D_801D9050.from[2] - D_801D9050.offset[2] / 0x10000;
             }
         }
     }
@@ -1933,9 +1933,9 @@ void func_801CBE60(void) {
         values[0] = menu_state_current->offset2.vx;
         values[1] = menu_state_current->offset2.vy;
         values[2] = menu_state_current->offset2.vz;
-        values[3] = D_801E8670[1]->parts->rotation.vy;
-        values[4] = D_801E8670[1]->groundY;
-        values[5] = D_801E8670[1]->scale;
+        values[3] = gear_model_actors[1]->parts->rotation.vy;
+        values[4] = gear_model_actors[1]->groundY;
+        values[5] = gear_model_actors[1]->scale;
         D_801D9048 = 7;
         for (i = 0; i < 6; i++) {
             value = values[i];

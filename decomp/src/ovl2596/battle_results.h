@@ -140,17 +140,17 @@ extern u8 battle_spoils_icon_cells[8];        /* two icon records: arg5, -, arg3
 extern u8 battle_skill_mark_icon_cell[4];        /* the skill mark icon: width, -, u, v */
 extern void *battle_work_growth_file[1];     /* the results text; the original addresses it as a table */
 
-void func_801DE1C4(void);
-void func_801DE408(void);
-void func_801DFF50(u8 member);
-void func_801DF710(POLY_G4 *bar, u8 colour);
-void func_801DF840(POLY_FT4 *prims, u8 blue, u8 count, u8 buffer);
-void func_801DF910(u8 from, u8 to, s32 max);
-s32 func_801DFA38(u8 slot);
-void func_801E0184(u8 member);
-void func_801E0ACC(u8 member);
-void func_801E1370(u8 id, u8 count, u8 *ids, u8 *counts, u8 size);
-void func_801E1690(void);
+void battle_results_queue_summary_and_new_skill(void);
+void battle_results_queue_spoils_window(void);
+void battle_results_build_summary_max_hp_change(u8 member);
+void battle_results_init_gauge_bar(POLY_G4 *bar, u8 colour);
+void battle_results_shade_glyphs(POLY_FT4 *prims, u8 blue, u8 count, u8 buffer);
+void battle_results_compute_gauge(u8 from, u8 to, s32 max);
+s32 battle_results_get_highest_stat(u8 slot);
+void battle_results_build_summary_max_ep_change(u8 member);
+void battle_results_show_new_deathblows_and_arts(u8 member);
+void battle_results_add_to_inventory_list(u8 id, u8 count, u8 *ids, u8 *counts, u8 size);
+void battle_results_build_spoils_item_list(void);
 
 /* --- Experience, growth and skills --------------------------------------- */
 
@@ -176,35 +176,35 @@ typedef struct GrowthFile {
     s32 experience[99];       /* 0xBB0: experience to the next level, per level - 1 */
 } GrowthFile;
 
-void func_801E2794(void);
-void func_801E2ACC(void);
-void func_801E2EB0(u32 experience, s16 slot, s16 reserve);
-void func_801E308C(void);          /* experience pool for level B */
-void func_801E335C(void);
-void func_801E3500(void);
-u8 func_801E3610(u8 stat, u8 target, u8 cap, u8 level);
-u16 func_801E3700(u16 maxHp, u8 level);
-u8 func_801E38CC(u8 maxEp, u8 level);
-void func_801E3A18(void);
-u8 func_801E3BE0(u8 id);
-u8 func_801E3D54(u8 id);
-void func_801E3E14(u8 id);
-void func_801E3EA4(void);
-void func_801E3F28(u8 id);
-void func_801E3FB0(void);
-void func_801E403C(void);
-void func_801E41B4(void);
-void func_801E42C4(void);
-void func_801E2888(void);
+void battle_results_grant_exp_skills_and_drops(void);
+void battle_results_distribute_exp(void);
+void battle_results_split_exp_into_pools(u32 experience, s16 slot, s16 reserve);
+void battle_results_add_exp_and_level_up(void);          /* experience pool for level B */
+void battle_results_grow_level_a_stats(void);
+void battle_results_grow_level_b_stats(void);
+u8 battle_results_grow_stat(u8 stat, u8 target, u8 cap, u8 level);
+u16 battle_results_grow_max_hp(u16 maxHp, u8 level);
+u8 battle_results_grow_max_ep(u8 maxEp, u8 level);
+void battle_results_learn_skills(void);
+u8 battle_results_learn_deathblow(u8 id);
+u8 battle_results_learn_art(u8 id);
+void battle_results_unlock_by_known_deathblows(u8 id);
+void battle_results_unlock_character8_by_level(void);
+void battle_results_unlock_by_known_arts(u8 id);
+void battle_results_derive_character7_gear_stats(void);
+void battle_results_advance_tiers(void);
+void battle_results_unlock_at_levels_50_60_70(void);
+void battle_results_roll_drops(void);
+void battle_results_write_party_to_game_data(void);
 
 /* --- Rewards, the results resources and the battle exit ------------------ */
 
 extern u8 battle_enemy_no_reward_flags[8][4];     /* per enemy: [0] nonzero, no rewards */
 u16 battle_get_slot_bit(u8 enemy);
 void battle_highlight_slots(s32 arg);
-void func_801E1FB8(u32 experience);
-void func_801E211C(void);
-void func_801E24B0(void);
+void battle_results_run_screens(u32 experience);
+void battle_results_load_resources(void);
+void battle_results_write_back_item_counts(void);
 
 /* The results archive (directory 0x10 file 2): a count, then its items. */
 typedef struct {
@@ -214,7 +214,7 @@ typedef struct {
 void battle_upload_party_portraits(void *portraits, s32 glyph);
 void *battle_heap_alloc(s32 size, s32 top);        /* heap allocate */
 
-/* Battle exit (func_801E252C). */
+/* Battle exit (battle_results_leave_battle). */
 typedef struct {
     void *data;
     u8 pad[0x5C];

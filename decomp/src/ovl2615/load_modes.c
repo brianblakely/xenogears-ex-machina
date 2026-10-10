@@ -7,16 +7,16 @@
  * burst_modes.c. */
 #include "transitions.h"
 
-u8 D_801E963C = 0;
-SVECTOR D_801E9640[3] = {{-160, -160, 0}, {352, -160, 0}, {-160, 352, 0}};
-SVECTOR D_801E9658[3] = {{160, -352, 0}, {160, 160, 0}, {-352, 160, 0}};
+u8 battle_setup_shatter_in_place = 0; /* 801E963C */
+SVECTOR battle_setup_shatter_upper_left_triangle[3] = {{-160, -160, 0}, {352, -160, 0}, {-160, 352, 0}}; /* 801E9640 */
+SVECTOR battle_setup_shatter_lower_right_triangle[3] = {{160, -352, 0}, {160, 160, 0}, {-352, 160, 0}}; /* 801E9658 */
 /* A shard's launch velocity (the battle overlay's 800c35c4); this module
  * never reads it. */
-VECTOR D_801E9670 = {0, 0, -1536 << 16};
-u32 *D_801E96B8;
+VECTOR battle_setup_unused_shatter_launch_velocity = {0, 0, -1536 << 16}; /* 801E9670 */
+u32 *battle_setup_shatter_current_ot; /* 801E96B8 */
 
-/* Shatter update: fade every cell and (variant 0) push it away. */
-void func_801E7F4C(Task *node) {
+/* 801E7F4C: Shatter update: fade every cell and (variant 0) push it away. */
+void battle_setup_shatter_update(Task *node) {
     SVECTOR unused; /* unused in the original; reserves 8 bytes */
     ShatterTask *task = node->data;
     ShatterCell *cell;
@@ -32,7 +32,7 @@ void func_801E7F4C(Task *node) {
                 prim->r0 = sprite_add_clamp_byte(prim->r0, -3);
                 prim->g0 = sprite_add_clamp_byte(prim->g0, -3);
                 prim->b0 = sprite_add_clamp_byte(prim->b0, -3);
-                if (D_801E963C == 0) {
+                if (battle_setup_shatter_in_place == 0) {
                     cell->trans.vz -= 0x40;
                 }
             }
@@ -40,16 +40,16 @@ void func_801E7F4C(Task *node) {
     }
 }
 
-/* Shatter drawing callback: into the current ordering table. */
-void func_801E8088(Task *node) {
-    D_801E96B8 = (u32 *)sprite_ot;
-    func_801E80B4(node);
+/* 801E8088: Shatter drawing callback: into the current ordering table. */
+void battle_setup_shatter_draw_task(Task *node) {
+    battle_setup_shatter_current_ot = (u32 *)sprite_ot;
+    battle_setup_shatter_draw(node);
 }
 
-/* Shatter drawing: each cell still in front (z >= 0x40) as its triangle,
+/* 801E80B4: Shatter drawing: each cell still in front (z >= 0x40) as its triangle,
  * rotated and moved by the cell, projected with a 512 screen distance
  * about the screen centre. */
-void func_801E80B4(Task *node) {
+void battle_setup_shatter_draw(Task *node) {
     ShatterTask *task = node->data;
     ShatterCell *cell;
     POLY_FT3 *prim;
@@ -76,11 +76,11 @@ void func_801E80B4(Task *node) {
                     TransMatrix(&m, &cell->trans);
                     SetRotMatrix(&m);
                     SetTransMatrix(&m);
-                    triangle = half == 0 ? D_801E9640 : D_801E9658;
+                    triangle = half == 0 ? battle_setup_shatter_upper_left_triangle : battle_setup_shatter_lower_right_triangle;
                     otz = RotTransPers3(&triangle[0], &triangle[1], &triangle[2],
                                         (long *)&prim->x0, (long *)&prim->x1, (long *)&prim->x2,
                                         &p, &flag) >> 6;
-                    AddPrim(D_801E96B8 + otz, prim);
+                    AddPrim(battle_setup_shatter_current_ot + otz, prim);
                 }
             }
         }
@@ -89,32 +89,32 @@ void func_801E80B4(Task *node) {
     SetGeomScreen(screen);
 }
 
-/* Release the shatter task after the drawing finishes. */
-void func_801E827C(void *block) {
+/* 801E827C: Release the shatter task after the drawing finishes. */
+void battle_setup_shatter_release(void *block) {
     DrawSync(0);
     heap_free(block);
 }
 
-/* Unlink a task-registered shatter and release it after the frame. */
-void func_801E82B0(Task *node) {
+/* 801E82B0: Unlink a task-registered shatter and release it after the frame. */
+void battle_setup_shatter_destroy_task(Task *node) {
     task_unlink_draw_node(node + 1);
     task_unlink_main_node(node);
     sprite_queue_free_later((u32)node);
 }
 
-/* Allocate and set up the shatter. */
-ShatterTask *func_801E82EC(void) {
+/* 801E82EC: Allocate and set up the shatter. */
+ShatterTask *battle_setup_shatter_create(void) {
     ShatterTask *task = heap_alloc(sizeof(ShatterTask), 1);
 
     task->task.data = task;
     task->draw.data = task;
-    return func_801E8320(task);
+    return battle_setup_shatter_init(task);
 }
 
-/* Set up the shatter: the screen as two triangles per 32x32 cell over a
+/* 801E8320: Set up the shatter: the screen as two triangles per 32x32 cell over a
  * 320x224 grid (textured from the copy at 0x2c0,0x100), each cell 0x2000
  * away at its place on the grid (each triangle centred on its centroid). */
-ShatterTask *func_801E8320(ShatterTask *task) {
+ShatterTask *battle_setup_shatter_init(ShatterTask *task) {
     MATRIX m;      /* unused in the original; with pos and angle reserves 0x38 bytes */
     VECTOR pos;
     SVECTOR angle;
@@ -178,11 +178,11 @@ ShatterTask *func_801E8320(ShatterTask *task) {
     return task;
 }
 
-/* Load mode (shatter): copy the screen (made semi-transparent) to
+/* 801E8588: Load mode (shatter): copy the screen (made semi-transparent) to
  * 0x2c0,0x100, then for at least 82 frames and until the four setup phases
  * are done (one per idle disc frame, 8001bb0c between the first two), fade
  * the background and run the shatter on the scratchpad stack. */
-void func_801E8588(void) {
+void battle_setup_run_shatter_load_mode(void) {
     RECT rect;
     u16 *screen;
     u16 *pixel;
@@ -235,14 +235,14 @@ void func_801E8588(void) {
     work->buffers[1].drawEnv.g0 = 0;
     work->buffers[0].drawEnv.b0 = 0;
     work->buffers[1].drawEnv.b0 = 0;
-    shatter = func_801E82EC();
+    shatter = battle_setup_shatter_create();
     while (frames != 0 || state != 5) {
         if (frames > 0) {
             frames--;
         }
         swap_buffers();
         battle_area.buffer = 1 - battle_area.buffer;
-        D_801E96B8 = battle_area.ot;
+        battle_setup_shatter_current_ot = battle_area.ot;
         if (cd_get_pending_read_count() == 0) {
             switch (state) {
             case 0:
@@ -254,7 +254,7 @@ void func_801E8588(void) {
             case 1:
             case 3:
             case 4:
-                func_801E5840(phase);
+                battle_setup_run_phase(phase);
                 phase++;
                 state++;
                 break;
@@ -263,8 +263,8 @@ void func_801E8588(void) {
         boot_check_soft_reset();
         /* Run the shatter on a stack at the top of the scratchpad. */
         STACK_ENTER(0x1F8003FC);
-        func_801E7F4C(&shatter->task);
-        func_801E80B4(&shatter->task);
+        battle_setup_shatter_update(&shatter->task);
+        battle_setup_shatter_draw(&shatter->task);
         STACK_LEAVE();
         DrawSync(0);
         VSync(2);
@@ -278,14 +278,14 @@ void func_801E8588(void) {
         PutDrawEnv(&battle_area.current->drawEnv);
         DrawOTag((u_long *)&battle_area.current->ot[0xFFF]);
     }
-    func_801E827C(shatter);
+    battle_setup_shatter_release(shatter);
     SetDispMask(0);
     cd_sync_reads(0);
-    func_801E5840(3);
+    battle_setup_run_phase(3);
 }
 
-/* Load mode: the shatter's variant 1 (cells fade in place). */
-void func_801E893C(void) {
-    D_801E963C = 1;
-    func_801E8588();
+/* 801E893C: Load mode: the shatter's variant 1 (cells fade in place). */
+void battle_setup_run_shatter_in_place_load_mode(void) {
+    battle_setup_shatter_in_place = 1;
+    battle_setup_run_shatter_load_mode();
 }

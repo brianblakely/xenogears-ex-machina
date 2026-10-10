@@ -4,7 +4,7 @@
 #include "common.h"
 #include "resident/sprite.h"
 
-/* The effect task func_801FC53C creates (0x54 bytes; resident tasks: the
+/* The effect task battle_module_spin_start creates (0x54 bytes; resident tasks: the
  * update node, then the drawing node, both with the task as their data). */
 typedef struct {
     Task task;      /* +00 */
@@ -18,7 +18,7 @@ typedef struct {
     s32 step;       /* +50 */
 } SpinTask;
 
-void func_801FC000(Task *node);
-void func_801FC020(Task *node);
+void battle_module_spin_update(Task *node);
+void battle_module_spin_draw(Task *node);
 
 #endif

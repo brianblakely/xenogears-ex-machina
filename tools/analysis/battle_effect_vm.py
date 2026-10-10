@@ -4,7 +4,7 @@ Battle objects (the stage model, stage object sets, gears and their parts, 3D
 enemies, and the copies scripts create) run effect scripts in the battle
 overlay's 800aad54 (decomp/src/battle/battle_scene.c, matching; switch on
 jtbl_8007056c, opcodes 00-75). ovl2143's 801e39f0 (decomp/src/ovl2143/
-ovl2143.c, matching, opcodes 00-70) runs the same format for the field and
+gear_model_scene.c, matching, opcodes 00-70) runs the same format for the field and
 menu gear models with a reduced command set: its no-op cases consume no
 parameter words, so the two dialects decode differently.
 

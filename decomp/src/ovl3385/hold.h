@@ -16,9 +16,9 @@ typedef struct {
     Sprite *actor;  /* +48 */
 } HoldTask;
 
-s32 func_801FC000(Sprite *actor, s32 *width, s32 *height, SpriteBounds *bounds);
-void func_801FC0EC(Task *node);
-void func_801FC168(SpritePart *cell, s32 count, s32 dx, s32 dy, s32 depth, Sprite *actor);
-void func_801FC508(Task *node);
+s32 battle_module_hold_get_cell_bounds(Sprite *actor, s32 *width, s32 *height, SpriteBounds *bounds);
+void battle_module_hold_update(Task *node);
+void battle_module_hold_queue_cells(SpritePart *cell, s32 count, s32 dx, s32 dy, s32 depth, Sprite *actor);
+void battle_module_hold_draw(Task *node);
 
 #endif
