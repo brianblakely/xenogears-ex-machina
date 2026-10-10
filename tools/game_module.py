@@ -439,6 +439,9 @@ class Rewriter:
         self.port_adapters = {name[len("xem_adapt_"):]: head for unit in units if unit.image == "port"
                               for name, head in unit.defined.items() if name.startswith("xem_adapt_")}
         self.overridden = set()
+        returns_path = PORT_DIR / "returns.json"
+        self.returns = {k: v for k, v in json.loads(returns_path.read_text()).items()
+                        if not k.startswith("_")} if returns_path.exists() else {}
         self.asm_map = {}
         for path in sorted(PORT_DIR.glob("asm_map*.json")):
             for entry in json.loads(path.read_text()):
@@ -518,6 +521,7 @@ class Rewriter:
             lines.extend(self.rewrite_call(unit, line))
         if not is_port:
             lines = poll_back_edges(lines)
+            lines = valueless_returns(lines, self.returns)
             self.declare(unit, "xem_loop_poll", "void", [])
         lines += host_groups
         # Declarations of the dispatchers and adapters this unit calls.
@@ -688,6 +692,69 @@ class Rewriter:
             return unit, unit.defined[name]
         found = self.definitions.get(name)
         return found
+
+
+RET_RE = re.compile(r"^\s*ret (\S+) (%[-\w.]+)$")
+LOAD_RE = re.compile(r"^\s*(%[-\w.]+) = load (\S+), ptr (%[-\w.]+)")
+CALL_RESULT_RE = re.compile(r"^\s*(%[-\w.]+) = (?:tail )?call (?:(?:noundef|signext|zeroext) )*(\S+) ")
+
+
+def valueless_returns(lines, returns):
+    """Give each non-void function's return slot a defined value on paths that
+    return without one (`return;`, falling off the end): 0, or the value
+    port/returns.json names, where "last_call" is the last call's result (the
+    original's $v0)."""
+    out = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if not line.startswith("define ") or line.startswith("define void") or " void @" in line.split("(")[0]:
+            out.append(line)
+            i += 1
+            continue
+        end = i
+        while end < len(lines) and lines[end] != "}":
+            end += 1
+        body = lines[i:end + 1]
+        name = name_of(parse_function_head(line)[1])
+        slot = ty = None
+        for a, b in zip(body, body[1:]):
+            load, ret = LOAD_RE.match(a), RET_RE.match(b)
+            if load and ret and ret.group(2) == load.group(1):
+                slot, ty = load.group(3), load.group(2)
+        if slot is None or ty not in ("i8", "i16", "i32", "ptr"):
+            out += body
+            i = end + 1
+            continue
+        rule = returns.get(name, 0)
+        zero = "null" if ty == "ptr" else "0"
+        result = []
+        for b in body:
+            result.append(b)
+            if re.match(r"^\s*" + re.escape(slot) + r" = alloca ", b):
+                if rule == "last_call":
+                    result += [f"  %xem.v0 = alloca {ty}", f"  store {ty} {zero}, ptr %xem.v0",
+                               f"  %xem.set = alloca i1", "  store i1 false, ptr %xem.set"]
+                value = zero if rule in (0, "last_call") else str(rule)
+                result.append(f"  store {ty} {value}, ptr {slot}")
+            elif rule == "last_call":
+                call = CALL_RESULT_RE.match(b)
+                if call and call.group(2) == ty:
+                    result.append(f"  store {ty} {call.group(1)}, ptr %xem.v0")
+                if re.match(r"^\s*store \S+ \S+, ptr " + re.escape(slot) + r",", b):
+                    result.append("  store i1 true, ptr %xem.set")
+        if rule == "last_call":
+            # At the return: the stored value, or the last call's result.
+            for k in range(len(result) - 1, 0, -1):
+                ret = RET_RE.match(result[k])
+                if ret:
+                    value = ret.group(2)
+                    result[k:k + 1] = [f"  %xem.s = load i1, ptr %xem.set", f"  %xem.c = load {ty}, ptr %xem.v0",
+                                       f"  %xem.r = select i1 %xem.s, {ty} {value}, {ty} %xem.c", f"  ret {ty} %xem.r"]
+                    break
+        out += result
+        i = end + 1
+    return out
 
 
 LABEL_RE = re.compile(r"^([-\w.]+):")

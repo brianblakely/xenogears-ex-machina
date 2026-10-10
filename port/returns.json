@@ -1,0 +1,6 @@
+{
+  "_comment": "What a valueless `return;` (or falling off the end) of a non-void game function returns (tools/game_module.py; docs/runtime.md, Valueless returns). Every other such function returns 0. \"last_call\" returns the result of the last call the function made, which is what the original leaves in $v0. Values from the matched code (port/adapters.c's audit).",
+  "sound_alloc_wave_bank_spu_memory": "last_call",
+  "battle_get_sound_bank_id": 3,
+  "gear_model_get_sound_bank_base": 2
+}
