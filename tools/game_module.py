@@ -76,6 +76,10 @@ CFLAGS = [
     # `return;` in a non-void function (docs/later-phases.md, Portability
     # hazards: values left in $v0) compiles; its callers are audited separately.
     "-Wno-return-mismatch",
+    # Uninitialized locals (docs/later-phases.md, Portability hazards) read 0 on
+    # every host rather than whatever the optimizer makes of them; address 0 is
+    # memory like any other.
+    "-ftrivial-auto-var-init=zero", "-fno-delete-null-pointer-checks",
 ]
 
 WASM_LAYOUT = 'target datalayout = "e-m:e-p:32:32-p10:8:8-p20:8:8-i64:64-i128:128-n32:64-S128-ni:1:10:20"'
