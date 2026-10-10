@@ -3807,7 +3807,7 @@ void func_800A8B0C(void) {
  * group), its root at position when given. One pointer reads the object's
  * description and then walks its mesh stream (the original keeps both in one
  * variable). */
-void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectModelFile *modelFile, s16 x, s16 y,
+void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *script_file, ObjectModelFile *model_file, s16 x, s16 y,
                    s16 z, s16 w, SVECTOR *position) {
     BattleObject *object;
     ObjectScripts *scripts;
@@ -3829,28 +3829,28 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
     if (index < 32 && D_800D3368[index] == NULL) {
         object = func_80031BDC(sizeof(BattleObject), 0);
         if (!(flags & 1)) {
-            func_8003342C(modelFile);
-            func_8003342C(modelFile->header);
+            func_8003342C(model_file);
+            func_8003342C(model_file->header);
         }
         object->ownSounds = 0;
         object->extraSounds = 0;
         if (!(flags & 4)) {
-            func_8003342C(scriptFile);
-            func_8003342C(scriptFile->data);
-            scripts = scriptFile->scripts;
+            func_8003342C(script_file);
+            func_8003342C(script_file->data);
+            scripts = script_file->scripts;
             func_8003342C(scripts);
             func_8003342C(scripts->animations);
-            data = scriptFile->data;
+            data = script_file->data;
             if (data->soundsEnd != data->sounds && func_8003864C(data->sounds, 0) == 0) {
                 func_80038428(data->sounds);
                 object->ownSounds = 1;
             }
         }
-        header = modelFile->header;
+        header = model_file->header;
         stream = (s16 *)header->desc;
-        images = modelFile->images;
-        models = modelFile->models;
-        hierarchy = modelFile->hierarchy;
+        images = model_file->images;
+        models = model_file->models;
+        hierarchy = model_file->hierarchy;
         D_800D3368[index] = object;
         object->scale24 = OBJECT_DESC(stream)->size[0];
         object->scale26 = OBJECT_DESC(stream)->size[1];
@@ -3902,7 +3902,7 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
             object->placement[0] = -1;
         }
         if (!(flags & 4) && !(flags & 0x80)) {
-            object->scriptFile = scriptFile;
+            object->scriptFile = script_file;
         } else {
             object->scriptFile = NULL;
         }
@@ -3969,8 +3969,8 @@ void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectMod
             object->active = 1;
         }
         if (!(flags & 0x40)) {
-            scripts = scriptFile->scripts;
-            object->model = scriptFile->data;
+            scripts = script_file->scripts;
+            object->model = script_file->data;
             func_800AA898(object, &D_800C3D0C, scripts->scripts, scripts->animations);
             func_800AA934(object, object, &D_800C3D0C, 0);
             func_800AFF9C(object);

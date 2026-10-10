@@ -58,7 +58,7 @@ void func_80021D3C(BattleSprite *sprite, s16 x, s16 z);   /* place a sprite */
 void func_800223B0(BattleSprite *sprite, s32 angle);       /* sprite orientation */
 void func_80021FE0(BattleSprite *sprite, s32 angle);       /* sprite heading */
 void func_80022A70(void *images, s32 x, s32 y);            /* upload an image list */
-void func_80022224(void *binding, void *data, DVECTOR image, DVECTOR clut, s32 a4);
+void func_80022224(void *binding, void *data, DVECTOR image, DVECTOR clut, s32 mode);
 s16 func_8003BDFC(s32 arg);                                /* sound transfer busy */
 
 /* The loading task (801e7098), run once per frame until the sprites, the
@@ -98,8 +98,9 @@ extern void *D_800D2D54;
 
 /* The battle overlay's sprite task for a sprite row: a resident task whose
  * data is the sprite (BattleArea.tasks and .sprites take the two). */
-Task *func_800BA984(void *data, s32 a1, s32 palette, s16 x, s16 y, s32 a5, s32 a6, s32 a7,
-                    s32 a8, s32 animation, s32 a10, s32 a11, s32 a12, s32 variant);
+Task *func_800BA984(void *resource, s32 clut_x, s32 clut_y, s16 texture_x, s16 texture_y, s32 unused5,
+                    s32 x, s32 y, s32 z, s32 animation, s32 direction, s32 unused11, s32 unused12,
+                    s32 palette_bank);
 void func_800BB350(s32 slot);
 void func_800B14B8(void);
 

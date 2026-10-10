@@ -43,7 +43,7 @@ u16 func_8009EF3C(ModelPart *part, s32 scale); /* pose a model hierarchy */
 
 /* battle/objects.h's: create a stage object from its script and model
  * files; reset an object. */
-void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *scriptFile, ObjectModelFile *modelFile, s16 x, s16 y,
+void func_800A8BF0(s32 index, u16 flags, ObjectScriptFile *script_file, ObjectModelFile *model_file, s16 x, s16 y,
                    s16 z, s16 w, SVECTOR *position);
 void func_800AA898(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **animations);
 

@@ -1154,8 +1154,9 @@ void func_800BA8F4(Sprite *sprite) {
 
 /* Create a sprite task (updated by 800BAC50, drawn by 800BAB0C) at x, y, z
  * facing direction, running animation. */
-SpriteTask *func_800BA984(s32 resource, s16 a, s16 b, s16 c, s16 d, s16 e, s16 x, s16 y, s16 z, s16 animation,
-                          s16 direction, s32 unused11, s32 unused12, s32 g) {
+SpriteTask *func_800BA984(s32 resource, s16 clut_x, s16 clut_y, s16 texture_x, s16 texture_y, s16 unused5, s16 x,
+                          s16 y, s16 z, s16 animation, s16 direction, s32 unused11, s32 unused12,
+                          s32 palette_bank) {
     SpriteTask *task;
     Sprite *sprite;
 
@@ -1164,7 +1165,7 @@ SpriteTask *func_800BA984(s32 resource, s16 a, s16 b, s16 c, s16 d, s16 e, s16 x
     task->task.data = sprite;
     task->auxiliary.data = sprite;
     task->auxiliary.owner = NULL;
-    func_800242F4(sprite, resource, a, b, c, d, e, g);
+    func_800242F4(sprite, resource, clut_x, clut_y, texture_x, texture_y, unused5, palette_bank);
     sprite->block = task;
     sprite->x = x << 16;
     sprite->y = y << 16;

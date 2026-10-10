@@ -197,7 +197,7 @@ void *func_800199CC(s32 mode) {
 const s32 D_80018080 = 0;
 
 /* Where a mode's overlay block is decoded. */
-u8 *const D_80018084 = D_8006FAF0;
+u8 *const D_80018084 = mode_overlay_area;
 
 /* Mode dispatcher: report a fatal error (with the caller) if given, reset graphics and the heap, clear the next mode's BSS, load its overlay, then run it and dispatch again. */
 void func_80019ACC(s32 error) {

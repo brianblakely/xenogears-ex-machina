@@ -900,7 +900,7 @@ s32 func_8002DDE4(s32 *images, s16 mode, s32 x, s32 y, s16 mode2, u16 x2, u16 y2
 
 /* The shared unpack buffer. */
 u8 *func_8002DFE0(void) {
-    return D_8006FAF0;
+    return mode_overlay_area;
 }
 
 /* Set the screen bounds the renderers test projected vertices against: x

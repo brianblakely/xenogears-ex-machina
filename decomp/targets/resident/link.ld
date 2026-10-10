@@ -19,6 +19,12 @@ _gp = main_SDATA_START;
  * last of the small data, through it. The BSS ends below the overlay area
  * at 8006faf0, so the link checks the bounds the units' variables reach. */
 D_8006FAEC = main_BSS_END - 4;
+
+/* The overlay area the modes load at, right after the BSS (main.c, the
+ * unpack buffer of main_8002C3E8.c): each mode overlay's first unit defines
+ * its first word, the overlay's number, under a name of its own, so the
+ * resident takes the address from here, as splat's list gave it before. */
+mode_overlay_area = 0x8006FAF0;
 ASSERT(main_BSS_START == 0x800592BC && main_BSS_END == 0x8006FAF0,
        "resident: the linked .bss is not the span the entry point clears")
 
