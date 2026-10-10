@@ -1,0 +1,124 @@
+// The settings panel. Widgets edit the in-out properties; the host turns each
+// edit into a typed settings change and writes back the acknowledged values.
+
+import { AboutSlint, Button, CheckBox, ComboBox, GroupBox, Palette, Slider } from "std-widgets.slint";
+
+export component SettingsPanel inherits Window {
+    in-out property <float> master-volume;
+    in-out property <int> audio-output;
+    in-out property <int> scale;
+    in-out property <int> filter;
+    in-out property <bool> show-fps;
+    in property <string> status;
+
+    callback master-volume-edited(int);
+    callback audio-output-edited(int);
+    callback scale-edited(int);
+    callback filter-edited(int);
+    callback show-fps-edited(bool);
+    callback close-requested();
+
+    title: "Settings";
+    background: transparent;
+    preferred-width: 440px;
+    preferred-height: 560px;
+
+    Rectangle {
+        background: Palette.background.with-alpha(0.96);
+        border-radius: 12px;
+        border-width: 1px;
+        border-color: Palette.border;
+
+        VerticalLayout {
+            padding: 16px;
+            spacing: 10px;
+
+            HorizontalLayout {
+                Text {
+                    text: "Settings";
+                    font-size: 20px;
+                    font-weight: 600;
+                    vertical-alignment: center;
+                }
+                Button {
+                    text: "Close";
+                    horizontal-stretch: 0;
+                    clicked => { root.close-requested(); }
+                }
+            }
+
+            GroupBox {
+                title: "Audio";
+                VerticalLayout {
+                    spacing: 8px;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Text { text: "Master volume"; vertical-alignment: center; min-width: 110px; }
+                        Slider {
+                            accessible-label: "Master volume";
+                            minimum: 0;
+                            maximum: 100;
+                            value <=> root.master-volume;
+                            changed(value) => { root.master-volume-edited(round(value)); }
+                        }
+                        Text { text: round(root.master-volume); vertical-alignment: center; min-width: 30px; }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Text { text: "Output"; vertical-alignment: center; min-width: 110px; }
+                        ComboBox {
+                            accessible-label: "Audio output";
+                            model: ["Mono", "Stereo", "Wide"];
+                            current-index <=> root.audio-output;
+                            selected => { root.audio-output-edited(self.current-index); }
+                        }
+                    }
+                }
+            }
+
+            GroupBox {
+                title: "Presentation";
+                VerticalLayout {
+                    spacing: 8px;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Text { text: "Scale"; vertical-alignment: center; min-width: 110px; }
+                        ComboBox {
+                            accessible-label: "Scale";
+                            model: ["Fit", "Integer", "Stretch"];
+                            current-index <=> root.scale;
+                            selected => { root.scale-edited(self.current-index); }
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Text { text: "Filter"; vertical-alignment: center; min-width: 110px; }
+                        ComboBox {
+                            accessible-label: "Filter";
+                            model: ["Nearest", "Linear"];
+                            current-index <=> root.filter;
+                            selected => { root.filter-edited(self.current-index); }
+                        }
+                    }
+                    CheckBox {
+                        text: "Show FPS";
+                        checked <=> root.show-fps;
+                        toggled => { root.show-fps-edited(self.checked); }
+                    }
+                }
+            }
+
+            Text {
+                text: root.status;
+                color: Palette.foreground.with-alpha(0.7);
+                wrap: word-wrap;
+            }
+
+            Rectangle { vertical-stretch: 1; }
+
+            AboutSlint {
+                max-height: 120px;
+            }
+        }
+    }
+}

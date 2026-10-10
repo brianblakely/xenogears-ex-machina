@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Runs a command from the Nix runtime shell on the host's NVIDIA Vulkan driver.
+#
+#   runtime/scripts/xem-gpu-host <command> [args...]
+#
+# Nix binaries do not search the host's /usr/lib, and lavapipe is the shell's
+# default. This selects the host's NVIDIA ICD and makes its driver libraries
+# loadable without putting the rest of /usr/lib (SDL, Wayland, ... built against
+# the host's glibc) ahead of the shell's: the driver libraries are linked into a
+# private directory that is prepended to LD_LIBRARY_PATH, with libXext, the one
+# library the driver needs that the shell does not provide.
+set -euo pipefail
+
+icd=${XEM_HOST_ICD:-/usr/share/vulkan/icd.d/nvidia_icd.json}
+libdir=${XEM_HOST_DRIVER_LIBS:-/usr/lib}
+[[ -f $icd ]] || { echo "xem-gpu-host: no host ICD at $icd" >&2; exit 1; }
+[[ $# -gt 0 ]] || { echo "usage: xem-gpu-host <command> [args...]" >&2; exit 2; }
+
+drivers=${XDG_RUNTIME_DIR:-/tmp}/xem-gpu-host-$(id -u)
+mkdir -p "$drivers"
+shopt -s nullglob
+for lib in "$libdir"/libGLX_nvidia.so* "$libdir"/libnvidia-*.so* "$libdir"/libEGL_nvidia.so* "$libdir"/libXext.so.6*; do
+    ln -sf "$lib" "$drivers/"
+done
+
+export VK_ICD_FILENAMES=$icd
+export VK_DRIVER_FILES=$icd
+export LD_LIBRARY_PATH=$drivers${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+exec "$@"

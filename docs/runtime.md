@@ -56,3 +56,25 @@ original address.
 | `xem-ui` | the Slint settings panel as a custom platform rendered into a texture on the shared wgpu device |
 | `xem-xr` | the OpenXR adapter |
 | `xem-desktop`, `xem-headless`, `xem-android`, `xem-web` | hosts |
+| `xem-settings` | typed application settings: validation, acknowledgement, change notification, JSON persistence |
+
+## Desktop host and settings panel
+
+`xem-desktop` opens an SDL3 window (Wayland or X11), presents through wgpu with
+FIFO vsync and draws the test scene as the stand-in game image, placed by the
+presentation settings, under the Slint settings panel (F1, Escape or a
+gamepad's Start/Back toggles it). One `xem_render::Gpu` (instance, adapter,
+device, queue) serves `SceneRenderer`, `Compositor` and `xem_ui::SettingsUi`;
+Slint runs as a custom platform under the host loop and renders into a texture
+only when it asks for a redraw. Settings live in
+`xem_settings::SettingsService` (`$XDG_CONFIG_HOME/xenogears-ex-machina/settings.json`
+on the desktop); the panel and agents change them only through `apply`.
+
+From `runtime/` in `nix develop path:./nix/runtime`:
+
+- tests on lavapipe: `VK_ICD_FILENAMES=$XEM_LAVAPIPE_ICD cargo test -p xem-settings -p xem-render -p xem-ui`
+- on the host NVIDIA driver: `scripts/xem-gpu-host target/debug/xem-desktop`
+  (`--show-settings --exit-after-frames N --screenshot out.png` for a smoke run)
+- Android, in `#android`: `cargo ndk -t arm64-v8a -P 26 build -p xem-ui -p xem-render`
+  (Slint compiles its FemtoVG module out on Android, so `xem-ui` takes the
+  renderer from `i-slint-renderer-femtovg` there)

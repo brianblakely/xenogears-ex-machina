@@ -1,0 +1,25 @@
+[package]
+name = "xem-ui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+slint = { workspace = true, features = ["std", "compat-1-2", "unstable-wgpu-30", "renderer-femtovg-wgpu"] }
+wgpu.workspace = true
+xem-settings = { path = "../xem-settings" }
+
+[target.'cfg(target_os = "android")'.dependencies]
+i-slint-renderer-femtovg = { workspace = true, features = ["unstable-wgpu-30"] }
+
+[build-dependencies]
+slint-build.workspace = true
+
+[dev-dependencies]
+pollster.workspace = true
+xem-render = { path = "../xem-render" }
+
+[dev-dependencies.i-slint-backend-testing]
+workspace = true
