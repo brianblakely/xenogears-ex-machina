@@ -160,9 +160,15 @@ impl XemApp {
             let mut batch = 0;
             while batch < due.min(MAX_FRAMES_PER_ANIMATION) && (batch == 0 || now_ms() - start < BATCH_BUDGET_MS) {
                 let Some(session) = self.session.as_mut() else { break };
-                batch += 1;
-                if session.frame().is_err() {
-                    break;
+                match session.frame() {
+                    Ok(true) => batch += 1,
+                    // A disc sector is still being fetched: no time passed;
+                    // the next animation frame retries after the fetch.
+                    Ok(false) => break,
+                    Err(_) => {
+                        batch += 1;
+                        break;
+                    }
                 }
             }
             if batch < due {

@@ -85,7 +85,9 @@ impl<M: GameModule> Session<M> {
     }
 
     /// Run one frame (to the next vertical blank), applying scheduled input.
-    pub fn frame(&mut self) -> Result<(), Trap> {
+    /// `Ok(false)`: the frame stopped while the disc source fetches a sector
+    /// (browser hosts); fetch it and call again, the frame continues.
+    pub fn frame(&mut self) -> Result<bool, Trap> {
         if let Some(reason) = &self.stopped {
             return Err(Trap::Host(reason.clone()));
         }
@@ -96,7 +98,7 @@ impl<M: GameModule> Session<M> {
             self.set_pad(port, buttons);
         }
         match self.runtime.run_frame() {
-            Ok(_) => Ok(()),
+            Ok(report) => Ok(!report.blocked),
             Err(trap) => {
                 self.stopped = Some(trap.to_string());
                 Err(trap)
@@ -184,8 +186,10 @@ impl<M: GameModule> Session<M> {
             "status" => Ok(self.status()),
             "frames" => {
                 let n = arg_u64("count").unwrap_or(1);
-                for _ in 0..n {
-                    self.frame().map_err(|t| t.to_string())?;
+                for done in 0..n {
+                    if !self.frame().map_err(|t| t.to_string())? {
+                        return Ok(json!({ "blocked": true, "frames": done, "status": self.status() }));
+                    }
                 }
                 Ok(self.status())
             }
@@ -196,7 +200,9 @@ impl<M: GameModule> Session<M> {
                     if self.condition_met(until)? {
                         return Ok(json!({ "met": true, "frames": frame, "status": self.status() }));
                     }
-                    self.frame().map_err(|t| t.to_string())?;
+                    if !self.frame().map_err(|t| t.to_string())? {
+                        return Ok(json!({ "met": false, "blocked": true, "frames": frame, "status": self.status() }));
+                    }
                 }
                 let met = self.condition_met(until)?;
                 Ok(json!({ "met": met, "frames": max, "status": self.status() }))

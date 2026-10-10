@@ -111,6 +111,7 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
     for frame in 0..options.frames {
+        // A native disc source never blocks.
         if let Err(trap) = session.frame() {
             println!("frame {frame}: {trap}");
             break;
