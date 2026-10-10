@@ -1005,7 +1005,8 @@ void battle_art_menu_build_row_glyphs(s32 y) {
 }
 
 /* 800916D4: Point the page title quad at entry (column, row) of the technique image
- * and, for character 1 (Fei), show the entry's cost (8009a258) as up to three
+ * and, for character 1 (Elly in ovl2606's battle_scene_select_character_names),
+ * show the entry's accuracy plus the character's ether (8009a258) as up to three
  * digit glyphs. */
 void battle_art_menu_point_title(u8 column, u8 row, u8 member) {
     u32 index;
@@ -2399,8 +2400,9 @@ void battle_resolve_adjust_for_elements(u16 *attack, u16 *defense, s8 *hit) {
     }
 }
 
-/* 80096824: Ether check: unless rand % 100 falls below the attacker's +0x5b plus the
- * descriptor's +0x14, the action fails (code 0x38 at +0x5fc7). */
+/* 80096824: Ether check: unless rand % 100 falls below the attacker's ether (+0x5b)
+ * plus the descriptor's accuracy (+0x14), the action fails (code 0x38 at +0x5fc7).
+ * Both callers run it only for character 1's commands with flagsA 0x100. */
 void battle_resolve_ether_check(void) {
     s32 chance = battle_attacker_record->pilot.ether + battle_current_command->accuracy;
 
@@ -3712,7 +3714,8 @@ u16 battle_status_get_shown_condition_mask(u8 slot) {
 }
 
 /* 8009A258: Accuracy of member's command: the descriptor's accuracy plus the member's
- * bonus, capped at 100. */
+ * ether (+0x5b), capped at 100: the chance the ether check (80096824) gives
+ * character 1, whose art menu alone shows it (800916d4). */
 u8 battle_get_command_accuracy(u8 member, u8 command) {
     CommandDescriptor *descriptor = &battle_work_ptr->partyCommands[member][command];
     u8 accuracy = descriptor->accuracy + (battle_work_ptr->records + member)->pilot.ether;

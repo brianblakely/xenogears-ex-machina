@@ -40,7 +40,7 @@ typedef struct {
     u8 equipAttack;       /* 0x28: equipment bonuses of the base values at 0x58 */
     u8 equipDefense;      /* 0x29 */
     u8 equipSpeed;        /* 0x2A */
-    u8 equipEther;        /* 0x2B */
+    u8 equipEther;        /* 0x2B: ether's (accessories EtherStone, EtherStoneLg) */
     u8 equipEtherDefense; /* 0x2C */
     u8 bodyDefense;       /* 0x2D */
     u8 equip5E;           /* 0x2E */
@@ -67,10 +67,24 @@ typedef struct {
     u8 attack;            /* 0x58: the base values */
     u8 defense;           /* 0x59 */
     u8 speed;             /* 0x5A */
-    u8 ether;             /* 0x5B: the ether attack value against etherDefense
-                           * (80096FBC, 80097610), the heal of formula 1 (80095690)
-                           * and of restoring arts, and added to a command's
-                           * accuracy (the ether check 80096824, 8009A258) */
+    u8 ether;             /* 0x5B: ether, as the game's names label it: item 53 "ETH
+                           * Drive" raises it, beside "STR Drive" (attack), "VIT
+                           * Drive" (defense) and "ETHDEF Drive" (etherDefense), and
+                           * the accessories "EtherStone" and "EtherStoneLg" raise
+                           * only equipEther (python3 -m tools.analysis.stat_items
+                           * --sweep, both discs). Its readers in every image: the
+                           * attack value of an amountKind 1 command (80096FBC)
+                           * against etherDefense (defenseKind 1, 80097610); the heal
+                           * of formula 1 (80095690), gear formula 10 (8009E364) and
+                           * the field menu's restoring arts (slot39 801E35BC); level B
+                           * growth with maxEp and etherDefense (ovl2596 801E3500);
+                           * the fifth stat the menus show, capped like attack and
+                           * defense (250 or 999), not at 99 like the percentages
+                           * +5E and +5F (slot39 801E3A80, ovl2601 801CCE1C); battle AI
+                           * byte attribute 9 (80079ED8); and, for character 1 only,
+                           * the success chance its flagsA 0x100 commands add it to
+                           * (the ether check 80096824, which its art menu shows
+                           * through 8009A258) */
     u8 etherDefense;      /* 0x5C */
     u8 field5D;
     u8 field5E;           /* 0x5E: physical hit chance (80096AB8 adds the command's) */

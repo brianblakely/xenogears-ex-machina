@@ -2457,8 +2457,8 @@ u8 menu_use_item_on_character(MenuTables *tables, u8 id, u8 item) {
     return 0;
 }
 
-/* 801E35BC: Apply `user`'s restoring effect: to `target`'s HP (its +5b times the
- * effect's +11, capped at the maximum), or with `gear` to the user's gear
+/* 801E35BC: Apply `user`'s restoring effect: to `target`'s HP (the user's ether, +5b,
+ * times the effect's +11, capped at the maximum), or with `gear` to the user's gear
  * (+60 up by a tenth of +64, capped at +64). */
 void menu_apply_restoring_art(tables, user, target, effect, gear)
 MenuTables *tables;
