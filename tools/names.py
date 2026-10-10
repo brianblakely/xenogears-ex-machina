@@ -19,7 +19,10 @@ does not define: views, aliases and parts of objects, listed under the image
 holding the address), the C and .s files named by an address or by their
 image number, and parameters named argN or aN. `inventory` writes one TSV per
 image and all.tsv: kind, name, address, size, binding, defining unit and
-file, the images importing it and the first line of its comment.
+file, the images importing it and the first line of its comment. A row of
+`check` or `apply` may also correct a name given before: its old name (a
+symbol, FUNCTION.parameter or a unit's path) is then taken as a placeholder;
+a comment names a corrected parameter only in backquotes (`index`).
 
 A mapping is a TSV of `image kind old new unit confidence evidence` rows
 (docs/matching.md, Names). Kinds: func, data and jtbl (a symbol), unit (a C
@@ -39,11 +42,13 @@ holds the name or where it lies in a path naming the image; each other
 occurrence is reported with file:line, and an overrides file
 (`file line old image`; line `*` for the whole file, image `-` to keep the
 token) decides them. Each renamed definition's address is written into its
-comment (a function's leading one, a variable's or label's trailing one)
-unless it is there, and each name a link takes from splat's lists is written
-to a symbol file its split reads (the image's own; for another image's name,
-the resident's for the resident's own symbols, else the importer's), so that
-a fresh split names the address so. Units and .s files move with git mv,
+comment (a function's leading one, a variable's or label's trailing one;
+for an alias given its definer's name, the definer's) unless it is there,
+and each name a link takes from splat's lists is written to a symbol file
+its split reads (the image's own; for another image's name, the resident's
+for the resident's own symbols, which every split reads, else one only the
+importer's splits read: an overlay's own, the resident's imports.txt), so
+that a fresh split names the address so. Units and .s files move with git mv,
 with their per-unit .mk settings, yaml subsegments and INCLUDE_ASM paths.
 Applying twice changes nothing more.
 
@@ -82,8 +87,9 @@ from matching_coverage import (  # noqa: E402
     read_elf,
 )
 
-# splat's names give an address (cross_image.ADDRESS_NAME); in text:
-PLACEHOLDER = re.compile(r"\b(?:func|D|jtbl)_[0-9A-Fa-f]{8}\w*")
+# splat's names give an address (cross_image.ADDRESS_NAME); in text, also
+# inside a longer identifier (test_follows_func_800941A4):
+PLACEHOLDER = re.compile(r"(?<![A-Za-z0-9])(?:func|D|jtbl)_[0-9A-Fa-f]{8}\w*")
 # Parameters named by position (m2c's argN) or by register (aN).
 PARAMETER = re.compile(r"arg\d+|a\d+")
 ADDRESS = re.compile(r"[0-9A-Fa-f]{8}")
@@ -291,28 +297,36 @@ def declarators(tokens: list[Token], statement: list[int], match: dict[int, int]
             continue
         t = tokens[i]
         nxt = tokens[statement[n + 1]].text if n + 1 < len(statement) else ";"
-        if t.text == "{" and i in match or t.text in ATTRIBUTES and nxt == "(":
-            group = i if t.text == "{" else statement[n + 1]
+        before = tokens[statement[n - 1]].text if n else ""
+        if (
+            t.text == "{"
+            and i in match
+            or t.text in ATTRIBUTES
+            and nxt == "("
+            or t.text == "("
+            and before == ")"  # a function pointer's parameter list
+        ):
+            group = i if t.text in ("{", "(") else statement[n + 1]
             skip |= {j for j in statement if i < j <= match.get(group, group)}
+            continue
+        if t.text == "=":  # an initializer, up to the next declarator
+            depth = 0
+            for j in statement[n + 1 :]:
+                text = tokens[j].text
+                depth += 1 if text in ("(", "{", "[") else -1 if text in (")", "}", "]") else 0
+                if text == "," and depth == 0:
+                    break
+                skip.add(j)
             continue
         if t.kind != "ident" or t.text in C_KEYWORDS:
             continue
-        previous = tokens[statement[n - 1]].text if n else ""
         if nxt == "(":
             after = tokens[statement[n + 2]].text if n + 2 < len(statement) else ""
             if after != "*":
                 return []  # a function's declaration
             continue
-        if nxt in ("=", ",", ";", "[") or nxt == ")" and previous == "*":
+        if nxt in ("=", ",", ";", "[") or nxt in ATTRIBUTES or nxt == ")" and before == "*":
             names.append(i)
-            if nxt == "=":  # its initializer, up to the next declarator
-                depth = 0
-                for j in statement[n + 1 :]:
-                    text = tokens[j].text
-                    depth += 1 if text in ("(", "{", "[") else -1 if text in (")", "}", "]") else 0
-                    if text == "," and depth == 0:
-                        break
-                    skip.add(j)
     return names
 
 
@@ -564,6 +578,7 @@ class Repository:
     sources: dict[Path, Source] = field(default_factory=dict)
     sites: dict[Path, list[Site]] = field(default_factory=dict)
     by_name: dict[str, cross_image.Target] = field(default_factory=dict)
+    corrected: frozenset[str] = frozenset()  # the names a mapping corrects
 
     def c(self, path: Path) -> Source:
         if path not in self.sources:
@@ -575,6 +590,19 @@ class Repository:
 
     def own_file(self, image: str) -> Path:
         return self.symbol_files[self.images[image][0].name][0]
+
+    def private_file(self, target: str) -> Path | None:
+        """The first symbol file of a target's split that no other image's
+        split reads: where its names for other images' symbols go."""
+        image = self.image[target]
+        return next(
+            (
+                f
+                for f in self.symbol_files[target]
+                if all(self.image[t] == image for t, fs in self.symbol_files.items() if f in fs)
+            ),
+            None,
+        )
 
 
 def tracked() -> list[Path]:
@@ -653,7 +681,10 @@ def dependencies(unit: Path, version: str, includes: list[str]) -> set[Path]:
     return found
 
 
-def load() -> Repository:
+def load(corrected: frozenset[str] = frozenset()) -> Repository:
+    """The targets, their files and the inventory: every placeholder, and the
+    names a mapping corrects (`corrected`: symbols, FUNCTION.parameter, unit
+    paths) as if they were placeholders."""
     configs = sorted(Path("decomp/targets").glob("*/*.mk"))
     if not configs:
         fail("no decomp/targets/*/*.mk: run from the repository root")
@@ -717,7 +748,10 @@ def load() -> Repository:
                         for found in re.finditer(ASM_LABEL.pattern, text, re.M):
                             generated_labels.add((name, found.group(1) or found.group(2)))
                         if macro == "INCLUDE_ASM":
-                            for word in set(PLACEHOLDER.findall(text)):
+                            words = set(PLACEHOLDER.findall(text))
+                            if corrected:
+                                words |= corrected & set(IDENTIFIER.findall(text))
+                            for word in words:
                                 users[(name, word)].add(included)
         for file in files:
             scopes[file].add(t.name)
@@ -728,6 +762,7 @@ def load() -> Repository:
     repo.inner, repo.at_end = inner, at_end
     repo.generated, repo.users = generated_labels, dict(users)
     repo.partners = {t.name: partners(repo, t) for t in targets}
+    repo.corrected = corrected
     inventory(repo)
     return repo
 
@@ -789,6 +824,11 @@ def address_named(image: str, unit: Path) -> bool:
     return bool(ADDRESS.search(unit.stem)) or bool(re.search(r"\d", image)) and image in unit.stem
 
 
+def placeholder(repo: Repository, name: str) -> bool:
+    """splat's name for an address, or a name the mapping corrects."""
+    return bool(cross_image.ADDRESS_NAME.fullmatch(name)) or name in repo.corrected
+
+
 def inventory(repo: Repository) -> None:
     """Every placeholder of every image (repo.entries)."""
     entries = repo.entries
@@ -803,11 +843,14 @@ def inventory(repo: Repository) -> None:
                 not s.name
                 or not s.section
                 or s.kind in (STT_SECTION, STT_FILE)
-                or not cross_image.ADDRESS_NAME.fullmatch(s.name)
+                or not placeholder(repo, s.name)
                 or not t.lo <= s.value < t.end
-                or (img, s.name) in entries
             ):
                 continue
+            if (img, s.name) in entries:  # statics of one name (a header's): the copy
+                named = cross_image.ADDRESS_NAME.fullmatch(s.name)  # the name gives wins
+                if not named or int(named.group(1), 16) != s.value:
+                    continue
             if s.section == SHN_ABS:
                 binding, unit = "script", str(t.imports.get(s.name, ("", ""))[0])
             else:
@@ -831,11 +874,7 @@ def inventory(repo: Repository) -> None:
     for t in repo.targets:
         for name, (script, expression) in t.imports.items():
             key = resolve(repo, t, name)
-            if (
-                not key
-                or key[0] in ("", "?", repo.image[t.name])
-                or not cross_image.ADDRESS_NAME.fullmatch(name)
-            ):
+            if not key or key[0] in ("", "?", repo.image[t.name]) or not placeholder(repo, name):
                 continue
             if key not in entries:
                 value = t.value[name]
@@ -858,7 +897,7 @@ def inventory(repo: Repository) -> None:
             entries[key].importers.add(repo.image[t.name])
     for img, units in repo.units.items():
         for unit in units:
-            if unit.suffix == ".c" and address_named(img, unit):
+            if unit.suffix == ".c" and (address_named(img, unit) or str(unit) in repo.corrected):
                 found = ADDRESS.search(unit.stem)
                 entries[(img, str(unit))] = Entry(
                     img,
@@ -873,16 +912,17 @@ def inventory(repo: Repository) -> None:
     for path in sorted(repo.scopes):
         if (
             path.suffix == ".s"
-            and PLACEHOLDER.fullmatch(path.stem)
+            and (PLACEHOLDER.fullmatch(path.stem) or path.stem in repo.corrected)
             and path.exists()
             and not str(path).startswith(".local")
         ):
+            found = ADDRESS.search(path.stem)
             for img in sorted({repo.image[t] for t in repo.scopes[path]}):
                 entries[(img, str(path))] = Entry(
                     img,
                     "asm",
                     str(path),
-                    int(ADDRESS.search(path.stem).group(), 16),
+                    int(found.group(), 16) if found else None,
                     None,
                     f"follows:{path.stem}",
                     str(path),
@@ -903,7 +943,11 @@ def inventory(repo: Repository) -> None:
             names = [
                 i
                 for i in parameters(source, f)
-                if i is not None and PARAMETER.fullmatch(source.tokens[i].text)
+                if i is not None
+                and (
+                    PARAMETER.fullmatch(source.tokens[i].text)
+                    or f"{fname}.{source.tokens[i].text}" in repo.corrected
+                )
             ]
             if not names:
                 continue
@@ -1654,6 +1698,21 @@ def read_overrides(path: Path | None) -> dict[tuple[str, int | str, str], str]:
     return overrides
 
 
+def token_pattern(corrected: set[str]) -> re.Pattern[str]:
+    """The tokens apply maps: placeholders, and the names a mapping corrects."""
+    if not corrected:
+        return PLACEHOLDER
+    words = "|".join(map(re.escape, sorted(corrected, key=len, reverse=True)))
+    return re.compile(rf"{PLACEHOLDER.pattern}|\b(?:{words})\b")
+
+
+def address_of(repo: Repository, key: tuple[str, str]) -> str:
+    """A symbol's address as its comment gives it: the one a placeholder's
+    name gives (a header's static has a copy in each unit), else its link's."""
+    named = cross_image.ADDRESS_NAME.fullmatch(key[1])
+    return named.group(1).upper() if named else f"{repo.entries[key].address:08X}"
+
+
 def apply(repo: Repository, plan: Plan, files: list[Path], overrides: dict, dry_run: bool) -> int:
     edits: dict[Path, list[tuple[int, int, str]]] = defaultdict(list)
     changes: list[Change] = []
@@ -1661,9 +1720,10 @@ def apply(repo: Repository, plan: Plan, files: list[Path], overrides: dict, dry_
     ambiguous: list[str] = []
     uses: dict[tuple[str, str], set[str]] = defaultdict(set)
     renamed = {name for _image, name in plan.renames}
+    pattern = token_pattern(renamed & repo.corrected)
     for path in files:
         text = file_text(path)
-        for m in PLACEHOLDER.finditer(text):
+        for m in pattern.finditer(text):
             name = m.group()
             if name not in renamed:
                 continue
@@ -1819,7 +1879,16 @@ def rename_params(
             end = f.body[1] if f.body else f.close
             first = leading_comment(source, f.start) if f.body else None
             span = range(first if first is not None else f.open, end)
-            word = re.compile(r"\b(" + "|".join(map(re.escape, renames)) + r")\b")
+            # a comment names argN and aN as words; a corrected name, which may
+            # be a word of the prose too, only in backquotes (`index`)
+            loose = [old for old in renames if PARAMETER.fullmatch(old)]
+            quoted = [old for old in renames if not PARAMETER.fullmatch(old)]
+            word = re.compile(
+                "|".join(
+                    ([r"\b(" + "|".join(map(re.escape, loose)) + r")\b"] if loose else [])
+                    + (["`(" + "|".join(map(re.escape, quoted)) + ")`"] if quoted else [])
+                )
+            )
             for i in span:
                 t = source.tokens[i]
                 inside = f.open < i
@@ -1827,8 +1896,10 @@ def rename_params(
                     hits = [(t.start, t.end, t.text)]
                 elif t.kind == "comment":
                     hits = [
-                        (t.start + m.start(), t.start + m.end(), m.group())
+                        (t.start + m.start(g), t.start + m.end(g), m.group(g))
                         for m in word.finditer(t.text)
+                        for g in range(1, (m.re.groups or 0) + 1)
+                        if m.group(g) is not None
                     ]
                 else:
                     continue
@@ -1849,8 +1920,12 @@ def write_addresses(
     changes: list[Change],
 ) -> None:
     """Each renamed definition's address in its comment: in the file defining
-    it, and on each linker-script line assigning it."""
+    it, and on each linker-script line assigning it; for an alias given its
+    definer's name, at the definer's definition."""
     renamed = {name for _image, name in plan.renames}
+    definers = {  # the definer's name -> the alias taking it
+        new: key for key, new in plan.renames.items() if repo.entries[key].binding == f"alias:{new}"
+    }
     for path in files:
         if path.suffix not in (".c", ".h", ".s", ".ld"):
             continue
@@ -1858,16 +1933,23 @@ def write_addresses(
         done: set[str] = set()
         groups: dict[tuple[bool, int], list[tuple[Site, str]]] = defaultdict(list)
         for site in sites_of(repo, path):
-            if site.name not in renamed:
-                continue
-            key, _how, _candidates = bind(repo, path, site.name, site.position)
-            if key not in plan.renames:
-                continue
-            if path.suffix != ".ld":
-                if str(path) != repo.entries[key].file or site.name in done:
+            if site.name in definers and path.suffix != ".ld":
+                key = definers[site.name]
+                images = {repo.image[t] for t in repo.scopes.get(path, ())}
+                if images != {key[0]} or site.name in done:
                     continue
+            elif site.name not in renamed:
+                continue
+            else:
+                key, _how, _candidates = bind(repo, path, site.name, site.position)
+                if key not in plan.renames:
+                    continue
+                if path.suffix != ".ld":
+                    if str(path) != repo.entries[key].file or site.name in done:
+                        continue
+            if path.suffix != ".ld":
                 done.add(site.name)
-            address = ADDRESS.search(site.name).group()
+            address = address_of(repo, key)
             group = (
                 (True, site.comment[0] if site.comment else site.position)
                 if site.leading
@@ -1904,8 +1986,9 @@ def add_symbols(
 ) -> None:
     """Each new name in a symbol file the splits read: an image's own symbols
     in its own file; another image's name where a link takes it from splat's
-    lists, in the resident's file for the resident's own symbols, else in the
-    importer's own file (unless a fragment or symbol file there names it)."""
+    lists, in the resident's file for the resident's own symbols (which every
+    split reads), else in a file only the importer's splits read (unless a
+    fragment or symbol file there names it)."""
     readable = {f for files in repo.symbol_files.values() for f in files}
     after = {f: symbol_lines(apply_edits(file_text(f), edits.get(f, []))) for f in readable}
     declared = {f: {name for name, _a, _x in lines} for f, lines in after.items()}
@@ -1944,7 +2027,14 @@ def add_symbols(
                 continue
             if any(new in declared[f] for f in files) or new in assigned[t]:
                 continue
-            wanted.append(files[0])
+            private = repo.private_file(t)
+            if private is None:
+                problems.append(
+                    f"{t}: {new}: no symbol file only {repo.image[t]}'s splits read"
+                    " (another image's names go in one)"
+                )
+                continue
+            wanted.append(private)
         for f in dict.fromkeys(wanted):
             if new in declared[f]:
                 continue
@@ -2012,6 +2102,20 @@ def report_check(plan: Plan, rows: int) -> None:
     )
 
 
+def corrections(mapping: Path) -> frozenset[str]:
+    """The names a mapping's rows correct: a symbol, a parameter (FUNCTION.name)
+    or a unit (its path) that is no placeholder, which a row may rename as well."""
+    found = set()
+    for row in read_rows(mapping, []):
+        if row.kind in SYMBOL_KINDS and not cross_image.ADDRESS_NAME.fullmatch(row.old):
+            found.add(row.old)
+        elif row.kind == "param" and not PARAMETER.fullmatch(row.old.rpartition(".")[2]):
+            found.add(row.old)
+        elif row.kind == "unit" and not address_named(row.image, Path(row.old)):
+            found.add(row.old if "/" in row.old else f"decomp/src/{row.image}/{row.old}")
+    return frozenset(found)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -2027,7 +2131,7 @@ def main() -> None:
     )
     applying.add_argument("--dry-run", action="store_true", help="report, change nothing")
     args = parser.parse_args()
-    repo = load()
+    repo = load(corrections(args.mapping) if args.command != "inventory" else frozenset())
     if args.command == "inventory":
         entries = ordered(repo.entries.values())
         out = Path(".local/names")

@@ -1,6 +1,7 @@
-"""tools/names.py on a synthetic repository: four linked targets (a resident,
-two overlays at one address and a third that imports from the resident and
-the first overlay), their sources, configuration, a doc and the package list."""
+"""tools/names.py on a synthetic repository: four linked targets (a resident
+that imports from the first overlay, two overlays at one address and a third
+that imports from the resident and the first overlay), their sources,
+configuration, a doc and the package list."""
 
 from __future__ import annotations
 
@@ -28,7 +29,12 @@ ASSEMBLY = {
         ".globl D_80010030\n.type D_80010030, @object\nD_80010030:\n.word 0\n"
         ".size D_80010030, 4\n.space 0x4\n.globl D_80010038\nD_80010038:\n.space 0x8\n"
         ".globl D_80010040\n.type D_80010040, @object\nD_80010040:\n.word 1, 2\n"
-        ".size D_80010040, 8\n",
+        ".size D_80010040, 8\n"
+        # named already (ovl3 takes it by number), and a word under an attribute
+        ".globl cd_init\n.type cd_init, @function\ncd_init:\njr $31\nnop\n"
+        ".size cd_init, . - cd_init\n"
+        ".globl D_80010050\n.type D_80010050, @object\nD_80010050:\n.word func_80100010\n"
+        ".size D_80010050, 4\n",
     ),
     "ovl1": (
         0x80100000,
@@ -51,14 +57,17 @@ ASSEMBLY = {
         "jal func_80100010\nnop\nlui $8, %hi(D_80010044)\nlw $8, %lo(D_80010044)($8)\n"
         "lui $9, %hi(D_80010040)\nlw $9, %lo(D_80010040)($9)\n"
         "lui $10, %hi(D_80010000)\nlw $10, %lo(D_80010000)($10)\n"
-        "lui $11, %hi(D_80010004)\nlw $11, %lo(D_80010004)($11)\njr $31\nnop\n"
+        "lui $11, %hi(D_80010004)\nlw $11, %lo(D_80010004)($11)\njal func_80010048\nnop\n"
+        "jr $31\nnop\n"
         ".size func_80200000, . - func_80200000\n",
     ),
 }
 # Each target's splat list (an import by address) and fragments.
 LISTS = {
+    "r": "func_80100010 = 0x80100010;\n",
     "ovl1": "func_80010000 = 0x80010000;\n",
-    "ovl3": "func_80100010 = 0x80100010;\nD_80010000 = 0x80010000;\nD_80010004 = 0x80010004;\n",
+    "ovl3": "func_80100010 = 0x80100010;\nD_80010000 = 0x80010000;\nD_80010004 = 0x80010004;\n"
+    "func_80010048 = 0x80010048;\n",
 }
 # A generated file a unit includes, with a label splat keeps inside it.
 GENERATED = {
@@ -77,10 +86,14 @@ SOURCES = {
         "extern int D_80010040[2]; /* a pair of words */\n\n#endif\n"
     ),
     "decomp/src/resident/main_80010000.c": (
-        '/* The resident unit. */\n#include "resident/r.h"\n\n/* Return at once. */\n'
+        '/* The resident unit. */\n#include "resident/r.h"\n\n'
+        "void (*cd_hook)(void) = func_80010000; /* the start, as a hook */\n\n"
+        "/* Return at once. */\n"
         'void func_80010000(void) {\n}\n\nINCLUDE_ASM("decomp/src/resident", func_80010020);\n\n'
         'INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_80010000", func_80010028);\n\n'
-        "int D_80010040[2] = {1, 2};\n"
+        "int D_80010040[2] = {1, 2};\n\n/* Return at once, by its own name. */\n"
+        "void cd_init(void) {\n}\n\n"
+        'int D_80010050 __attribute__((section(".data"))) = 0;\n'
     ),
     "decomp/src/resident/func_80010020.s": (
         "# Return at once, by hand.\nglabel func_80010020\n    jr      $ra\n    nop\n"
@@ -99,10 +112,12 @@ SOURCES = {
         '/* Overlay 3. */\n#include "resident/r.h"\n\n'
         "extern void func_80100010(void); /* overlay 1's */\n"
         "extern int D_80010044; /* the pair's second word */\n"
-        "extern int D_80010000[]; /* the resident's first word, by number */\n\n"
+        "extern int D_80010000[]; /* the resident's first word, by number */\n"
+        "extern void func_80010048(void); /* the resident's, by number */\n\n"
         "void func_80200000(void) {\n    func_80100010();\n}\n"
     ),
     "decomp/targets/resident/symbol_addrs.txt": "// The resident's names.\n",
+    "decomp/targets/resident/imports.txt": "",
     "decomp/targets/resident/classification.txt": "80010028 80010030 sdk a library routine\n",
     "decomp/targets/overlays/ovl3.resident.ld": (
         "D_80010040 = 0x80010040; /* the pair */\nD_80010044 = D_80010040 + 0x4;\n"
@@ -111,6 +126,7 @@ SOURCES = {
         "# Notes\n\nfunc_80010000 starts the resident; func_80100000 is in ovl1 and ovl2.\n"
         "decomp/src/ovl1/ovl1.c calls it; its assembly was\n"
         ".local/decomp/ovl2/asm/nonmatchings/ovl2/func_80100000.s.\n"
+        "test_starts_with_func_80010000 checks it.\n"
     ),
 }
 
@@ -131,6 +147,8 @@ ovl1\tunit\tdecomp/src/ovl1/ovl1.c\tone_main.c\t\thigh\tthe overlay's unit
 ovl1\tparam\tfunc_80100000.arg0\tvalue\t\thigh\tkept in the pair
 ovl2\tfunc\tfunc_80100000\ttwo_return\t\thigh\treturns
 resident\tdata\tD_80010004\tcd_start_word\t\thigh\tthe start's second word
+resident\tdata\tD_80010050\tcd_next_word\t\thigh\ta word under an attribute
+resident\tfunc\tfunc_80010048\tcd_init\t\thigh\tits definer's name
 """
 
 
@@ -151,6 +169,8 @@ class NamesTests(unittest.TestCase):
             config = Path("decomp/targets") / kind
             symbols = [f"{config}/{target}.symbols.txt"] if target != "r" else []
             symbols.append("decomp/targets/resident/symbol_addrs.txt")
+            if target == "r":  # the names of other images' symbols, only the resident's
+                symbols.append("decomp/targets/resident/imports.txt")
             files[f"{config}/{target}.yaml"] = (
                 f"name: {target}\noptions:\n  basename: {target}\n  symbol_addrs_path:\n"
                 + "".join(f"    - {s}\n" for s in symbols)
@@ -278,9 +298,11 @@ class NamesTests(unittest.TestCase):
         # A view another image's fragment gives, listed under the image holding it.
         view = rows[("resident", "data", "D_80010044")]
         self.assertEqual((view[5], view[8]), ("view:D_80010040 + 0x4", "ovl3"))
-        # The same placeholder in both overlays at 0x80100000, and the first's import.
+        # The same placeholder in both overlays at 0x80100000, and the first's
+        # imports; ovl3's number for a function the resident names already.
         self.assertIn(("ovl2", "func", "func_80100000"), rows)
-        self.assertEqual(rows[("ovl1", "func", "func_80100010")][8], "ovl3")
+        self.assertEqual(rows[("ovl1", "func", "func_80100010")][8], "ovl3,resident")
+        self.assertEqual(rows[("resident", "func", "func_80010048")][5], "alias:cd_init")
         # Units named by an address or the image number, an INCLUDE_ASM'd .s and a parameter.
         self.assertIn(("resident", "unit", "decomp/src/resident/main_80010000.c"), rows)
         self.assertIn(("ovl1", "unit", "decomp/src/ovl1/ovl1.c"), rows)
@@ -352,7 +374,7 @@ class NamesTests(unittest.TestCase):
         result = self.names("check", "good.tsv")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn(
-            "check: 16 rows (9 symbols, 2 units, 1 .s files, 1 parameters, 3 prefixes)",
+            "check: 18 rows (11 symbols, 2 units, 1 .s files, 1 parameters, 3 prefixes)",
             result.stdout,
         )
         self.assertIn("unnamed: 6 placeholders", result.stdout)
@@ -406,15 +428,20 @@ class NamesTests(unittest.TestCase):
             self.read("decomp/src/ovl2/ovl2.c"),
             ("/* Overlay 2. */\n\n/* 80100000: Return at once. */\nvoid two_return(void) {\n}\n"),
         )
+        # The address goes to the definition, not to an initializer naming
+        # it; past an attribute; and to the definer's own name an alias takes.
         self.assertEqual(
             self.read("decomp/src/resident/cd_main.c"),
             (
                 '/* 80010000: The resident unit. */\n#include "resident/r.h"\n\n'
+                "void (*cd_hook)(void) = cd_start; /* the start, as a hook */\n\n"
                 "/* 80010000: Return at once. */\nvoid cd_start(void) {\n}\n\n"
                 '/* 80010020 */\nINCLUDE_ASM("decomp/src/resident", cd_return);\n\n'
                 # the generated assembly's folder follows the unit
                 'INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/cd_main", func_80010028);\n\n'
-                "int cd_pair[2] = {1, 2}; /* 80010040 */\n"
+                "int cd_pair[2] = {1, 2}; /* 80010040 */\n\n"
+                "/* 80010048: Return at once, by its own name. */\nvoid cd_init(void) {\n}\n\n"
+                'int cd_next_word __attribute__((section(".data"))) = 0; /* 80010050 */\n'
             ),
         )
         self.assertIn("glabel cd_return\n", self.read("decomp/src/resident/cd_return.s"))
@@ -424,7 +451,9 @@ class NamesTests(unittest.TestCase):
         )
         self.assertIn(
             "extern void one_return(void); /* overlay 1's */\n"
-            "extern int cd_pair_second; /* the pair's second word */",
+            "extern int cd_pair_second; /* the pair's second word */\n"
+            "extern int D_80010000[]; /* the resident's first word, by number */\n"
+            "extern void cd_init(void); /* the resident's, by number */",
             self.read("decomp/src/ovl3/ovl3.c"),
         )
         # Configuration: the per-unit setting, yaml subsegments (not the
@@ -447,8 +476,14 @@ class NamesTests(unittest.TestCase):
             (
                 "// The resident's names.\n" + header + "cd_start = 0x80010000; // type:func\n"
                 "cd_return = 0x80010020; // type:func\nlibtest_word = 0x80010030; // type:label\n"
-                "cd_pair = 0x80010040;\n"
+                "cd_pair = 0x80010040;\ncd_next_word = 0x80010050;\n"
             ),
+        )
+        # The resident takes ovl1's function from its splat list: the name goes
+        # to its file no overlay's split reads.
+        self.assertEqual(
+            self.read("decomp/targets/resident/imports.txt"),
+            header + "one_return = 0x80100010; // type:func\n",
         )
         self.assertEqual(
             self.read("decomp/targets/overlays/ovl1.symbols.txt"),
@@ -457,11 +492,15 @@ class NamesTests(unittest.TestCase):
                 "one_return = 0x80100010; // type:func\n"
             ),
         )
-        # ovl3 takes ovl1's function and a part of the resident's first word
-        # (only its assembly names it) from its splat list: its own file names them.
+        # ovl3 takes ovl1's function, a part of the resident's first word (only
+        # its assembly names it) and the resident's cd_init from its splat list:
+        # its own file names them.
         self.assertEqual(
             self.read("decomp/targets/overlays/ovl3.symbols.txt"),
-            (header + "cd_start_word = 0x80010004;\none_return = 0x80100010; // type:func\n"),
+            (
+                header + "cd_start_word = 0x80010004;\ncd_init = 0x80010048; // type:func\n"
+                "one_return = 0x80100010; // type:func\n"
+            ),
         )
         self.assertEqual(
             self.read("docs/notes.md"),
@@ -469,6 +508,8 @@ class NamesTests(unittest.TestCase):
                 "# Notes\n\ncd_start starts the resident; one_call_resident is in ovl1 and ovl2.\n"
                 "decomp/src/ovl1/one_main.c calls it; its assembly was\n"
                 ".local/decomp/ovl2/asm/nonmatchings/ovl2/two_return.s.\n"
+                # a placeholder inside a longer identifier
+                "test_starts_with_cd_start checks it.\n"
             ),
         )
         listed = self.read("packaging/source-files.txt").splitlines()
@@ -486,6 +527,50 @@ class NamesTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("apply: changed 0 files;", result.stdout)
         self.assertIn("5 applied already", result.stdout)
+        # A unit named before may be named again: it moves with its settings.
+        (self.root / "fix.tsv").write_text(
+            "resident\tprefix\tcd\tcd_\tdecomp/include/resident/r.h\thigh\tx\n"
+            "resident\tunit\tdecomp/src/resident/cd_main.c\tcd_start_up.c\t\thigh\tx\n"
+        )
+        result = self.names("apply", "fix.tsv")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(
+            "RM decomp/src/resident/main_80010000.c -> decomp/src/resident/cd_start_up.c",
+            self.git("status", "--porcelain"),
+        )
+        self.assertIn("GP_cd_start_up := 8", self.read("decomp/targets/resident/r.mk"))
+        self.assertIn("- [0x0, c, cd_start_up]", self.read("decomp/targets/resident/r.yaml"))
+
+    def test_apply_corrects_names_given_before(self):
+        # A row may rename a symbol or a parameter that is no placeholder.
+        (self.root / "fix.tsv").write_text(
+            "resident\tprefix\tcd\tcd_\tdecomp/include/resident/r.h\thigh\tx\n"
+            "resident\tfunc\tcd_init\tcd_set_up\t\thigh\tcorrects the name given before\n"
+            "ovl1\tparam\tfunc_80100000.pair\trecord\t\thigh\tcorrects the parameter\n"
+        )
+        result = self.names("apply", "fix.tsv")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(
+            "/* 80010048: Return at once, by its own name. */\nvoid cd_set_up(void) {\n}\n",
+            self.read("decomp/src/resident/main_80010000.c"),
+        )
+        self.assertIn(
+            "cd_set_up = 0x80010048; // type:func\n",
+            self.read("decomp/targets/resident/symbol_addrs.txt"),
+        )
+        # its number in ovl3 stays for a row of its own
+        self.assertIn("extern void func_80010048(void);", self.read("decomp/src/ovl3/ovl3.c"))
+        # each declaration's parameter and the body; the prose "pair" stays
+        self.assertEqual(
+            self.read("decomp/src/ovl1/ovl1.c"),
+            (
+                '/* Overlay 1. */\n#include "resident/r.h"\n\nstruct Pair {\n    int arg0;\n};\n\n'
+                "void func_80100000(int value, struct Pair *record); /* named already */\n\n"
+                "/* Call the resident; keep `arg0` in the pair. */\n"
+                "void func_80100000(int arg0, struct Pair *record) {\n    func_80010000();\n"
+                "    record->arg0 = arg0;\n}\n\nvoid func_80100010(void) {\n}\n"
+            ),
+        )
 
     def test_apply_refuses_a_name_its_readers_bind_differently(self):
         # A header both overlays include names func_80100000, each its own.
