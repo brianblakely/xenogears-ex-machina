@@ -56,6 +56,27 @@
             freetype
             openxr-loader
           ];
+          # FreeSurround (Christian Kothe, GPL-2.0+) as vendored by Dolphin, wrapped in a
+          # stereo -> 5.1 filter for testing the Wide sound mode. A test tool only:
+          # nothing in the runtime links it.
+          freesurround = pkgs.stdenv.mkDerivation {
+            pname = "xem-freesurround";
+            version = "0-dolphin-d2833fb";
+            src = pkgs.fetchFromGitHub {
+              owner = "dolphin-emu";
+              repo = "dolphin";
+              rev = "d2833fb78882715950ab0a2c26c3ca20e3f6e349";
+              sparseCheckout = [ "Externals/FreeSurround" ];
+              hash = "sha256-0A1dw/59JAtw6Pqlta59iNiGk7f0If6hV5r+rJkt5ks=";
+            };
+            buildPhase = ''
+              $CXX -O2 -std=c++14 -w -IExternals/FreeSurround/include \
+                Externals/FreeSurround/source/*.cpp ${../../tools/freesurround/freesurround.cpp} \
+                -o freesurround
+            '';
+            installPhase = "install -Dm755 freesurround $out/bin/freesurround";
+            meta.license = pkgs.lib.licenses.gpl2Plus;
+          };
           base = pkgs.mkShell {
             packages =
               (with pkgs; [
@@ -82,6 +103,7 @@
                 openxr-loader
                 xvfb-run
                 weston
+                freesurround
               ])
               ++ runtimeLibraries;
             shellHook = ''

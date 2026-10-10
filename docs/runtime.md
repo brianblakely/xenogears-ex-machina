@@ -180,6 +180,34 @@ input.
   `take_audio`); headless runs advance the same state without output. CD
   audio reaches the SPU's CD input from the CD device
   (`Cd::take_audio`, `Services::route_cd_audio`) before the SPU advances.
+- **Sound modes.** The configuration menu's Mono, Stereo and Wide are
+  driver modes 0, 1 and 2 (`sound_set_output_mode`; mode 3 exists but no
+  menu reaches it). Mono gives every voice the centre gain and halves CD
+  audio into both sides; Stereo and Wide share the pan law. Wide only flips
+  signs (`sound_set_stereo_volume`): the master volume's right side and the
+  reverb depth's left side. The SPU applies the master volume after the
+  reverb and CD mix, so the dry mix, XA included, comes out in anti-phase,
+  and the reverb return in phase. On the sample-aligned stretches of the
+  native Stereo and Wide routes (`tests/reference-inputs/new-game-sound-mode-*.json`,
+  60-460 s), R(wide) = -R(stereo) to -64..-72 dB. L is identical without
+  reverb and differs only by twice the reverb return with it.
+  Wide is not a matrix-surround encoding: it has no surround channel, no
+  ±90° phase shift and no band limit. `tools/surround.py` decodes WAV
+  windows with FreeSurround (the `freesurround` filter in the nix/runtime
+  shell, a test tool only, GPL-2.0+). Through such a decoder Wide moves the
+  whole dry mix, including centred dialogue and movies, to the rears.
+  The reverb stays in front:
+
+  | window (s) | Stereo FC / rear | Wide FC / rear | original Stereo, Wide rear |
+  |---|---|---|---|
+  | 60-70 (XA) | 0.351 / 0.206 | 0.033 / 0.755 | 0.200, 0.752 |
+  | 120-130 (XA) | 0.355 / 0.203 | 0.032 / 0.718 | 0.205, 0.722 |
+  | 400-410 (SPU, reverb) | 0.246 / 0.117 | 0.021 / 0.585 | 0.106, 0.586 |
+  | 550-560 (SPU) | 0.501 / 0.087 | 0.008 / 0.824 | 0.080, 0.793 |
+
+  These are energy shares of the 5.1 output. "Original" means the
+  PCSX-ReARMed recordings in `.local/scenarios/p1-original-sound-*-20261002`,
+  which give the same picture.
 - **Memory cards** (`xem_core::devices::card`) are two raw 128 KB images
   (the `.mcd` layout) in a `CardStorage`: files natively (`xem-headless
   --cards DIR` keeps `card1.mcd`, `card2.mcd`; a missing file is a fresh
