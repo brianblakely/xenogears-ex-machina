@@ -824,9 +824,10 @@ Lessons from the hardest drafts (GCC 2.6.x/2.7.x `cse.c`, `sched.c`, `reorg.c`):
   In sched2 the reloads of spilled pseudos and the stores through a register never
   cross (the scheduler cannot tell a stack slot from the stored element), and between
   two reloads the stores of the latest-loaded values go last. So the stores between
-  two of the original's reloads were already between them before sched2:
-  field 8007E1C0's border matched written piece by piece with every coordinate
-  inline, after a draft had copied the scheduled order with s16 locals.
+  two of the original's reloads were already between them before sched2: the
+  border of field 8007E1C0 (`field_dialogue_draw_frame`) matched written piece by
+  piece with every coordinate inline, after a draft had copied the scheduled order
+  with s16 locals.
 - In 2.6.3 the insn after a loop note is a scheduling barrier (2.6.0's is not).
 - reorg never moves an `asm` into a branch delay slot: an original copy in a delay slot
   was compiler-generated, not inline asm.
