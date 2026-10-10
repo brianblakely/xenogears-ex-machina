@@ -100,6 +100,17 @@ void xem_host_yield(int reason) {
     }
 }
 
+/* boot.c's wait outside an interrupt handler. */
+void xem_wait(int reason) { xem_host_yield(reason); }
+
+/* libetc's interrupt mask; nothing is pending here. */
+int test_intr_mask = 0xFFFF;
+int SetIntrMask(int mask) {
+    int old = test_intr_mask;
+    test_intr_mask = mask;
+    return old;
+}
+
 int ResetCallback(void) {
     test_reset_callbacks++;
     return 0;

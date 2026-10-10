@@ -154,6 +154,8 @@ void xem_host_yield(int reason) {
     test_yields++;
     test_test_event_ready = 1;
 }
+/* boot.c's wait outside an interrupt handler. */
+void xem_wait(int reason) { xem_host_yield(reason); }
 void xem_host_debug_break(unsigned int code) { test_debug_breaks[test_debug_break_count++ & 15] = code; }
 
 /* The card service: a fixed answer per call, busy for two polls after each. */
