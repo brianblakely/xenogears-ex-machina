@@ -435,6 +435,11 @@ class Rewriter:
         self.adapters = {}     # adapter name -> (target token, call ret, call params, def head)
         self.missing_data = []
         self.unit_decls = {}   # unit -> declarations of the dispatchers and adapters it calls
+        # Defined functions by original address.
+        self.functions_at = {}
+        for key, entry in addresses.functions.items():
+            if key in self.definitions:
+                self.functions_at.setdefault(entry[1], []).append(key)
         # Port-written adapters: xem_adapt_<function> in port/.
         self.port_adapters = {name[len("xem_adapt_"):]: head for unit in units if unit.image == "port"
                               for name, head in unit.defined.items() if name.startswith("xem_adapt_")}
@@ -471,9 +476,12 @@ class Rewriter:
                     self.missing_data.append(f"{unit.source}: {name}")
                 if address is not None:
                     replacements[m.group(1)] = const_address(address)
-                    # Function addresses stored in the dropped initializer are taken.
+                    # Function addresses stored in the dropped initializer are
+                    # taken, by name or as numbers (mode_table's overlay entries
+                    # are integer casts).
                     for token in NAME_RE.findall(m.group(4)):
                         self.take(unit, name_of(token))
+                    self.take_numbers(m.group(4))
                     continue
                 kept.add(m.group(1))
             out.append(line)
@@ -513,6 +521,8 @@ class Rewriter:
                 lines.append(line)
                 continue
             line = self.substitute(unit, line, replacements, kept)
+            if "inttoptr (i32 " in line:
+                self.take_numbers(line)
             if " asm " in line:
                 asm = self.rewrite_asm(unit, line)
                 if asm is not None:
@@ -550,6 +560,15 @@ class Rewriter:
             # An address-taken static is reachable from the dispatchers.
             line = line.replace(" internal ", " hidden ", 1)
         return line
+
+    def take_numbers(self, text):
+        """Take every function whose original address appears as a number in
+        `text` (an initializer, a call through a constant address): all images'
+        functions at that address, which the dispatcher tells apart."""
+        for literal in re.findall(r"\bi32 (-?\d+)", text):
+            value = int(literal) & 0xFFFFFFFF
+            for key in self.functions_at.get(value, ()):
+                self.taken[key] = self.addresses.functions[key]
 
     def take(self, unit, name):
         """Record `name` as a function whose address the code or data takes."""

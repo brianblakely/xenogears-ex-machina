@@ -95,9 +95,12 @@ s32 xem_in_critical_section(void);
 
 /* Called at every loop back-edge of the game (tools/game_module.py): a loop
  * that spins on memory an interrupt changes would never let the host deliver
- * it, so a long-running loop suspends now and then, outside critical sections. */
+ * it, so a long-running loop suspends now and then, outside critical sections
+ * and interrupt handlers (which cannot suspend). */
 void xem_loop_poll(void) {
-    if (++xem_loop_iterations >= 0x10000 && !xem_in_critical_section()) {
+    extern s32 xem_in_interrupt;
+
+    if (++xem_loop_iterations >= 0x10000 && !xem_in_critical_section() && !xem_in_interrupt) {
         xem_loop_iterations = 0;
         xem_host_yield(XEM_YIELD_POLL);
     }

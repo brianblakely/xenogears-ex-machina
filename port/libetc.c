@@ -97,7 +97,11 @@ int VSync(int mode) {
 
 /* The interrupt handler: the host raises `irq` (XEM_IRQ_*; `detail` is the DMA
  * channel for XEM_IRQ_DMA). */
+/* Set while an interrupt handler runs: it cannot suspend (xem_loop_poll). */
+s32 xem_in_interrupt;
+
 void xem_interrupt(u32 irq, u32 detail) {
+    xem_in_interrupt = 1;
     switch (irq) {
     case XEM_IRQ_VBLANK:
         libetc_vsync_count++;
@@ -129,4 +133,5 @@ void xem_interrupt(u32 irq, u32 detail) {
         }
         break;
     }
+    xem_in_interrupt = 0;
 }
