@@ -72,7 +72,7 @@ u8 battle_access_combatant_attr8(u8 slot, u8 attribute, u8 value, u8 read) {
         field = &battle_work_area.records[slot].pilot.field5D;
         break;
     case 9:
-        field = &battle_work_area.records[slot].pilot.accuracy;
+        field = &battle_work_area.records[slot].pilot.ether;
         break;
     case 10:
         field = &battle_work_area.records[slot].pilot.etherDefense;

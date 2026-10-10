@@ -54,7 +54,7 @@ void item_shop_compute_character_stats(MenuTables *view, u8 id) {
     view->stats[1] = c->field5E + c->equip5E;
     view->stats[2] = c->bodyDefense + (c->defense + c->equipDefense);
     view->stats[3] = c->field5F + c->equip5F;
-    view->stats[4] = c->accuracy + c->equipAccuracy;
+    view->stats[4] = c->ether + c->equipEther;
     view->stats[5] = 99;
     view->stats[6] = c->etherDefense + c->equipEtherDefense;
     view->stats[7] = 10;

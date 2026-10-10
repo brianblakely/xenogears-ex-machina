@@ -2008,7 +2008,7 @@ void battle_formula0_deal_damage(void) {
  * target's +0x8c|+0x8e bits 0x100 / 0x200, none for a +0x15a 0x80 target;
  * code 2. */
 void battle_formula1_heal_by_ether(void) {
-    s16 amount = battle_attacker_record->pilot.accuracy * battle_current_command->power;
+    s16 amount = battle_attacker_record->pilot.ether * battle_current_command->power;
     u16 status;
 
     if (battle_attacker_record->pilot.status88.half.permanent & 0x2000) {
@@ -2400,7 +2400,7 @@ void battle_resolve_adjust_for_elements(u16 *attack, u16 *defense, s8 *hit) {
 /* 80096824: Ether check: unless rand % 100 falls below the attacker's +0x5b plus the
  * descriptor's +0x14, the action fails (code 0x38 at +0x5fc7). */
 void battle_resolve_ether_check(void) {
-    s32 chance = battle_attacker_record->pilot.accuracy + battle_current_command->accuracy;
+    s32 chance = battle_attacker_record->pilot.ether + battle_current_command->accuracy;
 
     if (rand() % 100 >= chance) {
         battle_work_ptr->message = 0x38;
@@ -2587,7 +2587,7 @@ s16 battle_resolve_attack_value(void) {
         base = battle_attacker_record->pilot.attack;
     }
     kinds = battle_current_command->itemKinds;
-    ether = battle_attacker_record->pilot.accuracy;
+    ether = battle_attacker_record->pilot.ether;
     sum = 0;
     if (kinds & 0x80) {
         sum = parts[0];
@@ -2905,7 +2905,7 @@ void battle_derive_party_stats(void) {
         battle_work_ptr->savedStats[member][1] = battle_attacker_record->pilot.field5E;
         battle_work_ptr->savedStats[member][2] = battle_attacker_record->pilot.defense + battle_attacker_record->pilot.bodyDefense;
         battle_work_ptr->savedStats[member][3] = battle_attacker_record->pilot.field5F;
-        battle_work_ptr->savedStats[member][4] = battle_attacker_record->pilot.accuracy;
+        battle_work_ptr->savedStats[member][4] = battle_attacker_record->pilot.ether;
         battle_work_ptr->savedStats[member][5] = battle_attacker_record->pilot.etherDefense;
         battle_work_ptr->savedStats[member][6] = battle_attacker_record->pilot.speed;
         pilot = &battle_attacker_record->pilot;
@@ -2917,7 +2917,7 @@ void battle_derive_party_stats(void) {
         pilot->flags34 = 0;
         battle_attacker_record->pilot.defense += battle_attacker_record->pilot.equipDefense;
         battle_attacker_record->pilot.speed += battle_attacker_record->pilot.equipSpeed;
-        battle_attacker_record->pilot.accuracy += battle_attacker_record->pilot.equipAccuracy;
+        battle_attacker_record->pilot.ether += battle_attacker_record->pilot.equipEther;
         battle_attacker_record->pilot.etherDefense += battle_attacker_record->pilot.equipEtherDefense;
         battle_attacker_record->pilot.field5E += battle_attacker_record->pilot.equip5E;
         battle_attacker_record->pilot.field5F += battle_attacker_record->pilot.equip5F;
@@ -3713,7 +3713,7 @@ u16 battle_status_get_shown_condition_mask(u8 slot) {
  * bonus, capped at 100. */
 u8 battle_get_command_accuracy(u8 member, u8 command) {
     CommandDescriptor *descriptor = &battle_work_ptr->partyCommands[member][command];
-    u8 accuracy = descriptor->accuracy + (battle_work_ptr->records + member)->pilot.accuracy;
+    u8 accuracy = descriptor->accuracy + (battle_work_ptr->records + member)->pilot.ether;
 
     if (accuracy > 100) {
         accuracy = 100;
@@ -5262,7 +5262,7 @@ void battle_gear_formula4_heal_by_power(void) {
 /* 8009E364: Gear formula 10 (battle_gear_formula_table[10]): damage the target by the attacker's
  * accuracy times the command's power. */
 void battle_gear_formula10_heal_by_ether(void) {
-    u32 damage = battle_attacker_record->pilot.accuracy * battle_current_command->power;
+    u32 damage = battle_attacker_record->pilot.ether * battle_current_command->power;
 
     battle_work_ptr->resultCode[battle_target_slot] = 2;
     battle_work_ptr->damage[battle_target_slot] = damage;

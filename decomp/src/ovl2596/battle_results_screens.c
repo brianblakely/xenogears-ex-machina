@@ -1414,7 +1414,7 @@ void battle_results_distribute_exp(void) {
         battle_results_work_ptr->resultStats[i][1] = battle_results_current_record->field5E;
         battle_results_work_ptr->resultStats[i][2] = battle_results_current_record->defense + battle_results_current_record->bodyDefense;
         battle_results_work_ptr->resultStats[i][3] = battle_results_current_record->field5F;
-        battle_results_work_ptr->resultStats[i][4] = battle_results_current_record->accuracy;
+        battle_results_work_ptr->resultStats[i][4] = battle_results_current_record->ether;
         battle_results_work_ptr->resultStats[i][5] = battle_results_current_record->etherDefense;
         battle_results_work_ptr->resultStats[i][6] = battle_results_current_record->speed;
     }
@@ -1554,7 +1554,7 @@ void battle_results_grow_level_b_stats(void) {
     }
     level = battle_results_current_record->level2;
     battle_results_current_record->maxEp = battle_results_grow_max_ep(battle_results_current_record->maxEp, battle_results_current_record->level2);
-    battle_results_current_record->accuracy = battle_results_grow_stat(battle_results_current_record->accuracy,
+    battle_results_current_record->ether = battle_results_grow_stat(battle_results_current_record->ether,
         battle_results_growth_file->characters[battle_results_current_record->characterId].statTargets[4][high], cap, level);
     battle_results_current_record->etherDefense = battle_results_grow_stat(battle_results_current_record->etherDefense,
         battle_results_growth_file->characters[battle_results_current_record->characterId].statTargets[5][high], cap, level);

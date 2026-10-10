@@ -2390,7 +2390,7 @@ u8 menu_use_item_on_character(MenuTables *tables, u8 id, u8 item) {
             chara->defense += record->amount;
         }
         if (record->stats & 0x2000) {
-            chara->accuracy += record->amount;
+            chara->ether += record->amount;
         }
         if (record->stats & 0x1000) {
             chara->etherDefense += record->amount;
@@ -2407,8 +2407,8 @@ u8 menu_use_item_on_character(MenuTables *tables, u8 id, u8 item) {
         if (chara->defense > 200) {
             chara->defense = 200;
         }
-        if (chara->accuracy > 200) {
-            chara->accuracy = 200;
+        if (chara->ether > 200) {
+            chara->ether = 200;
         }
         if (chara->etherDefense > 200) {
             chara->etherDefense = 200;
@@ -2478,7 +2478,7 @@ u8 gear;
     if (!gear) {
         record = tables->arts[user];
         record += effect;
-        dest->hp += source->accuracy * record->unk11;
+        dest->hp += source->ether * record->unk11;
         if (dest->hp > dest->maxHp) {
             dest->hp = dest->maxHp;
         }
@@ -2506,7 +2506,7 @@ void menu_compute_character_equipment(MenuTables *tables, u8 id) {
     chara->equipAttack = 0;
     chara->equipDefense = 0;
     chara->equipSpeed = 0;
-    chara->equipAccuracy = 0;
+    chara->equipEther = 0;
     chara->equipEtherDefense = 0;
     chara->equip5E = 0;
     chara->equip5F = 0;
@@ -2560,7 +2560,7 @@ void menu_compute_character_equipment(MenuTables *tables, u8 id) {
             chara->equipSpeed += amount;
         }
         if (accessory->stats & 0x1000) {
-            chara->equipAccuracy += amount;
+            chara->equipEther += amount;
         }
         if (accessory->stats & 0x800) {
             chara->equipEtherDefense += amount;
@@ -2615,7 +2615,7 @@ void menu_compute_character_stats(MenuTables *tables, u8 id) {
     tables->stats[1] = chara->field5E + chara->equip5E;
     tables->stats[2] = chara->bodyDefense + (chara->defense + chara->equipDefense);
     tables->stats[3] = chara->field5F + chara->equip5F;
-    tables->stats[4] = chara->accuracy + chara->equipAccuracy;
+    tables->stats[4] = chara->ether + chara->equipEther;
     tables->stats[5] = chara->etherDefense + chara->equipEtherDefense;
     tables->stats[6] = chara->speed + chara->equipSpeed;
     if (tables->stats[0] >= 251) {

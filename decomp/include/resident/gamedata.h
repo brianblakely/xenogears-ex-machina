@@ -40,7 +40,7 @@ typedef struct {
     u8 equipAttack;       /* 0x28: equipment bonuses of the base values at 0x58 */
     u8 equipDefense;      /* 0x29 */
     u8 equipSpeed;        /* 0x2A */
-    u8 equipAccuracy;     /* 0x2B */
+    u8 equipEther;        /* 0x2B */
     u8 equipEtherDefense; /* 0x2C */
     u8 bodyDefense;       /* 0x2D */
     u8 equip5E;           /* 0x2E */
@@ -67,11 +67,14 @@ typedef struct {
     u8 attack;            /* 0x58: the base values */
     u8 defense;           /* 0x59 */
     u8 speed;             /* 0x5A */
-    u8 accuracy;          /* 0x5B: added to a command's accuracy */
+    u8 ether;             /* 0x5B: the ether attack value against etherDefense
+                           * (80096FBC, 80097610), the heal of formula 1 (80095690)
+                           * and of restoring arts, and added to a command's
+                           * accuracy (the ether check 80096824, 8009A258) */
     u8 etherDefense;      /* 0x5C */
     u8 field5D;
-    u8 field5E;
-    u8 field5F;
+    u8 field5E;           /* 0x5E: physical hit chance (80096AB8 adds the command's) */
+    u8 field5F;           /* 0x5F: evasion against it (80096AB8) */
     u8 field60;           /* 0x60: chance in percent */
     u8 field61;
     u8 level;             /* 0x62 */
