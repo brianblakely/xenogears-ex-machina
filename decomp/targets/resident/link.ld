@@ -23,7 +23,9 @@ boot_bss_last_word = main_BSS_END - 4; /* 8006FAEC */
 /* The overlay area the modes load at, right after the BSS (main.c, the
  * unpack buffer of model_renderer.c): each mode overlay's first unit defines
  * its first word, the overlay's number, under a name of its own, so the
- * resident takes the address from here, as splat's list gave it before. */
+ * resident takes the address from here, as splat's list gave it before.
+ * After every target links, tools/cross_image.py checks that each mode
+ * overlay links its image here and defines a symbol here (MODE_AREA). */
 mode_overlay_area = 0x8006FAF0;
 ASSERT(main_BSS_START == 0x800592BC && main_BSS_END == 0x8006FAF0,
        "resident: the linked .bss is not the span the entry point clears")

@@ -12,6 +12,10 @@ BSS_END := 0x8006FAF0
 # The mode table (main.c), whose overlay entries and BSS bounds
 # tools/cross_image.py compares with the mode overlays' links (their MODE).
 MODE_TABLE := mode_table
+# The overlay area, where the dispatcher decodes each mode overlay
+# (mode_overlay_decode_destination), which link.ld gives as a number: each
+# mode overlay must link its image there and define a symbol there.
+MODE_AREA := mode_overlay_area
 BUILD := .local/decomp/build/resident
 IMAGE := .local/decomp/build/SLUS_006.64
 LINKER_SCRIPT := .local/decomp/resident/slus_006.64.ld

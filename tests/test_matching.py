@@ -952,25 +952,31 @@ class MatchingTests(unittest.TestCase):
         "enter the matching Nix shell to test the cross-image check")
     def test_cross_image_names_and_mode_table_agree_with_the_other_links(self):
         # A resident r (80010000-80010028: res_func, fill, the mode table,
-        # res_var), an overlay o (80020000-80020018, its .bss to 80020028)
-        # that takes res_func from a PROVIDE list and other names from a
-        # fragment, and a module p (80030000-8003000c: p_func, which loads
-        # res_var's second word by number): by name, by view (member:
-        # res_var + 4), by base (before: res_var - 4, which o's BASE_VIEWS
-        # lists) and by address (alias: the table, and D_80030000: p_func).
-        def resident(entry=0x80020000, bss=(0x80020014, 0x80020024)):
+        # res_var) whose fragment names the overlay area (area), an overlay o
+        # (80020000-80020018, its .bss to 80020028) that takes res_func from
+        # a PROVIDE list and other names from a fragment, and a module p
+        # (80030000-8003000c: p_func, which loads res_var's second word by
+        # number): by name, by view (member: res_var + 4), by base (before:
+        # res_var - 4, which o's BASE_VIEWS lists) and as the mode area.
+        def resident(entry=0x80020000, bss=(0x80020014, 0x80020024), loaded=1,
+                     area=0x80020000, setting="MODE_AREA := area\n"):
+            (self.root / "r.mode.ld").write_text(f"area = {area:#x};\n")
+            (self.root / "r.mk").write_text(
+                "IMAGE := r.bin\nBUILD := build/r\nLINKER_SCRIPT := r.ld\n"
+                f"LINKER_EXTRA := r.mode.ld\nMODE_TABLE := table\n{setting}")
             self.link_assembly("r", (
                 ".set noreorder\n.text\n.globl res_func\n.type res_func, @function\n"
                 "res_func:\njr $31\nnop\n.size res_func, . - res_func\n"
-                f".section .rodata\n.globl table\ntable:\n.word {entry}, {bss[0]}, {bss[1]}, 1\n"
+                ".section .rodata\n.globl table\ntable:\n"
+                f".word {entry}, {bss[0]}, {bss[1]}, {loaded}\n"
                 ".data\n.globl res_var\nres_var:\n.word 0, 0\n"),
                 "SECTIONS {\n  .r 0x80010000 : SUBALIGN(4) { r.o(.text) . = ALIGN(16); r.o(.rodata)"
-                " r.o(.data) }\n  /DISCARD/ : { *(*) }\n}\n")
+                " r.o(.data) }\n  /DISCARD/ : { *(*) }\n}\n", ["r.mode.ld"])
 
-        def overlay(names):
+        def overlay(names, lead=""):
             (self.root / "o.resident.ld").write_text(names)
             self.link_assembly("o", (
-                ".set noreorder\n.text\n.globl ov_entry\n.type ov_entry, @function\n"
+                f".set noreorder\n.text\n{lead}.globl ov_entry\n.type ov_entry, @function\n"
                 "ov_entry:\nlui $8, %hi(res_var)\nlw $8, %lo(res_var)($8)\njal res_func\nnop\n"
                 "jr $31\nnop\n.size ov_entry, . - ov_entry\n"
                 ".bss\n.globl ov_bss\nov_bss:\n.space 0x10\n"),
@@ -981,8 +987,6 @@ class MatchingTests(unittest.TestCase):
         provide = self.root / "build/o/auto/undefined_funcs_auto.ld"
         provide.parent.mkdir(parents=True)
         provide.write_text("PROVIDE(res_func = 0x80010000);\nPROVIDE(unused = 0x80010004);\n")
-        (self.root / "r.mk").write_text(
-            "IMAGE := r.bin\nBUILD := build/r\nLINKER_SCRIPT := r.ld\nMODE_TABLE := table\n")
 
         def configure(bases="before"):
             (self.root / "o.mk").write_text(
@@ -996,8 +1000,8 @@ class MatchingTests(unittest.TestCase):
             ".set noreorder\n.text\n.globl p_func\n.type p_func, @function\n"
             "p_func:\nlui $8, 0x8001\njr $31\nlw $8, 0x24($8)\n.size p_func, . - p_func\n"),
             "SECTIONS {\n  .p 0x80030000 : SUBALIGN(4) { p.o(.text) }\n  /DISCARD/ : { *(*) }\n}\n")
-        names = ("res_var = 0x80010020;\nalias = 0x80010010;\nmember = res_var + 4;\n"
-                 "before = res_var - 4;\nD_80030000 = 0x80030000;\ntimer = 0x1F801100;\n")
+        names = ("res_var = 0x80010020;\nmember = res_var + 4;\nbefore = res_var - 4;\n"
+                 "timer = 0x1F801100;\n")
         resident()
         overlay(names)
         tool = Path(__file__).resolve().parents[1] / "tools/cross_image.py"
@@ -1009,8 +1013,8 @@ class MatchingTests(unittest.TestCase):
         result = check()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout), {
-            "claim": "cross_image_agreement", "targets": 3, "names": 6, "by_name": 2,
-            "by_view": 1, "by_base": 1, "by_address": 2, "mode_entries": 1})
+            "claim": "cross_image_agreement", "targets": 3, "names": 5, "by_name": 2,
+            "by_view": 1, "by_base": 1, "mode_area": 1, "mode_entries": 1})
         # --numbers lists the other links' addresses a link holds as numbers:
         # p's lui/lw of res_var's second word, not o's relocated ones.
         listed = subprocess.run([sys.executable, str(tool), "r.mk", "o.mk", "p.mk", "--numbers"],
@@ -1021,10 +1025,12 @@ class MatchingTests(unittest.TestCase):
         # define), a view outside the object holding its base unless
         # BASE_VIEWS lists it as a base before that object, a listed name
         # that is no such base, a name whose value is not the address it
-        # gives, one inside an object that no name ties it to (res_var's
-        # second word), one in no object (the fill after res_func) and a
-        # mode table that does not hold the overlay's entry and
-        # uninitialized data all fail.
+        # gives, one that only a symbol of another name holds (alias: the
+        # table; D_80030000: p_func), one inside an object that no name ties
+        # it to (res_var's second word), one in no object (the fill after
+        # res_func), a mode table that does not hold the overlay's entry and
+        # uninitialized data or does not decode it, and an overlay area that
+        # the overlay does not start with a symbol of its own all fail.
         for change, message in (
             (lambda: overlay(names.replace("0x80010020", "0x80010024")),
              "o: before = 80010020 (o.resident.ld) is res_var - 4, but r defines res_var at"
@@ -1046,6 +1052,10 @@ class MatchingTests(unittest.TestCase):
              " target's name"),
             (lambda: overlay(names + "D_80010004 = 0x80010000;\n"),
              "o: D_80010004 = 80010000 (o.resident.ld), but its name gives 80010004"),
+            (lambda: overlay(names + "alias = 0x80010010;\n"),
+             "o: alias = 80010010 (o.resident.ld) agrees with r's table only by address"),
+            (lambda: overlay(names + "D_80030000 = 0x80030000;\n"),
+             "o: D_80030000 = 80030000 (o.resident.ld) agrees with p's p_func only by address"),
             (lambda: overlay(names + "inner = 0x80010024;\n"),
              "o: inner = 80010024 (o.resident.ld) lies inside r's res_var (80010020-80010028),"
              " but is no view of it"),
@@ -1056,6 +1066,16 @@ class MatchingTests(unittest.TestCase):
             (lambda: resident(bss=(0x80020014, 0x80020020)),
              "r: table[0] clears 80020018-80020024, but o links its uninitialized data at"
              " 80020018-80020028"),
+            (lambda: resident(loaded=0),
+             "r: table[0] does not decode o's image (its flag is 0)"),
+            (lambda: resident(area=0x80020004),
+             "r: area = 80020004, where table[0] decodes o's image, but o links it at 80020000"),
+            (lambda: (overlay(names, lead=".word 0\n"),
+                      resident(entry=0x80020004, bss=(0x80020018, 0x80020028))),
+             "r: area = 80020000, where o links its image, but o defines no symbol there"),
+            (lambda: resident(setting=""),
+             "r: area = 80020000 (r.mode.ld) agrees with o's ov_entry only by address\n"
+             "r: no overlay area that its link names (MODE_AREA)"),
         ):
             with self.subTest(message):
                 change()

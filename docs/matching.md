@@ -219,14 +219,15 @@ code indexes the object from (7: battle's sprite_vm_command_lengths_by_opcode, 0
 before the resident's command lengths of sprite VM commands 80-ff, ovl2596's five bases
 of battle's decimal digits and ovl2615's battle_enemy_name_indices_by_slot, three bytes
 before the enemies' name indices); each name `BASE_VIEWS` lists must be such a base.
-Otherwise a target holding the value has a symbol there (2: each resident's
-mode_overlay_area, which link.ld assigns where each mode overlay's first unit defines
-its number), which ties it only to the address its name gives, not to a particular
-object or, where targets overlap, to a particular target. Any other copied address
-fails, also one inside an object that no name ties it to: a fragment gives it as a view
-of that object. Values outside every target (the resident's sizes, a constant) are not
-checked, nor is an address the C spells as a number, which neither this check nor the
-relocation scan (a target's own range only) sees.
+Each resident's overlay area mode_overlay_area, which link.ld assigns as a number where
+each mode overlay's first unit defines its number, is the resident's `MODE_AREA`, which
+the mode comparison below ties to every mode overlay (2). Any other copied address
+fails: one that only a symbol of another name holds (agreement by address alone ties it
+to no object, so a definer renamed without its importers, or moved after such a rename,
+would pass) and one inside an object that no name ties it to, which a fragment gives as
+a view of that object instead. Values outside every target (the resident's sizes, a
+constant) are not checked, nor is an address the C spells as a number, which neither
+this check nor the relocation scan (a target's own range only) sees.
 `python3 tools/cross_image.py decomp/targets/*/*.mk --numbers` lists those (each other
 target's address a link holds without a relocation, outside asset and included bytes and
 the mode table); in the 26 links they are battle's three reads of the boot word
@@ -244,7 +245,11 @@ addresses. It also compares each resident's mode table (`MODE_TABLE`) with the m
 overlays (`MODE`, `MODE_ENTRY` in field 1, world map 3, menu 4 and movie 6; battle's
 mode 2 enters resident code and declares only `MODE`): the entry must be the overlay's
 entry symbol, and the words after bss_start through bss_end, which the dispatcher clears
-(boot_clear_bss_range), must be the overlay's linked .sbss/.bss. The check found one
+(boot_clear_bss_range), must be the overlay's linked .sbss/.bss. The entry's flag must be
+set, so that the dispatcher decodes the overlay file to the overlay area
+(mode_overlay_decode_destination, main.c mode_dispatch), and the overlay must link its
+image at the resident's `MODE_AREA` and define a symbol of its own there (its number,
+such as field_overlay_number). The check found one
 resident byte that other images use outside every object: the arena bout's outcome at
 80050622, which the menu writes and a field event reads, lay in the alignment fill after
 mode_arena_task_parameters[6]; console_and_sound_driver.c now defines it
