@@ -245,6 +245,9 @@ impl ImportHandler for Services {
 /// What a frame did.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct FrameReport {
+    /// The frame stopped early: the disc source is still fetching a sector
+    /// (browser hosts). Fetch it and call run_frame again; no time passed.
+    pub blocked: bool,
     pub steps: u64,
     pub restarts: Vec<(u32, u32)>,
     pub interrupts: u64,
@@ -268,6 +271,9 @@ pub struct Runtime<M: GameModule> {
     /// The game fiber and the arena task fiber (`FIBER_GAME`, `FIBER_TASK`).
     fibers: [Option<Fiber>; 2],
     current: u32,
+    /// A clock advance a blocked disc read interrupted: (frame end, limit,
+    /// first interrupt only).
+    resume_advance: Option<(u64, u64, bool)>,
 }
 
 impl<M: GameModule> Runtime<M> {
@@ -283,6 +289,7 @@ impl<M: GameModule> Runtime<M> {
             entry: (RESTART_BOOT, 0),
             stack_top,
             fibers: [Some(Fiber::Fresh { stack_top }), None],
+            resume_advance: None,
             current: FIBER_GAME,
         }
     }
@@ -403,6 +410,9 @@ impl<M: GameModule> Runtime<M> {
     /// Advance the clock to `limit` (or until the first interrupt when
     /// `first_only`), delivering interrupts in time order.
     fn advance(&mut self, limit: u64, first_only: bool, report: &mut FrameReport) -> Result<bool, Trap> {
+        if self.services().cd.blocked {
+            return Ok(false);
+        }
         let mut delivered = false;
         loop {
             let raised = std::mem::take(&mut self.services().raised);
@@ -423,6 +433,9 @@ impl<M: GameModule> Runtime<M> {
                     self.advance_devices();
                     let services = unsafe { &mut *self.services };
                     services.run_device_events(self.module.memory());
+                    if services.cd.blocked {
+                        return Ok(delivered);
+                    }
                     continue;
                 }
             }
@@ -451,21 +464,37 @@ impl<M: GameModule> Runtime<M> {
     /// advances the clock (a frame wait to the blank, a poll to the next
     /// interrupt), delivering interrupts in time order.
     pub fn run_frame(&mut self) -> Result<FrameReport, Trap> {
-        let frame_end = self.services().clock.next_vblank();
         let mut report = FrameReport::default();
+        // A frame a blocked disc read interrupted resumes its clock advance
+        // where it stopped.
+        self.services().cd.blocked = false;
+        let (frame_end, mut pending) = match self.resume_advance.take() {
+            Some((frame_end, limit, first_only)) => (frame_end, Some((limit, first_only))),
+            None => (self.services().clock.next_vblank(), None),
+        };
         loop {
-            report.steps += 1;
-            match self.step()? {
-                Stop::Yield(YieldReason::VSync) | Stop::Yield(YieldReason::Poll) | Stop::Yield(YieldReason::Other(_)) => {
-                    self.advance(frame_end, true, &mut report)?;
+            if pending.is_none() {
+                report.steps += 1;
+                pending = match self.step()? {
+                    Stop::Yield(YieldReason::DrawSync) => {
+                        // Drawing ends at once; deliver what it raised.
+                        Some((self.services().clock.now, false))
+                    }
+                    Stop::Yield(_) => Some((frame_end, true)),
+                    Stop::Restart { kind, arg } => {
+                        report.restarts.push((kind, arg));
+                        None
+                    }
+                    Stop::Returned => return Err(Trap::Host("xem_run returned".into())),
+                };
+            }
+            if let Some((limit, first_only)) = pending.take() {
+                self.advance(limit, first_only, &mut report)?;
+                if self.services().cd.blocked {
+                    self.resume_advance = Some((frame_end, limit, first_only));
+                    report.blocked = true;
+                    return Ok(report);
                 }
-                Stop::Yield(YieldReason::DrawSync) => {
-                    // Drawing ends at once; deliver what it raised.
-                    let now = self.services().clock.now;
-                    self.advance(now, false, &mut report)?;
-                }
-                Stop::Restart { kind, arg } => report.restarts.push((kind, arg)),
-                Stop::Returned => return Err(Trap::Host("xem_run returned".into())),
             }
             if self.services().clock.now >= frame_end {
                 return Ok(report);

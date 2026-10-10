@@ -200,6 +200,9 @@ pub struct DeliveredSector {
 /// The drive.
 pub struct Cd {
     disc: Option<Box<dyn SectorSource>>,
+    /// A sector the disc source has not fetched yet stopped the drive (browser
+    /// hosts); the runtime waits for the host to fetch it.
+    pub blocked: bool,
     lid_open: bool,
     /// Status bit 0x10 stays set until a Getstat after the lid closed.
     shell_latch: bool,
@@ -234,6 +237,7 @@ impl Default for Cd {
     fn default() -> Self {
         Cd {
             disc: None,
+            blocked: false,
             lid_open: false,
             shell_latch: false,
             motor: false,
@@ -552,8 +556,11 @@ impl Cd {
         match disc.read_sector(self.position, &mut raw) {
             Ok(()) => {}
             Err(DiscError::NotReady) => {
-                // A browser still fetching the image: the head waits for it.
-                self.schedule(now + period, Event::Sector);
+                // A browser still fetching the image: the sector stays due now
+                // and the runtime stops until the host has fetched it, so I/O
+                // latency never moves the virtual clock.
+                self.blocked = true;
+                self.schedule(now, Event::Sector);
                 return;
             }
             Err(_) => {
@@ -610,7 +617,7 @@ impl Cd {
 
     /// Run every event due at `now`.
     pub fn run_due(&mut self, now: u64, raised: &mut Vec<(u32, u32)>) {
-        while self.events.iter().any(|(at, _, _)| *at <= now) {
+        while !self.blocked && self.events.iter().any(|(at, _, _)| *at <= now) {
             let (at, event) = self.take_next_event().expect("a due event");
             self.run_event(at, event, raised);
         }
