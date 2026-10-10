@@ -63,7 +63,8 @@ class LineTests(unittest.TestCase):
             [(len(line.codes), line.length, line.cr) for line in lines],
             [(28, 56, False), (0, 1, True), (1, 3, True)],
         )
-        self.assertLessEqual(2 * LINE_CODES + 1, 0x40)  # field_staff_roll_write_line copies 0x40 bytes
+        # field_staff_roll_write_line copies 0x40 bytes
+        self.assertLessEqual(2 * LINE_CODES + 1, 0x40)
 
     def test_reading_stops_when_no_bytes_are_left(self):
         self.assertEqual(decode(b""), [])
@@ -136,11 +137,15 @@ class SourceTests(unittest.TestCase):
         self.assertRegex(line, r"if \(field_staff_roll_bytes_left <= 0\) \{\s+count = 0;")
         self.assertRegex(line, r"count < GLYPH_LINE_CELLS; count\+\+")
         self.assertRegex(line, r"if \(line\[used\] == '\\r'\) \{\s+used\+\+;\s+break;")
-        self.assertRegex(line, r"glyph = field_staff_roll_get_glyph\(&line\[used\], &own\);\s+used \+= 2;")
+        self.assertRegex(
+            line, r"glyph = field_staff_roll_get_glyph\(&line\[used\], &own\);\s+used \+= 2;"
+        )
         self.assertIn("source.x = glyph % 7 * 9 + 0x380;", line)
         self.assertIn("source.y = glyph / 7 * 16 + 0x100;", line)
         self.assertIn("field_staff_roll_bytes_left -= used;", line)
-        self.assertIn("code = text[1] | (text[0] << 8);", function(path, "s32 field_staff_roll_get_glyph("))
+        self.assertIn(
+            "code = text[1] | (text[0] << 8);", function(path, "s32 field_staff_roll_get_glyph(")
+        )
         loader = function(path, "void field_staff_roll_load_files(")
         self.assertIn(f"cd_select_directory({DIRECTORY[0]}, {DIRECTORY[1]});", loader)
         self.assertIn(f"field_staff_roll_bytes_left = cd_get_file_size(0x{TEXT_FILE:X});", loader)

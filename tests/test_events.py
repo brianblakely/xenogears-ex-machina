@@ -20,7 +20,9 @@ DEFINITION = re.compile(
     re.M | re.S,
 )
 # The selected-operand readers by flag bit (8009cf78-8009d154).
-READERS = {bit: f"field_event_read_selected_operand_{bit:02x}" for bit in (1, 2, 4, 8, 16, 32, 64, 128)}
+READERS = {
+    bit: f"field_event_read_selected_operand_{bit:02x}" for bit in (1, 2, 4, 8, 16, 32, 64, 128)
+}
 
 
 def number(value: int) -> str:

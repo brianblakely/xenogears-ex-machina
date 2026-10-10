@@ -143,7 +143,11 @@ WORLDMAP = Machine(
         7: Opcode("stop_effects", "worldmap_actor_script_stop_effects", ("group",)),
         8: Opcode("fade_music", "worldmap_actor_script_fade_music", ("level", "frames", None)),
         9: Opcode("play_sound", "worldmap_actor_script_play_sound", ("sound",)),
-        10: Opcode("slide_sound_volume", "worldmap_actor_script_slide_sound_volume", ("sound", "volume", "frames")),
+        10: Opcode(
+            "slide_sound_volume",
+            "worldmap_actor_script_slide_sound_volume",
+            ("sound", "volume", "frames"),
+        ),
         11: Opcode("set_fade", "worldmap_actor_script_set_fade", ("rate", "step", None)),
     },
 )
@@ -259,10 +263,15 @@ def scripts(machine: Machine, data: bytes, base: int = BASE) -> list[tuple[str, 
         handlers = list(WORLDMAP_HANDLER_ADDRESSES)
         if words(data, 0x8009A3C0, len(handlers), base) != handlers:
             raise ScriptError("worldmap_actor_script_handlers does not hold the recovered handlers")
-        return [("worldmap_scene17_script_start", 0x8009A758), ("worldmap_scene18_script_start", 0x8009AC60)]
+        return [
+            ("worldmap_scene17_script_start", 0x8009A758),
+            ("worldmap_scene18_script_start", 0x8009AC60),
+        ]
     table = words(data, 0x8009105C, 10, base)
     found = [("arena_scene_start_tutorial", 0x80090F38), ("arena_scene_start_bout_end", 0x800910C4)]
-    return found + [(f"arena_scene_scripts[{scene}]", address) for scene, address in enumerate(table)]
+    return found + [
+        (f"arena_scene_scripts[{scene}]", address) for scene, address in enumerate(table)
+    ]
 
 
 # Script-shaped data that nothing starts (menu2.c); decoded and reported apart.
@@ -445,7 +454,8 @@ def _sounds(*numbers: int) -> tuple[tuple, ...]:
 
 
 EXIT = ("exit_worldmap",)
-FLAMES = ((4, 3), (5, 3), (6, 3), (7, 3), (8, 3))  # worldmap_scene15_director_update's flame slots 4-8
+# worldmap_scene15_director_update's flame slots 4-8
+FLAMES = ((4, 3), (5, 3), (6, 3), (7, 3), (8, 3))
 FADE = "worldmap_screen_fade_update"  # slot 0, the screen fade
 
 
@@ -479,7 +489,14 @@ DIRECTORS = (
         False,
         14,
         "worldmap_scene14_start",
-        (FADE, "worldmap_scene14_director_update", "worldmap_scene14_camera_update", "worldmap_scene14_grow_objects_4_5_update", "worldmap_scene14_grow_objects_6_7_update", "worldmap_scene14_exhaust_trail_update")
+        (
+            FADE,
+            "worldmap_scene14_director_update",
+            "worldmap_scene14_camera_update",
+            "worldmap_scene14_grow_objects_4_5_update",
+            "worldmap_scene14_grow_objects_6_7_update",
+            "worldmap_scene14_exhaust_trail_update",
+        )
         + ("worldmap_scene14_rig_flight_update", "worldmap_scene_frame_update"),
         (Sequence("worldmap_scene14_cue_states", 0x8009A450, 0x8009A46C, 14),),
         {
@@ -504,8 +521,21 @@ DIRECTORS = (
         True,
         12,
         "worldmap_scene12_start",
-        (FADE, "worldmap_scene12_director_update", "worldmap_scene12_camera_shots_update", "worldmap_scene12_drift_object4_update", "worldmap_scene12_drift_object5_update", "worldmap_scene12_drift_object9_update")
-        + ("worldmap_scene12_drift_object10_update", "worldmap_scene12_drift_object12_update", "worldmap_scene12_drift_object13_update", "worldmap_scene12_drift_object16_update", "worldmap_scene_frame_update"),
+        (
+            FADE,
+            "worldmap_scene12_director_update",
+            "worldmap_scene12_camera_shots_update",
+            "worldmap_scene12_drift_object4_update",
+            "worldmap_scene12_drift_object5_update",
+            "worldmap_scene12_drift_object9_update",
+        )
+        + (
+            "worldmap_scene12_drift_object10_update",
+            "worldmap_scene12_drift_object12_update",
+            "worldmap_scene12_drift_object13_update",
+            "worldmap_scene12_drift_object16_update",
+            "worldmap_scene_frame_update",
+        ),
         (Sequence("worldmap_scene12_cue_states", 0x8009A4D8, 0x8009A4E8, 8),),
         {
             0: IDLE,
@@ -536,7 +566,13 @@ DIRECTORS = (
         True,
         15,
         "worldmap_scene15_start",
-        (FADE, "worldmap_scene15_director_update", "worldmap_scene15_camera_update", "worldmap_scene15_flying_vehicle_update", *["worldmap_scene15_flame_update"] * 5)
+        (
+            FADE,
+            "worldmap_scene15_director_update",
+            "worldmap_scene15_camera_update",
+            "worldmap_scene15_flying_vehicle_update",
+            *["worldmap_scene15_flame_update"] * 5,
+        )
         + ("worldmap_scene15_grow_objects_9_10_update", "worldmap_scene_frame_update"),
         (
             Sequence("worldmap_scene15_entry0_cue_states", 0x8009A5D4, 0x8009A5F0, 14),
@@ -588,7 +624,14 @@ DIRECTORS = (
         False,
         13,
         "worldmap_scene13_start",
-        (FADE, "worldmap_scene13_director_update", "worldmap_scene13_camera_update", "worldmap_scene13_effects_update", "worldmap_scene13_grow_objects_0_1_update", "worldmap_scene_frame_billboards_update"),
+        (
+            FADE,
+            "worldmap_scene13_director_update",
+            "worldmap_scene13_camera_update",
+            "worldmap_scene13_effects_update",
+            "worldmap_scene13_grow_objects_0_1_update",
+            "worldmap_scene_frame_billboards_update",
+        ),
         (Sequence("worldmap_scene13_cue_states", 0x8009A698, 0x8009A6AC, 9),),
         {
             0: IDLE,
@@ -610,7 +653,14 @@ DIRECTORS = (
         True,
         16,
         "worldmap_scene16_start",
-        (FADE, "worldmap_scene16_director_update", "worldmap_scene16_camera_update", "worldmap_scene16_fade_object2_update", "worldmap_scene16_fade_objects_0_1_update", "worldmap_scene16_haze_update")
+        (
+            FADE,
+            "worldmap_scene16_director_update",
+            "worldmap_scene16_camera_update",
+            "worldmap_scene16_fade_object2_update",
+            "worldmap_scene16_fade_objects_0_1_update",
+            "worldmap_scene16_haze_update",
+        )
         + ("worldmap_scene16_haze_strength_update", "worldmap_scene_frame_update"),
         (Sequence("worldmap_scene16_cue_states", 0x8009A6C0, 0x8009A70C, 37),),
         {
@@ -813,7 +863,8 @@ HIT_SPEC = {
     "vertex_b": (6, 2, True),
 }
 EVENT_END = 0xFF  # a record whose first frame is 0xFF ends the list
-EVENT_TABLE = 0x34  # header + 0x34: an s16 event list offset per animation (arena_actor_init_from_model_file)
+# header + 0x34: an s16 event list offset per animation (arena_actor_init_from_model_file)
+EVENT_TABLE = 0x34
 MODEL_DIRECTORY = (0x30, 1)  # arena_actor_load_model: model id n is file n + 2
 
 
@@ -856,7 +907,12 @@ EVENT_KINDS = {
         POINTS,
         "once per HitSpec in a call, up to 20 (the count is never initialised)",
     ),
-    3: EventKind("return_home", "arena_frame_event_run case 3: arena_frame_event_return_home", (), "every frame"),
+    3: EventKind(
+        "return_home",
+        "arena_frame_event_run case 3: arena_frame_event_return_home",
+        (),
+        "every frame",
+    ),
     4: EventKind("hide_part", "arena_frame_event_run case 4", (("type", "part"),), "every frame"),
     5: EventKind("show_part", "arena_frame_event_run case 5", (("type", "part"),), "every frame"),
 }
@@ -883,7 +939,8 @@ def effect_form(type_: int) -> str:
     if 0x10 <= type_ < 0x20:  # arena_effect_is_two_point_type: between the two points
         if type_ == 0x10:
             return "line"  # arena_effect_start_line_sparkle
-        return f"bolt_{type_ - 0x11}" if type_ <= 0x13 else "none"  # arena_effect_queue_bolt_by_type
+        # arena_effect_queue_bolt_by_type
+        return f"bolt_{type_ - 0x11}" if type_ <= 0x13 else "none"
     if type_ >= 0x20:  # arena_effect_start_trail_sparkle at a or the midpoint
         return f"sparkle_trail_{type_ - 0x20}" if type_ - 0x20 < SPARKLE_SIZES else "past_table"
     if type_ <= 4:
@@ -1154,18 +1211,17 @@ def event_listing(number: int, root: Path = ROOT) -> None:
 
 # Field movie sound timelines -------------------------------------------------
 #
-# field_movie_sound_timelines (decomp/src/field/field_event.c) holds u16 (frame, sound)
-# pairs: a leading end, then one run per movie sound-effect bank, each ended
-# by an entry whose frame is 0xFFFF. field_movie_load_sound_bank loads the movie's bank,
-# file 0x115 + bank of directory (0x1C, 0), and leaves field_movie_sound_timeline_index past bank + 1
-# ends. After each movie step (field_movie_run_frames) field_movie_play_due_sounds then plays every
-# entry from there whose frame plus the movie's sound start
-# (FIELD_MOVIE.sound_start) the movie frame field_movie_frame has reached (the frame
-# callback field_movie_frame_callback stores it): the bank's effect in the low byte on the voice
-# pair in bits 8-10 (sound_play_effect_on_channel gets pair * 2). Neither tests the run's end
-# itself: frame 0xFFFF lies past every movie. Event fe a0 (field_event_play_movie_sound)
-# names the bank in operand 9; 0xFF (FIELD_MOVIE.sound_bank's reset value)
-# loads none and plays nothing.
+# field_movie_sound_timelines (decomp/src/field/field_event.c) holds u16 (frame, sound) pairs: a
+# leading end, then one run per movie sound-effect bank, each ended by an entry whose frame is
+# 0xFFFF. field_movie_load_sound_bank loads the movie's bank, file 0x115 + bank of directory (0x1C,
+# 0), and leaves field_movie_sound_timeline_index past bank + 1 ends. After each movie step
+# (field_movie_run_frames) field_movie_play_due_sounds then plays every entry from there whose frame
+# plus the movie's sound start (FIELD_MOVIE.sound_start) the movie frame field_movie_frame has
+# reached (the frame callback field_movie_frame_callback stores it): the bank's effect in the low
+# byte on the voice pair in bits 8-10 (sound_play_effect_on_channel gets pair * 2). Neither tests
+# the run's end itself: frame 0xFFFF lies past every movie. Event fe a0
+# (field_event_play_movie_sound) names the bank in operand 9; 0xFF (FIELD_MOVIE.sound_bank's reset
+# value) loads none and plays nothing.
 
 MOVIE_SOUNDS = 0x800AE060
 MOVIE_SOUND_ENTRIES = 0x60  # the INCLUDE_ASSET size 0x180, four bytes per entry
@@ -1398,15 +1454,15 @@ def movie_sound_listing(number: int) -> None:
 
 # World map terrain texture animations ----------------------------------------
 #
-# worldmap_texture_anim_slots[2] and worldmap_texture_anim2_slots[3] (decomp/src/worldmap/worldmap_open_map.c)
-# are TexAnimSlot rows {RECT rect; s32; TexAnimFrame *frames}; a TexAnimFrame
-# run {s16 image; s16 duration} ends with a negative duration. worldmap_texture_anim_create
-# and worldmap_texture_anim2_create give animation i of the area file's two animation sections
-# (+0x20 and +0x24: a count, then image offsets) slot i, frame 0 and timer 1.
-# Each update worldmap_texture_anim_advance and worldmap_texture_anim2_advance count the timer down; at 0 they
-# step to the next frame and take its duration, restart at frame 0 with that
-# frame's duration when it is negative, and upload the frame's image into the
-# slot's rect (the first set's images are 16 bytes, the second's w * h * 2).
+# worldmap_texture_anim_slots[2] and worldmap_texture_anim2_slots[3]
+# (decomp/src/worldmap/worldmap_open_map.c) are TexAnimSlot rows {RECT rect; s32; TexAnimFrame
+# *frames}; a TexAnimFrame run {s16 image; s16 duration} ends with a negative duration.
+# worldmap_texture_anim_create and worldmap_texture_anim2_create give animation i of the area file's
+# two animation sections (+0x20 and +0x24: a count, then image offsets) slot i, frame 0 and timer 1.
+# Each update worldmap_texture_anim_advance and worldmap_texture_anim2_advance count the timer down;
+# at 0 they step to the next frame and take its duration, restart at frame 0 with that frame's
+# duration when it is negative, and upload the frame's image into the slot's rect (the first set's
+# images are 16 bytes, the second's w * h * 2).
 
 TEXTURE_SLOTS = (
     ("worldmap_texture_anim_slots", 0x8009A1E8, 2, "worldmap_texture_anim_advance"),

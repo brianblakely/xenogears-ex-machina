@@ -47,7 +47,8 @@ REPEAT = "repeat"  # 0x98: opens a repeat
 REPEAT_END = "repeat_end"  # 0x99: back to the repeat start while passes remain
 REPEAT_BREAK = "repeat_break"  # 0x9A: to the repeat end on the last pass
 
-UNUSED_HANDLER = 0x8003CD00  # sound_seq_unused_opcode returns its argument; sound_seq_opcode_lengths gives 0
+# sound_seq_unused_opcode returns its argument; sound_seq_opcode_lengths gives 0
+UNUSED_HANDLER = 0x8003CD00
 # Note ticks: sound_note_durations[k] = DURATIONS[k % 19] for k < 228 (0: a third byte).
 DURATIONS = (0, 192, 144, 96, 72, 64, 48, 36, 32, 24, 18, 16, 12, 9, 8, 6, 4, 3, 2)
 NOTE_KEYS = 12 * len(DURATIONS)  # 228 entries in sound_note_durations and sound_note_semitones
@@ -762,7 +763,10 @@ def check_driver_tables(exe: bytes) -> list[str]:
             problems.append(
                 f"sound_seq_opcode_lengths[{code:#x}] = {lengths[code - 0x80]}, module {lookahead_length(code)}"
             )
-    ticks, semitones = exe_bytes(exe, sound_note_durations, NOTE_KEYS), exe_bytes(exe, sound_note_semitones, NOTE_KEYS)
+    ticks, semitones = (
+        exe_bytes(exe, sound_note_durations, NOTE_KEYS),
+        exe_bytes(exe, sound_note_semitones, NOTE_KEYS),
+    )
     for key in range(NOTE_KEYS):
         if ticks[key] != DURATIONS[key % 19] or semitones[key] != key // 19:
             problems.append(f"note tables differ at key {key:#x}")
@@ -784,7 +788,8 @@ class Sweep:
     unreferenced_errors: list = field(default_factory=list)
     table_problems: list = field(default_factory=list)
     disc_codes: dict = field(default_factory=dict)  # disc -> opcodes its scripts use
-    waves: Counter = field(default_factory=Counter)  # (opcode, sound_modulator_waves index) installed
+    # (opcode, sound_modulator_waves index) installed
+    waves: Counter = field(default_factory=Counter)
     modulators: Counter = field(default_factory=Counter)  # F0's modulator indices
 
     def add(self, where: str, script: Script) -> set:
@@ -945,7 +950,9 @@ def report(result: Sweep) -> str:
         lines.append(f"    {code:02x} {OPCODES[code].mnemonic}: {result.uses[code]}")
     unused = [f"{code:02x}" for code in sorted(OPCODES) if code not in result.uses]
     lines.append(f"  defined but unused: {' '.join(unused)}")
-    lines.append(f"  modulator waves installed (sound_modulator_waves[mode & 0xf], {WAVE_SLOTS} slots):")
+    lines.append(
+        f"  modulator waves installed (sound_modulator_waves[mode & 0xf], {WAVE_SLOTS} slots):"
+    )
     for code in WAVE_OPCODES:
         shapes = {shape: n for (op, shape), n in sorted(result.waves.items()) if op == code}
         text = " ".join(f"{shape}:{n}" for shape, n in shapes.items()) or "none"

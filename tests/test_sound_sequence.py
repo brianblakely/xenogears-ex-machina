@@ -6,10 +6,6 @@ import unittest
 from pathlib import Path
 
 from tools.analysis.sound_sequence import (
-    sound_note_semitones,
-    sound_note_durations,
-    sound_seq_opcode_handlers,
-    sound_seq_opcode_lengths,
     DURATIONS,
     END,
     JUMP,
@@ -30,6 +26,10 @@ from tools.analysis.sound_sequence import (
     lookahead_length,
     parse_bank,
     parse_sequence,
+    sound_note_durations,
+    sound_note_semitones,
+    sound_seq_opcode_handlers,
+    sound_seq_opcode_lengths,
     word_sum,
 )
 

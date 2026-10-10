@@ -238,12 +238,16 @@ class SourceTests(unittest.TestCase):
 
     def test_model_viewer_commands_read_their_parameter_words(self):
         self.check_parameter_words(
-            "decomp/src/ovl2143/gear_model_scene.c", "void gear_model_run_effect_script(", MODEL_VIEWER
+            "decomp/src/ovl2143/gear_model_scene.c",
+            "void gear_model_run_effect_script(",
+            MODEL_VIEWER,
         )
 
     def test_event_records_follow_the_runners(self):
         viewer = case_bodies(
-            "decomp/src/ovl2143/gear_model_scene.c", "void gear_model_run_animation_events(", r"\n {8}case (\d):"
+            "decomp/src/ovl2143/gear_model_scene.c",
+            "void gear_model_run_animation_events(",
+            r"\n {8}case (\d):",
         )
         self.assertEqual(sorted(map(int, viewer)), sorted(MODEL_VIEWER_EVENTS))
         for kind, body in viewer.items():
@@ -253,7 +257,9 @@ class SourceTests(unittest.TestCase):
         records = {1: "SpriteCommand", 2: "LightEvent", 3: "ChannelEvent", 4: "ChannelEvent"}
         records.update({5: "SoundEvent", 8: "SlotEvent", 9: "ImageEvent"})
         battle = case_bodies(
-            "decomp/src/battle/battle_scene.c", "void battle_run_animation_events(", r"\n {16}case (\d):"
+            "decomp/src/battle/battle_scene.c",
+            "void battle_run_animation_events(",
+            r"\n {16}case (\d):",
         )
         self.assertEqual(sorted(map(int, battle)), sorted(BATTLE_EVENTS))
         for kind, body in battle.items():

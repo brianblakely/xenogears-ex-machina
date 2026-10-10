@@ -107,7 +107,9 @@ class SourceTests(unittest.TestCase):
             spec = OPCODES[int(code, 16)]
             # Each handler is named by its mnemonic; its comment opens with its address.
             self.assertEqual(function, f"battle_event_script_{spec.name}")
-            found = re.search(rf"\n/\* ([0-9A-F]{{8}})\b(?:[^*]|\*(?!/))*\*/\ns32 {function}\(", text)
+            found = re.search(
+                rf"\n/\* ([0-9A-F]{{8}})\b(?:[^*]|\*(?!/))*\*/\ns32 {function}\(", text
+            )
             self.assertEqual(found.group(1).lower(), spec.handler)
             handler = re.search(rf"\ns32 {function}\([^)]*\) \{{.*?\n\}}", text, re.S).group(0)
             lengths = re.findall(

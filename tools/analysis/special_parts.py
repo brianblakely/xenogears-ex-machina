@@ -1,17 +1,16 @@
 """Special parts: the ammo ids from 50 that index the game data's round counts.
 
-Character 4 equips special parts beside its weapons (CharacterRecord.entryItems)
-and so does the gear it pilots (GearRecord.partItems): weapon and gear part ids
-from 50, 0 for an empty slot. They are its ammo: system texts 23 and 51 name
-ids 50-72 "... Ammo" (docs/scripts/field-events.md). The field menu offers the
-inventory's ids from 50 of the slot's weapon kind (slot39 menu_equip_screen_build_candidates); the
-battle lists weapon ids 50-72 (ovl2615 battle_setup_build_item_lists) and copies the 48 weapon
-records 50-97 (0x300 bytes from +0x320 of the setup archive's entry 0x25,
-battle_setup_load_party_and_enemy_files). Each id's rounds are GameData.ammo[id - 50] (+0x22B8, character
-4) or gearAmmo[id - 50] (+0x22E8, its gears), 48 bytes each
-(decomp/include/resident/gamedata.h): the code forms the address from 50 bytes
-before the array (0x8006F8BA; 0x8006F8EA, the flag word +0x22B6), so an index
-outside 50-97 reaches other game data, which `alias` names.
+Character 4 equips special parts beside its weapons (CharacterRecord.entryItems) and so does the
+gear it pilots (GearRecord.partItems): weapon and gear part ids from 50, 0 for an empty slot. They
+are its ammo: system texts 23 and 51 name ids 50-72 "... Ammo" (docs/scripts/field-events.md). The
+field menu offers the inventory's ids from 50 of the slot's weapon kind (slot39
+menu_equip_screen_build_candidates); the battle lists weapon ids 50-72 (ovl2615
+battle_setup_build_item_lists) and copies the 48 weapon records 50-97 (0x300 bytes from +0x320 of
+the setup archive's entry 0x25, battle_setup_load_party_and_enemy_files). Each id's rounds are
+GameData.ammo[id - 50] (+0x22B8, character 4) or gearAmmo[id - 50] (+0x22E8, its gears), 48 bytes
+each (decomp/include/resident/gamedata.h): the code forms the address from 50 bytes before the
+array (0x8006F8BA; 0x8006F8EA, the flag word +0x22B6), so an index outside 50-97 reaches other
+game data, which `alias` names.
 
     python3 -m tools.analysis.special_parts --sweep   # both discs, aggregates
 
@@ -37,10 +36,10 @@ or the gear part list:
   battle_results_add_drops_to_inventory) and the AI's set_drop (3c, the first) and set_second_drop (3b, the
   second: +0x155, +0x153, +0x151).
 
-It also lists every field take_item (8d) from the weapon or gear part list,
-resolved as give_item is: one that takes an item's last copy leaves its slot's
-id at 0xFF (field field_event_take_item), which slot39 menu_equip_screen_build_candidates tests as an id
-from 50 through the table record 255, past the table's end.
+It also lists every field take_item (8d) from the weapon or gear part list, resolved as give_item
+is: one that takes an item's last copy leaves its slot's id at 0xFF (field field_event_take_item),
+which slot39 menu_equip_screen_build_candidates tests as an id from 50 through the table record
+255, past the table's end.
 
 The field menu's debug fill (slot39 menu_debug_fill_inventory) adds ids 1-71 to both lists.
 """
@@ -59,9 +58,12 @@ from tools.analysis.dispatch_tables import SETUP_ARCHIVE, archive_entries
 from tools.analysis.text_control import archive_entry
 
 ROOT = Path(__file__).resolve().parents[2]
-FIRST, COUNT = 50, 48  # slot39 menu_equip_screen_build_candidates ids >= 50; ovl2615 battle_setup_load_party_and_enemy_files records 50-97
+# slot39 menu_equip_screen_build_candidates ids >= 50; ovl2615
+# battle_setup_load_party_and_enemy_files records 50-97
+FIRST, COUNT = 50, 48
 BATTLE_END = 73  # ovl2615 battle_setup_build_item_lists: weapon ids 50..72 enter the battle's list
-BATTLE_RECORDS = 0x25  # battle_setup_load_party_and_enemy_files: archive[0x25] + 0x320, 0x300 bytes, to +0x5818
+# battle_setup_load_party_and_enemy_files: archive[0x25] + 0x320, 0x300 bytes, to +0x5818
+BATTLE_RECORDS = 0x25
 ITEM_BASE, GEAR_BASE = 0x2286, 0x22B6  # 8006f8ba, 8006f8ea as game data offsets
 GAME_DATA, GAME_DATA_SIZE = 0x8006D634, 0x2358  # game_data, sizeof(GameData)
 # The game data around the arrays (gamedata.h): (offset, size, member).
@@ -85,10 +87,9 @@ CHARACTERS, CHARACTER, CHARACTER_WEAPONS, ENTRY_ITEMS = 0x26C, 0xA4, 0x6A, 0x6F
 GEARS, GEAR, PART_ITEMS, GEAR_RECORD_WEAPONS = 0x978, 0xA4, 0x04, 0x0C
 MENU_DATA = (0x10, 0, 2)  # slot39 menu_load_or_release_data_set: the MenuDataArchive
 WEAPONS, GEAR_WEAPONS = 1, 42  # its +8 and +0xAC entries (tables->weapons, ->gearWeapons)
-# (entry, record size, users offset and width, load offset, kind offset):
-# slot39 MenuWeapon / GearWeapon. The load byte is the one battle battle_put_item_in_character4_entry
-# (BattleItem +3) and the uncalled battle_put_part_in_character4_gear (BattlePart +0xC) store as an
-# id's rounds.
+# (entry, record size, users offset and width, load offset, kind offset): slot39 MenuWeapon /
+# GearWeapon. The load byte is the one battle battle_put_item_in_character4_entry (BattleItem +3)
+# and the uncalled battle_put_part_in_character4_gear (BattlePart +0xC) store as an id's rounds.
 TABLES = {
     "weapon": (WEAPONS, 0x10, 0x0, 2, 0x3, 0x6),
     "gear weapon": (GEAR_WEAPONS, 0x14, 0x4, 4, 0xC, 0xF),
@@ -107,7 +108,8 @@ WEAPON_LIST, GEAR_PART_LIST = 1, 3  # field item code lists
 LOCAL_VARIABLES = 0x400  # byte offsets of field_event_variables[0x200..0x3ff]
 RECORDS, RECORD, ENEMIES = 0x32, 0x170, 8  # ovl2615 battle_setup_copy_enemy_records_and_ai
 DROPS = ((0x150, 0x152, 0x154), (0x151, 0x153, 0x155))  # (chance, id, category)
-DROP_LISTS = {0: "weapon list", 3: "gear part list"}  # ovl2596 battle_results_add_drops_to_inventory
+# ovl2596 battle_results_add_drops_to_inventory
+DROP_LISTS = {0: "weapon list", 3: "gear part list"}
 AI_DROPS = {0x3C: 0, 0x3B: 1}  # set_drop, set_second_drop: b1 category, b2 id
 ENEMY_PART_ITEMS = 0xA4 + PART_ITEMS  # the combatant's gear record
 

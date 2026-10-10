@@ -42,7 +42,8 @@ CR = 0x0D  # field_staff_roll_write_line: line[used] == '\r'
 LINE_CODES = 28  # GLYPH_LINE_CELLS (decomp/src/field/field_glyph.h)
 FONT_FIRST = 0x8540  # GLYPH_OWN_FIRST
 FONT_COUNT = 0x340  # GLYPH_OWN_COUNT
-FONT_ORIGIN = (0x380, 0x100)  # field_staff_roll_write_line's MoveImage source; field_staff_roll_upload_font's upload
+# field_staff_roll_write_line's MoveImage source; field_staff_roll_upload_font's upload
+FONT_ORIGIN = (0x380, 0x100)
 FONT_COLUMNS = 7  # glyph % 7, glyph / 7
 CELL = (9, 16)  # VRAM halfwords (18 8-bit pixels) by rows
 

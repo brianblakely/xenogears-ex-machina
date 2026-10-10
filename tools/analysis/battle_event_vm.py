@@ -344,9 +344,15 @@ OPCODES = {
         effect="play battle sound to its end (800b838c)",
     ),
     0x49: _op("set_return_fade", "801e7424", 3, _signed("value")),
-    0x4A: _op("set_slot0_attack_level4", "801e7660", 1, effect="slot 0 state 4, timer 6 (8009c0e0(0))"),
+    0x4A: _op(
+        "set_slot0_attack_level4", "801e7660", 1, effect="slot 0 state 4, timer 6 (8009c0e0(0))"
+    ),
     0x4B: _op(
-        "suppress_gear_hp_warning", "801e7684", 3, _signed("actor"), effect="set bit 0 of its record flags (0x36)"
+        "suppress_gear_hp_warning",
+        "801e7684",
+        3,
+        _signed("actor"),
+        effect="set bit 0 of its record flags (0x36)",
     ),
 }
 

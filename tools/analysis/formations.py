@@ -1,11 +1,10 @@
 """Battle formation and encounter set decoder (resident/formation.h).
 
-The battle overlay copies formation formation_selected_index of the encounter set formation_encounter_set
-into formation_active as it starts (battle battle_main). A set is 16 formations of
-0x20 bytes, BattleFormation in decomp/include/resident/formation.h, whose
-member comments name their readers; FIELDS follows that struct (the tests
-compare the two) and FLAGS names the flag bits its readers test. Sets come
-from:
+The battle overlay copies formation formation_selected_index of the encounter set
+formation_encounter_set into formation_active as it starts (battle battle_main). A set is 16
+formations of 0x20 bytes, BattleFormation in decomp/include/resident/formation.h, whose member
+comments name their readers; FIELDS follows that struct (the tests compare the two) and FLAGS names
+the flag bits its readers test. Sets come from:
 
 - a field map: map bundle component 6 (sizes at +0x10c, offsets at +0x130),
   which field_load_from_bundle decodes into formation_encounter_set itself: the set, then the 16
@@ -74,8 +73,12 @@ FIELDS = (
 # The flag bits a reader tests (formation.h); no reader tests 0x01-0x04.
 FLAGS = {
     0x08: "noresults",  # ovl2596 battle_results_grant_rewards, battle battle_main
-    0x10: "party10",  # ovl2615 battle_setup_load_party_and_enemy_files (battle_uses_fixed_party), battle battle_upload_party_portraits, ovl2596
-    0x20: "event",  # ovl2615 battle_setup_init_command_menus (battle_uses_event_script), ovl3087 battle_event_script_load
+    # ovl2615 battle_setup_load_party_and_enemy_files (battle_uses_fixed_party), battle
+    # battle_upload_party_portraits, ovl2596
+    0x10: "party10",
+    # ovl2615 battle_setup_init_command_menus (battle_uses_event_script), ovl3087
+    # battle_event_script_load
+    0x20: "event",
     0x40: "cmd7",  # ovl2615 battle_setup_init_command_menus
     0x80: "cmd8",  # ovl2615 battle_setup_init_command_menus
 }
@@ -99,8 +102,11 @@ STAGE_COUNT = 5  # mode_load_battle_stage: scene < the file count of entry 5 / 2
 SCRIPT_DIRECTORY = (0x20, 0)  # ovl3087's
 SCRIPT_ARCHIVE = 2  # ovl3087 battle_event_script_load
 REQUESTS = ("71", "fe 84")  # field events that set formation_selected_index from operand 1
-ARMING = "f7"  # field_event_draw_random_picks: the field draw's period and count from operands 1 and 3
-CONTROL = ("0c", "a7")  # player control (field_event_request_player_control), which runs the draw field_encounter_count_down
+# field_event_draw_random_picks: the field draw's period and count from operands 1 and 3
+ARMING = "f7"
+# player control (field_event_request_player_control), which runs the draw
+# field_encounter_count_down
+CONTROL = ("0c", "a7")
 CHAIN = 0x24  # battle event opcode next_battle (battle_event_script_next_battle)
 
 
@@ -863,7 +869,9 @@ def listing(census: Census, kind: str, item: int | None) -> list[str]:
     if kind == "field" and item is not None and item in census.empty_maps:
         lines.append(f"; field map {item}: component 6 is empty (the set loaded before stays)")
     if kind == "worldmap":
-        lines.append(f"; weight rows by the scene id (variable 0, worldmap_encounter_level_brackets): {bracket_text()}")
+        lines.append(
+            f"; weight rows by the scene id (variable 0, worldmap_encounter_level_brackets): {bracket_text()}"
+        )
         if item is not None and item in census.tableless:
             lines.append(
                 f"; area file {item}: no terrain tables (words 11-26 name none past its header)"

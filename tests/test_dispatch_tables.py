@@ -87,7 +87,8 @@ class SourceTests(unittest.TestCase):
         self.assertEqual(
             (gear.name, gear.caller, len(gear.handlers)), ("battle_gear_formula_table", "battle_resolve_gear_action", 11)
         )
-        self.assertEqual(foot.handlers[4], gear.handlers[9])  # battle_formula4_deal_damage_by_kind sits in both
+        # battle_formula4_deal_damage_by_kind sits in both
+        self.assertEqual(foot.handlers[4], gear.handlers[9])
         text = source("battle/battle_menus_and_resolver.c")
         for table in (foot, gear):
             for formula, handler in enumerate(table.handlers):

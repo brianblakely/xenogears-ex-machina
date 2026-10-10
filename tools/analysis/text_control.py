@@ -90,7 +90,12 @@ CONTROLS = {
         "state 2, flags 0x48: wait, then clear the window; a following 01 is skipped",
     ),
     0x03: Control(
-        0x03, "pause", (), 1, "window_reveal_text byte 3", "state 3, flag 8: wait, keeping the lines"
+        0x03,
+        "pause",
+        (),
+        1,
+        "window_reveal_text byte 3",
+        "state 3, flag 8: wait, keeping the lines",
     ),
 }
 _EXTENDED = (
@@ -389,7 +394,8 @@ def text_tables(disc: Disc):
     it cannot be unpacked."""
     system = system_data(disc)
     for index in range(struct.unpack_from("<I", system, 0)[0]):
-        if index != 27:  # text_system_resources[27]: character code pairs (text_decode_codes_to_buffer), not text
+        # text_system_resources[27]: character code pairs (text_decode_codes_to_buffer), not text
+        if index != 27:
             yield "system data", index, archive_entry(system, index)
     marker = disc.entries.get(disc.slot(4, 0, 0xB7))  # sub-directory of the map files
     for file in range(0xB8, 0xB8 + (-marker["size"] if marker else 0), 2):
@@ -410,23 +416,31 @@ def text_tables(disc: Disc):
         yield group, field_number, messages
     # Packed archive entries may read their last flag byte past the file's
     # declared size: unpack them from whole sectors.
-    menu = disc.sectors(disc.slot(0x10, 0, 1))  # menu_state_resource_file; labels = files[3] (801c65f4)
+    # menu_state_resource_file; labels = files[3] (801c65f4)
+    menu = disc.sectors(disc.slot(0x10, 0, 1))
     yield "menu labels", 3, archive_entry(menu, 3, packed=True)
-    world = disc.sectors(disc.slot(0x24, 0, 0x26))  # the world map's menu_state_resource_file (80071fec)
+    # the world map's menu_state_resource_file (80071fec)
+    world = disc.sectors(disc.slot(0x24, 0, 0x26))
     yield "menu labels (world map file 0x26)", 3, archive_entry(world, 3, packed=True)
     data = disc.sectors(disc.slot(0x10, 0, 2))  # 801c72bc MenuDataArchive +3C/+40/+54/+58/+D4..;
     for index in (14, 15, 20, 21, 52, 53, 54, 55, 0x27, 0x28, 0x29, *range(0x2C, 0x34)):
         yield "menu data", index, archive_entry(data, index, packed=True)  # shops 801c6828/801c6a54
-    mode = unpack(disc.sectors(disc.slot(0x30, 0, 3)))  # menu mode file 3: arena_text_message_table = entry 0
+    # menu mode file 3: arena_text_message_table = entry 0
+    mode = unpack(disc.sectors(disc.slot(0x30, 0, 3)))
     yield "menu mode", 0, archive_entry(mode, 0)
     battle = disc.sectors(disc.slot(12, 0, 3))  # mode_battle_setup_archive (8001bbac)
-    for index in (0x0F, 0x25):  # archive[0x10] battle_item_name_table, archive[0x26] battle_message_table (ovl2615)
+    # archive[0x10] battle_item_name_table, archive[0x26] battle_message_table (ovl2615)
+    for index in (0x0F, 0x25):
         yield "battle archive", index, archive_entry(battle, index, packed=True)
-    marker = disc.entries.get(disc.slot(12, 1, 1))  # enemy data: file 2n + 2 (battle_enemy_data_file)
+    # enemy data: file 2n + 2 (battle_enemy_data_file)
+    marker = disc.entries.get(disc.slot(12, 1, 1))
     for file in range(2, 2 + (-marker["size"] if marker else 0), 2):
         enemy = disc.data(disc.slot(12, 1, file))
-        yield "enemy data", file, enemy[struct.unpack_from("<H", enemy, 0x30)[0] :]  # battle_enemy_name_table
-    for file in (1, 2, 3):  # 8007fd38/8007fe3c after 8008ab94: battle_command_menu_module_block, battle_command_menu_file3_block
+        # battle_enemy_name_table
+        yield "enemy data", file, enemy[struct.unpack_from("<H", enemy, 0x30)[0] :]
+    # 8007fd38/8007fe3c after 8008ab94: battle_command_menu_module_block,
+    # battle_command_menu_file3_block
+    for file in (1, 2, 3):
         yield "battle menu", file, disc.data(disc.slot(0x20, 3, file))
     scripts = disc.sectors(disc.slot(0x20, 0, 2))  # ovl3087 801e5160: ScriptSet n data
     for index in range(1, struct.unpack_from("<I", scripts, 0)[0], 2):
@@ -438,13 +452,12 @@ def text_tables(disc: Disc):
 
 # Characters for --chars, read from each disc's own data.
 #
-# The number code: text_format_number writes a number's digits as the character
-# codes palette * 16 + digit and its sign as palette * 16 + 10 (negative) or
-# + 11, and the window controls pass palettes 0 and 1 (0F 09, 0F 0A, 0F 0C).
-# The menus write the blank that replaces a number's leading zeros as code 0xC3
-# (slot39 menu_arts_screen_build_list, ovl2601 item_shop_layout_stock_rows, ovl2602 gear_shop_show_sell_entry), which
-# the name entry also enters for an empty cell (ovl2600 name_entry_run).
-# Resource 27 gives each code's glyph.
+# The number code: text_format_number writes a number's digits as the character codes palette * 16 +
+# digit and its sign as palette * 16 + 10 (negative) or + 11, and the window controls pass palettes
+# 0 and 1 (0F 09, 0F 0A, 0F 0C). The menus write the blank that replaces a number's leading zeros as
+# code 0xC3 (slot39 menu_arts_screen_build_list, ovl2601 item_shop_layout_stock_rows, ovl2602
+# gear_shop_show_sell_entry), which the name entry also enters for an empty cell (ovl2600
+# name_entry_run). Resource 27 gives each code's glyph.
 NUMBER_PALETTES = (0, 1)
 SIGN_CODES = {10: "-", 11: "+"}
 BLANK_CODE = 0xC3

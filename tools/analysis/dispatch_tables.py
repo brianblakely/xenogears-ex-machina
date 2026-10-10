@@ -9,19 +9,19 @@ recovered C at run time, and `--sweep` reads every record the game's loaders
 hand to them on both discs and prints aggregate counts only. The world map
 modes, sprite kinds and TMD primitives are described with their sections below.
 
-Battle formulas (decomp/src/battle/battle_menus_and_resolver.c). For each target in the
-mask, battle_resolve_action calls battle_formula_table[battle_current_command->formula](). An attacker whose
-record has +0x15a bit 0x80 (fighting in a gear), or a descriptor with flagsA bit
-0x10, goes to battle_resolve_gear_action instead: it selects a party member's gear descriptor
-(an enemy keeps its own) and calls battle_gear_formula_table[formula](). The 0x28-byte
-descriptors come from the battle setup archive, directory (12, 0) file 3
-(resident mode_battle_load_files), an offset table of packed blocks that ovl2615
-battle_setup_load_party_and_enemy_files unpacks: archive[4] holds the enemy commands, archive[5 + character]
-a party member's and archive[0x11 + gear] its gear's (copies of 0x1f40, 0x5f0
-and 0x690 bytes). An enemy's command is the arg1 byte of its AI's type-1
-action-list entries (battle_action_list_act -> battle_commit_action), so the census also reads
-which commands the enemy data files' AI scripts select (tools.analysis.battle_ai)
-and whether each enemy fights in a gear (its record's +0x15a, copied by ovl2615
+Battle formulas (decomp/src/battle/battle_menus_and_resolver.c). For each target in the mask,
+battle_resolve_action calls battle_formula_table[battle_current_command->formula](). An
+attacker whose record has +0x15a bit 0x80 (fighting in a gear), or a descriptor with flagsA
+bit 0x10, goes to battle_resolve_gear_action instead: it selects a party member's gear
+descriptor (an enemy keeps its own) and calls battle_gear_formula_table[formula](). The
+0x28-byte descriptors come from the battle setup archive, directory (12, 0) file 3 (resident
+mode_battle_load_files), an offset table of packed blocks that ovl2615
+battle_setup_load_party_and_enemy_files unpacks: archive[4] holds the enemy commands,
+archive[5 + character] a party member's and archive[0x11 + gear] its gear's (copies of 0x1f40,
+0x5f0 and 0x690 bytes). An enemy's command is the arg1 byte of its AI's type-1 action-list
+entries (battle_action_list_act -> battle_commit_action), so the census also reads which
+commands the enemy data files' AI scripts select (tools.analysis.battle_ai) and whether each
+enemy fights in a gear (its record's +0x15a, copied by ovl2615
 battle_setup_copy_enemy_records_and_ai).
 
 Model primitives (decomp/src/resident/model_renderer.c). model_build_packets builds and
@@ -74,14 +74,19 @@ from tools.analysis.overlay_scripts import BASE, disc_image
 from tools.analysis.packed import PackedError, decode_block
 
 ROOT = Path(__file__).resolve().parents[2]
-FORMULA_UNIT = "battle/battle_menus_and_resolver.c"  # battle_formula_table, battle_gear_formula_table
+# battle_formula_table, battle_gear_formula_table
+FORMULA_UNIT = "battle/battle_menus_and_resolver.c"
 GEAR_FILE_UNIT = "battle/battle_scene.c"  # battle_gear_file_table
 MODEL_UNIT = "resident/model_renderer.c"  # model_primitive_types and its prepare routines
 AREA_UNIT = "worldmap/worldmap_movement_terrain.c"  # worldmap_area_file_sets
 MODE_UNIT = "worldmap/worldmap_open_map.c"  # worldmap_mode_handlers, the world map modes
 SPRITE_UNIT = "resident/sprite_vm_draw.c"  # sprite_draw_callbacks, the sprite task callbacks
-TMD_UNIT = "battle/battle_tmd_screen_effects.c"  # battle_tmd_build_packets packets, battle_tmd_draw_object draws
-FORMULA_TABLES = (("battle_formula_table", "battle_resolve_action"), ("battle_gear_formula_table", "battle_resolve_gear_action"))
+# battle_tmd_build_packets packets, battle_tmd_draw_object draws
+TMD_UNIT = "battle/battle_tmd_screen_effects.c"
+FORMULA_TABLES = (
+    ("battle_formula_table", "battle_resolve_action"),
+    ("battle_gear_formula_table", "battle_resolve_gear_action"),
+)
 
 
 class CensusError(ValueError):
@@ -180,7 +185,9 @@ def primitive_table(root: Path = ROOT) -> PrimitiveTable:
         overrides = "model_apply_override_command(" in function_body(text, prepare)
         values = (int(stride, 0), int(aux_stride, 0), int(packet_size, 0))
         types.append(PrimitiveType(routines, prepare, *values, overrides))
-    cases = re.findall(r"case (0x[0-9A-Fa-f]+):", function_body(text, "model_apply_override_command"))
+    cases = re.findall(
+        r"case (0x[0-9A-Fa-f]+):", function_body(text, "model_apply_override_command")
+    )
     return PrimitiveTable(tuple(types), frozenset(int(code, 16) for code in cases))
 
 
@@ -207,9 +214,10 @@ DESCRIPTOR = 0x28
 FORMULA = 0x16  # CommandDescriptor.formula
 FLAGS_A = 0x0A  # CommandDescriptor.flagsA
 GEAR_DESCRIPTOR = 0x10  # flagsA bit battle_resolve_action hands to battle_resolve_gear_action
-SETUP_ARCHIVE = (12, 0, 3)  # mode_battle_load_files: 80028470(12, 0), file 3 into mode_battle_setup_archive
-# battle_setup_load_party_and_enemy_files: archive entry, bytes copied, and the first entry after the run
-# (archive[0x10] and archive[0x24] are loaded for other uses).
+# mode_battle_load_files: 80028470(12, 0), file 3 into mode_battle_setup_archive
+SETUP_ARCHIVE = (12, 0, 3)
+# battle_setup_load_party_and_enemy_files: archive entry, bytes copied, and the first entry after
+# the run (archive[0x10] and archive[0x24] are loaded for other uses).
 ENEMY_COMMANDS = (4, 0x1F40, 5)
 PARTY_COMMANDS = (5, 0x5F0, 0x10)  # archive[5 + character]
 GEAR_COMMANDS = (0x11, 0x690, 0x24)  # archive[0x11 + gear]
@@ -390,9 +398,12 @@ TECHNIQUE_BASE = 21
 NEW_GAME = (0x10, 0, 3)  # mode_load_initial_game_data: the game data a new game starts from
 CHARACTER, CHARACTERS, GEAR_ID = 0x26C, 11, 0xA0  # 0xa4-byte records, +0xa0 the gear
 SKILLS, MASK6 = 0x16C0, 6  # 0x20-byte CharacterBattleData per character
-RESULTS = (0x10, 2, 2)  # ovl2596 battle_results_load_resources: item 0 is the growth table (+0x5f20)
-GROWTH, UNLOCKS_B, LEARNED_SLOTS = 0x110, 0xE0, 13  # battle_results_unlock_by_known_arts: k < 13, 0 ends
-FORCED_GEAR = (17, 10)  # battle_setup_load_party_and_enemy_files: formation flag 0x10 puts character 10 in gear 17
+# ovl2596 battle_results_load_resources: item 0 is the growth table (+0x5f20)
+RESULTS = (0x10, 2, 2)
+# battle_results_unlock_by_known_arts: k < 13, 0 ends
+GROWTH, UNLOCKS_B, LEARNED_SLOTS = 0x110, 0xE0, 13
+# battle_setup_load_party_and_enemy_files: formation flag 0x10 puts character 10 in gear 17
+FORCED_GEAR = (17, 10)
 
 
 @dataclass
@@ -672,7 +683,8 @@ def actor_models(disc: Disc) -> Iterator[ModelRef]:
 
 
 def battle_models(disc: Disc) -> Iterator[ModelRef]:
-    for s in range(record_count(disc, 12, 3, 5) // 2):  # mode_load_battle_stage: scene < file 5's count / 2
+    # mode_load_battle_stage: scene < file 5's count / 2
+    for s in range(record_count(disc, 12, 3, 5) // 2):
         yield from object_refs(f"stage {s}", file_bytes(disc, disc.slot(12, 3, 6 + 2 * s)))
     for n in range((record_count(disc, 12, 1, 1) - 1) // 2):
         data = file_bytes(disc, disc.slot(12, 1, 2 * n + 3))
@@ -703,7 +715,8 @@ def menu_models(disc: Disc) -> Iterator[ModelRef]:
         # arena_node_build_model_set relocates the model group at +4.
         models, base = struct.unpack_from("<I", data, 4)[0], struct.unpack_from("<I", data, 0x1C)[0]
         yield from group_refs(f"arena model {number - 2}", data, models - base)
-    model = 0x80091FB0 - BASE  # arena_mode_task: model_relocate_sprite_model(arena_actor_extra_model)
+    # arena_mode_task: model_relocate_sprite_model(arena_actor_extra_model)
+    model = 0x80091FB0 - BASE
     yield ModelRef("arena_actor_extra_model", disc_image("menu", disc.number), model, model)
 
 
@@ -714,8 +727,9 @@ def worldmap_models(disc: Disc) -> Iterator[ModelRef]:
         yield from group_refs(f"area {area}", data, group)
 
 
-# sprite_vm_run_generic_command: f5 binds the model at its target (relocated by model_relocate_sprite_model);
-# f6 and f7 relocate the group there (model_relocate_group) and build its first model.
+# sprite_vm_run_generic_command: f5 binds the model at its target (relocated by
+# model_relocate_sprite_model); f6 and f7 relocate the group there (model_relocate_group) and build
+# its first model.
 SPRITE_MODEL_COMMANDS = {0xF5: 0, 0xF6: GROUP_HEADER, 0xF7: GROUP_HEADER}
 
 
@@ -810,16 +824,15 @@ def primitive_census(disc: Disc) -> PrimitiveCensus:
 # World map arrival modes
 # ---------------------------------------------------------------------------
 #
-# The world map overlay's entry (worldmap.c worldmap_main) runs mode
-# game_data_worldmap_flag_word[0] & 0x7fff of worldmap_mode_handlers (its enter, then start and leave each
-# frame) without a bound check. The word is the game data's +0x2320. The world
-# map sets it to 1 for a new world state and keeps it across its own battles
-# (bit 0x8000 marks the return); its exits store a field's entry there. Field
-# 56 (change_map, field_event_change_map: operand 7) sets it as the field leaves for
+# The world map overlay's entry (worldmap.c worldmap_main) runs mode game_data_worldmap_flag_word[0]
+# & 0x7fff of worldmap_mode_handlers (its enter, then start and leave each frame) without a bound
+# check. The word is the game data's +0x2320. The world map sets it to 1 for a new world state and
+# keeps it across its own battles (bit 0x8000 marks the return); its exits store a field's entry
+# there. Field 56 (change_map, field_event_change_map: operand 7) sets it as the field leaves for
 # the world map (exit kind 1, mode 3). Battle event opcode 26 (ovl3087
-# battle_event_script_set_saved_map) sets the scene (a) and the word (d); after the battle the
-# world map runs only when the scene & 0x7ff is 0x400 or more (ovl2596
-# battle_results_leave_battle), otherwise d is a field's entry.
+# battle_event_script_set_saved_map) sets the scene (a) and the word (d); after the battle the world
+# map runs only when the scene & 0x7ff is 0x400 or more (ovl2596 battle_results_leave_battle),
+# otherwise d is a field's entry.
 
 MODE_FIELD_OPERAND = 3  # 56's operands: scene 1, +231e 3, heading 5, arrival 7
 MODE_EVENT_OPERAND = 3  # 26's operands: scene a, heading b, area c, arrival d
@@ -837,14 +850,13 @@ def world_modes(root: Path = ROOT) -> tuple[str, ...]:
     return tuple(start for _, start, _ in rows)
 
 
-# The world map leaves for a field (exit 0, worldmap.c worldmap_main) with the
-# scene and entry of the current path region (worldmap_current_path, a PathRegion) or,
-# from a scripted mode, constants its code stores in the game data's map
-# (game_data.map, 0x8006f94e). worldmap_path_select_region makes a region current for a
-# path table (it tests every region with a link; kind 4 regions only record a
-# destination) and worldmap_path_select_region_of_kind for table 3. The area files (0x24, 0) area + 1
-# of worldmap_area_file_sets hold the four path tables (worldmap_unpack_area_data: AreaHeader.spots,
-# then SpotHeader.table, offsets from the spot block).
+# The world map leaves for a field (exit 0, worldmap.c worldmap_main) with the scene and entry of
+# the current path region (worldmap_current_path, a PathRegion) or, from a scripted mode, constants
+# its code stores in the game data's map (game_data.map, 0x8006f94e). worldmap_path_select_region
+# makes a region current for a path table (it tests every region with a link; kind 4 regions only
+# record a destination) and worldmap_path_select_region_of_kind for table 3. The area files (0x24,
+# 0) area + 1 of worldmap_area_file_sets hold the four path tables (worldmap_unpack_area_data:
+# AreaHeader.spots, then SpotHeader.table, offsets from the spot block).
 PATH_TABLES = 4
 REGION = 16  # PathRegion: x, z, w, h, id, entry, link, kind
 DESTINATION = 4  # a kind-4 region records a destination, not a current path
@@ -945,12 +957,12 @@ def mode_census(disc: Disc, root: Path = ROOT) -> ModeCensus:
 # Sprite kinds
 # ---------------------------------------------------------------------------
 #
-# A new sprite's kind is bits 8-10 of its animation header's flags plus 8 for
-# bit 14 (sprite_get_header_kind): effect sprites take it from a directory animation
-# (sprite_create_effect), children from the header a command spawns (sprite_create_child;
-# kind 3 takes the parent's). sprite_task_init_by_kind rewrites camera markers 12 and 13
-# to 10 and 11 and hands the auxiliary task sprite_draw_callbacks[kind] (sprite_task_set_draw_by_kind);
-# the task loop skips a NULL update (task_run_main_list).
+# A new sprite's kind is bits 8-10 of its animation header's flags plus 8 for bit 14
+# (sprite_get_header_kind): effect sprites take it from a directory animation
+# (sprite_create_effect), children from the header a command spawns (sprite_create_child; kind 3
+# takes the parent's). sprite_task_init_by_kind rewrites camera markers 12 and 13 to 10 and 11 and
+# hands the auxiliary task sprite_draw_callbacks[kind] (sprite_task_set_draw_by_kind); the task loop
+# skips a NULL update (task_run_main_list).
 
 
 @cache
@@ -1018,15 +1030,14 @@ def kind_census(disc: Disc, root: Path = ROOT) -> KindCensus:
 # TMD primitives
 # ---------------------------------------------------------------------------
 #
-# Battle draws PlayStation TMD models (battle/effect_script.h's "effect script
-# file"): the resident model_slot_ring_tmd (the slot-highlight ring, battle_slot_ring_create) and the model a
-# battle sprite command f3 binds as its parts (battle_sprite_vm_run), which ovl3384
-# battle_module_debris_start can also break into pieces. Both read object 0
-# (battle_tmd_get_object: 0x1c-byte entries after a 0xc-byte header); each primitive
-# is olen (packet words - 1), ilen (data words - 1), flag and mode bytes and
-# its data. battle_tmd_build_packets builds a packet and battle_tmd_draw_object draws it by kind
-# (mode & 0x1c, plus 0x100 when flag bit 0, no lighting, is clear); ovl3384
-# switches on the same kinds. battle_tmd_get_packet_size sizes the packets by olen.
+# Battle draws PlayStation TMD models (battle/effect_script.h's "effect script file"): the resident
+# model_slot_ring_tmd (the slot-highlight ring, battle_slot_ring_create) and the model a battle
+# sprite command f3 binds as its parts (battle_sprite_vm_run), which ovl3384
+# battle_module_debris_start can also break into pieces. Both read object 0 (battle_tmd_get_object:
+# 0x1c-byte entries after a 0xc-byte header); each primitive is olen (packet words - 1), ilen (data
+# words - 1), flag and mode bytes and its data. battle_tmd_build_packets builds a packet and
+# battle_tmd_draw_object draws it by kind (mode & 0x1c, plus 0x100 when flag bit 0, no lighting, is
+# clear); ovl3384 switches on the same kinds. battle_tmd_get_packet_size sizes the packets by olen.
 
 TMD_OBJECT = 0xC
 RESIDENT_TMD = 0x8001C76C
@@ -1113,7 +1124,9 @@ def tmd_kinds(root: Path = ROOT) -> dict[int, TmdKind]:
         for label in labels:
             packets[label] = packet
     if any(kind & 0x1C not in packets for kind in reads):
-        raise CensusError("battle_tmd_draw_object draws no packet for a kind battle_tmd_build_packets builds")
+        raise CensusError(
+            "battle_tmd_draw_object draws no packet for a kind battle_tmd_build_packets builds"
+        )
     return {kind: TmdKind(packets[kind & 0x1C], reads[kind]) for kind in sorted(reads)}
 
 
@@ -1146,7 +1159,8 @@ def walk_tmd(
         census.primitives[kind] += 1
         census.modes[mode] += 1
         spec = kinds.get(kind)
-        if mode & 0xE0 != POLYGON:  # battle_tmd_build_packets writes the mode as the packet's GPU code
+        # battle_tmd_build_packets writes the mode as the packet's GPU code
+        if mode & 0xE0 != POLYGON:
             census.errors.append(f"{where}: primitive {number} mode {mode:#x} is not a polygon")
         if spec is None:
             census.errors.append(f"{where}: primitive {number} kind {kind:#x} has no case")

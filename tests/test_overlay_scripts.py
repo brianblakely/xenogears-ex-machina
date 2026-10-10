@@ -383,7 +383,8 @@ class TextureAnimationTests(unittest.TestCase):
         )
         data = bytearray(texture_image(good, good))
         struct.pack_into("<I", data, 0x8009A250 + 12 - BASE, BASE + len(data) - 2)
-        self.assertEqual(texture_sweep(bytes(data)).failures[0][0], "worldmap_texture_anim2_slots[0]")  # no end
+        # no end
+        self.assertEqual(texture_sweep(bytes(data)).failures[0][0], "worldmap_texture_anim2_slots[0]")
         with self.assertRaises(ScriptError):
             texture_frames(bytes(8), BASE + 4)
 
@@ -716,7 +717,8 @@ class SceneSourceTests(unittest.TestCase):
         self.assertEqual(
             untaken,
             [
-                # wakes the rig's flight, idle since worldmap_scene14_rig_flight_start returned 3; never read
+                # wakes the rig's flight, idle since worldmap_scene14_rig_flight_start returned 3;
+                # never read
                 ("worldmap_scene14_director_update", 9, "worldmap_scene14_rig_flight_update", 1, False),
                 # 0 is "none pending": the heat haze keeps its state
                 ("worldmap_scene16_director_update", 3, "worldmap_scene16_haze_strength_update", 0, True),

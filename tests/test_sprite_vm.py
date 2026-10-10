@@ -189,7 +189,9 @@ class SpriteDisassemblyTests(unittest.TestCase):
         battle = function_body("decomp/src/battle/battle_sprite_vm.c", "battle_sprite_vm_run")
         own = {op for op, spec in vm.BATTLE_SPECS.items() if spec.handler[:8] == "800c11cc"}
         self.assertEqual(hex_cases(battle), own)
-        commands = function_body("decomp/src/battle/battle_sprite_commands.c", "battle_sprite_command_run")
+        commands = function_body(
+            "decomp/src/battle/battle_sprite_commands.c", "battle_sprite_command_run"
+        )
         self.assertEqual(hex_cases(commands), set(vm.BATTLE_COMMANDS))
         place = generic[generic.index("case 0xBC:") : generic.index("case 0xD1:")]
         selectors = {int(value) for value in re.findall(r"case (\d+):", place)}
