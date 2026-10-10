@@ -777,10 +777,18 @@ def generate_dispatchers(rewriter, addresses):
 # ---------------------------------------------------------------- build
 
 def compile_ir(source, out_ll):
-    """Compile one unit to IR; the compiler's errors, or None."""
-    result = subprocess.run([os.environ["XEM_CLANG"], *CFLAGS, "-S", "-emit-llvm", "-O0", "-Xclang",
-                             "-disable-O0-optnone", "-ferror-limit=0", str(source), "-o", str(out_ll)],
-                            cwd=ROOT, capture_output=True, text=True)
+    """Compile one unit to IR; the compiler's errors, or None. A unit clang
+    rejects is retried with its target's headers first (game_schema.headers_first)."""
+    def attempt(path):
+        return subprocess.run([os.environ["XEM_CLANG"], *CFLAGS, "-S", "-emit-llvm", "-O0", "-Xclang",
+                               "-disable-O0-optnone", "-ferror-limit=0", str(path), "-o", str(out_ll)],
+                              cwd=ROOT, capture_output=True, text=True)
+
+    result = attempt(source)
+    if result.returncode and "decomp/src/" in str(source):
+        retry = attempt(game_schema.headers_first(os.path.relpath(source, ROOT), out_ll.parent))
+        if retry.returncode == 0:
+            return None
     return result.stderr if result.returncode else None
 
 
@@ -813,17 +821,21 @@ def build(args):
 
     with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
         errors = list(pool.map(lambda s: compile_ir(ROOT / s[0], ll_of(s[0])), sources))
-    failed = [(s, e) for s, e in zip(sources, errors) if e]
+    # The commons units (`*_common.c`, `commons/`) only define data, which the
+    # module keeps at its original addresses anyway; one clang rejects is noted.
+    data_only = [s for s, e in zip(sources, errors) if e and (s[0].endswith("_common.c") or "/commons/" in s[0])]
+    if data_only:
+        print(f"data-only units not compiled (their data stays at its original addresses): "
+              f"{', '.join(s[0] for s in data_only)}")
+    failed = [(s, e) for s, e in zip(sources, errors) if e and s not in data_only]
     if failed:
         log = out / "compile-errors.txt"
         log.write_text("".join(f"== {s[0]}\n{e}" for s, e in failed))
         print(f"{len(failed)} units failed to compile: {log}")
         if not args.stubs:
             raise SystemExit(1)
-        all_sources = sources
-        sources = [s for s, e in zip(sources, errors) if not e]
-    else:
-        all_sources = sources
+    all_sources = sources
+    sources = [s for s, e in zip(sources, errors) if not e]
     units = [Unit(source, ll_of(source), image) for source, image in sources]
     rewriter = Rewriter(addresses, units)
     rewritten = {}
