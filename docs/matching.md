@@ -198,29 +198,31 @@ After every target links, `all-verify` runs `make -C decomp cross-image`
 assign (the `PROVIDE`s its link used, ovl2602's names in ovl2143 among them, and the
 fragments: `*.resident.ld`, `debug595.field.ld`) whose value lies in another target's
 image or uninitialized data is an address copied from the original. A name that gives an
-address (splat's `D_`, `func_` and `jtbl_` names) must hold that address, and each must
-agree with the rebuilt targets by their own symbols: every other target that defines the
-name defines it there, each that exports it wherever the copied value points and one
-holding the value also by a local symbol (2318 of 2376 at present); where none does, a
-fragment may give it as a view, another name plus a constant that agrees by name, and
-the value must lie in the object holding that name in its definer (4: battle's game data
-member `game_data_party_state = game_data + 0x1D30` and debug595's three camera vectors
-of the field view field_view); otherwise a target holding the value has a symbol there
-(none: the movie library's entries and variable that field and movie use, the battle
-functions ovl3087 passes and the resident's VSync callback and sequence buffer that the
-world map uses all take their definers' names, which the importing symbol files give);
-otherwise the address must lie inside an input section that target's link places (54
-members or parts of objects that no symbol names, such as game data members, all from
-splat's lists). For this last group the check ties a value only to the address its name
-gives, not to a particular object or, where targets overlap (debug595's field names also
-lie in battle), to a particular target; reading them as members of their objects needs
-the importing C to use those objects (left open). Values outside every target (the
-resident's sizes, a constant) are not checked, nor is an address the C spells as a
-number, which neither this check nor the relocation scan (a target's own range only)
-sees. `python3 tools/cross_image.py decomp/targets/*/*.mk --numbers` lists those (each
-other target's address a link holds without a relocation, outside asset and included
-bytes and the mode table); in the 26 links they are battle's three reads of the boot
-word mode_disc_mode (80010000; battle_sprite_commands.c battle_sprite_command_run sprite
+address (splat's `D_`, `func_` and `jtbl_` names; the links hold none now) must hold
+that address, and each must agree with the rebuilt targets by their own symbols: every
+other target that defines the name defines it there, each that exports it wherever the
+copied value points and one holding the value also by a local symbol (2316 of 2376 at
+present); where none does, a fragment may give it as a view, another name plus a
+constant that agrees by name, and the value must lie in the object holding that name in
+its definer (4: battle's game data member `game_data_party_state = game_data + 0x1D30`
+and debug595's three camera vectors of the field view field_view); otherwise a target
+holding the value has a symbol there (2: each resident's mode_overlay_area, which
+link.ld assigns where each mode overlay's first unit defines its number; the movie
+library's entries and variable that field and movie use, the battle functions ovl3087
+passes and the resident's VSync callback and sequence buffer that the world map uses all
+take their definers' names, which the importing symbol files give); otherwise the
+address must lie inside an input section that target's link places (54 members or parts
+of objects that no symbol names, such as game data members, all from splat's lists). For
+this last group the check ties a value only to the address its name gives, not to a
+particular object or, where targets overlap (debug595's field names also lie in battle),
+to a particular target; reading them as members of their objects needs the importing C
+to use those objects (left open). Values outside every target (the resident's sizes, a
+constant) are not checked, nor is an address the C spells as a number, which neither
+this check nor the relocation scan (a target's own range only) sees.
+`python3 tools/cross_image.py decomp/targets/*/*.mk --numbers` lists those (each other
+target's address a link holds without a relocation, outside asset and included bytes and
+the mode table); in the 26 links they are battle's three reads of the boot word
+mode_disc_mode (80010000; battle_sprite_commands.c battle_sprite_command_run sprite
 commands 0x44/0x45, battle_settle.c battle_install_command_file_parts), a number in the
 original too: its CDK units load it with one register (`lui v1,0x8001; lw v1,0(v1)` at
 800b44b8), while by name they compile
