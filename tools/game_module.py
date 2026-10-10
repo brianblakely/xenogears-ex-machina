@@ -53,7 +53,7 @@ FINGERPRINT_BYTES = 32
 # through them).
 YIELD_IMPORTS = ["xem.yield", "xem.restart"]
 # The module's exports, defined in port/.
-EXPORTS = ["xem_run", "xem_call", "xem_unwind_area"]
+EXPORTS = ["xem_run", "xem_call", "xem_interrupt", "xem_unwind_area"]
 HOST_PREFIX = "xem_host_"
 # Game functions the port wraps (decomp/port): the game's definition is
 # renamed xem_original_<name> and the port's definition calls it.
@@ -488,12 +488,12 @@ class Rewriter:
             if line.startswith(("!", "source_filename")):
                 lines.append(line)
                 continue
+            line = self.substitute(unit, line, replacements, kept)
             if " asm " in line:
                 asm = self.rewrite_asm(unit, line)
                 if asm is not None:
                     lines.extend(asm)
                     continue
-            line = self.substitute(unit, line, replacements, kept)
             lines.extend(self.rewrite_call(unit, line))
         lines += host_groups
         # Declarations of the dispatchers and adapters this unit calls.
@@ -761,6 +761,8 @@ def build(args):
     out = (ROOT / args.out).resolve()
     (out / "ir").mkdir(parents=True, exist_ok=True)
     (out / "obj").mkdir(parents=True, exist_ok=True)
+    for report in ("compile-errors.txt", "codegen-errors.txt", "unmapped-asm.txt", "missing-data.txt", "stubs.txt"):
+        (out / report).unlink(missing_ok=True)
     images = collect_symbols(out)
     addresses = Addresses(images)
     sources = []

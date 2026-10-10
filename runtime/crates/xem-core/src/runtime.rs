@@ -1,11 +1,20 @@
-//! The run loop: start, suspend, resume and restart the game.
+//! The run loop: start, suspend, resume and restart the game, and advance the
+//! virtual clock at its waits.
 
+use crate::clock::{Clock, Tick};
+use crate::devices::{self, Context, Device};
 use crate::memory::GameMemory;
 use crate::module::{Action, AsyncState, GameModule, Import, ImportHandler, Trap};
+use crate::pad::Pads;
 
 /// Where `xem_run` starts (port/include/xem/port.h).
 pub const RESTART_BOOT: u32 = 0;
 pub const RESTART_DISPATCH: u32 = 1;
+
+/// Interrupt sources (port/include/xem/port.h, the PS1's I_STAT bits).
+pub const IRQ_VBLANK: u32 = 0;
+pub const IRQ_DMA: u32 = 3;
+pub const IRQ_RCNT0: u32 = 4;
 
 /// Yield reasons (port/include/xem/port.h).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -38,18 +47,61 @@ pub enum Stop {
     Returned,
 }
 
-/// The services the imports reach.
+/// The services the imports reach: the console's devices and the clock.
 #[derive(Default)]
 pub struct Services {
     pending: Option<Stop>,
+    pub clock: Clock,
+    pub pads: Pads,
+    pub gpu: devices::gpu::Gpu,
+    pub cd: devices::cd::Cd,
+    pub spu: devices::spu::Spu,
+    pub card: devices::card::Card,
     pub missing: Vec<u32>,
     pub log: Vec<String>,
     pub trap_reason: Option<String>,
     /// Names of the trapping stubs, by number (build/game/stubs.txt).
     pub stub_names: Vec<String>,
+    /// Interrupts raised by device services, delivered at the next wait.
+    pub raised: Vec<(u32, u32)>,
 }
 
 impl Services {
+    fn devices(&mut self) -> [(&'static str, &mut dyn Device); 4] {
+        [("gpu_", &mut self.gpu), ("cd_", &mut self.cd), ("spu_", &mut self.spu), ("card_", &mut self.card)]
+    }
+
+    /// The earliest scheduled device event.
+    pub fn next_device_event(&mut self) -> Option<u64> {
+        self.devices().into_iter().filter_map(|(_, d)| d.next_event()).min()
+    }
+
+    /// Call `f` on every device with a context.
+    fn each_device(&mut self, memory: &mut dyn GameMemory, mut f: impl FnMut(&mut dyn Device, &mut Context<'_>)) {
+        let now = self.clock.now;
+        let mut raised = std::mem::take(&mut self.raised);
+        let mut reason = self.trap_reason.take();
+        for (_, device) in self.devices() {
+            f(device, &mut Context { memory, now, raised: &mut raised, trap_reason: &mut reason });
+        }
+        self.raised = raised;
+        self.trap_reason = reason;
+    }
+
+    /// Run the device events due now.
+    fn run_device_events(&mut self, memory: &mut dyn GameMemory) {
+        let now = self.clock.now;
+        let mut raised = std::mem::take(&mut self.raised);
+        let mut reason = self.trap_reason.take();
+        for (_, device) in self.devices() {
+            if device.next_event().is_some_and(|at| at <= now) {
+                device.run_events(&mut Context { memory, now, raised: &mut raised, trap_reason: &mut reason });
+            }
+        }
+        self.raised = raised;
+        self.trap_reason = reason;
+    }
+
     fn stub_name(&self, id: u32) -> String {
         if id >= 0x10000 {
             return format!("unmapped inline assembly #{}", id - 0x10000);
@@ -59,7 +111,7 @@ impl Services {
 }
 
 impl ImportHandler for Services {
-    fn import(&mut self, import: Import<'_>, _memory: &mut dyn GameMemory) -> Action {
+    fn import(&mut self, import: Import<'_>, memory: &mut dyn GameMemory) -> Action {
         let arg = |i: usize| import.args.get(i).copied().unwrap_or(0);
         match import.name {
             "yield" => {
@@ -70,6 +122,26 @@ impl ImportHandler for Services {
                 self.pending = Some(Stop::Restart { kind: arg(0), arg: arg(1) });
                 Action::Unwind
             }
+            "rcnt_set" => {
+                self.clock.set_counter(arg(0) as usize % 3, arg(1), arg(2));
+                Action::Return(0)
+            }
+            "rcnt_start" => {
+                self.clock.start_counter(arg(0) as usize % 3);
+                Action::Return(0)
+            }
+            "rcnt_stop" => {
+                self.clock.stop_counter(arg(0) as usize % 3);
+                Action::Return(0)
+            }
+            "rcnt_read" => Action::Return(self.clock.read_counter(arg(0) as usize % 3)),
+            "pad_read" => match self.pads.write_receive_buffer(arg(0), arg(1), arg(2), memory) {
+                Ok(()) => Action::Return(0),
+                Err(error) => {
+                    self.trap_reason = Some(error.to_string());
+                    Action::Trap
+                }
+            },
             "debug_break" => {
                 self.log.push(format!("break {}", arg(0)));
                 Action::Return(0)
@@ -88,11 +160,34 @@ impl ImportHandler for Services {
                 Action::Trap
             }
             other => {
-                self.trap_reason = Some(format!("unknown import xem.{other}"));
-                Action::Trap
+                let now = self.clock.now;
+                let mut raised = std::mem::take(&mut self.raised);
+                let mut reason = self.trap_reason.take();
+                let mut action = None;
+                for (prefix, device) in self.devices() {
+                    if let Some(op) = other.strip_prefix(prefix) {
+                        let mut context = Context { memory, now, raised: &mut raised, trap_reason: &mut reason };
+                        action = Some(device.import(op, import.args, &mut context));
+                        break;
+                    }
+                }
+                self.raised = raised;
+                self.trap_reason = reason;
+                action.unwrap_or_else(|| {
+                    self.trap_reason = Some(format!("unknown import xem.{other}"));
+                    Action::Trap
+                })
             }
         }
     }
+}
+
+/// What a frame did.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct FrameReport {
+    pub steps: u64,
+    pub restarts: Vec<(u32, u32)>,
+    pub interrupts: u64,
 }
 
 /// The game module with its services.
@@ -128,7 +223,14 @@ impl<M: GameModule> Runtime<M> {
         self.module.memory()
     }
 
-    /// Run the game until it yields, restarts or traps.
+    fn host_trap(&mut self, trap: Trap) -> Trap {
+        match (trap, self.services().trap_reason.take()) {
+            (Trap::Wasm(_), Some(reason)) => Trap::Host(reason),
+            (trap, _) => trap,
+        }
+    }
+
+    /// Run the game until it waits, restarts or traps.
     pub fn step(&mut self) -> Result<Stop, Trap> {
         let (kind, arg) = self.entry;
         if self.suspended {
@@ -138,12 +240,9 @@ impl<M: GameModule> Runtime<M> {
             self.module.set_stack_pointer(self.stack_top);
         }
         let result = self.module.run(kind, arg);
+        self.sync_devices();
         if let Err(trap) = result {
-            let reason = self.services().trap_reason.take();
-            return Err(match (trap, reason) {
-                (Trap::Wasm(_), Some(reason)) => Trap::Host(reason),
-                (trap, _) => trap,
-            });
+            return Err(self.host_trap(trap));
         }
         if self.module.async_state() != AsyncState::Unwinding {
             self.suspended = false;
@@ -166,12 +265,95 @@ impl<M: GameModule> Runtime<M> {
         }
     }
 
-    /// Deliver an interrupt callback while the game is suspended.
-    pub fn call(&mut self, address: u32) -> Result<(), Trap> {
+    /// Deliver an interrupt while the game is suspended, on the stack below
+    /// the suspended frames.
+    pub fn interrupt(&mut self, irq: u32, detail: u32) -> Result<(), Trap> {
         let sp = self.module.stack_pointer();
-        let result = self.module.call(address);
+        let result = self.module.interrupt(irq, detail);
         self.module.set_stack_pointer(sp);
-        result
+        self.sync_devices();
+        result.map_err(|trap| self.host_trap(trap))
+    }
+
+    fn sync_devices(&mut self) {
+        // SAFETY: no export runs here; services and module memory are disjoint.
+        let services = unsafe { &mut *self.services };
+        services.each_device(self.module.memory(), |device, context| device.sync(context));
+    }
+
+    /// Let the devices catch up with the clock (after it moved).
+    fn advance_devices(&mut self) {
+        // SAFETY: as in sync_devices.
+        let services = unsafe { &mut *self.services };
+        services.each_device(self.module.memory(), |device, context| device.advance(context));
+    }
+
+    /// Advance the clock to `limit` (or until the first interrupt when
+    /// `first_only`), delivering interrupts in time order.
+    fn advance(&mut self, limit: u64, first_only: bool, report: &mut FrameReport) -> Result<bool, Trap> {
+        let mut delivered = false;
+        loop {
+            let raised = std::mem::take(&mut self.services().raised);
+            for (irq, detail) in raised {
+                self.interrupt(irq, detail)?;
+                report.interrupts += 1;
+                delivered = true;
+            }
+            if delivered && first_only {
+                return Ok(true);
+            }
+            // A device event before the clock's next interrupt runs first.
+            let device_at = self.services().next_device_event();
+            if let Some(at) = device_at.filter(|&at| at <= limit) {
+                let services = unsafe { &mut *self.services };
+                if at < services.clock.peek().0 {
+                    services.clock.now = services.clock.now.max(at);
+                    self.advance_devices();
+                    let services = unsafe { &mut *self.services };
+                    services.run_device_events(self.module.memory());
+                    continue;
+                }
+            }
+            let Some(tick) = self.services().clock.next_tick(limit) else {
+                return Ok(delivered);
+            };
+            self.advance_devices();
+            match tick {
+                Tick::VBlank => self.interrupt(IRQ_VBLANK, 0)?,
+                Tick::RootCounter(n) => self.interrupt(IRQ_RCNT0 + n as u32, 0)?,
+            }
+            report.interrupts += 1;
+            delivered = true;
+            if first_only || tick == Tick::VBlank {
+                return Ok(true);
+            }
+        }
+    }
+
+    /// Run the game until the clock passes the next vertical blank: each wait
+    /// advances the clock (a frame wait to the blank, a poll to the next
+    /// interrupt), delivering interrupts in time order.
+    pub fn run_frame(&mut self) -> Result<FrameReport, Trap> {
+        let frame_end = self.services().clock.next_vblank();
+        let mut report = FrameReport::default();
+        loop {
+            report.steps += 1;
+            match self.step()? {
+                Stop::Yield(YieldReason::VSync) | Stop::Yield(YieldReason::Poll) | Stop::Yield(YieldReason::Other(_)) => {
+                    self.advance(frame_end, true, &mut report)?;
+                }
+                Stop::Yield(YieldReason::DrawSync) => {
+                    // Drawing ends at once; deliver what it raised.
+                    let now = self.services().clock.now;
+                    self.advance(now, false, &mut report)?;
+                }
+                Stop::Restart { kind, arg } => report.restarts.push((kind, arg)),
+                Stop::Returned => return Err(Trap::Host("xem_run returned".into())),
+            }
+            if self.services().clock.now >= frame_end {
+                return Ok(report);
+            }
+        }
     }
 }
 

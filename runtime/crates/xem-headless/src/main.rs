@@ -12,10 +12,10 @@ fn main() -> ExitCode {
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--disc" => disc = args.next().map(PathBuf::from),
-            "--steps" => steps = args.next().and_then(|v| v.parse().ok()).unwrap_or(steps),
+            "--frames" => steps = args.next().and_then(|v| v.parse().ok()).unwrap_or(steps),
             "--stubs" => stubs = args.next().map(PathBuf::from).unwrap_or(stubs),
             _ => {
-                eprintln!("usage: xem-headless --disc <chd|cue|bin> [--steps N] [--stubs build/game/stubs.txt]");
+                eprintln!("usage: xem-headless --disc <chd|cue|bin> [--frames N] [--stubs build/game/stubs.txt]");
                 return ExitCode::FAILURE;
             }
         }
@@ -43,7 +43,7 @@ fn run(_: &std::path::Path, _: u64, _: &std::path::Path) -> Result<(), Box<dyn s
 
 #[cfg(has_game_module)]
 fn run(disc: &std::path::Path, steps: u64, stubs: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
-    use xem_core::{Runtime, Stop, exe};
+    use xem_core::{Runtime, exe};
 
     let mut source = xem_disc::open_path(disc)?;
     let identity = xem_disc::identify(source.as_mut())?;
@@ -58,29 +58,23 @@ fn run(disc: &std::path::Path, steps: u64, stubs: &std::path::Path) -> Result<()
     }
     // The BIOS copies the executable's text to its address and jumps to pc0.
     runtime.memory().write(header.text_address, exe::text(&identity.executable, &header))?;
-    let mut yields = 0u64;
-    for step in 0..steps {
-        match runtime.step() {
-            Ok(Stop::Yield(reason)) => {
-                yields += 1;
-                if yields <= 5 {
-                    println!("step {step}: yield {reason:?}");
+    for frame in 0..steps {
+        match runtime.run_frame() {
+            Ok(report) => {
+                for (kind, arg) in &report.restarts {
+                    println!("frame {frame}: restart kind {kind} arg {arg:#x}");
                 }
             }
-            Ok(Stop::Restart { kind, arg }) => println!("step {step}: restart kind {kind} arg {arg:#x}"),
-            Ok(Stop::Returned) => {
-                println!("step {step}: the game returned");
-                break;
-            }
             Err(trap) => {
-                println!("step {step}: {trap}");
+                println!("frame {frame}: {trap}");
                 break;
             }
         }
     }
-    for line in &runtime.services().log {
+    let services = runtime.services();
+    for line in &services.log {
         println!("log: {line}");
     }
-    println!("{yields} yields");
+    println!("clock: {} cycles, {} vblanks", services.clock.now, services.clock.vblanks);
     Ok(())
 }

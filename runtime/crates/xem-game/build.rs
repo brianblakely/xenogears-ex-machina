@@ -139,6 +139,13 @@ int xem_game_call(w2c_game *instance, u32 address) {
     return 0;
 }
 
+int xem_game_interrupt(w2c_game *instance, u32 irq, u32 detail) {
+    wasm_rt_trap_t code = wasm_rt_impl_try();
+    if (code != 0) return (int)code;
+    w2c_game_xem_interrupt(instance, irq, detail);
+    return 0;
+}
+
 const char *xem_game_trap_description(int code) {
     return wasm_rt_strerror((wasm_rt_trap_t)code);
 }

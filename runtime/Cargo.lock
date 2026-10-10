@@ -5182,6 +5182,12 @@ dependencies = [
 [[package]]
 name = "xem-core"
 version = "0.1.0"
+dependencies = [
+ "xem-disc",
+ "xem-gpu",
+ "xem-media",
+ "xem-spu",
+]
 
 [[package]]
 name = "xem-desktop"

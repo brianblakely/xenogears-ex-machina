@@ -25,6 +25,7 @@ unsafe extern "C" {
     fn xem_game_free(instance: *mut Instance);
     fn xem_game_run(instance: *mut Instance, kind: u32, arg: u32) -> c_int;
     fn xem_game_call(instance: *mut Instance, address: u32) -> c_int;
+    fn xem_game_interrupt(instance: *mut Instance, irq: u32, detail: u32) -> c_int;
     fn xem_game_trap_description(code: c_int) -> *const c_char;
     fn xem_game_memory(instance: *mut Instance, size: *mut u64) -> *mut u8;
     fn xem_game_stack_pointer(instance: *mut Instance) -> *mut u32;
@@ -150,6 +151,13 @@ impl GameModule for NativeModule {
 
     fn call(&mut self, address: u32) -> Result<(), Trap> {
         match unsafe { xem_game_call(self.instance, address) } {
+            0 => Ok(()),
+            code => Err(Self::trap(code)),
+        }
+    }
+
+    fn interrupt(&mut self, irq: u32, detail: u32) -> Result<(), Trap> {
+        match unsafe { xem_game_interrupt(self.instance, irq, detail) } {
             0 => Ok(()),
             code => Err(Self::trap(code)),
         }
