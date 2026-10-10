@@ -1,0 +1,12 @@
+{
+  "name": "xem-web",
+  "private": true,
+  "description": "The browser host's page and its Playwright tests",
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-concurrency=1 tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "1.64.0"
+  }
+}

@@ -85,6 +85,9 @@ pub trait GameModule {
     fn stack_pointer(&mut self) -> u32;
     fn set_stack_pointer(&mut self, value: u32);
     fn memory(&mut self) -> &mut dyn GameMemory;
+    /// The end of the port's shadow stack and data (the module's `__heap_base`):
+    /// memory below it is the module's own state, kept in snapshots.
+    fn data_end(&mut self) -> u32;
     /// The module's mutable globals other than the stack pointer, for snapshots.
     fn globals(&mut self) -> Vec<u32>;
     fn set_globals(&mut self, values: &[u32]);

@@ -21,9 +21,12 @@ wgpu = { version = "=30.0.1", default-features = false }
 wgpu-hal = { version = "=30.0.1", default-features = false }
 sdl3-sys = { version = "=0.6.8" }
 openxr = { version = "=0.22.0" }
+# wasm-bindgen must equal the Nix wasm-bindgen-cli; js-sys, web-sys and
+# wasm-bindgen-futures pin that wasm-bindgen exactly.
 wasm-bindgen = { version = "=0.2.127" }
-js-sys = { version = "0.3" }
-web-sys = { version = "0.3" }
+wasm-bindgen-futures = { version = "=0.4.77" }
+js-sys = { version = "=0.3.104" }
+web-sys = { version = "=0.3.104" }
 raw-window-handle = { version = "0.6.2" }
 cc = { version = "1.2" }
 bytemuck = { version = "1", features = ["derive"] }

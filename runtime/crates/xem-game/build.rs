@@ -168,6 +168,7 @@ u8 *xem_game_memory(w2c_game *instance, u64 *size) {
 }
 
 u32 *xem_game_stack_pointer(w2c_game *instance) { return w2c_game_0x5F_stack_pointer(instance); }
+u32 xem_game_data_end(w2c_game *instance) { return *w2c_game_0x5F_heap_base(instance); }
 u32 xem_game_async_state(w2c_game *instance) { return w2c_game_asyncify_get_state(instance); }
 void xem_game_stop_unwind(w2c_game *instance) { w2c_game_asyncify_stop_unwind(instance); }
 void xem_game_start_rewind(w2c_game *instance) { w2c_game_asyncify_start_rewind(instance, instance->w2c_xem_instance->area); }

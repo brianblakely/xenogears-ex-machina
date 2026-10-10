@@ -43,44 +43,29 @@ fn run(_: &std::path::Path, _: u64, _: &std::path::Path) -> Result<(), Box<dyn s
 
 #[cfg(has_game_module)]
 fn run(disc: &std::path::Path, steps: u64, stubs: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
-    use xem_core::{Runtime, Stop, exe};
+    use xem_core::session::{Condition, Session, StepLog, parse_stub_names};
 
     let mut source = xem_disc::open_path(disc)?;
     let identity = xem_disc::identify(source.as_mut())?;
     let known = identity.disc.ok_or("not a known Xenogears disc")?;
     println!("disc {} ({}), {}", known.number(), known.serial(), identity.boot_path);
-    let header = exe::parse(&identity.executable)?;
 
-    let mut runtime = Runtime::new(xem_game::NativeModule::new());
-    if let Ok(text) = std::fs::read_to_string(stubs) {
-        runtime.services().stub_names =
-            text.lines().filter_map(|l| l.split_once(' ').map(|(_, n)| n.to_string())).collect();
-    }
+    let stub_names = std::fs::read_to_string(stubs).map(|text| parse_stub_names(&text)).unwrap_or_default();
+    let mut session = Session::new(xem_game::NativeModule::new(), stub_names);
     // The BIOS copies the executable's text to its address and jumps to pc0.
-    runtime.memory().write(header.text_address, exe::text(&identity.executable, &header))?;
-    let mut yields = 0u64;
-    for step in 0..steps {
-        match runtime.step() {
-            Ok(Stop::Yield(reason)) => {
-                yields += 1;
-                if yields <= 5 {
-                    println!("step {step}: yield {reason:?}");
-                }
-            }
-            Ok(Stop::Restart { kind, arg }) => println!("step {step}: restart kind {kind} arg {arg:#x}"),
-            Ok(Stop::Returned) => {
-                println!("step {step}: the game returned");
-                break;
-            }
-            Err(trap) => {
-                println!("step {step}: {trap}");
-                break;
-            }
+    session.load_executable(&identity.executable)?;
+    // The browser host logs the same lines (runtime/crates/xem-web).
+    let mut log = StepLog::default();
+    session.run_until(&Condition::Halt, steps, |step, outcome| {
+        if let Some(line) = log.record(step, outcome) {
+            println!("{line}");
         }
-    }
-    for line in &runtime.services().log {
+    });
+    let status = session.status();
+    for line in &status.log {
         println!("log: {line}");
     }
-    println!("{yields} yields");
+    println!("{} yields", status.yields);
+    println!("ram digest {:016x}", session.digest()?);
     Ok(())
 }

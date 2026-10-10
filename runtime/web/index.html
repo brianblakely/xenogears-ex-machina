@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Xenogears Ex Machina</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="main.js"></script>
+</head>
+<body>
+  <header>
+    <strong>Xenogears Ex Machina</strong>
+    <nav>
+      <label class="button">Choose disc image…<input id="file" type="file" accept=".chd,.bin" hidden></label>
+      <button id="pick" hidden>Open with file access…</button>
+      <button id="reopen" hidden>Reopen</button>
+      <button id="boot">Boot</button>
+      <button id="run">Run / pause</button>
+      <button id="step">Step</button>
+      <button id="settings" title="Settings (F1)">Settings</button>
+      <button id="audio">Start audio</button>
+      <button id="save">Save</button>
+      <button id="load">Load</button>
+    </nav>
+  </header>
+  <main>
+    <canvas id="screen"></canvas>
+  </main>
+  <footer>
+    <p id="message">Your disc image is read in place on this device; nothing is uploaded.</p>
+    <pre id="status"></pre>
+  </footer>
+</body>
+</html>

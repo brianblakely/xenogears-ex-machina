@@ -1,6 +1,6 @@
 //! The run loop: start, suspend, resume and restart the game.
 
-use crate::memory::GameMemory;
+use crate::memory::{GameMemory, OutOfBounds, RAM_BASE, RAM_SIZE, SCRATCHPAD_BASE, SCRATCHPAD_SIZE};
 use crate::module::{Action, AsyncState, GameModule, Import, ImportHandler, Trap};
 
 /// Where `xem_run` starts (port/include/xem/port.h).
@@ -36,6 +36,21 @@ pub enum Stop {
     Restart { kind: u32, arg: u32 },
     /// `xem_run` returned, which the original program never does.
     Returned,
+}
+
+/// The runtime between steps: game memory, the module's globals and the host
+/// services' state (docs/runtime.md, Suspension).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RuntimeSnapshot {
+    /// Where the next step starts when the game is not suspended.
+    pub entry: (u32, u32),
+    pub suspended: bool,
+    pub saved_stack_pointer: u32,
+    pub globals: Vec<u32>,
+    /// (address, bytes): the port's stack and data, the scratchpad and RAM.
+    pub regions: Vec<(u32, Vec<u8>)>,
+    pub missing: Vec<u32>,
+    pub log: Vec<String>,
 }
 
 /// The services the imports reach.
@@ -164,6 +179,56 @@ impl<M: GameModule> Runtime<M> {
             }
             _ => Err(Trap::Host("the game unwound without a reason".into())),
         }
+    }
+
+    /// Where the next step starts when the game is not suspended: `xem_run(kind, arg)`.
+    pub fn entry(&self) -> (u32, u32) {
+        self.entry
+    }
+
+    /// Whether the game waits in a yield (the next step resumes it).
+    pub fn is_suspended(&self) -> bool {
+        self.suspended
+    }
+
+    /// Capture the state between steps.
+    pub fn snapshot(&mut self) -> Result<RuntimeSnapshot, OutOfBounds> {
+        let data_end = self.module.data_end();
+        let mut regions = Vec::new();
+        for (address, len) in [(0, data_end), (SCRATCHPAD_BASE, SCRATCHPAD_SIZE), (RAM_BASE, RAM_SIZE)] {
+            let mut bytes = vec![0; len as usize];
+            self.module.memory().read(address, &mut bytes)?;
+            regions.push((address, bytes));
+        }
+        let globals = self.module.globals();
+        let services = self.services();
+        let (missing, log) = (services.missing.clone(), services.log.clone());
+        Ok(RuntimeSnapshot {
+            entry: self.entry,
+            suspended: self.suspended,
+            saved_stack_pointer: self.saved_stack_pointer,
+            globals,
+            regions,
+            missing,
+            log,
+        })
+    }
+
+    /// Return to a captured state, including after a trap.
+    pub fn restore(&mut self, snapshot: &RuntimeSnapshot) -> Result<(), OutOfBounds> {
+        for (address, bytes) in &snapshot.regions {
+            self.module.memory().write(*address, bytes)?;
+        }
+        self.module.set_globals(&snapshot.globals);
+        self.entry = snapshot.entry;
+        self.suspended = snapshot.suspended;
+        self.saved_stack_pointer = snapshot.saved_stack_pointer;
+        let services = self.services();
+        services.pending = None;
+        services.trap_reason = None;
+        services.missing = snapshot.missing.clone();
+        services.log = snapshot.log.clone();
+        Ok(())
     }
 
     /// Deliver an interrupt callback while the game is suspended.

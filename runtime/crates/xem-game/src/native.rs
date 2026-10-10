@@ -28,6 +28,7 @@ unsafe extern "C" {
     fn xem_game_trap_description(code: c_int) -> *const c_char;
     fn xem_game_memory(instance: *mut Instance, size: *mut u64) -> *mut u8;
     fn xem_game_stack_pointer(instance: *mut Instance) -> *mut u32;
+    fn xem_game_data_end(instance: *mut Instance) -> u32;
     fn xem_game_async_state(instance: *mut Instance) -> u32;
     fn xem_game_stop_unwind(instance: *mut Instance);
     fn xem_game_start_rewind(instance: *mut Instance);
@@ -177,6 +178,10 @@ impl GameModule for NativeModule {
 
     fn memory(&mut self) -> &mut dyn GameMemory {
         &mut self.host.memory
+    }
+
+    fn data_end(&mut self) -> u32 {
+        unsafe { xem_game_data_end(self.instance) }
     }
 
     fn globals(&mut self) -> Vec<u32> {

@@ -8,7 +8,9 @@ pub mod exe;
 pub mod memory;
 pub mod module;
 pub mod runtime;
+pub mod session;
 
 pub use memory::{GameMemory, SliceMemory};
 pub use module::{Action, GameModule, Import, Trap};
-pub use runtime::{Runtime, Services, Stop, YieldReason};
+pub use runtime::{Runtime, RuntimeSnapshot, Services, Stop, YieldReason};
+pub use session::{Condition, Outcome, Report, Session, Snapshot, Status, StepLog};

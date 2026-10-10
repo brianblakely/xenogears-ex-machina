@@ -849,10 +849,13 @@ def stub_ir(missing, units):
 
 def link(out, objects, args, units):
     raw = out / "game.raw.wasm"
+    # __heap_base ends the port's stack and data, which snapshots keep with
+    # game RAM and the scratchpad.
     cmd = [os.environ["XEM_WASM_LD"], "--no-entry", "--error-limit=0",
            f"--initial-memory={MEMORY_BYTES}", f"--max-memory={MEMORY_BYTES}",
            "-z", f"stack-size={STACK_BYTES}", "--stack-first",
-           "--export=__stack_pointer", *(f"--export={name}" for name in EXPORTS), "-o", str(raw)]
+           "--export=__stack_pointer", "--export=__heap_base",
+           *(f"--export={name}" for name in EXPORTS), "-o", str(raw)]
     if args.stubs:
         # wasm-ld reports some undefined symbols only once others resolve.
         missing = set()

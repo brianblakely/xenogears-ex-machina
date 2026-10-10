@@ -115,3 +115,68 @@ From `runtime/` in `nix develop path:./nix/runtime`:
 - Android, in `#android`: `cargo ndk -t arm64-v8a -P 26 build -p xem-ui -p xem-render`
   (Slint compiles its FemtoVG module out on Android, so `xem-ui` takes the
   renderer from `i-slint-renderer-femtovg` there)
+
+## Browser host
+
+`xem-web` (wasm32-unknown-unknown, wasm-bindgen) and the thin ES-module page in
+`runtime/web/` are the browser host; everything structured crosses the boundary
+as JSON text or bytes.
+
+- **Two modules.** `game.js` compiles `game.wasm` and instantiates it with one
+  forward per `xem` import, `(...args) => xem_game_import(index, args)`. Like
+  xem-game's native glue, the forward stops a rewind and returns the resume
+  value, or asks the runtime's handler, which answers with a value, an unwind
+  (the forward calls `xem_unwind_area` and `asyncify_start_unwind`) or a trap
+  (a thrown error that leaves the game's frames). `WebModule` implements
+  `GameModule` over the instance's exports; game memory is reached through
+  copies from its `WebAssembly.Memory`. The module's 2 GiB memory (RAM at its
+  KSEG0 address) is a reservation the browser commits as pages are touched.
+  `boot` takes a fresh instance each time.
+- **Command layer.** `xem_core::Session` is shared with xem-headless: load the
+  executable as the BIOS does, `step`, bounded `run_until` (`halt`, `yield`,
+  `restart`, a memory `word`), `status`, `digest` (FNV-1a of RAM and the
+  scratchpad), `snapshot`/`restore` (the port's stack and data below
+  `__heap_base`, the scratchpad, RAM, the asyncify area pointer and the
+  services' state; `Snapshot::to_bytes` is the file form) and the `StepLog` both
+  hosts print. A browser `runUntil` is bounded to 100 000 steps per call.
+- **Scheduling.** `requestAnimationFrame` calls `XemApp::frame`: while running,
+  at most 16 steps, ending after a VSync yield or 8 ms, then one render. A
+  throttled or hidden page gets fewer frames; nothing catches up.
+- **Rendering.** wgpu on the canvas: WebGPU when the browser gives an adapter,
+  WebGL2 otherwise (`?backend=webgl2` forces it); `status().renderer.backend`
+  says which. The Slint panel (FemtoVG's wgpu renderer on the same device,
+  composited over the scene) works on both; F1 or the Settings button shows it,
+  Escape or Close hides it. A lost device is replaced on a new canvas (WebGL2
+  after repeated WebGPU losses).
+- **Disc import.** A file input (and, where available, the File System Access
+  API, whose handle is kept in IndexedDB for "Reopen") gives a `File`; the image
+  is read in place over `PrefetchedFile` in 256 KiB chunks with an 8 MiB chunk
+  budget and a 4 MiB decoded-hunk budget, whatever its size. Identifying disc 1
+  reads 1.1 MB of its 358 MB CHD. CHD and raw MODE2/2352 `.bin` images are
+  accepted (a `.cue` is not needed for a single-track image). Nothing is sent
+  anywhere.
+- **Audio.** "Start audio" creates the `AudioContext` inside the click; an
+  `AudioWorklet` plays a ring of samples `XemApp::audio_render` produces and
+  asks for more when low (no SharedArrayBuffer). Until the port drives xem-spu
+  the samples are a test tone mixed by the volume and output settings.
+- **Persistence.** Settings: `SettingsService` over `localStorage`
+  (`xem.settings`). Saves: IndexedDB (`xem` database, `saves` store) holds the
+  session snapshot, or without a session a formatted blank memory card, with its
+  SHA-256, checked when read back.
+- **Automation.** `window.xem`: `status()`, `boot({executable, run})`,
+  `setRunning`, `step(n)`, `runUntil({maxSteps, condition})`, `digest()`,
+  `snapshot()`, `restore(bytes)`, `settings.get()`/`settings.apply(change)`
+  (a `SettingChange`, e.g. `{MasterVolume: 40}`), `panel.show(bool)`,
+  `importDisc(blob)`, `readSectors(lba, count)`, `save(slot)`/`load(slot)`. Each
+  is the runtime method the page's controls use; there is no DOM-input path.
+
+From the repository root in `nix develop path:./nix/runtime`:
+
+- build: `python3 runtime/web/build.py` (output `build/web/`; `--no-game` leaves
+  the game module out, as a hosted build must until it ships separately)
+- serve: `node runtime/web/serve.mjs build/web 8080`, then http://localhost:8080/
+- tests: `cd runtime/web && npm ci && npm test` (Playwright on the shell's
+  Chromium; `XEM_DISC1=<disc 1 image>` adds the user-disc tests, which compare
+  the boot with `runtime/target/release/xem-headless` when it is built).
+  Headless Chromium needs `--use-vulkan=swiftshader` for WebGPU: with its
+  default Vulkan choice it destroys a WebGPU device after the canvas presents.
