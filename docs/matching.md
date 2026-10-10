@@ -545,7 +545,10 @@ definer's name where one unit sees both. The names of a second declaration bound
 assembler name, the resident's own name for the overlay area (`mode_overlay_area`,
 which link.ld assigns, where each mode overlay's first unit defines its number) and
 `arena_mode_heap_tag_name_strings` (a string boundary for splat in
-menu.symbols.txt) were given by hand.
+menu.symbols.txt) were given by hand. The only splat-shaped names left in tracked
+files are those synthetic fixtures and the two examples of splat's naming of a base
+address in Recovering data (`D_8009A684`, `D_801EA5D0`); the generated assembly
+under .local keeps splat's names for what no symbol file names.
 
 ## What counts as recovered source
 
