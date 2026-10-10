@@ -47,10 +47,14 @@ a fresh split names the address so. Units and .s files move with git mv,
 with their per-unit .mk settings, yaml subsegments and INCLUDE_ASM paths.
 Applying twice changes nothing more.
 
-Two names a split could not keep are refused: a label splat writes inside
-another symbol's generated file (alabel), which a name of its own would split
-out into a file no INCLUDE_ASM includes, and an alias given its definer's
-name where one unit sees both names.
+A label splat writes inside another symbol's generated file (alabel) takes
+its name as `type:label` in the symbol file: a plain name would split it out
+into a file no INCLUDE_ASM includes, a label stays in that file (its users
+are that unit's). An SDK member (in an sdk range of the classification, or
+defined in the generated assembly the units include and named only by SDK
+functions: the libraries' strings and jump tables) keeps its PsyQ name or
+takes its library's prefix. An alias given its definer's name where one unit
+sees both names is refused.
 """
 
 from __future__ import annotations
@@ -79,7 +83,7 @@ from matching_coverage import (  # noqa: E402
 # splat's names give an address (cross_image.ADDRESS_NAME); in text:
 PLACEHOLDER = re.compile(r"\b(?:func|D|jtbl)_[0-9A-Fa-f]{8}\w*")
 # Parameters named by position (m2c's argN) or by register (aN).
-PARAMETER = re.compile(r"arg\d+|a\d")
+PARAMETER = re.compile(r"arg\d+|a\d+")
 ADDRESS = re.compile(r"[0-9A-Fa-f]{8}")
 GAME_NAME = re.compile(r"[a-z][a-z0-9]*(?:_[a-z0-9]+)*")
 LIBRARY_NAME = re.compile(r"lib[a-z0-9]+_[a-z0-9]+(?:_[a-z0-9]+)*")
@@ -543,6 +547,10 @@ class Repository:
     units: dict[str, list[Path]]  # image -> its linked units
     # (image, name) -> the generated file splat keeps the label in (alabel)
     inner: dict[tuple[str, str], Path] = field(default_factory=dict)
+    # labels the generated files the units include define, and for each name
+    # the INCLUDE_ASM'd functions whose generated file names it
+    generated: set[tuple[str, str]] = field(default_factory=set)
+    users: dict[tuple[str, str], set[str]] = field(default_factory=dict)
     entries: dict[tuple[str, str], Entry] = field(default_factory=dict)
     holding: dict[str, set[str]] = field(default_factory=dict)  # name -> images
     partners: dict[str, set[str]] = field(default_factory=dict)
@@ -650,6 +658,8 @@ def load() -> Repository:
     sdk: dict[str, list[tuple[int, int]]] = defaultdict(list)
     units: dict[str, list[Path]] = defaultdict(list)
     inner: dict[tuple[str, str], Path] = {}
+    generated_labels: set[tuple[str, str]] = set()
+    users: dict[tuple[str, str], set[str]] = defaultdict(set)
     includes = include_paths()
     for path, t in zip(configs, targets, strict=True):
         values = t.values
@@ -689,11 +699,17 @@ def load() -> Repository:
                 if unit not in deps:
                     deps[unit] = dependencies(unit, values["CC_VERSION"], includes)
                 files |= deps[unit]
-                for _macro, folder, included in INCLUDE_CALL.findall(file_text(unit)):
+                for macro, folder, included in INCLUDE_CALL.findall(file_text(unit)):
                     generated = Path(folder) / f"{included}.s"
                     if folder.startswith(".local") and generated.exists():
-                        for label in ASM_INNER.findall(file_text(generated)):
+                        text = file_text(generated)
+                        for label in ASM_INNER.findall(text):
                             inner[(name, label)] = generated
+                        for found in re.finditer(ASM_LABEL.pattern, text, re.M):
+                            generated_labels.add((name, found.group(1) or found.group(2)))
+                        if macro == "INCLUDE_ASM":
+                            for word in set(PLACEHOLDER.findall(text)):
+                                users[(name, word)].add(included)
         for file in files:
             scopes[file].add(t.name)
     repo = Repository(
@@ -701,6 +717,7 @@ def load() -> Repository:
     )
     repo.by_name = {t.name: t for t in targets}
     repo.inner = inner
+    repo.generated, repo.users = generated_labels, dict(users)
     repo.partners = {t.name: partners(repo, t) for t in targets}
     inventory(repo)
     return repo
@@ -1387,21 +1404,12 @@ def check_symbol(
     if cross_image.ADDRESS_NAME.fullmatch(new):
         plan.errors.append(f"{where}: {new} is still a placeholder")
         return
-    if entry.binding == "label":
-        plan.errors.append(
-            f"{where}: {row.old} is a label splat keeps inside {entry.file}: naming it would"
-            " split it out of that file, which no INCLUDE_ASM includes"
-        )
-        return
     if entry.binding == f"alias:{new}":
         return  # the name its image already gives the address
-    sdk = entry.address is not None and any(
-        a <= entry.address < b for a, b in repo.sdk.get(row.image, [])
-    )
-    if sdk:
+    if sdk_member(repo, row.image, entry):
         if LIBRARY_NAME.fullmatch(new) or new in names.psyq:
             return
-        if GAME_NAME.fullmatch(new):
+        if GAME_NAME.fullmatch(new) and owning_prefix(plan, new) is not None:
             plan.errors.append(
                 f"{where}: {new}: an SDK member keeps its PsyQ name or takes"
                 " its library's prefix (libgte_..., libcd_...)"
@@ -1424,6 +1432,26 @@ def check_symbol(
             f"{where}: {new}: declared in {', '.join(headers)}, whose prefix is"
             f" {', '.join(expected)}"
         )
+
+
+def sdk_member(repo: Repository, image: str, entry: Entry) -> bool:
+    """In an sdk range of the classification, or defined in the generated
+    assembly the units include and named only by SDK functions (a library's
+    strings and jump tables, which splat migrates into the functions' files)."""
+
+    def sdk(address: int | None) -> bool:
+        return address is not None and any(a <= address < b for a, b in repo.sdk.get(image, []))
+
+    if sdk(entry.address):
+        return True
+    users = repo.users.get((image, entry.name), set())
+    return (
+        (image, entry.name) in repo.generated
+        and bool(users)
+        and all(
+            sdk(next((t.value[f] for t in repo.images[image] if f in t.value), None)) for f in users
+        )
+    )
 
 
 def unit_entry(repo: Repository, image: str, old: str, kind: str) -> Entry | None:
@@ -1517,16 +1545,37 @@ def check_param(
     if new in names.macros or new in names.typedefs:
         plan.errors.append(f"{where}: parameter {new} is a macro or a type")
         return
+    # Every declaration of the function in this image: the parameter keeps its
+    # position in each, and another declaration may name it so already.
+    old = row.old.rpartition(".")[2]
+    declarations = []
     for path in files:
         if path.suffix not in (".c", ".h") or str(path) not in names.code.get(function, ()):
             continue
         source = repo.c(path)
         for f in source.functions:
-            if source.tokens[f.name].text == function and new in function_identifiers(source, f):
-                plan.errors.append(
-                    f"{where}: parameter {new} is already a name in {function} ({path})"
-                )
-                return
+            if source.tokens[f.name].text != function:
+                continue
+            key, _how, _candidates = bind(repo, path, function, source.tokens[f.name].start)
+            if key is None or key[0] != row.image:
+                continue
+            listed = [None if i is None else source.tokens[i].text for i in parameters(source, f)]
+            declarations.append((path, source, f, listed))
+    positions = {listed.index(old) for *_rest, listed in declarations if old in listed}
+    if len(positions) > 1:
+        plan.errors.append(
+            f"{where}: {old} stands at positions {sorted(positions)} in the declarations of"
+            f" {function}: name them in step first"
+        )
+        return
+    index = positions.pop() if positions else None
+    for path, source, f, listed in declarations:
+        if new not in function_identifiers(source, f):
+            continue
+        if old not in listed and index is not None and listed[index : index + 1] == [new]:
+            continue  # this declaration names the parameter so already
+        plan.errors.append(f"{where}: parameter {new} is already a name in {function} ({path})")
+        return
     plan.params[(row.image, row.old)] = new
 
 
@@ -1860,7 +1909,7 @@ def add_symbols(
     additions: dict[Path, list[tuple[int, str, str]]] = defaultdict(list)
     for key, new in sorted(plan.renames.items()):
         entry = repo.entries[key]
-        own = entry.binding in OWN_BINDINGS
+        own = entry.binding in OWN_BINDINGS or entry.binding == "label"
         wanted = [repo.own_file(key[0])] if own else []
         # the targets using it: in the files they read, or only in their
         # generated assembly (splat's lists)
@@ -1880,7 +1929,15 @@ def add_symbols(
             if new in declared[f]:
                 continue
             declared[f].add(new)
-            attributes = ["type:func"] if entry.kind == "func" else []
+            # a label splat keeps inside another symbol's generated file stays
+            # there as a label of that file
+            attributes = (
+                ["type:func"]
+                if entry.kind == "func"
+                else ["type:label"]
+                if entry.binding == "label"
+                else []
+            )
             others = sorted(
                 {(g, n, x) for g, n, x in at[entry.address] if g in together[f] and n != new}
             )

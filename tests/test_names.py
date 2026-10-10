@@ -84,6 +84,7 @@ SOURCES = {
     ),
     "decomp/src/ovl1/ovl1.c": (
         '/* Overlay 1. */\n#include "resident/r.h"\n\nstruct Pair {\n    int arg0;\n};\n\n'
+        "void func_80100000(int value, struct Pair *pair); /* named already */\n\n"
         "/* Call the resident; keep `arg0` in the pair. */\n"
         "void func_80100000(int arg0, struct Pair *pair) {\n    func_80010000();\n"
         "    pair->arg0 = arg0;\n}\n\nvoid func_80100010(void) {\n}\n"
@@ -118,6 +119,7 @@ resident\tfunc\tfunc_80010020\tcd_return\t\thigh\treturns at once
 resident\tasm\tdecomp/src/resident/func_80010020.s\tcd_return.s\t\thigh\tfollows it
 resident\tdata\tD_80010040\tcd_pair\t\thigh\ta pair of words
 resident\tdata\tD_80010044\tcd_pair_second\t\thigh\tits second word
+resident\tdata\tD_80010030\tcd_word\t\thigh\ta label inside func_80010028's file
 resident\tunit\tdecomp/src/resident/main_80010000.c\tcd_main.c\t\thigh\tthe resident unit
 ovl1\tfunc\tfunc_80100000\tone_call_resident\t\thigh\tcalls the resident
 ovl1\tfunc\tfunc_80100010\tone_return\t\thigh\treturns
@@ -330,8 +332,6 @@ class NamesTests(unittest.TestCase):
             "bad.tsv:17: no image 'nowhere'",
             "bad.tsv:18: kind 'thing' is none of",
             "bad.tsv:19: 3 columns, not the seven",
-            "bad.tsv:20: D_80010030 is a label splat keeps inside .local/decomp/resident/asm/"
-            "nonmatchings/main_80010000/func_80010028.s",
             "bad.tsv:21: D_80010000 and func_80010000 (resident) meet in decomp/src/ovl3/ovl3.c",
         ):
             self.assertIn(message, result.stderr)
@@ -339,19 +339,19 @@ class NamesTests(unittest.TestCase):
         result = self.names("check", "good.tsv")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn(
-            "check: 15 rows (8 symbols, 2 units, 1 .s files, 1 parameters, 3 prefixes)",
+            "check: 16 rows (9 symbols, 2 units, 1 .s files, 1 parameters, 3 prefixes)",
             result.stdout,
         )
-        self.assertIn("unnamed: 5 placeholders", result.stdout)
+        self.assertIn("unnamed: 4 placeholders", result.stdout)
         unnamed = self.read(".local/names/unnamed.tsv")
         for name in (
             "func_80200000",
             "decomp/src/ovl2/ovl2.c",
             "decomp/src/ovl3/ovl3.c",
-            "D_80010030",
             "D_80010000",
         ):
             self.assertIn(name, unnamed)
+        self.assertNotIn("D_80010030", unnamed)
 
     def test_apply_renames_by_scope_and_is_idempotent(self):
         (self.root / "map.tsv").write_text(MAPPING)
@@ -381,6 +381,7 @@ class NamesTests(unittest.TestCase):
             self.read("decomp/src/ovl1/one_main.c"),
             (
                 '/* Overlay 1. */\n#include "resident/r.h"\n\nstruct Pair {\n    int arg0;\n};\n\n'
+                "void one_call_resident(int value, struct Pair *pair); /* named already */\n\n"
                 "/* 80100000: Call the resident; keep `value` in the pair. */\n"
                 "void one_call_resident(int value, struct Pair *pair) {\n    cd_start();\n"
                 "    pair->arg0 = value;\n}\n\n/* 80100010 */\nvoid one_return(void) {\n}\n"
@@ -430,7 +431,8 @@ class NamesTests(unittest.TestCase):
             self.read("decomp/targets/resident/symbol_addrs.txt"),
             (
                 "// The resident's names.\n" + header + "cd_start = 0x80010000; // type:func\n"
-                "cd_return = 0x80010020; // type:func\ncd_pair = 0x80010040;\n"
+                "cd_return = 0x80010020; // type:func\ncd_word = 0x80010030; // type:label\n"
+                "cd_pair = 0x80010040;\n"
             ),
         )
         self.assertEqual(
