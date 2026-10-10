@@ -105,6 +105,7 @@
  ],
  "reconstruction_set": {
   "sources": ["src/reconstruction", "include/xem/reconstruction"],
+  "sources_revision": "891d9d5bfd8c1f2113a2b99b49a112199d33cc34",
   "count": 986,
   "functions": [
    {"entry": "8001996c", "images": ["resident"], "basis": "declaration", "evidence": ["include/xem/reconstruction/program.hpp:850"]},

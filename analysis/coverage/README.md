@@ -78,7 +78,11 @@ addresses, instruction counts and hashes only; no original bytes.
 - `reconstruction_set` lists the original entries the C++ names: automatically
   when an address leads the comment of a definition or declaration, otherwise
   by hand review of each mention of an executed function. Each carries its
-  source lines.
+  source lines as of `sources_revision` (891d9d5, the commit that last
+  regenerated the census). The library has been edited and reformatted since,
+  so read the lines at that revision (`git show 891d9d5:PATH`); the
+  reconstructed statuses are that revision's too. No committed tool writes the
+  census.
 - `reconstructed_partial` means a C++ throw that stops on an unreconstructed
   path names an address this route executes, or the source says only part of
   the function is reconstructed. That is a necessary condition for the throw,
