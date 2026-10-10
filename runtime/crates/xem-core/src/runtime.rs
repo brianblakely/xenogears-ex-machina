@@ -331,7 +331,8 @@ impl<M: GameModule> Runtime<M> {
     /// next step (as the game's own restarts do).
     pub fn restart(&mut self, kind: u32, arg: u32) {
         self.entry = (kind, arg);
-        self.suspended = false;
+        self.fibers = [Some(Fiber::Fresh { stack_top: self.stack_top }), None];
+        self.current = 0;
     }
 
     /// Deliver an interrupt while the game is suspended, on the stack below
@@ -434,8 +435,21 @@ impl<M: GameModule> Runtime<M> {
         write_header(&mut w);
         w.u32(self.entry.0);
         w.u32(self.entry.1);
-        w.u32(self.suspended as u32);
-        w.u32(self.saved_stack_pointer);
+        w.u32(self.current);
+        for fiber in &self.fibers {
+            match fiber {
+                None => w.u32(0),
+                Some(Fiber::Fresh { stack_top }) => {
+                    w.u32(1);
+                    w.u32(*stack_top);
+                }
+                Some(Fiber::Suspended { stack_pointer, area }) => {
+                    w.u32(2);
+                    w.u32(*stack_pointer);
+                    w.u32(*area);
+                }
+            }
+        }
         w.u32(self.module.stack_pointer());
         let globals = self.module.globals();
         w.u32(globals.len() as u32);
@@ -463,8 +477,16 @@ impl<M: GameModule> Runtime<M> {
         let mut r = Reader::new(data);
         read_header(&mut r)?;
         let entry = (r.u32()?, r.u32()?);
-        let suspended = r.u32()? != 0;
-        let saved_stack_pointer = r.u32()?;
+        let current = r.u32()?;
+        let mut fibers = [None, None];
+        for fiber in fibers.iter_mut() {
+            *fiber = match r.u32()? {
+                0 => None,
+                1 => Some(Fiber::Fresh { stack_top: r.u32()? }),
+                2 => Some(Fiber::Suspended { stack_pointer: r.u32()?, area: r.u32()? }),
+                _ => return Err(SnapshotError::Format("fiber")),
+            };
+        }
         let stack_pointer = r.u32()?;
         let count = r.u32()? as usize;
         let mut globals = Vec::with_capacity(count);
@@ -491,8 +513,8 @@ impl<M: GameModule> Runtime<M> {
         services.raised = raised;
         services.pending = None;
         self.entry = entry;
-        self.suspended = suspended;
-        self.saved_stack_pointer = saved_stack_pointer;
+        self.current = current;
+        self.fibers = fibers;
         self.module.set_stack_pointer(stack_pointer);
         self.module.set_globals(&globals);
         Ok(())
