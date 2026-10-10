@@ -6,6 +6,7 @@
  */
 #include "common.h"
 #include "resident/mode.h"
+#include "xem/fiber.h"
 
 extern void (*heap_report_output)(char *line);
 extern u8 boot_bss_last_word[];
@@ -47,8 +48,11 @@ void mode_dispatch(s32 error) {
 }
 
 /* The host runs the game from here, at start-up and after each restart; it
- * calls it again with the same arguments to resume a suspended game. */
+ * calls it again to resume the suspended game fiber (port/fiber.c). A start
+ * on an empty stack abandons the task fiber; asyncify skips that reset when
+ * it rewinds. */
 void xem_run(s32 kind, s32 arg) {
+    xem_fiber_reset();
     if (kind == XEM_RESTART_BOOT) {
         boot_clear_bss_range((u8 *)&heap_report_output, boot_bss_last_word);
         boot_main();
@@ -82,13 +86,4 @@ void xem_bad_call(u32 address, s32 signature) {
 
 void xem_unmapped_asm(s32 number) {
     xem_host_missing(0x10000 + number);
-}
-
-/* Asyncify's save area: {current, end} and the unwound frames. */
-static u32 xem_unwind_words[2 + 0x10000];
-
-u32 *xem_unwind_area(void) {
-    xem_unwind_words[0] = (u32)&xem_unwind_words[2];
-    xem_unwind_words[1] = (u32)&xem_unwind_words[2 + 0x10000];
-    return xem_unwind_words;
 }

@@ -51,9 +51,9 @@ STACK_BYTES = 0x100000
 FINGERPRINT_BYTES = 32
 # Host imports that suspend the game or abandon its stack (asyncify unwinds
 # through them).
-YIELD_IMPORTS = ["xem.yield", "xem.restart"]
+YIELD_IMPORTS = ["xem.yield", "xem.restart", "xem.task_switch"]
 # The module's exports, defined in port/.
-EXPORTS = ["xem_run", "xem_call", "xem_interrupt", "xem_unwind_area"]
+EXPORTS = ["xem_run", "xem_task_run", "xem_call", "xem_interrupt", "xem_unwind_area"]
 HOST_PREFIX = "xem_host_"
 # Game functions the port wraps (decomp/port): the game's definition is
 # renamed xem_original_<name> and the port's definition calls it.
