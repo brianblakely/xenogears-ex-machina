@@ -103,7 +103,7 @@ typedef struct {
                            * value slot39's status panel shows times 2.2 (801D7884) */
     u8 field78;           /* 0x78: the part field ext 6b and items set (801E31C0) */
     u8 field79;           /* 0x79 */
-    u16 status7A;        /* 0x7A: the battle commands available (the battle setup masks
+    u16 status7A;         /* 0x7A: the battle commands available (the battle setup masks
                            * the command menus with it) */
     u16 status7C;         /* 0x7C: bits 0xC002 mark a member out of action; 0x80 inactive,
                            * 0x1000 slow (ticks every other frame), 0x2000 delay counter
