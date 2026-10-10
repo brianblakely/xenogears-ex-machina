@@ -176,7 +176,7 @@ void func_8009E5C8(u8 index, u8 k) {
     D_8006D634.gears[gearId].entries[k].value10 = part->value10;
     D_8006D634.gears[gearId].entries[k].value11 = part->value11;
     D_8006D634.gears[gearId].partItems[k] = index;
-    D_8006D634.ammo[index - 50] = part->durability;
+    D_8006D634.ammo[index - 50] = part->rounds;
     for (i = 0; i < 3; i++) {
         if ((D_800C34B0->records + i)->pilot.characterId == 4) {
             D_800C34B0->records[i].gear.entries[k].valueE = part->valueE;

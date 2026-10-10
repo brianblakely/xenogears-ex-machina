@@ -228,12 +228,6 @@ typedef struct MenuEquipList {
     u8 padA19[0x3];
 } MenuEquipList;
 
-#define GEAR_PART_DURABILITY ((u8 *)&D_8006D634.flags)
-
-/* Gear special part durability per part id: two views into the game data,
- * from +0x2286 and from its flags word at +0x22b6, whose extents the shared
- * GameData leaves unsettled (gearAccessoryIds, flags). */
-extern u8 D_8006F8BA[];
 extern s32 D_801E9EA0[];      /* item target label x offsets */
 extern u8 D_801EA550[];  /* item target labels */
 extern u8 D_801EA558[];

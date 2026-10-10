@@ -31,6 +31,6 @@ extern u8 D_800D2C34;
 u8 func_80079ED8(u8 slot, u8 attribute, u8 value, u8 read);   /* a byte attribute: store or read */
 u16 func_8007A280(u8 slot, u8 attribute, u16 value, u8 read); /* a halfword attribute */
 s32 func_8009C050(u8 slot);   /* gear warning flags of a slot */
-void func_8009E788(void);     /* wear the attacker gear's parts for the command */
+void func_8009E788(void);     /* take a round of the attacker gear's ammo for the command */
 
 #endif

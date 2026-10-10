@@ -3873,7 +3873,7 @@ void func_8009A854(u8 index, u8 k) {
     D_8006D634.characters[4].entries[k].value2 = item->valueA;
     D_8006D634.characters[4].entries[k].value3 = item->valueB;
     D_8006D634.characters[4].entryItems[k] = index;
-    D_8006D634.ammo[index - 50] = item->durability;
+    D_8006D634.ammo[index - 50] = item->rounds;
     D_8006D634.characters[4].entryItems[k] = index;
     for (i = 0; i < 3; i++) {
         Combatant *record = &D_800C34B0->records[i];

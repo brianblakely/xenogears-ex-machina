@@ -202,7 +202,7 @@ that gives an address (splat's `D_`, `func_` and `jtbl_` names) must hold that
 address, and each must agree with the rebuilt targets by their own symbols: every
 other target that defines the name defines it there, each that exports it wherever
 the copied value points and one holding the value also by a local symbol (2318 of
-2377 at present); where none does, a fragment may give it as a view, another name
+2376 at present); where none does, a fragment may give it as a view, another name
 plus a constant that agrees by name, and the value must lie in the object holding
 that name in its definer (4: battle's game data member `D_8006F364 = D_8006D634 +
 0x1D30` and debug595's three camera vectors of the field view D_800AF880);
@@ -210,7 +210,7 @@ otherwise a target holding the value has a symbol there (none: the movie library
 entries and variable that field and movie use, the battle functions ovl3087 passes
 and the resident's VSync callback and sequence buffer that the world map uses all
 take their definers' names, which the importing symbol files give); otherwise the
-address must lie inside an input section that target's link places (55 members or
+address must lie inside an input section that target's link places (54 members or
 parts of objects that no symbol names, such as game data members, all from splat's
 lists). For this last group the check ties a value only to the address its name
 gives, not to a particular object or, where targets overlap (debug595's field

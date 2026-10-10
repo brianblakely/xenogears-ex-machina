@@ -12,7 +12,7 @@
 /* A 16-byte entry of the battle's character item list. */
 typedef struct {
     u8 pad0[3];
-    u8 durability; /* +3 */
+    u8 rounds; /* +3: the rounds of ammo func_8009A854 gives an id it equips */
     u8 pad4[2];
     u8 id; /* +6 */
     u8 pad7[3];
@@ -25,7 +25,7 @@ typedef struct {
 /* A 20-byte entry of the battle's gear part list. */
 typedef struct {
     u8 pad0[0xC];
-    u8 durability; /* +0xC */
+    u8 rounds; /* +0xC: the rounds of ammo the uncalled func_8009E5C8 gives an id */
     u8 padD;
     u8 valueE;
     u8 id; /* +0xF */

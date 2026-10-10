@@ -1032,9 +1032,11 @@ s32 func_801DE5CC(u8 slot, s32 top, s32 part, u8 special, u8 gear) {
 
 /* Commit the equipment change of part `part` of party slot `slot` (with
  * `special` a special part, with `gear` the gear's): the newly equipped part
- * leaves its inventory list and the replaced one kept by 801df5d0 joins it
- * (worn special parts are dropped). Without a new part the kept one goes
- * back. Returns 1 when character 4 changed weapon. */
+ * leaves its inventory list and the replaced one kept by 801df5d0 joins it.
+ * A newly equipped special part's id gets 100 rounds of ammo (ammo or
+ * gearAmmo, resident/gamedata.h); when it had fewer, the replaced part is
+ * dropped instead. Without a new part the kept one goes back. Returns 1 when
+ * character 4 changed weapon. */
 s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
     u8 *ids;
     u8 *counts;
@@ -1068,10 +1070,10 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
                 *at = kept;
                 swap = 0;
             } else {
-                if (D_8006F8BA[*at] < 100) {
+                if (D_8006D634.ammo[*at - 50] < 100) {
                     kept = 0;
                 }
-                D_8006F8BA[*at] = 100;
+                D_8006D634.ammo[*at - 50] = 100;
             }
         } else {
             kept = D_800625A0->equip_labels->parts[1][part];
@@ -1081,10 +1083,10 @@ s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
                 *at = kept;
                 swap = 0;
             } else {
-                if (GEAR_PART_DURABILITY[*at] < 100) {
+                if (D_8006D634.gearAmmo[*at - 50] < 100) {
                     kept = 0;
                 }
-                GEAR_PART_DURABILITY[*at] = 100;
+                D_8006D634.gearAmmo[*at - 50] = 100;
             }
         }
     } else if (!gear) {
