@@ -6,8 +6,10 @@
 
 pub mod bios;
 pub mod clock;
+pub mod control;
 pub mod devices;
 pub mod exe;
+pub mod inspect;
 pub mod memory;
 pub mod module;
 pub mod pad;

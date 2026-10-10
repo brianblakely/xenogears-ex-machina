@@ -68,7 +68,7 @@
                 wasm-bindgen-cli
                 nodejs_24
                 chromium
-                python3
+                (python3.withPackages (python: [ python.pyelftools ]))
                 ruff
                 nixfmt
                 git

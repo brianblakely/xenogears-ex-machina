@@ -11,3 +11,4 @@ publish.workspace = true
 xem-core = { path = "../xem-core" }
 xem-disc = { path = "../xem-disc" }
 xem-game = { path = "../xem-game" }
+serde_json.workspace = true
