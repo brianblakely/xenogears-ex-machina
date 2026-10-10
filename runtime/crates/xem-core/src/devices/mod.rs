@@ -8,6 +8,7 @@ use crate::module::Action;
 pub mod card;
 pub mod cd;
 pub mod gpu;
+pub mod mdec;
 pub mod spu;
 
 /// What a device needs while it answers an import or runs an event.

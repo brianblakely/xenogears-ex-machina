@@ -13,3 +13,6 @@ xem-disc = { path = "../xem-disc" }
 xem-game = { path = "../xem-game" }
 serde_json.workspace = true
 png.workspace = true
+
+[dev-dependencies]
+xem-media = { path = "../xem-media" }

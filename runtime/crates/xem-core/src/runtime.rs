@@ -79,6 +79,7 @@ pub struct Services {
     pub last_wait: Option<YieldReason>,
     pub gpu: devices::gpu::Gpu,
     pub cd: devices::cd::Cd,
+    pub mdec: devices::mdec::Mdec,
     pub spu: devices::spu::Spu,
     pub card: devices::card::Card,
     pub missing: Vec<u32>,
@@ -91,8 +92,19 @@ pub struct Services {
 }
 
 impl Services {
-    fn devices(&mut self) -> [(&'static str, &mut dyn Device); 4] {
-        [("gpu_", &mut self.gpu), ("cd_", &mut self.cd), ("spu_", &mut self.spu), ("card_", &mut self.card)]
+    fn devices(&mut self) -> [(&'static str, &mut dyn Device); 5] {
+        [
+            ("gpu_", &mut self.gpu),
+            ("cd_", &mut self.cd),
+            ("mdec_", &mut self.mdec),
+            ("spu_", &mut self.spu),
+            ("card_", &mut self.card),
+        ]
+    }
+
+    /// Put the user's disc in the drive.
+    pub fn insert_disc(&mut self, disc: Box<dyn xem_disc::SectorSource>) {
+        self.cd.insert_disc(disc);
     }
 
     /// The earliest scheduled device event.

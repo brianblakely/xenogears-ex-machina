@@ -5265,6 +5265,7 @@ dependencies = [
  "xem-core",
  "xem-disc",
  "xem-game",
+ "xem-media",
 ]
 
 [[package]]
