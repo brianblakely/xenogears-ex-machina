@@ -21,6 +21,7 @@ void *menu_state_debug_heap_reservation; /* 8006BE24 */
 s32 commons_unused_word_f; /* 8006BE28: unreferenced */
 s16 mode_party_gear_refresh_flags[3]; /* 8006BE2C: field */
 
+#include "resident/formation.h"
 #include "resident/menu.h"
 #include "resident/mode.h"
 #include "resident/sound.h"

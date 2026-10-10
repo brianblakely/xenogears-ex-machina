@@ -22,7 +22,6 @@
 #include "battle/sprite.h"
 #include "battle/turn.h"
 #include "curve.h"
-#include "own_declarations.h"
 #include "resident_views.h"
 #include "settle.h"
 #include "sprite_effect.h"

@@ -15,6 +15,7 @@
 #include "battle/area.h"
 #include "resident/cd.h"
 #include "resident/console.h"
+#include "resident/formation.h"
 #include "resident/gamedata.h"
 #include "resident/heap.h"
 #include "resident/menu.h"
