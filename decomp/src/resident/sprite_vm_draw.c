@@ -315,7 +315,9 @@ void sprite_set_ot(s32 value) {
     sprite_ot = value;
 }
 
-/* 80024FF4: Copy the current light settings. */
+/* 80024FF4: Set the view matrix sprite_view_matrix, through which
+ * sprite_set_draw_matrix places sprites (the battle camera's matrix, the
+ * field view's scaled_world, the world map camera's matrix). */
 void sprite_set_view_matrix(MATRIX *view) {
     sprite_view_matrix = *view;
 }
