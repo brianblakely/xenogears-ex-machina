@@ -863,6 +863,7 @@ tests/test_movement_sweep.py
 tests/test_movie_chain.py
 tests/test_music_load.cpp
 tests/test_music_loading.py
+tests/test_names.py
 tests/test_observe.py
 tests/test_overlay_scripts.py
 tests/test_packed_container.py
@@ -988,6 +989,7 @@ tools/matching.py
 tools/matching_coverage.py
 tools/matching_diff.py
 tools/matching_ram.py
+tools/names.py
 tools/nonmatching_score.py
 tools/packed_container.py
 tools/permuter_import.py
