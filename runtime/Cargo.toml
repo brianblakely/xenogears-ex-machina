@@ -20,7 +20,9 @@ i-slint-renderer-femtovg = { version = "=1.18.1", default-features = false }
 wgpu = { version = "=30.0.1", default-features = false }
 wgpu-hal = { version = "=30.0.1", default-features = false }
 sdl3-sys = { version = "=0.6.8" }
-openxr = { version = "=0.22.0" }
+openxr = { version = "=0.22.0", default-features = false }
+# The Vulkan bindings of wgpu-hal 30, for the OpenXR Vulkan interop.
+ash = { version = "=0.38.0", default-features = false }
 # wasm-bindgen must equal the Nix wasm-bindgen-cli; js-sys, web-sys and
 # wasm-bindgen-futures pin that wasm-bindgen exactly.
 wasm-bindgen = { version = "=0.2.127" }

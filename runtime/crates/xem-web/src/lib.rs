@@ -1,7 +1,8 @@
 //! The browser host (docs/runtime.md, Browser host).
 //!
 //! The recovered C runs as `game.wasm`, instantiated by the page beside this
-//! module ([`game`]); the shared command layer (`xem_core::Session`) drives it.
+//! module ([`game`]); the shared command layer (`xem_core::control::Session`,
+//! the one xem-headless serves) drives it.
 //! The page's animation callback calls [`XemApp::frame`], which advances the
 //! game by the frames of the virtual clock that are due, in a bounded batch,
 //! and renders the canvas ([`render`]); Web Audio pulls
@@ -10,7 +11,8 @@
 //! and the automation API (`window.xem`, runtime/web/xem.js) calls the same
 //! methods: there is no DOM-input path to the game.
 //!
-//! Methods take and return JSON text where the value is structured.
+//! Methods take and return JSON text where the value is structured;
+//! [`XemApp::command`] takes the control layer's JSON commands as they are.
 #![cfg(target_arch = "wasm32")]
 
 mod audio;
@@ -22,10 +24,11 @@ mod storage;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use serde::Deserialize;
-use serde_json::json;
+use serde_json::{Value, json};
 use wasm_bindgen::prelude::*;
-use xem_core::session::{Condition, FrameLog, Session, parse_stub_names};
+use xem_core::control::Session;
+use xem_core::inspect::Schema;
+use xem_core::{Runtime, exe};
 use xem_settings::{MemoryStore, Rejected, SettingChange, SettingsService};
 
 pub use game::{WebModule, xem_game_import};
@@ -37,7 +40,8 @@ const FRAME_MS: f64 = 1000.0 / 60.0;
 const MAX_FRAMES_PER_ANIMATION: u64 = 2;
 /// …and no further frame once a batch has taken this long.
 const BATCH_BUDGET_MS: f64 = 12.0;
-/// The bound on one `step` or `run_until`; the caller repeats it to go further.
+/// The bound on one `frames` or `run_until` command, which runs inside one
+/// call; the caller repeats it to go further.
 pub const MAX_FRAMES_PER_COMMAND: u64 = 10_000;
 
 const SETTINGS_KEY: &str = "xem.settings";
@@ -72,9 +76,9 @@ pub struct XemApp {
     settings: Rc<RefCell<SettingsService>>,
     settings_error: Option<String>,
     stub_names: Vec<String>,
+    schema: Option<String>,
     session: Option<Session<WebModule>>,
     memory_bytes: u64,
-    log: FrameLog,
     disc: Option<disc::DiscImport>,
     renderer: Option<WebRenderer>,
     panel_closed: Rc<Cell<bool>>,
@@ -83,13 +87,6 @@ pub struct XemApp {
     /// Page time up to which game frames have been run or dropped.
     paced: Option<f64>,
     stats: LoopStats,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct RunUntil {
-    max_frames: u64,
-    condition: Condition,
 }
 
 #[wasm_bindgen]
@@ -116,9 +113,9 @@ impl XemApp {
             settings: Rc::new(RefCell::new(service)),
             settings_error,
             stub_names: Vec::new(),
+            schema: None,
             session: None,
             memory_bytes: 0,
-            log: FrameLog::default(),
             disc: None,
             renderer: None,
             panel_closed: Rc::new(Cell::new(false)),
@@ -163,11 +160,10 @@ impl XemApp {
             let mut batch = 0;
             while batch < due.min(MAX_FRAMES_PER_ANIMATION) && (batch == 0 || now_ms() - start < BATCH_BUDGET_MS) {
                 let Some(session) = self.session.as_mut() else { break };
-                let log = &mut self.log;
-                session.run_frames(1, |index, outcome| {
-                    log.record(index, outcome);
-                });
                 batch += 1;
+                if session.frame().is_err() {
+                    break;
+                }
             }
             if batch < due {
                 self.stats.dropped += due - batch;
@@ -175,7 +171,7 @@ impl XemApp {
             } else {
                 self.paced = Some(paced + due as f64 * FRAME_MS);
             }
-            if self.session.as_ref().is_none_or(|s| s.is_halted()) {
+            if self.session.as_ref().is_none_or(|s| s.stopped.is_some()) {
                 self.running = false;
             }
             self.stats.game_frames += batch;
@@ -279,13 +275,19 @@ impl XemApp {
 
     /// The trapping stubs' names (build/game/stubs.txt), for readable stops.
     pub fn set_stub_names(&mut self, text: &str) {
-        self.stub_names = parse_stub_names(text);
+        self.stub_names = text.lines().filter_map(|l| l.split_once(' ').map(|(_, n)| n.to_string())).collect();
+    }
+
+    /// The game's globals and types (build/game/schema.json) for `inspect`,
+    /// `write` and path conditions.
+    pub fn set_schema(&mut self, text: String) {
+        self.schema = Some(text);
     }
 
     /// Start a session on a fresh instance of game.wasm whose "xem" imports,
     /// in `import_names` order, forward to [`xem_game_import`]. Loads the
-    /// identified known disc's executable as the BIOS does, unless
-    /// `load_executable` is false (module test fixtures without a disc).
+    /// identified known disc's executable as the BIOS does (as xem-headless
+    /// does), unless `load_executable` is false (module test fixtures).
     pub fn boot(
         &mut self,
         instance: js_sys::WebAssembly::Instance,
@@ -293,77 +295,74 @@ impl XemApp {
         load_executable: bool,
     ) -> Result<String, JsValue> {
         let executable = if load_executable {
-            let identification = self.disc.as_ref().and_then(|d| d.identification()).ok_or_else(|| error("no identified disc"))?;
+            let identification =
+                self.disc.as_ref().and_then(|d| d.identification()).ok_or_else(|| error("no identified disc"))?;
             identification.disc.ok_or_else(|| error("not a known Xenogears disc"))?;
             Some(identification.executable.clone())
         } else {
             None
         };
+        let schema = self.schema.as_deref().map(Schema::parse).transpose().map_err(|e| error(format!("schema: {e}")))?;
         self.session = None;
         self.running = false;
-        self.log = FrameLog::default();
         let module = WebModule::new(&instance, import_names).map_err(error)?;
         self.memory_bytes = module.memory_bytes();
-        let mut session = Session::new(module, self.stub_names.clone());
+        let mut runtime = Runtime::new(module);
+        runtime.services().stub_names = self.stub_names.clone();
         if let Some(executable) = executable {
-            session.load_executable(&executable).map_err(error)?;
+            // The BIOS copies the executable's text to its address and jumps to pc0.
+            let header = exe::parse(&executable).map_err(error)?;
+            runtime.memory().write(header.text_address, exe::text(&executable, &header)).map_err(error)?;
         }
-        self.session = Some(session);
+        self.session = Some(Session::new(runtime, schema));
         Ok(self.status())
     }
 
     /// Let the animation loop advance the game (in bounded batches) or stop it.
     pub fn set_running(&mut self, running: bool) {
-        self.running = running && self.session.as_ref().is_some_and(|s| !s.is_halted());
+        self.running = running && self.session.as_ref().is_some_and(|s| s.stopped.is_none());
         self.paced = None;
     }
 
-    /// Run up to `count` frames now: a `Report`.
-    pub fn step(&mut self, count: u32) -> Result<String, JsValue> {
-        if u64::from(count) > MAX_FRAMES_PER_COMMAND {
-            return Err(error(format!("step at most {MAX_FRAMES_PER_COMMAND} frames per call")));
+    /// One command of the shared control layer (`xem_core::control`, as
+    /// `xem-headless --control` reads them), JSON in and out: `status`,
+    /// `frames`, `run_until`, `pad`, `press`, `inspect`, `write`, `snapshot`,
+    /// `restore`, `memory_hash`, ... A command that runs frames runs at most
+    /// [`MAX_FRAMES_PER_COMMAND`]; errors come back as `{"error": ...}`.
+    pub fn command(&mut self, command: &str) -> String {
+        let reply = match serde_json::from_str::<Value>(command) {
+            Err(e) => json!({ "error": format!("bad json: {e}") }),
+            Ok(command) => {
+                let frames = match command.get("cmd").and_then(Value::as_str) {
+                    Some("frames") => command.get("count").and_then(Value::as_u64).unwrap_or(1),
+                    Some("run_until") => command.get("max_frames").and_then(Value::as_u64).unwrap_or(0),
+                    _ => 0,
+                };
+                match self.session.as_mut() {
+                    None => json!({ "error": "no game session" }),
+                    Some(_) if frames > MAX_FRAMES_PER_COMMAND => {
+                        json!({ "error": format!("a command runs at most {MAX_FRAMES_PER_COMMAND} frames") })
+                    }
+                    Some(session) => session.execute(&command),
+                }
+            }
+        };
+        if self.session.as_ref().is_some_and(|s| s.stopped.is_some()) {
+            self.running = false;
         }
-        let session = self.session.as_mut().ok_or_else(|| error("no game session"))?;
-        let log = &mut self.log;
-        Ok(to_json(&session.run_frames(u64::from(count), |index, outcome| {
-            log.record(index, outcome);
-        })))
+        to_json(&reply)
     }
 
-    /// `{maxFrames, condition}` with a `Condition` (`{"until": "halt"}`,
-    /// `{"until": "restart"}`, `{"until": "word", "address": ..., "value": ...}`):
-    /// a `Report`.
-    pub fn run_until(&mut self, request: &str) -> Result<String, JsValue> {
-        let request: RunUntil = serde_json::from_str(request).map_err(|e| error(format!("bad request: {e}")))?;
-        if request.max_frames > MAX_FRAMES_PER_COMMAND {
-            return Err(error(format!("maxFrames is at most {MAX_FRAMES_PER_COMMAND} per call")));
-        }
+    /// The runtime between frames as snapshot bytes (`Runtime::snapshot`), for saves.
+    pub fn snapshot_bytes(&mut self) -> Result<Vec<u8>, JsValue> {
         let session = self.session.as_mut().ok_or_else(|| error("no game session"))?;
-        let log = &mut self.log;
-        let report = session.run_until(&request.condition, request.max_frames, |index, outcome| {
-            log.record(index, outcome);
-        });
-        Ok(to_json(&report))
+        session.runtime.snapshot().map_err(error)
     }
 
-    /// The session between frames as bytes (`Session::snapshot`).
-    pub fn snapshot(&mut self) -> Result<Vec<u8>, JsValue> {
+    /// Return to snapshot bytes of the same game module.
+    pub fn restore_bytes(&mut self, bytes: &[u8]) -> Result<(), JsValue> {
         let session = self.session.as_mut().ok_or_else(|| error("no game session"))?;
-        session.snapshot().map_err(error)
-    }
-
-    pub fn restore(&mut self, bytes: &[u8]) -> Result<String, JsValue> {
-        let session = self.session.as_mut().ok_or_else(|| error("no game session"))?;
-        session.restore(bytes).map_err(error)?;
-        let frames = session.status().frames;
-        self.log.lines.push(format!("restored a snapshot at frame {frames}"));
-        Ok(self.status())
-    }
-
-    /// FNV-1a of game RAM and the scratchpad, as xem-headless prints it.
-    pub fn digest(&mut self) -> Result<String, JsValue> {
-        let session = self.session.as_mut().ok_or_else(|| error("no game session"))?;
-        Ok(format!("{:016x}", session.digest().map_err(error)?))
+        session.restore_bytes(bytes).map_err(error)
     }
 
     /// The save placeholder: a formatted empty memory card.
@@ -373,7 +372,7 @@ impl XemApp {
 
     /// Everything a client can inspect.
     pub fn status(&mut self) -> String {
-        let session = self.session.as_mut().map(|s| s.status());
+        let session = self.session.as_mut().map(|s| s.execute(&json!({ "cmd": "status" })));
         let renderer = self.renderer.as_ref().map(|r| {
             json!({
                 "backend": r.backend,
@@ -392,7 +391,6 @@ impl XemApp {
             "disc": self.disc.as_ref().map(|d| d.status()),
             "session": session,
             "gameMemoryBytes": self.memory_bytes,
-            "bootLines": self.log.lines,
             "running": self.running,
             "loop": {
                 "animationFrames": self.stats.animation_frames,

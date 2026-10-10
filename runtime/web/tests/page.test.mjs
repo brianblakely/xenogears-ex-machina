@@ -165,49 +165,37 @@ describe('automation over a game module fixture', () => {
   });
   after(() => browser.close());
 
-  test('step, runUntil, snapshot and restore', async () => {
+  const STOP = 'host stopped the game: called FixtureStub, which the port does not define';
+
+  test('control commands: frames, run_until, memory, snapshots', async () => {
     const result = await page.evaluate(async () => {
       const xem = window.xem;
       await xem.boot({ executable: false });
       const first = xem.step(1);
-      const untilWord = xem.runUntil({ maxFrames: 10, condition: { until: 'word', address: 0x80000000, value: 2 } });
-      const snapshot = xem.snapshot();
-      const atSnapshot = xem.status().session;
-      const restart = xem.runUntil({ maxFrames: 10, condition: { until: 'restart' } });
-      const bounded = xem.runUntil({ maxFrames: 5, condition: { until: 'halt' } });
-      const halt = xem.runUntil({ maxFrames: 1000, condition: { until: 'halt' } });
-      const end = { status: xem.status().session, digest: xem.digest() };
-      const restored = xem.restore(snapshot).session;
-      const again = xem.runUntil({ maxFrames: 1000, condition: { until: 'halt' } });
-      const end2 = { status: xem.status().session, digest: xem.digest() };
-      let tooFar = null;
-      try {
-        xem.runUntil({ maxFrames: 1e9, condition: { until: 'halt' } });
-      } catch (error) {
-        tooFar = error.message;
-      }
-      return { first, untilWord, atSnapshot, restart, bounded, halt, end, restored, again, end2, tooFar,
-               lines: xem.status().bootLines, snapshotBytes: snapshot.length };
+      const until = xem.runUntil({ maxFrames: 10, until: { vblanks: 3 } });
+      const word = xem.command({ cmd: 'read_memory', address: 0x80000000, length: 4 });
+      const snapshot = xem.snapshot('three');
+      const halt = xem.step(1000);
+      const end = { status: xem.command({ cmd: 'status' }), hash: xem.memoryHash() };
+      const restored = xem.restore('three');
+      const again = xem.step(1000);
+      const end2 = { status: xem.command({ cmd: 'status' }), hash: xem.memoryHash() };
+      const tooFar = xem.runUntil({ maxFrames: 1e9, until: { vblanks: 1e9 } });
+      const unbounded = xem.command({ cmd: 'run_until', until: { vblanks: 1e9 } });
+      return { first, until, word, snapshot, halt, end, restored, again, end2, tooFar, unbounded };
     });
-    const frame = (steps, restarts = []) => ({ stop: 'frame', steps, interrupts: 1, restarts });
-    assert.deepEqual(result.first, { frames: 1, met: true, last: frame(1), halted: false });
-    assert.deepEqual([result.untilWord.frames, result.untilWord.met], [2, true]);
-    assert.deepEqual([result.atSnapshot.frames, result.atSnapshot.vblanks, result.atSnapshot.suspended], [3, 3, true]);
-    // The restart and the first poll share a frame.
-    assert.deepEqual(result.restart.last, frame(2, [[1, 100]]));
-    assert.deepEqual([result.bounded.frames, result.bounded.met, result.bounded.halted], [5, false, false]);
-    assert.equal(result.halt.met, true);
-    const stop = 'host stopped the game: called FixtureStub, which the port does not define';
-    assert.deepEqual(result.halt.last, { stop: 'trap', reason: stop });
-    assert.deepEqual([result.end.status.frames, result.end.status.vblanks], [3 + 100 + 1, 103]);
-    assert.deepEqual(result.end.status.missing, ['FixtureStub']);
-    assert.deepEqual([result.restored.frames, result.restored.halted, result.restored.missing], [3, null, []]);
-    assert.deepEqual(result.again.last, result.halt.last);
-    assert.equal(result.end2.digest, result.end.digest);
-    assert.deepEqual(result.end2.status, result.end.status);
-    assert.deepEqual(result.lines, ['frame 3: restart kind 1 arg 0x64', `frame 103: ${stop}`,
-      'restored a snapshot at frame 3', 'frame 3: restart kind 1 arg 0x64', `frame 103: ${stop}`]);
-    assert.match(result.tooFar, /maxFrames is at most/);
+    assert.deepEqual([result.first.vblanks, result.first.stopped], [1, null]);
+    assert.deepEqual([result.until.met, result.until.frames, result.until.status.vblanks], [true, 2, 3]);
+    assert.equal(result.word, '02000000');
+    assert.equal(result.snapshot.name, 'three');
+    assert.deepEqual(result.halt, { error: STOP });
+    // Three frame waits, a hundred polls (one per frame), then the stop.
+    assert.deepEqual([result.end.status.vblanks, result.end.status.stopped], [103, STOP]);
+    assert.deepEqual([result.restored.vblanks, result.restored.stopped], [3, null]);
+    assert.deepEqual(result.again, result.halt);
+    assert.deepEqual(result.end2, result.end);
+    assert.match(result.tooFar.error, /at most 10000 frames/);
+    assert.match(result.unbounded.error, /needs max_frames/);
   });
 
   test('the animation loop runs due frames in bounded batches and drops missed time', async () => {
@@ -219,14 +207,14 @@ describe('automation over a game module fixture', () => {
       });
       await window.xem.boot({ executable: false, run: true });
       const before = status().loop;
-      await waitFor(() => status().session.frames >= 10);
+      await waitFor(() => status().session.vblanks >= 10);
       // A one-second stall of the page (as a throttled or frozen tab sees).
-      const stalled = status().session.frames;
+      const stalled = status().session.vblanks;
       const until = performance.now() + 1000;
       while (performance.now() < until);
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      const afterStall = status().session.frames - stalled;
-      await waitFor(() => status().session.halted);
+      const afterStall = status().session.vblanks - stalled;
+      await waitFor(() => status().session.stopped);
       const s = status();
       return { ...s.loop, before, afterStall, running: s.running, session: s.session };
     });
@@ -235,7 +223,7 @@ describe('automation over a game module fixture', () => {
     assert.ok(loop.dropped - loop.before.dropped >= 50, `${loop.dropped - loop.before.dropped} dropped`);
     assert.equal(loop.gameFrames - loop.before.gameFrames, 104);
     assert.equal(loop.running, false);
-    assert.equal(loop.session.frames, 104);
+    assert.deepEqual([loop.session.vblanks, loop.session.stopped], [103, STOP]);
   });
 
   test('a snapshot save survives a reload byte for byte', async () => {
@@ -248,16 +236,17 @@ describe('automation over a game module fixture', () => {
     await page.reload();
     await page.waitForFunction(() => document.body.dataset.ready === 'true');
     const loaded = await page.evaluate(async () => {
-      const record = await window.xem.load('fixture');
-      await window.xem.boot({ executable: false });
-      const session = window.xem.restore(record.data).session;
-      window.xem.step(1);
-      return { verified: record.verified, sha256: record.sha256, session, word: window.xem.status().session };
+      const xem = window.xem;
+      const record = await xem.load('fixture');
+      await xem.boot({ executable: false });
+      xem.importSnapshot(record.data);
+      const at = xem.command({ cmd: 'status' }).vblanks;
+      const next = xem.step(1).vblanks;
+      const word = xem.command({ cmd: 'read_memory', address: 0x80000000, length: 4 });
+      return { verified: record.verified, sha256: record.sha256, at, next, word };
     });
     assert.equal(loaded.verified, true);
     assert.equal(loaded.sha256, saved.sha256);
-    assert.equal(loaded.session.frames, 2);
-    assert.equal(loaded.word.frames, 3);
-    assert.equal(loaded.word.vblanks, 3);
+    assert.deepEqual([loaded.at, loaded.next, loaded.word], [2, 3, '02000000']);
   });
 });

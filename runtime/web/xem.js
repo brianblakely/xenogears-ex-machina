@@ -1,13 +1,16 @@
 // The automation API, window.xem: the runtime's typed commands for browser
-// clients and test drivers. Each call goes straight to the same runtime method
-// the page's controls use (XemApp in runtime/crates/xem-web); nothing here
+// clients and test drivers. Game commands are the shared control layer's
+// (xem_core::control, the one `xem-headless --control` serves), so a client
+// drives the browser and the native host with the same JSON; each call goes
+// straight to the runtime method the page's controls use. Nothing here
 // synthesizes DOM input.
 
 export function createAutomation(host) {
   const { app } = host;
   const parse = (text) => JSON.parse(text);
+  const command = (cmd) => parse(app.command(JSON.stringify(cmd)));
   return Object.freeze({
-    version: 1,
+    version: 2,
     /** Renderer, disc, session, loop, audio, storage and page state. */
     status: () => ({ ...parse(app.status()), page: host.pageStatus() }),
     /** Start a session on a fresh game module instance: `{executable: false}`
@@ -15,14 +18,19 @@ export function createAutomation(host) {
      * animation loop advance it. */
     boot: (options = {}) => host.boot(options),
     setRunning: (running) => app.set_running(Boolean(running)),
-    /** Advance `count` frames of the virtual clock (each ends at a vertical blank). */
-    step: (count = 1) => parse(app.step(count)),
-    /** Frames until {until: 'halt' | 'restart'} or {until: 'word', address, value}, at most maxFrames. */
-    runUntil: ({ maxFrames, condition }) => parse(app.run_until(JSON.stringify({ maxFrames, condition }))),
-    digest: () => app.digest(),
-    /** Snapshot bytes (Uint8Array) of the session between frames. */
-    snapshot: () => app.snapshot(),
-    restore: (bytes) => parse(app.restore(bytes)),
+    /** Any control command, e.g. {cmd: 'inspect', path: 'mode_next_mode'}; errors come back as {error}. */
+    command,
+    /** Advance `count` frames (each ends at a vertical blank of the virtual clock). */
+    step: (count = 1) => command({ cmd: 'frames', count }),
+    /** Frames until `until` ({vblanks} or {path, equals | not_equals}), at most maxFrames. */
+    runUntil: ({ maxFrames, until }) => command({ cmd: 'run_until', max_frames: maxFrames, until }),
+    memoryHash: () => command({ cmd: 'memory_hash' }),
+    /** Named snapshots kept in the session. */
+    snapshot: (name = 'default') => command({ cmd: 'snapshot', name }),
+    restore: (name = 'default') => command({ cmd: 'restore', name }),
+    /** Snapshot bytes (Uint8Array) for files and saves, and back. */
+    exportSnapshot: () => app.snapshot_bytes(),
+    importSnapshot: (bytes) => app.restore_bytes(bytes),
     settings: Object.freeze({
       get: () => parse(app.settings()),
       /** A SettingChange, e.g. {MasterVolume: 40} or {Scale: 'Integer'}. */

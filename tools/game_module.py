@@ -37,6 +37,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import game_schema  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 TARGETS = ROOT / "decomp" / "targets"
 # The development images load at 0x80280000, outside retail RAM, and only when
@@ -137,7 +140,10 @@ def elf_symbols(path):
             text = data[start:data.index(b"\0", start)].decode()
             bind, kind = info >> 4, info & 15
             if kind == 4:
-                unit = os.path.relpath(text, ROOT) if text.startswith("/") else text
+                # Repository-relative, also when the matched links were built in
+                # another checkout (a worktree sharing the main checkout's .local).
+                at = text.find("/decomp/src/")
+                unit = text[at + 1:] if at >= 0 else os.path.relpath(text, ROOT) if text.startswith("/") else text
                 continue
             if not text or kind == 3 or shndx == 0:
                 continue
@@ -181,6 +187,10 @@ def collect_symbols(out):
                 code = section_bytes(data, sections, value, min(FINGERPRINT_BYTES, limit))
                 key = name if bind else f"{unit}:{name}"
                 functions[key] = [value, len(code), fnv1a64(code)]
+        # Every C unit of the link, from its map (units without local symbols,
+        # such as the commons units, have no FILE symbol in the ELF).
+        linked = set(re.findall(r"(decomp/src/\S+)\.o\b", (elf.parent / (elf.name[:-4] + ".map")).read_text()))
+        units |= {u + ".c" for u in linked if (ROOT / (u + ".c")).exists()}
         images[target] = {"globals": globals_, "locals": {k: v for k, v in locals_.items() if k},
                           "functions": functions, "units": sorted(u for u in units if u.endswith(".c"))}
     (out / "symbols.json").write_text(json.dumps(images, indent=1, sort_keys=True))
@@ -813,7 +823,10 @@ def build(args):
         print(f"{len(failed)} units failed to compile: {log}")
         if not args.stubs:
             raise SystemExit(1)
+        all_sources = sources
         sources = [s for s, e in zip(sources, errors) if not e]
+    else:
+        all_sources = sources
     units = [Unit(source, ll_of(source), image) for source, image in sources]
     rewriter = Rewriter(addresses, units)
     rewritten = {}
@@ -839,6 +852,9 @@ def build(args):
         path = out / "ir" / (unit.source.replace("/", ".") + ".x.ll")
         path.write_text(rewritten[unit.source])
         ll_files.append(path)
+    schema, count, type_count = game_schema.build_schema(
+        out, [s for s in all_sources if s[1] != "port"], addresses, CFLAGS, args.jobs)
+    print(f"{count} globals, {type_count} types: {schema}")
     dispatch, adapters = generate_dispatchers(rewriter, addresses)
     (out / "ir" / "dispatch.ll").write_text(dispatch)
     (out / "adapters.txt").write_text("\n".join(adapters) + "\n")

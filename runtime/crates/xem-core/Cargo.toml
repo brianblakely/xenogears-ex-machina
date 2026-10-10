@@ -8,9 +8,9 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
+serde.workspace = true
+serde_json.workspace = true
 xem-gpu = { path = "../xem-gpu" }
 xem-spu = { path = "../xem-spu" }
 xem-disc = { path = "../xem-disc" }
 xem-media = { path = "../xem-media" }
-serde.workspace = true
-serde_json.workspace = true

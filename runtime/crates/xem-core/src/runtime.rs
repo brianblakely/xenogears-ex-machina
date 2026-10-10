@@ -223,16 +223,6 @@ impl<M: GameModule> Runtime<M> {
         self.module.memory()
     }
 
-    /// Where the next run starts when the game is not suspended: `xem_run(kind, arg)`.
-    pub fn entry(&self) -> (u32, u32) {
-        self.entry
-    }
-
-    /// Whether the game waits (the next run resumes it).
-    pub fn is_suspended(&self) -> bool {
-        self.suspended
-    }
-
     fn host_trap(&mut self, trap: Trap) -> Trap {
         match (trap, self.services().trap_reason.take()) {
             (Trap::Wasm(_), Some(reason)) => Trap::Host(reason),
@@ -273,6 +263,13 @@ impl<M: GameModule> Runtime<M> {
             }
             _ => Err(Trap::Host("the game unwound without a reason".into())),
         }
+    }
+
+    /// Abandon the game stack and continue with `xem_run(kind, arg)` at the
+    /// next step (as the game's own restarts do).
+    pub fn restart(&mut self, kind: u32, arg: u32) {
+        self.entry = (kind, arg);
+        self.suspended = false;
     }
 
     /// Deliver an interrupt while the game is suspended, on the stack below

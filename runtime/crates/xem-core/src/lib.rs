@@ -5,16 +5,16 @@
 //! and owns the virtual clock. It needs no window, GPU, audio or input device.
 
 pub mod clock;
+pub mod control;
 pub mod devices;
 pub mod exe;
+pub mod inspect;
 pub mod memory;
 pub mod module;
 pub mod pad;
 pub mod runtime;
-pub mod session;
 pub mod snapshot;
 
 pub use memory::{GameMemory, SliceMemory};
 pub use module::{Action, GameModule, Import, Trap};
 pub use runtime::{FrameReport, Runtime, Services, Stop, YieldReason};
-pub use session::{Condition, FrameLog, Outcome, Report, Session, Status};

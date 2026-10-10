@@ -50,31 +50,36 @@ describe('the user\'s disc 1', { skip: !available && `needs ${USER_DISC} and the
     assert.ok(reads.disc.fetched_bytes < 32 * 1024 * 1024);
   });
 
-  test('boots to the same stop as xem-headless, with snapshot and restore', async () => {
-    const result = await page.evaluate(async () => {
-      const xem = window.xem;
-      await xem.boot();
-      const start = xem.snapshot();
-      const report = xem.runUntil({ maxFrames: 1000, condition: { until: 'halt' } });
-      const first = { lines: xem.status().bootLines, digest: xem.digest(), session: xem.status().session };
-      xem.restore(start);
-      const again = xem.runUntil({ maxFrames: 1000, condition: { until: 'halt' } });
-      return { report, first, again, digest: xem.digest(), memory: xem.status().gameMemoryBytes };
-    });
+  test('answers the same control commands as xem-headless', async () => {
+    const commands = [
+      { cmd: 'status' },
+      { cmd: 'snapshot', name: 'boot' },
+      { cmd: 'frames', count: 600 },
+      { cmd: 'status' },
+      { cmd: 'memory_hash' },
+      { cmd: 'restore', name: 'boot' },
+      { cmd: 'run_until', max_frames: 600, until: { vblanks: 600 } },
+      { cmd: 'status' },
+      { cmd: 'memory_hash' },
+    ];
+    const browser = await page.evaluate(async (commands) => {
+      await window.xem.boot();
+      return commands.map((command) => window.xem.command(command));
+    }, commands);
     await page.screenshot({ path: shot('disc1-boot.png') });
-    console.log(result.first.lines.join('\n'));
-    console.log(`ram digest ${result.first.digest}`);
-    assert.equal(result.report.halted, true);
-    assert.deepEqual(result.again.last, result.report.last);
-    assert.equal(result.digest, result.first.digest);
+    for (const [command, reply] of commands.map((c, i) => [c, browser[i]])) {
+      console.log(`${JSON.stringify(command)} -> ${JSON.stringify(reply)}`);
+    }
+    assert.equal(browser[2].error, browser[3].stopped, 'a stop halts the frames and is reported');
+    assert.deepEqual(browser[6], browser[2].error ? { error: browser[2].error } : browser[6]);
+    assert.equal(browser[8], browser[4], 'the same state after restore and the same frames');
 
     if (existsSync(HEADLESS)) {
-      const native = execFileSync(HEADLESS, ['--disc', USER_DISC], { cwd: ROOT, encoding: 'utf8' }).split('\n');
-      const steps = native.filter((line) => line.startsWith('frame '));
-      const digest = native.find((line) => line.startsWith('ram digest ')).slice('ram digest '.length);
-      assert.deepEqual(result.first.lines, steps);
-      assert.equal(result.first.digest, digest);
-      console.log(`native xem-headless agrees: ${steps.length} frame lines, ram digest ${digest}`);
+      const input = commands.map((c) => JSON.stringify(c)).join('\n') + '\n';
+      const native = execFileSync(HEADLESS, ['--disc', USER_DISC, '--control'], { cwd: ROOT, input, encoding: 'utf8' })
+        .trim().split('\n').map((line) => JSON.parse(line));
+      assert.deepEqual(browser, native);
+      console.log(`native xem-headless --control gives the same ${native.length} replies`);
     } else {
       console.log(`no ${HEADLESS}: native comparison skipped`);
     }

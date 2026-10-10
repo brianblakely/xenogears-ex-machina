@@ -47,7 +47,7 @@ def main():
     game = ROOT / "build" / "game"
     if not args.no_game and (game / "game.wasm").exists():
         (out / "game").mkdir()
-        for name in ["game.wasm", "stubs.txt"]:
+        for name in ["game.wasm", "stubs.txt", "schema.json"]:
             if (game / name).exists():
                 shutil.copy2(game / name, out / "game" / name)
         print(f"included the game module from {game}")

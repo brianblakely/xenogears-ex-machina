@@ -19,6 +19,7 @@ const audio = new AudioOut(app);
 const page = {
   game: { available: false },
   stubs: false,
+  schema: false,
   rendererError: null,
   discFile: null,
   frameError: null,
@@ -30,10 +31,17 @@ const page = {
 const gameUrl = params.get('game') ?? 'game/game.wasm';
 page.game = await loadGameModule(gameUrl);
 if (page.game.available) {
-  const stubs = await fetch(params.get('stubs') ?? new URL('stubs.txt', new URL(gameUrl, location.href)));
+  // Its build reports, next to it: stub names for readable stops, the schema for inspect.
+  const beside = (name) => new URL(name, new URL(gameUrl, location.href));
+  const stubs = await fetch(params.get('stubs') ?? beside('stubs.txt'));
   if (stubs.ok) {
     app.set_stub_names(await stubs.text());
     page.stubs = true;
+  }
+  const schema = await fetch(params.get('schema') ?? beside('schema.json'));
+  if (schema.ok) {
+    app.set_schema(await schema.text());
+    page.schema = true;
   }
 }
 
@@ -115,7 +123,7 @@ const host = {
     let bytes;
     let kind = 'snapshot';
     try {
-      bytes = app.snapshot();
+      bytes = app.snapshot_bytes();
     } catch {
       bytes = app.blank_memory_card();
       kind = 'memory-card';
@@ -134,7 +142,8 @@ const host = {
   pageStatus() {
     return {
       game: page.game.available
-        ? { available: true, url: page.game.url, imports: page.game.names, exports: page.game.exports, stubs: page.stubs }
+        ? { available: true, url: page.game.url, imports: page.game.names, exports: page.game.exports,
+            stubs: page.stubs, schema: page.schema }
         : { available: false, url: page.game.url, error: page.game.error },
       rendererError: page.rendererError,
       frameError: page.frameError,
@@ -229,7 +238,7 @@ $('run').addEventListener('click', () => {
   const status = JSON.parse(app.status());
   app.set_running(!status.running);
 });
-$('step').addEventListener('click', guarded(() => app.step(1)));
+$('step').addEventListener('click', () => window.xem.step(1));
 $('settings').addEventListener('click', () => app.set_panel_visible(!app.panel_visible()));
 $('audio').addEventListener('click', guarded(async () => {
   await audio.start();
@@ -242,7 +251,7 @@ $('save').addEventListener('click', guarded(async () => {
 $('load').addEventListener('click', guarded(async () => {
   const loaded = await host.load('slot0');
   if (!loaded) return show('No save in slot0');
-  if (loaded.kind === 'snapshot' && JSON.parse(app.status()).session) app.restore(loaded.data);
+  if (loaded.kind === 'snapshot' && JSON.parse(app.status()).session) app.restore_bytes(loaded.data);
   show(`Loaded ${loaded.kind} (${loaded.bytes} bytes, verified ${loaded.verified})`);
 }));
 
@@ -277,10 +286,9 @@ function describe(status) {
     `game       ${page.game.available ? `${page.game.url} (${page.game.names.length} imports)` : `unavailable: ${page.game.error}`}`,
     `disc       ${d ? `${d.name}: ${d.state}${d.identity ? ` — ${d.identity.serial ?? 'unknown disc'} ${d.identity.boot_path}` : ''}${d.error ? ` — ${d.error}` : ''}` : 'none'}`,
     d ? `disc cache ${(d.peak_resident_bytes / 1048576).toFixed(1)} of ${(d.chunk_budget / 1048576).toFixed(0)} MiB peak, ${d.fetches} reads` : null,
-    `session    ${s ? `${s.frames} frames, ${s.vblanks} vblanks, ${s.steps} waits${s.halted ? ` — halted: ${s.halted}` : status.running ? ' — running' : ''}` : 'none'}`,
+    `session    ${s ? `${s.vblanks} vblanks, ${s.cycles} cycles${s.stopped ? ` — stopped: ${s.stopped}` : status.running ? ' — running' : ''}` : 'none'}`,
     `audio      ${audio.status().state}, ${audio.status().played} frames played`,
     JSON.parse(app.settings()).settings.presentation.show_fps ? `fps        ${fps.value.toFixed(0)}` : null,
-    ...status.bootLines.slice(-8).map((line) => `  ${line}`),
   ];
   return lines.filter((line) => line !== null).join('\n');
 }

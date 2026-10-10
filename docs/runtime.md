@@ -82,6 +82,44 @@ original address.
   (wasm32-unknown-unknown, wasm-bindgen); the two modules keep separate
   memories and exchange scalars and bounds-checked offsets.
 
+## Commands, introspection and snapshots
+
+`xem_core::control::Session` is the one command layer for humans, agents,
+tests and browser clients: a JSON command in, a JSON result out
+(`xem-headless --control` reads one per line). Commands: `status`,
+`frames {count}`, bounded `run_until {max_frames, until: {vblanks} |
+{path, equals|not_equals}}`, `pad {port, buttons}`, `press {buttons, frames}`,
+`connect_pad`, `inspect {path, depth}`, `write {path, value}`, `globals
+{prefix}`, `read_memory`/`write_memory`, `snapshot`/`restore {name}`,
+`memory_hash`, `record`/`stop_recording`/`replay {changes}` (pad states per
+vertical blank) and `scenario {writes, mode}`, which writes values through the
+schema and enters a mode through the original dispatcher on an empty stack.
+Pads are set as the BIOS driver reports them; nothing simulates lower-level
+input.
+
+- **Introspection.** `tools/game_schema.py` compiles every unit again with
+  debug information and writes `build/game/schema.json`: each global the C
+  defines, at its original address, with its full type (records, arrays,
+  bit-fields, enums, pointers to named records), plus the matched links' other
+  data symbols untyped. `inspect` decodes paths such as
+  `game_data.characters[0]` or `mode_table[1].entry`; `write` stores scalars.
+  The commons units, which define arrays of types completed by later headers
+  (accepted by GCC, not clang), are described through a temporary wrapper that
+  includes their target's headers first.
+- **Snapshots** (`Runtime::snapshot`/`restore`) hold the module's low memory
+  (port data, shadow stack, asyncify area), the scratchpad and I/O pages and
+  the PS1's 2 MB of RAM (zero runs compressed), the module's stack pointer and
+  suspension, the clock, the pads, pending interrupts and every device's state.
+  They are taken at waits, where the whole game stack lives in game-module
+  memory. `memory_hash` hashes RAM and scratchpad: the authoritative state the
+  native and browser hosts compare.
+- **Time.** The game runs in zero time between its waits; the clock advances
+  only there (a frame wait to the next vertical blank, a poll to the next
+  interrupt), and every loop back-edge of the game polls now and then
+  (`xem_loop_poll`), so waits that spin on memory an interrupt writes reach the
+  clock. Headless runs are unlocked (as fast as the host computes) and
+  reproducible.
+
 ## Crates
 
 | Crate | Role |
@@ -133,13 +171,13 @@ as JSON text or bytes.
   copies from its `WebAssembly.Memory`. The module's 2 GiB memory (RAM at its
   KSEG0 address) is a reservation the browser commits as pages are touched.
   `boot` takes a fresh instance each time.
-- **Command layer.** `xem_core::Session` is shared with xem-headless: load the
-  executable as the BIOS does, advance by frames of the virtual clock
-  (`Runtime::run_frame`), run until a condition (`halt`, `restart`, a memory
-  `word`) within a frame bound, `status`, `digest` (FNV-1a of RAM and the
-  scratchpad), `snapshot`/`restore` (the session's counters ahead of
-  `Runtime::snapshot`) and the `FrameLog` lines both hosts print. A browser
-  `step` or `runUntil` runs at most 10 000 frames per call.
+- **Commands.** The session is `xem_core::control::Session`, the command
+  layer `xem-headless --control` serves: `XemApp::command` takes the same JSON
+  commands (a command runs at most 10 000 frames per call), so a client drives
+  either host identically; disc 1 answers the same replies in both.
+  `XemApp::snapshot_bytes`/`restore_bytes` carry `Runtime::snapshot` bytes for
+  saves. `boot` loads the executable as xem-headless does and takes the game's
+  `stubs.txt` and `schema.json` from beside `game.wasm`.
 - **Scheduling.** `requestAnimationFrame` calls `XemApp::frame`: while running,
   the game frames due at 60 per second of page time, at most two per animation
   frame and none after 12 ms, then one render. Time a throttled, hidden or
@@ -166,11 +204,13 @@ as JSON text or bytes.
   session snapshot, or without a session a formatted blank memory card, with its
   SHA-256, checked when read back.
 - **Automation.** `window.xem`: `status()`, `boot({executable, run})`,
-  `setRunning`, `step(frames)`, `runUntil({maxFrames, condition})`, `digest()`,
-  `snapshot()`, `restore(bytes)`, `settings.get()`/`settings.apply(change)`
-  (a `SettingChange`, e.g. `{MasterVolume: 40}`), `panel.show(bool)`,
-  `importDisc(blob)`, `readSectors(lba, count)`, `save(slot)`/`load(slot)`. Each
-  is the runtime method the page's controls use; there is no DOM-input path.
+  `setRunning`, `command(cmd)` (any control command) with the shorthands
+  `step(frames)`, `runUntil({maxFrames, until})`, `memoryHash()`,
+  `snapshot(name)`/`restore(name)`, `exportSnapshot()`/`importSnapshot(bytes)`;
+  `settings.get()`/`settings.apply(change)` (a `SettingChange`, e.g.
+  `{MasterVolume: 40}`), `panel.show(bool)`, `importDisc(blob)`,
+  `readSectors(lba, count)`, `save(slot)`/`load(slot)`. Each is the runtime
+  method the page's controls use; there is no DOM-input path.
 
 From the repository root in `nix develop path:./nix/runtime`:
 
@@ -178,8 +218,9 @@ From the repository root in `nix develop path:./nix/runtime`:
   the game module out, as a hosted build must until it ships separately)
 - serve: `node runtime/web/serve.mjs build/web 8080`, then http://localhost:8080/
 - tests: `cd runtime/web && npm ci && npm test` (Playwright on the shell's
-  Chromium; `XEM_DISC1=<disc 1 image>` adds the user-disc tests, which compare
-  the boot with `runtime/target/release/xem-headless` when it is built).
+  Chromium; `XEM_DISC1=<disc 1 image>` adds the user-disc tests, which send
+  the same control commands to `runtime/target/release/xem-headless --control`
+  when it is built and compare the replies).
   Headless Chromium needs `--use-vulkan=swiftshader` for WebGPU: with its
   default Vulkan choice it destroys a WebGPU device after the canvas presents.
 
@@ -249,3 +290,69 @@ tracking, exit by the app and by the runtime, re-entry, denial and missing
 support. It cannot cover a headset browser's WebGL/WebXR driver, compositor
 and display timing, which hand and gaze inputs it exposes, WebGPU XR layers or
 performance; those need Quest Browser on a Horizon headset.
+
+## OpenXR adapter
+
+`xem-xr` runs an immersive OpenXR session on the host's one wgpu device. The
+runtime creates the Vulkan instance and device (XR_KHR_vulkan_enable2) from the
+create infos wgpu-hal would use, and wgpu-hal/wgpu wrap and own them, so the
+scene, the compositor and the Slint panel render on the device and queue the
+session is bound to. The crate documentation records the ownership and
+synchronisation rules; in short:
+
+- wgpu's single queue is the session's queue. A swapchain image is rendered only
+  between acquire+wait and release, the work is submitted before
+  `xrReleaseSwapchainImage`, and the image is explicitly returned to
+  `COLOR_ATTACHMENT_OPTIMAL` (wgpu `transition_resources`) first. All frame,
+  swapchain and queue calls stay on the session's thread.
+- The eyes use one swapchain of two array layers: one acquire/wait/release and
+  one image index per frame for both eyes, the layout Horizon's compositor and
+  multiview rendering use, and per-layer views for today's per-eye passes.
+- The Slint panel is a quad layer with its own swapchain: the runtime samples it
+  directly (sharper text than resampling it through the eye images), and it is
+  updated by a GPU copy only when Slint redraws; other frames resubmit the last
+  released image.
+- `xrWaitFrame` paces the loop; views, head and input are located at the
+  predicted display time. Session states drive begin/end (READY, STOPPING) and
+  exit (EXITING, LOSS_PENDING, instance loss).
+- Controller actions (aim and grip poses, trigger, select, menu) are bound for
+  `khr/simple_controller` and `oculus/touch_controller`. Hand joints
+  (XR_EXT_hand_tracking) and eye gaze (XR_EXT_eye_gaze_interaction) are enabled
+  only when the runtime offers the extension and the system reports support;
+  `Capabilities` reports both. Input is raw state; gestures are interpreted
+  elsewhere.
+- On Android the loader is initialised with XR_KHR_loader_init_android and the
+  instance created with XR_KHR_android_create_instance (`Platform` is
+  `openxr::AndroidPlatformInfo` there).
+
+The `xem-xr-demo` example renders the test scene in stereo with the settings
+panel as a quad layer. Its scene clock stands in for the simulation:
+`--paused` freezes it while head tracking and rendering continue. It prints one
+`key=value` line per frame (predicted display time and period, session state,
+head and eye poses, swapchain operations in order, submitted layers, input) and
+`--capture DIR` saves the eye layers and the panel image, read back from the
+swapchains before release.
+
+`runtime/scripts/xr-smoke.sh` (in `nix develop path:./nix/runtime`) runs it
+against Monado 25.1 without a display or headset: `monado-service` with
+`XRT_COMPOSITOR_NULL=1` (null compositor), `SIMULATED_ENABLE=1
+SIMULATED_ROTATE=1` (the simulated HMD turns continuously),
+`SIMULATED_LEFT/RIGHT=simple` (simulated simple controllers) and `XRT_NO_STDIN=1`,
+in a private short `XDG_RUNTIME_DIR` (the IPC socket path must fit a
+`sockaddr_un`); the demo finds it through `XR_RUNTIME_JSON=$XEM_MONADO_RUNTIME`.
+Both use lavapipe unless `VK_ICD_FILENAMES` is set (`runtime/scripts/xem-gpu-host
+runtime/scripts/xr-smoke.sh` runs both on the host NVIDIA driver). It checks the state order
+READY, SYNCHRONIZED, VISIBLE, FOCUSED, STOPPING, EXITING after an exit request;
+strictly increasing predicted display times; two distinct eye poses; projection
+and quad layers on every rendered frame; acquire, wait, submit, release order;
+changing head poses; and, with `--paused`, a constant simulation time.
+`XEM_XR_COMPOSITED=1` adds a run under Monado's real compositor presenting to a
+headless weston and saves a weston screenshot of the runtime's composition.
+
+Monado cannot show what only a headset can: the Horizon OS runtime and its
+Vulkan driver, Quest frame pacing and reprojection, real head and controller
+tracking, hand tracking and eye gaze (Monado's simulated devices offer neither),
+Android lifecycle and permissions (eye tracking needs
+`com.oculus.permission.EYE_TRACKING`), and the APK packaging with Meta's loader.
+`xem-xr` cross-compiles for `aarch64-linux-android`
+(`cargo ndk -t arm64-v8a -P 26 build -p xem-xr` in `#android`).
