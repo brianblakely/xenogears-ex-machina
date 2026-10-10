@@ -4,11 +4,11 @@
  * flames and the growing objects), the set-up and leave handlers of mode 13
  * and the sequence start of its director.
  *
- * func_8007C7D8's seven-entry table ends at 8006fd8c and func_8007DE98's
+ * worldmap_scene12_camera_shots_update's seven-entry table ends at 8006fd8c and worldmap_scene15_director_update's
  * follows at once, 4 mod 8, a phase change without a pad word: this unit's
- * rodata starts there and its text after func_8007C7D8, at or before
- * func_8007DE98. Its data opens with the tables of mode 15's set-up and leave
- * handlers and sequence start (func_8007D918, func_8007DCE0, func_8007DE14),
+ * rodata starts there and its text after worldmap_scene12_camera_shots_update, at or before
+ * worldmap_scene15_director_update. Its data opens with the tables of mode 15's set-up and leave
+ * handlers and sequence start (worldmap_scene15_start, worldmap_scene15_leave, worldmap_scene15_director_start),
  * which the text split leaves in the preceding unit. */
 #include "common.h"
 #include "psyq/libc.h"
@@ -27,51 +27,51 @@
 #include "stream.h"
 #include "terrain.h"
 
-/* Data of the scene this director runs; its mode handlers func_8007D918 and
- * func_8007DCE0 and sequence start func_8007DE14 precede this unit. Per
- * entry (D_8009D3D4): the three ambient sounds, the player's start position
+/* Data of the scene this director runs; its mode handlers worldmap_scene15_start and
+ * worldmap_scene15_leave and sequence start worldmap_scene15_director_start precede this unit. Per
+ * entry (worldmap_entry_index): the three ambient sounds, the player's start position
  * and the resident flag word set on leaving. */
-u16 D_8009A5A0[3][3] = {{0x25, 0x26, 0x27}, {0x1F, 0x20, 0x21}, {0x22, 0x23, 0x24}};
-SVECTOR D_8009A5B4[3] = {{14976, -640, 11690}, {15412, -640, 11957}, {14976, -640, 11690}};
-u16 D_8009A5CC[3] = {2, 3, 4};
+u16 worldmap_scene15_ambient_sounds[3][3] = {{0x25, 0x26, 0x27}, {0x1F, 0x20, 0x21}, {0x22, 0x23, 0x24}}; /* 8009A5A0 */
+SVECTOR worldmap_scene15_start_positions[3] = {{14976, -640, 11690}, {15412, -640, 11957}, {14976, -640, 11690}}; /* 8009A5B4 */
+u16 worldmap_scene15_exit_entry_parameters[3] = {2, 3, 4}; /* 8009A5CC */
 
 /* The director's cue sequences per entry, user-supplied script data (an
  * asset in worldmap.classification.txt): s16 states and u16 waits, 14, 9
  * and 9 entries (tools/analysis/overlay_scripts.py decodes them). */
-extern s16 D_8009A5D4[], D_8009A60C[], D_8009A634[];
-extern u16 D_8009A5F0[], D_8009A620[], D_8009A648[];
-INCLUDE_ASSET(".data", D_8009A5D4, 0x8009A5D4, 0x1C);
-INCLUDE_ASSET(".data", D_8009A5F0, 0x8009A5F0, 0x1C);
-INCLUDE_ASSET(".data", D_8009A60C, 0x8009A60C, 0x12);
-INCLUDE_ASSET(".data", D_8009A620, 0x8009A620, 0x12);
-INCLUDE_ASSET(".data", D_8009A634, 0x8009A634, 0x12);
-INCLUDE_ASSET(".data", D_8009A648, 0x8009A648, 0x12);
-Sequence D_8009A65C[3] = {
-    {D_8009A5D4, D_8009A5F0}, {D_8009A60C, D_8009A620}, {D_8009A634, D_8009A648},
+extern s16 worldmap_scene15_entry0_cue_states[], worldmap_scene15_entry1_cue_states[], worldmap_scene15_entry2_cue_states[];
+extern u16 worldmap_scene15_entry0_cue_waits[], worldmap_scene15_entry1_cue_waits[], worldmap_scene15_entry2_cue_waits[];
+INCLUDE_ASSET(".data", worldmap_scene15_entry0_cue_states, 0x8009A5D4, 0x1C);
+INCLUDE_ASSET(".data", worldmap_scene15_entry0_cue_waits, 0x8009A5F0, 0x1C);
+INCLUDE_ASSET(".data", worldmap_scene15_entry1_cue_states, 0x8009A60C, 0x12);
+INCLUDE_ASSET(".data", worldmap_scene15_entry1_cue_waits, 0x8009A620, 0x12);
+INCLUDE_ASSET(".data", worldmap_scene15_entry2_cue_states, 0x8009A634, 0x12);
+INCLUDE_ASSET(".data", worldmap_scene15_entry2_cue_waits, 0x8009A648, 0x12);
+Sequence worldmap_scene15_cue_sequences[3] = { /* 8009A65C */
+    {worldmap_scene15_entry0_cue_states, worldmap_scene15_entry0_cue_waits}, {worldmap_scene15_entry1_cue_states, worldmap_scene15_entry1_cue_waits}, {worldmap_scene15_entry2_cue_states, worldmap_scene15_entry2_cue_waits},
 };
 
 /* Per entry: the flight path start. */
-SVECTOR D_8009A674[3] = {{14307, 0, 12781}, {14743, 0, 13048}, {14307, 0, 12781}};
+SVECTOR worldmap_scene15_vehicle_stop_points[3] = {{14307, 0, 12781}, {14743, 0, 13048}, {14307, 0, 12781}}; /* 8009A674 */
 
 /* Exhaust flame sizes, per flame (actors 4-8): 0x800, 0x700, 0x600, 0x500
  * and 0x300. A stray halfword (65 79, "ey") that nothing reads follows them
  * at the end of the unit's data, so the table stays original data
  * (worldmap.classification.txt). */
-INCLUDE_ORIGINAL(".data", D_8009A68C, 0x8009A68C, 12);
-extern u16 D_8009A68C[5];
+INCLUDE_ORIGINAL(".data", worldmap_scene15_flame_sizes, 0x8009A68C, 12);
+extern u16 worldmap_scene15_flame_sizes[5];
 
-/* Scene director (mode 15): func_8007A9F8's cue sequencer on the sequence
- * func_8007DE14 picks from D_8009A65C by D_8009D3D4 (states at unk54,
- * durations at unk58). Actor slots (func_8007D918): 0 the screen fade, 2 the
- * camera (func_8007E4E4), 3 the flying vehicle (func_8007EE34), 4-8 its
- * exhaust flames (func_8007F968), 9 the growing objects 9 and 10
- * (func_8007FD30). A fade with rate 1 adds the fade quad (white), with
+/* 8007DE98: Scene director (mode 15): worldmap_scene14_director_update's cue sequencer on the sequence
+ * worldmap_scene15_director_start picks from worldmap_scene15_cue_sequences by worldmap_entry_index (states at unk54,
+ * durations at unk58). Actor slots (worldmap_scene15_start): 0 the screen fade, 2 the
+ * camera (worldmap_scene15_camera_update), 3 the flying vehicle (worldmap_scene15_flying_vehicle_update), 4-8 its
+ * exhaust flames (worldmap_scene15_flame_update), 9 the growing objects 9 and 10
+ * (worldmap_scene15_grow_objects_9_10_update). A fade with rate 1 adds the fade quad (white), with
  * rate 2 subtracts it (black). */
-s32 func_8007DE98(s32 index) {
+s32 worldmap_scene15_director_update(s32 index) {
     WorldmapActor *actor;
     s32 unused[4]; /* unreferenced; the original frame reserves it */
 
-    actor = &D_8009BE24[index];
+    actor = &worldmap_actor_slots[index];
     switch (actor->state) {
     /* 0: idle. */
     case 0:
@@ -89,130 +89,130 @@ s32 func_8007DE98(s32 index) {
         sound_play_effect((sound_effect_bank->id << 16) | 0x1C);
         sound_play_effect((sound_effect_bank->id << 16) | 0x1D);
         sound_play_effect((sound_effect_bank->id << 16) | 0x1E);
-        func_80097770(2, 2);
-        func_80097770(3, 2);
-        func_80097770(4, 3);
-        func_80097770(5, 3);
-        func_80097770(6, 3);
-        func_80097770(7, 3);
-        func_80097770(8, 3);
+        worldmap_actor_request(2, 2);
+        worldmap_actor_request(3, 2);
+        worldmap_actor_request(4, 3);
+        worldmap_actor_request(5, 3);
+        worldmap_actor_request(6, 3);
+        worldmap_actor_request(7, 3);
+        worldmap_actor_request(8, 3);
         actor->state = 1;
         break;
     /* 3: stop the effects of emitter groups 0x22-0x24; slots 2 and 3
      * request 3, the flames 3. */
     case 3:
-        func_80089514(0x22);
-        func_80089514(0x23);
-        func_80089514(0x24);
-        func_80097770(2, 3);
-        func_80097770(3, 3);
-        func_80097770(4, 3);
-        func_80097770(5, 3);
-        func_80097770(6, 3);
-        func_80097770(7, 3);
-        func_80097770(8, 3);
+        worldmap_effects_stop_particles(0x22);
+        worldmap_effects_stop_particles(0x23);
+        worldmap_effects_stop_particles(0x24);
+        worldmap_actor_request(2, 3);
+        worldmap_actor_request(3, 3);
+        worldmap_actor_request(4, 3);
+        worldmap_actor_request(5, 3);
+        worldmap_actor_request(6, 3);
+        worldmap_actor_request(7, 3);
+        worldmap_actor_request(8, 3);
         actor->state = 1;
         break;
     /* 4: slots 2 and 3 request 4, the flames 3. */
     case 4:
-        func_80097770(2, 4);
-        func_80097770(3, 4);
-        func_80097770(4, 3);
-        func_80097770(5, 3);
-        func_80097770(6, 3);
-        func_80097770(7, 3);
-        func_80097770(8, 3);
+        worldmap_actor_request(2, 4);
+        worldmap_actor_request(3, 4);
+        worldmap_actor_request(4, 3);
+        worldmap_actor_request(5, 3);
+        worldmap_actor_request(6, 3);
+        worldmap_actor_request(7, 3);
+        worldmap_actor_request(8, 3);
         actor->state = 1;
         break;
     /* 5: slot 2 request 5. */
     case 5:
-        func_80097770(2, 5);
+        worldmap_actor_request(2, 5);
         actor->state = 1;
         break;
     /* 6: fade out at rate 1, 0x40 per frame. */
     case 6:
-        func_80097770(0, 0xD);
-        D_8009CCA4 = 1;
-        D_8009D3CC = 0x40;
+        worldmap_actor_request(0, 0xD);
+        worldmap_screen_fade_rate = 1;
+        worldmap_screen_fade_step = 0x40;
         actor->state = 1;
         break;
     /* 7: slot 3 request 5, the flames 4; fade in at rate 1, 0x40 per frame. */
     case 7:
-        func_80097770(3, 5);
-        func_80097770(4, 4);
-        func_80097770(5, 4);
-        func_80097770(6, 4);
-        func_80097770(7, 4);
-        func_80097770(8, 4);
-        func_80097770(0, 0xC);
-        D_8009CCA4 = 1;
-        D_8009D3CC = 0x40;
+        worldmap_actor_request(3, 5);
+        worldmap_actor_request(4, 4);
+        worldmap_actor_request(5, 4);
+        worldmap_actor_request(6, 4);
+        worldmap_actor_request(7, 4);
+        worldmap_actor_request(8, 4);
+        worldmap_actor_request(0, 0xC);
+        worldmap_screen_fade_rate = 1;
+        worldmap_screen_fade_step = 0x40;
         actor->state = 1;
         break;
     /* 8: slot 2 request 6. */
     case 8:
-        func_80097770(2, 6);
+        worldmap_actor_request(2, 6);
         actor->state = 1;
         break;
     /* 9: fade out at rate 1, 0x80 per frame. */
     case 9:
-        func_80097770(0, 0xD);
-        D_8009CCA4 = 1;
-        D_8009D3CC = 0x80;
+        worldmap_actor_request(0, 0xD);
+        worldmap_screen_fade_rate = 1;
+        worldmap_screen_fade_step = 0x80;
         actor->state = 1;
         break;
     /* 10: fade in at rate 1, 0x80 per frame; slot 9 request 1, slot 2
      * request 7. */
     case 10:
-        func_80097770(0, 0xC);
-        D_8009CCA4 = 1;
-        D_8009D3CC = 0x80;
-        func_80097770(9, 1);
-        func_80097770(2, 7);
+        worldmap_actor_request(0, 0xC);
+        worldmap_screen_fade_rate = 1;
+        worldmap_screen_fade_step = 0x80;
+        worldmap_actor_request(9, 1);
+        worldmap_actor_request(2, 7);
         actor->state = 1;
         break;
     /* 16: slot 2 request 4, slot 3 request 0x10, the flames 3. */
     case 16:
-        func_80097770(2, 4);
-        func_80097770(3, 0x10);
-        func_80097770(4, 3);
-        func_80097770(5, 3);
-        func_80097770(6, 3);
-        func_80097770(7, 3);
-        func_80097770(8, 3);
+        worldmap_actor_request(2, 4);
+        worldmap_actor_request(3, 0x10);
+        worldmap_actor_request(4, 3);
+        worldmap_actor_request(5, 3);
+        worldmap_actor_request(6, 3);
+        worldmap_actor_request(7, 3);
+        worldmap_actor_request(8, 3);
         actor->state = 1;
         break;
     /* 17: slot 2 request 0x10. */
     case 17:
-        func_80097770(2, 0x10);
+        worldmap_actor_request(2, 0x10);
         actor->state = 1;
         break;
     /* 18: slot 2 request 0x11 (no sequence holds it). */
     case 18:
-        func_80097770(2, 0x11);
+        worldmap_actor_request(2, 0x11);
         actor->state = 1;
         break;
     /* 24: slot 2 request 4, slot 3 request 0x18, the flames 3. */
     case 24:
-        func_80097770(2, 4);
-        func_80097770(3, 0x18);
-        func_80097770(4, 3);
-        func_80097770(5, 3);
-        func_80097770(6, 3);
-        func_80097770(7, 3);
-        func_80097770(8, 3);
+        worldmap_actor_request(2, 4);
+        worldmap_actor_request(3, 0x18);
+        worldmap_actor_request(4, 3);
+        worldmap_actor_request(5, 3);
+        worldmap_actor_request(6, 3);
+        worldmap_actor_request(7, 3);
+        worldmap_actor_request(8, 3);
         actor->state = 1;
         break;
     /* 25: slot 2 request 0x18. */
     case 25:
-        func_80097770(2, 0x18);
+        worldmap_actor_request(2, 0x18);
         actor->state = 1;
         break;
-    /* 61: the three ambient sounds of D_8009A5A0[D_8009D3D4]. */
+    /* 61: the three ambient sounds of worldmap_scene15_ambient_sounds[worldmap_entry_index]. */
     case 61:
-        sound_play_effect((sound_effect_bank->id << 16) | D_8009A5A0[D_8009D3D4][0]);
-        sound_play_effect((sound_effect_bank->id << 16) | D_8009A5A0[D_8009D3D4][1]);
-        sound_play_effect((sound_effect_bank->id << 16) | D_8009A5A0[D_8009D3D4][2]);
+        sound_play_effect((sound_effect_bank->id << 16) | worldmap_scene15_ambient_sounds[worldmap_entry_index][0]);
+        sound_play_effect((sound_effect_bank->id << 16) | worldmap_scene15_ambient_sounds[worldmap_entry_index][1]);
+        sound_play_effect((sound_effect_bank->id << 16) | worldmap_scene15_ambient_sounds[worldmap_entry_index][2]);
         actor->state = 1;
         break;
     /* 62: area sounds 0x19-0x1B. */
@@ -224,32 +224,32 @@ s32 func_8007DE98(s32 index) {
         break;
     /* 63: fade out at rate 2, 4 per frame. */
     case 63:
-        func_80097770(0, 0xD);
-        D_8009CCA4 = 2;
-        D_8009D3CC = 4;
+        worldmap_actor_request(0, 0xD);
+        worldmap_screen_fade_rate = 2;
+        worldmap_screen_fade_step = 4;
         actor->state = 1;
         break;
     /* 64: end the world-map loop with exit 0; idle. */
     case 64:
-        D_8009D554 = 0;
-        D_8009D7CC = 0;
+        worldmap_loop_running = 0;
+        worldmap_loop_result = 0;
         actor->state = 0;
         break;
     }
     return 1;
 }
 
-/* Start a scripted camera at the player position (step 0, speed 0x40). */
-s32 func_8007E450(s32 index) {
+/* 8007E450: Start a scripted camera at the player position (step 0, speed 0x40). */
+s32 worldmap_scene15_camera_start(s32 index) {
     WorldmapActor *actor;
 
-    D_8009D144 = 0;
-    actor = &D_8009BE24[index];
+    worldmap_view_kind = 0;
+    actor = &worldmap_actor_slots[index];
     actor->unk7C = 0x1000;
-    D_8009BE0C = 0x78;
-    D_8009D55C.target.vx = D_8009BE28.target.vx = D_8009C5AC.vx;
-    D_8009D55C.target.vy = D_8009BE28.target.vy = D_8009C5AC.vy;
-    D_8009D55C.target.vz = D_8009BE28.target.vz = D_8009C5AC.vz;
+    worldmap_view_center_y = 0x78;
+    worldmap_camera_follow_target.target.vx = worldmap_camera.target.vx = worldmap_player_position.vx;
+    worldmap_camera_follow_target.target.vy = worldmap_camera.target.vy = worldmap_player_position.vy;
+    worldmap_camera_follow_target.target.vz = worldmap_camera.target.vz = worldmap_player_position.vz;
     actor->unk4 = 1;
     actor->unk58 = 0x40;
     actor->state = 0;
@@ -257,43 +257,43 @@ s32 func_8007E450(s32 index) {
     return 1;
 }
 
-/* Scene camera director: commands set up camera shots; the states fly the
+/* 8007E4E4: Scene camera director: commands set up camera shots; the states fly the
  * camera target across the map, zoom and shake the view by unk7C. */
-s32 func_8007E4E4(s32 index) {
+s32 worldmap_scene15_camera_update(s32 index) {
     WorldmapActor *actor;
     CameraScratch *scratch;
     s32 shake;
 
-    actor = &D_8009BE24[index];
+    actor = &worldmap_actor_slots[index];
     scratch = (CameraScratch *)0x1F800000;
     switch (actor->unk4) {
     case 1:
-        D_8009D3F0 = 0x500000;
+        worldmap_camera_distance = 0x500000;
         actor->unk4 = 0;
-        D_8009BD38.vx = 0x150;
-        D_8009BD38.vy = 0xF50;
-        D_8009BD38.vz = 0;
+        worldmap_camera_angle.vx = 0x150;
+        worldmap_camera_angle.vy = 0xF50;
+        worldmap_camera_angle.vz = 0;
         break;
     case 2:
-        D_8009D3F0 = 0x4D0000;
+        worldmap_camera_distance = 0x4D0000;
         actor->unk4 = 0;
-        D_8009BD38.vx = 0xC60;
-        D_8009BD38.vy = 0x380;
-        D_8009BD38.vz = 0;
+        worldmap_camera_angle.vx = 0xC60;
+        worldmap_camera_angle.vy = 0x380;
+        worldmap_camera_angle.vz = 0;
         break;
     case 3:
-        D_8009D3F0 = 0x400000;
+        worldmap_camera_distance = 0x400000;
         actor->unk4 = 0;
-        D_8009BD38.vx = 0x30;
-        D_8009BD38.vy = 0x160;
-        D_8009BD38.vz = 0;
+        worldmap_camera_angle.vx = 0x30;
+        worldmap_camera_angle.vy = 0x160;
+        worldmap_camera_angle.vz = 0;
         break;
     case 4:
-        D_8009D3F0 = 0x400000;
+        worldmap_camera_distance = 0x400000;
         actor->unk4 = 0;
-        D_8009BD38.vx = 0x30;
-        D_8009BD38.vy = 0x960;
-        D_8009BD38.vz = 0;
+        worldmap_camera_angle.vx = 0x30;
+        worldmap_camera_angle.vy = 0x960;
+        worldmap_camera_angle.vz = 0;
         break;
     case 5:
         actor->state = 1;
@@ -303,11 +303,11 @@ s32 func_8007E4E4(s32 index) {
     case 6:
         actor->state = 3;
         actor->unk7C = 0x1000;
-        D_8009D3F0 = 0x200000;
+        worldmap_camera_distance = 0x200000;
         actor->unk4 = 0;
-        D_8009BD38.vx = -0x58;
-        D_8009BD38.vy = 0xE58;
-        D_8009BD38.vz = 0;
+        worldmap_camera_angle.vx = -0x58;
+        worldmap_camera_angle.vy = 0xE58;
+        worldmap_camera_angle.vz = 0;
         break;
     case 7:
         actor->state = 5;
@@ -322,11 +322,11 @@ s32 func_8007E4E4(s32 index) {
     case 17:
         actor->state = 0x10;
         actor->unk7C = 0x1000;
-        D_8009D3F0 = 0x400000;
+        worldmap_camera_distance = 0x400000;
         actor->unk4 = 0;
-        D_8009BD38.vx = 0xE0;
-        D_8009BD38.vy = 0x798;
-        D_8009BD38.vz = 0;
+        worldmap_camera_angle.vx = 0xE0;
+        worldmap_camera_angle.vy = 0x798;
+        worldmap_camera_angle.vz = 0;
         break;
     case 24:
         actor->state = 0x18;
@@ -334,32 +334,32 @@ s32 func_8007E4E4(s32 index) {
         actor->unk5C = -0x8000;
         break;
     }
-    if (D_8009D144 == 0) {
-        func_80093354(&actor->position);
-        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+    if (worldmap_view_kind == 0) {
+        worldmap_wrap_position(&actor->position);
+        worldmap_camera_place_orbit(&worldmap_view_setup, &worldmap_camera, worldmap_camera_distance, &worldmap_camera_angle);
     }
     switch (actor->state) {
     case 0:
         break;
     case 1:
-        D_8009BE28.target.vx -= 0x42D00;
-        D_8009BE28.target.vz += 0x6D300;
-        if (D_8009BE28.target.vx < 0x1F9E000 && D_8009BE28.target.vz > 0x5998000) {
-            D_8009BE28.target.vx = 0x1F9E000;
-            D_8009BE28.target.vz = 0x5998000;
+        worldmap_camera.target.vx -= 0x42D00;
+        worldmap_camera.target.vz += 0x6D300;
+        if (worldmap_camera.target.vx < 0x1F9E000 && worldmap_camera.target.vz > 0x5998000) {
+            worldmap_camera.target.vx = 0x1F9E000;
+            worldmap_camera.target.vz = 0x5998000;
             actor->state = 2;
             actor->unk7C = 0x10000;
         } else {
             GROUND_SCROLL[0] -= 0x42D00;
             GROUND_SCROLL[2] += 0x6D300;
         }
-        func_80093354(&actor->position);
-        D_8009BD38.vy -= 8;
-        D_8009BD38.vx += actor->unk5C >> 12;
+        worldmap_wrap_position(&actor->position);
+        worldmap_camera_angle.vy -= 8;
+        worldmap_camera_angle.vx += actor->unk5C >> 12;
         actor->unk5C += 0x300;
-        D_8009D3F0 += 0x8000;
-        if (D_8009BD38.vx > 0x80) {
-            D_8009BD38.vx = 0x80;
+        worldmap_camera_distance += 0x8000;
+        if (worldmap_camera_angle.vx > 0x80) {
+            worldmap_camera_angle.vx = 0x80;
         }
         break;
     case 2:
@@ -369,25 +369,25 @@ s32 func_8007E4E4(s32 index) {
         }
         break;
     case 3:
-        D_8009BE28.target.vx -= 0x4C400;
-        D_8009BE28.target.vy += 0xFF80;
-        D_8009BE28.target.vz -= 0x65580;
-        if (D_8009BE28.target.vx < 0x1498000 && D_8009BE28.target.vz < 0x4AF2000) {
-            D_8009BE28.target.vx = 0x1498000;
-            D_8009BE28.target.vz = 0x4AF2000;
+        worldmap_camera.target.vx -= 0x4C400;
+        worldmap_camera.target.vy += 0xFF80;
+        worldmap_camera.target.vz -= 0x65580;
+        if (worldmap_camera.target.vx < 0x1498000 && worldmap_camera.target.vz < 0x4AF2000) {
+            worldmap_camera.target.vx = 0x1498000;
+            worldmap_camera.target.vz = 0x4AF2000;
             actor->state = 4;
             actor->unk5C = 0x20000;
         } else {
             GROUND_SCROLL[0] -= 0x4C400;
             GROUND_SCROLL[2] -= 0x65580;
         }
-        func_80093354(&actor->position);
-        D_8009D3F0 += 0x20000;
-        D_8009BD38.vy += 0x20;
-        D_8009BD38.vx -= 4;
+        worldmap_wrap_position(&actor->position);
+        worldmap_camera_distance += 0x20000;
+        worldmap_camera_angle.vy += 0x20;
+        worldmap_camera_angle.vx -= 4;
         break;
     case 4:
-        D_8009BD38.vy += actor->unk5C >> 12;
+        worldmap_camera_angle.vy += actor->unk5C >> 12;
         actor->unk5C -= 0x800;
         if (actor->unk5C < 0) {
             actor->unk5C = 0;
@@ -402,24 +402,24 @@ s32 func_8007E4E4(s32 index) {
         }
         break;
     case 16:
-        D_8009BE28.target.vx -= 0x42D00;
-        D_8009BE28.target.vz += 0x6D300;
-        if (D_8009BE28.target.vx < 0x1F9E000 && D_8009BE28.target.vz > 0x5998000) {
-            D_8009BE28.target.vx = 0x1F9E000;
-            D_8009BE28.target.vz = 0x5998000;
+        worldmap_camera.target.vx -= 0x42D00;
+        worldmap_camera.target.vz += 0x6D300;
+        if (worldmap_camera.target.vx < 0x1F9E000 && worldmap_camera.target.vz > 0x5998000) {
+            worldmap_camera.target.vx = 0x1F9E000;
+            worldmap_camera.target.vz = 0x5998000;
             actor->state = 0x11;
             actor->unk7C = 0x8000;
         } else {
             GROUND_SCROLL[0] -= 0x42D00;
             GROUND_SCROLL[2] += 0x6D300;
         }
-        func_80093354(&actor->position);
-        D_8009BD38.vy -= 8;
-        D_8009BD38.vx += actor->unk5C >> 12;
+        worldmap_wrap_position(&actor->position);
+        worldmap_camera_angle.vy -= 8;
+        worldmap_camera_angle.vx += actor->unk5C >> 12;
         actor->unk5C += 0x300;
-        D_8009D3F0 += 0x8000;
-        if (D_8009BD38.vx > 0x80) {
-            D_8009BD38.vx = 0x80;
+        worldmap_camera_distance += 0x8000;
+        if (worldmap_camera_angle.vx > 0x80) {
+            worldmap_camera_angle.vx = 0x80;
         }
         break;
     case 17:
@@ -429,28 +429,28 @@ s32 func_8007E4E4(s32 index) {
         }
         break;
     case 24:
-        D_8009BE28.target.vx -= 0x42D00;
-        D_8009BE28.target.vz += 0x6D300;
-        if (D_8009BE28.target.vx < 0x2152000 && D_8009BE28.target.vz > 0x5AA3000) {
-            D_8009BE28.target.vx = 0x2152000;
-            D_8009BE28.target.vz = 0x5AA3000;
+        worldmap_camera.target.vx -= 0x42D00;
+        worldmap_camera.target.vz += 0x6D300;
+        if (worldmap_camera.target.vx < 0x2152000 && worldmap_camera.target.vz > 0x5AA3000) {
+            worldmap_camera.target.vx = 0x2152000;
+            worldmap_camera.target.vz = 0x5AA3000;
             actor->state = 0x19;
             actor->unk60 = 0x10000;
         } else {
             GROUND_SCROLL[0] -= 0x42D00;
             GROUND_SCROLL[2] += 0x6D300;
         }
-        func_80093354(&actor->position);
-        D_8009BD38.vy -= 8;
-        D_8009BD38.vx += actor->unk5C >> 12;
+        worldmap_wrap_position(&actor->position);
+        worldmap_camera_angle.vy -= 8;
+        worldmap_camera_angle.vx += actor->unk5C >> 12;
         actor->unk5C += 0x300;
-        D_8009D3F0 += 0x8000;
-        if (D_8009BD38.vx > 0x80) {
-            D_8009BD38.vx = 0x80;
+        worldmap_camera_distance += 0x8000;
+        if (worldmap_camera_angle.vx > 0x80) {
+            worldmap_camera_angle.vx = 0x80;
         }
         break;
     case 25:
-        D_8009BD38.vy -= actor->unk60 >> 12;
+        worldmap_camera_angle.vy -= actor->unk60 >> 12;
         actor->unk60 -= 0x200;
         if (actor->unk60 < 0) {
             actor->unk60 = 0;
@@ -464,8 +464,8 @@ s32 func_8007E4E4(s32 index) {
     return 1;
 }
 
-/* Set up `count` translucent blue textured quads of a scene object and copy them to its second buffer. */
-void func_8007EBBC(SceneObject *object, POLY_FT4 *quads, s32 count, s32 abr) {
+/* 8007EBBC: Set up `count` translucent blue textured quads of a scene object and copy them to its second buffer. */
+void worldmap_build_blue_translucent_quads(SceneObject *object, POLY_FT4 *quads, s32 count, s32 abr) {
     s32 i;
 
     for (i = 0; i < count; i++) {
@@ -479,32 +479,32 @@ void func_8007EBBC(SceneObject *object, POLY_FT4 *quads, s32 count, s32 abr) {
     memcpy(object->prims2, object->prims, count * sizeof(POLY_FT4));
 }
 
-/* Start the flight: link objects 2-3 to 1, build their quads, hide 1 and place the actor behind the player on its entry path. */
-s32 func_8007ECA4(s32 index) {
+/* 8007ECA4: Start the flight: link objects 2-3 to 1, build their quads, hide 1 and place the actor behind the player on its entry path. */
+s32 worldmap_scene15_flying_vehicle_start(s32 index) {
     SceneObject *objects;
     WorldmapActor *actor;
 
-    func_800848B4(1, 2);
-    func_800848B4(1, 3);
-    objects = D_8009C620;
-    actor = &D_8009BE24[index];
-    func_8007EBBC(&objects[1], objects[1].prims, objects[1].def->primitive_count, 3);
-    func_8007EBBC(&objects[2], objects[2].prims, objects[2].def->primitive_count, 3);
-    func_8007EBBC(&objects[3], objects[3].prims, objects[3].def->primitive_count, 1);
-    D_8009C620[1].visible = 0;
-    D_8009C620[1].angle.vz = 0;
-    D_8009C620[1].angle.vy = 0;
-    D_8009C620[1].angle.vx = 0;
-    RotMatrixYXZ(&D_8009C620[1].angle, &D_8009C620[1].matrix);
+    worldmap_objects_link(1, 2);
+    worldmap_objects_link(1, 3);
+    objects = worldmap_objects;
+    actor = &worldmap_actor_slots[index];
+    worldmap_build_blue_translucent_quads(&objects[1], objects[1].prims, objects[1].def->primitive_count, 3);
+    worldmap_build_blue_translucent_quads(&objects[2], objects[2].prims, objects[2].def->primitive_count, 3);
+    worldmap_build_blue_translucent_quads(&objects[3], objects[3].prims, objects[3].def->primitive_count, 1);
+    worldmap_objects[1].visible = 0;
+    worldmap_objects[1].angle.vz = 0;
+    worldmap_objects[1].angle.vy = 0;
+    worldmap_objects[1].angle.vx = 0;
+    RotMatrixYXZ(&worldmap_objects[1].angle, &worldmap_objects[1].matrix);
     actor->motion.vx = -0x85A;
     actor->state = 0;
     actor->motion.vy = 0;
     actor->motion.vz = 0xDA6;
-    actor->u.step = D_8009A674[D_8009D3D4].vx << 12;
-    actor->unk54 = D_8009A674[D_8009D3D4].vz << 12;
-    actor->position.vx = D_8009C5AC.vx - actor->motion.vx * 0x3680;
-    actor->position.vy = D_8009C5AC.vy;
-    actor->position.vz = D_8009C5AC.vz - actor->motion.vz * 0x3680;
+    actor->u.step = worldmap_scene15_vehicle_stop_points[worldmap_entry_index].vx << 12;
+    actor->unk54 = worldmap_scene15_vehicle_stop_points[worldmap_entry_index].vz << 12;
+    actor->position.vx = worldmap_player_position.vx - actor->motion.vx * 0x3680;
+    actor->position.vy = worldmap_player_position.vy;
+    actor->position.vz = worldmap_player_position.vz - actor->motion.vz * 0x3680;
     return 1;
 }
 
@@ -521,51 +521,51 @@ typedef struct {
     MATRIX frame;      /* 0x150 */
 } TrackScratch;
 
-/* Flying vehicle (scene object 1): commands place it on its approach track;
+/* 8007EE34: Flying vehicle (scene object 1): commands place it on its approach track;
  * it flies along its motion vector, stops at the landing point, trails
  * effect 0x22 and faces its direction. */
-s32 func_8007EE34(s32 index) {
+s32 worldmap_scene15_flying_vehicle_update(s32 index) {
     s32 result;
     WorldmapActor *actor;
     SceneObject *object;
     TrackScratch *scratch;
 
     result = 1;
-    actor = &D_8009BE24[index];
-    object = &D_8009C620[1];
+    actor = &worldmap_actor_slots[index];
+    object = &worldmap_objects[1];
     scratch = (TrackScratch *)0x1F800000;
     if (actor->unk4 != 0) {
         actor->motion.vx = -0x85A;
         actor->motion.vy = 0;
         actor->motion.vz = 0xDA6;
-        actor->u.step = D_8009A674[D_8009D3D4].vx << 12;
-        actor->unk54 = D_8009A674[D_8009D3D4].vz << 12;
+        actor->u.step = worldmap_scene15_vehicle_stop_points[worldmap_entry_index].vx << 12;
+        actor->unk54 = worldmap_scene15_vehicle_stop_points[worldmap_entry_index].vz << 12;
     }
     switch (actor->unk4) {
     case 1:
         actor->unk4 = 0;
         actor->state = 0;
-        actor->position.vx = D_8009C5AC.vx - actor->motion.vx * 0x3680;
-        actor->position.vy = D_8009C5AC.vy;
-        actor->position.vz = D_8009C5AC.vz - actor->motion.vz * 0x3680;
+        actor->position.vx = worldmap_player_position.vx - actor->motion.vx * 0x3680;
+        actor->position.vy = worldmap_player_position.vy;
+        actor->position.vz = worldmap_player_position.vz - actor->motion.vz * 0x3680;
         break;
     case 2:
         actor->unk4 = 0;
         actor->state = 0;
-        actor->position.vx = D_8009C5AC.vx - actor->motion.vx * 0x3680 + actor->motion.vx * 0x2D00;
-        actor->position.vz = D_8009C5AC.vz - actor->motion.vz * 0x3680 + actor->motion.vz * 0x2D00;
+        actor->position.vx = worldmap_player_position.vx - actor->motion.vx * 0x3680 + actor->motion.vx * 0x2D00;
+        actor->position.vz = worldmap_player_position.vz - actor->motion.vz * 0x3680 + actor->motion.vz * 0x2D00;
         break;
     case 3:
         actor->unk4 = 0;
         actor->state = 0;
-        actor->position.vx = D_8009C5AC.vx - actor->motion.vx * 0x3680 + actor->motion.vx * 0x1E00;
-        actor->position.vz = D_8009C5AC.vz - actor->motion.vz * 0x3680 + actor->motion.vz * 0x1E00;
+        actor->position.vx = worldmap_player_position.vx - actor->motion.vx * 0x3680 + actor->motion.vx * 0x1E00;
+        actor->position.vz = worldmap_player_position.vz - actor->motion.vz * 0x3680 + actor->motion.vz * 0x1E00;
         break;
     case 4:
         actor->unk4 = 0;
         actor->state = 1;
-        actor->position.vx = D_8009C5AC.vx - actor->motion.vx * 0x3680 + actor->motion.vx * 0x3300;
-        actor->position.vz = D_8009C5AC.vz - actor->motion.vz * 0x3680 + actor->motion.vz * 0x3300;
+        actor->position.vx = worldmap_player_position.vx - actor->motion.vx * 0x3680 + actor->motion.vx * 0x3300;
+        actor->position.vz = worldmap_player_position.vz - actor->motion.vz * 0x3680 + actor->motion.vz * 0x3300;
         break;
     case 5:
         actor->state = 2;
@@ -585,8 +585,8 @@ s32 func_8007EE34(s32 index) {
     case 24:
         actor->unk4 = 0;
         actor->state = 0x18;
-        actor->position.vx = D_8009C5AC.vx - actor->motion.vx * 0x3680 + actor->motion.vx * 0x3300;
-        actor->position.vz = D_8009C5AC.vz - actor->motion.vz * 0x3680 + actor->motion.vz * 0x3300;
+        actor->position.vx = worldmap_player_position.vx - actor->motion.vx * 0x3680 + actor->motion.vx * 0x3300;
+        actor->position.vz = worldmap_player_position.vz - actor->motion.vz * 0x3680 + actor->motion.vz * 0x3300;
         break;
     }
     actor->position.vx += actor->motion.vx << 7;
@@ -597,11 +597,11 @@ s32 func_8007EE34(s32 index) {
         if (actor->position.vx < actor->u.step && actor->position.vz > actor->unk54) {
             actor->position.vx = actor->u.step;
             actor->position.vz = actor->unk54;
-            func_80097770(4, 2);
-            func_80097770(5, 2);
-            func_80097770(6, 2);
-            func_80097770(7, 2);
-            func_80097770(8, 2);
+            worldmap_actor_request(4, 2);
+            worldmap_actor_request(5, 2);
+            worldmap_actor_request(6, 2);
+            worldmap_actor_request(7, 2);
+            worldmap_actor_request(8, 2);
         }
         break;
     case 1:
@@ -612,17 +612,17 @@ s32 func_8007EE34(s32 index) {
             scratch->position.vx = actor->position.vx >> 12;
             scratch->position.vy = actor->position.vy >> 12;
             scratch->position.vz = actor->position.vz >> 12;
-            func_80089160(0x20, &scratch->position, NULL);
+            worldmap_effects_start_emitters(0x20, &scratch->position, NULL);
         }
         break;
     case 2:
         if (actor->position.vy > -0x80000) {
             scratch->position.vx = 0x1498;
             scratch->position.vz = 0x4AF2;
-            scratch->position.vy = func_80093978(0x1498000, 0x4AF2000) >> 12;
-            func_80089160(0x25, &scratch->position, NULL);
-            func_80089160(0x26, &scratch->position, NULL);
-            func_80089160(0x27, &scratch->position, NULL);
+            scratch->position.vy = worldmap_terrain_get_height(0x1498000, 0x4AF2000) >> 12;
+            worldmap_effects_start_emitters(0x25, &scratch->position, NULL);
+            worldmap_effects_start_emitters(0x26, &scratch->position, NULL);
+            worldmap_effects_start_emitters(0x27, &scratch->position, NULL);
             actor->state = 3;
         }
         break;
@@ -641,8 +641,8 @@ s32 func_8007EE34(s32 index) {
             scratch->position.vx = 0x1F9E;
             scratch->position.vz = 0x5998;
             scratch->position.vy = actor->position.vy >> 12;
-            func_80089160(0x20, &scratch->position, NULL);
-            func_80089160(0x21, &scratch->position, NULL);
+            worldmap_effects_start_emitters(0x20, &scratch->position, NULL);
+            worldmap_effects_start_emitters(0x21, &scratch->position, NULL);
         }
         break;
     case 17:
@@ -650,22 +650,22 @@ s32 func_8007EE34(s32 index) {
             actor->position.vx = 0x199D000;
             actor->position.vz = 0x6367000;
             object[0].visible = object[1].visible = object[2].visible = 1;
-            func_80097770(4, 5);
-            func_80097770(5, 5);
-            func_80097770(6, 5);
-            func_80097770(7, 5);
-            func_80097770(8, 5);
+            worldmap_actor_request(4, 5);
+            worldmap_actor_request(5, 5);
+            worldmap_actor_request(6, 5);
+            worldmap_actor_request(7, 5);
+            worldmap_actor_request(8, 5);
             result = 3;
         }
         break;
     case 24:
         if (actor->position.vx < 0x1EB5000 && actor->position.vz > 0x5EE6000) {
             object[0].visible = object[1].visible = object[2].visible = 1;
-            func_80097770(4, 2);
-            func_80097770(5, 2);
-            func_80097770(6, 2);
-            func_80097770(7, 2);
-            func_80097770(8, 2);
+            worldmap_actor_request(4, 2);
+            worldmap_actor_request(5, 2);
+            worldmap_actor_request(6, 2);
+            worldmap_actor_request(7, 2);
+            worldmap_actor_request(8, 2);
             actor->state = 0x41;
         }
         break;
@@ -677,7 +677,7 @@ s32 func_8007EE34(s32 index) {
         result = 3;
         break;
     }
-    func_80093354(&actor->position);
+    worldmap_wrap_position(&actor->position);
     object->position.vx = actor->position.vx >> 12;
     object->position.vy = actor->position.vy >> 12;
     object->position.vz = actor->position.vz >> 12;
@@ -706,12 +706,12 @@ s32 func_8007EE34(s32 index) {
         scratch->position.vz = actor->position.vz >> 12;
         scratch->angle.vx = scratch->angle.vz = 0;
         scratch->angle.vy = ratan2(0x85A, 0xDA6) & 0xFFF;
-        func_80089160(0x22, &scratch->position, &scratch->angle);
+        worldmap_effects_start_emitters(0x22, &scratch->position, &scratch->angle);
         break;
     case 4:
     case 17:
     case 0x41:
-        func_800894C8(0x22);
+        worldmap_effects_stop_emitters(0x22);
         break;
     case 2:
     case 3:
@@ -733,7 +733,7 @@ s32 func_8007EE34(s32 index) {
         scratch->frame.m[2][0] = scratch->axis[0].vx;
         scratch->frame.m[2][1] = scratch->axis[0].vy;
         scratch->frame.m[2][2] = scratch->axis[0].vz;
-        func_80097070(&scratch->frame, &scratch->angle);
+        worldmap_get_matrix_angles(&scratch->frame, &scratch->angle);
         libgte_transpose_matrix(&scratch->frame, &scratch->base);
         object->angle.vz = (object->angle.vz + 0x100) & 0xFFF;
         RotMatrixYXZ(&object->angle, &scratch->rotation);
@@ -744,32 +744,32 @@ s32 func_8007EE34(s32 index) {
         scratch->position.vx = actor->position.vx >> 12;
         scratch->position.vy = actor->position.vy >> 12;
         scratch->position.vz = actor->position.vz >> 12;
-        func_80089160(0x22, &scratch->position, &scratch->angle);
+        worldmap_effects_start_emitters(0x22, &scratch->position, &scratch->angle);
         break;
     }
     return result;
 }
 
-/* Build scene object `index` and start its fall. */
-s32 func_8007F8AC(s32 index) {
+/* 8007F8AC: Build scene object `index` and start its fall. */
+s32 worldmap_scene15_flame_start(s32 index) {
     WorldmapActor *actor;
     SceneObject *object;
     s32 slot;
     s32 abr;
 
     slot = index - 4;
-    actor = &D_8009BE24[index];
-    object = &D_8009C620[slot + 4];
+    actor = &worldmap_actor_slots[index];
+    object = &worldmap_objects[slot + 4];
     abr = 3;
     if (slot == 4) {
         abr = 1;
     }
-    func_8007EBBC(object, object->prims, object->def->primitive_count, abr);
+    worldmap_build_blue_translucent_quads(object, object->prims, object->def->primitive_count, abr);
     actor->motion.vx = -0x85A;
     actor->motion.vz = 0xDA6;
     actor->state = 0;
     actor->motion.vy = 0;
-    actor->unk5C = D_8009A68C[slot];
+    actor->unk5C = worldmap_scene15_flame_sizes[slot];
     actor->wait = 0x3C;
     return 1;
 }
@@ -785,19 +785,19 @@ typedef struct {
     MATRIX rotation;   /* 0x110 */
 } FlameScratch;
 
-/* Exhaust flame on scene object `index`: commands 1-5 stop, start or restart
+/* 8007F968: Exhaust flame on scene object `index`: commands 1-5 stop, start or restart
  * it; it follows actor 3, emits effects 0x23/0x24 and shrinks away; done (3)
  * once its size runs out. */
-s32 func_8007F968(s32 index) {
+s32 worldmap_scene15_flame_update(s32 index) {
     WorldmapActor *actor;
     WorldmapActor *leader;
     SceneObject *object;
     FlameScratch *scratch;
     s32 unused[2]; /* unreferenced; the original frame reserves it */
 
-    actor = &D_8009BE24[index];
-    leader = &D_8009BE24[3];
-    object = &D_8009C620[index];
+    actor = &worldmap_actor_slots[index];
+    leader = &worldmap_actor_slots[3];
+    object = &worldmap_objects[index];
     scratch = (FlameScratch *)0x1F800000;
     switch (actor->unk4) {
     case 1:
@@ -814,23 +814,23 @@ s32 func_8007F968(s32 index) {
         actor->unk4 = 0;
         actor->state = 0;
         actor->motion.vy = 0;
-        actor->unk5C = D_8009A68C[index - 4];
+        actor->unk5C = worldmap_scene15_flame_sizes[index - 4];
         object->visible = 0;
         object->angle.vx = object->angle.vy = object->angle.vz = 0;
         RotMatrixYXZ(&object->angle, &object->matrix);
-        func_800894C8(0x23);
-        func_800894C8(0x24);
+        worldmap_effects_stop_emitters(0x23);
+        worldmap_effects_stop_emitters(0x24);
         break;
     case 4:
         actor->wait = 4;
         actor->state = 1;
         actor->unk4 = 0;
-        actor->unk5C = D_8009A68C[index - 4];
+        actor->unk5C = worldmap_scene15_flame_sizes[index - 4];
         object->visible = 0;
         object->angle.vx = object->angle.vy = object->angle.vz = 0;
         RotMatrixYXZ(&object->angle, &object->matrix);
-        func_800894C8(0x23);
-        func_800894C8(0x24);
+        worldmap_effects_stop_emitters(0x23);
+        worldmap_effects_stop_emitters(0x24);
         break;
     case 5:
         actor->state = 1;
@@ -848,8 +848,8 @@ s32 func_8007F968(s32 index) {
         scratch->position.vz = (actor->position.vz - 0x6D3000) >> 12;
         scratch->angle.vx = scratch->angle.vz = 0;
         scratch->angle.vy = ratan2(0x85A, 0xDA6) & 0xFFF;
-        func_80089160(0x23, &scratch->position, &scratch->angle);
-        func_80089160(0x24, &scratch->position, &scratch->angle);
+        worldmap_effects_start_emitters(0x23, &scratch->position, &scratch->angle);
+        worldmap_effects_start_emitters(0x24, &scratch->position, &scratch->angle);
         break;
     case 1:
         if (--actor->wait < 0) {
@@ -884,15 +884,15 @@ s32 func_8007F968(s32 index) {
     return 1;
 }
 
-/* Rebuild scene objects 9 and 10 and start a descent at a fixed point. */
-s32 func_8007FC8C(s32 index) {
+/* 8007FC8C: Rebuild scene objects 9 and 10 and start a descent at a fixed point. */
+s32 worldmap_scene15_grow_objects_9_10_start(s32 index) {
     SceneObject *objects;
     WorldmapActor *actor;
 
-    objects = D_8009C620;
-    actor = &D_8009BE24[index];
-    func_8007A06C(&objects[9], objects[9].prims, objects[9].def->primitive_count);
-    func_8007A06C(&objects[10], objects[10].prims, objects[10].def->primitive_count);
+    objects = worldmap_objects;
+    actor = &worldmap_actor_slots[index];
+    worldmap_build_translucent_quads(&objects[9], objects[9].prims, objects[9].def->primitive_count);
+    worldmap_build_translucent_quads(&objects[10], objects[10].prims, objects[10].def->primitive_count);
     actor->state = 0;
     actor->position.vx = 0x1498000;
     actor->position.vy = -0x80000;
@@ -903,20 +903,20 @@ s32 func_8007FC8C(s32 index) {
     return 3;
 }
 
-/* Grow and fade scene objects 9 and 10 at the actor; ends the step when faded out. */
-s32 func_8007FD30(s32 index) {
+/* 8007FD30: Grow and fade scene objects 9 and 10 at the actor; ends the step when faded out. */
+s32 worldmap_scene15_grow_objects_9_10_update(s32 index) {
     SceneObject *object;
     WorldmapActor *actor;
 
-    actor = &D_8009BE24[index];
-    object = &D_8009C620[9];
+    actor = &worldmap_actor_slots[index];
+    object = &worldmap_objects[9];
     if (actor->unk4 == 1) {
         actor->unk4 = 0;
     }
     object[0].position.vx = object[1].position.vx = actor->position.vx >> 12;
     object[0].position.vy = object[1].position.vy = actor->position.vy >> 12;
     object[0].position.vz = object[1].position.vz = actor->position.vz >> 12;
-    object[1].matrix = D_8009A180;
+    object[1].matrix = worldmap_identity_matrix;
     object[0].matrix = object[1].matrix;
     SCALE_SCRATCH->scale[0].vx = SCALE_SCRATCH->scale[0].vz = actor->u.step;
     SCALE_SCRATCH->scale[1].vx = SCALE_SCRATCH->scale[1].vz = actor->unk54;
@@ -929,9 +929,9 @@ s32 func_8007FD30(s32 index) {
     if ((actor->unk54 += 0x180) > 0x7FFF) {
         actor->unk54 = 0x7FFF;
     }
-    func_800809EC((&object->prims)[D_8009D7F0], object->def->primitive_count, actor->unk58, actor->unk58, actor->unk58);
+    worldmap_set_quad_colors((&object->prims)[worldmap_display_buffer_index], object->def->primitive_count, actor->unk58, actor->unk58, actor->unk58);
     object++;
-    func_800809EC((&object->prims)[D_8009D7F0], object->def->primitive_count, actor->unk58, actor->unk58, actor->unk58);
+    worldmap_set_quad_colors((&object->prims)[worldmap_display_buffer_index], object->def->primitive_count, actor->unk58, actor->unk58, actor->unk58);
     if ((actor->unk58 -= 3) < 0) {
         actor->unk58 = 0;
         return 3;
@@ -939,99 +939,99 @@ s32 func_8007FD30(s32 index) {
     return 1;
 }
 
-/* Set up the third cutscene mode: display, terrain loader, scene objects and
+/* 8007FF70: Set up the third cutscene mode: display, terrain loader, scene objects and
  * its actors. */
-void func_8007FF70(void) {
+void worldmap_scene13_start(void) {
     RECT rect;
 
-    func_80072BB0();
+    worldmap_init_display();
     rect.x = 0;
     rect.y = 0;
     rect.w = 0x140;
     rect.h = 0xD8;
     MoveImage(&rect, 0x2C0, 0x100);
     DrawSync(0);
-    func_80072DB4(0x40, 0, 4, 2);
+    worldmap_fade_saved_screen(0x40, 0, 4, 2);
     while (cd_get_pending_read_count() >= 3) {
     }
-    func_80076954();
-    func_8009766C();
-    D_8009BE4C = D_8009A180;
-    D_8009CCA4 = 2;
-    D_8009D3CC = 0x10;
-    D_8009D804 = 0;
-    D_8009D144 = 0;
-    D_8009CD40 = func_80086700;
-    func_80098044();
+    worldmap_unpack_scene_area_data();
+    worldmap_actor_alloc_slots();
+    worldmap_unread_mode_matrix = worldmap_identity_matrix;
+    worldmap_screen_fade_rate = 2;
+    worldmap_screen_fade_step = 0x10;
+    worldmap_menu_requested = 0;
+    worldmap_view_kind = 0;
+    worldmap_cloud_draw_hook = worldmap_clouds_move;
+    worldmap_terrain_compute_cull_normals();
     cd_sync_reads(0);
-    func_800721E4();
-    D_8009C5AC.vx = 0x4100000;
-    D_8009C5AC.vy = -0x80000;
-    D_8009C5AC.vz = 0x13C0000;
-    func_80084580();
-    func_8008440C();
-    func_800979C8();
-    func_800736DC();
-    func_80085F58();
-    func_800863E0();
-    func_80074E58();
-    func_80075030();
-    func_800739B8();
-    func_80088F64();
+    worldmap_read_area_sound_bank();
+    worldmap_player_position.vx = 0x4100000;
+    worldmap_player_position.vy = -0x80000;
+    worldmap_player_position.vz = 0x13C0000;
+    worldmap_objects_build();
+    worldmap_upload_area_image();
+    worldmap_terrain_upload_image();
+    worldmap_sky_init();
+    worldmap_billboards_resolve_lists();
+    worldmap_clouds_scatter();
+    worldmap_texture_anim_create();
+    worldmap_texture_anim2_create();
+    worldmap_horizon_init();
+    worldmap_effects_alloc_slots();
     cd_sync_reads(0);
     sound_add_effect_bank(sound_effect_bank);
     cd_select_directory(0x24, 0);
-    func_80097BC0(&D_8009C5AC);
+    worldmap_terrain_reset_at(&worldmap_player_position);
     do {
-        func_800967E4();
+        worldmap_stream_step();
         VSync(0);
-    } while (func_80096668() > 0);
-    func_80097718((s32)func_800923A8, (s32)func_800925A0);
-    func_80097718((s32)func_8008032C, (s32)func_80080370);
-    func_80097718((s32)func_80080578, (s32)func_80080600);
-    func_80097718((s32)func_80080900, (s32)func_80080944);
-    func_80097718((s32)func_80080A28, (s32)func_80080AC4);
-    func_80097718((s32)func_80076A14, (s32)func_80076A1C);
-    func_800978FC();
-    func_8008901C();
-    func_800865A0();
-    func_80085FE0();
-    func_80075228();
+    } while (worldmap_stream_count_queued() > 0);
+    worldmap_actor_spawn((s32)worldmap_screen_fade_start, (s32)worldmap_screen_fade_update);
+    worldmap_actor_spawn((s32)worldmap_scene13_director_start, (s32)worldmap_scene13_director_update);
+    worldmap_actor_spawn((s32)worldmap_scene13_camera_start, (s32)worldmap_scene13_camera_update);
+    worldmap_actor_spawn((s32)worldmap_scene13_effects_start, (s32)worldmap_scene13_effects_update);
+    worldmap_actor_spawn((s32)worldmap_scene13_grow_objects_0_1_start, (s32)worldmap_scene13_grow_objects_0_1_update);
+    worldmap_actor_spawn((s32)worldmap_scene_frame_billboards_start, (s32)worldmap_scene_frame_billboards_update);
+    worldmap_terrain_alloc_packets();
+    worldmap_effects_alloc_quads();
+    worldmap_clouds_alloc_quads();
+    worldmap_billboards_alloc_quads();
+    worldmap_encounter_reset_timers();
 }
 
-/* Leave the world map for scene 0x84 (flag word 2). */
-void func_80080218(void) {
+/* 80080218: Leave the world map for scene 0x84 (flag word 2). */
+void worldmap_scene13_leave(void) {
     sound_stop_all_effects();
     sound_remove_effect_bank(sound_effect_bank);
     heap_free(sound_effect_bank);
-    func_80084818();
-    func_80086124();
-    func_80086568();
-    func_800866C8();
-    func_80074F04();
-    func_800750DC();
-    func_80088FF4();
-    func_80089128();
-    func_80097D64();
-    heap_free(D_8009BBC8[0].ot);
-    heap_free(D_8009BBC8[1].ot);
-    heap_free(D_8009BBC8[0].packets);
-    heap_free(D_8009BBC8[1].packets);
-    heap_free(D_8009C180);
-    func_800976A0();
+    worldmap_objects_free();
+    worldmap_billboards_free_quads();
+    worldmap_clouds_free();
+    worldmap_clouds_free_quads();
+    worldmap_texture_anim_free();
+    worldmap_texture_anim2_free();
+    worldmap_effects_free_slots();
+    worldmap_effects_free_quads();
+    worldmap_terrain_free_blocks();
+    heap_free(worldmap_display_buffers[0].ot);
+    heap_free(worldmap_display_buffers[1].ot);
+    heap_free(worldmap_display_buffers[0].packets);
+    heap_free(worldmap_display_buffers[1].packets);
+    heap_free(worldmap_area_data);
+    worldmap_actor_free_slots();
     game_data.map = 0x84;
     game_data.entry[2] = 2;
-    D_8009BBC4 = 1;
-    game_data.entry[0] = D_8009BD38.vy;
+    worldmap_next_scene_chosen = 1;
+    game_data.entry[0] = worldmap_camera_angle.vy;
 }
 
-/* Restart an actor's timed sequence at its first step. */
-s32 func_8008032C(s32 index) {
+/* 8008032C: Restart an actor's timed sequence at its first step. */
+s32 worldmap_scene13_director_start(s32 index) {
     WorldmapActor *actor;
 
-    actor = &D_8009BE24[index];
+    actor = &worldmap_actor_slots[index];
     actor->u.step = 0;
-    actor->state = D_8009A698[0];
-    actor->wait = D_8009A6AC[actor->u.step];
+    actor->state = worldmap_scene13_cue_states[0];
+    actor->wait = worldmap_scene13_cue_waits[actor->u.step];
     return 1;
 }

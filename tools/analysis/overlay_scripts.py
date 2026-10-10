@@ -3,13 +3,13 @@
 Every table is read from the recovered interpreter, not inferred from the
 data:
 
-* World map actor scripts, func_80076B34 (decomp/src/worldmap/
-  worldmap_80072238.c). The script is a stream of signed halfwords. The
+* World map actor scripts, worldmap_actor_script_run (decomp/src/worldmap/
+  worldmap_open_map.c). The script is a stream of signed halfwords. The
   interpreter reads the 32-bit word at the actor's script position: its low
-  halfword indexes the twelve handlers of D_8009A3C0 (unchecked) and its high
+  halfword indexes the twelve handlers of worldmap_actor_script_handlers (unchecked) and its high
   halfword and the next two halfwords are the handler's three arguments. The
   handler returns the halfwords to advance; 0 yields until the actor's next
-  update. Only func_800827C8 (D_8009A758) and func_800838E8 (D_8009AC60) give
+  update. Only worldmap_scene17_script_start (worldmap_scene17_actor_script) and worldmap_scene18_script_start (worldmap_scene18_actor_script) give
   an actor a script.
 * Arena scene scripts, arena_scene_run_script (decomp/src/menu/menu2.c). Bytes; switch
   cases 1-34 take one to three bytes, except 16 and 17, which never advance
@@ -17,14 +17,14 @@ data:
   advancing. arena_scene_start_script starts the scripts: arena_scene_scripts[scene]
   (arena_scene_enter, scenes 0-9), the opening arena_scene_opening_script (arena_scene_start_tutorial) and the
   setup script arena_scene_bout_end_script (arena_scene_start_bout_end).
-* World map scene directors, the update handlers func_8007A9F8,
-  func_8007C3B8, func_8007DE98, func_80080370 and func_800811C0 of the
+* World map scene directors, the update handlers worldmap_scene14_director_update,
+  worldmap_scene12_director_update, worldmap_scene15_director_update, worldmap_scene13_director_update and worldmap_scene16_director_update of the
   scripted world-map modes 14, 12, 15, 13 and 16. Each switches on its
   actor's state. Case 1 counts the actor's wait down and, once it drops below
   0, loads the next state and wait from two parallel u16 tables embedded in
   the overlay's data (the step index is the instruction pointer); every other case
-  runs one cue and stores state 1 (or 0). A cue that clears D_8009D554 ends
-  the world-map loop (func_800712D0) after that frame, so the director never
+  runs one cue and stores state 1 (or 0). A cue that clears worldmap_loop_running ends
+  the world-map loop (worldmap_run_frame_loop) after that frame, so the director never
   runs again.
 * Arena move frame events, arena_frame_event_run (decomp/src/menu/menu3.c). A gear
   model file (directory 0x30/1) holds per animation a list of FrameEvent
@@ -35,9 +35,9 @@ data:
   field_event.c). u16 (frame, sound) pairs, one run per movie sound-effect
   bank, each ended by frame 0xFFFF; field_movie_load_sound_bank seeks the bank's run and the
   player plays its entries in order as the movie's frames reach them.
-* World map terrain texture animations, func_80074F2C and func_80075104
-  (decomp/src/worldmap/worldmap_80072238.c). Runs of (image, duration) frames
-  ended by a negative duration, one per slot of D_8009A1E8 and D_8009A250; each
+* World map terrain texture animations, worldmap_texture_anim_advance and worldmap_texture_anim2_advance
+  (decomp/src/worldmap/worldmap_open_map.c). Runs of (image, duration) frames
+  ended by a negative duration, one per slot of worldmap_texture_anim_slots and worldmap_texture_anim2_slots; each
   update steps a slot's frame when its timer runs out and uploads the image.
 
 None of the machines has jumps: a script runs straight to its stop. The
@@ -121,32 +121,38 @@ class Instruction:
         return f"{self.spec.mnemonic} {', '.join(values)}".rstrip()
 
 
-# Handlers of D_8009A3C0 in decomp/src/worldmap/worldmap_80072238.c. Each
+# Handlers of worldmap_actor_script_handlers in decomp/src/worldmap/worldmap_open_map.c. Each
 # operand is a signed halfword; sizes are the halfwords each handler returns
 # (exit_worldmap never advances: its word is the one the interpreter reads).
 WORLDMAP = Machine(
     name="worldmap",
     overlay="worldmap",
-    interpreter="func_80076B34",
-    table="D_8009A3C0",
+    interpreter="worldmap_actor_script_run",
+    table="worldmap_actor_script_handlers",
     unit=2,
     signed=True,
     align=4,  # the opcode word is one lw
     opcodes={
-        0: Opcode("exit_worldmap", "func_80076BC4", (None,), "stop"),
-        1: Opcode("wait", "func_80076BDC", ("frames",), "wait"),
-        2: Opcode("send_actor", "func_80076C18", ("actor", "argument", None)),
-        3: Opcode("place_player", "func_80076C3C", ("x", "y", "z")),
-        4: Opcode("set_script_vector", "func_80076C68", ("x", "y", "z")),
-        5: Opcode("start_emitters", "func_80076C88", ("group",)),
-        6: Opcode("stop_emitters", "func_80076CB4", ("group",)),
-        7: Opcode("stop_effects", "func_80076CD4", ("group",)),
-        8: Opcode("fade_music", "func_80076CF4", ("level", "frames", None)),
-        9: Opcode("play_sound", "func_80076D1C", ("sound",)),
-        10: Opcode("slide_sound_volume", "func_80076D50", ("sound", "volume", "frames")),
-        11: Opcode("set_fade", "func_80076D8C", ("rate", "step", None)),
+        0: Opcode("exit_worldmap", "worldmap_actor_script_exit_worldmap", (None,), "stop"),
+        1: Opcode("wait", "worldmap_actor_script_wait", ("frames",), "wait"),
+        2: Opcode("send_actor", "worldmap_actor_script_send_actor", ("actor", "argument", None)),
+        3: Opcode("place_player", "worldmap_actor_script_place_player", ("x", "y", "z")),
+        4: Opcode("set_script_vector", "worldmap_actor_script_set_script_vector", ("x", "y", "z")),
+        5: Opcode("start_emitters", "worldmap_actor_script_start_emitters", ("group",)),
+        6: Opcode("stop_emitters", "worldmap_actor_script_stop_emitters", ("group",)),
+        7: Opcode("stop_effects", "worldmap_actor_script_stop_effects", ("group",)),
+        8: Opcode("fade_music", "worldmap_actor_script_fade_music", ("level", "frames", None)),
+        9: Opcode("play_sound", "worldmap_actor_script_play_sound", ("sound",)),
+        10: Opcode("slide_sound_volume", "worldmap_actor_script_slide_sound_volume", ("sound", "volume", "frames")),
+        11: Opcode("set_fade", "worldmap_actor_script_set_fade", ("rate", "step", None)),
     },
 )
+# The handlers' addresses in table order: the words worldmap_actor_script_handlers
+# (8009a3c0) holds in the image.
+WORLDMAP_HANDLER_ADDRESSES = (
+    0x80076BC4, 0x80076BDC, 0x80076C18, 0x80076C3C, 0x80076C68, 0x80076C88,
+    0x80076CB4, 0x80076CD4, 0x80076CF4, 0x80076D1C, 0x80076D50, 0x80076D8C,
+)  # fmt: skip
 
 # Switch cases of arena_scene_run_script in decomp/src/menu/menu2.c. Operands are
 # unsigned bytes. Headings are relative to the facing toward the opponent.
@@ -250,10 +256,10 @@ def halfwords(data: bytes, address: int, count: int, base: int = BASE) -> list[i
 def scripts(machine: Machine, data: bytes, base: int = BASE) -> list[tuple[str, int]]:
     """The scripts the interpreter can be given, as (reference, address)."""
     if machine is WORLDMAP:
-        handlers = [int(spec.handler[5:], 16) for spec in WORLDMAP.opcodes.values()]
+        handlers = list(WORLDMAP_HANDLER_ADDRESSES)
         if words(data, 0x8009A3C0, len(handlers), base) != handlers:
-            raise ScriptError("D_8009A3C0 does not hold the recovered handlers")
-        return [("func_800827C8", 0x8009A758), ("func_800838E8", 0x8009AC60)]
+            raise ScriptError("worldmap_actor_script_handlers does not hold the recovered handlers")
+        return [("worldmap_scene17_script_start", 0x8009A758), ("worldmap_scene18_script_start", 0x8009AC60)]
     table = words(data, 0x8009105C, 10, base)
     found = [("arena_scene_start_tutorial", 0x80090F38), ("arena_scene_start_bout_end", 0x800910C4)]
     return found + [(f"arena_scene_scripts[{scene}]", address) for scene, address in enumerate(table)]
@@ -349,23 +355,23 @@ def listing(machine: Machine, disc: int) -> None:
 # A director's switch cases are its opcodes: the state fetched from the state
 # table, with the wait fetched from the duration table as the operand. The
 # actions of each case are its calls and stores in source order:
-#   ("request", s, n)    func_80097770(s, n): command 1 with argument n to
+#   ("request", s, n)    worldmap_actor_request(s, n): command 1 with argument n to
 #                        actor slot s, dropped while that actor has one
 #                        pending (Director.slots; slot 0 is the screen fade,
-#                        func_800925A0: 13 fades out, 12 fades in)
+#                        worldmap_screen_fade_update: 13 fades out, 12 fades in)
 #   ("sound", n)         sound_play_effect: area-bank effect n on two free voices
 #   ("sound_12", n)      sound_play_effect_on_channels_12_13: area-bank effect n on voices 12-13
-#   ("ambient", k)       sound_play_effect of D_8009A5A0[D_8009D3D4][k]
-#   ("emitters", g)      func_80089160(g, NULL, NULL): start emitter group g
+#   ("ambient", k)       sound_play_effect of worldmap_scene15_ambient_sounds[worldmap_entry_index][k]
+#   ("emitters", g)      worldmap_effects_start_emitters(g, NULL, NULL): start emitter group g
 #                        at position 0 unless one of its emitters is live
 #   ("emitters_at_target", g)  the same at the camera target's x, z (y 0)
-#   ("stop_effects", g)  func_80089514(g): stop group g's live effects
+#   ("stop_effects", g)  worldmap_effects_stop_particles(g): stop group g's live effects
 #   ("music_fade", a, b) sound_set_seq_fade(mode_music_seq, a, b): music to level a
 #                        over b frames
-#   ("fade_rate", v)     D_8009CCA4 = v: the fade quad's semi-transparency
+#   ("fade_rate", v)     worldmap_screen_fade_rate = v: the fade quad's semi-transparency
 #                        rate (1 adds it, fading to white; 2 subtracts it)
-#   ("fade_step", v)     D_8009D3CC = v: its brightness step per frame
-#   ("exit_worldmap",)   D_8009D554 = D_8009D7CC = 0: the world-map loop ends
+#   ("fade_step", v)     worldmap_screen_fade_step = v: its brightness step per frame
+#   ("exit_worldmap",)   worldmap_loop_running = worldmap_loop_result = 0: the world-map loop ends
 #                        after this frame with exit 0
 #   ("fetch",)           case 1: --wait < 0 loads state and wait of the step
 #                        index and advances it
@@ -439,8 +445,8 @@ def _sounds(*numbers: int) -> tuple[tuple, ...]:
 
 
 EXIT = ("exit_worldmap",)
-FLAMES = ((4, 3), (5, 3), (6, 3), (7, 3), (8, 3))  # func_8007DE98's flame slots 4-8
-FADE = "func_800925A0"  # slot 0, the screen fade
+FLAMES = ((4, 3), (5, 3), (6, 3), (7, 3), (8, 3))  # worldmap_scene15_director_update's flame slots 4-8
+FADE = "worldmap_screen_fade_update"  # slot 0, the screen fade
 
 
 @dataclass(frozen=True)
@@ -457,25 +463,25 @@ class Director:
     source: str
     starter: str  # its start handler, which loads entry 0
     advances: bool  # the starter steps past entry 0 (else entry 0 is fetched again)
-    mode: int  # D_8009A058 mode whose setup registers it
+    mode: int  # worldmap_mode_handlers mode whose setup registers it
     setup: str
     slots: tuple[str, ...]  # update handler per actor slot, in the setup's order
     sequences: tuple[Sequence, ...]
     cues: dict[int, Cue]
-    picker: int | None = None  # Sequence table the starter indexes by D_8009D3D4
+    picker: int | None = None  # Sequence table the starter indexes by worldmap_entry_index
 
 
 DIRECTORS = (
     Director(
-        "func_8007A9F8",
-        "decomp/src/worldmap/worldmap_8007A9F8.c",
-        "func_8007A9B4",
+        "worldmap_scene14_director_update",
+        "decomp/src/worldmap/worldmap_scene14.c",
+        "worldmap_scene14_director_start",
         False,
         14,
-        "func_8007A5DC",
-        (FADE, "func_8007A9F8", "func_8007ADD4", "func_8007B394", "func_8007B798", "func_8007BA10")
-        + ("func_8007BBEC", "func_80078950"),
-        (Sequence("D_8009A450", 0x8009A450, 0x8009A46C, 14),),
+        "worldmap_scene14_start",
+        (FADE, "worldmap_scene14_director_update", "worldmap_scene14_camera_update", "worldmap_scene14_grow_objects_4_5_update", "worldmap_scene14_grow_objects_6_7_update", "worldmap_scene14_exhaust_trail_update")
+        + ("worldmap_scene14_rig_flight_update", "worldmap_scene_frame_update"),
+        (Sequence("worldmap_scene14_cue_states", 0x8009A450, 0x8009A46C, 14),),
         {
             0: IDLE,
             1: FETCH,
@@ -492,15 +498,15 @@ DIRECTORS = (
         },
     ),
     Director(
-        "func_8007C3B8",
-        "decomp/src/worldmap/worldmap_8007C3B8.c",
-        "func_8007C36C",
+        "worldmap_scene12_director_update",
+        "decomp/src/worldmap/worldmap_scene12.c",
+        "worldmap_scene12_director_start",
         True,
         12,
-        "func_8007BF50",
-        (FADE, "func_8007C3B8", "func_8007C7D8", "func_8007CD20", "func_8007CF18", "func_8007D110")
-        + ("func_8007D2B8", "func_8007D4A4", "func_8007D690", "func_8007D7FC", "func_80078950"),
-        (Sequence("D_8009A4D8", 0x8009A4D8, 0x8009A4E8, 8),),
+        "worldmap_scene12_start",
+        (FADE, "worldmap_scene12_director_update", "worldmap_scene12_camera_shots_update", "worldmap_scene12_drift_object4_update", "worldmap_scene12_drift_object5_update", "worldmap_scene12_drift_object9_update")
+        + ("worldmap_scene12_drift_object10_update", "worldmap_scene12_drift_object12_update", "worldmap_scene12_drift_object13_update", "worldmap_scene12_drift_object16_update", "worldmap_scene_frame_update"),
+        (Sequence("worldmap_scene12_cue_states", 0x8009A4D8, 0x8009A4E8, 8),),
         {
             0: IDLE,
             1: FETCH,
@@ -524,18 +530,18 @@ DIRECTORS = (
         },
     ),
     Director(
-        "func_8007DE98",
-        "decomp/src/worldmap/worldmap_8007DE98.c",
-        "func_8007DE14",
+        "worldmap_scene15_director_update",
+        "decomp/src/worldmap/worldmap_scene15.c",
+        "worldmap_scene15_director_start",
         True,
         15,
-        "func_8007D918",
-        (FADE, "func_8007DE98", "func_8007E4E4", "func_8007EE34", *["func_8007F968"] * 5)
-        + ("func_8007FD30", "func_80078950"),
+        "worldmap_scene15_start",
+        (FADE, "worldmap_scene15_director_update", "worldmap_scene15_camera_update", "worldmap_scene15_flying_vehicle_update", *["worldmap_scene15_flame_update"] * 5)
+        + ("worldmap_scene15_grow_objects_9_10_update", "worldmap_scene_frame_update"),
         (
-            Sequence("D_8009A5D4", 0x8009A5D4, 0x8009A5F0, 14),
-            Sequence("D_8009A60C", 0x8009A60C, 0x8009A620, 9),
-            Sequence("D_8009A634", 0x8009A634, 0x8009A648, 9),
+            Sequence("worldmap_scene15_entry0_cue_states", 0x8009A5D4, 0x8009A5F0, 14),
+            Sequence("worldmap_scene15_entry1_cue_states", 0x8009A60C, 0x8009A620, 9),
+            Sequence("worldmap_scene15_entry2_cue_states", 0x8009A634, 0x8009A648, 9),
         ),
         {
             0: IDLE,
@@ -576,14 +582,14 @@ DIRECTORS = (
         picker=0x8009A65C,
     ),
     Director(
-        "func_80080370",
-        "decomp/src/worldmap/worldmap_80080370.c",
-        "func_8008032C",
+        "worldmap_scene13_director_update",
+        "decomp/src/worldmap/worldmap_scene13.c",
+        "worldmap_scene13_director_start",
         False,
         13,
-        "func_8007FF70",
-        (FADE, "func_80080370", "func_80080600", "func_80080944", "func_80080AC4", "func_80076A1C"),
-        (Sequence("D_8009A698", 0x8009A698, 0x8009A6AC, 9),),
+        "worldmap_scene13_start",
+        (FADE, "worldmap_scene13_director_update", "worldmap_scene13_camera_update", "worldmap_scene13_effects_update", "worldmap_scene13_grow_objects_0_1_update", "worldmap_scene_frame_billboards_update"),
+        (Sequence("worldmap_scene13_cue_states", 0x8009A698, 0x8009A6AC, 9),),
         {
             0: IDLE,
             1: FETCH,
@@ -598,15 +604,15 @@ DIRECTORS = (
         },
     ),
     Director(
-        "func_800811C0",
-        "decomp/src/worldmap/worldmap_800811C0.c",
-        "func_80081174",
+        "worldmap_scene16_director_update",
+        "decomp/src/worldmap/worldmap_scenes_16_18.c",
+        "worldmap_scene16_director_start",
         True,
         16,
-        "func_80080D00",
-        (FADE, "func_800811C0", "func_80081470", "func_80081868", "func_80081B24", "func_80081D80")
-        + ("func_80081FD8", "func_80078950"),
-        (Sequence("D_8009A6C0", 0x8009A6C0, 0x8009A70C, 37),),
+        "worldmap_scene16_start",
+        (FADE, "worldmap_scene16_director_update", "worldmap_scene16_camera_update", "worldmap_scene16_fade_object2_update", "worldmap_scene16_fade_objects_0_1_update", "worldmap_scene16_haze_update")
+        + ("worldmap_scene16_haze_strength_update", "worldmap_scene_frame_update"),
+        (Sequence("worldmap_scene16_cue_states", 0x8009A6C0, 0x8009A70C, 37),),
         {
             0: IDLE,
             1: FETCH,
@@ -1392,19 +1398,19 @@ def movie_sound_listing(number: int) -> None:
 
 # World map terrain texture animations ----------------------------------------
 #
-# D_8009A1E8[2] and D_8009A250[3] (decomp/src/worldmap/worldmap_80072238.c)
+# worldmap_texture_anim_slots[2] and worldmap_texture_anim2_slots[3] (decomp/src/worldmap/worldmap_open_map.c)
 # are TexAnimSlot rows {RECT rect; s32; TexAnimFrame *frames}; a TexAnimFrame
-# run {s16 image; s16 duration} ends with a negative duration. func_80074E58
-# and func_80075030 give animation i of the area file's two animation sections
+# run {s16 image; s16 duration} ends with a negative duration. worldmap_texture_anim_create
+# and worldmap_texture_anim2_create give animation i of the area file's two animation sections
 # (+0x20 and +0x24: a count, then image offsets) slot i, frame 0 and timer 1.
-# Each update func_80074F2C and func_80075104 count the timer down; at 0 they
+# Each update worldmap_texture_anim_advance and worldmap_texture_anim2_advance count the timer down; at 0 they
 # step to the next frame and take its duration, restart at frame 0 with that
 # frame's duration when it is negative, and upload the frame's image into the
 # slot's rect (the first set's images are 16 bytes, the second's w * h * 2).
 
 TEXTURE_SLOTS = (
-    ("D_8009A1E8", 0x8009A1E8, 2, "func_80074F2C"),
-    ("D_8009A250", 0x8009A250, 3, "func_80075104"),
+    ("worldmap_texture_anim_slots", 0x8009A1E8, 2, "worldmap_texture_anim_advance"),
+    ("worldmap_texture_anim2_slots", 0x8009A250, 3, "worldmap_texture_anim2_advance"),
 )
 TEXTURE_SLOT_BYTES = 16  # RECT, s32, frames pointer
 
@@ -1445,7 +1451,7 @@ def texture_frames(data: bytes, address: int, base: int = BASE) -> list[tuple[in
 
 def texture_uploads(run: list[tuple[int, int]], updates: int) -> list[tuple[int, int, int]]:
     """(update, frame, image) of every upload in the first `updates` updates
-    of a slot, stepped as func_80074F2C does from frame 0 and timer 1."""
+    of a slot, stepped as worldmap_texture_anim_advance does from frame 0 and timer 1."""
     frame, timer, uploads = 0, 1, []
     for update in range(1, updates + 1):
         timer = s16(timer - 1)
@@ -1490,8 +1496,8 @@ def texture_sweep(data: bytes, base: int = BASE) -> TextureSweep:
 
 def texture_report() -> int:
     print(
-        "worldmap-textures: steppers func_80074F2C, func_80075104, slots D_8009A1E8[2],"
-        " D_8009A250[3], overlay worldmap"
+        "worldmap-textures: steppers worldmap_texture_anim_advance, worldmap_texture_anim2_advance, slots worldmap_texture_anim_slots[2],"
+        " worldmap_texture_anim2_slots[3], overlay worldmap"
     )
     failures = 0
     for number in (1, 2):

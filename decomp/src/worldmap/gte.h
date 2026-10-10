@@ -1,7 +1,7 @@
 #ifndef WORLDMAP_GTE_H
 #define WORLDMAP_GTE_H
 
-/* The cloud drawing's (func_80086798) reads of the screen points SXY0-SXY2,
+/* The cloud drawing's (worldmap_clouds_draw) reads of the screen points SXY0-SXY2,
  * or SXY2 alone, into registers, then a nop for the load delay: C forms of
  * LIBGTE.H's read_sxsy_fifo3 and read_sxsy2 assembler macros, which the SDK's
  * inline_c.h does not have. The world map's other GTE macros are

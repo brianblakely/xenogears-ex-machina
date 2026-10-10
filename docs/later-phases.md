@@ -180,7 +180,7 @@ Three details matter for a native loop:
 - The packed overlay file is read into a top-of-heap block with tag 6, quietly
   (`mode_load_overlay_block`). The field's encounter draw, the world map and the battle
   results call it for the next mode before they leave (field.c `field_encounter_count_down`,
-  worldmap.c `func_80070CFC`, ovl2596.c `func_801E252C`), so the read overlaps
+  worldmap.c `worldmap_main`, ovl2596.c `func_801E252C`), so the read overlaps
   their last frames; the dispatcher waits for it (`cd_sync_reads(0)`) and
   decodes the block to 0x8006FAF0. A block read ahead like this has already
   been released by the first heap restart, so the decode reads a released
@@ -216,7 +216,7 @@ Three details matter for a native loop:
 | Sprite engine tasks | resident sprite.c (`task_link_draw_node` links, `task_alloc_draw_task` allocates); `Task` in resident/sprite.h | heap nodes with `update`/`destroy` function pointers, lists `task_main_list` (main) and `task_draw_list` (second) | `task_run_draw_list` runs the second list, `task_run_main_list` the main list (paused while `task_main_pause_timer` counts down); battle reruns the main list for measured lag (`battle_run_frame`) |
 | Field event VM | field_event.c `field_event_run_all_actors` schedules, `field_event_run_instructions` interprets | per actor: u16 PCs into the map's bytecode, 8 slots | each frame in the move phase of `field_run_frame` ([field-events.md](scripts/field-events.md)) |
 | Battle event VM | ovl3087 `battle_event_script_run` | 16 threads | at battle start and between turns; each pass runs one battle frame per thread (`battle_wait_frame`), then up to four of its instructions, until opcode 22 ends the run: an outer blocking loop around battle frames ([battle-event-vm.md](scripts/battle-event-vm.md)) |
-| World map actors | worldmap_80094A5C.c `func_80097800` | 64 slots `D_8009BE24` whose `kind` and `update` hold function addresses as integers | each world map frame |
+| World map actors | worldmap_movement_terrain.c `worldmap_actor_run_all` | 64 slots `worldmap_actor_slots` whose `kind` and `update` hold function addresses as integers | each world map frame |
 | Arena coroutine | created by menu7.c `arena_task_create` on a 0x400-word stack at 0x801FE000 (menu6.c `arena_mode_main`); `arena_task_resume` resumes and `arena_task_yield` yields (handwritten) | the task's registers and stack | resumed once per arena frame; yields at 7 sites (menu2.c 1, menu5.c 6) |
 | Sound sequencer | sound.c `sound_seq_interpret_channels`, called by the tick `sound_run_tick` | sequence channels in data | 240 Hz on root counter 2 ([sound-sequence.md](scripts/sound-sequence.md)) |
 
@@ -277,7 +277,7 @@ loading one can overwrite part of another slot's image.
 A snapshot holds 2 MB of RAM, 1 KB of scratchpad, 1 MB of VRAM and 512 KB of SPU
 RAM, and the device state outside them: GTE registers (the handwritten
 renderers project with the rotation, translation and projection their callers
-left there, as `func_8009980C.s` states), GPU drawing and display settings, SPU
+left there, as `worldmap_terrain_draw_quarter_block.s` states), GPU drawing and display settings, SPU
 voice and control registers (written through `sound_spu_registers`), the CD drive's
 position, mode and any command or read in progress, root counters (the sound
 tick runs on counter 2) and pending interrupts, and the memory cards' contents.
@@ -323,7 +323,7 @@ callers depend on narrowing.
 | --- | --- | --- |
 | Game data | `game_data`, resident/gamedata.h | pointer-free; new game copies (0x10, 0) file 3 whole (`mode_load_initial_game_data`); save layout in [original-boundaries.md](original-boundaries.md) |
 | Cross-mode words and flags | `mode_unread_play_record_word`-`mode_shared_wave_bank_needs_reload` (mode.h), small data 0x80059170-0x800591B8 (kernel_settings.c, sprite_settings.c) | map, music, battle module and entry requests |
-| Field state across battle and the arena | `mode_snapshot_block` (0x22FC-byte resident common): field `field_save_snapshot` writes it on those exits (`field_main`), `field_restore_snapshot` restores it; the world map parks its actors there (`func_80075460`) | holds raw actor pointers and world map function addresses |
+| Field state across battle and the arena | `mode_snapshot_block` (0x22FC-byte resident common): field `field_save_snapshot` writes it on those exits (`field_main`), `field_restore_snapshot` restores it; the world map parks its actors there (`worldmap_save_state`) | holds raw actor pointers and world map function addresses |
 | Field event variables | `field_event_variables[0x400]`: the lower half comes from game data `vars` at map load (`field_reset_state`) and returns each frame (`field_event_save_map_and_variables`); the upper half is per map | game data is stale until the frame ends |
 | Battle party | `BattleWork battle_work_area` (battle/work.h): ovl2615 `func_801E5384` copies the party in, ovl2596 `func_801E2888` writes it back | game data is stale during battle |
 | RNG seed | `libc_rand_seed`: libc `rand` (8003fa38) computes `seed = seed * 0x41C64E6D + 0x3039` and returns `(seed >> 16) & 0x7FFF` | cleared with the BSS at boot and soft reset; `srand` has no caller in `decomp/src` |
@@ -391,8 +391,8 @@ or Form 2. An import of 2048-byte file data cannot serve:
   0x924-byte sectors (psx-spx). Each callback copies the 4-byte header and the
   8-byte subheader (`CdGetSector(..., 3)`) before the 2048 data bytes, and drops
   a sector whose header position is not the one it expects (`CdPosToInt` in
-  cd_reads_and_streams.c `cd_copy_list_sector` and `cd_copy_file_sector`, worldmap_80094A5C.c
-  `func_80096C0C`);
+  cd_reads_and_streams.c `cd_copy_list_sector` and `cd_copy_file_sector`, worldmap_movement_terrain.c
+  `worldmap_stream_on_data_ready`);
 - movies. Their sizes in the index count 2336 bytes per sector, the subheader
   and the rest of the raw sector, and their sectors hold video, XA audio or
   nothing (`tools/extraction/code_census.py`). mdec reads the video through the
@@ -438,7 +438,7 @@ waits. What follows for a port:
   for SPU transfers (`sound_sync_transfer`). Without the 240 Hz tick and the transfer
   callback they never return.
 - **One wait is not a wait.** The world map's `while (sound_driver_flags & 0x10) {}`
-  (`func_80072238`) compiled to one test and a branch to itself (0x80072584): if
+  (`worldmap_open_map_start`) compiled to one test and a branch to itself (0x80072584): if
   a transfer is still running there, it hangs. Code the intended behaviour
   explicitly; a modern compiler may re-read the flag, keep the hang or delete
   the loop.
@@ -484,8 +484,8 @@ task-switch storage shares its routines' row):
 | menu 8008bb00-8008bcc8, storage 80096d88 | task context switch (resume, yield, nested-scheduler save and restore) | `arena_task_resume.s`, `arena_task_yield.s`, `arena_task_save_scheduler.s`, `arena_task_restore_scheduler.s`; `TaskContext` in menu/task.h | the nested fiber service |
 | menu 8008c3a8-8008c7c0 | mesh shadow projection, flat packet builders | `arena_mesh_project_shadow.s`, `arena_mesh_draw_flat_triangles.s`, `arena_mesh_draw_flat_quads.s`, `mesh_packet.s` | portable C |
 | menu 8008ddfc-8008df30 | GTE vector transform; a stub that never restores `$sp` | `arena_gte_rotate_scale_svector.s`, `arena_spark_link_tile_packet_unreferenced.s` | port the transform; the stub has no reference in `decomp/src` |
-| worldmap 8009980c-80099bfc | terrain quarter-block renderer | `func_8009980C.s`, `screen_bounds.s` | portable C; the terrain's pre-projection seam |
-| worldmap 80099bfc-80099e8c | terrain billboards | `func_80099BFC.s` | portable C |
+| worldmap 8009980c-80099bfc | terrain quarter-block renderer | `worldmap_terrain_draw_quarter_block.s`, `screen_bounds.s` | portable C; the terrain's pre-projection seam |
+| worldmap 80099bfc-80099e8c | terrain billboards | `worldmap_billboards_draw_block.s` | portable C |
 
 ### SDK libraries
 
@@ -525,7 +525,7 @@ pollhost, the stack switches, `GET_RA` and `addPrimLen9`. Natively:
   development test around it. Make the guarded ones no-ops and the assertion a
   fatal diagnostic.
 - **`GET_RA`** becomes a call-site id. The one register binding (world map
-  `func_80086798`) becomes plain variables.
+  `worldmap_clouds_draw`) becomes plain variables.
 
 ## Assets and script machines
 
@@ -568,9 +568,9 @@ instruction on either disc. For Phases 7, 11 and 12:
 | Sprite blocks | resident sprite units | [sprite-vm.md](scripts/sprite-vm.md), `sprite_vm.py` | none |
 | Sound: `smds`, `seds`, `wds ` | sound.c, console_and_sound_driver.c | [sound-sequence.md](scripts/sound-sequence.md), `sound_sequence.py` | no ADPCM sample decoder |
 | Battle enemy, AI, effect and event files | battle, ovl2615, ovl3087 | [battle-ai.md](scripts/battle-ai.md), [battle-effect-vm.md](scripts/battle-effect-vm.md), [battle-event-vm.md](scripts/battle-event-vm.md) | none |
-| Formations and encounter sets | field component 6 into `formation_encounter_set`, world map `D_8009D73C`, battle `battle_main`, ovl2615, ovl3087; `BattleFormation` and `EncounterSet` in resident/formation.h | [formations.md](scripts/formations.md), `formations.py` | see its Open items |
+| Formations and encounter sets | field component 6 into `formation_encounter_set`, world map `worldmap_encounter_sets`, battle `battle_main`, ovl2615, ovl3087; `BattleFormation` and `EncounterSet` in resident/formation.h | [formations.md](scripts/formations.md), `formations.py` | see its Open items |
 | World map actor and scene scripts, arena scripts | worldmap, menu | [worldmap-actor.md](scripts/worldmap-actor.md), [worldmap-scene.md](scripts/worldmap-scene.md), [arena-scene.md](scripts/arena-scene.md), `overlay_scripts.py` | none |
-| Cue timelines: field movie sounds, world map terrain texture animations | field `field_movie_play_due_sounds`; world map `func_80074F2C`, `func_80075104` | [timelines.md](scripts/timelines.md), `overlay_scripts.py` | see its Open item |
+| Cue timelines: field movie sounds, world map terrain texture animations | field `field_movie_play_due_sounds`; world map `worldmap_texture_anim_advance`, `worldmap_texture_anim2_advance` | [timelines.md](scripts/timelines.md), `overlay_scripts.py` | see its Open item |
 | Save files | slot39 `func_801CBD90`, `func_801CB304` | [original-boundaries.md](original-boundaries.md), `menu_save_file.py` | none |
 | Movies (STR, XA) | mdec, movie, field `field_movie_play` | VLC only (`src/analysis/mdec_codec.hpp`) | IDCT, colour conversion and XA ADPCM |
 
@@ -647,12 +647,12 @@ well:
   disc (field.c `field_main`).
 - **Packets are pre-culled** to the original window (original-boundaries.md,
   GPU features: Culling). World-map terrain also drops triangles whose largest
-  SZ is 0xF00 or more and stops at 0x7FE packets (`func_8009980C.s`). Widescreen,
+  SZ is 0xF00 or more and stops at 0x7FE packets (`worldmap_terrain_draw_quarter_block.s`). Widescreen,
   stereo and VR need a side-effect-free re-traversal of pre-projection data,
   not a reprojection of the packet list.
 - **VRAM is persistent, read-back state** (original-boundaries.md, GPU
   features: Framebuffer feedback). The saved-screen slot (0x2C0, 0x100) also
-  takes the world map's screen (`MoveImage` in worldmap_80072238.c and its
+  takes the world map's screen (`MoveImage` in worldmap_open_map.c and its
   scene directors), and the field's kind-3 transition copies it back into the
   draw buffer every frame (field.c `field_run_frame`). A bit-exact 1024x512x16
   VRAM belongs in snapshots; an HD renderer redirects samples of such regions to
@@ -676,8 +676,8 @@ well:
 | --- | --- | --- |
 | 3D models of every mode | `model_draw_sprite_model` (model_renderer.c), 11 call sites in battle, field, menu, ovl2143, resident sprites and the world map | mesh, GTE rotation/translation, H, offset, depth cue, sort mode, OT |
 | Sprites | `sprite_set_draw_matrix` (position through the view matrix `sprite_view_matrix`), `sprite_draw_parts` (part corners through `RotTransPers4`) | world position, scale, facing, frame parts |
-| World map terrain | `func_8009932C` calls `func_80099708`, which calls `func_8009980C.s`; billboards `func_8008615C` call `func_80099BFC.s` | the 9x9 vertex grid on the scratchpad, cell words |
-| Cameras | field `FieldView field_view` (look-at `field_camera_build_lookat_matrix`); battle eye/target (`battle_camera_step`); world map camera (`func_80097244`) | read-only inputs to stereo, diorama and VR views; head pose must never write them, because the player control (event `a7`, `field_event_request_player_control`) subtracts the field camera's `angle` from the pad direction |
+| World map terrain | `worldmap_terrain_draw` calls `worldmap_terrain_build_and_draw_quarter`, which calls `worldmap_terrain_draw_quarter_block.s`; billboards `worldmap_billboards_draw` call `worldmap_billboards_draw_block.s` | the 9x9 vertex grid on the scratchpad, cell words |
+| Cameras | field `FieldView field_view` (look-at `field_camera_build_lookat_matrix`); battle eye/target (`battle_camera_step`); world map camera (`worldmap_camera_build_look_at`) | read-only inputs to stereo, diorama and VR views; head pose must never write them, because the player control (event `a7`, `field_event_request_player_control`) subtracts the field camera's `angle` from the pad direction |
 
 Text is rasterised on the CPU into the window's 4-bit line image, two glyph
 planes per nibble (`text_draw_glyph`, main2.c), and drawn as sprites
@@ -724,7 +724,7 @@ revision:
 | --- | --- | --- | --- | --- | --- |
 | pointer to integer casts | 677 in 51 files (+30 from `void *`) | same | 792 in 58 files (+30) | 0 | 32-bit addresses kept in integers; on Windows also the casts to PsyQ's 32-bit `u_long` (packet words, the EXE header) |
 | integer to pointer casts | 320 (+34 to `void *`) | same | 321 (+34) | 2 | pointers rebuilt from 32-bit words |
-| non-constant static initializers | 17 in 3 files | same | 18 in 4 files | 0 | function addresses stored as `s32` (world map `D_80099E8C`; menu3.c, menu4.c); on Windows also header.c's EXE header |
+| non-constant static initializers | 17 in 3 files | same | 18 in 4 files | 0 | function addresses stored as `s32` (world map `worldmap_open_map_actors`; menu3.c, menu4.c); on Windows also header.c's EXE header |
 | failed `LAYOUT_CHECK` | 13 in 12 headers (battle/area.h, effect.h, scene.h, ui.h, work.h twice; menu/card.h, panel.h, screen.h, shop.h, tables.h; ovl2143/actors.h; resident/menu.h) | same | 10 in 9 (all but battle/ui.h, menu/panel.h and menu/screen.h) | 0 | asserted offsets of structures with pointers; under LP64 also of the three whose PsyQ packets' `u_long` words widen (they hold with `-Dlong=int`) |
 | rejected `section` attributes | 0 | 3 in 2 files | 0 | 0 | Mach-O section names need a segment (main.c `mode_next_mode`, `mode_table`; menu6.c `arena_mode_tasks`) |
 | asm with MIPS register names | 150 in 24 files | same | same | same | GTE macros, stack switches, `GET_RA` |
@@ -746,7 +746,7 @@ therefore the first Phase 2 decision.
 
 | Hazard | Evidence | Handling |
 | --- | --- | --- |
-| 32-bit pointers in data | world map actor slots and spawn tables hold function addresses as integers (`func_80097800`, `D_80099E8C`); sprite tasks, sound modulators and hooks hold function pointers; models and archives are relocated in place (`model_relocate_group`, `model_relocate_sprite_model`, `text_relocate_offset_table`); `mode_snapshot_block` parks raw pointers across modes | keep game memory a contiguous 32-bit arena and map code addresses to stable ids; never serialise host pointers |
+| 32-bit pointers in data | world map actor slots and spawn tables hold function addresses as integers (`worldmap_actor_run_all`, `worldmap_open_map_actors`); sprite tasks, sound modulators and hooks hold function pointers; models and archives are relocated in place (`model_relocate_group`, `model_relocate_sprite_model`, `text_relocate_offset_table`); `mode_snapshot_block` parks raw pointers across modes | keep game memory a contiguous 32-bit arena and map code addresses to stable ids; never serialise host pointers |
 | 24-bit ordering-table links | `AddPrim` and the OT helpers store packet addresses masked to 0x00FFFFFF; the arena rebuilds pointers as `(tag & 0xFFFFFF) - 0x80000000` (menu7.c `arena_display_compact_layer`) | links as offsets into the arena, below 16 MB |
 | Punned views | the same bytes read through several types: through explicit casts, which the census does not report (the SDK calls' among them: [matching.md](matching.md), Converting a function), and its 2 incompatible pointer types; the `link.ld`, `battle.data.ld`, `menu.bss.ld` and `worldmap.data.ld` views name parts of objects ([matching.md](matching.md)) | `-fno-strict-aliasing`; one canonical type per address for schemas |
 | Signedness and width | plain `char` is unsigned (`-D__CHAR_UNSIGNED__`, `lbu`; [matching.md](matching.md), Qualified configuration); `long` is 32 bits in the PsyQ structures (`VECTOR`, `MATRIX`, packet tags); event variables are 16-bit and read signed or unsigned by the map's event package bits (`field_event_read_variable`) | `-funsigned-char`; 32-bit `long` in native SDK headers |
@@ -757,7 +757,7 @@ therefore the first Phase 2 decision.
 | Signed overflow and shifts | the handwritten trig and renderers rely on 32-bit wrapping; 14 shifts of negative values | `-fwrapv` and arithmetic-shift helpers |
 | Overruns and offset bases | `STEP_FUEL` is `&gearHud.commands[-1]` (battle/command.h); `battle.data.ld` names `battle_combo_next_step_table_by_paid` and `battle_ap_timer_reload_table_by_max_ap` before their tables; menu5.c `arena_hud_build_overlay_buffer` writes `arrows[1][3..5]` past its array | explicit range-checked index arithmetic natively |
 | Decompressors read past files | the overlay LZSS decoder reads its final flag byte past the file (tools/extraction/overlays.py); arena model files and map 145's messages read past their bytes ([arena-frame-events.md](scripts/arena-frame-events.md), [text-control.md](scripts/text-control.md)) | zero-pad imported files to whole sectors; bound the decoder |
-| Scratchpad | work memory and stack switches ([original-boundaries.md](original-boundaries.md)); `TerrainDrawScratch` in worldmap_80094A5C.c and the layout func_80099BFC.s describes | a 1 KB static buffer behind one accessor |
+| Scratchpad | work memory and stack switches ([original-boundaries.md](original-boundaries.md)); `TerrainDrawScratch` in worldmap_movement_terrain.c and the layout worldmap_billboards_draw_block.s describes | a 1 KB static buffer behind one accessor |
 | Fixed cross-image addresses | the mode table holds overlay entries and BSS bounds as numbers (main.c `mode_table`); slot tenants are called by address (`menu_state_run_screen`); cross-image names come from the original's addresses (splat's `undefined_syms_auto.txt`, `*.resident.ld`, `debug595.field.ld`), outside the strict linker-script check; all-verify's cross-image step compares them, and the mode table, with the rebuilt targets ([matching.md](matching.md)) | a per-slot registry that rejects calls into an absent image; 45 function names are defined by two or more targets' C, so give them per-image namespaces |
 | Section placement and asm labels | `__attribute__((section(".rodata")))` on main.c `mode_next_mode` (which `mode_select_next_mode` writes) and `mode_table`, and `section(".text")` on the menu6.c table `arena_mode_tasks`, place data where the original had it. Mach-O rejects both names (the census above), and in a one-line clang 21.1.8 probe wasm32's code generator refuses data in `.text` ("data symbols must live in a data section"); ELF and COFF accept both. ovl2615's battle_setup.h declares `D_800CCCE8_setup __asm__("battle_work_area")` (movie_mode.h and worldmap.h one such view each): where C names take a leading underscore (Mach-O, 32-bit Windows), that label names another symbol than the definition `battle_work_area` | keep both behind the PS1-only build macro; natively, plain definitions and one name per object |
 | K&R calls and per-target prototypes | unprototyped calls pass unpromoted arguments ([matching.md](matching.md)); targets declare shared functions differently (`own_declarations.h`) | canonical prototypes and thunks in native-only headers; in WebAssembly a mismatched indirect call traps |

@@ -173,7 +173,7 @@ class MatchingTests(unittest.TestCase):
         v0 = ("SVECTOR", "point->vx", "gte_ldv0(point)",
               "gte_ldv0(get_point())", 0x29, 0, (0x32,), 2)
         cases = (
-            ("worldmap_80083A00", "worldmap",
+            ("worldmap_objects_effects_party", "worldmap",
              '#include "' + str(worldmap / "worldmap.h") + '"\n'
              '#include "psyq/inline_c.h"\n',
              (

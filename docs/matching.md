@@ -71,7 +71,7 @@ Vendor controls (local, `.local/original-toolchain-evidence`; the binaries stay 
 of the repository): PsyQ CC1PSX 2.6.3.SN.2 gives text and relocations identical to
 old-gcc 2.6.3 for saved whole units of movie, battle_scene, slot39 and sound;
 CC1PSX 2.7.2.SN32.3.7.0002 does the same against old-gcc 2.7.2 for the resident heap,
-field_motion, menu5, worldmap_80083A00 and worldmap_80090A84; Psy-Q ASPSX 2.34
+field_motion, menu5, worldmap_objects_effects_party and worldmap_steering_camera_terrain; Psy-Q ASPSX 2.34
 assembles movie 800737ec, battle 800a7064 and sound 8003b424 to the text that
 maspsx `--aspsx-version=2.34` and GNU as give.
 
@@ -165,7 +165,7 @@ boot_bss_last_word from the link's BSS end, for the entry point and the mode tab
 from the start of the small data, where the original's 80059170 lies),
 the menu's (`menu.bss.ld`: the opponent's command byte arena_settings_command, which
 arena_brain_run_practice_command loads absolutely at each of its three reads) and the world map's
-(`worldmap.data.ld`: D_8009D3FC, the read list's first destination, from which two
+(`worldmap.data.ld`: worldmap_read_list_first_destination, the read list's first destination, from which two
 loaders pass the list). `SCRIPT_SYMBOLS=strict` is the default;
 `SCRIPT_SYMBOLS=warn` (on the command line or in the environment) reports the names
 and passes a single target's `verify`, for a probe, which then prints `NOT
@@ -585,7 +585,7 @@ every placeholder (7797 rows, 390 files) kept all 26 images, cross-image and cov
   through on its own count and timing). So the field's movie sound timelines
   `field_movie_sound_timelines`, (frame, sound) runs ended by frame 0xFFFF that `field_movie_play_due_sounds`
   plays in order, are an asset, and the world map ferry's eight waypoints, which
-  `func_80087FD0` steps through on each update and wraps itself (`func_80087C6C`
+  `worldmap_ferry_update` steps through on each update and wraps itself (`worldmap_ferry_start`
   only resumes the route when the ferry spawns), are source.
 - The rule was applied to every initialized object cc1 emits from the 26 targets' C
   (at 8c0508e): 1,026 named objects and 989 literals (strings, jump tables); every
@@ -598,9 +598,9 @@ every placeholder (7797 rows, 390 files) kept all 26 images, cross-image and cov
   elements against an end value, its address stored for later) or by their comment's
   wording were checked against their readers. Six were authored sequences and are
   now assets, 528 bytes: `field_movie_sound_timelines` and the world map's terrain texture animation
-  runs `D_8009A1A0`, `D_8009A1C4`, `D_8009A208`, `D_8009A220` and `D_8009A238`,
-  (image, duration) frames ended by a negative duration that `func_80074F2C` and
-  `func_80075104` step (docs/scripts/timelines.md). That pass looked for media only
+  runs `worldmap_texture_anim_slot0_frames`, `worldmap_texture_anim_slot1_frames`, `worldmap_texture_anim2_slot0_frames`, `worldmap_texture_anim2_slot1_frames` and `worldmap_texture_anim2_slot2_frames`,
+  (image, duration) frames ended by a negative duration that `worldmap_texture_anim_advance` and
+  `worldmap_texture_anim2_advance` step (docs/scripts/timelines.md). That pass looked for media only
   among the objects passed to LoadImage or SpuWrite. A second pass (at 5559538:
   1,020 named objects, 565 of them not scalars) followed each object into its
   readers: the calls it reaches itself or through a local pointer set from it, the
@@ -613,11 +613,11 @@ every placeholder (7797 rows, 390 files) kept all 26 images, cross-image and cov
   also where an end value closes them (the picture table `field_picture_table` searched by
   map, the battle modes' sound programs `mode_battle_sound_programs`, the gear shop lamps' frames
   `D_801D6FE0` on the code's timing), lists one call processes whole (the battle
-  panel glyph sets ended by 0xFFFF, the world map's object links `D_8009AFA0`),
+  panel glyph sets ended by 0xFFFF, the world map's object links `worldmap_airship_object_links`),
   geometry the code interpolates or steps through on its own count (the world
-  map's camera and flight paths, which `func_80076858` interpolates at the
+  map's camera and flight paths, which `worldmap_eval_quadratic_bspline` interpolates at the
   parameter its scene code advances; the ferry's waypoints; the scripted flights'
-  waypoints, whose counts `func_8008E76C` fixes, never reading their -1 ends),
+  waypoints, whose counts `worldmap_flying_vehicle_update` fixes, never reading their -1 ends),
   texture layouts (the menu font's glyph rectangles `arena_text_glyphs`), and masks and
   thresholds. The four bare palettes passed to LoadImage are source: the text
   palette `text_palette` decodes the 2-bit codes `text_draw_glyph` writes into either
@@ -754,9 +754,9 @@ converted to C per unit. What converting the targets' `.data` established:
 - A table's readers, not the span to the next symbol, give its extent, and stray fill
   after it is not an element. Four tables spelled theirs as extra elements and are
   INCLUDE_ORIGINAL objects with `included` lines now, their externs declaring the
-  true extent: the world map's flame sizes D_8009A68C (5 u16 for flame actors 4-8,
-  func_8007F8AC and func_8007F968; fill 65 79) and gear parameters D_8009B1A4 (3 s16
-  for the members 0-2 func_8008C364 passes; fill 00 3c), slot39's sheet images
+  true extent: the world map's flame sizes worldmap_scene15_flame_sizes (5 u16 for flame actors 4-8,
+  worldmap_scene15_flame_start and worldmap_scene15_flame_update; fill 65 79) and gear parameters worldmap_gear_sprite_height (3 s16
+  for the members 0-2 worldmap_place_vehicle passes; fill 00 3c), slot39's sheet images
   D_801E97AC (13 rows of 5 u8, func_801E1544 for the rows of func_801E1AC8; fill 00 07
   2e) and battle's combo flags battle_combo_step_flags (15 u8: battle_can_use_combo_step, battle_combo_chain_add_gear_step and
   battle_combo_record_gear_step index at most 14 from combo steps 0-2, or 0xff at attack level 4;
@@ -822,8 +822,8 @@ converted to C per unit. What converting the targets' `.data` established:
   (debug2611's pages.c) and D_801C5000 (ovl2601) and the .data objects arena_actor_combo_inputs
   (menu7, `ind` before menu2's .sbss) and battle_unreferenced_stray_byte (battle), all of ASPSX 2.34
   units, and battle_music_lowered (battle) and D_801E9638 (ovl2615) of 2.56 units and the world
-  map's D_8009A68C and D_8009B1A4 of 2.79 units; so does the world map's cue sequence
-  asset D_8009A6AC. Psy-Q 3.5's ASPSX 2.34 pads no section's end under DOSBox: a 6-byte
+  map's worldmap_scene15_flame_sizes and worldmap_gear_sprite_height of 2.79 units; so does the world map's cue sequence
+  asset worldmap_scene13_cue_waits. Psy-Q 3.5's ASPSX 2.34 pads no section's end under DOSBox: a 6-byte
   .data or a 5-byte .rdata stays that long, also when another section follows, and a
   section entered again goes on at that offset. If the original 2.34 assembler did the
   same, the stray bytes of its units lie in the gap the link left before the next
@@ -856,7 +856,7 @@ converted to C per unit. What converting the targets' `.data` established:
   last pair is zero either way, stays C with 20 pairs, until a reader decides.
 - splat names addresses the code forms from a base plus a constant (`D_8009A684`, four
   entries before the flame sizes; `D_801EA5D0`, 0x20 before the Shift JIS codes).
-  Declare the real object and index it as the code does (`D_8009A68C[index - 4]`,
+  Declare the real object and index it as the code does (`worldmap_scene15_flame_sizes[index - 4]`,
   `D_801EA610[hi - 0x20]`): it compiles to the same address. Interior names that
   remaining assembly still uses go in `<target>.data.ld` (`D_x = D_y + off`; splat's
   `undefined_syms_auto.txt` covers only unaligned ones). These aliases are

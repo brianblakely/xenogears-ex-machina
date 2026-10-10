@@ -161,9 +161,9 @@ class SourceTests(unittest.TestCase):
 
     def test_world_modes_follow_the_entry_and_their_writers(self):
         self.assertEqual(len(world_modes()), 19)
-        entry = function_body(source("worldmap/worldmap.c"), "func_80070CFC")
+        entry = function_body(source("worldmap/worldmap.c"), "worldmap_main")
         self.assertIn("mode = game_data_worldmap_flag_word[0] & 0x7FFF;", entry)
-        self.assertIn("step = D_8009A058[D_8009C5A8].enter;", entry)
+        self.assertIn("step = worldmap_mode_handlers[worldmap_mode_index].enter;", entry)
         leave = function_body(source("field/field_event.c"), "field_event_change_map")
         self.assertIn("game_current_data->entry[2] = field_event_read_selected_operand_10(7, EVENT_OPERAND_BYTE(9));", leave)
         self.assertIn("game_data.entry[2] = battle_state_of_event_script->operands[3];", source("ovl3087/battle_event_script_vm.c"))
@@ -174,9 +174,9 @@ class SourceTests(unittest.TestCase):
         )
 
     def test_scripted_exits_are_the_world_maps_map_stores(self):
-        entry = function_body(source("worldmap/worldmap.c"), "func_80070CFC")
+        entry = function_body(source("worldmap/worldmap.c"), "worldmap_main")
         self.assertIn("game_data.map = 0x400;", entry)  # a new world state
-        leave = function_body(source("worldmap/worldmap_80072238.c"), "func_80077480")
+        leave = function_body(source("worldmap/worldmap_open_map.c"), "worldmap_scene8_leave")
         self.assertIn("game_data.map = 0x11;", leave)
         self.assertEqual(
             scripted_exits(),

@@ -28,7 +28,7 @@ with its handler, and its decoder sweeps both discs.
 | Sprite animation | resident, battle | `800248d4`, `800c11cc` | switches, `8001fbe4`, `800b3f04` | [sprite-vm.md](sprite-vm.md) | `sprite_vm` |
 | Text controls | resident | `80033df0` | bytes, 0F's jump table `80018a7c` | [text-control.md](text-control.md) | `text_control` |
 | Staff roll | field | `800ac0f0` | CR only | [text-control.md](text-control.md) | `staff_roll` |
-| World map actors | worldmap | `80076b34` | `D_8009A3C0[12]` | [worldmap-actor.md](worldmap-actor.md) | `overlay_scripts` |
+| World map actors | worldmap | `80076b34` | `worldmap_actor_script_handlers[12]` | [worldmap-actor.md](worldmap-actor.md) | `overlay_scripts` |
 | World map scenes | worldmap | five directors | switches | [worldmap-scene.md](worldmap-scene.md) | `overlay_scripts` |
 | Arena scenes | menu | `8007107c` | switch | [arena-scene.md](arena-scene.md) | `overlay_scripts` |
 | Arena frame events | menu | `80074678` | switch on the kind | [arena-frame-events.md](arena-frame-events.md) | `overlay_scripts` |
@@ -49,16 +49,16 @@ documents both; `overlay_scripts` decodes them.
 | `battle_formula_table`, `battle_gear_formula_table` | battle | a command descriptor's formula | [dispatch-tables.md](dispatch-tables.md) |
 | `model_primitive_types` | resident | a model primitive group's type | [dispatch-tables.md](dispatch-tables.md) |
 | `sound_modulator_waves` | resident | a sound modulator's mode & 0xf (16 slots) | [sound-sequence.md](sound-sequence.md) |
-| `D_8009A058` | worldmap | the arrival word +0x2320 & 0x7fff | [dispatch-tables.md](dispatch-tables.md) |
+| `worldmap_mode_handlers` | worldmap | the arrival word +0x2320 & 0x7fff | [dispatch-tables.md](dispatch-tables.md) |
 | `sprite_draw_callbacks` | resident | a sprite header's kind (four bits) | [dispatch-tables.md](dispatch-tables.md) |
 | `field_event_primary_handlers`, `field_event_extended_handlers` | field | the field event opcode | the field events interpreter |
 | `sound_seq_opcode_handlers` | resident | the sound sequence opcode - 0x80 | the sound sequence interpreter |
-| `D_8009A3C0` | worldmap | the world map actor opcode | the world map actor interpreter |
+| `worldmap_actor_script_handlers` | worldmap | the world map actor opcode | the world map actor interpreter |
 | `arena_menu_port1_items`, `arena_menu_port2_items`, `arena_menu_title_items`, `arena_menu_bonus_battling_items`, `arena_menu_pause_items`, `arena_menu_settings_items`, `arena_menu_give_up_items`, `arena_menu_practice_items`, `arena_menu_pages` | menu | the menu page and cursor (menu4's items and lines) | code |
 | `arena_mode_tasks` | menu | `mode_arena_task`, which only `mode_set_arena_task(0)` sets (resident and field) | code |
 | `arena_spark_shapes`, `arena_spark_placement_rules`, `arena_spark_update_callbacks` | menu | an emitter's shape and placement, constants at both callers of `arena_spark_create_emitter` (1, 0 and 3, 0); its one update | code |
-| `D_80099E8C` | worldmap | the actors every area starts, a list ended by kind 0 | code |
-| `D_80099F0C`, `D_80099F24`, `D_80099F3C`, `D_80099F74`, `D_80099FAC`, `D_80099FEC` | worldmap | the area's actor list, `D_8009A034[D_8009C610]`; the area index comes from the position against `D_8009B564`, whose last threshold is 0xffff | code |
+| `worldmap_open_map_actors` | worldmap | the actors every area starts, a list ended by kind 0 | code |
+| `worldmap_area0_actors`, `worldmap_area3_actors`, `worldmap_area4_actors`, `worldmap_area5_actors`, `worldmap_area6_actors`, `worldmap_area8_actors` | worldmap | the area's actor list, `worldmap_area_actor_lists[worldmap_area_index]`; the area index comes from the position against `worldmap_area_thresholds`, whose last threshold is 0xffff | code |
 | `mode_table` | resident | the mode number (0-6) the dispatcher `mode_dispatch` runs, set by `mode_select_next_mode` from code and from the movie's next-mode word `cd_movie_request_kind`; rows {entry, BSS start, BSS end, loaded} | [original-boundaries.md](../original-boundaries.md) |
 | `exe_header` | resident | the PS-X EXE header's entry point, not a dispatch | none |
 
@@ -88,5 +88,5 @@ takes the switch's default.
   tools) and ovl2606 (the debug battle-scene selector) switch on pad input and
   their own screens, not on game data.
 - The field's map entry records (`8009fa54`) and the world map's path regions
-  (`func_80094238`) are records the code tests, not dispatched; the world map
+  (`worldmap_path_select_region`) are records the code tests, not dispatched; the world map
   arrival census lists the fields the path regions name.

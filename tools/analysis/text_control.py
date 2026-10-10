@@ -352,7 +352,7 @@ def unpack_logical(source: bytes, size: int) -> tuple[bytes, bool]:
         return outputs.pop(), True
 
 
-# D_8009B584[].file (decomp/src/worldmap/worldmap_80094A5C.c): the world map's
+# worldmap_area_file_sets[].file (decomp/src/worldmap/worldmap_movement_terrain.c): the world map's
 # area file sets.
 WORLD_AREA_FILES = (
     43,

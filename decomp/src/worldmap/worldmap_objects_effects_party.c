@@ -5,10 +5,10 @@
  * ferry, the airship), the particle effects and the party on foot (leader
  * and followers, placements).
  *
- * func_80083264's five-entry table ends at 80070490 and func_80083A00's
+ * worldmap_scene17_pulse_update's five-entry table ends at 80070490 and worldmap_scene18_camera_update's
  * follows at once, 0 mod 8, a phase change without a pad word: this unit's
- * rodata starts there and its text after func_80083264, at or before
- * func_80083A00. PsyQ's CC1PSX 2.7.2.SN32.3.7.0002 gives this unit the same
+ * rodata starts there and its text after worldmap_scene17_pulse_update, at or before
+ * worldmap_scene18_camera_update. PsyQ's CC1PSX 2.7.2.SN32.3.7.0002 gives this unit the same
  * text and relocations as the build's cc1 (docs/matching.md). */
 #include "common.h"
 #include "psyq/inline_c.h"
@@ -30,18 +30,18 @@
 #include "screen.h"
 #include "terrain.h"
 
-/* Scene object draw mode, by the object's flags (func_800848F4). */
-s16 D_8009AD2C[10] = {4, 4, 5, 5, 0, 0, 2, 2, 3, 3};
+/* Scene object draw mode, by the object's flags (worldmap_objects_draw). */
+s16 worldmap_object_draw_modes[10] = {4, 4, 5, 5, 0, 0, 2, 2, 3, 3}; /* 8009AD2C */
 
-/* Drifting sprites (clouds, func_80086798): texture origins, the far sprite
+/* Drifting sprites (clouds, worldmap_clouds_draw): texture origins, the far sprite
  * corners and the near sprites' quads (four corners each), in three layers. */
-u16 D_8009AD40[8] = {0, 0x40, 0x80, 0, 0xC0, 0x4000, 0x4040, 0};
-SVECTOR D_8009AD50[12] = {
+u16 worldmap_cloud_texture_origins[8] = {0, 0x40, 0x80, 0, 0xC0, 0x4000, 0x4040, 0}; /* 8009AD40 */
+SVECTOR worldmap_cloud_far_corners[12] = { /* 8009AD50 */
     {-192, 0, 192}, {192, 0, 192}, {-192, 0, -192}, {192, 0, -192},
     {-192, -8, 192}, {192, -8, 192}, {-192, -8, -192}, {192, -8, -192},
     {-192, -16, 192}, {192, -16, 192}, {-192, -16, -192}, {192, -16, -192},
 };
-SVECTOR D_8009ADB0[48] = {
+SVECTOR worldmap_cloud_near_corners[48] = { /* 8009ADB0 */
     {-192, 0, 192}, {0, 0, 192}, {-192, 0, 0}, {0, 0, 0},
     {0, 0, 192}, {192, 0, 192}, {0, 0, 0}, {192, 0, 0},
     {-192, 0, 0}, {0, 0, 0}, {-192, 0, -192}, {0, 0, -192},
@@ -56,26 +56,26 @@ SVECTOR D_8009ADB0[48] = {
     {0, -16, 0}, {192, -16, 0}, {0, -16, -192}, {192, -16, -192},
 };
 
-/* Drift template points (func_800863E0). */
-Drift D_8009AF30[5] = {
+/* Drift template points (worldmap_clouds_scatter). */
+Drift worldmap_cloud_template_points[5] = { /* 8009AF30 */
     {0xC0, 0, 0xC0}, {0x240, 0, 0x340}, {0x4C0, 0, 0x140}, {0x5C0, 0, 0x440}, {0x2C0, 0, 0x640},
 };
 
 /* Ferry waypoints (x, z). */
-u16 D_8009AF80[8] = {23296, 18208, 14968, 11491, 3072, 31144, 28148, 25620};
-u16 D_8009AF90[8] = {23736, 16576, 16008, 16554, 16200, 14552, 14612, 16928};
+u16 worldmap_ferry_waypoints_x[8] = {23296, 18208, 14968, 11491, 3072, 31144, 28148, 25620}; /* 8009AF80 */
+u16 worldmap_ferry_waypoints_z[8] = {23736, 16576, 16008, 16554, 16200, 14552, 14612, 16928}; /* 8009AF90 */
 
 /* Scene object links (parent, child pairs; -1 ends). */
-s16 D_8009AFA0[30] = {
+s16 worldmap_airship_object_links[30] = { /* 8009AFA0 */
     7, 0, 7, 1, 7, 2, 7, 3, 5, 7, 5, 4, 12, 10, 12, 5, 12, 11, 12, 13, 12, 6, 12, 9, 12, 8,
     12, 13, -1, 0,
 };
 
 /* Scene objects to show (-1 ends). */
-s16 D_8009AFDC[10] = {67, 68, 70, 71, 72, 73, 74, 75, 76, -1};
+s16 worldmap_object69_children[10] = {67, 68, 70, 71, 72, 73, 74, 75, 76, -1}; /* 8009AFDC */
 
-/* Particle kinds (func_80089C78): four packed u,v corners and the quad shape. */
-u16 D_8009AFF0[10 * 4] = {
+/* Particle kinds (worldmap_effects_draw_particles): four packed u,v corners and the quad shape. */
+u16 worldmap_effect_particle_uvs[10 * 4] = { /* 8009AFF0 */
     0, 0, 0, 0,
     0, 0x3F, 0x3F00, 0x3F3F,
     0x4000, 0x403F, 0x7F00, 0x7F3F,
@@ -92,7 +92,7 @@ typedef struct {
     SVECTOR v[4];
 } ParticleShape;
 
-ParticleShape D_8009B040[10] = {
+ParticleShape worldmap_effect_particle_shapes[10] = { /* 8009B040 */
     {{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}}},
     {{{-32, -32, 0}, {32, -32, 0}, {-32, 32, 0}, {32, 32, 0}}},
     {{{-32, -64, 0}, {32, -64, 0}, {-32, 0, 0}, {32, 0, 0}}},
@@ -106,80 +106,80 @@ ParticleShape D_8009B040[10] = {
 };
 
 /* Per landing kind: whether the player may stand there. */
-s16 D_8009B180[6] = {1, 1, 0, 1, 1, 1};
+s16 worldmap_cylinder_hit_standable[6] = {1, 1, 0, 1, 1, 1}; /* 8009B180 */
 
-/* Per party member: the parameters func_8008C28C passes with its gear
+/* Per party member: the parameters worldmap_create_gear_sprite passes with its gear
  * model. The last table (0x140, 0x140, 0x100) ends the unit's data before a
  * stray halfword (00 3c) that nothing reads, so it stays original data
  * (worldmap.classification.txt). */
-s16 D_8009B18C[3] = {0x100, 0x100, 0x100};
-s16 D_8009B194[3] = {0x1FD, 0x1FC, 0x1FB};
-s16 D_8009B19C[3] = {0x140, 0x160, 0x280};
-INCLUDE_ORIGINAL(".data", D_8009B1A4, 0x8009B1A4, 8);
-extern s16 D_8009B1A4[3];
+s16 worldmap_gear_sprite_x[3] = {0x100, 0x100, 0x100}; /* 8009B18C */
+s16 worldmap_gear_sprite_y[3] = {0x1FD, 0x1FC, 0x1FB}; /* 8009B194 */
+s16 worldmap_gear_sprite_width[3] = {0x140, 0x160, 0x280}; /* 8009B19C */
+INCLUDE_ORIGINAL(".data", worldmap_gear_sprite_height, 0x8009B1A4, 8);
+extern s16 worldmap_gear_sprite_height[3];
 
-/* Scripted camera stages 1-6 around the player (commands set the angle, distance
+/* 80083A00: Scripted camera stages 1-6 around the player (commands set the angle, distance
  * and position of each stage), with easing and a random vertical shake. */
-s32 func_80083A00(s32 index) {
+s32 worldmap_scene18_camera_update(s32 index) {
     WorldmapActor *actor;
     ActorScratch *scratch;
 
-    actor = &D_8009BE24[index];
+    actor = &worldmap_actor_slots[index];
     scratch = (ActorScratch *)0x1F800000;
     switch (actor->unk4) {
     case 1:
         actor->state = 1;
         actor->unk4 = 0;
         actor->unk5C = 0x960000;
-        D_8009BD38.vx = -0x20;
-        D_8009BD38.vy = 0x400;
-        D_8009BD38.vz = 0;
+        worldmap_camera_angle.vx = -0x20;
+        worldmap_camera_angle.vy = 0x400;
+        worldmap_camera_angle.vz = 0;
         actor->motion.vx = actor->u.step = -0x20 << 12;
-        actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
-        D_8009D3F0 = 0x960000;
-        actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
+        actor->motion.vy = actor->unk54 = worldmap_camera_angle.vy << 12;
+        worldmap_camera_distance = 0x960000;
+        actor->motion.vz = actor->unk58 = worldmap_camera_angle.vz << 12;
         break;
     case 2:
         actor->state = 2;
         actor->unk4 = 0;
         actor->unk5C = 0x180000;
-        D_8009BD38.vx = 0x40;
-        D_8009BD38.vy = 0x1A0;
-        D_8009BD38.vz = 0;
+        worldmap_camera_angle.vx = 0x40;
+        worldmap_camera_angle.vy = 0x1A0;
+        worldmap_camera_angle.vz = 0;
         actor->motion.vx = actor->u.step = 0x40 << 12;
-        actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
-        D_8009D3F0 = 0x180000;
-        actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
-        actor->position.vy = D_8009D55C.target.vy = D_8009BE28.target.vy = -0xA0000;
+        actor->motion.vy = actor->unk54 = worldmap_camera_angle.vy << 12;
+        worldmap_camera_distance = 0x180000;
+        actor->motion.vz = actor->unk58 = worldmap_camera_angle.vz << 12;
+        actor->position.vy = worldmap_camera_follow_target.target.vy = worldmap_camera.target.vy = -0xA0000;
         break;
     case 3:
         actor->state = 3;
         actor->unk4 = 0;
         actor->unk5C = 0x120000;
-        D_8009BD38.vx = -0x2A0;
-        D_8009BD38.vy = 0x6A0;
-        D_8009BD38.vz = 0;
+        worldmap_camera_angle.vx = -0x2A0;
+        worldmap_camera_angle.vy = 0x6A0;
+        worldmap_camera_angle.vz = 0;
         actor->motion.vx = actor->u.step = -0x2A0 << 12;
-        D_8009D3F0 = 0x120000;
-        actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
-        actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
-        actor->position.vx = D_8009D55C.target.vx = D_8009BE28.target.vx = 0x1700000;
-        GROUND_SCROLL[0] += 0x1700000 - D_8009C5AC.vx;
+        worldmap_camera_distance = 0x120000;
+        actor->motion.vy = actor->unk54 = worldmap_camera_angle.vy << 12;
+        actor->motion.vz = actor->unk58 = worldmap_camera_angle.vz << 12;
+        actor->position.vx = worldmap_camera_follow_target.target.vx = worldmap_camera.target.vx = 0x1700000;
+        GROUND_SCROLL[0] += 0x1700000 - worldmap_player_position.vx;
         break;
     case 4:
         actor->state = 4;
         actor->unk4 = 0;
         actor->unk5C = 0x180000;
-        D_8009BD38.vx = -0x10;
-        D_8009BD38.vy = 0xA50;
-        D_8009BD38.vz = 0;
+        worldmap_camera_angle.vx = -0x10;
+        worldmap_camera_angle.vy = 0xA50;
+        worldmap_camera_angle.vz = 0;
         actor->motion.vx = actor->u.step = -0x10 << 12;
-        actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
-        D_8009D3F0 = 0x180000;
-        actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
-        actor->position.vx = D_8009D55C.target.vx = D_8009BE28.target.vx = 0x1800000;
-        actor->position.vz = D_8009D55C.target.vz = D_8009BE28.target.vz = 0x1900000;
-        actor->position.vy = D_8009D55C.target.vy = D_8009BE28.target.vy = -0x80000;
+        actor->motion.vy = actor->unk54 = worldmap_camera_angle.vy << 12;
+        worldmap_camera_distance = 0x180000;
+        actor->motion.vz = actor->unk58 = worldmap_camera_angle.vz << 12;
+        actor->position.vx = worldmap_camera_follow_target.target.vx = worldmap_camera.target.vx = 0x1800000;
+        actor->position.vz = worldmap_camera_follow_target.target.vz = worldmap_camera.target.vz = 0x1900000;
+        actor->position.vy = worldmap_camera_follow_target.target.vy = worldmap_camera.target.vy = -0x80000;
         GROUND_SCROLL[0] += 0x100;
         GROUND_SCROLL[2] -= 0x100;
         break;
@@ -187,35 +187,35 @@ s32 func_80083A00(s32 index) {
         actor->state = 5;
         actor->unk4 = 0;
         actor->unk5C = 0x260000;
-        D_8009BD38.vx = -0x100;
-        D_8009BD38.vy = 0x670;
-        D_8009BD38.vz = 0;
+        worldmap_camera_angle.vx = -0x100;
+        worldmap_camera_angle.vy = 0x670;
+        worldmap_camera_angle.vz = 0;
         actor->motion.vx = actor->u.step = -0x100 << 12;
-        actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
-        actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
-        actor->position.vy = D_8009D55C.target.vy = D_8009BE28.target.vy = -0x110000;
-        actor->position.vz = D_8009D55C.target.vz = D_8009BE28.target.vz = 0x1A80000;
-        D_8009D3F0 = 0x260000;
+        actor->motion.vy = actor->unk54 = worldmap_camera_angle.vy << 12;
+        actor->motion.vz = actor->unk58 = worldmap_camera_angle.vz << 12;
+        actor->position.vy = worldmap_camera_follow_target.target.vy = worldmap_camera.target.vy = -0x110000;
+        actor->position.vz = worldmap_camera_follow_target.target.vz = worldmap_camera.target.vz = 0x1A80000;
+        worldmap_camera_distance = 0x260000;
         GROUND_SCROLL[2] += 0x180;
         break;
     case 6:
         actor->state = 6;
         actor->unk4 = 0;
         actor->unk5C = 0x620000;
-        D_8009BD38.vx = -0x80;
-        D_8009BD38.vy = 0xA70;
-        D_8009BD38.vz = 0;
+        worldmap_camera_angle.vx = -0x80;
+        worldmap_camera_angle.vy = 0xA70;
+        worldmap_camera_angle.vz = 0;
         actor->motion.vx = actor->u.step = -0x80 << 12;
-        actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
-        actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
-        actor->position.vy = D_8009D55C.target.vy = D_8009BE28.target.vy = -0x120000;
-        actor->position.vz = D_8009D55C.target.vz = D_8009BE28.target.vz = 0x1980000;
-        D_8009D3F0 = 0x620000;
+        actor->motion.vy = actor->unk54 = worldmap_camera_angle.vy << 12;
+        actor->motion.vz = actor->unk58 = worldmap_camera_angle.vz << 12;
+        actor->position.vy = worldmap_camera_follow_target.target.vy = worldmap_camera.target.vy = -0x120000;
+        actor->position.vz = worldmap_camera_follow_target.target.vz = worldmap_camera.target.vz = 0x1980000;
+        worldmap_camera_distance = 0x620000;
         GROUND_SCROLL[2] -= 0x100;
         break;
     }
-    if (D_8009D144 == 0) {
-        func_80096F18(&D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+    if (worldmap_view_kind == 0) {
+        worldmap_camera_place_orbit(&worldmap_view_setup, &worldmap_camera, worldmap_camera_distance, &worldmap_camera_angle);
     }
     switch (actor->state) {
     case 0:
@@ -225,51 +225,51 @@ s32 func_80083A00(s32 index) {
     case 6:
         break;
     case 1:
-        actor->u.step = func_800771D8(actor->u.step, -0x400000, -0x8000);
-        actor->unk54 = func_800771D8(actor->unk54, 0, -0x8000);
-        actor->unk5C = func_800771D8(actor->unk5C, 0x380000, -0xD000);
+        actor->u.step = worldmap_step_value_toward(actor->u.step, -0x400000, -0x8000);
+        actor->unk54 = worldmap_step_value_toward(actor->unk54, 0, -0x8000);
+        actor->unk5C = worldmap_step_value_toward(actor->unk5C, 0x380000, -0xD000);
         break;
     case 5:
-        actor->u.step = func_800771D8(actor->u.step, 0x200000, 0x2000);
+        actor->u.step = worldmap_step_value_toward(actor->u.step, 0x200000, 0x2000);
         break;
     }
-    func_80076DA4(actor, scratch);
-    func_80076F54(actor, scratch);
-    func_80076FA8(actor, scratch);
+    worldmap_camera_ease_angle(actor, scratch);
+    worldmap_camera_ease_distance(actor, scratch);
+    worldmap_camera_ease_position(actor, scratch);
     scratch->position.vy = rand() % (actor->unk7C >> 12) - (actor->unk7C >> 13);
     VIEW.eye.vy += scratch->position.vy;
     VIEW_VECTORS[1].vy += scratch->position.vy;
     return 1;
 }
 
-/* Place the actor and show scene objects 7 and 8 at its position. */
-s32 func_80083FE4(s32 index) {
+/* 80083FE4: Place the actor and show scene objects 7 and 8 at its position. */
+s32 worldmap_scene18_lift_start(s32 index) {
     WorldmapActor *actor;
 
-    actor = &D_8009BE24[index];
+    actor = &worldmap_actor_slots[index];
     actor->position.vx = 0x1800000;
     actor->position.vy = 0x80000;
     actor->position.vz = 0x1A00000;
     actor->state = 0;
-    D_8009C620[8].visible = 1;
-    D_8009C620[7].visible = 1;
-    D_8009C620[7].position.vx = D_8009C620[8].position.vx = actor->position.vx >> 12;
-    D_8009C620[7].position.vy = D_8009C620[8].position.vy = actor->position.vy >> 12;
-    D_8009C620[7].position.vz = D_8009C620[8].position.vz = actor->position.vz >> 12;
+    worldmap_objects[8].visible = 1;
+    worldmap_objects[7].visible = 1;
+    worldmap_objects[7].position.vx = worldmap_objects[8].position.vx = actor->position.vx >> 12;
+    worldmap_objects[7].position.vy = worldmap_objects[8].position.vy = actor->position.vy >> 12;
+    worldmap_objects[7].position.vz = worldmap_objects[8].position.vz = actor->position.vz >> 12;
     return 1;
 }
 
-/* Drive the lift of scene objects 7 and 8: a command (1-4) selects the
+/* 80084068: Drive the lift of scene objects 7 and 8: a command (1-4) selects the
  * route state and stops the effect groups of the previous one; each state
  * lowers the actor and moves its effect groups with it. */
-s32 func_80084068(s32 index) {
+s32 worldmap_scene18_lift_update(s32 index) {
     WorldmapActor *actor;
     ActorScratch *scratch;
     SceneObject *objects;
     SceneObject *lift;
 
-    actor = &D_8009BE24[index];
-    objects = D_8009C620;
+    actor = &worldmap_actor_slots[index];
+    objects = worldmap_objects;
     lift = &objects[7];
     scratch = (ActorScratch *)0x1F800000;
     switch (actor->unk4) {
@@ -282,73 +282,73 @@ s32 func_80084068(s32 index) {
     case 2:
         actor->unk4 = 0;
         actor->state = 2;
-        func_800894C8(3);
-        func_800894C8(5);
-        func_800894C8(6);
-        func_800894C8(7);
-        func_800894C8(10);
+        worldmap_effects_stop_emitters(3);
+        worldmap_effects_stop_emitters(5);
+        worldmap_effects_stop_emitters(6);
+        worldmap_effects_stop_emitters(7);
+        worldmap_effects_stop_emitters(10);
         break;
     case 3:
         actor->unk4 = 0;
         actor->state = 3;
-        func_800894C8(7);
-        func_800894C8(8);
-        func_800894C8(9);
+        worldmap_effects_stop_emitters(7);
+        worldmap_effects_stop_emitters(8);
+        worldmap_effects_stop_emitters(9);
         break;
     case 4:
         actor->unk4 = 0;
         actor->state = 4;
-        func_800894C8(5);
-        func_800894C8(6);
-        func_800894C8(7);
-        func_800894C8(10);
-        func_800894C8(11);
-        func_800894C8(12);
+        worldmap_effects_stop_emitters(5);
+        worldmap_effects_stop_emitters(6);
+        worldmap_effects_stop_emitters(7);
+        worldmap_effects_stop_emitters(10);
+        worldmap_effects_stop_emitters(11);
+        worldmap_effects_stop_emitters(12);
         break;
     }
     switch (actor->state) {
     case 0:
         break;
     case 1:
-        actor->position.vy = func_800771D8(actor->position.vy, -0x180000, -0x400);
+        actor->position.vy = worldmap_step_value_toward(actor->position.vy, -0x180000, -0x400);
         scratch->position.vx = actor->position.vx >> 12;
         scratch->position.vz = actor->position.vz >> 12;
         scratch->position.vy = actor->position.vy >> 12;
-        func_80089160(3, &scratch->position, NULL);
-        func_80089160(5, &scratch->position, NULL);
-        func_80089160(6, &scratch->position, NULL);
-        func_80089160(7, &scratch->position, NULL);
-        func_80089160(10, &scratch->position, NULL);
+        worldmap_effects_start_emitters(3, &scratch->position, NULL);
+        worldmap_effects_start_emitters(5, &scratch->position, NULL);
+        worldmap_effects_start_emitters(6, &scratch->position, NULL);
+        worldmap_effects_start_emitters(7, &scratch->position, NULL);
+        worldmap_effects_start_emitters(10, &scratch->position, NULL);
         break;
     case 2:
-        actor->position.vy = func_800771D8(actor->position.vy, -0x180000, -0x400);
+        actor->position.vy = worldmap_step_value_toward(actor->position.vy, -0x180000, -0x400);
         scratch->position.vx = actor->position.vx >> 12;
         scratch->position.vz = actor->position.vz >> 12;
         scratch->position.vy = actor->position.vy >> 12;
-        func_80089160(7, &scratch->position, NULL);
-        func_80089160(8, &scratch->position, NULL);
-        func_80089160(9, &scratch->position, NULL);
+        worldmap_effects_start_emitters(7, &scratch->position, NULL);
+        worldmap_effects_start_emitters(8, &scratch->position, NULL);
+        worldmap_effects_start_emitters(9, &scratch->position, NULL);
         break;
     case 3:
-        actor->position.vy = func_800771D8(actor->position.vy, -0x180000, -0x400);
+        actor->position.vy = worldmap_step_value_toward(actor->position.vy, -0x180000, -0x400);
         scratch->position.vx = actor->position.vx >> 12;
         scratch->position.vz = actor->position.vz >> 12;
         scratch->position.vy = actor->position.vy >> 12;
-        func_80089160(5, &scratch->position, NULL);
-        func_80089160(6, &scratch->position, NULL);
-        func_80089160(7, &scratch->position, NULL);
-        func_80089160(10, &scratch->position, NULL);
-        func_80089160(11, &scratch->position, NULL);
-        func_80089160(12, &scratch->position, NULL);
+        worldmap_effects_start_emitters(5, &scratch->position, NULL);
+        worldmap_effects_start_emitters(6, &scratch->position, NULL);
+        worldmap_effects_start_emitters(7, &scratch->position, NULL);
+        worldmap_effects_start_emitters(10, &scratch->position, NULL);
+        worldmap_effects_start_emitters(11, &scratch->position, NULL);
+        worldmap_effects_start_emitters(12, &scratch->position, NULL);
         break;
     case 4:
-        actor->position.vy = func_800771D8(actor->position.vy, -0x180000, -0x400);
+        actor->position.vy = worldmap_step_value_toward(actor->position.vy, -0x180000, -0x400);
         scratch->position.vx = actor->position.vx >> 12;
         scratch->position.vz = actor->position.vz >> 12;
         scratch->position.vy = actor->position.vy >> 12;
-        func_80089160(13, &scratch->position, NULL);
+        worldmap_effects_start_emitters(13, &scratch->position, NULL);
         scratch->position.vy = 0;
-        func_80089160(14, &scratch->position, NULL);
+        worldmap_effects_start_emitters(14, &scratch->position, NULL);
         break;
     }
     lift[0].position.vx = lift[1].position.vx = actor->position.vx >> 12;
@@ -357,9 +357,9 @@ s32 func_80084068(s32 index) {
     return 1;
 }
 
-/* Unpack the area image to VRAM, then build 15 CLUT rows fading the
+/* 8008440C: Unpack the area image to VRAM, then build 15 CLUT rows fading the
  * 0,0x1F0 CLUT row towards a pale blue and record the 16 CLUT ids. */
-void func_8008440C(void) {
+void worldmap_upload_area_image(void) {
     RECT rect;
     CVECTOR fade = {0xE0, 0xF5, 0xFF, 0x00};
     s32 i;
@@ -367,13 +367,13 @@ void func_8008440C(void) {
     void *source;
     void *faded;
 
-    source = text_unpack_lzss_alloc(D_8009BD20, 1);
+    source = text_unpack_lzss_alloc(worldmap_area_image, 1);
     i = 0;
     model_load_tim_list(source);
     DrawSync(0);
     heap_free(source);
-    clut = D_8009BCE0;
-    heap_free(D_8009BD20);
+    clut = worldmap_area_image_cluts;
+    heap_free(worldmap_area_image);
     source = heap_alloc(0x200, 1);
     faded = heap_alloc(0x2000, 1);
     rect.x = 0;
@@ -382,7 +382,7 @@ void func_8008440C(void) {
     rect.h = 1;
     StoreImage(&rect, source);
     DrawSync(0);
-    func_800931D8(source, faded, 0x10, (u8 *)&fade);
+    worldmap_build_palette_fades(source, faded, 0x10, (u8 *)&fade);
     rect.x = 0;
     rect.y = 0x1F0;
     rect.w = 0x100;
@@ -414,67 +414,67 @@ typedef struct {
     SpriteModel defs[1];
 } SpriteDefTable;
 
-/* Build the scene objects from the area's placement list: resolve the
+/* 80084580: Build the scene objects from the area's placement list: resolve the
  * animation offsets, then place, orient and build each object's
  * primitives (two buffers) from its sprite definition. */
-void func_80084580(void) {
+void worldmap_objects_build(void) {
     ScenePlacement *placement;
     s32 *base;
     s32 *offsets;
     s32 i;
 
     i = 0;
-    D_8009BD28 = model_relocate_group(D_8009CD48);
-    base = D_8009D308;
+    worldmap_object_model_count = model_relocate_group(worldmap_object_models);
+    base = worldmap_object_meshes;
     offsets = base + 1;
-    D_8009D308 = offsets;
-    for (; i < D_8009BD28; i++) {
+    worldmap_object_meshes = offsets;
+    for (; i < worldmap_object_model_count; i++) {
         offsets[i] = (s32)base + offsets[i];
     }
-    D_8009D7E0 = *(s16 *)D_8009BD30;
-    D_8009C620 = heap_alloc(D_8009D7E0 * sizeof(SceneObject), 0);
-    placement = (ScenePlacement *)((u8 *)D_8009BD30 + 2);
-    SetColorMatrix(&D_8009A140);
-    SetLightMatrix(&D_8009A160);
-    for (i = 0; i < D_8009D7E0; i++, placement++) {
-        D_8009C620[i].visible = 0;
-        D_8009C620[i].unk2 = placement->def;
-        D_8009C620[i].flags = placement->flags;
-        D_8009C620[i].position.vx = placement->x;
-        D_8009C620[i].position.vy = placement->y;
-        D_8009C620[i].position.vz = -placement->z;
-        D_8009C620[i].angle.vx = placement->ax;
-        D_8009C620[i].angle.vy = placement->ay;
-        D_8009C620[i].angle.vz = placement->az;
-        RotMatrixYXZ(&D_8009C620[i].angle, &D_8009C620[i].matrix);
-        D_8009C620[i].def = &((SpriteDefTable *)D_8009CD48)->defs[D_8009C620[i].unk2];
-        model_alloc_packet_buffers(D_8009C620[i].def, &D_8009C620[i].prims, &D_8009C620[i].prims2, &D_8009C620[i]);
-        model_build_packets(D_8009C620[i].def, D_8009C620[i].prims, 1);
-        memcpy(D_8009C620[i].prims2, D_8009C620[i].prims, D_8009C620[i].def->packet_size);
-        D_8009C620[i].unk44 = ((s32 *)D_8009D308)[D_8009C620[i].unk2];
-        ((s32 *)D_8009C620[i].unk44)[1] = D_8009C620[i].unk44 + ((s32 *)D_8009C620[i].unk44)[1];
-        D_8009C620[i].parent = NULL;
+    worldmap_object_count = *(s16 *)worldmap_object_placement_list;
+    worldmap_objects = heap_alloc(worldmap_object_count * sizeof(SceneObject), 0);
+    placement = (ScenePlacement *)((u8 *)worldmap_object_placement_list + 2);
+    SetColorMatrix(&worldmap_light_color_matrix);
+    SetLightMatrix(&worldmap_light_direction_matrix);
+    for (i = 0; i < worldmap_object_count; i++, placement++) {
+        worldmap_objects[i].visible = 0;
+        worldmap_objects[i].unk2 = placement->def;
+        worldmap_objects[i].flags = placement->flags;
+        worldmap_objects[i].position.vx = placement->x;
+        worldmap_objects[i].position.vy = placement->y;
+        worldmap_objects[i].position.vz = -placement->z;
+        worldmap_objects[i].angle.vx = placement->ax;
+        worldmap_objects[i].angle.vy = placement->ay;
+        worldmap_objects[i].angle.vz = placement->az;
+        RotMatrixYXZ(&worldmap_objects[i].angle, &worldmap_objects[i].matrix);
+        worldmap_objects[i].def = &((SpriteDefTable *)worldmap_object_models)->defs[worldmap_objects[i].unk2];
+        model_alloc_packet_buffers(worldmap_objects[i].def, &worldmap_objects[i].prims, &worldmap_objects[i].prims2, &worldmap_objects[i]);
+        model_build_packets(worldmap_objects[i].def, worldmap_objects[i].prims, 1);
+        memcpy(worldmap_objects[i].prims2, worldmap_objects[i].prims, worldmap_objects[i].def->packet_size);
+        worldmap_objects[i].unk44 = ((s32 *)worldmap_object_meshes)[worldmap_objects[i].unk2];
+        ((s32 *)worldmap_objects[i].unk44)[1] = worldmap_objects[i].unk44 + ((s32 *)worldmap_objects[i].unk44)[1];
+        worldmap_objects[i].parent = NULL;
     }
     model_ot_depth_shift = 2;
-    D_8009C16C = -1;
-    D_8009C840 = -1;
-    D_8009C620[4].visible = 1;
+    worldmap_walker_face = -1;
+    worldmap_walker_object = -1;
+    worldmap_objects[4].visible = 1;
 }
 
-/* Free the scene objects' primitives and definitions, then the objects. */
-void func_80084818(void) {
+/* 80084818: Free the scene objects' primitives and definitions, then the objects. */
+void worldmap_objects_free(void) {
     s32 i;
 
-    for (i = 0; i < D_8009D7E0; i++) {
-        heap_free(D_8009C620[i].prims);
-        model_free_owned_block((ModelBuffer *)D_8009C620[i].def);
+    for (i = 0; i < worldmap_object_count; i++) {
+        heap_free(worldmap_objects[i].prims);
+        model_free_owned_block((ModelBuffer *)worldmap_objects[i].def);
     }
-    heap_free(D_8009C620);
+    heap_free(worldmap_objects);
 }
 
-/* Link scene object `child` to `parent`. */
-void func_800848B4(s32 parent, s32 child) {
-    D_8009C620[child].parent = &D_8009C620[parent];
+/* 800848B4: Link scene object `child` to `parent`. */
+void worldmap_objects_link(s32 parent, s32 child) {
+    worldmap_objects[child].parent = &worldmap_objects[parent];
 }
 
 /* Scratchpad work area of the scene object pass. */
@@ -491,10 +491,10 @@ typedef struct {
     MATRIX out;     /* 0x110 */
 } SceneScratch;
 
-/* Draw the visible scene objects: build each one's matrix through its
+/* 800848F4: Draw the visible scene objects: build each one's matrix through its
  * parent chain, place it relative to the camera target, and add its sprite
  * set to the ordering table when it projects in front and near enough. */
-void func_800848F4(void) {
+void worldmap_objects_draw(void) {
     SceneScratch *scratch;
     SceneObject *parent;
     s32 i;
@@ -506,20 +506,20 @@ void func_800848F4(void) {
     scratch->scale.vy = 0x800;
     scratch->scale.vx = 0x800;
     model_box_test_mode = 3;
-    x = D_8009BE28.target.vx >> 12;
-    z = D_8009BE28.target.vz >> 12;
+    x = worldmap_camera.target.vx >> 12;
+    z = worldmap_camera.target.vz >> 12;
     model_submitted_primitive_count = 0;
     model_drawn_primitive_count = 0;
     scratch->origin.vz = 0;
     scratch->origin.vy = 0;
     scratch->origin.vx = 0;
-    for (i = 0; i < D_8009D7E0; i++) {
-        if (D_8009C620[i].visible == 0) {
-            scratch->m = D_8009C620[i].matrix;
-            scratch->m.t[0] = D_8009C620[i].position.vx;
-            scratch->m.t[1] = D_8009C620[i].position.vy;
-            scratch->m.t[2] = -D_8009C620[i].position.vz;
-            parent = &D_8009C620[i];
+    for (i = 0; i < worldmap_object_count; i++) {
+        if (worldmap_objects[i].visible == 0) {
+            scratch->m = worldmap_objects[i].matrix;
+            scratch->m.t[0] = worldmap_objects[i].position.vx;
+            scratch->m.t[1] = worldmap_objects[i].position.vy;
+            scratch->m.t[2] = -worldmap_objects[i].position.vz;
+            parent = &worldmap_objects[i];
             while (parent->parent != NULL) {
                 parent = parent->parent;
                 parent->matrix.t[0] = parent->position.vx;
@@ -529,11 +529,11 @@ void func_800848F4(void) {
             }
             scratch->offset.vx = scratch->m.t[0] - x;
             scratch->offset.vz = -scratch->m.t[2] - z;
-            func_80093534(&scratch->offset);
+            worldmap_wrap_world_offset(&scratch->offset);
             scratch->m.t[0] = scratch->offset.vx;
             scratch->m.t[2] = -scratch->offset.vz;
             ScaleMatrix(&scratch->m, &scratch->scale);
-            CompMatrix(&D_8009C808, &scratch->m, &scratch->out);
+            CompMatrix(&worldmap_camera_matrix, &scratch->m, &scratch->out);
             SetRotMatrix(&scratch->out);
             SetTransMatrix(&scratch->out);
             gte_ldv0(&scratch->origin);
@@ -542,27 +542,27 @@ void func_800848F4(void) {
             if (scratch->flag >= 0) {
                 gte_stsz(&scratch->sz);
                 if (scratch->sz < 0xD80) {
-                    model_draw_sprite_model(D_8009C620[i].def, (&D_8009C620[i].prims)[D_8009D7F0],
-                                  (u32 *)D_8009BE3C->ot, D_8009AD2C[(s16)D_8009C620[i].flags]);
+                    model_draw_sprite_model(worldmap_objects[i].def, (&worldmap_objects[i].prims)[worldmap_display_buffer_index],
+                                  (u32 *)worldmap_current_display_buffer->ot, worldmap_object_draw_modes[(s16)worldmap_objects[i].flags]);
                 }
             }
         }
     }
 }
 
-s32 func_80084DB8(s32 probe, s32 index);
+s32 worldmap_mesh_collect_faces_at(s32 probe, s32 index);
 
-/* Probe the solid scene objects; the first hit's result, with its index. */
-s16 func_80084D00(s32 probe, s16 *hit) {
+/* 80084D00: Probe the solid scene objects; the first hit's result, with its index. */
+s16 worldmap_objects_probe_solid(s32 probe, s16 *hit) {
     SceneObject *object;
     s16 i;
     s16 result;
 
-    object = D_8009C620;
+    object = worldmap_objects;
     i = 0;
-    while (i < D_8009D7E0) {
+    while (i < worldmap_object_count) {
         if (object->flags & 1) {
-            result = func_80084DB8(probe, i);
+            result = worldmap_mesh_collect_faces_at(probe, i);
             if (result != 0) {
                 *hit = i;
                 return result;
@@ -592,11 +592,11 @@ typedef struct {
 
 #define FACE_TEST_SCRATCH ((FaceTestScratch *)0x1F800000)
 
-/* Test the probe position against scene object `index`: transform its
+/* 80084DB8: Test the probe position against scene object `index`: transform its
  * collision faces flat (x, z) and record every face whose outline contains
- * the probe (face number and its attribute) in D_8009D718. Returns a word-sized
+ * the probe (face number and its attribute) in worldmap_mesh_probe_hits. Returns a word-sized
  * count of table entries; the caller narrows it to s16. */
-s32 func_80084DB8(s32 probe, s32 index) {
+s32 worldmap_mesh_collect_faces_at(s32 probe, s32 index) {
     s32 flag;
     SceneObject *object;
     FaceTestScratch *scratch;
@@ -608,7 +608,7 @@ s32 func_80084DB8(s32 probe, s32 index) {
     s32 dx, dz, far;
     s32 hits;
 
-    object = &D_8009C620[index];
+    object = &worldmap_objects[index];
     dx = (((VECTOR *)probe)->vx >> 12) - object->position.vx;
     FACE_TEST_SCRATCH->u.test.delta.vx = dx;
     dx = dx >= 0 ? dx : -dx;
@@ -656,8 +656,8 @@ s32 func_80084DB8(s32 probe, s32 index) {
         if (NormalClip(scratch->u.test.edge[0], scratch->u.test.edge[1], scratch->u.test.point) > 0) {
             continue;
         }
-        D_8009D718[hits] = i;
-        D_8009D718[hits + 1] = face->kind;
+        worldmap_mesh_probe_hits[hits] = i;
+        worldmap_mesh_probe_hits[hits + 1] = face->kind;
         hits += 2;
     }
     return hits;
@@ -675,10 +675,10 @@ typedef struct {
 
 #define FACE_SCRATCH ((FaceScratch *)0x1F800000)
 
-/* Project `position` onto face `face` of scene object `index`: `offset` gets
+/* 80085158: Project `position` onto face `face` of scene object `index`: `offset` gets
  * the object-relative x/z, `normal` the face normal and offset->vy the
  * height of the face plane there. */
-void func_80085158(VECTOR *position, VECTOR *offset, VECTOR *normal, u16 index, u16 face) {
+void worldmap_mesh_project_onto_face(VECTOR *position, VECTOR *offset, VECTOR *normal, u16 index, u16 face) {
     long flag;
     VECTOR *edge1;
     VECTOR *edge2;
@@ -687,7 +687,7 @@ void func_80085158(VECTOR *position, VECTOR *offset, VECTOR *normal, u16 index, 
     SVECTOR *vertices;
     s32 y;
 
-    object = &D_8009C620[index];
+    object = &worldmap_objects[index];
     offset->vx = (position->vx >> 12) - object->position.vx;
     offset->vz = object->position.vz - (position->vz >> 12);
     FACE_SCRATCH->m = object->matrix;
@@ -720,12 +720,12 @@ void func_80085158(VECTOR *position, VECTOR *offset, VECTOR *normal, u16 index, 
     edge2->vy >>= 2;
     edge2->vz >>= 2;
     VectorNormal(&FACE_SCRATCH->p[2], normal);
-    func_800935DC(offset, &FACE_SCRATCH->p[0], normal);
+    worldmap_set_height_on_plane(offset, &FACE_SCRATCH->p[0], normal);
 }
 
-/* Does the vertical segment from `position` down by `height` cross the plane
+/* 80085418: Does the vertical segment from `position` down by `height` cross the plane
  * of face `face` of scene object `index`? Returns -1 if so, else 0. */
-s32 func_80085418(VECTOR *position, s32 height, u16 index, u16 face) {
+s32 worldmap_mesh_is_face_plane_crossed(VECTOR *position, s32 height, u16 index, u16 face) {
     long flag;
     SceneObject *object;
     MeshFace *corners;
@@ -737,7 +737,7 @@ s32 func_80085418(VECTOR *position, s32 height, u16 index, u16 face) {
     s32 y;
     s16 z;
 
-    object = &D_8009C620[index];
+    object = &worldmap_objects[index];
     FACE_SCRATCH->m = object->matrix;
     FACE_SCRATCH->m.t[2] = 0;
     FACE_SCRATCH->m.t[0] = 0;
@@ -782,11 +782,11 @@ s32 func_80085418(VECTOR *position, s32 height, u16 index, u16 face) {
     return (FACE_SCRATCH->side.vx ^ FACE_SCRATCH->side.vy) >> 31;
 }
 
-/* Classify the move from `from` to `to` against face `face` of scene object
+/* 80085760: Classify the move from `from` to `to` against face `face` of scene object
  * `index`: bit n is set when `to` lies outside edge n (flat x, z); when it
  * leaves through a corner, keep only the edge the move crosses. Also leave
  * the normalised edge directions in the scratchpad. */
-s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face) {
+s32 worldmap_mesh_classify_face_exit(VECTOR *from, VECTOR *to, s32 index, s32 face) {
     u32 sides;
     s32 y;
     SceneObject *object;
@@ -798,7 +798,7 @@ s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face) {
     SVECTOR *vertices;
 
     scratch = FACE_TEST_SCRATCH;
-    object = &D_8009C620[index];
+    object = &worldmap_objects[index];
     FACE_TEST_SCRATCH->u.test.delta.vx = (to->vx >> 12) - object->position.vx;
     FACE_TEST_SCRATCH->u.test.delta.vz = object->position.vz - (to->vz >> 12);
     FACE_TEST_SCRATCH->m = object->matrix;
@@ -901,10 +901,10 @@ typedef struct {
 
 #define DEPTH_SCRATCH ((DepthScratch *)0x1F800000)
 
-/* Draw the actors' model sprites: place each visible model relative to the
+/* 80085CDC: Draw the actors' model sprites: place each visible model relative to the
  * camera target, project it for its depth, then add it to the ordering
  * table and turn its facing towards the actor heading, 0x100 per frame. */
-void func_80085CDC(void) {
+void worldmap_actor_draw_sprites(void) {
     WorldmapActor *actor;
     Sprite *model;
     s32 i;
@@ -915,20 +915,20 @@ void func_80085CDC(void) {
     DepthScratch *scratch;
 
     scratch = DEPTH_SCRATCH;
-    actor = D_8009BE24;
+    actor = worldmap_actor_slots;
     for (i = 0; i < 0x40; i++, actor++) {
         if ((actor->unk24 == 0) & (actor->handle != NULL)) {
-            scratch->offset.vx = actor->position.vx - D_8009BE28.target.vx;
-            scratch->offset.vz = actor->position.vz - D_8009BE28.target.vz;
-            func_80093484(&scratch->offset);
+            scratch->offset.vx = actor->position.vx - worldmap_camera.target.vx;
+            scratch->offset.vz = actor->position.vz - worldmap_camera.target.vz;
+            worldmap_wrap_offset(&scratch->offset);
             actor->handle->x = scratch->offset.vx * 16;
             actor->handle->z = -scratch->offset.vz * 16;
             actor->handle->y = actor->position.vy * 16;
         }
     }
-    SetRotMatrix(&D_8009C808);
-    SetTransMatrix(&D_8009C808);
-    actor = D_8009BE24;
+    SetRotMatrix(&worldmap_camera_matrix);
+    SetTransMatrix(&worldmap_camera_matrix);
+    actor = worldmap_actor_slots;
     for (i = 0; i < 0x40; i++, actor++) {
         model = actor->handle;
         if ((actor->unk24 == 0) & (model != NULL)) {
@@ -940,11 +940,11 @@ void func_80085CDC(void) {
             gte_stsz(&scratch->depth[i]);
         }
     }
-    sprite_set_view_matrix(&D_8009C808);
-    actor = D_8009BE24;
+    sprite_set_view_matrix(&worldmap_camera_matrix);
+    actor = worldmap_actor_slots;
     for (i = 0; i < 0x40; i++, actor++) {
         if ((actor->unk24 == 0) & (actor->handle != NULL) & (scratch->depth[i] < 0xB00)) {
-            sprite_draw(actor->handle, &D_8009BE3C->ot[scratch->depth[i] >> 4]);
+            sprite_draw(actor->handle, &worldmap_current_display_buffer->ot[scratch->depth[i] >> 4]);
             heading = actor->heading;
             facing = actor->unk5C;
             diff = heading - facing;
@@ -967,25 +967,25 @@ void func_80085CDC(void) {
                 }
             }
             actor->unk5C = diff;
-            sprite_set_facing(actor->handle, (diff - (u16)D_8009BD38.vy - 0x400) & 0xFFF);
+            sprite_set_facing(actor->handle, (diff - (u16)worldmap_camera_angle.vy - 0x400) & 0xFFF);
             sprite_vm_tick(actor->handle);
         }
     }
 }
 
-/* Resolve the billboard lists' offsets and create the billboard CLUTs. */
-void func_80085F58(void) {
+/* 80085F58: Resolve the billboard lists' offsets and create the billboard CLUTs. */
+void worldmap_billboards_resolve_lists(void) {
     BillboardList *texture;
     s32 i;
 
-    texture = D_8009C7EC;
+    texture = worldmap_billboard_lists;
     for (i = 0; i < 0x100; i++, texture++) {
         if (texture->data != NULL) {
-            texture->data += (s32)D_8009C7EC;
+            texture->data += (s32)worldmap_billboard_lists;
         }
     }
     for (i = 0; i < 0x10; i++) {
-        D_8009D478[i] = GetClut(0xF0, i + 0x1F0);
+        worldmap_billboard_cluts[i] = GetClut(0xF0, i + 0x1F0);
     }
 }
 
@@ -994,15 +994,15 @@ typedef struct {
     POLY_FT4 quads[0x200];
 } QuadBlock512;
 
-/* Allocate the two buffers of 512 opaque textured 32x48 quads on the
+/* 80085FE0: Allocate the two buffers of 512 opaque textured 32x48 quads on the
  * 0x380,0x100 page, the second a copy of the first. */
-void func_80085FE0(void) {
+void worldmap_billboards_alloc_quads(void) {
     POLY_FT4 *quad;
     s32 i;
 
-    D_8009D7E8[0] = heap_alloc(sizeof(QuadBlock512), 1);
-    D_8009D7E8[1] = heap_alloc(sizeof(QuadBlock512), 1);
-    quad = D_8009D7E8[0];
+    worldmap_billboard_quads[0] = heap_alloc(sizeof(QuadBlock512), 1);
+    worldmap_billboard_quads[1] = heap_alloc(sizeof(QuadBlock512), 1);
+    quad = worldmap_billboard_quads[0];
     for (i = 0; i < 0x200; i++, quad++) {
         setPolyFT4(quad);
         setRGB0(quad, 0x80, 0x80, 0x80);
@@ -1017,13 +1017,13 @@ void func_80085FE0(void) {
         quad->clut = GetClut(0xF0, 0x1FF);
         quad->tpage = GetTPage(0, 0, 0x380, 0x100);
     }
-    *(QuadBlock512 *)D_8009D7E8[1] = *(QuadBlock512 *)D_8009D7E8[0];
+    *(QuadBlock512 *)worldmap_billboard_quads[1] = *(QuadBlock512 *)worldmap_billboard_quads[0];
 }
 
-/* Free the two billboard quad buffers. */
-void func_80086124(void) {
-    heap_free(D_8009D7E8[1]);
-    heap_free(D_8009D7E8[0]);
+/* 80086124: Free the two billboard quad buffers. */
+void worldmap_billboards_free_quads(void) {
+    heap_free(worldmap_billboard_quads[1]);
+    heap_free(worldmap_billboard_quads[0]);
 }
 
 /* Scratchpad work area of the billboard pass. */
@@ -1037,11 +1037,11 @@ typedef struct {
 
 #define BILLBOARD_SCRATCH ((BillboardScratch *)0x1F800000)
 
-/* Draw the billboards of the 5x5 visible terrain blocks: set up the
+/* 8008615C: Draw the billboards of the 5x5 visible terrain blocks: set up the
  * scratchpad quad (upright, 48x72), the camera and roll matrices and the
- * CLUTs, then submit each visible block's billboard list (func_80099BFC)
+ * CLUTs, then submit each visible block's billboard list (worldmap_billboards_draw_block)
  * into this display buffer's quads. */
-void func_8008615C(void) {
+void worldmap_billboards_draw(void) {
     BillboardList *textures;
     s32 index;
     s32 i;
@@ -1059,49 +1059,49 @@ void func_8008615C(void) {
     BILLBOARD_SCRATCH->corner[3].vx = 0x18;
     BILLBOARD_SCRATCH->corner[3].vy = 0;
     BILLBOARD_SCRATCH->corner[3].vz = 0;
-    BILLBOARD_SCRATCH->view = D_8009C808;
-    BILLBOARD_SCRATCH->roll = D_8009A180;
-    RotMatrixZ(-D_8009BD38.vz, &BILLBOARD_SCRATCH->roll);
+    BILLBOARD_SCRATCH->view = worldmap_camera_matrix;
+    BILLBOARD_SCRATCH->roll = worldmap_identity_matrix;
+    RotMatrixZ(-worldmap_camera_angle.vz, &BILLBOARD_SCRATCH->roll);
     for (i = 0; i < 0x10; i++) {
-        BILLBOARD_SCRATCH->clut[i] = D_8009D478[i];
+        BILLBOARD_SCRATCH->clut[i] = worldmap_billboard_cluts[i];
     }
-    textures = D_8009C7EC;
-    D_8009BE04 = 0;
+    textures = worldmap_billboard_lists;
+    worldmap_billboard_quad_count = 0;
     for (row = 0; row < 5; row++) {
         for (i = 0; i < 5; i++) {
-            if (D_8009D618[row * 5 + i] != -1) {
-                index = D_8009D570.cells[(row + D_8009C838.vz) * 9 + i + D_8009C838.vx];
+            if (worldmap_terrain_visible_blocks[row * 5 + i] != -1) {
+                index = worldmap_terrain_grid.cells[(row + worldmap_camera_block_cell.vz) * 9 + i + worldmap_camera_block_cell.vx];
                 if (textures[index].count != 0) {
-                    func_80099BFC(textures[index].data, textures[index].count, D_8009BE3C->ot,
-                                  (POLY_FT4 *)D_8009D7E8[D_8009D7F0] + D_8009BE04);
+                    worldmap_billboards_draw_block(textures[index].data, textures[index].count, worldmap_current_display_buffer->ot,
+                                  (POLY_FT4 *)worldmap_billboard_quads[worldmap_display_buffer_index] + worldmap_billboard_quad_count);
                 }
             }
         }
     }
 }
 
-/* Scatter the 80 drifting positions: five template points repeated over a
+/* 800863E0: Scatter the 80 drifting positions: five template points repeated over a
  * 4x4 grid of 0x800-unit cells at random heights, with random velocities. */
-void func_800863E0(void) {
+void worldmap_clouds_scatter(void) {
     Drift *drift;
     DriftVelocity *velocity;
     s32 row;
     s32 column;
     s32 i;
 
-    D_8009D150 = heap_alloc(0x50 * sizeof(Drift), 0);
-    D_8009CEB4 = heap_alloc(0x50 * sizeof(DriftVelocity), 0);
-    drift = D_8009D150;
+    worldmap_cloud_positions = heap_alloc(0x50 * sizeof(Drift), 0);
+    worldmap_cloud_velocities = heap_alloc(0x50 * sizeof(DriftVelocity), 0);
+    drift = worldmap_cloud_positions;
     for (row = 0; row < 4; row++) {
         for (column = 0; column < 4; column++) {
             for (i = 0; i < 5; i++, drift++) {
-                drift->x = (D_8009AF30[i].x + (column << 11)) << 12;
-                drift->z = (D_8009AF30[i].z + (row << 11)) << 12;
+                drift->x = (worldmap_cloud_template_points[i].x + (column << 11)) << 12;
+                drift->z = (worldmap_cloud_template_points[i].z + (row << 11)) << 12;
                 drift->unk4 = (-(rand() >> 10) * 8 - 0x200) << 12;
             }
         }
     }
-    velocity = D_8009CEB4;
+    velocity = worldmap_cloud_velocities;
     for (i = 0; i < 0x50; i++) {
         column = (rand() & 3) + 1; /* reused as the speed */
         velocity->dx = column * 0xDDB;
@@ -1111,10 +1111,10 @@ void func_800863E0(void) {
     }
 }
 
-/* Free the clouds' positions and velocities. */
-void func_80086568(void) {
-    heap_free(D_8009CEB4);
-    heap_free(D_8009D150);
+/* 80086568: Free the clouds' positions and velocities. */
+void worldmap_clouds_free(void) {
+    heap_free(worldmap_cloud_velocities);
+    heap_free(worldmap_cloud_positions);
 }
 
 /* The cloud quads, copied between display buffers as a whole. */
@@ -1122,20 +1122,20 @@ typedef struct {
     POLY_FT4 quads[0x120];
 } QuadBlock288;
 
-/* Allocate the two buffers of 0x120 semi-transparent grey textured quads
+/* 800865A0: Allocate the two buffers of 0x120 semi-transparent grey textured quads
  * on the 0x3C0,0x100 page, the second a copy of the first. */
-void func_800865A0(void) {
+void worldmap_clouds_alloc_quads(void) {
     POLY_FT4 *quad;
     s32 i;
     s32 code;
     s32 colour;
     s32 length;
 
-    D_8009D7F8[0] = heap_alloc(sizeof(QuadBlock288), 1);
-    D_8009D7F8[1] = heap_alloc(sizeof(QuadBlock288), 1);
+    worldmap_cloud_quads[0] = heap_alloc(sizeof(QuadBlock288), 1);
+    worldmap_cloud_quads[1] = heap_alloc(sizeof(QuadBlock288), 1);
     colour = 0x26;
     i = 0;
-    quad = D_8009D7F8[0];
+    quad = worldmap_cloud_quads[0];
     length = 9;
     code = 0x2C;
     for (; i < 0x120; i++, quad++) {
@@ -1146,17 +1146,17 @@ void func_800865A0(void) {
         quad->clut = GetClut(0x130, 0x1FE);
         SetSemiTrans(quad, 1);
     }
-    *(QuadBlock288 *)D_8009D7F8[1] = *(QuadBlock288 *)D_8009D7F8[0];
+    *(QuadBlock288 *)worldmap_cloud_quads[1] = *(QuadBlock288 *)worldmap_cloud_quads[0];
 }
 
-/* Free the two cloud quad buffers. */
-void func_800866C8(void) {
-    heap_free(D_8009D7F8[1]);
-    heap_free(D_8009D7F8[0]);
+/* 800866C8: Free the two cloud quad buffers. */
+void worldmap_clouds_free_quads(void) {
+    heap_free(worldmap_cloud_quads[1]);
+    heap_free(worldmap_cloud_quads[0]);
 }
 
-/* Move the 80 drifting positions, wrapping them on the 0x2000-unit world. */
-void func_80086700(void) {
+/* 80086700: Move the 80 drifting positions, wrapping them on the 0x2000-unit world. */
+void worldmap_clouds_move(void) {
     Drift *drift;
     DriftVelocity *velocity;
     s32 x;
@@ -1164,8 +1164,8 @@ void func_80086700(void) {
     s32 i;
 
     for (i = 0; i < 0x50; i++) {
-        drift = &D_8009D150[i];
-        velocity = &D_8009CEB4[i];
+        drift = &worldmap_cloud_positions[i];
+        velocity = &worldmap_cloud_velocities[i];
         x = drift->x + velocity->dx;
         z = drift->z + velocity->dz;
         if (x > 0x1FFFFFF) {
@@ -1187,9 +1187,9 @@ void func_80086700(void) {
 
 /* Scratchpad work area of the drifting sprites (clouds). */
 typedef struct {
-    SVECTOR far[12];      /* 0x000: far sprite corners (D_8009AD50) */
-    SVECTOR near[48];     /* 0x060: near sprite quads, 4 corners each (D_8009ADB0) */
-    u16 uv[8];            /* 0x1E0: texture origins (D_8009AD40) */
+    SVECTOR far[12];      /* 0x000: far sprite corners (worldmap_cloud_far_corners) */
+    SVECTOR near[48];     /* 0x060: near sprite quads, 4 corners each (worldmap_cloud_near_corners) */
+    u16 uv[8];            /* 0x1E0: texture origins (worldmap_cloud_texture_origins) */
     SVECTOR corner[4];    /* 0x1F0: built quad corners */
     VECTOR origin;        /* 0x210: camera target on the 0x2000-unit world */
     VECTOR cell;          /* 0x220 */
@@ -1230,7 +1230,7 @@ typedef struct {
     (((u16)(a) < 0x140 || (u16)(b) < 0x140 || (u16)(c) < 0x140 || (u16)(d) < 0x140) &&         \
      ((u32)(a) >> 16 < 0xD8 || (u32)(b) >> 16 < 0xD8 || (u32)(c) >> 16 < 0xD8 || (u32)(d) >> 16 < 0xD8))
 
-/* Draw the 80 drifting cloud sprites around the camera. Each is culled against
+/* 80086798: Draw the 80 drifting cloud sprites around the camera. Each is culled against
  * the view cone, then drawn by distance: far as one to three 64-texel quads,
  * middle as three 4-quad layers of 32 texels, near as three layers of 4x4
  * generated 16-texel quads. At most 0xF1 quads are added per frame. x and z
@@ -1249,7 +1249,7 @@ typedef struct {
  * t6-t9), and the corners are read with the three-mfc2-plus-nop shapes of
  * LIBGTE.H's register-argument read_sxsy macros, so the original most likely
  * declared them as register variables too. */
-void func_80086798(void) {
+void worldmap_clouds_draw(void) {
     DriftScratch *scratch;
     POLY_FT4 *quad;
     s32 i;
@@ -1264,42 +1264,42 @@ void func_80086798(void) {
     register s32 sxy2 asm("$24");
     register s32 sxy3 asm("$25");
 
-    (*D_8009CD40)();
+    (*worldmap_cloud_draw_hook)();
     scratch = DRIFT_SCRATCH;
     for (i = 0; i < 0x30; i++) {
-        scratch->near[i] = D_8009ADB0[i];
+        scratch->near[i] = worldmap_cloud_near_corners[i];
     }
     for (i = 0; i < 0xC; i++) {
-        scratch->far[i] = D_8009AD50[i];
+        scratch->far[i] = worldmap_cloud_far_corners[i];
     }
     for (i = 0; i < 8; i++) {
-        scratch->uv[i] = D_8009AD40[i];
+        scratch->uv[i] = worldmap_cloud_texture_origins[i];
     }
-    scratch->origin.vx = D_8009BE28.target.vx & 0x1FFFFFF;
-    scratch->origin.vz = D_8009BE28.target.vz & 0x1FFFFFF;
-    scratch->cell.vx = (D_8009BE28.target.vx >> 12) & 0x7FF;
-    scratch->cell.vz = (D_8009BE28.target.vz >> 12) & 0x7FF;
-    scratch->local = D_8009A180;
+    scratch->origin.vx = worldmap_camera.target.vx & 0x1FFFFFF;
+    scratch->origin.vz = worldmap_camera.target.vz & 0x1FFFFFF;
+    scratch->cell.vx = (worldmap_camera.target.vx >> 12) & 0x7FF;
+    scratch->cell.vz = (worldmap_camera.target.vz >> 12) & 0x7FF;
+    scratch->local = worldmap_identity_matrix;
     scratch->screen = scratch->local;
     scratch->turn = scratch->local;
-    RotMatrixX((D_8009BD38.vx + 0x400) / 8, &scratch->local);
-    RotMatrixY(-D_8009BD38.vy, &scratch->screen);
-    RotMatrixY(D_8009BD38.vy, &scratch->turn);
+    RotMatrixX((worldmap_camera_angle.vx + 0x400) / 8, &scratch->local);
+    RotMatrixY(-worldmap_camera_angle.vy, &scratch->screen);
+    RotMatrixY(worldmap_camera_angle.vy, &scratch->turn);
     MulMatrix0(&scratch->local, &scratch->screen, &scratch->work);
     MulMatrix0(&scratch->turn, &scratch->work, &scratch->local);
-    scratch->edge[0] = (gpu_get_cos(D_8009BD38.vy - 0x169) << 16) | (gpu_get_sin(D_8009BD38.vy - 0x169) & 0xFFFF);
-    scratch->edge[1] = (gpu_get_cos(D_8009BD38.vy + 0x169) << 16) | (gpu_get_sin(D_8009BD38.vy + 0x169) & 0xFFFF);
-    scratch->view.vx = VIEW_VECTORS[0].vx * 2 + (-gpu_get_sin(D_8009BD38.vy) >> 1);
-    scratch->view.vz = VIEW_VECTORS[0].vz * 2 + (-gpu_get_cos(D_8009BD38.vy) >> 1);
-    quad = D_8009D7F8[D_8009D7F0];
+    scratch->edge[0] = (gpu_get_cos(worldmap_camera_angle.vy - 0x169) << 16) | (gpu_get_sin(worldmap_camera_angle.vy - 0x169) & 0xFFFF);
+    scratch->edge[1] = (gpu_get_cos(worldmap_camera_angle.vy + 0x169) << 16) | (gpu_get_sin(worldmap_camera_angle.vy + 0x169) & 0xFFFF);
+    scratch->view.vx = VIEW_VECTORS[0].vx * 2 + (-gpu_get_sin(worldmap_camera_angle.vy) >> 1);
+    scratch->view.vz = VIEW_VECTORS[0].vz * 2 + (-gpu_get_cos(worldmap_camera_angle.vy) >> 1);
+    quad = worldmap_cloud_quads[worldmap_display_buffer_index];
     scratch->quads = 0;
     scratch->count = 0;
     for (i = 0; i < 0x50; i++) {
         if (scratch->count > 0xF0) {
             break;
         }
-        x = (D_8009D150[i].x - scratch->origin.vx) >> 12;
-        z = (D_8009D150[i].z - scratch->origin.vz) >> 12;
+        x = (worldmap_cloud_positions[i].x - scratch->origin.vx) >> 12;
+        z = (worldmap_cloud_positions[i].z - scratch->origin.vz) >> 12;
         if (x < -0x1000) {
             x += 0x2000;
         } else if (x >= 0x1000) {
@@ -1326,15 +1326,15 @@ void func_80086798(void) {
             continue;
         }
         scratch->local.t[0] = x;
-        scratch->local.t[1] = D_8009D150[i].unk4 >> 12;
+        scratch->local.t[1] = worldmap_cloud_positions[i].unk4 >> 12;
         scratch->local.t[2] = z;
-        gte_CompMatrix(&D_8009C808, &scratch->local, &scratch->screen);
+        gte_CompMatrix(&worldmap_camera_matrix, &scratch->local, &scratch->screen);
         gte_SetRotMatrix(&scratch->screen);
         gte_SetTransMatrix(&scratch->screen);
         scratch->corner[0].vx = scratch->corner[0].vy = scratch->corner[0].vz = 0;
         gte_ldv0(&scratch->corner[0]);
         gte_rtps();
-        scratch->uv_index = D_8009CEB4[i].unk2 * 4;
+        scratch->uv_index = worldmap_cloud_velocities[i].unk2 * 4;
         gte_stflg(&scratch->flag);
         if (scratch->flag & 0x7F85E000) {
             continue;
@@ -1370,7 +1370,7 @@ void func_80086798(void) {
                             if (scratch->z > 0xD00) {
                                 break;
                             }
-                            addPrimLen9(D_8009BE3C->ot + (scratch->z >> 4), quad);
+                            addPrimLen9(worldmap_current_display_buffer->ot + (scratch->z >> 4), quad);
                             *(u16 *)&quad->u1 = uv | 0x3F;
                             *(u16 *)&quad->u2 = uv | 0x3F00;
                             *(s32 *)&quad->x0 = sxy0;
@@ -1418,7 +1418,7 @@ void func_80086798(void) {
                                 } else if (scratch->sz[3] > scratch->z) {
                                     scratch->z = scratch->sz[3];
                                 }
-                                addPrimLen9(D_8009BE3C->ot + (scratch->z >> 4), quad);
+                                addPrimLen9(worldmap_current_display_buffer->ot + (scratch->z >> 4), quad);
                                 *(u16 *)&quad->u1 = uv | 0x1F;
                                 *(u16 *)&quad->u2 = uv | 0x1F00;
                                 *(s32 *)&quad->x0 = sxy0;
@@ -1486,7 +1486,7 @@ void func_80086798(void) {
                                     } else if (scratch->sz[3] > scratch->z) {
                                         scratch->z = scratch->sz[3];
                                     }
-                                    addPrimLen9(D_8009BE3C->ot + (scratch->z >> 4), quad);
+                                    addPrimLen9(worldmap_current_display_buffer->ot + (scratch->z >> 4), quad);
                                     *(u16 *)&quad->u1 = uv | 0xF;
                                     *(u16 *)&quad->u2 = uv | 0xF00;
                                     *(s32 *)&quad->x0 = sxy0;
@@ -1508,25 +1508,25 @@ void func_80086798(void) {
     }
 }
 
-/* Reset an actor to step 0 with parameter 8. */
-s32 func_80087710(s32 index) {
+/* 80087710: Reset an actor to step 0 with parameter 8. */
+s32 worldmap_spinning_pair_start(s32 index) {
     WorldmapActor *actor;
 
-    actor = &D_8009BE24[index];
+    actor = &worldmap_actor_slots[index];
     actor->u.step = 0;
     actor->unk54 = 8;
     return 1;
 }
 
-/* Spin scene objects 12 and 14 about their own axis. */
-s32 func_80087734(s32 index) {
+/* 80087734: Spin scene objects 12 and 14 about their own axis. */
+s32 worldmap_spinning_pair_update(s32 index) {
     WorldmapActor *actor;
     SceneObject *objects;
     SVECTOR *first;
     SVECTOR *second;
 
-    actor = &D_8009BE24[index];
-    objects = D_8009C620;
+    actor = &worldmap_actor_slots[index];
+    objects = worldmap_objects;
     actor->u.step = (actor->u.step + actor->unk54) & 0xFFF;
     first = SCRIPT_VECTOR;
     second = SCRIPT_VECTOR + 1;
@@ -1540,18 +1540,18 @@ s32 func_80087734(s32 index) {
     return 1;
 }
 
-/* Reset an actor to step 0 with parameter 8. */
-s32 func_800877E0(s32 index) {
+/* 800877E0: Reset an actor to step 0 with parameter 8. */
+s32 worldmap_area_spinning_pair_start(s32 index) {
     WorldmapActor *actor;
 
-    actor = &D_8009BE24[index];
+    actor = &worldmap_actor_slots[index];
     actor->u.step = 0;
     actor->unk54 = 8;
     return 1;
 }
 
-/* Spin the current area's two scene objects about their own axis. */
-s32 func_80087804(s32 index) {
+/* 80087804: Spin the current area's two scene objects about their own axis. */
+s32 worldmap_area_spinning_pair_update(s32 index) {
     s32 unused[2]; /* unreferenced; the original frame reserves it */
     WorldmapActor *actor;
     SceneObject *objects;
@@ -1560,10 +1560,10 @@ s32 func_80087804(s32 index) {
     s32 first_id;
     s32 second_id;
 
-    actor = &D_8009BE24[index];
-    objects = D_8009C620;
-    first_id = D_8009B624[D_8009C610][0];
-    second_id = D_8009B624[D_8009C610][1];
+    actor = &worldmap_actor_slots[index];
+    objects = worldmap_objects;
+    first_id = worldmap_area_spinning_pair_objects[worldmap_area_index][0];
+    second_id = worldmap_area_spinning_pair_objects[worldmap_area_index][1];
     actor->u.step = (actor->u.step + actor->unk54) & 0xFFF;
     SCRIPT_VECTOR[1].vx = 0;
     SCRIPT_VECTOR[0].vx = 0;
@@ -1577,8 +1577,8 @@ s32 func_80087804(s32 index) {
     return 1;
 }
 
-/* Give `count` quads the semi-transparent 0x1A0,0xA0 texture page. */
-void func_80087904(SceneObject *object, POLY_FT4 *quads, s32 count, s32 abr) {
+/* 80087904: Give `count` quads the semi-transparent 0x1A0,0xA0 texture page. */
+void worldmap_rolling_pair_make_translucent(SceneObject *object, POLY_FT4 *quads, s32 count, s32 abr) {
     s32 i;
 
     for (i = 0; i < count; i++) {
@@ -1589,33 +1589,33 @@ void func_80087904(SceneObject *object, POLY_FT4 *quads, s32 count, s32 abr) {
     memcpy(object->prims2, object->prims, count * sizeof(POLY_FT4));
 }
 
-/* Reset an actor to step 0 with parameter 0x10 and rebuild the area's two
+/* 800879A8: Reset an actor to step 0 with parameter 0x10 and rebuild the area's two
  * scene objects. */
-s32 func_800879A8(s32 index) {
+s32 worldmap_area_rolling_pair_start(s32 index) {
     WorldmapActor *actor;
 
-    actor = &D_8009BE24[index];
+    actor = &worldmap_actor_slots[index];
     actor->u.step = 0;
     actor->unk54 = 0x10;
-    func_800879E0(index);
+    worldmap_area_rolling_pair_rebuild(index);
     return 1;
 }
 
-/* Rebuild the primitives of the current area's two scene objects. */
-s32 func_800879E0(s32 index) {
+/* 800879E0: Rebuild the primitives of the current area's two scene objects. */
+s32 worldmap_area_rolling_pair_rebuild(s32 index) {
     s32 unused[2]; /* unreferenced; the original frame reserves it */
     SceneObject *first;
     SceneObject *second;
 
-    first = &D_8009C620[D_8009B64C[D_8009C610][0]];
-    second = &D_8009C620[D_8009B64C[D_8009C610][1]];
-    func_80087904(first, first->prims, first->def->primitive_count, 3);
-    func_80087904(second, second->prims, second->def->primitive_count, 3);
+    first = &worldmap_objects[worldmap_area_rolling_pair_objects[worldmap_area_index][0]];
+    second = &worldmap_objects[worldmap_area_rolling_pair_objects[worldmap_area_index][1]];
+    worldmap_rolling_pair_make_translucent(first, first->prims, first->def->primitive_count, 3);
+    worldmap_rolling_pair_make_translucent(second, second->prims, second->def->primitive_count, 3);
     return 1;
 }
 
-/* Roll the current area's two scene objects together. */
-s32 func_80087A8C(s32 index) {
+/* 80087A8C: Roll the current area's two scene objects together. */
+s32 worldmap_area_rolling_pair_update(s32 index) {
     s32 unused[2]; /* unreferenced; the original frame reserves it */
     WorldmapActor *actor;
     SceneObject *objects;
@@ -1624,10 +1624,10 @@ s32 func_80087A8C(s32 index) {
     s32 first_id;
     s32 second_id;
 
-    actor = &D_8009BE24[index];
-    objects = D_8009C620;
-    first_id = D_8009B64C[D_8009C610][0];
-    second_id = D_8009B64C[D_8009C610][1];
+    actor = &worldmap_actor_slots[index];
+    objects = worldmap_objects;
+    first_id = worldmap_area_rolling_pair_objects[worldmap_area_index][0];
+    second_id = worldmap_area_rolling_pair_objects[worldmap_area_index][1];
     actor->u.step = (actor->u.step + actor->unk54) & 0xFFF;
     first = &objects[first_id];
     SCRIPT_VECTOR[1].vz = 0;
@@ -1641,9 +1641,9 @@ s32 func_80087A8C(s32 index) {
     return 1;
 }
 
-/* Build a rotation matrix whose third row faces `direction`, using `up`
+/* 80087B84: Build a rotation matrix whose third row faces `direction`, using `up`
  * as scratch for the first two rows. */
-void func_80087B84(VECTOR *direction, VECTOR *up, MATRIX *m) {
+void worldmap_build_facing_matrix(VECTOR *direction, VECTOR *up, MATRIX *m) {
     up->vz = 0;
     up->vx = 0;
     up->vy = 0x1000;
@@ -1681,10 +1681,10 @@ typedef struct {
 
 #define FERRY_SCRATCH ((FerryScratch *)0x1F800000)
 
-/* Start the area's ferry: before scene 0xCD it rests at a fixed dock;
+/* 80087C6C: Start the area's ferry: before scene 0xCD it rests at a fixed dock;
  * otherwise it resumes its route (first time: at waypoint 0), advancing
  * when within 8 units of the waypoint, and heads for the next one. */
-s32 func_80087C6C(s32 index) {
+s32 worldmap_ferry_start(s32 index) {
     WorldmapActor *actor;
     SceneObject *object;
     FerryScratch *scratch;
@@ -1693,76 +1693,76 @@ s32 func_80087C6C(s32 index) {
     s32 i;
     u16 z;
 
-    id = D_8009B674[D_8009C610];
-    func_80087F60(index);
+    id = worldmap_area_ferry_objects[worldmap_area_index];
+    worldmap_ferry_link_objects(index);
     scratch = FERRY_SCRATCH;
-    actor = &D_8009BE24[index];
+    actor = &worldmap_actor_slots[index];
     actor->turn = 0x4000;
     actor->state = 0;
-    object = &D_8009C620[id];
+    object = &worldmap_objects[id];
     if (game_data.vars[0] < 0xCD) {
         actor->position.vx = 0xD80000;
         actor->position.vz = 0x7280000;
-        object->matrix = D_8009A180;
-        actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+        object->matrix = worldmap_identity_matrix;
+        actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
     } else {
         if (game_data.unk184A == 0) {
             game_data.unk184A++;
             actor->u.step = 0;
-            actor->position.vx = D_8009AF80[actor->u.step] << 12;
-            z = D_8009AF90[actor->u.step];
+            actor->position.vx = worldmap_ferry_waypoints_x[actor->u.step] << 12;
+            z = worldmap_ferry_waypoints_z[actor->u.step];
         } else {
             actor->u.step = game_data.unk1844[2];
             actor->position.vx = game_data.unk1844[0] << 12;
             z = game_data.unk1844[1];
         }
         actor->position.vz = z << 12;
-        actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+        actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
         FERRY_TRACE_POSITION(actor);
-        scratch->work.vx = D_8009AF80[actor->u.step] << 12;
-        scratch->work.vz = D_8009AF90[actor->u.step] << 12;
-        distance = func_80094154(&actor->position, &scratch->work);
+        scratch->work.vx = worldmap_ferry_waypoints_x[actor->u.step] << 12;
+        scratch->work.vz = worldmap_ferry_waypoints_z[actor->u.step] << 12;
+        distance = worldmap_get_ground_distance(&actor->position, &scratch->work);
         if (distance < 0) {
             distance = -distance;
         }
         if (distance < 8) {
             actor->u.step = (actor->u.step + 1) & 7;
         }
-        scratch->work.vx = D_8009AF80[actor->u.step] - (actor->position.vx >> 12);
-        scratch->work.vz = D_8009AF90[actor->u.step] - (actor->position.vz >> 12);
+        scratch->work.vx = worldmap_ferry_waypoints_x[actor->u.step] - (actor->position.vx >> 12);
+        scratch->work.vz = worldmap_ferry_waypoints_z[actor->u.step] - (actor->position.vz >> 12);
         scratch->work.vy = 0;
-        func_80093534(&scratch->work);
+        worldmap_wrap_world_offset(&scratch->work);
         VectorNormal(&scratch->work, &scratch->work);
         for (i = 0; i < 0x20; i++) {
-            D_8009CD68[i].dx = scratch->work.vx;
-            D_8009CD68[i].dz = scratch->work.vz;
+            worldmap_ferry_headings[i].dx = scratch->work.vx;
+            worldmap_ferry_headings[i].dz = scratch->work.vz;
         }
         actor->unk58 = 1;
         actor->unk54 = 0;
-        actor->motion.vx = D_8009CD68[1].dx;
-        actor->motion.vz = D_8009CD68[actor->unk58].dz;
+        actor->motion.vx = worldmap_ferry_headings[1].dx;
+        actor->motion.vz = worldmap_ferry_headings[actor->unk58].dz;
         actor->motion.vy = 0;
     }
     return 1;
 }
-/* Link the four objects before the area's scene object to it. The actor
+/* 80087F60: Link the four objects before the area's scene object to it. The actor
  * dispatcher supplies an index, which this area-wide handler does not use. */
-s32 func_80087F60(s32 index) {
+s32 worldmap_ferry_link_objects(s32 index) {
     u16 object;
 
-    object = D_8009B674[D_8009C610];
-    func_800848B4(object, object - 4);
-    func_800848B4(object, object - 3);
-    func_800848B4(object, object - 2);
-    func_800848B4(object, object - 1);
+    object = worldmap_area_ferry_objects[worldmap_area_index];
+    worldmap_objects_link(object, object - 4);
+    worldmap_objects_link(object, object - 3);
+    worldmap_objects_link(object, object - 2);
+    worldmap_objects_link(object, object - 1);
     return 1;
 }
 
-/* Run the ferry: before scene 0xCD it only follows the ground; otherwise
+/* 80087FD0: Run the ferry: before scene 0xCD it only follows the ground; otherwise
  * it steers along its waypoints, turns its model, moves by its delayed
  * heading history at a speed that eases in and out near the dock, sprays
  * its wake above speed 0x1000 and saves its route state. */
-s32 func_80087FD0(s32 index) {
+s32 worldmap_ferry_update(s32 index) {
     FerryScratch *scratch;
     WorldmapActor *actor;
     SceneObject *object;
@@ -1770,51 +1770,51 @@ s32 func_80087FD0(s32 index) {
     s32 dock;
 
     scratch = FERRY_SCRATCH;
-    actor = &D_8009BE24[index];
-    object = &D_8009C620[D_8009B674[D_8009C610]];
+    actor = &worldmap_actor_slots[index];
+    object = &worldmap_objects[worldmap_area_ferry_objects[worldmap_area_index]];
     if (game_data.vars[0] < 0xCD) {
-        actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+        actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
         object->position.vx = actor->position.vx >> 12;
         object->position.vy = actor->position.vy >> 12;
         object->position.vz = actor->position.vz >> 12;
     } else {
-        scratch->work.vx = D_8009AF80[actor->u.step] << 12;
-        scratch->work.vz = D_8009AF90[actor->u.step] << 12;
-        distance = func_80094154(&actor->position, &scratch->work);
+        scratch->work.vx = worldmap_ferry_waypoints_x[actor->u.step] << 12;
+        scratch->work.vz = worldmap_ferry_waypoints_z[actor->u.step] << 12;
+        distance = worldmap_get_ground_distance(&actor->position, &scratch->work);
         if (distance < 0) {
             distance = -distance;
         }
         if (distance < 8) {
             actor->u.step = (actor->u.step + 1) & 7;
         }
-        scratch->work.vx = D_8009AF80[actor->u.step] - (actor->position.vx >> 12);
-        scratch->work.vz = D_8009AF90[actor->u.step] - (actor->position.vz >> 12);
+        scratch->work.vx = worldmap_ferry_waypoints_x[actor->u.step] - (actor->position.vx >> 12);
+        scratch->work.vz = worldmap_ferry_waypoints_z[actor->u.step] - (actor->position.vz >> 12);
         scratch->work.vy = 0;
-        func_80093534(&scratch->work);
+        worldmap_wrap_world_offset(&scratch->work);
         VectorNormal(&scratch->work, &scratch->work);
         actor->motion.vx = ((scratch->work.vx + actor->motion.vx * 63) << 6) >> 12;
         actor->motion.vz = ((scratch->work.vz + actor->motion.vz * 63) << 6) >> 12;
         VectorNormal(&actor->motion, &actor->motion);
-        D_8009CD68[actor->unk54].dx = actor->motion.vx;
-        D_8009CD68[actor->unk54].dz = actor->motion.vz;
+        worldmap_ferry_headings[actor->unk54].dx = actor->motion.vx;
+        worldmap_ferry_headings[actor->unk54].dz = actor->motion.vz;
         actor->unk54 = (actor->unk54 + 1) & 0x1F;
         scratch->work.vx = actor->motion.vx;
         scratch->work.vy = actor->motion.vy;
         scratch->work.vz = -actor->motion.vz;
-        func_80087B84(&scratch->work, &scratch->up, &scratch->m);
+        worldmap_build_facing_matrix(&scratch->work, &scratch->up, &scratch->m);
         object->matrix = scratch->m;
-        actor->position.vx += D_8009CD68[actor->unk58].dx * (actor->turn >> 12);
-        actor->position.vz += D_8009CD68[actor->unk58].dz * (actor->turn >> 12);
+        actor->position.vx += worldmap_ferry_headings[actor->unk58].dx * (actor->turn >> 12);
+        actor->position.vz += worldmap_ferry_headings[actor->unk58].dz * (actor->turn >> 12);
         actor->unk58 = (actor->unk58 + 1) & 0x1F;
-        func_80093354(&actor->position);
-        actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+        worldmap_wrap_position(&actor->position);
+        actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
         object->position.vx = actor->position.vx >> 12;
         object->position.vy = actor->position.vy >> 12;
         object->position.vz = actor->position.vz >> 12;
         scratch->work.vx = game_data.worldmap.unk60 - (actor->position.vx >> 12);
         scratch->work.vz = game_data.worldmap.unk64 - (actor->position.vz >> 12);
         scratch->work.vy = (s16)game_data.worldmap.unk62;
-        func_80093534(&scratch->work);
+        worldmap_wrap_world_offset(&scratch->work);
         dock = SquareRoot0(scratch->work.vx * scratch->work.vx + scratch->work.vz * scratch->work.vz);
         if (dock < 0x100 && scratch->work.vy >= -0xBF) {
             actor->turn = 0;
@@ -1834,10 +1834,10 @@ s32 func_80087FD0(s32 index) {
             scratch->wake.vy = object->position.vy;
             scratch->wake.vz = object->position.vz;
             libgte_transpose_matrix(&object->matrix, &scratch->m2);
-            func_80097070(&scratch->m2, &scratch->wake_angle);
-            func_80089160(0x13, &scratch->wake, &scratch->wake_angle);
+            worldmap_get_matrix_angles(&scratch->m2, &scratch->wake_angle);
+            worldmap_effects_start_emitters(0x13, &scratch->wake, &scratch->wake_angle);
         } else {
-            func_800894C8(0x13);
+            worldmap_effects_stop_emitters(0x13);
         }
     }
     game_data.unk1844[0] = actor->position.vx >> 12;
@@ -1846,17 +1846,17 @@ s32 func_80087FD0(s32 index) {
     scratch->work.vx = actor->position.vx;
     scratch->work.vy = actor->position.vy + 0x30000;
     scratch->work.vz = actor->position.vz;
-    func_8008BFD4(index, &scratch->work, 0x80, 0xB0);
+    worldmap_queue_actor_cylinder(index, &scratch->work, 0x80, 0xB0);
     return 1;
 }
 
-/* Start the actor circling above the map from the saved position (first
+/* 80088570: Start the actor circling above the map from the saved position (first
  * time: from 0, 0x480), and save it back. */
-s32 func_80088570(s32 index) {
+s32 worldmap_airship_start(s32 index) {
     WorldmapActor *actor;
 
-    func_8008868C();
-    actor = &D_8009BE24[index];
+    worldmap_airship_link_objects();
+    actor = &worldmap_actor_slots[index];
     actor->unk54 = 4;
     actor->state = 0;
     actor->u.step = 0;
@@ -1883,14 +1883,14 @@ s32 func_80088570(s32 index) {
     return 1;
 }
 
-/* Link the area's scene objects in the listed (parent, child) pairs. */
-s32 func_8008868C(void) {
+/* 8008868C: Link the area's scene objects in the listed (parent, child) pairs. */
+s32 worldmap_airship_link_objects(void) {
     s32 i;
     s32 base;
 
-    base = D_8009B688[D_8009C610];
-    for (i = 0; D_8009AFA0[i] != -1; i += 2) {
-        func_800848B4(base + D_8009AFA0[i], base + D_8009AFA0[i + 1]);
+    base = worldmap_area_airship_objects[worldmap_area_index];
+    for (i = 0; worldmap_airship_object_links[i] != -1; i += 2) {
+        worldmap_objects_link(base + worldmap_airship_object_links[i], base + worldmap_airship_object_links[i + 1]);
     }
     return 1;
 }
@@ -1908,15 +1908,15 @@ typedef struct {
 
 #define FLIGHT_SCRATCH ((FlightScratch *)0x1F800000)
 
-/* Fly the airship: spin its rotors, stop over the saved landing point when
+/* 80088720: Fly the airship: spin its rotors, stop over the saved landing point when
  * low enough, move, place its shadow object and save the position. */
-s32 func_80088720(s32 index) {
+s32 worldmap_airship_update(s32 index) {
     WorldmapActor *actor;
     FlightScratch *scratch;
     s32 base;
 
-    actor = &D_8009BE24[index];
-    base = D_8009B688[D_8009C610];
+    actor = &worldmap_actor_slots[index];
+    base = worldmap_area_airship_objects[worldmap_area_index];
     actor->u.step = (actor->u.step + actor->unk54) & 0xFFF;
     actor->unk58 = (actor->unk58 + actor->unk5C) & 0xFFF;
     FLIGHT_SCRATCH->rotor.vx = FLIGHT_SCRATCH->rotor.vz = 0;
@@ -1925,14 +1925,14 @@ s32 func_80088720(s32 index) {
     FLIGHT_SCRATCH->tail.vy = actor->unk58;
     RotMatrixYXZ(&FLIGHT_SCRATCH->rotor, &FLIGHT_SCRATCH->rotor_matrix);
     RotMatrixYXZ(&FLIGHT_SCRATCH->tail, &FLIGHT_SCRATCH->tail_matrix);
-    D_8009C620[base + 5].matrix = FLIGHT_SCRATCH->rotor_matrix;
+    worldmap_objects[base + 5].matrix = FLIGHT_SCRATCH->rotor_matrix;
     scratch = FLIGHT_SCRATCH;
-    D_8009C620[base].matrix = D_8009C620[base + 1].matrix = D_8009C620[base + 2].matrix =
-        D_8009C620[base + 3].matrix = FLIGHT_SCRATCH->tail_matrix;
+    worldmap_objects[base].matrix = worldmap_objects[base + 1].matrix = worldmap_objects[base + 2].matrix =
+        worldmap_objects[base + 3].matrix = FLIGHT_SCRATCH->tail_matrix;
     scratch->work.vx = game_data.worldmap.unk60 - (actor->position.vx >> 12);
     scratch->work.vz = game_data.worldmap.unk64 - (actor->position.vz >> 12);
     scratch->work.vy = (s16)game_data.worldmap.unk62;
-    func_80093534(&scratch->work);
+    worldmap_wrap_world_offset(&scratch->work);
     if (SquareRoot0(scratch->work.vx * scratch->work.vx + scratch->work.vz * scratch->work.vz) < 0x300 && scratch->work.vy < -0x240) {
         actor->turn = 0;
     } else {
@@ -1940,12 +1940,12 @@ s32 func_80088720(s32 index) {
     }
     actor->position.vx += actor->motion.vx * actor->turn;
     actor->position.vz += actor->motion.vz * actor->turn;
-    func_80093354(&actor->position);
+    worldmap_wrap_position(&actor->position);
     scratch->work.vx = actor->position.vx >> 12;
     scratch->work.vy = actor->position.vy >> 12;
     scratch->work.vz = actor->position.vz >> 12;
-    D_8009C620[base + 12].position = scratch->work;
-    func_8008BFD4(index, &actor->position, 0x180, 0xC0);
+    worldmap_objects[base + 12].position = scratch->work;
+    worldmap_queue_actor_cylinder(index, &actor->position, 0x180, 0xC0);
     game_data.flight.x_frac = actor->position.vx;
     game_data.flight.x = actor->position.vx >> 12;
     game_data.flight.z_frac = actor->position.vz;
@@ -1953,19 +1953,19 @@ s32 func_80088720(s32 index) {
     return 1;
 }
 
-/* Link the listed scene objects to object 69 and place it at the actor;
+/* 80088B40: Link the listed scene objects to object 69 and place it at the actor;
  * outside scene 0x99 also show them. */
-s32 func_80088B40(s32 index) {
+s32 worldmap_object69_start(s32 index) {
     WorldmapActor *actor;
     SceneObject *object;
     s32 i;
     s32 result;
 
-    for (i = 0; D_8009AFDC[i] != -1; i++) {
-        func_800848B4(69, D_8009AFDC[i]);
+    for (i = 0; worldmap_object69_children[i] != -1; i++) {
+        worldmap_objects_link(69, worldmap_object69_children[i]);
     }
-    actor = &D_8009BE24[index];
-    object = D_8009C620;
+    actor = &worldmap_actor_slots[index];
+    object = worldmap_objects;
     actor->state = 0;
     if (game_data.vars[0] == 0x99) {
         result = 1;
@@ -1974,8 +1974,8 @@ s32 func_80088B40(s32 index) {
         actor->position.vy = 0;
     } else {
         object[69].visible = 1;
-        for (i = 0; D_8009AFDC[i] != -1; i++) {
-            object[D_8009AFDC[i]].visible = 1;
+        for (i = 0; worldmap_object69_children[i] != -1; i++) {
+            object[worldmap_object69_children[i]].visible = 1;
         }
         result = 3;
     }
@@ -1986,26 +1986,26 @@ s32 func_80088B40(s32 index) {
     return result;
 }
 
-/* Show scene object 69 and the listed objects. */
-s32 func_80088C90(void) {
+/* 80088C90: Show scene object 69 and the listed objects. */
+s32 worldmap_object69_resume(void) {
     SceneObject *objects;
     s32 i;
 
-    objects = D_8009C620;
+    objects = worldmap_objects;
     objects[69].visible = 1;
-    for (i = 0; D_8009AFDC[i] != -1; i++) {
-        objects[D_8009AFDC[i]].visible = 1;
+    for (i = 0; worldmap_object69_children[i] != -1; i++) {
+        objects[worldmap_object69_children[i]].visible = 1;
     }
     return 3;
 }
 
-/* In scene 0x99, move scene object 69 to the actor (world units). */
-s32 func_80088D00(s32 index) {
+/* 80088D00: In scene 0x99, move scene object 69 to the actor (world units). */
+s32 worldmap_object69_update(s32 index) {
     WorldmapActor *actor;
     SceneObject *object;
 
-    object = D_8009C620;
-    actor = &D_8009BE24[index];
+    object = worldmap_objects;
+    actor = &worldmap_actor_slots[index];
     object += 69;
     if (game_data.vars[0] == 0x99) {
         object->position.vx = actor->position.vx >> 12;
@@ -2015,78 +2015,78 @@ s32 func_80088D00(s32 index) {
     return 1;
 }
 
-/* Place the actor just above the current area's scene object. */
-s32 func_80088D64(s32 index) {
+/* 80088D64: Place the actor just above the current area's scene object. */
+s32 worldmap_raised_placement_start(s32 index) {
     SceneObject *object;
     WorldmapActor *actor;
 
-    object = &D_8009C620[D_8009B69C[D_8009C610]];
-    actor = &D_8009BE24[index];
+    object = &worldmap_objects[worldmap_area_raised_placement_objects[worldmap_area_index]];
+    actor = &worldmap_actor_slots[index];
     actor->position.vx = object->position.vx << 12;
     actor->position.vy = (object->position.vy << 12) + 0x40000;
     actor->position.vz = object->position.vz << 12;
     return 1;
 }
 
-/* Place the actor at (0x68, 0x60). */
-s32 func_80088DE4(s32 index) {
-    func_8008BFD4(index, &D_8009BE24[index].position, 0x68, 0x60);
+/* 80088DE4: Place the actor at (0x68, 0x60). */
+s32 worldmap_raised_placement_update(s32 index) {
+    worldmap_queue_actor_cylinder(index, &worldmap_actor_slots[index].position, 0x68, 0x60);
     return 1;
 }
 
-/* Place the actor at scene object 75. */
-s32 func_80088E1C(s32 index) {
+/* 80088E1C: Place the actor at scene object 75. */
+s32 worldmap_object75_placement_start(s32 index) {
     WorldmapActor *actor;
 
-    actor = &D_8009BE24[index];
-    actor->position.vx = D_8009C620[75].position.vx << 12;
-    actor->position.vy = D_8009C620[75].position.vy << 12;
-    actor->position.vz = D_8009C620[75].position.vz << 12;
+    actor = &worldmap_actor_slots[index];
+    actor->position.vx = worldmap_objects[75].position.vx << 12;
+    actor->position.vy = worldmap_objects[75].position.vy << 12;
+    actor->position.vz = worldmap_objects[75].position.vz << 12;
     return 1;
 }
 
-/* Place the actor at (0x10C, 0x1A6). */
-s32 func_80088E68(s32 index) {
-    func_8008BFD4(index, &D_8009BE24[index].position, 0x10C, 0x1A6);
+/* 80088E68: Place the actor at (0x10C, 0x1A6). */
+s32 worldmap_object75_placement_update(s32 index) {
+    worldmap_queue_actor_cylinder(index, &worldmap_actor_slots[index].position, 0x10C, 0x1A6);
     return 1;
 }
 
-/* Place the actor at the current area's scene object. */
-s32 func_80088EA0(s32 index) {
+/* 80088EA0: Place the actor at the current area's scene object. */
+s32 worldmap_ground_placement_start(s32 index) {
     SceneObject *object;
     WorldmapActor *actor;
 
-    object = &D_8009C620[D_8009B6B0[D_8009C610]];
-    actor = &D_8009BE24[index];
+    object = &worldmap_objects[worldmap_area_ground_placement_objects[worldmap_area_index]];
+    actor = &worldmap_actor_slots[index];
     actor->position.vx = object->position.vx << 12;
     actor->position.vy = object->position.vy << 12;
     actor->position.vz = object->position.vz << 12;
     return 1;
 }
 
-/* Place the actor at (0xC9, 0x392). */
-s32 func_80088F1C(s32 index) {
-    func_8008BFD4(index, &D_8009BE24[index].position, 0xC9, 0x392);
+/* 80088F1C: Place the actor at (0xC9, 0x392). */
+s32 worldmap_ground_placement_update(s32 index) {
+    worldmap_queue_actor_cylinder(index, &worldmap_actor_slots[index].position, 0xC9, 0x392);
     return 1;
 }
 
-/* Scene step with nothing to do. */
-s32 func_80088F54(void) {
+/* 80088F54: Scene step with nothing to do. */
+s32 worldmap_area_idle_actor_start(void) {
     return 3;
 }
 
-/* Scene step with nothing to do. */
-s32 func_80088F5C(void) {
+/* 80088F5C: Scene step with nothing to do. */
+s32 worldmap_area_idle_actor_update(void) {
     return 3;
 }
 
-/* Clear the area objects and allocate the effect slots. */
-void func_80088F64(void) {
+/* 80088F64: Clear the area objects and allocate the effect slots. */
+void worldmap_effects_alloc_slots(void) {
     AreaObject *object;
     EffectSlot *slot;
     s32 i;
 
-    object = D_8009BCC0;
+    object = worldmap_effect_emitters;
     for (i = 0x1FF; i != -1; i--) {
         object->unk4 = 0;
         object->unkA = 0;
@@ -2099,7 +2099,7 @@ void func_80088F64(void) {
         object->angle.vx = 0;
         object++;
     }
-    D_8009BDF4 = slot = heap_alloc(0x4C00, 0);
+    worldmap_effect_slots = slot = heap_alloc(0x4C00, 0);
     for (i = 0xFF; i != -1; i--) {
         EFFECT_ENABLED(slot) = 0;
         EFFECT_COUNT(slot) = 0;
@@ -2107,9 +2107,9 @@ void func_80088F64(void) {
     }
 }
 
-/* Free the effect table. */
-void func_80088FF4(void) {
-    heap_free(D_8009BDF4);
+/* 80088FF4: Free the effect table. */
+void worldmap_effects_free_slots(void) {
+    heap_free(worldmap_effect_slots);
 }
 
 /* The particle quads, copied between display buffers as a whole. */
@@ -2117,15 +2117,15 @@ typedef struct {
     POLY_FT4 quads[256];
 } EffectQuads;
 
-/* Allocate the two effect quad buffers: semi-transparent textured quads
+/* 8008901C: Allocate the two effect quad buffers: semi-transparent textured quads
  * on the 0x340,0x100 page, the second a copy of the first. */
-void func_8008901C(void) {
+void worldmap_effects_alloc_quads(void) {
     POLY_FT4 *quad;
     s32 i;
 
-    D_8009BE1C[0] = heap_alloc(sizeof(EffectQuads), 1);
-    D_8009BE1C[1] = heap_alloc(sizeof(EffectQuads), 1);
-    quad = D_8009BE1C[0];
+    worldmap_effect_quads[0] = heap_alloc(sizeof(EffectQuads), 1);
+    worldmap_effect_quads[1] = heap_alloc(sizeof(EffectQuads), 1);
+    quad = worldmap_effect_quads[0];
     for (i = 0xFF; i != -1; i--) {
         setPolyFT4(quad);
         quad->tpage = GetTPage(1, 1, 0x340, 0x100);
@@ -2133,34 +2133,34 @@ void func_8008901C(void) {
         setSemiTrans(quad, 1);
         quad++;
     }
-    *(EffectQuads *)D_8009BE1C[1] = *(EffectQuads *)D_8009BE1C[0];
+    *(EffectQuads *)worldmap_effect_quads[1] = *(EffectQuads *)worldmap_effect_quads[0];
 }
 
-/* Free the two particle quad buffers. */
-void func_80089128(void) {
-    heap_free(D_8009BE1C[0]);
-    heap_free(D_8009BE1C[1]);
+/* 80089128: Free the two particle quad buffers. */
+void worldmap_effects_free_quads(void) {
+    heap_free(worldmap_effect_quads[0]);
+    heap_free(worldmap_effect_quads[1]);
 }
 
 /* Short vectors handled as a word (vx, vy) plus vz. */
 #define SVECTOR_ZERO(v) (*(s32 *)&(v)->vx = 0, (v)->vz = 0)
 
-/* Place the eight emitters of group `group` at `position` facing `angle`
+/* 80089160: Place the eight emitters of group `group` at `position` facing `angle`
  * (either may be NULL for zero); start them unless one is already live. */
-void func_80089160(s32 group, SVECTOR *position, SVECTOR *angle) {
+void worldmap_effects_start_emitters(s32 group, SVECTOR *position, SVECTOR *angle) {
     AreaObject *object;
     s32 live;
     s32 i;
 
     live = 0;
-    object = &D_8009BCC0[group * 8];
+    object = &worldmap_effect_emitters[group * 8];
     for (i = 7; i != -1; i--) {
         if (object->flags & 0x80) {
             live++;
             break;
         }
     }
-    object = &D_8009BCC0[group * 8];
+    object = &worldmap_effect_emitters[group * 8];
     if ((position == NULL) & (angle == NULL)) {
         for (i = 7; i != -1; object++, i--) {
             if (live == 0) {
@@ -2212,22 +2212,22 @@ void func_80089160(s32 group, SVECTOR *position, SVECTOR *angle) {
     }
 }
 
-/* Place the eight emitters of group `group` at the origin, aimed along
+/* 800893E0: Place the eight emitters of group `group` at the origin, aimed along
  * `direction` and turned by `angle`; start them unless one is already live. */
-void func_800893E0(s32 group, SVECTOR *direction, SVECTOR *angle) {
+void worldmap_effects_aim_emitters(s32 group, SVECTOR *direction, SVECTOR *angle) {
     AreaObject *object;
     s32 live;
     s32 i;
 
     live = 0;
-    object = &D_8009BCC0[group * 8];
+    object = &worldmap_effect_emitters[group * 8];
     for (i = 7; i != -1; i--) {
         if (object->flags & 0x80) {
             live++;
             break;
         }
     }
-    object = &D_8009BCC0[group * 8];
+    object = &worldmap_effect_emitters[group * 8];
     for (i = 7; i != -1; object++, i--) {
         if (live == 0) {
             object->flags |= 0x80;
@@ -2244,25 +2244,25 @@ void func_800893E0(s32 group, SVECTOR *direction, SVECTOR *angle) {
     }
 }
 
-/* Deactivate the eight area objects of group `group`. */
-void func_800894C8(s32 group) {
+/* 800894C8: Deactivate the eight area objects of group `group`. */
+void worldmap_effects_stop_emitters(s32 group) {
     AreaObject *object;
     s32 i;
 
-    object = &D_8009BCC0[group * 8];
+    object = &worldmap_effect_emitters[group * 8];
     for (i = 7; i != -1; i--) {
         object->flags &= 0x7F;
         object++;
     }
 }
 
-/* Stop the effects that belong to group `group`. */
-void func_80089514(s32 group) {
+/* 80089514: Stop the effects that belong to group `group`. */
+void worldmap_effects_stop_particles(s32 group) {
     EffectSlot *slot;
     s32 i;
     s32 j;
 
-    slot = D_8009BDF4;
+    slot = worldmap_effect_slots;
     for (i = 0xFF; i != -1; i--) {
         for (j = 0; j < 8; j++) {
             if (slot->id == group * 8 + j && EFFECT_ENABLED(slot) != 0) {
@@ -2274,9 +2274,9 @@ void func_80089514(s32 group) {
     }
 }
 
-/* Age the particles: move, accelerate, spin and fade the live ones; when a
+/* 80089580: Age the particles: move, accelerate, spin and fade the live ones; when a
  * particle's life runs out, release it from its emitter. */
-void func_80089580(void) {
+void worldmap_effects_age_particles(void) {
     EffectSlot *slot;
     s32 step;   /* life word, then the colour step */
     s32 colour; /* live flag, then the colour */
@@ -2287,7 +2287,7 @@ void func_80089580(void) {
     s32 px, py, pz;
     s32 vx, vy, vz;
 
-    slot = D_8009BDF4;
+    slot = worldmap_effect_slots;
     for (i = 0xFF; i != -1; slot++, i--) {
         step = slot->timer;
         colour = step >> 16;
@@ -2340,7 +2340,7 @@ void func_80089580(void) {
                 slot->velocity.vy = vy;
                 slot->velocity.vz = vz;
             } else {
-                D_8009BCC0[slot->id].unkA--;
+                worldmap_effect_emitters[slot->id].unkA--;
                 slot->id = 0;
                 slot->timer = 0;
             }
@@ -2359,10 +2359,10 @@ typedef struct {
 
 #define EMIT_SCRATCH ((EmitScratch *)0x1F800000)
 
-/* Run the emitters: count down their timers and every interval spawn one
+/* 80089748: Run the emitters: count down their timers and every interval spawn one
  * particle into a free effect slot, starting at a random point around the
  * emitter and flying towards a random point around its target. */
-void func_80089748(void) {
+void worldmap_effects_run_emitters(void) {
     AreaObject *object;
     EffectSlot *slot;
     EmitScratch *scratch;
@@ -2373,7 +2373,7 @@ void func_80089748(void) {
     s32 repeats;
     s32 value;
 
-    object = D_8009BCC0;
+    object = worldmap_effect_emitters;
     scratch = EMIT_SCRATCH;
     for (i = 0; i < 0x200; i++, object++) {
         flags = object->flags;
@@ -2400,7 +2400,7 @@ void func_80089748(void) {
         object->unk12 = object->unk10;
         if ((((s16 *)&object->life)[1] != 0) & (object->unk8 > 0) & (object->unkA < object->unk8)) {
             value = 0xFF;
-            slot = D_8009BDF4;
+            slot = worldmap_effect_slots;
             for (; value != -1; value--, slot++) {
                 if (EFFECT_ENABLED(slot) == 0) {
                     slot->id = i;
@@ -2474,7 +2474,7 @@ void func_80089748(void) {
     store:
         object->unk4 = (repeats << 16) | delay;
     }
-    func_80089580();
+    worldmap_effects_age_particles();
 }
 
 /* Scratchpad work area of the particle pass. */
@@ -2493,10 +2493,10 @@ typedef struct {
 
 #define PARTICLE_SCRATCH ((ParticleScratch *)0x1F800000)
 
-/* Draw the live particles: build each one's billboard quad (kind shape,
+/* 80089C78: Draw the live particles: build each one's billboard quad (kind shape,
  * scaled and optionally rolled), place it relative to the camera target,
  * project it and add the visible ones to the ordering table. */
-void func_80089C78(void) {
+void worldmap_effects_draw_particles(void) {
     ParticleScratch *scratch;
     EffectSlot *slot;
     POLY_FT4 *quad;
@@ -2505,13 +2505,13 @@ void func_80089C78(void) {
     s32 i;
 
     scratch = (ParticleScratch *)0x1F800000;
-    PARTICLE_SCRATCH->view = D_8009C808;
-    PARTICLE_SCRATCH->identity = D_8009A180;
+    PARTICLE_SCRATCH->view = worldmap_camera_matrix;
+    PARTICLE_SCRATCH->identity = worldmap_identity_matrix;
     i = 0;
-    camera_x = D_8009BE28.target.vx >> 12;
-    camera_z = D_8009BE28.target.vz >> 12;
-    quad = D_8009BE1C[D_8009D7F0];
-    slot = D_8009BDF4;
+    camera_x = worldmap_camera.target.vx >> 12;
+    camera_z = worldmap_camera.target.vz >> 12;
+    quad = worldmap_effect_quads[worldmap_display_buffer_index];
+    slot = worldmap_effect_slots;
     for (; i < 0x100; i++, slot++) {
         if (EFFECT_ENABLED(slot) == 0) {
             continue;
@@ -2524,13 +2524,13 @@ void func_80089C78(void) {
             RotMatrixZ(slot->unk2, &scratch->m);
         }
         ScaleMatrix(&scratch->m, &scratch->scale);
-        scratch->v[0] = D_8009B040[EFFECT_ENABLED(slot)].v[0];
-        scratch->v[1] = D_8009B040[EFFECT_ENABLED(slot)].v[1];
-        scratch->v[2] = D_8009B040[EFFECT_ENABLED(slot)].v[2];
-        scratch->v[3] = D_8009B040[EFFECT_ENABLED(slot)].v[3];
+        scratch->v[0] = worldmap_effect_particle_shapes[EFFECT_ENABLED(slot)].v[0];
+        scratch->v[1] = worldmap_effect_particle_shapes[EFFECT_ENABLED(slot)].v[1];
+        scratch->v[2] = worldmap_effect_particle_shapes[EFFECT_ENABLED(slot)].v[2];
+        scratch->v[3] = worldmap_effect_particle_shapes[EFFECT_ENABLED(slot)].v[3];
         scratch->offset.vx = (slot->position.vx >> 12) - camera_x;
         scratch->offset.vz = (slot->position.vz >> 12) - camera_z;
-        func_80093534(&scratch->offset);
+        worldmap_wrap_world_offset(&scratch->offset);
         scratch->centre.vx = scratch->offset.vx;
         scratch->centre.vy = slot->position.vy >> 12;
         scratch->centre.vz = -scratch->offset.vz;
@@ -2569,50 +2569,50 @@ void func_80089C78(void) {
             quad->g0 = ((u8 *)&slot->colour)[1];
             quad->b0 = ((u8 *)&slot->colour)[2];
             quad->tpage = slot->code;
-            *(u16 *)&quad->u0 = D_8009AFF0[EFFECT_ENABLED(slot) * 4];
-            *(u16 *)&quad->u1 = D_8009AFF0[EFFECT_ENABLED(slot) * 4 + 1];
-            *(u16 *)&quad->u2 = D_8009AFF0[EFFECT_ENABLED(slot) * 4 + 2];
-            *(u16 *)&quad->u3 = D_8009AFF0[EFFECT_ENABLED(slot) * 4 + 3];
-            addPrim(&D_8009BE3C->ot[scratch->sz >> 4], quad);
+            *(u16 *)&quad->u0 = worldmap_effect_particle_uvs[EFFECT_ENABLED(slot) * 4];
+            *(u16 *)&quad->u1 = worldmap_effect_particle_uvs[EFFECT_ENABLED(slot) * 4 + 1];
+            *(u16 *)&quad->u2 = worldmap_effect_particle_uvs[EFFECT_ENABLED(slot) * 4 + 2];
+            *(u16 *)&quad->u3 = worldmap_effect_particle_uvs[EFFECT_ENABLED(slot) * 4 + 3];
+            addPrim(&worldmap_current_display_buffer->ot[scratch->sz >> 4], quad);
             quad++;
         }
     }
 }
 
-/* Create the party leader's model sprite at the scene's entry position; in
+/* 8008A2C8: Create the party leader's model sprite at the scene's entry position; in
  * movement modes 1-7 follow the player or start hidden. Fill the position
  * trail and save the position as the world-map return point. */
-s32 func_8008A2C8(s32 index) {
+s32 worldmap_leader_start(s32 index) {
     WorldmapActor *actor;
     TrailPoint *point;
     s32 i;
 
-    actor = &D_8009BE24[index];
-    actor->handle = sprite_create(D_8009CD34[0], 0x100, 0x1E0, 0x140, 0x100, 0x40);
+    actor = &worldmap_actor_slots[index];
+    actor->handle = sprite_create(worldmap_character_models[0], 0x100, 0x1E0, 0x140, 0x100, 0x40);
     sprite_start_animation(actor->handle, 0);
     sprite_set_scale(actor->handle, 0x1800);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
     actor->unk24 = 0;
     actor->position.vx = game_data.vars[0] << 12;
     actor->position.vz = game_data.vars[1] << 12;
-    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
-    actor->heading = D_8009C584;
+    actor->heading = worldmap_player_heading;
     actor->turn = 8;
     actor->unk5C = actor->heading;
-    switch (D_8009BE10) {
+    switch (worldmap_movement_mode) {
     case 1:
     case 2:
     case 3:
         if (game_data.inGear[0] == 0) {
-            actor->position.vx = D_8009C5AC.vx;
-            actor->position.vz = D_8009C5AC.vz;
-            actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
-            actor->heading = D_8009C584;
-            D_8009D55C.target = actor->position;
-            D_8009D52C = actor->heading;
+            actor->position.vx = worldmap_player_position.vx;
+            actor->position.vz = worldmap_player_position.vz;
+            actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
+            actor->heading = worldmap_player_heading;
+            worldmap_camera_follow_target.target = actor->position;
+            worldmap_camera_follow_heading = actor->heading;
         } else {
             actor->state = 1;
             actor->unk24 = 1;
@@ -2642,9 +2642,9 @@ s32 func_8008A2C8(s32 index) {
     case 13:
         break;
     }
-    D_8009D154 = 0;
+    worldmap_trail_index = 0;
     i = 0;
-    point = D_8009CEC4;
+    point = worldmap_trail_points;
     do {
         point->position = actor->position;
         i++;
@@ -2657,36 +2657,36 @@ s32 func_8008A2C8(s32 index) {
     return 1;
 }
 
-/* Create the lead party member's model sprite for the actor. */
-s32 func_8008A52C(s32 index) {
+/* 8008A52C: Create the lead party member's model sprite for the actor. */
+s32 worldmap_leader_resume(s32 index) {
     WorldmapActor *actor;
 
-    actor = &D_8009BE24[index];
-    actor->handle = sprite_create(D_8009CD34[0], 0x100, 0x1E0, 0x140, 0x100, 0x40);
+    actor = &worldmap_actor_slots[index];
+    actor->handle = sprite_create(worldmap_character_models[0], 0x100, 0x1E0, 0x140, 0x100, 0x40);
     sprite_start_animation(actor->handle, 0);
     sprite_set_scale(actor->handle, 0x1800);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
     return 1;
 }
 
-/* Create the party leader's model sprite at the saved world-map position
+/* 8008A5B8: Create the party leader's model sprite at the saved world-map position
  * and fill the position trail and saved camera target with it. */
-s32 func_8008A5B8(s32 index) {
+s32 worldmap_leader_start_at_saved_spot(s32 index) {
     WorldmapActor *actor;
     TrailPoint *point;
     s32 i;
     s16 heading;
 
-    actor = &D_8009BE24[index];
-    actor->handle = sprite_create(D_8009CD34[0], 0x100, 0x1E0, 0x140, 0x100, 0x40);
+    actor = &worldmap_actor_slots[index];
+    actor->handle = sprite_create(worldmap_character_models[0], 0x100, 0x1E0, 0x140, 0x100, 0x40);
     sprite_start_animation(actor->handle, 0);
     sprite_set_scale(actor->handle, 0x1800);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
     actor->position.vx = game_data.worldmap.x << 12;
     actor->position.vz = game_data.worldmap.z << 12;
-    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
     i = 0;
-    point = D_8009CEC4;
+    point = worldmap_trail_points;
     heading = game_data.worldmap.heading;
     actor->unk24 = 1;
     actor->turn = 8;
@@ -2694,7 +2694,7 @@ s32 func_8008A5B8(s32 index) {
     actor->motion.vy = 0;
     actor->motion.vx = 0;
     actor->state = 2;
-    D_8009D154 = 0;
+    worldmap_trail_index = 0;
     actor->heading = heading;
     do {
         point->position = actor->position;
@@ -2702,8 +2702,8 @@ s32 func_8008A5B8(s32 index) {
         point->heading = actor->heading;
         point++;
     } while (i < 0x20);
-    D_8009D55C.target = actor->position;
-    D_8009D52C = actor->heading;
+    worldmap_camera_follow_target.target = actor->position;
+    worldmap_camera_follow_heading = actor->heading;
     return 1;
 }
 
@@ -2717,10 +2717,10 @@ typedef struct {
     u16 heading;    /* 0xA0 */
 } LeaderScratch;
 
-/* Update the party leader on foot: walk by the pad and record the trail,
+/* 8008A72C: Update the party leader on foot: walk by the pad and record the trail,
  * gather the others into a vehicle or let them out on command, walk out of
  * the parked vehicle, and save the return spot and heading. */
-s32 func_8008A72C(s32 index) {
+s32 worldmap_leader_update(s32 index) {
     WorldmapActor *actor;
     WorldmapActor *target;
     LeaderScratch *scratch;
@@ -2731,7 +2731,7 @@ s32 func_8008A72C(s32 index) {
 
     result = 1;
     scratch = (LeaderScratch *)0x1F800000;
-    actor = &D_8009BE24[index];
+    actor = &worldmap_actor_slots[index];
     switch (actor->unk4) {
     case 2:
         actor->unk4 = 0;
@@ -2743,10 +2743,10 @@ s32 func_8008A72C(s32 index) {
         break;
     case 6:
         actor->unk4 = 0;
-        if (D_8009C170 == ++actor->unk58) {
+        if (worldmap_party_count == ++actor->unk58) {
             actor->state = 0;
-            D_8009BE10 = 1;
-            D_8009BD04 = 0;
+            worldmap_movement_mode = 1;
+            worldmap_actor_cylinder_count = 0;
         }
         break;
     }
@@ -2754,21 +2754,21 @@ s32 func_8008A72C(s32 index) {
     case 0:
     case 1:
         if (game_data.inGear[0] == 0) {
-            switch (func_80090A84(actor)) {
+            switch (worldmap_steer_on_foot(actor)) {
             case 2:
             case 4:
             case 5:
                 break;
             case 1:
                 actor->state = 0x40;
-                D_8009D554 = 0;
-                D_8009D7CC = 0;
+                worldmap_loop_running = 0;
+                worldmap_loop_result = 0;
                 break;
             case 3:
-                if (D_8009BD60 == 7) {
+                if (worldmap_cylinder_hit_actor == 7) {
                     actor->state = 8;
                 } else {
-                    D_8009BD60 = 4;
+                    worldmap_cylinder_hit_actor = 4;
                     actor->state = 0x10;
                 }
                 break;
@@ -2776,81 +2776,81 @@ s32 func_8008A72C(s32 index) {
                 if ((actor->motion.vx == 0) & (actor->motion.vy == 0) & (actor->motion.vz == 0)) {
                     if (SPRITE_ANIMATION(actor->handle) != 0) {
                         sprite_start_animation(actor->handle, 0);
-                        func_800894C8(0x2F);
+                        worldmap_effects_stop_emitters(0x2F);
                     }
                 } else {
                     if (SPRITE_ANIMATION(actor->handle) != 1) {
                         sprite_start_animation(actor->handle, 1);
                     }
-                    func_8008C1DC(0x2F, actor, (ActorScratch *)scratch);
+                    worldmap_actor_emit_on_layer3(0x2F, actor, (ActorScratch *)scratch);
                 }
-                value = func_80095414(&actor->position, &actor->motion, &scratch->probe, actor->turn << 12,
-                                    D_8009BE10);
+                value = worldmap_move_walking(&actor->position, &actor->motion, &scratch->probe, actor->turn << 12,
+                                    worldmap_movement_mode);
                 if (value == 0) {
                     actor->motion = scratch->probe;
-                    value = func_80095414(&actor->position, &actor->motion, &scratch->probe, actor->turn << 12,
-                                        D_8009BE10);
+                    value = worldmap_move_walking(&actor->position, &actor->motion, &scratch->probe, actor->turn << 12,
+                                        worldmap_movement_mode);
                     if (value == 0) {
                         actor->motion.vz = 0;
                         actor->motion.vx = 0;
                     }
                 }
                 if (value == 1) {
-                    func_8008C040(&scratch->probe, 0x10, 0x20, &D_8009D738, &D_8009BD60);
-                    if (D_8009BD60 == 7) {
-                        value = D_8009D738 + 3;
+                    worldmap_find_cylinder_hit(&scratch->probe, 0x10, 0x20, &worldmap_cylinder_hit, &worldmap_cylinder_hit_actor);
+                    if (worldmap_cylinder_hit_actor == 7) {
+                        value = worldmap_cylinder_hit + 3;
                     } else {
-                        value = D_8009D738;
+                        value = worldmap_cylinder_hit;
                     }
-                    if ((u16)D_8009B180[value] != 0) {
+                    if ((u16)worldmap_cylinder_hit_standable[value] != 0) {
                         actor->position = scratch->probe;
                         if (actor->motion.vx | actor->motion.vz) {
-                            value = (D_8009D154 + 1) & 0x1F;
-                            point = &D_8009CEC4[value];
-                            D_8009D154 = value;
+                            value = (worldmap_trail_index + 1) & 0x1F;
+                            point = &worldmap_trail_points[value];
+                            worldmap_trail_index = value;
                             point->position = actor->position;
                             point->heading = actor->heading;
-                            func_8007528C();
+                            worldmap_encounter_update_timers();
                         }
                     }
                 } else {
-                    func_8008C040(&actor->position, 0x10, 0x20, &D_8009D738, &D_8009BD60);
+                    worldmap_find_cylinder_hit(&actor->position, 0x10, 0x20, &worldmap_cylinder_hit, &worldmap_cylinder_hit_actor);
                 }
-                func_80094238(&actor->position, 0);
+                worldmap_path_select_region(&actor->position, 0);
                 actor->motion.vz = 0;
                 actor->motion.vy = 0;
                 actor->motion.vx = 0;
-                D_8009D55C.target = actor->position;
-                D_8009D52C = actor->heading;
+                worldmap_camera_follow_target.target = actor->position;
+                worldmap_camera_follow_heading = actor->heading;
                 break;
             }
-            D_8009BD04 = 0;
+            worldmap_actor_cylinder_count = 0;
             actor->unk24 = 0;
         } else {
             actor->unk24 = 1;
-            actor->position.vx = D_8009BE24[4].position.vx;
-            actor->position.vy = D_8009BE24[4].position.vy;
-            actor->position.vz = D_8009BE24[4].position.vz;
-            actor->heading = D_8009BE24[4].heading;
-            func_800894C8(0x2F);
+            actor->position.vx = worldmap_actor_slots[4].position.vx;
+            actor->position.vy = worldmap_actor_slots[4].position.vy;
+            actor->position.vz = worldmap_actor_slots[4].position.vz;
+            actor->heading = worldmap_actor_slots[4].heading;
+            worldmap_effects_stop_emitters(0x2F);
         }
         break;
     case 2:
     case 3:
-        actor->position.vx = D_8009BE24[7].position.vx;
-        actor->position.vy = D_8009BE24[7].position.vy;
-        actor->position.vz = D_8009BE24[7].position.vz;
-        actor->heading = D_8009BE24[7].heading;
+        actor->position.vx = worldmap_actor_slots[7].position.vx;
+        actor->position.vy = worldmap_actor_slots[7].position.vy;
+        actor->position.vz = worldmap_actor_slots[7].position.vz;
+        actor->heading = worldmap_actor_slots[7].heading;
         break;
     case 8:
         if (game_data.party[1] != 0xFF) {
             if (game_data.inGear[1] == 0) {
-                func_80097770(2, 1);
-                actor[1].unk6 = D_8009BD60;
-                func_80097770(5, 8);
+                worldmap_actor_request(2, 1);
+                actor[1].unk6 = worldmap_cylinder_hit_actor;
+                worldmap_actor_request(5, 8);
             } else {
-                func_80097770(5, 1);
-                D_8009BE24[5].unk6 = D_8009BD60;
+                worldmap_actor_request(5, 1);
+                worldmap_actor_slots[5].unk6 = worldmap_cylinder_hit_actor;
             }
         }
         actor->state++;
@@ -2858,19 +2858,19 @@ s32 func_8008A72C(s32 index) {
     case 9:
         if (game_data.party[2] != 0xFF) {
             if (game_data.inGear[2] == 0) {
-                func_80097770(3, 1);
-                actor[2].unk6 = D_8009BD60;
-                func_80097770(6, 8);
+                worldmap_actor_request(3, 1);
+                actor[2].unk6 = worldmap_cylinder_hit_actor;
+                worldmap_actor_request(6, 8);
             } else {
-                func_80097770(6, 1);
-                D_8009BE24[6].unk6 = D_8009BD60;
+                worldmap_actor_request(6, 1);
+                worldmap_actor_slots[6].unk6 = worldmap_cylinder_hit_actor;
             }
         }
         actor->state++;
         break;
     case 10:
         if (game_data.party[0] != 0xFF) {
-            if (func_80097770(4, 8) != 0) {
+            if (worldmap_actor_request(4, 8) != 0) {
                 actor->state = 0xD;
             }
         } else {
@@ -2878,31 +2878,31 @@ s32 func_8008A72C(s32 index) {
         }
         break;
     case 0xD:
-        func_800941C4(&actor->position, &D_8009BE24[D_8009BD60].position, &actor->motion, &actor->heading);
-        target = (WorldmapActor *)((D_8009BD60 * sizeof(*target)) + (u32)D_8009BE24);
+        worldmap_get_heading_to(&actor->position, &worldmap_actor_slots[worldmap_cylinder_hit_actor].position, &actor->motion, &actor->heading);
+        target = (WorldmapActor *)((worldmap_cylinder_hit_actor * sizeof(*target)) + (u32)worldmap_actor_slots);
         actor->u.step = target->position.vx >> 12;
         actor->unk54 = target->position.vz >> 12;
         sprite_start_animation(actor->handle, 1);
         actor->state++;
         /* fallthrough */
     case 0xE:
-        if (func_8008BEC8(actor) == 3) {
+        if (worldmap_actor_step_to_target(actor) == 3) {
             actor->state++;
         }
-        D_8009D55C.target = actor->position;
-        D_8009D52C = actor->heading;
-        func_8008C1DC(index + 0x2E, actor, (ActorScratch *)scratch);
+        worldmap_camera_follow_target.target = actor->position;
+        worldmap_camera_follow_heading = actor->heading;
+        worldmap_actor_emit_on_layer3(index + 0x2E, actor, (ActorScratch *)scratch);
         break;
     case 0xF:
-        if (func_80097770(D_8009BD60, 4) != 0) {
+        if (worldmap_actor_request(worldmap_cylinder_hit_actor, 4) != 0) {
             actor->unk24 = 1;
             actor->state = 2;
-            func_800894C8(0x2F);
+            worldmap_effects_stop_emitters(0x2F);
         }
         break;
     case 0x10:
         if (game_data.party[1] != 0xFF) {
-            if (func_80097770(2, 1) != 0) {
+            if (worldmap_actor_request(2, 1) != 0) {
                 actor[1].unk6 = 5;
                 actor->state++;
             }
@@ -2912,7 +2912,7 @@ s32 func_8008A72C(s32 index) {
         break;
     case 0x11:
         if (game_data.party[2] != 0xFF) {
-            if (func_80097770(3, 1) != 0) {
+            if (worldmap_actor_request(3, 1) != 0) {
                 actor[2].unk6 = 6;
                 actor->state++;
             }
@@ -2921,11 +2921,11 @@ s32 func_8008A72C(s32 index) {
         }
         break;
     case 0x12:
-        point = D_8009CEC4;
-        D_8009D154 = 0;
+        point = worldmap_trail_points;
+        worldmap_trail_index = 0;
         scratch->start.vx = VEHICLE_SPOTS[0].x << 12;
         scratch->start.vz = VEHICLE_SPOTS[0].z << 12;
-        scratch->start.vy = func_80093978(scratch->start.vx, scratch->start.vz);
+        scratch->start.vy = worldmap_terrain_get_height(scratch->start.vx, scratch->start.vz);
         scratch->heading = game_data.worldmap.unk5A;
         value = 0x1F;
         do {
@@ -2938,13 +2938,13 @@ s32 func_8008A72C(s32 index) {
     case 0x28:
         actor->position.vx = VEHICLE_SPOTS[0].x << 12;
         actor->position.vz = VEHICLE_SPOTS[0].z << 12;
-        actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+        actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
         heading = game_data.worldmap.unk5A;
         actor->unk5C = heading;
         actor->heading = heading;
         scratch->target.vx = actor->position.vx + gpu_get_sin(actor->heading) * 0x30;
         scratch->target.vz = actor->position.vz + -gpu_get_cos(actor->heading) * 0x30;
-        func_800941C4(&actor->position, &scratch->target, &actor->motion, &actor->heading);
+        worldmap_get_heading_to(&actor->position, &scratch->target, &actor->motion, &actor->heading);
         actor->u.step = scratch->target.vx >> 12;
         actor->unk54 = scratch->target.vz >> 12;
         actor->unk24 = 0;
@@ -2952,21 +2952,21 @@ s32 func_8008A72C(s32 index) {
         actor->state++;
         break;
     case 0x29:
-        if (func_8008BEC8(actor) == 3) {
+        if (worldmap_actor_step_to_target(actor) == 3) {
             sprite_start_animation(actor->handle, 0);
             actor->motion.vz = 0;
             actor->motion.vy = 0;
             actor->motion.vx = 0;
             actor->state++;
         }
-        D_8009D55C.target = actor->position;
-        D_8009D52C = actor->heading;
+        worldmap_camera_follow_target.target = actor->position;
+        worldmap_camera_follow_heading = actor->heading;
         break;
     case 0x2A:
-        point = D_8009CEC4;
+        point = worldmap_trail_points;
         game_data.inGear[0] = 0;
         actor->unk58 = 1;
-        D_8009D154 = 0;
+        worldmap_trail_index = 0;
         scratch->target = actor->position;
         scratch->heading = actor->heading;
         value = 0x1F;
@@ -2978,7 +2978,7 @@ s32 func_8008A72C(s32 index) {
         actor->state++;
         /* fallthrough */
     case 0x2B:
-        switch (D_8009C170) {
+        switch (worldmap_party_count) {
         case 1:
             actor->state = 1;
             break;
@@ -2996,7 +2996,7 @@ s32 func_8008A72C(s32 index) {
         break;
     case 0x2C:
         if (game_data.party[1] != 0xFF) {
-            if (func_80097770(2, 5) != 0) {
+            if (worldmap_actor_request(2, 5) != 0) {
                 actor->state++;
             }
         } else {
@@ -3004,7 +3004,7 @@ s32 func_8008A72C(s32 index) {
         }
         break;
     case 0x2D:
-        if (game_data.party[2] == 0xFF || func_80097770(3, 5) != 0) {
+        if (game_data.party[2] == 0xFF || worldmap_actor_request(3, 5) != 0) {
             actor->state = 0x40;
         }
         break;
@@ -3015,21 +3015,21 @@ s32 func_8008A72C(s32 index) {
     game_data.worldmap.z = actor->position.vz >> 12;
     game_data.worldmap.heading = actor->heading;
     if (actor->unk24 == 0) {
-        func_80074794(0, &actor->position);
+        worldmap_footprints_add(0, &actor->position);
     }
     return result;
 }
 
-/* Create party member 2's model sprite (if present) at the saved world-map
+/* 8008B2BC: Create party member 2's model sprite (if present) at the saved world-map
  * position; in movement modes 1-7 follow the player or start hidden. */
-s32 func_8008B2BC(s32 index) {
+s32 worldmap_second_member_start(s32 index) {
     WorldmapActor *actor;
     s32 result;
 
-    actor = &D_8009BE24[index];
+    actor = &worldmap_actor_slots[index];
     result = 1;
     if (game_data.party[1] != 0xFF) {
-        actor->handle = sprite_create(D_8009CD34[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
+        actor->handle = sprite_create(worldmap_character_models[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
         sprite_start_animation(actor->handle, 0);
         sprite_set_scale(actor->handle, 0x1800);
         actor->handle->render.word &= ~SPRITE_HIDDEN;
@@ -3040,7 +3040,7 @@ s32 func_8008B2BC(s32 index) {
     }
     actor->position.vx = game_data.worldmap.x << 12;
     actor->position.vz = game_data.worldmap.z << 12;
-    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
@@ -3048,15 +3048,15 @@ s32 func_8008B2BC(s32 index) {
     actor->turn = 8;
     actor->unk58 = 0xF;
     actor->unk5C = actor->heading;
-    switch (D_8009BE10) {
+    switch (worldmap_movement_mode) {
     case 1:
     case 2:
     case 3:
         if (game_data.inGear[1] == 0) {
-            actor->position.vx = D_8009C5AC.vx;
-            actor->position.vz = D_8009C5AC.vz;
-            actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
-            actor->heading = D_8009C584;
+            actor->position.vx = worldmap_player_position.vx;
+            actor->position.vz = worldmap_player_position.vz;
+            actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
+            actor->heading = worldmap_player_heading;
         } else {
             actor->state = 1;
             actor->unk24 = 1;
@@ -3089,15 +3089,15 @@ s32 func_8008B2BC(s32 index) {
     return result;
 }
 
-/* Create the second party member's model sprite, if present. */
-s32 func_8008B498(s32 index) {
+/* 8008B498: Create the second party member's model sprite, if present. */
+s32 worldmap_second_member_resume(s32 index) {
     WorldmapActor *actor;
     s32 result;
 
-    actor = &D_8009BE24[index];
+    actor = &worldmap_actor_slots[index];
     result = 1;
     if (game_data.party[1] != 0xFF) {
-        actor->handle = sprite_create(D_8009CD34[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
+        actor->handle = sprite_create(worldmap_character_models[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
         sprite_start_animation(actor->handle, 0);
         sprite_set_scale(actor->handle, 0x1800);
         actor->handle->render.word &= ~SPRITE_HIDDEN;
@@ -3107,19 +3107,19 @@ s32 func_8008B498(s32 index) {
     return result;
 }
 
-/* Create party member 2's model sprite at the saved world-map position. */
-s32 func_8008B54C(s32 index) {
+/* 8008B54C: Create party member 2's model sprite at the saved world-map position. */
+s32 worldmap_second_member_start_at_saved_spot(s32 index) {
     WorldmapActor *actor;
     s16 heading;
 
-    actor = &D_8009BE24[index];
-    actor->handle = sprite_create(D_8009CD34[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
+    actor = &worldmap_actor_slots[index];
+    actor->handle = sprite_create(worldmap_character_models[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
     sprite_start_animation(actor->handle, 0);
     sprite_set_scale(actor->handle, 0x1800);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
     actor->position.vx = game_data.worldmap.x << 12;
     actor->position.vz = game_data.worldmap.z << 12;
-    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
     heading = game_data.worldmap.heading;
     actor->unk24 = 1;
     actor->turn = 8;
@@ -3132,11 +3132,11 @@ s32 func_8008B54C(s32 index) {
     return 1;
 }
 
-/* Party follower: a command (1-3, 5) starts a scripted walk; otherwise
+/* 8008B644: Party follower: a command (1-3, 5) starts a scripted walk; otherwise
  * follow the vehicle trail a fixed delay behind (or stand at the leader
  * while riding), walk to a target, walk out of or back to the vehicle,
  * and keep the model on the ground. */
-s32 func_8008B644(s32 index) {
+s32 worldmap_follower_update(s32 index) {
     WorldmapActor *actor;
     WorldmapActor *target;
     TrailPoint *point;
@@ -3147,12 +3147,12 @@ s32 func_8008B644(s32 index) {
 
     result = 1;
     work = (VECTOR *)0x1F800000;
-    actor = &D_8009BE24[index];
+    actor = &worldmap_actor_slots[index];
     switch (actor->unk4) {
     case 1:
         actor->unk4 = 0;
         actor->state = 8;
-        target = &D_8009BE24[actor->unk6];
+        target = &worldmap_actor_slots[actor->unk6];
         break;
     case 2:
         actor->unk4 = 0;
@@ -3171,18 +3171,18 @@ s32 func_8008B644(s32 index) {
     case 0:
     case 1:
         if (game_data.inGear[index - 1] == 0) {
-            point = &D_8009CEC4[(D_8009D154 - actor->unk58) & 0x1F];
+            point = &worldmap_trail_points[(worldmap_trail_index - actor->unk58) & 0x1F];
             if ((actor->position.vx == point->position.vx) & (actor->position.vy == point->position.vy) &
                 (actor->position.vz == point->position.vz)) {
                 if (((s8 *)actor->handle)[0xAF] != 0) {
                     sprite_start_animation(actor->handle, 0);
-                    func_800894C8(index + 0x2E);
+                    worldmap_effects_stop_emitters(index + 0x2E);
                 }
             } else {
                 if (((s8 *)actor->handle)[0xAF] != 1) {
                     sprite_start_animation(actor->handle, 1);
                 }
-                func_8008C1DC(index + 0x2E, actor, (ActorScratch *)work);
+                worldmap_actor_emit_on_layer3(index + 0x2E, actor, (ActorScratch *)work);
             }
             actor->position.vx = point->position.vx;
             actor->position.vy = point->position.vy;
@@ -3190,51 +3190,51 @@ s32 func_8008B644(s32 index) {
             actor->heading = point->heading;
             actor->unk24 = 0;
         } else {
-            target = &D_8009BE24[index + 3];
+            target = &worldmap_actor_slots[index + 3];
             actor->position.vx = target->position.vx;
             actor->position.vy = target->position.vy;
             actor->position.vz = target->position.vz;
             actor->heading = target->heading;
             actor->unk24 = 1;
-            func_800894C8(index + 0x2E);
+            worldmap_effects_stop_emitters(index + 0x2E);
         }
         break;
     case 2:
-        actor->position.vx = D_8009BE24[7].position.vx;
-        actor->position.vy = D_8009BE24[7].position.vy;
-        actor->position.vz = D_8009BE24[7].position.vz;
-        actor->heading = D_8009BE24[7].heading;
+        actor->position.vx = worldmap_actor_slots[7].position.vx;
+        actor->position.vy = worldmap_actor_slots[7].position.vy;
+        actor->position.vz = worldmap_actor_slots[7].position.vz;
+        actor->heading = worldmap_actor_slots[7].heading;
         break;
     case 8:
-        func_800941C4(&actor->position, &target->position, &actor->motion, &actor->heading);
+        worldmap_get_heading_to(&actor->position, &target->position, &actor->motion, &actor->heading);
         actor->u.step = target->position.vx >> 12;
         actor->unk54 = target->position.vz >> 12;
         sprite_start_animation(actor->handle, 1);
         actor->state++;
         /* fallthrough */
     case 9:
-        if (func_8008BEC8(actor) == 3) {
+        if (worldmap_actor_step_to_target(actor) == 3) {
             actor->state++;
         }
-        func_8008C1DC(index + 0x2E, actor, (ActorScratch *)work);
+        worldmap_actor_emit_on_layer3(index + 0x2E, actor, (ActorScratch *)work);
         break;
     case 10:
-        if (func_80097770(actor->unk6, 4) != 0) {
+        if (worldmap_actor_request(actor->unk6, 4) != 0) {
             actor->unk24 = 1;
             actor->state = 2;
-            func_800894C8(index + 0x2E);
+            worldmap_effects_stop_emitters(index + 0x2E);
         }
         break;
     case 0x28:
         actor->position.vx = game_data_vehicle_spots_by_follower[index].x << 12;
         actor->position.vz = game_data_vehicle_spots_by_follower[index].z << 12;
-        actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+        actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
         heading = (&game_data.worldmap.unk5A)[index - 1];
         actor->unk5C = heading;
         actor->heading = heading;
         work->vx = actor->position.vx + gpu_get_sin(actor->heading) * 0x30;
         work->vz = actor->position.vz + -gpu_get_cos(actor->heading) * 0x30;
-        func_800941C4(&actor->position, work, &actor->motion, &actor->heading);
+        worldmap_get_heading_to(&actor->position, work, &actor->motion, &actor->heading);
         actor->u.step = work->vx >> 12;
         actor->unk54 = work->vz >> 12;
         actor->unk24 = 0;
@@ -3246,21 +3246,21 @@ s32 func_8008B644(s32 index) {
         actor->state = 0x40;
         break;
     case 0x30:
-        func_800941C4(&actor->position, &D_8009BE24[1].position, &actor->motion, &actor->heading);
-        actor->u.step = D_8009BE24[1].position.vx >> 12;
-        actor->unk54 = D_8009BE24[1].position.vz >> 12;
+        worldmap_get_heading_to(&actor->position, &worldmap_actor_slots[1].position, &actor->motion, &actor->heading);
+        actor->u.step = worldmap_actor_slots[1].position.vx >> 12;
+        actor->unk54 = worldmap_actor_slots[1].position.vz >> 12;
         sprite_start_animation(actor->handle, 1);
         actor->state++;
         /* fallthrough */
     case 0x29:
     case 0x31:
     walk:
-        if (func_8008BEC8(actor) == 3) {
+        if (worldmap_actor_step_to_target(actor) == 3) {
             actor->state++;
         }
         break;
     case 0x32:
-        if (func_80097770(1, 6) != 0) {
+        if (worldmap_actor_request(1, 6) != 0) {
             actor->state = 0;
         }
         break;
@@ -3268,21 +3268,21 @@ s32 func_8008B644(s32 index) {
         break;
     }
     if (actor->unk24 == 0) {
-        func_80074794(0, &actor->position);
+        worldmap_footprints_add(0, &actor->position);
     }
     return result;
 }
 
-/* Create party member 3's model sprite (if present) at the saved world-map
+/* 8008BB40: Create party member 3's model sprite (if present) at the saved world-map
  * position; in movement modes 1-7 follow the player or start hidden. */
-s32 func_8008BB40(s32 index) {
+s32 worldmap_third_member_start(s32 index) {
     WorldmapActor *actor;
     s32 result;
 
-    actor = &D_8009BE24[index];
+    actor = &worldmap_actor_slots[index];
     result = 1;
     if (game_data.party[2] != 0xFF) {
-        actor->handle = sprite_create(D_8009CD34[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
+        actor->handle = sprite_create(worldmap_character_models[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
         sprite_start_animation(actor->handle, 0);
         sprite_set_scale(actor->handle, 0x1800);
         actor->handle->render.word &= ~SPRITE_HIDDEN;
@@ -3293,7 +3293,7 @@ s32 func_8008BB40(s32 index) {
     }
     actor->position.vx = game_data.worldmap.x << 12;
     actor->position.vz = game_data.worldmap.z << 12;
-    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
@@ -3301,15 +3301,15 @@ s32 func_8008BB40(s32 index) {
     actor->turn = 8;
     actor->unk58 = 0x1E;
     actor->unk5C = actor->heading;
-    switch (D_8009BE10) {
+    switch (worldmap_movement_mode) {
     case 1:
     case 2:
     case 3:
         if (game_data.inGear[2] == 0) {
-            actor->position.vx = D_8009C5AC.vx;
-            actor->position.vz = D_8009C5AC.vz;
-            actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
-            actor->heading = D_8009C584;
+            actor->position.vx = worldmap_player_position.vx;
+            actor->position.vz = worldmap_player_position.vz;
+            actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
+            actor->heading = worldmap_player_heading;
         } else {
             actor->state = 1;
             actor->unk24 = 1;
@@ -3342,15 +3342,15 @@ s32 func_8008BB40(s32 index) {
     return result;
 }
 
-/* Create the third party member's model sprite, if present. */
-s32 func_8008BD1C(s32 index) {
+/* 8008BD1C: Create the third party member's model sprite, if present. */
+s32 worldmap_third_member_resume(s32 index) {
     WorldmapActor *actor;
     s32 result;
 
-    actor = &D_8009BE24[index];
+    actor = &worldmap_actor_slots[index];
     result = 1;
     if (game_data.party[2] != 0xFF) {
-        actor->handle = sprite_create(D_8009CD34[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
+        actor->handle = sprite_create(worldmap_character_models[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
         sprite_start_animation(actor->handle, 0);
         sprite_set_scale(actor->handle, 0x1800);
         actor->handle->render.word &= ~SPRITE_HIDDEN;
@@ -3360,19 +3360,19 @@ s32 func_8008BD1C(s32 index) {
     return result;
 }
 
-/* Create party member 3's model sprite at the saved world-map position. */
-s32 func_8008BDD0(s32 index) {
+/* 8008BDD0: Create party member 3's model sprite at the saved world-map position. */
+s32 worldmap_third_member_start_at_saved_spot(s32 index) {
     WorldmapActor *actor;
     s16 heading;
 
-    actor = &D_8009BE24[index];
-    actor->handle = sprite_create(D_8009CD34[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
+    actor = &worldmap_actor_slots[index];
+    actor->handle = sprite_create(worldmap_character_models[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
     sprite_start_animation(actor->handle, 0);
     sprite_set_scale(actor->handle, 0x1800);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
     actor->position.vx = game_data.worldmap.x << 12;
     actor->position.vz = game_data.worldmap.z << 12;
-    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
     heading = game_data.worldmap.heading;
     actor->unk24 = 1;
     actor->turn = 8;
@@ -3385,9 +3385,9 @@ s32 func_8008BDD0(s32 index) {
     return 1;
 }
 
-/* Step the actor towards its target (x, z in world units) at half its
+/* 8008BEC8: Step the actor towards its target (x, z in world units) at half its
  * speed; bit 0/1 of the result report x/z arrival. */
-s32 func_8008BEC8(WorldmapActor *actor) {
+s32 worldmap_actor_step_to_target(WorldmapActor *actor) {
     s32 arrived;
     s32 distance;
     s32 position;
@@ -3410,28 +3410,28 @@ s32 func_8008BEC8(WorldmapActor *actor) {
     } else {
         arrived |= 2;
     }
-    func_80093354(&actor->position);
-    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    worldmap_wrap_position(&actor->position);
+    actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
     return arrived;
 }
 
-/* Queue a placement of actor `index` at `position`, facing (x, z). */
-void func_8008BFD4(s32 index, VECTOR *position, s32 x, s32 z) {
+/* 8008BFD4: Queue a placement of actor `index` at `position`, facing (x, z). */
+void worldmap_queue_actor_cylinder(s32 index, VECTOR *position, s32 x, s32 z) {
     PlaceRequest *request;
 
-    request = &D_8009BE6C[D_8009BD04];
+    request = &worldmap_actor_cylinders[worldmap_actor_cylinder_count];
     request->actor = index;
     request->px = position->vx;
     request->py = position->vy;
     request->pz = position->vz;
     request->z = (s16)z;
     request->x = x;
-    D_8009BD04 = (D_8009BD04 + 1) & 0x1F;
+    worldmap_actor_cylinder_count = (worldmap_actor_cylinder_count + 1) & 0x1F;
 }
 
-/* Find the first queued placement that overlaps a cylinder at `position`
+/* 8008C040: Find the first queued placement that overlaps a cylinder at `position`
  * (radius, height): *hit is 2 inside its radius, 1 within 16 more units. */
-void func_8008C040(VECTOR *position, s32 radius, s32 height, u8 *hit, u8 *actor) {
+void worldmap_find_cylinder_hit(VECTOR *position, s32 radius, s32 height, u8 *hit, u8 *actor) {
     VECTOR delta;
     VECTOR unused; /* unreferenced; the original frame reserves it */
     PlaceRequest *request;
@@ -3443,11 +3443,11 @@ void func_8008C040(VECTOR *position, s32 radius, s32 height, u8 *hit, u8 *actor)
 
     *hit = 0;
     *actor = 0;
-    request = D_8009BE6C;
-    if (D_8009BD04 <= 0) {
+    request = worldmap_actor_cylinders;
+    if (worldmap_actor_cylinder_count <= 0) {
         return;
     }
-    for (i = 0; i < D_8009BD04; i++, request++) {
+    for (i = 0; i < worldmap_actor_cylinder_count; i++, request++) {
         top = position->vy;
         if (top < request->py) {
             bottom = top - (height << 12);
@@ -3458,7 +3458,7 @@ void func_8008C040(VECTOR *position, s32 radius, s32 height, u8 *hit, u8 *actor)
         if ((top - bottom) >> 12 < height + request->z) {
             delta.vx = (request->px - position->vx) >> 12;
             delta.vz = (request->pz - position->vz) >> 12;
-            func_80093534(&delta);
+            worldmap_wrap_world_offset(&delta);
             distance = SquareRoot0(delta.vx * delta.vx + delta.vz * delta.vz);
             reach = request->x + radius;
             if (distance < reach) {
@@ -3475,26 +3475,26 @@ void func_8008C040(VECTOR *position, s32 radius, s32 height, u8 *hit, u8 *actor)
     }
 }
 
-/* Emit effect `effect` at the actor while it stands on terrain type 3,
+/* 8008C1DC: Emit effect `effect` at the actor while it stands on terrain type 3,
  * otherwise stop the effect group. */
-void func_8008C1DC(s32 effect, WorldmapActor *actor, ActorScratch *scratch) {
-    if (func_80093F18(&actor->position) == 3) {
+void worldmap_actor_emit_on_layer3(s32 effect, WorldmapActor *actor, ActorScratch *scratch) {
+    if (worldmap_terrain_get_layer(&actor->position) == 3) {
         scratch->position.vx = actor->position.vx >> 12;
         scratch->position.vy = actor->position.vy >> 12;
         scratch->position.vz = actor->position.vz >> 12;
         scratch->angle.vz = 0;
         scratch->angle.vx = 0;
         scratch->angle.vy = actor->unk5C;
-        func_80089160(effect, &scratch->position, &scratch->angle);
+        worldmap_effects_start_emitters(effect, &scratch->position, &scratch->angle);
         return;
     }
-    func_800894C8(effect);
+    worldmap_effects_stop_emitters(effect);
 }
 
-/* Create a party member's gear sprite for the actor. */
-void func_8008C28C(WorldmapActor *actor, s32 member) {
-    actor->handle = sprite_create(D_8009BDF8[member], D_8009B18C[member], D_8009B194[member],
-                                  D_8009B19C[member], D_8009B1A4[member], 0x40);
+/* 8008C28C: Create a party member's gear sprite for the actor. */
+void worldmap_create_gear_sprite(WorldmapActor *actor, s32 member) {
+    actor->handle = sprite_create(worldmap_gear_models[member], worldmap_gear_sprite_x[member], worldmap_gear_sprite_y[member],
+                                  worldmap_gear_sprite_width[member], worldmap_gear_sprite_height[member], 0x40);
     if (game_data.inGear[member] == 1) {
         sprite_start_animation(actor->handle, 0);
     } else {

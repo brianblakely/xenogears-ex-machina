@@ -42,16 +42,16 @@ packed overlay.
 
 ## World map terrain texture animations
 
-- **Readers:** `func_80074F2C` and `func_80075104` in the `worldmap` overlay (Disc 1
+- **Readers:** `worldmap_texture_anim_advance` and `worldmap_texture_anim2_advance` in the `worldmap` overlay (Disc 1
   file 37, Disc 2 file 32), run once per frame of the world-map loop
-  (`func_800712D0`), an update below. `func_80074E58` and `func_80075030`
+  (`worldmap_run_frame_loop`), an update below. `worldmap_texture_anim_create` and `worldmap_texture_anim2_create`
   create the animations of the area file's two animation sections (+0x20 and
   +0x24: a count, then each animation's image offset): animation i gets slot i of
-  `D_8009A1E8` (two slots) or `D_8009A250` (three), frame 0 and timer 1.
+  `worldmap_texture_anim_slots` (two slots) or `worldmap_texture_anim2_slots` (three), frame 0 and timer 1.
 - **Tables:** a slot is a `TexAnimSlot` {RECT rect; s32; frames}, the VRAM rect
   the images go to and the frame sequence; the slots are C. The sequences
-  `D_8009A1A0`, `D_8009A1C4` (the slots of `D_8009A1E8`) and `D_8009A208`,
-  `D_8009A220`, `D_8009A238` (those of `D_8009A250`) are `TexAnimFrame` {s16 image;
+  `worldmap_texture_anim_slot0_frames`, `worldmap_texture_anim_slot1_frames` (the slots of `worldmap_texture_anim_slots`) and `worldmap_texture_anim2_slot0_frames`,
+  `worldmap_texture_anim2_slot1_frames`, `worldmap_texture_anim2_slot2_frames` (those of `worldmap_texture_anim2_slots`) are `TexAnimFrame` {s16 image;
   s16 duration} runs ended by a negative duration, assets in
   `decomp/targets/overlays/worldmap.classification.txt`.
 - **Timing:** each update counts a slot's timer down; at 0 the stepper moves to the
@@ -63,7 +63,7 @@ packed overlay.
   updates each in the first set and five of 8 in the second, a cycle of 40 updates
   per slot. Open: how many animations each area starts comes from its area file,
   which this decoder does not read; a count past two (or three) would take slots
-  beyond `D_8009A1E8` (`D_8009A250`).
+  beyond `worldmap_texture_anim_slots` (`worldmap_texture_anim2_slots`).
 - **Tool:** `--sweep`; `--list worldmap-textures [--disc N]` prints each slot's rect
   and frames. `tests/test_overlay_scripts.py` checks the decoder against the slot
   tables, the creators and the steppers, and that the runs stay assets.

@@ -6,18 +6,18 @@ ORIGINAL_SHA256 := 4c15fd32b3a03d7cd5ea4403dcaabc70abaf99b6aaca65d63d6866803edaa
 # Its uninitialized data ends at 8009d810: the resident's mode table entry 3
 # (800180bc) clears the words after 8009bbb0 through 8009d80c (80019560).
 BSS_END := 0x8009D810
-# Mode 3 enters func_80070CFC (main.c mode_table); after every target links,
+# Mode 3 enters worldmap_main (main.c mode_table); after every target links,
 # tools/cross_image.py compares the entry and the BSS bounds with this link.
 MODE := 3
-MODE_ENTRY := func_80070CFC
+MODE_ENTRY := worldmap_main
 BUILD := .local/decomp/build/worldmap
 IMAGE := .local/decomp/build/worldmap.bin
 LINKER_SCRIPT := .local/decomp/worldmap/worldmap.ld
 LINKER_EXTRA := .local/decomp/worldmap/undefined_syms_auto.txt .local/decomp/worldmap/undefined_funcs_auto.txt decomp/targets/overlays/worldmap.resident.ld decomp/targets/overlays/worldmap.data.ld
 # worldmap.data.ld names the shared read list's first destination member
-# D_8009D3FC, from which two loaders pass the list (WORLD_READ_LIST): formed
-# from D_8009D3F8 itself, the constant lets cse store the list's first entry
-# through the argument register in func_80071FEC. verify accepts it as a view.
+# worldmap_read_list_first_destination, from which two loaders pass the list (WORLD_READ_LIST): formed
+# from worldmap_read_list itself, the constant lets cse store the list's first entry
+# through the argument register in worldmap_read_shared_files. verify accepts it as a view.
 LINK_VIEWS := decomp/targets/overlays/worldmap.data.ld
 SOURCE_DIRS := decomp/src/worldmap
 # Packed containers of this image (tools/packed_container.py).

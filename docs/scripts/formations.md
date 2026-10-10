@@ -48,13 +48,13 @@ Party members take battle slots 0-2 and enemies slots 3-10 (`BattleSlot`,
   down and draws when one reaches 0, and `field_encounter_draw_steps` deals new values each time
   `unk2294` counts the period down. Nothing else writes the period or the count but
   the debug monitor's page 10 (TIME and ENCOUNT, `field_debug_run_screen`).
-- **The world map.** The area file (0x24, 0) area + 1 of each set of `D_8009B584`
-  (`func_80071B9C`). `func_80073530` points `D_8009D73C[kind]` at the offsets in header
+- **The world map.** The area file (0x24, 0) area + 1 of each set of `worldmap_area_file_sets`
+  (`worldmap_select_area_files`). `worldmap_unpack_area_data` points `worldmap_encounter_sets[kind]` at the offsets in header
   words 11-26 (`AreaHeader` +0x2c), one table per terrain kind. The roll
-  (`func_80075E7C`, from the world map loop `func_800712D0` when a timer of
-  `func_8007528C` expires) takes the terrain kind at the party's position
-  (`func_80094028`, or its substitute `D_8009A3A0` when `func_80093F18` returns 4), the
-  weight row of the bracket the scene id (variable 0) falls in (`D_8009B578`: 0-53,
+  (`worldmap_encounter_roll`, from the world map loop `worldmap_run_frame_loop` when a timer of
+  `worldmap_encounter_update_timers` expires) takes the terrain kind at the party's position
+  (`worldmap_terrain_get_cell_flags`, or its substitute `worldmap_layer4_encounter_kinds` when `worldmap_terrain_get_layer` returns 4), the
+  weight row of the bracket the scene id (variable 0) falls in (`worldmap_encounter_level_brackets`: 0-53,
   54-200, 201-339, 340 and up), draws a formation by those 16 weights and copies the
   kind's 0x200 bytes into `formation_encounter_set`. A table is the set and four weight rows; the
   next table follows 0x20 bytes later, bytes no reader reads. The area files 143,
@@ -136,9 +136,9 @@ bundles, area files and discs. On the user's discs:
   (`field5`), whose only accesses are ovl2615's writes in `func_801E4048` and
   `func_801E4160`. A read through another view is not ruled out.
 - Whether the modes that load the five tableless area files can roll: their timers
-  (`func_8007528C`) are not traced.
+  (`worldmap_encounter_update_timers`) are not traced.
 - The draws' other gates. "Can be drawn" means the weights, the arming and player
   control do not rule a formation out. `field_encounter_count_down` also returns while other field
   states are set (`field_battle_not_requested`, `field_worldmap_exit_not_requested`, `field_map_change_not_requested`, `mode_music_load_pending`, `field_music_stream_running`,
   `field_encounters_enabled`, `encounter_inhibition`), and the world map loop has its own
-  (`func_800712D0`); when scripts set them is not traced.
+  (`worldmap_run_frame_loop`); when scripts set them is not traced.

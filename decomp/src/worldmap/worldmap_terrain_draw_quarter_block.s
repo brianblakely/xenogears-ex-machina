@@ -3,7 +3,7 @@
 # Draw one terrain quarter block of 8x8 cells as textured triangles.
 # a0 = the block's cell words, nine per row (the ninth is skipped), a1 =
 # ordering table, a2 = the next free POLY_FT3, whose colour/code word is
-# preset (the callers pass the frame's buffer + D_8009D7DC packets).
+# preset (the callers pass the frame's buffer + worldmap_terrain_packet_count packets).
 # The scratchpad holds TerrainDrawScratch: 9x9 SVECTOR vertices from
 # 0x000 (row stride 0x48), 64 CLUTs at 0x288 and texture pages at 0x308.
 # The GTE holds the caller's rotation, translation, projection and depth
@@ -16,7 +16,7 @@
 # It is linked at OT entry max >> 4 with CLUT (IR0 >> 7) of the bank,
 # IR0 (the third vertex's depth cue) limited to 0xFFF. A FLAG error on the
 # first triangle skips the cell's second one as well. The packet count
-# D_8009D7DC is checked before each cell, so the block stops once 0x7FE
+# worldmap_terrain_packet_count is checked before each cell, so the block stops once 0x7FE
 # packets exist; it is stored back on exit.
 # Saves s0..s5, s5 in the caller's a0 home slot; clobbers a0, a2, a3, v0,
 # v1 and t0..t9. Handwritten: saves beyond its 24-byte frame, ori for
@@ -92,7 +92,7 @@
     sw      $s4, 0($t5)         # the entry now starts with this packet
 .endm
 
-glabel func_8009980C
+glabel worldmap_terrain_draw_quarter_block
     addiu   $sp, $sp, -24
     sw      $s0, 4($sp)
     sw      $s1, 8($sp)
@@ -104,8 +104,8 @@ glabel func_8009980C
     lui     $s5, 0x00FF
     ori     $s5, $s5, 0xFFFF    # DMA address mask
     addu    $t0, $a3, $zero     # top-left vertex of the cell
-    lui     $t1, %hi(D_8009D7DC)
-    lw      $t1, %lo(D_8009D7DC)($t1)
+    lui     $t1, %hi(worldmap_terrain_packet_count)
+    lw      $t1, %lo(worldmap_terrain_packet_count)($t1)
     ori     $v0, $zero, 8       # rows left
 .Lterrain_row:
     ori     $v1, $zero, 8       # cells left in the row
@@ -201,8 +201,8 @@ glabel func_8009980C
     bnez    $v0, .Lterrain_row
      addiu  $t0, $t0, 8         # and its ninth vertex
 .Lterrain_done:
-    lui     $at, %hi(D_8009D7DC)
-    sw      $t1, %lo(D_8009D7DC)($at)
+    lui     $at, %hi(worldmap_terrain_packet_count)
+    sw      $t1, %lo(worldmap_terrain_packet_count)($at)
     lw      $s5, 24($sp)
     lw      $s4, 20($sp)
     lw      $s3, 16($sp)
@@ -212,4 +212,4 @@ glabel func_8009980C
     addiu   $sp, $sp, 24
     jr      $ra
      nop
-endlabel func_8009980C
+endlabel worldmap_terrain_draw_quarter_block

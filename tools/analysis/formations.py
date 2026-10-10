@@ -14,10 +14,10 @@ from:
   place. Player control (events 0c, a7: field_event_request_player_control) runs the draw, which
   waits until a script of the map runs event f7 with a nonzero period and count
   (field_event_draw_random_picks; every map load clears both).
-- the world map: area files (0x24, 0) area + 1 of D_8009B584. func_80073530
-  points D_8009D73C[kind] at the offsets in header words 11-26; the roll
-  (func_80075E7C) draws by the 16 weights at +0x200 + 16 * bracket, the bracket
-  from the scene id (variable 0) against D_8009B578, and copies the kind's set.
+- the world map: area files (0x24, 0) area + 1 of worldmap_area_file_sets. worldmap_unpack_area_data
+  points worldmap_encounter_sets[kind] at the offsets in header words 11-26; the roll
+  (worldmap_encounter_roll) draws by the 16 weights at +0x200 + 16 * bracket, the bracket
+  from the scene id (variable 0) against worldmap_encounter_level_brackets, and copies the kind's set.
 - the debug battle selector: the first 0x200 bytes of (0x20, 3) file 4-6 or
   7 + n (ovl2606 func_801E0A34).
 
@@ -89,9 +89,9 @@ FIELD_COMPONENT = 6  # field_load_from_bundle decodes it into formation_encounte
 SIZES, OFFSETS = 0x10C, 0x130  # FieldBundle.sizes, .offsets
 SLACK = 0x10  # field_load_from_bundle passes the component's size + 0x10
 AREA_DIRECTORY = (0x24, 0)  # the world map's (80028470(0x24, 0))
-AREA_TABLES = 0x2C  # AreaHeader word 11: the 16 terrain tables (func_80073530)
+AREA_TABLES = 0x2C  # AreaHeader word 11: the 16 terrain tables (worldmap_unpack_area_data)
 KINDS = 16
-BRACKET_UNIT = "worldmap/worldmap_80094A5C.c"  # D_8009B578
+BRACKET_UNIT = "worldmap/worldmap_movement_terrain.c"  # worldmap_encounter_level_brackets
 DEBUG_DIRECTORY = (0x20, 3)  # ovl2606 func_801E0A34: 80028470(0x20, 3)
 DEBUG_FIRST = 4  # Event1-3 are files 4-6, FileNo n file 7 + n
 STAGE_DIRECTORY = (12, 3)  # mode_load_battle_stage: 80028470(12, 3)
@@ -250,10 +250,10 @@ def formation_text(formation: Formation) -> str:
 
 @cache
 def brackets(root: Path = ROOT) -> tuple[int, ...]:
-    """D_8009B578: the scene ids that start each weight row (func_80075E7C
+    """worldmap_encounter_level_brackets: the scene ids that start each weight row (worldmap_encounter_roll
     stops its search at the last entry, so it starts none)."""
     text = dispatch_tables.unit(BRACKET_UNIT, root)
-    _, body = dispatch_tables.initializer(text, "D_8009B578")
+    _, body = dispatch_tables.initializer(text, "worldmap_encounter_level_brackets")
     return tuple(int(value, 0) for value in body.split(",") if value.strip())
 
 
@@ -345,14 +345,14 @@ def field_source(map_id: int, size: int, stream: bytes) -> EncounterSource | Non
 
 def header_end(data: bytes) -> int:
     """Where an area file's header ends: at the first of the sections
-    func_80073530 resolves from header words 1-9 (the spot block, +8 ... +0x24)."""
+    worldmap_unpack_area_data resolves from header words 1-9 (the spot block, +8 ... +0x24)."""
     return min(struct.unpack_from("<9I", data, 4))
 
 
 def terrain_tables(data: bytes, rows: int) -> tuple[int | None, ...]:
-    """func_80073530: the offsets in header words 11-26 (AreaHeader +0x2c). A
+    """worldmap_unpack_area_data: the offsets in header words 11-26 (AreaHeader +0x2c). A
     word past the header's end is section data, not an offset, and a table must
-    hold the set and weight rows func_80075E7C reads between the header's end
+    hold the set and weight rows worldmap_encounter_roll reads between the header's end
     and the file's; None otherwise."""
     read = SET + rows * WEIGHTS
     if len(data) < AREA_TABLES + 4 * KINDS:
@@ -490,7 +490,7 @@ def armed(census: Census, map_id: int) -> bool:
 def read_worldmap(census: Census, files: DiscFiles, root: Path) -> None:
     rows = len(brackets(root)) - 1
     for area in sorted(set(dispatch_tables.area_files(root))):
-        number = area + 1  # func_80071B9C: D_8009D3C4 = file + 1
+        number = area + 1  # worldmap_select_area_files: worldmap_area_data_file = file + 1
         try:
             data = decode_block(files.sectors(files.slot(AREA_DIRECTORY, number))).data
         except PackedError as error:
@@ -579,7 +579,7 @@ def reach(census: Census) -> dict[tuple[str, int, int | None, int], set[str]]:
     drawn (a nonzero weight; on a field map also scripts that arm the draw),
     named (a field script's immediate request on its map), chained (opcode 24
     of the script set of a reachable event formation of the same set), or none
-    of these ('set' only). The draws' other gates (field_encounter_count_down, func_800712D0)
+    of these ('set' only). The draws' other gates (field_encounter_count_down, worldmap_run_frame_loop)
     are not traced."""
     result = {}
     for source in census.sources:
@@ -784,7 +784,7 @@ def disc_report(census: Census) -> list[str]:
         f" component 6 and armed: {empty_armed}; weighted formations never armed: {unarmed}",
         f"  world map area files: {len(census.area_files)}, {tables} with {KINDS} terrain"
         f" tables ({len(terrain)} tables); without: {tableless}",
-        f"    weight rows: {len(brackets()) - 1} (D_8009B578 {list(brackets())});"
+        f"    weight rows: {len(brackets()) - 1} (worldmap_encounter_level_brackets {list(brackets())});"
         f" bytes after each table's weights no reader reads: {_counts(census.table_gaps, '{}')}",
         f"  debug selector files {DEBUG_FIRST}-{debug_last}: {len(debug)} ({sizes});"
         f" then {census.debug_end}",
@@ -853,7 +853,7 @@ def failures(results: list[Census]) -> bool:
 
 
 def bracket_text(root: Path = ROOT) -> str:
-    """The scene ids of each world map weight row (func_80075E7C)."""
+    """The scene ids of each world map weight row (worldmap_encounter_roll)."""
     starts = brackets(root)
     return " ".join(f"{low}-{high - 1}" for low, high in zip(starts, starts[1:], strict=False))
 
@@ -863,7 +863,7 @@ def listing(census: Census, kind: str, item: int | None) -> list[str]:
     if kind == "field" and item is not None and item in census.empty_maps:
         lines.append(f"; field map {item}: component 6 is empty (the set loaded before stays)")
     if kind == "worldmap":
-        lines.append(f"; weight rows by the scene id (variable 0, D_8009B578): {bracket_text()}")
+        lines.append(f"; weight rows by the scene id (variable 0, worldmap_encounter_level_brackets): {bracket_text()}")
         if item is not None and item in census.tableless:
             lines.append(
                 f"; area file {item}: no terrain tables (words 11-26 name none past its header)"

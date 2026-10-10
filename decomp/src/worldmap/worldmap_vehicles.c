@@ -3,10 +3,10 @@
  * ones, the saved vehicle position, the path table choice and a probe for a
  * clear heading.
  *
- * func_8008BB40's 13-entry table ends at 800707ac and func_8008C364's
+ * worldmap_third_member_start's 13-entry table ends at 800707ac and worldmap_place_vehicle's
  * follows at once, 4 mod 8, a phase change without a pad word: this unit's
- * rodata starts there and its text after func_8008BB40, at or before
- * func_8008C364. The unit has no data. */
+ * rodata starts there and its text after worldmap_third_member_start, at or before
+ * worldmap_place_vehicle. The unit has no data. */
 #include "common.h"
 #include "psyq/libgte.h"
 #include "resident/gamedata.h"
@@ -18,9 +18,9 @@
 #include "screen.h"
 #include "terrain.h"
 
-/* Place a party member's vehicle actor: parked at its spot, with the
+/* 8008C364: Place a party member's vehicle actor: parked at its spot, with the
  * player when riding, or hidden (3) when the member has no vehicle. */
-s32 func_8008C364(WorldmapActor *actor, s32 member) {
+s32 worldmap_place_vehicle(WorldmapActor *actor, s32 member) {
     SVECTOR unused; /* unused in the original; reserves 8 bytes */
     s32 result;
     u32 state;
@@ -49,61 +49,61 @@ s32 func_8008C364(WorldmapActor *actor, s32 member) {
         if (game_data.characters[game_data.party[member]].gearId == 0xFF) {
             goto hidden;
         }
-        func_8008C28C(actor, member);
+        worldmap_create_gear_sprite(actor, member);
         actor->unk24 = 1;
         actor->position.vy = 0;
         actor->position.vz = 0;
         actor->position.vx = 0;
         break;
     case 3:
-        func_8008C28C(actor, member);
+        worldmap_create_gear_sprite(actor, member);
         actor->unk24 = 0;
         actor->position.vx = game_data_vehicle_spots[member].x << 12;
         actor->position.vz = game_data_vehicle_spots[member].z << 12;
-        actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+        actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
         break;
     case 5:
     case 7:
-        func_8008C28C(actor, member);
+        worldmap_create_gear_sprite(actor, member);
         actor->unk24 = 0;
-        actor->position.vx = D_8009C5AC.vx;
-        actor->position.vz = D_8009C5AC.vz;
-        actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+        actor->position.vx = worldmap_player_position.vx;
+        actor->position.vz = worldmap_player_position.vz;
+        actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
         game_data_vehicle_spots[member].flags = 0x400;
         break;
     }
     return result;
 }
 
-/* Start party vehicle 0: place it, and while its member rides (movement
+/* 8008C530: Start party vehicle 0: place it, and while its member rides (movement
  * modes 1-3) put it under the player, reset the saved camera target and the
  * trail; modes 4-7 mark it boarded. Save its spot and heading. */
-s32 func_8008C530(s32 index) {
+s32 worldmap_player_vehicle_start(s32 index) {
     WorldmapActor *actor;
     TrailPoint *point;
     s32 result;
     s32 i;
 
-    actor = &D_8009BE24[index];
-    result = func_8008C364(actor, 0);
+    actor = &worldmap_actor_slots[index];
+    result = worldmap_place_vehicle(actor, 0);
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
     actor->heading = game_data.worldmap.unk5A;
     actor->turn = 0xC;
     actor->unk5C = actor->heading;
-    switch (D_8009BE10) {
+    switch (worldmap_movement_mode) {
     case 1 ... 3:
         if (game_data.inGear[0] == 1) {
             actor->state = 1;
-            actor->position.vx = D_8009C5AC.vx;
-            actor->position.vz = D_8009C5AC.vz;
-            actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
-            actor->heading = D_8009C584;
-            D_8009D55C.target = actor->position;
-            D_8009D154 = 0;
-            D_8009D52C = actor->heading;
-            for (i = 0, point = D_8009CEC4; i < 0x20; i++, point++) {
+            actor->position.vx = worldmap_player_position.vx;
+            actor->position.vz = worldmap_player_position.vz;
+            actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
+            actor->heading = worldmap_player_heading;
+            worldmap_camera_follow_target.target = actor->position;
+            worldmap_trail_index = 0;
+            worldmap_camera_follow_heading = actor->heading;
+            for (i = 0, point = worldmap_trail_points; i < 0x20; i++, point++) {
                 point->position = actor->position;
                 point->heading = actor->heading;
             }
@@ -120,14 +120,14 @@ s32 func_8008C530(s32 index) {
     return result;
 }
 
-/* Update a kind-0 actor; flag it while riding a vehicle. */
-s32 func_8008C6EC(s32 index) {
+/* 8008C6EC: Update a kind-0 actor; flag it while riding a vehicle. */
+s32 worldmap_player_vehicle_resume(s32 index) {
     WorldmapActor *actor;
     s32 result;
 
-    actor = &D_8009BE24[index];
-    result = func_8008C364(actor, 0);
-    switch (D_8009BE10) {
+    actor = &worldmap_actor_slots[index];
+    result = worldmap_place_vehicle(actor, 0);
+    switch (worldmap_movement_mode) {
     case 1:
     case 2:
     case 3:
@@ -142,18 +142,18 @@ s32 func_8008C6EC(s32 index) {
     return result;
 }
 
-/* Start the parked vehicle 0: its model at the saved spot and heading. */
-s32 func_8008C75C(s32 index) {
+/* 8008C75C: Start the parked vehicle 0: its model at the saved spot and heading. */
+s32 worldmap_player_vehicle_start_parked(s32 index) {
     WorldmapActor *actor;
 
-    actor = &D_8009BE24[index];
-    actor->handle = sprite_create(D_8009BDF8[0], 0x100, 0x1FD, 0x140, 0x140, 0x40);
+    actor = &worldmap_actor_slots[index];
+    actor->handle = sprite_create(worldmap_gear_models[0], 0x100, 0x1FD, 0x140, 0x140, 0x40);
     sprite_start_animation(actor->handle, 0);
     sprite_set_scale(actor->handle, 0x2000);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
     actor->position.vx = VEHICLE_SPOTS[0].x << 12;
     actor->position.vz = VEHICLE_SPOTS[0].z << 12;
-    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
     actor->unk24 = 1;
     actor->motion.vz = 0;
     actor->motion.vy = 0;
@@ -163,10 +163,10 @@ s32 func_8008C75C(s32 index) {
     return 1;
 }
 
-/* Update the player's vehicle (actor slot 4): drive it by the pad, record
+/* 8008C844: Update the player's vehicle (actor slot 4): drive it by the pad, record
  * the trail, board and park the other party vehicles on command, and save
  * its spot and heading. */
-s32 func_8008C844(s32 index) {
+s32 worldmap_player_vehicle_update(s32 index) {
     MATRIX unused; /* unused in the original; reserves 32 bytes */
     WorldmapActor *actor;
     ActorScratch *scratch;
@@ -176,7 +176,7 @@ s32 func_8008C844(s32 index) {
     s32 result = 1;
 
     scratch = (ActorScratch *)0x1F800000;
-    actor = &D_8009BE24[index];
+    actor = &worldmap_actor_slots[index];
     switch (actor->unk4) {
     case 4:
         actor->state = 0x10;
@@ -186,10 +186,10 @@ s32 func_8008C844(s32 index) {
         break;
     case 7:
         actor->unk4 = 0;
-        if (D_8009C170 == ++actor->unk58) {
+        if (worldmap_party_count == ++actor->unk58) {
             actor->state = 1;
-            D_8009BE10 = 2;
-            D_8009BD04 = 0;
+            worldmap_movement_mode = 2;
+            worldmap_actor_cylinder_count = 0;
         }
         break;
     case 3:
@@ -205,16 +205,16 @@ s32 func_8008C844(s32 index) {
     case 0:
     case 1:
         if (game_data.inGear[0] == 1) {
-            switch (func_80090C68(actor)) {
+            switch (worldmap_steer_vehicle(actor)) {
             case 1:
-                D_8009D554 = 0;
-                D_8009D7CC = 0;
+                worldmap_loop_running = 0;
+                worldmap_loop_result = 0;
                 break;
             case 3:
                 actor->state = 8;
                 break;
             case 4:
-                if (func_80094060(1, func_80093F18(&actor->position)) != 0) {
+                if (worldmap_terrain_can_mode_enter_layer(1, worldmap_terrain_get_layer(&actor->position)) != 0) {
                     actor->state = 0x20;
                 }
                 break;
@@ -222,75 +222,75 @@ s32 func_8008C844(s32 index) {
                 if ((actor->motion.vx == 0) & (actor->motion.vy == 0) & (actor->motion.vz == 0)) {
                     if (SPRITE_ANIMATION(actor->handle) != 0) {
                         sprite_start_animation(actor->handle, 0);
-                        func_800894C8(0x2C);
+                        worldmap_effects_stop_emitters(0x2C);
                     }
                 } else {
                     if (SPRITE_ANIMATION(actor->handle) != 1) {
                         sprite_start_animation(actor->handle, 1);
                     }
-                    func_8008C1DC(0x2C, actor, scratch);
+                    worldmap_actor_emit_on_layer3(0x2C, actor, scratch);
                 }
-                value = func_80095414(&actor->position, &actor->motion, &scratch->probe, actor->turn << 12,
-                                    D_8009BE10);
+                value = worldmap_move_walking(&actor->position, &actor->motion, &scratch->probe, actor->turn << 12,
+                                    worldmap_movement_mode);
                 if (value == 0) {
                     actor->motion = scratch->probe;
-                    value = func_80095414(&actor->position, &actor->motion, &scratch->probe, actor->turn << 12,
-                                        D_8009BE10);
+                    value = worldmap_move_walking(&actor->position, &actor->motion, &scratch->probe, actor->turn << 12,
+                                        worldmap_movement_mode);
                     if (value == 0) {
                         actor->motion.vz = 0;
                         actor->motion.vx = 0;
                     }
                 }
                 if (value == 1) {
-                    func_8008C040(&scratch->probe, 0x18, 0x30, &D_8009D738, &D_8009BD60);
-                    value = D_8009D738;
-                    if (D_8009BD60 == 7) {
+                    worldmap_find_cylinder_hit(&scratch->probe, 0x18, 0x30, &worldmap_cylinder_hit, &worldmap_cylinder_hit_actor);
+                    value = worldmap_cylinder_hit;
+                    if (worldmap_cylinder_hit_actor == 7) {
                         value += 3;
                     }
-                    if ((u16)D_8009B180[value] != 0) {
+                    if ((u16)worldmap_cylinder_hit_standable[value] != 0) {
                         actor->position = scratch->probe;
                         if (actor->motion.vx | actor->motion.vz) {
-                            trail = (D_8009D154 + 1) & 0x1F;
-                            point = &D_8009CEC4[trail];
-                            D_8009D154 = trail;
+                            trail = (worldmap_trail_index + 1) & 0x1F;
+                            point = &worldmap_trail_points[trail];
+                            worldmap_trail_index = trail;
                             point->position = actor->position;
                             point->heading = actor->heading;
-                            func_8007528C();
+                            worldmap_encounter_update_timers();
                         }
                     }
                 } else {
-                    func_8008C040(&actor->position, 0x18, 0x30, &D_8009D738, &D_8009BD60);
+                    worldmap_find_cylinder_hit(&actor->position, 0x18, 0x30, &worldmap_cylinder_hit, &worldmap_cylinder_hit_actor);
                 }
-                func_80094238(&actor->position, 1);
+                worldmap_path_select_region(&actor->position, 1);
                 actor->motion.vz = 0;
                 actor->motion.vy = 0;
                 actor->motion.vx = 0;
-                D_8009D55C.target = actor->position;
-                D_8009D52C = actor->heading;
+                worldmap_camera_follow_target.target = actor->position;
+                worldmap_camera_follow_heading = actor->heading;
                 break;
             }
-            D_8009BD04 = 0;
+            worldmap_actor_cylinder_count = 0;
         } else if (SPRITE_ANIMATION(actor->handle) != 3) {
             sprite_start_animation(actor->handle, 3);
-            func_800894C8(0x2C);
+            worldmap_effects_stop_emitters(0x2C);
         }
         break;
     case 2:
-        actor->position.vx = D_8009BE24[7].position.vx;
-        actor->position.vz = D_8009BE24[7].position.vz;
-        actor->heading = D_8009BE24[7].heading;
+        actor->position.vx = worldmap_actor_slots[7].position.vx;
+        actor->position.vz = worldmap_actor_slots[7].position.vz;
+        actor->heading = worldmap_actor_slots[7].heading;
         break;
     case 8:
         if (game_data.party[1] != 0xFF) {
             if (game_data.inGear[1] == 1) {
-                if (func_80097770(5, 1) != 0) {
-                    actor[1].unk6 = D_8009BD60;
+                if (worldmap_actor_request(5, 1) != 0) {
+                    actor[1].unk6 = worldmap_cylinder_hit_actor;
                     actor->state++;
                 }
             } else {
-                func_80097770(2, 1);
-                D_8009BE24[2].unk6 = D_8009BD60;
-                func_80097770(5, 8);
+                worldmap_actor_request(2, 1);
+                worldmap_actor_slots[2].unk6 = worldmap_cylinder_hit_actor;
+                worldmap_actor_request(5, 8);
                 actor->state++;
             }
         } else {
@@ -300,14 +300,14 @@ s32 func_8008C844(s32 index) {
     case 9:
         if (game_data.party[2] != 0xFF) {
             if (game_data.inGear[2] == 1) {
-                if (func_80097770(6, 1) != 0) {
-                    actor[2].unk6 = D_8009BD60;
+                if (worldmap_actor_request(6, 1) != 0) {
+                    actor[2].unk6 = worldmap_cylinder_hit_actor;
                     actor->state++;
                 }
             } else {
-                func_80097770(3, 1);
-                D_8009BE24[3].unk6 = D_8009BD60;
-                func_80097770(6, 8);
+                worldmap_actor_request(3, 1);
+                worldmap_actor_slots[3].unk6 = worldmap_cylinder_hit_actor;
+                worldmap_actor_request(6, 8);
                 actor->state++;
             }
         } else {
@@ -315,28 +315,28 @@ s32 func_8008C844(s32 index) {
         }
         break;
     case 10:
-        func_800941C4(&actor->position, &D_8009BE24[D_8009BD60].position, &actor->motion, &actor->heading);
-        actor->u.step = D_8009BE24[D_8009BD60].position.vx >> 12;
-        actor->unk54 = D_8009BE24[D_8009BD60].position.vz >> 12;
+        worldmap_get_heading_to(&actor->position, &worldmap_actor_slots[worldmap_cylinder_hit_actor].position, &actor->motion, &actor->heading);
+        actor->u.step = worldmap_actor_slots[worldmap_cylinder_hit_actor].position.vx >> 12;
+        actor->unk54 = worldmap_actor_slots[worldmap_cylinder_hit_actor].position.vz >> 12;
         sprite_start_animation(actor->handle, 1);
         actor->state++;
     case 11:
-        if (func_8008BEC8(actor) == 3) {
+        if (worldmap_actor_step_to_target(actor) == 3) {
             actor->state++;
         }
-        D_8009D55C.target = actor->position;
-        D_8009D52C = actor->heading;
-        func_8008C1DC(0x2C, actor, scratch);
+        worldmap_camera_follow_target.target = actor->position;
+        worldmap_camera_follow_heading = actor->heading;
+        worldmap_actor_emit_on_layer3(0x2C, actor, scratch);
         break;
     case 12:
-        if (func_80097770(D_8009BD60, 4) != 0) {
+        if (worldmap_actor_request(worldmap_cylinder_hit_actor, 4) != 0) {
             actor->unk24 = 1;
             actor->state = 2;
-            func_800894C8(0x2C);
+            worldmap_effects_stop_emitters(0x2C);
         }
         break;
     case 0x10:
-        switch (D_8009C170) {
+        switch (worldmap_party_count) {
         case 1:
             actor->state = 1;
             break;
@@ -353,12 +353,12 @@ s32 func_8008C844(s32 index) {
         }
         break;
     case 0x11:
-        if (game_data.party[1] == 0xFF || func_80097770(5, 5) != 0) {
+        if (game_data.party[1] == 0xFF || worldmap_actor_request(5, 5) != 0) {
             actor->state++;
         }
         break;
     case 0x12:
-        if (game_data.party[2] == 0xFF || func_80097770(6, 5) != 0) {
+        if (game_data.party[2] == 0xFF || worldmap_actor_request(6, 5) != 0) {
             actor->state = 0x40;
         }
         break;
@@ -370,7 +370,7 @@ s32 func_8008C844(s32 index) {
             scratch->position.vx = actor->position.vx >> 12;
             scratch->position.vy = actor->position.vy >> 12;
             scratch->position.vz = actor->position.vz >> 12;
-            func_80089160(5, &scratch->position, NULL);
+            worldmap_effects_start_emitters(5, &scratch->position, NULL);
             actor->wait = 8;
             actor->state++;
         }
@@ -392,18 +392,18 @@ s32 func_8008C844(s32 index) {
     case 0x20:
         sprite_start_animation(actor->handle, 0);
         if (game_data.party[1] != 0xFF) {
-            func_80097770(5, 2);
+            worldmap_actor_request(5, 2);
         }
         if (game_data.party[2] != 0xFF) {
-            func_80097770(6, 2);
+            worldmap_actor_request(6, 2);
         }
         actor->motion.vz = 0;
         actor->motion.vy = 0;
         actor->motion.vx = 0;
         actor->state++;
     case 0x21:
-        if (func_80097770(1, 2) != 0) {
-            D_8009BE24[1].unk6 = index;
+        if (worldmap_actor_request(1, 2) != 0) {
+            worldmap_actor_slots[1].unk6 = index;
             actor->state++;
         }
         break;
@@ -411,30 +411,30 @@ s32 func_8008C844(s32 index) {
         actor->state = 0;
         break;
     case 0x30:
-        func_8008DFF4(&actor->position);
+        worldmap_load_flying_vehicle_position(&actor->position);
         actor->unk24 = 0;
-        actor->heading = D_8009BE24[7].unk78;
+        actor->heading = worldmap_actor_slots[7].unk78;
         scratch->work.vx = actor->position.vx + gpu_get_sin(actor->heading) * 0x60;
         scratch->work.vz = actor->position.vz + -gpu_get_cos(actor->heading) * 0x60;
-        func_800941C4(&actor->position, &scratch->work, &actor->motion, &actor->heading);
+        worldmap_get_heading_to(&actor->position, &scratch->work, &actor->motion, &actor->heading);
         actor->u.step = scratch->work.vx >> 12;
         actor->unk54 = scratch->work.vz >> 12;
         sprite_start_animation(actor->handle, 1);
         actor->state++;
     case 0x31:
-        if (func_8008BEC8(actor) == 3) {
+        if (worldmap_actor_step_to_target(actor) == 3) {
             sprite_start_animation(actor->handle, 0);
             actor->motion.vz = 0;
             actor->motion.vy = 0;
             actor->motion.vx = 0;
             actor->state++;
         }
-        D_8009D55C.target = actor->position;
-        D_8009D52C = actor->heading;
+        worldmap_camera_follow_target.target = actor->position;
+        worldmap_camera_follow_heading = actor->heading;
         break;
     case 0x32:
-        point = D_8009CEC4;
-        D_8009D154 = 0;
+        point = worldmap_trail_points;
+        worldmap_trail_index = 0;
         scratch->start = actor->position;
         scratch->position.vx = actor->heading;
         for (value = 0x1F; value != -1; value--, point++) {
@@ -442,13 +442,13 @@ s32 func_8008C844(s32 index) {
             point->heading = (u16)scratch->position.vx;
         }
         actor->state = 1;
-        D_8009BE10 = 2;
+        worldmap_movement_mode = 2;
         break;
     case 0x40:
         break;
     }
-    if (actor->state != 2 && (D_8009BE10 == 2 || game_data.party[0] != 7)) {
-        func_80074794(1, &actor->position);
+    if (actor->state != 2 && (worldmap_movement_mode == 2 || game_data.party[0] != 7)) {
+        worldmap_footprints_add(1, &actor->position);
     }
     VEHICLE_SPOTS[0].x = actor->position.vx >> 12;
     VEHICLE_SPOTS[0].z = actor->position.vz >> 12;
@@ -456,15 +456,15 @@ s32 func_8008C844(s32 index) {
     return result;
 }
 
-/* Start party vehicle 1: place it, and while its member rides (movement
+/* 8008D3F0: Start party vehicle 1: place it, and while its member rides (movement
  * modes 1-3) put it under the player; modes 4-7 mark it boarded. Save its
  * spot and heading. */
-s32 func_8008D3F0(s32 index) {
+s32 worldmap_second_vehicle_start(s32 index) {
     WorldmapActor *actor;
     s32 result;
 
-    actor = &D_8009BE24[index];
-    result = func_8008C364(actor, 1);
+    actor = &worldmap_actor_slots[index];
+    result = worldmap_place_vehicle(actor, 1);
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
@@ -472,16 +472,16 @@ s32 func_8008D3F0(s32 index) {
     actor->turn = 0xC;
     actor->unk58 = 0xF;
     actor->unk5C = actor->heading;
-    if (D_8009BE10 > 0) {
-        if (D_8009BE10 < 4) {
+    if (worldmap_movement_mode > 0) {
+        if (worldmap_movement_mode < 4) {
             if (game_data.inGear[1] == 1) {
                 actor->state = 1;
-                actor->position.vx = D_8009C5AC.vx;
-                actor->position.vz = D_8009C5AC.vz;
-                actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
-                actor->heading = D_8009C584;
+                actor->position.vx = worldmap_player_position.vx;
+                actor->position.vz = worldmap_player_position.vz;
+                actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
+                actor->heading = worldmap_player_heading;
             }
-        } else if (D_8009BE10 < 8) {
+        } else if (worldmap_movement_mode < 8) {
             actor->state = 2;
             actor->unk24 = 1;
         }
@@ -492,14 +492,14 @@ s32 func_8008D3F0(s32 index) {
     return result;
 }
 
-/* Update a kind-1 actor; flag it while riding a vehicle. */
-s32 func_8008D520(s32 index) {
+/* 8008D520: Update a kind-1 actor; flag it while riding a vehicle. */
+s32 worldmap_second_vehicle_resume(s32 index) {
     WorldmapActor *actor;
     s32 result;
 
-    actor = &D_8009BE24[index];
-    result = func_8008C364(actor, 1);
-    switch (D_8009BE10) {
+    actor = &worldmap_actor_slots[index];
+    result = worldmap_place_vehicle(actor, 1);
+    switch (worldmap_movement_mode) {
     case 1:
     case 2:
     case 3:
@@ -514,18 +514,18 @@ s32 func_8008D520(s32 index) {
     return result;
 }
 
-/* Start the parked vehicle 1: its model at the saved spot and heading. */
-s32 func_8008D590(s32 index) {
+/* 8008D590: Start the parked vehicle 1: its model at the saved spot and heading. */
+s32 worldmap_second_vehicle_start_parked(s32 index) {
     WorldmapActor *actor;
 
-    actor = &D_8009BE24[index];
-    actor->handle = sprite_create(D_8009BDF8[1], 0x100, 0x1FC, 0x160, 0x140, 0x40);
+    actor = &worldmap_actor_slots[index];
+    actor->handle = sprite_create(worldmap_gear_models[1], 0x100, 0x1FC, 0x160, 0x140, 0x40);
     sprite_start_animation(actor->handle, 0);
     sprite_set_scale(actor->handle, 0x2000);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
     actor->position.vx = VEHICLE_SPOTS[1].x << 12;
     actor->position.vz = VEHICLE_SPOTS[1].z << 12;
-    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
     actor->unk24 = 1;
     actor->motion.vz = 0;
     actor->motion.vy = 0;
@@ -535,10 +535,10 @@ s32 func_8008D590(s32 index) {
     return 1;
 }
 
-/* Update party vehicle actor `index` (slots 4-6): take commands (1 go to an
+/* 8008D678: Update party vehicle actor `index` (slots 4-6): take commands (1 go to an
  * actor, 2 park, 3 leave the flying vehicle, 5 go to the player, 8 board),
  * follow the player's trail while ridden, and save its spot and heading. */
-s32 func_8008D678(s32 index) {
+s32 worldmap_follower_vehicle_update(s32 index) {
     WorldmapActor *actor;
     WorldmapActor *target;
     ActorScratch *scratch;
@@ -546,13 +546,13 @@ s32 func_8008D678(s32 index) {
     s32 flag;
     s32 slot;
 
-    actor = &D_8009BE24[index];
+    actor = &worldmap_actor_slots[index];
     scratch = (ActorScratch *)0x1F800000;
     switch (actor->unk4) {
     case 1:
         actor->state = 8;
         actor->unk4 = 0;
-        target = &D_8009BE24[actor->unk6];
+        target = &worldmap_actor_slots[actor->unk6];
         break;
     case 4:
         actor->state = 0x40;
@@ -581,18 +581,18 @@ s32 func_8008D678(s32 index) {
     case 1:
         flag = game_data.inGear[index - 4];
         if (flag == 1) {
-            point = &D_8009CEC4[(D_8009D154 - actor->unk58) & 0x1F];
+            point = &worldmap_trail_points[(worldmap_trail_index - actor->unk58) & 0x1F];
             if ((actor->position.vx == point->position.vx) & (actor->position.vy == point->position.vy) &
                 (actor->position.vz == point->position.vz)) {
                 if (SPRITE_ANIMATION(actor->handle) != 0) {
                     sprite_start_animation(actor->handle, 0);
-                    func_800894C8(index + 0x28);
+                    worldmap_effects_stop_emitters(index + 0x28);
                 }
             } else {
                 if (SPRITE_ANIMATION(actor->handle) != flag) {
                     sprite_start_animation(actor->handle, 1);
                 }
-                func_8008C1DC(index + 0x28, actor, scratch);
+                worldmap_actor_emit_on_layer3(index + 0x28, actor, scratch);
             }
             actor->position.vx = point->position.vx;
             actor->position.vy = point->position.vy;
@@ -600,36 +600,36 @@ s32 func_8008D678(s32 index) {
             actor->heading = point->heading;
         } else if (SPRITE_ANIMATION(actor->handle) != 3) {
             sprite_start_animation(actor->handle, 3);
-            func_800894C8(index + 0x28);
+            worldmap_effects_stop_emitters(index + 0x28);
         }
         break;
     case 2:
-        actor->position.vx = D_8009BE24[7].position.vx;
-        actor->position.vz = D_8009BE24[7].position.vz;
-        actor->heading = D_8009BE24[7].heading;
+        actor->position.vx = worldmap_actor_slots[7].position.vx;
+        actor->position.vz = worldmap_actor_slots[7].position.vz;
+        actor->heading = worldmap_actor_slots[7].heading;
         break;
     case 8:
-        func_800941C4(&actor->position, &target->position, &actor->motion, &actor->heading);
+        worldmap_get_heading_to(&actor->position, &target->position, &actor->motion, &actor->heading);
         actor->u.step = target->position.vx >> 12;
         actor->unk54 = target->position.vz >> 12;
         sprite_start_animation(actor->handle, 1);
         actor->state++;
     case 9:
-        if (func_8008BEC8(actor) == 3) {
+        if (worldmap_actor_step_to_target(actor) == 3) {
             actor->state++;
         }
-        func_8008C1DC(index + 0x28, actor, scratch);
+        worldmap_actor_emit_on_layer3(index + 0x28, actor, scratch);
         break;
     case 10:
-        if (func_80097770(actor->unk6, 4) != 0) {
+        if (worldmap_actor_request(actor->unk6, 4) != 0) {
             actor->unk24 = 1;
             actor->state = 2;
-            func_800894C8(index + 0x28);
+            worldmap_effects_stop_emitters(index + 0x28);
         }
         break;
     case 0x10:
-        actor->u.step = D_8009BE24[4].position.vx;
-        actor->unk54 = D_8009BE24[4].position.vz;
+        actor->u.step = worldmap_actor_slots[4].position.vx;
+        actor->unk54 = worldmap_actor_slots[4].position.vz;
         scratch->work.vx = actor->u.step - actor->position.vx;
         scratch->work.vz = actor->unk54 - actor->position.vz;
         actor->heading = (ratan2(scratch->work.vz, scratch->work.vx) + 0x400) & 0xFFF;
@@ -640,12 +640,12 @@ s32 func_8008D678(s32 index) {
         sprite_start_animation(actor->handle, 1);
         actor->state++;
     case 0x11:
-        if (func_8008BEC8(actor) == 3) {
+        if (worldmap_actor_step_to_target(actor) == 3) {
             actor->state++;
         }
         break;
     case 0x12:
-        if (func_80097770(4, 7) != 0) {
+        if (worldmap_actor_request(4, 7) != 0) {
             actor->state = 1;
         }
         break;
@@ -657,7 +657,7 @@ s32 func_8008D678(s32 index) {
             scratch->position.vx = actor->position.vx >> 12;
             scratch->position.vy = actor->position.vy >> 12;
             scratch->position.vz = actor->position.vz >> 12;
-            func_80089160(index + 1, &scratch->position, NULL);
+            worldmap_effects_start_emitters(index + 1, &scratch->position, NULL);
             actor->wait = 8;
             actor->state++;
         }
@@ -684,8 +684,8 @@ s32 func_8008D678(s32 index) {
         actor->state++;
         break;
     case 0x21:
-        if (func_80097770(index - 3, 2) != 0) {
-            D_8009BE24[index - 3].unk6 = index;
+        if (worldmap_actor_request(index - 3, 2) != 0) {
+            worldmap_actor_slots[index - 3].unk6 = index;
             actor->state++;
         }
         break;
@@ -693,19 +693,19 @@ s32 func_8008D678(s32 index) {
         actor->state = 0;
         break;
     case 0x30:
-        func_8008DFF4(&actor->position);
+        worldmap_load_flying_vehicle_position(&actor->position);
         actor->unk24 = 0;
-        actor->heading = D_8009BE24[7].unk78;
+        actor->heading = worldmap_actor_slots[7].unk78;
         scratch->work.vx = actor->position.vx + gpu_get_sin(actor->heading) * 0x60;
         scratch->work.vz = actor->position.vz + -gpu_get_cos(actor->heading) * 0x60;
-        func_800941C4(&actor->position, &scratch->work, &actor->motion, &actor->heading);
+        worldmap_get_heading_to(&actor->position, &scratch->work, &actor->motion, &actor->heading);
         actor->u.step = scratch->work.vx >> 12;
         actor->unk54 = scratch->work.vz >> 12;
         sprite_start_animation(actor->handle, 1);
         actor->state++;
         break;
     case 0x31:
-        if (func_8008BEC8(actor) == 3) {
+        if (worldmap_actor_step_to_target(actor) == 3) {
             sprite_start_animation(actor->handle, 0);
             actor->motion.vz = 0;
             actor->motion.vy = 0;
@@ -719,8 +719,8 @@ s32 func_8008D678(s32 index) {
     case 0x40:
         break;
     }
-    if (actor->state != 2 && (D_8009BE10 == 2 || game_data.party[index - 4] != 7)) {
-        func_80074794(1, &actor->position);
+    if (actor->state != 2 && (worldmap_movement_mode == 2 || game_data.party[index - 4] != 7)) {
+        worldmap_footprints_add(1, &actor->position);
     }
     /* Save the spot (the vehicle spot's x and z) as offsets from the return
      * state, the base the original addresses both from (as members they
@@ -732,15 +732,15 @@ s32 func_8008D678(s32 index) {
     return 1;
 }
 
-/* Start party vehicle 2: place it, and while its member rides (movement
+/* 8008DD6C: Start party vehicle 2: place it, and while its member rides (movement
  * modes 1-3) put it under the player; modes 4-7 mark it boarded. Save its
  * spot and heading. */
-s32 func_8008DD6C(s32 index) {
+s32 worldmap_third_vehicle_start(s32 index) {
     WorldmapActor *actor;
     s32 result;
 
-    actor = &D_8009BE24[index];
-    result = func_8008C364(actor, 2);
+    actor = &worldmap_actor_slots[index];
+    result = worldmap_place_vehicle(actor, 2);
     actor->motion.vz = 0;
     actor->motion.vy = 0;
     actor->motion.vx = 0;
@@ -748,16 +748,16 @@ s32 func_8008DD6C(s32 index) {
     actor->turn = 0xC;
     actor->unk58 = 0x1F;
     actor->unk5C = actor->heading;
-    if (D_8009BE10 > 0) {
-        if (D_8009BE10 < 4) {
+    if (worldmap_movement_mode > 0) {
+        if (worldmap_movement_mode < 4) {
             if (game_data.inGear[2] == 1) {
                 actor->state = 1;
-                actor->position.vx = D_8009C5AC.vx;
-                actor->position.vz = D_8009C5AC.vz;
-                actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
-                actor->heading = D_8009C584;
+                actor->position.vx = worldmap_player_position.vx;
+                actor->position.vz = worldmap_player_position.vz;
+                actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
+                actor->heading = worldmap_player_heading;
             }
-        } else if (D_8009BE10 < 8) {
+        } else if (worldmap_movement_mode < 8) {
             actor->state = 2;
             actor->unk24 = 1;
         }
@@ -768,14 +768,14 @@ s32 func_8008DD6C(s32 index) {
     return result;
 }
 
-/* Update a kind-2 actor; flag it while riding a vehicle. */
-s32 func_8008DE9C(s32 index) {
+/* 8008DE9C: Update a kind-2 actor; flag it while riding a vehicle. */
+s32 worldmap_third_vehicle_resume(s32 index) {
     WorldmapActor *actor;
     s32 result;
 
-    actor = &D_8009BE24[index];
-    result = func_8008C364(actor, 2);
-    switch (D_8009BE10) {
+    actor = &worldmap_actor_slots[index];
+    result = worldmap_place_vehicle(actor, 2);
+    switch (worldmap_movement_mode) {
     case 1:
     case 2:
     case 3:
@@ -790,18 +790,18 @@ s32 func_8008DE9C(s32 index) {
     return result;
 }
 
-/* Start the parked vehicle 2: its model at the saved spot and heading. */
-s32 func_8008DF0C(s32 index) {
+/* 8008DF0C: Start the parked vehicle 2: its model at the saved spot and heading. */
+s32 worldmap_third_vehicle_start_parked(s32 index) {
     WorldmapActor *actor;
 
-    actor = &D_8009BE24[index];
-    actor->handle = sprite_create(D_8009BDF8[2], 0x100, 0x1FB, 0x280, 0x100, 0x40);
+    actor = &worldmap_actor_slots[index];
+    actor->handle = sprite_create(worldmap_gear_models[2], 0x100, 0x1FB, 0x280, 0x100, 0x40);
     sprite_start_animation(actor->handle, 0);
     sprite_set_scale(actor->handle, 0x2000);
     actor->handle->render.word &= ~SPRITE_HIDDEN;
     actor->position.vx = VEHICLE_SPOTS[2].x << 12;
     actor->position.vz = VEHICLE_SPOTS[2].z << 12;
-    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    actor->position.vy = worldmap_terrain_get_height(actor->position.vx, actor->position.vz);
     actor->unk24 = 1;
     actor->motion.vz = 0;
     actor->motion.vy = 0;
@@ -811,40 +811,40 @@ s32 func_8008DF0C(s32 index) {
     return 1;
 }
 
-/* Restore the saved vehicle position (world units to 20.12). */
-void func_8008DFF4(VECTOR *position) {
+/* 8008DFF4: Restore the saved vehicle position (world units to 20.12). */
+void worldmap_load_flying_vehicle_position(VECTOR *position) {
     position->vx = (s16)game_data.worldmap.unk60 << 12;
     position->vy = (s16)game_data.worldmap.unk62 << 12;
     position->vz = (s16)game_data.worldmap.unk64 << 12;
 }
 
-/* Save the vehicle position in world units. */
-void func_8008E034(VECTOR *position) {
+/* 8008E034: Save the vehicle position in world units. */
+void worldmap_save_flying_vehicle_position(VECTOR *position) {
     game_data.worldmap.unk60 = position->vx >> 12;
     game_data.worldmap.unk62 = position->vy >> 12;
     game_data.worldmap.unk64 = position->vz >> 12;
 }
 
-/* Select the path table of scenes 15 and 16. The link is read unsigned here
- * (lhu at 8008e0b4), signed by func_80094238. */
-void func_8008E078(void) {
-    if (D_8009D738 != 0) {
-        switch (D_8009BD60) {
+/* 8008E078: Select the path table of scenes 15 and 16. The link is read unsigned here
+ * (lhu at 8008e0b4), signed by worldmap_path_select_region. */
+void worldmap_select_actor_path_region(void) {
+    if (worldmap_cylinder_hit != 0) {
+        switch (worldmap_cylinder_hit_actor) {
         case 15:
-            D_8009D7D8 = &D_8009B6C4[0];
-            D_8009BD24 = (u16)D_8009B6C4[0].link;
+            worldmap_current_path = &worldmap_fixed_path_regions[0];
+            worldmap_path_name_id = (u16)worldmap_fixed_path_regions[0].link;
             break;
         case 16:
-            D_8009D7D8 = &D_8009B6C4[1];
-            D_8009BD24 = (u16)D_8009B6C4[1].link;
+            worldmap_current_path = &worldmap_fixed_path_regions[1];
+            worldmap_path_name_id = (u16)worldmap_fixed_path_regions[1].link;
             break;
         }
     }
 }
 
-/* First of sixteen headings in which a probe from the position hits; -1 if
+/* 8008E0F0: First of sixteen headings in which a probe from the position hits; -1 if
  * none does. */
-s32 func_8008E0F0(VECTOR *position, s32 unused, s32 range) {
+s32 worldmap_find_clear_heading(VECTOR *position, s32 unused, s32 range) {
     VECTOR hit;
     VECTOR direction;
     s32 heading;
@@ -852,7 +852,7 @@ s32 func_8008E0F0(VECTOR *position, s32 unused, s32 range) {
     for (heading = 0; heading < 0x1000; heading += 0x100) {
         direction.vx = gpu_get_sin(heading);
         direction.vz = -gpu_get_cos(heading);
-        if (func_80095414(position, &direction, &hit, range, 2) == 1) {
+        if (worldmap_move_walking(position, &direction, &hit, range, 2) == 1) {
             return heading;
         }
     }

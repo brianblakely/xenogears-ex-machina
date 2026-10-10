@@ -6,34 +6,34 @@
 # and texture coordinates are preset. The scratchpad holds
 # TerrainPassScratch: the sprite's four corners at 0x00, the view matrix at
 # 0x28, the roll matrix at 0x48 and 16 depth CLUTs at 0x68.
-# Each position is taken relative to the camera target D_8009BE28 (20.12);
+# Each position is taken relative to the camera target worldmap_camera (20.12);
 # an x or z difference below -0x4000 gains, and one then at or above 0x4000
-# loses, one map width or height (D_8009D160 by D_8009D2B4 blocks of
+# loses, one map width or height (worldmap_area_blocks_x by worldmap_area_blocks_z blocks of
 # 0x800). (dx, y, -dz) through the view matrix becomes the translation of
 # the roll matrix, and the corners are projected with RTPT and then RTPS.
 # A quad is drawn when RTPT reports no FLAG error, the first three corners
 # pass screen_bounds_test and SZ3 < 0xE00. It is linked at OT entry
 # SZ3 >> 4 with CLUT (IR0 >> 8), IR0 (the fourth corner's depth cue)
 # limited to 0xFFF. Nothing more is drawn once the frame's quad count
-# D_8009BE04 (a word here) reaches 512; it is stored back on exit.
+# worldmap_billboard_quad_count (a word here) reaches 512; it is stored back on exit.
 # Saves s0/s1, s1 in the caller's a0 home slot; clobbers a0, a1, a3, v0,
 # v1, t0..t9 and the GTE rotation and translation. Handwritten: saves
 # beyond its 8-byte frame and ori for a small positive constant.
-glabel func_80099BFC
+glabel worldmap_billboards_draw_block
     addiu   $sp, $sp, -8
     sw      $s0, 4($sp)
     sw      $s1, 8($sp)         # beyond the frame: the caller's a0 slot
     lui     $s1, 0x1F80         # scratchpad
-    lui     $s0, %hi(D_8009BE04)
-    lw      $s0, %lo(D_8009BE04)($s0)
-    lui     $v0, %hi(D_8009BE28)
-    lw      $v0, %lo(D_8009BE28)($v0)   # camera target x
-    lui     $v1, %hi(D_8009BE28+8)
-    lw      $v1, %lo(D_8009BE28+8)($v1) # camera target z
-    lui     $t0, %hi(D_8009D160)
-    lw      $t0, %lo(D_8009D160)($t0)   # map width in blocks
-    lui     $t1, %hi(D_8009D2B4)
-    lw      $t1, %lo(D_8009D2B4)($t1)   # map height in blocks
+    lui     $s0, %hi(worldmap_billboard_quad_count)
+    lw      $s0, %lo(worldmap_billboard_quad_count)($s0)
+    lui     $v0, %hi(worldmap_camera)
+    lw      $v0, %lo(worldmap_camera)($v0)   # camera target x
+    lui     $v1, %hi(worldmap_camera+8)
+    lw      $v1, %lo(worldmap_camera+8)($v1) # camera target z
+    lui     $t0, %hi(worldmap_area_blocks_x)
+    lw      $t0, %lo(worldmap_area_blocks_x)($t0)   # map width in blocks
+    lui     $t1, %hi(worldmap_area_blocks_z)
+    lw      $t1, %lo(worldmap_area_blocks_z)($t1)   # map height in blocks
     sra     $v0, $v0, 12
     sra     $v1, $v1, 12
     sll     $t0, $t0, 11
@@ -172,11 +172,11 @@ glabel func_80099BFC
     bnez    $a1, .Lbillboard_next
      addiu  $a0, $a0, 8
 .Lbillboard_done:
-    lui     $at, %hi(D_8009BE04)
-    sw      $s0, %lo(D_8009BE04)($at)
+    lui     $at, %hi(worldmap_billboard_quad_count)
+    sw      $s0, %lo(worldmap_billboard_quad_count)($at)
     lw      $s1, 8($sp)
     lw      $s0, 4($sp)
     addiu   $sp, $sp, 8
     jr      $ra
      nop
-endlabel func_80099BFC
+endlabel worldmap_billboards_draw_block

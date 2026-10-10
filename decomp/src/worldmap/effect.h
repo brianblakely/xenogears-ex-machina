@@ -1,7 +1,7 @@
 #ifndef WORLDMAP_EFFECT_H
 #define WORLDMAP_EFFECT_H
 
-/* The world map's particle effects and drifting sprites (worldmap_80083A00):
+/* The world map's particle effects and drifting sprites (worldmap_objects_effects_party):
  * the area objects (emitters, eight per group) that spawn particles into
  * the effect slots, and the clouds that drift over the terrain. */
 
@@ -52,19 +52,19 @@ typedef struct EffectSlot {
     s16 pad4A;
 } EffectSlot;
 
-extern AreaObject *D_8009BCC0; /* the area data's emitters */
-extern EffectSlot *D_8009BDF4;
-extern void *D_8009BE1C[2];    /* particle quads, per display buffer */
+extern AreaObject *worldmap_effect_emitters; /* the area data's emitters */
+extern EffectSlot *worldmap_effect_slots;
+extern void *worldmap_effect_quads[2];    /* particle quads, per display buffer */
 
-void func_80088F64(void); /* clear the area objects, allocate the effect slots */
-void func_80088FF4(void); /* free the effect slots */
-void func_8008901C(void); /* allocate the particle quads */
-void func_80089128(void); /* free them */
-void func_80089160(s32 effect, SVECTOR *position, SVECTOR *angle); /* place and start a group */
-void func_800894C8(s32 a); /* deactivate a group */
-void func_80089514(s32 a); /* stop a group's live particles */
-void func_80089748(void); /* run the emitters */
-void func_80089C78(void); /* draw the particles */
+void worldmap_effects_alloc_slots(void); /* clear the area objects, allocate the effect slots */
+void worldmap_effects_free_slots(void); /* free the effect slots */
+void worldmap_effects_alloc_quads(void); /* allocate the particle quads */
+void worldmap_effects_free_quads(void); /* free them */
+void worldmap_effects_start_emitters(s32 effect, SVECTOR *position, SVECTOR *angle); /* place and start a group */
+void worldmap_effects_stop_emitters(s32 a); /* deactivate a group */
+void worldmap_effects_stop_particles(s32 a); /* stop a group's live particles */
+void worldmap_effects_run_emitters(void); /* run the emitters */
+void worldmap_effects_draw_particles(void); /* draw the particles */
 
 /* Drifting position (0x10 bytes) and its velocity (8 bytes): the 80 clouds. */
 typedef struct Drift {
@@ -81,15 +81,15 @@ typedef struct DriftVelocity {
     s16 unk6;
 } DriftVelocity;
 
-extern Drift *D_8009D150;
-extern DriftVelocity *D_8009CEB4;
-extern void *D_8009D7F8[2]; /* cloud quads, per display buffer */
+extern Drift *worldmap_cloud_positions;
+extern DriftVelocity *worldmap_cloud_velocities;
+extern void *worldmap_cloud_quads[2]; /* cloud quads, per display buffer */
 
-void func_800863E0(void); /* scatter the clouds */
-void func_80086568(void); /* free them */
-void func_800865A0(void); /* allocate the cloud quads */
-void func_800866C8(void); /* free them */
-void func_80086700(void); /* move the clouds */
-void func_80086798(void); /* draw the clouds */
+void worldmap_clouds_scatter(void); /* scatter the clouds */
+void worldmap_clouds_free(void); /* free them */
+void worldmap_clouds_alloc_quads(void); /* allocate the cloud quads */
+void worldmap_clouds_free_quads(void); /* free them */
+void worldmap_clouds_move(void); /* move the clouds */
+void worldmap_clouds_draw(void); /* draw the clouds */
 
 #endif

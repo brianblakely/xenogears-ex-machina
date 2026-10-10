@@ -2,7 +2,7 @@
  * that object's linked address (worldmap_common.c). Two loaders pass the
  * shared read list from its first destination member (WORLD_READ_LIST,
  * worldmap.h). */
-D_8009D3FC = D_8009D3F8 + 0x4; /* [0].dest */
+worldmap_read_list_first_destination = worldmap_read_list + 0x4; /* 8009D3FC: [0].dest */
 
 /* The resident's mode table (8001808c, mode 3) clears the word after
  * 8009bbb0 through the word at 8009d80c for this overlay (80019560); nothing

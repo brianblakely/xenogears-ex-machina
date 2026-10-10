@@ -86,7 +86,7 @@ and table, and how each table's index is chosen, is listed in
   ovl2143 actor files (4, 0) 0x6bb + 2k, battle object model files (stages
   (12, 3) 6 + 2s, enemy set model entries, object sets (0x28, 0) 2s + 1, gears and
   their part files by `battle_gear_file_table`), arena models (0x30, 1) id + 2 and the menu
-  overlay's `arena_actor_extra_model`, world map area files (0x24, 0) by `D_8009B584`, and the
+  overlay's `arena_actor_extra_model`, world map area files (0x24, 0) by `worldmap_area_file_sets`, and the
   models sprite commands f5-f7 bind in the blocks `tools.analysis.sprite_vm`
   finds.
 - Results: disc 1 has 16252 field, 1786 actor, 3404 battle, 1067 menu, 562 world
@@ -100,7 +100,7 @@ and table, and how each table's index is chosen, is listed in
 ## World map arrival modes
 
 - Dispatch (`decomp/src/worldmap/worldmap.c`): the world map's entry runs mode
-  `game_data_worldmap_flag_word[0] & 0x7fff` of `D_8009A058` (19 rows of enter, start and leave
+  `game_data_worldmap_flag_word[0] & 0x7fff` of `worldmap_mode_handlers` (19 rows of enter, start and leave
   handlers) without a bound check. The word is the game data's +0x2320.
 - Data: field `56` (`change_map`, `field_event_change_map`) stores operand 7 there as the
   field leaves for the world map. Battle event opcode 26 (ovl3087
@@ -115,7 +115,7 @@ and table, and how each table's index is chosen, is listed in
   not selected by data.
 - The census also lists the fields the world map's exits name: the scene of every
   path region with a link (kind 4 regions only record a destination) in the area
-  files of `D_8009B584`, and the scenes its scripted modes store: 60 fields on
+  files of `worldmap_area_file_sets`, and the scenes its scripted modes store: 60 fields on
   both discs, among them field 0 (regions with scene 0 in the scripted modes' area
   files). Path table 3 of area file 198 points outside the file (the game
   relocates it anyway); worldmap.c reads table 3 only on a player's exit from a

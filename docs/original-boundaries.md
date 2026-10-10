@@ -210,7 +210,7 @@ The resident disc unit (cd_reads_and_streams.c, 80028230-8002c3e8, API in
 `resident/cd.h`) holds the file index and reads every file except the world-map
 terrain and the movie streams, whose readers (below) issue their own drive
 commands at sectors taken from that index (cd_get_file_sector at
-worldmap_80094A5C.c:1652/2044 and mdec.c:435). Outside the unit, three
+worldmap_movement_terrain.c:1652/2044 and mdec.c:435). Outside the unit, three
 shipped parts issue drive commands themselves: the world-map terrain reader,
 the movie library (mdec) and the disc check of the swap (and the movie
 overlay's development tools). Each of them, like the unit, branches on
@@ -222,7 +222,7 @@ which the host path does not serve (cd_read_raw_sectors returns -1 there): the
 arena's portraits and the swap's label and index. The other libcd calls are the
 busy test's CdDataSync(1) (cd_get_pending_read_count), CdDataSync(0) before a field movie
 (field field_movie_wait_disc_idle), a per-frame CdSync(1) whose status no code reads (world
-map func_800712D0), CdFlush at soft reset, the card screens' callback save and
+map worldmap_run_frame_loop), CdFlush at soft reset, the card screens' callback save and
 restore (Memory card and saves) and the dormant CdMix.
 
 - **Index.** Each resident image carries its disc's index ahead of its code,
@@ -260,9 +260,9 @@ restore (Memory card and saves) and the dormant CdMix.
   (Interrupt-context work) finish it. cd_get_pending_read_count returns that count (for a
   list, the files not yet finished, which cd_update_pending_read_count copies from cd_remaining_list_file_count;
   otherwise 1), or 1 while a command (cd_command_state) or a sector transfer
-  (CdDataSync(1)) is pending. The world map's entry (func_80072238) and scene
+  (CdDataSync(1)) is pending. The world map's entry (worldmap_open_map_start) and scene
   setups go on once a list has fewer than three files left
-  (`while (cd_get_pending_read_count() >= 3)` at eleven sites; `>= 2` in func_800758C0),
+  (`while (cd_get_pending_read_count() >= 3)` at eleven sites; `>= 2` in worldmap_suspend_open_map),
   so a port must report the count, not only busy. A finished or stopped read
   seeks to the file given as its `after` argument (cd_read_mode, cd_seek_or_pause)
   or, for 0, pauses; every shipped caller passes 0 (only the movie overlay's
@@ -284,16 +284,16 @@ restore (Memory card and saves) and the dormant CdMix.
 
   | Command | Issued by |
   | --- | --- |
-  | Setloc (2) | every resident read and seek (cd_start_read, cd_read_file_list, stream_start_image_load, cd_seek_or_pause_if_idle, cd_seek_or_pause), retries and list gaps (cd_advance_command_state, at a gap once cd_copy_list_sector's Pause completes); the world-map reader (func_8009699C, func_80096A6C, func_80096C0C); movie_restart; the swap (sector 0) |
+  | Setloc (2) | every resident read and seek (cd_start_read, cd_read_file_list, stream_start_image_load, cd_seek_or_pause_if_idle, cd_seek_or_pause), retries and list gaps (cd_advance_command_state, at a gap once cd_copy_list_sector's Pause completes); the world-map reader (worldmap_stream_start_disc_list, worldmap_stream_on_command_done, worldmap_stream_on_data_ready); movie_restart; the swap (sector 0) |
   | ReadN (6) | cd_advance_command_state after Setloc: every resident read |
-  | ReadS (0x1B) | the world-map reader (func_80096A6C); CdRead2 for movies (movie_restart) |
+  | ReadS (0x1B) | the world-map reader (worldmap_stream_on_command_done); CdRead2 for movies (movie_restart) |
   | SeekL (0x15) | cd_advance_command_state after a seek's Setloc; the swap |
   | Pause (9) | the end of every shipped resident read, cd_set_mode after Setmode, list gaps (cd_copy_list_sector), retries; soft reset (cd_shutdown_disc_access); the world-map reader at a list's end and in recovery; movie_stop |
   | Stop (8) | retry reason 4; the swap's preparation (func_801E92CC) |
   | Standby (7) | cd_init_disc_access through CdControl, after CdInit (repeated until it succeeds) and CdSetDebug(0) |
   | Setmode (0x0E) | cd_set_mode: 0xA0 at start-up, soft reset, movie_stop and before the swap's label read, 0 in the swap's preparation; retry reason 6; CdRead2 with the movie mode |
   | Setfilter (0x0D) | movie_start: file 1 and the movie's channel, when its select bit 0 is set |
-  | Nop (1, Getstat) | retries (cd_advance_command_state and the sector callbacks cd_copy_list_sector, cd_copy_file_sector, stream_store_sector and stream_store_image_sector; the world-map reader's func_80096A6C, func_80096C0C); the swap's lid and motor polling |
+  | Nop (1, Getstat) | retries (cd_advance_command_state and the sector callbacks cd_copy_list_sector, cd_copy_file_sector, stream_store_sector and stream_store_image_sector; the world-map reader's worldmap_stream_on_command_done, worldmap_stream_on_data_ready); the swap's lid and motor polling |
   | GetTN (0x13) | retries, once the drive status shows the lid closed; the swap |
 
 - **Modes and sectors** (Setmode bits after psx-spx: 0x80 double speed, 0x40
@@ -301,9 +301,9 @@ restore (Memory card and saves) and the dormant CdMix.
   Resident and world-map reads run in 0xA0: each sector callback copies the
   4-byte header and 8-byte subheader (CdGetSector(..., 3)) and the 2048 data
   bytes (the rest of a short last sector goes to cd_sector_buffer, the world map's to
-  D_8009D7D4) and checks the header's position against the expected sector
+  worldmap_stream_drain_buffer) and checks the header's position against the expected sector
   (CdPosToInt): on a mismatch, counted in cd_file_out_of_order_count/cd_list_out_of_order_count/cd_stream_out_of_order_count (the
-  world map's in D_8009CCA0), the sector is not taken and the read restarts
+  world map's in worldmap_stream_read_error_count), the sector is not taken and the read restarts
   there (Retries). Movies read 2048-byte sectors in the low byte of
   movie_cd_mode | 0x80: 0xC8 with XA audio, 0x88 when select bit 1 clears the
   ADPCM bit again (field movies with their own sound bank or whose event set
@@ -336,9 +336,9 @@ restore (Memory card and saves) and the dormant CdMix.
   and cd_stat_stop_fail_count). On a stalled movie, movie_poll overwrites cd_stat_stop_ok_count and
   cd_stat_stop_fail_count for those screens with the resume position StGetBackloc gives and
   the movie's starting sector in its file (mdec.c:398-399). The world-map
-  reader recovers the same way under its own state D_8009CD44 (Getstat while
+  reader recovers the same way under its own state worldmap_stream_state (Getstat while
   the lid is open, GetTN, Pause, Setloc and ReadS), while the world-map loop
-  spins VSync(0) (worldmap.c func_800712D0).
+  spins VSync(0) (worldmap.c worldmap_run_frame_loop).
 - **Streams.**
   - Music: the field streams a music's wave file (0x13 + 2 * wave of directory
     (0x1C, 0), field field_music_change_track) through an eight-slot ring
@@ -361,14 +361,14 @@ restore (Memory card and saves) and the dormant CdMix.
     the strip heights. Each following sector is one strip, loaded with
     LoadImage by the data callback stream_load_image_strip at interrupt time.
   - World-map terrain: the world map queues (sector, bytes, destination)
-    requests per frame (func_8009623C: at most 0x58 a list, 16 lists;
-    func_80096328 sorts a list by sector). Its reader (func_8009699C,
-    func_80096A6C, func_80096C0C) reads a list with one Setloc and ReadS,
+    requests per frame (worldmap_stream_add_disc_request: at most 0x58 a list, 16 lists;
+    worldmap_stream_submit_disc_list sorts a list by sector). Its reader (worldmap_stream_start_disc_list,
+    worldmap_stream_on_command_done, worldmap_stream_on_data_ready) reads a list with one Setloc and ReadS,
     reading through gaps under 0x13 sectors, seeking past larger ones and
     pausing at the end. Terrain blocks are 0x710 bytes, one per sector: rows
-    from file D_8009BCD8 (the area's file + 9) in block order, columns from
-    file D_8009BD08 (+ 10) in column-major order (func_80097DC0,
-    func_80098CC0). func_80096130 and func_80096694 wait with VSync(0) for list
+    from file worldmap_terrain_row_file (the area's file + 9) in block order, columns from
+    file worldmap_terrain_column_file (+ 10) in column-major order (worldmap_terrain_queue_missing_blocks,
+    worldmap_terrain_load_new_edges). worldmap_stream_wait_for_slot and worldmap_stream_drain wait with VSync(0) for list
     space and for the queue to drain.
   - Movies (mdec, Services): movie_open makes a ring of 2048-byte sectors
     (StSetRing); movie_start sets the XA filter and StSetStream; movie_restart
@@ -435,8 +435,8 @@ restore (Memory card and saves) and the dormant CdMix.
   PClseek; ring streams read a sector per step (stream_get_next_chunk; stream_get_next_movie_frame
   reads 0x920-byte records with their subheaders when the mode byte has 0x08,
   skipping file-1 sectors); stream_start_image_load pumps a whole image stream before it
-  returns; the world map reads (path, offset) lists (func_800962B0,
-  func_800966CC); the movie library uses the resident ring
+  returns; the world map reads (path, offset) lists (worldmap_stream_add_host_request,
+  worldmap_stream_read_host_list); the movie library uses the resident ring
   (movie_host_stream); and the swap loads `c:\work\cdrom.mdg` (the index,
   0x8000 bytes), `cdrom.fid` (the directory table, 0x7A) and `cdrom.fnd` (the
   names, 0x40000), or `cdrom2.*` for Disc 2 (slot39 func_801E93A0, movie
@@ -468,7 +468,7 @@ VSync(-1) 4, and VSync(8), VSync(arena_mode_vblanks_per_frame), VSync(sprite_fra
   stored in saves; it also drives input repeat, arena colour cycles and the
   arena's vblank hook. Every pause and missing-pad loop (Pacing per mode)
   saves and restores it, so paused time is not counted. These are field
-  field_main, world map func_8007634C and func_80076594, the battle input
+  field_main, world map worldmap_run_pause_screen and worldmap_wait_for_controller, the battle input
   readers battle_read_input, battle_tick_event_script and battle_tick_result_screens (battle.c), and the
   menu input readers slot39 func_801C7D78, ovl2598 func_801C92AC, ovl2600
   func_801C98E8, ovl2601 func_801CACC8 and ovl2602 func_801CB4E4.
@@ -502,8 +502,8 @@ VSync(-1) 4, and VSync(8), VSync(arena_mode_vblanks_per_frame), VSync(sprite_fra
 | 1 field movie (field_movie_play) | mode field_movie_mode 0: VSync(0) before each decode batch (field_movie_run_frames); 1: field overlays and VSync(0) (field_movie_run_overlay_frame); 2: the full field frame | 1, or the field's | movie progress field_movie_frame comes from the MDEC callback |
 | 2 battle (resident mode_run_battle, overlay battle_main, frame battle_run_frame) | start = VSync(-1); after DrawSync task_catch_up_frame_count = VSync(-1) - start - sprite_frame_skip, clamped 0-4; then VSync(sprite_frame_skip + 1), or VSync(0) when sprite_frame_skip is 0 | 1, plus catch-up | the next frame consumes the measured blanks (below). battle_start_first_frame leaves sprite_frame_skip = 0. Turn logic calls frames from inside rules (battle_wait_frame, nesting counted by battle_frame_nesting). Development: holding Select gives VSync(8) and drops the catch-up (battle_read_pads_with_slowdown, mode_disc_mode != -1) |
 | 2 battle pause and missing pad (battle.c battle_read_input, battle_tick_event_script, battle_tick_result_screens) | none: spins | — | The battle step's input readers spin, with no VSync or DrawSync, while the first pad is missing. A Start press (the pressed word; in battle_read_input and battle_tick_event_script only while battle_turns_active is set) toggles battle_paused. While it is set the reader keeps draining the input queue, which only the vblank handler fills, until the next press. No frame is presented meanwhile. Voices and tick are suspended and pad_vblank_count is restored, as in the field |
-| 3 world map (func_80070CFC, loop func_800712D0) | DrawSync, VSync(2) | 2 | first spins VSync(0) while the terrain stream reports 3 (func_800967E4); sprite scripts tick twice per update (sprite_frame_skip = 1, func_80072238) |
-| 3 world-map pause (worldmap_80072238.c func_8007634C, func_80076594) | DrawSync, VSync(0) | 1 | A Start press (the pressed word D_8009BD10 & 0x800) enters func_8007634C until the next press, and a missing first pad enters func_80076594 until one answers (worldmap.c func_800712D0). Both draw on the other buffer, suspend voices and tick, and restore pad_vblank_count |
+| 3 world map (worldmap_main, loop worldmap_run_frame_loop) | DrawSync, VSync(2) | 2 | first spins VSync(0) while the terrain stream reports 3 (worldmap_stream_step); sprite scripts tick twice per update (sprite_frame_skip = 1, worldmap_open_map_start) |
+| 3 world-map pause (worldmap_open_map.c worldmap_run_pause_screen, worldmap_wait_for_controller) | DrawSync, VSync(0) | 1 | A Start press (the pressed word worldmap_pad_port0_pressed & 0x800) enters worldmap_run_pause_screen until the next press, and a missing first pad enters worldmap_wait_for_controller until one answers (worldmap.c worldmap_run_frame_loop). Both draw on the other buffer, suspend voices and tick, and restore pad_vblank_count |
 | 4 Battling arena (`menu` target, arena_mode_main) | VSync(arena_mode_vblanks_per_frame) | 1 or 2 | the arena task sets arena_mode_vblanks_per_frame to 0 or 2 (menu5.c arena_mode_task); the arena coroutine runs once per frame (Control flow) |
 | 5 in-game menu (resident mode_run_menu; frames menu_state_update_frame, slot39 func_801C7BF4) | DrawSync, VSync(0) | 1 | also the ovl2598/2600/2601/2602 screens; card and disc-change waits inside |
 | 5 menu missing pad (slot39 func_801C7D78; ovl2598 func_801C92AC, ovl2600 func_801C98E8, ovl2601 func_801CACC8, ovl2602 func_801CB4E4) | none: spins | — | each screen's input reader spins on pad_get_controller_kind(0), with no VSync, until the first pad answers; voices and tick suspended, pad_vblank_count restored |
@@ -557,13 +557,13 @@ The sound driver runs beside this on its own timer: 240 ticks per second, about
 
 | Callback | Installed by | Runs | Writes | Waits that depend on it |
 | --- | --- | --- | --- | --- |
-| vblank handler pad_vblank_callback (main2.c) | VSyncCallback at boot (boot_main) and on world-map entry (func_80070CFC); cleared by soft reset | every vertical blank | pad_vblank_count++; pad words pad_port0_held/pad_port1_held, pad_port0_pressed/pad_port1_pressed, pad_port0_repeated/pad_port1_repeated and the sticks; the input ring pad_queue_port0_held-pad_queue_port1_repeated; the h:m:s clock pad_play_time_frames/pad_play_time_seconds/pad_play_time_minutes/pad_play_time_hours (stops at 100 h, pad_play_time_stopped); actuators pad_actuators; then the hook pad_vblank_hook. Last comes a development-only `pollhost()` (`break 1024`, a host-debugger trap). It needs mode_disc_mode != -1 and pad_vblank_polls_host set. Only pad_set_host_polling can set pad_vblank_polls_host (pad_start_controllers clears it), and nothing calls or references pad_set_host_polling | input readers, including the battle pause, which spins on the queue |
+| vblank handler pad_vblank_callback (main2.c) | VSyncCallback at boot (boot_main) and on world-map entry (worldmap_main); cleared by soft reset | every vertical blank | pad_vblank_count++; pad words pad_port0_held/pad_port1_held, pad_port0_pressed/pad_port1_pressed, pad_port0_repeated/pad_port1_repeated and the sticks; the input ring pad_queue_port0_held-pad_queue_port1_repeated; the h:m:s clock pad_play_time_frames/pad_play_time_seconds/pad_play_time_minutes/pad_play_time_hours (stops at 100 h, pad_play_time_stopped); actuators pad_actuators; then the hook pad_vblank_hook. Last comes a development-only `pollhost()` (`break 1024`, a host-debugger trap). It needs mode_disc_mode != -1 and pad_vblank_polls_host set. Only pad_set_host_polling can set pad_vblank_polls_host (pad_start_controllers clears it), and nothing calls or references pad_set_host_polling | input readers, including the battle pause, which spins on the queue |
 | BIOS pad driver | InitPAD on the two 0x22-byte receive buffers, StartPAD and ChangeClearPAD(0) at boot (main2.c pad_start_controllers); StopPAD in the soft reset | in the BIOS's interrupt handling (psx-spx: at vertical blank; not in the recovered code) | pad_receive_buffers[0]/[1] (pad.h PadBuffer: status 0, or 0xFF without a controller; type; buttons; stick or mouse bytes) | the vblank handler's read (pad_read_controllers). Main-thread readers: the pad check pad_get_controller_kind, which the battle and menu missing-pad loops spin on without VSync; the button read pad_read_buttons in the movie player (movie.c func_800737EC, func_800747AC, func_800769A4) and in battle's development pad read battle_read_pads; the field's mouse pointer (field_motion.c field_pointer_read/field_pointer_move_by_mouse, type 0x12 on port 1); the unreferenced dump pad_print_state |
 | vblank hook pad_vblank_hook | the arena (menu5.c arena_mode_task: arena_mode_vblank_hook); cleared by the dispatcher | every vertical blank | on odd blanks while arena_mode_glow_in_vblank is set, arena_glow_step steps the arena's glow field, calling rand(): interrupt-time draws from the gameplay RNG | — |
 | sound tick sound_run_tick (sound.c) | sound_start_driver: OpenEvent(0xF2000002), SetRCnt(0xF2000002, 0x44E8, 0x1000) (system clock / 8: 4233600 / 17640 = 240 Hz) | 240 Hz; returns at once while flag 0x40 is set (every pause loop sets it with the voices silenced, sound_silence_voices, and sound_restore_voices clears it) | sound_tick_count (tick count, stamps effect voices); every other tick the master and CD fades (sound_volumes), every tick the sequence slides and beats (sound_playing_seq_list, which links the effect channels too), staged voice registers written through sound_spu_registers (sound_flush_voice_registers, sound_key_off_voices), SpuSetCommonAttr, SPU IRQ re-enable (sound_pending_irq_enable) | the effect-end waits (below); the main loop reads the same driver state between ticks |
 | SPU transfer done sound_complete_transfer | sound_start_driver, each transfer (sound_start_next_transfer) | DMA completion | runs the transfer's callback with flag 4, clears flag 0x10, starts the next of the eight queued transfers (sound_transfer_ring_read_index/sound_transfer_ring_write_index), which sets 0x10 again | the transfer waits (below) |
 | SPU IRQ sound_dispatch_spu_irq | sound_start_driver | SPU IRQ | sound_unread_spu_irq_count++, hook sound_spu_irq_hook | — |
-| CD sync/ready/data | resident cd_start_read (one file), cd_read_file_list (file list), stream_start_image_load (image stream), cd_seek_or_pause_if_idle, then the callbacks themselves (cd_reads_and_streams.c); world map func_8009699C, func_80096A6C (installs func_80096C0C) | CD interrupts | the read state machine cd_command_state, retry reason cd_retry_reason, counters cd_stat_command_ok_count/cd_stat_command_fail_count, sector copies (CdGetSector), stream-ring slots stream_slots; image streams load VRAM strips from the callback (stream_load_image_strip) | cd_sync_reads(0) and `while (cd_get_pending_read_count() ...)` busy-wait without VSync; world-map func_800967E4 |
+| CD sync/ready/data | resident cd_start_read (one file), cd_read_file_list (file list), stream_start_image_load (image stream), cd_seek_or_pause_if_idle, then the callbacks themselves (cd_reads_and_streams.c); world map worldmap_stream_start_disc_list, worldmap_stream_on_command_done (installs worldmap_stream_on_data_ready) | CD interrupts | the read state machine cd_command_state, retry reason cd_retry_reason, counters cd_stat_command_ok_count/cd_stat_command_fail_count, sector copies (CdGetSector), stream-ring slots stream_slots; image streams load VRAM strips from the callback (stream_load_image_strip) | cd_sync_reads(0) and `while (cd_get_pending_read_count() ...)` busy-wait without VSync; world-map worldmap_stream_step |
 | MDEC output movie_slice_decoded (mdec.c) | DecDCToutCallback in movie_start (mdec.c:194), removed by movie_stop (mdec.c:454) | MDEC DMA completion | LoadImage of each slice, StCdInterrupt, the decoder state, then the frame callback: field field_movie_frame_callback (field_movie_frame frame number, display block field_movie_decoded_block/field_current_draw_block, isrgb24) or movie func_800768D8 | movie loops; field scripts and the staff roll key off field_movie_frame |
 | DrawSync callback | field field_record_gpu_time (development kits only, field_monitor_absent == 0), arena arena_debug_draw_sync_callback | GPU idle | VSync(1) stamps (profiling) | — |
 | card events 0xF4000001 | slot39 func_801D9B08 | BIOS card driver | event state | func_801C881C (TestEvent spin) |
@@ -573,7 +573,7 @@ How the main program excludes these handlers:
 - **Critical sections.** EnterCriticalSection/ExitCriticalSection appear in 11
   functions. They bracket:
   - the instruction-cache flush, FlushCache, in the dispatcher mode_dispatch,
-    field field_sync_and_flush_cache, battle battle_load_module and world map func_800762FC,
+    field field_sync_and_flush_cache, battle battle_load_module and world map worldmap_sync_and_flush_cache,
     each after a DrawSync and a VSync;
   - the sound driver's start and stop (sound_start_driver, sound_stop_driver) and its
     transfer queue (sound_queue_transfer);
@@ -636,9 +636,9 @@ callback never leaves these:
   - Outside a transfer callback, sound_queue_transfer spins while at least six of the
     eight ring entries are queued (sound_is_transfer_ring_full).
   - Not a wait: the world map's `while (sound_driver_flags & 0x10) {}` in
-    func_80072238 (worldmap_80072238.c:296), and its
-    `if (debug) while (debug)` form in func_8007D918, func_80080D00 and
-    func_80082324. Each runs after a wave-bank load (sound_load_wave_bank) and the
+    worldmap_open_map_start (worldmap_open_map.c:296), and its
+    `if (debug) while (debug)` form in worldmap_scene15_start, worldmap_scene16_start and
+    worldmap_scene17_start. Each runs after a wave-bank load (sound_load_wave_bank) and the
     terrain-stream wait. All four compile to a single test followed by a
     branch to itself (`bnez v0` at 0x80072584, 0x8007DB54, 0x80080EFC and
     0x80082538), so the world map hangs if a transfer is still running when it
@@ -681,7 +681,7 @@ Development only:
 | entry boot_entry_point (handwritten) | PS-X EXE entry (header.c); soft reset calls it | .data and .sdata as they are | resident BSS 0x800592BC-0x8006FAEC (GameData included) | start-up that clears only BSS-backed state; restarting the process is not equivalent |
 | stack reset boot_reset_stack_and_gp (handwritten) | entry fallthrough; the dispatcher (call at 80019bd0) | resident globals, kept heap blocks, VRAM, SPU RAM | every stack frame: sp = fp = 0x80200000, gp = _gp | transfer to a host-owned dispatch loop (longjmp or fiber reset) that unwinds no host frames |
 | dispatcher mode_dispatch(error) (main.c) | error: GET_RA, then the error screen. Otherwise ResetGraph, clear DrawSync and vblank hooks, VSync(2), restart the heap, clear the mode's BSS (boot_clear_bss_range), decode its cached overlay to 0x8006FAF0 (text_unpack_lzss), FlushCache, reset the stack, clear the pad queue, run `entry()`, then call itself | the mode row (in a register across the reset), resident data | the previous mode's stack, BSS, heap blocks not marked keep and its overlay .data (re-decoded on each entry) | top-level loop; overlay .data reset from a pristine copy and BSS cleared on each entry |
-| never-returning dispatch sites | boot boot_main, kernel menu mode_run_kernel_menu, field field_exit_to_mode, battle mode_run_battle, world map func_80070CFC, arena arena_mode_exit (from inside the arena coroutine), menu menu_state_run_screen (debug start), movie func_800737EC (2 sites), heap errors 0x82 (heap_alloc) and 0x83 (heap_free, heap_delay_free) | — | the caller's whole stack | a non-local mode exit (12 sites); the heap errors are fatal, as is the PC file server's error screen (cd_draw_error_indicator, endless at the fourth failed try of a host file call; development only, Disc and files) |
+| never-returning dispatch sites | boot boot_main, kernel menu mode_run_kernel_menu, field field_exit_to_mode, battle mode_run_battle, world map worldmap_main, arena arena_mode_exit (from inside the arena coroutine), menu menu_state_run_screen (debug start), movie func_800737EC (2 sites), heap errors 0x82 (heap_alloc) and 0x83 (heap_free, heap_delay_free) | — | the caller's whole stack | a non-local mode exit (12 sites); the heap errors are fatal, as is the PC file server's error screen (cd_draw_error_indicator, endless at the fourth failed try of a host file call; development only, Disc and files) |
 | fatal error mode_show_fatal_error | dispatcher with a nonzero error (the heap's 0x82 and 0x83) | — | — | on retail (mode_disc_mode = -1) it clears VRAM red and loops forever; the 384x240 report only runs on the PC host |
 | soft reset boot_check_soft_reset -> boot_restart | held 0x90C, checked at 18 call sites in 14 files; field extended event e2 (field_event_soft_reset), unused by shipped scripts | resident .data/.sdata | with interrupts enabled (SwExitCriticalSection) stops the graphics (ResetGraph), the CD (cd_shutdown_disc_access, CdFlush), sound (sound_stop_driver), SPU, the vblank hook, the DrawSync and VSync callbacks and the pads, disables interrupts (SwEnterCriticalSection), then calls the entry, which clears BSS | reset that keeps modified initialised data; the sound mode returns to Stereo |
 | arena coroutine arena_task_resume (resume) / arena_task_yield (yield) (handwritten, menu) | task made by arena_task_create on a 0x1000-byte stack at 0x801FE000 with gp from GetGp, resumed once per frame (menu6.c arena_mode_main); yields at 7 sites (menu2.c 1, menu5.c 6); arena_task_caller_stack/arena_current_task hold the suspended caller; arena_task_save_scheduler/arena_task_restore_scheduler (nested schedulers) are unreferenced | the task's registers and stack | — | a fiber nested in the game fiber (Asyncify, JSPI or stack switching in WebAssembly); snapshots only outside the task or at its yields |
@@ -707,9 +707,9 @@ state and an image at one address can be any of its tenants:
 
 | Address | Images | Loaded by |
 | --- | --- | --- |
-| 0x801C5000 | slot39, ovl2598, ovl2600, ovl2601, ovl2602 (directory 0x10, file kind + 5) | field field_run_menu (reads the file), world map func_800758C0 (decodes its packed copy D_8009D528), resident menu_state_run_screen on the debug start; menu_state_run_screen then calls the tenant's entry: func_801C62A8, func_801CB0A8, func_801CBDBC, func_801CCD28 or func_801CE024 |
+| 0x801C5000 | slot39, ovl2598, ovl2600, ovl2601, ovl2602 (directory 0x10, file kind + 5) | field field_run_menu (reads the file), world map worldmap_suspend_open_map (decodes its packed copy worldmap_packed_menu_overlay), resident menu_state_run_screen on the debug start; menu_state_run_screen then calls the tenant's entry: func_801C62A8, func_801CB0A8, func_801CBDBC, func_801CCD28 or func_801CE024 |
 | 0x801D3000 | mdec movie library | movie func_800737EC (directory 0x18 file 1); field field_movie_play copies directory 4 file 0xA9 there |
-| 0x801DC000 | ovl2143 (actor module) | field field_layer_load (directory 4 file 0x6B9); for the gear shop field_run_menu reads directory 0x10 file 0xC to 0x1DC000, the slot's KUSEG mirror; resident menu_state_run_screen on the debug start. The world map's directory 0x24 holds a third copy (file 0x28) that no world map code reads; its func_80076098, which would draw actor 0, has no caller |
+| 0x801DC000 | ovl2143 (actor module) | field field_layer_load (directory 4 file 0x6B9); for the gear shop field_run_menu reads directory 0x10 file 0xC to 0x1DC000, the slot's KUSEG mirror; resident menu_state_run_screen on the debug start. The world map's directory 0x24 holds a third copy (file 0x28) that no world map code reads; its worldmap_draw_distant_landmark, which would draw actor 0, has no caller |
 | 0x801DE000 | ovl2596 (battle results) | battle battle_main |
 | 0x801E0000 | ovl2606 (debug battle selector) | battle battle_main |
 | 0x801E4000 | ovl2615 (battle setup) | resident mode_battle_load_files |
@@ -748,7 +748,7 @@ isrgb24 0. The game changes only what the table lists.
 | file server error (PC file server only) | draw 320x256, display 320x240 at (0, 0) | default | 0 | 0 | dtd 0, dfe 1 | — | cd_reads_and_streams.c cd_draw_error_indicator |
 | field | 320x224 at y 0 and 256 | (0, 10, 256, 216) | 0, 1 on the shown block while a 24-bit movie plays (field_movie_frame_callback) | 0 | no isbg: ClearImage each frame; dtd 0 after map setup when field_work.jump_mode is set (field_brighten_text_strip) | 2-4 | field.c field_draw_init_display, field_event.c field_draw_set_display_areas |
 | field, 640 wide | 640x224 at y 0 and 256 | (0, 10, 256, 216) | 0 | 0 | as field | 2-4 | event fe df operand 0 (field_event_display_mode), used once, field map 41 on both discs; the staff roll field_staff_roll_run_over_movie also switches to it but needs field ext `be` (enable_movie_overlay, field_event_enable_movie_overlay), which no shipped script uses (Services, BIOS Kanji ROM) |
-| world map | 320x216 at y 0 and 216 | (0, 10, 256, 216) | 0 | 0 | isbg (0, 0, 0x70), black in mode 2 | 2 | worldmap_80072238.c func_80072BB0 |
+| world map | 320x216 at y 0 and 216 | (0, 10, 256, 216) | 0 | 0 | isbg (0, 0, 0x70), black in mode 2 | 2 | worldmap_open_map.c worldmap_init_display |
 | battle (resident preparation) | 320x224 at y 0 and 224 | default | 0 | 0 | isbg (0x3C, 0x78, 0x78) | — | mode_battle_and_menu.c mode_battle_init_display |
 | battle | 320x224 at y 0 and 224 | (0, 10, 256, 216) | 0 | 0 | isbg from the stage (func_801E7210) | 1 + catch-up | battle_flow.c battle_init_display_buffers |
 | Battling arena | 640x218 for scenes (menu2.c arena_winner_open_screen), 320x218 for its menus (arena_winner_close_screen, menu5.c arena_mode_task), at y 0 and 256 | (0, 10, 256, 218) | 0 | 0; the interlaced branch for heights above 256 (both buffers at y 0, screen (0, 16, 256, 212)) has no caller | dtd 1, isbg 0, tpage GetTPage(0, 2, 0x280, 0); DR_AREA/DR_OFFSET per layer | 1 or 2 | menu7.c arena_display_set_disp_envs, arena_display_set_draw_envs |
@@ -759,7 +759,7 @@ The screen window values are PsyQ display units; rendering-behavior.md
 observed the field, battle and menus showing lines 10-225 of a 320x240 frame.
 GTE projection is set per draw, not per mode: field offset (160, 112) with H
 from the map (FieldView.projection), the compass H 0x80 at (0x10A, 0xA6); world
-map H 0x100 at (160, D_8009BE0C); battle (160, 164) with H 0x200 (the screen
+map H 0x100 at (160, worldmap_view_center_y); battle (160, 164) with H 0x200 (the screen
 shatter 512, the sky its own); menu (160, 112) H 0x200; arena (width / 2,
 height / 2) with H set per screen (0xC0-0x800); 2D sprite sheets through the
 GTE with H 0x1000 (sprite_sheet.c).
@@ -785,28 +785,28 @@ GTE with H 0x1000 (sprite_sheet.c).
   - SetDrawMode passes 0 at 58 of 63 call sites.
   - SetDrawTPage passes 0 at 16 of 21.
   - The linked images hold 62 and 20 such calls, because the two branches of
-    arena arena_glow_draw_shade_tile and of world map func_800925A0 each share one call.
+    arena arena_glow_draw_shade_tile and of world map worldmap_screen_fade_update each share one call.
   - Dither 1 goes to the arena's screen fades (arena_glow_draw_shade_tile at menu7.c:2154
     and 2156, arena_glow_draw at menu7.c:2203), its HUD packets (arena_hud_build_overlay_buffer
     at menu5.c:1605 and 1675, arena_hud_build_packets at menu5.c:1832 and 1834) and the
-    world map's dithered saved-screen fade (worldmap_80072238.c:511 in
-    func_80072DB4, a DR_TPAGE drawn before its translucent black quad).
+    world map's dithered saved-screen fade (worldmap_open_map.c:511 in
+    worldmap_fade_saved_screen, a DR_TPAGE drawn before its translucent black quad).
   - ovl2615's stage backdrops copy the draw environment's dfe and dtd
     (stage.c func_801E7914, two sites, after GetDrawEnv).
 
   Observed: rendering-behavior.md, Dithering.
 - Semi-transparency: SetSemiTrans (76 functions) with the rate from GetTPage's
   abr argument (0 at 127 sites, 1 at 29, 2 at 31, 3 once in
-  worldmap_80077E68.c, plus variables such as the field fade channels'
+  worldmap_scenes_9_10.c, plus variables such as the field fade channels'
   field_work.fades[i].abr) or from data in raw E1 words (battle_sprite_commands.c
   effects, sprite render bits 5-6 in sprite_vm_draw.c).
 - Texture windows: SetDrawMode with a window for field dialogue and text
   (field_motion.c), field overlay sprites (field_effect.c) and ovl2615's
   stage backdrops (stage.c); DR_TWIN through SetTexWindow for the world-map
-  horizon (worldmap_80072238.c func_800739B8).
+  horizon (worldmap_open_map.c worldmap_horizon_init).
 - Framebuffer feedback: DR_MOVE packets copy screen regions inside the list
   (SetDrawMove: the field distortion effect field_distortion_start, the arena's
-  arena_menu_draw_overlay, the world-map heat haze func_80081D80); StoreImage (23
+  arena_menu_draw_overlay, the world-map heat haze worldmap_scene16_haze_update); StoreImage (23
   functions), MoveImage (40), LoadImage (109) and ClearImage (17) read, copy and
   rewrite VRAM, including the saved-screen slot at (0x2C0, 0x100). The CPU sets
   bit 15 (STP) on captured pixels (battle_action_files.c battle_run_intro_swirl, field

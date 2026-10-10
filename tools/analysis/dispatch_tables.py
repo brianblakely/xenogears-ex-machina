@@ -45,8 +45,8 @@ ones by model_relocate_sprite_model) come from these loaders:
 * arena model files (0x30, 1) id + 2 (menu arena_actor_load_model; relocated against the
   base word at +0x1c, arena_node_relocate_model_file, and bound by arena_node_build_model_set) and the menu
   overlay's own arena_actor_extra_model (arena_mode_task);
-* world map area files (0x24, 0) area + 1 for the area sets of D_8009B584
-  (func_80071B9C, func_80073530: the group at header +8, func_80084580);
+* world map area files (0x24, 0) area + 1 for the area sets of worldmap_area_file_sets
+  (worldmap_select_area_files, worldmap_unpack_area_data: the group at header +8, worldmap_objects_build);
 * sprite commands f5 (a model), f6 and f7 (a model group) in the sprite blocks
   tools.analysis.sprite_vm decodes (resident sprite_vm_run_generic_command).
 
@@ -77,8 +77,8 @@ ROOT = Path(__file__).resolve().parents[2]
 FORMULA_UNIT = "battle/battle_menus_and_resolver.c"  # battle_formula_table, battle_gear_formula_table
 GEAR_FILE_UNIT = "battle/battle_scene.c"  # battle_gear_file_table
 MODEL_UNIT = "resident/model_renderer.c"  # model_primitive_types and its prepare routines
-AREA_UNIT = "worldmap/worldmap_80094A5C.c"  # D_8009B584
-MODE_UNIT = "worldmap/worldmap_80072238.c"  # D_8009A058, the world map modes
+AREA_UNIT = "worldmap/worldmap_movement_terrain.c"  # worldmap_area_file_sets
+MODE_UNIT = "worldmap/worldmap_open_map.c"  # worldmap_mode_handlers, the world map modes
 SPRITE_UNIT = "resident/sprite_vm_draw.c"  # sprite_draw_callbacks, the sprite task callbacks
 TMD_UNIT = "battle/battle_tmd_screen_effects.c"  # battle_tmd_build_packets packets, battle_tmd_draw_object draws
 FORMULA_TABLES = (("battle_formula_table", "battle_resolve_action"), ("battle_gear_formula_table", "battle_resolve_gear_action"))
@@ -194,8 +194,8 @@ def gear_files(root: Path = ROOT) -> tuple[tuple[int, int], ...]:
 
 @cache
 def area_files(root: Path = ROOT) -> tuple[int, ...]:
-    """D_8009B584: each area set's first file (a record) in (0x24, 0)."""
-    _, body = initializer(unit(AREA_UNIT, root), "D_8009B584")
+    """worldmap_area_file_sets: each area set's first file (a record) in (0x24, 0)."""
+    _, body = initializer(unit(AREA_UNIT, root), "worldmap_area_file_sets")
     return tuple(int(row.split(",")[0], 0) for row in re.findall(r"\{([^}]*)\}", body))
 
 
@@ -710,7 +710,7 @@ def menu_models(disc: Disc) -> Iterator[ModelRef]:
 def worldmap_models(disc: Disc) -> Iterator[ModelRef]:
     for area in sorted(set(area_files())):
         data = decode_block(disc.sectors(disc.slot(0x24, 0, area + 1))).data
-        group = struct.unpack_from("<I", data, 8)[0]  # AreaHeader.off8 (func_80073530)
+        group = struct.unpack_from("<I", data, 8)[0]  # AreaHeader.off8 (worldmap_unpack_area_data)
         yield from group_refs(f"area {area}", data, group)
 
 
@@ -810,8 +810,8 @@ def primitive_census(disc: Disc) -> PrimitiveCensus:
 # World map arrival modes
 # ---------------------------------------------------------------------------
 #
-# The world map overlay's entry (worldmap.c func_80070CFC) runs mode
-# game_data_worldmap_flag_word[0] & 0x7fff of D_8009A058 (its enter, then start and leave each
+# The world map overlay's entry (worldmap.c worldmap_main) runs mode
+# game_data_worldmap_flag_word[0] & 0x7fff of worldmap_mode_handlers (its enter, then start and leave each
 # frame) without a bound check. The word is the game data's +0x2320. The world
 # map sets it to 1 for a new world state and keeps it across its own battles
 # (bit 0x8000 marks the return); its exits store a field's entry there. Field
@@ -829,21 +829,21 @@ EVENT_ARCHIVE = (0x20, 0, 2)  # ovl3087 801e5160: the battle event script archiv
 
 @cache
 def world_modes(root: Path = ROOT) -> tuple[str, ...]:
-    """D_8009A058's rows (each enter, start, leave), by mode."""
-    length, body = initializer(unit(MODE_UNIT, root), "D_8009A058")
+    """worldmap_mode_handlers's rows (each enter, start, leave), by mode."""
+    length, body = initializer(unit(MODE_UNIT, root), "worldmap_mode_handlers")
     rows = tuple(re.findall(r"\{(\w+), (\w+), (\w+)\}", body))
     if length != len(rows):
-        raise CensusError(f"D_8009A058[{length}] lists {len(rows)} modes")
+        raise CensusError(f"worldmap_mode_handlers[{length}] lists {len(rows)} modes")
     return tuple(start for _, start, _ in rows)
 
 
-# The world map leaves for a field (exit 0, worldmap.c func_80070CFC) with the
-# scene and entry of the current path region (D_8009D7D8, a PathRegion) or,
+# The world map leaves for a field (exit 0, worldmap.c worldmap_main) with the
+# scene and entry of the current path region (worldmap_current_path, a PathRegion) or,
 # from a scripted mode, constants its code stores in the game data's map
-# (game_data.map, 0x8006f94e). func_80094238 makes a region current for a
+# (game_data.map, 0x8006f94e). worldmap_path_select_region makes a region current for a
 # path table (it tests every region with a link; kind 4 regions only record a
-# destination) and func_80094364 for table 3. The area files (0x24, 0) area + 1
-# of D_8009B584 hold the four path tables (func_80073530: AreaHeader.spots,
+# destination) and worldmap_path_select_region_of_kind for table 3. The area files (0x24, 0) area + 1
+# of worldmap_area_file_sets hold the four path tables (worldmap_unpack_area_data: AreaHeader.spots,
 # then SpotHeader.table, offsets from the spot block).
 PATH_TABLES = 4
 REGION = 16  # PathRegion: x, z, w, h, id, entry, link, kind
@@ -1338,7 +1338,7 @@ def primitive_report(results: list[PrimitiveCensus]) -> list[str]:
 def mode_report(results: list[ModeCensus]) -> list[str]:
     modes = world_modes()
     out = [
-        f"world map arrival modes: D_8009A058 {len(modes)} modes (worldmap.c func_80070CFC,"
+        f"world map arrival modes: worldmap_mode_handlers {len(modes)} modes (worldmap.c worldmap_main,"
         " game_data_worldmap_flag_word[0] & 0x7fff)"
     ]
     for n, result in enumerate(results, 1):
