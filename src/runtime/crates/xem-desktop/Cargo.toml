@@ -13,3 +13,5 @@ png.workspace = true
 xem-host = { path = "../xem-host" }
 xem-render = { path = "../xem-render" }
 xem-settings = { path = "../xem-settings" }
+xem-core = { path = "../xem-core" }
+xem-game = { path = "../xem-game" }

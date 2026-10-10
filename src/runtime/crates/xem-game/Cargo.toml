@@ -10,6 +10,7 @@ links = "xem_game"
 
 [dependencies]
 xem-core = { path = "../xem-core" }
+xem-disc = { path = "../xem-disc" }
 
 [build-dependencies]
 cc.workspace = true

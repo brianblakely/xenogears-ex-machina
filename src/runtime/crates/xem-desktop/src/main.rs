@@ -1,7 +1,7 @@
-//! The desktop host: an SDL3 window presenting through wgpu, the test scene as
-//! the stand-in game view and the Slint settings panel as an overlay
-//! (`xem_host::View`). One wgpu device and queue serve the scene, the
-//! compositor and Slint.
+//! The desktop host: an SDL3 window presenting through wgpu, the game (with
+//! `--disc`, else the test scene as a stand-in) and the Slint settings panel as
+//! an overlay (`xem_host::View`). One wgpu device and queue serve the game
+//! image, the compositor and Slint.
 
 use sdl3_sys::everything::*;
 use std::cell::RefCell;
@@ -16,6 +16,10 @@ struct Options {
     exit_after_frames: Option<u64>,
     screenshot: Option<PathBuf>,
     show_settings: bool,
+    /// The user's disc (CHD, cue or bin): play the game.
+    disc: Option<PathBuf>,
+    cards: Option<PathBuf>,
+    bios: Option<PathBuf>,
 }
 
 fn options() -> Result<Options, String> {
@@ -23,6 +27,9 @@ fn options() -> Result<Options, String> {
         exit_after_frames: None,
         screenshot: None,
         show_settings: false,
+        disc: None,
+        cards: None,
+        bios: None,
     };
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -39,10 +46,16 @@ fn options() -> Result<Options, String> {
                 options.screenshot = Some(args.next().ok_or("--screenshot needs a path")?.into());
             }
             "--show-settings" => options.show_settings = true,
+            "--disc" => options.disc = Some(args.next().ok_or("--disc needs a path")?.into()),
+            "--cards" => options.cards = Some(args.next().ok_or("--cards needs a directory")?.into()),
+            "--bios" => options.bios = Some(args.next().ok_or("--bios needs a path")?.into()),
             "--help" => {
                 println!(
-                    "xem-desktop [--show-settings] [--exit-after-frames N] [--screenshot out.png]\n\
-                     F1, Escape or a gamepad's Start button toggles the settings panel."
+                    "xem-desktop [--disc DISC [--cards DIR] [--bios FILE]] [--show-settings] \
+                     [--exit-after-frames N] [--screenshot out.png]\n\
+                     F1 or Escape toggles the settings panel. Pad: arrows, Z cross, X circle, \
+                     A square, S triangle, Q/W L1/R1, 1/2 L2/R2, Enter start, right Shift select, \
+                     or a gamepad."
                 );
                 std::process::exit(0);
             }
@@ -88,6 +101,95 @@ struct Host {
     presenter: Presenter,
     gpu: Gpu,
     start: Instant,
+    game: Option<Game>,
+}
+
+/// The game, paced at the console's 60 frames a second, with its sound.
+struct Game {
+    session: xem_core::control::Session<xem_game::NativeModule>,
+    audio: *mut SDL_AudioStream,
+    paced: Instant,
+    samples: Vec<i16>,
+}
+
+const FRAME: std::time::Duration = std::time::Duration::from_nanos(1_000_000_000 / 60);
+
+impl Game {
+    fn open(options: &Options, disc: &std::path::Path) -> Result<Self, String> {
+        let cards = options.cards.clone().or_else(|| {
+            FileStore::default_path().and_then(|p| p.parent().map(|d| d.join("cards")))
+        });
+        if let Some(dir) = &cards {
+            std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+        }
+        let boot = xem_game::BootOptions {
+            cards,
+            bios: options.bios.clone(),
+            audio_output: true,
+            ..Default::default()
+        };
+        let (session, identity) = xem_game::boot(disc, &boot).map_err(|e| e.to_string())?;
+        eprintln!("xem-desktop: {}", identity.boot_path);
+        let spec = SDL_AudioSpec { format: SDL_AUDIO_S16LE, channels: 2, freq: 44100 };
+        // SAFETY: SDL is initialised with audio; a null callback queues data.
+        let audio = unsafe {
+            SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, None, std::ptr::null_mut())
+        };
+        if audio.is_null() {
+            eprintln!("xem-desktop: no audio device; the game runs silent");
+        } else {
+            unsafe { SDL_ResumeAudioStreamDevice(audio) };
+        }
+        Ok(Game { session, audio, paced: Instant::now(), samples: Vec::new() })
+    }
+
+    /// Run the frames due by the wall clock (at most two per call: a stalled
+    /// host drops time rather than catching up), then queue their sound.
+    fn update(&mut self, buttons: u16, volume: u8) -> Result<(), String> {
+        let mut due = 0;
+        while self.paced + FRAME <= Instant::now() && due < 2 {
+            self.paced += FRAME;
+            due += 1;
+        }
+        if self.paced + FRAME <= Instant::now() {
+            self.paced = Instant::now();
+        }
+        for _ in 0..due {
+            self.session.runtime.services().pads.0[0].buttons = buttons;
+            self.session.frame().map_err(|trap| trap.to_string())?;
+        }
+        let spu = &mut self.session.runtime.services().spu;
+        self.samples.resize(spu.audio_queued(), 0);
+        spu.take_audio(&mut self.samples);
+        if !self.audio.is_null() && !self.samples.is_empty() {
+            let gain = i32::from(volume.min(100));
+            for sample in &mut self.samples {
+                *sample = (i32::from(*sample) * gain / 100) as i16;
+            }
+            // SAFETY: an open stream; SDL copies the bytes.
+            unsafe {
+                SDL_PutAudioStreamData(
+                    self.audio,
+                    self.samples.as_ptr().cast(),
+                    (self.samples.len() * 2) as i32,
+                );
+            }
+        }
+        Ok(())
+    }
+
+    fn display(&mut self) -> (u32, u32, Vec<u8>) {
+        self.session.runtime.services().gpu.display_rgba8()
+    }
+}
+
+impl Drop for Game {
+    fn drop(&mut self) {
+        if !self.audio.is_null() {
+            // SAFETY: opened by SDL_OpenAudioDeviceStream, destroyed once.
+            unsafe { SDL_DestroyAudioStream(self.audio) };
+        }
+    }
 }
 
 impl Host {
@@ -116,11 +218,13 @@ impl Host {
             options.show_settings,
         )?;
         window.set_text_input(options.show_settings);
+        let game = options.disc.as_deref().map(|disc| Game::open(options, disc)).transpose()?;
         Ok(Self {
             view,
             presenter,
             gpu,
             start: Instant::now(),
+            game,
         })
     }
 
@@ -208,6 +312,12 @@ impl Host {
         if self.presenter.is_suspended() {
             // The surface was lost.
             self.presenter.resume(&self.gpu, window)?;
+        }
+        if let Some(game) = &mut self.game {
+            let volume = self.view.settings().borrow().settings().master_volume;
+            game.update(self.view.pad_buttons(), volume)?;
+            let (width, height, rgba) = game.display();
+            self.view.set_game_image(&self.gpu, (width, height), &rgba);
         }
         let Some(frame) = self.presenter.acquire(&self.gpu, window)? else {
             return Ok(false);

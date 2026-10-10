@@ -96,38 +96,20 @@ fn run(_: &Options) -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(has_game_module)]
 fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
     use std::io::BufRead;
-    use xem_core::control::Session;
-    use xem_core::inspect::Schema;
-    use xem_core::devices::card::FileStorage;
-    use xem_core::{Runtime, bios, exe};
 
-    let mut source = xem_disc::open_path(&options.disc)?;
-    let identity = xem_disc::identify(source.as_mut())?;
+    let boot = xem_game::BootOptions {
+        cards: options.cards.clone(),
+        bios: options.bios.clone(),
+        stubs: Some(options.stubs.clone()),
+        schema: Some(options.schema.clone()),
+        audio_output: options.wav.is_some(),
+    };
+    let (mut session, identity) = xem_game::boot(&options.disc, &boot)?;
     let known = identity.disc.ok_or("not a known Xenogears disc")?;
     eprintln!("disc {} ({}), {}", known.number(), known.serial(), identity.boot_path);
-    let header = exe::parse(&identity.executable)?;
-
-    let mut runtime = Runtime::new(xem_game::NativeModule::new());
-    if let Ok(text) = std::fs::read_to_string(&options.stubs) {
-        runtime.services().stub_names =
-            text.lines().filter_map(|l| l.split_once(' ').map(|(_, n)| n.to_string())).collect();
-    }
-    if let Some(dir) = &options.cards {
-        runtime.services().card.attach_storage(Box::new(FileStorage { dir: dir.clone() }))?;
-    }
-    let rom = options.bios.as_ref().map(std::fs::read).transpose()?;
-    if bios::install_kanji_font(runtime.memory(), rom.as_deref())? == bios::KanjiFont::Blank {
-        eprintln!("kanji font: blank glyphs (no --bios image)");
-    }
-    runtime.services().spu.set_output(options.wav.is_some());
-    // The BIOS copies the executable's text to its address and jumps to pc0.
-    runtime.memory().write(header.text_address, exe::text(&identity.executable, &header))?;
-    runtime.services().insert_disc(source);
     if options.cd_trace {
-        runtime.services().cd.sector_log = Some(Vec::new());
+        session.runtime.services().cd.sector_log = Some(Vec::new());
     }
-    let schema = std::fs::read_to_string(&options.schema).ok().map(|t| Schema::parse(&t)).transpose()?;
-    let mut session = Session::new(runtime, schema);
 
     if options.control {
         let stdin = std::io::stdin();

@@ -5231,6 +5231,8 @@ dependencies = [
  "png",
  "sdl3-sys",
  "wgpu",
+ "xem-core",
+ "xem-game",
  "xem-host",
  "xem-render",
  "xem-settings",
@@ -5250,6 +5252,7 @@ version = "0.1.0"
 dependencies = [
  "cc",
  "xem-core",
+ "xem-disc",
 ]
 
 [[package]]

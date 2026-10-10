@@ -216,6 +216,9 @@ pub struct View {
     ui: SettingsUi,
     panel_visible: Rc<RefCell<bool>>,
     gamepads: Vec<*mut SDL_Gamepad>,
+    /// The game's display (from the GPU device), shown instead of the test
+    /// scene once a host sets it.
+    game_image: Option<(wgpu::Texture, wgpu::TextureView, (u32, u32))>,
 }
 
 impl View {
@@ -273,6 +276,7 @@ impl View {
             ui,
             panel_visible,
             gamepads: Vec::new(),
+            game_image: None,
         })
     }
 
@@ -408,6 +412,104 @@ impl View {
         }
     }
 
+    /// Show the game's display: `rgba` is `width` x `height` RGBA8 pixels
+    /// (sRGB-encoded, as the console outputs them).
+    pub fn set_game_image(&mut self, gpu: &Gpu, (width, height): (u32, u32), rgba: &[u8]) {
+        if width == 0 || height == 0 {
+            return;
+        }
+        if self.game_image.as_ref().is_none_or(|(_, _, size)| *size != (width, height)) {
+            let texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
+                label: Some("game display"),
+                size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: GAME_FORMAT,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                view_formats: &[],
+            });
+            let view = texture.create_view(&Default::default());
+            self.game_image = Some((texture, view, (width, height)));
+        }
+        let (texture, _, _) = self.game_image.as_ref().expect("created above");
+        gpu.queue.write_texture(
+            texture.as_image_copy(),
+            rgba,
+            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(width * 4), rows_per_image: Some(height) },
+            wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+        );
+    }
+
+    /// The PS1 pad buttons the keyboard and the first gamepad hold, as the
+    /// pad's data halfword has them (bit 0 Select .. bit 15 Square), unless
+    /// the settings panel has the input.
+    pub fn pad_buttons(&self) -> u16 {
+        if self.panel_visible() {
+            return 0;
+        }
+        const KEYS: [(SDL_Scancode, u16); 16] = [
+            (SDL_SCANCODE_RSHIFT, 1 << 0),
+            (SDL_SCANCODE_RETURN, 1 << 3),
+            (SDL_SCANCODE_UP, 1 << 4),
+            (SDL_SCANCODE_RIGHT, 1 << 5),
+            (SDL_SCANCODE_DOWN, 1 << 6),
+            (SDL_SCANCODE_LEFT, 1 << 7),
+            (SDL_SCANCODE_1, 1 << 8),
+            (SDL_SCANCODE_2, 1 << 9),
+            (SDL_SCANCODE_Q, 1 << 10),
+            (SDL_SCANCODE_W, 1 << 11),
+            (SDL_SCANCODE_S, 1 << 12),
+            (SDL_SCANCODE_X, 1 << 13),
+            (SDL_SCANCODE_Z, 1 << 14),
+            (SDL_SCANCODE_A, 1 << 15),
+            (SDL_SCANCODE_BACKSPACE, 1 << 0),
+            (SDL_SCANCODE_SPACE, 1 << 14),
+        ];
+        const PAD: [(SDL_GamepadButton, u16); 14] = [
+            (SDL_GAMEPAD_BUTTON_BACK, 1 << 0),
+            (SDL_GAMEPAD_BUTTON_LEFT_STICK, 1 << 1),
+            (SDL_GAMEPAD_BUTTON_RIGHT_STICK, 1 << 2),
+            (SDL_GAMEPAD_BUTTON_START, 1 << 3),
+            (SDL_GAMEPAD_BUTTON_DPAD_UP, 1 << 4),
+            (SDL_GAMEPAD_BUTTON_DPAD_RIGHT, 1 << 5),
+            (SDL_GAMEPAD_BUTTON_DPAD_DOWN, 1 << 6),
+            (SDL_GAMEPAD_BUTTON_DPAD_LEFT, 1 << 7),
+            (SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, 1 << 10),
+            (SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, 1 << 11),
+            (SDL_GAMEPAD_BUTTON_NORTH, 1 << 12),
+            (SDL_GAMEPAD_BUTTON_EAST, 1 << 13),
+            (SDL_GAMEPAD_BUTTON_SOUTH, 1 << 14),
+            (SDL_GAMEPAD_BUTTON_WEST, 1 << 15),
+        ];
+        let mut buttons = 0;
+        let mut count = 0;
+        // SAFETY: SDL owns the array and keeps it valid while SDL runs.
+        let keys = unsafe { SDL_GetKeyboardState(&mut count) };
+        if !keys.is_null() {
+            let keys = unsafe { std::slice::from_raw_parts(keys, count.max(0) as usize) };
+            for (scancode, bit) in KEYS {
+                if keys.get(scancode.0 as usize).copied().unwrap_or(false) {
+                    buttons |= bit;
+                }
+            }
+        }
+        if let Some(&pad) = self.gamepads.first() {
+            for (button, bit) in PAD {
+                // SAFETY: an open gamepad.
+                if unsafe { SDL_GetGamepadButton(pad, button) } {
+                    buttons |= bit;
+                }
+            }
+            for (axis, bit) in [(SDL_GAMEPAD_AXIS_LEFT_TRIGGER, 1 << 8), (SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 1 << 9)] {
+                if unsafe { SDL_GetGamepadAxis(pad, axis) } > 16000 {
+                    buttons |= bit;
+                }
+            }
+        }
+        buttons
+    }
+
     /// Records one frame into `output` (a target of the view's size) at scene
     /// time `time` seconds and submits it.
     pub fn render(
@@ -422,23 +524,30 @@ impl View {
         }
 
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
-        let (view, proj) = demo_camera(GAME_SIZE.0 as f32 / GAME_SIZE.1 as f32, time);
-        self.scene.render_views(
-            &mut encoder,
-            &[ViewTarget {
-                view,
-                proj,
-                target: &self.game_view,
-                viewport: Viewport::full(GAME_SIZE.0, GAME_SIZE.1),
-            }],
-            time,
-        );
+        let (game_view, game_size) = match &self.game_image {
+            Some((_, view, size)) => (view, *size),
+            None => {
+                // No game: the test scene stands in for it.
+                let (view, proj) = demo_camera(GAME_SIZE.0 as f32 / GAME_SIZE.1 as f32, time);
+                self.scene.render_views(
+                    &mut encoder,
+                    &[ViewTarget {
+                        view,
+                        proj,
+                        target: &self.game_view,
+                        viewport: Viewport::full(GAME_SIZE.0, GAME_SIZE.1),
+                    }],
+                    time,
+                );
+                (&self.game_view, GAME_SIZE)
+            }
+        };
 
         let target_size = self.target_size;
         let presentation = self.settings.borrow().settings().presentation.clone();
         let mut game = Quad::screen(
-            &self.game_view,
-            present_rect(GAME_SIZE, target_size, presentation.scale),
+            game_view,
+            present_rect(game_size, target_size, presentation.scale),
             target_size,
         );
         game.filter = match presentation.filter {
