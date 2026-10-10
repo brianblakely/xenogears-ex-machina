@@ -165,7 +165,8 @@ SIMULATED_ROTATE=1` (the simulated HMD turns continuously),
 `SIMULATED_LEFT/RIGHT=simple` (simulated simple controllers) and `XRT_NO_STDIN=1`,
 in a private short `XDG_RUNTIME_DIR` (the IPC socket path must fit a
 `sockaddr_un`); the demo finds it through `XR_RUNTIME_JSON=$XEM_MONADO_RUNTIME`.
-Both use lavapipe unless `VK_ICD_FILENAMES` is set. It checks the state order
+Both use lavapipe unless `VK_ICD_FILENAMES` is set (`runtime/scripts/xem-gpu-host
+runtime/scripts/xr-smoke.sh` runs both on the host NVIDIA driver). It checks the state order
 READY, SYNCHRONIZED, VISIBLE, FOCUSED, STOPPING, EXITING after an exit request;
 strictly increasing predicted display times; two distinct eye poses; projection
 and quad layers on every rendered frame; acquire, wait, submit, release order;
