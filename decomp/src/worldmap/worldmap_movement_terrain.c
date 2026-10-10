@@ -1450,13 +1450,13 @@ void worldmap_actor_spawn(s32 kind, s32 update) {
 }
 
 /* 80097770: Send command 1 with an argument unless one is pending; 1 when sent. */
-s32 worldmap_actor_request(s32 index, s32 arg) {
+s32 worldmap_actor_request(s32 index, s32 argument) {
     WorldmapActor *actor;
 
     actor = &worldmap_actor_slots[index];
     if (actor->unk4 == 0) {
         actor->command = 1;
-        actor->unk4 = arg;
+        actor->unk4 = argument;
         return 1;
     }
     return 0;

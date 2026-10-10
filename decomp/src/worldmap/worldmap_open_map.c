@@ -45,16 +45,16 @@
  * table worldmap_actor_script_handlers in this unit's data, ahead of their code. */
 s32 worldmap_actor_script_exit_worldmap(void);
 s32 worldmap_actor_script_wait(WorldmapActor *actor, s16 frames);
-s32 worldmap_actor_script_send_actor(WorldmapActor *actor, s32 a, s32 b);
+s32 worldmap_actor_script_send_actor(WorldmapActor *actor, s32 slot, s32 argument);
 s32 worldmap_actor_script_place_player(WorldmapActor *actor, s32 x, s32 y, s32 z);
 s32 worldmap_actor_script_set_script_vector(WorldmapActor *actor, s16 x, s16 y, s16 z);
-s32 worldmap_actor_script_start_emitters(WorldmapActor *actor, s32 a);
-s32 worldmap_actor_script_stop_emitters(WorldmapActor *actor, s32 a);
-s32 worldmap_actor_script_stop_effects(WorldmapActor *actor, s32 a);
-s32 worldmap_actor_script_fade_music(WorldmapActor *actor, s32 a, s32 b);
+s32 worldmap_actor_script_start_emitters(WorldmapActor *actor, s32 group);
+s32 worldmap_actor_script_stop_emitters(WorldmapActor *actor, s32 group);
+s32 worldmap_actor_script_stop_effects(WorldmapActor *actor, s32 group);
+s32 worldmap_actor_script_fade_music(WorldmapActor *actor, s32 level, s32 frames);
 s32 worldmap_actor_script_play_sound(WorldmapActor *actor, s32 sound);
-s32 worldmap_actor_script_slide_sound_volume(WorldmapActor *actor, s32 sound, s32 b, s32 c);
-s32 worldmap_actor_script_set_fade(WorldmapActor *actor, s32 a, s32 b);
+s32 worldmap_actor_script_slide_sound_volume(WorldmapActor *actor, s32 sound, s32 volume, s32 frames);
+s32 worldmap_actor_script_set_fade(WorldmapActor *actor, s32 rate, s32 step);
 
 /* Called by the open map's start and leave handlers ahead of their
  * definitions. */
@@ -1823,11 +1823,11 @@ s32 worldmap_actor_script_wait(WorldmapActor *actor, s16 frames) {
     return 0;
 }
 
-/* 80076C18: Script opcode 2 (4 halfwords: actor a, argument b, unused): send command 1
- * with argument b to actor slot a (worldmap_actor_request; dropped while that actor
- * has an argument pending). */
-s32 worldmap_actor_script_send_actor(WorldmapActor *actor, s32 a, s32 b) {
-    worldmap_actor_request(a, b);
+/* 80076C18: Script opcode 2 (4 halfwords: slot, argument, unused): send command 1
+ * with `argument` to actor `slot` (worldmap_actor_request; dropped while that
+ * actor has an argument pending). */
+s32 worldmap_actor_script_send_actor(WorldmapActor *actor, s32 slot, s32 argument) {
+    worldmap_actor_request(slot, argument);
     return 4;
 }
 
@@ -1849,33 +1849,33 @@ s32 worldmap_actor_script_set_script_vector(WorldmapActor *actor, s16 x, s16 y, 
     return 4;
 }
 
-/* 80076C88: Script opcode 5 (2 halfwords: group a): place emitter group a at the
+/* 80076C88: Script opcode 5 (2 halfwords: group): place emitter `group` at the
  * script vector, unrotated, and start it unless one of its emitters is live
  * (worldmap_effects_start_emitters). */
-s32 worldmap_actor_script_start_emitters(WorldmapActor *actor, s32 a) {
-    worldmap_effects_start_emitters(a, SCRIPT_VECTOR, 0);
+s32 worldmap_actor_script_start_emitters(WorldmapActor *actor, s32 group) {
+    worldmap_effects_start_emitters(group, SCRIPT_VECTOR, 0);
     return 2;
 }
 
-/* 80076CB4: Script opcode 6 (2 halfwords: group a): deactivate emitter group a
+/* 80076CB4: Script opcode 6 (2 halfwords: group): deactivate emitter `group`
  * (worldmap_effects_stop_emitters). */
-s32 worldmap_actor_script_stop_emitters(WorldmapActor *actor, s32 a) {
-    worldmap_effects_stop_emitters(a);
+s32 worldmap_actor_script_stop_emitters(WorldmapActor *actor, s32 group) {
+    worldmap_effects_stop_emitters(group);
     return 2;
 }
 
-/* 80076CD4: Script opcode 7 (2 halfwords: group a): stop the live effects of emitter
- * group a (worldmap_effects_stop_particles). */
-s32 worldmap_actor_script_stop_effects(WorldmapActor *actor, s32 a) {
-    worldmap_effects_stop_particles(a);
+/* 80076CD4: Script opcode 7 (2 halfwords: group): stop the live effects of emitter
+ * `group` (worldmap_effects_stop_particles). */
+s32 worldmap_actor_script_stop_effects(WorldmapActor *actor, s32 group) {
+    worldmap_effects_stop_particles(group);
     return 2;
 }
 
-/* 80076CF4: Script opcode 8 (4 halfwords: level a, frames b, unused): fade the music
- * sequence mode_music_seq to level a over b frames, at once when b is 0
+/* 80076CF4: Script opcode 8 (4 halfwords: level, frames, unused): fade the music
+ * sequence mode_music_seq to `level` over `frames`, at once when that is 0
  * (sound_set_seq_fade). */
-s32 worldmap_actor_script_fade_music(WorldmapActor *actor, s32 a, s32 b) {
-    sound_set_seq_fade((SoundSeq *)mode_music_seq, a, b);
+s32 worldmap_actor_script_fade_music(WorldmapActor *actor, s32 level, s32 frames) {
+    sound_set_seq_fade((SoundSeq *)mode_music_seq, level, frames);
     return 4;
 }
 
@@ -1886,20 +1886,20 @@ s32 worldmap_actor_script_play_sound(WorldmapActor *actor, s32 sound) {
     return 2;
 }
 
-/* 80076D50: Script opcode 10 (4 halfwords: sound, volume b, frames c): slide the volume
- * of the channels playing area-bank effect `sound` to b over c frames
+/* 80076D50: Script opcode 10 (4 halfwords: sound, volume, frames): slide the volume of
+ * the channels playing area-bank effect `sound` to `volume` over `frames`
  * (sound_slide_effect_volume). */
-s32 worldmap_actor_script_slide_sound_volume(WorldmapActor *actor, s32 sound, s32 b, s32 c) {
-    sound_slide_effect_volume((sound_effect_bank->id << 16) | sound, b, c);
+s32 worldmap_actor_script_slide_sound_volume(WorldmapActor *actor, s32 sound, s32 volume, s32 frames) {
+    sound_slide_effect_volume((sound_effect_bank->id << 16) | sound, volume, frames);
     return 4;
 }
 
-/* 80076D8C: Script opcode 11 (4 halfwords: rate a, step b, unused): set the screen
+/* 80076D8C: Script opcode 11 (4 halfwords: rate, step, unused): set the screen
  * fade's semi-transparency rate (worldmap_screen_fade_rate, of its draw-mode page) and its
  * per-frame brightness step (worldmap_screen_fade_step). */
-s32 worldmap_actor_script_set_fade(WorldmapActor *actor, s32 a, s32 b) {
-    worldmap_screen_fade_rate = a;
-    worldmap_screen_fade_step = b;
+s32 worldmap_actor_script_set_fade(WorldmapActor *actor, s32 rate, s32 step) {
+    worldmap_screen_fade_rate = rate;
+    worldmap_screen_fade_step = step;
     return 4;
 }
 

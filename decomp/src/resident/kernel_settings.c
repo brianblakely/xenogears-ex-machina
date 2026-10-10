@@ -1,6 +1,6 @@
 /* Initialized small globals opening .sdata at _gp (0x80059170), ahead of the
- * sprite unit's own: the kernel menu's start parameters, the overlays'
- * battle-entry and battle-music flags and the pointer to the disc index's
+ * sprite unit's own: the kernel menu's start parameters, the overlays' gear
+ * riding lock and battle-music flag and the pointer to the disc index's
  * first word. Every user loads and stores them absolutely: battle_mode and
  * mode_battle_and_menu, which reach small data of their own through $gp, and the
  * overlays (tools/data_users.py --range 80059170:80059184). GCC writes a -G8

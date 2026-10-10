@@ -3552,10 +3552,10 @@ void menu_status_panel_layout_hp_ep(MenuStatusPanel *panel, u8 ch, u8 row, MenuA
 }
 
 /* 801CE0CC: Build the parts of `panel` (801cd81c, 801cdb1c, 801cdc6c) and show it. */
-void menu_status_panel_build(MenuStatusPanel *panel, u8 a, u8 b, MenuAnchor *c, MenuAnchor *d, u8 e) {
-    menu_status_panel_layout_sprites(panel, a, b, c, d, e);
-    menu_status_panel_layout_level(panel, a, b, c, d);
-    menu_status_panel_layout_hp_ep(panel, a, b, c, d, e);
+void menu_status_panel_build(MenuStatusPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y, u8 layout) {
+    menu_status_panel_layout_sprites(panel, ch, row, x, y, layout);
+    menu_status_panel_layout_level(panel, ch, row, x, y);
+    menu_status_panel_layout_hp_ep(panel, ch, row, x, y, layout);
     panel->shown = 1;
     panel->buffer = menu_state_current->buffer_index;
 }

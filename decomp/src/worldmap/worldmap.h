@@ -316,7 +316,7 @@ void worldmap_actor_free_slots(void);                  /* free them */
 void worldmap_actor_clear_slots(void);                 /* mark every slot free */
 void worldmap_actor_set_kind(s32 kind, s32 index);     /* change a slot's kind */
 void worldmap_actor_spawn(s32 kind, s32 update);       /* start an actor */
-s32 worldmap_actor_request(s32 index, s32 arg);        /* send command 1 */
+s32 worldmap_actor_request(s32 index, s32 argument);        /* send command 1 */
 void worldmap_actor_run_all(void);                     /* run the pending commands */
 
 /* An actor's model sprite: render bit 2 hides it (a new model starts hidden),
