@@ -1,6 +1,6 @@
 # Xenogears: Ex Machina
 
-**The original game. A new future.**
+**Stand tall, and shake the heavens.**
 
 Xenogears: Ex Machina (XEM) is an independent, open-source project to preserve the
 PlayStation role-playing game Xenogears and bring it to modern computers, mobile
@@ -9,49 +9,33 @@ The ambition is to keep the game's identity — its world, artwork and gameplay 
 while opening the door to modern presentation, more ways to play, and tools for
 creating new adventures.
 
-**October 10, 2026: the original-game decompilation milestone is complete.
-The modern port is still ahead.** The completed work covers both discs of the
-[supported North American version](analysis/reference-profiles.json).
-There is not yet a finished XEM game to download and play.
+## Project status
 
-## What is finished
+| Milestone | Status | Scope |
+| --- | --- | --- |
+| Original-game decompilation | **Complete** | Both [supported North American discs](analysis/reference-profiles.json); all 26 program components rebuild byte for byte. |
+| Modern platform foundation | **Next** | Shared native and browser runtime. |
+| First playable section | Planned | Exploration, dialogue, battle, menus, saving and media playback. |
+| Complete game | Planned | Both-disc story, optional content and minigames. |
+| Enhanced play and creation tools | Planned | Modern visuals, VR, conveniences, mods and desktop editors. |
+| Playable release | **Not yet available** | Tested native downloads and browser play. |
 
-**XEM can rebuild the original program exactly.** All 26 program components in the
-both-disc build reproduce the originals byte for byte. That includes each disc's
-main program and all of the smaller program modules it loads.
+[Completion record](https://github.com/brianblakely/xenogears-ex-machina/commit/e21f38248e8da2988f85e4f9b238aca4d2732a98)
+· [Build and verification guide](docs/matching.md) · [Full roadmap](plan.md)
+
+## Why recover the original code?
 
 Decompilation means working backward from the game on disc to reconstruct source
-code that developers can read, study and change. XEM has recovered the game's
-compiled logic this way, with original low-level routines and PlayStation library
-code explicitly classified and included in the matching build. This is
-reconstructed source, not the studio's original development files.
+code that developers can read, study and change. It produces reconstructed source,
+not the studio's original development files. A byte-for-byte match provides a
+precise reference for preserving the original game while adapting it to new
+hardware.
 
-That achievement gives the project a precise reference for preserving the
-original game while adapting it to new hardware. Reproducible build tools,
-automated checks and documented research are also in place to support the next
-stage.
+XEM's goal is to run that recovered logic directly on modern hardware, not wrap a
+PlayStation emulator in a new interface. The browser version will share the same
+game logic.
 
-The [completion record](https://github.com/brianblakely/xenogears-ex-machina/commit/e21f38248e8da2988f85e4f9b238aca4d2732a98)
-and [build and verification guide](docs/matching.md) explain the evidence, scope
-and how to reproduce the results with the supported original discs.
-
-## What comes next
-
-First, make the recovered game run directly on modern hardware. XEM's port is
-planned as a native application, not a PlayStation emulator wrapped in a new
-interface. A browser version will use the same recovered game logic.
-
-The next milestone is the shared platform foundation, followed by a first
-end-to-end playable section connecting exploration, dialogue, battle, menus,
-saving and media playback. From there, the goal is complete gameplay across both
-discs, including the original story, optional content and minigames.
-
-Faithful, complete gameplay comes before the later presentation upgrades and
-creation tools. The [roadmap](plan.md) sets out that sequence through tested
-releases; the features below describe where XEM is going, not what is already
-available.
-
-## The experience ahead
+## Planned player experience
 
 ### Play across more devices
 
