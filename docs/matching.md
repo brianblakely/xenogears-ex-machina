@@ -817,6 +817,16 @@ Lessons from the hardest drafts (GCC 2.6.x/2.7.x `cse.c`, `sched.c`, `reorg.c`):
   blocks, and its record offset became a global pseudo (v1/a0/a2) as in the original.
   When the allocation pattern points to a missing block boundary and the draft caches
   a repeated expression in variables, try writing it inline at every use.
+- The original's store order need not be the source order. In GCC 2.6.3 and 2.7.2,
+  sched1 places a pseudo set once as a whole register (a register birth) beside its
+  first store and puts any other set (an s16 local set through a subreg, a variable
+  set twice) above the stores of equal priority, which win ties as memory-unit insns.
+  In sched2 the reloads of spilled pseudos and the stores through a register never
+  cross (the scheduler cannot tell a stack slot from the stored element), and between
+  two reloads the stores of the latest-loaded values go last. So the stores between
+  two of the original's reloads were already between them before sched2:
+  field 8007E1C0's border matched written piece by piece with every coordinate
+  inline, after a draft had copied the scheduled order with s16 locals.
 - In 2.6.3 the insn after a loop note is a scheduling barrier (2.6.0's is not).
 - reorg never moves an `asm` into a branch delay slot: an original copy in a delay slot
   was compiler-generated, not inline asm.
