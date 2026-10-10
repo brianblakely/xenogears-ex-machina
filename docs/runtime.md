@@ -219,7 +219,24 @@ input.
   give the cards' first images (`unformatted` for a blank one);
   `--sample-memory` records the reference sampler's ranges every frame;
   `--fight-random-battles` makes it an agent that fights any battle with
-  Cross and resumes the program after it. `src/runtime/crates/xem-headless/tests/route.rs` (local, it
+  Cross and resumes the program after it. `tools/field_agent.py` is a direct agent that
+  walks a map by the game's state: it reads the party leader's position
+  through the schema each frame and holds the direction that points best at
+  the next waypoint of the path the original took (a sampled capture),
+  fighting battles on the way; it reaches field 22's save point and saves.
+  `--log FILE` on both writes a session log: every state-changing command at
+  the frame it was given, for `schedule`.
+- **Session logs.** `schedule {commands: [[frame, command], ...]}` runs each
+  command before the frame with that number (frames run since boot, `status`'s
+  `frames`), so a recorded session replays on any host that speaks these
+  commands. `tests/reference-inputs/slice-{forest,save,load}.json` are the
+  Phase 3 slice: the forest route (entry dialogue, encounter, battle,
+  rewards, return, menu), the agent's save at field 22 and the load of that
+  card from the title. `src/runtime/crates/xem-headless/tests/slice.rs`
+  (local, release) replays them to the recorded RAM/scratchpad hashes,
+  stepped and unthrottled, with spectator output (presentation capture,
+  sound output, screenshots) attached, changed and detached on the way, from
+  a snapshot restored in battle and from a pad recording. `src/runtime/crates/xem-headless/tests/route.rs` (local, it
   needs disc 1) checks that the new-game route's RAM and scratchpad do not
   depend on presentation capture or on a snapshot restored on the way, and
   the browser suite checks the same route's `memory_hash` against

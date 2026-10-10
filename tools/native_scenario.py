@@ -52,13 +52,38 @@ STATE = [
 ]
 
 
+# Commands that change the game's state, which a session log keeps.
+LOGGED = {
+    "pad",
+    "press",
+    "connect_pad",
+    "boot_mode",
+    "write_memory",
+    "write",
+    "enter_field",
+    "scenario",
+}
+
+
 class Headless:
-    def __init__(self, command):
+    """xem-headless --control. With `log`, it records every state-changing
+    command at the frame it was given (frames run since boot): a session log
+    that `schedule` replays on any host. Pad states are kept only as they
+    change."""
+
+    def __init__(self, command, log=False):
         self.process = subprocess.Popen(
             command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True
         )
+        self.log = [] if log else None
+        self.frames, self.pad = 0, None
 
     def __call__(self, command):
+        if self.log is not None and command["cmd"] in LOGGED:
+            if command["cmd"] != "pad" or command.get("buttons") != self.pad:
+                self.log.append([self.frames, command])
+            if command["cmd"] == "pad":
+                self.pad = command.get("buttons")
         self.process.stdin.write(json.dumps(command) + "\n")
         self.process.stdin.flush()
         line = self.process.stdout.readline()
@@ -67,7 +92,16 @@ class Headless:
         reply = json.loads(line)
         if isinstance(reply, dict) and reply.get("error"):
             raise RuntimeError(f"{command}: {reply['error']}")
+        status = reply.get("status", reply) if isinstance(reply, dict) else None
+        if isinstance(status, dict) and "frames" in status:
+            self.frames = status["frames"]
         return reply.get("ok", reply) if isinstance(reply, dict) else reply
+
+    def save_log(self, path):
+        """The log, the frames it ran and the RAM/scratchpad hash they ended at."""
+        digest = self({"cmd": "memory_hash"})
+        record = {"commands": self.log, "frames": self.frames, "memory_hash": digest}
+        Path(path).write_text(json.dumps(record) + "\n")
 
     def read(self, offset, length):
         data = b""
@@ -167,7 +201,9 @@ def run(program_json, headless, out, sampling=None, fight=False, dump_vram=False
                     cross = ["cross"] if vblank % 64 < 8 and mode == MODE_BATTLE else []
                     headless({"cmd": "pad", "port": 0, "buttons": cross})
                     if vblank % 600 == 0:
-                        headless({"cmd": "screenshot", "path": str(out / f"battle-{vblank:06d}.png")})
+                        headless(
+                            {"cmd": "screenshot", "path": str(out / f"battle-{vblank:06d}.png")}
+                        )
                     headless({"cmd": "frames", "count": 1})
                     vblank += 1
                     continue
@@ -234,6 +270,7 @@ def main():
         "--compare-only", action="store_true", help="compare an earlier run in OUT_DIR"
     )
     parser.add_argument("--vram", action="store_true", help="also save VRAM at every capture")
+    parser.add_argument("--log", type=Path, help="write the session log (schedule's commands) here")
     parser.add_argument(
         "--fight-random-battles",
         action="store_true",
@@ -281,7 +318,8 @@ def main():
                 str(cards),
                 "--schema",
                 str(args.schema),
-            ]
+            ],
+            log=args.log is not None,
         )
         try:
             sampling = json.loads(args.sample_memory.read_text()) if args.sample_memory else None
@@ -289,6 +327,8 @@ def main():
                 program, headless, args.out, sampling, args.fight_random_battles, args.vram
             )
         finally:
+            if args.log:
+                headless.save_log(args.log)
             headless.close()
         (args.out / "run.json").write_text(
             json.dumps({"events": events, "captures": captures}) + "\n"

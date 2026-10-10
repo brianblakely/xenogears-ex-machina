@@ -200,6 +200,7 @@ def main():
     parser.add_argument("--map", type=int, default=22)
     parser.add_argument("--then", required=True, help="first program step run at the last waypoint")
     parser.add_argument("--card2")
+    parser.add_argument("--log", type=Path, help="write the session log (schedule's commands) here")
     parser.add_argument("--face-actor", type=int, help="walk into this actor before FIRST_STEP")
     args = parser.parse_args()
 
@@ -224,7 +225,8 @@ def main():
             str(cards),
             "--schema",
             str(ns.ROOT / "build/game/schema.json"),
-        ]
+        ],
+        log=args.log is not None,
     )
     agent = Agent(headless, args.out)
     events, _ = ns.run(head, headless, args.out, fight=True)
@@ -239,6 +241,8 @@ def main():
         print("stopped", approach(agent, moves, args.face_actor), "from actor", args.face_actor)
     tail_events, captures = ns.run(tail, headless, args.out, fight=True)
     headless({"cmd": "screenshot", "path": str(args.out / "end.png")})
+    if args.log:
+        headless.save_log(args.log)
     headless.close()
     report = {
         "moves": {"+".join(k): v for k, v in moves.items()},
