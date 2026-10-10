@@ -146,7 +146,7 @@ void func_801E5160(void) {
         D_800D3278->quads[i].tpage = GetTPage(1, 0, 0x3C0, 0x100);
     }
     D_800D2D28->scriptLoaded = 1;
-    D_800D2D28->unkCC[3] = 0;
+    D_800D2D28->waitingCross = 0;
     for (i = 0; i < 16; i++) {
         D_800D3278->actionRunning[i] = 0;
         D_801E9C20[i] = 0;
@@ -690,10 +690,10 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
         if (!(flags & 8)) {
             func_801E5B00(D_800D2DAC->x * 4 + D_801E9C30 + 2, D_800D2DAC->y * 14 + D_801E9C34 + 5);
         }
-        D_800D2D28->unkCC[3] = 1;
+        D_800D2D28->waitingCross = 1;
         if (D_800D3014 == 4) {
             func_800345E0(D_800D2DAC);
-            D_800D2D28->unkCC[3] = 0;
+            D_800D2D28->waitingCross = 0;
             D_800D2D28->cursorShown = 0;
         }
     }
