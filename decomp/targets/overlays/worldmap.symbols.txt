@@ -1,6 +1,3 @@
-// The resident's VSync callback (resident/pad.h), which the overlay entry
-// installs again.
-pad_vblank_callback = 0x8003634C; // type:func
 // Sizes of C data objects whose interior the code addresses at unaligned
 // offsets: splat would otherwise name each such address and list it in
 // undefined_syms_auto.txt.

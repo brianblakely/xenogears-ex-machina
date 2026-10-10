@@ -18,6 +18,7 @@ options:
   cache_path: .local/decomp/resident2/.splat_cache
   symbol_addrs_path:
     - decomp/targets/resident/symbol_addrs.txt
+    - decomp/targets/resident/imports.txt
   undefined_funcs_auto_path: .local/decomp/resident2/undefined_funcs_auto.txt
   undefined_syms_auto_path: .local/decomp/resident2/undefined_syms_auto.txt
   find_file_boundaries: False

@@ -563,6 +563,7 @@ decomp/targets/overlays/worldmap.resident.ld
 decomp/targets/overlays/worldmap.symbols.txt
 decomp/targets/overlays/worldmap.yaml
 decomp/targets/resident/classification.txt
+decomp/targets/resident/imports.txt
 decomp/targets/resident/link.ld
 decomp/targets/resident/slus_006.64.mk
 decomp/targets/resident/slus_006.64.yaml

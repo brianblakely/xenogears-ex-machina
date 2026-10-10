@@ -896,7 +896,6 @@ field_party_leave_gear = 0x800ACFD0; // type:func
 field_party_board_gear = 0x800AD4D4; // type:func
 field_party_set_gear_rider_flags = 0x800AD898; // type:func
 field_party_board_or_leave_gears = 0x800AD978; // type:func
-field_music_wave_table = 0x800ADA68;
 field_monitor_page_toggle = 0x800ADAFC;
 field_pad_port0_allowed_mask = 0x800ADB00;
 field_player_stuck_frames = 0x800ADB02;
@@ -996,6 +995,9 @@ field_dpad_alt_headings = 0x800ADF88;
 field_terrain_push_angles = 0x800ADFA8;
 field_layer_animation_frames = 0x800ADFB8;
 field_terrain_push_speeds = 0x800ADFC4;
+// field_music.h's static table: field_event.c's copy, the one read (field.c
+// has an unread copy at 800ada68).
+field_music_wave_table = 0x800ADFCC;
 field_movie_sound_timelines = 0x800AE060;
 field_dialogue_portrait_files = 0x800AE1E0;
 field_character_sprite_ids = 0x800AE294;
