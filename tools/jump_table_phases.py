@@ -9,7 +9,7 @@ original assembler treated GCC's `.align 3` before each table:
   FLIP  the next table has the other phase mod 8 (a unit boundary);
   ODD   an odd-length table abutting a same-phase table (never seen: that
         would mean the directive was ignored or taken as 4-byte).
-Owners come from the linked maps, so run it after `make -C decomp all-verify`.
+Owners come from the linked maps, so run it after `make -C src/decomp all-verify`.
 """
 import argparse
 import bisect
@@ -56,7 +56,7 @@ def main():
     parser.add_argument("-v", "--verbose", action="store_true", help="also list every PAD")
     args = parser.parse_args()
     total = collections.Counter()
-    for config in sorted(glob.glob(str(ROOT / "decomp/targets/*/*.yaml"))):
+    for config in sorted(glob.glob(str(ROOT / "src/decomp/targets/*/*.yaml"))):
         cfg = yaml.safe_load(open(config))
         opts = cfg["options"]
         seg = next(s for s in cfg["segments"] if isinstance(s, dict) and "vram" in s)

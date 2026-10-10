@@ -3,7 +3,7 @@
 What the recovered PS1 program needs from its platform, and where its timing,
 control flow, presentation and sound modes cross that boundary, for the native
 port (plan.md Phases 2-5). Every statement names the matching source
-(`decomp/src`, functions by address) that shows it; observations of the
+(`src/decomp/src`, functions by address) that shows it; observations of the
 original are marked with their capture and its limits.
 
 Related records: [sound-modes](../analysis/formats/sound-modes.md) (Mono/Stereo/Wide
@@ -26,7 +26,7 @@ census of the forest route, EVID-REF-044), the script machines in
   ```sh
   nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra#matching -c \
     python3 tools/service_calls.py <psx_psyq_signatures data dir> \
-    decomp/targets/resident/slus_006.64.mk decomp/targets/overlays/*.mk [--detail]
+    src/decomp/targets/resident/slus_006.64.mk src/decomp/targets/overlays/*.mk [--detail]
   ```
 
   The signatures are the pinned `psx_psyq_signatures` input of nix/ghidra, at
@@ -212,8 +212,9 @@ Outside the libraries the game itself uses:
   summary with the file digit at +0x23 (SaveSummary), then SaveData's
   blocks: names +0x24, GameData +0xDC at +0x100, characters +0x290, gear
   subsets +0x99C, more GameData blocks at +0xE4C, +0xEC4, +0x1024 and +0x1124,
-  ending at +0x1B5C; the rest is zero. tools/analysis/menu_save_file.py checks
-  the serialisation against a card image a capture wrote.
+  ending at +0x1B5C; the rest is zero. The retired
+  tools/analysis/menu_save_file.py (commit b969b11) checked the serialisation
+  against a card image a capture wrote.
 
 ### Disc and files
 
@@ -658,7 +659,7 @@ callback never leaves these:
 - **SPU transfers.** Flag 0x10 stays set until the transfer queue is empty.
   - sound_sync_transfer(0x10) re-reads the flag until it clears (the loop at
     8003be08). Every such call is a busy-wait (`grep -rn
-    'sound_sync_transfer(0x10)' decomp/src`). They are boot boot_main
+    'sound_sync_transfer(0x10)' src/decomp/src`). They are boot boot_main
     (main.c:127), the driver's error beep sound_report_error (sound.c:3972), field
     field_movie_load_sound_bank, field_sound_load_effect_bank,
     field_music_gather_wave_chunk, field_music_advance_track_load,
@@ -818,7 +819,7 @@ GTE with H 0x1000 (sprite_sheet.c).
 - Dithering is on by default (above). The DR_MODE/DR_TPAGE packets the game
   builds mostly turn it off for what follows. The counts below take the third
   (dither) argument of every call that
-  `grep -rn 'SetDrawMode(\|SetDrawTPage(' decomp/src --include=*.c` lists. It
+  `grep -rn 'SetDrawMode(\|SetDrawTPage(' src/decomp/src --include=*.c` lists. It
   lists 63 and 21 lines, all of them calls, each with its first three
   arguments on the line:
   - SetDrawMode passes 0 at 58 of 63 call sites.

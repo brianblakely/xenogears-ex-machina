@@ -1,5 +1,5 @@
-"""The port's libspu, libcard and BIOS calls (port/libspu.c, port/libcard.c,
-port/bios.c).
+"""The port's libspu, libcard and BIOS calls (src/port/libspu.c, src/port/libcard.c,
+src/port/bios.c).
 
 The C is built for the host as a freestanding shared library and driven
 through ctypes against tests/port_spu_card/support.c, which stands in for the
@@ -30,14 +30,14 @@ def build_library(out):
     common = [
         "-O2", "-fPIC", "-ffreestanding", "-fno-builtin", "-nostdinc", "-std=gnu89",
         "-funsigned-char", "-fwrapv", "-fno-strict-aliasing", "-Wall", "-Werror",
-        "-Wno-unused-function", "-Iport/include", "-Idecomp/include",
+        "-Wno-unused-function", "-Isrc/port/include", "-Isrc/decomp/include",
     ]
     objects = []
     for source, extra in (
         # The PS1's long is 32 bits (SpuCommonAttr, DIRENTRY).
-        ("port/libspu.c", ["-Dlong=int"]),
-        ("port/libcard.c", ["-Dlong=int"]),
-        ("port/bios.c", ["-Dlong=int"]),
+        ("src/port/libspu.c", ["-Dlong=int"]),
+        ("src/port/libcard.c", ["-Dlong=int"]),
+        ("src/port/bios.c", ["-Dlong=int"]),
         ("tests/port_spu_card/support.c", []),
     ):
         obj = os.path.join(out, os.path.basename(source) + ".o")

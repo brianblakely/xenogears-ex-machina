@@ -1,4 +1,4 @@
-"""The port's software GTE and libgte (port/gte.c, port/gte_asm.c, port/libgte.c).
+"""The port's software GTE and libgte (src/port/gte.c, src/port/gte_asm.c, src/port/libgte.c).
 
 The C is built for the host as a freestanding shared library (no libc) and
 driven through ctypes. Expected values are worked by hand from psx-spx's GTE
@@ -89,15 +89,15 @@ def build_library(out):
         "-fno-strict-aliasing",
         "-Wall",
         "-Werror",
-        "-Iport/include",
-        "-Idecomp/include",
+        "-Isrc/port/include",
+        "-Isrc/decomp/include",
     ]
     objects = []
     for source, extra in (
-        ("port/gte.c", []),
-        ("port/gte_asm.c", []),
+        ("src/port/gte.c", []),
+        ("src/port/gte_asm.c", []),
         # libgte's long is the PS1's 32-bit long.
-        ("port/libgte.c", ["-Dlong=int"]),
+        ("src/port/libgte.c", ["-Dlong=int"]),
         ("tests/port_gte/support.c", []),
     ):
         obj = os.path.join(out, os.path.basename(source) + ".o")
@@ -646,7 +646,7 @@ def matrix_bytes(rows, translation=(0, 0, 0), pad=0):
 
 
 class AsmStatementTests(GteTest):
-    """port/gte_asm.c, the inline statements' functions."""
+    """src/port/gte_asm.c, the inline statements' functions."""
 
     def call(self, name, *args, restype=None):
         function = getattr(LIB, name)
@@ -715,8 +715,8 @@ def fill(name, values):
 
 
 def load_rcossin():
-    """rcossin_tbl from the resident's C (decomp/src) into the test object."""
-    source = (ROOT / "decomp/src/resident/gpu_rotation_and_psyq_libraries.c").read_text()
+    """rcossin_tbl from the resident's C (src/decomp/src) into the test object."""
+    source = (ROOT / "src/decomp/src/resident/gpu_rotation_and_psyq_libraries.c").read_text()
     start = source.index("rcossin_tbl[4096][2] = {")
     body = source[source.index("{", start + 20) + 1 : source.index("};", start)]
     values = [int(v) for v in re.findall(r"-?\d+", re.sub(r"/\*.*?\*/", "", body, flags=re.S))]
@@ -1085,19 +1085,19 @@ class AsmMapTests(unittest.TestCase):
     CALL = re.compile(r'asm sideeffect "((?:[^"\\]|\\.)*)", "((?:[^"\\]|\\.)*)"')
 
     def test_every_mapped_function_is_defined(self):
-        entries = json.loads((ROOT / "port/asm_map.json").read_text())
-        source = (ROOT / "port/gte_asm.c").read_text()
+        entries = json.loads((ROOT / "src/port/asm_map.json").read_text())
+        source = (ROOT / "src/port/gte_asm.c").read_text()
         defined = set(re.findall(r"^\w[\w ]*?\b(xem_gte_\w+)\(", source, re.M))
         self.assertEqual({e["function"] for e in entries}, defined)
         keys = [(e["template"], e["constraints"]) for e in entries]
         self.assertEqual(len(keys), len(set(keys)))
 
     def test_every_gte_statement_in_the_decomp_is_mapped(self):
-        entries = json.loads((ROOT / "port/asm_map.json").read_text())
+        entries = json.loads((ROOT / "src/port/asm_map.json").read_text())
         mapped = {(e["template"], e["constraints"]) for e in entries}
         users = sorted(
             path
-            for path in (ROOT / "decomp/src").rglob("*.c")
+            for path in (ROOT / "src/decomp/src").rglob("*.c")
             if re.search(r'#include "(psyq/inline_c|gte)\.h"', path.read_text(errors="replace"))
         )
         self.assertTrue(users)
@@ -1116,8 +1116,8 @@ class AsmMapTests(unittest.TestCase):
                         "-undef",
                         "-nostdinc",
                         "-ffreestanding",
-                        "-Iport/include",
-                        "-Idecomp/include",
+                        "-Isrc/port/include",
+                        "-Isrc/decomp/include",
                         "-Dmips",
                         "-D__mips__",
                         "-D__mips",

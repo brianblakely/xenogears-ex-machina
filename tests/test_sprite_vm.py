@@ -1,7 +1,7 @@
 """Invented streams distinguish ordinary sprite time from facing-only replay.
 
 The disassembler tests use invented byte strings and read the recovered
-handlers' case labels from decomp/src; no original data is involved.
+handlers' case labels from src/decomp/src; no original data is involved.
 """
 
 import re
@@ -181,16 +181,16 @@ def block(*scripts: bytes, directory_high: int = 0, sections: int = 3) -> bytes:
 
 class SpriteDisassemblyTests(unittest.TestCase):
     def test_tables_hold_exactly_the_recovered_switch_cases(self):
-        generic = function_body("decomp/src/resident/sprite.c", "sprite_vm_run_generic_command")
+        generic = function_body("src/decomp/src/resident/sprite.c", "sprite_vm_run_generic_command")
         self.assertEqual(hex_cases(generic), set(vm.GENERIC))
         shared = set(vm._interpreter("x"))
-        resident = "decomp/src/resident/sprite_vm_draw.c"
+        resident = "src/decomp/src/resident/sprite_vm_draw.c"
         self.assertEqual(hex_cases(function_body(resident, "sprite_vm_run")), shared)
-        battle = function_body("decomp/src/battle/battle_sprite_vm.c", "battle_sprite_vm_run")
+        battle = function_body("src/decomp/src/battle/battle_sprite_vm.c", "battle_sprite_vm_run")
         own = {op for op, spec in vm.BATTLE_SPECS.items() if spec.handler[:8] == "800c11cc"}
         self.assertEqual(hex_cases(battle), own)
         commands = function_body(
-            "decomp/src/battle/battle_sprite_commands.c", "battle_sprite_command_run"
+            "src/decomp/src/battle/battle_sprite_commands.c", "battle_sprite_command_run"
         )
         self.assertEqual(hex_cases(commands), set(vm.BATTLE_COMMANDS))
         place = generic[generic.index("case 0xBC:") : generic.index("case 0xD1:")]
@@ -201,7 +201,7 @@ class SpriteDisassemblyTests(unittest.TestCase):
         self.assertEqual([vm.table_width(op) for op in (0x80, 0x9F, 0xA0, 0xC7)], [1, 1, 2, 2])
         self.assertEqual([vm.table_width(op) for op in (0xC8, 0xF0, 0xF1, 0xFF)], [3, 3, 4, 4])
         source = re.sub(
-            r"/\*.*?\*/", "", (ROOT / "decomp/src/resident/sprite_construction.c").read_text()
+            r"/\*.*?\*/", "", (ROOT / "src/decomp/src/resident/sprite_construction.c").read_text()
         )
         table = re.search(r"u8 sprite_vm_command_lengths\[0x80\] = \{([^}]*)\}", source).group(1)
         lengths = [int(value) for value in re.findall(r"\d+", table)]

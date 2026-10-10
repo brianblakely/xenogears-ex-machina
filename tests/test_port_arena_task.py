@@ -1,7 +1,7 @@
-"""The arena task switch (port/arena_task.c over port/fiber.c) against the
-contracts of decomp/src/menu/arena_task_*.s, natively (tests/port_native.py),
+"""The arena task switch (src/port/arena_task.c over src/port/fiber.c) against the
+contracts of src/decomp/src/menu/arena_task_*.s, natively (tests/port_native.py),
 with the host's task_switch import recorded (tests/port_arena_task/support.c).
-The fiber switch itself is the runtime's (runtime/crates/xem-core/tests/fibers.rs);
+The fiber switch itself is the runtime's (src/runtime/crates/xem-core/tests/fibers.rs);
 these tests check the game-visible words and what the port asks the host."""
 
 import ctypes
@@ -31,7 +31,7 @@ def setUpModule():
         raise unittest.SkipTest("no clang (run inside nix develop path:./nix/runtime)")
     BUILD = tempfile.TemporaryDirectory()
     LIB = mem.build(
-        BUILD.name, ["port/arena_task.c", "port/fiber.c", "tests/port_arena_task/support.c"], SYMBOLS
+        BUILD.name, ["src/port/arena_task.c", "src/port/fiber.c", "tests/port_arena_task/support.c"], SYMBOLS
     )
     LIB.arena_task_resume.argtypes = [ctypes.c_void_p]
     LIB.arena_task_save_scheduler.argtypes = [ctypes.c_void_p]

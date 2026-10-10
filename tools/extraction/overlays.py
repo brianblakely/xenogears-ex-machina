@@ -3,7 +3,7 @@
 
 Overlay files were found by scanning all numbered disc files (whole-file packed
 blocks decoded) for MIPS function structure; load addresses come from each
-image's internal call targets and pointers (decomp/targets/overlays/*.yaml).
+image's internal call targets and pointers (src/decomp/targets/overlays/*.yaml).
 Packed mode overlays are decoded from their complete sectors, because the
 resident decoder reads its final flag byte past the file's declared size. The
 two discs carry byte-identical overlays; this tool checks that and fails

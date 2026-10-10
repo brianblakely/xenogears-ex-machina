@@ -1,7 +1,7 @@
 /*
  * A stand-in game module for the fiber test (tests/fiber_module/build.sh,
- * runtime/crates/xem-game/tests/fiber_module.rs): the port's real
- * port/fiber.c and port/arena_task.c, built straight to wasm32 and
+ * src/runtime/crates/xem-game/tests/fiber_module.rs): the port's real
+ * src/port/fiber.c and src/port/arena_task.c, built straight to wasm32 and
  * instrumented by asyncify like build/game/game.wasm, under a game fiber and
  * an arena task that suspend in every way the arena does. Each records
  * address-taken locals (on its fiber's shadow stack) into a log in game

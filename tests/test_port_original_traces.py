@@ -53,7 +53,7 @@ def setUpModule():
     if not mem.CLANG:
         raise unittest.SkipTest("no clang (run inside nix develop path:./nix/runtime)")
     BUILD = tempfile.TemporaryDirectory()
-    LIB = mem.build(BUILD.name, ["port/model_draw.c", "port/sprite_pixels.c"], SYMBOLS)
+    LIB = mem.build(BUILD.name, ["src/port/model_draw.c", "src/port/sprite_pixels.c"], SYMBOLS)
 
 
 def tearDownModule():

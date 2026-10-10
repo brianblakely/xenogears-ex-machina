@@ -1,5 +1,5 @@
-"""The port's menu overlay routines (port/arena.c) against the contracts of
-decomp/src/menu/*.s (all but the task switch), natively (tests/port_native.py),
+"""The port's menu overlay routines (src/port/arena.c) against the contracts of
+src/decomp/src/menu/*.s (all but the task switch), natively (tests/port_native.py),
 on invented inputs.
 
 Two kinds of checks: values worked by hand from the contracts, and, for the
@@ -34,7 +34,7 @@ SYMBOLS = {
 }
 S = SYMBOLS
 
-# GTE commands (decomp/include/macro.inc).
+# GTE commands (src/decomp/include/macro.inc).
 RTPS, RTPT, NCLIP, DPCS = 0x0180001, 0x0280030, 0x1400006, 0x0780010
 
 
@@ -56,7 +56,7 @@ def setUpModule():
     if not mem.CLANG:
         raise unittest.SkipTest("no clang (run inside nix develop path:./nix/runtime)")
     BUILD = tempfile.TemporaryDirectory()
-    LIB = mem.build(BUILD.name, ["port/arena.c", "tests/port_arena/support.c"], SYMBOLS)
+    LIB = mem.build(BUILD.name, ["src/port/arena.c", "tests/port_arena/support.c"], SYMBOLS)
     for name in ("arena_gte_scale_svector", "arena_gte_multiply_svector", "arena_gte_scale_vector_low_halves",
                  "arena_gte_rotate_scale_svector"):
         getattr(LIB, name).argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int]

@@ -12,13 +12,13 @@ python3 -m tools.analysis.dispatch_tables --sweep [--only formulas|primitives|mo
 
 It prints aggregates only and exits nonzero when a selected record would index
 past its table. `tests/test_dispatch_tables.py` ties the tables, offsets and
-loader constants to `decomp/src` and walks synthetic records. Every interpreter
+loader constants to `src/decomp/src` and walks synthetic records. Every interpreter
 and table, and how each table's index is chosen, is listed in
 [interpreters.md](interpreters.md).
 
 ## Battle formulas
 
-- Dispatch (`decomp/src/battle/battle_menus_and_resolver.c`): for each target in the mask,
+- Dispatch (`src/decomp/src/battle/battle_menus_and_resolver.c`): for each target in the mask,
   `battle_resolve_action` calls `battle_formula_table[descriptor->formula]()` (8 handlers). An
   attacker whose record has +0x15a bit 0x80 (in a gear), or a descriptor with
   flagsA bit 0x10, goes to `battle_resolve_gear_action`, which takes a party member's gear
@@ -76,7 +76,7 @@ and table, and how each table's index is chosen, is listed in
 
 ## Model primitives
 
-- Dispatch (`decomp/src/resident/model_renderer.c`): `model_build_packets` builds and
+- Dispatch (`src/decomp/src/resident/model_renderer.c`): `model_build_packets` builds and
   `model_draw_sprite_model` draws a model's primitive groups, `{u8 type, u8, s16 count}`
   and count records each, through `model_primitive_types[type]` (17 types): the prepare
   routine, the record stride, the auxiliary bytes per record, the packet size and
@@ -101,7 +101,7 @@ and table, and how each table's index is chosen, is listed in
 
 ## World map arrival modes
 
-- Dispatch (`decomp/src/worldmap/worldmap.c`): the world map's entry runs mode
+- Dispatch (`src/decomp/src/worldmap/worldmap.c`): the world map's entry runs mode
   `game_data_worldmap_flag_word[0] & 0x7fff` of `worldmap_mode_handlers` (19 rows
   of enter, start and leave handlers) without a bound check. The word is the game
   data's +0x2320.
@@ -126,7 +126,7 @@ and table, and how each table's index is chosen, is listed in
 
 ## Sprite kinds
 
-- Dispatch (`decomp/src/resident/sprite_vm_draw.c`): a new sprite task's
+- Dispatch (`src/decomp/src/resident/sprite_vm_draw.c`): a new sprite task's
   auxiliary node takes the update `sprite_draw_callbacks[kind]` (16 entries,
   `sprite_task_set_draw_by_kind`); entries 3, 4 and 10-13 are NULL, which the task loop skips
   (`task_run_main_list`).
@@ -141,7 +141,7 @@ and table, and how each table's index is chosen, is listed in
 
 ## TMD primitives
 
-- Dispatch (`decomp/src/battle/battle_tmd_screen_effects.c`):
+- Dispatch (`src/decomp/src/battle/battle_tmd_screen_effects.c`):
   `battle_tmd_build_packets` builds and `battle_tmd_draw_object` draws each
   primitive of a TMD object (`battle/effect_script.h`'s effect script file) by
   kind: mode & 0x1c, plus 0x100 when flag bit 0 (no lighting) is clear. Both

@@ -1,0 +1,303 @@
+# Explicit per-target recipes; no implicit host compiler or invented game image.
+# Run inside: nix develop path:./nix/ghidra#matching
+ROOT := $(abspath ../..)
+# The repository's tools beside this Makefile (ROOT may name another tree).
+TOOLS := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))../../tools)
+PYTHON ?= python3
+AS := psx-as
+LD := psx-ld
+NM := psx-nm
+OBJCOPY := psx-objcopy
+MASPSX := maspsx
+.DEFAULT_GOAL := verify
+.SUFFIXES:
+.SECONDARY:
+MAKEFLAGS += --no-builtin-rules
+# Recipes run in bash with pipefail: a failing stage of a pipe (cpp into cc1,
+# maspsx into the filters) fails its rule instead of leaving a partial object.
+SHELL := bash
+.SHELLFLAGS := -o pipefail -c
+.PHONY: verify smoke split coverage audit container clean all-split all-verify all-coverage all-audit all-container cross-image
+TARGET_CONFIGS := $(sort $(wildcard targets/resident/*.mk targets/overlays/*.mk))
+
+# Every supported executable image: split, exact comparison, source coverage.
+all-split all-coverage all-audit all-container:
+	@for config in $(TARGET_CONFIGS); do \
+		echo "== $$config"; \
+		$(MAKE) --no-print-directory CONFIG=$$config $(@:all-%=%) || exit 1; \
+	done
+
+# The acceptance run: each target's verify with SCRIPT_SYMBOLS=strict on its
+# command line, which neither the environment nor this make's command line
+# can weaken, then the links against each other.
+all-verify:
+	@for config in $(TARGET_CONFIGS); do \
+		echo "== $$config"; \
+		$(MAKE) --no-print-directory CONFIG=$$config SCRIPT_SYMBOLS=strict verify || exit 1; \
+	done
+	@$(MAKE) --no-print-directory cross-image
+
+# After every target links: each address a link takes from another target
+# (its linker scripts' names there) must hold the address its name gives and
+# agree with the other targets' rebuilt symbols, by name (wherever a target
+# exporting the name places it), as a view inside a named object or, where
+# the importer's BASE_VIEWS lists it, before it, or as the resident's overlay
+# area (MODE_AREA); any other fails. The resident's mode table (MODE_TABLE)
+# must hold each mode overlay's (MODE) entry symbol, linked BSS bounds and set
+# decode flag, and the overlay must link its image at the overlay area with a
+# symbol there (tools/cross_image.py).
+cross-image:
+	cd $(ROOT) && $(PYTHON) $(TOOLS)/cross_image.py $(abspath $(TARGET_CONFIGS))
+
+smoke:
+	@command -v psx-as >/dev/null && command -v psx-ld >/dev/null && command -v psx-objcopy >/dev/null || { echo "Enter the matching Nix shell first." >&2; exit 2; }
+	cd $(ROOT) && $(PYTHON) -m unittest tests.test_matching
+
+ifeq ($(strip $(CONFIG)),)
+verify split coverage audit container clean:
+	@echo 'Set CONFIG=targets/<target>/<target>.mk (see docs/matching.md).' >&2
+	@exit 2
+else
+include $(CONFIG)
+$(foreach var,ORIGINAL ORIGINAL_SHA256 IMAGE LINKER_SCRIPT SPLAT_CONFIG BUILD CC_VERSION,$(if $($(var)),,$(error $(var) must be set by $(CONFIG))))
+
+# Qualified original-compatible compilation (docs/matching.md): GCC 2.6.3/2.7.2/2.7.2-cdk cc1
+# (decompals/old-gcc 0.17) for the R3000, ASPSX behaviour through maspsx 7686f845 (2.34,
+# or 2.56/2.79 for the later units, which evidence only ASPSX >= 2.50), GNU binutils 2.46
+# as and ld for the objects and the link.
+CPPFLAGS := -undef -D__GNUC__=2 -Dmips -D__mips__ -D__mips -Dpsx -D__psx__ -D__psx \
+	-D_PSYQ -D__EXTENSIONS__ -D_MIPSEL -D__CHAR_UNSIGNED__ -D_LANGUAGE_C -DLANGUAGE_C \
+	-lang-c -nostdinc -I$(ROOT)/src/decomp/include -DORIGINAL_IMAGE='"$(ORIGINAL)"' $(TARGET_CPPFLAGS)
+CC1FLAGS := -quiet -mcpu=3000 -fgnu-linker -mgas -msoft-float -O2
+ASFLAGS := -EL -march=r3000 -mtune=r3000 -msoft-float -no-pad-sections -G0 \
+	-I$(ROOT)/src/decomp/include -I$(ROOT)
+
+# The small-data threshold and the GCC version (2.6.3, 2.7.2, 2.7.2-cdk) are properties
+# of each original translation unit: GP_<file> / CC_<file> override the target's
+# GP default of 0 and its CC_VERSION.
+gp_of = $(or $(GP_$(basename $(notdir $(1)))),0)
+cc_of = $(or $(CC_$(basename $(notdir $(1)))),$(CC_VERSION))
+# CC1FLAGS_<file> adds unit-specific cc1 options, qualified per unit (no unit
+# needs one at present).
+cc1flags_of = $(CC1FLAGS_$(basename $(notdir $(1))))
+# ASPSX behaviour (maspsx flags): 2.34 by default; MASPSX_FLAGS per target and
+# MASPSX_<file> per unit (e.g. --expand-div where division checks are inline).
+MASPSX_FLAGS ?= --aspsx-version=2.34
+maspsx_of = $(or $(MASPSX_$(basename $(notdir $(1)))),$(MASPSX_FLAGS))
+# GNU as addresses a symbol through $gp when GCC's `.extern name, size` declares it
+# small, it is a small common or it lies in the unit's .sdata, also for `la`. ASPSX
+# took every address (`la`) absolutely: no resident unit forms one from $gp, and the
+# heap unit's small string constants, which GCC places in .sdata, are addressed with
+# lui/addiu. Units with a small-data threshold therefore expand `la` themselves. Some
+# units' assembler also ignored the `.extern` sizes (the sprite units, the menu
+# support): EXTERN_<file> := absolute drops the directives.
+LA_ABSOLUTE := -e 's/^la\t(\$$[0-9a-z]+),((\$$LC[0-9]+|[A-Za-z_][A-Za-z0-9_]*)(\+[0-9]+)?)$$/lui\t\1,%hi(\2)\naddiu\t\1,\1,%lo(\2)/'
+extern_of = $(if $(filter absolute,$(EXTERN_$(basename $(notdir $(1))))),-e '/^\.extern/d')
+asm_filter_of = $(if $(filter-out 0,$(call gp_of,$(1))),| sed -E $(call extern_of,$(1)) $(LA_ABSOLUTE))
+# Uninitialized variables: GCC emits a unit's statics as .lcomm and its
+# tentative definitions as .comm after the code, and maspsx allocates both in
+# the unit's .sbss/.bss (packed without alignment; in .sbss an 8-byte object
+# 8-aligned). In the original images every such object takes a slot of whole
+# words, an 8-byte one also at 4 mod 8 (menu 8009265c, slot39 801ea8e4). That
+# is evidenced separately for ASPSX 2.34's .lcomm statics (mdec
+# 801e8958-801e8968: five u8, stored and loaded bytewise; arena_fighters_bout_and_effects
+# 80092678-800926a0; slot39 801ea710/801ea714) and for the commons PSYLINK
+# allocated after every unit's own (ovl2596 801e44e0/801e44e4; libcd's
+# Stsector_offset alone at 801e89bc; the world map's u16 at
+# 8009bd10-8009bd1c, shared by three units), which the commons units
+# reproduce. ASPSX 2.56 (the CDK units) keeps each .lcomm object's own size and
+# aligns it by that size up to a word: battle 800B3F04's four s16 statics lie
+# two bytes apart at 800c3ca4-800c3cab (separate symbols: the CDK compiler
+# addresses one object's members from a single %hi, these from four), its u8
+# at 800c3cac is followed by a u8[3] at the next word, and 800B8098's s32
+# after a u8 and its SVECTORs lie at word, not doubleword, boundaries
+# (800c3cbc, 800c3ccc). Under 2.34 and 2.79 this filter gives each object a
+# whole number of words at a word boundary; under 2.56 it aligns a 2-byte
+# object to 2 and a larger one to 4; under any other version it rejects a
+# sub-word object, whose placement nothing evidences. Only the .sbss/.bss that
+# maspsx appends are touched: any other section directive ends them.
+# The 2.79 setting stands for the world map's assembler, which its code shows only
+# to be ASPSX >= 2.50: every code unit set to 2.56 or 2.79 builds identically
+# under either. Only this filter tells them apart: the world map's commons
+# unit needs the word slots that PSYLINK gave its commons (consecutive
+# u16 a word apart at 8009bd10-8009bd1c, 8009bd24/8009bd28, 8009cd4c/8009cd50);
+# under 2.56 its link fails the mode table's BSS bounds. Its units have no
+# statics, and the 2.79 sprite units' are words, so the 2.79 assembler's own
+# .lcomm rule is not evidenced.
+# The assembler of some -G0 units also divided their variables by a small-data
+# threshold of its own, SBSS_<file> bytes (default none): each object of at most
+# that size, as GCC declares it, went to the unit's .sbss and each larger one to
+# its .bss, both in declaration order, while the code, assembled before them,
+# addresses every one absolutely (maspsx's -G would also move those accesses to
+# $gp). The filter moves such objects of the .bss that maspsx appends to a
+# .sbss after it; the slot rule applies to both. Evidence: with SBSS 8 every
+# variable of the resident's GCC 2.7.2 -G0 units and of the menu's units links
+# at its original address, each of up to 8 bytes among the small variables in
+# unit order (800592bc-800593a4, 800925d4-80092954) and each larger one among
+# the larger (800595e8-8005a1fc, 80092954-8009b558), while the GCC 2.6.3 unit
+# between them keeps one .bss (resident cd_reads_and_streams: a 2048-byte static, then
+# 4- and 8-byte ones, at 800596f8-80059f64).
+WORD_SLOT_ASPSX := --aspsx-version=2.34 --aspsx-version=2.79
+SIZE_ALIGNED_ASPSX := --aspsx-version=2.56
+bss_rule_of = $(if $(filter $(WORD_SLOT_ASPSX),$(call maspsx_of,$(1))),words,$(if $(filter $(SIZE_ALIGNED_ASPSX),$(call maspsx_of,$(1))),sized,none))
+sbss_of = $(SBSS_$(basename $(notdir $(1))))
+bss_filter_of = | awk -v rule=$(call bss_rule_of,$(1)) -v sbss=$(call sbss_of,$(1)) \
+	'function emit(text) { if (move) object = object text; else printf "%s", text } \
+	$$1 ~ /^\.(section|pushsection|popsection|previous|text|data|rdata|sdata|sbss|bss)$$/ { printf "%s%s", object, held; object = held = ""; \
+	bss = $$0 ~ /^\.section \.s?bss$$/; move = sbss != "" && $$0 == ".section .bss"; print; next } \
+	!bss { print; next } \
+	$$1 == ".align" { if (rule == "sized") next; if (rule == "words" && $$2 > 2) $$0 = "\t.align\t2"; emit($$0 "\n"); next } \
+	$$1 == ".space" { size = $$2; \
+	if (rule == "sized") { emit(sprintf("\t.align\t%d\n%s", (size > 2 ? 2 : size > 1 ? 1 : 0), held)); held = "" } \
+	else if (size % 4) { if (rule != "words") { print "a " size "-byte uninitialized variable has no slot rule under this ASPSX version" > "/dev/stderr"; exit 1 } \
+	$$0 = "\t.space\t" int((size + 3) / 4) * 4 } \
+	emit($$0 "\n"); if (move) { if (size <= sbss) small = small object; else printf "%s", object; object = "" } next } \
+	rule == "sized" { held = held $$0 "\n"; next } \
+	{ emit($$0 "\n") } \
+	END { printf "%s%s", object, held; if (small != "") printf ".section .sbss\n%s", small }'
+
+# A probe's settings must invalidate its object, including when switching back.
+# Keep the stamp's timestamp only while its contents and resolved tools agree.
+shell_quote = '$(subst ','"'"',$(1))'
+.PHONY: matching-flags-force
+matching-flags-force:
+
+$(ROOT)/$(BUILD)/%.cflags: matching-flags-force
+	@mkdir -p $(dir $@)
+	@{ printf '%s\n' \
+		$(call shell_quote,CC=$(call cc_of,$*)) \
+		$(call shell_quote,CPPFLAGS=$(CPPFLAGS)) \
+		$(call shell_quote,CC1FLAGS=$(CC1FLAGS) $(call cc1flags_of,$*)) \
+		$(call shell_quote,GP=$(call gp_of,$*)) \
+		$(call shell_quote,MASPSX=$(MASPSX)) \
+		$(call shell_quote,MASPSX_FLAGS=$(call maspsx_of,$*)) \
+		$(call shell_quote,EXTERN=$(EXTERN_$(basename $(notdir $*)))) \
+		$(call shell_quote,SBSS=$(call sbss_of,$*)) \
+		$(call shell_quote,AS=$(AS)) \
+		$(call shell_quote,ASFLAGS=$(ASFLAGS)); \
+		command -v psx-cpp-$(call cc_of,$*) psx-cc1-$(call cc_of,$*) $(firstword $(MASPSX)) $(firstword $(AS)); \
+	} > $@.tmp
+	@cmp -s $@.tmp $@ && rm $@.tmp || mv $@.tmp $@
+
+# Objects come from the splat-generated linker script (regenerate with `split`).
+LP := (
+OBJECTS = $(addprefix $(ROOT)/,$(shell sed -n 's/^ *\([^ ]*\.o\)[$(LP)].*/\1/p' $(ROOT)/$(LINKER_SCRIPT) 2>/dev/null | sort -u))
+
+# A fresh split: splat's cache would otherwise keep assembly with stale symbol names.
+# SPLIT_ALSO names configurations sharing this target's assembly directory.
+split:
+	rm -rf $(ROOT)/$(dir $(LINKER_SCRIPT))
+	cd $(ROOT) && splat split $(SPLAT_CONFIG)
+	cd $(ROOT) && for also in $(SPLIT_ALSO); do \
+		rm -rf "$$(dirname "$$(sed -n 's/^ *ld_script_path: *//p' $$also)")" && splat split $$also || exit 1; \
+	done
+
+# Objects are rebuilt after every split (they include the generated assembly).
+$(ROOT)/$(BUILD)/%.o: $(ROOT)/%.s $(ROOT)/$(LINKER_SCRIPT)
+	@mkdir -p $(dir $@)
+	cd $(ROOT) && $(AS) $(ASFLAGS) -o $@ $<
+
+# A C unit $(1) compiled (cpp, then $(2), then cc1), and the GAS input from its
+# cc1 output $(2) (maspsx and the filters above): shared by the object and its
+# coverage build.
+cc1_of = psx-cpp-$(call cc_of,$(1)) $(CPPFLAGS) $(1) $(2) | psx-cc1-$(call cc_of,$(1)) $(CC1FLAGS) $(call cc1flags_of,$(1)) -G$(call gp_of,$(1))
+gas_input_of = $(MASPSX) $(call maspsx_of,$(1)) -G$(call gp_of,$(1)) < $(2) $(call asm_filter_of,$(1)) $(call bss_filter_of,$(1))
+
+$(ROOT)/$(BUILD)/%.o: $(ROOT)/%.c $(ROOT)/$(LINKER_SCRIPT) $(ROOT)/$(BUILD)/%.cflags $(MAKEFILE_LIST) $(wildcard $(ROOT)/src/decomp/include/*.h $(ROOT)/src/decomp/include/*/*.h $(ROOT)/src/decomp/src/*/*.h $(ROOT)/src/decomp/src/*/*.s)
+	@mkdir -p $(dir $@)
+	cd $(ROOT) && $(call cc1_of,$<) -o $@.cc1.s
+	cd $(ROOT) && $(call gas_input_of,$<,$@.cc1.s) > $@.s
+	cd $(ROOT) && $(AS) $(ASFLAGS) -G$(call gp_of,$<) -o $@ $@.s
+
+# Source coverage attributes every byte of a C unit's object by where GAS put
+# it (tools/matching_coverage.py): the coverage build compiles the unit again
+# with a label line at both ends of each asm statement's text and assembles it
+# with each label recording its position in every section and the GAS macro
+# expansions so far. The report checks that without the labels the cc1
+# output, the GAS input and the sections are the object's own.
+$(ROOT)/$(BUILD)/%.cov.o: $(ROOT)/%.c $(ROOT)/$(BUILD)/%.o $(TOOLS)/matching_coverage.py
+	cd $(ROOT) && $(call cc1_of,$<,| $(PYTHON) $(TOOLS)/matching_coverage.py --mark-asm) -o $@.cc1.s
+	cd $(ROOT) && $(call gas_input_of,$<,$@.cc1.s) > $@.s
+	cd $(ROOT) && $(PYTHON) $(TOOLS)/matching_coverage.py --mark-gas < $@.s > $@.marks.s
+	cd $(ROOT) && $(AS) $(ASFLAGS) -G$(call gp_of,$<) -o $@ $@.marks.s
+
+# splat's undefined_syms_auto.txt and undefined_funcs_auto.txt assign an
+# address to every name its generated assembly used, also to names that a
+# linked object defines, and GNU ld silently lets a script assignment win
+# over the object's definition (the symbol becomes absolute). The link reads
+# them as PROVIDE, which defines only a name no linked object defines.
+LINKER_SCRIPTS = $(foreach script,$(LINKER_EXTRA),$(if $(filter %_auto.txt,$(script)),$(BUILD)/$(script:.txt=.ld),$(script)))
+
+# Each `NAME = VALUE;` line as PROVIDE(NAME = VALUE); any other line fails.
+PROVIDE_AWK := '/^[A-Za-z_.$$][A-Za-z0-9_.$$]* = [^;]+;$$/ { sub(/;$$/, ""); split($$0, f, " = "); print "PROVIDE(" f[1] " = " f[2] ");"; next } NF { print FILENAME ":" FNR ": not a symbol assignment" > "/dev/stderr"; exit 1 }'
+
+$(ROOT)/$(BUILD)/%_auto.ld: $(ROOT)/%_auto.txt $(MAKEFILE_LIST)
+	@mkdir -p $(dir $@)
+	awk $(PROVIDE_AWK) $< > $@.tmp && mv $@.tmp $@
+
+# PAD_TO_SYMBOL pads the file to that symbol's value in the link (the
+# resident's whole number of sectors, link.ld).
+pad_to = $(if $(PAD_TO_SYMBOL),--pad-to 0x$$($(NM) $(IMAGE).elf | awk '$$3 == "$(PAD_TO_SYMBOL)" { print $$1 }'))
+$(ROOT)/$(IMAGE): $(OBJECTS) $(ROOT)/$(LINKER_SCRIPT) $(wildcard $(addprefix $(ROOT)/,$(filter-out %_auto.txt,$(LINKER_EXTRA)))) $(patsubst $(ROOT)/%.txt,$(ROOT)/$(BUILD)/%.ld,$(wildcard $(addprefix $(ROOT)/,$(filter %_auto.txt,$(LINKER_EXTRA))))) $(CONFIG)
+	@test -n "$(OBJECTS)" || { echo "No objects: run make CONFIG=$(CONFIG) split" >&2; exit 2; }
+	cd $(ROOT) && $(LD) -nostdlib --no-check-sections -Map $(IMAGE).map \
+		-T $(LINKER_SCRIPT) $(addprefix -T ,$(LINKER_SCRIPTS)) -o $(IMAGE).elf
+	cd $(ROOT) && $(OBJCOPY) -O binary $(OBJCOPY_FLAGS) $(pad_to) $(IMAGE).elf $(IMAGE)
+	$(if $(PACKER_TAIL),cd $(ROOT) && head -c $(PACKER_TAIL) /dev/zero >> $(IMAGE))
+
+# A symbol that a linker script (LINKER_EXTRA: splat's generated lists, a
+# .data.ld or .resident.ld fragment) defines inside the target's own loaded
+# image or uninitialized data is an address copied from the original where the
+# link should place an object, so the comparison cannot see that object move.
+# verify fails on each one. BSS_END declares where the target's uninitialized
+# data ends past its image, the bound its loader clears: the check covers the
+# data up to it, a link that places data past it fails, and the coverage report
+# counts what no linked object holds there. LINK_VIEWS names the scripts whose
+# names there are views, expressions of symbols the link places, each with its
+# reason in the target. SCRIPT_SYMBOLS=warn (on the make command line or in the
+# environment) reports the names and passes a single target's verify, for a
+# probe, which then prints NOT ACCEPTANCE; strict is the default, and
+# all-verify passes it to every target.
+# verify also fails on each address of the target's own image or uninitialized
+# data that a loaded word holds without its relocation (a data word without
+# R_MIPS_32, a lui of its %hi without R_MIPS_HI16, a j/jal without R_MIPS_26):
+# the link did not produce it. Bytes classified asset or included (original
+# data the build copies) are exempt, others, authored assembly too, only by an
+# `unrelocated` line of the classification giving the reason
+# (matching_coverage.py --relocations).
+SCRIPT_SYMBOLS ?= strict
+$(if $(filter warn strict,$(SCRIPT_SYMBOLS)),,$(error SCRIPT_SYMBOLS must be warn or strict))
+
+verify: $(ROOT)/$(IMAGE)
+	cd $(ROOT) && $(PYTHON) $(TOOLS)/matching.py $(ORIGINAL) $(IMAGE) --sha256 $(ORIGINAL_SHA256)
+	cd $(ROOT) && $(PYTHON) $(TOOLS)/matching_coverage.py $(IMAGE).elf --map $(IMAGE).map \
+		--script-symbols $(SCRIPT_SYMBOLS) $(addprefix --script ,$(LINKER_SCRIPTS)) \
+		$(addprefix --views ,$(LINK_VIEWS)) $(if $(BSS_END),--bss-end $(BSS_END)) \
+		--relocations $(if $(CLASSIFICATION),--classification $(CLASSIFICATION))
+	$(if $(filter warn,$(SCRIPT_SYMBOLS)),@echo 'NOT ACCEPTANCE: SCRIPT_SYMBOLS=warn' >&2)
+
+# The coverage builds of the C units among the objects.
+COVERAGE_OBJECTS = $(foreach object,$(OBJECTS),$(if $(wildcard $(patsubst $(ROOT)/$(BUILD)/%.o,$(ROOT)/%.c,$(object))),$(object:.o=.cov.o)))
+
+coverage: $(ROOT)/$(IMAGE) $(COVERAGE_OBJECTS)
+	cd $(ROOT) && $(PYTHON) $(TOOLS)/matching_coverage.py $(IMAGE).elf --map $(IMAGE).map $(addprefix --src ,$(SOURCE_DIRS)) $(if $(CLASSIFICATION),--classification $(CLASSIFICATION)) $(if $(BSS_END),--bss-end $(BSS_END))
+
+audit: coverage
+	cd $(ROOT) && $(PYTHON) tools/nonmatching_score.py $(abspath $(CONFIG)) --exact
+
+# Compressed-container reproduction (a separate claim from image matching):
+# CONTAINERS lists DISC:SLOT pairs whose packed file holds this image.
+# PACKER_TAIL counts the zero literals the original packer appended to complete
+# its last group; the image rule appends them after the linked program, so the
+# image matches only when the link ends exactly where the program does.
+container: $(ROOT)/$(IMAGE)
+	cd $(ROOT) && for pair in $(CONTAINERS); do \
+		disc=$${pair%%:*}; slot=$${pair##*:}; \
+		$(PYTHON) tools/packed_container.py $(IMAGE) --tail $(or $(PACKER_TAIL),0) \
+			--disc .local/discs/disc$$disc.bin \
+			--manifest .local/extract/disc$$disc/manifest.json --slot $$slot || exit 1; \
+	done
+
+clean:
+	rm -rf $(ROOT)/$(BUILD) $(ROOT)/$(IMAGE) $(ROOT)/$(IMAGE).elf $(ROOT)/$(IMAGE).map
+endif

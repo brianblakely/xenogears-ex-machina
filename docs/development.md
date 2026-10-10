@@ -10,21 +10,21 @@ image's directory where overlays share load addresses.
 
 ```sh
 nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra#matching
-make -C decomp smoke
+make -C src/decomp smoke
 ```
 
 For Ghidra, enter `path:./nix/ghidra` instead. Reuse qualified private projects and
 source identities; importer usage is in [reverse engineering](reverse-engineering.md).
 
-For the retained host C++ reference and its public regressions:
+For the public checks (validator, Python tests, ruff and, where cargo is on PATH,
+the Rust workspace in `src/runtime` and its headless dependency check):
 
 ```sh
-nix --extra-experimental-features 'nix-command flakes' develop path:./nix
-python3 tools/repository/build.py debug --target test-program --test connected-program
-python3 tools/repository/check.py --preset debug
+nix --extra-experimental-features 'nix-command flakes' develop path:./nix/runtime
+python3 tools/repository/check.py
 ```
 
-Use `--preset all` explicitly for debug/release/sanitizers. Formatting is an explicit
+The host C++ reconstruction was retired; read it at commit b969b11. Formatting is an explicit
 `python3 tools/repository/format.py --check` operation, not a reason to regenerate
 requirements metadata. The source allowlist and JSON integrity are checked by
 `tools/repository/validate.py`; historical evidence validators remain available to

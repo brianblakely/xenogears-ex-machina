@@ -1,4 +1,4 @@
-/* The callees and game data port/adapters.c uses, as test doubles that
+/* The callees and game data src/port/adapters.c uses, as test doubles that
  * record each call's arguments for tests/test_port_adapters.py. Nothing here
  * is original content. */
 #include "common.h"

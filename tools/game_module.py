@@ -2,7 +2,7 @@
 """Build the wasm32 game module from the recovered C (docs/runtime.md).
 
 Every unit the matched PS1 links compiled (the FILE symbols of their ELFs),
-unchanged, plus the port layer in port/, is compiled to LLVM IR by clang's MIPS
+unchanged, plus the port layer in src/port/, is compiled to LLVM IR by clang's MIPS
 front end, retargeted to wasm32 and rewritten so that the module keeps the
 original memory layout:
 
@@ -15,7 +15,7 @@ original memory layout:
   bytes in game memory (an overlay function shares its address with other
   images' functions), trapping on an absent or overwritten image;
 - an inline assembly statement becomes a call to the port function that
-  port/asm_map*.json gives for its template and constraints;
+  src/port/asm_map*.json gives for its template and constraints;
 - a direct call whose argument or result types differ from the definition (an
   unprototyped call) goes through an adapter that truncates or extends integer
   arguments, passes 0 for a missing one and drops an extra one; adapters.txt
@@ -25,7 +25,7 @@ original memory layout:
 
 The rewritten units are compiled with -O2, linked by wasm-ld and instrumented
 by wasm-opt --asyncify at the yield imports. The decomp itself is not
-changed. Run inside nix/runtime after `make -C decomp all-verify`.
+changed. Run inside nix/runtime after `make -C src/decomp all-verify`.
 """
 
 import argparse
@@ -43,12 +43,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import game_schema  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-TARGETS = ROOT / "decomp" / "targets"
+TARGETS = ROOT / "src" / "decomp" / "targets"
 # The development images load at 0x80280000, outside retail RAM, and only when
 # the boot word enables the development paths; Disc 2's executable shares
 # Disc 1's code and addresses (only the embedded disc index differs).
 SKIPPED_TARGETS = {"debug595", "debug2611", "slus_006.69"}
-PORT_DIR = ROOT / "port"
+PORT_DIR = ROOT / "src" / "port"
 # Game memory: RAM at KSEG0 and the scratchpad keep their PS1 addresses.
 MEMORY_BYTES = 0x80200000
 # The port's shadow stack, then its own data, lie below the scratchpad.
@@ -57,10 +57,10 @@ FINGERPRINT_BYTES = 32
 # Host imports that suspend the game or abandon its stack (asyncify unwinds
 # through them).
 YIELD_IMPORTS = ["xem.yield", "xem.restart", "xem.task_switch"]
-# The module's exports, defined in port/.
+# The module's exports, defined in src/port/.
 EXPORTS = ["xem_run", "xem_task_run", "xem_call", "xem_interrupt", "xem_unwind_area"]
 HOST_PREFIX = "xem_host_"
-# Game functions the port wraps (decomp/port): the game's definition is
+# Game functions the port wraps (src/decomp or src/port): the game's definition is
 # renamed xem_original_<name> and the port's definition calls it.
 WRAPPED = {"mode_dispatch", "model_draw_sprite_model", "sprite_set_draw_matrix", "sprite_draw_parts",
            "pad_dequeue_state"}
@@ -70,7 +70,7 @@ CFLAGS = [
     # retargeted to wasm32, whose data layout (ILP32, little-endian, the same
     # ABI alignments) gives every structure the same layout.
     "--target=mipsel-unknown-unknown", "-std=gnu89", "-undef", "-nostdinc", "-ffreestanding",
-    "-include", "port/include/xem/prelude.h", "-Iport/include", "-Idecomp/include",
+    "-include", "src/port/include/xem/prelude.h", "-Isrc/port/include", "-Isrc/decomp/include",
     "-Dmips", "-D__mips__", "-D__mips", "-Dpsx", "-D__psx__", "-D__psx", "-D_PSYQ", "-D_MIPSEL",
     "-D__CHAR_UNSIGNED__", "-D_LANGUAGE_C", "-DLANGUAGE_C",
     "-funsigned-char", "-fwrapv", "-fno-strict-aliasing", "-fno-builtin", "-w",
@@ -149,7 +149,7 @@ def elf_symbols(path):
             if kind == 4:
                 # The source path as the repository names it, whichever checkout
                 # built the ELF.
-                unit = text[text.index("decomp/src/"):] if "decomp/src/" in text else text
+                unit = text[text.index("src/decomp/src/"):] if "src/decomp/src/" in text else text
                 continue
             if not text or kind == 3 or shndx == 0:
                 continue
@@ -171,7 +171,7 @@ def collect_symbols(out):
     images = {}
     for target, elf in read_targets():
         if not elf.exists():
-            raise SystemExit(f"{elf} is missing: run make -C decomp all-verify first")
+            raise SystemExit(f"{elf} is missing: run make -C src/decomp all-verify first")
         data, sections, symbols = elf_symbols(elf)
         exec_sections = {i for i, s in enumerate(sections) if s[2] & 4}
         globals_, locals_, units = {}, {}, set()
@@ -195,7 +195,7 @@ def collect_symbols(out):
                 functions[key] = [value, len(code), fnv1a64(code)]
         # Every C unit of the link, from its map (units without local symbols,
         # such as the commons units, have no FILE symbol in the ELF).
-        linked = set(re.findall(r"(decomp/src/\S+)\.o\b", (elf.parent / (elf.name[:-4] + ".map")).read_text()))
+        linked = set(re.findall(r"(src/decomp/src/\S+)\.o\b", (elf.parent / (elf.name[:-4] + ".map")).read_text()))
         units |= {u + ".c" for u in linked if (ROOT / (u + ".c")).exists()}
         images[target] = {"globals": globals_, "locals": {k: v for k, v in locals_.items() if k},
                           "functions": functions, "units": sorted(u for u in units if u.endswith(".c"))}
@@ -441,7 +441,7 @@ class Rewriter:
         for key, entry in addresses.functions.items():
             if key in self.definitions:
                 self.functions_at.setdefault(entry[1], []).append(key)
-        # Port-written adapters: xem_adapt_<function> in port/.
+        # Port-written adapters: xem_adapt_<function> in src/port/.
         self.port_adapters = {name[len("xem_adapt_"):]: head for unit in units if unit.image == "port"
                               for name, head in unit.defined.items() if name.startswith("xem_adapt_")}
         self.overridden = set()
@@ -676,7 +676,7 @@ class Rewriter:
         return [f"{lhs}{call_kw}{ret_attrs}{ret} @\"xem.icall.{key_name(key)}.{dispatch_variant(ret, arg_types)}\"({new_args}){tail}"]
 
     def rewrite_asm(self, unit, line):
-        """An inline assembly call as a call to its port function (port/asm_map*.json)."""
+        """An inline assembly call as a call to its port function (src/port/asm_map*.json)."""
         m = ASM_RE.match(line)
         if not m:
             return None
@@ -733,7 +733,7 @@ CALL_RESULT_RE = re.compile(r"^\s*(%[-\w.]+) = (?:tail )?call (?:(?:noundef|sign
 def valueless_returns(lines, returns):
     """Give each non-void function's return slot a defined value on paths that
     return without one (`return;`, falling off the end): 0, or the value
-    port/returns.json names, where "last_call" is the last call's result (the
+    src/port/returns.json names, where "last_call" is the last call's result (the
     original's $v0)."""
     out = []
     i = 0
@@ -765,7 +765,7 @@ def valueless_returns(lines, returns):
             if re.match(r"^\s*" + re.escape(slot) + r" = alloca ", b):
                 if rule == "last_call":
                     result += [f"  %xem.v0 = alloca {ty}", f"  store {ty} {zero}, ptr %xem.v0",
-                               f"  %xem.set = alloca i1", "  store i1 false, ptr %xem.set"]
+                               "  %xem.set = alloca i1", "  store i1 false, ptr %xem.set"]
                 value = zero if rule in (0, "last_call") else str(rule)
                 result.append(f"  store {ty} {value}, ptr {slot}")
             elif rule == "last_call":
@@ -780,7 +780,7 @@ def valueless_returns(lines, returns):
                 ret = RET_RE.match(result[k])
                 if ret:
                     value = ret.group(2)
-                    result[k:k + 1] = [f"  %xem.s = load i1, ptr %xem.set", f"  %xem.c = load {ty}, ptr %xem.v0",
+                    result[k:k + 1] = ["  %xem.s = load i1, ptr %xem.set", f"  %xem.c = load {ty}, ptr %xem.v0",
                                        f"  %xem.r = select i1 %xem.s, {ty} {value}, {ty} %xem.c", f"  ret {ty} %xem.r"]
                     break
         out += result
@@ -909,7 +909,7 @@ def compile_ir(source, out_ll):
                               cwd=ROOT, capture_output=True, text=True)
 
     result = attempt(source)
-    if result.returncode and "decomp/src/" in str(source):
+    if result.returncode and "src/decomp/src/" in str(source):
         retry = attempt(game_schema.headers_first(os.path.relpath(source, ROOT), out_ll.parent))
         if retry.returncode == 0:
             return None

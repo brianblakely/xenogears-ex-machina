@@ -1,5 +1,5 @@
-"""The port's small resident routines (port/resident.c) against the contracts
-of decomp/src/resident/mode_set_arena_task.s and console_report_printf.s,
+"""The port's small resident routines (src/port/resident.c) against the contracts
+of src/decomp/src/resident/mode_set_arena_task.s and console_report_printf.s,
 natively (tests/port_native.py)."""
 
 import ctypes
@@ -20,7 +20,7 @@ def setUpModule():
     if not mem.CLANG:
         raise unittest.SkipTest("no clang (run inside nix develop path:./nix/runtime)")
     BUILD = tempfile.TemporaryDirectory()
-    LIB = mem.build(BUILD.name, ["port/resident.c", "tests/port_resident/support.c"], SYMBOLS)
+    LIB = mem.build(BUILD.name, ["src/port/resident.c", "tests/port_resident/support.c"], SYMBOLS)
     LIB.console_report_printf.argtypes = [ctypes.c_char_p]
 
 

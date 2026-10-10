@@ -1,6 +1,6 @@
-"""The port's call adapters (port/adapters.c).
+"""The port's call adapters (src/port/adapters.c).
 
-port/adapters.c is compiled for wasm32, the game module's target, with test
+src/port/adapters.c is compiled for wasm32, the game module's target, with test
 doubles of its callees and data (tests/port_adapters/support.c) that record
 each call's arguments; Node runs the calls. Each test checks that an adapter
 passes the value the matched PS1 code left for the missing argument and
@@ -38,9 +38,9 @@ def setUpModule():
     BUILD = tempfile.TemporaryDirectory()
     flags = ["--target=wasm32-unknown-unknown", "-O2", "-std=gnu89", "-nostdinc", "-ffreestanding", "-fno-builtin",
              "-funsigned-char", "-fwrapv", "-fno-strict-aliasing", "-Wall", "-Werror", "-Wno-unused-function",
-             "-Iport/include", "-Idecomp/include"]
+             "-Isrc/port/include", "-Isrc/decomp/include"]
     objects = []
-    for source in ("port/adapters.c", "tests/port_adapters/support.c"):
+    for source in ("src/port/adapters.c", "tests/port_adapters/support.c"):
         obj = os.path.join(BUILD.name, Path(source).stem + ".o")
         subprocess.run([CLANG, *flags, "-c", source, "-o", obj], cwd=ROOT, check=True)
         objects.append(obj)

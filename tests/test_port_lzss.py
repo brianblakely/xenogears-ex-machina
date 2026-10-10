@@ -1,5 +1,5 @@
-"""The port's LZSS decoder (port/lzss.c) against the contract of
-decomp/src/resident/text_unpack_lzss.s and text_unpack_lzss_alloc.s and the
+"""The port's LZSS decoder (src/port/lzss.c) against the contract of
+src/decomp/src/resident/text_unpack_lzss.s and text_unpack_lzss_alloc.s and the
 format reconstruction tools/analysis/packed.py, natively
 (tests/port_native.py), on invented streams.
 """
@@ -27,7 +27,7 @@ def setUpModule():
     if not mem.CLANG:
         raise unittest.SkipTest("no clang (run inside nix develop path:./nix/runtime)")
     BUILD = tempfile.TemporaryDirectory()
-    LIB = mem.build(BUILD.name, ["port/lzss.c", "tests/port_resident/support.c"])
+    LIB = mem.build(BUILD.name, ["src/port/lzss.c", "tests/port_resident/support.c"])
     LIB.text_unpack_lzss.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
     LIB.text_unpack_lzss.restype = ctypes.c_void_p
     LIB.text_unpack_lzss_alloc.argtypes = [ctypes.c_void_p, ctypes.c_int]

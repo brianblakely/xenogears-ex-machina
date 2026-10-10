@@ -1,6 +1,6 @@
 # Field event scripts
 
-**Interpreter** (field overlay, `decomp/src/field/field_event.c`):
+**Interpreter** (field overlay, `src/decomp/src/field/field_event.c`):
 
 - `800a1ec8` runs the current actor's script until an instruction yields, its
   slot ends or the pass limit runs out (8, raised by some opcodes). The
@@ -45,7 +45,7 @@ the actor count and 32 entry PCs per actor, then the bytecode (`80070cc8`).
 **Instructions.** The table is `_PRIMARY`/`_EXTENDED` in `tools/analysis/events.py`
 (mnemonic, handler, size, flow, operand offsets, effect), and the C handlers
 carry fuller comments. `tests/test_events.py` checks it against
-`decomp/src/field`: dispatch order, every literal PC advance and jump, and
+`src/decomp/src/field`: dispatch order, every literal PC advance and jump, and
 every operand read.
 
 - Forms pick by a selector byte. `10`/`11` and `57` are set-up and step pairs:
@@ -246,7 +246,8 @@ maps are identical to Disc 1's.
   without ammo in its first slot, the enemies' included (their records hold
   none), adds its `+9f` to its accuracy (battle `8009d3a0`); character 4's
   gears add it only while that slot reads 0 rounds.
-- Compared with the host disassembler (`src/reconstruction/field_disassembler.cpp`),
+- Compared with the retired host disassembler
+  (`src/reconstruction/field_disassembler.cpp` at commit b969b11),
   the lengths agree for every opcode and form. It differs in three places, and
   the C reading above is used:
   - it skips zero entries everywhere, missing event 0 at PC 0 in the bytecode

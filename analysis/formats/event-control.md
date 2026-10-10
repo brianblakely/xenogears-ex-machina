@@ -206,7 +206,7 @@ the verifier rejects a window that starts or ends inside an unmatched batch.
 This route advances dialogue with repeated Cross presses. It does not demonstrate
 an encounter, victory, rewards, a save round trip or the Phase 1 slice exit.
 The [host reconstruction inventory](../recovery.json) records which instructions
-the host library implements; every handler is matching C in decomp/src and every
+the host library implements; every handler is matching C in src/decomp/src and every
 used instruction is decoded by tools/analysis/events.py
 ([field-events.md](../../docs/scripts/field-events.md)). Next, validate the
 remaining operand/slot modes against

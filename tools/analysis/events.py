@@ -1,7 +1,7 @@
 """Field event script disassembler, read from the recovered field interpreter.
 
 The field overlay runs each event actor's script with 800a1ec8
-(decomp/src/field/field_event.c): the byte at the actor's working PC
+(src/decomp/src/field/field_event.c): the byte at the actor's working PC
 indexes the 256 handlers of field_event_primary_handlers; fe (800869b8) moves the PC onto the
 next byte and indexes the 227 extended handlers of field_event_extended_handlers with it, so an
 extended handler reads its operands relative to the extended byte. Extended

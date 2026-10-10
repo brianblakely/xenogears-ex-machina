@@ -156,9 +156,10 @@ def headers_first(source, directory):
     (GCC accepts it, clang does not); with the headers first the types are
     complete, and the unit itself is unchanged."""
     wrapper = Path(directory) / (source.replace("/", ".") + ".wrapper.c")
-    target = Path(source).parts[2]
-    headers = sorted((ROOT / "decomp/include" / target).glob("*.h")) + sorted((ROOT / "decomp/src" / target).glob("*.h"))
-    includes = "".join(f'#include "{h}"\n' for h in [ROOT / "decomp/include/common.h", *headers])
+    target = Path(source).parts[3]
+    headers = sorted((ROOT / "src/decomp/include" / target).glob("*.h")) + sorted((ROOT / "src/decomp/src" / target).glob("*.h"))
+    common = ROOT / "src/decomp/include/common.h"
+    includes = "".join(f'#include "{h}"\n' for h in [common, *headers])
     wrapper.write_text(includes + f'#include "{ROOT / source}"\n')
     return wrapper
 

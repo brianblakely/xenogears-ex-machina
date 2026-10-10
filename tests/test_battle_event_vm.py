@@ -1,5 +1,5 @@
 """Invented battle event scripts exercise operand forms, lengths and flow; the
-table is checked against the recovered interpreter in decomp/src."""
+table is checked against the recovered interpreter in src/decomp/src."""
 
 import re
 import struct
@@ -98,7 +98,7 @@ class SourceTests(unittest.TestCase):
     """The table follows 801e879c's cases and its handlers' returns."""
 
     def test_cases_call_the_table_handlers_and_their_lengths(self):
-        text = (ROOT / "decomp/src/ovl3087/battle_event_script_vm.c").read_text()
+        text = (ROOT / "src/decomp/src/ovl3087/battle_event_script_vm.c").read_text()
         body = text[text.index("void battle_event_script_run(void) {") :]
         body = body[: body.index("\n}\n")]
         cases = re.findall(r"case 0x([0-9A-F]{2}):\s*\n\s*length = (\w+)\(", body)

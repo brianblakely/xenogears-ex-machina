@@ -17,7 +17,7 @@ packed overlay.
 - **Table:** `field_movie_sound_timelines`, 96 u16 (frame, sound) pairs: a leading
   end, then one run per movie sound-effect bank, each ended by an entry whose frame
   is 0xFFFF (sound 0). The asset line is in
-  `decomp/targets/overlays/field.classification.txt`.
+  `src/decomp/targets/overlays/field.classification.txt`.
 - **Bank:** event `fe a0` (`field_event_play_movie_sound`) requests a movie with its
   sound bank in operand 9; 0xFF requests none, as events 60 and 67 always do, and
   then `field_movie_play_due_sounds` plays nothing. `field_movie_load_sound_bank`
@@ -60,7 +60,7 @@ packed overlay.
   `worldmap_texture_anim2_slot1_frames`, `worldmap_texture_anim2_slot2_frames`
   (those of `worldmap_texture_anim2_slots`) are `TexAnimFrame` {s16 image; s16
   duration} runs ended by a negative duration, assets in
-  `decomp/targets/overlays/worldmap.classification.txt`.
+  `src/decomp/targets/overlays/worldmap.classification.txt`.
 - **Timing:** each update counts a slot's timer down; at 0 the stepper moves to the
   next frame and takes its duration, restarts at frame 0 with that frame's
   duration when the new one is negative, and uploads the frame's image into the

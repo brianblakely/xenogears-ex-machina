@@ -49,7 +49,7 @@ from tools.analysis.dispatch_tables import (
 
 
 def source(path: str) -> str:
-    return (ROOT / "decomp/src" / path).read_text()
+    return (ROOT / "src/decomp/src" / path).read_text()
 
 
 def packed(data: bytes) -> bytes:
@@ -77,7 +77,7 @@ def model_header(groups: int, aux: int, primitives: int, group_count: int, packe
 
 
 class SourceTests(unittest.TestCase):
-    """Every table, length and selector the census uses is read from decomp/src."""
+    """Every table, length and selector the census uses is read from src/decomp/src."""
 
     def test_formula_tables_and_their_callers(self):
         foot, gear = formula_tables()
@@ -101,7 +101,7 @@ class SourceTests(unittest.TestCase):
         self.assertIn("battle_current_command->flagsA & 0x10", caller)
 
     def test_descriptor_fields_and_archive_layout(self):
-        header = (ROOT / "decomp/include/battle/work.h").read_text()
+        header = (ROOT / "src/decomp/include/battle/work.h").read_text()
         self.assertIn("u8 formula; /* 0x16", header)
         self.assertIn("u16 flagsA;   /* 0x0A */", header)
         loader = " ".join(
@@ -301,7 +301,7 @@ class InventoryTests(unittest.TestCase):
         )
         texts = {
             path: re.sub(r"/\*.*?\*/", "", path.read_text(), flags=re.S)
-            for path in sorted((ROOT / "decomp").rglob("*.[ch]"))
+            for path in sorted((ROOT / "src" / "decomp").rglob("*.[ch]"))
         }
         functions = {a or b for text in texts.values() for a, b in declared.findall(text)}
         tables = set()
@@ -507,7 +507,7 @@ class PrimitiveTests(unittest.TestCase):
 
 class LayoutTests(unittest.TestCase):
     def test_model_header_fields_follow_the_c(self):
-        header = (ROOT / "decomp/include/resident/model.h").read_text()
+        header = (ROOT / "src/decomp/include/resident/model.h").read_text()
         fields = header[: header.index("} SpriteModel;")].rsplit("typedef struct {", 1)[1]
         declarations = re.findall(r"(\w+) \**(\w+);", re.sub(r"/\*.*?\*/", "", fields))
         # u16 counts at +0, +2, +4 and +6, six offsets from +8, the box from +0x20,

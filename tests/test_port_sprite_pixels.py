@@ -1,5 +1,5 @@
-"""The port's GTE pixel loops (port/sprite_pixels.c) against the contracts of
-decomp/src/resident/sprite_darken_pixels.s and sprite_blend_pixels.s,
+"""The port's GTE pixel loops (src/port/sprite_pixels.c) against the contracts of
+src/decomp/src/resident/sprite_darken_pixels.s and sprite_blend_pixels.s,
 natively (tests/port_native.py), on invented pixels.
 
 Expected pixels come from the contracts' arithmetic and psx-spx's GPF
@@ -32,7 +32,7 @@ def setUpModule():
     if not mem.CLANG:
         raise unittest.SkipTest("no clang (run inside nix develop path:./nix/runtime)")
     BUILD = tempfile.TemporaryDirectory()
-    LIB = mem.build(BUILD.name, ["port/sprite_pixels.c"])
+    LIB = mem.build(BUILD.name, ["src/port/sprite_pixels.c"])
     LIB.sprite_darken_pixels.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p]
     LIB.sprite_blend_pixels.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
 

@@ -13,11 +13,11 @@ def main() -> None:
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     paths = [path.relative_to(ROOT).as_posix() for path in source_files()]
-    cpp = [path for path in paths if path.endswith((".cpp", ".h", ".hpp", ".hpp.in", ".java"))]
+    c = [path for path in paths if path.endswith((".h", ".java"))]
     python = [path for path in paths if path.endswith(".py")]
     nix = [path for path in paths if path.endswith(".nix")]
     commands = [
-        ["clang-format", *(["--dry-run", "--Werror"] if args.check else ["-i"]), *cpp],
+        ["clang-format", *(["--dry-run", "--Werror"] if args.check else ["-i"]), *c],
         ["ruff", "format", *(["--check"] if args.check else []), *python],
         ["ruff", "check", *python],
         ["nixfmt", *(["--check"] if args.check else []), *nix],

@@ -6,13 +6,13 @@
     names.py apply MAPPING [--overrides FILE] [--dry-run]
 
 Run from the repository root in the matching shell once every target has
-linked (make -C decomp all-verify): the 26 ELFs and link maps give each
+linked (make -C src/decomp all-verify): the 26 ELFs and link maps give each
 image's symbols, and each name a link takes from another image (its linker
 scripts' names) is bound to the image defining it with tools/cross_image.py's
 helpers: by name, by view, by address, else inside an object (the last two,
 which the cross-image check rejects, for a placeholder still to be named);
 where images overlap, to the one the importer takes its other names from. The
-resident's two executables are one image (decomp/src/resident).
+resident's two executables are one image (src/decomp/src/resident).
 
 Placeholders are splat's func_/D_/jtbl_ names (each image's own symbols, and
 the names a link takes for another image's address that the image itself
@@ -105,7 +105,7 @@ SYMBOL_KINDS = ("func", "data", "jtbl")
 OWN_BINDINGS = ("global", "local", "weak", "script")
 NEVER_TOUCHED = {"prompt.md", "plan.md"}
 # The build's rules: per-unit settings and the preprocessor's include paths.
-MAKEFILE = Path(__file__).resolve().parents[1] / "decomp/Makefile"
+MAKEFILE = Path(__file__).resolve().parents[1] / "src/decomp/Makefile"
 SOURCE_FILES = Path("packaging/source-files.txt")
 INCLUDE_MACROS = set(
     "INCLUDE_ASM INCLUDE_RODATA INCLUDE_ORIGINAL INCLUDE_ORIGINAL_UNALIGNED INCLUDE_ASSET".split()
@@ -655,7 +655,7 @@ def source_of(build: str, obj: str) -> Path:
 
 
 def include_paths() -> list[str]:
-    """The -I options of decomp/Makefile's CPPFLAGS, from the repository root."""
+    """The -I options of src/decomp/Makefile's CPPFLAGS, from the repository root."""
     flags = re.search(r"^CPPFLAGS :=((?:.*\\\n)*.*)", MAKEFILE.read_text(), re.M).group(1)
     return [f"-I{path}" for path in re.findall(r"-I\$\(ROOT\)/(\S+)", flags)]
 
@@ -686,9 +686,9 @@ def load(corrected: frozenset[str] = frozenset()) -> Repository:
     """The targets, their files and the inventory: every placeholder, and the
     names a mapping corrects (`corrected`: symbols, FUNCTION.parameter, unit
     paths) as if they were placeholders."""
-    configs = sorted(Path("decomp/targets").glob("*/*.mk"))
+    configs = sorted(Path("src/decomp/targets").glob("*/*.mk"))
     if not configs:
-        fail("no decomp/targets/*/*.mk: run from the repository root")
+        fail("no src/decomp/targets/*/*.mk: run from the repository root")
     targets = [cross_image.load(path) for path in configs]
     image, images, symbol_files, auto = {}, defaultdict(list), {}, {}
     scopes: dict[Path, set[str]] = defaultdict(set)
@@ -1162,7 +1162,7 @@ class Names:
     macros: set[str]
     typedefs: set[str]
     symbols: dict[str, set[tuple[str, int]]]  # every link's symbols: (image, value)
-    psyq: set[str]  # the identifiers decomp/include/psyq declares
+    psyq: set[str]  # the identifiers src/decomp/include/psyq declares
 
 
 def source_names(repo: Repository, files: list[Path]) -> Names:
@@ -1172,7 +1172,7 @@ def source_names(repo: Repository, files: list[Path]) -> Names:
     typedefs: set[str] = set()
     psyq: set[str] = set()
     for path in files:
-        if path.parts[0] != "decomp" or path.suffix == ".md":
+        if path.parts[:2] != ("src", "decomp") or path.suffix == ".md":
             continue
         if path.suffix in (".c", ".h"):
             source = repo.c(path)
@@ -1478,7 +1478,7 @@ def check_symbol(
             )
         else:
             plan.warnings.append(
-                f"{where}: {new}: a PsyQ spelling that decomp/include/psyq"
+                f"{where}: {new}: a PsyQ spelling that src/decomp/include/psyq"
                 " does not declare (the evidence should cite the routine)"
             )
         return
@@ -1531,8 +1531,8 @@ def check_unit(repo: Repository, plan: Plan, where: str, row: Row) -> None:
     entry = unit_entry(repo, row.image, row.old, "unit")
     stem = row.new[:-2] if row.new.endswith(".c") else row.new
     if entry is None:
-        old = Path(row.old) if "/" in row.old else Path("decomp/src") / row.image / row.old
-        folder = Path("decomp/src") / row.image
+        old = Path(row.old) if "/" in row.old else Path("src/decomp/src") / row.image / row.old
+        folder = Path("src/decomp/src") / row.image
         here = [old] if "/" in row.old else [*folder.rglob(f"{old.stem}.c")]
         moved = old.with_name(f"{stem}.c").exists() or any(folder.rglob(f"{stem}.c"))
         if not any(path.exists() for path in [old, *here]) and moved:
@@ -1561,7 +1561,7 @@ def check_asm(repo: Repository, plan: Plan, where: str, row: Row) -> None:
     entry = unit_entry(repo, row.image, row.old, "asm")
     stem = row.new[:-2] if row.new.endswith(".s") else row.new
     if entry is None:
-        old = Path(row.old) if "/" in row.old else Path("decomp/src") / row.image / row.old
+        old = Path(row.old) if "/" in row.old else Path("src/decomp/src") / row.image / row.old
         if not old.exists() and old.with_name(f"{stem}.s").exists():
             plan.applied += 1  # moved already
         else:
@@ -1593,7 +1593,7 @@ def check_param(
         if any(
             source.tokens[i].text == new
             for path in files
-            if path.suffix in (".c", ".h") and path.parts[0] == "decomp"
+            if path.suffix in (".c", ".h") and path.parts[:2] == ("src", "decomp")
             for source in [repo.c(path)]
             for f in source.functions
             if source.tokens[f.name].text in functions
@@ -1660,7 +1660,7 @@ SYMBOL_FILE_HEADER = "// Names tools/names.py gave these addresses (docs/matchin
 
 
 def unit_settings() -> list[str]:
-    """The per-unit variables decomp/Makefile reads (CC_<file>, GP_<file>, ...)."""
+    """The per-unit variables src/decomp/Makefile reads (CC_<file>, GP_<file>, ...)."""
     return sorted(set(UNIT_SETTING.findall(MAKEFILE.read_text())))
 
 
@@ -2113,7 +2113,7 @@ def corrections(mapping: Path) -> frozenset[str]:
         elif row.kind == "param" and not PARAMETER.fullmatch(row.old.rpartition(".")[2]):
             found.add(row.old)
         elif row.kind == "unit" and not address_named(row.image, Path(row.old)):
-            found.add(row.old if "/" in row.old else f"decomp/src/{row.image}/{row.old}")
+            found.add(row.old if "/" in row.old else f"src/decomp/src/{row.image}/{row.old}")
     return frozenset(found)
 
 

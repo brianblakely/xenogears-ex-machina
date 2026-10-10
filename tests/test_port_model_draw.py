@@ -1,5 +1,5 @@
-"""The port's model renderers and environment-map patcher (port/model_draw.c)
-against the contracts of decomp/src/resident/model_draw*.s, model_depth.s and
+"""The port's model renderers and environment-map patcher (src/port/model_draw.c)
+against the contracts of src/decomp/src/resident/model_draw*.s, model_depth.s and
 model_set_envmap_mapping.s, natively (tests/port_native.py), on invented
 inputs.
 
@@ -83,7 +83,7 @@ def setUpModule():
     if not mem.CLANG:
         raise unittest.SkipTest("no clang (run inside nix develop path:./nix/runtime)")
     BUILD = tempfile.TemporaryDirectory()
-    LIB = mem.build(BUILD.name, ["port/model_draw.c"], SYMBOLS)
+    LIB = mem.build(BUILD.name, ["src/port/model_draw.c"], SYMBOLS)
     for name in ENTRIES:
         getattr(LIB, name).argtypes = [ctypes.c_void_p, ctypes.c_int]
     LIB.model_set_envmap_mapping.argtypes = [ctypes.c_int] * 4

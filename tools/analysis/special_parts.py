@@ -8,7 +8,7 @@ menu_equip_screen_build_candidates); the battle lists weapon ids 50-72 (ovl2615
 battle_setup_build_item_lists) and copies the 48 weapon records 50-97 (0x300 bytes from +0x320 of
 the setup archive's entry 0x25, battle_setup_load_party_and_enemy_files). Each id's rounds are
 GameData.ammo[id - 50] (+0x22B8, character 4) or gearAmmo[id - 50] (+0x22E8, its gears), 48 bytes
-each (decomp/include/resident/gamedata.h): the code forms the address from 50 bytes before the
+each (src/decomp/include/resident/gamedata.h): the code forms the address from 50 bytes before the
 array (0x8006F8BA; 0x8006F8EA, the flag word +0x22B6), so an index outside 50-97 reaches other
 game data, which `alias` names.
 

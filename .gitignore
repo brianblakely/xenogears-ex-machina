@@ -6,8 +6,6 @@ discs/
 /assets/cache/
 /saves/
 /captures/
-/CMakeUserPresets.json
-/compile_commands.json
 /*apikey*.txt
 /result
 /result-*

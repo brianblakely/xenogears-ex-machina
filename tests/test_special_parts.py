@@ -51,7 +51,7 @@ def function(path: str, head: str) -> str:
 
 class LayoutTests(unittest.TestCase):
     def test_layout_follows_gamedata_h(self):
-        text = (ROOT / "decomp/include/resident/gamedata.h").read_text()
+        text = (ROOT / "src/decomp/include/resident/gamedata.h").read_text()
         found = re.findall(r"OFFSET_OF\(GameData, (\w+)\) == (0x[0-9A-F]+)", text)
         offsets = {name: int(value, 16) for name, value in found}
         for start, _, name in LAYOUT:
@@ -73,41 +73,42 @@ class LayoutTests(unittest.TestCase):
 
     def test_constants_follow_the_c(self):
         loader = function(
-            "decomp/src/ovl2615/battle_setup_phases.c",
+            "src/decomp/src/ovl2615/battle_setup_phases.c",
             "void battle_setup_load_party_and_enemy_files(void) {",
         )
         record = TABLES["weapon"][1]
         self.assertIn("archive[0x25]", loader)
         self.assertIn(f"(u8 *)block + 0x{record * FIRST:x}, 0x{record * COUNT:x})", loader)
         lists = function(
-            "decomp/src/ovl2615/battle_setup_phases.c", "void battle_setup_build_item_lists(void) {"
+            "src/decomp/src/ovl2615/battle_setup_phases.c",
+            "void battle_setup_build_item_lists(void) {",
         )
         self.assertIn(
             f"game_data.weaponIds[i] >= {FIRST} && game_data.weaponIds[i] < {BATTLE_END}", lists
         )
         offered = function(
-            "decomp/src/slot39/menu_member_screens.c", "s32 menu_equip_screen_build_candidates("
+            "src/decomp/src/slot39/menu_member_screens.c", "s32 menu_equip_screen_build_candidates("
         )
         self.assertIn(f"game_data.gearPartIds[i] >= {FIRST}", offered)
         self.assertIn(f"game_data.weaponIds[i] >= {FIRST}", offered)
-        reset = function("decomp/src/field/field.c", "void field_reset_state(void) {")
+        reset = function("src/decomp/src/field/field.c", "void field_reset_state(void) {")
         self.assertIn(f"field_event_variables[i + 0x{LOCAL_VARIABLES // 2:x}] = 0;", reset)
         stock = function(
-            "decomp/src/ovl2602/gear_shop_framework.c", "void gear_shop_init_stock(void) {"
+            "src/decomp/src/ovl2602/gear_shop_framework.c", "void gear_shop_init_stock(void) {"
         )
         self.assertIn(f"menu_state_screen_parameter * 0x{GEAR_SHOP:x}", stock)
         self.assertIn(f"stock[4][i] = *(entry + i + 0x{GEAR_PARTS[0]:X});", stock)
         shop = function(
-            "decomp/src/ovl2601/item_shop_framework.c", "void item_shop_init_stock(void) {"
+            "src/decomp/src/ovl2601/item_shop_framework.c", "void item_shop_init_stock(void) {"
         )
         self.assertIn(f"menu_state_screen_parameter * 0x{SHOP:X}", shop)
         self.assertIn(f"shop_kinds[j] = i / {SHOP_WEAPONS};", shop)
         copy = function(
-            "decomp/src/ovl2615/battle_setup_phases.c",
+            "src/decomp/src/ovl2615/battle_setup_phases.c",
             "void battle_setup_copy_enemy_records_and_ai(void) {",
         )
         self.assertIn(f"battle_enemy_data_file + 0x{RECORDS:x}", copy)
-        take = function("decomp/src/field/field_event.c", "void field_event_take_item(void) {")
+        take = function("src/decomp/src/field/field_event.c", "void field_event_take_item(void) {")
         self.assertRegex(take, rf"if \(--counts\[slot\] == 0\) \{{\s+ids\[slot\] = 0x{EMPTIED:X};")
 
     def test_alias_names_what_each_index_reaches(self):

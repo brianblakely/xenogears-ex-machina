@@ -8,13 +8,13 @@ It does not stop at one playable slice or require every recovered function to be
 ported into a host-side ownership model. See [the plan](plan.md) and the short
 [matching workflow](docs/matching.md). Code and data are named by their module's
 prefix and what they do ([Names](docs/matching.md#names)); each definition keeps its
-original address in its comment, so `git grep -i -n 80031bdc decomp` finds the code
+original address in its comment, so `git grep -i -n 80031bdc src/decomp` finds the code
 at an address.
 
 ```sh
 nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra#matching
-make -C decomp smoke
-make -C decomp all-split all-verify all-coverage
+make -C src/decomp smoke
+make -C src/decomp all-split all-verify all-coverage
 ```
 
 That smoke test exercises MIPS assembly/linking and exact comparison on an authored
@@ -22,17 +22,17 @@ fixture, not Xenogears decompilation. The game targets need the user's discs (th
 matching workflow's clean build); `all-verify` then compares every rebuilt resident
 executable and overlay with the original byte for byte, and `all-coverage` reports
 source coverage by class. Those reports, not this file, own the status. Source
-recovery and binary matching are reported separately; existing C++ comparisons
-imply neither a PS1 match nor a complete decomp.
+recovery and binary matching are reported separately.
 
-The existing `xem-reconstruction` library, original scenarios, findings and tests
-remain useful reference/portability assets. Its state declarations are separated
-into subsystem headers; `Program` remains its integration owner, not the design
-for new PS1-target source. Run its public build with:
+Everything that ships is under `src/`: the decomp (`src/decomp`, its own
+mini-project with targets, Makefile and headers), the port layer (`src/port`) and
+the Rust runtime (`src/runtime`). The former host C++ reconstruction was retired;
+the findings that cite it name files at commit b969b11. Run the public checks
+(validator, Python tests, ruff and, in the runtime shell, the Rust workspace) with:
 
 ```sh
-nix --extra-experimental-features 'nix-command flakes' develop path:./nix
-python3 tools/repository/check.py --preset debug
+nix --extra-experimental-features 'nix-command flakes' develop path:./nix/runtime
+python3 tools/repository/check.py
 ```
 
 [Development](docs/development.md) covers focused commands. The

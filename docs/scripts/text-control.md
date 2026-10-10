@@ -1,6 +1,6 @@
 # Text control codes
 
-- Interpreter: `window_reveal_text` (decomp/src/resident/text_windows_and_pads.c), the reveal step
+- Interpreter: `window_reveal_text` (src/decomp/src/resident/text_windows_and_pads.c), the reveal step
   of message windows (`window_draw_frame`) and one-line layouts (`window_render_text_line`).
 - Dispatch: bytes 00, 01, 02, 03 and 0F are controls; 0F takes a sub-code
   through the 16-entry jump table at 0x80018A7C (cases 0-15). Other bytes are
@@ -12,7 +12,7 @@
   stalls, so the parser reports it as undecodable.
 - Sources: windows get text only through `window_queue_message` (queue),
   `window_render_text_line` (one-line layout) and the insertions (`window_insert_text`). The
-  122 calls in decomp/src pass entries of the tables below or text built at
+  122 calls in src/decomp/src pass entries of the tables below or text built at
   run time; no function still linked as assembly calls them.
 - Tables (a count, 0, count + 1 offsets and count (columns, rows) pairs, read
   by `text_get_resource_entry`): field messages (map bundle component 7, field_message_table),
@@ -116,7 +116,7 @@ Notes from the handler:
 
 ## Staff-roll text (field file 0xAB)
 
-- Reader: field `field_staff_roll_write_line` (decomp/src/field/field_effect.c) draws one
+- Reader: field `field_staff_roll_write_line` (src/decomp/src/field/field_effect.c) draws one
   line into VRAM row n & 15 at x 0x300. `field_staff_roll_advance` calls it on every
   16th pass of the movie loop in `field_staff_roll_run_over_movie` (movie frames 0x687-0x18E1),
   and `field_staff_roll_draw` scrolls the sixteen rows up a pixel each pass.

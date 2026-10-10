@@ -3,7 +3,7 @@
 The field menu (slot39) loads its item and accessory records from the menu data archive,
 directory (0x10, 0) file 2 (menu_load_or_release_data_set): entry 0 holds the 16-byte item
 records and entry 2 the 16-byte accessory records (ItemInfo and AccessoryInfo,
-decomp/include/menu/tables.h). An item whose flags (+0x0a) have bit 4 raises the
+src/decomp/include/menu/tables.h). An item whose flags (+0x0a) have bit 4 raises the
 CharacterRecord member of each bit of its +0x0c by its +0x08 (menu_use_item_on_character);
 an accessory adds the low byte of its +0x0c to the equipment bonus of each of its bits
 (menu_compute_character_equipment). System texts 22 and 17 name them (text_get_item_name,
@@ -37,7 +37,7 @@ ITEMS, ACCESSORIES = 0, 2  # its +4 and +0xc entries (tables->items, tables->acc
 RECORD = 0x10  # sizeof(ItemInfo), sizeof(AccessoryInfo)
 ITEM_NAMES, ACCESSORY_NAMES = 22, 17  # text_system_resources[22] and [17]
 RAISES_STATS = 4  # ItemInfo.flags bit 4
-# The CharacterRecord member (decomp/include/resident/gamedata.h) each bit of +0x0c
+# The CharacterRecord member (src/decomp/include/resident/gamedata.h) each bit of +0x0c
 # raises: menu_use_item_on_character for an item, menu_compute_character_equipment for an
 # accessory.
 ITEM_BITS = {

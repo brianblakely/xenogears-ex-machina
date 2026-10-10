@@ -1,4 +1,4 @@
-"""The port's libgpu (port/libgpu.c) built natively against a recording GPU.
+"""The port's libgpu (src/port/libgpu.c) built natively against a recording GPU.
 
 The C is built for the host as a freestanding shared library (no libc) and
 driven through ctypes. libgpu's state lives at fixed addresses in an arena
@@ -76,11 +76,11 @@ def build_library(out):
         # Host pointers are wider than the game's 32-bit addresses; the test's
         # addresses all fit.
         "-Wno-pointer-to-int-cast", "-Wno-int-to-pointer-cast",
-        "-Iport/include", "-Idecomp/include",
+        "-Isrc/port/include", "-Isrc/decomp/include",
     ]
     objects = []
     for source, extra in (
-        ("port/libgpu.c", ["-Dlong=int"]),
+        ("src/port/libgpu.c", ["-Dlong=int"]),
         ("tests/port_gpu/support.c", []),
     ):
         obj = os.path.join(out, os.path.basename(source) + ".o")

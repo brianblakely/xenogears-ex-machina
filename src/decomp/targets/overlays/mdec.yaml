@@ -1,0 +1,72 @@
+# Overlay image from Disc 1 slot 19 / Disc 2 slot 14 (unpacked; the discs are
+# byte-identical). Load address from its internal calls and pointers; the
+# text ends after the last library function at 0x801d68b4 (placement at 0x801d3000
+# is also what src/reconstruction/field_movie_player.cpp at commit b969b11
+# relocates it to).
+name: mdec
+sha1: 138835efbceb6bbd2010f0d63c740a6cfdebd261
+options:
+  basename: mdec
+  base_path: ../../../..
+  target_path: .local/extract/overlays/mdec.bin
+  platform: psx
+  compiler: PSYQ
+  asm_path: .local/decomp/mdec/asm
+  asset_path: .local/decomp/mdec/assets
+  src_path: src/decomp/src/mdec
+  build_path: .local/decomp/build/mdec
+  ld_script_path: .local/decomp/mdec/mdec.ld
+  cache_path: .local/decomp/mdec/.splat_cache
+  symbol_addrs_path:
+    - src/decomp/targets/overlays/mdec.symbols.txt
+    - src/decomp/targets/resident/symbol_addrs.txt
+  undefined_funcs_auto_path: .local/decomp/mdec/undefined_funcs_auto.txt
+  undefined_syms_auto_path: .local/decomp/mdec/undefined_syms_auto.txt
+  find_file_boundaries: False
+  gp_value: 0x80059170
+  ld_gp_expression: "0x80059170"
+  o_as_suffix: True
+  generate_asm_macros_files: False
+  ld_bss_is_noload: False
+  ld_align_segment_vram_end: False
+  ld_align_section_vram_end: False
+  use_legacy_include_asm: False
+  section_order: [".rodata", ".text", ".data", ".bss"]
+  subalign: 4
+  string_encoding: ASCII
+  data_string_encoding: ASCII
+  rodata_string_guesser_level: 2
+  data_string_guesser_level: 2
+  include_asm_macro_style: maspsx_hack
+segments:
+  - name: mdec
+    type: code
+    start: 0x0
+    vram: 0x801d3000
+    subsegments:
+      # The libraries' strings (sdk); the player has no read-only data.
+      - [0x0, rodata, mdec_sdk_rodata]
+      - [0xc4, c, mdec]
+      # .data: the player's initialized statics, then the libraries' data
+      # (sdk ranges in mdec.classification.txt).
+      - [0x38b4, .data, mdec]
+      - [0x38d0, data, mdec_sdk_data]
+      # The file ends with the .bss (loaded), all zero, each variable in a
+      # slot of whole words (src/decomp/Makefile): the player's statics, the libcd
+      # modules' statics, then the commons. The original linker placed the
+      # player's five commons among libcd's (CDROM.OBJ declares 20), so each
+      # of those is linked from its own unit under commons/ between the
+      # generated libcd ranges.
+      - [0x15910, .bss, mdec]
+      - [0x159ac, bss, mdec_sdk_bss]
+      - [0x159c0, .bss, commons/slice_width]
+      - [0x159c4, bss, mdec_sdk_commons1]
+      - [0x159d4, .bss, commons/skipped_frames]
+      - [0x159d8, bss, mdec_sdk_commons2]
+      - [0x159e0, .bss, commons/load_restart]
+      - [0x159e4, bss, mdec_sdk_commons3]
+      - [0x159ec, .bss, commons/previous_frame]
+      - [0x159f0, bss, mdec_sdk_commons4]
+      - [0x159f4, .bss, commons/stall_count]
+      - [0x159f8, bss, mdec_sdk_commons5]
+  - [0x15a1c]

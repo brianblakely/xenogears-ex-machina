@@ -6,7 +6,7 @@ A battle's event script runs when its formation has flag 0x20, which sets
 between turns.
 
 - Interpreter: ovl3087 `battle_event_script_run`
-  (`decomp/src/ovl3087/battle_event_script_vm.c`, matching):
+  (`src/decomp/src/ovl3087/battle_event_script_vm.c`, matching):
   `switch (code[pc])`, 76 cases 00-4B. Each case calls one handler that returns
   the instruction length, or 0 while it waits. Operands come from 801E57F8, from
   byte 1 on. In the masked form, a bit of byte 5 marks an operand as an

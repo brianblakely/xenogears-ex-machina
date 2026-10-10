@@ -16,7 +16,7 @@
 
 - **Tables:** each director's unit opens its data with its u16 state and wait tables.
   They stay user-supplied: the units link them from the user's image (`INCLUDE_ASSET`;
-  `asset` lines in `decomp/targets/overlays/worldmap.classification.txt`).
+  `asset` lines in `src/decomp/targets/overlays/worldmap.classification.txt`).
   `worldmap_scene13_director_update`'s waits `worldmap_scene13_cue_waits` end its
   unit's data, and a stray halfword (0x7542) follows them before the next unit's
   ([matching.md](../matching.md#recovering-data)); `worldmap_scene16_director_update`'s

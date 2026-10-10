@@ -1,7 +1,7 @@
 """Native host builds of port C for unit tests (docs/runtime.md, The game module).
 
 The port's reimplementations of the handwritten routines address game memory
-by PS1 address (port/include/xem/memory.h). Natively, this module maps RAM at
+by PS1 address (src/port/include/xem/memory.h). Natively, this module maps RAM at
 0x80000000 (2 MB) and the scratchpad page at 0x1F800000 into the test process
 at those same addresses, builds the port sources with the software GTE into a
 shared library, and places each game global the C names at an address in the
@@ -39,8 +39,8 @@ COMMON_FLAGS = [
     "-Wall",
     "-Werror",
     "-Wno-unused-function",
-    "-Iport/include",
-    "-Idecomp/include",
+    "-Isrc/port/include",
+    "-Isrc/decomp/include",
 ]
 
 _LIBC = ctypes.CDLL(None, use_errno=True)
@@ -71,7 +71,7 @@ def build(out, sources, symbols=None, defines=()):
         raise RuntimeError("no clang (run inside nix develop path:./nix/runtime)")
     map_game_memory()
     objects = []
-    for source in ["port/gte.c", *sources]:
+    for source in ["src/port/gte.c", *sources]:
         obj = os.path.join(out, source.replace("/", "_") + ".o")
         subprocess.run([CLANG, *COMMON_FLAGS, *(f"-D{d}" for d in defines), "-c", source, "-o", obj],
                        cwd=ROOT, check=True)

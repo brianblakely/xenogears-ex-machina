@@ -2,8 +2,7 @@
 
 New Phase 1 work follows the [matching-first workflow](../docs/matching.md):
 recover original-target source, compile, compare, and fix the first difference.
-Do not first translate every function into the host reconstruction or read this
-entire directory before implementing a change.
+Do not read this entire directory before implementing a change.
 
 Consult these resources only for the source or subsystem being changed:
 
@@ -15,8 +14,12 @@ Consult these resources only for the source or subsystem being changed:
 - `scenarios/` supports targeted original execution when it resolves a question.
 - `decisions/` distinguishes intentional changes from unknown original behavior.
 
-The existing host C++ and its memory-comparison workflow remain reference and
-portability assets, not the mandatory path for new PS1-target source. Historical
+The host C++ reconstruction and its memory-comparison workflow were retired after
+commit b969b11: the paths that findings, formats, coverage records and
+`recovery.json` cite under `src/reconstruction`, `src/analysis`, `include/xem`,
+`tests/*.cpp` and the removed runner tools (`tools/analysis/execution.py`,
+`memory_case.py`, `movie_chain.py`, `menu_save_file.py`) name files at that commit
+(`git show b969b11:src/reconstruction/program.cpp`). Historical
 phase/facet labels in findings describe their original scope; `plan.md` owns the
 current roadmap. Source coverage and byte matching must be reported separately.
 

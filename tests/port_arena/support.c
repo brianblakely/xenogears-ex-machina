@@ -1,4 +1,4 @@
-/* The host import port/arena.c calls, as a test-owned recorder
+/* The host import src/port/arena.c calls, as a test-owned recorder
  * (tests/test_port_arena.py): the break codes of the trapping divisions. */
 unsigned int test_break_codes[8];
 int test_break_count;

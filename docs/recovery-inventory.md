@@ -1,10 +1,13 @@
 # Host reconstruction inventory
 
+The host C++ reconstruction, its runners and `tools/analysis/execution.py` were
+retired; the sources this inventory names are those of commit b969b11.
+
 [The inventory](../analysis/recovery.json) records the status of the host
 reference reconstruction ([executable-reconstruction.md](executable-reconstruction.md)):
 which original dispatch entries its C++ library implements, the bounded original
 comparisons behind them and the connections it still lacks. It does not record the
-recovery of the original program. That program is recovered under decomp/, every
+recovery of the original program. That program is recovered under src/decomp/, every
 target byte-identical, and its formats, dispatch tables and script instructions are
 documented in [docs/scripts](scripts/interpreters.md) with their decoders under
 tools/analysis.
@@ -36,8 +39,8 @@ The first command checks the inventory and counts the entries the host library h
 not completed (649: 627 dispatch rows, 6 symbols, 16 behaviours). The second returns
 exit code 1 and JSON identifying the dependency, its next step, its evidence and the
 requested coverage that it blocks. Malformed inventory or command input returns
-exit code 2. `tools/analysis/execution.py` adds the matching row to a runner report
-that stops at a dependency.
+exit code 2. The retired `tools/analysis/execution.py` added the matching row to a
+runner report that stopped at a dependency.
 
 Dependency names use `symbol:<id>`, `format:<id>`, `behavior:<id>` or
 `instruction:<namespace>:0xNN`. Instruction namespaces are `primary`, `extended`

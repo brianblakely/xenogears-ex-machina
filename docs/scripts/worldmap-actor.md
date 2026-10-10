@@ -1,6 +1,6 @@
 # World map actor scripts
 
-- **Interpreter:** `worldmap_actor_script_run` (`decomp/src/worldmap/worldmap_open_map.c`), the
+- **Interpreter:** `worldmap_actor_script_run` (`src/decomp/src/worldmap/worldmap_open_map.c`), the
   update handler of an actor that world-map modes 17 and 18 register
   (`worldmap_scene17_start`, `worldmap_scene18_start`); its start handler sets the script.
 - **Dispatch:** `worldmap_actor_script_handlers[12]`, handlers
@@ -16,7 +16,7 @@
   `worldmap_scene18_script_start`), the only values stored to an actor's script
   pointer. They lie in `worldmap_scenes_16_18.c`'s data and stay user-supplied: the
   unit links them from the user's image (`INCLUDE_ASSET`; `asset` lines in
-  `decomp/targets/overlays/worldmap.classification.txt`).
+  `src/decomp/targets/overlays/worldmap.classification.txt`).
 - **Coverage:** 12 opcodes defined, all 12 used. Each disc decodes 2 scripts, 172
   instructions, none undecodable.
 - **Tool:** `python3 -m tools.analysis.overlay_scripts --sweep` decodes both discs'

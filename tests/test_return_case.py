@@ -10,7 +10,6 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from tools.analysis.execution import canonical_digest, compare
 from tools.analysis.original_trace import collector_fingerprint, qualify_collector
 from tools.analysis.return_case import (
     encountered_command,
@@ -368,55 +367,6 @@ class ReturnCaseTests(unittest.TestCase):
         registers[2] += 1
         with self.assertRaisesRegex(ValueError, "sprite PC differs"):
             encountered_command(rows, 19, 0x96)
-
-    def test_comparison_keeps_case_binding_and_independent_output_oracles(self):
-        case = {"schema_version": 1, "entry": "field_return", "source": {"kind": "synthetic"}}
-        digest = hashlib.sha256(
-            json.dumps(case, sort_keys=True, separators=(",", ":")).encode()
-        ).hexdigest()
-        self.assertEqual(digest, canonical_digest(case))
-        checkpoints = [{"operation": "restore_field_data", "actor": None, "variables": "0100"}]
-        sprite = {"address": 0x80102000, "bytes": "1234"}
-        expected = {
-            **case,
-            "case_sha256": digest,
-            "checkpoints": checkpoints,
-            "stop": {
-                "actor_index": 0,
-                "operation": "ordinary_sprite_command",
-                "opcode": 0x96,
-                "sprite_bytecode_pc": 0x80101002,
-            },
-            "partial_actor": {"index": 0, "sprite": sprite},
-        }
-        actual = {
-            **case,
-            "case_sha256": digest,
-            "checkpoints": copy.deepcopy(checkpoints),
-            "status": "dependency_needs_recovery",
-            "opcode": 0x96,
-            "sprite_bytecode_pc": 0x80101002,
-            "location": {"actor": 0, "operation": "ordinary_sprite_command"},
-            "partial_state": {
-                "actors": [{"actor": "", "descriptor": ""}],
-                "sprites": [{"sprite": copy.deepcopy(sprite), "parts": {}}],
-            },
-        }
-        self.assertEqual(compare(actual, expected)["status"], "matched")
-        mutations = (
-            lambda value: value["checkpoints"][0].update(variables="0200"),
-            lambda value: value["stop"].update(opcode=0x97),
-            lambda value: value["stop"].update(sprite_bytecode_pc=0x80101003),
-            lambda value: value["partial_actor"]["sprite"].update(bytes="1235"),
-        )
-        for mutate in mutations:
-            with self.subTest(mutation=mutate):
-                changed = copy.deepcopy(expected)
-                mutate(changed)
-                self.assertEqual(compare(actual, changed)["status"], "behavioral_divergence")
-        changed_input = {**expected, "case_sha256": "0" * 64}
-        with self.assertRaisesRegex(ValueError, "starting input differs"):
-            compare(actual, changed_input)
 
 
 if __name__ == "__main__":

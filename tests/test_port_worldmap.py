@@ -1,5 +1,5 @@
-"""The port's world map terrain renderers (port/worldmap_terrain.c) against
-the contracts of decomp/src/worldmap/worldmap_terrain_draw_quarter_block.s,
+"""The port's world map terrain renderers (src/port/worldmap_terrain.c) against
+the contracts of src/decomp/src/worldmap/worldmap_terrain_draw_quarter_block.s,
 worldmap_billboards_draw_block.s and screen_bounds.s, natively
 (tests/port_native.py), on invented inputs.
 
@@ -54,7 +54,7 @@ def setUpModule():
     if not mem.CLANG:
         raise unittest.SkipTest("no clang (run inside nix develop path:./nix/runtime)")
     BUILD = tempfile.TemporaryDirectory()
-    LIB = mem.build(BUILD.name, ["port/worldmap_terrain.c"], SYMBOLS)
+    LIB = mem.build(BUILD.name, ["src/port/worldmap_terrain.c"], SYMBOLS)
 
 
 def tearDownModule():

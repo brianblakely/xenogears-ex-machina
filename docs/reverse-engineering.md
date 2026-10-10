@@ -29,6 +29,6 @@ name does not prove the original compiler. Work on connected understanding, but
 unconverted dependencies can remain original assembly in the PS1 build.
 
 Original bytes, generated assembly, Ghidra projects and captures remain private.
-Reviewed authored source goes under decomp/. Existing host C++ algorithms/tests
-are references, not a compulsory rewrite destination. Record genuinely new source
+Reviewed authored source goes under src/decomp/. The retired host C++ algorithms/tests
+(commit b969b11) are references, not a compulsory rewrite destination. Record genuinely new source
 knowledge concisely; do not require a capture or separate proof pipeline per helper.

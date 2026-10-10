@@ -1,7 +1,7 @@
 # Runtime (Phase 2)
 
 The shared Rust/C runtime of [plan.md](../plan.md) Phases 2 onward. The recovered
-C in `decomp/` stays the only game implementation; this document records how it
+C in `src/decomp/` stays the only game implementation; this document records how it
 is built for native and browser hosts and how the hosts are layered. The
 [later-phases handbook](later-phases.md) holds the program facts it relies on.
 
@@ -9,7 +9,7 @@ is built for native and browser hosts and how the hosts are layered. The
 
 | Decision | Choice |
 | --- | --- |
-| Rust workspace | `runtime/` (`runtime/Cargo.toml`, crates in `runtime/crates/*`, committed `Cargo.lock`) |
+| Rust workspace | `src/runtime/` (`src/runtime/Cargo.toml`, crates in `src/runtime/crates/*`, committed `Cargo.lock`) |
 | Toolchain | `nix develop path:./nix/runtime` (Rust 1.97.1 with wasm32/Android targets via rust-overlay, clang/lld 21.1.8, wabt 1.0.41, binaryen 132, wasm-bindgen-cli 0.2.127, SDL3 3.4.14, mesa 26.2.2, Monado 25.1.0, Chromium 152, Node 24); `#android` adds the Android SDK/NDK r29, emulator and API-34 x86_64 image, JDK 17, Gradle 8.14.4, cargo-ndk |
 | Data model and link | the recovered C is compiled once to a wasm32 *game module* (ILP32, the original data model); natively it is translated ahead of time with wasm2c, in browsers it runs as is beside the wasm-bindgen runtime |
 | Versions | slint =1.18.1 (`unstable-wgpu-30`, FemtoVG wgpu renderer), wgpu/wgpu-hal =30.0.1, sdl3-sys =0.6.8+SDL-3.4.14, openxr 0.22.0, wasm-bindgen =0.2.127, iwer 2.5.0, playwright-core 1.64.0 |
@@ -19,43 +19,43 @@ is built for native and browser hosts and how the hosts are layered. The
 
 The decomp is the game-logic provider and stays a pure, byte-identical
 implementation of the original game ([plan.md](../plan.md), Shared
-native/browser architecture). It is compiled unchanged; nothing in `decomp/` is
+native/browser architecture). It is compiled unchanged; nothing in `src/decomp/` is
 added or edited for integration. When integration needs something the original
-sources do not give, it goes into `port/` or `tools/game_module.py`: shadow
+sources do not give, it goes into `src/port/` or `tools/game_module.py`: shadow
 headers through the prelude, port functions, the inline-assembly map, IR
-rewriting. A change to `decomp/` is made only for the original game and is
-verified with `make -C decomp all-verify`.
+rewriting. A change to `src/decomp/` is made only for the original game and is
+verified with `make -C src/decomp all-verify`.
 
 ## The game module
 
 `python3 tools/game_module.py` (inside `nix develop path:./nix/runtime`) builds
 `build/game/game.wasm` from the same C units the PS1 targets link and the port
-layer in `port/`. The decomp is not changed for the port: its sources and
+layer in `src/port/`. The decomp is not changed for the port: its sources and
 headers stay exactly what the byte-matching build compiles, and everything the
-port needs lives in `port/` and the tool. It needs the matched PS1 links
-(`make -C decomp all-verify`), whose symbol tables give every object its
+port needs lives in `src/port/` and the tool. It needs the matched PS1 links
+(`make -C src/decomp all-verify`), whose symbol tables give every object its
 original address.
 
 - **Front end.** clang compiles the untouched C for `mipsel-unknown-unknown`,
   which accepts the original inline assembly, and the IR is retargeted to
   wasm32: both are ILP32 and little-endian with the same ABI alignments, so
-  every structure keeps its layout. `port/include/xem/prelude.h` is
+  every structure keeps its layout. `src/port/include/xem/prelude.h` is
   force-included first; the headers it includes replace originals of the same
   include guard (`include_asm.h`, whose macros include nothing; PsyQ's
   `stdarg.h`, which walks MIPS argument words) and give canonical prototypes
   where a unit calls a function before declaring it.
 - **Inline assembly.** Each statement (GTE transfers and commands, stack
   switches, `break`s) becomes a call to the port function that
-  `port/asm_map*.json` names for its template and constraints.
-- **Port layer.** `port/*.c` defines what the matched images take from
+  `src/port/asm_map*.json` names for its template and constraints.
+- **Port layer.** `src/port/*.c` defines what the matched images take from
   assembly: the PsyQ SDK and BIOS calls (over host imports), the handwritten
   routines (from their `.s` contracts) and the entry and restart logic. A
   function the port does not define yet traps through `xem.missing`
   (`--stubs` lists them in `build/game/stubs.txt`).
-- **Handwritten routines.** Their ports (`port/model_draw.c`, `arena.c`,
+- **Handwritten routines.** Their ports (`src/port/model_draw.c`, `arena.c`,
   `worldmap_terrain.c`, `sprite_pixels.c`, `lzss.c`, `resident.c`) keep game
   addresses as 32-bit integers and access memory through
-  `port/include/xem/memory.h`, which maps KUSEG and KSEG1 RAM mirrors onto
+  `src/port/include/xem/memory.h`, which maps KUSEG and KSEG1 RAM mirrors onto
   KSEG0: a packet pointer the original reduced to its 24-bit DMA address stays
   reduced where the game sees it (`model_current_packet`). They make the
   original's GTE transfers and commands in its order, including those in
@@ -84,7 +84,7 @@ original address.
   lists each): integer arguments are truncated or extended, a missing
   argument is 0 and an extra one is dropped. Where the PS1 callee read the
   register or stack word the caller left, or the caller used the `$v0` a void
-  function left, `port/adapters.c` defines `xem_adapt_<function>` with the
+  function left, `src/port/adapters.c` defines `xem_adapt_<function>` with the
   call's types and the matched code's value, and the build calls it instead.
 - **Suspension.** `wasm-opt --asyncify` instruments the module so that the
   imports `xem.yield` (frame waits, polls) and `xem.restart` (the dispatcher's
@@ -96,7 +96,7 @@ original address.
   globals and the host services' state.
 - **Fibers.** The arena runs its mode task as a coroutine on its own MIPS
   stack (`arena_task_resume.s`, `arena_task_yield.s`); the port cannot switch
-  stacks, so the game is two fibers (`port/fiber.c`): the game, whose bottom
+  stacks, so the game is two fibers (`src/port/fiber.c`): the game, whose bottom
   frame is `xem_run`, and the arena task, whose bottom frame is the export
   `xem_task_run`. Each has its own asyncify save area (`xem_unwind_area`
   returns the running fiber's) and its own shadow stack (the task's is a port
@@ -115,7 +115,7 @@ original address.
   the game fiber's shadow stack. The task entry never returns
   (`arena_mode_task` loops); the original would re-enter it through ra, the
   runtime stops the game with a diagnostic. `tests/fiber_module/build.sh`
-  runs `port/fiber.c` and `port/arena_task.c` under asyncify, wasm2c and the
+  runs `src/port/fiber.c` and `src/port/arena_task.c` under asyncify, wasm2c and the
   runtime end to end.
 - **Native.** `wasm2c` output is compiled into `xem-game` with explicit bounds
   checks (no signal handlers). Nothing interprets or emulates a CPU.
@@ -163,7 +163,7 @@ input.
 
 ## Sound and memory cards
 
-- **libspu** (`port/libspu.c`) is the resident's libspu from its original
+- **libspu** (`src/port/libspu.c`) is the resident's libspu from its original
   code: its state at the original addresses, its register writes through
   `libspu_spu_registers` into the window at 0x1F801C00, where the sound
   driver writes the voice registers too. The SPU device
@@ -184,7 +184,7 @@ input.
   (the `.mcd` layout) in a `CardStorage`: files natively (`xem-headless
   --cards DIR` keeps `card1.mcd`, `card2.mcd`; a missing file is a fresh
   formatted card), memory in tests. The BIOS file calls on "bu00:" and
-  "bu10:" (`port/bios.c`) and `_card_info` (`port/libcard.c`) run the BIOS's
+  "bu10:" (`src/port/bios.c`) and `_card_info` (`src/port/libcard.c`) run the BIOS's
   card file system over them; each access costs one 140-byte card command at
   250 kHz per 128-byte frame, during which the port suspends as the BIOS
   blocks, and a check ends with the card interrupt and its event (done,
@@ -201,7 +201,7 @@ input.
 Presentation consumes the original frame; it never runs game draw code per
 eye, repaint or spectator ([later-phases.md](later-phases.md#presentation)).
 Besides the GPU's VRAM and display (`devices/gpu.rs`), the port records
-read-only pre-projection data at the handbook's seams (`port/present.c`):
+read-only pre-projection data at the handbook's seams (`src/port/present.c`):
 `model_draw_sprite_model` (the mesh, its packets, the ordering table, the sort
 mode and the GTE transform its caller set), `sprite_set_draw_matrix` (the
 sprite and the transform it produced) and `sprite_draw_parts` (the sprite, its
@@ -241,7 +241,7 @@ only when it asks for a redraw. Settings live in
 `xem_settings::SettingsService` (`$XDG_CONFIG_HOME/xenogears-ex-machina/settings.json`
 on the desktop); the panel and agents change them only through `apply`.
 
-From `runtime/` in `nix develop path:./nix/runtime`:
+From `src/runtime/` in `nix develop path:./nix/runtime`:
 
 - tests on lavapipe: `VK_ICD_FILENAMES=$XEM_LAVAPIPE_ICD cargo test -p xem-settings -p xem-render -p xem-ui`
 - on the host NVIDIA driver: `scripts/xem-gpu-host target/debug/xem-desktop`
@@ -253,7 +253,7 @@ From `runtime/` in `nix develop path:./nix/runtime`:
 ## Browser host
 
 `xem-web` (wasm32-unknown-unknown, wasm-bindgen) and the thin ES-module page in
-`runtime/web/` are the browser host; everything structured crosses the boundary
+`src/runtime/web/` are the browser host; everything structured crosses the boundary
 as JSON text or bytes.
 
 - **Two modules.** `game.js` compiles `game.wasm` and instantiates it with one
@@ -309,19 +309,19 @@ as JSON text or bytes.
 
 From the repository root in `nix develop path:./nix/runtime`:
 
-- build: `python3 runtime/web/build.py` (output `build/web/`; `--no-game` leaves
+- build: `python3 src/runtime/web/build.py` (output `build/web/`; `--no-game` leaves
   the game module out, as a hosted build must until it ships separately)
-- serve: `node runtime/web/serve.mjs build/web 8080`, then http://localhost:8080/
-- tests: `cd runtime/web && npm ci && npm test` (Playwright on the shell's
+- serve: `node src/runtime/web/serve.mjs build/web 8080`, then http://localhost:8080/
+- tests: `cd src/runtime/web && npm ci && npm test` (Playwright on the shell's
   Chromium; `XEM_DISC1=<disc 1 image>` adds the user-disc tests, which send
-  the same control commands to `runtime/target/release/xem-headless --control`
+  the same control commands to `src/runtime/target/release/xem-headless --control`
   when it is built and compare the replies).
   Headless Chromium needs `--use-vulkan=swiftshader` for WebGPU: with its
   default Vulkan choice it destroys a WebGPU device after the canvas presents.
 
 ## WebXR adapter
 
-`xem-webxr` (wasm32 only) and its test page `runtime/web/xr/` render the
+`xem-webxr` (wasm32 only) and its test page `src/runtime/web/xr/` render the
 `xem-render` test scene in stereo through WebXR. The page is separate from the
 main browser host so the adapter can move into it unchanged.
 
@@ -365,15 +365,15 @@ main browser host so the adapter can move into it unchanged.
   available runtime can test WebGPU layer submission, so WebGL2 is the
   submission path for now.
 
-`runtime/.cargo/config.toml` sets `--cfg=web_sys_unstable_apis` for wasm32,
+`src/runtime/.cargo/config.toml` sets `--cfg=web_sys_unstable_apis` for wasm32,
 which web-sys's WebXR bindings require. In `nix develop path:./nix/runtime`:
 
-- dependencies: `npm ci` in `runtime/web` (iwer 2.5.0, playwright-core 1.64.0)
-- build: `runtime/web/xr/build.sh` (wasm-bindgen output in `runtime/web/xr/pkg`)
-- tests: `node runtime/web/xr/tests/run.mjs [scenario...]` drives Chromium
+- dependencies: `npm ci` in `src/runtime/web` (iwer 2.5.0, playwright-core 1.64.0)
+- build: `src/runtime/web/xr/build.sh` (wasm-bindgen output in `src/runtime/web/xr/pkg`)
+- tests: `node src/runtime/web/xr/tests/run.mjs [scenario...]` drives Chromium
   (`$XEM_CHROMIUM`, SwiftShader WebGL2) with IWER emulating a Quest 3, its
   controllers and hands; screenshots go to `build/xr-test/`
-- by hand: serve `runtime/web` from localhost or HTTPS and open `/xr/`
+- by hand: serve `src/runtime/web` from localhost or HTTPS and open `/xr/`
   (`/xr/?emulate=quest3` installs IWER)
 
 Emulation covers entry by click, granted features, session-scheduled frames,
@@ -428,15 +428,15 @@ head and eye poses, swapchain operations in order, submitted layers, input) and
 `--capture DIR` saves the eye layers and the panel image, read back from the
 swapchains before release.
 
-`runtime/scripts/xr-smoke.sh` (in `nix develop path:./nix/runtime`) runs it
+`src/runtime/scripts/xr-smoke.sh` (in `nix develop path:./nix/runtime`) runs it
 against Monado 25.1 without a display or headset: `monado-service` with
 `XRT_COMPOSITOR_NULL=1` (null compositor), `SIMULATED_ENABLE=1
 SIMULATED_ROTATE=1` (the simulated HMD turns continuously),
 `SIMULATED_LEFT/RIGHT=simple` (simulated simple controllers) and `XRT_NO_STDIN=1`,
 in a private short `XDG_RUNTIME_DIR` (the IPC socket path must fit a
 `sockaddr_un`); the demo finds it through `XR_RUNTIME_JSON=$XEM_MONADO_RUNTIME`.
-Both use lavapipe unless `VK_ICD_FILENAMES` is set (`runtime/scripts/xem-gpu-host
-runtime/scripts/xr-smoke.sh` runs both on the host NVIDIA driver). It checks the state order
+Both use lavapipe unless `VK_ICD_FILENAMES` is set (`src/runtime/scripts/xem-gpu-host
+src/runtime/scripts/xr-smoke.sh` runs both on the host NVIDIA driver). It checks the state order
 READY, SYNCHRONIZED, VISIBLE, FOCUSED, STOPPING, EXITING after an exit request;
 strictly increasing predicted display times; two distinct eye poses; projection
 and quad layers on every rendered frame; acquire, wait, submit, release order;
@@ -462,7 +462,7 @@ arm64-v8a) is SDL3's Java layer from the desktop's SDL release
 (`$XEM_SDL3_SRC`, nixpkgs' `sdl3.src`: `SDLActivity` and its helpers are
 copied into the Gradle build, never vendored), `libSDL3.so` built from the same
 source with the NDK's CMake toolchain and `libmain.so`, the `xem-android`
-cdylib whose `SDL_main` SDLActivity runs. `runtime/android` is a plain Gradle
+cdylib whose `SDL_main` SDLActivity runs. `src/runtime/android` is a plain Gradle
 project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
 `build/android`); `XemActivity` only adds what SDL lacks.
 
@@ -495,9 +495,9 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
 
 In `nix develop path:./nix/runtime#android`:
 
-- build: `runtime/scripts/android-build.sh` (`XEM_ANDROID_ABIS` to pick ABIs)
+- build: `src/runtime/scripts/android-build.sh` (`XEM_ANDROID_ABIS` to pick ABIs)
   → `build/android/gradle/app/outputs/apk/debug/xem-debug.apk`
-- emulator smoke test: `runtime/scripts/android-smoke.sh` (headless API-34
+- emulator smoke test: `src/runtime/scripts/android-smoke.sh` (headless API-34
   x86_64 AVD under `.local/android`, guest Vulkan on SwiftShader; logcat and
   screenshots in `build/android/smoke`)
 - `cargo ndk -t arm64-v8a -P 29 build -p xem-ui -p xem-render` builds the

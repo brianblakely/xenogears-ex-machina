@@ -79,7 +79,7 @@ class MatchingTests(unittest.TestCase):
     def test_unconfigured_game_target_fails(self):
         root = Path(__file__).resolve().parents[1]
         result = subprocess.run(
-            ["make", "-C", str(root / "decomp"), "verify"],
+            ["make", "-C", str(root / "src/decomp"), "verify"],
             text=True,
             capture_output=True,
             check=False,
@@ -108,7 +108,7 @@ class MatchingTests(unittest.TestCase):
 
         def build(settings):
             result = subprocess.run(
-                ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
+                ["make", "--no-print-directory", "-f", str(repo / "src/decomp/Makefile"),
                  "ROOT=" + str(self.root), "CONFIG=fixture.mk", *settings, str(obj)],
                 cwd=self.root, text=True, capture_output=True, check=False,
             )
@@ -148,12 +148,12 @@ class MatchingTests(unittest.TestCase):
     )
     def test_gte_loads_consume_stores_and_evaluate_pointer_once(self):
         repo = Path(__file__).resolve().parents[1]
-        worldmap = repo / "decomp/src/worldmap"
+        worldmap = repo / "src/decomp/src/worldmap"
         # The menu's gte_SetRotMatrix and gte_SetTransMatrix (psyq/inline_c.h).
         menu_includes = ('#include "common.h"\n#include "psyq/libgte.h"\n'
                          '#include "psyq/inline_c.h"\n')
-        (self.root / "decomp").mkdir()
-        (self.root / "decomp/include").symlink_to(repo / "decomp/include")
+        (self.root / "src/decomp").mkdir(parents=True)
+        (self.root / "src/decomp/include").symlink_to(repo / "src/decomp/include")
         (self.root / "fixture.ld").write_text("SECTIONS { .text : { *(.text) } }\n")
 
         def instructions(obj, function):
@@ -201,7 +201,7 @@ class MatchingTests(unittest.TestCase):
         for unit, target, includes, macros in cases:
             # Inherit each real unit's settings and the Makefile compiler recipe.
             (self.root / "fixture.mk").write_text(
-                "include " + str(repo / ("decomp/targets/overlays/" + target + ".mk"))
+                "include " + str(repo / ("src/decomp/targets/overlays/" + target + ".mk"))
                 + "\nORIGINAL := original.bin\nORIGINAL_SHA256 := " + self.digest + "\n"
                 + "IMAGE := image.bin\nLINKER_SCRIPT := fixture.ld\nBUILD := build\n"
             )
@@ -218,7 +218,7 @@ class MatchingTests(unittest.TestCase):
             obj = self.root / ("build/" + unit + ".o")
             for compiler in ("2.6.3", "2.7.2", "2.7.2-cdk"):
                 result = subprocess.run(
-                    ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
+                    ["make", "--no-print-directory", "-f", str(repo / "src/decomp/Makefile"),
                      "ROOT=" + str(self.root), "CONFIG=fixture.mk",
                      "CC_" + unit + "=" + compiler, str(obj)],
                     cwd=self.root, text=True, capture_output=True, check=False,
@@ -258,10 +258,10 @@ class MatchingTests(unittest.TestCase):
     )
     def test_return_address_capture_reloads_output_and_evaluates_pointer_once(self):
         repo = Path(__file__).resolve().parents[1]
-        (self.root / "decomp").mkdir()
-        (self.root / "decomp/include").symlink_to(repo / "decomp/include")
+        (self.root / "src/decomp").mkdir(parents=True)
+        (self.root / "src/decomp/include").symlink_to(repo / "src/decomp/include")
         (self.root / "heap.c").write_text(
-            '#include "' + str(repo / "decomp/include/resident/heap.h") + '"\n'
+            '#include "' + str(repo / "src/decomp/include/resident/heap.h") + '"\n'
             + "u32 read_caller(void) {\n"
             + "    u32 caller = 0; GET_RA(&caller); return caller;\n}\n"
             + "extern u32 *caller_slot(void);\n"
@@ -269,13 +269,13 @@ class MatchingTests(unittest.TestCase):
         )
         (self.root / "fixture.ld").write_text("SECTIONS { .text : { *(.text) } }\n")
         (self.root / "fixture.mk").write_text(
-            "include " + str(repo / "decomp/targets/resident/slus_006.64.mk") + "\n"
+            "include " + str(repo / "src/decomp/targets/resident/slus_006.64.mk") + "\n"
             + "ORIGINAL := original.bin\nORIGINAL_SHA256 := " + self.digest + "\n"
             + "IMAGE := image.bin\nLINKER_SCRIPT := fixture.ld\nBUILD := build\n"
         )
         obj = self.root / "build/heap.o"
         result = subprocess.run(
-            ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
+            ["make", "--no-print-directory", "-f", str(repo / "src/decomp/Makefile"),
              "ROOT=" + str(self.root), "CONFIG=fixture.mk", str(obj)],
             cwd=self.root, text=True, capture_output=True, check=False,
         )
@@ -413,7 +413,7 @@ class MatchingTests(unittest.TestCase):
         from tools.matching_coverage import mark_asm
 
         source = (
-            '# 1 "decomp/src/t/unit.c"\n'
+            '# 1 "src/decomp/src/t/unit.c"\n'
             '__asm__(".include \\"macro.inc\\"\\n");\n'
             'register int pinned asm("$14");\n'
             'int renamed(void) asm("other");\n'
@@ -430,7 +430,7 @@ class MatchingTests(unittest.TestCase):
             "}\n"
         )
         self.assertEqual(mark_asm(source), (
-            '# 1 "decomp/src/t/unit.c"\n'
+            '# 1 "src/decomp/src/t/unit.c"\n'
             '__asm__("Lcovb_0:\\n\\t" ".include \\"macro.inc\\"\\n" "\\nLcove_0:");\n'
             'register int pinned asm("$14");\n'
             'int renamed(void) asm("other");\n'
@@ -456,8 +456,8 @@ class MatchingTests(unittest.TestCase):
         # and a line marker's file name into its output as they are: the
         # coverage build accepts only plain names, which carry no lines.
         plain = (
-            '# 1 "decomp/src/t/unit.c"\n'
-            '# 1 "decomp/include/include_asm.h" 1\n'
+            '# 1 "src/decomp/src/t/unit.c"\n'
+            '# 1 "src/decomp/include/include_asm.h" 1\n'
             'register int pinned asm("$14");\n'
             'extern int word __asm__("battle_drawing_buffer_byte");\n'
             'int table[] __attribute__((section(".text"))) = { 1 };\n'
@@ -489,15 +489,15 @@ class MatchingTests(unittest.TestCase):
             enter.fullmatch("move $8, $9\nsw $29, 0($8)\naddiu $8, $8, -4\nmove $29, $8"))
 
     def write_fixture(self, source, root=None):
-        """decomp/src/t/unit.c, the include files it may use and a target
+        """src/decomp/src/t/unit.c, the include files it may use and a target
         configuration for it at root (the test's own by default)."""
         repo = Path(__file__).resolve().parents[1]
         root = root or self.root
-        include = root / "decomp/include"
+        include = root / "src/decomp/include"
         include.mkdir(parents=True, exist_ok=True)
         for name in ("include_asm.h", "macro.inc"):
-            shutil.copy(repo / "decomp/include" / name, include / name)
-        unit = root / "decomp/src/t/unit.c"
+            shutil.copy(repo / "src/decomp/include" / name, include / name)
+        unit = root / "src/decomp/src/t/unit.c"
         unit.parent.mkdir(parents=True, exist_ok=True)
         unit.write_text(source)
         digest = hashlib.sha256((root / "original.bin").read_bytes()).hexdigest()
@@ -509,18 +509,18 @@ class MatchingTests(unittest.TestCase):
         )
 
     def build_fixture_unit(self, source, settings=()):
-        """Compile decomp/src/t/unit.c with the target Makefile; returns the object."""
+        """Compile src/decomp/src/t/unit.c with the target Makefile; returns the object."""
         obj, result = self.make_fixture_unit(source, settings)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         return obj
 
     def make_fixture_unit(self, source, settings=()):
-        """Run the target Makefile's object rule on decomp/src/t/unit.c."""
+        """Run the target Makefile's object rule on src/decomp/src/t/unit.c."""
         repo = Path(__file__).resolve().parents[1]
         self.write_fixture(source)
-        obj = self.root / "build/decomp/src/t/unit.o"
+        obj = self.root / "build/src/decomp/src/t/unit.o"
         result = subprocess.run(
-            ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
+            ["make", "--no-print-directory", "-f", str(repo / "src/decomp/Makefile"),
              "ROOT=" + str(self.root), "CONFIG=fixture.mk", *settings, str(obj)],
             cwd=self.root, text=True, capture_output=True, check=False,
         )
@@ -541,7 +541,7 @@ class MatchingTests(unittest.TestCase):
         report on the ELF and map."""
         repo = Path(__file__).resolve().parents[1]
         root = root or self.root
-        inputs = "".join(f"    build/decomp/src/t/unit.o({section})\n" for section in sections)
+        inputs = "".join(f"    build/src/decomp/src/t/unit.o({section})\n" for section in sections)
         inputs += "".join(f"    {line}\n" for line in extra)
         unloaded = "".join(f"    {line}\n" for line in noload)
         (root / "fixture.ld").write_text(
@@ -550,16 +550,16 @@ class MatchingTests(unittest.TestCase):
             + "  /DISCARD/ : { *(*) }\n}\n"
         )
         build = subprocess.run(
-            ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
+            ["make", "--no-print-directory", "-f", str(repo / "src/decomp/Makefile"),
              "ROOT=" + str(root), "CONFIG=fixture.mk", "IMAGE=" + image,
              "TARGET_CPPFLAGS=-DORIGINAL_BASE=0x80010000", *settings,
-             str(root / image), str(root / "build/decomp/src/t/unit.cov.o")],
+             str(root / image), str(root / "build/src/decomp/src/t/unit.cov.o")],
             cwd=root, text=True, capture_output=True, check=False,
         )
         self.assertEqual(build.returncode, 0, build.stdout + build.stderr)
         return subprocess.run(
             [sys.executable, str(repo / "tools/matching_coverage.py"), image + ".elf",
-             "--map", image + ".map", "--src", "decomp/src", *arguments],
+             "--map", image + ".map", "--src", "src/decomp/src", *arguments],
             cwd=root, text=True, capture_output=True, check=False,
         )
 
@@ -710,7 +710,7 @@ class MatchingTests(unittest.TestCase):
                 if setting.startswith("LINKER_EXTRA"):
                     auto.write_text("INCLUDE other.ld\n")
                 result = subprocess.run(
-                    ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
+                    ["make", "--no-print-directory", "-f", str(repo / "src/decomp/Makefile"),
                      "ROOT=" + str(self.root), "CONFIG=fixture.mk", "IMAGE=bad.bin", *settings,
                      setting, str(self.root / "bad.bin")],
                     cwd=self.root, text=True, capture_output=True, check=False,
@@ -840,7 +840,7 @@ class MatchingTests(unittest.TestCase):
         for mode, status in ((None, 2), ("strict", 2), ("warn", 0)):
             with self.subTest(mode):
                 result = subprocess.run(
-                    ["make", "--no-print-directory", "-f", str(repo / "decomp/Makefile"),
+                    ["make", "--no-print-directory", "-f", str(repo / "src/decomp/Makefile"),
                      "ROOT=" + str(self.root), "CONFIG=fixture.mk", "IMAGE=image.bin",
                      "TARGET_CPPFLAGS=-DORIGINAL_BASE=0x80010000", *settings,
                      "LINK_VIEWS=views.ld", "BSS_END=0x80010040",
@@ -862,7 +862,7 @@ class MatchingTests(unittest.TestCase):
             fixture.read_text() + "TARGET_CPPFLAGS := -DORIGINAL_BASE=0x80010000\n"
             "LINKER_EXTRA := auto/undefined_syms_auto.txt views.ld other.ld\n"
             "LINK_VIEWS := views.ld\nBSS_END := 0x80010040\n")
-        (self.root / "Makefile").write_text(f"include {repo / 'decomp/Makefile'}\n")
+        (self.root / "Makefile").write_text(f"include {repo / 'src/decomp/Makefile'}\n")
         for where in ("environment", "command line"):
             with self.subTest(where):
                 result = subprocess.run(
@@ -1177,7 +1177,7 @@ class MatchingTests(unittest.TestCase):
         (self.root / "asm/data/tail.bss.s").write_text(".section .bss\n.space 4\n")
         names = self.root / "names.ld"
         names.write_text("D_8001001C = 0x8001001C;\n")
-        noload = ("build/decomp/src/t/unit.o(.bss)", "build/asm/data/generated.bss.o(.bss)",
+        noload = ("build/src/decomp/src/t/unit.o(.bss)", "build/asm/data/generated.bss.o(.bss)",
                   "build/asm/data/tail.bss.o(.bss)")
 
         def cover(*arguments):
@@ -1292,7 +1292,7 @@ class MatchingTests(unittest.TestCase):
         self.assertEqual(report["remaining_data_asm_bytes"], 12)
         # The report reads the coverage build as made from this object: one
         # changed after it fails.
-        side = self.root / "build/decomp/src/t/unit.cov.o.s"
+        side = self.root / "build/src/decomp/src/t/unit.cov.o.s"
         side.write_text(side.read_text() + "\tnop\n")
         tool = Path(__file__).resolve().parents[1] / "tools/matching_coverage.py"
         result = subprocess.run(
@@ -1317,12 +1317,12 @@ class MatchingTests(unittest.TestCase):
         self.build_fixture_unit("int c_data = 0x11111111;\n")
         (self.root / "asm/data").mkdir(parents=True)
         (self.root / "asm/data/generated.s").write_text(".section .data\n.word 1, 2, 3, 4\n")
-        (self.root / "decomp/src/t/authored.s").write_text(".section .data\n.word 5\n")
+        (self.root / "src/decomp/src/t/authored.s").write_text(".section .data\n.word 5\n")
         ranges = "80010000 80010002 sdk half the C word\n80010014 80010018 asset a generated word\n"
         classification = self.root / "classification.txt"
         classification.write_text(ranges)
         arguments = ["--classification", "classification.txt"]
-        extra = ("build/asm/data/generated.o(.data)", "build/decomp/src/t/authored.o(.data)")
+        extra = ("build/asm/data/generated.o(.data)", "build/src/decomp/src/t/authored.o(.data)")
         # Handwritten bytes count only inside a handwritten range.
         result = self.cover_linked_fixture("image.bin", sections=(".data",), arguments=arguments,
                                            extra=extra)
@@ -1375,7 +1375,7 @@ class MatchingTests(unittest.TestCase):
         unit = (".include \"macro.inc\"\n.set noreorder\n.section .text\n"
                 "glabel {0}\n    jr $ra\n    nop\nendlabel {0}\n    .word 0\n")
         (asm / "gen.s").write_text(unit.format("func_gen"))
-        (self.root / "decomp/src/t/authored.s").write_text(unit.format("func_auth"))
+        (self.root / "src/decomp/src/t/authored.s").write_text(unit.format("func_auth"))
         # The INCLUDE_RODATA'd words (in .text, unlabelled, and in .rodata)
         # stay original with a reviewed reason; the authored unit's function
         # and padding are handwritten only inside a handwritten range.
@@ -1386,7 +1386,7 @@ class MatchingTests(unittest.TestCase):
         classification = self.root / "classification.txt"
         classification.write_text(ranges)
         arguments = ["--classification", "classification.txt"]
-        extra = ("build/asm/gen.o(.text)", "build/decomp/src/t/authored.o(.text)")
+        extra = ("build/asm/gen.o(.text)", "build/src/decomp/src/t/authored.o(.text)")
         result = self.cover_linked_fixture(
             "image.bin", sections=(".text", ".rodata"), arguments=arguments, extra=extra)
         self.assertNotEqual(result.returncode, 0)
@@ -1450,7 +1450,7 @@ class MatchingTests(unittest.TestCase):
         root.mkdir()
         (root / "original.bin").write_bytes(original)
         self.write_fixture(source, root)
-        headers = {f"decomp/include/{path}": text for path, text in headers.items()}
+        headers = {f"src/decomp/include/{path}": text for path, text in headers.items()}
         for path, text in {**files, **headers}.items():
             (root / path).parent.mkdir(parents=True, exist_ok=True)
             (root / path).write_text(text)
@@ -1530,7 +1530,7 @@ class MatchingTests(unittest.TestCase):
             ("splice_original", data_unit(
                 'INCLUDE_ORIG\\\nINAL(".data", D_80010004, 0x80010004, 4);'), {}, in_data),
             ("other_extension", data_unit('#include "orig.inc"'),
-             {"decomp/src/t/orig.inc": place + "\n"}, in_data),
+             {"src/decomp/src/t/orig.inc": place + "\n"}, in_data),
             ("header_wrapper", data_unit("ORIG(D_80010004, 0x80010004, 4);",
                                          '#include "wrap.h"\n'), {}, in_data,
              {"wrap.h": '#define ORIG(name, vram, size) '
@@ -1835,7 +1835,7 @@ class MatchingTests(unittest.TestCase):
         side = obj.with_name("unit.cov.o")
         result = subprocess.run(
             ["make", "--no-print-directory", "-f",
-             str(Path(__file__).resolve().parents[1] / "decomp/Makefile"),
+             str(Path(__file__).resolve().parents[1] / "src/decomp/Makefile"),
              "ROOT=" + str(self.root), "CONFIG=fixture.mk", str(side)],
             cwd=self.root, text=True, capture_output=True, check=False,
         )
@@ -1991,11 +1991,11 @@ class MatchingTests(unittest.TestCase):
         from tools import nonmatching_score
 
         repo = Path(__file__).resolve().parents[1]
-        decomp = self.root / "decomp"
+        decomp = self.root / "src/decomp"
         source_dir = decomp / "src/fixture"
         source_dir.mkdir(parents=True)
-        (decomp / "include").symlink_to(repo / "decomp/include")
-        shutil.copyfile(repo / "decomp/Makefile", decomp / "Makefile")
+        (decomp / "include").symlink_to(repo / "src/decomp/include")
+        shutil.copyfile(repo / "src/decomp/Makefile", decomp / "Makefile")
         source = source_dir / "fixture.c"
         source.write_text(
             "extern int external_global[];\nint draft(void) { return external_global[0]; }\n"
@@ -2004,7 +2004,7 @@ class MatchingTests(unittest.TestCase):
         linker.write_text(
             "external_global = 0x80020000; _gp = 0x80059170;\n"
             "SECTIONS { .text 0x80010000 : AT(0) { fixture_TEXT_START = .;\n"
-            ".local/build/decomp/src/fixture/fixture.o(.text)\n"
+            ".local/build/src/decomp/src/fixture/fixture.o(.text)\n"
             "fixture_TEXT_END = .; } /DISCARD/ : { *(*) } }\n"
         )
         config = decomp / "fixture.mk"
@@ -2012,7 +2012,7 @@ class MatchingTests(unittest.TestCase):
             "ORIGINAL := original.bin\nORIGINAL_SHA256 := " + self.digest + "\n"
             "IMAGE := baseline.bin\nLINKER_SCRIPT := fixture.ld\n"
             "SPLAT_CONFIG := unused.yaml\nBUILD := .local/build\nCC_VERSION := 2.7.2\n"
-            "SOURCE_DIRS := decomp/src/fixture\n"
+            "SOURCE_DIRS := src/decomp/src/fixture\n"
         )
         config.write_text(contents)
         baseline = self.root / "baseline.bin"
@@ -2023,12 +2023,12 @@ class MatchingTests(unittest.TestCase):
         self.original.write_bytes(original)
         config.write_text(contents.replace(self.digest, hashlib.sha256(original).hexdigest()))
         shutil.copyfile(
-            self.root / ".local/build/decomp/src/fixture/fixture.o.s", source_dir / "draft.s",
+            self.root / ".local/build/src/decomp/src/fixture/fixture.o.s", source_dir / "draft.s",
         )
         source.write_text(
             '#include "include_asm.h"\nextern int external_global[];\n'
             '#ifdef NON_MATCHING\nint draft(void) { return external_global[1]; }\n'
-            '#else\nINCLUDE_ASM("decomp/src/fixture", draft);\n#endif\n'
+            '#else\nINCLUDE_ASM("src/decomp/src/fixture", draft);\n#endif\n'
         )
         with patch.object(nonmatching_score, "ROOT", self.root):
             report = nonmatching_score.audit_drafts(config, nonmatching_score.config(config), [])
@@ -2049,18 +2049,18 @@ class MatchingTests(unittest.TestCase):
         integer = "assignment makes integer from pointer without a cast"
         log = [
             "== targets/overlays/menu.mk",
-            f"/tree/decomp/include/psyq/libc.h:11: warning: {builtin}",
-            "/tree/decomp/src/a.c: In function `f':",
-            f"/tree/decomp/src/a.c:7: warning: {load}",
-            f"/tree/decomp/src/a.c:9: warning: {project}",
+            f"/tree/src/decomp/include/psyq/libc.h:11: warning: {builtin}",
+            "/tree/src/decomp/src/a.c: In function `f':",
+            f"/tree/src/decomp/src/a.c:7: warning: {load}",
+            f"/tree/src/decomp/src/a.c:9: warning: {project}",
             # the header again from another unit, and the same unit in a second target
-            f"/tree/decomp/include/psyq/libc.h:11: warning: {builtin}",
-            f"/tree/decomp/src/a.c:7: warning: {load}",
+            f"/tree/src/decomp/include/psyq/libc.h:11: warning: {builtin}",
+            f"/tree/src/decomp/src/a.c:7: warning: {load}",
             f"/elsewhere/b.c:3: warning: {integer}",
             "make: Leaving directory",
         ]
         found = parse([line + "\n" for line in log], "/tree")
-        self.assertIn(("decomp/src/a.c", 7, load), found)
+        self.assertIn(("src/decomp/src/a.c", 7, load), found)
         self.assertIn(("/elsewhere/b.c", 3, integer), found)
         counts = summary(found)
         self.assertEqual(counts["unique"], 4)

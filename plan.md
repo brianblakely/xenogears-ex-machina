@@ -49,9 +49,9 @@ The decomp stays a pure, byte-identical implementation of the original game.
 It remains the runtime's game-logic provider, compiled unchanged into the
 native and browser builds, but it is never edited for native client
 integration: no port-only conditionals, hooks, prototypes, renames or layout
-changes in `decomp/`. Everything integration needs lives in the separate port
-layer (`port/`) and the build tooling around the unmodified sources
-([runtime.md](docs/runtime.md)). Changes to `decomp/` serve the original game
+changes in `src/decomp/`. Everything integration needs lives in the separate port
+layer (`src/port/`) and the build tooling around the unmodified sources
+([runtime.md](docs/runtime.md)). Changes to `src/decomp/` serve the original game
 only and must keep every target byte-identical.
 
 - **SDL3:** Default desktop/Android platform layer for game windows/surfaces,

@@ -146,14 +146,14 @@ class SourceTests(unittest.TestCase):
     """The reader follows the recovered field code."""
 
     def test_constants_follow_field_glyph_h(self):
-        header = (ROOT / "decomp/src/field/field_glyph.h").read_text()
+        header = (ROOT / "src/decomp/src/field/field_glyph.h").read_text()
         defines = dict(re.findall(r"#define (GLYPH_\w+) (0x[0-9A-F]+|\d+)\n", header))
         self.assertEqual(int(defines["GLYPH_OWN_FIRST"], 0), FONT_FIRST)
         self.assertEqual(int(defines["GLYPH_OWN_COUNT"], 0), FONT_COUNT)
         self.assertEqual(int(defines["GLYPH_LINE_CELLS"], 0), LINE_CODES)
 
     def test_lines_codes_and_cells_follow_the_c(self):
-        path = "decomp/src/field/field_effect.c"
+        path = "src/decomp/src/field/field_effect.c"
         line = function(path, "u8 *field_staff_roll_write_line(")
         self.assertRegex(line, r"if \(field_staff_roll_bytes_left <= 0\) \{\s+count = 0;")
         self.assertRegex(line, r"count < GLYPH_LINE_CELLS; count\+\+")

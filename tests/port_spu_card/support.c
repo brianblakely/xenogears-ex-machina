@@ -1,4 +1,4 @@
-/* What port/libspu.c, port/libcard.c and port/bios.c take from the game and
+/* What src/port/libspu.c, src/port/libcard.c and src/port/bios.c take from the game and
  * the host, as test-owned objects that tests/test_port_spu_card.py drives:
  * libspu's state at its original addresses, a register window standing in for
  * 0x1F801C00, and host imports and libapi/libetc calls that record what they
