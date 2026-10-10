@@ -156,13 +156,15 @@ wherever it stands, also a second one on a line or after a comma and one inside
 expression, a name with a non-ASCII byte (ld skips the byte and assigns the rest) and a
 comment directly after other text (ld reads a `/` after a name character into the name)
 fail too. tests/test_matching.py links the string and comma forms with the pinned ld and
-checks that it reads them, in the target's own range and in the cross-image step. Names
-of other images (the `*.resident.ld` fragments, an overlay's addresses in the resident,
-also the `_gp` an overlay's splat script sets) lie outside and pass; splat's main script
-is not among the checked scripts, so the resident's `_gp` comes from its checked
-`link.ld`. `BSS_END` in a target gives the end of its uninitialized data past the image,
-the bound its loader clears (the resident's entry point, the mode table entries): the
-check covers the data up to it, a link placing any past it fails, and the coverage
+checks that it reads them, in the target's own range and in the cross-image step; it
+links the refused compound, quoted-name and non-ASCII forms to show that ld assigns the
+object's own symbol through each, and a comment after a name, which ld does not read as
+one. Names of other images (the `*.resident.ld` fragments, an overlay's addresses in the
+resident, also the `_gp` an overlay's splat script sets) lie outside and pass; splat's
+main script is not among the checked scripts, so the resident's `_gp` comes from its
+checked `link.ld`. `BSS_END` in a target gives the end of its uninitialized data past the
+image, the bound its loader clears (the resident's entry point, the mode table entries):
+the check covers the data up to it, a link placing any past it fails, and the coverage
 report counts what no linked object holds there. `LINK_VIEWS` names a script whose names
 there are views, expressions of linked symbols, with the reason beside it in the target;
 a number such a script assigns there still fails, and so does a views script that

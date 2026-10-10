@@ -890,6 +890,50 @@ class MatchingTests(unittest.TestCase):
                         "-T", f"{name}.ld", *(f"-T{path}" for path in scripts),
                         "-o", f"{name}.bin.elf"], cwd=self.root, check=True)
 
+    @unittest.skipUnless(
+        all(shutil.which(tool) for tool in ("psx-as", "psx-ld", "psx-nm")),
+        "enter the matching Nix shell to test GNU ld's reading of fragments")
+    def test_fragment_forms_the_check_refuses_are_ones_ld_reads(self):
+        # The script-symbol check fails on these fragment forms instead of
+        # skipping them, because the pinned GNU ld reads each as an assignment
+        # to the object's own symbol `own` (80010000), which becomes absolute:
+        # a compound assignment, also after a comma, a quoted name and a name
+        # followed by a non-ASCII byte, which ld skips with a warning.
+        self.link_assembly("image", ".data\n.globl own\nown:\n.word 0, 0\n",
+                           "SECTIONS {\n  .image 0x80010000 : { image.o(.data) }\n"
+                           "  /DISCARD/ : { *(*) }\n}\n")
+        tool = Path(__file__).resolve().parents[1] / "tools/matching_coverage.py"
+
+        def link(name, text):
+            (self.root / f"{name}.ld").write_text(text)
+            return subprocess.run(["psx-ld", "-nostdlib", "--no-check-sections", "-T", "image.ld",
+                                   "-T", f"{name}.ld", "-o", f"{name}.elf"], cwd=self.root,
+                                  text=True, capture_output=True, check=False)
+
+        for name, text, value in (("compound", "own += 4;\n", 0x80010004),
+                                  ("comma", "other = 1, own <<= 0;\n", 0x80010000),
+                                  ("quoted", '"own" = 0x80010004;\n', 0x80010004),
+                                  ("byte", "owné = 0x80010004;\n", 0x80010004)):
+            with self.subTest(name):
+                linked = link(name, text)
+                self.assertEqual(linked.returncode, 0, linked.stderr)
+                symbols = subprocess.run(["psx-nm", f"{name}.elf"], cwd=self.root, text=True,
+                                         capture_output=True, check=True).stdout
+                self.assertIn(f"{value:08x} A own\n", symbols)
+                checked = subprocess.run(
+                    [sys.executable, str(tool), "image.bin.elf", "--map", "image.bin.map",
+                     "--script", f"{name}.ld", "--script-symbols", "strict"],
+                    cwd=self.root, text=True, capture_output=True, check=False)
+                self.assertNotEqual(checked.returncode, 0)
+                self.assertIn(f"{name}.ld:1: not a statement the checks read", checked.stderr)
+        # After a name character ld reads `/` into the name: `/*` there opens
+        # no comment, so the check refuses a comment that follows no space.
+        linked = link("adjacent", "x = own/* 4 */;\n")
+        self.assertNotEqual(linked.returncode, 0)
+        self.assertIn("adjacent.ld:1: syntax error", linked.stderr)
+        linked = link("spaced", "x = own /* 4 */;\n")
+        self.assertEqual(linked.returncode, 0, linked.stderr)
+
     @unittest.skipUnless(shutil.which("psx-as") and shutil.which("psx-ld"),
                          "enter the matching Nix shell to test the relocation scan")
     def test_own_addresses_without_their_relocation_fail(self):
