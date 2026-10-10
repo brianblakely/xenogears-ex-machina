@@ -982,7 +982,6 @@ tools/authoring/tsconfig.json
 tools/compiler_warnings.py
 tools/cross_image.py
 tools/data_users.py
-tools/decomp_rename.py
 tools/extraction/README.md
 tools/extraction/code_census.py
 tools/extraction/disc_files.py
