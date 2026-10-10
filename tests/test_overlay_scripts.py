@@ -812,7 +812,7 @@ class FrameEventSourceTests(unittest.TestCase):
         self.assertEqual(struct_fields(header, "FrameEvent"), FRAME_EVENT)
         self.assertEqual(struct_fields(header, "HitSpec"), HIT_SPEC)
 
-    def test_kinds_follow_the_cases_of_func_80074678(self):
+    def test_kinds_follow_the_cases_of_arena_frame_event_run(self):
         body = function(self.arena_fighters_bout_and_effects, "arena_frame_event_run")
         self.assertIn("while (event->first != 0xFF) {", body)
         self.assertIn(

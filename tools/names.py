@@ -88,7 +88,7 @@ from matching_coverage import (  # noqa: E402
 )
 
 # splat's names give an address (cross_image.ADDRESS_NAME); in text, also
-# inside a longer identifier (test_follows_func_800941A4):
+# inside a longer identifier (a test method named after one):
 PLACEHOLDER = re.compile(r"(?<![A-Za-z0-9])(?:func|D|jtbl)_[0-9A-Fa-f]{8}\w*")
 # Parameters named by position (m2c's argN) or by register (aN).
 PARAMETER = re.compile(r"arg\d+|a\d+")

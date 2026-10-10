@@ -58,7 +58,7 @@ extern u16 cd_movie_request_last_frame;
 /* Resident functions whose callers convert arguments/result differently
  * from the resident definition (decomp/src/resident/own_declarations.h). */
 void window_open(Window *window, s32 vram_x, s32 vram_y, s32 x, s32 y, s32 columns, s32 rows);
-void *text_get_resource_entry(void *messages, u16 index);
+void *text_get_resource_entry(void *resource, u16 index);
 s32 sound_create_and_play_seq(u8 *header, u8 fade, s32 frames);
 void sound_play_effect_volume_pan(s32 effect, s16 volume, s16 pan);
 void sound_set_effect_volume(s32 id, u16 volume);

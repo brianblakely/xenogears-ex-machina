@@ -22,7 +22,7 @@ void sprite_set_part_color(void *sprite, s32 red, s32 green, s32 blue);         
 void sprite_set_gravity_divisor(Sprite *sprite, u16 divisor);                                        /* the gravity divisor */
 void sprite_set_direction(Sprite *sprite, s32 direction);                                            /* turn a sprite */
 void sprite_set_facing(Sprite *sprite, s16 angle);                                                 /* face a sprite at `angle` */
-void sprite_upload_images_side_by_side(void *tim, s32 x, s32 y);                                  /* upload an image list */
+void sprite_upload_images_side_by_side(void *list, s32 x, s32 y);                                  /* upload an image list */
 Sprite *sprite_create(void *data, s16 clut_x, s16 clut_y, s16 texture_x, s16 texture_y, s32 unused);                             /* build a sprite */
 Sprite *sprite_create_with_palette_bank(void *data, s16 clut_x, s16 clut_y, s16 texture_x, s16 texture_y, s32 unused, s32 extra); /* with a bank */
 
@@ -44,7 +44,7 @@ void model_set_back_color_16bit(s32 r, s32 g, s32 b);                           
 void heap_free_tag(s32 tag);                                /* release the blocks with `tag` */
 void window_open(Window *window, s32 vram_x, s32 vram_y, s32 x, s32 y, s32 columns, s32 rows);
 void text_load_palette(s32 x, s32 y);                       /* upload the text palette */
-s32 text_get_resource_entry(void *messages, s32 index);   /* a message of a resource */
+s32 text_get_resource_entry(void *resource, s32 index);   /* a message of a resource */
 s32 text_get_message_columns(void *table, s32 index);     /* message columns */
 s32 text_get_message_rows(void *table, s32 index);        /* message rows */
 s32 window_get_wait_state(Window *window);                  /* chosen answer, 0 while open */

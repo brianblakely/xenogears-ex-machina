@@ -52,7 +52,7 @@ typedef struct {
 extern s16 battle_stage_image_anim_active;
 /* The battle's calls with the stage's conversions: start the stage model's
  * effect script list, and pose its hierarchy (no result). */
-void battle_reset_object(BattleObject *object, EffectPool *pool, void *motion, s32 animations);
+void battle_reset_object(BattleObject *object, EffectPool *pool, void *scripts, s32 animations);
 void battle_pose_model_hierarchy(ModelPart *part, s32 scale);
 
 /* The stage backdrop (battle_setup_create_stage_sky, 0x17cc bytes): a floor grid of 9 x 9

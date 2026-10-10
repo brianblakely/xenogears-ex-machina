@@ -38,7 +38,7 @@ extern PolyFT4Words arena_select_wheel_quads[2][10];
 void arena_select_build_list(s32 filter);
 void arena_select_alloc_portrait_slots(void);
 void arena_select_draw_portrait(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fade);
-void arena_select_draw_wheels(void *ot, s32 arg);
+void arena_select_draw_wheels(void *packets, s32 arg);
 void arena_select_load_picked_models(void);
 void arena_select_load_pick_portraits(s32 first, s32 second);
 

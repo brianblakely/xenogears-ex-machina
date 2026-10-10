@@ -301,7 +301,7 @@ class FormulaTests(unittest.TestCase):
         self.assertEqual((enemy.formulas[9], enemy.gear_descriptors), (1, 1))
         self.assertEqual(enemy.outside, ["set 0 #2: formula 8", "set 1 #0: formula 9"])
 
-    def test_enemy_table_follows_func_800941a4(self):
+    def test_enemy_table_follows_battle_resolve_action(self):
         self.assertEqual(enemy_table((8, 0), in_gear=False), 0)
         self.assertEqual(enemy_table((8, 0), in_gear=True), 1)
         self.assertEqual(enemy_table((8, 0x10), in_gear=False), 1)

@@ -6,6 +6,7 @@ configuration, a doc and the package list."""
 from __future__ import annotations
 
 import importlib.util
+import re
 import shutil
 import subprocess
 import sys
@@ -591,6 +592,78 @@ class NamesTests(unittest.TestCase):
             result.stderr,
         )
         self.assertNotIn("one_call_resident", self.read("decomp/src/ovl1/ovl1.c"))
+
+
+REPOSITORY = TOOL.parents[1]
+SPLAT_NAME = re.compile(r"(?<![A-Za-z0-9])(?:func|D|jtbl)_[0-9A-Fa-f]{8}", re.I)
+
+
+class RepositoryNamesTests(unittest.TestCase):
+    """The repository itself: what docs/matching.md's Names section says stays."""
+
+    def test_splat_names_stay_only_in_the_fixtures_and_two_doc_examples(self):
+        allowed = {"tests/test_matching.py", "tests/test_names.py"}  # synthetic targets
+        examples = {"docs/matching.md": {"D_8009A684", "D_801EA5D0"}}  # Recovering data
+        listed = (REPOSITORY / "packaging/source-files.txt").read_text().split()
+        left = {}
+        for name in listed:
+            path = REPOSITORY / name
+            if name in allowed | {"prompt.md", "plan.md"} or not path.is_file():
+                continue
+            try:
+                found = set(SPLAT_NAME.findall(path.read_text()))
+            except UnicodeDecodeError:
+                continue
+            found -= examples.get(name, set())
+            if found:
+                left[name] = sorted(found)
+        self.assertEqual(left, {})
+
+    @unittest.skipUnless(
+        importlib.util.find_spec("rabbitizer"), "enter the matching Nix shell to parse the C"
+    )
+    def test_prototypes_name_parameters_as_their_definition_does(self):
+        sys.path.insert(0, str(TOOL.parent))
+        import names  # noqa: PLC0415
+
+        listed = (REPOSITORY / "packaging/source-files.txt").read_text().split()
+        sources = [
+            (name, names.parse_c((REPOSITORY / name).read_text()))
+            for name in listed
+            if name.startswith("decomp/") and name.endswith((".c", ".h"))
+        ]
+
+        def named(source, function):
+            """Each parameter's name; in a prototype, a lone identifier or a
+            struct, union or enum tag names a type (unnamed)."""
+            out = []
+            for i in names.parameters(source, function):
+                if i is None:
+                    out.append(None)
+                    continue
+                before = source.tokens[source.code[source.position[i] - 1]].text
+                lone = before in (",", "(", "struct", "union", "enum")
+                out.append(None if lone and function.body is None else source.tokens[i].text)
+            return out
+
+        definitions = {}
+        for _name, source in sources:
+            for f in source.functions:
+                if f.body is not None:
+                    definitions[source.tokens[f.name].text] = named(source, f)
+        apart = []
+        for name, source in sources:
+            for f in source.functions:
+                function = source.tokens[f.name].text
+                if f.body is not None or function not in definitions:
+                    continue
+                theirs, ours = definitions[function], named(source, f)
+                if len(theirs) == len(ours) and any(
+                    a and b and a != b for a, b in zip(ours, theirs, strict=True)
+                ):
+                    line = source.text.count("\n", 0, source.tokens[f.name].start) + 1
+                    apart.append(f"{name}:{line}: {function}{tuple(ours)} != {tuple(theirs)}")
+        self.assertEqual(apart, [])
 
 
 if __name__ == "__main__":

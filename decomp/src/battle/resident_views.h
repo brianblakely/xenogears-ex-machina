@@ -36,23 +36,23 @@ void sprite_construct_with_palette_bank(Sprite *sprite, s32 data, s16 clut_x, s1
 
 /* Glyphs and images (80025fa8-80026dcc, 8002dde4). */
 /* 80025fa8: the u16 coordinates, scale and angle passed as full words. */
-s32 sprite_sheet_draw_rotated(void *table, s32 id, POLY_FT4 *prims, s32 index, s32 x, s32 y,
+s32 sprite_sheet_draw_rotated(void *sheet, s32 id, POLY_FT4 *prims, s32 index, s32 x, s32 y,
                   s32 scale_x, s32 scale_y, s32 angle);
-s32 sprite_sheet_draw_scaled_flip(void *table, s32 id, POLY_FT4 *prims, s32 index, s32 x, s32 y, s32 scale, s32 flip_x, s32 flip_y);
-s32 sprite_sheet_draw_scaled(void *table, s32 id, POLY_FT4 *prims, s32 index, s32 x, s32 y, s32 scale);
-s32 sprite_sheet_fill_parts(void *font, s32 id, SpritePart *parts, s16 x, s32 y); /* glyphs added */
+s32 sprite_sheet_draw_scaled_flip(void *sheet, s32 id, POLY_FT4 *prims, s32 index, s32 x, s32 y, s32 scale, s32 flip_x, s32 flip_y);
+s32 sprite_sheet_draw_scaled(void *sheet, s32 id, POLY_FT4 *prims, s32 index, s32 x, s32 y, s32 scale);
+s32 sprite_sheet_fill_parts(void *sheet, s32 id, SpritePart *parts, s16 x, s32 y); /* glyphs added */
 void model_load_image_list(void *images, s16 mode, s32 x, s32 y, s16 mode2, s32 x2, s32 y2); /* upload images */
 
 /* Disc streams (80029eb0). */
 void stream_start_image_load(s32 file, void *ring, s32 mode, s32 unused, s32 mode_1200, s32 base_x_1200, s32 base_y_1200, s32 mode_1201, s32 base_x_1201, s32 base_y_1201);
 
 /* Models (8002cb54-8002cc74). */
-void model_alloc_packet_buffers(SpriteModel *buffer, void **packets0, void **packets1); /* allocate packets */
+void model_alloc_packet_buffers(SpriteModel *buffer, void **first, void **second); /* allocate packets */
 void model_set_tpage_override(s16 x, s16 y);
 void model_set_clut_override(s16 x, s16 y);
 
 /* Text (80033728-80034eac). */
-void *text_get_resource_entry(void *table, s32 index);
+void *text_get_resource_entry(void *resource, s32 index);
 void *text_get_system_resource_entry(u8 table, u8 index); /* a character text */
 u8 *text_get_item_name(s32 index); /* item name */
 u8 *text_get_weapon_name(s32 index); /* equipment name */

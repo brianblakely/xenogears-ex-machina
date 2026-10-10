@@ -19,7 +19,7 @@
  * ModelBuffer and u8 ** buffers there; s16 where it takes u16): allocate a
  * model's two packet buffers, and override the models' texture pages and
  * CLUTs with those at (x, y). */
-void model_alloc_packet_buffers(SpriteModel *buffer, void **packets0, void **packets1);
+void model_alloc_packet_buffers(SpriteModel *buffer, void **first, void **second);
 void model_set_tpage_override(s16 x, s16 y);
 void model_set_clut_override(s16 x, s16 y);
 

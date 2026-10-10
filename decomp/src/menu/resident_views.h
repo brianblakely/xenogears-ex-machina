@@ -22,7 +22,7 @@ void model_alloc_packet_buffers(SpriteModel *buffer, void **first, void **second
 /* The resident takes u16 x, y. */
 void model_set_clut_override(s32 x, s32 y);
 /* The resident takes s16 modes and u16 second coordinates. */
-void model_load_image_list(void *target, s32 mode, s32 x, s32 y, s32 mode2, s32 x2, s32 y2);
+void model_load_image_list(void *images, s32 mode, s32 x, s32 y, s32 mode2, s32 x2, s32 y2);
 /* The resident takes a u16 index and a ModelLight. */
 void model_set_light(s32 index, struct Light *light);
 /* The resident takes an s16 kind. */

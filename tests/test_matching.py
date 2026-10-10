@@ -459,7 +459,7 @@ class MatchingTests(unittest.TestCase):
             '# 1 "decomp/src/t/unit.c"\n'
             '# 1 "decomp/include/include_asm.h" 1\n'
             'register int pinned asm("$14");\n'
-            'extern int word __asm__("D_800CCB34");\n'
+            'extern int word __asm__("battle_drawing_buffer_byte");\n'
             'int table[] __attribute__((section(".text"))) = { 1 };\n'
         )
         self.assertEqual(mark_asm(plain), plain)
@@ -1814,7 +1814,7 @@ class MatchingTests(unittest.TestCase):
         # battle's combo flags as they were: 15 indexed bytes, then '5' in the fill
         table = {"bytes": bytes(range(15)) + b"5", "elements": [1] * 16, "strings": [], "size": 1,
                  "start": 0x800C34CC, "next": 0x800C34DC, "pointers": 0,
-                 "access": [(0, "indexed", "lbu", "func_80086B88")]}
+                 "access": [(0, "indexed", "lbu", "battle_can_use_combo_step")]}
         self.assertEqual(flags(table)[0], ("tail", 1, "35", ["text", "outlier"]))
         table["access"] = [(15, "exact", "lbu", "f")]  # a constant-offset read dismisses it
         self.assertTrue(all("read" in f[3] for f in flags(table)))

@@ -74,13 +74,13 @@ typedef struct CameraMove {
  * (decomp/src/resident/own_declarations.h). */
 void sound_play_effect_on_last_channels(s32 effect);                                                   /* play a sound effect */
 void text_load_palette(s32 x, s32 y);                                                                  /* text palettes */
-u8 *text_get_resource_entry(void *table, s32 index);                                                   /* entry of a text table */
+u8 *text_get_resource_entry(void *resource, s32 index);                                                   /* entry of a text table */
 u8 *text_get_gear_accessory_name(s32 index);                                                              /* kind 3 part name */
 u8 *text_get_gear_part_name(s32 index);                                                                   /* kind 4 part name */
 void text_decode_codes(u8 *codes, u8 *out, s32 count);                                                /* codes to text */
-s32 window_render_text_line(u8 *text, void *pixels, s32 width, s32 flags);                              /* render a text line */
-s32 sprite_sheet_draw_scaled(void *sheet, s32 id, void *packets, s32 index, s32 x, s32 y, s32 scale); /* sprite */
-s32 sprite_sheet_draw_scaled_flip(void *sheet, s32 id, void *packets, s32 index, s32 x, s32 y, s32 scale, s32 flip_x,
+s32 window_render_text_line(u8 *text, void *image, s32 width, s32 flags);                              /* render a text line */
+s32 sprite_sheet_draw_scaled(void *sheet, s32 id, void *prims, s32 index, s32 x, s32 y, s32 scale); /* sprite */
+s32 sprite_sheet_draw_scaled_flip(void *sheet, s32 id, void *prims, s32 index, s32 x, s32 y, s32 scale, s32 flip_x,
                   s32 flip_y); /* mirrored sprite */
 u8 mode_get_random_byte_in_range(u8 low, u8 high); /* random number in [low, high] */
 
