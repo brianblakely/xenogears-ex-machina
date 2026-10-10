@@ -139,8 +139,9 @@ def state_regions(schema_path):
 
 
 MODE_FIELD, MODE_BATTLE = 1, 2
-# --fight-random-battles: a battle is fought with Cross held 4 of every 12
-# frames, and the program waits until the field has run this long again.
+# --fight-random-battles: a battle is fought with Cross held 8 of every 64
+# frames (attack, then the results screens), and the program waits until the
+# field has run this long again.
 BATTLE_SETTLE_FRAMES = 90
 
 
@@ -163,8 +164,10 @@ def run(program_json, headless, out, sampling=None, fight=False, dump_vram=False
             if battle_settle is not None:
                 battle_settle = battle_settle + 1 if mode == MODE_FIELD else 0
                 if battle_settle < BATTLE_SETTLE_FRAMES:
-                    cross = ["cross"] if vblank % 12 < 4 and mode == MODE_BATTLE else []
+                    cross = ["cross"] if vblank % 64 < 8 and mode == MODE_BATTLE else []
                     headless({"cmd": "pad", "port": 0, "buttons": cross})
+                    if vblank % 600 == 0:
+                        headless({"cmd": "screenshot", "path": str(out / f"battle-{vblank:06d}.png")})
                     headless({"cmd": "frames", "count": 1})
                     vblank += 1
                     continue

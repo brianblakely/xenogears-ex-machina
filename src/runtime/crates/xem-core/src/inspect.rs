@@ -107,7 +107,8 @@ impl Schema {
         }
     }
 
-    /// Locate `name.member[3].field`, following pointers with `->`.
+    /// Locate `name.member[3].field`, following pointers with `->` and
+    /// indexing through them with `[i]`.
     pub fn locate(&self, path: &str, memory: &dyn GameMemory) -> Result<Place, InspectError> {
         let (head, mut rest) = split_head(path);
         let global = self.globals.get(head).ok_or_else(|| InspectError::Unknown(head.to_string()))?;
@@ -116,13 +117,21 @@ impl Schema {
             if let Some(after) = rest.strip_prefix('[') {
                 let end = after.find(']').ok_or_else(|| InspectError::Path("missing ]".into()))?;
                 let index: u32 = after[..end].trim().parse().map_err(|_| InspectError::Path("index".into()))?;
-                let Some(Type::Array { of, count }) = self.resolve(place.ty) else {
-                    return Err(InspectError::Path(format!("not an array before [{index}]")));
+                place = match self.resolve(place.ty) {
+                    Some(Type::Array { of, count }) => {
+                        if *count != 0 && index >= *count {
+                            return Err(InspectError::Path(format!("index {index} >= {count}")));
+                        }
+                        Place { address: place.address + index * self.size_of(*of), ty: *of }
+                    }
+                    // A pointer indexes the array it points into, as in C.
+                    Some(Type::Pointer { to }) => {
+                        let element = self.pointee(to);
+                        let base = memory.read_u32(place.address)?;
+                        Place { address: base.wrapping_add(index * self.size_of(element)), ty: element }
+                    }
+                    _ => return Err(InspectError::Path(format!("not an array or pointer before [{index}]"))),
                 };
-                if *count != 0 && index >= *count {
-                    return Err(InspectError::Path(format!("index {index} >= {count}")));
-                }
-                place = Place { address: place.address + index * self.size_of(*of), ty: *of };
                 rest = &after[end + 1..];
             } else if let Some(after) = rest.strip_prefix("->") {
                 let Some(Type::Pointer { to }) = self.resolve(place.ty) else {
