@@ -2335,7 +2335,7 @@ void battle_action_list_act(u8 actor, u8 index, u8 target) {
     s32 i;
 
     battle_action_list_queue_name(index, actor);
-    battle_turn_state->unk2DC = battle_action_list[index].arg1 + 1;
+    battle_turn_state->unk2DC = battle_action_list[index].operand + 1;
     battle_commit_action(actor, battle_action_list[index].targets, battle_action_list[index].animation);
     battle_accumulate_and_apply_results(battle_turn_state->eventCount);
     battle_area_events[battle_turn_state->eventCount].type = battle_action_list[index].animation;
@@ -2424,27 +2424,27 @@ void battle_action_list_split(u8 slot, u8 index, u8 target) {
     battle_turn_state->eventCount++;
 }
 
-/* 80079054: Set the actor's attribute arg1 to the entry's parameter byte. */
+/* 80079054: Set the actor's attribute `operand` to the entry's parameter byte. */
 void battle_action_list_set_attr8(u8 actor, u8 index, u8 target) {
-    battle_access_combatant_attr8(actor, battle_action_list[index].arg1, battle_action_list[index].param, 0);
+    battle_access_combatant_attr8(actor, battle_action_list[index].operand, battle_action_list[index].param, 0);
 }
 
-/* 80079098: Add the entry's parameter byte to the actor's attribute arg1. */
+/* 80079098: Add the entry's parameter byte to the actor's attribute `operand`. */
 void battle_action_list_add_attr8(u8 actor, u8 index, u8 target) {
-    battle_access_combatant_attr8(actor, battle_action_list[index].arg1,
-                  battle_action_list[index].param + battle_access_combatant_attr8(actor, battle_action_list[index].arg1, 0, 1), 0);
+    battle_access_combatant_attr8(actor, battle_action_list[index].operand,
+                  battle_action_list[index].param + battle_access_combatant_attr8(actor, battle_action_list[index].operand, 0, 1), 0);
 }
 
-/* 80079114: Set the actor's 16-bit attribute arg1 to the entry's parameter halfword. */
+/* 80079114: Set the actor's 16-bit attribute `operand` to the entry's parameter halfword. */
 void battle_action_list_set_attr16(u8 actor, u8 index, u8 target) {
-    battle_access_combatant_attr16(actor, battle_action_list[index].arg1, battle_action_list[index].param | (battle_action_list[index].unk5 << 8), 0);
+    battle_access_combatant_attr16(actor, battle_action_list[index].operand, battle_action_list[index].param | (battle_action_list[index].unk5 << 8), 0);
 }
 
-/* 8007916C: Add the entry's parameter halfword to the actor's 16-bit attribute arg1. */
+/* 8007916C: Add the entry's parameter halfword to the actor's 16-bit attribute `operand`. */
 void battle_action_list_add_attr16(u8 actor, u8 index, u8 target) {
-    battle_access_combatant_attr16(actor, battle_action_list[index].arg1,
+    battle_access_combatant_attr16(actor, battle_action_list[index].operand,
                   battle_action_list[index].param +
-                      (battle_access_combatant_attr16(actor, battle_action_list[index].arg1, 0, 1) + (battle_action_list[index].unk5 << 8)),
+                      (battle_access_combatant_attr16(actor, battle_action_list[index].operand, 0, 1) + (battle_action_list[index].unk5 << 8)),
                   0);
 }
 

@@ -11,9 +11,9 @@ typedef struct {
     Task draw;      /* +1c */
     Sprite *actor;  /* +38: the battle sprite the effect circles */
     s32 radius;     /* +3c: horizontal swing of the rows */
-    s32 arg3;       /* +40: added to the swing each row (8.8) */
-    s32 arg4;       /* +44: angle step between rows (8.8) */
-    s32 arg5;       /* +48: added to the angle step each row */
+    s32 swing_growth;      /* +40: added to the swing each row (8.8) */
+    s32 row_angle_step;    /* +44: angle step between rows (8.8) */
+    s32 angle_step_growth; /* +48: added to the angle step each row */
     s32 angle;      /* +4c: advanced by step every frame */
     s32 step;       /* +50 */
 } SpinTask;

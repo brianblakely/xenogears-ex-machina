@@ -246,7 +246,7 @@ void mode_dispatch(s32 error) {
 /* The next mode: mode_select_next_mode writes it and the dispatcher reads it, yet the
  * original keeps it among this unit's read-only data, between the decode
  * destination and the mode table. */
-s32 mode_next_mode __attribute__((section(".rodata"))) = 0;
+s32 mode_next_mode __attribute__((section(".rodata"))) = 0; /* 80018088 */
 
 /* Each mode's entry, the BSS the dispatcher clears before it (the words
  * after bss_start through bss_end) and whether its overlay file

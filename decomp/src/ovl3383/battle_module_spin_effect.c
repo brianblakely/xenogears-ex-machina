@@ -84,7 +84,7 @@ void battle_module_spin_draw(Task *node) {
     shift_prev = gpu_get_sin(angle) * spin->radius / 4096;
     swing = spin->radius << 8;
     part = actor->renderer->parts[1];
-    angle_step = spin->arg4 << 8;
+    angle_step = spin->row_angle_step << 8;
     row = part->y + part->h - 4;
     top = part->y;
     u = part->u;
@@ -138,8 +138,8 @@ void battle_module_spin_draw(Task *node) {
         }
         row -= 4;
         angle += angle_step >> 8;
-        angle_step += spin->arg5;
-        swing += spin->arg3;
+        angle_step += spin->angle_step_growth;
+        swing += spin->swing_growth;
     } while (top < row);
 }
 
@@ -151,9 +151,9 @@ void battle_module_spin_start(Sprite *actor, s32 angle, s32 radius, s32 swing_gr
     spin = (SpinTask *)task_alloc_two_node_task(sizeof(SpinTask), actor->block, battle_module_spin_update, battle_module_spin_draw, NULL);
     spin->actor = actor;
     spin->radius = radius;
-    spin->arg3 = swing_growth;
-    spin->arg4 = row_angle_step;
-    spin->arg5 = angle_step_growth;
+    spin->swing_growth = swing_growth;
+    spin->row_angle_step = row_angle_step;
+    spin->angle_step_growth = angle_step_growth;
     spin->angle = angle;
     spin->step = step;
 }

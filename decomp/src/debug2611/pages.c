@@ -37,7 +37,7 @@ void battle_debug_print_state_page(void) {
             console_place_cursor(0x24, (i + 2) * 8);
             console_printf("%X", battle_action_list[i].type);
             console_place_cursor(0x48, (i + 2) * 8);
-            console_printf("%X", battle_action_list[i].arg1);
+            console_printf("%X", battle_action_list[i].operand);
             console_place_cursor(0x6C, (i + 2) * 8);
             console_printf("%X", battle_action_list[i].animation);
             console_place_cursor(0x90, (i + 2) * 8);

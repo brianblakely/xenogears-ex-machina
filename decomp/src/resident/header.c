@@ -16,7 +16,7 @@ typedef struct {
     char unused[0x800 - sizeof(struct XF_HDR)];
 } ExeFileHeader;
 
-ExeFileHeader exe_header = {
+ExeFileHeader exe_header = { /* 8000F800 */
     {
         "PS-X EXE",
         0,

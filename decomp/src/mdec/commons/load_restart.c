@@ -2,4 +2,4 @@
 #include "common.h"
 #include "../movie.h"
 
-s32 movie_load_restart;
+s32 movie_load_restart; /* 801E89E0 */

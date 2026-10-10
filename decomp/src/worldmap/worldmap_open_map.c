@@ -197,8 +197,10 @@ SVECTOR worldmap_map_marker_triangles[4][3] = { /* 8009A340 */
 /* Terrain kind substitutes. */
 s16 worldmap_layer4_encounter_kinds[16] = {3, 3, 3, 3, 3, 3, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10}; /* 8009A3A0 */
 
-/* Script opcode handler: returns the halfwords to advance, 0 to yield. */
-typedef s32 (*ScriptOp)(WorldmapActor *actor, s32 arg1, s32 arg2, s32 arg3);
+/* Script opcode handler, given the command's three operands (the high half of the
+ * command word and the script's next two halfwords): returns the halfwords
+ * to advance, 0 to yield. */
+typedef s32 (*ScriptOp)(WorldmapActor *actor, s32 operand1, s32 operand2, s32 operand3);
 
 /* Actor script commands, by command number. */
 ScriptOp worldmap_actor_script_handlers[12] = { /* 8009A3C0 */

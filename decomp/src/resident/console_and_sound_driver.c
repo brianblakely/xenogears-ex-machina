@@ -41,7 +41,7 @@ void console_draw_char(s32 c);
  * 80032e88 decodes (800374e8). */
 extern u8 console_packed_font[];
 INCLUDE_ASSET(".data", console_packed_font, 0x80050240, 0x354);
-void (*console_char_output)(s32 c) = console_draw_char; /* 80050594 800370DC: character output (800366f0) */
+void (*console_char_output)(s32 c) = console_draw_char; /* 80050594: character output (800366f0) */
 /* The console font CLUTs, built by 80036e4c: four rows of 16 colours. */
 u16 console_font_cluts[64] = { /* 80050598 */
     0x0000, 0x7FFF, 0x0000, 0x7FFF, 0x0000, 0x7FFF, 0x0000, 0x7FFF,
@@ -437,7 +437,7 @@ void console_place_cursor_and_line_start(s32 x, s32 y) {
     }
 }
 
-/* Put a character on the console: a font sprite for printable characters
+/* 800370DC: Put a character on the console: a font sprite for printable characters
  * (wrapping, or stopping, at the right edge) and newlines; nothing once the
  * window or the sprite budget is full. */
 void console_draw_char(s32 c) {

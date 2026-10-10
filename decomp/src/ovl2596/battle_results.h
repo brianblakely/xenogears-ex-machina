@@ -136,7 +136,7 @@ void battle_init_text_quad_pair(POLY_FT4 *prims, s32 alternate, s32 page);
 void *battle_heap_alloc_text_image(s32 count);                                              /* allocate a text image */
 void battle_wait_frame(void);                                                              /* run one battle frame */
 
-extern u8 battle_spoils_icon_cells[8];        /* two icon records: arg5, -, arg3, arg4 */
+extern u8 battle_spoils_icon_cells[8];        /* two icon records: width, -, u, v */
 extern u8 battle_skill_mark_icon_cell[4];     /* the skill mark icon: width, -, u, v */
 extern void *battle_work_growth_file[1];      /* BattleWork.growth, the growth data file; the original
                                                * addresses it as a table */

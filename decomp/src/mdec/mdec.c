@@ -13,46 +13,46 @@
 #include "movie.h"
 
 /* The player's initialized statics open the image's .data (all zero). */
-s32 movie_split_display = 0;        /* frames span both display buffers */
-u16 movie_frame_width = 0;          /* last frame header width */
-u16 movie_frame_height = 0;
-u16 movie_image_width = 0;          /* 16-bit VRAM units */
-u16 movie_image_height = 0;
-volatile s32 movie_vlc_pending = 0; /* a frame's decode is resumable */
-s32 movie_vlc_limit = 0;            /* halfwords per decode call */
-s32 movie_color_mode = 0;           /* bit 0: 24-bit output */
-s32 movie_end_frame = 0;
+s32 movie_split_display = 0;        /* 801D68B4: frames span both display buffers */
+u16 movie_frame_width = 0;          /* 801D68B8: last frame header width */
+u16 movie_frame_height = 0;         /* 801D68BA */
+u16 movie_image_width = 0;          /* 801D68BC: 16-bit VRAM units */
+u16 movie_image_height = 0;         /* 801D68BE */
+volatile s32 movie_vlc_pending = 0; /* 801D68C0: a frame's decode is resumable */
+s32 movie_vlc_limit = 0;            /* 801D68C4: halfwords per decode call */
+s32 movie_color_mode = 0;           /* 801D68C8: bit 0: 24-bit output */
+s32 movie_end_frame = 0;            /* 801D68CC */
 
 /* The player's uninitialized variables (801e8910..801e89ac) open the .bss,
  * which the file holds as zeros after the libraries' .data and ahead of the
  * libcd modules' .bss, each in a slot of whole words (decomp/Makefile): the u8
  * flags at 801e8958..801e8968 sit four bytes apart. */
-static MovieSectorHeader *movie_decoded_bitstream;
-static u_long *movie_frame_bitstream;
-static MovieDecoder movie_decoder;
-static u8 movie_mdec_idle;         /* the MDEC finished a frame */
-static u8 movie_frame_waiting;     /* no frame was in the ring */
-static u8 movie_restarted;
-static s8 movie_player_state;
-static u8 movie_host_stream;       /* resident host-file table in use */
-static s32 movie_start_sector;
-static s32 movie_cd_mode;
-static u16 movie_file;
-static u16 movie_xa_channel;
-static s16 movie_row_limit;        /* rows a slice loads at most */
-static s32 movie_loaded_frame;     /* frame the MDEC decodes */
-static s32 movie_first_frame;
-static s32 movie_shown_frame;      /* last frame fully loaded */
-static void *movie_ring_buffer;    /* the stream ring */
-static void (*movie_frame_callback)(u16 frame, u16 x, u16 y); /* a frame is loaded */
-static s32 movie_ring_frame;       /* frame of the last ring bitstream */
-static s32 movie_load_enabled;     /* slices go to VRAM */
-static s32 movie_saved_directory; /* directory group of the movie files */
-static s32 movie_saved_index;     /* and index */
-static s32 movie_fade_in_pending;
-static s32 movie_fade_out_pending;
+static MovieSectorHeader *movie_decoded_bitstream; /* 801E8910 */
+static u_long *movie_frame_bitstream; /* 801E8914 */
+static MovieDecoder movie_decoder;    /* 801E8918 */
+static u8 movie_mdec_idle;            /* 801E8958: the MDEC finished a frame */
+static u8 movie_frame_waiting;        /* 801E895C: no frame was in the ring */
+static u8 movie_restarted;            /* 801E8960 */
+static s8 movie_player_state;         /* 801E8964 */
+static u8 movie_host_stream;          /* 801E8968: resident host-file table in use */
+static s32 movie_start_sector;        /* 801E896C */
+static s32 movie_cd_mode;             /* 801E8970 */
+static u16 movie_file;                /* 801E8974 */
+static u16 movie_xa_channel;          /* 801E8978 */
+static s16 movie_row_limit;           /* 801E897C: rows a slice loads at most */
+static s32 movie_loaded_frame;        /* 801E8980: frame the MDEC decodes */
+static s32 movie_first_frame;         /* 801E8984 */
+static s32 movie_shown_frame;         /* 801E8988: last frame fully loaded */
+static void *movie_ring_buffer;       /* 801E898C: the stream ring */
+static void (*movie_frame_callback)(u16 frame, u16 x, u16 y); /* 801E8990: a frame is loaded */
+static s32 movie_ring_frame;          /* 801E8994: frame of the last ring bitstream */
+static s32 movie_load_enabled;        /* 801E8998: slices go to VRAM */
+static s32 movie_saved_directory;     /* 801E899C: directory group of the movie files */
+static s32 movie_saved_index;         /* 801E89A0: and index */
+static s32 movie_fade_in_pending;     /* 801E89A4 */
+static s32 movie_fade_out_pending;    /* 801E89A8 */
 
-/* The MDEC output DMA's completion callback: load the slice just decoded into
+/* 801D30C4: The MDEC output DMA's completion callback: load the slice just decoded into
  * VRAM (column by column for a split display), then start the MDEC on the
  * next slice or, past the frame's last column, report the loaded frame. */
 void movie_slice_decoded(void) {
@@ -114,7 +114,7 @@ void movie_slice_decoded(void) {
     }
 }
 
-/* Open the library for a `width` x `height` movie (16-bit VRAM units).
+/* 801D3538: Open the library for a `width` x `height` movie (16-bit VRAM units).
  * `scale` sizes the two run-level buffers (width * height * scale / 128
  * bytes), `slice` is the macroblock column width, `sectors` the ring length,
  * `limit` the decode-call limit; `mode` bit 0 selects 24-bit output.
@@ -176,7 +176,7 @@ s32 movie_open(u16 width, u16 height, u16 scale, u16 slice, u16 sectors, u16 lim
     return 0;
 }
 
-/* Start streaming `file` from `sector`: frames `first_frame` to `last_frame`,
+/* 801D37CC: Start streaming `file` from `sector`: frames `first_frame` to `last_frame`,
  * CD-XA audio of `channel` when `select` bit 0 is set, `hold` keeps the first
  * frame, `x0, y0, x1, y1` place the two display buffers, `rows` limits the
  * rows a slice loads (none when negative), and `callback` receives each
@@ -263,7 +263,7 @@ void movie_start(s32 file, s32 sector, u16 first_frame, u16 last_frame, u16 chan
     movie_restart(file, sector, movie_xa_channel, movie_cd_mode, NULL);
 }
 
-/* The next frame's bitstream from the ring, or NULL when no frame is complete;
+/* 801D3B00: The next frame's bitstream from the ring, or NULL when no frame is complete;
  * its first sector's header goes to `header`. A frame of another size moves
  * the display buffers' far corners and the rows each slice loads. */
 u_long *movie_next_bitstream(u32 end_frame, MovieSectorHeader **header) {
@@ -316,7 +316,7 @@ u_long *movie_next_bitstream(u32 end_frame, MovieSectorHeader **header) {
     return data;
 }
 
-/* Start the MDEC on the frame decoded last when it is idle, then decode the
+/* 801D3D54: Start the MDEC on the frame decoded last when it is idle, then decode the
  * next frame's bitstream into a run-level buffer, or continue a partial
  * decode; a finished bitstream's ring sectors are freed. */
 void movie_decode(void) {
@@ -359,7 +359,7 @@ void movie_decode(void) {
     }
 }
 
-/* One step of playback: fade the CD audio in once past the first frame and
+/* 801D3F7C: One step of playback: fade the CD audio in once past the first frame and
  * out three frames before the end, stop or loop at the end, decode, and seek
  * again from the ring's last sector when no frame arrived for 2161 polls. */
 void movie_poll(void) {
@@ -407,7 +407,7 @@ void movie_poll(void) {
     }
 }
 
-/* Seek the stream to `sector` of `file` (or to `location` when given) and read
+/* 801D41AC: Seek the stream to `sector` of `file` (or to `location` when given) and read
  * from there in `mode` at double speed; the current directory is kept. The
  * host-file stream instead reopens the file and seeks within it. */
 void movie_restart(s32 file, s32 sector, s32 channel, s32 mode, CdlLOC *location) {
@@ -446,7 +446,7 @@ void movie_restart(s32 file, s32 sector, s32 channel, s32 mode, CdlLOC *location
     cd_select_directory(kept_directory, kept_offset);
 }
 
-/* Stop the stream: silence the CD input, stop the MDEC, drop the ring's
+/* 801D4318: Stop the stream: silence the CD input, stop the MDEC, drop the ring's
  * callbacks, pause the drive and restore the resident read mode. */
 void movie_stop(void) {
     sound_set_cd_volume(0, 0);
@@ -465,7 +465,7 @@ void movie_stop(void) {
     cd_sync_reads(0);
 }
 
-/* Stop, then release the run-level and slice buffers and the ring. */
+/* 801D43B0: Stop, then release the run-level and slice buffers and the ring. */
 void movie_close(void) {
     movie_stop();
     heap_free(movie_decoder.vlc_buffers[0]);

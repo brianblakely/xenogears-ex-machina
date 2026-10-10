@@ -2,4 +2,4 @@
 #include "common.h"
 #include "../movie.h"
 
-u16 movie_slice_width;
+u16 movie_slice_width; /* 801E89C0 */

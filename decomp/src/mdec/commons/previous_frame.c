@@ -2,4 +2,4 @@
 #include "common.h"
 #include "../movie.h"
 
-s32 movie_previous_frame;
+s32 movie_previous_frame; /* 801E89EC */

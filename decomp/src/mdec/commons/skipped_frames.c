@@ -2,4 +2,4 @@
 #include "common.h"
 #include "../movie.h"
 
-s32 movie_skipped_frames;
+s32 movie_skipped_frames; /* 801E89D4 */
