@@ -495,6 +495,9 @@ class Rewriter:
                     lines.extend(asm)
                     continue
             lines.extend(self.rewrite_call(unit, line))
+        if not is_port:
+            lines = poll_back_edges(lines)
+            self.declare(unit, "xem_loop_poll", "void", [])
         lines += host_groups
         # Declarations of the dispatchers and adapters this unit calls.
         for name, decl in sorted(self.unit_decls.pop(unit.source, {}).items()):
@@ -654,6 +657,30 @@ class Rewriter:
             return unit, unit.defined[name]
         found = self.definitions.get(name)
         return found
+
+
+LABEL_RE = re.compile(r"^([-\w.]+):")
+BRANCH_RE = re.compile(r"^\s*br (?:label %([-\w.]+)|i1 [^,]+, label %([-\w.]+), label %([-\w.]+))")
+
+
+def poll_back_edges(lines):
+    """Insert a call to xem_loop_poll before every loop back-edge (a branch to
+    a block earlier in its function). A wait the original spins on memory an
+    interrupt writes, or on a call that reads it, then suspends the game in
+    time for the interrupt; the opaque call also keeps the loads in the loop."""
+    out, seen = [], set()
+    for line in lines:
+        if line.startswith("define "):
+            seen = set()
+        else:
+            label = LABEL_RE.match(line)
+            if label:
+                seen.add(label.group(1))
+        branch = BRANCH_RE.match(line)
+        if branch and any(target in seen for target in branch.groups() if target):
+            out.append('  call void @"xem_loop_poll"()')
+        out.append(line)
+    return out
 
 
 def dispatch_variant(ret, arg_types):

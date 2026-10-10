@@ -11,6 +11,7 @@ pub mod memory;
 pub mod module;
 pub mod pad;
 pub mod runtime;
+pub mod snapshot;
 
 pub use memory::{GameMemory, SliceMemory};
 pub use module::{Action, GameModule, Import, Trap};

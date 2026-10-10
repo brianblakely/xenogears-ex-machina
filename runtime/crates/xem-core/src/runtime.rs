@@ -357,6 +357,79 @@ impl<M: GameModule> Runtime<M> {
     }
 }
 
+impl<M: GameModule> Runtime<M> {
+    /// The whole runtime at a wait (between steps), as bytes.
+    pub fn snapshot(&mut self) -> Result<Vec<u8>, crate::snapshot::SnapshotError> {
+        use crate::snapshot::*;
+        let mut w = Writer::default();
+        write_header(&mut w);
+        w.u32(self.entry.0);
+        w.u32(self.entry.1);
+        w.u32(self.suspended as u32);
+        w.u32(self.saved_stack_pointer);
+        w.u32(self.module.stack_pointer());
+        let globals = self.module.globals();
+        w.u32(globals.len() as u32);
+        for g in globals {
+            w.u32(g);
+        }
+        write_memory(&mut w, self.module.memory())?;
+        let services = unsafe { &mut *self.services };
+        write_clock(&mut w, &services.clock);
+        write_pads(&mut w, &services.pads);
+        w.u32(services.raised.len() as u32);
+        for &(irq, detail) in &services.raised {
+            w.u32(irq);
+            w.u32(detail);
+        }
+        for (_, device) in services.devices() {
+            w.bytes(&device.save());
+        }
+        Ok(w.0)
+    }
+
+    /// Restore a snapshot taken by `snapshot` from the same game module.
+    pub fn restore(&mut self, data: &[u8]) -> Result<(), crate::snapshot::SnapshotError> {
+        use crate::snapshot::*;
+        let mut r = Reader::new(data);
+        read_header(&mut r)?;
+        let entry = (r.u32()?, r.u32()?);
+        let suspended = r.u32()? != 0;
+        let saved_stack_pointer = r.u32()?;
+        let stack_pointer = r.u32()?;
+        let count = r.u32()? as usize;
+        let mut globals = Vec::with_capacity(count);
+        for _ in 0..count {
+            globals.push(r.u32()?);
+        }
+        read_memory(&mut r, self.module.memory())?;
+        let clock = read_clock(&mut r)?;
+        let pads = read_pads(&mut r)?;
+        let raised_count = r.u32()? as usize;
+        let mut raised = Vec::with_capacity(raised_count);
+        for _ in 0..raised_count {
+            raised.push((r.u32()?, r.u32()?));
+        }
+        let services = unsafe { &mut *self.services };
+        for (_, device) in services.devices() {
+            device.load(r.bytes()?).map_err(SnapshotError::Device)?;
+        }
+        if !r.done() {
+            return Err(SnapshotError::Format("trailing bytes"));
+        }
+        services.clock = clock;
+        services.pads = pads;
+        services.raised = raised;
+        services.pending = None;
+        self.entry = entry;
+        self.suspended = suspended;
+        self.saved_stack_pointer = saved_stack_pointer;
+        self.module.set_stack_pointer(stack_pointer);
+        self.module.set_globals(&globals);
+        Ok(())
+    }
+}
+
 impl<M: GameModule> Drop for Runtime<M> {
     fn drop(&mut self) {
         // SAFETY: created by Box::into_raw in `new`, dropped once.

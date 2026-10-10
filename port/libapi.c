@@ -126,6 +126,10 @@ void UnDeliverEvent(unsigned long class, unsigned long spec) {
 
 /* Interrupts reach the game only at its waits, so a critical section only
  * reports whether one was open. */
+s32 xem_in_critical_section(void) {
+    return xem_critical;
+}
+
 long EnterCriticalSection(void) {
     s32 was_open = !xem_critical;
 
