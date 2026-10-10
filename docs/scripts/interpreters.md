@@ -78,8 +78,8 @@ takes the switch's default.
 ## Rejected candidates
 
 - TMD primitive builder (`func_800B1720`, `func_800B1F6C`, ovl3384): a model
-  format (`objects.h`'s "effect script file"), not an instruction stream. Its
-  kinds are censused as a data-selected dispatch.
+  format (`battle/effect_script.h`'s "effect script file"), not an instruction
+  stream. Its kinds are censused as a data-selected dispatch.
 - Morph channels (resident `func_800303C8`, `func_8003014C`): per-target vertex
   and normal delta lists that code weights; each channel's update is a function
   the code installs (the default steps the weight), and nothing reads an

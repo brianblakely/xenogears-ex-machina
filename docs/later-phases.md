@@ -339,7 +339,7 @@ narrowing.
 | Disc and files | resident cd.h API over libcd; world map stream reader; mdec `St*` ring; disc swap in slot39 | [below](#disc-and-files); [original-boundaries.md](original-boundaries.md#disc-and-files) | cut at the resident API plus the direct libcd users listed below, over raw sectors; key files by (directory, file) and content hash from the index, not by slot, and serve streams and raw reads by LBA ([Importing the discs](#importing-the-discs)) |
 | Controllers | `PadBuffer D_800625FC`, vblank handler `func_8003634C`, 16-entry queue | [original-boundaries.md](original-boundaries.md), Controllers | inject one pad state per vblank; a disconnected pad starts the game's pause loops |
 | Memory card and saves | BIOS `bu00:`/`bu10:` file calls, card events, slot39 save/load | Memory card and saves | the commit point is the rename of `__tmp_file`; names for slots 10-14 end in `:;<=>` |
-| Game data layout | resident/gamedata.h; payload in slot39/menu.h `SaveData` | Memory card and saves | a load finishes in field scripts (event variables 0x46 and 4); copying game data directly is not a load |
+| Game data layout | resident/gamedata.h; payload in slot39/file.h `SaveData` | Memory card and saves | a load finishes in field scripts (event variables 0x46 and 4); copying game data directly is not a load |
 | Sound and SPU | sound.c driver, tick `func_8003C020`, register writes through `D_800508E4` | Sound output modes; [sound-sequence.md](scripts/sound-sequence.md) | software SPU (ADPCM, ADSR, reverb, CD input); the driver tick stays in the simulation |
 | GPU and VRAM | libgpu, ordering tables, VRAM transfers, readbacks | Presentation | readable 1024x512 VRAM; framebuffer feedback ([Presentation](#presentation)) |
 | Timing and pacing | `VSync`, root counters, `DrawSync`, polls | Timing | virtual clock; [consequences below](#timing-consequences-for-a-port) |
@@ -481,7 +481,7 @@ task-switch storage shares its routines' row):
 | resident 800379b4-800379d0 | arena task index store; report printf tail-jump | `func_800379B4.s`, `func_800379C8.s` | C with a `va_list` printf |
 | resident 8003f738-8003f8e8 | rotation matrix and sin/cos lookups (table `D_800523F0`, main3.c) | `func_8003F738.s`, `func_8003F8B0.s`, `func_8003F8CC.s` | portable C with 32-bit wrapping |
 | menu 80072d18-800732cc | ground triangle batch; GTE vector, colour and matrix helpers | `func_80072D18.s`, `ground_packet.s`, `vector_scale.s`, `func_8007313C.s`, `func_800731F8.s`, `func_800732AC.s` | portable C on the software GTE |
-| menu 8008bb00-8008bcc8, storage 80096d88 | task context switch (resume, yield, nested-scheduler save and restore) | `func_8008BB3C.s`, `func_8008BC04.s`, `func_8008BB00.s`, `func_8008BB1C.s`; `Task` in menu/system.h | the nested fiber service |
+| menu 8008bb00-8008bcc8, storage 80096d88 | task context switch (resume, yield, nested-scheduler save and restore) | `func_8008BB3C.s`, `func_8008BC04.s`, `func_8008BB00.s`, `func_8008BB1C.s`; `TaskContext` in menu/task.h | the nested fiber service |
 | menu 8008c3a8-8008c7c0 | mesh shadow projection, flat packet builders | `func_8008C3A8.s`, `func_8008C4B0.s`, `func_8008C620.s`, `mesh_packet.s` | portable C |
 | menu 8008ddfc-8008df30 | GTE vector transform; a stub that never restores `$sp` | `func_8008DDFC.s`, `func_8008DE54.s` | port the transform; the stub has no reference in `decomp/src` |
 | worldmap 8009980c-80099bfc | terrain quarter-block renderer | `func_8009980C.s`, `screen_bounds.s` | portable C; the terrain's pre-projection seam |
@@ -512,10 +512,10 @@ The original-style asm forms are listed exactly in `ORIGINAL_ASM`
 pollhost, the stack switches, `GET_RA` and `addPrimLen9`. Natively:
 
 - **GTE macros.** One native header maps the macro names onto the software GTE.
-  The PS1 build keeps `psyq/inline_c.h` and the per-target macro sets
-  (`battle/gte.h`, `field/field_gte.h`, `ovl2143/gte.h`, `menu/gte.h`,
-  `menu/spark.h`, `menu/system.h`, `resident/gte.h`, `worldmap/worldmap.h`),
-  because their instruction orders are what match.
+  The PS1 build keeps `psyq/inline_c.h` and the few per-target macros it lacks
+  or spells otherwise (`battle/gte.h` and `ovl2143/gte.h`: gte_rtv0tr;
+  `menu/gte.h`, `worldmap/gte.h`), because their instruction orders are what
+  match.
 - **Stack switches.** These move `$sp` to the scratchpad or a heap block for a
   few calls (for example field.c `func_8007554C`). They become no-ops, but the
   heap allocation around them stays.
@@ -561,7 +561,7 @@ instruction on either disc. For Phases 7, 11 and 12:
 | --- | --- | --- | --- |
 | Disc index and directories | resident cd.h | `tools/extraction/disc_files.py`, `tools/analysis/disc_index.py` | none |
 | LZSS blocks, offset archives | `func_80032EB4`, `func_8003342C` | `tools/analysis/packed.py`, `tools/packed_container.py` | none |
-| Field bundle (nine components) | field.c `func_80070CC8`; header `FieldBundle` in field.h | `tools/analysis/field.py` (components, event package, collision) | palettes, images, trigger zones and the header's view block (+0x154, lights and background) |
+| Field bundle (nine components) | field.c `func_80070CC8`; header `FieldBundle` in field_load.h | `tools/analysis/field.py` (components, event package, collision) | palettes, images, trigger zones and the header's view block (+0x154, lights and background) |
 | Field event bytecode | field_800854D0.c | [field-events.md](scripts/field-events.md), `events.py` | see its Open items |
 | Messages and text controls | resident main2.c `func_80033DF0` | [text-control.md](scripts/text-control.md), `text_control.py` | the characters of punctuation and two-byte glyphs (its Open line) |
 | Models (`ModelGroup`, `SpriteModel`, TMD) | `func_8002C3E8`, `func_8002C700`; battle `func_800B1F6C` | [dispatch-tables.md](scripts/dispatch-tables.md) (primitive census) | no mesh exporter |
@@ -669,7 +669,8 @@ well:
   once at load (`func_8002C8CC`). Each frame the renderers rewrite only screen
   coordinates and some colours or UVs, and link the packets (`model_draw.s`).
   Other code builds SPRT, TILE, LINE and the DR_* environment packets inline,
-  with the libgpu setters and the OT helpers (`ot_link.s`, resident/gpu.h).
+  with the libgpu setters and the OT helpers (`ot_link.s`, resident/console.h and
+  window.h).
 
 | Pre-projection seam | Where | Captures |
 | --- | --- | --- |
@@ -754,11 +755,11 @@ therefore the first Phase 2 decision.
 | Uninitialized reads | `chance` in `func_8009A2D4` (gear boost, battle_8008CCCC.c); `actions` in `func_80072324` zeroes 0x100 bytes at an unset pointer; unset `parts` entries in `func_80096FBC`; the call event (type 8) of ovl2143 `func_801E5D44`; `owner` in ovl3383 `func_801FC020` and ovl3385 `func_801FC508`; `hold` (menu5.c `func_800852C4`), `last` (menu6.c `func_80088E90`); sprite opcodes 40-7f and f7 (resident and battle sprite VMs) | an optimising compiler treats these as undefined; give each an explicit native value and record whether it can diverge (Open questions) |
 | Division | units built with maspsx `--expand-div` (ovl2615, mdec, movie, ovl2143, worldmap, resident `main_8002709C`, battle `battle_8009E53C`; see the `.mk` files) trap on zero with `break 7` and on overflow with `break 6`; other units use bare `div`, which does not trap on the R3000 | a source-correlated division adapter where a zero divisor can occur (`func_8009A2D4` divides by `maxHp / 10`); keep the field script divide `func_8009D768`, which already maps 0 to 1 |
 | Signed overflow and shifts | the handwritten trig and renderers rely on 32-bit wrapping; 14 shifts of negative values | `-fwrapv` and arithmetic-shift helpers |
-| Overruns and offset bases | `STEP_FUEL` is `&gearHud.commands[-1]` (battle_command.h); `battle.data.ld` names `D_800C34B3` and `D_800C31D4` before their tables; menu5.c `func_80085EC8` writes `arrows[1][3..5]` past its array | explicit range-checked index arithmetic natively |
+| Overruns and offset bases | `STEP_FUEL` is `&gearHud.commands[-1]` (battle/command.h); `battle.data.ld` names `D_800C34B3` and `D_800C31D4` before their tables; menu5.c `func_80085EC8` writes `arrows[1][3..5]` past its array | explicit range-checked index arithmetic natively |
 | Decompressors read past files | the overlay LZSS decoder reads its final flag byte past the file (tools/extraction/overlays.py); arena model files and map 145's messages read past their bytes ([arena-frame-events.md](scripts/arena-frame-events.md), [text-control.md](scripts/text-control.md)) | zero-pad imported files to whole sectors; bound the decoder |
-| Scratchpad | work memory and stack switches ([original-boundaries.md](original-boundaries.md)); `TerrainDrawScratch`/`TerrainPassScratch` in worldmap/worldmap.h | a 1 KB static buffer behind one accessor |
+| Scratchpad | work memory and stack switches ([original-boundaries.md](original-boundaries.md)); `TerrainDrawScratch` in worldmap_80094A5C.c and the layout func_80099BFC.s describes | a 1 KB static buffer behind one accessor |
 | Fixed cross-image addresses | the mode table holds overlay entries and BSS bounds as numbers (main.c `D_8001808C`); slot tenants are called by address (`func_8001C1A8`); cross-image names come from the original's addresses (splat's `undefined_syms_auto.txt`, `*.resident.ld`, `debug595.field.ld`), outside the strict linker-script check; all-verify's cross-image step compares them, and the mode table, with the rebuilt targets ([matching.md](matching.md)) | a per-slot registry that rejects calls into an absent image; 45 function names are defined by two or more targets' C, so give them per-image namespaces |
-| Section placement and asm labels | `__attribute__((section(".rodata")))` on main.c `D_80018088` (which `func_8001996C` writes) and `D_8001808C`, and `section(".text")` on the menu6.c table `D_80088BFC`, place data where the original had it. Mach-O rejects both names (the census above), and in a one-line clang 21.1.8 probe wasm32's code generator refuses data in `.text` ("data symbols must live in a data section"); ELF and COFF accept both. battle_8008CCCC.c declares `D_800CCB34_word __asm__("D_800CCB34")`: where C names take a leading underscore (Mach-O, 32-bit Windows), that label names another symbol than the definition `D_800CCB34` | keep both behind the PS1-only build macro; natively, plain definitions and one name per object |
+| Section placement and asm labels | `__attribute__((section(".rodata")))` on main.c `D_80018088` (which `func_8001996C` writes) and `D_8001808C`, and `section(".text")` on the menu6.c table `D_80088BFC`, place data where the original had it. Mach-O rejects both names (the census above), and in a one-line clang 21.1.8 probe wasm32's code generator refuses data in `.text` ("data symbols must live in a data section"); ELF and COFF accept both. ovl2615's battle_setup.h declares `D_800CCCE8_setup __asm__("D_800CCCE8")` (movie_mode.h and worldmap.h one such view each): where C names take a leading underscore (Mach-O, 32-bit Windows), that label names another symbol than the definition `D_800CCCE8` | keep both behind the PS1-only build macro; natively, plain definitions and one name per object |
 | K&R calls and per-target prototypes | unprototyped calls pass unpromoted arguments ([matching.md](matching.md)); targets declare shared functions differently (`own_declarations.h`) | canonical prototypes and thunks in native-only headers; in WebAssembly a mismatched indirect call traps |
 | Non-volatile polling | `while (D_8005957C & 0x10)` was compiled to test once (world map); other polls re-read through calls (`func_80028A60` loops on `func_800286CC`) | deliver interrupts at yield points inside polls; do not rely on the host compiler re-reading globals |
 | GTE fixed point | gameplay calls libgte: field movement and collision use `ratan2` (field_8007A44C.c), as does the arena AI (menu7.c); culling reads GTE registers (LZCR in `model_draw.s`) | one bit-exact software GTE whose state is in snapshots |

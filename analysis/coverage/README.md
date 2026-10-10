@@ -87,9 +87,9 @@ addresses, instruction counts and hashes only; no original bytes.
 The census is a worklist, not a completion claim. Reconstructed status says the
 library contains the function, not that it was compared with this route.
 
-The [Phase 1 handoff](../../docs/phase1-handoff.md) identifies the measured starting
-points and the format, event, battle and persistence work still required. This
-baseline inventory does not advance any subsystem to decompiled, implemented or
+The [Phase 1 checkpoint](../../docs/phase1-progress.md) says where Phase 1's goal
+and status live (plan.md's checklist and the decomp build). This baseline
+inventory does not advance any subsystem to decompiled, implemented or
 behaviorally validated.
 
 The two raw tracks explicitly contain `DS01_XENOGEARS` and `DS02_XENOGEARS` at

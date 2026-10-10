@@ -227,8 +227,8 @@ battle_800BFE48.c func_800C0FAC), a number in the original too: its CDK units lo
 it with one register (`lui v1,0x8001; lw v1,0(v1)` at 800b44b8), while by name they
 compile `lui v0,%hi(D_80010000); lw v1,%lo(D_80010000)(v0)` and the battle link
 fails its BSS bounds; and the load addresses of overlays and the heap's end
-(resident main.c:79, main_8001B6C4.c:180/428/436; battle_80070E2C.c:287/350/363/464,
-battle_800BD3AC.c:723; field.c:2940), which no check ties to the images loaded
+(resident main.c:87, main_8001B6C4.c:189/437/445; battle_80070E2C.c:323/386/399/500,
+battle_800BD3AC.c:765; field.c:2906), which no check ties to the images loaded
 there. In data the only such words are the mode table's, compared below, and five
 in each resident's packed boot logo and console font, asset bytes that merely look
 like addresses. It also compares each resident's mode table (`MODE_TABLE`) with the

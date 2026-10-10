@@ -196,8 +196,8 @@ Outside the libraries the game itself uses:
   fields that are not saved, D_80059488 = the saved play time and
   D_8005A3A0[16] (battle-AI globals) come back from GameData +0x2324. The field
   finishes a load through event variables 0x46 and 4 (field.c func_800799D4).
-- Payload layout (slot39/menu.h): the play time in vblanks at +0 and the party
-  summary with the file digit at +0x23 (MenuSavePayload), then SaveData's
+- Payload layout (slot39/file.h): the play time in vblanks at +0 and the party
+  summary with the file digit at +0x23 (SaveSummary), then SaveData's
   blocks: names +0x24, GameData +0xDC at +0x100, characters +0x290, gear
   subsets +0x99C, more GameData blocks at +0xE4C, +0xEC4, +0x1024 and +0x1124,
   ending at +0x1B5C; the rest is zero. tools/analysis/menu_save_file.py checks
@@ -209,7 +209,7 @@ The resident disc unit (main_8002709C.c, 80028230-8002c3e8, API in
 `resident/cd.h`) holds the file index and reads every file except the world-map
 terrain and the movie streams, whose readers (below) issue their own drive
 commands at sectors taken from that index (func_800289D0 at
-worldmap_80094A5C.c:1589/1966 and mdec.c:424). Outside the unit, three
+worldmap_80094A5C.c:1652/2044 and mdec.c:435). Outside the unit, three
 shipped parts issue drive commands themselves: the world-map terrain reader,
 the movie library (mdec) and the disc check of the swap (and the movie
 overlay's development tools). Each of them, like the unit, branches on
@@ -334,7 +334,7 @@ restore (Memory card and saves) and the dormant CdMix.
   func_800737EC, which prints and clears D_8005A49C, D_8005A4A4, D_8005A4A8
   and D_8005A4B4). On a stalled movie, movie_poll overwrites D_8005A4A8 and
   D_8005A4B4 for those screens with the resume position StGetBackloc gives and
-  the movie's starting sector in its file (mdec.c:387-388). The world-map
+  the movie's starting sector in its file (mdec.c:398-399). The world-map
   reader recovers the same way under its own state D_8009CD44 (Getstat while
   the lid is open, GetTN, Pause, Setloc and ReadS), while the world-map loop
   spins VSync(0) (worldmap.c func_800712D0).
@@ -475,14 +475,14 @@ VSync(-1) 4, and VSync(8), VSync(D_80092898), VSync(D_80059198 + 1).
   D_80059370 (60 to the second), then seconds in D_80059418, minutes in
   D_80059420 and hours in D_80059484; D_800501F8 stops it at 100 h. The
   counters live in BSS, so they start at zero at boot and after a soft reset.
-  The stop flag is initialised data (main2.c:69) that only func_80035E44 tests
+  The stop flag is initialised data (main2.c:76) that only func_80035E44 tests
   and sets and nothing clears, and a soft reset keeps .data: once the clock has
   reached 100 h it stays stopped, at 00:00:00 after a soft reset, until the
   program is loaded again. It counts through pauses, because only D_80059488
   is restored, and saves do not store it (the payload keeps D_80059488).
   Scripts can read it: in each field frame
   (func_80077DAC) func_800A31E8 copies it into event variables 0xC (seconds |
-  minutes << 8) and 0xE (hours) (field_800854D0.c:11047-11048). The kernel
+  minutes << 8) and 0xE (hours) (field_800854D0.c:10932-10933). The kernel
   menu also prints it (main.c func_8001A344). Decoding all 935 maps
   of both discs with `tools/analysis/events.py` (walking from each entry) finds
   no instruction that names variables 0xC-0xF as a variable or bit operand.
@@ -497,7 +497,7 @@ VSync(-1) 4, and VSync(8), VSync(D_80092898), VSync(D_80059198 + 1).
 | 0 kernel menu (resident func_8001A4B4) | DrawSync, VSync(0) | 1 | development start screen |
 | boot logo (func_80019D48) | VSync(0) per step | 1 | 16 fade-in steps, 110 held, 17 fade-out |
 | 1 field (func_80077E88, frame func_8007554C) | start = VSync(-1); DrawSync and VSync(0) mid-frame; at the end busy-waits until VSync(-1) >= start + D_800B2078.unk217C + 2 | 2, 3 or 4 | unk217C comes from field event d6 (func_800925A0, operand 0/1/2, which also sets text speed 8/6/4); scripts use all three values on both discs. Sprite scripts tick D_80059198 + 1 = 2 times per update (field.c func_80071FB0) |
-| 1 field pause (func_80077E88) | DrawSync, VSync(2) | 2 | Two loops, each also running the input drain func_80074700 and the soft-reset check. One runs while the first pad is missing (field.c:2997-3008). The other is a toggle on Start (field.c:3010-3021): it starts when the field's repeat word D_800C3900 (the queued D_800594A4, masked) holds Start 0x800, unless held bit 0x40 or D_800B2078.unk2358 is set, and ends when D_800C3900 holds Start again. That is the next press, or the auto-repeat once Start has been held for 32 blanks (Controllers). Both silence the voices and suspend the sound tick (func_80037EE4, until func_80037E8C) and restore D_80059488 |
+| 1 field pause (func_80077E88) | DrawSync, VSync(2) | 2 | Two loops, each also running the input drain func_80074700 and the soft-reset check. One runs while the first pad is missing (field.c:2963-2974). The other is a toggle on Start (field.c:2976-2987): it starts when the field's repeat word D_800C3900 (the queued D_800594A4, masked) holds Start 0x800, unless held bit 0x40 or D_800B2078.unk2358 is set, and ends when D_800C3900 holds Start again. That is the next press, or the auto-repeat once Start has been held for 32 blanks (Controllers). Both silence the voices and suspend the sound tick (func_80037EE4, until func_80037E8C) and restore D_80059488 |
 | 1 field movie (func_800A7C58) | mode D_800ADB74 0: VSync(0) before each decode batch (func_800A732C); 1: field overlays and VSync(0) (func_80075910); 2: the full field frame | 1, or the field's | movie progress D_800B06A0 comes from the MDEC callback |
 | 2 battle (resident func_8001B6C4, overlay func_80070F40, frame func_800BE790) | start = VSync(-1); after DrawSync D_80059494 = VSync(-1) - start - D_80059198, clamped 0-4; then VSync(D_80059198 + 1), or VSync(0) when D_80059198 is 0 | 1, plus catch-up | the next frame consumes the measured blanks (below). func_800B88C4 leaves D_80059198 = 0. Turn logic calls frames from inside rules (func_800716D8, nesting counted by D_800C37D0). Development: holding Select gives VSync(8) and drops the catch-up (func_800BEBC4, D_80010000 != -1) |
 | 2 battle pause and missing pad (battle.c func_80089CCC, func_8008A3EC, func_8008A684) | none: spins | — | The battle step's input readers spin, with no VSync or DrawSync, while the first pad is missing. A Start press (the pressed word; in func_80089CCC and func_8008A3EC only while D_800CCC58 is set) toggles D_800C3444. While it is set the reader keeps draining the input queue, which only the vblank handler fills, until the next press. No frame is presented meanwhile. Voices and tick are suspended and D_80059488 is restored, as in the field |
@@ -510,14 +510,14 @@ VSync(-1) 4, and VSync(8), VSync(D_80092898), VSync(D_80059198 + 1).
 | battle screen effects (ovl2615 load/burst modes, ovl3387) | DrawSync, VSync(2) | 2 | |
 
 Battle alone measures its frames and scales logic by the result. The field's
-VSync(-1) values only pace its frame (field.c:2085-2161), and the work driven by
+VSync(-1) values only pace its frame (field.c:2109-2182), and the work driven by
 blanks rather than frames follows D_80059488 (above). After DrawSync the battle
 frame func_800BE790 stores D_80059494, the blanks since the frame's start less
 D_80059198, clamped to 0-4. It also stores frameTicks D_800CCC5C
-(BattleArea.frameTicks) = D_80059494 + D_80059198 (battle_800BD3AC.c:675-682).
+(BattleArea.frameTicks) = D_80059494 + D_80059198 (battle_800BD3AC.c:717-724).
 The next frame consumes them:
 
-- Catch-up in the frame (battle_800BD3AC.c:661-671). The camera step
+- Catch-up in the frame (battle_800BD3AC.c:703-713). The camera step
   func_800BBAB8 and the main task list func_8001C964 run D_80059494 more times,
   and so does the battle step func_8008A9C0(1). func_8008A9C0 dispatches on
   D_800C3E4C, and in state 1 its func_8008A274 runs the ATB tick func_8007171C
@@ -563,7 +563,7 @@ The sound driver runs beside this on its own timer: 240 ticks per second, about
 | SPU transfer done func_8003BB64 | func_80037B88, each transfer (func_8003BE68) | DMA completion | runs the transfer's callback with flag 4, clears flag 0x10, starts the next of the eight queued transfers (D_80059510/D_800594F4), which sets 0x10 again | the transfer waits (below) |
 | SPU IRQ func_8003BFA0 | func_80037B88 | SPU IRQ | D_80059514++, hook D_8005950C | — |
 | CD sync/ready/data | resident func_80029690 (one file), func_80029AFC (file list), func_80029EB0 (image stream), func_8002A2D0, then the callbacks themselves (main_8002709C.c); world map func_8009699C, func_80096A6C (installs func_80096C0C) | CD interrupts | the read state machine D_8004FE1C, retry reason D_8004FE20, counters D_8005A48C/D_8005A490, sector copies (CdGetSector), stream-ring slots D_8004FE2C; image streams load VRAM strips from the callback (func_8002BB50) | func_80028A60(0) and `while (func_800286CC() ...)` busy-wait without VSync; world-map func_800967E4 |
-| MDEC output movie_slice_decoded (mdec.c) | DecDCToutCallback in movie_start (mdec.c:183), removed by movie_stop (mdec.c:443) | MDEC DMA completion | LoadImage of each slice, StCdInterrupt, the decoder state, then the frame callback: field func_800A7120 (D_800B06A0 frame number, display block D_800ADB78/D_800C426C, isrgb24) or movie func_800768D8 | movie loops; field scripts and the staff roll key off D_800B06A0 |
+| MDEC output movie_slice_decoded (mdec.c) | DecDCToutCallback in movie_start (mdec.c:194), removed by movie_stop (mdec.c:454) | MDEC DMA completion | LoadImage of each slice, StCdInterrupt, the decoder state, then the frame callback: field func_800A7120 (D_800B06A0 frame number, display block D_800ADB78/D_800C426C, isrgb24) or movie func_800768D8 | movie loops; field scripts and the staff roll key off D_800B06A0 |
 | DrawSync callback | field func_8007781C (development kits only, D_800C268C == 0), arena func_80088C00 | GPU idle | VSync(1) stamps (profiling) | — |
 | card events 0xF4000001 | slot39 func_801D9B08 | BIOS card driver | event state | func_801C881C (TestEvent spin) |
 
@@ -621,21 +621,21 @@ callback never leaves these:
   - func_8003BDFC(0x10) re-reads the flag until it clears (the loop at
     8003be08). Every such call is a busy-wait
     (`grep -rn 'func_8003BDFC(0x10)' decomp/src`). They are boot
-    func_80019578 (main.c:115), the driver's error beep func_8003F6B0
-    (sound.c:3994), field func_80085788, func_80085890, func_800859DC,
-    func_80085C90, func_80085F30 and func_8008AACC (field_800854D0.c:150, 184,
-    213, 274, 347, 1931), and ovl3087 func_801E5160 (ovl3087.c:125).
+    func_80019578 (main.c:123), the driver's error beep func_8003F6B0
+    (sound.c:3960), field func_80085788, func_80085890, func_800859DC,
+    func_80085C90, func_80085F30 and func_8008AACC (field_800854D0.c:182, 216,
+    245, 306, 379, 1960), and ovl3087 func_801E5160 (ovl3087.c:160).
   - `while (func_8003BDFC(0) != 0)` runs battle frames in battle
-    func_800B838C, func_800B853C and func_800B89FC (battle_800B8098.c:193, 257,
-    390) and func_800BFBA0 (battle_800BD3AC.c:1166). It spins in battle
-    func_800C0FAC (battle_800BFE48.c:534), trapping to the debugger on each
+    func_800B838C, func_800B853C and func_800B89FC (battle_800B8098.c:241, 305,
+    439) and func_800BFBA0 (battle_800BD3AC.c:1207). It spins in battle
+    func_800C0FAC (battle_800BFE48.c:547), trapping to the debugger on each
     pass on a development kit, and in movie.c's unreferenced host-PC loaders
     func_800753B8 and func_8007548C.
   - ovl2615 func_801E6D6C polls the flag once per task step.
   - Outside a transfer callback, func_8003BCA0 spins while at least six of the
     eight ring entries are queued (func_8003BDBC).
   - Not a wait: the world map's `while (D_8005957C & 0x10) {}` in
-    func_80072238 (worldmap_80072238.c:300), and its
+    func_80072238 (worldmap_80072238.c:296), and its
     `if (debug) while (debug)` form in func_8007D918, func_80080D00 and
     func_80082324. Each runs after a wave-bank load (func_80037FD8) and the
     terrain-stream wait. All four compile to a single test followed by a
@@ -668,9 +668,9 @@ Development only:
 
 - The ovl2606 battle-scene selector func_801E0238 loops DrawSync and VSync(0)
   until Start. Battle func_80070F40 runs it only while D_800594F8 is set
-  (battle_80070E2C.c:346), and the field's and world map's battle requests
-  clear that flag (field.c:3467, field_800854D0.c:5020 and 5047,
-  worldmap.c:118).
+  (battle_80070E2C.c:382), and the field's and world map's battle requests
+  clear that flag (field.c:3418, field_800854D0.c:4984 and 5011,
+  worldmap.c:152).
 - The vblank handler's pollhost() trap (above).
 
 ## Control flow and state
@@ -788,7 +788,7 @@ GTE with H 0x1000 (sprite_80025C04.c).
   - Dither 1 goes to the arena's screen fades (menu7.c func_8008E2B8 at 2118
     and 2120, func_8008E3CC at 2167), its HUD packets (menu5.c func_80085EC8
     at 1565 and 1635, func_800868E0 at 1792 and 1794) and the world map's
-    dithered saved-screen fade (worldmap_80072238.c:515 in func_80072DB4, a
+    dithered saved-screen fade (worldmap_80072238.c:511 in func_80072DB4, a
     DR_TPAGE drawn before its translucent black quad).
   - ovl2615's stage backdrops copy the draw environment's dfe and dtd
     (stage.c func_801E7914, two sites, after GetDrawEnv).
