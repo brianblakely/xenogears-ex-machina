@@ -117,24 +117,31 @@ It does not prove:
 the mode table `mode_table` with each mode's entry, BSS, overlay file and the
 word at 0x8006FAF0 that identifies the loaded image, and the secondary overlay
 slots. Two more numberings name the same images: the kernel menu's labels
-(`mode_kernel_menu_update`, main.c) and the disc slots (`OVERLAYS`,
-tools/extraction/overlays.py).
+(`mode_kernel_menu_update`, main.c) and the disc slots. A mode's overlay file is
+file `mode_overlay_files[mode]` of directory (0, 1) (main.c, 8004eaa0), which
+each disc's directory table places at the slot below (`Disc.slot`,
+tools/analysis/disc_index.py, on the user's discs).
 
-| Mode | Kernel menu label | Target | Disc 1 / 2 slot |
-| --- | --- | --- | --- |
-| 0 | (the kernel menu itself) | resident `mode_run_kernel_menu` | none |
-| 1 | Field | `field` | 36 / 31 |
-| 2 | Battle | `battle`, entered via resident `mode_run_battle` | 38 / 33 |
-| 3 | Worldmap | `worldmap` | 37 / 32 |
-| 4 | Battling | `menu` (the Battling arena, not the game menu) | 35 / 30 |
-| 5 | Menu | resident `mode_run_menu` and the 0x801C5000 tenants `slot39`, `ovl2598`, `ovl2600`, `ovl2601`, `ovl2602` | 39 / 34, not loaded |
-| 6 | Movie | `movie` (with `mdec` at 0x801D3000) | 40 / 35 |
+| Mode | Kernel menu label | Target | File | Disc 1 / 2 slot |
+| --- | --- | --- | --- | --- |
+| 0 | (the kernel menu itself) | resident `mode_run_kernel_menu` | none | none |
+| 1 | Field | `field` | 0xE | 36 / 31 |
+| 2 | Battle | `battle`, entered via resident `mode_run_battle` | 0x10 | 38 / 33 |
+| 3 | Worldmap | `worldmap` | 0xF | 37 / 32 |
+| 4 | Battling | `menu` (the Battling arena, not the game menu) | 0xD | 35 / 30 |
+| 5 | Menu | resident `mode_run_menu` and the 0x801C5000 tenants `slot39`, `ovl2598`, `ovl2600`, `ovl2601`, `ovl2602` | 0x11, not loaded | 39 / 34 |
+| 6 | Movie | `movie` (with `mdec` at 0x801D3000) | 0x12 | 40 / 35 |
 
-Every overlay has a disc 2 slot five lower (tools/extraction/overlays.py). Slot
-39 holds a packed copy of the `slot39` image; the game loads its menu screens
-from directory (0x10, 0), file kind + 5 (`field_run_menu`,
-`menu_state_run_screen`). The two discs carry byte-identical overlays; only the
-disc index embedded in the resident differs.
+Mode 5's row of `mode_table` loads no file, although file 0x11 holds a packed
+copy of the `slot39` image. The menu screens come from directory (0x10, 0), file
+screen + 5 (`field_run_menu`, `menu_state_run_screen`): files 5-11, at disc 1
+slots 2597-2603 and disc 2 slots 2592-2598. Files 5, 7 and 11 are the same
+`slot39` image (screens 0, 2 and 6 all run `menu_main`); files 6, 8, 9 and 10
+are ovl2598, ovl2600, ovl2601 and ovl2602. The extractor's `OVERLAYS`
+(tools/extraction/overlays.py) reads `slot39` from slot 2597 / 2592 and every
+other overlay from its own slot, five lower on disc 2, and checks that the two
+discs carry byte-identical overlays. Only the disc index embedded in the
+resident differs.
 
 ### Boot
 
@@ -162,8 +169,9 @@ From `boot_main` (main.c):
    1, else 7, next mode 1, 0}. The movie mode reads it in `movie_mode_main`
    (movie.c) and then selects the field.
 
-The only outside inputs are the boot word `mode_disc_mode`, the disc index, pads
-and cards. The boot word is -1 in both retail executables
+Boot's only outside inputs are the boot word `mode_disc_mode`, the disc index,
+the disc files of steps 6 and 7 (directory (0, 1) files 2-7 and (0x10, 0) file
+3), pads and cards. The boot word is -1 in both retail executables
 (`decomp/targets/resident/classification.txt`, range 80010000). Any other value
 switches on the development paths, such as the debug595 load to 0x80280000
 (field.c `field_main`) and the debugger breaks. A pointer value also selects the
@@ -306,12 +314,12 @@ schema, not the view.
 | `resident/cd.h` | disc index, file reads, CD state, PC file server | `cd_select_directory`, `cd_get_file_size`, `cd_read_file`, `cd_read_file_list`, `cd_get_pending_read_count`, `cd_pc_file_names` |
 | `resident/stream.h` | disc stream ring, image streams | `StreamRing`, `stream_create_ring`, `stream_load_image_strip` |
 | `resident/pad.h` | controllers | `PadBuffer pad_receive_buffers[]`, held/pressed/repeat words, `pad_dequeue_state` |
-| `resident/sound.h` | sound driver, SPU voices, banks, sequences | `SpuRegs` through `sound_spu_registers`, driver state `sound_volumes` |
+| `resident/sound.h` | sound driver, SPU voices, banks, sequences | `SpuRegs` through `sound_spu_registers`, the SPU common attributes and volumes `sound_volumes`, the driver state flags `sound_driver_flags` |
 | `resident/gpu.h` | texture scroll, panorama, OT link helpers | `gpu_update_texture_scroll`, `gpu_draw_panorama`, `gpu_ot_link_poly_g4` |
 | `resident/model.h` | model renderer | `ModelGroup`, `SpriteModel`, `model_primitive_types`, `model_draw_sprite_model` |
 | `resident/sprite.h` | sprite engine and tasks | `Task`, `Sprite`, task lists |
 | `resident/text.h`, `resident/window.h` | message text and windows | font and system data resources, `Window` |
-| `resident/menu.h` | resident side of mode 5 | `MenuState menu_state_current`, the 0x801C5000 entries |
+| `resident/menu.h` | resident side of mode 5 | `MenuState *menu_state_current`, the 0x801C5000 entries |
 | `resident/console.h` | debug console, report printf | `console_printf`, `console_report_printf` |
 | `battle/area.h`, `battle/work.h` | battle area `battle_area` and work area `battle_work_area` | `BattleArea`, `BattleWork`, `Combatant` |
 
@@ -329,7 +337,7 @@ where callers depend on narrowing.
 | State | Where | Notes |
 | --- | --- | --- |
 | Game data | `game_data`, resident/gamedata.h | pointer-free; new game copies (0x10, 0) file 3 whole (`mode_load_initial_game_data`); save layout in [original-boundaries.md](original-boundaries.md) |
-| Cross-mode words and flags | `mode_unread_play_record_word`-`mode_shared_wave_bank_needs_reload` (mode.h), small data 0x80059170-0x800591B8 (kernel_settings.c, sprite_settings.c) | map, music, battle module and entry requests |
+| Cross-mode words and flags | `mode_unread_play_record_word`-`mode_shared_wave_bank_needs_reload` (mode.h), small data of kernel_settings.c (0x80059170-0x80059184) and sprite_settings.c (0x80059198-0x800591B8), around sprite.c's own small data (0x80059184-0x80059198; `slus_006.64.yaml`) | map, music, battle module and entry requests |
 | Field state across battle and the arena | `mode_snapshot_block` (0x22FC-byte resident common): field `field_save_snapshot` writes it on those exits (`field_main`), `field_restore_snapshot` restores it; the world map parks its actors there (`worldmap_save_state`) | holds raw actor pointers and world map function addresses |
 | Field event variables | `field_event_variables[0x400]`: the lower half comes from game data `vars` at map load (`field_reset_state`) and returns each frame (`field_event_save_map_and_variables`); the upper half is per map | game data is stale until the frame ends |
 | Battle party | `BattleWork battle_work_area` (battle/work.h): ovl2615 `battle_setup_load_party_and_enemy_files` copies the party in, ovl2596 `battle_results_write_party_to_game_data` writes it back | game data is stale during battle |
@@ -753,7 +761,7 @@ revision:
 | conflicting types | 2 in 2 files | same | same | same | a prototype after a call implicitly declared the function (field_effect.c `field_load_tim_at`), and menu_member_screens.c's `memcpy` prototype, which drops the built-in ([matching.md](matching.md)) |
 | arrays of incomplete struct type | 34 in 6 files | same | same | same | commons units define their variables before the headers complete the types ([matching.md](matching.md), Recovering data) |
 | incompatible function-pointer types | 2 in 2 files | same | same | same | a function stored under another prototype: the variadic report printf `console_report_printf` in the heap report's `void (*)(char *)` output hook (heap_host_report.c), a primitive type's unprototyped `prepare` in a prototyped local (model_renderer.c `model_build_packets`) |
-| unsequenced modifications | 6 in 2 files | same | same | same | several `*pc++` in one call's arguments |
+| unsequenced modifications | 6 in 2 files | same | same | same | several `*pc++` in a call's arguments (in one call `*stream++`) |
 | shift of a negative value | 14 in 5 files | same | same | same | `-x << n` |
 | array index -1 | 4 (battle.c, through `STEP_FUEL`) | same | same | same | tables read through an offset base |
 
@@ -769,7 +777,7 @@ therefore the first Phase 2 decision.
 | 24-bit ordering-table links | `AddPrim` and the OT helpers store packet addresses masked to 0x00FFFFFF; the arena rebuilds pointers as `(tag & 0xFFFFFF) - 0x80000000` (arena_scene_graph_and_opponent.c `arena_display_compact_layer`) | links as offsets into the arena, below 16 MB |
 | Punned views | the same bytes read through several types: through explicit casts, which the census does not report (the SDK calls' among them: [matching.md](matching.md), Converting a function), and its 2 incompatible pointer types; the `link.ld`, `battle.data.ld`, `menu.bss.ld` and `worldmap.data.ld` views name parts of objects ([matching.md](matching.md)) | `-fno-strict-aliasing`; one canonical type per address for schemas |
 | Signedness and width | plain `char` is unsigned (`-D__CHAR_UNSIGNED__`, `lbu`; [matching.md](matching.md), Qualified configuration); `long` is 32 bits in the PsyQ structures (`VECTOR`, `MATRIX`, packet tags); event variables are 16-bit and read signed or unsigned by the map's event package bits (`field_event_read_variable`) | `-funsigned-char`; 32-bit `long` in native SDK headers |
-| Unspecified evaluation order | `sprite_set_svector(&angles, rand(), rand(), 0)` (sprite.c, case c1): the matched code draws the first `rand()` into the second argument (0x80020244-0x8002026c); the 6 unsequenced `*pc++` calls in battle_scene.c and gear_model_scene.c | read operands into locals in the order the matched disassembly shows |
+| Unspecified evaluation order | `sprite_set_svector(&angles, rand(), rand(), 0)` (sprite.c, case c1): the matched code draws the first `rand()` into the second argument (0x80020244-0x8002026c); the 6 calls with several `*pc++` or `*stream++` arguments, 4 in battle_scene.c (the `*stream++` one calls `battle_build_surface`) and 2 in gear_model_scene.c | read operands into locals in the order the matched disassembly shows |
 | Values left in `$v0` | `battle_menu_set_acting_slot` is defined `void`, but callers use the acting sprite left in `$v0` (0x800bf094; battle_flow.c); `arena_brain_apply_retreat_rule` falls off the end (arena_scene_graph_and_opponent.c); `arena_node_step_anim_player` returns the header pointer with zero frames (0x8008b770); `sound_alloc_wave_bank_spu_memory` returns its allocator's result implicitly; `sound_switch_modulator_off` sits in the `s32` modulator table, and its value always scales to 0; `battle_setup_build_stage` returns the allocator's NULL into `drawEnv.isbg`; the movie test menu stores what `movie_mode_find_frame_sector` and `movie_mode_find_last_frame` leave for an index past the list | return the PS1 value explicitly; check every other `return;` site's callers before declaring it `void` |
 | Uninitialized reads | `chance` in `battle_gear_hud_fill` (gear boost, battle_menus_and_resolver.c); `actions` in `battle_run_joint_turns` zeroes 0x100 bytes at an unset pointer; unset `parts` entries in `battle_resolve_attack_value`; the call event (type 8) of ovl2143 `gear_model_run_animation_events`; `owner` in ovl3383 `battle_module_spin_draw` and ovl3385 `battle_module_hold_draw`; `hold` (arena_stage_views_and_hud.c `arena_mode_task`), `last` (arena_mode_entry.c `arena_mode_main`); sprite opcodes 40-7f and f7 (resident and battle sprite VMs) | an optimising compiler treats these as undefined; give each an explicit native value and record whether it can diverge (Open questions) |
 | Division | units built with maspsx `--expand-div` (ovl2615, mdec, movie, ovl2143, worldmap, resident `cd_reads_and_streams`, battle `battle_scene`; see the `.mk` files) trap on zero with `break 7` and on overflow with `break 6`; other units use bare `div`, which does not trap on the R3000 | a source-correlated division adapter where a zero divisor can occur (`battle_gear_hud_fill` divides by `maxHp / 10`); keep the field script divide `field_event_divide_variable`, which already maps 0 to 1 |
