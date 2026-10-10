@@ -315,7 +315,7 @@ impl<M: GameModule> Session<M> {
                     "pad_queue_reads_last_frame": services.input_reads_last_frame,
                     "stopped": stopped,
                     "valid_commands": ["pad", "press", "frames", "run_until", "inspect", "write", "snapshot",
-                                        "restore", "scenario", "enter_field", "record", "replay"],
+                                        "restore", "scenario", "boot_mode", "enter_field", "record", "replay"],
                 }))
             }
             "memory_hash" => Ok(json!(format!("{:016x}", self.memory_hash()?))),
@@ -343,6 +343,23 @@ impl<M: GameModule> Session<M> {
                     let buttons = c.get(2).and_then(Value::as_u64).ok_or("buttons")? as u16;
                     self.scheduled.push((now + at.saturating_sub(start), port, buttons));
                 }
+                Ok(self.status())
+            }
+            "boot_mode" => {
+                // Leave boot into `mode` instead of the opening movie: the
+                // value main's mode_select_next_mode(6) chose is replaced when
+                // main's mode_dispatch restarts into the dispatcher, before the
+                // dispatcher reads it (as tools/reference/scenario.py's patch of
+                // that call's argument does in the original program).
+                if self.runtime.services().dispatches != 0 {
+                    return Err("boot_mode is only valid before the first dispatch".into());
+                }
+                let mode = arg_u64("mode").ok_or("boot_mode needs mode")? as u32;
+                let address = {
+                    let schema = self.schema.as_ref().ok_or("no schema loaded")?;
+                    schema.locate("mode_next_mode", self.runtime.memory()).map_err(|e| e.to_string())?.address
+                };
+                self.runtime.write_before_next_dispatch(address, mode);
                 Ok(self.status())
             }
             "enter_field" => {

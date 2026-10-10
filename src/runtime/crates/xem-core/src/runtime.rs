@@ -1,7 +1,7 @@
 //! The run loop: start, suspend, resume and restart the game, and advance the
 //! virtual clock at its waits.
 
-use crate::clock::{Clock, Tick};
+use crate::clock::{Clock, Tick, VBLANK_CYCLES};
 use crate::devices::{self, Context, Device};
 use crate::memory::GameMemory;
 use crate::module::{Action, AsyncState, GameModule, Import, ImportHandler, Trap};
@@ -299,6 +299,12 @@ pub struct Runtime<M: GameModule> {
     /// A clock advance a blocked disc read interrupted: (frame end, limit,
     /// first interrupt only).
     resume_advance: Option<(u64, u64, bool)>,
+    /// Set when an advance stopped before the frame's vertical blank, which
+    /// the next frame delivers first.
+    stopped_before_vblank: bool,
+    /// A 32-bit write made when the game next restarts into the dispatcher,
+    /// before `xem_run` enters it: (address, value).
+    dispatch_write: Option<(u32, u32)>,
 }
 
 impl<M: GameModule> Runtime<M> {
@@ -316,6 +322,8 @@ impl<M: GameModule> Runtime<M> {
             fibers: [Some(Fiber::Fresh { stack_top }), None],
             resume_advance: None,
             current: FIBER_GAME,
+            dispatch_write: None,
+            stopped_before_vblank: false,
         }
     }
 
@@ -378,6 +386,13 @@ impl<M: GameModule> Runtime<M> {
                     return Ok(Stop::Yield(reason));
                 }
                 Some(Pending::Stop(Stop::Restart { kind, arg })) => {
+                    if kind == RESTART_DISPATCH
+                        && let Some((address, value)) = self.dispatch_write.take()
+                    {
+                        self.memory()
+                            .write(address, &value.to_le_bytes())
+                            .map_err(|e| Trap::Host(format!("dispatch write: {e}")))?;
+                    }
                     self.fibers = [Some(Fiber::Fresh { stack_top: self.stack_top }), None];
                     self.current = FIBER_GAME;
                     self.entry = (kind, arg);
@@ -399,6 +414,13 @@ impl<M: GameModule> Runtime<M> {
                 _ => return Err(Trap::Host("the game unwound without a reason".into())),
             }
         }
+    }
+
+    /// Write `value` (32 bits) at `address` when the game next restarts into
+    /// the dispatcher, between the call that requested it and the dispatcher
+    /// reading its state.
+    pub fn write_before_next_dispatch(&mut self, address: u32, value: u32) {
+        self.dispatch_write = Some((address, value));
     }
 
     /// Abandon the game stack and continue with `xem_run(kind, arg)` at the
@@ -443,7 +465,7 @@ impl<M: GameModule> Runtime<M> {
 
     /// Advance the clock to `limit` (or until the first interrupt when
     /// `first_only`), delivering interrupts in time order.
-    fn advance(&mut self, limit: u64, first_only: bool, report: &mut FrameReport) -> Result<bool, Trap> {
+    fn advance(&mut self, limit: u64, first_only: bool, frame_end: u64, report: &mut FrameReport) -> Result<bool, Trap> {
         if self.services().cd.blocked {
             return Ok(false);
         }
@@ -473,6 +495,17 @@ impl<M: GameModule> Runtime<M> {
                     continue;
                 }
             }
+            // A frame ends just before its vertical blank (as an emulator's
+            // frame ends at the blank, before the CPU takes the interrupt):
+            // what a host does between frames (pad input above all) is in
+            // place when the next frame's blank interrupt runs.
+            let (at, next) = self.services().clock.peek();
+            if next == Tick::VBlank && at <= limit && at >= frame_end {
+                self.services().clock.now = at;
+                self.advance_devices();
+                self.stopped_before_vblank = true;
+                return Ok(delivered);
+            }
             let Some(tick) = self.services().clock.next_tick(limit) else {
                 return Ok(delivered);
             };
@@ -494,13 +527,14 @@ impl<M: GameModule> Runtime<M> {
         }
     }
 
-    /// Run the game until the clock passes the next vertical blank: each wait
+    /// Run the game until the clock reaches the next vertical blank: each wait
     /// advances the clock (a frame wait to the blank, a poll to the next
-    /// interrupt), delivering interrupts in time order.
+    /// interrupt), delivering interrupts in time order. The frame stops just
+    /// before the blank's interrupt; the next frame delivers it first.
     pub fn run_frame(&mut self) -> Result<FrameReport, Trap> {
         let mut report = FrameReport::default();
-        // A frame a blocked disc read interrupted resumes its clock advance
-        // where it stopped.
+        // A frame resumes the clock advance the previous one stopped: at its
+        // vertical blank, or where a blocked disc read interrupted it.
         self.services().cd.blocked = false;
         let (frame_end, mut pending) = match self.resume_advance.take() {
             Some((frame_end, limit, first_only)) => (frame_end, Some((limit, first_only))),
@@ -523,7 +557,11 @@ impl<M: GameModule> Runtime<M> {
                 };
             }
             if let Some((limit, first_only)) = pending.take() {
-                self.advance(limit, first_only, &mut report)?;
+                self.advance(limit, first_only, frame_end, &mut report)?;
+                if std::mem::take(&mut self.stopped_before_vblank) {
+                    self.resume_advance = Some((frame_end + VBLANK_CYCLES, limit, first_only));
+                    return Ok(report);
+                }
                 if self.services().cd.blocked {
                     self.resume_advance = Some((frame_end, limit, first_only));
                     report.blocked = true;
@@ -575,6 +613,15 @@ impl<M: GameModule> Runtime<M> {
             w.u32(irq);
             w.u32(detail);
         }
+        match self.resume_advance {
+            None => w.u32(0),
+            Some((frame_end, limit, first_only)) => {
+                w.u32(1);
+                w.u64(frame_end);
+                w.u64(limit);
+                w.u32(first_only as u32);
+            }
+        }
         for (_, device) in services.devices() {
             w.bytes(&device.save());
         }
@@ -611,6 +658,11 @@ impl<M: GameModule> Runtime<M> {
         for _ in 0..raised_count {
             raised.push((r.u32()?, r.u32()?));
         }
+        let resume_advance = match r.u32()? {
+            0 => None,
+            1 => Some((r.u64()?, r.u64()?, r.u32()? != 0)),
+            _ => return Err(SnapshotError::Format("resume advance")),
+        };
         let services = unsafe { &mut *self.services };
         for (_, device) in services.devices() {
             device.load(r.bytes()?).map_err(SnapshotError::Device)?;
@@ -622,6 +674,8 @@ impl<M: GameModule> Runtime<M> {
         services.pads = pads;
         services.raised = raised;
         services.pending = None;
+        self.resume_advance = resume_advance;
+        self.stopped_before_vblank = false;
         self.entry = entry;
         self.current = current;
         self.fibers = fibers;

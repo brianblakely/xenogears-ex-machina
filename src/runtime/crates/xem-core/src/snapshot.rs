@@ -11,7 +11,7 @@ use crate::memory::{GameMemory, OutOfBounds};
 use crate::pad::{Pad, Pads};
 
 const MAGIC: &[u8; 8] = b"XEMSNAP\0";
-const VERSION: u32 = 1;
+const VERSION: u32 = 2;
 
 /// The linear-memory regions a snapshot keeps: KUSEG below 8 MB (where stray
 /// game stores land), the port's data, shadow stack and asyncify areas

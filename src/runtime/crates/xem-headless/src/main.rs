@@ -2,7 +2,8 @@
 //! GPU, input or audio device.
 //!
 //! `--frames N` runs N frames and reports; `--control` reads one JSON command
-//! per line from stdin and answers each on stdout (xem_core::control).
+//! per line from stdin and answers each on stdout (xem_core::control), plus
+//! `screenshot {path}`, which writes the display as a PNG.
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -122,7 +123,18 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
             if line.trim().is_empty() {
                 continue;
             }
-            let reply = match serde_json::from_str(&line) {
+            let reply = match serde_json::from_str::<serde_json::Value>(&line) {
+                // The display as a PNG file: the one command that writes a file.
+                Ok(command) if command["cmd"] == "screenshot" => match command["path"].as_str() {
+                    Some(path) => {
+                        let (width, height, rgba) = session.runtime.services().gpu.display_rgba8();
+                        match write_png(std::path::Path::new(path), width, height, &rgba) {
+                            Ok(()) => serde_json::json!({ "width": width, "height": height }),
+                            Err(error) => serde_json::json!({ "error": error.to_string() }),
+                        }
+                    }
+                    None => serde_json::json!({ "error": "screenshot needs path" }),
+                },
                 Ok(command) => session.execute(&command),
                 Err(error) => serde_json::json!({ "error": format!("bad json: {error}") }),
             };

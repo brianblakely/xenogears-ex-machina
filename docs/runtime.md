@@ -163,7 +163,10 @@ input.
   interrupt), and every loop back-edge of the game polls now and then
   (`xem_loop_poll`), so waits that spin on memory an interrupt writes reach the
   clock. Headless runs are unlocked (as fast as the host computes) and
-  reproducible.
+  reproducible. A frame ends just before its vertical blank interrupt, as an
+  emulator's frame ends at the blank before the CPU takes it; the next frame
+  delivers it first. Pad input a host sets between frames is therefore what
+  the blank's pad read sees at once.
 - **Interrupts.** The host delivers device interrupts in time order through
   the export `xem_interrupt` (`src/port/libetc.c`), between the game's steps
   and at its waits. `SetIntrMask` is modelled: a masked interrupt stays pending,
@@ -172,6 +175,11 @@ input.
   one (`xem_wait`, `src/port/boot.c`) asks the host to deliver what is due now
   (`xem.poll_now`) instead of yielding, and the runtime traps if a handler
   suspends anyway.
+- **Boot mode.** `boot_mode {mode}` (before the first dispatch) makes boot
+  leave into `mode` instead of the opening movie: the value main's
+  `mode_select_next_mode(6)` chose is replaced when main's `mode_dispatch`
+  restarts into the dispatcher, before the dispatcher reads it. It is the
+  runtime's form of the reference tools' patch of that call's argument.
 - **Go anywhere.** `enter_field {map, entry?}` enters a field map the way the
   original's development kernel menu does: once the boot reaches the opening
   movie request, it restarts the dispatcher into mode 0 (the kernel menu),
@@ -185,7 +193,14 @@ input.
   and the reference emulator (`tools/reference/observe.py`); the captures of
   the original environment stay in `.local/scenarios`. `tools/compare_frames.py
   RUN_DIR CAPTURE_DIR` scores checkpoint frames against a capture at the best
-  vertical offset. `src/runtime/crates/xem-headless/tests/route.rs` (local, it
+  vertical offset. `tools/native_scenario.py CAPTURE_DIR OUT_DIR` runs a
+  scenario program capture (tools/reference/observe.py `--program`) on the
+  runtime with the reference's own executor (`tools/reference/scenario_program.py`:
+  the same conditions, fingerprint-guarded writes, held buttons and capture
+  labels, over `xem-headless --control`, whose `screenshot {path}` writes the
+  display) and compares, at every labelled capture, `game_data`, the RNG seed,
+  the field event variables and the whole RAM, and the frame each step
+  completed. `src/runtime/crates/xem-headless/tests/route.rs` (local, it
   needs disc 1) checks that the new-game route's RAM and scratchpad do not
   depend on presentation capture or on a snapshot restored on the way, and
   the browser suite checks the same route's `memory_hash` against
