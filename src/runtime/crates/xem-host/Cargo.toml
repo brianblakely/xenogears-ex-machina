@@ -8,6 +8,7 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
+serde_json.workspace = true
 sdl3-sys.workspace = true
 raw-window-handle.workspace = true
 wgpu.workspace = true

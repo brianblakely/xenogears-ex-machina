@@ -20,6 +20,10 @@ struct Options {
     disc: Option<PathBuf>,
     cards: Option<PathBuf>,
     bios: Option<PathBuf>,
+    /// A session log to play (pads and setup) instead of the player's input.
+    script: Option<PathBuf>,
+    /// Exit when the game has run this many frames, reporting its memory hash.
+    exit_at_frame: Option<u64>,
 }
 
 fn options() -> Result<Options, String> {
@@ -30,6 +34,8 @@ fn options() -> Result<Options, String> {
         disc: None,
         cards: None,
         bios: None,
+        script: None,
+        exit_at_frame: None,
     };
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -49,10 +55,17 @@ fn options() -> Result<Options, String> {
             "--disc" => options.disc = Some(args.next().ok_or("--disc needs a path")?.into()),
             "--cards" => options.cards = Some(args.next().ok_or("--cards needs a directory")?.into()),
             "--bios" => options.bios = Some(args.next().ok_or("--bios needs a path")?.into()),
+            "--script" => options.script = Some(args.next().ok_or("--script needs a session log")?.into()),
+            "--exit-at-frame" => {
+                let count = args.next().ok_or("--exit-at-frame needs a frame")?;
+                options.exit_at_frame = Some(count.parse().map_err(|_| format!("bad frame {count:?}"))?);
+            }
             "--help" => {
                 println!(
-                    "xem-desktop [--disc DISC [--cards DIR] [--bios FILE]] [--show-settings] \
-                     [--exit-after-frames N] [--screenshot out.png]\n\
+                    "xem-desktop [--disc DISC [--cards DIR] [--bios FILE] [--script LOG] \
+                     [--exit-at-frame N]] [--show-settings] [--exit-after-frames N] [--screenshot out.png]\n\
+                     --script plays a session log (tools/native_scenario.py --log); \
+                     --exit-at-frame prints the memory hash at that game frame and exits.\n\
                      F1 or Escape toggles the settings panel. Pad: arrows, Z cross, X circle, \
                      A square, S triangle, Q/W L1/R1, 1/2 L2/R2, Enter start, right Shift select, \
                      or a gamepad (its Guide button toggles the panel while the game runs)."
@@ -161,7 +174,15 @@ impl Host {
             options.show_settings,
         )?;
         window.set_text_input(options.show_settings);
-        let game = options.disc.as_deref().map(|disc| open_game(options, disc)).transpose()?;
+        let mut game = options.disc.as_deref().map(|disc| open_game(options, disc)).transpose()?;
+        if let (Some(game), Some(path)) = (&mut game, &options.script) {
+            let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
+            let log: serde_json::Value = serde_json::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))?;
+            game.schedule(&log)?;
+        }
+        if let Some(game) = &mut game {
+            game.set_frame_limit(options.exit_at_frame);
+        }
         Ok(Self {
             view,
             presenter,
@@ -215,6 +236,12 @@ impl Host {
                 fps_window.1 += 1;
             }
             if last && frames > 0 {
+                return Ok(());
+            }
+            if let (Some(game), Some(at)) = (&mut self.game, options.exit_at_frame)
+                && game.frames_run() >= at
+            {
+                println!("xem-desktop: frame {} memory_hash {}", game.frames_run(), game.memory_hash());
                 return Ok(());
             }
             let elapsed = fps_window.0.elapsed().as_secs_f32();

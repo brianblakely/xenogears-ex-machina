@@ -164,7 +164,7 @@ describe('automation over a game module fixture', () => {
       const xem = window.xem;
       await xem.boot({ executable: false });
       const first = xem.step(1);
-      const until = xem.runUntil({ maxFrames: 10, until: { vblanks: 3 } });
+      const until = xem.runUntil({ maxFrames: 10, until: { frames: 3 } });
       const word = xem.command({ cmd: 'read_memory', address: 0x80000000, length: 4 });
       const snapshot = xem.snapshot('three');
       const halt = xem.step(1000);
@@ -176,14 +176,14 @@ describe('automation over a game module fixture', () => {
       const unbounded = xem.command({ cmd: 'run_until', until: { vblanks: 1e9 } });
       return { first, until, word, snapshot, halt, end, restored, again, end2, tooFar, unbounded };
     });
-    assert.deepEqual([result.first.vblanks, result.first.stopped], [1, null]);
-    assert.deepEqual([result.until.met, result.until.frames, result.until.status.vblanks], [true, 2, 3]);
+    assert.deepEqual([result.first.frames, result.first.stopped], [1, null]);
+    assert.deepEqual([result.until.met, result.until.frames, result.until.status.frames], [true, 2, 3]);
     assert.equal(result.word, '02000000');
     assert.equal(result.snapshot.name, 'three');
     assert.deepEqual(result.halt, { error: STOP });
     // Three frame waits, a hundred polls (one per frame), then the stop.
     assert.deepEqual([result.end.status.vblanks, result.end.status.stopped], [103, STOP]);
-    assert.deepEqual([result.restored.vblanks, result.restored.stopped], [3, null]);
+    assert.deepEqual([result.restored.frames, result.restored.stopped], [3, null]);
     assert.deepEqual(result.again, result.halt);
     assert.deepEqual(result.end2, result.end);
     assert.match(result.tooFar.error, /at most 10000 frames/);
@@ -332,8 +332,8 @@ describe('automation over a game module fixture', () => {
       const record = await xem.load('fixture');
       await xem.boot({ executable: false });
       xem.importSnapshot(record.data);
-      const at = xem.command({ cmd: 'status' }).vblanks;
-      const next = xem.step(1).vblanks;
+      const at = xem.command({ cmd: 'status' }).frames;
+      const next = xem.step(1).frames;
       const word = xem.command({ cmd: 'read_memory', address: 0x80000000, length: 4 });
       return { verified: record.verified, sha256: record.sha256, at, next, word };
     });

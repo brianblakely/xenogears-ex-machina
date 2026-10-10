@@ -40,13 +40,14 @@ export function buildFixtures() {
   return fixtures;
 }
 
-export async function start({ args = [], fixtures: withFixtures = false } = {}) {
+export async function start({ args = [], fixtures: withFixtures = false, context: contextOptions = {}, initScripts = [] } = {}) {
   if (!existsSync(join(WEB, 'index.html'))) throw new Error(`${WEB} is missing: run src/runtime/web/build.py`);
   const mounts = { '/': WEB };
   if (withFixtures) mounts['/fixtures/'] = buildFixtures();
   const server = await serve(mounts);
   const browser = await chromium.launch({ executablePath: process.env.XEM_CHROMIUM, headless: true, args });
-  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, ...contextOptions });
+  for (const script of initScripts) await context.addInitScript(script);
   const base = `http://localhost:${server.address().port}/`;
   return {
     base,

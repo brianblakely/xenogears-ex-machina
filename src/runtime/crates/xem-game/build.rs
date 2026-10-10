@@ -27,6 +27,11 @@ fn main() {
     };
     let include = env::var("XEM_WASM2C_INCLUDE").expect("XEM_WASM2C_INCLUDE");
     let out = PathBuf::from(env::var("OUT_DIR").unwrap());
+    // tools/game_module.py writes the module's schema beside it: the session's
+    // introspection, embedded so every host has it.
+    let schema = wasm.with_file_name("schema.json");
+    println!("cargo::rerun-if-changed={}", schema.display());
+    fs::copy(&schema, out.join("schema.json")).expect("build/game/schema.json (tools/game_module.py writes it)");
     let status = Command::new("wasm2c")
         .args(["-n", "game", "-o"])
         .arg(out.join("game.c"))

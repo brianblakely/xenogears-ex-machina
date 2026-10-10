@@ -15,6 +15,11 @@ pub struct Game {
     audio: *mut SDL_AudioStream,
     paced: Instant,
     samples: Vec<i16>,
+    /// A session log drives the pads (`schedule`): the player's buttons are
+    /// not applied.
+    scripted: bool,
+    /// Frames the game runs at most (a scripted session's end).
+    frame_limit: Option<u64>,
 }
 
 impl Game {
@@ -44,7 +49,36 @@ impl Game {
             audio,
             paced: Instant::now(),
             samples: Vec::new(),
+            scripted: false,
+            frame_limit: None,
         }
+    }
+
+    /// Plays a session log (`{"commands": [[frame, command], ...]}`, as
+    /// tools/native_scenario.py --log writes it): its commands run before
+    /// their frames and its pad states replace the player's.
+    pub fn schedule(&mut self, log: &serde_json::Value) -> Result<(), String> {
+        let reply = self.session.execute(&serde_json::json!({ "cmd": "schedule", "commands": log["commands"] }));
+        if let Some(error) = reply.get("error") {
+            return Err(format!("schedule: {error}"));
+        }
+        self.scripted = true;
+        Ok(())
+    }
+
+    /// Run no frame beyond `limit` (frames since boot).
+    pub fn set_frame_limit(&mut self, limit: Option<u64>) {
+        self.frame_limit = limit;
+    }
+
+    /// Frames the game ran since boot.
+    pub fn frames_run(&self) -> u64 {
+        self.session.runtime.frames()
+    }
+
+    /// The hash of RAM and the scratchpad (`memory_hash`).
+    pub fn memory_hash(&mut self) -> String {
+        format!("{:016x}", self.session.memory_hash().unwrap_or(0))
     }
 
     /// Whether the SPU's output reaches an audio device.
@@ -70,8 +104,13 @@ impl Game {
         if self.paced + FRAME <= Instant::now() {
             self.paced = Instant::now();
         }
+        if let Some(limit) = self.frame_limit {
+            due = due.min(limit.saturating_sub(self.session.runtime.frames()) as u32);
+        }
         for _ in 0..due {
-            self.session.runtime.services().pads.0[0].buttons = buttons;
+            if !self.scripted {
+                self.session.runtime.services().pads.0[0].buttons = buttons;
+            }
             self.session.frame().map_err(|trap| trap.to_string())?;
         }
         let spu = &mut self.session.runtime.services().spu;

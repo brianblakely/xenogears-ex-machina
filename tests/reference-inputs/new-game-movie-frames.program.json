@@ -1,0 +1,273 @@
+{
+ "schema_version": 1,
+ "name": "new-game-opening-movie-frames",
+ "source_profile": "na-slus-00664-39c547a9afc6",
+ "kind": "analysis_probe",
+ "steps": [
+  {
+   "name": "wait-0",
+   "timeout_frames": 1,
+   "run_frames": 901
+  },
+  {
+   "name": "press-0",
+   "timeout_frames": 1,
+   "run_frames": 9,
+   "buttons": [
+    "start"
+   ]
+  },
+  {
+   "name": "wait-1",
+   "timeout_frames": 1,
+   "run_frames": 390
+  },
+  {
+   "name": "press-1",
+   "timeout_frames": 1,
+   "run_frames": 10,
+   "buttons": [
+    "start"
+   ]
+  },
+  {
+   "name": "wait-2",
+   "timeout_frames": 1,
+   "run_frames": 190
+  },
+  {
+   "name": "press-2",
+   "timeout_frames": 1,
+   "run_frames": 10,
+   "buttons": [
+    "cross"
+   ]
+  },
+  {
+   "name": "wait-3",
+   "timeout_frames": 1,
+   "run_frames": 240
+  },
+  {
+   "name": "press-3",
+   "timeout_frames": 1,
+   "run_frames": 10,
+   "buttons": [
+    "up"
+   ]
+  },
+  {
+   "name": "wait-4",
+   "timeout_frames": 1,
+   "run_frames": 50
+  },
+  {
+   "name": "press-4",
+   "timeout_frames": 1,
+   "run_frames": 10,
+   "buttons": [
+    "cross"
+   ]
+  },
+  {
+   "name": "movie-frame-400",
+   "timeout_frames": 30000,
+   "stable_frames": 1,
+   "capture": true,
+   "when": [
+    {
+     "offset": 324344,
+     "width": 4,
+     "operator": "eq",
+     "value": 1
+    },
+    {
+     "offset": 722592,
+     "width": 4,
+     "operator": "ge",
+     "value": 400
+    }
+   ]
+  },
+  {
+   "name": "movie-frame-800",
+   "timeout_frames": 30000,
+   "stable_frames": 1,
+   "capture": true,
+   "when": [
+    {
+     "offset": 324344,
+     "width": 4,
+     "operator": "eq",
+     "value": 1
+    },
+    {
+     "offset": 722592,
+     "width": 4,
+     "operator": "ge",
+     "value": 800
+    }
+   ]
+  },
+  {
+   "name": "movie-frame-1200",
+   "timeout_frames": 30000,
+   "stable_frames": 1,
+   "capture": true,
+   "when": [
+    {
+     "offset": 324344,
+     "width": 4,
+     "operator": "eq",
+     "value": 1
+    },
+    {
+     "offset": 722592,
+     "width": 4,
+     "operator": "ge",
+     "value": 1200
+    }
+   ]
+  },
+  {
+   "name": "movie-frame-1600",
+   "timeout_frames": 30000,
+   "stable_frames": 1,
+   "capture": true,
+   "when": [
+    {
+     "offset": 324344,
+     "width": 4,
+     "operator": "eq",
+     "value": 1
+    },
+    {
+     "offset": 722592,
+     "width": 4,
+     "operator": "ge",
+     "value": 1600
+    }
+   ]
+  },
+  {
+   "name": "movie-frame-2000",
+   "timeout_frames": 30000,
+   "stable_frames": 1,
+   "capture": true,
+   "when": [
+    {
+     "offset": 324344,
+     "width": 4,
+     "operator": "eq",
+     "value": 1
+    },
+    {
+     "offset": 722592,
+     "width": 4,
+     "operator": "ge",
+     "value": 2000
+    }
+   ]
+  },
+  {
+   "name": "movie-frame-2400",
+   "timeout_frames": 30000,
+   "stable_frames": 1,
+   "capture": true,
+   "when": [
+    {
+     "offset": 324344,
+     "width": 4,
+     "operator": "eq",
+     "value": 1
+    },
+    {
+     "offset": 722592,
+     "width": 4,
+     "operator": "ge",
+     "value": 2400
+    }
+   ]
+  },
+  {
+   "name": "movie-frame-2800",
+   "timeout_frames": 30000,
+   "stable_frames": 1,
+   "capture": true,
+   "when": [
+    {
+     "offset": 324344,
+     "width": 4,
+     "operator": "eq",
+     "value": 1
+    },
+    {
+     "offset": 722592,
+     "width": 4,
+     "operator": "ge",
+     "value": 2800
+    }
+   ]
+  },
+  {
+   "name": "movie-frame-3200",
+   "timeout_frames": 30000,
+   "stable_frames": 1,
+   "capture": true,
+   "when": [
+    {
+     "offset": 324344,
+     "width": 4,
+     "operator": "eq",
+     "value": 1
+    },
+    {
+     "offset": 722592,
+     "width": 4,
+     "operator": "ge",
+     "value": 3200
+    }
+   ]
+  },
+  {
+   "name": "movie-frame-3600",
+   "timeout_frames": 30000,
+   "stable_frames": 1,
+   "capture": true,
+   "when": [
+    {
+     "offset": 324344,
+     "width": 4,
+     "operator": "eq",
+     "value": 1
+    },
+    {
+     "offset": 722592,
+     "width": 4,
+     "operator": "ge",
+     "value": 3600
+    }
+   ]
+  },
+  {
+   "name": "movie-frame-4000",
+   "timeout_frames": 30000,
+   "stable_frames": 1,
+   "capture": true,
+   "when": [
+    {
+     "offset": 324344,
+     "width": 4,
+     "operator": "eq",
+     "value": 1
+    },
+    {
+     "offset": 722592,
+     "width": 4,
+     "operator": "ge",
+     "value": 4000
+    }
+   ]
+  }
+ ]
+}

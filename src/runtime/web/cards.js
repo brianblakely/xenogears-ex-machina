@@ -43,6 +43,13 @@ export class Cards {
     return this.writing;
   }
 
+  /** Put an image (a .mcd's 128 KB) in `slot`: IndexedDB keeps it and the
+   * next session boots with it. */
+  async store(slot, image) {
+    await storage.put('cards', key(slot), image);
+    this.app.set_card_image(slot, image);
+  }
+
   /** The image IndexedDB holds for `slot`, or undefined. */
   stored(slot) {
     return storage.get('cards', key(slot));

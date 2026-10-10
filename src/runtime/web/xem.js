@@ -99,6 +99,8 @@ export function createAutomation(host) {
       image: (slot) => app.card_image(slot),
       /** The image IndexedDB holds for slot 0 or 1. */
       stored: (slot) => host.cards.stored(slot),
+      /** Put an image (Uint8Array, a .mcd) in slot 0 or 1 for the next session. */
+      store: (slot, image) => host.cards.store(slot, image),
       /** Resolves when the card device's writes so far are in IndexedDB. */
       flush: () => host.flushCards(),
     }),

@@ -302,6 +302,9 @@ pub struct Runtime<M: GameModule> {
     /// Set when an advance stopped before the frame's vertical blank, which
     /// the next frame delivers first.
     stopped_before_vblank: bool,
+    /// Frames run to completion since boot (a frame a blocked disc read
+    /// interrupted counts once it completes).
+    frames: u64,
     /// A 32-bit write made when the game next restarts into the dispatcher,
     /// before `xem_run` enters it: (address, value).
     dispatch_write: Option<(u32, u32)>,
@@ -324,6 +327,7 @@ impl<M: GameModule> Runtime<M> {
             current: FIBER_GAME,
             dispatch_write: None,
             stopped_before_vblank: false,
+            frames: 0,
         }
     }
 
@@ -560,6 +564,7 @@ impl<M: GameModule> Runtime<M> {
                 self.advance(limit, first_only, frame_end, &mut report)?;
                 if std::mem::take(&mut self.stopped_before_vblank) {
                     self.resume_advance = Some((frame_end + VBLANK_CYCLES, limit, first_only));
+                    self.frames += 1;
                     return Ok(report);
                 }
                 if self.services().cd.blocked {
@@ -569,9 +574,15 @@ impl<M: GameModule> Runtime<M> {
                 }
             }
             if self.services().clock.now >= frame_end {
+                self.frames += 1;
                 return Ok(report);
             }
         }
+    }
+
+    /// Frames run to completion since boot.
+    pub fn frames(&self) -> u64 {
+        self.frames
     }
 }
 
@@ -613,6 +624,7 @@ impl<M: GameModule> Runtime<M> {
             w.u32(irq);
             w.u32(detail);
         }
+        w.u64(self.frames);
         match self.resume_advance {
             None => w.u32(0),
             Some((frame_end, limit, first_only)) => {
@@ -658,6 +670,7 @@ impl<M: GameModule> Runtime<M> {
         for _ in 0..raised_count {
             raised.push((r.u32()?, r.u32()?));
         }
+        let frames = r.u64()?;
         let resume_advance = match r.u32()? {
             0 => None,
             1 => Some((r.u64()?, r.u64()?, r.u32()? != 0)),
@@ -675,6 +688,7 @@ impl<M: GameModule> Runtime<M> {
         services.raised = raised;
         services.pending = None;
         self.resume_advance = resume_advance;
+        self.frames = frames;
         self.stopped_before_vblank = false;
         self.entry = entry;
         self.current = current;

@@ -16,7 +16,10 @@
 # 1 the game boots from it and plays for ~25 s (screenshots), with its frame
 # rate measured, a pad press, and a background and return during which the
 # game's frame count does not move. XEM_SMOKE_GAME_ONLY=1 runs only the
-# start and the game. Touch coordinates are those of the AVD's pixel_6
+# start and the game. XEM_SMOKE_SLICE=1 then plays the Phase 3 slice's session
+# logs (tests/reference-inputs/slice-*.json) to their native memory hashes:
+# the forest route with a background and return on the way, the save to card
+# 2, and the load of that card in a fresh process. Touch coordinates are those of the AVD's pixel_6
 # profile in portrait.
 set -euo pipefail
 
@@ -303,6 +306,52 @@ if [ -f "$disc1" ]; then
     if tail -n "+$game_start" "$log" |
         grep -E "xem: (panic|game stopped|error)|FATAL EXCEPTION|SIGSEGV|SIGABRT|Fatal signal" | sed 's/^/  /'; then
         fail "crash or game trap in the log"
+    fi
+    if [ -n "${XEM_SMOKE_SLICE:-}" ]; then
+        # play_log NAME [lifecycle]: the session log tests/reference-inputs/slice-NAME.json
+        # as files/script.json, from a fresh start through the picker, to the
+        # memory hash its native recording ended at.
+        play_log() {
+            local name=$1 file="$root/tests/reference-inputs/slice-$1.json" want frames got
+            want=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['memory_hash'])" "$file")
+            frames=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['frames'])" "$file")
+            "${adb[@]}" push "$file" /data/local/tmp/xem-script.json >/dev/null
+            "${adb[@]}" shell run-as "$package" cp /data/local/tmp/xem-script.json files/script.json
+            mark
+            "${adb[@]}" shell am force-stop "$package"
+            "${adb[@]}" shell am start -n "$activity" --esa xem.args --pick-disc >/dev/null
+            wait_for "xem: disc picker opened" 60
+            pick_document disc1 "xem-disc1\.chd"
+            wait_for "xem: script .* to frame Some\($frames\)" 120
+            if [ "${2:-}" = lifecycle ]; then
+                sleep 60
+                "${adb[@]}" shell input keyevent KEYCODE_HOME
+                wait_for "xem: game paused" 30
+                sleep 10
+                "${adb[@]}" shell am start -n "$activity" >/dev/null
+                wait_for "xem: game resumed" 30
+                echo "  backgrounded for 10 s at about frame 3600 and returned"
+            fi
+            got=$(wait_for "xem: script frame $frames memory_hash " $((frames / 60 + 240)) | sed -E 's/.*memory_hash ([0-9a-f]+).*/\1/')
+            echo "  $name: frame $frames memory_hash $got (native $want)"
+            [ "$got" = "$want" ] || fail "the $name slice ended elsewhere than natively"
+        }
+        echo "== the Phase 3 slice from session logs (XEM_SMOKE_SLICE)"
+        "${adb[@]}" shell run-as "$package" rm -rf files/cards
+        "${adb[@]}" shell run-as "$package" mkdir files/cards
+        play_log forest lifecycle
+        # The save starts from an unformatted card 2; the load from a fresh
+        # process reads the card the save left in files/cards.
+        head -c 131072 /dev/zero >"$out/card2.mcd"
+        "${adb[@]}" push "$out/card2.mcd" /data/local/tmp/xem-card2.mcd >/dev/null
+        "${adb[@]}" shell run-as "$package" rm -rf files/cards
+        "${adb[@]}" shell run-as "$package" mkdir files/cards
+        "${adb[@]}" shell run-as "$package" cp /data/local/tmp/xem-card2.mcd files/cards/card2.mcd
+        play_log save
+        "${adb[@]}" shell am force-stop "$package"
+        play_log load-card2
+        "${adb[@]}" shell run-as "$package" rm -f files/script.json
+        "${adb[@]}" shell rm -f /data/local/tmp/xem-script.json /data/local/tmp/xem-card2.mcd
     fi
     "${adb[@]}" shell rm -f /sdcard/Download/xem-disc1.chd
 else

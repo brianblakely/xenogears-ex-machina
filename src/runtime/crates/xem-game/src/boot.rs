@@ -22,8 +22,6 @@ pub struct BootOptions {
     pub bios: Option<PathBuf>,
     /// build/game/stubs.txt, to name functions the port does not define.
     pub stubs: Option<PathBuf>,
-    /// build/game/schema.json, for introspection.
-    pub schema: Option<PathBuf>,
     /// Keep the SPU's samples for the host to play (or record).
     pub audio_output: bool,
 }
@@ -58,11 +56,7 @@ pub fn boot_source(
     // The BIOS copies the executable's text to its address and jumps to pc0.
     runtime.memory().write(header.text_address, exe::text(&identity.executable, &header))?;
     runtime.services().insert_disc(source);
-    let schema = options
-        .schema
-        .as_ref()
-        .and_then(|p| std::fs::read_to_string(p).ok())
-        .map(|t| Schema::parse(&t))
-        .transpose()?;
-    Ok((Session::new(runtime, schema), identity))
+    // The module's schema (build/game/schema.json, embedded by build.rs).
+    let schema = Schema::parse(include_str!(concat!(env!("OUT_DIR"), "/schema.json")))?;
+    Ok((Session::new(runtime, Some(schema)), identity))
 }

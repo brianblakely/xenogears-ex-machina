@@ -133,7 +133,7 @@ original address.
 `xem_core::control::Session` is the one command layer for humans, agents,
 tests and browser clients: a JSON command in, a JSON result out
 (`xem-headless --control` reads one per line). Commands: `status`,
-`frames {count}`, bounded `run_until {max_frames, until: {vblanks} |
+`frames {count}`, bounded `run_until {max_frames, until: {frames} | {vblanks} |
 {path, equals|not_equals}}`, `pad {port, buttons}`, `press {buttons, frames}`,
 `connect_pad`, `inspect {path, depth}`, `write {path, value}`, `globals
 {prefix}`, `read_memory`/`write_memory`, `snapshot`/`restore {name}`,
@@ -148,7 +148,10 @@ input.
   defines, at its original address, with its full type (records, arrays,
   bit-fields, enums, pointers to named records), plus the matched links' other
   data symbols untyped. `inspect` decodes paths such as
-  `game_data.characters[0]` or `mode_table[1].entry`; `write` stores scalars.
+  `game_data.characters[0]`, `mode_table[1].entry` or, through a pointer,
+  `field_view.components.descriptors[4].matrix.t`; `write` stores scalars.
+  `xem-game` embeds the schema built with the module, so every native host
+  has it.
   The commons units, which define arrays of types completed by later headers
   (accepted by GCC, not clang), are described through a temporary wrapper that
   includes their target's headers first.
@@ -236,7 +239,15 @@ input.
   (local, release) replays them to the recorded RAM/scratchpad hashes,
   stepped and unthrottled, with spectator output (presentation capture,
   sound output, screenshots) attached, changed and detached on the way, from
-  a snapshot restored in battle and from a pad recording. `src/runtime/crates/xem-headless/tests/route.rs` (local, it
+  a snapshot restored in battle and from a pad recording. The runtime counts
+  the frames it completed (kept in snapshots), which `status` reports and
+  `run_until {frames}` waits for. The slice's media is checked at the
+  opening movie's own frames: `tests/reference-inputs/new-game-movie-frames.program.json`
+  captures at movie frames 400 to 4000 (`field_movie_frame`), on the original
+  (observe.py `--program`) and natively (`native_scenario.py --capture`): equal
+  movie frames show the same picture (mean difference 0.02-2.6 of 255; 15 at
+  frame 400, whose engine flame changes every frame) at the same pace, 400
+  movie frames per 1600 vertical blanks. `src/runtime/crates/xem-headless/tests/route.rs` (local, it
   needs disc 1) checks that the new-game route's RAM and scratchpad do not
   depend on presentation capture or on a snapshot restored on the way, and
   the browser suite checks the same route's `memory_hash` against
@@ -356,6 +367,11 @@ and the first gamepad, the GPU's display is uploaded as the game image after
 each frame and the SPU's output is queued to an SDL3 audio stream at the
 master volume and audio output (`xem_host::Game`; `AudioOutput::mix` is the
 browser's mix too). Memory cards default to `cards/` beside the settings file.
+`--script LOG` plays a session log instead of the player's input (its pad
+states replace the keyboard's) and `--exit-at-frame N` prints the memory hash
+when the game has run N frames and exits: the slice's logs end at their native
+hashes in the desktop host too, the load from card 2 in a fresh process after
+the save.
 
 `./play.sh [DISC] [xem-desktop options]` (repository root) builds what is
 missing or stale (the matched images, the game module, `xem-desktop`) and plays
@@ -455,6 +471,13 @@ as JSON text or bytes.
   copy is the authority; IndexedDB trails it by the writes in flight
   (`status().cards`, `status().page.cards`). Saves: the `saves` store holds
   session snapshots with their SHA-256, checked when read back.
+  `window.xem.cards.store(slot, image)` puts a card image (a `.mcd`) in
+  IndexedDB for the next session. `npm run test:slice` (local, with disc 1)
+  plays the slice's session logs on a desktop browser, a phone (Playwright's
+  Pixel 7) and a headset browser (Quest Browser's user agent, IWER's Quest 3
+  as navigator.xr) to their native hashes; the save goes through a reload
+  taken mid-route (the session saved to IndexedDB, restored after the reload)
+  and the next page loads card 2 from the title.
 - **Automation.** `window.xem`: `status()`, `boot({executable, run})`,
   `setRunning`, `command(cmd)` (any control command) with the shorthands
   `step(frames)`, `runUntil({maxFrames, until})`, `memoryHash()`,
@@ -653,6 +676,11 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
   wasm2c's output compiles with the NDK clang for both ABIs; game memory is
   one 2 GiB private anonymous mapping (the module's whole linear memory, made
   read-write at once), committed only as pages are touched.
+  A session log pushed to `<files dir>/script.json` plays instead of the
+  player, and the frame and memory hash it ends at are logged:
+  `XEM_SMOKE_SLICE=1 android-smoke.sh` plays the slice's logs on the
+  emulator, the forest route with a background and return on the way, the
+  save, and the load of card 2 in a fresh process.
 - **Settings.** `xem_settings::FileStore` at `<files dir>/settings.json`.
 - **Lifecycle.** SDL 3.4 delivers the application events only to event
   watches, synchronously on the SDL thread inside `SDL_PollEvent`: on

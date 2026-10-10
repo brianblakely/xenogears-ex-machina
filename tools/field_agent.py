@@ -223,8 +223,6 @@ def main():
             "--control",
             "--cards",
             str(cards),
-            "--schema",
-            str(ns.ROOT / "build/game/schema.json"),
         ],
         log=args.log is not None,
     )

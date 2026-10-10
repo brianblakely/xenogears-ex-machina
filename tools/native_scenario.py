@@ -316,8 +316,6 @@ def main():
                 "--control",
                 "--cards",
                 str(cards),
-                "--schema",
-                str(args.schema),
             ],
             log=args.log is not None,
         )

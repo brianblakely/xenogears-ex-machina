@@ -167,6 +167,9 @@ struct Live {
     game: Option<Game>,
     /// Pad 1's buttons last frame (changes are logged).
     buttons: u16,
+    /// The frame a session log (files/script.json) ends at: its memory hash
+    /// is logged there and the game waits.
+    script_end: Option<u64>,
     frames: u64,
     background: bool,
     terminating: bool,
@@ -374,6 +377,7 @@ impl Host {
             clock: SimClock::start(Instant::now()),
             game: None,
             buttons: 0,
+            script_end: None,
             frames: 0,
             background: false,
             terminating: false,
@@ -494,7 +498,25 @@ impl Host {
         live.game = None;
         match booted {
             Ok((session, identity)) => {
-                let game = Game::new(session);
+                let mut game = Game::new(session);
+                // A session log pushed beside the cards (tools/native_scenario.py
+                // --log) plays instead of the player: android-smoke.sh's slice.
+                live.script_end = None;
+                let script = self.cards.with_file_name("script.json");
+                if let Ok(text) = std::fs::read_to_string(&script) {
+                    match serde_json::from_str::<serde_json::Value>(&text)
+                        .map_err(|e| e.to_string())
+                        .and_then(|value| game.schedule(&value).map(|()| value))
+                    {
+                        Ok(value) => {
+                            let end = value["frames"].as_u64();
+                            game.set_frame_limit(end);
+                            live.script_end = end;
+                            log(&format!("script {} to frame {end:?}", script.display()));
+                        }
+                        Err(error) => log(&format!("script {}: {error}", script.display())),
+                    }
+                }
                 log(&format!(
                     "game booted source={source} boot={} cards={} audio={}",
                     identity.boot_path,
@@ -554,6 +576,10 @@ impl Host {
             } else {
                 let (width, height, rgba) = game.display();
                 self.view.set_game_image(&self.gpu, (width, height), &rgba);
+                if live.script_end.is_some_and(|end| game.frames_run() >= end) {
+                    log(&format!("script frame {} memory_hash {}", game.frames_run(), game.memory_hash()));
+                    live.script_end = None;
+                }
             }
         }
         let Some(frame) = live.presenter.acquire(&self.gpu, window)? else {

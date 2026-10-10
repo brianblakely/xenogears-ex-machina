@@ -1,0 +1,174 @@
+{
+ "schema_version": 1,
+ "name": "native-field22-load-card2",
+ "source_profile": "na-slus-00664-39c547a9afc6",
+ "description": "As phase1-field22-load-card1, with the cursor moved to card 2's first slot (six Right presses, as the save menu does) before choosing it.",
+ "entry": {
+  "type": "kernel"
+ },
+ "launch": {
+  "settle_frames": 120
+ },
+ "steps": [
+  {
+   "buttons": [
+    "cross"
+   ],
+   "hold_frames": 8,
+   "after_frames": 600,
+   "capture": true
+  },
+  {
+   "wait_frames": 300,
+   "capture": true
+  },
+  {
+   "wait_frames": 300,
+   "capture": true
+  },
+  {
+   "wait_frames": 300,
+   "capture": true
+  },
+  {
+   "wait_frames": 300,
+   "capture": true
+  },
+  {
+   "buttons": [
+    "start"
+   ],
+   "hold_frames": 8,
+   "after_frames": 300,
+   "capture": true
+  },
+  {
+   "buttons": [
+    "cross"
+   ],
+   "hold_frames": 8,
+   "after_frames": 200,
+   "capture": true
+  },
+  {
+   "buttons": [
+    "cross"
+   ],
+   "hold_frames": 8,
+   "after_frames": 120,
+   "capture": true
+  },
+  {
+   "wait_frames": 121,
+   "capture": true
+  },
+  {
+   "buttons": [
+    "cross"
+   ],
+   "hold_frames": 8,
+   "after_frames": 90,
+   "capture": true
+  },
+  {
+   "wait_frames": 91,
+   "capture": true
+  },
+  {
+   "buttons": [
+    "right"
+   ],
+   "hold_frames": 6,
+   "after_frames": 30,
+   "capture": true
+  },
+  {
+   "buttons": [
+    "right"
+   ],
+   "hold_frames": 6,
+   "after_frames": 30,
+   "capture": true
+  },
+  {
+   "buttons": [
+    "right"
+   ],
+   "hold_frames": 6,
+   "after_frames": 30,
+   "capture": true
+  },
+  {
+   "buttons": [
+    "right"
+   ],
+   "hold_frames": 6,
+   "after_frames": 30,
+   "capture": true
+  },
+  {
+   "buttons": [
+    "right"
+   ],
+   "hold_frames": 6,
+   "after_frames": 30,
+   "capture": true
+  },
+  {
+   "buttons": [
+    "right"
+   ],
+   "hold_frames": 6,
+   "after_frames": 30,
+   "capture": true
+  },
+  {
+   "buttons": [
+    "cross"
+   ],
+   "hold_frames": 8,
+   "after_frames": 90,
+   "capture": true
+  },
+  {
+   "buttons": [
+    "left"
+   ],
+   "hold_frames": 6,
+   "after_frames": 30,
+   "capture": true
+  },
+  {
+   "buttons": [
+    "cross"
+   ],
+   "hold_frames": 8,
+   "after_frames": 120,
+   "capture": true
+  },
+  {
+   "wait_frames": 301,
+   "capture": true
+  },
+  {
+   "wait_frames": 301,
+   "capture": true
+  },
+  {
+   "wait_frames": 301,
+   "capture": true
+  },
+  {
+   "wait_frames": 301,
+   "capture": true
+  },
+  {
+   "wait_frames": 301,
+   "capture": true
+  },
+  {
+   "wait_frames": 301,
+   "capture": true
+  }
+ ]
+}

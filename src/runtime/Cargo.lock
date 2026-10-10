@@ -5205,6 +5205,7 @@ version = "0.1.0"
 dependencies = [
  "jni-sys 0.4.1",
  "sdl3-sys",
+ "serde_json",
  "wgpu",
  "xem-disc",
  "xem-game",
@@ -5231,6 +5232,7 @@ version = "0.1.0"
 dependencies = [
  "png",
  "sdl3-sys",
+ "serde_json",
  "wgpu",
  "xem-game",
  "xem-host",
@@ -5278,6 +5280,7 @@ dependencies = [
  "pollster",
  "raw-window-handle",
  "sdl3-sys",
+ "serde_json",
  "wgpu",
  "xem-core",
  "xem-game",

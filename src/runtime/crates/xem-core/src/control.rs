@@ -23,12 +23,9 @@ pub struct InputLog {
 pub struct Session<M: GameModule> {
     pub runtime: Runtime<M>,
     pub schema: Option<Schema>,
-    /// Named snapshots with the frame count they were taken at.
-    snapshots: HashMap<String, (Vec<u8>, u64)>,
-    /// Frames run to completion since boot (`status`'s `frames`).
-    pub frames_run: u64,
+    snapshots: HashMap<String, Vec<u8>>,
     /// Scheduled commands (`schedule`): each runs before the frame that
-    /// starts with `frames_run` at its number, in order.
+    /// starts with the runtime frame count at its number, in order.
     script: Vec<(u64, Value)>,
     recording: Option<InputLog>,
     /// Scheduled pad changes (vblank, port, buttons), applied before the frame
@@ -81,7 +78,6 @@ impl<M: GameModule> Session<M> {
             runtime,
             schema,
             snapshots: HashMap::new(),
-            frames_run: 0,
             script: Vec::new(),
             recording: None,
             scheduled: Vec::new(),
@@ -112,7 +108,7 @@ impl<M: GameModule> Session<M> {
         if let Some(reason) = &self.stopped {
             return Err(Trap::Host(reason.clone()));
         }
-        while self.script.first().is_some_and(|(at, _)| *at <= self.frames_run) {
+        while self.script.first().is_some_and(|(at, _)| *at <= self.runtime.frames()) {
             let (at, command) = self.script.remove(0);
             let reply = self.execute(&command);
             if let Some(error) = reply.get("error") {
@@ -128,12 +124,7 @@ impl<M: GameModule> Session<M> {
             self.set_pad(port, buttons);
         }
         match self.runtime.run_frame() {
-            Ok(report) => {
-                if !report.blocked {
-                    self.frames_run += 1;
-                }
-                Ok(!report.blocked)
-            }
+            Ok(report) => Ok(!report.blocked),
             Err(trap) => {
                 self.stopped = Some(trap.to_string());
                 Err(trap)
@@ -179,6 +170,9 @@ impl<M: GameModule> Session<M> {
         if let Some(n) = until.get("vblanks").and_then(Value::as_u64) {
             return Ok(self.vblank() >= n);
         }
+        if let Some(n) = until.get("frames").and_then(Value::as_u64) {
+            return Ok(self.runtime.frames() >= n);
+        }
         if let Some(path) = until.get("path").and_then(Value::as_str) {
             let value = self.inspect(path, 0)?;
             if let Some(expected) = until.get("equals") {
@@ -210,7 +204,7 @@ impl<M: GameModule> Session<M> {
             "stopped": stopped,
             "recording": self.recording.is_some(),
             "snapshots": self.snapshots.keys().cloned().collect::<Vec<_>>(),
-            "frames": self.frames_run,
+            "frames": self.runtime.frames(),
         })
     }
 
@@ -300,14 +294,13 @@ impl<M: GameModule> Session<M> {
                 let name = arg_str("name").unwrap_or("default").to_string();
                 let data = self.runtime.snapshot().map_err(|e| e.to_string())?;
                 let size = data.len();
-                self.snapshots.insert(name.clone(), (data, self.frames_run));
+                self.snapshots.insert(name.clone(), data);
                 Ok(json!({ "name": name, "bytes": size }))
             }
             "restore" => {
                 let name = arg_str("name").unwrap_or("default");
-                let (data, frames) = self.snapshots.get(name).ok_or_else(|| format!("no snapshot {name}"))?.clone();
+                let data = self.snapshots.get(name).ok_or_else(|| format!("no snapshot {name}"))?.clone();
                 self.restore_bytes(&data)?;
-                self.frames_run = frames;
                 Ok(self.status())
             }
             "presentation" => {
@@ -401,7 +394,7 @@ impl<M: GameModule> Session<M> {
                 for item in list {
                     let pair = item.as_array().filter(|p| p.len() == 2).ok_or("commands are [frame, command]")?;
                     let at = pair[0].as_u64().ok_or("a command's frame is a number")?;
-                    if at < self.frames_run {
+                    if at < self.runtime.frames() {
                         return Err(format!("frame {at} has passed"));
                     }
                     self.script.push((at, pair[1].clone()));

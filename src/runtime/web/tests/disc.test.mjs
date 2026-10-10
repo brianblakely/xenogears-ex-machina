@@ -150,7 +150,7 @@ describe('the new-game route on disc 1', { skip: !available && `needs ${USER_DIS
       const s = await status(page);
       console.log(`browser: ${END} frames in ${seconds.toFixed(1)} s; hashes ${replies.filter((r) => typeof r === 'string').join(' ')}`);
       console.log(`disc: ${s.disc.fetches} reads, ${s.disc.fetched_bytes} bytes, peak ${s.disc.peak_resident_bytes}`);
-      assert.equal(s.session.vblanks, END);
+      assert.equal(s.session.frames, END);
       assert.equal(s.session.stopped, null);
       assert.ok(s.disc.peak_resident_bytes <= s.disc.chunk_budget);
       // The title and the story text are on the canvas, not the test scene.
@@ -187,7 +187,7 @@ describe('disc 1 on WebGPU', { skip: !available && `needs ${USER_DISC} and the g
       const pixels = pixelStats(await page.locator('canvas').screenshot({ path: shot('disc1-webgpu.png') }));
       const s = await status(page);
       assert.equal(s.renderer.backend, 'webgpu');
-      assert.equal(reply.vblanks, 600);
+      assert.equal(reply.frames, 600);
       // The publisher's logo on black.
       assert.ok(pixels.lit > 0.02 && pixels.lit < 0.5, JSON.stringify(pixels));
       assert.deepEqual(page.errors, []);

@@ -15,7 +15,6 @@ struct Options {
     disc: PathBuf,
     frames: u64,
     stubs: PathBuf,
-    schema: PathBuf,
     control: bool,
     /// Memory card images (card1.mcd, card2.mcd) live here; no card is
     /// inserted without it.
@@ -42,7 +41,6 @@ fn main() -> ExitCode {
         disc: PathBuf::new(),
         frames: 600,
         stubs: PathBuf::from("build/game/stubs.txt"),
-        schema: PathBuf::from("build/game/schema.json"),
         control: false,
         cards: None,
         bios: None,
@@ -60,7 +58,6 @@ fn main() -> ExitCode {
             "--disc" => options.disc = args.next().map(PathBuf::from).unwrap_or_default(),
             "--frames" => options.frames = args.next().and_then(|v| v.parse().ok()).unwrap_or(options.frames),
             "--stubs" => options.stubs = args.next().map(PathBuf::from).unwrap_or(options.stubs),
-            "--schema" => options.schema = args.next().map(PathBuf::from).unwrap_or(options.schema),
             "--control" => options.control = true,
             "--cards" => options.cards = args.next().map(PathBuf::from),
             "--bios" => options.bios = args.next().map(PathBuf::from),
@@ -73,7 +70,7 @@ fn main() -> ExitCode {
             "--cd-trace" => options.cd_trace = true,
             _ => {
                 eprintln!(
-                    "usage: xem-headless --disc <chd|cue|bin> [--frames N | --control] [--stubs FILE] [--schema FILE] \
+                    "usage: xem-headless --disc <chd|cue|bin> [--frames N | --control] [--stubs FILE] \
                      [--screenshot out.png] [--cd-trace] [--cards DIR] [--bios FILE] [--wav FILE]"
                 );
                 return ExitCode::FAILURE;
@@ -106,7 +103,6 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
         cards: options.cards.clone(),
         bios: options.bios.clone(),
         stubs: Some(options.stubs.clone()),
-        schema: Some(options.schema.clone()),
         audio_output: options.wav.is_some(),
     };
     let (mut session, identity) = xem_game::boot(&options.disc, &boot)?;

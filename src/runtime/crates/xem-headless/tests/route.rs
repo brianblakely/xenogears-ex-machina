@@ -31,8 +31,7 @@ fn disc() -> Option<PathBuf> {
 }
 
 fn session(disc: &std::path::Path) -> Session<NativeModule> {
-    let schema = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../build/game/schema.json");
-    let options = BootOptions { schema: Some(schema), ..Default::default() };
+    let options = BootOptions::default();
     boot(disc, &options).expect("boot").0
 }
 

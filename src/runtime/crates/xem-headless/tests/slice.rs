@@ -45,8 +45,7 @@ fn disc() -> Option<PathBuf> {
 
 /// A session on the disc with its cards in `cards`, the log scheduled.
 fn session(disc: &Path, cards: &Path, log: &Log) -> Session<NativeModule> {
-    let schema = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../build/game/schema.json");
-    let options = BootOptions { cards: Some(cards.to_path_buf()), schema: Some(schema), ..Default::default() };
+    let options = BootOptions { cards: Some(cards.to_path_buf()), ..Default::default() };
     let mut session = boot(disc, &options).expect("boot").0;
     let reply = session.execute(&json!({ "cmd": "schedule", "commands": log.commands }));
     assert!(reply.get("error").is_none(), "{reply}");
@@ -66,7 +65,7 @@ fn hash(session: &mut Session<NativeModule>) -> String {
 
 /// Run to `to` frames (counted from boot) one frame per call.
 fn step_to(session: &mut Session<NativeModule>, to: u64) {
-    while session.frames_run < to {
+    while session.runtime.frames() < to {
         assert!(session.frame().expect("frame"), "a native disc never blocks");
     }
 }
@@ -88,7 +87,7 @@ fn forest_route_runs_stepped_or_unthrottled_to_the_same_rewarded_end() {
     // Stepped frame by frame, with the modes it passes through.
     let mut stepped = session(&disc, &cards("forest-stepped"), &forest);
     let mut modes = Vec::new();
-    while stepped.frames_run < forest.frames {
+    while stepped.runtime.frames() < forest.frames {
         stepped.frame().expect("frame");
         let mode = stepped.runtime.services().mode;
         if modes.last() != Some(&mode) {
@@ -115,8 +114,8 @@ fn spectators_attach_change_and_detach_without_changing_the_game() {
     let mut session = session(&disc, &cards("spectated"), &forest);
     let mut samples = vec![0i16; 0];
     let mut pictures = 0;
-    while session.frames_run < forest.frames {
-        let frame = session.frames_run;
+    while session.runtime.frames() < forest.frames {
+        let frame = session.runtime.frames();
         let services = session.runtime.services();
         // Presentation capture and sound output attach, change and detach on
         // the way (the battle runs from about frame 5950 to 8600).
@@ -143,7 +142,7 @@ fn spectators_attach_change_and_detach_without_changing_the_game() {
     }
     assert!(pictures > 20);
     assert_eq!(hash(&mut session), forest.memory_hash, "spectators changed the game");
-    assert_eq!(session.frames_run, forest.frames, "or its pacing");
+    assert_eq!(session.runtime.frames(), forest.frames, "or its pacing");
 }
 
 #[test]
@@ -164,7 +163,7 @@ fn a_snapshot_taken_in_battle_and_a_recording_replay_the_same_end() {
 
     // Restored in battle (the schedule's later commands given again).
     session.execute(&json!({ "cmd": "restore", "name": "battle" }));
-    assert_eq!(session.frames_run, 7000);
+    assert_eq!(session.runtime.frames(), 7000);
     let later: Vec<Value> = forest.commands.iter().filter(|c| c[0].as_u64().unwrap() >= 7000).cloned().collect();
     session.execute(&json!({ "cmd": "schedule", "commands": later }));
     step_to(&mut session, forest.frames);
