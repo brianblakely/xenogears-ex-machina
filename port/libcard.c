@@ -9,6 +9,7 @@
 #include "common.h"
 #include "psyq/libapi.h"
 #include "xem/card.h"
+#include "xem/port.h"
 
 void ChangeClearPAD(long val);
 void DeliverEvent(unsigned long class, unsigned long spec);

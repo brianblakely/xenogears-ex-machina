@@ -20,6 +20,7 @@
 #include "psyq/libapi.h"
 #include "psyq/libetc.h"
 #include "psyq/libspu.h"
+#include "xem/port.h"
 #include "xem/spu.h"
 
 /* The library's state at its original addresses. */
@@ -196,7 +197,7 @@ long _spu_t(long mode, u32 address, void *data, u32 size) {
         if (!xem_spu_reads(SPU_CONTROL, SPU_CONTROL_TRANSFER, want)) {
             return -2;
         }
-        libspu_transfer_ram_address = (u32)(unsigned long)data;
+        libspu_transfer_ram_address = (u32)((u8 *)data - (u8 *)NULL);
         libspu_transfer_block_count = (size >> 6) + ((size & 0x3F) != 0);
         xem_host_spu_transfer((u32)libspu_transfer_start_address << 3, data, libspu_transfer_block_count << 6,
                               libspu_transfer_is_read == 1);

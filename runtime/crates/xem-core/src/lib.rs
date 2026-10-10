@@ -4,6 +4,7 @@
 //! (the host services), drives it through asyncify's unwind/rewind protocol
 //! and owns the virtual clock. It needs no window, GPU, audio or input device.
 
+pub mod bios;
 pub mod clock;
 pub mod devices;
 pub mod exe;
