@@ -122,7 +122,7 @@ pub(crate) fn create_gpu(
         unsafe { instance.vulkan_graphics_device(system, raw_instance) }
             .map_err(XrError::xr("xrGetVulkanGraphicsDevice2KHR"))? as u64,
     );
-    let exposed = hal_instance
+    let mut exposed = hal_instance
         .expose_adapter(physical_device)
         .ok_or_else(|| {
             XrError::new(
@@ -137,6 +137,20 @@ pub(crate) fn create_gpu(
             .ok_or_else(|| XrError::new("Vulkan queue", "no graphics queue family".into()))?
             as u32;
 
+    // wgpu-core 30 lowers these limits for adapters it enumerates when indirect
+    // calls are validated, but not for adapters created from hal, and its
+    // indirect validation asserts them (NVIDIA reports larger buffers).
+    if flags.contains(wgpu::InstanceFlags::VALIDATION_INDIRECT_CALL) {
+        let limits = &mut exposed.capabilities.limits;
+        let u32_max = u64::from(u32::MAX);
+        limits.max_buffer_size = limits.max_buffer_size.min(u32_max);
+        limits.max_uniform_buffer_binding_size =
+            limits.max_uniform_buffer_binding_size.min(u32_max);
+        limits.max_storage_buffer_binding_size = limits
+            .max_storage_buffer_binding_size
+            // Rounded down to the 4-byte storage binding size alignment.
+            .min(u32_max & !3);
+    }
     let features = wgpu::Features::empty();
     let limits = exposed.capabilities.limits.clone();
     let device_extensions = exposed.adapter.required_device_extensions(features);
