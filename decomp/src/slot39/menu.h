@@ -41,20 +41,20 @@ typedef struct MenuDataArchive {
     void *unkD4[4]; /* D4 */
 } MenuDataArchive;
 
-extern s32 D_801EA1EC[]; /* per command: four choices of cursor and label images */
+extern s32 menu_choice_window_images[]; /* per command: four choices of cursor and label images */
 /* Sheet positions (u / 4, v) of the name images 801e8da8 renders: 0-2 the
  * party slots' characters, 3-5 their gears, from 6 the file views. */
-extern s32 D_801EA578[19];
-extern s32 D_801EA5C4[19];
-extern s32 D_801E9A00[]; /* highlight positions: x */
-extern s32 D_801E9A2C[]; /* y */
-extern s32 D_801E9EC4[8];     /* label x (mode 1) */
-extern u16 D_801E9EE4;        /* label y (mode 1) */
-extern s32 D_801E9EE8[];      /* label x (modes 2, 5 from 8) */
-extern s32 D_801E9F28[2];     /* label y per row (mode 2) */
-extern s32 D_801E9F30[];      /* label y per row (mode 3) */
-extern s32 D_801E9F68[2];     /* label x (mode 6) */
-extern s32 D_801E9F70[];      /* label y (mode 6) */
+extern s32 menu_name_image_vram_x_table[19];
+extern s32 menu_name_image_vram_y_table[19];
+extern s32 menu_highlight_x_table[]; /* highlight positions: x */
+extern s32 menu_highlight_y_table[]; /* y */
+extern s32 menu_label_mode1_x_table[8];     /* label x (mode 1) */
+extern u16 menu_label_mode1_y;        /* label y (mode 1) */
+extern s32 menu_label_mode2_x_table[];      /* label x (modes 2, 5 from 8) */
+extern s32 menu_label_mode2_y_table[2];     /* label y per row (mode 2) */
+extern s32 menu_label_mode3_y_table[];      /* label y per row (mode 3) */
+extern s32 menu_label_mode6_x_table[2];     /* label x (mode 6) */
+extern s32 menu_label_mode6_y_table[];      /* label y (mode 6) */
 
 /* Resident calls declared here: these callers convert arguments or results
  * differently from the resident definitions (decomp/src/resident/own_declarations.h). */
@@ -75,49 +75,49 @@ s32 text_decode_codes(u8 *codes, u8 *text, s32 count); /* decode a name */
 
 /* The framework's functions that another unit calls, or its own before
  * defining them. */
-void func_801C72BC(u8 arg0);
-void func_801C7B0C(void);
-void func_801C7BF4(void);
-void func_801C7D78(void);
-void func_801C7F34(u32 frames);
-void func_801C80B8(u32 value);
-void func_801C8164(POLY_G4 *poly, u8 r, u8 g, u8 b);
-void func_801C851C(SVECTOR *v, u16 x, u16 y, u16 w, u16 h);
-void func_801C8574(s32 sound);
-u16 func_801C8640(u16 flags, u8 bit);
-u16 func_801C865C(u16 flags, u8 bit);
-u32 func_801C8678(u32 flags, u8 bit);
-void func_801D1CA0(void);
-void func_801D1D40(void);
-void func_801D1E80(void);
-void func_801D1EB0(void);
-void func_801D1EE0(s32 index, u8 outline);
-void func_801D3344(s32 x, s32 y, s32 h);
-void func_801D3444(void);
-void func_801D3674(void);
-void func_801D36E0(MenuLabel *label, u8 slot, u8 gear, u8 mode);
-void func_801D397C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 grow, u8 flat, s32 ot_entry, u8 has_bar);
-void func_801D3B00(void);
-void func_801D4D1C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 flat, s32 ot_entry, u8 has_bar);
-void func_801D4EA0(u8 slot);
-void func_801D5BA4(s32 x, s32 y);
-void func_801D5CF8(s32 x, s32 y);
-void func_801E53CC(u8 index);
-void func_801E7C50(MenuLabel *label, s32 index, s32 first, u8 mode);
-void func_801E7E68(MenuLabel *labels, u8 *layout, s32 first, s32 count);
-void func_801E8018(u8 count, MenuLabel *labels, u8 *table, u8 *flags);
-void func_801E8044(u8 count, u8 *flags);
-void func_801E8070(u8 count, MenuLabel *labels, u8 *table, s32 *offsets, u8 *flags, u8 selected, u8 row,
+void menu_load_or_release_data_set(u8 code);
+void menu_init_screen(void);
+void menu_run_frame(void);
+void menu_read_input(void);
+void menu_split_play_time(u32 frames);
+void menu_split_digits(u32 value);
+void menu_init_gradient_quad(POLY_G4 *poly, u8 r, u8 g, u8 b);
+void menu_set_rect_verts(SVECTOR *v, u16 x, u16 y, u16 w, u16 h);
+void menu_play_sound(s32 sound);
+u16 menu_test_bit_msb_first(u16 flags, u8 bit);
+u16 menu_test_bit(u16 flags, u8 bit);
+u32 menu_test_bit32(u32 flags, u8 bit);
+void menu_draw_screen(void);
+void menu_view_update(void);
+void menu_view_start_zoom_in(void);
+void menu_view_start_zoom_out(void);
+void menu_highlight_place(s32 index, u8 outline);
+void menu_scroll_bar_show(s32 x, s32 y, s32 h);
+void menu_scroll_bar_hide(void);
+void menu_member_marks_hide(void);
+void menu_name_label_layout(MenuLabel *label, u8 slot, u8 gear, u8 mode);
+void menu_panel_open(u8 index, u16 x, u16 y, u16 w, u16 h, u8 grow, u8 flat, s32 ot_entry, u8 has_bar);
+void menu_panel_grow_opening(void);
+void menu_panel_layout(u8 index, u16 x, u16 y, u16 w, u16 h, u8 flat, s32 ot_entry, u8 has_bar);
+void menu_panel_close(u8 slot);
+void menu_money_window_layout_digits(s32 x, s32 y);
+void menu_play_time_window_layout_digits(s32 x, s32 y);
+void menu_panel_init(u8 index);
+void menu_label_init_quads(MenuLabel *label, s32 index, s32 first, u8 mode);
+void menu_label_render_pairs(MenuLabel *labels, u8 *layout, s32 first, s32 count);
+void menu_label_render_table(u8 count, MenuLabel *labels, u8 *table, u8 *flags);
+void menu_label_clear_shown(u8 count, u8 *flags);
+void menu_label_place(u8 count, MenuLabel *labels, u8 *table, s32 *offsets, u8 *flags, u8 selected, u8 row,
                    u8 mode);
-void func_801E8474(s32 count, MenuCommandImages *images);
-void func_801E86C8(u8 offset);
-void func_801E8978(u8 count, u8 cursor, MenuCommandImages *images);
-void func_801E8B4C(u8 offset);
-void func_801E8DA8(u8 image, u8 row);
-void func_801E8EAC(POLY_FT4 *poly, u8 mode);
-void func_801E8F60(u8 index, u8 dim);
-void func_801E91C4(POLY_FT4 *poly);
-void func_801E920C(POLY_FT4 *poly, u16 x, u16 y, u8 u, u8 v, u16 w, u16 h);
-void func_801E927C(POLY_FT4 *poly);
+void menu_command_window_open(s32 count, MenuCommandImages *images);
+void menu_choice_window_open(u8 offset);
+void menu_command_window_set_cursor(u8 count, u8 cursor, MenuCommandImages *images);
+void menu_choice_window_set_cursor(u8 offset);
+void menu_name_image_render(u8 image, u8 row);
+void menu_quad_set_blending(POLY_FT4 *poly, u8 mode);
+void menu_panel_set_dimmed(u8 index, u8 dim);
+void menu_quad_set_semi_transparent(POLY_FT4 *poly);
+void menu_quad_place(POLY_FT4 *poly, u16 x, u16 y, u8 u, u8 v, u16 w, u16 h);
+void menu_quad_init(POLY_FT4 *poly);
 
 #endif

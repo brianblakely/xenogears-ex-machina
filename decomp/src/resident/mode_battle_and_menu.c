@@ -448,7 +448,7 @@ void menu_state_run_screen(void) {
     cd_select_directory(0x10, 0);
     switch (menu_state_screen) {
     case 0:
-        func_801C62A8();
+        menu_main();
         break;
     case 1:
         func_801CB0A8();
@@ -461,7 +461,7 @@ void menu_state_run_screen(void) {
         break;
     case 2:
     case 6:
-        func_801C62A8();
+        menu_main();
         mode_select_next_mode(1);
         break;
     case 5:

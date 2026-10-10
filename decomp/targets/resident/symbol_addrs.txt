@@ -2049,3 +2049,4 @@ battle_area = 0x800C3EB0;
 battle_area_outcome = 0x800C48EA;
 battle_continue_to_movie_mode = 0x800D3338;
 battle_area_event_target_sprites = 0x800D363C;
+menu_main = 0x801C62A8; // type:func

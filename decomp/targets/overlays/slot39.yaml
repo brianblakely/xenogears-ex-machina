@@ -46,24 +46,24 @@ segments:
       # (docs/matching.md); 801DBE54's starts at 4 mod 8 after the previous
       # unit's strings, and 801E8070's returns to 0 mod 8 right after
       # 801E433C's odd-length table.
-      - [0x0, .rodata, slot39]
-      - [0xFC, .rodata, slot39_801DBE54]
-      - [0x278, .rodata, slot39_801E8070]
-      - [0x31c, c, slot39]
+      - [0x0, .rodata, menu_framework]
+      - [0xFC, .rodata, menu_member_screens]
+      - [0x278, .rodata, menu_command_windows]
+      - [0x31c, c, menu_framework]
       # Named after 801DBE54, its start before its uninitialized variables
       # bounded the text boundary (at or before 801DBDB4; see its header).
-      - [0x16DB4, c, slot39_801DBE54]
-      - [0x23070, c, slot39_801E8070]
+      - [0x16DB4, c, menu_member_screens]
+      - [0x23070, c, menu_command_windows]
       # All initialized data is slot39's: the other units' tables are interleaved
       # with its own and come before every unit's uninitialized variables.
-      - [0x246A4, .data, slot39]
+      - [0x246A4, .data, menu_framework]
       # The file ends with each unit's uninitialized variables (their .bss,
       # loaded), each in a slot of whole words (decomp/Makefile): two bytes
       # lie four apart (801EA710, 801EA714). The common variables follow every
       # unit's own. Only a unit's own code forms addresses in its own
       # (tools/data_users.py slot39.mk: no FOREIGN reference).
-      - [0x256D0, .bss, slot39]
-      - [0x25724, .bss, slot39_801DBE54]
-      - [0x258F4, .bss, slot39_801E8070]
-      - [0x258FC, .bss, slot39_common]
+      - [0x256D0, .bss, menu_framework]
+      - [0x25724, .bss, menu_member_screens]
+      - [0x258F4, .bss, menu_command_windows]
+      - [0x258FC, .bss, menu_overlay_common]
   - [0x25908]

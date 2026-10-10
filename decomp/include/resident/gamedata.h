@@ -279,7 +279,7 @@ typedef struct GameData {
      * are ammo: system texts 23 and 51 name ids 50-72 "... Ammo", and only
      * character 4 and its gears 5 and 13 may use them
      * (docs/scripts/field-events.md). The field menu sets an id's byte to 100
-     * when it is loaded (slot39 func_801DF0D4), each action takes one from the
+     * when it is loaded (slot39 menu_equip_screen_commit_part), each action takes one from the
      * slots its command number names (battle battle_wear_weapon_items, battle_wear_down_attacker_gear_parts), and
      * a command whose descriptor names a slot at 0 misses (battle_resolve_hit_outcome,
      * battle_resolve_gear_hit_outcome). The code forms

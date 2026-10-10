@@ -108,7 +108,7 @@ typedef struct MenuSlotImage {
     DR_MODE boxMode[2]; /* 140 */
 } MenuSlotImage;
 
-/* The disc label: the first 16 bytes of sector 0x17 (func_801E93A0). */
+/* The disc label: the first 16 bytes of sector 0x17 (menu_cd_check_disc). */
 typedef struct DiscLabel {
     u8 unk0[3];
     u8 disc; /* 3: '1' or '2' */
@@ -168,53 +168,53 @@ typedef struct SaveData {
  * in its flag words. No shared header declares them; battle reads them
  * signed. */
 extern u16 mode_battle_ai_variables[16];
-extern u8 D_801EA8FC;    /* the last choice was cancelled */
-extern u16 D_801EA610[96]; /* two-byte codes of the ASCII characters 0x20-0x7F */
-extern s16 D_801E9894[32][2];    /* image block x */
-extern s16 D_801E9914[32][2];    /* image block y */
-extern s32 D_801EA004[];
-extern s32 D_801EA010[];
-extern s32 D_801E9994[21];    /* text character x per column */
-extern s32 D_801E99E8[];      /* text character y per row */
-extern s32 D_801E99F0;        /* cursor sprite x */
-extern s32 D_801E99F8;        /* cursor sprite y */
-extern s32 D_801EA494[18];    /* view frame images, ffff none */
-extern s32 D_801E9F98[9];     /* view frame x (first view) */
-extern s32 D_801E9FBC[9];     /* view frame y */
-extern s32 D_801E9FE0[9];     /* play time: x of the two separators and seven digits */
-extern s32 D_801EA01C;         /* view level digits x */
-extern s32 D_801EA020;         /* view level digits y */
-extern s32 D_801EA04C;         /* save title x, y */
-extern s32 D_801EA050;
-extern s32 D_801EA02C;         /* view HP digits x, y */
-extern s32 D_801EA030;
-extern s32 D_801EA034;         /* view maximum HP digits x, y */
-extern s32 D_801EA038;
-extern s32 D_801EA03C;         /* view EP digits x, y */
-extern s32 D_801EA040;
-extern s32 D_801EA044;         /* view maximum EP digits x, y */
-extern s32 D_801EA048;
-extern s32 D_801EA900[2]; /* per port: blocks the listed files use (15 fill a card) */
+extern u8 menu_yes_no_cancelled;    /* the last choice was cancelled */
+extern u16 menu_ascii_to_sjis_table[96]; /* two-byte codes of the ASCII characters 0x20-0x7F */
+extern s16 menu_file_slot_x_table[32][2];    /* image block x */
+extern s16 menu_file_slot_y_table[32][2];    /* image block y */
+extern s32 menu_save_view_image_x_table[];
+extern s32 menu_save_view_image_y_table[];
+extern s32 menu_file_info_char_x_table[21];    /* text character x per column */
+extern s32 menu_file_info_char_y_table[];      /* text character y per row */
+extern s32 menu_file_info_cursor_x;        /* cursor sprite x */
+extern s32 menu_file_info_cursor_y;        /* cursor sprite y */
+extern s32 menu_save_view_frame_images[18];    /* view frame images, ffff none */
+extern s32 menu_save_view_frame_x_table[9];     /* view frame x (first view) */
+extern s32 menu_save_view_frame_y_table[9];     /* view frame y */
+extern s32 menu_file_info_play_time_x_table[9];     /* play time: x of the two separators and seven digits */
+extern s32 menu_save_view_level_x;         /* view level digits x */
+extern s32 menu_save_view_level_y;         /* view level digits y */
+extern s32 menu_save_title_x;         /* save title x, y */
+extern s32 menu_save_title_y;
+extern s32 menu_save_view_hp_x;         /* view HP digits x, y */
+extern s32 menu_save_view_hp_y;
+extern s32 menu_save_view_max_hp_x;         /* view maximum HP digits x, y */
+extern s32 menu_save_view_max_hp_y;
+extern s32 menu_save_view_ep_x;         /* view EP digits x, y */
+extern s32 menu_save_view_ep_y;
+extern s32 menu_save_view_max_ep_x;         /* view maximum EP digits x, y */
+extern s32 menu_save_view_max_ep_y;
+extern s32 menu_card_blocks_used[2]; /* per port: blocks the listed files use (15 fill a card) */
 
 /* The card and file screen functions that another unit calls, or its own
  * before defining them. */
-void func_801C8694(u8 arg0);
-void func_801C8BEC(void);
-void func_801C8EE8(void);
-s32 func_801CACF8(u8 message, u8 confirm, u8 arg);
-void func_801D9B08(void);
-void func_801D9E3C(void);
-u8 func_801D9F98(u8 mode, u8 save);
-void func_801E4A28(SaveData *save);
-void func_801E4D10(SaveData *save, MenuTables *tables);
-void func_801E5ACC(void);
-void func_801E5B3C(void);
-void func_801E6450(void);
-void func_801E649C(void);
-void func_801E64E0(void);
-void func_801E781C(s32 index, u8 rebuild);
-void func_801E78C8(s32 file);
-void func_801E92CC(void);
-s32 func_801E93A0(s32 disc);
+void menu_cd_ask_for_disc(u8 disc);
+void menu_card_poll_ports(void);
+void menu_card_list_unscanned_ports(void);
+s32 menu_notice_ask_yes_no(u8 message, u8 confirm, u8 arg);
+void menu_card_restart_access(void);
+void menu_file_screen_leave_card_mode(void);
+u8 menu_file_screen_run(u8 mode, u8 save);
+void menu_copy_game_data_to_save(SaveData *save);
+void menu_restore_game_data_from_save(SaveData *save, MenuTables *tables);
+void menu_file_slots_alloc(void);
+void menu_file_slots_free(void);
+void menu_file_info_alloc(void);
+void menu_file_info_free(void);
+void menu_file_info_clear(void);
+void menu_file_info_show(s32 index, u8 rebuild);
+void menu_save_icon_upload(s32 file);
+void menu_cd_stop_drive(void);
+s32 menu_cd_check_disc(s32 disc);
 
 #endif

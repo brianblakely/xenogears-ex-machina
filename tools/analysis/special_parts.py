@@ -4,7 +4,7 @@ Character 4 equips special parts beside its weapons (CharacterRecord.entryItems)
 and so does the gear it pilots (GearRecord.partItems): weapon and gear part ids
 from 50, 0 for an empty slot. They are its ammo: system texts 23 and 51 name
 ids 50-72 "... Ammo" (docs/scripts/field-events.md). The field menu offers the
-inventory's ids from 50 of the slot's weapon kind (slot39 func_801DE5CC); the
+inventory's ids from 50 of the slot's weapon kind (slot39 menu_equip_screen_build_candidates); the
 battle lists weapon ids 50-72 (ovl2615 func_801E4CD0) and copies the 48 weapon
 records 50-97 (0x300 bytes from +0x320 of the setup archive's entry 0x25,
 func_801E5384). Each id's rounds are GameData.ammo[id - 50] (+0x22B8, character
@@ -39,10 +39,10 @@ or the gear part list:
 
 It also lists every field take_item (8d) from the weapon or gear part list,
 resolved as give_item is: one that takes an item's last copy leaves its slot's
-id at 0xFF (field field_event_take_item), which slot39 func_801DE5CC tests as an id
+id at 0xFF (field field_event_take_item), which slot39 menu_equip_screen_build_candidates tests as an id
 from 50 through the table record 255, past the table's end.
 
-The field menu's debug fill (slot39 func_801E5058) adds ids 1-71 to both lists.
+The field menu's debug fill (slot39 menu_debug_fill_inventory) adds ids 1-71 to both lists.
 """
 
 from __future__ import annotations
@@ -59,7 +59,7 @@ from tools.analysis.dispatch_tables import SETUP_ARCHIVE, archive_entries
 from tools.analysis.text_control import archive_entry
 
 ROOT = Path(__file__).resolve().parents[2]
-FIRST, COUNT = 50, 48  # slot39 func_801DE5CC ids >= 50; ovl2615 func_801E5384 records 50-97
+FIRST, COUNT = 50, 48  # slot39 menu_equip_screen_build_candidates ids >= 50; ovl2615 func_801E5384 records 50-97
 BATTLE_END = 73  # ovl2615 func_801E4CD0: weapon ids 50..72 enter the battle's list
 BATTLE_RECORDS = 0x25  # func_801E5384: archive[0x25] + 0x320, 0x300 bytes, to +0x5818
 ITEM_BASE, GEAR_BASE = 0x2286, 0x22B6  # D_8006F8BA, D_8006F8EA as game data offsets
@@ -83,7 +83,7 @@ NEW_GAME = (0x10, 0, 3)  # mode_load_initial_game_data loads it whole into game_
 CHARACTERS, CHARACTER, CHARACTER_WEAPONS, ENTRY_ITEMS = 0x26C, 0xA4, 0x6A, 0x6F
 # 20 records: GearRecord.partItems (4) and weapons (4)
 GEARS, GEAR, PART_ITEMS, GEAR_RECORD_WEAPONS = 0x978, 0xA4, 0x04, 0x0C
-MENU_DATA = (0x10, 0, 2)  # slot39 func_801C72BC: the MenuDataArchive
+MENU_DATA = (0x10, 0, 2)  # slot39 menu_load_or_release_data_set: the MenuDataArchive
 WEAPONS, GEAR_WEAPONS = 1, 42  # its +8 and +0xAC entries (tables->weapons, ->gearWeapons)
 # (entry, record size, users offset and width, load offset, kind offset):
 # slot39 MenuWeapon / GearWeapon. The load byte is the one battle battle_put_item_in_character4_entry

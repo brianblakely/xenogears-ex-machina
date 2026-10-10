@@ -3,5 +3,5 @@
 # INCLUDE_ORIGINAL_UNALIGNED) at its place among the unit's .data, with the
 # reason: C cannot emit the stray bytes the original assembler left in its
 # alignment padding, which nothing reads.
-801e96a5 801e96a8 included D_801E96A5 u8 flag 0 (slot39.c; func_801C57A4 sets it around its save, func_801CBA4C reads it), then 08 00 before the word-aligned masks, which nothing reads: taken as its padding by analogy with battle's flag battle_applying_item_results (08 00 00) and ovl2596's D_801E44C0 (04 00 00); neither the bytes nor the vendor tools tell it from an unreferenced byte 8 and zero fill (docs/matching.md)
-801e97ac 801e97f0 included D_801E97AC u8[13 * 5] sheet images of the 801e1544 screen's 13 rows (field.h; func_801E1544 reads row * 5 + 0-4, rows 0-12 from func_801E1AC8); padding 00 07 2e
+801e96a5 801e96a8 included menu_saving_at_cd_change u8 flag 0 (menu_framework.c; menu_cd_change_run sets it around its save, menu_save_build_payload reads it), then 08 00 before the word-aligned masks, which nothing reads: taken as its padding by analogy with battle's flag battle_applying_item_results (08 00 00) and ovl2596's D_801E44C0 (04 00 00); neither the bytes nor the vendor tools tell it from an unreferenced byte 8 and zero fill (docs/matching.md)
+801e97ac 801e97f0 included menu_deathblow_row_images u8[13 * 5] sheet images of the 801e1544 screen's 13 rows (field.h; menu_deathblow_screen_layout_row reads row * 5 + 0-4, rows 0-12 from menu_deathblow_screen_build); padding 00 07 2e

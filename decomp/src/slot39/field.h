@@ -228,74 +228,74 @@ typedef struct MenuEquipList {
     u8 padA19[0x3];
 } MenuEquipList;
 
-extern s32 D_801E9EA0[];      /* item target label x offsets */
-extern u8 D_801EA550[];  /* item target labels */
-extern u8 D_801EA558[];
-extern u8 D_801EA564[];  /* 801e1014 screen labels */
-extern u8 D_801EA568[];  /* status screen labels: a character's page, then (6) a gear's */
-extern u8 D_801EA548[];  /* item and arts screen labels, eight per page */
-extern s32 D_801E9DBC[8]; /* equipment screen: part cursor y by special * 4 + part */
-extern s32 D_801E9DDC[];  /* arts list cost x positions */
-extern s32 D_801E9E14[];  /* arts list cost y positions */
-extern u16 D_801E97F0[];
-extern s32 D_801E9788[3]; /* arts screen window sizes per kind */
-extern s32 D_801E9794[3];
-extern s32 D_801E97A0[3];
-extern u8 D_801E9785;    /* the target panels are allocated */
-extern u8 D_801E97AC[13 * 5]; /* 801e1544 screen: five sheet images per row, ff none */
-extern s32 D_801E9F48[];      /* status command label x offsets (page 0 and 6) */
-extern u8 D_801E9808[20];      /* pilot character of each gear */
+extern s32 menu_file_command_label_x_offsets[];      /* item target label x offsets */
+extern u8 menu_item_target_label_ids[];  /* item target labels */
+extern u8 menu_equip_screen_label_ids[];
+extern u8 menu_deathblow_screen_label_ids[];  /* 801e1014 screen labels */
+extern u8 menu_gear_command_label_ids[];  /* status screen labels: a character's page, then (6) a gear's */
+extern u8 menu_item_arts_label_ids[];  /* item and arts screen labels, eight per page */
+extern s32 menu_equip_screen_part_cursor_y_table[8]; /* equipment screen: part cursor y by special * 4 + part */
+extern s32 menu_arts_screen_cost_x_table[];  /* arts list cost x positions */
+extern s32 menu_arts_screen_cost_y_table[];  /* arts list cost y positions */
+extern u16 menu_arts_screen_usable_art_masks[];
+extern s32 menu_arts_screen_panel6_widths[3]; /* arts screen window sizes per kind */
+extern s32 menu_arts_screen_panel4_x_table[3];
+extern s32 menu_arts_screen_panel4_widths[3];
+extern u8 menu_target_panels_allocated;    /* the target panels are allocated */
+extern u8 menu_deathblow_row_images[13 * 5]; /* 801e1544 screen: five sheet images per row, ff none */
+extern s32 menu_gear_command_label_x_offsets[];      /* status command label x offsets (page 0 and 6) */
+extern u8 menu_gear_pilots[20];      /* pilot character of each gear */
 
 /* The field menu's functions that another unit calls, or its own before
  * defining them. */
-void func_801D22C4(void);
-void func_801D22F4(u8 arg0);
-void func_801D2484(void);
-void func_801D249C(u8 show);
-void func_801D25E4(void);
-void func_801D261C(void);
-void func_801D2968(void);
-void func_801D29A8(u8 arg0, u8 arg1);
-void func_801D2D38(void);
-void func_801D2EC0(u8 slot, u8 mode);
-void func_801D2F4C(u8 message);
-void func_801D32B4(void);
-void func_801D3488(u8 row, u8 fighters);
-void func_801D5A50(u8 index, u8 mode);
-void func_801D7C3C(u8 slot, u8 mode);
-void func_801D8DE4(u8 slot, u8 lower, u8 arg2, u8 mode);
-void func_801D8EA4(u8 slot, u8 mode, u8 kept, u8 gear);
-s32 func_801D9704(s32 slot, u8 dir, u8 readyOnly);
-u8 func_801D9808(void);
-void func_801DA4A8(void);
-void func_801DA518(void);
-void func_801DA5BC(s32 row);
-void func_801DA9A8(s32 entry, s32 row);
-void func_801DB02C(u8 index);
-void func_801DB0A8(s32 entry, s32 row, u8 kind, u8 index);
-void func_801DB340(u8 index);
-void func_801DB5E4(u8 mode);
-u8 func_801DB920(s32 row, s32 entry);
-void func_801DBD4C(s32 a, s32 b);
-u8 func_801DBE54(void);
-u8 func_801DE29C(u8 slot, u8 arg1);
-u8 func_801E0F78(u8 slot, u8 arg1);
-u8 func_801E23CC(void);
-u8 func_801E2BE4(void);
-void func_801E3088(u8 command);
-void func_801E35BC();
-void func_801E36D4(MenuTables *tables, u8 id);
-void func_801E3A80(MenuTables *tables, u8 id);
-void func_801E3C2C(MenuTables *tables, u8 gear);
-void func_801E3ECC(MenuTables *tables, u8 gear);
-void func_801E41C0(MenuTables *tables, u8 gear);
-void func_801E4258(MenuTables *tables, u8 gear);
-void func_801E42AC(MenuTables *tables, u8 gear);
-void func_801E433C(MenuTables *tables, u8 gear);
-void func_801E4754(MenuTables *tables, u8 gear);
-u8 func_801E4928(u8 gear);
-void func_801E4998(MenuTables *tables, u8 gear);
-void func_801E5058(void);
-void func_801E5178(void);
+void menu_highlight_hide(void);
+void menu_markers_layout(u8 mode);
+void menu_markers_hide(void);
+void menu_party_labels_show(u8 show);
+void menu_row_labels_hide(void);
+void menu_choice_label_place(void);
+void menu_play_time_window_update(void);
+void menu_field_blocks_slide(u8 open, u8 keep);
+void menu_field_menu_open(void);
+void menu_member_page_build(u8 slot, u8 mode);
+void menu_notice_open(u8 message);
+void menu_notice_close(void);
+void menu_member_marks_show(u8 row, u8 fighters);
+void menu_field_block_layout(u8 index, u8 mode);
+void menu_detail_build(u8 slot, u8 mode);
+void menu_equip_panel_build(u8 slot, u8 lower, u8 compare, u8 mode);
+void menu_equip_labels_layout_parts(u8 slot, u8 mode, u8 kept, u8 gear);
+s32 menu_step_party_slot(s32 slot, u8 dir, u8 readyOnly);
+u8 menu_sound_mode_screen_run(void);
+void menu_item_screen_open(void);
+void menu_item_screen_close(void);
+void menu_item_screen_build_list(s32 row);
+void menu_item_screen_show_description(s32 entry, s32 row);
+void menu_list_cursor_alloc(u8 index);
+void menu_list_cursor_place(s32 entry, s32 row, u8 kind, u8 index);
+void menu_list_cursor_free(u8 index);
+void menu_target_panels_build(u8 mode);
+u8 menu_item_screen_use_item(s32 row, s32 entry);
+void menu_item_screen_swap_entries(s32 a, s32 b);
+u8 menu_item_screen_run(void);
+u8 menu_arts_command_run(u8 slot, u8 zoom);
+u8 menu_equip_command_run(u8 slot, u8 zoom);
+u8 menu_gear_command_run(void);
+u8 menu_character_command_run(void);
+void menu_top_command_close(u8 command);
+void menu_apply_restoring_art();
+void menu_compute_character_equipment(MenuTables *tables, u8 id);
+void menu_compute_character_stats(MenuTables *tables, u8 id);
+void menu_compute_gear_summary(MenuTables *tables, u8 gear);
+void menu_compute_gear_equipment(MenuTables *tables, u8 gear);
+void menu_set_gear_engine_values(MenuTables *tables, u8 gear);
+void menu_set_gear_frame_values(MenuTables *tables, u8 gear);
+void menu_set_gear_part_values(MenuTables *tables, u8 gear);
+void menu_sum_gear_accessories(MenuTables *tables, u8 gear);
+void menu_set_gear_weapon_values(MenuTables *tables, u8 gear);
+u8 menu_compute_gear_speed_penalty(u8 gear);
+void menu_set_gear_fuel_art_cost(MenuTables *tables, u8 gear);
+void menu_debug_fill_inventory(void);
+void menu_debug_set_skill_masks(void);
 
 #endif

@@ -435,10 +435,10 @@ decomp/src/resident/text_unpack_lzss_alloc.s
 decomp/src/slot39/field.h
 decomp/src/slot39/file.h
 decomp/src/slot39/menu.h
-decomp/src/slot39/slot39.c
-decomp/src/slot39/slot39_801DBE54.c
-decomp/src/slot39/slot39_801E8070.c
-decomp/src/slot39/slot39_common.c
+decomp/src/slot39/menu_command_windows.c
+decomp/src/slot39/menu_framework.c
+decomp/src/slot39/menu_member_screens.c
+decomp/src/slot39/menu_overlay_common.c
 decomp/src/worldmap/camera.h
 decomp/src/worldmap/effect.h
 decomp/src/worldmap/gte.h

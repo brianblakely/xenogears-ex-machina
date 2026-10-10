@@ -49,14 +49,14 @@ it from three sources:
 - The number code. `text_format_number` writes a number's digits as the codes
   palette × 16 + digit and its sign as palette × 16 + 10 (negative) or + 11. The
   window controls pass palettes 0 and 1. The menus write the blank of a number's
-  leading zeros as code 0xC3 (slot39 `func_801DC3D8`, ovl2601 `func_801CDD14`,
+  leading zeros as code 0xC3 (slot39 `menu_arts_screen_build_list`, ovl2601 `func_801CDD14`,
   ovl2602 `func_801D1304`), which the name entry also enters for an empty cell
   (ovl2600 `func_801CB33C`). Resource 27 gives these codes 25 one-byte glyphs on
   both discs: 0x61-0x6A and 0x16-0x1F the digits, 0x7E and 0x13 the minus sign,
   0x7D and 0x11 the plus sign, 0x10 the blank.
-- The memory card titles, directory (0x10, 1) file 1. `func_801C6400` copies line
+- The memory card titles, directory (0x10, 1) file 1. `menu_card_init_and_read_title` copies line
   `D_8006EF64` (30 bytes of two-byte Shift-JIS) into the save header. The menu
-  turns ASCII into Shift-JIS through its table `D_801EA610` (`func_801E65E4`), so
+  turns ASCII into Shift-JIS through its table `menu_ascii_to_sjis_table` (`menu_save_title_find_glyph`), so
   the inverse of that table reads the titles as text: 68 distinct ones. A title
   with known and unknown characters names the glyphs of the one whole text that
   fits it, if exactly one does. Such a text has the same length, the known glyphs

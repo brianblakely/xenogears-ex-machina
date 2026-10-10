@@ -60,7 +60,7 @@ The scan finds 4436 compiled game functions and these library entries
 | libapi | events (Open/Close/Enable/Disable/Test/UnDeliverEvent; Enable/DisableEvent 18/17, the sound driver's tick guard, Interrupt-context work), root counters (Set/Get/Start/StopRCnt), critical sections (11 each), SwEnterCriticalSection/SwExitCriticalSection (the soft reset boot_restart), FlushCache, InitPAD/StartPAD/StopPAD/ChangeClearPAD, BIOS file calls open B(32h), read B(34h), write B(35h), close B(36h), format B(41h), firstfile B(42h), nextfile B(43h), rename B(44h) and delete B(45h) (Memory card and saves), Krom2RawAdd B(51h), GetGp (the arena task's gp, menu arena_task_create) |
 | libetc | VSync (75), VSyncCallback (3), ResetCallback, SetVideoMode |
 | libspu | SpuInit/SpuQuit, SpuInitMalloc, SpuSetCommonAttr, SpuSetReverb and the reverb mode setters, SpuGetReverbModeType, SpuSetIRQ/SpuSetIRQCallback, SpuSetTransferMode/StartAddr/Callback, SpuReadDecodedData, SpuGetVoiceEnvelopeAttr, SpuSetNoiseClock; SpuRead/SpuWrite (8004d818/8004d878) by inspection (unattributed, called by sound.c sound_start_next_transfer) |
-| libcard | InitCARD, StartCARD, `_bu_init` (A(70h)), `_card_info` (A(ABh), the card check of slot39 func_801C891C) |
+| libcard | InitCARD, StartCARD, `_bu_init` (A(70h)), `_card_info` (A(ABh), the card check of slot39 menu_card_check_channel) |
 | libpress, libds | DecDCTReset/DecDCTin/DecDCTout/DecDCTvlc/DecDCTvlcSize and DecDCToutCallback, all from mdec |
 | libc, libc2 | bzero (126), rand (96), memcpy (33), memmove (16), sprintf (11), strcat, strcpy, strlen, memset, memchr, strcmp |
 | libsn | PCopen, PCcreat, PClseek, PCclose and PCinit/PCread/PCwrite (8004c38c/8004c398/8004c470, by inspection): development-host paths only (cd_pc_file_names set, or `mode_disc_mode != -1`) |
@@ -126,7 +126,7 @@ Outside the libraries the game itself uses:
 
   The arena coroutine switches stacks its own way (Control flow).
 - **BIOS Kanji ROM**: Krom2RawAdd returns a ROM glyph address for a Shift-JIS
-  code. slot39 func_801E65E4 draws every listed save title from it; field
+  code. slot39 menu_save_title_find_glyph draws every listed save title from it; field
   field_staff_roll_get_glyph uses it for staff-roll codes outside the game font (8540-887F).
   The staff roll (field_staff_roll_run_over_movie) runs only while mode_staff_roll_enabled is set, which only
   field ext `be` (enable_movie_overlay, field_event_enable_movie_overlay, entry 0xBE of the
@@ -171,29 +171,29 @@ Outside the libraries the game itself uses:
 ### Memory card and saves
 
 - Start-up: InitCARD(1), StartCARD, `_bu_init` at boot (main.c boot_main)
-  and again on the file screens (slot39.c func_801D9B08), which also open and
+  and again on the file screens (menu_framework.c menu_card_restart_access), which also open and
   enable the four card events on 0xF4000001: 4 (done), 0x8000 (error), 0x100
-  (timeout), 0x2000 (new card). func_801C881C busy-polls them with TestEvent
-  (no VSync); func_801C891C starts a check with A(ABh) and waits there. The
+  (timeout), 0x2000 (new card). menu_card_wait_event busy-polls them with TestEvent
+  (no VSync); menu_card_check_channel starts a check with A(ABh) and waits there. The
   file screens save and clear the CD callbacks around card access
-  (func_801D9C84, restored by func_801D9E3C).
+  (menu_file_screen_enter_card_mode, restored by menu_file_screen_leave_card_mode).
 - Files: devices "bu00:" and "bu10:" (D_801C50A8/D_801C50B0); a save is
   "BASLUS-00664" followed by the character '0' + digit, digit 0-14
-  (func_801CB9E8), so digits 10-14 give ':' ';' '<' '=' '>', which a host
-  filesystem may reject. func_801C8D78 lists a card with B(42h)/B(43h);
-  func_801C9038 reads each file's first 0x200 bytes. func_801C65F4 also stores
+  (menu_save_choose_digit), so digits 10-14 give ':' ';' '<' '=' '>', which a host
+  filesystem may reject. menu_card_list_directory lists a card with B(42h)/B(43h);
+  menu_card_read_first_block reads each file's first 0x200 bytes. menu_load_resources also stores
   "BASLUS-01160" in MenuCard.otherPrefix, which no recovered code reads.
-- Save (func_801CBD90): erase "bu0X:__tmp_file" (B(45h)), create it with
+- Save (menu_save_command_run): erase "bu0X:__tmp_file" (B(45h)), create it with
   `open(name, blocks << 16 | 0x200)`, reopen it for writing (mode 2), write the
   0x100-byte header (magic "SC", icon flag 0x11, one block, a 0x5C-byte
-  Shift-JIS title from func_801CA8C0, a 0x20-byte palette and the 0x80-byte
+  Shift-JIS title from menu_save_build_header_title, a 0x20-byte palette and the 0x80-byte
   16x16 icon), then the 0x1F00-byte payload in 0x100-byte writes, one menu frame
-  (func_801C7BF4) before each; payload byte 0x1EFF is the 8-bit sum of bytes
+  (menu_run_frame) before each; payload byte 0x1EFF is the 8-bit sum of bytes
   0-0x1EFE. Rename (B(44h)) to the final name commits it. An unformatted card
   is formatted with B(41h). Writes retry three times.
-- Load (func_801CB304, READ_SAVE): read the 0x2000-byte file in 0x100-byte
+- Load (menu_load_command_run, READ_SAVE): read the 0x2000-byte file in 0x100-byte
   reads (five retries) into a 0x2100-byte heap block, compare the sum, then
-  func_801CB28C: func_801E4D10 copies the saved blocks and recomputes the gear
+  menu_apply_loaded_save: menu_restore_game_data_from_save copies the saved blocks and recomputes the gear
   fields that are not saved, pad_vblank_count = the saved play time and
   mode_battle_ai_variables[16] (battle-AI globals) come back from GameData +0x2324. The field
   finishes a load through event variables 0x46 and 4 (field.c field_run_menu).
@@ -289,7 +289,7 @@ restore (Memory card and saves) and the dormant CdMix.
   | ReadS (0x1B) | the world-map reader (worldmap_stream_on_command_done); CdRead2 for movies (movie_restart) |
   | SeekL (0x15) | cd_advance_command_state after a seek's Setloc; the swap |
   | Pause (9) | the end of every shipped resident read, cd_set_mode after Setmode, list gaps (cd_copy_list_sector), retries; soft reset (cd_shutdown_disc_access); the world-map reader at a list's end and in recovery; movie_stop |
-  | Stop (8) | retry reason 4; the swap's preparation (func_801E92CC) |
+  | Stop (8) | retry reason 4; the swap's preparation (menu_cd_stop_drive) |
   | Standby (7) | cd_init_disc_access through CdControl, after CdInit (repeated until it succeeds) and CdSetDebug(0) |
   | Setmode (0x0E) | cd_set_mode: 0xA0 at start-up, soft reset, movie_stop and before the swap's label read, 0 in the swap's preparation; retry reason 6; CdRead2 with the movie mode |
   | Setfilter (0x0D) | movie_start: file 1 and the movie's channel, when its select bit 0 is set |
@@ -394,19 +394,19 @@ restore (Memory card and saves) and the dormant CdMix.
   in Disc 1's table and 2 in Disc 2's. Its readers: boot's opening-movie
   request (main.c boot_main: cd_movie_request_index = 0x10 on Disc 1, else 7, played as
   file 0x12 or 9 of directory (0x18, 1), movie.c func_80076488), the title file
-  screen's exit after 600 idle frames, on Disc 1 only (slot39.c func_801C58EC),
-  the swap (func_801C8694), the save (func_801CBA4C: D_8006F008 = disc - 1, or
+  screen's exit after 600 idle frames, on Disc 1 only (menu_framework.c menu_title_load_menu_run),
+  the swap (menu_cd_ask_for_disc), the save (menu_save_build_payload: D_8006F008 = disc - 1, or
   1 for the save offered at the change), field event `fe cd` (store_disc_number,
   field_event_store_disc_number) and the movie overlay's development screens.
 
   The swap runs in the in-game menu (mode 5). Menu kind 6 (field event `fe da`,
-  slot39.c func_801C57A4) offers a save and then asks for Disc 2
-  (func_801C8694(1)); after the title file screen (kind 2, func_801C62A8) the
+  menu_framework.c menu_cd_change_run) offers a save and then asks for Disc 2
+  (menu_cd_ask_for_disc(1)); after the title file screen (kind 2, menu_main) the
   menu asks for Disc 1 or, after a load, for the file's disc D_8006F008
   ([EVID-REF-003](../analysis/findings/EVID-REF-003.json) saw Disc 2's New Game
-  ask for Disc 1). func_801C8694(d) repeats while the reported disc is not
-  d + 1. func_801E92CC stops the read, sets Setmode 0 and retries Stop every
-  VSync(3); the change notice shows; func_801E93A0(d + 1) polls Getstat every
+  ask for Disc 1). menu_cd_ask_for_disc(d) repeats while the reported disc is not
+  d + 1. menu_cd_stop_drive stops the read, sets Setmode 0 and retries Stop every
+  VSync(3); the change notice shows; menu_cd_check_disc(d + 1) polls Getstat every
   VSync(3) until the lid opens (bit 0x10), until it closes and until the motor
   runs (bit 0x02) with the command completing, then sends GetTN, Setloc to
   sector 0 and SeekL. A SeekL failing with the error bit 0x01 and error-code bit
@@ -439,7 +439,7 @@ restore (Memory card and saves) and the dormant CdMix.
   worldmap_stream_read_host_list); the movie library uses the resident ring
   (movie_host_stream); and the swap loads `c:\work\cdrom.mdg` (the index,
   0x8000 bytes), `cdrom.fid` (the directory table, 0x7A) and `cdrom.fnd` (the
-  names, 0x40000), or `cdrom2.*` for Disc 2 (slot39 func_801E93A0, movie
+  names, 0x40000), or `cdrom2.*` for Disc 2 (slot39 menu_cd_check_disc, movie
   func_80072A08). libsn's entries are in the Services table.
 
 ## Timing
@@ -470,7 +470,7 @@ VSync(-1) 4, and VSync(8), VSync(arena_mode_vblanks_per_frame), VSync(sprite_fra
   saves and restores it, so paused time is not counted. These are field
   field_main, world map worldmap_run_pause_screen and worldmap_wait_for_controller, the battle input
   readers battle_read_input, battle_tick_event_script and battle_tick_result_screens (battle.c), and the
-  menu input readers slot39 func_801C7D78, ovl2598 func_801C92AC, ovl2600
+  menu input readers slot39 menu_read_input, ovl2598 func_801C92AC, ovl2600
   func_801C98E8, ovl2601 func_801CACC8 and ovl2602 func_801CB4E4.
 - The vblank handler's h:m:s clock (main2.c pad_advance_play_time) counts blanks in
   pad_play_time_frames (60 to the second), then seconds in pad_play_time_seconds, minutes in
@@ -505,8 +505,8 @@ VSync(-1) 4, and VSync(8), VSync(arena_mode_vblanks_per_frame), VSync(sprite_fra
 | 3 world map (worldmap_main, loop worldmap_run_frame_loop) | DrawSync, VSync(2) | 2 | first spins VSync(0) while the terrain stream reports 3 (worldmap_stream_step); sprite scripts tick twice per update (sprite_frame_skip = 1, worldmap_open_map_start) |
 | 3 world-map pause (worldmap_open_map.c worldmap_run_pause_screen, worldmap_wait_for_controller) | DrawSync, VSync(0) | 1 | A Start press (the pressed word worldmap_pad_port0_pressed & 0x800) enters worldmap_run_pause_screen until the next press, and a missing first pad enters worldmap_wait_for_controller until one answers (worldmap.c worldmap_run_frame_loop). Both draw on the other buffer, suspend voices and tick, and restore pad_vblank_count |
 | 4 Battling arena (`menu` target, arena_mode_main) | VSync(arena_mode_vblanks_per_frame) | 1 or 2 | the arena task sets arena_mode_vblanks_per_frame to 0 or 2 (menu5.c arena_mode_task); the arena coroutine runs once per frame (Control flow) |
-| 5 in-game menu (resident mode_run_menu; frames menu_state_update_frame, slot39 func_801C7BF4) | DrawSync, VSync(0) | 1 | also the ovl2598/2600/2601/2602 screens; card and disc-change waits inside |
-| 5 menu missing pad (slot39 func_801C7D78; ovl2598 func_801C92AC, ovl2600 func_801C98E8, ovl2601 func_801CACC8, ovl2602 func_801CB4E4) | none: spins | — | each screen's input reader spins on pad_get_controller_kind(0), with no VSync, until the first pad answers; voices and tick suspended, pad_vblank_count restored |
+| 5 in-game menu (resident mode_run_menu; frames menu_state_update_frame, slot39 menu_run_frame) | DrawSync, VSync(0) | 1 | also the ovl2598/2600/2601/2602 screens; card and disc-change waits inside |
+| 5 menu missing pad (slot39 menu_read_input; ovl2598 func_801C92AC, ovl2600 func_801C98E8, ovl2601 func_801CACC8, ovl2602 func_801CB4E4) | none: spins | — | each screen's input reader spins on pad_get_controller_kind(0), with no VSync, until the first pad answers; voices and tick suspended, pad_vblank_count restored |
 | 6 movie (func_800737EC, player func_80076488) | VSync(0) per pass, three decode steps per frame (movie_poll) | 1 | mdec's DecDCTout callback delivers frames |
 | battle screen effects (ovl2615 load/burst modes, ovl3387) | DrawSync, VSync(2) | 2 | |
 
@@ -566,7 +566,7 @@ The sound driver runs beside this on its own timer: 240 ticks per second, about
 | CD sync/ready/data | resident cd_start_read (one file), cd_read_file_list (file list), stream_start_image_load (image stream), cd_seek_or_pause_if_idle, then the callbacks themselves (cd_reads_and_streams.c); world map worldmap_stream_start_disc_list, worldmap_stream_on_command_done (installs worldmap_stream_on_data_ready) | CD interrupts | the read state machine cd_command_state, retry reason cd_retry_reason, counters cd_stat_command_ok_count/cd_stat_command_fail_count, sector copies (CdGetSector), stream-ring slots stream_slots; image streams load VRAM strips from the callback (stream_load_image_strip) | cd_sync_reads(0) and `while (cd_get_pending_read_count() ...)` busy-wait without VSync; world-map worldmap_stream_step |
 | MDEC output movie_slice_decoded (mdec.c) | DecDCToutCallback in movie_start (mdec.c:194), removed by movie_stop (mdec.c:454) | MDEC DMA completion | LoadImage of each slice, StCdInterrupt, the decoder state, then the frame callback: field field_movie_frame_callback (field_movie_frame frame number, display block field_movie_decoded_block/field_current_draw_block, isrgb24) or movie func_800768D8 | movie loops; field scripts and the staff roll key off field_movie_frame |
 | DrawSync callback | field field_record_gpu_time (development kits only, field_monitor_absent == 0), arena arena_debug_draw_sync_callback | GPU idle | VSync(1) stamps (profiling) | — |
-| card events 0xF4000001 | slot39 func_801D9B08 | BIOS card driver | event state | func_801C881C (TestEvent spin) |
+| card events 0xF4000001 | slot39 menu_card_restart_access | BIOS card driver | event state | menu_card_wait_event (TestEvent spin) |
 
 How the main program excludes these handlers:
 
@@ -577,8 +577,8 @@ How the main program excludes these handlers:
     each after a DrawSync and a VSync;
   - the sound driver's start and stop (sound_start_driver, sound_stop_driver) and its
     transfer queue (sound_queue_transfer);
-  - slot39's card events and its CD-callback swap (func_801C8960,
-    func_801D9B08, func_801D9C84, func_801D9E3C).
+  - slot39's card events and its CD-callback swap (menu_card_close_events,
+    menu_card_restart_access, menu_file_screen_enter_card_mode, menu_file_screen_leave_card_mode).
 
   The soft reset boot_restart uses SwExitCriticalSection and
   SwEnterCriticalSection instead. These set and clear status-register bits
@@ -655,7 +655,7 @@ Blocking waits deep in call stacks:
 - Disc waits: cd_sync_reads(0) and the world map's
   `while (cd_get_pending_read_count() >= 3)` spin without VSync.
 - The CdInit/CdControlB retry loops (cd_init_disc_access, cd_shutdown_disc_access) and the
-  disc-change checks in slot39 (func_801E92CC, func_801E93A0, with VSync(3)
+  disc-change checks in slot39 (menu_cd_stop_drive, menu_cd_check_disc, with VSync(3)
   between commands).
 - The transfer waits above.
 - The missing-pad spins of battle and the menus, and the battle pause (Pacing
@@ -707,7 +707,7 @@ state and an image at one address can be any of its tenants:
 
 | Address | Images | Loaded by |
 | --- | --- | --- |
-| 0x801C5000 | slot39, ovl2598, ovl2600, ovl2601, ovl2602 (directory 0x10, file kind + 5) | field field_run_menu (reads the file), world map worldmap_suspend_open_map (decodes its packed copy worldmap_packed_menu_overlay), resident menu_state_run_screen on the debug start; menu_state_run_screen then calls the tenant's entry: func_801C62A8, func_801CB0A8, func_801CBDBC, func_801CCD28 or func_801CE024 |
+| 0x801C5000 | slot39, ovl2598, ovl2600, ovl2601, ovl2602 (directory 0x10, file kind + 5) | field field_run_menu (reads the file), world map worldmap_suspend_open_map (decodes its packed copy worldmap_packed_menu_overlay), resident menu_state_run_screen on the debug start; menu_state_run_screen then calls the tenant's entry: menu_main, func_801CB0A8, func_801CBDBC, func_801CCD28 or func_801CE024 |
 | 0x801D3000 | mdec movie library | movie func_800737EC (directory 0x18 file 1); field field_movie_play copies directory 4 file 0xA9 there |
 | 0x801DC000 | ovl2143 (actor module) | field field_layer_load (directory 4 file 0x6B9); for the gear shop field_run_menu reads directory 0x10 file 0xC to 0x1DC000, the slot's KUSEG mirror; resident menu_state_run_screen on the debug start. The world map's directory 0x24 holds a third copy (file 0x28) that no world map code reads; its worldmap_draw_distant_landmark, which would draw actor 0, has no caller |
 | 0x801DE000 | ovl2596 (battle results) | battle battle_main |
@@ -752,7 +752,7 @@ isrgb24 0. The game changes only what the table lists.
 | battle (resident preparation) | 320x224 at y 0 and 224 | default | 0 | 0 | isbg (0x3C, 0x78, 0x78) | — | mode_battle_and_menu.c mode_battle_init_display |
 | battle | 320x224 at y 0 and 224 | (0, 10, 256, 216) | 0 | 0 | isbg from the stage (func_801E7210) | 1 + catch-up | battle_flow.c battle_init_display_buffers |
 | Battling arena | 640x218 for scenes (menu2.c arena_winner_open_screen), 320x218 for its menus (arena_winner_close_screen, menu5.c arena_mode_task), at y 0 and 256 | (0, 10, 256, 218) | 0 | 0; the interlaced branch for heights above 256 (both buffers at y 0, screen (0, 16, 256, 212)) has no caller | dtd 1, isbg 0, tpage GetTPage(0, 2, 0x280, 0); DR_AREA/DR_OFFSET per layer | 1 or 2 | menu7.c arena_display_set_disp_envs, arena_display_set_draw_envs |
-| in-game menu | 320x224 at y 0 and 224 | (0, 10, 256, 216) | 0 | 0 | dtd 1, isbg 0; the saved screen is copied into the back buffer every frame | 1 | mode_battle_and_menu.c menu_state_init_display, menu_state_init_buffer; slot39.c func_801C7BF4 |
+| in-game menu | 320x224 at y 0 and 224 | (0, 10, 256, 216) | 0 | 0 | dtd 1, isbg 0; the saved screen is copied into the back buffer every frame | 1 | mode_battle_and_menu.c menu_state_init_display, menu_state_init_buffer; menu_framework.c menu_run_frame |
 | movie | 320x240 at y 0 and 240 | (0, 10, 256, 216) | 1 while a movie plays | 0 | isbg 1 (0 during playback) | 1 | movie.c func_800737EC, func_800763BC; its CD-ROM and sector monitors (debug) use 640x240 |
 
 The screen window values are PsyQ display units; rendering-behavior.md
@@ -828,7 +828,7 @@ GTE with H 0x1000 (sprite_sheet.c).
 - **State**: bits 0x700 of the driver flags sound_driver_flags, set by
   `sound_set_output_mode(mode)` (console_and_sound_driver.c): 0 Mono (no bit), 1 Stereo (0x100),
   2 Wide (0x300), 3 (0x500) has no caller. Boot runs sound_start_driver(0): flags
-  0xB801, then Stereo. The sound option (slot39.c func_801D9808) maps its
+  0xB801, then Stereo. The sound option (menu_framework.c menu_sound_mode_screen_run) maps its
   choices 0/1/2 to modes 0/2/1. The mode is not saved, and boot (also after a
   soft reset) restores Stereo.
 - **Voices**: the pan law sound_stage_seq_voices (sound.c) gives every voice the centre

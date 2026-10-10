@@ -199,7 +199,7 @@ extern void *menu_state_debug_heap_reservation;
 extern u32 *menu_state_big_ots[2]; /* the menu's large ordering tables, one per draw buffer */
 
 /* Menu overlay (801c5000) entries. */
-void func_801C62A8(void);
+void menu_main(void);
 void func_801CB0A8(void);
 void func_801CBDBC(void);
 void func_801CCD28(void);

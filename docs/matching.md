@@ -396,7 +396,7 @@ screen words.
 `psyq/libc.h` declares memcpy and memset unprototyped, as MEMORY.H does "to avoid
 conflicting" with GCC's built-ins, which they keep: field 800AB808's copy needs the
 built-in memcpy (with its computed length the built-in still calls memcpy).
-slot39_801DBE54's two 0xa38-byte save copies call memcpy in the original; the
+menu_member_screens's two 0xa38-byte save copies call memcpy in the original; the
 built-in would move them inline, their length being constant. That unit declares a
 memcpy prototype, which drops the built-in there (cc1 warns of the conflict);
 passing the length in a variable instead keeps the built-in and gives the same code
@@ -544,7 +544,7 @@ every placeholder (7797 rows, 390 files) kept all 26 images, cross-image and cov
   linked the same way with `INCLUDE_ORIGINAL(".data", NAME, VRAM, SIZE)` at its place
   among the unit's definitions, from the pristine input as INCLUDE_ASSET does
   (`INCLUDE_ORIGINAL_UNALIGNED`, without the `.align 2`, for a byte that directly
-  follows the object before it, slot39's flag D_801E96A5); use it only where the
+  follows the object before it, slot39's flag menu_saving_at_cd_change); use it only where the
   padding is non-zero and nothing reads it. Both count as `included`. The same holds
   where the object ends its unit's section and stray bytes run to the next unit's
   (menu7's arena_actor_combo_inputs, then `ind`), which are not established as the assembler's
@@ -738,7 +738,7 @@ converted to C per unit. What converting the targets' `.data` established:
 
 - A unit emits each section in definition order and the original linker joined them
   in unit order, so a block belongs to the unit whose section holds it, not to the
-  units that read it (slot39.c holds tables only its later units use; battle
+  units that read it (menu_framework.c holds tables only its later units use; battle
   80070E2C's `.data` opens with tables several units share). Define blocks in
   address order. Each unit has one `.data`, so an object that stays original data is
   linked at its place among the unit's definitions (INCLUDE_ORIGINAL, above) and its
@@ -757,7 +757,7 @@ converted to C per unit. What converting the targets' `.data` established:
   true extent: the world map's flame sizes worldmap_scene15_flame_sizes (5 u16 for flame actors 4-8,
   worldmap_scene15_flame_start and worldmap_scene15_flame_update; fill 65 79) and gear parameters worldmap_gear_sprite_height (3 s16
   for the members 0-2 worldmap_place_vehicle passes; fill 00 3c), slot39's sheet images
-  D_801E97AC (13 rows of 5 u8, func_801E1544 for the rows of func_801E1AC8; fill 00 07
+  menu_deathblow_row_images (13 rows of 5 u8, menu_deathblow_screen_layout_row for the rows of menu_deathblow_screen_build; fill 00 07
   2e) and battle's combo flags battle_combo_step_flags (15 u8: battle_can_use_combo_step, battle_combo_chain_add_gear_step and
   battle_combo_record_gear_step index at most 14 from combo steps 0-2, or 0xff at attack level 4;
   fill 35). `tools/stray_padding.py` (module docstring) lists every linked C data
@@ -800,18 +800,18 @@ converted to C per unit. What converting the targets' `.data` established:
   copies, or tables read through a base formed before
   them (`battle_combo_next_step_table_by_paid`, `D_801EA5D0`, `[text[0] - 1]`, `[(top_cursor - 1) * 4 +
   list_cursor]`). slot39's unreferenced bytes 08 00 at 801E96A6, between the flags
-  D_801E96A4 and D_801E96A5 and the u16 masks D_801E96A8 (GCC 2.6.3 emits consecutive
+  menu_save_command_stays_open and menu_saving_at_cd_change and the u16 masks menu_bit_masks (GCC 2.6.3 emits consecutive
   byte scalars back to back and aligns the arrays to a word), are taken as the flag's
   padding by analogy with the flags closure D links with theirs, battle's battle_applying_item_results
-  (08 00 00) and ovl2596's D_801E44C0 (04 00 00): D_801E96A5 is linked with them, with
-  INCLUDE_ORIGINAL_UNALIGNED (it follows D_801E96A4 directly). Neither the bytes nor
+  (08 00 00) and ovl2596's D_801E44C0 (04 00 00): menu_saving_at_cd_change is linked with them, with
+  INCLUDE_ORIGINAL_UNALIGNED (it follows menu_save_command_stays_open directly). Neither the bytes nor
   the vendor tools decide it, here or for those two, which could as well each be a
   flag, an unreferenced byte 8 or 4 and zero fill: nothing in any image reaches
   801E96A6; battle's flag battle_paused before the same two mask tables (battle_slot_bits,
   battle_flag_bits) is followed by zeros, as slot39's other byte groups are (801E977B,
   801E9786-87); and Psy-Q 3.5's CC1PSX 2.6.3.SN.2 and ASPSX 2.34 under DOSBox build the
   whole slot39 unit, with or without a byte 8 there, to the original .data but for
-  zeros at every stray byte (08 without the byte, 07 2e after D_801E97AC in both).
+  zeros at every stray byte (08 without the byte, 07 2e after menu_deathblow_row_images in both).
   Battle's battle_in_automatic_turn and battle_effects_disabled (00 08 00 71, 00 74 72 73) are no such analogue:
   GCC would put the byte flag that follows each (battle_applying_item_results, battle_gear_objects_loaded) directly
   after it, so their three bytes need a unit boundary, unreferenced data or a
@@ -857,7 +857,7 @@ converted to C per unit. What converting the targets' `.data` established:
 - splat names addresses the code forms from a base plus a constant (`D_8009A684`, four
   entries before the flame sizes; `D_801EA5D0`, 0x20 before the Shift JIS codes).
   Declare the real object and index it as the code does (`worldmap_scene15_flame_sizes[index - 4]`,
-  `D_801EA610[hi - 0x20]`): it compiles to the same address. Interior names that
+  `menu_ascii_to_sjis_table[hi - 0x20]`): it compiles to the same address. Interior names that
   remaining assembly still uses go in `<target>.data.ld` (`D_x = D_y + off`; splat's
   `undefined_syms_auto.txt` covers only unaligned ones). These aliases are
   scaffolding, deleted when their last assembly user matches (slot39's and field's
@@ -958,7 +958,7 @@ converted to C per unit. What converting the targets' `.data` established:
   is kept. The commons, which the original linker
   allocated after every unit's own in an order of its own (mdec's five player commons
   among the 20 of libcd's CDROM.OBJ), are defined by a commons unit linked last
-  (slot39_common.c, menu_common.c, ovl2602_common.c, battle_common.c,
+  (menu_overlay_common.c, menu_common.c, ovl2602_common.c, battle_common.c,
   field_common.c, worldmap_common.c, mdec commons/; the resident's commons/ units
   lie between the PsyQ libraries' generated ranges), which reproduces the linker's
   placement rather than modelling it. It
@@ -988,7 +988,7 @@ converted to C per unit. What converting the targets' `.data` established:
   own to 80096fa8, then the large commons up to the mode table's BSS end 8009b558
   (`tools/data_users.py decomp/targets/overlays/menu.mk --end 80096fa8`: no
   INVERSION, and the one FOREIGN address above). The GCC 2.6.3 images keep one
-  `.bss` in declaration order (slot39_801DBE54's 2-, 200-, 200- and 1-byte statics at
+  `.bss` in declaration order (menu_member_screens's 2-, 200-, 200- and 1-byte statics at
   801ea72c-801ea8c0; mdec's 64-byte movie_decoder among 4-byte statics), so the split
   is the assembler's own 8-byte small-data threshold, applied to the `.lcomm`/`.comm`
   GCC emits after a `-G0` unit's code, with the linker's small commons. The code,

@@ -6,5 +6,5 @@
  * then this order, the address order. */
 #include "common.h"
 
-u8 D_801EA8FC;     /* the last choice was cancelled */
-s32 D_801EA900[2]; /* per port: blocks the listed files use (15 fill a card) */
+u8 menu_yes_no_cancelled;     /* 801EA8FC: the last choice was cancelled */
+s32 menu_card_blocks_used[2]; /* 801EA900: per port: blocks the listed files use (15 fill a card) */

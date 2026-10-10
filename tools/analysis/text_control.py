@@ -442,20 +442,20 @@ def text_tables(disc: Disc):
 # codes palette * 16 + digit and its sign as palette * 16 + 10 (negative) or
 # + 11, and the window controls pass palettes 0 and 1 (0F 09, 0F 0A, 0F 0C).
 # The menus write the blank that replaces a number's leading zeros as code 0xC3
-# (slot39 func_801DC3D8, ovl2601 func_801CDD14, ovl2602 func_801D1304), which
+# (slot39 menu_arts_screen_build_list, ovl2601 func_801CDD14, ovl2602 func_801D1304), which
 # the name entry also enters for an empty cell (ovl2600 func_801CB33C).
 # Resource 27 gives each code's glyph.
 NUMBER_PALETTES = (0, 1)
 SIGN_CODES = {10: "-", 11: "+"}
 BLANK_CODE = 0xC3
-# The memory card title lines (directory (0x10, 1) file 1): func_801C6400
+# The memory card title lines (directory (0x10, 1) file 1): menu_card_init_and_read_title
 # skips D_8006EF64 lines, a byte of 0x80 or more taking the next byte with it,
 # and copies the next 30 bytes of two-byte Shift-JIS into the save header. The
-# menu's func_801E65E4 turns ASCII 0x20-0x7F into Shift-JIS through the
-# 96-entry table D_801EA610 of the slot-39 image; its inverse reads the titles.
+# menu's menu_save_title_find_glyph turns ASCII 0x20-0x7F into Shift-JIS through the
+# 96-entry table menu_ascii_to_sjis_table of the slot-39 image; its inverse reads the titles.
 TITLE_FILE = (0x10, 1, 1)
 TITLE_BYTES = 30
-SJIS_TABLE = 0x801EA610 - 0x801C5000  # offset of D_801EA610 in the slot-39 image
+SJIS_TABLE = 0x801EA610 - 0x801C5000  # offset of menu_ascii_to_sjis_table in the slot-39 image
 # The name entry grid (ovl2600 D_801CBEC0): 36 entries of six character codes,
 # of which func_801CA558 shows five, in four columns of nine, so screen row r
 # shows entries r, r + 9, r + 18 and r + 27 from left to right.
@@ -479,7 +479,7 @@ def number_glyphs(pairs: bytes, threshold: int) -> dict[int, str]:
 
 
 def save_titles(data: bytes, table: tuple[int, ...]) -> list[str]:
-    """The title lines as func_801C6400 reads them: 30 bytes from the start of
+    """The title lines as menu_card_init_and_read_title reads them: 30 bytes from the start of
     the file and after each newline, as text through the inverse of `table`
     (entry n the Shift-JIS of ASCII 0x20 + n) up to the first byte below 0x80,
     without trailing blanks. A line holding a code outside the table is left

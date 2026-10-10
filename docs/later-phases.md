@@ -366,7 +366,7 @@ takes from it:
   still to come, and the world map goes on once fewer than three are left
   (`while (cd_get_pending_read_count() >= 3)`, eleven sites).
 - **Present the swap.** The drive shows the sequence that section gives for
-  `func_801E93A0`: the lid opening and closing, a running motor, GetTN, Setloc
+  `menu_cd_check_disc`: the lid opening and closing, a running motor, GetTN, Setloc
   and SeekL, the label at sector 0x17 and the other disc's index and directory
   at sectors 0x18 and 0x28. RAM is kept.
 - **The host-file path is an original seam, with gaps.** It finishes sizes,
@@ -571,7 +571,7 @@ instruction on either disc. For Phases 7, 11 and 12:
 | Formations and encounter sets | field component 6 into `formation_encounter_set`, world map `worldmap_encounter_sets`, battle `battle_main`, ovl2615, ovl3087; `BattleFormation` and `EncounterSet` in resident/formation.h | [formations.md](scripts/formations.md), `formations.py` | see its Open items |
 | World map actor and scene scripts, arena scripts | worldmap, menu | [worldmap-actor.md](scripts/worldmap-actor.md), [worldmap-scene.md](scripts/worldmap-scene.md), [arena-scene.md](scripts/arena-scene.md), `overlay_scripts.py` | none |
 | Cue timelines: field movie sounds, world map terrain texture animations | field `field_movie_play_due_sounds`; world map `worldmap_texture_anim_advance`, `worldmap_texture_anim2_advance` | [timelines.md](scripts/timelines.md), `overlay_scripts.py` | see its Open item |
-| Save files | slot39 `func_801CBD90`, `func_801CB304` | [original-boundaries.md](original-boundaries.md), `menu_save_file.py` | none |
+| Save files | slot39 `menu_save_command_run`, `menu_load_command_run` | [original-boundaries.md](original-boundaries.md), `menu_save_file.py` | none |
 | Movies (STR, XA) | mdec, movie, field `field_movie_play` | VLC only (`src/analysis/mdec_codec.hpp`) | IDCT, colour conversion and XA ADPCM |
 
 ### Original bytes the port must import
@@ -729,9 +729,9 @@ revision:
 | rejected `section` attributes | 0 | 3 in 2 files | 0 | 0 | Mach-O section names need a segment (main.c `mode_next_mode`, `mode_table`; menu6.c `arena_mode_tasks`) |
 | asm with MIPS register names | 150 in 24 files | same | same | same | GTE macros, stack switches, `GET_RA` |
 | non-prototype declarations | 258 in 47 files | same | same | same | K&R definitions and calls |
-| incompatible pointer types | 2 in 2 files | same | same | same | one object read through two types: a `VECTOR`'s `long` passed as `s32 *` (field_motion.c `field_actor_move` to `field_actor_is_outside_boundary`), an `s32` buffer as `SaveData *` (slot39.c to `func_801E4D10`) |
+| incompatible pointer types | 2 in 2 files | same | same | same | one object read through two types: a `VECTOR`'s `long` passed as `s32 *` (field_motion.c `field_actor_move` to `field_actor_is_outside_boundary`), an `s32` buffer as `SaveData *` (menu_framework.c to `menu_restore_game_data_from_save`) |
 | `return;` in a non-void function | 45 in 13 files | same | same | same | implicit-int functions; see below |
-| conflicting types | 2 in 2 files | same | same | same | a prototype after a call implicitly declared the function (field_effect.c `field_load_tim_at`), and slot39_801DBE54.c's `memcpy` prototype, which drops the built-in ([matching.md](matching.md)) |
+| conflicting types | 2 in 2 files | same | same | same | a prototype after a call implicitly declared the function (field_effect.c `field_load_tim_at`), and menu_member_screens.c's `memcpy` prototype, which drops the built-in ([matching.md](matching.md)) |
 | arrays of incomplete struct type | 34 in 6 files | same | same | same | commons units define their variables before the headers complete the types ([matching.md](matching.md), Recovering data) |
 | incompatible function-pointer types | 2 in 2 files | same | same | same | a function stored under another prototype: the variadic report printf `console_report_printf` in the heap report's `void (*)(char *)` output hook (heap_host_report.c), a primitive type's unprototyped `prepare` in a prototyped local (model_renderer.c `model_build_packets`) |
 | unsequenced modifications | 6 in 2 files | same | same | same | several `*pc++` in one call's arguments |
@@ -834,7 +834,7 @@ captures on both discs.
    VRAM, the software SPU with Mono/Stereo/Wide in the mixer, and the software
    MDEC. Add the pre-projection capture at the seams above.
 6. **Remaining modes (Phase 4).** Add the world map with its own CD stream
-   reader, the arena with its nested fiber, disc swap through `func_801E93A0`'s
+   reader, the arena with its nested fiber, disc swap through `menu_cd_check_disc`'s
    protocol, and the rest of the field, battle and menu content.
 7. **Modern presentation (Phase 5).** Re-traverse pre-projection data with
    relaxed culling, keep the on-screen bit and parity on the original camera,
