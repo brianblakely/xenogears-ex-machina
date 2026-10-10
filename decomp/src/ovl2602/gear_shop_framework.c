@@ -104,7 +104,7 @@ u32 gear_shop_bit_masks32[32] = { /* 801D6C88 */
  * units' data (zero there), each in a slot of whole words (decomp/Makefile).
  * Only this unit's code reads them (tools/data_users.py). */
 static POLY_FT4 gear_shop_debug_value_packets[200]; /* 801D7108: model values debug display packets, two per sprite */
-static s32 gear_shop_debug_value_sprite_count;           /* 801D9048: their sprite count */
+static s32 gear_shop_debug_value_sprite_count;      /* 801D9048: their sprite count */
 
 /* 801C511C: A random value in [min, max] (ffff stays ffff, a zero max gives 0). */
 u16 gear_shop_pick_random_in_range(u16 min, u16 max) {

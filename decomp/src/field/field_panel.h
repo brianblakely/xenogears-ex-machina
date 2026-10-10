@@ -29,11 +29,11 @@ typedef struct {
 extern PanelFrame field_status_panel_texture_frames[];
 extern PanelPiece field_status_panel_pieces[PANEL_PIECES];
 extern s32 field_status_panel_draw_count;         /* frame counter */
-extern s32 field_status_panel_blink_phase;         /* blinking frame 0..2 */
-extern POLY_FT4 *field_status_panel_quads[2]; /* the quads per draw buffer */
+extern s32 field_status_panel_blink_phase;        /* blinking frame 0..2 */
+extern POLY_FT4 *field_status_panel_quads[2];     /* the quads per draw buffer */
 
 void field_status_panel_build(void);      /* build the panel's quads */
-void field_status_panel_draw(void);      /* draw the panel */
-void field_status_panel_release(void);      /* release the quads once allocated */
+void field_status_panel_draw(void);       /* draw the panel */
+void field_status_panel_release(void);    /* release the quads once allocated */
 
 #endif

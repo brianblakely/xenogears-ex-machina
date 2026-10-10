@@ -111,12 +111,12 @@ PrimitiveType model_primitive_types[17] = { /* 8004FE50 */
     {{model_draw_ft3_envmap, model_draw_ft3_envmap, model_draw_ft3_envmap, model_draw_ft3_envmap, model_draw_ft3_envmap, model_draw_ft3_envmap},
      model_prepare_ft3_envmap, 8, 4, 0x20},
 };
-s32 model_screen_x_limit = 0x13F;    /* 800500F8: right screen edge of the renderers (8002dff0) */
-s32 model_screen_y_limit = 0xEE0000; /* 800500FC: bottom screen edge - 1, in the high half */
-s32 model_ot_depth_shift = 2;        /* 80050100: depth shift into the ordering table */
-s32 model_box_test_mode = 1;        /* 80050104: bounding box test mode (8003101c), 0 off */
-s32 model_tpage_override_mode = 0;        /* 80050108: texture page override: 0 none, 1 page, 2 raw */
-s32 model_clut_override_disabled = 1;        /* 8005010C: CLUT override: 0 on */
+s32 model_screen_x_limit = 0x13F;     /* 800500F8: right screen edge of the renderers (8002dff0) */
+s32 model_screen_y_limit = 0xEE0000;  /* 800500FC: bottom screen edge - 1, in the high half */
+s32 model_ot_depth_shift = 2;         /* 80050100: depth shift into the ordering table */
+s32 model_box_test_mode = 1;          /* 80050104: bounding box test mode (8003101c), 0 off */
+s32 model_tpage_override_mode = 0;    /* 80050108: texture page override: 0 none, 1 page, 2 raw */
+s32 model_clut_override_disabled = 1; /* 8005010C: CLUT override: 0 on */
 
 /* 8002C3E8: Relocate a model group's offsets to addresses (once). Returns the number
  * of models. */

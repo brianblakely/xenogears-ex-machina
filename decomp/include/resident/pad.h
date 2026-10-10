@@ -20,18 +20,18 @@ typedef struct {
 } Actuator;
 
 extern PadBuffer pad_receive_buffers[];
-extern u16 pad_port0_held;    /* held pad buttons */
-extern u16 pad_port0_pressed;    /* pad buttons pressed */
-extern u16 pad_port0_repeated;    /* pad buttons repeated */
+extern u16 pad_port0_held;     /* held pad buttons */
+extern u16 pad_port0_pressed;  /* pad buttons pressed */
+extern u16 pad_port0_repeated; /* pad buttons repeated */
 /* The vertical blank count pad_vblank_count (an s32 that 8003634c increments; saves
  * keep it as the play time in frames) is declared by its users: the mode 4
  * menu reads it as volatile at each use (decomp/src/menu/resident_views.h),
  * the other targets as a plain s32 (volatile, 8003634c's increment would
  * load it again after the store). */
-extern u8 pad_play_time_hours;     /* play time hours */
+extern u8 pad_play_time_hours;       /* play time hours */
 extern u8 pad_play_time_minutes;     /* play time minutes */
 extern u8 pad_play_time_seconds;     /* play time seconds */
-extern u16 pad_button_bits[8]; /* button bits */
+extern u16 pad_button_bits[8];       /* button bits */
 extern u8 pad_button_assignment[8];  /* button assignment */
 extern u8 pad_dpad_stick_x_table[16];
 extern u8 pad_dpad_stick_y_table[16];

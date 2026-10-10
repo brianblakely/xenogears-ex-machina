@@ -229,22 +229,22 @@ typedef struct MenuEquipList {
 } MenuEquipList;
 
 extern s32 menu_file_command_label_x_offsets[];      /* item target label x offsets */
-extern u8 menu_item_target_label_ids[];  /* item target labels */
+extern u8 menu_item_target_label_ids[];              /* item target labels */
 extern u8 menu_equip_screen_label_ids[];
-extern u8 menu_deathblow_screen_label_ids[];  /* 801e1014 screen labels */
-extern u8 menu_gear_command_label_ids[];  /* status screen labels: a character's page, then (6) a gear's */
-extern u8 menu_item_arts_label_ids[];  /* item and arts screen labels, eight per page */
+extern u8 menu_deathblow_screen_label_ids[];         /* 801e1014 screen labels */
+extern u8 menu_gear_command_label_ids[];             /* status screen labels: a character's page, then (6) a gear's */
+extern u8 menu_item_arts_label_ids[];                /* item and arts screen labels, eight per page */
 extern s32 menu_equip_screen_part_cursor_y_table[8]; /* equipment screen: part cursor y by special * 4 + part */
-extern s32 menu_arts_screen_cost_x_table[];  /* arts list cost x positions */
-extern s32 menu_arts_screen_cost_y_table[];  /* arts list cost y positions */
+extern s32 menu_arts_screen_cost_x_table[];          /* arts list cost x positions */
+extern s32 menu_arts_screen_cost_y_table[];          /* arts list cost y positions */
 extern u16 menu_arts_screen_usable_art_masks[];
-extern s32 menu_arts_screen_panel6_widths[3]; /* arts screen window sizes per kind */
+extern s32 menu_arts_screen_panel6_widths[3];        /* arts screen window sizes per kind */
 extern s32 menu_arts_screen_panel4_x_table[3];
 extern s32 menu_arts_screen_panel4_widths[3];
-extern u8 menu_target_panels_allocated;    /* the target panels are allocated */
-extern u8 menu_deathblow_row_images[13 * 5]; /* 801e1544 screen: five sheet images per row, ff none */
+extern u8 menu_target_panels_allocated;              /* the target panels are allocated */
+extern u8 menu_deathblow_row_images[13 * 5];         /* 801e1544 screen: five sheet images per row, ff none */
 extern s32 menu_gear_command_label_x_offsets[];      /* status command label x offsets (page 0 and 6) */
-extern u8 menu_gear_pilots[20];      /* pilot character of each gear */
+extern u8 menu_gear_pilots[20];                      /* pilot character of each gear */
 
 /* The field menu's functions that another unit calls, or its own before
  * defining them. */

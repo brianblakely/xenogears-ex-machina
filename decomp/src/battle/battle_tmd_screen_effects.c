@@ -34,14 +34,14 @@
  * decomp/Makefile). The users of the last, 800B3E04, end the unit before
  * 800B3F04. */
 static ScriptEntry battle_tmd_selected_object; /* 800C3BD0: the selected script */
-static u8 *battle_tmd_primitive_cursor;         /* 800C3BEC: effect script cursor */
-static s32 battle_unread_tmd_step_count;         /* 800C3BF0: effect script step count */
-static s32 battle_unused_tmd_word;         /* 800C3BF4: unreferenced */
-static DR_TPAGE battle_tmd_blend_tpage;    /* 800C3BF8: the blend mode's texture page */
-static ScreenFade battle_second_screen_fade;  /* 800C3C00: the second screen fade */
-static s32 battle_unused_screen_fade_word;         /* 800C3C4C: unreferenced */
-static ScreenFade battle_main_screen_fade; /* 800C3C50 */
-static RECT battle_vram_column_rect; /* 800C3C9C */
+static u8 *battle_tmd_primitive_cursor;        /* 800C3BEC: effect script cursor */
+static s32 battle_unread_tmd_step_count;       /* 800C3BF0: effect script step count */
+static s32 battle_unused_tmd_word;             /* 800C3BF4: unreferenced */
+static DR_TPAGE battle_tmd_blend_tpage;        /* 800C3BF8: the blend mode's texture page */
+static ScreenFade battle_second_screen_fade;   /* 800C3C00: the second screen fade */
+static s32 battle_unused_screen_fade_word;     /* 800C3C4C: unreferenced */
+static ScreenFade battle_main_screen_fade;     /* 800C3C50 */
+static RECT battle_vram_column_rect;           /* 800C3C9C */
 
 Quake *battle_current_quake = NULL; /* 800C3548 */
 SVECTOR battle_quake_view_offset = {0, 0, 0}; /* 800C354C */

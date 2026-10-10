@@ -11,8 +11,8 @@
 
 /* The party's model files: character and gear models per party slot. */
 extern void *worldmap_character_models[3]; /* character model buffers */
-extern void *worldmap_gear_models[3]; /* gear model buffers */
-extern s32 worldmap_party_count;      /* loaded party members */
+extern void *worldmap_gear_models[3];      /* gear model buffers */
+extern s32 worldmap_party_count;           /* loaded party members */
 
 /* A parked vehicle's spot (world units), per party slot: event variables
  * 21-29 of the game data. */

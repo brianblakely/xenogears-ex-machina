@@ -48,9 +48,9 @@ extern Formation *battle_formation;
  * actor's position, then up to seven formation points; unused points are
  * 0xFFFF. */
 s32 battle_plan_approach_route(u8 actor, u8 target);
-void battle_join_target_group(u8 actor, u8 target); /* move actor into target's group */
+void battle_join_target_group(u8 actor, u8 target);       /* move actor into target's group */
 void battle_join_empty_target_group(u8 actor, u8 target); /* move actor alone into target's empty group */
-void battle_give_slot_own_group(s32 slot); /* give slot a formation group of its own */
-u8 battle_count_enemy_gear_group_members(u8 slot);               /* the slot's group's members among the flagged groups */
+void battle_give_slot_own_group(s32 slot);                /* give slot a formation group of its own */
+u8 battle_count_enemy_gear_group_members(u8 slot);        /* the slot's group's members among the flagged groups */
 
 #endif

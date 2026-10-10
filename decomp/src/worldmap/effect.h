@@ -54,7 +54,7 @@ typedef struct EffectSlot {
 
 extern AreaObject *worldmap_effect_emitters; /* the area data's emitters */
 extern EffectSlot *worldmap_effect_slots;
-extern void *worldmap_effect_quads[2];    /* particle quads, per display buffer */
+extern void *worldmap_effect_quads[2];       /* particle quads, per display buffer */
 
 void worldmap_effects_alloc_slots(void); /* clear the area objects, allocate the effect slots */
 void worldmap_effects_free_slots(void); /* free the effect slots */

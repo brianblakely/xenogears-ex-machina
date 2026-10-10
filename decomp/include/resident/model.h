@@ -134,11 +134,11 @@ typedef struct RenderPacket {
 } RenderPacket;
 
 extern RenderPacket *model_current_packet; /* the primitive being built */
-extern s32 *model_lit_color_cache;          /* lit-color cache: color word, then the face normal */
-extern SVECTOR *model_current_normals;      /* vertex normals of the model being drawn */
-extern SVECTOR *model_current_vertices;      /* vertices of the model being drawn */
-extern u32 *model_ot;          /* the ordering table models are drawn into */
-extern s32 model_drawn_primitive_count;           /* primitives drawn */
+extern s32 *model_lit_color_cache;         /* lit-color cache: color word, then the face normal */
+extern SVECTOR *model_current_normals;     /* vertex normals of the model being drawn */
+extern SVECTOR *model_current_vertices;    /* vertices of the model being drawn */
+extern u32 *model_ot;                      /* the ordering table models are drawn into */
+extern s32 model_drawn_primitive_count;    /* primitives drawn */
 extern s32 model_ot_depth_shift;           /* depth shift into the ordering table */
 
 void model_compute_face_normal(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *normal); /* face normal */
@@ -169,9 +169,9 @@ typedef struct {
 
 extern PrimitiveType model_primitive_types[];
 extern PrimitiveGroup *model_current_primitive_group; /* the primitive group being drawn */
-extern s32 model_submitted_primitive_count;             /* primitives submitted */
-extern s32 model_box_test_mode;             /* bounding box test mode (8003101C), 0 off */
-extern u8 *model_current_aux_data;             /* auxiliary data of the record being prepared */
+extern s32 model_submitted_primitive_count;           /* primitives submitted */
+extern s32 model_box_test_mode;                       /* bounding box test mode (8003101C), 0 off */
+extern u8 *model_current_aux_data;                    /* auxiliary data of the record being prepared */
 
 s32 model_draw_sprite_model(SpriteModel *model, RenderPacket *packets, u32 *ot, s32 mode); /* draw */
 void model_build_packets(SpriteModel *model, RenderPacket *packets, s32 mode); /* build packets */

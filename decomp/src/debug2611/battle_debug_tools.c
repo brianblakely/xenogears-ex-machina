@@ -11,19 +11,19 @@
 
 /* Tool statics, in the original's definition order. The words this code
  * never reads (8028203c, 80282048-8028205b) are kept as they were defined. */
-s32 battle_debug_heap_monitor_shown = 0;          /* 80282034: heap monitor shown */
-s32 battle_debug_performance_counters_shown = 0;          /* 80282038: performance counters shown */
-s32 battle_debug_unused_word_1 = 0;          /* 8028203C: unreferenced */
+s32 battle_debug_heap_monitor_shown = 0;         /* 80282034: heap monitor shown */
+s32 battle_debug_performance_counters_shown = 0; /* 80282038: performance counters shown */
+s32 battle_debug_unused_word_1 = 0;              /* 8028203C: unreferenced */
 s32 battle_debug_camera_tool_shown = 0;          /* 80282040: camera tool shown */
-s32 battle_debug_geometry_offset_toggle = 0;          /* 80282044: geometry offset toggle */
-s32 battle_debug_unused_word_2 = 0;          /* 80282048: unreferenced */
+s32 battle_debug_geometry_offset_toggle = 0;     /* 80282044: geometry offset toggle */
+s32 battle_debug_unused_word_2 = 0;              /* 80282048: unreferenced */
 char battle_debug_unused_file_name[] = "mem_0"; /* 8028204C: unreferenced dump file name */
-s32 battle_debug_unused_word_3 = 0;          /* 80282054: unreferenced */
-s32 battle_debug_unused_word_4 = 10;         /* 80282058: unreferenced */
-s32 battle_debug_heap_monitor_column_flags = 0x808D;     /* 8028205C: heap monitor flags */
-s32 battle_debug_heap_monitor_first_row = 0;          /* 80282060: heap monitor first block */
-s32 battle_debug_heap_monitor_repeat_timer = 0;          /* 80282064: heap monitor scroll repeat delay */
-s32 battle_debug_heap_monitor_row_count = 1;          /* 80282068: heap monitor step */
+s32 battle_debug_unused_word_3 = 0;                  /* 80282054: unreferenced */
+s32 battle_debug_unused_word_4 = 10;                 /* 80282058: unreferenced */
+s32 battle_debug_heap_monitor_column_flags = 0x808D; /* 8028205C: heap monitor flags */
+s32 battle_debug_heap_monitor_first_row = 0;         /* 80282060: heap monitor first block */
+s32 battle_debug_heap_monitor_repeat_timer = 0;      /* 80282064: heap monitor scroll repeat delay */
+s32 battle_debug_heap_monitor_row_count = 1;         /* 80282068: heap monitor step */
 
 /* The load meter's needles: a triangle across the dial centre reaching 20
  * (GPU) or 30 (CPU) along the rotated x axis. */

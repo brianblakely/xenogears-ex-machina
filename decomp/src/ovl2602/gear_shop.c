@@ -118,8 +118,8 @@ u16 gear_shop_lamp_y_choices[12] = { /* 801D7044 */
 };
 u16 gear_shop_indicator_x_choices[6] = {238, 238, 150, 150, 50, 50}; /* 801D705C: indicator x choices */
 u16 gear_shop_indicator_y_choices[6] = {42, 150, 42, 150, 42, 150};  /* 801D7068: indicator y choices */
-u16 gear_shop_flicker_x_choices[6] = {42, 42, 100, 100, 150, 150}; /* 801D7074: flicker x choices */
-u16 gear_shop_flicker_y_choices[6] = {110, 30, 110, 30, 110, 30};  /* 801D7080: flicker y choices */
+u16 gear_shop_flicker_x_choices[6] = {42, 42, 100, 100, 150, 150};   /* 801D7074: flicker x choices */
+u16 gear_shop_flicker_y_choices[6] = {110, 30, 110, 30, 110, 30};    /* 801D7080: flicker y choices */
 
 /* The gear parts frame: sprite ids and positions. */
 u16 gear_shop_gear_values_frame_images[14] = {0x11, 0x19, 0x3E, 0xF, 0x1E, 0xE, 0x15, 0x3E, 0x20, 0xE, 0x12, 0x10, 0x11, 0x1D}; /* 801D708C */

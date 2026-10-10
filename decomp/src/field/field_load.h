@@ -54,18 +54,18 @@ typedef struct {
 #define BUNDLE_SIZE(k) (*(s32 *)((u8 *)mode_read_ahead_block + 0x10C + (k) * 4))
 #define BUNDLE_COMPONENT(k) ((void *)(*(s32 *)((u8 *)mode_read_ahead_block + 0x130 + (k) * 4) + (s32)mode_read_ahead_block))
 
-extern SpriteSlotTable field_sprite_slots; /* the bundle's sprite slots, kept by the load */
-extern s32 field_unread_collision_attribute_count;         /* attributes before the first triangle */
-extern u32 field_heap_top;         /* heap top */
+extern SpriteSlotTable field_sprite_slots;         /* the bundle's sprite slots, kept by the load */
+extern s32 field_unread_collision_attribute_count; /* attributes before the first triangle */
+extern u32 field_heap_top;                         /* heap top */
 
 void field_load_from_bundle(void);      /* load the field from the bundle */
-void field_teardown(void);      /* tear the field down */
+void field_teardown(void);              /* tear the field down */
 
 /* The map's own stream (file 0xb9 + 2 * map) in a four-sector ring. */
 extern s32 field_map_stream_running;         /* the stream is running */
-extern void *field_map_stream_ring;       /* its ring */
-void field_map_stream_start(void);      /* start it unless one runs */
-void field_map_stream_stop(void);      /* stop it and release the ring */
+extern void *field_map_stream_ring;          /* its ring */
+void field_map_stream_start(void);           /* start it unless one runs */
+void field_map_stream_stop(void);            /* stop it and release the ring */
 
 /* Trigger zone (field component 8): four x, y, z corners. */
 typedef struct {

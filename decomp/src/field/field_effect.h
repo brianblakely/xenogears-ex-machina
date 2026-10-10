@@ -84,14 +84,14 @@ extern FieldLaunch field_effect_launch;
 
 /* The effect slots (starting and stopping an owner's effects, field_effect_start
  * and field_effect_stop_by_owner, are in field/monitor.h). */
-extern u8 field_effect_slot_states[64];      /* effect slot states */
-extern s16 field_effect_slot_owners[64];     /* effect slot owners, -1 free */
+extern u8 field_effect_slot_states[64];          /* effect slot states */
+extern s16 field_effect_slot_owners[64];         /* effect slot owners, -1 free */
 extern Record78 *field_effect_slot_emitters[64]; /* effect slot emitters */
-extern s32 field_unread_effect_last_owner;         /* last effect owner */
-void field_effect_clear_slots(void);      /* free all slots */
-void field_effect_release_all_slots(void);      /* release all slots */
-void field_effect_release_slot(s32 slot);  /* release a slot and its particles */
-void field_effect_update_slots(void);      /* run the slots for a frame */
+extern s32 field_unread_effect_last_owner;       /* last effect owner */
+void field_effect_clear_slots(void);             /* free all slots */
+void field_effect_release_all_slots(void);       /* release all slots */
+void field_effect_release_slot(s32 slot);        /* release a slot and its particles */
+void field_effect_update_slots(void);            /* run the slots for a frame */
 
 /* Particles. */
 void field_effect_spawn_particle(Record78 *emitter, Particle *particle, s32 *spawned); /* spawn */

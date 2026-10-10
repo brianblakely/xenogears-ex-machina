@@ -1041,13 +1041,13 @@ void field_wide_overlay_draw(void) {
 /* The unit's own uninitialized variables, which only the text sequence
  * below reads: the field BSS 800af76c-800af858, after field_event's and
  * ahead of the commons (field_common.c). */
-static void *field_staff_roll_text;           /* 800AF76C: file 0xab */
-static TextRollLine *field_staff_roll_line_sprites;   /* 800AF770: 16 lines */
-static u8 *field_staff_roll_text_position;             /* 800AF774: sequence text position */
-static s32 field_staff_roll_vram_row; /* 800AF778 */
-static s32 field_staff_roll_pass_count; /* 800AF77C */
+static void *field_staff_roll_text;                 /* 800AF76C: file 0xab */
+static TextRollLine *field_staff_roll_line_sprites; /* 800AF770: 16 lines */
+static u8 *field_staff_roll_text_position;          /* 800AF774: sequence text position */
+static s32 field_staff_roll_vram_row;               /* 800AF778 */
+static s32 field_staff_roll_pass_count;             /* 800AF77C */
 static s32 field_staff_roll_bytes_left;             /* 800AF780: file 0xab bytes left */
-static void *field_staff_roll_font_tim;           /* 800AF784: file 0xac */
+static void *field_staff_roll_font_tim;             /* 800AF784: file 0xac */
 static POLY_GT4 field_staff_roll_fade_quads[2][2];  /* 800AF788: top and bottom fade per buffer */
 
 /* 800ABFDC: The glyph of the big-endian two-byte code at `text`: codes 8540..887f give

@@ -45,7 +45,7 @@
  * random numbers, text rendering and the text palettes. */
 s32 mode_get_random_byte_in_range(s32 low, s32 high); /* random number in [low, high] */
 void window_render_text_line(void *text, void *image, s32 mode, s32 flags);
-void text_load_palette(s32 x, s32 y);     /* upload the text palettes */
+void text_load_palette(s32 x, s32 y);                 /* upload the text palettes */
 
 /* The game data's inGear bytes (+0x22B1) as the setup reads them, one per
  * slot: past the three party entries they are the bytes that follow. */
@@ -93,10 +93,10 @@ extern u8 battle_work_command_index;
 
 /* Per-slot battle state (0x800D32A1, 8 bytes per slot). */
 typedef struct {
-    u8 in_gear; /* the slot fights in a gear (battle: battle_slot_flags.unk1) */
+    u8 in_gear;     /* the slot fights in a gear (battle: battle_slot_flags.unk1) */
     u8 pad1[2];
     u8 character_b; /* from the character table */
-    u8 stat62;  /* copied from the record */
+    u8 stat62;      /* copied from the record */
     u8 stat63;
     u8 pad6[2];
 } SlotState;
@@ -126,7 +126,7 @@ extern u8 *battle_enemy_data_file;
 #define FORMATION_ENEMY_GROUP(enemy) formation_active.enemyGroups[enemy]
 #define FORMATION_FLAG6(slot) formation_active.enemyGroups[slot]
 extern u8 *battle_command_layouts_by_character[];        /* command menu layouts */
-extern u8 *battle_command_layout_gear_ptr;          /* command menu sources */
+extern u8 *battle_command_layout_gear_ptr;               /* command menu sources */
 extern u8 *battle_command_layout_gear_second_ptr;
 extern u8 *battle_command_layout_gear_character7_ptr;
 
@@ -142,7 +142,7 @@ u16 battle_get_slot_bit(s32 index); /* bit of a group member index */
 
 /* The enemy files' disc read list (0x800D33E8): entries of a file number
  * and a destination, ended by file 0. Its fields are separate variables. */
-extern u16 battle_enemy_read_list;   /* entry 0 file */
+extern u16 battle_enemy_read_list;                /* entry 0 file */
 extern void *battle_enemy_read_list_destination0; /* entry 0 destination */
 extern u16 battle_enemy_read_list_file1;
 extern void *battle_enemy_read_list_destination1;

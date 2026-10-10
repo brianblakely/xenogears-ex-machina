@@ -54,12 +54,12 @@ typedef struct BattleSprite {
  * SVECTOR, u16 coordinates; a narrow result): sprite placement and
  * orientation, an image list upload, the resource binding and the sound
  * transfer test. */
-void sprite_set_position_xz(BattleSprite *sprite, s16 x, s16 z);   /* place a sprite */
-void sprite_set_facing(BattleSprite *sprite, s32 angle);       /* sprite orientation */
-void sprite_set_direction(BattleSprite *sprite, s32 angle);       /* sprite heading */
-void sprite_upload_images_side_by_side(void *images, s32 x, s32 y);            /* upload an image list */
+void sprite_set_position_xz(BattleSprite *sprite, s16 x, s16 z);    /* place a sprite */
+void sprite_set_facing(BattleSprite *sprite, s32 angle);            /* sprite orientation */
+void sprite_set_direction(BattleSprite *sprite, s32 angle);         /* sprite heading */
+void sprite_upload_images_side_by_side(void *images, s32 x, s32 y); /* upload an image list */
 void sprite_resolve_resource(void *binding, void *data, DVECTOR image, DVECTOR clut, s32 mode);
-s16 sound_sync_transfer(s32 arg);                                /* sound transfer busy */
+s16 sound_sync_transfer(s32 arg);                                   /* sound transfer busy */
 
 /* The loading task (801e7098), run once per frame until the sprites, the
  * battle images and the effect bank are loaded. */

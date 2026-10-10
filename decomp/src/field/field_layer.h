@@ -12,12 +12,12 @@
 #include "ovl2143/actors.h"
 
 /* The field's side (field.c). */
-extern void *field_layer_module;           /* the module */
-extern s32 field_event_runs_per_frame;             /* the module is loaded */
+extern void *field_layer_module;                  /* the module */
+extern s32 field_event_runs_per_frame;            /* the module is loaded */
 extern FileRequest field_layer_file_requests[10]; /* its file list: two files per layer, the module, the zero end */
-void field_layer_load(void);          /* load the module and its layers' files */
-void field_layer_start(void);          /* start its layers */
-void field_layer_load_and_start(void);          /* load, then start */
+void field_layer_load(void);                      /* load the module and its layers' files */
+void field_layer_start(void);                     /* start its layers */
+void field_layer_load_and_start(void);            /* load, then start */
 
 /* The module's draw, which each target declares itself (ovl2143/actors.h
  * says why); the field's light matrix is its work block's s16 rows. */

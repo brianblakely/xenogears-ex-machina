@@ -336,13 +336,13 @@ extern ShotKind arena_actor_shot_kinds[];
 extern s32 arena_actor_ether_attack_name;           /* "ETHER": the name of an ether attack */
 extern AnimRule arena_actor_anim_rules[];
 extern u8 arena_actor_combo_transitions[];          /* pairs: next combo number after each button */
-extern s32 arena_actor_combo_names[];         /* the name of each combo number */
-extern SpriteModel arena_actor_extra_model;   /* the extra object attached to the actors */
-extern u8 arena_actor_combo_inputs[15][3];     /* each combo's command inputs (1 A, 2 B), by special move */
-extern s32 arena_actors_flat_distance;           /* horizontal distance between the actors */
-extern s32 arena_actors_distance;           /* distance between the actors */
-extern MoveList *arena_actor_move_lists;     /* per model id */
-extern s32 arena_actors_heading;           /* heading from the second actor to the first */
+extern s32 arena_actor_combo_names[];               /* the name of each combo number */
+extern SpriteModel arena_actor_extra_model;         /* the extra object attached to the actors */
+extern u8 arena_actor_combo_inputs[15][3];          /* each combo's command inputs (1 A, 2 B), by special move */
+extern s32 arena_actors_flat_distance;              /* horizontal distance between the actors */
+extern s32 arena_actors_distance;                   /* distance between the actors */
+extern MoveList *arena_actor_move_lists;            /* per model id */
+extern s32 arena_actors_heading;                    /* heading from the second actor to the first */
 extern SideHits arena_actor_side_move_info[2];
 extern Actor arena_second_actor;
 extern Actor arena_first_actor;

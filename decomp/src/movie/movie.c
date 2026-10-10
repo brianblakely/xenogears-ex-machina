@@ -14,40 +14,40 @@
 #include "movie_mode.h"
 
 /* The unit's .data (0x80076e48..0x80076f3c); the .bss follows. */
-s32 movie_mode_cd_check_command = 0;             /* 80076E48: read check state: the command running */
-s32 movie_mode_cd_check_error_count = 0;             /* 80076E4C: verify errors */
-s32 movie_mode_cd_check_unused_1 = 0;             /* 80076E50: never read */
-s32 movie_mode_cd_check_unused_2 = 0;             /* 80076E54: never read */
-s32 movie_mode_cd_check_unused_3 = 0;             /* 80076E58: never read */
-s32 movie_mode_vblank_count = 0;             /* 80076E5C: vertical blanks counted */
-s32 movie_mode_cd_check_unused_4 = 0;             /* 80076E60: never read */
-s32 movie_mode_cd_check_phase = 0;             /* 80076E64: read phase: waiting, reading, verifying */
-s32 movie_mode_cd_check_error_address = 0;             /* 80076E68: last error: offset */
-s32 movie_mode_cd_check_error_size = 0;             /* 80076E6C: size */
-s32 movie_mode_cd_check_error_file_out_of_order = 0;             /* 80076E70: and the resident's stream counters */
-s32 movie_mode_cd_check_error_list_out_of_order = 0; /* 80076E74 */
-s32 movie_mode_cd_check_error_stream_out_of_order = 0; /* 80076E78 */
-FileEntry *movie_mode_cd_check_file_table = NULL;   /* 80076E7C: stream list */
-FileEntry *movie_mode_cd_check_verify_file_table = NULL;   /* 80076E80: verify copy of the stream list */
-s32 *movie_mode_cd_check_write_pointer = NULL;         /* 80076E84: stream destination */
-s32 *movie_mode_cd_check_read_buffer = NULL;         /* 80076E88: read buffer */
-s32 *movie_mode_cd_check_verify_buffer = NULL;         /* 80076E8C: verify copy of the read */
-s32 movie_mode_cd_check_read_size = 0;             /* 80076E90: read size */
-s32 movie_mode_cd_check_stream_bytes_left = 0;             /* 80076E94: stream bytes left */
-StreamRing *movie_mode_cd_check_stream_ring = NULL;  /* 80076E98: stream buffer */
-s32 *movie_mode_cd_check_stream_chunk = NULL;         /* 80076E9C: arrived stream chunk */
-void *movie_mode_cd_check_sector_buffer = NULL;        /* 80076EA0: FAT check read buffer */
-s32 movie_mode_cd_check_cancel_count = 0;             /* 80076EA4: reads ended */
-s32 movie_mode_cd_check_total_reads = 0;             /* 80076EA8: reads in total */
-s32 movie_mode_cd_check_before_class = -1;            /* 80076EAC: class marked " BEFORE" (-1: none) */
-s32 movie_mode_cd_check_now_class = -1;            /* 80076EB0: class marked " NOW" */
-s32 movie_mode_cd_check_file_table_index = 0;             /* 80076EB4: stream list entry */
-s32 movie_mode_cd_check_stream_mode = 0;             /* 80076EB8: 1: stream copy; 2: host read */
-s32 movie_mode_cd_check_random_mode = 0;             /* 80076EBC: random commands */
-s32 movie_mode_cd_check_unused_5 = 0;             /* 80076EC0: never read */
-s32 movie_mode_cd_check_unused_6 = 0;             /* 80076EC4: never read */
-s32 movie_mode_elapsed_seconds = 0;             /* 80076EC8: seconds counted */
-s32 movie_mode_frames_this_second = 0;             /* 80076ECC: frames of the current second */
+s32 movie_mode_cd_check_command = 0;                     /* 80076E48: read check state: the command running */
+s32 movie_mode_cd_check_error_count = 0;                 /* 80076E4C: verify errors */
+s32 movie_mode_cd_check_unused_1 = 0;                    /* 80076E50: never read */
+s32 movie_mode_cd_check_unused_2 = 0;                    /* 80076E54: never read */
+s32 movie_mode_cd_check_unused_3 = 0;                    /* 80076E58: never read */
+s32 movie_mode_vblank_count = 0;                         /* 80076E5C: vertical blanks counted */
+s32 movie_mode_cd_check_unused_4 = 0;                    /* 80076E60: never read */
+s32 movie_mode_cd_check_phase = 0;                       /* 80076E64: read phase: waiting, reading, verifying */
+s32 movie_mode_cd_check_error_address = 0;               /* 80076E68: last error: offset */
+s32 movie_mode_cd_check_error_size = 0;                  /* 80076E6C: size */
+s32 movie_mode_cd_check_error_file_out_of_order = 0;     /* 80076E70: and the resident's stream counters */
+s32 movie_mode_cd_check_error_list_out_of_order = 0;     /* 80076E74 */
+s32 movie_mode_cd_check_error_stream_out_of_order = 0;   /* 80076E78 */
+FileEntry *movie_mode_cd_check_file_table = NULL;        /* 80076E7C: stream list */
+FileEntry *movie_mode_cd_check_verify_file_table = NULL; /* 80076E80: verify copy of the stream list */
+s32 *movie_mode_cd_check_write_pointer = NULL;           /* 80076E84: stream destination */
+s32 *movie_mode_cd_check_read_buffer = NULL;             /* 80076E88: read buffer */
+s32 *movie_mode_cd_check_verify_buffer = NULL;           /* 80076E8C: verify copy of the read */
+s32 movie_mode_cd_check_read_size = 0;                   /* 80076E90: read size */
+s32 movie_mode_cd_check_stream_bytes_left = 0;           /* 80076E94: stream bytes left */
+StreamRing *movie_mode_cd_check_stream_ring = NULL;      /* 80076E98: stream buffer */
+s32 *movie_mode_cd_check_stream_chunk = NULL;            /* 80076E9C: arrived stream chunk */
+void *movie_mode_cd_check_sector_buffer = NULL;          /* 80076EA0: FAT check read buffer */
+s32 movie_mode_cd_check_cancel_count = 0;                /* 80076EA4: reads ended */
+s32 movie_mode_cd_check_total_reads = 0;                 /* 80076EA8: reads in total */
+s32 movie_mode_cd_check_before_class = -1;               /* 80076EAC: class marked " BEFORE" (-1: none) */
+s32 movie_mode_cd_check_now_class = -1;                  /* 80076EB0: class marked " NOW" */
+s32 movie_mode_cd_check_file_table_index = 0;            /* 80076EB4: stream list entry */
+s32 movie_mode_cd_check_stream_mode = 0;                 /* 80076EB8: 1: stream copy; 2: host read */
+s32 movie_mode_cd_check_random_mode = 0;                 /* 80076EBC: random commands */
+s32 movie_mode_cd_check_unused_5 = 0;                    /* 80076EC0: never read */
+s32 movie_mode_cd_check_unused_6 = 0;                    /* 80076EC4: never read */
+s32 movie_mode_elapsed_seconds = 0;                      /* 80076EC8: seconds counted */
+s32 movie_mode_frames_this_second = 0;                   /* 80076ECC: frames of the current second */
 /* Never read: a string, three words and a record of 233, the string and the
  * record's own address. */
 char movie_mode_unused_newline[] = "\n"; /* 80076ED0 */
@@ -57,18 +57,18 @@ struct {
     char *text;
     void *self;
 } movie_mode_unused_record = {233, movie_mode_unused_newline, &movie_mode_unused_record}; /* 80076EE0 */
-s32 movie_mode_menu_hold_frames = 0;             /* 80076EEC: menu: frames the buttons were held */
-s32 movie_mode_menu_repeat_timer = 16;            /* 80076EF0: frames until they repeat */
-s32 movie_mode_random_state_a = 1234567890;    /* 80076EF4: random number state */
-s32 movie_mode_random_state_b = 987654321; /* 80076EF8 */
-s32 movie_mode_cd_monitor_sector = 0;             /* 80076EFC: monitor sector */
-s32 movie_mode_cd_monitor_row = 0;             /* 80076F00: monitor row */
-s32 movie_mode_playback_hold_frames = 0;             /* 80076F04: playback: frames the buttons were held */
-s32 movie_mode_playback_repeat_timer = 90;            /* 80076F08: frames until they repeat */
+s32 movie_mode_menu_hold_frames = 0;                                                      /* 80076EEC: menu: frames the buttons were held */
+s32 movie_mode_menu_repeat_timer = 16;                                                    /* 80076EF0: frames until they repeat */
+s32 movie_mode_random_state_a = 1234567890;                                               /* 80076EF4: random number state */
+s32 movie_mode_random_state_b = 987654321;                                                /* 80076EF8 */
+s32 movie_mode_cd_monitor_sector = 0;                                                     /* 80076EFC: monitor sector */
+s32 movie_mode_cd_monitor_row = 0;                                                        /* 80076F00: monitor row */
+s32 movie_mode_playback_hold_frames = 0;                                                  /* 80076F04: playback: frames the buttons were held */
+s32 movie_mode_playback_repeat_timer = 90;                                                /* 80076F08: frames until they repeat */
 /* Never read: the origin and three 128-long axes, beside the playback
  * camera's translation. */
 SVECTOR movie_mode_unused_axes[4] = {{0, 0, 0}, {128, 0, 0}, {0, 128, 0}, {0, 0, 128}}; /* 80076F0C */
-VECTOR movie_mode_camera_offset = {0};        /* 80076F2C: the playback camera's translation */
+VECTOR movie_mode_camera_offset = {0};                                                  /* 80076F2C: the playback camera's translation */
 
 /* The unit's .bss (80076f3c-80077458), not in the file: the resident's mode
  * table clears it before entering the overlay (movie.bss.ld). The variables
@@ -76,61 +76,61 @@ VECTOR movie_mode_camera_offset = {0};        /* 80076F2C: the playback camera's
  * in which GCC emits tentative definitions, each in a slot of whole words
  * (decomp/Makefile); the decoded image ends 7 bytes into the first. */
 s32 movie_mode_cd_check_class_counts[16];      /* 80076F3C: reads per result class */
-u8 *movie_mode_cd_check_host_frame_data;          /* 80076F7C: host stream: the next frame's data (80028f30) */
-StreamFrame *movie_mode_cd_check_host_frame; /* 80076F80: and its first sector header */
-u8 movie_mode_cd_command_result[8];        /* 80076F84: CD command result */
+u8 *movie_mode_cd_check_host_frame_data;       /* 80076F7C: host stream: the next frame's data (80028f30) */
+StreamFrame *movie_mode_cd_check_host_frame;   /* 80076F80: and its first sector header */
+u8 movie_mode_cd_command_result[8];            /* 80076F84: CD command result */
 /* Menu backdrop: each corner's color fades from one random color to the
  * next over a random number of frames. */
 CVECTOR movie_mode_backdrop_from_colors[4];   /* 80076F8C: from */
-CVECTOR movie_mode_backdrop_to_colors[4];   /* 80076F9C: to */
-s32 movie_mode_backdrop_fade_elapsed[4];       /* 80076FAC: frames into the fade */
-s32 movie_mode_backdrop_fade_durations[4];       /* 80076FBC: frames of the fade */
-CVECTOR movie_mode_menu_frame_from_colors[4];   /* 80076FCC: menu frame: from */
+CVECTOR movie_mode_backdrop_to_colors[4];     /* 80076F9C: to */
+s32 movie_mode_backdrop_fade_elapsed[4];      /* 80076FAC: frames into the fade */
+s32 movie_mode_backdrop_fade_durations[4];    /* 80076FBC: frames of the fade */
+CVECTOR movie_mode_menu_frame_from_colors[4]; /* 80076FCC: menu frame: from */
 CVECTOR movie_mode_menu_frame_to_colors[4];   /* 80076FDC: to */
-s32 movie_mode_menu_frame_fade_elapsed[4];       /* 80076FEC: frames into the fade */
-s32 movie_mode_menu_frame_fade_durations[4];       /* 80076FFC: frames of the fade */
-SoundSeq *movie_mode_battle_music_seq;    /* 8007700C: battle music sequence (8007548c) */
+s32 movie_mode_menu_frame_fade_elapsed[4];    /* 80076FEC: frames into the fade */
+s32 movie_mode_menu_frame_fade_durations[4];  /* 80076FFC: frames of the fade */
+SoundSeq *movie_mode_battle_music_seq;        /* 8007700C: battle music sequence (8007548c) */
 /* Movie playback. */
-s32 movie_mode_unread_loaded_frame;          /* 80077010: last frame the library loaded */
-s32 movie_mode_stop_timer;          /* 80077014: 1: stop; 2..5: frames until then */
+s32 movie_mode_unread_loaded_frame;    /* 80077010: last frame the library loaded */
+s32 movie_mode_stop_timer;             /* 80077014: 1: stop; 2..5: frames until then */
 s32 movie_mode_loaded_buffer;          /* 80077018: buffer the frame went to */
-s32 movie_mode_shown_buffer;          /* 8007701C: buffer on display */
+s32 movie_mode_shown_buffer;           /* 8007701C: buffer on display */
 s32 movie_mode_decode_paused;          /* 80077020: decoding paused */
-s32 movie_mode_first_buffer_y;          /* 80077024: the first buffer's y */
-s32 movie_mode_unskippable;          /* 80077028: buttons do not end the movie */
+s32 movie_mode_first_buffer_y;         /* 80077024: the first buffer's y */
+s32 movie_mode_unskippable;            /* 80077028: buttons do not end the movie */
 /* The playback camera (unused by the movie path). */
-VECTOR movie_mode_camera_eye;       /* 8007702C: eye */
-VECTOR movie_mode_camera_target;       /* 8007703C: target */
-s32 movie_mode_camera_roll;          /* 8007704C: roll */
-MATRIX movie_mode_world_to_screen;       /* 80077050: world to screen */
-MATRIX movie_mode_light_colors;       /* 80077070: light colors */
-MATRIX movie_mode_unread_light_directions;       /* 80077090: light directions */
-SVECTOR movie_mode_camera_angles;      /* 800770B0: camera rotation */
-MATRIX movie_mode_camera_translation;       /* 800770B8: camera translation */
-MATRIX movie_mode_camera_rotation;       /* 800770D8: camera rotation */
+VECTOR movie_mode_camera_eye;                 /* 8007702C: eye */
+VECTOR movie_mode_camera_target;              /* 8007703C: target */
+s32 movie_mode_camera_roll;                   /* 8007704C: roll */
+MATRIX movie_mode_world_to_screen;            /* 80077050: world to screen */
+MATRIX movie_mode_light_colors;               /* 80077070: light colors */
+MATRIX movie_mode_unread_light_directions;    /* 80077090: light directions */
+SVECTOR movie_mode_camera_angles;             /* 800770B0: camera rotation */
+MATRIX movie_mode_camera_translation;         /* 800770B8: camera translation */
+MATRIX movie_mode_camera_rotation;            /* 800770D8: camera rotation */
 MATRIX movie_mode_camera_base_rotation;       /* 800770F8: base rotation (identity) */
-s32 movie_mode_menu_cursor;          /* 80077118: menu cursor */
-s32 movie_mode_movie_index;          /* 8007711C: movie index */
-MovieBuffer *movie_mode_current_buffer; /* 80077120: buffer being drawn */
-MovieBuffer movie_mode_buffers[2]; /* 80077124 */
-s32 movie_mode_heap_report_shown;          /* 80077394: statistics shown */
-s32 movie_mode_xa_channel;          /* 80077398: XA channel */
-s32 movie_mode_last_frame;          /* 8007739C: last frame */
-s32 movie_mode_draw_rows;          /* 800773A0: rows */
-s32 movie_mode_first_frame;          /* 800773A4: first frame */
-s32 movie_mode_start_sector;          /* 800773A8: start sector */
-s32 movie_mode_buttons;          /* 800773AC: buttons */
-s32 movie_mode_monitor_shown;          /* 800773B0: monitor shown */
-s32 movie_mode_previous_buttons;          /* 800773B4: previous buttons */
-s32 movie_mode_unread_decode_vsync_times[32];      /* 800773B8: VSync(1) before and after each decode step */
-s32 movie_mode_rewind_enabled;          /* 80077438: split display */
-s32 movie_mode_end_frame_state;          /* 8007743C: end frame: 0 changed, 1 found, 2 not found */
-s32 movie_mode_unread_menu_shown;          /* 80077440: menu shown */
-s32 movie_mode_start_frame_state;          /* 80077444: start frame: 1 changed, 2 sought */
-s32 movie_mode_movie_kind;          /* 80077448: movie kind */
-s32 movie_mode_buffer_index;          /* 8007744C: buffer index */
-s32 movie_mode_disc_mode;          /* 80077450: disc mode: 0, -1 or host */
-s32 movie_mode_library_output_mode;          /* 80077454: library output mode (bit 0: 24-bit) */
+s32 movie_mode_menu_cursor;                   /* 80077118: menu cursor */
+s32 movie_mode_movie_index;                   /* 8007711C: movie index */
+MovieBuffer *movie_mode_current_buffer;       /* 80077120: buffer being drawn */
+MovieBuffer movie_mode_buffers[2];            /* 80077124 */
+s32 movie_mode_heap_report_shown;             /* 80077394: statistics shown */
+s32 movie_mode_xa_channel;                    /* 80077398: XA channel */
+s32 movie_mode_last_frame;                    /* 8007739C: last frame */
+s32 movie_mode_draw_rows;                     /* 800773A0: rows */
+s32 movie_mode_first_frame;                   /* 800773A4: first frame */
+s32 movie_mode_start_sector;                  /* 800773A8: start sector */
+s32 movie_mode_buttons;                       /* 800773AC: buttons */
+s32 movie_mode_monitor_shown;                 /* 800773B0: monitor shown */
+s32 movie_mode_previous_buttons;              /* 800773B4: previous buttons */
+s32 movie_mode_unread_decode_vsync_times[32]; /* 800773B8: VSync(1) before and after each decode step */
+s32 movie_mode_rewind_enabled;                /* 80077438: split display */
+s32 movie_mode_end_frame_state;               /* 8007743C: end frame: 0 changed, 1 found, 2 not found */
+s32 movie_mode_unread_menu_shown;             /* 80077440: menu shown */
+s32 movie_mode_start_frame_state;             /* 80077444: start frame: 1 changed, 2 sought */
+s32 movie_mode_movie_kind;                    /* 80077448: movie kind */
+s32 movie_mode_buffer_index;                  /* 8007744C: buffer index */
+s32 movie_mode_disc_mode;                     /* 80077450: disc mode: 0, -1 or host */
+s32 movie_mode_library_output_mode;           /* 80077454: library output mode (bit 0: 24-bit) */
 
 /* 800704E8: The menu's CD-ROM monitor: at 640x240, show the read statistics, the
  * resident's error counters and stream state, a dump of the stream buffer

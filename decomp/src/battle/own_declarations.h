@@ -17,7 +17,7 @@
  * declares them for its own calls. */
 
 /* battle/turn.h's subsystem. */
-s32 battle_wait_frame(void);    /* one battle frame: the debugger's hook, the task runner */
+s32 battle_wait_frame(void);      /* one battle frame: the debugger's hook, the task runner */
 u16 battle_get_slot_bit(u8 slot); /* the mask bit of a slot */
 
 /* battle/ui.h's. */
@@ -29,7 +29,7 @@ void battle_leave_member_menu(u8 member); /* leave a member's menu */
 
 /* battle/formation.h's. */
 s32 battle_is_target_at_lower_x(u8 slot, u8 target); /* whether target's slot-info +0xa is below slot's */
-void battle_leave_formation_group(u8 slot);           /* drop a slot from its group */
+void battle_leave_formation_group(u8 slot);          /* drop a slot from its group */
 
 /* battle/setup.h's. */
 s32 battle_heap_alloc(s32 size, s32 mode); /* allocate a battle heap block */
@@ -48,7 +48,7 @@ void battle_create_object(s32 index, u16 flags, ObjectScriptFile *script_file, O
 void battle_reset_object(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **animations);
 
 /* battle/screen.h's. */
-void battle_quake_start(SVECTOR *amplitude, s32 frames);    /* quake the view towards amplitude */
+void battle_quake_start(SVECTOR *amplitude, s32 frames);          /* quake the view towards amplitude */
 void battle_screen_fade_start(s32 a, s32 b, s32 c, s32 d, s32 e); /* fade the screen to a colour */
 
 /* battle/action_file.h's. */

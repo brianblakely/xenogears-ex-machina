@@ -30,26 +30,26 @@ typedef struct {
 } WorldmapMode;
 
 extern WorldmapMode worldmap_mode_handlers[]; /* per mode */
-extern s32 worldmap_mode_index;            /* the current mode */
+extern s32 worldmap_mode_index;               /* the current mode */
 
-void worldmap_read_party_models(void);         /* modes 0-7: enter (read the party's models) */
-void worldmap_read_area_files(void);         /* modes 8-18: enter (read the area files) */
+void worldmap_read_party_models(void);      /* modes 0-7: enter (read the party's models) */
+void worldmap_read_area_files(void);        /* modes 8-18: enter (read the area files) */
 void worldmap_open_map_start(void);         /* modes 0-7: start */
 void worldmap_open_map_leave(void);         /* modes 0-7: leave */
 
 /* The frame loop (worldmap_run_frame_loop) and its state. */
-extern s32 worldmap_loop_running; /* nonzero while the loop runs */
-extern s32 worldmap_loop_result; /* its result: 0 leave for a scene, 1 battle, 2 and more run the mode again */
-extern s32 worldmap_next_scene_chosen; /* nonzero once a leave handler chose the next scene */
-extern s32 worldmap_resuming; /* nonzero when resuming a saved state */
-extern s32 worldmap_screen_fade_active; /* nonzero while a screen fade runs */
-extern s32 worldmap_menu_requested; /* the menu was requested */
-extern s32 worldmap_button_combo_pressed; /* the two-button combination was pressed (worldmap_latch_button_combo) */
+extern s32 worldmap_loop_running;                                       /* nonzero while the loop runs */
+extern s32 worldmap_loop_result;                                        /* its result: 0 leave for a scene, 1 battle, 2 and more run the mode again */
+extern s32 worldmap_next_scene_chosen;                                  /* nonzero once a leave handler chose the next scene */
+extern s32 worldmap_resuming;                                           /* nonzero when resuming a saved state */
+extern s32 worldmap_screen_fade_active;                                 /* nonzero while a screen fade runs */
+extern s32 worldmap_menu_requested;                                     /* the menu was requested */
+extern s32 worldmap_button_combo_pressed;                               /* the two-button combination was pressed (worldmap_latch_button_combo) */
 extern s32 worldmap_button_combo_held, worldmap_button_combo_held_last; /* that combination held this frame and the last */
-extern void (*worldmap_cloud_draw_hook)(void); /* per-frame hook */
-extern MATRIX worldmap_unread_mode_matrix; /* set to the identity by each mode's set-up */
-extern MATRIX worldmap_identity_matrix; /* identity matrix */
-extern s32 worldmap_entry_map_offset;    /* the saved map at entry less 0x400 (event variable 2 on leaving) */
+extern void (*worldmap_cloud_draw_hook)(void);                          /* per-frame hook */
+extern MATRIX worldmap_unread_mode_matrix;                              /* set to the identity by each mode's set-up */
+extern MATRIX worldmap_identity_matrix;                                 /* identity matrix */
+extern s32 worldmap_entry_map_offset;                                   /* the saved map at entry less 0x400 (event variable 2 on leaving) */
 
 /* The world map's first flag word, game data entry[2], by a name of its own
  * where the overlay entry tests and sets it before choosing the mode: as the
@@ -70,21 +70,21 @@ typedef struct {
 } WorldmapArea;
 
 extern u16 worldmap_area_thresholds[];          /* open map area thresholds, indexed from 1 */
-extern WorldmapArea worldmap_area_file_sets[]; /* area file sets */
-extern s32 worldmap_area_index;            /* open map area */
-extern s32 worldmap_entry_index;            /* entry: arrival point, or the scene's entry */
+extern WorldmapArea worldmap_area_file_sets[];  /* area file sets */
+extern s32 worldmap_area_index;                 /* open map area */
+extern s32 worldmap_entry_index;                /* entry: arrival point, or the scene's entry */
 
 /* The area's disc files (worldmap_select_area_files) and the buffers they are read into. */
-extern s32 worldmap_area_data_file, worldmap_terrain_image_file, worldmap_area_image_file, worldmap_wave_bank_file, worldmap_music_file; /* files 1-5 */
+extern s32 worldmap_area_data_file, worldmap_terrain_image_file, worldmap_area_image_file, worldmap_wave_bank_file, worldmap_music_file;              /* files 1-5 */
 extern s32 worldmap_sound_bank_file, worldmap_flight_music_file, worldmap_battle_music_file, worldmap_terrain_row_file, worldmap_terrain_column_file; /* files 6-10 */
-extern s32 worldmap_area_blocks_x, worldmap_area_blocks_z; /* extent in blocks: x, z */
-extern void *worldmap_area_data;           /* area data (file 1) */
-extern void *worldmap_terrain_image;           /* terrain texture image (file 2) */
-extern void *worldmap_area_image;           /* area image (file 3) */
-extern void *worldmap_wave_bank;           /* wave bank (file 4) */
-extern void *worldmap_music, *worldmap_flight_music, *worldmap_battle_music; /* music (files 5, 7, 8) */
-extern void *worldmap_packed_menu_overlay;           /* the shared file 0x25 */
-extern FileRequest worldmap_read_list[];   /* shared read list, a zero file ends it */
+extern s32 worldmap_area_blocks_x, worldmap_area_blocks_z;                                                                                            /* extent in blocks: x, z */
+extern void *worldmap_area_data;                                                                                                                      /* area data (file 1) */
+extern void *worldmap_terrain_image;                                                                                                                  /* terrain texture image (file 2) */
+extern void *worldmap_area_image;                                                                                                                     /* area image (file 3) */
+extern void *worldmap_wave_bank;                                                                                                                      /* wave bank (file 4) */
+extern void *worldmap_music, *worldmap_flight_music, *worldmap_battle_music;                                                                          /* music (files 5, 7, 8) */
+extern void *worldmap_packed_menu_overlay;                                                                                                            /* the shared file 0x25 */
+extern FileRequest worldmap_read_list[];                                                                                                              /* shared read list, a zero file ends it */
 /* The list's first destination member by a name of its own (worldmap.data.ld):
  * two loaders pass the list from it. Formed from worldmap_read_list itself, the
  * constant lets cse store the first entry through the argument register. */
@@ -133,14 +133,14 @@ typedef struct WorldmapSpot {
 } WorldmapSpot;
 
 /* The area data's sections (worldmap_unpack_area_data). */
-extern void *worldmap_object_models;          /* sprite models */
-extern void *worldmap_object_meshes;          /* their collision meshes */
-extern void *worldmap_object_placement_list;          /* scene object placements */
-extern void *worldmap_name_table;          /* path and destination names */
+extern void *worldmap_object_models;                                        /* sprite models */
+extern void *worldmap_object_meshes;                                        /* their collision meshes */
+extern void *worldmap_object_placement_list;                                /* scene object placements */
+extern void *worldmap_name_table;                                           /* path and destination names */
 extern s32 *worldmap_texture_anim_section, *worldmap_texture_anim2_section; /* texture animations, both sets */
-extern void *worldmap_encounter_sets[16];      /* encounter sets, per terrain kind */
-extern s32 *worldmap_path_tables;           /* the four path tables */
-extern WorldmapSpot *worldmap_arrival_points;  /* arrival points */
+extern void *worldmap_encounter_sets[16];                                   /* encounter sets, per terrain kind */
+extern s32 *worldmap_path_tables;                                           /* the four path tables */
+extern WorldmapSpot *worldmap_arrival_points;                               /* arrival points */
 
 void worldmap_unpack_scene_area_data(void); /* unpack a scene mode's area data */
 
@@ -198,9 +198,9 @@ typedef struct DisplayBuffer {
 
 extern DisplayBuffer worldmap_display_buffers[2];
 extern DisplayBuffer *worldmap_current_display_buffer; /* the buffer being drawn */
-extern s32 worldmap_display_buffer_index;           /* its index */
-extern s32 worldmap_projection_distance;           /* projection distance */
-extern u8 worldmap_background_color[3];         /* background colour */
+extern s32 worldmap_display_buffer_index;              /* its index */
+extern s32 worldmap_projection_distance;               /* projection distance */
+extern u8 worldmap_background_color[3];                /* background colour */
 
 void worldmap_alloc_ots(void); /* allocate the ordering tables */
 void worldmap_init_display(void); /* set up the display */
@@ -227,23 +227,23 @@ typedef struct PolyG4 {
 
 /* The sky, the horizon, the map overlay and the footprints
  * (worldmap_open_map). */
-extern PolyG4 worldmap_sky_bands[4][2];   /* sky gradient bands, per buffer */
-extern POLY_FT4 worldmap_horizon_quads[2][2]; /* textured horizon quads, per buffer */
-extern DR_TWIN worldmap_horizon_texture_windows[2];     /* their texture windows */
-extern POLY_FT4 worldmap_map_overlay_quads[2];    /* overlay picture, per buffer */
+extern PolyG4 worldmap_sky_bands[4][2];                             /* sky gradient bands, per buffer */
+extern POLY_FT4 worldmap_horizon_quads[2][2];                       /* textured horizon quads, per buffer */
+extern DR_TWIN worldmap_horizon_texture_windows[2];                 /* their texture windows */
+extern POLY_FT4 worldmap_map_overlay_quads[2];                      /* overlay picture, per buffer */
 extern DR_TPAGE worldmap_map_overlay_tpage;
-extern POLY_G3 worldmap_map_marker_polys[8];     /* player marker triangles */
-extern TILE worldmap_map_dot_tiles[0x40];     /* map dots */
-extern u16 worldmap_map_dot_positions[64];        /* 32 map dot positions: interleaved X/Z */
-extern WorldmapSpot *worldmap_footprints;  /* footprint ring of 16 positions */
-extern s32 worldmap_footprint_count;            /* footprints recorded */
+extern POLY_G3 worldmap_map_marker_polys[8];                        /* player marker triangles */
+extern TILE worldmap_map_dot_tiles[0x40];                           /* map dots */
+extern u16 worldmap_map_dot_positions[64];                          /* 32 map dot positions: interleaved X/Z */
+extern WorldmapSpot *worldmap_footprints;                           /* footprint ring of 16 positions */
+extern s32 worldmap_footprint_count;                                /* footprints recorded */
 extern void *worldmap_footprint_quads0, *worldmap_footprint_quads1; /* footprint quads, per buffer */
 
-void worldmap_sky_init(void), worldmap_sky_draw(void); /* the sky: set up, draw */
+void worldmap_sky_init(void), worldmap_sky_draw(void);         /* the sky: set up, draw */
 void worldmap_horizon_init(void), worldmap_horizon_draw(void); /* the horizon */
-void worldmap_map_overlay_draw(void);                      /* draw the map overlay */
-void worldmap_footprints_add(s16 id, VECTOR *position);  /* record a footprint */
-void worldmap_footprints_draw(void);                      /* draw the footprints */
+void worldmap_map_overlay_draw(void);                          /* draw the map overlay */
+void worldmap_footprints_add(s16 id, VECTOR *position);        /* record a footprint */
+void worldmap_footprints_draw(void);                           /* draw the footprints */
 
 /* Random encounters: timers with distinct random delays per period, and the
  * terrain's encounter set copied for the battle. */
@@ -256,7 +256,7 @@ extern u16 worldmap_encounter_level_brackets[]; /* scene id bracket thresholds, 
  * (resident/formation.h), then 16 formation weights per scene id bracket. */
 
 void worldmap_encounter_update_timers(void);                        /* count the timers down */
-s32 worldmap_encounter_roll(VECTOR *position, s32 scene);  /* roll an encounter */
+s32 worldmap_encounter_roll(VECTOR *position, s32 scene);           /* roll an encounter */
 
 /* The pause and controller check screens, and the music. */
 void worldmap_run_pause_screen(void);
@@ -312,12 +312,12 @@ typedef s32 (*ActorFunc)(s32 index);
 extern WorldmapActor *worldmap_actor_slots;
 
 void worldmap_actor_alloc_slots(void);                 /* allocate the slots */
-void worldmap_actor_free_slots(void);                 /* free them */
+void worldmap_actor_free_slots(void);                  /* free them */
 void worldmap_actor_clear_slots(void);                 /* mark every slot free */
-void worldmap_actor_set_kind(s32 kind, s32 index);  /* change a slot's kind */
-void worldmap_actor_spawn(s32 kind, s32 update); /* start an actor */
-s32 worldmap_actor_request(s32 index, s32 arg);    /* send command 1 */
-void worldmap_actor_run_all(void);                 /* run the pending commands */
+void worldmap_actor_set_kind(s32 kind, s32 index);     /* change a slot's kind */
+void worldmap_actor_spawn(s32 kind, s32 update);       /* start an actor */
+s32 worldmap_actor_request(s32 index, s32 arg);        /* send command 1 */
+void worldmap_actor_run_all(void);                     /* run the pending commands */
 
 /* An actor's model sprite: render bit 2 hides it (a new model starts hidden),
  * and the last byte of its motion word, read signed, is the animation

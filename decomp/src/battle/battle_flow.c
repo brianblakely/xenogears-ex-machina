@@ -49,8 +49,8 @@
 
 /* Functions of other units declared as this unit calls them, which differs
  * from their definitions. */
-void battle_set_background_color_ptrs(u8 *first, u8 *second); /* the two buffers' background colours (two words there) */
-void battle_set_object_current_animation(s32 index, s32 value);  /* set stage object index's byte 0x2A (a u8 there) */
+void battle_set_background_color_ptrs(u8 *first, u8 *second);   /* the two buffers' background colours (two words there) */
+void battle_set_object_current_animation(s32 index, s32 value); /* set stage object index's byte 0x2A (a u8 there) */
 /* Defined without a return value: 800B89FC takes what it leaves in v0, the
  * new acting sprite. */
 Sprite *battle_menu_set_acting_slot(s32 slot);
@@ -73,15 +73,15 @@ void battle_slot_ring_create(SpriteTask *owner);
 /* The unit's own uninitialized variables (its .bss, after
  * battle_action_files.c's; ASPSX 2.56 aligns each by its size up to a word:
  * decomp/Makefile). */
-static u8 battle_gear_file_read_count;      /* 800C3CB8: gear file reads running */
-static s32 battle_camera_ease_mode; /* 800C3CBC */
-static s32 battle_camera_mode;     /* 800C3CC0: camera mode */
+static u8 battle_gear_file_read_count;     /* 800C3CB8: gear file reads running */
+static s32 battle_camera_ease_mode;        /* 800C3CBC */
+static s32 battle_camera_mode;             /* 800C3CC0: camera mode */
 static u8 battle_camera_sprite_count;      /* 800C3CC4: eye and look-at sprites running */
-static s32 battle_unused_camera_word;     /* 800C3CC8: unreferenced */
-static SVECTOR battle_camera_saved_eye; /* 800C3CCC: the eye point saved while the camera sprites run */
+static s32 battle_unused_camera_word;      /* 800C3CC8: unreferenced */
+static SVECTOR battle_camera_saved_eye;    /* 800C3CCC: the eye point saved while the camera sprites run */
 static SVECTOR battle_camera_saved_target; /* 800C3CD4: the look-at point saved while they run */
 static s32 battle_camera_framed_range;     /* 800C3CDC: the framed camera range */
-static s32 battle_unused_camera_pair[2];  /* 800C3CE0: unreferenced */
+static s32 battle_unused_camera_pair[2];   /* 800C3CE0: unreferenced */
 
 s32 battle_gear_object_load_count = 0; /* 800C35D8 */
 BattleSound battle_sound_table[] = { /* 800C35DC */

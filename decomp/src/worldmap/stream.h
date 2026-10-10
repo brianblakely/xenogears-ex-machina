@@ -35,21 +35,21 @@ extern s32 worldmap_stream_state, worldmap_stream_wait; /* reader state and its 
 extern DiscReadRequest *volatile worldmap_stream_next_request; /* next disc request (shared with the CD callbacks) */
 extern s32 worldmap_stream_unread_cleared_word_1, worldmap_stream_unread_cleared_word_2, worldmap_stream_status_error_count, worldmap_stream_read_error_count;
 extern s32 worldmap_stream_drive_sector, worldmap_stream_wanted_sector, worldmap_stream_bytes_left;
-extern u8 *worldmap_stream_destination;    /* destination of the next sector's data */
-extern u32 worldmap_stream_sectors_left;    /* sectors left */
-extern s32 worldmap_stream_sector_header[3]; /* sector header */
-extern CdlLOC worldmap_stream_seek_position; /* request position */
-extern void *worldmap_stream_drain_buffer;  /* unused bytes drained from the final CD sector */
+extern u8 *worldmap_stream_destination;                        /* destination of the next sector's data */
+extern u32 worldmap_stream_sectors_left;                       /* sectors left */
+extern s32 worldmap_stream_sector_header[3];                   /* sector header */
+extern CdlLOC worldmap_stream_seek_position;                   /* request position */
+extern void *worldmap_stream_drain_buffer;                     /* unused bytes drained from the final CD sector */
 
-void worldmap_stream_reset(void);  /* reset the queue, allocate its buffers */
-void worldmap_stream_free(void);  /* free them */
-void worldmap_stream_wait_for_slot(void);  /* wait for a free write slot */
+void worldmap_stream_reset(void);         /* reset the queue, allocate its buffers */
+void worldmap_stream_free(void);          /* free them */
+void worldmap_stream_wait_for_slot(void); /* wait for a free write slot */
 s32 worldmap_stream_add_disc_request(s32 sector, s32 bytes, u8 *destination);
 s32 worldmap_stream_add_host_request(char *path, s32 offset, s32 bytes, u8 *destination);
 s32 worldmap_stream_submit_disc_list(void);
 s32 worldmap_stream_submit_host_list(void);
 s32 worldmap_stream_count_queued(void);   /* lists queued */
-void worldmap_stream_drain(void);  /* drain the queue */
-s32 worldmap_stream_step(void);   /* stream step: worldmap_stream_step_reader status */
+void worldmap_stream_drain(void);         /* drain the queue */
+s32 worldmap_stream_step(void);           /* stream step: worldmap_stream_step_reader status */
 
 #endif

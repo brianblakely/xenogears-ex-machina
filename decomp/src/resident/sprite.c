@@ -42,14 +42,14 @@ INCLUDE_ASSET(".data", sprite_packed_pause_image, 0x8004FBD8, 0xE8);
 /* The unit's own small data, statics and small commons, all $gp-relative.
  * The statics take the unit's .sbss (800592e4); the commons merge with
  * commons/commons_small.c's definitions. */
-u32 task_next_serial = 0; /* 80059184 */
-s32 task_main_count = 0; /* 80059188 */
-s32 task_draw_count = 0; /* 8005918C */
-Sprite *sprite_pending_list = NULL; /* 80059190 */
-s16 sprite_texture_area_row = 0; /* 80059194: texture area row (0-2) of the next image */
-s16 sprite_texture_area_column = 0; /* 80059196: texture area column of the next image */
-static s32 *sprite_image_list;       /* 800592E4: image list for 8001fb30 */
-static DVECTOR sprite_image_list_position;    /* 800592E8: its position */
+u32 task_next_serial = 0;                  /* 80059184 */
+s32 task_main_count = 0;                   /* 80059188 */
+s32 task_draw_count = 0;                   /* 8005918C */
+Sprite *sprite_pending_list = NULL;        /* 80059190 */
+s16 sprite_texture_area_row = 0;           /* 80059194: texture area row (0-2) of the next image */
+s16 sprite_texture_area_column = 0;        /* 80059196: texture area column of the next image */
+static s32 *sprite_image_list;             /* 800592E4: image list for 8001fb30 */
+static DVECTOR sprite_image_list_position; /* 800592E8: its position */
 Task *task_current_node;
 Task *task_main_list;
 Task *task_next_node;

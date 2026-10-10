@@ -72,13 +72,13 @@ typedef struct CameraMove {
 /* Resident calls declared here: these callers convert arguments or results
  * differently from the resident definitions
  * (decomp/src/resident/own_declarations.h). */
-void sound_play_effect_on_last_channels(s32 effect);            /* play a sound effect */
-void text_load_palette(s32 x, s32 y);          /* text palettes */
-u8 *text_get_resource_entry(void *table, s32 index); /* entry of a text table */
-u8 *text_get_gear_accessory_name(s32 id);                 /* kind 3 part name */
-u8 *text_get_gear_part_name(s32 id);                 /* kind 4 part name */
-void text_decode_codes(u8 *codes, u8 *text, s32 count); /* codes to text */
-s32 window_render_text_line(u8 *text, void *pixels, s32 width, s32 line); /* render a text line */
+void sound_play_effect_on_last_channels(s32 effect);                                                   /* play a sound effect */
+void text_load_palette(s32 x, s32 y);                                                                  /* text palettes */
+u8 *text_get_resource_entry(void *table, s32 index);                                                   /* entry of a text table */
+u8 *text_get_gear_accessory_name(s32 id);                                                              /* kind 3 part name */
+u8 *text_get_gear_part_name(s32 id);                                                                   /* kind 4 part name */
+void text_decode_codes(u8 *codes, u8 *text, s32 count);                                                /* codes to text */
+s32 window_render_text_line(u8 *text, void *pixels, s32 width, s32 line);                              /* render a text line */
 s32 sprite_sheet_draw_scaled(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale); /* sprite */
 s32 sprite_sheet_draw_scaled_flip(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale, s32 flip_x,
                   s32 flip_y); /* mirrored sprite */
@@ -92,11 +92,11 @@ u8 mode_get_random_byte_in_range(u8 low, u8 high); /* random number in [low, hig
 void gear_model_step_and_draw(MATRIX *m, MenuLight *light, u32 *ot, s32 buffer);
 
 /* The screen code's data and calls the Gear screen uses (gear_shop_framework.c). */
-extern u8 gear_shop_debug_values_on;    /* the model values debug display is on */
-extern u8 gear_shop_choice_label_ids[];  /* sell list label text ids */
-extern u8 gear_shop_buy_label_ids[];  /* buy list label text ids */
+extern u8 gear_shop_debug_values_on;           /* the model values debug display is on */
+extern u8 gear_shop_choice_label_ids[];        /* sell list label text ids */
+extern u8 gear_shop_buy_label_ids[];           /* buy list label text ids */
 extern s32 gear_shop_choice_label_x_offsets[]; /* gear list label x offsets */
-extern s32 gear_shop_portrait_x_table[]; /* member portrait x */
+extern s32 gear_shop_portrait_x_table[];       /* member portrait x */
 u32 gear_shop_get_bit_mask32(u8 id);
 u32 gear_shop_test_bit32(u32 mask, u8 id);
 void gear_shop_split_digits(u32 value);
@@ -141,8 +141,8 @@ u8 gear_shop_compute_gear_speed_penalty(u8 id);
 /* The overlay's commons (gear_shop_common.c, which defines them ahead of this
  * header). */
 extern CameraMove gear_shop_camera_move;
-extern u8 gear_shop_edited_gear;     /* gear being edited */
-extern u8 *gear_shop_name_pixels;    /* name pixel buffer */
+extern u8 gear_shop_edited_gear;           /* gear being edited */
+extern u8 *gear_shop_name_pixels;          /* name pixel buffer */
 extern s32 gear_shop_stock_list_counts[5]; /* entries in each of the five gear part lists */
 
 #endif

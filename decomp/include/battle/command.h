@@ -13,23 +13,23 @@
 
 /* The menu's state. */
 extern u8 battle_command_menu_sounds_enabled;      /* menu effects enabled */
-extern void *battle_command_menu_module_block;   /* menu module block */
-extern void *battle_command_menu_file3_block;   /* file 3 block */
-extern u8 battle_target_candidates[12];  /* default-target candidates */
-extern u8 battle_target_candidate_count;      /* candidate count */
+extern void *battle_command_menu_module_block;     /* menu module block */
+extern void *battle_command_menu_file3_block;      /* file 3 block */
+extern u8 battle_target_candidates[12];            /* default-target candidates */
+extern u8 battle_target_candidate_count;           /* candidate count */
 extern u16 battle_target_candidate_mask;
 extern u8 battle_target_cursor_slot;
 extern u8 battle_turns_active;
 extern s32 battle_list_page_scroll;
 extern u8 battle_list_page_scroll_request;
-extern u8 battle_combo_step_flags[15];  /* combo step flags, by combo step index 0-14 */
-extern u16 battle_gear_hud_charge;     /* fuel gained by charging */
+extern u8 battle_combo_step_flags[15];             /* combo step flags, by combo step index 0-14 */
+extern u16 battle_gear_hud_charge;                 /* fuel gained by charging */
 
 /* The timer reload by maximum and remaining AP: battle_ap_timer_reload_table (maximum 3-7) from
  * three rows before (battle.data.ld). */
 extern u8 battle_ap_timer_reload_table_by_max_ap[][8];
 extern u8 battle_unread_gear_attack_step_flag;       /* healing ignores the gear */
-extern u8 *battle_combo_patterns[13]; /* combo input patterns (seven inputs each) */
+extern u8 *battle_combo_patterns[13];                /* combo input patterns (seven inputs each) */
 /* The next combo step by step and AP paid: battle_combo_next_step_table from one byte before
  * (battle.data.ld). */
 extern u8 battle_combo_next_step_table_by_paid[8][3];
@@ -47,34 +47,34 @@ extern u8 *battle_combo_deathblows_by_character[];   /* per character: the death
 
 /* A member's turn in the menu (80079ED8's unit). */
 void battle_ammo_window_release(u8 member);
-void battle_command_menu_release_module_block(void);    /* release the menu module block */
+void battle_command_menu_release_module_block(void);   /* release the menu module block */
 void battle_command_menu_load_module_block(u8 member); /* load the menu module block */
 void battle_command_menu_release_file3_block(void);    /* release the file 3 block */
-void battle_command_menu_load_file3_block(void);    /* load the file 3 block */
-void battle_command_menu_run(u8 member); /* run a party member's command menu */
-void battle_mark_actor_events_done(void);    /* events done: refresh the actor's menu state */
-void battle_take_automatic_turn(u8 member); /* an automatic turn */
+void battle_command_menu_load_file3_block(void);       /* load the file 3 block */
+void battle_command_menu_run(u8 member);               /* run a party member's command menu */
+void battle_mark_actor_events_done(void);              /* events done: refresh the actor's menu state */
+void battle_take_automatic_turn(u8 member);            /* an automatic turn */
 
 /* The attack page, targets and commands (battle.c). */
-void battle_board_gear(u8 member); /* the member boards its gear */
-u8 battle_can_attack_slot(u8 member, u8 slot); /* whether the member can attack slot */
-u8 battle_order_attack_candidates(u8 member);   /* order the member's attack candidates */
+void battle_board_gear(u8 member);                        /* the member boards its gear */
+u8 battle_can_attack_slot(u8 member, u8 slot);            /* whether the member can attack slot */
+u8 battle_order_attack_candidates(u8 member);             /* order the member's attack candidates */
 u8 battle_choose_target(u16 target, u8 member, s32 mode); /* select a target */
-void battle_attack_page_enter(u8 member); /* enter the attack page */
-u8 battle_execute_attack_step(u8 member, u8 cost); /* execute the attack; the target reacted */
-void battle_play_menu_sound(u8 id);   /* play a menu sound */
-void battle_execute_chosen_art(u8 member); /* execute the chosen technique */
+void battle_attack_page_enter(u8 member);                 /* enter the attack page */
+u8 battle_execute_attack_step(u8 member, u8 cost);        /* execute the attack; the target reacted */
+void battle_play_menu_sound(u8 id);                       /* play a menu sound */
+void battle_execute_chosen_art(u8 member);                /* execute the chosen technique */
 
 /* The combo, gear, item and escape commands (8008B478's and 8008CCCC's
  * units). */
-u8 battle_combo_command_run(u8 member); /* run the member's combo; 1 when cancelled */
-u8 battle_gear_menu_run(u8 member); /* run the gear command menu; 1 when committed */
+u8 battle_combo_command_run(u8 member);                              /* run the member's combo; 1 when cancelled */
+u8 battle_gear_menu_run(u8 member);                                  /* run the gear command menu; 1 when committed */
 void battle_ammo_window_open(u8 member);
 void battle_ammo_window_hide(u8 member, u8 release);
-s32 battle_try_escape(void);     /* the escape succeeds */
-void battle_start_defending(u8 member); /* the Defense command */
-void battle_end_defending(u8 member); /* end the member's defending */
+s32 battle_try_escape(void);                                         /* the escape succeeds */
+void battle_start_defending(u8 member);                              /* the Defense command */
+void battle_end_defending(u8 member);                                /* end the member's defending */
 void battle_choose_automatic_action(u8 slot, u8 *choice, s16 *busy); /* choose an automatic action */
-void battle_cancel_turn(void);    /* cancel the turn */
+void battle_cancel_turn(void);                                       /* cancel the turn */
 
 #endif

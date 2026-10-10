@@ -26,12 +26,12 @@ extern POLY_FT4 worldmap_destination_marker[2];
 extern s16 worldmap_path_name_id; /* path */
 extern s16 worldmap_destination_name_id; /* destination */
 
-s32 worldmap_path_window_open(void);      /* open the path name window */
-s32 worldmap_path_window_update(s32 index); /* show the path's name */
-void worldmap_path_window_close(void);     /* close it */
-s32 worldmap_destination_window_open(void);      /* open the destination window */
+s32 worldmap_path_window_open(void);               /* open the path name window */
+s32 worldmap_path_window_update(s32 index);        /* show the path's name */
+void worldmap_path_window_close(void);             /* close it */
+s32 worldmap_destination_window_open(void);        /* open the destination window */
 s32 worldmap_destination_window_update(s32 index); /* show the destination's name and marker */
-void worldmap_destination_window_close(void);     /* close it */
+void worldmap_destination_window_close(void);      /* close it */
 
 /* Resident text calls the world map declares itself: its calls pass words
  * where the resident's definitions take halfwords, and it reads the text's

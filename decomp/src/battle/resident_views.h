@@ -67,9 +67,9 @@ void sound_set_effect_volume(s32 sound, s32 volume); /* set its volume */
 s16 sound_sync_transfer(s32 wait); /* sound transfer busy */
 
 /* Resident data no shared header declares. */
-extern u8 model_slot_ring_tmd[];       /* a TMD model (an effect script file, battle/effect_script.h) */
-extern u8 sprite_vm_command_lengths_by_opcode[];       /* the byte widths of sprite VM commands 80-FF */
-extern s32 pad_vblank_count;        /* the vertical blank count */
-extern s16 mode_battle_ai_variables[];      /* the AI scripts' shared variables */
+extern u8 model_slot_ring_tmd[];                 /* a TMD model (an effect script file, battle/effect_script.h) */
+extern u8 sprite_vm_command_lengths_by_opcode[]; /* the byte widths of sprite VM commands 80-FF */
+extern s32 pad_vblank_count;                     /* the vertical blank count */
+extern s16 mode_battle_ai_variables[];           /* the AI scripts' shared variables */
 
 #endif

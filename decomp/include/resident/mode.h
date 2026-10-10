@@ -32,7 +32,7 @@ typedef struct {
     u32 xy;
 } LifeTile;
 
-extern s32 mode_kernel_menu_cursor;           /* kernel menu cursor */
+extern s32 mode_kernel_menu_cursor; /* kernel menu cursor */
 extern s32 *mode_disc_mode_pointer;
 extern u8 *mode_battle_stage_file;  /* the battle stage file (mode_load_battle_stage; ovl2615 battle_setup_build_stage) */
 extern s32 mode_battle_stage_unused_word;
@@ -49,38 +49,38 @@ extern s16 mode_shared_wave_bank_needs_reload;
 extern u8 mode_battle_return_fade;
 extern u8 mode_result_code;
 extern s32 mode_party_actors[3];
-extern s32 mode_wave_bank_slots[4]; /* loaded wave bank per slot */
+extern s32 mode_wave_bank_slots[4];                /* loaded wave bank per slot */
 extern s32 mode_party_members[3];
 extern s32 mode_party_stand_in_actors[3];
 extern s32 mode_party_file_ids[3];
-extern FileRequest mode_party_file_list[4]; /* party file list, zero-terminated */
-extern FileRequest mode_battle_file_list[4]; /* the battle mode's sound files (8001bbac) */
-extern void *mode_party_file_blocks[3];       /* party character file blocks */
-extern void *mode_preloaded_text_images;          /* file 0xa7 block */
-extern void *mode_preloaded_effect_bank;          /* file 0xa8 block */
-extern void *mode_party_sprite_blocks[3];       /* party field sprite blocks */
-extern s32 mode_read_ahead_size;            /* map read-ahead size */
-extern void *mode_read_ahead_block;          /* map read-ahead block */
-extern s32 mode_music_seq;            /* the active sequence */
+extern FileRequest mode_party_file_list[4];        /* party file list, zero-terminated */
+extern FileRequest mode_battle_file_list[4];       /* the battle mode's sound files (8001bbac) */
+extern void *mode_party_file_blocks[3];            /* party character file blocks */
+extern void *mode_preloaded_text_images;           /* file 0xa7 block */
+extern void *mode_preloaded_effect_bank;           /* file 0xa8 block */
+extern void *mode_party_sprite_blocks[3];          /* party field sprite blocks */
+extern s32 mode_read_ahead_size;                   /* map read-ahead size */
+extern void *mode_read_ahead_block;                /* map read-ahead block */
+extern s32 mode_music_seq;                         /* the active sequence */
 extern struct SoundSequence *mode_music_wave_bank; /* the transferred wave bank */
 
-extern u8 *const mode_overlay_decode_destination; /* overlay decode destination */
-extern u8 boot_bss_last_word[];      /* the last word below the overlay area */
-extern s32 mode_next_mode;       /* next mode */
+extern u8 *const mode_overlay_decode_destination;   /* overlay decode destination */
+extern u8 boot_bss_last_word[];                     /* the last word below the overlay area */
+extern s32 mode_next_mode;                          /* next mode */
 extern ModeEntry mode_table[];
-extern s32 mode_overlay_files[];     /* each mode's overlay file in directory 1 */
+extern s32 mode_overlay_files[];                    /* each mode's overlay file in directory 1 */
 extern struct SoundSequence *mode_shared_wave_bank; /* resident wave banks */
 extern struct SoundSequence *mode_wave_bank_5;
 extern s32 mode_disc_mode;
-extern u8 boot_packed_logo[];      /* compressed boot logo image */
-extern char *mode_fatal_error_messages[];   /* messages of the fatal errors 0x80-0x85 */
-extern s32 mode_fatal_error_count;       /* fatal error count */
+extern u8 boot_packed_logo[];                       /* compressed boot logo image */
+extern char *mode_fatal_error_messages[];           /* messages of the fatal errors 0x80-0x85 */
+extern s32 mode_fatal_error_count;                  /* fatal error count */
 extern u8 cd_disc_files[];
 extern u16 cd_disc_directories[];
 
 /* Original hand-written startup code. */
-void boot_entry_point(void);               /* entry: clear the BSS, reset the stack, boot */
-void boot_reset_stack_and_gp(void);               /* sp = fp = 0x80200000, gp = _gp */
+void boot_entry_point(void);                   /* entry: clear the BSS, reset the stack, boot */
+void boot_reset_stack_and_gp(void);            /* sp = fp = 0x80200000, gp = _gp */
 void boot_clear_bss_range(u8 *start, u8 *end); /* zero the words after start through end */
 
 void mode_run_kernel_menu(void); /* mode 0, the kernel menu */

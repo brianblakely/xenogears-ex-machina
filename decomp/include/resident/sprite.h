@@ -253,7 +253,7 @@ extern u8 sprite_battle_module_loaded;
 extern u8 sprite_requested_battle_module;
 extern u8 sprite_effect_source[];
 extern u8 *sprite_queue_second_entry_block; /* end of the queue entry block */
-extern s32 sprite_palette_bank;    /* extra argument of 80024524/8002435c for one call */
+extern s32 sprite_palette_bank;             /* extra argument of 80024524/8002435c for one call */
 
 /* A queued VRAM upload (LoadImage, or ClearImage without pixels), from the
  * queue block; 80025044 runs the list of the queue being filled. */
@@ -367,10 +367,10 @@ void sprite_upload_image_list(void);
 u8 *sprite_vm_resolve_variable(Sprite *sprite, u8 *code);
 
 extern SpriteQueueEntry *sprite_queue_next_free; /* the next free queue entry */
-extern u8 *sprite_queue_block_end;                /* its end */
-extern u16 sprite_halfword_bit_masks[16]; /* bit masks; the facing groups test render byte 1 */
-extern SVECTOR sprite_quad_corners[4]; /* the corners of the quad being drawn */
-extern SVECTOR sprite_shadow_corners[4]; /* the corners of the shadow quad being drawn */
+extern u8 *sprite_queue_block_end;               /* its end */
+extern u16 sprite_halfword_bit_masks[16];        /* bit masks; the facing groups test render byte 1 */
+extern SVECTOR sprite_quad_corners[4];           /* the corners of the quad being drawn */
+extern SVECTOR sprite_shadow_corners[4];         /* the corners of the shadow quad being drawn */
 
 /* Texture positions of the resident cell pages (two-byte cell kinds). */
 typedef struct {

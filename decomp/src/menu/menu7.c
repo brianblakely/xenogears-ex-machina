@@ -62,14 +62,14 @@ static u8 arena_brain_last_command; /* 80092848: the command the brain last star
  * after every unit's small ones (menu.mk), behind the task scheduler's
  * two words (arena_task_save_scheduler.s). Nothing addresses the words marked
  * unreferenced. */
-static POLY_FT4 arena_glow_quads[2];  /* 80096D90: glow field quad per draw buffer */
-static TILE arena_glow_shade_tiles[2];  /* 80096DE0: full-screen shade tile per draw buffer */
-static DR_MODE arena_glow_blend_modes[2]; /* 80096E00: its blend mode per draw buffer */
-static s32 arena_glow_unused_words[34];     /* 80096E18: unreferenced */
-static SoundVoice arena_sound_voices[4]; /* 80096EA0 */
-static Brain arena_brain_for_first_actor; /* 80096F30: brain of the side-0 opponent */
+static POLY_FT4 arena_glow_quads[2];       /* 80096D90: glow field quad per draw buffer */
+static TILE arena_glow_shade_tiles[2];     /* 80096DE0: full-screen shade tile per draw buffer */
+static DR_MODE arena_glow_blend_modes[2];  /* 80096E00: its blend mode per draw buffer */
+static s32 arena_glow_unused_words[34];    /* 80096E18: unreferenced */
+static SoundVoice arena_sound_voices[4];   /* 80096EA0 */
+static Brain arena_brain_for_first_actor;  /* 80096F30: brain of the side-0 opponent */
 static Brain arena_brain_for_second_actor; /* 80096F64: brain of the side-1 opponent */
-static VECTOR arena_look_at_axis_z; /* 80096F98: look-at work: side */
+static VECTOR arena_look_at_axis_z;        /* 80096F98: look-at work: side */
 
 MATRIX arena_identity_matrix = { { { 0x1000, 0, 0 }, { 0, 0x1000, 0 }, { 0, 0, 0x1000 } }, { 0, 0, 0 } }; /* 80091C0C */
 

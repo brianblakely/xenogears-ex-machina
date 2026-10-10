@@ -2147,16 +2147,16 @@ void worldmap_terrain_load_new_edges(void) {
 /* Scratchpad work area of the terrain draw. */
 typedef struct {
     u8 pad0[0x288];
-    u16 clut[0x40];  /* 0x288 */
-    u16 tpage[8];    /* 0x308 */
-    s32 x0;          /* 0x318 */
+    u16 clut[0x40];    /* 0x288 */
+    u16 tpage[8];      /* 0x308 */
+    s32 x0;            /* 0x318 */
     s32 pad31C;
-    s32 z0;          /* 0x320 */
+    s32 z0;            /* 0x320 */
     s32 pad324;
     SVECTOR corner[4]; /* 0x328: quarter origins */
     u8 pad348[8];
-    MATRIX local;    /* 0x350 */
-    MATRIX world;    /* 0x370 */
+    MATRIX local;      /* 0x350 */
+    MATRIX world;      /* 0x370 */
 } TerrainDrawScratch;
 
 /* 8009932C: Draw the visible 5x5 terrain blocks around the camera: all four quarters

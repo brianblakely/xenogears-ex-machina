@@ -40,14 +40,14 @@ extern u16 battle_gear_sound_played_slots; /* slots whose gear sound played */
 extern s16 battle_single_action_base_table[]; /* per target code: its first command */
 extern s16 battle_single_action_split_table[]; /* per target code: its commands from here play motion 0x11 */
 
-void battle_start_intro(s32 kind);  /* start the battle in a mode */
-void battle_enter(s32 a);     /* enter the battle */
-void battle_wait_for_disc(void);      /* run frames while the disc is busy */
-void battle_close(s32 mode);  /* close the battle */
+void battle_start_intro(s32 kind);                                          /* start the battle in a mode */
+void battle_enter(s32 a);                                                   /* enter the battle */
+void battle_wait_for_disc(void);                                            /* run frames while the disc is busy */
+void battle_close(s32 mode);                                                /* close the battle */
 void battle_menu_open_turn(s32 mode, s32 slot, s32 targets, s32 next_slot); /* open the battle menu for a turn */
-void battle_finish_loads(void);      /* finish the battle's loads */
-void battle_stop_reads_finish_loads(void);      /* stop the resident transfer and finish the loads */
-void battle_menu_add_step(void);      /* count a step of the battle menu */
+void battle_finish_loads(void);                                             /* finish the battle's loads */
+void battle_stop_reads_finish_loads(void);                                  /* stop the resident transfer and finish the loads */
+void battle_menu_add_step(void);                                            /* count a step of the battle menu */
 /* Mark the battle menu (field48) with its state; a sprite callback (also the
  * event script overlay's). Declared without a prototype: 800B9508 also calls
  * it with the sprite (defined (void)). */

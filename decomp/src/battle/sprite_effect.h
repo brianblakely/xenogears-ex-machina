@@ -60,9 +60,9 @@ typedef struct {
 } SpriteLink;
 
 extern u8 battle_trail_anchor_indices[5]; /* the anchors of a sprite's trail */
-extern u8 *battle_trail_colors;   /* the trail being drawn: its colours */
-extern s16 battle_trail_color_count;   /* its colour count */
-extern s16 battle_trail_blend;   /* its blend */
+extern u8 *battle_trail_colors;           /* the trail being drawn: its colours */
+extern s16 battle_trail_color_count;      /* its colour count */
+extern s16 battle_trail_blend;            /* its blend */
 extern s16 battle_trail_depth;
 
 /* Sprite script commands (800B3F04). */

@@ -114,8 +114,8 @@ extern u8 arena_effect_sparkle1_frame_v[16];
 extern u8 arena_effect_sparkle2_frame_u[16];
 extern u8 arena_effect_sparkle2_frame_v[16]; /* 12 used */
 extern u8 arena_effect_sparkle4_frame_v[16];
-extern s16 arena_effect_trail_sizes[];  /* trail sizes */
-extern s32 arena_frame_count;    /* owner of the segments started now */
+extern s16 arena_effect_trail_sizes[];       /* trail sizes */
+extern s32 arena_frame_count;                /* owner of the segments started now */
 
 void arena_effect_create_hit_spark_emitter(void);
 void arena_effect_emit_hit_sparks(u32 *ot, MATRIX *view);

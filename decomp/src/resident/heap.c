@@ -13,22 +13,22 @@
  * data and the assembler allocates those of up to 8 bytes in the unit's
  * .sbss ($gp-relative, 80059318), the larger in its .bss (80059fa4), each
  * in a slot of whole words. */
-static u16 heap_next_class;     /* 80059318: allocation class of the next block */
-static u16 heap_owner_tag;     /* 8005931C: owner tag of the next block */
-static u8 *heap_first_block;     /* 80059320: data address of the first block */
+static u16 heap_next_class;              /* 80059318: allocation class of the next block */
+static u16 heap_owner_tag;               /* 8005931C: owner tag of the next block */
+static u8 *heap_first_block;             /* 80059320: data address of the first block */
 static s32 heap_unreferenced_word_1;     /* 80059324: unreferenced */
 static s32 heap_unreferenced_word_2;     /* 80059328: unreferenced */
-static s32 heap_needs_coalescing;     /* 8005932C: free blocks await coalescing */
-static s32 heap_quiet_failures;     /* 80059330: failures return NULL instead of stopping */
+static s32 heap_needs_coalescing;        /* 8005932C: free blocks await coalescing */
+static s32 heap_quiet_failures;          /* 80059330: failures return NULL instead of stopping */
 /* Loaded host symbols: the complete "SYM1" file and its byte limit. They
  * are separate scalars: heap_init clears them ahead of its block-header
  * stores, which GCC's alias rules allow for scalars but not for members of a
  * global struct. */
-static u8 *heap_symbol_data; /* 80059334 */
-static u8 *heap_symbol_data_end; /* 80059338 */
-static s32 heap_last_request_size;     /* 8005933C: size of the last request */
-static s32 heap_last_request_caller;     /* 80059340: caller of the last request */
-static s32 heap_unreferenced_word_3;     /* 80059344: unreferenced */
+static u8 *heap_symbol_data;                  /* 80059334 */
+static u8 *heap_symbol_data_end;              /* 80059338 */
+static s32 heap_last_request_size;            /* 8005933C: size of the last request */
+static s32 heap_last_request_caller;          /* 80059340: caller of the last request */
+static s32 heap_unreferenced_word_3;          /* 80059344: unreferenced */
 static char **heap_tag_class_name_tables[10]; /* 80059FA4: per tag, the names of its allocation classes */
 /* The delayed releases: one list head, but not small data. */
 static DelayedFree *heap_delayed_frees[3]; /* 80059FCC */

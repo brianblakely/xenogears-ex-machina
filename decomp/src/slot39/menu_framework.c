@@ -360,20 +360,20 @@ u16 menu_ascii_to_sjis_table[96] = { /* 801EA610 */
 
 /* The unit's uninitialized variables, zero in the file after all units'
  * initialized data, each in a slot of whole words (decomp/Makefile). */
-static u8 menu_card_own_save_flags[2][16]; /* 801EA6D0: per port and save slot: a save of this game exists */
-static s32 menu_unused_card_scan_word;       /* 801EA6F0: unreferenced */
-static u8 *menu_card_unread_last_matched_save_info;       /* 801EA6F4: the save information of the last matched file */
-static u8 menu_card_unread_access_restarted; /* 801EA6F8 */
-static s32 menu_stat_bar_from; /* 801EA6FC: gauge: from, to, difference and lengths */
-static s32 menu_stat_bar_unread_to; /* 801EA700 */
-static s32 menu_stat_bar_change; /* 801EA704 */
-static s32 menu_stat_bar_length; /* 801EA708 */
-static s32 menu_stat_bar_change_length; /* 801EA70C */
-static u8 menu_stat_bar_change_color; /* 801EA710 */
-static u8 menu_stat_bar_change_sign_image; /* 801EA714 */
-static CdlCB menu_saved_cd_sync_callback; /* 801EA718: the CD sync, ready and read callbacks, saved in card mode */
-static CdlCB menu_saved_cd_ready_callback; /* 801EA71C */
-static CdlCB menu_saved_cd_read_callback; /* 801EA720 */
+static u8 menu_card_own_save_flags[2][16];          /* 801EA6D0: per port and save slot: a save of this game exists */
+static s32 menu_unused_card_scan_word;              /* 801EA6F0: unreferenced */
+static u8 *menu_card_unread_last_matched_save_info; /* 801EA6F4: the save information of the last matched file */
+static u8 menu_card_unread_access_restarted;        /* 801EA6F8 */
+static s32 menu_stat_bar_from;                      /* 801EA6FC: gauge: from, to, difference and lengths */
+static s32 menu_stat_bar_unread_to;                 /* 801EA700 */
+static s32 menu_stat_bar_change;                    /* 801EA704 */
+static s32 menu_stat_bar_length;                    /* 801EA708 */
+static s32 menu_stat_bar_change_length;             /* 801EA70C */
+static u8 menu_stat_bar_change_color;               /* 801EA710 */
+static u8 menu_stat_bar_change_sign_image;          /* 801EA714 */
+static CdlCB menu_saved_cd_sync_callback;           /* 801EA718: the CD sync, ready and read callbacks, saved in card mode */
+static CdlCB menu_saved_cd_ready_callback;          /* 801EA71C */
+static CdlCB menu_saved_cd_read_callback;           /* 801EA720 */
 
 /* 801C531C: Run the command at `offset` past the top cursor (0 back, 1 load/save file,
  * 2..6 the field-menu screens, 7/8 the title file screen's load and new game,

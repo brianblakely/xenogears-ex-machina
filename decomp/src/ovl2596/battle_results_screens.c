@@ -23,17 +23,17 @@ BattleWork *battle_results_work_ptr = &battle_work_area; /* 801E44C8 */
  * in the file: commons, which the original linker allocated each in a slot
  * of whole words (decomp/Makefile). */
 s32 battle_results_gauge_start_value;               /* 801E44CC: gauge: start value */
-s32 battle_results_gauge_end_value;               /* 801E44D0: end value */
-s32 battle_results_gauge_change;               /* 801E44D4: distance */
-s32 battle_results_gauge_start_length;               /* 801E44D8: start length */
-s32 battle_results_gauge_change_length;               /* 801E44DC: distance length */
-u8 battle_results_gauge_change_color;                /* 801E44E0: bar colour */
+s32 battle_results_gauge_end_value;                 /* 801E44D0: end value */
+s32 battle_results_gauge_change;                    /* 801E44D4: distance */
+s32 battle_results_gauge_start_length;              /* 801E44D8: start length */
+s32 battle_results_gauge_change_length;             /* 801E44DC: distance length */
+u8 battle_results_gauge_change_color;               /* 801E44E0: bar colour */
 u8 battle_results_gauge_arrow_glyph;                /* 801E44E4: arrow glyph */
-GrowthFile *battle_results_growth_file;       /* 801E44E8: the growth data file */
-CharacterRecord *battle_results_current_record;  /* 801E44EC: the record being processed: a combatant's or the game data's */
-u32 battle_results_exp_pool_a;               /* 801E44F0: experience pool for level A */
-u32 battle_results_exp_pool_b;               /* 801E44F4: and level B */
-u8 battle_results_levels_before[3][2];          /* 801E44F8: each slot's levels A and B before the experience */
+GrowthFile *battle_results_growth_file;             /* 801E44E8: the growth data file */
+CharacterRecord *battle_results_current_record;     /* 801E44EC: the record being processed: a combatant's or the game data's */
+u32 battle_results_exp_pool_a;                      /* 801E44F0: experience pool for level A */
+u32 battle_results_exp_pool_b;                      /* 801E44F4: and level B */
+u8 battle_results_levels_before[3][2];              /* 801E44F8: each slot's levels A and B before the experience */
 
 /* 801DE048: Queue every member card's glyph runs while the cards are shown. */
 void battle_results_queue_member_cards(void) {

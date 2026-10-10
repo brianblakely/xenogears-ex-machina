@@ -26,10 +26,10 @@ typedef struct {
 
 extern s16 arena_select_wheel_neighbors[2][4];       /* neighbour offsets and slide of the wheel portraits, per row */
 extern ListEntry arena_select_gears[49];
-extern s32 arena_select_entry_count;             /* entries in the list */
-extern u8 *arena_select_portraits;             /* the 49 portraits, 0x1000 bytes each */
-extern ListEntry **arena_select_entries;     /* the list */
-extern s32 arena_select_portraits_in_vram;             /* the portraits are in VRAM */
+extern s32 arena_select_entry_count;                 /* entries in the list */
+extern u8 *arena_select_portraits;                   /* the 49 portraits, 0x1000 bytes each */
+extern ListEntry **arena_select_entries;             /* the list */
+extern s32 arena_select_portraits_in_vram;           /* the portraits are in VRAM */
 /* Two-player selection wheels: each side's portraits per buffer, and the
  * neighbour offsets and slide of the portraits beside the pick (row 1
  * while sliding right or still). */

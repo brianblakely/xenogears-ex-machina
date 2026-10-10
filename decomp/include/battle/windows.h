@@ -52,7 +52,7 @@ typedef struct {
 
 extern MessageImage battle_message_image;
 extern void *battle_message_table;   /* battle message table */
-extern u8 battle_pending_message;      /* pending battle message + 1 */
+extern u8 battle_pending_message;    /* pending battle message + 1 */
 
 /* Eight 0x60-byte message entries from 800d36c8. */
 typedef struct BattleMessage {

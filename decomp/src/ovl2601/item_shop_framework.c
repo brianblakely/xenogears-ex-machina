@@ -87,7 +87,7 @@ s32 item_shop_file_slot_y_table[32] = { /* 801D2114: y */
     54, 14, 34, 54, 14, 34, 54, 256,
 };
 /* Cursor position per position. */
-s32 item_shop_highlight_x_table[7] = {73, 72, 67, 37, 36, 31, 24};       /* 801D2194: x */
+s32 item_shop_highlight_x_table[7] = {73, 72, 67, 37, 36, 31, 24};        /* 801D2194: x */
 s32 item_shop_highlight_y_table[7] = {205, 185, 166, 201, 181, 162, 144}; /* 801D21B0: y */
 /* Member portrait x by shown member. */
 s32 item_shop_portrait_x_table[9] = {72, 98, 124, 150, 176, 202, 228, 254, 280}; /* 801D21CC */

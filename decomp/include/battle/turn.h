@@ -67,10 +67,10 @@ typedef struct TurnQueue {
 } TurnQueue;
 
 extern TurnQueue battle_turn_queue;
-extern u8 battle_atb_enabled;      /* ATB enabled */
-extern u8 battle_forced_next_turn;      /* forced next turn: slot + 1 */
-extern u8 battle_acting_slot;      /* acting slot (the battle area's +0xa72) */
-extern u8 battle_unread_open_menu_member;      /* the party member whose menu is open */
+extern u8 battle_atb_enabled;             /* ATB enabled */
+extern u8 battle_forced_next_turn;        /* forced next turn: slot + 1 */
+extern u8 battle_acting_slot;             /* acting slot (the battle area's +0xa72) */
+extern u8 battle_unread_open_menu_member; /* the party member whose menu is open */
 
 /* Per-slot flags (8 bytes from 800d32a0). */
 typedef struct SlotFlags {
@@ -82,25 +82,25 @@ typedef struct SlotFlags {
 extern SlotFlags battle_slot_flags[11];
 
 /* The slots' masks and running results. */
-extern u16 battle_alive_mask;     /* alive mask */
-extern u16 battle_area_knocked_out;     /* knocked-out mask (the battle area's knockedOut) */
-extern u16 battle_slots_counting_while_down;     /* slots that still count while down */
-extern u16 battle_slot_bits[16]; /* slot bits */
-extern u16 battle_flag_bits[16]; /* flag bits */
-extern u16 battle_command_seal_bits[16]; /* single-bit masks, 0x8000 down to 1 */
-extern u8 battle_running_result_codes[11];  /* running result code per slot */
+extern u16 battle_alive_mask;                 /* alive mask */
+extern u16 battle_area_knocked_out;           /* knocked-out mask (the battle area's knockedOut) */
+extern u16 battle_slots_counting_while_down;  /* slots that still count while down */
+extern u16 battle_slot_bits[16];              /* slot bits */
+extern u16 battle_flag_bits[16];              /* flag bits */
+extern u16 battle_command_seal_bits[16];      /* single-bit masks, 0x8000 down to 1 */
+extern u8 battle_running_result_codes[11];    /* running result code per slot */
 extern s16 battle_running_result_amounts[11]; /* running result amount per slot */
 
-void battle_tick_atb(void);      /* one ATB tick */
+void battle_tick_atb(void);               /* one ATB tick */
 void battle_reset_turn_timers(u8 *order); /* reset every slot's turn timers */
-s32 battle_find_next_turn_slot(u8 actor);   /* the next slot in turn order */
+s32 battle_find_next_turn_slot(u8 actor); /* the next slot in turn order */
 
 /* Slot masks and random values (battle.c). */
-u16 battle_random_range(u16 low, u16 high);  /* a random value in low..high */
-u16 battle_get_flag_bit(u8 bit);             /* mask bit `bit` */
-u16 battle_get_other_slot_bits(u8 slot);            /* every slot bit but a slot's */
-u16 battle_is_flag_in_mask(u16 mask, u8 bit);   /* bit `bit` of a mask */
-u16 battle_is_slot_in_mask(u16 mask, u8 slot);  /* a slot's bit of a mask */
+u16 battle_random_range(u16 low, u16 high);    /* a random value in low..high */
+u16 battle_get_flag_bit(u8 bit);               /* mask bit `bit` */
+u16 battle_get_other_slot_bits(u8 slot);       /* every slot bit but a slot's */
+u16 battle_is_flag_in_mask(u16 mask, u8 bit);  /* bit `bit` of a mask */
+u16 battle_is_slot_in_mask(u16 mask, u8 slot); /* a slot's bit of a mask */
 
 /* A slot's turn timer from its speed (8008CCCC's unit); defined old-style,
  * its callers pass the slot unnarrowed. */

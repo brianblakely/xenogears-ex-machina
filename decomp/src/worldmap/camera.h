@@ -13,13 +13,13 @@ typedef struct Camera {
     VECTOR target;
 } Camera;
 
-extern Camera worldmap_camera; /* the camera */
+extern Camera worldmap_camera;               /* the camera */
 extern Camera worldmap_camera_follow_target; /* the target the camera follows (the player's) */
-extern SVECTOR worldmap_camera_angle; /* camera angle */
-extern s32 worldmap_camera_distance;    /* camera distance */
-extern s32 worldmap_view_center_y;    /* screen y of the view's centre (SetGeomOffset) */
-extern s32 worldmap_view_kind;    /* view kind: 0 by angle, 1 look-at */
-extern MATRIX worldmap_camera_matrix; /* camera matrix */
+extern SVECTOR worldmap_camera_angle;        /* camera angle */
+extern s32 worldmap_camera_distance;         /* camera distance */
+extern s32 worldmap_view_center_y;           /* screen y of the view's centre (SetGeomOffset) */
+extern s32 worldmap_view_kind;               /* view kind: 0 by angle, 1 look-at */
+extern MATRIX worldmap_camera_matrix;        /* camera matrix */
 
 /* The view setup at worldmap_view_setup: eye and look-at points and the up vector,
  * which the orbit placement (worldmap_camera_place_orbit) writes and the look-at camera
@@ -44,8 +44,8 @@ typedef struct {
 
 void worldmap_camera_place_orbit(ViewSetup *view, Camera *camera, s32 distance, SVECTOR *angle);
 void worldmap_get_matrix_angles(MATRIX *m, SVECTOR *angle); /* matrix to angles */
-void worldmap_camera_build_look_at(void *);                    /* look-at camera matrix */
-void worldmap_camera_build_from_angles(void *);                    /* camera matrix by angle */
+void worldmap_camera_build_look_at(void *);                 /* look-at camera matrix */
+void worldmap_camera_build_from_angles(void *);             /* camera matrix by angle */
 void worldmap_eval_quadratic_bspline(s32 t, SVECTOR *p0, SVECTOR *p1, SVECTOR *p2, VECTOR *out);
 
 /* Scripted camera easing (worldmap_open_map): an eighth of the way to the

@@ -10,7 +10,7 @@
  * command's argument bytes. The debug overlay follows a sprite it marks. */
 
 extern u8 battle_unread_sprite_slot_mark;    /* 1, or a slot + 2 */
-extern Sprite *battle_sprite_for_debugger; /* the sprite the debugger follows */
+extern Sprite *battle_sprite_for_debugger;   /* the sprite the debugger follows */
 
 void battle_sprite_command_run(Sprite *sprite, s32 command, u8 *args); /* run sprite script command `command` */
 

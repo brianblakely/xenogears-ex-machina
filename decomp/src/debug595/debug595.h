@@ -106,7 +106,7 @@ void field_debug_edit_emitter_field(s32 axis, u32 item);
  * (the field's Record78) from its editor's labels, reading their flags as
  * bit-fields and their colour offsets as one s8 array (the field reads +0x70
  * as u8), and takes the actors and their descriptors as below (80281b90). */
-extern u_long *field_current_draw_block;     /* the current draw block */
+extern u_long *field_current_draw_block;          /* the current draw block */
 extern ParticleEmitter field_effect_templates[8]; /* the eight template emitters */
 
 /* An event actor record; the members the monitor prints. */
@@ -162,28 +162,28 @@ typedef struct {
 } FieldObjects;
 
 /* FieldView members (800af880). */
-extern Fixed field_view[3];    /* camera eye */
-extern Fixed field_view_target[3];    /* camera look-at */
-extern Fixed field_view_eye_goal[3];    /* second camera eye */
-extern Fixed field_view_target_goal[3];    /* second camera look-at */
+extern Fixed field_view[3];                    /* camera eye */
+extern Fixed field_view_target[3];             /* camera look-at */
+extern Fixed field_view_eye_goal[3];           /* second camera eye */
+extern Fixed field_view_target_goal[3];        /* second camera look-at */
 extern s32 field_view_target_follow_divisor;
 extern s32 field_view_eye_follow_divisor;
 extern s16 field_view_heading_angle;
 extern s32 field_view_heading_high;
 extern u8 field_view_heading_blocks0;          /* dolly set */
 extern u8 field_view_heading_blocks1;          /* dolly stop */
-extern s32 field_view_projection;         /* screen distance */
+extern s32 field_view_projection;              /* screen distance */
 extern s16 field_view_elevation;
 extern u16 field_view_distance;
 extern MATRIX field_view_scaled_world;
 extern FieldObjects field_view_components;
 /* FieldWork members (800b2078). */
 extern s16 field_work_sprite_gate;
-extern u8 field_work_fog_color[3];       /* fog near colour */
-extern u8 field_work_far_color[3];       /* fog far colour */
-extern s16 field_work_fog_range[2];      /* fog near, far */
-extern s32 field_work_controlled;         /* player actor */
-extern s32 field_work_encounter_period;         /* encounter timer */
-extern s32 field_work_encounter_step_count;         /* encounter number */
+extern u8 field_work_fog_color[3];          /* fog near colour */
+extern u8 field_work_far_color[3];          /* fog far colour */
+extern s16 field_work_fog_range[2];         /* fog near, far */
+extern s32 field_work_controlled;           /* player actor */
+extern s32 field_work_encounter_period;     /* encounter timer */
+extern s32 field_work_encounter_step_count; /* encounter number */
 
 #endif

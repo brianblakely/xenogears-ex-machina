@@ -14,78 +14,78 @@
 /* Battle UI state: the heap block at *800d2d28. */
 typedef struct BattleUi {
     RECT textureWindows[6]; /* +0x00 */
-    u32 unk30;         /* CLUT cycle position */
-    s32 unk34;         /* +0x34 panel cursor window: x */
+    u32 unk30;              /* CLUT cycle position */
+    s32 unk34;              /* +0x34 panel cursor window: x */
     s32 unk38;
-    u32 unk3C;         /* y */
+    u32 unk3C;              /* y */
     s32 unk40;
-    s32 unk44;         /* width */
+    s32 unk44;              /* width */
     s32 unk48;
-    u32 unk4C;         /* height */
+    u32 unk4C;              /* height */
     s32 unk50;
-    u32 unk54;         /* x step (8.8) */
+    u32 unk54;              /* x step (8.8) */
     s32 unk58;
-    u32 unk5C;         /* step count */
+    u32 unk5C;              /* step count */
     s32 unk60;
     s32 unk64;
     s32 unk68;
     s32 unk6C;
     u8 unk70[4];
-    u8 statusParts[4]; /* +0x74 status glyph parts, [3] party-wide */
-    u8 gaugeParts[3];  /* +0x78 */
-    u8 unk7B;          /* AP text part count */
-    u8 reaction[3];    /* +0x7C */
-    u8 barShown[4];    /* +0x7F time bar shown, [3] party-wide */
-    u8 portraitBuffer; /* +0x83 */
-    u8 statusBuffer[4]; /* +0x84 draw buffer of the status glyphs, [3] party-wide */
+    u8 statusParts[4];      /* +0x74 status glyph parts, [3] party-wide */
+    u8 gaugeParts[3];       /* +0x78 */
+    u8 unk7B;               /* AP text part count */
+    u8 reaction[3];         /* +0x7C */
+    u8 barShown[4];         /* +0x7F time bar shown, [3] party-wide */
+    u8 portraitBuffer;      /* +0x83 */
+    u8 statusBuffer[4];     /* +0x84 draw buffer of the status glyphs, [3] party-wide */
     u8 unk88[0x8E - 0x88];
     u8 unk8E;
-    u8 showSkill;      /* +0x8F the result screens' learnt skill message (ovl2596) */
-    u8 unk90[3];       /* per party member */
+    u8 showSkill;           /* +0x8F the result screens' learnt skill message (ovl2596) */
+    u8 unk90[3];            /* per party member */
     u8 unk93[3];
-    u8 unk96;          /* file 3 block loaded */
-    u8 unk97;          /* selected list row */
+    u8 unk96;               /* file 3 block loaded */
+    u8 unk97;               /* selected list row */
     u8 unk98;
-    u8 unk99[3];       /* party panel digit buffers */
+    u8 unk99[3];            /* party panel digit buffers */
     u8 unk9C;
     u8 unk9D;
-    u8 cursorShown;    /* +0x9E the cursor glyph (graphics +0x27c8) is shown */
+    u8 cursorShown;         /* +0x9E the cursor glyph (graphics +0x27c8) is shown */
     u8 unk9F;
-    u8 showCards;      /* +0xA0 the result screens' member cards, which count up */
-    u8 showSummary;    /* +0xA1 their summary window */
-    u8 gaugeBuffer;    /* +0xA2 */
+    u8 showCards;           /* +0xA0 the result screens' member cards, which count up */
+    u8 showSummary;         /* +0xA1 their summary window */
+    u8 gaugeBuffer;         /* +0xA2 */
     u8 unkA3;
     u8 unkA4;
     u8 unkA5;
     u8 unkA6;
-    u8 cursorBuffer;   /* +0xA7 its draw buffer */
+    u8 cursorBuffer;        /* +0xA7 its draw buffer */
     u8 unkA8;
     u8 unkA9;
-    u8 unkAA;          /* frame counter */
+    u8 unkAA;               /* frame counter */
     u8 unkAB;
-    u8 showSpoils;     /* +0xAC their spoils window */
+    u8 showSpoils;          /* +0xAC their spoils window */
     u8 unkAD;
-    u8 unkAE;          /* menu module block loaded */
+    u8 unkAE;               /* menu module block loaded */
     u8 unkAF;
-    u8 windows[7];     /* +0xB0 window shown */
-    u8 unkB7;          /* command window page */
-    u8 windowOpening[7]; /* +0xB8 */
-    u8 windowOpen[7];    /* +0xBF fully open */
+    u8 windows[7];          /* +0xB0 window shown */
+    u8 unkB7;               /* command window page */
+    u8 windowOpening[7];    /* +0xB8 */
+    u8 windowOpen[7];       /* +0xBF fully open */
     u8 unkC6;
     u8 unkC7;
     u8 scriptPortraitShown; /* +0xC8 the event script's portrait quad (ScriptState) is drawn */
-    u8 messageShown;   /* +0xC9 the message text window battle_message_text_window is drawn */
-    u8 scriptLoaded;   /* +0xCA the event script is set up: its threads' waits count down */
+    u8 messageShown;        /* +0xC9 the message text window battle_message_text_window is drawn */
+    u8 scriptLoaded;        /* +0xCA the event script is set up: its threads' waits count down */
     u8 unkCB;
-    u8 unkCC[3];       /* per party member: its panel and gauge are drawn */
-    u8 waitingCross;   /* +0xCF a prompt waits for a key: the input is kept */
+    u8 unkCC[3];            /* per party member: its panel and gauge are drawn */
+    u8 waitingCross;        /* +0xCF a prompt waits for a key: the input is kept */
     s32 unkD0[2];
     u8 unkD8[0xE0 - 0xD8];
     s32 unkE0[3];
     s32 unkEC[3];
     s32 unkF8;
     s32 unkFC;
-    s32 cursorParts;   /* +0x100 its glyph's primitives */
+    s32 cursorParts;        /* +0x100 its glyph's primitives */
     u16 unk104;
     u16 unk106;
     u8 unk108[4];
@@ -145,8 +145,8 @@ typedef struct {
 extern BattleDraw battle_drawing_state;
 extern u8 battle_drawing_buffer_byte;   /* battle_drawing_state.buffer's low byte, read on its own */
 
-extern void *battle_glyph_table;   /* glyph table */
-extern u8 battle_decimal_digits[9];   /* decimal digits */
+extern void *battle_glyph_table;    /* glyph table */
+extern u8 battle_decimal_digits[9]; /* decimal digits */
 
 /* A menu icon cell of the icon image (4 bytes, 800d2f68). */
 typedef struct IconCell {
@@ -185,7 +185,7 @@ void battle_hide_direction_arrows(void);
 
 /* Decimal digits and text images (battle.c), the cursor glyph (8008CCCC's
  * unit). */
-void battle_split_decimal_digits(u32 value);  /* split a value into decimal digits */
+void battle_split_decimal_digits(u32 value);                           /* split a value into decimal digits */
 void battle_animate_cursor_glyph(s32 x, s32 y, s32 *frame, u8 *ticks); /* animate a cursor glyph */
 
 #endif

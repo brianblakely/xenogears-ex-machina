@@ -41,6 +41,6 @@ typedef struct {
 #define AREA_ACTING_SLOT (((u8 *)&BATTLE_AREA)[0xA72])
 
 void battle_show_slot_result(s32 slot);  /* show the current event's result on a slot */
-void battle_show_results(void);      /* show the current event's results on every slot */
+void battle_show_results(void);          /* show the current event's results on every slot */
 
 #endif

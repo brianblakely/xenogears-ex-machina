@@ -10,10 +10,10 @@
  * point, the view modes, the idle orbit and the camera/scene modes. */
 
 extern u8 arena_camera_ease_step_count;      /* idle camera */
-extern s32 arena_camera_view_mode;     /* camera view */
-extern s32 arena_camera_side_angle;     /* side of the actors' line the eye takes (+-0x400) */
-extern VECTOR arena_camera_focus;  /* eye */
-extern VECTOR arena_camera_position;  /* look-at point */
+extern s32 arena_camera_view_mode;           /* camera view */
+extern s32 arena_camera_side_angle;          /* side of the actors' line the eye takes (+-0x400) */
+extern VECTOR arena_camera_focus;            /* eye */
+extern VECTOR arena_camera_position;         /* look-at point */
 
 void arena_scene_close_choice(void);
 s32 arena_camera_ease_step(s32 target, s32 current, s32 steps);

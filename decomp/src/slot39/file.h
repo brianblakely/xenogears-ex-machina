@@ -168,33 +168,33 @@ typedef struct SaveData {
  * in its flag words. No shared header declares them; battle reads them
  * signed. */
 extern u16 mode_battle_ai_variables[16];
-extern u8 menu_yes_no_cancelled;    /* the last choice was cancelled */
-extern u16 menu_ascii_to_sjis_table[96]; /* two-byte codes of the ASCII characters 0x20-0x7F */
-extern s16 menu_file_slot_x_table[32][2];    /* image block x */
-extern s16 menu_file_slot_y_table[32][2];    /* image block y */
+extern u8 menu_yes_no_cancelled;                /* the last choice was cancelled */
+extern u16 menu_ascii_to_sjis_table[96];        /* two-byte codes of the ASCII characters 0x20-0x7F */
+extern s16 menu_file_slot_x_table[32][2];       /* image block x */
+extern s16 menu_file_slot_y_table[32][2];       /* image block y */
 extern s32 menu_save_view_image_x_table[];
 extern s32 menu_save_view_image_y_table[];
-extern s32 menu_file_info_char_x_table[21];    /* text character x per column */
-extern s32 menu_file_info_char_y_table[];      /* text character y per row */
-extern s32 menu_file_info_cursor_x;        /* cursor sprite x */
-extern s32 menu_file_info_cursor_y;        /* cursor sprite y */
-extern s32 menu_save_view_frame_images[18];    /* view frame images, ffff none */
+extern s32 menu_file_info_char_x_table[21];     /* text character x per column */
+extern s32 menu_file_info_char_y_table[];       /* text character y per row */
+extern s32 menu_file_info_cursor_x;             /* cursor sprite x */
+extern s32 menu_file_info_cursor_y;             /* cursor sprite y */
+extern s32 menu_save_view_frame_images[18];     /* view frame images, ffff none */
 extern s32 menu_save_view_frame_x_table[9];     /* view frame x (first view) */
 extern s32 menu_save_view_frame_y_table[9];     /* view frame y */
-extern s32 menu_file_info_play_time_x_table[9];     /* play time: x of the two separators and seven digits */
-extern s32 menu_save_view_level_x;         /* view level digits x */
-extern s32 menu_save_view_level_y;         /* view level digits y */
-extern s32 menu_save_title_x;         /* save title x, y */
+extern s32 menu_file_info_play_time_x_table[9]; /* play time: x of the two separators and seven digits */
+extern s32 menu_save_view_level_x;              /* view level digits x */
+extern s32 menu_save_view_level_y;              /* view level digits y */
+extern s32 menu_save_title_x;                   /* save title x, y */
 extern s32 menu_save_title_y;
-extern s32 menu_save_view_hp_x;         /* view HP digits x, y */
+extern s32 menu_save_view_hp_x;                 /* view HP digits x, y */
 extern s32 menu_save_view_hp_y;
-extern s32 menu_save_view_max_hp_x;         /* view maximum HP digits x, y */
+extern s32 menu_save_view_max_hp_x;             /* view maximum HP digits x, y */
 extern s32 menu_save_view_max_hp_y;
-extern s32 menu_save_view_ep_x;         /* view EP digits x, y */
+extern s32 menu_save_view_ep_x;                 /* view EP digits x, y */
 extern s32 menu_save_view_ep_y;
-extern s32 menu_save_view_max_ep_x;         /* view maximum EP digits x, y */
+extern s32 menu_save_view_max_ep_x;             /* view maximum EP digits x, y */
 extern s32 menu_save_view_max_ep_y;
-extern s32 menu_card_blocks_used[2]; /* per port: blocks the listed files use (15 fill a card) */
+extern s32 menu_card_blocks_used[2];            /* per port: blocks the listed files use (15 fill a card) */
 
 /* The card and file screen functions that another unit calls, or its own
  * before defining them. */

@@ -32,10 +32,10 @@ typedef struct SceneObject {
     struct SceneObject *parent; /* 0x50 */
 } SceneObject;
 
-extern SceneObject *worldmap_objects; /* scene objects */
-extern s16 worldmap_object_count;          /* scene object count */
-extern s16 worldmap_object_model_count;          /* animation count */
-extern u16 worldmap_area_image_cluts[16];      /* the area image's faded CLUT ids */
+extern SceneObject *worldmap_objects;                                       /* scene objects */
+extern s16 worldmap_object_count;                                           /* scene object count */
+extern s16 worldmap_object_model_count;                                     /* animation count */
+extern u16 worldmap_area_image_cluts[16];                                   /* the area image's faded CLUT ids */
 extern MATRIX worldmap_light_color_matrix, worldmap_light_direction_matrix; /* colour and light matrices */
 
 void worldmap_upload_area_image(void); /* upload the area image, build its faded CLUTs */
@@ -61,7 +61,7 @@ typedef struct {
     MeshFace faces[1];
 } Mesh;
 
-extern s16 worldmap_mesh_probe_hits[];        /* probe hits: face and kind pairs */
+extern s16 worldmap_mesh_probe_hits[];                   /* probe hits: face and kind pairs */
 extern s32 worldmap_walker_face, worldmap_walker_object; /* the face and object the walker stands on, -1 none */
 
 void worldmap_mesh_project_onto_face(VECTOR *position, VECTOR *offset, VECTOR *normal, u16 index, u16 face);
@@ -172,25 +172,25 @@ void sound_set_effect_volume(s32 sound, s32 volume);
 
 /* Their actors (start, update), by mode. The frame steps that end each
  * mode's list draw the scene. */
-s32 worldmap_open_map_frame_start(void), worldmap_open_map_frame_update(void);           /* the open map's frame step */
-s32 worldmap_scene_frame_billboards_start(void), worldmap_scene_frame_billboards_update(void);           /* frame step without input */
-s32 worldmap_scene_frame_start(void), worldmap_scene_frame_update(void);           /* frame step */
-s32 worldmap_scene8_camera_start(s32 index), worldmap_scene8_camera_update(s32 index); /* 8, 11: the pad-steered camera */
+s32 worldmap_open_map_frame_start(void), worldmap_open_map_frame_update(void);                       /* the open map's frame step */
+s32 worldmap_scene_frame_billboards_start(void), worldmap_scene_frame_billboards_update(void);       /* frame step without input */
+s32 worldmap_scene_frame_start(void), worldmap_scene_frame_update(void);                             /* frame step */
+s32 worldmap_scene8_camera_start(s32 index), worldmap_scene8_camera_update(s32 index);               /* 8, 11: the pad-steered camera */
 s32 worldmap_scene9_camera_flight_start(s32 index), worldmap_scene9_camera_flight_update(s32 index); /* 9: the camera flight */
-s32 worldmap_scene9_rig_start(s32 index), worldmap_scene9_rig_update(s32 index); /* 9: the rig */
-s32 worldmap_scene10_script_start(s32 index), worldmap_scene10_script_update(s32 index); /* 10 */
+s32 worldmap_scene9_rig_start(s32 index), worldmap_scene9_rig_update(s32 index);                     /* 9: the rig */
+s32 worldmap_scene10_script_start(s32 index), worldmap_scene10_script_update(s32 index);             /* 10 */
 s32 worldmap_scene10_ground_object16_start(s32 index), worldmap_scene10_ground_object16_update(s32 index);
 s32 worldmap_scene10_landing_rig_start(s32 index), worldmap_scene10_landing_rig_update(s32 index);
 s32 worldmap_scene10_grow_sprites_14_15_start(s32 index), worldmap_scene10_grow_sprites_14_15_update(s32 index);
 s32 worldmap_scene10_group9_trail_start(s32 index), worldmap_scene10_group9_trail_update(s32 index);
 s32 worldmap_scene10_group10_burst_start(void), worldmap_scene10_group10_burst_update(s32 index);
-s32 worldmap_scene14_director_start(s32 index), worldmap_scene14_director_update(s32 index); /* 14: the director */
+s32 worldmap_scene14_director_start(s32 index), worldmap_scene14_director_update(s32 index);         /* 14: the director */
 s32 worldmap_scene14_camera_start(s32 index), worldmap_scene14_camera_update(s32 index);
 s32 worldmap_scene14_grow_objects_4_5_start(s32 index), worldmap_scene14_grow_objects_4_5_update(s32 index);
 s32 worldmap_scene14_grow_objects_6_7_start(s32 index), worldmap_scene14_grow_objects_6_7_update(s32 index);
 s32 worldmap_scene14_exhaust_trail_start(void), worldmap_scene14_exhaust_trail_update(s32 index);
 s32 worldmap_scene14_rig_flight_start(s32 index), worldmap_scene14_rig_flight_update(s32 index);
-s32 worldmap_scene12_director_start(s32 index), worldmap_scene12_director_update(s32 index); /* 12: the director */
+s32 worldmap_scene12_director_start(s32 index), worldmap_scene12_director_update(s32 index);         /* 12: the director */
 s32 worldmap_scene12_camera_shots_start(s32 index), worldmap_scene12_camera_shots_update(s32 index);
 s32 worldmap_scene12_drift_object4_start(s32 index), worldmap_scene12_drift_object4_update(s32 index);
 s32 worldmap_scene12_drift_object5_start(s32 index), worldmap_scene12_drift_object5_update(s32 index);
@@ -199,26 +199,26 @@ s32 worldmap_scene12_drift_object10_start(s32 index), worldmap_scene12_drift_obj
 s32 worldmap_scene12_drift_object12_start(s32 index), worldmap_scene12_drift_object12_update(s32 index);
 s32 worldmap_scene12_drift_object13_start(s32 index), worldmap_scene12_drift_object13_update(s32 index);
 s32 worldmap_scene12_drift_object16_start(s32 index), worldmap_scene12_drift_object16_update(s32 index);
-s32 worldmap_scene15_director_start(s32 index), worldmap_scene15_director_update(s32 index); /* 15: the director */
+s32 worldmap_scene15_director_start(s32 index), worldmap_scene15_director_update(s32 index);         /* 15: the director */
 s32 worldmap_scene15_camera_start(s32 index), worldmap_scene15_camera_update(s32 index);
 s32 worldmap_scene15_flying_vehicle_start(s32 index), worldmap_scene15_flying_vehicle_update(s32 index);
 s32 worldmap_scene15_flame_start(s32 index), worldmap_scene15_flame_update(s32 index);
 s32 worldmap_scene15_grow_objects_9_10_start(s32 index), worldmap_scene15_grow_objects_9_10_update(s32 index);
-s32 worldmap_scene13_director_start(s32 index), worldmap_scene13_director_update(s32 index); /* 13: the director */
+s32 worldmap_scene13_director_start(s32 index), worldmap_scene13_director_update(s32 index);         /* 13: the director */
 s32 worldmap_scene13_camera_start(s32 index), worldmap_scene13_camera_update(s32 index);
 s32 worldmap_scene13_effects_start(s32 index), worldmap_scene13_effects_update(s32 index);
 s32 worldmap_scene13_grow_objects_0_1_start(s32 index), worldmap_scene13_grow_objects_0_1_update(s32 index);
-s32 worldmap_scene16_director_start(s32 index), worldmap_scene16_director_update(s32 index); /* 16: the director */
+s32 worldmap_scene16_director_start(s32 index), worldmap_scene16_director_update(s32 index);         /* 16: the director */
 s32 worldmap_scene16_camera_start(s32 index), worldmap_scene16_camera_update(s32 index);
 s32 worldmap_scene16_fade_object2_start(s32 index), worldmap_scene16_fade_object2_update(s32 index);
 s32 worldmap_scene16_fade_objects_0_1_start(s32 index), worldmap_scene16_fade_objects_0_1_update(s32 index);
 s32 worldmap_scene16_haze_start(void), worldmap_scene16_haze_update(void);
 s32 worldmap_scene16_haze_strength_start(s32 index), worldmap_scene16_haze_strength_update(s32 index);
-s32 worldmap_scene17_script_start(s32 index), worldmap_actor_script_run(s32 index); /* 17: the actor script */
+s32 worldmap_scene17_script_start(s32 index), worldmap_actor_script_run(s32 index);                  /* 17: the actor script */
 s32 worldmap_scene17_camera_start(s32 index), worldmap_scene17_camera_update(s32 index);
 s32 worldmap_scene17_pulse_start(s32 index), worldmap_scene17_pulse_update(s32 index);
 s32 worldmap_scene17_terrain_reload_start(void), worldmap_scene17_terrain_reload_update(s32 index);
-s32 worldmap_scene18_script_start(s32 index);                           /* 18: the actor script */
+s32 worldmap_scene18_script_start(s32 index);                                                        /* 18: the actor script */
 s32 worldmap_scene18_camera_start(s32 index), worldmap_scene18_camera_update(s32 index);
 s32 worldmap_scene18_lift_start(s32 index), worldmap_scene18_lift_update(s32 index);
 

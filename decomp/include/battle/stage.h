@@ -58,11 +58,11 @@ typedef struct {
 } StageColors;
 
 extern ModelTable *battle_stage_model_table; /* the stage's models (hierarchy battle_stage_model_parts) */
-extern s32 battle_frame_ticks;        /* frame steps */
-extern s16 battle_stage_image_width;          /* stage image width */
-extern s16 battle_stage_image_x;          /* stage image x */
-extern s16 battle_stage_image_y;          /* stage image y */
-extern s16 battle_stage_image_height;          /* stage image height */
+extern s32 battle_frame_ticks;               /* frame steps */
+extern s16 battle_stage_image_width;         /* stage image width */
+extern s16 battle_stage_image_x;             /* stage image x */
+extern s16 battle_stage_image_y;             /* stage image y */
+extern s16 battle_stage_image_height;        /* stage image height */
 
 /* Draw the stage. */
 void battle_draw_stage(MATRIX *view, MATRIX *light, s32 unused_mode, u32 *ot, s32 buffer, SVECTOR *eye, SVECTOR *target,

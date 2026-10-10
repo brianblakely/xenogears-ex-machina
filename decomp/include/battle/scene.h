@@ -26,76 +26,76 @@ typedef struct {
 /* A battle object: a stage object or an effect (fields as far as
  * recovered). */
 typedef struct BattleObject {
-    ModelTable *field0;    /* 0x00: the object's models (battle_object_model_tables), NULL unused */
-    ModelPart *hierarchy; /* 0x04 */
-    u8 **scripts;         /* 0x08: effect scripts 0-0x4F */
-    ExtraFile *extra;     /* 0x0C: scripts from 0x50, NULL none */
-    u8 *script;           /* 0x10: the running script */
-    u8 **animations;      /* 0x14: count, then animations 0-63 */
-    u8 **moreAnimations;  /* 0x18: animations from 64 */
-    s16 scale1C;          /* 0x1C */
-    s16 field1E;          /* 0x1E */
-    u8 slot;              /* 0x20 */
-    u8 slot2;             /* 0x21 */
-    u8 field22; /* 0x22 */
-    u8 field23;  /* 0x23 */
-    s16 scale24; /* 0x24 */
-    s16 scale26; /* 0x26 */
-    s16 scale28; /* 0x28 */
-    u8 field2A;  /* 0x2A */
-    u8 queueCount; /* 0x2B: the running script and the queued ones (5 at most) */
-    u8 queueTargets[4]; /* 0x2C: queued script k's target slot at [k - 2] */
-    u8 queueScripts[4]; /* 0x30 */
-    u8 active;   /* 0x34 */
-    u8 field35;  /* 0x35 */
-    u8 field36;  /* 0x36 */
-    u8 field37;  /* 0x37 */
-    u8 field38;  /* 0x38 */
-    u8 field39;  /* 0x39 */
-    s16 field3A; /* 0x3A */
-    u16 field3C; /* 0x3C */
+    ModelTable *field0;           /* 0x00: the object's models (battle_object_model_tables), NULL unused */
+    ModelPart *hierarchy;         /* 0x04 */
+    u8 **scripts;                 /* 0x08: effect scripts 0-0x4F */
+    ExtraFile *extra;             /* 0x0C: scripts from 0x50, NULL none */
+    u8 *script;                   /* 0x10: the running script */
+    u8 **animations;              /* 0x14: count, then animations 0-63 */
+    u8 **moreAnimations;          /* 0x18: animations from 64 */
+    s16 scale1C;                  /* 0x1C */
+    s16 field1E;                  /* 0x1E */
+    u8 slot;                      /* 0x20 */
+    u8 slot2;                     /* 0x21 */
+    u8 field22;                   /* 0x22 */
+    u8 field23;                   /* 0x23 */
+    s16 scale24;                  /* 0x24 */
+    s16 scale26;                  /* 0x26 */
+    s16 scale28;                  /* 0x28 */
+    u8 field2A;                   /* 0x2A */
+    u8 queueCount;                /* 0x2B: the running script and the queued ones (5 at most) */
+    u8 queueTargets[4];           /* 0x2C: queued script k's target slot at [k - 2] */
+    u8 queueScripts[4];           /* 0x30 */
+    u8 active;                    /* 0x34 */
+    u8 field35;                   /* 0x35 */
+    u8 field36;                   /* 0x36 */
+    u8 field37;                   /* 0x37 */
+    u8 field38;                   /* 0x38 */
+    u8 field39;                   /* 0x39 */
+    s16 field3A;                  /* 0x3A */
+    u16 field3C;                  /* 0x3C */
     u8 pad3E[2];
-    u16 scriptWait; /* 0x40 */
-    u16 field42;    /* 0x42 */
+    u16 scriptWait;               /* 0x40 */
+    u16 field42;                  /* 0x42 */
     u8 pad44[0x4A - 0x44];
-    u16 flags4A; /* 0x4A */
-    s32 field4C; /* 0x4C */
-    s32 field50; /* 0x50 */
-    s32 field54; /* 0x54 */
-    s16 field58;    /* 0x58: target code (0xFA-0xFF special, 1-127 a slot + 1) */
-    s16 targetPart; /* 0x5A: part of the target's hierarchy, 0 its root */
-    u8 field5C;     /* 0x5C: parent object, 0xFF none */
-    u8 field5D;     /* 0x5D: turn with the parent */
-    s16 parentPart; /* 0x5E */
-    s16 groundY;    /* 0x60 */
-    u8 ownSounds;    /* 0x62: the model data's sound bank is loaded */
-    u8 extraSounds;  /* 0x63: the extra data's sound bank is loaded */
-    s16 offset[3];   /* 0x64: position relative to the target */
-    s16 offset2[3];  /* 0x6A */
-    s16 motion[12];  /* 0x70 */
-    s16 position[3]; /* 0x88 */
-    s16 field8E;     /* 0x8E */
-    s16 placement[4]; /* 0x90: where its images went (x, y, z, w), x -1 none */
-    s16 animation;       /* 0x98: -1 none */
-    s16 animationLoop;   /* 0x9A: -1 none */
-    s16 animationFrame;  /* 0x9C: the next event */
-    s16 animationLength; /* 0x9E: the events */
-    u8 *animationStart;  /* 0xA0: the next event (AnimEvent) */
-    u8 *animationCursor; /* 0xA4: the first event */
-    u8 *modelBlock;  /* 0xA8: its own copy of its models, NULL none */
-    void *scriptFile; /* 0xAC: its script file, NULL shared */
+    u16 flags4A;                  /* 0x4A */
+    s32 field4C;                  /* 0x4C */
+    s32 field50;                  /* 0x50 */
+    s32 field54;                  /* 0x54 */
+    s16 field58;                  /* 0x58: target code (0xFA-0xFF special, 1-127 a slot + 1) */
+    s16 targetPart;               /* 0x5A: part of the target's hierarchy, 0 its root */
+    u8 field5C;                   /* 0x5C: parent object, 0xFF none */
+    u8 field5D;                   /* 0x5D: turn with the parent */
+    s16 parentPart;               /* 0x5E */
+    s16 groundY;                  /* 0x60 */
+    u8 ownSounds;                 /* 0x62: the model data's sound bank is loaded */
+    u8 extraSounds;               /* 0x63: the extra data's sound bank is loaded */
+    s16 offset[3];                /* 0x64: position relative to the target */
+    s16 offset2[3];               /* 0x6A */
+    s16 motion[12];               /* 0x70 */
+    s16 position[3];              /* 0x88 */
+    s16 field8E;                  /* 0x8E */
+    s16 placement[4];             /* 0x90: where its images went (x, y, z, w), x -1 none */
+    s16 animation;                /* 0x98: -1 none */
+    s16 animationLoop;            /* 0x9A: -1 none */
+    s16 animationFrame;           /* 0x9C: the next event */
+    s16 animationLength;          /* 0x9E: the events */
+    u8 *animationStart;           /* 0xA0: the next event (AnimEvent) */
+    u8 *animationCursor;          /* 0xA4: the first event */
+    u8 *modelBlock;               /* 0xA8: its own copy of its models, NULL none */
+    void *scriptFile;             /* 0xAC: its script file, NULL shared */
     struct ObjectData *model;     /* 0xB0: the model data */
     struct ObjectData *extraData; /* 0xB4: the extra file's data */
-    POLY_FT4 shadow[2]; /* 0xB8: one per frame buffer */
+    POLY_FT4 shadow[2];           /* 0xB8: one per frame buffer */
     u8 pad108[2];
-    u16 slotMask; /* 0x10A */
-    u8 channelCount;          /* 0x10C */
-    u8 surfaceCount;          /* 0x10D */
-    u8 imageCount;            /* 0x10E: image animations at 0x118 */
+    u16 slotMask;                 /* 0x10A */
+    u8 channelCount;              /* 0x10C */
+    u8 surfaceCount;              /* 0x10D */
+    u8 imageCount;                /* 0x10E: image animations at 0x118 */
     u8 pad10F;
-    struct ColorFade *channels; /* 0x110: colour fades */
-    struct Surface *surfaces; /* 0x114 */
-    struct ImageAnim *images; /* 0x118 */
+    struct ColorFade *channels;   /* 0x110: colour fades */
+    struct Surface *surfaces;     /* 0x114 */
+    struct ImageAnim *images;     /* 0x118 */
 } BattleObject;
 
 /* Layout check (a negative array size fails the build). */
@@ -164,14 +164,14 @@ typedef struct {
 } LightSlot;
 
 /* Battle scene and effect state. */
-extern SVECTOR *battle_scene_points;       /* scene points */
-extern SceneTriangle *battle_scene_triangles; /* scene triangles */
-extern s32 battle_scene_triangle_count;            /* scene triangle count */
-extern u8 battle_triangle_visit_stamp;             /* triangle visit stamp */
-extern u8 battle_effects_disabled;             /* effects disabled */
-extern s16 battle_stage_circle_count;  /* point count of battle_stage_circles */
-extern u16 *battle_stage_circles; /* (x, z, y) points */
-extern u8 battle_stage_image_dirty;   /* a light slot changed */
+extern SVECTOR *battle_scene_points;                  /* scene points */
+extern SceneTriangle *battle_scene_triangles;         /* scene triangles */
+extern s32 battle_scene_triangle_count;               /* scene triangle count */
+extern u8 battle_triangle_visit_stamp;                /* triangle visit stamp */
+extern u8 battle_effects_disabled;                    /* effects disabled */
+extern s16 battle_stage_circle_count;                 /* point count of battle_stage_circles */
+extern u16 *battle_stage_circles;                     /* (x, z, y) points */
+extern u8 battle_stage_image_dirty;                   /* a light slot changed */
 extern u8 battle_shadows_enabled;
 extern u8 battle_unread_acting_object_started;
 extern s32 battle_stage_frame_remainder;
@@ -179,27 +179,27 @@ extern s16 battle_surface_wind_phase;
 extern Tracker battle_light_trackers[2];
 extern s32 battle_buffer0_background_color_ptr;
 extern s32 battle_buffer1_background_color_ptr;
-extern BattleObject *battle_objects[]; /* stage objects */
-extern BattleEvent battle_area_events[];   /* presentation events */
-extern u16 battle_selected_slot_mask;             /* slot mask */
+extern BattleObject *battle_objects[];                /* stage objects */
+extern BattleEvent battle_area_events[];              /* presentation events */
+extern u16 battle_selected_slot_mask;                 /* slot mask */
 extern u16 battle_selected_object_index;
 extern EffectPool battle_effect_pool;
 extern SpritePool battle_effect_sprite_pool;
-extern ImageAnim battle_stage_image_anim; /* the stage's image animation */
-extern ModelPart *battle_stage_model_parts; /* the stage model's parts (the setup, ovl2615, sets them) */
-extern Panorama *battle_stage_backdrops[2]; /* the stage backdrops (ovl2615 makes them, 8002709C) */
+extern ImageAnim battle_stage_image_anim;             /* the stage's image animation */
+extern ModelPart *battle_stage_model_parts;           /* the stage model's parts (the setup, ovl2615, sets them) */
+extern Panorama *battle_stage_backdrops[2];           /* the stage backdrops (ovl2615 makes them, 8002709C) */
 extern void *battle_stage_sky;
 extern TextureScroll battle_stage_texture_scrolls[2]; /* the stage's texture scrolls */
 extern s32 battle_area_event_index;
-extern u8 battle_area_event0_codes[]; /* per slot */
+extern u8 battle_area_event0_codes[];                 /* per slot */
 extern BattleSlot battle_area_slots[11];
 
-void battle_free_scene(void);         /* free the battle scene's resources */
-s32 battle_find_scene_triangle(SVECTOR *point); /* the first scene triangle containing a point */
+void battle_free_scene(void);                                                 /* free the battle scene's resources */
+s32 battle_find_scene_triangle(SVECTOR *point);                               /* the first scene triangle containing a point */
 s32 battle_put_point_on_scene_triangle(SVECTOR *point, s32 index, void *out); /* relate a point to a triangle */
 s32 battle_find_scene_triangle_near(SVECTOR *point, s32 triangle, s32 depth); /* the triangle containing a point, from a neighbour */
-void battle_reset_scene(void);         /* reset the battle scene */
-void battle_free_objects(void);         /* free the stage objects and the pools */
-void battle_free_object(s32 index);    /* free a stage object */
+void battle_reset_scene(void);                                                /* reset the battle scene */
+void battle_free_objects(void);                                               /* free the stage objects and the pools */
+void battle_free_object(s32 index);                                           /* free a stage object */
 
 #endif

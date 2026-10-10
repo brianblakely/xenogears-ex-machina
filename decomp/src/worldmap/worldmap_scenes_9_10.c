@@ -34,9 +34,9 @@ SVECTOR worldmap_scene9_camera_path_points[12] = { /* 8009A3F0 */
 
 /* Scratchpad work area of the camera path. */
 typedef struct {
-    VECTOR at;        /* 0x00: path point, then look-at */
-    VECTOR eye;       /* 0x10 */
-    s32 distance;     /* 0x20 */
+    VECTOR at;         /* 0x00: path point, then look-at */
+    VECTOR eye;        /* 0x10 */
+    s32 distance;      /* 0x20 */
     u8 pad24[0x7C];
     SVECTOR points[3]; /* 0xA0 */
 } PathScratch;

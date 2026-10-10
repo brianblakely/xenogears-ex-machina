@@ -13,9 +13,9 @@ u8 sprite_add_clamp_byte(u8 value, s32 delta);
 
 /* The screen burst (battle/burst.h), which battle_module_burst_run_frame_loop runs in its own
  * frame loop. */
-extern SVECTOR battle_module_burst_upper_left_triangle[3]; /* first triangle of a cell */
+extern SVECTOR battle_module_burst_upper_left_triangle[3];  /* first triangle of a cell */
 extern SVECTOR battle_module_burst_lower_right_triangle[3]; /* second triangle */
-extern u32 *battle_module_burst_current_ot;       /* ordering table being filled */
+extern u32 *battle_module_burst_current_ot;                 /* ordering table being filled */
 
 extern u8 battle_module_burst_variant; /* the effect's variant (1 in the module's data) */
 

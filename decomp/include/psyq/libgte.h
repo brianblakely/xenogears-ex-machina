@@ -75,7 +75,7 @@ MATRIX *MulMatrix2(MATRIX *m0, MATRIX *m1);
 /* Members of libgte that no library signature names, by their signatures
  * and their callers' uses: the SDK function where the callers name it, else
  * libgte_ and what the code does. */
-void libgte_orthonormalize_matrix(MATRIX *m, MATRIX *out); /* orthonormal rows from two outer products */
+void libgte_orthonormalize_matrix(MATRIX *m, MATRIX *out);       /* orthonormal rows from two outer products */
 void LoadAverageShort12(SVECTOR *v0, SVECTOR *v1, long p0, long p1, SVECTOR *v2);
 void libgte_rotate_svector(SVECTOR *v0, VECTOR *v1);             /* rotate by the current GTE matrix */
 void libgte_rotate_vector(VECTOR *v0, VECTOR *v1);               /* rotate a long vector by it */

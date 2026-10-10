@@ -100,20 +100,20 @@ typedef struct BattleGraphics {
 extern BattleGraphics *battle_graphics;
 
 /* The party panel: its layout, name glyphs and values. */
-extern u8 battle_party_panel_layout;      /* party panel layout */
-extern u16 battle_panel_x_by_layout[]; /* party panel x: [layout * 3 + member] */
-extern s16 battle_panel_glyph_x[]; /* party panel glyph x: [member * 24 + glyph] */
-extern u8 battle_panel_gear_hp_digits[5];   /* name glyph codes */
+extern u8 battle_party_panel_layout;                /* party panel layout */
+extern u16 battle_panel_x_by_layout[];              /* party panel x: [layout * 3 + member] */
+extern s16 battle_panel_glyph_x[];                  /* party panel glyph x: [member * 24 + glyph] */
+extern u8 battle_panel_gear_hp_digits[5];           /* name glyph codes */
 extern u8 battle_separator_rows_by_list_size[5][6]; /* list separator rows by list size (3-7) */
-extern s16 battle_panel_max_hp;     /* panel member maximum HP */
-extern s16 battle_panel_max_hp_remainder;     /* its digits' remainder */
-extern s16 battle_panel_hp;     /* panel member HP */
-extern s16 battle_panel_hp_remainder;     /* its digits' remainder */
-extern s32 battle_panel_gear_hp;     /* panel gear HP */
-extern s32 battle_panel_gear_hp_remainder;     /* its digits' remainder */
-extern s32 battle_panel_gear_max_hp;     /* panel gear maximum HP */
-extern u8 battle_panel_hp_digits[3]; /* panel value digits */
-extern u8 battle_file2_block_and_max_hp_digits[7]; /* panel maximum digits */
+extern s16 battle_panel_max_hp;                     /* panel member maximum HP */
+extern s16 battle_panel_max_hp_remainder;           /* its digits' remainder */
+extern s16 battle_panel_hp;                         /* panel member HP */
+extern s16 battle_panel_hp_remainder;               /* its digits' remainder */
+extern s32 battle_panel_gear_hp;                    /* panel gear HP */
+extern s32 battle_panel_gear_hp_remainder;          /* its digits' remainder */
+extern s32 battle_panel_gear_max_hp;                /* panel gear maximum HP */
+extern u8 battle_panel_hp_digits[3];                /* panel value digits */
+extern u8 battle_file2_block_and_max_hp_digits[7];  /* panel maximum digits */
 
 /* 80070E2C's unit. */
 void battle_add_prims_to_ot(POLY_FT4 *prims, s32 count, s32 first); /* add every other primitive to the OT */

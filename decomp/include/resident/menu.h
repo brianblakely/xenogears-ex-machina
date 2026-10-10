@@ -189,14 +189,14 @@ typedef struct {
     void *files[8];
 } MenuResources;
 
-extern u8 menu_state_debug_start;       /* debug start: choose the menu screen */
-extern u8 menu_state_screen;       /* menu screen */
-extern u8 menu_state_screen_parameter;       /* menu screen parameter */
+extern u8 menu_state_debug_start;        /* debug start: choose the menu screen */
+extern u8 menu_state_screen;             /* menu screen */
+extern u8 menu_state_screen_parameter;   /* menu screen parameter */
 extern char *menu_state_screen_names[7]; /* menu screen names */
-extern void *menu_state_resource_file;    /* the menu's resource file (MenuResources) */
+extern void *menu_state_resource_file;   /* the menu's resource file (MenuResources) */
 extern void *menu_state_debug_heap_marker;
 extern void *menu_state_debug_heap_reservation;
-extern u32 *menu_state_big_ots[2]; /* the menu's large ordering tables, one per draw buffer */
+extern u32 *menu_state_big_ots[2];       /* the menu's large ordering tables, one per draw buffer */
 
 /* Menu overlay (801c5000) entries. */
 void menu_main(void);

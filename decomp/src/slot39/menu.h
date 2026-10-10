@@ -46,10 +46,10 @@ extern s32 menu_choice_window_images[]; /* per command: four choices of cursor a
  * party slots' characters, 3-5 their gears, from 6 the file views. */
 extern s32 menu_name_image_vram_x_table[19];
 extern s32 menu_name_image_vram_y_table[19];
-extern s32 menu_highlight_x_table[]; /* highlight positions: x */
-extern s32 menu_highlight_y_table[]; /* y */
+extern s32 menu_highlight_x_table[];        /* highlight positions: x */
+extern s32 menu_highlight_y_table[];        /* y */
 extern s32 menu_label_mode1_x_table[8];     /* label x (mode 1) */
-extern u16 menu_label_mode1_y;        /* label y (mode 1) */
+extern u16 menu_label_mode1_y;              /* label y (mode 1) */
 extern s32 menu_label_mode2_x_table[];      /* label x (modes 2, 5 from 8) */
 extern s32 menu_label_mode2_y_table[2];     /* label y per row (mode 2) */
 extern s32 menu_label_mode3_y_table[];      /* label y per row (mode 3) */
@@ -63,15 +63,15 @@ void mode_get_random_byte_in_range(s32 low, s32 high);
 void sprite_sheet_draw_scaled_flip(void *sheet, s32 image, void *dst, s32 buffer, s32 x, s32 y, s32 scale, s32 flipX, s32 flipY);
 s32 sprite_sheet_draw_scaled(void *sheet, s32 image, void *dst, s32 buffer, s32 x, s32 y, s32 scale);
 void text_load_palette(s32 x, s32 y);
-void sound_play_effect_on_last_channels(s32 id, s32 sound); /* play a sound effect */
+void sound_play_effect_on_last_channels(s32 id, s32 sound);              /* play a sound effect */
 u8 *text_get_accessory_name(u8 id);
-u8 *text_get_weapon_name(u8 id);  /* weapon name */
-u8 *text_get_gear_accessory_name(u8 id);  /* gear accessory name */
-u8 *text_get_gear_part_name(u8 id);  /* gear part name */
-u8 *text_get_resource_entry(u8 *table, s32 index); /* message of a table */
-u8 *text_get_item_name(u8 item);  /* item name text */
+u8 *text_get_weapon_name(u8 id);                                         /* weapon name */
+u8 *text_get_gear_accessory_name(u8 id);                                 /* gear accessory name */
+u8 *text_get_gear_part_name(u8 id);                                      /* gear part name */
+u8 *text_get_resource_entry(u8 *table, s32 index);                       /* message of a table */
+u8 *text_get_item_name(u8 item);                                         /* item name text */
 u8 window_render_text_line(u8 *text, void *pixels, s32 width, s32 line); /* render a text line; its width */
-s32 text_decode_codes(u8 *codes, u8 *text, s32 count); /* decode a name */
+s32 text_decode_codes(u8 *codes, u8 *text, s32 count);                   /* decode a name */
 
 /* The framework's functions that another unit calls, or its own before
  * defining them. */

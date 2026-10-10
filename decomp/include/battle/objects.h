@@ -40,16 +40,16 @@ typedef struct {
 } ObjectScriptFile;
 
 /* Per-frame update and drawing of the stage objects. */
-extern s16 battle_surface_wind_strength;     /* a slow wave (4..9) */
-extern u16 battle_highlight_slot_mask;     /* highlighted slots */
+extern s16 battle_surface_wind_strength;      /* a slow wave (4..9) */
+extern u16 battle_highlight_slot_mask;        /* highlighted slots */
 extern u8 battle_camera_channels_active;      /* effects run */
-extern MATRIX *battle_stage_color_matrix; /* the stage colour matrix */
+extern MATRIX *battle_stage_color_matrix;     /* the stage colour matrix */
 extern SoundBank *battle_sound_bank_of_event_script;
-extern SVECTOR battle_camera_view_eye; /* camera position */
-extern SVECTOR battle_camera_view_target; /* camera look-at point */
+extern SVECTOR battle_camera_view_eye;        /* camera position */
+extern SVECTOR battle_camera_view_target;     /* camera look-at point */
 extern s16 battle_camera_ground_triangle;     /* last scene triangle under the camera's view point */
-extern s16 battle_camera_ground_height;     /* its ground height */
-extern s16 battle_camera_ground_key;     /* key of the last update */
+extern s16 battle_camera_ground_height;       /* its ground height */
+extern s16 battle_camera_ground_key;          /* key of the last update */
 
 /* The battle's block of a sprite following an object part (0x18 bytes),
  * after the sprite in its resident sprite task (the sprite's size bytes
@@ -78,12 +78,12 @@ typedef struct {
 } CameraChannel;
 
 void battle_create_object_from_files(s32 index, s16 texture_x, s16 texture_y, s16 clut_x, s16 clut_y); /* create a gear object */
-void battle_start_slot_object_own_script(u16 index, u16 mask, s32 script); /* select an object and start its effect */
-s32 battle_get_object_height(s32 index);            /* the scaled size of an object */
-void battle_set_object_drawing(s32 value);           /* a sprite script command: set the flag battle_object_drawing_on */
-void battle_swap_objects(s32 a, s32 b);        /* swap two stage objects */
+void battle_start_slot_object_own_script(u16 index, u16 mask, s32 script);                             /* select an object and start its effect */
+s32 battle_get_object_height(s32 index);                                                               /* the scaled size of an object */
+void battle_set_object_drawing(s32 value);                                                             /* a sprite script command: set the flag battle_object_drawing_on */
+void battle_swap_objects(s32 a, s32 b);                                                                /* swap two stage objects */
 void battle_start_effect_script(BattleObject *object, BattleObject *target, EffectPool *pool, s32 id); /* start or queue its effect */
-void battle_wait_objects_idle(void);                /* wait until no object is busy */
-void battle_end_party_objects(s32 keep);            /* end the party's objects other than keep's */
+void battle_wait_objects_idle(void);                                                                   /* wait until no object is busy */
+void battle_end_party_objects(s32 keep);                                                               /* end the party's objects other than keep's */
 
 #endif

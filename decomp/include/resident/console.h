@@ -61,8 +61,8 @@ typedef struct {
 } FormatSpec;
 
 s32 console_vprintf(s32 target, const char *format, va_list args); /* the console printf core */
-void console_printf(char *format, ...); /* printf to the console */
-void console_flush(u_long *ot);            /* flush the debug text into ot */
+void console_printf(char *format, ...);                            /* printf to the console */
+void console_flush(u_long *ot);                                    /* flush the debug text into ot */
 void console_set_external_block(s32 value);
 Console *console_open(s32 left, s32 top, s32 width, s32 height, s32 capacity, u32 flags,
                        s32 tex_x, s32 tex_y, s32 clut_x, s32 clut_y, void *font); /* open */

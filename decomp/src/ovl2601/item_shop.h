@@ -13,24 +13,24 @@
 /* Resident calls declared here: these callers convert arguments or results
  * differently from the resident definitions
  * (decomp/src/resident/own_declarations.h). */
-void sound_play_effect_on_last_channels(s32 effect);            /* play a sound effect */
-void text_load_palette(s32 x, s32 y);          /* text palettes */
-u8 *text_get_resource_entry(void *table, s32 index); /* entry of a text table */
-u8 *text_get_weapon_name(s32 id);                 /* equipment name */
-u8 *text_get_accessory_name(s32 id);                 /* accessory name */
-u8 *text_get_item_name(s32 id);                 /* item name */
-void text_decode_codes(u8 *codes, u8 *text, s32 count); /* codes to text */
-s32 window_render_text_line(u8 *text, void *pixels, s32 width, s32 line); /* render a text line */
+void sound_play_effect_on_last_channels(s32 effect);                                                   /* play a sound effect */
+void text_load_palette(s32 x, s32 y);                                                                  /* text palettes */
+u8 *text_get_resource_entry(void *table, s32 index);                                                   /* entry of a text table */
+u8 *text_get_weapon_name(s32 id);                                                                      /* equipment name */
+u8 *text_get_accessory_name(s32 id);                                                                   /* accessory name */
+u8 *text_get_item_name(s32 id);                                                                        /* item name */
+void text_decode_codes(u8 *codes, u8 *text, s32 count);                                                /* codes to text */
+s32 window_render_text_line(u8 *text, void *pixels, s32 width, s32 line);                              /* render a text line */
 s32 sprite_sheet_draw_scaled(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale); /* sprite */
 s32 sprite_sheet_draw_scaled_flip(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale, s32 flip_x,
                   s32 flip_y); /* mirrored sprite */
 
 /* The screen code's data and calls the shop's screens use (item_shop_framework.c). */
-extern s32 item_shop_stock_count;   /* items the shop sells */
-extern u8 item_shop_sell_label_ids[];  /* sell list label text ids */
-extern u8 item_shop_buy_label_ids[];  /* buy list label text ids */
+extern s32 item_shop_stock_count;            /* items the shop sells */
+extern u8 item_shop_sell_label_ids[];        /* sell list label text ids */
+extern u8 item_shop_buy_label_ids[];         /* buy list label text ids */
 extern s32 item_shop_sell_label_x_offsets[]; /* sell list label x offsets */
-extern s32 item_shop_portrait_x_table[]; /* member portrait x */
+extern s32 item_shop_portrait_x_table[];     /* member portrait x */
 void item_shop_split_digits(u32 value);
 void item_shop_label_init_quads(MenuLabel *label, s32 index, s32 row, s32 mode);
 void item_shop_scroll_bar_hide(void);

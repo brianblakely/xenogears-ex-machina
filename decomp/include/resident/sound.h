@@ -354,59 +354,59 @@ u32 sound_free_spu_memory(u32 address);                        /* release SPU me
 SpuMemBlock *sound_find_spu_block(u32 address);
 
 extern SoundBlock *sound_memory_pool_head;        /* the pool head */
-extern u32 sound_memory_pool_end;                /* end of the pool */
+extern u32 sound_memory_pool_end;                 /* end of the pool */
 
-extern SpuRegs *sound_spu_registers;           /* SPU registers */
+extern SpuRegs *sound_spu_registers;          /* SPU registers */
 extern s16 sound_driver_flags;                /* driver state flags */
 extern s32 sound_channels_per_effect;
-extern s32 sound_effect_channel_count;                /* voice count of the effect channels */
-extern s32 sound_effect_voice_count;                /* voices kept for music */
-extern s32 sound_tick_event;                /* driver event */
-extern s16 sound_unread_last_error;                /* last driver error */
+extern s32 sound_effect_channel_count;        /* voice count of the effect channels */
+extern s32 sound_effect_voice_count;          /* voices kept for music */
+extern s32 sound_tick_event;                  /* driver event */
+extern s16 sound_unread_last_error;           /* last driver error */
 extern SoundChannel *sound_voice_owners[24];  /* channel of each voice */
-extern SoundBank *sound_effect_bank_list;         /* loaded banks */
-extern SoundSequence *sound_wave_bank_list;     /* loaded wave banks */
+extern SoundBank *sound_effect_bank_list;     /* loaded banks */
+extern SoundSequence *sound_wave_bank_list;   /* loaded wave banks */
 
 /* Driver interface (0x80037e8c-0x8003f738). */
 SoundSequence *sound_load_wave_bank(SoundSequence *bank, s32 mode);
 s32 sound_alloc_wave_bank_spu_memory(SoundSequence *bank, s32 mode);
-void *sound_alloc_memory_high(s32 size);                         /* allocate driver memory */
-void sound_free_memory(void *data);                        /* release driver memory */
-void sound_copy_memory(void *dst, void *src, s32 size);    /* copy */
-void sound_clear_memory(void *data, s32 size);             /* clear */
-void sound_release_wave_bank(SoundSequence *bank); /* release a wave bank */
+void *sound_alloc_memory_high(s32 size);                                             /* allocate driver memory */
+void sound_free_memory(void *data);                                                  /* release driver memory */
+void sound_copy_memory(void *dst, void *src, s32 size);                              /* copy */
+void sound_clear_memory(void *data, s32 size);                                       /* clear */
+void sound_release_wave_bank(SoundSequence *bank);                                   /* release a wave bank */
 void sound_play_effect(s32 sound);
 void sound_clear_reverb_work_part(void);
 void sound_set_stereo_volume(s32 volume, SpuVolume *out, s32 channel);
 void *sound_alloc_memory_low(s32 size);
-s32 sound_alloc_spu_memory(s32 size, u16 mode);                 /* allocate SPU memory */
-s32 sound_alloc_spu_memory_at(s32 size, s32 address, u16 mode);    /* allocate SPU memory at */
+s32 sound_alloc_spu_memory(s32 size, u16 mode);                                      /* allocate SPU memory */
+s32 sound_alloc_spu_memory_at(s32 size, s32 address, u16 mode);                      /* allocate SPU memory at */
 SoundSeq *sound_create_seq(SoundSeqHeader *header);
 SoundSeq *sound_create_seq_in_place(SoundSeqHeader *header, SoundSeq *seq);
-void sound_release_seq(SoundSeq *seq);  /* release a sequence */
-void sound_play_seq(SoundSeq *seq, s32 fade, s32 frames); /* play from the start */
-void sound_stop_seq(SoundSeq *seq);  /* stop a sequence */
+void sound_release_seq(SoundSeq *seq);                                               /* release a sequence */
+void sound_play_seq(SoundSeq *seq, s32 fade, s32 frames);                            /* play from the start */
+void sound_stop_seq(SoundSeq *seq);                                                  /* stop a sequence */
 void sound_stop_all_seqs(void);
 void sound_stop_all_effects(void);
 u32 sound_find_effect_channels(s32 id, s32 width);
 void sound_set_seq_fade(SoundSeq *seq, s32 fade, s32 frames);
 void sound_release_seq_voices(SoundSeq *seq);
-void sound_load_seq_table(SoundSeq *seq, SoundSeqHeader *header); /* take a snapshot */
+void sound_load_seq_table(SoundSeq *seq, SoundSeqHeader *header);                    /* take a snapshot */
 void sound_read_seq_header(SoundSeq *seq);
 void sound_start_seq_channels(SoundSeq *seq);
 void sound_free_seq_snapshots(SoundSeq *seq);
 void sound_link_seq(SoundSeq *seq);
 s32 sound_unlink_seq(SoundSeq *seq);
-s32 sound_get_seq_size(s32 channels);   /* size of a sequence with `channels` */
-s16 sound_check_seq_header(SoundSeqHeader *header); /* error code of sequence data, 0 when valid */
-s32 sound_check_file(u32 *data, u32 magic, s32 id); /* check a sound file */
+s32 sound_get_seq_size(s32 channels);                                                /* size of a sequence with `channels` */
+s16 sound_check_seq_header(SoundSeqHeader *header);                                  /* error code of sequence data, 0 when valid */
+s32 sound_check_file(u32 *data, u32 magic, s32 id);                                  /* check a sound file */
 void sound_stop_bank_effects(SoundBank *bank);
 void sound_start_effect(s16 id, s32 channel, s16 volume, s16 pan);
 void sound_queue_transfer(u32 address, u8 *data, s32 size, void (*callback)(void), u16 type);
 void sound_request_seq_channel_updates(s32 bits, SoundSeq *seq);
 void sound_release_voice(SoundChannel *state, u32 voice);
-void sound_write_key_off(u32 voices);   /* key off */
-void sound_write_voice_release(s32 voice, s32 rate, s32 mode); /* set a voice's release */
+void sound_write_key_off(u32 voices);                                                /* key off */
+void sound_write_voice_release(s32 voice, s32 rate, s32 mode);                       /* set a voice's release */
 void sound_report_error(s32 error);
 void sound_queue_spu_write(u32 address, u8 *data, s32 size, void (*callback)(void)); /* SPU transfer */
 

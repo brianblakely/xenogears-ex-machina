@@ -22,9 +22,9 @@ typedef struct {
     SPRT sprite;
 } SceneSprite;
 
-extern Glyph arena_text_glyphs[]; /* menu font glyphs: digits, capitals, punctuation */
-extern s32 arena_text_width_scale;     /* text width scale (0x100 = 1) */
-extern s32 arena_text_message_table;     /* the menu's message table (text_get_resource_entry) */
+extern Glyph arena_text_glyphs[];    /* menu font glyphs: digits, capitals, punctuation */
+extern s32 arena_text_width_scale;   /* text width scale (0x100 = 1) */
+extern s32 arena_text_message_table; /* the menu's message table (text_get_resource_entry) */
 
 void arena_text_set_banner_timer(s32 state);
 void arena_text_draw_banner(void *ot);

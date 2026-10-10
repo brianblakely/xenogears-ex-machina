@@ -74,11 +74,11 @@ void battle_sprite_command_turn_velocity();
 /* The unit's own uninitialized variables (its .bss, after
  * battle_tmd_screen_effects.c's): ASPSX 2.56 keeps the halfwords two bytes apart and
  * starts the 3-byte colour at the next word (decomp/Makefile). */
-static s16 battle_trail_last_corner_x2; /* 800C3CA4: the last trail segment's far corners */
-static s16 battle_trail_last_corner_y2; /* 800C3CA6 */
-static s16 battle_trail_last_corner_x3; /* 800C3CA8 */
-static s16 battle_trail_last_corner_y3; /* 800C3CAA */
-static u8 battle_saved_background_flag;    /* 800C3CAC: the saved background flag of the display buffers */
+static s16 battle_trail_last_corner_x2;     /* 800C3CA4: the last trail segment's far corners */
+static s16 battle_trail_last_corner_y2;     /* 800C3CA6 */
+static s16 battle_trail_last_corner_x3;     /* 800C3CA8 */
+static s16 battle_trail_last_corner_y3;     /* 800C3CAA */
+static u8 battle_saved_background_flag;     /* 800C3CAC: the saved background flag of the display buffers */
 static u8 battle_saved_background_color[3]; /* 800C3CB0: the saved background colour */
 
 u8 battle_unread_sprite_slot_mark = 0; /* 800C3564 */

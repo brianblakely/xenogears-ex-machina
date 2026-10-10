@@ -20,23 +20,23 @@ typedef struct {
     void *data;
 } FileEntry;
 
-extern s32 cd_max_list_gap_sectors;      /* largest sector gap read through between list files */
+extern s32 cd_max_list_gap_sectors;         /* largest sector gap read through between list files */
 extern s32 cd_file_out_of_order_count;      /* out-of-order sectors in single-file reads */
 extern s32 cd_list_out_of_order_count;      /* out-of-order sectors in list reads */
-extern s32 cd_stream_out_of_order_count;      /* out-of-order sectors in stream reads */
-extern u8 *cd_file_index;      /* file index: 7 bytes per file */
-extern u16 *cd_directory_table;     /* directory table: first file of each directory, 1-based */
-extern s32 cd_read_bytes_left;      /* bytes of the current read */
+extern s32 cd_stream_out_of_order_count;    /* out-of-order sectors in stream reads */
+extern u8 *cd_file_index;                   /* file index: 7 bytes per file */
+extern u16 *cd_directory_table;             /* directory table: first file of each directory, 1-based */
+extern s32 cd_read_bytes_left;              /* bytes of the current read */
 extern s32 cd_pending_read_count;
-extern s32 cd_remaining_list_file_count;      /* files in the current list */
-extern s32 cd_next_sector;      /* sector of the current read */
-extern void *cd_read_destination;    /* destination of the current read */
-extern FileRequest *cd_current_file_list; /* the file list being read */
+extern s32 cd_remaining_list_file_count;    /* files in the current list */
+extern s32 cd_next_sector;                  /* sector of the current read */
+extern void *cd_read_destination;           /* destination of the current read */
+extern FileRequest *cd_current_file_list;   /* the file list being read */
 extern s32 cd_read_cursor;
-extern s32 cd_selected_directory;      /* selected directory (first file - 1) */
-extern s32 cd_reading_directory;      /* second directory selection */
-extern s32 cd_command_state;      /* CD command state (8002a68c) */
-extern s32 cd_retry_reason;      /* retry reason of the failed command */
+extern s32 cd_selected_directory;           /* selected directory (first file - 1) */
+extern s32 cd_reading_directory;            /* second directory selection */
+extern s32 cd_command_state;                /* CD command state (8002a68c) */
+extern s32 cd_retry_reason;                 /* retry reason of the failed command */
 extern s32 cd_stop_requested;
 /* The current read's mode (the read calls' mode argument, or a stop's
  * reason): when the read ends or stops, 8002a394 seeks to that file, or

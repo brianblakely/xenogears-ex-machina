@@ -36,41 +36,41 @@ typedef struct SoundTransfer {
 } SoundTransfer;
 
 /* The driver state both units use: commons, and sound.c's reverb sizes. */
-extern SoundSeq *sound_playing_seq_list;      /* playing sequences */
-extern SoundSeq *sound_effect_channels;      /* the sound effect channels */
-extern u32 sound_tick_count;            /* the driver's tick count, the effects' start clock */
+extern SoundSeq *sound_playing_seq_list;         /* playing sequences */
+extern SoundSeq *sound_effect_channels;          /* the sound effect channels */
+extern u32 sound_tick_count;                     /* the driver's tick count, the effects' start clock */
 extern u32 sound_pending_key_on_mask;            /* voices held (keyed on) */
-extern u32 sound_pending_key_off_mask;            /* voices to key off */
-extern u32 sound_changed_voice_mask;            /* voices whose registers changed */
-extern s32 sound_unread_spu_irq_count;            /* SPU interrupts counted */
-extern void (*sound_spu_irq_hook)(void);  /* the SPU interrupt hook (8003c010) */
-extern s32 sound_unread_tick_time_total;            /* root counter time spent in ticks */
-extern s32 sound_unread_timed_tick_count;            /* timed ticks */
-extern u16 sound_pending_irq_enable;            /* pending SPU IRQ re-enable */
-extern s32 sound_random_state;            /* random state */
-extern SoundTransfer *sound_transfer_ring; /* the SPU transfer ring */
-extern u16 sound_transfer_ring_write_index;            /* transfer ring write index */
-extern u16 sound_transfer_ring_read_index;            /* transfer ring read index */
-extern s16 sound_unread_decoded_read_result;            /* result of the last decoded-data read */
+extern u32 sound_pending_key_off_mask;           /* voices to key off */
+extern u32 sound_changed_voice_mask;             /* voices whose registers changed */
+extern s32 sound_unread_spu_irq_count;           /* SPU interrupts counted */
+extern void (*sound_spu_irq_hook)(void);         /* the SPU interrupt hook (8003c010) */
+extern s32 sound_unread_tick_time_total;         /* root counter time spent in ticks */
+extern s32 sound_unread_timed_tick_count;        /* timed ticks */
+extern u16 sound_pending_irq_enable;             /* pending SPU IRQ re-enable */
+extern s32 sound_random_state;                   /* random state */
+extern SoundTransfer *sound_transfer_ring;       /* the SPU transfer ring */
+extern u16 sound_transfer_ring_write_index;      /* transfer ring write index */
+extern u16 sound_transfer_ring_read_index;       /* transfer ring read index */
+extern s16 sound_unread_decoded_read_result;     /* result of the last decoded-data read */
 extern s32 sound_reverb_clear_buffer;            /* the zeroed transfer buffer */
-extern s32 sound_reverb_clear_address;            /* next SPU address to clear */
-extern s32 sound_reverb_clear_bytes_left;            /* bytes left to clear */
-extern s32 sound_wave_bank_stream_address;            /* SPU address of a streamed wave bank's next part */
-extern s32 sound_wave_bank_stream_bytes_left;            /* bytes of it still missing */
+extern s32 sound_reverb_clear_address;           /* next SPU address to clear */
+extern s32 sound_reverb_clear_bytes_left;        /* bytes left to clear */
+extern s32 sound_wave_bank_stream_address;       /* SPU address of a streamed wave bank's next part */
+extern s32 sound_wave_bank_stream_bytes_left;    /* bytes of it still missing */
 extern u32 sound_reverb_work_address;            /* SPU address of the reverb work area, -1 none */
-extern SpuVolume sound_reverb_depth;      /* reverb depth */
-extern s32 sound_reverb_work_area_sizes[10];        /* reverb work area size of each reverb type */
+extern SpuVolume sound_reverb_depth;             /* reverb depth */
+extern s32 sound_reverb_work_area_sizes[10];     /* reverb work area size of each reverb type */
 extern SoundModeVoice *sound_output_mode_voice;
-extern s32 sound_unread_memory_pool_size;            /* size of the driver memory pool */
-extern u8 sound_memory_pool[0x6300];     /* the driver memory pool */
-extern u8 sound_spu_malloc_table[0x28];       /* the SPU memory management table (SpuInitMalloc, 4 blocks) */
+extern s32 sound_unread_memory_pool_size;        /* size of the driver memory pool */
+extern u8 sound_memory_pool[0x6300];             /* the driver memory pool */
+extern u8 sound_spu_malloc_table[0x28];          /* the SPU memory management table (SpuInitMalloc, 4 blocks) */
 
 /* Calls between the two sound units. */
 void sound_set_reverb(s32 type, s32 depth, s32 delay, s32 feedback); /* set the reverb */
-s32 sound_run_tick(void);           /* the driver tick (root counter 2 event) */
-void sound_complete_transfer(void);          /* SPU transfer callback */
-void sound_dispatch_spu_irq(void);          /* SPU interrupt callback */
+s32 sound_run_tick(void);                                            /* the driver tick (root counter 2 event) */
+void sound_complete_transfer(void);                                  /* SPU transfer callback */
+void sound_dispatch_spu_irq(void);                                   /* SPU interrupt callback */
 void sound_clear_voice_owners(void);
-SoundSeq *sound_create_effect_channels(s32 count); /* create the sound effect channels */
+SoundSeq *sound_create_effect_channels(s32 count);                   /* create the sound effect channels */
 
 #endif

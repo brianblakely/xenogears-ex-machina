@@ -242,16 +242,16 @@ typedef struct GameData {
     u8 names[31][0x14];           /* 0x0000: text codes, two bytes per code; 0-10 the
                                    * characters' names (slot39 reads ten line pairs) */
     CharacterRecord characters[11]; /* 0x026C: 8006d8a0 */
-    GearRecord gears[20];         /* 0x0978: 8006dfac */
+    GearRecord gears[20];           /* 0x0978: 8006dfac */
     u8 unk1648[0x16C0 - 0x1648];
-    CharacterSkills skills[11];   /* 0x16C0: 8006ecf4 */
-    WorldmapReturn worldmap;      /* 0x1820: 8006ee54 */
-    u16 unk1844[3];               /* 0x1844: 8006ee78 (the world map) */
-    u16 unk184A;                  /* 0x184A */
-    FlightSave flight;            /* 0x184C: 8006ee80 */
-    u16 unk1856;                  /* 0x1856 */
+    CharacterSkills skills[11];     /* 0x16C0: 8006ecf4 */
+    WorldmapReturn worldmap;        /* 0x1820: 8006ee54 */
+    u16 unk1844[3];                 /* 0x1844: 8006ee78 (the world map) */
+    u16 unk184A;                    /* 0x184A */
+    FlightSave flight;              /* 0x184C: 8006ee80 */
+    u16 unk1856;                    /* 0x1856 */
     u8 unk1858[0x1924 - 0x1858];
-    u32 gold;                     /* 0x1924: at most 999999999 */
+    u32 gold;                       /* 0x1924: at most 999999999 */
     u8 unk1928[0x1930 - 0x1928];
     u16 vars[0x200];              /* 0x1930: the saved event variables (the field's 800c3a68);
                                    * [0] the scene id (8006ef64) */

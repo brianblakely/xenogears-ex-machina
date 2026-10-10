@@ -26,13 +26,13 @@
 /* This unit's own statics, which functions on both sides of 8002a260 read:
  * its one .bss, in declaration order (800596f8-80059f64, among the units'
  * larger variables). */
-static u8 cd_sector_buffer[0x800];  /* 800596F8: sector buffer; the PC file server's subheader opens it */
-static s32 cd_sector_header[3];     /* 80059EF8: read status words */
-static s32 stream_image_pc_file_descriptor;        /* 80059F04: PC file server handle of the stream */
-static CdlCB cd_saved_ready_callback;      /* 80059F08: ready callback saved while retrying */
-static s32 cd_file_being_read;        /* 80059F0C: the file being read */
-static CdlLOC cd_setloc_parameter;     /* 80059F10: CD position of the current read */
-static CdlFILTER cd_setfilter_parameter;  /* 80059F14: CdlSetfilter parameter */
+static u8 cd_sector_buffer[0x800];          /* 800596F8: sector buffer; the PC file server's subheader opens it */
+static s32 cd_sector_header[3];             /* 80059EF8: read status words */
+static s32 stream_image_pc_file_descriptor; /* 80059F04: PC file server handle of the stream */
+static CdlCB cd_saved_ready_callback;       /* 80059F08: ready callback saved while retrying */
+static s32 cd_file_being_read;              /* 80059F0C: the file being read */
+static CdlLOC cd_setloc_parameter;          /* 80059F10: CD position of the current read */
+static CdlFILTER cd_setfilter_parameter;    /* 80059F14: CdlSetfilter parameter */
 /* The CD mode byte, the first of the 4-byte CdlSetmode parameter, which
  * takes the whole word slot (decomp/Makefile, slots). A compromise: 80029690
  * and 8002a428 clear all four bytes through &cd_setmode_parameter + 3, beyond the
@@ -43,26 +43,26 @@ static CdlFILTER cd_setfilter_parameter;  /* 80059F14: CdlSetfilter parameter */
  * declaration-ordered statics, not among the commons, so all three functions
  * are this unit's and see one declaration. */
 static u8 cd_setmode_parameter; /* 80059F18 */
-static u8 cd_command_result[8];      /* 80059F1C: CD command result */
+static u8 cd_command_result[8]; /* 80059F1C: CD command result */
 /* Image stream parameters set by 80029eb0: for images of type 0x1200 and
  * 0x1201, a placement mode (1: base + offset, 2: base + origin + offset,
  * otherwise origin + offset) and a base position. */
-static s16 stream_image_1200_mode; /* 80059F24 */
-static u16 stream_image_1200_base_x; /* 80059F28 */
-static u16 stream_image_1200_base_y; /* 80059F2C */
-static s16 stream_image_1201_mode; /* 80059F30 */
-static u16 stream_image_1201_base_x; /* 80059F34 */
-static u16 stream_image_1201_base_y; /* 80059F38 */
-static s32 stream_image_remaining_count;        /* 80059F3C: images left in the stream */
-static s16 stream_image_strip_x;        /* 80059F40: next strip: x */
-static s16 stream_image_strip_y;        /* 80059F44: y */
-static s16 stream_image_strip_width;        /* 80059F48: width */
-static u16 *stream_image_strip_heights;       /* 80059F4C: heights of the remaining strips */
-static s32 stream_image_remaining_strip_count;        /* 80059F50: strips left in the current image */
-static u8 *stream_frame_headers;        /* 80059F54: sector headers of the frame being read */
-static u8 *stream_frame_payloads;        /* 80059F58: payloads of the frame being read */
-static s16 stream_frame_sector_count;        /* 80059F5C: sectors of the frame being read */
-static s16 stream_frame_sector_index;        /* 80059F60: sector of the frame being read from the PC file server */
+static s16 stream_image_1200_mode;             /* 80059F24 */
+static u16 stream_image_1200_base_x;           /* 80059F28 */
+static u16 stream_image_1200_base_y;           /* 80059F2C */
+static s16 stream_image_1201_mode;             /* 80059F30 */
+static u16 stream_image_1201_base_x;           /* 80059F34 */
+static u16 stream_image_1201_base_y;           /* 80059F38 */
+static s32 stream_image_remaining_count;       /* 80059F3C: images left in the stream */
+static s16 stream_image_strip_x;               /* 80059F40: next strip: x */
+static s16 stream_image_strip_y;               /* 80059F44: y */
+static s16 stream_image_strip_width;           /* 80059F48: width */
+static u16 *stream_image_strip_heights;        /* 80059F4C: heights of the remaining strips */
+static s32 stream_image_remaining_strip_count; /* 80059F50: strips left in the current image */
+static u8 *stream_frame_headers;               /* 80059F54: sector headers of the frame being read */
+static u8 *stream_frame_payloads;              /* 80059F58: payloads of the frame being read */
+static s16 stream_frame_sector_count;          /* 80059F5C: sectors of the frame being read */
+static s16 stream_frame_sector_index;          /* 80059F60: sector of the frame being read from the PC file server */
 
 /* 8002709C: Create a panoramic backdrop (heap tag 4). `colours` (three RGB words:
  * sky, horizon, ground) enables the fills, NULL leaves them off. */

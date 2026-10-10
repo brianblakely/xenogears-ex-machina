@@ -118,16 +118,16 @@ static FileRequest *battle_object_file_list; /* 800C3B78: the file list being re
 static s16 battle_highlight_pulse_phase; /* 800C3B7C */
 static s16 battle_highlight_pulse_level; /* 800C3B80: pulse level of the highlight colour */
 /* The camera. */
-static u8 battle_camera_wait_kind;  /* 800C3B84: the channel tag reported in battle_camera_wait_state */
-static u8 battle_camera_wait_state;  /* 800C3B88: bit 0: that channel runs, bit 1: it finished */
-static u8 battle_camera_snap;  /* 800C3B8C: snap: channels 7 and 8 start at their targets */
-static s16 battle_camera_orbit_yaw; /* 800C3B90: orbit yaw */
-static s16 battle_camera_orbit_pitch; /* 800C3B94: orbit pitch */
-static s16 battle_camera_orbit_distance; /* 800C3B98: orbit distance */
-static s16 battle_camera_orbit_height; /* 800C3B9C: orbit height */
-static s16 battle_camera_look_yaw; /* 800C3BA0: look-at yaw */
-static s16 battle_camera_look_distance; /* 800C3BA4: look-at distance */
-static s16 battle_camera_look_height; /* 800C3BA8: look-at height */
+static u8 battle_camera_wait_kind;             /* 800C3B84: the channel tag reported in battle_camera_wait_state */
+static u8 battle_camera_wait_state;            /* 800C3B88: bit 0: that channel runs, bit 1: it finished */
+static u8 battle_camera_snap;                  /* 800C3B8C: snap: channels 7 and 8 start at their targets */
+static s16 battle_camera_orbit_yaw;            /* 800C3B90: orbit yaw */
+static s16 battle_camera_orbit_pitch;          /* 800C3B94: orbit pitch */
+static s16 battle_camera_orbit_distance;       /* 800C3B98: orbit distance */
+static s16 battle_camera_orbit_height;         /* 800C3B9C: orbit height */
+static s16 battle_camera_look_yaw;             /* 800C3BA0: look-at yaw */
+static s16 battle_camera_look_distance;        /* 800C3BA4: look-at distance */
+static s16 battle_camera_look_height;          /* 800C3BA8: look-at height */
 static EffectEntry *battle_camera_channels[9]; /* 800C3BAC */
 
 /* Per gear: its first extra file in directory 0x28 and its variant count.

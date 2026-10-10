@@ -41,8 +41,8 @@
 void heap_free_tag(s32 arg);
 void sound_play_effect_on_last_channels(s32 code);
 s32 window_render_text_line(void *text, void *image, s32 mode, s32 flags); /* render text */
-void *text_get_system_resource_entry(u8 id, s32 k);              /* counter skill names */
-void *text_get_accessory_name(u8 id);                     /* item names per list */
+void *text_get_system_resource_entry(u8 id, s32 k);                        /* counter skill names */
+void *text_get_accessory_name(u8 id);                                      /* item names per list */
 void *text_get_item_name(u8 id);
 void *text_get_weapon_name(u8 id);
 void *text_get_gear_accessory_name(u8 id);
@@ -103,7 +103,7 @@ extern u8 battle_decimal_digits_plus_6[];
 extern u8 battle_decimal_digits_plus_7[];
 extern u8 battle_decimal_digits_minus_21[];
 extern u8 battle_decimal_digits_minus_29[];
-extern u8 battle_camera_framed_range[];     /* the spoils window's */
+extern u8 battle_camera_framed_range[];       /* the spoils window's */
 
 /* Battle slot levels (8 bytes per slot). */
 typedef struct {
@@ -131,14 +131,14 @@ extern s16 battle_member_card_label_x[18];
 extern s16 battle_member_card_label_y[18];
 
 void battle_window_open(s32 id, u16 x, u16 y, u16 width, u16 height, s32 style, s32 wait); /* open a window */
-void battle_window_close(s32 id);     /* close a window */
+void battle_window_close(s32 id);                                                          /* close a window */
 void battle_init_text_quad_pair(POLY_FT4 *prims, s32 alternate, s32 page);
-void *battle_heap_alloc_text_image(s32 kind);                  /* allocate a text image */
-void battle_wait_frame(void);       /* run one battle frame */
+void *battle_heap_alloc_text_image(s32 kind);                                              /* allocate a text image */
+void battle_wait_frame(void);                                                              /* run one battle frame */
 
 extern u8 battle_spoils_icon_cells[8];        /* two icon records: arg5, -, arg3, arg4 */
-extern u8 battle_skill_mark_icon_cell[4];        /* the skill mark icon: width, -, u, v */
-extern void *battle_work_growth_file[1];     /* the results text; the original addresses it as a table */
+extern u8 battle_skill_mark_icon_cell[4];     /* the skill mark icon: width, -, u, v */
+extern void *battle_work_growth_file[1];      /* the results text; the original addresses it as a table */
 
 void battle_results_queue_summary_and_new_skill(void);
 void battle_results_queue_spoils_window(void);
@@ -220,6 +220,6 @@ typedef struct {
     u8 pad[0x5C];
 } BattleBlock;
 extern BattleBlock battle_message_pixel_blocks[8]; /* every other one is released */
-void battle_leave(void);     /* levels A and B per slot before the battle */
+void battle_leave(void);                           /* levels A and B per slot before the battle */
 
 #endif

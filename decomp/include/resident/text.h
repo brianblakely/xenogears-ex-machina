@@ -15,9 +15,9 @@ typedef struct {
     u8 second;
 } CharPair;
 
-extern u16 text_plane1_clut;  /* text CLUTs */
+extern u16 text_plane1_clut;            /* text CLUTs */
 extern u16 text_plane0_clut;
-extern u16 text_palette[]; /* text palette */
+extern u16 text_palette[];              /* text palette */
 extern u16 text_special_glyph_rows[11]; /* special 0xFFFF glyph */
 
 /* Packed data (0x80032e7c-0x80032f54); window setup follows. */

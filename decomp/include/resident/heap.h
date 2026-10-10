@@ -42,13 +42,13 @@ s32 heap_get_owner_tag(void);
 void heap_set_owner_tag(s32 tag);
 s32 heap_set_quiet_failures(s32 quiet);
 void heap_get_last_request(s32 *caller, s32 *size);
-void *heap_alloc(s32 size, s32 mode); /* allocate `size` bytes */
+void *heap_alloc(s32 size, s32 mode);  /* allocate `size` bytes */
 HeapHeader *heap_shrink_block(u8 *data, s32 size);
 void heap_coalesce(void);
-void heap_protect_block(void *data); /* keep the block across heap restarts */
+void heap_protect_block(void *data);   /* keep the block across heap restarts */
 void heap_unprotect_block(void *data); /* stop keeping the block */
 void heap_unprotect_block_copy(void *data);
-s32 heap_free(void *data);  /* release a block */
+s32 heap_free(void *data);             /* release a block */
 void heap_free_all(void);
 void heap_force_free_all(void);
 s32 heap_get_free_total(void);

@@ -23,11 +23,11 @@ u8 sprite_vm_command_lengths[0x80] = { /* 8004FCC0 */
 
 /* The unit's own small data and statics ($gp-relative; the statics take
  * the unit's .sbss, 800592ec). */
-s32 sprite_palette_bank = 0; /* 800591B8 */
+s32 sprite_palette_bank = 0;                            /* 800591B8 */
 s16 sprite_unused_halfwords[4] = {0x400, -0x200, 0, 0}; /* 800591BC: nothing references it */
-static s32 sprite_unread_kind7_update_count; /* 800592EC */
-static RECT *sprite_load_image_rect;      /* 800592F0: LoadImage area for 80022a0c */
-static u_long *sprite_load_image_pixels;    /* 800592F4: LoadImage pixels for 80022a0c */
+static s32 sprite_unread_kind7_update_count;            /* 800592EC */
+static RECT *sprite_load_image_rect;                    /* 800592F0: LoadImage area for 80022a0c */
+static u_long *sprite_load_image_pixels;                /* 800592F4: LoadImage pixels for 80022a0c */
 
 /* 80022090: Rebuild a sprite renderer's matrix: rotation by its angles, scaled by
  * its scales (flag bit 0: scale before rotating), then halved by the

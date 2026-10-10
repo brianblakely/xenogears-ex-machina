@@ -51,12 +51,12 @@ struct Menu {
 
 extern s32 arena_menu_copy_one_more_frame;
 extern char *arena_menu_level_names[];
-extern u8 arena_menu_frame_rates[];       /* frame rate of each rate setting */
-extern s32 arena_menu_motion_speeds[];      /* value of each speed setting */
+extern u8 arena_menu_frame_rates[];            /* frame rate of each rate setting */
+extern s32 arena_menu_motion_speeds[];         /* value of each speed setting */
 extern char *arena_menu_ai_command_names[];    /* names of the entries of setting 10 */
 extern s32 arena_menu_applied_pad_port;        /* pad port of the menu input */
-extern MenuItem arena_menu_port1_items[2]; /* vibration choices, port 1 */
-extern MenuItem arena_menu_port2_items[2]; /* port 2 */
+extern MenuItem arena_menu_port1_items[2];     /* vibration choices, port 1 */
+extern MenuItem arena_menu_port2_items[2];     /* port 2 */
 extern Menu arena_menu_pages[8];
 extern u8 arena_menu_driving_pad_port;         /* pad port driving the menus */
 extern s32 arena_menu_screen_done;

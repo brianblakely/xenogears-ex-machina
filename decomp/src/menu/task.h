@@ -20,9 +20,9 @@ typedef struct {
 } TaskCallerContext;
 
 TaskContext *arena_task_create(void (*entry)(s32), s32 arg, u32 *stack, s32 words); /* create */
-void arena_task_save_scheduler(TaskCallerContext *context); /* save the scheduler state */
-void arena_task_restore_scheduler(TaskCallerContext *context); /* restore it */
-void arena_task_resume(TaskContext *task); /* run the task until it yields */
-void arena_task_yield(void);              /* yield the current task */
+void arena_task_save_scheduler(TaskCallerContext *context);                         /* save the scheduler state */
+void arena_task_restore_scheduler(TaskCallerContext *context);                      /* restore it */
+void arena_task_resume(TaskContext *task);                                          /* run the task until it yields */
+void arena_task_yield(void);                                                        /* yield the current task */
 
 #endif

@@ -30,15 +30,15 @@
 
 /* The unit's uninitialized variables, zero in the file after slot39's, each
  * in a slot of whole words (decomp/Makefile). */
-static s16 menu_item_screen_bar_height; /* 801EA724: item list scroll bar */
-static s32 menu_item_screen_scroll_limit; /* 801EA728 */
-static s16 menu_item_screen_bar_step; /* 801EA72C */
-static u8 menu_equip_screen_candidate_ids[200]; /* 801EA730: equipment list entry ids */
+static s16 menu_item_screen_bar_height;            /* 801EA724: item list scroll bar */
+static s32 menu_item_screen_scroll_limit;          /* 801EA728 */
+static s16 menu_item_screen_bar_step;              /* 801EA72C */
+static u8 menu_equip_screen_candidate_ids[200];    /* 801EA730: equipment list entry ids */
 static u8 menu_equip_screen_candidate_counts[200]; /* 801EA7F8: equipment list entry counts */
-static u8 menu_save_title_char_is_two_byte;      /* 801EA8C0: the last printed character was two-byte */
-static u8 menu_save_icon_palette[0x20]; /* 801EA8C4: icon palette buffer */
-static RECT menu_save_icon_image_rect;     /* 801EA8E4: icon image area */
-static RECT menu_save_icon_palette_rect;     /* 801EA8EC: icon palette area */
+static u8 menu_save_title_char_is_two_byte;        /* 801EA8C0: the last printed character was two-byte */
+static u8 menu_save_icon_palette[0x20];            /* 801EA8C4: icon palette buffer */
+static RECT menu_save_icon_image_rect;             /* 801EA8E4: icon image area */
+static RECT menu_save_icon_palette_rect;           /* 801EA8EC: icon palette area */
 
 /* 801DBDB4: Size the item list's scroll bar from the last occupied inventory entry. */
 void menu_item_screen_size_scroll_bar(void) {

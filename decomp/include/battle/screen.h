@@ -94,7 +94,7 @@ extern VECTOR battle_shatter_launch_velocity; /* a shard's launch velocity befor
  * field4C, field4E). */
 void battle_light_fade_start();
 void battle_save_vram_columns(void);        /* save the three VRAM columns at 0x200-0x2BF */
-void battle_shatter_update(Task *task);  /* the shattered screen's update */
-void battle_shatter_start(void);        /* shatter the screen copied to VRAM */
+void battle_shatter_update(Task *task);     /* the shattered screen's update */
+void battle_shatter_start(void);            /* shatter the screen copied to VRAM */
 
 #endif

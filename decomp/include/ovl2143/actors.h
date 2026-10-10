@@ -169,7 +169,7 @@ void gear_model_set_instant_keyframes(s32 on); /* while on, tweens to keyframes 
 void gear_model_init(s32 slot_count); /* reset the module and its pools */
 void gear_model_create_actor(s32 index, u16 flags, ActorScript *script, ObjectModelFile *file, s16 x, s16 y,
                    s16 z, s16 w, s16 *pos); /* create actor `index` from its files */
-void gear_model_shut_down(void);   /* release every actor and both pools */
+void gear_model_shut_down(void);       /* release every actor and both pools */
 void gear_model_free_actor(s32 index); /* release actor `index` */
 /* Select actor `index` and mask `mask` and run its script entry `entry`. */
 void gear_model_select_and_call_entry(u16 index, u16 mask, s32 entry);

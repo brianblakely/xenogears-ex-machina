@@ -33,16 +33,16 @@
  * original assembler gave those of up to 8 bytes the unit's .sbss, ahead of
  * every other unit's (800592bc), and the larger kernel menu buffers its .bss
  * (800595e8; SBSS_main in slus_006.64.mk). */
-static void *mode_overlay_block;         /* 800592BC: the loaded mode block */
-static s32 mode_overlay_block_mode;           /* 800592C0: the mode whose block is loaded, or -1 */
-static s32 mode_kernel_menu_frame_count;           /* 800592C4: kernel menu frame count */
-static s32 mode_kernel_menu_buffer_index;           /* 800592C8: kernel menu buffer index */
+static void *mode_overlay_block;                      /* 800592BC: the loaded mode block */
+static s32 mode_overlay_block_mode;                   /* 800592C0: the mode whose block is loaded, or -1 */
+static s32 mode_kernel_menu_frame_count;              /* 800592C4: kernel menu frame count */
+static s32 mode_kernel_menu_buffer_index;             /* 800592C8: kernel menu buffer index */
 static KernelBuffer *mode_kernel_menu_current_buffer; /* 800592CC: kernel menu current buffer */
-static s32 mode_kernel_menu_running;           /* 800592D0: kernel menu running */
-static u8 *mode_game_of_life_cells; /* 800592D4 */
-static u8 *mode_game_of_life_neighbor_counts; /* 800592D8 */
-static LifeTile *mode_game_of_life_tiles[2];  /* 800592DC: tile buffers per display buffer */
-static KernelBuffer mode_kernel_menu_buffers[2]; /* 800595E8: kernel menu buffers */
+static s32 mode_kernel_menu_running;                  /* 800592D0: kernel menu running */
+static u8 *mode_game_of_life_cells;                   /* 800592D4 */
+static u8 *mode_game_of_life_neighbor_counts;         /* 800592D8 */
+static LifeTile *mode_game_of_life_tiles[2];          /* 800592DC: tile buffers per display buffer */
+static KernelBuffer mode_kernel_menu_buffers[2];      /* 800595E8: kernel menu buffers */
 
 /* Each mode's overlay file in directory 1; the kernel menu (mode 0) has none. */
 s32 mode_overlay_files[] = {0, 0xE, 0x10, 0xF, 0xD, 0x11, 0x12}; /* 8004EAA0 */

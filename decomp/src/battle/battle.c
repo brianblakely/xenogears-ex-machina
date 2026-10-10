@@ -60,16 +60,16 @@ void battle_play_system_sound(u8 id); /* play a sound effect */
  * (decomp/Makefile). Its .bss opens the overlay's at 800c3a70, where the
  * resident's mode table starts the clear. */
 static u32 *battle_combo_text_image_blocks[3]; /* 800C3A70: combo text image blocks */
-static s32 battle_stepped_line_start_x;     /* 800C3A7C: stepped line state (8008887c) */
-static s32 battle_stepped_line_start_y; /* 800C3A80 */
-static s32 battle_stepped_line_end_x; /* 800C3A84 */
-static s32 battle_stepped_line_end_y; /* 800C3A88 */
-static s32 battle_stepped_line_step_x; /* 800C3A8C */
-static s32 battle_stepped_line_step_y; /* 800C3A90 */
-static u8 battle_stepped_line_x_decreasing; /* 800C3A94 */
-static u8 battle_stepped_line_y_decreasing; /* 800C3A98 */
-static s32 battle_stepped_line_speed; /* 800C3A9C */
-static u8 battle_console_opened; /* 800C3AA0: the debug console is open */
+static s32 battle_stepped_line_start_x;        /* 800C3A7C: stepped line state (8008887c) */
+static s32 battle_stepped_line_start_y;        /* 800C3A80 */
+static s32 battle_stepped_line_end_x;          /* 800C3A84 */
+static s32 battle_stepped_line_end_y;          /* 800C3A88 */
+static s32 battle_stepped_line_step_x;         /* 800C3A8C */
+static s32 battle_stepped_line_step_y;         /* 800C3A90 */
+static u8 battle_stepped_line_x_decreasing;    /* 800C3A94 */
+static u8 battle_stepped_line_y_decreasing;    /* 800C3A98 */
+static s32 battle_stepped_line_speed;          /* 800C3A9C */
+static u8 battle_console_opened;               /* 800C3AA0: the debug console is open */
 
 /* 8008115C: Confirm the selected entry of the member's on-foot window: entries 4, 6
  * and 7 open the attack page (5) when the member has a target; 1 and 0 open

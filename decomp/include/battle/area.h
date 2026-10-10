@@ -75,34 +75,34 @@ typedef struct {
  * the work table through this aggregate. */
 typedef struct BattleArea {
     struct Formation *formation; /* 0x0000 */
-    BattleSlot slots[11];       /* 0x0004 */
-    BattleEvent events[32];     /* 0x0138 */
-    u16 knockedOut;            /* 0x0A38: battle_area_knocked_out */
-    u8 outcome;               /* 0x0A3A: battle_area_outcome */
+    BattleSlot slots[11];        /* 0x0004 */
+    BattleEvent events[32];      /* 0x0138 */
+    u16 knockedOut;              /* 0x0A38: battle_area_knocked_out */
+    u8 outcome;                  /* 0x0A3A: battle_area_outcome */
     u8 padA3B;
-    PathPoint path[51];         /* 0x0A3C */
+    PathPoint path[51];          /* 0x0A3C */
     u8 padB6E[2];
-    FrameBuffer buffers[2];     /* 0x0B70 */
-    FrameBuffer *current;       /* 0x8C50 */
-    u32 *ot;                    /* 0x8C54 */
-    u16 held;                   /* 0x8C58 */
-    u16 held2;                  /* 0x8C5A: the second controller */
-    u16 pressed;                /* 0x8C5C */
-    u16 pressed2;               /* 0x8C5E */
-    u16 released;               /* 0x8C60 */
-    u16 heldOnly;               /* 0x8C62: held on the first, not the second */
-    PadRecord history[4];       /* 0x8C64: the last changes, newest first */
-    s32 buffer;                 /* 0x8C84: the buffer being drawn */
+    FrameBuffer buffers[2];      /* 0x0B70 */
+    FrameBuffer *current;        /* 0x8C50 */
+    u32 *ot;                     /* 0x8C54 */
+    u16 held;                    /* 0x8C58 */
+    u16 held2;                   /* 0x8C5A: the second controller */
+    u16 pressed;                 /* 0x8C5C */
+    u16 pressed2;                /* 0x8C5E */
+    u16 released;                /* 0x8C60 */
+    u16 heldOnly;                /* 0x8C62: held on the first, not the second */
+    PadRecord history[4];        /* 0x8C64: the last changes, newest first */
+    s32 buffer;                  /* 0x8C84: the buffer being drawn */
     u8 pad8C88[4];
-    Sprite *sprites[11];        /* 0x8C8C: the slots' sprites */
-    SpriteTask *tasks[11];      /* 0x8CB8: their tasks */
+    Sprite *sprites[11];         /* 0x8C8C: the slots' sprites */
+    SpriteTask *tasks[11];       /* 0x8CB8: their tasks */
     u8 pad8CE4[0x8D24 - 0x8CE4];
-    SlotSource sources[11];     /* 0x8D24 */
-    u8 field8DA8;               /* 0x8DA8 */
+    SlotSource sources[11];      /* 0x8D24 */
+    u8 field8DA8;                /* 0x8DA8 */
     u8 pad8DA9[0x8DAC - 0x8DA9];
-    s32 frameTicks;             /* 0x8DAC: vertical blanks of the last frame */
+    s32 frameTicks;              /* 0x8DAC: vertical blanks of the last frame */
     u8 pad8DB0[0x8E38 - 0x8DB0];
-    BattleWork work;            /* 0x8E38: battle_work_area */
+    BattleWork work;             /* 0x8E38: battle_work_area */
 } BattleArea;
 
 /* The battle area: one global from 800c3eb0 (the other battle overlays

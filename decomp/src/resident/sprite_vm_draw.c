@@ -38,14 +38,14 @@ MATRIX sprite_light_direction_matrix = {{{0x1000, 0x1000, 0x1000}, {0, 0, 0}, {0
 /* The unit's own small variables, $gp-relative: its statics, which take
  * the unit's .sbss (800592f8), and its small commons, which merge with
  * commons/commons_small.c's definitions. */
-static s32 sprite_queue_index;        /* 800592F8: the queue being filled (0 or 1) */
-static s32 sprite_queue_size;        /* 800592FC: bytes of the queue entry block / 2 */
+static s32 sprite_queue_index;                       /* 800592F8: the queue being filled (0 or 1) */
+static s32 sprite_queue_size;                        /* 800592FC: bytes of the queue entry block / 2 */
 static SpriteQueueEntry *sprite_queue_free_lists[2]; /* 80059300: the two queues */
-u8 *sprite_queue_entry_blocks;               /* the first queue's entry block (the second's follows) */
-ImageUpload *sprite_queue_upload_lists;      /* the upload list of the first queue (the second follows) */
-SpriteQueueEntry *sprite_queue_next_free; /* the next free queue entry */
-u8 *sprite_queue_block_start;                /* the queue block being filled */
-u8 *sprite_queue_block_end;                /* its end */
+u8 *sprite_queue_entry_blocks;                       /* the first queue's entry block (the second's follows) */
+ImageUpload *sprite_queue_upload_lists;              /* the upload list of the first queue (the second follows) */
+SpriteQueueEntry *sprite_queue_next_free;            /* the next free queue entry */
+u8 *sprite_queue_block_start;                        /* the queue block being filled */
+u8 *sprite_queue_block_end;                          /* its end */
 
 /* 800248D4: Run a sprite's animation script until a command takes time: frame
  * commands (below 80) show a frame for their duration scaled by the gravity

@@ -27,8 +27,8 @@ typedef struct {
 } StreamFrame;
 
 extern StreamRing *stream_current_ring; /* the ring */
-extern StreamSlot *stream_slots; /* its slots */
-extern s32 stream_slot_count;         /* its slot count */
+extern StreamSlot *stream_slots;        /* its slots */
+extern s32 stream_slot_count;           /* its slot count */
 extern u16 stream_next_chunk_sequence;
 extern u16 stream_next_store_sequence;
 extern u16 stream_next_complete_sequence;

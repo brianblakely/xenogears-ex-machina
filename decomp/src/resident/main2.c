@@ -26,25 +26,25 @@
  * (8005934c), the larger window, text and controller queue buffers in its
  * .bss (80059fd8), as the original assembler placed them (SBSS_main2 in
  * slus_006.64.mk). */
-static s32 text_font_two_byte_threshold;  /* 8005934C: font: first byte of a two-byte character */
+static s32 text_font_two_byte_threshold;    /* 8005934C: font: first byte of a two-byte character */
 static s32 text_font_two_byte_glyph_offset; /* 80059350 */
 static s32 text_font_narrow_one_byte_count; /* 80059354 */
 static s32 text_font_narrow_two_byte_limit; /* 80059358 */
-static u8 *text_font_glyphs;  /* 8005935C: font glyph data */
-static u8 **text_system_resources; /* 80059360: system data: resource table */
-static s32 text_font_first_one_byte_code; /* 80059364 */
-static u8 *text_system_data;  /* 80059368: system data block */
+static u8 *text_font_glyphs;                /* 8005935C: font glyph data */
+static u8 **text_system_resources;          /* 80059360: system data: resource table */
+static s32 text_font_first_one_byte_code;   /* 80059364 */
+static u8 *text_system_data;                /* 80059368: system data block */
 static u16 *text_font; /* 8005936C: font block: halfword 1 glyph offset, 2 first
                          * byte of a two-byte character */
 static u8 pad_play_time_frames;   /* 80059370: play time frames */
-static u32 pad_port0_last_held;  /* 80059374: held pad buttons of the last frame */
-static u32 pad_port1_last_held; /* 80059378 */
-static u32 pad_queue_count;  /* 8005937C: queued controller states */
-static u32 pad_queue_write_index;  /* 80059380: queue write index */
+static u32 pad_port0_last_held;   /* 80059374: held pad buttons of the last frame */
+static u32 pad_port1_last_held;   /* 80059378 */
+static u32 pad_queue_count;       /* 8005937C: queued controller states */
+static u32 pad_queue_write_index; /* 80059380: queue write index */
 static u32 pad_queue_read_index;  /* 80059384: queue read index */
-static u8 pad_last_read_type;   /* 80059388: kind of the last read controller */
-static u8 pad_unread_byte; /* 8005938C */
-static s32 pad_vblank_polls_host;  /* 80059390: the vertical-blank callback polls the host */
+static u8 pad_last_read_type;     /* 80059388: kind of the last read controller */
+static u8 pad_unread_byte;        /* 8005938C */
+static s32 pad_vblank_polls_host; /* 80059390: the vertical-blank callback polls the host */
 /* The one-line layout window and its line. */
 static Window window_single_line_window; /* 80059FD8 */
 static WindowLine window_single_line_layout; /* 8005A068 */
@@ -73,12 +73,12 @@ u16 text_palette[32] = { /* 80050190 */
  * of a font glyph. */
 INCLUDE_ASSET(".data", text_special_glyph_rows, 0x800501D0, 0x16);
 u16 pad_button_bits[8] = {0x20, 0x40, 0x10, 0x80, 0x4, 0x1, 0x8, 0x2}; /* 800501E8: button bits */
-u8 pad_play_time_stopped = 0;              /* 800501F8: play time stopped at 100 hours */
-void (*pad_vblank_hook)(void) = NULL; /* 800501FC: vertical-blank hook */
-s32 pad_unread_reset_word = 1; /* 80050200 */
-s32 pad_unread_init_word = 0; /* 80050204 */
-s32 pad_queue_overflowed = 0; /* 80050208: queue overflowed */
-u8 pad_dpad_stick_x_table[16] = { /* 8005020C */
+u8 pad_play_time_stopped = 0;                                          /* 800501F8: play time stopped at 100 hours */
+void (*pad_vblank_hook)(void) = NULL;                                  /* 800501FC: vertical-blank hook */
+s32 pad_unread_reset_word = 1;                                         /* 80050200 */
+s32 pad_unread_init_word = 0;                                          /* 80050204 */
+s32 pad_queue_overflowed = 0;                                          /* 80050208: queue overflowed */
+u8 pad_dpad_stick_x_table[16] = {                                      /* 8005020C */
     0x80, 0x80, 0xFF, 0xFF, 0x80, 0x80, 0xFF, 0x80, 0x00, 0x00, 0x80, 0x80, 0x00, 0x80, 0x80, 0x80,
 };
 u8 pad_dpad_stick_y_table[16] = { /* 8005021C */

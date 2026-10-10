@@ -43,11 +43,11 @@ typedef struct {
 } ModelArchive;
 
 /* This overlay's data. */
-extern u8 battle_event_script_portrait_files[];   /* portrait file per actor (normal, mirrored) */
+extern u8 battle_event_script_portrait_files[];          /* portrait file per actor (normal, mirrored) */
 extern u16 battle_event_script_default_window_layout[5]; /* default message window layout */
-extern s32 battle_event_script_cursor_frame;    /* the cursor glyph's frame, cycled 4..0 */
-extern u8 battle_event_script_actions_started[16]; /* actor action started by the script */
-extern s32 battle_event_script_text_origin_x;    /* text origin */
+extern s32 battle_event_script_cursor_frame;             /* the cursor glyph's frame, cycled 4..0 */
+extern u8 battle_event_script_actions_started[16];       /* actor action started by the script */
+extern s32 battle_event_script_text_origin_x;            /* text origin */
 extern s32 battle_event_script_text_origin_y;
 extern ModelArchive *battle_event_script_model_archive;
 

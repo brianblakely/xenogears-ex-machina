@@ -40,16 +40,16 @@ typedef struct {
 /* Word count of a primitive, from its tag (libgpu P_TAG len). */
 #define TAG_LEN(tag) (((u8 *)(tag))[3])
 
-extern OtPair *arena_display_layer_to_compact;        /* table to compact at the end of the frame */
-extern s16 arena_display_width;            /* display width */
+extern OtPair *arena_display_layer_to_compact;   /* table to compact at the end of the frame */
+extern s16 arena_display_width;                  /* display width */
 extern DisplayBuffer *arena_current_draw_buffer; /* the buffer being drawn */
-extern s16 arena_display_height;            /* display height */
+extern s16 arena_display_height;                 /* display height */
 extern DisplayBuffer *arena_unread_shown_buffer; /* the buffer being displayed */
-extern u8 arena_draw_buffer_index;             /* index of the buffer being built */
-extern u32 *arena_current_layer_ot;           /* ordering table primitives are added to */
-extern s32 arena_node_color_changed;            /* colour changed this frame */
-extern u32 *arena_current_ot;           /* ordering table of the buffer being built */
-extern MATRIX arena_display_screen_scale;         /* screen scale */
+extern u8 arena_draw_buffer_index;               /* index of the buffer being built */
+extern u32 *arena_current_layer_ot;              /* ordering table primitives are added to */
+extern s32 arena_node_color_changed;             /* colour changed this frame */
+extern u32 *arena_current_ot;                    /* ordering table of the buffer being built */
+extern MATRIX arena_display_screen_scale;        /* screen scale */
 extern DisplayBuffer arena_display_buffers[2];
 
 void arena_display_clear_buffers(s32 both); /* clear one or both display areas */

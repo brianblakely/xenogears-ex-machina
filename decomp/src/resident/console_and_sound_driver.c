@@ -25,9 +25,9 @@
  * (80059394), the larger format defaults and stage file list in its .bss
  * (8005a1cc), as the original assembler placed them (SBSS_console_and_sound_driver in
  * slus_006.64.mk). */
-static Console *console_current; /* 80059394 */
-static RECT console_font_clut_rect;   /* 80059398: the console font CLUTs' VRAM rectangle */
-static s32 console_external_block;    /* 800593A0: the console block is not owned (not released) */
+static Console *console_current;           /* 80059394 */
+static RECT console_font_clut_rect;        /* 80059398: the console font CLUTs' VRAM rectangle */
+static s32 console_external_block;         /* 800593A0: the console block is not owned (not released) */
 static FormatSpec console_format_defaults; /* 8005A1CC: the format defaults */
 /* The battle stage file list (mode_load_battle_stage): the stage file, the scene
  * data and the zero entry ending it, and a fourth entry that nothing

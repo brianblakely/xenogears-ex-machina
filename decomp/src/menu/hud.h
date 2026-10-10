@@ -43,9 +43,9 @@ typedef struct {
 } Hud;
 
 extern DVECTOR arena_hud_gauge_frame_layout[8];    /* map frame corner layout */
-extern u16 arena_hud_gauge_palette[16];       /* gauge palette */
-extern u8 arena_hud_left_charge_bar_v;            /* left bar texel row */
-extern u8 arena_hud_unread_right_charge_bar_v;            /* right bar texel row */
+extern u16 arena_hud_gauge_palette[16];            /* gauge palette */
+extern u8 arena_hud_left_charge_bar_v;             /* left bar texel row */
+extern u8 arena_hud_unread_right_charge_bar_v;     /* right bar texel row */
 extern OverlayBuffer arena_hud_overlay_buffers[2];
 
 void arena_hud_set_gauge_x(s32 mirrored, s16 *out, s32 x);

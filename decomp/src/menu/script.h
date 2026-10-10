@@ -19,13 +19,13 @@ typedef struct {
 } FloorStep;
 
 extern u8 arena_scene_opening_script[];           /* the opening's scene script */
-extern u8 *arena_scene_scripts[];          /* scene scripts */
+extern u8 *arena_scene_scripts[];                 /* scene scripts */
 extern FloorStep arena_scene_floor_steps[8];
-extern u8 arena_scene_bout_end_script[];           /* the setup script */
-extern LightRig *arena_winner_light_rig;      /* the scene's lights */
-extern Actor *arena_scene_driven_actor;         /* actor the scene script drives */
-extern s32 arena_scene_bout_end_step;            /* bout-end sequence step */
-extern u8 arena_scene_bout_end_active;             /* the one-time scene setup ran */
+extern u8 arena_scene_bout_end_script[];          /* the setup script */
+extern LightRig *arena_winner_light_rig;          /* the scene's lights */
+extern Actor *arena_scene_driven_actor;           /* actor the scene script drives */
+extern s32 arena_scene_bout_end_step;             /* bout-end sequence step */
+extern u8 arena_scene_bout_end_active;            /* the one-time scene setup ran */
 extern Window arena_scene_message_window;         /* message window */
 
 void arena_scene_start_script(u8 *script);
