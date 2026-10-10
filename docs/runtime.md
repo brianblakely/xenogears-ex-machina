@@ -15,6 +15,17 @@ is built for native and browser hosts and how the hosts are layered. The
 | Versions | slint =1.18.1 (`unstable-wgpu-30`, FemtoVG wgpu renderer), wgpu/wgpu-hal =30.0.1, sdl3-sys =0.6.8+SDL-3.4.14, openxr 0.22.0, wasm-bindgen =0.2.127, iwer 2.5.0, playwright-core 1.64.0 |
 | Slint license | Royalty-free 2.0 (attribution shown in the settings panel); GPLv3 is the alternative |
 
+## The decomp mandate
+
+The decomp is the game-logic provider and stays a pure, byte-identical
+implementation of the original game ([plan.md](../plan.md), Shared
+native/browser architecture). It is compiled unchanged; nothing in `decomp/` is
+added or edited for integration. When integration needs something the original
+sources do not give, it goes into `port/` or `tools/game_module.py`: shadow
+headers through the prelude, port functions, the inline-assembly map, IR
+rewriting. A change to `decomp/` is made only for the original game and is
+verified with `make -C decomp all-verify`.
+
 ## The game module
 
 `python3 tools/game_module.py` (inside `nix develop path:./nix/runtime`) builds

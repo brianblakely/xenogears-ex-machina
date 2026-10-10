@@ -45,6 +45,15 @@ native infrastructure and narrow, source-correlated portability adapters. Do not
 require a wholesale Rust rewrite or a second independently updated game-state
 model. These choices add no work to Phase 1's original-compatible matching exit.
 
+The decomp stays a pure, byte-identical implementation of the original game.
+It remains the runtime's game-logic provider, compiled unchanged into the
+native and browser builds, but it is never edited for native client
+integration: no port-only conditionals, hooks, prototypes, renames or layout
+changes in `decomp/`. Everything integration needs lives in the separate port
+layer (`port/`) and the build tooling around the unmodified sources
+([runtime.md](docs/runtime.md)). Changes to `decomp/` serve the original game
+only and must keep every target byte-identical.
+
 - **SDL3:** Default desktop/Android platform layer for game windows/surfaces,
   keyboard/mouse/touch/controllers, audio-device I/O and lifecycle integration.
   Reuse applicable services on Horizon OS; use native APIs only for demonstrated
