@@ -18,7 +18,13 @@ battle_message_entries = 0x800D36C8; /* the message entries (BattleMessage, 0x60
 battle_message_pixel_blocks = battle_message_entries + 0x58; /* 800D3720: [0].pixels */
 /* The nine decimal digits battle_split_decimal_digits writes (u8[9]); the
  * screens read the last ones by digit position from bases of their own
- * (battle_results.h). */
+ * (battle_results.h), most of them before the digits (ovl2596.mk
+ * BASE_VIEWS). */
 battle_decimal_digits = 0x800C3CF4; /* battle's decimal digits */
-battle_decimal_digits_plus_6 = battle_decimal_digits + 0x6; /* 800C3CFA: [6] */
-battle_decimal_digits_plus_7 = battle_decimal_digits + 0x7; /* 800C3CFB: [7] */
+battle_decimal_digits_minus_29 = battle_decimal_digits - 0x1D; /* 800C3CD7: [2]-[8] at 31-37 */
+battle_decimal_digits_minus_21 = battle_decimal_digits - 0x15; /* 800C3CDF: [1]-[8] at 22-29 */
+battle_decimal_digits_minus_17 = battle_decimal_digits - 0x11; /* 800C3CE3: [6]-[8] at 23-25 */
+battle_decimal_digits_minus_7 = battle_decimal_digits - 0x7; /* 800C3CED: [6]-[8] at 13-15 */
+battle_decimal_digits_minus_3 = battle_decimal_digits - 0x3; /* 800C3CF1: [6]-[8] at 9-11 */
+battle_decimal_digits_plus_6 = battle_decimal_digits + 0x6; /* 800C3CFA: [6]-[8] at 0-2 */
+battle_decimal_digits_plus_7 = battle_decimal_digits + 0x7; /* 800C3CFB: [7]-[8] at 0-1 */

@@ -1,6 +1,5 @@
 battle_gear_file_table = 0x800C3508;
 // Names tools/names.py gave these addresses (docs/matching.md, Names).
-sprite_vm_command_lengths_by_opcode = 0x8004FC40;
 battle_overlay_number = 0x8006FAF0;
 battle_start_event_script_module = 0x80070E2C; // type:func
 battle_run_event_script = 0x80070EB0; // type:func

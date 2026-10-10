@@ -7,6 +7,12 @@ BUILD := .local/decomp/build/ovl2615
 IMAGE := .local/decomp/build/ovl2615.bin
 LINKER_SCRIPT := .local/decomp/ovl2615/ovl2615.ld
 LINKER_EXTRA := .local/decomp/ovl2615/undefined_syms_auto.txt .local/decomp/ovl2615/undefined_funcs_auto.txt decomp/targets/overlays/ovl2615.resident.ld
+# The setup (battle_setup_phases.c) stores each enemy's name index by its slot
+# (3-10) from the base battle_enemy_name_indices_by_slot, which
+# ovl2615.resident.ld gives as a view three bytes before battle's
+# battle_enemy_name_indices (one per enemy). tools/cross_image.py accepts a
+# view before its object only where this lists it.
+BASE_VIEWS := battle_enemy_name_indices_by_slot
 SOURCE_DIRS := decomp/src/ovl2615
 # The reasons its included objects stay original (coverage class included).
 CLASSIFICATION := decomp/targets/overlays/ovl2615.classification.txt

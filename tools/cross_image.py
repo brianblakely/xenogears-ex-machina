@@ -20,14 +20,17 @@ address (splat's D_, func_ and jtbl_ names) must hold that address; then
   agrees by name, and the value lies in the object that holds that name in
   each target defining it (up to the next symbol its link places in a
   section, or its end): a member of a named object;
-* by address, where neither applies: a target holding the value has a
-  symbol there;
-* otherwise the address must lie inside an input section a target holding it
-  places: a member or part of an object that no symbol names.
+* by base: such a view that lies before that object instead, a base the
+  importing code indexes the object from (``battle_enemy_name_indices_by_slot
+  = battle_enemy_name_indices - 0x3``), which the target's configuration
+  lists in BASE_VIEWS with its reason; each name listed there must be one;
+* by address, where none of these applies: a target holding the value has a
+  symbol there.
 
-By address and inside an object, the check ties the value only to the
-address its name gives, not to a particular object or, where targets
-overlap, to a particular target. A value outside every target (a size, a
+Any other copied address fails, also one inside an object that no name ties
+it to (give it as a view of that object). By address, the check ties the
+value only to the address its name gives, not to a particular object or,
+where targets overlap, to a particular target. A value outside every target (a size, a
 constant, a hardware or kernel address) is no image's address and is not
 checked, nor is an address that C spells as a number: ``--numbers`` lists
 those instead, each other target's address a link holds without a
@@ -170,7 +173,7 @@ def holding(d: Target, address: int) -> tuple[int, int]:
 def check(targets: list[Target]) -> tuple[list[str], dict[str, int]]:
     """The disagreements, and what agreed."""
     errors: list[str] = []
-    counts = {"names": 0, "by_name": 0, "by_view": 0, "by_address": 0, "inside_object": 0,
+    counts = {"names": 0, "by_name": 0, "by_view": 0, "by_base": 0, "by_address": 0,
               "mode_entries": 0}
 
     def disagree(where: str, d: Target, name: str) -> None:
@@ -178,6 +181,7 @@ def check(targets: list[Target]) -> tuple[list[str], dict[str, int]]:
         errors.append(f"{where}, but {d.name} defines {name} at {found}")
 
     for t in targets:
+        listed, seen = set(t.values.get("BASE_VIEWS", "").split()), set()
         for name, (script, expression) in sorted(t.imports.items()):
             value = t.value.get(name)
             if value is None or t.lo <= value < t.end:
@@ -202,22 +206,36 @@ def check(targets: list[Target]) -> tuple[list[str], dict[str, int]]:
                     if value not in d.names[name]:
                         disagree(where, d, name)
             elif bases:
-                counts["by_view"] += 1
+                seen.add(name)
+                counts["by_base" if name in listed else "by_view"] += 1
                 for d in bases:
                     if t.value[base] not in d.names[base]:
                         disagree(f"{where} is {expression}", d, base)
                         continue
                     start, stop = holding(d, t.value[base])
-                    if not start <= value < stop:
+                    if name in listed and value >= start:
+                        errors.append(f"{where} is {expression}, which BASE_VIEWS lists, but it"
+                                      f" does not lie before the object holding {base} in"
+                                      f" {d.name} ({start:08x}-{stop:08x})")
+                    elif name not in listed and not start <= value < stop:
                         errors.append(f"{where} is {expression}, outside the object holding"
                                       f" {base} in {d.name} ({start:08x}-{stop:08x})")
             elif any(value in d.at for d in holders):
                 counts["by_address"] += 1
-            elif any(a <= value < b for d in holders for a, b in d.inputs):
-                counts["inside_object"] += 1
             else:
-                errors.append(f"{where} lies in {', '.join(d.name for d in holders)} but in"
-                              " no input section they place")
+                inside = [(d, *holding(d, value)) for d in holders
+                          if any(a <= value < b for a, b in d.inputs)]
+                if inside:
+                    objects = ", ".join(
+                        f"{d.name}'s {'/'.join(sorted(d.at.get(start, ()))) or 'object'}"
+                        f" ({start:08x}-{stop:08x})" for d, start, stop in inside)
+                    errors.append(f"{where} lies inside {objects}, but is no view of it")
+                else:
+                    errors.append(f"{where} lies in {', '.join(d.name for d in holders)} but in"
+                                  " no input section they place")
+        for name in sorted(listed - seen):
+            errors.append(f"{t.name}: BASE_VIEWS lists {name}, which its scripts do not give as"
+                          " a view of another target's name")
     tables = [t for t in targets if t.values.get("MODE_TABLE")]
     modes = [t for t in targets if t.values.get("MODE")]
     if modes and not tables:

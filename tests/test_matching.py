@@ -956,8 +956,8 @@ class MatchingTests(unittest.TestCase):
         # that takes res_func from a PROVIDE list and other names from a
         # fragment, and a module p (80030000-8003000c: p_func, which loads
         # res_var's second word by number): by name, by view (member:
-        # res_var + 4), by address (alias: the table, and D_80030000: p_func)
-        # and inside an object (inner: res_var's second word).
+        # res_var + 4), by base (before: res_var - 4, which o's BASE_VIEWS
+        # lists) and by address (alias: the table, and D_80030000: p_func).
         def resident(entry=0x80020000, bss=(0x80020014, 0x80020024)):
             self.link_assembly("r", (
                 ".set noreorder\n.text\n.globl res_func\n.type res_func, @function\n"
@@ -983,17 +983,21 @@ class MatchingTests(unittest.TestCase):
         provide.write_text("PROVIDE(res_func = 0x80010000);\nPROVIDE(unused = 0x80010004);\n")
         (self.root / "r.mk").write_text(
             "IMAGE := r.bin\nBUILD := build/r\nLINKER_SCRIPT := r.ld\nMODE_TABLE := table\n")
-        (self.root / "o.mk").write_text(
-            "IMAGE := o.bin\nBUILD := build/o\nLINKER_SCRIPT := o.ld\n"
-            "LINKER_EXTRA := auto/undefined_funcs_auto.txt o.resident.ld\n"
-            "MODE := 0\nMODE_ENTRY := ov_entry\n")
+
+        def configure(bases="before"):
+            (self.root / "o.mk").write_text(
+                "IMAGE := o.bin\nBUILD := build/o\nLINKER_SCRIPT := o.ld\n"
+                "LINKER_EXTRA := auto/undefined_funcs_auto.txt o.resident.ld\n"
+                f"MODE := 0\nMODE_ENTRY := ov_entry\nBASE_VIEWS := {bases}\n")
+
+        configure()
         (self.root / "p.mk").write_text("IMAGE := p.bin\nBUILD := build/p\nLINKER_SCRIPT := p.ld\n")
         self.link_assembly("p", (
             ".set noreorder\n.text\n.globl p_func\n.type p_func, @function\n"
             "p_func:\nlui $8, 0x8001\njr $31\nlw $8, 0x24($8)\n.size p_func, . - p_func\n"),
             "SECTIONS {\n  .p 0x80030000 : SUBALIGN(4) { p.o(.text) }\n  /DISCARD/ : { *(*) }\n}\n")
-        names = ("res_var = 0x80010020;\nalias = 0x80010010;\ninner = 0x80010024;\n"
-                 "member = res_var + 4;\nD_80030000 = 0x80030000;\ntimer = 0x1F801100;\n")
+        names = ("res_var = 0x80010020;\nalias = 0x80010010;\nmember = res_var + 4;\n"
+                 "before = res_var - 4;\nD_80030000 = 0x80030000;\ntimer = 0x1F801100;\n")
         resident()
         overlay(names)
         tool = Path(__file__).resolve().parents[1] / "tools/cross_image.py"
@@ -1006,7 +1010,7 @@ class MatchingTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout), {
             "claim": "cross_image_agreement", "targets": 3, "names": 6, "by_name": 2,
-            "by_view": 1, "by_address": 2, "inside_object": 1, "mode_entries": 1})
+            "by_view": 1, "by_base": 1, "by_address": 2, "mode_entries": 1})
         # --numbers lists the other links' addresses a link holds as numbers:
         # p's lui/lw of res_var's second word, not o's relocated ones.
         listed = subprocess.run([sys.executable, str(tool), "r.mk", "o.mk", "p.mk", "--numbers"],
@@ -1014,20 +1018,37 @@ class MatchingTests(unittest.TestCase):
         self.assertEqual(listed.stdout, "p 80030000 lui 80010024 (p.o): r\n")
         # A name another link places elsewhere, also where its copied value
         # points into a third link (r exports table, which p does not
-        # define), a view outside the object holding its base, a name whose
-        # value is not the address it gives, one in no object (the fill
-        # after res_func) and a mode table that does not hold the overlay's
-        # entry and uninitialized data all fail.
+        # define), a view outside the object holding its base unless
+        # BASE_VIEWS lists it as a base before that object, a listed name
+        # that is no such base, a name whose value is not the address it
+        # gives, one inside an object that no name ties it to (res_var's
+        # second word), one in no object (the fill after res_func) and a
+        # mode table that does not hold the overlay's entry and
+        # uninitialized data all fail.
         for change, message in (
             (lambda: overlay(names.replace("0x80010020", "0x80010024")),
-             "o: res_var = 80010024 (o.resident.ld), but r defines res_var at 80010020"),
+             "o: before = 80010020 (o.resident.ld) is res_var - 4, but r defines res_var at"
+             " 80010020\no: res_var = 80010024 (o.resident.ld), but r defines res_var at"
+             " 80010020"),
             (lambda: overlay(names + "table = 0x80030000;\n"),
              "o: table = 80030000 (o.resident.ld), but r defines table at 80010010"),
             (lambda: overlay(names + "table = 0x80010010;\npast = table + 0x10;\n"),
              "o: past = 80010020 (o.resident.ld) is table + 0x10, outside the object holding"
              " table in r (80010010-80010020)"),
+            (lambda: overlay(names + "early = res_var - 8;\n"),
+             "o: early = 80010018 (o.resident.ld) is res_var - 8, outside the object holding"
+             " res_var in r (80010020-80010028)"),
+            (lambda: configure("before member"),
+             "o: member = 80010024 (o.resident.ld) is res_var + 4, which BASE_VIEWS lists, but"
+             " it does not lie before the object holding res_var in r (80010020-80010028)"),
+            (lambda: configure("before res_var"),
+             "o: BASE_VIEWS lists res_var, which its scripts do not give as a view of another"
+             " target's name"),
             (lambda: overlay(names + "D_80010004 = 0x80010000;\n"),
              "o: D_80010004 = 80010000 (o.resident.ld), but its name gives 80010004"),
+            (lambda: overlay(names + "inner = 0x80010024;\n"),
+             "o: inner = 80010024 (o.resident.ld) lies inside r's res_var (80010020-80010028),"
+             " but is no view of it"),
             (lambda: overlay(names + "gap = 0x8001000C;\n"),
              "o: gap = 8001000c (o.resident.ld) lies in r but in no input section they place"),
             (lambda: resident(entry=0x80020004),
@@ -1040,9 +1061,11 @@ class MatchingTests(unittest.TestCase):
                 change()
                 result = check()
                 self.assertEqual(result.returncode, 1, result.stdout)
-                self.assertEqual(result.stderr, f"error: {message}\n")
+                self.assertEqual(result.stderr, "".join(f"error: {line}\n"
+                                                        for line in message.split("\n")))
                 resident()
                 overlay(names)
+                configure()
 
     @unittest.skipUnless(
         all(shutil.which(tool) for tool in (

@@ -15,6 +15,12 @@ BUILD := .local/decomp/build/battle
 IMAGE := .local/decomp/build/battle.bin
 LINKER_SCRIPT := .local/decomp/battle/battle.ld
 LINKER_EXTRA := .local/decomp/battle/undefined_syms_auto.txt .local/decomp/battle/undefined_funcs_auto.txt decomp/targets/overlays/battle.resident.ld decomp/targets/overlays/battle.data.ld
+# battle_sprite_vm.c reads the resident's command lengths of sprite VM
+# commands 80-ff (sprite_vm_command_lengths) by the opcode itself, from the
+# base sprite_vm_command_lengths_by_opcode, which battle.resident.ld gives as
+# a view 0x80 bytes before the table; tools/cross_image.py accepts a view
+# before its object only where this lists it.
+BASE_VIEWS := sprite_vm_command_lengths_by_opcode
 SOURCE_DIRS := decomp/src/battle
 # battle.data.ld names parts of C objects, each from its object's linked
 # address: members of the commons that the units address by names and views

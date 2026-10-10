@@ -39,7 +39,6 @@ battle_enemy_name_table = 0x800C3DDC;
 battle_enemy_set_file = 0x800C3DEC;
 battle_direction_arrows = 0x800C3E24;
 battle_stage_model_parts = 0x800C3E38;
-battle_enemy_name_indices_by_slot = 0x800C3E3D;
 battle_stage_model_table = 0x800C3E48;
 battle_digit_text_images = 0x800C3E5C;
 battle_stage_sky = 0x800C3EA0;

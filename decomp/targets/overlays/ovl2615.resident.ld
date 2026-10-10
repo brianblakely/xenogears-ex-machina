@@ -15,3 +15,8 @@ battle_slot_flags = 0x800D32A0; /* the per-slot flags (SlotFlags, 8 bytes each) 
 battle_slot_states = battle_slot_flags + 0x1; /* 800D32A1: [0].unk1 */
 battle_stage_image_anim = 0x800D3600; /* the stage's image animation (battle/effect.h ImageAnim) */
 battle_stage_image_anim_active = battle_stage_image_anim + 0x1A; /* 800D361A: its active */
+/* A base three bytes before battle's enemy name indices (u8[8], one per
+ * enemy), from which the setup stores them by slot, 3-10 (ovl2615.mk
+ * BASE_VIEWS). */
+battle_enemy_name_indices = 0x800C3E40; /* enemy name per enemy slot (3-10) */
+battle_enemy_name_indices_by_slot = battle_enemy_name_indices - 0x3; /* 800C3E3D */

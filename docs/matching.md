@@ -204,24 +204,29 @@ image or uninitialized data is an address copied from the original. A name that 
 address (splat's `D_`, `func_` and `jtbl_` names; the links hold none now) must hold
 that address, and each must agree with the rebuilt targets by their own symbols: every
 other target that defines the name defines it there, each that exports it wherever the
-copied value points and one holding the value also by a local symbol (2325 of 2384 at
-present); where none does, a fragment may give it as a view, another name plus a
-constant that agrees by name, and the value must lie in the object holding that name in
-its definer (50: the members of the game data, the field view and work block, the
-resident's arena option bytes and battle's objects that debug595, the world map, the
-menu, ovl2596, ovl2615 and battle address by names of their own, such as
-`game_data_party_state = game_data + 0x1D30`); otherwise a target holding the value has
-a symbol there (2: each resident's mode_overlay_area, which link.ld assigns where each
-mode overlay's first unit defines its number; the movie library's entries and variable
-that field and movie use, the battle functions ovl3087 passes and the resident's VSync
-callback and sequence buffer that the world map uses all take their definers' names,
-which the importing symbol files give); otherwise the address must lie inside an input
-section that target's link places (7: bases that battle, ovl2596 and ovl2615 index
-another image's object from, all from splat's lists). For this last group the check ties
-a value only to the address its name gives, not to a particular object or, where
-targets overlap, to a particular target. Values outside every target (the resident's
-sizes, a constant) are not checked, nor is an address the C spells as a number, which
-neither this check nor the relocation scan (a target's own range only) sees.
+copied value points and one holding the value also by a local symbol (2327 of 2386 at
+present; the movie library's entries and variable that field and movie use, the battle
+functions ovl3087 passes and the resident's VSync callback and sequence buffer that the
+world map uses all take their definers' names, which the importing symbol files give).
+Where none does, a fragment gives it as a view, another name plus a constant that agrees
+by name, and the value must lie in the object holding that name in its definer (50: the
+members of the game data, the field view and work block, the resident's arena option
+bytes and battle's objects that debug595, the world map, the menu, ovl2596, ovl2615 and
+battle address by names of their own, such as
+`game_data_party_state = game_data + 0x1D30`), or before that object where the
+importer's `BASE_VIEWS` lists the view with the reason in its configuration: a base its
+code indexes the object from (7: battle's sprite_vm_command_lengths_by_opcode, 0x80 bytes
+before the resident's command lengths of sprite VM commands 80-ff, ovl2596's five bases
+of battle's decimal digits and ovl2615's battle_enemy_name_indices_by_slot, three bytes
+before the enemies' name indices); each name `BASE_VIEWS` lists must be such a base.
+Otherwise a target holding the value has a symbol there (2: each resident's
+mode_overlay_area, which link.ld assigns where each mode overlay's first unit defines
+its number), which ties it only to the address its name gives, not to a particular
+object or, where targets overlap, to a particular target. Any other copied address
+fails, also one inside an object that no name ties it to: a fragment gives it as a view
+of that object. Values outside every target (the resident's sizes, a constant) are not
+checked, nor is an address the C spells as a number, which neither this check nor the
+relocation scan (a target's own range only) sees.
 `python3 tools/cross_image.py decomp/targets/*/*.mk --numbers` lists those (each other
 target's address a link holds without a relocation, outside asset and included bytes and
 the mode table); in the 26 links they are battle's three reads of the boot word
