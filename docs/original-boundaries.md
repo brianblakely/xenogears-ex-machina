@@ -191,7 +191,8 @@ Outside the libraries the game itself uses:
   (menu_save_choose_digit), so digits 10-14 give ':' ';' '<' '=' '>', which a host
   filesystem may reject. menu_card_list_directory lists a card with B(42h)/B(43h);
   menu_card_read_first_block reads each file's first 0x200 bytes. menu_load_resources also stores
-  "BASLUS-01160" in MenuCard.otherPrefix, which no recovered code reads.
+  "BASLUS-01160" in MenuCard.other_prefix (menu/card.h), which no recovered code
+  reads.
 - Save (menu_save_command_run): erase "bu0X:__tmp_file" (B(45h)), create it with
   `open(name, blocks << 16 | 0x200)`, reopen it for writing (mode 2), write the
   0x100-byte header (magic "SC", icon flag 0x11, one block, a 0x5C-byte
@@ -278,8 +279,10 @@ callback save and restore (Memory card and saves) and the dormant CdMix.
   (cd_get_pending_read_count() >= 3)` at eleven sites; `>= 2` in
   worldmap_suspend_open_map), so a port must report the count, not only busy. A
   finished or stopped read seeks to the file given as its `after` argument
-  (cd_read_mode, cd_seek_or_pause) or, for 0, pauses; every shipped caller passes
-  0 (only the movie overlay's development tools pass 1).
+  (cd_read_mode, cd_seek_or_pause) or, for 0, pauses. Every caller passes 0 but
+  two: the movie overlay's development tools pass 1, and mdec's movie_restart
+  passes its XA channel (movie_xa_channel: 1, or the movie's channel) when it
+  streams from the PC file server, which no retail run does (below).
 
   | Entry | Reads | Sector callbacks |
   | --- | --- | --- |
@@ -721,7 +724,7 @@ Development only:
 | fatal error mode_show_fatal_error | dispatcher with a nonzero error (the heap's 0x82 and 0x83) | — | — | on retail (mode_disc_mode = -1) it clears VRAM red and loops forever; the 384x240 report only runs on the PC host |
 | soft reset boot_check_soft_reset -> boot_restart | held 0x90C, checked at 18 call sites in 14 files; field extended event e2 (field_event_soft_reset), unused by shipped scripts | resident .data/.sdata | with interrupts enabled (SwExitCriticalSection) stops the graphics (ResetGraph), the CD (cd_shutdown_disc_access, CdFlush), sound (sound_stop_driver), SPU, the vblank hook, the DrawSync and VSync callbacks and the pads, disables interrupts (SwEnterCriticalSection), then calls the entry, which clears BSS | reset that keeps modified initialised data; the sound mode returns to Stereo |
 | arena coroutine arena_task_resume (resume) / arena_task_yield (yield) (handwritten, menu) | task made by arena_task_create on a 0x1000-byte stack at 0x801FE000 with gp from GetGp, resumed once per frame (arena_mode_entry.c arena_mode_main); yields at 7 sites (arena_camera_and_scenes.c 1, arena_stage_views_and_hud.c 6); arena_task_caller_stack/arena_current_task hold the suspended caller; arena_task_save_scheduler/arena_task_restore_scheduler (nested schedulers) are unreferenced | the task's registers and stack | — | a fiber nested in the game fiber (Asyncify, JSPI or stack switching in WebAssembly); snapshots only outside the task or at its yields |
-| environment-map patcher model_set_envmap_mapping (handwritten) | rewrites the six `srl` shift fields and six `addiu` offsets of model_draw_ft3_envmap at fixed offsets from model_envmap_patch_base; image default (6, 6, 0x40, 0x40); callers arena arena_camera_and_scenes.c arena_winner_open_screen (5, 4), arena_winner_close_screen and arena_stage_views_and_hud.c arena_mode_task (1, 1), battle battle_reset_scene and ovl2143 gear_model_init (2, 2); no I-cache flush | persists across modes in resident code | — | four resident globals read by the C renderer, kept in snapshots |
+| environment-map patcher model_set_envmap_mapping (handwritten) | rewrites the six `srl` shift fields and six `addiu` offsets of model_draw_ft3_envmap at fixed offsets from model_envmap_patch_base; image default (6, 6, 0x40, 0x40); callers arena arena_camera_and_scenes.c arena_winner_open_screen (5, 4), arena_winner_close_screen and arena_stage_views_and_hud.c arena_mode_task (1, 1), battle battle_scene.c battle_create_object and ovl2143 gear_model_scene.c gear_model_create_actor (2, 2); no I-cache flush | persists across modes in resident code | — | four resident globals read by the C renderer, kept in snapshots |
 
 Mode table mode_table (rows {entry, BSS start, BSS end, loaded}; overlay files
 mode_overlay_files in directory (0, 1)):
