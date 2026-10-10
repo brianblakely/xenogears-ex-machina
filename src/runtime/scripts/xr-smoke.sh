@@ -84,7 +84,8 @@ if [[ ${XEM_XR_COMPOSITED:-0} == 1 ]]; then
     services+=($!)
     wait_for_socket "$rundir/wl-xem" "$out/weston.log"
     start_monado "$out/monado-composited.log" WAYLAND_DISPLAY=wl-xem XRT_COMPOSITOR_FORCE_WAYLAND=1
-    "$demo" --exit-after-frames 150 >"$out/composited.log" 2>"$out/composited.err" &
+    # Long enough (15 s at 60 Hz) that the screenshot lands mid-session.
+    "$demo" --exit-after-frames 900 >"$out/composited.log" 2>"$out/composited.err" &
     run=$!
     sleep 6
     mkdir -p "$out/composited"
@@ -93,11 +94,13 @@ if [[ ${XEM_XR_COMPOSITED:-0} == 1 ]]; then
     stop_services
 fi
 
-python3 -I - "$out" "$frames" <<'EOF'
+python3 -I - "$out" "$frames" "$runtime/../../tools" <<'EOF'
 import sys
 from pathlib import Path
 
 out, expected = Path(sys.argv[1]), int(sys.argv[2])
+sys.path.insert(0, sys.argv[3])
+from compare_frames import read_png  # noqa: E402
 failures = []
 
 
@@ -122,7 +125,7 @@ runs = ["running", "paused"] + (["composited"] if (out / "composited.log").exist
 for name in runs:
     frames, states = parse(name)
     label = f"{name}:"
-    count = expected if name != "composited" else 150
+    count = expected if name != "composited" else 900
     check(len(frames) == count, f"{label} {len(frames)} frames, expected {count}")
     wanted = ["READY", "SYNCHRONIZED", "VISIBLE", "FOCUSED", "STOPPING", "EXITING"]
     seen = iter(states)
@@ -158,7 +161,17 @@ for name in runs:
     else:
         check(all(b > a for a, b in zip(sims, sims[1:])), f"{label} simulation time not advancing")
     if name == "composited":
-        check(any((out / name).glob("*.png")), f"{label} no weston screenshot")
+        shots = sorted((out / name).glob("*.png"))
+        check(bool(shots), f"{label} no weston screenshot")
+        if shots:
+            # The scene's sky must show in Monado's window: a session that
+            # ended (or never presented) leaves the window black.
+            width, height, rows = read_png(shots[-1])
+            sky = sum(
+                1 for row in rows for i in range(0, len(row), 3)
+                if row[i + 2] > row[i] + 30 and row[i + 2] > row[i + 1] + 20
+            )
+            check(sky > width * height // 100, f"{label} the composition shows no scene ({sky} sky pixels)")
     for image in ["left.png", "right.png", "panel.png"] if name != "composited" else []:
         check((out / name / image).is_file(), f"{label} no {image}")
     periods = sorted({int(f["period_ns"]) for f in frames})

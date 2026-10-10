@@ -548,7 +548,8 @@ strictly increasing predicted display times; two distinct eye poses; projection
 and quad layers on every rendered frame; acquire, wait, submit, release order;
 changing head poses; and, with `--paused`, a constant simulation time.
 `XEM_XR_COMPOSITED=1` adds a run under Monado's real compositor presenting to a
-headless weston and saves a weston screenshot of the runtime's composition.
+headless weston and screenshots it mid-session; the composition must show the
+scene (a session that ended or never presented leaves the window black).
 
 Monado cannot show what only a headset can: the Horizon OS runtime and its
 Vulkan driver, Quest frame pacing and reprojection, real head and controller
@@ -628,3 +629,21 @@ In `nix develop path:./nix/runtime#android`:
 - `cargo ndk -t arm64-v8a -P 29 build -p xem-ui -p xem-render` builds the
   shared crates alone (Slint compiles its FemtoVG module out on Android, so
   `xem-ui` takes the renderer from `i-slint-renderer-femtovg` there)
+
+## Emulators as hardware
+
+Phase 2's device items are verified on emulators, which the project counts as
+the hardware: the Android emulator (x86_64 AVD, API 34) for Android
+startup, asset access, lifecycle and the game (`src/runtime/scripts/android-smoke.sh`),
+Monado's simulated headset for OpenXR stereo, the Slint panel quad, swapchain
+and device ownership, frame scheduling and paused head tracking
+(`XEM_XR_COMPOSITED=1 src/runtime/scripts/xr-smoke.sh`), and IWER's Quest 3 in
+Chromium for WebXR (`npm run test:xr`). What no emulator here exercises, and a
+headset would be the first to show: the arm64-v8a build running (it is only
+compiled and linked); Horizon OS's OpenXR runtime with Meta's loader in the APK,
+its Vulkan driver, reprojection, hand tracking and eye gaze; Quest Browser's
+WebXR compositor and whether it offers WebGPU XR layers (`XRGPUBinding`);
+whether the 2 GiB read-write reservation of game memory fits Quest memory
+limits; audible AAudio output; Bluetooth gamepad mapping. The game's sound
+level (about 1.3x the reference emulator's recordings in every sound mode)
+needs a console recording to settle.
