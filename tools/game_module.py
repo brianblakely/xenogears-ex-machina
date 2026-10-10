@@ -146,10 +146,9 @@ def elf_symbols(path):
             text = data[start:data.index(b"\0", start)].decode()
             bind, kind = info >> 4, info & 15
             if kind == 4:
-                # Repository-relative, also when the matched links were built in
-                # another checkout (a worktree sharing the main checkout's .local).
-                at = text.find("/decomp/src/")
-                unit = text[at + 1:] if at >= 0 else os.path.relpath(text, ROOT) if text.startswith("/") else text
+                # The source path as the repository names it, whichever checkout
+                # built the ELF.
+                unit = text[text.index("decomp/src/"):] if "decomp/src/" in text else text
                 continue
             if not text or kind == 3 or shndx == 0:
                 continue

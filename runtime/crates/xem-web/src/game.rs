@@ -51,6 +51,7 @@ struct Link {
     names: Vec<String>,
     memory: WebMemory,
     run: Function,
+    run_task: Function,
     call: Function,
     interrupt: Function,
     unwind_area: Function,
@@ -114,6 +115,7 @@ impl WebModule {
             names,
             memory: memory.clone(),
             run: function("xem_run")?,
+            run_task: function("xem_task_run")?,
             call: function("xem_call")?,
             interrupt: function("xem_interrupt")?,
             unwind_area: function("xem_unwind_area")?,
@@ -189,6 +191,10 @@ impl GameModule for WebModule {
         self.link.run.call2(&JsValue::NULL, &kind.into(), &arg.into()).map(drop).map_err(Self::trap)
     }
 
+    fn run_task(&mut self) -> Result<(), Trap> {
+        self.link.run_task.call0(&JsValue::NULL).map(drop).map_err(Self::trap)
+    }
+
     fn call(&mut self, address: u32) -> Result<(), Trap> {
         self.link.call.call1(&JsValue::NULL, &address.into()).map(drop).map_err(Self::trap)
     }
@@ -205,8 +211,12 @@ impl GameModule for WebModule {
         let _ = self.link.stop_unwind.call0(&JsValue::NULL);
     }
 
-    fn start_rewind(&mut self) {
-        let _ = self.link.start_rewind.call1(&JsValue::NULL, &self.link.area.get().into());
+    fn unwind_area(&mut self) -> u32 {
+        self.link.area.get()
+    }
+
+    fn start_rewind(&mut self, area: u32) {
+        let _ = self.link.start_rewind.call1(&JsValue::NULL, &area.into());
     }
 
     fn stack_pointer(&mut self) -> u32 {

@@ -24,6 +24,8 @@
 
   (func (export "xem_call") (param $address i32))
 
+  (func (export "xem_task_run") (unreachable))
+
   (func (export "xem_interrupt") (param $irq i32) (param $detail i32))
 
   (func (export "xem_run") (param $kind i32) (param $arg i32)

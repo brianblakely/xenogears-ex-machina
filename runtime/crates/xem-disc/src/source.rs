@@ -208,15 +208,30 @@ impl<R: ReadAt> SectorSource for BinSource<R> {
 /// 1700 sectors.
 pub const DEFAULT_CACHE_BYTES: usize = 4 << 20;
 
+/// Whether `reader` holds a CHD (by its signature).
+fn is_chd(reader: &mut impl ReadAt) -> Result<bool> {
+    let mut magic = [0u8; 8];
+    if reader.len() >= 8 {
+        reader.read_at(0, &mut magic)?;
+    }
+    Ok(&magic == crate::chd::CHD_MAGIC)
+}
+
+/// Open an image the host already holds open without a usable name (an
+/// Android document's file descriptor, say): a CHD by its signature, otherwise
+/// a raw MODE2/2352 track.
+pub fn open_reader<R: ReadAt + 'static>(mut reader: R) -> Result<Box<dyn SectorSource>> {
+    if is_chd(&mut reader)? {
+        return Ok(Box::new(ChdSource::open(reader, DEFAULT_CACHE_BYTES)?));
+    }
+    Ok(Box::new(BinSource::whole(reader)?))
+}
+
 /// Open a native image file: a CHD (by its signature), a `.cue` (its first
 /// track's `.bin`, relative to the sheet) or a raw MODE2/2352 track.
 pub fn open_path(path: &Path) -> Result<Box<dyn SectorSource>> {
     let mut file = FileReadAt::open(path)?;
-    let mut magic = [0u8; 8];
-    if file.len() >= 8 {
-        file.read_at(0, &mut magic)?;
-    }
-    if &magic == crate::chd::CHD_MAGIC {
+    if is_chd(&mut file)? {
         return Ok(Box::new(ChdSource::open(file, DEFAULT_CACHE_BYTES)?));
     }
     let is_cue = path
@@ -281,6 +296,17 @@ mod tests {
         let mut ragged = bytes;
         ragged.push(0);
         assert!(BinSource::whole(ragged).is_err());
+    }
+
+    #[test]
+    fn open_reader_takes_a_raw_track() {
+        let bytes: Vec<u8> = (0..5).flat_map(data_sector).collect();
+        let mut src = open_reader(bytes).unwrap();
+        assert_eq!(src.sector_count(), 5);
+        let mut one = [0u8; SECTOR_SIZE];
+        src.read_sector(4, &mut one).unwrap();
+        assert_eq!(Sector(&one).header().lba(), Some(4));
+        assert!(open_reader(vec![0u8; SECTOR_SIZE + 1]).is_err());
     }
 
     #[test]

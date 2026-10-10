@@ -7,7 +7,7 @@
 //!   and subheader kept, Form 1 and Form 2 alike, over a CHD
 //!   ([`ChdSource`]), a raw track or `.bin`/`.cue` ([`BinSource`],
 //!   [`parse_cue`]) or memory ([`MemorySource`]). [`open_path`] opens a native
-//!   file by its kind.
+//!   file by its kind, [`open_reader`] an already open one (CHD or raw track).
 //! - [`ReadAt`]: the byte access under every source. Natively a [`FileReadAt`];
 //!   in a browser a [`PrefetchedFile`].
 //! - [`ByteLru`]: the byte-budgeted cache of decoded CHD hunks and fetched chunks.
@@ -51,6 +51,7 @@ pub use read_at::{FileReadAt, PrefetchedFile, ReadAt};
 pub use sector::{Form, SECTOR_SIZE, Sector};
 pub use source::{
     BinSource, DEFAULT_CACHE_BYTES, Error, MemorySource, Result, SectorSource, open_path,
+    open_reader,
 };
 
 use sha2::{Digest, Sha256};

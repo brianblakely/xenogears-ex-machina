@@ -30,6 +30,7 @@ wasm-bindgen-futures = { version = "=0.4.77" }
 js-sys = { version = "=0.3.104" }
 web-sys = { version = "=0.3.104" }
 raw-window-handle = { version = "0.6.2" }
+jni-sys = { version = "=0.4.1" }
 cc = { version = "1.2" }
 bytemuck = { version = "1", features = ["derive"] }
 glam = { version = "0.30" }
