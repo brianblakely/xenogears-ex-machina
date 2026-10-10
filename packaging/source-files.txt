@@ -336,7 +336,7 @@ decomp/src/ovl2615/scene.h
 decomp/src/ovl2615/stage.c
 decomp/src/ovl2615/stage.h
 decomp/src/ovl2615/transitions.h
-decomp/src/ovl3087/ovl3087.c
+decomp/src/ovl3087/battle_event_script_vm.c
 decomp/src/ovl3087/ovl3087.h
 decomp/src/ovl3087/script_actor.c
 decomp/src/ovl3087/script_actor.h

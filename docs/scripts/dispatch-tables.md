@@ -104,7 +104,7 @@ and table, and how each table's index is chosen, is listed in
   handlers) without a bound check. The word is the game data's +0x2320.
 - Data: field `56` (`change_map`, `field_event_change_map`) stores operand 7 there as the
   field leaves for the world map. Battle event opcode 26 (ovl3087
-  `func_801E7770`) stores operand d with scene a; the world map runs after the
+  `battle_event_script_set_saved_map`) stores operand d with scene a; the world map runs after the
   battle only when the scene & 0x7ff is 0x400 or more (ovl2596 `func_801E252C`),
   otherwise d is a field's entry. The world map itself stores 1 for a new world
   state and keeps the word across its own battles (bit 0x8000 marks the return);

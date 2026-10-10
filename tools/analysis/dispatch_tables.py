@@ -817,7 +817,7 @@ def primitive_census(disc: Disc) -> PrimitiveCensus:
 # (bit 0x8000 marks the return); its exits store a field's entry there. Field
 # 56 (change_map, field_event_change_map: operand 7) sets it as the field leaves for
 # the world map (exit kind 1, mode 3). Battle event opcode 26 (ovl3087
-# func_801E7770) sets the scene (a) and the word (d); after the battle the
+# battle_event_script_set_saved_map) sets the scene (a) and the word (d); after the battle the
 # world map runs only when the scene & 0x7ff is 0x400 or more (ovl2596
 # func_801E252C), otherwise d is a field's entry.
 

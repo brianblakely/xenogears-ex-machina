@@ -98,14 +98,17 @@ class SourceTests(unittest.TestCase):
     """The table follows 801e879c's cases and its handlers' returns."""
 
     def test_cases_call_the_table_handlers_and_their_lengths(self):
-        text = (ROOT / "decomp/src/ovl3087/ovl3087.c").read_text()
-        body = text[text.index("void func_801E879C(void) {") :]
+        text = (ROOT / "decomp/src/ovl3087/battle_event_script_vm.c").read_text()
+        body = text[text.index("void battle_event_script_run(void) {") :]
         body = body[: body.index("\n}\n")]
-        cases = re.findall(r"case 0x([0-9A-F]{2}):\s*\n\s*length = (func_[0-9A-F]{8})\(", body)
+        cases = re.findall(r"case 0x([0-9A-F]{2}):\s*\n\s*length = (\w+)\(", body)
         self.assertEqual(sorted(int(code, 16) for code, _ in cases), sorted(OPCODES))
         for code, function in cases:
             spec = OPCODES[int(code, 16)]
-            self.assertEqual(function.lower(), "func_" + spec.handler)
+            # Each handler is named by its mnemonic; its comment opens with its address.
+            self.assertEqual(function, f"battle_event_script_{spec.name}")
+            found = re.search(rf"\n/\* ([0-9A-F]{{8}})\b(?:[^*]|\*(?!/))*\*/\ns32 {function}\(", text)
+            self.assertEqual(found.group(1).lower(), spec.handler)
             handler = re.search(rf"\ns32 {function}\([^)]*\) \{{.*?\n\}}", text, re.S).group(0)
             lengths = re.findall(
                 r"return (\d+);|length = (\d+);|\) \* (\d+);|\? (\d+) : 0;", handler

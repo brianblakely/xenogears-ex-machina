@@ -24,7 +24,7 @@ from:
 A field script names formation n of its map's set for a battle (events 71 and
 fe 84, operand 1, an immediate when bit 15 is set: field_event_request_battle,
 field_event_request_battle_field). A battle event script's opcode 24 makes formation n of the same
-set the next battle (ovl3087 func_801E7700, taken by 80070f40).
+set the next battle (ovl3087 battle_event_script_next_battle, taken by 80070f40).
 
 `--sweep` decodes every set on both discs, prints aggregate counts and
 cross-checks the (battle, enemy id) pairs the formations place against the
@@ -75,7 +75,7 @@ FIELDS = (
 FLAGS = {
     0x08: "noresults",  # ovl2596 func_801E2280, battle battle_main
     0x10: "party10",  # ovl2615 func_801E5384 (battle_uses_fixed_party), battle battle_upload_party_portraits, ovl2596
-    0x20: "event",  # ovl2615 func_801E5014 (battle_uses_event_script), ovl3087 func_801E5160
+    0x20: "event",  # ovl2615 func_801E5014 (battle_uses_event_script), ovl3087 battle_event_script_load
     0x40: "cmd7",  # ovl2615 func_801E5014
     0x80: "cmd8",  # ovl2615 func_801E5014
 }
@@ -97,11 +97,11 @@ DEBUG_FIRST = 4  # Event1-3 are files 4-6, FileNo n file 7 + n
 STAGE_DIRECTORY = (12, 3)  # mode_load_battle_stage: 80028470(12, 3)
 STAGE_COUNT = 5  # mode_load_battle_stage: scene < the file count of entry 5 / 2
 SCRIPT_DIRECTORY = (0x20, 0)  # ovl3087's
-SCRIPT_ARCHIVE = 2  # ovl3087 func_801E5160
+SCRIPT_ARCHIVE = 2  # ovl3087 battle_event_script_load
 REQUESTS = ("71", "fe 84")  # field events that set formation_selected_index from operand 1
 ARMING = "f7"  # field_event_draw_random_picks: the field draw's period and count from operands 1 and 3
 CONTROL = ("0c", "a7")  # player control (field_event_request_player_control), which runs the draw field_encounter_count_down
-CHAIN = 0x24  # battle event opcode next_battle (func_801E7700)
+CHAIN = 0x24  # battle event opcode next_battle (battle_event_script_next_battle)
 
 
 class FormationError(ValueError):

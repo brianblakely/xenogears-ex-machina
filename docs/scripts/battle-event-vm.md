@@ -2,10 +2,10 @@
 
 A battle's event script runs when its formation has flag 0x20, which sets
 800C3D48 ([formations.md](formations.md)). The battle overlay loads ovl3087
-(80070E2C) and calls `func_801E879C` through 80070EB0, at the battle's start and
+(80070E2C) and calls `battle_event_script_run` through 80070EB0, at the battle's start and
 between turns.
 
-- Interpreter: ovl3087 `func_801E879C` (`decomp/src/ovl3087/ovl3087.c`,
+- Interpreter: ovl3087 `battle_event_script_run` (`decomp/src/ovl3087/battle_event_script_vm.c`,
   matching): `switch (code[pc])`, 76 cases 00-4B. Each case calls one handler
   that returns the instruction length, or 0 while it waits. Operands come from
   801E57F8, from byte 1 on. In the masked form, a bit of byte 5 marks an

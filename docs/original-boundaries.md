@@ -615,7 +615,7 @@ callback never leaves these:
   choice for a new effect is sound_find_effect_channels.
   - Field event fe 64 (field_event_wait_sound_channels) yields while any effect channel in the
     mask operand 1 << 8 is active (sound_get_active_effect_mask(-1)), so its script stalls.
-  - Battle battle_play_sound_to_end, reached through ovl3087 opcode 48 (func_801E8750),
+  - Battle battle_play_sound_to_end, reached through ovl3087 opcode 48 (battle_event_script_battle_sound),
     runs battle frames until sound_get_active_effect_mask(sound) returns 0. The event VM
     stalls while the battle keeps running.
 - **SPU transfers.** Flag 0x10 stays set until the transfer queue is empty.
@@ -625,7 +625,7 @@ callback never leaves these:
     boot_main (main.c:123), the driver's error beep sound_report_error
     (sound.c:3960), field field_movie_load_sound_bank, field_sound_load_effect_bank, field_music_gather_wave_chunk,
     field_music_advance_track_load, field_music_open_shared_wave_bank and field_event_sound_bank (field_event.c:182, 216,
-    245, 306, 379, 1960), and ovl3087 func_801E5160 (ovl3087.c:160).
+    245, 306, 379, 1960), and ovl3087 battle_event_script_load (battle_event_script_vm.c:160).
   - `while (sound_sync_transfer(0) != 0)` runs battle frames in battle
     battle_play_sound_to_end, battle_close and battle_menu_open_turn (battle_flow.c:241, 305,
     439) and battle_load_wave_bank_5 (battle_frame.c:1207). It spins in battle

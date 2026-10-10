@@ -61,7 +61,7 @@ struct ModelPart *battle_stage_model_parts; /* 800C3E38 */
 s32 battle_unreferenced_word_02;   /* 800C3E3C: unreferenced */
 u8 battle_enemy_name_indices[8]; /* 800C3E40: enemy name per enemy slot (3-10) */
 struct ModelTable *battle_stage_model_table; /* 800C3E48: the stage's models (hierarchy battle_stage_model_parts) */
-u8 battle_frame_mode;                /* 800C3E4C: battle end state */
+u8 battle_frame_mode;                /* 800C3E4C: 2 event script, 1 turns, 0 result screens */
 u8 battle_target_slot;                /* 800C3E50: target slot */
 s32 battle_music_seq; /* 800C3E54 */
 s32 battle_unreferenced_word_03; /* 800C3E58: unreferenced */

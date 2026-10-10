@@ -33,7 +33,7 @@ typedef struct BattleFormation {
                         * and scene data 7 + 2s (resident mode_load_current_battle_stage,
                         * mode_load_battle_stage; ovl2615 func_801E7210 sets them up) */
     u8 scriptSet;      /* 0x03: the event script set, read under flag 0x20 (ovl3087
-                        * func_801E5160) */
+                        * battle_event_script_load) */
     u8 partyGroups[3]; /* 0x04: per member, & 0x7f: its formation group unless it
                         * fights in its gear, as all do under flag 0x10 (ovl2615
                         * func_801E4160) */

@@ -322,14 +322,14 @@ void battle_start_event_script_module(void) {
         battle_heap_reserve_for_event_script = battle_heap_alloc(block - 0x801E5000, 1);
         cd_read_file(1, (void *)0x801E5000, 0, 0x80);
         battle_cd_wait_for_reads();
-        func_801E5160();
+        battle_event_script_load();
     }
 }
 
 /* 80070EB0: Forward a byte argument to the 801e5000 module when it is loaded. */
 void battle_run_event_script(s32 value) {
     if (battle_uses_event_script != 0) {
-        func_801E879C(value & 0xFF);
+        battle_event_script_run(value & 0xFF);
     }
 }
 
@@ -339,7 +339,7 @@ void battle_release_script_and_fade_music(void) {
     s32 handled = 0;
 
     if (battle_uses_event_script != 0) {
-        handled = func_801E563C();
+        handled = battle_event_script_release();
     }
     if ((handled & 0xFF) == 0 && battle_area_outcome == 0x81) {
         sound_set_seq_fade((SoundSeq *)battle_music_seq, 0, 0xF0);

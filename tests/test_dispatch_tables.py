@@ -166,7 +166,7 @@ class SourceTests(unittest.TestCase):
         self.assertIn("step = D_8009A058[D_8009C5A8].enter;", entry)
         leave = function_body(source("field/field_event.c"), "field_event_change_map")
         self.assertIn("game_current_data->entry[2] = field_event_read_selected_operand_10(7, EVENT_OPERAND_BYTE(9));", leave)
-        self.assertIn("game_data.entry[2] = battle_state_of_event_script->operands[3];", source("ovl3087/ovl3087.c"))
+        self.assertIn("game_data.entry[2] = battle_state_of_event_script->operands[3];", source("ovl3087/battle_event_script_vm.c"))
         results = function_body(source("ovl2596/ovl2596.c"), "func_801E252C")
         self.assertIn(
             "} else if ((game_data.map & 0x7FF) >= 0x400) {\n            mode_load_overlay_block(3);",

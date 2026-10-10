@@ -43,13 +43,13 @@ typedef struct {
 } ModelArchive;
 
 /* This overlay's data. */
-extern u8 D_801E9B5C[];   /* portrait file per actor (normal, mirrored) */
-extern u16 D_801E9C10[5]; /* default message window layout */
-extern s32 D_801E9C1C;    /* the cursor glyph's frame, cycled 4..0 */
-extern u8 D_801E9C20[16]; /* actor action started by the script */
-extern s32 D_801E9C30;    /* text origin */
-extern s32 D_801E9C34;
-extern ModelArchive *D_801E9C38;
+extern u8 battle_event_script_portrait_files[];   /* portrait file per actor (normal, mirrored) */
+extern u16 battle_event_script_default_window_layout[5]; /* default message window layout */
+extern s32 battle_event_script_cursor_frame;    /* the cursor glyph's frame, cycled 4..0 */
+extern u8 battle_event_script_actions_started[16]; /* actor action started by the script */
+extern s32 battle_event_script_text_origin_x;    /* text origin */
+extern s32 battle_event_script_text_origin_y;
+extern ModelArchive *battle_event_script_model_archive;
 
 /* Resident data no shared header declares: the movie's last frame, which
  * the script sets for the movie it starts. */
@@ -85,15 +85,15 @@ void battle_play_sound_to_end(u16 index, u16 variant);
 void battle_highlight_slots(s32 arg);
 
 /* This module. */
-u16 func_801E5768(ScriptThread *thread);
-u16 func_801E57C4(ScriptThread *thread);
-void func_801E57F8(u8 *insn, u8 count, u8 immediateMask, u8 signedForm);
-u8 func_801E58EC(s16 a, s16 b, u8 op);
-s32 func_801E5DCC(s32 thread, u8 *insn);
-void func_801E5B00(); /* K&R (s16 x, s16 y); callers pass ints unconverted */
-void func_801E6750(u8 actor, s32 flags, s32 x, s32 y, s32 width);
-u8 func_801E6CE8(u16 message, u8 actor, u16 flags);
-void func_801E7A5C(s32 thread, u8 *insn);
-s32 func_801E84A4(s32 thread, u8 *insn);
+u16 battle_event_script_select_top_level(ScriptThread *thread);
+u16 battle_event_script_find_free_level(ScriptThread *thread);
+void battle_event_script_decode_operands(u8 *insn, u8 count, u8 immediateMask, u8 signedForm);
+u8 battle_event_script_compare(s16 a, s16 b, u8 op);
+s32 battle_event_script_request(s32 thread, u8 *insn);
+void battle_event_script_show_cursor_glyph(); /* K&R (s16 x, s16 y); callers pass ints unconverted */
+void battle_event_script_load_portrait(u8 actor, s32 flags, s32 x, s32 y, s32 width);
+u8 battle_event_script_show_message(u16 message, u8 actor, u16 flags);
+void battle_event_script_release_slot_model(s32 thread, u8 *insn);
+s32 battle_event_script_attack(s32 thread, u8 *insn);
 
 #endif

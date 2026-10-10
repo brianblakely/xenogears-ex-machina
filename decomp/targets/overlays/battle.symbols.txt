@@ -1328,3 +1328,6 @@ battle_requested_single_action = 0x800D39E4;
 battle_surface_wind_strength = 0x800D39E8;
 battle_camera_circled_sprite = 0x800D39EC;
 battle_message_table = 0x800D39F0;
+battle_event_script_load = 0x801E5160; // type:func
+battle_event_script_release = 0x801E563C; // type:func
+battle_event_script_run = 0x801E879C; // type:func

@@ -42,8 +42,8 @@ segments:
     start: 0x0
     vram: 0x801e5000
     subsegments:
-      - [0x0, .rodata, ovl3087]
-      - [0x160, c, ovl3087]
+      - [0x0, .rodata, battle_event_script_vm]
+      - [0x160, c, battle_event_script_vm]
       - [0x43e8, c, script_actor]
-      - [0x4b5c, .data, ovl3087]
+      - [0x4b5c, .data, battle_event_script_vm]
   - [0x4c3c]

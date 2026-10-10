@@ -85,7 +85,7 @@ void battle_run_event_script(s32 value); /* forward a byte to the module when it
 void battle_mark_event_thread_effect_done(u8 index);  /* set thread index's member state to done */
 
 /* The interpreter's entries (ovl3087). */
-void func_801E5160(void); /* load the script set and set up the threads */
-s32 func_801E563C(void);  /* release everything; whether it handled the music */
+void battle_event_script_load(void); /* load the script set and set up the threads */
+s32 battle_event_script_release(void);  /* release everything; whether it handled the music */
 
 #endif

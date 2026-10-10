@@ -18,7 +18,7 @@ Party members take battle slots 0-2 and enemies slots 3-10 (`BattleSlot`,
 | 0x00 | `battle` | n: enemy file (12, 1) 2n + 2 and enemy set file 2n + 3 (ovl2615 `func_801E5384`); [battle-ai.md](battle-ai.md) decodes the enemy file. |
 | 0x01 | `flags` | 0x08: no result screens (ovl2596 `func_801E2280` skips `func_801E1FB8`, whose spoils list adds the drops, `func_801E1690`) and no fade after them (battle `battle_main`). 0x10: ovl2615 `func_801E5384` sets `battle_uses_fixed_party`: the party is party slot 0's character and character 10 twice, members 1 and 2 with gear 17. Every member then fights in a gear (`func_801E4048`), so `partyGroups` is not read (`func_801E4160`); members 1 and 2 get fixed HP and stats (battle `battle_set_debug_party_stats`, from `func_801E4AC0`), character 11's portrait (battle `battle_upload_party_portraits`) and no place in the results (ovl2596 `func_801E2280`). 0x20: the battle event script runs (`func_801E5014` sets `battle_uses_event_script`; [battle-event-vm.md](battle-event-vm.md)). 0x40, 0x80: every member gets command 7, 8 (`func_801E5014`). No reader tests 0x01, 0x02 or 0x04. |
 | 0x02 | `stage` | s, the battle stage: resident `mode_load_current_battle_stage` passes it to `mode_load_battle_stage`, which loads the stage file (12, 3) 6 + 2s into `mode_battle_stage_file` and the scene data 7 + 2s, after its size word, into `mode_battle_scene_file` and `mode_battle_scene_data` (s must be below half the file count of entry 5). ovl2615 `func_801E7210` takes them as its `stage` and `scene`. The scene data holds each formation group's standing places (ovl2615 `BattleScene.group`, read by `func_801E4160`; battle's `Formation`) and the cameras (`battle_enter`). |
-| 0x03 | `scriptSet` | the battle event script set, read only under flag 0x20 (ovl3087 `func_801E5160`). |
+| 0x03 | `scriptSet` | the battle event script set, read only under flag 0x20 (ovl3087 `battle_event_script_load`). |
 | 0x04 | `partyGroups[3]` | per member, & 0x7f: its formation group, unless it fights in its gear, as every member does under flag 0x10 (then its slot number; ovl2615 `func_801E4160`). |
 | 0x07 | `unk7` | no reader. |
 | 0x08 | `enemyIds[8]` | per enemy, & 0x7f: its id in the enemy file (0x7f none); bit 7: it fights in a gear, slot byte 4 (`func_801E4160`). |
@@ -68,7 +68,7 @@ Party members take battle slots 0-2 and enemies slots 3-10 (`BattleSlot`,
 `formation_selected_index` names the formation. The field's draw and the world map's roll set it,
 and so do field events 71 and fe 84 from operand 1 (`field_event_request_battle`, `field_event_request_battle_field`:
 an immediate when bit 15 is set, else a variable) and the debug selector's SceneNo.
-Battle event opcode 24 (ovl3087 `func_801E7700`) sets `mode_pending_battle_formation` to its operand + 1.
+Battle event opcode 24 (ovl3087 `battle_event_script_next_battle`) sets `mode_pending_battle_formation` to its operand + 1.
 When that battle ends with outcome 1, 0x40 or 0x21, the resident battle mode
 (`mode_run_battle`) runs another battle (unless `battle_continue_to_movie_mode` is set), which takes that
 formation of the same set.

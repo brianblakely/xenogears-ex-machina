@@ -32,7 +32,7 @@ void func_801E9594(void);
 
 /* The event script interpreter's pass (ovl3087, 801E5000), which takes no
  * argument. */
-void func_801E879C(s32);
+void battle_event_script_run(s32);
 
 /* The battle modules at 0x801FC000, one loaded at a time: break a model into
  * pieces (ovl3384: the model bound at a model sprite's renderer +0x34, its

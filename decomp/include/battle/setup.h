@@ -13,7 +13,7 @@ extern u8 battle_resume_event_script_at_end;
 extern u8 battle_defeat_allowed_by_event_script;
 extern s32 battle_enemy_set_file;
 extern s32 battle_music_seq;     /* the battle music's sequence */
-extern u8 battle_frame_mode;      /* battle end state */
+extern u8 battle_frame_mode;      /* the HUD and frame tick: 2 event script, 1 turns, 0 results */
 extern u8 battle_area_outcome;      /* battle outcome (the battle area's outcome) */
 extern u8 battle_turn_hud_hidden;      /* keep the battle's resources at its end (the battle area's +0xa7a) */
 extern s32 battle_heap_mark_for_post_battle_module;     /* 801de000 module blocks */

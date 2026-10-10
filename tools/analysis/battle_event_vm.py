@@ -1,6 +1,6 @@
 """Battle event-script VM (ovl3087): opcode table, decoder and both-disc sweep.
 
-ovl3087 (decomp/src/ovl3087/ovl3087.c, matching) runs a battle's event
+ovl3087 (decomp/src/ovl3087/battle_event_script_vm.c, matching) runs a battle's event
 script when the formation sets 800c3d48. 801e879c dispatches code[pc] (u8)
 through a 76-case switch (00-4b) to one handler per opcode; each returns the
 instruction length, or 0 while it waits. Operands are little-endian: 801e57f8
@@ -143,8 +143,8 @@ OPCODES = {
     0x1B: _op(
         "speaker", "801e7314", 2, [("actor", 1, U8)], effect="the thread's speaker (f3-f5 party)"
     ),
-    0x1C: _op("end_state_2", "801e7358", 1, effect="battle end state (800c3e4c) = 2"),
-    0x1D: _op("end_state_1", "801e736c", 1, effect="battle end state (800c3e4c) = 1"),
+    0x1C: _op("enter_script_mode", "801e7358", 1, effect="battle frame mode (800c3e4c) = 2"),
+    0x1D: _op("enter_turn_mode", "801e736c", 1, effect="battle frame mode (800c3e4c) = 1"),
     0x1E: _op(
         "fade_white",
         "801e7380",
@@ -155,8 +155,8 @@ OPCODES = {
     0x1F: _op(
         "fade_black", "801e73d4", 3, _signed("frames"), effect="fade the screen to black (as 1e)"
     ),
-    0x20: _op("end_battle", "801e746c", 1, effect="800c3d44 = 1, halt the script"),
-    0x21: _op("set_800d2d50", "801e748c", 1, effect="800d2d50 = 1"),
+    0x20: _op("halt_until_battle_end", "801e746c", 1, effect="800c3d44 = 1, halt the script"),
+    0x21: _op("skip_result_screens", "801e748c", 1, effect="800d2d50 = 1"),
     0x22: _op(
         "last_pass", "801e74a0", 1, effect="this pass of 801e879c is its last (back to the battle)"
     ),
@@ -176,16 +176,16 @@ OPCODES = {
         effect="pending formation (8005947c) = formation + 1, battle kind (8005954c) = kind:"
         " the next battle's formation of the same set (resident 8001b6c4, battle 80070f40)",
     ),
-    0x25: _op("set_800c3d5c", "801e775c", 1, effect="800c3d5c = 1"),
+    0x25: _op("allow_defeat", "801e775c", 1, effect="800c3d5c = 1"),
     0x26: _op(
-        "set_8006f94e",
+        "set_saved_map",
         "801e7770",
         9,
         _signed("a", "b", "c", "d"),
         effect="8006f94e[0..3] = a..d, clear state word 8004f30c (8001ac94)",
     ),
     0x27: _op(
-        "set_8004fe44",
+        "request_movie",
         "801e77e4",
         9,
         _signed("a", "b", "c", "d"),
@@ -316,7 +316,7 @@ OPCODES = {
         _signed("sound", "volume", "resident"),
         effect="set a playing sound's volume (8003a2e4)",
     ),
-    0x42: _op("member_lists", "801e86d0", 1, effect="show member 0's number lists (8007ff14(0))"),
+    0x42: _op("show_gear_hud", "801e86d0", 1, effect="show member 0's number lists (8007ff14(0))"),
     0x43: _op("leave_member_menu", "801e86f4", 1, effect="leave member 0's menu (800800e8(0))"),
     0x44: _op("clear_objects_35", "801e8718", 1, effect="byte 0x35 = 0 of battle objects 0-10"),
     0x45: _op(
@@ -343,10 +343,10 @@ OPCODES = {
         _signed("index", "variant"),
         effect="play battle sound to its end (800b838c)",
     ),
-    0x49: _op("set_8005942c", "801e7424", 3, _signed("value")),
-    0x4A: _op("slot_state_4", "801e7660", 1, effect="slot 0 state 4, timer 6 (8009c0e0(0))"),
+    0x49: _op("set_return_fade", "801e7424", 3, _signed("value")),
+    0x4A: _op("set_slot0_attack_level4", "801e7660", 1, effect="slot 0 state 4, timer 6 (8009c0e0(0))"),
     0x4B: _op(
-        "actor_flag", "801e7684", 3, _signed("actor"), effect="set bit 0 of its record flags (0x36)"
+        "suppress_gear_hp_warning", "801e7684", 3, _signed("actor"), effect="set bit 0 of its record flags (0x36)"
     ),
 }
 

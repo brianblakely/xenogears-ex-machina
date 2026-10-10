@@ -43,7 +43,7 @@
 #include "ovl3087.h"
 
 /* Portrait file per actor, normal then mirrored (file 0x46 + n). */
-u8 D_801E9B5C[] = {
+u8 battle_event_script_portrait_files[] = { /* 801E9B5C */
     0,  0,  6,  6,  17, 17, 19, 20, 21, 21, 23, 23, 24, 24, 28, 28,
     27, 27, 17, 17, 25, 25, 34, 34, 35, 35, 36, 36, 37, 37, 79, 79,
     82, 82, 83, 83, 26, 26, 52, 52, 81, 81, 77, 77, 78, 78, 33, 33,
@@ -58,34 +58,34 @@ u8 D_801E9B5C[] = {
     89, 89, 90, 90,
 };
 /* Default message window layout. */
-u16 D_801E9C10[5] = {0x7FFF, 0x7FFF, 16, 8, 0x1F0};
-s32 D_801E9C1C = 4; /* the cursor glyph's frame, cycled 4..0 */
-u8 D_801E9C20[16] = {0};
-s32 D_801E9C30 = 0;
-s32 D_801E9C34 = 0;
-ModelArchive *D_801E9C38 = NULL;
+u16 battle_event_script_default_window_layout[5] = {0x7FFF, 0x7FFF, 16, 8, 0x1F0}; /* 801E9C10 */
+s32 battle_event_script_cursor_frame = 4; /* 801E9C1C: the cursor glyph's frame, cycled 4..0 */
+u8 battle_event_script_actions_started[16] = {0}; /* 801E9C20 */
+s32 battle_event_script_text_origin_x = 0; /* 801E9C30 */
+s32 battle_event_script_text_origin_y = 0; /* 801E9C34 */
+ModelArchive *battle_event_script_model_archive = NULL; /* 801E9C38 */
 
 /* The actor and model helpers (script_actor.c) as this unit declares them:
  * its calls convert the actor, animation and target arguments differently
  * from the definitions (bytes and halfwords where those take words). */
-void func_801E9958(s32 model, u16 animation);
-s32 func_801E9978(void *file, s32 *info);
-void func_801E9430(u8 actor, s16 animation);
-void func_801E950C(u8 actor);
-void func_801E9550(u8 actor);
-void func_801E958C(u8 actor);
-void func_801E95E4(u8 actor, s16 arg1, s16 arg2, s16 arg3);
-void func_801E9694(u8 actor, s16 arg1, s16 arg2, s16 arg3);
-void func_801E9700(u8 actor, u16 arg1);
-void func_801E9760(u8 actor, u8 target);
-void func_801E9894(u8 actor, u16 target);
-void func_801E9AD4(s32 model);
-void func_801E9B2C(void);
+void battle_event_script_play_model_animation(s32 model, u16 animation);
+s32 battle_event_script_create_model(void *file, s32 *info);
+void battle_event_script_start_actor_animation(u8 actor, s16 animation);
+void battle_event_script_return_actor_to_idle(u8 actor);
+void battle_event_script_stop_actor_commands(u8 actor);
+void battle_event_script_clear_actor_countdown(u8 actor);
+void battle_event_script_start_actor_move(u8 actor, s16 x, s16 y, s16 z);
+void battle_event_script_start_actor_animation3(u8 actor, s16 x, s16 y, s16 z);
+void battle_event_script_give_actor_command(u8 actor, u16 command);
+void battle_event_script_run_actor_attack(u8 actor, u8 target);
+void battle_event_script_turn_actor_to_target(u8 actor, u16 target);
+void battle_event_script_destroy_model(s32 model);
+void battle_event_script_reset_camera(void);
 
-/* Load the script set of 8006f9df (script archive file 2) and the model
+/* 801E5160: Load the script set of 8006f9df (script archive file 2) and the model
  * archive (file 3), set up the interpreter state and its threads, the
  * portrait quads and the script's sound bank (file 4). */
-void func_801E5160(void) {
+void battle_event_script_load(void) {
     FileRequest files[3];
     ScriptArchive *archive;
     EventScriptFile *script;
@@ -97,15 +97,15 @@ void func_801E5160(void) {
     archive = battle_heap_alloc(cd_get_aligned_file_size(2), 1);
     files[0].file = 2;
     files[0].destination = archive;
-    D_801E9C38 = battle_heap_alloc(cd_get_aligned_file_size(3), 0);
+    battle_event_script_model_archive = battle_heap_alloc(cd_get_aligned_file_size(3), 0);
     files[1].file = 3;
-    files[1].destination = D_801E9C38;
+    files[1].destination = battle_event_script_model_archive;
     files[2].file = 0;
     files[2].destination = NULL;
     cd_read_file_list(files, 0, 0x80);
     battle_cd_wait_for_reads();
     text_relocate_offset_table(archive);
-    text_relocate_offset_table(D_801E9C38);
+    text_relocate_offset_table(battle_event_script_model_archive);
     script = text_unpack_lzss_alloc(((ScriptSet *)((u8 *)archive + formation_active.scriptSet * 8))->script, 0);
     battle_messages_of_event_script = text_unpack_lzss_alloc(((ScriptSet *)((u8 *)archive + formation_active.scriptSet * 8))->data, 0);
     heap_free(archive);
@@ -135,7 +135,7 @@ void func_801E5160(void) {
     }
     battle_state_of_event_script->unk7F5 = 4;
     for (i = 0; i < 5; i++) {
-        battle_state_of_event_script->window[i] = D_801E9C10[i];
+        battle_state_of_event_script->window[i] = battle_event_script_default_window_layout[i];
     }
     for (i = 0; i < 2; i++) {
         SetPolyFT4(&battle_state_of_event_script->quads[i]);
@@ -149,7 +149,7 @@ void func_801E5160(void) {
     battle_ui->waitingCross = 0;
     for (i = 0; i < 16; i++) {
         battle_state_of_event_script->actionRunning[i] = 0;
-        D_801E9C20[i] = 0;
+        battle_event_script_actions_started[i] = 0;
     }
     battle_state_of_event_script->musicPlaying = 0;
     battle_cd_select_event_script_directory();
@@ -163,9 +163,9 @@ void func_801E5160(void) {
     battle_load_wave_bank_5();
 }
 
-/* Release the interpreter state, the script and model files, stop the
+/* 801E563C: Release the interpreter state, the script and model files, stop the
  * music and release the sound bank. Returns whether music was playing. */
-s32 func_801E563C(void) {
+s32 battle_event_script_release(void) {
     s32 musicWasPlaying;
 
     heap_free(battle_state_of_event_script);
@@ -173,7 +173,7 @@ s32 func_801E563C(void) {
     heap_free(battle_message_text_window);
     heap_free(battle_file_of_event_script);
     heap_free(battle_messages_of_event_script);
-    heap_free(D_801E9C38);
+    heap_free(battle_event_script_model_archive);
     if (battle_state_of_event_script->musicPlaying != 0) {
         musicWasPlaying = 1;
         sound_stop_seq((SoundSeq *)battle_music_seq);
@@ -191,8 +191,8 @@ s32 func_801E563C(void) {
     return musicWasPlaying;
 }
 
-/* Make the thread's highest occupied level current; return its pc. */
-u16 func_801E5768(ScriptThread *thread) {
+/* 801E5768: Make the thread's highest occupied level current; return its pc. */
+u16 battle_event_script_select_top_level(ScriptThread *thread) {
     s32 i;
     s32 level;
     u32 free;
@@ -209,8 +209,8 @@ u16 func_801E5768(ScriptThread *thread) {
     return thread->pc[level];
 }
 
-/* First free level above the base level (8 when none is free). */
-u16 func_801E57C4(ScriptThread *thread) {
+/* 801E57C4: First free level above the base level (8 when none is free). */
+u16 battle_event_script_find_free_level(ScriptThread *thread) {
     s32 i;
 
     for (i = 1; i < 8; i++) {
@@ -221,11 +221,11 @@ u16 func_801E57C4(ScriptThread *thread) {
     return i;
 }
 
-/* Decode count 16-bit operands following the opcode into the operand
+/* 801E57F8: Decode count 16-bit operands following the opcode into the operand
  * slots. Each is an immediate when its bit (from 0x80 down) is set in
  * immediateMask, otherwise a variable offset. In the signed form bit 15
  * marks an immediate instead. */
-void func_801E57F8(u8 *insn, u8 count, u8 immediateMask, u8 signedForm) {
+void battle_event_script_decode_operands(u8 *insn, u8 count, u8 immediateMask, u8 signedForm) {
     s32 i;
     s16 raw;
 
@@ -246,8 +246,8 @@ void func_801E57F8(u8 *insn, u8 count, u8 immediateMask, u8 signedForm) {
     }
 }
 
-/* Compare two script values with condition op (low four bits). */
-u8 func_801E58EC(s16 a, s16 b, u8 op) {
+/* 801E58EC: Compare two script values with condition op (low four bits). */
+u8 battle_event_script_compare(s16 a, s16 b, u8 op) {
     s32 result = 0;
 
     switch (op & 0xF) {
@@ -310,9 +310,9 @@ u8 func_801E58EC(s16 a, s16 b, u8 op) {
     return result;
 }
 
-/* Battle slot of a script actor id: party characters (ids below 16) by
+/* 801E5A98: Battle slot of a script actor id: party characters (ids below 16) by
  * their position in the party, enemies as id - 13. */
-u8 func_801E5A98(s32 id) {
+u8 battle_event_script_get_actor_slot(s32 id) {
     s32 slot = 0;
     s32 i;
 
@@ -329,10 +329,10 @@ u8 func_801E5A98(s32 id) {
     return slot;
 }
 
-/* Show the next frame of the five-frame cursor glyph (glyphs 0xe0-0xe4, the
+/* 801E5B00: Show the next frame of the five-frame cursor glyph (glyphs 0xe0-0xe4, the
  * battle graphics' cursor quads) at (x, y), mirrored horizontally by
  * swapping the current buffer's second and third vertices. */
-void func_801E5B00(x, y)
+void battle_event_script_show_cursor_glyph(x, y)
 s16 x;
 s16 y;
 {
@@ -340,11 +340,11 @@ s16 y;
     s32 x1;
     s32 y1;
 
-    if (--D_801E9C1C < 0) {
-        D_801E9C1C = 4;
+    if (--battle_event_script_cursor_frame < 0) {
+        battle_event_script_cursor_frame = 4;
     }
     battle_ui->cursorParts =
-        battle_build_glyph(D_801E9C1C + 0xE0, battle_graphics->cursor, x, y);
+        battle_build_glyph(battle_event_script_cursor_frame + 0xE0, battle_graphics->cursor, x, y);
     graphics = battle_graphics;
     x1 = graphics->cursor[battle_drawing_state.buffer].x1;
     y1 = graphics->cursor[battle_drawing_state.buffer].y1;
@@ -356,9 +356,9 @@ s16 y;
     battle_ui->cursorShown = 1;
 }
 
-/* Opcode 00 (end, 1 byte): drop the running level and restart the thread's
+/* 801E5C1C: Opcode 00 (end, 1 byte): drop the running level and restart the thread's
  * base level at its idle entry (1). Yields. */
-s32 func_801E5C1C(s32 thread) {
+s32 battle_event_script_end(s32 thread) {
     battle_state_of_event_script->threads[thread].entry[battle_state_of_event_script->threads[thread].level] = 0xFF;
     battle_state_of_event_script->threads[thread].priority[battle_state_of_event_script->threads[thread].level] = 0xFF;
     battle_state_of_event_script->threads[thread].pc[battle_state_of_event_script->threads[thread].level] = 0xFFFF;
@@ -370,31 +370,31 @@ s32 func_801E5C1C(s32 thread) {
     return 0;
 }
 
-/* Opcode 01 (jump, 3 bytes): continue the running level at the bytecode
+/* 801E5CE4: Opcode 01 (jump, 3 bytes): continue the running level at the bytecode
  * offset (u16 at byte 1). */
-s32 func_801E5CE4(s32 thread, u8 *insn) {
+s32 battle_event_script_jump(s32 thread, u8 *insn) {
     battle_state_of_event_script->threads[thread].pc[battle_state_of_event_script->threads[thread].level] = insn[1] + (insn[2] << 8);
     return 0;
 }
 
-/* Opcode 02 (branch unless, 8 bytes): compare a (byte 1) and b (byte 3),
+/* 801E5D24: Opcode 02 (branch unless, 8 bytes): compare a (byte 1) and b (byte 3),
  * immediates by bits 0x80 and 0x40 of byte 5, by its low four bits
  * (801e58ec); when the comparison fails jump to the offset at byte 6. */
-s32 func_801E5D24(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 2, insn[5], 0);
-    if (func_801E58EC(battle_state_of_event_script->operands[0], battle_state_of_event_script->operands[1], insn[5])) {
+s32 battle_event_script_branch_unless(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 2, insn[5], 0);
+    if (battle_event_script_compare(battle_state_of_event_script->operands[0], battle_state_of_event_script->operands[1], insn[5])) {
         return 8;
     }
     battle_state_of_event_script->threads[thread].pc[battle_state_of_event_script->threads[thread].level] = insn[6] + (insn[7] << 8);
     return 0;
 }
 
-/* Opcode 03 (request, 3 bytes): start entry (byte 2, low five bits) of
+/* 801E5DCC: Opcode 03 (request, 3 bytes): start entry (byte 2, low five bits) of
  * thread (byte 1) on a free level with the priority in byte 2's top three
  * bits. Retries (length 0) while that thread has no free level. */
-s32 func_801E5DCC(s32 thread, u8 *insn) {
+s32 battle_event_script_request(s32 thread, u8 *insn) {
     s32 length = 0;
-    u8 level = func_801E57C4(&battle_state_of_event_script->threads[insn[1]]);
+    u8 level = battle_event_script_find_free_level(&battle_state_of_event_script->threads[insn[1]]);
 
     if (level != 8) {
         battle_state_of_event_script->threads[thread].request = insn[2] & 0x1F;
@@ -407,14 +407,14 @@ s32 func_801E5DCC(s32 thread, u8 *insn) {
     return length;
 }
 
-/* Opcode 04 (request and wait for start, 3 bytes as 03): issue the request,
+/* 801E5EF8: Opcode 04 (request and wait for start, 3 bytes as 03): issue the request,
  * then wait until the other thread is running the requested entry. */
-s32 func_801E5EF8(s32 thread, u8 *insn) {
+s32 battle_event_script_request_wait_start(s32 thread, u8 *insn) {
     s32 length = 0;
     u8 request = battle_state_of_event_script->threads[thread].request;
 
     if (request != (insn[2] & 0x1F)) {
-        func_801E5DCC(thread, insn);
+        battle_event_script_request(thread, insn);
     } else if (request == battle_state_of_event_script->threads[insn[1]].runningEntry) {
         battle_state_of_event_script->threads[thread].request = 0xFF;
         length = 3;
@@ -422,17 +422,17 @@ s32 func_801E5EF8(s32 thread, u8 *insn) {
     return length;
 }
 
-/* Opcode 05 (request and wait for end, 3 bytes as 03): issue the request,
+/* 801E5F8C: Opcode 05 (request and wait for end, 3 bytes as 03): issue the request,
  * then wait until the requested entry is neither queued nor running on the
  * other thread. */
-s32 func_801E5F8C(s32 thread, u8 *insn) {
+s32 battle_event_script_request_wait_end(s32 thread, u8 *insn) {
     s32 length = 0;
     u8 request = battle_state_of_event_script->threads[thread].request;
     u8 finished = 1;
     s32 i;
 
     if (request != (insn[2] & 0x1F)) {
-        func_801E5DCC(thread, insn);
+        battle_event_script_request(thread, insn);
     } else {
         for (i = 0; i < 8; i++) {
             if (battle_state_of_event_script->threads[insn[1]].entry[i] == request) {
@@ -449,140 +449,140 @@ s32 func_801E5F8C(s32 thread, u8 *insn) {
     return length;
 }
 
-/* Opcode 06 (6 bytes): var (byte 1) = value (byte 3, an immediate when byte
+/* 801E6084: Opcode 06 (6 bytes): var (byte 1) = value (byte 3, an immediate when byte
  * 5 has bit 0x40). */
-s32 func_801E6084(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 2, insn[5], 0);
+s32 battle_event_script_set(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 2, insn[5], 0);
     INSN_VAR(insn) = battle_state_of_event_script->operands[1];
     return 6;
 }
 
-/* Opcode 07 (3 bytes): var (byte 1) = 1. */
-s32 func_801E60E8(s32 thread, u8 *insn) {
+/* 801E60E8: Opcode 07 (3 bytes): var (byte 1) = 1. */
+s32 battle_event_script_set_one(s32 thread, u8 *insn) {
     INSN_VAR(insn) = 1;
     return 3;
 }
 
-/* Opcode 08 (3 bytes): var (byte 1) = 0. */
-s32 func_801E6118(s32 thread, u8 *insn) {
+/* 801E6118: Opcode 08 (3 bytes): var (byte 1) = 0. */
+s32 battle_event_script_set_zero(s32 thread, u8 *insn) {
     INSN_VAR(insn) = 0;
     return 3;
 }
 
-/* Opcode 09 (6 bytes): var (byte 1) += value (byte 3, immediate by bit 0x40
+/* 801E6144: Opcode 09 (6 bytes): var (byte 1) += value (byte 3, immediate by bit 0x40
  * of byte 5). */
-s32 func_801E6144(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 2, insn[5], 0);
+s32 battle_event_script_add(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 2, insn[5], 0);
     INSN_VAR(insn) += battle_state_of_event_script->operands[1];
     return 6;
 }
 
-/* Opcode 0a (6 bytes): var (byte 1) -= value (as 09). */
-s32 func_801E61B4(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 2, insn[5], 0);
+/* 801E61B4: Opcode 0a (6 bytes): var (byte 1) -= value (as 09). */
+s32 battle_event_script_subtract(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 2, insn[5], 0);
     INSN_VAR(insn) -= battle_state_of_event_script->operands[1];
     return 6;
 }
 
-/* Opcode 0b (6 bytes): var (byte 1) |= value (as 09). */
-s32 func_801E6224(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 2, insn[5], 0);
+/* 801E6224: Opcode 0b (6 bytes): var (byte 1) |= value (as 09). */
+s32 battle_event_script_or(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 2, insn[5], 0);
     INSN_VAR(insn) |= battle_state_of_event_script->operands[1];
     return 6;
 }
 
-/* Opcode 0c (6 bytes): var (byte 1) &= ~value (as 09). */
-s32 func_801E6294(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 2, insn[5], 0);
+/* 801E6294: Opcode 0c (6 bytes): var (byte 1) &= ~value (as 09). */
+s32 battle_event_script_clear_bits(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 2, insn[5], 0);
     INSN_VAR(insn) &= ~battle_state_of_event_script->operands[1];
     return 6;
 }
 
-/* Opcode 0d (3 bytes): var (byte 1)++. */
-s32 func_801E6304(s32 thread, u8 *insn) {
+/* 801E6304: Opcode 0d (3 bytes): var (byte 1)++. */
+s32 battle_event_script_increment(s32 thread, u8 *insn) {
     INSN_VAR(insn)++;
     return 3;
 }
 
-/* Opcode 0e (3 bytes): var (byte 1)--. */
-s32 func_801E633C(s32 thread, u8 *insn) {
+/* 801E633C: Opcode 0e (3 bytes): var (byte 1)--. */
+s32 battle_event_script_decrement(s32 thread, u8 *insn) {
     INSN_VAR(insn)--;
     return 3;
 }
 
-/* Opcode 0f (6 bytes): var (byte 1) &= value (as 09). */
-s32 func_801E6374(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 2, insn[5], 0);
+/* 801E6374: Opcode 0f (6 bytes): var (byte 1) &= value (as 09). */
+s32 battle_event_script_and(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 2, insn[5], 0);
     INSN_VAR(insn) &= battle_state_of_event_script->operands[1];
     return 6;
 }
 
-/* Opcode 10 (6 bytes): var (byte 1) |= value (as 09; the same as 0b). */
-s32 func_801E63E4(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 2, insn[5], 0);
+/* 801E63E4: Opcode 10 (6 bytes): var (byte 1) |= value (as 09; the same as 0b). */
+s32 battle_event_script_or_10(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 2, insn[5], 0);
     INSN_VAR(insn) |= battle_state_of_event_script->operands[1];
     return 6;
 }
 
-/* Opcode 11 (6 bytes): var (byte 1) ^= value (as 09). */
-s32 func_801E6454(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 2, insn[5], 0);
+/* 801E6454: Opcode 11 (6 bytes): var (byte 1) ^= value (as 09). */
+s32 battle_event_script_xor(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 2, insn[5], 0);
     INSN_VAR(insn) ^= battle_state_of_event_script->operands[1];
     return 6;
 }
 
-/* Opcode 12 (5 bytes): var (byte 1) <<= the variable at byte 3. */
-s32 func_801E64C4(s32 thread, u8 *insn) {
+/* 801E64C4: Opcode 12 (5 bytes): var (byte 1) <<= the variable at byte 3. */
+s32 battle_event_script_shift_left(s32 thread, u8 *insn) {
     s32 index = ((insn[2] << 8) | insn[1]) >> 1;
 
-    func_801E57F8(insn, 2, 0, 0);
+    battle_event_script_decode_operands(insn, 2, 0, 0);
     battle_state_of_event_script->vars[index] <<= battle_state_of_event_script->operands[1];
     return 5;
 }
 
-/* Opcode 13 (5 bytes): var (byte 1) >>= the variable at byte 3. */
-s32 func_801E6534(s32 thread, u8 *insn) {
+/* 801E6534: Opcode 13 (5 bytes): var (byte 1) >>= the variable at byte 3. */
+s32 battle_event_script_shift_right(s32 thread, u8 *insn) {
     s32 index = ((insn[2] << 8) | insn[1]) >> 1;
 
-    func_801E57F8(insn, 2, 0, 0);
+    battle_event_script_decode_operands(insn, 2, 0, 0);
     battle_state_of_event_script->vars[index] >>= battle_state_of_event_script->operands[1];
     return 5;
 }
 
-/* Opcode 14 (3 bytes): var (byte 1) = random 0..7fff. */
-s32 func_801E65A4(s32 thread, u8 *insn) {
+/* 801E65A4: Opcode 14 (3 bytes): var (byte 1) = random 0..7fff. */
+s32 battle_event_script_random(s32 thread, u8 *insn) {
     INSN_VAR(insn) = battle_random_range(0, 0x7FFF);
     return 3;
 }
 
-/* Opcode 15 (5 bytes): var (byte 3) = random 0..limit (u16 at byte 1). */
-s32 func_801E65FC(s32 thread, u8 *insn) {
+/* 801E65FC: Opcode 15 (5 bytes): var (byte 3) = random 0..limit (u16 at byte 1). */
+s32 battle_event_script_random_below(s32 thread, u8 *insn) {
     SCRIPT_VAR(battle_state_of_event_script, (insn[4] << 8) | insn[3]) = battle_random_range(0, insn[1] | (insn[2] << 8));
     return 5;
 }
 
-/* Opcode 16 (6 bytes): var (byte 1) = a * b, a the var operand itself (an
+/* 801E6660: Opcode 16 (6 bytes): var (byte 1) = a * b, a the var operand itself (an
  * immediate by bit 0x80 of byte 5), b at byte 3 (bit 0x40). */
-s32 func_801E6660(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 2, insn[5], 0);
+s32 battle_event_script_multiply(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 2, insn[5], 0);
     INSN_VAR(insn) = battle_state_of_event_script->operands[0] * battle_state_of_event_script->operands[1];
     return 6;
 }
 
-/* Opcode 17 (6 bytes): var (byte 1) = a / b (signed; operands as 16). */
-s32 func_801E66D8(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 2, insn[5], 0);
+/* 801E66D8: Opcode 17 (6 bytes): var (byte 1) = a / b (signed; operands as 16). */
+s32 battle_event_script_divide(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 2, insn[5], 0);
     INSN_VAR(insn) = (s32)battle_state_of_event_script->operands[0] / (s32)battle_state_of_event_script->operands[1];
     return 6;
 }
 
-/* Load the portrait TIM of an actor (mirrored or not) into VRAM (clut
+/* 801E6750: Load the portrait TIM of an actor (mirrored or not) into VRAM (clut
  * 0,1d0; pixels 3c0,100) and lay the current buffer's portrait quad out
  * in a 64x64 box inside the window at (x, y). */
-void func_801E6750(u8 actor, s32 flags, s32 x, s32 y, s32 width) {
+void battle_event_script_load_portrait(u8 actor, s32 flags, s32 x, s32 y, s32 width) {
     TIM_IMAGE tim;
     s32 mirrored = flags & 1;
-    s32 file = D_801E9B5C[actor * 2 + mirrored] + 0x46;
+    s32 file = battle_event_script_portrait_files[actor * 2 + mirrored] + 0x46;
     void *data;
 
     cd_select_directory(4, 0);
@@ -611,11 +611,11 @@ void func_801E6750(u8 actor, s32 flags, s32 x, s32 y, s32 width) {
     battle_state_of_event_script->portraitBuffer = battle_drawing_state.buffer;
 }
 
-/* Show message of the script's message file in the layout of opcode 1a,
+/* 801E6CE8: Show message of the script's message file in the layout of opcode 1a,
  * with the speaker's portrait unless flag 2 is set; returns 1 once the
  * message has been dismissed. Flags: 1 portrait left, 2 no portrait,
  * 4 lower window, 8 no window, 0x10 window style. */
-u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
+u8 battle_event_script_show_message(u16 message, u8 actor, u16 flags) {
     u16 x;
     u16 y;
     u16 width;
@@ -633,7 +633,7 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
         flags = battle_state_of_event_script->window[4];
     }
     if (battle_state_of_event_script->windowOpen == 0) {
-        D_801E9C1C = 4;
+        battle_event_script_cursor_frame = 4;
         if (battle_state_of_event_script->window[1] == 0x7FFF) {
             y = 0x10;
             if (flags & 4) {
@@ -663,7 +663,7 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
                     battle_wait_frame();
                 }
             } else {
-                func_801E6750(actor, flags, x, y, width);
+                battle_event_script_load_portrait(actor, flags, x, y, width);
                 battle_window_open(0, x, y, width, height, ((flags >> 4) ^ 1) & 1, 1);
                 while (battle_ui->windowOpen[0] == 0) {
                     battle_wait_frame();
@@ -674,9 +674,9 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
                 }
             }
         }
-        D_801E9C34 = y + 8;
-        D_801E9C30 = x + 12;
-        window_open(battle_message_text_window, 0x380, 0x100, D_801E9C30, D_801E9C34, battle_state_of_event_script->window[2] * 3,
+        battle_event_script_text_origin_y = y + 8;
+        battle_event_script_text_origin_x = x + 12;
+        window_open(battle_message_text_window, 0x380, 0x100, battle_event_script_text_origin_x, battle_event_script_text_origin_y, battle_state_of_event_script->window[2] * 3,
                       battle_state_of_event_script->window[3]);
         *(u8 *)&battle_message_text_window->tile[1] = 4;
         battle_message_text_window->flags |= 2;
@@ -688,7 +688,7 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
     }
     if (battle_message_text_window->flags & 8) {
         if (!(flags & 8)) {
-            func_801E5B00(battle_message_text_window->x * 4 + D_801E9C30 + 2, battle_message_text_window->y * 14 + D_801E9C34 + 5);
+            battle_event_script_show_cursor_glyph(battle_message_text_window->x * 4 + battle_event_script_text_origin_x + 2, battle_message_text_window->y * 14 + battle_event_script_text_origin_y + 5);
         }
         battle_ui->waitingCross = 1;
         if (battle_pressed_key == 4) {
@@ -708,45 +708,45 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags) {
         done = 1;
         battle_state_of_event_script->windowOpen = 0;
         for (i = 0; i < 5; i++) {
-            battle_state_of_event_script->window[i] = D_801E9C10[i];
+            battle_state_of_event_script->window[i] = battle_event_script_default_window_layout[i];
         }
     }
     return done;
 }
 
-/* Opcode 18 (4 bytes): show message (u16 at byte 1) from the thread's
+/* 801E71D4: Opcode 18 (4 bytes): show message (u16 at byte 1) from the thread's
  * speaker with flags (byte 3; 0 takes the layout's); repeats until the
  * message is done. */
-s32 func_801E71D4(s32 thread, u8 *insn) {
-    return (func_801E6CE8(insn[1] | (insn[2] << 8), battle_state_of_event_script->threads[thread].speaker, insn[3]) != 0) * 4;
+s32 battle_event_script_message(s32 thread, u8 *insn) {
+    return (battle_event_script_show_message(insn[1] | (insn[2] << 8), battle_state_of_event_script->threads[thread].speaker, insn[3]) != 0) * 4;
 }
 
-/* Opcode 19 (5 bytes): show message (u16 at byte 2) from actor (byte 1) with
+/* 801E7230: Opcode 19 (5 bytes): show message (u16 at byte 2) from actor (byte 1) with
  * flags (byte 4); repeats until done. */
-s32 func_801E7230(s32 thread, u8 *insn) {
-    return func_801E6CE8(insn[2] | (insn[3] << 8), insn[1], insn[4]) ? 5 : 0;
+s32 battle_event_script_message_from(s32 thread, u8 *insn) {
+    return battle_event_script_show_message(insn[2] | (insn[3] << 8), insn[1], insn[4]) ? 5 : 0;
 }
 
-/* Opcode 1a (11 bytes): set the message window layout from five signed-form
+/* 801E7278: Opcode 1a (11 bytes): set the message window layout from five signed-form
  * operands (x, y, width, height, flags); zero x..height take the defaults. */
-s32 func_801E7278(s32 thread, u8 *insn) {
+s32 battle_event_script_window(s32 thread, u8 *insn) {
     s32 i;
 
-    func_801E57F8(insn, 5, 0, 1);
+    battle_event_script_decode_operands(insn, 5, 0, 1);
     for (i = 0; i < 4; i++) {
         if (battle_state_of_event_script->operands[i] != 0) {
             battle_state_of_event_script->window[i] = battle_state_of_event_script->operands[i];
         } else {
-            battle_state_of_event_script->window[i] = D_801E9C10[i];
+            battle_state_of_event_script->window[i] = battle_event_script_default_window_layout[i];
         }
     }
     battle_state_of_event_script->window[4] = battle_state_of_event_script->operands[4];
     return 11;
 }
 
-/* Opcode 1b (2 bytes): set the thread's speaker to actor (byte 1; f3-f5 name
+/* 801E7314: Opcode 1b (2 bytes): set the thread's speaker to actor (byte 1; f3-f5 name
  * the party members). */
-s32 func_801E7314(s32 thread, u8 *insn) {
+s32 battle_event_script_speaker(s32 thread, u8 *insn) {
     u8 actor = insn[1];
 
     if (actor >= 0xF3) {
@@ -756,78 +756,78 @@ s32 func_801E7314(s32 thread, u8 *insn) {
     return 2;
 }
 
-/* Opcode 1c (1 byte): battle end state (800c3e4c) = 2. */
-s32 func_801E7358(s32 thread, u8 *insn) {
+/* 801E7358: Opcode 1c (1 byte): battle frame mode (800c3e4c) = 2. */
+s32 battle_event_script_enter_script_mode(s32 thread, u8 *insn) {
     battle_frame_mode = 2;
     return 1;
 }
 
-/* Opcode 1d (1 byte): battle end state (800c3e4c) = 1. */
-s32 func_801E736C(s32 thread, u8 *insn) {
+/* 801E736C: Opcode 1d (1 byte): battle frame mode (800c3e4c) = 1. */
+s32 battle_event_script_enter_turn_mode(s32 thread, u8 *insn) {
     battle_frame_mode = 1;
     return 1;
 }
 
-/* Opcode 1e (3 bytes): fade the screen to white over 2 * a frames (signed
+/* 801E7380: Opcode 1e (3 bytes): fade the screen to white over 2 * a frames (signed
  * operand a; blend mode 2, 800b39c0). */
-s32 func_801E7380(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 1, 0, 1);
+s32 battle_event_script_fade_white(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 1, 0, 1);
     battle_screen_fade_start(battle_state_of_event_script->operands[0], 2, 0xFF, 0xFF, 0xFF);
     return 3;
 }
 
-/* Opcode 1f (3 bytes): fade the screen to black over 2 * a frames (as 1e). */
-s32 func_801E73D4(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 1, 0, 1);
+/* 801E73D4: Opcode 1f (3 bytes): fade the screen to black over 2 * a frames (as 1e). */
+s32 battle_event_script_fade_black(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 1, 0, 1);
     battle_screen_fade_start(battle_state_of_event_script->operands[0], 2, 0, 0, 0);
     return 3;
 }
 
-/* Opcode 49 (3 bytes): 8005942c = signed operand a. */
-s32 func_801E7424(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 1, 0, 1);
+/* 801E7424: Opcode 49 (3 bytes): 8005942c = signed operand a. */
+s32 battle_event_script_set_return_fade(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 1, 0, 1);
     mode_battle_return_fade = battle_state_of_event_script->operands[0];
     return 3;
 }
 
-/* Opcode 20 (1 byte): end the battle (800c3d44) and halt the script
+/* 801E746C: Opcode 20 (1 byte): end the battle (800c3d44) and halt the script
  * (801e879c checks it when next called). */
-s32 func_801E746C(s32 thread, u8 *insn) {
+s32 battle_event_script_halt_until_battle_end(s32 thread, u8 *insn) {
     battle_resume_event_script_at_end = 1;
     battle_state_of_event_script->halted = 1;
     return 1;
 }
 
-/* Opcode 21 (1 byte): 800d2d50 = 1. */
-s32 func_801E748C(s32 thread, u8 *insn) {
+/* 801E748C: Opcode 21 (1 byte): 800d2d50 = 1. */
+s32 battle_event_script_skip_result_screens(s32 thread, u8 *insn) {
     battle_skip_result_screens = 1;
     return 1;
 }
 
-/* Opcode 22 (1 byte): make this pass of 801e879c its last, returning to the
+/* 801E74A0: Opcode 22 (1 byte): make this pass of 801e879c its last, returning to the
  * battle (it repeats its passes until then). */
-s32 func_801E74A0(s32 thread, u8 *insn) {
+s32 battle_event_script_last_pass(s32 thread, u8 *insn) {
     battle_state_of_event_script->unk801 = 2;
     return 1;
 }
 
-/* Opcode 37 (1 byte): request the battle exit (800d2fc4), set the outcome
+/* 801E74B8: Opcode 37 (1 byte): request the battle exit (800d2fc4), set the outcome
  * (800c48ea) to 1 and halt the script. */
-s32 func_801E74B8(s32 thread, u8 *insn) {
+s32 battle_event_script_exit_battle(s32 thread, u8 *insn) {
     battle_exit_requested = 1;
     battle_state_of_event_script->halted = 1;
     battle_area_outcome = 1;
     return 1;
 }
 
-/* Opcode 23 (7 bytes; signed operands a, b, c): object a - f3 acts on slot b
+/* 801E74E0: Opcode 23 (7 bytes; signed operands a, b, c): object a - f3 acts on slot b
  * + 13 with its effect script c (800aa384), then waits until that effect
  * reports it is done (the effect VM's 02/03 set this thread's 0x34 through
  * 80080c6c) and finishes the battle's loads (800b8d04). */
-s32 func_801E74E0(s32 thread, u8 *insn) {
+s32 battle_event_script_act(s32 thread, u8 *insn) {
     s32 length = 0;
 
-    func_801E57F8(insn, 3, 0, 1);
+    battle_event_script_decode_operands(insn, 3, 0, 1);
     switch (battle_state_of_event_script->threads[battle_state_of_event_script->operands[0] - 0xF3].memberState) {
     case 0:
         battle_state_of_event_script->threads[battle_state_of_event_script->operands[0] - 0xF3].memberState = 2;
@@ -844,49 +844,49 @@ s32 func_801E74E0(s32 thread, u8 *insn) {
     return length;
 }
 
-/* Opcode 38 (7 bytes; signed operands a, b, c): object a - f3 starts its
+/* 801E75F0: Opcode 38 (7 bytes; signed operands a, b, c): object a - f3 starts its
  * effect script c on slot b + 13 (800aa320) without waiting. */
-s32 func_801E75F0(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 3, 0, 1);
+s32 battle_event_script_act_nowait(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 3, 0, 1);
     battle_start_object_script(battle_state_of_event_script->operands[0] - 0xF3, battle_get_slot_bit(battle_state_of_event_script->operands[1] + 0xD),
                   battle_state_of_event_script->operands[2]);
     return 7;
 }
 
-/* Opcode 4a (1 byte): put slot 0 into state 4 with timer 6 (8009c0e0(0)). */
-s32 func_801E7660(s32 thread, u8 *insn) {
+/* 801E7660: Opcode 4a (1 byte): put slot 0 into state 4 with timer 6 (8009c0e0(0)). */
+s32 battle_event_script_set_slot0_attack_level4(s32 thread, u8 *insn) {
     battle_set_slot_attack_level4(0);
     return 1;
 }
 
-/* Opcode 4b (3 bytes): set bit 0 of actor a's battle record flags (0x36;
+/* 801E7684: Opcode 4b (3 bytes): set bit 0 of actor a's battle record flags (0x36;
  * signed operand a). */
-s32 func_801E7684(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 1, 0, 1);
-    battle_work_area.records[func_801E5A98((u8)battle_state_of_event_script->operands[0])].pilot.flags36 |= 1;
+s32 battle_event_script_suppress_gear_hp_warning(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 1, 0, 1);
+    battle_work_area.records[battle_event_script_get_actor_slot((u8)battle_state_of_event_script->operands[0])].pilot.flags36 |= 1;
     return 3;
 }
 
-/* Opcode 24 (5 bytes; signed operands a, b): the pending formation (8005947c)
+/* 801E7700: Opcode 24 (5 bytes; signed operands a, b): the pending formation (8005947c)
  * = a + 1 and the battle kind (8005954c) = b: the next battle (resident
  * 8001b6c4) takes formation a of the same encounter set (80070f40). */
-s32 func_801E7700(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 2, 0, 1);
+s32 battle_event_script_next_battle(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 2, 0, 1);
     mode_pending_battle_formation = battle_state_of_event_script->operands[0] + 1;
     mode_battle_kind = battle_state_of_event_script->operands[1];
     return 5;
 }
 
-/* Opcode 25 (1 byte): 800c3d5c = 1. */
-s32 func_801E775C(s32 thread, u8 *insn) {
+/* 801E775C: Opcode 25 (1 byte): 800c3d5c = 1. */
+s32 battle_event_script_allow_defeat(s32 thread, u8 *insn) {
     battle_defeat_allowed_by_event_script = 1;
     return 1;
 }
 
-/* Opcode 26 (9 bytes): store four signed operands at 8006f94e and clear the
+/* 801E7770: Opcode 26 (9 bytes): store four signed operands at 8006f94e and clear the
  * state word 8004f30c (8001ac94). */
-s32 func_801E7770(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 4, 0, 1);
+s32 battle_event_script_set_saved_map(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 4, 0, 1);
     game_data.map = battle_state_of_event_script->operands[0];
     game_data.entry[0] = battle_state_of_event_script->operands[1];
     game_data.entry[1] = battle_state_of_event_script->operands[2];
@@ -895,10 +895,10 @@ s32 func_801E7770(s32 thread, u8 *insn) {
     return 9;
 }
 
-/* Opcode 27 (9 bytes; signed operands a-d): 8004fe44 = a | 0x80, b, 1, c;
+/* 801E77E4: Opcode 27 (9 bytes; signed operands a-d): 8004fe44 = a | 0x80, b, 1, c;
  * 800d3338 = 1; 80062514 = d. */
-s32 func_801E77E4(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 4, 0, 1);
+s32 battle_event_script_request_movie(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 4, 0, 1);
     (&cd_movie_request_kind)[0] = battle_state_of_event_script->operands[0] | 0x80;
     (&cd_movie_request_kind)[1] = battle_state_of_event_script->operands[1];
     (&cd_movie_request_kind)[2] = 1;
@@ -908,19 +908,19 @@ s32 func_801E77E4(s32 thread, u8 *insn) {
     return 9;
 }
 
-/* Opcode 28 (6 bytes): fade the screen to colour (bytes 2-4) in blend mode
+/* 801E786C: Opcode 28 (6 bytes): fade the screen to colour (bytes 2-4) in blend mode
  * (byte 1) over 2 * (byte 5) frames (800b39c0). */
-s32 func_801E786C(s32 thread, u8 *insn) {
+s32 battle_event_script_fade(s32 thread, u8 *insn) {
     battle_screen_fade_start(insn[5], insn[1], insn[2], insn[3], insn[4]);
     return 6;
 }
 
-/* Opcode 29 (9 bytes; signed operands x, y, z, n): quake the view towards
+/* 801E78A8: Opcode 29 (9 bytes; signed operands x, y, z, n): quake the view towards
  * amplitude (x, y, z) over 2 * n frames (800b3658). */
-s32 func_801E78A8(s32 thread, u8 *insn) {
+s32 battle_event_script_quake(s32 thread, u8 *insn) {
     u16 position[3];
 
-    func_801E57F8(insn, 4, 0, 1);
+    battle_event_script_decode_operands(insn, 4, 0, 1);
     position[0] = battle_state_of_event_script->operands[0];
     position[1] = battle_state_of_event_script->operands[1];
     position[2] = battle_state_of_event_script->operands[2];
@@ -928,71 +928,71 @@ s32 func_801E78A8(s32 thread, u8 *insn) {
     return 9;
 }
 
-/* Opcode 35 (5 bytes; signed operands a, n): load model n of the model
+/* 801E7914: Opcode 35 (5 bytes; signed operands a, n): load model n of the model
  * archive into actor slot a (thread a + 13) unless one is loaded. */
-s32 func_801E7914(s32 thread, u8 *insn) {
+s32 battle_event_script_load_model(s32 thread, u8 *insn) {
     s32 info[2];
     s32 slot;
     void *file;
 
-    func_801E57F8(insn, 2, 0, 1);
+    battle_event_script_decode_operands(insn, 2, 0, 1);
     slot = (u8)(battle_state_of_event_script->operands[0] + 13);
     if (battle_state_of_event_script->threads[slot].modelLoaded == 0) {
-        file = text_unpack_lzss_alloc(D_801E9C38->entries[battle_state_of_event_script->operands[1]], 0);
+        file = text_unpack_lzss_alloc(battle_event_script_model_archive->entries[battle_state_of_event_script->operands[1]], 0);
         battle_state_of_event_script->threads[slot].modelFile = file;
-        battle_state_of_event_script->threads[slot].model = func_801E9978(file, info);
+        battle_state_of_event_script->threads[slot].model = battle_event_script_create_model(file, info);
         battle_state_of_event_script->threads[slot].modelLoaded = 1;
     }
     return 5;
 }
 
-/* Opcode 2a (5 bytes; signed operands a, n): play animation n on the loaded
+/* 801E79E0: Opcode 2a (5 bytes; signed operands a, n): play animation n on the loaded
  * model of slot a. */
-s32 func_801E79E0(s32 thread, u8 *insn) {
+s32 battle_event_script_model_animation(s32 thread, u8 *insn) {
     s32 slot;
 
-    func_801E57F8(insn, 2, 0, 1);
+    battle_event_script_decode_operands(insn, 2, 0, 1);
     slot = (u8)(battle_state_of_event_script->operands[0] + 13);
     if (battle_state_of_event_script->threads[slot].modelLoaded != 0) {
-        func_801E9958(battle_state_of_event_script->threads[slot].model, battle_state_of_event_script->operands[1]);
+        battle_event_script_play_model_animation(battle_state_of_event_script->threads[slot].model, battle_state_of_event_script->operands[1]);
     }
     return 5;
 }
 
-/* Release the slot's loaded model and its data. */
-void func_801E7A5C(s32 thread, u8 *insn) {
+/* 801E7A5C: Release the slot's loaded model and its data. */
+void battle_event_script_release_slot_model(s32 thread, u8 *insn) {
     s32 slot;
 
-    func_801E57F8(insn, 1, 0, 1);
+    battle_event_script_decode_operands(insn, 1, 0, 1);
     slot = (u8)(battle_state_of_event_script->operands[0] + 13);
     if (battle_state_of_event_script->threads[slot].modelLoaded != 0) {
-        func_801E9AD4(battle_state_of_event_script->threads[slot].model);
+        battle_event_script_destroy_model(battle_state_of_event_script->threads[slot].model);
         heap_free(battle_state_of_event_script->threads[slot].modelFile);
         battle_state_of_event_script->threads[slot].modelLoaded = 0;
     }
 }
 
-/* Opcode 36 (3 bytes): release slot a's model (signed operand a). */
-s32 func_801E7B08(s32 thread, u8 *insn) {
-    func_801E7A5C(thread, insn);
+/* 801E7B08: Opcode 36 (3 bytes): release slot a's model (signed operand a). */
+s32 battle_event_script_free_model(s32 thread, u8 *insn) {
+    battle_event_script_release_slot_model(thread, insn);
     return 3;
 }
 
-/* Opcode 40 (3 bytes): release slot a's model and reset the script camera
+/* 801E7B2C: Opcode 40 (3 bytes): release slot a's model and reset the script camera
  * (801e9b2c: 800c367c = 0, camera mode 0, effects disabled). */
-s32 func_801E7B2C(s32 thread, u8 *insn) {
-    func_801E7A5C(thread, insn);
-    func_801E9B2C();
+s32 battle_event_script_free_model_camera(s32 thread, u8 *insn) {
+    battle_event_script_release_slot_model(thread, insn);
+    battle_event_script_reset_camera();
     return 3;
 }
 
-/* Opcode 2b (3 bytes): wait until the thread's timer, set to 2 * n (signed
+/* 801E7B58: Opcode 2b (3 bytes): wait until the thread's timer, set to 2 * n (signed
  * operand n), runs out. */
-s32 func_801E7B58(s32 thread, u8 *insn) {
+s32 battle_event_script_wait(s32 thread, u8 *insn) {
     s32 length = 0;
 
     if (battle_state_of_event_script->threads[thread].waiting == 0) {
-        func_801E57F8(insn, 1, 0, 1);
+        battle_event_script_decode_operands(insn, 1, 0, 1);
         battle_state_of_event_script->threads[thread].waitTimer = battle_state_of_event_script->operands[0] * 2;
         battle_state_of_event_script->threads[thread].waiting = 1;
     }
@@ -1003,9 +1003,9 @@ s32 func_801E7B58(s32 thread, u8 *insn) {
     return length;
 }
 
-/* Opcode 2c (3 bytes): set the thread's run-order request (byte 1; byte 2
+/* 801E7C0C: Opcode 2c (3 bytes): set the thread's run-order request (byte 1; byte 2
  * unused); fe moves it to the front of the run order at once. */
-s32 func_801E7C0C(s32 thread, u8 *insn) {
+s32 battle_event_script_run_order(s32 thread, u8 *insn) {
     u8 order[16];
     s32 i;
     s32 next;
@@ -1026,9 +1026,9 @@ s32 func_801E7C0C(s32 thread, u8 *insn) {
     return 3;
 }
 
-/* Stop the current music and start sequence music (file music + 4) at a
+/* 801E7CD0: Stop the current music and start sequence music (file music + 4) at a
  * volume. */
-void func_801E7CD0(s16 music, u8 volume) {
+void battle_event_script_play_music_file(s16 music, u8 volume) {
     s32 size;
 
     mode_stop_music();
@@ -1048,54 +1048,54 @@ void func_801E7CD0(s16 music, u8 volume) {
     battle_music_seq = sound_create_and_play_seq(mode_music_buffer, volume, 0);
 }
 
-/* Fade the music to a volume. */
-void func_801E7DE4(s32 volume, s32 time) {
+/* 801E7DE4: Fade the music to a volume. */
+void battle_event_script_fade_music_to_volume(s32 volume, s32 time) {
     sound_set_seq_fade((SoundSeq *)battle_music_seq, volume, time);
 }
 
-/* Opcode 2d (3 bytes): start music a (file a + 4; signed operand) at full
+/* 801E7E14: Opcode 2d (3 bytes): start music a (file a + 4; signed operand) at full
  * volume. */
-s32 func_801E7E14(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 1, 0, 1);
-    func_801E7CD0(battle_state_of_event_script->operands[0], 0x7F);
+s32 battle_event_script_music(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 1, 0, 1);
+    battle_event_script_play_music_file(battle_state_of_event_script->operands[0], 0x7F);
     return 3;
 }
 
-/* Opcode 2e (3 bytes): start music a at volume 0. */
-s32 func_801E7E5C(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 1, 0, 1);
-    func_801E7CD0(battle_state_of_event_script->operands[0], 0);
+/* 801E7E5C: Opcode 2e (3 bytes): start music a at volume 0. */
+s32 battle_event_script_music_silent(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 1, 0, 1);
+    battle_event_script_play_music_file(battle_state_of_event_script->operands[0], 0);
     return 3;
 }
 
-/* Opcode 2f (5 bytes): fade the music to volume a over time b and keep a as
+/* 801E7EA4: Opcode 2f (5 bytes): fade the music to volume a over time b and keep a as
  * its stored volume (signed operands). */
-s32 func_801E7EA4(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 2, 0, 1);
+s32 battle_event_script_music_fade(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 2, 0, 1);
     battle_state_of_event_script->musicVolume = battle_state_of_event_script->operands[0];
-    func_801E7DE4(battle_state_of_event_script->operands[0], battle_state_of_event_script->operands[1]);
+    battle_event_script_fade_music_to_volume(battle_state_of_event_script->operands[0], battle_state_of_event_script->operands[1]);
     return 5;
 }
 
-/* Opcode 30 (3 bytes): set the music to its stored volume when a is 0, else
+/* 801E7F08: Opcode 30 (3 bytes): set the music to its stored volume when a is 0, else
  * silence it. */
-s32 func_801E7F08(s32 thread, u8 *insn) {
+s32 battle_event_script_music_volume(s32 thread, u8 *insn) {
     u8 volume = 0;
 
-    func_801E57F8(insn, 1, 0, 1);
+    battle_event_script_decode_operands(insn, 1, 0, 1);
     if (battle_state_of_event_script->operands[0] == 0) {
         volume = battle_state_of_event_script->musicVolume;
     }
-    func_801E7DE4(volume, 0);
+    battle_event_script_fade_music_to_volume(volume, 0);
     return 3;
 }
 
-/* Opcode 31 (9 bytes; signed operands a-d): play sound a of the script bank
+/* 801E7F70: Opcode 31 (9 bytes; signed operands a-d): play sound a of the script bank
  * (the resident bank when d is set) with volume b and pan c (80039f18). */
-s32 func_801E7F70(s32 thread, u8 *insn) {
+s32 battle_event_script_sound(s32 thread, u8 *insn) {
     SoundBank *bank;
 
-    func_801E57F8(insn, 4, 0, 1);
+    battle_event_script_decode_operands(insn, 4, 0, 1);
     if (battle_state_of_event_script->operands[3] == 0) {
         bank = battle_state_of_event_script->soundBank;
     } else {
@@ -1106,12 +1106,12 @@ s32 func_801E7F70(s32 thread, u8 *insn) {
     return 9;
 }
 
-/* Opcode 41 (7 bytes; signed operands a-c): set the volume of playing sound
+/* 801E7FF4: Opcode 41 (7 bytes; signed operands a-c): set the volume of playing sound
  * a of the script bank (the resident one when c is set) to b (8003a2e4). */
-s32 func_801E7FF4(s32 thread, u8 *insn) {
+s32 battle_event_script_sound_volume(s32 thread, u8 *insn) {
     SoundBank *bank;
 
-    func_801E57F8(insn, 3, 0, 1);
+    battle_event_script_decode_operands(insn, 3, 0, 1);
     if (battle_state_of_event_script->operands[2] == 0) {
         bank = battle_state_of_event_script->soundBank;
     } else {
@@ -1121,13 +1121,13 @@ s32 func_801E7FF4(s32 thread, u8 *insn) {
     return 7;
 }
 
-/* Opcode 32 (1 byte): no operation. */
-s32 func_801E8074(s32 thread, u8 *insn) {
+/* 801E8074: Opcode 32 (1 byte): no operation. */
+s32 battle_event_script_nop(s32 thread, u8 *insn) {
     return 1;
 }
 
-/* Opcode 33 (1 byte): stop the music. */
-s32 func_801E807C(s32 thread, u8 *insn) {
+/* 801E807C: Opcode 33 (1 byte): stop the music. */
+s32 battle_event_script_stop_music(s32 thread, u8 *insn) {
     if (battle_state_of_event_script->musicPlaying != 0) {
         sound_stop_seq((SoundSeq *)battle_music_seq);
         battle_wait_frame();
@@ -1137,17 +1137,17 @@ s32 func_801E807C(s32 thread, u8 *insn) {
     return 1;
 }
 
-/* Opcode 34 (1 byte): no operation. */
-s32 func_801E80E8(s32 thread, u8 *insn) {
+/* 801E80E8: Opcode 34 (1 byte): no operation. */
+s32 battle_event_script_nop_34(s32 thread, u8 *insn) {
     return 1;
 }
 
-/* Opcode 39 (1 byte): party slot 0 changes to its gear: a formation group of
+/* 801E80F0: Opcode 39 (1 byte): party slot 0 changes to its gear: a formation group of
  * its own (80088490), its sprite sent off and the gear object loaded
  * (800baf48), then out of its group (800883ac); also sets 800ccd88/8006d940
  * = 0, 800cce42 bit 7, 800d32a1 = 2, 800c3eb8 = 1 and two battle state
  * bytes. */
-s32 func_801E80F0(s32 thread, u8 *insn) {
+s32 battle_event_script_slot0_to_gear(s32 thread, u8 *insn) {
     battle_work_area.records[0].pilot.gearId = 0;
     game_data.characters[0].gearId = 0;
     battle_give_slot_own_group(0);
@@ -1161,140 +1161,140 @@ s32 func_801E80F0(s32 thread, u8 *insn) {
     return 1;
 }
 
-/* Opcode 3a (5 bytes; signed operands a, b): start animation b on actor a
+/* 801E818C: Opcode 3a (5 bytes; signed operands a, b): start animation b on actor a
  * (801e9430). */
-s32 func_801E818C(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 2, 0, 1);
-    func_801E9430(func_801E5A98((u8)battle_state_of_event_script->operands[0]), battle_state_of_event_script->operands[1]);
+s32 battle_event_script_actor_animation(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 2, 0, 1);
+    battle_event_script_start_actor_animation(battle_event_script_get_actor_slot((u8)battle_state_of_event_script->operands[0]), battle_state_of_event_script->operands[1]);
     return 5;
 }
 
-/* Opcode 3b (3 bytes): return actor a to its idle animation (801e950c). */
-s32 func_801E81EC(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 1, 0, 1);
-    func_801E950C(func_801E5A98((u8)battle_state_of_event_script->operands[0]));
+/* 801E81EC: Opcode 3b (3 bytes): return actor a to its idle animation (801e950c). */
+s32 battle_event_script_actor_idle(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 1, 0, 1);
+    battle_event_script_return_actor_to_idle(battle_event_script_get_actor_slot((u8)battle_state_of_event_script->operands[0]));
     return 3;
 }
 
-/* Opcode 3c (3 bytes): clear actor a's bytes 0x9e and 0x34 and bits 2-7 of
+/* 801E823C: Opcode 3c (3 bytes): clear actor a's bytes 0x9e and 0x34 and bits 2-7 of
  * its flags at 0x40 (801e9550). */
-s32 func_801E823C(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 1, 0, 1);
-    func_801E9550(func_801E5A98((u8)battle_state_of_event_script->operands[0]));
+s32 battle_event_script_actor_clear(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 1, 0, 1);
+    battle_event_script_stop_actor_commands(battle_event_script_get_actor_slot((u8)battle_state_of_event_script->operands[0]));
     return 3;
 }
 
-/* Opcode 3d (3 bytes): clear actor a's byte 0x9e (801e958c). */
-s32 func_801E828C(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 1, 0, 1);
-    func_801E958C(func_801E5A98((u8)battle_state_of_event_script->operands[0]));
+/* 801E828C: Opcode 3d (3 bytes): clear actor a's byte 0x9e (801e958c). */
+s32 battle_event_script_actor_clear_9e(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 1, 0, 1);
+    battle_event_script_clear_actor_countdown(battle_event_script_get_actor_slot((u8)battle_state_of_event_script->operands[0]));
     return 3;
 }
 
-/* Opcode 3e (9 bytes; signed operands a, x, y, z): move actor a to (x, y, z)
+/* 801E82DC: Opcode 3e (9 bytes; signed operands a, x, y, z): move actor a to (x, y, z)
  * (801e95e4) and wait for it. */
-s32 func_801E82DC(s32 thread, u8 *insn) {
+s32 battle_event_script_actor_move(s32 thread, u8 *insn) {
     s32 slot;
     s32 length = 0;
 
-    func_801E57F8(insn, 4, 0, 1);
-    slot = func_801E5A98((u8)battle_state_of_event_script->operands[0]);
-    if (D_801E9C20[slot] == 0) {
+    battle_event_script_decode_operands(insn, 4, 0, 1);
+    slot = battle_event_script_get_actor_slot((u8)battle_state_of_event_script->operands[0]);
+    if (battle_event_script_actions_started[slot] == 0) {
         battle_state_of_event_script->actionRunning[slot] = 1;
-        D_801E9C20[slot] = 1;
-        func_801E95E4(slot, battle_state_of_event_script->operands[1], battle_state_of_event_script->operands[2], battle_state_of_event_script->operands[3]);
+        battle_event_script_actions_started[slot] = 1;
+        battle_event_script_start_actor_move(slot, battle_state_of_event_script->operands[1], battle_state_of_event_script->operands[2], battle_state_of_event_script->operands[3]);
     } else if (battle_state_of_event_script->actionRunning[slot] == 0) {
-        D_801E9C20[slot] = 0;
+        battle_event_script_actions_started[slot] = 0;
         length = 9;
     }
     return length;
 }
 
-/* Opcode 3f (9 bytes; signed operands a, x, y, z): run actor a's action 3
+/* 801E83C0: Opcode 3f (9 bytes; signed operands a, x, y, z): run actor a's action 3
  * with (x, y, z) (801e9694) and wait for it. */
-s32 func_801E83C0(s32 thread, u8 *insn) {
+s32 battle_event_script_actor_action(s32 thread, u8 *insn) {
     s32 slot;
     s32 length = 0;
 
-    func_801E57F8(insn, 4, 0, 1);
-    slot = func_801E5A98((u8)battle_state_of_event_script->operands[0]);
-    if (D_801E9C20[slot] == 0) {
+    battle_event_script_decode_operands(insn, 4, 0, 1);
+    slot = battle_event_script_get_actor_slot((u8)battle_state_of_event_script->operands[0]);
+    if (battle_event_script_actions_started[slot] == 0) {
         battle_state_of_event_script->actionRunning[slot] = 1;
-        D_801E9C20[slot] = 1;
-        func_801E9694(slot, battle_state_of_event_script->operands[1], battle_state_of_event_script->operands[2], battle_state_of_event_script->operands[3]);
+        battle_event_script_actions_started[slot] = 1;
+        battle_event_script_start_actor_animation3(slot, battle_state_of_event_script->operands[1], battle_state_of_event_script->operands[2], battle_state_of_event_script->operands[3]);
     } else if (battle_state_of_event_script->actionRunning[slot] == 0) {
-        D_801E9C20[slot] = 0;
+        battle_event_script_actions_started[slot] = 0;
         length = 9;
     }
     return length;
 }
 
-/* Opcode 45 (9 bytes; signed operands a-d): actor a attacks actor b
+/* 801E84A4: Opcode 45 (9 bytes; signed operands a-d): actor a attacks actor b
  * (animation c, value d) and waits; value d becomes b's code in the first
  * presentation event. */
-s32 func_801E84A4(s32 thread, u8 *insn) {
+s32 battle_event_script_attack(s32 thread, u8 *insn) {
     s32 length = 0;
     u8 attacker;
     u8 target;
 
-    func_801E57F8(insn, 4, 0, 1);
-    attacker = func_801E5A98((u8)battle_state_of_event_script->operands[0]);
-    target = func_801E5A98((u8)battle_state_of_event_script->operands[1]);
+    battle_event_script_decode_operands(insn, 4, 0, 1);
+    attacker = battle_event_script_get_actor_slot((u8)battle_state_of_event_script->operands[0]);
+    target = battle_event_script_get_actor_slot((u8)battle_state_of_event_script->operands[1]);
     battle_turn_state->eventCount = 0;
     battle_clear_event_results();
     battle_area.events[0].codes[target] = battle_state_of_event_script->operands[3];
-    if (D_801E9C20[attacker] == 0) {
+    if (battle_event_script_actions_started[attacker] == 0) {
         battle_state_of_event_script->actionRunning[attacker] = 1;
-        D_801E9C20[attacker] = 1;
-        func_801E9894(attacker, target);
+        battle_event_script_actions_started[attacker] = 1;
+        battle_event_script_turn_actor_to_target(attacker, target);
         while (cd_get_pending_read_count() != 0) {
             battle_wait_frame();
         }
-        func_801E9430(attacker, battle_state_of_event_script->operands[2]);
+        battle_event_script_start_actor_animation(attacker, battle_state_of_event_script->operands[2]);
     } else if (battle_state_of_event_script->actionRunning[attacker] == 0) {
-        D_801E9C20[attacker] = 0;
+        battle_event_script_actions_started[attacker] = 0;
         length = 9;
     }
     return length;
 }
 
-/* Opcode 46 (7 bytes; signed operands a, b, c): clear the event results,
+/* 801E8600: Opcode 46 (7 bytes; signed operands a, b, c): clear the event results,
  * give actor a its idle animation with command c (801e9700) and run its
  * attack on actor b (801e9760). */
-s32 func_801E8600(s32 thread, u8 *insn) {
+s32 battle_event_script_actor_attack(s32 thread, u8 *insn) {
     u8 actor;
     u8 target;
 
     battle_turn_state->eventCount = 0;
     battle_clear_event_results();
-    func_801E57F8(insn, 3, 0, 1);
-    actor = func_801E5A98((u8)battle_state_of_event_script->operands[0]);
-    target = func_801E5A98((u8)battle_state_of_event_script->operands[1]);
-    func_801E9700(actor, battle_state_of_event_script->operands[2]);
-    func_801E9760(actor, target);
+    battle_event_script_decode_operands(insn, 3, 0, 1);
+    actor = battle_event_script_get_actor_slot((u8)battle_state_of_event_script->operands[0]);
+    target = battle_event_script_get_actor_slot((u8)battle_state_of_event_script->operands[1]);
+    battle_event_script_give_actor_command(actor, battle_state_of_event_script->operands[2]);
+    battle_event_script_run_actor_attack(actor, target);
     return 7;
 }
 
-/* Opcode 47 (1 byte): stop the disc read and finish the loads (800b8d7c). */
-s32 func_801E86AC(s32 thread, u8 *insn) {
+/* 801E86AC: Opcode 47 (1 byte): stop the disc read and finish the loads (800b8d7c). */
+s32 battle_event_script_finish_loads(s32 thread, u8 *insn) {
     battle_stop_reads_finish_loads();
     return 1;
 }
 
-/* Opcode 42 (1 byte): show member 0's number lists (8007ff14(0)). */
-s32 func_801E86D0(s32 thread, u8 *insn) {
+/* 801E86D0: Opcode 42 (1 byte): show member 0's number lists (8007ff14(0)). */
+s32 battle_event_script_show_gear_hud(s32 thread, u8 *insn) {
     battle_gear_hud_show(0);
     return 1;
 }
 
-/* Opcode 43 (1 byte): leave member 0's menu (800800e8(0)). */
-s32 func_801E86F4(s32 thread, u8 *insn) {
+/* 801E86F4: Opcode 43 (1 byte): leave member 0's menu (800800e8(0)). */
+s32 battle_event_script_leave_member_menu(s32 thread, u8 *insn) {
     battle_leave_member_menu(0);
     return 1;
 }
 
-/* Opcode 44 (1 byte): clear byte 0x35 of the eleven battle objects. */
-s32 func_801E8718(s32 thread, u8 *insn) {
+/* 801E8718: Opcode 44 (1 byte): clear byte 0x35 of the eleven battle objects. */
+s32 battle_event_script_clear_objects_35(s32 thread, u8 *insn) {
     s32 i;
 
     for (i = 0; i < 11; i++) {
@@ -1305,19 +1305,19 @@ s32 func_801E8718(s32 thread, u8 *insn) {
     return 1;
 }
 
-/* Opcode 48 (5 bytes; signed operands a, b): play battle sound a (variant b)
+/* 801E8750: Opcode 48 (5 bytes; signed operands a, b): play battle sound a (variant b)
  * to its end (800b838c). */
-s32 func_801E8750(s32 thread, u8 *insn) {
-    func_801E57F8(insn, 2, 0, 1);
+s32 battle_event_script_battle_sound(s32 thread, u8 *insn) {
+    battle_event_script_decode_operands(insn, 2, 0, 1);
     battle_play_sound_to_end(battle_state_of_event_script->operands[0], battle_state_of_event_script->operands[1]);
     return 5;
 }
 
-/* Run the script: each pass gives every thread in run order a battle frame
+/* 801E879C: Run the script: each pass gives every thread in run order a battle frame
  * (800716d8) and then up to four instructions (fewer when one ends it).
  * Passes repeat until opcode 22 makes one the last. Opcodes 4c-ff have no
  * case: the previous length is applied again. */
-void func_801E879C(void) {
+void battle_event_script_run(void) {
     s32 length;
     u8 steps;
     u32 i;
@@ -1335,236 +1335,236 @@ void func_801E879C(void) {
                 steps = 4;
                 battle_wait_frame();
                 do {
-                    pc = func_801E5768(&battle_state_of_event_script->threads[thread]);
+                    pc = battle_event_script_select_top_level(&battle_state_of_event_script->threads[thread]);
                     switch (battle_state_of_event_script->code[pc]) {
                     case 0x00:
-                        length = func_801E5C1C(thread);
+                        length = battle_event_script_end(thread);
                         steps = 1;
                         break;
                     case 0x01:
-                        length = func_801E5CE4(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_jump(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x02:
-                        length = func_801E5D24(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_branch_unless(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x03:
-                        length = func_801E5DCC(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_request(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x04:
-                        length = func_801E5EF8(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_request_wait_start(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x05:
-                        length = func_801E5F8C(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_request_wait_end(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x06:
-                        length = func_801E6084(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_set(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x07:
-                        length = func_801E60E8(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_set_one(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x08:
-                        length = func_801E6118(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_set_zero(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x09:
-                        length = func_801E6144(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_add(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x0A:
-                        length = func_801E61B4(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_subtract(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x0B:
-                        length = func_801E6224(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_or(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x0C:
-                        length = func_801E6294(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_clear_bits(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x0D:
-                        length = func_801E6304(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_increment(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x0E:
-                        length = func_801E633C(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_decrement(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x0F:
-                        length = func_801E6374(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_and(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x10:
-                        length = func_801E63E4(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_or_10(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x11:
-                        length = func_801E6454(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_xor(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x12:
-                        length = func_801E64C4(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_shift_left(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x13:
-                        length = func_801E6534(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_shift_right(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x14:
-                        length = func_801E65A4(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_random(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x15:
-                        length = func_801E65FC(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_random_below(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x16:
-                        length = func_801E6660(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_multiply(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x17:
-                        length = func_801E66D8(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_divide(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x18:
-                        length = func_801E71D4(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_message(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x19:
-                        length = func_801E7230(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_message_from(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x1A:
-                        length = func_801E7278(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_window(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x1B:
-                        length = func_801E7314(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_speaker(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x1C:
-                        length = func_801E7358(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_enter_script_mode(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x1D:
-                        length = func_801E736C(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_enter_turn_mode(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x1E:
-                        length = func_801E7380(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_fade_white(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x1F:
-                        length = func_801E73D4(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_fade_black(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x20:
-                        length = func_801E746C(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_halt_until_battle_end(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x21:
-                        length = func_801E748C(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_skip_result_screens(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x22:
-                        length = func_801E74A0(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_last_pass(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x23:
-                        length = func_801E74E0(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_act(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x24:
-                        length = func_801E7700(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_next_battle(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x25:
-                        length = func_801E775C(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_allow_defeat(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x26:
-                        length = func_801E7770(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_set_saved_map(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x27:
-                        length = func_801E77E4(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_request_movie(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x28:
-                        length = func_801E786C(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_fade(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x29:
-                        length = func_801E78A8(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_quake(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x2A:
-                        length = func_801E79E0(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_model_animation(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x2B:
-                        length = func_801E7B58(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_wait(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x2C:
-                        length = func_801E7C0C(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_run_order(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x2D:
-                        length = func_801E7E14(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_music(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x2E:
-                        length = func_801E7E5C(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_music_silent(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x2F:
-                        length = func_801E7EA4(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_music_fade(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x30:
-                        length = func_801E7F08(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_music_volume(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x31:
-                        length = func_801E7F70(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_sound(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x32:
-                        length = func_801E8074(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_nop(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x33:
-                        length = func_801E807C(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_stop_music(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x34:
-                        length = func_801E80E8(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_nop_34(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x35:
-                        length = func_801E7914(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_load_model(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x36:
-                        length = func_801E7B08(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_free_model(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x37:
-                        length = func_801E74B8(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_exit_battle(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x38:
-                        length = func_801E75F0(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_act_nowait(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x39:
-                        length = func_801E80F0(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_slot0_to_gear(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x3A:
-                        length = func_801E818C(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_actor_animation(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x3B:
-                        length = func_801E81EC(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_actor_idle(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x3C:
-                        length = func_801E823C(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_actor_clear(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x3D:
-                        length = func_801E828C(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_actor_clear_9e(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x3E:
-                        length = func_801E82DC(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_actor_move(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x3F:
-                        length = func_801E83C0(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_actor_action(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x40:
-                        length = func_801E7B2C(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_free_model_camera(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x41:
-                        length = func_801E7FF4(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_sound_volume(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x42:
-                        length = func_801E86D0(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_show_gear_hud(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x43:
-                        length = func_801E86F4(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_leave_member_menu(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x44:
-                        length = func_801E8718(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_clear_objects_35(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x45:
-                        length = func_801E84A4(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_attack(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x46:
-                        length = func_801E8600(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_actor_attack(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x47:
-                        length = func_801E86AC(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_finish_loads(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x48:
-                        length = func_801E8750(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_battle_sound(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x49:
-                        length = func_801E7424(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_set_return_fade(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x4A:
-                        length = func_801E7660(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_set_slot0_attack_level4(thread, battle_state_of_event_script->code + pc);
                         break;
                     case 0x4B:
-                        length = func_801E7684(thread, battle_state_of_event_script->code + pc);
+                        length = battle_event_script_suppress_gear_hp_warning(thread, battle_state_of_event_script->code + pc);
                         break;
                     }
                     battle_state_of_event_script->threads[thread].pc[battle_state_of_event_script->threads[thread].level] =
