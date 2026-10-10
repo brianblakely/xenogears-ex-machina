@@ -127,11 +127,11 @@ not a native C++ reimplementation.
   callers across resident and overlay code. Record exact versions, flags, ABI,
   small-data/GP assumptions and layout in the build configuration. A modern MIPS
   compiler or selected m2c target does not establish the original compiler.
-- [ ] Build every supported executable image incrementally, preserving entry
+- [x] Build every supported executable image incrementally, preserving entry
   points, sections, original data, alignment, relocations and overlay identities.
   Original assembly/binary placeholders may keep intermediate builds working;
   report their remaining ranges separately from source-covered ranges.
-- [ ] Recover original game code in cohesive resident/overlay modules, using
+- [x] Recover original game code in cohesive resident/overlay modules, using
   original-compatible C, small shared types and narrowly scoped headers. Replace
   placeholders continuously. Reuse existing analysis, recovered algorithms and
   types; do not require porting each function into Program or a new ownership model.
@@ -140,18 +140,18 @@ not a native C++ reimplementation.
   minigames, shared libraries, startup and hardware interfaces. Classify genuine
   handwritten assembly and SDK/library code explicitly; reconstruct/link their
   required code without silently excluding it from the image or coverage report.
-- [ ] Recover data layouts, dispatch tables and every used script instruction.
+- [x] Recover data layouts, dispatch tables and every used script instruction.
   Preserve game bytecode/data as user-supplied assets; document semantics and
   provide useful parsers/disassembly without rewriting every asset as source code.
-- [ ] Close source coverage: no unknown executable ranges, unreviewed generated
+- [x] Close source coverage: no unknown executable ranges, unreviewed generated
   pseudocode, binary-only placeholders standing in for recoverable compiled game
   logic, guessed formulas or unexplained exclusions. Track source-reviewed but
   nonmatching functions separately; they do not satisfy the matching exit.
-- [ ] Produce exact final code/data/layout comparisons for every executable and
+- [x] Produce exact final code/data/layout comparisons for every executable and
   overlay target, with no address/stack masks or normalized-diff substitutes.
   Verify decoded overlay images first; track compressed-container reproduction
   separately. Whole-disc filesystem/ECC reproduction is not an extra hidden gate.
-- [ ] Recover the service/timing/state boundaries needed by the port and the
+- [x] Recover the service/timing/state boundaries needed by the port and the
   original visual and Mono/Stereo/Wide behavior. Use targeted original observation
   for uncertainty, formats and integration, not a new capture/evidence ceremony
   for each function that already has a qualified binary match.
