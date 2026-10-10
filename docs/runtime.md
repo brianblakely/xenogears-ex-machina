@@ -67,7 +67,10 @@ original address.
 - **Unprototyped calls.** A direct call whose types differ from the
   definition goes through a generated adapter (`build/game/adapters.txt`
   lists each): integer arguments are truncated or extended, a missing
-  argument is 0 and an extra one is dropped.
+  argument is 0 and an extra one is dropped. Where the PS1 callee read the
+  register or stack word the caller left, or the caller used the `$v0` a void
+  function left, `port/adapters.c` defines `xem_adapt_<function>` with the
+  call's types and the matched code's value, and the build calls it instead.
 - **Suspension.** `wasm-opt --asyncify` instruments the module so that the
   imports `xem.yield` (frame waits, polls) and `xem.restart` (the dispatcher's
   stack reset, soft reset) unwind the game stack into linear memory. The host
