@@ -115,3 +115,68 @@ From `runtime/` in `nix develop path:./nix/runtime`:
 - Android, in `#android`: `cargo ndk -t arm64-v8a -P 26 build -p xem-ui -p xem-render`
   (Slint compiles its FemtoVG module out on Android, so `xem-ui` takes the
   renderer from `i-slint-renderer-femtovg` there)
+
+## OpenXR adapter
+
+`xem-xr` runs an immersive OpenXR session on the host's one wgpu device. The
+runtime creates the Vulkan instance and device (XR_KHR_vulkan_enable2) from the
+create infos wgpu-hal would use, and wgpu-hal/wgpu wrap and own them, so the
+scene, the compositor and the Slint panel render on the device and queue the
+session is bound to. The crate documentation records the ownership and
+synchronisation rules; in short:
+
+- wgpu's single queue is the session's queue. A swapchain image is rendered only
+  between acquire+wait and release, the work is submitted before
+  `xrReleaseSwapchainImage`, and the image is explicitly returned to
+  `COLOR_ATTACHMENT_OPTIMAL` (wgpu `transition_resources`) first. All frame,
+  swapchain and queue calls stay on the session's thread.
+- The eyes use one swapchain of two array layers: one acquire/wait/release and
+  one image index per frame for both eyes, the layout Horizon's compositor and
+  multiview rendering use, and per-layer views for today's per-eye passes.
+- The Slint panel is a quad layer with its own swapchain: the runtime samples it
+  directly (sharper text than resampling it through the eye images), and it is
+  updated by a GPU copy only when Slint redraws; other frames resubmit the last
+  released image.
+- `xrWaitFrame` paces the loop; views, head and input are located at the
+  predicted display time. Session states drive begin/end (READY, STOPPING) and
+  exit (EXITING, LOSS_PENDING, instance loss).
+- Controller actions (aim and grip poses, trigger, select, menu) are bound for
+  `khr/simple_controller` and `oculus/touch_controller`. Hand joints
+  (XR_EXT_hand_tracking) and eye gaze (XR_EXT_eye_gaze_interaction) are enabled
+  only when the runtime offers the extension and the system reports support;
+  `Capabilities` reports both. Input is raw state; gestures are interpreted
+  elsewhere.
+- On Android the loader is initialised with XR_KHR_loader_init_android and the
+  instance created with XR_KHR_android_create_instance (`Platform` is
+  `openxr::AndroidPlatformInfo` there).
+
+The `xem-xr-demo` example renders the test scene in stereo with the settings
+panel as a quad layer. Its scene clock stands in for the simulation:
+`--paused` freezes it while head tracking and rendering continue. It prints one
+`key=value` line per frame (predicted display time and period, session state,
+head and eye poses, swapchain operations in order, submitted layers, input) and
+`--capture DIR` saves the eye layers and the panel image, read back from the
+swapchains before release.
+
+`runtime/scripts/xr-smoke.sh` (in `nix develop path:./nix/runtime`) runs it
+against Monado 25.1 without a display or headset: `monado-service` with
+`XRT_COMPOSITOR_NULL=1` (null compositor), `SIMULATED_ENABLE=1
+SIMULATED_ROTATE=1` (the simulated HMD turns continuously),
+`SIMULATED_LEFT/RIGHT=simple` (simulated simple controllers) and `XRT_NO_STDIN=1`,
+in a private short `XDG_RUNTIME_DIR` (the IPC socket path must fit a
+`sockaddr_un`); the demo finds it through `XR_RUNTIME_JSON=$XEM_MONADO_RUNTIME`.
+Both use lavapipe unless `VK_ICD_FILENAMES` is set. It checks the state order
+READY, SYNCHRONIZED, VISIBLE, FOCUSED, STOPPING, EXITING after an exit request;
+strictly increasing predicted display times; two distinct eye poses; projection
+and quad layers on every rendered frame; acquire, wait, submit, release order;
+changing head poses; and, with `--paused`, a constant simulation time.
+`XEM_XR_COMPOSITED=1` adds a run under Monado's real compositor presenting to a
+headless weston and saves a weston screenshot of the runtime's composition.
+
+Monado cannot show what only a headset can: the Horizon OS runtime and its
+Vulkan driver, Quest frame pacing and reprojection, real head and controller
+tracking, hand tracking and eye gaze (Monado's simulated devices offer neither),
+Android lifecycle and permissions (eye tracking needs
+`com.oculus.permission.EYE_TRACKING`), and the APK packaging with Meta's loader.
+`xem-xr` cross-compiles for `aarch64-linux-android`
+(`cargo ndk -t arm64-v8a -P 26 build -p xem-xr` in `#android`).
