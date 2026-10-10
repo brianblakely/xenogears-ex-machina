@@ -236,3 +236,1019 @@ void model_set_envmap_mapping(s32 u_shift, s32 v_shift, s32 u_offset, s32 v_offs
         XEM_U16(base + XEM_ENVMAP_OFFSET(xem_envmap_v_shifts[i])) = (u16)v_offset;
     }
 }
+
+/* ---------------------------------------------------------------- AVSZ sorts */
+
+/* model_draw_gt3_avg.s, triangles: kept when on screen and NCLIP > 0; the
+ * three SXY words are written and the face counted, then linked at
+ * OT[AVSZ3 >> shift] unless the OTZ is 0. */
+static void xem_draw_avg_triangles(u8 *records, s32 count, u32 step, u32 tag, u32 size) {
+    XemDraw d;
+    u32 sxy0, sxy1, sxy2, otz, entry, old;
+    s32 nclip;
+
+    xem_draw_begin(&d, records, count);
+    xem_draw_read(&d);
+    xem_load_vector(0, xem_vertex0(&d));
+    xem_load_vector(1, xem_vertex1(&d));
+    xem_load_vector(2, xem_vertex2(&d));
+    d.slot -= size;
+    for (;;) {
+        xem_cop2(XEM_GTE_RTPT);
+        if (d.left == 0) {
+            break;
+        }
+        d.left--;
+        xem_draw_next(&d);
+        d.slot += size;
+        xem_load_vector(0, xem_vertex0(&d));
+        xem_load_vector(1, xem_vertex1(&d));
+        xem_load_vector(2, xem_vertex2(&d));
+        if (xem_draw_error()) {
+            continue;
+        }
+        sxy0 = xem_mfc2(XEM_GTE_SXY0);
+        sxy1 = xem_mfc2(XEM_GTE_SXY1);
+        sxy2 = xem_mfc2(XEM_GTE_SXY2);
+        xem_cop2(XEM_GTE_NCLIP);
+        if (!xem_y_test3(&d, sxy0, sxy1, sxy2) || !xem_x_test3(&d, sxy0, sxy1, sxy2)) {
+            continue;
+        }
+        nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
+        xem_cop2(XEM_GTE_AVSZ3);
+        d.slot &= XEM_DMA_MASK;
+        if (nclip <= 0) {
+            continue;
+        }
+        xem_store_xy3(&d, step, sxy0, sxy1, sxy2);
+        otz = xem_mfc2(XEM_GTE_OTZ);
+        d.drawn++;
+        if (otz == 0) {
+            continue;
+        }
+        entry = xem_ot_entry(&d, otz, d.shift);
+        old = XEM_U32(entry);
+        xem_link(&d, entry, old, tag);
+    }
+    xem_draw_end(&d, size);
+}
+
+/* model_draw_gt3_avg.s, quads: RTPT projects the first three points and
+ * NCLIP tests their winding only; RTPS then projects the fourth. A quad on
+ * screen is counted, and only then skipped when its AVSZ4 OTZ is 0;
+ * otherwise it is linked and its four SXY words written. */
+static void xem_draw_avg_quads(u8 *records, s32 count, u32 step, u32 tag, u32 size) {
+    XemDraw d;
+    u32 first, fourth, sxy0, sxy1, sxy2, sxy3, otz, entry, old;
+    s32 nclip;
+    int error;
+
+    xem_draw_begin(&d, records, count);
+    xem_draw_read(&d);
+    first = xem_vertex0(&d);
+    xem_load_vector(1, xem_vertex1(&d));
+    xem_load_vector(2, xem_vertex2(&d));
+    d.slot -= size;
+    for (;;) {
+        xem_load_vector(0, first);
+        xem_cop2(XEM_GTE_RTPT);
+        if (d.left == 0) {
+            break;
+        }
+        d.left--;
+        xem_draw_next(&d);
+        d.slot += size;
+        first = xem_vertex0(&d);
+        xem_load_vector(1, xem_vertex1(&d));
+        xem_load_vector(2, xem_vertex2(&d));
+        error = xem_draw_error();
+        xem_cop2(XEM_GTE_NCLIP);
+        d.slot &= XEM_DMA_MASK;
+        if (error) {
+            continue;
+        }
+        fourth = xem_vertex3(&d);
+        sxy0 = xem_mfc2(XEM_GTE_SXY0);
+        nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
+        if (nclip <= 0) {
+            continue;
+        }
+        sxy1 = xem_mfc2(XEM_GTE_SXY1);
+        xem_load_vector(0, fourth);
+        sxy2 = xem_mfc2(XEM_GTE_SXY2);
+        xem_cop2(XEM_GTE_RTPS);
+        error = xem_draw_error();
+        sxy3 = xem_mfc2(XEM_GTE_SXY2);
+        xem_cop2(XEM_GTE_AVSZ4);
+        if (error) {
+            continue;
+        }
+        if (!xem_y_test4(&d, sxy0, sxy1, sxy2, sxy3) || !xem_x_test4(&d, sxy0, sxy1, sxy2, sxy3)) {
+            continue;
+        }
+        otz = xem_mfc2(XEM_GTE_OTZ);
+        d.drawn++;
+        if (otz == 0) {
+            continue;
+        }
+        entry = xem_ot_entry(&d, otz, d.shift);
+        old = XEM_U32(entry);
+        xem_link(&d, entry, old, tag);
+        XEM_U32(d.slot + 8) = sxy0;
+        XEM_U32(d.slot + step + 8) = sxy1;
+        XEM_U32(d.slot + step * 2 + 8) = sxy2;
+        XEM_U32(d.slot + step * 3 + 8) = sxy3;
+    }
+    xem_draw_end(&d, size);
+}
+
+/* The entry points select the packet format: XY word step, tag length and
+ * packet size (model_packet). */
+void model_draw_gt3_avg(u8 *records, s32 count) { xem_draw_avg_triangles(records, count, 12, 0x09000000, 40); }
+void model_draw_g3_avg(u8 *records, s32 count) { xem_draw_avg_triangles(records, count, 8, 0x06000000, 28); }
+void model_draw_f3_avg(u8 *records, s32 count) { xem_draw_avg_triangles(records, count, 4, 0x04000000, 20); }
+void model_draw_ft3_avg(u8 *records, s32 count) { xem_draw_avg_triangles(records, count, 8, 0x07000000, 32); }
+void model_draw_gt4_avg(u8 *records, s32 count) { xem_draw_avg_quads(records, count, 12, 0x0C000000, 52); }
+void model_draw_g4_avg(u8 *records, s32 count) { xem_draw_avg_quads(records, count, 8, 0x08000000, 36); }
+void model_draw_f4_avg(u8 *records, s32 count) { xem_draw_avg_quads(records, count, 4, 0x05000000, 24); }
+void model_draw_ft4_avg(u8 *records, s32 count) { xem_draw_avg_quads(records, count, 8, 0x09000000, 40); }
+
+/* ---------------------------------------------------------------- far and near sorts */
+
+/* model_depth.s, triangles: sorted by the largest (far) or smallest (near)
+ * of SZ1..SZ3 shifted by model_ot_depth_shift + 2. The first SXY word is
+ * written also for a back face; a front-facing face gets all three, is
+ * counted and, unless its depth is 0, linked. */
+static void xem_draw_depth_triangles(u8 *records, s32 count, u32 step, u32 tag, u32 size, int far) {
+    XemDraw d;
+    u32 sxy0, sxy1, sxy2, sz2, sz3, depth, entry, old;
+    s32 nclip;
+
+    xem_draw_begin(&d, records, count);
+    xem_draw_read(&d);
+    d.shift += 2;
+    xem_load_vector(0, xem_vertex0(&d));
+    xem_load_vector(1, xem_vertex1(&d));
+    xem_load_vector(2, xem_vertex2(&d));
+    d.slot -= size;
+    for (;;) {
+        xem_cop2(XEM_GTE_RTPT);
+        if (d.left == 0) {
+            break;
+        }
+        d.left--;
+        xem_draw_next(&d);
+        d.slot += size;
+        xem_load_vector(0, xem_vertex0(&d));
+        xem_load_vector(1, xem_vertex1(&d));
+        xem_load_vector(2, xem_vertex2(&d));
+        if (xem_draw_error()) {
+            continue;
+        }
+        sxy0 = xem_mfc2(XEM_GTE_SXY0);
+        sxy1 = xem_mfc2(XEM_GTE_SXY1);
+        sxy2 = xem_mfc2(XEM_GTE_SXY2);
+        xem_cop2(XEM_GTE_NCLIP);
+        if (!xem_y_test3(&d, sxy0, sxy1, sxy2) || !xem_x_test3(&d, sxy0, sxy1, sxy2)) {
+            continue;
+        }
+        nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
+        sz2 = xem_mfc2(XEM_GTE_SZ2);
+        XEM_U32(d.slot + 8) = sxy0;
+        if (nclip <= 0) {
+            continue;
+        }
+        XEM_U32(d.slot + step + 8) = sxy1;
+        XEM_U32(d.slot + step * 2 + 8) = sxy2;
+        depth = xem_mfc2(XEM_GTE_SZ1);
+        sz3 = xem_mfc2(XEM_GTE_SZ3);
+        depth = xem_depth_keep(depth, sz2, far);
+        d.slot &= XEM_DMA_MASK;
+        depth = xem_depth_keep(depth, sz3, far);
+        d.drawn++;
+        if (depth == 0) {
+            continue;
+        }
+        entry = xem_ot_entry(&d, depth, d.shift);
+        old = XEM_U32(entry);
+        xem_link(&d, entry, old, tag);
+    }
+    xem_draw_end(&d, size);
+}
+
+/* model_depth.s, quads: once on screen the SXY words are written (the
+ * first as soon as the y test passes, whatever the x test says: the x
+ * test's accept instruction is its reject branch's delay slot), but a zero
+ * SZ at any of the four points rejects the quad before it is counted or
+ * linked (the fourth SXY is written only once SZ0 is nonzero). */
+static void xem_draw_depth_quads(u8 *records, s32 count, u32 step, u32 tag, u32 size, int far) {
+    XemDraw d;
+    u32 first, fourth, sxy0, sxy1, sxy2, sxy3, sz0, sz1, sz2, sz3, depth, entry, old;
+    s32 nclip;
+
+    xem_draw_begin(&d, records, count);
+    xem_draw_read(&d);
+    d.shift += 2;
+    first = xem_vertex0(&d);
+    xem_load_vector(1, xem_vertex1(&d));
+    xem_load_vector(2, xem_vertex2(&d));
+    d.slot -= size;
+    for (;;) {
+        xem_load_vector(0, first);
+        xem_cop2(XEM_GTE_RTPT);
+        if (d.left == 0) {
+            break;
+        }
+        d.left--;
+        xem_draw_next(&d);
+        d.slot += size;
+        first = xem_vertex0(&d);
+        xem_load_vector(1, xem_vertex1(&d));
+        xem_load_vector(2, xem_vertex2(&d));
+        if (xem_draw_error()) {
+            continue;
+        }
+        sxy0 = xem_mfc2(XEM_GTE_SXY0);
+        sxy1 = xem_mfc2(XEM_GTE_SXY1);
+        sxy2 = xem_mfc2(XEM_GTE_SXY2);
+        xem_cop2(XEM_GTE_NCLIP);
+        fourth = xem_vertex3(&d);
+        nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
+        if (nclip <= 0) {
+            continue;
+        }
+        xem_load_vector(0, fourth);
+        xem_cop2(XEM_GTE_RTPS);
+        if (xem_draw_error()) {
+            continue;
+        }
+        sxy3 = xem_mfc2(XEM_GTE_SXY2);
+        if (!xem_y_test4(&d, sxy0, sxy1, sxy2, sxy3)) {
+            continue;
+        }
+        XEM_U32(d.slot + 8) = sxy0;
+        if (!xem_x_test4(&d, sxy0, sxy1, sxy2, sxy3)) {
+            continue;
+        }
+        XEM_U32(d.slot + step + 8) = sxy1;
+        sz0 = xem_mfc2(XEM_GTE_SZ0);
+        XEM_U32(d.slot + step * 2 + 8) = sxy2;
+        if (sz0 == 0) {
+            continue;
+        }
+        sz1 = xem_mfc2(XEM_GTE_SZ1);
+        XEM_U32(d.slot + step * 3 + 8) = sxy3;
+        if (sz1 == 0) {
+            continue;
+        }
+        depth = xem_depth_keep(sz0, sz1, far);
+        sz2 = xem_mfc2(XEM_GTE_SZ2);
+        if (sz2 == 0) {
+            continue;
+        }
+        sz3 = xem_mfc2(XEM_GTE_SZ3);
+        depth = xem_depth_keep(depth, sz2, far);
+        d.slot &= XEM_DMA_MASK;
+        if (sz3 == 0) {
+            continue;
+        }
+        depth = xem_depth_keep(depth, sz3, far);
+        d.drawn++;
+        if (depth == 0) {
+            continue;
+        }
+        entry = xem_ot_entry(&d, depth, d.shift);
+        old = XEM_U32(entry);
+        xem_link(&d, entry, old, tag);
+    }
+    xem_draw_end(&d, size);
+}
+
+void model_draw_gt3_far(u8 *records, s32 count) { xem_draw_depth_triangles(records, count, 12, 0x09000000, 40, 1); }
+void model_draw_g3_far(u8 *records, s32 count) { xem_draw_depth_triangles(records, count, 8, 0x06000000, 28, 1); }
+void model_draw_f3_far(u8 *records, s32 count) { xem_draw_depth_triangles(records, count, 4, 0x04000000, 20, 1); }
+void model_draw_ft3_far(u8 *records, s32 count) { xem_draw_depth_triangles(records, count, 8, 0x07000000, 32, 1); }
+void model_draw_gt3_near(u8 *records, s32 count) { xem_draw_depth_triangles(records, count, 12, 0x09000000, 40, 0); }
+void model_draw_g3_near(u8 *records, s32 count) { xem_draw_depth_triangles(records, count, 8, 0x06000000, 28, 0); }
+void model_draw_f3_near(u8 *records, s32 count) { xem_draw_depth_triangles(records, count, 4, 0x04000000, 20, 0); }
+void model_draw_ft3_near(u8 *records, s32 count) { xem_draw_depth_triangles(records, count, 8, 0x07000000, 32, 0); }
+void model_draw_gt4_far(u8 *records, s32 count) { xem_draw_depth_quads(records, count, 12, 0x0C000000, 52, 1); }
+void model_draw_g4_far(u8 *records, s32 count) { xem_draw_depth_quads(records, count, 8, 0x08000000, 36, 1); }
+void model_draw_f4_far(u8 *records, s32 count) { xem_draw_depth_quads(records, count, 4, 0x05000000, 24, 1); }
+void model_draw_ft4_far(u8 *records, s32 count) { xem_draw_depth_quads(records, count, 8, 0x09000000, 40, 1); }
+void model_draw_gt4_near(u8 *records, s32 count) { xem_draw_depth_quads(records, count, 12, 0x0C000000, 52, 0); }
+void model_draw_g4_near(u8 *records, s32 count) { xem_draw_depth_quads(records, count, 8, 0x08000000, 36, 0); }
+void model_draw_f4_near(u8 *records, s32 count) { xem_draw_depth_quads(records, count, 4, 0x05000000, 24, 0); }
+void model_draw_ft4_near(u8 *records, s32 count) { xem_draw_depth_quads(records, count, 8, 0x09000000, 40, 0); }
+
+/* ---------------------------------------------------------------- lit and depth-cued */
+
+/* model_draw_f3_lit.s: flat triangles (POLY_F3) lit from the lit-colour
+ * cache, twelve bytes per face (colour word, face normal), consumed per
+ * face culled or not. The SXY words are written before the NCLIP test; a
+ * front-facing face is counted, lit with NCCS and always linked (no zero
+ * test); its colour word takes the lit RGB and the cached code byte. */
+void model_draw_f3_lit(u8 *records, s32 count) {
+    XemDraw d;
+    u32 first, cache, sxy0, sxy1, sxy2, otz, colour, entry, old;
+    s32 nclip;
+
+    xem_draw_begin(&d, records, count);
+    xem_draw_read(&d);
+    first = xem_vertex0(&d);
+    cache = model_lit_color_cache;
+    xem_load_vector(1, xem_vertex1(&d));
+    xem_load_vector(2, xem_vertex2(&d));
+    d.slot -= 20;
+    for (;;) {
+        xem_load_vector(0, first);
+        xem_cop2(XEM_GTE_RTPT);
+        if (d.left == 0) {
+            break;
+        }
+        d.left--;
+        xem_draw_next(&d);
+        d.slot += 20;
+        first = xem_vertex0(&d);
+        cache += 12;
+        xem_load_vector(1, xem_vertex1(&d));
+        xem_load_vector(2, xem_vertex2(&d));
+        if (xem_draw_error()) {
+            continue;
+        }
+        sxy0 = xem_mfc2(XEM_GTE_SXY0);
+        sxy1 = xem_mfc2(XEM_GTE_SXY1);
+        sxy2 = xem_mfc2(XEM_GTE_SXY2);
+        xem_cop2(XEM_GTE_NCLIP);
+        if (!xem_y_test3(&d, sxy0, sxy1, sxy2) || !xem_x_test3(&d, sxy0, sxy1, sxy2)) {
+            continue;
+        }
+        nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
+        XEM_U32(d.slot + 8) = sxy0;
+        xem_cop2(XEM_GTE_AVSZ3);
+        XEM_U32(d.slot + 12) = sxy1;
+        XEM_U32(d.slot + 16) = sxy2;
+        if (nclip <= 0) {
+            continue;
+        }
+        d.slot &= XEM_DMA_MASK;
+        otz = xem_mfc2(XEM_GTE_OTZ);
+        d.drawn++;
+        colour = XEM_U32(cache - 12);
+        xem_load_vector(0, cache - 8);
+        xem_gte_write_data(XEM_GTE_RGBC, colour);
+        xem_cop2(XEM_GTE_NCCS);
+        entry = xem_ot_entry(&d, otz, d.shift);
+        XEM_U32(d.slot + 4) = xem_colour(colour & 0xFF000000, xem_mfc2(XEM_GTE_RGB2));
+        old = XEM_U32(entry);
+        xem_link(&d, entry, old, 0x04000000);
+    }
+    model_lit_color_cache = cache;
+    xem_draw_end(&d, 20);
+}
+
+/* The colour word of a depth-cued face: the DPCS result with the packet's
+ * own code less bit 0, so that a texture is modulated. */
+static u32 xem_cued_colour(XemDraw *d) {
+    u32 code = (u32)XEM_U8(d->slot + 7) << 24;
+
+    return xem_colour(code & 0xFE000000, xem_mfc2(XEM_GTE_RGB2));
+}
+
+/* model_draw_f3_cued.s: depth-cued triangles sorted by AVSZ3. RGBC holds
+ * the model colour; faces are culled, written, counted and linked as
+ * model_draw_gt3_avg's triangles, and DPCS (by the IR0 of the RTPT's last
+ * vertex) is issued for every counted face, linked or not. */
+static void xem_draw_cued_triangles(u8 *records, s32 count, u32 step, u32 tag, u32 size) {
+    XemDraw d;
+    u32 sxy0, sxy1, sxy2, otz, entry, old;
+    s32 nclip;
+
+    xem_draw_begin(&d, records, count);
+    xem_draw_read(&d);
+    xem_load_vector(0, xem_vertex0(&d));
+    xem_load_vector(1, xem_vertex1(&d));
+    xem_load_vector(2, xem_vertex2(&d));
+    d.slot -= size;
+    xem_gte_write_data(XEM_GTE_RGBC, model_color);
+    for (;;) {
+        xem_cop2(XEM_GTE_RTPT);
+        if (d.left == 0) {
+            break;
+        }
+        d.left--;
+        xem_draw_next(&d);
+        d.slot += size;
+        xem_load_vector(0, xem_vertex0(&d));
+        xem_load_vector(1, xem_vertex1(&d));
+        xem_load_vector(2, xem_vertex2(&d));
+        if (xem_draw_error()) {
+            continue;
+        }
+        sxy0 = xem_mfc2(XEM_GTE_SXY0);
+        sxy1 = xem_mfc2(XEM_GTE_SXY1);
+        sxy2 = xem_mfc2(XEM_GTE_SXY2);
+        xem_cop2(XEM_GTE_NCLIP);
+        if (!xem_y_test3(&d, sxy0, sxy1, sxy2) || !xem_x_test3(&d, sxy0, sxy1, sxy2)) {
+            continue;
+        }
+        nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
+        xem_cop2(XEM_GTE_AVSZ3);
+        d.slot &= XEM_DMA_MASK;
+        if (nclip <= 0) {
+            continue;
+        }
+        xem_store_xy3(&d, step, sxy0, sxy1, sxy2);
+        otz = xem_mfc2(XEM_GTE_OTZ);
+        d.drawn++;
+        xem_cop2(XEM_GTE_DPCS);
+        if (otz == 0) {
+            continue;
+        }
+        entry = xem_ot_entry(&d, otz, d.shift);
+        XEM_U32(d.slot + 4) = xem_cued_colour(&d);
+        old = XEM_U32(entry);
+        xem_link(&d, entry, old, tag);
+    }
+    xem_draw_end(&d, size);
+}
+
+void model_draw_f3_cued(u8 *records, s32 count) { xem_draw_cued_triangles(records, count, 4, 0x04000000, 20); }
+void model_draw_ft3_cued(u8 *records, s32 count) { xem_draw_cued_triangles(records, count, 8, 0x07000000, 32); }
+
+/* model_draw_ft3_cued_far.s: depth-cued POLY_FT3 sorted by the largest of
+ * SZ1..SZ3 (model_ot_depth_shift + 2). DPCS is issued once the y test is
+ * reached (it is the test's accept instruction and its reject branch's
+ * delay slot); a front-facing face on screen is written and counted, and
+ * left unlinked at depth 0. */
+void model_draw_ft3_cued_far(u8 *records, s32 count) {
+    XemDraw d;
+    u32 sxy0, sxy1, sxy2, sz2, sz3, depth, code, rgb, entry, old;
+    s32 nclip;
+    int y;
+
+    xem_draw_begin(&d, records, count);
+    xem_draw_read(&d);
+    d.shift += 2;
+    xem_load_vector(0, xem_vertex0(&d));
+    xem_load_vector(1, xem_vertex1(&d));
+    xem_load_vector(2, xem_vertex2(&d));
+    d.slot -= 32;
+    xem_gte_write_data(XEM_GTE_RGBC, model_color);
+    for (;;) {
+        xem_cop2(XEM_GTE_RTPT);
+        if (d.left == 0) {
+            break;
+        }
+        d.left--;
+        xem_draw_next(&d);
+        d.slot += 32;
+        xem_load_vector(0, xem_vertex0(&d));
+        xem_load_vector(1, xem_vertex1(&d));
+        xem_load_vector(2, xem_vertex2(&d));
+        if (xem_draw_error()) {
+            continue;
+        }
+        sxy0 = xem_mfc2(XEM_GTE_SXY0);
+        sxy1 = xem_mfc2(XEM_GTE_SXY1);
+        sxy2 = xem_mfc2(XEM_GTE_SXY2);
+        xem_cop2(XEM_GTE_NCLIP);
+        y = xem_y_test3(&d, sxy0, sxy1, sxy2);
+        xem_cop2(XEM_GTE_DPCS);
+        if (!y || !xem_x_test3(&d, sxy0, sxy1, sxy2)) {
+            continue;
+        }
+        nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
+        sz2 = xem_mfc2(XEM_GTE_SZ2);
+        d.slot &= XEM_DMA_MASK;
+        if (nclip <= 0) {
+            continue;
+        }
+        xem_store_xy3(&d, 8, sxy0, sxy1, sxy2);
+        sz3 = xem_mfc2(XEM_GTE_SZ3);
+        depth = xem_depth_keep(xem_mfc2(XEM_GTE_SZ1), sz2, 1);
+        code = XEM_U8(d.slot + 7);
+        depth = xem_depth_keep(depth, sz3, 1);
+        d.drawn++;
+        rgb = xem_mfc2(XEM_GTE_RGB2);
+        if (depth == 0) {
+            continue;
+        }
+        entry = xem_ot_entry(&d, depth, d.shift);
+        XEM_U32(d.slot + 4) = xem_colour((code << 24) & 0xFE000000, rgb);
+        old = XEM_U32(entry);
+        xem_link(&d, entry, old, 0x07000000);
+    }
+    xem_draw_end(&d, 32);
+}
+
+/* model_draw_ft3_lit.s: POLY_FT3 lit by cached face normals (eight bytes
+ * per face, consumed culled or not). The SXY words are stored around the
+ * NCLIP test, the first two also for a back face. A front-facing face is
+ * counted and, unless its AVSZ3 OTZ is 0, lit by NCS and linked; its colour
+ * word keeps the packet's code byte. The cached normal's first word is
+ * loaded into VXY0 also for a zero OTZ (a delay slot). */
+void model_draw_ft3_lit(u8 *records, s32 count) {
+    XemDraw d;
+    u32 first, cache, sxy0, sxy1, sxy2, otz, entry, old;
+    s32 nclip;
+
+    xem_draw_begin(&d, records, count);
+    cache = model_lit_color_cache;
+    xem_draw_read(&d);
+    first = xem_vertex0(&d);
+    xem_load_vector(1, xem_vertex1(&d));
+    xem_load_vector(2, xem_vertex2(&d));
+    d.slot -= 32;
+    for (;;) {
+        xem_load_vector(0, first);
+        xem_cop2(XEM_GTE_RTPT);
+        if (d.left == 0) {
+            break;
+        }
+        d.left--;
+        xem_draw_next(&d);
+        d.slot += 32;
+        first = xem_vertex0(&d);
+        cache += 8;
+        xem_load_vector(1, xem_vertex1(&d));
+        xem_load_vector(2, xem_vertex2(&d));
+        if (xem_draw_error()) {
+            continue;
+        }
+        sxy0 = xem_mfc2(XEM_GTE_SXY0);
+        sxy1 = xem_mfc2(XEM_GTE_SXY1);
+        sxy2 = xem_mfc2(XEM_GTE_SXY2);
+        xem_cop2(XEM_GTE_NCLIP);
+        if (!xem_y_test3(&d, sxy0, sxy1, sxy2) || !xem_x_test3(&d, sxy0, sxy1, sxy2)) {
+            continue;
+        }
+        nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
+        XEM_U32(d.slot + 8) = sxy0;
+        XEM_U32(d.slot + 16) = sxy1;
+        if (nclip <= 0) {
+            continue;
+        }
+        xem_cop2(XEM_GTE_AVSZ3);
+        XEM_U32(d.slot + 24) = sxy2;
+        d.slot &= XEM_DMA_MASK;
+        otz = xem_mfc2(XEM_GTE_OTZ);
+        d.drawn++;
+        xem_lwc2(XEM_GTE_VXY0, cache - 8);
+        if (otz == 0) {
+            continue;
+        }
+        xem_lwc2(XEM_GTE_VZ0, cache - 4);
+        xem_cop2(XEM_GTE_NCS);
+        entry = xem_ot_entry(&d, otz, d.shift);
+        XEM_U32(d.slot + 4) = xem_colour((u32)XEM_U8(d.slot + 7) << 24, xem_mfc2(XEM_GTE_RGB2));
+        old = XEM_U32(entry);
+        xem_link(&d, entry, old, 0x07000000);
+    }
+    model_lit_color_cache = cache;
+    xem_draw_end(&d, 32);
+}
+
+/* The vertex-normal renderers' setup: the face's three vertex addresses
+ * (t6..t8) and normals - vertices (a3; the original's trapping sub). */
+typedef struct {
+    u32 vertex[3];
+    u32 delta;
+} XemNormals;
+
+static void xem_normals_next(XemDraw *d, XemNormals *n) {
+    n->vertex[0] = xem_vertex0(d);
+    n->vertex[1] = xem_vertex1(d);
+    n->vertex[2] = xem_vertex2(d);
+}
+
+/* Load the face's vertices, and after the count test spill its normal
+ * addresses to the scratchpad words 0x1F800000..8. */
+static void xem_normals_project(XemNormals *n) {
+    xem_load_vector(0, n->vertex[0]);
+    xem_load_vector(1, n->vertex[1]);
+    xem_load_vector(2, n->vertex[2]);
+    xem_cop2(XEM_GTE_RTPT);
+}
+
+static void xem_normals_spill(XemNormals *n) {
+    XEM_U32(XEM_SPILL) = n->vertex[0] + n->delta;
+    XEM_U32(XEM_SPILL + 4) = n->vertex[1] + n->delta;
+    XEM_U32(XEM_SPILL + 8) = n->vertex[2] + n->delta;
+}
+
+/* V0..V2 = the spilled vertex normals; `colour` (when not null) is read
+ * from the cache between the loads and written to RGBC, as model_draw_g3_lit
+ * does. */
+static void xem_normals_load(u32 first, u32 cache, u32 *colour) {
+    u32 second, third;
+
+    xem_lwc2(XEM_GTE_VXY0, first);
+    second = XEM_U32(XEM_SPILL + 4);
+    xem_lwc2(XEM_GTE_VZ0, first + 4);
+    third = XEM_U32(XEM_SPILL + 8);
+    xem_load_vector(1, second);
+    if (colour != NULL) {
+        *colour = XEM_U32(cache - 4);
+    }
+    xem_load_vector(2, third);
+    if (colour != NULL) {
+        xem_gte_write_data(XEM_GTE_RGBC, *colour);
+    }
+}
+
+/* model_draw_gt3_lit.s and model_draw_g3_lit.s: Gouraud triangles lit by
+ * their vertex normals (model_current_normals, indexed like the vertices).
+ * The SXY words are stored around the NCLIP test, the first two also for a
+ * back face. A front-facing face with a nonzero AVSZ3 OTZ is counted (only
+ * then), lit (NCT, or NCCT of a cached colour word consumed per face) and
+ * linked. RGB0 takes the packet's (GT3) or the cached colour's (G3) code
+ * byte; RGB1 and RGB2 are stored whole, their high byte landing in padding. */
+static void xem_draw_vertex_lit(u8 *records, s32 count, int cached) {
+    XemDraw d;
+    XemNormals n;
+    u32 size = cached ? 28 : 40;
+    u32 cache = 0, colour = 0, sxy0, sxy1, sxy2, otz, normal, code, entry, old;
+    s32 nclip;
+
+    xem_draw_begin(&d, records, count);
+    n.delta = model_current_normals;
+    if (cached) {
+        cache = model_lit_color_cache;
+    }
+    xem_draw_read(&d);
+    xem_normals_next(&d, &n);
+    d.slot -= size;
+    n.delta -= d.vertices;
+    for (;;) {
+        xem_normals_project(&n);
+        if (d.left == 0) {
+            break;
+        }
+        xem_normals_spill(&n);
+        d.left--;
+        d.record += 8;
+        if (cached) {
+            cache += 4;
+        }
+        xem_draw_read(&d);
+        d.slot += size;
+        xem_normals_next(&d, &n);
+        if (xem_draw_error()) {
+            continue;
+        }
+        sxy0 = xem_mfc2(XEM_GTE_SXY0);
+        sxy1 = xem_mfc2(XEM_GTE_SXY1);
+        sxy2 = xem_mfc2(XEM_GTE_SXY2);
+        xem_cop2(XEM_GTE_NCLIP);
+        if (!xem_y_test3(&d, sxy0, sxy1, sxy2) || !xem_x_test3(&d, sxy0, sxy1, sxy2)) {
+            continue;
+        }
+        nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
+        XEM_U32(d.slot + 8) = sxy0;
+        XEM_U32(d.slot + (cached ? 16 : 20)) = sxy1;
+        if (nclip <= 0) {
+            continue;
+        }
+        xem_cop2(XEM_GTE_AVSZ3);
+        XEM_U32(d.slot + (cached ? 24 : 32)) = sxy2;
+        d.slot &= XEM_DMA_MASK;
+        otz = xem_mfc2(XEM_GTE_OTZ);
+        normal = XEM_U32(XEM_SPILL);
+        if (otz == 0) {
+            continue;
+        }
+        d.drawn++;
+        xem_normals_load(normal, cache, cached ? &colour : NULL);
+        xem_cop2(cached ? XEM_GTE_NCCT : XEM_GTE_NCT);
+        entry = xem_ot_entry(&d, otz, d.shift);
+        code = cached ? colour & 0xFF000000 : (u32)XEM_U8(d.slot + 7) << 24;
+        XEM_U32(d.slot + 4) = xem_colour(code, xem_mfc2(XEM_GTE_RGB0));
+        xem_swc2(XEM_GTE_RGB1, d.slot + (cached ? 12 : 16));
+        xem_swc2(XEM_GTE_RGB2, d.slot + (cached ? 20 : 28));
+        old = XEM_U32(entry);
+        xem_link(&d, entry, old, cached ? 0x06000000 : 0x09000000);
+    }
+    if (cached) {
+        model_lit_color_cache = cache;
+    }
+    xem_draw_end(&d, size);
+}
+
+void model_draw_gt3_lit(u8 *records, s32 count) { xem_draw_vertex_lit(records, count, 0); }
+void model_draw_g3_lit(u8 *records, s32 count) { xem_draw_vertex_lit(records, count, 1); }
+
+/* model_draw_f4_lit.s and model_draw_ft4_lit.s: flat quads lit from the
+ * cache (F4: twelve bytes per face, colour word then normal, lit by NCCS
+ * with the cached code byte; FT4: an eight-byte normal, lit by NCS with the
+ * packet's code byte), consumed per face culled or not. Quads are culled
+ * as in model_draw_gt3_avg; one on screen is counted and, unless its AVSZ4
+ * OTZ is 0, lit, written (four SXY words and the colour) and linked.
+ * Inside the loop index 0 is masked to thirteen bits like index 1 (the
+ * first face's is not). */
+static void xem_draw_quad_lit(u8 *records, s32 count, int textured) {
+    XemDraw d;
+    u32 size = textured ? 40 : 24;
+    u32 step = textured ? 8 : 4;
+    u32 record_bytes = textured ? 8 : 12;
+    u32 first, fourth, cache, sxy0, sxy1, sxy2, sxy3, otz, colour = 0, code, entry, old;
+    s32 nclip;
+    int error, y0;
+
+    xem_draw_begin(&d, records, count);
+    cache = model_lit_color_cache;
+    xem_draw_read(&d);
+    first = xem_vertex0(&d);
+    xem_load_vector(1, xem_vertex1(&d));
+    xem_load_vector(2, xem_vertex2(&d));
+    d.slot -= size;
+    for (;;) {
+        xem_load_vector(0, first);
+        xem_cop2(XEM_GTE_RTPT);
+        if (d.left == 0) {
+            break;
+        }
+        d.left--;
+        xem_draw_next(&d);
+        d.slot += size;
+        first = xem_vertex0_13(&d);
+        xem_load_vector(1, xem_vertex1(&d));
+        xem_load_vector(2, xem_vertex2(&d));
+        cache += record_bytes;
+        error = xem_draw_error();
+        xem_cop2(XEM_GTE_NCLIP);
+        d.slot &= XEM_DMA_MASK;
+        if (error) {
+            continue;
+        }
+        fourth = xem_vertex3(&d);
+        sxy0 = xem_mfc2(XEM_GTE_SXY0);
+        nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
+        if (nclip <= 0) {
+            continue;
+        }
+        sxy1 = xem_mfc2(XEM_GTE_SXY1);
+        xem_load_vector(0, fourth);
+        sxy2 = xem_mfc2(XEM_GTE_SXY2);
+        xem_cop2(XEM_GTE_RTPS);
+        y0 = xem_y_in(&d, sxy0);
+        error = xem_draw_error();
+        sxy3 = xem_mfc2(XEM_GTE_SXY2);
+        xem_cop2(XEM_GTE_AVSZ4);
+        if (error) {
+            continue;
+        }
+        if (!(y0 || xem_y_in(&d, sxy1) || xem_y_in(&d, sxy2) || xem_y_in(&d, sxy3)) ||
+            !xem_x_test4(&d, sxy0, sxy1, sxy2, sxy3)) {
+            continue;
+        }
+        otz = xem_mfc2(XEM_GTE_OTZ);
+        d.drawn++;
+        if (otz == 0) {
+            continue;
+        }
+        if (textured) {
+            xem_load_vector(0, cache - 8);
+            entry = xem_ot_entry(&d, otz, d.shift);
+            xem_cop2(XEM_GTE_NCS);
+            old = XEM_U32(entry);
+            code = (u32)XEM_U8(d.slot + 7) << 24;
+        } else {
+            colour = XEM_U32(cache - 12);
+            xem_load_vector(0, cache - 8);
+            xem_gte_write_data(XEM_GTE_RGBC, colour);
+            xem_cop2(XEM_GTE_NCCS);
+            entry = xem_ot_entry(&d, otz, d.shift);
+            old = XEM_U32(entry);
+            code = colour & 0xFF000000;
+        }
+        XEM_U32(d.slot + 8) = sxy0;
+        XEM_U32(d.slot + step + 8) = sxy1;
+        XEM_U32(d.slot + step * 2 + 8) = sxy2;
+        XEM_U32(d.slot + step * 3 + 8) = sxy3;
+        XEM_U32(d.slot + 4) = xem_colour(code, xem_mfc2(XEM_GTE_RGB2));
+        xem_link(&d, entry, old, textured ? 0x09000000 : 0x05000000);
+    }
+    model_lit_color_cache = cache;
+    xem_draw_end(&d, size);
+}
+
+void model_draw_f4_lit(u8 *records, s32 count) { xem_draw_quad_lit(records, count, 0); }
+void model_draw_ft4_lit(u8 *records, s32 count) { xem_draw_quad_lit(records, count, 1); }
+
+/* model_draw_ft4_cued.s and model_draw_ft4_cued_far.s: depth-cued POLY_FT4
+ * (RGBC = the model colour, DPCS by the IR0 of the fourth point), culled
+ * as in model_draw_gt3_avg. The first SXY word is written once the y test
+ * passes, whatever the x test says (the x test's accept instruction is its
+ * reject branch's delay slot); a quad on screen gets the others and is
+ * counted. AVSZ4 sorts: DPCS for every counted quad, linked unless the OTZ
+ * is 0. Far sort: the largest of SZ0..SZ3 (no zero test per point) shifted
+ * by model_ot_depth_shift + 2, and DPCS issued once the y test is reached. */
+static void xem_draw_cued_quads(u8 *records, s32 count, int far) {
+    XemDraw d;
+    u32 first, fourth, sxy0, sxy1, sxy2, sxy3, depth, code, rgb, entry, old;
+    s32 nclip;
+    int error, y;
+
+    xem_draw_begin(&d, records, count);
+    xem_draw_read(&d);
+    if (far) {
+        d.shift += 2;
+    }
+    first = xem_vertex0(&d);
+    xem_load_vector(1, xem_vertex1(&d));
+    xem_load_vector(2, xem_vertex2(&d));
+    d.slot -= 40;
+    xem_gte_write_data(XEM_GTE_RGBC, model_color);
+    for (;;) {
+        xem_load_vector(0, first);
+        xem_cop2(XEM_GTE_RTPT);
+        if (d.left == 0) {
+            break;
+        }
+        d.left--;
+        xem_draw_next(&d);
+        d.slot += 40;
+        first = xem_vertex0(&d);
+        xem_load_vector(1, xem_vertex1(&d));
+        xem_load_vector(2, xem_vertex2(&d));
+        if (xem_draw_error()) {
+            continue;
+        }
+        sxy0 = xem_mfc2(XEM_GTE_SXY0);
+        sxy1 = xem_mfc2(XEM_GTE_SXY1);
+        sxy2 = xem_mfc2(XEM_GTE_SXY2);
+        xem_cop2(XEM_GTE_NCLIP);
+        fourth = xem_vertex3(&d);
+        d.slot &= XEM_DMA_MASK;
+        nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
+        if (nclip <= 0) {
+            continue;
+        }
+        xem_load_vector(0, fourth);
+        xem_cop2(XEM_GTE_RTPS);
+        error = xem_draw_error();
+        sxy3 = xem_mfc2(XEM_GTE_SXY2);
+        if (!far) {
+            xem_cop2(XEM_GTE_AVSZ4);
+        }
+        if (error) {
+            continue;
+        }
+        y = xem_y_test4(&d, sxy0, sxy1, sxy2, sxy3);
+        if (far) {
+            xem_cop2(XEM_GTE_DPCS);
+        }
+        if (!y) {
+            continue;
+        }
+        XEM_U32(d.slot + 8) = sxy0;
+        if (!xem_x_test4(&d, sxy0, sxy1, sxy2, sxy3)) {
+            continue;
+        }
+        XEM_U32(d.slot + 16) = sxy1;
+        XEM_U32(d.slot + 24) = sxy2;
+        XEM_U32(d.slot + 32) = sxy3;
+        if (far) {
+            depth = xem_depth_keep(xem_mfc2(XEM_GTE_SZ0), xem_mfc2(XEM_GTE_SZ1), 1);
+            code = XEM_U8(d.slot + 7);
+            depth = xem_depth_keep(depth, xem_mfc2(XEM_GTE_SZ2), 1);
+            rgb = xem_mfc2(XEM_GTE_RGB2);
+            depth = xem_depth_keep(depth, xem_mfc2(XEM_GTE_SZ3), 1);
+            d.drawn++;
+            if (depth == 0) {
+                continue;
+            }
+            entry = xem_ot_entry(&d, depth, d.shift);
+            XEM_U32(d.slot + 4) = xem_colour((code << 24) & 0xFE000000, rgb);
+        } else {
+            depth = xem_mfc2(XEM_GTE_OTZ);
+            d.drawn++;
+            xem_cop2(XEM_GTE_DPCS);
+            if (depth == 0) {
+                continue;
+            }
+            entry = xem_ot_entry(&d, depth, d.shift);
+            XEM_U32(d.slot + 4) = xem_cued_colour(&d);
+        }
+        old = XEM_U32(entry);
+        xem_link(&d, entry, old, 0x09000000);
+    }
+    xem_draw_end(&d, 40);
+}
+
+void model_draw_ft4_cued(u8 *records, s32 count) { xem_draw_cued_quads(records, count, 0); }
+void model_draw_ft4_cued_far(u8 *records, s32 count) { xem_draw_cued_quads(records, count, 1); }
+
+/* ---------------------------------------------------------------- environment map */
+
+/* The sa field of the srl and the sign-extended immediate of the addiu at
+ * a patch site: model_set_envmap_mapping rewrites these in the code bytes
+ * in game memory, so the mapping persists across modes as the original's
+ * self-modified code does, and the renderer reads it back on every call.
+ * Only these fields are interpreted (the patcher keeps the rest of each
+ * word for counts 0-31). */
+typedef struct {
+    u32 shift;
+    u32 offset;
+} XemEnvmapMap;
+
+static XemEnvmapMap xem_envmap_site(u32 address) {
+    XemEnvmapMap map;
+
+    map.shift = (XEM_U32(address) >> 6) & 31;
+    map.offset = (u32)(s32)(s16)XEM_U16(address + 4);
+    return map;
+}
+
+/* Texture coordinate byte: srl, addiu, sb. */
+static u8 xem_envmap_coordinate(u32 value, XemEnvmapMap map) {
+    return (u8)((value >> map.shift) + map.offset);
+}
+
+/* model_draw_ft3_envmap.s: environment-mapped POLY_FT3. Faces are culled as
+ * in model_draw_gt3_avg; the SXY words are stored around the NCLIP test, the
+ * first two also for a back face. A front-facing face with a nonzero AVSZ3
+ * OTZ is counted (only then) and linked, each vertex getting texture
+ * coordinates from its normal rotated into view space (MVMVA by the
+ * rotation matrix, no translation): u = ((x >> u_shift) + u_offset) & 0xFF,
+ * v likewise from y, with the shifts and offsets of its patched code. */
+void model_draw_ft3_envmap(u8 *records, s32 count) {
+    XemDraw d;
+    XemNormals n;
+    XemEnvmapMap u[3], v[3];
+    u32 base = XEM_ADDRESS_OF(model_envmap_patch_base[0]);
+    u32 normal[3], sxy0, sxy1, sxy2, otz, entry, old, x, y;
+    s32 nclip;
+    s32 i;
+
+    for (i = 0; i < 3; i++) {
+        u[i] = xem_envmap_site(base + xem_envmap_u_shifts[i]);
+        v[i] = xem_envmap_site(base + xem_envmap_v_shifts[i]);
+    }
+    xem_draw_begin(&d, records, count);
+    n.delta = model_current_normals;
+    xem_draw_read(&d);
+    xem_normals_next(&d, &n);
+    xem_load_vector(1, n.vertex[1]);
+    xem_load_vector(2, n.vertex[2]);
+    d.slot -= 32;
+    n.delta -= d.vertices;
+    for (;;) {
+        xem_load_vector(0, n.vertex[0]);
+        xem_cop2(XEM_GTE_RTPT);
+        if (d.left == 0) {
+            break;
+        }
+        for (i = 0; i < 3; i++) {
+            normal[i] = n.vertex[i] + n.delta;
+        }
+        d.left--;
+        xem_draw_next(&d);
+        d.slot += 32;
+        xem_normals_next(&d, &n);
+        xem_load_vector(1, n.vertex[1]);
+        xem_load_vector(2, n.vertex[2]);
+        if (xem_draw_error()) {
+            continue;
+        }
+        sxy0 = xem_mfc2(XEM_GTE_SXY0);
+        sxy1 = xem_mfc2(XEM_GTE_SXY1);
+        sxy2 = xem_mfc2(XEM_GTE_SXY2);
+        xem_cop2(XEM_GTE_NCLIP);
+        if (!xem_y_test3(&d, sxy0, sxy1, sxy2) || !xem_x_test3(&d, sxy0, sxy1, sxy2)) {
+            continue;
+        }
+        nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
+        XEM_U32(d.slot + 8) = sxy0;
+        XEM_U32(d.slot + 16) = sxy1;
+        if (nclip <= 0) {
+            continue;
+        }
+        xem_cop2(XEM_GTE_AVSZ3);
+        XEM_U32(d.slot + 24) = sxy2;
+        otz = xem_mfc2(XEM_GTE_OTZ);
+        d.slot &= XEM_DMA_MASK;
+        xem_lwc2(XEM_GTE_VXY0, normal[0]);
+        if (otz == 0) {
+            continue;
+        }
+        xem_lwc2(XEM_GTE_VZ0, normal[0] + 4);
+        xem_cop2(XEM_GTE_MVMVA(1, 0, 0, 3, 0));
+        d.drawn++;
+        entry = xem_ot_entry(&d, otz, d.shift);
+        for (i = 0; i < 3; i++) {
+            x = xem_mfc2(XEM_GTE_MAC1);
+            y = xem_mfc2(XEM_GTE_MAC2);
+            if (i < 2) {
+                xem_load_vector(0, normal[i + 1]);
+                xem_cop2(XEM_GTE_MVMVA(1, 0, 0, 3, 0));
+            }
+            XEM_U8(d.slot + 12 + i * 8) = xem_envmap_coordinate(x, u[i]);
+            XEM_U8(d.slot + 13 + i * 8) = xem_envmap_coordinate(y, v[i]);
+        }
+        old = XEM_U32(entry);
+        xem_link(&d, entry, old, 0x07000000);
+    }
+    xem_draw_end(&d, 32);
+}
