@@ -167,6 +167,19 @@ impl DiscImport {
         }
     }
 
+    /// A second sector source over the same fetched chunks, for the game's
+    /// own drive (`Services::insert_disc`); its reads block until fetched.
+    pub fn game_source(&self) -> Result<Box<dyn SectorSource>, String> {
+        match (&self.stage, self.chd) {
+            (Stage::Ready(_), Some(true)) => {
+                ChdSource::open(self.file.clone(), HUNK_BUDGET).map(|s| Box::new(s) as Box<dyn SectorSource>)
+            }
+            (Stage::Ready(_), _) => BinSource::whole(self.file.clone()).map(|s| Box::new(s) as Box<dyn SectorSource>),
+            _ => return Err("the disc is not identified".into()),
+        }
+        .map_err(|e| e.to_string())
+    }
+
     /// The byte ranges reads are waiting for.
     pub fn take_missing(&mut self) -> Vec<Range<u64>> {
         self.file.borrow_mut().take_missing()

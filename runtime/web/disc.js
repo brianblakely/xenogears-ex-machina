@@ -39,6 +39,18 @@ export async function readSectors(app, file, lba, count) {
   }
 }
 
+/** Fetch the ranges the game's own disc reads wait for (the runtime stops a
+ * frame, not its clock, until they arrive). One fetch runs at a time. */
+let serving = null;
+export function serveGameReads(app, file) {
+  if (serving || !file) return;
+  const ranges = JSON.parse(app.disc_missing());
+  if (ranges.length === 0) return;
+  serving = fetchRanges(app, file, ranges).finally(() => {
+    serving = null;
+  });
+}
+
 export const fileSystemAccess = typeof window.showOpenFilePicker === 'function';
 
 /** Pick an image with the File System Access API and remember its handle. */

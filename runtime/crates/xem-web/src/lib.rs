@@ -300,13 +300,13 @@ impl XemApp {
         import_names: Vec<String>,
         load_executable: bool,
     ) -> Result<String, JsValue> {
-        let executable = if load_executable {
-            let identification =
-                self.disc.as_ref().and_then(|d| d.identification()).ok_or_else(|| error("no identified disc"))?;
+        let (executable, game_disc) = if load_executable {
+            let disc = self.disc.as_ref().ok_or_else(|| error("no identified disc"))?;
+            let identification = disc.identification().ok_or_else(|| error("no identified disc"))?;
             identification.disc.ok_or_else(|| error("not a known Xenogears disc"))?;
-            Some(identification.executable.clone())
+            (Some(identification.executable.clone()), Some(disc.game_source().map_err(error)?))
         } else {
-            None
+            (None, None)
         };
         let schema = self.schema.as_deref().map(Schema::parse).transpose().map_err(|e| error(format!("schema: {e}")))?;
         self.session = None;
@@ -315,6 +315,9 @@ impl XemApp {
         self.memory_bytes = module.memory_bytes();
         let mut runtime = Runtime::new(module);
         runtime.services().stub_names = self.stub_names.clone();
+        if let Some(source) = game_disc {
+            runtime.services().insert_disc(source);
+        }
         if let Some(executable) = executable {
             // The BIOS copies the executable's text to its address and jumps to pc0.
             let header = exe::parse(&executable).map_err(error)?;

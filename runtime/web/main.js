@@ -169,6 +169,7 @@ function frame(time) {
   }
   try {
     app.frame(time);
+    disc.serveGameReads(app, page.discFile);
     page.frameError = null;
   } catch (error) {
     page.frameError = String(error.message ?? error);
