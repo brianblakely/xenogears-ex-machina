@@ -1,10 +1,14 @@
 //! What the SDL3 hosts (desktop, Android) share: the SDL window and its native
 //! handles, the wgpu surface they present to (dropped and recreated when the
 //! platform takes the native window away), and the view they present: the
-//! test scene as the stand-in game image under the Slint settings panel. One
-//! wgpu device and queue serve the scene, the compositor and Slint.
+//! game's display (or the test scene as its stand-in) under the Slint
+//! settings panel, and the game's pacing and sound ([`Game`]). One wgpu
+//! device and queue serve the scene, the compositor and Slint.
 
+pub mod game;
 pub mod sdl;
+
+pub use game::Game;
 
 use sdl3_sys::everything::*;
 use std::cell::RefCell;
@@ -119,7 +123,9 @@ impl Presenter {
         self.surface.is_none()
     }
 
-    /// Follows the window's pixel size; false while it has none.
+    /// Follows the window's pixel size; false while it has none. A surface
+    /// whose native window is gone or replaced (an activity recreated while
+    /// it runs) is dropped instead of reconfigured, as in [`Self::acquire`].
     pub fn resize(&mut self, gpu: &Gpu, window: &sdl::Window) -> bool {
         let (width, height) = window.pixel_size();
         if width == 0 || height == 0 {
@@ -128,7 +134,14 @@ impl Presenter {
         if (width, height) != self.size() {
             self.config.width = width;
             self.config.height = height;
-            if let Some(surface) = &self.surface {
+            let gone = window.native_surface() != self.native
+                || self
+                    .surface
+                    .as_ref()
+                    .is_some_and(|surface| surface.get_capabilities(&gpu.adapter).formats.is_empty());
+            if gone {
+                self.surface = None;
+            } else if let Some(surface) = &self.surface {
                 surface.configure(&gpu.device, &self.config);
             }
         }
@@ -325,7 +338,8 @@ impl View {
     }
 
     /// Routes input to the panel and toggles it (F1, Escape while shown, a
-    /// gamepad's Start/Back, Android's Back key).
+    /// gamepad's Guide, or its Start/Back while no game runs, Android's Back
+    /// key).
     ///
     /// # Safety
     /// `event` must come from SDL_PollEvent.
@@ -404,7 +418,12 @@ impl View {
             }
             SDL_EVENT_GAMEPAD_BUTTON_DOWN => {
                 let button = SDL_GamepadButton(i32::from(unsafe { event.gbutton.button }));
-                if button == SDL_GAMEPAD_BUTTON_START || button == SDL_GAMEPAD_BUTTON_BACK {
+                // Start and Back are the game's pad buttons while it runs;
+                // Guide toggles the panel always.
+                if button == SDL_GAMEPAD_BUTTON_GUIDE
+                    || (self.game_image.is_none()
+                        && (button == SDL_GAMEPAD_BUTTON_START || button == SDL_GAMEPAD_BUTTON_BACK))
+                {
                     self.set_panel_visible(!visible);
                 }
             }

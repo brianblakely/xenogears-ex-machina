@@ -17,6 +17,7 @@ sdl3-sys.workspace = true
 jni-sys.workspace = true
 wgpu.workspace = true
 xem-disc = { path = "../xem-disc" }
+xem-game = { path = "../xem-game" }
 xem-host = { path = "../xem-host" }
 xem-render = { path = "../xem-render" }
 xem-settings = { path = "../xem-settings" }

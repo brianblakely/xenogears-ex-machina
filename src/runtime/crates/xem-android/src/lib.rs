@@ -8,9 +8,12 @@
 //! - Assets: a bundled APK asset read through SDL (the AssetManager); the
 //!   user's disc imported through the Storage Access Framework ([`disc`]);
 //!   settings in the app's internal files directory.
+//! - Game: an imported Xenogears disc boots the game (`xem_host::Game`:
+//!   60 frames a second, SPU audio through SDL3, pad 1 from the keyboard or
+//!   a gamepad), its memory cards in the files directory.
 //! - Lifecycle: SDL's application events drop the surface and stop the
-//!   simulation clock ([`clock`]) in the background and recreate the surface
-//!   on return, with no catch-up.
+//!   simulation clock ([`clock`]) and the game in the background and
+//!   recreate the surface on return, with no catch-up.
 
 pub mod clock;
 

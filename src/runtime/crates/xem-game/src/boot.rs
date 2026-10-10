@@ -10,7 +10,7 @@ use xem_core::control::Session;
 use xem_core::devices::card::FileStorage;
 use xem_core::inspect::Schema;
 use xem_core::{Runtime, bios, exe};
-use xem_disc::Identification;
+use xem_disc::{Identification, SectorSource};
 
 use crate::NativeModule;
 
@@ -29,7 +29,15 @@ pub struct BootOptions {
 }
 
 pub fn boot(disc: &Path, options: &BootOptions) -> Result<(Session<NativeModule>, Identification), Box<dyn Error>> {
-    let mut source = xem_disc::open_path(disc)?;
+    boot_source(xem_disc::open_path(disc)?, options)
+}
+
+/// [`boot`] from an opened disc image (`xem_disc::open_reader` over a file
+/// descriptor, as Android's document picker gives one).
+pub fn boot_source(
+    mut source: Box<dyn SectorSource>,
+    options: &BootOptions,
+) -> Result<(Session<NativeModule>, Identification), Box<dyn Error>> {
     let identity = xem_disc::identify(source.as_mut())?;
     identity.disc.ok_or("not a known Xenogears disc")?;
     let header = exe::parse(&identity.executable)?;
