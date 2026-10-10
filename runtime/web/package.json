@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "node --test --test-concurrency=1 tests/*.test.mjs",
     "test:xr": "node xr/tests/run.mjs"
   },
   "devDependencies": {

@@ -23,6 +23,8 @@ sdl3-sys = { version = "=0.6.8" }
 openxr = { version = "=0.22.0", default-features = false }
 # The Vulkan bindings of wgpu-hal 30, for the OpenXR Vulkan interop.
 ash = { version = "=0.38.0", default-features = false }
+# wasm-bindgen must equal the Nix wasm-bindgen-cli; js-sys, web-sys and
+# wasm-bindgen-futures pin that wasm-bindgen exactly.
 wasm-bindgen = { version = "=0.2.127" }
 wasm-bindgen-futures = { version = "=0.4.77" }
 js-sys = { version = "=0.3.104" }
