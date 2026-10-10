@@ -56,9 +56,10 @@ void battle_panel_step_opening(s32 member);
 void battle_init_hud_textures(void);
 void battle_init_messages(void);
 
-/* The battle's shared tables and state, which open .data (800c2048-800c348c).
- * The flags battle_in_automatic_turn and battle_applying_item_results and the unreferenced object at 800c3488
- * are followed by stray bytes, so they stay original data. */
+/* The battle's shared tables and state, which open .data (800c2048-800c348c). The
+ * flags battle_in_automatic_turn and battle_applying_item_results and the
+ * unreferenced object at 800c3488 are followed by stray bytes, so they stay
+ * original data. */
 s32 battle_unreferenced_first_data_word = 0; /* 800C2048: unreferenced */
 INCLUDE_ORIGINAL(".data", battle_in_automatic_turn, 0x800C204C, 4);
 INCLUDE_ORIGINAL(".data", battle_applying_item_results, 0x800C2050, 4);

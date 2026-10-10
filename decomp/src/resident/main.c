@@ -60,7 +60,8 @@ INCLUDE_ASM("decomp/src/resident", boot_reset_stack_and_gp);
 /* 80019560 */
 INCLUDE_ASM("decomp/src/resident", boot_clear_bss_range);
 
-/* 80019578: Boot: initialise the system libraries, the disc index and the heap, load and install the resident data files, then enter the first mode. */
+/* 80019578: Boot: initialise the system libraries, the disc index and the heap,
+ * load and install the resident data files, then enter the first mode. */
 void boot_main(void) {
     RECT screen;
     void *file2;
@@ -169,7 +170,8 @@ void mode_select_next_mode(s32 mode) {
     }
 }
 
-/* 800199CC: Load the mode's overlay file into a heap block (tag 6, from the top, quietly) unless it is already cached; returns the block. */
+/* 800199CC: Load the mode's overlay file into a heap block (tag 6, from the top,
+ * quietly) unless it is already cached; returns the block. */
 void *mode_load_overlay_block(s32 mode) {
     s32 tag;
     s32 quiet;
@@ -202,7 +204,9 @@ const s32 mode_unreferenced_rodata_word = 0; /* 80018080 */
 /* Where a mode's overlay block is decoded. */
 u8 *const mode_overlay_decode_destination = mode_overlay_area; /* 80018084 */
 
-/* 80019ACC: Mode dispatcher: report a fatal error (with the caller) if given, reset graphics and the heap, clear the next mode's BSS, load its overlay, then run it and dispatch again. */
+/* 80019ACC: Mode dispatcher: report a fatal error (with the caller) if given, reset
+ * graphics and the heap, clear the next mode's BSS, load its overlay, then run it
+ * and dispatch again. */
 void mode_dispatch(s32 error) {
     ModeEntry *mode;
     void *block;
@@ -314,7 +318,8 @@ void boot_restart(void) {
     boot_entry_point();
 }
 
-/* 80019D48: Boot logo: upload the logo image and its palette, then fade the logo sprite in, hold it and fade it out. */
+/* 80019D48: Boot logo: upload the logo image and its palette, then fade the logo
+ * sprite in, hold it and fade it out. */
 void boot_show_logo(void) {
     DRAWENV draw;
     DISPENV disp;
@@ -369,7 +374,9 @@ void boot_show_logo(void) {
     heap_free(image);
 }
 
-/* 80019EF8: Fatal error screen: dump the heap log to the PC (or, without one, clear the screen red and hang), then print the error, its caller and heap details every frame forever. */
+/* 80019EF8: Fatal error screen: dump the heap log to the PC (or, without one, clear
+ * the screen red and hang), then print the error, its caller and heap details every
+ * frame forever. */
 void mode_show_fatal_error(s32 error, u32 caller) {
     DRAWENV draw[2];
     DISPENV disp[2];
@@ -514,7 +521,8 @@ void mode_kernel_menu_init(void) {
     mode_kernel_menu_init_buffer(1);
 }
 
-/* 8001A344: Kernel menu frame: move the cursor over the six modes, start the chosen one, print the menu with the play time and place the cursor. */
+/* 8001A344: Kernel menu frame: move the cursor over the six modes, start the chosen
+ * one, print the menu with the play time and place the cursor. */
 void mode_kernel_menu_update(void) {
     char clock[24];
     s32 y;
@@ -587,7 +595,8 @@ void mode_game_of_life_init(void) {
     }
 }
 
-/* 8001A684: Count a hit in a cell of the second grid; out-of-range coordinates wrap to the other edge. */
+/* 8001A684: Count a hit in a cell of the second grid; out-of-range coordinates wrap
+ * to the other edge. */
 void mode_game_of_life_count_neighbor(s32 row, s32 column) {
     if (row < 0) {
         row = 28;
@@ -604,7 +613,9 @@ void mode_game_of_life_count_neighbor(s32 row, s32 column) {
     mode_game_of_life_neighbor_counts[row * 40 + column]++;
 }
 
-/* 8001A6E8: Debug screen, one Game of Life generation on the 40x28 grid: draw each live cell as an 8x8 tile, count its neighbours, apply the rules and reseed a random walk of 20 cells when fewer than 20 live, plus one random neighbourhood. */
+/* 8001A6E8: Debug screen, one Game of Life generation on the 40x28 grid: draw each
+ * live cell as an 8x8 tile, count its neighbours, apply the rules and reseed a
+ * random walk of 20 cells when fewer than 20 live, plus one random neighbourhood. */
 void mode_game_of_life_step(u_long *ot) {
     LifeTile *tile;
     s32 live;
@@ -755,7 +766,8 @@ void mode_wait_for_disc_idle(void) {
     cd_sync_reads(0);
 }
 
-/* 8001AD4C: Take the party from the game data and load each member's field character file (member + 5) into a kept block. */
+/* 8001AD4C: Take the party from the game data and load each member's field
+ * character file (member + 5) into a kept block. */
 void mode_load_party_character_files(void) {
     s32 i;
     s32 count;
@@ -785,7 +797,8 @@ void mode_load_party_character_files(void) {
     mode_party_file_kind = 1;
 }
 
-/* 8001AEB8: As 8001ad4c, but load each member's gear file instead (16 + the gear of the character record, 0xff meaning none). */
+/* 8001AEB8: As 8001ad4c, but load each member's gear file instead (16 + the gear of
+ * the character record, 0xff meaning none). */
 void mode_load_party_gear_files(void) {
     s32 i;
     s32 count;
@@ -821,7 +834,8 @@ void mode_load_party_gear_files(void) {
     mode_party_file_kind = 2;
 }
 
-/* 8001B044: Make sure the party files match the current state: characters on foot, gears when 8004f34c has 0xc000 set. */
+/* 8001B044: Make sure the party files match the current state: characters on foot,
+ * gears when 8004f34c has 0xc000 set. */
 void mode_sync_party_files(void) {
     mode_wait_for_disc_idle();
     if (mode_party_files_pending != 1) {
@@ -854,7 +868,8 @@ void mode_sync_party_files(void) {
     }
 }
 
-/* 8001B158: Reload the party files listed in 8006fabc (quietly, from the heap top), plus files 0xa7/0xa8 when asked; on a failed allocation release what was loaded. */
+/* 8001B158: Reload the party files listed in 8006fabc (quietly, from the heap top),
+ * plus files 0xa7/0xa8 when asked; on a failed allocation release what was loaded. */
 void mode_reload_party_files(s32 extra) {
     s32 i;
     s32 count;
@@ -904,7 +919,8 @@ void mode_reload_party_files(s32 extra) {
     heap_set_quiet_failures(0);
 }
 
-/* 8001B3A8: Once the party files are read, unpack each member's file into its field sprite block (8005a414) and release it. */
+/* 8001B3A8: Once the party files are read, unpack each member's file into its field
+ * sprite block (8005a414) and release it. */
 void mode_unpack_party_files(void) {
     s32 i;
 
@@ -922,7 +938,9 @@ void mode_unpack_party_files(void) {
     }
 }
 
-/* 8001B484: Read a map's data ahead into its own block unless that map is already loaded; returns 0 when loaded, -1 while the disc is busy or after starting the read. */
+/* 8001B484: Read a map's data ahead into its own block unless that map is already
+ * loaded; returns 0 when loaded, -1 while the disc is busy or after starting the
+ * read. */
 s32 mode_read_map_ahead(s32 map, s32 slot) {
     if (mode_read_ahead_slot != slot || mode_read_ahead_map != map) {
         if (cd_get_pending_read_count() == 0) {
@@ -958,7 +976,8 @@ void mode_release_music_wave_bank(void) {
     }
 }
 
-/* 8001B5E8: Stop the active sequence; release it unless it is kept for reuse, in which case it becomes the cached sequence. */
+/* 8001B5E8: Stop the active sequence; release it unless it is kept for reuse, in
+ * which case it becomes the cached sequence. */
 void mode_stop_music_seq(void) {
     if (mode_music_seq_active == 1) {
         sound_stop_seq((SoundSeq *)mode_music_seq);

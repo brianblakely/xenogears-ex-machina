@@ -278,19 +278,19 @@ typedef struct GameData {
     u16 flags;                    /* 0x22B6: option flags (0x4000 battle's boost, ext d1;
                                    * 0x2000/0x1000 a copy to character 9/10, ext d0) */
     /* The rounds left of each ammo id, by id - 50 for ids 50-97 (the 48 weapon
-     * records ovl2615 battle_setup_load_party_and_enemy_files copies for the battle). The special parts
-     * are ammo: system texts 23 and 51 name ids 50-72 "... Ammo", and only
-     * character 4 and its gears 5 and 13 may use them
-     * (docs/scripts/field-events.md). The field menu sets an id's byte to 100
-     * when it is loaded (slot39 menu_equip_screen_commit_part), each action takes one from the
-     * slots its command number names (battle battle_wear_weapon_items, battle_wear_down_attacker_gear_parts), and
-     * a command whose descriptor names a slot at 0 misses (battle_resolve_hit_outcome,
-     * battle_resolve_gear_hit_outcome). The code forms
-     * an id's address from 50 bytes before each array, 8006f8ba (+0x2286)
-     * and 8006f8ea (+0x22B6, the address of `flags`). An empty
-     * slot (id 0) reads gearAccessoryIds[108] or the low byte of `flags`,
-     * which no code sets; ids 98 and 99 would reach gearAmmo[0-1] and
-     * `locked`. */
+     * records ovl2615 battle_setup_load_party_and_enemy_files copies for the
+     * battle). The special parts are ammo: system texts 23 and 51 name ids 50-72
+     * "... Ammo", and only character 4 and its gears 5 and 13 may use them
+     * (docs/scripts/field-events.md). The field menu sets an id's byte to 100 when
+     * it is loaded (slot39 menu_equip_screen_commit_part), each action takes one
+     * from the slots its command number names (battle battle_wear_weapon_items,
+     * battle_wear_down_attacker_gear_parts), and a command whose descriptor names a
+     * slot at 0 misses (battle_resolve_hit_outcome,
+     * battle_resolve_gear_hit_outcome). The code forms an id's address from 50
+     * bytes before each array, 8006f8ba (+0x2286) and 8006f8ea (+0x22B6, the
+     * address of `flags`). An empty slot (id 0) reads gearAccessoryIds[108] or the
+     * low byte of `flags`, which no code sets; ids 98 and 99 would reach
+     * gearAmmo[0-1] and `locked`. */
     u8 ammo[48];                  /* 0x22B8: character 4's (weapon ids) */
     u8 gearAmmo[48];              /* 0x22E8: its gears' (gear part ids) */
     u16 locked;                   /* 0x2318: characters locked in place */

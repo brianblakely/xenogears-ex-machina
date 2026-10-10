@@ -1915,12 +1915,12 @@ void movie_mode_play_battle_music(void) {
     sound_play_seq(movie_mode_battle_music_seq, 0x7F, 0);
 }
 
-/* 80075534: The menu's CD-ROM monitor (line 9), a sector monitor: at 640x240, dump 192 bytes of the current
- * sector (Up/Down by a row, Triangle/Cross by twelve) with its position;
- * Left/Right step the sector by one, L1/R1 by 75 (a second) and L2/R2 by
- * 4500 (a minute), rereading it when it changes. Circle returns to the
- * 320-wide menu. The original reads the menu cursor before the exit test and
- * stores it back after. */
+/* 80075534: The menu's CD-ROM monitor (line 9), a sector monitor: at 640x240, dump
+ * 192 bytes of the current sector (Up/Down by a row, Triangle/Cross by twelve) with
+ * its position; Left/Right step the sector by one, L1/R1 by 75 (a second) and L2/R2
+ * by 4500 (a minute), rereading it when it changes. Circle returns to the 320-wide
+ * menu. The original reads the menu cursor before the exit test and stores it back
+ * after. */
 void movie_mode_run_cd_monitor(void) {
     CdlLOC loc;
     s32 button;

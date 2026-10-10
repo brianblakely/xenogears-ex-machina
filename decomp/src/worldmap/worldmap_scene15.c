@@ -4,12 +4,14 @@
  * flames and the growing objects), the set-up and leave handlers of mode 13
  * and the sequence start of its director.
  *
- * worldmap_scene12_camera_shots_update's seven-entry table ends at 8006fd8c and worldmap_scene15_director_update's
- * follows at once, 4 mod 8, a phase change without a pad word: this unit's
- * rodata starts there and its text after worldmap_scene12_camera_shots_update, at or before
- * worldmap_scene15_director_update. Its data opens with the tables of mode 15's set-up and leave
- * handlers and sequence start (worldmap_scene15_start, worldmap_scene15_leave, worldmap_scene15_director_start),
- * which the text split leaves in the preceding unit. */
+ * worldmap_scene12_camera_shots_update's seven-entry table ends at 8006fd8c and
+ * worldmap_scene15_director_update's follows at once, 4 mod 8, a phase change
+ * without a pad word: this unit's rodata starts there and its text after
+ * worldmap_scene12_camera_shots_update, at or before
+ * worldmap_scene15_director_update. Its data opens with the tables of mode 15's
+ * set-up and leave handlers and sequence start (worldmap_scene15_start,
+ * worldmap_scene15_leave, worldmap_scene15_director_start), which the text split
+ * leaves in the preceding unit. */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libetc.h"
@@ -60,13 +62,15 @@ SVECTOR worldmap_scene15_vehicle_stop_points[3] = {{14307, 0, 12781}, {14743, 0,
 INCLUDE_ORIGINAL(".data", worldmap_scene15_flame_sizes, 0x8009A68C, 12);
 extern u16 worldmap_scene15_flame_sizes[5];
 
-/* 8007DE98: Scene director (mode 15): worldmap_scene14_director_update's cue sequencer on the sequence
- * worldmap_scene15_director_start picks from worldmap_scene15_cue_sequences by worldmap_entry_index (states at unk54,
- * durations at unk58). Actor slots (worldmap_scene15_start): 0 the screen fade, 2 the
- * camera (worldmap_scene15_camera_update), 3 the flying vehicle (worldmap_scene15_flying_vehicle_update), 4-8 its
- * exhaust flames (worldmap_scene15_flame_update), 9 the growing objects 9 and 10
- * (worldmap_scene15_grow_objects_9_10_update). A fade with rate 1 adds the fade quad (white), with
- * rate 2 subtracts it (black). */
+/* 8007DE98: Scene director (mode 15): worldmap_scene14_director_update's cue
+ * sequencer on the sequence worldmap_scene15_director_start picks from
+ * worldmap_scene15_cue_sequences by worldmap_entry_index (states at unk54,
+ * durations at unk58). Actor slots (worldmap_scene15_start): 0 the screen fade, 2
+ * the camera (worldmap_scene15_camera_update), 3 the flying vehicle
+ * (worldmap_scene15_flying_vehicle_update), 4-8 its exhaust flames
+ * (worldmap_scene15_flame_update), 9 the growing objects 9 and 10
+ * (worldmap_scene15_grow_objects_9_10_update). A fade with rate 1 adds the fade
+ * quad (white), with rate 2 subtracts it (black). */
 s32 worldmap_scene15_director_update(s32 index) {
     WorldmapActor *actor;
     s32 unused[4]; /* unreferenced; the original frame reserves it */
@@ -464,7 +468,8 @@ s32 worldmap_scene15_camera_update(s32 index) {
     return 1;
 }
 
-/* 8007EBBC: Set up `count` translucent blue textured quads of a scene object and copy them to its second buffer. */
+/* 8007EBBC: Set up `count` translucent blue textured quads of a scene object and
+ * copy them to its second buffer. */
 void worldmap_build_blue_translucent_quads(SceneObject *object, POLY_FT4 *quads, s32 count, s32 abr) {
     s32 i;
 
@@ -479,7 +484,8 @@ void worldmap_build_blue_translucent_quads(SceneObject *object, POLY_FT4 *quads,
     memcpy(object->prims2, object->prims, count * sizeof(POLY_FT4));
 }
 
-/* 8007ECA4: Start the flight: link objects 2-3 to 1, build their quads, hide 1 and place the actor behind the player on its entry path. */
+/* 8007ECA4: Start the flight: link objects 2-3 to 1, build their quads, hide 1 and
+ * place the actor behind the player on its entry path. */
 s32 worldmap_scene15_flying_vehicle_start(s32 index) {
     SceneObject *objects;
     WorldmapActor *actor;

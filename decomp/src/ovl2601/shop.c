@@ -40,7 +40,8 @@ u16 item_shop_held_count; /* 801D2260 */
  * the helper's narrow definition before its local calls. */
 void item_shop_set_rect_verts();
 
-/* 801CCE1C: Fill a view's nine stat words from character `id`'s base and bonus bytes, capped at 999 or 99. */
+/* 801CCE1C: Fill a view's nine stat words from character `id`'s base and bonus
+ * bytes, capped at 999 or 99. */
 void item_shop_compute_character_stats(MenuTables *view, u8 id) {
     CharacterRecord *c;
 
@@ -88,7 +89,8 @@ void item_shop_compute_character_stats(MenuTables *view, u8 id) {
     }
 }
 
-/* 801CCFF4: Draw the shop's detail packets: member bars, portraits, headings, list rows, labels and numbers. */
+/* 801CCFF4: Draw the shop's detail packets: member bars, portraits, headings, list
+ * rows, labels and numbers. */
 void item_shop_draw_details(void) {
     s32 i;
 
@@ -265,7 +267,8 @@ void item_shop_layout_gold_numbers(u32 first, u32 second, u32 third) {
     menu_state_current->details->digits_shown = 1;
 }
 
-/* 801CDBA0: Party bits of the available members holding item `item` in their gear (kind 0) or accessories (kind 1). */
+/* 801CDBA0: Party bits of the available members holding item `item` in their gear
+ * (kind 0) or accessories (kind 1). */
 u16 item_shop_find_item_holders(u8 item, u8 kind) {
     u16 members;
     u8 found;
@@ -531,7 +534,8 @@ u16 item_shop_find_inventory_count(u8 *ids, u8 *counts, s32 n, u8 id) {
     return count;
 }
 
-/* 801CE91C: Show how many of item `id` the party holds in inventory `kind` (label beside the list). */
+/* 801CE91C: Show how many of item `id` the party holds in inventory `kind` (label
+ * beside the list). */
 void item_shop_show_held_count(u8 kind, u8 id) {
     RECT rect;
     u8 codes[4];
@@ -1538,7 +1542,8 @@ void item_shop_item_sell_list_run(void) {
     item_shop_sell_list_run(150, game_data.itemIds, game_data.itemIds - 150, 2, 1, game_data.itemIds - 150, 0);
 }
 
-/* 801D1968: Hide the shop list's packets; with `close` also close its panels (5 too with `all`), scroll bar and marker. */
+/* 801D1968: Hide the shop list's packets; with `close` also close its panels (5 too
+ * with `all`), scroll bar and marker. */
 void item_shop_hide_details(u8 close, u8 all) {
     s32 i;
 
@@ -1569,7 +1574,8 @@ void item_shop_hide_details(u8 close, u8 all) {
     }
 }
 
-/* 801D1B18: Run the chosen sell list (0 a member's equipment, 1-3 the three inventories), then restore the list labels. */
+/* 801D1B18: Run the chosen sell list (0 a member's equipment, 1-3 the three
+ * inventories), then restore the list labels. */
 void item_shop_chosen_sell_list_run(void) {
     u8 close;
 

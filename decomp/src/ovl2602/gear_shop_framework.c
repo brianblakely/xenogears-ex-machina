@@ -166,7 +166,8 @@ u32 gear_shop_test_bit32(u32 mask, u8 id) {
     return mask & gear_shop_bit_masks32[id];
 }
 
-/* 801C5298: Split `value` into nine decimal digits (menu state +31c), leading zeros blanked (ff). */
+/* 801C5298: Split `value` into nine decimal digits (menu state +31c), leading zeros
+ * blanked (ff). */
 void gear_shop_split_digits(u32 value) {
     s32 i;
     u32 divisor;
@@ -278,7 +279,9 @@ void gear_shop_alloc_or_free_gear_screen(u8 allocate) {
     }
 }
 
-/* 801C56C8: Load the screen's resources: the card header (prefix, icon), text images, sprite sheet, labels, the party's portraits, the sound bank and the gear shop tables. */
+/* 801C56C8: Load the screen's resources: the card header (prefix, icon), text
+ * images, sprite sheet, labels, the party's portraits, the sound bank and the gear
+ * shop tables. */
 void gear_shop_load_resources(void) {
     enum {
         ENTRY_UNUSED, ENTRY_MODE, ENTRY_CLUT_X, ENTRY_CLUT_Y,
@@ -353,7 +356,8 @@ void gear_shop_load_resources(void) {
     heap_free(res);
 }
 
-/* 801C5B08: Reset the screen state, note which party members are available (and selectable) and load the resources. */
+/* 801C5B08: Reset the screen state, note which party members are available (and
+ * selectable) and load the resources. */
 void gear_shop_init_party(void) {
     u16 available;
     s32 i;
@@ -548,7 +552,8 @@ void gear_shop_highlight_hide(void) {
     menu_state_current->flags->cursor_shown = 0;
 }
 
-/* 801C668C: Initialise a gouraud quad fading from (r, g, b) on the top edge to black on the bottom. */
+/* 801C668C: Initialise a gouraud quad fading from (r, g, b) on the top edge to
+ * black on the bottom. */
 void gear_shop_init_gradient_quad(POLY_G4 *poly, u8 r, u8 g, u8 b) {
     SetPolyG4(poly);
     poly->r0 = r;
@@ -606,7 +611,8 @@ void gear_shop_init_highlight_and_fade_prims(void) {
     }
 }
 
-/* 801C6A54: Unpack (mode 0) or release (mode 10h) the item tables, pictures and gear part pictures from file 2. */
+/* 801C6A54: Unpack (mode 0) or release (mode 10h) the item tables, pictures and
+ * gear part pictures from file 2. */
 void gear_shop_load_or_release_data_set(u8 mode) {
     void **list;
 
@@ -822,7 +828,8 @@ void gear_shop_list_cursor_alloc(u8 index) {
     menu_state_current->cursors[index]->timer = 0;
 }
 
-/* 801C78EC: Animate marker `index` and draw it beside row `row` (at its previous place when `fixed`). */
+/* 801C78EC: Animate marker `index` and draw it beside row `row` (at its previous
+ * place when `fixed`). */
 void gear_shop_list_cursor_place(s32 row, s32 unused, u8 fixed, u8 index) {
     MenuCursor *marker;
     POLY_FT4 *poly;
@@ -1192,7 +1199,8 @@ void gear_shop_panel_grow_opening(void) {
     }
 }
 
-/* 801C93B0: Project `count` quads and link their packets (every other one from `first`) into OT entry 4. */
+/* 801C93B0: Project `count` quads and link their packets (every other one from
+ * `first`) into OT entry 4. */
 void gear_shop_draw_projected_quads(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first) {
     long depth;
     long flag;
@@ -1236,7 +1244,8 @@ void gear_shop_draw_highlight_sprite(void) {
     }
 }
 
-/* 801C962C: Project and link the four second markers when shown and at least two members are available. */
+/* 801C962C: Project and link the four second markers when shown and at least two
+ * members are available. */
 void gear_shop_draw_member_marks(void) {
     if (menu_state_current->flags->marks_shown != 0 && gear_shop_available_member_count >= 2) {
         gear_shop_draw_projected_quads(4, menu_state_current->marks->verts, menu_state_current->marks->polys, menu_state_current->marks->buffer);
@@ -1567,7 +1576,8 @@ void gear_shop_draw_label_layers(void) {
     gear_shop_draw_notice_labels();
 }
 
-/* 801CAC20: Link both image packet groups, first applying a changed dimming (semi-transparent, 20h grey). */
+/* 801CAC20: Link both image packet groups, first applying a changed dimming
+ * (semi-transparent, 20h grey). */
 void gear_shop_draw_screen_images(void) {
     s32 i;
 
@@ -1665,7 +1675,8 @@ void gear_shop_play_sound(u8 sound) {
     }
 }
 
-/* 801CB4E4: Wait for a controller (sound paused meanwhile), then decode the frame's input into +325. */
+/* 801CB4E4: Wait for a controller (sound paused meanwhile), then decode the frame's
+ * input into +325. */
 void gear_shop_read_input(void) {
     u8 code;
     s32 saved;
@@ -1735,7 +1746,8 @@ void gear_shop_read_input(void) {
     menu_state_current->input = code;
 }
 
-/* 801CB690: Plan the camera's move from `from` to `to`: steps per axis so x and y arrive together, z over the same count. */
+/* 801CB690: Plan the camera's move from `from` to `to`: steps per axis so x and y
+ * arrive together, z over the same count. */
 void gear_shop_camera_plan_move(void) {
     u8 done;
     u8 count_x;
@@ -1912,7 +1924,9 @@ void gear_shop_view_update(void) {
     SetTransMatrix(&menu_state_current->matrix);
 }
 
-/* 801CBE60: Debug display (when enabled and the model is loaded): the model translation, the gear actor's turn, ground height and scale, in decimal with a minus sign. */
+/* 801CBE60: Debug display (when enabled and the model is loaded): the model
+ * translation, the gear actor's turn, ground height and scale, in decimal with a
+ * minus sign. */
 void gear_shop_draw_debug_model_values(void) {
     s32 values[6];
     s32 i;
@@ -1959,7 +1973,8 @@ void gear_shop_draw_debug_model_values(void) {
     }
 }
 
-/* 801CC1C4: Run one frame: input, buffer swap, both ordering tables, view, packets, then present the finished buffer. */
+/* 801CC1C4: Run one frame: input, buffer swap, both ordering tables, view, packets,
+ * then present the finished buffer. */
 void gear_shop_run_frame(void) {
     MenuBuffer *env;
 
@@ -1986,7 +2001,8 @@ void gear_shop_run_frame(void) {
     DrawOTag((u_long *)&menu_state_current->current->ot_big[0x3FF]);
 }
 
-/* 801CC31C: Create the marker block: both yes/no markers at the cursor (0), the four markers (2) or one (3). */
+/* 801CC31C: Create the marker block: both yes/no markers at the cursor (0), the
+ * four markers (2) or one (3). */
 void gear_shop_markers_open(u8 mode) {
     s32 i;
 
@@ -2108,7 +2124,8 @@ void gear_shop_notice_close(void) {
     gear_shop_run_frame();
 }
 
-/* 801CCA40: Let the player choose yes or no (1 = yes; moving only when `movable`); without `wait` the choice ends after 60 idle frames. */
+/* 801CCA40: Let the player choose yes or no (1 = yes; moving only when `movable`);
+ * without `wait` the choice ends after 60 idle frames. */
 u8 gear_shop_ask_yes_no(u8 wait, u8 movable) {
     u8 choosing;
     u8 yes;
@@ -2159,7 +2176,8 @@ u8 gear_shop_ask_yes_no(u8 wait, u8 movable) {
     return yes;
 }
 
-/* 801CCC18: Ask message `message` (movable only without a follow-up); a yes is confirmed by `confirm` unless it is ff. */
+/* 801CCC18: Ask message `message` (movable only without a follow-up); a yes is
+ * confirmed by `confirm` unless it is ff. */
 s32 gear_shop_notice_ask_yes_no(u8 message, u8 confirm, u8 wait) {
     u8 answer;
     u8 movable;
@@ -2185,7 +2203,8 @@ s32 gear_shop_notice_ask_yes_no(u8 message, u8 confirm, u8 wait) {
     return answer;
 }
 
-/* 801CCD20: Close the screen: stop drawing, release every block and resource, then the menu state itself. */
+/* 801CCD20: Close the screen: stop drawing, release every block and resource, then
+ * the menu state itself. */
 void gear_shop_shut_down(void) {
     gear_shop_run_frame();
     gear_shop_run_frame();
@@ -2231,7 +2250,8 @@ void gear_shop_label_clear_shown(u8 count, u8 *shown) {
     }
 }
 
-/* 801CCEE8: Show label `index`: in list row `row` (mode 0, offset by its column) or at the info position (mode 1; labels past the first further left). */
+/* 801CCEE8: Show label `index`: in list row `row` (mode 0, offset by its column) or
+ * at the info position (mode 1; labels past the first further left). */
 void gear_shop_label_place(u8 count, MenuLabel *labels, u8 *text_ids, s32 *offsets, u8 *shown, u8 index, u8 row, u8 mode) {
     switch (mode) {
     case 0:
@@ -2273,7 +2293,8 @@ void gear_shop_label_place(u8 count, MenuLabel *labels, u8 *text_ids, s32 *offse
     shown[index] = 1;
 }
 
-/* 801CD310: Reveal `count` image pairs one step at a time (two frames each), the second of each pair one step behind. */
+/* 801CD310: Reveal `count` image pairs one step at a time (two frames each), the
+ * second of each pair one step behind. */
 void gear_shop_command_window_open(s32 count, s32 *ids) {
     s32 step;
     s32 i;
@@ -2308,7 +2329,8 @@ void gear_shop_command_window_open(s32 count, s32 *ids) {
     }
 }
 
-/* 801CD564: Reveal the list pictures of the current command (up to four pairs), two frames per step. */
+/* 801CD564: Reveal the list pictures of the current command (up to four pairs), two
+ * frames per step. */
 void gear_shop_choice_window_open(u8 menu) {
     s32 animate;
     s32 step;
@@ -2373,7 +2395,8 @@ void gear_shop_choice_window_open(u8 menu) {
     }
 }
 
-/* 801CD838: Draw `count` image pairs with pair `selected` highlighted (+0dh), and put the cursor on it. */
+/* 801CD838: Draw `count` image pairs with pair `selected` highlighted (+0dh), and
+ * put the cursor on it. */
 void gear_shop_command_window_set_cursor(u8 count, u8 selected, s32 *ids) {
     s32 id;
     s32 i;
@@ -2401,7 +2424,8 @@ void gear_shop_command_window_set_cursor(u8 count, u8 selected, s32 *ids) {
     menu_state_current->flags->sprite_shown = 1;
 }
 
-/* 801CDA0C: Draw the current command's list pictures with the chosen one highlighted (+0dh), and put the cursor on it. */
+/* 801CDA0C: Draw the current command's list pictures with the chosen one
+ * highlighted (+0dh), and put the cursor on it. */
 void gear_shop_choice_window_set_cursor(u8 menu) {
     s32 id;
     s32 i;
@@ -2429,7 +2453,8 @@ void gear_shop_choice_window_set_cursor(u8 menu) {
     menu_state_current->flags->sprite_shown = 1;
 }
 
-/* 801CDC68: Run the chosen top command (0 leaves); afterwards restore the command screen. Returns 0 to leave. */
+/* 801CDC68: Run the chosen top command (0 leaves); afterwards restore the command
+ * screen. Returns 0 to leave. */
 u8 gear_shop_top_command_run(void) {
     u8 running;
     u8 redraw;
@@ -2453,7 +2478,8 @@ u8 gear_shop_top_command_run(void) {
     return running;
 }
 
-/* 801CDD74: The command screen: leave, sell, buy or the two gear commands, switching members with L1/R1, until leaving. */
+/* 801CDD74: The command screen: leave, sell, buy or the two gear commands,
+ * switching members with L1/R1, until leaving. */
 void gear_shop_run(void) {
     u8 running;
 

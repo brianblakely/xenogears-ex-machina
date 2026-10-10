@@ -96,9 +96,10 @@ void battle_gear_formula7_restore_fuel(void);
 void battle_gear_formula8_cure_statuses(void);
 void battle_gear_formula10_heal_by_ether(void);
 /* The formula table, by CommandDescriptor.formula: battle_resolve_action calls
- * battle_formula_table[formula]() once per target without a range check. Gear attackers
- * and descriptors with flagsA 0x10 use battle_gear_formula_table instead (battle_resolve_gear_action).
- * tools/analysis/dispatch_tables.py counts the ids the descriptors use. */
+ * battle_formula_table[formula]() once per target without a range check. Gear
+ * attackers and descriptors with flagsA 0x10 use battle_gear_formula_table instead
+ * (battle_resolve_gear_action). tools/analysis/dispatch_tables.py counts the ids
+ * the descriptors use. */
 void (*battle_formula_table[])(void) = { /* 800C348C */
     /* 0 */ battle_formula0_deal_damage, /* 1 */ battle_formula1_heal_by_ether, /* 2 */ battle_formula2_inflict_status, /* 3 */ battle_formula3_drain_hp_or_ep,
     /* 4 */ battle_formula4_deal_damage_by_kind, /* 5 */ battle_formula5_cure_statuses, /* 6 */ battle_formula6_revive, /* 7 */ battle_formula7_heal_by_gear_max_hp,
@@ -113,9 +114,10 @@ u8 battle_combo_next_step_table[8][3] = { /* 800C34B4 */
     {1, 5, 7}, {2, 6, 7}, {3, 5, 7}, {4, 6, 7}, {1, 5, 7}, {2, 6, 7}, {3, 5, 7}, {1, 5, 7},
 };
 /* The combo flag of each combo step index, 0-14 (each flag is its index):
- * battle_can_use_combo_step, battle_combo_chain_add_gear_step and battle_combo_record_gear_step read entries 0-14. Its
- * alignment padding holds a stray byte (35, "5") that nothing reads, so it
- * stays original data (battle.classification.txt). */
+ * battle_can_use_combo_step, battle_combo_chain_add_gear_step and
+ * battle_combo_record_gear_step read entries 0-14. Its alignment padding holds a
+ * stray byte (35, "5") that nothing reads, so it stays original data
+ * (battle.classification.txt). */
 INCLUDE_ORIGINAL(".data", battle_combo_step_flags, 0x800C34CC, 16);
 /* The gear formula table, by CommandDescriptor.formula: battle_resolve_gear_action calls
  * battle_gear_formula_table[formula]() once per target without a range check. */
@@ -2193,11 +2195,11 @@ void battle_formula3_drain_hp_or_ep(void) {
     }
 }
 
-/* 80096018: Formula 4 (battle_formula_table[4]) and gear formula 9 (battle_gear_formula_table[9]): chance roll
- * (attacker +0x60 or the descriptor's +0x1c, by +0x18), then the amount by the
- * descriptor's kind +0x1a: target HP / power, HP - 1, the attacker's missing
- * HP, EP * 10, 1, HP, the maximum HP (capped at 9999) or the target's down
- * state (gears refuse it). */
+/* 80096018: Formula 4 (battle_formula_table[4]) and gear formula 9
+ * (battle_gear_formula_table[9]): chance roll (attacker +0x60 or the descriptor's
+ * +0x1c, by +0x18), then the amount by the descriptor's kind +0x1a: target HP /
+ * power, HP - 1, the attacker's missing HP, EP * 10, 1, HP, the maximum HP (capped
+ * at 9999) or the target's down state (gears refuse it). */
 void battle_formula4_deal_damage_by_kind(void) {
     u8 chance;
 
@@ -4747,9 +4749,9 @@ void battle_mirror_gear_status_to_pilot(u8 slot) {
     }
 }
 
-/* 8009CBC4: Gear formula 0 (battle_gear_formula_table[0]), gear attack damage: the gear hit outcome,
- * attack and defense values with the element adjustment and both gears'
- * boost/break statuses, the command's drain effects, then (5a - 4d for
+/* 8009CBC4: Gear formula 0 (battle_gear_formula_table[0]), gear attack damage: the
+ * gear hit outcome, attack and defense values with the element adjustment and both
+ * gears' boost/break statuses, the command's drain effects, then (5a - 4d for
  * ether, else 4a - 3d) times the power over 20, a random spread, the element
  * resistance and the hit outcome's result code; at most 9999. */
 void battle_gear_formula0_deal_damage(void) {
@@ -5293,8 +5295,8 @@ void battle_gear_formula7_restore_fuel(void) {
     battle_work_ptr->damage[battle_target_slot] = amount;
 }
 
-/* 8009E508: Gear formula 8 (battle_gear_formula_table[8]): clear the target gear's statuses 0x7F4 and
- * the target's status 0x20. */
+/* 8009E508: Gear formula 8 (battle_gear_formula_table[8]): clear the target gear's
+ * statuses 0x7F4 and the target's status 0x20. */
 void battle_gear_formula8_cure_statuses(void) {
     battle_target_gear->status7C &= 0xF80B;
     battle_target_record->pilot.status7A &= ~0x20;

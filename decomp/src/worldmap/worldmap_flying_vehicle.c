@@ -3,10 +3,10 @@
  * and the scripted take-offs), its rotors and the two-button combination
  * latch.
  *
- * worldmap_follower_vehicle_update's 65-entry table ends at 800709f8 and worldmap_flying_vehicle_start's
- * follows at once, 0 mod 8, a phase change without a pad word: this unit's
- * rodata starts there and its text after worldmap_follower_vehicle_update, at or before
- * worldmap_flying_vehicle_start. */
+ * worldmap_follower_vehicle_update's 65-entry table ends at 800709f8 and
+ * worldmap_flying_vehicle_start's follows at once, 0 mod 8, a phase change without
+ * a pad word: this unit's rodata starts there and its text after
+ * worldmap_follower_vehicle_update, at or before worldmap_flying_vehicle_start. */
 #include "common.h"
 #include "psyq/libgte.h"
 #include "resident/gamedata.h"

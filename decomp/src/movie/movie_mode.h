@@ -32,10 +32,10 @@ s16 sound_sync_transfer(s32 wait);  /* sound transfer busy */
 extern u16 cd_movie_request_last_frame; /* the requested movie's last frame */
 
 /* The movie request bytes 8004fe44-8004fe47 (cd.h's cd_movie_request_kind to
- * cd_movie_request_unskippable): kind (bit 7: last frame from 80062514),
- * index, the next mode, and whether buttons do not end the movie. This unit indexes them as one array, loading
- * [0] through the array's address in a register, which the four scalars do
- * not reproduce. */
+ * cd_movie_request_unskippable): kind (bit 7: last frame from 80062514), index, the
+ * next mode, and whether buttons do not end the movie. This unit indexes them as
+ * one array, loading [0] through the array's address in a register, which the four
+ * scalars do not reproduce. */
 extern u8 cd_movie_request[4] __asm__("cd_movie_request_kind");
 
 /* One display buffer: its drawing and display environments, the ordering

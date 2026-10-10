@@ -118,7 +118,8 @@ void field_debug_draw_line(u_long *ot, DebugLine *line, MATRIX *m, s32 buffer) {
     PopMatrix();
 }
 
-/* 802815B0: Rebuild each debug line's matrix from its rotation and translation in the camera frame. */
+/* 802815B0: Rebuild each debug line's matrix from its rotation and translation in
+ * the camera frame. */
 void field_debug_update_line_matrices(void) {
     s32 i;
     long flag;

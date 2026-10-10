@@ -175,7 +175,8 @@ void gear_shop_member_marks_close(void) {
     heap_free(menu_state_current->marks);
 }
 
-/* 801CE32C: Draw the shop's detail packets: member bars, portraits, headings, list rows, labels, numbers and prices. */
+/* 801CE32C: Draw the shop's detail packets: member bars, portraits, headings, list
+ * rows, labels, numbers and prices. */
 void gear_shop_draw_details(void) {
     s32 i;
 
@@ -259,7 +260,8 @@ void gear_shop_draw_model(void) {
     }
 }
 
-/* 801CE82C: Draw the gear screen's animated sprites, then its backdrop, frame and part pictures when shown. */
+/* 801CE82C: Draw the gear screen's animated sprites, then its backdrop, frame and
+ * part pictures when shown. */
 void gear_shop_draw_gear_screen(void) {
     s32 i;
 
@@ -299,7 +301,9 @@ void gear_shop_draw_gear_screen(void) {
     }
 }
 
-/* 801CEA68: Animate the two lamps: pick their position (from the cursor while opening, now and then at random while idle), draw the frame's sprites and step the frame. */
+/* 801CEA68: Animate the two lamps: pick their position (from the cursor while
+ * opening, now and then at random while idle), draw the frame's sprites and step
+ * the frame. */
 void gear_shop_animate_lamps(void) {
     u16 at[2][4];
     u8 moved;
@@ -370,7 +374,8 @@ void gear_shop_animate_lamps(void) {
     }
 }
 
-/* 801CEEA8: Animate the indicator: its position (from the cursor while opening, now and then at random while idle), its sprite, and its open-idle-close frame steps. */
+/* 801CEEA8: Animate the indicator: its position (from the cursor while opening, now
+ * and then at random while idle), its sprite, and its open-idle-close frame steps. */
 void gear_shop_animate_indicator(void) {
     u8 moved;
     u16 x;
@@ -432,7 +437,8 @@ void gear_shop_animate_indicator(void) {
     }
 }
 
-/* 801CF184: Animate the flicker every fifth frame: now and then move it to a random place, draw its three sprites (a diagonal row) and toggle their frame. */
+/* 801CF184: Animate the flicker every fifth frame: now and then move it to a random
+ * place, draw its three sprites (a diagonal row) and toggle their frame. */
 void gear_shop_animate_flicker(void) {
     u16 x;
     u16 y;
@@ -487,7 +493,8 @@ void gear_shop_render_name(u8 index) {
     heap_free(gear_shop_name_pixels);
 }
 
-/* 801CF448: Build the gear parts panel: its fourteen frame sprites, five of the gear's values in decimal, and the gear's name. */
+/* 801CF448: Build the gear parts panel: its fourteen frame sprites, five of the
+ * gear's values in decimal, and the gear's name. */
 void gear_shop_layout_gear_values(void) {
     s32 i;
     s32 j;
@@ -632,7 +639,8 @@ void gear_shop_gear_view_open(void) {
     }
 }
 
-/* 801CFF18: Show the gear screen: close its lamps and indicator, swing the camera and start its motion (7). */
+/* 801CFF18: Show the gear screen: close its lamps and indicator, swing the camera
+ * and start its motion (7). */
 void gear_shop_gear_view_close(void) {
     menu_state_current->gear_screen->lamp_state[0] = 3;
     menu_state_current->gear_screen->lamp_state[1] = 3;
@@ -707,7 +715,8 @@ void gear_shop_count_available_members(void) {
     }
 }
 
-/* 801D0398: Switch the gear screen to the previous (`back`) or next available member and load its gear. */
+/* 801D0398: Switch the gear screen to the previous (`back`) or next available
+ * member and load its gear. */
 void gear_shop_switch_member(u8 back) {
     s32 next;
     s32 member;
@@ -771,7 +780,8 @@ void gear_shop_layout_sell_headings(void) {
     menu_state_current->details->heading_buffer = menu_state_current->buffer_index;
 }
 
-/* 801D06D8: Show the number panel: its two frame lines and three numbers, plus a fourth when `lower` (shifted left and up by `lower`). */
+/* 801D06D8: Show the number panel: its two frame lines and three numbers, plus a
+ * fourth when `lower` (shifted left and up by `lower`). */
 void gear_shop_layout_gold_numbers(u32 first, u32 second, u32 third, u32 fourth, u8 lower) {
     s32 i;
 
@@ -892,7 +902,8 @@ void gear_shop_layout_price_digits(u32 value) {
     menu_state_current->flags->price_shown = 1;
 }
 
-/* 801D0EC8: Hide the shop list's packets; with `close` also close its panels, scroll bar and marker. */
+/* 801D0EC8: Hide the shop list's packets; with `close` also close its panels,
+ * scroll bar and marker. */
 void gear_shop_hide_details(u8 close) {
     s32 i;
 
@@ -921,7 +932,8 @@ void gear_shop_hide_details(u8 close) {
     }
 }
 
-/* 801D1078: Party bits of the available members whose gear has part `item` of kind `kind` fitted. */
+/* 801D1078: Party bits of the available members whose gear has part `item` of kind
+ * `kind` fitted. */
 u32 gear_shop_find_part_holders(u8 item, u8 kind) {
     u16 members;
     u8 found;
@@ -1186,7 +1198,8 @@ void gear_shop_layout_sell_rows(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *hel
     heap_free(pixels);
 }
 
-/* 801D1F20: Set the party's gold (capped at 9999999) and, with `remove`, take the chosen amounts out of the inventory. */
+/* 801D1F20: Set the party's gold (capped at 9999999) and, with `remove`, take the
+ * chosen amounts out of the inventory. */
 void gear_shop_settle_sale(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_counts, u8 *unused,
                    u8 remove, u8 unused_member) {
     u32 *party_gold;
@@ -1392,7 +1405,8 @@ void gear_shop_gear_part_sell_list_run(void) {
     gear_shop_sell_list_run(100, game_data.gearPartIds, game_data.gearPartIds - 100, 4, 1, game_data.gearPartIds - 100, 0);
 }
 
-/* 801D2804: Run sell list `page` * 3 + cursor (3 and 4 are the two inventories), then restore the list labels. */
+/* 801D2804: Run sell list `page` * 3 + cursor (3 and 4 are the two inventories),
+ * then restore the list labels. */
 void gear_shop_chosen_sell_list_run(u8 page) {
     u8 close;
 
@@ -1416,7 +1430,8 @@ void gear_shop_chosen_sell_list_run(u8 page) {
     gear_shop_label_render_table(4, menu_state_current->list_labels, gear_shop_choice_label_ids, menu_state_current->flags->list_labels_shown);
 }
 
-/* 801D2950: Render the edited gear's part name of list `kind` (0 frame, 1 engine, 2 armour) into its label and show it. */
+/* 801D2950: Render the edited gear's part name of list `kind` (0 frame, 1 engine, 2
+ * armour) into its label and show it. */
 void gear_shop_show_fitted_part_name(u8 kind) {
     RECT rect;
     u8 *pixels;
@@ -1702,7 +1717,8 @@ u16 gear_shop_find_inventory_count(u8 *ids, u8 *counts, s32 n, u8 id) {
     return count;
 }
 
-/* 801D3A80: Show how many of item `id` the party holds in inventory `kind` (3 or 4) beside the list. */
+/* 801D3A80: Show how many of item `id` the party holds in inventory `kind` (3 or 4)
+ * beside the list. */
 void gear_shop_show_held_count(u8 kind, u8 id) {
     RECT rect;
     u8 codes[4];
@@ -1973,7 +1989,8 @@ void gear_shop_settle_purchase(u32 gold) {
     }
 }
 
-/* 801D4888: Whether shop part `index` differs from the edited gear's part of that kind (0 when the gear already has it or better). */
+/* 801D4888: Whether shop part `index` differs from the edited gear's part of that
+ * kind (0 when the gear already has it or better). */
 u8 gear_shop_is_part_upgrade(s32 index) {
     u8 wanted;
 
@@ -2430,7 +2447,8 @@ u8 gear_shop_choice_list_run(void) {
     return 1;
 }
 
-/* 801D5D38: Set up the Gear model: the actor module, its light, both large ordering tables and the two model blocks, then show the first present member's gear. */
+/* 801D5D38: Set up the Gear model: the actor module, its light, both large ordering
+ * tables and the two model blocks, then show the first present member's gear. */
 void gear_shop_model_init(void) {
     s32 i;
 
@@ -2529,7 +2547,8 @@ void gear_shop_rebuild_gear_values(MenuTables *table, u8 id) {
     gear_shop_set_gear_weapon_values(table, id);
 }
 
-/* 801D61B8: Copy gear `id`'s values from its +2 entry of the table's 18h-byte records, capping +60. */
+/* 801D61B8: Copy gear `id`'s values from its +2 entry of the table's 18h-byte
+ * records, capping +60. */
 void gear_shop_set_gear_engine_values(MenuTables *table, u8 id) {
     GearRecord *gear;
     GearEngineInfo *record;
@@ -2560,7 +2579,8 @@ void gear_shop_set_gear_frame_values(MenuTables *table, u8 id) {
     gear->armor = entry->unkA;
 }
 
-/* 801D62A4: Copy gear `id`'s values from its +3 entry of the table's 10h-byte records, capping +38. */
+/* 801D62A4: Copy gear `id`'s values from its +3 entry of the table's 10h-byte
+ * records, capping +38. */
 void gear_shop_set_gear_part_values(MenuTables *table, u8 id) {
     GearRecord *gear;
     GearPartInfo *record;
@@ -2580,7 +2600,8 @@ void gear_shop_set_gear_part_values(MenuTables *table, u8 id) {
     }
 }
 
-/* 801D6334: Sum gear `id`'s three parts into its derived values and effect bits, and update its pilot's ability bits. */
+/* 801D6334: Sum gear `id`'s three parts into its derived values and effect bits,
+ * and update its pilot's ability bits. */
 void gear_shop_sum_gear_accessories(MenuTables *table, u8 id) {
     GearRecord *gear;
     GearAccessoryInfo *part;
@@ -2681,7 +2702,8 @@ void gear_shop_sum_gear_accessories(MenuTables *table, u8 id) {
     }
 }
 
-/* 801D6738: Copy gear `id`'s weapon values from the weapon table; gear 5 and 13 carry three weapons. */
+/* 801D6738: Copy gear `id`'s weapon values from the weapon table; gear 5 and 13
+ * carry three weapons. */
 void gear_shop_set_gear_weapon_values(MenuTables *table, u8 id) {
     GearRecord *gear;
     GearWeaponInfo *weapon;

@@ -95,9 +95,9 @@ next:
             }
             return;
         }
-        /* 80-ff: as 800248d4 (a handler that keeps the script pointer then advances by
-         * the resident length table, sprite_vm_command_lengths_by_opcode[op] = sprite_vm_command_lengths[op - 0x80]), with the
-         * battle's cases. */
+        /* 80-ff: as 800248d4 (a handler that keeps the script pointer then advances
+         * by the resident length table, sprite_vm_command_lengths_by_opcode[op] =
+         * sprite_vm_command_lengths[op - 0x80]), with the battle's cases. */
         switch (op) {
         /* e8 cmd var: battle command cmd (800b3f04) on the bytes at the variable. */
         case 0xE8:

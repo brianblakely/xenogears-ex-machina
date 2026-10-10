@@ -6,10 +6,10 @@
 #include "psyq/libgte.h"
 #include "mode.h"
 
-/* The scene's particle effects (arena_fighters_bout_and_effects 800732CC-80073424, 8007B270-8007E528):
- * the glow emitter, the sparkles (sprite quads that fall or trail), the
- * bolts, the ground particles, the scene cells thrown up along a segment,
- * and the queued 3D lines, drawn in the scene passes. */
+/* The scene's particle effects (arena_fighters_bout_and_effects 800732CC-80073424,
+ * 8007B270-8007E528): the glow emitter, the sparkles (sprite quads that fall or
+ * trail), the bolts, the ground particles, the scene cells thrown up along a
+ * segment, and the queued 3D lines, drawn in the scene passes. */
 
 /* Scratchpad work area of the scene drawing. */
 typedef struct {
@@ -106,9 +106,10 @@ typedef struct {
     SVECTOR to;   /* 0x18 */
 } SceneLine;
 
-/* Frame tables of the sparkle kinds: kind 0's are filled from its twelve
- * TIMs (arena_fighters_bout_and_effects's arena_effect_sparkle0_frame_u, arena_effect_sparkle0_frame_v and arena_effect_sparkle0_frame_cluts); kinds 1-4 use
- * fixed tables whose rows are offset once by their TIM's row. */
+/* Frame tables of the sparkle kinds: kind 0's are filled from its twelve TIMs
+ * (arena_fighters_bout_and_effects's arena_effect_sparkle0_frame_u,
+ * arena_effect_sparkle0_frame_v and arena_effect_sparkle0_frame_cluts); kinds 1-4
+ * use fixed tables whose rows are offset once by their TIM's row. */
 extern u8 arena_effect_sparkle1_frame_u[16];
 extern u8 arena_effect_sparkle1_frame_v[16];
 extern u8 arena_effect_sparkle2_frame_u[16];

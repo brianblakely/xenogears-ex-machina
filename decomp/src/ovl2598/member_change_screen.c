@@ -36,10 +36,12 @@ s32 member_change_marker_y_table[4] = {0, 0, 200, 200}; /* 801CB190: y */
 s32 member_change_row_marker_x_table[9] = {32, 32, 32, 144, 144, 144, 144, 144, 144}; /* 801CB1A0: x */
 s32 member_change_row_marker_y_table[9] = {38, 94, 150, 22, 54, 86, 118, 150, 182};   /* 801CB1C4: y */
 
-/* Status panel layouts: the 17 part positions member_change_status_panel_layout_sprites,
- * member_change_status_panel_layout_levels and member_change_status_panel_layout_hp_ep read (layout sprites 0-8, then the face,
- * level digits, next value, HP, HP max, EP, EP max and name label). The
- * party tables' entries past the 17th are never read. */
+/* Status panel layouts: the 17 part positions
+ * member_change_status_panel_layout_sprites,
+ * member_change_status_panel_layout_levels and
+ * member_change_status_panel_layout_hp_ep read (layout sprites 0-8, then the face,
+ * level digits, next value, HP, HP max, EP, EP max and name label). The party
+ * tables' entries past the 17th are never read. */
 s32 member_change_member_panel_x_table[17] = { /* 801CB1E8: member panel x */
     152, 160, 192, 224, 232, 264, 224, 232, 264,
     126, 168, 200, 240, 272, 248, 272, 152,

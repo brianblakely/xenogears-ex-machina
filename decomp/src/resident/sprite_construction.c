@@ -271,7 +271,8 @@ next:
     }
 }
 
-/* 80022974: Derive a sprite's horizontal velocity from its walking speed, gravity divisor and direction. */
+/* 80022974: Derive a sprite's horizontal velocity from its walking speed, gravity
+ * divisor and direction. */
 void sprite_update_velocity(Sprite *sprite) {
     s32 speed = ((sprite->speed >> 4) << 8) / sprite->motion.bits.divisor;
 
@@ -284,8 +285,8 @@ s32 sprite_read_word(s32 *word) {
     return *word;
 }
 
-/* 80022A0C: Upload the image at sprite_load_image_pixels to sprite_load_image_rect, running LoadImage on an 8 KB
- * heap block as its stack. */
+/* 80022A0C: Upload the image at sprite_load_image_pixels to sprite_load_image_rect,
+ * running LoadImage on an 8 KB heap block as its stack. */
 void sprite_load_image_on_own_stack(void) {
     u8 *stack = heap_alloc(0x2000, 1);
 
@@ -383,7 +384,8 @@ void sprite_move(Sprite *sprite) {
     sprite_move_vertically(sprite);
 }
 
-/* 80022D44: Show the frame the frame index selects, mirrored when its flip bit and the sprite's mirror flag differ. */
+/* 80022D44: Show the frame the frame index selects, mirrored when its flip bit and
+ * the sprite's mirror flag differ. */
 void sprite_show_indexed_frame(Sprite *sprite) {
     s32 index = sprite->frame_bits.frame;
     u16 entry;
@@ -403,7 +405,8 @@ void sprite_show_indexed_frame(Sprite *sprite) {
     sprite_request_frame(sprite, frame);
 }
 
-/* 80022DF4: Sprite task update: advance the animation and move (twice with double_step); destroy the task when the frames run out. */
+/* 80022DF4: Sprite task update: advance the animation and move (twice with
+ * double_step); destroy the task when the frames run out. */
 void sprite_task_update(Task *task) {
     Sprite *sprite = task->data;
 
@@ -513,7 +516,8 @@ s32 sprite_read_palette_word1_plus_one(s32 *block) {
     return ((s32 *)(block[3] + (s32)block))[1] + 1;
 }
 
-/* 80023210: Count down the frame timer once per displayed frame, running the next command when it expires. */
+/* 80023210: Count down the frame timer once per displayed frame, running the next
+ * command when it expires. */
 void sprite_vm_tick(Sprite *sprite) {
     s32 i;
 
@@ -526,7 +530,8 @@ void sprite_vm_tick(Sprite *sprite) {
     }
 }
 
-/* 80023290: Set a sprite's blend rate; type 8 and 9 sprites keep it one lower, the others recolour their parts. */
+/* 80023290: Set a sprite's blend rate; type 8 and 9 sprites keep it one lower, the
+ * others recolour their parts. */
 void sprite_set_blend_rate(Sprite *sprite, s32 rate) {
     s32 type;
     s32 blend;
@@ -549,13 +554,15 @@ void sprite_set_blend_rate(Sprite *sprite, s32 rate) {
     }
 }
 
-/* 80023340: Replace a sprite renderer's part list with room for `count` parts (from the heap bottom). */
+/* 80023340: Replace a sprite renderer's part list with room for `count` parts (from
+ * the heap bottom). */
 void sprite_realloc_parts_from_bottom(Sprite *sprite, s32 count) {
     heap_free(sprite->renderer->parts[0]);
     sprite->renderer->parts[0] = sprite->renderer->parts[1] = heap_alloc(count * 24, 0);
 }
 
-/* 800233A4: Create a sprite task (with `extra` bytes after the sprite) under `owner`: its auxiliary node, default sprite and update/destroy callbacks. */
+/* 800233A4: Create a sprite task (with `extra` bytes after the sprite) under
+ * `owner`: its auxiliary node, default sprite and update/destroy callbacks. */
 SpriteTask *sprite_task_alloc(Task *owner, s32 extra) {
     SpriteTask *node = heap_alloc(extra + sizeof(SpriteTask), task_alloc_mode);
     Task *auxiliary;

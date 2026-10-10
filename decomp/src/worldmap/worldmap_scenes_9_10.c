@@ -4,10 +4,12 @@
  * frame step of most scene modes, the set-up and leave handlers of modes 10
  * and 14 and the sequence start of mode 14's director.
  *
- * worldmap_restore_player_position's seven-entry table ends at 8006fb40 and worldmap_scene9_camera_flight_update's
- * follows at once, 0 mod 8: within one unit an odd-length table followed by
- * another keeps its phase with a pad word, so this unit's rodata starts at
- * 8006fb40 and its text after worldmap_restore_player_position, at or before worldmap_scene9_camera_flight_update. */
+ * worldmap_restore_player_position's seven-entry table ends at 8006fb40 and
+ * worldmap_scene9_camera_flight_update's follows at once, 0 mod 8: within one unit
+ * an odd-length table followed by another keeps its phase with a pad word, so this
+ * unit's rodata starts at 8006fb40 and its text after
+ * worldmap_restore_player_position, at or before
+ * worldmap_scene9_camera_flight_update. */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libetc.h"

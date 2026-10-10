@@ -1527,7 +1527,8 @@ void sprite_upload_image_list(void) {
     heap_free(stack);
 }
 
-/* 8001FBA4: The operand a script byte names: a frame table entry (bit 7 set) or a byte on the sprite's stack. */
+/* 8001FBA4: The operand a script byte names: a frame table entry (bit 7 set) or a
+ * byte on the sprite's stack. */
 u8 *sprite_vm_resolve_variable(Sprite *sprite, u8 *code) {
     u8 *operand;
     s32 offset;
@@ -1687,7 +1688,8 @@ void sprite_vm_run_generic_command(Sprite *sprite, u8 op, u8 *code) {
     case 0x96:
         task_destroy_owned_by(sprite->block);
         break;
-    /* a2 u8: render byte 1 = u8: the part groups not drawn (their sprite_halfword_bit_masks bits). */
+    /* a2 u8: render byte 1 = u8: the part groups not drawn (their
+     * sprite_halfword_bit_masks bits). */
     case 0xA2:
         ((u8 *)&sprite->render)[1] = code[0];
         break;

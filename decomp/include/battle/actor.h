@@ -16,8 +16,9 @@ extern s32 battle_gear_object_load_count;  /* gear object loads running */
 extern u8 battle_gear_objects_loaded;      /* the gear objects are loaded */
 extern u8 battle_camera_skip_gear_heights; /* frame the sprites without their gear heights */
 
-/* The battle camera (800d309c); its view matrix is also named battle_camera_view_matrix,
- * its eye and look-at points battle_camera_wanted_points, its angles battle_camera_angles and its range
+/* The battle camera (800d309c); its view matrix is also named
+ * battle_camera_view_matrix, its eye and look-at points
+ * battle_camera_wanted_points, its angles battle_camera_angles and its range
  * battle_camera_distance. */
 typedef struct BattleCamera {
     s32 field0;

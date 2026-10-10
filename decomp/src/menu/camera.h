@@ -5,8 +5,9 @@
 #include "psyq/libgte.h"
 #include "actor.h"
 
-/* The camera (arena_camera_and_scenes 800707A8-80070F80; arena_fighters_bout_and_effects 800796B8, 8007A768,
- * 8007A958; arena_stage_views_and_hud 800831C8-80083CE8 but 80083BB4): its eye and look-at
+/* The camera (arena_camera_and_scenes 800707A8-80070F80;
+ * arena_fighters_bout_and_effects 800796B8, 8007A768, 8007A958;
+ * arena_stage_views_and_hud 800831C8-80083CE8 but 80083BB4): its eye and look-at
  * point, the view modes, the idle orbit and the camera/scene modes. */
 
 extern u8 arena_camera_ease_step_count;      /* idle camera */

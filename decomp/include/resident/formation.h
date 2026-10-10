@@ -3,13 +3,13 @@
 
 #include "common.h"
 
-/* Battle formations and encounter sets (docs/scripts/formations.md). The
- * battle overlay copies formation formation_selected_index of the encounter set formation_encounter_set
- * into formation_active as it starts (battle battle_main); the battle setup, event
- * script and results overlays read it there. Party members take battle slots
- * 0-2, enemies slots 3-10 (battle/area.h BattleSlot); "slot byte n" below is
- * byte n of a slot's BattleSlot record. The places of each formation group
- * come from the stage's scene data (mode_battle_scene_file), not from here. */
+/* Battle formations and encounter sets (docs/scripts/formations.md). The battle
+ * overlay copies formation formation_selected_index of the encounter set
+ * formation_encounter_set into formation_active as it starts (battle battle_main);
+ * the battle setup, event script and results overlays read it there. Party members
+ * take battle slots 0-2, enemies slots 3-10 (battle/area.h BattleSlot); "slot byte
+ * n" below is byte n of a slot's BattleSlot record. The places of each formation
+ * group come from the stage's scene data (mode_battle_scene_file), not from here. */
 
 /* A battle formation (0x20 bytes). */
 typedef struct BattleFormation {

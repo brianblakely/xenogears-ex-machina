@@ -47,11 +47,12 @@ void menu_detail_layout_tabs(u8 slot, u8 shown, u8 second);
 /* The overlay's initialized data: all of it is defined here, ahead of the
  * units' uninitialized variables. */
 u8 menu_save_command_stays_open = 0; /* 801E96A4: the file screen saves (nonzero) or loads */
-/* The flag menu_saving_at_cd_change (0), then 08 00 before the word-aligned masks, which
- * nothing reads: taken as its padding, holding stray bytes, by analogy with
- * battle's flag battle_applying_item_results (08 00 00) and ovl2596's battle_results_fanfare_started (04 00 00);
- * neither the bytes nor the vendor tools tell it from an unreferenced byte 8
- * (docs/matching.md). It stays original data (slot39.classification.txt). */
+/* The flag menu_saving_at_cd_change (0), then 08 00 before the word-aligned masks,
+ * which nothing reads: taken as its padding, holding stray bytes, by analogy with
+ * battle's flag battle_applying_item_results (08 00 00) and ovl2596's
+ * battle_results_fanfare_started (04 00 00); neither the bytes nor the vendor tools
+ * tell it from an unreferenced byte 8 (docs/matching.md). It stays original data
+ * (slot39.classification.txt). */
 INCLUDE_ORIGINAL_UNALIGNED(".data", menu_saving_at_cd_change, 0x801E96A5, 3);
 extern u8 menu_saving_at_cd_change; /* set while menu kind 6 (menu_cd_change_run) saves: menu_save_build_payload
                        * then stores 1, not the disc number - 1, in vars[82] */
@@ -1658,7 +1659,8 @@ u8 menu_card_check_port(u8 port) {
     return ok;
 }
 
-/* 801C8BEC: While the card screen is up, recheck both ports every menu_card_poll_interval frames. */
+/* 801C8BEC: While the card screen is up, recheck both ports every
+ * menu_card_poll_interval frames. */
 void menu_card_poll_ports(void) {
     if (menu_state_current->card->mode != 0) {
         if (++menu_state_current->card_poll_timer > menu_card_poll_interval) {
@@ -5269,8 +5271,8 @@ void menu_field_block_layout_portrait(u8 index, u8 mode, s32 x, s32 y) {
                   (u8)(menu_name_image_vram_x_table[index] * 4), (u8)menu_name_image_vram_y_table[index], 0x48, 13);
 }
 
-/* 801D50EC: Lay out the parts of field block `index` at (x, y) from the menu_field_block_part_images
- * sheet images (ffff none). */
+/* 801D50EC: Lay out the parts of field block `index` at (x, y) from the
+ * menu_field_block_part_images sheet images (ffff none). */
 void menu_field_block_layout_parts(u8 index, s32 x, s32 y) {
     MenuFieldBlock *block;
     s32 i;

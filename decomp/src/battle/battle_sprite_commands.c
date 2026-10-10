@@ -755,9 +755,9 @@ void battle_sprite_get_anchor_matrix(Sprite *sprite, s32 index, MATRIX *m) {
     }
 }
 
-/* 800B50D4: The offsets of the sprite's five trail anchors (battle_trail_anchor_indices), mirrored with
- * the sprite and scaled, as points (x, y, 0) of out, when it is drawn one
- * sided. */
+/* 800B50D4: The offsets of the sprite's five trail anchors
+ * (battle_trail_anchor_indices), mirrored with the sprite and scaled, as points (x,
+ * y, 0) of out, when it is drawn one sided. */
 void battle_trail_get_anchors(Sprite *sprite, SVECTOR *out) {
     s32 i;
     s32 x;

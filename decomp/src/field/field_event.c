@@ -938,8 +938,8 @@ void field_event_copy_character(void) {
 }
 
 /* 80087800: Event: store the arena bout's outcome (80050622, the byte after the six
- * parameters ext bf sets; arena_fighters_bout_and_effects arena_bout_record_outcome writes it) in variable
- * operand 1. */
+ * parameters ext bf sets; arena_fighters_bout_and_effects arena_bout_record_outcome
+ * writes it) in variable operand 1. */
 void field_event_store_bout_outcome(void) {
     field_event_write_variable(field_event_read_u16(1) & 0xFFFF, mode_arena_bout_outcome);
     field_current_event_actor->pc += 3;
@@ -3720,10 +3720,11 @@ void field_event_select_music_keep(void) {
     field_event_select_music_track();
 }
 
-/* 8008F7B8: Select the field music track (operand 1). Without field_event_runs_per_frame the track is
- * only recorded; otherwise yield until the music system can take a change.
- * The two "busy" yields are separate branches that GCC merges into one tail
- * after the change branch, storing the comparison's constant 1. */
+/* 8008F7B8: Select the field music track (operand 1). Without
+ * field_event_runs_per_frame the track is only recorded; otherwise yield until the
+ * music system can take a change. The two "busy" yields are separate branches that
+ * GCC merges into one tail after the change branch, storing the comparison's
+ * constant 1. */
 void field_event_select_music_track(void) {
     s32 track;
 
@@ -10002,8 +10003,11 @@ void field_event_set_party_sprite(void) {
     field_current_event_actor->pc += 3;
 }
 
-/* 800A08B8: Event 16: the current actor becomes party character operand 1 (ff, fe, fd: party slots 2, 1, 0). A party member takes its slot (slot 0 becomes the controlled actor), its sprite (or sprite 800ae294[character] of the alternate set 800b2268) and map entry variable 2; others hide and end their script.
- * The alternate sprite's offset entry is addressed before the call. */
+/* 800A08B8: Event 16: the current actor becomes party character operand 1 (ff, fe,
+ * fd: party slots 2, 1, 0). A party member takes its slot (slot 0 becomes the
+ * controlled actor), its sprite (or sprite 800ae294[character] of the alternate set
+ * 800b2268) and map entry variable 2; others hide and end their script. The
+ * alternate sprite's offset entry is addressed before the call. */
 void field_event_become_party_character(void) {
     FieldDescriptor *descriptor;
     s32 character;
@@ -10721,9 +10725,9 @@ void field_reload_actor_blocks(void) {
     }
 }
 
-/* 800A28D4: When mode_field_return_pending is set: rebuild every actor's sprite and animation state,
- * swap in the party models and rerun the actors' setup scripts. Each sprite
- * table pointer is a block-local variable. */
+/* 800A28D4: When mode_field_return_pending is set: rebuild every actor's sprite and
+ * animation state, swap in the party models and rerun the actors' setup scripts.
+ * Each sprite table pointer is a block-local variable. */
 void field_event_init_actors(void) {
     s32 i;
     Sprite *model;

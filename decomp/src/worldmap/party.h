@@ -28,14 +28,15 @@ typedef struct {
  * state (game_data.worldmap). */
 #define STATE_U16(offset) (*(u16 *)((u8 *)&game_data.worldmap + (offset)))
 
-/* Game data words that some movers address by names of their own: as members
- * of game_data they compile differently there. The parked vehicles'
- * headings (worldmap.unk5A-unk5E; worldmap_player_vehicle_start_parked, worldmap_second_vehicle_start_parked, worldmap_third_vehicle_start_parked)
- * and spots (worldmap_place_vehicle), the flying vehicle's heading where it starts
- * (worldmap.vehicle_heading; worldmap_flying_vehicle_start) and the return flags it masks
- * on its two landings (worldmap.flags; worldmap_flying_vehicle_update), and the spots
- * seen four bytes early, so that the followers' actor slots 1-3 index the x
- * and z of party slots 0-2 (worldmap_follower_update). */
+/* Game data words that some movers address by names of their own: as members of
+ * game_data they compile differently there. The parked vehicles' headings
+ * (worldmap.unk5A-unk5E; worldmap_player_vehicle_start_parked,
+ * worldmap_second_vehicle_start_parked, worldmap_third_vehicle_start_parked) and
+ * spots (worldmap_place_vehicle), the flying vehicle's heading where it starts
+ * (worldmap.vehicle_heading; worldmap_flying_vehicle_start) and the return flags it
+ * masks on its two landings (worldmap.flags; worldmap_flying_vehicle_update), and
+ * the spots seen four bytes early, so that the followers' actor slots 1-3 index the
+ * x and z of party slots 0-2 (worldmap_follower_update). */
 extern u16 game_data_parked_vehicle0_heading, game_data_parked_vehicle1_heading, game_data_parked_vehicle2_heading;
 extern VehicleSpot game_data_vehicle_spots[3];
 extern u16 game_data_flying_vehicle_heading, game_data_worldmap_return_flags;

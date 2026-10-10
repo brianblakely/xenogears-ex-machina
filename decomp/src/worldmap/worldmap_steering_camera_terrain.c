@@ -54,7 +54,8 @@ VECTOR worldmap_terrain_split_points[16] = { /* 8009B464 */
     {0x7FFF, 0, 0}, {0x8000, 0, 0}, {0, 0, 0x8000}, {0xFFFF, 0, 0x8000},
 };
 
-/* 80090A84: Walking input: steer by the d-pad relative to the camera; 3 on a menu request, 1 when a path or its entrance is selected, else 0. */
+/* 80090A84: Walking input: steer by the d-pad relative to the camera; 3 on a menu
+ * request, 1 when a path or its entrance is selected, else 0. */
 s32 worldmap_steer_on_foot(WorldmapActor *actor) {
     switch (worldmap_pad_port0_held >> 12) {
     case 1:
@@ -103,7 +104,8 @@ s32 worldmap_steer_on_foot(WorldmapActor *actor) {
     return 0;
 }
 
-/* 80090C68: Vehicle input: steer by the d-pad relative to the camera; 3 on a menu request, 1 when leaving at a path, else 0. */
+/* 80090C68: Vehicle input: steer by the d-pad relative to the camera; 3 on a menu
+ * request, 1 when leaving at a path, else 0. */
 s32 worldmap_steer_vehicle(WorldmapActor *actor) {
     switch (worldmap_pad_port0_held >> 12) {
     case 1:
@@ -150,7 +152,8 @@ s32 worldmap_steer_vehicle(WorldmapActor *actor) {
     return 0;
 }
 
-/* 80090E14: Flying input: steer by the d-pad relative to the camera; 1 when landing at a path, 4 on the take-off button, else 0. */
+/* 80090E14: Flying input: steer by the d-pad relative to the camera; 1 when landing
+ * at a path, 4 on the take-off button, else 0. */
 s32 worldmap_steer_flying(WorldmapActor *actor) {
     switch (worldmap_pad_port0_held >> 12) {
     case 1:
@@ -1186,7 +1189,8 @@ typedef struct {
 
 #define TERRAIN_SCRATCH ((TerrainScratch *)0x1F800000)
 
-/* 80093740: Unit normal of the terrain triangle under a position (cells split along one diagonal). */
+/* 80093740: Unit normal of the terrain triangle under a position (cells split along
+ * one diagonal). */
 void worldmap_terrain_get_normal(VECTOR *normal, s32 x, s32 z) {
     u8 *cell;
     TerrainScratch *scratch;
@@ -1256,7 +1260,8 @@ s32 worldmap_terrain_get_height(s32 x, s32 z) {
     return point.vy * 8;
 }
 
-/* 80093A5C: Wave-displaced terrain height at a position (20.12): corners bob with two phase-scrolled sines. */
+/* 80093A5C: Wave-displaced terrain height at a position (20.12): corners bob with
+ * two phase-scrolled sines. */
 s32 worldmap_terrain_get_wave_height(s32 x, s32 z) {
     u8 *cell;
     TerrainScratch *scratch;
@@ -1363,7 +1368,8 @@ s32 worldmap_terrain_get_attribute(VECTOR *position) {
     return attributes[(((z & 0x7FF000) >> 19) << 4) | ((x & 0x7FF000) >> 19)];
 }
 
-/* 80093F18: Terrain layer (0-7) at a position: the cell's split plane picks attribute bits 4-6 or 7-9. */
+/* 80093F18: Terrain layer (0-7) at a position: the cell's split plane picks
+ * attribute bits 4-6 or 7-9. */
 s16 worldmap_terrain_get_layer(VECTOR *position) {
     u32 attribute;
     s32 type;
@@ -1442,7 +1448,8 @@ void worldmap_get_heading_to(VECTOR *from, VECTOR *to, VECTOR *direction, s16 *h
     direction->vz = -gpu_get_cos(*heading);
 }
 
-/* 80094238: Find the region of path table `table` containing the position: a path becomes current, a destination (kind 4) is recorded. */
+/* 80094238: Find the region of path table `table` containing the position: a path
+ * becomes current, a destination (kind 4) is recorded. */
 s32 worldmap_path_select_region(VECTOR *position, s32 table) {
     PathRegion *region;
     u16 x;
@@ -1501,7 +1508,8 @@ s32 worldmap_path_select_region_of_kind(VECTOR *position, s32 table, s32 kind) {
 void worldmap_terrain_empty_unreferenced(void) {
 }
 
-/* 8009443C: Step along the direction to the next cell boundary in +x: 1 when the far side is walkable (step[0] moves there), 3 when only the near side is, else 0. */
+/* 8009443C: Step along the direction to the next cell boundary in +x: 1 when the
+ * far side is walkable (step[0] moves there), 3 when only the near side is, else 0. */
 s32 worldmap_terrain_step_boundary_plus_x(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row) {
     s32 slope;
 

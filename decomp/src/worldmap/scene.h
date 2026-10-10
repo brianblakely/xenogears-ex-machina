@@ -128,9 +128,9 @@ extern u16 worldmap_scene15_exit_entry_parameters[];
 
 /* Scene sprite quads (worldmap_scene13): set their colour. */
 void worldmap_set_quad_colors(POLY_FT4 *quads, s32 count, s32 r, s32 g, s32 b);
-/* worldmap_build_translucent_quads (void, worldmap_scenes_9_10) has no prototype here: the other units
- * call it undeclared (implicit int), which lets the caller schedule its return value
- * early after the call (8007FC8C). */
+/* worldmap_build_translucent_quads (void, worldmap_scenes_9_10) has no prototype
+ * here: the other units call it undeclared (implicit int), which lets the caller
+ * schedule its return value early after the call (8007FC8C). */
 
 /* Scratchpad work area of the scaled scene objects. */
 typedef struct {

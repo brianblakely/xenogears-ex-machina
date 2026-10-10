@@ -3034,7 +3034,8 @@ s32 battle_find_triangle_in_neighbors(SVECTOR *point, s32 triangle, s32 depth) {
     return -1;
 }
 
-/* 800A5E9C: Set the two words battle_buffer0_background_color_ptr and battle_buffer1_background_color_ptr. */
+/* 800A5E9C: Set the two words battle_buffer0_background_color_ptr and
+ * battle_buffer1_background_color_ptr. */
 void battle_set_background_color_ptrs(s32 first, s32 second) {
     battle_buffer0_background_color_ptr = first;
     battle_buffer1_background_color_ptr = second;

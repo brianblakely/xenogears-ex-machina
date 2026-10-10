@@ -44,9 +44,10 @@ typedef struct {
     POLY_G4 quads[4];    /* 0x173C */
 } StageGeometry;
 
-/* The stage's lit colours in their saved order (0x88 bytes): per side the
- * geometry quad's four corners, its flat and the backdrop's flat, then the
- * backdrop quads' corners and the two colours of battle_buffer0_background_color_ptr/battle_buffer1_background_color_ptr. */
+/* The stage's lit colours in their saved order (0x88 bytes): per side the geometry
+ * quad's four corners, its flat and the backdrop's flat, then the backdrop quads'
+ * corners and the two colours of
+ * battle_buffer0_background_color_ptr/battle_buffer1_background_color_ptr. */
 typedef struct {
     struct {
         CVECTOR quad[4];

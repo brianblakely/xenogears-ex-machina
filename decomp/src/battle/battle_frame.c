@@ -63,8 +63,8 @@ void battle_walk_to_target(Sprite *sprite, s32 mode);
  * battle_flow.c's); the commons follow (battle_common.c). */
 static s32 battle_finished_motion_count; /* 800C3CE8: finished sprite motions */
 
-/* This unit's data (800c374c-800c37d4). The flags battle_showing_status_drains and battle_effects_disabled
- * are followed by stray bytes, so they stay original data. */
+/* This unit's data (800c374c-800c37d4). The flags battle_showing_status_drains and
+ * battle_effects_disabled are followed by stray bytes, so they stay original data. */
 s32 battle_unread_popup_word = 0; /* 800C374C */
 DamagePopup *battle_damage_popups = NULL; /* 800C3750 */
 s16 battle_popup_first_glyph_x_table[5] = {-4, -8, -12, -16, -20}; /* 800C3754: the first glyph's x by digit count */
@@ -750,8 +750,9 @@ void battle_run_frame(void) {
     battle_frame_nesting--;
 }
 
-/* 800BEB04: Load the requested battle module (sprite_requested_battle_module) into 0x801FC000 when it
- * changed, around the module switch 800B8354, and mark it loaded. */
+/* 800BEB04: Load the requested battle module (sprite_requested_battle_module) into
+ * 0x801FC000 when it changed, around the module switch 800B8354, and mark it
+ * loaded. */
 void battle_load_module(void) {
     s32 saved0;
     s32 saved1;

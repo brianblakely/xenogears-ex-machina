@@ -1230,8 +1230,9 @@ void worldmap_encounter_reset_timers(void) {
     worldmap_encounter_expired_count = 0;
 }
 
-/* 8007528C: Every worldmap_encounter_period frames give each of worldmap_encounter_timer_count timers a distinct random
- * delay (1..worldmap_encounter_period); count down the timers and count those expiring. */
+/* 8007528C: Every worldmap_encounter_period frames give each of
+ * worldmap_encounter_timer_count timers a distinct random delay
+ * (1..worldmap_encounter_period); count down the timers and count those expiring. */
 void worldmap_encounter_update_timers(void) {
     s32 i;
     s32 j;

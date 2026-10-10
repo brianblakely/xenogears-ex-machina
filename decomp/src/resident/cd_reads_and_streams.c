@@ -315,7 +315,8 @@ void gpu_free_panorama(void *block) {
     }
 }
 
-/* 80027D64: Set up a texture scroll of `count` bands over an area; the band phases are allocated (heap tag 4) and cleared. Returns the scroll, or NULL. */
+/* 80027D64: Set up a texture scroll of `count` bands over an area; the band phases
+ * are allocated (heap tag 4) and cleared. Returns the scroll, or NULL. */
 TextureScroll *gpu_init_texture_scroll(TextureScroll *scroll, s16 x, s16 y, s16 w, s16 h, s16 count, u16 source_x,
                              u16 source_y, s8 *speeds) {
     s32 i;
@@ -341,7 +342,8 @@ TextureScroll *gpu_init_texture_scroll(TextureScroll *scroll, s16 x, s16 y, s16 
     return scroll;
 }
 
-/* 80027EAC: Advance each band's phase by its speed and redraw the area rotated by it (two MoveImage copies per band). */
+/* 80027EAC: Advance each band's phase by its speed and redraw the area rotated by
+ * it (two MoveImage copies per band). */
 void gpu_update_texture_scroll(TextureScroll *scroll) {
     RECT rect;
     s32 i;
@@ -430,7 +432,9 @@ void cd_draw_error_indicator(s32 level, s32 r, s32 g, s32 b) {
     }
 }
 
-/* 80028230: Initialise disc access: the CD library (or the PC file server for other modes), the file index and directory table, reading both from sectors 24 and 40 when booting from CD. */
+/* 80028230: Initialise disc access: the CD library (or the PC file server for other
+ * modes), the file index and directory table, reading both from sectors 24 and 40
+ * when booting from CD. */
 void cd_init_disc_access(u8 *files, u16 *directories, u32 mode) {
     cd_stat_setloc_count = 0;
     cd_stat_command_ok_count = 0;
@@ -494,7 +498,8 @@ void cd_shutdown_disc_access(void) {
     cd_command_state = 0;
 }
 
-/* 80028470: Select a directory by group and index in the directory table; returns it, or -1 (selecting 0) when that entry is empty. */
+/* 80028470: Select a directory by group and index in the directory table; returns
+ * it, or -1 (selecting 0) when that entry is empty. */
 s32 cd_select_directory(s32 group, s32 index) {
     cd_selected_directory = cd_directory_table[group + index] - 1;
     if (cd_selected_directory < 0) {
@@ -504,7 +509,8 @@ s32 cd_select_directory(s32 group, s32 index) {
     return cd_selected_directory;
 }
 
-/* 800284B4: The directory group (a multiple of four) and index of the selected directory, both zero when none matches; returns the selection. */
+/* 800284B4: The directory group (a multiple of four) and index of the selected
+ * directory, both zero when none matches; returns the selection. */
 s32 cd_get_selected_directory(s32 *group, s32 *index) {
     u16 *entry = cd_directory_table;
     s32 i;
@@ -533,7 +539,8 @@ s32 cd_get_relative_directory(s32 group, s32 index) {
     return cd_directory_table[group + index] - cd_selected_directory;
 }
 
-/* 80028570: Load a whole PC file into a new heap block (four tries per file-server call); returns the block, or NULL. */
+/* 80028570: Load a whole PC file into a new heap block (four tries per file-server
+ * call); returns the block, or NULL. */
 void *cd_load_pc_file(char *name, s32 *size) {
     s32 fd;
     s32 length;
@@ -603,7 +610,8 @@ s32 cd_get_pending_read_count(void) {
     return state;
 }
 
-/* 80028738: A file's byte size: from the PC file server when it knows the file, else from the file index. */
+/* 80028738: A file's byte size: from the PC file server when it knows the file,
+ * else from the file index. */
 s32 cd_get_file_size(s32 file) {
     s32 fd;
     s32 size;
@@ -822,7 +830,8 @@ u8 *stream_get_next_chunk(void) {
     return payload + (i << 11);
 }
 
-/* 80028E60: Whether any of `count` ring slots from `index` differs from `state` or runs past the last slot. */
+/* 80028E60: Whether any of `count` ring slots from `index` differs from `state` or
+ * runs past the last slot. */
 s32 stream_has_slot_mismatch(s32 index, s32 count, s32 state) {
     s32 i;
 
@@ -965,7 +974,8 @@ search:
     return 0;
 }
 
-/* 8002945C: Release a ring chunk: clear its slot's state and return the old state (0xffff without a ring, 0 for no chunk). */
+/* 8002945C: Release a ring chunk: clear its slot's state and return the old state
+ * (0xffff without a ring, 0 for no chunk). */
 u16 stream_release_chunk(u8 *chunk) {
     StreamRing *ring = stream_current_ring;
     StreamSlot *slots;
@@ -987,7 +997,8 @@ u16 stream_release_chunk(u8 *chunk) {
     return state;
 }
 
-/* 800294B4: Release a run of ring chunks (the chunk header's halfword 3 counts them), merge the freed run and return the first slot's old state. */
+/* 800294B4: Release a run of ring chunks (the chunk header's halfword 3 counts
+ * them), merge the freed run and return the first slot's old state. */
 u16 stream_release_movie_frame(u8 *chunk) {
     StreamRing *ring = stream_current_ring;
     StreamSlot *slots;
@@ -1025,7 +1036,8 @@ s32 cd_read_raw_sectors(s32 sector, void *destination, s32 size, s32 mode, s32 f
     return cd_start_read(0, destination, mode, flags);
 }
 
-/* 800295D8: Read a file of the selected directory; -3 for an invalid file, an empty file or no destination. */
+/* 800295D8: Read a file of the selected directory; -3 for an invalid file, an empty
+ * file or no destination. */
 s32 cd_read_file(s32 file, void *destination, s32 mode, s32 flags) {
     if (file <= 0 || cd_get_file_size(file) <= 0 || destination == NULL) {
         return -3;
@@ -1037,7 +1049,9 @@ s32 cd_read_file(s32 file, void *destination, s32 mode, s32 flags) {
     return cd_start_read(file, destination, mode, flags);
 }
 
-/* 80029690: Start reading `cd_read_bytes_left` bytes from sector cd_next_sector: into a stream ring (flags 0x100, or 0x200 with CD mode byte flags | 0xa0) or into memory; with the PC file server the file is opened (ring) or read now. */
+/* 80029690: Start reading `cd_read_bytes_left` bytes from sector cd_next_sector:
+ * into a stream ring (flags 0x100, or 0x200 with CD mode byte flags | 0xa0) or into
+ * memory; with the PC file server the file is opened (ring) or read now. */
 /* The ring branch starts the read itself; its copy of the shared tail is
  * merged back by cross-jumping, but its references keep the data callback
  * address load ahead of the read-active flag store. */
@@ -1169,7 +1183,9 @@ s32 cd_start_read(s32 file, void *destination, s32 mode, s32 flags) {
     return 0;
 }
 
-/* 80029AFC: Read a zero-terminated file list: sort it by file, then start the CD reads (the callbacks continue them), or with the PC file server read every file now. Returns 0, or -3 for an empty list. */
+/* 80029AFC: Read a zero-terminated file list: sort it by file, then start the CD
+ * reads (the callbacks continue them), or with the PC file server read every file
+ * now. Returns 0, or -3 for an empty list. */
 s32 cd_read_file_list(FileRequest *list, s32 mode, s32 unused) {
     s32 count;
     s32 i;

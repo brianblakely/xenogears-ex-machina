@@ -398,13 +398,14 @@ s32 arena_actor_add_charge(Actor *actor, s32 amount, s32 kind) {
     return 1;
 }
 
-/* 80073F34: Frame event kind 2: the effect a HitSpec's type selects. Types 0x10-0x1F
- * go between the two model points: 0x10 a line trail (arena_effect_start_line_sparkle),
- * 0x11-0x13 a bolt of kind 0-2 (arena_effect_queue_bolt_by_type), the rest nothing. Other
- * types go to point a, or the midpoint when b differs, after setting the
- * kind-2 sparkle colour to the actor's: 0x20 and up a sparkle trail of size
- * arena_effect_trail_sizes[type - 0x20] (arena_effect_start_trail_sparkle), 0-4 a sparkle of that kind and
- * 8-12 the same jittered (arena_effect_spawn_sparkle; other types nothing). */
+/* 80073F34: Frame event kind 2: the effect a HitSpec's type selects. Types
+ * 0x10-0x1F go between the two model points: 0x10 a line trail
+ * (arena_effect_start_line_sparkle), 0x11-0x13 a bolt of kind 0-2
+ * (arena_effect_queue_bolt_by_type), the rest nothing. Other types go to point a,
+ * or the midpoint when b differs, after setting the kind-2 sparkle colour to the
+ * actor's: 0x20 and up a sparkle trail of size arena_effect_trail_sizes[type -
+ * 0x20] (arena_effect_start_trail_sparkle), 0-4 a sparkle of that kind and 8-12 the
+ * same jittered (arena_effect_spawn_sparkle; other types nothing). */
 void arena_frame_event_effect(Actor *actor, HitSpec *hit) {
     VECTOR a;
     VECTOR b;
@@ -437,12 +438,13 @@ void arena_frame_event_effect(Actor *actor, HitSpec *hit) {
 
 /* 800740E4: Frame event kind 0, every frame of its range: unless the type has bit
  * 0x40 (or the actor's unk84[2] is 0), a sparkle trail at point a
- * (arena_effect_start_trail_sparkle) or a line trail from a to b (arena_effect_start_line_sparkle). While the hit
- * is live (lands): type 0x20 a charged shot (arena_actor_fire_shot kind 0, from the
- * midpoint of two points) if arena_actor_add_charge takes the charge, else sparkle 9;
- * type 4 a kind-1 shot at the opponent; 0x21-0x26 a kind 1-6 shot, away from
- * b when the points differ; any other type a trail segment from a to b
- * (arena_actor_record_trail), which arena_actor_test_hits tests against the opponent. */
+ * (arena_effect_start_trail_sparkle) or a line trail from a to b
+ * (arena_effect_start_line_sparkle). While the hit is live (lands): type 0x20 a
+ * charged shot (arena_actor_fire_shot kind 0, from the midpoint of two points) if
+ * arena_actor_add_charge takes the charge, else sparkle 9; type 4 a kind-1 shot at
+ * the opponent; 0x21-0x26 a kind 1-6 shot, away from b when the points differ; any
+ * other type a trail segment from a to b (arena_actor_record_trail), which
+ * arena_actor_test_hits tests against the opponent. */
 void arena_frame_event_hit(Actor *actor, HitSpec *hit, s32 lands) {
     VECTOR a;
     VECTOR b;

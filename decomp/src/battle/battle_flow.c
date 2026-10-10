@@ -1819,7 +1819,8 @@ void battle_camera_set_resume_mode(s32 value) {
     battle_camera_resume_mode = value;
 }
 
-/* 800BC404: Start camera move (800BC460) unless effects are off; restore mode_battle_camera_range. */
+/* 800BC404: Start camera move (800BC460) unless effects are off; restore
+ * mode_battle_camera_range. */
 void battle_camera_start_move(s32 mask) {
     if (battle_effects_disabled == 0) {
         battle_camera_set_mode(1);

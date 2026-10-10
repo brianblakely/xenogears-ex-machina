@@ -3,11 +3,12 @@
  * camera, the effects and the growing objects), the set-up and leave
  * handlers of mode 16 and the sequence start of its director.
  *
- * worldmap_scene15_flame_update's five-entry table ends at 800701e0 and worldmap_scene13_director_update's
- * follows at once, 0 mod 8, a phase change without a pad word: this unit's
- * rodata starts there and its text after worldmap_scene15_flame_update, at or before
- * worldmap_scene13_director_update. Its data opens with the cue sequence that worldmap_scene13_director_start,
- * left in the preceding unit by the split, starts. */
+ * worldmap_scene15_flame_update's five-entry table ends at 800701e0 and
+ * worldmap_scene13_director_update's follows at once, 0 mod 8, a phase change
+ * without a pad word: this unit's rodata starts there and its text after
+ * worldmap_scene15_flame_update, at or before worldmap_scene13_director_update. Its
+ * data opens with the cue sequence that worldmap_scene13_director_start, left in
+ * the preceding unit by the split, starts. */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libetc.h"
@@ -34,11 +35,12 @@
 INCLUDE_ASSET(".data", worldmap_scene13_cue_states, 0x8009A698, 0x12);
 INCLUDE_ASSET(".data", worldmap_scene13_cue_waits, 0x8009A6AC, 0x14);
 
-/* 80080370: Flight scene director (mode 13): worldmap_scene14_director_update's cue sequencer on
- * worldmap_scene13_cue_states/worldmap_scene13_cue_waits; its starter does not step, so entry 0 runs twice.
- * Actor slots (worldmap_scene13_start): 0 the screen fade, 2 the camera
- * (worldmap_scene13_camera_update), 3 effects 0x28-0x2A (worldmap_scene13_effects_update), 4 the growing
- * objects 0 and 1 (worldmap_scene13_grow_objects_0_1_update). A fade with rate 1 adds the fade quad
+/* 80080370: Flight scene director (mode 13): worldmap_scene14_director_update's cue
+ * sequencer on worldmap_scene13_cue_states/worldmap_scene13_cue_waits; its starter
+ * does not step, so entry 0 runs twice. Actor slots (worldmap_scene13_start): 0 the
+ * screen fade, 2 the camera (worldmap_scene13_camera_update), 3 effects 0x28-0x2A
+ * (worldmap_scene13_effects_update), 4 the growing objects 0 and 1
+ * (worldmap_scene13_grow_objects_0_1_update). A fade with rate 1 adds the fade quad
  * (white), with rate 2 subtracts it (black). */
 s32 worldmap_scene13_director_update(s32 index) {
     WorldmapActor *actor;
@@ -294,7 +296,8 @@ s32 worldmap_scene13_grow_objects_0_1_update(s32 index) {
     return 1;
 }
 
-/* 80080D00: Set up the heat-haze scene: fixed start position, music, its director and effect actors. */
+/* 80080D00: Set up the heat-haze scene: fixed start position, music, its director
+ * and effect actors. */
 void worldmap_scene16_start(void) {
     RECT rect;
     SoundSeq *sequence;

@@ -235,7 +235,8 @@ u8 mode_get_random_byte_in_range(u8 low, u8 high) {
     return low;
 }
 
-/* 8001BDDC: Menu buffer: no background clear, dithering, and a 256x216 display area 10 lines down. */
+/* 8001BDDC: Menu buffer: no background clear, dithering, and a 256x216 display area
+ * 10 lines down. */
 void menu_state_init_buffer(MenuBuffer *buffer) {
     buffer->draw.dtd = 1;
     buffer->draw.isbg = 0;
@@ -274,7 +275,8 @@ void menu_state_reset_views(void) {
     work->view_motion = 0;
 }
 
-/* 8001BF38: Decode the menu input of this frame: directions 0-3, confirm 4, debug toggles; 8 when nothing applies. */
+/* 8001BF38: Decode the menu input of this frame: directions 0-3, confirm 4, debug
+ * toggles; 8 when nothing applies. */
 void menu_state_decode_input(void) {
     s32 input = 8;
     u16 buttons;
@@ -324,7 +326,8 @@ void menu_state_decode_input(void) {
     menu_state_current->input = input;
 }
 
-/* 8001C074: Menu frame: decode input, flip buffers, clear the ordering table, draw the debug overlays, then present. */
+/* 8001C074: Menu frame: decode input, flip buffers, clear the ordering table, draw
+ * the debug overlays, then present. */
 void menu_state_update_frame(void) {
     MenuState *work;
 
@@ -348,7 +351,10 @@ void menu_state_update_frame(void) {
     DrawOTag(&menu_state_current->current->ot[15]);
 }
 
-/* 8001C1A8: Menu mode body: with the debug start, pick the menu screen and its parameter on screen and load the menu overlay (plus the extra blocks screen 5 needs); then run the chosen screen and, after a debug start, release everything and dispatch. */
+/* 8001C1A8: Menu mode body: with the debug start, pick the menu screen and its
+ * parameter on screen and load the menu overlay (plus the extra blocks screen 5
+ * needs); then run the chosen screen and, after a debug start, release everything
+ * and dispatch. */
 void menu_state_run_screen(void) {
     s32 screen;
     s32 number;
@@ -483,7 +489,8 @@ void menu_state_run_screen(void) {
     }
 }
 
-/* 8001C634: Mode 5, the menu: allocate and clear its work block, set up the display, then run the menu body. */
+/* 8001C634: Mode 5, the menu: allocate and clear its work block, set up the
+ * display, then run the menu body. */
 void mode_run_menu(void) {
     menu_state_current = heap_alloc(0x1E98, 0);
     bzero((u8 *)menu_state_current, 0x1E98);

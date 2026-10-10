@@ -3,11 +3,12 @@
  * shake, growing objects, exhaust trail, the rig's flight), the set-up and
  * leave handlers of mode 12 and the sequence start of its director.
  *
- * worldmap_scene10_landing_rig_update's five-entry table ends at 8006fbc4 and worldmap_scene14_director_update's
- * follows at once, 4 mod 8, a phase change without a pad word: this unit's
- * rodata starts there and its text after worldmap_scene10_landing_rig_update, at or before
- * worldmap_scene14_director_update. Its data opens with the cue sequence that worldmap_scene14_director_start,
- * left in the preceding unit by the split, starts. */
+ * worldmap_scene10_landing_rig_update's five-entry table ends at 8006fbc4 and
+ * worldmap_scene14_director_update's follows at once, 4 mod 8, a phase change
+ * without a pad word: this unit's rodata starts there and its text after
+ * worldmap_scene10_landing_rig_update, at or before
+ * worldmap_scene14_director_update. Its data opens with the cue sequence that
+ * worldmap_scene14_director_start, left in the preceding unit by the split, starts. */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libetc.h"
@@ -43,12 +44,13 @@ SVECTOR worldmap_scene14_rig_path_points[9] = { /* 8009A490 */
 
 /* 8007A9F8: Scene director (mode 14), a cue sequencer: state 1 counts the wait down
  * and, once it drops below 0, loads the next entry's state and wait from
- * worldmap_scene14_cue_states/worldmap_scene14_cue_waits; each other state runs its cue on the next update
- * and returns to 1. Requests (worldmap_actor_request) go to the setup's actor slots
- * (worldmap_scene14_start): 0 the screen fade, 2 the camera (worldmap_scene14_camera_update), 3 and 4
- * the growing objects (worldmap_scene14_grow_objects_4_5_update, worldmap_scene14_grow_objects_6_7_update), 5 the exhaust trail,
- * 6 the rig's flight. tools/analysis/overlay_scripts.py decodes the
- * sequence. */
+ * worldmap_scene14_cue_states/worldmap_scene14_cue_waits; each other state runs its
+ * cue on the next update and returns to 1. Requests (worldmap_actor_request) go to
+ * the setup's actor slots (worldmap_scene14_start): 0 the screen fade, 2 the camera
+ * (worldmap_scene14_camera_update), 3 and 4 the growing objects
+ * (worldmap_scene14_grow_objects_4_5_update,
+ * worldmap_scene14_grow_objects_6_7_update), 5 the exhaust trail, 6 the rig's
+ * flight. tools/analysis/overlay_scripts.py decodes the sequence. */
 s32 worldmap_scene14_director_update(s32 index) {
     WorldmapActor *actor;
 
@@ -362,7 +364,8 @@ s32 worldmap_scene14_grow_objects_6_7_start(s32 index) {
     return 3;
 }
 
-/* 8007B798: Grow scene objects 6 and 7 at the player (see worldmap_scene14_grow_objects_4_5_update). */
+/* 8007B798: Grow scene objects 6 and 7 at the player (see
+ * worldmap_scene14_grow_objects_4_5_update). */
 s32 worldmap_scene14_grow_objects_6_7_update(s32 index) {
     WorldmapActor *actor;
     SceneObject *objects;
@@ -405,7 +408,8 @@ s32 worldmap_scene14_exhaust_trail_start(void) {
     return 3;
 }
 
-/* 8007BA10: Exhaust trail: move the emitter along its path for 60 frames, then reset to the player and end the step. */
+/* 8007BA10: Exhaust trail: move the emitter along its path for 60 frames, then
+ * reset to the player and end the step. */
 s32 worldmap_scene14_exhaust_trail_update(s32 index) {
     WorldmapActor *actor;
     s32 result;
@@ -553,7 +557,8 @@ s32 worldmap_scene14_rig_flight_update(s32 index) {
     return result;
 }
 
-/* 8007BF50: Set up the second vehicle scene: fixed start position, its director and object actors. */
+/* 8007BF50: Set up the second vehicle scene: fixed start position, its director and
+ * object actors. */
 void worldmap_scene12_start(void) {
     RECT rect;
 
@@ -615,7 +620,8 @@ void worldmap_scene12_start(void) {
     worldmap_encounter_reset_timers();
 }
 
-/* 8007C260: Leave the world map for scene 0x111 (flag word 2), releasing its sound, subsystems and buffers. */
+/* 8007C260: Leave the world map for scene 0x111 (flag word 2), releasing its sound,
+ * subsystems and buffers. */
 void worldmap_scene12_leave(void) {
     sound_stop_all_effects();
     sound_remove_effect_bank(sound_effect_bank);

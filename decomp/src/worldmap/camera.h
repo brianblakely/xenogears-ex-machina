@@ -1,10 +1,10 @@
 #ifndef WORLDMAP_CAMERA_H
 #define WORLDMAP_CAMERA_H
 
-/* The world map camera: its target, angle and distance, the view it is built
- * from (an orbit by angle, worldmap_camera_build_from_angles, or a look-at view, worldmap_camera_build_look_at),
- * the scripted camera helpers of the scene modes and the open map's camera
- * actors (worldmap_steering_camera_terrain). */
+/* The world map camera: its target, angle and distance, the view it is built from
+ * (an orbit by angle, worldmap_camera_build_from_angles, or a look-at view,
+ * worldmap_camera_build_look_at), the scripted camera helpers of the scene modes
+ * and the open map's camera actors (worldmap_steering_camera_terrain). */
 
 #include "worldmap.h"
 

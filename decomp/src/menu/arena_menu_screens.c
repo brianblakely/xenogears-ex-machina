@@ -1000,7 +1000,8 @@ void arena_select_enter(s32 mode) {
     arena_menu_show_page(5);
 }
 
-/* 800808F4: Menu line handler: hide the captions and end the menu screen (arena_menu_screen_done). */
+/* 800808F4: Menu line handler: hide the captions and end the menu screen
+ * (arena_menu_screen_done). */
 void arena_menu_end_screen(void) {
     arena_menu_screen_done = 1;
     arena_menu_hide_captions();

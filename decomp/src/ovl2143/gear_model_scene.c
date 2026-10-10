@@ -65,12 +65,13 @@
 u8 gear_model_battle_extra_file_bases[] = {1, 108, 164, 99, 94, 220, 22, 123, 151, 158, 161, 143, 139, 141, 40, 214, 219, 0}; /* 801E8590 */
 INCLUDE_ORIGINAL(".data", gear_model_battle_gear_file_table, 0x801E85A4, 40);
 
-/* The module state, zero in the file (its .bss, loaded), each object in a
- * slot of whole words (decomp/Makefile): gear_model_wind_phase starts its own slot
- * after gear_model_wind_strength, and the file ends with the rest of gear_model_current_actor_index's. GCC
- * emits tentative definitions in the order of their first declaration, so
- * the state is defined ahead of ovl2143/actors.h, which declares two of
- * them for the module's callers (the actors by their structure's tag). */
+/* The module state, zero in the file (its .bss, loaded), each object in a slot of
+ * whole words (decomp/Makefile): gear_model_wind_phase starts its own slot after
+ * gear_model_wind_strength, and the file ends with the rest of
+ * gear_model_current_actor_index's. GCC emits tentative definitions in the order of
+ * their first declaration, so the state is defined ahead of ovl2143/actors.h, which
+ * declares two of them for the module's callers (the actors by their structure's
+ * tag). */
 s32 gear_model_instant_keyframes; /* 801E85CC */
 u8 gear_model_unread_bytes[36]; /* 801E85D0: never read */
 ModelTable gear_model_model_lists[8]; /* 801E85F4 */
@@ -4138,8 +4139,8 @@ s32 gear_model_find_lowest_masked_actor(void) {
     return i;
 }
 
-/* 801E6830: The actor index (returned) and bit mask of reference `ref` (0xff: the mask's lowest actor,
- * 0xfe: the current actor, 0xfd/0xf9: this actor, ...). */
+/* 801E6830: The actor index (returned) and bit mask of reference `ref` (0xff: the
+ * mask's lowest actor, 0xfe: the current actor, 0xfd/0xf9: this actor, ...). */
 s32 gear_model_resolve_actor_reference(Actor *actor, u8 ref, u16 *mask) {
     if (ref == 0xFF) {
         ref = gear_model_find_lowest_masked_actor();

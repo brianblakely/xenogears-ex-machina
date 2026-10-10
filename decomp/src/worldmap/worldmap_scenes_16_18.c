@@ -4,10 +4,11 @@
  * their set-up and leave handlers, mode 17's camera and pulsing effects, the
  * actor scripts of both and the start of mode 18's camera.
  *
- * worldmap_scene13_director_update's 65-entry table ends at 800702e4 and worldmap_scene16_director_update's
- * follows at once, 4 mod 8, a phase change without a pad word: this unit's
- * rodata starts there and its text after worldmap_scene13_director_update, at or before
- * worldmap_scene16_director_update. Its data opens with mode 16's cue sequence, which
+ * worldmap_scene13_director_update's 65-entry table ends at 800702e4 and
+ * worldmap_scene16_director_update's follows at once, 4 mod 8, a phase change
+ * without a pad word: this unit's rodata starts there and its text after
+ * worldmap_scene13_director_update, at or before worldmap_scene16_director_update.
+ * Its data opens with mode 16's cue sequence, which
  * worldmap_scene16_director_start, left in the preceding unit by the split, starts. */
 #include "common.h"
 #include "psyq/libc.h"
@@ -37,9 +38,9 @@
 INCLUDE_ASSET(".data", worldmap_scene16_cue_states, 0x8009A6C0, 0x4A);
 INCLUDE_ASSET(".data", worldmap_scene16_cue_waits, 0x8009A70C, 0x4C);
 
-/* Actor script (worldmap_actor_script_run commands) given by worldmap_scene17_script_start: 434 signed
- * halfwords, user-supplied (an asset in worldmap.classification.txt;
- * tools/analysis/overlay_scripts.py decodes it). */
+/* Actor script (worldmap_actor_script_run commands) given by
+ * worldmap_scene17_script_start: 434 signed halfwords, user-supplied (an asset in
+ * worldmap.classification.txt; tools/analysis/overlay_scripts.py decodes it). */
 INCLUDE_ASSET(".data", worldmap_scene17_actor_script, 0x8009A758, 0x364);
 
 /* The pulsing effect's settings for its commands 1, 2 and 4 (worldmap_scene17_pulse_update):
@@ -66,15 +67,19 @@ s16 worldmap_scene17_pulse_settings_4[5 * 14] = { /* 8009ABD4 */
     20344, -760, 6794, 64, 128, 255, 2, 1, 0, 64, 1536, 0, 16, 0,
 };
 
-/* Actor script (worldmap_actor_script_run commands) given by worldmap_scene18_script_start: 102 signed
- * halfwords, user-supplied like worldmap_scene17_actor_script. */
+/* Actor script (worldmap_actor_script_run commands) given by
+ * worldmap_scene18_script_start: 102 signed halfwords, user-supplied like
+ * worldmap_scene17_actor_script. */
 INCLUDE_ASSET(".data", worldmap_scene18_actor_script, 0x8009AC60, 0xCC);
 
-/* 800811C0: Heat-haze scene director (mode 16): worldmap_scene14_director_update's cue sequencer on
- * worldmap_scene16_cue_states/worldmap_scene16_cue_waits. Actor slots (worldmap_scene16_start): 0 the screen fade, 2
- * the camera (worldmap_scene16_camera_update), 3 object 2's fade (worldmap_scene16_fade_object2_update), 4 objects
- * 0 and 1 (worldmap_scene16_fade_objects_0_1_update), 6 the heat-haze strength (worldmap_scene16_haze_strength_update). The
- * fade with rate 2 subtracts the fade quad (black). */
+/* 800811C0: Heat-haze scene director (mode 16): worldmap_scene14_director_update's
+ * cue sequencer on worldmap_scene16_cue_states/worldmap_scene16_cue_waits. Actor
+ * slots (worldmap_scene16_start): 0 the screen fade, 2 the camera
+ * (worldmap_scene16_camera_update), 3 object 2's fade
+ * (worldmap_scene16_fade_object2_update), 4 objects 0 and 1
+ * (worldmap_scene16_fade_objects_0_1_update), 6 the heat-haze strength
+ * (worldmap_scene16_haze_strength_update). The fade with rate 2 subtracts the fade
+ * quad (black). */
 s32 worldmap_scene16_director_update(s32 index) {
     WorldmapActor *actor;
 
@@ -391,7 +396,8 @@ s32 worldmap_scene16_haze_start(void) {
     return 1;
 }
 
-/* 80081D80: Heat haze: offset each of 192 one-pixel rows by a random amount and copy the result back to the frame. */
+/* 80081D80: Heat haze: offset each of 192 one-pixel rows by a random amount and
+ * copy the result back to the frame. */
 s32 worldmap_scene16_haze_update(void) {
     RECT rect;
     POLY_FT4 *quad;
@@ -446,7 +452,8 @@ s32 worldmap_scene16_haze_strength_start(s32 index) {
     return 1;
 }
 
-/* 80081FD8: Heat-haze strength: set every row (1-3, 5) or scatter random rows (1, 4) per command. */
+/* 80081FD8: Heat-haze strength: set every row (1-3, 5) or scatter random rows (1,
+ * 4) per command. */
 s32 worldmap_scene16_haze_strength_update(s32 index) {
     WorldmapActor *actor;
     s32 i;
@@ -540,7 +547,8 @@ s32 worldmap_scene16_haze_strength_update(s32 index) {
     return 1;
 }
 
-/* 80082324: Set up the pulsing-effect scene: fixed start position, music, its camera and five effect slots. */
+/* 80082324: Set up the pulsing-effect scene: fixed start position, music, its
+ * camera and five effect slots. */
 void worldmap_scene17_start(void) {
     RECT rect;
     SoundSeq *sequence;
@@ -675,7 +683,8 @@ s32 worldmap_scene17_camera_start(s32 index) {
     return 1;
 }
 
-/* 800828DC: Pulsing-effect scene camera: commands pick camera shots and moves; each state eases distance, pitch and yaw; adds a vertical shake. */
+/* 800828DC: Pulsing-effect scene camera: commands pick camera shots and moves; each
+ * state eases distance, pitch and yaw; adds a vertical shake. */
 s32 worldmap_scene17_camera_update(s32 index) {
     WorldmapActor *actor;
     ActorScratch *scratch;
@@ -844,7 +853,8 @@ s32 worldmap_scene17_camera_update(s32 index) {
     return 1;
 }
 
-/* 80082F64: Pulse a scene object: spin it, stretch its x scale and bounce its tint between limits. */
+/* 80082F64: Pulse a scene object: spin it, stretch its x scale and bounce its tint
+ * between limits. */
 void worldmap_scene17_pulse_object(WorldmapActor *actor, SceneObject *object, ScaleScratch *scratch) {
     switch (actor->state) {
     case 0:
@@ -915,7 +925,8 @@ s32 worldmap_scene17_pulse_start(s32 index) {
     return 1;
 }
 
-/* 80083264: Pulsing effect slot: commands 1/2/4 load one of three settings, 3 stops it; then pulse and tint its object. */
+/* 80083264: Pulsing effect slot: commands 1/2/4 load one of three settings, 3 stops
+ * it; then pulse and tint its object. */
 s32 worldmap_scene17_pulse_update(s32 index) {
     WorldmapActor *actor;
     SceneObject *object;

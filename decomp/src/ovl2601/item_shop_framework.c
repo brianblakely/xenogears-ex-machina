@@ -127,7 +127,8 @@ u16 item_shop_get_bit_mask(u8 id) {
     return item_shop_bit_masks[id];
 }
 
-/* 801C50E8: Split `value` into nine decimal digits (menu state +31c), leading zeros blanked (ff). */
+/* 801C50E8: Split `value` into nine decimal digits (menu state +31c), leading zeros
+ * blanked (ff). */
 void item_shop_split_digits(u32 value) {
     s32 i;
     u32 divisor;
@@ -229,7 +230,9 @@ void item_shop_alloc_or_free_shop_details(u8 allocate) {
     }
 }
 
-/* 801C54B4: Load the screen's resources: the card header (prefix, icon), text images, sprite sheet, labels, the party's portraits, the sound bank and the shop tables. */
+/* 801C54B4: Load the screen's resources: the card header (prefix, icon), text
+ * images, sprite sheet, labels, the party's portraits, the sound bank and the shop
+ * tables. */
 void item_shop_load_resources(void) {
     enum {
         ENTRY_UNUSED, ENTRY_MODE, ENTRY_CLUT_X, ENTRY_CLUT_Y,
@@ -304,7 +307,8 @@ void item_shop_load_resources(void) {
     heap_free(res);
 }
 
-/* 801C58F4: Reset the screen state, note which party members are available and load the resources. */
+/* 801C58F4: Reset the screen state, note which party members are available and load
+ * the resources. */
 void item_shop_init_party(void) {
     u16 available;
     s32 i;
@@ -499,7 +503,8 @@ void item_shop_highlight_hide(void) {
     menu_state_current->flags->cursor_shown = 0;
 }
 
-/* 801C6460: Initialise a gouraud quad fading from (r, g, b) on the top edge to black on the bottom. */
+/* 801C6460: Initialise a gouraud quad fading from (r, g, b) on the top edge to
+ * black on the bottom. */
 void item_shop_init_gradient_quad(POLY_G4 *poly, u8 r, u8 g, u8 b) {
     SetPolyG4(poly);
     poly->r0 = r;
@@ -590,7 +595,8 @@ void item_shop_load_or_release_data_set(u8 mode) {
     }
 }
 
-/* 801C6A6C: Collect the shop's items (id and kind), unpack the item tables and set up the bars and frame lines. */
+/* 801C6A6C: Collect the shop's items (id and kind), unpack the item tables and set
+ * up the bars and frame lines. */
 void item_shop_init_stock(void) {
     u8 *entry;
     s32 j;
@@ -1080,7 +1086,8 @@ void item_shop_panel_grow_opening(void) {
     }
 }
 
-/* 801C8C3C: Project `count` quads and link their packets (every other one from `first`) into OT entry 4. */
+/* 801C8C3C: Project `count` quads and link their packets (every other one from
+ * `first`) into OT entry 4. */
 void item_shop_draw_projected_quads(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first) {
     long depth;
     long flag;
@@ -1446,7 +1453,8 @@ void item_shop_draw_label_layers(void) {
     item_shop_draw_notice_labels();
 }
 
-/* 801CA444: Link both image packet groups, first applying a changed dimming (semi-transparent, 20h grey). */
+/* 801CA444: Link both image packet groups, first applying a changed dimming
+ * (semi-transparent, 20h grey). */
 void item_shop_draw_screen_images(void) {
     s32 i;
 
@@ -1514,7 +1522,8 @@ void item_shop_draw_list_cursors(void) {
     }
 }
 
-/* 801CABF4: Build the frame's packets: every element while the screen is drawn, then the screen quad. */
+/* 801CABF4: Build the frame's packets: every element while the screen is drawn,
+ * then the screen quad. */
 void item_shop_draw_screen(void) {
     if (menu_state_current->drawing != 0) {
         item_shop_panel_grow_opening();
@@ -1538,7 +1547,8 @@ void item_shop_play_sound(u8 sound) {
     }
 }
 
-/* 801CACC8: Wait for a controller (sound paused meanwhile), then decode the frame's input into +325. */
+/* 801CACC8: Wait for a controller (sound paused meanwhile), then decode the frame's
+ * input into +325. */
 void item_shop_read_input(void) {
     s32 saved;
     u8 waiting;
@@ -1688,7 +1698,8 @@ void item_shop_run_frame(void) {
     DrawOTag(&menu_state_current->current->ot[15]);
 }
 
-/* 801CB13C: Create the marker block: both yes/no markers at the cursor (0), the four markers (2) or one (3). */
+/* 801CB13C: Create the marker block: both yes/no markers at the cursor (0), the
+ * four markers (2) or one (3). */
 void item_shop_markers_open(u8 mode) {
     s32 i;
 
@@ -1811,7 +1822,8 @@ void item_shop_notice_close(void) {
     item_shop_run_frame();
 }
 
-/* 801CB894: Let the player choose yes or no (1 = yes); without `wait` the choice ends after 60 idle frames. */
+/* 801CB894: Let the player choose yes or no (1 = yes); without `wait` the choice
+ * ends after 60 idle frames. */
 u8 item_shop_ask_yes_no(u8 wait) {
     u8 choosing;
     u8 yes;
@@ -1858,7 +1870,8 @@ u8 item_shop_ask_yes_no(u8 wait) {
     return yes;
 }
 
-/* 801CBA50: Ask message `message` as a yes/no question; a yes is confirmed by `confirm` unless it is ff. */
+/* 801CBA50: Ask message `message` as a yes/no question; a yes is confirmed by
+ * `confirm` unless it is ff. */
 u8 item_shop_notice_ask_yes_no(u8 message, u8 confirm, u8 wait) {
     u8 answer;
 
@@ -1875,7 +1888,8 @@ u8 item_shop_notice_ask_yes_no(u8 message, u8 confirm, u8 wait) {
     return answer;
 }
 
-/* 801CBB08: Close the screen: stop drawing, release every block and resource, then the menu state itself. */
+/* 801CBB08: Close the screen: stop drawing, release every block and resource, then
+ * the menu state itself. */
 void item_shop_shut_down(void) {
     item_shop_run_frame();
     item_shop_run_frame();
@@ -1920,7 +1934,8 @@ void item_shop_label_render_or_clear_shown(u8 render, u8 count, MenuLabel *label
     }
 }
 
-/* 801CBCF0: Show label `index`: in list row `row` (mode 0, offset by its column) or at the info position (mode 1). */
+/* 801CBCF0: Show label `index`: in list row `row` (mode 0, offset by its column) or
+ * at the info position (mode 1). */
 void item_shop_label_place(u8 count, MenuLabel *labels, u8 *text_ids, s32 *offsets, u8 *shown, u8 index, u8 row,
                    u8 mode) {
     switch (mode) {
@@ -1952,7 +1967,8 @@ void item_shop_label_place(u8 count, MenuLabel *labels, u8 *text_ids, s32 *offse
     shown[index] = 1;
 }
 
-/* 801CC024: Reveal `count` image pairs one step at a time (two frames each), the second of each pair one step behind. */
+/* 801CC024: Reveal `count` image pairs one step at a time (two frames each), the
+ * second of each pair one step behind. */
 void item_shop_command_window_open(s32 count, s32 *ids) {
     s32 step;
     s32 i;
@@ -1987,7 +2003,8 @@ void item_shop_command_window_open(s32 count, s32 *ids) {
     }
 }
 
-/* 801CC278: Reveal the list pictures of the current command (up to four pairs), two frames per step. */
+/* 801CC278: Reveal the list pictures of the current command (up to four pairs), two
+ * frames per step. */
 void item_shop_choice_window_open(u8 menu) {
     s32 animate;
     s32 step;
@@ -2052,7 +2069,8 @@ void item_shop_choice_window_open(u8 menu) {
     }
 }
 
-/* 801CC54C: Draw `count` image pairs with pair `selected` highlighted (+0dh), and put the cursor on it. */
+/* 801CC54C: Draw `count` image pairs with pair `selected` highlighted (+0dh), and
+ * put the cursor on it. */
 void item_shop_command_window_set_cursor(u8 count, u8 selected, s32 *ids) {
     s32 id;
     s32 i;
@@ -2080,7 +2098,8 @@ void item_shop_command_window_set_cursor(u8 count, u8 selected, s32 *ids) {
     menu_state_current->flags->sprite_shown = 1;
 }
 
-/* 801CC720: Draw the current command's list pictures with the chosen one highlighted (+0dh), and put the cursor on it. */
+/* 801CC720: Draw the current command's list pictures with the chosen one
+ * highlighted (+0dh), and put the cursor on it. */
 void item_shop_choice_window_set_cursor(u8 menu) {
     s32 id;
     s32 i;
@@ -2108,7 +2127,8 @@ void item_shop_choice_window_set_cursor(u8 menu) {
     menu_state_current->flags->sprite_shown = 1;
 }
 
-/* 801CC97C: Run the chosen top command (0 leaves); afterwards restore the command screen. Returns 0 to leave. */
+/* 801CC97C: Run the chosen top command (0 leaves); afterwards restore the command
+ * screen. Returns 0 to leave. */
 u8 item_shop_top_command_run(void) {
     u8 running;
     u8 redraw;
@@ -2139,7 +2159,8 @@ u8 item_shop_top_command_run(void) {
     return running;
 }
 
-/* 801CCAD8: The command screen: move between leave, sell and buy and run the chosen one until leaving. */
+/* 801CCAD8: The command screen: move between leave, sell and buy and run the chosen
+ * one until leaving. */
 void item_shop_run(void) {
     u8 running;
 

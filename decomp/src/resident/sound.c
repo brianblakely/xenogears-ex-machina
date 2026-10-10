@@ -3185,7 +3185,8 @@ u8 *sound_seq_modulator_timing(u8 *data, SoundSeq *seq, SoundSeqChannel *channel
     return data + 2;
 }
 
-/* 8003E358: F5 nop_f5(): no effect. The look-ahead (sound_seq_opcode_lengths) steps 2 bytes over it. */
+/* 8003E358: F5 nop_f5(): no effect. The look-ahead (sound_seq_opcode_lengths) steps
+ * 2 bytes over it. */
 u8 *sound_seq_nop_f5(u8 *data) {
     return data;
 }

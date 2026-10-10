@@ -3,11 +3,12 @@
  * camera shots and the drifting scene objects), the set-up and leave
  * handlers of mode 15 and the sequence start of its director.
  *
- * worldmap_scene14_rig_flight_update's nine-entry table ends at 8006fc50 and worldmap_scene12_director_update's
- * follows at once, 0 mod 8, a phase change without a pad word: this unit's
- * rodata starts there and its text after worldmap_scene14_rig_flight_update, at or before
- * worldmap_scene12_director_update. Its data opens with the cue sequence that worldmap_scene12_director_start,
- * left in the preceding unit by the split, starts. */
+ * worldmap_scene14_rig_flight_update's nine-entry table ends at 8006fc50 and
+ * worldmap_scene12_director_update's follows at once, 0 mod 8, a phase change
+ * without a pad word: this unit's rodata starts there and its text after
+ * worldmap_scene14_rig_flight_update, at or before
+ * worldmap_scene12_director_update. Its data opens with the cue sequence that
+ * worldmap_scene12_director_start, left in the preceding unit by the split, starts. */
 #include "common.h"
 #include "psyq/libc.h"
 #include "psyq/libetc.h"
@@ -44,12 +45,14 @@ SVECTOR worldmap_scene12_shot_path2_points[7] = { /* 8009A568 */
     {-495, -1063, 852}, {-703, -707, 1647},
 };
 
-/* 8007C3B8: Vehicle scene director (mode 12): worldmap_scene14_director_update's cue sequencer on
- * worldmap_scene12_cue_states/worldmap_scene12_cue_waits, whose starter runs entry 0 at once. Actor slots
- * (worldmap_scene12_start): 0 the screen fade, 2 the camera shots (worldmap_scene12_camera_shots_update),
- * 3-8 the drifting scene objects (worldmap_scene12_drift_object4_update-worldmap_scene12_drift_object13_update), 9 object 16
- * (worldmap_scene12_drift_object16_update). A fade with rate 1 adds the fade quad (white), with
- * rate 2 subtracts it (black). */
+/* 8007C3B8: Vehicle scene director (mode 12): worldmap_scene14_director_update's
+ * cue sequencer on worldmap_scene12_cue_states/worldmap_scene12_cue_waits, whose
+ * starter runs entry 0 at once. Actor slots (worldmap_scene12_start): 0 the screen
+ * fade, 2 the camera shots (worldmap_scene12_camera_shots_update), 3-8 the drifting
+ * scene objects
+ * (worldmap_scene12_drift_object4_update-worldmap_scene12_drift_object13_update), 9
+ * object 16 (worldmap_scene12_drift_object16_update). A fade with rate 1 adds the
+ * fade quad (white), with rate 2 subtracts it (black). */
 s32 worldmap_scene12_director_update(s32 index) {
     WorldmapActor *actor;
     ActorScratch *scratch;
@@ -333,7 +336,8 @@ s32 worldmap_scene12_drift_object4_start(s32 index) {
     return 1;
 }
 
-/* 8007CD20: Drift scene object 4 with the actor along z; commands 1/2 start its effects (state 1 also follows with the camera). */
+/* 8007CD20: Drift scene object 4 with the actor along z; commands 1/2 start its
+ * effects (state 1 also follows with the camera). */
 s32 worldmap_scene12_drift_object4_update(s32 index) {
     WorldmapActor *actor;
     SceneObject *object;
@@ -392,7 +396,8 @@ s32 worldmap_scene12_drift_object5_start(s32 index) {
     return 1;
 }
 
-/* 8007CF18: Drift scene object 5 with the actor over the terrain along z; command 1 starts its trail effect. */
+/* 8007CF18: Drift scene object 5 with the actor over the terrain along z; command 1
+ * starts its trail effect. */
 s32 worldmap_scene12_drift_object5_update(s32 index) {
     WorldmapActor *actor;
     SceneObject *objects;
@@ -445,7 +450,8 @@ s32 worldmap_scene12_drift_object9_start(s32 index) {
     return 1;
 }
 
-/* 8007D110: Drift scene object 9 with the actor over the terrain; command 1 shows objects 7-9 and ends the step. */
+/* 8007D110: Drift scene object 9 with the actor over the terrain; command 1 shows
+ * objects 7-9 and ends the step. */
 s32 worldmap_scene12_drift_object9_update(s32 index) {
     WorldmapActor *actor;
     SceneObject *objects;
@@ -493,7 +499,8 @@ s32 worldmap_scene12_drift_object10_start(s32 index) {
     return 1;
 }
 
-/* 8007D2B8: Drift scene object 10 with the actor over the terrain; command 1 shows objects 10-11, bursts and ends the step. */
+/* 8007D2B8: Drift scene object 10 with the actor over the terrain; command 1 shows
+ * objects 10-11, bursts and ends the step. */
 s32 worldmap_scene12_drift_object10_update(s32 index) {
     WorldmapActor *actor;
     SceneObject *objects;
@@ -544,7 +551,8 @@ s32 worldmap_scene12_drift_object12_start(s32 index) {
     return 1;
 }
 
-/* 8007D4A4: Drift scene object 12 with the actor over the terrain; command 1 shows objects 12 and 15, bursts and ends the step. */
+/* 8007D4A4: Drift scene object 12 with the actor over the terrain; command 1 shows
+ * objects 12 and 15, bursts and ends the step. */
 s32 worldmap_scene12_drift_object12_update(s32 index) {
     WorldmapActor *actor;
     SceneObject *objects;
@@ -634,7 +642,8 @@ s32 worldmap_scene12_drift_object16_start(s32 index) {
     return 3;
 }
 
-/* 8007D7FC: Drift scene object 16 with the actor; command 1 hides it and moves ahead of the camera, command 2 makes the camera follow. */
+/* 8007D7FC: Drift scene object 16 with the actor; command 1 hides it and moves
+ * ahead of the camera, command 2 makes the camera follow. */
 s32 worldmap_scene12_drift_object16_update(s32 index) {
     WorldmapActor *actor;
     SceneObject *object;
@@ -666,7 +675,8 @@ s32 worldmap_scene12_drift_object16_update(s32 index) {
     return 1;
 }
 
-/* 8007D918: Set up the vehicle scene: load its area, place the player at the entry, start music and its scripted actors. */
+/* 8007D918: Set up the vehicle scene: load its area, place the player at the entry,
+ * start music and its scripted actors. */
 void worldmap_scene15_start(void) {
     RECT rect;
     SoundSeq *sequence;
@@ -744,7 +754,8 @@ void worldmap_scene15_start(void) {
     worldmap_encounter_reset_timers();
 }
 
-/* 8007DCE0: Leave the world map: release its sound, subsystems and buffers, and request scene 0x1A1 with the exit's flag word. */
+/* 8007DCE0: Leave the world map: release its sound, subsystems and buffers, and
+ * request scene 0x1A1 with the exit's flag word. */
 void worldmap_scene15_leave(void) {
     sound_set_seq_fade((SoundSeq *)mode_music_seq, 0, 0xF0);
     sound_stop_all_effects();

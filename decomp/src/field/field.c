@@ -3429,9 +3429,9 @@ draw:
 }
 
 /* 8007954C: Leave the field for another game mode, then run the mode dispatcher:
- * kind 0 selects battle (2) after saving the map and event variable 1 in
- * the game state, kind 1 mode 3 (first stopping the field sound and
- * stream work while 8004f384 is 1), kind 2 mode 4, kind 3 the mode in 800b0064's low bits (bit 7 runs
+ * kind 0 selects battle (2) after saving the map and event variable 1 in the game
+ * state, kind 1 mode 3 (first stopping the field sound and stream work while
+ * 8004f384 is 1), kind 2 mode 4, kind 3 the mode in 800b0064's low bits (bit 7 runs
  * 8001bb50 first). Nothing is selected while 8004f370 is set. */
 void field_exit_to_mode(s32 kind) {
     mode_battle_return_fade = 0;

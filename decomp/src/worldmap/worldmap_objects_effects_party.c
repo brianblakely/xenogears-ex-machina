@@ -5,11 +5,12 @@
  * ferry, the airship), the particle effects and the party on foot (leader
  * and followers, placements).
  *
- * worldmap_scene17_pulse_update's five-entry table ends at 80070490 and worldmap_scene18_camera_update's
- * follows at once, 0 mod 8, a phase change without a pad word: this unit's
- * rodata starts there and its text after worldmap_scene17_pulse_update, at or before
- * worldmap_scene18_camera_update. PsyQ's CC1PSX 2.7.2.SN32.3.7.0002 gives this unit the same
- * text and relocations as the build's cc1 (docs/matching.md). */
+ * worldmap_scene17_pulse_update's five-entry table ends at 80070490 and
+ * worldmap_scene18_camera_update's follows at once, 0 mod 8, a phase change without
+ * a pad word: this unit's rodata starts there and its text after
+ * worldmap_scene17_pulse_update, at or before worldmap_scene18_camera_update.
+ * PsyQ's CC1PSX 2.7.2.SN32.3.7.0002 gives this unit the same text and relocations
+ * as the build's cc1 (docs/matching.md). */
 #include "common.h"
 #include "psyq/inline_c.h"
 #include "psyq/libc.h"

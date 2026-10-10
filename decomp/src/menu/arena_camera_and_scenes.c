@@ -487,7 +487,8 @@ s32 arena_scene_run_script(void) {
             arena_camera_view_mode = arena_scene_script_pc[1];
             arena_scene_script_pc += 2;
             break;
-        /* 24 s: bout-end sequence step s (arena_scene_bout_end_step, arena_scene_update_bout_end). */
+        /* 24 s: bout-end sequence step s (arena_scene_bout_end_step,
+         * arena_scene_update_bout_end). */
         case 24:
             arena_scene_bout_end_step = arena_scene_script_pc[1];
             arena_scene_script_pc += 2;
