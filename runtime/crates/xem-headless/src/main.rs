@@ -16,6 +16,13 @@ struct Options {
     stubs: PathBuf,
     schema: PathBuf,
     control: bool,
+    /// Memory card images (card1.mcd, card2.mcd) live here; no card is
+    /// inserted without it.
+    cards: Option<PathBuf>,
+    /// A BIOS image for the Kanji font.
+    bios: Option<PathBuf>,
+    /// Write the SPU's output as a 16-bit stereo 44.1 kHz WAV file.
+    wav: Option<PathBuf>,
     screenshot: Option<PathBuf>,
     /// Report the drive's data sectors at the end (cd_trace.rs).
     cd_trace: bool,
@@ -28,6 +35,9 @@ fn main() -> ExitCode {
         stubs: PathBuf::from("build/game/stubs.txt"),
         schema: PathBuf::from("build/game/schema.json"),
         control: false,
+        cards: None,
+        bios: None,
+        wav: None,
         screenshot: None,
         cd_trace: false,
     };
@@ -39,12 +49,15 @@ fn main() -> ExitCode {
             "--stubs" => options.stubs = args.next().map(PathBuf::from).unwrap_or(options.stubs),
             "--schema" => options.schema = args.next().map(PathBuf::from).unwrap_or(options.schema),
             "--control" => options.control = true,
+            "--cards" => options.cards = args.next().map(PathBuf::from),
+            "--bios" => options.bios = args.next().map(PathBuf::from),
+            "--wav" => options.wav = args.next().map(PathBuf::from),
             "--screenshot" => options.screenshot = args.next().map(PathBuf::from),
             "--cd-trace" => options.cd_trace = true,
             _ => {
                 eprintln!(
                     "usage: xem-headless --disc <chd|cue|bin> [--frames N | --control] [--stubs FILE] [--schema FILE] \
-                     [--screenshot out.png] [--cd-trace]"
+                     [--screenshot out.png] [--cd-trace] [--cards DIR] [--bios FILE] [--wav FILE]"
                 );
                 return ExitCode::FAILURE;
             }
@@ -73,7 +86,8 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
     use std::io::BufRead;
     use xem_core::control::Session;
     use xem_core::inspect::Schema;
-    use xem_core::{Runtime, exe};
+    use xem_core::devices::card::FileStorage;
+    use xem_core::{Runtime, bios, exe};
 
     let mut source = xem_disc::open_path(&options.disc)?;
     let identity = xem_disc::identify(source.as_mut())?;
@@ -86,6 +100,14 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
         runtime.services().stub_names =
             text.lines().filter_map(|l| l.split_once(' ').map(|(_, n)| n.to_string())).collect();
     }
+    if let Some(dir) = &options.cards {
+        runtime.services().card.attach_storage(Box::new(FileStorage { dir: dir.clone() }))?;
+    }
+    let rom = options.bios.as_ref().map(std::fs::read).transpose()?;
+    if bios::install_kanji_font(runtime.memory(), rom.as_deref())? == bios::KanjiFont::Blank {
+        eprintln!("kanji font: blank glyphs (no --bios image)");
+    }
+    runtime.services().spu.set_output(options.wav.is_some());
     // The BIOS copies the executable's text to its address and jumps to pc0.
     runtime.memory().write(header.text_address, exe::text(&identity.executable, &header))?;
     runtime.services().insert_disc(source);
@@ -110,9 +132,15 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
         }
         return Ok(());
     }
+    let mut audio = Vec::new();
     for frame in 0..options.frames {
         // A native disc source never blocks.
-        if let Err(trap) = session.frame() {
+        let result = session.frame();
+        let spu = &mut session.runtime.services().spu;
+        let start = audio.len();
+        audio.resize(start + spu.audio_queued(), 0);
+        spu.take_audio(&mut audio[start..]);
+        if let Err(trap) = result {
             println!("frame {frame}: {trap}");
             break;
         }
@@ -128,6 +156,14 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
         println!("log: {line}");
     }
     println!("clock: {} cycles, {} vblanks", services.clock.now, services.clock.vblanks);
+    for error in &services.card.errors {
+        println!("card: {error}");
+    }
+    if let Some(path) = &options.wav {
+        std::fs::write(path, wav(&audio))?;
+        let peak = audio.iter().map(|s| s.unsigned_abs()).max().unwrap_or(0);
+        println!("audio: {} samples, peak {peak}, {}", audio.len() / 2, path.display());
+    }
     if let Some(path) = &options.screenshot {
         let (width, height, rgba) = services.gpu.display_rgba8();
         write_png(path, width, height, &rgba)?;
@@ -146,4 +182,27 @@ fn write_png(path: &std::path::Path, width: u32, height: u32, rgba: &[u8]) -> Re
     encoder.set_depth(png::BitDepth::Eight);
     encoder.write_header()?.write_image_data(rgba)?;
     Ok(())
+}
+
+/// A 16-bit stereo 44.1 kHz WAV file of interleaved samples.
+#[cfg(has_game_module)]
+fn wav(samples: &[i16]) -> Vec<u8> {
+    let data = samples.len() as u32 * 2;
+    let mut out = Vec::with_capacity(44 + data as usize);
+    out.extend_from_slice(b"RIFF");
+    out.extend_from_slice(&(36 + data).to_le_bytes());
+    out.extend_from_slice(b"WAVEfmt ");
+    out.extend_from_slice(&16u32.to_le_bytes());
+    out.extend_from_slice(&1u16.to_le_bytes());
+    out.extend_from_slice(&2u16.to_le_bytes());
+    out.extend_from_slice(&44_100u32.to_le_bytes());
+    out.extend_from_slice(&(44_100u32 * 4).to_le_bytes());
+    out.extend_from_slice(&4u16.to_le_bytes());
+    out.extend_from_slice(&16u16.to_le_bytes());
+    out.extend_from_slice(b"data");
+    out.extend_from_slice(&data.to_le_bytes());
+    for sample in samples {
+        out.extend_from_slice(&sample.to_le_bytes());
+    }
+    out
 }

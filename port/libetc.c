@@ -6,6 +6,8 @@
  */
 #include "common.h"
 #include "psyq/libetc.h"
+#include "xem/card.h"
+#include "xem/spu.h"
 
 extern s32 libetc_vsync_count;
 extern s32 libetc_vsync_previous_count;
@@ -114,8 +116,18 @@ void xem_interrupt(u32 irq, u32 detail) {
         }
         break;
     case XEM_IRQ_DMA:
-        if (detail < 7 && xem_dma_callbacks[detail] != NULL) {
+        if (detail == 4 && xem_dma_callbacks[4] == (void (*)(void))XEM_LIBSPU_TRANSFER_WAIT_ENTRY) {
+            /* libspu's own entry, which the port implements. */
+            xem_spu_transfer_done();
+        } else if (detail < 7 && xem_dma_callbacks[detail] != NULL) {
             xem_dma_callbacks[detail]();
+        }
+        break;
+    case XEM_IRQ_PAD:
+        /* The memory card shares the controller port's interrupt. */
+        xem_card_interrupt(detail);
+        if (xem_interrupt_callbacks[irq] != NULL) {
+            xem_interrupt_callbacks[irq]();
         }
         break;
     case XEM_IRQ_RCNT0:

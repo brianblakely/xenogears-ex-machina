@@ -107,6 +107,15 @@ impl Services {
         self.cd.insert_disc(disc);
     }
 
+    /// Feed the CD device's decoded audio to the SPU's CD input.
+    fn route_cd_audio(&mut self) {
+        let mut pcm = Vec::new();
+        self.cd.take_audio(&mut pcm);
+        if !pcm.is_empty() {
+            self.spu.push_cd_audio(&pcm);
+        }
+    }
+
     /// The earliest scheduled device event.
     pub fn next_device_event(&mut self) -> Option<u64> {
         self.devices().into_iter().filter_map(|(_, d)| d.next_event()).min()
@@ -404,6 +413,7 @@ impl<M: GameModule> Runtime<M> {
     fn advance_devices(&mut self) {
         // SAFETY: as in sync_devices.
         let services = unsafe { &mut *self.services };
+        services.route_cd_audio();
         services.each_device(self.module.memory(), |device, context| device.advance(context));
     }
 
