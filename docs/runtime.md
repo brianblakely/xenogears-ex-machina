@@ -17,12 +17,30 @@ is built for native and browser hosts and how the hosts are layered. The
 
 ## The game module
 
-`make -C decomp game-wasm` builds `build/game/game.wasm` from the same C units
-the PS1 targets link, plus `decomp/port/` (the SDK, the BIOS and the handwritten
-routines as portable C over host imports). It needs the matched PS1 links
+`python3 tools/game_module.py` (inside `nix develop path:./nix/runtime`) builds
+`build/game/game.wasm` from the same C units the PS1 targets link and the port
+layer in `port/`. The decomp is not changed for the port: its sources and
+headers stay exactly what the byte-matching build compiles, and everything the
+port needs lives in `port/` and the tool. It needs the matched PS1 links
 (`make -C decomp all-verify`), whose symbol tables give every object its
 original address.
 
+- **Front end.** clang compiles the untouched C for `mipsel-unknown-unknown`,
+  which accepts the original inline assembly, and the IR is retargeted to
+  wasm32: both are ILP32 and little-endian with the same ABI alignments, so
+  every structure keeps its layout. `port/include/xem/prelude.h` is
+  force-included first; the headers it includes replace originals of the same
+  include guard (`include_asm.h`, whose macros include nothing; PsyQ's
+  `stdarg.h`, which walks MIPS argument words) and give canonical prototypes
+  where a unit calls a function before declaring it.
+- **Inline assembly.** Each statement (GTE transfers and commands, stack
+  switches, `break`s) becomes a call to the port function that
+  `port/asm_map*.json` names for its template and constraints.
+- **Port layer.** `port/*.c` defines what the matched images take from
+  assembly: the PsyQ SDK and BIOS calls (over host imports), the handwritten
+  routines (from their `.s` contracts) and the entry and restart logic. A
+  function the port does not define yet traps through `xem.missing`
+  (`--stubs` lists them in `build/game/stubs.txt`).
 - **Original memory layout.** Game memory is the PS1 address space: RAM at its
   KSEG0 addresses 0x80000000-0x801FFFFF and the scratchpad at 0x1F800000, inside
   one wasm32 linear memory. Every global the C defines resolves to its original
@@ -35,10 +53,18 @@ original address.
   function by address and check, from a fingerprint of its original code bytes in
   game memory, that the image holding it is the one loaded there; a call into an
   absent or overwritten image traps.
-- **Suspension.** `wasm-opt --asyncify` instruments the module so that the yield
-  imports (frame waits, polls, mode exits) unwind the game stack into linear
-  memory. The host loop resumes it; a snapshot at a yield point is game memory,
-  the module's globals and the host services' state.
+- **Unprototyped calls.** A direct call whose types differ from the
+  definition goes through a generated adapter (`build/game/adapters.txt`
+  lists each): integer arguments are truncated or extended, a missing
+  argument is 0 and an extra one is dropped.
+- **Suspension.** `wasm-opt --asyncify` instruments the module so that the
+  imports `xem.yield` (frame waits, polls) and `xem.restart` (the dispatcher's
+  stack reset, soft reset) unwind the game stack into linear memory. The host
+  resumes a yield by calling `xem_run` again and answers a restart by calling
+  `xem_run(kind, arg)` on an empty stack; the dispatcher (`mode_dispatch`,
+  wrapped by the port) therefore runs each mode from an empty stack, as the
+  original does. A snapshot at a yield point is game memory, the module's
+  globals and the host services' state.
 - **Native.** `wasm2c` output is compiled into `xem-game` with explicit bounds
   checks (no signal handlers). Nothing interprets or emulates a CPU.
 - **Browser.** The same `game.wasm` is instantiated next to the Rust runtime
