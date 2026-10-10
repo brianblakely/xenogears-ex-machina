@@ -3,11 +3,14 @@
 //! The recovered C runs as `game.wasm`, instantiated by the page beside this
 //! module ([`game`]); the shared command layer (`xem_core::control::Session`,
 //! the one xem-headless serves) drives it.
-//! The page's animation callback calls [`XemApp::frame`], which advances the
-//! game by the frames of the virtual clock that are due, in a bounded batch,
-//! and renders the canvas ([`render`]); Web Audio pulls
-//! samples with [`XemApp::audio_render`]; the user's disc is read in place
-//! through [`disc`]. Every operation the page's controls use is a method here,
+//! The page's animation callback calls [`XemApp::frame`], which applies the
+//! player's keyboard and gamepad to pad 1 ([`input`]), advances the game by the
+//! frames of the virtual clock that are due, in a bounded batch, and renders
+//! the GPU's display on the canvas ([`render`]); the page then posts the SPU's
+//! samples ([`XemApp::take_audio`]) to its AudioWorklet and the memory cards'
+//! changed images ([`XemApp::take_card_write`]) to IndexedDB. The user's disc
+//! is read in place through [`disc`]: a frame whose sector has not arrived
+//! stops without advancing the clock and continues once the page fetched it. Every operation the page's controls use is a method here,
 //! and the automation API (`window.xem`, src/runtime/web/xem.js) calls the same
 //! methods: there is no DOM-input path to the game.
 //!
@@ -18,6 +21,7 @@
 mod audio;
 mod disc;
 mod game;
+mod input;
 mod render;
 mod storage;
 
@@ -28,7 +32,7 @@ use serde_json::{Value, json};
 use wasm_bindgen::prelude::*;
 use xem_core::control::Session;
 use xem_core::inspect::Schema;
-use xem_core::{Runtime, exe};
+use xem_core::{Runtime, bios, exe};
 use xem_settings::{MemoryStore, Rejected, SettingChange, SettingsService};
 
 pub use game::{WebModule, xem_game_import};
@@ -70,7 +74,7 @@ struct LoopStats {
 }
 
 /// The browser application: settings, the disc, the game session, the
-/// renderer and the audio source.
+/// renderer, the sound, the memory cards and the player's input.
 #[wasm_bindgen]
 pub struct XemApp {
     settings: Rc<RefCell<SettingsService>>,
@@ -82,7 +86,14 @@ pub struct XemApp {
     disc: Option<disc::DiscImport>,
     renderer: Option<WebRenderer>,
     panel_closed: Rc<Cell<bool>>,
-    tone: audio::Tone,
+    audio: audio::Mixer,
+    audio_scratch: Vec<i16>,
+    cards: storage::BrowserCards,
+    input: input::HostInput,
+    /// The buttons the player's input last put on pad 1.
+    host_buttons: u16,
+    /// Frames ran since the display was last shown.
+    display_dirty: bool,
     running: bool,
     /// Page time up to which game frames have been run or dropped.
     paced: Option<f64>,
@@ -119,7 +130,12 @@ impl XemApp {
             disc: None,
             renderer: None,
             panel_closed: Rc::new(Cell::new(false)),
-            tone: audio::Tone::new(),
+            audio: audio::Mixer::default(),
+            audio_scratch: Vec::new(),
+            cards: storage::BrowserCards::default(),
+            input: input::HostInput::default(),
+            host_buttons: 0,
+            display_dirty: false,
             running: false,
             paced: None,
             stats: LoopStats::default(),
@@ -134,6 +150,7 @@ impl XemApp {
         let closed = self.panel_closed.clone();
         renderer.attach_panel(self.settings.clone(), move || closed.set(true));
         self.renderer = Some(renderer);
+        self.display_dirty = true;
     }
 
     /// Why the renderer's device was lost, if it was (the page then attaches a new one).
@@ -147,13 +164,23 @@ impl XemApp {
         }
     }
 
-    /// One animation frame at page time `now` (ms): the game frames due since
-    /// the last one, at most [`MAX_FRAMES_PER_ANIMATION`] and within the batch
-    /// budget, then the canvas. Time a throttled or frozen page missed is
-    /// dropped, not caught up.
+    /// One animation frame at page time `now` (ms): the player's input on pad
+    /// 1, the game frames due since the last one, at most
+    /// [`MAX_FRAMES_PER_ANIMATION`] and within the batch budget, then the
+    /// canvas. Time a throttled or frozen page missed, or a frame spent
+    /// waiting for a disc sector, is dropped, not caught up.
     pub fn frame(&mut self, now: f64) -> Result<(), JsValue> {
         self.stats.animation_frames += 1;
         if self.running {
+            // The player's input reaches pad 1 when it changes, so a pad an
+            // automation client set stays until the player presses something.
+            let buttons = if self.panel_visible() { 0 } else { self.input.buttons() };
+            if buttons != self.host_buttons
+                && let Some(session) = self.session.as_mut()
+            {
+                session.set_pad(0, buttons);
+                self.host_buttons = buttons;
+            }
             let paced = *self.paced.get_or_insert(now - FRAME_MS);
             let due = ((now - paced) / FRAME_MS).floor().max(0.0) as u64;
             let start = now_ms();
@@ -183,14 +210,57 @@ impl XemApp {
             self.stats.game_frames += batch;
             self.stats.last_batch = batch;
             self.stats.max_batch = self.stats.max_batch.max(batch);
+            if batch > 0 {
+                self.ran_frames();
+            }
         }
         if self.panel_closed.replace(false) {
             self.set_panel_visible(false);
         }
         if let Some(renderer) = &mut self.renderer {
+            match self.session.as_mut() {
+                Some(session) if self.display_dirty => {
+                    let (width, height, rgba) = session.runtime.services().gpu.display_rgba8();
+                    renderer.set_game_image((width, height), &rgba);
+                    self.display_dirty = false;
+                }
+                Some(_) => {}
+                None => renderer.clear_game_image(),
+            }
             renderer.frame((now / 1000.0) as f32, &self.settings.borrow()).map_err(error)?;
         }
         Ok(())
+    }
+
+    /// After game frames ran: keep the SPU's samples for the page and show
+    /// the new display at the next render.
+    fn ran_frames(&mut self) {
+        self.display_dirty = true;
+        let Some(session) = self.session.as_mut() else { return };
+        let spu = &mut session.runtime.services().spu;
+        self.audio_scratch.resize(spu.audio_queued(), 0);
+        let taken = spu.take_audio(&mut self.audio_scratch);
+        self.audio.push(&self.audio_scratch[..taken]);
+    }
+
+    /// A key (`KeyboardEvent.code`) went down or up; true when it is one of
+    /// pad 1's keys (the page then keeps it from the browser). Ignored while
+    /// the settings panel has the input.
+    pub fn game_key(&mut self, code: &str, down: bool) -> bool {
+        if down && self.panel_visible() {
+            return false;
+        }
+        self.input.key(code, down)
+    }
+
+    /// The first gamepad's buttons (Gamepad API standard mapping, 1 = pressed).
+    pub fn gamepad(&mut self, pressed: &[u8]) {
+        self.input.gamepad(pressed);
+    }
+
+    /// Release the player's keys and buttons (the page lost focus).
+    pub fn release_input(&mut self) {
+        self.input.clear();
     }
 
     pub fn set_panel_visible(&mut self, visible: bool) {
@@ -215,9 +285,10 @@ impl XemApp {
         }
     }
 
-    /// `frames` interleaved stereo frames for Web Audio at `rate` Hz.
-    pub fn audio_render(&mut self, frames: u32, rate: f32) -> Vec<f32> {
-        self.tone.render(frames as usize, rate, self.settings.borrow().settings())
+    /// The game's sound since the last call: interleaved stereo at
+    /// [`audio_sample_rate`], mixed by the volume and output settings.
+    pub fn take_audio(&mut self) -> Vec<f32> {
+        self.audio.take(self.settings.borrow().settings())
     }
 
     // --- Settings -----------------------------------------------------------
@@ -313,17 +384,23 @@ impl XemApp {
         self.running = false;
         let module = WebModule::new(&instance, import_names).map_err(error)?;
         self.memory_bytes = module.memory_bytes();
+        // As xem_game::boot does natively (without a BIOS image: blank Kanji glyphs).
         let mut runtime = Runtime::new(module);
         runtime.services().stub_names = self.stub_names.clone();
-        if let Some(source) = game_disc {
-            runtime.services().insert_disc(source);
-        }
+        runtime.services().card.attach_storage(Box::new(self.cards.clone())).map_err(error)?;
+        runtime.services().spu.set_output(true);
         if let Some(executable) = executable {
+            bios::install_kanji_font(runtime.memory(), None).map_err(error)?;
             // The BIOS copies the executable's text to its address and jumps to pc0.
             let header = exe::parse(&executable).map_err(error)?;
             runtime.memory().write(header.text_address, exe::text(&executable, &header)).map_err(error)?;
         }
+        if let Some(source) = game_disc {
+            runtime.services().insert_disc(source);
+        }
         self.session = Some(Session::new(runtime, schema));
+        self.host_buttons = 0;
+        self.display_dirty = true;
         Ok(self.status())
     }
 
@@ -352,7 +429,13 @@ impl XemApp {
                     Some(_) if frames > MAX_FRAMES_PER_COMMAND => {
                         json!({ "error": format!("a command runs at most {MAX_FRAMES_PER_COMMAND} frames") })
                     }
-                    Some(session) => session.execute(&command),
+                    Some(session) => {
+                        let reply = session.execute(&command);
+                        if frames > 0 {
+                            self.ran_frames();
+                        }
+                        reply
+                    }
                 }
             }
         };
@@ -371,12 +454,33 @@ impl XemApp {
     /// Return to snapshot bytes of the same game module.
     pub fn restore_bytes(&mut self, bytes: &[u8]) -> Result<(), JsValue> {
         let session = self.session.as_mut().ok_or_else(|| error("no game session"))?;
-        session.restore_bytes(bytes).map_err(error)
+        session.restore_bytes(bytes).map_err(error)?;
+        self.display_dirty = true;
+        Ok(())
     }
 
-    /// The save placeholder: a formatted empty memory card.
-    pub fn blank_memory_card(&self) -> Vec<u8> {
-        storage::blank_memory_card()
+    // --- Memory cards -------------------------------------------------------
+
+    /// The image IndexedDB holds for card `slot` (0, 1), or undefined for a
+    /// fresh formatted card; the page sets both before a session boots.
+    pub fn set_card_image(&mut self, slot: usize, image: Option<Vec<u8>>) -> Result<(), JsValue> {
+        if slot > 1 {
+            return Err(error("cards are 0 and 1"));
+        }
+        self.cards.set_image(slot, image);
+        Ok(())
+    }
+
+    /// Card `slot`'s image when the card device changed it since the last
+    /// call (the page writes it to IndexedDB), else undefined.
+    pub fn take_card_write(&mut self, slot: usize) -> Option<Vec<u8>> {
+        (slot < 2).then(|| self.cards.take_write(slot)).flatten()
+    }
+
+    /// The image the card device holds in `slot` (none without a session).
+    pub fn card_image(&mut self, slot: usize) -> Option<Vec<u8>> {
+        let session = self.session.as_mut()?;
+        (slot < 2).then(|| session.runtime.services().card.image(slot).map(<[u8]>::to_vec)).flatten()
     }
 
     /// Everything a client can inspect.
@@ -395,6 +499,7 @@ impl XemApp {
             })
         });
         let settings_revision = self.settings.borrow().revision();
+        let card_errors = self.session.as_mut().map(|s| s.runtime.services().card.errors.clone()).unwrap_or_default();
         to_json(&json!({
             "renderer": renderer,
             "disc": self.disc.as_ref().map(|d| d.status()),
@@ -410,7 +515,8 @@ impl XemApp {
                 "maxFramesPerAnimation": MAX_FRAMES_PER_ANIMATION,
                 "batchBudgetMs": BATCH_BUDGET_MS,
             },
-            "audioFrames": self.tone.frames,
+            "audio": { "frames": self.audio.frames, "dropped": self.audio.dropped, "sampleRate": audio::SAMPLE_RATE },
+            "cards": { "unsaved": self.cards.dirty(), "errors": card_errors },
             "settingsRevision": settings_revision,
         }))
     }
@@ -431,6 +537,12 @@ pub async fn create_renderer(canvas: web_sys::HtmlCanvasElement, prefer: String)
 /// A renderer on its way to [`XemApp::attach_renderer`].
 #[wasm_bindgen]
 pub struct Renderer(WebRenderer);
+
+/// The rate of [`XemApp::take_audio`]'s samples (the SPU's 44.1 kHz).
+#[wasm_bindgen]
+pub fn audio_sample_rate() -> u32 {
+    audio::SAMPLE_RATE
+}
 
 /// The current settings' JSON shape, for documentation and clients.
 #[wasm_bindgen]

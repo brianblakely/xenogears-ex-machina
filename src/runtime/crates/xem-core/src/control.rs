@@ -78,7 +78,8 @@ impl<M: GameModule> Session<M> {
         self.runtime.services().clock.vblanks
     }
 
-    fn set_pad(&mut self, port: u32, buttons: u16) {
+    /// Set a pad's buttons now, as `pad` does (a recording keeps the change).
+    pub fn set_pad(&mut self, port: u32, buttons: u16) {
         let vblank = self.vblank();
         let pads = &mut self.runtime.services().pads.0;
         if let Some(pad) = pads.get_mut(port as usize) {

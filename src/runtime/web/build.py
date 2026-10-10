@@ -18,7 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 WEB = ROOT / "src" / "runtime" / "web"
 PAGE = ["index.html", "style.css", "main.js", "game.js", "disc.js", "storage.js", "audio.js",
-        "audio-worklet.js", "xem.js"]
+        "audio-worklet.js", "cards.js", "xem.js"]
 
 
 def main():
