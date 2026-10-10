@@ -561,6 +561,7 @@ libcd_shell_open_count = 0x800564C0;
 libcd_last_position = 0x800564C4;
 libcd_last_mode = 0x800564C8;
 libcd_last_command = 0x800564C9;
+libcd_uses_libds_callbacks = 0x800564CC;
 libcd_command_name_table = 0x800564D0;
 libcd_interrupt_name_table = 0x80056550;
 libcd_command_has_second_response_table = 0x80056570;
