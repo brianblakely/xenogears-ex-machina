@@ -661,7 +661,7 @@ undecodable on either disc. For Phases 7, 11 and 12:
 | World map actor and scene scripts, arena scripts | worldmap, menu | [worldmap-actor.md](scripts/worldmap-actor.md), [worldmap-scene.md](scripts/worldmap-scene.md), [arena-scene.md](scripts/arena-scene.md), `overlay_scripts.py` | none |
 | Cue timelines: field movie sounds, world map terrain texture animations | field `field_movie_play_due_sounds`; world map `worldmap_texture_anim_advance`, `worldmap_texture_anim2_advance` | [timelines.md](scripts/timelines.md), `overlay_scripts.py` | see its Open item |
 | Save files | slot39 `menu_save_command_run`, `menu_load_command_run` | [original-boundaries.md](original-boundaries.md), `menu_save_file.py` | none |
-| Movies (STR, XA) | mdec, movie, field `field_movie_play` | VLC only (`src/analysis/mdec_codec.hpp`) | IDCT, colour conversion and XA ADPCM |
+| Movies (STR, XA) | mdec, movie, field `field_movie_play` | VLC (`src/analysis/mdec_codec.hpp`); BS v2/v3, MDEC and XA ADPCM in `runtime/crates/xem-media` | comparison with captured frames and audio |
 
 ### Original bytes the port must import
 
@@ -923,7 +923,7 @@ record.
 | The disc and stream boundary | the code ([Disc and files](#disc-and-files)); no retained capture covers a disc swap, disc 2 media or the CD callback order ([matching.md](matching.md) lists the routes) | a disc-swap and streaming capture on both discs |
 | Wide on hardware | emulator recordings only ([original-boundaries.md](original-boundaries.md)) | a hardware recording before Phase 10 |
 | World map, Gear battle and arena presentation | no packets observed ([original-boundaries.md](original-boundaries.md)) | `tools/analysis/gpu_packets.py` on captures of those modes |
-| Missing media decoders | no IDCT, colour conversion, XA ADPCM or SPU ADPCM in the repository | implementations in Phase 2, tested against captured frames and audio |
+| Missing media decoders | no SPU ADPCM in the repository; `runtime/crates/xem-media` implements the MDEC (dequantization, IDCT, colour conversion) and XA ADPCM with its resampler from psx-spx, whose IDCT rounding, colour fixed point, 15-bit truncation and 18900 Hz resampling are approximations, untested against captured frames and audio | SPU ADPCM in Phase 2; compare xem-media with captured MDEC output and CD audio |
 | BIOS font source | `Krom2RawAdd` users in slot39 and field | a user BIOS import or a labelled substitute |
 | Script data open items | the Open lines of [field-events.md](scripts/field-events.md), [text-control.md](scripts/text-control.md), [battle-ai.md](scripts/battle-ai.md), [battle-effect-vm.md](scripts/battle-effect-vm.md), [battle-event-vm.md](scripts/battle-event-vm.md), [arena-frame-events.md](scripts/arena-frame-events.md), [formations.md](scripts/formations.md), [timelines.md](scripts/timelines.md) | as stated there |
 
