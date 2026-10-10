@@ -24,11 +24,6 @@ arena_effect_side_palette = 0x800926A8; // size:0x8
 arena_effect_sparkle2_color = 0x800926B8; // size:0x4
 arena_stage_ground_normal = 0x80092768; // size:0x8
 // Names tools/names.py gave these addresses (docs/matching.md, Names).
-mode_arena_entry_kind = 0x8005061D;
-mode_arena_first_model = 0x8005061E;
-mode_arena_second_model = 0x8005061F;
-mode_arena_option6 = 0x80050620;
-mode_arena_level = 0x80050621;
 arena_overlay_number = 0x8006FAF0;
 arena_unused_empty_string = 0x80070198;
 arena_scene_close_choice = 0x800707A8; // type:func

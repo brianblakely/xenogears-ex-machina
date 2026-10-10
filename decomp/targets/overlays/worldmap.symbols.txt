@@ -13,15 +13,7 @@ worldmap_area_spinning_pair_objects = 0x8009B624; // size:0x28
 worldmap_area_rolling_pair_objects = 0x8009B64C; // size:0x28
 worldmap_background_color = 0x8009BB48; // size:0x3
 // Names tools/names.py gave these addresses (docs/matching.md, Names).
-game_data_parked_vehicle0_heading = 0x8006EE5A;
-game_data_parked_vehicle1_heading = 0x8006EE5C;
-game_data_parked_vehicle2_heading = 0x8006EE5E;
-game_data_flying_vehicle_heading = 0x8006EE66;
-game_data_worldmap_return_flags = 0x8006EE68;
-game_data_vehicle_spots_by_follower = 0x8006EF8A;
-game_data_vehicle_spots = 0x8006EF8E;
 game_data_party_state = 0x8006F364;
-game_data_worldmap_flag_word = 0x8006F954;
 worldmap_overlay_number = 0x8006FAF0;
 worldmap_main = 0x80070CFC; // type:func
 worldmap_run_frame_loop = 0x800712D0; // type:func
