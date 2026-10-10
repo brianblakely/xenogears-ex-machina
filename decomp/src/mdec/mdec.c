@@ -410,7 +410,7 @@ void movie_poll(void) {
 /* Seek the stream to `sector` of `file` (or to `location` when given) and read
  * from there in `mode` at double speed; the current directory is kept. The
  * host-file stream instead reopens the file and seeks within it. */
-void movie_restart(s32 file, s32 sector, s32 arg2, s32 mode, CdlLOC *location) {
+void movie_restart(s32 file, s32 sector, s32 channel, s32 mode, CdlLOC *location) {
     CdlLOC position;
     CdlLOC *seek;
     s32 kept_directory;
@@ -424,7 +424,7 @@ void movie_restart(s32 file, s32 sector, s32 arg2, s32 mode, CdlLOC *location) {
     movie_fade_in_pending = 1;
     movie_fade_out_pending = 1;
     if (movie_host_stream != 0) {
-        cd_read_file(file, movie_ring_buffer, arg2, mode);
+        cd_read_file(file, movie_ring_buffer, channel, mode);
         if (mode & 8) {
             PClseek(cd_pc_file_descriptor, sector * 0x920, 0);
         } else {
@@ -516,17 +516,25 @@ INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", MDEC_status);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", timeout);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", D_801D4C94);
+/* 801D4C94 */
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", libpress_vlc_max_size);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTvlcSize);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTvlc);
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", D_801D502C);
+/* 801D5008: the nine words DecDCTvlc keeps its decoding state in between calls. */
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", libpress_vlc_saved_state);
+
+/* 801D502C */
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", libpress_vlc2_max_size);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTvlcSize2);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", DecDCTvlc2);
+
+/* 801D539C: the nine words DecDCTvlc2 keeps its decoding state in between calls. */
+INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", libpress_vlc2_saved_state);
 
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", _EncSPU_encode);
 

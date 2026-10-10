@@ -313,7 +313,7 @@ restore (Memory card and saves) and the dormant CdMix.
   without. CdRead2 issues that Setmode, installs the St ring's callbacks
   (StCdInterrupt2, data_ready_callback) for bit 0x100 and sends ReadS (mdec
   CdRead2). Setmode 0 is "NORMAL SPEED" in the development test (movie.c
-  func_80072480).
+  movie_mode_run_disc_change_test).
 - **Retries.** cd_advance_command_state (state cd_command_state, reason cd_retry_reason): a command
   that does not complete (status other than Complete, 2), or a sector that
   fails, arrives out of place or finds no free ring slot, makes it poll Getstat
@@ -331,8 +331,8 @@ restore (Memory card and saves) and the dormant CdMix.
   (cd_stat_setloc_count, cd_stat_command_ok_count, cd_stat_command_fail_count, cd_stat_retry_setloc_count, cd_stat_retry_fail_count, cd_stat_lesmem_count,
   which nothing increments, cd_stat_error_limit_count, cd_stat_stop_ok_count and cd_stat_stop_fail_count; the blocks
   mode_preloaded_text_images, menu_state_big_ots and D_8005A4B0 among them are other data), feed only
-  the movie overlay's development screens (movie.c func_800704E8, and
-  func_800737EC, which prints and clears cd_stat_lesmem_count, cd_stat_error_limit_count, cd_stat_stop_ok_count
+  the movie overlay's development screens (movie.c movie_mode_run_cd_check, and
+  movie_mode_main, which prints and clears cd_stat_lesmem_count, cd_stat_error_limit_count, cd_stat_stop_ok_count
   and cd_stat_stop_fail_count). On a stalled movie, movie_poll overwrites cd_stat_stop_ok_count and
   cd_stat_stop_fail_count for those screens with the resume position StGetBackloc gives and
   the movie's starting sector in its file (mdec.c:398-399). The world-map
@@ -378,9 +378,9 @@ restore (Memory card and saves) and the dormant CdMix.
     (movie_next_bitstream, movie_decode); movie_stop unsets the ring, pauses
     and sets 0xA0 again. The field plays file + 2 of directory (0x18, 1)
     (field_movie_start), the movie mode a request's entry + 2 of (0x18, 1) or + 3
-    of (0x18, 0) (movie.c func_80076488).
+    of (0x18, 0) (movie.c movie_mode_play_movie).
   - XA: only movie_start selects a channel: file 1 and the channel, 1 at every
-    shipped caller (field field_movie_start; movie.c func_800737EC for a request).
+    shipped caller (field field_movie_start; movie.c movie_mode_main for a request).
     With bit 0x40 the drive plays the matching sectors into the SPU's CD input
     (Sound output modes).
 
@@ -393,7 +393,7 @@ restore (Memory card and saves) and the dormant CdMix.
 - **Disc identity and the swap.** cd_get_disc_number returns directory word 0x3C, 1
   in Disc 1's table and 2 in Disc 2's. Its readers: boot's opening-movie
   request (main.c boot_main: cd_movie_request_index = 0x10 on Disc 1, else 7, played as
-  file 0x12 or 9 of directory (0x18, 1), movie.c func_80076488), the title file
+  file 0x12 or 9 of directory (0x18, 1), movie.c movie_mode_play_movie), the title file
   screen's exit after 600 idle frames, on Disc 1 only (menu_framework.c menu_title_load_menu_run),
   the swap (menu_cd_ask_for_disc), the save (menu_save_build_payload: D_8006F008 = disc - 1, or
   1 for the save offered at the change), field event `fe cd` (store_disc_number,
@@ -411,7 +411,7 @@ restore (Memory card and saves) and the dormant CdMix.
   runs (bit 0x02) with the command completing, then sends GetTN, Setloc to
   sector 0 and SeekL. A SeekL failing with the error bit 0x01 and error-code bit
   0x40 returns 2; another failure retries from GetTN. The development test
-  (movie.c func_80072480 over func_80072A08) labels these steps "CD STOPED",
+  (movie.c movie_mode_run_disc_change_test over movie_mode_step_disc_change_test) labels these steps "CD STOPED",
   "CD OPENED", "CD CLOSED", "SPINDLE OK", "TOC OK" and "SET LOCATION OK", and
   that failure "IT IS NOT PLAY STATION DISC". Then come Setmode 0xA0 and 16
   bytes of sector 0x17: bytes 4-7 must read "_XEN" (else 2) and byte 3 the
@@ -440,7 +440,7 @@ restore (Memory card and saves) and the dormant CdMix.
   (movie_host_stream); and the swap loads `c:\work\cdrom.mdg` (the index,
   0x8000 bytes), `cdrom.fid` (the directory table, 0x7A) and `cdrom.fnd` (the
   names, 0x40000), or `cdrom2.*` for Disc 2 (slot39 menu_cd_check_disc, movie
-  func_80072A08). libsn's entries are in the Services table.
+  movie_mode_step_disc_change_test). libsn's entries are in the Services table.
 
 ## Timing
 
@@ -459,7 +459,7 @@ VSync(-1) 4, and VSync(8), VSync(arena_mode_vblanks_per_frame), VSync(sprite_fra
   (Pacing per mode).
 - VSync(1) feeds only profiling values (field field_frame_start_time/field_frame_cpu_time/field_frame_gpu_time
   read by debug595, battle battle_camera.cpu/gpu read by debug2611, arena
-  arena_debug_gpu_time and the movie monitor's D_800773B8).
+  arena_debug_gpu_time and the movie monitor's movie_mode_unread_decode_vsync_times).
 - GetRCnt: the sound tick times itself on root counter 2 (sound_unread_tick_time_total,
   sound_unread_timed_tick_count; profiling); the arena compacts its ordering table while root
   counter 1 (horizontal blanks) stays within a budget (menu7.c arena_display_note_frame_start,
@@ -507,7 +507,7 @@ VSync(-1) 4, and VSync(8), VSync(arena_mode_vblanks_per_frame), VSync(sprite_fra
 | 4 Battling arena (`menu` target, arena_mode_main) | VSync(arena_mode_vblanks_per_frame) | 1 or 2 | the arena task sets arena_mode_vblanks_per_frame to 0 or 2 (menu5.c arena_mode_task); the arena coroutine runs once per frame (Control flow) |
 | 5 in-game menu (resident mode_run_menu; frames menu_state_update_frame, slot39 menu_run_frame) | DrawSync, VSync(0) | 1 | also the ovl2598/2600/2601/2602 screens; card and disc-change waits inside |
 | 5 menu missing pad (slot39 menu_read_input; ovl2598 func_801C92AC, ovl2600 func_801C98E8, ovl2601 func_801CACC8, ovl2602 func_801CB4E4) | none: spins | — | each screen's input reader spins on pad_get_controller_kind(0), with no VSync, until the first pad answers; voices and tick suspended, pad_vblank_count restored |
-| 6 movie (func_800737EC, player func_80076488) | VSync(0) per pass, three decode steps per frame (movie_poll) | 1 | mdec's DecDCTout callback delivers frames |
+| 6 movie (movie_mode_main, player movie_mode_play_movie) | VSync(0) per pass, three decode steps per frame (movie_poll) | 1 | mdec's DecDCTout callback delivers frames |
 | battle screen effects (ovl2615 load/burst modes, ovl3387) | DrawSync, VSync(2) | 2 | |
 
 Battle alone measures its frames and scales logic by the result. The field's
@@ -558,13 +558,13 @@ The sound driver runs beside this on its own timer: 240 ticks per second, about
 | Callback | Installed by | Runs | Writes | Waits that depend on it |
 | --- | --- | --- | --- | --- |
 | vblank handler pad_vblank_callback (main2.c) | VSyncCallback at boot (boot_main) and on world-map entry (worldmap_main); cleared by soft reset | every vertical blank | pad_vblank_count++; pad words pad_port0_held/pad_port1_held, pad_port0_pressed/pad_port1_pressed, pad_port0_repeated/pad_port1_repeated and the sticks; the input ring pad_queue_port0_held-pad_queue_port1_repeated; the h:m:s clock pad_play_time_frames/pad_play_time_seconds/pad_play_time_minutes/pad_play_time_hours (stops at 100 h, pad_play_time_stopped); actuators pad_actuators; then the hook pad_vblank_hook. Last comes a development-only `pollhost()` (`break 1024`, a host-debugger trap). It needs mode_disc_mode != -1 and pad_vblank_polls_host set. Only pad_set_host_polling can set pad_vblank_polls_host (pad_start_controllers clears it), and nothing calls or references pad_set_host_polling | input readers, including the battle pause, which spins on the queue |
-| BIOS pad driver | InitPAD on the two 0x22-byte receive buffers, StartPAD and ChangeClearPAD(0) at boot (main2.c pad_start_controllers); StopPAD in the soft reset | in the BIOS's interrupt handling (psx-spx: at vertical blank; not in the recovered code) | pad_receive_buffers[0]/[1] (pad.h PadBuffer: status 0, or 0xFF without a controller; type; buttons; stick or mouse bytes) | the vblank handler's read (pad_read_controllers). Main-thread readers: the pad check pad_get_controller_kind, which the battle and menu missing-pad loops spin on without VSync; the button read pad_read_buttons in the movie player (movie.c func_800737EC, func_800747AC, func_800769A4) and in battle's development pad read battle_read_pads; the field's mouse pointer (field_motion.c field_pointer_read/field_pointer_move_by_mouse, type 0x12 on port 1); the unreferenced dump pad_print_state |
+| BIOS pad driver | InitPAD on the two 0x22-byte receive buffers, StartPAD and ChangeClearPAD(0) at boot (main2.c pad_start_controllers); StopPAD in the soft reset | in the BIOS's interrupt handling (psx-spx: at vertical blank; not in the recovered code) | pad_receive_buffers[0]/[1] (pad.h PadBuffer: status 0, or 0xFF without a controller; type; buttons; stick or mouse bytes) | the vblank handler's read (pad_read_controllers). Main-thread readers: the pad check pad_get_controller_kind, which the battle and menu missing-pad loops spin on without VSync; the button read pad_read_buttons in the movie player (movie.c movie_mode_main, movie_mode_read_menu_input, movie_mode_read_playback_input) and in battle's development pad read battle_read_pads; the field's mouse pointer (field_motion.c field_pointer_read/field_pointer_move_by_mouse, type 0x12 on port 1); the unreferenced dump pad_print_state |
 | vblank hook pad_vblank_hook | the arena (menu5.c arena_mode_task: arena_mode_vblank_hook); cleared by the dispatcher | every vertical blank | on odd blanks while arena_mode_glow_in_vblank is set, arena_glow_step steps the arena's glow field, calling rand(): interrupt-time draws from the gameplay RNG | — |
 | sound tick sound_run_tick (sound.c) | sound_start_driver: OpenEvent(0xF2000002), SetRCnt(0xF2000002, 0x44E8, 0x1000) (system clock / 8: 4233600 / 17640 = 240 Hz) | 240 Hz; returns at once while flag 0x40 is set (every pause loop sets it with the voices silenced, sound_silence_voices, and sound_restore_voices clears it) | sound_tick_count (tick count, stamps effect voices); every other tick the master and CD fades (sound_volumes), every tick the sequence slides and beats (sound_playing_seq_list, which links the effect channels too), staged voice registers written through sound_spu_registers (sound_flush_voice_registers, sound_key_off_voices), SpuSetCommonAttr, SPU IRQ re-enable (sound_pending_irq_enable) | the effect-end waits (below); the main loop reads the same driver state between ticks |
 | SPU transfer done sound_complete_transfer | sound_start_driver, each transfer (sound_start_next_transfer) | DMA completion | runs the transfer's callback with flag 4, clears flag 0x10, starts the next of the eight queued transfers (sound_transfer_ring_read_index/sound_transfer_ring_write_index), which sets 0x10 again | the transfer waits (below) |
 | SPU IRQ sound_dispatch_spu_irq | sound_start_driver | SPU IRQ | sound_unread_spu_irq_count++, hook sound_spu_irq_hook | — |
 | CD sync/ready/data | resident cd_start_read (one file), cd_read_file_list (file list), stream_start_image_load (image stream), cd_seek_or_pause_if_idle, then the callbacks themselves (cd_reads_and_streams.c); world map worldmap_stream_start_disc_list, worldmap_stream_on_command_done (installs worldmap_stream_on_data_ready) | CD interrupts | the read state machine cd_command_state, retry reason cd_retry_reason, counters cd_stat_command_ok_count/cd_stat_command_fail_count, sector copies (CdGetSector), stream-ring slots stream_slots; image streams load VRAM strips from the callback (stream_load_image_strip) | cd_sync_reads(0) and `while (cd_get_pending_read_count() ...)` busy-wait without VSync; world-map worldmap_stream_step |
-| MDEC output movie_slice_decoded (mdec.c) | DecDCToutCallback in movie_start (mdec.c:194), removed by movie_stop (mdec.c:454) | MDEC DMA completion | LoadImage of each slice, StCdInterrupt, the decoder state, then the frame callback: field field_movie_frame_callback (field_movie_frame frame number, display block field_movie_decoded_block/field_current_draw_block, isrgb24) or movie func_800768D8 | movie loops; field scripts and the staff roll key off field_movie_frame |
+| MDEC output movie_slice_decoded (mdec.c) | DecDCToutCallback in movie_start (mdec.c:194), removed by movie_stop (mdec.c:454) | MDEC DMA completion | LoadImage of each slice, StCdInterrupt, the decoder state, then the frame callback: field field_movie_frame_callback (field_movie_frame frame number, display block field_movie_decoded_block/field_current_draw_block, isrgb24) or movie movie_mode_on_frame_loaded | movie loops; field scripts and the staff roll key off field_movie_frame |
 | DrawSync callback | field field_record_gpu_time (development kits only, field_monitor_absent == 0), arena arena_debug_draw_sync_callback | GPU idle | VSync(1) stamps (profiling) | — |
 | card events 0xF4000001 | slot39 menu_card_restart_access | BIOS card driver | event state | menu_card_wait_event (TestEvent spin) |
 
@@ -631,7 +631,7 @@ callback never leaves these:
     439) and battle_load_wave_bank_5 (battle_frame.c:1207). It spins in battle
     battle_install_command_file_parts (battle_settle.c:547), trapping to the debugger on each
     pass on a development kit, and in movie.c's unreferenced host-PC loaders
-    func_800753B8 and func_8007548C.
+    movie_mode_load_host_effect_wave_banks and movie_mode_load_host_battle_music.
   - ovl2615 func_801E6D6C polls the flag once per task step.
   - Outside a transfer callback, sound_queue_transfer spins while at least six of the
     eight ring entries are queued (sound_is_transfer_ring_full).
@@ -681,7 +681,7 @@ Development only:
 | entry boot_entry_point (handwritten) | PS-X EXE entry (header.c); soft reset calls it | .data and .sdata as they are | resident BSS 0x800592BC-0x8006FAEC (GameData included) | start-up that clears only BSS-backed state; restarting the process is not equivalent |
 | stack reset boot_reset_stack_and_gp (handwritten) | entry fallthrough; the dispatcher (call at 80019bd0) | resident globals, kept heap blocks, VRAM, SPU RAM | every stack frame: sp = fp = 0x80200000, gp = _gp | transfer to a host-owned dispatch loop (longjmp or fiber reset) that unwinds no host frames |
 | dispatcher mode_dispatch(error) (main.c) | error: GET_RA, then the error screen. Otherwise ResetGraph, clear DrawSync and vblank hooks, VSync(2), restart the heap, clear the mode's BSS (boot_clear_bss_range), decode its cached overlay to 0x8006FAF0 (text_unpack_lzss), FlushCache, reset the stack, clear the pad queue, run `entry()`, then call itself | the mode row (in a register across the reset), resident data | the previous mode's stack, BSS, heap blocks not marked keep and its overlay .data (re-decoded on each entry) | top-level loop; overlay .data reset from a pristine copy and BSS cleared on each entry |
-| never-returning dispatch sites | boot boot_main, kernel menu mode_run_kernel_menu, field field_exit_to_mode, battle mode_run_battle, world map worldmap_main, arena arena_mode_exit (from inside the arena coroutine), menu menu_state_run_screen (debug start), movie func_800737EC (2 sites), heap errors 0x82 (heap_alloc) and 0x83 (heap_free, heap_delay_free) | — | the caller's whole stack | a non-local mode exit (12 sites); the heap errors are fatal, as is the PC file server's error screen (cd_draw_error_indicator, endless at the fourth failed try of a host file call; development only, Disc and files) |
+| never-returning dispatch sites | boot boot_main, kernel menu mode_run_kernel_menu, field field_exit_to_mode, battle mode_run_battle, world map worldmap_main, arena arena_mode_exit (from inside the arena coroutine), menu menu_state_run_screen (debug start), movie movie_mode_main (2 sites), heap errors 0x82 (heap_alloc) and 0x83 (heap_free, heap_delay_free) | — | the caller's whole stack | a non-local mode exit (12 sites); the heap errors are fatal, as is the PC file server's error screen (cd_draw_error_indicator, endless at the fourth failed try of a host file call; development only, Disc and files) |
 | fatal error mode_show_fatal_error | dispatcher with a nonzero error (the heap's 0x82 and 0x83) | — | — | on retail (mode_disc_mode = -1) it clears VRAM red and loops forever; the 384x240 report only runs on the PC host |
 | soft reset boot_check_soft_reset -> boot_restart | held 0x90C, checked at 18 call sites in 14 files; field extended event e2 (field_event_soft_reset), unused by shipped scripts | resident .data/.sdata | with interrupts enabled (SwExitCriticalSection) stops the graphics (ResetGraph), the CD (cd_shutdown_disc_access, CdFlush), sound (sound_stop_driver), SPU, the vblank hook, the DrawSync and VSync callbacks and the pads, disables interrupts (SwEnterCriticalSection), then calls the entry, which clears BSS | reset that keeps modified initialised data; the sound mode returns to Stereo |
 | arena coroutine arena_task_resume (resume) / arena_task_yield (yield) (handwritten, menu) | task made by arena_task_create on a 0x1000-byte stack at 0x801FE000 with gp from GetGp, resumed once per frame (menu6.c arena_mode_main); yields at 7 sites (menu2.c 1, menu5.c 6); arena_task_caller_stack/arena_current_task hold the suspended caller; arena_task_save_scheduler/arena_task_restore_scheduler (nested schedulers) are unreferenced | the task's registers and stack | — | a fiber nested in the game fiber (Asyncify, JSPI or stack switching in WebAssembly); snapshots only outside the task or at its yields |
@@ -708,7 +708,7 @@ state and an image at one address can be any of its tenants:
 | Address | Images | Loaded by |
 | --- | --- | --- |
 | 0x801C5000 | slot39, ovl2598, ovl2600, ovl2601, ovl2602 (directory 0x10, file kind + 5) | field field_run_menu (reads the file), world map worldmap_suspend_open_map (decodes its packed copy worldmap_packed_menu_overlay), resident menu_state_run_screen on the debug start; menu_state_run_screen then calls the tenant's entry: menu_main, func_801CB0A8, func_801CBDBC, func_801CCD28 or func_801CE024 |
-| 0x801D3000 | mdec movie library | movie func_800737EC (directory 0x18 file 1); field field_movie_play copies directory 4 file 0xA9 there |
+| 0x801D3000 | mdec movie library | movie movie_mode_main (directory 0x18 file 1); field field_movie_play copies directory 4 file 0xA9 there |
 | 0x801DC000 | ovl2143 (actor module) | field field_layer_load (directory 4 file 0x6B9); for the gear shop field_run_menu reads directory 0x10 file 0xC to 0x1DC000, the slot's KUSEG mirror; resident menu_state_run_screen on the debug start. The world map's directory 0x24 holds a third copy (file 0x28) that no world map code reads; its worldmap_draw_distant_landmark, which would draw actor 0, has no caller |
 | 0x801DE000 | ovl2596 (battle results) | battle battle_main |
 | 0x801E0000 | ovl2606 (debug battle selector) | battle battle_main |
@@ -753,7 +753,7 @@ isrgb24 0. The game changes only what the table lists.
 | battle | 320x224 at y 0 and 224 | (0, 10, 256, 216) | 0 | 0 | isbg from the stage (func_801E7210) | 1 + catch-up | battle_flow.c battle_init_display_buffers |
 | Battling arena | 640x218 for scenes (menu2.c arena_winner_open_screen), 320x218 for its menus (arena_winner_close_screen, menu5.c arena_mode_task), at y 0 and 256 | (0, 10, 256, 218) | 0 | 0; the interlaced branch for heights above 256 (both buffers at y 0, screen (0, 16, 256, 212)) has no caller | dtd 1, isbg 0, tpage GetTPage(0, 2, 0x280, 0); DR_AREA/DR_OFFSET per layer | 1 or 2 | menu7.c arena_display_set_disp_envs, arena_display_set_draw_envs |
 | in-game menu | 320x224 at y 0 and 224 | (0, 10, 256, 216) | 0 | 0 | dtd 1, isbg 0; the saved screen is copied into the back buffer every frame | 1 | mode_battle_and_menu.c menu_state_init_display, menu_state_init_buffer; menu_framework.c menu_run_frame |
-| movie | 320x240 at y 0 and 240 | (0, 10, 256, 216) | 1 while a movie plays | 0 | isbg 1 (0 during playback) | 1 | movie.c func_800737EC, func_800763BC; its CD-ROM and sector monitors (debug) use 640x240 |
+| movie | 320x240 at y 0 and 240 | (0, 10, 256, 216) | 1 while a movie plays | 0 | isbg 1 (0 during playback) | 1 | movie.c movie_mode_main, movie_mode_play_requested_movie; its CD-ROM and sector monitors (debug) use 640x240 |
 
 The screen window values are PsyQ display units; rendering-behavior.md
 observed the field, battle and menus showing lines 10-225 of a 320x240 frame.

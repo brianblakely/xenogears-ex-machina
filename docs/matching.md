@@ -190,8 +190,8 @@ splat had emitted DecDCTvlcSize2 (801d5030, VLC_C.OBJ) as raw words after its
 object's leading decode-call limit, so its `lui`/`addiu` of that word carried none.
 The PsyQ signatures place each VLC object's `text_0` word before
 DecDCTvlcSize/DecDCTvlcSize2 at +4; mdec.symbols.txt makes the two words data labels
-(D_801D4C94, D_801D502C, counted `sdk` bytes outside every function) and
-DecDCTvlcSize2 a function, relocated against D_801D502C.
+(libpress_vlc_max_size, libpress_vlc2_max_size, counted `sdk` bytes outside every function) and
+DecDCTvlcSize2 a function, relocated against libpress_vlc2_max_size.
 
 After every target links, `all-verify` runs `make -C decomp cross-image`
 (`tools/cross_image.py` over every configuration). Each name a target's linker

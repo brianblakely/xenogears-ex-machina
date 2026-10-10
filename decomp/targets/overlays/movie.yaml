@@ -63,6 +63,6 @@ segments:
   # The packer completes its last group of eight tokens with zero literals
   # and records the padded length (movie.mk), so the decoded image ends
   # seven zero bytes after the data, inside the BSS: the counters
-  # D_80076F3C[16], which the resident's mode table clears from 0x80076f38
+  # movie_mode_cd_check_class_counts[16], which the resident's mode table clears from 0x80076f38
   # with a pre-increment loop.
   - [0x7453]

@@ -59,8 +59,14 @@ movie_stall_count = 0x801E89F4; // size:0x4
 // DecDCTvlc/DecDCTvlc2 load, data inside .text. As data labels they split
 // the text without being disassembled, so the code after each one keeps its
 // %hi/%lo relocations against it.
-D_801D4C94 = 0x801D4C94; // type:u32
-D_801D502C = 0x801D502C; // type:u32
+libpress_vlc_max_size = 0x801D4C94; // type:u32
+libpress_vlc2_max_size = 0x801D502C; // type:u32
+// The nine words DecDCTvlc and DecDCTvlc2 keep their decoding state in
+// between calls (each stores up to +0x20), right after each one's code: data
+// labels too, each with an INCLUDE_ASM of its own in mdec.c (splat drops a
+// label there with the words after it).
+libpress_vlc_saved_state = 0x801D5008; // type:u32
+libpress_vlc2_saved_state = 0x801D539C; // type:u32
 DecDCTvlcBuild = 0x801D444C; // type:func
 DecDCTGetEnv = 0x801D456C; // type:func
 DecDCTPutEnv = 0x801D45F8; // type:func
@@ -100,3 +106,60 @@ mem2mem = 0x801D66C4; // type:func
 dma_execute = 0x801D66F8; // type:func
 // Names tools/names.py gave these addresses (docs/matching.md, Names).
 libcd_uses_libds_callbacks = 0x800564CC;
+libpress_reset_bad_option_format = 0x801D3000;
+libpress_in_sync_name = 0x801D301C;
+libpress_out_sync_name = 0x801D302C;
+libpress_timeout_dma_format = 0x801D303C;
+libpress_timeout_fifo_format = 0x801D3064;
+libpress_timeout_format = 0x801D309C;
+libcd_dma_status_error_format = 0x801D30AC;
+libpress_packed_vlc_table = 0x801D68D0;
+libpress_set_iq_command = 0x801D76E0;
+libpress_default_iq_luma = 0x801D76E4;
+libpress_default_iq_chroma = 0x801D7724;
+libpress_set_scale_command = 0x801D7764;
+libpress_dct_matrix = 0x801D7768;
+libpress_dma0_address_register = 0x801D77F0;
+libpress_dma0_block_register = 0x801D77F4;
+libpress_dma0_control_register = 0x801D77F8;
+libpress_dma1_address_register = 0x801D77FC;
+libpress_dma1_block_register = 0x801D7800;
+libpress_dma1_control_register = 0x801D7804;
+libpress_mdec_data_register = 0x801D7820;
+libpress_mdec_status_register = 0x801D7824;
+libpress_dma_control_register = 0x801D7828;
+libpress_vlc_ac_table = 0x801D802C;
+libpress_vlc_table_end = 0x801E802C;
+libpress_encspu_state = 0x801E882C;
+libcd_stream_cd_status_register = 0x801E8850;
+libcd_stream_cd_register_table = 0x801E885C;
+libcd_interrupt_cd_status_register = 0x801E88C0;
+libcd_interrupt_cd_parameter_register = 0x801E88C8;
+libcd_interrupt_cd_request_register = 0x801E88CC;
+libcd_interrupt_cdrom_delay_register = 0x801E88D0;
+libcd_interrupt_com_delay_register = 0x801E88D4;
+libcd_dma_execute_control_register = 0x801E88D8;
+libcd_dma_execute_interrupt_register = 0x801E88DC;
+libcd_interrupt_dma1_control_register = 0x801E88E0;
+libcd_interrupt_dma3_control_register = 0x801E88F0;
+libcd_stream_last_result = 0x801E8908;
+libcd_stream_current_slot = 0x801E89B4;
+libcd_stream_frame_number = 0x801E89B8;
+libcd_stream_sector_offset = 0x801E89BC;
+libcd_stream_rgb24 = 0x801E89C4;
+libcd_stream_ready_callback = 0x801E89C8;
+libcd_stream_end_callback = 0x801E89CC;
+libcd_stream_reset_channel = 0x801E89D8;
+libcd_stream_start_frame = 0x801E89DC;
+libcd_stream_channel = 0x801E89E4;
+libcd_stream_callback_busy = 0x801E89E8;
+libcd_stream_linear_sector_count = 0x801E89F0;
+libcd_stream_ring_write_index = 0x801E89F8;
+libcd_stream_frame_start_index = 0x801E89FC;
+libcd_stream_ring_read_index = 0x801E8A00;
+libcd_stream_linear_mode = 0x801E8A04;
+libcd_stream_end_frame = 0x801E8A08;
+libcd_stream_mask = 0x801E8A0C;
+libcd_stream_linear_buffer = 0x801E8A10;
+libcd_stream_ring_address = 0x801E8A14;
+libcd_stream_ring_size = 0x801E8A18;

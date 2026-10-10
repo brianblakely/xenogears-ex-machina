@@ -52,7 +52,7 @@ its name as `type:label` in the symbol file: a plain name would split it out
 into a file no INCLUDE_ASM includes, a label stays in that file (its users
 are that unit's). One directly after the function's end is refused: splat
 drops a label there with the words after it, so it takes a `type:u32` line
-and an INCLUDE_ASM of its own (mdec's D_801D4C94). An SDK member (in an sdk
+and an INCLUDE_ASM of its own (mdec's libpress_vlc_max_size). An SDK member (in an sdk
 range of the classification, or defined in the generated assembly the units
 include and named only by SDK functions: the libraries' strings and jump
 tables) keeps its PsyQ name or takes its library's prefix. An alias given
@@ -1418,7 +1418,7 @@ def check_symbol(
         plan.errors.append(
             f"{where}: {row.old} follows the function's end in {entry.file}: splat drops a"
             " label there with the words after it; name it by a type:u32 line and an"
-            " INCLUDE_ASM of its own after the function's (as mdec's D_801D4C94)"
+            " INCLUDE_ASM of its own after the function's (as mdec's libpress_vlc_max_size)"
         )
         return
     if entry.binding == f"alias:{new}":

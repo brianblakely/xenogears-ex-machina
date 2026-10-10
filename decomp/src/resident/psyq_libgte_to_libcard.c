@@ -254,7 +254,7 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/psyq_libgte_to_libcard", _p
 
 /* 8004B514: the start of the words _patch_gte copies into the kernel, up to
  * VSync (the exception patch code below); a data label of its own, as mdec's
- * D_801D4C94, since the words follow _patch_gte's end. */
+ * libpress_vlc_max_size, since the words follow _patch_gte's end. */
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/psyq_libgte_to_libcard", libgte_patch_code);
 
 /* 8004B51C */

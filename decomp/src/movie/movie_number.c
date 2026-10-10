@@ -5,4 +5,4 @@
  * phase). */
 #include "common.h"
 
-const s32 D_8006FAF0 = 8;
+const s32 movie_mode_overlay_number = 8; /* 8006FAF0 */

@@ -31,12 +31,12 @@ s16 sound_sync_transfer(s32 wait);  /* sound transfer busy */
 
 extern u16 cd_movie_request_last_frame; /* the requested movie's last frame */
 
-/* The movie request bytes 8004fe44-8004fe47 (cd.h's cd_movie_request_kind-cd_movie_request_unskippable):
- * kind (bit 7: last frame from 80062514), index, the next mode, and whether
- * buttons do not end the movie. This unit indexes them as one array, loading
+/* The movie request bytes 8004fe44-8004fe47 (cd.h's cd_movie_request_kind to
+ * cd_movie_request_unskippable): kind (bit 7: last frame from 80062514),
+ * index, the next mode, and whether buttons do not end the movie. This unit indexes them as one array, loading
  * [0] through the array's address in a register, which the four scalars do
  * not reproduce. */
-extern u8 D_8004FE44_request[4] __asm__("cd_movie_request_kind");
+extern u8 cd_movie_request[4] __asm__("cd_movie_request_kind");
 
 /* One display buffer: its drawing and display environments, the ordering
  * table and the two frame primitives drawn over it. */
@@ -58,48 +58,48 @@ typedef struct MovieSector {
 } MovieSector;
 
 /* Movie playback. */
-extern const RECT D_800704E0; /* the screen area */
+extern const RECT movie_mode_screen_area; /* the screen area */
 
-s32 func_80076488(void);
-void func_800768D8(u16 frame, u16 x, u16 y);
-void func_800769A4(void);
-void func_80076CA4(void);
+s32 movie_mode_play_movie(void);
+void movie_mode_on_frame_loaded(u16 frame, u16 x, u16 y);
+void movie_mode_read_playback_input(void);
+void movie_mode_aim_camera(void);
 
 /* CD-ROM monitor. */
-void func_80071BA0(void);
-void func_80070DCC(void);
-void func_80071C34(s32 command);
-s32 func_80074AF0(void);
+void movie_mode_start_cd_check_sector_read(void);
+void movie_mode_poll_cd_check_input(void);
+void movie_mode_start_cd_check_command(s32 command);
+s32 movie_mode_next_random(void);
 
 /* FAT check. */
-void func_80072F98(u_long *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h);
-void func_800734B8(u_long *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h);
-s32 func_800747AC(s32 first, s32 last, s32 *button);
-void func_80074B58(void);
-u32 func_80075D4C(s32 index);
-extern const char D_8007042C[]; /* "\n" */
-extern const char D_80070430[]; /* "\nPUSH CIRCLE BUTTON TO MENU." */
+void movie_mode_draw_backdrop(u_long *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h);
+void movie_mode_draw_menu_frame(u_long *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h);
+s32 movie_mode_read_menu_input(s32 first, s32 last, s32 *button);
+void movie_mode_clear_vram(void);
+u32 movie_mode_get_file_index_size(s32 index);
+extern const char movie_mode_monitor_newline_text[]; /* "\n" */
+extern const char movie_mode_push_circle_text[]; /* "\nPUSH CIRCLE BUTTON TO MENU." */
 
 /* CD-ROM monitor screen. */
-extern const char D_8006FC70[], D_8006FC8C[], D_8006FC98[], D_8006FCA4[], D_8006FCAC[];
-extern const char D_8006FCB4[], D_8006FCD8[];
-void func_800712C4(void);
+extern const char movie_mode_cd_check_file_data_format[], movie_mode_cd_check_cancel_format[], movie_mode_cd_check_class_format[], movie_mode_cd_check_now_label[], movie_mode_cd_check_before_label[];
+extern const char movie_mode_cd_check_total_format[], movie_mode_push_start_text[];
+void movie_mode_verify_cd_check_read(void);
 
 /* Mode entry and menu. */
-void func_80072D84(POLY_G4 *poly0, POLY_G4 *poly1, s32 x, s32 y, s32 w, s32 h);
-void func_80073328(POLY_G4 *poly0, POLY_G4 *poly1, s32 x, s32 y, s32 w, s32 h);
-s32 func_80074BA4(s32 frame);
-s32 func_8007519C(void);
-void func_80075534(void);
-void func_80075D8C(void);
-void func_8007625C(void);
-s32 func_800763BC(u8 keep);
-void func_800704E8(void);
-void func_80072480(void);
+void movie_mode_init_backdrop(POLY_G4 *poly0, POLY_G4 *poly1, s32 x, s32 y, s32 w, s32 h);
+void movie_mode_init_menu_frame(POLY_G4 *poly0, POLY_G4 *poly1, s32 x, s32 y, s32 w, s32 h);
+s32 movie_mode_find_frame_sector(s32 frame);
+s32 movie_mode_find_last_frame(void);
+void movie_mode_run_cd_monitor(void);
+void movie_mode_run_fat_check(void);
+void movie_mode_run_movie_test(void);
+s32 movie_mode_play_requested_movie(u8 keep);
+void movie_mode_run_cd_check(void);
+void movie_mode_run_disc_change_test(void);
 
 /* Disc change test. */
-extern const char D_8006FC6C[]; /* "\n", first used by the menu (800704E8) */
-void func_8007293C(void);
-s32 func_80072A08(s32 disc, s32 state, s32 *error, s32 *done);
+extern const char movie_mode_newline_text[]; /* "\n", first used by the menu (800704E8) */
+void movie_mode_stop_disc_read(void);
+s32 movie_mode_step_disc_change_test(s32 disc, s32 state, s32 *error, s32 *done);
 
 #endif
