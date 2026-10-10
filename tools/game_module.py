@@ -20,6 +20,8 @@ original memory layout:
   unprototyped call) goes through an adapter that truncates or extends integer
   arguments, passes 0 for a missing one and drops an extra one; adapters.txt
   lists each, since a missing argument read a leftover register on the PS1.
+  Where that matters, the port defines `xem_adapt_<function>` with the call's
+  types, written from the matched code, and it replaces the generated adapter.
 
 The rewritten units are compiled with -O2, linked by wasm-ld and instrumented
 by wasm-opt --asyncify at the yield imports. The decomp itself is not
@@ -54,9 +56,9 @@ STACK_BYTES = 0x100000
 FINGERPRINT_BYTES = 32
 # Host imports that suspend the game or abandon its stack (asyncify unwinds
 # through them).
-YIELD_IMPORTS = ["xem.yield", "xem.restart"]
+YIELD_IMPORTS = ["xem.yield", "xem.restart", "xem.task_switch"]
 # The module's exports, defined in port/.
-EXPORTS = ["xem_run", "xem_call", "xem_interrupt", "xem_unwind_area"]
+EXPORTS = ["xem_run", "xem_task_run", "xem_call", "xem_interrupt", "xem_unwind_area"]
 HOST_PREFIX = "xem_host_"
 # Game functions the port wraps (decomp/port): the game's definition is
 # renamed xem_original_<name> and the port's definition calls it.
@@ -74,6 +76,10 @@ CFLAGS = [
     # `return;` in a non-void function (docs/later-phases.md, Portability
     # hazards: values left in $v0) compiles; its callers are audited separately.
     "-Wno-return-mismatch",
+    # Uninitialized locals (docs/later-phases.md, Portability hazards) read 0 on
+    # every host rather than whatever the optimizer makes of them; address 0 is
+    # memory like any other.
+    "-ftrivial-auto-var-init=zero", "-fno-delete-null-pointer-checks",
 ]
 
 WASM_LAYOUT = 'target datalayout = "e-m:e-p:32:32-p10:8:8-p20:8:8-i64:64-i128:128-n32:64-S128-ni:1:10:20"'
@@ -380,8 +386,9 @@ def zero_of(ty):
     return "null" if ty == "ptr" else ("0.0" if ty in ("float", "double") else "0")
 
 
-def adapter_body(target, call_ret, call_params, def_ret, def_ret_attrs, def_params):
-    """Body lines calling `target` (defined with def types) from params %a0.. of call types."""
+def adapter_body(target, call_ret, call_params, def_ret, def_ret_attrs, def_params, variadic=False):
+    """Body lines calling `target` (defined with def types) from params %a0.. of call types.
+    A variadic target gets its fixed arguments and an empty variable list."""
     lines, args = [], []
     for i, (ty, attrs) in enumerate(def_params):
         if i < len(call_params):
@@ -391,7 +398,8 @@ def adapter_body(target, call_ret, call_params, def_ret, def_ret_attrs, def_para
             args.append(f"{ty} {' '.join(attrs) + ' ' if attrs else ''}{value}")
         else:
             args.append(f"{ty} {zero_of(ty)}")
-    call = f"call {def_ret} {target}({', '.join(args)})"
+    fnty = f"{def_ret} ({''.join(t + ', ' for t, _ in def_params)}...) " if variadic else ""
+    call = f"call {fnty or def_ret + ' '}{target}({', '.join(args)})"
     if def_ret == "void":
         lines.append(f"  {call}")
         lines.append("  ret void" if call_ret == "void" else f"  ret {call_ret} {zero_of(call_ret)}")
@@ -428,6 +436,10 @@ class Rewriter:
         self.adapters = {}     # adapter name -> (target token, call ret, call params, def head)
         self.missing_data = []
         self.unit_decls = {}   # unit -> declarations of the dispatchers and adapters it calls
+        # Port-written adapters: xem_adapt_<function> in port/.
+        self.port_adapters = {name[len("xem_adapt_"):]: head for unit in units if unit.image == "port"
+                              for name, head in unit.defined.items() if name.startswith("xem_adapt_")}
+        self.overridden = set()
         self.asm_map = {}
         for path in sorted(PORT_DIR.glob("asm_map*.json")):
             for entry in json.loads(path.read_text()):
@@ -607,6 +619,16 @@ class Rewriter:
             if call_key == signature_key(def_ret, def_params) and len(arg_types) == len(def_params) \
                     and all(a[0] == p[0] for a, p in zip(arg_types, def_params)) and ret == def_ret:
                 return [line]
+            # The port's own adapter (xem_adapt_<name>, written from the matched
+            # code) replaces the generated one: it supplies what the original
+            # left in registers.
+            override = self.port_adapters.get(name)
+            if override is not None:
+                _, otoken, oret, _, oparams, _, _ = override
+                if signature_key(oret, oparams) == call_key:
+                    self.overridden.add(name)
+                    self.declare(unit, f"xem_adapt_{name}", ret, [t for t, _ in arg_types])
+                    return [f'{lhs}{call_kw}{ret_attrs}{ret} @"xem_adapt_{name}"({args_text}){tail}']
             adapter = f"xem.adapt.{name}.{key_name(call_key)}"
             self.adapters[adapter] = (callee if tunit is unit else "@" + name, ret, arg_types, head, unit.source)
             self.declare(unit, adapter, ret, [t for t, _ in arg_types])
@@ -714,12 +736,13 @@ def generate_dispatchers(rewriter, addresses):
             continue
         unit, head = found
         _, token, def_ret, def_ret_attrs, def_params, variadic, _ = head
-        if variadic:
-            continue
         name = name_of(token)
         target = "@" + (rewriter.mangle(unit, name) if ":" in key else name)
+        # A variadic function stored as a fixed-parameter pointer (the heap
+        # report hook holds console_printf and console_report_printf) is
+        # called with its fixed parameters.
         candidates.setdefault(signature_key(def_ret, def_params), []).append(
-            (address, length, fingerprint, target, def_ret, def_ret_attrs, def_params, image))
+            (address, length, fingerprint, target, def_ret, def_ret_attrs, def_params, image, variadic))
     sharers = {}
     for items in candidates.values():
         for item in items:
@@ -739,7 +762,8 @@ def generate_dispatchers(rewriter, addresses):
         lines.append(f"  switch i32 %addr, label %miss [ {cases} ]")
         for address, group in by_address.items():
             lines.append(f"at{address:x}:")
-            for index, (_, length, fingerprint, target, def_ret, def_ret_attrs, def_params, image) in enumerate(group):
+            for index, (_, length, fingerprint, target, def_ret, def_ret_attrs, def_params, image, variadic) \
+                    in enumerate(group):
                 if index:
                     lines.append(f"c{address:x}_{index}:")
                 label = f"b{address:x}_{index}"
@@ -753,14 +777,14 @@ def generate_dispatchers(rewriter, addresses):
                     lines.append(f"  %t{label} = icmp ne i32 %m{label}, 0")
                     lines.append(f"  br i1 %t{label}, label %{label}, label %{nxt}")
                 lines.append(f"{label}:")
-                lines += adapter_body(target, ret, call_params, def_ret, def_ret_attrs, def_params)
+                lines += adapter_body(target, ret, call_params, def_ret, def_ret_attrs, def_params, variadic)
         lines.append("miss:")
         lines.append(f"  call void @xem_bad_call(i32 %addr, i32 {number})")
         lines.append("  unreachable")
         lines.append("}")
         lines.append("")
         for item in items:
-            declared.add((item[3], item[4], tuple(t for t, _ in item[6])))
+            declared.add((item[3], item[4], tuple(t for t, _ in item[6]) + (("...",) if item[8] else ())))
     report = []
     for adapter, (target, call_ret, call_params, head, source) in sorted(rewriter.adapters.items()):
         _, token, def_ret, def_ret_attrs, def_params, _, _ = head
@@ -780,10 +804,18 @@ def generate_dispatchers(rewriter, addresses):
 # ---------------------------------------------------------------- build
 
 def compile_ir(source, out_ll):
-    """Compile one unit to IR; the compiler's errors, or None."""
-    result = subprocess.run([os.environ["XEM_CLANG"], *CFLAGS, "-S", "-emit-llvm", "-O0", "-Xclang",
-                             "-disable-O0-optnone", "-ferror-limit=0", str(source), "-o", str(out_ll)],
-                            cwd=ROOT, capture_output=True, text=True)
+    """Compile one unit to IR; the compiler's errors, or None. A unit clang
+    rejects is retried with its target's headers first (game_schema.headers_first)."""
+    def attempt(path):
+        return subprocess.run([os.environ["XEM_CLANG"], *CFLAGS, "-S", "-emit-llvm", "-O0", "-Xclang",
+                               "-disable-O0-optnone", "-ferror-limit=0", str(path), "-o", str(out_ll)],
+                              cwd=ROOT, capture_output=True, text=True)
+
+    result = attempt(source)
+    if result.returncode and "decomp/src/" in str(source):
+        retry = attempt(game_schema.headers_first(os.path.relpath(source, ROOT), out_ll.parent))
+        if retry.returncode == 0:
+            return None
     return result.stderr if result.returncode else None
 
 
@@ -816,17 +848,21 @@ def build(args):
 
     with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
         errors = list(pool.map(lambda s: compile_ir(ROOT / s[0], ll_of(s[0])), sources))
-    failed = [(s, e) for s, e in zip(sources, errors) if e]
+    # The commons units (`*_common.c`, `commons/`) only define data, which the
+    # module keeps at its original addresses anyway; one clang rejects is noted.
+    data_only = [s for s, e in zip(sources, errors) if e and (s[0].endswith("_common.c") or "/commons/" in s[0])]
+    if data_only:
+        print(f"data-only units not compiled (their data stays at its original addresses): "
+              f"{', '.join(s[0] for s in data_only)}")
+    failed = [(s, e) for s, e in zip(sources, errors) if e and s not in data_only]
     if failed:
         log = out / "compile-errors.txt"
         log.write_text("".join(f"== {s[0]}\n{e}" for s, e in failed))
         print(f"{len(failed)} units failed to compile: {log}")
         if not args.stubs:
             raise SystemExit(1)
-        all_sources = sources
-        sources = [s for s, e in zip(sources, errors) if not e]
-    else:
-        all_sources = sources
+    all_sources = sources
+    sources = [s for s, e in zip(sources, errors) if not e]
     units = [Unit(source, ll_of(source), image) for source, image in sources]
     rewriter = Rewriter(addresses, units)
     rewritten = {}
@@ -857,6 +893,7 @@ def build(args):
     print(f"{count} globals, {type_count} types: {schema}")
     dispatch, adapters = generate_dispatchers(rewriter, addresses)
     (out / "ir" / "dispatch.ll").write_text(dispatch)
+    adapters += [f"port adapter: xem_adapt_{name}" for name in sorted(rewriter.overridden)]
     (out / "adapters.txt").write_text("\n".join(adapters) + "\n")
     ll_files.append(out / "ir" / "dispatch.ll")
     objects = [out / "obj" / (p.stem + ".o") for p in ll_files]
