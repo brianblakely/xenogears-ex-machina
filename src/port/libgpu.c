@@ -172,8 +172,33 @@ int _cwb(u_long *words, u_long count) {
     return 0;
 }
 
+/* Whether DMA reaches `p`: not when it is on the port's stack (within 1 MB
+ * above this frame), which is outside PS1 RAM where the original's stack was.
+ * A packet or image a caller keeps on its stack goes through the CPU's GP0
+ * and GPUREAD ports instead, which leaves the same VRAM. */
+static s32 xem_gpu_dma_reaches(void *p) {
+    u8 here;
+
+    return (u32)(unsigned long)p - (u32)(unsigned long)&here >= 0x100000;
+}
+
 /* A DMA2 linked list (an ordering table or a packet chain) to GP0. */
 int _cwc(u_long *list, u_long unused) {
+    u_long *word;
+    u32 count;
+
+    if (!xem_gpu_dma_reaches(list)) {
+        /* The first node by the CPU; the rest of the list is in RAM. */
+        count = *list >> 24;
+        xem_host_gpu_gp1(0x04000000);
+        for (word = list + 1; count-- != 0; word++) {
+            xem_host_gpu_gp0(*word);
+        }
+        if (*list & 0x800000) {
+            return 0;
+        }
+        list = (u_long *)(0x80000000 | (*list & 0xFFFFFF));
+    }
     xem_host_gpu_gp1(0x04000002);
     xem_host_gpu_dma((u32)list, 0, 0x01000401);
     return 0;
@@ -266,6 +291,10 @@ int _dws(RECT *rect, u_long pixels) {
     xem_host_gpu_gp0(0xA0000000);
     xem_host_gpu_gp0(*(u_long *)&rect->x);
     xem_host_gpu_gp0(*(u_long *)&rect->w);
+    if (!xem_gpu_dma_reaches(p)) {
+        rest = words;
+        blocks = 0;
+    }
     while (rest-- > 0) {
         xem_host_gpu_gp0(*p++);
     }
@@ -296,6 +325,10 @@ int _drs(RECT *rect, u_long pixels) {
     xem_host_gpu_gp0(*(u_long *)&rect->w);
     while (!(xem_host_gpu_status() & 0x08000000)) {
         xem_wait(XEM_YIELD_DRAWSYNC);
+    }
+    if (!xem_gpu_dma_reaches(p)) {
+        rest = words;
+        blocks = 0;
     }
     while (rest-- > 0) {
         *p++ = xem_host_gpu_read();

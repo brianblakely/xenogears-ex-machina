@@ -79,14 +79,29 @@ impl Gpu {
         self.gpu.vram_rgba8()
     }
 
+    /// VRAM's 1024x512 halfwords, as the GPU holds them.
+    pub fn vram(&self) -> &[u16] {
+        self.gpu.vram()
+    }
+
     /// DMA2's CHCR (bit 24 while a transfer runs).
     pub fn dma_control(&self) -> u32 {
         self.chcr
     }
 
-    /// Start DMA2 as a CHCR write does: move the words now, end at `now`'s
-    /// next wait. Bits 9-10 select block (1) or linked-list (2) mode, bit 0
-    /// the direction (1: memory to GPU).
+    /// End the transfer if the clock reached its end: the channel is free and
+    /// raises its interrupt.
+    fn end_due_transfer(&mut self, context: &mut Context<'_>) {
+        if self.completion.is_some_and(|at| at <= context.now) {
+            self.completion = None;
+            self.chcr &= !CHCR_BUSY;
+            context.raised.push((IRQ_DMA, DMA_CHANNEL));
+        }
+    }
+
+    /// Start DMA2 as a CHCR write does: move the words now and end at `now`
+    /// (the next CHCR read or wait sees it ended). Bits 9-10 select block (1)
+    /// or linked-list (2) mode, bit 0 the direction (1: memory to GPU).
     fn start_dma(&mut self, memory: &mut dyn GameMemory, now: u64) -> Result<(), String> {
         if self.chcr & CHCR_BUSY == 0 {
             self.completion = None;
@@ -128,7 +143,14 @@ impl Device for Gpu {
             "gp1" => self.gpu.write_gp1(arg(0)),
             "read" => return Action::Return(self.gpu.read_gpuread()),
             "status" => return Action::Return(self.gpu.gpustat()),
-            "dma_control" => return Action::Return(self.chcr),
+            // A transfer whose end the clock reached has ended, whether or
+            // not its interrupt was taken yet: CHCR reads it free (as the
+            // SDK's busy checks see on the console, where a block transfer
+            // ends long before the CPU frees what it read).
+            "dma_control" => {
+                self.end_due_transfer(context);
+                return Action::Return(self.chcr);
+            }
             "dma" => {
                 self.madr = arg(0) & 0xFF_FFFF;
                 self.bcr = arg(1);
@@ -149,11 +171,7 @@ impl Device for Gpu {
 
     /// The transfer ended: the channel is free and raises its interrupt.
     fn run_events(&mut self, context: &mut Context<'_>) {
-        if self.completion.is_some_and(|at| at <= context.now) {
-            self.completion = None;
-            self.chcr &= !CHCR_BUSY;
-            context.raised.push((IRQ_DMA, DMA_CHANNEL));
-        }
+        self.end_due_transfer(context);
     }
 
     /// The device state for a snapshot: DMA2 and xem-gpu's own snapshot.
@@ -284,19 +302,20 @@ mod tests {
     }
 
     #[test]
-    fn linked_list_draws_at_once_and_ends_at_the_wait() {
+    fn linked_list_draws_at_once_and_ends_by_the_next_status_read() {
         let mut h = Harness::new();
         let ot = ordering_table(&mut h.ram);
         assert_eq!(h.call("gp1", &[0x0400_0002]), Action::Return(0));
         assert_eq!(h.call("dma", &[ot, 0, 0x0100_0401]), Action::Return(0));
-        // Drawn at once, busy until the wait.
+        // Drawn at once; the transfer has ended when the game next reads CHCR,
+        // which raises its interrupt once.
         assert_eq!(h.pixel(0x20, 0x10), 0x001F);
         assert_eq!(h.pixel(0x5F, 0x17), 0x001F);
         assert_eq!(h.pixel(0x60, 0x10), 0);
-        assert_eq!(h.call("dma_control", &[]), Action::Return(0x0100_0401));
         assert!(h.raised.is_empty());
-        h.wait();
         assert_eq!(h.call("dma_control", &[]), Action::Return(0x0000_0401));
+        assert_eq!(h.raised, vec![(IRQ_DMA, DMA_CHANNEL)]);
+        h.wait();
         assert_eq!(h.raised, vec![(IRQ_DMA, DMA_CHANNEL)]);
         assert_eq!(h.gpu.next_event(), None);
     }
