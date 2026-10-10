@@ -76,7 +76,7 @@ from matching_coverage import (  # noqa: E402
     extent,
     map_sections,
     read_elf,
-    script_assignments,
+    script_assigned_names,
     script_names,
 )
 from matching_diff import config  # noqa: E402
@@ -122,8 +122,7 @@ def load(path: Path) -> Target:
     bss_end = int(values["BSS_END"], 0) if values.get("BSS_END") else None
     lo, _hi, end = extent(sections, bss_end)
     # splat's main script names segment and section bounds, not objects.
-    bounds = {name for name, _expression, _provide
-              in script_assignments(Path(values["LINKER_SCRIPT"]))}
+    bounds = script_assigned_names(Path(values["LINKER_SCRIPT"]))
     value, names, exported, at, starts = {}, {}, set(), {}, set()
     for symbol in symbols:
         if symbol.name and symbol.section and symbol.kind not in (STT_SECTION, STT_FILE):

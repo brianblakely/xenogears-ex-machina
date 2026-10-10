@@ -740,7 +740,12 @@ class MatchingTests(unittest.TestCase):
         (self.root / "views.ld").write_text(
             "/* Views of the table. */\nview = table + 8;\nchained = view + 4;\n"
             "fixed = 0x8001000C;\n")
-        (self.root / "other.ld").write_text("elsewhere = table + 0x10000;\n")
+        # Assignments count wherever they stand: a second one on a line and
+        # those in HIDDEN() or PROVIDE_HIDDEN(), which a script uses here.
+        (self.root / "other.ld").write_text(
+            "elsewhere = table + 0x10000; second = 0x80010010;\n"
+            "HIDDEN(hidden = 0x80010014);\n"
+            "PROVIDE_HIDDEN(provided = 0x80010018); uses = provided + 0x10000;\n")
         settings = ["LINKER_EXTRA=auto/undefined_syms_auto.txt views.ld other.ld"]
         self.cover_linked_fixture("image.bin", settings, sections=(".data",))
         tool = Path(__file__).resolve().parents[1] / "tools/matching_coverage.py"
@@ -765,7 +770,24 @@ class MatchingTests(unittest.TestCase):
             " inside the target's own uninitialized data (80010028-80010040): late",
             "error: image.bin.elf: 1 name(s) that views.ld assigns lie inside the target's own"
             " image (80010000-80010028): fixed",
+            "error: image.bin.elf: 3 name(s) that other.ld assigns lie inside the target's own"
+            " image (80010000-80010028): second, hidden, provided",
         ])
+        # A fragment statement the parser does not read fails the check.
+        for text, message in (
+            ("x += 4;\n", "bad.ld:1: not a statement the checks read"),
+            ("EXTERN(x)\n", "bad.ld:1: not a statement the checks read"),
+            ("HIDDEN(x = 1;\n", "bad.ld:1: not a statement the checks read"),
+            ("x = 1\ny = 2;\n", "bad.ld:1: not a statement the checks read"),
+            ("x = 1;\nINCLUDE other.ld\n", "bad.ld:2: not a statement the checks read"),
+            ('x = 1;\nASSERT(x, "a)")\nASSERT(x, "b)"\n',
+             "bad.ld:3: an ASSERT without its closing parenthesis"),
+        ):
+            with self.subTest(text):
+                (self.root / "bad.ld").write_text(text)
+                failed = check("--script", "bad.ld", "--script-symbols", "strict")
+                self.assertNotEqual(failed.returncode, 0)
+                self.assertIn(message, failed.stderr)
         warned = check("--script-symbols", "warn", "--views", "views.ld", "--bss-end",
                        "0x80010040")
         self.assertEqual(warned.returncode, 0)

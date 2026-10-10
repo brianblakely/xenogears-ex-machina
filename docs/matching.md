@@ -146,7 +146,10 @@ link's `__exe_file_size` (`PAD_TO_SYMBOL`), the sectors its header declares.
 `verify` then fails on each name a linker script defines (a used `PROVIDE`, a `.data.ld`
 or any other `LINKER_EXTRA` fragment) inside the target's own image or uninitialized
 data (`matching_coverage.py --script-symbols`): an address copied from the original
-where the link should place an object, which the exact comparison cannot see move. Names
+where the link should place an object, which the exact comparison cannot see move. It
+reads each assignment wherever it stands, also a second one on a line and one inside
+`HIDDEN()`, `PROVIDE()` or `PROVIDE_HIDDEN()`, and fails on any fragment statement that is
+neither such an assignment nor an `ASSERT`, so no name the link reads escapes it. Names
 of other images (the `*.resident.ld` fragments, an overlay's addresses in the resident,
 also the `_gp` an overlay's splat script sets) lie outside and pass; splat's main script
 is not among the checked scripts, so the resident's `_gp` comes from its checked
