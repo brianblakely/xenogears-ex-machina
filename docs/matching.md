@@ -81,7 +81,7 @@ original linker placed each unit's section at a 4-byte boundary, so all tables
 of one unit share one phase mod 8. `tools/jump_table_phases.py` (after
 `all-verify`) finds every original switch dispatch in the 25 distinct images:
 45 odd-length tables followed by another table are padded with one zero word
-that keeps the phase, 20 of them at 4 mod 8 (resident 800188f4 -> 8001892c
+that keeps the phase, 18 of them at 4 mod 8 (resident 800188f4 -> 8001892c
 within 8002a68c; slot39 801c50fc -> 801c512c; battle 80070514 -> 8007053c);
 the phase changes 34 times, never within one function; no odd-length table
 abuts a same-phase table. Ignoring the directive or taking it as 4-byte would
@@ -374,7 +374,7 @@ it separately.
 
 Callers pass the types of the shared prototypes. Those in `psyq/` follow PsyQ 4.6's
 headers (`.local/original-sdk-evidence/headers/Psy-Q_46.zip`, the only release at
-hand; the game's own is not identified) for 164 of the 181 functions both declare,
+hand; the game's own is not identified) for 170 of the 187 functions both declare,
 compared by cc1 `-aux-info`. The other 17 differ in parameter types (memmove and
 memchr take `void *` where MEMORY.H has `unsigned char *` and memchr's byte is an
 `int`, SpuReadDecodedData takes a `void *`, DrawSyncCallback and VSyncCallback a
