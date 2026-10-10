@@ -2,9 +2,11 @@
 
 Phase 1 starts with [matching](matching.md), not a repository-wide document audit.
 Symbols are named by their owner's prefix (one per overlay, one per resident
-subsystem) and what they do ([Names](matching.md#names)): grep a prefix to find a
-module's code, or an original address (`git grep -i -n 80031bdc decomp`) to find the
-definition whose comment gives it.
+subsystem) and what they do ([Names](matching.md#names)): grep a whole name to find
+its definition and users (a prefix also matches longer prefixes, and headers follow
+the original units, not the prefixes), or an original address (`git grep -i -n
+80031bdc decomp`) to find the definition whose comment gives it, narrowed to the
+image's directory where overlays share load addresses.
 
 ```sh
 nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra#matching
