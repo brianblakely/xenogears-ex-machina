@@ -1,0 +1,12 @@
+{
+  "name": "xem-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:xr": "node xr/tests/run.mjs"
+  },
+  "devDependencies": {
+    "iwer": "2.5.0",
+    "playwright-core": "1.64.0"
+  }
+}

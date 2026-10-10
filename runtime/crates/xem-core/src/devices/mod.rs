@@ -35,6 +35,13 @@ pub trait Device {
     /// Game code ran (a step or an interrupt): pick up what it wrote to
     /// memory-mapped registers.
     fn sync(&mut self, _context: &mut Context<'_>) {}
+    /// The device's whole state, for snapshots (deterministic bytes).
+    fn save(&self) -> Vec<u8> {
+        Vec::new()
+    }
+    fn load(&mut self, _state: &[u8]) -> Result<(), String> {
+        Ok(())
+    }
 }
 
 /// An import the device does not know.

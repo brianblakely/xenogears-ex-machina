@@ -92,6 +92,7 @@ original address.
 | `xem-render` | the wgpu renderer for flat, stereo and XR views |
 | `xem-ui` | the Slint settings panel as a custom platform rendered into a texture on the shared wgpu device |
 | `xem-xr` | the OpenXR adapter |
+| `xem-webxr` | the WebXR adapter: immersive sessions, views, raw input and WebGL2 layer submission through wgpu |
 | `xem-desktop`, `xem-headless`, `xem-android`, `xem-web` | hosts |
 | `xem-settings` | typed application settings: validation, acknowledgement, change notification, JSON persistence |
 
@@ -115,3 +116,136 @@ From `runtime/` in `nix develop path:./nix/runtime`:
 - Android, in `#android`: `cargo ndk -t arm64-v8a -P 26 build -p xem-ui -p xem-render`
   (Slint compiles its FemtoVG module out on Android, so `xem-ui` takes the
   renderer from `i-slint-renderer-femtovg` there)
+
+## WebXR adapter
+
+`xem-webxr` (wasm32 only) and its test page `runtime/web/xr/` render the
+`xem-render` test scene in stereo through WebXR. The page is separate from the
+main browser host so the adapter can move into it unchanged.
+
+- **Device ownership.** The page canvas gets one WebGL2 context (no alpha,
+  antialiasing, depth or stencil; `xrCompatible` whenever `navigator.xr`
+  exists). wgpu's GLES adapter is created over it
+  (`wgpu_hal::gles::Adapter::new_external`, `create_adapter_from_hal`), and the
+  flat canvas surface resolves to the same context, so flat and immersive
+  frames share one device and queue.
+- **Submission (WebGL2).** The layer framebuffer of the session's
+  `XRWebGLLayer` (antialias, depth, stencil and alpha off) is wrapped as a wgpu
+  texture (`create_texture_from_hal`: `ExternalFramebuffer` for the opaque XR
+  framebuffer, `DefaultRenderbuffer` when the layer reports `null`, as IWER's
+  does), rebuilt only when the framebuffer or its size changes. The scene
+  renders into a wgpu-owned eye buffer with its own depth (wgpu-hal would
+  otherwise attach a depth texture to the opaque framebuffer, which WebXR
+  forbids); one compositor pass then copies it into the layer on the GPU,
+  flipped vertically (the GLES backend stores images top row first, WebXR
+  reads framebuffers bottom row first) and sRGB-encoded in the shader (the
+  layer is RGBA8 without sRGB writes). Nothing passes through the CPU.
+- **Views.** Each view is drawn with the inverse of `XRView.transform`,
+  `projectionMatrix` remapped from OpenGL depth (-1..1) to wgpu's (0..1), and
+  its layer viewport (converted from WebXR's bottom-left origin).
+- **Scheduling.** While a session runs, only `session.requestAnimationFrame`
+  schedules frames; window animation frames drive the flat canvas and stop.
+  One scene clock serves both; pausing freezes it while poses, views and
+  rendering continue.
+- **Session.** Enter VR requests `immersive-vr` synchronously in the click
+  (user activation), requiring `local-floor` and offering `bounded-floor` and
+  `hand-tracking`; granted features are read from `session.enabledFeatures`.
+  Exit VR (or Escape) calls `session.end()`; any `end` event returns to the
+  flat canvas. Missing `navigator.xr`, unsupported `immersive-vr` and refused
+  requests leave the flat page usable.
+- **Input.** Input sources are raw state: handedness, target-ray mode,
+  profiles, target-ray and grip poses, gamepad buttons and axes, and the 25
+  hand joints (pose and radius) when the session tracks hands, plus counts of
+  select/squeeze/inputsourceschange events, visibility and reference-space
+  resets. Nothing interprets gestures.
+- **WebGPU.** `XRGPUBinding` is detected and reported (Chromium 152 exposes it
+  only with `--enable-blink-features=WebXRGPUBinding`) but not used: no
+  available runtime can test WebGPU layer submission, so WebGL2 is the
+  submission path for now.
+
+`runtime/.cargo/config.toml` sets `--cfg=web_sys_unstable_apis` for wasm32,
+which web-sys's WebXR bindings require. In `nix develop path:./nix/runtime`:
+
+- dependencies: `npm ci` in `runtime/web` (iwer 2.5.0, playwright-core 1.64.0)
+- build: `runtime/web/xr/build.sh` (wasm-bindgen output in `runtime/web/xr/pkg`)
+- tests: `node runtime/web/xr/tests/run.mjs [scenario...]` drives Chromium
+  (`$XEM_CHROMIUM`, SwiftShader WebGL2) with IWER emulating a Quest 3, its
+  controllers and hands; screenshots go to `build/xr-test/`
+- by hand: serve `runtime/web` from localhost or HTTPS and open `/xr/`
+  (`/xr/?emulate=quest3` installs IWER)
+
+Emulation covers entry by click, granted features, session-scheduled frames,
+two views with distinct view matrices, the projection conversion (including
+asymmetric frusta), upright rendering into both the canvas framebuffer and an
+opaque framebuffer (a test shim stands in for the headset compositor), head
+pose, controller and hand input, visibility and recentering, paused head
+tracking, exit by the app and by the runtime, re-entry, denial and missing
+support. It cannot cover a headset browser's WebGL/WebXR driver, compositor
+and display timing, which hand and gaze inputs it exposes, WebGPU XR layers or
+performance; those need Quest Browser on a Horizon headset.
+
+## OpenXR adapter
+
+`xem-xr` runs an immersive OpenXR session on the host's one wgpu device. The
+runtime creates the Vulkan instance and device (XR_KHR_vulkan_enable2) from the
+create infos wgpu-hal would use, and wgpu-hal/wgpu wrap and own them, so the
+scene, the compositor and the Slint panel render on the device and queue the
+session is bound to. The crate documentation records the ownership and
+synchronisation rules; in short:
+
+- wgpu's single queue is the session's queue. A swapchain image is rendered only
+  between acquire+wait and release, the work is submitted before
+  `xrReleaseSwapchainImage`, and the image is explicitly returned to
+  `COLOR_ATTACHMENT_OPTIMAL` (wgpu `transition_resources`) first. All frame,
+  swapchain and queue calls stay on the session's thread.
+- The eyes use one swapchain of two array layers: one acquire/wait/release and
+  one image index per frame for both eyes, the layout Horizon's compositor and
+  multiview rendering use, and per-layer views for today's per-eye passes.
+- The Slint panel is a quad layer with its own swapchain: the runtime samples it
+  directly (sharper text than resampling it through the eye images), and it is
+  updated by a GPU copy only when Slint redraws; other frames resubmit the last
+  released image.
+- `xrWaitFrame` paces the loop; views, head and input are located at the
+  predicted display time. Session states drive begin/end (READY, STOPPING) and
+  exit (EXITING, LOSS_PENDING, instance loss).
+- Controller actions (aim and grip poses, trigger, select, menu) are bound for
+  `khr/simple_controller` and `oculus/touch_controller`. Hand joints
+  (XR_EXT_hand_tracking) and eye gaze (XR_EXT_eye_gaze_interaction) are enabled
+  only when the runtime offers the extension and the system reports support;
+  `Capabilities` reports both. Input is raw state; gestures are interpreted
+  elsewhere.
+- On Android the loader is initialised with XR_KHR_loader_init_android and the
+  instance created with XR_KHR_android_create_instance (`Platform` is
+  `openxr::AndroidPlatformInfo` there).
+
+The `xem-xr-demo` example renders the test scene in stereo with the settings
+panel as a quad layer. Its scene clock stands in for the simulation:
+`--paused` freezes it while head tracking and rendering continue. It prints one
+`key=value` line per frame (predicted display time and period, session state,
+head and eye poses, swapchain operations in order, submitted layers, input) and
+`--capture DIR` saves the eye layers and the panel image, read back from the
+swapchains before release.
+
+`runtime/scripts/xr-smoke.sh` (in `nix develop path:./nix/runtime`) runs it
+against Monado 25.1 without a display or headset: `monado-service` with
+`XRT_COMPOSITOR_NULL=1` (null compositor), `SIMULATED_ENABLE=1
+SIMULATED_ROTATE=1` (the simulated HMD turns continuously),
+`SIMULATED_LEFT/RIGHT=simple` (simulated simple controllers) and `XRT_NO_STDIN=1`,
+in a private short `XDG_RUNTIME_DIR` (the IPC socket path must fit a
+`sockaddr_un`); the demo finds it through `XR_RUNTIME_JSON=$XEM_MONADO_RUNTIME`.
+Both use lavapipe unless `VK_ICD_FILENAMES` is set (`runtime/scripts/xem-gpu-host
+runtime/scripts/xr-smoke.sh` runs both on the host NVIDIA driver). It checks the state order
+READY, SYNCHRONIZED, VISIBLE, FOCUSED, STOPPING, EXITING after an exit request;
+strictly increasing predicted display times; two distinct eye poses; projection
+and quad layers on every rendered frame; acquire, wait, submit, release order;
+changing head poses; and, with `--paused`, a constant simulation time.
+`XEM_XR_COMPOSITED=1` adds a run under Monado's real compositor presenting to a
+headless weston and saves a weston screenshot of the runtime's composition.
+
+Monado cannot show what only a headset can: the Horizon OS runtime and its
+Vulkan driver, Quest frame pacing and reprojection, real head and controller
+tracking, hand tracking and eye gaze (Monado's simulated devices offer neither),
+Android lifecycle and permissions (eye tracking needs
+`com.oculus.permission.EYE_TRACKING`), and the APK packaging with Meta's loader.
+`xem-xr` cross-compiles for `aarch64-linux-android`
+(`cargo ndk -t arm64-v8a -P 26 build -p xem-xr` in `#android`).
