@@ -607,7 +607,7 @@ void func_800B1F6C(entry, packets, ot, unused, bias, blend)
             }
             break;
         case 0x8:
-            opz = func_8004A83C(v0, v1, v2, v3, (long *)&((POLY_F4 *)prims)->x0, (long *)&((POLY_F4 *)prims)->x1,
+            opz = libgte_project_front_quad(v0, v1, v2, v3, (long *)&((POLY_F4 *)prims)->x0, (long *)&((POLY_F4 *)prims)->x1,
                                 (long *)&((POLY_F4 *)prims)->x2, (long *)&((POLY_F4 *)prims)->x3, &p, &otz, &flag);
             if (opz > 0) {
                 otz = (otz >> D_80050100) + bias;
@@ -623,7 +623,7 @@ void func_800B1F6C(entry, packets, ot, unused, bias, blend)
             }
             break;
         case 0x18:
-            opz = func_8004A83C(v0, v1, v2, v3, (long *)&((POLY_G4 *)prims)->x0, (long *)&((POLY_G4 *)prims)->x1,
+            opz = libgte_project_front_quad(v0, v1, v2, v3, (long *)&((POLY_G4 *)prims)->x0, (long *)&((POLY_G4 *)prims)->x1,
                                 (long *)&((POLY_G4 *)prims)->x2, (long *)&((POLY_G4 *)prims)->x3, &p, &otz, &flag);
             if (opz > 0) {
                 otz = (otz >> D_80050100) + bias;
@@ -639,7 +639,7 @@ void func_800B1F6C(entry, packets, ot, unused, bias, blend)
             }
             break;
         case 0xC:
-            opz = func_8004A83C(v0, v1, v2, v3, (long *)&((POLY_FT4 *)prims)->x0, (long *)&((POLY_FT4 *)prims)->x1,
+            opz = libgte_project_front_quad(v0, v1, v2, v3, (long *)&((POLY_FT4 *)prims)->x0, (long *)&((POLY_FT4 *)prims)->x1,
                                 (long *)&((POLY_FT4 *)prims)->x2, (long *)&((POLY_FT4 *)prims)->x3, &p, &otz, &flag);
             if (opz > 0) {
                 otz = (otz >> D_80050100) + bias;
@@ -652,7 +652,7 @@ void func_800B1F6C(entry, packets, ot, unused, bias, blend)
             }
             break;
         case 0x1C:
-            opz = func_8004A83C(v0, v1, v2, v3, (long *)&((POLY_GT4 *)prims)->x0, (long *)&((POLY_GT4 *)prims)->x1,
+            opz = libgte_project_front_quad(v0, v1, v2, v3, (long *)&((POLY_GT4 *)prims)->x0, (long *)&((POLY_GT4 *)prims)->x1,
                                 (long *)&((POLY_GT4 *)prims)->x2, (long *)&((POLY_GT4 *)prims)->x3, &p, &otz, &flag);
             if (opz > 0) {
                 otz = (otz >> D_80050100) + bias;

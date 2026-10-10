@@ -230,7 +230,7 @@ u32 func_801DC5C0(ModelPart *parts, s32 scale) {
     part->world.t[1] = part->translation[1];
     part->world.t[2] = part->translation[2];
     if (part->yxz) {
-        func_8004A92C(&part->rotation, &part->world);
+        RotMatrixYXZ(&part->rotation, &part->world);
     } else {
         func_8003F738(&part->rotation, &part->world);
     }
@@ -258,7 +258,7 @@ u32 func_801DC5C0(ModelPart *parts, s32 scale) {
         parts++;
         if (parts->rotate) {
             if (parts->yxz) {
-                func_8004A92C(&parts->rotation, &parts->transform);
+                RotMatrixYXZ(&parts->rotation, &parts->transform);
                 parts->rotate = 0;
             } else {
                 func_8003F738(&parts->rotation, &parts->transform);
@@ -303,7 +303,7 @@ u32 func_801DC848(ModelPart *parts, s32 scale) {
     part->world.t[1] = part->translation[1];
     part->world.t[2] = part->translation[2];
     if (part->yxz) {
-        func_8004A92C(&part->rotation, &part->world);
+        RotMatrixYXZ(&part->rotation, &part->world);
     } else {
         func_8003F738(&part->rotation, &part->world);
     }
@@ -340,7 +340,7 @@ u32 func_801DC848(ModelPart *parts, s32 scale) {
         if (parts->rotate) {
             scratch = (MATRIX *)0x1F800000;
             if (parts->yxz) {
-                func_8004A92C(&parts->rotation, &parts->transform);
+                RotMatrixYXZ(&parts->rotation, &parts->transform);
             } else {
                 func_8003F738(&parts->rotation, &parts->transform);
             }
@@ -540,7 +540,7 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
         scratch->m[2][0] = 0;
         scratch->m[2][1] = 0;
         scratch->m[2][2] = shade;
-        func_80049ACC(placed, scratch);
+        libgte_multiply_matrix_in_place(placed, scratch);
         SetRotMatrix(placed);
         SetTransMatrix(placed);
         v.vx = actor->size[1];
@@ -4120,7 +4120,7 @@ s16 func_801E66BC(VECTOR *dir, void *a, void *b, s32 divisor) {
     s32 dot;
     s32 length;
 
-    func_8004A480(a, b, &v);
+    OuterProduct12(a, b, &v);
     dot = v.vx * dir->vx + v.vy * dir->vy + v.vz * dir->vz;
     length = SquareRoot0(v.vx * v.vx + v.vy * v.vy + v.vz * v.vz) + 1;
     return (((dot * 16) / length) << 8) / divisor;

@@ -446,7 +446,7 @@ void func_80084580(void) {
         D_8009C620[i].angle.vx = placement->ax;
         D_8009C620[i].angle.vy = placement->ay;
         D_8009C620[i].angle.vz = placement->az;
-        func_8004A92C(&D_8009C620[i].angle, &D_8009C620[i].matrix);
+        RotMatrixYXZ(&D_8009C620[i].angle, &D_8009C620[i].matrix);
         D_8009C620[i].def = &((SpriteDefTable *)D_8009CD48)->defs[D_8009C620[i].unk2];
         func_8002CB54(D_8009C620[i].def, &D_8009C620[i].prims, &D_8009C620[i].prims2, &D_8009C620[i]);
         func_8002C8CC(D_8009C620[i].def, D_8009C620[i].prims, 1);
@@ -643,17 +643,17 @@ s32 func_80084DB8(s32 probe, s32 index) {
         gte_RotTrans(&vertices[face->corner[2]], &scratch->p[2], &flag);
         scratch->u.test.edge[0] = (scratch->p[0].vz << 16) | (scratch->p[0].vx & 0xFFFF);
         scratch->u.test.edge[1] = (scratch->p[1].vz << 16) | (scratch->p[1].vx & 0xFFFF);
-        if (func_8004A70C(scratch->u.test.edge[0], scratch->u.test.edge[1], scratch->u.test.point) > 0) {
+        if (NormalClip(scratch->u.test.edge[0], scratch->u.test.edge[1], scratch->u.test.point) > 0) {
             continue;
         }
         scratch->u.test.edge[0] = (scratch->p[1].vz << 16) | (scratch->p[1].vx & 0xFFFF);
         scratch->u.test.edge[1] = (scratch->p[2].vz << 16) | (scratch->p[2].vx & 0xFFFF);
-        if (func_8004A70C(scratch->u.test.edge[0], scratch->u.test.edge[1], scratch->u.test.point) > 0) {
+        if (NormalClip(scratch->u.test.edge[0], scratch->u.test.edge[1], scratch->u.test.point) > 0) {
             continue;
         }
         scratch->u.test.edge[0] = (scratch->p[2].vz << 16) | (scratch->p[2].vx & 0xFFFF);
         scratch->u.test.edge[1] = (scratch->p[0].vz << 16) | (scratch->p[0].vx & 0xFFFF);
-        if (func_8004A70C(scratch->u.test.edge[0], scratch->u.test.edge[1], scratch->u.test.point) > 0) {
+        if (NormalClip(scratch->u.test.edge[0], scratch->u.test.edge[1], scratch->u.test.point) > 0) {
             continue;
         }
         D_8009D718[hits] = i;
@@ -706,9 +706,9 @@ void func_80085158(VECTOR *position, VECTOR *offset, VECTOR *normal, u16 index, 
     corners = ((Mesh *)object->unk44)->faces;
     corners += face;
     vertices = ((Mesh *)object->unk44)->vertices;
-    func_8004A6DC(&vertices[corners->corner[0]], &FACE_SCRATCH->p[0], &flag);
-    func_8004A6DC(&vertices[corners->corner[1]], &FACE_SCRATCH->p[1], &flag);
-    func_8004A6DC(&vertices[corners->corner[2]], &FACE_SCRATCH->p[2], &flag);
+    RotTrans(&vertices[corners->corner[0]], &FACE_SCRATCH->p[0], &flag);
+    RotTrans(&vertices[corners->corner[1]], &FACE_SCRATCH->p[1], &flag);
+    RotTrans(&vertices[corners->corner[2]], &FACE_SCRATCH->p[2], &flag);
     edge1->vx -= FACE_SCRATCH->p[0].vx;
     edge1->vy -= FACE_SCRATCH->p[0].vy;
     edge1->vz -= FACE_SCRATCH->p[0].vz;
@@ -753,9 +753,9 @@ s32 func_80085418(VECTOR *position, s32 height, u16 index, u16 face) {
     corners = ((Mesh *)object->unk44)->faces;
     corners += face;
     vertices = ((Mesh *)object->unk44)->vertices;
-    func_8004A6DC(&vertices[corners->corner[0]], &FACE_SCRATCH->p[0], &flag);
-    func_8004A6DC(&vertices[corners->corner[1]], &FACE_SCRATCH->p[1], &flag);
-    func_8004A6DC(&vertices[corners->corner[2]], &FACE_SCRATCH->p[2], &flag);
+    RotTrans(&vertices[corners->corner[0]], &FACE_SCRATCH->p[0], &flag);
+    RotTrans(&vertices[corners->corner[1]], &FACE_SCRATCH->p[1], &flag);
+    RotTrans(&vertices[corners->corner[2]], &FACE_SCRATCH->p[2], &flag);
     origin = &FACE_SCRATCH->p[0];
     edge1->vx -= origin->vx;
     edge1->vy -= origin->vy;
@@ -832,19 +832,19 @@ s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face) {
     FACE_TEST_SCRATCH->u.test.edge[1] = (FACE_TEST_SCRATCH->p[1].vz << 16) | (u16)p1->vx;
     FACE_TEST_SCRATCH->u.test.point =
         (FACE_TEST_SCRATCH->u.test.delta.vz << 16) | (u16)FACE_TEST_SCRATCH->u.test.delta.vx;
-    if (func_8004A70C(FACE_TEST_SCRATCH->u.test.edge[0], FACE_TEST_SCRATCH->u.test.edge[1],
+    if (NormalClip(FACE_TEST_SCRATCH->u.test.edge[0], FACE_TEST_SCRATCH->u.test.edge[1],
                       FACE_TEST_SCRATCH->u.test.point) > 0) {
         sides |= 1;
     }
     FACE_TEST_SCRATCH->u.test.edge[0] = (FACE_TEST_SCRATCH->p[1].vz << 16) | (u16)p1->vx;
     FACE_TEST_SCRATCH->u.test.edge[1] = (FACE_TEST_SCRATCH->p[2].vz << 16) | (u16)p2->vx;
-    if (func_8004A70C(FACE_TEST_SCRATCH->u.test.edge[0], FACE_TEST_SCRATCH->u.test.edge[1],
+    if (NormalClip(FACE_TEST_SCRATCH->u.test.edge[0], FACE_TEST_SCRATCH->u.test.edge[1],
                       FACE_TEST_SCRATCH->u.test.point) > 0) {
         sides |= 2;
     }
     FACE_TEST_SCRATCH->u.test.edge[0] = (FACE_TEST_SCRATCH->p[2].vz << 16) | (u16)p2->vx;
     FACE_TEST_SCRATCH->u.test.edge[1] = (FACE_TEST_SCRATCH->p[0].vz << 16) | (u16)scratch->p[0].vx;
-    if (func_8004A70C(FACE_TEST_SCRATCH->u.test.edge[0], FACE_TEST_SCRATCH->u.test.edge[1],
+    if (NormalClip(FACE_TEST_SCRATCH->u.test.edge[0], FACE_TEST_SCRATCH->u.test.edge[1],
                       FACE_TEST_SCRATCH->u.test.point) > 0) {
         sides |= 4;
     }
@@ -853,7 +853,7 @@ s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face) {
         FACE_TEST_SCRATCH->u.test.edge[0] = ((object->position.vz - (from->vz >> 12)) << 16) |
                                             (((from->vx >> 12) - object->position.vx) & 0xFFFF);
         FACE_TEST_SCRATCH->u.test.edge[1] = (FACE_TEST_SCRATCH->p[1].vz << 16) | (u16)p1->vx;
-        if (func_8004A70C(FACE_TEST_SCRATCH->u.test.edge[0], FACE_TEST_SCRATCH->u.test.edge[1],
+        if (NormalClip(FACE_TEST_SCRATCH->u.test.edge[0], FACE_TEST_SCRATCH->u.test.edge[1],
                           FACE_TEST_SCRATCH->u.test.point) != 0) {
             sides = 1;
         }
@@ -862,7 +862,7 @@ s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face) {
         FACE_TEST_SCRATCH->u.test.edge[0] = ((object->position.vz - (from->vz >> 12)) << 16) |
                                             (((from->vx >> 12) - object->position.vx) & 0xFFFF);
         FACE_TEST_SCRATCH->u.test.edge[1] = (FACE_TEST_SCRATCH->p[0].vz << 16) | (u16)scratch->p[0].vx;
-        if (func_8004A70C(FACE_TEST_SCRATCH->u.test.edge[0], FACE_TEST_SCRATCH->u.test.edge[1],
+        if (NormalClip(FACE_TEST_SCRATCH->u.test.edge[0], FACE_TEST_SCRATCH->u.test.edge[1],
                           FACE_TEST_SCRATCH->u.test.point) != 0) {
             sides = 4;
         }
@@ -871,7 +871,7 @@ s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face) {
         FACE_TEST_SCRATCH->u.test.edge[0] = ((object->position.vz - (from->vz >> 12)) << 16) |
                                             (((from->vx >> 12) - object->position.vx) & 0xFFFF);
         FACE_TEST_SCRATCH->u.test.edge[1] = (FACE_TEST_SCRATCH->p[2].vz << 16) | (u16)p2->vx;
-        if (func_8004A70C(FACE_TEST_SCRATCH->u.test.edge[0], FACE_TEST_SCRATCH->u.test.edge[1],
+        if (NormalClip(FACE_TEST_SCRATCH->u.test.edge[0], FACE_TEST_SCRATCH->u.test.edge[1],
                           FACE_TEST_SCRATCH->u.test.point) != 0) {
             sides = 2;
         }
@@ -1282,9 +1282,9 @@ void func_80086798(void) {
     scratch->local = D_8009A180;
     scratch->screen = scratch->local;
     scratch->turn = scratch->local;
-    func_8004AE4C((D_8009BD38.vx + 0x400) / 8, &scratch->local);
-    func_8004AFEC(-D_8009BD38.vy, &scratch->screen);
-    func_8004AFEC(D_8009BD38.vy, &scratch->turn);
+    RotMatrixX((D_8009BD38.vx + 0x400) / 8, &scratch->local);
+    RotMatrixY(-D_8009BD38.vy, &scratch->screen);
+    RotMatrixY(D_8009BD38.vy, &scratch->turn);
     MulMatrix0(&scratch->local, &scratch->screen, &scratch->work);
     MulMatrix0(&scratch->turn, &scratch->work, &scratch->local);
     scratch->edge[0] = (func_8003F8CC(D_8009BD38.vy - 0x169) << 16) | (func_8003F8B0(D_8009BD38.vy - 0x169) & 0xFFFF);
@@ -1647,12 +1647,12 @@ void func_80087B84(VECTOR *direction, VECTOR *up, MATRIX *m) {
     up->vz = 0;
     up->vx = 0;
     up->vy = 0x1000;
-    func_8004A480(up, direction, up);
+    OuterProduct12(up, direction, up);
     VectorNormal(up, up);
     m->m[0][0] = up->vx;
     m->m[0][1] = up->vy;
     m->m[0][2] = up->vz;
-    func_8004A480(direction, up, up);
+    OuterProduct12(direction, up, up);
     VectorNormal(up, up);
     m->m[1][0] = up->vx;
     m->m[1][1] = up->vy;
@@ -1660,7 +1660,7 @@ void func_80087B84(VECTOR *direction, VECTOR *up, MATRIX *m) {
     m->m[2][0] = direction->vx;
     m->m[2][1] = direction->vy;
     m->m[2][2] = direction->vz;
-    func_8004A8EC(m, m);
+    libgte_transpose_matrix(m, m);
 }
 
 /* Compiled-out debug trace of the ferry's resumed position. */
@@ -1833,7 +1833,7 @@ s32 func_80087FD0(s32 index) {
             scratch->wake.vx = object->position.vx;
             scratch->wake.vy = object->position.vy;
             scratch->wake.vz = object->position.vz;
-            func_8004A8EC(&object->matrix, &scratch->m2);
+            libgte_transpose_matrix(&object->matrix, &scratch->m2);
             func_80097070(&scratch->m2, &scratch->wake_angle);
             func_80089160(0x13, &scratch->wake, &scratch->wake_angle);
         } else {
@@ -1923,8 +1923,8 @@ s32 func_80088720(s32 index) {
     FLIGHT_SCRATCH->rotor.vy = actor->u.step;
     FLIGHT_SCRATCH->tail.vx = FLIGHT_SCRATCH->tail.vz = 0;
     FLIGHT_SCRATCH->tail.vy = actor->unk58;
-    func_8004A92C(&FLIGHT_SCRATCH->rotor, &FLIGHT_SCRATCH->rotor_matrix);
-    func_8004A92C(&FLIGHT_SCRATCH->tail, &FLIGHT_SCRATCH->tail_matrix);
+    RotMatrixYXZ(&FLIGHT_SCRATCH->rotor, &FLIGHT_SCRATCH->rotor_matrix);
+    RotMatrixYXZ(&FLIGHT_SCRATCH->tail, &FLIGHT_SCRATCH->tail_matrix);
     D_8009C620[base + 5].matrix = FLIGHT_SCRATCH->rotor_matrix;
     scratch = FLIGHT_SCRATCH;
     D_8009C620[base].matrix = D_8009C620[base + 1].matrix = D_8009C620[base + 2].matrix =
@@ -2405,7 +2405,7 @@ void func_80089748(void) {
                 if (EFFECT_ENABLED(slot) == 0) {
                     slot->id = i;
                     slot->timer = object->life;
-                    func_8004A92C(&object->angle, &scratch->m);
+                    RotMatrixYXZ(&object->angle, &scratch->m);
                     ApplyMatrix(&scratch->m, &object->unk24, &scratch->offset);
                     if (!(flags & 0x20)) {
                         scratch->random.vy = (rand() & 0xFFF) - 0x800;

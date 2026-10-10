@@ -218,10 +218,10 @@ s32 func_800783E8(s32 index) {
     RIG_SCRATCH->angle[2].vy = actor->unk60;
     RIG_SCRATCH->angle[3].vx = RIG_SCRATCH->angle[3].vy = 0;
     RIG_SCRATCH->angle[3].vz = actor->unk60;
-    func_8004A92C(&RIG_SCRATCH->angle[0], &RIG_SCRATCH->matrix[0]);
-    func_8004A92C(&RIG_SCRATCH->angle[1], &RIG_SCRATCH->matrix[1]);
-    func_8004A92C(&RIG_SCRATCH->angle[2], &RIG_SCRATCH->matrix[2]);
-    func_8004A92C(&RIG_SCRATCH->angle[3], &RIG_SCRATCH->matrix[3]);
+    RotMatrixYXZ(&RIG_SCRATCH->angle[0], &RIG_SCRATCH->matrix[0]);
+    RotMatrixYXZ(&RIG_SCRATCH->angle[1], &RIG_SCRATCH->matrix[1]);
+    RotMatrixYXZ(&RIG_SCRATCH->angle[2], &RIG_SCRATCH->matrix[2]);
+    RotMatrixYXZ(&RIG_SCRATCH->angle[3], &RIG_SCRATCH->matrix[3]);
     D_8009C620[1].matrix = D_8009C620[2].matrix = D_8009C620[3].matrix = RIG_SCRATCH->matrix[3];
     D_8009C620[4].matrix = D_8009C620[5].matrix = RIG_SCRATCH->matrix[2];
     D_8009C620[6].matrix = D_8009C620[10].matrix = D_8009C620[8].matrix = D_8009C620[12].matrix =
@@ -504,7 +504,7 @@ s32 func_800794D8(s32 index) {
     D_8009C620[16].angle.vx = 0;
     D_8009C620[16].angle.vy = 0x780;
     D_8009C620[16].angle.vz = 0;
-    func_8004A92C(&D_8009C620[16].angle, &D_8009C620[16].matrix);
+    RotMatrixYXZ(&D_8009C620[16].angle, &D_8009C620[16].matrix);
     return 1;
 }
 
@@ -664,17 +664,17 @@ s32 func_80079778(s32 index) {
     scratch->angle[2].vy = actor->unk60;
     scratch->angle[3].vx = scratch->angle[3].vy = 0;
     scratch->angle[3].vz = actor->unk60;
-    func_8004A92C(&scratch->angle[0], &scratch->matrix[0]);
-    func_8004A92C(&scratch->angle[1], &scratch->matrix[1]);
-    func_8004A92C(&scratch->angle[2], &scratch->matrix[2]);
-    func_8004A92C(&scratch->angle[3], &scratch->matrix[3]);
+    RotMatrixYXZ(&scratch->angle[0], &scratch->matrix[0]);
+    RotMatrixYXZ(&scratch->angle[1], &scratch->matrix[1]);
+    RotMatrixYXZ(&scratch->angle[2], &scratch->matrix[2]);
+    RotMatrixYXZ(&scratch->angle[3], &scratch->matrix[3]);
     D_8009C620[1].matrix = D_8009C620[2].matrix = D_8009C620[3].matrix = scratch->matrix[3];
     D_8009C620[4].matrix = D_8009C620[5].matrix = scratch->matrix[2];
     D_8009C620[6].matrix = D_8009C620[10].matrix = D_8009C620[8].matrix = D_8009C620[12].matrix =
         scratch->matrix[0];
     D_8009C620[7].matrix = D_8009C620[11].matrix = D_8009C620[9].matrix = D_8009C620[13].matrix =
         scratch->matrix[1];
-    func_8004A92C(&D_8009C620[0].angle, &scratch->matrix[0]);
+    RotMatrixYXZ(&D_8009C620[0].angle, &scratch->matrix[0]);
     D_8009C620[0].matrix = scratch->matrix[0];
     return 1;
 }

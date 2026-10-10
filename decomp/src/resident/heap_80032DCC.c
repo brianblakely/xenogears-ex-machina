@@ -14,12 +14,12 @@ static s32 D_80059348; /* host file of the heap report */
 
 /* Report output to the host file. */
 void func_80032DCC(char *line) {
-    func_8004C470(D_80059348, line, strlen(line));
+    PCwrite(D_80059348, line, strlen(line));
 }
 
 /* Write the full heap report to the host file `name`. */
 void func_80032E04(char *name) {
-    func_8004C38C();
+    PCinit();
     D_80059348 = PCcreat(name, 0);
     D_800592B8 = func_80032DCC;
     func_8003278C(1, 0, 0, -1);

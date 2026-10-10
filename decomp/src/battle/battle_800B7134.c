@@ -170,7 +170,7 @@ ScreenShatter *func_800B7424(ScreenShatter *shatter) {
                 }
                 D_800C35C4.vz = -500 << 16;
                 D_800C35C4.vz = D_800C35C4.vz + (-(rand() % 1000) << 16);
-                func_8004A414(&shard->position, &square);
+                Square0(&shard->position, &square);
                 distance = SquareRoot0(square.vx + square.vy);
                 shard->delay = (radius / 32 - distance) / 2048; /* overwritten */
                 shard->delay = distance / 1024;
@@ -185,7 +185,7 @@ ScreenShatter *func_800B7424(ScreenShatter *shatter) {
                 angles.vx = 0;
                 angles.vy = tilt;
                 angles.vz = yaw;
-                func_8004ABBC(&angles, &m);
+                RotMatrix(&angles, &m);
                 ApplyMatrixLV(&m, &D_800C35C4, &shard->velocity);
                 shard->fall = 0x70800 - ((rand() % 1600) << 8);
                 shard->spin.vx = (rand() & 0xFF) - 0x7F;

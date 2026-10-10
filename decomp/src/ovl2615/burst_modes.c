@@ -213,7 +213,7 @@ BurstTask *func_801E8DF0(BurstTask *burst) {
                         cell->corner[k].vy += (s16)(y * 16);
                     }
                     copyVector(&square, &cell->corner[k]);
-                    func_8004A414(&square, &square);
+                    Square0(&square, &square);
                     if (D_801E9680 != 0) {
                         cell->distance[k] = SquareRoot0(square.vx + square.vy) * 2;
                     } else {

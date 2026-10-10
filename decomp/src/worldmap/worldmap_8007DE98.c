@@ -495,7 +495,7 @@ s32 func_8007ECA4(s32 index) {
     D_8009C620[1].angle.vz = 0;
     D_8009C620[1].angle.vy = 0;
     D_8009C620[1].angle.vx = 0;
-    func_8004A92C(&D_8009C620[1].angle, &D_8009C620[1].matrix);
+    RotMatrixYXZ(&D_8009C620[1].angle, &D_8009C620[1].matrix);
     actor->motion.vx = -0x85A;
     actor->state = 0;
     actor->motion.vy = 0;
@@ -696,7 +696,7 @@ s32 func_8007EE34(s32 index) {
         scratch->base.m[2][1] = 0;
         scratch->base.m[2][2] = 0xDA6;
         object->angle.vz = (object->angle.vz + 0x100) & 0xFFF;
-        func_8004A92C(&object->angle, &scratch->rotation);
+        RotMatrixYXZ(&object->angle, &scratch->rotation);
         MulMatrix0(&scratch->base, &scratch->rotation, &object->matrix);
         scratch->axis[0].vx = scratch->axis[0].vy = 0x800;
         scratch->axis[0].vz = 0x1800;
@@ -720,9 +720,9 @@ s32 func_8007EE34(s32 index) {
         scratch->axis[0].vz = -0xCAB;
         scratch->axis[1].vx = scratch->axis[1].vz = 0;
         scratch->axis[1].vy = 0x1000;
-        func_8004A480(&scratch->axis[1], &scratch->axis[0], &scratch->axis[2]);
+        OuterProduct12(&scratch->axis[1], &scratch->axis[0], &scratch->axis[2]);
         VectorNormal(&scratch->axis[2], &scratch->axis[2]);
-        func_8004A480(&scratch->axis[0], &scratch->axis[2], &scratch->axis[1]);
+        OuterProduct12(&scratch->axis[0], &scratch->axis[2], &scratch->axis[1]);
         VectorNormal(&scratch->axis[1], &scratch->axis[1]);
         scratch->frame.m[0][0] = scratch->axis[2].vx;
         scratch->frame.m[0][1] = scratch->axis[2].vy;
@@ -734,9 +734,9 @@ s32 func_8007EE34(s32 index) {
         scratch->frame.m[2][1] = scratch->axis[0].vy;
         scratch->frame.m[2][2] = scratch->axis[0].vz;
         func_80097070(&scratch->frame, &scratch->angle);
-        func_8004A8EC(&scratch->frame, &scratch->base);
+        libgte_transpose_matrix(&scratch->frame, &scratch->base);
         object->angle.vz = (object->angle.vz + 0x100) & 0xFFF;
-        func_8004A92C(&object->angle, &scratch->rotation);
+        RotMatrixYXZ(&object->angle, &scratch->rotation);
         MulMatrix0(&scratch->base, &scratch->rotation, &object->matrix);
         scratch->axis[0].vx = scratch->axis[0].vy = 0x800;
         scratch->axis[0].vz = 0x1800;
@@ -817,7 +817,7 @@ s32 func_8007F968(s32 index) {
         actor->unk5C = D_8009A68C[index - 4];
         object->visible = 0;
         object->angle.vx = object->angle.vy = object->angle.vz = 0;
-        func_8004A92C(&object->angle, &object->matrix);
+        RotMatrixYXZ(&object->angle, &object->matrix);
         func_800894C8(0x23);
         func_800894C8(0x24);
         break;
@@ -828,7 +828,7 @@ s32 func_8007F968(s32 index) {
         actor->unk5C = D_8009A68C[index - 4];
         object->visible = 0;
         object->angle.vx = object->angle.vy = object->angle.vz = 0;
-        func_8004A92C(&object->angle, &object->matrix);
+        RotMatrixYXZ(&object->angle, &object->matrix);
         func_800894C8(0x23);
         func_800894C8(0x24);
         break;
@@ -868,7 +868,7 @@ s32 func_8007F968(s32 index) {
     scratch->base.m[2][1] = 0;
     scratch->base.m[2][2] = 0xDA6;
     object->angle.vz = (object->angle.vz + 0x100) & 0xFFF;
-    func_8004A92C(&object->angle, &scratch->rotation);
+    RotMatrixYXZ(&object->angle, &scratch->rotation);
     MulMatrix0(&scratch->base, &scratch->rotation, &object->matrix);
     object->position.vx = actor->position.vx >> 12;
     object->position.vy = actor->position.vy >> 12;

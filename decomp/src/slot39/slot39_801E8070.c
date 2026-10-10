@@ -368,7 +368,7 @@ void func_801E9340(char *name, void *buffer, s32 size) {
     s32 handle;
 
     handle = PCopen(name, 0, 0);
-    func_8004C398(handle, buffer, size);
+    PCread(handle, buffer, size);
     PCclose(handle);
 }
 

@@ -5819,7 +5819,7 @@ void func_80095300(void) {
 }
 
 /* Trigger zone operand 1 and one of its corners packed as (z << 16) + x,
- * the point format of func_8004A70C.  The zone is addressed inside each
+ * the point format of NormalClip.  The zone is addressed inside each
  * access (not through a Zone pointer): GCC then forms the address as
  * (scaled index + table), which ties the zone byte's register differently
  * from `zone = &D_800ADBF4[i]' (base + scaled index). */
@@ -5847,8 +5847,8 @@ void func_8009533C(void) {
     b = EVENT_ZONE_CORNER(1);
     c = EVENT_ZONE_CORNER(2);
     d = EVENT_ZONE_CORNER(3);
-    if (func_8004A70C(a, b, point) >= 0 && func_8004A70C(b, c, point) >= 0 &&
-        func_8004A70C(c, d, point) >= 0 && func_8004A70C(d, a, point) >= 0 &&
+    if (NormalClip(a, b, point) >= 0 && NormalClip(b, c, point) >= 0 &&
+        NormalClip(c, d, point) >= 0 && NormalClip(d, a, point) >= 0 &&
         (D_800B0078->state.word & 0x1C0) != 0x100) {
         D_800B0078->call_stack[(D_800B0078->state.word >> 6) & 7] = D_800B0078->pc + 4;
         D_800B0078->pc = func_800ACDB8(2);
@@ -5882,8 +5882,8 @@ void func_80095520(void) {
         point = (WHOLE(CONTROLLED_ACTOR->position[2]) << 16) + WHOLE(CONTROLLED_ACTOR->position[0]);
         c = CODE_ZONE_CORNER(code, 2);
         d = CODE_ZONE_CORNER(code, 3);
-        if (func_8004A70C(a, b, point) >= 0 && func_8004A70C(b, c, point) >= 0 &&
-            func_8004A70C(c, d, point) >= 0 && func_8004A70C(d, a, point) >= 0 &&
+        if (NormalClip(a, b, point) >= 0 && NormalClip(b, c, point) >= 0 &&
+            NormalClip(c, d, point) >= 0 && NormalClip(d, a, point) >= 0 &&
             (D_800B0078->state.word & 0x1C0) != 0x100) {
             D_800B0078->call_stack[(D_800B0078->state.word >> 6) & 7] = D_800B0078->pc + 4;
             D_800B0078->pc = func_800ACDB8(2);
@@ -5911,8 +5911,8 @@ void func_80095734(void) {
     b = EVENT_ZONE_CORNER(1);
     c = EVENT_ZONE_CORNER(2);
     d = EVENT_ZONE_CORNER(3);
-    if (func_8004A70C(a, b, point) >= 0 && func_8004A70C(b, c, point) >= 0 &&
-        func_8004A70C(c, d, point) >= 0 && func_8004A70C(d, a, point) >= 0) {
+    if (NormalClip(a, b, point) >= 0 && NormalClip(b, c, point) >= 0 &&
+        NormalClip(c, d, point) >= 0 && NormalClip(d, a, point) >= 0) {
         D_800B0078->pc += 4;
         return;
     }
@@ -5941,8 +5941,8 @@ void func_800958C0(void) {
         point = (WHOLE(CONTROLLED_ACTOR->position[2]) << 16) + WHOLE(CONTROLLED_ACTOR->position[0]);
         c = CODE_ZONE_CORNER(code, 2);
         d = CODE_ZONE_CORNER(code, 3);
-        if (func_8004A70C(a, b, point) >= 0 && func_8004A70C(b, c, point) >= 0 &&
-            func_8004A70C(c, d, point) >= 0 && func_8004A70C(d, a, point) >= 0) {
+        if (NormalClip(a, b, point) >= 0 && NormalClip(b, c, point) >= 0 &&
+            NormalClip(c, d, point) >= 0 && NormalClip(d, a, point) >= 0) {
             D_800B0078->pc += 4;
             return;
         }
@@ -7314,7 +7314,7 @@ s32 func_80099A04(s32 dx, s32 dy, s32 dz) {
     v.vx = dx;
     v.vy = dy;
     v.vz = dz;
-    func_8004A414(&v, &squares);
+    Square0(&v, &squares);
     return SquareRoot0(squares.vx + squares.vy + squares.vz);
 }
 
@@ -7326,7 +7326,7 @@ s32 func_80099A4C(s32 dx, s32 dz) {
     v.vx = dx;
     v.vy = dz;
     v.vz = 0;
-    func_8004A414(&v, &squares);
+    Square0(&v, &squares);
     return SquareRoot0(squares.vx + squares.vy);
 }
 
@@ -7336,7 +7336,7 @@ s32 func_80099A8C(s32 x) {
     VECTOR squares;
 
     v.vx = x;
-    func_8004A414(&v, &squares);
+    Square0(&v, &squares);
     return SquareRoot0(squares.vx);
 }
 

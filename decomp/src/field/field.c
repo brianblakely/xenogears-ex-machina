@@ -203,7 +203,7 @@ void func_8006FDEC(s16 *record) {
     D_800AF880.back_color[2] = record[2] << 4;
     SetRotMatrix(&D_800AF880.previous_view);
     SetTransMatrix(&D_800AF880.previous_view);
-    func_8004A6DC(&D_800AF880.anchor, (VECTOR *)D_800AF880.scaled_world.t, &flag);
+    RotTrans(&D_800AF880.anchor, (VECTOR *)D_800AF880.scaled_world.t, &flag);
     func_80030B14(&D_800AF880.scaled_world);
     SetRotMatrix(&D_800AF880.scaled_world);
     SetTransMatrix(&D_800AF880.scaled_world);
@@ -982,7 +982,7 @@ void func_80072150(void) {
     MulMatrix2(&D_800AF880.previous_view, &D_800AF880.scaled_world);
     SetRotMatrix(&D_800AF880.previous_view);
     SetTransMatrix(&D_800AF880.previous_view);
-    func_8004A6DC(&D_800AF880.anchor, (VECTOR *)D_800AF880.scaled_world.t, &flag);
+    RotTrans(&D_800AF880.anchor, (VECTOR *)D_800AF880.scaled_world.t, &flag);
     scale.vx = D_800AF880.scale;
     scale.vy = D_800AF880.scale;
     scale.vz = D_800AF880.scale;
@@ -1498,9 +1498,9 @@ void func_80073750(MATRIX *view, VECTOR *eye, VECTOR *target, VECTOR *up) {
     y.vy >>= 16;
     y.vz >>= 16;
     VectorNormal(&v, &forward);
-    func_8004A480(&y, &forward, &v);
+    OuterProduct12(&y, &forward, &v);
     VectorNormal(&v, &side);
-    func_8004A480(&forward, &side, &v);
+    OuterProduct12(&forward, &side, &v);
     VectorNormal(&v, &y);
     view->m[0][0] = side.vx;
     view->m[0][1] = side.vy;
@@ -1891,7 +1891,7 @@ void func_800748E8(void) {
     D_800595C0 = 0;
     if (D_800B2078.sprite_gate != 0) {
         func_8002C6E0(D_800B2078.fog_color[0], D_800B2078.fog_color[1], D_800B2078.fog_color[2]);
-        func_8004A10C(D_800B2078.far_color[0], D_800B2078.far_color[1], D_800B2078.far_color[2]);
+        SetFarColor(D_800B2078.far_color[0], D_800B2078.far_color[1], D_800B2078.far_color[2]);
         SetFogNearFar(D_800B2078.fog_range[0], D_800B2078.fog_range[1], D_800AF880.projection);
     }
     half.vx = 0x800;
@@ -2210,9 +2210,9 @@ void func_800759E4(MATRIX *m, VECTOR *axis) {
     VECTOR side;
     VECTOR cross;
 
-    func_8004A480(&up, axis, &cross);
+    OuterProduct12(&up, axis, &cross);
     VectorNormal(&cross, &side);
-    func_8004A480(&side, axis, &cross);
+    OuterProduct12(&side, axis, &cross);
     VectorNormal(&cross, &up);
     m->m[0][0] = side.vx;
     m->m[0][1] = side.vy;

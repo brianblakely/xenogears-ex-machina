@@ -82,7 +82,7 @@ s32 func_800318F8(char *name) {
     s32 size;
     u8 *p;
 
-    func_8004C38C();
+    PCinit();
     fd = PCopen(name, 0, 0);
     if (fd == -1) {
         return -1;
@@ -100,7 +100,7 @@ s32 func_800318F8(char *name) {
         if (size < chunk) {
             chunk = size;
         }
-        func_8004C398(fd, p, chunk);
+        PCread(fd, p, chunk);
         size -= chunk;
         p += chunk;
     }

@@ -322,7 +322,7 @@ s32 func_8007CC6C(s32 index) {
     D_8009C620[4].angle.vz = 0;
     D_8009C620[4].angle.vy = 0;
     D_8009C620[4].angle.vx = 0;
-    func_8004A92C(&D_8009C620[4].angle, &D_8009C620[4].matrix);
+    RotMatrixYXZ(&D_8009C620[4].angle, &D_8009C620[4].matrix);
     actor = &D_8009BE24[index];
     actor->motion.vz = -0x4000;
     actor->position.vx = 0xD00000;
@@ -380,7 +380,7 @@ s32 func_8007CE84(s32 index) {
     D_8009C620[5].angle.vz = 0;
     D_8009C620[5].angle.vy = 0;
     D_8009C620[5].angle.vx = 0;
-    func_8004A92C(&D_8009C620[5].angle, &D_8009C620[5].matrix);
+    RotMatrixYXZ(&D_8009C620[5].angle, &D_8009C620[5].matrix);
     actor = &D_8009BE24[index];
     actor->motion.vz = -0x4000;
     actor->position.vx = 0xB00000;
@@ -434,7 +434,7 @@ s32 func_8007D078(s32 index) {
     D_8009C620[9].angle.vz = 0;
     D_8009C620[9].angle.vy = 0;
     D_8009C620[9].angle.vx = 0;
-    func_8004A92C(&D_8009C620[9].angle, &D_8009C620[9].matrix);
+    RotMatrixYXZ(&D_8009C620[9].angle, &D_8009C620[9].matrix);
     actor = &D_8009BE24[index];
     actor->motion.vz = -0x4000;
     actor->motion.vy = 0;
@@ -482,7 +482,7 @@ s32 func_8007D228(s32 index) {
     D_8009C620[10].angle.vz = 0;
     D_8009C620[10].angle.vy = 0;
     D_8009C620[10].angle.vx = 0;
-    func_8004A92C(&D_8009C620[10].angle, &D_8009C620[10].matrix);
+    RotMatrixYXZ(&D_8009C620[10].angle, &D_8009C620[10].matrix);
     actor = &D_8009BE24[index];
     actor->motion.vz = -0x4000;
     actor->position.vx = 0xE00000;
@@ -533,7 +533,7 @@ s32 func_8007D414(s32 index) {
     D_8009C620[12].angle.vz = 0;
     D_8009C620[12].angle.vy = 0;
     D_8009C620[12].angle.vx = 0;
-    func_8004A92C(&D_8009C620[12].angle, &D_8009C620[12].matrix);
+    RotMatrixYXZ(&D_8009C620[12].angle, &D_8009C620[12].matrix);
     actor = &D_8009BE24[index];
     actor->motion.vz = -0x4000;
     actor->position.vx = 0xE80000;
@@ -584,7 +584,7 @@ s32 func_8007D600(s32 index) {
     D_8009C620[13].angle.vz = 0;
     D_8009C620[13].angle.vy = 0;
     D_8009C620[13].angle.vx = 0;
-    func_8004A92C(&D_8009C620[13].angle, &D_8009C620[13].matrix);
+    RotMatrixYXZ(&D_8009C620[13].angle, &D_8009C620[13].matrix);
     actor = &D_8009BE24[index];
     actor->motion.vz = -0x4000;
     actor->position.vx = 0xF80000;
@@ -623,7 +623,7 @@ s32 func_8007D774(s32 index) {
     D_8009C620[16].angle.vz = 0;
     D_8009C620[16].angle.vy = 0;
     D_8009C620[16].angle.vx = 0;
-    func_8004A92C(&D_8009C620[16].angle, &D_8009C620[16].matrix);
+    RotMatrixYXZ(&D_8009C620[16].angle, &D_8009C620[16].matrix);
     actor = &D_8009BE24[index];
     actor->position.vx = 0xD00000;
     actor->position.vz = 0x400000;

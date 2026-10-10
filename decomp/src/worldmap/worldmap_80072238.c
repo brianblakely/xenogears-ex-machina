@@ -475,7 +475,7 @@ void func_80072BB0(void) {
     D_8009BBC8[0].disp.screen.h = 0xD8;
     func_8002C6E0(0x80, 0x80, 0x80);
     SetBackColor(0x80, 0x80, 0x80);
-    func_8004A10C(D_8009BB48[0], D_8009BB48[1], D_8009BB48[2]);
+    SetFarColor(D_8009BB48[0], D_8009BB48[1], D_8009BB48[2]);
     SetFogNearFar(D_8009D7CC == 2 ? 0xB00 : 0x800, 0xE80, D_8009BCDC);
 }
 
@@ -708,7 +708,7 @@ void func_800737EC(void) {
     scratch->angle.vz = 0;
     scratch->angle.vx = 0;
     scratch->angle.vy = D_8009BD38.vy;
-    func_8004A92C(&scratch->angle, &scratch->rotation);
+    RotMatrixYXZ(&scratch->angle, &scratch->rotation);
     corners = D_8009A280[0];
     scratch->rotation.t[2] = 0;
     scratch->rotation.t[1] = 0;
@@ -803,7 +803,7 @@ void func_80073B04(void) {
     scratch = HORIZON_SCRATCH;
     scratch->angle.vx = 0;
     scratch->angle.vy = D_8009BD38.vy;
-    func_8004A92C(&scratch->angle, &scratch->rotation);
+    RotMatrixYXZ(&scratch->angle, &scratch->rotation);
     scratch->rotation.t[2] = 0;
     scratch->rotation.t[1] = 0;
     scratch->rotation.t[0] = 0;
@@ -1056,9 +1056,9 @@ void func_800747DC(void) {
             scratch->position.vz = spot->z << 12;
             scratch->position.vy = func_80093978(scratch->position.vx, scratch->position.vz);
             func_80093740(&scratch->normal, scratch->position.vx, scratch->position.vz);
-            func_8004A480(&scratch->up, &scratch->normal, &scratch->side);
+            OuterProduct12(&scratch->up, &scratch->normal, &scratch->side);
             VectorNormal(&scratch->side, &scratch->forward);
-            func_8004A480(&scratch->normal, &scratch->forward, &scratch->scale);
+            OuterProduct12(&scratch->normal, &scratch->forward, &scratch->scale);
             VectorNormal(&scratch->scale, &scratch->side);
             scratch->local.m[0][0] = scratch->forward.vx;
             scratch->local.m[0][1] = scratch->forward.vy;
@@ -1078,8 +1078,8 @@ void func_800747DC(void) {
                 break;
             case 2:
                 scratch->heading = D_8009A180;
-                func_8004AFEC(D_8006D634.worldmap.vehicle_heading, &scratch->heading);
-                func_80049ACC(&scratch->local, &scratch->heading);
+                RotMatrixY(D_8006D634.worldmap.vehicle_heading, &scratch->heading);
+                libgte_multiply_matrix_in_place(&scratch->local, &scratch->heading);
                 scratch->scale.vx = 0x1800;
                 scratch->scale.vy = 0x1000;
                 scratch->scale.vz = 0x4800;

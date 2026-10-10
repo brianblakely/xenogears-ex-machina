@@ -453,7 +453,7 @@ void func_80028230(u8 *files, u16 *directories, u32 mode) {
         func_80028A60(0);
         VSync(3);
     } else {
-        func_8004C38C();
+        PCinit();
     }
     if (mode != -1) {
         D_8004FE48 = (char *)mode;
@@ -557,7 +557,7 @@ void *func_80028570(char *name, s32 *size) {
         read = 0;
         if (block != NULL) {
             for (i = 0; i < 4; i++) {
-                read = func_8004C398(fd, block, length);
+                read = PCread(fd, block, length);
                 if (read != 0) {
                     break;
                 }
@@ -769,7 +769,7 @@ u8 *func_80028B14(void) {
         slot->state = 3;
         payload += index << 11;
         for (i = 0; i < 4; i++) {
-            if (func_8004C398(D_8004FE4C, payload, 0x800) != 0) {
+            if (PCread(D_8004FE4C, payload, 0x800) != 0) {
                 goto read;
             }
             func_8002804C(i, 0, 0xFF, 0);
@@ -884,7 +884,7 @@ s32 func_80028F30(u8 **data, StreamFrame **frame) {
                 goto search;
             }
             if (D_80059F18 & 8) {
-                func_8004C398(D_8004FE4C, D_800596F8, 8);
+                PCread(D_8004FE4C, D_800596F8, 8);
                 if (D_800596F8[0] == 1) {
                     goto skip;
                 }
@@ -892,7 +892,7 @@ s32 func_80028F30(u8 **data, StreamFrame **frame) {
             offset = i << 11;
             D_80059F54 = (u8 *)D_8004FE08 + offset;
             header = (StreamFrame *)D_80059F54;
-            func_8004C398(D_8004FE4C, (u8 *)header, 0x20);
+            PCread(D_8004FE4C, (u8 *)header, 0x20);
             D_80059F5C = header->sectors;
             D_8005A4B8 = header->word8;
             if (slot[2] < D_80059F5C) {
@@ -914,7 +914,7 @@ s32 func_80028F30(u8 **data, StreamFrame **frame) {
             }
             D_8004FE26++;
             D_80059F58 = (u8 *)D_8004FE08 + offset + D_80059F5C * 32;
-            func_8004C398(D_8004FE4C, D_80059F58, 0x7E0);
+            PCread(D_8004FE4C, D_80059F58, 0x7E0);
             if (D_80059F18 & 8) {
                 PClseek(D_8004FE4C, 0x118, 1);
             }
@@ -923,7 +923,7 @@ s32 func_80028F30(u8 **data, StreamFrame **frame) {
             D_80059F60++;
         } else {
             if (D_80059F18 & 8) {
-                func_8004C398(D_8004FE4C, D_800596F8, 8);
+                PCread(D_8004FE4C, D_800596F8, 8);
                 if (D_800596F8[0] == 1) {
                 skip:
                     PClseek(D_8004FE4C, 0x918, 1);
@@ -934,8 +934,8 @@ s32 func_80028F30(u8 **data, StreamFrame **frame) {
             slot[1] = D_8004FE26;
             slot[0] = 3;
             D_8004FE26++;
-            func_8004C398(D_8004FE4C, D_80059F54 + D_80059F60 * 32, 0x20);
-            func_8004C398(D_8004FE4C, D_80059F58 + D_80059F60 * 0x7E0, 0x7E0);
+            PCread(D_8004FE4C, D_80059F54 + D_80059F60 * 32, 0x20);
+            PCread(D_8004FE4C, D_80059F58 + D_80059F60 * 0x7E0, 0x7E0);
             if (D_80059F18 & 8) {
                 PClseek(D_8004FE4C, 0x118, 1);
             }
@@ -1143,7 +1143,7 @@ s32 func_80029690(s32 file, void *destination, s32 mode, s32 flags) {
         opened:
             if (destination != NULL) {
                 for (i = 0; i < 4; i++) {
-                    if (func_8004C398(fd, destination, D_8004FDF8) != 0) {
+                    if (PCread(fd, destination, D_8004FDF8) != 0) {
                         break;
                     }
                     func_8002804C(i, 0, 0xFF, 0);
@@ -1245,7 +1245,7 @@ s32 func_80029AFC(FileRequest *list, s32 mode, s32 unused) {
         opened:
             if (list[i].destination != NULL) {
                 for (j = 0; j < 4; j++) {
-                    if (func_8004C398(fd, list[i].destination, func_80028808(file)) != 0) {
+                    if (PCread(fd, list[i].destination, func_80028808(file)) != 0) {
                         break;
                     }
                     func_8002804C(j, 0, 0xFF, 0);
@@ -2043,7 +2043,7 @@ void func_8002B8B0(void) {
             slot[1] = D_8004FE26;
             D_8004FE26++;
             for (i = 0; i < 4; i++) {
-                if (func_8004C398(D_80059F04, (u8 *)D_8004FE08 + index * 0x800, 0x800) != 0) {
+                if (PCread(D_80059F04, (u8 *)D_8004FE08 + index * 0x800, 0x800) != 0) {
                     break;
                 }
                 func_8002804C(i, 0, 0xFF, 0);

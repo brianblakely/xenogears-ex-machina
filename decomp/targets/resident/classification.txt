@@ -9,12 +9,12 @@
 # library strings that several SDK functions share, which splat therefore
 # leaves to INCLUDE_RODATA in their unit's rodata.
 80010000 80018080 asset Disc file data copied ahead of the code (rodatabins disc_mode/disc_files/disc_directories, disc2_* on Disc 2; it is the only part that differs between SLUS_006.64 and SLUS_006.69): s32 -1 at 80010000 (read through D_8005917C and by the kernel menu), the file index of disc sectors 24-38 at 80010004 (7-byte records: 24-bit start sector, signed 32-bit size, negative for a directory and its file count; the format tools/extraction/disc_files.py reads from sector 24), zero fill with one halfword at 80018002, and the 0x7c-byte directory table of disc sector 40 (u16 first file of each directory) at 80018004
-80018ce4 80018e28 included D_80018CE4 libcd command and interrupt names ("none", "CdlReadS" ... "NoIntr"), read by CdComstr and CdIntstr and the libcd SYS name tables (800564d0-8005656c)
-80018e28 80018e38 included D_80018E28 libcd "CD timeout: ", read by CD_sync, CD_ready, CD_cw and CD_datasync
-80018e38 80018e54 included D_80018E38 libcd "%s:(%s) Sync=%s, Ready=%s\n", read by CD_sync, CD_ready, CD_cw and CD_datasync
-80018f88 80018fa0 included D_80018F88 libgpu "tpage: (%d,%d,%d,%d)\n", read by func_80043A70 and func_80043F50
-80019180 8001918c included D_80019180 libgpu "ClearImage", read by ClearImage and ClearImage2
-8001946c 8001947c included D_8001946C libspu "SPU:T/O [%s]\n", read by _spu_init and _spu_FwriteByIO
+80018ce4 80018e28 included libcd_command_and_interrupt_names libcd command and interrupt names ("none", "CdlReadS" ... "NoIntr"), read by CdComstr and CdIntstr and the libcd SYS name tables (800564d0-8005656c)
+80018e28 80018e38 included libcd_timeout_message libcd "CD timeout: ", read by CD_sync, CD_ready, CD_cw and CD_datasync
+80018e38 80018e54 included libcd_sync_ready_format libcd "%s:(%s) Sync=%s, Ready=%s\n", read by CD_sync, CD_ready, CD_cw and CD_datasync
+80018f88 80018fa0 included libgpu_tpage_format libgpu "tpage: (%d,%d,%d,%d)\n", read by libgpu_dump_tpage and libgpu_dump_draw_env
+80019180 8001918c included libgpu_clear_image_name libgpu "ClearImage", read by ClearImage and ClearImage2
+8001946c 8001947c included libspu_timeout_format libspu "SPU:T/O [%s]\n", read by _spu_init and _spu_FwriteByIO
 80019524 80019578 handwritten Entry point: clears BSS 800592b8-8006faec, sets $sp 0x80200000/$fp/$gp (80019548, also used by the mode dispatcher to reset the stack), and a word-clear loop (80019560) with the same pre-increment form
 8001c76c 8001c8dc asset PlayStation TMD model D_8001C76C embedded in .text (0x170 bytes), not effect-VM bytecode: header id 0x41, flags 0 (table offsets count from the object entry) and one object; the 0x1c-byte object entry at 8001c778 gives the primitive table (8 at +0x1c), vertex table (6 SVECTOR at +0xcc), normal table (13 at +0xfc) and scale 3; each primitive is olen (GPU packet words), ilen (data words), flag and mode bytes then ilen words: here 2 flat and 6 Gouraud unlit triangles (mode 0x21/0x31, flag 1) with their colours and vertex indices. Read only by the battle overlay for the slot-highlight ring (decomp/include/battle/highlight.h): func_800BD098 sizes and builds its packets (func_800B168C object entry, func_800B16A4 packet bytes, func_800B1720 packet builder) and func_800BCEAC draws it (func_800B1F6C); battle/effect_script.h calls the format an effect script file
 80026f44 8002709c handwritten GTE colour scaling and blending loops over 15-bit pixels (mtc2/gpf, addi/add)

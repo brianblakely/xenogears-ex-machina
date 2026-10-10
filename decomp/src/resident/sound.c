@@ -1690,10 +1690,10 @@ void func_8003BE68(void) {
     case 0:
         break;
     case 1:
-        func_8004D878(transfer->data, transfer->size);
+        SpuWrite(transfer->data, transfer->size);
         break;
     case 2:
-        func_8004D818(transfer->data, transfer->size);
+        SpuRead(transfer->data, transfer->size);
         break;
     case 3:
         D_80059548 = SpuReadDecodedData(transfer->data, 0);

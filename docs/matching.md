@@ -337,8 +337,8 @@ functions in original order; the function's jump tables and strings move with
 it (splat migrated them into the function's assembly). A unit's structures go in
 small headers beside the source; what several targets share has one definition in
 `decomp/include`: `psyq/` (the SDK's types, prototypes and macros, the inline GTE
-ones in `inline_c.h`; members the symbol file leaves unnamed under their `func_`
-names), `resident/` (one header per resident subsystem with its types, variables and
+ones in `inline_c.h`; members no library signature names under the PsyQ name their
+callers give them, else their library's prefix, `libgte_rotate_vector`), `resident/` (one header per resident subsystem with its types, variables and
 calls; `gamedata.h` holds the game data D_8006D634), `battle/` (one header per
 battle overlay subsystem whose types, variables or calls its modules and overlays
 use, with the battle area D_800C3EB0 and its work area D_800CCCE8; each function

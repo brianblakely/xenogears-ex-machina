@@ -93,7 +93,7 @@ segments:
       # Hand-written rotation helpers and the PsyQ library objects.
       - [0x93F0, .rodata, main3]
       # Rodata used by the SDK tail beginning with libgte MSC00.
-      - [0x9BC4, .rodata, psyq_tail_80048BC4]
+      - [0x9BC4, .rodata, psyq_libgte_to_libcard]
       - [0x9D24, c, main]
       # The battle entry owns 8005959C through GP, but accesses the setup
       # flags 8005947C/F8 absolutely. Isolate that ownership from the
@@ -159,7 +159,7 @@ segments:
         type: data
         name: libgte_msc00_data
         linker_section_order: .text
-      - [0x393C4, c, psyq_tail_80048BC4]
+      - [0x393C4, c, psyq_libgte_to_libcard]
       # LIBCARD END.OBJ keeps the three words _ExitCard copies into the
       # kernel (8004EA88-8004EA94) and its end label in its .text, after the
       # code (its signature labels text_68/text_74); .data starts at 8004EAA0.
@@ -224,7 +224,7 @@ segments:
       - { start: 0x49ABC, type: .sbss, vram: 0x8005934C, name: main2, linker_section_order: .bss }
       - { start: 0x49ABC, type: .sbss, vram: 0x80059394, name: main2_800366E0, linker_section_order: .bss }
       # The libraries' small statics: libapi's controller patches (main3),
-      # libgte's and libcard's patches (psyq_tail_80048BC4).
+      # libgte's and libcard's patches (psyq_libgte_to_libcard).
       - { start: 0x49ABC, type: bss, vram: 0x800593A4, name: psyq_sbss }
       - { start: 0x49ABC, type: .bss, vram: 0x80059404, name: commons/common_80059404 }
       - { start: 0x49ABC, type: .bss, vram: 0x800595E8, name: main }

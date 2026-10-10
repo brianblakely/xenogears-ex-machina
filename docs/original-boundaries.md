@@ -59,13 +59,13 @@ The scan finds 4436 compiled game functions and these library entries
 | libcd | CdSyncCallback (17), CdIntToPos (16), CdControlF (14), CdReadyCallback (14), CdDataCallback (10), CdControlB (8), CdPosToInt, CdGetSector, CdInit, CdControl and CdSetDebug (func_80028230 only: Standby and debug level 0 at start-up), CdSync, CdDataSync, CdFlush, CdReadCallback, CdMix (dormant, see Sound); mdec: CdRead2 and the streaming ring's StSetRing, StSetStream, StGetNext, StFreeRing, StGetBackloc, StCdInterrupt and StUnSetRing (Disc and files) |
 | libapi | events (Open/Close/Enable/Disable/Test/UnDeliverEvent; Enable/DisableEvent 18/17, the sound driver's tick guard, Interrupt-context work), root counters (Set/Get/Start/StopRCnt), critical sections (11 each), SwEnterCriticalSection/SwExitCriticalSection (the soft reset func_80019CD0), FlushCache, InitPAD/StartPAD/StopPAD/ChangeClearPAD, BIOS file calls open B(32h), read B(34h), write B(35h), close B(36h), format B(41h), firstfile B(42h), nextfile B(43h), rename B(44h) and delete B(45h) (Memory card and saves), Krom2RawAdd B(51h), GetGp (the arena task's gp, menu func_8008BA2C) |
 | libetc | VSync (75), VSyncCallback (3), ResetCallback, SetVideoMode |
-| libspu | SpuInit/SpuQuit, SpuInitMalloc, SpuSetCommonAttr, SpuSetReverb and the reverb mode setters, SpuGetReverbModeType, SpuSetIRQ/SpuSetIRQCallback, SpuSetTransferMode/StartAddr/Callback, SpuReadDecodedData, SpuGetVoiceEnvelopeAttr, SpuSetNoiseClock; SpuRead/SpuWrite are func_8004D818/func_8004D878 by inspection (unattributed, called by sound.c func_8003BE68) |
+| libspu | SpuInit/SpuQuit, SpuInitMalloc, SpuSetCommonAttr, SpuSetReverb and the reverb mode setters, SpuGetReverbModeType, SpuSetIRQ/SpuSetIRQCallback, SpuSetTransferMode/StartAddr/Callback, SpuReadDecodedData, SpuGetVoiceEnvelopeAttr, SpuSetNoiseClock; SpuRead/SpuWrite (8004d818/8004d878) by inspection (unattributed, called by sound.c func_8003BE68) |
 | libcard | InitCARD, StartCARD, `_bu_init` (A(70h)), `_card_info` (A(ABh), the card check of slot39 func_801C891C) |
 | libpress, libds | DecDCTReset/DecDCTin/DecDCTout/DecDCTvlc/DecDCTvlcSize and DecDCToutCallback, all from mdec |
 | libc, libc2 | bzero (126), rand (96), memcpy (33), memmove (16), sprintf (11), strcat, strcpy, strlen, memset, memchr, strcmp |
-| libsn | PCopen, PCcreat, PClseek, PCclose and func_8004C38C/func_8004C398/func_8004C470 (PCinit/PCread/PCwrite by inspection): development-host paths only (D_8004FE48 set, or `D_80010000 != -1`) |
+| libsn | PCopen, PCcreat, PClseek, PCclose and PCinit/PCread/PCwrite (8004c38c/8004c398/8004c470, by inspection): development-host paths only (D_8004FE48 set, or `D_80010000 != -1`) |
 
-The rows and, for the unattributed func_80040C3C, the note below name every
+The rows and, for the unattributed libapi_register_pad_send_buffers, the note below name every
 entry the scan reports at this revision; its `--detail` output lists each
 entry's caller functions.
 
@@ -74,29 +74,30 @@ pinned signatures name them (among them LIBAPI A54 close, A65-A69 format,
 firstfile, nextfile, rename and delete, A91 ChangeClearPAD, A94 GetGp and
 LIBCARD C171 `_card_info`), and the resident's symbol list gives each its own
 extent; slot39 and the menu call them by these names (psyq/libapi.h).
-func_80040C3C (unattributed) is the
+libapi_register_pad_send_buffers (unattributed) is the
 pad send registration: it calls `_SendPAD` with its four arguments
 (Controllers).
 
 The libgte entries without a signature name, by their code (psyq/libgte.h declares
-all 16 under these names):
+all 16 under these names: the SDK function's name where the code is that routine,
+else `libgte_` and what it computes):
 
 | Entry | What it computes |
 | --- | --- |
-| func_80048E94 | an orthonormal matrix from a matrix's first two rows: two outer products (OP), each row normalised by 80048DD8 (MatrixNormal form) |
-| func_8004901C | weighted sum of two SVECTORs, GPF then GPL (LoadAverageShort12) |
-| func_800495DC | SVECTOR times the rotation matrix, MVMVA sf=1 without translation, to a VECTOR |
-| func_8004998C | a 32-bit VECTOR times the rotation matrix, split into 15-bit halves (two MVMVAs) |
-| func_80049ACC | m0 = m0 x m1 through the rotation registers (MulMatrix form) |
-| func_8004A10C | far colour = rgb << 4 (SetFarColor) |
-| func_8004A414 | SQR sf=0 of a VECTOR (Square0) |
-| func_8004A480 | outer product sf=1, keeping the rotation diagonal (OuterProduct12) |
-| func_8004A6DC | RT x v + TR with FLAG out (RotTrans) |
-| func_8004A70C | NCLIP of three screen points (NormalClip) |
-| func_8004A83C | RTPT, NCLIP, then RTPS, AVSZ4, depth cue and FLAG out (RotAverageNclip4's arguments) |
-| func_8004A8EC | copy a matrix's rotation transposed (TransposeMatrix form) |
-| func_8004A92C, func_8004ABBC | rotation matrix from three angles through the sin/cos table D_800523F0 (RotMatrixYXZ and RotMatrix) |
-| func_8004AE4C, func_8004AFEC | single-axis rotation matrix (RotMatrixX, RotMatrixY) |
+| libgte_orthonormalize_matrix (80048e94) | an orthonormal matrix from a matrix's first two rows: two outer products (OP), each row normalised by 80048DD8 (MatrixNormal form) |
+| LoadAverageShort12 (8004901c) | weighted sum of two SVECTORs, GPF then GPL |
+| libgte_rotate_svector (800495dc) | SVECTOR times the rotation matrix, MVMVA sf=1 without translation, to a VECTOR |
+| libgte_rotate_vector (8004998c) | a 32-bit VECTOR times the rotation matrix, split into 15-bit halves (two MVMVAs) |
+| libgte_multiply_matrix_in_place (80049acc) | m0 = m0 x m1 through the rotation registers (MulMatrix form) |
+| SetFarColor (8004a10c) | far colour = rgb << 4 |
+| Square0 (8004a414) | SQR sf=0 of a VECTOR |
+| OuterProduct12 (8004a480) | outer product sf=1, keeping the rotation diagonal |
+| RotTrans (8004a6dc) | RT x v + TR with FLAG out |
+| NormalClip (8004a70c) | NCLIP of three screen points |
+| libgte_project_front_quad (8004a83c) | RTPT, NCLIP, then RTPS, AVSZ4, depth cue and FLAG out (RotAverageNclip4's arguments) |
+| libgte_transpose_matrix (8004a8ec) | copy a matrix's rotation transposed (TransposeMatrix form) |
+| RotMatrixYXZ, RotMatrix (8004a92c, 8004abbc) | rotation matrix from three angles through the sin/cos table D_800523F0 |
+| RotMatrixX, RotMatrixY (8004ae4c, 8004afec) | single-axis rotation matrix |
 
 Outside the libraries the game itself uses:
 
@@ -153,7 +154,7 @@ Outside the libraries the game itself uses:
   D_80059430/D_80059438 from the d-pad (tables D_8005020C/D_8005021C). Only the
   arena reads them (menu3.c func_80076884, menu4.c func_8008162C).
 - Vibration: `D_8005A1BC[2]` hold each port's four transmit bytes, registered
-  once with func_80040C3C(act0, 4, act1, 4) (func_8003611C). The vblank handler
+  once with libapi_register_pad_send_buffers(act0, 4, act1, 4) (func_8003611C). The vblank handler
   steps them (func_80036220/func_80036188): {1, 0x40, 1, 0} while the timer
   runs, {1, 0x40, 0, 0} once, then off. func_80036258(port, frames) starts one;
   only the arena calls it (menu3.c func_800776A8, per side, gated by the
@@ -276,7 +277,7 @@ restore (Memory card and saves) and the dormant CdMix.
   | func_8002A2D0, func_8002A394(file) | a seek (Setloc, SeekL) to a file, or Pause for file <= 0; func_8002A2D0 only when idle, once before a field movie (field func_800A7C58) | — |
   | func_8002A428(mode), func_8002A498(after) | Setmode, then Pause; a stop request that the next sector callback carries out | — |
 
-- **Commands**, numbered as libcd's own name table (D_800564D0) names them.
+- **Commands**, numbered as libcd's own name table (libcd_command_name_table) names them.
   CdControlF returns at once and completion reaches the sync callback;
   CdControlB waits for completion (it calls CD_sync), and its callers mostly
   repeat it until it succeeds.
@@ -425,7 +426,7 @@ restore (Memory card and saves) and the dormant CdMix.
   motor, successful GetTN, Setloc and SeekL, the label at sector 23 and the
   other disc's sectors 24 and 40.
 - **PC file server, development only.** A boot word other than 0 and -1 selects
-  it: func_80028230 calls func_8004C38C (PCinit by inspection) and keeps the
+  it: func_80028230 calls PCinit (8004c38c, by inspection) and keeps the
   word as D_8004FE48, a table of 64-byte host file names, one per index record
   (func_80028998), which func_8002C3D8 returns. Both retail images hold -1, so
   none of this runs on retail. Plain and list reads then open, read and close
@@ -448,7 +449,7 @@ restore (Memory card and saves) and the dormant CdMix.
 libetc VSync (8004b54c): VSync(0) waits for the next vertical blank; VSync(n),
 n > 1, returns once n blanks have passed since the previous wait returned (at
 least one new blank); VSync(1) returns the horizontal blanks since the last
-wait; VSync(-1) returns libetc's blank counter (D_80058960). The game calls it
+wait; VSync(-1) returns libetc's blank counter (libetc_vsync_count). The game calls it
 from 75 functions: VSync(0) 89 sites, VSync(2) 15, VSync(3) 13, VSync(1) 13,
 VSync(-1) 4, and VSync(8), VSync(D_80092898), VSync(D_80059198 + 1).
 

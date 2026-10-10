@@ -424,7 +424,7 @@ decomp/src/resident/model_depth.s
 decomp/src/resident/model_draw.s
 decomp/src/resident/ot_link.s
 decomp/src/resident/own_declarations.h
-decomp/src/resident/psyq_tail_80048BC4.c
+decomp/src/resident/psyq_libgte_to_libcard.c
 decomp/src/resident/sound.c
 decomp/src/resident/sound_driver.h
 decomp/src/resident/sprite.c

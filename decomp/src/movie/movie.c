@@ -887,7 +887,7 @@ void func_800729A8(char *name, void *buffer, s32 size) {
     s32 fd;
 
     fd = PCopen(name, 0, 0);
-    func_8004C398(fd, buffer, size);
+    PCread(fd, buffer, size);
     PCclose(fd);
 }
 
@@ -1694,12 +1694,12 @@ s32 func_80074BA4(s32 frame) {
         fd = PCopen(name, 0, 0);
         PClseek(fd, 0, 2);
         PClseek(fd, 0, 0);
-        func_8004C398(fd, buffer, read_size);
+        PCread(fd, buffer, read_size);
         h = (MovieSector *)&buffer[header];
         per_frame = h->sectors;
         pos = (frame - 1) * per_frame - (frame - 1) / 4;
         PClseek(fd, pos * sector_size, 0);
-        count = func_8004C398(fd, buffer, read_size);
+        count = PCread(fd, buffer, read_size);
         if (h->frame == frame && count != 0) {
             if (h->sector == 0) {
                 goto done;
@@ -1713,7 +1713,7 @@ s32 func_80074BA4(s32 frame) {
             pos = (frame - 1) * per_frame - (frame - 1) / 4;
             pos += pos / 7;
             PClseek(fd, pos * sector_size, 0);
-            count = func_8004C398(fd, buffer, read_size);
+            count = PCread(fd, buffer, read_size);
             h = (MovieSector *)&buffer[header];
             if (h->frame == frame && count != 0) {
                 if (h->sector == 0) {
@@ -1734,7 +1734,7 @@ s32 func_80074BA4(s32 frame) {
         do {
             pos = next;
             PClseek(fd, next * sector_size, 0);
-            count = func_8004C398(fd, buffer, read_size);
+            count = PCread(fd, buffer, read_size);
             h = (MovieSector *)&buffer[header];
             if (h->magic == 0x160) {
                 next = pos + (h->sectors - h->sector);
@@ -1849,7 +1849,7 @@ s32 func_8007519C(void) {
         size = PClseek(fd, 0, 2);
         PClseek(fd, 0, 0);
         PClseek(fd, size - sector_size, 0);
-        func_8004C398(fd, buffer, read_size);
+        PCread(fd, buffer, read_size);
         if (((MovieSector *)(buffer + header))->magic == 0x160) {
             frames = ((MovieSector *)(buffer + header))->frame;
         }

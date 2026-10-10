@@ -30,9 +30,10 @@ long InitCARD(long val);
 long StartCARD(void);
 void _bu_init(void);
 
-/* A controller member between _send_pad and _remove_ChgclrPAD that the
- * symbol file does not name yet: registers the two actuator buffers. */
-void func_80040C3C(unsigned char *data0, long size0, unsigned char *data1, long size1);
+/* A controller member between _send_pad and _remove_ChgclrPAD that no
+ * library signature names: registers the two actuator buffers. */
+void libapi_register_pad_send_buffers(unsigned char *data0, long size0, unsigned char *data1,
+                                      long size1);
 
 /* BIOS file calls (the memory card's file system), GetGp and the start of a
  * card check: stubs the resident folded into neighbouring objects, each its

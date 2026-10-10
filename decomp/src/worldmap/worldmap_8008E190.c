@@ -109,8 +109,8 @@ s32 func_8008E190(s32 index) {
     scratch->position.vx = -(actor->unk70 >> 12);
     scratch->position.vy = actor->heading;
     scratch->position.vz = D_8009BD38.vz;
-    func_8004A92C(&scratch->position, &D_8009C620[0].matrix);
-    func_8004A92C(&scratch->position, &D_8009C620[1].matrix);
+    RotMatrixYXZ(&scratch->position, &D_8009C620[0].matrix);
+    RotMatrixYXZ(&scratch->position, &D_8009C620[1].matrix);
     func_8008E034(&actor->position);
     D_8006D634.worldmap.vehicle_heading = actor->heading;
     switch (D_8009C5A8) {
@@ -174,8 +174,8 @@ s32 func_8008E4F4(s32 index) {
     scratch->position.vx = -(actor->unk70 >> 12);
     scratch->position.vy = actor->heading;
     scratch->position.vz = D_8009BD38.vz;
-    func_8004A92C(&scratch->position, &D_8009C620[0].matrix);
-    func_8004A92C(&scratch->position, &D_8009C620[1].matrix);
+    RotMatrixYXZ(&scratch->position, &D_8009C620[0].matrix);
+    RotMatrixYXZ(&scratch->position, &D_8009C620[1].matrix);
     return result;
 }
 
@@ -237,8 +237,8 @@ s32 func_8008E680(s32 index) {
         scratch->rotation.vx = -(actor->unk70 >> 12);                        \
         scratch->rotation.vy = actor->heading;                               \
         scratch->rotation.vz = D_8009BD38.vz;                                \
-        func_8004A92C(&scratch->rotation, &D_8009C620[0].matrix);            \
-        func_8004A92C(&scratch->rotation, &D_8009C620[1].matrix);            \
+        RotMatrixYXZ(&scratch->rotation, &D_8009C620[0].matrix);            \
+        RotMatrixYXZ(&scratch->rotation, &D_8009C620[1].matrix);            \
     }
 
 /* Point the camera at the vehicle. Expanded per state: each copy ends its
@@ -709,8 +709,8 @@ s32 func_8008E76C(s32 index) {
         scratch->rotation.vx = -(actor->unk70 >> 12);
         scratch->rotation.vy = actor->heading;
         scratch->rotation.vz = D_8009BD38.vz;
-        func_8004A92C(&scratch->rotation, &D_8009C620[0].matrix);
-        func_8004A92C(&scratch->rotation, &D_8009C620[1].matrix);
+        RotMatrixYXZ(&scratch->rotation, &D_8009C620[0].matrix);
+        RotMatrixYXZ(&scratch->rotation, &D_8009C620[1].matrix);
         break;
     case 0x25:
         if (func_8008BEC8(actor) == 3) {
@@ -1016,8 +1016,8 @@ s32 func_800907F4(s32 index) {
     scratch->angle.vy = actor->unk54;
     scratch->position.vz = rotor->angle.vz;
     scratch->angle.vz = tail->angle.vz;
-    func_8004ABBC(&scratch->position, &rotor->matrix);
-    func_8004ABBC(&scratch->angle, &tail->matrix);
+    RotMatrix(&scratch->position, &rotor->matrix);
+    RotMatrix(&scratch->angle, &tail->matrix);
     return 1;
 }
 

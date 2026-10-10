@@ -241,7 +241,7 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
         probe->step[4].vy = 0;
         probe->step[4].vx = (probe->step[2].vz << 16) | (probe->step[2].vx & 0xFFFF);
         probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
-        side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
+        side = NormalClip(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
         if (side < 0) {
             scale = func_8009443C(position, direction, probe->step, row);
             if (scale != 0) {
@@ -268,7 +268,7 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
         probe->step[4].vy = 0;
         probe->step[4].vx = (probe->step[2].vz << 16) | (probe->step[2].vx & 0xFFFF);
         probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
-        side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
+        side = NormalClip(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
         if (side > 0) {
             scale = func_800945C8(position, direction, probe->step, row);
             if (scale != 0) {
@@ -295,7 +295,7 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
         probe->step[4].vy = 0;
         probe->step[4].vx = (probe->step[2].vz << 16) | (probe->step[2].vx & 0xFFFF);
         probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
-        side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
+        side = NormalClip(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
         if (side > 0) {
             scale = func_8009443C(position, direction, probe->step, row);
             if (scale != 0) {
@@ -322,7 +322,7 @@ s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
         probe->step[4].vy = 0;
         probe->step[4].vx = (probe->step[2].vz << 16) | (probe->step[2].vx & 0xFFFF);
         probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
-        side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
+        side = NormalClip(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
         if (side < 0) {
             scale = func_800945C8(position, direction, probe->step, row);
             if (scale != 0) {
@@ -420,7 +420,7 @@ void func_80095324(VECTOR *normal, VECTOR *direction, VECTOR *out) {
     SCRATCH_VECTOR[1].vz = 0;
     SCRATCH_VECTOR[1].vx = 0;
     SCRATCH_VECTOR[1].vy = -0x1000;
-    func_8004A480(normal, &SCRATCH_VECTOR[1], &SCRATCH_VECTOR[2]);
+    OuterProduct12(normal, &SCRATCH_VECTOR[1], &SCRATCH_VECTOR[2]);
     VectorNormal(&SCRATCH_VECTOR[2], &SCRATCH_VECTOR[0]);
     tangent = SCRATCH_VECTOR[0].vx;
     dot = tangent * direction->vx + SCRATCH_VECTOR[0].vz * direction->vz;
@@ -1078,7 +1078,7 @@ void func_800966CC(HostReadRequest *request) {
         }
         PClseek(fd, request->offset, 0);
         for (i = 0; i < 8; i++) {
-            if (func_8004C398(fd, request->destination, request->bytes) != 0) {
+            if (PCread(fd, request->destination, request->bytes) != 0) {
                 break;
             }
         }
@@ -1302,7 +1302,7 @@ void func_80096F18(ViewSetup *view, Camera *camera, s32 distance, SVECTOR *angle
     rotation = &ORBIT_SCRATCH->angle;
     ORBIT_SCRATCH->angle.vy = angle->vy;
     ORBIT_SCRATCH->angle.vz = 0;
-    func_8004A92C(&ORBIT_SCRATCH->angle, &ORBIT_SCRATCH->rotation);
+    RotMatrixYXZ(&ORBIT_SCRATCH->angle, &ORBIT_SCRATCH->rotation);
     ORBIT_SCRATCH->offset.vx = 0;
     ORBIT_SCRATCH->offset.vy = 0;
     ORBIT_SCRATCH->offset.vz = -(distance >> 12);
@@ -1313,7 +1313,7 @@ void func_80096F18(ViewSetup *view, Camera *camera, s32 distance, SVECTOR *angle
     rotation->vx = 0;
     rotation->vy = angle->vy;
     rotation->vz = angle->vz;
-    func_8004A92C(rotation, &ORBIT_SCRATCH->rotation);
+    RotMatrixYXZ(rotation, &ORBIT_SCRATCH->rotation);
     rotation->vx = 0;
     rotation->vy = -0x1000;
     rotation->vz = 0;
@@ -1326,11 +1326,11 @@ void func_80097070(MATRIX *m, SVECTOR *angle) {
         angle->vy = ratan2(m->m[2][0], m->m[2][2]) & 0xFFF;
         *SCRATCH_MATRIX_A = *m;
         *SCRATCH_MATRIX_B = D_8009A180;
-        func_8004AFEC(angle->vy, SCRATCH_MATRIX_B);
+        RotMatrixY(angle->vy, SCRATCH_MATRIX_B);
         MulMatrix0(SCRATCH_MATRIX_A, SCRATCH_MATRIX_B, SCRATCH_MATRIX_C);
         angle->vx = ratan2(SCRATCH_MATRIX_C->m[1][2], SCRATCH_MATRIX_C->m[1][1]);
         *SCRATCH_MATRIX_B = D_8009A180;
-        func_8004AE4C(angle->vx, SCRATCH_MATRIX_B);
+        RotMatrixX(angle->vx, SCRATCH_MATRIX_B);
         MulMatrix0(SCRATCH_MATRIX_C, SCRATCH_MATRIX_B, SCRATCH_MATRIX_A);
         angle->vz = -ratan2(SCRATCH_MATRIX_A->m[1][0], SCRATCH_MATRIX_A->m[1][1]);
     }
@@ -1357,9 +1357,9 @@ void func_80097244(void *arg) {
     LOOKAT_SCRATCH->work.vy = -view->eye.vy + view->at.vy;
     LOOKAT_SCRATCH->work.vz = -view->eye.vz + view->at.vz;
     VectorNormal(&LOOKAT_SCRATCH->work, &LOOKAT_SCRATCH->forward);
-    func_8004A480(&LOOKAT_SCRATCH->forward, &view->up, &LOOKAT_SCRATCH->work);
+    OuterProduct12(&LOOKAT_SCRATCH->forward, &view->up, &LOOKAT_SCRATCH->work);
     VectorNormal(&LOOKAT_SCRATCH->work, &LOOKAT_SCRATCH->right);
-    func_8004A480(&LOOKAT_SCRATCH->forward, &LOOKAT_SCRATCH->right, &LOOKAT_SCRATCH->work);
+    OuterProduct12(&LOOKAT_SCRATCH->forward, &LOOKAT_SCRATCH->right, &LOOKAT_SCRATCH->work);
     VectorNormal(&LOOKAT_SCRATCH->work, &LOOKAT_SCRATCH->up);
     D_8009C808.m[0][0] = LOOKAT_SCRATCH->right.vx;
     D_8009C808.m[0][1] = LOOKAT_SCRATCH->right.vy;
@@ -1386,8 +1386,8 @@ void func_80097440(void *arg) {
     *SCRATCH_MATRIX_A = D_8009A180;
     *SCRATCH_MATRIX_B = *SCRATCH_MATRIX_A;
     *SCRATCH_MATRIX_C = *SCRATCH_MATRIX_A;
-    func_8004AE4C(-D_8009BD38.vx, SCRATCH_MATRIX_A);
-    func_8004AFEC(-D_8009BD38.vy, SCRATCH_MATRIX_B);
+    RotMatrixX(-D_8009BD38.vx, SCRATCH_MATRIX_A);
+    RotMatrixY(-D_8009BD38.vy, SCRATCH_MATRIX_B);
     RotMatrixZ(-D_8009BD38.vz, SCRATCH_MATRIX_C);
     MulMatrix0(SCRATCH_MATRIX_A, SCRATCH_MATRIX_B, SCRATCH_MATRIX_D);
     MulMatrix0(SCRATCH_MATRIX_C, SCRATCH_MATRIX_D, &D_8009C808);

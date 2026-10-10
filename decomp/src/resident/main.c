@@ -265,9 +265,9 @@ ModeEntry D_8001808C[] __attribute__((section(".rodata"))) = {
 void func_80019C2C(void) {
     s32 fd;
 
-    func_8004C38C();
+    PCinit();
     fd = PCcreat("c:\\core", 0);
-    func_8004C470(fd, (void *)0x80000000, 0x200000);
+    PCwrite(fd, (void *)0x80000000, 0x200000);
     PCclose(fd);
 }
 

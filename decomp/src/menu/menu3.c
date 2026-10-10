@@ -219,7 +219,7 @@ s32 func_80073644(Actor *actor) {
             actor->nearest_shot = shot;
         }
         VectorNormalS(&toward, &dir);
-        func_8004901C(&dir, &shot->dir, shot->homing, 0x1000 - shot->homing, &shot->dir);
+        LoadAverageShort12(&dir, &shot->dir, shot->homing, 0x1000 - shot->homing, &shot->dir);
         func_80073064(&shot->dir, &shot->velocity, shot->speed);
         switch (shot->look) {
         case 0:
@@ -996,7 +996,7 @@ s32 func_80075750(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
     rx = px - x0;
     rz = pz - z0;
     d.vz = radius;
-    func_8004A414(&d, &sq);
+    Square0(&d, &sq);
     len = SquareRoot0(sq.vx + sq.vy);
     if (len == 0) {
         return 0;
@@ -1032,7 +1032,7 @@ s32 func_80075888(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
     rx = px - x0;
     rz = pz - z0;
     d.vz = radius;
-    func_8004A414(&d, &sq);
+    Square0(&d, &sq);
     len = SquareRoot0(sq.vx + sq.vy);
     if (len == 0) {
         return 0;
@@ -3763,7 +3763,7 @@ void func_8007CF78(MATRIX *view, u32 *ot) {
     MATRIX local;
 
     SCENE_SCRATCH->camera = D_80096FA8;
-    func_8004A8EC(view, &local);
+    libgte_transpose_matrix(view, &local);
     func_8007BBA0(view, &local, ot);
     func_8007C280(view, &local, ot);
     func_8007CAA4(view, NULL, ot);

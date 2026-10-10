@@ -1083,7 +1083,7 @@ void func_800BA614(Sprite *sprite) {
     delta.vx = sprite->target_x - (sprite->x >> 16);
     delta.vz = sprite->target_z - (sprite->z >> 16);
     angle = -ratan2(delta.vz, delta.vx);
-    func_8004A414(&delta, &delta);
+    Square0(&delta, &delta);
     distance = SquareRoot0(delta.vx + delta.vz);
     sprite->speed_y = -sprite->gravity * distance * 16 / (sprite->speed >> 11) + sprite->speed * height / distance;
     func_800BA59C(sprite, angle);
@@ -1110,7 +1110,7 @@ void func_800BA768(Sprite *sprite) {
     delta.vz = sprite->target_z - (sprite->z >> 16);
     delta.vy = 0;
     angle = -ratan2(delta.vz, delta.vx);
-    func_8004A414(&delta, &delta);
+    Square0(&delta, &delta);
     distance = SquareRoot0(delta.vx + delta.vz) << 16;
     if (frames != 0) {
         sprite->speed = distance / frames;
@@ -1537,9 +1537,9 @@ void func_800BB844(MATRIX *m, SVECTOR *eye, SVECTOR *target, SVECTOR *up) {
     upward.vy = up->vy;
     upward.vz = up->vz;
     VectorNormal(&v, &forward);
-    func_8004A480(&upward, &forward, &v);
+    OuterProduct12(&upward, &forward, &v);
     VectorNormal(&v, &right);
-    func_8004A480(&forward, &right, &v);
+    OuterProduct12(&forward, &right, &v);
     VectorNormal(&v, &upward);
     m->m[0][0] = right.vx;
     m->m[0][1] = right.vy;
@@ -1649,7 +1649,7 @@ void func_800BBAB8(void) {
     delta.vx = D_800D335C.vx - D_800D3354.vx;
     delta.vy = D_800D335C.vy - D_800D3354.vy;
     delta.vz = D_800D335C.vz - D_800D3354.vz;
-    func_8004A414(&delta, &square);
+    Square0(&delta, &square);
     horizontal = SquareRoot0(square.vx + square.vz);
     D_800D309C.range = SquareRoot0(square.vx + square.vy + square.vz);
     D_800D309C.rot.vy = -ratan2(delta.vz, delta.vx);
@@ -1910,7 +1910,7 @@ void func_800BC460(u32 mask) {
         center.vx >>= 16;
         center.vy >>= 16;
         center.vz >>= 16;
-        func_8004ABBC(&D_800C3740, &m);
+        RotMatrix(&D_800C3740, &m);
         v.vx = 0;
         v.vy = 0;
         v.vz = ReadGeomScreen() * 8;
@@ -1959,7 +1959,7 @@ void func_800BC460(u32 mask) {
         }
         farthest = SquareRoot0(farthest);
         if (farthest < 120) {
-            func_8004ABBC(&D_800C3740, &m2);
+            RotMatrix(&D_800C3740, &m2);
             v2.vx = 0;
             v2.vy = 0;
             v2.vz = ReadGeomScreen() * 2;
@@ -1989,7 +1989,7 @@ void func_800BC460(u32 mask) {
             range = (range << 1) * ReadGeomScreen();
             range >>= 14;
             D_800C3CDC = range;
-            func_8004ABBC(&D_800C3740, &m3);
+            RotMatrix(&D_800C3740, &m3);
             v3.vx = 0;
             v3.vy = 0;
             v3.vz = range;

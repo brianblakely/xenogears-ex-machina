@@ -449,7 +449,7 @@ s32 func_8007BB60(s32 index) {
     D_8009C620[0].angle.vx = 0;
     D_8009C620[0].angle.vy = 0;
     D_8009C620[0].angle.vz = 0;
-    func_8004A92C(&D_8009C620[0].angle, &D_8009C620[0].matrix);
+    RotMatrixYXZ(&D_8009C620[0].angle, &D_8009C620[0].matrix);
     return 3;
 }
 
@@ -523,14 +523,14 @@ s32 func_8007BBEC(s32 index) {
     scratch->angle.vx = 0;
     scratch->angle.vy = ratan2(scratch->axis[0].vx, scratch->axis[0].vz) & 0xFFF;
     scratch->angle.vz = actor->unk54;
-    func_8004A92C(&scratch->angle, &scratch->frame);
+    RotMatrixYXZ(&scratch->angle, &scratch->frame);
     scratch->angle.vx = 0;
     scratch->angle.vy = -0x1000;
     scratch->angle.vz = 0;
     ApplyMatrix(&scratch->frame, &scratch->angle, &scratch->axis[1]);
-    func_8004A480(&scratch->axis[0], &scratch->axis[1], &scratch->axis[3]);
+    OuterProduct12(&scratch->axis[0], &scratch->axis[1], &scratch->axis[3]);
     VectorNormal(&scratch->axis[3], &scratch->axis[2]);
-    func_8004A480(&scratch->axis[0], &scratch->axis[2], &scratch->axis[3]);
+    OuterProduct12(&scratch->axis[0], &scratch->axis[2], &scratch->axis[3]);
     VectorNormal(&scratch->axis[3], &scratch->axis[1]);
     scratch->frame.m[0][0] = scratch->axis[2].vx;
     scratch->frame.m[0][1] = scratch->axis[2].vy;
@@ -541,7 +541,7 @@ s32 func_8007BBEC(s32 index) {
     scratch->frame.m[2][0] = scratch->axis[0].vx;
     scratch->frame.m[2][1] = scratch->axis[0].vy;
     scratch->frame.m[2][2] = scratch->axis[0].vz;
-    func_8004A8EC(&scratch->frame, &object->matrix);
+    libgte_transpose_matrix(&scratch->frame, &object->matrix);
     func_80097070(&scratch->frame, &scratch->heading);
     if (object->position.vy >= -0x7F) {
         scratch->angle.vx = object->position.vx;

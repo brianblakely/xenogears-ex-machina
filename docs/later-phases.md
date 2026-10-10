@@ -326,7 +326,7 @@ callers depend on narrowing.
 | Field state across battle and the arena | `D_8005A4E4` (0x22FC-byte resident common): field `func_800A3F4C` writes it on those exits (`func_80077E88`), `func_800A3474` restores it; the world map parks its actors there (`func_80075460`) | holds raw actor pointers and world map function addresses |
 | Field event variables | `D_800C3A68[0x400]`: the lower half comes from game data `vars` at map load (`func_800705DC`) and returns each frame (`func_800A30FC`); the upper half is per map | game data is stale until the frame ends |
 | Battle party | `BattleWork D_800CCCE8` (battle/work.h): ovl2615 `func_801E5384` copies the party in, ovl2596 `func_801E2888` writes it back | game data is stale during battle |
-| RNG seed | `D_8005A1FC`: libc `rand` (8003fa38) computes `seed = seed * 0x41C64E6D + 0x3039` and returns `(seed >> 16) & 0x7FFF` | cleared with the BSS at boot and soft reset; `srand` has no caller in `decomp/src` |
+| RNG seed | `libc_rand_seed`: libc `rand` (8003fa38) computes `seed = seed * 0x41C64E6D + 0x3039` and returns `(seed >> 16) & 0x7FFF` | cleared with the BSS at boot and soft reset; `srand` has no caller in `decomp/src` |
 | Clocks | `D_80059488` (vblank count, the saved play time) and the vblank h:m:s clock | the field copies the clock into event variables 0xC/0xE each frame (`func_800A31E8`) |
 | Draw-buffer parity | field `D_800ADB08` | gates field exits (Presentation) |
 | Patched renderer fields | `func_80030988` rewrites shifts and offsets inside `func_80030750` | persists across modes |
@@ -503,7 +503,7 @@ census is in [original-boundaries.md](original-boundaries.md), Services).
 | libapi pad, libcard, BIOS file calls | input, cards | per-vblank pad buffers; virtual cards with event completion |
 | libc, libc2 | `rand`, `sprintf`, `memcpy`, `bzero` | exact PsyQ behaviour (the `rand` recurrence above), not host libc |
 | libpress | movies | software MDEC (VLC, IQ, IDCT, YCbCr to RGB at 15 and 24 bits) |
-| libsn | the development PC file server: `PCopen`, `PClseek`, `PCclose`, and `func_8004C38C` and `func_8004C398`, PCinit and PCread by their signatures and callers (psyq/libsn.h) | not needed on the disc path; if a port takes the host-file seam, `PCopen`, `PCread`, `PClseek` and `PCclose` are that seam's interface, and the port still serves raw reads by LBA ([Disc and files](#disc-and-files)) |
+| libsn | the development PC file server: `PCopen`, `PClseek`, `PCclose`, and `PCinit` and `PCread`, PCinit and PCread by their signatures and callers (psyq/libsn.h) | not needed on the disc path; if a port takes the host-file seam, `PCopen`, `PCread`, `PClseek` and `PCclose` are that seam's interface, and the port still serves raw reads by LBA ([Disc and files](#disc-and-files)) |
 
 ### Inline assembly in the C
 

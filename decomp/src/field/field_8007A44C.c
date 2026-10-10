@@ -453,7 +453,7 @@ void func_8007B07C(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *p, VECTOR *norma
     d.vy = c->vy - a->vy;
     d.vz = c->vz - a->vz;
     VectorNormal(&d, &edge_c);
-    func_8004A480(&edge_b, &edge_c, normal);
+    OuterProduct12(&edge_b, &edge_c, normal);
     if (normal->vy == 0) {
         p->vy = 0;
         return;
@@ -865,11 +865,11 @@ s32 func_8007BEF4(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
         a = (vertices[triangles[current].unk00[0]].vx << 16) + vertices[triangles[current].unk00[0]].vz;
         b = (vertices[triangles[current].unk00[1]].vx << 16) + vertices[triangles[current].unk00[1]].vz;
         c = (vertices[triangles[current].unk00[2]].vx << 16) + vertices[triangles[current].unk00[2]].vz;
-        side = (u32)func_8004A70C(a, b, point) >> 31;
-        if (func_8004A70C(b, c, point) < 0) {
+        side = (u32)NormalClip(a, b, point) >> 31;
+        if (NormalClip(b, c, point) < 0) {
             side |= 2;
         }
-        if (func_8004A70C(c, a, point) < 0) {
+        if (NormalClip(c, a, point) < 0) {
             side |= 4;
         }
         switch (side) {
@@ -883,7 +883,7 @@ s32 func_8007BEF4(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
             current = triangles[current].unk00[4];
             break;
         case 3:
-            if (func_8004A70C(b, point, origin) < 0) {
+            if (NormalClip(b, point, origin) < 0) {
                 current = triangles[current].unk00[3];
                 side = 1;
             } else {
@@ -895,7 +895,7 @@ s32 func_8007BEF4(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
             current = triangles[current].unk00[5];
             break;
         case 5:
-            if (func_8004A70C(a, point, origin) >= 0) {
+            if (NormalClip(a, point, origin) >= 0) {
                 current = triangles[current].unk00[3];
                 side = 1;
             } else {
@@ -904,7 +904,7 @@ s32 func_8007BEF4(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
             }
             break;
         case 6:
-            if (func_8004A70C(c, point, origin) < 0) {
+            if (NormalClip(c, point, origin) < 0) {
                 current = triangles[current].unk00[4];
                 side = 2;
             } else {
@@ -1032,11 +1032,11 @@ s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
         a = (vertices[triangles[triangle].unk00[0]].vx << 16) + vertices[triangles[triangle].unk00[0]].vz;
         b = (vertices[triangles[triangle].unk00[1]].vx << 16) + vertices[triangles[triangle].unk00[1]].vz;
         c = (vertices[triangles[triangle].unk00[2]].vx << 16) + vertices[triangles[triangle].unk00[2]].vz;
-        side = (u32)func_8004A70C(a, b, point) >> 31;
-        if (func_8004A70C(b, c, point) < 0) {
+        side = (u32)NormalClip(a, b, point) >> 31;
+        if (NormalClip(b, c, point) < 0) {
             side |= 2;
         }
-        if (func_8004A70C(c, a, point) < 0) {
+        if (NormalClip(c, a, point) < 0) {
             side |= 4;
         }
         switch (side) {
@@ -1050,7 +1050,7 @@ s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
             triangle = triangles[triangle].unk00[4];
             break;
         case 3:
-            if (func_8004A70C(b, point, origin) < 0) {
+            if (NormalClip(b, point, origin) < 0) {
                 triangle = triangles[triangle].unk00[3];
                 side = 1;
             } else {
@@ -1062,7 +1062,7 @@ s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
             triangle = triangles[triangle].unk00[5];
             break;
         case 5:
-            if (func_8004A70C(a, point, origin) < 0) {
+            if (NormalClip(a, point, origin) < 0) {
                 triangle = triangles[triangle].unk00[5];
                 side = 4;
             } else {
@@ -1071,7 +1071,7 @@ s32 func_8007C694(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge
             }
             break;
         case 6:
-            if (func_8004A70C(c, point, origin) < 0) {
+            if (NormalClip(c, point, origin) < 0) {
                 triangle = triangles[triangle].unk00[4];
                 side = 2;
             } else {
@@ -1358,11 +1358,11 @@ s32 func_8007D3D4(FieldActor *actor, s32 layer, s32 *floor, VECTOR *normal, s16 
             a = (vertices[triangles[current].unk00[0]].vx << 16) + vertices[triangles[current].unk00[0]].vz;
             b = (vertices[triangles[current].unk00[1]].vx << 16) + vertices[triangles[current].unk00[1]].vz;
             c = (vertices[triangles[current].unk00[2]].vx << 16) + vertices[triangles[current].unk00[2]].vz;
-            side = (u32)func_8004A70C(a, b, point) >> 31;
-            if (func_8004A70C(b, c, point) < 0) {
+            side = (u32)NormalClip(a, b, point) >> 31;
+            if (NormalClip(b, c, point) < 0) {
                 side |= 2;
             }
-            if (func_8004A70C(c, a, point) < 0) {
+            if (NormalClip(c, a, point) < 0) {
                 side |= 4;
             }
             switch (side) {
@@ -1370,14 +1370,14 @@ s32 func_8007D3D4(FieldActor *actor, s32 layer, s32 *floor, VECTOR *normal, s16 
                 steps = 0xFF;
                 break;
             case 3:
-                if (func_8004A70C(b, point, origin) < 0) {
+                if (NormalClip(b, point, origin) < 0) {
                     current = triangles[current].unk00[3];
                 } else {
                     current = triangles[current].unk00[4];
                 }
                 break;
             case 5:
-                if (func_8004A70C(a, point, origin) < 0) {
+                if (NormalClip(a, point, origin) < 0) {
                     current = triangles[current].unk00[5];
                     break;
                 }
@@ -1386,7 +1386,7 @@ s32 func_8007D3D4(FieldActor *actor, s32 layer, s32 *floor, VECTOR *normal, s16 
                 current = triangles[current].unk00[3];
                 break;
             case 6:
-                if (func_8004A70C(c, point, origin) >= 0) {
+                if (NormalClip(c, point, origin) >= 0) {
                     current = triangles[current].unk00[5];
                     break;
                 }
@@ -2783,8 +2783,8 @@ s32 func_8008237C(s32 x, s32 z, FieldBox *box, s32 margin) {
     b = ((box->x + box->half_x + margin) << 16) + (box->z + box->half_z + margin);
     c = ((box->x + box->half_x + margin) << 16) + (box->z - box->half_z - margin);
     d = ((box->x - box->half_x - margin) << 16) + (box->z - box->half_z - margin);
-    if (func_8004A70C(a, b, point) < 0 || func_8004A70C(b, c, point) < 0 ||
-        func_8004A70C(c, d, point) < 0 || func_8004A70C(d, a, point) < 0) {
+    if (NormalClip(a, b, point) < 0 || NormalClip(b, c, point) < 0 ||
+        NormalClip(c, d, point) < 0 || NormalClip(d, a, point) < 0) {
         return -1;
     }
     if (D_800C268C == 0) {
@@ -2812,11 +2812,11 @@ s32 func_80082494(s32 *offset, FieldActor *actor) {
     b = (quad[2] << 16) + quad[3];
     c = (quad[4] << 16) + quad[5];
     d = (quad[6] << 16) + quad[7];
-    if (func_8004A70C(a, b, point) < 0 || func_8004A70C(b, c, point) < 0 ||
-        func_8004A70C(c, d, point) < 0) {
+    if (NormalClip(a, b, point) < 0 || NormalClip(b, c, point) < 0 ||
+        NormalClip(c, d, point) < 0) {
         return -1;
     }
-    return func_8004A70C(d, a, point) >> 31;
+    return NormalClip(d, a, point) >> 31;
 }
 
 /* Planar distance between two descriptors' actors (integer positions). */
@@ -3250,10 +3250,10 @@ s32 func_80083288(s32 index, SpriteModel *model, s32 x, s32 z, s32 *height, VECT
                 work->packed[0] = (work->v[0].vx << 16) + work->v[0].vz;
                 work->packed[1] = (work->v[1].vx << 16) + work->v[1].vz;
                 work->packed[2] = (work->v[2].vx << 16) + work->v[2].vz;
-                if (func_8004A70C(work->packed[0], work->packed[1], work->point) >= 0
-                    && func_8004A70C(work->packed[1], work->packed[2], work->point) >= 0
-                    && func_8004A70C(work->packed[2], work->packed[0], work->point) >= 0
-                    && func_8004A70C(work->packed[0], work->packed[1], work->packed[2]) >= 0) {
+                if (NormalClip(work->packed[0], work->packed[1], work->point) >= 0
+                    && NormalClip(work->packed[1], work->packed[2], work->point) >= 0
+                    && NormalClip(work->packed[2], work->packed[0], work->point) >= 0
+                    && NormalClip(work->packed[0], work->packed[1], work->packed[2]) >= 0) {
                     work->p.vx = x;
                     work->p.vz = z;
                     func_8007B07C(&work->v[0], &work->v[1], &work->v[2], &work->p, normal);
@@ -3274,14 +3274,14 @@ s32 func_80083288(s32 index, SpriteModel *model, s32 x, s32 z, s32 *height, VECT
                 work->packed[1] = (work->v[1].vx << 16) + work->v[1].vz;
                 work->packed[2] = (work->v[2].vx << 16) + work->v[2].vz;
                 work->packed[3] = (work->v[3].vx << 16) + work->v[3].vz;
-                if (func_8004A70C(work->packed[0], work->packed[1], work->point) >= 0
-                    && func_8004A70C(work->packed[1], work->packed[3], work->point) >= 0
-                    && func_8004A70C(work->packed[3], work->packed[2], work->point) >= 0
-                    && func_8004A70C(work->packed[2], work->packed[0], work->point) >= 0
-                    && func_8004A70C(work->packed[0], work->packed[1], work->packed[2]) >= 0) {
+                if (NormalClip(work->packed[0], work->packed[1], work->point) >= 0
+                    && NormalClip(work->packed[1], work->packed[3], work->point) >= 0
+                    && NormalClip(work->packed[3], work->packed[2], work->point) >= 0
+                    && NormalClip(work->packed[2], work->packed[0], work->point) >= 0
+                    && NormalClip(work->packed[0], work->packed[1], work->packed[2]) >= 0) {
                     work->p.vx = x;
                     work->p.vz = z;
-                    if (func_8004A70C(work->packed[1], work->packed[2], work->point) >= 0) {
+                    if (NormalClip(work->packed[1], work->packed[2], work->point) >= 0) {
                         func_8007B07C(&work->v[0], &work->v[1], &work->v[2], &work->p, normal);
                     } else {
                         func_8007B07C(&work->v[1], &work->v[3], &work->v[2], &work->p, normal);
@@ -3427,11 +3427,11 @@ void func_8008399C(s32 index, FieldDescriptor *descriptor, FieldActor *player) {
             }
             offset.vx = WHOLE(other->position[0]) - px + other->unk60;
             offset.vz = WHOLE(other->position[2]) - pz + other->unk64;
-            func_8004A414(&offset, &square);
+            Square0(&offset, &square);
             reach.vx = touch + (u16)other->gravity.part.whole;
             distance = square.vx + square.vz;
             reach.vz = talk + (u16)other->gravity.part.whole;
-            func_8004A414(&reach, &reach_square);
+            Square0(&reach, &reach_square);
             if (distance < reach_square.vz && (D_800C2694 & 0x20) && talked == 0
                 && !(other->layer_flags & 0x4000000)) {
                 if (other->flags & 0x220000) {
@@ -3557,7 +3557,7 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
                 scratch[0] = ((other->position[0] + other->unk030[0]) >> 16) - x;
                 scratch[2] = ((other->position[2] + other->unk030[2]) >> 16) - z;
                 scratch[1] = (u16)actor->gravity.part.whole + (u16)other->gravity.part.whole;
-                func_8004A414((VECTOR *)scratch, (VECTOR *)(scratch + 4));
+                Square0((VECTOR *)scratch, (VECTOR *)(scratch + 4));
                 if (scratch[4] + scratch[6] >= scratch[5]) {
                     other->layer_flags &= 0xFF3FFFFF;
                     continue;

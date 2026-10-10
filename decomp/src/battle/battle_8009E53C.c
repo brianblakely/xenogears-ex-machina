@@ -459,7 +459,7 @@ u16 func_8009EF3C(ModelPart *part, s32 scale) {
     root->world.t[1] = root->translation[1];
     root->world.t[2] = root->translation[2];
     if (root->yxz) {
-        func_8004A92C(&root->rotation, &root->world);
+        RotMatrixYXZ(&root->rotation, &root->world);
     } else {
         func_8003F738(&root->rotation, &root->world);
     }
@@ -480,7 +480,7 @@ u16 func_8009EF3C(ModelPart *part, s32 scale) {
         part++;
         if (part->rotate) {
             if (part->yxz) {
-                func_8004A92C(&part->rotation, &part->transform);
+                RotMatrixYXZ(&part->rotation, &part->transform);
             } else {
                 func_8003F738(&part->rotation, &part->transform);
             }
@@ -525,7 +525,7 @@ u16 func_8009F1C4(ModelPart *part, s32 scale) {
     root->world.t[1] = root->translation[1];
     root->world.t[2] = root->translation[2];
     if (root->yxz) {
-        func_8004A92C(&root->rotation, &root->world);
+        RotMatrixYXZ(&root->rotation, &root->world);
     } else {
         func_8003F738(&root->rotation, &root->world);
     }
@@ -561,7 +561,7 @@ u16 func_8009F1C4(ModelPart *part, s32 scale) {
         if (part->rotate) {
             scratch = (MATRIX *)0x1F800000;
             if (part->yxz) {
-                func_8004A92C(&part->rotation, &part->transform);
+                RotMatrixYXZ(&part->rotation, &part->transform);
             } else {
                 func_8003F738(&part->rotation, &part->transform);
             }
@@ -776,7 +776,7 @@ void func_8009F844(BattleObject *object, MATRIX *view, MATRIX *light, s32 mode, 
             scratch->m[2][0] = 0;
             scratch->m[2][1] = 0;
             scratch->m[2][2] = shadowScale;
-            func_80049ACC(lighting, scratch);
+            libgte_multiply_matrix_in_place(lighting, scratch);
             SetRotMatrix(lighting);
             SetTransMatrix(lighting);
             point.vx = object->scale26;
@@ -2814,7 +2814,7 @@ void func_800A4DB8(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vi
     turn.t[2] = 0;
     angles.vx = tilt;
     angles.vy = -angles.vy;
-    func_8004A92C(&angles, &camera);
+    RotMatrixYXZ(&angles, &camera);
     VectorNormalS(&delta, &angles);
     delta.vx = eye->vx + angles.vx * 2;
     delta.vy = eye->vy / 4 - sky->height;
@@ -2991,7 +2991,7 @@ void func_800A5BE8(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point, VECTOR *n
     edge.vy = c->vy - a->vy;
     edge.vz = c->vz - a->vz;
     VectorNormal(&edge, &edgeC);
-    func_8004A480(&edgeB, &edgeC, normal);
+    OuterProduct12(&edgeB, &edgeC, normal);
     if (normal->vy == 0) {
         point->vy = 0;
         return;
@@ -6559,7 +6559,7 @@ s16 func_800AF2C4(VECTOR *direction, VECTOR *a, VECTOR *b, s32 scale) {
     s32 dot;
     s32 length;
 
-    func_8004A480(a, b, &normal);
+    OuterProduct12(a, b, &normal);
     dot = normal.vx * direction->vx + normal.vy * direction->vy + normal.vz * direction->vz;
     length = SquareRoot0(normal.vx * normal.vx + normal.vy * normal.vy + normal.vz * normal.vz) + 1;
     return (dot * 16 / length << 8) / scale;

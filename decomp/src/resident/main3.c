@@ -5,7 +5,7 @@
  * the game units' (800523f0), ahead of every library's. The library code
  * that follows (libc, libapi, libds, libcd, libgpu, libgte) is the original
  * assembly, classified sdk (decomp/targets/resident/classification.txt);
- * psyq_tail_80048BC4.c continues it. The sound driver unit ends where this
+ * psyq_libgte_to_libcard.c continues it. The sound driver unit ends where this
  * object starts. */
 #include "common.h"
 
@@ -806,13 +806,17 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _Pad1);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _IsVSync);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", func_80040A8C);
+/* 80040A8C */
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libapi_bios_b12_init_pad);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", func_80040A9C);
+/* 80040A9C */
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libapi_bios_b13_start_pad);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", func_80040AAC);
+/* 80040AAC */
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libapi_bios_b14_stop_pad);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", func_80040ABC);
+/* 80040ABC */
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libapi_bios_b15_init_and_start_pad);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SysEnqIntRP);
 
@@ -828,9 +832,11 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _SendPAD);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _send_pad);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", func_80040C20);
+/* 80040C20 */
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libapi_send_pad_patch_code);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", func_80040C3C);
+/* 80040C3C */
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libapi_register_pad_send_buffers);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _remove_ChgclrPAD);
 
@@ -896,11 +902,11 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdIntToPos);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CdPosToInt);
 
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main3", D_80018CE4);
+INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main3", libcd_command_and_interrupt_names); /* 80018CE4 */
 
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main3", D_80018E28);
+INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main3", libcd_timeout_message); /* 80018E28 */
 
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main3", D_80018E38);
+INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main3", libcd_sync_ready_format); /* 80018E38 */
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", getintr);
 
@@ -968,9 +974,10 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", GetTPage);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", GetClut);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", func_80043A70);
+/* 80043A70 */
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libgpu_dump_tpage);
 
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main3", D_80018F88);
+INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main3", libgpu_tpage_format); /* 80018F88 */
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", DumpClut);
 
@@ -1026,11 +1033,13 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetLineG2);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetLineF3);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", func_80043DC0);
+/* 80043DC0 */
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libgpu_set_line_g3);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetLineF4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", func_80043E00);
+/* 80043E00 */
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libgpu_set_line_g4);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetDrawTPage);
 
@@ -1040,9 +1049,11 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetDrawLoad);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", MargePrim);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", func_80043F50);
+/* 80043F50 */
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libgpu_dump_draw_env);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", func_80044064);
+/* 80044064 */
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libgpu_dump_disp_env);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", ResetGraph);
 
@@ -1068,7 +1079,7 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", ClearImage);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", ClearImage2);
 
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main3", D_80019180);
+INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main3", libgpu_clear_image_name); /* 80019180 */
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", LoadImage);
 
@@ -1158,7 +1169,8 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", get_alarm);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", _version);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", func_80047178);
+/* 80047178 */
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", libgpu_fill_bytes);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", GPU_cw);
 

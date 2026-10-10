@@ -273,11 +273,11 @@ void func_800B3F04(Sprite *sprite, s32 command, u8 *args) {
         eye.vx = D_800D309C.eye.vx - D_800D3354.vx;
         eye.vy = D_800D309C.eye.vy - D_800D3354.vy;
         eye.vz = D_800D309C.eye.vz - D_800D3354.vz;
-        func_8004A414(&eye, &eye);
+        Square0(&eye, &eye);
         target.vx = D_800D309C.target.vx - D_800D335C.vx;
         target.vy = D_800D309C.target.vy - D_800D335C.vy;
         target.vz = D_800D309C.target.vz - D_800D335C.vz;
-        func_8004A414(&target, &target);
+        Square0(&target, &target);
         if (SquareRoot0(eye.vx + eye.vy + eye.vz) < 4 && SquareRoot0(target.vx + target.vy + target.vz) < 4) {
             break;
         }
@@ -945,7 +945,7 @@ s32 func_800B57E4(Sprite *sprite) {
     delta.vx = sprite->target_x - FIXED_WHOLE(sprite->x);
     delta.vy = sprite->target_y - FIXED_WHOLE(sprite->y);
     delta.vz = sprite->target_z - FIXED_WHOLE(sprite->z);
-    func_8004A414(&delta, &squares);
+    Square0(&delta, &squares);
     return SquareRoot0(squares.vx + squares.vz + squares.vy);
 }
 
@@ -1332,7 +1332,7 @@ void func_800B65B0(Sprite *sprite, u8 *args) {
     delta.vx = sprite->target_x - FIXED_WHOLE(sprite->x);
     delta.vy = sprite->target_y - FIXED_WHOLE(sprite->y);
     delta.vz = sprite->target_z - FIXED_WHOLE(sprite->z);
-    func_8004A414(&delta, &squares);
+    Square0(&delta, &squares);
     distance = SquareRoot0(squares.vx + squares.vz);
     want.vy = -ratan2(delta.vz, delta.vx);
     want.vz = ratan2(delta.vy, distance);
@@ -1340,7 +1340,7 @@ void func_800B65B0(Sprite *sprite, u8 *args) {
     velocity.vx = sprite->speed_x >> 7;
     velocity.vy = sprite->speed_y >> 7;
     velocity.vz = sprite->speed_z >> 7;
-    func_8004A414(&velocity, &squares);
+    Square0(&velocity, &squares);
     speedLength = SquareRoot0(squares.vy + squares.vx + squares.vz);
     distance = SquareRoot0(squares.vx + squares.vz);
     angles.vy = -ratan2(velocity.vz, velocity.vx);
@@ -1388,7 +1388,7 @@ void func_800B6808(Sprite *sprite) {
     delta.vx = sprite->target_x - FIXED_WHOLE(sprite->x);
     delta.vy = sprite->target_y - FIXED_WHOLE(sprite->y);
     delta.vz = sprite->target_z - FIXED_WHOLE(sprite->z);
-    func_8004A414(&delta, &squares);
+    Square0(&delta, &squares);
     distance = SquareRoot0(squares.vx + squares.vz);
     angles.vy = -ratan2(delta.vz, delta.vx);
     angles.vz = ratan2(delta.vy, distance);
@@ -1517,7 +1517,7 @@ void func_800B6CEC(Sprite *sprite) {
     if (speed.vz == 0) {
         speed.vz = 4;
     }
-    func_8004A414(&speed, &squares);
+    Square0(&speed, &squares);
     distance = SquareRoot0(squares.vx + squares.vz);
     sprite->renderer->angle_y = -ratan2(speed.vz, speed.vx);
     sprite->renderer->angle_z = ratan2(speed.vy, distance);

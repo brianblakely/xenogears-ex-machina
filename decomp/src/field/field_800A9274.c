@@ -445,7 +445,7 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
                 sv.vx = emitter->unk0C.vx;
                 sv.vy = emitter->unk0C.vy;
                 sv.vz = emitter->unk0C.vz;
-                func_8004A6DC(&sv, &origin, &flag);
+                RotTrans(&sv, &origin, &flag);
                 emitter->unk50 = 0x1000;
                 break;
             case 2:
@@ -455,7 +455,7 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
                 sv.vx = emitter->unk0C.vx;
                 sv.vy = emitter->unk0C.vy;
                 sv.vz = emitter->unk0C.vz;
-                func_8004A6DC(&sv, &origin, &flag);
+                RotTrans(&sv, &origin, &flag);
                 emitter->unk50 = 0x1000;
                 break;
             }
@@ -465,7 +465,7 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
             sv.vx = particle->velocity.vx;
             sv.vy = particle->velocity.vy;
             sv.vz = particle->velocity.vz;
-            func_800495DC(&sv, &v);
+            libgte_rotate_svector(&sv, &v);
             VectorNormal(&v, &particle->velocity);
             particle->velocity.vx = (particle->velocity.vx * emitter->unk08 >> 12) * emitter->unk24;
             particle->velocity.vy = (particle->velocity.vy * emitter->unk08 >> 12) * emitter->unk24;
@@ -480,18 +480,18 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
             sv.vx = particle->position.vx;
             sv.vy = particle->position.vy;
             sv.vz = particle->position.vz;
-            func_8004A6DC(&sv, &v, &flag);
+            RotTrans(&sv, &v, &flag);
             if (scaled == 1) {
                 sv.vz = 0;
                 sv.vx = D_800B00B4 - 0x400;
                 sv.vy = -D_800AF880.view_angle;
-                func_8004ABBC(&sv, &camera);
+                RotMatrix(&sv, &camera);
                 SetRotMatrix(&camera);
                 SetTransMatrix(&camera);
                 up.vx = 0;
                 up.vz = 0;
                 up.vy = v.vy;
-                func_8004998C(&up, &rotated);
+                libgte_rotate_vector(&up, &rotated);
                 v.vx += rotated.vx;
                 v.vz += rotated.vz;
                 v.vy = rotated.vy;
@@ -635,7 +635,7 @@ s32 func_800AAA74(FieldInstance *instance) {
     s32 bottom;
     s32 right;
 
-    func_8004A6DC((SVECTOR *)instance->center, &position, &flag);
+    RotTrans((SVECTOR *)instance->center, &position, &flag);
     D_800B00E8.t[0] = position.vx;
     D_800B00E8.t[1] = position.vy;
     D_800B00E8.t[2] = position.vz;

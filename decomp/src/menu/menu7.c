@@ -337,9 +337,9 @@ void func_800898BC(MATRIX *m, SVECTOR *eye, SVECTOR *at, SVECTOR *up) {
     D_8009A918.vy = up->vy;
     D_8009A918.vz = up->vz;
     VectorNormal(&D_8009A0C8, &D_80096F98);
-    func_8004A480(&D_8009A918, &D_80096F98, &D_8009A0C8);
+    OuterProduct12(&D_8009A918, &D_80096F98, &D_8009A0C8);
     VectorNormal(&D_8009A0C8, &D_80097000);
-    func_8004A480(&D_80096F98, &D_80097000, &D_8009A0C8);
+    OuterProduct12(&D_80096F98, &D_80097000, &D_8009A0C8);
     VectorNormal(&D_8009A0C8, &D_8009A918);
     m->m[0][0] = D_80097000.vx;
     m->m[0][1] = D_80097000.vy;
@@ -1693,7 +1693,7 @@ void func_8008CFC4(Emitter *source, SVECTOR *pos) {
     v.vx = rand() % source->range.vx - source->offset.vx;
     v.vy = rand() % source->range.vy - source->offset.vy;
     v.vz = rand() % source->range.vz - source->offset.vz;
-    func_800495DC(&v, &r);
+    libgte_rotate_svector(&v, &r);
     pos->vx = source->origin.vx + r.vx;
     pos->vy = source->origin.vy + r.vy;
     pos->vz = source->origin.vz + r.vz;
@@ -1715,7 +1715,7 @@ void func_8008D14C(Emitter *source, SVECTOR *pos) {
     v.vx = rand() % source->range.vx - source->offset.vx;
     v.vy = 0;
     v.vz = rand() % source->range.vz - source->offset.vz;
-    func_800495DC(&v, &r);
+    libgte_rotate_svector(&v, &r);
     pos->vx = source->origin.vx + r.vx;
     pos->vy = source->origin.vy + r.vy;
     pos->vz = source->origin.vz + r.vz;
@@ -1732,7 +1732,7 @@ void func_8008D208(Emitter *source, SVECTOR *pos) {
     v.vx = (func_8003F8B0(angle) * (radius % source->range.vx)) >> 13;
     v.vy = 0;
     v.vz = (func_8003F8CC(angle) * (radius % source->range.vz)) >> 13;
-    func_800495DC(&v, &r);
+    libgte_rotate_svector(&v, &r);
     pos->vx = source->origin.vx + r.vx;
     pos->vy = source->origin.vy + r.vy;
     pos->vz = source->origin.vz + r.vz;
@@ -1748,7 +1748,7 @@ void func_8008D304(Emitter *source, SVECTOR *pos) {
     v.vx = (func_8003F8B0(angle) * source->range.vx) >> 12;
     v.vy = rand() % source->range.vy - source->range.vy / 2;
     v.vz = (func_8003F8CC(angle) * source->range.vz) >> 12;
-    func_800495DC(&v, &r);
+    libgte_rotate_svector(&v, &r);
     pos->vx = source->origin.vx + r.vx;
     pos->vy = source->origin.vy + r.vy;
     pos->vz = source->origin.vz + r.vz;
@@ -1860,9 +1860,9 @@ void func_8008D680(Emitter *emitter, MATRIX *rotation, s32 count) {
     emitter->origin.vy = emitter->base.vy + rotation->t[1];
     emitter->origin.vz = emitter->base.vz + rotation->t[2];
     func_8003F738(&emitter->angles, &local);
-    func_80049ACC(&world, &local);
+    libgte_multiply_matrix_in_place(&world, &local);
     func_8003F738(&emitter->turn, &turned);
-    func_80049ACC(&turned, &world);
+    libgte_multiply_matrix_in_place(&turned, &world);
     SetRotMatrix(&turned);
     left = count;
     spark = emitter->sparks;
@@ -1995,7 +1995,7 @@ void func_8008DCB8(u32 *ot, Node *model, MATRIX *view, VECTOR *pos) {
 
     if (D_80092838 >= 0x10) {
         func_8008DBC0(model, 0x27, &part);
-        func_80048E94(&part, &rotation);
+        libgte_orthonormalize_matrix(&part, &rotation);
         rotation.t[0] = rotation.t[1] = rotation.t[2] = 0;
         emitter->base.vx = pos->vx;
         emitter->base.vy = pos->vy;

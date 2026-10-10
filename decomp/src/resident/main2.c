@@ -1469,8 +1469,8 @@ void func_80035F1C(RECT *rect, char *name) {
     header.rect.w = rect->w;
     header.rect.h = rect->h;
     fd = PCcreat(name, 0);
-    func_8004C470(fd, (char *)&header, sizeof(header));
-    func_8004C470(fd, (char *)0x80700000, rect->w * rect->h * 2);
+    PCwrite(fd, (char *)&header, sizeof(header));
+    PCwrite(fd, (char *)0x80700000, rect->w * rect->h * 2);
     PCclose(fd);
 }
 
@@ -1500,8 +1500,8 @@ s32 func_80035FF8(RECT *rect, char *name) {
     if (fd == -1) {
         return -1;
     }
-    func_8004C470(fd, header, strlen(header));
-    func_8004C470(fd, (char *)0x80700000, count * 3);
+    PCwrite(fd, header, strlen(header));
+    PCwrite(fd, (char *)0x80700000, count * 3);
     PCclose(fd);
     return 0;
 }
@@ -1513,7 +1513,7 @@ void func_8003611C(void) {
     D_8005A1BC[0].state = 0;
     D_8005A1BC[0].disabled = 0;
     D_8005A1BC[1] = D_8005A1BC[0];
-    func_80040C3C(D_8005A1BC[0].act, 4, D_8005A1BC[1].act, 4);
+    libapi_register_pad_send_buffers(D_8005A1BC[0].act, 4, D_8005A1BC[1].act, 4);
 }
 
 /* Step one actuator: run while its timer lasts, then wind down. */

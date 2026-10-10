@@ -957,7 +957,7 @@ void func_800A6998(POLY_GT4 *quad, s32 corner, s32 radius, s16 *shade) {
     case 0:
         offset.vx = centre_x - quad->x0;
         offset.vy = centre_y - quad->y0;
-        func_8004A414(&offset, &squares);
+        Square0(&offset, &squares);
         if (SquareRoot0(squares.vx + squares.vy) >> 1 < radius) {
             *shade -= 6;
             if (*shade < 0) {
@@ -971,7 +971,7 @@ void func_800A6998(POLY_GT4 *quad, s32 corner, s32 radius, s16 *shade) {
     case 1:
         offset.vx = centre_x - quad->x1;
         offset.vy = centre_y - quad->y1;
-        func_8004A414(&offset, &squares);
+        Square0(&offset, &squares);
         if (SquareRoot0(squares.vx + squares.vy) >> 1 < radius) {
             *shade -= 6;
             if (*shade < 0) {
@@ -985,7 +985,7 @@ void func_800A6998(POLY_GT4 *quad, s32 corner, s32 radius, s16 *shade) {
     case 2:
         offset.vx = centre_x - quad->x2;
         offset.vy = centre_y - quad->y2;
-        func_8004A414(&offset, &squares);
+        Square0(&offset, &squares);
         if (SquareRoot0(squares.vx + squares.vy) >> 1 < radius) {
             *shade -= 6;
             if (*shade < 0) {
@@ -999,7 +999,7 @@ void func_800A6998(POLY_GT4 *quad, s32 corner, s32 radius, s16 *shade) {
     case 3:
         offset.vx = centre_x - quad->x3;
         offset.vy = centre_y - quad->y3;
-        func_8004A414(&offset, &squares);
+        Square0(&offset, &squares);
         if (SquareRoot0(squares.vx + squares.vy) >> 1 < radius) {
             *shade -= 6;
             if (*shade < 0) {

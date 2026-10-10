@@ -324,7 +324,7 @@ s32 func_800C06E4(VECTOR *a, VECTOR *b) {
     d.vx = a->vx - b->vx;
     d.vy = a->vy - b->vy;
     d.vz = a->vz - b->vz;
-    func_8004A414(&d, &d);
+    Square0(&d, &d);
     return SquareRoot0(d.vy + d.vz + d.vx);
 }
 
@@ -335,7 +335,7 @@ s32 func_800C0758(SVECTOR *a, SVECTOR *b) {
     d.vx = a->vx - b->vx;
     d.vy = a->vy - b->vy;
     d.vz = a->vz - b->vz;
-    func_8004A414(&d, &d);
+    Square0(&d, &d);
     return SquareRoot0(d.vy + d.vz + d.vx);
 }
 
@@ -345,7 +345,7 @@ s32 func_800C07CC(GroundPoint a, GroundPoint b) {
 
     d.vx = a.x - b.x;
     d.vz = a.z - b.z;
-    func_8004A414(&d, &d);
+    Square0(&d, &d);
     return SquareRoot0(d.vx + d.vz);
 }
 
@@ -359,7 +359,7 @@ void func_800C0828(SVECTOR *from, SVECTOR *to, SVECTOR *angles) {
     d.vx = from->vx - to->vx;
     d.vy = from->vy - to->vy;
     d.vz = from->vz - to->vz;
-    func_8004A414(&d, &squares);
+    Square0(&d, &squares);
     ground = SquareRoot0(squares.vx + squares.vz);
     angles->vy = ratan2(d.vz, d.vx);
     angles->vz = ratan2(d.vy, ground);

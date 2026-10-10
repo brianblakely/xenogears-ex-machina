@@ -98,3 +98,5 @@ StSetMask = 0x801D5D34; // type:func
 StCdInterrupt = 0x801D5D54; // type:func
 mem2mem = 0x801D66C4; // type:func
 dma_execute = 0x801D66F8; // type:func
+// Names tools/names.py gave these addresses (docs/matching.md, Names).
+libcd_uses_libds_callbacks = 0x800564CC;

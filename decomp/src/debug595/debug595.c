@@ -129,7 +129,7 @@ void func_802815B0(void) {
             PushMatrix();
             MulMatrix2(&D_800AFA64, &D_80285B48[i].matrix);
             PopMatrix();
-            func_8004A6DC(&D_80285B48[i].trans, (VECTOR *)D_80285B48[i].matrix.t, &flag);
+            RotTrans(&D_80285B48[i].trans, (VECTOR *)D_80285B48[i].matrix.t, &flag);
         }
     }
 }

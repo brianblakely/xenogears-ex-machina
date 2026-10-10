@@ -383,7 +383,7 @@ void func_800828F8(VECTOR *pos, VECTOR *step, s32 radius) {
 
     local.vx = pos->vx + step->vx - 0x3F80;
     local.vz = pos->vz + step->vz - 0x3F80;
-    func_8004A414(&local, &square);
+    Square0(&local, &square);
     if (radius < SquareRoot0(square.vx + square.vz)) {
         VectorNormalS(&local, &dir);
         rim.m[2][1] = 0;
@@ -396,14 +396,14 @@ void func_800828F8(VECTOR *pos, VECTOR *step, s32 radius) {
         rim.m[0][2] = -dir.vx;
         rim.m[2][0] = dir.vx;
         ApplyMatrixLV(&rim, step, &local);
-        func_8004A8EC(&rim, &back);
+        libgte_transpose_matrix(&rim, &back);
         SetRotMatrix(&back);
         local.vz = 0;
         for (;;) {
-            func_8004998C(&local, step);
+            libgte_rotate_vector(&local, step);
             next.vx = pos->vx + step->vx - 0x3F80;
             next.vz = pos->vz + step->vz - 0x3F80;
-            func_8004A414(&next, &square);
+            Square0(&next, &square);
             distance = SquareRoot0(square.vx + square.vz);
             if (radius >= distance) {
                 break;
@@ -436,7 +436,7 @@ void func_80082A70(void) {
     bottom_g = env->bottom[1];
     bottom_b = env->bottom[2];
     func_8002C6E0(env->back[0], env->back[1], env->back[2]);
-    func_8004A10C(bottom_r, bottom_g, bottom_b);
+    SetFarColor(bottom_r, bottom_g, bottom_b);
     D_80095580[0].r0 = top_r;
     D_80095580[1].r0 = top_r;
     D_80095580[0].g0 = top_g;
