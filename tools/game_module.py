@@ -20,6 +20,8 @@ original memory layout:
   unprototyped call) goes through an adapter that truncates or extends integer
   arguments, passes 0 for a missing one and drops an extra one; adapters.txt
   lists each, since a missing argument read a leftover register on the PS1.
+  Where that matters, the port defines `xem_adapt_<function>` with the call's
+  types, written from the matched code, and it replaces the generated adapter.
 
 The rewritten units are compiled with -O2, linked by wasm-ld and instrumented
 by wasm-opt --asyncify at the yield imports. The decomp itself is not
@@ -425,6 +427,10 @@ class Rewriter:
         self.adapters = {}     # adapter name -> (target token, call ret, call params, def head)
         self.missing_data = []
         self.unit_decls = {}   # unit -> declarations of the dispatchers and adapters it calls
+        # Port-written adapters: xem_adapt_<function> in port/.
+        self.port_adapters = {name[len("xem_adapt_"):]: head for unit in units if unit.image == "port"
+                              for name, head in unit.defined.items() if name.startswith("xem_adapt_")}
+        self.overridden = set()
         self.asm_map = {}
         for path in sorted(PORT_DIR.glob("asm_map*.json")):
             for entry in json.loads(path.read_text()):
@@ -604,6 +610,16 @@ class Rewriter:
             if call_key == signature_key(def_ret, def_params) and len(arg_types) == len(def_params) \
                     and all(a[0] == p[0] for a, p in zip(arg_types, def_params)) and ret == def_ret:
                 return [line]
+            # The port's own adapter (xem_adapt_<name>, written from the matched
+            # code) replaces the generated one: it supplies what the original
+            # left in registers.
+            override = self.port_adapters.get(name)
+            if override is not None:
+                _, otoken, oret, _, oparams, _, _ = override
+                if signature_key(oret, oparams) == call_key:
+                    self.overridden.add(name)
+                    self.declare(unit, f"xem_adapt_{name}", ret, [t for t, _ in arg_types])
+                    return [f'{lhs}{call_kw}{ret_attrs}{ret} @"xem_adapt_{name}"({args_text}){tail}']
             adapter = f"xem.adapt.{name}.{key_name(call_key)}"
             self.adapters[adapter] = (callee if tunit is unit else "@" + name, ret, arg_types, head, unit.source)
             self.declare(unit, adapter, ret, [t for t, _ in arg_types])
@@ -866,6 +882,7 @@ def build(args):
     print(f"{count} globals, {type_count} types: {schema}")
     dispatch, adapters = generate_dispatchers(rewriter, addresses)
     (out / "ir" / "dispatch.ll").write_text(dispatch)
+    adapters += [f"port adapter: xem_adapt_{name}" for name in sorted(rewriter.overridden)]
     (out / "adapters.txt").write_text("\n".join(adapters) + "\n")
     ll_files.append(out / "ir" / "dispatch.ll")
     objects = [out / "obj" / (p.stem + ".o") for p in ll_files]
