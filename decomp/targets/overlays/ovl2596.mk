@@ -7,6 +7,13 @@ BUILD := .local/decomp/build/ovl2596
 IMAGE := .local/decomp/build/ovl2596.bin
 LINKER_SCRIPT := .local/decomp/ovl2596/ovl2596.ld
 LINKER_EXTRA := .local/decomp/ovl2596/undefined_syms_auto.txt .local/decomp/ovl2596/undefined_funcs_auto.txt decomp/targets/overlays/ovl2596.resident.ld
+# The result screens (battle_results_screens.c) read battle's nine decimal
+# digits by digit position from bases of their own, which ovl2596.resident.ld
+# gives as views before battle_decimal_digits: minus_29 from position 31,
+# minus_21 from 22, minus_17 from 23, minus_7 from 13 and minus_3 from 9, each
+# reaching digits 1-8 only. tools/cross_image.py accepts a view before its
+# object only where this lists it.
+BASE_VIEWS := battle_decimal_digits_minus_29 battle_decimal_digits_minus_21 battle_decimal_digits_minus_17 battle_decimal_digits_minus_7 battle_decimal_digits_minus_3
 SOURCE_DIRS := decomp/src/ovl2596
 # The reasons its included objects stay original (coverage class included).
 CLASSIFICATION := decomp/targets/overlays/ovl2596.classification.txt

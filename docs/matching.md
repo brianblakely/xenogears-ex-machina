@@ -146,7 +146,10 @@ link's `__exe_file_size` (`PAD_TO_SYMBOL`), the sectors its header declares.
 `verify` then fails on each name a linker script defines (a used `PROVIDE`, a `.data.ld`
 or any other `LINKER_EXTRA` fragment) inside the target's own image or uninitialized
 data (`matching_coverage.py --script-symbols`): an address copied from the original
-where the link should place an object, which the exact comparison cannot see move. Names
+where the link should place an object, which the exact comparison cannot see move. It
+reads each assignment wherever it stands, also a second one on a line and one inside
+`HIDDEN()`, `PROVIDE()` or `PROVIDE_HIDDEN()`, and fails on any fragment statement that is
+neither such an assignment nor an `ASSERT`, so no name the link reads escapes it. Names
 of other images (the `*.resident.ld` fragments, an overlay's addresses in the resident,
 also the `_gp` an overlay's splat script sets) lie outside and pass; splat's main script
 is not among the checked scripts, so the resident's `_gp` comes from its checked
@@ -201,22 +204,28 @@ image or uninitialized data is an address copied from the original. A name that 
 address (splat's `D_`, `func_` and `jtbl_` names; the links hold none now) must hold
 that address, and each must agree with the rebuilt targets by their own symbols: every
 other target that defines the name defines it there, each that exports it wherever the
-copied value points and one holding the value also by a local symbol (2316 of 2376 at
-present); where none does, a fragment may give it as a view, another name plus a
-constant that agrees by name, and the value must lie in the object holding that name in
-its definer (4: battle's game data member `game_data_party_state = game_data + 0x1D30`
-and debug595's three camera vectors of the field view field_view); otherwise a target
-holding the value has a symbol there (2: each resident's mode_overlay_area, which
-link.ld assigns where each mode overlay's first unit defines its number; the movie
-library's entries and variable that field and movie use, the battle functions ovl3087
-passes and the resident's VSync callback and sequence buffer that the world map uses all
-take their definers' names, which the importing symbol files give); otherwise the
-address must lie inside an input section that target's link places (54 members or parts
-of objects that no symbol names, such as game data members, all from splat's lists). For
-this last group the check ties a value only to the address its name gives, not to a
-particular object or, where targets overlap (debug595's field names also lie in battle),
-to a particular target; reading them as members of their objects needs the importing C
-to use those objects (left open). Values outside every target (the resident's sizes, a
+copied value points and one holding the value also by a local symbol (2327 of 2386 at
+present; the movie library's entries and variable that field and movie use, the battle
+functions ovl3087 passes and the resident's VSync callback and sequence buffer that the
+world map uses all take their definers' names, which the importing symbol files give).
+Where none does, a fragment gives it as a view, another name plus a constant that agrees
+by name, and the value must lie in the object holding that name in its definer (50: the
+members of the game data, the field view and work block, the resident's arena option
+bytes and battle's objects that debug595, the world map, the menu, ovl2596, ovl2615 and
+battle address by names of their own, such as
+`game_data_party_state = game_data + 0x1D30`), or before that object where the
+importer's `BASE_VIEWS` lists the view with the reason in its configuration: a base its
+code indexes the object from (7: battle's sprite_vm_command_lengths_by_opcode, 0x80 bytes
+before the resident's command lengths of sprite VM commands 80-ff, ovl2596's five bases
+of battle's decimal digits and ovl2615's battle_enemy_name_indices_by_slot, three bytes
+before the enemies' name indices); each name `BASE_VIEWS` lists must be such a base.
+Each resident's overlay area mode_overlay_area, which link.ld assigns as a number where
+each mode overlay's first unit defines its number, is the resident's `MODE_AREA`, which
+the mode comparison below ties to every mode overlay (2). Any other copied address
+fails: one that only a symbol of another name holds (agreement by address alone ties it
+to no object, so a definer renamed without its importers, or moved after such a rename,
+would pass) and one inside an object that no name ties it to, which a fragment gives as
+a view of that object instead. Values outside every target (the resident's sizes, a
 constant) are not checked, nor is an address the C spells as a number, which neither
 this check nor the relocation scan (a target's own range only) sees.
 `python3 tools/cross_image.py decomp/targets/*/*.mk --numbers` lists those (each other
@@ -236,12 +245,15 @@ addresses. It also compares each resident's mode table (`MODE_TABLE`) with the m
 overlays (`MODE`, `MODE_ENTRY` in field 1, world map 3, menu 4 and movie 6; battle's
 mode 2 enters resident code and declares only `MODE`): the entry must be the overlay's
 entry symbol, and the words after bss_start through bss_end, which the dispatcher clears
-(boot_clear_bss_range), must be the overlay's linked .sbss/.bss. The check found one
-resident byte that other images use outside every object: the arena bout's outcome at
-80050622, which the menu writes and a field event reads, lay in the alignment fill after
-mode_arena_task_parameters[6]; console_and_sound_driver.c now defines it
-(mode_arena_bout_outcome), whether apart or as part of mode_arena_task_parameters left
-open.
+(boot_clear_bss_range), must be the overlay's linked .sbss/.bss. The entry's flag must be
+set, so that the dispatcher decodes the overlay file to the overlay area
+(mode_overlay_decode_destination, main.c mode_dispatch), and the overlay must link its
+image at the resident's `MODE_AREA` and define a symbol of its own there (its number,
+such as field_overlay_number). The check found one resident byte that other images use
+outside every object: the arena bout's outcome at 80050622, which the menu writes and a
+field event reads, lay in the alignment fill after mode_arena_task_parameters[6];
+console_and_sound_driver.c now defines it (mode_arena_bout_outcome), whether apart or as
+part of mode_arena_task_parameters left open.
 
 ```sh
 # the user's CHD images to raw MODE2/2352 tracks (and likewise disc 2); chdman

@@ -20,17 +20,20 @@ address (splat's D_, func_ and jtbl_ names) must hold that address; then
   agrees by name, and the value lies in the object that holds that name in
   each target defining it (up to the next symbol its link places in a
   section, or its end): a member of a named object;
-* by address, where neither applies: a target holding the value has a
-  symbol there;
-* otherwise the address must lie inside an input section a target holding it
-  places: a member or part of an object that no symbol names.
+* by base: such a view that lies before that object instead, a base the
+  importing code indexes the object from (``battle_enemy_name_indices_by_slot
+  = battle_enemy_name_indices - 0x3``), which the target's configuration
+  lists in BASE_VIEWS with its reason; each name listed there must be one;
+* as the mode area: the overlay area of a resident with a mode table
+  (MODE_AREA in its configuration), which the mode comparison below ties to
+  every mode overlay.
 
-By address and inside an object, the check ties the value only to the
-address its name gives, not to a particular object or, where targets
-overlap, to a particular target. A value outside every target (a size, a
-constant, a hardware or kernel address) is no image's address and is not
-checked, nor is an address that C spells as a number: ``--numbers`` lists
-those instead, each other target's address a link holds without a
+Any other copied address fails: one that only a symbol of another name
+holds (it agrees only by address) and one inside an object that no name ties
+it to (give it as a view of that object). A value outside every target (a
+size, a constant, a hardware or kernel address) is no image's address and is
+not checked, nor is an address that C spells as a number: ``--numbers``
+lists those instead, each other target's address a link holds without a
 relocation (a lui and the instruction completing it, or a data word),
 outside asset and included bytes and the mode table (docs/matching.md).
 
@@ -42,7 +45,11 @@ uninitialized data as its rebuilt link places them. The dispatcher (main.c
 mode_dispatch) clears the words after bss_start through bss_end
 (boot_clear_bss_range), so bss_start + 4 and bss_end + 4 must be the start and end
 of the overlay's .sbss/.bss input sections. A mode whose entry is resident
-code (battle) declares only MODE.
+code (battle) declares only MODE. Where the flag is set, the dispatcher
+decodes the mode's overlay file to the resident's overlay area (MODE_AREA:
+the resident's name for it, main.c mode_overlay_decode_destination), so each
+mode overlay's entry must have the flag set, and the overlay must link its
+image at the area and define a symbol of its own there.
 
 The report claims only that agreement; run it after the targets link.
 """
@@ -76,7 +83,7 @@ from matching_coverage import (  # noqa: E402
     extent,
     map_sections,
     read_elf,
-    script_assignments,
+    script_assigned_names,
     script_names,
 )
 from matching_diff import config  # noqa: E402
@@ -122,8 +129,7 @@ def load(path: Path) -> Target:
     bss_end = int(values["BSS_END"], 0) if values.get("BSS_END") else None
     lo, _hi, end = extent(sections, bss_end)
     # splat's main script names segment and section bounds, not objects.
-    bounds = {name for name, _expression, _provide
-              in script_assignments(Path(values["LINKER_SCRIPT"]))}
+    bounds = script_assigned_names(Path(values["LINKER_SCRIPT"]))
     value, names, exported, at, starts = {}, {}, set(), {}, set()
     for symbol in symbols:
         if symbol.name and symbol.section and symbol.kind not in (STT_SECTION, STT_FILE):
@@ -171,7 +177,7 @@ def holding(d: Target, address: int) -> tuple[int, int]:
 def check(targets: list[Target]) -> tuple[list[str], dict[str, int]]:
     """The disagreements, and what agreed."""
     errors: list[str] = []
-    counts = {"names": 0, "by_name": 0, "by_view": 0, "by_address": 0, "inside_object": 0,
+    counts = {"names": 0, "by_name": 0, "by_view": 0, "by_base": 0, "mode_area": 0,
               "mode_entries": 0}
 
     def disagree(where: str, d: Target, name: str) -> None:
@@ -179,6 +185,7 @@ def check(targets: list[Target]) -> tuple[list[str], dict[str, int]]:
         errors.append(f"{where}, but {d.name} defines {name} at {found}")
 
     for t in targets:
+        listed, seen = set(t.values.get("BASE_VIEWS", "").split()), set()
         for name, (script, expression) in sorted(t.imports.items()):
             value = t.value.get(name)
             if value is None or t.lo <= value < t.end:
@@ -187,6 +194,9 @@ def check(targets: list[Target]) -> tuple[list[str], dict[str, int]]:
             if not holders:
                 continue
             counts["names"] += 1
+            if name == t.values.get("MODE_AREA"):
+                counts["mode_area"] += 1  # compared with every mode overlay below
+                continue
             where = f"{t.name}: {name} = {value:08x} ({script})"
             given = ADDRESS_NAME.fullmatch(name)
             if given and int(given.group(1), 16) != value:
@@ -203,22 +213,38 @@ def check(targets: list[Target]) -> tuple[list[str], dict[str, int]]:
                     if value not in d.names[name]:
                         disagree(where, d, name)
             elif bases:
-                counts["by_view"] += 1
+                seen.add(name)
+                counts["by_base" if name in listed else "by_view"] += 1
                 for d in bases:
                     if t.value[base] not in d.names[base]:
                         disagree(f"{where} is {expression}", d, base)
                         continue
                     start, stop = holding(d, t.value[base])
-                    if not start <= value < stop:
+                    if name in listed and value >= start:
+                        errors.append(f"{where} is {expression}, which BASE_VIEWS lists, but it"
+                                      f" does not lie before the object holding {base} in"
+                                      f" {d.name} ({start:08x}-{stop:08x})")
+                    elif name not in listed and not start <= value < stop:
                         errors.append(f"{where} is {expression}, outside the object holding"
                                       f" {base} in {d.name} ({start:08x}-{stop:08x})")
-            elif any(value in d.at for d in holders):
-                counts["by_address"] += 1
-            elif any(a <= value < b for d in holders for a, b in d.inputs):
-                counts["inside_object"] += 1
             else:
-                errors.append(f"{where} lies in {', '.join(d.name for d in holders)} but in"
-                              " no input section they place")
+                at = [f"{d.name}'s {'/'.join(sorted(d.at[value]))}"
+                      for d in holders if value in d.at]
+                inside = [(d, *holding(d, value)) for d in holders
+                          if any(a <= value < b for a, b in d.inputs)]
+                if at:
+                    errors.append(f"{where} agrees with {', '.join(at)} only by address")
+                elif inside:
+                    objects = ", ".join(
+                        f"{d.name}'s {'/'.join(sorted(d.at.get(start, ()))) or 'object'}"
+                        f" ({start:08x}-{stop:08x})" for d, start, stop in inside)
+                    errors.append(f"{where} lies inside {objects}, but is no view of it")
+                else:
+                    errors.append(f"{where} lies in {', '.join(d.name for d in holders)} but in"
+                                  " no input section they place")
+        for name in sorted(listed - seen):
+            errors.append(f"{t.name}: BASE_VIEWS lists {name}, which its scripts do not give as"
+                          " a view of another target's object")
     tables = [t for t in targets if t.values.get("MODE_TABLE")]
     modes = [t for t in targets if t.values.get("MODE")]
     if modes and not tables:
@@ -229,10 +255,14 @@ def check(targets: list[Target]) -> tuple[list[str], dict[str, int]]:
             errors.append(f"{r.name}: no single mode table {symbol}")
             continue
         (base,) = r.names[symbol]
+        name = r.values.get("MODE_AREA")
+        area = r.value.get(name) if name else None
+        if modes and area is None:
+            errors.append(f"{r.name}: no overlay area that its link names (MODE_AREA)")
         for o in modes:
             index = int(o.values["MODE"], 0)
-            entry, start, stop = (word(r, base + MODE_ENTRY_SIZE * index + 4 * i)
-                                  for i in range(3))
+            entry, start, stop, loaded = (word(r, base + MODE_ENTRY_SIZE * index + 4 * i)
+                                          for i in range(4))
             where = f"{r.name}: {symbol}[{index}]"
             function = o.values.get("MODE_ENTRY")
             if function and entry not in o.names.get(function, ()):
@@ -244,6 +274,14 @@ def check(targets: list[Target]) -> tuple[list[str], dict[str, int]]:
             elif (start + 4, stop + 4) != o.bss:
                 errors.append(f"{where} clears {start + 4:08x}-{stop + 4:08x}, but {o.name}"
                               f" links its uninitialized data at {o.bss[0]:08x}-{o.bss[1]:08x}")
+            if not loaded:
+                errors.append(f"{where} does not decode {o.name}'s image (its flag is 0)")
+            elif area is not None and area != o.lo:
+                errors.append(f"{r.name}: {name} = {area:08x}, where {symbol}[{index}] decodes"
+                              f" {o.name}'s image, but {o.name} links it at {o.lo:08x}")
+            elif area is not None and not o.at.get(area):
+                errors.append(f"{r.name}: {name} = {area:08x}, where {o.name} links its image,"
+                              f" but {o.name} defines no symbol there")
             counts["mode_entries"] += 1
     return errors, counts
 

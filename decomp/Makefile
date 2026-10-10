@@ -40,10 +40,12 @@ all-verify:
 # After every target links: each address a link takes from another target
 # (its linker scripts' names there) must hold the address its name gives and
 # agree with the other targets' rebuilt symbols, by name (wherever a target
-# exporting the name places it), as a view inside a named object, or else by
-# address, or lie inside an object a target holding it places, and the
-# resident's mode table (MODE_TABLE) must hold each mode overlay's (MODE)
-# entry symbol and linked BSS bounds (tools/cross_image.py).
+# exporting the name places it), as a view inside a named object or, where
+# the importer's BASE_VIEWS lists it, before it, or as the resident's overlay
+# area (MODE_AREA); any other fails. The resident's mode table (MODE_TABLE)
+# must hold each mode overlay's (MODE) entry symbol, linked BSS bounds and set
+# decode flag, and the overlay must link its image at the overlay area with a
+# symbol there (tools/cross_image.py).
 cross-image:
 	cd $(ROOT) && $(PYTHON) $(TOOLS)/cross_image.py $(abspath $(TARGET_CONFIGS))
 

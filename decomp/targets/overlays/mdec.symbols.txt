@@ -105,7 +105,6 @@ StCdInterrupt = 0x801D5D54; // type:func
 mem2mem = 0x801D66C4; // type:func
 dma_execute = 0x801D66F8; // type:func
 // Names tools/names.py gave these addresses (docs/matching.md, Names).
-libcd_uses_libds_callbacks = 0x800564CC;
 libpress_reset_bad_option_format = 0x801D3000;
 libpress_in_sync_name = 0x801D301C;
 libpress_out_sync_name = 0x801D302C;

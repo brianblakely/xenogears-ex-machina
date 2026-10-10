@@ -93,7 +93,10 @@ loaded image or uninitialized data, where an address copied from the original
 stands in for an object the link should place. A script named with
 ``--views`` may define names there only as views, expressions of symbols
 the link places (``battle_area_slots = battle_area + 0x4``), and must define one.
-``warn`` reports and passes; ``strict`` fails.
+``warn`` reports and passes; ``strict`` fails. Each assignment counts
+wherever it stands, also a second one on a line and one inside HIDDEN(),
+PROVIDE() or PROVIDE_HIDDEN(); a script statement that is neither such an
+assignment nor an ASSERT fails the check in either mode.
 
 ``--relocations`` (also run by ``verify``) fails on each address of the
 target's own image or uninitialized data that the link did not produce: an
@@ -581,10 +584,17 @@ def extent(sections: list[Section], bss_end: int | None) -> tuple[int, int, int]
     return lo, hi, end
 
 
-# A linker script's symbol assignments, `NAME = EXPR;` and `PROVIDE(NAME = EXPR);`.
+# The start of a linker script fragment's statements: a symbol assignment
+# `NAME = EXPR;`, plain or inside HIDDEN(), PROVIDE() or PROVIDE_HIDDEN() (up
+# to its `=`), and `ASSERT(EXPR, "message")` (up to its parenthesis).
 SCRIPT_ASSIGNMENT = re.compile(
-    r"^[ \t]*(PROVIDE(?:_HIDDEN)?[ \t]*\([ \t]*)?([A-Za-z_.$][\w.$]*)[ \t]*=(?!=)[ \t]*"
-    r"([^;]*?)[ \t]*;", re.M)
+    r"(?:(HIDDEN|PROVIDE_HIDDEN|PROVIDE)\s*\(\s*)?([A-Za-z_.$][\w.$]*)\s*=(?!=)")
+SCRIPT_ASSERT = re.compile(r"ASSERT\s*\(")
+# An `=` that assigns, not one of the comparisons ==, !=, <= and >=.
+SCRIPT_BARE_EQUALS = re.compile(r"(?<![=!<>])=(?!=)")
+# A symbol assignment anywhere in a script, also inside the SECTIONS of
+# splat's main script, which script_assignments does not read.
+SCRIPT_ASSIGNED_NAME = re.compile(r"(?<![\w.$])([A-Za-z_.$][\w.$]*)\s*=(?!=)")
 SCRIPT_COMMENT = re.compile(r"/\*.*?\*/", re.S)
 # A PROVIDE the link used (its value) or not (`[!provide]`), in the map.
 MAP_PROVIDE = re.compile(
@@ -597,17 +607,64 @@ LD_FUNCTIONS = {
 }
 
 
+def balanced(text: str) -> bool:
+    """Whether every parenthesis of text closes and none closes before it opens."""
+    depth = 0
+    for c in text:
+        depth += (c == "(") - (c == ")")
+        if depth < 0:
+            return False
+    return depth == 0
+
+
 def script_assignments(path: Path) -> list[tuple[str, str, bool]]:
     """(name, expression, provide) of each symbol assignment of a linker
-    script, in order."""
-    text = SCRIPT_COMMENT.sub(" ", path.read_text())
-    result = []
-    for match in SCRIPT_ASSIGNMENT.finditer(text):
-        provide, expression = bool(match.group(1)), match.group(3)
-        if provide and expression.endswith(")"):
-            expression = expression[:-1].rstrip()  # the PROVIDE's own parenthesis
-        result.append((match.group(2), expression, provide))
-    return result
+    script fragment (splat's lists as PROVIDE, a .data.ld, .bss.ld or
+    .resident.ld), in order, wherever it stands: `NAME = EXPR;`, also inside
+    HIDDEN(), PROVIDE() or PROVIDE_HIDDEN() (provide: the last two). Its
+    other statements may only be ASSERTs; any other text fails, so that no
+    assignment the link reads escapes the checks."""
+    text = SCRIPT_COMMENT.sub(lambda m: re.sub(r"[^\n]", " ", m.group()), path.read_text())
+
+    def fail(at: int, what: str) -> SystemExit:
+        return SystemExit(f"{path}:{text.count(chr(10), 0, at) + 1}: {what}")
+
+    result, i = [], 0
+    while True:
+        while i < len(text) and (text[i].isspace() or text[i] == ";"):  # an empty statement too
+            i += 1
+        if i == len(text):
+            return result
+        start, found = i, SCRIPT_ASSERT.match(text, i)
+        if found:  # up to its closing parenthesis, outside the message's quotes
+            depth, i = 1, found.end()
+            while depth and i < len(text):
+                if text[i] == '"':
+                    close = text.find('"', i + 1)
+                    i = close if close >= 0 else len(text)
+                elif text[i] in "()":
+                    depth += 1 if text[i] == "(" else -1
+                i += 1
+            if depth:
+                raise fail(start, "an ASSERT without its closing parenthesis")
+            continue
+        found = SCRIPT_ASSIGNMENT.match(text, i)
+        end = text.find(";", found.end()) if found else -1
+        expression = text[found.end():end].strip() if end >= 0 else ""
+        wrapper = found.group(1) if found else None
+        if wrapper:  # its own parenthesis closes before the semicolon
+            expression = expression[:-1].rstrip() if expression.endswith(")") else ""
+        if not expression or not balanced(expression) or SCRIPT_BARE_EQUALS.search(expression):
+            raise fail(start, "not a statement the checks read (a symbol assignment, plain or"
+                              " in HIDDEN, PROVIDE or PROVIDE_HIDDEN, or an ASSERT)")
+        result.append((found.group(2), expression, wrapper in ("PROVIDE", "PROVIDE_HIDDEN")))
+        i = end + 1
+
+
+def script_assigned_names(path: Path) -> set[str]:
+    """The names a linker script assigns anywhere, also inside SECTIONS
+    (splat's main script)."""
+    return set(SCRIPT_ASSIGNED_NAME.findall(SCRIPT_COMMENT.sub(" ", path.read_text())))
 
 
 def script_names(map_path: Path, scripts: list[Path]) -> dict[str, tuple[Path, str]]:
