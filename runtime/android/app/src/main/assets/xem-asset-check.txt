@@ -1,0 +1,2 @@
+Xenogears Ex Machina bundled asset check v1
+This file is packaged in the APK's assets and read at startup through SDL_IOFromFile.

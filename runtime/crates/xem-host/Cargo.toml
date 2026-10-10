@@ -1,5 +1,6 @@
 [package]
-name = "xem-desktop"
+name = "xem-host"
+description = "What the SDL3 hosts share: the window, its wgpu surface and the presented view (scene and Slint settings panel)"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,8 +9,9 @@ publish.workspace = true
 
 [dependencies]
 sdl3-sys.workspace = true
+raw-window-handle.workspace = true
 wgpu.workspace = true
-png.workspace = true
-xem-host = { path = "../xem-host" }
+pollster.workspace = true
 xem-render = { path = "../xem-render" }
+xem-ui = { path = "../xem-ui" }
 xem-settings = { path = "../xem-settings" }

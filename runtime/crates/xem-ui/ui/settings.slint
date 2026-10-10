@@ -10,6 +10,9 @@ export component SettingsPanel inherits Window {
     in-out property <int> filter;
     in-out property <bool> show-fps;
     in property <string> status;
+    // Hosts that can import a disc image set this and answer import-disc-requested.
+    in property <bool> can-import-disc;
+    in property <string> disc-status: "No disc imported";
 
     callback master-volume-edited(int);
     callback audio-output-edited(int);
@@ -17,6 +20,7 @@ export component SettingsPanel inherits Window {
     callback filter-edited(int);
     callback show-fps-edited(bool);
     callback close-requested();
+    callback import-disc-requested();
 
     title: "Settings";
     background: transparent;
@@ -104,6 +108,24 @@ export component SettingsPanel inherits Window {
                         text: "Show FPS";
                         checked <=> root.show-fps;
                         toggled => { root.show-fps-edited(self.checked); }
+                    }
+                }
+            }
+
+            if root.can-import-disc: GroupBox {
+                title: "Disc";
+                HorizontalLayout {
+                    spacing: 8px;
+                    Text {
+                        text: root.disc-status;
+                        vertical-alignment: center;
+                        wrap: word-wrap;
+                        horizontal-stretch: 1;
+                    }
+                    Button {
+                        text: "Import disc…";
+                        horizontal-stretch: 0;
+                        clicked => { root.import-disc-requested(); }
                     }
                 }
             }

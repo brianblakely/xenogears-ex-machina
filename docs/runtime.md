@@ -170,6 +170,7 @@ input.
 | `xem-xr` | the OpenXR adapter |
 | `xem-webxr` | the WebXR adapter: immersive sessions, views, raw input and WebGL2 layer submission through wgpu |
 | `xem-desktop`, `xem-headless`, `xem-android`, `xem-web` | hosts |
+| `xem-host` | what the SDL3 hosts share: the window and its native handles, the wgpu surface (dropped and recreated with the native window), the presented view (scene and settings panel) |
 | `xem-settings` | typed application settings: validation, acknowledgement, change notification, JSON persistence |
 
 ## Desktop host and settings panel
@@ -325,3 +326,55 @@ Android lifecycle and permissions (eye tracking needs
 `com.oculus.permission.EYE_TRACKING`), and the APK packaging with Meta's loader.
 `xem-xr` cross-compiles for `aarch64-linux-android`
 (`cargo ndk -t arm64-v8a -P 26 build -p xem-xr` in `#android`).
+
+The window, the surface and the view (`xem_host::View`: scene, compositor,
+panel and its input) are shared with the Android host in `xem-host`.
+
+## Android host
+
+The APK (`dev.xem.app`, minSdk 29, target/compile SDK 34, x86_64 and
+arm64-v8a) is SDL3's Java layer from the desktop's SDL release
+(`$XEM_SDL3_SRC`, nixpkgs' `sdl3.src`: `SDLActivity` and its helpers are
+copied into the Gradle build, never vendored), `libSDL3.so` built from the same
+source with the NDK's CMake toolchain and `libmain.so`, the `xem-android`
+cdylib whose `SDL_main` SDLActivity runs. `runtime/android` is a plain Gradle
+project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
+`build/android`); `XemActivity` only adds what SDL lacks.
+
+- **Startup.** SDL window on the activity's surface; wgpu on Vulkan, the GLES
+  backend only when no Vulkan adapter can present (logged); the shared view
+  with the settings panel shown (Back toggles it).
+- **Assets.** A file bundled in the APK's assets is read through
+  `SDL_IOFromFile` (the AssetManager). The user's disc is imported with SDL's
+  open-file dialog, which is Android's `ACTION_OPEN_DOCUMENT` picker (the
+  panel's *Import disc…* button); `XemActivity` takes a persistable read grant
+  on the returned `content://` document and hands it to native code itself
+  (SDL's dialog callback is lost when Android recreates the activity behind
+  the picker), SDL opens it through the
+  ContentResolver, its file descriptor is duplicated into a Rust `File` and
+  `xem-disc` (`open_reader`, `identify`) reads it in place on a worker thread.
+  The URI is kept in the app's files directory and reopened on start.
+- **Settings.** `xem_settings::FileStore` at `<files dir>/settings.json`.
+- **Lifecycle.** SDL 3.4 delivers the application events only to event
+  watches, synchronously on the SDL thread inside `SDL_PollEvent`: on
+  `WILL_ENTER_BACKGROUND` the host drops the wgpu surface and stops the
+  simulation clock, SDL then blocks the thread until the activity resumes,
+  and after `DID_ENTER_FOREGROUND` the surface is recreated on the new native
+  window and the clock restarts where it stopped (a frame never advances it
+  by more than 100 ms, so there is no catch-up). A replaced native window
+  (configuration changes) is detected by identity and the surface recreated.
+  `LOW_MEMORY` is logged; on `TERMINATING` the run ends. A recreated activity
+  (changes outside `configChanges`, such as density or asset paths) runs
+  `SDL_main` again in the same process (`SDL_ANDROID_ALLOW_RECREATE_ACTIVITY`),
+  which reloads settings and reopens the imported disc.
+
+In `nix develop path:./nix/runtime#android`:
+
+- build: `runtime/scripts/android-build.sh` (`XEM_ANDROID_ABIS` to pick ABIs)
+  → `build/android/gradle/app/outputs/apk/debug/xem-debug.apk`
+- emulator smoke test: `runtime/scripts/android-smoke.sh` (headless API-34
+  x86_64 AVD under `.local/android`, guest Vulkan on SwiftShader; logcat and
+  screenshots in `build/android/smoke`)
+- `cargo ndk -t arm64-v8a -P 29 build -p xem-ui -p xem-render` builds the
+  shared crates alone (Slint compiles its FemtoVG module out on Android, so
+  `xem-ui` takes the renderer from `i-slint-renderer-femtovg` there)

@@ -1,9 +1,14 @@
 //! The SDL3 window and the raw handles wgpu presents to.
 
+#[cfg(target_os = "android")]
+use raw_window_handle::{AndroidDisplayHandle, AndroidNdkWindowHandle};
 use raw_window_handle::{
     DisplayHandle, HandleError, HasDisplayHandle, HasWindowHandle, RawDisplayHandle,
-    RawWindowHandle, WaylandDisplayHandle, WaylandWindowHandle, WindowHandle, XlibDisplayHandle,
-    XlibWindowHandle,
+    RawWindowHandle, WindowHandle,
+};
+#[cfg(not(target_os = "android"))]
+use raw_window_handle::{
+    WaylandDisplayHandle, WaylandWindowHandle, XlibDisplayHandle, XlibWindowHandle,
 };
 use sdl3_sys::everything::*;
 use std::ffi::{CStr, CString, c_void};
@@ -40,7 +45,8 @@ impl Drop for Sdl {
     }
 }
 
-/// The display connection wgpu's instance needs for GL on Wayland/X11.
+/// The display connection wgpu's instance needs for GL on Wayland/X11 (and the
+/// empty Android display).
 #[derive(Debug)]
 pub struct SdlDisplay(RawDisplayHandle);
 
@@ -58,33 +64,30 @@ impl HasDisplayHandle for SdlDisplay {
 
 pub struct Window {
     pub raw: *mut SDL_Window,
-    window: RawWindowHandle,
     display: RawDisplayHandle,
 }
 
 impl Window {
+    /// A resizable high-density window; on Android the activity's full screen.
     pub fn new(_sdl: &Sdl, title: &str, width: i32, height: i32) -> Result<Self, String> {
         let title = CString::new(title).expect("title without NUL");
+        let mut flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
+        if cfg!(target_os = "android") {
+            flags |= SDL_WINDOW_FULLSCREEN;
+        }
         // SAFETY: SDL is initialised; the title outlives the call.
-        let raw = unsafe {
-            SDL_CreateWindow(
-                title.as_ptr(),
-                width,
-                height,
-                SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY,
-            )
-        };
+        let raw = unsafe { SDL_CreateWindow(title.as_ptr(), width, height, flags) };
         if raw.is_null() {
             return Err(format!("SDL_CreateWindow: {}", error()));
         }
         // SAFETY: raw is a live window; the properties belong to it.
-        let handles = unsafe { native_handles(raw) };
-        match handles {
-            Ok((window, display)) => Ok(Self {
-                raw,
-                window,
-                display,
-            }),
+        let display = if cfg!(target_os = "android") {
+            Ok(android_display())
+        } else {
+            unsafe { native_handles(raw) }.map(|(_, display)| display)
+        };
+        match display {
+            Ok(display) => Ok(Self { raw, display }),
             Err(message) => {
                 // SAFETY: raw was created above and is not used again.
                 unsafe { SDL_DestroyWindow(raw) };
@@ -95,6 +98,24 @@ impl Window {
 
     pub fn display(&self) -> SdlDisplay {
         SdlDisplay(self.display)
+    }
+
+    /// The identity of the native surface the window presents to now: on
+    /// Android none while the activity is in the background, and a new one
+    /// whenever the activity's surface is recreated.
+    pub fn native_surface(&self) -> Option<usize> {
+        // SAFETY: live window.
+        let (window, _) = unsafe { native_handles(self.raw) }.ok()?;
+        Some(match window {
+            RawWindowHandle::AndroidNdk(handle) => handle.a_native_window.as_ptr() as usize,
+            RawWindowHandle::Wayland(handle) => handle.surface.as_ptr() as usize,
+            RawWindowHandle::Xlib(handle) => handle.window as usize,
+            _ => 0,
+        })
+    }
+
+    pub fn has_native_surface(&self) -> bool {
+        self.native_surface().is_some()
     }
 
     /// The drawable size in pixels.
@@ -147,8 +168,14 @@ impl Drop for Window {
 
 impl HasWindowHandle for Window {
     fn window_handle(&self) -> Result<WindowHandle<'_>, HandleError> {
-        // SAFETY: the handle is valid while the window lives.
-        Ok(unsafe { WindowHandle::borrow_raw(self.window) })
+        // Read each time: on Android the native window changes when the
+        // activity's surface is recreated.
+        // SAFETY: live window.
+        let (window, _) =
+            unsafe { native_handles(self.raw) }.map_err(|_| HandleError::Unavailable)?;
+        // SAFETY: the handle is valid while the window (and on Android its
+        // current surface) lives.
+        Ok(unsafe { WindowHandle::borrow_raw(window) })
     }
 }
 
@@ -159,7 +186,15 @@ impl HasDisplayHandle for Window {
     }
 }
 
-/// Reads the Wayland or X11 handles of `window` from its SDL properties.
+fn android_display() -> RawDisplayHandle {
+    #[cfg(target_os = "android")]
+    return AndroidDisplayHandle::new().into();
+    #[cfg(not(target_os = "android"))]
+    unreachable!("only Android windows have an Android display")
+}
+
+/// Reads the native handles of `window` from its SDL properties: Wayland or
+/// X11 on the desktop, the ANativeWindow on Android.
 ///
 /// # Safety
 /// `window` must be a live SDL window.
@@ -170,34 +205,47 @@ unsafe fn native_handles(
         let props = SDL_GetWindowProperties(window);
         let pointer =
             |name| NonNull::new(SDL_GetPointerProperty(props, name, null_mut::<c_void>()));
-        let driver = CStr::from_ptr(SDL_GetCurrentVideoDriver()).to_string_lossy();
-        match &*driver {
-            "wayland" => {
-                let display = pointer(SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER);
-                let surface = pointer(SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER);
-                let (Some(display), Some(surface)) = (display, surface) else {
-                    return Err("SDL gave no Wayland display/surface".into());
-                };
-                Ok((
-                    WaylandWindowHandle::new(surface).into(),
-                    WaylandDisplayHandle::new(display).into(),
-                ))
-            }
-            "x11" => {
-                let display = pointer(SDL_PROP_WINDOW_X11_DISPLAY_POINTER);
-                let screen = SDL_GetNumberProperty(props, SDL_PROP_WINDOW_X11_SCREEN_NUMBER, 0);
-                let xid = SDL_GetNumberProperty(props, SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
-                if display.is_none() || xid == 0 {
-                    return Err("SDL gave no X11 display/window".into());
+        #[cfg(target_os = "android")]
+        {
+            let Some(native) = pointer(SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER) else {
+                return Err("SDL has no Android native window (in the background?)".into());
+            };
+            Ok((
+                AndroidNdkWindowHandle::new(native).into(),
+                android_display(),
+            ))
+        }
+        #[cfg(not(target_os = "android"))]
+        {
+            let driver = CStr::from_ptr(SDL_GetCurrentVideoDriver()).to_string_lossy();
+            match &*driver {
+                "wayland" => {
+                    let display = pointer(SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER);
+                    let surface = pointer(SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER);
+                    let (Some(display), Some(surface)) = (display, surface) else {
+                        return Err("SDL gave no Wayland display/surface".into());
+                    };
+                    Ok((
+                        WaylandWindowHandle::new(surface).into(),
+                        WaylandDisplayHandle::new(display).into(),
+                    ))
                 }
-                Ok((
-                    XlibWindowHandle::new(xid as _).into(),
-                    XlibDisplayHandle::new(display, screen as _).into(),
-                ))
+                "x11" => {
+                    let display = pointer(SDL_PROP_WINDOW_X11_DISPLAY_POINTER);
+                    let screen = SDL_GetNumberProperty(props, SDL_PROP_WINDOW_X11_SCREEN_NUMBER, 0);
+                    let xid = SDL_GetNumberProperty(props, SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
+                    if display.is_none() || xid == 0 {
+                        return Err("SDL gave no X11 display/window".into());
+                    }
+                    Ok((
+                        XlibWindowHandle::new(xid as _).into(),
+                        XlibDisplayHandle::new(display, screen as _).into(),
+                    ))
+                }
+                other => Err(format!(
+                    "unsupported SDL video driver {other:?} (Wayland and X11 are)"
+                )),
             }
-            other => Err(format!(
-                "unsupported SDL video driver {other:?} (Wayland and X11 are)"
-            )),
         }
     }
 }
