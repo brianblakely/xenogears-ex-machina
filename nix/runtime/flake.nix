@@ -71,7 +71,7 @@
             };
             buildPhase = ''
               $CXX -O2 -std=c++14 -w -IExternals/FreeSurround/include \
-                Externals/FreeSurround/source/*.cpp ${../../tools/freesurround/freesurround.cpp} \
+                Externals/FreeSurround/source/*.cpp ${./freesurround.cpp} \
                 -o freesurround
             '';
             installPhase = "install -Dm755 freesurround $out/bin/freesurround";

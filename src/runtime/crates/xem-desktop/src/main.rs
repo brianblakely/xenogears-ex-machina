@@ -145,7 +145,7 @@ impl Game {
 
     /// Run the frames due by the wall clock (at most two per call: a stalled
     /// host drops time rather than catching up), then queue their sound.
-    fn update(&mut self, buttons: u16, volume: u8) -> Result<(), String> {
+    fn update(&mut self, buttons: u16, settings: &xem_settings::Settings) -> Result<(), String> {
         let mut due = 0;
         while self.paced + FRAME <= Instant::now() && due < 2 {
             self.paced += FRAME;
@@ -162,9 +162,12 @@ impl Game {
         self.samples.resize(spu.audio_queued(), 0);
         spu.take_audio(&mut self.samples);
         if !self.audio.is_null() && !self.samples.is_empty() {
-            let gain = i32::from(volume.min(100));
-            for sample in &mut self.samples {
-                *sample = (i32::from(*sample) * gain / 100) as i16;
+            let gain = f32::from(settings.master_volume.min(xem_settings::MAX_VOLUME))
+                / f32::from(xem_settings::MAX_VOLUME);
+            for frame in self.samples.chunks_exact_mut(2) {
+                let (left, right) = settings.audio_output.mix(f32::from(frame[0]), f32::from(frame[1]));
+                frame[0] = (left * gain) as i16;
+                frame[1] = (right * gain) as i16;
             }
             // SAFETY: an open stream; SDL copies the bytes.
             unsafe {
@@ -314,8 +317,8 @@ impl Host {
             self.presenter.resume(&self.gpu, window)?;
         }
         if let Some(game) = &mut self.game {
-            let volume = self.view.settings().borrow().settings().master_volume;
-            game.update(self.view.pad_buttons(), volume)?;
+            let settings = self.view.settings().borrow().settings().clone();
+            game.update(self.view.pad_buttons(), &settings)?;
             let (width, height, rgba) = game.display();
             self.view.set_game_image(&self.gpu, (width, height), &rgba);
         }

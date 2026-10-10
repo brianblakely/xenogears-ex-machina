@@ -5,7 +5,7 @@
 
 use std::collections::VecDeque;
 
-use xem_settings::{AudioOutput, MAX_VOLUME, Settings};
+use xem_settings::{MAX_VOLUME, Settings};
 
 /// The SPU's output rate; the page's AudioContext runs at it.
 pub const SAMPLE_RATE: u32 = 44_100;
@@ -41,13 +41,7 @@ impl Mixer {
         let mut out = Vec::with_capacity(self.pending.len());
         let mut samples = self.pending.drain(..);
         while let (Some(left), Some(right)) = (samples.next(), samples.next()) {
-            let (left, right) = (f32::from(left), f32::from(right));
-            let (mid, side) = ((left + right) / 2.0, (left - right) / 2.0);
-            let (left, right) = match settings.audio_output {
-                AudioOutput::Mono => (mid, mid),
-                AudioOutput::Stereo => (left, right),
-                AudioOutput::Wide => (mid + side * 1.5, mid - side * 1.5),
-            };
+            let (left, right) = settings.audio_output.mix(f32::from(left), f32::from(right));
             out.extend([(left * gain).clamp(-1.0, 1.0), (right * gain).clamp(-1.0, 1.0)]);
         }
         self.frames += out.len() as u64 / 2;

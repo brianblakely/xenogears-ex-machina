@@ -22,6 +22,19 @@ pub enum AudioOutput {
     Wide,
 }
 
+impl AudioOutput {
+    /// One stereo frame as this output sends it (Wide widens the side
+    /// channel by half; the game's own Wide sound mode is separate).
+    pub fn mix(self, left: f32, right: f32) -> (f32, f32) {
+        let (mid, side) = ((left + right) / 2.0, (left - right) / 2.0);
+        match self {
+            AudioOutput::Mono => (mid, mid),
+            AudioOutput::Stereo => (left, right),
+            AudioOutput::Wide => (mid + side * 1.5, mid - side * 1.5),
+        }
+    }
+}
+
 /// How the game image is scaled into the presentation area.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Scale {
@@ -354,6 +367,13 @@ mod tests {
     use super::*;
     use std::cell::RefCell;
     use std::rc::Rc;
+
+    #[test]
+    fn audio_outputs_mix_mid_and_side() {
+        assert_eq!(AudioOutput::Mono.mix(1.0, 0.0), (0.5, 0.5));
+        assert_eq!(AudioOutput::Stereo.mix(1.0, 0.0), (1.0, 0.0));
+        assert_eq!(AudioOutput::Wide.mix(1.0, 0.0), (1.25, -0.25));
+    }
 
     #[derive(Clone, Default)]
     struct SharedStore(Rc<RefCell<Option<String>>>, Rc<RefCell<bool>>);
