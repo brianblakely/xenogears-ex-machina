@@ -174,10 +174,10 @@ matches exactly. A hash pass built mostly from original assembly is only a build
 baseline. Matching proves original-target code, not historical source spelling,
 semantic understanding of every name, or portability to a new compiler.
 
-The existing host reconstruction and captures remain regression/reference assets.
-They are not the required implementation path or acceptance gate for new Phase 1
-functions. Do not grow its artificial stack/heap/service model merely to validate
-code that can instead be compiled and compared on the original target.
+The original-environment captures remain regression/reference assets. The host
+C++ reconstruction that accompanied Phase 1 was retired once the decomp matched
+(it remains readable at commit b969b11); it was never the implementation path or
+acceptance gate for Phase 1 functions.
 
 ## Phase 2 — Shared runtime and platform foundation
 
