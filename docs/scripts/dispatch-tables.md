@@ -140,11 +140,12 @@ and table, and how each table's index is chosen, is listed in
 
 - Dispatch (`decomp/src/battle/battle_800B15D8.c`): `func_800B1720` builds and
   `func_800B1F6C` draws each primitive of a TMD object
-  (`battle/effect_script.h`'s effect script file) by kind: mode & 0x1c, plus 0x100 when flag bit 0 (no lighting) is
-  clear. Both switches, and ovl3384 `func_801FC4C4`'s, have all 16 kinds, and a
-  switch is bounds-checked, so the census checks what each kind needs instead: it
-  reads from the C each kind's packet (the POLY type the drawer's mode switch
-  writes) and the primitive bytes the two functions read.
+  (`battle/effect_script.h`'s effect script file) by kind: mode & 0x1c, plus
+  0x100 when flag bit 0 (no lighting) is clear. Both switches, and ovl3384
+  `func_801FC4C4`'s, have all 16 kinds, and a switch is bounds-checked, so the
+  census checks what each kind needs instead: it reads from the C each kind's
+  packet (the POLY type the drawer's mode switch writes) and the primitive bytes
+  the two functions read.
 - Data: object 0 of the resident `D_8001C76C` (the slot-highlight ring) and of
   every model a battle sprite command `f3` binds as its parts (which ovl3384 can
   break into pieces).
