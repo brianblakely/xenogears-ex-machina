@@ -32,6 +32,10 @@ void xem_host_yield(int reason);
  * at once (as the hardware goes on while a handler spins). Port code waits
  * only through this. */
 void xem_wait(int reason);
+/* The game's waits so far, and from a repeated read with none in between
+ * (a spin on interrupt-written state), a wait for the next interrupt. */
+extern unsigned int xem_waits;
+void xem_spin_waiting(unsigned int *last);
 
 /* Run the devices' earliest scheduled event now; 0 when none is scheduled. */
 unsigned int xem_host_poll_now(void);

@@ -200,9 +200,13 @@ static s32 libcd_wait(void) {
     return 1;
 }
 
+/* libetc's vertical blank count, which the original reads through VSync(-1);
+ * the port's VSync(-1) treats a repeated read as the game spinning on it. */
+extern s32 libetc_vsync_count;
+
 /* Whether a wait ran past its 960 vblanks: then the controller is flushed. */
 static s32 libcd_timed_out(void) {
-    if (VSync(-1) > libcd_timeout_deadline) {
+    if (libetc_vsync_count > libcd_timeout_deadline) {
         CD_flush();
         return 1;
     }
@@ -210,7 +214,7 @@ static s32 libcd_timed_out(void) {
 }
 
 static void libcd_start_timeout(char *name) {
-    libcd_timeout_deadline = VSync(-1) + 960;
+    libcd_timeout_deadline = libetc_vsync_count + 960;
     libcd_timeout_poll_count = 0;
     libcd_timeout_name = name;
 }

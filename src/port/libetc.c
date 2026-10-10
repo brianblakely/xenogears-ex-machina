@@ -85,6 +85,18 @@ int VSync(int mode) {
     u32 elapsed = (xem_hblank_counter() - libetc_vsync_previous_counter1) & 0xFFFF;
 
     if (mode < 0) {
+        /* The field's frame pacing spins on this count until two blanks have
+         * passed since its frame began: the same count read again with no
+         * wait in between is that spin. */
+        static u32 last_waits;
+        static s32 last_count = -1;
+
+        if (libetc_vsync_count == last_count) {
+            xem_spin_waiting(&last_waits);
+        } else {
+            last_waits = xem_waits;
+        }
+        last_count = libetc_vsync_count;
         return libetc_vsync_count;
     }
     if (mode == 1) {

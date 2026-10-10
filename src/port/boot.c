@@ -94,10 +94,14 @@ void xem_unmapped_asm(s32 number) {
     xem_host_missing(0x10000 + number);
 }
 
+/* The game's waits so far (xem_spin_waiting). */
+u32 xem_waits;
+
 void xem_wait(int reason) {
     extern s32 xem_in_interrupt;
     static u32 idle_polls;
 
+    xem_waits++;
     if (!xem_in_interrupt) {
         xem_host_yield(reason);
         return;
@@ -114,6 +118,21 @@ void xem_wait(int reason) {
 static u32 xem_loop_iterations;
 
 s32 xem_in_critical_section(void);
+
+/* A read the game repeats without waiting in between (a spin on a value only
+ * an interrupt changes): from the second read on, the clock reaches the next
+ * interrupt first, as the spinning loop's poll (xem_loop_poll) would after
+ * iterations that take no time here. `*last` keeps the wait count of the
+ * caller's previous read. */
+void xem_spin_waiting(u32 *last) {
+    extern s32 xem_in_interrupt;
+
+    if (*last == xem_waits && !xem_in_interrupt && !xem_in_critical_section()) {
+        xem_loop_iterations = 0;
+        xem_wait(XEM_YIELD_POLL);
+    }
+    *last = xem_waits;
+}
 
 /* Called at every loop back-edge of the game (tools/game_module.py): a loop
  * that spins on memory an interrupt changes would never let the host deliver
