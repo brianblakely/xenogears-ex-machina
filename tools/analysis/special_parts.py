@@ -31,10 +31,10 @@ or the gear part list:
   gear_shop_settle_purchase), and every whole record of both tables, whose record counts
   it prints: a shop number past them reads the memory after the unpacked
   table, which the sweep cannot see;
-* the enemies' two drops (combatant record +0x150 chances, +0x152 ids, +0x154
-  categories, 0 weapons and 3 gear parts; ovl2596 battle_results_roll_drops,
-  battle_results_add_drops_to_inventory) and the AI's set_drop (3c, the first) and set_second_drop (3b, the
-  second: +0x155, +0x153, +0x151).
+* the enemies' two drops (combatant record +0x150 chances, +0x152 ids, +0x154 categories, 0
+  weapons and 3 gear parts; ovl2596 battle_results_roll_drops,
+  battle_results_add_drops_to_inventory) and the AI's set_drop (3c, the first) and
+  set_second_drop (3b, the second: +0x155, +0x153, +0x151).
 
 It also lists every field take_item (8d) from the weapon or gear part list, resolved as give_item
 is: one that takes an item's last copy leaves its slot's id at 0xFF (field field_event_take_item),
@@ -192,11 +192,12 @@ class Census:
 
 
 def written(instructions) -> dict[int, list[int | None]]:
-    """variable -> what each instruction that may write it stores: set_variable's
-    immediate, else None (unknown). Writers are the `var` operands, the
-    variable of a `bit` operand (operand >> 4: fe 0a/fe 0b, field field_event_ext_set_variable_bit,
-    field_event_ext_clear_variable_bit) and af/b0/b1's operand 1 when byte 3 is 0 (field_event_scripted_heading,
-    field_event_scripted_elevation, field_event_scripted_zoom); reads among them only leave a value unknown."""
+    """variable -> what each instruction that may write it stores: set_variable's immediate,
+    else None (unknown). Writers are the `var` operands, the variable of a `bit` operand
+    (operand >> 4: fe 0a/fe 0b, field field_event_ext_set_variable_bit,
+    field_event_ext_clear_variable_bit) and af/b0/b1's operand 1 when byte 3 is 0
+    (field_event_scripted_heading, field_event_scripted_elevation, field_event_scripted_zoom);
+    reads among them only leave a value unknown."""
     writes = defaultdict(list)
     for ins in instructions:
         for operand, value in zip(ins.spec.operands, ins.operands, strict=True):

@@ -757,11 +757,13 @@ def check_driver_tables(exe: bytes) -> list[str]:
         expected = OPCODES[code].handler if code in OPCODES else UNUSED_HANDLER
         if handlers[code - 0x80] != expected:
             problems.append(
-                f"sound_seq_opcode_handlers[{code:#x}] = {handlers[code - 0x80]:08x}, module {expected:08x}"
+                f"sound_seq_opcode_handlers[{code:#x}] = {handlers[code - 0x80]:08x},"
+                f" module {expected:08x}"
             )
         if lengths[code - 0x80] != lookahead_length(code):
             problems.append(
-                f"sound_seq_opcode_lengths[{code:#x}] = {lengths[code - 0x80]}, module {lookahead_length(code)}"
+                f"sound_seq_opcode_lengths[{code:#x}] = {lengths[code - 0x80]},"
+                f" module {lookahead_length(code)}"
             )
     ticks, semitones = (
         exe_bytes(exe, sound_note_durations, NOTE_KEYS),
@@ -921,7 +923,8 @@ def sweep() -> Sweep:
 def report(result: Sweep) -> str:
     lines = ["sound sequence sweep (both discs)"]
     lines.append(
-        "  driver tables (sound_seq_opcode_handlers/sound_seq_opcode_lengths/sound_note_durations/sound_note_semitones) vs module: "
+        "  driver tables (sound_seq_opcode_handlers/sound_seq_opcode_lengths/"
+        "sound_note_durations/sound_note_semitones) vs module: "
         + ("match" if not result.table_problems else f"{len(result.table_problems)} differences")
     )
     lines += [f"    {p}" for p in result.table_problems]

@@ -233,10 +233,10 @@ class Spec:
 def table_width(opcode: int) -> int:
     """sprite_vm_command_lengths[opcode - 0x80], the length of command 80-ff (resident data).
 
-    The interpreters add it to the script pointer after every handler that
-    keeps the pointer (the battle copy indexes the same bytes as sprite_vm_command_lengths_by_opcode).
-    A test checks it against the C table in sprite_construction.c; the sweep checks
-    it against each disc's resident executable.
+    The interpreters add it to the script pointer after every handler that keeps the pointer
+    (the battle copy indexes the same bytes as sprite_vm_command_lengths_by_opcode). A test
+    checks it against the C table in sprite_construction.c; the sweep checks it against each
+    disc's resident executable.
     """
     if not 0x80 <= opcode <= 0xFF:
         raise ValueError(f"no width entry is read for command {opcode:#x}")

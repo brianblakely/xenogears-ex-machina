@@ -194,7 +194,9 @@ class SceneDirectorTests(unittest.TestCase):
             cues[0x16].text(slots),
             "slot 0 (worldmap_screen_fade_update) request 13, fade_rate 0x2, fade_step 0x4",
         )
-        self.assertEqual(director("worldmap_scene13_director_update").cues[0x40].text(), "exit_worldmap, state 0")
+        self.assertEqual(
+            director("worldmap_scene13_director_update").cues[0x40].text(), "exit_worldmap, state 0"
+        )
 
     def test_the_sweep_reads_every_sequence_and_checks_the_picker(self):
         placed = {}
@@ -358,7 +360,10 @@ class TextureAnimationTests(unittest.TestCase):
         self.assertEqual(
             [(s.table, s.index, s.stepper) for s in slots],
             [("worldmap_texture_anim_slots", i, "worldmap_texture_anim_advance") for i in range(2)]
-            + [("worldmap_texture_anim2_slots", i, "worldmap_texture_anim2_advance") for i in range(3)],
+            + [
+                ("worldmap_texture_anim2_slots", i, "worldmap_texture_anim2_advance")
+                for i in range(3)
+            ],
         )
         self.assertEqual((slots[1].rect, slots[1].frames), ((0xF8, 0x1D0, 8, 1), 0x8009A1A0))
         self.assertEqual(texture_frames(data, slots[0].frames), [(0, 5), (1, 5), (0, -1)])
@@ -376,15 +381,21 @@ class TextureAnimationTests(unittest.TestCase):
     def test_runs_without_an_end_or_a_restart_fail(self):
         good = frames_bytes((3, 8), (0, -1))
         empty = texture_sweep(texture_image(frames_bytes((0, -1)), good))  # nothing to restart at
-        self.assertEqual([where for where, _ in empty.failures], ["worldmap_texture_anim_slots[0]", "worldmap_texture_anim_slots[1]"])
+        self.assertEqual(
+            [where for where, _ in empty.failures],
+            ["worldmap_texture_anim_slots[0]", "worldmap_texture_anim_slots[1]"],
+        )
         zero = texture_sweep(texture_image(good, frames_bytes((0, 4), (1, 0), (0, -1))))
         self.assertEqual(
-            [where for where, _ in zero.failures], [f"worldmap_texture_anim2_slots[{i}]" for i in range(3)]
+            [where for where, _ in zero.failures],
+            [f"worldmap_texture_anim2_slots[{i}]" for i in range(3)],
         )
         data = bytearray(texture_image(good, good))
         struct.pack_into("<I", data, 0x8009A250 + 12 - BASE, BASE + len(data) - 2)
         # no end
-        self.assertEqual(texture_sweep(bytes(data)).failures[0][0], "worldmap_texture_anim2_slots[0]")
+        self.assertEqual(
+            texture_sweep(bytes(data)).failures[0][0], "worldmap_texture_anim2_slots[0]"
+        )
         with self.assertRaises(ScriptError):
             texture_frames(bytes(8), BASE + 4)
 
@@ -506,7 +517,9 @@ class SourceTests(unittest.TestCase):
 
     def test_worldmap_entries_follow_the_handler_table_and_returns(self):
         text = (ROOT / "decomp/src/worldmap/worldmap_open_map.c").read_text()
-        table = re.search(r"ScriptOp worldmap_actor_script_handlers\[12\] = \{(.*?)\};", text, re.S).group(1)
+        table = re.search(
+            r"ScriptOp worldmap_actor_script_handlers\[12\] = \{(.*?)\};", text, re.S
+        ).group(1)
         handlers = [spec.handler for spec in WORLDMAP.opcodes.values()]
         named = [word for word in re.findall(r"\w+", code(table)) if word != "ScriptOp"]
         self.assertEqual(named, handlers)
@@ -519,7 +532,11 @@ class SourceTests(unittest.TestCase):
 
     def test_arena_entries_follow_the_switch_cases_and_their_advances(self):
         text = (ROOT / "decomp/src/menu/arena_camera_and_scenes.c").read_text()
-        body = text[text.index("s32 arena_scene_run_script(void) {") : text.index("void arena_scene_draw_marker(")]
+        body = text[
+            text.index("s32 arena_scene_run_script(void) {") : text.index(
+                "void arena_scene_draw_marker("
+            )
+        ]
         parts = re.split(r"\n\s*case (\d+):", body)
         advances = {}
         for number, case in zip(parts[1::2], parts[2::2], strict=True):
@@ -563,13 +580,19 @@ def defined_at(text: str, address: int) -> str:
     function = re.search(
         rf"/\* {address:08X}\b(?:[^*]|\*(?!/))*\*/\n(?:[^\n(]*?[ *])?(\w+)\(", text
     )
-    variable = re.search(rf"^[^\n/]*?\b(\w+)(?:\[[^\]]*\])*(?: = [^\n]*?)? /\* {address:08X}\b", text, re.M)
+    variable = re.search(
+        rf"^[^\n/]*?\b(\w+)(?:\[[^\]]*\])*(?: = [^\n]*?)? /\* {address:08X}\b", text, re.M
+    )
     return (function or variable).group(1)
 
 
 def asset_ranges(overlay: str) -> list[tuple[int, int]]:
     """The `asset` ranges of an overlay's (or the resident's) classification file."""
-    name = "resident/classification.txt" if overlay == "resident" else f"overlays/{overlay}.classification.txt"
+    name = (
+        "resident/classification.txt"
+        if overlay == "resident"
+        else f"overlays/{overlay}.classification.txt"
+    )
     lines = (ROOT / "decomp/targets" / name).read_text()
     return [
         (int(start, 16), int(end, 16))
@@ -616,7 +639,9 @@ class AssetTests(unittest.TestCase):
     def test_resident_media(self):
         # The packed boot logo, sprite image and console font, the 0xFFFF
         # font glyph and the error sound's effect and wave banks.
-        self.check("resident", [0x8004EABC, 0x8004FBD8, 0x800501D0, 0x80050240, 0x80050910, 0x80050940])
+        self.check(
+            "resident", [0x8004EABC, 0x8004FBD8, 0x800501D0, 0x80050240, 0x80050910, 0x80050940]
+        )
 
 
 def function(text: str, name: str) -> str:
@@ -644,9 +669,16 @@ def cases(body: str, switch: str) -> dict[int, str]:
 # A director case's statements, as the cue actions of overlay_scripts.py.
 ACTIONS = (
     (r"worldmap_actor_request\((\w+), (\w+)\);", "request"),
-    (r"sound_play_effect\(\(sound_effect_bank->id << 16\) \| worldmap_scene15_ambient_sounds\[worldmap_entry_index\]\[(\d)\]\);", "ambient"),
+    (
+        r"sound_play_effect\(\(sound_effect_bank->id << 16\) \| "
+        r"worldmap_scene15_ambient_sounds\[worldmap_entry_index\]\[(\d)\]\);",
+        "ambient",
+    ),
     (r"sound_play_effect\(\(sound_effect_bank->id << 16\) \| (\w+)\);", "sound"),
-    (r"sound_play_effect_on_channels_12_13\(\(sound_effect_bank->id << 16\) \| (\w+)\);", "sound_12"),
+    (
+        r"sound_play_effect_on_channels_12_13\(\(sound_effect_bank->id << 16\) \| (\w+)\);",
+        "sound_12",
+    ),
     (r"worldmap_effects_start_emitters\((\w+), NULL, NULL\);", "emitters"),
     (r"worldmap_effects_start_emitters\((\w+), &scratch->position, NULL\);", "emitters_at_target"),
     (r"worldmap_effects_stop_particles\((\w+)\);", "stop_effects"),
@@ -698,7 +730,7 @@ class SceneSourceTests(unittest.TestCase):
             path.read_text() for path in sorted((ROOT / "decomp/src/worldmap").glob("*.c"))
         )
         sender = function(sources, "worldmap_actor_request")
-        self.assertIn("actor->command = 1;\n        actor->unk4 = arg;", sender)
+        self.assertIn("actor->command = 1;\n        actor->unk4 = argument;", sender)
         actor_pass = function(sources, "worldmap_actor_run_all")
         self.assertIn(
             "case 1:\n                actor->command = ((ActorFunc)actor->update)(i);", actor_pass
@@ -719,9 +751,21 @@ class SceneSourceTests(unittest.TestCase):
             [
                 # wakes the rig's flight, idle since worldmap_scene14_rig_flight_start returned 3;
                 # never read
-                ("worldmap_scene14_director_update", 9, "worldmap_scene14_rig_flight_update", 1, False),
+                (
+                    "worldmap_scene14_director_update",
+                    9,
+                    "worldmap_scene14_rig_flight_update",
+                    1,
+                    False,
+                ),
                 # 0 is "none pending": the heat haze keeps its state
-                ("worldmap_scene16_director_update", 3, "worldmap_scene16_haze_strength_update", 0, True),
+                (
+                    "worldmap_scene16_director_update",
+                    3,
+                    "worldmap_scene16_haze_strength_update",
+                    0,
+                    True,
+                ),
             ],
         )
         self.assertIn("return 3;", function(sources, "worldmap_scene14_rig_flight_start"))
@@ -755,7 +799,9 @@ class SceneSourceTests(unittest.TestCase):
         sources = "".join(
             path.read_text() for path in sorted((ROOT / "decomp/src/worldmap").glob("*.c"))
         )
-        modes = re.search(r"WorldmapMode worldmap_mode_handlers\[19\] = \{(.*?)\n\};", sources, re.S).group(1)
+        modes = re.search(
+            r"WorldmapMode worldmap_mode_handlers\[19\] = \{(.*?)\n\};", sources, re.S
+        ).group(1)
         modes = re.findall(r"\{(\w+), (\w+), (\w+)\}", modes)
         named = {address: name for name, address in asset_addresses(sources).items()}
         for each in DIRECTORS:
@@ -767,7 +813,9 @@ class SceneSourceTests(unittest.TestCase):
                 else:
                     picker = defined_at(sources, each.picker)
                     self.assertIn(f"{picker}[sequence].states", starter)
-                    pairs = re.search(rf"Sequence {picker}\[3\] = \{{(.*?)\}};", code(sources), re.S)
+                    pairs = re.search(
+                        rf"Sequence {picker}\[3\] = \{{(.*?)\}};", code(sources), re.S
+                    )
                     names = [(named[s.states], named[s.durations]) for s in each.sequences]
                     self.assertEqual(re.findall(r"\{(\w+), (\w+)\}", pairs.group(1)), names)
                 for sequence in each.sequences:
@@ -782,10 +830,16 @@ class SceneSourceTests(unittest.TestCase):
                 calls = re.findall(r"worldmap_actor_spawn\(\(s32\)(\w+), \(s32\)(\w+)\);", setup)
                 self.assertEqual(
                     calls[:2],
-                    [("worldmap_screen_fade_start", "worldmap_screen_fade_update"), (each.starter, each.interpreter)],
+                    [
+                        ("worldmap_screen_fade_start", "worldmap_screen_fade_update"),
+                        (each.starter, each.interpreter),
+                    ],
                 )
                 # fresh slots (worldmap_actor_alloc_slots), so slot n is the setup's n-th actor
-                self.assertLess(setup.index("worldmap_actor_alloc_slots();"), setup.index("worldmap_actor_spawn("))
+                self.assertLess(
+                    setup.index("worldmap_actor_alloc_slots();"),
+                    setup.index("worldmap_actor_spawn("),
+                )
                 self.assertEqual(tuple(update for _, update in calls), each.slots)
                 targets = {
                     a[1] for cue in each.cues.values() for a in cue.actions if a[0] == "request"
@@ -805,7 +859,9 @@ def struct_fields(text: str, name: str) -> dict:
 
 class FrameEventSourceTests(unittest.TestCase):
     def setUp(self):
-        self.arena_fighters_bout_and_effects = (ROOT / "decomp/src/menu/arena_fighters_bout_and_effects.c").read_text()
+        self.arena_fighters_bout_and_effects = (
+            ROOT / "decomp/src/menu/arena_fighters_bout_and_effects.c"
+        ).read_text()
 
     def test_layouts_follow_actor_h(self):
         header = (ROOT / "decomp/src/menu/actor.h").read_text()
@@ -822,7 +878,10 @@ class FrameEventSourceTests(unittest.TestCase):
         found = cases(body, "spec->unk0")
         self.assertEqual(found.pop("default").split(), ["continue;"])  # stays on the record
         self.assertEqual(sorted(found), sorted(EVENT_KINDS))
-        callees = {name: function(self.arena_fighters_bout_and_effects, name) for name in ("arena_frame_event_hit", "arena_frame_event_effect")}
+        callees = {
+            name: function(self.arena_fighters_bout_and_effects, name)
+            for name in ("arena_frame_event_hit", "arena_frame_event_effect")
+        }
         for kind, case in found.items():
             spec = EVENT_KINDS[kind]
             callee = spec.handler.partition(": ")[2]
@@ -846,22 +905,38 @@ class FrameEventSourceTests(unittest.TestCase):
         shots = set(cases(hit, "hit->type")) - {"default"}
         self.assertEqual(shots, {t for t in range(256) if hit_form(t).startswith("shot")})
         effect = function(self.arena_fighters_bout_and_effects, "arena_frame_event_effect")
-        for text in ("arena_effect_is_two_point_type(hit->type) != 0", "hit->type == 0x10", "hit->type >= 0x20"):
+        for text in (
+            "arena_effect_is_two_point_type(hit->type) != 0",
+            "hit->type == 0x10",
+            "hit->type >= 0x20",
+        ):
             self.assertIn(text, effect)
         self.assertIn(
             "if (code < 0x10) {\n        return 0;\n    }\n    return code < 0x20;",
             function(self.arena_fighters_bout_and_effects, "arena_effect_is_two_point_type"),
         )
-        bolts = set(cases(function(self.arena_fighters_bout_and_effects, "arena_effect_queue_bolt_by_type"), "code"))
+        bolts = set(
+            cases(
+                function(self.arena_fighters_bout_and_effects, "arena_effect_queue_bolt_by_type"),
+                "code",
+            )
+        )
         self.assertEqual(bolts, {t for t in range(0x10, 0x20) if effect_form(t).startswith("bolt")})
-        sparkles = set(cases(function(self.arena_fighters_bout_and_effects, "arena_effect_spawn_sparkle"), "kind"))
+        sparkles = set(
+            cases(
+                function(self.arena_fighters_bout_and_effects, "arena_effect_spawn_sparkle"), "kind"
+            )
+        )
         self.assertEqual(sparkles, {t for t in range(0x10) if effect_form(t).startswith("sparkle")})
-        sizes = re.search(r"s16 arena_effect_trail_sizes\[\] = \{([^}]*)\};", self.arena_fighters_bout_and_effects).group(1)
+        sizes = re.search(
+            r"s16 arena_effect_trail_sizes\[\] = \{([^}]*)\};", self.arena_fighters_bout_and_effects
+        ).group(1)
         self.assertEqual(len(sizes.split(",")), SPARKLE_SIZES)
 
 
 class MovieSoundSourceTests(unittest.TestCase):
-    """The timeline decoder follows field_movie_load_sound_bank, field_movie_play_due_sounds and event fe a0."""
+    """The timeline decoder follows field_movie_load_sound_bank, field_movie_play_due_sounds and
+    event fe a0."""
 
     def setUp(self):
         self.text = (ROOT / "decomp/src/field/field_event.c").read_text()
@@ -877,9 +952,15 @@ class MovieSoundSourceTests(unittest.TestCase):
 
     def test_the_player_plays_the_low_byte_on_the_pair_in_bits_8_to_10(self):
         body = function(self.text, "field_movie_play_due_sounds")
-        self.assertIn("if (field_movie_frame < times[field_movie_sound_timeline_index * 2] + FIELD_MOVIE.sound_start) {", body)
         self.assertIn(
-            "sound_play_effect_on_channel((sound & 0xFF) | (field_movie_sound_bank->id << 16), ((sound >> 8) & 7) * 2);", body
+            "if (field_movie_frame < times[field_movie_sound_timeline_index * 2]"
+            " + FIELD_MOVIE.sound_start) {",
+            body,
+        )
+        self.assertIn(
+            "sound_play_effect_on_channel((sound & 0xFF) | (field_movie_sound_bank->id << 16),"
+            " ((sound >> 8) & 7) * 2);",
+            body,
         )
         self.assertIn("field_movie_sound_timeline_index++;", body)
         full = MovieSound(0, 0, 0xFFFF)
@@ -889,7 +970,9 @@ class MovieSoundSourceTests(unittest.TestCase):
         prefix, extended, offset = MOVIE_SOUND_REQUEST
         body = function(self.text, "field_event_play_movie_sound")
         self.assertIn(
-            f"FIELD_MOVIE.sound_bank = field_event_read_selected_operand_08({offset}, EVENT_OPERAND_BYTE(0xB));", body
+            f"FIELD_MOVIE.sound_bank = field_event_read_selected_operand_08({offset},"
+            " EVENT_OPERAND_BYTE(0xB));",
+            body,
         )
         self.assertEqual(prefix, 0xFE)
         forms = EXTENDED[extended]
@@ -930,7 +1013,10 @@ class TextureSourceTests(unittest.TestCase):
             self.assertEqual(asset_size(self.text, start) % 4, 0, f"{start:08x}")
 
     def test_the_steppers_count_down_step_and_restart_at_frame_0(self):
-        creators = {"worldmap_texture_anim_slots": "worldmap_texture_anim_create", "worldmap_texture_anim2_slots": "worldmap_texture_anim2_create"}
+        creators = {
+            "worldmap_texture_anim_slots": "worldmap_texture_anim_create",
+            "worldmap_texture_anim2_slots": "worldmap_texture_anim2_create",
+        }
         for table, _, _, stepper in TEXTURE_SLOTS:
             with self.subTest(table=table):
                 body = function(self.text, creators[table])

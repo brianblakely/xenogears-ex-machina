@@ -102,7 +102,8 @@ def read_patterns(operand: ev.Operand, offset: int) -> list[str]:
 
 
 class SourceTests(unittest.TestCase):
-    """The tables follow field_event_primary_handlers, field_event_extended_handlers and their handlers."""
+    """The tables follow field_event_primary_handlers, field_event_extended_handlers and
+    their handlers."""
 
     def test_entries_name_the_dispatch_table_handlers(self):
         primary = SOURCE.dispatch("field_event_primary_handlers")

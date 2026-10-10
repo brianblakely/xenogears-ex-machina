@@ -3,42 +3,43 @@
 Every table is read from the recovered interpreter, not inferred from the
 data:
 
-* World map actor scripts, worldmap_actor_script_run (decomp/src/worldmap/
-  worldmap_open_map.c). The script is a stream of signed halfwords. The
-  interpreter reads the 32-bit word at the actor's script position: its low
-  halfword indexes the twelve handlers of worldmap_actor_script_handlers (unchecked) and its high
-  halfword and the next two halfwords are the handler's three arguments. The
-  handler returns the halfwords to advance; 0 yields until the actor's next
-  update. Only worldmap_scene17_script_start (worldmap_scene17_actor_script) and worldmap_scene18_script_start (worldmap_scene18_actor_script) give
-  an actor a script.
-* Arena scene scripts, arena_scene_run_script (decomp/src/menu/arena_camera_and_scenes.c). Bytes; switch
-  cases 1-34 take one to three bytes, except 16 and 17, which never advance
-  and never return. 0 and every value without a case return without
-  advancing. arena_scene_start_script starts the scripts: arena_scene_scripts[scene]
-  (arena_scene_enter, scenes 0-9), the opening arena_scene_opening_script (arena_scene_start_tutorial) and the
-  setup script arena_scene_bout_end_script (arena_scene_start_bout_end).
+* World map actor scripts, worldmap_actor_script_run (decomp/src/worldmap/worldmap_open_map.c).
+  The script is a stream of signed halfwords. The interpreter reads the 32-bit word at the
+  actor's script position: its low halfword indexes the twelve handlers of
+  worldmap_actor_script_handlers (unchecked) and its high halfword and the next two halfwords
+  are the handler's three arguments. The handler returns the halfwords to advance; 0 yields
+  until the actor's next update. Only worldmap_scene17_script_start
+  (worldmap_scene17_actor_script) and worldmap_scene18_script_start
+  (worldmap_scene18_actor_script) give an actor a script.
+* Arena scene scripts, arena_scene_run_script (decomp/src/menu/arena_camera_and_scenes.c).
+  Bytes; switch cases 1-34 take one to three bytes, except 16 and 17, which never advance and
+  never return. 0 and every value without a case return without advancing.
+  arena_scene_start_script starts the scripts: arena_scene_scripts[scene] (arena_scene_enter,
+  scenes 0-9), the opening arena_scene_opening_script (arena_scene_start_tutorial) and the setup
+  script arena_scene_bout_end_script (arena_scene_start_bout_end).
 * World map scene directors, the update handlers worldmap_scene14_director_update,
-  worldmap_scene12_director_update, worldmap_scene15_director_update, worldmap_scene13_director_update and worldmap_scene16_director_update of the
-  scripted world-map modes 14, 12, 15, 13 and 16. Each switches on its
-  actor's state. Case 1 counts the actor's wait down and, once it drops below
-  0, loads the next state and wait from two parallel u16 tables embedded in
-  the overlay's data (the step index is the instruction pointer); every other case
-  runs one cue and stores state 1 (or 0). A cue that clears worldmap_loop_running ends
-  the world-map loop (worldmap_run_frame_loop) after that frame, so the director never
-  runs again.
-* Arena move frame events, arena_frame_event_run (decomp/src/menu/arena_fighters_bout_and_effects.c). A gear
-  model file (directory 0x30/1) holds per animation a list of FrameEvent
-  records {first, last, spec} ending in first 0xFF; each record whose frame
-  range holds the frame runs the HitSpec at header + spec through a switch on
-  its kind byte (cases 0-5), and kinds 0 and 2 dispatch again on its type.
+  worldmap_scene12_director_update, worldmap_scene15_director_update,
+  worldmap_scene13_director_update and worldmap_scene16_director_update of the scripted
+  world-map modes 14, 12, 15, 13 and 16. Each switches on its actor's state. Case 1 counts the
+  actor's wait down and, once it drops below 0, loads the next state and wait from two parallel
+  u16 tables embedded in the overlay's data (the step index is the instruction pointer); every
+  other case runs one cue and stores state 1 (or 0). A cue that clears worldmap_loop_running
+  ends the world-map loop (worldmap_run_frame_loop) after that frame, so the director never runs
+  again.
+* Arena move frame events, arena_frame_event_run
+  (decomp/src/menu/arena_fighters_bout_and_effects.c). A gear model file (directory 0x30/1)
+  holds per animation a list of FrameEvent records {first, last, spec} ending in first 0xFF;
+  each record whose frame range holds the frame runs the HitSpec at header + spec through a
+  switch on its kind byte (cases 0-5), and kinds 0 and 2 dispatch again on its type.
 * Field movie sound timelines, field_movie_play_due_sounds (decomp/src/field/
   field_event.c). u16 (frame, sound) pairs, one run per movie sound-effect
   bank, each ended by frame 0xFFFF; field_movie_load_sound_bank seeks the bank's run and the
   player plays its entries in order as the movie's frames reach them.
-* World map terrain texture animations, worldmap_texture_anim_advance and worldmap_texture_anim2_advance
-  (decomp/src/worldmap/worldmap_open_map.c). Runs of (image, duration) frames
-  ended by a negative duration, one per slot of worldmap_texture_anim_slots and worldmap_texture_anim2_slots; each
-  update steps a slot's frame when its timer runs out and uploads the image.
+* World map terrain texture animations, worldmap_texture_anim_advance and
+  worldmap_texture_anim2_advance (decomp/src/worldmap/worldmap_open_map.c). Runs of (image,
+  duration) frames ended by a negative duration, one per slot of worldmap_texture_anim_slots and
+  worldmap_texture_anim2_slots; each update steps a slot's frame when its timer runs out and
+  uploads the image.
 
 None of the machines has jumps: a script runs straight to its stop. The
 scripts and cue tables embedded in the overlays stay user-supplied: the units
@@ -370,7 +371,8 @@ def listing(machine: Machine, disc: int) -> None:
 #                        worldmap_screen_fade_update: 13 fades out, 12 fades in)
 #   ("sound", n)         sound_play_effect: area-bank effect n on two free voices
 #   ("sound_12", n)      sound_play_effect_on_channels_12_13: area-bank effect n on voices 12-13
-#   ("ambient", k)       sound_play_effect of worldmap_scene15_ambient_sounds[worldmap_entry_index][k]
+#   ("ambient", k)       sound_play_effect of
+#                        worldmap_scene15_ambient_sounds[worldmap_entry_index][k]
 #   ("emitters", g)      worldmap_effects_start_emitters(g, NULL, NULL): start emitter group g
 #                        at position 0 unless one of its emitters is live
 #   ("emitters_at_target", g)  the same at the camera target's x, z (y 0)
@@ -919,8 +921,9 @@ EVENT_KINDS = {
 
 
 def hit_form(type_: int) -> str:
-    """arena_frame_event_hit's use of a hit's type while the hit is live; bit 0x40
-    drops the sparkle trail (arena_effect_start_trail_sparkle / arena_effect_start_line_sparkle) of every frame."""
+    """arena_frame_event_hit's use of a hit's type while the hit is live; bit 0x40 drops the
+    sparkle trail (arena_effect_start_trail_sparkle / arena_effect_start_line_sparkle) of every
+    frame."""
     if type_ == 0x20:
         return "charged_shot"  # arena_actor_fire_shot kind 0 if the charge is taken, else sparkle 9
     if type_ == 4:
@@ -1262,7 +1265,8 @@ def movie_sound_table(data: bytes, base: int = BASE) -> list[tuple[int, int]]:
 
 
 def movie_sound_seek(table: list[tuple[int, int]], bank: int) -> int:
-    """The position field_movie_load_sound_bank leaves in field_movie_sound_timeline_index: past bank + 1 ends."""
+    """The position field_movie_load_sound_bank leaves in field_movie_sound_timeline_index:
+    past bank + 1 ends."""
     position = 0
     for _ in range(bank + 1):
         while position < len(table) and table[position][0] != MOVIE_SOUND_END:
@@ -1408,7 +1412,8 @@ def movie_sound_sweep(data: bytes, disc: Disc | None = None, requests: Counter |
 
 def movie_sound_report(root: Path = ROOT) -> int:
     print(
-        f"movie-sounds: player field_movie_play_due_sounds, seek field_movie_load_sound_bank, table field_movie_sound_timelines"
+        "movie-sounds: player field_movie_play_due_sounds, seek field_movie_load_sound_bank,"
+        " table field_movie_sound_timelines"
         f" ({MOVIE_SOUND_ENTRIES} entries), overlay field"
     )
     failures = 0
@@ -1552,7 +1557,8 @@ def texture_sweep(data: bytes, base: int = BASE) -> TextureSweep:
 
 def texture_report() -> int:
     print(
-        "worldmap-textures: steppers worldmap_texture_anim_advance, worldmap_texture_anim2_advance, slots worldmap_texture_anim_slots[2],"
+        "worldmap-textures: steppers worldmap_texture_anim_advance,"
+        " worldmap_texture_anim2_advance, slots worldmap_texture_anim_slots[2],"
         " worldmap_texture_anim2_slots[3], overlay worldmap"
     )
     failures = 0

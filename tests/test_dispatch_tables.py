@@ -82,10 +82,12 @@ class SourceTests(unittest.TestCase):
     def test_formula_tables_and_their_callers(self):
         foot, gear = formula_tables()
         self.assertEqual(
-            (foot.name, foot.caller, len(foot.handlers)), ("battle_formula_table", "battle_resolve_action", 8)
+            (foot.name, foot.caller, len(foot.handlers)),
+            ("battle_formula_table", "battle_resolve_action", 8),
         )
         self.assertEqual(
-            (gear.name, gear.caller, len(gear.handlers)), ("battle_gear_formula_table", "battle_resolve_gear_action", 11)
+            (gear.name, gear.caller, len(gear.handlers)),
+            ("battle_gear_formula_table", "battle_resolve_gear_action", 11),
         )
         # battle_formula4_deal_damage_by_kind sits in both
         self.assertEqual(foot.handlers[4], gear.handlers[9])
@@ -102,7 +104,11 @@ class SourceTests(unittest.TestCase):
         header = (ROOT / "decomp/include/battle/work.h").read_text()
         self.assertIn("u8 formula; /* 0x16", header)
         self.assertIn("u16 flagsA;   /* 0x0A */", header)
-        loader = " ".join(function_body(source("ovl2615/battle_setup_phases.c"), "battle_setup_load_party_and_enemy_files").split())
+        loader = " ".join(
+            function_body(
+                source("ovl2615/battle_setup_phases.c"), "battle_setup_load_party_and_enemy_files"
+            ).split()
+        )
         for entry, member, size in (
             ("5 + battle_setup_work_area.partyIds[i]", "partyCommands[i]", 0x5F0),
             ("0x11 + gear", "gearCommands[i]", 0x690),
@@ -125,7 +131,9 @@ class SourceTests(unittest.TestCase):
 
     def test_enemy_command_is_the_act_entrys_operand(self):
         executor = function_body(source("battle/battle_ai_runners.c"), "battle_action_list_execute")
-        self.assertIn(f"case {ACT}:\n            battle_action_list_act(actor, i, target);", executor)
+        self.assertIn(
+            f"case {ACT}:\n            battle_action_list_act(actor, i, target);", executor
+        )
         act = function_body(source("battle/battle_turns_and_hud.c"), "battle_action_list_act")
         self.assertIn("battle_turn_state->unk2DC = battle_action_list[index].operand + 1;", act)
         commit = function_body(source("battle/battle.c"), "battle_commit_action")
@@ -135,7 +143,8 @@ class SourceTests(unittest.TestCase):
         menu = function_body(source("battle/battle.c"), "battle_confirm_art")
         self.assertIn(f"gearCommands[member][row * 2 + column + {TECHNIQUE_BASE}]", menu)
         self.assertIn(
-            "battle_is_flag_in_mask(game_data.skills[battle_party_character_ids[member]].unlocksB, column + row * 2)",
+            "battle_is_flag_in_mask(game_data.skills[battle_party_character_ids[member]].unlocksB,"
+            " column + row * 2)",
             menu,
         )
         battle = source("battle/battle.c")  # battle_execute_chosen_art is defined K&R
@@ -145,20 +154,28 @@ class SourceTests(unittest.TestCase):
         bits = initializer(source("battle/battle_turns_and_hud.c"), "battle_flag_bits")[1]
         values = [int(v, 0) for v in bits.split(",") if v.strip()]
         self.assertEqual(values, [0x8000 >> i for i in range(16)])
-        learn = function_body(source("ovl2596/battle_results_screens.c"), "battle_results_unlock_by_known_arts")
+        learn = function_body(
+            source("ovl2596/battle_results_screens.c"), "battle_results_unlock_by_known_arts"
+        )
         self.assertIn(f"for (k = 0; k < {LEARNED_SLOTS}; k++)", learn)
         self.assertIn("skills[id].unlocksB |= 0x8000 >> k;", learn)
         growth = source("ovl2596/battle_results.h")
         self.assertIn(f"u8 unlocksB[16];          /* 0x{UNLOCKS_B:X}: 0 ends */", growth)
         self.assertIn("Growth characters[11];", growth)
         self.assertIn(f"(0x{GROWTH:x} each;", growth)
-        loader = function_body(source("ovl2615/battle_setup_phases.c"), "battle_setup_load_party_and_enemy_files")
+        loader = function_body(
+            source("ovl2615/battle_setup_phases.c"), "battle_setup_load_party_and_enemy_files"
+        )
         gear, character = FORCED_GEAR
         self.assertIn(f"battle_setup_work_area.partyIds[1] = {character};", loader)
         self.assertIn(f"battle_setup_work_area.work.records[i].pilot.gearId = 0x{gear:X};", loader)
-        results = function_body(source("ovl2596/battle_results_screens.c"), "battle_results_load_resources")
+        results = function_body(
+            source("ovl2596/battle_results_screens.c"), "battle_results_load_resources"
+        )
         self.assertIn("cd_select_directory(0x10, 2);", results)
-        self.assertIn("battle_work_growth_file[0] = text_unpack_lzss_alloc(archive->items[0], 0);", results)
+        self.assertIn(
+            "battle_work_growth_file[0] = text_unpack_lzss_alloc(archive->items[0], 0);", results
+        )
 
     def test_world_modes_follow_the_entry_and_their_writers(self):
         self.assertEqual(len(world_modes()), 19)
@@ -166,11 +183,21 @@ class SourceTests(unittest.TestCase):
         self.assertIn("mode = game_data_worldmap_flag_word[0] & 0x7FFF;", entry)
         self.assertIn("step = worldmap_mode_handlers[worldmap_mode_index].enter;", entry)
         leave = function_body(source("field/field_event.c"), "field_event_change_map")
-        self.assertIn("game_current_data->entry[2] = field_event_read_selected_operand_10(7, EVENT_OPERAND_BYTE(9));", leave)
-        self.assertIn("game_data.entry[2] = battle_state_of_event_script->operands[3];", source("ovl3087/battle_event_script_vm.c"))
-        results = function_body(source("ovl2596/battle_results_screens.c"), "battle_results_leave_battle")
         self.assertIn(
-            "} else if ((game_data.map & 0x7FF) >= 0x400) {\n            mode_load_overlay_block(3);",
+            "game_current_data->entry[2] ="
+            " field_event_read_selected_operand_10(7, EVENT_OPERAND_BYTE(9));",
+            leave,
+        )
+        self.assertIn(
+            "game_data.entry[2] = battle_state_of_event_script->operands[3];",
+            source("ovl3087/battle_event_script_vm.c"),
+        )
+        results = function_body(
+            source("ovl2596/battle_results_screens.c"), "battle_results_leave_battle"
+        )
+        self.assertIn(
+            "} else if ((game_data.map & 0x7FF) >= 0x400) {\n"
+            "            mode_load_overlay_block(3);",
             results,
         )
 
@@ -181,7 +208,21 @@ class SourceTests(unittest.TestCase):
         self.assertIn("game_data.map = 0x11;", leave)
         self.assertEqual(
             scripted_exits(),
-            (0x11, 0x50, 0x84, 0x10E, 0x110, 0x111, 0x11A, 0x120, 0x1A1, 0x1F0, 0x1FA, 0x269, 0x400),
+            (
+                0x11,
+                0x50,
+                0x84,
+                0x10E,
+                0x110,
+                0x111,
+                0x11A,
+                0x120,
+                0x1A1,
+                0x1F0,
+                0x1FA,
+                0x269,
+                0x400,
+            ),
         )
 
     def test_sprite_kinds_follow_the_header_and_the_callback_table(self):
@@ -194,7 +235,9 @@ class SourceTests(unittest.TestCase):
         self.assertIn("s32 index = (*entry >> 8) & 7;", kind)
         self.assertIn("if ((*entry >> 14) & 1) {\n        index += 8;", kind)
         self.assertEqual([sprite_kind(f) for f in (0x0700, 0x4100, 0x47FF)], [7, 9, 15])
-        dispatch = function_body(source("resident/sprite_vm_draw.c"), "sprite_task_set_draw_by_kind")
+        dispatch = function_body(
+            source("resident/sprite_vm_draw.c"), "sprite_task_set_draw_by_kind"
+        )
         self.assertIn("task_set_draw_callback(task, sprite_draw_callbacks[kind]);", dispatch)
         loop = function_body(source("resident/sprite.c"), "task_run_main_list")
         self.assertIn("if (task->update != NULL) {", loop)
@@ -273,7 +316,9 @@ class InventoryTests(unittest.TestCase):
                         break
                 if set(re.findall(r"[A-Za-z_]\w*", text[match.end() : end])) & functions:
                     tables.add(match.group(1))
-        self.assertIn("arena_mode_tasks", tables)  # the .text table arena_mode_entry places by attribute
+        self.assertIn(
+            "arena_mode_tasks", tables
+        )  # the .text table arena_mode_entry places by attribute
         self.assertGreaterEqual(len(tables), 31)
         self.assertEqual(sorted(name for name in tables if f"`{name}`" not in inventory), [])
 

@@ -6,17 +6,18 @@ formations of 0x20 bytes, BattleFormation in decomp/include/resident/formation.h
 comments name their readers; FIELDS follows that struct (the tests compare the two) and FLAGS names
 the flag bits its readers test. Sets come from:
 
-- a field map: map bundle component 6 (sizes at +0x10c, offsets at +0x130),
-  which field_load_from_bundle decodes into formation_encounter_set itself: the set, then the 16
-  weights formation_encounter_weights of the random draw (field_encounter_count_down). The packed stream may
-  end a few bytes later, in commons_unused_4_words_b; an empty component leaves the set in
-  place. Player control (events 0c, a7: field_event_request_player_control) runs the draw, which
-  waits until a script of the map runs event f7 with a nonzero period and count
-  (field_event_draw_random_picks; every map load clears both).
-- the world map: area files (0x24, 0) area + 1 of worldmap_area_file_sets. worldmap_unpack_area_data
-  points worldmap_encounter_sets[kind] at the offsets in header words 11-26; the roll
-  (worldmap_encounter_roll) draws by the 16 weights at +0x200 + 16 * bracket, the bracket
-  from the scene id (variable 0) against worldmap_encounter_level_brackets, and copies the kind's set.
+- a field map: map bundle component 6 (sizes at +0x10c, offsets at +0x130), which
+  field_load_from_bundle decodes into formation_encounter_set itself: the set, then the 16
+  weights formation_encounter_weights of the random draw (field_encounter_count_down). The
+  packed stream may end a few bytes later, in commons_unused_4_words_b; an empty component
+  leaves the set in place. Player control (events 0c, a7: field_event_request_player_control)
+  runs the draw, which waits until a script of the map runs event f7 with a nonzero period and
+  count (field_event_draw_random_picks; every map load clears both).
+- the world map: area files (0x24, 0) area + 1 of worldmap_area_file_sets.
+  worldmap_unpack_area_data points worldmap_encounter_sets[kind] at the offsets in header words
+  11-26; the roll (worldmap_encounter_roll) draws by the 16 weights at +0x200 + 16 * bracket,
+  the bracket from the scene id (variable 0) against worldmap_encounter_level_brackets, and
+  copies the kind's set.
 - the debug battle selector: the first 0x200 bytes of (0x20, 3) file 4-6 or
   7 + n (ovl2606 battle_scene_select_main).
 
@@ -115,7 +116,8 @@ class FormationError(ValueError):
 
 
 class Request(NamedTuple):
-    """A field event that sets formation_selected_index from operand 1 (field_event_read_imm_or_var)."""
+    """A field event that sets formation_selected_index from operand 1
+    (field_event_read_imm_or_var)."""
 
     pc: int
     event: str  # 71 or fe 84
@@ -256,8 +258,8 @@ def formation_text(formation: Formation) -> str:
 
 @cache
 def brackets(root: Path = ROOT) -> tuple[int, ...]:
-    """worldmap_encounter_level_brackets: the scene ids that start each weight row (worldmap_encounter_roll
-    stops its search at the last entry, so it starts none)."""
+    """worldmap_encounter_level_brackets: the scene ids that start each weight row
+    (worldmap_encounter_roll stops its search at the last entry, so it starts none)."""
     text = dispatch_tables.unit(BRACKET_UNIT, root)
     _, body = dispatch_tables.initializer(text, "worldmap_encounter_level_brackets")
     return tuple(int(value, 0) for value in body.split(",") if value.strip())
@@ -343,7 +345,10 @@ def field_source(map_id: int, size: int, stream: bytes) -> EncounterSource | Non
     if size < FIELD_SIZE or len(stream) < FIELD_SIZE:
         raise FormationError(f"component 6 of 0x{size:x} bytes is not a set and its weights")
     tail = len(stream) - FIELD_SIZE
-    note = f"component 6, 0x{size:x} bytes; its stream writes {tail} bytes more, into commons_unused_4_words_b"
+    note = (
+        f"component 6, 0x{size:x} bytes; its stream writes {tail} bytes more,"
+        " into commons_unused_4_words_b"
+    )
     return EncounterSource(
         "field", map_id, None, stream[:FIELD_SIZE], (stream[SET:FIELD_SIZE],), note
     )
@@ -581,12 +586,11 @@ def sweep(root: Path, repository: Path = ROOT) -> list[Census]:
 
 
 def reach(census: Census) -> dict[tuple[str, int, int | None, int], set[str]]:
-    """How each formation of a field or world map set can start a battle:
-    drawn (a nonzero weight; on a field map also scripts that arm the draw),
-    named (a field script's immediate request on its map), chained (opcode 24
-    of the script set of a reachable event formation of the same set), or none
-    of these ('set' only). The draws' other gates (field_encounter_count_down, worldmap_run_frame_loop)
-    are not traced."""
+    """How each formation of a field or world map set can start a battle: drawn (a nonzero
+    weight; on a field map also scripts that arm the draw), named (a field script's immediate
+    request on its map), chained (opcode 24 of the script set of a reachable event formation of
+    the same set), or none of these ('set' only). The draws' other gates
+    (field_encounter_count_down, worldmap_run_frame_loop) are not traced."""
     result = {}
     for source in census.sources:
         if source.kind == "debug":
@@ -790,7 +794,8 @@ def disc_report(census: Census) -> list[str]:
         f" component 6 and armed: {empty_armed}; weighted formations never armed: {unarmed}",
         f"  world map area files: {len(census.area_files)}, {tables} with {KINDS} terrain"
         f" tables ({len(terrain)} tables); without: {tableless}",
-        f"    weight rows: {len(brackets()) - 1} (worldmap_encounter_level_brackets {list(brackets())});"
+        f"    weight rows: {len(brackets()) - 1}"
+        f" (worldmap_encounter_level_brackets {list(brackets())});"
         f" bytes after each table's weights no reader reads: {_counts(census.table_gaps, '{}')}",
         f"  debug selector files {DEBUG_FIRST}-{debug_last}: {len(debug)} ({sizes});"
         f" then {census.debug_end}",
@@ -870,7 +875,8 @@ def listing(census: Census, kind: str, item: int | None) -> list[str]:
         lines.append(f"; field map {item}: component 6 is empty (the set loaded before stays)")
     if kind == "worldmap":
         lines.append(
-            f"; weight rows by the scene id (variable 0, worldmap_encounter_level_brackets): {bracket_text()}"
+            "; weight rows by the scene id (variable 0, worldmap_encounter_level_brackets):"
+            f" {bracket_text()}"
         )
         if item is not None and item in census.tableless:
             lines.append(

@@ -167,7 +167,8 @@ _PRIMARY = """
 10/1=* walk_step field_event_walk 2 wait u8@1 <9
     step the walk set up 9 bytes back, yielding, until it arrives; then
     snap to its target and play the arrival animation (+e6)
-11/1=00 walk_to_limited field_event_walk_limited 9 next u8@1 sel@2:8/80 sel@4:8/40 sel@6:8/20 flags@8
+11/1=00 walk_to_limited field_event_walk_limited 9 next u8@1 sel@2:8/80 sel@4:8/40 sel@6:8/20 \
+        flags@8
     set up as 10, latching the step limit at pc + 11 (operand 2 of the step)
 11/1=* walk_step_limited field_event_walk_limited 4 wait u8@1 iv@2 <9
     step the walk set up 9 bytes back; out of steps it stops without snapping
@@ -331,7 +332,8 @@ _PRIMARY = """
     re-read the running actor's floor triangles and end the jump; yields
 57/1&03=03 arc_step field_event_arc 2 wait u8@1 <11
     step the arc jump set up 11 bytes back until it lands; yields
-57/1=* arc_jump field_event_arc 11 next u8@1 sel@2:10/80 sel@4:10/40 sel@6:10/20 sel@8:10/10 flags@10
+57/1=* arc_jump field_event_arc 11 next u8@1 sel@2:10/80 sel@4:10/40 sel@6:10/20 sel@8:10/10 \
+        flags@10
     set up a jump to x, z operands 2, 4 and height operand 6 (bit 7 of
     byte 1: the floor of layer operand 6); operand 8 gives the steps, a
     speed or the peak height by mode (byte 1 & 3); yields
@@ -600,7 +602,8 @@ ce unblock_touch field_event_unblock_touch 1 next
     clear the running actor's flag 0x800000
 cf set_window_layout field_event_set_window_layout 5 next u8@1 u8@2 u8@3 u8@4
     set the running actor's window left, top, columns and rows from bytes 1-4
-d0 set_window_layout_operands field_event_set_window_layout_operands 11 next iv@1 iv@3 iv@5 iv@7 iv@9
+d0 set_window_layout_operands field_event_set_window_layout_operands 11 next iv@1 iv@3 iv@5 iv@7 \
+        iv@9
     set the window left, top, columns, rows and style from operands
 d1 halt field_event_halt 1 hang
     empty: never advances
@@ -622,7 +625,8 @@ d8 rotate_model_y field_event_rotate_model_y 3 next iv@1
     turn the running actor's model about y by angle operand 1 (mode 2)
 d9 rotate_model_z field_event_rotate_model_z 3 next iv@1
     turn the running actor's model about z by angle operand 1 (mode 3)
-da add_texture_scroll field_event_add_texture_scroll 17 next s16@1 s16@3 s16@5 s16@7 u16@9 s16@11 u16@13 u16@15
+da add_texture_scroll field_event_add_texture_scroll 17 next s16@1 s16@3 s16@5 s16@7 u16@9 s16@11 \
+        u16@13 u16@15
     add a texture scroll (80027d64) of area operands 1-7, operand-9
     bands, source operands 11/13 and band speed operand 15
 db set_channel_word field_event_set_channel_word 5 next iv@1 iv@3
@@ -637,14 +641,16 @@ de multiply_variable field_event_multiply_variable 6 next var@1 sel@3:5/40 flags
     variable operand 1 *= operand 3
 df divide_variable field_event_divide_variable 6 next var@1 sel@3:5/40 flags@5
     variable operand 1 /= operand 3 (0 counts as 1)
-e0 set_actor_sprite_draw_mode field_event_set_actor_sprite_draw_mode 7 next actor@1 sel@2:6/80 sel@4:6/40 flags@6
+e0 set_actor_sprite_draw_mode field_event_set_actor_sprite_draw_mode 7 next actor@1 sel@2:6/80 \
+        sel@4:6/40 flags@6
     as dd for the selected actor
-e1 vram_rectangle field_event_vram_rectangle 14 next sel@1:13/80 sel@3:13/40 sel@5:13/20 sel@7:13/10 \
-        sel@9:13/08 sel@11:13/04 flags@13
+e1 vram_rectangle field_event_vram_rectangle 14 next sel@1:13/80 sel@3:13/40 sel@5:13/20 \
+        sel@7:13/10 sel@9:13/08 sel@11:13/04 flags@13
     move the VRAM rectangle at operands 1/3 (size 5/7) to 9/11, or clear it
 e2 branch_unless_buttons_equal field_event_branch_unless_buttons_equal 5 branch u16@1 addr@3
     continue when the held buttons equal operand 1, else jump to operand 3
-e3 branch_unless_buttons_seen_equal field_event_branch_unless_buttons_seen_equal 5 branch u16@1 addr@3
+e3 branch_unless_buttons_seen_equal field_event_branch_unless_buttons_seen_equal 5 branch u16@1 \
+        addr@3
     continue when the buttons seen held (800afc6c) equal operand 1, else
     jump to operand 3
 e4 halt_e4 field_event_halt_e4 1 hang
@@ -662,12 +668,12 @@ e9 shake_actor_back field_event_shake_actor_back 7 wait iv@1 iv@3 iv@5
     the reverse of e8 while flag 0x100000 is set
 ea walk_player_ahead_ea field_event_walk_player_ahead_ea 6 wait iv@2 iv@4
     as 47 along the running descriptor's facing (angle 0)
-eb point_at_angle field_event_point_at_angle 20 next sel@1:13/80 sel@3:13/40 sel@5:13/20 sel@7:13/10 \
-        sel@9:13/08 sel@11:13/04 flags@13 var@14 var@16 var@18
+eb point_at_angle field_event_point_at_angle 20 next sel@1:13/80 sel@3:13/40 sel@5:13/20 \
+        sel@7:13/10 sel@9:13/08 sel@11:13/04 flags@13 var@14 var@16 var@18
     store the point at heading 7, elevation 9, distance 11 from centre 1/3/5
     in variables operands 14, 16, 18
-ec point_around field_event_point_around 15 next u8@1 sel@2:8/80 sel@4:8/40 sel@6:8/20 flags@8 var@9 var@11 \
-        var@13
+ec point_around field_event_point_around 15 next u8@1 sel@2:8/80 sel@4:8/40 sel@6:8/20 flags@8 \
+        var@9 var@11 var@13
     as eb around camera point byte 1
 ed store_camera_point field_event_store_camera_point 8 next u8@1 var@2 var@4 var@6
     store camera point byte 1's x, z, y in three variables
@@ -741,7 +747,8 @@ _EXTENDED = """
     set variable bit operand 1
 0b clear_variable_bit field_event_ext_clear_variable_bit 3 next bit@1
     clear variable bit operand 1
-0c set_unread_work_halfwords field_event_set_unread_work_halfwords 13 next u16@1 u16@3 u16@5 u16@7 u16@9 u16@11
+0c set_unread_work_halfwords field_event_set_unread_work_halfwords 13 next u16@1 u16@3 u16@5 u16@7 \
+        u16@9 u16@11
     set the six halfwords at 800b21a0, which no code reads (the field setup
     stores 0x100 three times, then 0x200 three times)
 0d set_character field_event_set_character 3 next iv@1
@@ -857,9 +864,11 @@ _EXTENDED = """
 3c call_layer_script field_event_call_layer_script 5 next iv@1 iv@3
     with the 801e module loaded run script entry operand 3 of layer
     actor operand 1 (801e8330)
-3d set_layer_light_row field_event_set_layer_light_row 10 next sel@1:9/80 sel@3:9/40 sel@5:9/20 sel@7:9/10 flags@9
+3d set_layer_light_row field_event_set_layer_light_row 10 next sel@1:9/80 sel@3:9/40 sel@5:9/20 \
+        sel@7:9/10 flags@9
     set row operand 1 of the 801e layers' light matrix (800b221c)
-3e set_layer_color_column field_event_set_layer_color_column 10 next sel@1:9/80 sel@3:9/40 sel@5:9/20 sel@7:9/10 flags@9
+3e set_layer_color_column field_event_set_layer_color_column 10 next sel@1:9/80 sel@3:9/40 \
+        sel@5:9/20 sel@7:9/10 flags@9
     set column operand 1 of the 801e layers' colour matrix (800b223c)
 3f set_layer_back_color field_event_set_layer_back_color 7 next iv@1 iv@3 iv@5
     set the 801e layers' back colour (800b225c)
@@ -958,7 +967,8 @@ _EXTENDED = """
 66 play_sound_effect_full field_event_play_sound_effect_full 9 next iv@1 iv@3 iv@5 iv@7
     play sound effect operand 1 on voice pair operand 7 at volume
     operand 5, pan operand 3 (800855c8)
-67 play_movie_window field_event_play_movie_window 19 next iv@1 iv@3 iv@5 iv@7 iv@9 iv@11 iv@13 iv@15 iv@17
+67 play_movie_window field_event_play_movie_window 19 next iv@1 iv@3 iv@5 iv@7 iv@9 iv@11 iv@13 \
+        iv@15 iv@17
     request movie operand 1 in the window of operands 11-17
 68 walk_player_to field_event_walk_player_to 6 wait sel@1:5/80 sel@3:5/40 flags@5
     once field control allows walk the controlled actor to x, z operands 1, 3
@@ -981,17 +991,18 @@ _EXTENDED = """
     set the piece drift mode 800b21d2 to operand 1 - 0x80
 71 store_facing field_event_store_facing 3 next var@1
     store the running actor's facing in a variable
-72 store_turn_step field_event_store_turn_step 10 next var@1 sel@3:9/40 sel@5:9/20 sel@7:9/10 flags@9
+72 store_turn_step field_event_store_turn_step 10 next var@1 sel@3:9/40 sel@5:9/20 sel@7:9/10 \
+        flags@9
     store 80073930(operands 3, 5, 7) in a variable
-73 store_planar_distance field_event_store_planar_distance 12 next var@1 sel@3:11/40 sel@5:11/20 sel@7:11/10 \
-        sel@9:11/08 flags@11
+73 store_planar_distance field_event_store_planar_distance 12 next var@1 sel@3:11/40 sel@5:11/20 \
+        sel@7:11/10 sel@9:11/08 flags@11
     store the planar distance between two x/z points in a variable
 74 debug_print field_event_debug_print 3 next var@1
     print a variable (debug)
 75 store_actor_facing field_event_store_actor_facing 4 next actor@1 var@2
     store the selected actor's facing in a variable
-76 store_distance field_event_store_distance 16 next var@1 sel@3:15/40 sel@5:15/20 sel@7:15/20 sel@9:15/10 \
-        sel@11:15/08 sel@13:15/08 flags@15
+76 store_distance field_event_store_distance 16 next var@1 sel@3:15/40 sel@5:15/20 sel@7:15/20 \
+        sel@9:15/10 sel@11:15/08 sel@13:15/08 flags@15
     store the distance between two points in a variable
 77/1=00 tim_load field_event_tim 2 wait u8@1
     once the stream stops load TIM file 7fb + pc + 5 (the following fe 77
@@ -1018,10 +1029,11 @@ _EXTENDED = """
     yield while 800adb88 is set
 80 set_panorama field_event_set_panorama 15 next u16@1 u16@3 u16@5 u16@7 u16@9 u16@11 u16@13
     set the panorama backdrop's texture, size, CLUT, mode and turn
-81 set_panorama_position field_event_set_panorama_position 8 next sel@1:7/80 sel@3:7/40 sel@5:7/20 flags@7
+81 set_panorama_position field_event_set_panorama_position 8 next sel@1:7/80 sel@3:7/40 sel@5:7/20 \
+        flags@7
     set the panorama backdrop's position
-82 set_panorama_colors field_event_set_panorama_colors 25 next iv@1 iv@3 iv@5 iv@7 iv@9 iv@11 iv@13 iv@15 iv@17 \
-        iv@19 iv@21 iv@23
+82 set_panorama_colors field_event_set_panorama_colors 25 next iv@1 iv@3 iv@5 iv@7 iv@9 iv@11 \
+        iv@13 iv@15 iv@17 iv@19 iv@21 iv@23
     set the panorama backdrop's colours and fade and enable it
 83 end_field_mode field_event_end_field_mode 3 next iv@1
     when 800adbd8 is set, clear it and end the field with kind 3 into
@@ -1035,10 +1047,11 @@ _EXTENDED = """
     set 800afe84 to byte 1 (nonzero: no panorama after a movie or menu)
 87 wait_menus_done field_event_wait_menus_done 1 wait
     yield until the requested menus have run (8004f350 zero)
-88 set_emitter_path field_event_set_emitter_path 18 next sel@1:17/80 sel@3:17/40 sel@5:17/20 sel@7:17/10 \
-        sel@9:17/08 sel@11:17/04 sel@13:17/02 sel@15:17/01 flags@17
+88 set_emitter_path field_event_set_emitter_path 18 next sel@1:17/80 sel@3:17/40 sel@5:17/20 \
+        sel@7:17/10 sel@9:17/08 sel@11:17/04 sel@13:17/02 sel@15:17/01 flags@17
     set emitter operand 1's start and end points and step count
-89 place_emitter field_event_place_emitter 11 next sel@1:9/80 sel@3:9/40 sel@5:9/20 sel@7:9/10 flags@9 actor@10
+89 place_emitter field_event_place_emitter 11 next sel@1:9/80 sel@3:9/40 sel@5:9/20 sel@7:9/10 \
+        flags@9 actor@10
     place sound emitter operand 1 and attach it to the actor of byte 10
 8a set_listener field_event_set_listener 3 next iv@1
     set the sound listener selector (800b22e0)
@@ -1056,18 +1069,19 @@ _EXTENDED = """
     frame operand 2 and operands 4, 6
 90 select_emitter_template field_event_select_emitter_template 9 next iv@1 iv@3 iv@5 iv@7
     select emitter template operand 1 with count 3, delay 5 and life 7
-91 set_template_vectors field_event_set_template_vectors 14 next sel@1:13/80 sel@3:13/40 sel@5:13/20 sel@7:13/10 \
-        sel@9:13/08 sel@11:13/04 flags@13
+91 set_template_vectors field_event_set_template_vectors 14 next sel@1:13/80 sel@3:13/40 \
+        sel@5:13/20 sel@7:13/10 sel@9:13/08 sel@11:13/04 flags@13
     set the current emitter template's +0c and +14 vectors
-92 set_template_08 field_event_set_template_08 14 next sel@1:13/80 sel@3:13/40 sel@5:13/20 sel@7:13/10 \
-        sel@9:13/08 sel@11:13/04 flags@13
+92 set_template_08 field_event_set_template_08 14 next sel@1:13/80 sel@3:13/40 sel@5:13/20 \
+        sel@7:13/10 sel@9:13/08 sel@11:13/04 flags@13
     set the current emitter template's +08, +1c, +26 and +28
 93 set_template_56 field_event_set_template_56 11 next iv@1 iv@3 iv@5 iv@7 iv@9
     set the current emitter template's +56, +58, +54 and flags
-94 set_template_5a field_event_set_template_5a 10 next sel@1:9/80 sel@3:9/40 sel@5:9/20 sel@7:9/10 flags@9
+94 set_template_5a field_event_set_template_5a 10 next sel@1:9/80 sel@3:9/40 sel@5:9/20 sel@7:9/10 \
+        flags@9
     set the current emitter template's +5a and +62 vectors
-95 set_template_6a field_event_set_template_6a 14 next sel@1:13/80 sel@3:13/40 sel@5:13/20 sel@7:13/10 \
-        sel@9:13/08 sel@11:13/04 flags@13
+95 set_template_6a field_event_set_template_6a 14 next sel@1:13/80 sel@3:13/40 sel@5:13/20 \
+        sel@7:13/10 sel@9:13/08 sel@11:13/04 flags@13
     set the current emitter template's bytes +6a..+6c and +6e..+70
 96 start_effect field_event_start_effect 1 next
     start the effect the templates define for the running actor
@@ -1091,8 +1105,8 @@ _EXTENDED = """
     lock (byte 1 zero) or unlock character operand 2 (fd-ff party slots) in
     the game's +2318: the party menu does not exchange a locked member (ovl2598
     801cab48)
-a0 play_movie_sound field_event_play_movie_sound 12 wait sel@1:11/80 sel@3:11/40 sel@5:11/20 sel@7:11/10 \
-        sel@9:11/08 flags@11
+a0 play_movie_sound field_event_play_movie_sound 12 wait sel@1:11/80 sel@3:11/40 sel@5:11/20 \
+        sel@7:11/10 sel@9:11/08 flags@11
     while 800adbdc is set request movie operand 1 with sound bank operand
     9 (else wait)
 a1 set_gear field_event_set_gear 5 next iv@1 iv@3
@@ -1126,8 +1140,8 @@ ad store_party_hp field_event_store_party_hp 4 next var@1 u8@3
     store the HP of party slot byte 3 in a variable
 ae set_jump_mode field_event_set_jump_mode 7 next iv@1 iv@3 iv@5
     set the jump mode, animation mode and repeat delay
-af transform_vector field_event_transform_vector 18 next sel@1:11/80 sel@3:11/40 sel@5:11/20 sel@7:11/10 \
-        sel@9:11/08 flags@11 var@12 var@14 var@16
+af transform_vector field_event_transform_vector 18 next sel@1:11/80 sel@3:11/40 sel@5:11/20 \
+        sel@7:11/10 sel@9:11/08 flags@11 var@12 var@14 var@16
     transform vector 5/7/9 by node operand 3 of layer actor operand 1
     into the variables operands 12, 14, 16 name
 b0/1=01 sound_bank_register field_event_sound_bank 2 wait u8@1
@@ -1159,7 +1173,8 @@ b8 set_battle_sounds field_event_set_battle_sounds 4 next u8@1 iv@2
 b9 store_vehicle_place field_event_store_vehicle_place 9 next var@1 var@3 var@5 var@7
     store the world map vehicle's saved position (game +182c-+1830) and
     heading (+1832) in variables (WorldmapReturn, resident/gamedata.h)
-ba set_vehicle_place field_event_set_vehicle_place 10 next sel@1:9/80 sel@3:9/40 sel@5:9/20 sel@7:9/10 flags@9
+ba set_vehicle_place field_event_set_vehicle_place 10 next sel@1:9/80 sel@3:9/40 sel@5:9/20 \
+        sel@7:9/10 flags@9
     set the world map vehicle's saved position and heading (+182c-+1832)
 bb store_vehicle_flags field_event_store_vehicle_flags 3 next var@1
     store the world map vehicle's flags (+1834: 0x4000 a vehicle, 0x2000
@@ -1174,8 +1189,8 @@ bf open_menu_task field_event_open_menu_task 13 wait iv@1 iv@3 iv@5 iv@7 iv@9 iv
     once field control allows select menu task 0 with six parameter
     bytes and end the field (kind 2)
 c0 store_bout_outcome field_event_store_bout_outcome 3 next var@1
-    store the arena bout's outcome (80050622, arena_fighters_bout_and_effects arena_bout_record_outcome: 1-3 lost,
-    0x82-0x88 won within a limit) in a variable
+    store the arena bout's outcome (80050622, arena_fighters_bout_and_effects
+    arena_bout_record_outcome: 1-3 lost, 0x82-0x88 won within a limit) in a variable
 c1 store_member_animation field_event_store_member_animation 7 next var@1 var@3 iv@5
     store party member operand 5's animation +0c and actor in variables
 c2 begin_effect field_event_begin_effect 9 next iv@1 iv@3 iv@5 iv@7
@@ -1193,11 +1208,11 @@ c6 join_party field_event_join_party 3 wait iv@1 +5
     already pending) mark it waiting and skip 2 more bytes
 c7 store_gear field_event_store_gear 5 next iv@1 var@3
     store character operand 1's gear (+a0, ff for none) in a variable
-c8 set_template_pairs0 field_event_set_template_pairs0 18 next sel@1:17/80 sel@3:17/40 sel@5:17/20 sel@7:17/10 \
-        sel@9:17/08 sel@11:17/04 sel@13:17/02 sel@15:17/01 flags@17
+c8 set_template_pairs0 field_event_set_template_pairs0 18 next sel@1:17/80 sel@3:17/40 sel@5:17/20 \
+        sel@7:17/10 sel@9:17/08 sel@11:17/04 sel@13:17/02 sel@15:17/01 flags@17
     set the current template's +30 pairs 0-3 (80088d38)
-c9 set_template_pairs4 field_event_set_template_pairs4 18 next sel@1:17/80 sel@3:17/40 sel@5:17/20 sel@7:17/10 \
-        sel@9:17/08 sel@11:17/04 sel@13:17/02 sel@15:17/01 flags@17
+c9 set_template_pairs4 field_event_set_template_pairs4 18 next sel@1:17/80 sel@3:17/40 sel@5:17/20 \
+        sel@7:17/10 sel@9:17/08 sel@11:17/04 sel@13:17/02 sel@15:17/01 flags@17
     set the current template's +30 pairs 4-7 (80088d38)
 ca/1=00 layer_inactive field_event_layer 2 next u8@1
     clear the running actor's 801e layer's active flag; yields

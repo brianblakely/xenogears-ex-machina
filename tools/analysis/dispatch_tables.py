@@ -37,16 +37,17 @@ ones by model_relocate_sprite_model) come from these loaders:
   the geometry component (component 2, field field_load_from_bundle);
 * ovl2143 actors, the model file of each pair after ovl2143 in (4, 0), files
   0x6bb + 2k (field field_layer_load, the gear shop's gear_shop_model_read_files);
-* battle objects (battle_create_object: the group between the model file's entries 2
-  and 3): stage files (12, 3) 6 + 2s (resident mode_load_battle_stage), the model entries
-  of enemy set files (12, 1) 2n + 3 (ovl2615 battle_setup_build_enemy_sources_and_models), object sets
-  (0x28, 0) 2s + 1 (battle_read_object_set_files), gears (0x28, 1) base + 1 and their part
-  files base + 2 + v by battle_gear_file_table (battle_read_gear_files, battle_create_object_from_files);
-* arena model files (0x30, 1) id + 2 (menu arena_actor_load_model; relocated against the
-  base word at +0x1c, arena_node_relocate_model_file, and bound by arena_node_build_model_set) and the menu
-  overlay's own arena_actor_extra_model (arena_mode_task);
+* battle objects (battle_create_object: the group between the model file's entries 2 and 3):
+  stage files (12, 3) 6 + 2s (resident mode_load_battle_stage), the model entries of enemy set
+  files (12, 1) 2n + 3 (ovl2615 battle_setup_build_enemy_sources_and_models), object sets (0x28,
+  0) 2s + 1 (battle_read_object_set_files), gears (0x28, 1) base + 1 and their part files base +
+  2 + v by battle_gear_file_table (battle_read_gear_files, battle_create_object_from_files);
+* arena model files (0x30, 1) id + 2 (menu arena_actor_load_model; relocated against the base
+  word at +0x1c, arena_node_relocate_model_file, and bound by arena_node_build_model_set) and
+  the menu overlay's own arena_actor_extra_model (arena_mode_task);
 * world map area files (0x24, 0) area + 1 for the area sets of worldmap_area_file_sets
-  (worldmap_select_area_files, worldmap_unpack_area_data: the group at header +8, worldmap_objects_build);
+  (worldmap_select_area_files, worldmap_unpack_area_data: the group at header +8,
+  worldmap_objects_build);
 * sprite commands f5 (a model), f6 and f7 (a model group) in the sprite blocks
   tools.analysis.sprite_vm decodes (resident sprite_vm_run_generic_command).
 
@@ -324,8 +325,9 @@ def family_census(
 
 
 def enemy_table(descriptor: tuple[int, int], in_gear: bool) -> int:
-    """0 for battle_formula_table, 1 for battle_gear_formula_table: an enemy in a gear, or a descriptor
-    with flagsA 0x10, goes through battle_resolve_gear_action with its own descriptor."""
+    """0 for battle_formula_table, 1 for battle_gear_formula_table: an enemy in a gear, or a
+    descriptor with flagsA 0x10, goes through battle_resolve_gear_action with its own
+    descriptor."""
     return int(in_gear or bool(descriptor[1] & GEAR_DESCRIPTOR))
 
 
@@ -1095,11 +1097,11 @@ class TmdKind:
 
 @cache
 def tmd_kinds(root: Path = ROOT) -> dict[int, TmdKind]:
-    """Each kind battle_tmd_build_packets and battle_tmd_draw_object handle: battle_tmd_draw_object's
-    second switch (mode & 0x1c) gives the packet each mode draws (the builder
-    writes the colour bytes of the flat quads through POLY_F3), and the bytes
-    read are the furthest cmd[] byte (builder) and vertex or normal index
-    (both switches of the drawer) of the kind's cases."""
+    """Each kind battle_tmd_build_packets and battle_tmd_draw_object handle:
+    battle_tmd_draw_object's second switch (mode & 0x1c) gives the packet each mode draws (the
+    builder writes the colour bytes of the flat quads through POLY_F3), and the bytes read are
+    the furthest cmd[] byte (builder) and vertex or normal index (both switches of the drawer)
+    of the kind's cases."""
     text = unit(TMD_UNIT, root)
     reads: dict[int, int] = {}
     for labels, statements in case_groups(kr_body(text, "battle_tmd_build_packets")):
@@ -1310,8 +1312,8 @@ def formula_report(results: list[FormulaCensus]) -> list[str]:
 def primitive_report(results: list[PrimitiveCensus]) -> list[str]:
     table = primitive_table()
     out = [
-        f"model primitives: model_primitive_types {len(table.types)} types (model_build_packets prepare, "
-        "model_draw_sprite_model draw by sort mode 0-5)",
+        f"model primitives: model_primitive_types {len(table.types)} types"
+        " (model_build_packets prepare, model_draw_sprite_model draw by sort mode 0-5)",
     ]
     for n, result in enumerate(results, 1):
         sources = ", ".join(
@@ -1352,8 +1354,8 @@ def primitive_report(results: list[PrimitiveCensus]) -> list[str]:
 def mode_report(results: list[ModeCensus]) -> list[str]:
     modes = world_modes()
     out = [
-        f"world map arrival modes: worldmap_mode_handlers {len(modes)} modes (worldmap.c worldmap_main,"
-        " game_data_worldmap_flag_word[0] & 0x7fff)"
+        f"world map arrival modes: worldmap_mode_handlers {len(modes)} modes"
+        " (worldmap.c worldmap_main, game_data_worldmap_flag_word[0] & 0x7fff)"
     ]
     for n, result in enumerate(results, 1):
         out.append(
@@ -1379,8 +1381,9 @@ def kind_report(results: list[KindCensus]) -> list[str]:
     callbacks = sprite_callbacks()
     empty = [k for k, name in enumerate(callbacks) if name == "NULL"]
     out = [
-        f"sprite kinds: sprite_draw_callbacks {len(callbacks)} callbacks (sprite_task_set_draw_by_kind), NULL for"
-        f" {' '.join(map(str, empty))}; header bits 8-10 and 14 (sprite_get_header_kind)"
+        f"sprite kinds: sprite_draw_callbacks {len(callbacks)} callbacks"
+        f" (sprite_task_set_draw_by_kind), NULL for {' '.join(map(str, empty))};"
+        " header bits 8-10 and 14 (sprite_get_header_kind)"
     ]
     for n, result in enumerate(results, 1):
         out.append(
@@ -1393,8 +1396,8 @@ def kind_report(results: list[KindCensus]) -> list[str]:
 def tmd_report(results: list[TmdCensus]) -> list[str]:
     kinds = tmd_kinds()
     out = [
-        f"TMD primitives: {len(kinds)} kinds (battle_tmd_build_packets builds, battle_tmd_draw_object draws;"
-        " mode & 0x1c, 0x100 lit)"
+        f"TMD primitives: {len(kinds)} kinds (battle_tmd_build_packets builds,"
+        " battle_tmd_draw_object draws; mode & 0x1c, 0x100 lit)"
     ]
     for n, result in enumerate(results, 1):
         sources = ", ".join(f"{name} {count}" for name, count in sorted(result.models.items()))

@@ -177,7 +177,8 @@ _EXTENDED = (
         "insert_button",
         ("action",),
         3,
-        "insert the name of the button assigned to `action` (pad_button_assignment) from resource 49",
+        "insert the name of the button assigned to `action` (pad_button_assignment)"
+        " from resource 49",
     ),
 )
 for _sub, _name, _operands, _length, _effect in _EXTENDED:
@@ -384,7 +385,8 @@ WORLD_AREA_FILES = (
 
 
 def system_data(disc: Disc) -> bytes:
-    """ "MES SYSDATA", installed by text_install_system_data (text_system_resources[n] = entry n)."""
+    """ "MES SYSDATA", installed by text_install_system_data (text_system_resources[n] =
+    entry n)."""
     return unpack(disc.sectors(disc.slot(0, 1, 7)))
 
 

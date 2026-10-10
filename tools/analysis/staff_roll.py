@@ -79,8 +79,9 @@ def decode_line(data: bytes, offset: int) -> Line:
 
 
 def decode(data: bytes) -> list[Line]:
-    """The lines field_staff_roll_advance draws from a text of len(data) bytes: one per
-    call of field_staff_roll_write_line until the bytes left (field_staff_roll_bytes_left) are 0 or less."""
+    """The lines field_staff_roll_advance draws from a text of len(data) bytes: one per call of
+    field_staff_roll_write_line until the bytes left (field_staff_roll_bytes_left) are 0 or
+    less."""
     lines, offset = [], 0
     while len(data) - offset > 0:
         line = decode_line(data, offset)
@@ -177,7 +178,8 @@ def disc_files(disc: Disc) -> tuple[bytes, bytes]:
 
 def report(results: dict[int, TextCount], digests: set[bytes]) -> str:
     lines = [
-        "staff-roll text: field_staff_roll_write_line, directory (4, 0) file 0xab; font image file 0xac",
+        "staff-roll text: field_staff_roll_write_line, directory (4, 0) file 0xab;"
+        " font image file 0xac",
         f"  texts decoded: {len(results)} ({len(digests)} distinct)",
     ]
     for disc, r in sorted(results.items()):
