@@ -498,6 +498,17 @@ class Rewriter:
                                        f'"wasm-import-name"="{import_name}" }}')
                     lines.append(line)
                     continue
+            if line.startswith("declare "):
+                # An unprototyped declaration (`f()` in C, `(...)` in IR) gives
+                # the wasm symbol a variadic signature that the definition does
+                # not have: declare the definition's parameters instead (calls
+                # that disagree with them go through adapters).
+                head = parse_function_head(line)
+                target = self.lookup_definition(unit, name_of(head[1]))
+                if head[5] and not head[4] and target is not None and not target[1][5]:
+                    _, _, def_ret, _, def_params, _, _ = target[1]
+                    params = ", ".join(f"{t}{' ' + ' '.join(a) if a else ''}" for t, a in def_params)
+                    line = f"declare {def_ret} {head[1]}({params})"
             if line.startswith(("define ", "declare ")):
                 line = self.rename_static_head(unit, line)
                 if line.startswith("define ") and not is_port:
@@ -1043,7 +1054,12 @@ def link(out, objects, args, units):
         if missing:
             print(f"{len(missing)} undefined functions trap through xem.missing: {out / 'stubs.txt'}")
             objects = objects + [stub_obj]
-    run(cmd + list(map(str, objects)))
+    result = run(cmd + list(map(str, objects)))
+    # wasm-ld replaces a function whose references disagree on its signature
+    # with a trap; that is a build error here.
+    mismatches = sorted(set(re.findall(r"function signature mismatch: (\S+)", result.stderr)))
+    if mismatches:
+        raise SystemExit(f"signature mismatches: {', '.join(mismatches)}")
     final = out / "game.wasm"
     imports = ",".join(YIELD_IMPORTS)
     run(["wasm-opt", "-O2", "--asyncify", f"--pass-arg=asyncify-imports@{imports}",
