@@ -1,6 +1,6 @@
 /*
- * The remaining BIOS calls the game makes, the development host's file
- * server and the report printf.
+ * The remaining BIOS calls the game makes and the development host's file
+ * server.
  *
  * - The BIOS file calls B(32h)-B(36h), B(41h)-B(45h) on the memory card
  *   devices "bu00:" and "bu10:" go to the host's card service; they block as
@@ -14,7 +14,6 @@
 #include "common.h"
 #include "psyq/libapi.h"
 #include "psyq/libsn.h"
-#include "resident/console.h"
 #include "xem/card.h"
 #include "xem/port.h"
 
@@ -187,18 +186,4 @@ int PCwrite(int fd, char *buff, int len) {
 
 int PClseek(int fd, int offset, int mode) {
     return xem_pc_call(0x107);
-}
-
-/* console_report_printf.s: a tail jump into console_printf with every
- * argument, so the same printf to the console when there is one. */
-extern void *console_current;
-
-void console_report_printf(char *format, ...) {
-    va_list args;
-
-    if (console_current != NULL) {
-        va_start(args, format);
-        console_vprintf(0, format, args);
-        va_end(args);
-    }
 }
