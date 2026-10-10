@@ -1,6 +1,7 @@
 // The browser host in headless Chromium: rendering on both backends, the Slint
-// settings panel, settings and save persistence, audio, disc import and the
-// automation API over a game module fixture. Needs no private inputs.
+// settings panel, settings persistence, disc import and, over a game module
+// fixture, the automation API, the game's sound, input, memory cards in
+// IndexedDB and snapshot saves. Needs no private inputs.
 
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
@@ -93,31 +94,22 @@ describe('page services', () => {
     await page.close();
   });
 
-  test('audio starts from a user gesture and plays runtime samples', async () => {
+  test('audio starts from a user gesture at the SPU rate', async () => {
     const page = await browser.page();
     assert.equal((await status(page)).page.audio.state, 'not started');
     await page.click('#audio');
-    await page.waitForFunction(() => {
-      const s = window.xem.status();
-      return s.page.audio.state === 'running' && s.page.audio.played > 4800 && s.audioFrames > 4800;
-    });
+    await page.waitForFunction(() => window.xem.status().page.audio.state === 'running');
+    const { audio, page: host } = await status(page);
+    assert.equal(host.audio.sampleRate, 44100);
+    assert.equal(audio.sampleRate, 44100);
+    // Without a session nothing is produced: the worklet plays silence.
+    assert.equal(audio.frames, 0);
     await page.close();
   });
 
-  test('a save round-trips through IndexedDB across reload', async () => {
+  test('saving needs a session', async () => {
     const page = await browser.page();
-    const saved = await page.evaluate(() => window.xem.save('slot-test'));
-    assert.equal(saved.kind, 'memory-card');
-    assert.equal(saved.bytes, 128 * 1024);
-    await page.reload();
-    await page.waitForFunction(() => document.body.dataset.ready === 'true');
-    const loaded = await page.evaluate(async () => {
-      const { data, ...rest } = await window.xem.load('slot-test');
-      return { ...rest, magic: String.fromCharCode(data[0], data[1]) };
-    });
-    assert.equal(loaded.verified, true);
-    assert.equal(loaded.sha256, saved.sha256);
-    assert.equal(loaded.magic, 'MC');
+    await assert.rejects(page.evaluate(() => window.xem.save('slot-test')), /no game session/);
     await page.close();
   });
 
@@ -224,6 +216,106 @@ describe('automation over a game module fixture', () => {
     assert.equal(loop.gameFrames - loop.before.gameFrames, 104);
     assert.equal(loop.running, false);
     assert.deepEqual([loop.session.vblanks, loop.session.stopped], [103, STOP]);
+  });
+
+  test('the game\'s sound reaches the AudioWorklet', async () => {
+    await page.click('#audio');
+    const audio = await page.evaluate(async () => {
+      await window.xem.boot({ executable: false, run: true });
+      await new Promise((resolve) => {
+        const check = () => (window.xem.status().session.stopped ? resolve() : setTimeout(check, 10));
+        check();
+      });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const s = window.xem.status();
+      return { runtime: s.audio, page: s.page.audio, vblanks: s.session.vblanks };
+    });
+    // 735 samples per frame at 44.1 kHz and 60 frames a second.
+    assert.ok(audio.runtime.frames > 735 * 60, JSON.stringify(audio));
+    assert.ok(audio.page.posted > 735 * 60, JSON.stringify(audio));
+    assert.ok(audio.page.played > 4800, JSON.stringify(audio));
+  });
+
+  test('the card device\'s writes reach IndexedDB and survive a reload', async () => {
+    const hex = (bytes) => Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+    const text = (bytes, from, length) => String.fromCharCode(...bytes.subarray(from, from + length)).replace(/\0.*$/, '');
+    const saved = await page.evaluate(async () => {
+      const xem = window.xem;
+      await xem.boot({ executable: false });
+      // The fixture saves a file on card 1 through the BIOS file calls.
+      xem.command({ cmd: 'write_memory', address: 0x80000100, hex: '01000000' });
+      await xem.runFrames(2);
+      const result = xem.command({ cmd: 'read_memory', address: 0x80000104, length: 8 });
+      const image = xem.cards.image(0);
+      await xem.cards.flush();
+      const s = xem.status();
+      return { result, image, stored: await xem.cards.stored(0), other: await xem.cards.stored(1),
+               unsaved: s.cards.unsaved, errors: s.cards.errors, page: s.page.cards };
+    });
+    // Descriptor 2, 128 bytes written.
+    assert.equal(saved.result, '0200000080000000');
+    const image = Uint8Array.from(Object.values(saved.image));
+    const stored = Uint8Array.from(Object.values(saved.stored));
+    assert.equal(image.length, 128 * 1024);
+    assert.equal(hex(stored), hex(image), 'IndexedDB holds the device\'s image');
+    assert.equal(text(image, 0, 2), 'MC');
+    // Directory frame 1: a file's first block named XEMTEST; its data in block 1.
+    assert.equal(image[0x80], 0x51);
+    assert.equal(text(image, 0x8a, 20), 'XEMTEST');
+    assert.equal(text(image, 0x2000, 128), 'Saved by the browser host\'s card test.');
+    assert.equal(saved.other, undefined, 'card 2 was never written');
+    assert.deepEqual([saved.unsaved, saved.errors, saved.page.pending, saved.page.error], [false, [], 0, null]);
+
+    await page.reload();
+    await page.waitForFunction(() => document.body.dataset.ready === 'true');
+    const reloaded = await page.evaluate(async () => {
+      const xem = window.xem;
+      const stored = await xem.cards.stored(0);
+      await xem.boot({ executable: false });
+      const image = xem.cards.image(0);
+      // Creating the file again fails: the card the device loaded has it.
+      xem.command({ cmd: 'write_memory', address: 0x80000100, hex: '01000000' });
+      await xem.runFrames(1);
+      return { stored, image, result: xem.command({ cmd: 'read_memory', address: 0x80000104, length: 4 }) };
+    });
+    assert.equal(hex(Uint8Array.from(Object.values(reloaded.stored))), hex(image));
+    assert.equal(hex(Uint8Array.from(Object.values(reloaded.image))), hex(image));
+    assert.equal(reloaded.result, 'ffffffff');
+  });
+
+  test('pad 1 follows the keyboard while the panel is hidden, and automation sets pads directly', async () => {
+    const pads = await page.evaluate(async () => {
+      await window.xem.boot({ executable: false });
+      // The fixture's card path, which then waits for VSync forever (its file
+      // exists by now, so it saves nothing).
+      window.xem.command({ cmd: 'write_memory', address: 0x80000100, hex: '01000000' });
+      window.xem.setRunning(true);
+      const frames = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const buttons = () => window.xem.command({ cmd: 'status' }).pads[0].buttons;
+      const out = {};
+      window.xem.command({ cmd: 'pad', port: 0, buttons: ['triangle'] });
+      await frames();
+      out.automation = buttons();
+      return out;
+    });
+    assert.deepEqual(pads.automation, ['triangle'], 'the player\'s idle input leaves an automation pad alone');
+    await page.keyboard.down('KeyZ');
+    await page.keyboard.down('Enter');
+    await page.waitForTimeout(100);
+    const held = await page.evaluate(() => window.xem.command({ cmd: 'status' }).pads[0].buttons);
+    await page.keyboard.up('KeyZ');
+    await page.keyboard.up('Enter');
+    await page.waitForTimeout(100);
+    const released = await page.evaluate(() => window.xem.command({ cmd: 'status' }).pads[0].buttons);
+    await page.evaluate(() => window.xem.panel.show(true));
+    await page.keyboard.down('ArrowUp');
+    await page.waitForTimeout(100);
+    const withPanel = await page.evaluate(() => window.xem.command({ cmd: 'status' }).pads[0].buttons);
+    await page.keyboard.up('ArrowUp');
+    await page.evaluate(() => window.xem.panel.show(false));
+    assert.deepEqual(held, ['start', 'cross']);
+    assert.deepEqual(released, []);
+    assert.deepEqual(withPanel, [], 'the panel has the input');
   });
 
   test('a snapshot save survives a reload byte for byte', async () => {

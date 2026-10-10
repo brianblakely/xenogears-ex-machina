@@ -11,7 +11,8 @@ use xem_render::{Compositor, Gpu, Quad, Rect, SceneRenderer, ViewTarget, Viewpor
 use xem_settings::{Filter, SettingsService};
 use xem_ui::{LogicalPosition, PointerEventButton, SettingsUi, SharedGpu, WindowEvent};
 
-/// The stand-in game picture's size (the original's typical display mode).
+/// The test scene's size (the original's typical display mode), shown until a
+/// game session runs.
 const GAME_SIZE: (u32, u32) = (320, 240);
 const GAME_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
 /// The panel's size in logical pixels.
@@ -24,6 +25,8 @@ pub struct WebRenderer {
     scene: SceneRenderer,
     compositor: Compositor,
     game_view: wgpu::TextureView,
+    /// The game's display (texture, view, size) once a session shows one.
+    game_image: Option<(wgpu::Texture, wgpu::TextureView, (u32, u32))>,
     pub backend: &'static str,
     pub adapter: String,
     scale: f32,
@@ -94,6 +97,7 @@ pub async fn create(canvas: HtmlCanvasElement, prefer: &str) -> Result<WebRender
         surface,
         config,
         game_view,
+        game_image: None,
         scale: 1.0,
         panel: None,
         panel_error: None,
@@ -191,7 +195,43 @@ impl WebRenderer {
         }
     }
 
-    /// Render one frame of the scene at `time` seconds with the panel on top.
+    /// Show the game's display: `rgba` is `width` x `height` RGBA8 pixels
+    /// (sRGB-encoded, as the console outputs them), as xem-host's
+    /// `View::set_game_image` does.
+    pub fn set_game_image(&mut self, (width, height): (u32, u32), rgba: &[u8]) {
+        if width == 0 || height == 0 {
+            return;
+        }
+        if self.game_image.as_ref().is_none_or(|(_, _, size)| *size != (width, height)) {
+            let texture = self.gpu.device.create_texture(&wgpu::TextureDescriptor {
+                label: Some("game display"),
+                size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: GAME_FORMAT,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                view_formats: &[],
+            });
+            let view = texture.create_view(&Default::default());
+            self.game_image = Some((texture, view, (width, height)));
+        }
+        let (texture, _, _) = self.game_image.as_ref().expect("created above");
+        self.gpu.queue.write_texture(
+            texture.as_image_copy(),
+            rgba,
+            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(width * 4), rows_per_image: Some(height) },
+            wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+        );
+    }
+
+    /// Go back to the test scene (no session).
+    pub fn clear_game_image(&mut self) {
+        self.game_image = None;
+    }
+
+    /// Render one frame: the game's display (or, without a session, the test
+    /// scene at `time` seconds) with the panel on top.
     pub fn frame(&mut self, time: f32, settings: &SettingsService) -> Result<(), String> {
         if self.lost().is_some() {
             return Ok(());
@@ -211,15 +251,21 @@ impl WebRenderer {
             wgpu::CurrentSurfaceTexture::Validation => return Err("surface validation error".into()),
         };
         let mut encoder = self.gpu.device.create_command_encoder(&Default::default());
-        let (view, proj) = demo_camera(GAME_SIZE.0 as f32 / GAME_SIZE.1 as f32, time);
-        self.scene.render_views(
-            &mut encoder,
-            &[ViewTarget { view, proj, target: &self.game_view, viewport: Viewport::full(GAME_SIZE.0, GAME_SIZE.1) }],
-            time,
-        );
+        let (game_view, game_size) = match &self.game_image {
+            Some((_, view, size)) => (view, *size),
+            None => {
+                let (view, proj) = demo_camera(GAME_SIZE.0 as f32 / GAME_SIZE.1 as f32, time);
+                self.scene.render_views(
+                    &mut encoder,
+                    &[ViewTarget { view, proj, target: &self.game_view, viewport: Viewport::full(GAME_SIZE.0, GAME_SIZE.1) }],
+                    time,
+                );
+                (&self.game_view, GAME_SIZE)
+            }
+        };
         let target = self.size();
         let presentation = &settings.settings().presentation;
-        let mut game = Quad::screen(&self.game_view, present_rect(GAME_SIZE, target, presentation.scale), target);
+        let mut game = Quad::screen(game_view, present_rect(game_size, target, presentation.scale), target);
         game.filter = match presentation.filter {
             Filter::Nearest => wgpu::FilterMode::Nearest,
             Filter::Linear => wgpu::FilterMode::Linear,

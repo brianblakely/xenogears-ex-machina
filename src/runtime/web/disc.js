@@ -40,7 +40,8 @@ export async function readSectors(app, file, lba, count) {
 }
 
 /** Fetch the ranges the game's own disc reads wait for (the runtime stops a
- * frame, not its clock, until they arrive). One fetch runs at a time. */
+ * frame, not its clock, until they arrive), from the animation loop. One
+ * fetch runs at a time. */
 let serving = null;
 export function serveGameReads(app, file) {
   if (serving || !file) return;
@@ -49,6 +50,18 @@ export function serveGameReads(app, file) {
   serving = fetchRanges(app, file, ranges).finally(() => {
     serving = null;
   });
+}
+
+/** Fetch everything the game's disc reads wait for, including a fetch the
+ * animation loop started; resolves once nothing is missing. */
+export async function fillGameReads(app, file) {
+  if (!file) throw new Error('no disc is open');
+  for (;;) {
+    if (serving) await serving;
+    const ranges = JSON.parse(app.disc_missing());
+    if (ranges.length === 0) return;
+    await fetchRanges(app, file, ranges);
+  }
 }
 
 export const fileSystemAccess = typeof window.showOpenFilePicker === 'function';

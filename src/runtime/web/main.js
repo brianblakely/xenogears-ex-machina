@@ -1,13 +1,14 @@
 // The browser host page: thin glue between browser APIs and the runtime
-// (src/runtime/crates/xem-web). The page owns the canvas, input, Web Audio,
-// asynchronous file and storage access and the animation callback; the runtime
-// owns the game, settings and rendering.
+// (src/runtime/crates/xem-web). The page owns the canvas, input events, Web
+// Audio, asynchronous file and storage access and the animation callback; the
+// runtime owns the game, settings, rendering, the pad mapping and the mix.
 
 import init, { XemApp, create_renderer } from './pkg/xem_web.js';
 import { loadGameModule, instantiate } from './game.js';
 import * as disc from './disc.js';
 import * as storage from './storage.js';
 import { AudioOut } from './audio.js';
+import { Cards } from './cards.js';
 import { createAutomation } from './xem.js';
 
 const params = new URLSearchParams(location.search);
@@ -16,6 +17,7 @@ const $ = (id) => document.getElementById(id);
 await init();
 const app = new XemApp();
 const audio = new AudioOut(app);
+const cards = new Cards(app);
 const page = {
   game: { available: false },
   stubs: false,
@@ -43,6 +45,13 @@ if (page.game.available) {
     app.set_schema(await schema.text());
     page.schema = true;
   }
+}
+
+// The memory cards, before any session boots.
+try {
+  await cards.load();
+} catch (error) {
+  cards.error = String(error);
 }
 
 // --- Canvas renderer: WebGPU, else WebGL2 -----------------------------------
@@ -103,6 +112,9 @@ new ResizeObserver(sizeCanvas).observe(document.querySelector('main'));
 // --- Host operations (the controls and window.xem call these) ---------------
 const host = {
   app,
+  cards,
+  flushCards: () => cards.flush(),
+  fillDisc: () => disc.fillGameReads(app, page.discFile),
   async boot({ executable = true, run = false } = {}) {
     if (!page.game.available) throw new Error(`no game module: ${page.game.error}`);
     const instance = await instantiate(page.game);
@@ -120,14 +132,8 @@ const host = {
     return disc.readSectors(app, page.discFile, lba, count);
   },
   async save(slot) {
-    let bytes;
-    let kind = 'snapshot';
-    try {
-      bytes = app.snapshot_bytes();
-    } catch {
-      bytes = app.blank_memory_card();
-      kind = 'memory-card';
-    }
+    const bytes = app.snapshot_bytes();
+    const kind = 'snapshot';
     const sha256 = await storage.sha256(bytes);
     await storage.put('saves', slot, { kind, bytes, sha256, savedAt: Date.now() });
     return { slot, kind, bytes: bytes.length, sha256 };
@@ -149,6 +155,8 @@ const host = {
       frameError: page.frameError,
       deviceLosses: page.deviceLosses,
       audio: audio.status(),
+      cards: cards.status(),
+      gamepad: gamepadName,
       fileSystemAccess: disc.fileSystemAccess,
       hidden: page.hidden,
       crossOriginIsolated: window.crossOriginIsolated,
@@ -156,6 +164,21 @@ const host = {
   },
 };
 window.xem = createAutomation(host);
+
+// --- Input: the keyboard and the first gamepad to pad 1 (the runtime maps them) --
+let gamepadName = null;
+let gamepadHome = false;
+function pollGamepad() {
+  const pad = navigator.getGamepads?.().find((p) => p?.connected);
+  gamepadName = pad?.id ?? null;
+  const pressed = Uint8Array.from(pad?.buttons ?? [], (b) => (b.pressed ? 1 : 0));
+  // Its Home button toggles the settings panel.
+  const home = pressed[16] === 1;
+  if (home && !gamepadHome) app.set_panel_visible(!app.panel_visible());
+  gamepadHome = home;
+  app.gamepad(pressed);
+}
+window.addEventListener('blur', () => app.release_input());
 
 // --- Animation: the game frames due (bounded) and one render per frame -----
 let recovering = false;
@@ -168,8 +191,11 @@ function frame(time) {
     fps.frames = 0;
   }
   try {
+    pollGamepad();
     app.frame(time);
     disc.serveGameReads(app, page.discFile);
+    audio.pump();
+    cards.flush();
     page.frameError = null;
   } catch (error) {
     page.frameError = String(error.message ?? error);
@@ -239,7 +265,7 @@ $('run').addEventListener('click', () => {
   const status = JSON.parse(app.status());
   app.set_running(!status.running);
 });
-$('step').addEventListener('click', () => window.xem.step(1));
+$('step').addEventListener('click', guarded(() => window.xem.runFrames(1)));
 $('settings').addEventListener('click', () => app.set_panel_visible(!app.panel_visible()));
 $('audio').addEventListener('click', guarded(async () => {
   await audio.start();
@@ -269,8 +295,13 @@ for (const type of ['keydown', 'keyup']) {
       return;
     }
     const text = slintKeys[event.key] ?? (event.key.length === 1 ? event.key : null);
-    if (text !== null && app.panel_visible()) {
+    const panel = app.panel_visible();
+    // A game key is released even while the panel has the input.
+    const game = (!down || !panel) && app.game_key(event.code, down);
+    if (text !== null && panel) {
       app.key(text, down);
+      event.preventDefault();
+    } else if (game) {
       event.preventDefault();
     }
   });
@@ -288,7 +319,9 @@ function describe(status) {
     `disc       ${d ? `${d.name}: ${d.state}${d.identity ? ` — ${d.identity.serial ?? 'unknown disc'} ${d.identity.boot_path}` : ''}${d.error ? ` — ${d.error}` : ''}` : 'none'}`,
     d ? `disc cache ${(d.peak_resident_bytes / 1048576).toFixed(1)} of ${(d.chunk_budget / 1048576).toFixed(0)} MiB peak, ${d.fetches} reads` : null,
     `session    ${s ? `${s.vblanks} vblanks, ${s.cycles} cycles${s.stopped ? ` — stopped: ${s.stopped}` : status.running ? ' — running' : ''}` : 'none'}`,
-    `audio      ${audio.status().state}, ${audio.status().played} frames played`,
+    `audio      ${audio.status().state}, ${audio.status().played} frames played, ${audio.status().underruns} silent`,
+    `cards      ${status.cards.unsaved || cards.status().pending ? 'saving…' : 'saved'}${cards.status().error ? ` — ${cards.status().error}` : ''}`,
+    gamepadName ? `gamepad    ${gamepadName}` : null,
     JSON.parse(app.settings()).settings.presentation.show_fps ? `fps        ${fps.value.toFixed(0)}` : null,
   ];
   return lines.filter((line) => line !== null).join('\n');

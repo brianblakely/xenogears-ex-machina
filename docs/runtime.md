@@ -299,15 +299,31 @@ as JSON text or bytes.
   commands (a command runs at most 10 000 frames per call), so a client drives
   either host identically; disc 1 answers the same replies in both.
   `XemApp::snapshot_bytes`/`restore_bytes` carry `Runtime::snapshot` bytes for
-  saves. `boot` loads the executable as xem-headless does and takes the game's
-  `stubs.txt` and `schema.json` from beside `game.wasm`.
+  saves. `boot` starts the game as `xem_game::boot` does natively (the
+  executable's text, blank Kanji glyphs, the memory cards, the user's disc in
+  the drive read in place through `DiscImport::game_source`) and takes the
+  game's `stubs.txt` and `schema.json` from beside `game.wasm`.
+- **Blocked frames.** The page reads the disc only asynchronously, so a frame
+  whose sector is not fetched yet stops (`Session::frame` returns `Ok(false)`)
+  without advancing the virtual clock, and continues where it stopped once the
+  bytes arrived. The animation loop fetches the missing ranges after each
+  animation frame (`disc_missing`, `disc_fill`) and counts the waiting time as
+  dropped. A `frames` or `run_until` command returns early with
+  `{"blocked": true, "frames": n, ...}`; the automation API's `run(command)`
+  and `runFrames(n)` fetch and repeat until the command is done and answer
+  what `xem-headless --control` answers.
 - **Scheduling.** `requestAnimationFrame` calls `XemApp::frame`: while running,
-  the game frames due at 60 per second of page time, at most two per animation
-  frame and none after 12 ms, then one render. Time a throttled, hidden or
-  stalled page missed is dropped (`status().loop.dropped`), never caught up.
+  the player's input on pad 1, the game frames due at 60 per second of page
+  time, at most two per animation frame and none after 12 ms, then one render;
+  the page then posts the frames' sound and card writes. Time a throttled,
+  hidden or stalled page missed is dropped (`status().loop.dropped`), never
+  caught up.
 - **Rendering.** wgpu on the canvas: WebGPU when the browser gives an adapter,
   WebGL2 otherwise (`?backend=webgl2` forces it); `status().renderer.backend`
-  says which. The Slint panel (FemtoVG's wgpu renderer on the same device,
+  says which. With a session the canvas shows the GPU device's display
+  (`display_rgba8`, uploaded to an sRGB texture after frames ran and placed by
+  the presentation scale and filter, as xem-host's `View::set_game_image`);
+  without one, the test scene. The Slint panel (FemtoVG's wgpu renderer on the same device,
   composited over the scene) works on both; F1 or the Settings button shows it,
   Escape or Close hides it. A lost device is replaced on a new canvas (WebGL2
   after repeated WebGPU losses).
@@ -318,22 +334,46 @@ as JSON text or bytes.
   reads 1.1 MB of its 358 MB CHD. CHD and raw MODE2/2352 `.bin` images are
   accepted (a `.cue` is not needed for a single-track image). Nothing is sent
   anywhere.
-- **Audio.** "Start audio" creates the `AudioContext` inside the click; an
-  `AudioWorklet` plays a ring of samples `XemApp::audio_render` produces and
-  asks for more when low (no SharedArrayBuffer). Until the port drives xem-spu
-  the samples are a test tone mixed by the volume and output settings.
+- **Audio.** A browser session keeps the SPU's output (`Spu::set_output`).
+  After the frames of an animation frame (or a command) the runtime takes the
+  samples into a bounded queue (a quarter second; older ones are dropped, as
+  when automation runs frames faster than real time); each animation frame the
+  page takes them, mixed by the master volume and output settings
+  (`XemApp::take_audio`), and posts them to an `AudioWorklet`, whose ring keeps
+  at most about 0.19 s and plays silence when dry (no SharedArrayBuffer).
+  "Start audio" creates the `AudioContext` inside the click, at the SPU's
+  44.1 kHz; the browser resamples to the device.
+- **Input.** While the settings panel is hidden, the keyboard
+  (`KeyboardEvent.code`, xem-host's default mapping: arrows, Enter Start,
+  Right Shift or Backspace Select, Z or Space Cross, X Circle, A Square, S
+  Triangle, Q/W L1/R1, 1/2 L2/R2) and the first gamepad (Gamepad API standard
+  mapping; Home toggles the panel) hold pad 1's buttons (`src/runtime/crates/xem-web/src/input.rs`). The
+  animation loop sets the pad when the player's buttons change, so a pad an
+  automation client set (`pad`, `press`, `replay`) stays until the player
+  presses something.
 - **Persistence.** Settings: `SettingsService` over `localStorage`
-  (`xem.settings`). Saves: IndexedDB (`xem` database, `saves` store) holds the
-  session snapshot, or without a session a formatted blank memory card, with its
-  SHA-256, checked when read back.
+  (`xem.settings`). Memory cards: two 128 KB images in IndexedDB (`xem`
+  database, `cards` store, `card1`/`card2`; none stored is a fresh formatted
+  card). The card device's `CardStorage` is synchronous and IndexedDB is not:
+  the page loads both images before any session boots, the storage
+  (`BrowserCards`) answers loads from that copy and takes the device's writes
+  into it at once, marking the card dirty; after each animation frame and
+  automation step the page takes the dirty images and writes them to
+  IndexedDB on a chain of transactions, so they land in order. The runtime's
+  copy is the authority; IndexedDB trails it by the writes in flight
+  (`status().cards`, `status().page.cards`). Saves: the `saves` store holds
+  session snapshots with their SHA-256, checked when read back.
 - **Automation.** `window.xem`: `status()`, `boot({executable, run})`,
   `setRunning`, `command(cmd)` (any control command) with the shorthands
   `step(frames)`, `runUntil({maxFrames, until})`, `memoryHash()`,
   `snapshot(name)`/`restore(name)`, `exportSnapshot()`/`importSnapshot(bytes)`;
+  the asynchronous `run(cmd)` and `runFrames(n)` (through blocked frames);
   `settings.get()`/`settings.apply(change)` (a `SettingChange`, e.g.
   `{MasterVolume: 40}`), `panel.show(bool)`, `importDisc(blob)`,
-  `readSectors(lba, count)`, `save(slot)`/`load(slot)`. Each is the runtime
-  method the page's controls use; there is no DOM-input path.
+  `readSectors(lba, count)`, `save(slot)`/`load(slot)`,
+  `cards.image(slot)`/`cards.stored(slot)`/`cards.flush()`. Each is the
+  runtime method the page's controls use; there is no DOM-input path (pads
+  are set with the shared `pad`, `press` and `replay` commands).
 
 From the repository root in `nix develop path:./nix/runtime`:
 
@@ -343,7 +383,8 @@ From the repository root in `nix develop path:./nix/runtime`:
 - tests: `cd src/runtime/web && npm ci && npm test` (Playwright on the shell's
   Chromium; `XEM_DISC1=<disc 1 image>` adds the user-disc tests, which send
   the same control commands to `src/runtime/target/release/xem-headless --control`
-  when it is built and compare the replies).
+  when it is built and compare the replies, including the retained new-game
+  route's `memory_hash` at the title, the story text and frame 4500).
   Headless Chromium needs `--use-vulkan=swiftshader` for WebGPU: with its
   default Vulkan choice it destroys a WebGPU device after the canvas presents.
 

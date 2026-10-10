@@ -1,16 +1,18 @@
-// IndexedDB: save blobs and, where the File System Access API exists, the
-// handle of the user's disc image so it can be reopened after a reload. All of
-// it stays in this browser profile; nothing is uploaded.
+// IndexedDB: the memory card images, save blobs and, where the File System
+// Access API exists, the handle of the user's disc image so it can be reopened
+// after a reload. All of it stays in this browser profile; nothing is uploaded.
 
 const DB = 'xem';
-const VERSION = 1;
+const VERSION = 2;
+const STORES = ['saves', 'handles', 'cards'];
 
 function open() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB, VERSION);
     request.onupgradeneeded = () => {
-      request.result.createObjectStore('saves');
-      request.result.createObjectStore('handles');
+      for (const store of STORES) {
+        if (!request.result.objectStoreNames.contains(store)) request.result.createObjectStore(store);
+      }
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
