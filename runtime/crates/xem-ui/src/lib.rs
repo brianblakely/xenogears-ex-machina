@@ -193,6 +193,17 @@ impl SettingsUi {
         self.panel.on_close_requested(f);
     }
 
+    /// Shows the Disc group; `f` is called when its Import button is pressed.
+    pub fn on_import_disc(&self, f: impl FnMut() + 'static) {
+        self.panel.set_can_import_disc(true);
+        self.panel.on_import_disc_requested(f);
+    }
+
+    /// What the Disc group says about the imported disc.
+    pub fn set_disc_status(&self, text: &str) {
+        self.panel.set_disc_status(text.into());
+    }
+
     /// The Slint component, for inspection.
     pub fn component(&self) -> &SettingsPanel {
         &self.panel
