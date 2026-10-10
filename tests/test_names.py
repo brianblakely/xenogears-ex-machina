@@ -22,7 +22,9 @@ ASSEMBLY = {
         ".globl func_80010000\n.type func_80010000, @function\nfunc_80010000:\njr $31\nnop\n"
         ".size func_80010000, . - func_80010000\n.space 0x18\n"
         ".globl func_80010020\n.type func_80010020, @function\nfunc_80010020:\njr $31\nnop\n"
-        ".size func_80010020, . - func_80010020\n.space 0x8\n"
+        ".size func_80010020, . - func_80010020\n"
+        ".globl func_80010028\n.type func_80010028, @function\nfunc_80010028:\njr $31\nnop\n"
+        ".size func_80010028, . - func_80010028\n"
         ".globl D_80010030\n.type D_80010030, @object\nD_80010030:\n.word 0\n"
         ".size D_80010030, 4\n.space 0x4\n.globl D_80010038\nD_80010038:\n.space 0x8\n"
         ".globl D_80010040\n.type D_80010040, @object\nD_80010040:\n.word 1, 2\n"
@@ -101,6 +103,7 @@ SOURCES = {
         "void func_80200000(void) {\n    func_80100010();\n}\n"
     ),
     "decomp/targets/resident/symbol_addrs.txt": "// The resident's names.\n",
+    "decomp/targets/resident/classification.txt": "80010028 80010030 sdk a library routine\n",
     "decomp/targets/overlays/ovl3.resident.ld": (
         "D_80010040 = 0x80010040; /* the pair */\nD_80010044 = D_80010040 + 0x4;\n"
     ),
@@ -120,7 +123,7 @@ resident\tfunc\tfunc_80010020\tcd_return\t\thigh\treturns at once
 resident\tasm\tdecomp/src/resident/func_80010020.s\tcd_return.s\t\thigh\tfollows it
 resident\tdata\tD_80010040\tcd_pair\t\thigh\ta pair of words
 resident\tdata\tD_80010044\tcd_pair_second\t\thigh\tits second word
-resident\tdata\tD_80010030\tcd_word\t\thigh\ta label inside func_80010028's file
+resident\tdata\tD_80010030\tlibtest_word\t\thigh\ta label inside func_80010028's file
 resident\tunit\tdecomp/src/resident/main_80010000.c\tcd_main.c\t\thigh\tthe resident unit
 ovl1\tfunc\tfunc_80100000\tone_call_resident\t\thigh\tcalls the resident
 ovl1\tfunc\tfunc_80100010\tone_return\t\thigh\treturns
@@ -164,7 +167,12 @@ class NamesTests(unittest.TestCase):
                 f"IMAGE := .local/build/{target}.bin\nBUILD := .local/build/{target}\n"
                 f"LINKER_SCRIPT := .local/{target}/{target}.ld\nSOURCE_DIRS := decomp/src/{image}\n"
                 + (f"LINKER_EXTRA := {' '.join(extra)}\n" if extra else "")
-                + ("GP_main_80010000 := 8\n" if target == "r" else "")
+                + (
+                    "GP_main_80010000 := 8\n"
+                    "CLASSIFICATION := decomp/targets/resident/classification.txt\n"
+                    if target == "r"
+                    else ""
+                )
             )
         files["packaging/source-files.txt"] = "\n".join(
             sorted([*files, "packaging/source-files.txt"])
@@ -335,6 +343,7 @@ class NamesTests(unittest.TestCase):
             "bad.tsv:18: kind 'thing' is none of",
             "bad.tsv:19: 3 columns, not the seven",
             "bad.tsv:22: D_80010000 and func_80010000 (resident) meet in decomp/src/ovl3/ovl3.c",
+            "bad.tsv:20: cd_word: an SDK member keeps its PsyQ name or takes its library's prefix",
             "bad.tsv:21: D_80010038 follows the function's end in .local/decomp/resident/asm/"
             "nonmatchings/main_80010000/func_80010028.s",
         ):
@@ -346,7 +355,7 @@ class NamesTests(unittest.TestCase):
             "check: 16 rows (9 symbols, 2 units, 1 .s files, 1 parameters, 3 prefixes)",
             result.stdout,
         )
-        self.assertIn("unnamed: 5 placeholders", result.stdout)
+        self.assertIn("unnamed: 6 placeholders", result.stdout)
         unnamed = self.read(".local/names/unnamed.tsv")
         for name in (
             "func_80200000",
@@ -354,6 +363,7 @@ class NamesTests(unittest.TestCase):
             "decomp/src/ovl3/ovl3.c",
             "D_80010000",
             "D_80010038",
+            "func_80010028",
         ):
             self.assertIn(name, unnamed)
         self.assertNotIn("D_80010030", unnamed)
@@ -436,7 +446,7 @@ class NamesTests(unittest.TestCase):
             self.read("decomp/targets/resident/symbol_addrs.txt"),
             (
                 "// The resident's names.\n" + header + "cd_start = 0x80010000; // type:func\n"
-                "cd_return = 0x80010020; // type:func\ncd_word = 0x80010030; // type:label\n"
+                "cd_return = 0x80010020; // type:func\nlibtest_word = 0x80010030; // type:label\n"
                 "cd_pair = 0x80010040;\n"
             ),
         )
@@ -464,7 +474,14 @@ class NamesTests(unittest.TestCase):
         listed = self.read("packaging/source-files.txt").splitlines()
         self.assertEqual(listed, sorted(listed))
         self.assertIn("decomp/src/resident/cd_return.s", listed)
-        # A second run changes nothing.
+        # A second run changes nothing (once a split and a link name the
+        # generated folder and the object after the renamed unit).
+        generated = self.root / ".local/decomp/resident/asm/nonmatchings"
+        (generated / "main_80010000").rename(generated / "cd_main")
+        built = self.root / ".local/build/r/decomp/src/resident"
+        (built / "main_80010000.o").rename(built / "cd_main.o")
+        script = self.root / ".local/r/r.ld"
+        script.write_text(script.read_text().replace("main_80010000", "cd_main"))
         result = self.names("apply", "map.tsv", "--overrides", "overrides.tsv")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("apply: changed 0 files;", result.stdout)
