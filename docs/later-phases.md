@@ -3,10 +3,11 @@
 This handbook is for the engineer of plan.md Phases 2-5. It covers what the
 Phase 1 decomp gives them: how to use it as an oracle, how the program is built,
 what a port replaces, and what it must keep. Every statement cites the recovered
-source (`decomp/src`, by name, with original addresses where they help),
-matched disassembly, a committed tool or the document that records it. Existing
-documents are summarised and linked, not repeated. Anything not established is
-listed under [Open questions](#open-questions).
+source (`decomp/src`, by the names [Navigating the code](#navigating-the-code)
+explains, with original addresses where they help), matched disassembly, a
+committed tool or the document that records it. Existing documents are
+summarised and linked, not repeated. Anything not established is listed under
+[Open questions](#open-questions).
 
 Read first: [plan.md](../plan.md) (shared architecture, Phases 2-5),
 [matching.md](matching.md) (build, comparison, coverage),
@@ -20,6 +21,45 @@ Scale: `make -C decomp all-coverage` counts the 25 distinct images
 of compiled C, 68 (16,028 bytes) of handwritten assembly and 458 (71,168 bytes)
 of PsyQ SDK code, with no remaining assembly or placeholders. Regenerate these
 numbers rather than copying them.
+
+## Navigating the code
+
+The naming convention is in [matching.md](matching.md#names) (Names). What this
+handbook relies on:
+
+- **Where things are.** An image's units are in `decomp/src/<target>`, named
+  after the target rather than its prefix: `decomp/src/menu` is the Battling
+  arena (`arena_`), `decomp/src/slot39` the in-game menu (`menu_`),
+  `decomp/src/movie` the movie mode (`movie_mode_`) and `decomp/src/mdec` the
+  movie library (`movie_`). Shared types are in `decomp/include`
+  ([The resident API](#the-resident-api)). Each target's split, build settings,
+  classification and symbol files are in `decomp/targets`.
+- **Prefixes.** Every game name starts with its owner's prefix: one per overlay
+  image, one per resident subsystem (`cd_`, `heap_`, `mode_` and the others
+  matching.md lists). The longest prefix a name starts with is its owner's
+  (`menu_state_` is the resident's, `menu_` slot39's, `battle_setup_`
+  ovl2615's), so grep a whole name, not a prefix. Headers follow the original
+  units, not the prefixes (resident/sound.h declares `mode_battle_kind`). SDK
+  code keeps PsyQ's names; a member with no known PsyQ name takes its library's
+  (`libgte_rotate_vector`, psyq/libgte.h). A script machine's handlers carry
+  their decoder's mnemonics (`field_event_<mnemonic>` for
+  `tools/analysis/events.py`).
+- **By address.** Each definition keeps its original address in its comment,
+  or in its symbol-file line for SDK code that only the generated assembly
+  defines, so `git grep -i -n 80031bdc decomp` finds `heap_alloc`. A splat name
+  met in history, a capture or an older report (`func_`, `D_` or `jtbl_` and
+  eight hex digits) carries its address: grep those digits the same way.
+  Overlays that share a load address give one address several symbols
+  (`801c5040` is ovl2600's `name_entry_test_bit` and ovl2601's
+  `item_shop_quad_place`): narrow the grep to `decomp/src/<image>` or
+  `decomp/targets/overlays/<image>.symbols.txt`.
+- **Renaming.** `tools/names.py` (its module docstring) checks a mapping of old
+  to new names against the convention and applies it to the sources, symbol
+  files, linker fragments and documents; its `inventory` finds no placeholder
+  left. `tests/test_names.py` checks that prototypes name their parameters as
+  the definitions do and that no splat name is left outside the tests' fixtures
+  and matching.md's two examples. After a rename run `all-split`, `all-verify`
+  and `python3 -m unittest tests.test_names`.
 
 ## Using the decomp as an oracle
 
