@@ -40,54 +40,54 @@
 
 /* The unit's small uninitialized variables, zero in the file after every
  * unit's data, each in a slot of whole words (decomp/Makefile). */
-static s32 D_80092638;
-static s32 D_8009263C;
-static s32 D_80092640;
-static Emitter *D_80092644; /* the menu's glow emitter */
-static s32 D_80092648;
-static u8 D_8009264C[4]; /* default combo state */
-static s32 D_80092650; /* trail segments added */
-static s32 D_80092654; /* last crossing point x, z */
-static s32 D_80092658;
-static s32 D_8009265C[2]; /* unreferenced */
-static u8 D_80092664;
-static s32 D_80092668;
-static s32 D_8009266C;
-static s32 D_80092670;
-static s32 D_80092674;
-static u16 D_80092678;
-static u16 D_8009267C;
-static s16 D_80092680;
-static s16 D_80092684;
-static s16 D_80092688;
-static s16 D_8009268C;
-static s16 D_80092690;
-static u16 D_80092694; /* texture page */
-static s16 D_80092698;
-static s16 D_8009269C;
-static u16 D_800926A0; /* its CLUT id */
-static s32 D_800926A4; /* frame counter */
-static u16 D_800926A8[4];
-static s32 D_800926B0; /* scene lines added this frame */
-static s32 D_800926B4;
-static CVECTOR D_800926B8; /* colour of kind-2 sparkles */
-static SceneCell10 *D_800926BC;
-static Tile1Words *D_800926C0[2]; /* ground particle tiles per draw buffer */
-static SceneCell12 *D_800926C8;
-static TileWords *D_800926CC[2]; /* scene cell tiles per draw buffer */
+static s32 arena_bout_round_over; /* 80092638 */
+static s32 arena_bout_countdown_timer; /* 8009263C */
+static s32 arena_bout_round_over_frame_count; /* 80092640 */
+static Emitter *arena_effect_hit_spark_emitter; /* 80092644: the menu's glow emitter */
+static s32 arena_effect_hit_spark_count; /* 80092648 */
+static u8 arena_actor_default_move_slot[4]; /* 8009264C: default combo state */
+static s32 arena_actor_unread_added_trail_count; /* 80092650: trail segments added */
+static s32 arena_actor_crossing_point_x; /* 80092654: last crossing point x, z */
+static s32 arena_actor_crossing_point_z; /* 80092658 */
+static s32 arena_actor_unused_pair[2]; /* 8009265C: unreferenced */
+static u8 arena_bout_frame_skip_timer; /* 80092664 */
+static s32 arena_camera_victory_angle; /* 80092668 */
+static s32 arena_camera_victory_focus_height; /* 8009266C */
+static s32 arena_camera_victory_height; /* 80092670 */
+static s32 arena_camera_victory_distance; /* 80092674 */
+static u16 arena_effect_unread_shadow_tim_x; /* 80092678 */
+static u16 arena_effect_unread_shadow_tim_y; /* 8009267C */
+static s16 arena_effect_unread_shadow_tim_clut; /* 80092680 */
+static s16 arena_effect_unread_shadow_tim_tpage; /* 80092684 */
+static s16 arena_effect_unread_trail_texture_u; /* 80092688 */
+static s16 arena_effect_unread_trail_texture_v; /* 8009268C */
+static s16 arena_effect_unread_trail_texture_clut; /* 80092690 */
+static u16 arena_effect_trail_texture_tpage; /* 80092694: texture page */
+static s16 arena_effect_side_palette_x; /* 80092698 */
+static s16 arena_effect_side_palette_y; /* 8009269C */
+static u16 arena_effect_side_palette_clut; /* 800926A0: its CLUT id */
+static s32 arena_effect_frame_count; /* 800926A4: frame counter */
+static u16 arena_effect_side_palette[4]; /* 800926A8 */
+static s32 arena_effect_queued_line_count; /* 800926B0: scene lines added this frame */
+static s32 arena_effect_latched_line_count; /* 800926B4 */
+static CVECTOR arena_effect_sparkle2_color; /* 800926B8: colour of kind-2 sparkles */
+static SceneCell10 *arena_effect_ground_particles; /* 800926BC */
+static Tile1Words *arena_effect_ground_particle_tiles[2]; /* 800926C0: ground particle tiles per draw buffer */
+static SceneCell12 *arena_effect_thrown_cells; /* 800926C8 */
+static TileWords *arena_effect_thrown_cell_tiles[2]; /* 800926CC: scene cell tiles per draw buffer */
 
 /* Its larger ones, past the program's end (not in the file), each unit's
  * after every unit's small ones (menu.mk). */
-static VECTOR D_80092A24; /* glow emitter position */
-static VECTOR D_80092A34[4]; /* saved positions: both actors, then both homes */
-static SparkleKind D_80092A74[5];
-static Sparkle D_80092AD8[SPARKLE_COUNT];
-static u8 D_800947E8[12]; /* sparkle kind 0: texture column of each frame */
-static u8 D_800947F4[12]; /* its texture row of each frame */
-static u16 D_80094800[12]; /* its CLUT of each frame */
-static SceneLine D_80094818[100];
+static VECTOR arena_effect_hit_spark_position; /* 80092A24: glow emitter position */
+static VECTOR arena_bout_saved_positions[4]; /* 80092A34: saved positions: both actors, then both homes */
+static SparkleKind arena_effect_sparkle_kinds[5]; /* 80092A74 */
+static Sparkle arena_effect_sparkles[SPARKLE_COUNT]; /* 80092AD8 */
+static u8 arena_effect_sparkle0_frame_u[12]; /* 800947E8: sparkle kind 0: texture column of each frame */
+static u8 arena_effect_sparkle0_frame_v[12]; /* 800947F4: its texture row of each frame */
+static u16 arena_effect_sparkle0_frame_cluts[12]; /* 80094800: its CLUT of each frame */
+static SceneLine arena_effect_lines[100]; /* 80094818 */
 
-ShotKind D_800910F4[] = {
+ShotKind arena_actor_shot_kinds[] = { /* 800910F4 */
     { 0x0600, 0, 0x2D, 0x40, 1, 0x0B, 0 },
     { 0x0600, 2, 0x19, 0xC0, 3, 0x00, 0 },
     { 0x0300, 2, 0x19, 0xC0, 0, 0x00, 0 },
@@ -97,42 +97,42 @@ ShotKind D_800910F4[] = {
     { 0x0000, 5, 0x20, 0x80, 2, 0x00, 0 },
 };
 
-/* Create the menu's glow emitter: 96 bluish tile sparks. */
-void func_800732CC(void) {
-    Emitter *emitter = func_8008D3F4(3, 0);
+/* 800732CC: Create the menu's glow emitter: 96 bluish tile sparks. */
+void arena_effect_create_hit_spark_emitter(void) {
+    Emitter *emitter = arena_spark_create_emitter(3, 0);
 
     emitter->r = 0x80;
     emitter->g = 0x80;
     emitter->b = 0xC0;
-    func_8008D5C0(emitter, 0x60);
+    arena_spark_alloc_pool(emitter, 0x60);
     emitter->gravity = 4;
     emitter->spread = 0x300;
     emitter->speed = 8;
     emitter->speed_range = 0x20;
     emitter->unk68 = 0;
     emitter->life = 0x20;
-    D_80092644 = emitter;
+    arena_effect_hit_spark_emitter = emitter;
 }
 
-/* Place the glow emitter, launch this frame's sparks and draw them in view. */
-void func_8007334C(u32 *ot, MATRIX *view) {
-    Emitter *emitter = D_80092644;
+/* 8007334C: Place the glow emitter, launch this frame's sparks and draw them in view. */
+void arena_effect_emit_hit_sparks(u32 *ot, MATRIX *view) {
+    Emitter *emitter = arena_effect_hit_spark_emitter;
 
-    emitter->base.vx = D_80092A24.vx;
-    emitter->base.vy = D_80092A24.vy;
-    emitter->base.vz = D_80092A24.vz;
+    emitter->base.vx = arena_effect_hit_spark_position.vx;
+    emitter->base.vy = arena_effect_hit_spark_position.vy;
+    emitter->base.vz = arena_effect_hit_spark_position.vz;
     emitter->angles.vx = 0;
     emitter->angles.vy = 0;
     emitter->angles.vz = 0;
-    func_8008D680(emitter, &D_80091C0C, D_80092648);
+    arena_spark_launch(emitter, &arena_identity_matrix, arena_effect_hit_spark_count);
     gte_SetTransMatrix(view);
     gte_SetRotMatrix(view);
-    func_8008DA48(emitter, ot, view);
+    arena_spark_update_and_draw(emitter, ot, view);
 }
 
-/* Fire a projectile of the given kind from a point toward the actor's
+/* 80073424: Fire a projectile of the given kind from a point toward the actor's
  * target (or away from origin when given), in the first free slot. */
-void func_80073424(VECTOR *from, VECTOR *origin, Actor *actor, s32 kind, s32 arg4, s32 arg5) {
+void arena_actor_fire_shot(VECTOR *from, VECTOR *origin, Actor *actor, s32 kind, s32 power, s32 style) {
     VECTOR toward;
     VECTOR aim;
     SVECTOR unused; /* unused in the original; reserves 8 bytes */
@@ -154,7 +154,7 @@ void func_80073424(VECTOR *from, VECTOR *origin, Actor *actor, s32 kind, s32 arg
     aim.vx = opponent->pos.vx - from->vx;
     aim.vy = opponent->pos.vy - from->vy - 0x90;
     aim.vz = opponent->pos.vz - from->vz;
-    info = &D_800910F4[kind];
+    info = &arena_actor_shot_kinds[kind];
     if (origin != NULL) {
         toward.vx = from->vx - origin->vx;
         toward.vy = from->vy - origin->vy;
@@ -162,26 +162,26 @@ void func_80073424(VECTOR *from, VECTOR *origin, Actor *actor, s32 kind, s32 arg
     } else {
         toward = aim;
     }
-    func_8008859C(&toward, &shot->dir);
+    arena_vector_normalize_to_svector(&toward, &shot->dir);
     shot->homing = info->unk0;
     shot->speed = info->speed;
     shot->life = info->unk3;
     shot->look = info->unk2;
     shot->steer = info->unk5;
-    shot->unk38 = arg5;
-    shot->unk3C = arg4;
+    shot->unk38 = style;
+    shot->unk3C = power;
     if (info->sound != 0) {
-        func_8008EBD0(actor, info->sound, &shot->pos, 2);
+        arena_sound_play_command_sound(actor, info->sound, &shot->pos, 2);
     }
-    func_80073064(&shot->dir, &shot->velocity, shot->speed);
+    arena_gte_scale_svector(&shot->dir, &shot->velocity, shot->speed);
     shot->pos = *from;
     shot->prev = shot->pos;
     shot->active = 1;
 }
 
-/* Move an actor's shots: expire, hit the floor, home in on the opponent's
+/* 80073644: Move an actor's shots: expire, hit the floor, home in on the opponent's
  * core, draw the trail for their look and update speed and homing. */
-s32 func_80073644(Actor *actor) {
+s32 arena_actor_update_shots(Actor *actor) {
     SVECTOR half;
     VECTOR toward;
     SVECTOR dir;
@@ -193,7 +193,7 @@ s32 func_80073644(Actor *actor) {
 
     opponent = actor->opponent;
     actor->nearest_dist = 0x10000;
-    func_8007C100(&actor->colour);
+    arena_effect_set_sparkle2_color(&actor->colour);
     for (i = 0; i < 8; i++) {
         shot = &actor->shots[i];
         if (shot->active == 0) {
@@ -203,16 +203,16 @@ s32 func_80073644(Actor *actor) {
             shot->active = 0;
             continue;
         }
-        if (func_80082488(&shot->pos, 0) < shot->pos.vy) {
+        if (arena_stage_get_ground_height(&shot->pos, 0) < shot->pos.vy) {
             shot->active = 0;
-            func_8007D190(&shot->pos, 1);
+            arena_effect_spawn_sparkle(&shot->pos, 1);
             continue;
         }
         shot->prev = shot->pos;
         toward.vx = opponent->core.vx - shot->pos.vx;
         toward.vy = opponent->core.vy - shot->pos.vy;
         toward.vz = opponent->core.vz - shot->pos.vz;
-        dist = func_800886FC(&toward);
+        dist = arena_vector_get_length(&toward);
         shot->dist = dist;
         if (dist < actor->nearest_dist) {
             actor->nearest_dist = dist;
@@ -220,7 +220,7 @@ s32 func_80073644(Actor *actor) {
         }
         VectorNormalS(&toward, &dir);
         LoadAverageShort12(&dir, &shot->dir, shot->homing, 0x1000 - shot->homing, &shot->dir);
-        func_80073064(&shot->dir, &shot->velocity, shot->speed);
+        arena_gte_scale_svector(&shot->dir, &shot->velocity, shot->speed);
         switch (shot->look) {
         case 0:
             half.vx = shot->velocity.vx;
@@ -232,32 +232,32 @@ s32 func_80073644(Actor *actor) {
             shot->pos.vx += half.vx;
             shot->pos.vy += half.vy;
             shot->pos.vz += half.vz;
-            func_8007D190(&shot->pos, 0xA);
+            arena_effect_spawn_sparkle(&shot->pos, 0xA);
             shot->pos.vx += half.vx;
             shot->pos.vy += half.vy;
             shot->pos.vz += half.vz;
-            func_8007D190(&shot->pos, 0xA);
+            arena_effect_spawn_sparkle(&shot->pos, 0xA);
             break;
         case 1:
             shot->pos.vx += shot->velocity.vx;
             shot->pos.vy += shot->velocity.vy;
             shot->pos.vz += shot->velocity.vz;
-            func_8007D190(&shot->pos, 2);
+            arena_effect_spawn_sparkle(&shot->pos, 2);
             break;
         case 2:
             colour.r = 0xFF;
             colour.b = 0x40;
-            colour.g = ((D_800928E8 + i) << 6) - 1;
+            colour.g = ((arena_frame_count + i) << 6) - 1;
             shot->pos.vx += shot->velocity.vx;
             shot->pos.vy += shot->velocity.vy;
             shot->pos.vz += shot->velocity.vz;
-            func_8007E31C(&shot->prev, &shot->pos, &colour);
+            arena_effect_queue_line(&shot->prev, &shot->pos, &colour);
             break;
         case 3:
             shot->pos.vx += shot->velocity.vx;
             shot->pos.vy += shot->velocity.vy;
             shot->pos.vz += shot->velocity.vz;
-            func_8007C880((actor->flags >> 27) & 1, &shot->pos, shot->unk38, 2);
+            arena_effect_start_trail_sparkle((actor->flags >> 27) & 1, &shot->pos, shot->unk38, 2);
             break;
         case 4:
             colour.r = colour.g = rand() % 191 + 0x40;
@@ -265,7 +265,7 @@ s32 func_80073644(Actor *actor) {
             shot->pos.vx += shot->velocity.vx;
             shot->pos.vy += shot->velocity.vy;
             shot->pos.vz += shot->velocity.vz;
-            func_8007E31C(&shot->prev, &shot->pos, &colour);
+            arena_effect_queue_line(&shot->prev, &shot->pos, &colour);
             break;
         case 5:
             colour.r = colour.g = rand() % 191 + 0x40;
@@ -273,8 +273,8 @@ s32 func_80073644(Actor *actor) {
             shot->pos.vx += shot->velocity.vx;
             shot->pos.vy += shot->velocity.vy;
             shot->pos.vz += shot->velocity.vz;
-            func_8007E31C(&shot->prev, &shot->pos, &colour);
-            func_8007C880((actor->flags >> 27) & 1, &shot->pos, shot->unk38, 2);
+            arena_effect_queue_line(&shot->prev, &shot->pos, &colour);
+            arena_effect_start_trail_sparkle((actor->flags >> 27) & 1, &shot->pos, shot->unk38, 2);
             break;
         }
         switch (shot->steer) {
@@ -295,9 +295,9 @@ s32 func_80073644(Actor *actor) {
     }
 }
 
-/* World position of a model part's vertex (1-based; 0 or a non-model part
+/* 80073B7C: World position of a model part's vertex (1-based; 0 or a non-model part
  * gives the part's origin), relative to the actor's position. */
-void func_80073B7C(Actor *actor, s32 part, s32 vertex, VECTOR *out) {
+void arena_actor_get_part_point(Actor *actor, s32 part, s32 vertex, VECTOR *out) {
     Node *node = ((ModelSet *)actor->node->data)->nodes[part];
 
     if (vertex != 0 && node->type == 1) {
@@ -316,8 +316,8 @@ void func_80073B7C(Actor *actor, s32 part, s32 vertex, VECTOR *out) {
     }
 }
 
-/* Age an actor's trail segments: new ones start fading, fading ones are freed. */
-void func_80073CA4(Actor *actor) {
+/* 80073CA4: Age an actor's trail segments: new ones start fading, fading ones are freed. */
+void arena_actor_age_trails(Actor *actor) {
     s32 i;
     Trail *trail;
 
@@ -331,24 +331,24 @@ void func_80073CA4(Actor *actor) {
     }
 }
 
-/* Record a new trail segment between two points. */
-void func_80073CEC(VECTOR *a, VECTOR *b, s32 flip, HitSpec *hit, Trail *trail, s32 arg5, Actor *owner) {
+/* 80073CEC: Record a new trail segment between two points. */
+void arena_actor_record_trail(VECTOR *a, VECTOR *b, s32 flip, HitSpec *hit, Trail *trail, s32 part, Actor *owner) {
     trail->a_prev = trail->a;
     trail->b_prev = trail->b;
     trail->a = *a;
     trail->b = *b;
-    trail->unk43 = arg5;
+    trail->unk43 = part;
     trail->flip = flip & 1;
     trail->state = 2;
     trail->unk47 = owner->unk644;
     trail->unk50 = owner->unk84;
     trail->unk46 = hit->type;
-    D_80092650++;
+    arena_actor_unread_added_trail_count++;
 }
 
-/* Whether an actor can take amount more: always below 0x1000 total,
+/* 80073DE4: Whether an actor can take amount more: always below 0x1000 total,
  * otherwise only while the excess / 20 is below its HP. */
-s32 func_80073DE4(Actor *actor, s32 amount) {
+s32 arena_actor_can_take_charge(Actor *actor, s32 amount) {
     s32 total = actor->charge + amount;
 
     if (total > 0x1000) {
@@ -359,16 +359,16 @@ s32 func_80073DE4(Actor *actor, s32 amount) {
     return 1;
 }
 
-/* Add charge to an actor. Past full charge the excess / 20 is spent from
+/* 80073E2C: Add charge to an actor. Past full charge the excess / 20 is spent from
  * its HP-bound reserve (and counted by kind); if it cannot be, the charge
  * is refused with a buzzer. Always accepted in modes 4 and 6. */
-s32 func_80073E2C(Actor *actor, s32 amount, s32 kind) {
+s32 arena_actor_add_charge(Actor *actor, s32 amount, s32 kind) {
     s32 excess;
 
-    if (D_800928C8 == 4) {
+    if (arena_play_mode == 4) {
         return 1;
     }
-    if (D_800928C8 == 6) {
+    if (arena_play_mode == 6) {
         return 1;
     }
     actor->charge += amount;
@@ -377,8 +377,8 @@ s32 func_80073E2C(Actor *actor, s32 amount, s32 kind) {
         if (excess >= actor->hp) {
             actor->charge -= amount;
             actor->unkBA = 0;
-            if (func_80083CD8() != 4) {
-                func_8008EB4C(0x2E);
+            if (arena_mode_get_state() != 4) {
+                arena_sound_play_effect(0x2E);
             }
             return 0;
         }
@@ -398,52 +398,52 @@ s32 func_80073E2C(Actor *actor, s32 amount, s32 kind) {
     return 1;
 }
 
-/* Frame event kind 2: the effect a HitSpec's type selects. Types 0x10-0x1F
- * go between the two model points: 0x10 a line trail (func_8007CD44),
- * 0x11-0x13 a bolt of kind 0-2 (func_8007D65C), the rest nothing. Other
+/* 80073F34: Frame event kind 2: the effect a HitSpec's type selects. Types 0x10-0x1F
+ * go between the two model points: 0x10 a line trail (arena_effect_start_line_sparkle),
+ * 0x11-0x13 a bolt of kind 0-2 (arena_effect_queue_bolt_by_type), the rest nothing. Other
  * types go to point a, or the midpoint when b differs, after setting the
  * kind-2 sparkle colour to the actor's: 0x20 and up a sparkle trail of size
- * D_80091228[type - 0x20] (func_8007C880), 0-4 a sparkle of that kind and
- * 8-12 the same jittered (func_8007D190; other types nothing). */
-void func_80073F34(Actor *actor, HitSpec *hit) {
+ * arena_effect_trail_sizes[type - 0x20] (arena_effect_start_trail_sparkle), 0-4 a sparkle of that kind and
+ * 8-12 the same jittered (arena_effect_spawn_sparkle; other types nothing). */
+void arena_frame_event_effect(Actor *actor, HitSpec *hit) {
     VECTOR a;
     VECTOR b;
     s32 style;
 
-    style = func_8007CD14((actor->flags >> 27) & 1, hit->part_a, hit->vertex_a, 1);
-    func_80073B7C(actor, hit->part_a, hit->vertex_a, &a);
-    if (func_8007D25C(hit->type) != 0) {
-        func_80073B7C(actor, hit->part_b, hit->vertex_b, &b);
+    style = arena_effect_pack_trail_key((actor->flags >> 27) & 1, hit->part_a, hit->vertex_a, 1);
+    arena_actor_get_part_point(actor, hit->part_a, hit->vertex_a, &a);
+    if (arena_effect_is_two_point_type(hit->type) != 0) {
+        arena_actor_get_part_point(actor, hit->part_b, hit->vertex_b, &b);
         if (hit->type == 0x10) {
-            func_8007CD44((actor->flags >> 27) & 1, &a, &b, style);
+            arena_effect_start_line_sparkle((actor->flags >> 27) & 1, &a, &b, style);
         } else {
-            func_8007D65C(&a, &b, hit->type);
+            arena_effect_queue_bolt_by_type(&a, &b, hit->type);
         }
         return;
     }
     if (hit->part_a != hit->part_b || hit->vertex_a != hit->vertex_b) {
-        func_80073B7C(actor, hit->part_b, hit->vertex_b, &b);
+        arena_actor_get_part_point(actor, hit->part_b, hit->vertex_b, &b);
         a.vx = (a.vx + b.vx) / 2;
         a.vy = (a.vy + b.vy) / 2;
         a.vz = (a.vz + b.vz) / 2;
     }
-    func_8007C100(&actor->colour);
+    arena_effect_set_sparkle2_color(&actor->colour);
     if (hit->type >= 0x20) {
-        func_8007C880((actor->flags >> 27) & 1, &a, style, hit->type - 0x20);
+        arena_effect_start_trail_sparkle((actor->flags >> 27) & 1, &a, style, hit->type - 0x20);
     } else {
-        func_8007D190(&a, hit->type);
+        arena_effect_spawn_sparkle(&a, hit->type);
     }
 }
 
-/* Frame event kind 0, every frame of its range: unless the type has bit
+/* 800740E4: Frame event kind 0, every frame of its range: unless the type has bit
  * 0x40 (or the actor's unk84[2] is 0), a sparkle trail at point a
- * (func_8007C880) or a line trail from a to b (func_8007CD44). While the hit
- * is live (lands): type 0x20 a charged shot (func_80073424 kind 0, from the
- * midpoint of two points) if func_80073E2C takes the charge, else sparkle 9;
+ * (arena_effect_start_trail_sparkle) or a line trail from a to b (arena_effect_start_line_sparkle). While the hit
+ * is live (lands): type 0x20 a charged shot (arena_actor_fire_shot kind 0, from the
+ * midpoint of two points) if arena_actor_add_charge takes the charge, else sparkle 9;
  * type 4 a kind-1 shot at the opponent; 0x21-0x26 a kind 1-6 shot, away from
  * b when the points differ; any other type a trail segment from a to b
- * (func_80073CEC), which func_80075B50 tests against the opponent. */
-void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
+ * (arena_actor_record_trail), which arena_actor_test_hits tests against the opponent. */
+void arena_frame_event_hit(Actor *actor, HitSpec *hit, s32 lands) {
     VECTOR a;
     VECTOR b;
     VECTOR unused; /* unused in the original; reserves 16 bytes */
@@ -454,19 +454,19 @@ void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
     s32 i;
     Trail *trail;
 
-    style = func_8007CD14(ACTOR_SIDE(actor), hit->part_a, hit->vertex_a, 0);
+    style = arena_effect_pack_trail_key(ACTOR_SIDE(actor), hit->part_a, hit->vertex_a, 0);
     if (hit->part_a == hit->part_b && hit->vertex_a == hit->vertex_b) {
-        func_80073B7C(actor, hit->part_a, hit->vertex_a, &a);
+        arena_actor_get_part_point(actor, hit->part_a, hit->vertex_a, &a);
         if (actor->unk84[2] != 0 && !(hit->type & 0x40)) {
-            func_8007C880(ACTOR_SIDE(actor), &a, style, 0);
+            arena_effect_start_trail_sparkle(ACTOR_SIDE(actor), &a, style, 0);
         }
         b = a;
         single = 1;
     } else {
-        func_80073B7C(actor, hit->part_a, hit->vertex_a, &a);
-        func_80073B7C(actor, hit->part_b, hit->vertex_b, &b);
+        arena_actor_get_part_point(actor, hit->part_a, hit->vertex_a, &a);
+        arena_actor_get_part_point(actor, hit->part_b, hit->vertex_b, &b);
         if (actor->unk84[2] != 0 && !(hit->type & 0x40)) {
-            func_8007CD44(ACTOR_SIDE(actor), &a, &b, style);
+            arena_effect_start_line_sparkle(ACTOR_SIDE(actor), &a, &b, style);
         }
         single = 0;
     }
@@ -474,35 +474,35 @@ void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
         return;
     }
     if (hit->type == 0x20) {
-        if ((func_80073E2C(actor, actor->unkBE, 1) && func_80083CD8() != 4)
-            || (func_80083CD8() == 4 && (actor->move->flags & 0x8000))) {
+        if ((arena_actor_add_charge(actor, actor->unkBE, 1) && arena_mode_get_state() != 4)
+            || (arena_mode_get_state() == 4 && (actor->move->flags & 0x8000))) {
             if (!single) {
                 a.vx = (a.vx + b.vx) / 2;
                 a.vy = (a.vy + b.vy) / 2;
                 a.vz = (a.vz + b.vz) / 2;
             }
-            func_80073424(&a, NULL, actor, 0, actor->moves->unk18, style);
-            func_80076424(actor);
+            arena_actor_fire_shot(&a, NULL, actor, 0, actor->moves->unk18, style);
+            arena_actor_clear_inputs(actor);
             actor->pose->flags |= 0x8000;
         } else {
-            func_8007D190(&a, 9);
-            func_80076424(actor);
+            arena_effect_spawn_sparkle(&a, 9);
+            arena_actor_clear_inputs(actor);
             actor->pose->flags &= 0x7FFF;
         }
-        D_80096FB8[ACTOR_SIDE(actor)].unkC = D_80096FB8[ACTOR_SIDE(actor)].unk10 = actor->unk99E;
-        D_80096FB8[ACTOR_SIDE(actor)].unk0 = D_80096FB8[ACTOR_SIDE(actor)].unk8 = D_8009112C;
-        D_80096FB8[ACTOR_SIDE(actor)].unk4 = actor->moves->unk18;
+        arena_actor_side_move_info[ACTOR_SIDE(actor)].unkC = arena_actor_side_move_info[ACTOR_SIDE(actor)].unk10 = actor->unk99E;
+        arena_actor_side_move_info[ACTOR_SIDE(actor)].unk0 = arena_actor_side_move_info[ACTOR_SIDE(actor)].unk8 = arena_actor_ether_attack_name;
+        arena_actor_side_move_info[ACTOR_SIDE(actor)].unk4 = actor->moves->unk18;
         return;
     }
-    if (D_80096FB8[ACTOR_SIDE(actor)].unk8 != D_80096FB8[ACTOR_SIDE(actor)].unk0) {
-        D_80096FB8[ACTOR_SIDE(actor)].unkC = actor->unk99E;
-        D_80096FB8[ACTOR_SIDE(actor)].unk8 = D_80096FB8[ACTOR_SIDE(actor)].unk0;
+    if (arena_actor_side_move_info[ACTOR_SIDE(actor)].unk8 != arena_actor_side_move_info[ACTOR_SIDE(actor)].unk0) {
+        arena_actor_side_move_info[ACTOR_SIDE(actor)].unkC = actor->unk99E;
+        arena_actor_side_move_info[ACTOR_SIDE(actor)].unk8 = arena_actor_side_move_info[ACTOR_SIDE(actor)].unk0;
     }
-    D_80096FB8[ACTOR_SIDE(actor)].unk10 = actor->unk99E;
+    arena_actor_side_move_info[ACTOR_SIDE(actor)].unk10 = actor->unk99E;
     power = actor->unk644;
     switch (hit->type) {
     case 4:
-        func_80073424(&a, NULL, actor, 1, power, style);
+        arena_actor_fire_shot(&a, NULL, actor, 1, power, style);
         return;
     case 0x21:
     case 0x22:
@@ -511,42 +511,42 @@ void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
     case 0x25:
     case 0x26:
         if (single) {
-            func_80073424(&a, NULL, actor, hit->type - 0x20, power, style);
+            arena_actor_fire_shot(&a, NULL, actor, hit->type - 0x20, power, style);
         } else {
-            func_80073424(&a, &b, actor, hit->type - 0x20, power, style);
+            arena_actor_fire_shot(&a, &b, actor, hit->type - 0x20, power, style);
         }
         return;
     }
     found = 0;
     for (i = 0; i < 16; i++) {
         trail = &actor->trails[i];
-        if (trail->state == 1 && trail->style == style && trail->frame != D_800928E8) {
-            func_80073CEC(&a, &b, single, hit, trail, hit->part_a, actor);
+        if (trail->state == 1 && trail->style == style && trail->frame != arena_frame_count) {
+            arena_actor_record_trail(&a, &b, single, hit, trail, hit->part_a, actor);
             trail->unk44_0 = 0;
-            trail->frame = D_800928E8;
+            trail->frame = arena_frame_count;
             return;
         }
     }
     for (i = 0; i < 16 && !found; i++) {
         trail = &actor->trails[i];
         if (trail->state == 0) {
-            func_80073CEC(&a, &b, single, hit, trail, hit->part_a, actor);
+            arena_actor_record_trail(&a, &b, single, hit, trail, hit->part_a, actor);
             trail->style = style;
             trail->unk44_0 = 1;
-            trail->frame = D_800928E8;
+            trail->frame = arena_frame_count;
             found = 1;
             break;
         }
     }
 }
 
-/* Attack name shown for an ether attack (the combos' are D_80091198). Its
+/* Attack name shown for an ether attack (the combos' are arena_actor_combo_names). Its
  * literal follows the code before it. */
-s32 D_8009112C = (s32)"ETHER";
+s32 arena_actor_ether_attack_name = (s32)"ETHER"; /* 8009112C */
 
 /* Per animation: kind and next animation (-1: none). Rules 10 and 16 are
  * set at run time. */
-AnimRule D_80091130[] = {
+AnimRule arena_actor_anim_rules[] = { /* 80091130 */
     { 1, -1 }, { 1, -1 }, { 2, -1 }, { 0, -1 }, { 0, -1 }, { 3, -1 },
     { 3, -1 }, { 0, -1 }, { 0, 9 }, { 2, 0xA }, { 0, 0 }, { 0, -1 },
     { 0, 9 }, { 0, 0xE }, { 0, -1 }, { 2, -1 }, { 2, -1 }, { 0, -1 },
@@ -556,18 +556,18 @@ AnimRule D_80091130[] = {
 };
 
 /* Per combo number: the combo reached by button A, then by button B. */
-u8 D_80091178[] = {
+u8 arena_actor_combo_transitions[] = { /* 80091178 */
     1, 2, 3, 4, 5, 6, 7, 8, 9, 0xA, 0xB, 0xC, 0xD, 0xE, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 };
 
-/* Run the frame events of an actor's current animation for count frames
+/* 80074678: Run the frame events of an actor's current animation for count frames
  * from frame (once per frame): its list (header + unk900[anim], 0 for none)
  * holds FrameEvent records up to first 0xFF, and each record whose range
  * holds the frame runs the HitSpec at header + spec by its kind byte. An
  * unknown kind stalls the loop, as in the original. tools/analysis/
  * overlay_scripts.py decodes the lists of the arena model files. */
-void func_80074678(Actor *actor, s16 frame, s16 count) {
+void arena_frame_event_run(Actor *actor, s16 frame, s16 count) {
     VECTOR unused; /* unused in the original; reserves 16 bytes */
     HitSpec *trails[20];
     u8 sounded;
@@ -588,7 +588,7 @@ void func_80074678(Actor *actor, s16 frame, s16 count) {
     offset = ((s16 *)actor->unk900)[offset];
     if (offset != 0) {
         sounded = 0;
-        D_80092650 = 0;
+        arena_actor_unread_added_trail_count = 0;
         events = (FrameEvent *)((u8 *)actor->header + offset);
         while (--count != -1) {
             event = events;
@@ -600,12 +600,12 @@ void func_80074678(Actor *actor, s16 frame, s16 count) {
                 switch (spec->unk0) {
                 /* 0 hit (type, part_a, vertex_a, part_b, vertex_b): live
                  * (0x4000000) from the first frame until the last, unless a
-                 * trail connects first; func_800740E4 on every frame. */
+                 * trail connects first; arena_frame_event_hit on every frame. */
                 case 0:
                     if (frame == event->first) {
                         actor->flags |= 0x4000000;
                     }
-                    func_800740E4(actor, spec, (actor->flags >> 26) & 1);
+                    arena_frame_event_hit(actor, spec, (actor->flags >> 26) & 1);
                     if (frame == event->last) {
                         actor->flags &= ~0x4000000;
                     }
@@ -614,13 +614,13 @@ void func_80074678(Actor *actor, s16 frame, s16 count) {
                  * play both at the actor; only the call's first kind-1 event. */
                 case 1:
                     if (!sounded) {
-                        func_8008EB88(actor, spec->part_a, &actor->pos, 2);
+                        arena_sound_play_actor_effect(actor, spec->part_a, &actor->pos, 2);
                         sounded = 1;
-                        func_8008EB88(actor, spec->part_b, &actor->pos, 2);
+                        arena_sound_play_actor_effect(actor, spec->part_b, &actor->pos, 2);
                     }
                     break;
                 /* 2 effect (type, part_a, vertex_a, part_b, vertex_b):
-                 * func_80073F34 once per HitSpec in a call, up to 20 (the
+                 * arena_frame_event_effect once per HitSpec in a call, up to 20 (the
                  * count is never initialised). */
                 case 2:
                     for (offset = 0; offset < trail_count; offset++) {
@@ -630,12 +630,12 @@ void func_80074678(Actor *actor, s16 frame, s16 count) {
                     }
                     if (trail_count < 20) {
                         trails[trail_count++] = spec;
-                        func_80073F34(actor, spec);
+                        arena_frame_event_effect(actor, spec);
                     }
                     break;
                 /* 3 return home: put the actor at its home position, idle. */
                 case 3:
-                    func_80078154(actor);
+                    arena_frame_event_return_home(actor);
                     break;
                 /* 4 hide part (type: model node): set its model's hidden flag. */
                 case 4:
@@ -655,12 +655,12 @@ void func_80074678(Actor *actor, s16 frame, s16 count) {
             frame++;
         }
     }
-    func_80073CA4(actor);
+    arena_actor_age_trails(actor);
 }
 
-/* Show the model objects of the current move: unhide every kind-1 object,
+/* 80074998: Show the model objects of the current move: unhide every kind-1 object,
  * then hide the listed ones (and object 13 in mode 0xD). */
-void func_80074998(Actor *actor) {
+void arena_actor_apply_part_visibility(Actor *actor) {
     Node **nodes = ((ModelSet *)actor->node->data)->nodes;
     s32 i;
 
@@ -677,8 +677,8 @@ void func_80074998(Actor *actor) {
     }
 }
 
-/* Apply an actor's pose and start its move's animation. */
-void func_80074AB4(Actor *actor) {
+/* 80074AB4: Apply an actor's pose and start its move's animation. */
+void arena_actor_apply_recorded_pose(Actor *actor) {
     Pose *pose = actor->pose;
     Move *move = actor->move;
     Player *anim;
@@ -690,28 +690,28 @@ void func_80074AB4(Actor *actor) {
     actor->angle = (pose->flags << 20) >> 20;
     anim = &((ModelSet *)actor->node->data)->players[move->anim];
     if (move->flags & 0x1000) {
-        func_80074998(actor);
-        func_8008B0D8(anim);
+        arena_actor_apply_part_visibility(actor);
+        arena_node_rewind_anim_player(anim);
     }
-    func_80074678(actor, anim->frame, actor->move->unk9);
+    arena_frame_event_run(actor, anim->frame, actor->move->unk9);
     if (move->unkA != 0) {
-        func_8008B730(anim, move->unk9, move->unkA);
+        arena_node_step_anim_player(anim, move->unk9, move->unkA);
     }
 }
 
 /* Step an actor's animation player by the elapsed animation steps and
  * record the frame; stepped/done go to the pose record. */
 #define ANIM_ADVANCE(actor, player, steps)                                     \
-    ACTOR_FLAG_BITS(actor)->flag11 = func_8008B730(player, steps, actor->anim_speed); \
+    ACTOR_FLAG_BITS(actor)->flag11 = arena_node_step_anim_player(player, steps, actor->anim_speed); \
     stepped = (steps);                                                         \
     speed = actor->anim_speed
 
-/* Record an actor's pose for this frame and run its animation: a new move
+/* 80074BA4: Record an actor's pose for this frame and run its animation: a new move
  * (or a forced restart) resets the player, speed and parts; then advance
  * by the accumulated speed and apply the move's end rule (stop, chain to
  * the next move, hold, or loop). The end-of-animation result goes to flag
  * 11 through a bit-field store. */
-void func_80074BA4(Actor *actor) {
+void arena_actor_record_pose_and_animate(Actor *actor) {
     s32 steps;
     Pose *pose = actor->pose;
     AnimRule *rule;
@@ -725,11 +725,11 @@ void func_80074BA4(Actor *actor) {
     pose->y = actor->pos.vy;
     pose->z = actor->pos.vz;
     ((Move *)pose)->anim = actor->anim;
-    rule = &D_80091130[actor->anim];
+    rule = &arena_actor_anim_rules[actor->anim];
     player = &((ModelSet *)actor->node->data)->players[actor->anim];
     pose->flags &= ~0x1000;
     if (actor->anim != actor->unk4E || (actor->flags & 0x10000000)) {
-        rule = &D_80091130[actor->anim];
+        rule = &arena_actor_anim_rules[actor->anim];
         actor->unk4E = actor->anim;
         actor->flags = (actor->flags | 0x1000) & ~0x800;
         if (!(actor->flags & 0x10000000)) {
@@ -741,8 +741,8 @@ void func_80074BA4(Actor *actor) {
         }
         actor->unk4F = ((u8 *)actor->unk7C)[actor->anim * 2 + 1] * actor->unk15F2 / 256;
         player = &((ModelSet *)actor->node->data)->players[actor->anim];
-        func_80074998(actor);
-        func_8008B0D8(player);
+        arena_actor_apply_part_visibility(actor);
+        arena_node_rewind_anim_player(player);
         actor->unk99E = 0;
         actor->event_frame = -1;
         actor->flags &= ~0x10000000;
@@ -815,23 +815,23 @@ void func_80074BA4(Actor *actor) {
     ((Move *)pose)->unkA = speed;
 }
 
-/* Record the outcome of a bout from the player's side: how it was lost,
+/* 80075060: Record the outcome of a bout from the player's side: how it was lost,
  * or which limit the win stayed within and how the opponent ended. */
-void func_80075060(s32 lost) {
-    Actor *player = &D_8009872C;
+void arena_bout_record_outcome(s32 lost) {
+    Actor *player = &arena_first_actor;
     s32 limit;
 
     if (lost) {
-        if (func_8008F4F4(player, 0xE0)) {
+        if (arena_brain_is_hp_above_fraction(player, 0xE0)) {
             mode_arena_bout_outcome = 2;
-        } else if (func_8008F4F4(player, 0x10)) {
+        } else if (arena_brain_is_hp_above_fraction(player, 0x10)) {
             mode_arena_bout_outcome = 1;
         } else {
             mode_arena_bout_outcome = 3;
         }
-    } else if (D_8009872C.unk1660 == 0 && D_8009872C.unk165C == 0) {
+    } else if (arena_first_actor.unk1660 == 0 && arena_first_actor.unk165C == 0) {
         mode_arena_bout_outcome = 0x88;
-    } else if (D_8009872C.unk165C == 0) {
+    } else if (arena_first_actor.unk165C == 0) {
         mode_arena_bout_outcome = 0x82;
     } else {
         limit = player->max_hp * 0xB0 / 255;
@@ -843,9 +843,9 @@ void func_80075060(s32 lost) {
             mode_arena_bout_outcome = 0x85;
         } else {
             player = player->opponent;
-            if (func_8008F4F4(player, 0xE0)) {
+            if (arena_brain_is_hp_above_fraction(player, 0xE0)) {
                 mode_arena_bout_outcome = 0x86;
-            } else if (func_8008F4F4(player, 0x10)) {
+            } else if (arena_brain_is_hp_above_fraction(player, 0x10)) {
                 mode_arena_bout_outcome = 0x81;
             } else {
                 mode_arena_bout_outcome = 0x87;
@@ -854,132 +854,132 @@ void func_80075060(s32 lost) {
     }
 }
 
-/* Referee of the bout: ring-out and knock-out checks, the end of the bout
+/* 800751C8: Referee of the bout: ring-out and knock-out checks, the end of the bout
  * (draw or winner, with the debug controller dump), the start captions
  * while the start countdown runs, and the distance and angle between the
  * two actors. */
-void func_800751C8(Actor *first, Actor *second) {
+void arena_bout_update_referee(Actor *first, Actor *second) {
     char text[16];
 
-    D_8009294C++;
-    func_8007E894(0xA0, 0x64);
-    if (!func_8008F4F4(first, 0x60) || !func_8008F4F4(second, 0x60)) {
-        if (D_800928C4 != 0 && !func_8008F9B0(first) && !func_8008F9B0(second)) {
-            D_80091130[10].kind = 1;
-            D_80091130[10].next = 0xA;
-            func_800720D4();
+    arena_bout_round_frame_count++;
+    arena_text_move_cursor(0xA0, 0x64);
+    if (!arena_brain_is_hp_above_fraction(first, 0x60) || !arena_brain_is_hp_above_fraction(second, 0x60)) {
+        if (arena_retreat_rule_enabled != 0 && !arena_brain_is_in_far_quadrant(first) && !arena_brain_is_in_far_quadrant(second)) {
+            arena_actor_anim_rules[10].kind = 1;
+            arena_actor_anim_rules[10].next = 0xA;
+            arena_scene_start_bout_end();
         }
     }
-    if (D_80092638 != 0) {
-        if (D_80092640++ >= 0x3D) {
-            func_80083C0C(D_80092890 == 2 ? 2 : 4);
+    if (arena_bout_round_over != 0) {
+        if (arena_bout_round_over_frame_count++ >= 0x3D) {
+            arena_mode_set_state(arena_bout_round_winner == 2 ? 2 : 4);
             mode_empty_debug_print("gm");
             heap_alloc(1, 0);
             mode_empty_debug_print(" fin\n");
         }
-        if (D_80092890 == 2) {
-            func_8007EC54("DRAW GAME");
+        if (arena_bout_round_winner == 2) {
+            arena_text_draw_line_centered("DRAW GAME");
         } else {
-            func_8007EC54("KNOCK OUT!!");
+            arena_text_draw_line_centered("KNOCK OUT!!");
         }
     } else if (first->flags & 0x800000) {
         if (second->flags & 0x800000) {
-            D_80092638 = 1;
-            D_800928D4 = 0;
-            D_80092890 = 2;
-            D_80092918++;
+            arena_bout_round_over = 1;
+            arena_bout_fight_active = 0;
+            arena_bout_round_winner = 2;
+            arena_bout_unread_draw_count++;
         } else {
-            D_80097010.unkF2++;
-            D_800928D4 = 0;
-            D_80092638 = 1;
-            D_80092890 = 1;
+            arena_second_actor.unkF2++;
+            arena_bout_fight_active = 0;
+            arena_bout_round_over = 1;
+            arena_bout_round_winner = 1;
             if (second->flags & 0x40) {
-                D_800928FC = 0;
+                arena_menu_driving_pad_port = 0;
             } else {
-                D_800928FC = 1;
+                arena_menu_driving_pad_port = 1;
             }
-            func_80075060(0);
+            arena_bout_record_outcome(0);
         }
     } else if (second->flags & 0x800000) {
-        D_8009872C.unkF2++;
-        D_80092638 = 1;
-        D_800928D4 = 0;
-        D_80092890 = 0;
-        D_800928FC = 0;
-        func_80075060(1);
-        if ((second->flags & 0x40) && D_800928C8 != 3) {
+        arena_first_actor.unkF2++;
+        arena_bout_round_over = 1;
+        arena_bout_fight_active = 0;
+        arena_bout_round_winner = 0;
+        arena_menu_driving_pad_port = 0;
+        arena_bout_record_outcome(1);
+        if ((second->flags & 0x40) && arena_play_mode != 3) {
             mode_empty_debug_print("00");
             heap_alloc(1, 2);
             mode_empty_debug_print(" fin\n");
-            func_80088BD4(second->model_id);
+            arena_progress_set_flag_and_check(second->model_id);
             mode_empty_debug_print("11");
             heap_alloc(1, 2);
             mode_empty_debug_print(" ctrl\n");
         }
     }
-    if (D_8009263C != 0) {
-        if (D_8009263C < 0x1E) {
-            if (func_80083CD8() != 7 && D_800928C8 != 4) {
-                func_8007EC54("FIGHT!!");
+    if (arena_bout_countdown_timer != 0) {
+        if (arena_bout_countdown_timer < 0x1E) {
+            if (arena_mode_get_state() != 7 && arena_play_mode != 4) {
+                arena_text_draw_line_centered("FIGHT!!");
             }
-            D_800928D4 = 1;
-        } else if (D_8009263C < 0x3C) {
-            if (func_80083CD8() != 7) {
-                if (D_800928C8 == 4) {
-                    func_8007EC54("START");
-                    if (D_80092884 != 0) {
-                        func_8007EC54("");
-                        func_8007EC54("RUBBER BAND MODE");
+            arena_bout_fight_active = 1;
+        } else if (arena_bout_countdown_timer < 0x3C) {
+            if (arena_mode_get_state() != 7) {
+                if (arena_play_mode == 4) {
+                    arena_text_draw_line_centered("START");
+                    if (arena_rubber_band_enabled != 0) {
+                        arena_text_draw_line_centered("");
+                        arena_text_draw_line_centered("RUBBER BAND MODE");
                     }
                 } else {
-                    func_8007EC54("READY");
-                    if (D_80092884 != 0) {
-                        func_8007EC54("");
-                        func_8007EC54("RUBBER BAND BATTLE");
+                    arena_text_draw_line_centered("READY");
+                    if (arena_rubber_band_enabled != 0) {
+                        arena_text_draw_line_centered("");
+                        arena_text_draw_line_centered("RUBBER BAND BATTLE");
                     }
                 }
             }
-        } else if (func_80083CD8() != 7) {
-            if (D_800928C8 == 4) {
-                func_8007EC54("PRACTICE");
-                if (D_80092884 != 0) {
-                    func_8007EC54("");
-                    func_8007EC54("RUBBER BAND MODE");
+        } else if (arena_mode_get_state() != 7) {
+            if (arena_play_mode == 4) {
+                arena_text_draw_line_centered("PRACTICE");
+                if (arena_rubber_band_enabled != 0) {
+                    arena_text_draw_line_centered("");
+                    arena_text_draw_line_centered("RUBBER BAND MODE");
                 }
             } else {
-                sprintf(text, "ROUND %d", D_80092950);
-                func_8007EC54(text);
-                if (D_80092884 != 0) {
-                    func_8007EC54("");
-                    func_8007EC54("RUBBER BAND BATTLE");
+                sprintf(text, "ROUND %d", arena_bout_round_number);
+                arena_text_draw_line_centered(text);
+                if (arena_rubber_band_enabled != 0) {
+                    arena_text_draw_line_centered("");
+                    arena_text_draw_line_centered("RUBBER BAND BATTLE");
                 }
             }
         }
-        D_8009263C--;
+        arena_bout_countdown_timer--;
     }
-    D_80092850 = func_800887A4(&first->pos, &second->pos);
-    D_8009284C = func_80088838(&first->pos, &second->pos);
-    D_80092934 = ratan2(first->pos.vx - second->pos.vx, first->pos.vz - second->pos.vz);
+    arena_actors_distance = arena_vector_get_distance(&first->pos, &second->pos);
+    arena_actors_flat_distance = arena_vector_get_flat_distance(&first->pos, &second->pos);
+    arena_actors_heading = ratan2(first->pos.vx - second->pos.vx, first->pos.vz - second->pos.vz);
 }
 
-/* The other actor's value 15EC scaled by amount / 32, less this actor's
+/* 8007570C: The other actor's value 15EC scaled by amount / 32, less this actor's
  * value 15EE. */
-s32 func_8007570C(Actor *actor, Actor *other, s32 amount) {
+s32 arena_actor_unused_scaled_difference(Actor *actor, Actor *other, s32 amount) {
     return other->unk15EC * amount / 32 - actor->unk15EE;
 }
 
-/* The other actor's value 15EA less this actor's value 15E8. */
-s32 func_80075738(Actor *actor, Actor *other) {
+/* 80075738: The other actor's value 15EA less this actor's value 15E8. */
+s32 arena_actor_unused_difference(Actor *actor, Actor *other) {
     return other->unk15EA - actor->unk15E8;
 }
 
-/* Unreferenced, and empty. */
-void func_80075748(void) {
+/* 80075748: Unreferenced, and empty. */
+void arena_actor_empty_unreferenced(void) {
 }
 
-/* Whether point (px, pz) lies within radius of the segment from (x0, z0)
+/* 80075750: Whether point (px, pz) lies within radius of the segment from (x0, z0)
  * to (x1, z1), on its forward side. */
-s32 func_80075750(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
+s32 arena_actor_is_point_near_segment(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
     VECTOR d;
     VECTOR sq;
     s32 rx;
@@ -1012,9 +1012,9 @@ s32 func_80075750(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
     return along <= len + radius ? hit : 0;
 }
 
-/* Like func_80075750, and on a hit store where the segment enters the
- * circle around the point in D_80092654/D_80092658. */
-s32 func_80075888(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
+/* 80075888: Like arena_actor_is_point_near_segment, and on a hit store where the segment enters the
+ * circle around the point in arena_actor_crossing_point_x/arena_actor_crossing_point_z. */
+s32 arena_actor_find_segment_crossing(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
     VECTOR d;
     VECTOR sq;
     s32 rx;
@@ -1054,23 +1054,23 @@ s32 func_80075888(s32 x0, s32 z0, s32 x1, s32 z1, s32 px, s32 pz, s32 radius) {
             diff = -diff;
         }
         diff = along - SquareRoot0(diff); /* the entry distance along the segment */
-        D_80092654 = diff * ux / 4096 + x0;
-        D_80092658 = diff * uz / 4096 + z0;
+        arena_actor_crossing_point_x = diff * ux / 4096 + x0;
+        arena_actor_crossing_point_z = diff * uz / 4096 + z0;
     }
     return hit;
 }
 
-/* Whether a point comes within radius of any edge of a quad given as four
+/* 80075A4C: Whether a point comes within radius of any edge of a quad given as four
  * corner vectors; clears the crossing point to the point first. */
-s32 func_80075A4C(VECTOR *quad, s32 px, s32 pz, s32 radius) {
-    D_80092654 = px;
-    D_80092658 = pz;
-    if (func_80075750(quad[1].vx, quad[1].vz, quad[0].vx, quad[0].vz, px, pz, radius)
-        || func_80075750(quad[3].vx, quad[3].vz, quad[2].vx, quad[2].vz, px, pz, radius)
-        || func_80075750(quad[0].vx, quad[0].vz, quad[2].vx, quad[2].vz, px, pz, radius)) {
+s32 arena_actor_is_point_near_quad(VECTOR *quad, s32 px, s32 pz, s32 radius) {
+    arena_actor_crossing_point_x = px;
+    arena_actor_crossing_point_z = pz;
+    if (arena_actor_is_point_near_segment(quad[1].vx, quad[1].vz, quad[0].vx, quad[0].vz, px, pz, radius)
+        || arena_actor_is_point_near_segment(quad[3].vx, quad[3].vz, quad[2].vx, quad[2].vz, px, pz, radius)
+        || arena_actor_is_point_near_segment(quad[0].vx, quad[0].vz, quad[2].vx, quad[2].vz, px, pz, radius)) {
         return 1;
     }
-    return func_80075750(quad[1].vx, quad[1].vz, quad[3].vx, quad[3].vz, px, pz, radius) != 0;
+    return arena_actor_is_point_near_segment(quad[1].vx, quad[1].vz, quad[3].vx, quad[3].vz, px, pz, radius) != 0;
 }
 
 /* Point of the body axis (home to upper anchor) at a height between them;
@@ -1081,11 +1081,11 @@ s32 func_80075A4C(VECTOR *quad, s32 px, s32 pz, s32 radius) {
     (out).vy = ((frac * ((top).vy - (home).vy)) >> 12) + (home).vy;             \
     (out).vz = ((frac * ((top).vz - (home).vz)) >> 12) + (home).vz
 
-/* Test the opponent's shots and trails against an actor's body axis; the
+/* 80075B50: Test the opponent's shots and trails against an actor's body axis; the
  * first shot or trail that hits sets the hit point, effect, glow, damage and
  * reaction. Returns 0. One variable serves as the damage and as the
  * scratch value before it (the axis fraction, the distance to the top). */
-s32 func_80075B50(Actor *actor) {
+s32 arena_actor_test_hits(Actor *actor) {
     VECTOR home;
     VECTOR top;
     VECTOR point;
@@ -1113,7 +1113,7 @@ s32 func_80075B50(Actor *actor) {
         hit = 0;
         if (top.vy < shot->pos.vy && shot->pos.vy < home.vy) {
             AXIS_POINT(point, home, top, shot->pos.vy, damage);
-            hit = func_80075888(shot->prev.vx, shot->prev.vz, shot->pos.vx, shot->pos.vz, point.vx, point.vz,
+            hit = arena_actor_find_segment_crossing(shot->prev.vx, shot->prev.vz, shot->pos.vx, shot->pos.vz, point.vx, point.vz,
                                 actor->header->unk13);
         } else if (shot->dist < actor->header->unk13) {
             damage = abs(top.vy - shot->prev.vy);
@@ -1137,16 +1137,16 @@ s32 func_80075B50(Actor *actor) {
         damage = shot->unk3C;
         if ((u32)(((ratan2(shot->velocity.vx, shot->velocity.vz) - actor->angle) & 0xFFF) - 0x601) >= 0x3FF) {
             if (actor->flags & 4) {
-                func_8008EBD0(actor, 0xF, &point, 1);
+                arena_sound_play_command_sound(actor, 0xF, &point, 1);
                 damage /= 2;
                 actor->glow = 0x80;
             } else {
-                func_8008EBD0(actor, 0xC, &point, 1);
+                arena_sound_play_command_sound(actor, 0xC, &point, 1);
             }
         } else {
             damage *= 2;
             kind = 3;
-            func_8008EBD0(actor, 0xC, &point, 1);
+            arena_sound_play_command_sound(actor, 0xC, &point, 1);
         }
         actor->unkE8 += damage * 2 / 3;
         actor->unk916 += damage * 2 / 3;
@@ -1154,8 +1154,8 @@ s32 func_80075B50(Actor *actor) {
         if (damage != 0) {
             hits++;
         }
-        D_80092A24 = point;
-        D_80092648 = 0x10;
+        arena_effect_hit_spark_position = point;
+        arena_effect_hit_spark_count = 0x10;
         actor->unkC8 = damage / 3 + 0xC;
         best = damage;
         from = point;
@@ -1174,34 +1174,34 @@ s32 func_80075B50(Actor *actor) {
         if (trail->flip) {
             if (top.vy < trail->a.vy && trail->a.vy < home.vy) {
                 AXIS_POINT(point, home, top, trail->a.vy, damage);
-                hit = func_80075888(trail->a_prev.vx, trail->a_prev.vz, trail->a.vx, trail->a.vz, point.vx,
+                hit = arena_actor_find_segment_crossing(trail->a_prev.vx, trail->a_prev.vz, trail->a.vx, trail->a.vz, point.vx,
                                     point.vz, actor->header->unk13);
             }
         } else {
             damage = (trail->a.vy + trail->a_prev.vy + trail->b.vy + trail->b_prev.vy) / 4;
             if (top.vy < damage && damage < home.vy) {
                 AXIS_POINT(point, home, top, damage, damage);
-                hit = func_80075A4C((VECTOR *)trail, point.vx, point.vz, actor->header->unk13);
+                hit = arena_actor_is_point_near_quad((VECTOR *)trail, point.vx, point.vz, actor->header->unk13);
             }
         }
         if (!hit) {
             continue;
         }
         actor->opponent->flags &= ~0x4000000;
-        point.vx = D_80092654;
-        point.vz = D_80092658;
+        point.vx = arena_actor_crossing_point_x;
+        point.vz = arena_actor_crossing_point_z;
         if (actor->flags & 4) {
-            func_8008EBD0(actor, 0xF, &point, 1);
+            arena_sound_play_command_sound(actor, 0xF, &point, 1);
             damage = trail->unk47 >> 1;
-            D_80092A24 = point;
-            D_80092648 = 4;
+            arena_effect_hit_spark_position = point;
+            arena_effect_hit_spark_count = 4;
             actor->glow = 0xC0;
             actor->unkD4 |= 0x20;
         } else {
-            func_8008EBD0(actor, trail->effect, &point, 1);
-            func_8007D190(&point, 0);
-            D_80092A24 = point;
-            D_80092648 = 0x10;
+            arena_sound_play_command_sound(actor, trail->effect, &point, 1);
+            arena_effect_spawn_sparkle(&point, 0);
+            arena_effect_hit_spark_position = point;
+            arena_effect_hit_spark_count = 0x10;
             actor->glow = 0xFF;
             actor->unkD4 &= ~0x20;
             damage = trail->unk47;
@@ -1218,7 +1218,7 @@ s32 func_80075B50(Actor *actor) {
             from = trail->a;
             kind = trail->unk46;
         }
-        func_80073CA4(actor->opponent);
+        arena_actor_age_trails(actor->opponent);
         break;
     }
     if (hits != 0) {
@@ -1232,16 +1232,16 @@ s32 func_80075B50(Actor *actor) {
     return 0;
 }
 
-/* Queue a pad input for an actor (dropped when 32 are pending). */
-void func_8007639C(Actor *actor, u8 input) {
+/* 8007639C: Queue a pad input for an actor (dropped when 32 are pending). */
+void arena_actor_queue_input(Actor *actor, u8 input) {
     if (actor->input_count < 32) {
         actor->inputs[actor->input_head++ & 0x1F] = input;
         actor->input_count++;
     }
 }
 
-/* Take the oldest queued input of an actor, 0 when none. */
-s32 func_800763E4(Actor *actor) {
+/* 800763E4: Take the oldest queued input of an actor, 0 when none. */
+s32 arena_actor_take_input(Actor *actor) {
     u8 input;
 
     if (actor->input_count == 0) {
@@ -1252,17 +1252,17 @@ s32 func_800763E4(Actor *actor) {
     return input;
 }
 
-/* Empty an actor's input queue. */
-void func_80076424(Actor *actor) {
+/* 80076424: Empty an actor's input queue. */
+void arena_actor_clear_inputs(Actor *actor) {
     actor->input_count = 0;
     actor->input_head = 0;
     actor->input_tail = 0;
     actor->unk9C3 = 0;
 }
 
-/* Debug: print an actor's queued inputs, oldest first. The name argument of
+/* 80076438: Debug: print an actor's queued inputs, oldest first. The name argument of
  * the leading "%s:" is missing in the original. */
-void func_80076438(Actor *actor) {
+void arena_actor_debug_print_inputs(Actor *actor) {
     s32 i;
     s32 index = actor->input_tail;
 
@@ -1274,8 +1274,8 @@ void func_80076438(Actor *actor) {
 }
 
 /* Name of each combo number. GCC emits an initializer's string literals last
- * to first, after those of the code before it ("" is func_800751C8's). */
-s32 D_80091198[] = {
+ * to first, after those of the code before it ("" is arena_bout_update_referee's). */
+s32 arena_actor_combo_names[] = { /* 80091198 */
     (s32)"",
     (s32)"A", (s32)"B",
     (s32)"AA", (s32)"AB", (s32)"BA", (s32)"BB",
@@ -1283,53 +1283,53 @@ s32 D_80091198[] = {
     (s32)"BAA", (s32)"BAB", (s32)"BBA", (s32)"BBB",
 };
 
-s32 D_800911D4 = 0;
+s32 arena_debug_enabled = 0; /* 800911D4 */
 
 /* Sparkle frame texel positions (u, v); the v tables get the image's y
  * added once. */
-u8 D_800911D8[16] = {
+u8 arena_effect_sparkle1_frame_u[16] = { /* 800911D8 */
     0x00, 0x20, 0x40, 0x60, 0x80, 0xA0, 0xC0, 0xE0,
     0x00, 0x20, 0x40, 0x60, 0x80, 0xA0, 0xC0, 0xE0,
 };
-u8 D_800911E8[16] = {
+u8 arena_effect_sparkle1_frame_v[16] = { /* 800911E8 */
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
 };
-u8 D_800911F8[16] = {
+u8 arena_effect_sparkle2_frame_u[16] = { /* 800911F8 */
     0x00, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70,
     0x80, 0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0,
 };
-u8 D_80091208[16] = { 0 };
-u8 D_80091218[16] = { 0 };
+u8 arena_effect_sparkle2_frame_v[16] = { 0 }; /* 80091208 */
+u8 arena_effect_sparkle4_frame_v[16] = { 0 }; /* 80091218 */
 
-s16 D_80091228[] = { 0x18, 0x30, 0x10 };
+s16 arena_effect_trail_sizes[] = { 0x18, 0x30, 0x10 }; /* 80091228 */
 
-/* Start an actor's turn: clear its per-turn state and flags, set its
+/* 800764CC: Start an actor's turn: clear its per-turn state and flags, set its
  * gauge, place its gauge at its side and record the pending combo. */
-void func_800764CC(Actor *actor) {
+void arena_actor_start_frame(Actor *actor) {
     s32 value;
     u32 flags;
 
     actor->unk40 = 0;
     actor->unk100 = 0;
-    if (func_80083CD8() != 7) {
+    if (arena_mode_get_state() != 7) {
         actor->flags &= ~0x8000;
         actor->flags &= ~2;
     }
-    value = actor->unk15F4 * D_8009292C;
+    value = actor->unk15F4 * arena_bout_motion_speed;
     flags = actor->flags & ~0x80000;
     actor->flags = flags;
     actor->unk15F2 = value >> 8;
-    func_8007E894(!(flags & 0x8000000) ? 0x28 : 0xF0, 0x28);
+    arena_text_move_cursor(!(flags & 0x8000000) ? 0x28 : 0xF0, 0x28);
     if (actor->unk9C3 != 0) {
-        D_80096FB8[ACTOR_SIDE(actor)].unk0 = D_80091198[actor->unk9C3];
-        D_80096FB8[ACTOR_SIDE(actor)].unk4 = actor->moves->learned[actor->unk9C3 - 1] * actor->moves->base / 100;
+        arena_actor_side_move_info[ACTOR_SIDE(actor)].unk0 = arena_actor_combo_names[actor->unk9C3];
+        arena_actor_side_move_info[ACTOR_SIDE(actor)].unk4 = actor->moves->learned[actor->unk9C3 - 1] * actor->moves->base / 100;
     }
 }
 
-/* Debug: print an actor side's pending move name (dimmed unless it is the
+/* 8007661C: Debug: print an actor side's pending move name (dimmed unless it is the
  * current one), its strength and its frame range at the side's corner. */
-void func_8007661C(Actor *actor) {
+void arena_actor_draw_move_info(Actor *actor) {
     char text[16];
     s32 x;
     s32 y = 0xA;
@@ -1339,29 +1339,29 @@ void func_8007661C(Actor *actor) {
     } else {
         x = 0x14;
     }
-    if (D_800928C8 != 4) {
+    if (arena_play_mode != 4) {
         y = 0xB2;
     }
-    func_8007E894(x, y);
-    sprintf(text, "%s", D_80096FB8[ACTOR_SIDE(actor)].unk0);
-    func_8007E954(D_80096FB8[ACTOR_SIDE(actor)].unk0 == D_8009112C ? 0xE7 : 0x100);
-    func_8007EBE0(text);
-    func_8007E954(0x100);
-    func_8007E894(x + 0x34, y);
-    sprintf(text, "STR:%d", D_80096FB8[ACTOR_SIDE(actor)].unk4);
-    func_8007EBE0(text);
+    arena_text_move_cursor(x, y);
+    sprintf(text, "%s", arena_actor_side_move_info[ACTOR_SIDE(actor)].unk0);
+    arena_text_set_width_scale(arena_actor_side_move_info[ACTOR_SIDE(actor)].unk0 == arena_actor_ether_attack_name ? 0xE7 : 0x100);
+    arena_text_draw_line(text);
+    arena_text_set_width_scale(0x100);
+    arena_text_move_cursor(x + 0x34, y);
+    sprintf(text, "STR:%d", arena_actor_side_move_info[ACTOR_SIDE(actor)].unk4);
+    arena_text_draw_line(text);
     y += 0x14;
-    func_8007E894(x, y);
-    sprintf(text, "FRAME:%d-%d", D_80096FB8[ACTOR_SIDE(actor)].unkC >> 4,
-            D_80096FB8[ACTOR_SIDE(actor)].unk10 >> 4);
-    func_8007EBE0(text);
+    arena_text_move_cursor(x, y);
+    sprintf(text, "FRAME:%d-%d", arena_actor_side_move_info[ACTOR_SIDE(actor)].unkC >> 4,
+            arena_actor_side_move_info[ACTOR_SIDE(actor)].unk10 >> 4);
+    arena_text_draw_line(text);
 }
 
-/* Queue input 5 for an actor when both actors are in the 0x40000 state
+/* 800767C8: Queue input 5 for an actor when both actors are in the 0x40000 state
  * near the ground, unless it is blocked (bit 24, move 4, or the 0x20000000
  * stance without permission bit 1). */
-s32 func_800767C8(Actor *actor) {
-    if (D_8009284C > 0x200 || actor->unkC5 == 4) {
+s32 arena_actor_queue_back_dash(Actor *actor) {
+    if (arena_actors_flat_distance > 0x200 || actor->unkC5 == 4) {
         return;
     }
     if (actor->flags & 0x1000000) {
@@ -1369,8 +1369,8 @@ s32 func_800767C8(Actor *actor) {
     }
     if ((actor->flags & 0x40000) && (actor->opponent->flags & 0x40000)
         && ((actor->flags & 0x60000000) != 0x20000000 || (actor->kind & 2))) {
-        func_80076424(actor);
-        func_8007639C(actor, 5);
+        arena_actor_clear_inputs(actor);
+        arena_actor_queue_input(actor, 5);
     }
 }
 
@@ -1388,11 +1388,11 @@ s32 func_800767C8(Actor *actor) {
         }                                                                      \
     }
 
-/* Read a player's pad (analog sticks or the d-pad) and turn it into the
+/* 80076884: Read a player's pad (analog sticks or the d-pad) and turn it into the
  * actor's commands, guard/dash flags and its four directional speeds,
  * giving the move speed and heading. Declared s32 with a bare return so
  * the early exit keeps the original's empty delay slot. */
-s32 func_80076884(Actor *actor) {
+s32 arena_actor_read_pad(Actor *actor) {
     u8 stick_y;
     u8 stick_x;
     u16 held;
@@ -1433,42 +1433,42 @@ s32 func_80076884(Actor *actor) {
     if (actor->flags & 0x40) {
         return;
     }
-    if (D_800928F4 != ((actor->flags >> 17) & 1)) {
-        if (D_800928F4 != 0) {
+    if (arena_camera_side_flipped != ((actor->flags >> 17) & 1)) {
+        if (arena_camera_side_flipped != 0) {
             actor->unkCE = -actor->unkCC;
         } else {
             actor->unkCE = actor->unkCC;
         }
         actor->unk648 += 0x800;
-        ACTOR_FLAG_BITS(actor)->flag17 = D_800928F4;
+        ACTOR_FLAG_BITS(actor)->flag17 = arena_camera_side_flipped;
         actor->unkFC += 0x800;
     }
     if (pressed & 0x10) {
-        func_8007639C(actor, 1);
+        arena_actor_queue_input(actor, 1);
         actor->unk1660++;
     }
     if (pressed & 0x20) {
-        func_8007639C(actor, 2);
+        arena_actor_queue_input(actor, 2);
         actor->unk1660++;
     }
     if (pressed & 8) {
-        func_8007639C(actor, 3);
+        arena_actor_queue_input(actor, 3);
         actor->unk165C++;
     }
     if (pressed & 0x80) {
-        func_80076424(actor);
-        func_8007639C(actor, 4);
+        arena_actor_clear_inputs(actor);
+        arena_actor_queue_input(actor, 4);
     }
     if (held & 0x40) {
         actor->flags |= 0x8000;
     }
     if (pressed & 0x40) {
-        func_80076424(actor);
+        arena_actor_clear_inputs(actor);
     }
     brake = actor->brake;
     if (held & 4) {
         actor->flags |= 2;
-        func_80076424(actor);
+        arena_actor_clear_inputs(actor);
         brake <<= 2;
         actor->flags |= 0x100;
     } else {
@@ -1526,7 +1526,7 @@ s32 func_80076884(Actor *actor) {
     }
     dir &= 0xFFF;
     if ((u32)(dir - 0x201) < 0x3FF) {
-        func_800767C8(actor);
+        arena_actor_queue_back_dash(actor);
         actor->flags |= 0x1000000;
     } else {
         actor->flags &= ~0x1000000;
@@ -1537,12 +1537,12 @@ s32 func_80076884(Actor *actor) {
     }
 }
 
-/* Per-frame actor status: count down its timers, drain its charge, apply
+/* 80077038: Per-frame actor status: count down its timers, drain its charge, apply
  * this frame's damage to its hit points (with the hit sound), update its
  * gauge and knock it out when the hit points run out. Declared int without
  * a return value, as the original's unfilled delay slots in the knock-out
  * test show. */
-s32 func_80077038(Actor *actor) {
+s32 arena_actor_update_status(Actor *actor) {
     u8 state;
     u8 gauge;
     u32 stance;
@@ -1642,8 +1642,8 @@ s32 func_80077038(Actor *actor) {
     actor->hp -= actor->unk970;
     if (actor->unkBA != 0) {
         if (actor->unk910 == 0) {
-            if (func_80083CD8() != 4) {
-                func_8008EB4C(0x2D);
+            if (arena_mode_get_state() != 4) {
+                arena_sound_play_effect(0x2D);
             }
             actor->unk910 = 0x14;
         }
@@ -1651,7 +1651,7 @@ s32 func_80077038(Actor *actor) {
     } else {
         actor->unk910 = 0;
     }
-    if (D_800928C4 && !func_8008F4F4(actor, 0x50) && (actor->flags & 0x08000000)) {
+    if (arena_retreat_rule_enabled && !arena_brain_is_hp_above_fraction(actor, 0x50) && (actor->flags & 0x08000000)) {
         actor->hp = actor->max_hp * 0x50 / 256;
     }
     if (actor->hp < 0) {
@@ -1669,7 +1669,7 @@ s32 func_80077038(Actor *actor) {
     }
     actor->unkBA = 0;
     actor->unk970 = 0;
-    if (D_800928C8 != 4 && actor->hp == 0 && D_800928C8 != 6 && !(actor->flags & 0x800000)) {
+    if (arena_play_mode != 4 && actor->hp == 0 && arena_play_mode != 6 && !(actor->flags & 0x800000)) {
         actor->anim = 0xD;
         actor->unk4E = 0xFF;
         actor->unkC4 = 5;
@@ -1678,21 +1678,21 @@ s32 func_80077038(Actor *actor) {
         actor->flags |= 0x400;
         actor->velocity.vy -= 0x50;
         if (actor->flags & 0x08000000) {
-            actor->push.vx -= gpu_get_sin(D_80092934) >> 9;
-            actor->push.vz -= gpu_get_cos(D_80092934) >> 9;
+            actor->push.vx -= gpu_get_sin(arena_actors_heading) >> 9;
+            actor->push.vz -= gpu_get_cos(arena_actors_heading) >> 9;
         } else {
-            actor->push.vx += gpu_get_sin(D_80092934) >> 9;
-            actor->push.vz += gpu_get_cos(D_80092934) >> 9;
+            actor->push.vx += gpu_get_sin(arena_actors_heading) >> 9;
+            actor->push.vz += gpu_get_cos(arena_actors_heading) >> 9;
         }
         actor->flags |= 0x800000;
-        func_800776A8(actor, 0x14);
+        arena_actor_vibrate_pad(actor, 0x14);
         actor->unk100 = 0;
     }
 }
 
-/* Push an actor along an angle (scaled down by shift) and let it rise by
+/* 80077584: Push an actor along an angle (scaled down by shift) and let it rise by
  * lift, never faster than 0x82 upward. */
-s32 func_80077584(Actor *actor, s32 angle, s32 shift, s32 lift) {
+s32 arena_actor_push(Actor *actor, s32 angle, s32 shift, s32 lift) {
     actor->push.vx += gpu_get_sin(angle) >> shift;
     actor->push.vz += gpu_get_cos(angle) >> shift;
     if (actor->velocity.vy >= -0x8B) {
@@ -1703,9 +1703,9 @@ s32 func_80077584(Actor *actor, s32 angle, s32 shift, s32 lift) {
     }
 }
 
-/* Put an actor into its jump: animation, timers and flags, then the
+/* 8007762C: Put an actor into its jump: animation, timers and flags, then the
  * initial push. */
-void func_8007762C(Actor *actor, s32 angle, s32 shift, s32 lift) {
+void arena_actor_start_knockdown(Actor *actor, s32 angle, s32 shift, s32 lift) {
     actor->anim = 8;
     actor->unk4E = 0xFF;
     actor->unkCA = 0x3C;
@@ -1716,20 +1716,20 @@ void func_8007762C(Actor *actor, s32 angle, s32 shift, s32 lift) {
     actor->flags |= 0x1000;
     actor->unkD4 &= ~0x10;
     actor->flags &= ~0x400;
-    func_80077584(actor, angle, shift, lift);
+    arena_actor_push(actor, angle, shift, lift);
 }
 
-/* Start pad vibration for an actor's side when enabled for it (the right
+/* 800776A8: Start pad vibration for an actor's side when enabled for it (the right
  * side only in modes 2 and 4) and it is not suppressed. */
-s32 func_800776A8(Actor *actor, s32 arg) {
-    if (func_80083CD8() == 4) {
+s32 arena_actor_vibrate_pad(Actor *actor, s32 arg) {
+    if (arena_mode_get_state() == 4) {
         return;
     }
     if (actor->flags & 0x8000000) {
-        if ((D_800928C8 == 2 || D_800928C8 == 4) && (D_80099D98.option5 & 1) && !(actor->flags & 0x40)) {
+        if ((arena_play_mode == 2 || arena_play_mode == 4) && (arena_settings.option5 & 1) && !(actor->flags & 0x40)) {
             pad_run_actuator(1, arg);
         }
-    } else if ((D_80099D98.option4 & 1) && !(actor->flags & 0x40)) {
+    } else if ((arena_settings.option4 & 1) && !(actor->flags & 0x40)) {
         pad_run_actuator(0, arg);
     }
 }
@@ -1737,10 +1737,10 @@ s32 func_800776A8(Actor *actor, s32 arg) {
 /* Start a reaction pose: animation, restart it, pose change pending. */
 #define SET_POSE(actor, pose) ((actor)->anim = (pose), (actor)->unk4E = 0xFF, (actor)->flags |= 0x1000)
 
-/* React to a hit: pick the flinch pose (alternating by the hit height
+/* 80077770: React to a hit: pick the flinch pose (alternating by the hit height
  * between the two anchor heights), then knock the actor away from where the
  * hit came from according to the hit's step, and vibrate the pad. */
-void func_80077770(Actor *actor) {
+void arena_actor_react_to_hit(Actor *actor) {
     s32 strength = 4;
     s32 angle;
     s32 lift;
@@ -1777,61 +1777,61 @@ void func_80077770(Actor *actor) {
         }
     }
     angle = ratan2(actor->pos.vx - actor->hit_from.vx, actor->pos.vz - actor->hit_from.vz);
-    if (func_80088838(&actor->pos, &actor->opponent->pos) < func_80088838(&actor->hit_from, &actor->opponent->pos)) {
+    if (arena_vector_get_flat_distance(&actor->pos, &actor->opponent->pos) < arena_vector_get_flat_distance(&actor->hit_from, &actor->opponent->pos)) {
         angle += 0x800;
     }
     lift = 1;
     switch ((actor->unk100 - 1) & 7) {
     case 2:
         SET_POSE(actor, 6);
-        func_80077584(actor, angle, 0xC, 0x64);
+        arena_actor_push(actor, angle, 0xC, 0x64);
         break;
     case 3:
-        func_8007762C(actor, angle, 0xB, 0x80);
+        arena_actor_start_knockdown(actor, angle, 0xB, 0x80);
         break;
     case 1:
         lift = 0;
     default:
         if (actor->unk916 >= 0x26 || actor->unkF0 >= 4) {
-            func_8007762C(actor, angle, 0xA, 0xA0);
+            arena_actor_start_knockdown(actor, angle, 0xA, 0xA0);
             strength = 0xF;
             actor->unkE8 = 0;
             actor->unk916 = 0;
         } else {
-            func_80077584(actor, angle, 0xA, -lift & 0x1E);
+            arena_actor_push(actor, angle, 0xA, -lift & 0x1E);
         }
         break;
     }
 done:
-    func_800776A8(actor, strength);
+    arena_actor_vibrate_pad(actor, strength);
 }
 
-/* Advance an actor's combo with a button and return the new combo's
+/* 80077A38: Advance an actor's combo with a button and return the new combo's
  * entry. */
-MoveSlot *func_80077A38(Actor *actor, s32 button) {
+MoveSlot *arena_actor_advance_combo(Actor *actor, s32 button) {
     s32 i = actor->unk9C3 * 2;
 
     if (button != 0) {
-        actor->unk9C3 = D_80091178[i];
+        actor->unk9C3 = arena_actor_combo_transitions[i];
     } else {
-        actor->unk9C3 = D_80091178[i + 1];
+        actor->unk9C3 = arena_actor_combo_transitions[i + 1];
     }
     return &actor->move_slots[actor->unk9C3];
 }
 
-/* Set an actor's 0x80000 flag. */
-void func_80077A88(Actor *actor) {
+/* 80077A88: Set an actor's 0x80000 flag. */
+void arena_actor_mark_skidding(Actor *actor) {
     actor->flags |= 0x80000;
 }
 
 /* Debug trace of a started special move, compiled out of the release. */
 #define MOVE_TRACE() do { } while (0)
 
-/* Per-frame actor action: unless busy or stunned, start the move for the
+/* 80077A9C: Per-frame actor action: unless busy or stunned, start the move for the
  * decoded command (combo attacks by button, the charged shot, the jump,
  * the dash), then set the animation, drift and turn for the current
  * stance, derive the walking speed and let a dash use up charge. */
-void func_80077A9C(Actor *actor) {
+void arena_actor_update_action(Actor *actor) {
     MoveSlot *slot;
     s32 bounce;
 
@@ -1839,34 +1839,34 @@ void func_80077A9C(Actor *actor) {
         return;
     }
     if (actor->unk100 != 0) {
-        func_80077770(actor);
+        arena_actor_react_to_hit(actor);
         return;
     }
     bounce = 0;
     if (actor->unkE8 != 0) {
-        func_80076424(actor);
+        arena_actor_clear_inputs(actor);
         return;
     }
     actor->flags &= ~1;
     if (actor->unk914 != 0) {
-        func_80076424(actor);
+        arena_actor_clear_inputs(actor);
     }
     if ((actor->flags & 0x800) && actor->unkC5 != 4) {
         actor->unkC5 = 0;
     }
     if (actor->unkC5 == 0 && actor->unkC4 != 4) {
-        switch (func_800763E4(actor)) {
+        switch (arena_actor_take_input(actor)) {
         case 1:
             if (actor->unk914 != 0) {
                 break;
             }
-            slot = func_80077A38(actor, 1);
+            slot = arena_actor_advance_combo(actor, 1);
             goto start;
         case 2:
             if (actor->unk914 != 0) {
                 break;
             }
-            slot = func_80077A38(actor, 0);
+            slot = arena_actor_advance_combo(actor, 0);
         start:
             if (actor->unkC4 & 2) {
                 break;
@@ -1885,10 +1885,10 @@ void func_80077A9C(Actor *actor) {
                 break;
             }
             actor->unk914 = 0xF;
-            func_80076424(actor);
+            arena_actor_clear_inputs(actor);
             break;
         case 0:
-            func_80076424(actor);
+            arena_actor_clear_inputs(actor);
             break;
         case 3:
             if (actor->unk914 == 0 && actor->moves->unk18 != 0 && actor->model_id != 0x29) {
@@ -1910,18 +1910,18 @@ void func_80077A9C(Actor *actor) {
                 return;
             }
             if (!(actor->unkC4 & 2)) {
-                func_8007D190(&actor->home, 9);
+                arena_effect_spawn_sparkle(&actor->home, 9);
                 actor->velocity.vy -= 0x8C;
                 actor->unkC4 |= 2;
-                func_8008ED6C(actor, 0xA);
-                func_8008EBD0(actor, 0xA, &actor->home, 2);
+                arena_sound_stop_command_sound(actor, 0xA);
+                arena_sound_play_command_sound(actor, 0xA, &actor->home, 2);
             }
             break;
         case 5:
             actor->anim = 0xF;
             actor->unk4E = 0xFF;
             actor->flags |= 0x1000;
-            func_8008EBD0(actor, 0xE, &actor->pos, 2);
+            arena_sound_play_command_sound(actor, 0xE, &actor->pos, 2);
             actor->unkC3 = 6;
             actor->unkC5 = 4;
             break;
@@ -1951,10 +1951,10 @@ void func_80077A9C(Actor *actor) {
             }
             break;
         case 4:
-            func_80077A88(actor);
+            arena_actor_mark_skidding(actor);
             break;
         }
-        actor->unkFC = func_8008B650(actor->unkFC, actor->target_angle, 0x100);
+        actor->unkFC = arena_angle_turn_toward(actor->unkFC, actor->target_angle, 0x100);
         break;
     case 1:
         actor->unk52 = actor->state * actor->unk15F2 / 4096;
@@ -1968,10 +1968,10 @@ void func_80077A9C(Actor *actor) {
             }
             break;
         case 4:
-            func_80077A88(actor);
+            arena_actor_mark_skidding(actor);
             break;
         }
-        actor->unkFC = func_8008B650(actor->unkFC, actor->target_angle, 0x100);
+        actor->unkFC = arena_angle_turn_toward(actor->unkFC, actor->target_angle, 0x100);
         if ((actor->flags & 0x60000000) == 0x20000000 && !(actor->kind & 2)) {
             actor->flags &= ~0x8000;
         }
@@ -2002,15 +2002,15 @@ void func_80077A9C(Actor *actor) {
     }
     if (actor->unkC5 == 0 && !(actor->unkD4 & 0x40) && actor->unk40 > 0x30 &&
         !(actor->unkC4 == 2 || actor->unkC4 == 3)) {
-        if (func_80073E2C(actor, 0x20, 2)) {
+        if (arena_actor_add_charge(actor, 0x20, 2)) {
             actor->unk40 *= 2;
             actor->unk52 *= 2;
         } else {
             actor->flags &= ~0x8000;
             actor->unkD4 |= 0x40;
         }
-        if (D_8009287C >= 2) {
-            D_8009287C = 1;
+        if (arena_camera_ease_step_count >= 2) {
+            arena_camera_ease_step_count = 1;
         }
     }
 done:
@@ -2019,8 +2019,8 @@ done:
     }
 }
 
-/* Put an actor back at its home position, idle. */
-void func_80078154(Actor *actor) {
+/* 80078154: Put an actor back at its home position, idle. */
+void arena_frame_event_return_home(Actor *actor) {
     actor->pos = actor->home;
     actor->anim = 0;
     actor->unkC4 = 0;
@@ -2028,12 +2028,12 @@ void func_80078154(Actor *actor) {
     actor->flags |= 0x2000000;
 }
 
-/* Per-frame actor motion: note the round-start position, steer the heading
+/* 80078194: Per-frame actor motion: note the round-start position, steer the heading
  * toward the camera-relative facing (the other way round on side 1), stop
  * dead while stunned, turn the forward speed, gravity, bounce and (in the
  * late round) a pull toward the opponent into this frame's velocity, and
  * add the push scaled by the stance. */
-void func_80078194(Actor *actor) {
+void arena_actor_update_motion(Actor *actor) {
     VECTOR pull;
     s32 facing;
     s32 speed;
@@ -2042,7 +2042,7 @@ void func_80078194(Actor *actor) {
     actor->start = actor->pos;
     actor->start_home = actor->home;
     speed = actor->unk40;
-    facing = D_80092934;
+    facing = arena_actors_heading;
     if (actor->flags & 0x08000000) {
         facing += 0x800;
     }
@@ -2050,21 +2050,21 @@ void func_80078194(Actor *actor) {
         if (actor->unkFC != 0) {
             actor->unk648 = facing;
         } else {
-            actor->unk648 = func_8008B650(actor->unk648, facing, 0x100);
+            actor->unk648 = arena_angle_turn_toward(actor->unk648, facing, 0x100);
         }
-        if (D_8009287C >= 5) {
-            D_8009287C = 4;
+        if (arena_camera_ease_step_count >= 5) {
+            arena_camera_ease_step_count = 4;
         }
     } else if (actor->unkC4 == 1) {
-        if (D_8009284C > 0x100) {
+        if (arena_actors_flat_distance > 0x100) {
             if (actor->unkFC != 0) {
                 actor->unk648 = facing;
             } else {
-                actor->unk648 = func_8008B650(actor->unk648, facing, 0x100);
+                actor->unk648 = arena_angle_turn_toward(actor->unk648, facing, 0x100);
             }
         }
-        if (D_8009287C >= 3) {
-            D_8009287C = 2;
+        if (arena_camera_ease_step_count >= 3) {
+            arena_camera_ease_step_count = 2;
         }
     }
     if (actor->unkC5 == 4) {
@@ -2104,7 +2104,7 @@ void func_80078194(Actor *actor) {
         actor->velocity.vy += actor->unk30.vy;
         actor->velocity.vz += actor->unk30.vz;
     }
-    if (D_80092850 > 0x280 && D_80092884 != 0) {
+    if (arena_actors_distance > 0x280 && arena_rubber_band_enabled != 0) {
         pull.vx = actor->opponent->pos.vx;
         pull.vy = actor->opponent->pos.vy;
         pull.vz = actor->opponent->pos.vz;
@@ -2142,11 +2142,11 @@ void func_80078194(Actor *actor) {
     actor->velocity.vz += actor->push.vz;
 }
 
-/* Which of an actor's two anchor points (0x92c and home) lie on the other
+/* 80078704: Which of an actor's two anchor points (0x92c and home) lie on the other
  * side of the line from `a` to `b` than its round start position: 0 both
  * (choosing 0x92c when home is nearer to `a`), 1 or 2 only that one, 3
  * neither (choosing the nearer); the choice goes to *anchor. */
-s32 func_80078704(VECTOR *a, VECTOR *b, Actor *actor, VECTOR **anchor) {
+s32 arena_actor_pick_anchor_across_line(VECTOR *a, VECTOR *b, Actor *actor, VECTOR **anchor) {
     s32 dz = a->vz - b->vz;
     s32 dx = b->vx - a->vx;
     s32 start = dz * actor->start.vx + dx * actor->start.vz + a->vx * b->vz - b->vx * a->vz;
@@ -2173,9 +2173,9 @@ s32 func_80078704(VECTOR *a, VECTOR *b, Actor *actor, VECTOR **anchor) {
     if (first < 0) {
         if (second < 0) {
             VECTOR *p1 = &actor->unk92C;
-            s32 d1 = func_80088838(p1, a);
+            s32 d1 = arena_vector_get_flat_distance(p1, a);
             VECTOR *p2 = &actor->home;
-            s32 d2 = func_80088838(p2, a);
+            s32 d2 = arena_vector_get_flat_distance(p2, a);
             *anchor = d2 < d1 ? p1 : p2;
             return 0;
         }
@@ -2188,21 +2188,21 @@ s32 func_80078704(VECTOR *a, VECTOR *b, Actor *actor, VECTOR **anchor) {
     }
     {
         VECTOR *p1 = &actor->unk92C;
-        s32 d1 = func_80088838(p1, a);
+        s32 d1 = arena_vector_get_flat_distance(p1, a);
         VECTOR *p2 = &actor->home;
-        s32 d2 = func_80088838(p2, a);
+        s32 d2 = arena_vector_get_flat_distance(p2, a);
         *anchor = d1 < d2 ? p1 : p2;
     }
     return 3;
 }
 
-/* Keep two close actors apart: when their bodies overlap in height, take
+/* 80078920: Keep two close actors apart: when their bodies overlap in height, take
  * each one's anchor across the line between their start positions, and if
  * those are closer than the actors' radii, push both apart along the line
  * between them, each by the other's share of their combined speed.
  * Declared int without a return value, as the original's unfilled delay
  * slot in the last height test shows. */
-s32 func_80078920(Actor *first, Actor *second) {
+s32 arena_actors_push_apart(Actor *first, Actor *second) {
     VECTOR unused; /* unused in the original; reserves 16 bytes */
     VECTOR point_a;
     VECTOR point_b;
@@ -2219,7 +2219,7 @@ s32 func_80078920(Actor *first, Actor *second) {
     s32 speed_b;
     s32 total;
 
-    if (D_8009284C <= 0x300 && ((first->home.vy < second->unk92C.vy && second->home.vy < first->home.vy) ||
+    if (arena_actors_flat_distance <= 0x300 && ((first->home.vy < second->unk92C.vy && second->home.vy < first->home.vy) ||
         (second->unk92C.vy < first->unk92C.vy && first->unk92C.vy < second->home.vy) ||
         (second->home.vy < first->unk92C.vy && first->home.vy < second->home.vy) ||
         (first->unk92C.vy < second->unk92C.vy && second->unk92C.vy < first->home.vy))) {
@@ -2229,8 +2229,8 @@ s32 func_80078920(Actor *first, Actor *second) {
         across.vx = first->start.vz - second->start.vz + mid.vx;
         radius_a = first->header->unk3;
         radius_b = second->header->unk3;
-        func_80078704(&mid, &across, first, &anchor_a);
-        func_80078704(&mid, &across, second, &anchor_b);
+        arena_actor_pick_anchor_across_line(&mid, &across, first, &anchor_a);
+        arena_actor_pick_anchor_across_line(&mid, &across, second, &anchor_b);
         point_a = *anchor_a;
         point_b = *anchor_b;
         point_a.vx -= first->start.vx;
@@ -2245,18 +2245,18 @@ s32 func_80078920(Actor *first, Actor *second) {
         point_b.vx += second->pos.vx;
         point_b.vy += second->pos.vy;
         point_b.vz += second->pos.vz;
-        dist = func_80088838(&point_a, &point_b);
+        dist = arena_vector_get_flat_distance(&point_a, &point_b);
         total = radius_a + radius_b;
         if (dist < total) {
-            angle = func_80088838(&first->start, &point_a);
-            if (func_80088838(&first->start, &point_b) < angle) {
+            angle = arena_vector_get_flat_distance(&first->start, &point_a);
+            if (arena_vector_get_flat_distance(&first->start, &point_b) < angle) {
                 dist += total;
             } else {
                 dist = total - dist;
             }
             angle = ratan2(first->start.vx - second->start.vx, first->start.vz - second->start.vz);
-            speed_a = func_80088754(&first->velocity);
-            speed_b = func_80088754(&second->velocity);
+            speed_a = arena_vector_get_flat_length(&first->velocity);
+            speed_b = arena_vector_get_flat_length(&second->velocity);
             sum = speed_a + speed_b;
             if (sum == 0) {
                 speed_b = 1;
@@ -2273,26 +2273,26 @@ s32 func_80078920(Actor *first, Actor *second) {
     }
 }
 
-/* Move an actor by its velocity: take the floor height and cell kind (bits
+/* 80078D20: Move an actor by its velocity: take the floor height and cell kind (bits
  * 29-30; both set also sets 0x90b), keep it in the arena, and land it on
  * the floor (a mode-4 landing bounces once, with a sound and effect). */
-void func_80078D20(Actor *actor) {
+void arena_actor_apply_velocity(Actor *actor) {
     VECTOR unused; /* keeps the original's 16-byte frame slot */
 
-    actor->floor_y = func_80082488(&actor->pos, 1);
+    actor->floor_y = arena_stage_get_ground_height(&actor->pos, 1);
     actor->flags = (actor->flags & ~0x60000000) |
-                   ((((u32)func_800828C4(&actor->pos) >> 24) & 3) << 29);
+                   ((((u32)arena_stage_get_ground_square(&actor->pos) >> 24) & 3) << 29);
     if ((actor->flags & 0x60000000) == 0x60000000) {
         actor->unk90B = 0xF;
     }
-    func_800828F8(&actor->pos, &actor->velocity, 0x3E80);
+    arena_stage_keep_step_inside(&actor->pos, &actor->velocity, 0x3E80);
     actor->flags &= ~0x40000;
     if (actor->floor_y < actor->pos.vy + actor->velocity.vy) {
         actor->flags |= 0x40000;
         if (actor->unkC4 == 4) {
             if (!(actor->unkD4 & 0x10)) {
-                func_8008EBD0(actor, 0xD, &actor->pos, 2);
-                func_800776A8(actor, 6);
+                arena_sound_play_command_sound(actor, 0xD, &actor->pos, 2);
+                arena_actor_vibrate_pad(actor, 6);
             }
             actor->unkD4 |= 0x10;
             if (actor->velocity.vy >= 0x40) {
@@ -2310,16 +2310,16 @@ void func_80078D20(Actor *actor) {
     actor->pos.vz += actor->velocity.vz;
 }
 
-/* Place an actor's model at the actor's position and facing. */
-void func_80078E94(Actor *actor) {
+/* 80078E94: Place an actor's model at the actor's position and facing. */
+void arena_actor_place_model(Actor *actor) {
     actor->node->position.vx = actor->pos.vx;
     actor->node->position.vy = actor->pos.vy;
     actor->node->position.vz = actor->pos.vz;
     actor->node->angles.vy = actor->angle;
 }
 
-/* Default values of a seven-entry parameter block. */
-void func_80078ED4(s16 *params) {
+/* 80078ED4: Default values of a seven-entry parameter block. */
+void arena_actor_init_parameter_block(s16 *params) {
     params[0] = 0x100;
     params[2] = 0x10;
     params[1] = 0;
@@ -2329,11 +2329,11 @@ void func_80078ED4(s16 *params) {
     params[6] = 0x30;
 }
 
-/* Reset an actor for a new round: position and motion, model scale,
+/* 80078F00: Reset an actor for a new round: position and motion, model scale,
  * movement and health values, shots, trails, pose and flags, its side's hit
  * record and the combo, brain and effect state. The stance fields are
  * cleared as bit-fields (one read-modify-write of word 0xd4). */
-void func_80078F00(Actor *actor) {
+void arena_actor_reset_for_round(Actor *actor) {
     SceneHeader *header = actor->header;
     s32 i;
 
@@ -2369,7 +2369,7 @@ void func_80078F00(Actor *actor) {
         actor->trails[i].state = 0;
     }
     actor->unkF4 = 1;
-    func_80076424(actor);
+    arena_actor_clear_inputs(actor);
     actor->unk4E = 0xFF;
     actor->anim = 0;
     actor->unkC3 = 0;
@@ -2393,71 +2393,71 @@ void func_80078F00(Actor *actor) {
     actor->flags &= ~2;
     actor->flags &= ~0x38;
     actor->unkD4 &= ~0x10;
-    actor->unk84 = D_8009264C;
-    D_8009264C[2] = 1;
-    D_80096FB8[ACTOR_SIDE(actor)].unk0 = (s32)"";
-    D_80096FB8[ACTOR_SIDE(actor)].unk8 = 0;
-    D_80096FB8[ACTOR_SIDE(actor)].unk4 = 0;
-    D_80096FB8[ACTOR_SIDE(actor)].unkC = 0;
-    D_80096FB8[ACTOR_SIDE(actor)].unk10 = 0;
-    func_80090CC0(actor);
-    func_80078ED4((s16 *)actor->unk15D8);
-    func_80087AB0(actor);
+    actor->unk84 = arena_actor_default_move_slot;
+    arena_actor_default_move_slot[2] = 1;
+    arena_actor_side_move_info[ACTOR_SIDE(actor)].unk0 = (s32)"";
+    arena_actor_side_move_info[ACTOR_SIDE(actor)].unk8 = 0;
+    arena_actor_side_move_info[ACTOR_SIDE(actor)].unk4 = 0;
+    arena_actor_side_move_info[ACTOR_SIDE(actor)].unkC = 0;
+    arena_actor_side_move_info[ACTOR_SIDE(actor)].unk10 = 0;
+    arena_brain_attach(actor);
+    arena_actor_init_parameter_block((s16 *)actor->unk15D8);
+    arena_stage_build_shadow_quad(actor);
     actor->unk914 = 0;
     actor->unk1668 = 0;
     actor->unkD4 &= ~0x40;
 }
 
-/* Per-frame anchors of an actor: home between its feet, dust when landing
+/* 8007920C: Per-frame anchors of an actor: home between its feet, dust when landing
  * or skidding, cells thrown up while it stands in deep ground, the upper
  * anchor and core, the charged glow and its effect, and the stance effects
  * (7 and 9) when the stance changes. The stance state and last frame's
  * flag 15 are stored through bit-fields. */
-void func_8007920C(Actor *actor) {
+void arena_actor_update_anchors(Actor *actor) {
     VECTOR foot_a;
     VECTOR foot_b;
     VECTOR unused; /* keeps the original's 16-byte frame slot */
     SceneHeader *header = actor->header;
     s32 state;
 
-    func_80073B7C(actor, header->foot_a_part, header->foot_a_vertex, &foot_a);
-    func_80073B7C(actor, header->foot_b_part, header->foot_b_vertex, &foot_b);
+    arena_actor_get_part_point(actor, header->foot_a_part, header->foot_a_vertex, &foot_a);
+    arena_actor_get_part_point(actor, header->foot_b_part, header->foot_b_vertex, &foot_b);
     actor->home.vx = (foot_a.vx + foot_b.vx) / 2;
     actor->home.vy = (foot_a.vy + foot_b.vy) / 2;
     actor->home.vz = (foot_a.vz + foot_b.vz) / 2;
     if ((actor->flags & 0x80000) && (actor->flags & 0x60000000) != 0x20000000 && !(actor->kind & 1)) {
-        func_8007D190(&foot_a, 9);
-        func_8007D190(&foot_b, 9);
+        arena_effect_spawn_sparkle(&foot_a, 9);
+        arena_effect_spawn_sparkle(&foot_b, 9);
     }
     if (actor->unk90B != 0) {
         if (foot_a.vy + 0x40 > actor->floor_y - 0x20 && actor->foot_a_y + 6 < foot_a.vy) {
-            func_8007D7A8(&foot_a, 0x20);
+            arena_effect_spawn_ground_particles(&foot_a, 0x20);
         }
         if (foot_b.vy + 0x40 > actor->floor_y - 0x20 && actor->foot_b_y + 6 < foot_b.vy) {
-            func_8007D7A8(&foot_b, 0x20);
+            arena_effect_spawn_ground_particles(&foot_b, 0x20);
         }
         actor->unk90B--;
     }
     if ((actor->flags & 0x60000000) == 0x20000000) {
-        func_8007DC74(&actor->home, &actor->start_home);
+        arena_effect_throw_cells(&actor->home, &actor->start_home);
     }
-    if (func_80083CD8() != 7 && (actor->flags & 0x60000000) == 0x20000000 && actor->home.vy > 0x80 &&
+    if (arena_mode_get_state() != 7 && (actor->flags & 0x60000000) == 0x20000000 && actor->home.vy > 0x80 &&
         actor->start_home.vy < 0x80) {
-        func_8008EB88(actor, 0x3A, &actor->home, 2);
+        arena_sound_play_actor_effect(actor, 0x3A, &actor->home, 2);
     }
     actor->foot_a_y = foot_a.vy;
     actor->foot_b_y = foot_b.vy;
-    func_80073B7C(actor, header->core_part, header->core_vertex, &actor->unk92C);
+    arena_actor_get_part_point(actor, header->core_part, header->core_vertex, &actor->unk92C);
     actor->unk92C.vy -= 0x38;
     actor->core.vx = (actor->home.vx + actor->unk92C.vx) / 2;
     actor->core.vz = (actor->home.vz + actor->unk92C.vz) / 2;
     actor->core.vy = (actor->home.vy + actor->unk92C.vy) / 2;
     if ((actor->flags & 0x8000) && actor->unkC5 == 0 && (actor->unkC4 & 1)) {
-        func_8007C100(&actor->colour);
-        func_8007CD44(ACTOR_SIDE(actor), &actor->unk92C, &actor->home, ACTOR_SIDE(actor));
+        arena_effect_set_sparkle2_color(&actor->colour);
+        arena_effect_start_line_sparkle(ACTOR_SIDE(actor), &actor->unk92C, &actor->home, ACTOR_SIDE(actor));
         if (!(actor->flags & 0x10000)) {
-            func_8008ED6C(actor, 8);
-            func_8008EBD0(actor, 8, &actor->home, 2);
+            arena_sound_stop_command_sound(actor, 8);
+            arena_sound_play_command_sound(actor, 8, &actor->home, 2);
         }
     }
     if (actor->unkC5 != 4) {
@@ -2478,16 +2478,16 @@ void func_8007920C(Actor *actor) {
         switch (state) {
         case 0:
         case 3:
-            func_8008ED6C(actor, 7);
-            func_8008ED6C(actor, 9);
+            arena_sound_stop_command_sound(actor, 7);
+            arena_sound_stop_command_sound(actor, 9);
             break;
         case 1:
-            func_8008EBD0(actor, 7, &actor->pos, 2);
-            func_8008ED6C(actor, 9);
+            arena_sound_play_command_sound(actor, 7, &actor->pos, 2);
+            arena_sound_stop_command_sound(actor, 9);
             break;
         case 2:
-            func_8008EBD0(actor, 9, &actor->home, 2);
-            func_8008ED6C(actor, 7);
+            arena_sound_play_command_sound(actor, 9, &actor->home, 2);
+            arena_sound_stop_command_sound(actor, 7);
             break;
         }
     }
@@ -2496,11 +2496,11 @@ void func_8007920C(Actor *actor) {
     ACTOR_STANCE_BITS(actor)->prev_stance = ACTOR_STANCE_BITS(actor)->stance;
 }
 
-/* Frame both actors with the camera: look at their midpoint, choose the
+/* 800796B8: Frame both actors with the camera: look at their midpoint, choose the
  * side (left or right of the line between them) whose eye point is nearer
  * the current one (the comparison reads the heights uninitialised, as the
  * original does), and ease the eye there, above the ground. */
-void func_800796B8(Actor *first, Actor *second) {
+void arena_camera_frame_actors_for_bout(Actor *first, Actor *second) {
     VECTOR eye;
     VECTOR step;
     s32 angle;
@@ -2508,283 +2508,283 @@ void func_800796B8(Actor *first, Actor *second) {
     s32 radius;
     s32 floor;
 
-    if (D_8009293C != 0) {
+    if (arena_scene_bout_end_active != 0) {
         return;
     }
     angle = ratan2(first->pos.vx - second->pos.vx, first->pos.vz - second->pos.vz);
-    dist = func_80088838(&first->pos, &second->pos);
-    D_80092934 = angle;
-    D_8009284C = dist;
-    dist = func_800887A4(&first->pos, &second->pos);
+    dist = arena_vector_get_flat_distance(&first->pos, &second->pos);
+    arena_actors_heading = angle;
+    arena_actors_flat_distance = dist;
+    dist = arena_vector_get_distance(&first->pos, &second->pos);
     radius = dist * 2 / 3 + 0xC0;
-    D_8009867C.vx = (first->pos.vx + second->pos.vx) / 2;
-    D_8009867C.vy = (first->pos.vy + second->pos.vy) / 2 - 0xA0;
-    D_8009867C.vz = (first->pos.vz + second->pos.vz) / 2;
-    eye.vx = D_8009867C.vx + ((gpu_get_sin(angle - 0x400) * radius) >> 12);
-    eye.vz = D_8009867C.vz + ((gpu_get_cos(angle - 0x400) * radius) >> 12);
-    step.vx = D_8009867C.vx + ((gpu_get_sin(angle + 0x400) * radius) >> 12);
-    step.vz = D_8009867C.vz + ((gpu_get_cos(angle + 0x400) * radius) >> 12);
-    eye.vx -= D_8009871C.vx;
-    eye.vy -= D_8009871C.vy;
-    eye.vz -= D_8009871C.vz;
-    step.vx -= D_8009871C.vx;
-    step.vy -= D_8009871C.vy;
-    step.vz -= D_8009871C.vz;
-    floor = func_80088754(&eye);
-    if (func_80088754(&step) < floor) {
-        D_8009290C = 0x400;
-        D_800928F4 = 0;
+    arena_camera_focus.vx = (first->pos.vx + second->pos.vx) / 2;
+    arena_camera_focus.vy = (first->pos.vy + second->pos.vy) / 2 - 0xA0;
+    arena_camera_focus.vz = (first->pos.vz + second->pos.vz) / 2;
+    eye.vx = arena_camera_focus.vx + ((gpu_get_sin(angle - 0x400) * radius) >> 12);
+    eye.vz = arena_camera_focus.vz + ((gpu_get_cos(angle - 0x400) * radius) >> 12);
+    step.vx = arena_camera_focus.vx + ((gpu_get_sin(angle + 0x400) * radius) >> 12);
+    step.vz = arena_camera_focus.vz + ((gpu_get_cos(angle + 0x400) * radius) >> 12);
+    eye.vx -= arena_camera_position.vx;
+    eye.vy -= arena_camera_position.vy;
+    eye.vz -= arena_camera_position.vz;
+    step.vx -= arena_camera_position.vx;
+    step.vy -= arena_camera_position.vy;
+    step.vz -= arena_camera_position.vz;
+    floor = arena_vector_get_flat_length(&eye);
+    if (arena_vector_get_flat_length(&step) < floor) {
+        arena_camera_side_angle = 0x400;
+        arena_camera_side_flipped = 0;
     } else {
-        D_8009290C = -0x400;
-        D_800928F4 = 1;
+        arena_camera_side_angle = -0x400;
+        arena_camera_side_flipped = 1;
     }
     dist /= 4;
     if (dist > 0x300) {
         dist = 0x300;
     }
-    eye.vy = D_8009867C.vy - 0x40 - dist;
-    eye.vx = D_8009867C.vx + ((gpu_get_sin(angle + D_8009290C) * radius) >> 12);
-    eye.vz = D_8009867C.vz + ((gpu_get_cos(angle + D_8009290C) * radius) >> 12);
-    step.vx = (eye.vx - D_8009871C.vx) / D_8009287C;
-    step.vz = (eye.vz - D_8009871C.vz) / D_8009287C;
-    func_800828F8(&D_8009871C, &step, 0x3A00);
-    D_8009871C.vx += step.vx;
-    D_8009871C.vz += step.vz;
-    floor = func_80082488(&D_8009871C, 0) - 0x100;
+    eye.vy = arena_camera_focus.vy - 0x40 - dist;
+    eye.vx = arena_camera_focus.vx + ((gpu_get_sin(angle + arena_camera_side_angle) * radius) >> 12);
+    eye.vz = arena_camera_focus.vz + ((gpu_get_cos(angle + arena_camera_side_angle) * radius) >> 12);
+    step.vx = (eye.vx - arena_camera_position.vx) / arena_camera_ease_step_count;
+    step.vz = (eye.vz - arena_camera_position.vz) / arena_camera_ease_step_count;
+    arena_stage_keep_step_inside(&arena_camera_position, &step, 0x3A00);
+    arena_camera_position.vx += step.vx;
+    arena_camera_position.vz += step.vz;
+    floor = arena_stage_get_ground_height(&arena_camera_position, 0) - 0x100;
     if (floor < eye.vy) {
         eye.vy = floor;
     }
-    D_8009871C.vy += (eye.vy - D_8009871C.vy) / D_8009287C;
-    D_8009287C = 0x64;
+    arena_camera_position.vy += (eye.vy - arena_camera_position.vy) / arena_camera_ease_step_count;
+    arena_camera_ease_step_count = 0x64;
 }
 
-/* Reset the bout: effects, glow and the round settings. */
-void func_80079A8C(void) {
-    func_800732CC();
-    func_8008DC28();
-    func_80088AF8();
-    D_80099D98.com1 = 1;
-    D_80099D98.speed = 3;
-    D_8009292C = 0x100;
-    D_80099D98.driven = 0;
-    D_80099D98.rate = 0;
-    D_80099D98.command = 0;
-    D_80099D98.unkC = 0x100;
+/* 80079A8C: Reset the bout: effects, glow and the round settings. */
+void arena_bout_init(void) {
+    arena_effect_create_hit_spark_emitter();
+    arena_spark_create_burst_emitter();
+    arena_settings_load_from_game_data();
+    arena_settings.com1 = 1;
+    arena_settings.speed = 3;
+    arena_bout_motion_speed = 0x100;
+    arena_settings.driven = 0;
+    arena_settings.rate = 0;
+    arena_settings.command = 0;
+    arena_settings.unkC = 0x100;
 }
 
-/* Unreferenced, and empty. */
-void func_80079B04(void) {
+/* 80079B04: Unreferenced, and empty. */
+void arena_bout_empty_unreferenced(void) {
 }
 
-/* Clear the per-round counters. */
-void func_80079B0C(void) {
-    D_80092950 = 0;
-    D_8009872C.unkF2 = 0;
-    D_80097010.unkF2 = 0;
-    D_80092918 = 0;
-    D_80092944 = 0;
-    D_800928FC = 0;
+/* 80079B0C: Clear the per-round counters. */
+void arena_bout_clear_counters(void) {
+    arena_bout_round_number = 0;
+    arena_first_actor.unkF2 = 0;
+    arena_second_actor.unkF2 = 0;
+    arena_bout_unread_draw_count = 0;
+    arena_bout_fight_frame_count = 0;
+    arena_menu_driving_pad_port = 0;
 }
 
-/* Start a round: face both actors in, reset effects, counters and the
+/* 80079B44: Start a round: face both actors in, reset effects, counters and the
  * message window; every fifth round from the third picks a special stage
  * when enabled. */
-s32 func_80079B44(void) {
-    D_8009872C.unkCC = 0x400;
-    D_80097010.unkCC = -0x400;
-    func_80078F00(&D_8009872C);
-    func_80078F00(&D_80097010);
-    func_8008D580(D_80092644);
-    func_8007E24C();
-    func_8007BB7C();
-    func_800831C8();
-    D_800928F4 = 1;
-    D_8009290C = -1;
-    func_8008DCA8(0);
-    D_80092638 = 0;
-    D_80092640 = 0;
-    D_80092890 = 0;
-    D_8009263C = 0x5A;
-    D_8009294C = 0;
-    D_80092648 = 0;
-    func_8007F834();
+s32 arena_bout_start_round(void) {
+    arena_first_actor.unkCC = 0x400;
+    arena_second_actor.unkCC = -0x400;
+    arena_actor_reset_for_round(&arena_first_actor);
+    arena_actor_reset_for_round(&arena_second_actor);
+    arena_spark_stop_all(arena_effect_hit_spark_emitter);
+    arena_effect_clear_ground_effects();
+    arena_effect_clear_sparkles();
+    arena_camera_place_at_random();
+    arena_camera_side_flipped = 1;
+    arena_camera_side_angle = -1;
+    arena_spark_start_burst(0);
+    arena_bout_round_over = 0;
+    arena_bout_round_over_frame_count = 0;
+    arena_bout_round_winner = 0;
+    arena_bout_countdown_timer = 0x5A;
+    arena_bout_round_frame_count = 0;
+    arena_effect_hit_spark_count = 0;
+    arena_menu_hide_captions();
     mode_arena_bout_outcome = 0;
-    func_8008E620();
-    func_800720C4();
-    D_800928D4 = 0;
-    D_800928F0 = 0;
-    D_80091130[10].kind = 0;
-    D_80091130[10].next = 0;
-    D_80092664 = 0;
-    D_80092950++;
-    window_reset(&D_8009868C);
-    D_80099D98.rate = 0;
+    arena_sound_reset();
+    arena_scene_allow_bout_end();
+    arena_bout_fight_active = 0;
+    arena_bout_unread_byte = 0;
+    arena_actor_anim_rules[10].kind = 0;
+    arena_actor_anim_rules[10].next = 0;
+    arena_bout_frame_skip_timer = 0;
+    arena_bout_round_number++;
+    window_reset(&arena_scene_message_window);
+    arena_settings.rate = 0;
     if (mode_arena_task_parameters != 0) {
-        switch ((D_80092950 - 1) % 5) {
+        switch ((arena_bout_round_number - 1) % 5) {
         case 3:
-            D_800928B4 = 1;
+            arena_stage_index = 1;
             break;
         case 4:
-            D_800928B4 = 2;
+            arena_stage_index = 2;
             break;
         default:
-            D_800928B4 = 0;
+            arena_stage_index = 0;
             break;
         }
     }
 }
 
-/* Mirror actor flags 2, 15 and 19 into its pose. */
-void func_80079D08(Actor *actor) {
+/* 80079D08: Mirror actor flags 2, 15 and 19 into its pose. */
+void arena_actor_store_pose_flags(Actor *actor) {
     actor->pose->unkA = (actor->pose->unkA & ~0x100) | ((actor->flags << 6) & 0x100);
     actor->pose->flags = (actor->pose->flags & ~0x2000) | ((actor->flags >> 2) & 0x2000);
     actor->pose->flags = (actor->pose->flags & ~0x4000) | ((actor->flags >> 5) & 0x4000);
 }
 
-/* Restore actor flags 2, 15 and 19 from its pose. */
-void func_80079D6C(Actor *actor) {
+/* 80079D6C: Restore actor flags 2, 15 and 19 from its pose. */
+void arena_actor_load_pose_flags(Actor *actor) {
     actor->flags = (actor->flags & ~4) | ((actor->pose->unkA >> 6) & 4);
     actor->flags = (actor->flags & ~0x8000) | ((actor->pose->flags << 2) & 0x8000);
     actor->flags = (actor->flags & ~0x80000)
                  | ((((PoseFlagBits *)&actor->pose->flags)->flag19 & 1) << 19);
 }
 
-/* Clear D_80092640. */
-void func_80079DE0(void) {
-    D_80092640 = 0;
+/* 80079DE0: Clear arena_bout_round_over_frame_count. */
+void arena_bout_clear_round_over_frame_count(void) {
+    arena_bout_round_over_frame_count = 0;
 }
 
-/* One frame of the bout (every frame rate setting + 1 frames): record the
+/* 80079DF0: One frame of the bout (every frame rate setting + 1 frames): record the
  * pose slot, read the pads (letting a player on the free port take over
  * while the pause is open), then run both actors' frame: moves, AI,
  * physics, separation, model placement, anchors and frame events. The
  * settings are read through the Settings struct, which keeps the rate
  * load ahead of the pose stores. */
-void func_80079DF0(Actor *first, Actor *second) {
-    if (D_80092664 != 0) {
-        D_80092664--;
+void arena_bout_update(Actor *first, Actor *second) {
+    if (arena_bout_frame_skip_timer != 0) {
+        arena_bout_frame_skip_timer--;
         return;
     }
-    D_80092664 = D_80099D98.rate;
-    first->pose = (Pose *)first->unk9CC + D_800928C0;
-    second->pose = (Pose *)second->unk9CC + D_800928C0;
+    arena_bout_frame_skip_timer = arena_settings.rate;
+    first->pose = (Pose *)first->unk9CC + arena_bout_pose_ring_index;
+    second->pose = (Pose *)second->unk9CC + arena_bout_pose_ring_index;
     first->move = (Move *)first->pose;
-    D_800928C0++;
+    arena_bout_pose_ring_index++;
     second->move = (Move *)second->pose;
-    first->flags = (first->flags & ~0x40) | ((D_80099D98.com1 & 1) << 6);
-    second->flags = (second->flags & ~0x40) | ((D_80099D98.driven & 1) << 6);
-    func_80073644(first);
-    func_80073644(second);
-    func_800764CC(first);
-    func_800764CC(second);
-    D_80092648 = 0;
-    func_80075B50(first);
-    func_80075B50(second);
+    first->flags = (first->flags & ~0x40) | ((arena_settings.com1 & 1) << 6);
+    second->flags = (second->flags & ~0x40) | ((arena_settings.driven & 1) << 6);
+    arena_actor_update_shots(first);
+    arena_actor_update_shots(second);
+    arena_actor_start_frame(first);
+    arena_actor_start_frame(second);
+    arena_effect_hit_spark_count = 0;
+    arena_actor_test_hits(first);
+    arena_actor_test_hits(second);
     console_place_cursor_and_line_start(0xA, 0x60);
-    func_8007E528(0);
-    if (D_800928D4 != 0) {
+    arena_text_set_banner_timer(0);
+    if (arena_bout_fight_active != 0) {
         if (pad_has_queue_overflowed()) {
             pad_clear_queue();
         } else {
         poll:
             if (pad_dequeue_state()) {
-                if ((((pad_port0_pressed | pad_port1_pressed) & 0x800) && D_8009263C < 0x14) || !pad_get_controller_kind(0) ||
-                    (!pad_get_controller_kind(1) && D_800928C8 == 2)) {
+                if ((((pad_port0_pressed | pad_port1_pressed) & 0x800) && arena_bout_countdown_timer < 0x14) || !pad_get_controller_kind(0) ||
+                    (!pad_get_controller_kind(1) && arena_play_mode == 2)) {
                     if ((pad_port0_pressed & 0x800) || !pad_get_controller_kind(0)) {
-                        D_800928FC = 0;
+                        arena_menu_driving_pad_port = 0;
                     } else {
                         if (second->flags & 0x40) {
                             goto next;
                         }
-                        D_800928FC = 1;
+                        arena_menu_driving_pad_port = 1;
                     }
-                    if (D_800928C4 == 0) {
-                        func_80080C48(D_800928C8 == 4 ? 2 : 1);
+                    if (arena_retreat_rule_enabled == 0) {
+                        arena_menu_open_pause(arena_play_mode == 4 ? 2 : 1);
                     }
                 }
             next:
-                func_80076884(first);
-                func_80076884(second);
+                arena_actor_read_pad(first);
+                arena_actor_read_pad(second);
                 goto poll;
             }
         }
     } else {
         pad_merge_queued_states();
     }
-    if (D_800928D4 != 0) {
-        if (D_80092944 != 0x2BF1F) {
-            D_80092944++;
+    if (arena_bout_fight_active != 0) {
+        if (arena_bout_fight_frame_count != 0x2BF1F) {
+            arena_bout_fight_frame_count++;
         }
-        if (D_800928C8 == 4) {
-            func_8008F280(second);
+        if (arena_play_mode == 4) {
+            arena_brain_run_practice_command(second);
         } else {
-            func_80090E10(first);
-            func_80090E10(second);
+            arena_brain_update(first);
+            arena_brain_update(second);
         }
     }
-    if (D_80092638 != 0) {
+    if (arena_bout_round_over != 0) {
         first->state = 0;
         second->state = 0;
-        func_80076424(first);
-        func_80076424(second);
+        arena_actor_clear_inputs(first);
+        arena_actor_clear_inputs(second);
     }
-    func_800751C8(first, second);
-    func_80077038(first);
-    func_80077038(second);
+    arena_bout_update_referee(first, second);
+    arena_actor_update_status(first);
+    arena_actor_update_status(second);
     console_place_cursor_and_line_start(0x4A, 0);
-    func_80077A9C(first);
+    arena_actor_update_action(first);
     console_place_cursor_and_line_start(0x6A, 0);
-    func_80077A9C(second);
+    arena_actor_update_action(second);
     console_place_cursor_and_line_start(0xA, 0x80);
-    func_80078194(first);
-    func_80078194(second);
-    func_80078D20(second);
-    func_80078D20(first);
-    func_80078920(first, second);
-    func_80078E94(second);
-    func_80078E94(first);
-    func_80072170();
-    func_80074BA4(first);
-    func_80074BA4(second);
-    func_80079D08(first);
-    func_80079D08(second);
-    func_8007920C(first);
-    func_8007920C(second);
-    func_80074678(first, first->unk998, first->unk99A);
-    func_80074678(second, second->unk998, second->unk99A);
-    func_8007BACC();
-    if (D_80092884 != 0) {
-        func_8007D65C(&first->core, &second->core, 0x13);
+    arena_actor_update_motion(first);
+    arena_actor_update_motion(second);
+    arena_actor_apply_velocity(second);
+    arena_actor_apply_velocity(first);
+    arena_actors_push_apart(first, second);
+    arena_actor_place_model(second);
+    arena_actor_place_model(first);
+    arena_scene_update_bout_end();
+    arena_actor_record_pose_and_animate(first);
+    arena_actor_record_pose_and_animate(second);
+    arena_actor_store_pose_flags(first);
+    arena_actor_store_pose_flags(second);
+    arena_actor_update_anchors(first);
+    arena_actor_update_anchors(second);
+    arena_frame_event_run(first, first->unk998, first->unk99A);
+    arena_frame_event_run(second, second->unk998, second->unk99A);
+    arena_effect_advance_frame();
+    if (arena_rubber_band_enabled != 0) {
+        arena_effect_queue_bolt_by_type(&first->core, &second->core, 0x13);
     }
 }
 
-/* Save both actors' positions and homes (at height 0x100) and set the
+/* 8007A21C: Save both actors' positions and homes (at height 0x100) and set the
  * countdown from the given frame count. */
-void func_8007A21C(s32 frames) {
+void arena_bout_start_replay(s32 frames) {
     if (frames < 0xFF) {
-        D_800928AC = frames - 2;
-        D_800928C0 -= frames;
+        arena_bout_replay_timer = frames - 2;
+        arena_bout_pose_ring_index -= frames;
     } else {
-        D_800928AC = 0xFF;
+        arena_bout_replay_timer = 0xFF;
     }
-    D_80092A34[0] = D_8009872C.pos;
-    D_80092A34[1] = D_80097010.pos;
-    D_80092A34[2] = D_8009872C.home;
-    D_80092A34[3] = D_80097010.home;
-    D_80092A34[0].vy = D_80092A34[1].vy = D_80092A34[2].vy = D_80092A34[3].vy = 0x100;
+    arena_bout_saved_positions[0] = arena_first_actor.pos;
+    arena_bout_saved_positions[1] = arena_second_actor.pos;
+    arena_bout_saved_positions[2] = arena_first_actor.home;
+    arena_bout_saved_positions[3] = arena_second_actor.home;
+    arena_bout_saved_positions[0].vy = arena_bout_saved_positions[1].vy = arena_bout_saved_positions[2].vy = arena_bout_saved_positions[3].vy = 0x100;
 }
 
-/* One frame of a replay: step both actors to the next recorded pose (the
+/* 8007A344: One frame of a replay: step both actors to the next recorded pose (the
  * first frame after a reset shows every part), show "REPLAY", then run
  * the actors' frame as in play and count down the replay. */
-void func_8007A344(Actor *first, Actor *second) {
-    u8 frame = D_800928C0++;
+void arena_bout_update_replay(Actor *first, Actor *second) {
+    u8 frame = arena_bout_pose_ring_index++;
 
     first->pose = (Pose *)first->unk9CC + frame;
     second->pose = (Pose *)second->unk9CC + frame;
-    first->move = (Move *)((Pose *)first->unk9CC + D_800928C0);
-    second->move = (Move *)((Pose *)second->unk9CC + D_800928C0);
-    if (D_800928AC == 0xFF) {
+    first->move = (Move *)((Pose *)first->unk9CC + arena_bout_pose_ring_index);
+    second->move = (Move *)((Pose *)second->unk9CC + arena_bout_pose_ring_index);
+    if (arena_bout_replay_timer == 0xFF) {
         first->move->flags |= 0x1000;
         second->move->flags |= 0x1000;
         first->move->unkA = 1;
@@ -2792,64 +2792,64 @@ void func_8007A344(Actor *first, Actor *second) {
         first->move->unk9 = 1;
         second->move->unk9 = 1;
     }
-    if (D_800928E8 & 8) {
-        func_8007E894(0x10, 0x10);
-        func_8007EBE0("REPLAY");
+    if (arena_frame_count & 8) {
+        arena_text_move_cursor(0x10, 0x10);
+        arena_text_draw_line("REPLAY");
     }
-    func_80073644(first);
-    func_80073644(second);
-    func_800764CC(first);
-    func_800764CC(second);
+    arena_actor_update_shots(first);
+    arena_actor_update_shots(second);
+    arena_actor_start_frame(first);
+    arena_actor_start_frame(second);
     first->start_home = first->home;
     second->start_home = second->home;
     first->start = first->pos;
     second->start = second->pos;
-    D_80092648 = 0;
-    if (D_8009287C >= 2) {
-        D_8009287C = 1;
+    arena_effect_hit_spark_count = 0;
+    if (arena_camera_ease_step_count >= 2) {
+        arena_camera_ease_step_count = 1;
     }
     pad_merge_queued_states();
-    if (D_800928FC == 1) {
+    if (arena_menu_driving_pad_port == 1) {
         if (pad_port1_pressed & 0x20) {
-            func_80083C0C(8);
+            arena_mode_set_state(8);
         }
-        func_800832C0(pad_port1_held);
+        arena_camera_turn_orbit(pad_port1_held);
     } else {
         if (pad_port0_pressed & 0x20) {
-            func_80083C0C(8);
+            arena_mode_set_state(8);
         }
-        func_800832C0(pad_port0_held);
+        arena_camera_turn_orbit(pad_port0_held);
     }
-    func_80074AB4(first);
-    func_80074AB4(second);
-    func_80078E94(first);
-    func_80078E94(second);
-    first->flags = (first->flags & ~0x60000000) | ((func_800828C4(&first->pos) & 0x3000000) << 5);
-    second->flags = (second->flags & ~0x60000000) | ((func_800828C4(&second->pos) & 0x3000000) << 5);
-    func_80079D6C(first);
-    func_80079D6C(second);
-    func_8007920C(first);
-    func_8007920C(second);
-    func_80075B50(first);
-    func_80075B50(second);
-    func_8007BACC();
-    if (D_80092884 != 0) {
-        func_8007D65C(&first->core, &second->core, 0x13);
+    arena_actor_apply_recorded_pose(first);
+    arena_actor_apply_recorded_pose(second);
+    arena_actor_place_model(first);
+    arena_actor_place_model(second);
+    first->flags = (first->flags & ~0x60000000) | ((arena_stage_get_ground_square(&first->pos) & 0x3000000) << 5);
+    second->flags = (second->flags & ~0x60000000) | ((arena_stage_get_ground_square(&second->pos) & 0x3000000) << 5);
+    arena_actor_load_pose_flags(first);
+    arena_actor_load_pose_flags(second);
+    arena_actor_update_anchors(first);
+    arena_actor_update_anchors(second);
+    arena_actor_test_hits(first);
+    arena_actor_test_hits(second);
+    arena_effect_advance_frame();
+    if (arena_rubber_band_enabled != 0) {
+        arena_effect_queue_bolt_by_type(&first->core, &second->core, 0x13);
     }
-    if (D_800928AC == 0xFF) {
-        func_8008369C();
+    if (arena_bout_replay_timer == 0xFF) {
+        arena_camera_start_orbit();
     }
-    if (D_800928AC == 0) {
-        func_80083C0C(8);
+    if (arena_bout_replay_timer == 0) {
+        arena_mode_set_state(8);
     }
-    D_800928AC--;
+    arena_bout_replay_timer--;
 }
 
-/* Put an actor into its round-end pose: a win pose when the round took
+/* 8007A6D0: Put an actor into its round-end pose: a win pose when the round took
  * under two seconds. */
-void func_8007A6D0(Actor *actor) {
-    D_8009292C = 0x100;
-    if (D_800928AC < 0x78) {
+void arena_bout_pose_winner(Actor *actor) {
+    arena_bout_motion_speed = 0x100;
+    if (arena_bout_replay_timer < 0x78) {
         actor->unk4F = 0x10;
         actor->unk52 = 0;
         actor->anim = 0x10;
@@ -2862,264 +2862,264 @@ void func_8007A6D0(Actor *actor) {
     }
 }
 
-/* Put an actor into its knocked-down pose. */
-void func_8007A730(Actor *actor) {
-    D_8009292C = 0x100;
+/* 8007A730: Put an actor into its knocked-down pose. */
+void arena_bout_pose_loser(Actor *actor) {
+    arena_bout_motion_speed = 0x100;
     actor->unk4F = 0x10;
     actor->unk52 = 0;
     actor->anim = 9;
     actor->flags |= 0x2000400;
 }
 
-/* Point the camera at an actor for its victory view: height and distance
+/* 8007A768: Point the camera at an actor for its victory view: height and distance
  * from its move header, a random direction around it. */
-void func_8007A768(Actor *actor) {
+void arena_camera_start_victory_view(Actor *actor) {
     SceneHeader *header = actor->header;
     s32 angle;
     s32 y;
 
-    D_80092668 = header->unk24;
-    D_8009266C = header->unk28;
-    D_80092670 = header->unk26;
-    D_80092674 = header->unk2A;
+    arena_camera_victory_angle = header->unk24;
+    arena_camera_victory_focus_height = header->unk28;
+    arena_camera_victory_height = header->unk26;
+    arena_camera_victory_distance = header->unk2A;
     SetGeomScreen(0x200);
     angle = rand();
-    D_8009867C.vy = actor->pos.vy;
-    D_8009867C.vx = actor->pos.vx;
-    D_8009867C.vz = actor->pos.vz;
-    y = D_8009867C.vy - 0x400;
-    D_8009871C.vy = y - D_80092670;
-    D_8009871C.vx = D_8009867C.vx + (((gpu_get_sin(angle) << 2) * D_80092674) >> 12);
-    D_8009871C.vz = D_8009867C.vz + (((gpu_get_cos(angle) << 2) * D_80092674) >> 12);
+    arena_camera_focus.vy = actor->pos.vy;
+    arena_camera_focus.vx = actor->pos.vx;
+    arena_camera_focus.vz = actor->pos.vz;
+    y = arena_camera_focus.vy - 0x400;
+    arena_camera_position.vy = y - arena_camera_victory_height;
+    arena_camera_position.vx = arena_camera_focus.vx + (((gpu_get_sin(angle) << 2) * arena_camera_victory_distance) >> 12);
+    arena_camera_position.vz = arena_camera_focus.vz + (((gpu_get_cos(angle) << 2) * arena_camera_victory_distance) >> 12);
 }
 
-/* End the bout's effects and pick the next stage from the winner's move
+/* 8007A884: End the bout's effects and pick the next stage from the winner's move
  * header; both actors are lifted to the start height. */
-void func_8007A884(void) {
+void arena_bout_end_round_effects(void) {
     SceneHeader *header;
 
-    func_8007E24C();
-    func_8008D580(D_80092644);
-    func_8007BB7C();
-    func_8007F834();
-    func_8008E620();
-    if (D_80092890 != 0) {
-        header = D_80097010.header;
+    arena_effect_clear_ground_effects();
+    arena_spark_stop_all(arena_effect_hit_spark_emitter);
+    arena_effect_clear_sparkles();
+    arena_menu_hide_captions();
+    arena_sound_reset();
+    if (arena_bout_round_winner != 0) {
+        header = arena_second_actor.header;
     } else {
-        header = D_8009872C.header;
+        header = arena_first_actor.header;
     }
     if (header->unk2C != 0) {
-        D_80091130[16].kind = 1;
-        D_80091130[16].next = 0x10;
+        arena_actor_anim_rules[16].kind = 1;
+        arena_actor_anim_rules[16].next = 0x10;
     } else {
-        D_80091130[16].kind = 2;
-        D_80091130[16].next = -1;
+        arena_actor_anim_rules[16].kind = 2;
+        arena_actor_anim_rules[16].next = -1;
     }
-    D_8009872C.pos.vy = 0x100;
-    D_80097010.pos.vy = 0x100;
-    D_8009872C.start.vy = 0x100;
-    D_80097010.start.vy = 0x100;
+    arena_first_actor.pos.vy = 0x100;
+    arena_second_actor.pos.vy = 0x100;
+    arena_first_actor.start.vy = 0x100;
+    arena_second_actor.start.vy = 0x100;
 }
 
-/* Follow an actor with the camera: look at its core at the reference
+/* 8007A958: Follow an actor with the camera: look at its core at the reference
  * height, place the eye behind it by the camera angle, height and length
  * (tunable with the pad in debug), and back the look-at point off until it
  * is at least 0x200 away. */
-void func_8007A958(Actor *actor) {
+void arena_camera_update_victory_view(Actor *actor) {
     VECTOR target;
     u16 held;
 
-    if (D_800911D4 != 0) {
+    if (arena_debug_enabled != 0) {
         held = pad_port0_held;
         if (held & 0x1000) {
-            D_8009266C += 4;
+            arena_camera_victory_focus_height += 4;
         }
         if (held & 0x4000) {
-            D_8009266C -= 4;
+            arena_camera_victory_focus_height -= 4;
         }
         if (held & 0x10) {
-            D_80092670 += 4;
+            arena_camera_victory_height += 4;
         }
         if (held & 0x40) {
-            D_80092670 -= 4;
+            arena_camera_victory_height -= 4;
         }
         if (held & 0x2000) {
-            D_80092668 -= 0x20;
+            arena_camera_victory_angle -= 0x20;
         }
         if (held & 0x8000) {
-            D_80092668 += 0x20;
+            arena_camera_victory_angle += 0x20;
         }
         if (held & 8) {
-            D_80092674 -= 0x10;
+            arena_camera_victory_distance -= 0x10;
         }
         if (held & 2) {
-            D_80092674 += 0x10;
+            arena_camera_victory_distance += 0x10;
         }
-        console_report_printf("ANG %x\n", D_80092668 & 0xFFF);
-        console_report_printf("REF %x\n", D_8009266C);
-        console_report_printf("CAM %x\n", D_80092670);
-        console_report_printf("LEN %x\n", D_80092674);
+        console_report_printf("ANG %x\n", arena_camera_victory_angle & 0xFFF);
+        console_report_printf("REF %x\n", arena_camera_victory_focus_height);
+        console_report_printf("CAM %x\n", arena_camera_victory_height);
+        console_report_printf("LEN %x\n", arena_camera_victory_distance);
     }
     target = actor->core;
-    target.vy = actor->pos.vy - D_8009266C;
-    func_80070808(&target, 8);
-    target.vy = actor->pos.vy - D_80092670;
-    target.vx = actor->pos.vx + ((gpu_get_sin(actor->angle + D_80092668) * D_80092674) >> 12);
-    target.vz = actor->pos.vz + ((gpu_get_cos(actor->angle + D_80092668) * D_80092674) >> 12);
-    func_800708C4(&target, 0x10);
-    while (func_800887A4(&D_8009871C, &actor->pos) < 0x200) {
-        D_8009871C.vy -= 2;
-        D_8009871C.vx -= 2;
+    target.vy = actor->pos.vy - arena_camera_victory_focus_height;
+    arena_camera_ease_focus(&target, 8);
+    target.vy = actor->pos.vy - arena_camera_victory_height;
+    target.vx = actor->pos.vx + ((gpu_get_sin(actor->angle + arena_camera_victory_angle) * arena_camera_victory_distance) >> 12);
+    target.vz = actor->pos.vz + ((gpu_get_cos(actor->angle + arena_camera_victory_angle) * arena_camera_victory_distance) >> 12);
+    arena_camera_ease_position(&target, 0x10);
+    while (arena_vector_get_distance(&arena_camera_position, &actor->pos) < 0x200) {
+        arena_camera_position.vy -= 2;
+        arena_camera_position.vx -= 2;
     }
 }
 
-/* Restore the saved positions and homes, make them the round start and
+/* 8007AC3C: Restore the saved positions and homes, make them the round start and
  * set up the camera on the leading actor. */
-void func_8007AC3C(void) {
-    D_800928AC = 0x96;
-    D_8009292C = 0x100;
+void arena_bout_start_result_view(void) {
+    arena_bout_replay_timer = 0x96;
+    arena_bout_motion_speed = 0x100;
     SetGeomScreen(0x200);
-    D_8009872C.pos = D_80092A34[0];
-    D_80097010.pos = D_80092A34[1];
-    D_8009872C.home = D_80092A34[2];
-    D_80097010.home = D_80092A34[3];
-    D_8009872C.start_home = D_8009872C.home;
-    D_80097010.start_home = D_80097010.home;
-    D_8009872C.start = D_8009872C.pos;
-    D_80097010.start = D_80097010.pos;
-    if (D_80092890 != 0) {
-        func_8007A768(&D_80097010);
+    arena_first_actor.pos = arena_bout_saved_positions[0];
+    arena_second_actor.pos = arena_bout_saved_positions[1];
+    arena_first_actor.home = arena_bout_saved_positions[2];
+    arena_second_actor.home = arena_bout_saved_positions[3];
+    arena_first_actor.start_home = arena_first_actor.home;
+    arena_second_actor.start_home = arena_second_actor.home;
+    arena_first_actor.start = arena_first_actor.pos;
+    arena_second_actor.start = arena_second_actor.pos;
+    if (arena_bout_round_winner != 0) {
+        arena_camera_start_victory_view(&arena_second_actor);
     } else {
-        func_8007A768(&D_8009872C);
+        arena_camera_start_victory_view(&arena_first_actor);
     }
 }
 
-/* func_8007AE10's caption, an original string linked after it (below). */
-extern char D_8006FDD8[];
+/* arena_bout_update_result_view's caption, an original string linked after it (below). */
+extern char arena_bout_com2_victory_text[];
 
-/* Update the bout-result view: finish its effects once, allow the selected
+/* 8007AE10: Update the bout-result view: finish its effects once, allow the selected
  * controller to leave, show the winner's caption for the current bout mode,
  * keep the camera above the ground, and pose both actors for victory/defeat.
  * Debug bouts repeat the result timer unless both actors are computer driven. */
-void func_8007AE10(Actor *first, Actor *second) {
+void arena_bout_update_result_view(Actor *first, Actor *second) {
     char text[64];
     s32 held;
     s32 ground;
 
-    if (D_800928AC == 0x95) {
-        func_8007A884();
+    if (arena_bout_replay_timer == 0x95) {
+        arena_bout_end_round_effects();
     }
     first->flags &= ~0x40;
     second->flags &= ~0x40;
-    func_800764CC(first);
-    func_800764CC(second);
-    D_80092648 = 0;
+    arena_actor_start_frame(first);
+    arena_actor_start_frame(second);
+    arena_effect_hit_spark_count = 0;
     pad_merge_queued_states();
-    if (D_800928FC == 1) {
+    if (arena_menu_driving_pad_port == 1) {
         held = pad_port1_pressed & 0x20;
     } else {
         held = pad_port0_pressed & 0x20;
     }
     if (held != 0) {
-        func_80083C0C(2);
+        arena_mode_set_state(2);
     }
-    D_800928AC--;
-    if (D_800928AC == -1) {
-        if (D_800911D4 == 0 || D_800928C8 == 3) {
-            func_80083C0C(2);
+    arena_bout_replay_timer--;
+    if (arena_bout_replay_timer == -1) {
+        if (arena_debug_enabled == 0 || arena_play_mode == 3) {
+            arena_mode_set_state(2);
         } else {
             first->flags |= 0x2000000;
             second->flags |= 0x2000000;
-            D_800928AC = 0x95;
+            arena_bout_replay_timer = 0x95;
         }
     }
-    func_8007E894(0xA0, 0xA0);
-    switch (D_80092890) {
+    arena_text_move_cursor(0xA0, 0xA0);
+    switch (arena_bout_round_winner) {
     case 0:
-        func_8007A958(first);
-        switch (D_800928C8) {
+        arena_camera_update_victory_view(first);
+        switch (arena_play_mode) {
         case 1:
-            func_8007EC54("YOU WERE VICTORIOUS");
+            arena_text_draw_line_centered("YOU WERE VICTORIOUS");
             break;
         case 2:
-            func_8007EC54("1PLAYER VICTORY");
+            arena_text_draw_line_centered("1PLAYER VICTORY");
             break;
         case 3:
-            func_8007EC54("COM1 VICTORY");
+            arena_text_draw_line_centered("COM1 VICTORY");
             break;
         }
         break;
     case 1:
-        func_8007A958(second);
-        switch (D_800928C8) {
+        arena_camera_update_victory_view(second);
+        switch (arena_play_mode) {
         case 1:
-            func_8007EC54("YOU WERE DEFEATED");
-            sprintf(text, "     BY %s", D_80091964[second->model_id].name);
-            func_8007EC54(text);
+            arena_text_draw_line_centered("YOU WERE DEFEATED");
+            sprintf(text, "     BY %s", arena_select_gears[second->model_id].name);
+            arena_text_draw_line_centered(text);
             break;
         case 2:
-            func_8007EC54("2PLAYER VICTORY");
+            arena_text_draw_line_centered("2PLAYER VICTORY");
             break;
         case 3:
-            func_8007EC54(D_8006FDD8);
+            arena_text_draw_line_centered(arena_bout_com2_victory_text);
             break;
         }
         break;
     case 2:
-        func_8007EC54("DRAW GAME");
+        arena_text_draw_line_centered("DRAW GAME");
         break;
     }
-    ground = func_80082488(&D_8009871C, 0) - D_80092670;
-    if (ground < D_8009871C.vy) {
-        D_8009871C.vy = ground;
+    ground = arena_stage_get_ground_height(&arena_camera_position, 0) - arena_camera_victory_height;
+    if (ground < arena_camera_position.vy) {
+        arena_camera_position.vy = ground;
     }
     first->state = 0;
     second->state = 0;
-    func_80076424(first);
-    func_80076424(second);
-    func_800764CC(first);
-    func_800764CC(second);
-    D_80092648 = 0;
-    func_80078194(first);
-    func_80078194(second);
-    func_80078D20(second);
-    func_80078D20(first);
-    func_80078920(first, second);
-    func_80078E94(second);
-    func_80078E94(first);
+    arena_actor_clear_inputs(first);
+    arena_actor_clear_inputs(second);
+    arena_actor_start_frame(first);
+    arena_actor_start_frame(second);
+    arena_effect_hit_spark_count = 0;
+    arena_actor_update_motion(first);
+    arena_actor_update_motion(second);
+    arena_actor_apply_velocity(second);
+    arena_actor_apply_velocity(first);
+    arena_actors_push_apart(first, second);
+    arena_actor_place_model(second);
+    arena_actor_place_model(first);
     if (first->flags & 0x800000) {
-        func_8007A6D0(second);
-        func_8007A730(first);
+        arena_bout_pose_winner(second);
+        arena_bout_pose_loser(first);
     } else {
-        func_8007A6D0(first);
-        func_8007A730(second);
+        arena_bout_pose_winner(first);
+        arena_bout_pose_loser(second);
     }
-    func_80074BA4(first);
-    func_80074BA4(second);
-    func_8007920C(first);
-    func_8007920C(second);
-    func_80074678(first, first->unk998, first->unk99A);
-    func_80074678(second, second->unk998, second->unk99A);
-    func_8007BACC();
+    arena_actor_record_pose_and_animate(first);
+    arena_actor_record_pose_and_animate(second);
+    arena_actor_update_anchors(first);
+    arena_actor_update_anchors(second);
+    arena_frame_event_run(first, first->unk998, first->unk99A);
+    arena_frame_event_run(second, second->unk998, second->unk99A);
+    arena_effect_advance_frame();
 }
 
 /* This original string also contains nonzero bytes after its terminator. */
-INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FDD8);
+INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", arena_bout_com2_victory_text); /* 8006FDD8 */
 
-/* Set up a scene model with the given mode and place it. */
-void func_8007B210(Actor *model, s32 mode) {
+/* 8007B210: Set up a scene model with the given mode and place it. */
+void arena_actor_play_animation(Actor *model, s32 mode) {
     model->pose = (Pose *)model->unk9CC;
     model->unk4F = 0x10;
     model->anim = mode;
     model->unk52 = 0;
-    D_8009292C = 0x100;
-    func_80074BA4(model);
-    func_80074678(model, model->unk998, model->unk99A);
+    arena_bout_motion_speed = 0x100;
+    arena_actor_record_pose_and_animate(model);
+    arena_frame_event_run(model, model->unk998, model->unk99A);
 }
 
-/* Build a four-entry palette from two colours (components biased by 0x80,
+/* 8007B270: Build a four-entry palette from two colours (components biased by 0x80,
  * clamped at zero) and load it, keeping the returned CLUT id. */
-void func_8007B270(CVECTOR *first, CVECTOR *second) {
+void arena_effect_load_side_palette(CVECTOR *first, CVECTOR *second) {
     s32 r, g, b;
 
     r = first->r - 0x80;
@@ -3134,7 +3134,7 @@ void func_8007B270(CVECTOR *first, CVECTOR *second) {
     if (b < 0) {
         b = 0;
     }
-    D_800926A8[0] = (((r >> 2) & 0x1F) + ((g << 3) & 0x3E0) + ((b << 8) & 0x7C00)) | -0x8000;
+    arena_effect_side_palette[0] = (((r >> 2) & 0x1F) + ((g << 3) & 0x3E0) + ((b << 8) & 0x7C00)) | -0x8000;
     r = second->r - 0x80;
     g = second->g - 0x80;
     b = second->b - 0x80;
@@ -3147,41 +3147,41 @@ void func_8007B270(CVECTOR *first, CVECTOR *second) {
     if (b < 0) {
         b = 0;
     }
-    D_800926A8[1] = (((r >> 2) & 0x1F) + ((g << 3) & 0x3E0) + ((b << 8) & 0x7C00)) | -0x8000;
-    D_800926A8[2] = 0;
-    D_800926A8[3] = 0x1111;
-    D_800926A0 = LoadClut2((u_long *)D_800926A8, D_80092698, D_8009269C);
+    arena_effect_side_palette[1] = (((r >> 2) & 0x1F) + ((g << 3) & 0x3E0) + ((b << 8) & 0x7C00)) | -0x8000;
+    arena_effect_side_palette[2] = 0;
+    arena_effect_side_palette[3] = 0x1111;
+    arena_effect_side_palette_clut = LoadClut2((u_long *)arena_effect_side_palette, arena_effect_side_palette_x, arena_effect_side_palette_y);
 }
 
-/* Load the effect textures from the scene file table: the twelve frames
+/* 8007B388: Load the effect textures from the scene file table: the twelve frames
  * of sparkle kind 0, the textures of kinds 1-4 (kind 3 is kind 1 drawn
  * additively), the sparkle packets, and the two other effect textures. */
-void func_8007B388(MenuImageFile *files) {
+void arena_effect_load_textures(MenuImageFile *files) {
     TIM_IMAGE tim;
     RECT unused; /* the original frame has 8 unused bytes */
     s16 *clut;
     Sparkle *sparkle;
-    u8 first = D_800911E8[0] == 0;
+    u8 first = arena_effect_sparkle1_frame_v[0] == 0;
     s32 i;
 
     for (i = 0; i < 12; i++) {
         OpenTIM(files->sparkle0[i]);
         ReadTIM(&tim);
-        D_800947E8[i] = (u8)tim.prect->x * 4;
-        D_800947F4[i] = tim.prect->y;
-        D_80094800[i] = GetClut(tim.crect->x, tim.crect->y);
+        arena_effect_sparkle0_frame_u[i] = (u8)tim.prect->x * 4;
+        arena_effect_sparkle0_frame_v[i] = tim.prect->y;
+        arena_effect_sparkle0_frame_cluts[i] = GetClut(tim.crect->x, tim.crect->y);
         LoadImage(tim.crect, tim.caddr);
         LoadImage(tim.prect, tim.paddr);
     }
-    D_80092A74[0].u = D_800947E8;
-    D_80092A74[0].v = D_800947F4;
-    D_80092A74[0].w = 0x26;
-    D_80092A74[0].h = 0x26;
-    D_80092A74[0].clut = 0;
-    D_80092A74[0].tpage = GetTPage(0, 1, 0x3C0, 0x100);
-    D_80092A74[0].frame_count = 0xC;
-    D_80092A74[0].gravity = 0;
-    D_80092A74[0].unkB = 0;
+    arena_effect_sparkle_kinds[0].u = arena_effect_sparkle0_frame_u;
+    arena_effect_sparkle_kinds[0].v = arena_effect_sparkle0_frame_v;
+    arena_effect_sparkle_kinds[0].w = 0x26;
+    arena_effect_sparkle_kinds[0].h = 0x26;
+    arena_effect_sparkle_kinds[0].clut = 0;
+    arena_effect_sparkle_kinds[0].tpage = GetTPage(0, 1, 0x3C0, 0x100);
+    arena_effect_sparkle_kinds[0].frame_count = 0xC;
+    arena_effect_sparkle_kinds[0].gravity = 0;
+    arena_effect_sparkle_kinds[0].unkB = 0;
 
     OpenTIM(files->sparkle1);
     ReadTIM(&tim);
@@ -3192,20 +3192,20 @@ void func_8007B388(MenuImageFile *files) {
     }
     if (first) {
         for (i = 0; i < 16; i++) {
-            D_800911E8[i] += tim.prect->y;
+            arena_effect_sparkle1_frame_v[i] += tim.prect->y;
         }
     }
     LoadImage(tim.crect, tim.caddr);
     LoadImage(tim.prect, tim.paddr);
-    D_80092A74[1].u = D_800911D8;
-    D_80092A74[1].v = D_800911E8;
-    D_80092A74[1].w = 0x1F;
-    D_80092A74[1].h = 0x1F;
-    D_80092A74[1].clut = GetClut(tim.crect->x, tim.crect->y);
-    D_80092A74[1].tpage = GetTPage(0, 1, tim.prect->x, tim.prect->y);
-    D_80092A74[1].frame_count = 0x10;
-    D_80092A74[1].gravity = -2;
-    D_80092A74[1].unkB = 0;
+    arena_effect_sparkle_kinds[1].u = arena_effect_sparkle1_frame_u;
+    arena_effect_sparkle_kinds[1].v = arena_effect_sparkle1_frame_v;
+    arena_effect_sparkle_kinds[1].w = 0x1F;
+    arena_effect_sparkle_kinds[1].h = 0x1F;
+    arena_effect_sparkle_kinds[1].clut = GetClut(tim.crect->x, tim.crect->y);
+    arena_effect_sparkle_kinds[1].tpage = GetTPage(0, 1, tim.prect->x, tim.prect->y);
+    arena_effect_sparkle_kinds[1].frame_count = 0x10;
+    arena_effect_sparkle_kinds[1].gravity = -2;
+    arena_effect_sparkle_kinds[1].unkB = 0;
 
     OpenTIM(files->sparkle2);
     ReadTIM(&tim);
@@ -3216,44 +3216,44 @@ void func_8007B388(MenuImageFile *files) {
     }
     if (first) {
         for (i = 0; i < 12; i++) {
-            D_80091208[i] += tim.prect->y;
+            arena_effect_sparkle2_frame_v[i] += tim.prect->y;
         }
     }
     LoadImage(tim.crect, tim.caddr);
     LoadImage(tim.prect, tim.paddr);
-    D_80092A74[2].u = D_800911F8;
-    D_80092A74[2].v = D_80091208;
-    D_80092A74[2].w = 0xF;
-    D_80092A74[2].h = 0xF;
-    D_80092A74[2].clut = GetClut(tim.crect->x, tim.crect->y);
-    D_80092A74[2].tpage = GetTPage(0, 1, tim.prect->x, tim.prect->y);
-    D_80092A74[2].frame_count = 0xC;
-    D_80092A74[2].gravity = 0;
-    D_80092A74[2].unkB = 1;
+    arena_effect_sparkle_kinds[2].u = arena_effect_sparkle2_frame_u;
+    arena_effect_sparkle_kinds[2].v = arena_effect_sparkle2_frame_v;
+    arena_effect_sparkle_kinds[2].w = 0xF;
+    arena_effect_sparkle_kinds[2].h = 0xF;
+    arena_effect_sparkle_kinds[2].clut = GetClut(tim.crect->x, tim.crect->y);
+    arena_effect_sparkle_kinds[2].tpage = GetTPage(0, 1, tim.prect->x, tim.prect->y);
+    arena_effect_sparkle_kinds[2].frame_count = 0xC;
+    arena_effect_sparkle_kinds[2].gravity = 0;
+    arena_effect_sparkle_kinds[2].unkB = 1;
 
-    D_80092A74[3] = D_80092A74[1];
-    D_80092A74[3].tpage = (D_80092A74[3].tpage & ~0x60) | 0x40;
+    arena_effect_sparkle_kinds[3] = arena_effect_sparkle_kinds[1];
+    arena_effect_sparkle_kinds[3].tpage = (arena_effect_sparkle_kinds[3].tpage & ~0x60) | 0x40;
 
     OpenTIM(files->sparkle4);
     ReadTIM(&tim);
     if (first) {
         for (i = 0; i < 16; i++) {
-            D_80091218[i] += tim.prect->y;
+            arena_effect_sparkle4_frame_v[i] += tim.prect->y;
         }
     }
     LoadImage(tim.crect, tim.caddr);
     LoadImage(tim.prect, tim.paddr);
-    D_80092A74[4].u = D_800911F8;
-    D_80092A74[4].v = D_80091218;
-    D_80092A74[4].w = 0xF;
-    D_80092A74[4].h = 0xF;
-    D_80092A74[4].clut = GetClut(tim.crect->x, tim.crect->y);
-    D_80092A74[4].tpage = GetTPage(0, 1, tim.prect->x, tim.prect->y);
-    D_80092A74[4].frame_count = 0x10;
-    D_80092A74[4].gravity = 0;
-    D_80092A74[4].unkB = 2;
+    arena_effect_sparkle_kinds[4].u = arena_effect_sparkle2_frame_u;
+    arena_effect_sparkle_kinds[4].v = arena_effect_sparkle4_frame_v;
+    arena_effect_sparkle_kinds[4].w = 0xF;
+    arena_effect_sparkle_kinds[4].h = 0xF;
+    arena_effect_sparkle_kinds[4].clut = GetClut(tim.crect->x, tim.crect->y);
+    arena_effect_sparkle_kinds[4].tpage = GetTPage(0, 1, tim.prect->x, tim.prect->y);
+    arena_effect_sparkle_kinds[4].frame_count = 0x10;
+    arena_effect_sparkle_kinds[4].gravity = 0;
+    arena_effect_sparkle_kinds[4].unkB = 2;
 
-    sparkle = D_80092AD8;
+    sparkle = arena_effect_sparkles;
     for (i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
         setlen(&sparkle->prim[0], 9);
         *(u32 *)&sparkle->prim[0].r0 = 0x2C808080;
@@ -3267,10 +3267,10 @@ void func_8007B388(MenuImageFile *files) {
     ReadTIM(&tim);
     LoadImage(tim.crect, tim.caddr);
     LoadImage(tim.prect, tim.paddr);
-    D_80092678 = tim.prect->x;
-    D_8009267C = tim.prect->y;
-    D_80092680 = GetClut(tim.crect->x, tim.crect->y);
-    D_80092684 = GetTPage(0, 2, tim.prect->x, tim.prect->y);
+    arena_effect_unread_shadow_tim_x = tim.prect->x;
+    arena_effect_unread_shadow_tim_y = tim.prect->y;
+    arena_effect_unread_shadow_tim_clut = GetClut(tim.crect->x, tim.crect->y);
+    arena_effect_unread_shadow_tim_tpage = GetTPage(0, 2, tim.prect->x, tim.prect->y);
 
     OpenTIM(files->effect);
     ReadTIM(&tim);
@@ -3281,26 +3281,26 @@ void func_8007B388(MenuImageFile *files) {
     }
     LoadImage(tim.crect, tim.caddr);
     LoadImage(tim.prect, tim.paddr);
-    D_80092688 = (u8)((u16)tim.prect->x * 4);
-    D_8009268C = (u8)tim.prect->y;
-    D_80092690 = GetClut(tim.crect->x, tim.crect->y);
-    D_80092694 = GetTPage(0, 1, tim.prect->x, tim.prect->y);
-    D_800926A4 = 0x8000;
-    D_80092698 = tim.crect->x;
-    D_8009269C = tim.crect->y + 1;
-    func_8007D6B8();
-    func_8007DB28();
-    func_8007E2D8();
+    arena_effect_unread_trail_texture_u = (u8)((u16)tim.prect->x * 4);
+    arena_effect_unread_trail_texture_v = (u8)tim.prect->y;
+    arena_effect_unread_trail_texture_clut = GetClut(tim.crect->x, tim.crect->y);
+    arena_effect_trail_texture_tpage = GetTPage(0, 1, tim.prect->x, tim.prect->y);
+    arena_effect_frame_count = 0x8000;
+    arena_effect_side_palette_x = tim.crect->x;
+    arena_effect_side_palette_y = tim.crect->y + 1;
+    arena_effect_alloc_ground_particles();
+    arena_effect_alloc_thrown_cells();
+    arena_effect_init_lines();
 }
 
-/* Advance every live sparkle one frame (expiring it after its last frame,
+/* 8007BACC: Advance every live sparkle one frame (expiring it after its last frame,
  * letting it fall otherwise) and latch the per-frame counters. */
-void func_8007BACC(void) {
+void arena_effect_advance_frame(void) {
     Sparkle *sparkle;
     s32 i;
     s32 count;
 
-    sparkle = D_80092AD8;
+    sparkle = arena_effect_sparkles;
     for (i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
         if (sparkle->active) {
             if (sparkle->frame == sparkle->frame_count) {
@@ -3314,15 +3314,15 @@ void func_8007BACC(void) {
             }
         }
     }
-    D_800926A4++;
-    count = D_800926B0;
-    D_800926B0 = 0;
-    D_800926B4 = count;
+    arena_effect_frame_count++;
+    count = arena_effect_queued_line_count;
+    arena_effect_queued_line_count = 0;
+    arena_effect_latched_line_count = count;
 }
 
-/* Free every sparkle. */
-void func_8007BB7C(void) {
-    Sparkle *sparkle = D_80092AD8;
+/* 8007BB7C: Free every sparkle. */
+void arena_effect_clear_sparkles(void) {
+    Sparkle *sparkle = arena_effect_sparkles;
     s32 i;
 
     for (i = SPARKLE_COUNT - 1; i >= 0; i--, sparkle++) {
@@ -3339,10 +3339,10 @@ void func_8007BB7C(void) {
     prev |= (len);                                                             \
     *(u32 *)addr = prev
 
-/* Draw the falling sparkles as camera-facing quads: rotate the corner
+/* 8007BBA0: Draw the falling sparkles as camera-facing quads: rotate the corner
  * offsets of the three sprite sizes by the local matrix once, then project
  * each type-0 sparkle's position plus the offsets of its size. */
-void func_8007BBA0(MATRIX *view, MATRIX *local, u32 *ot) {
+void arena_effect_draw_falling_sparkles(MATRIX *view, MATRIX *local, u32 *ot) {
     SceneScratch *scratch = SCENE_SCRATCH;
     Sparkle *sparkle;
     SparkleKind *kind;
@@ -3379,7 +3379,7 @@ void func_8007BBA0(MATRIX *view, MATRIX *local, u32 *ot) {
     gte_stlvnl(&scratch->corner[5]);
     gte_SetRotMatrix(view);
     gte_SetTransMatrix(view);
-    for (sparkle = D_80092AD8, i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
+    for (sparkle = arena_effect_sparkles, i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
         if (!sparkle->active || sparkle->type != 0) {
             continue;
         }
@@ -3388,7 +3388,7 @@ void func_8007BBA0(MATRIX *view, MATRIX *local, u32 *ot) {
         scratch->point.vy = sparkle->y - scratch->camera.vy;
         scratch->point.vz = sparkle->z - scratch->camera.vz;
         scratch->to = scratch->point;
-        prim = &sparkle->prim[D_800928A0];
+        prim = &sparkle->prim[arena_draw_buffer_index];
         switch (kind->unkB) {
         case 0:
             scratch->point.vx += scratch->corner[0].vx;
@@ -3432,7 +3432,7 @@ void func_8007BBA0(MATRIX *view, MATRIX *local, u32 *ot) {
         prim->u3 = prim->u0 + kind->w;
         prim->v3 = prim->v0 + kind->h;
         if ((s16)kind->clut == 0) {
-            prim->clut = D_80094800[sparkle->frame - 1];
+            prim->clut = arena_effect_sparkle0_frame_cluts[sparkle->frame - 1];
         }
         if (scratch->depth > 0x40) {
             scratch->depth -= 0x40;
@@ -3441,14 +3441,14 @@ void func_8007BBA0(MATRIX *view, MATRIX *local, u32 *ot) {
     }
 }
 
-/* Set the colour of kind-2 sparkles. */
-void func_8007C100(CVECTOR *color) {
-    D_800926B8 = *color;
+/* 8007C100: Set the colour of kind-2 sparkles. */
+void arena_effect_set_sparkle2_color(CVECTOR *color) {
+    arena_effect_sparkle2_color = *color;
 }
 
-/* Start a sparkle of the given kind at a position, in the first free slot. */
-void func_8007C124(SVECTOR *pos, s32 kind) {
-    Sparkle *sparkle = D_80092AD8;
+/* 8007C124: Start a sparkle of the given kind at a position, in the first free slot. */
+void arena_effect_start_falling_sparkle(SVECTOR *pos, s32 kind) {
+    Sparkle *sparkle = arena_effect_sparkles;
     SparkleKind *info;
     POLY_FT4 *prim;
     s32 i;
@@ -3462,7 +3462,7 @@ void func_8007C124(SVECTOR *pos, s32 kind) {
         return;
     }
     sparkle->active = 1;
-    info = &D_80092A74[kind];
+    info = &arena_effect_sparkle_kinds[kind];
     sparkle->type = 0;
     sparkle->frame = 0;
     sparkle->u.fall.kind = info;
@@ -3476,9 +3476,9 @@ void func_8007C124(SVECTOR *pos, s32 kind) {
     prim->tpage = info->tpage;
     if (kind == 2) {
         prim->code &= ~1;
-        prim->r0 = D_800926B8.r;
-        prim->g0 = D_800926B8.g;
-        prim->b0 = D_800926B8.b;
+        prim->r0 = arena_effect_sparkle2_color.r;
+        prim->g0 = arena_effect_sparkle2_color.g;
+        prim->b0 = arena_effect_sparkle2_color.b;
     } else {
         prim->code |= 1;
     }
@@ -3486,10 +3486,10 @@ void func_8007C124(SVECTOR *pos, s32 kind) {
     sparkle->prim[1] = *prim;
 }
 
-/* Draw the trail sparkles as quads from the previous segment's edge to an
+/* 8007C280: Draw the trail sparkles as quads from the previous segment's edge to an
  * edge across the direction of travel on screen (vertical for the first
  * segment), sized by the trail and shaded by age. */
-void func_8007C280(MATRIX *view, MATRIX *local, u32 *ot) {
+void arena_effect_draw_trail_sparkles(MATRIX *view, MATRIX *local, u32 *ot) {
     SceneScratch *scratch = SCENE_SCRATCH;
     Sparkle *sparkle;
     SparkleTrail *prev;
@@ -3507,7 +3507,7 @@ void func_8007C280(MATRIX *view, MATRIX *local, u32 *ot) {
     scratch->from.vz = 0;
     gte_SetRotMatrix(view);
     gte_SetTransMatrix(view);
-    for (sparkle = D_80092AD8, i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
+    for (sparkle = arena_effect_sparkles, i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
         if (!sparkle->active || sparkle->type != 1) {
             continue;
         }
@@ -3515,7 +3515,7 @@ void func_8007C280(MATRIX *view, MATRIX *local, u32 *ot) {
         scratch->point.vy = sparkle->y - scratch->camera.vy;
         scratch->point.vz = sparkle->z - scratch->camera.vz;
         scratch->to = scratch->point;
-        prim = &sparkle->prim[D_800928A0];
+        prim = &sparkle->prim[arena_draw_buffer_index];
         gte_ldv0(&scratch->point);
         gte_rtps();
         gte_stsxy(&prim->x0);
@@ -3604,21 +3604,21 @@ void func_8007C280(MATRIX *view, MATRIX *local, u32 *ot) {
     }
 }
 
-/* Start a trail segment of a key at a position for the current owner
+/* 8007C880: Start a trail segment of a key at a position for the current owner
  * (once per key and owner), with the given texture column and size, linked
  * to the segment started on the previous frame. */
-void func_8007C880(s32 column, VECTOR *pos, s32 key, s32 size) {
+void arena_effect_start_trail_sparkle(s32 column, VECTOR *pos, s32 key, s32 size) {
     Sparkle *sparkle;
     Sparkle *other;
     POLY_FT4 *prim;
     s32 i;
 
-    for (i = 0, sparkle = D_80092AD8; i < SPARKLE_COUNT; i++, sparkle++) {
-        if (sparkle->active && sparkle->u.trail.key == key && sparkle->u.trail.owner == D_800928E8) {
+    for (i = 0, sparkle = arena_effect_sparkles; i < SPARKLE_COUNT; i++, sparkle++) {
+        if (sparkle->active && sparkle->u.trail.key == key && sparkle->u.trail.owner == arena_frame_count) {
             return;
         }
     }
-    sparkle = D_80092AD8;
+    sparkle = arena_effect_sparkles;
     for (i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
         if (!sparkle->active) {
             break;
@@ -3628,10 +3628,10 @@ void func_8007C880(s32 column, VECTOR *pos, s32 key, s32 size) {
         return;
     }
     prim = sparkle->prim;
-    prim->u0 = prim->u1 = prim->u2 = prim->u3 = (u8)D_80092698 * 4 + 8 + column * 4;
-    prim->v0 = prim->v1 = prim->v2 = prim->v3 = D_8009269C;
-    prim->tpage = D_80092694;
-    prim->clut = D_800926A0;
+    prim->u0 = prim->u1 = prim->u2 = prim->u3 = (u8)arena_effect_side_palette_x * 4 + 8 + column * 4;
+    prim->v0 = prim->v1 = prim->v2 = prim->v3 = arena_effect_side_palette_y;
+    prim->tpage = arena_effect_trail_texture_tpage;
+    prim->clut = arena_effect_side_palette_clut;
     prim->code &= ~1;
     sparkle->prim[1] = *prim;
     sparkle->frame_count = 7;
@@ -3641,22 +3641,22 @@ void func_8007C880(s32 column, VECTOR *pos, s32 key, s32 size) {
     sparkle->x = pos->vx;
     sparkle->y = pos->vy;
     sparkle->z = pos->vz;
-    sparkle->u.trail.owner = D_800928E8;
+    sparkle->u.trail.owner = arena_frame_count;
     sparkle->u.trail.key = key;
     sparkle->u.trail.prev = NULL;
-    sparkle->u.trail.stamp = D_800926A4;
-    sparkle->u.trail.size = D_80091228[size];
-    for (other = D_80092AD8, i = 0; i < SPARKLE_COUNT; i++, other++) {
+    sparkle->u.trail.stamp = arena_effect_frame_count;
+    sparkle->u.trail.size = arena_effect_trail_sizes[size];
+    for (other = arena_effect_sparkles, i = 0; i < SPARKLE_COUNT; i++, other++) {
         if (other->active && other->u.trail.key == key && other != sparkle && other->type == 1 &&
-            other->u.trail.stamp == (u16)(D_800926A4 - 1)) {
+            other->u.trail.stamp == (u16)(arena_effect_frame_count - 1)) {
             sparkle->u.trail.prev = other;
         }
     }
 }
 
-/* Draw the line sparkles that continue last frame's segment as quads
+/* 8007CAA4: Draw the line sparkles that continue last frame's segment as quads
  * joining both segments, fading with their age. */
-void func_8007CAA4(MATRIX *view, MATRIX *unused, u32 *ot) {
+void arena_effect_draw_line_sparkles(MATRIX *view, MATRIX *unused, u32 *ot) {
     SceneScratch *scratch = SCENE_SCRATCH;
     Sparkle *sparkle;
     POLY_FT4 *prim;
@@ -3666,11 +3666,11 @@ void func_8007CAA4(MATRIX *view, MATRIX *unused, u32 *ot) {
 
     gte_SetRotMatrix(view);
     gte_SetTransMatrix(view);
-    for (sparkle = D_80092AD8, i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
+    for (sparkle = arena_effect_sparkles, i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
         if (!sparkle->active || sparkle->type != 2 || sparkle->u.line.prev == NULL) {
             continue;
         }
-        prim = &sparkle->prim[D_800928A0];
+        prim = &sparkle->prim[arena_draw_buffer_index];
         scratch->point.vx = sparkle->x - scratch->camera.vx;
         scratch->point.vy = sparkle->y - scratch->camera.vy;
         scratch->point.vz = sparkle->z - scratch->camera.vz;
@@ -3699,27 +3699,27 @@ void func_8007CAA4(MATRIX *view, MATRIX *unused, u32 *ot) {
     }
 }
 
-/* Pack four fields into one word: top byte, 16-bit middle, flag bit 7 and
+/* 8007CD14: Pack four fields into one word: top byte, 16-bit middle, flag bit 7 and
  * a 7-bit low field. */
-u32 func_8007CD14(s32 flag, s32 top, s32 middle, s32 low) {
+u32 arena_effect_pack_trail_key(s32 flag, s32 top, s32 middle, s32 low) {
     return (low & 0x7F) | ((flag << 7) & 0x80) | (top << 24) | ((middle << 8) & 0xFFFF00);
 }
 
-/* Start a line segment of a key between two positions for the current
+/* 8007CD44: Start a line segment of a key between two positions for the current
  * owner (once per key and owner), with the given texture column, linked to
  * the segment started on the previous frame. */
-void func_8007CD44(s32 column, VECTOR *from, VECTOR *to, s32 key) {
+void arena_effect_start_line_sparkle(s32 column, VECTOR *from, VECTOR *to, s32 key) {
     Sparkle *sparkle;
     Sparkle *other;
     POLY_FT4 *prim;
     s32 i;
 
-    for (i = 0, sparkle = D_80092AD8; i < SPARKLE_COUNT; i++, sparkle++) {
-        if (sparkle->active && sparkle->u.line.key == key && sparkle->u.line.owner == D_800928E8) {
+    for (i = 0, sparkle = arena_effect_sparkles; i < SPARKLE_COUNT; i++, sparkle++) {
+        if (sparkle->active && sparkle->u.line.key == key && sparkle->u.line.owner == arena_frame_count) {
             return;
         }
     }
-    sparkle = D_80092AD8;
+    sparkle = arena_effect_sparkles;
     for (i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
         if (!sparkle->active) {
             break;
@@ -3735,62 +3735,62 @@ void func_8007CD44(s32 column, VECTOR *from, VECTOR *to, s32 key) {
     sparkle->x = from->vx;
     sparkle->y = from->vy;
     sparkle->z = from->vz;
-    sparkle->u.line.owner = D_800928E8;
+    sparkle->u.line.owner = arena_frame_count;
     sparkle->u.line.x = to->vx;
     sparkle->u.line.y = to->vy;
     sparkle->u.line.z = to->vz;
-    sparkle->u.line.stamp = D_800926A4;
+    sparkle->u.line.stamp = arena_effect_frame_count;
     prim = sparkle->prim;
-    prim->u0 = prim->u1 = prim->u2 = prim->u3 = (u8)D_80092698 * 4 + 8 + column * 4;
-    prim->v0 = prim->v1 = prim->v2 = prim->v3 = D_8009269C;
+    prim->u0 = prim->u1 = prim->u2 = prim->u3 = (u8)arena_effect_side_palette_x * 4 + 8 + column * 4;
+    prim->v0 = prim->v1 = prim->v2 = prim->v3 = arena_effect_side_palette_y;
     sparkle->u.line.key = key;
     sparkle->u.line.prev = NULL;
-    prim->tpage = D_80092694;
-    prim->clut = D_800926A0;
+    prim->tpage = arena_effect_trail_texture_tpage;
+    prim->clut = arena_effect_side_palette_clut;
     prim->code &= ~1;
     sparkle->prim[1] = *prim;
-    for (other = D_80092AD8, i = 0; i < SPARKLE_COUNT; i++, other++) {
+    for (other = arena_effect_sparkles, i = 0; i < SPARKLE_COUNT; i++, other++) {
         if (other->active && other->u.line.key == key && other != sparkle && other->type == 2 &&
-            other->u.line.stamp == (u16)(D_800926A4 - 1)) {
+            other->u.line.stamp == (u16)(arena_effect_frame_count - 1)) {
             sparkle->u.line.prev = other;
         }
     }
 }
 
-/* Draw the scene effects: the passes that need the view and its derived
+/* 8007CF78: Draw the scene effects: the passes that need the view and its derived
  * matrix, then the screen-space passes under the view matrix. */
-void func_8007CF78(MATRIX *view, u32 *ot) {
+void arena_effect_draw_all(MATRIX *view, u32 *ot) {
     MATRIX local;
 
-    SCENE_SCRATCH->camera = D_80096FA8;
+    SCENE_SCRATCH->camera = arena_view_origin;
     libgte_transpose_matrix(view, &local);
-    func_8007BBA0(view, &local, ot);
-    func_8007C280(view, &local, ot);
-    func_8007CAA4(view, NULL, ot);
+    arena_effect_draw_falling_sparkles(view, &local, ot);
+    arena_effect_draw_trail_sparkles(view, &local, ot);
+    arena_effect_draw_line_sparkles(view, NULL, ot);
     gte_SetRotMatrix(view);
     gte_SetTransMatrix(view);
-    func_8007D918(ot);
-    func_8007E020(ot);
-    func_8007E3CC(ot);
+    arena_effect_draw_ground_particles(ot);
+    arena_effect_draw_thrown_cells(ot);
+    arena_effect_draw_lines(ot);
 }
 
-/* Copy the camera position to the scratchpad and run the scene pass. */
-void func_8007D068(void *arg) {
-    SCENE_SCRATCH->camera = D_80096FA8;
-    func_8007E3CC(arg);
+/* 8007D068: Copy the camera position to the scratchpad and run the scene pass. */
+void arena_effect_draw_lines_only(void *arg) {
+    SCENE_SCRATCH->camera = arena_view_origin;
+    arena_effect_draw_lines(arg);
 }
 
-/* Jitter a short position by -24..23 on each axis. */
-void func_8007D0B4(SVECTOR *pos) {
+/* 8007D0B4: Jitter a short position by -24..23 on each axis. */
+void arena_effect_jitter_svector(SVECTOR *pos) {
     pos->vx += rand() % 48 - 24;
     pos->vy += rand() % 48 - 24;
     pos->vz += rand() % 48 - 24;
 }
 
-/* Start a sparkle of kind 0..4 at a position; kinds 8..12 are the same
+/* 8007D190: Start a sparkle of kind 0..4 at a position; kinds 8..12 are the same
  * sparkles with the position jittered first. Declared int without a return
  * value, as the original's unfilled branch delay slot shows. */
-s32 func_8007D190(VECTOR *pos, u32 kind) {
+s32 arena_effect_spawn_sparkle(VECTOR *pos, u32 kind) {
     SVECTOR at;
 
     at.vx = pos->vx;
@@ -3798,52 +3798,52 @@ s32 func_8007D190(VECTOR *pos, u32 kind) {
     at.vz = pos->vz;
     switch (kind) {
     case 8:
-        func_8007D0B4(&at);
+        arena_effect_jitter_svector(&at);
     case 0:
-        func_8007C124(&at, 0);
+        arena_effect_start_falling_sparkle(&at, 0);
         break;
     case 9:
-        func_8007D0B4(&at);
+        arena_effect_jitter_svector(&at);
     case 1:
-        func_8007C124(&at, 1);
+        arena_effect_start_falling_sparkle(&at, 1);
         break;
     case 10:
-        func_8007D0B4(&at);
+        arena_effect_jitter_svector(&at);
     case 2:
-        func_8007C124(&at, 2);
+        arena_effect_start_falling_sparkle(&at, 2);
         break;
     case 11:
-        func_8007D0B4(&at);
+        arena_effect_jitter_svector(&at);
     case 3:
-        func_8007C124(&at, 3);
+        arena_effect_start_falling_sparkle(&at, 3);
         break;
     case 12:
-        func_8007D0B4(&at);
+        arena_effect_jitter_svector(&at);
     case 4:
-        func_8007C124(&at, 4);
+        arena_effect_start_falling_sparkle(&at, 4);
         break;
     }
 }
 
-/* Whether a code lies in 0x10..0x1f. */
-s32 func_8007D25C(s32 code) {
+/* 8007D25C: Whether a code lies in 0x10..0x1f. */
+s32 arena_effect_is_two_point_type(s32 code) {
     if (code < 0x10) {
         return 0;
     }
     return code < 0x20;
 }
 
-/* Jitter a position by -32..31 on each axis. */
-void func_8007D274(VECTOR *from, VECTOR *to) {
+/* 8007D274: Jitter a position by -32..31 on each axis. */
+void arena_effect_jitter_vector(VECTOR *from, VECTOR *to) {
     to->vx = from->vx + rand() % 64 - 32;
     to->vy = from->vy + rand() % 64 - 32;
     to->vz = from->vz + rand() % 64 - 32;
 }
 
-/* Queue a three-strand bolt of jittered 7-segment lines between two points,
+/* 8007D334: Queue a three-strand bolt of jittered 7-segment lines between two points,
  * coloured by kind: 0 green-blue flicker, 1 random grey-yellow, 2
  * alternating white and red segments. */
-void func_8007D334(VECTOR *from, VECTOR *to, s32 kind) {
+void arena_effect_queue_bolt(VECTOR *from, VECTOR *to, s32 kind) {
     VECTOR point;
     VECTOR step;
     VECTOR prev;
@@ -3857,7 +3857,7 @@ void func_8007D334(VECTOR *from, VECTOR *to, s32 kind) {
     step.vx -= from->vx;
     step.vy -= from->vy;
     step.vz -= from->vz;
-    func_800886FC(&step);
+    arena_vector_get_length(&step);
     step.vx /= 7;
     step.vy /= 7;
     step.vz /= 7;
@@ -3868,7 +3868,7 @@ void func_8007D334(VECTOR *from, VECTOR *to, s32 kind) {
             point.vx += step.vx;
             point.vy += step.vy;
             point.vz += step.vz;
-            func_8007D274(&point, &next);
+            arena_effect_jitter_vector(&point, &next);
             switch (kind) {
             case 0:
                 color.r = rand() & 0x3F;
@@ -3898,54 +3898,54 @@ void func_8007D334(VECTOR *from, VECTOR *to, s32 kind) {
                 break;
             }
             if (i != 6) {
-                func_8007E31C(&prev, &next, &color);
+                arena_effect_queue_line(&prev, &next, &color);
             } else {
-                func_8007E31C(&prev, to, &color);
+                arena_effect_queue_line(&prev, to, &color);
             }
             prev = next;
         }
     }
 }
 
-/* Map codes 0x11..0x13 to kinds 0..2 and forward them. */
-void func_8007D65C(VECTOR *from, VECTOR *to, s32 code) {
+/* 8007D65C: Map codes 0x11..0x13 to kinds 0..2 and forward them. */
+void arena_effect_queue_bolt_by_type(VECTOR *from, VECTOR *to, s32 code) {
     switch (code) {
     case 0x11:
-        func_8007D334(from, to, 0);
+        arena_effect_queue_bolt(from, to, 0);
         break;
     case 0x12:
-        func_8007D334(from, to, 1);
+        arena_effect_queue_bolt(from, to, 1);
         break;
     case 0x13:
-        func_8007D334(from, to, 2);
+        arena_effect_queue_bolt(from, to, 2);
         break;
     }
 }
 
-/* Allocate the scene cell table and both buffers' point primitives. */
-void func_8007D6B8(void) {
+/* 8007D6B8: Allocate the scene cell table and both buffers' point primitives. */
+void arena_effect_alloc_ground_particles(void) {
     SceneCell10 *cell;
     s32 i;
 
-    D_800926BC = heap_alloc(0x9F6, 0);
-    D_800926C0[0] = heap_alloc(0xBF4, 0);
-    D_800926C0[1] = heap_alloc(0xBF4, 0);
-    cell = D_800926BC;
+    arena_effect_ground_particles = heap_alloc(0x9F6, 0);
+    arena_effect_ground_particle_tiles[0] = heap_alloc(0xBF4, 0);
+    arena_effect_ground_particle_tiles[1] = heap_alloc(0xBF4, 0);
+    cell = arena_effect_ground_particles;
     for (i = 0; i < 0xFF; i++) {
-        D_800926C0[0][i].len = 2;
-        D_800926C0[0][i].rgbc = 0x6880B0F0;
-        D_800926C0[1][i].len = 2;
-        D_800926C0[1][i].rgbc = 0x6880B0F0;
+        arena_effect_ground_particle_tiles[0][i].len = 2;
+        arena_effect_ground_particle_tiles[0][i].rgbc = 0x6880B0F0;
+        arena_effect_ground_particle_tiles[1][i].len = 2;
+        arena_effect_ground_particle_tiles[1][i].rgbc = 0x6880B0F0;
         cell->unk0 = cell->unk2 = cell->unk4 = 0;
         cell->unk0 = cell->unk4 = cell->unk6 = 0;
         cell++;
     }
 }
 
-/* Spawn up to count ground particles in free cells around a position: on
+/* 8007D7A8: Spawn up to count ground particles in free cells around a position: on
  * the ground below a random point within 32 units, rising for 20 frames. */
-void func_8007D7A8(VECTOR *pos, s32 count) {
-    SceneCell10 *cell = D_800926BC;
+void arena_effect_spawn_ground_particles(VECTOR *pos, s32 count) {
+    SceneCell10 *cell = arena_effect_ground_particles;
     s32 i;
     s32 x;
     s32 z;
@@ -3961,7 +3961,7 @@ void func_8007D7A8(VECTOR *pos, s32 count) {
             z = pos->vz + (rand() % 64 - 32);
             cell->unk4 = z;
             z = (s16)z;
-            cell->unk2 = cell->unk8 = D_800928DC[(x >> 8) + (z >> 8) * 128].height;
+            cell->unk2 = cell->unk8 = arena_stage_height_map[(x >> 8) + (z >> 8) * 128].height;
             cell->unk7 = -(rand() % 10 + 10);
             count--;
             cell->unk6 = 20;
@@ -3969,13 +3969,13 @@ void func_8007D7A8(VECTOR *pos, s32 count) {
     }
 }
 
-/* Draw and advance this buffer's half of the ground particles: project
+/* 8007D918: Draw and advance this buffer's half of the ground particles: project
  * them three at a time into point tiles, then let each fall (accelerating)
  * until it reaches its ground height. */
-void func_8007D918(u32 *ot) {
+void arena_effect_draw_ground_particles(u32 *ot) {
     SceneScratch *scratch = SCENE_SCRATCH;
-    Tile1Words *tile = D_800926C0[D_800928A0];
-    SceneCell10 *cell = &D_800926BC[D_800928A0];
+    Tile1Words *tile = arena_effect_ground_particle_tiles[arena_draw_buffer_index];
+    SceneCell10 *cell = &arena_effect_ground_particles[arena_draw_buffer_index];
     s32 cx = scratch->camera.vx;
     s32 cy = scratch->camera.vy;
     s32 cz = scratch->camera.vz;
@@ -3984,7 +3984,7 @@ void func_8007D918(u32 *ot) {
     u32 prev;
     u32 addr;
 
-    for (i = D_800928A0; i < 0xFC; i += 2, cell += 2) {
+    for (i = arena_draw_buffer_index; i < 0xFC; i += 2, cell += 2) {
         if (cell->unk6 == 0) {
             continue;
         }
@@ -4018,18 +4018,18 @@ void func_8007D918(u32 *ot) {
     }
 }
 
-/* Allocate the 540 scene cells and their small tiles (2..4 pixels square,
+/* 8007DB28: Allocate the 540 scene cells and their small tiles (2..4 pixels square,
  * pale blue), with a copy of the tiles for the other draw buffer. */
-void func_8007DB28(void) {
+void arena_effect_alloc_thrown_cells(void) {
     SceneCell12 *cell;
     TileWords *tile;
     s32 i;
 
-    D_800926C8 = heap_alloc(0x1950, 0);
+    arena_effect_thrown_cells = heap_alloc(0x1950, 0);
     tile = heap_alloc(0x21C0, 0);
-    D_800926CC[0] = tile;
-    D_800926CC[1] = heap_alloc(0x21C0, 0);
-    cell = D_800926C8;
+    arena_effect_thrown_cell_tiles[0] = tile;
+    arena_effect_thrown_cell_tiles[1] = heap_alloc(0x21C0, 0);
+    cell = arena_effect_thrown_cells;
     for (i = 0; i < 540; i++, cell++, tile++) {
         tile->len = 3;
         tile->rgbc = 0x60FFD0A0;
@@ -4038,14 +4038,14 @@ void func_8007DB28(void) {
         cell->unk0 = cell->unk2 = cell->unk4 = 0;
         cell->unk8 = cell->unkA = cell->unk9 = cell->unk6 = 0;
     }
-    func_800732AC(D_800926CC[1], D_800926CC[0], 0x21C0);
+    arena_copy_words(arena_effect_thrown_cell_tiles[1], arena_effect_thrown_cell_tiles[0], 0x21C0);
 }
 
-/* Throw up scene cells along a segment that reaches above height 0x80: one
+/* 8007DC74: Throw up scene cells along a segment that reaches above height 0x80: one
  * per six units of its length, starting around `from` below the floor and
  * drifting across the segment (randomly to either side) or at random, with
  * a rise and life that grow with its height difference. */
-void func_8007DC74(VECTOR *from, VECTOR *to) {
+void arena_effect_throw_cells(VECTOR *from, VECTOR *to) {
     VECTOR across;
     s32 nx;
     s32 nz;
@@ -4064,13 +4064,13 @@ void func_8007DC74(VECTOR *from, VECTOR *to) {
     across.vz = to->vx - from->vx;
     across.vx = from->vz - to->vz;
     across.vy = from->vy - to->vy;
-    cell = D_800926C8;
-    count = func_800886FC(&across) / 6;
+    cell = arena_effect_thrown_cells;
+    count = arena_vector_get_length(&across) / 6;
     if (count <= 0) {
         count = 1;
     }
     across.vy = 0x1000;
-    drift = func_80088754(&across);
+    drift = arena_vector_get_flat_length(&across);
     if (drift < 0x10) {
         drift = 0;
     }
@@ -4119,18 +4119,18 @@ void func_8007DC74(VECTOR *from, VECTOR *to) {
     }
 }
 
-/* Draw and advance the scene cells: project the live ones three at a time
+/* 8007E020: Draw and advance the scene cells: project the live ones three at a time
  * into their tiles, drift them sideways and let them rise or fall (capped
  * at height 0x10) until their life runs out. */
-void func_8007E020(u32 *ot) {
+void arena_effect_draw_thrown_cells(u32 *ot) {
     SceneScratch *scratch = SCENE_SCRATCH;
     s32 loaded = 0;
     s32 i;
     s32 cx = scratch->camera.vx;
     s32 cy = scratch->camera.vy;
     s32 cz = scratch->camera.vz;
-    SceneCell12 *cell = D_800926C8;
-    TileWords *tile = D_800926CC[D_800928A0];
+    SceneCell12 *cell = arena_effect_thrown_cells;
+    TileWords *tile = arena_effect_thrown_cell_tiles[arena_draw_buffer_index];
     u32 prev;
     u32 addr;
 
@@ -4171,46 +4171,46 @@ void func_8007E020(u32 *ot) {
     }
 }
 
-/* Clear both scene cell tables and the actors' 0x90b bytes. */
-void func_8007E24C(void) {
+/* 8007E24C: Clear both scene cell tables and the actors' 0x90b bytes. */
+void arena_effect_clear_ground_effects(void) {
     SceneCell12 *cell;
     s32 i;
 
-    cell = D_800926C8;
+    cell = arena_effect_thrown_cells;
     for (i = 0; i < 0x21C; i++) {
         cell[i].unk6 = 0;
         cell[i].unk4 = 0;
         cell[i].unk2 = 0;
         cell[i].unk0 = 0;
     }
-    D_80097010.unk90B = 0;
-    D_8009872C.unk90B = 0;
+    arena_second_actor.unk90B = 0;
+    arena_first_actor.unk90B = 0;
     for (i = 0; i < 0xFF; i++) {
-        D_800926BC[i].unk6 = 0;
-        D_800926BC[i].unk0 = D_800926BC[i].unk2 = D_800926BC[i].unk4 = 0;
+        arena_effect_ground_particles[i].unk6 = 0;
+        arena_effect_ground_particles[i].unk0 = arena_effect_ground_particles[i].unk2 = arena_effect_ground_particles[i].unk4 = 0;
     }
 }
 
-/* Initialise the scene's line primitives and clear the per-frame counters. */
-void func_8007E2D8(void) {
+/* 8007E2D8: Initialise the scene's line primitives and clear the per-frame counters. */
+void arena_effect_init_lines(void) {
     SceneLine *line;
     s32 i;
 
     for (i = 0; i < 100; i++) {
-        line = &D_80094818[i];
+        line = &arena_effect_lines[i];
         setlen(&line->line, 3);
         line->line.code = 0x40;
     }
-    D_800926B0 = 0;
-    D_800926B4 = 0;
+    arena_effect_queued_line_count = 0;
+    arena_effect_latched_line_count = 0;
 }
 
-/* Queue a coloured 3D line segment for this frame (at most 100). */
-void func_8007E31C(VECTOR *from, VECTOR *to, CVECTOR *color) {
+/* 8007E31C: Queue a coloured 3D line segment for this frame (at most 100). */
+void arena_effect_queue_line(VECTOR *from, VECTOR *to, CVECTOR *color) {
     SceneLine *line;
 
-    if (D_800926B0 < 100) {
-        line = &D_80094818[D_800926B0];
+    if (arena_effect_queued_line_count < 100) {
+        line = &arena_effect_lines[arena_effect_queued_line_count];
         line->from.vx = from->vx;
         line->from.vy = from->vy;
         line->from.vz = from->vz;
@@ -4220,15 +4220,15 @@ void func_8007E31C(VECTOR *from, VECTOR *to, CVECTOR *color) {
         line->line.r0 = color->r;
         line->line.g0 = color->g;
         line->line.b0 = color->b;
-        D_800926B0++;
+        arena_effect_queued_line_count++;
     }
 }
 
-/* Project this frame's queued 3D line segments (relative to the camera in
+/* 8007E3CC: Project this frame's queued 3D line segments (relative to the camera in
  * the scratchpad) and link each into the ordering table by depth. */
-void func_8007E3CC(u32 *ot) {
+void arena_effect_draw_lines(u32 *ot) {
     SceneScratch *scratch = SCENE_SCRATCH;
-    SceneLine *line = D_80094818;
+    SceneLine *line = arena_effect_lines;
     s32 cx = scratch->camera.vx;
     s32 cy = scratch->camera.vy;
     s32 cz = scratch->camera.vz;
@@ -4237,7 +4237,7 @@ void func_8007E3CC(u32 *ot) {
     u32 prev;
     u32 addr;
 
-    for (i = 0; i < D_800926B4; i++, line++) {
+    for (i = 0; i < arena_effect_latched_line_count; i++, line++) {
         scratch->from = line->from;
         scratch->to = line->to;
         scratch->from.vx -= cx;

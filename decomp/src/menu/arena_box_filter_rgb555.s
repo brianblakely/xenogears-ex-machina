@@ -4,7 +4,7 @@
 # Bit 15 is discarded. There is no width-boundary or empty-range guard.
 # The next pair is loaded before the end test, including at the end cursor.
 # Handwritten: trapping add/addi throughout, where GCC emits addu/addiu.
-glabel func_8007313C
+glabel arena_box_filter_rgb555
     # Seed the two left-hand colours for the sliding window.
     lhu     $t0, 0($a0)
     lhu     $t1, 0x280($a0)
@@ -60,4 +60,4 @@ glabel func_8007313C
      sh     $t2, -4($a0)
     jr      $ra
      nop
-endlabel func_8007313C
+endlabel arena_box_filter_rgb555

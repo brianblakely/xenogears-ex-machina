@@ -7,34 +7,34 @@
 # Do not present this entry as an ordinary C-callable projection helper.
 # Handwritten: it returns with sp still lowered and ra never reloaded, and
 # overwrites an offset it has just computed (dead code GCC deletes).
-glabel func_8008DE54
+glabel arena_spark_link_tile_packet_unreferenced
     addiu   $sp, $sp, -0x28
     addu    $a2, $a0, $zero
     sw      $ra, 32($sp)
 
     # Three truncated differences; the vector's padding is left untouched.
-    lui     $t0, %hi(D_80096FA8)
-    lhu     $t0, %lo(D_80096FA8)($t0)
+    lui     $t0, %hi(arena_view_origin)
+    lhu     $t0, %lo(arena_view_origin)($t0)
     lhu     $t1, 0($a0)
     nop
     subu    $t0, $t0, $t1
     sh      $t0, 16($sp)
-    lui     $t0, %hi(D_80096FA8+4)
-    lhu     $t0, %lo(D_80096FA8+4)($t0)
+    lui     $t0, %hi(arena_view_origin+4)
+    lhu     $t0, %lo(arena_view_origin+4)($t0)
     lhu     $t1, 2($a0)
     nop
     subu    $t0, $t0, $t1
     sh      $t0, 18($sp)
-    lui     $t0, %hi(D_80096FA8+8)
-    lhu     $t0, %lo(D_80096FA8+8)($t0)
+    lui     $t0, %hi(arena_view_origin+8)
+    lhu     $t0, %lo(arena_view_origin+8)($t0)
     lhu     $t1, 4($a0)
     nop
     subu    $t0, $t0, $t1
     sh      $t0, 20($sp)
 
     # The computed draw-buffer offset is overwritten by the stack address.
-    lui     $v0, %hi(D_800928A0)
-    lbu     $v0, %lo(D_800928A0)($v0)
+    lui     $v0, %hi(arena_draw_buffer_index)
+    lbu     $v0, %lo(arena_draw_buffer_index)($v0)
     nop
     sll     $v0, $v0, 4
     addiu   $v0, $v0, 16
@@ -67,4 +67,4 @@ glabel func_8008DE54
     sw      $t0, 0($a2)
     jr      $ra
      nop
-endlabel func_8008DE54
+endlabel arena_spark_link_tile_packet_unreferenced

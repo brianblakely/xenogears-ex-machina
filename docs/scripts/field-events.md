@@ -123,7 +123,7 @@ maps are identical to Disc 1's.
   position, heading and flags (game `+182c`-`+1834`, `WorldmapReturn`), `d5` the
   ferry's saved place (`+1844`, `+1846`; `D_8006EE78`), `d6`/`d7` the circling
   flight's (`+184e`, `+1852`; `D_8006EE80`), `c0` the arena bout's outcome
-  (`80050622`, menu3 `func_80075060`), `61` the field movie's start (`800adb7c`,
+  (`80050622`, menu3 `arena_bout_record_outcome`), `61` the field movie's start (`800adb7c`,
   `800a7c58`), `b5` the gathering warp (`800b2348`), and `2a`/`2b` and `cd`/`ce`
   the actor flags 0x20000 and 0x800000 that keep talk and touch, or touch alone,
   from starting events 2 and 3 (`8008399c`).

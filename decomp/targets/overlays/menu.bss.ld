@@ -6,7 +6,7 @@ ASSERT(menu_SBSS_START == 0x800925D4 && menu_SBSS_END == menu_BSS_START &&
        menu_BSS_END == 0x8009B558,
        "menu: the linked .sbss and .bss are not the BSS the resident's mode table clears")
 
-/* func_8008F280 reads the opponent's command, D_80099D98.command, by a name
+/* arena_brain_run_practice_command reads the opponent's command, arena_settings.command, by a name
  * of its own: as a member, GCC keeps the byte's address in a register for
  * its three reads, where the original loads it absolutely at each. */
-D_80099DA2 = D_80099D98 + 0xA;
+arena_settings_command = arena_settings + 0xA; /* 80099DA2 */

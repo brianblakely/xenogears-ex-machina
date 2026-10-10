@@ -8,13 +8,13 @@
  * neighbours below every step (a fire), drawn over the screen through a
  * 256-colour palette; and the full-screen shade tile. */
 
-extern u16 D_80091CE0[]; /* glow palette (256 entries) */
+extern u16 arena_glow_palette[]; /* glow palette (256 entries) */
 
-void func_8008DF30(void);
-void func_8008DF50(void);
-void func_8008E064(void);
-void func_8008E120(void);
-void func_8008E2B8(u32 *ot, s32 level, s32 subtract);
-void func_8008E3CC(u32 *ot, s32 level, s32 brighten);
+void arena_glow_forget_buffers(void);
+void arena_glow_init(void);
+void arena_glow_free_buffers(void);
+void arena_glow_step(void);
+void arena_glow_draw_shade_tile(u32 *ot, s32 level, s32 subtract);
+void arena_glow_draw(u32 *ot, s32 level, s32 brighten);
 
 #endif

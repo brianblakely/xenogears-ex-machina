@@ -163,8 +163,8 @@ window colour's green and blue bytes, the CD mix bytes and a base for the name
 slots' second bytes, which compile differently as members, the BSS's last word
 boot_bss_last_word from the link's BSS end, for the entry point and the mode table, and `_gp`
 from the start of the small data, where the original's 80059170 lies),
-the menu's (`menu.bss.ld`: the opponent's command byte D_80099DA2, which
-func_8008F280 loads absolutely at each of its three reads) and the world map's
+the menu's (`menu.bss.ld`: the opponent's command byte arena_settings_command, which
+arena_brain_run_practice_command loads absolutely at each of its three reads) and the world map's
 (`worldmap.data.ld`: D_8009D3FC, the read list's first destination, from which two
 loaders pass the list). `SCRIPT_SYMBOLS=strict` is the default;
 `SCRIPT_SYMBOLS=warn` (on the command line or in the environment) reports the names
@@ -536,7 +536,7 @@ every placeholder (7797 rows, 390 files) kept all 26 images, cross-image and cov
   `$a1` as the step count and the facing), which sched1 does not sink as births.
 - Strings whose alignment padding holds stray bytes stay original data:
   mark the symbol `force_not_migration:True` (with `size:` and a symbol after it where
-  splat would join the strings that follow, menu6's `D_800705F0`), link it with
+  splat would join the strings that follow, menu6's `arena_select_first_gear_model_name`), link it with
   INCLUDE_RODATA beside the function and reference it as `extern char[]`; never spell
   the stray bytes in a C initializer, also not as invented trailing elements
   (Recovering data). A .data object whose padding holds such bytes (a byte flag
@@ -547,7 +547,7 @@ every placeholder (7797 rows, 390 files) kept all 26 images, cross-image and cov
   follows the object before it, slot39's flag D_801E96A5); use it only where the
   padding is non-zero and nothing reads it. Both count as `included`. The same holds
   where the object ends its unit's section and stray bytes run to the next unit's
-  (menu7's D_800925A4, then `ind`), which are not established as the assembler's
+  (menu7's arena_actor_combo_inputs, then `ind`), which are not established as the assembler's
   fill (Recovering data).
   The coverage report finds a string's stray byte itself; every other included object
   needs an `included` line in the target's classification with its reason (those data
@@ -618,17 +618,17 @@ every placeholder (7797 rows, 390 files) kept all 26 images, cross-image and cov
   map's camera and flight paths, which `func_80076858` interpolates at the
   parameter its scene code advances; the ferry's waypoints; the scripted flights'
   waypoints, whose counts `func_8008E76C` fixes, never reading their -1 ends),
-  texture layouts (the menu font's glyph rectangles `D_80091230`), and masks and
+  texture layouts (the menu font's glyph rectangles `arena_text_glyphs`), and masks and
   thresholds. The four bare palettes passed to LoadImage are source: the text
   palette `text_palette` decodes the 2-bit codes `text_draw_glyph` writes into either
   half of each 4-bit pixel (1 the glyph, 2 its outline), entry i of its first CLUT
   being the colour of code i & 3 and of its second that of code i >> 2, and
   `window_open` gives each line the CLUT of its plane; `console_load_font_cluts` rebuilds
   all 64 entries of the console font CLUTs `console_font_cluts` before their only upload;
-  the gauge palette `D_80091814` is the grey ramp 0x8000 | 0x421 * i (i = 1..14,
-  opaque black at 0 and 15); and menu7's glow ramp `D_80091CE0` colours the heat
-  values `func_8008E120` computes, with bit 15 set on every entry by
-  `func_8008DF50` before its upload.
+  the gauge palette `arena_hud_gauge_palette` is the grey ramp 0x8000 | 0x421 * i (i = 1..14,
+  opaque black at 0 and 15); and menu7's glow ramp `arena_glow_palette` colours the heat
+  values `arena_glow_step` computes, with bit 15 set on every entry by
+  `arena_glow_init` before its upload.
 - K&R definitions, unprototyped calls and implicit-int returns are legitimate where
   the original passes unpromoted arguments or keeps `$v0` live.
 - Unit compiler settings are qualified per code unit (Qualified configuration, above,
@@ -818,8 +818,8 @@ converted to C per unit. What converting the targets' `.data` established:
   word-aligned next flag.
 - An object that ends its unit's section can be followed by stray bytes up to the
   next unit's. In the targets' links eleven included objects end their unit's section
-  so: the strings field_clear_otag_label and field_error_id0_format (field), D_800706D4 (menu6), D_8028007C
-  (debug2611's pages.c) and D_801C5000 (ovl2601) and the .data objects D_800925A4
+  so: the strings field_clear_otag_label and field_error_id0_format (field), arena_debug_rate_format (menu6), D_8028007C
+  (debug2611's pages.c) and D_801C5000 (ovl2601) and the .data objects arena_actor_combo_inputs
   (menu7, `ind` before menu2's .sbss) and battle_unreferenced_stray_byte (battle), all of ASPSX 2.34
   units, and battle_music_lowered (battle) and D_801E9638 (ovl2615) of 2.56 units and the world
   map's D_8009A68C and D_8009B1A4 of 2.79 units; so does the world map's cue sequence
@@ -847,7 +847,7 @@ converted to C per unit. What converting the targets' `.data` established:
   field_event_restore_gears) and battle_read_gear_files indexes the table by a combatant's gear id without
   a range check. With 19 pairs, battle's 00 00 is GCC's zero fill before the
   word-aligned battle_extra_file_bases, and ovl2143's 66 00 follow the unit's last .data object as
-  `ind` follows menu7's D_800925A4 (above): both are ASPSX 2.34 units, and both files
+  `ind` follows menu7's arena_actor_combo_inputs (above): both are ASPSX 2.34 units, and both files
   go on with zeros for the uninitialized variables after those bytes (ovl2143's .bss,
   the menu's .sbss). Neither the readers nor the vendor tools, which write zeros at
   every stray byte under DOSBox, tell 19 entries with fill from 20 entries. So the
@@ -948,9 +948,9 @@ converted to C per unit. What converting the targets' `.data` established:
 - A unit's own variables come first, in unit order, as statics where the commons
   follow apart, and a unit reads only its own: `tools/data_users.py CONFIG.mk`
   reports every FOREIGN reference, another unit's code forming an address in a unit's
-  own `.bss` (in no target but the menu, whose one, 80092a30, menu2's func_80072170
-  only forms as the end of its loop over the embers D_800929F4[3]: it is the pad word
-  of menu3's D_80092A24 behind them), and, with `--end`, the order of variables still
+  own `.bss` (in no target but the menu, whose one, 80092a30, menu2's arena_scene_update_bout_end
+  only forms as the end of its loop over the embers arena_scene_bout_end_embers[3]: it is the pad word
+  of menu3's arena_effect_hit_spark_position behind them), and, with `--end`, the order of variables still
   extern. That places menu 800707A8 and 8007E528 exactly, the menu4/menu5 boundary at
   80081E00, 80081E6C or 80081ECC, slot39's after 801CD2AC and at or before
   801DBDB4 (an earlier one moves the `.bss` boundary with it), and battle 800B7870's
@@ -1000,7 +1000,7 @@ converted to C per unit. What converting the targets' `.data` established:
   unit's `.sbss` into the file (data entries with `linker_section: .sbss`) and its
   `.bss` NOLOAD past it, one subsegment per unit with the segment's `bss_size`, and
   menu.bss.ld asserts both bounds. The task scheduler's two words open menu7's larger
-  variables: an explicit `.bss` in its handwritten func_8008BB00.s, outside the
+  variables: an explicit `.bss` in its handwritten arena_task_save_scheduler.s, outside the
   assembler's rule, classified `handwritten`.
 - The resident's BSS (800592bc-8006faf0, the span its entry point clears) has the
   same four parts, the PsyQ libraries' statics after the game units' own and their
@@ -1041,7 +1041,7 @@ converted to C per unit. What converting the targets' `.data` established:
   `menu.bss.ld` with its `.sbss`, `worldmap.data.ld`, `battle.data.ld`), and the
   resident's unless its own is the span the entry point clears (`link.ld`).
 - Embedded game data stays generated and is classified `asset` with its format
-  (menu7's SpriteModel D_80091FB0); library data is classified `sdk` by the code that
+  (menu7's SpriteModel arena_actor_extra_model); library data is classified `sdk` by the code that
   reads it. splat migrates rodata used only by an INCLUDE_ASM function into that
   function's `.s` file, and coverage counts it with the function (the resident's
   library strings and jump tables as `sdk`) until the function is C and the compiler
@@ -1077,7 +1077,7 @@ functions are data objects and never count as C: machine words in a
 Such an object counts as `text_data` (bytes, no instructions) only where the target's
 classification has a `START END text_data NAME REASON` line for it: NAME is cc1's
 label at START, the range ends at the next symbol, and the reason is the evidence that
-the original keeps the object in .text (menu6's mode-task table D_80088BFC). Every other
+the original keeps the object in .text (menu6's mode-task table arena_mode_tasks). Every other
 such byte fails the report, whatever placed it: the attribute in any spelling, a
 function's static under 2.7.2-cdk, or a definition cc1 emits while an INCLUDE_RODATA
 has left the assembler in .text. The report also fails on a data directive cc1 emits

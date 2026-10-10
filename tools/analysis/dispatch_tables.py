@@ -42,9 +42,9 @@ ones by model_relocate_sprite_model) come from these loaders:
   of enemy set files (12, 1) 2n + 3 (ovl2615 func_801E6314), object sets
   (0x28, 0) 2s + 1 (battle_read_object_set_files), gears (0x28, 1) base + 1 and their part
   files base + 2 + v by battle_gear_file_table (battle_read_gear_files, battle_create_object_from_files);
-* arena model files (0x30, 1) id + 2 (menu func_8008509C; relocated against the
-  base word at +0x1c, func_8008AF6C, and bound by func_8008B38C) and the menu
-  overlay's own D_80091FB0 (func_800852C4);
+* arena model files (0x30, 1) id + 2 (menu arena_actor_load_model; relocated against the
+  base word at +0x1c, arena_node_relocate_model_file, and bound by arena_node_build_model_set) and the menu
+  overlay's own arena_actor_extra_model (arena_mode_task);
 * world map area files (0x24, 0) area + 1 for the area sets of D_8009B584
   (func_80071B9C, func_80073530: the group at header +8, func_80084580);
 * sprite commands f5 (a model), f6 and f7 (a model group) in the sprite blocks
@@ -697,14 +697,14 @@ def battle_models(disc: Disc) -> Iterator[ModelRef]:
 
 
 def menu_models(disc: Disc) -> Iterator[ModelRef]:
-    for number in range(2, record_count(disc, 0x30, 1, 1) + 2):  # func_8008509C: id + 2
+    for number in range(2, record_count(disc, 0x30, 1, 1) + 2):  # arena_actor_load_model: id + 2
         data = decode_block(disc.sectors(disc.slot(0x30, 1, number))).data
-        # func_8008AF6C relocates the pointers against the base word at +0x1c;
-        # func_8008B38C relocates the model group at +4.
+        # arena_node_relocate_model_file relocates the pointers against the base word at +0x1c;
+        # arena_node_build_model_set relocates the model group at +4.
         models, base = struct.unpack_from("<I", data, 4)[0], struct.unpack_from("<I", data, 0x1C)[0]
         yield from group_refs(f"arena model {number - 2}", data, models - base)
-    model = 0x80091FB0 - BASE  # func_800852C4: model_relocate_sprite_model(D_80091FB0)
-    yield ModelRef("D_80091FB0", disc_image("menu", disc.number), model, model)
+    model = 0x80091FB0 - BASE  # arena_mode_task: model_relocate_sprite_model(arena_actor_extra_model)
+    yield ModelRef("arena_actor_extra_model", disc_image("menu", disc.number), model, model)
 
 
 def worldmap_models(disc: Disc) -> Iterator[ModelRef]:

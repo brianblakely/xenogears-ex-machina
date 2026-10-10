@@ -18,30 +18,30 @@ typedef struct {
     s32 z;
 } FloorStep;
 
-extern u8 D_80090F38[];           /* the opening's scene script */
-extern u8 *D_8009105C[];          /* scene scripts */
-extern FloorStep D_80091084[8];
-extern u8 D_800910C4[];           /* the setup script */
-extern LightRig *D_800910F0;      /* the scene's lights */
-extern Actor *D_80092894;         /* actor the scene script drives */
-extern s32 D_80092900;            /* bout-end sequence step */
-extern u8 D_8009293C;             /* the one-time scene setup ran */
-extern Window D_8009868C;         /* message window */
+extern u8 arena_scene_opening_script[];           /* the opening's scene script */
+extern u8 *arena_scene_scripts[];          /* scene scripts */
+extern FloorStep arena_scene_floor_steps[8];
+extern u8 arena_scene_bout_end_script[];           /* the setup script */
+extern LightRig *arena_winner_light_rig;      /* the scene's lights */
+extern Actor *arena_scene_driven_actor;         /* actor the scene script drives */
+extern s32 arena_scene_bout_end_step;            /* bout-end sequence step */
+extern u8 arena_scene_bout_end_active;             /* the one-time scene setup ran */
+extern Window arena_scene_message_window;         /* message window */
 
-void func_80070F80(u8 *script);
-s32 func_8007107C(void);
-void func_80071724(u32 *ot);
-void func_80071794(MenuImageFile *files);
-void func_800718C0(void);
-void func_8007191C(s32 scene);
-void func_800719F0(void);
-void func_80071AD0(void);
-void func_80071DA4(Actor *actor);
-s32 func_80071F8C(s32 command); /* the scene callbacks */
-void func_800720C4(void);
-void func_800720D4(void);
-void func_80072170(void);
-void func_800725B0(Actor *scene);
-void func_80072858(LightRig *rig);
+void arena_scene_start_script(u8 *script);
+s32 arena_scene_run_script(void);
+void arena_scene_draw_marker(u32 *ot);
+void arena_scene_load_sprite_sheet(MenuImageFile *files);
+void arena_scene_open_message_window(void);
+void arena_scene_enter(s32 scene);
+void arena_scene_start_tutorial(void);
+void arena_scene_update(void);
+void arena_scene_settle_actor_on_floor(Actor *actor);
+s32 arena_scene_run_callback(s32 command); /* the scene callbacks */
+void arena_scene_allow_bout_end(void);
+void arena_scene_start_bout_end(void);
+void arena_scene_update_bout_end(void);
+void arena_winner_open_screen(Actor *scene);
+void arena_winner_update_screen(LightRig *rig);
 
 #endif

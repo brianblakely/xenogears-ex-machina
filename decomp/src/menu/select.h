@@ -16,7 +16,7 @@ typedef struct ListEntry {
     u8 *name;    /* 0x08 */
 } ListEntry;
 
-/* VRAM areas of one of the 49 portrait slots (20 bytes; D_8009270C):
+/* VRAM areas of one of the 49 portrait slots (20 bytes; arena_select_portrait_slots):
  * its palette row and its 30x64 image. */
 typedef struct {
     RECT clut;
@@ -24,22 +24,22 @@ typedef struct {
     u8 unk10[4];
 } GridCell;
 
-extern s16 D_800912E0[2][4];       /* neighbour offsets and slide of the wheel portraits, per row */
-extern ListEntry D_80091964[49];
-extern s32 D_80092888;             /* entries in the list */
-extern u8 *D_800928D8;             /* the 49 portraits, 0x1000 bytes each */
-extern ListEntry **D_800928EC;     /* the list */
-extern s32 D_80092940;             /* the portraits are in VRAM */
+extern s16 arena_select_wheel_neighbors[2][4];       /* neighbour offsets and slide of the wheel portraits, per row */
+extern ListEntry arena_select_gears[49];
+extern s32 arena_select_entry_count;             /* entries in the list */
+extern u8 *arena_select_portraits;             /* the 49 portraits, 0x1000 bytes each */
+extern ListEntry **arena_select_entries;     /* the list */
+extern s32 arena_select_portraits_in_vram;             /* the portraits are in VRAM */
 /* Two-player selection wheels: each side's portraits per buffer, and the
  * neighbour offsets and slide of the portraits beside the pick (row 1
  * while sliding right or still). */
-extern PolyFT4Words D_80099DA8[2][10];
+extern PolyFT4Words arena_select_wheel_quads[2][10];
 
-void func_8007EEE8(s32 filter);
-void func_8007EFB4(void);
-void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fade);
-void func_8007F258(void *ot, s32 flag);
-void func_80080570(void);
-void func_80080644(s32 first, s32 second);
+void arena_select_build_list(s32 filter);
+void arena_select_alloc_portrait_slots(void);
+void arena_select_draw_portrait(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fade);
+void arena_select_draw_wheels(void *ot, s32 flag);
+void arena_select_load_picked_models(void);
+void arena_select_load_pick_portraits(s32 first, s32 second);
 
 #endif

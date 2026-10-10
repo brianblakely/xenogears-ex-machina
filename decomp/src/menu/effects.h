@@ -25,7 +25,7 @@ typedef struct {
 
 #define SCENE_SCRATCH ((SceneScratch *)0x1F800000)
 
-/* Kind of sparkle (20-byte records at D_80092A74). */
+/* Kind of sparkle (20-byte records at arena_effect_sparkle_kinds). */
 typedef struct {
     u8 *u;          /* 0x00: texture column of each frame */
     u8 *v;          /* 0x04: texture row of each frame */
@@ -80,7 +80,7 @@ typedef struct Sparkle {
 
 #define SPARKLE_COUNT 60
 
-/* A scene cell (12 bytes; table at D_800926C8). */
+/* A scene cell (12 bytes; table at arena_effect_thrown_cells). */
 typedef struct {
     s16 unk0, unk2, unk4; /* position */
     s16 unk6;             /* remaining life */
@@ -89,7 +89,7 @@ typedef struct {
     s16 unkA;             /* vertical speed */
 } SceneCell12;
 
-/* A ground particle of the scene (10 bytes; table at D_800926BC). */
+/* A ground particle of the scene (10 bytes; table at arena_effect_ground_particles). */
 typedef struct {
     s16 unk0; /* x */
     s16 unk2; /* height */
@@ -107,45 +107,45 @@ typedef struct {
 } SceneLine;
 
 /* Frame tables of the sparkle kinds: kind 0's are filled from its twelve
- * TIMs (menu3's D_800947E8, D_800947F4 and D_80094800); kinds 1-4 use
+ * TIMs (menu3's arena_effect_sparkle0_frame_u, arena_effect_sparkle0_frame_v and arena_effect_sparkle0_frame_cluts); kinds 1-4 use
  * fixed tables whose rows are offset once by their TIM's row. */
-extern u8 D_800911D8[16];
-extern u8 D_800911E8[16];
-extern u8 D_800911F8[16];
-extern u8 D_80091208[16]; /* 12 used */
-extern u8 D_80091218[16];
-extern s16 D_80091228[];  /* trail sizes */
-extern s32 D_800928E8;    /* owner of the segments started now */
+extern u8 arena_effect_sparkle1_frame_u[16];
+extern u8 arena_effect_sparkle1_frame_v[16];
+extern u8 arena_effect_sparkle2_frame_u[16];
+extern u8 arena_effect_sparkle2_frame_v[16]; /* 12 used */
+extern u8 arena_effect_sparkle4_frame_v[16];
+extern s16 arena_effect_trail_sizes[];  /* trail sizes */
+extern s32 arena_frame_count;    /* owner of the segments started now */
 
-void func_800732CC(void);
-void func_8007334C(u32 *ot, MATRIX *view);
-void func_8007B270(CVECTOR *first, CVECTOR *second);
-void func_8007B388(MenuImageFile *files);
-void func_8007BACC(void);
-void func_8007BB7C(void);
-void func_8007BBA0(MATRIX *view, MATRIX *local, u32 *ot);
-void func_8007C100(CVECTOR *color);
-void func_8007C280(MATRIX *view, MATRIX *local, u32 *ot);
-void func_8007C880(s32 column, VECTOR *pos, s32 key, s32 size);
-void func_8007CAA4(MATRIX *view, MATRIX *local, u32 *ot);
-u32 func_8007CD14(s32 flag, s32 top, s32 middle, s32 low);
-void func_8007CD44(s32 column, VECTOR *from, VECTOR *to, s32 key);
-void func_8007CF78(MATRIX *view, u32 *ot);
-void func_8007D068(void *arg);
-s32 func_8007D190(VECTOR *pos, u32 kind);
-s32 func_8007D25C(s32 type);
-void func_8007D274(VECTOR *from, VECTOR *to);
-void func_8007D334(VECTOR *from, VECTOR *to, s32 kind);
-void func_8007D65C(VECTOR *from, VECTOR *to, s32 code);
-void func_8007D6B8(void);
-void func_8007D7A8(VECTOR *pos, s32 count);
-void func_8007D918(u32 *ot);
-void func_8007DB28(void);
-void func_8007DC74(VECTOR *from, VECTOR *to);
-void func_8007E020(u32 *ot);
-void func_8007E24C(void);
-void func_8007E2D8(void);
-void func_8007E31C(VECTOR *from, VECTOR *to, CVECTOR *color);
-void func_8007E3CC(u32 *ot);
+void arena_effect_create_hit_spark_emitter(void);
+void arena_effect_emit_hit_sparks(u32 *ot, MATRIX *view);
+void arena_effect_load_side_palette(CVECTOR *first, CVECTOR *second);
+void arena_effect_load_textures(MenuImageFile *files);
+void arena_effect_advance_frame(void);
+void arena_effect_clear_sparkles(void);
+void arena_effect_draw_falling_sparkles(MATRIX *view, MATRIX *local, u32 *ot);
+void arena_effect_set_sparkle2_color(CVECTOR *color);
+void arena_effect_draw_trail_sparkles(MATRIX *view, MATRIX *local, u32 *ot);
+void arena_effect_start_trail_sparkle(s32 column, VECTOR *pos, s32 key, s32 size);
+void arena_effect_draw_line_sparkles(MATRIX *view, MATRIX *local, u32 *ot);
+u32 arena_effect_pack_trail_key(s32 flag, s32 top, s32 middle, s32 low);
+void arena_effect_start_line_sparkle(s32 column, VECTOR *from, VECTOR *to, s32 key);
+void arena_effect_draw_all(MATRIX *view, u32 *ot);
+void arena_effect_draw_lines_only(void *arg);
+s32 arena_effect_spawn_sparkle(VECTOR *pos, u32 kind);
+s32 arena_effect_is_two_point_type(s32 type);
+void arena_effect_jitter_vector(VECTOR *from, VECTOR *to);
+void arena_effect_queue_bolt(VECTOR *from, VECTOR *to, s32 kind);
+void arena_effect_queue_bolt_by_type(VECTOR *from, VECTOR *to, s32 code);
+void arena_effect_alloc_ground_particles(void);
+void arena_effect_spawn_ground_particles(VECTOR *pos, s32 count);
+void arena_effect_draw_ground_particles(u32 *ot);
+void arena_effect_alloc_thrown_cells(void);
+void arena_effect_throw_cells(VECTOR *from, VECTOR *to);
+void arena_effect_draw_thrown_cells(u32 *ot);
+void arena_effect_clear_ground_effects(void);
+void arena_effect_init_lines(void);
+void arena_effect_queue_line(VECTOR *from, VECTOR *to, CVECTOR *color);
+void arena_effect_draw_lines(u32 *ot);
 
 #endif

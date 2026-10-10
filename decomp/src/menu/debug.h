@@ -25,11 +25,11 @@ typedef struct PathMarker {
     u8 pad[2];
 } PathMarker;
 
-extern s32 D_800928F8; /* recorded path points */
+extern s32 arena_debug_path_marker_count; /* recorded path points */
 /* Thirty records end the BSS the resident's mode table clears (8009b558);
- * func_80087E38 records up to 31, the last over the heap that follows. */
-extern PathMarker D_8009A928[30];
+ * arena_debug_record_path_point records up to 31, the last over the heap that follows. */
+extern PathMarker arena_debug_path_markers[30];
 
-void func_80088308(void);
+void arena_debug_stop_lines(void);
 
 #endif

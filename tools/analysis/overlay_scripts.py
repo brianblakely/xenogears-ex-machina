@@ -11,12 +11,12 @@ data:
   handler returns the halfwords to advance; 0 yields until the actor's next
   update. Only func_800827C8 (D_8009A758) and func_800838E8 (D_8009AC60) give
   an actor a script.
-* Arena scene scripts, func_8007107C (decomp/src/menu/menu2.c). Bytes; switch
+* Arena scene scripts, arena_scene_run_script (decomp/src/menu/menu2.c). Bytes; switch
   cases 1-34 take one to three bytes, except 16 and 17, which never advance
   and never return. 0 and every value without a case return without
-  advancing. func_80070F80 starts the scripts: D_8009105C[scene]
-  (func_8007191C, scenes 0-9), the opening D_80090F38 (func_800719F0) and the
-  setup script D_800910C4 (func_800720D4).
+  advancing. arena_scene_start_script starts the scripts: arena_scene_scripts[scene]
+  (arena_scene_enter, scenes 0-9), the opening arena_scene_opening_script (arena_scene_start_tutorial) and the
+  setup script arena_scene_bout_end_script (arena_scene_start_bout_end).
 * World map scene directors, the update handlers func_8007A9F8,
   func_8007C3B8, func_8007DE98, func_80080370 and func_800811C0 of the
   scripted world-map modes 14, 12, 15, 13 and 16. Each switches on its
@@ -26,7 +26,7 @@ data:
   runs one cue and stores state 1 (or 0). A cue that clears D_8009D554 ends
   the world-map loop (func_800712D0) after that frame, so the director never
   runs again.
-* Arena move frame events, func_80074678 (decomp/src/menu/menu3.c). A gear
+* Arena move frame events, arena_frame_event_run (decomp/src/menu/menu3.c). A gear
   model file (directory 0x30/1) holds per animation a list of FrameEvent
   records {first, last, spec} ending in first 0xFF; each record whose frame
   range holds the frame runs the HitSpec at header + spec through a switch on
@@ -148,12 +148,12 @@ WORLDMAP = Machine(
     },
 )
 
-# Switch cases of func_8007107C in decomp/src/menu/menu2.c. Operands are
+# Switch cases of arena_scene_run_script in decomp/src/menu/menu2.c. Operands are
 # unsigned bytes. Headings are relative to the facing toward the opponent.
 ARENA = Machine(
     name="arena",
     overlay="menu",
-    interpreter="func_8007107C",
+    interpreter="arena_scene_run_script",
     table="switch",
     unit=1,
     signed=False,
@@ -255,12 +255,12 @@ def scripts(machine: Machine, data: bytes, base: int = BASE) -> list[tuple[str, 
             raise ScriptError("D_8009A3C0 does not hold the recovered handlers")
         return [("func_800827C8", 0x8009A758), ("func_800838E8", 0x8009AC60)]
     table = words(data, 0x8009105C, 10, base)
-    found = [("func_800719F0", 0x80090F38), ("func_800720D4", 0x800910C4)]
-    return found + [(f"D_8009105C[{scene}]", address) for scene, address in enumerate(table)]
+    found = [("arena_scene_start_tutorial", 0x80090F38), ("arena_scene_start_bout_end", 0x800910C4)]
+    return found + [(f"arena_scene_scripts[{scene}]", address) for scene, address in enumerate(table)]
 
 
 # Script-shaped data that nothing starts (menu2.c); decoded and reported apart.
-UNREFERENCED = {ARENA.name: [("D_80091050", 0x80091050)], WORLDMAP.name: []}
+UNREFERENCED = {ARENA.name: [("arena_scene_unreferenced_script", 0x80091050)], WORLDMAP.name: []}
 
 
 @dataclass
@@ -807,14 +807,14 @@ HIT_SPEC = {
     "vertex_b": (6, 2, True),
 }
 EVENT_END = 0xFF  # a record whose first frame is 0xFF ends the list
-EVENT_TABLE = 0x34  # header + 0x34: an s16 event list offset per animation (func_80084C88)
-MODEL_DIRECTORY = (0x30, 1)  # func_8008509C: model id n is file n + 2
+EVENT_TABLE = 0x34  # header + 0x34: an s16 event list offset per animation (arena_actor_init_from_model_file)
+MODEL_DIRECTORY = (0x30, 1)  # arena_actor_load_model: model id n is file n + 2
 
 
 @dataclass(frozen=True)
 class EventKind:
     mnemonic: str
-    handler: str  # func_80074678's case and the function it calls
+    handler: str  # arena_frame_event_run's case and the function it calls
     fields: tuple[tuple[str, str], ...]  # (HitSpec field the case reads, its role)
     runs: str  # which of a call's frames run it
 
@@ -833,55 +833,55 @@ POINTS = (
 EVENT_KINDS = {
     0: EventKind(
         "hit",
-        "func_80074678 case 0: func_800740E4",
+        "arena_frame_event_run case 0: arena_frame_event_hit",
         POINTS,
         "every frame of the range; it is live (actor flag 0x4000000) from the first frame"
-        " until the last or until one of its trails connects (func_80075B50)",
+        " until the last or until one of its trails connects (arena_actor_test_hits)",
     ),
     1: EventKind(
         "sounds",
-        "func_80074678 case 1: func_8008EB88",
+        "arena_frame_event_run case 1: arena_sound_play_actor_effect",
         (("part_a", "sound_a"), ("part_b", "sound_b")),
         "only the first kind-1 event of a call",
     ),
     2: EventKind(
         "effect",
-        "func_80074678 case 2: func_80073F34",
+        "arena_frame_event_run case 2: arena_frame_event_effect",
         POINTS,
         "once per HitSpec in a call, up to 20 (the count is never initialised)",
     ),
-    3: EventKind("return_home", "func_80074678 case 3: func_80078154", (), "every frame"),
-    4: EventKind("hide_part", "func_80074678 case 4", (("type", "part"),), "every frame"),
-    5: EventKind("show_part", "func_80074678 case 5", (("type", "part"),), "every frame"),
+    3: EventKind("return_home", "arena_frame_event_run case 3: arena_frame_event_return_home", (), "every frame"),
+    4: EventKind("hide_part", "arena_frame_event_run case 4", (("type", "part"),), "every frame"),
+    5: EventKind("show_part", "arena_frame_event_run case 5", (("type", "part"),), "every frame"),
 }
 
 
 def hit_form(type_: int) -> str:
-    """func_800740E4's use of a hit's type while the hit is live; bit 0x40
-    drops the sparkle trail (func_8007C880 / func_8007CD44) of every frame."""
+    """arena_frame_event_hit's use of a hit's type while the hit is live; bit 0x40
+    drops the sparkle trail (arena_effect_start_trail_sparkle / arena_effect_start_line_sparkle) of every frame."""
     if type_ == 0x20:
-        return "charged_shot"  # func_80073424 kind 0 if the charge is taken, else sparkle 9
+        return "charged_shot"  # arena_actor_fire_shot kind 0 if the charge is taken, else sparkle 9
     if type_ == 4:
-        return "shot_1_at_opponent"  # func_80073424 kind 1, b unused
+        return "shot_1_at_opponent"  # arena_actor_fire_shot kind 1, b unused
     if 0x21 <= type_ <= 0x26:
-        return f"shot_{type_ - 0x20}"  # func_80073424, away from b when the points differ
-    return "trail_no_sparkle" if type_ & 0x40 else "trail"  # func_80073CEC
+        return f"shot_{type_ - 0x20}"  # arena_actor_fire_shot, away from b when the points differ
+    return "trail_no_sparkle" if type_ & 0x40 else "trail"  # arena_actor_record_trail
 
 
-SPARKLE_SIZES = 3  # D_80091228, indexed by type - 0x20
+SPARKLE_SIZES = 3  # arena_effect_trail_sizes, indexed by type - 0x20
 
 
 def effect_form(type_: int) -> str:
-    """func_80073F34's dispatch on an effect's type; "none" has no case in the
-    callee and "past_table" indexes past D_80091228."""
-    if 0x10 <= type_ < 0x20:  # func_8007D25C: between the two points
+    """arena_frame_event_effect's dispatch on an effect's type; "none" has no case in the
+    callee and "past_table" indexes past arena_effect_trail_sizes."""
+    if 0x10 <= type_ < 0x20:  # arena_effect_is_two_point_type: between the two points
         if type_ == 0x10:
-            return "line"  # func_8007CD44
-        return f"bolt_{type_ - 0x11}" if type_ <= 0x13 else "none"  # func_8007D65C
-    if type_ >= 0x20:  # func_8007C880 at a or the midpoint
+            return "line"  # arena_effect_start_line_sparkle
+        return f"bolt_{type_ - 0x11}" if type_ <= 0x13 else "none"  # arena_effect_queue_bolt_by_type
+    if type_ >= 0x20:  # arena_effect_start_trail_sparkle at a or the midpoint
         return f"sparkle_trail_{type_ - 0x20}" if type_ - 0x20 < SPARKLE_SIZES else "past_table"
     if type_ <= 4:
-        return f"sparkle_{type_}"  # func_8007D190
+        return f"sparkle_{type_}"  # arena_effect_spawn_sparkle
     if 8 <= type_ <= 12:
         return f"sparkle_{type_ - 8}_jittered"
     return "none"
@@ -957,8 +957,8 @@ WORD = (0, 4, False)
 
 
 def model_file(data: bytes) -> ModelFile:
-    """The pointers func_8008AF6C relocates (absolute against the build address
-    at +0x1C) and the event list offsets at header + 0x34 (func_80084C88), one
+    """The pointers arena_node_relocate_model_file relocates (absolute against the build address
+    at +0x1C) and the event list offsets at header + 0x34 (arena_actor_init_from_model_file), one
     per animation of the table at +0x08 (0: none)."""
     base = field_value(data, 0x1C, WORD)
     header = field_value(data, 0x10, WORD) - base
@@ -971,7 +971,7 @@ def model_file(data: bytes) -> ModelFile:
 
 
 def loaded(disc: Disc, slot: int) -> bytes:
-    """The bytes func_800891C0 reads into memory: the file's size rounded up
+    """The bytes arena_load_whole_file reads into memory: the file's size rounded up
     to words (cd_get_aligned_file_size); the rest of its last sector is not copied."""
     return disc.sectors(slot)[: (disc.entries[slot]["size"] + 3) & ~3]
 
@@ -1082,7 +1082,7 @@ def spans_text(values: list[int]) -> str:
 def event_report(root: Path = ROOT) -> int:
     group, index = MODEL_DIRECTORY
     print(
-        f"arena-events: interpreter func_80074678, {len(EVENT_KINDS)} kinds (switch),"
+        f"arena-events: interpreter arena_frame_event_run, {len(EVENT_KINDS)} kinds (switch),"
         f" model files of directory {group:#x}/{index}"
     )
     results = {}

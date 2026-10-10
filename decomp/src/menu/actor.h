@@ -30,7 +30,7 @@ typedef struct {
     u8 unk42[0x2];
 } Shot;
 
-/* Projectile kinds (D_800910F4). */
+/* Projectile kinds (arena_actor_shot_kinds). */
 typedef struct {
     u16 unk0;
     u8 unk2;
@@ -87,7 +87,7 @@ typedef struct {
     u8 unkA;
 } Move;
 
-/* Per-side hit bookkeeping (D_80096FB8, one record per side). */
+/* Per-side hit bookkeeping (arena_actor_side_move_info, one record per side). */
 typedef struct SideHits {
     s32 unk0;
     u8 unk4;
@@ -272,7 +272,7 @@ typedef struct {
     u32 unk12 : 3;
     u32 flag15 : 1;
     u32 flag16 : 1;
-    u32 flag17 : 1;    /* the actor faces the other way (D_800928F4) */
+    u32 flag17 : 1;    /* the actor faces the other way (arena_camera_side_flipped) */
     u32 unk18 : 14;
 } ActorFlagBits;
 
@@ -295,7 +295,7 @@ typedef struct {
     s16 spec;
 } FrameEvent;
 
-/* A frame event's operands: its kind (func_80074678's case), the type its
+/* A frame event's operands: its kind (arena_frame_event_run's case), the type its
  * kind dispatches on, and the model part and vertex of one or two points.
  * Kinds 1, 3, 4 and 5 read only the first 4, 1, 2 and 2 bytes. */
 typedef struct {
@@ -316,7 +316,7 @@ typedef struct {
 } AnimRule;
 
 /* Which special moves an actor has learned and may use. */
-/* Per model id (D_80092874, 0x20 bytes each). */
+/* Per model id (arena_actor_move_lists, 0x20 bytes each). */
 typedef struct MoveList {
     s16 base;       /* 0x00: scales the combo damage (percent per level) */
     u8 unk2[0x2];
@@ -332,37 +332,37 @@ typedef struct MoveSlot {
     u8 usable;
 } MoveSlot;
 
-extern ShotKind D_800910F4[];
-extern s32 D_8009112C;           /* "ETHER": the name of an ether attack */
-extern AnimRule D_80091130[];
-extern u8 D_80091178[];          /* pairs: next combo number after each button */
-extern s32 D_80091198[];         /* the name of each combo number */
-extern SpriteModel D_80091FB0;   /* the extra object attached to the actors */
-extern u8 D_800925A4[15][3];     /* each combo's command inputs (1 A, 2 B), by special move */
-extern s32 D_8009284C;           /* horizontal distance between the actors */
-extern s32 D_80092850;           /* distance between the actors */
-extern MoveList *D_80092874;     /* per model id */
-extern s32 D_80092934;           /* heading from the second actor to the first */
-extern SideHits D_80096FB8[2];
-extern Actor D_80097010;
-extern Actor D_8009872C;
+extern ShotKind arena_actor_shot_kinds[];
+extern s32 arena_actor_ether_attack_name;           /* "ETHER": the name of an ether attack */
+extern AnimRule arena_actor_anim_rules[];
+extern u8 arena_actor_combo_transitions[];          /* pairs: next combo number after each button */
+extern s32 arena_actor_combo_names[];         /* the name of each combo number */
+extern SpriteModel arena_actor_extra_model;   /* the extra object attached to the actors */
+extern u8 arena_actor_combo_inputs[15][3];     /* each combo's command inputs (1 A, 2 B), by special move */
+extern s32 arena_actors_flat_distance;           /* horizontal distance between the actors */
+extern s32 arena_actors_distance;           /* distance between the actors */
+extern MoveList *arena_actor_move_lists;     /* per model id */
+extern s32 arena_actors_heading;           /* heading from the second actor to the first */
+extern SideHits arena_actor_side_move_info[2];
+extern Actor arena_second_actor;
+extern Actor arena_first_actor;
 
-void func_80073B7C(Actor *actor, s32 part, s32 vertex, VECTOR *out);
-s32 func_80073DE4(Actor *actor, s32 amount);
-void func_80074678(Actor *actor, s16 frame, s16 count);
-void func_80074BA4(Actor *actor);
-void func_8007639C(Actor *actor, u8 input); /* queue a command input */
-void func_80076424(Actor *actor);
-void func_8007661C(Actor *actor);
-s32 func_800767C8(Actor *actor);
-s32 func_80077584(Actor *actor, s32 angle, s32 shift, s32 lift);
-s32 func_800776A8(Actor *actor, s32 arg); /* start the side's pad vibration */
-void func_80078154(Actor *actor);
-void func_80078ED4(s16 *params);
-void func_80078F00(Actor *actor);
-void func_8007B210(Actor *model, s32 mode);
-void func_80084BEC(Actor *actor);
-void func_8008509C(s32 which, s32 id);
-void func_80085134(s32 which);
+void arena_actor_get_part_point(Actor *actor, s32 part, s32 vertex, VECTOR *out);
+s32 arena_actor_can_take_charge(Actor *actor, s32 amount);
+void arena_frame_event_run(Actor *actor, s16 frame, s16 count);
+void arena_actor_record_pose_and_animate(Actor *actor);
+void arena_actor_queue_input(Actor *actor, u8 input); /* queue a command input */
+void arena_actor_clear_inputs(Actor *actor);
+void arena_actor_draw_move_info(Actor *actor);
+s32 arena_actor_queue_back_dash(Actor *actor);
+s32 arena_actor_push(Actor *actor, s32 angle, s32 shift, s32 lift);
+s32 arena_actor_vibrate_pad(Actor *actor, s32 arg); /* start the side's pad vibration */
+void arena_frame_event_return_home(Actor *actor);
+void arena_actor_init_parameter_block(s16 *params);
+void arena_actor_reset_for_round(Actor *actor);
+void arena_actor_play_animation(Actor *model, s32 mode);
+void arena_actor_attach_extra_model(Actor *actor);
+void arena_actor_load_model(s32 which, s32 id);
+void arena_actor_release_model(s32 which);
 
 #endif

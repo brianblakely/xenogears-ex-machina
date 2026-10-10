@@ -6,16 +6,16 @@ ORIGINAL_SHA256 := 3e6df915e9c7f05f5fb997cb331392f1333e867dfb2628cd65e5e1ea15756
 # Its uninitialized data ends at 8009b558: the resident's mode table entry 4
 # (800180cc) clears the words after 800925d0 through 8009b554 (80019560).
 BSS_END := 0x8009B558
-# Mode 4 enters func_80088E90 (main.c mode_table); after every target links,
+# Mode 4 enters arena_mode_main (main.c mode_table); after every target links,
 # tools/cross_image.py compares the entry and the BSS bounds with this link.
 MODE := 4
-MODE_ENTRY := func_80088E90
+MODE_ENTRY := arena_mode_main
 BUILD := .local/decomp/build/menu
 IMAGE := .local/decomp/build/menu.bin
 LINKER_SCRIPT := .local/decomp/menu/menu.ld
 LINKER_EXTRA := .local/decomp/menu/undefined_syms_auto.txt .local/decomp/menu/undefined_funcs_auto.txt decomp/targets/overlays/menu.resident.ld decomp/targets/overlays/menu.bss.ld
-# menu.bss.ld names the opponent's command byte D_80099DA2 inside the
-# settings common D_80099D98: func_8008F280 reads it by that name three times,
+# menu.bss.ld names the opponent's command byte arena_settings_command inside the
+# settings common arena_settings: arena_brain_run_practice_command reads it by that name three times,
 # and as a member GCC keeps its address in a register where the original
 # loads it absolutely at each read. verify accepts it as a view.
 LINK_VIEWS := decomp/targets/overlays/menu.bss.ld

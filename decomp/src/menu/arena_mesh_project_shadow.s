@@ -1,4 +1,4 @@
-# Project transformed mesh vertices along D_8009A2C8 onto the y=0 plane.
+# Project transformed mesh vertices along arena_mesh_light_direction onto the y=0 plane.
 # a0: SVector inputs; a1: SVector work records; a2: positive vertex count.
 # With L = the mesh light vector and (x,y,z) = the GTE MAC1..3 result:
 #   work.vx = (x*L.y - L.x*y) / (L.y-y)
@@ -27,9 +27,9 @@
     mflo    $t0
 .endm
 
-glabel func_8008C3A8
-    lui     $t0, %hi(D_8009A2C8)
-    addiu   $t0, $t0, %lo(D_8009A2C8)
+glabel arena_mesh_project_shadow
+    lui     $t0, %hi(arena_mesh_light_direction)
+    addiu   $t0, $t0, %lo(arena_mesh_light_direction)
     lw      $t6, 0($t0)         # L.x
     lw      $t5, 4($t0)         # L.y
     lw      $t4, 8($t0)         # L.z
@@ -81,4 +81,4 @@ glabel func_8008C3A8
      addiu  $a1, $a1, 8
     jr      $ra
      nop
-endlabel func_8008C3A8
+endlabel arena_mesh_project_shadow

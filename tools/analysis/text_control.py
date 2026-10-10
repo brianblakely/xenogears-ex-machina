@@ -417,7 +417,7 @@ def text_tables(disc: Disc):
     data = disc.sectors(disc.slot(0x10, 0, 2))  # 801c72bc MenuDataArchive +3C/+40/+54/+58/+D4..;
     for index in (14, 15, 20, 21, 52, 53, 54, 55, 0x27, 0x28, 0x29, *range(0x2C, 0x34)):
         yield "menu data", index, archive_entry(data, index, packed=True)  # shops 801c6828/801c6a54
-    mode = unpack(disc.sectors(disc.slot(0x30, 0, 3)))  # menu mode file 3: D_80092880 = entry 0
+    mode = unpack(disc.sectors(disc.slot(0x30, 0, 3)))  # menu mode file 3: arena_text_message_table = entry 0
     yield "menu mode", 0, archive_entry(mode, 0)
     battle = disc.sectors(disc.slot(12, 0, 3))  # mode_battle_setup_archive (8001bbac)
     for index in (0x0F, 0x25):  # archive[0x10] battle_item_name_table, archive[0x26] battle_message_table (ovl2615)

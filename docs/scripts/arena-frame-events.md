@@ -1,13 +1,13 @@
 # Arena move frame events
 
-- **Interpreter:** `func_80074678` (`decomp/src/menu/menu3.c`) in the `menu` overlay
+- **Interpreter:** `arena_frame_event_run` (`decomp/src/menu/menu3.c`) in the `menu` overlay
   (Disc 1 file 35, Disc 2 file 30). It is called with a frame and a count for an
   arena actor's current animation and covers count frames from that frame, once per
   frame. It is the arena counterpart of the battle animation events.
 - **Data:** the gear model files, directory (0x30, 1) file `id + 2` for model ids
-  0-48 (Disc 1 slots 52-100, Disc 2 slots 47-95). `func_8008509C` loads one with
-  `func_800891C0`, which reads the file's size rounded up to words. `func_800852C4`
-  unpacks it (80032E88), and `func_80084C88` relocates it (`func_8008AF6C`, against
+  0-48 (Disc 1 slots 52-100, Disc 2 slots 47-95). `arena_actor_load_model` loads one with
+  `arena_load_whole_file`, which reads the file's size rounded up to words. `arena_mode_task`
+  unpacks it (80032E88), and `arena_actor_init_from_model_file` relocates it (`arena_node_relocate_model_file`, against
   the build address at +0x1C). At +0x34 the header (+0x10) holds one s16
   header-relative list offset (`unk900`, 0 for none) per animation of the table at
   +0x08.
@@ -18,15 +18,15 @@
   files pack them that way. Hit records take 10 bytes, of which the code reads 8.
   There are no jumps.
 - **Dispatch:** a jump-table switch on the kind, six cases, each commented; kinds 0
-  and 2 dispatch again on the type (`func_800740E4`, `func_80073F34`). Any other kind
+  and 2 dispatch again on the type (`arena_frame_event_hit`, `arena_frame_event_effect`). Any other kind
   re-tests the same record forever (`continue`).
 
   | Kind | Handler | Operands | Effect |
   | --- | --- | --- | --- |
-  | 0 hit | `func_800740E4` | type, part/vertex a and b | every frame: a sparkle trail at a, or a line trail from a to b, unless type bit 0x40 is set or the actor's `unk84[2]` is 0; while live (flag 0x4000000, from the first frame until the last or until a trail connects): 0x20 a charged shot, 4 a kind-1 shot at the opponent, 0x21-0x26 shots of kind 1-6 (away from b when the points differ), any other type a trail segment from a to b, the volume `func_80075B50` tests for hits |
-  | 1 sounds | `func_8008EB88` | part_a, part_b: sound ids | both at the actor, for the first kind-1 event of a call only |
-  | 2 effect | `func_80073F34` | type, part/vertex a and b | once per HitSpec in a call, up to 20: 0x10 a line trail, 0x11-0x13 bolts 0-2, 0x20-0x22 sparkle trails, 0-4 sparkles and 8-12 jittered ones. 5-7, 13-15 and 0x14-0x1F do nothing; 0x23 and up read past `D_80091228` |
-  | 3 return_home | `func_80078154` | none | the actor back at its home position, idle |
+  | 0 hit | `arena_frame_event_hit` | type, part/vertex a and b | every frame: a sparkle trail at a, or a line trail from a to b, unless type bit 0x40 is set or the actor's `unk84[2]` is 0; while live (flag 0x4000000, from the first frame until the last or until a trail connects): 0x20 a charged shot, 4 a kind-1 shot at the opponent, 0x21-0x26 shots of kind 1-6 (away from b when the points differ), any other type a trail segment from a to b, the volume `arena_actor_test_hits` tests for hits |
+  | 1 sounds | `arena_sound_play_actor_effect` | part_a, part_b: sound ids | both at the actor, for the first kind-1 event of a call only |
+  | 2 effect | `arena_frame_event_effect` | type, part/vertex a and b | once per HitSpec in a call, up to 20: 0x10 a line trail, 0x11-0x13 bolts 0-2, 0x20-0x22 sparkle trails, 0-4 sparkles and 8-12 jittered ones. 5-7, 13-15 and 0x14-0x1F do nothing; 0x23 and up read past `arena_effect_trail_sizes` |
+  | 3 return_home | `arena_frame_event_return_home` | none | the actor back at its home position, idle |
   | 4 hide_part | case 4 | type: model node | set the node model's hidden flag |
   | 5 show_part | case 5 | type: model node | clear it |
 
@@ -37,7 +37,7 @@
   0x40-0x43; kind 2 uses 0x00-0x02, 0x04, 0x08-0x0C, 0x10-0x12 and 0x20-0x22. The two
   discs give the same counts.
 - **Reads past the file:** in 38 of the 49 files the stream reads past the bytes
-  `func_800891C0` loads before its output is complete, so its last 1-7 output bytes
+  `arena_load_whole_file` loads before its output is complete, so its last 1-7 output bytes
   come from memory after the file. The decoder keeps only the output before that
   read; no event reaches the missing bytes.
 - **Unread bytes:** before the first list, the HitSpec area holds 1174 bytes in the

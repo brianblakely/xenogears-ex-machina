@@ -40,29 +40,29 @@ typedef struct {
 /* Word count of a primitive, from its tag (libgpu P_TAG len). */
 #define TAG_LEN(tag) (((u8 *)(tag))[3])
 
-extern OtPair *D_80091C30;        /* table to compact at the end of the frame */
-extern s16 D_8009285C;            /* display width */
-extern DisplayBuffer *D_80092868; /* the buffer being drawn */
-extern s16 D_8009286C;            /* display height */
-extern DisplayBuffer *D_80092870; /* the buffer being displayed */
-extern u8 D_800928A0;             /* index of the buffer being built */
-extern u32 *D_800928E4;           /* ordering table primitives are added to */
-extern s32 D_80092914;            /* colour changed this frame */
-extern u32 *D_80092938;           /* ordering table of the buffer being built */
-extern MATRIX D_80096FE0;         /* screen scale */
-extern DisplayBuffer D_8009A0D8[2];
+extern OtPair *arena_display_layer_to_compact;        /* table to compact at the end of the frame */
+extern s16 arena_display_width;            /* display width */
+extern DisplayBuffer *arena_current_draw_buffer; /* the buffer being drawn */
+extern s16 arena_display_height;            /* display height */
+extern DisplayBuffer *arena_unread_shown_buffer; /* the buffer being displayed */
+extern u8 arena_draw_buffer_index;             /* index of the buffer being built */
+extern u32 *arena_current_layer_ot;           /* ordering table primitives are added to */
+extern s32 arena_node_color_changed;            /* colour changed this frame */
+extern u32 *arena_current_ot;           /* ordering table of the buffer being built */
+extern MATRIX arena_display_screen_scale;         /* screen scale */
+extern DisplayBuffer arena_display_buffers[2];
 
-void func_80083BB4(s32 both); /* clear one or both display areas */
-void func_80089210(s32 width, s32 height);
-void func_80089330(s32 width, s32 height);
-void func_80089534(s32 width, s32 height);
-void func_8008976C(s32 width, s32 height);
-OtPair *func_8008A2B8(u16 length);
-void func_8008A3A8(OtPair *layer);
-void func_8008AC0C(OtPair *pair);
-void func_8008AC7C(OtPair *pair);
-void func_8008AC8C(void);
-void func_8008ACB8(s32 frames);
-void func_8008AE1C(OtPair *layer);
+void arena_display_clear_buffers(s32 both); /* clear one or both display areas */
+void arena_display_set_screen_scale(s32 width, s32 height);
+void arena_display_set_disp_envs(s32 width, s32 height);
+void arena_display_set_draw_envs(s32 width, s32 height);
+void arena_display_set_resolution(s32 width, s32 height);
+OtPair *arena_display_alloc_layer(u16 length);
+void arena_display_free_layer(OtPair *layer);
+void arena_display_start_layer(OtPair *pair);
+void arena_display_choose_layer_to_compact(OtPair *pair);
+void arena_display_note_frame_start(void);
+void arena_display_compact_layer(s32 frames);
+void arena_display_link_layer(OtPair *layer);
 
 #endif

@@ -3,7 +3,7 @@
 # SVector *a1. Translation is disabled by mvmva's cv=3 selector.
 # Handwritten: t0-t2 temporaries; a plain-C probe under GCC 2.7.2 and 2.6.3
 # uses v0/v1/a0.
-glabel func_8008DDFC
+glabel arena_gte_rotate_scale_svector
     lwc2    $0, 0($a0)           # VXY0
     lwc2    $1, 4($a0)           # VZ0
     mtc2    $a2, $8             # IR0
@@ -28,4 +28,4 @@ glabel func_8008DDFC
     sh      $t1, 2($a1)
     jr      $ra
      sh     $t2, 4($a1)
-endlabel func_8008DDFC
+endlabel arena_gte_rotate_scale_svector

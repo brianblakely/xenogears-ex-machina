@@ -9,7 +9,7 @@
 # Return the emitted triangle count. No OT bounds or GTE flag test is made.
 # Handwritten: callee saves below the unchanged sp without a frame, a
 # trapping add and GTE stores (swc2) in branch delay slots.
-glabel func_80072D18
+glabel arena_stage_draw_ground_cells
     # This leaf saves registers below the caller's unchanged stack pointer.
     # Preserve its unused s0 save and the gap at sp-12 as well.
     sw      $s0, -4($sp)
@@ -31,10 +31,10 @@ glabel func_80072D18
     ori     $t6, $t6, 0x80
     ori     $a3, $a3, 0x100
     ori     $t5, $t5, 0x120
-    lui     $t0, %hi(D_800928A0)
-    lbu     $t0, %lo(D_800928A0)($t0)
-    lui     $t1, %hi(D_80092854)
-    addiu   $t1, $t1, %lo(D_80092854)
+    lui     $t0, %hi(arena_draw_buffer_index)
+    lbu     $t0, %lo(arena_draw_buffer_index)($t0)
+    lui     $t1, %hi(arena_stage_ground_triangles)
+    addiu   $t1, $t1, %lo(arena_stage_ground_triangles)
     sll     $t0, $t0, 2
     add     $t0, $t0, $t1
     lw      $s4, 0($t0)
@@ -67,8 +67,8 @@ glabel func_80072D18
     sll     $t0, $t7, 7
     addu    $t0, $t0, $t1
     sll     $t0, $t0, 2
-    lui     $t3, %hi(D_800928DC)
-    lw      $t3, %lo(D_800928DC)($t3)
+    lui     $t3, %hi(arena_stage_height_map)
+    lw      $t3, %lo(arena_stage_height_map)($t3)
     sll     $s1, $s1, 2
     addu    $t4, $t3, $t0       # current four-byte height/texture record
     addu    $t9, $t4, $s1       # exclusive row end
@@ -138,10 +138,10 @@ glabel func_80072D18
      nop
 
     # Count only emitted packets. Keep the pool's stored base unchanged.
-    lui     $t0, %hi(D_800928A0)
-    lbu     $t0, %lo(D_800928A0)($t0)
-    lui     $t1, %hi(D_80092854)
-    addiu   $t1, $t1, %lo(D_80092854)
+    lui     $t0, %hi(arena_draw_buffer_index)
+    lbu     $t0, %lo(arena_draw_buffer_index)($t0)
+    lui     $t1, %hi(arena_stage_ground_triangles)
+    addiu   $t1, $t1, %lo(arena_stage_ground_triangles)
     sll     $t0, $t0, 2
     addu    $t0, $t0, $t1
     lw      $t0, 0($t0)
@@ -163,5 +163,5 @@ glabel func_80072D18
     lw      $s6, -32($sp)
     jr      $ra
      lw     $s7, -36($sp)
-endlabel func_80072D18
+endlabel arena_stage_draw_ground_cells
     nop                         # original word before the vector helpers

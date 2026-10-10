@@ -938,7 +938,7 @@ void field_event_copy_character(void) {
 }
 
 /* 80087800: Event: store the arena bout's outcome (80050622, the byte after the six
- * parameters ext bf sets; menu3 func_80075060 writes it) in variable
+ * parameters ext bf sets; menu3 arena_bout_record_outcome writes it) in variable
  * operand 1. */
 void field_event_store_bout_outcome(void) {
     field_event_write_variable(field_event_read_u16(1) & 0xFFFF, mode_arena_bout_outcome);

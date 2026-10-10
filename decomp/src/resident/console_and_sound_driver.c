@@ -56,7 +56,7 @@ u16 console_font_cluts[64] = { /* 80050598 */
 s32 mode_arena_task = 0; /* 80050618: the menu's mode (800379b4) */
 u8 mode_arena_task_parameters[6] = {1, 0, 0, 2, 2, 0}; /* 8005061C: option bytes of the field and menu */
 /* The arena bout's outcome, the byte after them: the menu writes it (menu3.c
- * func_80075060, menu2.c func_80072170) and a field event reads it
+ * arena_bout_record_outcome, menu2.c arena_scene_update_bout_end) and a field event reads it
  * (field_event.c field_event_store_bout_outcome); no resident code addresses it. Whether
  * the original declared it apart or as a seventh byte of mode_arena_task_parameters is open. */
 u8 mode_arena_bout_outcome = 0; /* 80050622 */

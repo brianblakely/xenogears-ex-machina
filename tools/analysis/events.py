@@ -1172,7 +1172,7 @@ bf open_menu_task field_event_open_menu_task 13 wait iv@1 iv@3 iv@5 iv@7 iv@9 iv
     once field control allows select menu task 0 with six parameter
     bytes and end the field (kind 2)
 c0 store_bout_outcome field_event_store_bout_outcome 3 next var@1
-    store the arena bout's outcome (80050622, menu3 func_80075060: 1-3 lost,
+    store the arena bout's outcome (80050622, menu3 arena_bout_record_outcome: 1-3 lost,
     0x82-0x88 won within a limit) in a variable
 c1 store_member_animation field_event_store_member_animation 7 next var@1 var@3 iv@5
     store party member operand 5's animation +0c and actor in variables

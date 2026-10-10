@@ -39,35 +39,35 @@ typedef struct {
     u16 icons[8];      /* 0x20: per icon its texture page, then its palette */
 } MapTable;
 
-extern Environment D_8009178C[];
-extern u8 D_80091834[];          /* per map row: leftmost allowed column */
-extern u8 D_800918B4[];          /* per map row: rightmost allowed column */
-extern MapTable D_80091934;
-extern POLY_FT3 *D_80092854[2];  /* map triangle pool per draw buffer */
-extern Environment *D_8009288C;  /* current stage colours */
-extern s32 D_800928B0;           /* selects the look-at marker (func_80082300 or func_80082178) */
-extern u8 D_800928B4;            /* stage */
-extern GroundSquare *D_800928DC; /* the height map */
-extern s32 D_80092908;           /* back colour blue */
-extern s32 D_80092910;           /* back colour green */
-extern s32 D_8009291C;           /* back colour red */
+extern Environment arena_stage_color_table[];
+extern u8 arena_stage_row_left_limits[];          /* per map row: leftmost allowed column */
+extern u8 arena_stage_row_right_limits[];          /* per map row: rightmost allowed column */
+extern MapTable arena_stage_ground_draw_table;
+extern POLY_FT3 *arena_stage_ground_triangles[2];  /* map triangle pool per draw buffer */
+extern Environment *arena_current_stage_colors;  /* current stage colours */
+extern s32 arena_stage_uses_narrow_view;           /* selects the look-at marker (arena_stage_mark_narrow_view_cells or arena_stage_mark_wide_view_cells) */
+extern u8 arena_stage_index;            /* stage */
+extern GroundSquare *arena_stage_height_map; /* the height map */
+extern s32 arena_stage_back_color_blue;           /* back colour blue */
+extern s32 arena_stage_back_color_green;           /* back colour green */
+extern s32 arena_stage_back_color_red;           /* back colour red */
 
 /* Draw selected map cells using scratchpad row spans and MapTable.
  * Return the emitted triangle count; loaded GTE view/depth-cue state is used. */
-u32 func_80072D18(u32 *ot, s32 originX, s32 originZ);
-void func_80081ECC(void);
-void func_80082458(SVECTOR *out);
-s32 func_80082488(VECTOR *pos, s32 lift);
-s32 func_800828C4(VECTOR *pos);
-void func_800828F8(VECTOR *pos, VECTOR *step, s32 radius);
-void func_80082C4C(MenuImageFile *files);
-void func_800875EC(void);
-void func_80087650(void);
-void func_80087698(s32 x0, s32 y0, s32 x1, s32 y1); /* widen the map's row spans along a line */
-void func_8008779C(u32 *ot, s32 originX, s32 originZ);
-void func_80087830(void);
-void func_800878DC(MenuImageFile *files);
-void func_80087AB0(Actor *actor);
-void func_80087B74(Actor *actor, u32 *ot, MATRIX *view);
+u32 arena_stage_draw_ground_cells(u32 *ot, s32 originX, s32 originZ);
+void arena_stage_init(void);
+void arena_stage_get_ground_normal(SVECTOR *out);
+s32 arena_stage_get_ground_height(VECTOR *pos, s32 lift);
+s32 arena_stage_get_ground_square(VECTOR *pos);
+void arena_stage_keep_step_inside(VECTOR *pos, VECTOR *step, s32 radius);
+void arena_stage_load_wall(MenuImageFile *files);
+void arena_hud_build_overlay_buffers(void);
+void arena_stage_clear_row_spans(void);
+void arena_stage_widen_row_spans(s32 x0, s32 y0, s32 x1, s32 y1); /* widen the map's row spans along a line */
+void arena_stage_draw_ground(u32 *ot, s32 originX, s32 originZ);
+void arena_stage_init_ground_pools(void);
+void arena_stage_load_images(MenuImageFile *files);
+void arena_stage_build_shadow_quad(Actor *actor);
+void arena_stage_draw_shadow(Actor *actor, u32 *ot, MATRIX *view);
 
 #endif

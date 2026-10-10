@@ -5,7 +5,7 @@
 
 /* Cooperative tasks (menu7 8008BA2C-8008BCC8): a task runs on its own
  * stack until it yields back to the frame loop (handwritten context
- * switches, func_8008BB00.s and its kin). */
+ * switches, arena_task_save_scheduler.s and its kin). */
 
 /* Cooperative task: registers saved by number, then its stack. */
 typedef struct {
@@ -19,10 +19,10 @@ typedef struct {
     TaskContext *task;
 } TaskCallerContext;
 
-TaskContext *func_8008BA2C(void (*entry)(s32), s32 arg, u32 *stack, s32 words); /* create */
-void func_8008BB00(TaskCallerContext *context); /* save the scheduler state */
-void func_8008BB1C(TaskCallerContext *context); /* restore it */
-void func_8008BB3C(TaskContext *task); /* run the task until it yields */
-void func_8008BC04(void);              /* yield the current task */
+TaskContext *arena_task_create(void (*entry)(s32), s32 arg, u32 *stack, s32 words); /* create */
+void arena_task_save_scheduler(TaskCallerContext *context); /* save the scheduler state */
+void arena_task_restore_scheduler(TaskCallerContext *context); /* restore it */
+void arena_task_resume(TaskContext *task); /* run the task until it yields */
+void arena_task_yield(void);              /* yield the current task */
 
 #endif

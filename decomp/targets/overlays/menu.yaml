@@ -73,20 +73,20 @@ segments:
       - [0x37DC, c, menu3]
       - [0xEA38, c, menu4]
       - [0x123DC, c, menu5]
-      # menu6 opens with a data word in .text: the mode-task table D_80088BFC.
+      # menu6 opens with a data word in .text: the mode-task table arena_mode_tasks.
       - [0x1910C, c, menu6]
       - [0x196D0, c, menu7]
       # Initialized data of each unit in link order; menu has none.
       - [0x21448, .data, menu2]
       - [0x21604, .data, menu3]
       - [0x21740, .data, menu4]
-      # menu5's data opens with the stage colours (D_8009178C), which only
-      # its func_80082A70 reads.
+      # menu5's data opens with the stage colours (arena_stage_color_table), which only
+      # its arena_stage_apply_colors reads.
       - [0x21C9C, .data, menu5]
       # menu6's gear list: its strings open menu6's rodata (80070284).
       - [0x21E74, .data, menu6]
-      # menu7's .data ends with the embedded sprite model D_80091FB0 (asset,
-      # menu.classification.txt) and D_800925A4, followed by three stray
+      # menu7's .data ends with the embedded sprite model arena_actor_extra_model (asset,
+      # menu.classification.txt) and arena_actor_combo_inputs, followed by three stray
       # bytes ("ind").
       - [0x2211C, .data, menu7]
       # The uninitialized variables. The menu's assembler put those of up
@@ -100,12 +100,12 @@ segments:
       # large commons up to the mode table's BSS end (menu.bss.ld). Every
       # object in 800925D4-80092954 has at most eight bytes and every one
       # from 80092954 on more, apart from the handwritten scheduler's two
-      # words (func_8008BB00.s), which an explicit .bss puts there. Every
+      # words (arena_task_save_scheduler.s), which an explicit .bss puts there. Every
       # variable a unit reads lies in its own range, which places or bounds
       # the text boundaries above (tools/data_users.py menu.mk: its one
-      # FOREIGN address, 80092A30, menu2's func_80072170 only forms, as the
-      # end of its loop over the embers D_800929F4[3]; it is the pad word of
-      # menu3's D_80092A24 behind them). Splat links the .sbss into the
+      # FOREIGN address, 80092A30, menu2's arena_scene_update_bout_end only forms, as the
+      # end of its loop over the embers arena_scene_bout_end_embers[3]; it is the pad word of
+      # menu3's arena_effect_hit_spark_position behind them). Splat links the .sbss into the
       # loaded section as data entries; listing each .bss with its vram and
       # the segment's bss_size keeps their names out of
       # undefined_syms_auto.txt, so the link places every variable from its
@@ -126,5 +126,5 @@ segments:
   - [0x22E64]
   # The packer completes its last group of eight tokens with zero literals
   # and records the padded length (menu.mk), so the decoded image ends five
-  # zero bytes after the program, inside the window record D_80092954.
+  # zero bytes after the program, inside the window record arena_scene_choice_window.
   - [0x22e69]

@@ -4,4 +4,4 @@
  * phase). */
 #include "common.h"
 
-const s32 D_8006FAF0 = 7;
+const s32 arena_overlay_number = 7; /* 8006FAF0 */

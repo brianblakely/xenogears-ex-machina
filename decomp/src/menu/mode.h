@@ -10,7 +10,7 @@
  * files and runs the title, options and scene screens, its music, and the
  * option settings and progress flags it keeps in the game data. */
 
-/* The menu's image file (D_800917C0[4], unpacked): pointers to its TIM
+/* The menu's image file (arena_mode_files[4], unpacked): pointers to its TIM
  * images, named by their readers. */
 typedef struct MenuImageFile {
     u_long *unk0;
@@ -47,30 +47,30 @@ typedef struct Settings {
     s16 unkC;
 } Settings;
 
-extern void (*D_80088BFC[])(s32);  /* mode tasks, by mode_arena_task */
-extern FileRequest D_800917C0[6];  /* sequence, sound bank, messages, map, scene; zero file */
-extern s32 D_800917F0;             /* nonzero: the menu plays its own sequence */
-extern char *D_80091BB0[];         /* names of the menu's heap block kinds */
-extern s16 D_80092898;             /* vertical blanks per frame */
-extern s32 D_800928C8;             /* menu mode */
-extern s32 D_800928CC;
-extern u16 D_800928D0;             /* debug display switches */
-extern u8 D_80092920;              /* bit 0: the menu screen is shown */
-extern void (*D_80092930)(void *block); /* debug hook (switch 0x10) */
-extern struct SoundSeq *D_80092948; /* the music sequence */
-extern Settings D_80099D98;
+extern void (*arena_mode_tasks[])(s32);  /* mode tasks, by mode_arena_task */
+extern FileRequest arena_mode_files[6];  /* sequence, sound bank, messages, map, scene; zero file */
+extern s32 arena_mode_own_seq;             /* nonzero: the menu plays its own sequence */
+extern char *arena_mode_heap_tag_names[];         /* names of the menu's heap block kinds */
+extern s16 arena_mode_vblanks_per_frame;             /* vertical blanks per frame */
+extern s32 arena_play_mode;             /* menu mode */
+extern s32 arena_mode_unread_disc_mode_kind;
+extern u16 arena_debug_display_flags;             /* debug display switches */
+extern u8 arena_menu_screen_flags;              /* bit 0: the menu screen is shown */
+extern void (*arena_debug_frame_hook)(void *block); /* debug hook (switch 0x10) */
+extern struct SoundSeq *arena_mode_music_seq; /* the music sequence */
+extern Settings arena_settings;
 
-void func_800851D4(void);
-void func_800852C4(s32 arg);       /* the menu task */
-void func_800888B0(s32 flag);
-s32 func_800888E4(s32 flag);
-void func_8008895C(void);
-s32 func_800889C8(void);
-void func_80088A40(void);
-void func_80088AF8(void);
-void func_80088BD4(s32 flag);
-void func_80088C00(void);
-void func_80088C28(void);
-void func_80088CBC(s32 index);
+void arena_mode_exit(void);
+void arena_mode_task(s32 arg);       /* the menu task */
+void arena_progress_set_flag(s32 flag);
+s32 arena_progress_is_flag_set(s32 flag);
+void arena_progress_add_unlocked_entry(void);
+s32 arena_progress_check_complete(void);
+void arena_settings_save_to_game_data(void);
+void arena_settings_load_from_game_data(void);
+void arena_progress_set_flag_and_check(s32 flag);
+void arena_debug_draw_sync_callback(void);
+void arena_debug_step_counter(void);
+void arena_display_init_buffer_sprite(s32 index);
 
 #endif

@@ -86,7 +86,7 @@ and table, and how each table's index is chosen, is listed in
   ovl2143 actor files (4, 0) 0x6bb + 2k, battle object model files (stages
   (12, 3) 6 + 2s, enemy set model entries, object sets (0x28, 0) 2s + 1, gears and
   their part files by `battle_gear_file_table`), arena models (0x30, 1) id + 2 and the menu
-  overlay's `D_80091FB0`, world map area files (0x24, 0) by `D_8009B584`, and the
+  overlay's `arena_actor_extra_model`, world map area files (0x24, 0) by `D_8009B584`, and the
   models sprite commands f5-f7 bind in the blocks `tools.analysis.sprite_vm`
   finds.
 - Results: disc 1 has 16252 field, 1786 actor, 3404 battle, 1067 menu, 562 world

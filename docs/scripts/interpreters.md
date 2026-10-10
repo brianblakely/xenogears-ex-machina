@@ -54,9 +54,9 @@ documents both; `overlay_scripts` decodes them.
 | `field_event_primary_handlers`, `field_event_extended_handlers` | field | the field event opcode | the field events interpreter |
 | `sound_seq_opcode_handlers` | resident | the sound sequence opcode - 0x80 | the sound sequence interpreter |
 | `D_8009A3C0` | worldmap | the world map actor opcode | the world map actor interpreter |
-| `D_80091368`, `D_80091390`, `D_800913B8`, `D_8009141C`, `D_800914A8`, `D_800914D0`, `D_80091534`, `D_8009155C`, `D_800915AC` | menu | the menu page and cursor (menu4's items and lines) | code |
-| `D_80088BFC` | menu | `mode_arena_task`, which only `mode_set_arena_task(0)` sets (resident and field) | code |
-| `D_80091C74`, `D_80091CC4`, `D_80091CDC` | menu | an emitter's shape and placement, constants at both callers of `func_8008D3F4` (1, 0 and 3, 0); its one update | code |
+| `arena_menu_port1_items`, `arena_menu_port2_items`, `arena_menu_title_items`, `arena_menu_bonus_battling_items`, `arena_menu_pause_items`, `arena_menu_settings_items`, `arena_menu_give_up_items`, `arena_menu_practice_items`, `arena_menu_pages` | menu | the menu page and cursor (menu4's items and lines) | code |
+| `arena_mode_tasks` | menu | `mode_arena_task`, which only `mode_set_arena_task(0)` sets (resident and field) | code |
+| `arena_spark_shapes`, `arena_spark_placement_rules`, `arena_spark_update_callbacks` | menu | an emitter's shape and placement, constants at both callers of `arena_spark_create_emitter` (1, 0 and 3, 0); its one update | code |
 | `D_80099E8C` | worldmap | the actors every area starts, a list ended by kind 0 | code |
 | `D_80099F0C`, `D_80099F24`, `D_80099F3C`, `D_80099F74`, `D_80099FAC`, `D_80099FEC` | worldmap | the area's actor list, `D_8009A034[D_8009C610]`; the area index comes from the position against `D_8009B564`, whose last threshold is 0xffff | code |
 | `mode_table` | resident | the mode number (0-6) the dispatcher `mode_dispatch` runs, set by `mode_select_next_mode` from code and from the movie's next-mode word `cd_movie_request_kind`; rows {entry, BSS start, BSS end, loaded} | [original-boundaries.md](../original-boundaries.md) |
@@ -68,7 +68,7 @@ Switches on a field of a data record take their default for a value without a
 case. The TMD primitive kinds of battle `battle_tmd_build_packets`, `battle_tmd_draw_object` and
 ovl3384 `func_801FC4C4` (mode & 0x1c, lit) are censused in
 [dispatch-tables.md](dispatch-tables.md). The effect events of `800ae2a4` and
-`801e5d44`, the arena hit and effect types (`func_800740E4`, `func_80073F34`),
+`801e5d44`, the arena hit and effect types (`arena_frame_event_hit`, `arena_frame_event_effect`),
 the AI action-list entry types (`800793f0`) and the battle sprite commands'
 arguments (`800c11cc`, `800b3f04`) are decoded with their machines. The battle
 formulas' sub-switches on descriptor fields (`chanceSource`, `amountKind`,

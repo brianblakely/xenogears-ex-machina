@@ -1,10 +1,10 @@
-# Resume TaskContext *a0 until it yields through func_8008BC04. The caller's
+# Resume TaskContext *a0 until it yields through arena_task_yield. The caller's
 # preserved registers live below its unchanged sp while the task runs on
 # its own stack. The save layout skips sp-12 and does not save t8/t9.
 # k0/k1 are preserved too, as required by this original context interface.
 # Handwritten: saves below the unchanged sp, stores sp, k0 and k1, and loads
 # sp and every other register from the task, which compiled code never does.
-glabel func_8008BB3C
+glabel arena_task_resume
     sw      $s0, -4($sp)
     sw      $s1, -8($sp)
     # s2..s7, followed by k0/k1/gp/sp/fp/ra in the caller save area.
@@ -15,10 +15,10 @@ glabel func_8008BB3C
         sw  $\reg, -4*(\reg-16)($sp)
     .endr
 
-    lui     $at, %hi(D_80096D88)
-    sw      $sp, %lo(D_80096D88)($at)
-    lui     $at, %hi(D_80096D8C)
-    sw      $a0, %lo(D_80096D8C)($at)
+    lui     $at, %hi(arena_task_caller_stack)
+    sw      $sp, %lo(arena_task_caller_stack)($at)
+    lui     $at, %hi(arena_current_task)
+    sw      $a0, %lo(arena_current_task)($at)
     addu    $at, $a0, $zero
 
     # TaskContext.regs is indexed by hardware register number. Keep at pointing
@@ -30,4 +30,4 @@ glabel func_8008BB3C
     lw      $sp, 4*29($at)
     jr      $ra
      lw     $fp, 4*30($at)
-endlabel func_8008BB3C
+endlabel arena_task_resume

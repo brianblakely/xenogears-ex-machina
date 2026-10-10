@@ -32,7 +32,7 @@ typedef struct {
 
 typedef struct Menu Menu;
 
-/* A choice menu drawn on a translucent panel (eight in D_800915AC, 0x3C
+/* A choice menu drawn on a translucent panel (eight in arena_menu_pages, 0x3C
  * bytes each); a page's draw callback adds its values column. */
 struct Menu {
     u8 title_width;    /* 0x00: nonzero shifts the lines right */
@@ -49,40 +49,40 @@ struct Menu {
     TILE panel[2];  /* 0x1C: one per buffer */
 };
 
-extern s32 D_800912F0;
-extern char *D_800912F4[];
-extern u8 D_80091300[];       /* frame rate of each rate setting */
-extern s32 D_8009130C[];      /* value of each speed setting */
-extern char *D_8009132C[];    /* names of the entries of setting 10 */
-extern s32 D_80091364;        /* pad port of the menu input */
-extern MenuItem D_80091368[2]; /* vibration choices, port 1 */
-extern MenuItem D_80091390[2]; /* port 2 */
-extern Menu D_800915AC[8];
-extern u8 D_800928FC;         /* pad port driving the menus */
-extern s32 D_80092924;
+extern s32 arena_menu_copy_one_more_frame;
+extern char *arena_menu_level_names[];
+extern u8 arena_menu_frame_rates[];       /* frame rate of each rate setting */
+extern s32 arena_menu_motion_speeds[];      /* value of each speed setting */
+extern char *arena_menu_ai_command_names[];    /* names of the entries of setting 10 */
+extern s32 arena_menu_applied_pad_port;        /* pad port of the menu input */
+extern MenuItem arena_menu_port1_items[2]; /* vibration choices, port 1 */
+extern MenuItem arena_menu_port2_items[2]; /* port 2 */
+extern Menu arena_menu_pages[8];
+extern u8 arena_menu_driving_pad_port;         /* pad port driving the menus */
+extern s32 arena_menu_screen_done;
 
-void func_8007F834(void);
-void func_8007F8B4(void);
-void func_8007F948(Menu *page, s32 entry);
-char *func_8007F97C(void);
-s32 func_8007FF70(s32 value, s32 max, s32 flags);
-void func_80080964(s32 page);
-s32 func_800809BC(void);
-void func_800809D8(void);
-void func_80080A58(void);
-void func_80080AA0(s32 forget);
-void func_80080AE8(void);
-void func_80080B58(void);
-void func_80080C48(s32 mode);
-void func_80080D10(void);
-void func_80080D20(void *ot);
-void func_80080F04(void);
-void func_80081100(s32 text, s32 lower);
-void func_800811AC(void *ot);
-void func_800814AC(void);
-void func_80081A44(void);
-void func_80081D2C(void);
-void func_80081E00(void);
-void func_80081E6C(void);
+void arena_menu_hide_captions(void);
+void arena_menu_close(void);
+void arena_menu_highlight_entry(Menu *page, s32 entry);
+char *arena_menu_get_level_name(void);
+s32 arena_menu_step_setting(s32 value, s32 max, s32 flags);
+void arena_menu_show_page(s32 page);
+s32 arena_menu_is_title_shown(void);
+void arena_menu_enter_title(void);
+void arena_select_drop_portraits(void);
+void arena_menu_free_screen_copy(s32 forget);
+void arena_menu_blur_screen_copy(void);
+void arena_menu_store_screen_copy(void);
+void arena_menu_open_pause(s32 mode);
+void arena_text_drop_quads(void);
+void arena_menu_draw_overlay(void *ot);
+void arena_menu_init_captions(void);
+void arena_menu_show_caption(s32 text, s32 lower);
+void arena_menu_draw_captions(void *ot);
+void arena_menu_init_pages(void);
+void arena_menu_update_port_pages(void);
+void arena_menu_update(void);
+void arena_menu_dim_background(void);
+void arena_menu_reset_background(void);
 
 #endif

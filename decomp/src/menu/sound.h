@@ -23,21 +23,21 @@ typedef struct {
     VECTOR *follow; /* 0x20 */
 } SoundVoice;
 
-extern u8 D_80091EE0[]; /* command sounds: two effect ids (0: none) per entry */
-extern u8 D_80091F60[];
-extern u8 D_80091F70[];
-extern u8 D_80091F80[];
-extern u8 D_80091F90[];
-extern u8 D_80091FA0[];
+extern u8 arena_sound_command_effect_pairs[]; /* command sounds: two effect ids (0: none) per entry */
+extern u8 arena_sound_model29_command_sounds[];
+extern u8 arena_sound_model36_command_sounds[];
+extern u8 arena_sound_model27_command_sounds[];
+extern u8 arena_sound_default_command_sounds[];
+extern u8 arena_sound_model9_command_sounds[];
 
-void func_8008E620(void);
-void func_8008E6F8(Actor *owner);
-void func_8008E78C(s32 sound, s32 mode, VECTOR *pos, s32 tag);
-void func_8008E8B0(void);
-void func_8008EADC(void);
-void func_8008EB4C(s32 id);
-void func_8008EB88(Actor *owner, s32 id, VECTOR *pos, s32 mode);
-void func_8008EBD0(Actor *owner, s32 index, VECTOR *pos, s32 mode);
-s32 func_8008ED6C(Actor *owner, s32 index);
+void arena_sound_reset(void);
+void arena_sound_choose_command_table(Actor *owner);
+void arena_sound_start_voice(s32 sound, s32 mode, VECTOR *pos, s32 tag);
+void arena_sound_update_voices(void);
+void arena_sound_free_stopped_voices(void);
+void arena_sound_play_effect(s32 id);
+void arena_sound_play_actor_effect(Actor *owner, s32 id, VECTOR *pos, s32 mode);
+void arena_sound_play_command_sound(Actor *owner, s32 index, VECTOR *pos, s32 mode);
+s32 arena_sound_stop_command_sound(Actor *owner, s32 index);
 
 #endif

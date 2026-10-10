@@ -22,22 +22,22 @@ typedef struct {
     SPRT sprite;
 } SceneSprite;
 
-extern Glyph D_80091230[]; /* menu font glyphs: digits, capitals, punctuation */
-extern s32 D_800912DC;     /* text width scale (0x100 = 1) */
-extern s32 D_80092880;     /* the menu's message table (text_get_resource_entry) */
+extern Glyph arena_text_glyphs[]; /* menu font glyphs: digits, capitals, punctuation */
+extern s32 arena_text_width_scale;     /* text width scale (0x100 = 1) */
+extern s32 arena_text_message_table;     /* the menu's message table (text_get_resource_entry) */
 
-void func_8007E528(s32 state);
-void func_8007E574(void *ot);
-void func_8007E634(MenuImageFile *files);
-void func_8007E894(s32 x, s32 y);
-Glyph *func_8007E8AC(s32 ch);
-void func_8007E954(s32 value);
-s32 func_8007E964(s32 ch);
-s32 func_8007EB6C(u8 *text);
-void func_8007EBE0(u8 *text);
-void func_8007EC54(u8 *text);
-void func_8007ECF0(u8 *text);
-void func_8007EE08(s32 highlight);
-void func_8007EE68(s32 highlight);
+void arena_text_set_banner_timer(s32 state);
+void arena_text_draw_banner(void *ot);
+void arena_text_load_font_and_banner(MenuImageFile *files);
+void arena_text_move_cursor(s32 x, s32 y);
+Glyph *arena_text_find_glyph(s32 ch);
+void arena_text_set_width_scale(s32 value);
+s32 arena_text_draw_char(s32 ch);
+s32 arena_text_measure_width(u8 *text);
+void arena_text_draw_line(u8 *text);
+void arena_text_draw_line_centered(u8 *text);
+void arena_text_draw_line_right_aligned(u8 *text);
+void arena_text_set_highlight(s32 highlight);
+void arena_text_set_blue_highlight(s32 highlight);
 
 #endif

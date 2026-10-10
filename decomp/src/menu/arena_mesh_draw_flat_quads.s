@@ -9,7 +9,7 @@
 # The pipeline reads an extra face even when the requested count is zero.
 # Handwritten: rtpt and lwc2 in branch delay slots (reorg never puts an asm
 # there), and branch targets inside delay slots.
-glabel func_8008C620
+glabel arena_mesh_draw_flat_quads
     mesh_packet_state 5
     mesh_face_vectors 1
     mesh_packet_start 24
@@ -65,4 +65,4 @@ glabel func_8008C620
     mesh_packet_link 4, .Lmesh_quad_next
 .Lmesh_quad_done:
     mesh_packet_finish 24
-endlabel func_8008C620
+endlabel arena_mesh_draw_flat_quads

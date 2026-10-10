@@ -41,26 +41,26 @@ typedef struct Brain {
     s16 unk30;
 } Brain;
 
-extern u8 D_800928C4; /* enables the retreat rule */
+extern u8 arena_retreat_rule_enabled; /* enables the retreat rule */
 
-void func_8008F280(Actor *actor);
-s32 func_8008F4F4(Actor *actor, s32 fraction);
-s32 func_8008F530(Actor *actor, s32 check);
-s32 func_8008F570(Actor *actor, Brain *brain);
-s32 func_8008F720(Actor *actor, s32 eager);
-void func_8008F7B8(Brain *brain);
-s32 func_8008F9B0(Actor *actor);
-s32 func_8008FACC(Actor *actor, Brain *brain);
-void func_8008FBD8(Actor *actor, Brain *brain);
-void func_8008FC7C(Actor *actor);
-void func_8008FE80(Actor *actor);
-void func_8008FF24(Actor *actor, Brain *brain);
-s32 func_8008FFEC(Actor *actor, Brain *brain);
-void func_80090174(Actor *actor);
-s32 func_80090258(Actor *actor, Brain *brain);
-void func_80090504(Actor *actor, s32 kind);
-void func_80090894(Actor *actor, s32 kind);
-void func_80090CC0(Actor *actor);
-void func_80090E10(Actor *actor);
+void arena_brain_run_practice_command(Actor *actor);
+s32 arena_brain_is_hp_above_fraction(Actor *actor, s32 fraction);
+s32 arena_brain_check_special_charge(Actor *actor, s32 check);
+s32 arena_brain_get_charge_after_special(Actor *actor, Brain *brain);
+s32 arena_brain_decide_close_in(Actor *actor, s32 eager);
+void arena_brain_roll_choices(Brain *brain);
+s32 arena_brain_is_in_far_quadrant(Actor *actor);
+s32 arena_brain_apply_retreat_rule(Actor *actor, Brain *brain);
+void arena_brain_react_with_guard(Actor *actor, Brain *brain);
+void arena_brain_enter_idle_mode(Actor *actor);
+void arena_brain_queue_random_attacks(Actor *actor);
+void arena_brain_take_attack_step(Actor *actor, Brain *brain);
+s32 arena_brain_use_special_move(Actor *actor, Brain *brain);
+void arena_brain_enter_attack_mode(Actor *actor);
+s32 arena_brain_choose_attack(Actor *actor, Brain *brain);
+void arena_brain_enter_approach_mode(Actor *actor, s32 kind);
+void arena_brain_enter_distance_mode(Actor *actor, s32 kind);
+void arena_brain_attach(Actor *actor);
+void arena_brain_update(Actor *actor);
 
 #endif

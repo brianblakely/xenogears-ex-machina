@@ -28,7 +28,7 @@ typedef struct {
     POLY_F4 parts[3];
 } GaugeBar;
 
-/* HUD packets (D_80095698, 0x280 bytes). */
+/* HUD packets (arena_hud_packets, 0x280 bytes). */
 typedef struct {
     SPRT s[2];
 } SpritePair;
@@ -42,19 +42,19 @@ typedef struct {
     POLY_FT4 bar_r[2];     /* 0x230 */
 } Hud;
 
-extern DVECTOR D_800917F4[8];    /* map frame corner layout */
-extern u16 D_80091814[16];       /* gauge palette */
-extern u8 D_80092860;            /* left bar texel row */
-extern u8 D_80092864;            /* right bar texel row */
-extern OverlayBuffer D_8009A2F8[2];
+extern DVECTOR arena_hud_gauge_frame_layout[8];    /* map frame corner layout */
+extern u16 arena_hud_gauge_palette[16];       /* gauge palette */
+extern u8 arena_hud_left_charge_bar_v;            /* left bar texel row */
+extern u8 arena_hud_unread_right_charge_bar_v;            /* right bar texel row */
+extern OverlayBuffer arena_hud_overlay_buffers[2];
 
-void func_80085E90(s32 mirrored, s16 *out, s32 x);
-void func_80085EAC(s32 mirrored, s16 *out, s32 y);
-void func_80085EC8(OverlayBuffer *buf);
-void func_800864B4(TIM_IMAGE *tim, s32 x, s32 y, POLY_FT4 *quad, s32 depth);
-void func_800866D4(TIM_IMAGE *tim, s32 x, s32 y, POLY_FT4 *quad, s32 depth);
-void func_800868E0(MenuImageFile *files);
-void func_80086E24(void);
-void func_80087068(Actor *left, Actor *right);
+void arena_hud_set_gauge_x(s32 mirrored, s16 *out, s32 x);
+void arena_hud_set_gauge_y(s32 mirrored, s16 *out, s32 y);
+void arena_hud_build_overlay_buffer(OverlayBuffer *buf);
+void arena_hud_build_tim_quad(TIM_IMAGE *tim, s32 x, s32 y, POLY_FT4 *quad, s32 depth);
+void arena_hud_build_mirrored_tim_quad(TIM_IMAGE *tim, s32 x, s32 y, POLY_FT4 *quad, s32 depth);
+void arena_hud_build_packets(MenuImageFile *files);
+void arena_hud_link_overlay_tpage(void);
+void arena_hud_draw(Actor *left, Actor *right);
 
 #endif

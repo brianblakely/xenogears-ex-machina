@@ -147,7 +147,7 @@ typedef struct {
 /* An actor's model file, loaded as one block: a model set (hierarchy,
  * models, animations), the actor's header, move slots and images. Its
  * pointers are relative to the address it was built at (0x1C) until
- * func_8008AF6C relocates them. */
+ * arena_node_relocate_model_file relocates them. */
 typedef struct ModelFile {
     u32 *hierarchy;    /* count, then that many HierarchyRecords */
     u8 *models;        /* 0x04: the model group */
@@ -173,63 +173,63 @@ typedef struct {
     u8 unk28B;
 } LightRig;
 
-extern MATRIX D_80091C0C;  /* identity */
-extern s32 D_80091C2C;     /* nonzero: model set players do not own their keys */
-extern s32 D_8009289C;     /* nonzero: model sets compose with their parent's view */
-extern VECTOR D_80096FA8;  /* the scene origin: the last eye position */
-extern VECTOR D_80097000;  /* look-at work: third axis */
-extern VECTOR D_8009A0C8;  /* look-at work: forward */
-extern VECTOR D_8009A2C8;  /* mesh light direction */
-extern MATRIX D_8009A2D8;
-extern VECTOR D_8009A918;  /* look-at work: up */
+extern MATRIX arena_identity_matrix;  /* identity */
+extern s32 arena_node_players_share_keys;     /* nonzero: model set players do not own their keys */
+extern s32 arena_node_compose_parent_view;     /* nonzero: model sets compose with their parent's view */
+extern VECTOR arena_view_origin;  /* the scene origin: the last eye position */
+extern VECTOR arena_look_at_axis_x;  /* look-at work: third axis */
+extern VECTOR arena_look_at_forward;  /* look-at work: forward */
+extern VECTOR arena_mesh_light_direction;  /* mesh light direction */
+extern MATRIX arena_display_unread_identity;
+extern VECTOR arena_look_at_axis_y;  /* look-at work: up */
 
-void func_800898BC(MATRIX *m, SVECTOR *eye, SVECTOR *at, SVECTOR *up);
-void func_80089A98(LightRig *view, VECTOR *target, VECTOR *eye);
-Node *func_80089B44(Node *node);
-Node *func_80089C54(void);
-void func_80089C88(Node *parent, Node *child);
-void func_80089D5C(Node *node);
-void func_80089E2C(Node *node, NodeModel *model);
-void func_80089E54(Node *node, ModelSet *set);
-void func_80089E64(Node *node, void *data);
-ModelSet *func_80089E74(void);
-void func_80089EB4(ModelSet *set);
-NodeModel *func_80089F8C(NodeModel *model);
-NodeModel *func_80089FC4(void);
-void func_80089FF8(NodeModel *model);
-void func_8008A110(s16 x, s16 y);
-void func_8008A128(s16 x, s16 y);
-void func_8008A140(s16 tx, s16 ty, s16 cx, s16 cy);
-void func_8008A168(void);
-void func_8008A184(NodeModel *model, SpriteModel *file);
-Light *func_8008A254(void);
-LightRig *func_8008A3E0(OtPair *layer);
-void func_8008A5BC(LightRig *rig);
-void func_8008A62C(void);
-void func_8008A63C(NodeModel *model);
-void func_8008A78C(Node *node);
-void func_8008A7E0(Node *node);
-void func_8008ABAC(Node **lights);
-ModelFile *func_8008AF6C(ModelFile *file);
-void func_8008B0D8(Player *player);
-void func_8008B13C(AnimRecord *record, Player *player, Node *root);
-Node *func_8008B38C(ModelFile *file);
-s32 func_8008B730(Player *player, s32 frames, s32 steps);
-void func_8008BCC8(SpriteModel *mesh, u8 *work);
-void func_8008BD70(SpriteModel *mesh, ModelPrim *prims, u32 *ot, u8 *work);
-void func_8008BE4C(ModelPrims *prims, SpriteModel *mesh);
-void func_8008C120(Instance *instance);
-Node *func_8008C188(Node *source, Node *parent);
-Node *func_8008C298(Node *source);
-Node *func_8008C2C0(Node *source);
-void func_8008C2E8(Node *node);
-/* Project toward D_8009A2C8 onto y=0; writes work.vx/vz, preserving vy/pad.
+void arena_look_at_build_matrix(MATRIX *m, SVECTOR *eye, SVECTOR *at, SVECTOR *up);
+void arena_node_aim_rig_camera(LightRig *view, VECTOR *target, VECTOR *eye);
+Node *arena_node_reset(Node *node);
+Node *arena_node_alloc(void);
+void arena_node_add_child(Node *parent, Node *child);
+void arena_node_free_tree(Node *node);
+void arena_node_set_model(Node *node, NodeModel *model);
+void arena_node_set_model_set(Node *node, ModelSet *set);
+void arena_node_set_light(Node *node, void *data);
+ModelSet *arena_node_alloc_model_set(void);
+void arena_node_free_model_set(ModelSet *set);
+NodeModel *arena_node_reset_model(NodeModel *model);
+NodeModel *arena_node_alloc_model(void);
+void arena_node_free_model(NodeModel *model);
+void arena_node_set_tpage_override(s16 x, s16 y);
+void arena_node_set_clut_override(s16 x, s16 y);
+void arena_node_set_texture_overrides(s16 tx, s16 ty, s16 cx, s16 cy);
+void arena_node_clear_texture_overrides(void);
+void arena_node_init_model(NodeModel *model, SpriteModel *file);
+Light *arena_node_alloc_light(void);
+LightRig *arena_node_alloc_light_rig(OtPair *layer);
+void arena_node_free_light_rig(LightRig *rig);
+void arena_node_disable_color_overrides(void);
+void arena_node_draw_model(NodeModel *model);
+void arena_node_color_instance(Node *node);
+void arena_node_draw_tree(Node *node);
+void arena_node_load_rig_lights(Node **lights);
+ModelFile *arena_node_relocate_model_file(ModelFile *file);
+void arena_node_rewind_anim_player(Player *player);
+void arena_node_bind_animation(AnimRecord *record, Player *player, Node *root);
+Node *arena_node_build_model_set(ModelFile *file);
+s32 arena_node_step_anim_player(Player *player, s32 frames, s32 steps);
+void arena_mesh_set_light_and_project_shadow(SpriteModel *mesh, u8 *work);
+void arena_mesh_draw_groups(SpriteModel *mesh, ModelPrim *prims, u32 *ot, u8 *work);
+void arena_mesh_build_packets(ModelPrims *prims, SpriteModel *mesh);
+void arena_node_free_instance(Instance *instance);
+Node *arena_node_copy_subtree_as_instances(Node *source, Node *parent);
+Node *arena_node_copy_tree_as_instances(Node *source);
+Node *arena_node_copy_root_as_instances(Node *source);
+void arena_node_draw_instances(Node *node);
+/* Project toward arena_mesh_light_direction onto y=0; writes work.vx/vz, preserving vy/pad.
  * count must be positive. Reads the next vertex even on the last iteration. */
-void func_8008C3A8(void *vertices, u8 *work, s32 count);
+void arena_mesh_project_shadow(void *vertices, u8 *work, s32 count);
 /* Mesh packet builders consume eight-byte u16 index records and preload one
  * beyond count. They advance model_current_packet past culled packet slots too, and
  * prepend accepted packets to model_ot without a depth sort. */
-void func_8008C4B0(u8 *prims, s32 count); /* triangles */
-void func_8008C620(u8 *prims, s32 count); /* quads */
+void arena_mesh_draw_flat_triangles(u8 *prims, s32 count); /* triangles */
+void arena_mesh_draw_flat_quads(u8 *prims, s32 count); /* quads */
 
 #endif

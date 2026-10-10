@@ -5,7 +5,7 @@
 # the original unscaled matrix; its IR values finish on the last column.
 # Handwritten: a leaf on t1-t6 alone; a plain-C probe under GCC 2.7.2 and
 # 2.6.3 starts its temporaries at v0/v1 and the free argument registers.
-glabel func_800731F8
+glabel arena_gte_scale_matrix_columns
     lw      $t1, 0($a0)
     lw      $t2, 4($a0)
     ctc2    $t1, $0             # packed R11/R12
@@ -57,4 +57,4 @@ glabel func_800731F8
     sh      $t2, 10($a0)
     jr      $ra
      sh     $t3, 16($a0)
-endlabel func_800731F8
+endlabel arena_gte_scale_matrix_columns

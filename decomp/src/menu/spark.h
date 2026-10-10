@@ -66,9 +66,9 @@ struct Emitter {
     u8 unk77[0x5];
 };
 
-extern SparkShape D_80091C74[];
-extern void (*D_80091CC4[])(Emitter *emitter, SVECTOR *pos);
-extern void (*D_80091CDC[1])(Spark *spark);
+extern SparkShape arena_spark_shapes[];
+extern void (*arena_spark_placement_rules[])(Emitter *emitter, SVECTOR *pos);
+extern void (*arena_spark_update_callbacks[1])(Spark *spark);
 
 /* Sparks drawn as a line through their last positions, with one primitive
  * per draw buffer. */
@@ -105,16 +105,16 @@ typedef struct {
     TILE_1 dot[2];
 } SparkDot;
 
-Emitter *func_8008D3F4(s32 shape, s32 placement);
-void func_8008D580(Emitter *emitter);
-void func_8008D5C0(Emitter *emitter, s32 count);
-void func_8008D680(Emitter *emitter, MATRIX *rotation, s32 count);
-void func_8008DA48(Emitter *emitter, u32 *ot, MATRIX *view);
-void func_8008DBC0(Node *model, s16 part, MATRIX *out);
-void func_8008DC28(void);
-void func_8008DCA8(s32 strength);
+Emitter *arena_spark_create_emitter(s32 shape, s32 placement);
+void arena_spark_stop_all(Emitter *emitter);
+void arena_spark_alloc_pool(Emitter *emitter, s32 count);
+void arena_spark_launch(Emitter *emitter, MATRIX *rotation, s32 count);
+void arena_spark_update_and_draw(Emitter *emitter, u32 *ot, MATRIX *view);
+void arena_spark_copy_part_matrix(Node *model, s16 part, MATRIX *out);
+void arena_spark_create_burst_emitter(void);
+void arena_spark_start_burst(s32 strength);
 /* Rotate with the loaded GTE matrix, then scale through IR0 with GPF12.
  * Only out->vx/vy/vz are written; out->pad is preserved. */
-void func_8008DDFC(SVECTOR *vector, SVECTOR *out, s32 scale);
+void arena_gte_rotate_scale_svector(SVECTOR *vector, SVECTOR *out, s32 scale);
 
 #endif

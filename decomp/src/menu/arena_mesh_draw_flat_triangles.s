@@ -9,7 +9,7 @@
 # test, including backfaces and triangles rejected by the x test.
 # Handwritten: an mfc2 in a branch delay slot (reorg never puts an asm
 # there), and branch targets inside delay slots.
-glabel func_8008C4B0
+glabel arena_mesh_draw_flat_triangles
     mesh_packet_state 4
     mesh_face_vectors
     mesh_packet_start 20
@@ -47,4 +47,4 @@ glabel func_8008C4B0
     mesh_packet_link 3, .Lmesh_triangle_next
 .Lmesh_triangle_done:
     mesh_packet_finish 20
-endlabel func_8008C4B0
+endlabel arena_mesh_draw_flat_triangles
