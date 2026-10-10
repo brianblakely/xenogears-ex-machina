@@ -722,18 +722,18 @@ revision:
 
 | Diagnostic | x86_64-linux-gnu | arm64-apple-macos | x86_64-pc-windows-msvc | wasm32, i686 | Cause |
 | --- | --- | --- | --- | --- | --- |
-| pointer to integer casts | 660 in 45 files (+19 from `void *`) | same | 769 in 50 files (+19) | 0 | 32-bit addresses kept in integers; on Windows also the casts to PsyQ's 32-bit `u_long` (packet words, the EXE header) |
-| integer to pointer casts | 278 (+33 to `void *`) | same | 279 (+33) | 2 | pointers rebuilt from 32-bit words |
+| pointer to integer casts | 677 in 51 files (+30 from `void *`) | same | 792 in 58 files (+30) | 0 | 32-bit addresses kept in integers; on Windows also the casts to PsyQ's 32-bit `u_long` (packet words, the EXE header) |
+| integer to pointer casts | 320 (+34 to `void *`) | same | 321 (+34) | 2 | pointers rebuilt from 32-bit words |
 | non-constant static initializers | 17 in 3 files | same | 18 in 4 files | 0 | function addresses stored as `s32` (world map `D_80099E8C`; menu3.c, menu4.c); on Windows also header.c's EXE header |
-| failed `LAYOUT_CHECK` | 3 (battle/area.h, battle/effect.h, battle/scene.h) | same | same | 0 | asserted offsets of structures with pointers |
+| failed `LAYOUT_CHECK` | 13 in 12 headers (battle/area.h, effect.h, scene.h, ui.h, work.h twice; menu/card.h, panel.h, screen.h, shop.h, tables.h; ovl2143/actors.h; resident/menu.h) | same | 10 in 9 (all but battle/ui.h, menu/panel.h and menu/screen.h) | 0 | asserted offsets of structures with pointers; under LP64 also of the three whose PsyQ packets' `u_long` words widen (they hold with `-Dlong=int`) |
 | rejected `section` attributes | 0 | 3 in 2 files | 0 | 0 | Mach-O section names need a segment (main.c `D_80018088`, `D_8001808C`; menu6.c `D_80088BFC`) |
 | asm with MIPS register names | 150 in 24 files | same | same | same | GTE macros, stack switches, `GET_RA` |
-| non-prototype declarations | 328 in 48 files | same | same | same | K&R definitions and calls |
-| incompatible pointer types | 316 in 27 files | same | same | same | one object read through several types |
+| non-prototype declarations | 258 in 47 files | same | same | same | K&R definitions and calls |
+| incompatible pointer types | 2 in 2 files | same | same | same | one object read through two types: a `VECTOR`'s `long` passed as `s32 *` (field_8007A44C.c `func_80082BB8` to `func_80082494`), an `s32` buffer as `SaveData *` (slot39.c to `func_801E4D10`) |
 | `return;` in a non-void function | 45 in 13 files | same | same | same | implicit-int functions; see below |
-| conflicting types | 32 in 10 files | same | same | same | implicit declarations, then definitions |
-| arrays of incomplete struct type | 41 in 6 files | same | same | same | commons units define their variables before the headers complete the types ([matching.md](matching.md), Recovering data) |
-| incompatible function-pointer types | 27 in 5 files | same | same | same | cast dispatch tables |
+| conflicting types | 2 in 2 files | same | same | same | a prototype after a call implicitly declared the function (field_800A9274.c `func_80070340`), and slot39_801DBE54.c's `memcpy` prototype, which drops the built-in ([matching.md](matching.md)) |
+| arrays of incomplete struct type | 34 in 6 files | same | same | same | commons units define their variables before the headers complete the types ([matching.md](matching.md), Recovering data) |
+| incompatible function-pointer types | 2 in 2 files | same | same | same | a function stored under another prototype: the variadic report printf `func_800379C8` in the heap report's `void (*)(char *)` output hook (heap_80032DCC.c), a primitive type's unprototyped `prepare` in a prototyped local (main_8002C3E8.c `func_8002C8CC`) |
 | unsequenced modifications | 6 in 2 files | same | same | same | several `*pc++` in one call's arguments |
 | shift of a negative value | 14 in 5 files | same | same | same | `-x << n` |
 | array index -1 | 4 (battle.c, through `STEP_FUEL`) | same | same | same | tables read through an offset base |
@@ -748,7 +748,7 @@ therefore the first Phase 2 decision.
 | --- | --- | --- |
 | 32-bit pointers in data | world map actor slots and spawn tables hold function addresses as integers (`func_80097800`, `D_80099E8C`); sprite tasks, sound modulators and hooks hold function pointers; models and archives are relocated in place (`func_8002C3E8`, `func_8002C59C`, `func_8003342C`); `D_8005A4E4` parks raw pointers across modes | keep game memory a contiguous 32-bit arena and map code addresses to stable ids; never serialise host pointers |
 | 24-bit ordering-table links | `AddPrim` and the OT helpers store packet addresses masked to 0x00FFFFFF; the arena rebuilds pointers as `(tag & 0xFFFFFF) - 0x80000000` (menu7.c `func_8008ACB8`) | links as offsets into the arena, below 16 MB |
-| Punned views | the same bytes read through several types (316 incompatible pointer types); the `link.ld`, `battle.data.ld`, `menu.bss.ld` and `worldmap.data.ld` views name parts of objects ([matching.md](matching.md)) | `-fno-strict-aliasing`; one canonical type per address for schemas |
+| Punned views | the same bytes read through several types: through explicit casts, which the census does not report (the SDK calls' among them: [matching.md](matching.md), Converting a function), and its 2 incompatible pointer types; the `link.ld`, `battle.data.ld`, `menu.bss.ld` and `worldmap.data.ld` views name parts of objects ([matching.md](matching.md)) | `-fno-strict-aliasing`; one canonical type per address for schemas |
 | Signedness and width | plain `char` is unsigned (`-D__CHAR_UNSIGNED__`, `lbu`; [matching.md](matching.md), Qualified configuration); `long` is 32 bits in the PsyQ structures (`VECTOR`, `MATRIX`, packet tags); event variables are 16-bit and read signed or unsigned by the map's event package bits (`func_800A3018`) | `-funsigned-char`; 32-bit `long` in native SDK headers |
 | Unspecified evaluation order | `func_80021B04(&angles, rand(), rand(), 0)` (sprite.c, case c1): the matched code draws the first `rand()` into the second argument (0x80020244-0x8002026c); the 6 unsequenced `*pc++` calls in battle_8009E53C.c and ovl2143.c | read operands into locals in the order the matched disassembly shows |
 | Values left in `$v0` | `func_800BEFF4` is defined `void`, but callers use the acting sprite left in `$v0` (0x800bf094; battle_800B8098.c); `func_8008FACC` falls off the end (menu7.c); `func_8008B730` returns the header pointer with zero frames (0x8008b770); `func_800381F4` returns its allocator's result implicitly; `func_8003F190` sits in the `s32` modulator table, and its value always scales to 0; `func_801E7210` returns the allocator's NULL into `drawEnv.isbg`; the movie test menu stores what `func_80074BA4` and `func_8007519C` leave for an index past the list | return the PS1 value explicitly; check every other `return;` site's callers before declaring it `void` |
