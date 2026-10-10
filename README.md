@@ -1,51 +1,129 @@
 # Xenogears: Ex Machina
 
-Independent Xenogears decompilation, native PC port and modding tools, with Arch
-Linux leading development. The native application does not run the complete game.
+**The original game. A new future.**
 
-Phase 1 now targets a **complete binary-matching PS1 decompilation of both discs**.
-It does not stop at one playable slice or require every recovered function to be
-ported into a host-side ownership model. See [the plan](plan.md) and the short
-[matching workflow](docs/matching.md). Code and data are named by their module's
-prefix and what they do ([Names](docs/matching.md#names)); each definition keeps its
-original address in its comment, so `git grep -i -n 80031bdc decomp` finds the code
-at an address.
+Xenogears: Ex Machina (XEM) is an independent, open-source project to preserve the
+PlayStation role-playing game Xenogears and bring it to modern computers, mobile
+devices and VR headsets.
+The ambition is to keep the game's identity — its world, artwork and gameplay —
+while opening the door to modern presentation, more ways to play, and tools for
+creating new adventures.
 
-```sh
-nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra#matching
-make -C decomp smoke
-make -C decomp all-split all-verify all-coverage
-```
+**October 10, 2026: the original-game decompilation milestone is complete.
+The modern port is still ahead.** The completed work covers both discs of the
+[supported North American version](analysis/reference-profiles.json).
+There is not yet a finished XEM game to download and play.
 
-That smoke test exercises MIPS assembly/linking and exact comparison on an authored
-fixture, not Xenogears decompilation. The game targets need the user's discs (the
-matching workflow's clean build); `all-verify` then compares every rebuilt resident
-executable and overlay with the original byte for byte, and `all-coverage` reports
-source coverage by class. Those reports, not this file, own the status. Source
-recovery and binary matching are reported separately; existing C++ comparisons
-imply neither a PS1 match nor a complete decomp.
+## What is finished
 
-The existing `xem-reconstruction` library, original scenarios, findings and tests
-remain useful reference/portability assets. Its state declarations are separated
-into subsystem headers; `Program` remains its integration owner, not the design
-for new PS1-target source. Run its public build with:
+**XEM can rebuild the original program exactly.** All 26 program components in the
+both-disc build reproduce the originals byte for byte. That includes each disc's
+main program and all of the smaller program modules it loads.
 
-```sh
-nix --extra-experimental-features 'nix-command flakes' develop path:./nix
-python3 tools/repository/check.py --preset debug
-```
+Decompilation means working backward from the game on disc to reconstruct source
+code that developers can read, study and change. XEM has recovered the game's
+compiled logic this way, with original low-level routines and PlayStation library
+code explicitly classified and included in the matching build. This is
+reconstructed source, not the studio's original development files.
 
-[Development](docs/development.md) covers focused commands. The
-[later-phases handbook](docs/later-phases.md) collects what the decomp gives
-Phases 2-5: the oracle, the program's structure, the boundaries a port replaces
-and the hazards it must keep in view. Source profiles live in
-`analysis/reference-profiles.json`; detailed findings are read on demand.
-Original images stay in ignored `discs/`, and extracted bytes/captures/saves in
-ignored `.local/`. The [source allowlist](packaging/source-files.txt) is audited.
-The Nix path inputs contain tool configuration only, never original data.
+That achievement gives the project a precise reference for preserving the
+original game while adapting it to new hardware. Reproducible build tools,
+automated checks and documented research are also in place to support the next
+stage.
 
-The [native-agent](docs/agent/README.md) and [authoring](docs/authoring/README.md)
-specifications preserve product requirements, not implemented capability. The
-plan places native gameplay before the authoring bridge. Historical Phase 0
-records and finding IDs retain their original scope; retired facet numbers are
-not the current phase checklist.
+The [completion record](https://github.com/brianblakely/xenogears-ex-machina/commit/e21f38248e8da2988f85e4f9b238aca4d2732a98)
+and [build and verification guide](docs/matching.md) explain the evidence, scope
+and how to reproduce the results with the supported original discs.
+
+## What comes next
+
+First, make the recovered game run directly on modern hardware. XEM's port is
+planned as a native application, not a PlayStation emulator wrapped in a new
+interface. A browser version will use the same recovered game logic.
+
+The next milestone is the shared platform foundation, followed by a first
+end-to-end playable section connecting exploration, dialogue, battle, menus,
+saving and media playback. From there, the goal is complete gameplay across both
+discs, including the original story, optional content and minigames.
+
+Faithful, complete gameplay comes before the later presentation upgrades and
+creation tools. The [roadmap](plan.md) sets out that sequence through tested
+releases; the features below describe where XEM is going, not what is already
+available.
+
+## The experience ahead
+
+### Play across more devices
+
+The target platforms are Linux, Windows, macOS, Android and Meta Horizon OS, plus
+web browsers on desktop, mobile and headsets. Development is led on Arch Linux.
+Browser-based VR through WebXR is also planned for compatible browsers and
+devices. Full editing tools are desktop-focused; mobile, headset and browser
+versions are intended for playing the game and compatible prebuilt mods.
+
+### Keep the original art. Choose a new look.
+
+Modern display options will support higher resolutions, wider screens and
+smoother motion while keeping the original gameplay timing intact. Players will
+be able to choose modern presentation, an optional HD-2D-inspired look, or a
+PS1-style presentation with selectable original visual quirks.
+
+The HD-2D-inspired mode will bring scene lighting, shadows, atmosphere and
+adjustable depth of field to the existing game art. It is an effects treatment,
+not an art remake: the original sprites, textures, models and animations remain,
+with no replacement art pack required. Graphics style and flat-screen or VR
+viewing will be separate choices.
+
+### See the world from a new perspective
+
+Seated stereo and VR modes will offer a virtual screen and, later, a scalable
+diorama: a tabletop-like view of the game's world that players can enlarge or
+shrink. A stationary first-person inspection mode, on both ordinary screens and
+in VR, will let players look around without turning Xenogears into a
+first-person action game.
+
+Optional hand and gaze controls are planned for devices that support them, with
+conventional alternatives. VR is an additional way to experience the game, not
+a requirement to play.
+
+### Make a long adventure easier to live with
+
+Planned conveniences include save states, rewind, fast-forward, supported
+original-save import and export, and modern cutscene skipping. Gameplay options
+will include disabling random battles in identified platforming-heavy areas.
+
+Clearer movie playback and headphone surround derived from the game's original
+Wide sound mode are later goals. The audio work will be grounded in verification
+of the original signal and listening intent, with original playback options
+retained.
+
+### Create new Xenogears experiences
+
+Mod support and desktop creation tools will open the way to custom levels,
+cutscenes, battles and minigames. The plan includes mod management, gameplay
+extensions and graphical editors built around the same game that players use.
+
+AI-assisted authoring and automated playtesting are part of that vision.
+Software agents will be able to play and inspect the game directly, repeat
+scenarios and test changes, with or without a visible game window. Human creators
+and agents will work through the same editing, debugging and game services rather
+than a separate approximation of Xenogears.
+
+## Built around your own copy
+
+XEM provides source code and tools, not the original game discs. Original disc
+images, artwork, music and other extracted game assets are not distributed with
+the project. Matching builds use data from the user's own supported discs; the
+planned native and browser versions will also import game data locally rather
+than bundle it or upload users' disc images and saves.
+
+The project's authored source is available under the [MIT License](LICENSE).
+
+## Follow the project or get involved
+
+Follow this repository for milestones and see the [full roadmap](plan.md) for the
+planned progression from preservation to play to creation.
+
+Developers can start with the [development guide](docs/development.md),
+[porting handbook](docs/later-phases.md) and
+[contribution guidelines](CONTRIBUTING.md).
