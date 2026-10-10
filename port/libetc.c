@@ -18,9 +18,18 @@ static void (*xem_vsync_callback)(void);
 static void (*xem_interrupt_callbacks[11])(void);
 static void (*xem_dma_callbacks[7])(void);
 
+/* Initialise the callbacks once: libetc_interrupt_enabled stays set (it is
+ * data, not BSS, so a soft reset keeps it too), and later calls, such as
+ * ResetGraph(0)'s, change nothing. */
+extern u16 libetc_interrupt_enabled;
+
 int ResetCallback(void) {
     s32 i;
 
+    if (libetc_interrupt_enabled) {
+        return 0;
+    }
+    libetc_interrupt_enabled = 1;
     xem_vsync_callback = NULL;
     for (i = 0; i < 11; i++) {
         xem_interrupt_callbacks[i] = NULL;
