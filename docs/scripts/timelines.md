@@ -9,18 +9,21 @@ packed overlay.
 
 ## Field movie sound timelines
 
-- **Reader:** `field_movie_play_due_sounds` in the `field` overlay (Disc 1 file 36, Disc 2 file
-  31). The field movie player `field_movie_play` seeks the timeline with
-  `field_movie_load_sound_bank` before the movie starts and runs `field_movie_play_due_sounds` after each
-  movie step (`field_movie_run_frames`); at the end `field_movie_release_sound_bank` releases the bank.
-- **Table:** `field_movie_sound_timelines`, 96 u16 (frame, sound) pairs: a leading end, then one run
-  per movie sound-effect bank, each ended by an entry whose frame is 0xFFFF (sound
-  0). The asset line is in `decomp/targets/overlays/field.classification.txt`.
-- **Bank:** event `fe a0` (`field_event_play_movie_sound`) requests a movie with its sound bank
-  in operand 9; 0xFF requests none, as events 60 and 67 always do, and then
-  `field_movie_play_due_sounds` plays nothing. `field_movie_load_sound_bank` loads file 0x115 + bank of
-  directory (0x1C, 0), adds it to the open effect banks (`sound_add_effect_bank`) and
-  leaves the position `field_movie_sound_timeline_index` past bank + 1 ends.
+- **Reader:** `field_movie_play_due_sounds` in the `field` overlay (Disc 1 file 36,
+  Disc 2 file 31). The field movie player `field_movie_play` seeks the timeline with
+  `field_movie_load_sound_bank` before the movie starts and runs
+  `field_movie_play_due_sounds` after each movie step (`field_movie_run_frames`); at
+  the end `field_movie_release_sound_bank` releases the bank.
+- **Table:** `field_movie_sound_timelines`, 96 u16 (frame, sound) pairs: a leading
+  end, then one run per movie sound-effect bank, each ended by an entry whose frame
+  is 0xFFFF (sound 0). The asset line is in
+  `decomp/targets/overlays/field.classification.txt`.
+- **Bank:** event `fe a0` (`field_event_play_movie_sound`) requests a movie with its
+  sound bank in operand 9; 0xFF requests none, as events 60 and 67 always do, and
+  then `field_movie_play_due_sounds` plays nothing. `field_movie_load_sound_bank`
+  loads file 0x115 + bank of directory (0x1C, 0), adds it to the open effect banks
+  (`sound_add_effect_bank`) and leaves the position
+  `field_movie_sound_timeline_index` past bank + 1 ends.
 - **Timing:** the movie's frame callback (`field_movie_frame_callback`) stores the frame in
   `field_movie_frame`. `field_movie_play_due_sounds` plays, in table order, every entry whose frame
   plus the movie's sound start (`FIELD_MOVIE.sound_start`, event `fe a0`'s operand
@@ -36,23 +39,27 @@ packed overlay.
   0-9 with `fe a0` (0-3 once, 4-9 three times), no bank 11 times on Disc 1 and 10
   on Disc 2, and once a bank held in a variable.
 - **Tool:** `--sweep` prints these aggregates; `--list movie-sounds [--disc N]`
-  prints each bank's run. `tests/test_overlay_scripts.py` checks the decoder
-  against `field_movie_load_sound_bank`, `field_movie_play_due_sounds` and `field_event_play_movie_sound`, and that the table
-  stays an asset.
+  prints each bank's run. `tests/test_overlay_scripts.py` checks the decoder against
+  `field_movie_load_sound_bank`, `field_movie_play_due_sounds` and
+  `field_event_play_movie_sound`, and that the table stays an asset.
 
 ## World map terrain texture animations
 
-- **Readers:** `worldmap_texture_anim_advance` and `worldmap_texture_anim2_advance` in the `worldmap` overlay (Disc 1
-  file 37, Disc 2 file 32), run once per frame of the world-map loop
-  (`worldmap_run_frame_loop`), an update below. `worldmap_texture_anim_create` and `worldmap_texture_anim2_create`
-  create the animations of the area file's two animation sections (+0x20 and
-  +0x24: a count, then each animation's image offset): animation i gets slot i of
-  `worldmap_texture_anim_slots` (two slots) or `worldmap_texture_anim2_slots` (three), frame 0 and timer 1.
-- **Tables:** a slot is a `TexAnimSlot` {RECT rect; s32; frames}, the VRAM rect
-  the images go to and the frame sequence; the slots are C. The sequences
-  `worldmap_texture_anim_slot0_frames`, `worldmap_texture_anim_slot1_frames` (the slots of `worldmap_texture_anim_slots`) and `worldmap_texture_anim2_slot0_frames`,
-  `worldmap_texture_anim2_slot1_frames`, `worldmap_texture_anim2_slot2_frames` (those of `worldmap_texture_anim2_slots`) are `TexAnimFrame` {s16 image;
-  s16 duration} runs ended by a negative duration, assets in
+- **Readers:** `worldmap_texture_anim_advance` and `worldmap_texture_anim2_advance`
+  in the `worldmap` overlay (Disc 1 file 37, Disc 2 file 32), run once per frame of
+  the world-map loop (`worldmap_run_frame_loop`), an update below.
+  `worldmap_texture_anim_create` and `worldmap_texture_anim2_create` create the
+  animations of the area file's two animation sections (+0x20 and +0x24: a count,
+  then each animation's image offset): animation i gets slot i of
+  `worldmap_texture_anim_slots` (two slots) or `worldmap_texture_anim2_slots`
+  (three), frame 0 and timer 1.
+- **Tables:** a slot is a `TexAnimSlot` {RECT rect; s32; frames}, the VRAM rect the
+  images go to and the frame sequence; the slots are C. The sequences
+  `worldmap_texture_anim_slot0_frames`, `worldmap_texture_anim_slot1_frames` (the
+  slots of `worldmap_texture_anim_slots`) and `worldmap_texture_anim2_slot0_frames`,
+  `worldmap_texture_anim2_slot1_frames`, `worldmap_texture_anim2_slot2_frames`
+  (those of `worldmap_texture_anim2_slots`) are `TexAnimFrame` {s16 image; s16
+  duration} runs ended by a negative duration, assets in
   `decomp/targets/overlays/worldmap.classification.txt`.
 - **Timing:** each update counts a slot's timer down; at 0 the stepper moves to the
   next frame and takes its duration, restarts at frame 0 with that frame's

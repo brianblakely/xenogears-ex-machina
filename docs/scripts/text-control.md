@@ -46,30 +46,31 @@ characters and every other glyph as its hex code in braces (`{58}Whoa{57}`). A l
 at the top names the characters. The tool holds no font map; `character_map` reads
 it from three sources:
 
-- The number code. `text_format_number` writes a number's digits as the codes
-  palette × 16 + digit and its sign as palette × 16 + 10 (negative) or + 11. The
-  window controls pass palettes 0 and 1. The menus write the blank of a number's
-  leading zeros as code 0xC3 (slot39 `menu_arts_screen_build_list`, ovl2601 `item_shop_layout_stock_rows`,
-  ovl2602 `gear_shop_show_sell_entry`), which the name entry also enters for an empty cell
-  (ovl2600 `name_entry_run`). Resource 27 gives these codes 25 one-byte glyphs on
-  both discs: 0x61-0x6A and 0x16-0x1F the digits, 0x7E and 0x13 the minus sign,
-  0x7D and 0x11 the plus sign, 0x10 the blank.
-- The memory card titles, directory (0x10, 1) file 1. `menu_card_init_and_read_title` copies line
-  `game_data.vars[0]`, the scene id (30 bytes of two-byte Shift-JIS) into the save header. The menu
-  turns ASCII into Shift-JIS through its table `menu_ascii_to_sjis_table` (`menu_save_title_find_glyph`), so
-  the inverse of that table reads the titles as text: 68 distinct ones. A title
-  with known and unknown characters names the glyphs of the one whole text that
-  fits it, if exactly one does. Such a text has the same length, the known glyphs
-  at their characters, and the other characters at glyphs not yet known, equal
-  characters at equal glyphs and different ones apart. Each round keeps the
-  titles found in every largest set of findings that agree (no glyph read as two
-  characters, no character with two glyphs) and repeats with the glyphs they add.
-  Agreement matters: in the first round "Night Purge" fits exactly one whole text
-  (entry 10 of enemy data file 110), and the largest agreeing set is the round's
-  three other titles, so it adds nothing. Five titles align, all as world area
-  names (Lahan Village, Mountain Path, Road to Nisan, Babel Tower, Dazil), and
-  give 25 letters: B D L M N P R T V and a b d e g h i l n o r s t u w z. Night
-  Purge is the only other title that ever fits exactly one whole text.
+- The number code. `text_format_number` writes a number's digits as the codes palette
+  × 16 + digit and its sign as palette × 16 + 10 (negative) or + 11. The window
+  controls pass palettes 0 and 1. The menus write the blank of a number's leading
+  zeros as code 0xC3 (slot39 `menu_arts_screen_build_list`, ovl2601
+  `item_shop_layout_stock_rows`, ovl2602 `gear_shop_show_sell_entry`), which the name
+  entry also enters for an empty cell (ovl2600 `name_entry_run`). Resource 27 gives
+  these codes 25 one-byte glyphs on both discs: 0x61-0x6A and 0x16-0x1F the digits,
+  0x7E and 0x13 the minus sign, 0x7D and 0x11 the plus sign, 0x10 the blank.
+- The memory card titles, directory (0x10, 1) file 1. `menu_card_init_and_read_title`
+  copies line `game_data.vars[0]`, the scene id (30 bytes of two-byte Shift-JIS) into
+  the save header. The menu turns ASCII into Shift-JIS through its table
+  `menu_ascii_to_sjis_table` (`menu_save_title_find_glyph`), so the inverse of that
+  table reads the titles as text: 68 distinct ones. A title with known and unknown
+  characters names the glyphs of the one whole text that fits it, if exactly one
+  does. Such a text has the same length, the known glyphs at their characters, and
+  the other characters at glyphs not yet known, equal characters at equal glyphs and
+  different ones apart. Each round keeps the titles found in every largest set of
+  findings that agree (no glyph read as two characters, no character with two glyphs)
+  and repeats with the glyphs they add. Agreement matters: in the first round "Night
+  Purge" fits exactly one whole text (entry 10 of enemy data file 110), and the
+  largest agreeing set is the round's three other titles, so it adds nothing. Five
+  titles align, all as world area names (Lahan Village, Mountain Path, Road to Nisan,
+  Babel Tower, Dazil), and give 25 letters: B D L M N P R T V and a b d e g h i l n o
+  r s t u w z. Night Purge is the only other title that ever fits exactly one whole
+  text.
 - The name entry grid (ovl2600 `name_entry_grid_codes`): `name_entry_build_grid` shows its 36
   entries of five codes in four columns of nine, so screen row r shows entries
   r, r + 9, r + 18 and r + 27. In that order it holds two runs of 26 ascending
@@ -92,13 +93,13 @@ Open: punctuation and the two-byte glyphs. The grid's other codes, besides its
 digits 0x10-0x19, have no order that names their characters, and no data maps a
 two-byte glyph to one.
 
-Sweep of both discs: 1375 tables (805 distinct; 525 placeholder map files
-skipped), 42367 texts, 1961794 tokens; 13 controls used (12 on disc 2: 0F 0D
-occurs only on disc 1); unknown or undecodable: 0. Unused by the data: 0F 03, 0F 06, 0F 07, 0F 08, 0F 09, 0F 0B,
-0F 0F. 1886 nonzero bytes in 32 tables are reached by no entry. The sweep
-decodes them too, outside the counts: they form 37 whole texts ending in 00
-(messages no entry shows). The 62 initial names decode as 392 glyphs. The
-sweep also reports each disc's `--chars` glyphs (above: 77 on each disc).
+Sweep of both discs: 1375 tables (805 distinct; 525 placeholder map files skipped),
+42367 texts, 1961794 tokens; 13 controls used (12 on disc 2: 0F 0D occurs only on
+disc 1); unknown or undecodable: 0. Unused by the data: 0F 03, 0F 06, 0F 07, 0F 08,
+0F 09, 0F 0B, 0F 0F. 1886 nonzero bytes in 32 tables are reached by no entry. The
+sweep decodes them too, outside the counts: they form 37 whole texts ending in 00
+(messages no entry shows). The 62 initial names decode as 392 glyphs. The sweep also
+reports each disc's `--chars` glyphs (above: 77 on each disc).
 
 Notes from the handler:
 

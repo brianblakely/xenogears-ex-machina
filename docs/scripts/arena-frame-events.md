@@ -5,12 +5,12 @@
   arena actor's current animation and covers count frames from that frame, once per
   frame. It is the arena counterpart of the battle animation events.
 - **Data:** the gear model files, directory (0x30, 1) file `id + 2` for model ids
-  0-48 (Disc 1 slots 52-100, Disc 2 slots 47-95). `arena_actor_load_model` loads one with
-  `arena_load_whole_file`, which reads the file's size rounded up to words. `arena_mode_task`
-  unpacks it (80032E88), and `arena_actor_init_from_model_file` relocates it (`arena_node_relocate_model_file`, against
-  the build address at +0x1C). At +0x34 the header (+0x10) holds one s16
-  header-relative list offset (`unk900`, 0 for none) per animation of the table at
-  +0x08.
+  0-48 (Disc 1 slots 52-100, Disc 2 slots 47-95). `arena_actor_load_model` loads one
+  with `arena_load_whole_file`, which reads the file's size rounded up to words.
+  `arena_mode_task` unpacks it (80032E88), and `arena_actor_init_from_model_file`
+  relocates it (`arena_node_relocate_model_file`, against the build address at
+  +0x1C). At +0x34 the header (+0x10) holds one s16 header-relative list offset
+  (`unk900`, 0 for none) per animation of the table at +0x08.
 - **Format:** a list of 4-byte `FrameEvent {u8 first, u8 last, s16 spec}` records
   ending at first 0xFF. Each record whose range holds the frame runs the `HitSpec`
   at header + spec (`actor.h`: kind, type, part_a, part_b, s16 vertex_a, s16
@@ -18,8 +18,9 @@
   files pack them that way. Hit records take 10 bytes, of which the code reads 8.
   There are no jumps.
 - **Dispatch:** a jump-table switch on the kind, six cases, each commented; kinds 0
-  and 2 dispatch again on the type (`arena_frame_event_hit`, `arena_frame_event_effect`). Any other kind
-  re-tests the same record forever (`continue`).
+  and 2 dispatch again on the type (`arena_frame_event_hit`,
+  `arena_frame_event_effect`). Any other kind re-tests the same record forever
+  (`continue`).
 
   | Kind | Handler | Operands | Effect |
   | --- | --- | --- | --- |

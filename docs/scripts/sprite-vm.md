@@ -24,9 +24,10 @@ the `decomp/src` switch labels and the C length table.
     the frame. Each waits `(op & f) + 1` frames scaled by the sprite's divisor.
     `40`-`7f` set no duration; the original reads a stale register.
   - A handler at `80`-`ff` that keeps the script pointer then advances it by the
-    resident length table `sprite_vm_command_lengths[op - 0x80]` (`sprite_construction.c`; the battle
-    copy reads the same bytes as `sprite_vm_command_lengths_by_opcode[op]`): `80`-`9f` 1, `a0`-`c7` 2,
-    `c8`-`f0` 3, `f1`-`ff` 4.
+    resident length table `sprite_vm_command_lengths[op - 0x80]`
+    (`sprite_construction.c`; the battle copy reads the same bytes as
+    `sprite_vm_command_lengths_by_opcode[op]`): `80`-`9f` 1, `a0`-`c7` 2, `c8`-`f0` 3,
+    `f1`-`ff` 4.
   - Jumps (`d4`, `e1`, `e2`, `e4`, `fa`, battle `f8` and `fb`), `cc` and `e3` count
     from the command's first byte. `e0`, `ca`, `cb` and the 24-bit offsets (`f3`,
     `f5`-`f7`, `fc`) count from the operand bytes; battle command data count from

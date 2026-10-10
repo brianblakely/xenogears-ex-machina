@@ -5,13 +5,13 @@ A battle's event script runs when its formation has flag 0x20, which sets
 (80070E2C) and calls `battle_event_script_run` through 80070EB0, at the battle's start and
 between turns.
 
-- Interpreter: ovl3087 `battle_event_script_run` (`decomp/src/ovl3087/battle_event_script_vm.c`,
-  matching): `switch (code[pc])`, 76 cases 00-4B. Each case calls one handler
-  that returns the instruction length, or 0 while it waits. Operands come from
-  801E57F8, from byte 1 on. In the masked form, a bit of byte 5 marks an
-  operand as an immediate; in the signed form, bit 15 does. Any other operand
-  is a variable offset. There is no default case: opcodes 4C-FF reapply the
-  previous length.
+- Interpreter: ovl3087 `battle_event_script_run`
+  (`decomp/src/ovl3087/battle_event_script_vm.c`, matching):
+  `switch (code[pc])`, 76 cases 00-4B. Each case calls one handler that returns
+  the instruction length, or 0 while it waits. Operands come from 801E57F8, from
+  byte 1 on. In the masked form, a bit of byte 5 marks an operand as an
+  immediate; in the signed form, bit 15 does. Any other operand is a variable
+  offset. There is no default case: opcodes 4C-FF reapply the previous length.
 - Execution: there are up to 16 threads, each with eight priority levels and
   an eight-entry table (0 start, 1 idle, others requested by 03-05). A pass
   gives each thread one battle frame (800716D8), then up to four instructions.

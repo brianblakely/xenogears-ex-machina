@@ -1,9 +1,10 @@
 # Battle formations and encounter sets
 
-A battle starts from one **formation**, 0x20 bytes that the battle overlay copies
-from the **encounter set** `formation_encounter_set` into `formation_active` as it starts (battle
-`battle_main`: formation `formation_selected_index`, or `mode_pending_battle_formation - 1` when that is set). The
-layout is `BattleFormation` and `EncounterSet` in
+A battle starts from one **formation**, 0x20 bytes that the battle overlay copies from
+the **encounter set** `formation_encounter_set` into `formation_active` as it starts
+(battle `battle_main`: formation `formation_selected_index`, or
+`mode_pending_battle_formation - 1` when that is set). The layout is `BattleFormation`
+and `EncounterSet` in
 [`decomp/include/resident/formation.h`](../../decomp/include/resident/formation.h),
 whose member comments name their readers; every unit that reads a formation or a set
 uses it, and its `LAYOUT_CHECK` fixes the offsets.
@@ -30,48 +31,54 @@ Party members take battle slots 0-2 and enemies slots 3-10 (`BattleSlot`,
 `EncounterSet` is 16 formations (0x200 bytes). Three loaders fill `formation_encounter_set`:
 
 - **Field maps.** Map bundle component 6, which `field_load_from_bundle` decodes into
-  `formation_encounter_set` itself: the set, then the 16 weights `formation_encounter_weights` of the random draw.
-  `field_encounter_count_down` picks a formation with a nonzero weight by a random number against
-  the weights' running sums. Every component 6 that is not empty is 0x210 bytes; the
-  packed stream ends 0-7 bytes later, in `commons_unused_4_words_b`, which no code reads. A map
-  whose component 6 is empty leaves the set that was loaded before. The debug monitor
-  prints the weights with its per-formation counts (debug595 page 10).
+  `formation_encounter_set` itself: the set, then the 16 weights
+  `formation_encounter_weights` of the random draw. `field_encounter_count_down` picks
+  a formation with a nonzero weight by a random number against the weights' running
+  sums. Every component 6 that is not empty is 0x210 bytes; the packed stream ends 0-7
+  bytes later, in `commons_unused_4_words_b`, which no code reads. A map whose
+  component 6 is empty leaves the set that was loaded before. The debug monitor prints
+  the weights with its per-formation counts (debug595 page 10).
 
   A script of the map has to arm the draw. Player control (events 0c and a7,
-  `field_event_request_player_control`) calls `field_encounter_count_down` on frames the player holds a direction with
-  no dialogue open, and `field_encounter_count_down` returns at once while the period
-  `field_work.unk2298` is 0. Every map load clears the period and the count `unk229C`
-  (`field_reset_state`, which `field_load_from_bundle` calls first). Event f7 (`field_event_draw_random_picks`)
-  sets the period from operand 1 and the count from operand 3 (at most 32);
-  `field_encounter_draw_steps` then gives that many countdowns `unk22A0` distinct values from 1 to
-  period + 1, or clears the period when the count is 0. `field_encounter_count_down` counts them
-  down and draws when one reaches 0, and `field_encounter_draw_steps` deals new values each time
-  `unk2294` counts the period down. Nothing else writes the period or the count but
-  the debug monitor's page 10 (TIME and ENCOUNT, `field_debug_run_screen`).
-- **The world map.** The area file (0x24, 0) area + 1 of each set of `worldmap_area_file_sets`
-  (`worldmap_select_area_files`). `worldmap_unpack_area_data` points `worldmap_encounter_sets[kind]` at the offsets in header
-  words 11-26 (`AreaHeader` +0x2c), one table per terrain kind. The roll
-  (`worldmap_encounter_roll`, from the world map loop `worldmap_run_frame_loop` when a timer of
-  `worldmap_encounter_update_timers` expires) takes the terrain kind at the party's position
-  (`worldmap_terrain_get_cell_flags`, or its substitute `worldmap_layer4_encounter_kinds` when `worldmap_terrain_get_layer` returns 4), the
-  weight row of the bracket the scene id (variable 0) falls in (`worldmap_encounter_level_brackets`: 0-53,
-  54-200, 201-339, 340 and up), draws a formation by those 16 weights and copies the
-  kind's 0x200 bytes into `formation_encounter_set`. A table is the set and four weight rows; the
-  next table follows 0x20 bytes later, bytes no reader reads. The area files 143,
-  154, 165, 176 and 187 (modes 9, 10 and 12-15) hold no tables: their header ends at
-  0x30, so words 12-26 are section data, and word 11 leaves no room for a table.
+  `field_event_request_player_control`) calls `field_encounter_count_down` on frames
+  the player holds a direction with no dialogue open, and `field_encounter_count_down`
+  returns at once while the period `field_work.unk2298` is 0. Every map load clears the
+  period and the count `unk229C` (`field_reset_state`, which `field_load_from_bundle`
+  calls first). Event f7 (`field_event_draw_random_picks`) sets the period from operand
+  1 and the count from operand 3 (at most 32); `field_encounter_draw_steps` then gives
+  that many countdowns `unk22A0` distinct values from 1 to period + 1, or clears the
+  period when the count is 0. `field_encounter_count_down` counts them down and draws
+  when one reaches 0, and `field_encounter_draw_steps` deals new values each time
+  `unk2294` counts the period down. Nothing else writes the period or the count but the
+  debug monitor's page 10 (TIME and ENCOUNT, `field_debug_run_screen`).
+- **The world map.** The area file (0x24, 0) area + 1 of each set of
+  `worldmap_area_file_sets` (`worldmap_select_area_files`). `worldmap_unpack_area_data`
+  points `worldmap_encounter_sets[kind]` at the offsets in header words 11-26
+  (`AreaHeader` +0x2c), one table per terrain kind. The roll
+  (`worldmap_encounter_roll`, from the world map loop `worldmap_run_frame_loop` when a
+  timer of `worldmap_encounter_update_timers` expires) takes the terrain kind at the
+  party's position (`worldmap_terrain_get_cell_flags`, or its substitute
+  `worldmap_layer4_encounter_kinds` when `worldmap_terrain_get_layer` returns 4), the
+  weight row of the bracket the scene id (variable 0) falls in
+  (`worldmap_encounter_level_brackets`: 0-53, 54-200, 201-339, 340 and up), draws a
+  formation by those 16 weights and copies the kind's 0x200 bytes into
+  `formation_encounter_set`. A table is the set and four weight rows; the next table
+  follows 0x20 bytes later, bytes no reader reads. The area files 143, 154, 165, 176
+  and 187 (modes 9, 10 and 12-15) hold no tables: their header ends at 0x30, so words
+  12-26 are section data, and word 11 leaves no room for a table.
 - **The debug battle selector.** ovl2606 `battle_scene_select_main` copies the first 0x200 bytes
   of (0x20, 3) file 7 + n (FileNo n) or 4-6 (Event1-3). Files 4-52 hold sets: 34 of
   0x210 bytes, 32 of them a field map's set, and 15 of 0x260 bytes whose sets are world
   map tables'. File 53 starts a sub-directory.
 
-`formation_selected_index` names the formation. The field's draw and the world map's roll set it,
-and so do field events 71 and fe 84 from operand 1 (`field_event_request_battle`, `field_event_request_battle_field`:
-an immediate when bit 15 is set, else a variable) and the debug selector's SceneNo.
-Battle event opcode 24 (ovl3087 `battle_event_script_next_battle`) sets `mode_pending_battle_formation` to its operand + 1.
-When that battle ends with outcome 1, 0x40 or 0x21, the resident battle mode
-(`mode_run_battle`) runs another battle (unless `battle_continue_to_movie_mode` is set), which takes that
-formation of the same set.
+`formation_selected_index` names the formation. The field's draw and the world map's
+roll set it, and so do field events 71 and fe 84 from operand 1
+(`field_event_request_battle`, `field_event_request_battle_field`: an immediate when
+bit 15 is set, else a variable) and the debug selector's SceneNo. Battle event opcode
+24 (ovl3087 `battle_event_script_next_battle`) sets `mode_pending_battle_formation` to
+its operand + 1. When that battle ends with outcome 1, 0x40 or 0x21, the resident
+battle mode (`mode_run_battle`) runs another battle (unless
+`battle_continue_to_movie_mode` is set), which takes that formation of the same set.
 
 ## Census and cross-check
 
@@ -138,7 +145,9 @@ bundles, area files and discs. On the user's discs:
 - Whether the modes that load the five tableless area files can roll: their timers
   (`worldmap_encounter_update_timers`) are not traced.
 - The draws' other gates. "Can be drawn" means the weights, the arming and player
-  control do not rule a formation out. `field_encounter_count_down` also returns while other field
-  states are set (`field_battle_not_requested`, `field_worldmap_exit_not_requested`, `field_map_change_not_requested`, `mode_music_load_pending`, `field_music_stream_running`,
-  `field_encounters_enabled`, `encounter_inhibition`), and the world map loop has its own
+  control do not rule a formation out. `field_encounter_count_down` also returns while
+  other field states are set (`field_battle_not_requested`,
+  `field_worldmap_exit_not_requested`, `field_map_change_not_requested`,
+  `mode_music_load_pending`, `field_music_stream_running`, `field_encounters_enabled`,
+  `encounter_inhibition`), and the world map loop has its own
   (`worldmap_run_frame_loop`); when scripts set them is not traced.

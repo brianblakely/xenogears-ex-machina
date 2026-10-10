@@ -67,13 +67,14 @@ rest on the stack after 16 bytes the caller reserves for those four, results in
 `short`, 32-bit `int`, `long` and pointers, 8-byte `long long` and `double`, both
 8-aligned, and `$gp` = 0x80059170 for `-G8` units.
 
-Vendor controls (local, `.local/original-toolchain-evidence`; the binaries stay out
-of the repository): PsyQ CC1PSX 2.6.3.SN.2 gives text and relocations identical to
-old-gcc 2.6.3 for saved whole units of movie, battle_scene, slot39 and sound;
-CC1PSX 2.7.2.SN32.3.7.0002 does the same against old-gcc 2.7.2 for the resident heap,
-field_motion, menu5, worldmap_objects_effects_party and worldmap_steering_camera_terrain; Psy-Q ASPSX 2.34
-assembles movie 800737ec, battle 800a7064 and sound 8003b424 to the text that
-maspsx `--aspsx-version=2.34` and GNU as give.
+Vendor controls (local, `.local/original-toolchain-evidence`; the binaries stay out of
+the repository): PsyQ CC1PSX 2.6.3.SN.2 gives text and relocations identical to old-gcc
+2.6.3 for saved whole units of movie, battle_scene, slot39 and sound; CC1PSX
+2.7.2.SN32.3.7.0002 does the same against old-gcc 2.7.2 for the resident heap,
+field_motion, menu5, worldmap_objects_effects_party and
+worldmap_steering_camera_terrain; Psy-Q ASPSX 2.34 assembles movie 800737ec, battle
+800a7064 and sound 8003b424 to the text that maspsx `--aspsx-version=2.34` and GNU as
+give.
 
 Jump tables: GCC emits `.align 3` before each table in `.rdata`. The original
 assembler honoured it relative to the unit's own rodata section, and the
@@ -142,34 +143,33 @@ script assignment win silently and makes the name absolute; 63 names were so bou
 before, the resident's model_envmap_patch_base among them). The resident pads its file to the
 link's `__exe_file_size` (`PAD_TO_SYMBOL`), the sectors its header declares.
 
-`verify` then fails on each name a linker script defines (a used `PROVIDE`, a
-`.data.ld` or any other `LINKER_EXTRA` fragment) inside the target's own image or
-uninitialized data (`matching_coverage.py --script-symbols`): an address copied from
-the original where the link should place an object, which the exact comparison
-cannot see move. Names of other images (the `*.resident.ld` fragments, an overlay's
-addresses in the resident, also the `_gp` an overlay's splat script sets) lie outside
-and pass; splat's main script is not among the checked scripts, so the resident's
-`_gp` comes from its checked `link.ld`. `BSS_END` in a target gives
-the end of its uninitialized data past the image, the bound its loader clears (the
-resident's entry point, the mode table entries): the check covers the data up to it,
-a link placing any past it fails, and the coverage report counts what no linked
-object holds there. `LINK_VIEWS` names a script whose names there are views,
-expressions of linked symbols, with the reason beside it in the target; a number
-such a script assigns there still fails, and so does a views script that defines no
-view. Four scripts are allowed: battle's (`battle.data.ld`, 42 names: parts of its
-commons that the units, CDK ones too, address by names of their own, and the timer
-reload and combo step tables from before them), the resident's (`link.ld`, 8: the
-window colour's green and blue bytes, the CD mix bytes and a base for the name
-slots' second bytes, which compile differently as members, the BSS's last word
-boot_bss_last_word from the link's BSS end, for the entry point and the mode table, and `_gp`
-from the start of the small data, where the original's 80059170 lies),
-the menu's (`menu.bss.ld`: the opponent's command byte arena_settings_command, which
-arena_brain_run_practice_command loads absolutely at each of its three reads) and the world map's
-(`worldmap.data.ld`: worldmap_read_list_first_destination, the read list's first destination, from which two
-loaders pass the list). `SCRIPT_SYMBOLS=strict` is the default;
-`SCRIPT_SYMBOLS=warn` (on the command line or in the environment) reports the names
-and passes a single target's `verify`, for a probe, which then prints `NOT
-ACCEPTANCE: SCRIPT_SYMBOLS=warn`. `all-verify` gives every target
+`verify` then fails on each name a linker script defines (a used `PROVIDE`, a `.data.ld`
+or any other `LINKER_EXTRA` fragment) inside the target's own image or uninitialized
+data (`matching_coverage.py --script-symbols`): an address copied from the original
+where the link should place an object, which the exact comparison cannot see move. Names
+of other images (the `*.resident.ld` fragments, an overlay's addresses in the resident,
+also the `_gp` an overlay's splat script sets) lie outside and pass; splat's main script
+is not among the checked scripts, so the resident's `_gp` comes from its checked
+`link.ld`. `BSS_END` in a target gives the end of its uninitialized data past the image,
+the bound its loader clears (the resident's entry point, the mode table entries): the
+check covers the data up to it, a link placing any past it fails, and the coverage
+report counts what no linked object holds there. `LINK_VIEWS` names a script whose names
+there are views, expressions of linked symbols, with the reason beside it in the target;
+a number such a script assigns there still fails, and so does a views script that
+defines no view. Four scripts are allowed: battle's (`battle.data.ld`, 42 names: parts
+of its commons that the units, CDK ones too, address by names of their own, and the
+timer reload and combo step tables from before them), the resident's (`link.ld`, 8: the
+window colour's green and blue bytes, the CD mix bytes and a base for the name slots'
+second bytes, which compile differently as members, the BSS's last word
+boot_bss_last_word from the link's BSS end, for the entry point and the mode table, and
+`_gp` from the start of the small data, where the original's 80059170 lies), the menu's
+(`menu.bss.ld`: the opponent's command byte arena_settings_command, which
+arena_brain_run_practice_command loads absolutely at each of its three reads) and the
+world map's (`worldmap.data.ld`: worldmap_read_list_first_destination, the read list's
+first destination, from which two loaders pass the list). `SCRIPT_SYMBOLS=strict` is the
+default; `SCRIPT_SYMBOLS=warn` (on the command line or in the environment) reports the
+names and passes a single target's `verify`, for a probe, which then prints
+`NOT ACCEPTANCE: SCRIPT_SYMBOLS=warn`. `all-verify` gives every target
 `SCRIPT_SYMBOLS=strict` on its command line, which neither the environment nor
 all-verify's own command line overrides.
 
@@ -194,52 +194,52 @@ DecDCTvlcSize/DecDCTvlcSize2 at +4; mdec.symbols.txt makes the two words data la
 DecDCTvlcSize2 a function, relocated against libpress_vlc2_max_size.
 
 After every target links, `all-verify` runs `make -C decomp cross-image`
-(`tools/cross_image.py` over every configuration). Each name a target's linker
-scripts assign (the `PROVIDE`s its link used, ovl2602's names in ovl2143 among them,
-and the fragments: `*.resident.ld`, `debug595.field.ld`) whose value lies in another
-target's image or uninitialized data is an address copied from the original. A name
-that gives an address (splat's `D_`, `func_` and `jtbl_` names) must hold that
-address, and each must agree with the rebuilt targets by their own symbols: every
-other target that defines the name defines it there, each that exports it wherever
-the copied value points and one holding the value also by a local symbol (2318 of
-2376 at present); where none does, a fragment may give it as a view, another name
-plus a constant that agrees by name, and the value must lie in the object holding
-that name in its definer (4: battle's game data member `game_data_party_state = game_data +
-0x1D30` and debug595's three camera vectors of the field view field_view);
-otherwise a target holding the value has a symbol there (none: the movie library's
-entries and variable that field and movie use, the battle functions ovl3087 passes
-and the resident's VSync callback and sequence buffer that the world map uses all
-take their definers' names, which the importing symbol files give); otherwise the
-address must lie inside an input section that target's link places (54 members or
-parts of objects that no symbol names, such as game data members, all from splat's
-lists). For this last group the check ties a value only to the address its name
-gives, not to a particular object or, where targets overlap (debug595's field
-names also lie in battle), to a particular target; reading them as members of
-their objects needs the importing C to use those objects (left open). Values
-outside every target (the resident's sizes, a constant) are not checked, nor is an
-address the C spells as a number, which neither this check nor the relocation scan
-(a target's own range only) sees.
-`python3 tools/cross_image.py decomp/targets/*/*.mk --numbers` lists those (each
-other target's address a link holds without a relocation, outside asset and
-included bytes and the mode table); in the 26 links they are battle's three reads of
-the boot word mode_disc_mode (80010000; battle_sprite_commands.c battle_sprite_command_run sprite commands 0x44/0x45,
-battle_settle.c battle_install_command_file_parts), a number in the original too: its CDK units load
-it with one register (`lui v1,0x8001; lw v1,0(v1)` at 800b44b8), while by name they
-compile `lui v0,%hi(mode_disc_mode); lw v1,%lo(mode_disc_mode)(v0)` and the battle link
-fails its BSS bounds; and the load addresses of overlays and the heap's end
-(resident main.c:87, mode_battle_and_menu.c:189/437/445; battle_turns_and_hud.c:323/386/399/500,
-battle_frame.c:765; field.c:2906), which no check ties to the images loaded
-there. In data the only such words are the mode table's, compared below, and five
-in each resident's packed boot logo and console font, asset bytes that merely look
-like addresses. It also compares each resident's mode table (`MODE_TABLE`) with the
-mode overlays (`MODE`, `MODE_ENTRY` in field 1, world map 3, menu 4 and movie 6;
-battle's mode 2 enters resident code and declares only `MODE`): the entry must be the
-overlay's entry symbol, and the words after bss_start through bss_end, which the
-dispatcher clears (boot_clear_bss_range), must be the overlay's linked .sbss/.bss. The check
-found one resident byte that other images use outside every object: the arena bout's
-outcome at 80050622, which the menu writes and a field event reads, lay in the
-alignment fill after mode_arena_task_parameters[6]; console_and_sound_driver.c now defines it (mode_arena_bout_outcome),
-whether apart or as part of mode_arena_task_parameters left open.
+(`tools/cross_image.py` over every configuration). Each name a target's linker scripts
+assign (the `PROVIDE`s its link used, ovl2602's names in ovl2143 among them, and the
+fragments: `*.resident.ld`, `debug595.field.ld`) whose value lies in another target's
+image or uninitialized data is an address copied from the original. A name that gives an
+address (splat's `D_`, `func_` and `jtbl_` names) must hold that address, and each must
+agree with the rebuilt targets by their own symbols: every other target that defines the
+name defines it there, each that exports it wherever the copied value points and one
+holding the value also by a local symbol (2318 of 2376 at present); where none does, a
+fragment may give it as a view, another name plus a constant that agrees by name, and
+the value must lie in the object holding that name in its definer (4: battle's game data
+member `game_data_party_state = game_data + 0x1D30` and debug595's three camera vectors
+of the field view field_view); otherwise a target holding the value has a symbol there
+(none: the movie library's entries and variable that field and movie use, the battle
+functions ovl3087 passes and the resident's VSync callback and sequence buffer that the
+world map uses all take their definers' names, which the importing symbol files give);
+otherwise the address must lie inside an input section that target's link places (54
+members or parts of objects that no symbol names, such as game data members, all from
+splat's lists). For this last group the check ties a value only to the address its name
+gives, not to a particular object or, where targets overlap (debug595's field names also
+lie in battle), to a particular target; reading them as members of their objects needs
+the importing C to use those objects (left open). Values outside every target (the
+resident's sizes, a constant) are not checked, nor is an address the C spells as a
+number, which neither this check nor the relocation scan (a target's own range only)
+sees. `python3 tools/cross_image.py decomp/targets/*/*.mk --numbers` lists those (each
+other target's address a link holds without a relocation, outside asset and included
+bytes and the mode table); in the 26 links they are battle's three reads of the boot
+word mode_disc_mode (80010000; battle_sprite_commands.c battle_sprite_command_run sprite
+commands 0x44/0x45, battle_settle.c battle_install_command_file_parts), a number in the
+original too: its CDK units load it with one register (`lui v1,0x8001; lw v1,0(v1)` at
+800b44b8), while by name they compile
+`lui v0,%hi(mode_disc_mode); lw v1,%lo(mode_disc_mode)(v0)` and the battle link fails
+its BSS bounds; and the load addresses of overlays and the heap's end (resident
+main.c:87, mode_battle_and_menu.c:189/437/445; battle_turns_and_hud.c:323/386/399/500,
+battle_frame.c:765; field.c:2906), which no check ties to the images loaded there. In
+data the only such words are the mode table's, compared below, and five in each
+resident's packed boot logo and console font, asset bytes that merely look like
+addresses. It also compares each resident's mode table (`MODE_TABLE`) with the mode
+overlays (`MODE`, `MODE_ENTRY` in field 1, world map 3, menu 4 and movie 6; battle's
+mode 2 enters resident code and declares only `MODE`): the entry must be the overlay's
+entry symbol, and the words after bss_start through bss_end, which the dispatcher clears
+(boot_clear_bss_range), must be the overlay's linked .sbss/.bss. The check found one
+resident byte that other images use outside every object: the arena bout's outcome at
+80050622, which the menu writes and a field event reads, lay in the alignment fill after
+mode_arena_task_parameters[6]; console_and_sound_driver.c now defines it
+(mode_arena_bout_outcome), whether apart or as part of mode_arena_task_parameters left
+open.
 
 ```sh
 # the user's CHD images to raw MODE2/2352 tracks (and likewise disc 2); chdman
@@ -329,48 +329,46 @@ python3 tools/matching_ram.py .local/scenarios/<capture>/capture/final.ram --tar
 
 ## Converting a function
 
-Replace one `INCLUDE_ASM(...)` in the target's C file with C. Start from m2c
-(`m2c --target mipsel-gcc-c <asm file>`), existing findings and the host
-reconstruction (search `src/reconstruction` for the address), then compile,
-`make verify`, and read `matching_diff.py -f` for the first difference. Keep
-functions in original order; the function's jump tables and strings move with
-it (splat migrated them into the function's assembly). A unit's structures go in
-small headers beside the source; what several targets share has one definition in
-`decomp/include`: `psyq/` (the SDK's types, prototypes and macros, the inline GTE
-ones in `inline_c.h`; members no library signature names under the PsyQ name their
-callers give them, else their library's prefix, `libgte_rotate_vector`), `resident/` (one header per resident subsystem with its types, variables and
-calls; `gamedata.h` holds the game data game_data), `battle/` (one header per
-battle overlay subsystem whose types, variables or calls its modules and overlays
+Replace one `INCLUDE_ASM(...)` in the target's C file with C. Start from m2c (`m2c
+--target mipsel-gcc-c <asm file>`), existing findings and the host reconstruction
+(search `src/reconstruction` for the address), then compile, `make verify`, and read
+`matching_diff.py -f` for the first difference. Keep functions in original order; the
+function's jump tables and strings move with it (splat migrated them into the function's
+assembly). A unit's structures go in small headers beside the source; what several
+targets share has one definition in `decomp/include`: `psyq/` (the SDK's types,
+prototypes and macros, the inline GTE ones in `inline_c.h`; members no library signature
+names under the PsyQ name their callers give them, else their library's prefix,
+`libgte_rotate_vector`), `resident/` (one header per resident subsystem with its types,
+variables and calls; `gamedata.h` holds the game data game_data), `battle/` (one header
+per battle overlay subsystem whose types, variables or calls its modules and overlays
 use, with the battle area battle_area and its work area battle_work_area; each function
-sits in the header of the subsystem that defines it; also the screen burst that
-ovl2615 and ovl3387 both carry; `model.h` and `effect.h` hold the records of the
-battle's model and effect library, which ovl2143 links a copy of, and declare no
-variables), `menu/` (the blocks the menu mode's screens, slot39 and ovl2598-ovl2602,
-keep behind the menu state of `resident/menu.h`), `mdec/` (the movie library's
-player, which the movie mode and the field call), `field/` (`monitor.h`: the field
-state and calls that its debug monitor, debug595, also uses, and the monitor's
-entries and debug-lines flag, which the field calls and sets) and `ovl2143/` (the
-actor module's records, variables and entries, which the field, the world map and
-the Gear parts shop use). Another image's functions and variables keep their
-definer's names, which the importing overlay's symbol file gives its link (movie and
-field name the library's entries, ovl3087 the battle's callbacks it passes, the
-world map the resident's VSync callback). A resident, battle or ovl2143 function
-whose callers in other targets were built with other argument or result conversions
-(narrow parameters, another count) stays out of them: each target declares it, the
-resident and the battle in their `own_declarations.h` (ovl2143's draw 801E7D14,
-which ovl2602 calls with four arguments, in each caller). So does a variable some
-target declares with another qualifier (the vertical blank count, volatile in the
-mode 4 menu), and a target keeps its own view of an object whose members its code
-reads with other types (ovl2615 reads the scene data's positions unsigned); a second
-declaration of one object takes its assembler name (the world map's sequence header
-over mode_music_buffer, whose address cse would otherwise keep from the copy before it). A
-shared header's `extern` sets the order of the defining unit's tentative
-definitions, so that unit defines them ahead of the header (gear_model_scene.c's state before
-`ovl2143/actors.h`, as the commons units do). A unit declares what only it uses
-itself, before the first use. A function that is understood but does not yet match
-stays linked as assembly inside
-`#ifdef NON_MATCHING ... #else INCLUDE_ASM(...) #endif`; the coverage report counts
-it separately.
+sits in the header of the subsystem that defines it; also the screen burst that ovl2615
+and ovl3387 both carry; `model.h` and `effect.h` hold the records of the battle's model
+and effect library, which ovl2143 links a copy of, and declare no variables), `menu/`
+(the blocks the menu mode's screens, slot39 and ovl2598-ovl2602, keep behind the menu
+state of `resident/menu.h`), `mdec/` (the movie library's player, which the movie mode
+and the field call), `field/` (`monitor.h`: the field state and calls that its debug
+monitor, debug595, also uses, and the monitor's entries and debug-lines flag, which the
+field calls and sets) and `ovl2143/` (the actor module's records, variables and entries,
+which the field, the world map and the Gear parts shop use). Another image's functions
+and variables keep their definer's names, which the importing overlay's symbol file
+gives its link (movie and field name the library's entries, ovl3087 the battle's
+callbacks it passes, the world map the resident's VSync callback). A resident, battle or
+ovl2143 function whose callers in other targets were built with other argument or result
+conversions (narrow parameters, another count) stays out of them: each target declares
+it, the resident and the battle in their `own_declarations.h` (ovl2143's draw 801E7D14,
+which ovl2602 calls with four arguments, in each caller). So does a variable some target
+declares with another qualifier (the vertical blank count, volatile in the mode 4 menu),
+and a target keeps its own view of an object whose members its code reads with other
+types (ovl2615 reads the scene data's positions unsigned); a second declaration of one
+object takes its assembler name (the world map's sequence header over mode_music_buffer,
+whose address cse would otherwise keep from the copy before it). A shared header's
+`extern` sets the order of the defining unit's tentative definitions, so that unit
+defines them ahead of the header (gear_model_scene.c's state before `ovl2143/actors.h`,
+as the commons units do). A unit declares what only it uses itself, before the first
+use. A function that is understood but does not yet match stays linked as assembly
+inside `#ifdef NON_MATCHING ... #else INCLUDE_ASM(...) #endif`; the coverage report
+counts it separately.
 
 Callers pass the types of the shared prototypes. Those in `psyq/` follow PsyQ 4.6's
 headers (`.local/original-sdk-evidence/headers/Psy-Q_46.zip`, the only release at
@@ -609,71 +607,74 @@ menu.symbols.txt) were given by hand.
   its targets by literal offsets (resident 80030988).
 - Media and bytecode embedded in a unit's data (packed images, fonts, sound banks,
   scripts such as the world map actor scripts and cue sequences and the arena scene
-  scripts) stay user-supplied: `INCLUDE_ASSET(".data", NAME, VRAM, SIZE)` links them
-  in place from the target's pristine input (`ORIGINAL_IMAGE`, with `ORIGINAL_BASE`
-  set in the .mk), and an `asset` line in the classification names the format and
-  its reader. Never commit their bytes as C initializers. Media is image, glyph,
-  sound and model data in a format that a generic loader or renderer of the game
-  parses for whichever file supplies it (LZSS-packed data, TIM images, the font
-  block's 22-byte glyphs of eleven 12-bit rows that `text_draw_glyph` draws, seds/wds
-  banks, TMD and SpriteModel models), also where the code picks one record itself
-  (the resident's glyph `text_special_glyph_rows`, which `text_draw_glyph` draws for the character
-  pair 0xFF 0xFF); a bare palette the code uploads is source where the code builds
-  or rewrites it before the upload, where it decodes pixel values the code writes
-  or computes, or where it is a formula's ramp, and otherwise media, the colours of
-  a picture. Media, and authored content that a reader walks as a sequence
-  (scripts, cue timelines, scene directions: entries that say what happens or
-  when, consumed in order from a position the reader keeps across updates up to
-  the data's own end), are assets; tables the program indexes to compute a result
-  are source (sine, pitch, note encodings, opcode lengths, dispatch, per-character
-  file numbers, and points, paths and layouts that code interpolates or steps
-  through on its own count and timing). So the field's movie sound timelines
-  `field_movie_sound_timelines`, (frame, sound) runs ended by frame 0xFFFF that `field_movie_play_due_sounds`
-  plays in order, are an asset, and the world map ferry's eight waypoints, which
-  `worldmap_ferry_update` steps through on each update and wraps itself (`worldmap_ferry_start`
-  only resumes the route when the ferry spawns), are source.
-- The rule was applied to every initialized object cc1 emits from the 26 targets' C
-  (at 8c0508e): 1,026 named objects and 989 literals (strings, jump tables); every
-  named data symbol of the C objects is one of them or linked by
+  scripts) stay user-supplied: `INCLUDE_ASSET(".data", NAME, VRAM, SIZE)` links them in
+  place from the target's pristine input (`ORIGINAL_IMAGE`, with `ORIGINAL_BASE` set in
+  the .mk), and an `asset` line in the classification names the format and its reader.
+  Never commit their bytes as C initializers. Media is image, glyph, sound and model
+  data in a format that a generic loader or renderer of the game parses for whichever
+  file supplies it (LZSS-packed data, TIM images, the font block's 22-byte glyphs of
+  eleven 12-bit rows that `text_draw_glyph` draws, seds/wds banks, TMD and SpriteModel
+  models), also where the code picks one record itself (the resident's glyph
+  `text_special_glyph_rows`, which `text_draw_glyph` draws for the character pair 0xFF
+  0xFF); a bare palette the code uploads is source where the code builds or rewrites it
+  before the upload, where it decodes pixel values the code writes or computes, or where
+  it is a formula's ramp, and otherwise media, the colours of a picture. Media, and
+  authored content that a reader walks as a sequence (scripts, cue timelines, scene
+  directions: entries that say what happens or when, consumed in order from a position
+  the reader keeps across updates up to the data's own end), are assets; tables the
+  program indexes to compute a result are source (sine, pitch, note encodings, opcode
+  lengths, dispatch, per-character file numbers, and points, paths and layouts that code
+  interpolates or steps through on its own count and timing). So the field's movie sound
+  timelines `field_movie_sound_timelines`, (frame, sound) runs ended by frame 0xFFFF
+  that `field_movie_play_due_sounds` plays in order, are an asset, and the world map
+  ferry's eight waypoints, which `worldmap_ferry_update` steps through on each update
+  and wraps itself (`worldmap_ferry_start` only resumes the route when the ferry
+  spawns), are source.
+- The rule was applied to every initialized object cc1 emits from the 26 targets' C (at
+  8c0508e): 1,026 named objects and 989 literals (strings, jump tables); every named
+  data symbol of the C objects is one of them or linked by
   INCLUDE_ASSET/INCLUDE_ORIGINAL/INCLUDE_RODATA. All 571 that are not scalars (488
-  numeric arrays and structures, 65 pointer tables, 18 character arrays) were read
-  with their comments, and the 283 objects (56 of them scalars) flagged by shape (an
-  end value 0xFF, 0xFFFF, -1, 0x8000 or 0x7FFF that ends the object or recurs), by
-  reader (an index or pointer into it that persists or advances, a test of its
-  elements against an end value, its address stored for later) or by their comment's
-  wording were checked against their readers. Six were authored sequences and are
-  now assets, 528 bytes: `field_movie_sound_timelines` and the world map's terrain texture animation
-  runs `worldmap_texture_anim_slot0_frames`, `worldmap_texture_anim_slot1_frames`, `worldmap_texture_anim2_slot0_frames`, `worldmap_texture_anim2_slot1_frames` and `worldmap_texture_anim2_slot2_frames`,
-  (image, duration) frames ended by a negative duration that `worldmap_texture_anim_advance` and
-  `worldmap_texture_anim2_advance` step (docs/scripts/timelines.md). That pass looked for media only
-  among the objects passed to LoadImage or SpuWrite. A second pass (at 5559538:
-  1,020 named objects, 565 of them not scalars) followed each object into its
-  readers: the calls it reaches itself or through a local pointer set from it, the
-  other values that pointer takes, and where its address is stored. It found one
-  more asset, the glyph `text_special_glyph_rows` (22 bytes), which `text_draw_glyph` takes in
-  place of a 22-byte record of the loaded font. No other object reaches a media
-  reader as the data it parses (they give it file numbers, sound and character
-  codes, VRAM places, draw modes, colours or a destination), except the four
-  palettes below. None remains: the others are lookups by a key the code computes,
-  also where an end value closes them (the picture table `field_picture_table` searched by
-  map, the battle modes' sound programs `mode_battle_sound_programs`, the gear shop lamps' frames
-  `gear_shop_lamp_frame_images` on the code's timing), lists one call processes whole (the battle
-  panel glyph sets ended by 0xFFFF, the world map's object links `worldmap_airship_object_links`),
-  geometry the code interpolates or steps through on its own count (the world
-  map's camera and flight paths, which `worldmap_eval_quadratic_bspline` interpolates at the
-  parameter its scene code advances; the ferry's waypoints; the scripted flights'
-  waypoints, whose counts `worldmap_flying_vehicle_update` fixes, never reading their -1 ends),
-  texture layouts (the menu font's glyph rectangles `arena_text_glyphs`), and masks and
-  thresholds. The four bare palettes passed to LoadImage are source: the text
-  palette `text_palette` decodes the 2-bit codes `text_draw_glyph` writes into either
-  half of each 4-bit pixel (1 the glyph, 2 its outline), entry i of its first CLUT
-  being the colour of code i & 3 and of its second that of code i >> 2, and
-  `window_open` gives each line the CLUT of its plane; `console_load_font_cluts` rebuilds
-  all 64 entries of the console font CLUTs `console_font_cluts` before their only upload;
-  the gauge palette `arena_hud_gauge_palette` is the grey ramp 0x8000 | 0x421 * i (i = 1..14,
-  opaque black at 0 and 15); and menu7's glow ramp `arena_glow_palette` colours the heat
-  values `arena_glow_step` computes, with bit 15 set on every entry by
-  `arena_glow_init` before its upload.
+  numeric arrays and structures, 65 pointer tables, 18 character arrays) were read with
+  their comments, and the 283 objects (56 of them scalars) flagged by shape (an end
+  value 0xFF, 0xFFFF, -1, 0x8000 or 0x7FFF that ends the object or recurs), by reader
+  (an index or pointer into it that persists or advances, a test of its elements against
+  an end value, its address stored for later) or by their comment's wording were checked
+  against their readers. Six were authored sequences and are now assets, 528 bytes:
+  `field_movie_sound_timelines` and the world map's terrain texture animation runs
+  `worldmap_texture_anim_slot0_frames`, `worldmap_texture_anim_slot1_frames`,
+  `worldmap_texture_anim2_slot0_frames`, `worldmap_texture_anim2_slot1_frames` and
+  `worldmap_texture_anim2_slot2_frames`, (image, duration) frames ended by a negative
+  duration that `worldmap_texture_anim_advance` and `worldmap_texture_anim2_advance`
+  step (docs/scripts/timelines.md). That pass looked for media only among the objects
+  passed to LoadImage or SpuWrite. A second pass (at 5559538: 1,020 named objects, 565
+  of them not scalars) followed each object into its readers: the calls it reaches
+  itself or through a local pointer set from it, the other values that pointer takes,
+  and where its address is stored. It found one more asset, the glyph
+  `text_special_glyph_rows` (22 bytes), which `text_draw_glyph` takes in place of a
+  22-byte record of the loaded font. No other object reaches a media reader as the data
+  it parses (they give it file numbers, sound and character codes, VRAM places, draw
+  modes, colours or a destination), except the four palettes below. None remains: the
+  others are lookups by a key the code computes, also where an end value closes them
+  (the picture table `field_picture_table` searched by map, the battle modes' sound
+  programs `mode_battle_sound_programs`, the gear shop lamps' frames
+  `gear_shop_lamp_frame_images` on the code's timing), lists one call processes whole
+  (the battle panel glyph sets ended by 0xFFFF, the world map's object links
+  `worldmap_airship_object_links`), geometry the code interpolates or steps through on
+  its own count (the world map's camera and flight paths, which
+  `worldmap_eval_quadratic_bspline` interpolates at the parameter its scene code
+  advances; the ferry's waypoints; the scripted flights' waypoints, whose counts
+  `worldmap_flying_vehicle_update` fixes, never reading their -1 ends), texture layouts
+  (the menu font's glyph rectangles `arena_text_glyphs`), and masks and thresholds. The
+  four bare palettes passed to LoadImage are source: the text palette `text_palette`
+  decodes the 2-bit codes `text_draw_glyph` writes into either half of each 4-bit pixel
+  (1 the glyph, 2 its outline), entry i of its first CLUT being the colour of code i & 3
+  and of its second that of code i >> 2, and `window_open` gives each line the CLUT of
+  its plane; `console_load_font_cluts` rebuilds all 64 entries of the console font CLUTs
+  `console_font_cluts` before their only upload; the gauge palette
+  `arena_hud_gauge_palette` is the grey ramp 0x8000 | 0x421 * i (i = 1..14, opaque black
+  at 0 and 15); and menu7's glow ramp `arena_glow_palette` colours the heat values
+  `arena_glow_step` computes, with bit 15 set on every entry by `arena_glow_init` before
+  its upload.
 - K&R definitions, unprototyped calls and implicit-int returns are legitimate where
   the original passes unpromoted arguments or keeps `$v0` live.
 - Unit compiler settings are qualified per code unit (Qualified configuration, above,
@@ -734,14 +735,14 @@ what has been measured for it.
 
 Lessons from the hardest drafts (GCC 2.6.x/2.7.x `cse.c`, `sched.c`, `reorg.c`):
 
-- cse replaces a register source by a known constant whenever it can (a MIPS
-  CONST_INT costs 0, a pseudo 1), so a surviving `move` of a register that was just
-  zeroed means both cse passes lost the value: the zero came from an expression only
-  combine reduces, such as a byte shifted right by 8 (slot39 801c93a8). A cse block ends at a referenced label;
-  the first pass also ends at a loop-end note (any `do { } while (0)`), the second
-  (`-frerun-cse-after-loop`, on at `-O2`) does not. cse keeps going past a label whose
-  remaining uses it removed itself, and `-fcse-skip-blocks` extends a block over an
-  `if` without inner labels, so a dead `if` hides nothing.
+- cse replaces a register source by a known constant whenever it can (a MIPS CONST_INT
+  costs 0, a pseudo 1), so a surviving `move` of a register that was just zeroed means
+  both cse passes lost the value: the zero came from an expression only combine reduces,
+  such as a byte shifted right by 8 (slot39 801c93a8). A cse block ends at a referenced
+  label; the first pass also ends at a loop-end note (any `do { } while (0)`), the
+  second (`-frerun-cse-after-loop`, on at `-O2`) does not. cse keeps going past a label
+  whose remaining uses it removed itself, and `-fcse-skip-blocks` extends a block over
+  an `if` without inner labels, so a dead `if` hides nothing.
 - When `x = y;` copies a register and both live on, cse makes the one that outlives the
   block and the other the canonical name (`make_regs_eqv`); a test of `y` right after the
   copy is rewritten to `x`, `y` dies there, and allocation merges them. A later use of `y`
@@ -798,107 +799,118 @@ converted to C per unit. What converting the targets' `.data` established:
   the same table include it as a `static` from a shared header (field_music.h).
 - A table's readers, not the span to the next symbol, give its extent, and stray fill
   after it is not an element. Four tables spelled theirs as extra elements and are
-  INCLUDE_ORIGINAL objects with `included` lines now, their externs declaring the
-  true extent: the world map's flame sizes worldmap_scene15_flame_sizes (5 u16 for flame actors 4-8,
-  worldmap_scene15_flame_start and worldmap_scene15_flame_update; fill 65 79) and gear parameters worldmap_gear_sprite_height (3 s16
-  for the members 0-2 worldmap_place_vehicle passes; fill 00 3c), slot39's sheet images
-  menu_deathblow_row_images (13 rows of 5 u8, menu_deathblow_screen_layout_row for the rows of menu_deathblow_screen_build; fill 00 07
-  2e) and battle's combo flags battle_combo_step_flags (15 u8: battle_can_use_combo_step, battle_combo_chain_add_gear_step and
-  battle_combo_record_gear_step index at most 14 from combo steps 0-2, or 0xff at attack level 4;
-  fill 35). `tools/stray_padding.py` (module docstring) lists every linked C data
-  object whose last 1-3 bytes, whole byte or halfword elements as cc1 emitted them
-  whatever the declared shape (a flat table's last elements, the end of a 2-D table's
-  last row, a structure's last members), would be alignment fill before the next
-  object and hold a non-zero byte that no constant-offset access reads (`tail`, noted
-  `unread` where every access is exact and none reaches them, `text` or `outlier`
-  where they look stray), whose accesses are all exact and leave an unread rest with a
-  non-zero byte in an alignment slot, word elements too (`unread`), that nothing
-  references (`unref`), that is declared wider than every access with a byte none
-  touches (`wide`), or whose string holds bytes after its terminator (`string`).
-  It reports `2301 C data objects, 244 to review; objects per flag: tail 209, tail read 8,
-  unref 42` (222 distinct, 195 with a tail and 33 unreferenced; the second executable
-  repeats the resident's; the resident's zero byte mode_arena_bout_outcome is an object in each
-  executable and is not flagged), each reviewed against its readers. None other
-  spells stray fill: the tails are read (masks `& 7` and `& 3`, the frame counts 0x10,
-  the count passed with each label list, the 18-, 7- and 16-entry glyph label loops
-  of ovl2596 and battle) or complete their structure (single-bit masks, permutations
-  of the eight facings, a CLUT LoadImage'd 16 wide, the round map's 128th row
-  continuing both column curves, frame rates 60/n for n = 2-60 dividing 60, the party
-  panels' per-member pattern, a pilot per gear of the 20, lamp frames, per-character
-  and per-gear tables; the last rows of 2-D tables, battle's timer reloads and list
-  separators by AP and list size (battle_ap_timer_reload_table, battle_separator_rows_by_list_size: each row holds one value
-  more than the row before), the field compass grid's (rows 4-8 alike or stepping
-  on), the menu wheel's offsets (the second row's slide -0x24 mirrors the first's)
-  and the resident's sound programs per battle mode (mode_battle_sound_programs, 0xff absent as for
-  modes 0 and 4); and the last members of whole records, battle's 26 command panel
-  pages battle_command_panel_page_00-battle_command_panel_page_19 (the lists each fills, 0xff none, and their glyph
-  sets, read through battle_command_panel_pages) and sound banks battle_sound_table, the field's panel
-  frames, particle sprites (the last corner closes the quad), portrait and text
-  places (palette rows e0-e7), icon and strip origins, image pieces and style pages,
-  the menu's shot kinds, animation rules (the last's next -1, as for the 17 before
-  it), font glyphs and arena frame points, the world map's area file sets (each
-  area's last parameter 2), the resident's texture positions and the last cosine
-  4096 of its sine table), or are the sentinels their loops stop at (-1, 0xffff,
-  also the world map's camera path pad); a stray byte
-  that continued its structure's pattern would pass this review too. The
-  unreferenced ones are words, structures, strings, documented unread tables and
-  copies, or tables read through a base formed before
-  them (`battle_combo_next_step_table_by_paid`, `menu_ascii_to_sjis_table[hi - 0x20]`, `[text[0] - 1]`, `[(top_cursor - 1) * 4 +
-  list_cursor]`). slot39's unreferenced bytes 08 00 at 801E96A6, between the flags
-  menu_save_command_stays_open and menu_saving_at_cd_change and the u16 masks menu_bit_masks (GCC 2.6.3 emits consecutive
-  byte scalars back to back and aligns the arrays to a word), are taken as the flag's
-  padding by analogy with the flags closure D links with theirs, battle's battle_applying_item_results
-  (08 00 00) and ovl2596's battle_results_fanfare_started (04 00 00): menu_saving_at_cd_change is linked with them, with
-  INCLUDE_ORIGINAL_UNALIGNED (it follows menu_save_command_stays_open directly). Neither the bytes nor
-  the vendor tools decide it, here or for those two, which could as well each be a
-  flag, an unreferenced byte 8 or 4 and zero fill: nothing in any image reaches
-  801E96A6; battle's flag battle_paused before the same two mask tables (battle_slot_bits,
-  battle_flag_bits) is followed by zeros, as slot39's other byte groups are (801E977B,
-  801E9786-87); and Psy-Q 3.5's CC1PSX 2.6.3.SN.2 and ASPSX 2.34 under DOSBox build the
-  whole slot39 unit, with or without a byte 8 there, to the original .data but for
-  zeros at every stray byte (08 without the byte, 07 2e after menu_deathblow_row_images in both).
-  Battle's battle_in_automatic_turn and battle_effects_disabled (00 08 00 71, 00 74 72 73) are no such analogue:
-  GCC would put the byte flag that follows each (battle_applying_item_results, battle_gear_objects_loaded) directly
-  after it, so their three bytes need a unit boundary, unreferenced data or a
-  word-aligned next flag.
-- An object that ends its unit's section can be followed by stray bytes up to the
-  next unit's. In the targets' links eleven included objects end their unit's section
-  so: the strings field_clear_otag_label and field_error_id0_format (field), arena_debug_rate_format (menu6), battle_debug_state_page_char_format
-  (debug2611's pages.c) and item_shop_save_file_prefix (ovl2601) and the .data objects arena_actor_combo_inputs
-  (menu7, `ind` before menu2's .sbss) and battle_unreferenced_stray_byte (battle), all of ASPSX 2.34
-  units, and battle_music_lowered (battle) and battle_setup_next_member_image_column (ovl2615) of 2.56 units and the world
-  map's worldmap_scene15_flame_sizes and worldmap_gear_sprite_height of 2.79 units; so does the world map's cue sequence
-  asset worldmap_scene13_cue_waits. Psy-Q 3.5's ASPSX 2.34 pads no section's end under DOSBox: a 6-byte
-  .data or a 5-byte .rdata stays that long, also when another section follows, and a
-  section entered again goes on at that offset. If the original 2.34 assembler did the
-  same, the stray bytes of its units lie in the gap the link left before the next
+  INCLUDE_ORIGINAL objects with `included` lines now, their externs declaring the true
+  extent: the world map's flame sizes worldmap_scene15_flame_sizes (5 u16 for flame
+  actors 4-8, worldmap_scene15_flame_start and worldmap_scene15_flame_update; fill 65 79)
+  and gear parameters worldmap_gear_sprite_height (3 s16 for the members 0-2
+  worldmap_place_vehicle passes; fill 00 3c), slot39's sheet images
+  menu_deathblow_row_images (13 rows of 5 u8, menu_deathblow_screen_layout_row for the
+  rows of menu_deathblow_screen_build; fill 00 07 2e) and battle's combo flags
+  battle_combo_step_flags (15 u8: battle_can_use_combo_step,
+  battle_combo_chain_add_gear_step and battle_combo_record_gear_step index at most 14
+  from combo steps 0-2, or 0xff at attack level 4; fill 35). `tools/stray_padding.py`
+  (module docstring) lists every linked C data object whose last 1-3 bytes, whole byte
+  or halfword elements as cc1 emitted them whatever the declared shape (a flat table's
+  last elements, the end of a 2-D table's last row, a structure's last members), would
+  be alignment fill before the next object and hold a non-zero byte that no
+  constant-offset access reads (`tail`, noted `unread` where every access is exact and
+  none reaches them, `text` or `outlier` where they look stray), whose accesses are all
+  exact and leave an unread rest with a non-zero byte in an alignment slot, word
+  elements too (`unread`), that nothing references (`unref`), that is declared wider
+  than every access with a byte none touches (`wide`), or whose string holds bytes after
+  its terminator (`string`). It reports
+  `2301 C data objects, 244 to review; objects per flag: tail 209, tail read 8, unref 42`
+  (222 distinct, 195 with a tail and 33 unreferenced; the second executable repeats the
+  resident's; the resident's zero byte mode_arena_bout_outcome is an object in each
+  executable and is not flagged), each reviewed against its readers. None other spells
+  stray fill: the tails are read (masks `& 7` and `& 3`, the frame counts 0x10, the
+  count passed with each label list, the 18-, 7- and 16-entry glyph label loops of
+  ovl2596 and battle) or complete their structure (single-bit masks, permutations of the
+  eight facings, a CLUT LoadImage'd 16 wide, the round map's 128th row continuing both
+  column curves, frame rates 60/n for n = 2-60 dividing 60, the party panels' per-member
+  pattern, a pilot per gear of the 20, lamp frames, per-character and per-gear tables;
+  the last rows of 2-D tables, battle's timer reloads and list separators by AP and list
+  size (battle_ap_timer_reload_table, battle_separator_rows_by_list_size: each row holds
+  one value more than the row before), the field compass grid's (rows 4-8 alike or
+  stepping on), the menu wheel's offsets (the second row's slide -0x24 mirrors the
+  first's) and the resident's sound programs per battle mode
+  (mode_battle_sound_programs, 0xff absent as for modes 0 and 4); and the last members
+  of whole records, battle's 26 command panel pages
+  battle_command_panel_page_00-battle_command_panel_page_19 (the lists each fills, 0xff
+  none, and their glyph sets, read through battle_command_panel_pages) and sound banks
+  battle_sound_table, the field's panel frames, particle sprites (the last corner closes
+  the quad), portrait and text places (palette rows e0-e7), icon and strip origins,
+  image pieces and style pages, the menu's shot kinds, animation rules (the last's next
+  -1, as for the 17 before it), font glyphs and arena frame points, the world map's area
+  file sets (each area's last parameter 2), the resident's texture positions and the
+  last cosine 4096 of its sine table), or are the sentinels their loops stop at (-1,
+  0xffff, also the world map's camera path pad); a stray byte that continued its
+  structure's pattern would pass this review too. The unreferenced ones are words,
+  structures, strings, documented unread tables and copies, or tables read through a
+  base formed before them (`battle_combo_next_step_table_by_paid`,
+  `menu_ascii_to_sjis_table[hi - 0x20]`, `[text[0] - 1]`,
+  `[(top_cursor - 1) * 4 + list_cursor]`). slot39's unreferenced bytes 08 00 at
+  801E96A6, between the flags menu_save_command_stays_open and menu_saving_at_cd_change
+  and the u16 masks menu_bit_masks (GCC 2.6.3 emits consecutive byte scalars back to
+  back and aligns the arrays to a word), are taken as the flag's padding by analogy with
+  the flags closure D links with theirs, battle's battle_applying_item_results (08 00 00)
+  and ovl2596's battle_results_fanfare_started (04 00 00): menu_saving_at_cd_change is
+  linked with them, with INCLUDE_ORIGINAL_UNALIGNED (it follows
+  menu_save_command_stays_open directly). Neither the bytes nor the vendor tools decide
+  it, here or for those two, which could as well each be a flag, an unreferenced byte 8
+  or 4 and zero fill: nothing in any image reaches 801E96A6; battle's flag battle_paused
+  before the same two mask tables (battle_slot_bits, battle_flag_bits) is followed by
+  zeros, as slot39's other byte groups are (801E977B, 801E9786-87); and Psy-Q 3.5's
+  CC1PSX 2.6.3.SN.2 and ASPSX 2.34 under DOSBox build the whole slot39 unit, with or
+  without a byte 8 there, to the original .data but for zeros at every stray byte (08
+  without the byte, 07 2e after menu_deathblow_row_images in both). Battle's
+  battle_in_automatic_turn and battle_effects_disabled (00 08 00 71, 00 74 72 73) are no
+  such analogue: GCC would put the byte flag that follows each
+  (battle_applying_item_results, battle_gear_objects_loaded) directly after it, so their
+  three bytes need a unit boundary, unreferenced data or a word-aligned next flag.
+- An object that ends its unit's section can be followed by stray bytes up to the next
+  unit's. In the targets' links eleven included objects end their unit's section so: the
+  strings field_clear_otag_label and field_error_id0_format (field),
+  arena_debug_rate_format (menu6), battle_debug_state_page_char_format (debug2611's
+  pages.c) and item_shop_save_file_prefix (ovl2601) and the .data objects
+  arena_actor_combo_inputs (menu7, `ind` before menu2's .sbss) and
+  battle_unreferenced_stray_byte (battle), all of ASPSX 2.34 units, and
+  battle_music_lowered (battle) and battle_setup_next_member_image_column (ovl2615) of
+  2.56 units and the world map's worldmap_scene15_flame_sizes and
+  worldmap_gear_sprite_height of 2.79 units; so does the world map's cue sequence asset
+  worldmap_scene13_cue_waits. Psy-Q 3.5's ASPSX 2.34 pads no section's end under DOSBox:
+  a 6-byte .data or a 5-byte .rdata stays that long, also when another section follows,
+  and a section entered again goes on at that offset. If the original 2.34 assembler did
+  the same, the stray bytes of its units lie in the gap the link left before the next
   section, not in the assembler's fill (the later assemblers' section ends are not
-  probed). PSYLINK 2.37 writes zeros in such a gap under DOSBox when every section is
-  in its default group (also after 64 KB of pattern data and between two objects'
-  .data); with text and bss groups `/p` writes the file only to the .data's end. The
-  DOSBox runs also write zeros at the stray bytes inside sections, so which tool
-  wrote any of these is open. The nine gaps GNU ld leaves between input sections in
-  the targets' links (resident 6, menu 1, slot39 2) are zero in the originals; the
-  non-zero ones lie inside the included objects and the asset above.
-- One table's extent stays open. ovl2143's unread copy gear_model_battle_gear_file_table of battle's gear
-  file table battle_gear_file_table is battle's byte for byte, as its copy gear_model_battle_extra_file_bases of the
-  18-byte extra file bases battle_extra_file_bases is, but for the last pair: 66 00 where battle's
-  has 00 00. The bases of gears 0-18 chain (each is the previous gear's base plus 2
-  plus that gear's variant count, the files battle_read_gear_files reads) and fill directory
-  (0x28, 1) exactly: on both discs its file 1 heads a sub-directory of the 62 files
-  2-63 that gears 0-18 take (tools/analysis/disc_index.py). Neither twentieth pair
-  continues the chain or names gear files (base 0 reads that header, base 102 the
-  `wds ` wave banks 103 and 104), but the game data holds 20 gear records (field's
-  field_event_restore_gears) and battle_read_gear_files indexes the table by a combatant's gear id without
-  a range check. With 19 pairs, battle's 00 00 is GCC's zero fill before the
-  word-aligned battle_extra_file_bases, and ovl2143's 66 00 follow the unit's last .data object as
-  `ind` follows menu7's arena_actor_combo_inputs (above): both are ASPSX 2.34 units, and both files
-  go on with zeros for the uninitialized variables after those bytes (ovl2143's .bss,
-  the menu's .sbss). Neither the readers nor the vendor tools, which write zeros at
-  every stray byte under DOSBox, tell 19 entries with fill from 20 entries. So the
-  copy whose last pair holds a non-zero byte is linked with INCLUDE_ORIGINAL and an
-  `included` line rather than spelled as a twentieth C element, and battle's, whose
-  last pair is zero either way, stays C with 20 pairs, until a reader decides.
+  probed). PSYLINK 2.37 writes zeros in such a gap under DOSBox when every section is in
+  its default group (also after 64 KB of pattern data and between two objects' .data);
+  with text and bss groups `/p` writes the file only to the .data's end. The DOSBox runs
+  also write zeros at the stray bytes inside sections, so which tool wrote any of these
+  is open. The nine gaps GNU ld leaves between input sections in the targets' links
+  (resident 6, menu 1, slot39 2) are zero in the originals; the non-zero ones lie inside
+  the included objects and the asset above.
+- One table's extent stays open. ovl2143's unread copy gear_model_battle_gear_file_table
+  of battle's gear file table battle_gear_file_table is battle's byte for byte, as its
+  copy gear_model_battle_extra_file_bases of the 18-byte extra file bases
+  battle_extra_file_bases is, but for the last pair: 66 00 where battle's has 00 00. The
+  bases of gears 0-18 chain (each is the previous gear's base plus 2 plus that gear's
+  variant count, the files battle_read_gear_files reads) and fill directory (0x28, 1)
+  exactly: on both discs its file 1 heads a sub-directory of the 62 files 2-63 that
+  gears 0-18 take (tools/analysis/disc_index.py). Neither twentieth pair continues the
+  chain or names gear files (base 0 reads that header, base 102 the `wds ` wave banks
+  103 and 104), but the game data holds 20 gear records (field's
+  field_event_restore_gears) and battle_read_gear_files indexes the table by a
+  combatant's gear id without a range check. With 19 pairs, battle's 00 00 is GCC's zero
+  fill before the word-aligned battle_extra_file_bases, and ovl2143's 66 00 follow the
+  unit's last .data object as `ind` follows menu7's arena_actor_combo_inputs (above):
+  both are ASPSX 2.34 units, and both files go on with zeros for the uninitialized
+  variables after those bytes (ovl2143's .bss, the menu's .sbss). Neither the readers
+  nor the vendor tools, which write zeros at every stray byte under DOSBox, tell 19
+  entries with fill from 20 entries. So the copy whose last pair holds a non-zero byte
+  is linked with INCLUDE_ORIGINAL and an `included` line rather than spelled as a
+  twentieth C element, and battle's, whose last pair is zero either way, stays C with 20
+  pairs, until a reader decides.
 - splat names addresses the code forms from a base plus a constant (`D_8009A684`, four
   entries before the flame sizes; `D_801EA5D0`, 0x20 before the Shift JIS codes).
   Declare the real object and index it as the code does (`worldmap_scene15_flame_sizes[index - 4]`,
@@ -990,33 +1002,32 @@ converted to C per unit. What converting the targets' `.data` established:
   `u8` in mode_battle_and_menu.c, which writes the other two bytes through `link.ld` names:
   ASPSX 2.34 addressed a common at an offset absolutely (maspsx models it), but GNU
   as moves a small common's offset accesses to `$gp`.
-- A unit's own variables come first, in unit order, as statics where the commons
-  follow apart, and a unit reads only its own: `tools/data_users.py CONFIG.mk`
-  reports every FOREIGN reference, another unit's code forming an address in a unit's
-  own `.bss` (in no target but the menu, whose one, 80092a30, menu2's arena_scene_update_bout_end
-  only forms as the end of its loop over the embers arena_scene_bout_end_embers[3]: it is the pad word
-  of menu3's arena_effect_hit_spark_position behind them), and, with `--end`, the order of variables still
-  extern. That places menu 800707A8 and 8007E528 exactly, the menu4/menu5 boundary at
-  80081E00, 80081E6C or 80081ECC, slot39's after 801CD2AC and at or before
-  801DBDB4 (an earlier one moves the `.bss` boundary with it), and battle 800B7870's
-  unit at or before 800B7134, whose shatter draw shares its battle_shatter_ot; the latest
-  is kept. The commons, which the original linker
+- A unit's own variables come first, in unit order, as statics where the commons follow
+  apart, and a unit reads only its own: `tools/data_users.py CONFIG.mk` reports every
+  FOREIGN reference, another unit's code forming an address in a unit's own `.bss` (in
+  no target but the menu, whose one, 80092a30, menu2's arena_scene_update_bout_end only
+  forms as the end of its loop over the embers arena_scene_bout_end_embers[3]: it is the
+  pad word of menu3's arena_effect_hit_spark_position behind them), and, with `--end`,
+  the order of variables still extern. That places menu 800707A8 and 8007E528 exactly,
+  the menu4/menu5 boundary at 80081E00, 80081E6C or 80081ECC, slot39's after 801CD2AC
+  and at or before 801DBDB4 (an earlier one moves the `.bss` boundary with it), and
+  battle 800B7870's unit at or before 800B7134, whose shatter draw shares its
+  battle_shatter_ot; the latest is kept. The commons, which the original linker
   allocated after every unit's own in an order of its own (mdec's five player commons
   among the 20 of libcd's CDROM.OBJ), are defined by a commons unit linked last
   (menu_overlay_common.c, menu_common.c, gear_shop_common.c, battle_common.c,
-  field_common.c, worldmap_common.c, mdec commons/; the resident's commons/ units
-  lie between the PsyQ libraries' generated ranges), which reproduces the linker's
-  placement rather than modelling it. It
-  defines them ahead of the headers that declare them, structures by their tag: GCC
-  2.6.3 lays out such a tentative definition once a header completes the type.
-  Functions on both sides of a supposed unit boundary that read the same statics
-  are one unit: the resident's cd_reads_and_streams.c runs from 8002709C to 8002C3E8.
-  One declaration then serves every user, which leaves one accepted compromise
-  there: the CD mode byte cd_setmode_parameter is a `u8` (80028f30's tests match only with a
-  scalar; a `u8[4]`, a union or a word read bytewise keep its address in a
-  register), while 80029690 and 8002a428 clear and pass all four bytes of the
-  CdlSetmode parameter in its word slot through `&cd_setmode_parameter + 3`.
-  Zeros a packer added past the program are file padding (Compressed containers).
+  field_common.c, worldmap_common.c, mdec commons/; the resident's commons/ units lie
+  between the PsyQ libraries' generated ranges), which reproduces the linker's placement
+  rather than modelling it. It defines them ahead of the headers that declare them,
+  structures by their tag: GCC 2.6.3 lays out such a tentative definition once a header
+  completes the type. Functions on both sides of a supposed unit boundary that read the
+  same statics are one unit: the resident's cd_reads_and_streams.c runs from 8002709C to
+  8002C3E8. One declaration then serves every user, which leaves one accepted compromise
+  there: the CD mode byte cd_setmode_parameter is a `u8` (80028f30's tests match only
+  with a scalar; a `u8[4]`, a union or a word read bytewise keep its address in a
+  register), while 80029690 and 8002a428 clear and pass all four bytes of the CdlSetmode
+  parameter in its word slot through `&cd_setmode_parameter + 3`. Zeros a packer added
+  past the program are file padding (Compressed containers).
 - Code shows where an object starts and how far it reaches. A member at a nonzero
   offset is addressed through a pseudo holding `sym+off`, which cse reuses and relates
   to any other offset of the symbol and which can stay in a register (hoisted by
@@ -1047,22 +1058,22 @@ converted to C per unit. What converting the targets' `.data` established:
   menu.bss.ld asserts both bounds. The task scheduler's two words open menu7's larger
   variables: an explicit `.bss` in its handwritten arena_task_save_scheduler.s, outside the
   assembler's rule, classified `handwritten`.
-- The resident's BSS (800592bc-8006faf0, the span its entry point clears) has the
-  same four parts, the PsyQ libraries' statics after the game units' own and their
-  commons among the game's: every unit's variables of up to 8 bytes in link order
-  (800592bc-800593a4: the `-G8` units' `.sbss` and, by `SBSS_<file> := 8`, that of
-  the GCC 2.7.2 `-G0` units main, model_renderer, main2 and console_and_sound_driver), the
-  libraries' small statics, the small commons (commons_small.c), every unit's
-  larger variables (800595e8-8005a1fc; the GCC 2.6.3 unit cd_reads_and_streams keeps all
-  its statics there in declaration order), the libraries' other statics, and the
-  other commons (commons_before_libspu.c to commons_after_libgpu.c; GameData game_data with
-  its full 0x2358 bytes). Each unit defines its own as statics. Where nothing
-  addresses the end of a `-G0` unit's larger object, a word of its own would be
-  small and lie in the unit's `.sbss`, so the object reaches to the next one (the
-  number codes text_number_codes[14], the stage file list mode_battle_stage_file_list[4]). The SPU malloc
-  table sound_spu_malloc_table, 8 * (4 + 1) bytes, ends the BSS; link.ld names its last word
-  boot_bss_last_word from the BSS end for the entry point and the mode table and asserts
-  the span.
+- The resident's BSS (800592bc-8006faf0, the span its entry point clears) has the same
+  four parts, the PsyQ libraries' statics after the game units' own and their commons
+  among the game's: every unit's variables of up to 8 bytes in link order
+  (800592bc-800593a4: the `-G8` units' `.sbss` and, by `SBSS_<file> := 8`, that of the
+  GCC 2.7.2 `-G0` units main, model_renderer, main2 and console_and_sound_driver), the
+  libraries' small statics, the small commons (commons_small.c), every unit's larger
+  variables (800595e8-8005a1fc; the GCC 2.6.3 unit cd_reads_and_streams keeps all its
+  statics there in declaration order), the libraries' other statics, and the other
+  commons (commons_before_libspu.c to commons_after_libgpu.c; GameData game_data with
+  its full 0x2358 bytes). Each unit defines its own as statics. Where nothing addresses
+  the end of a `-G0` unit's larger object, a word of its own would be small and lie in
+  the unit's `.sbss`, so the object reaches to the next one (the number codes
+  text_number_codes[14], the stage file list mode_battle_stage_file_list[4]). The SPU
+  malloc table sound_spu_malloc_table, 8 * (4 + 1) bytes, ends the BSS; link.ld names
+  its last word boot_bss_last_word from the BSS end for the entry point and the mode
+  table and asserts the span.
 - GCC writes a `-G8` unit's data, commons and `.extern`s ahead of its code, also a
   definition placed after its use: `extern int late_var; int g(void) { return
   late_var; } int late_var = 2;` through `psx-cc1-<version> -O2 -G8` puts `late_var:`

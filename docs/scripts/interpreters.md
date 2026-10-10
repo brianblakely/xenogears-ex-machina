@@ -65,15 +65,16 @@ documents both; `overlay_scripts` decodes them.
 ## Data-selected switches
 
 Switches on a field of a data record take their default for a value without a
-case. The TMD primitive kinds of battle `battle_tmd_build_packets`, `battle_tmd_draw_object` and
-ovl3384 `battle_module_debris_start` (mode & 0x1c, lit) are censused in
-[dispatch-tables.md](dispatch-tables.md). The effect events of `800ae2a4` and
-`801e5d44`, the arena hit and effect types (`arena_frame_event_hit`, `arena_frame_event_effect`),
-the AI action-list entry types (`800793f0`) and the battle sprite commands'
-arguments (`800c11cc`, `800b3f04`) are decoded with their machines. The battle
-formulas' sub-switches on descriptor fields (`chanceSource`, `amountKind`,
-`defenseKind` in `battle_menus_and_resolver.c`) are not censused; a value without a case
-takes the switch's default.
+case. The TMD primitive kinds of battle `battle_tmd_build_packets`,
+`battle_tmd_draw_object` and ovl3384 `battle_module_debris_start` (mode & 0x1c,
+lit) are censused in [dispatch-tables.md](dispatch-tables.md). The effect events
+of `800ae2a4` and `801e5d44`, the arena hit and effect types
+(`arena_frame_event_hit`, `arena_frame_event_effect`), the AI action-list entry
+types (`800793f0`) and the battle sprite commands' arguments (`800c11cc`,
+`800b3f04`) are decoded with their machines. The battle formulas' sub-switches on
+descriptor fields (`chanceSource`, `amountKind`, `defenseKind` in
+`battle_menus_and_resolver.c`) are not censused; a value without a case takes the
+switch's default.
 
 ## Rejected candidates
 

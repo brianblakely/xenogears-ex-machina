@@ -145,8 +145,9 @@ From `boot_main` (main.c):
    a 384x480 VRAM clear, `InitGeom`; pads (`pad_start_controllers`); `InitCARD(1)`,
    `StartCARD`, `_bu_init`; the vblank handler `pad_vblank_callback`.
 3. The heap over [0x8006FAF0, 0x801FC000) (`heap_init`), then `SpuInit`.
-4. The disc index: `cd_init_disc_access(cd_disc_files, cd_disc_directories, mode_disc_mode)` with the
-   tables embedded in the executable.
+4. The disc index:
+   `cd_init_disc_access(cd_disc_files, cd_disc_directories, mode_disc_mode)` with
+   the tables embedded in the executable.
 5. The sound driver and its 240 Hz tick (`sound_start_driver`).
 6. Directory (0, 1) files 2-5 (sound banks), 6 (font, `text_install_font`) and
    7 (system data, `text_install_system_data`).
@@ -178,15 +179,16 @@ Three details matter for a native loop:
   BSS end + 4 after the stack reset, when the allocation defaults and the pad
   queue are reset too.
 - The packed overlay file is read into a top-of-heap block with tag 6, quietly
-  (`mode_load_overlay_block`). The field's encounter draw, the world map and the battle
-  results call it for the next mode before they leave (field.c `field_encounter_count_down`,
-  worldmap.c `worldmap_main`, battle_results_screens.c `battle_results_leave_battle`), so the read overlaps
-  their last frames; the dispatcher waits for it (`cd_sync_reads(0)`) and
-  decodes the block to 0x8006FAF0. A block read ahead like this has already
-  been released by the first heap restart, so the decode reads a released
-  block: a native heap must not scrub released blocks. Selecting mode 0 before
-  `entry()` ends the cache (`mode_select_next_mode`). The overlay's `.data` is decoded
-  afresh on every entry.
+  (`mode_load_overlay_block`). The field's encounter draw, the world map and the
+  battle results call it for the next mode before they leave (field.c
+  `field_encounter_count_down`, worldmap.c `worldmap_main`,
+  battle_results_screens.c `battle_results_leave_battle`), so the read overlaps
+  their last frames; the dispatcher waits for it (`cd_sync_reads(0)`) and decodes
+  the block to 0x8006FAF0. A block read ahead like this has already been released
+  by the first heap restart, so the decode reads a released block: a native heap
+  must not scrub released blocks. Selecting mode 0 before `entry()` ends the
+  cache (`mode_select_next_mode`). The overlay's `.data` is decoded afresh on
+  every entry.
 - No game stack frame survives the call. That makes the dispatch boundary the
   natural snapshot keyframe and the place for the host's top-level loop.
 
@@ -275,12 +277,13 @@ Images of different slots overlap (ovl2615 and ovl3087, for example), so
 loading one can overwrite part of another slot's image.
 
 A snapshot holds 2 MB of RAM, 1 KB of scratchpad, 1 MB of VRAM and 512 KB of SPU
-RAM, and the device state outside them: GTE registers (the handwritten
-renderers project with the rotation, translation and projection their callers
-left there, as `worldmap_terrain_draw_quarter_block.s` states), GPU drawing and display settings, SPU
-voice and control registers (written through `sound_spu_registers`), the CD drive's
-position, mode and any command or read in progress, root counters (the sound
-tick runs on counter 2) and pending interrupts, and the memory cards' contents.
+RAM, and the device state outside them: GTE registers (the handwritten renderers
+project with the rotation, translation and projection their callers left there,
+as `worldmap_terrain_draw_quarter_block.s` states), GPU drawing and display
+settings, SPU voice and control registers (written through
+`sound_spu_registers`), the CD drive's position, mode and any command or read in
+progress, root counters (the sound tick runs on counter 2) and pending
+interrupts, and the memory cards' contents.
 
 ### The resident API
 
@@ -391,16 +394,16 @@ or Form 2. An import of 2048-byte file data cannot serve:
   0x924-byte sectors (psx-spx). Each callback copies the 4-byte header and the
   8-byte subheader (`CdGetSector(..., 3)`) before the 2048 data bytes, and drops
   a sector whose header position is not the one it expects (`CdPosToInt` in
-  cd_reads_and_streams.c `cd_copy_list_sector` and `cd_copy_file_sector`, worldmap_movement_terrain.c
-  `worldmap_stream_on_data_ready`);
-- movies. Their sizes in the index count 2336 bytes per sector, the subheader
-  and the rest of the raw sector, and their sectors hold video, XA audio or
-  nothing (`tools/extraction/code_census.py`). mdec reads the video through the
-  `St*` ring and lets the drive play the XA audio into the SPU's CD input,
-  filtered to file 1 and the movie's channel (`movie_start`). The original's
-  host-file path keeps these records too: it seeks a movie by 0x920 bytes per
-  sector (mdec.c `movie_restart`), reads each record's 8-byte subheader and
-  skips a record whose file byte is 1 (cd_reads_and_streams.c `stream_get_next_movie_frame`). Decode
+  cd_reads_and_streams.c `cd_copy_list_sector` and `cd_copy_file_sector`,
+  worldmap_movement_terrain.c `worldmap_stream_on_data_ready`);
+- movies. Their sizes in the index count 2336 bytes per sector, the subheader and
+  the rest of the raw sector, and their sectors hold video, XA audio or nothing
+  (`tools/extraction/code_census.py`). mdec reads the video through the `St*`
+  ring and lets the drive play the XA audio into the SPU's CD input, filtered to
+  file 1 and the movie's channel (`movie_start`). The original's host-file path
+  keeps these records too: it seeks a movie by 0x920 bytes per sector (mdec.c
+  `movie_restart`), reads each record's 8-byte subheader and skips a record whose
+  file byte is 1 (cd_reads_and_streams.c `stream_get_next_movie_frame`). Decode
   XA ADPCM from the Form 2 audio sectors that the file and channel select;
 - raw reads by LBA: the arena's portraits, and the swap's label, index and
   directory at sectors 0x17, 0x18 and 0x28.
@@ -433,10 +436,10 @@ waits. What follows for a port:
   ([Mode dispatcher](#mode-dispatcher)). A disc service that completes reads at
   once runs fewer of these frames than the drive did.
 - **A headless runtime must run the sound driver.** Field event `fe 64`
-  (`field_event_wait_sound_channels`) and battle event opcode 48 (battle `battle_play_sound_to_end`) wait
-  for sound effects to end, and boot, the field's music loader and battle wait
-  for SPU transfers (`sound_sync_transfer`). Without the 240 Hz tick and the transfer
-  callback they never return.
+  (`field_event_wait_sound_channels`) and battle event opcode 48 (battle
+  `battle_play_sound_to_end`) wait for sound effects to end, and boot, the
+  field's music loader and battle wait for SPU transfers (`sound_sync_transfer`).
+  Without the 240 Hz tick and the transfer callback they never return.
 - **One wait is not a wait.** The world map's `while (sound_driver_flags & 0x10) {}`
   (`worldmap_open_map_start`) compiled to one test and a branch to itself (0x80072584): if
   a transfer is still running there, it hangs. Code the intended behaviour
@@ -583,18 +586,20 @@ place.
 - **The discs**, as raw sectors ([Importing the discs](#importing-the-discs)).
 - **Every `asset` range** of the targets' classifications, not only the
   `INCLUDE_ASSET` blobs. In the resident: the embedded disc data
-  0x80010000-0x80018080 (below); the TMD model `model_slot_ring_tmd` (0x170 bytes), a
-  splat data segment inside `.text` (`battle_effect_script` in
+  0x80010000-0x80018080 (below); the TMD model `model_slot_ring_tmd` (0x170
+  bytes), a splat data segment inside `.text` (`battle_effect_script` in
   `slus_006.64.yaml`) that only the battle overlay reads, for the slot-highlight
-  ring; and, through `INCLUDE_ASSET`, the boot logo `boot_packed_logo`, a packed image
-  `sprite_packed_pause_image`, the glyph `text_special_glyph_rows` of the character pair 0xFF 0xFF, the
-  console font `console_packed_font`, and the error sound banks `sound_error_effect_bank` (used in
-  place as a `SoundBank`) and `sound_error_wave_bank`. In the field: the movie sound
-  timelines `field_movie_sound_timelines`. In the menu: the sprite model `arena_actor_extra_model` (relocated
-  in place by `model_relocate_sprite_model`) and the arena scene and setup scripts. In the
-  world map: the terrain texture animation sequences, the actor scripts and the
-  scene directors' cue tables ([timelines.md](scripts/timelines.md) and the
-  classification lines give each format and reader).
+  ring; and, through `INCLUDE_ASSET`, the boot logo `boot_packed_logo`, a packed
+  image `sprite_packed_pause_image`, the glyph `text_special_glyph_rows` of the
+  character pair 0xFF 0xFF, the console font `console_packed_font`, and the error
+  sound banks `sound_error_effect_bank` (used in place as a `SoundBank`) and
+  `sound_error_wave_bank`. In the field: the movie sound timelines
+  `field_movie_sound_timelines`. In the menu: the sprite model
+  `arena_actor_extra_model` (relocated in place by `model_relocate_sprite_model`)
+  and the arena scene and setup scripts. In the world map: the terrain texture
+  animation sequences, the actor scripts and the scene directors' cue tables
+  ([timelines.md](scripts/timelines.md) and the classification lines give each
+  format and reader).
 - **`INCLUDE_ORIGINAL`/`INCLUDE_RODATA` objects** (`included` lines). These are
   real variables, tables and strings kept original because stray bytes that
   nothing reads follow them, in their alignment padding or before the next
@@ -623,33 +628,37 @@ well:
 - **There is no draw-free update.** Drawing passes advance state. In the field
   frame (field.c `field_run_frame`) these are the sprite task lists inside the
   character pass (`field_draw_characters`), the effect slots that spawn particles
-  (`field_effect_update_slots`), the fades (`field_fade_update_channels`), the dialogue timers
-  (`field_dialogue_close_expired_windows`), the delayed frees (`heap_update_delayed_frees`) and the VRAM upload
-  queue (`sprite_queue_run_uploads`). In battle, the stage step that draws the objects
-  (`battle_update_stage`) also pushes them apart and animates them. Presentation must
-  consume the output of the original frame, never call game draw code per eye,
-  per repaint or for a spectator.
+  (`field_effect_update_slots`), the fades (`field_fade_update_channels`), the
+  dialogue timers (`field_dialogue_close_expired_windows`), the delayed frees
+  (`heap_update_delayed_frees`) and the VRAM upload queue
+  (`sprite_queue_run_uploads`). In battle, the stage step that draws the objects
+  (`battle_update_stage`) also pushes them apart and animates them. Presentation
+  must consume the output of the original frame, never call game draw code per
+  eye, per repaint or for a spectator.
 - **Projection feeds gameplay.** The field character pass projects every actor
-  with the original camera and sets `layer_flags` 0x200 when it falls outside
-  x [-39, 360), y [-9, 314) (field.c `field_draw_sprite_actors`). An off-screen actor
-  skips turning (`field_run_move_phase`) and the collision, floor and movement steps
-  of the move phase (`field_update_events_and_actors`). A window for an off-screen speaker does
-  not open (field_motion.c `field_dialogue_open_window`), and an open one closes
-  (`field_event_wait_dialogue`), unless the window style's bit 0 is set. Field events `8a`
-  and ext `02` branch on whether an actor projects inside 320x224 or inside
-  x 33-287, y 33-191 (`field_event_branch_unless_on_screen`, `field_event_branch_unless_well_on_screen`). Keep computing these
-  from the original camera and screen, headless too: an actor just outside the
-  original screen stops moving even when a wider view shows it.
+  with the original camera and sets `layer_flags` 0x200 when it falls outside x
+  [-39, 360), y [-9, 314) (field.c `field_draw_sprite_actors`). An off-screen
+  actor skips turning (`field_run_move_phase`) and the collision, floor and
+  movement steps of the move phase (`field_update_events_and_actors`). A window
+  for an off-screen speaker does not open (field_motion.c
+  `field_dialogue_open_window`), and an open one closes
+  (`field_event_wait_dialogue`), unless the window style's bit 0 is set. Field
+  events `8a` and ext `02` branch on whether an actor projects inside 320x224 or
+  inside x 33-287, y 33-191 (`field_event_branch_unless_on_screen`,
+  `field_event_branch_unless_well_on_screen`). Keep computing these from the
+  original camera and screen, headless too: an actor just outside the original
+  screen stops moving even when a wider view shows it.
 - **Buffer parity and fades are state.** The field leaves for battle, the world
   map, the arena or another mode, and starts a movie, only when the draw-buffer
   index `field_draw_buffer_index` is 1; it opens the menu only when it is 0. A map change
   waits for the first fade channel to finish (`fades[0].steps == 0`) and for the
   disc (field.c `field_main`).
-- **Packets are pre-culled** to the original window (original-boundaries.md,
-  GPU features: Culling). World-map terrain also drops triangles whose largest
-  SZ is 0xF00 or more and stops at 0x7FE packets (`worldmap_terrain_draw_quarter_block.s`). Widescreen,
-  stereo and VR need a side-effect-free re-traversal of pre-projection data,
-  not a reprojection of the packet list.
+- **Packets are pre-culled** to the original window (original-boundaries.md, GPU
+  features: Culling). World-map terrain also drops triangles whose largest SZ is
+  0xF00 or more and stops at 0x7FE packets
+  (`worldmap_terrain_draw_quarter_block.s`). Widescreen, stereo and VR need a
+  side-effect-free re-traversal of pre-projection data, not a reprojection of the
+  packet list.
 - **VRAM is persistent, read-back state** (original-boundaries.md, GPU
   features: Framebuffer feedback). The saved-screen slot (0x2C0, 0x100) also
   takes the world map's screen (`MoveImage` in worldmap_open_map.c and its
