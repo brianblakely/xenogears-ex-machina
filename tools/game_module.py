@@ -396,8 +396,14 @@ def adapter_body(target, call_ret, call_params, def_ret, def_ret_attrs, def_para
     lines, args = [], []
     for i, (ty, attrs) in enumerate(def_params):
         if i < len(call_params):
-            src_ty = call_params[i][0]
-            pre, value = cast_value(f"%a{i}", src_ty, ty, "signext" in attrs or "signext" in call_params[i][1])
+            src_ty, call_attrs = call_params[i]
+            # The caller widens an argument by its own type (zeroext for an
+            # unsigned char), as MIPS puts it in the register the callee reads.
+            if "signext" in call_attrs or "zeroext" in call_attrs:
+                signed = "signext" in call_attrs
+            else:
+                signed = "signext" in attrs
+            pre, value = cast_value(f"%a{i}", src_ty, ty, signed)
             lines += pre
             args.append(f"{ty} {' '.join(attrs) + ' ' if attrs else ''}{value}")
         else:
