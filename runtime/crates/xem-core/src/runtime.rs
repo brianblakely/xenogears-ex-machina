@@ -67,6 +67,7 @@ pub struct Services {
     pending: Option<Pending>,
     pub clock: Clock,
     pub pads: Pads,
+    pub presentation: crate::presentation::Presentation,
     pub gpu: devices::gpu::Gpu,
     pub cd: devices::cd::Cd,
     pub spu: devices::spu::Spu,
@@ -160,6 +161,17 @@ impl ImportHandler for Services {
                     Action::Trap
                 }
             },
+            "present" => {
+                if self.presentation.enabled {
+                    let mut bytes = vec![0; arg(2).min(0x1000) as usize];
+                    if memory.read(arg(1), &mut bytes).is_err() {
+                        self.trap_reason = Some("presentation record outside memory".into());
+                        return Action::Trap;
+                    }
+                    self.presentation.record(arg(0), bytes);
+                }
+                Action::Return(0)
+            }
             "debug_break" => {
                 self.log.push(format!("break {}", arg(0)));
                 Action::Return(0)
@@ -389,7 +401,10 @@ impl<M: GameModule> Runtime<M> {
             };
             self.advance_devices();
             match tick {
-                Tick::VBlank => self.interrupt(IRQ_VBLANK, 0)?,
+                Tick::VBlank => {
+                    self.services().presentation.end_frame();
+                    self.interrupt(IRQ_VBLANK, 0)?
+                }
                 Tick::RootCounter(n) => self.interrupt(IRQ_RCNT0 + n as u32, 0)?,
             }
             report.interrupts += 1;

@@ -267,6 +267,25 @@ impl<M: GameModule> Session<M> {
                 self.restore_bytes(&data)?;
                 Ok(self.status())
             }
+            "presentation" => {
+                // Turn capture on (it is off until asked for) and report the last
+                // complete frame's records: kind counts and the first few.
+                let presentation = &mut self.runtime.services().presentation;
+                presentation.enabled = command.get("enable").and_then(Value::as_bool).unwrap_or(true);
+                let records = &presentation.last_frame;
+                let count = |kind| records.iter().filter(|r| r.kind == kind).count();
+                let limit = arg_u64("limit").unwrap_or(8) as usize;
+                Ok(json!({
+                    "models": count(crate::presentation::MODEL),
+                    "sprite_matrices": count(crate::presentation::SPRITE_MATRIX),
+                    "sprite_parts": count(crate::presentation::SPRITE_PARTS),
+                    "records": records.iter().take(limit).map(|r| json!({
+                        "kind": r.kind,
+                        "object": format!("{:#010x}", r.word(0)),
+                        "words": (0..r.bytes.len() / 4).map(|i| r.word(i)).collect::<Vec<_>>(),
+                    })).collect::<Vec<_>>(),
+                }))
+            }
             "memory_hash" => Ok(json!(format!("{:016x}", self.memory_hash()?))),
             "record" => {
                 let vblank = self.vblank();

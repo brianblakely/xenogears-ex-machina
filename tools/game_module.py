@@ -62,7 +62,7 @@ EXPORTS = ["xem_run", "xem_task_run", "xem_call", "xem_interrupt", "xem_unwind_a
 HOST_PREFIX = "xem_host_"
 # Game functions the port wraps (decomp/port): the game's definition is
 # renamed xem_original_<name> and the port's definition calls it.
-WRAPPED = {"mode_dispatch"}
+WRAPPED = {"mode_dispatch", "model_draw_sprite_model", "sprite_set_draw_matrix", "sprite_draw_parts"}
 
 CFLAGS = [
     # The MIPS front end accepts the original inline assembly; the IR is then

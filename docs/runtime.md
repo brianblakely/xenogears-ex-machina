@@ -161,6 +161,24 @@ input.
   clock. Headless runs are unlocked (as fast as the host computes) and
   reproducible.
 
+## Presentation
+
+Presentation consumes the original frame; it never runs game draw code per
+eye, repaint or spectator ([later-phases.md](later-phases.md#presentation)).
+Besides the GPU's VRAM and display (`devices/gpu.rs`), the port records
+read-only pre-projection data at the handbook's seams (`port/present.c`):
+`model_draw_sprite_model` (the mesh, its packets, the ordering table, the sort
+mode and the GTE transform its caller set), `sprite_set_draw_matrix` (the
+sprite and the transform it produced) and `sprite_draw_parts` (the sprite, its
+ordering table and transform). The wrappers record and then run the original
+unchanged (`WRAPPED` in tools/game_module.py). The host keeps the records of
+the last complete frame (`xem_core::presentation`, the `presentation` command);
+capture is off until asked for. Cameras are read through the schema
+(`field_view`, the battle and world map camera state). A renderer for other
+views (widescreen, stereo, XR) re-traverses these records and the meshes in
+game memory with its own cameras; the original camera and screen keep
+deciding gameplay (on-screen tests, culling).
+
 ## Crates
 
 | Crate | Role |
