@@ -39,6 +39,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
 
 [[package]]
+name = "cc"
+version = "1.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50a649af8a827553c29fb0cb4bd4a6f1a0dd695bd3232b9bc98bd9c8a3ffbb8b"
+dependencies = [
+ "find-msvc-tools",
+ "shlex",
+]
+
+[[package]]
 name = "cfg-if"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -118,6 +128,12 @@ dependencies = [
  "const-oid",
  "crypto-common",
 ]
+
+[[package]]
+name = "find-msvc-tools"
+version = "0.1.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aedcfb3409746eddb02b9e19ebda1c3394f759a152e48ee875a0844d1b955484"
 
 [[package]]
 name = "flate2"
@@ -212,6 +228,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "shlex"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
+
+[[package]]
 name = "syn"
 version = "2.0.119"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -247,6 +269,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d245f478577f809a851594d02313b640fb437e0bb33866753cff937863096954"
 
 [[package]]
+name = "xem-core"
+version = "0.1.0"
+
+[[package]]
 name = "xem-disc"
 version = "0.1.0"
 dependencies = [
@@ -255,7 +281,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "xem-game"
+version = "0.1.0"
+dependencies = [
+ "cc",
+ "xem-core",
+]
+
+[[package]]
+name = "xem-gpu"
+version = "0.1.0"
+
+[[package]]
+name = "xem-headless"
+version = "0.1.0"
+dependencies = [
+ "xem-core",
+ "xem-disc",
+ "xem-game",
+]
+
+[[package]]
 name = "xem-media"
+version = "0.1.0"
+
+[[package]]
+name = "xem-spu"
 version = "0.1.0"
 
 [[package]]
