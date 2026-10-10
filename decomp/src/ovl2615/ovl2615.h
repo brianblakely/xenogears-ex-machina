@@ -10,11 +10,6 @@
 #define SLOT_COUNT 11
 #define NO_COMBATANT 0x7F
 
-/* Run one setup phase (battle_setup_phases.c); the load modes (load_modes.c,
- * burst_modes.c) run them between their frames. The prototype keeps the
- * callers' u8 conversion. */
-void battle_setup_run_phase(u8 phase);
-
 /* Callers convert arguments differently from the resident definition (s16
  * modes and u16 positions there): upload an image list (battle_setup_phases.c,
  * battle_loader.c). */

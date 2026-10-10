@@ -51,10 +51,6 @@ extern s32 battle_event_script_text_origin_x;            /* text origin */
 extern s32 battle_event_script_text_origin_y;
 extern ModelArchive *battle_event_script_model_archive;
 
-/* Resident data no shared header declares: the movie's last frame, which
- * the script sets for the movie it starts. */
-extern u16 cd_movie_request_last_frame;
-
 /* Resident functions whose callers convert arguments/result differently
  * from the resident definition (decomp/src/resident/own_declarations.h). */
 void window_open(Window *window, s32 vram_x, s32 vram_y, s32 x, s32 y, s32 columns, s32 rows);

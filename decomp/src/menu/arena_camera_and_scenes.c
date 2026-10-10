@@ -12,6 +12,7 @@
 #include "psyq/libc.h"
 #include "psyq/libgpu.h"
 #include "psyq/libgte.h"
+#include "resident/console.h"
 #include "resident/gpu.h"
 #include "resident/model.h"
 #include "resident/pad.h"

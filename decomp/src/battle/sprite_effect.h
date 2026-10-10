@@ -66,7 +66,6 @@ extern s16 battle_trail_blend;            /* its blend */
 extern s16 battle_trail_depth;
 
 /* Sprite script commands (800B3F04). */
-extern Sprite *battle_acting_sprite;
 extern s16 battle_pending_hit_count;
 
 /* Sprite streaks and sprite effects (800B5DF4-800B7424). */

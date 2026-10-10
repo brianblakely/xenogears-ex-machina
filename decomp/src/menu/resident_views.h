@@ -45,16 +45,15 @@ void pad_run_actuator(s32 port, s32 frames);
 void sound_play_effect_on_channel_volume_pan(s32 effect, s32 channel, s16 volume, s16 pan); /* key on */
 
 /* The resident's option bytes of the field and the menu (its u8[6] at
- * 8005061c) and the byte after them, each by its own name: indexed from the
- * array, arena_mode_task keeps the array's address in a register where the
- * original loads each byte absolutely. */
+ * 8005061c), each by its own name: indexed from the array, arena_mode_task
+ * keeps the array's address in a register where the original loads each byte
+ * absolutely. */
 extern u8 mode_arena_task_parameters; /* nonzero keeps the options in game_data.options */
 extern u8 mode_arena_entry_kind; /* entry kind (0 bout, 1 bout mode 4, 2 scene) */
 extern u8 mode_arena_first_model; /* first actor's model id */
 extern u8 mode_arena_second_model; /* second actor's model id */
 extern u8 mode_arena_option6; /* option 6 */
 extern u8 mode_arena_level; /* level */
-extern u8 mode_arena_bout_outcome; /* result of the last menu battle */
 
 /* The resident's vertical blank count (text_windows_and_pads.c counts it), volatile here:
  * the menu's frame loop reads it again at each use (80088e90). */

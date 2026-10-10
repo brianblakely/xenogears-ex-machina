@@ -49,6 +49,11 @@ extern u8 cd_movie_request_kind;
 extern u8 cd_movie_request_index;
 extern u8 cd_movie_request_next_mode;
 extern u8 cd_movie_request_unskippable;
+/* The requested movie's last frame, which the movie mode takes when the
+ * kind's bit 7 is set: the battle's event script stores it, the movie library
+ * clears it when it streams from the PC file server, and the movie mode reads
+ * it unsigned. */
+extern u16 cd_movie_request_last_frame;
 extern char *cd_pc_file_names;    /* PC file server name table (64 bytes per file), or NULL */
 extern s32 cd_pc_file_descriptor;
 extern s32 cd_stat_setloc_count, cd_stat_command_ok_count, cd_stat_command_fail_count, cd_stat_retry_setloc_count, cd_stat_retry_fail_count, cd_stat_lesmem_count;

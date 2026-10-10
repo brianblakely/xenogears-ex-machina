@@ -211,7 +211,6 @@ typedef struct {
     s32 count;
     void *items[4];
 } ResultArchive;
-void battle_upload_party_portraits(void *portraits, s32 glyph);
 void *battle_heap_alloc(s32 size, s32 mode);        /* heap allocate */
 
 /* Battle exit (battle_results_leave_battle). */

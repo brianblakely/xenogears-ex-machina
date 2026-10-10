@@ -351,8 +351,9 @@ and effect library, which ovl2143 links a copy of, and declare no variables), `m
 state of `resident/menu.h`), `mdec/` (the movie library's player, which the movie mode
 and the field call), `field/` (`monitor.h`: the field state and calls that its debug
 monitor, debug595, also uses, and the monitor's entries and debug-lines flag, which the
-field calls and sets) and `ovl2143/` (the actor module's records, variables and entries,
-which the field, the world map and the Gear parts shop use). Another image's functions
+field calls and sets), `ovl2143/` (the actor module's records, variables and entries,
+which the field, the world map and the Gear parts shop use) and `ovl2615/` (the battle
+setup module's phases and load modes, which the battle calls). Another image's functions
 and variables keep their definer's names, which the importing overlay's symbol file
 gives its link (movie and field name the library's entries, ovl3087 the battle's
 callbacks it passes, the world map the resident's VSync callback). A resident, battle or

@@ -12,6 +12,7 @@
 
 extern u8 battle_unread_command_file_loaded;    /* a command file is loaded */
 extern u8 battle_music_lowered;                 /* the command file's sound bank is started */
+extern Sprite *battle_acting_sprite;            /* the acting sprite (battle_single_action_set_actor sets it) */
 extern s16 battle_acting_sprite_command_motion; /* the acting sprite's command motion */
 
 void battle_run_intro_swirl(void);                   /* the battle's intro swirl */

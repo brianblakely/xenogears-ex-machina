@@ -13,6 +13,7 @@
 #include "resident/heap.h"
 #include "resident/sound.h"
 #include "resident/sprite.h"
+#include "battle/action_file.h"
 #include "battle/actor.h"
 #include "battle/area.h"
 #include "battle/effect_script.h"

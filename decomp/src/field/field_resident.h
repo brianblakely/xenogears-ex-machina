@@ -59,7 +59,6 @@ void sound_sync_transfer(s32 wait);                                             
 extern s32 pad_vblank_count;             /* vertical blank count (text_windows_and_pads.c) */
 extern CVECTOR model_color;              /* the model (fog) colour 8002c6e0 sets */
 extern u8 mode_arena_task_parameters[6]; /* option bytes of the field and the menu */
-extern u8 mode_arena_bout_outcome;       /* the arena bout's outcome (arena_fighters_bout_and_effects writes it) */
 extern u8 mode_snapshot_block[];         /* the field snapshot (0x22fc bytes, 800a3f4c) */
 
 #endif

@@ -85,5 +85,6 @@ void console_close(void);
 void sound_restore_voices(void);
 void sound_silence_voices(void);
 extern s32 mode_arena_task; /* the menu's mode (800379b4) */
+extern u8 mode_arena_bout_outcome; /* the arena bout's outcome: the menu writes it, a field event reads it */
 
 #endif

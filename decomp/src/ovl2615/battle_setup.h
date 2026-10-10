@@ -147,6 +147,4 @@ extern void *battle_enemy_read_list_destination1;
 extern u16 battle_enemy_read_list_end;
 extern void *battle_enemy_read_list_end_destination;
 
-void battle_upload_party_portraits(void *portraits, s32 glyph);
-
 #endif
