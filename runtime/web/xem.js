@@ -15,10 +15,12 @@ export function createAutomation(host) {
      * animation loop advance it. */
     boot: (options = {}) => host.boot(options),
     setRunning: (running) => app.set_running(Boolean(running)),
+    /** Advance `count` frames of the virtual clock (each ends at a vertical blank). */
     step: (count = 1) => parse(app.step(count)),
-    runUntil: ({ maxSteps, condition }) => parse(app.run_until(JSON.stringify({ maxSteps, condition }))),
+    /** Frames until {until: 'halt' | 'restart'} or {until: 'word', address, value}, at most maxFrames. */
+    runUntil: ({ maxFrames, condition }) => parse(app.run_until(JSON.stringify({ maxFrames, condition }))),
     digest: () => app.digest(),
-    /** Snapshot file bytes (Uint8Array) of the session between steps. */
+    /** Snapshot bytes (Uint8Array) of the session between frames. */
     snapshot: () => app.snapshot(),
     restore: (bytes) => parse(app.restore(bytes)),
     settings: Object.freeze({

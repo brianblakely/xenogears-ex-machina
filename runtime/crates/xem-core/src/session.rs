@@ -1,58 +1,41 @@
 //! The command layer every host shares: load the executable as the BIOS does,
-//! step the game, run it until a condition within a step bound, inspect it and
-//! take and restore snapshots. Native and browser hosts, their automation
-//! interfaces and their UIs call these same operations; nothing here depends on
-//! a window, a clock or the host's scheduling.
+//! advance the game by frames of the virtual clock, run it until a condition
+//! within a frame bound, inspect it and take and restore snapshots. Native and
+//! browser hosts, their automation interfaces and their UIs call these same
+//! operations; nothing here depends on a window, wall time or the host's
+//! scheduling.
 
 use serde::{Deserialize, Serialize};
 
 use crate::exe::{self, ExeHeader};
 use crate::memory::{OutOfBounds, RAM_BASE, RAM_SIZE, SCRATCHPAD_BASE, SCRATCHPAD_SIZE};
 use crate::module::GameModule;
-use crate::runtime::{Runtime, RuntimeSnapshot, Stop};
+use crate::runtime::Runtime;
+use crate::snapshot::SnapshotError;
 
-/// How one step ended.
+/// How one frame (`Runtime::run_frame`) ended.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "stop", rename_all = "snake_case")]
 pub enum Outcome {
-    /// The game waits (`VSync`, `DrawSync`, `Poll` or a number).
-    Yield { reason: String },
-    /// The game abandoned its stack; the next step runs `xem_run(kind, arg)`.
-    Restart { kind: u32, arg: u32 },
-    /// `xem_run` returned, which the original never does. The game is halted.
-    Returned,
+    /// The clock passed the next vertical blank.
+    Frame { steps: u64, interrupts: u64, restarts: Vec<(u32, u32)> },
     /// The module trapped or the host refused an import. The game is halted.
     Trap { reason: String },
 }
 
 impl Outcome {
     pub fn halts(&self) -> bool {
-        matches!(self, Outcome::Returned | Outcome::Trap { .. })
+        matches!(self, Outcome::Trap { .. })
     }
 }
 
-impl std::fmt::Display for Outcome {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Outcome::Yield { reason } => write!(f, "yield {reason}"),
-            Outcome::Restart { kind, arg } => write!(f, "restart kind {kind} arg {arg:#x}"),
-            Outcome::Returned => write!(f, "the game returned"),
-            Outcome::Trap { reason } => write!(f, "{reason}"),
-        }
-    }
-}
-
-/// What [`Session::run_until`] waits for, checked after every step.
+/// What [`Session::run_until`] waits for, checked after every frame.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "until", rename_all = "snake_case")]
 pub enum Condition {
-    /// The game halts (a trap or a return).
+    /// The game halts.
     Halt,
-    /// A yield; of this reason when given (`VSync`, `DrawSync`, `Poll`).
-    Yield {
-        #[serde(default)]
-        reason: Option<String>,
-    },
+    /// The game abandons its stack (mode dispatch, soft reset).
     Restart,
     /// The 32-bit little-endian word of game memory at `address` equals `value`.
     Word { address: u32, value: u32 },
@@ -61,11 +44,11 @@ pub enum Condition {
 /// The result of a stepping command.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Report {
-    /// Steps this command ran.
-    pub steps: u64,
-    /// Whether the condition was met (`step_n`: whether every step ran).
+    /// Frames this command ran.
+    pub frames: u64,
+    /// Whether the condition was met (`run_frames`: whether every frame ran).
     pub met: bool,
-    /// How the last step ended.
+    /// How the last frame ended.
     pub last: Option<Outcome>,
     pub halted: bool,
 }
@@ -73,11 +56,16 @@ pub struct Report {
 /// Introspection of a session.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Status {
+    pub frames: u64,
+    /// Waits the game reached (module runs), interrupts delivered, restarts.
     pub steps: u64,
-    pub yields: u64,
+    pub interrupts: u64,
     pub restarts: u64,
+    /// The virtual clock: CPU cycles and vertical blanks since boot.
+    pub cycles: u64,
+    pub vblanks: u64,
     pub suspended: bool,
-    /// `xem_run(kind, arg)` of the next step when not suspended.
+    /// `xem_run(kind, arg)` of the next run when not suspended.
     pub entry: (u32, u32),
     /// Why the game halted, if it did.
     pub halted: Option<String>,
@@ -88,96 +76,25 @@ pub struct Status {
     pub log: Vec<String>,
 }
 
-/// A session between steps: the runtime and the session's counters.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Snapshot {
-    pub runtime: RuntimeSnapshot,
-    pub steps: u64,
-    pub yields: u64,
-    pub restarts: u64,
-    pub last: Option<Outcome>,
-    pub halted: Option<String>,
+/// A session's notable frames as hosts print them: each restart and the stop.
+#[derive(Clone, Debug, Default)]
+pub struct FrameLog {
+    pub lines: Vec<String>,
 }
 
-const SNAPSHOT_MAGIC: &[u8; 8] = b"XEMSNAP1";
-
-/// Everything but the region bytes, as JSON in the snapshot file.
-#[derive(Serialize, Deserialize)]
-struct SnapshotHeader {
-    entry: (u32, u32),
-    suspended: bool,
-    saved_stack_pointer: u32,
-    globals: Vec<u32>,
-    regions: Vec<(u32, u32)>,
-    missing: Vec<u32>,
-    log: Vec<String>,
-    steps: u64,
-    yields: u64,
-    restarts: u64,
-    last: Option<Outcome>,
-    halted: Option<String>,
-}
-
-impl Snapshot {
-    /// The snapshot as a file: magic, header length, JSON header, region bytes.
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let r = &self.runtime;
-        let header = SnapshotHeader {
-            entry: r.entry,
-            suspended: r.suspended,
-            saved_stack_pointer: r.saved_stack_pointer,
-            globals: r.globals.clone(),
-            regions: r.regions.iter().map(|(address, bytes)| (*address, bytes.len() as u32)).collect(),
-            missing: r.missing.clone(),
-            log: r.log.clone(),
-            steps: self.steps,
-            yields: self.yields,
-            restarts: self.restarts,
-            last: self.last.clone(),
-            halted: self.halted.clone(),
-        };
-        let json = serde_json::to_vec(&header).expect("snapshot header serializes");
-        let mut out = Vec::with_capacity(12 + json.len() + r.regions.iter().map(|(_, b)| b.len()).sum::<usize>());
-        out.extend_from_slice(SNAPSHOT_MAGIC);
-        out.extend_from_slice(&(json.len() as u32).to_le_bytes());
-        out.extend_from_slice(&json);
-        for (_, bytes) in &r.regions {
-            out.extend_from_slice(bytes);
+impl FrameLog {
+    /// Record frame `index`; returns the lines it added.
+    pub fn record(&mut self, index: u64, outcome: &Outcome) -> &[String] {
+        let start = self.lines.len();
+        match outcome {
+            Outcome::Frame { restarts, .. } => {
+                for (kind, arg) in restarts {
+                    self.lines.push(format!("frame {index}: restart kind {kind} arg {arg:#x}"));
+                }
+            }
+            Outcome::Trap { reason } => self.lines.push(format!("frame {index}: {reason}")),
         }
-        out
-    }
-
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
-        let rest = bytes.strip_prefix(SNAPSHOT_MAGIC).ok_or("not a snapshot")?;
-        let (len, rest) = rest.split_at_checked(4).ok_or("truncated snapshot")?;
-        let len = u32::from_le_bytes(len.try_into().unwrap()) as usize;
-        let (json, mut data) = rest.split_at_checked(len).ok_or("truncated snapshot header")?;
-        let header: SnapshotHeader = serde_json::from_slice(json).map_err(|e| format!("snapshot header: {e}"))?;
-        let mut regions = Vec::new();
-        for (address, size) in header.regions {
-            let (bytes, rest) = data.split_at_checked(size as usize).ok_or("truncated snapshot region")?;
-            regions.push((address, bytes.to_vec()));
-            data = rest;
-        }
-        if !data.is_empty() {
-            return Err("trailing bytes after the snapshot regions".into());
-        }
-        Ok(Snapshot {
-            runtime: RuntimeSnapshot {
-                entry: header.entry,
-                suspended: header.suspended,
-                saved_stack_pointer: header.saved_stack_pointer,
-                globals: header.globals,
-                regions,
-                missing: header.missing,
-                log: header.log,
-            },
-            steps: header.steps,
-            yields: header.yields,
-            restarts: header.restarts,
-            last: header.last,
-            halted: header.halted,
-        })
+        &self.lines[start..]
     }
 }
 
@@ -186,43 +103,34 @@ pub fn parse_stub_names(text: &str) -> Vec<String> {
     text.lines().filter_map(|line| line.split_once(' ').map(|(_, name)| name.to_string())).collect()
 }
 
-/// FNV-1a (64-bit) over game RAM then the scratchpad: a cheap identity of the
-/// game's state for comparing hosts.
+pub const FNV_OFFSET: u64 = 0xCBF2_9CE4_8422_2325;
+
+/// FNV-1a (64-bit), continuing from `hash`.
 pub fn fnv1a(hash: u64, bytes: &[u8]) -> u64 {
     bytes.iter().fold(hash, |h, &b| (h ^ u64::from(b)).wrapping_mul(0x100_0000_01B3))
 }
 
-pub const FNV_OFFSET: u64 = 0xCBF2_9CE4_8422_2325;
+const SNAPSHOT_MAGIC: &[u8; 8] = b"XEMSESS\0";
 
-/// A session's notable steps as hosts print them: every restart and stop and
-/// the first [`StepLog::YIELDS`] yields, as `step N: outcome`.
-#[derive(Clone, Debug, Default)]
-pub struct StepLog {
-    pub lines: Vec<String>,
-    yields: u64,
-}
-
-impl StepLog {
-    pub const YIELDS: u64 = 5;
-
-    /// Record a step; returns the line when it is logged.
-    pub fn record(&mut self, index: u64, outcome: &Outcome) -> Option<&str> {
-        if matches!(outcome, Outcome::Yield { .. }) {
-            self.yields += 1;
-            if self.yields > Self::YIELDS {
-                return None;
-            }
-        }
-        self.lines.push(format!("step {index}: {outcome}"));
-        self.lines.last().map(String::as_str)
-    }
+/// The session's own state in a snapshot, ahead of the runtime's.
+#[derive(Serialize, Deserialize)]
+struct Counters {
+    frames: u64,
+    steps: u64,
+    interrupts: u64,
+    restarts: u64,
+    halted: Option<String>,
+    last: Option<Outcome>,
+    missing: Vec<u32>,
+    log: Vec<String>,
 }
 
 /// The game module under the command layer.
 pub struct Session<M: GameModule> {
     runtime: Runtime<M>,
+    frames: u64,
     steps: u64,
-    yields: u64,
+    interrupts: u64,
     restarts: u64,
     last: Option<Outcome>,
     halted: Option<String>,
@@ -232,11 +140,11 @@ impl<M: GameModule> Session<M> {
     pub fn new(module: M, stub_names: Vec<String>) -> Self {
         let mut runtime = Runtime::new(module);
         runtime.services().stub_names = stub_names;
-        Session { runtime, steps: 0, yields: 0, restarts: 0, last: None, halted: None }
+        Session { runtime, frames: 0, steps: 0, interrupts: 0, restarts: 0, last: None, halted: None }
     }
 
     /// Load a PS-X EXE as the BIOS does: copy its text to its address. The
-    /// first step then starts the game at its entry.
+    /// first frame then starts the game at its entry.
     pub fn load_executable(&mut self, executable: &[u8]) -> Result<ExeHeader, String> {
         let header = exe::parse(executable)?;
         self.runtime
@@ -254,48 +162,41 @@ impl<M: GameModule> Session<M> {
         self.halted.is_some()
     }
 
-    /// Run one step; `None` once the game has halted.
-    pub fn step(&mut self) -> Option<Outcome> {
+    /// Run one frame; `None` once the game has halted.
+    pub fn frame(&mut self) -> Option<Outcome> {
         if self.halted.is_some() {
             return None;
         }
-        let outcome = match self.runtime.step() {
-            Ok(Stop::Yield(reason)) => {
-                self.yields += 1;
-                Outcome::Yield { reason: format!("{reason:?}") }
+        let outcome = match self.runtime.run_frame() {
+            Ok(report) => {
+                self.steps += report.steps;
+                self.interrupts += report.interrupts;
+                self.restarts += report.restarts.len() as u64;
+                Outcome::Frame { steps: report.steps, interrupts: report.interrupts, restarts: report.restarts }
             }
-            Ok(Stop::Restart { kind, arg }) => {
-                self.restarts += 1;
-                Outcome::Restart { kind, arg }
-            }
-            Ok(Stop::Returned) => Outcome::Returned,
             Err(trap) => Outcome::Trap { reason: trap.to_string() },
         };
-        self.steps += 1;
-        if outcome.halts() {
-            self.halted = Some(outcome.to_string());
+        self.frames += 1;
+        if let Outcome::Trap { reason } = &outcome {
+            self.halted = Some(reason.clone());
         }
         self.last = Some(outcome.clone());
         Some(outcome)
     }
 
-    /// Run up to `count` steps, stopping early if the game halts. `observe`
-    /// sees each step's index and outcome.
-    pub fn step_n(&mut self, count: u64, observe: impl FnMut(u64, &Outcome)) -> Report {
+    /// Run up to `count` frames, stopping early if the game halts. `observe`
+    /// sees each frame's index and outcome.
+    pub fn run_frames(&mut self, count: u64, observe: impl FnMut(u64, &Outcome)) -> Report {
         let report = self.drive(count, observe, |_, _| false);
-        Report { met: report.steps == count, ..report }
+        Report { met: report.frames == count, ..report }
     }
 
-    /// Step until `condition` holds after a step, at most `max_steps` steps or
-    /// until the game halts. `observe` sees each step's index and outcome.
-    pub fn run_until(&mut self, condition: &Condition, max_steps: u64, observe: impl FnMut(u64, &Outcome)) -> Report {
-        self.drive(max_steps, observe, |session, outcome| match condition {
+    /// Run frames until `condition` holds after one, at most `max_frames`
+    /// frames or until the game halts. `observe` sees each frame.
+    pub fn run_until(&mut self, condition: &Condition, max_frames: u64, observe: impl FnMut(u64, &Outcome)) -> Report {
+        self.drive(max_frames, observe, |session, outcome| match condition {
             Condition::Halt => outcome.halts(),
-            Condition::Yield { reason: None } => matches!(outcome, Outcome::Yield { .. }),
-            Condition::Yield { reason: Some(want) } => {
-                matches!(outcome, Outcome::Yield { reason } if reason.eq_ignore_ascii_case(want))
-            }
-            Condition::Restart => matches!(outcome, Outcome::Restart { .. }),
+            Condition::Restart => matches!(outcome, Outcome::Frame { restarts, .. } if !restarts.is_empty()),
             Condition::Word { address, value } => {
                 session.runtime.memory().read_u32(*address).is_ok_and(|word| word == *value)
             }
@@ -304,15 +205,15 @@ impl<M: GameModule> Session<M> {
 
     fn drive(
         &mut self,
-        max_steps: u64,
+        max_frames: u64,
         mut observe: impl FnMut(u64, &Outcome),
         mut met: impl FnMut(&mut Self, &Outcome) -> bool,
     ) -> Report {
         let mut ran = 0;
         let mut done = false;
-        while ran < max_steps {
-            let index = self.steps;
-            let Some(outcome) = self.step() else { break };
+        while ran < max_frames {
+            let index = self.frames;
+            let Some(outcome) = self.frame() else { break };
             ran += 1;
             observe(index, &outcome);
             done = met(self, &outcome);
@@ -320,7 +221,7 @@ impl<M: GameModule> Session<M> {
                 break;
             }
         }
-        Report { steps: ran, met: done, last: self.last.clone(), halted: self.is_halted() }
+        Report { frames: ran, met: done, last: self.last.clone(), halted: self.is_halted() }
     }
 
     pub fn status(&mut self) -> Status {
@@ -328,14 +229,16 @@ impl<M: GameModule> Session<M> {
         let services = self.runtime.services();
         let missing = services
             .missing
-            .clone()
-            .into_iter()
-            .map(|id| services.stub_names.get(id as usize).cloned().unwrap_or_else(|| format!("stub #{id}")))
+            .iter()
+            .map(|&id| services.stub_names.get(id as usize).cloned().unwrap_or_else(|| format!("stub #{id}")))
             .collect();
         Status {
+            frames: self.frames,
             steps: self.steps,
-            yields: self.yields,
+            interrupts: self.interrupts,
             restarts: self.restarts,
+            cycles: services.clock.now,
+            vblanks: services.clock.vblanks,
             suspended,
             entry,
             halted: self.halted.clone(),
@@ -345,7 +248,8 @@ impl<M: GameModule> Session<M> {
         }
     }
 
-    /// [`fnv1a`] over game RAM and the scratchpad.
+    /// [`fnv1a`] over game RAM and the scratchpad: a cheap identity of the
+    /// game's state for comparing hosts.
     pub fn digest(&mut self) -> Result<u64, OutOfBounds> {
         let mut hash = FNV_OFFSET;
         for (address, len) in [(RAM_BASE, RAM_SIZE), (SCRATCHPAD_BASE, SCRATCHPAD_SIZE)] {
@@ -356,24 +260,47 @@ impl<M: GameModule> Session<M> {
         Ok(hash)
     }
 
-    pub fn snapshot(&mut self) -> Result<Snapshot, OutOfBounds> {
-        Ok(Snapshot {
-            runtime: self.runtime.snapshot()?,
+    /// The session between frames, as bytes: its counters, then the runtime's
+    /// snapshot (`Runtime::snapshot`).
+    pub fn snapshot(&mut self) -> Result<Vec<u8>, SnapshotError> {
+        let services = self.runtime.services();
+        let counters = Counters {
+            frames: self.frames,
             steps: self.steps,
-            yields: self.yields,
+            interrupts: self.interrupts,
             restarts: self.restarts,
-            last: self.last.clone(),
             halted: self.halted.clone(),
-        })
+            last: self.last.clone(),
+            missing: services.missing.clone(),
+            log: services.log.clone(),
+        };
+        let json = serde_json::to_vec(&counters).expect("session counters serialize");
+        let mut out = SNAPSHOT_MAGIC.to_vec();
+        out.extend_from_slice(&(json.len() as u32).to_le_bytes());
+        out.extend_from_slice(&json);
+        out.extend_from_slice(&self.runtime.snapshot()?);
+        Ok(out)
     }
 
-    pub fn restore(&mut self, snapshot: &Snapshot) -> Result<(), OutOfBounds> {
-        self.runtime.restore(&snapshot.runtime)?;
-        self.steps = snapshot.steps;
-        self.yields = snapshot.yields;
-        self.restarts = snapshot.restarts;
-        self.last = snapshot.last.clone();
-        self.halted = snapshot.halted.clone();
+    /// Return to a snapshot of this game module's session, also after a halt.
+    pub fn restore(&mut self, bytes: &[u8]) -> Result<(), SnapshotError> {
+        let rest = bytes.strip_prefix(SNAPSHOT_MAGIC).ok_or(SnapshotError::Format("not a session snapshot"))?;
+        let (len, rest) = rest.split_at_checked(4).ok_or(SnapshotError::Format("truncated"))?;
+        let len = u32::from_le_bytes(len.try_into().unwrap()) as usize;
+        let (json, runtime) = rest.split_at_checked(len).ok_or(SnapshotError::Format("truncated"))?;
+        let counters: Counters =
+            serde_json::from_slice(json).map_err(|_| SnapshotError::Format("session counters"))?;
+        self.runtime.restore(runtime)?;
+        let services = self.runtime.services();
+        services.missing = counters.missing;
+        services.log = counters.log;
+        services.trap_reason = None;
+        self.frames = counters.frames;
+        self.steps = counters.steps;
+        self.interrupts = counters.interrupts;
+        self.restarts = counters.restarts;
+        self.halted = counters.halted;
+        self.last = counters.last;
         Ok(())
     }
 }

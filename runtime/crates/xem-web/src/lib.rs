@@ -3,7 +3,8 @@
 //! The recovered C runs as `game.wasm`, instantiated by the page beside this
 //! module ([`game`]); the shared command layer (`xem_core::Session`) drives it.
 //! The page's animation callback calls [`XemApp::frame`], which advances the
-//! game in a bounded batch and renders the canvas ([`render`]); Web Audio pulls
+//! game by the frames of the virtual clock that are due, in a bounded batch,
+//! and renders the canvas ([`render`]); Web Audio pulls
 //! samples with [`XemApp::audio_render`]; the user's disc is read in place
 //! through [`disc`]. Every operation the page's controls use is a method here,
 //! and the automation API (`window.xem`, runtime/web/xem.js) calls the same
@@ -24,18 +25,20 @@ use std::rc::Rc;
 use serde::Deserialize;
 use serde_json::json;
 use wasm_bindgen::prelude::*;
-use xem_core::session::{Condition, Outcome, Session, Snapshot, StepLog, parse_stub_names};
+use xem_core::session::{Condition, FrameLog, Session, parse_stub_names};
 use xem_settings::{MemoryStore, Rejected, SettingChange, SettingsService};
 
 pub use game::{WebModule, xem_game_import};
 pub use render::WebRenderer;
 
-/// At most this many steps per animation frame…
-const MAX_STEPS_PER_FRAME: u64 = 16;
-/// …and no more after this much wall time in the frame's batch.
-const FRAME_BUDGET_MS: f64 = 8.0;
-/// The bound on one `run_until`; the caller repeats it to go further.
-pub const MAX_RUN_UNTIL_STEPS: u64 = 100_000;
+/// One game frame (a vertical blank of the virtual clock) per 1/60 s of page time…
+const FRAME_MS: f64 = 1000.0 / 60.0;
+/// …at most this many per animation frame; time beyond that is dropped…
+const MAX_FRAMES_PER_ANIMATION: u64 = 2;
+/// …and no further frame once a batch has taken this long.
+const BATCH_BUDGET_MS: f64 = 12.0;
+/// The bound on one `step` or `run_until`; the caller repeats it to go further.
+pub const MAX_FRAMES_PER_COMMAND: u64 = 10_000;
 
 const SETTINGS_KEY: &str = "xem.settings";
 
@@ -53,10 +56,13 @@ fn error(message: impl std::fmt::Display) -> JsValue {
 
 #[derive(Default)]
 struct LoopStats {
-    frames: u64,
-    loop_steps: u64,
+    animation_frames: u64,
+    game_frames: u64,
     last_batch: u64,
     max_batch: u64,
+    /// Game frames the page's time called for but the loop dropped (a
+    /// throttled, hidden or frozen page, or a batch over budget).
+    dropped: u64,
 }
 
 /// The browser application: settings, the disc, the game session, the
@@ -68,19 +74,21 @@ pub struct XemApp {
     stub_names: Vec<String>,
     session: Option<Session<WebModule>>,
     memory_bytes: u64,
-    log: StepLog,
+    log: FrameLog,
     disc: Option<disc::DiscImport>,
     renderer: Option<WebRenderer>,
     panel_closed: Rc<Cell<bool>>,
     tone: audio::Tone,
     running: bool,
+    /// Page time up to which game frames have been run or dropped.
+    paced: Option<f64>,
     stats: LoopStats,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct RunUntil {
-    max_steps: u64,
+    max_frames: u64,
     condition: Condition,
 }
 
@@ -110,12 +118,13 @@ impl XemApp {
             stub_names: Vec::new(),
             session: None,
             memory_bytes: 0,
-            log: StepLog::default(),
+            log: FrameLog::default(),
             disc: None,
             renderer: None,
             panel_closed: Rc::new(Cell::new(false)),
             tone: audio::Tone::new(),
             running: false,
+            paced: None,
             stats: LoopStats::default(),
         }
     }
@@ -141,24 +150,35 @@ impl XemApp {
         }
     }
 
-    /// One animation frame: a bounded batch of game steps, then the canvas.
-    /// A throttled or hidden page simply gets fewer frames; nothing catches up.
+    /// One animation frame at page time `now` (ms): the game frames due since
+    /// the last one, at most [`MAX_FRAMES_PER_ANIMATION`] and within the batch
+    /// budget, then the canvas. Time a throttled or frozen page missed is
+    /// dropped, not caught up.
     pub fn frame(&mut self, now: f64) -> Result<(), JsValue> {
-        self.stats.frames += 1;
+        self.stats.animation_frames += 1;
         if self.running {
+            let paced = *self.paced.get_or_insert(now - FRAME_MS);
+            let due = ((now - paced) / FRAME_MS).floor().max(0.0) as u64;
             let start = now_ms();
             let mut batch = 0;
-            while batch < MAX_STEPS_PER_FRAME && now_ms() - start < FRAME_BUDGET_MS {
-                let Some(outcome) = self.step_once() else { break };
+            while batch < due.min(MAX_FRAMES_PER_ANIMATION) && (batch == 0 || now_ms() - start < BATCH_BUDGET_MS) {
+                let Some(session) = self.session.as_mut() else { break };
+                let log = &mut self.log;
+                session.run_frames(1, |index, outcome| {
+                    log.record(index, outcome);
+                });
                 batch += 1;
-                if matches!(&outcome, Outcome::Yield { reason } if reason == "VSync") {
-                    break;
-                }
             }
-            if self.session.as_ref().is_some_and(|s| s.is_halted()) {
+            if batch < due {
+                self.stats.dropped += due - batch;
+                self.paced = Some(now);
+            } else {
+                self.paced = Some(paced + due as f64 * FRAME_MS);
+            }
+            if self.session.as_ref().is_none_or(|s| s.is_halted()) {
                 self.running = false;
             }
-            self.stats.loop_steps += batch;
+            self.stats.game_frames += batch;
             self.stats.last_batch = batch;
             self.stats.max_batch = self.stats.max_batch.max(batch);
         }
@@ -281,7 +301,7 @@ impl XemApp {
         };
         self.session = None;
         self.running = false;
-        self.log = StepLog::default();
+        self.log = FrameLog::default();
         let module = WebModule::new(&instance, import_names).map_err(error)?;
         self.memory_bytes = module.memory_bytes();
         let mut session = Session::new(module, self.stub_names.clone());
@@ -292,47 +312,51 @@ impl XemApp {
         Ok(self.status())
     }
 
-    /// Let the animation loop advance the game (bounded per frame) or stop it.
+    /// Let the animation loop advance the game (in bounded batches) or stop it.
     pub fn set_running(&mut self, running: bool) {
         self.running = running && self.session.as_ref().is_some_and(|s| !s.is_halted());
+        self.paced = None;
     }
 
-    /// Run up to `count` steps now: a `Report`.
+    /// Run up to `count` frames now: a `Report`.
     pub fn step(&mut self, count: u32) -> Result<String, JsValue> {
+        if u64::from(count) > MAX_FRAMES_PER_COMMAND {
+            return Err(error(format!("step at most {MAX_FRAMES_PER_COMMAND} frames per call")));
+        }
         let session = self.session.as_mut().ok_or_else(|| error("no game session"))?;
         let log = &mut self.log;
-        Ok(to_json(&session.step_n(u64::from(count), |index, outcome| {
+        Ok(to_json(&session.run_frames(u64::from(count), |index, outcome| {
             log.record(index, outcome);
         })))
     }
 
-    /// `{maxSteps, condition}` with a `Condition` (`{"until": "halt"}`,
-    /// `{"until": "yield", "reason": "VSync"}`, `{"until": "restart"}`,
-    /// `{"until": "word", "address": ..., "value": ...}`): a `Report`.
+    /// `{maxFrames, condition}` with a `Condition` (`{"until": "halt"}`,
+    /// `{"until": "restart"}`, `{"until": "word", "address": ..., "value": ...}`):
+    /// a `Report`.
     pub fn run_until(&mut self, request: &str) -> Result<String, JsValue> {
         let request: RunUntil = serde_json::from_str(request).map_err(|e| error(format!("bad request: {e}")))?;
-        if request.max_steps > MAX_RUN_UNTIL_STEPS {
-            return Err(error(format!("maxSteps is at most {MAX_RUN_UNTIL_STEPS} per call")));
+        if request.max_frames > MAX_FRAMES_PER_COMMAND {
+            return Err(error(format!("maxFrames is at most {MAX_FRAMES_PER_COMMAND} per call")));
         }
         let session = self.session.as_mut().ok_or_else(|| error("no game session"))?;
         let log = &mut self.log;
-        let report = session.run_until(&request.condition, request.max_steps, |index, outcome| {
+        let report = session.run_until(&request.condition, request.max_frames, |index, outcome| {
             log.record(index, outcome);
         });
         Ok(to_json(&report))
     }
 
-    /// The session as a snapshot file (`xem_core::Snapshot::to_bytes`).
+    /// The session between frames as bytes (`Session::snapshot`).
     pub fn snapshot(&mut self) -> Result<Vec<u8>, JsValue> {
         let session = self.session.as_mut().ok_or_else(|| error("no game session"))?;
-        Ok(session.snapshot().map_err(error)?.to_bytes())
+        session.snapshot().map_err(error)
     }
 
     pub fn restore(&mut self, bytes: &[u8]) -> Result<String, JsValue> {
-        let snapshot = Snapshot::from_bytes(bytes).map_err(error)?;
         let session = self.session.as_mut().ok_or_else(|| error("no game session"))?;
-        session.restore(&snapshot).map_err(error)?;
-        self.log.lines.push(format!("restored the snapshot of step {}", snapshot.steps));
+        session.restore(bytes).map_err(error)?;
+        let frames = session.status().frames;
+        self.log.lines.push(format!("restored a snapshot at frame {frames}"));
         Ok(self.status())
     }
 
@@ -371,12 +395,13 @@ impl XemApp {
             "bootLines": self.log.lines,
             "running": self.running,
             "loop": {
-                "frames": self.stats.frames,
-                "steps": self.stats.loop_steps,
+                "animationFrames": self.stats.animation_frames,
+                "gameFrames": self.stats.game_frames,
                 "lastBatch": self.stats.last_batch,
                 "maxBatch": self.stats.max_batch,
-                "maxStepsPerFrame": MAX_STEPS_PER_FRAME,
-                "frameBudgetMs": FRAME_BUDGET_MS,
+                "dropped": self.stats.dropped,
+                "maxFramesPerAnimation": MAX_FRAMES_PER_ANIMATION,
+                "batchBudgetMs": BATCH_BUDGET_MS,
             },
             "audioFrames": self.tone.frames,
             "settingsRevision": settings_revision,
@@ -387,16 +412,6 @@ impl XemApp {
 impl Default for XemApp {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-impl XemApp {
-    fn step_once(&mut self) -> Option<Outcome> {
-        let session = self.session.as_mut()?;
-        let index = session.status().steps;
-        let outcome = session.step()?;
-        self.log.record(index, &outcome);
-        Some(outcome)
     }
 }
 

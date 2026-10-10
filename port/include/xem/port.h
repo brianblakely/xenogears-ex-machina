@@ -41,6 +41,33 @@ void xem_host_missing(int id);
  * image is absent or overwritten there, or the call needs an adapter. */
 void xem_host_bad_call(unsigned int address, int signature);
 
+/* Interrupt sources the host delivers through xem_interrupt (the PS1's I_STAT
+ * bits). */
+enum {
+    XEM_IRQ_VBLANK = 0,
+    XEM_IRQ_GPU = 1,
+    XEM_IRQ_CDROM = 2,
+    XEM_IRQ_DMA = 3,
+    XEM_IRQ_RCNT0 = 4,
+    XEM_IRQ_RCNT1 = 5,
+    XEM_IRQ_RCNT2 = 6,
+    XEM_IRQ_PAD = 7,
+    XEM_IRQ_SIO = 8,
+    XEM_IRQ_SPU = 9,
+};
+
+/* Root counters (the host's virtual clock): program, start, stop and read
+ * counter `n` (0-2). The host raises XEM_IRQ_RCNT0 + n at its target when the
+ * mode asks for an interrupt. */
+void xem_host_rcnt_set(unsigned int n, unsigned int target, unsigned int mode);
+void xem_host_rcnt_start(unsigned int n);
+void xem_host_rcnt_stop(unsigned int n);
+unsigned int xem_host_rcnt_read(unsigned int n);
+
+/* The BIOS pad driver: write controller `port`'s receive buffer (the BIOS
+ * format: status, id, data) of `length` bytes at `buffer`. */
+void xem_host_pad_read(unsigned int port, void *buffer, unsigned int length);
+
 /* A `break` instruction: the debugger and PC file server traps of the
  * development configurations. The host records the code and continues. */
 void xem_host_debug_break(unsigned int code);

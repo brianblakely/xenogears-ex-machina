@@ -12,10 +12,10 @@ fn main() -> ExitCode {
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--disc" => disc = args.next().map(PathBuf::from),
-            "--steps" => steps = args.next().and_then(|v| v.parse().ok()).unwrap_or(steps),
+            "--frames" => steps = args.next().and_then(|v| v.parse().ok()).unwrap_or(steps),
             "--stubs" => stubs = args.next().map(PathBuf::from).unwrap_or(stubs),
             _ => {
-                eprintln!("usage: xem-headless --disc <chd|cue|bin> [--steps N] [--stubs build/game/stubs.txt]");
+                eprintln!("usage: xem-headless --disc <chd|cue|bin> [--frames N] [--stubs build/game/stubs.txt]");
                 return ExitCode::FAILURE;
             }
         }
@@ -42,8 +42,8 @@ fn run(_: &std::path::Path, _: u64, _: &std::path::Path) -> Result<(), Box<dyn s
 }
 
 #[cfg(has_game_module)]
-fn run(disc: &std::path::Path, steps: u64, stubs: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
-    use xem_core::session::{Condition, Session, StepLog, parse_stub_names};
+fn run(disc: &std::path::Path, frames: u64, stubs: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
+    use xem_core::session::{Condition, FrameLog, Session, parse_stub_names};
 
     let mut source = xem_disc::open_path(disc)?;
     let identity = xem_disc::identify(source.as_mut())?;
@@ -55,9 +55,9 @@ fn run(disc: &std::path::Path, steps: u64, stubs: &std::path::Path) -> Result<()
     // The BIOS copies the executable's text to its address and jumps to pc0.
     session.load_executable(&identity.executable)?;
     // The browser host logs the same lines (runtime/crates/xem-web).
-    let mut log = StepLog::default();
-    session.run_until(&Condition::Halt, steps, |step, outcome| {
-        if let Some(line) = log.record(step, outcome) {
+    let mut log = FrameLog::default();
+    session.run_until(&Condition::Halt, frames, |frame, outcome| {
+        for line in log.record(frame, outcome) {
             println!("{line}");
         }
     });
@@ -65,7 +65,7 @@ fn run(disc: &std::path::Path, steps: u64, stubs: &std::path::Path) -> Result<()
     for line in &status.log {
         println!("log: {line}");
     }
-    println!("{} yields", status.yields);
+    println!("clock: {} cycles, {} vblanks", status.cycles, status.vblanks);
     println!("ram digest {:016x}", session.digest()?);
     Ok(())
 }

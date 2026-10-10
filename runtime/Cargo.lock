@@ -5175,6 +5175,10 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
+ "xem-disc",
+ "xem-gpu",
+ "xem-media",
+ "xem-spu",
 ]
 
 [[package]]
@@ -5276,6 +5280,21 @@ dependencies = [
  "xem-render",
  "xem-settings",
  "xem-ui",
+]
+
+[[package]]
+name = "xem-webxr"
+version = "0.1.0"
+dependencies = [
+ "glam",
+ "js-sys",
+ "serde",
+ "serde_json",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "wgpu",
+ "xem-render",
 ]
 
 [[package]]

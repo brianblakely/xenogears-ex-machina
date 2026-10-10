@@ -170,59 +170,72 @@ describe('automation over a game module fixture', () => {
       const xem = window.xem;
       await xem.boot({ executable: false });
       const first = xem.step(1);
-      const untilWord = xem.runUntil({ maxSteps: 10, condition: { until: 'word', address: 0x80000000, value: 2 } });
+      const untilWord = xem.runUntil({ maxFrames: 10, condition: { until: 'word', address: 0x80000000, value: 2 } });
       const snapshot = xem.snapshot();
       const atSnapshot = xem.status().session;
-      const restart = xem.runUntil({ maxSteps: 10, condition: { until: 'restart' } });
-      const bounded = xem.runUntil({ maxSteps: 5, condition: { until: 'halt' } });
-      const halt = xem.runUntil({ maxSteps: 1000, condition: { until: 'halt' } });
+      const restart = xem.runUntil({ maxFrames: 10, condition: { until: 'restart' } });
+      const bounded = xem.runUntil({ maxFrames: 5, condition: { until: 'halt' } });
+      const halt = xem.runUntil({ maxFrames: 1000, condition: { until: 'halt' } });
       const end = { status: xem.status().session, digest: xem.digest() };
       const restored = xem.restore(snapshot).session;
-      const again = xem.runUntil({ maxSteps: 1000, condition: { until: 'halt' } });
+      const again = xem.runUntil({ maxFrames: 1000, condition: { until: 'halt' } });
       const end2 = { status: xem.status().session, digest: xem.digest() };
       let tooFar = null;
       try {
-        xem.runUntil({ maxSteps: 1e9, condition: { until: 'halt' } });
+        xem.runUntil({ maxFrames: 1e9, condition: { until: 'halt' } });
       } catch (error) {
         tooFar = error.message;
       }
       return { first, untilWord, atSnapshot, restart, bounded, halt, end, restored, again, end2, tooFar,
                lines: xem.status().bootLines, snapshotBytes: snapshot.length };
     });
-    assert.deepEqual(result.first, { steps: 1, met: true, last: { stop: 'yield', reason: 'VSync' }, halted: false });
-    assert.deepEqual([result.untilWord.steps, result.untilWord.met], [2, true]);
-    assert.deepEqual([result.atSnapshot.steps, result.atSnapshot.yields, result.atSnapshot.suspended], [3, 3, true]);
-    assert.deepEqual(result.restart.last, { stop: 'restart', kind: 1, arg: 100 });
-    assert.deepEqual([result.bounded.steps, result.bounded.met, result.bounded.halted], [5, false, false]);
+    const frame = (steps, restarts = []) => ({ stop: 'frame', steps, interrupts: 1, restarts });
+    assert.deepEqual(result.first, { frames: 1, met: true, last: frame(1), halted: false });
+    assert.deepEqual([result.untilWord.frames, result.untilWord.met], [2, true]);
+    assert.deepEqual([result.atSnapshot.frames, result.atSnapshot.vblanks, result.atSnapshot.suspended], [3, 3, true]);
+    // The restart and the first poll share a frame.
+    assert.deepEqual(result.restart.last, frame(2, [[1, 100]]));
+    assert.deepEqual([result.bounded.frames, result.bounded.met, result.bounded.halted], [5, false, false]);
     assert.equal(result.halt.met, true);
-    assert.deepEqual(result.halt.last, { stop: 'trap', reason: 'host stopped the game: called FixtureStub, which the port does not define' });
-    assert.equal(result.end.status.steps, 105);
+    const stop = 'host stopped the game: called FixtureStub, which the port does not define';
+    assert.deepEqual(result.halt.last, { stop: 'trap', reason: stop });
+    assert.deepEqual([result.end.status.frames, result.end.status.vblanks], [3 + 100 + 1, 103]);
     assert.deepEqual(result.end.status.missing, ['FixtureStub']);
-    assert.deepEqual([result.restored.steps, result.restored.halted, result.restored.missing], [3, null, []]);
+    assert.deepEqual([result.restored.frames, result.restored.halted, result.restored.missing], [3, null, []]);
     assert.deepEqual(result.again.last, result.halt.last);
     assert.equal(result.end2.digest, result.end.digest);
     assert.deepEqual(result.end2.status, result.end.status);
-    assert.match(result.tooFar, /maxSteps is at most/);
-    assert.ok(result.snapshotBytes > 2 * 1024 * 1024);
+    assert.deepEqual(result.lines, ['frame 3: restart kind 1 arg 0x64', `frame 103: ${stop}`,
+      'restored a snapshot at frame 3', 'frame 3: restart kind 1 arg 0x64', `frame 103: ${stop}`]);
+    assert.match(result.tooFar, /maxFrames is at most/);
   });
 
-  test('the animation loop advances the game in bounded batches', async () => {
+  test('the animation loop runs due frames in bounded batches and drops missed time', async () => {
     const loop = await page.evaluate(async () => {
-      await window.xem.boot({ executable: false, run: true });
-      const startFrames = window.xem.status().loop.frames;
-      await new Promise((resolve) => {
-        const check = () => (window.xem.status().session.halted ? resolve() : setTimeout(check, 20));
+      const status = () => window.xem.status();
+      const waitFor = (done) => new Promise((resolve) => {
+        const check = () => (done() ? resolve() : setTimeout(check, 10));
         check();
       });
-      const s = window.xem.status();
-      return { ...s.loop, frames: s.loop.frames - startFrames, running: s.running, session: s.session };
+      await window.xem.boot({ executable: false, run: true });
+      const before = status().loop;
+      await waitFor(() => status().session.frames >= 10);
+      // A one-second stall of the page (as a throttled or frozen tab sees).
+      const stalled = status().session.frames;
+      const until = performance.now() + 1000;
+      while (performance.now() < until);
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const afterStall = status().session.frames - stalled;
+      await waitFor(() => status().session.halted);
+      const s = status();
+      return { ...s.loop, before, afterStall, running: s.running, session: s.session };
     });
-    // VSync yields end a frame's batch; Poll yields run until the step bound.
-    assert.ok(loop.maxBatch <= loop.maxStepsPerFrame);
-    assert.equal(loop.maxBatch, loop.maxStepsPerFrame);
-    assert.ok(loop.frames >= Math.ceil(100 / loop.maxStepsPerFrame) + 3, `${loop.frames} frames`);
+    assert.ok(loop.maxBatch <= loop.maxFramesPerAnimation, `batch of ${loop.maxBatch}`);
+    assert.ok(loop.afterStall <= 2 * loop.maxFramesPerAnimation, `${loop.afterStall} frames after the stall`);
+    assert.ok(loop.dropped - loop.before.dropped >= 50, `${loop.dropped - loop.before.dropped} dropped`);
+    assert.equal(loop.gameFrames - loop.before.gameFrames, 104);
     assert.equal(loop.running, false);
-    assert.equal(loop.session.steps, 105);
+    assert.equal(loop.session.frames, 104);
   });
 
   test('a snapshot save survives a reload byte for byte', async () => {
@@ -238,12 +251,13 @@ describe('automation over a game module fixture', () => {
       const record = await window.xem.load('fixture');
       await window.xem.boot({ executable: false });
       const session = window.xem.restore(record.data).session;
-      const next = window.xem.step(1);
-      return { verified: record.verified, sha256: record.sha256, session, next };
+      window.xem.step(1);
+      return { verified: record.verified, sha256: record.sha256, session, word: window.xem.status().session };
     });
     assert.equal(loaded.verified, true);
     assert.equal(loaded.sha256, saved.sha256);
-    assert.equal(loaded.session.steps, 2);
-    assert.deepEqual(loaded.next.last, { stop: 'yield', reason: 'VSync' });
+    assert.equal(loaded.session.frames, 2);
+    assert.equal(loaded.word.frames, 3);
+    assert.equal(loaded.word.vblanks, 3);
   });
 });

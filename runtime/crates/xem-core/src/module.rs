@@ -76,8 +76,10 @@ pub trait GameModule {
     fn set_resume_value(&mut self, value: u32);
     /// The export `xem_run(kind, arg)`.
     fn run(&mut self, kind: u32, arg: u32) -> Result<(), Trap>;
-    /// The export `xem_call(address)`: an interrupt callback.
+    /// The export `xem_call(address)`: run a game function.
     fn call(&mut self, address: u32) -> Result<(), Trap>;
+    /// The export `xem_interrupt(irq, detail)`: the port's interrupt handler.
+    fn interrupt(&mut self, irq: u32, detail: u32) -> Result<(), Trap>;
     fn async_state(&mut self) -> AsyncState;
     fn stop_unwind(&mut self);
     /// Rewind with the save area the last unwind filled.
@@ -85,9 +87,6 @@ pub trait GameModule {
     fn stack_pointer(&mut self) -> u32;
     fn set_stack_pointer(&mut self, value: u32);
     fn memory(&mut self) -> &mut dyn GameMemory;
-    /// The end of the port's shadow stack and data (the module's `__heap_base`):
-    /// memory below it is the module's own state, kept in snapshots.
-    fn data_end(&mut self) -> u32;
     /// The module's mutable globals other than the stack pointer, for snapshots.
     fn globals(&mut self) -> Vec<u32>;
     fn set_globals(&mut self, values: &[u32]);

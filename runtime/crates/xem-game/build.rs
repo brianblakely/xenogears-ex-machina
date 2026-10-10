@@ -139,6 +139,13 @@ int xem_game_call(w2c_game *instance, u32 address) {
     return 0;
 }
 
+int xem_game_interrupt(w2c_game *instance, u32 irq, u32 detail) {
+    wasm_rt_trap_t code = wasm_rt_impl_try();
+    if (code != 0) return (int)code;
+    w2c_game_xem_interrupt(instance, irq, detail);
+    return 0;
+}
+
 const char *xem_game_trap_description(int code) {
     return wasm_rt_strerror((wasm_rt_trap_t)code);
 }
@@ -168,7 +175,6 @@ u8 *xem_game_memory(w2c_game *instance, u64 *size) {
 }
 
 u32 *xem_game_stack_pointer(w2c_game *instance) { return w2c_game_0x5F_stack_pointer(instance); }
-u32 xem_game_data_end(w2c_game *instance) { return *w2c_game_0x5F_heap_base(instance); }
 u32 xem_game_async_state(w2c_game *instance) { return w2c_game_asyncify_get_state(instance); }
 void xem_game_stop_unwind(w2c_game *instance) { w2c_game_asyncify_stop_unwind(instance); }
 void xem_game_start_rewind(w2c_game *instance) { w2c_game_asyncify_start_rewind(instance, instance->w2c_xem_instance->area); }

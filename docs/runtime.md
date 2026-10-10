@@ -92,6 +92,7 @@ original address.
 | `xem-render` | the wgpu renderer for flat, stereo and XR views |
 | `xem-ui` | the Slint settings panel as a custom platform rendered into a texture on the shared wgpu device |
 | `xem-xr` | the OpenXR adapter |
+| `xem-webxr` | the WebXR adapter: immersive sessions, views, raw input and WebGL2 layer submission through wgpu |
 | `xem-desktop`, `xem-headless`, `xem-android`, `xem-web` | hosts |
 | `xem-settings` | typed application settings: validation, acknowledgement, change notification, JSON persistence |
 
@@ -133,15 +134,16 @@ as JSON text or bytes.
   KSEG0 address) is a reservation the browser commits as pages are touched.
   `boot` takes a fresh instance each time.
 - **Command layer.** `xem_core::Session` is shared with xem-headless: load the
-  executable as the BIOS does, `step`, bounded `run_until` (`halt`, `yield`,
-  `restart`, a memory `word`), `status`, `digest` (FNV-1a of RAM and the
-  scratchpad), `snapshot`/`restore` (the port's stack and data below
-  `__heap_base`, the scratchpad, RAM, the asyncify area pointer and the
-  services' state; `Snapshot::to_bytes` is the file form) and the `StepLog` both
-  hosts print. A browser `runUntil` is bounded to 100 000 steps per call.
+  executable as the BIOS does, advance by frames of the virtual clock
+  (`Runtime::run_frame`), run until a condition (`halt`, `restart`, a memory
+  `word`) within a frame bound, `status`, `digest` (FNV-1a of RAM and the
+  scratchpad), `snapshot`/`restore` (the session's counters ahead of
+  `Runtime::snapshot`) and the `FrameLog` lines both hosts print. A browser
+  `step` or `runUntil` runs at most 10 000 frames per call.
 - **Scheduling.** `requestAnimationFrame` calls `XemApp::frame`: while running,
-  at most 16 steps, ending after a VSync yield or 8 ms, then one render. A
-  throttled or hidden page gets fewer frames; nothing catches up.
+  the game frames due at 60 per second of page time, at most two per animation
+  frame and none after 12 ms, then one render. Time a throttled, hidden or
+  stalled page missed is dropped (`status().loop.dropped`), never caught up.
 - **Rendering.** wgpu on the canvas: WebGPU when the browser gives an adapter,
   WebGL2 otherwise (`?backend=webgl2` forces it); `status().renderer.backend`
   says which. The Slint panel (FemtoVG's wgpu renderer on the same device,
@@ -164,7 +166,7 @@ as JSON text or bytes.
   session snapshot, or without a session a formatted blank memory card, with its
   SHA-256, checked when read back.
 - **Automation.** `window.xem`: `status()`, `boot({executable, run})`,
-  `setRunning`, `step(n)`, `runUntil({maxSteps, condition})`, `digest()`,
+  `setRunning`, `step(frames)`, `runUntil({maxFrames, condition})`, `digest()`,
   `snapshot()`, `restore(bytes)`, `settings.get()`/`settings.apply(change)`
   (a `SettingChange`, e.g. `{MasterVolume: 40}`), `panel.show(bool)`,
   `importDisc(blob)`, `readSectors(lba, count)`, `save(slot)`/`load(slot)`. Each
@@ -180,3 +182,70 @@ From the repository root in `nix develop path:./nix/runtime`:
   the boot with `runtime/target/release/xem-headless` when it is built).
   Headless Chromium needs `--use-vulkan=swiftshader` for WebGPU: with its
   default Vulkan choice it destroys a WebGPU device after the canvas presents.
+
+## WebXR adapter
+
+`xem-webxr` (wasm32 only) and its test page `runtime/web/xr/` render the
+`xem-render` test scene in stereo through WebXR. The page is separate from the
+main browser host so the adapter can move into it unchanged.
+
+- **Device ownership.** The page canvas gets one WebGL2 context (no alpha,
+  antialiasing, depth or stencil; `xrCompatible` whenever `navigator.xr`
+  exists). wgpu's GLES adapter is created over it
+  (`wgpu_hal::gles::Adapter::new_external`, `create_adapter_from_hal`), and the
+  flat canvas surface resolves to the same context, so flat and immersive
+  frames share one device and queue.
+- **Submission (WebGL2).** The layer framebuffer of the session's
+  `XRWebGLLayer` (antialias, depth, stencil and alpha off) is wrapped as a wgpu
+  texture (`create_texture_from_hal`: `ExternalFramebuffer` for the opaque XR
+  framebuffer, `DefaultRenderbuffer` when the layer reports `null`, as IWER's
+  does), rebuilt only when the framebuffer or its size changes. The scene
+  renders into a wgpu-owned eye buffer with its own depth (wgpu-hal would
+  otherwise attach a depth texture to the opaque framebuffer, which WebXR
+  forbids); one compositor pass then copies it into the layer on the GPU,
+  flipped vertically (the GLES backend stores images top row first, WebXR
+  reads framebuffers bottom row first) and sRGB-encoded in the shader (the
+  layer is RGBA8 without sRGB writes). Nothing passes through the CPU.
+- **Views.** Each view is drawn with the inverse of `XRView.transform`,
+  `projectionMatrix` remapped from OpenGL depth (-1..1) to wgpu's (0..1), and
+  its layer viewport (converted from WebXR's bottom-left origin).
+- **Scheduling.** While a session runs, only `session.requestAnimationFrame`
+  schedules frames; window animation frames drive the flat canvas and stop.
+  One scene clock serves both; pausing freezes it while poses, views and
+  rendering continue.
+- **Session.** Enter VR requests `immersive-vr` synchronously in the click
+  (user activation), requiring `local-floor` and offering `bounded-floor` and
+  `hand-tracking`; granted features are read from `session.enabledFeatures`.
+  Exit VR (or Escape) calls `session.end()`; any `end` event returns to the
+  flat canvas. Missing `navigator.xr`, unsupported `immersive-vr` and refused
+  requests leave the flat page usable.
+- **Input.** Input sources are raw state: handedness, target-ray mode,
+  profiles, target-ray and grip poses, gamepad buttons and axes, and the 25
+  hand joints (pose and radius) when the session tracks hands, plus counts of
+  select/squeeze/inputsourceschange events, visibility and reference-space
+  resets. Nothing interprets gestures.
+- **WebGPU.** `XRGPUBinding` is detected and reported (Chromium 152 exposes it
+  only with `--enable-blink-features=WebXRGPUBinding`) but not used: no
+  available runtime can test WebGPU layer submission, so WebGL2 is the
+  submission path for now.
+
+`runtime/.cargo/config.toml` sets `--cfg=web_sys_unstable_apis` for wasm32,
+which web-sys's WebXR bindings require. In `nix develop path:./nix/runtime`:
+
+- dependencies: `npm ci` in `runtime/web` (iwer 2.5.0, playwright-core 1.64.0)
+- build: `runtime/web/xr/build.sh` (wasm-bindgen output in `runtime/web/xr/pkg`)
+- tests: `node runtime/web/xr/tests/run.mjs [scenario...]` drives Chromium
+  (`$XEM_CHROMIUM`, SwiftShader WebGL2) with IWER emulating a Quest 3, its
+  controllers and hands; screenshots go to `build/xr-test/`
+- by hand: serve `runtime/web` from localhost or HTTPS and open `/xr/`
+  (`/xr/?emulate=quest3` installs IWER)
+
+Emulation covers entry by click, granted features, session-scheduled frames,
+two views with distinct view matrices, the projection conversion (including
+asymmetric frusta), upright rendering into both the canvas framebuffer and an
+opaque framebuffer (a test shim stands in for the headset compositor), head
+pose, controller and hand input, visibility and recentering, paused head
+tracking, exit by the app and by the runtime, re-entry, denial and missing
+support. It cannot cover a headset browser's WebGL/WebXR driver, compositor
+and display timing, which hand and gaze inputs it exposes, WebGPU XR layers or
+performance; those need Quest Browser on a Horizon headset.

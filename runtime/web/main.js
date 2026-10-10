@@ -148,7 +148,7 @@ const host = {
 };
 window.xem = createAutomation(host);
 
-// --- Animation: one bounded batch of game steps and one render per frame ----
+// --- Animation: the game frames due (bounded) and one render per frame -----
 let recovering = false;
 const fps = { since: 0, frames: 0, value: 0 };
 function frame(time) {
@@ -223,7 +223,7 @@ if (!remembered && last) show(`Last disc: ${last.name}. Choose it again to conti
 $('boot').disabled = !page.game.available;
 $('boot').addEventListener('click', guarded(async () => {
   await host.boot({ run: true });
-  show('Booted; the game runs in bounded steps per frame.');
+  show('Booted; the game runs a frame of its clock per 1/60 s, in bounded batches.');
 }));
 $('run').addEventListener('click', () => {
   const status = JSON.parse(app.status());
@@ -277,7 +277,7 @@ function describe(status) {
     `game       ${page.game.available ? `${page.game.url} (${page.game.names.length} imports)` : `unavailable: ${page.game.error}`}`,
     `disc       ${d ? `${d.name}: ${d.state}${d.identity ? ` — ${d.identity.serial ?? 'unknown disc'} ${d.identity.boot_path}` : ''}${d.error ? ` — ${d.error}` : ''}` : 'none'}`,
     d ? `disc cache ${(d.peak_resident_bytes / 1048576).toFixed(1)} of ${(d.chunk_budget / 1048576).toFixed(0)} MiB peak, ${d.fetches} reads` : null,
-    `session    ${s ? `${s.steps} steps, ${s.yields} yields${s.halted ? ` — halted: ${s.halted}` : status.running ? ' — running' : ''}` : 'none'}`,
+    `session    ${s ? `${s.frames} frames, ${s.vblanks} vblanks, ${s.steps} waits${s.halted ? ` — halted: ${s.halted}` : status.running ? ' — running' : ''}` : 'none'}`,
     `audio      ${audio.status().state}, ${audio.status().played} frames played`,
     JSON.parse(app.settings()).settings.presentation.show_fps ? `fps        ${fps.value.toFixed(0)}` : null,
     ...status.bootLines.slice(-8).map((line) => `  ${line}`),

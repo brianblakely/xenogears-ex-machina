@@ -1,0 +1,65 @@
+[package]
+name = "xem-webxr"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "The WebXR adapter: immersive sessions, views, input and WebGL2 layer submission through wgpu"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+# The adapter only exists in browsers; on other targets the crate is empty.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+glam.workspace = true
+js-sys.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+wasm-bindgen.workspace = true
+wasm-bindgen-futures.workspace = true
+wgpu = { workspace = true, features = ["std", "wgsl", "webgl"] }
+xem-render = { path = "../xem-render" }
+web-sys = { workspace = true, features = [
+    "console",
+    "Document",
+    "DomPointReadOnly",
+    "Element",
+    "Event",
+    "EventTarget",
+    "Gamepad",
+    "GamepadButton",
+    "HtmlCanvasElement",
+    "Navigator",
+    "Performance",
+    "WebGl2RenderingContext",
+    "WebGlFramebuffer",
+    "Window",
+    "XrEye",
+    "XrFrame",
+    "XrHand",
+    "XrHandJoint",
+    "XrHandedness",
+    "XrInputSource",
+    "XrInputSourceArray",
+    "XrJointPose",
+    "XrJointSpace",
+    "XrPose",
+    "XrReferenceSpace",
+    "XrReferenceSpaceType",
+    "XrRenderState",
+    "XrRenderStateInit",
+    "XrRigidTransform",
+    "XrSession",
+    "XrSessionInit",
+    "XrSessionMode",
+    "XrSpace",
+    "XrSystem",
+    "XrTargetRayMode",
+    "XrView",
+    "XrViewerPose",
+    "XrViewport",
+    "XrVisibilityState",
+    "XrWebGlLayer",
+    "XrWebGlLayerInit",
+] }

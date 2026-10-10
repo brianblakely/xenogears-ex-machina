@@ -52,6 +52,7 @@ struct Link {
     memory: WebMemory,
     run: Function,
     call: Function,
+    interrupt: Function,
     unwind_area: Function,
     start_unwind: Function,
     stop_unwind: Function,
@@ -59,7 +60,6 @@ struct Link {
     stop_rewind: Function,
     get_state: Function,
     stack_pointer: WebAssembly::Global,
-    heap_base: WebAssembly::Global,
     handler: Cell<Option<*mut dyn ImportHandler>>,
     resume_value: Cell<u32>,
     area: Cell<u32>,
@@ -115,6 +115,7 @@ impl WebModule {
             memory: memory.clone(),
             run: function("xem_run")?,
             call: function("xem_call")?,
+            interrupt: function("xem_interrupt")?,
             unwind_area: function("xem_unwind_area")?,
             start_unwind: function("asyncify_start_unwind")?,
             stop_unwind: function("asyncify_stop_unwind")?,
@@ -122,7 +123,6 @@ impl WebModule {
             stop_rewind: function("asyncify_stop_rewind")?,
             get_state: function("asyncify_get_state")?,
             stack_pointer: global("__stack_pointer")?,
-            heap_base: global("__heap_base")?,
             handler: Cell::new(None),
             resume_value: Cell::new(0),
             area: Cell::new(0),
@@ -193,6 +193,10 @@ impl GameModule for WebModule {
         self.link.call.call1(&JsValue::NULL, &address.into()).map(drop).map_err(Self::trap)
     }
 
+    fn interrupt(&mut self, irq: u32, detail: u32) -> Result<(), Trap> {
+        self.link.interrupt.call2(&JsValue::NULL, &irq.into(), &detail.into()).map(drop).map_err(Self::trap)
+    }
+
     fn async_state(&mut self) -> AsyncState {
         self.link.async_state()
     }
@@ -215,10 +219,6 @@ impl GameModule for WebModule {
 
     fn memory(&mut self) -> &mut dyn GameMemory {
         &mut self.memory
-    }
-
-    fn data_end(&mut self) -> u32 {
-        number(self.link.heap_base.value())
     }
 
     fn globals(&mut self) -> Vec<u32> {

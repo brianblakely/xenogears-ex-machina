@@ -53,7 +53,7 @@ FINGERPRINT_BYTES = 32
 # through them).
 YIELD_IMPORTS = ["xem.yield", "xem.restart"]
 # The module's exports, defined in port/.
-EXPORTS = ["xem_run", "xem_call", "xem_unwind_area"]
+EXPORTS = ["xem_run", "xem_call", "xem_interrupt", "xem_unwind_area"]
 HOST_PREFIX = "xem_host_"
 # Game functions the port wraps (decomp/port): the game's definition is
 # renamed xem_original_<name> and the port's definition calls it.
@@ -488,13 +488,16 @@ class Rewriter:
             if line.startswith(("!", "source_filename")):
                 lines.append(line)
                 continue
+            line = self.substitute(unit, line, replacements, kept)
             if " asm " in line:
                 asm = self.rewrite_asm(unit, line)
                 if asm is not None:
                     lines.extend(asm)
                     continue
-            line = self.substitute(unit, line, replacements, kept)
             lines.extend(self.rewrite_call(unit, line))
+        if not is_port:
+            lines = poll_back_edges(lines)
+            self.declare(unit, "xem_loop_poll", "void", [])
         lines += host_groups
         # Declarations of the dispatchers and adapters this unit calls.
         for name, decl in sorted(self.unit_decls.pop(unit.source, {}).items()):
@@ -656,6 +659,30 @@ class Rewriter:
         return found
 
 
+LABEL_RE = re.compile(r"^([-\w.]+):")
+BRANCH_RE = re.compile(r"^\s*br (?:label %([-\w.]+)|i1 [^,]+, label %([-\w.]+), label %([-\w.]+))")
+
+
+def poll_back_edges(lines):
+    """Insert a call to xem_loop_poll before every loop back-edge (a branch to
+    a block earlier in its function). A wait the original spins on memory an
+    interrupt writes, or on a call that reads it, then suspends the game in
+    time for the interrupt; the opaque call also keeps the loads in the loop."""
+    out, seen = [], set()
+    for line in lines:
+        if line.startswith("define "):
+            seen = set()
+        else:
+            label = LABEL_RE.match(line)
+            if label:
+                seen.add(label.group(1))
+        branch = BRANCH_RE.match(line)
+        if branch and any(target in seen for target in branch.groups() if target):
+            out.append('  call void @"xem_loop_poll"()')
+        out.append(line)
+    return out
+
+
 def dispatch_variant(ret, arg_types):
     """Distinguish IR-level signatures sharing a wasm signature (i8 vs i32)."""
     text = ret + "(" + ",".join(t for t, _ in arg_types) + ")"
@@ -761,6 +788,8 @@ def build(args):
     out = (ROOT / args.out).resolve()
     (out / "ir").mkdir(parents=True, exist_ok=True)
     (out / "obj").mkdir(parents=True, exist_ok=True)
+    for report in ("compile-errors.txt", "codegen-errors.txt", "unmapped-asm.txt", "missing-data.txt", "stubs.txt"):
+        (out / report).unlink(missing_ok=True)
     images = collect_symbols(out)
     addresses = Addresses(images)
     sources = []
@@ -849,13 +878,10 @@ def stub_ir(missing, units):
 
 def link(out, objects, args, units):
     raw = out / "game.raw.wasm"
-    # __heap_base ends the port's stack and data, which snapshots keep with
-    # game RAM and the scratchpad.
     cmd = [os.environ["XEM_WASM_LD"], "--no-entry", "--error-limit=0",
            f"--initial-memory={MEMORY_BYTES}", f"--max-memory={MEMORY_BYTES}",
            "-z", f"stack-size={STACK_BYTES}", "--stack-first",
-           "--export=__stack_pointer", "--export=__heap_base",
-           *(f"--export={name}" for name in EXPORTS), "-o", str(raw)]
+           "--export=__stack_pointer", *(f"--export={name}" for name in EXPORTS), "-o", str(raw)]
     if args.stubs:
         # wasm-ld reports some undefined symbols only once others resolve.
         missing = set()

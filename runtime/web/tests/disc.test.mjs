@@ -55,10 +55,10 @@ describe('the user\'s disc 1', { skip: !available && `needs ${USER_DISC} and the
       const xem = window.xem;
       await xem.boot();
       const start = xem.snapshot();
-      const report = xem.runUntil({ maxSteps: 1000, condition: { until: 'halt' } });
+      const report = xem.runUntil({ maxFrames: 1000, condition: { until: 'halt' } });
       const first = { lines: xem.status().bootLines, digest: xem.digest(), session: xem.status().session };
       xem.restore(start);
-      const again = xem.runUntil({ maxSteps: 1000, condition: { until: 'halt' } });
+      const again = xem.runUntil({ maxFrames: 1000, condition: { until: 'halt' } });
       return { report, first, again, digest: xem.digest(), memory: xem.status().gameMemoryBytes };
     });
     await page.screenshot({ path: shot('disc1-boot.png') });
@@ -70,11 +70,11 @@ describe('the user\'s disc 1', { skip: !available && `needs ${USER_DISC} and the
 
     if (existsSync(HEADLESS)) {
       const native = execFileSync(HEADLESS, ['--disc', USER_DISC], { cwd: ROOT, encoding: 'utf8' }).split('\n');
-      const steps = native.filter((line) => line.startsWith('step '));
+      const steps = native.filter((line) => line.startsWith('frame '));
       const digest = native.find((line) => line.startsWith('ram digest ')).slice('ram digest '.length);
       assert.deepEqual(result.first.lines, steps);
       assert.equal(result.first.digest, digest);
-      console.log(`native xem-headless agrees: ${steps.length} step lines, ram digest ${digest}`);
+      console.log(`native xem-headless agrees: ${steps.length} frame lines, ram digest ${digest}`);
     } else {
       console.log(`no ${HEADLESS}: native comparison skipped`);
     }
