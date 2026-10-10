@@ -166,17 +166,22 @@ static void multiply_matrix_vector(int mx, int v, int cv, int shift, int lm) {
     static const int translations[4] = {TR, BK, FC, -1};
     int i;
     gte_i64 sum;
+    /* The vector is latched before the rows: with v = 3 a row's result must
+     * not feed the next row's IR operand. */
+    int x = vector(v, 1);
+    int y = vector(v, 2);
+    int z = vector(v, 3);
 
     for (i = 1; i <= 3; i++) {
         sum = cv == 3 ? 0 : (gte_i64)(int)C[translations[cv] + i - 1] * 0x1000;
         sum = mac_check(i, sum);
-        sum = mac_check(i, sum + (gte_i64)matrix(mx, i, 1) * vector(v, 1));
+        sum = mac_check(i, sum + (gte_i64)matrix(mx, i, 1) * x);
         if (cv == 2) {
             ir_saturate(i, sum >> shift, lm, 1);
             sum = 0;
         }
-        sum = mac_check(i, sum + (gte_i64)matrix(mx, i, 2) * vector(v, 2));
-        sum = mac_check(i, sum + (gte_i64)matrix(mx, i, 3) * vector(v, 3));
+        sum = mac_check(i, sum + (gte_i64)matrix(mx, i, 2) * y);
+        sum = mac_check(i, sum + (gte_i64)matrix(mx, i, 3) * z);
         set_mac_ir(i, sum, shift, lm);
     }
 }

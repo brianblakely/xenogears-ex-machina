@@ -460,6 +460,16 @@ class CommandTests(GteTest):
         self.assertEqual(g.run(0x0006E012), 0)  # sf 0, mx 3, V1, none
         self.assertEqual(g.mac(), [-320 + 640 + 150, 3 * 60, 5 * 60])
 
+    def test_mvmva_latches_the_ir_vector(self):
+        # Every row multiplies the IR1-IR3 the command started with, not the
+        # IR an earlier row of the same command wrote.
+        g = self.g
+        g.matrix(RT, ((0x1000, 0x200, -0x300), (0x400, 0x7000, 0x10), (-0x1000, 0x20, 0x1800)))
+        g.ir(0x800, 0, 0)
+        g.run(0x0009E012)  # sf 1, RT, IR, none
+        self.assertEqual(g.mac(), [0x800, 0x200, -0x800])
+        self.assertEqual(g.irs(), [0x800, 0x200, -0x800])
+
     def test_mvmva_lm_saturates_at_zero(self):
         g = self.g
         g.matrix(RT, ((-0x1000, 0, 0), (0, 0x1000, 0), (0, 0, 0x1000)))

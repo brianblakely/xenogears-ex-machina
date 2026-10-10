@@ -125,6 +125,8 @@
               export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/29.0.14206865
               export JAVA_HOME=${androidPkgs.jdk17.home}
               export GRADLE_OPTS="-Dorg.gradle.project.android.aapt2FromMavenOverride=$ANDROID_HOME/build-tools/34.0.0/aapt2"
+              # The desktop's SDL release: the APK builds libSDL3.so and SDLActivity from it.
+              export XEM_SDL3_SRC=${pkgs.sdl3.src}
             '';
           });
         }

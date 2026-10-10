@@ -5200,6 +5200,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "xem-android"
+version = "0.1.0"
+dependencies = [
+ "jni-sys 0.4.1",
+ "sdl3-sys",
+ "wgpu",
+ "xem-disc",
+ "xem-host",
+ "xem-render",
+ "xem-settings",
+]
+
+[[package]]
 name = "xem-core"
 version = "0.1.0"
 dependencies = [
@@ -5216,13 +5229,11 @@ name = "xem-desktop"
 version = "0.1.0"
 dependencies = [
  "png",
- "pollster",
- "raw-window-handle",
  "sdl3-sys",
  "wgpu",
+ "xem-host",
  "xem-render",
  "xem-settings",
- "xem-ui",
 ]
 
 [[package]]
@@ -5249,10 +5260,24 @@ version = "0.1.0"
 name = "xem-headless"
 version = "0.1.0"
 dependencies = [
+ "png",
  "serde_json",
  "xem-core",
  "xem-disc",
  "xem-game",
+]
+
+[[package]]
+name = "xem-host"
+version = "0.1.0"
+dependencies = [
+ "pollster",
+ "raw-window-handle",
+ "sdl3-sys",
+ "wgpu",
+ "xem-render",
+ "xem-settings",
+ "xem-ui",
 ]
 
 [[package]]

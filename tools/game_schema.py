@@ -149,6 +149,20 @@ def unit_globals(obj, types):
     return out
 
 
+def headers_first(source, directory):
+    """A wrapper unit that includes the target's headers before `source`.
+
+    The commons units define arrays of types their headers complete later
+    (GCC accepts it, clang does not); with the headers first the types are
+    complete, and the unit itself is unchanged."""
+    wrapper = Path(directory) / (source.replace("/", ".") + ".wrapper.c")
+    target = Path(source).parts[2]
+    headers = sorted((ROOT / "decomp/include" / target).glob("*.h")) + sorted((ROOT / "decomp/src" / target).glob("*.h"))
+    includes = "".join(f'#include "{h}"\n' for h in [ROOT / "decomp/include/common.h", *headers])
+    wrapper.write_text(includes + f'#include "{ROOT / source}"\n')
+    return wrapper
+
+
 def build_schema(out, units, addresses, cflags, jobs):
     """Write out/schema.json for the game units [(source, image)]."""
     types = Types()
@@ -165,15 +179,7 @@ def build_schema(out, units, addresses, cflags, jobs):
 
             if attempt(source):
                 return obj
-            # The commons units define arrays of types their headers complete
-            # later (GCC accepts it, clang does not): describe them through a
-            # wrapper that includes the target's headers first.
-            wrapper = Path(tmp) / (source.replace("/", ".") + ".wrapper.c")
-            target = Path(source).parts[2]
-            headers = sorted((ROOT / "decomp/include" / target).glob("*.h")) + sorted((ROOT / "decomp/src" / target).glob("*.h"))
-            includes = "".join(f'#include "{h}"\n' for h in [ROOT / "decomp/include/common.h", *headers])
-            wrapper.write_text(includes + f'#include "{ROOT / source}"\n')
-            return obj if attempt(wrapper) else None
+            return obj if attempt(headers_first(source, Path(tmp))) else None
 
         with concurrent.futures.ThreadPoolExecutor(jobs) as pool:
             objects = list(pool.map(compile_unit, units))

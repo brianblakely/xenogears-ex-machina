@@ -32,6 +32,19 @@ void xem_host_yield(int reason);
  * reset). Does not return. */
 __attribute__((noreturn)) void xem_host_restart(int kind, int arg);
 
+/* The game's fibers (port/fiber.c): the game itself, whose bottom frame is
+ * xem_run, and the arena task (arena_task_resume), whose bottom frame is
+ * xem_task_run. */
+enum {
+    XEM_FIBER_GAME = 0,
+    XEM_FIBER_TASK = 1,
+};
+
+/* Suspend the running fiber (asyncify unwinds it into its own save area) and
+ * continue fiber `fiber`: start it afresh on the shadow stack that ends at
+ * `stack_top` when that is nonzero, else rewind it where it suspended. */
+void xem_host_task_switch(unsigned int fiber, unsigned int stack_top);
+
 /* A function the port does not define yet was called (build/game/stubs.txt),
  * or an inline assembly statement without a port function (unmapped-asm.txt;
  * its number + 0x10000). */

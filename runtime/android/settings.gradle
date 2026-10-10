@@ -1,0 +1,22 @@
+// The Android APK: SDL3's SDLActivity (Java from the desktop's SDL release,
+// $XEM_SDL3_SRC), libSDL3.so and the xem-android libmain.so. Build it with
+// runtime/scripts/android-build.sh inside `nix develop path:./nix/runtime#android`
+// (Nix's Gradle; no wrapper).
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'xem'
+include ':app'

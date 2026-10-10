@@ -20,6 +20,7 @@ struct Options {
     bios: Option<PathBuf>,
     /// Write the SPU's output as a 16-bit stereo 44.1 kHz WAV file.
     wav: Option<PathBuf>,
+    screenshot: Option<PathBuf>,
 }
 
 fn main() -> ExitCode {
@@ -32,6 +33,7 @@ fn main() -> ExitCode {
         cards: None,
         bios: None,
         wav: None,
+        screenshot: None,
     };
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -44,10 +46,11 @@ fn main() -> ExitCode {
             "--cards" => options.cards = args.next().map(PathBuf::from),
             "--bios" => options.bios = args.next().map(PathBuf::from),
             "--wav" => options.wav = args.next().map(PathBuf::from),
+            "--screenshot" => options.screenshot = args.next().map(PathBuf::from),
             _ => {
                 eprintln!(
                     "usage: xem-headless --disc <chd|cue|bin> [--frames N | --control] [--stubs FILE] [--schema FILE] \
-                     [--cards DIR] [--bios FILE] [--wav FILE]"
+                     [--screenshot out.png] [--cards DIR] [--bios FILE] [--wav FILE]"
                 );
                 return ExitCode::FAILURE;
             }
@@ -143,6 +146,23 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
         let peak = audio.iter().map(|s| s.unsigned_abs()).max().unwrap_or(0);
         println!("audio: {} samples, peak {peak}, {}", audio.len() / 2, path.display());
     }
+    if let Some(path) = &options.screenshot {
+        let (width, height, rgba) = services.gpu.display_rgba8();
+        write_png(path, width, height, &rgba)?;
+        println!("screenshot: {width}x{height} {}", path.display());
+    }
+    Ok(())
+}
+
+/// The displayed picture as an RGBA PNG (an empty display area gives 1x1).
+#[cfg(has_game_module)]
+fn write_png(path: &std::path::Path, width: u32, height: u32, rgba: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
+    let (width, height, rgba) =
+        if width == 0 || height == 0 { (1, 1, &[0, 0, 0, 0xFF][..]) } else { (width, height, rgba) };
+    let mut encoder = png::Encoder::new(std::io::BufWriter::new(std::fs::File::create(path)?), width, height);
+    encoder.set_color(png::ColorType::Rgba);
+    encoder.set_depth(png::BitDepth::Eight);
+    encoder.write_header()?.write_image_data(rgba)?;
     Ok(())
 }
 

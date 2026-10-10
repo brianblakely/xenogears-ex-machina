@@ -52,6 +52,21 @@ original address.
   routines (from their `.s` contracts) and the entry and restart logic. A
   function the port does not define yet traps through `xem.missing`
   (`--stubs` lists them in `build/game/stubs.txt`).
+- **Handwritten routines.** Their ports (`port/model_draw.c`, `arena.c`,
+  `worldmap_terrain.c`, `sprite_pixels.c`, `lzss.c`, `resident.c`) keep game
+  addresses as 32-bit integers and access memory through
+  `port/include/xem/memory.h`, which maps KUSEG and KSEG1 RAM mirrors onto
+  KSEG0: a packet pointer the original reduced to its 24-bit DMA address stays
+  reduced where the game sees it (`model_current_packet`). They make the
+  original's GTE transfers and commands in its order, including those in
+  branch delay slots and the projection of the record after the last face, so
+  the GTE is left as the original leaves it. `model_set_envmap_mapping`
+  patches `model_draw_ft3_envmap`'s instruction words in game memory, and the
+  renderer reads its shifts and offsets back from them on every call. Native
+  tests (`tests/port_native.py` maps RAM and the scratchpad at their PS1
+  addresses) check the contracts; `tests/test_port_original_traces.py`
+  replays original calls captured by the reference emulator
+  (`tools/reference/handwritten_trace.py`).
 - **Original memory layout.** Game memory is the PS1 address space: RAM at its
   KSEG0 addresses 0x80000000-0x801FFFFF and the scratchpad at 0x1F800000, inside
   one wasm32 linear memory. Every global the C defines resolves to its original
@@ -76,6 +91,29 @@ original address.
   wrapped by the port) therefore runs each mode from an empty stack, as the
   original does. A snapshot at a yield point is game memory, the module's
   globals and the host services' state.
+- **Fibers.** The arena runs its mode task as a coroutine on its own MIPS
+  stack (`arena_task_resume.s`, `arena_task_yield.s`); the port cannot switch
+  stacks, so the game is two fibers (`port/fiber.c`): the game, whose bottom
+  frame is `xem_run`, and the arena task, whose bottom frame is the export
+  `xem_task_run`. Each has its own asyncify save area (`xem_unwind_area`
+  returns the running fiber's) and its own shadow stack (the task's is a port
+  array; the PS1 task stack at 0x801FE000 is never written). `arena_task_resume`
+  and `arena_task_yield` call the import `xem.task_switch(fiber, stack_top)`:
+  the runtime unwinds the running fiber, keeping its area and shadow stack
+  pointer, then starts the other on the shadow stack ending at `stack_top`
+  (nonzero for a TaskContext the task fiber does not run yet: it calls
+  entry(arg), the context's ra and a0) or rewinds it where it suspended, all
+  within one `Runtime::step`. Frame waits and polls inside the task unwind
+  only the task fiber, interrupts run below the suspended fiber's frames, and
+  a restart abandons both fibers (`xem_run` resets the port's fiber state when
+  it starts afresh). The original's register bank is not modelled: a yield
+  leaves the TaskContext untouched, `arena_current_task` stays set after it,
+  and `arena_task_caller_stack` holds the address of the resuming frame on
+  the game fiber's shadow stack. The task entry never returns
+  (`arena_mode_task` loops); the original would re-enter it through ra, the
+  runtime stops the game with a diagnostic. `tests/fiber_module/build.sh`
+  runs `port/fiber.c` and `port/arena_task.c` under asyncify, wasm2c and the
+  runtime end to end.
 - **Native.** `wasm2c` output is compiled into `xem-game` with explicit bounds
   checks (no signal handlers). Nothing interprets or emulates a CPU.
 - **Browser.** The same `game.wasm` is instantiated next to the Rust runtime
@@ -132,6 +170,7 @@ input.
 | `xem-xr` | the OpenXR adapter |
 | `xem-webxr` | the WebXR adapter: immersive sessions, views, raw input and WebGL2 layer submission through wgpu |
 | `xem-desktop`, `xem-headless`, `xem-android`, `xem-web` | hosts |
+| `xem-host` | what the SDL3 hosts share: the window and its native handles, the wgpu surface (dropped and recreated with the native window), the presented view (scene and settings panel) |
 | `xem-settings` | typed application settings: validation, acknowledgement, change notification, JSON persistence |
 
 ## Desktop host and settings panel
@@ -287,3 +326,55 @@ Android lifecycle and permissions (eye tracking needs
 `com.oculus.permission.EYE_TRACKING`), and the APK packaging with Meta's loader.
 `xem-xr` cross-compiles for `aarch64-linux-android`
 (`cargo ndk -t arm64-v8a -P 26 build -p xem-xr` in `#android`).
+
+The window, the surface and the view (`xem_host::View`: scene, compositor,
+panel and its input) are shared with the Android host in `xem-host`.
+
+## Android host
+
+The APK (`dev.xem.app`, minSdk 29, target/compile SDK 34, x86_64 and
+arm64-v8a) is SDL3's Java layer from the desktop's SDL release
+(`$XEM_SDL3_SRC`, nixpkgs' `sdl3.src`: `SDLActivity` and its helpers are
+copied into the Gradle build, never vendored), `libSDL3.so` built from the same
+source with the NDK's CMake toolchain and `libmain.so`, the `xem-android`
+cdylib whose `SDL_main` SDLActivity runs. `runtime/android` is a plain Gradle
+project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
+`build/android`); `XemActivity` only adds what SDL lacks.
+
+- **Startup.** SDL window on the activity's surface; wgpu on Vulkan, the GLES
+  backend only when no Vulkan adapter can present (logged); the shared view
+  with the settings panel shown (Back toggles it).
+- **Assets.** A file bundled in the APK's assets is read through
+  `SDL_IOFromFile` (the AssetManager). The user's disc is imported with SDL's
+  open-file dialog, which is Android's `ACTION_OPEN_DOCUMENT` picker (the
+  panel's *Import disc…* button); `XemActivity` takes a persistable read grant
+  on the returned `content://` document and hands it to native code itself
+  (SDL's dialog callback is lost when Android recreates the activity behind
+  the picker), SDL opens it through the
+  ContentResolver, its file descriptor is duplicated into a Rust `File` and
+  `xem-disc` (`open_reader`, `identify`) reads it in place on a worker thread.
+  The URI is kept in the app's files directory and reopened on start.
+- **Settings.** `xem_settings::FileStore` at `<files dir>/settings.json`.
+- **Lifecycle.** SDL 3.4 delivers the application events only to event
+  watches, synchronously on the SDL thread inside `SDL_PollEvent`: on
+  `WILL_ENTER_BACKGROUND` the host drops the wgpu surface and stops the
+  simulation clock, SDL then blocks the thread until the activity resumes,
+  and after `DID_ENTER_FOREGROUND` the surface is recreated on the new native
+  window and the clock restarts where it stopped (a frame never advances it
+  by more than 100 ms, so there is no catch-up). A replaced native window
+  (configuration changes) is detected by identity and the surface recreated.
+  `LOW_MEMORY` is logged; on `TERMINATING` the run ends. A recreated activity
+  (changes outside `configChanges`, such as density or asset paths) runs
+  `SDL_main` again in the same process (`SDL_ANDROID_ALLOW_RECREATE_ACTIVITY`),
+  which reloads settings and reopens the imported disc.
+
+In `nix develop path:./nix/runtime#android`:
+
+- build: `runtime/scripts/android-build.sh` (`XEM_ANDROID_ABIS` to pick ABIs)
+  → `build/android/gradle/app/outputs/apk/debug/xem-debug.apk`
+- emulator smoke test: `runtime/scripts/android-smoke.sh` (headless API-34
+  x86_64 AVD under `.local/android`, guest Vulkan on SwiftShader; logcat and
+  screenshots in `build/android/smoke`)
+- `cargo ndk -t arm64-v8a -P 29 build -p xem-ui -p xem-render` builds the
+  shared crates alone (Slint compiles its FemtoVG module out on Android, so
+  `xem-ui` takes the renderer from `i-slint-renderer-femtovg` there)

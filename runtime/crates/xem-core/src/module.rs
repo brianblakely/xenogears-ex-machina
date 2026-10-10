@@ -76,14 +76,19 @@ pub trait GameModule {
     fn set_resume_value(&mut self, value: u32);
     /// The export `xem_run(kind, arg)`.
     fn run(&mut self, kind: u32, arg: u32) -> Result<(), Trap>;
+    /// The export `xem_task_run()`: the arena task fiber's bottom frame.
+    fn run_task(&mut self) -> Result<(), Trap>;
     /// The export `xem_call(address)`: run a game function.
     fn call(&mut self, address: u32) -> Result<(), Trap>;
     /// The export `xem_interrupt(irq, detail)`: the port's interrupt handler.
     fn interrupt(&mut self, irq: u32, detail: u32) -> Result<(), Trap>;
     fn async_state(&mut self) -> AsyncState;
     fn stop_unwind(&mut self);
-    /// Rewind with the save area the last unwind filled.
-    fn start_rewind(&mut self);
+    /// The save area the last unwind filled (the port's `xem_unwind_area`,
+    /// one per fiber).
+    fn unwind_area(&mut self) -> u32;
+    /// Rewind with a save area an unwind filled.
+    fn start_rewind(&mut self, area: u32);
     fn stack_pointer(&mut self) -> u32;
     fn set_stack_pointer(&mut self, value: u32);
     fn memory(&mut self) -> &mut dyn GameMemory;
