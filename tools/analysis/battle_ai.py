@@ -434,21 +434,21 @@ UNKNOWN_CONDITION = Opcode(
     "false; inside an or chain the previous result stands",
 )
 
-# 800793f0: action-list entries are 8 bytes (+0 type, +1 arg1, +2 animation,
+# 800793f0: action-list entries are 8 bytes (+0 type, +1 operand, +2 animation,
 # +3 name, +4/+5 parameter, +6 targets); other types reach 800792f8.
 ENTRY_TYPES = {
     0: ("end", "800793f0/0", "end of the list"),
-    1: ("act", "80078998", "name text, attack step arg1 + 1, animation event on the targets"),
+    1: ("act", "80078998", "name text, attack step operand + 1, animation event on the targets"),
     2: ("approach", "80078b34", "move event 0xfd toward the target"),
     3: ("event_fc", "80078c9c", "event 0xfc"),
     4: ("event", "80078cec", "event of type +4"),
     5: ("together", "80078d48", "800d39e0 = the targets"),
     6: ("leave", "80078d6c", "event 0xf9: the actor leaves the battle"),
     7: ("split", "80078e24", "the actor becomes a copy of its first target (event 0xfb)"),
-    8: ("set_attr8", "80079054", "own byte attribute arg1 = +4"),
-    9: ("add_attr8", "80079098", "own byte attribute arg1 += +4"),
-    10: ("set_attr16", "80079114", "own halfword attribute arg1 = +4 | +5 << 8"),
-    11: ("add_attr16", "8007916c", "own halfword attribute arg1 += +4 | +5 << 8"),
+    8: ("set_attr8", "80079054", "own byte attribute operand = +4"),
+    9: ("add_attr8", "80079098", "own byte attribute operand += +4"),
+    10: ("set_attr16", "80079114", "own halfword attribute operand = +4 | +5 << 8"),
+    11: ("add_attr16", "8007916c", "own halfword attribute operand += +4 | +5 << 8"),
     12: ("name", "80078658", "show name text +3 (event 0xfa)"),
     13: ("named_f4", "800791fc", "name text, then event 0xf4"),
     14: ("event_f7", "800787e0", "event 0xf7 with parameter +4"),

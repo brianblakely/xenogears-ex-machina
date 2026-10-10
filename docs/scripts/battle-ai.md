@@ -37,7 +37,7 @@ and `801e4870` points the scripts.
 - Actions write the enemy's variables in its AI block at `800d3400`. The
   listing calls them `bN` (u8 at +0x30), `vN` (u16 at +0x20) and `lN` (s32 at
   +0x10).
-- Actions also write action-list entries of 8 bytes: type, arg1, animation,
+- Actions also write action-list entries of 8 bytes: type, operand, animation,
   name, parameter (2 bytes) and targets. `list_set +0, type` closes an entry.
 - The opcode table (mnemonic, operand bytes, handler, effect) is
   `_ACTIONS`/`_CONDITIONS` in `tools/analysis/battle_ai.py`. The C handlers

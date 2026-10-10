@@ -28,7 +28,7 @@ and table, and how each table's index is chosen, is listed in
   battle setup archive, directory (12, 0) file 3, an offset table of packed blocks
   that ovl2615 `battle_setup_load_party_and_enemy_files` unpacks: archive[5 +
   character] (copies 0x5f0 bytes, 38 descriptors), archive[0x11 + gear] (0x690, 42)
-  and archive[4] for the enemies (0x1f40, 200). An enemy's command is the arg1 byte
+  and archive[4] for the enemies (0x1f40, 200). An enemy's command is the operand byte
   of its AI's type-1 action-list entries (`battle_action_list_act` ->
   `battle_commit_action`); the census reads those from the enemy data files with
   `tools.analysis.battle_ai`, with the enemy's in-gear bit from its record (+0x15a,

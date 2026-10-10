@@ -123,11 +123,11 @@ class SourceTests(unittest.TestCase):
         self.assertIn("cd_select_directory(12, 0);", entry)
         self.assertIn("file = heap_alloc(cd_get_aligned_file_size(3), 1);", entry)
 
-    def test_enemy_command_is_the_act_entrys_arg1(self):
+    def test_enemy_command_is_the_act_entrys_operand(self):
         executor = function_body(source("battle/battle_ai_runners.c"), "battle_action_list_execute")
         self.assertIn(f"case {ACT}:\n            battle_action_list_act(actor, i, target);", executor)
         act = function_body(source("battle/battle_turns_and_hud.c"), "battle_action_list_act")
-        self.assertIn("battle_turn_state->unk2DC = battle_action_list[index].arg1 + 1;", act)
+        self.assertIn("battle_turn_state->unk2DC = battle_action_list[index].operand + 1;", act)
         commit = function_body(source("battle/battle.c"), "battle_commit_action")
         self.assertIn("battle_committed_action.action = action - 1;", commit)
 
@@ -309,14 +309,14 @@ class FormulaTests(unittest.TestCase):
     def test_act_commands_follow_the_list_writes(self):
         words = [
             (0x80, 0, 0, 0),  # always
-            (0x01, 1, 31, 0),  # arg1 = 31
+            (0x01, 1, 31, 0),  # operand = 31
             (0x01, 2, 5, 0),  # animation
             (0x01, 0, ACT, 0),  # closes an act entry
-            (0x01, 0, 2, 0),  # an approach entry without arg1
-            (0x01, 0, ACT, 0),  # an act entry nothing wrote arg1 for
-            (0x3D, 1, 9, 0),  # arg1 = 9 by the halfword writer
+            (0x01, 0, 2, 0),  # an approach entry without an operand
+            (0x01, 0, ACT, 0),  # an act entry nothing wrote the operand for
+            (0x3D, 1, 9, 0),  # operand = 9 by the halfword writer
             (0x01, 0, ACT, 0),
-            (0x52, 0, 3, 0),  # type and arg1 from a variable
+            (0x52, 0, 3, 0),  # type and operand from a variable
             (0x01, 0, ACT, 0),
             (0xFD, 0, 0, 0),
         ]

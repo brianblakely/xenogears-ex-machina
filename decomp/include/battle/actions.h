@@ -13,9 +13,9 @@
  * page prints the first 23 under the columns Cd, Cl, An, P1, P2, P3 and Tg. */
 typedef struct BattleAction {
     u8 type;
-    u8 operand;   /* by type: the attribute an attribute action sets or adds to
-                   * (80079054-8007916C); 80078998 stores it plus one at the
-                   * turn state's +0x2dc; the state page's Cl column */
+    u8 operand;   /* by type: an act's command (80078998 makes it the attack
+                   * step, plus one), the attribute an attribute action sets or
+                   * adds to (80079054-8007916C); the state page's Cl column */
     u8 animation;
     u8 named;
     u8 param;

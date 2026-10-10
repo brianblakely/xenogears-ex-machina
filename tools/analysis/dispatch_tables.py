@@ -18,7 +18,7 @@ descriptor (an enemy keeps its own) and calls battle_gear_formula_table[formula]
 mode_battle_load_files), an offset table of packed blocks that ovl2615
 battle_setup_load_party_and_enemy_files unpacks: archive[4] holds the enemy commands,
 archive[5 + character] a party member's and archive[0x11 + gear] its gear's (copies of 0x1f40,
-0x5f0 and 0x690 bytes). An enemy's command is the arg1 byte of its AI's type-1 action-list
+0x5f0 and 0x690 bytes). An enemy's command is the operand byte of its AI's type-1 action-list
 entries (battle_action_list_act -> battle_commit_action), so the census also reads which
 commands the enemy data files' AI scripts select (tools.analysis.battle_ai) and whether each
 enemy fights in a gear (its record's +0x15a, copied by ovl2615
@@ -273,8 +273,8 @@ class EnemyCommands:
 
     files: int = 0
     acts: int = 0
-    unwritten: int = 0  # act entries closed with no arg1 write before them
-    dynamic: int = 0  # act entries whose arg1 comes from a variable
+    unwritten: int = 0  # act entries closed with no operand write before them
+    dynamic: int = 0  # act entries whose operand comes from a variable
     joins: int = 0  # act entries that paths reach with different commands
     on_foot: Counter = field(default_factory=Counter)
     in_gear: Counter = field(default_factory=Counter)
@@ -329,11 +329,11 @@ def enemy_table(descriptor: tuple[int, int], in_gear: bool) -> int:
     return int(in_gear or bool(descriptor[1] & GEAR_DESCRIPTOR))
 
 
-VARIABLE = -1  # an arg1 taken from an AI variable
+VARIABLE = -1  # an operand taken from an AI variable
 
 
 def act_commands(script: battle_ai.Script, data: bytes) -> Iterator[frozenset[int | None]]:
-    """The arg1 bytes each act entry the script closes can carry (None when
+    """The operand bytes each act entry the script closes can carry (None when
     nothing wrote it, VARIABLE when a variable did), along the runner's paths:
     an action steps to the next word; a condition (with its 99 chain) goes on
     when it holds and, unless it always holds, skips its rule when it does
