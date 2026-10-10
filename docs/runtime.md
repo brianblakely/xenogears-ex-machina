@@ -52,6 +52,21 @@ original address.
   routines (from their `.s` contracts) and the entry and restart logic. A
   function the port does not define yet traps through `xem.missing`
   (`--stubs` lists them in `build/game/stubs.txt`).
+- **Handwritten routines.** Their ports (`port/model_draw.c`, `arena.c`,
+  `worldmap_terrain.c`, `sprite_pixels.c`, `lzss.c`, `resident.c`) keep game
+  addresses as 32-bit integers and access memory through
+  `port/include/xem/memory.h`, which maps KUSEG and KSEG1 RAM mirrors onto
+  KSEG0: a packet pointer the original reduced to its 24-bit DMA address stays
+  reduced where the game sees it (`model_current_packet`). They make the
+  original's GTE transfers and commands in its order, including those in
+  branch delay slots and the projection of the record after the last face, so
+  the GTE is left as the original leaves it. `model_set_envmap_mapping`
+  patches `model_draw_ft3_envmap`'s instruction words in game memory, and the
+  renderer reads its shifts and offsets back from them on every call. Native
+  tests (`tests/port_native.py` maps RAM and the scratchpad at their PS1
+  addresses) check the contracts; `tests/test_port_original_traces.py`
+  replays original calls captured by the reference emulator
+  (`tools/reference/handwritten_trace.py`).
 - **Original memory layout.** Game memory is the PS1 address space: RAM at its
   KSEG0 addresses 0x80000000-0x801FFFFF and the scratchpad at 0x1F800000, inside
   one wasm32 linear memory. Every global the C defines resolves to its original
