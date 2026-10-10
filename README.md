@@ -6,7 +6,10 @@ Linux leading development. The native application does not run the complete game
 Phase 1 now targets a **complete binary-matching PS1 decompilation of both discs**.
 It does not stop at one playable slice or require every recovered function to be
 ported into a host-side ownership model. See [the plan](plan.md) and the short
-[matching workflow](docs/matching.md).
+[matching workflow](docs/matching.md). Code and data are named by their module's
+prefix and what they do ([Names](docs/matching.md#names)); each definition keeps its
+original address in its comment, so `git grep -i -n 80031bdc decomp` finds the code
+at an address.
 
 ```sh
 nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra#matching

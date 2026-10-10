@@ -503,7 +503,7 @@ census is in [original-boundaries.md](original-boundaries.md), Services).
 | libapi pad, libcard, BIOS file calls | input, cards | per-vblank pad buffers; virtual cards with event completion |
 | libc, libc2 | `rand`, `sprintf`, `memcpy`, `bzero` | exact PsyQ behaviour (the `rand` recurrence above), not host libc |
 | libpress | movies | software MDEC (VLC, IQ, IDCT, YCbCr to RGB at 15 and 24 bits) |
-| libsn | the development PC file server: `PCopen`, `PClseek`, `PCclose`, and `PCinit` and `PCread`, PCinit and PCread by their signatures and callers (psyq/libsn.h) | not needed on the disc path; if a port takes the host-file seam, `PCopen`, `PCread`, `PClseek` and `PCclose` are that seam's interface, and the port still serves raw reads by LBA ([Disc and files](#disc-and-files)) |
+| libsn | the development PC file server: `PCopen`, `PClseek`, `PCclose`, and `PCinit` and `PCread`, these two by their signatures and callers (psyq/libsn.h) | not needed on the disc path; if a port takes the host-file seam, `PCopen`, `PCread`, `PClseek` and `PCclose` are that seam's interface, and the port still serves raw reads by LBA ([Disc and files](#disc-and-files)) |
 
 ### Inline assembly in the C
 

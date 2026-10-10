@@ -222,7 +222,7 @@ address the C spells as a number, which neither this check nor the relocation sc
 `python3 tools/cross_image.py decomp/targets/*/*.mk --numbers` lists those (each
 other target's address a link holds without a relocation, outside asset and
 included bytes and the mode table); in the 26 links they are battle's three reads of
-the boot word mode_disc_mode (battle_sprite_commands.c battle_sprite_command_run sprite commands 0x44/0x45,
+the boot word mode_disc_mode (80010000; battle_sprite_commands.c battle_sprite_command_run sprite commands 0x44/0x45,
 battle_settle.c battle_install_command_file_parts), a number in the original too: its CDK units load
 it with one register (`lui v1,0x8001; lw v1,0(v1)` at 800b44b8), while by name they
 compile `lui v0,%hi(mode_disc_mode); lw v1,%lo(mode_disc_mode)(v0)` and the battle link
@@ -440,48 +440,81 @@ the audit; they are never counted as matches. This diagnostic does not replace
 ## Names
 
 splat's placeholders (`func_`/`D_`/`jtbl_` names, units and `.s` files named by an
-address or by their image number, parameters named `argN` or `aN`) give way to names
-from which a reader, often an agent, knows what a symbol is and which module owns
-it, and finds it with one grep:
+address or by their image number, parameters named `argN` or `aN`) have given way to
+names from which a reader, often an agent, knows what a symbol is and which module
+owns it, and finds it with one grep:
 
 - Game code and data are lower snake_case. PsyQ functions and library variables
-  keep the SDK's spelling (`LoadImage`, `CdRead`, `_card_info`); a placeholder in an
-  `sdk` range gets its PsyQ name only where its comment or decomp/include/psyq says
-  the code is that routine, else its library as prefix (`libgte_`, `libcd_`).
-- Every game name starts with its module's prefix, each image's its own: in the
-  resident the subsystem of the header declaring it (decomp/include/resident: `cd_`,
-  `console_`, `gpu_`, `heap_`, `menu_state_`, `mode_`, `model_`, `pad_`, `sound_`,
-  `sprite_`, `stream_`, `text_`, `window_`, `game_` for GameData, `formation_`,
-  `task_`; `boot_` and `mode_` for the boot code and dispatcher), in each overlay one
-  from its role (`field_`, `battle_`, `worldmap_`, `menu_`, `field_debug_` for
-  debug595, `battle_debug_` for debug2611, `movie_mode_`, `movie_` for the mdec
-  library, `battle_mod_<role>_` for each 0x801fc000 module). The longest declared
-  prefix a name starts with must be its own image's (`menu_state_` is the resident's,
-  `menu_` the menu's); a subsystem word may follow (`field_event_`).
-- Functions: prefix and verb phrase (`field_update_camera`), predicates `is_`/`has_`/
-  `can_`, a script VM's handlers prefix, VM and the mnemonic its decoder prints
-  (tools/analysis, docs/scripts). Data: prefix and noun phrase; tables plural or
-  `_table`, counters `_count`, timers `_timer`, flag words `_flags`, pointers to the
-  current object `current_*`. Parameters are named from their use.
+  keep the SDK's spelling (`LoadImage`, `CdRead`, `longjmp`, `_card_info`); an SDK
+  member gets its PsyQ name only where its comment or decomp/include/psyq says the
+  code is that routine, else its library as prefix and what the code does
+  (`libgte_rotate_vector`, `libcd_timeout_message`).
+- Every game name starts with its owner's prefix: one per overlay image, one per
+  resident subsystem. The resident's subsystems are those of decomp/include/resident
+  (`cd_`, `console_`, `gpu_`, `heap_`, `menu_state_`, `mode_`, `model_`, `pad_`,
+  `sound_`, `sprite_`, `stream_`, `text_`, `window_`, `game_` for GameData,
+  `formation_`, `task_`), with `boot_` for the entry point and boot, `commons_` for
+  the commons units' own, `psyq_` for the PsyQ unit psyq_libgte_to_libcard.c and
+  `rcossin_tbl`, libgte's table. The overlays: field
+  `field_` and its debug monitor debug595 `field_debug_`, battle `battle_` and its
+  debug tools debug2611 `battle_debug_`, the world map `worldmap_`, the menu target
+  (mode 4, the Battling arena) `arena_`, slot39 (the in-game menu) `menu_`, movie
+  `movie_mode_`, the mdec movie library `movie_`, ovl2143 `gear_model_`, ovl2596
+  `battle_results_`, ovl2598 `member_change_`, ovl2600 `name_entry_`, ovl2601
+  `item_shop_`, ovl2602 `gear_shop_`, ovl2606 `battle_scene_select_`, ovl2615
+  `battle_setup_`, ovl3087 `battle_event_script_` and the 0x801fc000 modules
+  `battle_module_tiles_`, `_spin_`, `_debris_`, `_hold_`, `_scroll_` and `_burst_`.
+  The longest prefix a name starts with is its owner's (`menu_state_` is the
+  resident's, `menu_` slot39's, `battle_setup_` ovl2615's); a subsystem word may
+  follow (`field_event_`, `sound_seq_`).
+- Functions are verb phrases (`cd_select_directory`, `heap_alloc`), predicates
+  `is_`/`has_`/`can_` (`battle_can_use_combo_step`). A script VM's handlers are the
+  prefix, the VM and the mnemonic its decoder prints, so the C and the decoder
+  listings agree: `field_event_<mnemonic>` for tools/analysis/events.py,
+  `battle_event_script_<mnemonic>`, `battle_ai_<mnemonic>`, `sound_seq_<mnemonic>`;
+  a handler serving several sub-opcodes takes their common stem. The tests compare
+  the decoder tables with the C (test_events.py; test_battle_event_vm.py also checks
+  each handler's name against its mnemonic).
+  Data are noun phrases: tables plural or `_table`, counters `_count`, timers
+  `_timer`, flag words `_flags`, pointers to the current object `current_`
+  (`game_current_data`); data written but never read say `unread`
+  (`arena_bout_unread_byte`). Parameters are named from their use, in step in every
+  declaration of their function.
 - A name states what the code does, from the code, its reviewed comments, the docs
-  and the decoders; a game-level meaning only where established, else the mechanics
-  (`battle_scale_vectors_by_table`); never unknown, unk, maybe, misc, stuff, helper
-  or a bare do/handle/process. Names are unique (the resident counts once), collide
-  with no SDK name, macro, typedef, tag, keyword or other identifier, and stay under
-  about 48 characters.
-- A unit named by an address or its image number becomes `<prefix>_<subsystem>.c`
-  (descriptive names stay; its overview comment keeps its address range); an
-  INCLUDE_ASM'd `.s` file takes its function's name.
+  and the decoders: a game-level meaning only where established, else the mechanics
+  (`battle_is_target_at_lower_x`, `worldmap_eval_quadratic_bspline`); never unknown,
+  unk, maybe, misc, stuff, helper or a bare do/handle/process. Names are unique
+  across the codebase (the resident counts once), collide with no SDK name, macro,
+  typedef, tag or keyword, and stay under about 48 characters. Another image's
+  functions and variables keep their definer's names (Converting a function); a
+  second declaration of one under its assembler name takes a name of its own after
+  the object (`cd_movie_request`, `mode_music_buffer_header`,
+  `battle_setup_work_area`).
+- A unit named by an address or its image number became `<prefix>_<subsystem>.c`
+  (`cd_reads_and_streams.c`, `battle_event_script_vm.c`; its overview comment keeps
+  its address range); an INCLUDE_ASM'd `.s` file takes its function's name.
+- Each definition keeps its original address in its comment: a function's leading
+  comment (`/* 80031BDC: Allocate ...` above `heap_alloc`), a variable's or an
+  INCLUDE_ASM statement's trailing or leading one, a symbol-file line's value. To
+  find the symbol at an address, grep the address in decomp (`git grep -i -n
+  80031bdc decomp`): definitions spell it in upper case, prose in lower case, and
+  a symbol file (decomp/targets) holds each name the splits give, the SDK's labels
+  inside generated files included. A tool, a test or a doc that needs an address
+  keeps it beside the name or reads it from the definition (the world map actor
+  script handlers' table in overlay_scripts.py, test_battle_event_vm.py).
 
-`tools/names.py` (module docstring) applies a mapping in the matching shell once
-every target links:
+`tools/names.py` (module docstring) applied the reviewed mapping in the matching
+shell, one image or group per commit after 8185d98: 7,671 rows (4,607 functions,
+2,804 data, 7 jump tables, 120 parameters, 65 units, 68 `.s` files) and 44
+prefixes. `inventory` now finds no placeholder in any image, and `check` takes every
+row as applied:
 
 ```sh
-python3 tools/names.py inventory               # .local/names/<image>.tsv
+python3 tools/names.py inventory               # placeholders left: .local/names/*.tsv
 python3 tools/names.py check names.tsv         # the rules above; what stays unnamed
 python3 tools/names.py apply names.tsv --dry-run [--overrides overrides.tsv]
 python3 tools/names.py apply names.tsv [--overrides overrides.tsv]
-make -C decomp all-split && make -j8 -C decomp all-verify && make -C decomp all-coverage
+make -C decomp all-split && make -j8 -C decomp all-verify && make -j8 -C decomp all-coverage
 ```
 
 A mapping row is `image kind old new unit confidence evidence`: kind func, data,
@@ -491,18 +524,30 @@ in a file the build reads to what every target reading it binds it to (as
 cross_image.py binds imports; where they differ it stops), and elsewhere (docs,
 tools, tests) only where one image holds the name or a path names the image; it
 lists each other occurrence with file:line for an overrides file (`file line old
-image`, line `*` for the file, image `-` to keep it). It writes each renamed
-definition's address into its comment and each new name into the symbol file the
-split reads it from, moves units and `.s` files with git mv together with their .mk
-settings, yaml subsegments and INCLUDE_ASM folders, never touches prompt.md or
-plan.md, and changes nothing more when run again; `.local/names/apply.tsv` lists
-every change. `check` refuses two names a split could not keep: a label splat writes
-inside another symbol's generated file (`alabel`: twelve SDK words in text), which a
-name of its own would split out of the file INCLUDE_ASM includes, and an alias given
-its definer's name where one unit sees both (worldmap.h's `mode_music_buffer_header`). A
-41-row trial over 170 files passed all-split, all-verify (26/26 and cross-image),
-all-coverage, the unit tests and `source_archive.py --check`; a mechanical name for
-every placeholder (7797 rows, 390 files) kept all 26 images, cross-image and coverage.
+image`, line `*` for the file, image `-` to keep it: the synthetic targets of
+tests/test_matching.py and tests/test_names.py keep their `D_8001xxxx` names). It
+writes each renamed definition's address into its comment and each new name into
+the symbol file the split reads it from, moves units and `.s` files with git mv
+together with their .mk settings, yaml subsegments and INCLUDE_ASM folders, never
+touches prompt.md or plan.md, and changes nothing more when run again;
+`.local/names/apply.tsv` lists every change. A parameter of a prototype may take
+the name its definition gives that position. An SDK member is one in an `sdk` range
+of the classification or defined in the generated assembly the units include and
+named only by SDK functions (the resident's library strings and jump tables at
+80018bf0-800194f4, which splat migrates into the functions' files). A label splat
+writes inside another symbol's generated file (`alabel`: twelve SDK words) is named
+by a `type:label` line of the symbol file, which keeps it a label of that file (a
+plain name would split it out into a file no INCLUDE_ASM includes; its users are
+that unit's); one directly after the function's end, where splat drops a label with
+the words after it, is a data label (`type:u32`) with an INCLUDE_ASM of its own, as
+mdec's limits `libpress_vlc_max_size` and `libpress_vlc2_max_size`: the resident's
+`libgte_patch_code` and mdec's `libpress_vlc_saved_state` and
+`libpress_vlc2_saved_state`. `check` refuses such a label and an alias given its
+definer's name where one unit sees both. The names of a second declaration bound by
+assembler name, the resident's own name for the overlay area (`mode_overlay_area`,
+which link.ld assigns, where each mode overlay's first unit defines its number) and
+`arena_mode_heap_tag_name_strings` (a string boundary for splat in
+menu.symbols.txt) were given by hand.
 
 ## What counts as recovered source
 
@@ -870,7 +915,7 @@ converted to C per unit. What converting the targets' `.data` established:
   rows, the combo step table one byte before battle_combo_next_step_table): GCC 2.6.3 forms such a
   base with `la` only for a declared array, and `battle_combo_next_step_table[step][paid - 1]` puts
   the -1 in the load instead. Where the index form compiles alike, C indexes the
-  object (battle's party panel name glyphs, `battle_panel_glyph_x[member * 24 + 7 + i]`).
+  object (battle's party panel name glyph positions, `battle_panel_glyph_x[member * 24 + 7 + i]`).
   The resident's `link.ld` (the window colour's last two bytes, the CD mix bytes,
   a base for the name slots' second bytes), `menu.bss.ld` (the
   opponent's command byte) and `worldmap.data.ld` (the read list's first

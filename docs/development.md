@@ -1,6 +1,10 @@
 # Development
 
 Phase 1 starts with [matching](matching.md), not a repository-wide document audit.
+Symbols are named by their owner's prefix (one per overlay, one per resident
+subsystem) and what they do ([Names](matching.md#names)): grep a prefix to find a
+module's code, or an original address (`git grep -i -n 80031bdc decomp`) to find the
+definition whose comment gives it.
 
 ```sh
 nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra#matching
