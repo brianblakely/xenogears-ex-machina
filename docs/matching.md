@@ -147,9 +147,16 @@ link's `__exe_file_size` (`PAD_TO_SYMBOL`), the sectors its header declares.
 or any other `LINKER_EXTRA` fragment) inside the target's own image or uninitialized
 data (`matching_coverage.py --script-symbols`): an address copied from the original
 where the link should place an object, which the exact comparison cannot see move. It
-reads each assignment wherever it stands, also a second one on a line and one inside
-`HIDDEN()`, `PROVIDE()` or `PROVIDE_HIDDEN()`, and fails on any fragment statement that is
-neither such an assignment nor an `ASSERT`, so no name the link reads escapes it. Names
+lexes a fragment as GNU ld does: a quoted string runs to the next quote, so a `/*` in an
+`ASSERT` message starts no comment, a comment runs from `/*` to the next `*/`, and an
+assignment ends at the first `;` or `,` outside parentheses. It reads each assignment
+wherever it stands, also a second one on a line or after a comma and one inside
+`HIDDEN()`, `PROVIDE()` or `PROVIDE_HIDDEN()`, and fails on any other statement but an
+`ASSERT`. A compound assignment (`+=` to `>>=`), a quoted name, a quoted string in an
+expression, a name with a non-ASCII byte (ld skips the byte and assigns the rest) and a
+comment directly after other text (ld reads a `/` after a name character into the name)
+fail too. tests/test_matching.py links the string and comma forms with the pinned ld and
+checks that it reads them, in the target's own range and in the cross-image step. Names
 of other images (the `*.resident.ld` fragments, an overlay's addresses in the resident,
 also the `_gp` an overlay's splat script sets) lie outside and pass; splat's main script
 is not among the checked scripts, so the resident's `_gp` comes from its checked

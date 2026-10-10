@@ -746,11 +746,17 @@ class MatchingTests(unittest.TestCase):
             "elsewhere = table + 0x10000; second = 0x80010010;\n"
             "HIDDEN(hidden = 0x80010014);\n"
             "PROVIDE_HIDDEN(provided = 0x80010018); uses = provided + 0x10000;\n")
-        settings = ["LINKER_EXTRA=auto/undefined_syms_auto.txt views.ld other.ld"]
+        # The parser lexes as GNU ld does: a quoted string runs to the next
+        # quote, so the comment markers in two ASSERT messages hide nothing,
+        # and a comma ends an assignment as a semicolon does.
+        (self.root / "lexed.ld").write_text(
+            'ASSERT(1, "/*"); quoted = 0x8001001C; ASSERT(1, "*/");\n'
+            "outer = table + 0x10000, comma = 0x80010020;\n")
+        settings = ["LINKER_EXTRA=auto/undefined_syms_auto.txt views.ld other.ld lexed.ld"]
         self.cover_linked_fixture("image.bin", settings, sections=(".data",))
         tool = Path(__file__).resolve().parents[1] / "tools/matching_coverage.py"
         scripts = ["--script", "build/auto/undefined_syms_auto.ld", "--script", "views.ld",
-                   "--script", "other.ld"]
+                   "--script", "other.ld", "--script", "lexed.ld"]
 
         def check(*arguments):
             return subprocess.run(
@@ -770,18 +776,29 @@ class MatchingTests(unittest.TestCase):
             " inside the target's own uninitialized data (80010028-80010040): late",
             "error: image.bin.elf: 1 name(s) that views.ld assigns lie inside the target's own"
             " image (80010000-80010028): fixed",
+            "error: image.bin.elf: 2 name(s) that lexed.ld assigns lie inside the target's own"
+            " image (80010000-80010028): quoted, comma",
             "error: image.bin.elf: 3 name(s) that other.ld assigns lie inside the target's own"
             " image (80010000-80010028): second, hidden, provided",
         ])
-        # A fragment statement the parser does not read fails the check.
+        # A fragment statement the parser does not read fails the check: GNU
+        # ld takes a compound assignment, also one after a comma, and a quoted
+        # name, and after a name character it reads a / into the name, so a
+        # comment there would hide script text.
         for text, message in (
             ("x += 4;\n", "bad.ld:1: not a statement the checks read"),
+            ("x = 1, y <<= 2;\n", "bad.ld:1: not a statement the checks read"),
+            ('"x" = 1;\n', "bad.ld:1: not a statement the checks read"),
+            ("xé = 1;\n", "bad.ld:1: not a statement the checks read"),
+            ('x = DEFINED("y") ? 1 : 2;\n', "bad.ld:1: not a statement the checks read"),
             ("EXTERN(x)\n", "bad.ld:1: not a statement the checks read"),
             ("HIDDEN(x = 1;\n", "bad.ld:1: not a statement the checks read"),
             ("x = 1\ny = 2;\n", "bad.ld:1: not a statement the checks read"),
             ("x = 1;\nINCLUDE other.ld\n", "bad.ld:2: not a statement the checks read"),
             ('x = 1;\nASSERT(x, "a)")\nASSERT(x, "b)"\n',
              "bad.ld:3: an ASSERT without its closing parenthesis"),
+            ("x = 1;\ny = x/* 2 */;\n", "bad.ld:2: a comment that follows no space"),
+            ("x = 1; /* y = 2;\n", "bad.ld:1: a comment without its end"),
         ):
             with self.subTest(text):
                 (self.root / "bad.ld").write_text(text)
@@ -1057,6 +1074,13 @@ class MatchingTests(unittest.TestCase):
             (lambda: overlay(names + "D_80030000 = 0x80030000;\n"),
              "o: D_80030000 = 80030000 (o.resident.ld) agrees with p's p_func only by address"),
             (lambda: overlay(names + "inner = 0x80010024;\n"),
+             "o: inner = 80010024 (o.resident.ld) lies inside r's res_var (80010020-80010028),"
+             " but is no view of it"),
+            # The fragment parser reads what GNU ld reads: an assignment between
+            # two ASSERT messages that hold comment markers, and one after a comma.
+            (lambda: overlay(names + 'ASSERT(1, "/*"); inner = 0x80010024; ASSERT(1, "*/");\n'
+                             "outer = 0x1F801104, gap = 0x8001000C;\n"),
+             "o: gap = 8001000c (o.resident.ld) lies in r but in no input section they place\n"
              "o: inner = 80010024 (o.resident.ld) lies inside r's res_var (80010020-80010028),"
              " but is no view of it"),
             (lambda: overlay(names + "gap = 0x8001000C;\n"),

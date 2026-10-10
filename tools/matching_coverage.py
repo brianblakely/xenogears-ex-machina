@@ -586,16 +586,22 @@ def extent(sections: list[Section], bss_end: int | None) -> tuple[int, int, int]
 
 # The start of a linker script fragment's statements: a symbol assignment
 # `NAME = EXPR;`, plain or inside HIDDEN(), PROVIDE() or PROVIDE_HIDDEN() (up
-# to its `=`), and `ASSERT(EXPR, "message")` (up to its parenthesis).
+# to its `=`), and `ASSERT(EXPR, "message")` (up to its parenthesis). Names
+# are ASCII: GNU ld skips other bytes with a warning, so a name followed by a
+# UTF-8 letter assigns the name.
 SCRIPT_ASSIGNMENT = re.compile(
-    r"(?:(HIDDEN|PROVIDE_HIDDEN|PROVIDE)\s*\(\s*)?([A-Za-z_.$][\w.$]*)\s*=(?!=)")
+    r"(?:(HIDDEN|PROVIDE_HIDDEN|PROVIDE)\s*\(\s*)?([A-Za-z_.$][\w.$]*)\s*=(?!=)", re.ASCII)
 SCRIPT_ASSERT = re.compile(r"ASSERT\s*\(")
-# An `=` that assigns, not one of the comparisons ==, !=, <= and >=.
-SCRIPT_BARE_EQUALS = re.compile(r"(?<![=!<>])=(?!=)")
+# An assignment inside an expression: an `=` that is not one of the
+# comparisons ==, !=, <= and >=, which also finds the compound assignments
+# += to |= (GNU ld reads `a += b` as `a = a + b`), and <<= and >>=.
+SCRIPT_ASSIGN_OPERATOR = re.compile(r"<<=|>>=|(?<![=!<>])=(?!=)")
 # A symbol assignment anywhere in a script, also inside the SECTIONS of
 # splat's main script, which script_assignments does not read.
-SCRIPT_ASSIGNED_NAME = re.compile(r"(?<![\w.$])([A-Za-z_.$][\w.$]*)\s*=(?!=)")
-SCRIPT_COMMENT = re.compile(r"/\*.*?\*/", re.S)
+SCRIPT_ASSIGNED_NAME = re.compile(r"(?<![\w.$])([A-Za-z_.$][\w.$]*)\s*=(?!=)", re.ASCII)
+# What GNU ld's lexer reads past statement text: a quoted string runs to the
+# next quote, a comment from /* to the next */.
+SCRIPT_STRING_OR_COMMENT = re.compile(r'"[^"]*"|/\*')
 # A PROVIDE the link used (its value) or not (`[!provide]`), in the map.
 MAP_PROVIDE = re.compile(
     r"^\s+(0x[0-9a-fA-F]+|\[!provide\])\s+PROVIDE(?:_HIDDEN)? \(([A-Za-z_.$][\w.$]*) = ", re.M)
@@ -607,31 +613,50 @@ LD_FUNCTIONS = {
 }
 
 
-def balanced(text: str) -> bool:
-    """Whether every parenthesis of text closes and none closes before it opens."""
-    depth = 0
-    for c in text:
-        depth += (c == "(") - (c == ")")
-        if depth < 0:
-            return False
-    return depth == 0
+def script_text(path: Path) -> str:
+    """A linker script's text with each comment blanked (its newlines kept),
+    lexed as GNU ld lexes it: a quoted string runs to the next quote, so a
+    /* inside one starts no comment, and a comment runs from a /* outside
+    strings to the next */. Fails on a comment without its end and on one
+    that neither starts the text nor follows a space, tab or line break:
+    after a name character ld reads the / into the name and what follows as
+    script text."""
+    text, i = path.read_text(), 0
+    while found := SCRIPT_STRING_OR_COMMENT.search(text, i):
+        start, i = found.start(), found.end()
+        if found.group() != "/*":
+            continue
+        line = text.count("\n", 0, start) + 1
+        if start and text[start - 1] not in " \t\r\n":
+            raise SystemExit(f"{path}:{line}: a comment that follows no space or line break")
+        close = text.find("*/", i)
+        if close < 0:
+            raise SystemExit(f"{path}:{line}: a comment without its end")
+        i = close + 2
+        text = text[:start] + re.sub(r"[^\n]", " ", text[start:i]) + text[i:]
+    return text
 
 
 def script_assignments(path: Path) -> list[tuple[str, str, bool]]:
     """(name, expression, provide) of each symbol assignment of a linker
     script fragment (splat's lists as PROVIDE, a .data.ld, .bss.ld or
-    .resident.ld), in order, wherever it stands: `NAME = EXPR;`, also inside
+    .resident.ld), in order, wherever it stands: `NAME = EXPR`, which ends at
+    the first `;` or `,` outside parentheses as in GNU ld, also inside
     HIDDEN(), PROVIDE() or PROVIDE_HIDDEN() (provide: the last two). Its
-    other statements may only be ASSERTs; any other text fails, so that no
-    assignment the link reads escapes the checks."""
-    text = SCRIPT_COMMENT.sub(lambda m: re.sub(r"[^\n]", " ", m.group()), path.read_text())
+    other statements may only be ASSERTs; any other text fails, a compound
+    assignment (`+=` to `>>=`), a quoted name and a quoted string in an
+    expression among it, so that no assignment the link reads escapes the
+    checks."""
+    text = script_text(path)
+    not_read = ("not a statement the checks read (a symbol assignment, plain or in HIDDEN,"
+                " PROVIDE or PROVIDE_HIDDEN, or an ASSERT)")
 
     def fail(at: int, what: str) -> SystemExit:
         return SystemExit(f"{path}:{text.count(chr(10), 0, at) + 1}: {what}")
 
     result, i = [], 0
     while True:
-        while i < len(text) and (text[i].isspace() or text[i] == ";"):  # an empty statement too
+        while i < len(text) and (text[i].isspace() or text[i] in ";,"):  # separators
             i += 1
         if i == len(text):
             return result
@@ -649,22 +674,29 @@ def script_assignments(path: Path) -> list[tuple[str, str, bool]]:
                 raise fail(start, "an ASSERT without its closing parenthesis")
             continue
         found = SCRIPT_ASSIGNMENT.match(text, i)
-        end = text.find(";", found.end()) if found else -1
-        expression = text[found.end():end].strip() if end >= 0 else ""
-        wrapper = found.group(1) if found else None
-        if wrapper:  # its own parenthesis closes before the semicolon
-            expression = expression[:-1].rstrip() if expression.endswith(")") else ""
-        if not expression or not balanced(expression) or SCRIPT_BARE_EQUALS.search(expression):
-            raise fail(start, "not a statement the checks read (a symbol assignment, plain or"
-                              " in HIDDEN, PROVIDE or PROVIDE_HIDDEN, or an ASSERT)")
+        if not found:
+            raise fail(start, not_read)
+        # The expression runs to the first `;` or `,` outside parentheses,
+        # in a wrapper to the parenthesis that closes it.
+        wrapper, depth, i = found.group(1), 0, found.end()
+        while i < len(text) and depth >= 0 and not (depth == 0 and text[i] in ";,"):
+            depth += (text[i] == "(") - (text[i] == ")")
+            i += 1
+        if wrapper and depth < 0:
+            expression = text[found.end():i - 1].strip()
+        elif not wrapper and depth == 0 and i < len(text):
+            expression = text[found.end():i].strip()
+        else:
+            raise fail(start, not_read)
+        if not expression or '"' in expression or SCRIPT_ASSIGN_OPERATOR.search(expression):
+            raise fail(start, not_read)
         result.append((found.group(2), expression, wrapper in ("PROVIDE", "PROVIDE_HIDDEN")))
-        i = end + 1
 
 
 def script_assigned_names(path: Path) -> set[str]:
     """The names a linker script assigns anywhere, also inside SECTIONS
     (splat's main script)."""
-    return set(SCRIPT_ASSIGNED_NAME.findall(SCRIPT_COMMENT.sub(" ", path.read_text())))
+    return set(SCRIPT_ASSIGNED_NAME.findall(script_text(path)))
 
 
 def script_names(map_path: Path, scripts: list[Path]) -> dict[str, tuple[Path, str]]:
