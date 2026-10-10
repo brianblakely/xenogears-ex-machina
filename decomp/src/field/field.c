@@ -1601,7 +1601,7 @@ void field_run_move_phase(void) {
             actor = field_view.components.descriptors[i].actor;
             if (!(actor->layer_flags & 0x100000) && (actor->layer_flags & 0x600) != 0x200) {
                 if (!(actor->flags & 0x8000)) {
-                    if (!(actor->unk014 & 0x200000) || (actor->flags & 0x1800)) {
+                    if (!(actor->floor_attribute & 0x200000) || (actor->flags & 0x1800)) {
                         if (!(actor->layer_flags & 0x2000)) {
                             step = actor->unk11E;
                         } else {
@@ -1609,7 +1609,7 @@ void field_run_move_phase(void) {
                         }
                         actor->unk108 = field_turn_angle_or_cut(actor->unk108, actor->heading_goal, step);
                     } else {
-                        actor->unk108 = field_turn_angle_or_cut(actor->unk108, (((actor->unk014 >> 11) - 2) & 7) << 9, 0x200);
+                        actor->unk108 = field_turn_angle_or_cut(actor->unk108, (((actor->floor_attribute >> 11) - 2) & 7) << 9, 0x200);
                     }
                 }
                 if (field_characters_hidden == 0) {
@@ -2302,8 +2302,8 @@ void field_draw_sprite_actors(u_long *ot, s32 buffer) {
             }
             sprite->renderer->matrix = orient;
             ScaleMatrix(&sprite->renderer->matrix, &scale);
-            if (field_view.components.descriptors[i].actor->unk014 & 0x200000) {
-                side = (octant - (((field_view.components.descriptors[i].actor->unk014 >> 11) - 2) & 7)) & 7;
+            if (field_view.components.descriptors[i].actor->floor_attribute & 0x200000) {
+                side = (octant - (((field_view.components.descriptors[i].actor->floor_attribute >> 11) - 2) & 7)) & 7;
                 if (side != 0) {
                     if (side < 4) {
                         v.vx = 0;
@@ -2369,7 +2369,7 @@ void field_draw_sprite_actors(u_long *ot, s32 buffer) {
                 }
             }
         } else if (mode_debug_hide_layer == 0) {
-            if (!(actor->flags & 0x10000) && !(actor->unk014 & 0x200002) && !(actor->layer_flags & 0x800)) {
+            if (!(actor->flags & 0x10000) && !(actor->floor_attribute & 0x200002) && !(actor->layer_flags & 0x800)) {
                 gear_model_actors[party]->flags &= 0xFFFE;
             } else {
                 gear_model_actors[party]->flags |= 1;
@@ -2435,7 +2435,7 @@ void field_draw_shadows(u_long *ot, s32 buffer) {
         if (actor->flags & 0x10000) {
             continue;
         }
-        if (actor->unk014 & 0x200002) {
+        if (actor->floor_attribute & 0x200002) {
             continue;
         }
         up.vx = 0;
@@ -3514,7 +3514,7 @@ void field_menu_present_dimmed(s32 level) {
  * or leaving its gears: clear only while the controlled actor has neither
  * bit 0x40 nor 0x80 of +14; the event override (800b234c) wins unless 0xff. */
 void field_update_gear_riding_lock(void) {
-    if (field_work.unk2268 != 0 && !(field_view.components.descriptors[field_work.controlled].actor->unk014 & 0xC0)) {
+    if (field_work.unk2268 != 0 && !(field_view.components.descriptors[field_work.controlled].actor->floor_attribute & 0xC0)) {
         mode_gear_riding_lock = 0;
     } else {
         mode_gear_riding_lock = 1;

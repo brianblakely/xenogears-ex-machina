@@ -41,7 +41,6 @@
 void heap_free_tag(s32 tag);
 void sound_play_effect_on_last_channels(s32 effect);
 s32 window_render_text_line(void *text, void *image, s32 width, s32 flags); /* render text */
-void *text_get_system_resource_entry(u8 table, s32 index);                        /* counter skill names */
 void *text_get_accessory_name(u8 index);                                      /* item names per list */
 void *text_get_item_name(u8 index);
 void *text_get_weapon_name(u8 index);
@@ -212,7 +211,6 @@ typedef struct {
     s32 count;
     void *items[4];
 } ResultArchive;
-void battle_upload_party_portraits(void *portraits, s32 glyph);
 void *battle_heap_alloc(s32 size, s32 mode);        /* heap allocate */
 
 /* Battle exit (battle_results_leave_battle). */

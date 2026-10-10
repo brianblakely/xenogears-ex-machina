@@ -135,6 +135,7 @@ s32 sound_reverb_clear_address; /* 800595DC */
 s32 sound_reverb_clear_bytes_left; /* 800595E0 */
 u32 sound_memory_pool_end; /* 800595E4: end of the sound driver's pool */
 
+#include "resident/formation.h"
 #include "resident/heap.h"
 #include "resident/menu.h"
 #include "resident/mode.h"

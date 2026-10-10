@@ -18,6 +18,7 @@
 #include "resident/heap.h"
 #include "resident/mode.h"
 #include "resident/sprite.h"
+#include "ovl2615/load_modes.h"
 #include "ovl2615.h"
 
 /* Callers convert arguments/result differently from the resident definition
@@ -45,13 +46,11 @@ void battle_setup_shatter_draw(Task *node);
 void battle_setup_shatter_release(void *block);
 ShatterTask *battle_setup_shatter_create(void);
 ShatterTask *battle_setup_shatter_init(ShatterTask *task);
-void battle_setup_run_shatter_load_mode(void);
 void battle_setup_burst_update(Task *node);
 void battle_setup_burst_draw(Task *node);
 void battle_setup_burst_release(void *block);
 BurstTask *battle_setup_burst_create(void);
 BurstTask *battle_setup_burst_init(BurstTask *burst);
-void battle_setup_run_burst_load_mode(void);
 
 /* Flip to the other display buffer and clear its ordering table. */
 static inline void swap_buffers(void) {

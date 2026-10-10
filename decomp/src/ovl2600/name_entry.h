@@ -45,6 +45,5 @@ s32 sprite_sheet_draw_scaled_flip(void *sheet, s32 id, void *prims, s32 index, s
                   s32 flip_y); /* a mirrored sprite */
 void *text_get_resource_entry(void *resource, s32 index);                   /* message address */
 u8 window_render_text_line(void *text, u8 *image, s32 width, s32 flags); /* render a text line; its width */
-void text_load_palette(s32 x, s32 y);                                    /* text palettes */
 
 #endif

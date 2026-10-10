@@ -44,6 +44,10 @@
 /* Declared here only: menu_member_screens.c calls it without a prototype. */
 void menu_detail_layout_tabs(u8 slot, u8 shown, u8 second);
 
+/* menu_member_screens.c's item use, which this unit calls without a prototype:
+ * its u8 result is tested unmasked. */
+s32 menu_use_item_on_character();
+
 /* The overlay's initialized data: all of it is defined here, ahead of the
  * units' uninitialized variables. */
 u8 menu_save_command_stays_open = 0; /* 801E96A4: the file screen saves (nonzero) or loads */
@@ -2511,11 +2515,11 @@ void menu_decode_game_names(void) {
 
 /* 801CB28C: Apply a loaded save: its derived tables, play time and the 16 resident
  * words copied from the game data, then finish (801cb184). */
-void menu_apply_loaded_save(s32 *save) {
+void menu_apply_loaded_save(SaveData *save) {
     s32 i;
 
     menu_restore_game_data_from_save(save, menu_state_current->tables);
-    pad_vblank_count = *save;
+    pad_vblank_count = save->summary.time;
     for (i = 0; i < 16; i++) {
         mode_battle_ai_variables[i] = game_data.flagWords[i + 1];
     }
@@ -2558,7 +2562,7 @@ void menu_apply_loaded_save(s32 *save) {
         if (sum == *p) {                                     \
             p = buffer + 0x100;                              \
             menu_load_or_release_data_set(1);                                \
-            menu_apply_loaded_save((s32 *)p);                         \
+            menu_apply_loaded_save((SaveData *)p);                    \
             menu_load_or_release_data_set(0x11);                             \
         } else {                                             \
             fd = 0;                                          \

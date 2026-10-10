@@ -4,6 +4,7 @@
 #include "common.h"
 #include "psyq/libgte.h"
 #include "resident/sprite.h"
+#include "ovl2615/load_modes.h"
 
 /* The entries of the overlays the battle loads and calls, declared as the
  * battle calls them: some definitions take fewer arguments or other types
@@ -20,15 +21,11 @@ void battle_results_leave_battle(void); /* leave the battle */
 /* The battle's start from the scene select (ovl2606, 801E0000). */
 void battle_scene_select_main(void);
 
-/* The battle loader (ovl2615, 801E4000): set-up phases, the enemy set file,
- * the stage and the load modes. */
-void battle_setup_run_phase(u8 phase); /* the battle module's set-up phase */
+/* The battle loader (ovl2615, 801E4000): the enemy set file and the stage
+ * (its set-up phases and load modes, which the battle calls as they are
+ * defined, are in ovl2615/load_modes.h). */
 void battle_setup_loader_start(s32 data); /* start loading the enemy set file */
 u8 battle_setup_build_stage(u8 **scene, s32 unused, u8 *stage, u8 *origin, u8 *colours, u8 *tint); /* set up the stage */
-void battle_setup_run_shatter_load_mode(void);
-void battle_setup_run_shatter_in_place_load_mode(void);
-void battle_setup_run_burst_load_mode(void);
-void battle_setup_run_burst_variant1_load_mode(void);
 
 /* The event script interpreter's pass (ovl3087, 801E5000), which takes no
  * argument. */

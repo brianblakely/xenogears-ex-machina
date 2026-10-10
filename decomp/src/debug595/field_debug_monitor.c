@@ -243,11 +243,11 @@ void field_debug_mark_cpu_time(char *name) {
  * Returns the screen shown. */
 s32 field_debug_run_screen(u_long *ot) {
     void *seq;
-    MonitorActor *actor;
+    FieldActor *actor;
     s32 i, n;
     s32 step;
     s32 a;
-    u32 id;
+    u32 attribute;
     u8 *rate;
     s32 *player;
     s32 length;
@@ -256,9 +256,9 @@ s32 field_debug_run_screen(u_long *ot) {
     if (field_monitor_absent == 1) {
         return 0;
     }
-    for (i = 0; i < field_view_components.count; i++) {
+    for (i = 0; i < field_view_components.descriptor_count; i++) {
         if (field_view_components.descriptors[i].flags & 0x2000) {
-            if (field_view_components.descriptors[i].instance->loaded == 0) {
+            if (field_view_components.descriptors[i].instance->anims == NULL) {
                 console_report_printf("MIME ERROR %d\n", i);
             }
         }
@@ -309,9 +309,9 @@ channels:
     case 12:
         console_report_printf("\nCPU=%04d GPU=%04d\n", field_frame_cpu_time, field_frame_gpu_time);
         console_report_printf("PolyCount %d / %d\n", model_drawn_primitive_count, model_submitted_primitive_count);
-        console_report_printf("Pos X%6d Z=%6d Y=%6d\n", field_view_components.descriptors[field_work_controlled].actor->pos[0].part.whole,
-                      field_view_components.descriptors[field_work_controlled].actor->pos[2].part.whole,
-                      field_view_components.descriptors[field_work_controlled].actor->pos[1].part.whole);
+        console_report_printf("Pos X%6d Z=%6d Y=%6d\n", WHOLE(field_view_components.descriptors[field_work_controlled].actor->position[0]),
+                      WHOLE(field_view_components.descriptors[field_work_controlled].actor->position[2]),
+                      WHOLE(field_view_components.descriptors[field_work_controlled].actor->position[1]));
         goto free_size;
     case 13:
         console_report_printf("RGB CALC\n\n");
@@ -415,17 +415,17 @@ channels:
         break;
     case 1:
         console_report_printf("---------- Player Info -----\n");
-        console_report_printf("Pos X%6d Z%6d Y%6d\n", field_view_components.descriptors[field_work_controlled].actor->pos[0].part.whole,
-                      field_view_components.descriptors[field_work_controlled].actor->pos[2].part.whole,
-                      field_view_components.descriptors[field_work_controlled].actor->pos[1].part.whole);
+        console_report_printf("Pos X%6d Z%6d Y%6d\n", WHOLE(field_view_components.descriptors[field_work_controlled].actor->position[0]),
+                      WHOLE(field_view_components.descriptors[field_work_controlled].actor->position[2]),
+                      WHOLE(field_view_components.descriptors[field_work_controlled].actor->position[1]));
         actor = field_view_components.descriptors[field_work_controlled].actor;
         console_report_printf("Pol=%d Pri=%d ID=%x:%x\n", actor->triangle[actor->layer], actor->layer,
-                      field_view_components.triangles[actor->layer][actor->triangle[actor->layer]].attribute, actor->id);
+                      field_view_components.collision_triangles[actor->layer][actor->triangle[actor->layer]].attribute, actor->floor_attribute);
         console_report_printf("P0=%d P1=%d P2=%d C=%d\n", field_view_components.descriptors[field_work_controlled].actor->triangle[0],
                       field_view_components.descriptors[field_work_controlled].actor->triangle[1],
                       field_view_components.descriptors[field_work_controlled].actor->triangle[2], field_player_stuck_frames);
         console_report_printf("MFflag=%x MFlag2=%x N=%d\n", field_view_components.descriptors[field_work_controlled].actor->flags,
-                      field_view_components.descriptors[field_work_controlled].actor->flags2, field_view_components.descriptors[field_work_controlled].actor->count);
+                      field_view_components.descriptors[field_work_controlled].actor->layer_flags, field_view_components.descriptors[field_work_controlled].actor->ridden_actor);
         console_report_printf("\n---------- Scene Info ------\n");
         console_report_printf("SCRZ=%d DIP=%d Scale=%d\n", field_view_projection, field_view_elevation, (s16)field_view_distance);
         a = field_camera_get_octant() & 0xFFFF;
@@ -445,7 +445,7 @@ channels:
         console_report_printf("Length=%d (%d)\n", length >> 12, (length * 2) >> 12);
         console_report_printf("Wave=%02x Music=%02x\n", mode_music_loaded_wave, mode_music_loaded_track);
         console_report_printf("Total Aactor =%d\n", field_event_actor_count);
-        console_report_printf("Total Object =%d\n", field_view_components.count);
+        console_report_printf("Total Object =%d\n", field_view_components.descriptor_count);
         break;
     case 2:
         console_report_printf("---------- Memory Info -----\n");
@@ -537,18 +537,18 @@ free_size:
             }
         }
         console_report_printf(" ID=");
-        id = field_view_components.descriptors[field_work_controlled].actor->id;
-        if (!(id & 0x80)) {
+        attribute = field_view_components.descriptors[field_work_controlled].actor->floor_attribute;
+        if (!(attribute & 0x80)) {
             console_report_printf("C");
         } else {
             console_report_printf("-");
         }
-        if (!(id & 0x40)) {
+        if (!(attribute & 0x40)) {
             console_report_printf("G");
         } else {
             console_report_printf("-");
         }
-        if (!(id & 0x20)) {
+        if (!(attribute & 0x20)) {
             console_report_printf("P");
         } else {
             console_report_printf("-");
@@ -558,18 +558,18 @@ free_size:
         console_report_printf("---------- Event DEBUG -----\n");
         for (i = field_debug_screen_cursor, n = 0; i < field_event_actor_count; i++, n++) {
             console_report_printf("ActNum=%3d RUN=%04x\n", i,
-                          field_view_components.descriptors[i].actor->threads[field_view_components.descriptors[i].actor->thread].pc);
+                          field_view_components.descriptors[i].actor->slots[field_view_components.descriptors[i].actor->slot].resume_pc);
             console_report_printf("P0=%d P1=%d P2=%d P=%d I=%x:%x\n", field_view_components.descriptors[i].actor->triangle[0],
                           field_view_components.descriptors[i].actor->triangle[1], field_view_components.descriptors[i].actor->triangle[2],
                           field_view_components.descriptors[i].actor->layer,
-                          field_view_components.triangles[field_view_components.descriptors[i].actor->layer]
+                          field_view_components.collision_triangles[field_view_components.descriptors[i].actor->layer]
                                     [field_view_components.descriptors[i].actor->triangle[field_view_components.descriptors[i].actor->layer]]
                                         .attribute,
-                          field_view_components.descriptors[i].actor->id);
-            console_report_printf("Pos X%6d Z%6d Y%6d\n", field_view_components.descriptors[i].actor->pos[0].part.whole,
-                          field_view_components.descriptors[i].actor->pos[2].part.whole, field_view_components.descriptors[i].actor->pos[1].part.whole);
-            console_report_printf("M1=%x M2=%x", field_view_components.descriptors[i].actor->flags, field_view_components.descriptors[i].actor->flags2);
-            if (!(field_view_components.descriptors[i].actor->flags2 & 0x4000000)) {
+                          field_view_components.descriptors[i].actor->floor_attribute);
+            console_report_printf("Pos X%6d Z%6d Y%6d\n", WHOLE(field_view_components.descriptors[i].actor->position[0]),
+                          WHOLE(field_view_components.descriptors[i].actor->position[2]), WHOLE(field_view_components.descriptors[i].actor->position[1]));
+            console_report_printf("M1=%x M2=%x", field_view_components.descriptors[i].actor->flags, field_view_components.descriptors[i].actor->layer_flags);
+            if (!(field_view_components.descriptors[i].actor->layer_flags & 0x4000000)) {
                 console_report_printf("\n\n");
             } else {
                 console_report_printf(" TALK OFF\n\n");

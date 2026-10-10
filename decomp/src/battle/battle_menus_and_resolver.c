@@ -1111,11 +1111,7 @@ void battle_art_menu_build_description(u8 member, u8 column, u8 row) {
 /* 80091D38: Open the combo/technique entry (column, row) of the member's page when its
  * character knows it (mask +2 on foot, +6 in a gear): build its graphics for
  * the current draw buffer; otherwise mark the page closed. */
-void battle_art_menu_show_entry(member, column, row)
-u8 member;
-u8 column;
-u8 row;
-{
+void battle_art_menu_show_entry(u8 member, u8 column, u8 row) {
     u8 known = 0;
 
     if (battle_slot_flags[member].unk1 == 0) {

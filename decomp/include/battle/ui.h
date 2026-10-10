@@ -182,6 +182,7 @@ void battle_quad_place_text_row(POLY_FT4 *prim, u16 x, u16 y, u8 u, u8 v, u8 w);
 void battle_quad_place(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h); /* place a quad */
 void battle_show_direction_arrows(void); /* set up the direction arrows */
 void battle_hide_direction_arrows(void);
+void battle_upload_party_portraits(u8 *portraits, u8 glyph); /* upload the members' portraits to sprites glyph + member */
 
 /* Decimal digits and text images (battle.c), the cursor glyph (8008CCCC's
  * unit). */

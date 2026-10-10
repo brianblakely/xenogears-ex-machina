@@ -73,7 +73,6 @@ typedef struct CameraMove {
  * differently from the resident definitions
  * (decomp/src/resident/own_declarations.h). */
 void sound_play_effect_on_last_channels(s32 effect);                                                   /* play a sound effect */
-void text_load_palette(s32 x, s32 y);                                                                  /* text palettes */
 u8 *text_get_resource_entry(void *resource, s32 index);                                                /* entry of a text table */
 u8 *text_get_gear_accessory_name(s32 index);                                                           /* kind 3 part name */
 u8 *text_get_gear_part_name(s32 index);                                                                /* kind 4 part name */
@@ -97,11 +96,15 @@ extern u8 gear_shop_choice_label_ids[];        /* sell list label text ids */
 extern u8 gear_shop_buy_label_ids[];           /* buy list label text ids */
 extern s32 gear_shop_choice_label_x_offsets[]; /* gear list label x offsets */
 extern s32 gear_shop_portrait_x_table[];       /* member portrait x */
+void gear_shop_quad_place(POLY_FT4 *poly, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h);
 u32 gear_shop_get_bit_mask32(u8 id);
 u32 gear_shop_test_bit32(u32 mask, u8 id);
 void gear_shop_split_digits(u32 value);
 void gear_shop_label_init_quads(MenuLabel *label, s32 index, s32 row, s32 mode);
+void gear_shop_scroll_bar_show(s32 x, s32 y, s32 height, s32 count, s32 top);
 void gear_shop_scroll_bar_hide(void);
+void gear_shop_list_cursor_alloc(u8 index);
+void gear_shop_list_cursor_place(s32 row, s32 unused, u8 fixed, u8 index);
 void gear_shop_list_cursor_free(u8 index);
 void gear_shop_panel_close(u8 index);
 void gear_shop_panel_open(u8 index, s16 x, s16 y, s16 w, u16 h, u8 grow, u8 flat, s32 ot_entry, u8 has_bar);
@@ -110,11 +113,15 @@ void gear_shop_draw_quads(s32 count, POLY_FT4 *packets, s32 first);
 void gear_shop_play_sound(u8 sound);
 void gear_shop_camera_plan_move(void);
 void gear_shop_run_frame(void);
+void gear_shop_markers_open(u8 mode);
+void gear_shop_markers_close(); /* no prototype: the refuel step passes an ignored zero */
+s32 gear_shop_notice_ask_yes_no(u8 message, u8 confirm, u8 wait);
 void gear_shop_label_render_table(u8 count, MenuLabel *labels, u8 *text_ids, u8 *shown);
 void gear_shop_label_clear_shown(u8 count, u8 *shown);
 void gear_shop_label_place(u8 count, MenuLabel *labels, u8 *text_ids, s32 *offsets, u8 *shown, u8 index, u8 row,
                    u8 mode);
 void gear_shop_choice_window_open(u8 menu);
+void gear_shop_choice_window_set_cursor(u8 menu);
 
 /* The Gear screen's data and calls the screen code uses (gear_shop.c), and
  * the gear summary and rebuild steps that its unit calls before defining
@@ -122,6 +129,7 @@ void gear_shop_choice_window_open(u8 menu);
 extern s32 gear_shop_available_member_count; /* available members 1-10 */
 void gear_shop_member_marks_layout(void);
 void gear_shop_member_marks_close(void);
+void gear_shop_draw_details(void);
 void gear_shop_draw_model(void);
 void gear_shop_draw_gear_screen(void);
 void gear_shop_animate_gear_screen(void);
@@ -129,6 +137,7 @@ void gear_shop_model_load_gear(u8 slot, u8 gear);
 void gear_shop_switch_member(u8 back);
 u8 gear_shop_choice_list_run(void);
 void gear_shop_model_init(void);
+void gear_shop_model_close(void);
 void gear_shop_compute_gear_summary(MenuTables *table, u8 id);
 void gear_shop_rebuild_gear_values(MenuTables *table, u8 id);
 void gear_shop_set_gear_engine_values(MenuTables *table, u8 id);

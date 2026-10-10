@@ -23,7 +23,7 @@ typedef struct {
                         * line, 4 = skipped by the cursor */
     u8 caption;        /* 0x01: caption text while selected */
     u8 unk2[2];
-    s32 text;          /* 0x04 */
+    u8 *text;          /* 0x04 */
     void (*handler)(); /* 0x08: run on confirm with arg (some take none) */
     s32 arg;           /* 0x0C */
     u8 unk10[2];

@@ -400,8 +400,4 @@ typedef struct {
 
 extern WorldmapSave mode_snapshot_block;
 
-/* A resident window call the world map declares itself: its call passes
- * words where the resident's definition takes halfwords. */
-void text_load_palette(s32 x, s32 y);
-
 #endif

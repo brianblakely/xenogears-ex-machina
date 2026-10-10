@@ -53,7 +53,6 @@ void model_set_clut_override(s16 x, s16 y);
 
 /* Text (80033728-80034eac). */
 void *text_get_resource_entry(void *resource, s32 index);
-void *text_get_system_resource_entry(u8 table, u8 index); /* a character text */
 u8 *text_get_item_name(s32 index); /* item name */
 u8 *text_get_weapon_name(s32 index); /* equipment name */
 s32 window_render_text_line(void *text, u32 *image, s32 width, s32 flags);

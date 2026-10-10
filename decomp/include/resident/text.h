@@ -27,12 +27,14 @@ void *text_unpack_lzss(void *source, void *destination); /* unpack; returns dest
 
 void text_install_font(u16 *font);
 void text_install_system_data(u8 *data);
+void text_load_palette(s16 x, s16 y);
 s32 text_find_char_code(u8 first, u8 second);
 s32 text_get_glyph_width(u16 first, u16 second);
 void text_draw_glyph(s32 first, u16 second, u16 *image, s16 stride, s32 plane);
 
 /* More of the text services. */
 u32 text_relocate_offset_table(void *data);
+u8 *text_get_system_resource_entry(s32 table, s32 index);
 u8 *text_get_battle_message(s32 index);
 u8 *text_get_character_art_name(s32 index);
 u8 *text_get_gear_resource_entry(s32 table, s32 index);

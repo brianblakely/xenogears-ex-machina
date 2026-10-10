@@ -4,9 +4,10 @@
 /* The field and its debug monitor (debug595, at 80280000): the monitor's
  * entries and debug-lines flag, which the field calls and sets while
  * field_monitor_absent is clear, and the field's state and calls that the monitor
- * shows, edits and makes. The field and the monitor both include this; the
- * monitor's views of the field's own objects (its view, work block, actors
- * and emitters) stay in debug595.h. */
+ * shows, edits and makes. The field and the monitor both include this and
+ * field/actors.h, the actor, descriptor and collision records both read; the
+ * monitor's views of the field's other objects (its view, work block, emitters
+ * and an actor's box) stay in debug595.h. */
 
 #include "common.h"
 

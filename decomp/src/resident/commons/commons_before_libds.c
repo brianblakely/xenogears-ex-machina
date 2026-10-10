@@ -8,7 +8,7 @@ void *mode_read_ahead_block; /* 8005A4E0: map read-ahead block */
  * the world map's is 0x22fc bytes. */
 u8 mode_snapshot_block[0x22FC]; /* 8005A4E4 */
 u8 commons_unused_block[0x5D34]; /* 8005C7E0: unreferenced */
-s16 cd_movie_request_last_frame; /* 80062514: movie: the requested movie's last frame */
+u16 cd_movie_request_last_frame; /* 80062514: movie: the requested movie's last frame */
 s32 mode_wave_bank_slots[4]; /* 80062518: loaded wave bank per slot */
 s32 mode_music_seq; /* 80062528: the active sequence */
 struct SoundChannel *sound_voice_owners[24]; /* 8006252C: channel of each voice */

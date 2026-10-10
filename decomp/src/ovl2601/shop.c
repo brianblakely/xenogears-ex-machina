@@ -19,6 +19,10 @@
 #include "menu/tables.h"
 #include "item_shop.h"
 
+/* The screen code's yes/no notice, which this unit also calls without a
+ * prototype in scope: its u8 result is tested unmasked. */
+s32 item_shop_notice_ask_yes_no();
+
 /* The four heading sprites and the two alternative ones: ids and positions. */
 u8 item_shop_buy_heading_images[4] = {0xF2, 0xDE, 0xE0, 0xE5}; /* 801D2210 */
 u8 item_shop_sell_heading_images[2] = {0xF2, 0xE3}; /* 801D2214 */

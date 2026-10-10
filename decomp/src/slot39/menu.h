@@ -62,7 +62,6 @@ void cd_set_mode(s32 mode);
 void mode_get_random_byte_in_range(s32 low, s32 high);
 void sprite_sheet_draw_scaled_flip(void *sheet, s32 id, void *prims, s32 index, s32 x, s32 y, s32 scale, s32 flip_x, s32 flip_y);
 s32 sprite_sheet_draw_scaled(void *sheet, s32 id, void *prims, s32 index, s32 x, s32 y, s32 scale);
-void text_load_palette(s32 x, s32 y);
 void sound_play_effect_on_last_channels(s32 id, s32 sound);              /* play a sound effect */
 u8 *text_get_accessory_name(u8 index);
 u8 *text_get_weapon_name(u8 index);                                         /* weapon name */

@@ -16,6 +16,7 @@ s32 mode_party_file_ids[3]; /* 8006FABC: party members of the loaded field files
 u8 sound_spu_malloc_table[0x28]; /* 8006FAC8: the SPU memory management table (SpuInitMalloc, 4 blocks) */
 
 #include "resident/cd.h"
+#include "resident/formation.h"
 #include "resident/gamedata.h"
 #include "resident/mode.h"
 #include "resident/sound.h"

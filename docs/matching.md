@@ -363,8 +363,11 @@ and effect library, which ovl2143 links a copy of, and declare no variables), `m
 state of `resident/menu.h`), `mdec/` (the movie library's player, which the movie mode
 and the field call), `field/` (`monitor.h`: the field state and calls that its debug
 monitor, debug595, also uses, and the monitor's entries and debug-lines flag, which the
-field calls and sets) and `ovl2143/` (the actor module's records, variables and entries,
-which the field, the world map and the Gear parts shop use). Another image's functions
+field calls and sets; `actors.h`: the event actors, their descriptors and model
+instances, the collision triangles and the loaded components, which both read),
+`ovl2143/` (the actor module's records, variables and entries, which the field, the
+world map and the Gear parts shop use) and `ovl2615/` (the battle setup module's phases
+and load modes, which the battle calls). Another image's functions
 and variables keep their definer's names, which the importing overlay's symbol file
 gives its link (movie and field name the library's entries, ovl3087 the battle's
 callbacks it passes, the world map the resident's VSync callback). A resident, battle or
@@ -386,7 +389,7 @@ counts it separately.
 
 Callers pass the types of the shared prototypes. Those in `psyq/` follow PsyQ 4.6's
 headers (`.local/original-sdk-evidence/headers/Psy-Q_46.zip`, the only release at
-hand; the game's own is not identified) for 184 of the 202 functions both declare,
+hand; the game's own is not identified) for 185 of the 203 functions both declare,
 compared by cc1 `-aux-info` (and, for the 15 libgte, libsn and libspu members that
 took their PsyQ names with the renaming, against LIBGTE.H, LIBSN.H and LIBSPU.H by
 reading). The other 18 differ in parameter types (memmove and memchr take `void *`

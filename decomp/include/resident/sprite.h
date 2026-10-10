@@ -292,6 +292,8 @@ extern void (*sprite_draw_callbacks[])(Task *); /* task update callbacks by kind
 void sprite_task_update(Task *task);
 void sprite_task_destroy(Task *task);
 void sprite_queue_free_later(u32 value);
+void sprite_clear_pending_list(void);
+void sprite_clear_pending_list_on_release(void);
 void sprite_remove_pending(Sprite *sprite);
 s32 sprite_get_part_count(u16 *header); /* the part count of a frame header */
 void sprite_set_scale(Sprite *sprite, s32 scale);

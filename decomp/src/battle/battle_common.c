@@ -231,6 +231,5 @@ void *battle_message_table;                          /* 800D39F0: battle message
 #include "battle/windows.h"
 #include "action_resolve.h"
 #include "curve.h"
-#include "overlays.h"
 #include "popup.h"
 #include "sprite_effect.h"

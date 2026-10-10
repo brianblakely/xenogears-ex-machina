@@ -76,9 +76,7 @@ static u8 battle_console_opened;               /* 800C3AA0: the debug console is
  * pages 2 and 7 unless their item is unavailable (buzzer 0x4f); 2 opens page
  * 3; 3 opens page 4 when available, else on a second press of the repeat
  * entry (800c3e29 = 3) page 0xa. */
-void battle_command_menu_page_01_attack(member)
-u8 member;
-{
+void battle_command_menu_page_01_attack(u8 member) {
     switch (battle_pressed_key) {
     case 4:
     case 6:
@@ -133,9 +131,7 @@ u8 member;
  * opens page 1 when available, else on a repeat press (800c3e29 = 0) page 7;
  * 2 opens page 3; 3 opens page 4, else on a repeat press page 0xa; 1 opens
  * page 8 unless unavailable (buzzer 0x4f). */
-void battle_command_menu_page_02_item(member)
-u8 member;
-{
+void battle_command_menu_page_02_item(u8 member) {
     switch (battle_pressed_key) {
     case 4:
     case 6:
@@ -194,9 +190,7 @@ u8 member;
  * else on a repeat press (800c3e29 = 0) page 7; 1 and 2 open pages 2 and 9
  * unless unavailable (buzzer 0x4f); 3 opens page 4, else on a repeat press
  * page 0xa. */
-void battle_command_menu_page_03_defend(member)
-u8 member;
-{
+void battle_command_menu_page_03_defend(u8 member) {
     switch (battle_pressed_key) {
     case 4:
     case 6:
@@ -257,9 +251,7 @@ u8 member;
  * 4); 0 opens page 1 when available, else on a repeat press (800c3e29 = 0)
  * page 7; 1 and 3 open pages 2 and 0xa unless unavailable (buzzer 0x4f); 2
  * opens page 3. */
-void battle_command_menu_page_04_art(member)
-u8 member;
-{
+void battle_command_menu_page_04_art(u8 member) {
     switch (battle_pressed_key) {
     case 4:
     case 6:
@@ -479,9 +471,7 @@ s32 battle_command_menu_page_05_attack_inputs(u8 member) {
  * pages 8 and 1 unless unavailable (buzzer 0x4f); 2 opens page 9, else on a
  * repeat press (800c3e29 = 2) page 3; 3 opens page 0xa, else on a repeat
  * press page 4. */
-void battle_command_menu_page_07_combo(member)
-u8 member;
-{
+void battle_command_menu_page_07_combo(u8 member) {
     switch (battle_pressed_key) {
     case 4:
     case 6:
@@ -545,9 +535,7 @@ u8 member;
  * else on a repeat press (800c3e29 = 0) page 1; 2 opens page 9, else on a
  * repeat press (= 2) page 3; 3 opens page 0xa, else on a repeat press (= 3)
  * page 4; 1 opens page 2 unless unavailable (buzzer 0x4f). */
-void battle_command_menu_page_08_item(member)
-u8 member;
-{
+void battle_command_menu_page_08_item(u8 member) {
     switch (battle_pressed_key) {
     case 4:
     case 6:
@@ -614,9 +602,7 @@ u8 member;
  * when available, else on a repeat press (800c3e29 = 0) page 1; 3 opens page
  * 0xa, else on a repeat press (800c3e29 = 3) page 4; 1 opens page 8 unless
  * unavailable (buzzer 0x4f); 2 opens page 3. */
-void battle_command_menu_page_09_escape(member)
-u8 member;
-{
+void battle_command_menu_page_09_escape(u8 member) {
     switch (battle_pressed_key) {
     case 4:
     case 6:
@@ -699,9 +685,7 @@ void battle_board_gear(u8 member) {
  * else on a second press of the repeat entry (800c3e29 = 0) page 1; 2 opens
  * page 9, else on a repeat press (800c3e29 = 2) page 3; 1 and 3 open pages 8
  * and 4 unless their item is unavailable (buzzer 0x4f). */
-void battle_command_menu_page_0a_board_gear(member)
-u8 member;
-{
+void battle_command_menu_page_0a_board_gear(u8 member) {
     switch (battle_pressed_key) {
     case 4:
     case 6:
@@ -757,9 +741,7 @@ u8 member;
  * 1 open pages 0x15 and 0x11 unless their item is unavailable (buzzer 0x4f);
  * 2 opens page 0x12; 3 opens page 0x13 when available, else on a second
  * press of the repeat entry page 0x18. */
-void battle_command_menu_page_10_gear_attack(member)
-u8 member;
-{
+void battle_command_menu_page_10_gear_attack(u8 member) {
     switch (battle_pressed_key) {
     case 4:
     case 6:
@@ -814,9 +796,7 @@ u8 member;
  * open pages 0x10 and 0x16 unless their item is unavailable (buzzer 0x4f);
  * 2 opens page 0x12; 3 opens page 0x13 when available, else on a second
  * press of the repeat entry (800c3e29 = 3) page 0x18. */
-void battle_command_menu_page_11_gear_item(member)
-u8 member;
-{
+void battle_command_menu_page_11_gear_item(u8 member) {
     switch (battle_pressed_key) {
     case 4:
     case 6:
@@ -867,9 +847,7 @@ u8 member;
  * the member's turn; 0, 1 and 2 open pages 0x10, 0x11 and 0x17 unless their
  * item is unavailable (buzzer 0x4f); 3 opens page 0x13 when available, else
  * on a second press of the repeat entry page 0x18. */
-void battle_command_menu_page_12_gear_charge(member)
-u8 member;
-{
+void battle_command_menu_page_12_gear_charge(u8 member) {
     switch (battle_pressed_key) {
     case 4:
     case 6:
@@ -926,9 +904,7 @@ u8 member;
  * entries 4, 6 and 7 open the gear list when the member has one (else page
  * 0x13); 0, 1 and 3 open pages 0x10, 0x11 and 0x18 unless their item is
  * unavailable (buzzer 0x4f); 2 opens page 0x12. */
-void battle_command_menu_page_13_gear_art(member)
-u8 member;
-{
+void battle_command_menu_page_13_gear_art(u8 member) {
     switch (battle_pressed_key) {
     case 4:
     case 6:
@@ -973,9 +949,7 @@ u8 member;
  * the menu; 1 and 0 open pages 0x16 and 0x10 unless unavailable (buzzer
  * 0x4f); 2 opens page 0x17, else on a repeat press (800c3e29 = 2) page 0x12;
  * 3 opens page 0x18, else on a repeat press page 0x13. */
-void battle_command_menu_page_15_gear_haste(member)
-u8 member;
-{
+void battle_command_menu_page_15_gear_haste(u8 member) {
     switch (battle_pressed_key) {
     case 4:
     case 6:
@@ -1040,9 +1014,7 @@ u8 member;
  * 2 opens page 0x17, else on a repeat press page 0x12; 3 opens page 0x18,
  * else on a repeat press page 0x13; 1 opens page 0x11 unless unavailable
  * (buzzer 0x4f). */
-void battle_command_menu_page_16_gear_item(member)
-u8 member;
-{
+void battle_command_menu_page_16_gear_item(u8 member) {
     switch (battle_pressed_key) {
     case 4:
     case 6:
@@ -1109,9 +1081,7 @@ u8 member;
  * page 0x15, else on a repeat press (800c3e29 = 0) page 0x10; 1 opens page
  * 0x16 unless unavailable (buzzer 0x4f); 3 opens page 0x18, else on a repeat
  * press page 0x13; 2 opens page 0x12. */
-void battle_command_menu_page_17_gear_escape(member)
-u8 member;
-{
+void battle_command_menu_page_17_gear_escape(u8 member) {
     switch (battle_pressed_key) {
     case 4:
     case 6:
@@ -1170,9 +1140,7 @@ u8 member;
  * 0x18); 0 opens page 0x15, else on a repeat press (800c3e29 = 0) page 0x10;
  * 1 and 3 open pages 0x16 and 0x13 unless unavailable (buzzer 0x4f); 2 opens
  * page 0x17, else on a repeat press page 0x12. */
-void battle_command_menu_page_18_gear_menu(member)
-u8 member;
-{
+void battle_command_menu_page_18_gear_menu(u8 member) {
     switch (battle_pressed_key) {
     case 4:
     case 6:

@@ -78,11 +78,13 @@ void sound_stop_driver(void);
 
 /* More of the debug console and the system screens' services. */
 void console_set_color(s32 r, s32 g, s32 b);
+void console_load_font_cluts(u16 foreground, u16 background);
 void console_place_cursor(s32 x, s32 y);
 void console_place_cursor_and_line_start(s32 x, s32 y);
 void console_close(void);
 void sound_restore_voices(void);
 void sound_silence_voices(void);
 extern s32 mode_arena_task; /* the menu's mode (800379b4) */
+extern u8 mode_arena_bout_outcome; /* the arena bout's outcome: the menu writes it, a field event reads it */
 
 #endif
