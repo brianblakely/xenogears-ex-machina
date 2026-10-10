@@ -30,10 +30,10 @@ address (splat's D_, func_ and jtbl_ names) must hold that address; then
 
 Any other copied address fails: one that only a symbol of another name
 holds (it agrees only by address) and one inside an object that no name ties
-it to (give it as a view of that object). A value outside every target (a size, a
-constant, a hardware or kernel address) is no image's address and is not
-checked, nor is an address that C spells as a number: ``--numbers`` lists
-those instead, each other target's address a link holds without a
+it to (give it as a view of that object). A value outside every target (a
+size, a constant, a hardware or kernel address) is no image's address and is
+not checked, nor is an address that C spells as a number: ``--numbers``
+lists those instead, each other target's address a link holds without a
 relocation (a lui and the instruction completing it, or a data word),
 outside asset and included bytes and the mode table (docs/matching.md).
 
@@ -244,7 +244,7 @@ def check(targets: list[Target]) -> tuple[list[str], dict[str, int]]:
                                   " no input section they place")
         for name in sorted(listed - seen):
             errors.append(f"{t.name}: BASE_VIEWS lists {name}, which its scripts do not give as"
-                          " a view of another target's name")
+                          " a view of another target's object")
     tables = [t for t in targets if t.values.get("MODE_TABLE")]
     modes = [t for t in targets if t.values.get("MODE")]
     if modes and not tables:

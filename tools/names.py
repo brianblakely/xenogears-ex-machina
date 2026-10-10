@@ -8,10 +8,11 @@
 Run from the repository root in the matching shell once every target has
 linked (make -C decomp all-verify): the 26 ELFs and link maps give each
 image's symbols, and each name a link takes from another image (its linker
-scripts' names) is bound to the image defining it as tools/cross_image.py
-binds it: by name, by view, by address, else inside an object; where images
-overlap, to the one the importer takes its other names from. The resident's
-two executables are one image (decomp/src/resident).
+scripts' names) is bound to the image defining it with tools/cross_image.py's
+helpers: by name, by view, by address, else inside an object (the last two,
+which the cross-image check rejects, for a placeholder still to be named);
+where images overlap, to the one the importer takes its other names from. The
+resident's two executables are one image (decomp/src/resident).
 
 Placeholders are splat's func_/D_/jtbl_ names (each image's own symbols, and
 the names a link takes for another image's address that the image itself

@@ -1049,7 +1049,7 @@ class MatchingTests(unittest.TestCase):
              " it does not lie before the object holding res_var in r (80010020-80010028)"),
             (lambda: configure("before res_var"),
              "o: BASE_VIEWS lists res_var, which its scripts do not give as a view of another"
-             " target's name"),
+             " target's object"),
             (lambda: overlay(names + "D_80010004 = 0x80010000;\n"),
              "o: D_80010004 = 80010000 (o.resident.ld), but its name gives 80010004"),
             (lambda: overlay(names + "alias = 0x80010010;\n"),
