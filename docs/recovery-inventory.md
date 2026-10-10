@@ -10,8 +10,8 @@ documented in [docs/scripts](scripts/interpreters.md) with their decoders under
 tools/analysis.
 An `unresolved` or `unimplemented` entry means only that the host library lacks it.
 
-- Dispatch rows: the field event primary and extended tables (`D_800AE2A0`,
-  `D_800AE6A0`) and the resident sprite command table (`0x800183d8`, opcodes
+- Dispatch rows: the field event primary and extended tables (`field_event_primary_handlers`,
+  `field_event_extended_handlers`) and the resident sprite command table (`0x800183d8`, opcodes
   8a-fc), with every original table value, also the extended values that are not
   code; the table fingerprints keep them unchanged. `native_status` says whether the
   C++ library implements an entry (`cpp_reconstruction` names its source).

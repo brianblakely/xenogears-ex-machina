@@ -3,7 +3,7 @@
 
 /* The movie library's player (disc file 19, linked at 0x801d3000; its source
  * is decomp/src/mdec), as the movie mode (decomp/src/movie) and the field's
- * movie player (field_800A4748.c) use it. Their links take these names from
+ * movie player (field_screen.c) use it. Their links take these names from
  * their symbol files. */
 
 #include "common.h"

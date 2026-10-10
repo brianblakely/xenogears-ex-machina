@@ -8,12 +8,12 @@ compare the two) and FLAGS names the flag bits its readers test. Sets come
 from:
 
 - a field map: map bundle component 6 (sizes at +0x10c, offsets at +0x130),
-  which func_80070CC8 decodes into formation_encounter_set itself: the set, then the 16
-  weights formation_encounter_weights of the random draw (func_80079288). The packed stream may
+  which field_load_from_bundle decodes into formation_encounter_set itself: the set, then the 16
+  weights formation_encounter_weights of the random draw (field_encounter_count_down). The packed stream may
   end a few bytes later, in commons_unused_4_words_b; an empty component leaves the set in
-  place. Player control (events 0c, a7: func_8009F5F4) runs the draw, which
+  place. Player control (events 0c, a7: field_event_request_player_control) runs the draw, which
   waits until a script of the map runs event f7 with a nonzero period and count
-  (func_8008E85C; every map load clears both).
+  (field_event_draw_random_picks; every map load clears both).
 - the world map: area files (0x24, 0) area + 1 of D_8009B584. func_80073530
   points D_8009D73C[kind] at the offsets in header words 11-26; the roll
   (func_80075E7C) draws by the 16 weights at +0x200 + 16 * bracket, the bracket
@@ -22,8 +22,8 @@ from:
   7 + n (ovl2606 func_801E0A34).
 
 A field script names formation n of its map's set for a battle (events 71 and
-fe 84, operand 1, an immediate when bit 15 is set: func_80093568,
-func_800933F8). A battle event script's opcode 24 makes formation n of the same
+fe 84, operand 1, an immediate when bit 15 is set: field_event_request_battle,
+field_event_request_battle_field). A battle event script's opcode 24 makes formation n of the same
 set the next battle (ovl3087 func_801E7700, taken by 80070f40).
 
 `--sweep` decodes every set on both discs, prints aggregate counts and
@@ -85,9 +85,9 @@ GEAR = 0x80  # enemyIds: slot byte 4
 HIDDEN, BYTE5 = 0x80, 0x01  # enemyFlags: slot bytes 3 and 5
 FIRST_ENEMY_SLOT = 3
 
-FIELD_COMPONENT = 6  # func_80070CC8 decodes it into formation_encounter_set
+FIELD_COMPONENT = 6  # field_load_from_bundle decodes it into formation_encounter_set
 SIZES, OFFSETS = 0x10C, 0x130  # FieldBundle.sizes, .offsets
-SLACK = 0x10  # func_80070CC8 passes the component's size + 0x10
+SLACK = 0x10  # field_load_from_bundle passes the component's size + 0x10
 AREA_DIRECTORY = (0x24, 0)  # the world map's (80028470(0x24, 0))
 AREA_TABLES = 0x2C  # AreaHeader word 11: the 16 terrain tables (func_80073530)
 KINDS = 16
@@ -99,8 +99,8 @@ STAGE_COUNT = 5  # mode_load_battle_stage: scene < the file count of entry 5 / 2
 SCRIPT_DIRECTORY = (0x20, 0)  # ovl3087's
 SCRIPT_ARCHIVE = 2  # ovl3087 func_801E5160
 REQUESTS = ("71", "fe 84")  # field events that set formation_selected_index from operand 1
-ARMING = "f7"  # func_8008E85C: the field draw's period and count from operands 1 and 3
-CONTROL = ("0c", "a7")  # player control (func_8009F5F4), which runs the draw func_80079288
+ARMING = "f7"  # field_event_draw_random_picks: the field draw's period and count from operands 1 and 3
+CONTROL = ("0c", "a7")  # player control (field_event_request_player_control), which runs the draw field_encounter_count_down
 CHAIN = 0x24  # battle event opcode next_battle (func_801E7700)
 
 
@@ -109,7 +109,7 @@ class FormationError(ValueError):
 
 
 class Request(NamedTuple):
-    """A field event that sets formation_selected_index from operand 1 (func_800ACDEC)."""
+    """A field event that sets formation_selected_index from operand 1 (field_event_read_imm_or_var)."""
 
     pc: int
     event: str  # 71 or fe 84
@@ -118,11 +118,11 @@ class Request(NamedTuple):
 
 
 class Arming(NamedTuple):
-    """A field event f7 (func_8008E85C): it sets the draw's period
-    D_800B2078.unk2298 from operand 1 and its count unk229C from operand 3 (the
-    debug monitor's TIME and ENCOUNT), then func_8008E718 draws that many
-    distinct countdowns. func_80079288 returns while the period is 0, and
-    func_8008E718 clears the period when the count is 0."""
+    """A field event f7 (field_event_draw_random_picks): it sets the draw's period
+    field_work.unk2298 from operand 1 and its count unk229C from operand 3 (the
+    debug monitor's TIME and ENCOUNT), then field_encounter_draw_steps draws that many
+    distinct countdowns. field_encounter_count_down returns while the period is 0, and
+    field_encounter_draw_steps clears the period when the count is 0."""
 
     pc: int
     period: int | None  # an immediate operand's value; None for a variable
@@ -321,7 +321,7 @@ class EncounterSource:
 
 
 def field_component(data: bytes) -> tuple[int, bytes] | None:
-    """Map bundle component 6 as func_80070CC8 writes it at formation_encounter_set: the
+    """Map bundle component 6 as field_load_from_bundle writes it at formation_encounter_set: the
     header's size and the whole decoded stream (empty for an empty component);
     None for a file too short to be a bundle (events.map_events)."""
     if len(data) < events.HEADER:
@@ -472,7 +472,7 @@ def field_scripts(data: bytes) -> Scripts:
 
 
 def immediate(ins: events.Instruction, n: int) -> int | None:
-    """Operand n's 15-bit immediate, None when it names a variable (func_800ACDEC)."""
+    """Operand n's 15-bit immediate, None when it names a variable (field_event_read_imm_or_var)."""
     return ins.operands[n] & 0x7FFF if ins.immediate[n] else None
 
 
@@ -579,7 +579,7 @@ def reach(census: Census) -> dict[tuple[str, int, int | None, int], set[str]]:
     drawn (a nonzero weight; on a field map also scripts that arm the draw),
     named (a field script's immediate request on its map), chained (opcode 24
     of the script set of a reachable event formation of the same set), or none
-    of these ('set' only). The draws' other gates (func_80079288, func_800712D0)
+    of these ('set' only). The draws' other gates (field_encounter_count_down, func_800712D0)
     are not traced."""
     result = {}
     for source in census.sources:
@@ -774,7 +774,7 @@ def disc_report(census: Census) -> list[str]:
         f"    component 6 sizes: {_counts(census.component_sizes)};"
         f" stream bytes past 0x{FIELD_SIZE:x} (into commons_unused_4_words_b):"
         f" {_counts(census.stream_tails, '{}')}",
-        f"    f7 reached (func_8008E85C, period/count): {sum(armings.values())},"
+        f"    f7 reached (field_event_draw_random_picks, period/count): {sum(armings.values())},"
         f" {_counts(armings, '{}')}",
         f"    maps with a weight: {len(weighted)}; armed (an f7 with a nonzero period and"
         f" count, and player control 0c or a7): {len(arming)}; such an f7 but no player"

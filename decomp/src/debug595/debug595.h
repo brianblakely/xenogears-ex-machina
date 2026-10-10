@@ -85,20 +85,20 @@ typedef struct {
     s16 rot_angle;            /* 0x76 ROTANGLE */
 } ParticleEmitter;            /* 0x78 */
 
-s32 func_80281B90(u_long *ot);
-void func_802814D4(u_long *ot, DebugLine *line, MATRIX *m, s32 buffer);
+s32 field_debug_run_screen(u_long *ot);
+void field_debug_draw_line(u_long *ot, DebugLine *line, MATRIX *m, s32 buffer);
 
 /* Particle emitter editor. */
-void func_802835E0(void);
-void func_80284354(s32 row, s32 cursor, s32 blink);
-s32 func_8028439C(s32 row, s32 cursor, s32 *selected);
-void func_802846CC(s32 axis, u32 item);
+void field_debug_run_particle_editor(void);
+void field_debug_print_column_marker(s32 row, s32 cursor, s32 blink);
+s32 field_debug_start_editor_row(s32 row, s32 cursor, s32 *selected);
+void field_debug_edit_emitter_field(s32 axis, u32 item);
 
 /* The monitor's views of the field's own objects, whose types stay in the
  * field's headers (src/field). The view at 800af880 (FieldView) and the
  * work block at 800b2078 (FieldWork) it addresses member by member through
- * symbols of its own: as FieldView members, func_80284EA4 keeps 800af9fc's
- * address in a register, and func_80281B90 differs only because it reads
+ * symbols of its own: as FieldView members, field_debug_move_camera keeps 800af9fc's
+ * address in a register, and field_debug_run_screen differs only because it reads
  * 800af9fc as s16 where the field has u16 (lh, not lhu). Its u16 view of
  * 800af9fe builds the same as the field's s16, and the work block's members
  * build the same either way. It reads the current draw block as its
@@ -106,8 +106,8 @@ void func_802846CC(s32 axis, u32 item);
  * (the field's Record78) from its editor's labels, reading their flags as
  * bit-fields and their colour offsets as one s8 array (the field reads +0x70
  * as u8), and takes the actors and their descriptors as below (80281b90). */
-extern u_long *D_800C426C;     /* the current draw block */
-extern ParticleEmitter D_800B02CC[8]; /* the eight template emitters */
+extern u_long *field_current_draw_block;     /* the current draw block */
+extern ParticleEmitter field_effect_templates[8]; /* the eight template emitters */
 
 /* An event actor record; the members the monitor prints. */
 typedef struct {
@@ -162,28 +162,28 @@ typedef struct {
 } FieldObjects;
 
 /* FieldView members (800af880). */
-extern Fixed D_800AF880[3];    /* camera eye */
-extern Fixed D_800AF890[3];    /* camera look-at */
-extern Fixed D_800AF8B0[3];    /* second camera eye */
-extern Fixed D_800AF8C0[3];    /* second camera look-at */
-extern s32 D_800AF984;
-extern s32 D_800AF988;
-extern s16 D_800AF9E6;
-extern s32 D_800AF9F0;
-extern u8 D_800AF9F4;          /* dolly set */
-extern u8 D_800AF9F5;          /* dolly stop */
-extern s32 D_800AF9F8;         /* screen distance */
-extern s16 D_800AF9FC;
-extern u16 D_800AF9FE;
-extern MATRIX D_800AFA64;
-extern FieldObjects D_800AFB0C;
+extern Fixed field_view[3];    /* camera eye */
+extern Fixed field_view_target[3];    /* camera look-at */
+extern Fixed field_view_eye_goal[3];    /* second camera eye */
+extern Fixed field_view_target_goal[3];    /* second camera look-at */
+extern s32 field_view_target_follow_divisor;
+extern s32 field_view_eye_follow_divisor;
+extern s16 field_view_heading_angle;
+extern s32 field_view_heading_high;
+extern u8 field_view_heading_blocks0;          /* dolly set */
+extern u8 field_view_heading_blocks1;          /* dolly stop */
+extern s32 field_view_projection;         /* screen distance */
+extern s16 field_view_elevation;
+extern u16 field_view_distance;
+extern MATRIX field_view_scaled_world;
+extern FieldObjects field_view_components;
 /* FieldWork members (800b2078). */
-extern s16 D_800B218E;
-extern u8 D_800B2190[3];       /* fog near colour */
-extern u8 D_800B2194[3];       /* fog far colour */
-extern s16 D_800B2198[2];      /* fog near, far */
-extern s32 D_800B226C;         /* player actor */
-extern s32 D_800B2298;         /* encounter timer */
-extern s32 D_800B229C;         /* encounter number */
+extern s16 field_work_sprite_gate;
+extern u8 field_work_fog_color[3];       /* fog near colour */
+extern u8 field_work_far_color[3];       /* fog far colour */
+extern s16 field_work_fog_range[2];      /* fog near, far */
+extern s32 field_work_controlled;         /* player actor */
+extern s32 field_work_encounter_period;         /* encounter timer */
+extern s32 field_work_encounter_step_count;         /* encounter number */
 
 #endif

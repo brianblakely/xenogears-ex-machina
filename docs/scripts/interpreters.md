@@ -20,7 +20,7 @@ with its handler, and its decoder sweeps both discs.
 
 | Machine | Image | Interpreter | Dispatch | Document | Decoder |
 | --- | --- | --- | --- | --- | --- |
-| Field events | field | `800a1ec8` | `D_800AE2A0[256]`, `D_800AE6A0[227]` | [field-events.md](field-events.md) | `events` |
+| Field events | field | `800a1ec8` | `field_event_primary_handlers[256]`, `field_event_extended_handlers[227]` | [field-events.md](field-events.md) | `events` |
 | Enemy AI | battle | `800799c8`, `80079ab0`, `80079c24` | switches `8007ef6c` (actions), `8007f8c0` (conditions) | [battle-ai.md](battle-ai.md) | `battle_ai` |
 | Effect scripts | battle, ovl2143 | `800aad54`, `801e39f0` | switches | [battle-effect-vm.md](battle-effect-vm.md) | `battle_effect_vm` |
 | Battle events | ovl3087 | `801e879c` | switch | [battle-event-vm.md](battle-event-vm.md) | `battle_event_vm` |
@@ -51,7 +51,7 @@ documents both; `overlay_scripts` decodes them.
 | `sound_modulator_waves` | resident | a sound modulator's mode & 0xf (16 slots) | [sound-sequence.md](sound-sequence.md) |
 | `D_8009A058` | worldmap | the arrival word +0x2320 & 0x7fff | [dispatch-tables.md](dispatch-tables.md) |
 | `sprite_draw_callbacks` | resident | a sprite header's kind (four bits) | [dispatch-tables.md](dispatch-tables.md) |
-| `D_800AE2A0`, `D_800AE6A0` | field | the field event opcode | the field events interpreter |
+| `field_event_primary_handlers`, `field_event_extended_handlers` | field | the field event opcode | the field events interpreter |
 | `sound_seq_opcode_handlers` | resident | the sound sequence opcode - 0x80 | the sound sequence interpreter |
 | `D_8009A3C0` | worldmap | the world map actor opcode | the world map actor interpreter |
 | `D_80091368`, `D_80091390`, `D_800913B8`, `D_8009141C`, `D_800914A8`, `D_800914D0`, `D_80091534`, `D_8009155C`, `D_800915AC` | menu | the menu page and cursor (menu4's items and lines) | code |

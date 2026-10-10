@@ -1,12 +1,12 @@
 # Field event scripts
 
-**Interpreter** (field overlay, `decomp/src/field/field_800854D0.c`):
+**Interpreter** (field overlay, `decomp/src/field/field_event.c`):
 
 - `800a1ec8` runs the current actor's script until an instruction yields, its
   slot ends or the pass limit runs out (8, raised by some opcodes). The
   scheduler `800a2030` runs it for every active actor each frame.
-- The byte at the PC indexes `D_800AE2A0[256]`. `fe` (`800869b8`) steps onto the
-  next byte and indexes `D_800AE6A0[227]` with it, so extended handlers read
+- The byte at the PC indexes `field_event_primary_handlers[256]`. `fe` (`800869b8`) steps onto the
+  next byte and indexes `field_event_extended_handlers[227]` with it, so extended handlers read
   their operands from the extended byte. Extended `e3`-`ff` index past the
   table and are unknown.
 - Handlers advance the PC themselves. One that does not advance runs again, at
@@ -24,7 +24,7 @@
 the actor count and 32 entry PCs per actor, then the bytecode (`80070cc8`).
 
 - `80070cc8` allocates the header's component size + 0x10 bytes, and
-  `func_8007008C` ignores the size it is passed: `80032eb4` writes the whole
+  `field_decompress_component` ignores the size it is passed: `80032eb4` writes the whole
   packed stream, which ends 0-7 bytes past the size (the packer's last group
   took them from the bytes after the component). The rest of the allocation is
   undefined. The decoder walks that stream; its byte counts and gaps cover the
@@ -104,7 +104,7 @@ maps are identical to Disc 1's.
   317's `v0420` (310, 312-315, 318, 319), and the selectors of maps 0 (`v0408`),
   488 and 723 (`v0432`), which build any number 0-799 from three digits. Map 0,
   whose own scripts also list maps 720-729, is entered by the field's debug key
-  only when 80010000 is not -1 (`func_80077E88`; both retail executables hold
+  only when 80010000 is not -1 (`field_main`; both retail executables hold
   -1) and by maps 96, 722 and 728 (map 96 from a choice whose message 0x2e its
   retail table lacks) and world-map path regions with scene 0 in the scripted
   modes' area files. Map 723 is one of the listed maps. In map 488 (Shakhan and

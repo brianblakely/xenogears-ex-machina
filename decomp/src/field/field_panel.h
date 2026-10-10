@@ -1,7 +1,7 @@
 #ifndef FIELD_FIELD_PANEL_H
 #define FIELD_FIELD_PANEL_H
 
-/* The field status panel (800a8314-800a8eac, field_800A4748.c): 0x6d
+/* The field status panel (800a8314-800a8eac, field_screen.c): 0x6d
  * textured quads per draw buffer (800afc60) placed by a layout table and
  * textured from a frame table in VRAM at (380, 0). */
 
@@ -26,14 +26,14 @@ typedef struct {
 
 #define PANEL_PIECES 0x6D
 
-extern PanelFrame D_800AEB68[];
-extern PanelPiece D_800AEF10[PANEL_PIECES];
-extern s32 D_800AEB60;         /* frame counter */
-extern s32 D_800AEB64;         /* blinking frame 0..2 */
-extern POLY_FT4 *D_800AFC60[2]; /* the quads per draw buffer */
+extern PanelFrame field_status_panel_texture_frames[];
+extern PanelPiece field_status_panel_pieces[PANEL_PIECES];
+extern s32 field_status_panel_draw_count;         /* frame counter */
+extern s32 field_status_panel_blink_phase;         /* blinking frame 0..2 */
+extern POLY_FT4 *field_status_panel_quads[2]; /* the quads per draw buffer */
 
-void func_800A8BA4(void);      /* build the panel's quads */
-void func_800A84C0(void);      /* draw the panel */
-void func_800A83B4(void);      /* release the quads once allocated */
+void field_status_panel_build(void);      /* build the panel's quads */
+void field_status_panel_draw(void);      /* draw the panel */
+void field_status_panel_release(void);      /* release the quads once allocated */
 
 #endif

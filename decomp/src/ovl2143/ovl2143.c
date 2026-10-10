@@ -3714,7 +3714,7 @@ aim:
     }
     actor->pc = (s32)pc;
     if (redraw) {
-        func_800796F4();
+        field_layer_redraw_hook();
     }
 }
 

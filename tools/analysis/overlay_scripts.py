@@ -31,9 +31,9 @@ data:
   records {first, last, spec} ending in first 0xFF; each record whose frame
   range holds the frame runs the HitSpec at header + spec through a switch on
   its kind byte (cases 0-5), and kinds 0 and 2 dispatch again on its type.
-* Field movie sound timelines, func_80085678 (decomp/src/field/
-  field_800854D0.c). u16 (frame, sound) pairs, one run per movie sound-effect
-  bank, each ended by frame 0xFFFF; func_80085788 seeks the bank's run and the
+* Field movie sound timelines, field_movie_play_due_sounds (decomp/src/field/
+  field_event.c). u16 (frame, sound) pairs, one run per movie sound-effect
+  bank, each ended by frame 0xFFFF; field_movie_load_sound_bank seeks the bank's run and the
   player plays its entries in order as the movie's frames reach them.
 * World map terrain texture animations, func_80074F2C and func_80075104
   (decomp/src/worldmap/worldmap_80072238.c). Runs of (image, duration) frames
@@ -1148,16 +1148,16 @@ def event_listing(number: int, root: Path = ROOT) -> None:
 
 # Field movie sound timelines -------------------------------------------------
 #
-# D_800AE060 (decomp/src/field/field_800854D0.c) holds u16 (frame, sound)
+# field_movie_sound_timelines (decomp/src/field/field_event.c) holds u16 (frame, sound)
 # pairs: a leading end, then one run per movie sound-effect bank, each ended
-# by an entry whose frame is 0xFFFF. func_80085788 loads the movie's bank,
-# file 0x115 + bank of directory (0x1C, 0), and leaves D_800C3A64 past bank + 1
-# ends. After each movie step (func_800A732C) func_80085678 then plays every
+# by an entry whose frame is 0xFFFF. field_movie_load_sound_bank loads the movie's bank,
+# file 0x115 + bank of directory (0x1C, 0), and leaves field_movie_sound_timeline_index past bank + 1
+# ends. After each movie step (field_movie_run_frames) field_movie_play_due_sounds then plays every
 # entry from there whose frame plus the movie's sound start
-# (FIELD_MOVIE.sound_start) the movie frame D_800B06A0 has reached (the frame
-# callback func_800A7120 stores it): the bank's effect in the low byte on the voice
+# (FIELD_MOVIE.sound_start) the movie frame field_movie_frame has reached (the frame
+# callback field_movie_frame_callback stores it): the bank's effect in the low byte on the voice
 # pair in bits 8-10 (sound_play_effect_on_channel gets pair * 2). Neither tests the run's end
-# itself: frame 0xFFFF lies past every movie. Event fe a0 (func_8008EA58)
+# itself: frame 0xFFFF lies past every movie. Event fe a0 (field_event_play_movie_sound)
 # names the bank in operand 9; 0xFF (FIELD_MOVIE.sound_bank's reset value)
 # loads none and plays nothing.
 
@@ -1186,7 +1186,7 @@ class MovieSound:
 
     @property
     def unread(self) -> int:
-        """Bits 11-15, which func_80085678 does not read."""
+        """Bits 11-15, which field_movie_play_due_sounds does not read."""
         return self.sound >> 11
 
     def text(self) -> str:
@@ -1194,13 +1194,13 @@ class MovieSound:
 
 
 def movie_sound_table(data: bytes, base: int = BASE) -> list[tuple[int, int]]:
-    """The (frame, sound) entries of D_800AE060 in a field image."""
+    """The (frame, sound) entries of field_movie_sound_timelines in a field image."""
     values = halfwords(data, MOVIE_SOUNDS, 2 * MOVIE_SOUND_ENTRIES, base)
     return list(zip(values[0::2], values[1::2], strict=True))
 
 
 def movie_sound_seek(table: list[tuple[int, int]], bank: int) -> int:
-    """The position func_80085788 leaves in D_800C3A64: past bank + 1 ends."""
+    """The position field_movie_load_sound_bank leaves in field_movie_sound_timeline_index: past bank + 1 ends."""
     position = 0
     for _ in range(bank + 1):
         while position < len(table) and table[position][0] != MOVIE_SOUND_END:
@@ -1233,8 +1233,8 @@ def movie_sound_banks(table: list[tuple[int, int]]) -> int:
 def movie_sound_step(
     table: list[tuple[int, int]], position: int, frame: int, start: int
 ) -> tuple[list[MovieSound], int]:
-    """One call of func_80085678 at movie frame `frame`: the entries it plays
-    from `position` (D_800C3A64) and the position it leaves."""
+    """One call of field_movie_play_due_sounds at movie frame `frame`: the entries it plays
+    from `position` (field_movie_sound_timeline_index) and the position it leaves."""
     played = []
     while True:
         if position >= len(table):
@@ -1346,7 +1346,7 @@ def movie_sound_sweep(data: bytes, disc: Disc | None = None, requests: Counter |
 
 def movie_sound_report(root: Path = ROOT) -> int:
     print(
-        f"movie-sounds: player func_80085678, seek func_80085788, table D_800AE060"
+        f"movie-sounds: player field_movie_play_due_sounds, seek field_movie_load_sound_bank, table field_movie_sound_timelines"
         f" ({MOVIE_SOUND_ENTRIES} entries), overlay field"
     )
     failures = 0

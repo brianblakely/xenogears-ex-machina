@@ -1,10 +1,10 @@
 #ifndef FIELD_FIELD_DIALOGUE_H
 #define FIELD_FIELD_DIALOGUE_H
 
-/* Dialogue windows (8007dc..800808xx, field_8007A44C.c): the four windows at
+/* Dialogue windows (8007dc..800808xx, field_motion.c): the four windows at
  * 800c2698 with their frames, choices and prompts, their text texture
  * windows and draw modes, the message table and the portraits the events
- * show beside them (8009c154, field_800854D0.c). */
+ * show beside them (8009c154, field_event.c). */
 
 #include "common.h"
 #include "psyq/libgpu.h"
@@ -73,39 +73,39 @@ typedef struct DialogueWindow {
     u8 unk496[0x498 - 0x496];
 } DialogueWindow;
 
-extern DialogueWindow D_800C2698[4];
-extern s32 D_800B068C[4];      /* message slot per window, -1 free */
-extern RECT D_800AFC80[16];    /* text texture windows */
-/* Draw modes per buffer, one per text texture window (D_800AFC80): 0 for
+extern DialogueWindow field_dialogue_windows[4];
+extern s32 field_dialogue_message_slots[4];      /* message slot per window, -1 free */
+extern RECT field_texture_windows[16];    /* text texture windows */
+/* Draw modes per buffer, one per text texture window (field_texture_windows): 0 for
  * the text, 1 the compass, 3 the distortion, 4 the grid. */
-extern DR_MODE D_800B1DF4[2][16];
-extern void *D_800ADBF0;       /* the field's message table */
-extern s32 D_800ADE94;         /* dialogue cursor frame */
-extern s32 D_800ADE98;         /* dialogue ticks */
-extern s32 D_800AFD04;         /* 1 while the field enters or changes screens: no window opens */
-extern s32 D_800C4268;         /* dialogue windows opened this pass */
-extern s16 D_800C2690[2];      /* only cleared (80077620, the text images) */
-extern s16 D_800C38FC[2];      /* only cleared (80077620) */
+extern DR_MODE field_texture_window_modes[2][16];
+extern void *field_message_table;       /* the field's message table */
+extern s32 field_dialogue_cursor_frame;         /* dialogue cursor frame */
+extern s32 field_dialogue_tick_count;         /* dialogue ticks */
+extern s32 field_dialogue_open_blocked;         /* 1 while the field enters or changes screens: no window opens */
+extern s32 field_dialogue_pass_open_count;         /* dialogue windows opened this pass */
+extern s16 field_unread_text_pair1[2];      /* only cleared (80077620, the text images) */
+extern s16 field_unread_text_pair2[2];      /* only cleared (80077620) */
 
-s32 func_8007F8DC(s16 x, s16 y, s32 message, s32 window, s32 columns, s32 rows, s32 owner, s32 speaker,
+s32 field_dialogue_open_window(s16 x, s16 y, s32 message, s32 window, s32 columns, s32 rows, s32 owner, s32 speaker,
                   s32 mode, s32 turned, s32 flags); /* open a window */
-void func_8007DECC(void);                        /* reset the text texture windows and the windows */
-void func_8007EE0C(s32 window);                 /* build a window's packets */
-void func_80077544(void);                       /* load the text palette */
-void func_800771F8(u32 *tim);                   /* load the images of a TIM list */
-void func_8007E1C0(u_long *ot, s32 buffer, s32 window); /* draw a window's frame */
-void func_8008004C(u_long *ot, s32 buffer);     /* draw the windows */
-void func_800805F4(void);                       /* close the idle windows whose time ran out */
-s32 func_8007F6F8(s16 window);                  /* close a window unless busy; -1 when busy */
-void func_8007FFE8(void);                       /* close every window that is not busy */
-s32 func_80080720(void);                        /* 0 when a window is free, else -1 */
-s32 func_80080760(void);                        /* the oldest window in use, or 0xffff */
-s32 func_800807B4(void);                        /* take the first free window, or 0xffff */
-void func_8007F814(s32 index, s32 *x, s32 *y, s32 height); /* screen point above a descriptor */
-s32 func_8009C538(s32 id);                      /* -1 when an idle window shows message kind 1 for `id` */
-void func_8009CCF8(s32 bit);                    /* set talk-inhibit bit `bit` */
+void field_dialogue_reset_windows(void);                        /* reset the text texture windows and the windows */
+void field_dialogue_build_packets(s32 window);                 /* build a window's packets */
+void field_load_text_palette(void);                       /* load the text palette */
+void field_load_tim_list(u32 *tim);                   /* load the images of a TIM list */
+void field_dialogue_draw_frame(u_long *ot, s32 buffer, s32 window); /* draw a window's frame */
+void field_dialogue_draw_windows(u_long *ot, s32 buffer);     /* draw the windows */
+void field_dialogue_close_expired_windows(void);                       /* close the idle windows whose time ran out */
+s32 field_dialogue_close_window(s16 window);                  /* close a window unless busy; -1 when busy */
+void field_dialogue_close_all_windows(void);                       /* close every window that is not busy */
+s32 field_dialogue_is_full(void);                        /* 0 when a window is free, else -1 */
+s32 field_dialogue_find_oldest_window(void);                        /* the oldest window in use, or 0xffff */
+s32 field_dialogue_take_free_window(void);                        /* take the first free window, or 0xffff */
+void field_descriptor_get_screen_point(s32 index, s32 *x, s32 *y, s32 height); /* screen point above a descriptor */
+s32 field_dialogue_is_portrait_shown(s32 id);                      /* -1 when an idle window shows message kind 1 for `id` */
+void field_dialogue_mark_window_open(s32 bit);                    /* set talk-inhibit bit `bit` */
 
-/* Dialogue portraits (8009c154): D_800B06A4[slot] holds .a the character,
+/* Dialogue portraits (8009c154): field_dialogue_portrait_slots[slot] holds .a the character,
  * .b the state (1 loaded, 2 shown) and .c whether a second image is used. */
 typedef struct FieldSlot6 {
     s16 a;
@@ -120,13 +120,13 @@ typedef struct {
     s16 clut_y;
 } PortraitPlace;
 
-extern FieldSlot6 D_800B06A4[3];
-extern PortraitPlace D_800AEAE4[4][2]; /* VRAM place per slot and image */
-extern u8 D_800AE1E0[][2];             /* portrait files per character, - 0x46 */
-extern void *D_800ADB10;               /* first portrait image */
-extern void *D_800ADB14;               /* second portrait image */
-extern FileRequest D_800B00C8[3];      /* file list read by 80029afc */
-extern s32 D_800ADB0C;
-void func_80070C84(void);              /* reset the slots and 800adb0c */
+extern FieldSlot6 field_dialogue_portrait_slots[3];
+extern PortraitPlace field_dialogue_portrait_places[4][2]; /* VRAM place per slot and image */
+extern u8 field_dialogue_portrait_files[][2];             /* portrait files per character, - 0x46 */
+extern void *field_dialogue_portrait_first_image;               /* first portrait image */
+extern void *field_dialogue_portrait_second_image;               /* second portrait image */
+extern FileRequest field_dialogue_portrait_file_requests[3];      /* file list read by 80029afc */
+extern s32 field_dialogue_portrait_last_slot;
+void field_dialogue_reset_portrait_slots(void);              /* reset the slots and 800adb0c */
 
 #endif

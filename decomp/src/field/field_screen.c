@@ -42,18 +42,18 @@
 #include "field_sound.h"
 
 /* The saved strip sources (x, y) of the screen effects. */
-DVECTOR D_800AEB24[15] = {
+DVECTOR field_distortion_strip_sources[15] = { /* 800AEB24 */
     {0, 0xB0}, {0x40, 0xB0}, {0x80, 0xB0}, {0xC0, 0xB0}, {0x100, 0xB0},
     {0, 0xC0}, {0x40, 0xC0}, {0x80, 0xC0}, {0xC0, 0xC0}, {0x100, 0xC0},
     {0, 0xD0}, {0x40, 0xD0}, {0x80, 0xD0}, {0xC0, 0xD0}, {0x100, 0xD0},
 };
 
-s32 D_800AEB60 = 0; /* panel frame counter */
-s32 D_800AEB64 = 0; /* panel blinking frame 0..2 */
+s32 field_status_panel_draw_count = 0; /* 800AEB60: panel frame counter */
+s32 field_status_panel_blink_phase = 0; /* 800AEB64: panel blinking frame 0..2 */
 
 /* The status panel's texture frames (u, v, w, h) and its layout pieces
  * (x, y, frame, flags). */
-PanelFrame D_800AEB68[117] = {
+PanelFrame field_status_panel_texture_frames[117] = { /* 800AEB68 */
     {0, 0, 8, 8}, {8, 0, 8, 8}, {0x10, 0, 8, 8}, {0x18, 0, 8, 8},
     {0x20, 0, 8, 8}, {0x28, 0, 8, 8}, {0x30, 0, 8, 8}, {0x38, 0, 8, 8},
     {0x40, 0, 8, 8}, {0x48, 0, 8, 8}, {0x50, 0, 8, 8}, {0x58, 0, 8, 8},
@@ -85,7 +85,7 @@ PanelFrame D_800AEB68[117] = {
     {0xBE, 0x70, 2, 0x10}, {0xE0, 0x70, 0x10, 2}, {0xF6, 0x70, 2, 0x10}, {0xF0, 0x58, 0x10, 0x10},
     {0x58, 0x50, 0x10, 8},
 };
-PanelPiece D_800AEF10[PANEL_PIECES] = {
+PanelPiece field_status_panel_pieces[PANEL_PIECES] = { /* 800AEF10 */
     {0x1A, 0xC, 0x6D, 2}, {0x2A, 0xC, 0x6D, 2}, {0x3A, 0xC, 0x6D, 2}, {0x4A, 0xC, 0x6D, 2},
     {0x5A, 0xC, 0x6D, 2}, {0x6A, 0xC, 0x6D, 2}, {0x7A, 0xC, 0x6D, 2}, {0x8A, 0xC, 0x6D, 2},
     {0x9A, 0xC, 0x6D, 2}, {0xAA, 0xC, 0x6D, 2}, {0xBA, 0xC, 0x6D, 2}, {0xCA, 0xC, 0x6D, 2},
@@ -116,7 +116,7 @@ PanelPiece D_800AEF10[PANEL_PIECES] = {
     {0xEE, 0x80, 0x72, 0},
 };
 
-s32 D_800AF278 = 0; /* panel primitive buffers allocated */
+s32 field_status_panel_built = 0; /* 800AF278: panel primitive buffers allocated */
 
 /* A particle sprite (800af27c): half size, centre, and the four texture
  * corners (u, v) within the sprite page. */
@@ -128,7 +128,7 @@ typedef struct {
     u16 uv[4][2];
 } ParticleSprite;
 
-ParticleSprite D_800AF27C[21] = {
+ParticleSprite field_effect_particle_sprites[21] = { /* 800AF27C */
     {0x40, 0x40, 0, 0, {{0, 0}, {0x40, 0}, {0, 0x40}, {0x40, 0x40}}},
     {0x40, 0x40, 0, 0xFFC0, {{0x40, 0}, {0x80, 0}, {0x40, 0x40}, {0x80, 0x40}}},
     {0x20, 0x20, 0, 0, {{0, 0x40}, {0x20, 0x40}, {0, 0x60}, {0x20, 0x60}}},
@@ -152,14 +152,14 @@ ParticleSprite D_800AF27C[21] = {
     {0x10, 0x10, 0, 0, {{0xE0, 0x20}, {0xF0, 0x20}, {0xE0, 0x30}, {0xF0, 0x30}}},
 };
 
-/* Reset the screen effect view with the image moved to (2c0, 100). */
-void func_800A4748(void) {
-    func_800A476C(0x2C0, 0x100);
+/* 800A4748: Reset the screen effect view with the image moved to (2c0, 100). */
+void field_screen_save_copy(void) {
+    field_screen_copy_to(0x2C0, 0x100);
 }
 
-/* Restore the projection distance and move the 320x224 screen image to
+/* 800A476C: Restore the projection distance and move the 320x224 screen image to
  * (x, y). */
-void func_800A476C(s32 x, s32 y) {
+void field_screen_copy_to(s32 x, s32 y) {
     RECT rect;
 
     rect.w = 0x140;
@@ -168,28 +168,28 @@ void func_800A476C(s32 x, s32 y) {
     rect.h = 0xE0;
     SetGeomScreen(0x200);
     MoveImage(&rect, x, y);
-    func_800775F8();
+    field_sync_draw_and_vsync();
 }
 
-/* Stop the screen effect and release its buffers. */
-void func_800A47D4(void) {
-    D_800B2078.unk2078 = 0;
-    if (D_800ADB24 != 0) {
-        heap_free(D_800B2078.effect_buffers[0]);
-        heap_free(D_800B2078.effect_buffers[1]);
-        heap_free(D_800B2078.effect_buffers[2]);
-        heap_free(D_800B2078.effect_buffers[3]);
-        D_800ADB24 = 0;
+/* 800A47D4: Stop the screen effect and release its buffers. */
+void field_distortion_stop(void) {
+    field_work.unk2078 = 0;
+    if (field_distortion_buffers_allocated != 0) {
+        heap_free(field_work.effect_buffers[0]);
+        heap_free(field_work.effect_buffers[1]);
+        heap_free(field_work.effect_buffers[2]);
+        heap_free(field_work.effect_buffers[3]);
+        field_distortion_buffers_allocated = 0;
     }
 }
 
-/* Start the screen distortion: on first use allocate its buffers, build the
+/* 800A484C: Start the screen distortion: on first use allocate its buffers, build the
  * 20x17 grid of 16x16 textured quads (rows 14-16 sample the saved strips at
  * (3c0, 0)) and the screen/strip copy commands; unless resuming, read the
  * six targets and the step count from the operands. The strip loop reuses
  * the row counter and reads the strip x through a pointer to the table
  * (its own induction pointer; y is read from the table). */
-void func_800A484C(s32 resume) {
+void field_distortion_start(s32 resume) {
     RECT rect;
     s32 row;
     s32 column;
@@ -198,17 +198,17 @@ void func_800A484C(s32 resume) {
     POLY_FT4 *copy;
     s32 u;
 
-    D_800B2078.unk2078 = 1;
-    if (D_800ADB24 == 0) {
-        D_800B2078.effect_buffers[0] = heap_alloc(0x180, 0);
-        D_800B2078.effect_buffers[1] = heap_alloc(0x180, 0);
-        D_800B2078.effect_buffers[2] = heap_alloc(0x3840, 0);
-        D_800B2078.effect_buffers[3] = heap_alloc(0x3840, 0);
-        D_800ADB24 = 1;
+    field_work.unk2078 = 1;
+    if (field_distortion_buffers_allocated == 0) {
+        field_work.effect_buffers[0] = heap_alloc(0x180, 0);
+        field_work.effect_buffers[1] = heap_alloc(0x180, 0);
+        field_work.effect_buffers[2] = heap_alloc(0x3840, 0);
+        field_work.effect_buffers[3] = heap_alloc(0x3840, 0);
+        field_distortion_buffers_allocated = 1;
         for (row = 0; row < 17; row++) {
             for (column = 0; column < 20; column++) {
-                poly = (POLY_FT4 *)D_800B2078.effect_buffers[2] + (column + row * 20);
-                copy = (POLY_FT4 *)D_800B2078.effect_buffers[3] + (column + row * 20);
+                poly = (POLY_FT4 *)field_work.effect_buffers[2] + (column + row * 20);
+                copy = (POLY_FT4 *)field_work.effect_buffers[3] + (column + row * 20);
                 SetPolyFT4(poly);
                 SetSemiTrans(poly, 0);
                 poly->r0 = 0x80;
@@ -253,30 +253,30 @@ void func_800A484C(s32 resume) {
         rect.y = 0x20;
         rect.w = 0x140;
         rect.h = 0xC0;
-        SetDrawMove(D_800B2078.effect_buffers[0], &rect, 0, 0);
+        SetDrawMove(field_work.effect_buffers[0], &rect, 0, 0);
         rect.y = 0x120;
-        SetDrawMove(D_800B2078.effect_buffers[1], &rect, 0, 0x100);
+        SetDrawMove(field_work.effect_buffers[1], &rect, 0, 0x100);
         rect.w = 0x40;
         rect.h = 0x10;
-        strips = D_800AEB24;
+        strips = field_distortion_strip_sources;
         for (row = 0; row < 15; row++) {
             rect.x = strips[row].vx;
-            rect.y = D_800AEB24[row].vy;
-            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[0] + (row + 1), &rect, 0x3C0, row * 16);
-            rect.y = D_800AEB24[row].vy + 0x100;
-            SetDrawMove((DR_MOVE *)D_800B2078.effect_buffers[1] + (row + 1), &rect, 0x3C0, row * 16);
+            rect.y = field_distortion_strip_sources[row].vy;
+            SetDrawMove((DR_MOVE *)field_work.effect_buffers[0] + (row + 1), &rect, 0x3C0, row * 16);
+            rect.y = field_distortion_strip_sources[row].vy + 0x100;
+            SetDrawMove((DR_MOVE *)field_work.effect_buffers[1] + (row + 1), &rect, 0x3C0, row * 16);
         }
     }
     if (resume == 0) {
-        func_800A4CC4(func_800ACDEC(1), func_800ACDEC(3), func_800ACDEC(5), func_800ACDEC(7),
-                      func_800ACDEC(9), func_800ACDEC(11), func_800ACDEC(13));
+        field_distortion_set_targets(field_event_read_imm_or_var(1), field_event_read_imm_or_var(3), field_event_read_imm_or_var(5), field_event_read_imm_or_var(7),
+                      field_event_read_imm_or_var(9), field_event_read_imm_or_var(11), field_event_read_imm_or_var(13));
     }
-    D_800B2078.unk207A = 0;
+    field_work.unk207A = 0;
 }
 
-/* Move the six screen effect values to the given whole targets over
+/* 800A4CC4: Move the six screen effect values to the given whole targets over
  * `steps` frames. */
-void func_800A4CC4(s32 a, s32 b, s32 c, s32 d, s32 e, s32 f, s32 steps) {
+void field_distortion_set_targets(s32 a, s32 b, s32 c, s32 d, s32 e, s32 f, s32 steps) {
     s32 step0;
     s32 step1;
     s32 step2;
@@ -287,28 +287,28 @@ void func_800A4CC4(s32 a, s32 b, s32 c, s32 d, s32 e, s32 f, s32 steps) {
     if (steps == 0) {
         steps = 1;
     }
-    step0 = ((a << 16) - D_800B2078.effect_value[0]) / steps;
-    step1 = ((b << 16) - D_800B2078.effect_value[1]) / steps;
-    step2 = ((c << 16) - D_800B2078.effect_value[2]) / steps;
-    step3 = ((d << 16) - D_800B2078.effect_value[3]) / steps;
-    step4 = ((e << 16) - D_800B2078.effect_value[4]) / steps;
-    step5 = ((f << 16) - D_800B2078.effect_value[5]) / steps;
-    D_800B2078.effect_steps = steps;
-    D_800B2078.effect_step[0] = step0;
-    D_800B2078.effect_step[1] = step1;
-    D_800B2078.effect_step[2] = step2;
-    D_800B2078.effect_step[3] = step3;
-    D_800B2078.effect_step[4] = step4;
-    D_800B2078.effect_step[5] = step5;
+    step0 = ((a << 16) - field_work.effect_value[0]) / steps;
+    step1 = ((b << 16) - field_work.effect_value[1]) / steps;
+    step2 = ((c << 16) - field_work.effect_value[2]) / steps;
+    step3 = ((d << 16) - field_work.effect_value[3]) / steps;
+    step4 = ((e << 16) - field_work.effect_value[4]) / steps;
+    step5 = ((f << 16) - field_work.effect_value[5]) / steps;
+    field_work.effect_steps = steps;
+    field_work.effect_step[0] = step0;
+    field_work.effect_step[1] = step1;
+    field_work.effect_step[2] = step2;
+    field_work.effect_step[3] = step3;
+    field_work.effect_step[4] = step4;
+    field_work.effect_step[5] = step5;
 }
 
 /* The distortion grid of the buffer being drawn: 20 x 17 textured quads. */
 #define EFFECT_QUAD(row, column) \
-    (((POLY_FT4 *)D_800B2078.effect_buffers[2 + D_800ADB08])[(row) * 20 + (column)])
+    (((POLY_FT4 *)field_work.effect_buffers[2 + field_draw_buffer_index])[(row) * 20 + (column)])
 /* The buffer's strip copy commands. */
-#define EFFECT_MOVES ((DR_MOVE *)D_800B2078.effect_buffers[D_800ADB08])
+#define EFFECT_MOVES ((DR_MOVE *)field_work.effect_buffers[field_draw_buffer_index])
 
-/* Draw the screen distortion: step the six effect values (amplitude,
+/* 800A4DAC: Draw the screen distortion: step the six effect values (amplitude,
  * frequency and phase speed in x and y; once released, clear them when the
  * steps run out and stop), then bend the grid along two sine waves: rows
  * 14-16 hold the saved strips, rows 0-13 the screen, and row 13's lower
@@ -316,7 +316,7 @@ void func_800A4CC4(s32 a, s32 b, s32 c, s32 d, s32 e, s32 f, s32 steps) {
  * index throughout; GCC substitutes the tested row/column constants
  * (column 0/19, row 13/16) into it. The step is shared by both branches
  * (one block that the released case jumps into). */
-void func_800A4DAC(void) {
+void field_distortion_draw(void) {
     s32 amplitude_x;
     s32 amplitude_y;
     s32 frequency_x;
@@ -332,39 +332,39 @@ void func_800A4DAC(void) {
     s32 speed_x;
     s32 speed_y;
 
-    if (D_800B2078.unk2078 == 0) {
+    if (field_work.unk2078 == 0) {
         return;
     }
-    if (D_800B2078.unk207A == 0) {
-        if (D_800B2078.effect_steps > 0) {
+    if (field_work.unk207A == 0) {
+        if (field_work.effect_steps > 0) {
         step:
-            D_800B2078.effect_value[0] += D_800B2078.effect_step[0];
-            D_800B2078.effect_value[1] += D_800B2078.effect_step[1];
-            D_800B2078.effect_value[2] += D_800B2078.effect_step[2];
-            D_800B2078.effect_steps--;
-            D_800B2078.effect_value[3] += D_800B2078.effect_step[3];
-            D_800B2078.effect_value[4] += D_800B2078.effect_step[4];
-            D_800B2078.effect_value[5] += D_800B2078.effect_step[5];
+            field_work.effect_value[0] += field_work.effect_step[0];
+            field_work.effect_value[1] += field_work.effect_step[1];
+            field_work.effect_value[2] += field_work.effect_step[2];
+            field_work.effect_steps--;
+            field_work.effect_value[3] += field_work.effect_step[3];
+            field_work.effect_value[4] += field_work.effect_step[4];
+            field_work.effect_value[5] += field_work.effect_step[5];
         }
     } else {
-        if (D_800B2078.effect_steps > 0) {
+        if (field_work.effect_steps > 0) {
             goto step;
         }
-        D_800B2078.effect_value[5] = 0;
-        D_800B2078.effect_value[4] = 0;
-        D_800B2078.effect_value[3] = 0;
-        D_800B2078.effect_value[2] = 0;
-        D_800B2078.effect_value[1] = 0;
-        D_800B2078.effect_value[0] = 0;
-        D_800B2078.unk2078 = 0;
+        field_work.effect_value[5] = 0;
+        field_work.effect_value[4] = 0;
+        field_work.effect_value[3] = 0;
+        field_work.effect_value[2] = 0;
+        field_work.effect_value[1] = 0;
+        field_work.effect_value[0] = 0;
+        field_work.unk2078 = 0;
     }
     phase = EFFECT_PHASE;
-    amplitude_x = WHOLE(D_800B2078.effect_value[0]);
-    amplitude_y = WHOLE(D_800B2078.effect_value[1]);
-    frequency_x = WHOLE(D_800B2078.effect_value[2]);
-    frequency_y = WHOLE(D_800B2078.effect_value[3]);
-    speed_x = WHOLE(D_800B2078.effect_value[4]);
-    speed_y = WHOLE(D_800B2078.effect_value[5]);
+    amplitude_x = WHOLE(field_work.effect_value[0]);
+    amplitude_y = WHOLE(field_work.effect_value[1]);
+    frequency_x = WHOLE(field_work.effect_value[2]);
+    frequency_y = WHOLE(field_work.effect_value[3]);
+    speed_x = WHOLE(field_work.effect_value[4]);
+    speed_y = WHOLE(field_work.effect_value[5]);
     phase[0] += speed_x;
     phase[1] += speed_y;
 
@@ -394,10 +394,10 @@ void func_800A4DAC(void) {
             if (row == 16) {
                 EFFECT_QUAD(row, column).y2 = EFFECT_QUAD(row, column).y3 = 0xE0;
             }
-            addPrim(&D_800C426C->ot[1], poly);
+            addPrim(&field_current_draw_block->ot[1], poly);
         }
     }
-    addPrim(&D_800C426C->ot[1], &EFFECT_MOVES[0]);
+    addPrim(&field_current_draw_block->ot[1], &EFFECT_MOVES[0]);
 
     /* Rows 0-13: the screen itself. */
     phase_y = EFFECT_PHASE[1];
@@ -435,64 +435,64 @@ void func_800A4DAC(void) {
             } else {
                 EFFECT_QUAD(row, column).x0 = EFFECT_QUAD(row, column).x2 = 0;
             }
-            addPrim(&D_800C426C->ot[1], poly);
+            addPrim(&field_current_draw_block->ot[1], poly);
         }
     }
     for (row = 0; row < 15; row++) {
-        addPrim(&D_800C426C->ot[1], &EFFECT_MOVES[row + 1]);
+        addPrim(&field_current_draw_block->ot[1], &EFFECT_MOVES[row + 1]);
     }
-    addPrim(&D_800C426C->ot[1], &D_800B1DF4[D_800ADB08][3]);
+    addPrim(&field_current_draw_block->ot[1], &field_texture_window_modes[field_draw_buffer_index][3]);
 }
 
-/* Store three words at +14 of `object`. */
-void func_800A55B8(s32 *object, s32 a, s32 b, s32 c) {
+/* 800A55B8: Store three words at +14 of `object`. */
+void field_store_three_words_at_14(s32 *object, s32 a, s32 b, s32 c) {
     object[5] = a;
     object[6] = b;
     object[7] = c;
 }
 
-/* Release the two blocks at 800afe80 and 800b069c. */
-void func_800A55C8(void) {
-    heap_free(D_800AFE80);
-    heap_free(D_800B069C);
+/* 800A55C8: Release the two blocks at 800afe80 and 800b069c. */
+void field_free_block_pair(void) {
+    heap_free(field_block_pair_first);
+    heap_free(field_block_pair_second);
 }
 
-/* Set the five screen pieces of the next draw buffer to grey `shade`. */
-void func_800A5600(s32 shade) {
+/* 800A5600: Set the five screen pieces of the next draw buffer to grey `shade`. */
+void field_screen_pieces_set_shade(s32 shade) {
     s32 i;
 
     for (i = 0; i < 5; i++) {
-        (D_800B11AC.quads[i] + ((D_800ADB08 + 1) & 1))->r0 = shade;
-        (D_800B11AC.quads[i] + ((D_800ADB08 + 1) & 1))->g0 = shade;
-        (D_800B11AC.quads[i] + ((D_800ADB08 + 1) & 1))->b0 = shade;
+        (field_screen_pieces.quads[i] + ((field_draw_buffer_index + 1) & 1))->r0 = shade;
+        (field_screen_pieces.quads[i] + ((field_draw_buffer_index + 1) & 1))->g0 = shade;
+        (field_screen_pieces.quads[i] + ((field_draw_buffer_index + 1) & 1))->b0 = shade;
     }
 }
 
-/* Fade screen channel 0 in from white over `frames` frames. */
-void func_800A56A8(s32 frames) {
+/* 800A56A8: Fade screen channel 0 in from white over `frames` frames. */
+void field_fade_from_white(s32 frames) {
     s32 step;
 
     step = -0x10000 / frames;
-    D_800B2078.fades[0].level[0] = D_800B2078.fades[0].level[1] = D_800B2078.fades[0].level[2] = 0xFF00;
-    D_800B2078.fades[0].steps = frames + 1;
-    D_800B2078.fades[0].abr = D_800B2078.fades[0].active = 1;
-    D_800B2078.fades[0].step[0] = D_800B2078.fades[0].step[1] = D_800B2078.fades[0].step[2] = step;
+    field_work.fades[0].level[0] = field_work.fades[0].level[1] = field_work.fades[0].level[2] = 0xFF00;
+    field_work.fades[0].steps = frames + 1;
+    field_work.fades[0].abr = field_work.fades[0].active = 1;
+    field_work.fades[0].step[0] = field_work.fades[0].step[1] = field_work.fades[0].step[2] = step;
 }
 
-/* Fade screen channel 0 up from black over `frames` frames. */
-void func_800A5710(s32 frames) {
+/* 800A5710: Fade screen channel 0 up from black over `frames` frames. */
+void field_fade_to_white(s32 frames) {
     s32 step;
 
     step = 0x10000 / frames;
-    D_800B2078.fades[0].level[0] = D_800B2078.fades[0].level[1] = D_800B2078.fades[0].level[2] = 0;
-    D_800B2078.fades[0].steps = frames + 1;
-    D_800B2078.fades[0].abr = D_800B2078.fades[0].active = 1;
-    D_800B2078.fades[0].step[0] = D_800B2078.fades[0].step[1] = D_800B2078.fades[0].step[2] = step;
+    field_work.fades[0].level[0] = field_work.fades[0].level[1] = field_work.fades[0].level[2] = 0;
+    field_work.fades[0].steps = frames + 1;
+    field_work.fades[0].abr = field_work.fades[0].active = 1;
+    field_work.fades[0].step[0] = field_work.fades[0].step[1] = field_work.fades[0].step[2] = step;
 }
 
-/* Set the mask bit of every pixel of the 64-pixel-wide VRAM column at
+/* 800A5774: Set the mask bit of every pixel of the 64-pixel-wide VRAM column at
  * (x, y), `h` rows tall. */
-void func_800A5774(s32 x, s32 y, s32 h) {
+void field_screen_set_stp_bits(s32 x, s32 y, s32 h) {
     RECT rect;
     u_long *pixels;
     u_long *p;
@@ -522,124 +522,124 @@ void func_800A5774(s32 x, s32 y, s32 h) {
     heap_free(pixels);
 }
 
-void func_800A663C(s32 semitrans, s32 abr);
+void field_screen_pieces_init(s32 semitrans, s32 abr);
 
-/* Set up the screen pieces, draw them twice, mask the saved screen columns at
+/* 800A5884: Set up the screen pieces, draw them twice, mask the saved screen columns at
  * (2c0..3c0, 100) and draw twice more. */
-void func_800A5884(s32 semitrans, s32 abr) {
+void field_screen_pieces_show(s32 semitrans, s32 abr) {
     s32 i;
     s32 x;
 
-    func_800A663C(semitrans, abr);
+    field_screen_pieces_init(semitrans, abr);
     for (i = 0; i < 2; i++) {
-        func_80073FE0();
-        func_800A6408();
-        func_800A6924();
+        field_draw_swap_and_clear_ots();
+        field_screen_pieces_draw();
+        field_draw_present_overlay();
     }
     x = 0x2C0;
     for (i = 0; i < 5; i++) {
-        func_800A5774(x, 0x100, 0xE0);
+        field_screen_set_stp_bits(x, 0x100, 0xE0);
         x += 0x40;
     }
     for (i = 0; i < 2; i++) {
-        func_80073FE0();
-        func_800A6408();
-        func_800A6924();
+        field_draw_swap_and_clear_ots();
+        field_screen_pieces_draw();
+        field_draw_present_overlay();
     }
 }
 
-/* Run the requested screen transition (800adb38) over 800adb3c frames:
+/* 800A5924: Run the requested screen transition (800adb38) over 800adb3c frames:
  * 1-2 fade the screen pieces out, 3 fades them in and holds while it
  * stays requested, 4 dissolves the screen grid from the centre. */
-void func_800A5924(void) {
+void field_transition_run(void) {
     s32 i;
     s32 x;
     s32 level;
 
-    if (D_800ADB38 != 0) {
+    if (field_transition_kind != 0) {
         console_close();
-        func_80070C84();
-        func_800A915C();
-        if (D_800ADB38 == 1 || D_800ADB38 == 4) {
-            func_800A4748();
+        field_dialogue_reset_portrait_slots();
+        field_vram_column_save();
+        if (field_transition_kind == 1 || field_transition_kind == 4) {
+            field_screen_save_copy();
             DrawSync(0);
-            func_80073FE0();
-            func_800775F8();
+            field_draw_swap_and_clear_ots();
+            field_sync_draw_and_vsync();
         }
-        func_800775F8();
+        field_sync_draw_and_vsync();
     dispatch:
-        switch (D_800ADB38) {
+        switch (field_transition_kind) {
         case 4:
-            func_800A5884(1, 1);
-            func_800A6E70();
-            D_800ADC08 = 1;
-            func_80071E58(D_800ADB3C);
-            D_800C3A40 = 0;
-            for (i = 0; i < D_800ADB3C; i++) {
-                func_80077DAC();
-                func_800A6C40();
-                func_8007554C();
-                func_80078B5C();
-                D_800C3A40 += 6;
+            field_screen_pieces_show(1, 1);
+            field_screen_grid_build();
+            field_faded_out = 1;
+            field_fade_in(field_transition_frames);
+            field_screen_grid_fade_radius = 0;
+            for (i = 0; i < field_transition_frames; i++) {
+                field_run_pre_frame();
+                field_screen_grid_draw();
+                field_run_frame();
+                field_run_post_frame();
+                field_screen_grid_fade_radius += 6;
             }
             DrawSync(0);
-            func_800A7064();
+            field_screen_grid_release();
             break;
         case 1:
         case 2:
-            func_800A5884(1, 1);
-            D_800ADC08 = 1;
-            func_80071E58(D_800ADB3C);
+            field_screen_pieces_show(1, 1);
+            field_faded_out = 1;
+            field_fade_in(field_transition_frames);
             level = 0x800000;
-            for (i = 0; i < D_800ADB3C; i++) {
-                func_80077DAC();
-                func_800A6408();
-                func_8007554C();
-                func_80078B5C();
-                func_800A5600(level >> 16);
-                level -= 0x800000 / D_800ADB3C;
+            for (i = 0; i < field_transition_frames; i++) {
+                field_run_pre_frame();
+                field_screen_pieces_draw();
+                field_run_frame();
+                field_run_post_frame();
+                field_screen_pieces_set_shade(level >> 16);
+                level -= 0x800000 / field_transition_frames;
                 if (level < 0) {
                     level = 0;
                 }
             }
             break;
         case 3:
-            func_800A663C(1, 1);
+            field_screen_pieces_init(1, 1);
             for (i = 0, x = 0x2C0; i < 5; i++, x += 0x40) {
-                func_800A5774(x, 0x100, 0xE0);
+                field_screen_set_stp_bits(x, 0x100, 0xE0);
             }
             level = 0;
-            func_80071DCC(D_800ADB3C);
-            func_800A5600(0);
-            for (i = 0; i < D_800ADB3C; i++) {
-                func_80077DAC();
-                func_800A6408();
-                func_8007554C();
-                func_80078B5C();
-                func_800A5600(level >> 16);
-                level += 0x800000 / D_800ADB3C;
+            field_fade_out(field_transition_frames);
+            field_screen_pieces_set_shade(0);
+            for (i = 0; i < field_transition_frames; i++) {
+                field_run_pre_frame();
+                field_screen_pieces_draw();
+                field_run_frame();
+                field_run_post_frame();
+                field_screen_pieces_set_shade(level >> 16);
+                level += 0x800000 / field_transition_frames;
             }
             for (;;) {
-                if (D_800ADB38 != 3) {
+                if (field_transition_kind != 3) {
                     goto dispatch;
                 }
-                func_80077DAC();
-                func_800A6408();
-                func_8007554C();
-                func_80078B5C();
+                field_run_pre_frame();
+                field_screen_pieces_draw();
+                field_run_frame();
+                field_run_post_frame();
             }
         }
-        D_800ADB38 = 0;
-        func_800A91F0();
-        func_80077544();
+        field_transition_kind = 0;
+        field_vram_column_restore();
+        field_load_text_palette();
     }
 }
 
-/* Reload the field for a map change inside the field mode (800b0048 the
+/* 800A5C40: Reload the field for a map change inside the field mode (800b0048 the
  * transition kind, 800afd14 its frames): stop effects, keep the map
  * read-ahead block across the heap reset, then per kind fade or dissolve
  * out, reload the components (80070cc8), restart the music and fade in. */
-void func_800A5C40(void) {
+void field_reload_for_map_change(void) {
     RECT rect;
     u8 *ahead;
     s32 kind;
@@ -648,247 +648,247 @@ void func_800A5C40(void) {
     s32 i;
 
     console_close();
-    func_800A9460();
-    func_800864F0();
-    func_8007FFE8();
-    if (D_800B0048 != 6) {
-        func_800A915C();
-        if (D_800B0048 != 4) {
-            func_800A4748();
+    field_effect_release_all_slots();
+    field_sound_clear_emitters_stop_voices();
+    field_dialogue_close_all_windows();
+    if (field_map_change_kind != 6) {
+        field_vram_column_save();
+        if (field_map_change_kind != 4) {
+            field_screen_save_copy();
         }
     }
     DrawSync(0);
-    func_80073FE0();
-    func_800775F8();
-    func_800700B0();
+    field_draw_swap_and_clear_ots();
+    field_sync_draw_and_vsync();
+    field_teardown();
     ahead = heap_alloc(mode_read_ahead_size, 0);
     memcpy(ahead, mode_read_ahead_block, mode_read_ahead_size);
     heap_unprotect_block(mode_read_ahead_block);
     heap_free(mode_read_ahead_block);
-    if (D_800B0048 != 6) {
-        func_800A90B4(1);
+    if (field_map_change_kind != 6) {
+        field_vram_column_relocate(1);
     }
     mode_read_ahead_block = heap_alloc(mode_read_ahead_size, 1);
     memcpy(mode_read_ahead_block, ahead, mode_read_ahead_size);
     heap_protect_block(mode_read_ahead_block);
     heap_free(ahead);
-    switch (D_800B0048) {
+    switch (field_map_change_kind) {
     case 6:
-        func_80071DCC(D_800AFD14);
-        for (i = 0; i < D_800AFD14; i++) {
-            func_80073FE0();
-            func_80071CB4(&D_800C426C->overlay_ot[0], D_800ADB08);
-            func_800A6924();
+        field_fade_out(field_map_change_frames);
+        for (i = 0; i < field_map_change_frames; i++) {
+            field_draw_swap_and_clear_ots();
+            field_fade_update_channels(&field_current_draw_block->overlay_ot[0], field_draw_buffer_index);
+            field_draw_present_overlay();
         }
         goto reload;
     case 0:
-        func_800A663C(0, 0);
-        func_80071DCC(D_800AFD14);
-        for (i = 0; i < D_800AFD14; i++) {
-            func_80073FE0();
-            func_80071CB4(&D_800C426C->overlay_ot[0], D_800ADB08);
-            func_800A6408();
-            func_800A6924();
+        field_screen_pieces_init(0, 0);
+        field_fade_out(field_map_change_frames);
+        for (i = 0; i < field_map_change_frames; i++) {
+            field_draw_swap_and_clear_ots();
+            field_fade_update_channels(&field_current_draw_block->overlay_ot[0], field_draw_buffer_index);
+            field_screen_pieces_draw();
+            field_draw_present_overlay();
         }
     reload:
-        func_80073FE0();
-        func_800A6924();
+        field_draw_swap_and_clear_ots();
+        field_draw_present_overlay();
         mode_sync_party_files();
         mode_unpack_party_files();
-        kind = D_800B0048;
-        frames = D_800AFD14;
-        func_80070CC8();
-        func_80070488();
-        func_80070508();
-        D_800B0048 = kind;
-        D_800AFD14 = frames;
+        kind = field_map_change_kind;
+        frames = field_map_change_frames;
+        field_load_from_bundle();
+        field_map_stream_start();
+        field_map_stream_stop();
+        field_map_change_kind = kind;
+        field_map_change_frames = frames;
         if (mode_music_load_pending == -1) {
-            func_80085B20(mode_music_selected_track, 0);
+            field_music_change_track(mode_music_selected_track, 0);
         }
-        func_80071E58(D_800AFD14);
+        field_fade_in(field_map_change_frames);
         break;
     case 1:
-        func_800A663C(0, 0);
-        func_800A5710(D_800AFD14);
-        for (i = 0; i < D_800AFD14; i++) {
-            func_80073FE0();
-            func_80071CB4(&D_800C426C->overlay_ot[0], D_800ADB08);
-            func_800A6408();
-            func_800A6924();
+        field_screen_pieces_init(0, 0);
+        field_fade_to_white(field_map_change_frames);
+        for (i = 0; i < field_map_change_frames; i++) {
+            field_draw_swap_and_clear_ots();
+            field_fade_update_channels(&field_current_draw_block->overlay_ot[0], field_draw_buffer_index);
+            field_screen_pieces_draw();
+            field_draw_present_overlay();
         }
-        func_800775F8();
+        field_sync_draw_and_vsync();
         mode_sync_party_files();
         mode_unpack_party_files();
-        kind = D_800B0048;
-        frames = D_800AFD14;
-        func_80070CC8();
-        func_80070488();
-        func_80070508();
-        D_800B0048 = kind;
-        D_800AFD14 = frames;
+        kind = field_map_change_kind;
+        frames = field_map_change_frames;
+        field_load_from_bundle();
+        field_map_stream_start();
+        field_map_stream_stop();
+        field_map_change_kind = kind;
+        field_map_change_frames = frames;
         if (mode_music_load_pending == -1) {
-            func_80085B20(mode_music_selected_track, 0);
+            field_music_change_track(mode_music_selected_track, 0);
         }
-        func_800A56A8(D_800AFD14);
+        field_fade_from_white(field_map_change_frames);
         break;
     case 2:
     case 4:
-        func_800A5884(1, 1);
+        field_screen_pieces_show(1, 1);
         mode_sync_party_files();
         mode_unpack_party_files();
-        kind = D_800B0048;
-        frames = D_800AFD14;
-        func_80070CC8();
-        func_80070488();
-        if (D_800ADB60 == 1) {
+        kind = field_map_change_kind;
+        frames = field_map_change_frames;
+        field_load_from_bundle();
+        field_map_stream_start();
+        if (field_map_stream_running == 1) {
             while (cd_get_pending_read_count() != 0) {
-                func_80073FE0();
-                func_800A6408();
-                func_800A6924();
-                if (D_800C2684 < 0x22C0) {
-                    D_800C2684 += 0x20;
+                field_draw_swap_and_clear_ots();
+                field_screen_pieces_draw();
+                field_draw_present_overlay();
+                if (field_screen_pieces_scale < 0x22C0) {
+                    field_screen_pieces_scale += 0x20;
                 }
             }
-            heap_free(D_800ADC14);
-            D_800ADB60 = 0;
-            func_80078C5C();
+            heap_free(field_map_stream_ring);
+            field_map_stream_running = 0;
+            field_brighten_text_strip();
         }
-        D_800AFD04 = 1;
-        D_800B0048 = kind;
-        D_800AFD14 = frames;
+        field_dialogue_open_blocked = 1;
+        field_map_change_kind = kind;
+        field_map_change_frames = frames;
         if (mode_music_load_pending == -1) {
-            func_80085B20(mode_music_selected_track, 0);
+            field_music_change_track(mode_music_selected_track, 0);
         }
         level = 0x800000;
-        func_80071E58(D_800AFD14);
-        for (i = 0; i < D_800AFD14; i++) {
-            func_80077DAC();
-            func_800A6408();
-            func_8007554C();
-            func_80078B5C();
-            func_800A5600(level >> 16);
-            level -= 0x800000 / D_800AFD14;
+        field_fade_in(field_map_change_frames);
+        for (i = 0; i < field_map_change_frames; i++) {
+            field_run_pre_frame();
+            field_screen_pieces_draw();
+            field_run_frame();
+            field_run_post_frame();
+            field_screen_pieces_set_shade(level >> 16);
+            level -= 0x800000 / field_map_change_frames;
             if (level < 0) {
                 level = 0;
             }
-            if (D_800C2684 < 0x22C0) {
-                D_800C2684 += 0x20;
+            if (field_screen_pieces_scale < 0x22C0) {
+                field_screen_pieces_scale += 0x20;
             }
         }
         break;
     case 3:
-        func_800A663C(0, 0);
-        func_80070488();
-        func_80073FE0();
-        func_800A6408();
-        func_800A6924();
+        field_screen_pieces_init(0, 0);
+        field_map_stream_start();
+        field_draw_swap_and_clear_ots();
+        field_screen_pieces_draw();
+        field_draw_present_overlay();
         mode_sync_party_files();
         mode_unpack_party_files();
-        kind = D_800B0048;
-        frames = D_800AFD14;
-        D_800AFD04 = 1;
-        func_80070CC8();
-        func_80070508();
-        D_800B0048 = kind;
-        D_800AFD14 = frames;
+        kind = field_map_change_kind;
+        frames = field_map_change_frames;
+        field_dialogue_open_blocked = 1;
+        field_load_from_bundle();
+        field_map_stream_stop();
+        field_map_change_kind = kind;
+        field_map_change_frames = frames;
         if (mode_music_load_pending == -1) {
-            func_80085B20(mode_music_selected_track, 0);
+            field_music_change_track(mode_music_selected_track, 0);
         }
         for (i = 0; i < 4; i++) {
-            func_80077DAC();
-            func_800A6408();
-            func_8007554C();
-            func_80078B5C();
+            field_run_pre_frame();
+            field_screen_pieces_draw();
+            field_run_frame();
+            field_run_post_frame();
         }
         break;
     case 5:
-        func_800A663C(0, 0);
-        func_80070488();
-        func_80073FE0();
-        func_800A6408();
-        func_800A6924();
+        field_screen_pieces_init(0, 0);
+        field_map_stream_start();
+        field_draw_swap_and_clear_ots();
+        field_screen_pieces_draw();
+        field_draw_present_overlay();
         mode_sync_party_files();
         mode_unpack_party_files();
-        kind = D_800B0048;
-        frames = D_800AFD14;
-        D_800AFD04 = 1;
-        func_80070CC8();
-        func_80070508();
+        kind = field_map_change_kind;
+        frames = field_map_change_frames;
+        field_dialogue_open_blocked = 1;
+        field_load_from_bundle();
+        field_map_stream_stop();
         setRECT(&rect, 0x2C0, 0x100, 0x140, 0xFF);
-        D_800B0048 = kind;
-        D_800AFD14 = frames;
+        field_map_change_kind = kind;
+        field_map_change_frames = frames;
         MoveImage(&rect, 0x140, 0xFF);
         if (mode_music_load_pending == -1) {
-            func_80085B20(mode_music_selected_track, 0);
+            field_music_change_track(mode_music_selected_track, 0);
         }
         for (i = 0; i < 4; i++) {
-            func_80077DAC();
-            func_800A6408();
-            func_8007554C();
-            func_80078B5C();
+            field_run_pre_frame();
+            field_screen_pieces_draw();
+            field_run_frame();
+            field_run_post_frame();
         }
         break;
     }
-    if (D_800B0048 != 6) {
-        func_800A91F0();
+    if (field_map_change_kind != 6) {
+        field_vram_column_restore();
     }
-    D_800B0048 = 2;
-    D_800AFD14 = 0x20;
-    D_800AFD04 = 0;
-    func_80077544();
+    field_map_change_kind = 2;
+    field_map_change_frames = 0x20;
+    field_dialogue_open_blocked = 0;
+    field_load_text_palette();
     heap_coalesce();
 }
 
-/* Rotate and scale the screen pieces (when scaled) into their quads and
+/* 800A6408: Rotate and scale the screen pieces (when scaled) into their quads and
  * link the quads and draw modes of the current buffer. */
-void func_800A6408(void) {
+void field_screen_pieces_draw(void) {
     MATRIX m;
     VECTOR scale;
     long p;
     long flag;
     s32 i;
 
-    gpu_build_rotation_matrix(&D_800B00B8, &m);
+    gpu_build_rotation_matrix(&field_screen_pieces_rotation, &m);
     m.t[2] = 0;
     m.t[1] = 0;
     m.t[0] = 0;
-    scale.vx = D_800C2684;
-    scale.vy = D_800C2684;
-    scale.vz = D_800C2684;
+    scale.vx = field_screen_pieces_scale;
+    scale.vy = field_screen_pieces_scale;
+    scale.vz = field_screen_pieces_scale;
     ScaleMatrix(&m, &scale);
     SetRotMatrix(&m);
     SetTransMatrix(&m);
     for (i = 0; i < 5; i++) {
-        if (D_800C2684 != 0x1000) {
-            RotAverage4(&D_800B11AC.corners[i][0], &D_800B11AC.corners[i][1],
-                        &D_800B11AC.corners[i][2], &D_800B11AC.corners[i][3],
-                        (long *)&D_800B11AC.quads[i][D_800ADB08].x0,
-                        (long *)&D_800B11AC.quads[i][D_800ADB08].x1,
-                        (long *)&D_800B11AC.quads[i][D_800ADB08].x2,
-                        (long *)&D_800B11AC.quads[i][D_800ADB08].x3, &p, &flag);
+        if (field_screen_pieces_scale != 0x1000) {
+            RotAverage4(&field_screen_pieces.corners[i][0], &field_screen_pieces.corners[i][1],
+                        &field_screen_pieces.corners[i][2], &field_screen_pieces.corners[i][3],
+                        (long *)&field_screen_pieces.quads[i][field_draw_buffer_index].x0,
+                        (long *)&field_screen_pieces.quads[i][field_draw_buffer_index].x1,
+                        (long *)&field_screen_pieces.quads[i][field_draw_buffer_index].x2,
+                        (long *)&field_screen_pieces.quads[i][field_draw_buffer_index].x3, &p, &flag);
         }
-        addPrim(&D_800C426C->overlay_ot[0], &D_800B11AC.quads[i][D_800ADB08]);
-        addPrim(&D_800C426C->overlay_ot[0], &D_800B11AC.modes[i][D_800ADB08]);
+        addPrim(&field_current_draw_block->overlay_ot[0], &field_screen_pieces.quads[i][field_draw_buffer_index]);
+        addPrim(&field_current_draw_block->overlay_ot[0], &field_screen_pieces.modes[i][field_draw_buffer_index]);
     }
 }
 
-/* Set up the five 64x224 screen pieces (textured from the screen copy at
+/* 800A663C: Set up the five 64x224 screen pieces (textured from the screen copy at
  * (2c0, 100)) at full scale with no rotation, with semi-transparency
  * `semitrans` and rate `abr`. */
-void func_800A663C(s32 semitrans, s32 abr) {
+void field_screen_pieces_init(s32 semitrans, s32 abr) {
     POLY_FT4 *quad;
     POLY_FT4 *copy;
     SVECTOR *corners;
     s32 i;
 
-    D_800C2684 = 0x1000;
-    D_800B00B8.vx = 0;
-    D_800B00B8.vy = 0;
-    D_800B00B8.vz = 0;
+    field_screen_pieces_scale = 0x1000;
+    field_screen_pieces_rotation.vx = 0;
+    field_screen_pieces_rotation.vy = 0;
+    field_screen_pieces_rotation.vz = 0;
     for (i = 0; i < 5; i++) {
-        quad = &D_800B11AC.quads[i][0];
-        copy = &D_800B11AC.quads[i][1];
-        corners = D_800B11AC.corners[i];
+        quad = &field_screen_pieces.quads[i][0];
+        copy = &field_screen_pieces.quads[i][1];
+        corners = field_screen_pieces.corners[i];
         SetPolyFT4(quad);
         corners[0].vx = i * 0x20 - 0x50;
         corners[0].vy = -0x38;
@@ -910,12 +910,12 @@ void func_800A663C(s32 semitrans, s32 abr) {
         quad->y2 = 0xDF;
         quad->x3 = (i << 6) + 0x40;
         quad->y3 = 0xDF;
-        setRECT(&D_800B11AC.windows[i][0], 0, 0, 0xFF, 0xFF);
-        setRECT(&D_800B11AC.windows[i][1], 0, 0, 0xFF, 0xFF);
-        SetDrawMode(&D_800B11AC.modes[i][0], 0, 0, GetTPage(2, abr, 0x2C0 + i * 0x40, 0x100),
-                    &D_800B11AC.windows[i][0]);
-        SetDrawMode(&D_800B11AC.modes[i][1], 0, 0, GetTPage(2, abr, 0x2C0 + i * 0x40, 0x100),
-                    &D_800B11AC.windows[i][1]);
+        setRECT(&field_screen_pieces.windows[i][0], 0, 0, 0xFF, 0xFF);
+        setRECT(&field_screen_pieces.windows[i][1], 0, 0, 0xFF, 0xFF);
+        SetDrawMode(&field_screen_pieces.modes[i][0], 0, 0, GetTPage(2, abr, 0x2C0 + i * 0x40, 0x100),
+                    &field_screen_pieces.windows[i][0]);
+        SetDrawMode(&field_screen_pieces.modes[i][1], 0, 0, GetTPage(2, abr, 0x2C0 + i * 0x40, 0x100),
+                    &field_screen_pieces.windows[i][1]);
         setRGB0(quad, 0x80, 0x80, 0x80);
         SetSemiTrans(quad, semitrans);
         quad->u0 = 0;
@@ -931,20 +931,20 @@ void func_800A663C(s32 semitrans, s32 abr) {
     }
 }
 
-/* Present the current draw block: clear, set environments and draw its
+/* 800A6924: Present the current draw block: clear, set environments and draw its
  * overlay ordering table. */
-void func_800A6924(void) {
+void field_draw_present_overlay(void) {
     DrawSync(0);
     VSync(2);
-    ClearImage(&D_800C426C->draw.clip, 0, 0, 0);
-    PutDrawEnv(&D_800C426C->draw);
-    PutDispEnv(&D_800C426C->disp);
-    DrawOTag(&D_800C426C->overlay_ot[7]);
+    ClearImage(&field_current_draw_block->draw.clip, 0, 0, 0);
+    PutDrawEnv(&field_current_draw_block->draw);
+    PutDispEnv(&field_current_draw_block->disp);
+    DrawOTag(&field_current_draw_block->overlay_ot[7]);
 }
 
-/* Darken corner `corner` of a grid quad by 6 (to 0) while it lies within
+/* 800A6998: Darken corner `corner` of a grid quad by 6 (to 0) while it lies within
  * `radius` of the screen centre (a0, 70). */
-void func_800A6998(POLY_GT4 *quad, s32 corner, s32 radius, s16 *shade) {
+void field_screen_grid_darken_corner(POLY_GT4 *quad, s32 corner, s32 radius, s16 *shade) {
     VECTOR offset;
     VECTOR squares;
     s32 centre_x;
@@ -1013,45 +1013,45 @@ void func_800A6998(POLY_GT4 *quad, s32 corner, s32 radius, s16 *shade) {
     }
 }
 
-/* Fade the grid quads of the current buffer and link them, then the grid
+/* 800A6C40: Fade the grid quads of the current buffer and link them, then the grid
  * draw mode, into the overlay ordering table. */
-void func_800A6C40(void) {
+void field_screen_grid_draw(void) {
     POLY_GT4 *quad;
     s32 row;
     s32 column;
 
     for (row = 0; row < GRID_ROWS; row++) {
         for (column = 0; column < GRID_COLUMNS; column++) {
-            quad = &D_800B00C4->quads[D_800ADB08][row * GRID_COLUMNS + column];
-            func_800A6998(quad, 0, D_800C3A40, &D_800B00C4->shade[0][row * GRID_COLUMNS + column]);
-            func_800A6998(quad, 1, D_800C3A40, &D_800B00C4->shade[1][row * GRID_COLUMNS + column]);
-            func_800A6998(quad, 2, D_800C3A40, &D_800B00C4->shade[2][row * GRID_COLUMNS + column]);
-            func_800A6998(quad, 3, D_800C3A40, &D_800B00C4->shade[3][row * GRID_COLUMNS + column]);
-            addPrim(&D_800C426C->overlay_ot[0], &D_800B00C4->quads[D_800ADB08][row * GRID_COLUMNS + column]);
+            quad = &field_screen_grid->quads[field_draw_buffer_index][row * GRID_COLUMNS + column];
+            field_screen_grid_darken_corner(quad, 0, field_screen_grid_fade_radius, &field_screen_grid->shade[0][row * GRID_COLUMNS + column]);
+            field_screen_grid_darken_corner(quad, 1, field_screen_grid_fade_radius, &field_screen_grid->shade[1][row * GRID_COLUMNS + column]);
+            field_screen_grid_darken_corner(quad, 2, field_screen_grid_fade_radius, &field_screen_grid->shade[2][row * GRID_COLUMNS + column]);
+            field_screen_grid_darken_corner(quad, 3, field_screen_grid_fade_radius, &field_screen_grid->shade[3][row * GRID_COLUMNS + column]);
+            addPrim(&field_current_draw_block->overlay_ot[0], &field_screen_grid->quads[field_draw_buffer_index][row * GRID_COLUMNS + column]);
         }
     }
-    addPrim(&D_800C426C->overlay_ot[0], &D_800B1DF4[D_800ADB08][4]);
+    addPrim(&field_current_draw_block->overlay_ot[0], &field_texture_window_modes[field_draw_buffer_index][4]);
 }
 
-/* Build the screen grid: 16x16 half-bright quads textured from the
+/* 800A6E70: Build the screen grid: 16x16 half-bright quads textured from the
  * 15-bit screen copy at (2c0, 100), their corners at full shade. */
-void func_800A6E70(void) {
+void field_screen_grid_build(void) {
     POLY_GT4 *quad;
     POLY_GT4 *copy;
     s32 row;
     s32 column;
     s32 k;
 
-    D_800B00C4 = heap_alloc(sizeof(ScreenGrid), 1);
+    field_screen_grid = heap_alloc(sizeof(ScreenGrid), 1);
     for (row = 0; row < GRID_ROWS; row++) {
         for (column = 0; column < GRID_COLUMNS; column++) {
             k = row * GRID_COLUMNS + column;
-            quad = &D_800B00C4->quads[0][k];
-            copy = &D_800B00C4->quads[1][k];
-            D_800B00C4->shade[0][k] = 0x80;
-            D_800B00C4->shade[1][k] = 0x80;
-            D_800B00C4->shade[2][k] = 0x80;
-            D_800B00C4->shade[3][k] = 0x80;
+            quad = &field_screen_grid->quads[0][k];
+            copy = &field_screen_grid->quads[1][k];
+            field_screen_grid->shade[0][k] = 0x80;
+            field_screen_grid->shade[1][k] = 0x80;
+            field_screen_grid->shade[2][k] = 0x80;
+            field_screen_grid->shade[3][k] = 0x80;
             SetPolyGT4(quad);
             setRGB0(quad, 0x80, 0x80, 0x80);
             quad->r1 = 0x80;
@@ -1086,94 +1086,94 @@ void func_800A6E70(void) {
     }
 }
 
-/* Release the screen grid. */
-void func_800A7064(void) {
-    heap_free(D_800B00C4);
+/* 800A7064: Release the screen grid. */
+void field_screen_grid_release(void) {
+    heap_free(field_screen_grid);
 }
 
-/* Set up the movie player for a 320x224 picture. */
-void func_800A708C(void) {
+/* 800A708C: Set up the movie player for a 320x224 picture. */
+void field_movie_init_player(void) {
     heap_select_owner_tag(4, 0);
-    if (D_800ADB74 == 2) {
+    if (field_movie_mode == 2) {
         movie_split_display = 1;
     } else {
         movie_split_display = 0;
     }
     movie_open(0x140, 0xE0, 0x80, 0x10, 0x20, 0x800, FIELD_MOVIE.depth24);
-    D_800ADB6C = 0;
+    field_movie_stopped = 0;
     heap_select_owner_tag(8, 0);
 }
 
-/* Movie frame callback: record the frame, select the draw block for the
+/* 800A7120: Movie frame callback: record the frame, select the draw block for the
  * decoded buffer (24-bit display when set). */
-void func_800A7120(u16 frame, u16 x, u16 buffer) {
-    D_800B06A0 = frame;
-    D_800B00E4 = 0;
+void field_movie_frame_callback(u16 frame, u16 x, u16 buffer) {
+    field_movie_frame = frame;
+    field_movie_awaiting_frame = 0;
     if (buffer == 0) {
-        D_800ADB78 = 1;
+        field_movie_decoded_block = 1;
     } else {
-        D_800ADB78 = 0;
+        field_movie_decoded_block = 0;
     }
-    if (D_800ADB74 == 0 && D_800AFE74 == 0) {
+    if (field_movie_mode == 0 && field_staff_roll_drawing == 0) {
         DrawSync(0);
-        D_800C426C = &D_800B249C[D_800ADB78];
+        field_current_draw_block = &field_draw_blocks[field_movie_decoded_block];
         if ((s16)FIELD_MOVIE.depth24 == 1) {
-            D_800B249C[D_800ADB78 & 1].disp.isrgb24 = 1;
+            field_draw_blocks[field_movie_decoded_block & 1].disp.isrgb24 = 1;
         }
     }
 }
 
-/* Start the field movie with the current parameters. */
-void func_800A7218(void) {
+/* 800A7218: Start the field movie with the current parameters. */
+void field_movie_start(void) {
     s32 mode;
 
-    D_800B06A0 = 0;
+    field_movie_frame = 0;
     heap_select_owner_tag(4, 0);
-    if (D_800ADB6C == 0) {
+    if (field_movie_stopped == 0) {
         cd_select_directory(0x18, 1);
         mode = 1;
-        if (FIELD_MOVIE.sound_bank != 0xFF || (D_800ADB80 & 0x40)) {
+        if (FIELD_MOVIE.sound_bank != 0xFF || (field_movie_fade_bits & 0x40)) {
             mode = 3;
         }
         movie_start(FIELD_MOVIE.file + 2, FIELD_MOVIE.unk2A, FIELD_MOVIE.sound_start,
                     FIELD_MOVIE.unk2E, 1, mode, FIELD_MOVIE.unk3A, FIELD_MOVIE.x, FIELD_MOVIE.y,
-                    FIELD_MOVIE.source_x, FIELD_MOVIE.source_y, 0xE0, func_800A7120);
+                    FIELD_MOVIE.source_x, FIELD_MOVIE.source_y, 0xE0, field_movie_frame_callback);
         cd_select_directory(4, 0);
     }
     heap_select_owner_tag(8, 0);
 }
 
-/* Run `frames` movie frames (with field sound) unless the movie stopped. */
-void func_800A732C(s32 frames) {
+/* 800A732C: Run `frames` movie frames (with field sound) unless the movie stopped. */
+void field_movie_run_frames(s32 frames) {
     s32 i;
 
     boot_check_soft_reset();
-    if (D_800ADB6C == 0) {
+    if (field_movie_stopped == 0) {
         for (i = 0; i < frames; i++) {
             movie_poll();
-            func_80085678();
+            field_movie_play_due_sounds();
         }
     }
 }
 
-/* Keep the field running until the stream is idle and draw buffer 0 is
+/* 800A7394: Keep the field running until the stream is idle and draw buffer 0 is
  * current, then wait for CD data. */
-void func_800A7394(void) {
+void field_movie_wait_disc_idle(void) {
     do {
         do {
-            func_80077DAC();
-            func_8007554C();
+            field_run_pre_frame();
+            field_run_frame();
         } while (cd_get_pending_read_count() != 0);
-    } while (D_800ADB08 != 0);
+    } while (field_draw_buffer_index != 0);
     CdDataSync(0);
 }
 
-/* After a movie: reload the VRAM kept in party sprite blocks 1 and 2
+/* 800A73E8: After a movie: reload the VRAM kept in party sprite blocks 1 and 2
  * (unless movie mode 2), then release both blocks. */
-void func_800A73E8(void) {
+void field_movie_park_party_sprites(void) {
     RECT rect;
 
-    if (D_800ADB74 == 2) {
+    if (field_movie_mode == 2) {
         heap_unprotect_block(mode_party_sprite_blocks[1]);
         heap_unprotect_block(mode_party_sprite_blocks[2]);
         heap_free(mode_party_sprite_blocks[1]);
@@ -1192,16 +1192,16 @@ void func_800A73E8(void) {
     }
 }
 
-/* Before a movie: allocate party sprite blocks 1 and 2 and save the VRAM
+/* 800A74F8: Before a movie: allocate party sprite blocks 1 and 2 and save the VRAM
  * at (200, 0) in them; in movie mode 2 instead reload the sprites of party
  * slots 1 and 2 from their character files. */
-void func_800A74F8(void) {
+void field_movie_restore_party_sprites(void) {
     RECT rect;
     FileRequest requests[4];
     s32 count;
     s32 i;
 
-    if (D_800ADB74 == 2) {
+    if (field_movie_mode == 2) {
         mode_party_sprite_blocks[1] = heap_alloc(0x14000, 0);
         mode_party_sprite_blocks[2] = heap_alloc(0x14000, 0);
         heap_protect_block(mode_party_sprite_blocks[1]);
@@ -1239,18 +1239,18 @@ void func_800A74F8(void) {
     DrawSync(0);
 }
 
-/* Next byte of the packed stream (four per word), scaled down by 8 but
+/* 800A7744: Next byte of the packed stream (four per word), scaled down by 8 but
  * at least 1 when nonzero. */
-u32 func_800A7744(void) {
+u32 field_screen_read_24bit_channel(void) {
     u32 value;
 
-    if ((D_800B14A8 & 3) == 0) {
-        D_800C2688 = *D_800C3904;
-        D_800C3904++;
+    if ((field_screen_convert_nibble_count & 3) == 0) {
+        field_screen_convert_word = *field_screen_convert_stream;
+        field_screen_convert_stream++;
     }
-    D_800B14A8++;
-    value = D_800C2688 & 0xFF;
-    D_800C2688 >>= 8;
+    field_screen_convert_nibble_count++;
+    value = field_screen_convert_word & 0xFF;
+    field_screen_convert_word >>= 8;
     if (value != 0) {
         value >>= 3;
         if (value == 0) {
@@ -1260,9 +1260,9 @@ u32 func_800A7744(void) {
     return value;
 }
 
-/* Convert the 24-bit screen (five 96-pixel columns at x 0) to 15-bit
+/* 800A77C4: Convert the 24-bit screen (five 96-pixel columns at x 0) to 15-bit
  * pixels at (0..0x140, 100). Both callers pass 0, which it ignores. */
-void func_800A77C4(s32 unused) {
+void field_screen_convert_24bit_to_15bit(s32 unused) {
     RECT rect;
     u32 *packed;
     u32 *pixels;
@@ -1279,18 +1279,18 @@ void func_800A77C4(s32 unused) {
         rect.h = 0xE0;
         StoreImage(&rect, (u_long *)packed);
         DrawSync(0);
-        D_800C3904 = packed;
-        D_800C390C = pixels;
-        D_800B14A8 = 0;
+        field_screen_convert_stream = packed;
+        field_screen_convert_pixels = pixels;
+        field_screen_convert_nibble_count = 0;
         for (j = 0; j < 0x1C00; j++) {
-            value = func_800A7744();
-            value |= func_800A7744() << 5;
-            value |= func_800A7744() << 10;
-            value |= func_800A7744() << 16;
-            value |= func_800A7744() << 21;
-            value |= func_800A7744() << 26;
-            *D_800C390C = value;
-            D_800C390C++;
+            value = field_screen_read_24bit_channel();
+            value |= field_screen_read_24bit_channel() << 5;
+            value |= field_screen_read_24bit_channel() << 10;
+            value |= field_screen_read_24bit_channel() << 16;
+            value |= field_screen_read_24bit_channel() << 21;
+            value |= field_screen_read_24bit_channel() << 26;
+            *field_screen_convert_pixels = value;
+            field_screen_convert_pixels++;
         }
         rect.x = i << 6;
         rect.y = 0x100;
@@ -1303,99 +1303,99 @@ void func_800A77C4(s32 unused) {
     heap_free(pixels);
 }
 
-/* While movie frames 687..18e2 play (when the sequence is enabled),
+/* 800A7948: While movie frames 687..18e2 play (when the sequence is enabled),
  * switch to 640-wide draw buffers and draw the file 0xab sequence over
  * the movie each frame, then restore the 320-wide buffers. Declared int
  * without a value, as the original's live result register shows. */
-s32 func_800A7948(void) {
+s32 field_staff_roll_run_over_movie(void) {
     RECT rect;
 
-    if (mode_staff_roll_enabled == 0 || D_800B06A0 < 0x687) {
+    if (mode_staff_roll_enabled == 0 || field_movie_frame < 0x687) {
         return;
     }
-    if (D_800B06A0 < 0x18E2) {
-        D_800AFE74 = 1;
+    if (field_movie_frame < 0x18E2) {
+        field_staff_roll_drawing = 1;
         movie_load_restart = 0;
         setRECT(&rect, 0, 0, 0x500, 0x200);
         ClearImage(&rect, 0, 0, 0);
         DrawSync(0);
         VSync(0);
-        SetDefDrawEnv(&D_800B249C[0].draw, 0, 0, 0x280, 0xE0);
-        SetDefDrawEnv(&D_800B249C[1].draw, 0, 0x100, 0x280, 0xE0);
-        SetDefDispEnv(&D_800B249C[0].disp, 0, 0x100, 0x280, 0xE0);
-        SetDefDispEnv(&D_800B249C[1].disp, 0, 0, 0x280, 0xE0);
-        D_800B249C[1].disp.isrgb24 = 0;
-        D_800B249C[0].disp.isrgb24 = 0;
-        PutDispEnv(&D_800C426C->disp);
-        PutDrawEnv(&D_800C426C->draw);
+        SetDefDrawEnv(&field_draw_blocks[0].draw, 0, 0, 0x280, 0xE0);
+        SetDefDrawEnv(&field_draw_blocks[1].draw, 0, 0x100, 0x280, 0xE0);
+        SetDefDispEnv(&field_draw_blocks[0].disp, 0, 0x100, 0x280, 0xE0);
+        SetDefDispEnv(&field_draw_blocks[1].disp, 0, 0, 0x280, 0xE0);
+        field_draw_blocks[1].disp.isrgb24 = 0;
+        field_draw_blocks[0].disp.isrgb24 = 0;
+        PutDispEnv(&field_current_draw_block->disp);
+        PutDrawEnv(&field_current_draw_block->draw);
         setRECT(&rect, 0x300, 0, 0x200, 0x100);
         ClearImage(&rect, 0, 0, 0);
-        func_800ACB90();
+        field_staff_roll_upload_font();
         VSync(0);
         DrawSync(0);
-        while (D_800B06A0 < 0x18E2) {
+        while (field_movie_frame < 0x18E2) {
             boot_check_soft_reset();
-            func_80073F50();
-            if (D_800B06A0 < 0x18DE) {
-                func_800AC99C();
+            field_draw_switch_block();
+            if (field_movie_frame < 0x18DE) {
+                field_staff_roll_draw();
             }
             DrawSync(0);
             VSync(2);
-            ClearImage(&D_800C426C->draw.clip, 0, 0, 0);
-            PutDispEnv(&D_800C426C->disp);
-            PutDrawEnv(&D_800C426C->draw);
-            DrawOTag(&D_800C426C->overlay_ot[7]);
-            func_800ACCF4();
-            func_800A732C(5);
+            ClearImage(&field_current_draw_block->draw.clip, 0, 0, 0);
+            PutDispEnv(&field_current_draw_block->disp);
+            PutDrawEnv(&field_current_draw_block->draw);
+            DrawOTag(&field_current_draw_block->overlay_ot[7]);
+            field_staff_roll_advance();
+            field_movie_run_frames(5);
         }
-        D_800AFE74 = 0;
+        field_staff_roll_drawing = 0;
         movie_load_restart = 1;
         DrawSync(0);
         VSync(0);
-        SetDefDrawEnv(&D_800B249C[0].draw, 0, 0, 0x140, 0xE0);
-        SetDefDrawEnv(&D_800B249C[1].draw, 0, 0x100, 0x140, 0xE0);
-        SetDefDispEnv(&D_800B249C[0].disp, 0, 0x100, 0x140, 0xE0);
-        SetDefDispEnv(&D_800B249C[1].disp, 0, 0, 0x140, 0xE0);
-        D_800B249C[1].disp.isrgb24 = 1;
-        D_800B249C[0].disp.isrgb24 = 1;
-        D_800B249C[1].disp.isinter = 0;
-        D_800B249C[0].disp.isinter = 0;
-        func_800ACCB0();
+        SetDefDrawEnv(&field_draw_blocks[0].draw, 0, 0, 0x140, 0xE0);
+        SetDefDrawEnv(&field_draw_blocks[1].draw, 0, 0x100, 0x140, 0xE0);
+        SetDefDispEnv(&field_draw_blocks[0].disp, 0, 0x100, 0x140, 0xE0);
+        SetDefDispEnv(&field_draw_blocks[1].disp, 0, 0, 0x140, 0xE0);
+        field_draw_blocks[1].disp.isrgb24 = 1;
+        field_draw_blocks[0].disp.isrgb24 = 1;
+        field_draw_blocks[1].disp.isinter = 0;
+        field_draw_blocks[0].disp.isinter = 0;
+        field_staff_roll_release();
     }
 }
 
-/* Play the requested field movie (800c3a20..): move the movie library
+/* 800A7C58: Play the requested field movie (800c3a20..): move the movie library
  * (file 0xa9) into place, park the VRAM the movie uses, stop the field's
  * effects and the 801e module, then decode and present frames by movie
  * mode until it ends or is skipped; finally restore VRAM, the display and
  * the field stream. */
-void func_800A7C58(void) {
+void field_movie_play(void) {
     RECT rect;
     u8 *data;
     u8 *library;
     s32 top;
     s32 i;
 
-    D_800ADB84 = 0;
-    D_800B00E4 = 0;
-    D_800ADB78 = 0;
+    field_movie_end_count = 0;
+    field_movie_awaiting_frame = 0;
+    field_movie_decoded_block = 0;
     data = heap_alloc(cd_get_aligned_file_size(0xA9), 0);
     cd_read_file(0xA9, data, 0, 0x80);
-    D_800B06A0 = 0;
-    D_800AFE74 = 0;
-    func_800A7394();
+    field_movie_frame = 0;
+    field_staff_roll_drawing = 0;
+    field_movie_wait_disc_idle();
     cd_select_directory(0x18, 0);
     cd_seek_or_pause_if_idle(FIELD_MOVIE.file);
     cd_select_directory(4, 0);
-    func_800A7394();
-    if (D_800B2078.unk2264 != 0) {
+    field_movie_wait_disc_idle();
+    if (field_work.unk2264 != 0) {
         func_801E7FD4();
-        func_8007999C();
-        func_800775F8();
-        heap_free(D_800ADB20);
+        field_sync_and_flush_cache();
+        field_sync_draw_and_vsync();
+        heap_free(field_layer_module);
     }
-    func_800A9460();
-    if (D_800ADB74 != 2) {
+    field_effect_release_all_slots();
+    if (field_movie_mode != 2) {
         setRECT(&rect, 0x140, 0, 0xC0, 0x100);
         LoadImage(&rect, (u_long *)data);
         DrawSync(0);
@@ -1403,7 +1403,7 @@ void func_800A7C58(void) {
         data = heap_alloc(0x18000, 0);
         StoreImage(&rect, (u_long *)data);
     }
-    top = D_800ADB30;
+    top = field_heap_top;
     if (mode_field_standalone == 0) {
         library = heap_alloc((top & 0xFFFFFF) - 0x1D3008, 1);
         memcpy(library, data, cd_get_aligned_file_size(0xA9));
@@ -1411,59 +1411,59 @@ void func_800A7C58(void) {
         library = heap_alloc(8, 1);
     }
     heap_free(data);
-    func_80085788();
-    func_800ACC58();
-    D_800B00E4 = 1;
-    func_800A73E8();
-    func_8007999C();
+    field_movie_load_sound_bank();
+    field_staff_roll_start();
+    field_movie_awaiting_frame = 1;
+    field_movie_park_party_sprites();
+    field_sync_and_flush_cache();
     heap_coalesce();
-    func_800A708C();
-    func_800A7218();
-    D_800ADB7C = 1;
+    field_movie_init_player();
+    field_movie_start();
+    field_movie_presenting = 1;
     do {
         VSync(0);
-        func_800A732C(3);
-    } while (D_800B00E4 != 0);
+        field_movie_run_frames(3);
+    } while (field_movie_awaiting_frame != 0);
     do {
-        switch (D_800ADB74) {
+        switch (field_movie_mode) {
         case 1:
-            func_80073F50();
-            func_80075910();
-            func_800A732C(6);
+            field_draw_switch_block();
+            field_movie_run_overlay_frame();
+            field_movie_run_frames(6);
             break;
         case 0:
             DrawSync(0);
             VSync(0);
-            PutDispEnv(&D_800C426C->disp);
-            PutDrawEnv(&D_800C426C->draw);
-            func_800A732C(3);
+            PutDispEnv(&field_current_draw_block->disp);
+            PutDrawEnv(&field_current_draw_block->draw);
+            field_movie_run_frames(3);
             DrawSync(0);
             VSync(0);
-            PutDispEnv(&D_800C426C->disp);
-            PutDrawEnv(&D_800C426C->draw);
-            func_800A732C(3);
-            func_800A7948();
+            PutDispEnv(&field_current_draw_block->disp);
+            PutDrawEnv(&field_current_draw_block->draw);
+            field_movie_run_frames(3);
+            field_staff_roll_run_over_movie();
             break;
         case 2:
-            func_80077DAC();
-            func_8007554C();
-            func_800A732C(9);
+            field_run_pre_frame();
+            field_run_frame();
+            field_movie_run_frames(9);
             break;
         }
-        if (D_800C268C == 0) {
-            if (D_800ADB74 == 2) {
-                if ((D_800C3900 & 0x80) || D_800ADB84 != 0) {
+        if (field_monitor_absent == 0) {
+            if (field_movie_mode == 2) {
+                if ((field_pad_port0_repeated & 0x80) || field_movie_end_count != 0) {
                     break;
                 }
             } else {
-                func_80074700();
-                if (D_800C3900 & 0x20) {
+                field_pad_drain_queue();
+                if (field_pad_port0_repeated & 0x20) {
                     break;
                 }
             }
-        } else if (D_800ADB80 & 0x80) {
-            func_80074700();
-            if (D_800C3900 & 0x20) {
+        } else if (field_movie_fade_bits & 0x80) {
+            field_pad_drain_queue();
+            if (field_pad_port0_repeated & 0x20) {
                 sound_set_cd_volume(0, 10);
                 for (i = 0; i < 5; i++) {
                     VSync(0);
@@ -1471,74 +1471,74 @@ void func_800A7C58(void) {
                 break;
             }
         }
-        if (D_800ADB74 == 2 && D_800ADB84 != 0) {
+        if (field_movie_mode == 2 && field_movie_end_count != 0) {
             break;
         }
-    } while ((s16)FIELD_MOVIE.unk3A != 0 || D_800B06A0 < FIELD_MOVIE.unk2E);
+    } while ((s16)FIELD_MOVIE.unk3A != 0 || field_movie_frame < FIELD_MOVIE.unk2E);
     VSync(0);
     DrawSync(0);
     movie_close();
-    func_8007999C();
-    PutDispEnv(&D_800C426C->disp);
-    PutDrawEnv(&D_800C426C->draw);
+    field_sync_and_flush_cache();
+    PutDispEnv(&field_current_draw_block->disp);
+    PutDrawEnv(&field_current_draw_block->draw);
     VSync(0);
     DrawSync(0);
     heap_free(library);
     heap_coalesce();
-    func_800A74F8();
-    func_80077884();
-    setRECT(&rect, 0, D_800ADB78 << 8, 0x1E0, 0xE0);
-    MoveImage(&rect, 0, D_800ADB78 << 8);
+    field_movie_restore_party_sprites();
+    field_layer_load();
+    setRECT(&rect, 0, field_movie_decoded_block << 8, 0x1E0, 0xE0);
+    MoveImage(&rect, 0, field_movie_decoded_block << 8);
     DrawSync(0);
     VSync(0);
-    D_800C426C = &D_800B249C[1];
-    PutDispEnv(&D_800B249C[1].disp);
-    PutDrawEnv(&D_800C426C->draw);
-    if (D_800ADB74 != 2) {
-        func_800A77C4(0);
+    field_current_draw_block = &field_draw_blocks[1];
+    PutDispEnv(&field_draw_blocks[1].disp);
+    PutDrawEnv(&field_current_draw_block->draw);
+    if (field_movie_mode != 2) {
+        field_screen_convert_24bit_to_15bit(0);
     }
     VSync(0);
-    D_800B249C[0].disp.isrgb24 = 0;
-    D_800C426C = &D_800B249C[0];
-    PutDispEnv(&D_800B249C[0].disp);
-    PutDrawEnv(&D_800C426C->draw);
+    field_draw_blocks[0].disp.isrgb24 = 0;
+    field_current_draw_block = &field_draw_blocks[0];
+    PutDispEnv(&field_draw_blocks[0].disp);
+    PutDrawEnv(&field_current_draw_block->draw);
     setRECT(&rect, 0, 0x100, 0x140, 0xE0);
     MoveImage(&rect, 0, 0);
     DrawSync(0);
     VSync(0);
-    D_800B249C[1].disp.isrgb24 = 0;
-    D_800C426C = &D_800B249C[1];
-    PutDispEnv(&D_800B249C[1].disp);
-    PutDrawEnv(&D_800C426C->draw);
-    if (D_800AFE84 != 0) {
-        D_800ADB50 = 1;
+    field_draw_blocks[1].disp.isrgb24 = 0;
+    field_current_draw_block = &field_draw_blocks[1];
+    PutDispEnv(&field_draw_blocks[1].disp);
+    PutDrawEnv(&field_current_draw_block->draw);
+    if (field_no_panorama_after_return != 0) {
+        field_panorama_hidden = 1;
     } else {
-        D_800ADB50 = 0;
+        field_panorama_hidden = 0;
     }
-    func_80077AB4();
-    if (D_800ADB74 != 2) {
+    field_layer_start();
+    if (field_movie_mode != 2) {
         cd_select_directory(4, 0);
         heap_select_owner_tag(8, 0);
-        D_800ADB60 = 0;
-        func_80070488();
-        func_80070508();
-        D_800ADB3C = 0x20;
-        D_800ADB38 = 1;
+        field_map_stream_running = 0;
+        field_map_stream_start();
+        field_map_stream_stop();
+        field_transition_frames = 0x20;
+        field_transition_kind = 1;
     }
-    func_80085738();
+    field_movie_release_sound_bank();
     FIELD_MOVIE.sound_bank = 0xFF;
-    D_800ADB74 = 0;
-    D_800ADB6C = -1;
+    field_movie_mode = 0;
+    field_movie_stopped = -1;
 }
 
 /* field.c's TIM upload, declared here for the call below: the calls in
- * field_800854D0.c and the first in field_800A9274.c pass it unnarrowed
+ * field_event.c and the first in field_effect.c pass it unnarrowed
  * ints without a prototype, so no header declares it. */
-void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
+void field_load_tim_at(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h);
 
-/* Load file 0xaa and upload its image to (380, 0) with its CLUT at
+/* 800A8314: Load file 0xaa and upload its image to (380, 0) with its CLUT at
  * (0, e8). */
-void func_800A8314(void) {
+void field_status_panel_load_image(void) {
     u32 *data;
 
     heap_select_owner_tag(8, 0);
@@ -1546,25 +1546,25 @@ void func_800A8314(void) {
     data = heap_alloc(cd_get_aligned_file_size(0xAA), 1);
     cd_read_file(0xAA, data, 0, 0x80);
     cd_sync_reads(0);
-    func_80070340(data, 0x380, 0, 0, 0xE8, 0, 0);
+    field_load_tim_at(data, 0x380, 0, 0, 0xE8, 0, 0);
     DrawSync(0);
     heap_free(data);
 }
 
-/* Release the two primitive buffers once allocated. */
-void func_800A83B4(void) {
-    if (D_800AF278 != 0) {
-        D_800AF278 = 0;
+/* 800A83B4: Release the two primitive buffers once allocated. */
+void field_status_panel_release(void) {
+    if (field_status_panel_built != 0) {
+        field_status_panel_built = 0;
         DrawSync(0);
-        heap_free(D_800AFC60[0]);
-        heap_free(D_800AFC60[1]);
+        heap_free(field_status_panel_quads[0]);
+        heap_free(field_status_panel_quads[1]);
     }
 }
 
-/* Texture panel piece `index` of the current buffer with its frame moved
+/* 800A8408: Texture panel piece `index` of the current buffer with its frame moved
  * by (du, dv), flipped vertically. The original passes the coordinates to
  * 8007a44c unconverted (no s16 prototype in scope: a separate unit). */
-void func_800A8408(s32 index, s32 du, s32 dv) {
+void field_status_panel_set_piece_uv(s32 index, s32 du, s32 dv) {
     s32 frame;
     s32 u;
     s32 v;
@@ -1572,80 +1572,80 @@ void func_800A8408(s32 index, s32 du, s32 dv) {
     s32 h;
     s32 unused[6]; /* the original frame reserves an unused 24-byte local */
 
-    frame = D_800AEF10[index].frame;
-    v = D_800AEB68[frame].v + dv;
-    w = D_800AEB68[frame].w;
-    u = D_800AEB68[frame].u + du;
-    h = D_800AEB68[frame].h;
-    func_8007A44C(&D_800AFC60[D_800ADB08][index], u, v + h - 1, u + w, v + h - 1, u, v - 1, u + w, v - 1);
+    frame = field_status_panel_pieces[index].frame;
+    v = field_status_panel_texture_frames[frame].v + dv;
+    w = field_status_panel_texture_frames[frame].w;
+    u = field_status_panel_texture_frames[frame].u + du;
+    h = field_status_panel_texture_frames[frame].h;
+    field_set_quad_uvs_clamped(&field_status_panel_quads[field_draw_buffer_index][index], u, v + h - 1, u + w, v + h - 1, u, v - 1, u + w, v - 1);
 }
 
-/* Draw the status panel: rotate the compass strip by the view angle, the
+/* 800A84C0: Draw the status panel: rotate the compass strip by the view angle, the
  * pitch strip by the camera pitch, their digits, the blinking marker and
  * the rest of the pieces. */
-void func_800A84C0(void) {
+void field_status_panel_draw(void) {
     s32 pitch;
     s32 angle;
     s32 count;
     s32 i;
 
-    if (D_800AF278 != 0) {
+    if (field_status_panel_built != 0) {
         count = PANEL_PIECES;
-        pitch = ratan2(func_80099A4C((D_800AF880.target.vx - D_800AF880.eye.vx) >> 16,
-                                     (D_800AF880.target.vz - D_800AF880.eye.vz) >> 16),
-                       (D_800AF880.target.vy - D_800AF880.eye.vy) >> 16) &
+        pitch = ratan2(field_compute_planar_length((field_view.target.vx - field_view.eye.vx) >> 16,
+                                     (field_view.target.vz - field_view.eye.vz) >> 16),
+                       (field_view.target.vy - field_view.eye.vy) >> 16) &
                 0xFFF;
-        angle = D_800AF880.view_angle & 0xFFF;
+        angle = field_view.view_angle & 0xFFF;
         for (i = 0; i < 16; i++) {
-            func_800A8408(i, (angle >> 4) & 0xF, 0);
-            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+            field_status_panel_set_piece_uv(i, (angle >> 4) & 0xF, 0);
+            addPrim(&field_current_draw_block->overlay_ot[4], &field_status_panel_quads[field_draw_buffer_index][i]);
         }
         for (; i < 29; i++) {
-            func_800A8408(i, 0, (pitch >> 4) & 0xF);
-            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+            field_status_panel_set_piece_uv(i, 0, (pitch >> 4) & 0xF);
+            addPrim(&field_current_draw_block->overlay_ot[4], &field_status_panel_quads[field_draw_buffer_index][i]);
         }
         for (; i < 34; i++) {
-            func_800A8408(i, (angle & 0xF) * 8, 0);
+            field_status_panel_set_piece_uv(i, (angle & 0xF) * 8, 0);
             angle >>= 2;
-            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+            addPrim(&field_current_draw_block->overlay_ot[4], &field_status_panel_quads[field_draw_buffer_index][i]);
         }
         for (; i < 39; i++) {
-            func_800A8408(i, (pitch & 0xF) * 8, 0);
+            field_status_panel_set_piece_uv(i, (pitch & 0xF) * 8, 0);
             pitch >>= 2;
-            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+            addPrim(&field_current_draw_block->overlay_ot[4], &field_status_panel_quads[field_draw_buffer_index][i]);
         }
         for (; i < 40; i++) {
-            if (!(D_800AEB60 & 0xF)) {
-                D_800AEB64++;
+            if (!(field_status_panel_draw_count & 0xF)) {
+                field_status_panel_blink_phase++;
             }
-            if (D_800AEB64 >= 3) {
-                D_800AEB64 = 0;
+            if (field_status_panel_blink_phase >= 3) {
+                field_status_panel_blink_phase = 0;
             }
-            func_800A8408(i, 0, D_800AEB64 * 8);
-            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+            field_status_panel_set_piece_uv(i, 0, field_status_panel_blink_phase * 8);
+            addPrim(&field_current_draw_block->overlay_ot[4], &field_status_panel_quads[field_draw_buffer_index][i]);
         }
         for (; i < 42; i++) {
-            func_800A8408(i, (D_800AEB60 >> 2) & 0xF, 0);
-            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+            field_status_panel_set_piece_uv(i, (field_status_panel_draw_count >> 2) & 0xF, 0);
+            addPrim(&field_current_draw_block->overlay_ot[4], &field_status_panel_quads[field_draw_buffer_index][i]);
         }
         for (; i < 43; i++) {
-            if (!(D_800AEB60 & 0x10)) {
-                addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+            if (!(field_status_panel_draw_count & 0x10)) {
+                addPrim(&field_current_draw_block->overlay_ot[4], &field_status_panel_quads[field_draw_buffer_index][i]);
             }
         }
         for (; i < count; i++) {
-            addPrim(&D_800C426C->overlay_ot[4], &D_800AFC60[D_800ADB08][i]);
+            addPrim(&field_current_draw_block->overlay_ot[4], &field_status_panel_quads[field_draw_buffer_index][i]);
         }
-        D_800AEB60++;
+        field_status_panel_draw_count++;
     }
 }
 
-#define FRAME(n, field) (((u16 *)D_800AEB68)[(n) * 4 + (field)])
+#define FRAME(n, field) (((u16 *)field_status_panel_texture_frames)[(n) * 4 + (field)])
 enum { FRAME_U, FRAME_V, FRAME_W, FRAME_H };
-#define PIECE(n, field) (((u16 *)D_800AEF10)[(n) * 4 + (field)])
+#define PIECE(n, field) (((u16 *)field_status_panel_pieces)[(n) * 4 + (field)])
 enum { PIECE_X, PIECE_Y, PIECE_FRAME, PIECE_FLAGS };
 
-/* Build the status panel: load its image, allocate the quads of both
+/* 800A8BA4: Build the status panel: load its image, allocate the quads of both
  * buffers and texture each piece from its frame (flip in flags bits 0-3;
  * bits 4-7 pick semi-transparency rate 1 or 2 on a 4-bit page, other values
  * keep the previous piece's rate, 0 before the first). The original passes
@@ -1661,7 +1661,7 @@ enum { PIECE_X, PIECE_Y, PIECE_FRAME, PIECE_FLAGS };
  * is worth 1 against the add's cost of 2, so three is the minimum (one:
  * -6107 vs 171; two: 0 vs 172), and which read uses which copy cannot be
  * recovered. */
-void func_800A8BA4(void) {
+void field_status_panel_build(void) {
     POLY_FT4 *quad;
     POLY_FT4 *copy;
     POLY_FT4 **prims;
@@ -1672,11 +1672,11 @@ void func_800A8BA4(void) {
     s32 flip_piece;
     s32 x, y, frame, u, v, w, h;
 
-    func_800A8314();
+    field_status_panel_load_image();
     mode = 0;
-    D_800AEB64 = 0;
+    field_status_panel_blink_phase = 0;
     heap_select_owner_tag(8, 0);
-    prims = D_800AFC60;
+    prims = field_status_panel_quads;
     prims[0] = heap_alloc(PANEL_PIECES * sizeof(POLY_FT4), 0);
     prims[1] = heap_alloc(PANEL_PIECES * sizeof(POLY_FT4), 0);
     page_piece = piece = flip_piece = 0;
@@ -1707,16 +1707,16 @@ void func_800A8BA4(void) {
         setXYWH(quad, x, y, w, h);
         switch (PIECE(flip_piece, PIECE_FLAGS) & 0xF) {
         case 0:
-            func_8007A44C(quad, u, v, u + w, v, u, v + h, u + w, v + h);
+            field_set_quad_uvs_clamped(quad, u, v, u + w, v, u, v + h, u + w, v + h);
             break;
         case 1:
-            func_8007A44C(quad, u + w - 1, v, u - 1, v, u + w - 1, v + h, u - 1, v + h);
+            field_set_quad_uvs_clamped(quad, u + w - 1, v, u - 1, v, u + w - 1, v + h, u - 1, v + h);
             break;
         case 2:
-            func_8007A44C(quad, u, v + h - 1, u + w, v + h - 1, u, v - 1, u + w, v - 1);
+            field_set_quad_uvs_clamped(quad, u, v + h - 1, u + w, v + h - 1, u, v - 1, u + w, v - 1);
             break;
         case 3:
-            func_8007A44C(quad, u + w - 1, v + h - 1, u - 1, v + h - 1, u + w - 1, v - 1, u - 1, v - 1);
+            field_set_quad_uvs_clamped(quad, u + w - 1, v + h - 1, u - 1, v + h - 1, u + w - 1, v - 1, u - 1, v - 1);
             break;
         }
         *copy = *quad;
@@ -1725,10 +1725,10 @@ void func_800A8BA4(void) {
         }
         page_piece = piece = flip_piece = i;
     }
-    D_800AF278 = 1;
+    field_status_panel_built = 1;
 }
 
-/* Set up a particle's quad in both buffers from sprite `sprite` with
+/* 800A8EAC: Set up a particle's quad in both buffers from sprite `sprite` with
  * semi-transparency rate `abr`.
  * The corners scale each term by 16 before subtracting/adding: x * 16
  * and y * 16 are computed once, but w * 16 and h * 16 twice (once for the
@@ -1738,7 +1738,7 @@ void func_800A8BA4(void) {
  * CSE from sharing the second w * 16 / h * 16 with the first.
  * The second buffer's quad is taken as a pointer up front; the block copy
  * then starts from a copy of it (addiu v1,s0,0x78; move a2,v1). */
-void func_800A8EAC(Particle *particle, s32 sprite, s32 abr) {
+void field_effect_init_particle_quads(Particle *particle, s32 sprite, s32 abr) {
     POLY_FT4 *quad;
     POLY_FT4 *copy;
     s32 half_w;
@@ -1750,10 +1750,10 @@ void func_800A8EAC(Particle *particle, s32 sprite, s32 abr) {
     quad = &particle->quads[0];
     copy = &particle->quads[1];
     SetPolyFT4(quad);
-    half_w = D_800AF27C[sprite].half_w;
-    half_h = D_800AF27C[sprite].half_h;
-    x = D_800AF27C[sprite].x;
-    y = D_800AF27C[sprite].y;
+    half_w = field_effect_particle_sprites[sprite].half_w;
+    half_h = field_effect_particle_sprites[sprite].half_h;
+    x = field_effect_particle_sprites[sprite].x;
+    y = field_effect_particle_sprites[sprite].y;
     particle->corners[0].vz = 0;
     particle->corners[1].vz = 0;
     particle->corners[2].vz = 0;
@@ -1767,54 +1767,54 @@ void func_800A8EAC(Particle *particle, s32 sprite, s32 abr) {
     particle->corners[2].vy = (u16)half_h * 16 + (y << 4);
     particle->corners[3].vx = (u16)half_w * 16 + (x << 4);
     particle->corners[3].vy = (u16)half_h * 16 + (y << 4);
-    func_8007A44C(quad, D_800AF27C[sprite].uv[0][0], D_800AF27C[sprite].uv[0][1] + 0x40,
-                  D_800AF27C[sprite].uv[1][0] - 1, D_800AF27C[sprite].uv[1][1] + 0x40,
-                  D_800AF27C[sprite].uv[2][0], D_800AF27C[sprite].uv[2][1] + 0x3F,
-                  D_800AF27C[sprite].uv[3][0] - 1, D_800AF27C[sprite].uv[3][1] + 0x3F);
+    field_set_quad_uvs_clamped(quad, field_effect_particle_sprites[sprite].uv[0][0], field_effect_particle_sprites[sprite].uv[0][1] + 0x40,
+                  field_effect_particle_sprites[sprite].uv[1][0] - 1, field_effect_particle_sprites[sprite].uv[1][1] + 0x40,
+                  field_effect_particle_sprites[sprite].uv[2][0], field_effect_particle_sprites[sprite].uv[2][1] + 0x3F,
+                  field_effect_particle_sprites[sprite].uv[3][0] - 1, field_effect_particle_sprites[sprite].uv[3][1] + 0x3F);
     SetSemiTrans(quad, 1);
     quad->tpage = GetTPage(0, abr, 0x3C0, 0x140);
     quad->clut = GetClut(0x100, 0xF7);
     *copy = *quad;
 }
 
-/* Move the saved screen column into a new block allocated with `flags`. */
-void func_800A90B4(s32 flags) {
+/* 800A90B4: Move the saved screen column into a new block allocated with `flags`. */
+void field_vram_column_relocate(s32 flags) {
     ScreenColumn *copy;
 
-    if (D_800ADB34 == 1) {
+    if (field_vram_column_saved == 1) {
         heap_select_owner_tag(8, 0);
         copy = heap_alloc(0x8000, flags);
-        *copy = *D_800AFC70;
-        heap_free(D_800AFC70);
-        D_800AFC70 = copy;
+        *copy = *field_vram_column_copy;
+        heap_free(field_vram_column_copy);
+        field_vram_column_copy = copy;
     }
 }
 
-/* Save the 64x256 VRAM column at (3c0, 100) once. */
-void func_800A915C(void) {
-    if (D_800ADB34 != 1) {
-        D_800ADB34 = 1;
+/* 800A915C: Save the 64x256 VRAM column at (3c0, 100) once. */
+void field_vram_column_save(void) {
+    if (field_vram_column_saved != 1) {
+        field_vram_column_saved = 1;
         heap_select_owner_tag(8, 0);
-        D_800AFC70 = heap_alloc(0x8000, 1);
-        D_800AFC28.x = 0x3C0;
-        D_800AFC28.y = 0x100;
-        D_800AFC28.w = 0x40;
-        D_800AFC28.h = 0x100;
-        StoreImage(&D_800AFC28, D_800AFC70->words);
+        field_vram_column_copy = heap_alloc(0x8000, 1);
+        field_vram_column_rect.x = 0x3C0;
+        field_vram_column_rect.y = 0x100;
+        field_vram_column_rect.w = 0x40;
+        field_vram_column_rect.h = 0x100;
+        StoreImage(&field_vram_column_rect, field_vram_column_copy->words);
         DrawSync(0);
     }
 }
 
-/* Restore the saved VRAM column and release it. */
-void func_800A91F0(void) {
-    if (D_800ADB34 != 0) {
-        D_800AFC28.x = 0x3C0;
-        D_800ADB34 = 0;
-        D_800AFC28.y = 0x100;
-        D_800AFC28.w = 0x40;
-        D_800AFC28.h = 0x100;
-        LoadImage(&D_800AFC28, D_800AFC70->words);
+/* 800A91F0: Restore the saved VRAM column and release it. */
+void field_vram_column_restore(void) {
+    if (field_vram_column_saved != 0) {
+        field_vram_column_rect.x = 0x3C0;
+        field_vram_column_saved = 0;
+        field_vram_column_rect.y = 0x100;
+        field_vram_column_rect.w = 0x40;
+        field_vram_column_rect.h = 0x100;
+        LoadImage(&field_vram_column_rect, field_vram_column_copy->words);
         DrawSync(0);
-        heap_free(D_800AFC70);
+        heap_free(field_vram_column_copy);
     }
 }

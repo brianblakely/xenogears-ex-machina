@@ -63,7 +63,7 @@ class LineTests(unittest.TestCase):
             [(len(line.codes), line.length, line.cr) for line in lines],
             [(28, 56, False), (0, 1, True), (1, 3, True)],
         )
-        self.assertLessEqual(2 * LINE_CODES + 1, 0x40)  # func_800AC0F0 copies 0x40 bytes
+        self.assertLessEqual(2 * LINE_CODES + 1, 0x40)  # field_staff_roll_write_line copies 0x40 bytes
 
     def test_reading_stops_when_no_bytes_are_left(self):
         self.assertEqual(decode(b""), [])
@@ -131,23 +131,23 @@ class SourceTests(unittest.TestCase):
         self.assertEqual(int(defines["GLYPH_LINE_CELLS"], 0), LINE_CODES)
 
     def test_lines_codes_and_cells_follow_the_c(self):
-        path = "decomp/src/field/field_800A9274.c"
-        line = function(path, "u8 *func_800AC0F0(")
-        self.assertRegex(line, r"if \(D_800AF780 <= 0\) \{\s+count = 0;")
+        path = "decomp/src/field/field_effect.c"
+        line = function(path, "u8 *field_staff_roll_write_line(")
+        self.assertRegex(line, r"if \(field_staff_roll_bytes_left <= 0\) \{\s+count = 0;")
         self.assertRegex(line, r"count < GLYPH_LINE_CELLS; count\+\+")
         self.assertRegex(line, r"if \(line\[used\] == '\\r'\) \{\s+used\+\+;\s+break;")
-        self.assertRegex(line, r"glyph = func_800ABFDC\(&line\[used\], &own\);\s+used \+= 2;")
+        self.assertRegex(line, r"glyph = field_staff_roll_get_glyph\(&line\[used\], &own\);\s+used \+= 2;")
         self.assertIn("source.x = glyph % 7 * 9 + 0x380;", line)
         self.assertIn("source.y = glyph / 7 * 16 + 0x100;", line)
-        self.assertIn("D_800AF780 -= used;", line)
-        self.assertIn("code = text[1] | (text[0] << 8);", function(path, "s32 func_800ABFDC("))
-        loader = function(path, "void func_800AC308(")
+        self.assertIn("field_staff_roll_bytes_left -= used;", line)
+        self.assertIn("code = text[1] | (text[0] << 8);", function(path, "s32 field_staff_roll_get_glyph("))
+        loader = function(path, "void field_staff_roll_load_files(")
         self.assertIn(f"cd_select_directory({DIRECTORY[0]}, {DIRECTORY[1]});", loader)
-        self.assertIn(f"D_800AF780 = cd_get_file_size(0x{TEXT_FILE:X});", loader)
-        self.assertIn(f"cd_read_file(0x{FONT_FILE:X}, D_800AF784, 0, 0x80);", loader)
+        self.assertIn(f"field_staff_roll_bytes_left = cd_get_file_size(0x{TEXT_FILE:X});", loader)
+        self.assertIn(f"cd_read_file(0x{FONT_FILE:X}, field_staff_roll_font_tim, 0, 0x80);", loader)
         self.assertIn(
-            "func_80070340(D_800AF784, 0x380, 0x100, 0, 0x1FF, 0, 0);",
-            function(path, "void func_800ACB90("),
+            "field_load_tim_at(field_staff_roll_font_tim, 0x380, 0x100, 0, 0x1FF, 0, 0);",
+            function(path, "void field_staff_roll_upload_font("),
         )
 
 

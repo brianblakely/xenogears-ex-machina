@@ -1,1 +1,3 @@
 D_801E8648 = 0x801E8648; // size:0x28
+// Names tools/names.py gave these addresses (docs/matching.md, Names).
+field_layer_redraw_hook = 0x800796F4; // type:func

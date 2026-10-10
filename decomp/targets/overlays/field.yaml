@@ -48,31 +48,31 @@ segments:
       # docs/matching.md). The text boundaries are documented in each file.
       # The first unit's rodata opens with the overlay's number (4).
       - [0x0, .rodata, field]
-      - [0x9C, .rodata, field_8007A44C]
-      - [0x198, .rodata, field_800854D0]
-      - [0x2BC, .rodata, field_800A4748]
-      - [0x2D8, .rodata, field_800A9274]
+      - [0x9C, .rodata, field_motion]
+      - [0x198, .rodata, field_event]
+      - [0x2BC, .rodata, field_screen]
+      - [0x2D8, .rodata, field_effect]
       - [0x2fc, c, field]
-      - [0xA95C, c, field_8007A44C]
-      - [0x159E0, c, field_800854D0]
-      - [0x34C58, c, field_800A4748]
-      - [0x39784, c, field_800A9274]
+      - [0xA95C, c, field_motion]
+      - [0x159E0, c, field_event]
+      - [0x34C58, c, field_screen]
+      - [0x39784, c, field_effect]
       - [0x3df78, .data, field]
-      - [0x3e1f0, .data, field_8007A44C]
-      - [0x3e4dc, .data, field_800854D0]
-      - [0x3f034, .data, field_800A4748]
-      - [0x3f984, .data, field_800A9274]
+      - [0x3e1f0, .data, field_motion]
+      - [0x3e4dc, .data, field_event]
+      - [0x3f034, .data, field_screen]
+      - [0x3f984, .data, field_effect]
       # The uninitialized variables follow the program, not loaded: the BSS
       # the resident's mode table clears (800af5e4 + 4 through the word at
       # 800c426c, bss_size above). Each unit's own come first, in unit order:
-      # only field_800854D0 (the RECT ring 80091adc keeps) and field_800A9274
+      # only field_event (the RECT ring 80091adc keeps) and field_effect
       # (the text sequence) have statics, and no unit forms an address in
       # another's. The commons, which every unit reaches, follow up to the end
       # in the original linker's order (field_common.c). Declaring them here
       # keeps their names out of undefined_syms_auto.txt: the link places
       # every one from its definition.
-      - { type: .bss, vram: 0x800AF5E8, name: field_800854D0 }
-      - { type: .bss, vram: 0x800AF76C, name: field_800A9274 }
+      - { type: .bss, vram: 0x800AF5E8, name: field_event }
+      - { type: .bss, vram: 0x800AF76C, name: field_effect }
       - { type: .bss, vram: 0x800AF858, name: field_common }
   - [0x3faf8]
   # The packer completes its last group of eight tokens with zero literals

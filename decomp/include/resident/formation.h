@@ -51,7 +51,7 @@ typedef struct BattleFormation {
 
 /* An encounter set: 16 formations. The field decodes a map's set from map
  * bundle component 6 (0x210 bytes: the set, then the 16 weights formation_encounter_weights;
- * field func_80070CC8), the world map copies a terrain kind's set from its area
+ * field field_load_from_bundle), the world map copies a terrain kind's set from its area
  * file's tables (D_8009D73C, worldmap func_80075E7C) and the debug battle
  * selector the first 0x200 bytes of a (0x20, 3) file (ovl2606 func_801E0A34). */
 typedef struct EncounterSet {
@@ -67,11 +67,11 @@ LAYOUT_CHECK(BattleFormationLayout, sizeof(BattleFormation) == 0x20 &&
 
 extern EncounterSet formation_encounter_set;    /* the set of the next battle */
 extern u8 formation_encounter_weights[16];          /* the field's random-encounter weight per formation
-                                    * (field func_80079288, which draws only after a
+                                    * (field field_encounter_count_down, which draws only after a
                                     * script of the map arms it with event f7,
-                                    * func_8008E85C) */
+                                    * field_event_draw_random_picks) */
 extern u8 formation_selected_index;              /* the formation the battle copies: drawn by the field
-                                    * (func_80079288) or the world map (func_80075E7C),
+                                    * (field_encounter_count_down) or the world map (func_80075E7C),
                                     * named by a field script (events 71, fe 84), or
                                     * mode_pending_battle_formation - 1 (battle battle_main) */
 extern BattleFormation formation_active; /* the battle's formation */

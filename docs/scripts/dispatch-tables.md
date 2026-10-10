@@ -82,7 +82,7 @@ and table, and how each table's index is chosen, is listed in
   texture page (c4) and CLUT (c8) words of the auxiliary data (`model_apply_override_command`).
   The table's comments name each type's packet.
 - Data: every model of each group a loader relocates (`model_relocate_group`; a
-  hierarchy may build only some): field map geometry (component 2, `func_80070CC8`),
+  hierarchy may build only some): field map geometry (component 2, `field_load_from_bundle`),
   ovl2143 actor files (4, 0) 0x6bb + 2k, battle object model files (stages
   (12, 3) 6 + 2s, enemy set model entries, object sets (0x28, 0) 2s + 1, gears and
   their part files by `battle_gear_file_table`), arena models (0x30, 1) id + 2 and the menu
@@ -102,7 +102,7 @@ and table, and how each table's index is chosen, is listed in
 - Dispatch (`decomp/src/worldmap/worldmap.c`): the world map's entry runs mode
   `game_data_worldmap_flag_word[0] & 0x7fff` of `D_8009A058` (19 rows of enter, start and leave
   handlers) without a bound check. The word is the game data's +0x2320.
-- Data: field `56` (`change_map`, `func_80093014`) stores operand 7 there as the
+- Data: field `56` (`change_map`, `field_event_change_map`) stores operand 7 there as the
   field leaves for the world map. Battle event opcode 26 (ovl3087
   `func_801E7770`) stores operand d with scene a; the world map runs after the
   battle only when the scene & 0x7ff is 0x400 or more (ovl2596 `func_801E252C`),

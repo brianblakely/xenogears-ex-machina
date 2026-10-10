@@ -1,7 +1,7 @@
 #ifndef FIELD_FIELD_PICTURE_H
 #define FIELD_FIELD_PICTURE_H
 
-/* The picture viewer (800aaf80-800aba98, field_800A9274.c): on some maps an
+/* The picture viewer (800aaf80-800aba98, field_effect.c): on some maps an
  * item shows a full-screen picture (file 0x7fb + picture) faded in over the
  * field until dismissed. */
 
@@ -23,11 +23,11 @@
 #define PICTURE_Y 6       /* to 800afe7c */
 #define PICTURE_PIECES 7  /* 1 adds the flagged pieces (800ab808) */
 
-extern s32 D_800AF47C[];
-extern s32 D_800C3914;
-extern s32 D_800C3A18;
-extern s32 D_800AFE78;
-extern s32 D_800AFE7C;
+extern s32 field_picture_table[];
+extern s32 field_picture_marker_scale_x;
+extern s32 field_picture_marker_scale_z;
+extern s32 field_picture_marker_origin_x;
+extern s32 field_picture_marker_origin_y;
 
 /* The picture's marker sprites (800b1df0), each with a draw mode per
  * draw buffer; only the first (the controlled actor's spot) is drawn. */
@@ -36,12 +36,12 @@ typedef struct PictureMarks {
     SPRT sprites[16][2];  /* 180 */
 } PictureMarks;
 
-extern ScreenPieces *D_800C3A3C; /* the picture's three pieces */
-extern PictureMarks *D_800B1DF0;
+extern ScreenPieces *field_picture_pieces; /* the picture's three pieces */
+extern PictureMarks *field_picture_marker_sprites;
 
-void func_800AAF80(void);      /* set the picture up */
-void func_800AB378(s32 level);
-void func_800AB808(void);
-void func_800ABA98(void);      /* show the map's picture while its item is held */
+void field_picture_init(void);      /* set the picture up */
+void field_picture_draw(s32 level);
+void field_picture_add_flagged_pieces(void);
+void field_picture_show(void);      /* show the map's picture while its item is held */
 
 #endif

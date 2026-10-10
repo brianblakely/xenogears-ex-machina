@@ -30,7 +30,7 @@ enum {
     BUNDLE_IMAGES,
     BUNDLE_EVENTS,
     BUNDLE_ENCOUNTERS, /* the encounter set and its weights (resident/formation.h) */
-    BUNDLE_MESSAGES,   /* the field message table (D_800ADBF0) */
+    BUNDLE_MESSAGES,   /* the field message table (field_message_table) */
     BUNDLE_ZONES
 };
 
@@ -54,18 +54,18 @@ typedef struct {
 #define BUNDLE_SIZE(k) (*(s32 *)((u8 *)mode_read_ahead_block + 0x10C + (k) * 4))
 #define BUNDLE_COMPONENT(k) ((void *)(*(s32 *)((u8 *)mode_read_ahead_block + 0x130 + (k) * 4) + (s32)mode_read_ahead_block))
 
-extern SpriteSlotTable D_800B1F78; /* the bundle's sprite slots, kept by the load */
-extern s32 D_800AFD10;         /* attributes before the first triangle */
-extern u32 D_800ADB30;         /* heap top */
+extern SpriteSlotTable field_sprite_slots; /* the bundle's sprite slots, kept by the load */
+extern s32 field_unread_collision_attribute_count;         /* attributes before the first triangle */
+extern u32 field_heap_top;         /* heap top */
 
-void func_80070CC8(void);      /* load the field from the bundle */
-void func_800700B0(void);      /* tear the field down */
+void field_load_from_bundle(void);      /* load the field from the bundle */
+void field_teardown(void);      /* tear the field down */
 
 /* The map's own stream (file 0xb9 + 2 * map) in a four-sector ring. */
-extern s32 D_800ADB60;         /* the stream is running */
-extern void *D_800ADC14;       /* its ring */
-void func_80070488(void);      /* start it unless one runs */
-void func_80070508(void);      /* stop it and release the ring */
+extern s32 field_map_stream_running;         /* the stream is running */
+extern void *field_map_stream_ring;       /* its ring */
+void field_map_stream_start(void);      /* start it unless one runs */
+void field_map_stream_stop(void);      /* stop it and release the ring */
 
 /* Trigger zone (field component 8): four x, y, z corners. */
 typedef struct {
@@ -78,9 +78,9 @@ typedef struct {
     ZonePoint corner[4];
 } Zone;
 
-extern Zone *D_800ADBF4;       /* trigger zones */
+extern Zone *field_trigger_zones;       /* trigger zones */
 
-/* Up to 32 texture scrolls (80027d64) created by func_800921E8. */
+/* Up to 32 texture scrolls (80027d64) created by field_event_add_texture_scroll. */
 typedef struct WindowList {
     s16 count;
     TextureScroll *scrolls[32];
@@ -88,11 +88,11 @@ typedef struct WindowList {
     s16 lengths[32];
 } WindowList;
 
-extern WindowList D_800AFEA8;
-void func_800920D8(void);      /* run every scroll (80027eac) */
+extern WindowList field_texture_scrolls;
+void field_run_texture_scrolls(void);      /* run every scroll (80027eac) */
 
 /* The panorama backdrop (resident 8002709c) built from the parameters events
- * set (D_800B0080, field_event.h). */
-extern Panorama *D_800B007C;
+ * set (field_panorama_parameters, field_event.h). */
+extern Panorama *field_panorama;
 
 #endif

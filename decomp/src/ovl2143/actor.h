@@ -35,7 +35,7 @@ typedef struct {
     SVECTOR offset;         /* +10 */
 } SpriteLink;
 
-void func_800796F4(void);
+void field_layer_redraw_hook(void);
 
 void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, u32 *ot, s32 buffer);
 void func_801E1880(Actor **actors);

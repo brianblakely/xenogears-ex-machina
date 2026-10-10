@@ -3,7 +3,7 @@
 
 /* The field frame's drawing (field.c): the draw blocks' switch, the model
  * and sprite passes, the compass and pointer markers, the screen fades, the
- * overlay sprites and the sprite block of field_800A9274.c. */
+ * overlay sprites and the sprite block of field_effect.c. */
 
 #include "common.h"
 #include "psyq/libgpu.h"
@@ -11,23 +11,23 @@
 #include "field/monitor.h"
 #include "field.h"
 
-void func_80073F50(void);      /* switch draw blocks, clear the overlay table */
-void func_80073FE0(void);      /* swap the draw buffer, clear its tables */
-void func_80075910(void);      /* finish the frame */
+void field_draw_switch_block(void);      /* switch draw blocks, clear the overlay table */
+void field_draw_swap_and_clear_ots(void);      /* swap the draw buffer, clear its tables */
+void field_movie_run_overlay_frame(void);      /* finish the frame */
 
 /* The model pass (800748e8): instances are culled by their bounding square
  * against the screen widened by the margins (the instances' refresh,
- * func_80073E38, is in field/monitor.h). */
-extern s32 D_800C3A5C;         /* screen margin x */
-extern s32 D_800C3A60;         /* screen margin y */
-void func_800748E8(void);      /* draw the models */
-s32 func_8007469C(void);       /* whether a shown descriptor has flag 0x8000 */
-void func_800AA9DC(FieldInstance *instance); /* bounds from the mesh */
-s32 func_800AAA74(FieldInstance *instance);  /* 0 when on screen, else -1 */
+ * field_instance_refresh_bounds_modes, is in field/monitor.h). */
+extern s32 field_model_cull_margin_x;         /* screen margin x */
+extern s32 field_model_cull_margin_y;         /* screen margin y */
+void field_draw_models(void);      /* draw the models */
+s32 field_has_second_ot_instances(void);       /* whether a shown descriptor has flag 0x8000 */
+void field_instance_set_bounds(FieldInstance *instance); /* bounds from the mesh */
+s32 field_instance_is_off_screen(FieldInstance *instance);  /* 0 when on screen, else -1 */
 
 /* The sprite pass and the sprite factory (80076ac0). */
-extern s32 D_800AFC74;         /* sprites created */
-void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk, s32 flag);
+extern s32 field_sprite_created_count;         /* sprites created */
+void field_actor_create_sprite(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk, s32 flag);
 
 /* A pointer marker: its quad's corners and primitive per buffer. */
 typedef struct FieldMarker {
@@ -35,36 +35,36 @@ typedef struct FieldMarker {
     POLY_FT4 poly[2];
 } FieldMarker;
 
-void func_8007AA44(FieldMarker *marker); /* set a marker up */
-void func_8007AB6C(u_long *ot, FieldMarker *marker, MATRIX *m, s32 buffer); /* project and link */
-void func_8007AC58(u_long *ot, FieldMarker *marker, MATRIX *m, s32 buffer); /* as a standing sprite */
+void field_shadow_init_quad(FieldMarker *marker); /* set a marker up */
+void field_marker_project_and_link(u_long *ot, FieldMarker *marker, MATRIX *m, s32 buffer); /* project and link */
+void field_marker_link_standing_sprite(u_long *ot, FieldMarker *marker, MATRIX *m, s32 buffer); /* as a standing sprite */
 
 /* The compass (80074108). */
-extern FieldMarker D_800B06BC[25]; /* ring, letters, needle and pointer quads */
-extern u16 D_800ADC24[8];      /* heading octant bit per palette row */
-extern DVECTOR D_800ADC34[4];  /* letter x, z offsets */
-extern s16 D_800ADB48;         /* needle heading */
-extern s16 D_800ADB4A;         /* needle goal */
-extern u16 D_800AFC08[16];     /* compass colours read back from VRAM */
-extern u16 D_800AFD24[128];    /* compass palette */
-extern RECT D_800B004C;        /* compass colour strip */
-void func_8007A5C4(void);      /* build the four letters */
-void func_8007A7F4(FieldMarker *record, s32 column, s32 row, s32 style); /* build a grid quad */
+extern FieldMarker field_compass_markers[25]; /* ring, letters, needle and pointer quads */
+extern u16 field_compass_row_octant_bits[8];      /* heading octant bit per palette row */
+extern DVECTOR field_compass_letter_offsets[4];  /* letter x, z offsets */
+extern s16 field_compass_needle_heading;         /* needle heading */
+extern s16 field_compass_needle_goal;         /* needle goal */
+extern u16 field_compass_colors[16];     /* compass colours read back from VRAM */
+extern u16 field_compass_palette[128];    /* compass palette */
+extern RECT field_compass_palette_rect;        /* compass colour strip */
+void field_compass_build_quadrant_quads(void);      /* build the four letters */
+void field_compass_build_grid_quad(FieldMarker *record, s32 column, s32 row, s32 style); /* build a grid quad */
 
 /* Screen fades: two channels in the work block (FadeChannel); a fade starts
- * with func_80071D08 (field/monitor.h). */
-extern s32 D_800ADC04;         /* fade mode; fades start only in mode 2 */
-extern s16 D_800ADC08;         /* fade started */
-extern DR_MODE D_800AFE24[2];  /* fade draw mode per buffer */
-extern RECT D_800AFE3C[2];     /* fade texture windows */
-extern RECT D_800AFE4C;        /* fade copy source */
-extern TILE D_800AFE54[2];     /* fade tile per buffer */
-void func_80071A64(void);          /* set both channels' primitives up */
-void func_8007D93C(s32 channel);   /* prepare a channel */
-void func_80071DCC(s32 steps);     /* fade channel 0 out to white, once */
-void func_80071E58(s32 steps);     /* fade it back in, once */
-void func_80071CB4(void *ot, s32 buffer); /* step and draw both channels */
-void func_8007DA44(u_long *ot, s32 buffer); /* link the active channels */
+ * with field_fade_start (field/monitor.h). */
+extern s32 field_fade_mode;         /* fade mode; fades start only in mode 2 */
+extern s16 field_faded_out;         /* fade started */
+extern DR_MODE field_menu_fade_draw_modes[2];  /* fade draw mode per buffer */
+extern RECT field_fade_texture_windows[2];     /* fade texture windows */
+extern RECT field_menu_fade_source_rect;        /* fade copy source */
+extern TILE field_menu_fade_tiles[2];     /* fade tile per buffer */
+void field_fade_init_channels(void);          /* set both channels' primitives up */
+void field_fade_init_channel(s32 channel);   /* prepare a channel */
+void field_fade_out(s32 steps);     /* fade channel 0 out to white, once */
+void field_fade_in(s32 steps);     /* fade it back in, once */
+void field_fade_update_channels(void *ot, s32 buffer); /* step and draw both channels */
+void field_fade_link_channels(u_long *ot, s32 buffer); /* link the active channels */
 
 /* The five overlay sprites (800abd18), per sprite and draw buffer. */
 typedef struct OverlaySprites {
@@ -72,9 +72,9 @@ typedef struct OverlaySprites {
     SPRT sprites[5][2];
 } OverlaySprites;
 
-extern OverlaySprites D_800B0188;
-void func_800ABD18(void);      /* set them up */
-void func_800ABEC8(void);      /* link the current buffer's */
+extern OverlaySprites field_wide_overlay_sprites;
+void field_wide_overlay_init(void);      /* set them up */
+void field_wide_overlay_draw(void);      /* link the current buffer's */
 
 /* The sprite block (800aac08): 33 sprites, each with a draw mode, per draw
  * buffer. */
@@ -83,10 +83,10 @@ typedef struct FieldSprites {
     SPRT sprites[33][2];
 } FieldSprites;
 
-extern FieldSprites *D_800AFC68;
-void func_800AAC08(void);      /* allocate it */
-void func_800AABD8(void);      /* release it */
-void func_800AADC8(s32, s32, s32, s32); /* set a sprite's colour */
-void func_800AAE4C(s32 index, s32 x, s32 y, s32 anchor); /* place and link a sprite */
+extern FieldSprites *field_overlay_sprites;
+void field_overlay_sprite_alloc_all(void);      /* allocate it */
+void field_overlay_sprite_release_all(void);      /* release it */
+void field_overlay_sprite_set_color(s32, s32, s32, s32); /* set a sprite's colour */
+void field_overlay_sprite_place(s32 index, s32 x, s32 y, s32 anchor); /* place and link a sprite */
 
 #endif

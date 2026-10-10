@@ -42,7 +42,7 @@ segments:
     start: 0x0
     vram: 0x80280000
     subsegments:
-      - [0x0, .rodata, debug595]
-      - [0x11ec, c, debug595]
-      - [0x596c, .data, debug595]
+      - [0x0, .rodata, field_debug_monitor]
+      - [0x11ec, c, field_debug_monitor]
+      - [0x596c, .data, field_debug_monitor]
   - [0x61c8]

@@ -9,20 +9,20 @@ packed overlay.
 
 ## Field movie sound timelines
 
-- **Reader:** `func_80085678` in the `field` overlay (Disc 1 file 36, Disc 2 file
-  31). The field movie player `func_800A7C58` seeks the timeline with
-  `func_80085788` before the movie starts and runs `func_80085678` after each
-  movie step (`func_800A732C`); at the end `func_80085738` releases the bank.
-- **Table:** `D_800AE060`, 96 u16 (frame, sound) pairs: a leading end, then one run
+- **Reader:** `field_movie_play_due_sounds` in the `field` overlay (Disc 1 file 36, Disc 2 file
+  31). The field movie player `field_movie_play` seeks the timeline with
+  `field_movie_load_sound_bank` before the movie starts and runs `field_movie_play_due_sounds` after each
+  movie step (`field_movie_run_frames`); at the end `field_movie_release_sound_bank` releases the bank.
+- **Table:** `field_movie_sound_timelines`, 96 u16 (frame, sound) pairs: a leading end, then one run
   per movie sound-effect bank, each ended by an entry whose frame is 0xFFFF (sound
   0). The asset line is in `decomp/targets/overlays/field.classification.txt`.
-- **Bank:** event `fe a0` (`func_8008EA58`) requests a movie with its sound bank
+- **Bank:** event `fe a0` (`field_event_play_movie_sound`) requests a movie with its sound bank
   in operand 9; 0xFF requests none, as events 60 and 67 always do, and then
-  `func_80085678` plays nothing. `func_80085788` loads file 0x115 + bank of
+  `field_movie_play_due_sounds` plays nothing. `field_movie_load_sound_bank` loads file 0x115 + bank of
   directory (0x1C, 0), adds it to the open effect banks (`sound_add_effect_bank`) and
-  leaves the position `D_800C3A64` past bank + 1 ends.
-- **Timing:** the movie's frame callback (`func_800A7120`) stores the frame in
-  `D_800B06A0`. `func_80085678` plays, in table order, every entry whose frame
+  leaves the position `field_movie_sound_timeline_index` past bank + 1 ends.
+- **Timing:** the movie's frame callback (`field_movie_frame_callback`) stores the frame in
+  `field_movie_frame`. `field_movie_play_due_sounds` plays, in table order, every entry whose frame
   plus the movie's sound start (`FIELD_MOVIE.sound_start`, event `fe a0`'s operand
   5) the movie frame has reached, several in one call when they are due together:
   the loaded bank's effect in the low byte of the sound, on the voice pair in bits
@@ -37,7 +37,7 @@ packed overlay.
   on Disc 2, and once a bank held in a variable.
 - **Tool:** `--sweep` prints these aggregates; `--list movie-sounds [--disc N]`
   prints each bank's run. `tests/test_overlay_scripts.py` checks the decoder
-  against `func_80085788`, `func_80085678` and `func_8008EA58`, and that the table
+  against `field_movie_load_sound_bank`, `field_movie_play_due_sounds` and `field_event_play_movie_sound`, and that the table
   stays an asset.
 
 ## World map terrain texture animations

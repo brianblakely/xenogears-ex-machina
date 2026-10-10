@@ -22,8 +22,8 @@ gear special slots, and every id from 50 a source can put into the weapon list
 or the gear part list:
 
 * field give_item (8c) with the list in the item code's high byte (1 weapons,
-  3 gear parts; field func_800951B8); a variable operand from v0400 is resolved
-  from the same map's set_variable (35) immediates, since field func_800705DC
+  3 gear parts; field field_inventory_find_free_slot); a variable operand from v0400 is resolved
+  from the same map's set_variable (35) immediates, since field field_reset_state
   clears those variables for each map;
 * the shops the field opens: fe 59 (menu kind 4, ovl2601) with the first 30 ids
   of each 0x5c-byte record of the menu resources' file 6 as weapons
@@ -39,7 +39,7 @@ or the gear part list:
 
 It also lists every field take_item (8d) from the weapon or gear part list,
 resolved as give_item is: one that takes an item's last copy leaves its slot's
-id at 0xFF (field func_8009640C), which slot39 func_801DE5CC tests as an id
+id at 0xFF (field field_event_take_item), which slot39 func_801DE5CC tests as an id
 from 50 through the table record 255, past the table's end.
 
 The field menu's debug fill (slot39 func_801E5058) adds ids 1-71 to both lists.
@@ -93,18 +93,18 @@ TABLES = {
     "weapon": (WEAPONS, 0x10, 0x0, 2, 0x3, 0x6),
     "gear weapon": (GEAR_WEAPONS, 0x14, 0x4, 4, 0xC, 0xF),
 }
-# menu_state_resource_file, the shops' resource archive: field func_800799D4 loads file 1 of
+# menu_state_resource_file, the shops' resource archive: field field_run_menu loads file 1 of
 # directory 0x10 with the menu overlay, and so does the resident's debug start
 # (menu_state_run_screen).
 RESOURCES = (0x10, 0, 1)
 SHOPS, SHOP, SHOP_WEAPONS = 6, 0x5C, 30  # ovl2601: files[6], kind 0 (ids 0-29) weapons
 GEAR_SHOPS, GEAR_SHOP, GEAR_PARTS = 7, 0x64, (0x3C, 0x50)  # ovl2602: files[7], stock[4]
-OPEN_SHOP, OPEN_GEAR_SHOP = "fe 59", "fe 5a"  # field func_800939A0, func_80093A04
-GIVE_ITEM, TAKE_ITEM, SET_VARIABLE = "8c", "8d", "35"  # take_item: field func_8009640C
+OPEN_SHOP, OPEN_GEAR_SHOP = "fe 59", "fe 5a"  # field field_event_open_menu4, field_event_open_menu5
+GIVE_ITEM, TAKE_ITEM, SET_VARIABLE = "8c", "8d", "35"  # take_item: field field_event_take_item
 EMPTIED = 0xFF  # the id take_item leaves in a slot whose count reaches 0
 CAMERA_STORES = ("af", "b0", "b1")  # u16@1 a variable when u8@3 is 0
 WEAPON_LIST, GEAR_PART_LIST = 1, 3  # field item code lists
-LOCAL_VARIABLES = 0x400  # byte offsets of D_800C3A68[0x200..0x3ff]
+LOCAL_VARIABLES = 0x400  # byte offsets of field_event_variables[0x200..0x3ff]
 RECORDS, RECORD, ENEMIES = 0x32, 0x170, 8  # ovl2615 func_801E4870
 DROPS = ((0x150, 0x152, 0x154), (0x151, 0x153, 0x155))  # (chance, id, category)
 DROP_LISTS = {0: "weapon list", 3: "gear part list"}  # ovl2596 func_801E1444
@@ -192,9 +192,9 @@ class Census:
 def written(instructions) -> dict[int, list[int | None]]:
     """variable -> what each instruction that may write it stores: set_variable's
     immediate, else None (unknown). Writers are the `var` operands, the
-    variable of a `bit` operand (operand >> 4: fe 0a/fe 0b, field func_8008D684,
-    func_8008D700) and af/b0/b1's operand 1 when byte 3 is 0 (func_80090C20,
-    func_80090CB8, func_80090D50); reads among them only leave a value unknown."""
+    variable of a `bit` operand (operand >> 4: fe 0a/fe 0b, field field_event_ext_set_variable_bit,
+    field_event_ext_clear_variable_bit) and af/b0/b1's operand 1 when byte 3 is 0 (field_event_scripted_heading,
+    field_event_scripted_elevation, field_event_scripted_zoom); reads among them only leave a value unknown."""
     writes = defaultdict(list)
     for ins in instructions:
         for operand, value in zip(ins.spec.operands, ins.operands, strict=True):
@@ -221,14 +221,14 @@ def item_codes(ins, writes: dict[int, list[int | None]]) -> list[int] | None:
 
 def in_lists(code: int) -> tuple[str, int] | None:
     """(list, id) when item code `code` names the weapon or gear part list
-    (the list in the high byte, field func_8009501C)."""
+    (the list in the high byte, field field_inventory_get_id_array)."""
     kind = {WEAPON_LIST: "weapon list", GEAR_PART_LIST: "gear part list"}.get(code >> 8)
     return (kind, code & 0xFF) if kind else None
 
 
 def listed(code: int) -> tuple[str, int] | None:
     """(list, id) when item code `code` adds an id from FIRST to the weapon or
-    gear part list (the list in the high byte, field func_800951B8)."""
+    gear part list (the list in the high byte, field field_inventory_find_free_slot)."""
     found = in_lists(code)
     return found if found and found[1] >= FIRST else None
 

@@ -15,7 +15,7 @@
   122 calls in decomp/src pass entries of the tables below or text built at
   run time; no function still linked as assembly calls them.
 - Tables (a count, 0, count + 1 offsets and count (columns, rows) pairs, read
-  by `text_get_resource_entry`): field messages (map bundle component 7, D_800ADBF0),
+  by `text_get_resource_entry`): field messages (map bundle component 7, field_message_table),
   system data (`MES SYSDATA`, except the character pairs of resource 27), menu
   labels and menu data (directory 0x10 files 1 and 2; the world map loads the
   menu resources from its own file 0x26, byte-identical to file 1 on both
@@ -115,21 +115,21 @@ Notes from the handler:
 
 ## Staff-roll text (field file 0xAB)
 
-- Reader: field `func_800AC0F0` (decomp/src/field/field_800A9274.c) draws one
-  line into VRAM row n & 15 at x 0x300. `func_800ACCF4` calls it on every
-  16th pass of the movie loop in `func_800A7948` (movie frames 0x687-0x18E1),
-  and `func_800AC99C` scrolls the sixteen rows up a pixel each pass.
+- Reader: field `field_staff_roll_write_line` (decomp/src/field/field_effect.c) draws one
+  line into VRAM row n & 15 at x 0x300. `field_staff_roll_advance` calls it on every
+  16th pass of the movie loop in `field_staff_roll_run_over_movie` (movie frames 0x687-0x18E1),
+  and `field_staff_roll_draw` scrolls the sixteen rows up a pixel each pass.
 - Format: lines of up to 28 big-endian two-byte glyph codes, each ending at a
   CR (0x0D) that the line consumes. The CR test comes before each code, so a
   line of 28 codes leaves its CR to the next line, an empty one. Codes
   8540-887F are cells of the font image (file 0xAC at (380, 100), seven 9x16
-  cells a row; `func_800ABFDC`); any other code goes to the BIOS kanji ROM
+  cells a row; `field_staff_roll_get_glyph`); any other code goes to the BIOS kanji ROM
   (`Krom2RawAdd`, whose PsyQ prototype takes a Shift-JIS code). CR is the only
-  control. Once the file's bytes are used up (`D_800AF780`), every further
+  control. Once the file's bytes are used up (`field_staff_roll_bytes_left`), every further
   line is blank.
-- Source: directory (4, 0) files 0xAB and 0xAC, loaded by `func_800AC308`
-  from `func_800ACC58` when `mode_staff_roll_enabled` is set. Only field ext `be`
-  (`enable_movie_overlay`, `func_80087C0C`) sets it, and no reachable field
+- Source: directory (4, 0) files 0xAB and 0xAC, loaded by `field_staff_roll_load_files`
+  from `field_staff_roll_start` when `mode_staff_roll_enabled` is set. Only field ext `be`
+  (`enable_movie_overlay`, `field_event_enable_movie_overlay`) sets it, and no reachable field
   script on either disc uses that event (`python3 -m tools.analysis.events
   --sweep`).
 

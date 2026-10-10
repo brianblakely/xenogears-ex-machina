@@ -34,9 +34,9 @@ models (0x38-byte headers; groups of them relocated by model_relocate_group, sin
 ones by model_relocate_sprite_model) come from these loaders:
 
 * field map bundles, directory (4, 0) file 0xb8 + 2 * map: every model group of
-  the geometry component (component 2, field func_80070CC8);
+  the geometry component (component 2, field field_load_from_bundle);
 * ovl2143 actors, the model file of each pair after ovl2143 in (4, 0), files
-  0x6bb + 2k (field func_80077884, the gear shop's func_801CF9BC);
+  0x6bb + 2k (field field_layer_load, the gear shop's func_801CF9BC);
 * battle objects (battle_create_object: the group between the model file's entries 2
   and 3): stage files (12, 3) 6 + 2s (resident mode_load_battle_stage), the model entries
   of enemy set files (12, 1) 2n + 3 (ovl2615 func_801E6314), object sets
@@ -815,7 +815,7 @@ def primitive_census(disc: Disc) -> PrimitiveCensus:
 # frame) without a bound check. The word is the game data's +0x2320. The world
 # map sets it to 1 for a new world state and keeps it across its own battles
 # (bit 0x8000 marks the return); its exits store a field's entry there. Field
-# 56 (change_map, func_80093014: operand 7) sets it as the field leaves for
+# 56 (change_map, field_event_change_map: operand 7) sets it as the field leaves for
 # the world map (exit kind 1, mode 3). Battle event opcode 26 (ovl3087
 # func_801E7770) sets the scene (a) and the word (d); after the battle the
 # world map runs only when the scene & 0x7ff is 0x400 or more (ovl2596

@@ -16,11 +16,11 @@ from tools.analysis.field import FieldError
 ROOT = Path(__file__).resolve().parents[1]
 FIELD = ROOT / "decomp/src/field"
 DEFINITION = re.compile(
-    r"^(?:s32|void|u32|s16|u16|u8|int) (func_[0-9A-F]{8})\([^;]*?\)\s*(?:\n[^{]*)?\{(.*?)\n\}",
+    r"^(?:s32|void|u32|s16|u16|u8|int) ([A-Za-z_]\w*)\([^;]*?\)\s*(?:\n[^{]*)?\{(.*?)\n\}",
     re.M | re.S,
 )
-READERS = {0x80: "8009CF78", 0x40: "8009CFBC", 0x20: "8009D000", 0x10: "8009D044"}
-READERS |= {0x08: "8009D088", 0x04: "8009D0CC", 0x02: "8009D110", 0x01: "8009D154"}
+# The selected-operand readers by flag bit (8009cf78-8009d154).
+READERS = {bit: f"field_event_read_selected_operand_{bit:02x}" for bit in (1, 2, 4, 8, 16, 32, 64, 128)}
 
 
 def number(value: int) -> str:
@@ -35,7 +35,7 @@ class Source:
 
     def dispatch(self, table: str) -> list[str]:
         block = re.search(rf"void \(\*{table}\[\d+\]\)\(void\) = \{{(.*?)\}};", self.text, re.S)
-        return re.findall(r"func_[0-9A-F]{8}", block.group(1))
+        return re.findall(r"[A-Za-z_]\w*", re.sub(r"/\*.*?\*/", "", block.group(1), flags=re.S))
 
     def reach(self, name: str, depth: int = 3) -> str:
         """The handler's body and those of the field functions it calls."""
@@ -48,13 +48,13 @@ class Source:
             body = self.bodies[current]
             parts.append(body)
             if level < depth:
-                pending += [(c, level + 1) for c in re.findall(r"(func_[0-9A-F]{8})\(", body)]
+                pending += [(c, level + 1) for c in re.findall(r"([A-Za-z_]\w*)\(", body)]
         return "\n".join(parts)
 
     def advances(self, name: str) -> set[int]:
         body = self.reach(name)
         found = {int(n, 0) for n in re.findall(r"pc \+= (0x[0-9A-Fa-f]+|\d+);", body)}
-        if re.search(r"pc\+\+|\+\+D_800B0078->pc", body):
+        if re.search(r"pc\+\+|\+\+field_current_event_actor->pc", body):
             found.add(1)
         return found
 
@@ -81,30 +81,30 @@ def read_patterns(operand: ev.Operand, offset: int) -> list[str]:
     if operand.kind in ("u8", "flags", "cond"):
         return [rf"EVENT_OPERAND_BYTE\({k}\)", rf"pc \+ {k}\]", rf"code\[{k}\]"]
     if operand.kind == "actor":
-        return [rf"func_8009CD[B7][4C]\({k}\)"]
+        return [rf"field_event_read_actor_index(?:_or_leader)?\({k}\)"]
     if operand.kind == "s16":
-        return [rf"func_800ACD7C\({k}\)", rf"\(s16\)func_800ACDB8\({k}\)"]
+        return [rf"field_event_read_s16\({k}\)", rf"\(s16\)field_event_read_u16\({k}\)"]
     if operand.kind == "iv":
-        return [rf"func_800ACDEC\({k}\)"]
+        return [rf"field_event_read_imm_or_var\({k}\)"]
     if operand.kind == "sel":
         flags = number(operand.flags)
         reader = READERS[operand.bit]
         selected = rf"(?:EVENT_OPERAND_BYTE\({flags}\)|[^)]*pc \+ {flags}\]|code\[{flags}\])"
         # 02 reads its two sides directly: 800acd7c or a variable by mode.
-        immediate, variable = rf"func_800ACD7C\({k}\)", rf"func_800ACDB8\({k}\)"
+        immediate, variable = rf"field_event_read_s16\({k}\)", rf"field_event_read_u16\({k}\)"
         direct = rf"{immediate}(?s:.*){variable}|{variable}(?s:.*){immediate}"
-        return [rf"func_{reader}\({k}, {selected}", direct]
+        return [rf"{reader}\({k}, {selected}", direct]
     if operand.kind == "u32":
         return [rf"operand\[{k}\]"]
-    return [rf"func_800ACDB8\({k}\)"]  # u16, var, addr, data, bit, msg
+    return [rf"field_event_read_u16\({k}\)"]  # u16, var, addr, data, bit, msg
 
 
 class SourceTests(unittest.TestCase):
-    """The tables follow D_800AE2A0, D_800AE6A0 and their handlers."""
+    """The tables follow field_event_primary_handlers, field_event_extended_handlers and their handlers."""
 
     def test_entries_name_the_dispatch_table_handlers(self):
-        primary = SOURCE.dispatch("D_800AE2A0")
-        extended = SOURCE.dispatch("D_800AE6A0")
+        primary = SOURCE.dispatch("field_event_primary_handlers")
+        extended = SOURCE.dispatch("field_event_extended_handlers")
         self.assertEqual((len(primary), len(extended)), (256, 227))
         self.assertEqual(primary[ev.PREFIX], ev.PREFIX_HANDLER)
         self.assertEqual(sorted(ev.PRIMARY), [c for c in range(256) if c != ev.PREFIX])
@@ -163,7 +163,7 @@ class SourceTests(unittest.TestCase):
                     with self.subTest(space=space, code=f"{code:02x}"):
                         (address,) = [o.offset for o in form.operands if o.kind == "addr"]
                         body = SOURCE.reach(form.handler)
-                        self.assertRegex(body, rf"pc = func_800ACDB8\({number(address)}\)")
+                        self.assertRegex(body, rf"pc = field_event_read_u16\({number(address)}\)")
 
     def test_operands_are_read_where_the_table_says(self):
         for space, table in (("primary", ev.PRIMARY), ("extended", ev.EXTENDED)):

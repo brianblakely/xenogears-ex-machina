@@ -7,10 +7,10 @@ ORIGINAL_SHA256 := 38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1f
 # (8001809c) clears the words after 800af5e4 through 800c426c (80019560).
 # field.bss.ld asserts that the linked .bss is this span.
 BSS_END := 0x800C4270
-# Mode 1 enters func_80077E88 (main.c mode_table); after every target links,
+# Mode 1 enters field_main (main.c mode_table); after every target links,
 # tools/cross_image.py compares the entry and the BSS bounds with this link.
 MODE := 1
-MODE_ENTRY := func_80077E88
+MODE_ENTRY := field_main
 BUILD := .local/decomp/build/field
 IMAGE := .local/decomp/build/field.bin
 LINKER_SCRIPT := .local/decomp/field/field.ld

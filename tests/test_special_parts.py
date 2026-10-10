@@ -81,8 +81,8 @@ class LayoutTests(unittest.TestCase):
         offered = function("decomp/src/slot39/slot39_801DBE54.c", "s32 func_801DE5CC(")
         self.assertIn(f"game_data.gearPartIds[i] >= {FIRST}", offered)
         self.assertIn(f"game_data.weaponIds[i] >= {FIRST}", offered)
-        reset = function("decomp/src/field/field.c", "void func_800705DC(void) {")
-        self.assertIn(f"D_800C3A68[i + 0x{LOCAL_VARIABLES // 2:x}] = 0;", reset)
+        reset = function("decomp/src/field/field.c", "void field_reset_state(void) {")
+        self.assertIn(f"field_event_variables[i + 0x{LOCAL_VARIABLES // 2:x}] = 0;", reset)
         stock = function("decomp/src/ovl2602/ovl2602.c", "void func_801C6E74(void) {")
         self.assertIn(f"menu_state_screen_parameter * 0x{GEAR_SHOP:x}", stock)
         self.assertIn(f"stock[4][i] = *(entry + i + 0x{GEAR_PARTS[0]:X});", stock)
@@ -91,7 +91,7 @@ class LayoutTests(unittest.TestCase):
         self.assertIn(f"shop_kinds[j] = i / {SHOP_WEAPONS};", shop)
         copy = function("decomp/src/ovl2615/ovl2615.c", "void func_801E4870(void) {")
         self.assertIn(f"battle_enemy_data_file + 0x{RECORDS:x}", copy)
-        take = function("decomp/src/field/field_800854D0.c", "void func_8009640C(void) {")
+        take = function("decomp/src/field/field_event.c", "void field_event_take_item(void) {")
         self.assertRegex(take, rf"if \(--counts\[slot\] == 0\) \{{\s+ids\[slot\] = 0x{EMPTIED:X};")
 
     def test_alias_names_what_each_index_reaches(self):

@@ -402,14 +402,14 @@ typedef struct FieldWork {
 } FieldWork;
 
 /* The objects of these types. */
-extern FieldView D_800AF880;         /* the view, with the loaded components */
-extern FieldWork D_800B2078;         /* the work block */
+extern FieldView field_view;         /* the view, with the loaded components */
+extern FieldWork field_work;         /* the work block */
 /* The commons after the work block are objects of their own: code addresses
  * 800b235c, 800b2360, 800b236c and 800b2370 from symbols of their own (as
  * members of the block, 800815f0, 80081c54, 80085738, 8008848c and 800859dc
  * compile differently), and the launch fields from 800b2374. */
-extern FieldDrawBlock D_800B249C[2]; /* the two draw blocks */
-extern FieldDrawBlock *D_800C426C;   /* the current draw block (the buffer,
-                                      * D_800ADB08, is in field/monitor.h) */
+extern FieldDrawBlock field_draw_blocks[2]; /* the two draw blocks */
+extern FieldDrawBlock *field_current_draw_block;   /* the current draw block (the buffer,
+                                      * field_draw_buffer_index, is in field/monitor.h) */
 
 #endif

@@ -164,8 +164,8 @@ class SourceTests(unittest.TestCase):
         entry = function_body(source("worldmap/worldmap.c"), "func_80070CFC")
         self.assertIn("mode = game_data_worldmap_flag_word[0] & 0x7FFF;", entry)
         self.assertIn("step = D_8009A058[D_8009C5A8].enter;", entry)
-        leave = function_body(source("field/field_800854D0.c"), "func_80093014")
-        self.assertIn("game_current_data->entry[2] = func_8009D044(7, EVENT_OPERAND_BYTE(9));", leave)
+        leave = function_body(source("field/field_event.c"), "field_event_change_map")
+        self.assertIn("game_current_data->entry[2] = field_event_read_selected_operand_10(7, EVENT_OPERAND_BYTE(9));", leave)
         self.assertIn("game_data.entry[2] = battle_state_of_event_script->operands[3];", source("ovl3087/ovl3087.c"))
         results = function_body(source("ovl2596/ovl2596.c"), "func_801E252C")
         self.assertIn(

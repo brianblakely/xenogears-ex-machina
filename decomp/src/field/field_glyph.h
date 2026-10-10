@@ -28,10 +28,10 @@ typedef struct {
 
 /* The text sequence (files 0xab and 0xac) that a movie shows over its
  * frames 687..18e2 (800a7948). */
-void func_800ACC58(void);      /* start it when enabled */
-void func_800ACCF4(void);      /* advance it one pass */
-void func_800AC99C(void);      /* draw the text roll */
-void func_800ACB90(void);      /* upload file 0xac's image */
-void func_800ACCB0(void);      /* release its buffers when enabled */
+void field_staff_roll_start(void);      /* start it when enabled */
+void field_staff_roll_advance(void);      /* advance it one pass */
+void field_staff_roll_draw(void);      /* draw the text roll */
+void field_staff_roll_upload_font(void);      /* upload file 0xac's image */
+void field_staff_roll_release(void);      /* release its buffers when enabled */
 
 #endif

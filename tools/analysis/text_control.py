@@ -401,7 +401,7 @@ def text_tables(disc: Disc):
             continue
         sectors = disc.sectors(slot)
         size, offset = (struct.unpack_from("<I", sectors, base + 28)[0] for base in (0x10C, 0x130))
-        try:  # component 7 (BUNDLE_8, D_800ADBF0), unpacked by 80070cc8
+        try:  # component 7 (BUNDLE_8, field_message_table), unpacked by 80070cc8
             messages, past_end = unpack_logical(sectors[offset:], size)
         except TextError as error:
             yield "field messages", field_number, error

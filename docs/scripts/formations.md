@@ -29,25 +29,25 @@ Party members take battle slots 0-2 and enemies slots 3-10 (`BattleSlot`,
 
 `EncounterSet` is 16 formations (0x200 bytes). Three loaders fill `formation_encounter_set`:
 
-- **Field maps.** Map bundle component 6, which `func_80070CC8` decodes into
+- **Field maps.** Map bundle component 6, which `field_load_from_bundle` decodes into
   `formation_encounter_set` itself: the set, then the 16 weights `formation_encounter_weights` of the random draw.
-  `func_80079288` picks a formation with a nonzero weight by a random number against
+  `field_encounter_count_down` picks a formation with a nonzero weight by a random number against
   the weights' running sums. Every component 6 that is not empty is 0x210 bytes; the
   packed stream ends 0-7 bytes later, in `commons_unused_4_words_b`, which no code reads. A map
   whose component 6 is empty leaves the set that was loaded before. The debug monitor
   prints the weights with its per-formation counts (debug595 page 10).
 
   A script of the map has to arm the draw. Player control (events 0c and a7,
-  `func_8009F5F4`) calls `func_80079288` on frames the player holds a direction with
-  no dialogue open, and `func_80079288` returns at once while the period
-  `D_800B2078.unk2298` is 0. Every map load clears the period and the count `unk229C`
-  (`func_800705DC`, which `func_80070CC8` calls first). Event f7 (`func_8008E85C`)
+  `field_event_request_player_control`) calls `field_encounter_count_down` on frames the player holds a direction with
+  no dialogue open, and `field_encounter_count_down` returns at once while the period
+  `field_work.unk2298` is 0. Every map load clears the period and the count `unk229C`
+  (`field_reset_state`, which `field_load_from_bundle` calls first). Event f7 (`field_event_draw_random_picks`)
   sets the period from operand 1 and the count from operand 3 (at most 32);
-  `func_8008E718` then gives that many countdowns `unk22A0` distinct values from 1 to
-  period + 1, or clears the period when the count is 0. `func_80079288` counts them
-  down and draws when one reaches 0, and `func_8008E718` deals new values each time
+  `field_encounter_draw_steps` then gives that many countdowns `unk22A0` distinct values from 1 to
+  period + 1, or clears the period when the count is 0. `field_encounter_count_down` counts them
+  down and draws when one reaches 0, and `field_encounter_draw_steps` deals new values each time
   `unk2294` counts the period down. Nothing else writes the period or the count but
-  the debug monitor's page 10 (TIME and ENCOUNT, `func_80281B90`).
+  the debug monitor's page 10 (TIME and ENCOUNT, `field_debug_run_screen`).
 - **The world map.** The area file (0x24, 0) area + 1 of each set of `D_8009B584`
   (`func_80071B9C`). `func_80073530` points `D_8009D73C[kind]` at the offsets in header
   words 11-26 (`AreaHeader` +0x2c), one table per terrain kind. The roll
@@ -66,7 +66,7 @@ Party members take battle slots 0-2 and enemies slots 3-10 (`BattleSlot`,
   map tables'. File 53 starts a sub-directory.
 
 `formation_selected_index` names the formation. The field's draw and the world map's roll set it,
-and so do field events 71 and fe 84 from operand 1 (`func_80093568`, `func_800933F8`:
+and so do field events 71 and fe 84 from operand 1 (`field_event_request_battle`, `field_event_request_battle_field`:
 an immediate when bit 15 is set, else a variable) and the debug selector's SceneNo.
 Battle event opcode 24 (ovl3087 `func_801E7700`) sets `mode_pending_battle_formation` to its operand + 1.
 When that battle ends with outcome 1, 0x40 or 0x21, the resident battle mode
@@ -138,7 +138,7 @@ bundles, area files and discs. On the user's discs:
 - Whether the modes that load the five tableless area files can roll: their timers
   (`func_8007528C`) are not traced.
 - The draws' other gates. "Can be drawn" means the weights, the arming and player
-  control do not rule a formation out. `func_80079288` also returns while other field
-  states are set (`D_800ADBDC`, `D_800ADBE4`, `D_800ADBEC`, `mode_music_load_pending`, `D_800ADB2C`,
-  `D_800ADB04`, `encounter_inhibition`), and the world map loop has its own
+  control do not rule a formation out. `field_encounter_count_down` also returns while other field
+  states are set (`field_battle_not_requested`, `field_worldmap_exit_not_requested`, `field_map_change_not_requested`, `mode_music_load_pending`, `field_music_stream_running`,
+  `field_encounters_enabled`, `encounter_inhibition`), and the world map loop has its own
   (`func_800712D0`); when scripts set them is not traced.

@@ -71,7 +71,7 @@ Vendor controls (local, `.local/original-toolchain-evidence`; the binaries stay 
 of the repository): PsyQ CC1PSX 2.6.3.SN.2 gives text and relocations identical to
 old-gcc 2.6.3 for saved whole units of movie, battle_scene, slot39 and sound;
 CC1PSX 2.7.2.SN32.3.7.0002 does the same against old-gcc 2.7.2 for the resident heap,
-field_8007A44C, menu5, worldmap_80083A00 and worldmap_80090A84; Psy-Q ASPSX 2.34
+field_motion, menu5, worldmap_80083A00 and worldmap_80090A84; Psy-Q ASPSX 2.34
 assembles movie 800737ec, battle 800a7064 and sound 8003b424 to the text that
 maspsx `--aspsx-version=2.34` and GNU as give.
 
@@ -205,7 +205,7 @@ the copied value points and one holding the value also by a local symbol (2318 o
 2376 at present); where none does, a fragment may give it as a view, another name
 plus a constant that agrees by name, and the value must lie in the object holding
 that name in its definer (4: battle's game data member `game_data_party_state = game_data +
-0x1D30` and debug595's three camera vectors of the field view D_800AF880);
+0x1D30` and debug595's three camera vectors of the field view field_view);
 otherwise a target holding the value has a symbol there (none: the movie library's
 entries and variable that field and movie use, the battle functions ovl3087 passes
 and the resident's VSync callback and sequence buffer that the world map uses all
@@ -583,7 +583,7 @@ every placeholder (7797 rows, 390 files) kept all 26 images, cross-image and cov
   are source (sine, pitch, note encodings, opcode lengths, dispatch, per-character
   file numbers, and points, paths and layouts that code interpolates or steps
   through on its own count and timing). So the field's movie sound timelines
-  `D_800AE060`, (frame, sound) runs ended by frame 0xFFFF that `func_80085678`
+  `field_movie_sound_timelines`, (frame, sound) runs ended by frame 0xFFFF that `field_movie_play_due_sounds`
   plays in order, are an asset, and the world map ferry's eight waypoints, which
   `func_80087FD0` steps through on each update and wraps itself (`func_80087C6C`
   only resumes the route when the ferry spawns), are source.
@@ -597,7 +597,7 @@ every placeholder (7797 rows, 390 files) kept all 26 images, cross-image and cov
   reader (an index or pointer into it that persists or advances, a test of its
   elements against an end value, its address stored for later) or by their comment's
   wording were checked against their readers. Six were authored sequences and are
-  now assets, 528 bytes: `D_800AE060` and the world map's terrain texture animation
+  now assets, 528 bytes: `field_movie_sound_timelines` and the world map's terrain texture animation
   runs `D_8009A1A0`, `D_8009A1C4`, `D_8009A208`, `D_8009A220` and `D_8009A238`,
   (image, duration) frames ended by a negative duration that `func_80074F2C` and
   `func_80075104` step (docs/scripts/timelines.md). That pass looked for media only
@@ -610,7 +610,7 @@ every placeholder (7797 rows, 390 files) kept all 26 images, cross-image and cov
   reader as the data it parses (they give it file numbers, sound and character
   codes, VRAM places, draw modes, colours or a destination), except the four
   palettes below. None remains: the others are lookups by a key the code computes,
-  also where an end value closes them (the picture table `D_800AF47C` searched by
+  also where an end value closes them (the picture table `field_picture_table` searched by
   map, the battle modes' sound programs `mode_battle_sound_programs`, the gear shop lamps' frames
   `D_801D6FE0` on the code's timing), lists one call processes whole (the battle
   panel glyph sets ended by 0xFFFF, the world map's object links `D_8009AFA0`),
@@ -818,7 +818,7 @@ converted to C per unit. What converting the targets' `.data` established:
   word-aligned next flag.
 - An object that ends its unit's section can be followed by stray bytes up to the
   next unit's. In the targets' links eleven included objects end their unit's section
-  so: the strings D_8006FB80 and D_8006FC74 (field), D_800706D4 (menu6), D_8028007C
+  so: the strings field_clear_otag_label and field_error_id0_format (field), D_800706D4 (menu6), D_8028007C
   (debug2611's pages.c) and D_801C5000 (ovl2601) and the .data objects D_800925A4
   (menu7, `ind` before menu2's .sbss) and battle_unreferenced_stray_byte (battle), all of ASPSX 2.34
   units, and battle_music_lowered (battle) and D_801E9638 (ovl2615) of 2.56 units and the world
@@ -844,7 +844,7 @@ converted to C per unit. What converting the targets' `.data` established:
   2-63 that gears 0-18 take (tools/analysis/disc_index.py). Neither twentieth pair
   continues the chain or names gear files (base 0 reads that header, base 102 the
   `wds ` wave banks 103 and 104), but the game data holds 20 gear records (field's
-  func_80088198) and battle_read_gear_files indexes the table by a combatant's gear id without
+  field_event_restore_gears) and battle_read_gear_files indexes the table by a combatant's gear id without
   a range check. With 19 pairs, battle's 00 00 is GCC's zero fill before the
   word-aligned battle_extra_file_bases, and ovl2143's 66 00 follow the unit's last .data object as
   `ind` follows menu7's D_800925A4 (above): both are ASPSX 2.34 units, and both files
