@@ -397,8 +397,9 @@ _PRIMARY = """
 73/1=00 emitter_skip field_event_emitter 2 next u8@1
     continue
 73/1=01 emitter_start field_event_emitter 8 next u8@1 iv@2 iv@4 iv@6
-    reset the emitter templates for the running actor, set template 0
-    from operand 4 and start the effect
+    reset the emitter templates for the running actor, make template 0
+    spawn 16 particles for 0x1000 frames from node 0x20 (operand 4 0x27,
+    else 0x22) of 801e layer actor 0 and start the effect
 73/1=* emitter_halt field_event_emitter 2 hang u8@1
     no case: never advances
 74 play_sound field_event_play_sound 3 next iv@1
@@ -973,11 +974,16 @@ _EXTENDED = """
 68 walk_player_to field_event_walk_player_to 6 wait sel@1:5/80 sel@3:5/40 flags@5
     once field control allows walk the controlled actor to x, z operands 1, 3
 69 store_character_sum field_event_store_character_sum 5 next var@1 iv@3
-    store character operand 3's +77 + +78 in a variable
+    store character operand 3's record +77 + +78 (fd-ff party slots; 0 for
+    none) in a variable: the whole part of the value the field menu's
+    status panel shows, ((+77 + +78) * 10 + +79) * 22 hundredths (slot39
+    801d7884)
 6a set_panorama_depth field_event_set_panorama_depth 3 next iv@1
     set the ordering-table depth of the panorama and second table (800b21d4)
 6b set_character_78 field_event_set_character_78 5 next iv@1 iv@3
-    set character operand 3's +78 to operand 1 less its +77
+    make character operand 3's record +77 + +78 (ext 69) operand 1 by
+    setting +78, at least 0 (fd-ff party slots; none: unchanged); items
+    with use flag 2 raise or lower +78 too, to at most 200 (slot39 801e31c0)
 6c clear_pad_byte field_event_clear_pad_byte 1 next
     clear 8005938c (8003633c(0)) when the byte after the instruction is
     zero
@@ -1065,26 +1071,49 @@ _EXTENDED = """
 8e set_visibility_margins field_event_set_visibility_margins 5 next iv@1 iv@3
     set the screen margins 800c3a5c/800c3a60
 8f begin_effect_actor field_event_begin_effect_actor 8 next actor@1 iv@2 iv@4 iv@6
-    reset the emitter templates for the selected actor and keep launch
-    frame operand 2 and operands 4, 6
+    reset the eight emitter templates for the selected actor (none: actor
+    0) and keep the launch frame operand 2 for ext 93: 0 the owner's place
+    and facing, 1 node operand 6 of 801e layer actor operand 4, 2 the
+    owner's transform, 3 as 0 and scaled by the owner's scale
 90 select_emitter_template field_event_select_emitter_template 9 next iv@1 iv@3 iv@5 iv@7
-    select emitter template operand 1 with count 3, delay 5 and life 7
+    select emitter template operand 1 for the template instructions that
+    follow and give it the effect's actor: operand 3 particles (0 leaves it
+    off), a start delay of operand 5 frames, then spawning for operand 7
+    frames (7fff without end); its speed multiplier (1), angle and spawn
+    offsets are reset
 91 set_template_vectors field_event_set_template_vectors 14 next sel@1:13/80 sel@3:13/40 \
         sel@5:13/20 sel@7:13/10 sel@9:13/08 sel@11:13/04 flags@13
-    set the current emitter template's +0c and +14 vectors
+    set the selected emitter template's start point (operands 1, 3, 5, +0c:
+    the centre of the area particles spawn in) and end point (7, 9, 11, +14:
+    where each particle's velocity aims)
 92 set_template_08 field_event_set_template_08 14 next sel@1:13/80 sel@3:13/40 sel@5:13/20 \
         sel@7:13/10 sel@9:13/08 sel@11:13/04 flags@13
-    set the current emitter template's +08, +1c, +26 and +28
+    set the selected emitter template's launch speed (operand 1, +08: the
+    aim's unit vector times it >> 12), gravity (3, 5, 7, +1c: added to the
+    velocity each frame), spawn radius (9, +26: a particle starts a random
+    distance up to it from the start point) and aim spread (11, +28: it
+    aims up to that far from the end point)
 93 set_template_56 field_event_set_template_56 11 next iv@1 iv@3 iv@5 iv@7 iv@9
-    set the current emitter template's +56, +58, +54 and flags
+    set the selected emitter template's launch interval (operand 1, +56:
+    frames between the particles a frame spawns), particle life (3, +58),
+    particle sprite (5, +54: an entry of the 21 field_effect_particle_sprites)
+    and flags (+2a, replaced): operand 7 (bit 0 a random angle per particle),
+    operand 9 as the draw depth (bits 1-2: 0 in front of all, 1 16 nearer, 2
+    its own, 3 16 farther) and the launch frame of ext 8f or c2 (bits 4-5)
+    with its 801e layer actor and node (+72, +74)
 94 set_template_5a field_event_set_template_5a 10 next sel@1:9/80 sel@3:9/40 sel@5:9/20 sel@7:9/10 \
         flags@9
-    set the current emitter template's +5a and +62 vectors
+    set the selected emitter template's particle size (operands 1, 3, +5a:
+    the x and y scale of its quad) and size step (5, 7, +62: added each
+    frame)
 95 set_template_6a field_event_set_template_6a 14 next sel@1:13/80 sel@3:13/40 sel@5:13/20 \
         sel@7:13/10 sel@9:13/08 sel@11:13/04 flags@13
-    set the current emitter template's bytes +6a..+6c and +6e..+70
+    set the selected emitter template's particle colour (operands 1, 3, 5,
+    +6a: red, green, blue) and colour step (7, 9, 11, +6e: signed, added each
+    frame and kept within 0-255)
 96 start_effect field_event_start_effect 1 next
-    start the effect the templates define for the running actor
+    start the effect the templates define for the running actor (a free one
+    of 64 effect slots, owned by the running actor)
 97 stop_effects field_event_stop_effects 2 next u8@1
     stop the running actor's effects (releasing particles with byte 1)
 98 set_emitter_range field_event_set_emitter_range 3 next iv@1
@@ -1118,7 +1147,11 @@ a3 save_vram_column field_event_save_vram_column 2 next u8@1
 a4 restore_gears field_event_restore_gears 1 next
     restore every gear's points and gauge
 a5 set_template_24 field_event_set_template_24 7 next iv@1 iv@3 iv@5
-    set the current emitter template's +24, flag high byte and +76
+    set the selected emitter template's speed multiplier (operand 1, +24:
+    the launch velocity times it), or operand 3 << 8 into its flags (bits
+    8-9 the blend: 0 back + front, 1 back - front, 2 back + front / 4, 3
+    half each; its quads take semi-transparency rate (mode + 1) & 3) and set
+    its particles' angle (5, +76) for when the random angle is off
 a6 set_sprite_sequence field_event_set_sprite_sequence 5 next iv@1 iv@3
     give the running actor's sprite a sequencer buffer from operands
     1 and 3
@@ -1182,7 +1215,9 @@ bb store_vehicle_flags field_event_store_vehicle_flags 3 next var@1
 bc set_vehicle_flags field_event_set_vehicle_flags 4 next sel@1:3/80 flags@3
     set the world map vehicle's flags (+1834)
 bd set_template_flag field_event_set_template_flag 7 next iv@1
-    set flag 80 (operand 1 = 1) or 40 (2) of the current emitter template
+    make the selected emitter template spawn on the circle of its spawn
+    radius (operand 1 = 1: flag 0x80) or on a line along x through the start
+    point (2: flag 0x40) rather than anywhere within the radius
 be enable_movie_overlay field_event_enable_movie_overlay 1 next
     set 8004f300 (the file ab sequence drawn over movie frames)
 bf open_menu_task field_event_open_menu_task 13 wait iv@1 iv@3 iv@5 iv@7 iv@9 iv@11
@@ -1194,7 +1229,8 @@ c0 store_bout_outcome field_event_store_bout_outcome 3 next var@1
 c1 store_member_animation field_event_store_member_animation 7 next var@1 var@3 iv@5
     store party member operand 5's animation +0c and actor in variables
 c2 begin_effect field_event_begin_effect 9 next iv@1 iv@3 iv@5 iv@7
-    as 8f for actor operand 1 with launch frame operand 3
+    as 8f for actor operand 1 with launch frame operand 3 and its 801e
+    layer actor and node operands 5, 7
 c3 hide_sprite_and_shadow field_event_hide_sprite_and_shadow 1 next
     set the running actor's layer flags 0x2000000 (80075b44 does not draw its
     sprite; 22 and 24 clear it) and 0x800 (no drop shadow, ext 09)
@@ -1210,10 +1246,13 @@ c7 store_gear field_event_store_gear 5 next iv@1 var@3
     store character operand 1's gear (+a0, ff for none) in a variable
 c8 set_template_pairs0 field_event_set_template_pairs0 18 next sel@1:17/80 sel@3:17/40 sel@5:17/20 \
         sel@7:17/10 sel@9:17/08 sel@11:17/04 sel@13:17/02 sel@15:17/01 flags@17
-    set the current template's +30 pairs 0-3 (80088d38)
+    set the selected emitter template's spawn offsets for octants 0-3 (x, z
+    pairs, +30; 80088d38): the octant of the owner's facing in the view
+    picks the pair added to the start point
 c9 set_template_pairs4 field_event_set_template_pairs4 18 next sel@1:17/80 sel@3:17/40 sel@5:17/20 \
         sel@7:17/10 sel@9:17/08 sel@11:17/04 sel@13:17/02 sel@15:17/01 flags@17
-    set the current template's +30 pairs 4-7 (80088d38)
+    set the selected emitter template's spawn offsets for octants 4-7 (as
+    c8)
 ca/1=00 layer_inactive field_event_layer 2 next u8@1
     clear the running actor's 801e layer's active flag; yields
 ca/1=01 layer_release field_event_layer 2 next u8@1
@@ -1281,7 +1320,11 @@ dd/1=03 screen_band_none field_event_screen_band 2 next u8@1
 dd/1=* screen_band_rerun field_event_screen_band 0 rerun
     no case: the extended byte runs next as primary dd
 de set_skill_record_flags field_event_set_skill_record_flags 5 next iv@1 iv@3
-    or operand 3 into the flags of game record operand 1
+    or operand 3 into the fuel art bits (+1a) of character operand 1's
+    skill record: bit 0x8000 >> i unlocks its gear's fuel art i (command 37
+    + i), which battle's gear command menu then lists, opens the page of and
+    lets be chosen (8008cfb8, 800939cc, 8008cde4) and the field menu's arts
+    list shows (slot39 801dc3d8)
 df display_mode field_event_display_mode 3 next iv@1
     640-wide display (operand 1 zero), or show (1) / hide (2) the five
     overlay sprites (800adb54)

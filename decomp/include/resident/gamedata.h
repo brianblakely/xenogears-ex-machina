@@ -85,10 +85,11 @@ typedef struct {
     u8 entryItems[5];     /* 0x6F: special parts, the ammo (weapon ids from 50, 0 none);
                            * [0]-[3] go with entries[0]-[3] */
     u8 accessories[3];    /* 0x74 */
-    u8 field77;
-    u8 field78;
-    u8 field79;
-    u16 status7A;         /* 0x7A: the battle commands available (the battle setup masks
+    u8 field77;           /* 0x77: with +78 the whole part and +79 the tenths of the
+                           * value slot39's status panel shows times 2.2 (801D7884) */
+    u8 field78;           /* 0x78: the part field ext 6b and items set (801E31C0) */
+    u8 field79;           /* 0x79 */
+    u16 status7A;        /* 0x7A: the battle commands available (the battle setup masks
                            * the command menus with it) */
     u16 status7C;         /* 0x7C: bits 0xC002 mark a member out of action; 0x80 inactive,
                            * 0x1000 slow (ticks every other frame), 0x2000 delay counter
@@ -195,7 +196,9 @@ typedef struct {
     u8 pad8[0x17 - 0x8];
     u8 tier;           /* 0x17 */
     u8 pad18[0x1A - 0x18];
-    u16 flags1A;       /* 0x1A */
+    u16 flags1A;       /* 0x1A: the fuel arts known, bit 0x8000 >> i for the gear's
+                        * art i, command 37 + i (battle 8008CFB8, slot39 801DC3D8;
+                        * field ext de) */
     u8 pad1C[0x20 - 0x1C];
 } CharacterSkills;
 

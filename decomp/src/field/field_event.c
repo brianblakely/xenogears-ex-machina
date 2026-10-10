@@ -812,7 +812,9 @@ void field_event_overlay_sprites(void) {
     }
 }
 
-/* 80087148: Event: set bits op3 in the flags of game record op1. */
+/* 80087148: Event: set bits op3 in the fuel art bits (+1a) of character op1's skill
+ * record: bit 0x8000 >> i unlocks the fuel art i of its gear, command 37 + i
+ * (battle 8008CFB8, 800939CC, 8008CDE4; slot39 801DC3D8). */
 void field_event_set_skill_record_flags(void) {
     s32 record = field_event_read_imm_or_var(1);
     s32 bits = field_event_read_imm_or_var(3);
@@ -1246,7 +1248,7 @@ void field_event_store_member_animation(void) {
     field_current_event_actor->pc += 7;
 }
 
-/* 8008861C: Clear the eight pairs at +30 of the current emitter record. */
+/* 8008861C: Clear the selected emitter template's eight spawn offsets (+30). */
 void field_effect_clear_template_pairs(void) {
     s32 i;
 
@@ -1370,8 +1372,10 @@ void field_event_set_sprite_sequence2(void) {
     field_current_event_actor->state.bits.unk16 = 2;
 }
 
-/* 80088B68: Event: set flag 0x80 (op1 1) or 0x40 (op1 2) of the current record's +2a,
- * using four batch steps. */
+/* 80088B68: Event: make the selected emitter template spawn on the circle of its
+ * spawn radius (op1 1: flag 0x80 of +2a) or on a line along x through its
+ * start point (op1 2: 0x40) rather than anywhere within the radius
+ * (800aa6b4), using four batch steps. */
 void field_event_set_template_flag(void) {
     s32 bits = 0;
 
@@ -1388,9 +1392,11 @@ void field_event_set_template_flag(void) {
     field_current_event_actor->pc += 7;
 }
 
-/* 80088C1C: Event: set the current emitter template's +24 to operand 1, or operand 3 << 8
- * into its flags and set its particle angle (+76) to operand 5; four batch
- * steps. */
+/* 80088C1C: Event: set the selected emitter template's speed multiplier (+24) to
+ * operand 1, or operand 3 << 8 into its flags (bits 8-9, the blend: 800a99a8
+ * gives its quads semi-transparency rate (mode + 1) & 3) and set its
+ * particles' angle (+76, used while flag bit 0 is clear) to operand 5; four
+ * batch steps. */
 void field_event_set_template_24(void) {
     field_effect_templates[field_effect_launch.record].unk24 = field_event_read_imm_or_var(1);
     field_effect_templates[field_effect_launch.record].flags |= field_event_read_imm_or_var(3) << 8;
@@ -1399,20 +1405,22 @@ void field_event_set_template_24(void) {
     field_current_event_actor->pc += 7;
 }
 
-/* 80088CF8: Event: set the current emitter template's +30 pairs 0-3 from the selected
- * operands 1-15 (flags byte 17; 80088d38); four batch steps. */
+/* 80088CF8: Event: set the selected emitter template's spawn offsets for octants 0-3
+ * from the selected operands 1-15 (flags byte 17; 80088d38); four batch steps. */
 void field_event_set_template_pairs0(void) {
     field_event_set_template_pairs(0);
 }
 
-/* 80088D18: Event: set the current emitter template's +30 pairs 4-7 from the selected
- * operands 1-15 (flags byte 17; 80088d38); four batch steps. */
+/* 80088D18: Event: set the selected emitter template's spawn offsets for octants 4-7
+ * from the selected operands 1-15 (flags byte 17; 80088d38); four batch steps. */
 void field_event_set_template_pairs4(void) {
     field_event_set_template_pairs(4);
 }
 
-/* 80088D38: Set the current emitter record's four +30 pairs from index first on to the
- * selected operands 1..15 (flags byte 0x11); four batch steps. */
+/* 80088D38: Set four of the selected emitter template's spawn offsets (+30: an x, z
+ * pair per octant of the owner's facing in the view, which 800aa6b4 adds to
+ * the start point) from index first on to the selected operands 1..15 (flags
+ * byte 0x11); four batch steps. */
 void field_event_set_template_pairs(s32 first) {
     field_effect_templates[field_effect_launch.record].unk30[first][0] = field_event_read_selected_operand_80(1, EVENT_OPERAND_BYTE(0x11));
     field_effect_templates[field_effect_launch.record].unk30[first][1] = field_event_read_selected_operand_40(3, EVENT_OPERAND_BYTE(0x11));
@@ -1428,9 +1436,9 @@ void field_event_set_template_pairs(s32 first) {
 
 /* 80089004: Event: select emitter template operand 1 (800b2384) for the template
  * instructions that follow and set it up for the effect's actor (+52 and
- * 800adb40 = 800b2374): operand 3 particles, start delay operand 5, lifetime
- * operand 7 (7fff lasting), +24 = 1, +00 and +76 cleared and its +30 pairs
- * cleared (8008861c); four batch steps. */
+ * 800adb40 = 800b2374): operand 3 particles, start delay operand 5, spawning
+ * time operand 7 (7fff lasting), speed multiplier +24 = 1, +00 and the angle
+ * +76 cleared and its spawn offsets cleared (8008861c); four batch steps. */
 void field_event_select_emitter_template(void) {
     s32 index;
 
@@ -1448,8 +1456,9 @@ void field_event_select_emitter_template(void) {
     field_current_event_actor->pc += 9;
 }
 
-/* 80089174: Event: set the current emitter record's +0c and +14 vectors from the
- * selected operands 1..11 (flags byte 13); four batch steps. */
+/* 80089174: Event: set the selected emitter template's start point (+0c, the centre of
+ * the area its particles spawn in) and end point (+14, where they aim) from
+ * the selected operands 1..11 (flags byte 13); four batch steps. */
 void field_event_set_template_vectors(void) {
     field_effect_templates[field_effect_launch.record].unk0C.vx = field_event_read_selected_operand_80(1, EVENT_OPERAND_BYTE(0xD));
     field_effect_templates[field_effect_launch.record].unk0C.vy = field_event_read_selected_operand_40(3, EVENT_OPERAND_BYTE(0xD));
@@ -1461,9 +1470,9 @@ void field_event_set_template_vectors(void) {
     field_current_event_actor->pc += 0xE;
 }
 
-/* 80089374: Event: set the current emitter template's +08 (operand 1), +1c vector
- * (operands 3, 5, 7), spawn radius +26 (operand 9) and velocity spread +28
- * (operand 11), selected by flags byte 13; four batch steps. */
+/* 80089374: Event: set the selected emitter template's launch speed +08 (operand 1),
+ * gravity +1c (operands 3, 5, 7), spawn radius +26 (operand 9) and aim spread
+ * +28 (operand 11), selected by flags byte 13; four batch steps. */
 void field_event_set_template_08(void) {
     field_effect_templates[field_effect_launch.record].unk08 = field_event_read_selected_operand_80(1, EVENT_OPERAND_BYTE(0xD));
     field_effect_templates[field_effect_launch.record].unk1C.vx = field_event_read_selected_operand_40(3, EVENT_OPERAND_BYTE(0xD));
@@ -1475,10 +1484,12 @@ void field_event_set_template_08(void) {
     field_current_event_actor->pc += 0xE;
 }
 
-/* 80089574: Event: set the current emitter template's spawn interval +56, particle life
- * +58 and +54 from operands 1, 3 and 5, its flags to operand 7 | operand 9 * 2
- * | the effect's launch frame (800b2378), and +72/+74 (the 801e layer actor and
- * node of launch frame 1) from 800b237c/800b2380; four batch steps. */
+/* 80089574: Event: set the selected emitter template's launch interval +56, particle
+ * life +58 and particle sprite +54 (field_effect_particle_sprites) from
+ * operands 1, 3 and 5, its flags to operand 7 (bit 0 a random angle) |
+ * operand 9 * 2 (the draw depth) | the effect's launch frame (800b2378), and
+ * +72/+74 (the 801e layer actor and node of launch frame 1) from
+ * 800b237c/800b2380; four batch steps. */
 void field_event_set_template_56(void) {
     s16 flags;
 
@@ -1493,8 +1504,9 @@ void field_event_set_template_56(void) {
     field_current_event_actor->pc += 11;
 }
 
-/* 800896D4: Event: set the current emitter record's +5a and +62 vectors from the
- * selected operands 1/3 and 5/7 (flags byte 9); four batch steps. */
+/* 800896D4: Event: set the selected emitter template's particle size +5a and size step
+ * +62 (x and y; z 0) from the selected operands 1/3 and 5/7 (flags byte 9);
+ * four batch steps. */
 void field_event_set_template_5a(void) {
     field_effect_templates[field_effect_launch.record].unk5A.vx = field_event_read_selected_operand_80(1, EVENT_OPERAND_BYTE(9));
     field_effect_templates[field_effect_launch.record].unk5A.vy = field_event_read_selected_operand_40(3, EVENT_OPERAND_BYTE(9));
@@ -1506,8 +1518,9 @@ void field_event_set_template_5a(void) {
     field_current_event_actor->pc += 10;
 }
 
-/* 80089880: Event: set the current emitter record's bytes +6a..+6c and +6e..+70 from
- * the selected operands 1..11 (flags byte 13); four batch steps. */
+/* 80089880: Event: set the selected emitter template's particle colour +6a..+6c and
+ * signed colour step +6e..+70 from the selected operands 1..11 (flags byte
+ * 13); four batch steps. */
 void field_event_set_template_6a(void) {
     field_effect_templates[field_effect_launch.record].unk6A = field_event_read_selected_operand_80(1, EVENT_OPERAND_BYTE(0xD));
     field_effect_templates[field_effect_launch.record].unk6B = field_event_read_selected_operand_40(3, EVENT_OPERAND_BYTE(0xD));
@@ -1816,7 +1829,8 @@ void field_event_set_panorama_depth(void) {
 }
 
 /* 8008A640: Event fe 6b: set byte +78 of character record operand 3 (resolved by
- * 8008cf3c; none: unchanged) to operand 1 less its byte +77, at least 0. */
+ * 8008cf3c; none: unchanged) to operand 1 less its byte +77, at least 0, so
+ * that their sum (fe 69) is operand 1. */
 void field_event_set_character_78(void) {
     s32 character = field_event_resolve_character(field_event_read_imm_or_var(3));
     s32 value;
@@ -1832,7 +1846,8 @@ void field_event_set_character_78(void) {
 }
 
 /* 8008A6E0: Event fe 69: store the sum of bytes +77 and +78 of character record operand 3
- * (resolved by 8008cf3c; 0 for none) in variable operand 1. */
+ * (resolved by 8008cf3c; 0 for none) in variable operand 1: the whole part of
+ * the value slot39's status panel shows (801D7884, with +79 as tenths). */
 void field_event_store_character_sum(void) {
     s32 character = field_event_resolve_character(field_event_read_imm_or_var(3));
     s32 sum;
