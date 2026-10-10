@@ -897,6 +897,7 @@ tests/test_sprite_tasks.cpp
 tests/test_sprite_upload.cpp
 tests/test_sprite_vm.py
 tests/test_staff_roll.py
+tests/test_stat_items.py
 tests/test_sweep_math.py
 tests/test_sweep_trace.py
 tests/test_text_control.py
@@ -957,6 +958,7 @@ tools/analysis/sprite_return.py
 tools/analysis/sprite_state.py
 tools/analysis/sprite_vm.py
 tools/analysis/staff_roll.py
+tools/analysis/stat_items.py
 tools/analysis/sweep_math.py
 tools/analysis/sweep_math_trace.py
 tools/analysis/sweep_trace.py
@@ -982,7 +984,6 @@ tools/authoring/tsconfig.json
 tools/compiler_warnings.py
 tools/cross_image.py
 tools/data_users.py
-tools/decomp_rename.py
 tools/extraction/README.md
 tools/extraction/code_census.py
 tools/extraction/disc_files.py

@@ -40,7 +40,7 @@ typedef struct {
     u8 equipAttack;       /* 0x28: equipment bonuses of the base values at 0x58 */
     u8 equipDefense;      /* 0x29 */
     u8 equipSpeed;        /* 0x2A */
-    u8 equipEther;        /* 0x2B */
+    u8 equipEther;        /* 0x2B: ether's (accessories EtherStone, EtherStoneLg) */
     u8 equipEtherDefense; /* 0x2C */
     u8 bodyDefense;       /* 0x2D */
     u8 equip5E;           /* 0x2E */
@@ -67,10 +67,24 @@ typedef struct {
     u8 attack;            /* 0x58: the base values */
     u8 defense;           /* 0x59 */
     u8 speed;             /* 0x5A */
-    u8 ether;             /* 0x5B: the ether attack value against etherDefense
-                           * (80096FBC, 80097610), the heal of formula 1 (80095690)
-                           * and of restoring arts, and added to a command's
-                           * accuracy (the ether check 80096824, 8009A258) */
+    u8 ether;             /* 0x5B: ether, as the game's names label it: item 53 "ETH
+                           * Drive" raises it, beside "STR Drive" (attack), "VIT
+                           * Drive" (defense) and "ETHDEF Drive" (etherDefense), and
+                           * the accessories "EtherStone" and "EtherStoneLg" raise
+                           * only equipEther (python3 -m tools.analysis.stat_items
+                           * --sweep, both discs). Its readers in every image: the
+                           * attack value of an amountKind 1 command (80096FBC)
+                           * against etherDefense (defenseKind 1, 80097610); the heal
+                           * of formula 1 (80095690), gear formula 10 (8009E364) and
+                           * the field menu's restoring arts (slot39 801E35BC); level B
+                           * growth with maxEp and etherDefense (ovl2596 801E3500);
+                           * the fifth stat the menus show, capped like attack and
+                           * defense (250 or 999), not at 99 like the percentages
+                           * +5E and +5F (slot39 801E3A80, ovl2601 801CCE1C); battle AI
+                           * byte attribute 9 (80079ED8); and, for character 1 only,
+                           * the success chance its flagsA 0x100 commands add it to
+                           * (the ether check 80096824, which its art menu shows
+                           * through 8009A258) */
     u8 etherDefense;      /* 0x5C */
     u8 field5D;
     u8 field5E;           /* 0x5E: physical hit chance (80096AB8 adds the command's) */
@@ -85,9 +99,10 @@ typedef struct {
     u8 entryItems[5];     /* 0x6F: special parts, the ammo (weapon ids from 50, 0 none);
                            * [0]-[3] go with entries[0]-[3] */
     u8 accessories[3];    /* 0x74 */
-    u8 field77;
-    u8 field78;
-    u8 field79;
+    u8 field77;           /* 0x77: with +78 the whole part and +79 the tenths of the
+                           * value slot39's status panel shows times 2.2 (801D7884) */
+    u8 field78;           /* 0x78: the part field ext 6b and items set (801E31C0) */
+    u8 field79;           /* 0x79 */
     u16 status7A;         /* 0x7A: the battle commands available (the battle setup masks
                            * the command menus with it) */
     u16 status7C;         /* 0x7C: bits 0xC002 mark a member out of action; 0x80 inactive,
@@ -195,7 +210,9 @@ typedef struct {
     u8 pad8[0x17 - 0x8];
     u8 tier;           /* 0x17 */
     u8 pad18[0x1A - 0x18];
-    u16 flags1A;       /* 0x1A */
+    u16 flags1A;       /* 0x1A: the fuel arts known, bit 0x8000 >> i for the gear's
+                        * art i, command 37 + i (battle 8008CFB8, slot39 801DC3D8;
+                        * field ext de) */
     u8 pad1C[0x20 - 0x1C];
 } CharacterSkills;
 

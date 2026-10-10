@@ -55,6 +55,31 @@ every operand read.
 - `a6` skips index × 3 bytes into a table of jumps. `12` continues at +4 inside
   its own operands while a movie is pending; that path is reported, not followed.
 
+**Emitter templates.** Particle effects are built from eight emitter templates
+(`field_effect_templates`, `800b02cc`, 0x78 bytes each; `field_effect.h`). Ext
+`8f` (or `c2`, which takes the actor by number) resets all eight for an actor
+(`800a94a4`) and keeps the launch frame. Ext `90` selects one, and the template
+instructions after it (`91`-`95`, `a5`, `bd`, `c8`, `c9`) set the selected
+emitter template's members, as the `_EXTENDED` entries describe them from their
+readers. Ext `96` copies the eight into one of 64 effect slots, owned by the
+running actor (`800a99a8`), and ext `97` stops that actor's effects. Each frame
+(`800a9688`) an emitter past its start delay spawns particles (`800aa6b4`) for as
+long as its spawning time lasts. Each particle waits out its launch delay, then
+moves, grows, changes colour and is drawn until its life runs out (`800a9f18`).
+The seven setters `91`-`95`, `a5` and `bd` are 73352 of Disc 1's reachable
+instructions and 32788 of Disc 2's (the sweep's counts). The debug monitor's
+particle editor (debug595 `field_debug_run_particle_editor`) prints the same
+members under labels of its own, which agree with their readers:
+
+- MAX, SWAIT and EWAIT (`90`); SPOS and EPOS (`91`); SPEED, GRAVITE, SRANGE and
+  ERANGE (`92`).
+- PSWAIT, PEWAIT, SHAPE, RANDROT and SORT (`93`); SCALE and SCALEOFS (`94`);
+  COLOR and COLOROFS (`95`).
+- The SPEED multiplier, COLMODE and ROTANGLE (`a5`). COLMODE's four texts are the
+  blends of the semi-transparency rates its quads take.
+- RANGEMOD (`bd`), which prints `CIRCLE (1)` for flag 0x80 and `LINE (2)` for
+  0x40, the operand values that set them; and ANGOFFS0-7 (`c8`, `c9`).
+
 **Sweep.** Run `python3 -m tools.analysis.events --sweep` (it reads `.local/extract` and
 `.local/discs`). `--list MAP [--disc N]` prints one map; keep listings under
 `.local/`. Both discs carry the recovered field image (`38a1ce82`). Disc 2
@@ -155,6 +180,15 @@ maps are identical to Disc 1's.
     counter skills 7-12 (ovl2596 `801e3be0`) and raise tier 6 to 7 at level 50
     (`801e403c`), and the field menu rates rows 7 and up of a member's
     completion table (slot39 `801e1418`).
+  - Ext `de` the fuel art bits of a character's skill record (`+1a`,
+    `CharacterSkills`). Bit 0x8000 >> i unlocks the fuel art i of the
+    character's gear, command 37 + i. Battle's gear command menu then lists the
+    art, opens its page and lets it be chosen (`8008cfb8`, `800939cc`,
+    `8008cde4`), and the field menu's arts list shows it (slot39 `801dc3d8`).
+- Ext `69` and `6b` read and set the sum of character record bytes `+77` and
+  `+78`; `6b` sets it through `+78`. The field menu's status panel shows
+  `((+77 + +78) * 10 + +79) * 22` in hundredths (slot39 `801d7884`), and items
+  with use flag 2 raise or lower `+78`, to at most 200 (`801e31c0`).
 - Character 4's special parts are its ammo. Its special slots (character
   record `+6f`) and its gear's (gear record `+04`) hold weapon and gear part
   ids from 50, 0 for an empty slot: the field menu offers inventory ids from
@@ -243,3 +277,5 @@ maps are identical to Disc 1's.
 - The stock of the shop numbers past the tables, weapon shops 40-255 and gear
   shops 30-255, which maps 488 and 723's selectors and the debug start can
   open: each reads the memory after its unpacked table.
+- What quantity the character record's `+77`-`+79` hold (ext `69`, `6b`): the
+  code does not name the value the status panel shows.

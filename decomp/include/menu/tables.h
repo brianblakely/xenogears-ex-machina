@@ -160,7 +160,9 @@ typedef struct MenuTables {
     ItemInfo *items;                     /* 0x1c */
     struct ArtInfo *arts[31];            /* 0x20: per character, then per gear from 11 (slot39) */
     GearSummary gear;                    /* 0x9c */
-    u16 stats[9];                        /* 0xb8: a member's or gear's stats as shown */
+    u16 stats[9];                        /* 0xb8: a member's or gear's stats as shown; a
+                                          * member's attack, +5E, defense, +5F, ether,
+                                          * etherDefense, speed (slot39 801e3a80) */
     u8 padca[2];
 } MenuTables;
 

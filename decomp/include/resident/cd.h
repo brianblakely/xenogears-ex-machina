@@ -49,10 +49,11 @@ extern u8 cd_movie_request_kind;
 extern u8 cd_movie_request_index;
 extern u8 cd_movie_request_next_mode;
 extern u8 cd_movie_request_unskippable;
-/* The requested movie's last frame, which the movie mode takes when the
- * kind's bit 7 is set: the battle's event script stores it, the movie library
- * clears it when it streams from the PC file server, and the movie mode reads
- * it unsigned. */
+/* The requested movie's last frame, a common the resident defines and no
+ * resident code addresses: ovl3087's movie request sets it
+ * (battle_event_script_request_movie), the movie mode takes it as the last
+ * frame when the request kind's bit 7 is set (movie_mode_main, lhu), and mdec's
+ * movie_start clears it when it streams from the PC file server. */
 extern u16 cd_movie_request_last_frame;
 extern char *cd_pc_file_names;    /* PC file server name table (64 bytes per file), or NULL */
 extern s32 cd_pc_file_descriptor;

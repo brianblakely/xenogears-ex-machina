@@ -127,7 +127,8 @@ typedef struct {
     u8 learntCounter[3];  /* 0x101C: the counter skill each member learnt */
     u8 learntLevel[3];    /* 0x101F: the level skill each member learnt */
     u8 levelGains[3][2];  /* 0x1022: the levels A and B each member gained */
-    u8 savedStats[3][8]; /* 0x1028: each member's base stats */
+    u8 savedStats[3][8]; /* 0x1028: each member's base stats: attack, +5E, defense,
+                          * +5F, ether, etherDefense, speed (80097D5C) */
     u8 resultStats[3][8]; /* 0x1040: and after the battle's growth (the results screen) */
     CommandDescriptor partyCommands[3][38]; /* 0x1058 */
     CommandDescriptor gearCommands[3][42];  /* 0x2228 */

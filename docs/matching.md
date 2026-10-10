@@ -1181,8 +1181,13 @@ converted to C per unit. What converting the targets' `.data` established:
   unless its linked `.bss` is exactly that span (`field.bss.ld`, `movie.bss.ld`,
   `menu.bss.ld` with its `.sbss`, `worldmap.data.ld`, `battle.data.ld`), and the
   resident's unless its own is the span the entry point clears (`link.ld`).
-- Embedded game data stays generated and is classified `asset` with its format
-  (arena_scene_graph_and_opponent's SpriteModel arena_actor_extra_model); library data
+- Embedded media and bytecode are linked from the user's image with INCLUDE_ASSET and
+  classified `asset` with their format (What counts as recovered source;
+  arena_scene_graph_and_opponent's SpriteModel arena_actor_extra_model). Only the
+  resident's disc data, the rodatabins `disc_mode`, `disc_files` and `disc_directories`
+  ahead of its code (`disc2_*` in SLUS_006.69; above), and its TMD model
+  `model_slot_ring_tmd`, a splat data segment inside `.text` (`battle_effect_script` in
+  its yaml), stay generated, classified `asset` by their ranges. Library data
   is classified `sdk` by the code that reads it. splat migrates rodata used only by an
   INCLUDE_ASM function into that function's `.s` file, and coverage counts it with the
   function (the resident's library strings and jump tables as `sdk`) until the function

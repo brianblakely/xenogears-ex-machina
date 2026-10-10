@@ -1514,8 +1514,8 @@ void battle_results_add_exp_and_level_up(void) {
     battle_results_current_record->expNextB = rest;
 }
 
-/* 801E335C: Level A growth of the current record: max HP, then stats 58, 59, 5e
- * and 5f toward the growth data's targets for its level range. */
+/* 801E335C: Level A growth of the current record: max HP, then attack (+58), defense
+ * (+59), +5e and +5f toward the growth data's targets for its level range. */
 void battle_results_grow_level_a_stats(void) {
     u8 high;
     u8 cap;
@@ -1539,8 +1539,8 @@ void battle_results_grow_level_a_stats(void) {
         battle_results_growth_file->characters[battle_results_current_record->characterId].statTargets[3][high], cap, level);
 }
 
-/* 801E3500: Level B growth of the current record: max EP, then stats 5b and 5c
- * toward the growth data's targets for its level range. */
+/* 801E3500: Level B growth of the current record: max EP, then ether (+5b) and ether
+ * defense (+5c) toward the growth data's targets for its level range. */
 void battle_results_grow_level_b_stats(void) {
     u8 high;
     u8 cap;
