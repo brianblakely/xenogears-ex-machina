@@ -13,6 +13,15 @@
  * at the same host addresses, so the same C runs in both.
  */
 
+/* A host pointer's width: the game module's front end runs with -undef,
+ * which removes __UINTPTR_TYPE__; its long has 32 bits, the LP64 test
+ * hosts' 64. */
+#ifdef __UINTPTR_TYPE__
+typedef __UINTPTR_TYPE__ XemUintptr;
+#else
+typedef unsigned long XemUintptr;
+#endif
+
 /* The game-memory address of a PS1 address: KUSEG, KSEG0 and KSEG1 RAM and
  * its 8 MB of mirrors map to KSEG0 RAM, the scratchpad to 0x1F800000. */
 static inline unsigned int xem_address(unsigned int address) {
@@ -25,7 +34,7 @@ static inline unsigned int xem_address(unsigned int address) {
 }
 
 /* The object of type `type` at a PS1 address. */
-#define XEM_AT(type, address) (*(type *)(__UINTPTR_TYPE__)xem_address(address))
+#define XEM_AT(type, address) (*(type *)(XemUintptr)xem_address(address))
 #define XEM_U8(address) XEM_AT(unsigned char, address)
 #define XEM_S8(address) XEM_AT(signed char, address)
 #define XEM_U16(address) XEM_AT(unsigned short, address)
@@ -34,6 +43,6 @@ static inline unsigned int xem_address(unsigned int address) {
 
 /* The PS1 address of a game object the C names (the port's game globals have
  * their original addresses, below 4 GB natively too). */
-#define XEM_ADDRESS_OF(object) ((unsigned int)(__UINTPTR_TYPE__)&(object))
+#define XEM_ADDRESS_OF(object) ((unsigned int)(XemUintptr)&(object))
 
 #endif
