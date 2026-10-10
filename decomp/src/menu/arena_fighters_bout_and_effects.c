@@ -2922,9 +2922,9 @@ void arena_bout_end_round_effects(void) {
 }
 
 /* 8007A958: Follow an actor with the camera: look at its core at the reference
- * height, place the eye behind it by the camera angle, height and length
- * (tunable with the pad in debug), and back the look-at point off until it
- * is at least 0x200 away. */
+ * height, place the eye by the camera angle, height and length (tunable
+ * with the pad in debug), and back the eye off until it is at least 0x200
+ * away. */
 void arena_camera_update_victory_view(Actor *actor) {
     VECTOR target;
     u16 held;

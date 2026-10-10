@@ -34,7 +34,7 @@ typedef struct SceneObject {
 
 extern SceneObject *worldmap_objects;                                       /* scene objects */
 extern s16 worldmap_object_count;                                           /* scene object count */
-extern s16 worldmap_object_model_count;                                     /* animation count */
+extern s16 worldmap_object_model_count;                                     /* model count of the object model group */
 extern u16 worldmap_area_image_cluts[16];                                   /* the area image's faded CLUT ids */
 extern MATRIX worldmap_light_color_matrix, worldmap_light_direction_matrix; /* colour and light matrices */
 
@@ -65,7 +65,7 @@ extern s16 worldmap_mesh_probe_hits[];                   /* probe hits: face and
 extern s32 worldmap_walker_face, worldmap_walker_object; /* the face and object the walker stands on, -1 none */
 
 void worldmap_mesh_project_onto_face(VECTOR *position, VECTOR *offset, VECTOR *normal, u16 index, u16 face);
-s32 worldmap_mesh_is_face_plane_crossed(VECTOR *probe, s32 radius, u16 object, u16 other);
+s32 worldmap_mesh_is_face_plane_crossed(VECTOR *position, s32 height, u16 index, u16 face);
 s32 worldmap_mesh_classify_face_exit(VECTOR *from, VECTOR *to, s32 index, s32 face);
 
 /* Per area: the scene objects of the area's actors (a spinning pair, a
@@ -168,7 +168,7 @@ void worldmap_scene18_start(void), worldmap_scene18_leave(void); /* mode 18 */
 /* A resident sound call the world map declares itself (the camera flight's
  * engine volume): the shared headers leave it out, since other targets'
  * calls convert its arguments differently. */
-void sound_set_effect_volume(s32 sound, s32 volume);
+void sound_set_effect_volume(s32 id, s32 volume);
 
 /* Their actors (start, update), by mode. The frame steps that end each
  * mode's list draw the scene. */

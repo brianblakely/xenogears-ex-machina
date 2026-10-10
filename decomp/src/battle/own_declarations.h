@@ -49,7 +49,7 @@ void battle_reset_object(BattleObject *object, EffectPool *pool, u8 **scripts, u
 
 /* battle/screen.h's. */
 void battle_quake_start(SVECTOR *amplitude, s32 frames);          /* quake the view towards amplitude */
-void battle_screen_fade_start(s32 a, s32 b, s32 c, s32 d, s32 e); /* fade the screen to a colour */
+void battle_screen_fade_start(s32 frames, s32 blend, s32 r, s32 g, s32 b); /* fade the screen to a colour */
 
 /* battle/action_file.h's. */
 u8 battle_single_action_start(void); /* start the loaded single action file; 1 when the acting sprite runs it itself */

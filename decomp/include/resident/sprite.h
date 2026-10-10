@@ -306,7 +306,7 @@ void sprite_vm_replay_frames(Sprite *sprite, u8 *target, s32 count);
 void sprite_apply_animation_header(Sprite *sprite, u16 *animation);
 void sprite_update_velocity(Sprite *sprite); /* velocity from speed and direction */
 void sprite_vm_tick(Sprite *sprite);
-void sprite_start_animation(Sprite *sprite, s32 value);
+void sprite_start_animation(Sprite *sprite, s32 animation);
 void sprite_request_frame(Sprite *sprite, s32 frame);
 void sprite_build_cell_frame(Sprite *sprite, s32 frame, SpriteSource *source);
 void sprite_build_frame(Sprite *sprite, s32 frame, SpriteSource *source);
@@ -325,7 +325,7 @@ s32 gpu_get_cos(s32 angle); /* cosine (4096 = 1.0) */
 void sprite_vm_run(Sprite *sprite); /* run the next script command */
 extern s32 sprite_frame_skip; /* extra frames per update */
 void sprite_move_vertically(Sprite *sprite);
-Sprite *sprite_construct(Sprite *sprite, s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused);
+Sprite *sprite_construct(Sprite *self, s32 *data, s16 clut_x, s16 clut_y, s16 texture_x, s16 texture_y, s16 unused);
 s32 sprite_scale_by_rate(Sprite *sprite, s32 value);
 void sprite_move(Sprite *sprite);
 
@@ -359,7 +359,7 @@ extern VECTOR sprite_camera_eye;       /* positions (16.16) of two field points 
 extern VECTOR sprite_camera_look_at;
 
 void sprite_set_blend_rate(Sprite *sprite, s32 rate);
-Sprite *sprite_create_child(Sprite *sprite, u16 *animation, SpriteSource *image);
+Sprite *sprite_create_child(Sprite *parent, u16 *header, SpriteSource *source);
 void sprite_set_vector(VECTOR *vector, s32 x, s32 y, s32 z);
 void sprite_stack_push_byte(Sprite *sprite, u8 value);
 void sprite_alloc_group_entries(Sprite *sprite);
@@ -421,7 +421,7 @@ void sprite_upload_pause_image(s32 x, s32 y);
 void sprite_copy_svector(SVECTOR *to, SVECTOR *from);
 void sprite_set_alternate_resource(Sprite *sprite, s32 resource);
 void sprite_set_completion_callback(Sprite *sprite, void *callback);
-void sprite_set_scale_shift(Sprite *sprite, s32 group);
+void sprite_set_scale_shift(Sprite *sprite, s32 shift);
 void sprite_restore_state(Sprite *sprite, SpriteState *state);
 void sprite_save_state(Sprite *sprite, SpriteState *state);
 void sprite_set_walk_speed(Sprite *sprite, s32 speed);

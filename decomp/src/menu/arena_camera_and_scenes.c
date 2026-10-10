@@ -127,16 +127,16 @@ s32 arena_camera_ease_step(s32 target, s32 current, s32 steps) {
     return delta / steps;
 }
 
-/* 80070808: Ease the camera eye toward target over the given number of steps; the
- * eye height is compared including the current lift. */
+/* 80070808: Ease the camera's focus (its look-at point) toward target over the given
+ * number of steps; its height is compared including the current lift. */
 void arena_camera_ease_focus(VECTOR *target, s32 steps) {
     arena_camera_focus.vx += arena_camera_ease_step(target->vx, arena_camera_focus.vx, steps);
     arena_camera_focus.vz += arena_camera_ease_step(target->vz, arena_camera_focus.vz, steps);
     arena_camera_focus.vy += arena_camera_ease_step(target->vy, arena_camera_focus.vy + arena_camera_view_lift, steps);
 }
 
-/* 800708C4: Ease the camera look-at point toward target, limited by the collision
- * step check. */
+/* 800708C4: Ease the camera's position (its eye) toward target, limited by the
+ * collision step check. */
 void arena_camera_ease_position(VECTOR *target, s32 steps) {
     VECTOR step;
 
@@ -199,13 +199,13 @@ void arena_camera_apply_view_mode(u32 mode) {
     }
 }
 
-/* 80070C7C: Re-centre the two actors and the look-at point on a fixed scene spot:
- * the midpoint of the actors moves to the layout's anchor, actors on the
- * floor and the look-at point at a fixed height. */
+/* 80070C7C: Re-centre the two actors and the camera's position on a fixed scene
+ * spot: the midpoint of the actors moves to the layout's anchor, actors on
+ * the floor and the camera at a fixed height. */
 void arena_scene_apply_layout(s32 layout) {
     VECTOR first = arena_first_actor.pos;
     VECTOR second = arena_second_actor.pos;
-    VECTOR look = arena_camera_position;
+    VECTOR eye = arena_camera_position;
     VECTOR centre = first;
 
     centre.vx += second.vx;
@@ -220,9 +220,9 @@ void arena_scene_apply_layout(s32 layout) {
     second.vx -= centre.vx;
     second.vy -= centre.vy;
     second.vz -= centre.vz;
-    look.vx -= centre.vx;
-    look.vy -= centre.vy;
-    look.vz -= centre.vz;
+    eye.vx -= centre.vx;
+    eye.vy -= centre.vy;
+    eye.vz -= centre.vz;
     switch (layout) {
     case 0:
         centre.vx = 0x4000;
@@ -251,15 +251,15 @@ void arena_scene_apply_layout(s32 layout) {
     second.vx += centre.vx;
     second.vy += centre.vy;
     second.vz += centre.vz;
-    look.vx += centre.vx;
-    look.vy += centre.vy;
-    look.vz += centre.vz;
+    eye.vx += centre.vx;
+    eye.vy += centre.vy;
+    eye.vz += centre.vz;
     first.vy = 0;
     second.vy = 0;
-    look.vy = -0x300;
+    eye.vy = -0x300;
     arena_first_actor.pos = first;
     arena_second_actor.pos = second;
-    arena_camera_position = look;
+    arena_camera_position = eye;
     arena_effect_clear_ground_effects();
 }
 
@@ -762,7 +762,7 @@ void arena_scene_settle_actor_on_floor(Actor *actor) {
 
 /* 80071F8C: Scene script callback: 0 plays the stored sound, 1/2 act on one actor
  * (1 also picks the message for whichever actor has more HP left), 3 sets
- * the look-at height, capped at -0x600. */
+ * the camera's height from the actors' distance, capped at -0x600. */
 s32 arena_scene_run_callback(s32 command) {
     switch (command) {
     case 0:

@@ -63,7 +63,7 @@ s32 field_dialogue_portrait_last_slot = 0;         /* 800ADB0C */
 void *field_dialogue_portrait_first_image = NULL;  /* 800ADB10: first portrait image */
 void *field_dialogue_portrait_second_image = NULL; /* 800ADB14: second portrait image */
 s32 field_skip_exit_snapshot = 0;                  /* 800ADB18 */
-s32 field_event_runs_per_frame = 0;                /* 800ADB1C: 801e module loaded */
+s32 field_event_runs_per_frame = 0;                /* 800ADB1C: 0 while event scripts run to their end at once */
 void *field_layer_module = NULL;                   /* 800ADB20: the 801e module */
 s32 field_distortion_buffers_allocated = 0;        /* 800ADB24: screen effect buffers allocated */
 s32 field_unread_jump_start_history_index = 0;     /* 800ADB28: latched jump setting */
@@ -94,7 +94,7 @@ s32 field_movie_end_count = 0;                     /* 800ADB84 */
 s32 field_exit_request_pending = 0;                /* 800ADB88 */
 s32 field_party_rebuilding = 0;                    /* 800ADB8C */
 s32 field_actor_block_loading = 0;                 /* 800ADB90 */
-s32 field_ground_override_height = 0;              /* 800ADB94: camera distance */
+s32 field_ground_override_height = 0;              /* 800ADB94: the floor actors stand on while the override is on */
 s32 field_ground_override_enabled = 0;             /* 800ADB98 */
 s32 field_frame_start_time = 0;                    /* 800ADB9C: frame start time */
 s32 field_frame_cpu_time = 0;                      /* 800ADBA0: frame draw (CPU) time */
@@ -372,7 +372,7 @@ void field_reset_state(void) {
     field_work.unk2356 = 5;
     field_work.animation_mode = 3;
     field_work.unk234A = 0x40;
-    field_work.battle_override = 0xFF;
+    field_work.gear_riding_lock_override = 0xFF;
     FIELD_MOVIE.sound_bank = 0xFF;
     field_model_cull_margin_y = 0;
     field_model_cull_margin_x = 0;
@@ -3510,16 +3510,17 @@ void field_menu_present_dimmed(s32 level) {
     DrawOTag(&field_current_draw_block->ot[1]);
 }
 
-/* 800798BC: Set the battle-entry flag (80059179): clear only while the controlled
- * actor has neither bit 0x40 nor 0x80 of +14; 800b234c overrides it. */
+/* 800798BC: Set mode_gear_riding_lock (80059179), which keeps the party from boarding
+ * or leaving its gears: clear only while the controlled actor has neither
+ * bit 0x40 nor 0x80 of +14; the event override (800b234c) wins unless 0xff. */
 void field_update_gear_riding_lock(void) {
     if (field_work.unk2268 != 0 && !(field_view.components.descriptors[field_work.controlled].actor->unk014 & 0xC0)) {
         mode_gear_riding_lock = 0;
     } else {
         mode_gear_riding_lock = 1;
     }
-    if (field_work.battle_override != 0xFF) {
-        mode_gear_riding_lock = field_work.battle_override;
+    if (field_work.gear_riding_lock_override != 0xFF) {
+        mode_gear_riding_lock = field_work.gear_riding_lock_override;
     }
 }
 

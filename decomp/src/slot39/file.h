@@ -204,7 +204,7 @@ void menu_card_list_unscanned_ports(void);
 s32 menu_notice_ask_yes_no(u8 message, u8 confirm, u8 arg);
 void menu_card_restart_access(void);
 void menu_file_screen_leave_card_mode(void);
-u8 menu_file_screen_run(u8 mode, u8 save);
+u8 menu_file_screen_run(u8 loading, u8 save);
 void menu_copy_game_data_to_save(SaveData *save);
 void menu_restore_game_data_from_save(SaveData *save, MenuTables *tables);
 void menu_file_slots_alloc(void);

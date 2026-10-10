@@ -10,9 +10,9 @@
 
 extern u8 field_character_sprite_ids[];         /* sprite of each character */
 extern s16 field_event_party_slot_masks[4];     /* party masks */
-extern s16 field_unread_party_sprite_take_mark; /* the party member an actor took the sprite of */
+extern s16 field_unread_party_sprite_take_mark; /* -0xc0 once an actor takes a party member's sprite; never read */
 
-s32 field_party_find_character_slot(s32 character);                    /* party slot of a character, or -1 */
+s32 field_party_find_character_slot(s32 id);                    /* party slot of a character, or -1 */
 s32 field_party_find_free_slot(s32 id, s32 *slot);                     /* a free slot of 80062590 for `id` */
 s32 field_party_add_gear_hp(s32 member, s32 amount);                   /* add to a member's points */
 s32 field_party_take_gear_hp(s32 member, s32 amount);                  /* take from a member's points */
@@ -39,7 +39,7 @@ void field_party_read_member_sprite(s32 member, s32 slot);
 void field_party_run_join_event(s32 member);
 
 /* Slot swaps. */
-void field_actor_copy_position_state(s32 actor, s32 member); /* copy an actor's position state to another */
+void field_actor_copy_position_state(s32 to, s32 from); /* copy an actor's position state to another */
 void field_party_board_gear(s32 slot);                       /* put the current actor in for a slot */
 void field_party_leave_gear(s32 slot);                       /* return a slot to its member */
 void field_party_apply_gear_changes(void);                   /* mark the slots that changed character, refresh */

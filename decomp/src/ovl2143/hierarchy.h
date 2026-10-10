@@ -19,7 +19,7 @@
  * ModelBuffer and u8 ** buffers there; s16 where it takes u16): allocate a
  * model's two packet buffers, and override the models' texture pages and
  * CLUTs with those at (x, y). */
-void model_alloc_packet_buffers(SpriteModel *model, void **packets0, void **packets1);
+void model_alloc_packet_buffers(SpriteModel *buffer, void **packets0, void **packets1);
 void model_set_tpage_override(s16 x, s16 y);
 void model_set_clut_override(s16 x, s16 y);
 
@@ -39,7 +39,7 @@ EffectPool *gear_model_alloc_tween_pool(EffectPool *pool, s32 capacity);
 void gear_model_free_tween_pool(EffectPool *pool);
 void gear_model_clear_tween_pool(EffectPool *pool);
 EffectEntry *gear_model_take_tween_slot(EffectPool *pool);
-s32 gear_model_free_tween_slot(EffectPool *pool, EffectEntry *entry);
+s32 gear_model_free_tween_slot(EffectPool *pool, EffectEntry *slot);
 s32 gear_model_start_keyframe_tracks(EffectPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag);
 void gear_model_release_unkept_tweens(EffectPool *pool, ModelPart *parts);
 void gear_model_release_tagged_tweens(EffectPool *pool, ModelPart *parts, u8 tag);

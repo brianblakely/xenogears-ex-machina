@@ -3,11 +3,12 @@
 
 #include "common.h"
 
-/* The battle's set-up and end: the scene settings, the battle's outcome and
- * exit (80070E2C's unit 80076544), the result screen step (battle.c
- * 8008A9C0, declared where it is called), the party's battle masks and their
- * adjustments at the start (8008CCCC's 8009892C), the music, and the battle
- * heap and disc helpers (battle.c 8008AB4C-8008AC50). */
+/* The battle's set-up and end: the scene settings, the frame mode with the
+ * HUD each mode draws (battle_turns_and_hud.c 80076544) and its frame tick
+ * (battle.c 8008A9C0, declared where it is called), the battle's outcome
+ * and exit, the party's battle masks and their adjustments at the start
+ * (battle_menus_and_resolver.c 8009892C), the music, and the battle heap and
+ * disc helpers (battle.c 8008AB4C-8008AC50). */
 
 extern u8 battle_resume_event_script_at_end;
 extern u8 battle_defeat_allowed_by_event_script;
@@ -15,7 +16,7 @@ extern s32 battle_enemy_set_file;
 extern s32 battle_music_seq;                        /* the battle music's sequence */
 extern u8 battle_frame_mode;                        /* the HUD and frame tick: 2 event script, 1 turns, 0 results */
 extern u8 battle_area_outcome;                      /* battle outcome (the battle area's outcome) */
-extern u8 battle_turn_hud_hidden;                   /* keep the battle's resources at its end (the battle area's +0xa7a) */
+extern u8 battle_turn_hud_hidden;                   /* the turns' HUD is not drawn (the battle area's +0xa7a) */
 extern s32 battle_heap_mark_for_post_battle_module; /* 801de000 module blocks */
 extern s32 battle_heap_reserve_for_post_battle_module;
 extern u8 battle_skip_result_screens;
@@ -37,7 +38,7 @@ typedef struct KnownSkills {
 
 extern KnownSkills battle_known_skills_at_start[3];
 
-void battle_draw_hud(void);              /* end the battle by its outcome state */
+void battle_draw_hud(void);              /* draw the HUD of the frame mode */
 void battle_adjust_party_at_start(void); /* the party's adjustments at battle start */
 
 /* The battle heap and the disc. */

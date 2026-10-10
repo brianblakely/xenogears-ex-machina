@@ -1711,7 +1711,9 @@ void worldmap_replace_music(void *data, s32 file) {
     sound_play_seq((SoundSeq *)mode_music_seq, 0x7F, 0);
 }
 
-/* 80076858: Quadratic Bezier point at t (0..0x1000) through three control points. */
+/* 80076858: The point at t (0..0x1000) of the uniform quadratic B-spline over three
+ * control points (weights s^2/2, st + 1/2 and t^2/2 with s = 1 - t), scaled
+ * by 0x10000, to *out. */
 void worldmap_eval_quadratic_bspline(s32 t, SVECTOR *p0, SVECTOR *p1, SVECTOR *p2, VECTOR *out) {
     s32 w0;
     s32 w1;

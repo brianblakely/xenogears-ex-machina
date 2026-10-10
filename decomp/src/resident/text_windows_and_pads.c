@@ -1632,8 +1632,8 @@ void pad_set_host_polling(s32 value) {
 }
 
 /* 800363F0 */
-void pad_set_vblank_hook(void (*value)(void)) {
-    pad_vblank_hook = value;
+void pad_set_vblank_hook(void (*hook)(void)) {
+    pad_vblank_hook = hook;
 }
 
 /* 80036400 */

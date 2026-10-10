@@ -99,7 +99,7 @@ s32 sound_effect_voice_count; /* 80059544: voices kept for music */
 s16 sound_unread_decoded_read_result; /* 80059548: result of the last decoded-data read */
 u8 mode_battle_kind; /* 8005954C */
 u32 sound_pending_key_off_mask; /* 80059550: voices to key off */
-u32 sound_changed_voice_mask; /* 80059554: voices whose registers changed */
+u32 sound_fast_key_off_mask; /* 80059554: voices to cut: sound_key_off_voices gives them a fast release and keys them off */
 struct SoundSequence *sound_wave_bank_list; /* 80059558: loaded wave banks */
 u16 sound_pending_irq_enable; /* 8005955C: pending SPU IRQ re-enable */
 struct SoundSequence *mode_shared_wave_bank; /* 80059560: resident wave banks */

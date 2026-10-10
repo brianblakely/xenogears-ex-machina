@@ -1149,8 +1149,10 @@ b5 warp_gathering field_event_warp_gathering 1 next
     to their spots (8009aee0), and gathering clears it
 b6 set_controlled field_event_set_controlled 2 next actor@1
     make the selected actor the controlled one
-b7 set_battle_override field_event_set_battle_override 3 next iv@1
-    set the battle-entry override
+b7 set_gear_riding_lock_override field_event_set_gear_riding_lock_override 3 next iv@1
+    set the value field_update_gear_riding_lock gives mode_gear_riding_lock
+    (800b234c, 0xff none), which keeps the party from boarding or leaving
+    its gears
 b8 set_battle_sounds field_event_set_battle_sounds 4 next u8@1 iv@2
     set the battle sound value of random (byte 1 zero, 800b2355) or
     scripted (800b2356) battles

@@ -2031,8 +2031,8 @@ void battle_camera_track_slots(void) {
     }
 }
 
-/* 800BCAFC: Shade the sprite by the cosine of angle (0x80 plus half, at most 0xFF)
- * and update it (8001F6B0). */
+/* 800BCAFC: Shade the sprite by the sine of angle << 6, 0x80 + (sine + 0x1000) / 64
+ * (at most 0xFF), and update it (8001F6B0). */
 void battle_shade_sprite_by_angle(Sprite *sprite, s32 angle) {
     s32 level = gpu_get_sin(angle << 6) + 0x1000;
 

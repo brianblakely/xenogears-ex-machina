@@ -1627,8 +1627,11 @@ void battle_panel_update_time_bars(void) {
     }
 }
 
-/* 80076418: Battle end, outcome state 1: unless 800c492a is set, release every battle
- * resource. */
+/* 80076418: The HUD of frame mode 1 (the turns), unless battle_turn_hud_hidden
+ * (800c492a): the opening windows, the member panels, the command panel,
+ * the list page and its glyphs, the messages, the combo chain lists, the
+ * direction arrows, the gauge bars and windows, the stepped line and the HUD
+ * lists. */
 void battle_draw_hud_for_turns(void) {
     if (battle_turn_hud_hidden == 0) {
         battle_window_grow_opening();
@@ -1649,8 +1652,9 @@ void battle_draw_hud_for_turns(void) {
     }
 }
 
-/* 800764B4: Battle end, outcome state 0: leave the result screens (8008fad8), run the
- * post-battle module's exit and release the battle display. */
+/* 800764B4: The HUD of frame mode 0 (the result screens): clear the debug page, grow
+ * the opening windows, queue the result screens' primitives (ovl2596) and
+ * draw the gauge bars and windows. */
 void battle_draw_hud_for_result_screens(void) {
     mode_battle_debug_page = 0;
     battle_window_grow_opening();
@@ -1658,7 +1662,9 @@ void battle_draw_hud_for_result_screens(void) {
     battle_draw_gauge_bars_and_windows();
 }
 
-/* 800764EC: Battle end, outcome state 2: release the battle's resources. */
+/* 800764EC: The HUD of frame mode 2 (the event script): the opening windows, the
+ * status and list page glyphs, the messages, the script's portrait and text
+ * window, the gauge bars and windows, the stepped line and the HUD lists. */
 void battle_draw_hud_for_event_script(void) {
     battle_window_grow_opening();
     battle_panel_build_status_glyphs();
@@ -1670,7 +1676,8 @@ void battle_draw_hud_for_event_script(void) {
     battle_draw_hud_lists();
 }
 
-/* 80076544: Battle end by outcome state 800c3e4c. */
+/* 80076544: Draw the HUD of battle_frame_mode (800c3e4c): the result screens (0),
+ * the turns (1) or the event script (2). */
 void battle_draw_hud(void) {
     switch (battle_frame_mode) {
     case 0:
@@ -1781,7 +1788,8 @@ s32 battle_build_glyph_half_scale(s32 id, POLY_FT4 *prims, s16 x, s16 y) {
     return sprite_sheet_draw_scaled(battle_glyph_table, id, prims, battle_drawing_state.buffer, x, y, 0x800);
 }
 
-/* 80076AC8: Initialise a textured quad: raw texture, opaque. */
+/* 80076AC8: Initialise a textured quad: semi-transparent, its texture shaded by its
+ * colour. */
 void battle_quad_init_semi_transparent(POLY_FT4 *prim) {
     SetSemiTrans(prim, 1);
     SetShadeTex(prim, 0);

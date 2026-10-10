@@ -927,7 +927,7 @@ void sound_set_seq_pan(SoundSeq *seq, s32 pan, s32 frames) {
     }
 }
 
-void sound_request_seq_voice_updates(SoundSeq *seq, s32 voices);
+void sound_request_seq_voice_updates(SoundSeq *seq, s32 bits);
 void sound_request_seq_key_on(SoundSeq *seq);
 
 /* 8003AA30: Resume a sequence: apply its reverb (when the driver owns the reverb),
@@ -1728,12 +1728,12 @@ void sound_set_spu_irq_hook(void (*callback)(void)) {
 }
 
 void sound_step_slide(SoundSlide *slide);
-void sound_step_seq_slides(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
+void sound_step_seq_slides(SoundSeq *seq, SoundSeqChannel *channel, s16 count);
 void sound_seq_interpret_channels(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
 void sound_flush_voice_registers(void);
 void sound_key_off_voices(void);
 void sound_stage_seq_voices(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
-void sound_run_seq_modulators(SoundSeq *seq, SoundSeqChannel *channels, s16 count);
+void sound_run_seq_modulators(SoundSeq *seq, SoundSeqChannel *channel, s16 count);
 
 /* 8003C020: The sound driver tick. Every other tick it steps the master and CD
  * volume fades; the master volume goes through 80038e6c, which gives it
@@ -3345,7 +3345,8 @@ void sound_clear_voice_owners(void) {
 }
 
 /* 8003E724: Claim hardware voice `voice` for a channel unless its holder has a
- * higher priority. */
+ * higher priority, cutting its sound (sound_fast_key_off_mask) and dropping
+ * a pending key-on; a voice the channel holds is only cut. */
 void sound_claim_voice(SoundChannel *state, u32 voice) {
     SoundChannel **owner = &sound_voice_owners[voice];
     SoundChannel *holder;
@@ -3356,7 +3357,7 @@ void sound_claim_voice(SoundChannel *state, u32 voice) {
     }
     holder = *owner;
     if (holder == state) {
-        sound_changed_voice_mask |= 1 << voice;
+        sound_fast_key_off_mask |= 1 << voice;
         return;
     }
     if (holder == NULL || holder->priority <= state->priority) {
@@ -3364,12 +3365,13 @@ void sound_claim_voice(SoundChannel *state, u32 voice) {
         bit = 1 << voice;
         state->voice = voice;
         sound_voice_owners[voice] = state;
-        sound_changed_voice_mask |= bit;
+        sound_fast_key_off_mask |= bit;
         sound_pending_key_on_mask &= ~bit;
     }
 }
 
-/* 8003E7E0: Claim hardware voice `voice` without requesting a register update. */
+/* 8003E7E0: Claim hardware voice `voice` without cutting its sound (no
+ * sound_fast_key_off_mask bit) or keying it on. */
 void sound_claim_voice_no_update(SoundChannel *state, u32 voice) {
     SoundChannel **owner = &sound_voice_owners[voice];
     SoundChannel *holder;
@@ -3392,19 +3394,19 @@ void sound_release_voice(SoundChannel *state, u32 voice) {
     if (voice < 24 && *owner == state) {
         *owner = NULL;
         bit = 1 << voice;
-        sound_changed_voice_mask |= bit;
+        sound_fast_key_off_mask |= bit;
         sound_pending_key_on_mask &= ~bit;
     }
 }
 
-/* 8003E8A4: Request a register update (and key-on) of hardware voice `voice` if the
- * channel holds it. */
+/* 8003E8A4: Request a fast key-off (sound_fast_key_off_mask) of hardware voice `voice`
+ * if the channel holds it, dropping its pending key-on. */
 void sound_request_fast_key_off(SoundChannel *state, u32 voice) {
     u32 bit;
 
     if (voice < 24 && sound_voice_owners[voice] == state) {
         bit = 1 << voice;
-        sound_changed_voice_mask |= bit;
+        sound_fast_key_off_mask |= bit;
         sound_pending_key_on_mask &= ~bit;
     }
 }
@@ -3505,10 +3507,10 @@ void sound_flush_voice_registers(void) {
     }
 }
 
-/* 8003EB5C: Key off the requested voices; voices whose registers changed are first
+/* 8003EB5C: Key off the requested voices; those in sound_fast_key_off_mask are first
  * switched to a fast linear release (release rate 6). */
 void sound_key_off_voices(void) {
-    u32 mask = sound_changed_voice_mask;
+    u32 mask = sound_fast_key_off_mask;
     SpuRegs *regs = sound_spu_registers;
     s32 voice;
     s32 bit;
@@ -3525,11 +3527,11 @@ void sound_key_off_voices(void) {
             adsr = (u16 *)((u8 *)adsr + sizeof(SpuVoice));
         } while (voice < 24);
     }
-    mask = sound_pending_key_off_mask | sound_changed_voice_mask;
+    mask = sound_pending_key_off_mask | sound_fast_key_off_mask;
     if (mask != 0) {
         regs->key_off[0] = mask;
         regs->key_off[1] = mask >> 16;
-        sound_changed_voice_mask = 0;
+        sound_fast_key_off_mask = 0;
         sound_pending_key_off_mask = 0;
     }
 }
@@ -3650,7 +3652,7 @@ void sound_key_on_voice(SoundChannel *state, u32 voice) {
         state->flags = 0xFFFF;
         state->voice = voice;
         sound_voice_owners[voice] = state;
-        sound_changed_voice_mask |= 1 << voice;
+        sound_fast_key_off_mask |= 1 << voice;
     }
     sound_pending_key_on_mask |= 1 << voice;
 }

@@ -35,7 +35,7 @@ typedef struct FieldMarker {
     POLY_FT4 poly[2];
 } FieldMarker;
 
-void field_shadow_init_quad(FieldMarker *marker); /* set a marker up */
+void field_shadow_init_quad(FieldMarker *m); /* set a marker up */
 void field_marker_project_and_link(u_long *ot, FieldMarker *marker, MATRIX *m, s32 buffer); /* project and link */
 void field_marker_link_standing_sprite(u_long *ot, FieldMarker *marker, MATRIX *m, s32 buffer); /* as a standing sprite */
 
@@ -48,7 +48,7 @@ extern s16 field_compass_needle_goal;                                           
 extern u16 field_compass_colors[16];                                                     /* compass colours read back from VRAM */
 extern u16 field_compass_palette[128];                                                   /* compass palette */
 extern RECT field_compass_palette_rect;                                                  /* compass colour strip */
-void field_compass_build_quadrant_quads(void);                                           /* build the four letters */
+void field_compass_build_quadrant_quads(void);                                           /* build the four quadrant quads */
 void field_compass_build_grid_quad(FieldMarker *record, s32 column, s32 row, s32 style); /* build a grid quad */
 
 /* Screen fades: two channels in the work block (FadeChannel); a fade starts

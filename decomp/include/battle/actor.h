@@ -48,7 +48,7 @@ extern s32 battle_camera_circle_distance;      /* its distance from it */
 extern s16 battle_camera_circle_angle;         /* its angle round it */
 
 /* The slots' sprites. */
-void battle_end_turn_and_preload_slot(s32 value);       /* end a slot's turn presentation */
+void battle_end_turn_and_preload_slot(s32 slot);       /* end a slot's turn presentation */
 void battle_sprite_aim_jump(Sprite *sprite);            /* aim a sprite's jump at its target */
 void battle_sprite_aim_jump_keep_rise(Sprite *sprite);  /* the same, keeping its rising speed */
 void battle_sprite_update_ground(Sprite *sprite);       /* put a sprite on the scene's ground */
@@ -56,7 +56,7 @@ void battle_sprite_update_ground(Sprite *sprite);       /* put a sprite on the s
  * overlay its script slots' models): task_alloc_two_node_task's update, second update
  * and destroy. */
 void battle_sprite_task_draw(Task *task);        /* second update: depth in the view, draw the parts */
-void battle_sprite_task_destroy(Task *task);     /* destroy: part block, children, sprite and node */
+void battle_sprite_task_destroy(Task *node);     /* destroy: part block, children, sprite and node */
 void battle_sprite_task_update(Task *task);      /* update (twice with double steps) unless paused */
 void battle_slot_sprite_face_side(s32 slot);     /* face a slot's sprite along its side */
 void battle_slot_swap_sprite_for_gear(s32 slot); /* send a party slot's sprite off for its gear */

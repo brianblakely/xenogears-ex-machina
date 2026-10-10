@@ -60,9 +60,9 @@ void worldmap_effects_alloc_slots(void); /* clear the area objects, allocate the
 void worldmap_effects_free_slots(void); /* free the effect slots */
 void worldmap_effects_alloc_quads(void); /* allocate the particle quads */
 void worldmap_effects_free_quads(void); /* free them */
-void worldmap_effects_start_emitters(s32 effect, SVECTOR *position, SVECTOR *angle); /* place and start a group */
-void worldmap_effects_stop_emitters(s32 a); /* deactivate a group */
-void worldmap_effects_stop_particles(s32 a); /* stop a group's live particles */
+void worldmap_effects_start_emitters(s32 group, SVECTOR *position, SVECTOR *angle); /* place and start a group */
+void worldmap_effects_stop_emitters(s32 group); /* deactivate a group */
+void worldmap_effects_stop_particles(s32 group); /* stop a group's live particles */
 void worldmap_effects_run_emitters(void); /* run the emitters */
 void worldmap_effects_draw_particles(void); /* draw the particles */
 

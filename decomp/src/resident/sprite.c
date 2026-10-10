@@ -2655,9 +2655,10 @@ void sprite_set_completion_callback(Sprite *sprite, void *callback) {
     sprite->callback = callback;
 }
 
-/* 80021C00: Set a sprite's facing group (flags bits 8-12). */
-void sprite_set_scale_shift(Sprite *sprite, s32 group) {
-    sprite->flags = (sprite->flags & ~0x1F00) | ((group & 0x1F) << 8);
+/* 80021C00: Set a sprite's scale shift (flags bits 8-12, SpriteFlagBits.shift: the
+ * shift 8001e148 applies to its parts' offsets and sizes). */
+void sprite_set_scale_shift(Sprite *sprite, s32 shift) {
+    sprite->flags = (sprite->flags & ~0x1F00) | ((shift & 0x1F) << 8);
 }
 
 /* 80021C20: Pop a byte from a sprite's stack. */

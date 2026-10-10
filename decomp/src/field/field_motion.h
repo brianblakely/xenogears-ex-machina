@@ -18,7 +18,7 @@ extern s32 field_layer_next_index;                                              
 extern s32 field_update_ran;                                                                       /* 1 once the update ran */
 void field_actor_apply_additive_motion(s32 index, FieldDescriptor *descriptor, FieldActor *actor); /* additive motion */
 void field_actor_move(s32 index, FieldDescriptor *descriptor, FieldActor *actor);                  /* move an actor */
-void field_actor_check_talk_and_touch(s32 index, FieldDescriptor *descriptor, FieldActor *actor);  /* talk and touch triggers */
+void field_actor_check_talk_and_touch(s32 index, FieldDescriptor *descriptor, FieldActor *player);  /* talk and touch triggers */
 void field_actor_resolve_contacts(s32 index, FieldDescriptor *descriptor, FieldActor *actor);      /* contacts */
 void field_actor_set_planar_velocity(Sprite *sprite, s16 heading, FieldDescriptor *descriptor);    /* planar velocity */
 void field_actor_start_animation(void *model, s32 animation, FieldDescriptor *descriptor);         /* start an animation */

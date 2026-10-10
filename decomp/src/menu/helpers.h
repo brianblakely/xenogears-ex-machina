@@ -26,7 +26,7 @@ s32 arena_vector_get_length(VECTOR *vector);
 s32 arena_vector_get_flat_length(VECTOR *vector);
 s32 arena_vector_get_distance(VECTOR *from, VECTOR *to);
 s32 arena_vector_get_flat_distance(VECTOR *from, VECTOR *to);
-void *arena_load_whole_file(s32 id);
+void *arena_load_whole_file(s32 file);
 s32 arena_angle_turn_toward(s32 from, s32 to, s32 step); /* turn an angle toward a target */
 
 #endif

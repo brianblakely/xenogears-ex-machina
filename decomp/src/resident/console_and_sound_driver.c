@@ -792,7 +792,7 @@ void sound_start_driver(s32 flags) {
     sound_output_mode_voice = NULL;
     sound_pending_key_on_mask = 0;
     sound_pending_key_off_mask = 0;
-    sound_changed_voice_mask = 0;
+    sound_fast_key_off_mask = 0;
     sound_volumes.attr.mvolmode.left = 0;
     sound_volumes.attr.mvolmode.right = 0;
     sound_volumes.attr.mask = 0xC;
@@ -1000,9 +1000,9 @@ s32 sound_alloc_wave_bank_spu_memory(SoundSequence *bank, s32 mode) {
 }
 
 /* 80038264: Start a streamed wave bank's transfer: its SPU address and size. */
-void sound_set_wave_bank_stream_target(s32 a, s32 b) {
-    sound_wave_bank_stream_address = a;
-    sound_wave_bank_stream_bytes_left = b;
+void sound_set_wave_bank_stream_target(s32 address, s32 size) {
+    sound_wave_bank_stream_address = address;
+    sound_wave_bank_stream_bytes_left = size;
 }
 
 /* 8003827C: Transfer the next part of a streamed wave bank's samples (at most what
@@ -1152,7 +1152,8 @@ SoundBank *sound_find_effect_bank(SoundBank *bank, s16 id) {
     return entry;
 }
 
-/* 8003869C: Resume every paused track and stop the effect channels. */
+/* 8003869C: Stop the sequences flagged 1 (sound_stop_all_seqs) and the effect
+ * channels. */
 void sound_stop_all_seqs_and_effects(void) {
     sound_stop_all_seqs();
     sound_stop_all_effects();
@@ -1210,7 +1211,8 @@ void sound_set_output_mode(s32 mode) {
     }
 }
 
-/* 80038824: 0 without reverb, 1 or 2 by reverb mode. */
+/* 80038824: The output mode sound_set_output_mode selected, by its 0x700 bits: 0 for
+ * mode 0, 1 for mode 1, 2 for modes 2 and 3. */
 s32 sound_get_output_mode(void) {
     s32 mode;
 
@@ -2004,17 +2006,18 @@ void sound_stop_seq(SoundSeq *seq) {
     sound_release_seq_voices(seq);
 }
 
-/* 80039C8C: Fade a sequence out over `c` frames (error 5 without one). */
-void sound_fade_out_seq(s32 a, s32 c) {
-    if (a == 0) {
+/* 80039C8C: Fade a sequence out over `frames` frames (error 5 without one). */
+void sound_fade_out_seq(s32 seq, s32 frames) {
+    if (seq == 0) {
         sound_report_error(5);
         return;
     }
-    sound_set_seq_fade((SoundSeq *)a, 0, c);
+    sound_set_seq_fade((SoundSeq *)seq, 0, frames);
 }
 
 
-/* 80039CC4: Resume every paused track (flag 1). */
+/* 80039CC4: Stop every listed sequence flagged 1: clear its playing flag (0x8000)
+ * and release its channels' voices, as sound_stop_seq does. */
 void sound_stop_all_seqs(void) {
     SoundSeq *seq;
 

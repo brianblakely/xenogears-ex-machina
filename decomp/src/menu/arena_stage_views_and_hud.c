@@ -201,7 +201,9 @@ void arena_stage_init(void) {
     arena_stage_init_ground_pools();
 }
 
-/* 80082178: Draw the large direction arrow at a map position (8.8 fixed point). */
+/* 80082178: Mark the ground cells in view: widen the map's row spans over a wide
+ * wedge reaching 24 cells from the camera at (x, z) (8.8 fixed point), away
+ * from `direction` (the focus's side toward the camera). */
 void arena_stage_mark_wide_view_cells(s32 x, s32 z, s32 direction) {
     s32 start_x;
     s32 start_z;
@@ -231,7 +233,8 @@ void arena_stage_mark_wide_view_cells(s32 x, s32 z, s32 direction) {
     arena_stage_widen_row_spans(start_x, start_z, next_x, next_z);
 }
 
-/* 80082300: Draw the small direction arrow at a map position (8.8 fixed point). */
+/* 80082300: Mark the ground cells in view over a narrow wedge reaching 32 cells (the
+ * replay's), as arena_stage_mark_wide_view_cells does. */
 void arena_stage_mark_narrow_view_cells(s32 x, s32 z, s32 direction) {
     s32 start_x;
     s32 start_z;
@@ -598,8 +601,8 @@ void arena_stage_draw_wall(u32 *ot, VECTOR *pos) {
     }
 }
 
-/* 800831C8: Put the look-at point somewhere random around the scene centre and set
- * the idle camera motion parameters. */
+/* 800831C8: Put the camera's position somewhere random around the scene centre and
+ * set the idle camera motion parameters. */
 void arena_camera_place_at_random(void) {
     s32 radius;
     s32 angle;
@@ -625,12 +628,12 @@ void arena_camera_turn_orbit(s32 buttons) {
     }
 }
 
-/* 80083310: Idle orbit camera: move the eye toward a point between the two actors
+/* 80083310: Idle orbit camera: move the focus toward a point between the two actors
  * (further toward the other actor late in the orbit, a third of the way
- * when smoothing) and swing the look-at point around it, kept inside the
- * arena and above the ground. */
+ * when smoothing) and swing the eye around it, kept inside the arena and
+ * above the ground. */
 void arena_camera_update_orbit(s32 smooth) {
-    VECTOR look;
+    VECTOR eye;
     VECTOR step;
     VECTOR offset;
     VECTOR unused;   /* the original frame has 0x18 unused bytes */
@@ -683,22 +686,22 @@ void arena_camera_update_orbit(s32 smooth) {
     arena_camera_focus.vy += offset.vy;
     arena_camera_focus.vz += offset.vz;
     value = arena_camera_orbit_angle + arena_bout_replay_timer * arena_camera_orbit_speed;
-    look.vx = (gpu_get_sin(value) * arena_camera_radius) >> 12;
-    look.vz = (gpu_get_cos(value) * arena_camera_radius) >> 12;
-    look.vy = -(arena_bout_replay_timer * 6 + 0x200);
-    look.vx += arena_camera_focus.vx;
-    look.vy += arena_camera_focus.vy;
-    look.vz += arena_camera_focus.vz;
-    step.vx = look.vx - arena_camera_position.vx;
-    step.vz = look.vz - arena_camera_position.vz;
+    eye.vx = (gpu_get_sin(value) * arena_camera_radius) >> 12;
+    eye.vz = (gpu_get_cos(value) * arena_camera_radius) >> 12;
+    eye.vy = -(arena_bout_replay_timer * 6 + 0x200);
+    eye.vx += arena_camera_focus.vx;
+    eye.vy += arena_camera_focus.vy;
+    eye.vz += arena_camera_focus.vz;
+    step.vx = eye.vx - arena_camera_position.vx;
+    step.vz = eye.vz - arena_camera_position.vz;
     arena_stage_keep_step_inside(&arena_camera_position, &step, 0x3D00);
     arena_camera_position.vx += step.vx;
     arena_camera_position.vz += step.vz;
     value = arena_stage_get_ground_height(&arena_camera_position, 0);
-    if (value < look.vy) {
-        look.vy = value;
+    if (value < eye.vy) {
+        eye.vy = value;
     }
-    arena_camera_position.vy = look.vy;
+    arena_camera_position.vy = eye.vy;
 }
 
 /* 8008369C: Start an idle camera orbit at a random angle, speed and direction. */
@@ -711,10 +714,10 @@ void arena_camera_start_orbit(void) {
     arena_camera_update_orbit(0);
 }
 
-/* 80083738: Frame two actors: put the eye between them, pick the side of the pair
- * the look-at point is nearer to, and move the look-at point toward a spot
- * beside the pair (further back when they are far apart), kept inside the
- * arena and above the ground. */
+/* 80083738: Frame two actors: put the focus between them, pick the side of the pair
+ * the eye is nearer to, and move the eye toward a spot beside the pair
+ * (further back when they are far apart), kept inside the arena and above
+ * the ground. */
 void arena_camera_frame_actors_for_scene(Actor *first, Actor *second) {
     VECTOR side;
     VECTOR other_side;
@@ -772,7 +775,7 @@ void arena_camera_frame_actors_for_scene(Actor *first, Actor *second) {
     arena_camera_position.vz += side.vz;
 }
 
-/* 80083B54: Read the camera's look-at point and eye. */
+/* 80083B54: Read the camera's position (its eye) and focus (its look-at point). */
 void arena_camera_get_position_and_focus(VECTOR *position, VECTOR *focus) {
     *position = arena_camera_position;
     *focus = arena_camera_focus;
@@ -882,7 +885,7 @@ void arena_view_light_actor(LightRig *rig, Actor *actor, s32 index) {
 }
 
 /* 800840CC: Draw the 3D arena: aim the camera, pose the actors, then draw the floor,
- * the actors and their shadows, the look-at marker and the sky. */
+ * the actors and their shadows, the ground cells in view and the sky. */
 s32 arena_view_draw_arena(LightRig *rig) {
     MATRIX floor;
     MATRIX camera;

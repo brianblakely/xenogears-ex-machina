@@ -357,8 +357,9 @@ void arena_look_at_build_matrix(MATRIX *m, SVECTOR *eye, SVECTOR *at, SVECTOR *u
     m->t[2] = -arena_look_at_forward.vz;
 }
 
-/* 80089A98: Point the owner's view from eye toward target (eye kept as the last eye
- * position). */
+/* 80089A98: Aim the rig's view from `position` toward `focus`: the view is built
+ * relative to focus (kept in arena_view_origin), its eye at position - focus
+ * looking at the origin. */
 void arena_node_aim_rig_camera(LightRig *view, VECTOR *position, VECTOR *focus) {
     SVECTOR up;
     SVECTOR from;
@@ -787,9 +788,9 @@ void arena_node_color_instance(Node *node) {
     }
 }
 
-/* 8008A7E0: Update a node tree's matrices (model sets relative to the eye, other
- * nodes relative to their parent) and draw its shown models and
- * instances. */
+/* 8008A7E0: Update a node tree's matrices (model sets relative to the view origin,
+ * the focus, other nodes relative to their parent) and draw its shown models
+ * and instances. */
 void arena_node_draw_tree(Node *node) {
     if (node->callback != NULL) {
         node->callback(node);
@@ -1361,7 +1362,7 @@ void arena_mesh_draw_groups(SpriteModel *mesh, ModelPrim *prims, u32 *ot, u8 *wo
 /* 8008BE4C: Build a mesh's packet buffers: a vertex work area and, per display
  * buffer, a flat grey quad (0x18 bytes) or triangle (0x14 bytes) packet
  * for every primitive. */
-void arena_mesh_build_packets(ModelPrims *mp, SpriteModel *mesh) {
+void arena_mesh_build_packets(ModelPrims *prims, SpriteModel *mesh) {
     s32 n; /* vertex, then group counter, then packet bytes per buffer */
     s32 i;
     s32 j;
@@ -1371,14 +1372,14 @@ void arena_mesh_build_packets(ModelPrims *mp, SpriteModel *mesh) {
     u8 *vertex;
     u8 *packet;
 
-    mp->vertices = mesh->vertex_count;
-    mp->count = mesh->primitive_count;
-    mp->vertexData = mesh->vertices;
-    mp->mesh = mesh;
+    prims->vertices = mesh->vertex_count;
+    prims->count = mesh->primitive_count;
+    prims->vertexData = mesh->vertices;
+    prims->mesh = mesh;
     model_current_primitive_group = (PrimitiveGroup *)mesh->unk10;
     heap_set_next_class(0x13);
-    vertex = mp->work = heap_alloc(mp->vertices * 8, 2);
-    n = mp->vertices;
+    vertex = prims->work = heap_alloc(prims->vertices * 8, 2);
+    n = prims->vertices;
     while (--n != -1) {
         ((s16 *)vertex)[1] = 0;
         vertex += 8;
@@ -1399,8 +1400,8 @@ void arena_mesh_build_packets(ModelPrims *mp, SpriteModel *mesh) {
     }
     n = triangles * 0x14 + quads * 0x18;
     packet = heap_alloc(n * 2, 2);
-    mp->prims[0] = (ModelPrim *)packet;
-    mp->prims[1] = (ModelPrim *)(packet + n);
+    prims->prims[0] = (ModelPrim *)packet;
+    prims->prims[1] = (ModelPrim *)(packet + n);
     i = mesh->group_count;
     model_current_primitive_group = (PrimitiveGroup *)mesh->unk10;
     while (--i != -1) {
@@ -1423,7 +1424,7 @@ void arena_mesh_build_packets(ModelPrims *mp, SpriteModel *mesh) {
         }
         model_current_primitive_group = (PrimitiveGroup *)((u8 *)model_current_primitive_group + group->count * 8);
     }
-    arena_copy_words(mp->prims[1], mp->prims[0], n);
+    arena_copy_words(prims->prims[1], prims->prims[0], n);
 }
 
 /* 8008C0BC: Make a node an instance node. */

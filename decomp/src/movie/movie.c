@@ -123,7 +123,7 @@ s32 movie_mode_buttons;                       /* 800773AC: buttons */
 s32 movie_mode_monitor_shown;                 /* 800773B0: monitor shown */
 s32 movie_mode_previous_buttons;              /* 800773B4: previous buttons */
 s32 movie_mode_unread_decode_vsync_times[32]; /* 800773B8: VSync(1) before and after each decode step */
-s32 movie_mode_rewind_enabled;                /* 80077438: split display */
+s32 movie_mode_rewind_enabled;                /* 80077438: the menu's REWIND: movie_start's hold (restart at the end) */
 s32 movie_mode_end_frame_state;               /* 8007743C: end frame: 0 changed, 1 found, 2 not found */
 s32 movie_mode_unread_menu_shown;             /* 80077440: menu shown */
 s32 movie_mode_start_frame_state;             /* 80077444: start frame: 1 changed, 2 sought */
@@ -132,7 +132,7 @@ s32 movie_mode_buffer_index;                  /* 8007744C: buffer index */
 s32 movie_mode_disc_mode;                     /* 80077450: disc mode: 0, -1 or host */
 s32 movie_mode_library_output_mode;           /* 80077454: library output mode (bit 0: 24-bit) */
 
-/* 800704E8: The menu's CD-ROM monitor: at 640x240, show the read statistics, the
+/* 800704E8: The menu's CD-ROM check (line 10): at 640x240, show the read statistics, the
  * resident's error counters and stream state, a dump of the stream buffer
  * and the reads per result class, run the monitor's input every frame and
  * return to the 320-wide menu on Start once no read is running. The unused
@@ -1915,7 +1915,7 @@ void movie_mode_play_battle_music(void) {
     sound_play_seq(movie_mode_battle_music_seq, 0x7F, 0);
 }
 
-/* 80075534: The menu's sector monitor: at 640x240, dump 192 bytes of the current
+/* 80075534: The menu's CD-ROM monitor (line 9), a sector monitor: at 640x240, dump 192 bytes of the current
  * sector (Up/Down by a row, Triangle/Cross by twelve) with its position;
  * Left/Right step the sector by one, L1/R1 by 75 (a second) and L2/R2 by
  * 4500 (a minute), rereading it when it changes. Circle returns to the
@@ -2081,7 +2081,8 @@ void movie_mode_run_cd_monitor(void) {
 const char movie_mode_monitor_newline_text[] = "\n"; /* 8007042C */
 const char movie_mode_push_circle_text[] = "\nPUSH CIRCLE BUTTON TO MENU."; /* 80070430 */
 
-/* 80075D4C: The first sector of directory record `index` (bytes 3..6). */
+/* 80075D4C: The size field of file index record `index` (bytes 3..6): 0 for none,
+ * negative for an entry the FAT check lists as [Pn] by its negation. */
 u32 movie_mode_get_file_index_size(s32 index) {
     u8 *record;
 

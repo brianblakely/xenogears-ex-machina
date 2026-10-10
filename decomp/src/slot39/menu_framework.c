@@ -42,7 +42,7 @@
 #include "field.h"
 
 /* Declared here only: menu_member_screens.c calls it without a prototype. */
-void menu_detail_layout_tabs(u8 slot, u8 mode, u8 second);
+void menu_detail_layout_tabs(u8 slot, u8 shown, u8 second);
 
 /* The overlay's initialized data: all of it is defined here, ahead of the
  * units' uninitialized variables. */

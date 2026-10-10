@@ -42,7 +42,7 @@ u16 worldmap_pad_unread_port0_repeated; /* 8009BD18 */
 u16 worldmap_pad_unread_port1_repeated; /* 8009BD1C */
 void *worldmap_area_image; /* 8009BD20 */
 s16 worldmap_path_name_id; /* 8009BD24 */
-s16 worldmap_object_model_count; /* 8009BD28: animation count */
+s16 worldmap_object_model_count; /* 8009BD28: model count of the object model group */
 s32 worldmap_stream_wait; /* 8009BD2C */
 void *worldmap_object_placement_list; /* 8009BD30 */
 s32 worldmap_button_combo_pressed; /* 8009BD34 */
@@ -81,7 +81,7 @@ u8 *worldmap_stream_destination; /* 8009C590: destination of the next sector's d
 s32 worldmap_unreferenced_pair[2]; /* 8009C594: unreferenced */
 void *worldmap_terrain_image; /* 8009C59C */
 DR_TPAGE worldmap_map_overlay_tpage; /* 8009C5A0 */
-s32 worldmap_mode_index; /* 8009C5A8: arrival kind */
+s32 worldmap_mode_index; /* 8009C5A8: the current mode (worldmap_mode_handlers index) */
 VECTOR worldmap_player_position; /* 8009C5AC: player position (20.12) */
 s32 worldmap_wave_phase_x; /* 8009C5BC */
 POLY_FT4 worldmap_map_overlay_quads[2]; /* 8009C5C0: overlay picture, per buffer */
@@ -162,7 +162,7 @@ DR_TWIN worldmap_horizon_texture_windows[2]; /* 8009D3D8 */
 s32 worldmap_camera_distance; /* 8009D3F0: camera distance */
 struct WorldmapSpot *worldmap_arrival_points; /* 8009D3F4 */
 FileRequest worldmap_read_list[16]; /* 8009D3F8: shared read list */
-u16 worldmap_billboard_cluts[16]; /* 8009D478: terrain CLUTs */
+u16 worldmap_billboard_cluts[16]; /* 8009D478: billboard CLUTs */
 Window worldmap_path_window; /* 8009D498: path name window */
 void *worldmap_packed_menu_overlay; /* 8009D528 */
 u16 worldmap_camera_follow_heading; /* 8009D52C */

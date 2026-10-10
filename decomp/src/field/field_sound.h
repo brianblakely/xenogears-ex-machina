@@ -61,7 +61,7 @@ void field_sound_start_emitter(s32 sound, s32 volume, s32 unused, s32 distance, 
 void field_sound_stop_emitter(s32 id);                                                      /* stop the one following descriptor `id` */
 void field_sound_clear_emitter_slots(void);                                                 /* clear the slots */
 void field_sound_clear_emitters_stop_voices(void);                                          /* clear them and stop their voices */
-void field_sound_keep_nearest_emitters(VECTOR *target);                                     /* keep those of the three actors nearest `target` */
+void field_sound_keep_nearest_emitters(VECTOR *listener);                                     /* keep those of the three actors nearest `target` */
 void field_sound_update_emitters(void);                                                     /* point the listener */
 void field_layer_update_emitter_lights(void);                                               /* follow the actors' positions */
 void field_layer_set_emitter_light_color(s32 emitter, s32 *position);

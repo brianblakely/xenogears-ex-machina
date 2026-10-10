@@ -23,7 +23,7 @@
 void sprite_set_direction(Sprite *sprite, s32 direction);
 void sprite_set_facing(Sprite *sprite, s32 angle);
 s32 sound_find_effect_bank(SoundBank *bank, s32 id);
-void model_load_image_list(void *images, s32 on, s32 a, s32 b, s32 c, s32 d, s32 e);
+void model_load_image_list(void *images, s32 mode, s32 x, s32 y, s32 mode2, s32 x2, s32 y2);
 
 /* This overlay's link of a sprite to an actor node. */
 typedef struct {

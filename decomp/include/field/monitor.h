@@ -46,7 +46,7 @@ void field_instance_refresh_bounds_modes(void);                                 
 void field_fade_start(s32 channel, s32 steps, s32 red, s32 green, s32 blue, s32 abr); /* start a fade */
 
 /* The camera. */
-extern s32 field_ground_override_height;         /* camera distance */
+extern s32 field_ground_override_height;          /* the floor height actors take while it is set */
 extern s32 field_ground_override_enabled;         /* set by the monitor's dolly (80284ea4); the field's
                                 * motion tests it (8007b814, 80084158) */
 s32 field_camera_get_octant(void);                  /* camera octant (0..7; the monitor's CamDIR) */

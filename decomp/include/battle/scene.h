@@ -169,8 +169,8 @@ extern SceneTriangle *battle_scene_triangles;         /* scene triangles */
 extern s32 battle_scene_triangle_count;               /* scene triangle count */
 extern u8 battle_triangle_visit_stamp;                /* triangle visit stamp */
 extern u8 battle_effects_disabled;                    /* effects disabled */
-extern s16 battle_stage_circle_count;                 /* point count of battle_stage_circles */
-extern u16 *battle_stage_circles;                     /* (x, z, y) points */
+extern s16 battle_stage_circle_count;                 /* circle count of battle_stage_circles */
+extern u16 *battle_stage_circles;                     /* (x, z, radius) circles objects keep out of */
 extern u8 battle_stage_image_dirty;                   /* a light slot changed */
 extern u8 battle_shadows_enabled;
 extern u8 battle_unread_acting_object_started;

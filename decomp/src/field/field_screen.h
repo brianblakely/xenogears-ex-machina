@@ -15,7 +15,7 @@ extern s32 field_distortion_buffers_allocated;         /* its buffers are alloca
 extern DVECTOR field_distortion_strip_sources[15];     /* saved strip sources (x, y) */
 /* The distortion's two wave phases (x, y) at 800b20b0. */
 #define EFFECT_PHASE ((s16 *)field_work.unk20B0)
-void field_distortion_start(s32 mode);                                /* start it */
+void field_distortion_start(s32 resume);                                /* start it */
 void field_distortion_set_targets(s32, s32, s32, s32, s32, s32, s32); /* move its values over `steps` frames */
 void field_distortion_draw(void);                                     /* draw it */
 void field_distortion_stop(void);                                     /* stop it and release its buffers */

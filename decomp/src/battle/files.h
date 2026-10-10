@@ -21,6 +21,6 @@ typedef struct {
 } GearPartFile;
 
 void battle_read_gear_files(s32 slot);      /* read a slot's gear files */
-void battle_read_object_set_files(s32 set); /* load the battle's sound banks for a set */
+void battle_read_object_set_files(s32 set); /* read an object set's two files */
 
 #endif

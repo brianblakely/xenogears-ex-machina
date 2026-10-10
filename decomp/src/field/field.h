@@ -390,7 +390,7 @@ typedef struct FieldWork {
     s16 animation_mode;        /* 2346 */
     u16 unk2348;               /* 2348: gather override */
     s16 unk234A;               /* 234A */
-    s16 battle_override;       /* 234C: battle-entry flag override, 0xff none */
+    s16 gear_riding_lock_override; /* 234C: mode_gear_riding_lock's value, 0xff none */
     s16 followers_idle;        /* 234E */
     u32 unk2350;               /* 2350: saved player flags */
     u8 unk2354;                /* 2354 */

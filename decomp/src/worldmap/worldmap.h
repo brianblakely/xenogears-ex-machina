@@ -30,7 +30,7 @@ typedef struct {
 } WorldmapMode;
 
 extern WorldmapMode worldmap_mode_handlers[]; /* per mode */
-extern s32 worldmap_mode_index;               /* the current mode */
+extern s32 worldmap_mode_index;               /* the current mode (worldmap_mode_handlers index) */
 
 void worldmap_read_party_models(void);      /* modes 0-7: enter (read the party's models) */
 void worldmap_read_area_files(void);        /* modes 8-18: enter (read the area files) */
@@ -204,7 +204,7 @@ extern u8 worldmap_background_color[3];                /* background colour */
 
 void worldmap_alloc_ots(void); /* allocate the ordering tables */
 void worldmap_init_display(void); /* set up the display */
-void worldmap_fade_saved_screen(s32 a, s32 b, s32 c, s32 d); /* fade the saved screen */
+void worldmap_fade_saved_screen(s32 frames, s32 level, s32 step, s32 abr); /* fade the saved screen */
 void worldmap_sync_and_flush_cache(void); /* wait for the GPU, flush the cache */
 
 /* A resident display call the world map declares itself: its calls pass
@@ -329,7 +329,7 @@ void worldmap_actor_draw_sprites(void); /* draw the actors' model sprites */
 
 /* Resident sprite calls the world map declares itself: its calls pass words
  * where the resident's definitions take halfwords. */
-Sprite *sprite_create(s32 *data, s32 x, s32 y, s32 width, s32 height, s32 unused);
+Sprite *sprite_create(s32 *data, s32 clut_x, s32 clut_y, s32 texture_x, s32 texture_y, s32 unused);
 void sprite_set_facing(Sprite *sprite, s32 angle);
 
 /* Scratchpad work area of the actor updaters. */
@@ -402,6 +402,6 @@ extern WorldmapSave mode_snapshot_block;
 
 /* A resident window call the world map declares itself: its call passes
  * words where the resident's definition takes halfwords. */
-void text_load_palette(s32 a, s32 b);
+void text_load_palette(s32 x, s32 y);
 
 #endif

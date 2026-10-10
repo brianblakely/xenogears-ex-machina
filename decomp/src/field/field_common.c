@@ -121,9 +121,9 @@ u16 field_pad_port0_pressed; /* 800C2694: newly pressed pad buttons */
 struct DialogueWindow field_dialogue_windows[4]; /* 800C2698 */
 u16 field_pad_unread_port1_pressed; /* 800C38F8 */
 s16 field_unread_text_pair2[2]; /* 800C38FC: only cleared (80077620) */
-u16 field_pad_port0_repeated; /* 800C3900: pad buttons held */
+u16 field_pad_port0_repeated; /* 800C3900: pad buttons repeated (the allowed ones) */
 u32 *field_screen_convert_stream; /* 800C3904: packed stream */
-u16 field_pad_port1_repeated; /* 800C3908: pad buttons pressed */
+u16 field_pad_port1_repeated; /* 800C3908: pad buttons repeated, second port */
 u32 *field_screen_convert_pixels; /* 800C390C: converted pixels */
 s32 field_movement_history_not_recorded; /* 800C3910: history reset */
 s32 field_picture_marker_scale_x; /* 800C3914 */

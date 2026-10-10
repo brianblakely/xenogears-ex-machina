@@ -282,7 +282,7 @@ u8 menu_arts_command_run(u8 slot, u8 zoom);
 u8 menu_equip_command_run(u8 slot, u8 zoom);
 u8 menu_gear_command_run(void);
 u8 menu_character_command_run(void);
-void menu_top_command_close(u8 command);
+void menu_top_command_close(u8 offset);
 void menu_apply_restoring_art();
 void menu_compute_character_equipment(MenuTables *tables, u8 id);
 void menu_compute_character_stats(MenuTables *tables, u8 id);

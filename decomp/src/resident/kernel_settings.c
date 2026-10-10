@@ -23,6 +23,6 @@ u8 menu_state_screen_parameter = 0;            /* 80059171: menu screen paramete
 s16 mode_unreferenced_setting_halfword = 0;    /* 80059172: unreferenced; size from value and alignment */
 s32 mode_unreferenced_setting_word = 1;        /* 80059174: unreferenced; size from value and alignment */
 u8 menu_state_debug_start = 1;                 /* 80059178: debug start: choose the menu screen */
-u8 mode_gear_riding_lock = 0;                  /* 80059179: battle-entry flag (field and world map set it, battle and slot39 read it) */
+u8 mode_gear_riding_lock = 0;                  /* 80059179: while set, no mode lets the party board or leave its gears (field and world map set it) */
 s32 *mode_disc_mode_pointer = &mode_disc_mode; /* 8005917C */
 u8 mode_result_fanfare_started = 0;            /* 80059180: battle music playing (battle, ovl2596) */

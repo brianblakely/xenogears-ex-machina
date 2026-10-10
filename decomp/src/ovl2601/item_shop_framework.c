@@ -1724,13 +1724,14 @@ void item_shop_markers_close(void) {
     heap_free(menu_state_current->markers);
 }
 
-/* 801CB340: Start zooming the view out, with its sound. */
+/* 801CB340: Start zooming the view in (view motion 3: its distance from 0x800 down
+ * to 0x200), with its sound. */
 void item_shop_view_start_zoom_in(void) {
     menu_state_current->view_motion = 3;
     item_shop_play_sound(0x5B);
 }
 
-/* 801CB370: Start zooming the view in. */
+/* 801CB370: Start zooming the view out (view motion 4: from 0x200 out to 0xe00). */
 void item_shop_view_start_zoom_out(void) {
     menu_state_current->view_motion = 4;
 }

@@ -132,7 +132,7 @@ extern s32 mode_field_last_moved_actor;
 extern u8 mode_music_buffer[0x3200]; /* a work buffer of the field, the world map, battle and its overlays */
 extern s32 mode_field_pointer_state[5];
 extern u8 mode_pending_battle_formation; /* the next battle's formation + 1 (formation.h) */
-extern u8 mode_gear_riding_lock; /* the battle-entry flag (the field and world map set it) */
+extern u8 mode_gear_riding_lock; /* while set, the party may not board or leave its gears */
 extern s16 mode_party_gear_refresh_flags[3]; /* per party slot (the field) */
 extern u8 mode_result_fanfare_started; /* battle music playing */
 

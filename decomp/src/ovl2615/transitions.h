@@ -50,7 +50,7 @@ void battle_setup_burst_update(Task *node);
 void battle_setup_burst_draw(Task *node);
 void battle_setup_burst_release(void *block);
 BurstTask *battle_setup_burst_create(void);
-BurstTask *battle_setup_burst_init(BurstTask *task);
+BurstTask *battle_setup_burst_init(BurstTask *burst);
 void battle_setup_run_burst_load_mode(void);
 
 /* Flip to the other display buffer and clear its ordering table. */

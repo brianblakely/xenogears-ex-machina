@@ -28,7 +28,7 @@
  * stage object, which starts with its VECTOR position), and a texture scroll
  * of `count` bands (words where it takes s16 and u16). */
 Panorama *gpu_create_panorama(u16 tex_x, u16 tex_y, u16 width, u16 height, u16 clut_x, u16 clut_y,
-                        u16 mode, u16 turn, StageObject *object, void *colours, s32 fill_scale,
+                        u16 mode, u16 turn, StageObject *position, void *colours, s32 fill_scale,
                         s32 fade_range, s32 fade_start);
 void gpu_init_texture_scroll(TextureScroll *scroll, s32 x, s32 y, s32 w, s32 h, s32 count, s32 source_x,
                    s32 source_y, void *speeds);
@@ -53,7 +53,7 @@ extern s16 battle_stage_image_anim_active;
 /* The battle's calls with the stage's conversions: start the stage model's
  * effect script list, and pose its hierarchy (no result). */
 void battle_reset_object(BattleObject *object, EffectPool *pool, void *motion, s32 animations);
-void battle_pose_model_hierarchy(ModelPart *parts, s32 scale);
+void battle_pose_model_hierarchy(ModelPart *part, s32 scale);
 
 /* The stage backdrop (battle_setup_create_stage_sky, 0x17cc bytes): a floor grid of 9 x 9
  * vertices and 128 tiles, and the fills and fades around it. */

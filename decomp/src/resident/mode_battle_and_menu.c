@@ -92,7 +92,7 @@ u8 mode_pending_battle_formation; /* the next battle's formation + 1 (resident/m
  * own prototypes (own_declarations.h) are not included here: its window.h
  * declares the window colour as the array this unit cannot. */
 void text_decode_codes(u16 *codes, u8 *out, u32 count);
-void sound_play_effect_on_last_channels(s32 program);
+void sound_play_effect_on_last_channels(s32 effect);
 
 /* 8001B970: Load directory 16 file 3 into the saved game data, decode the first
  * 31 twenty-byte name slots, and clear the battle script variables. */
@@ -154,7 +154,8 @@ extern u8 window_color_blue;
 s32 window_semi_transparency_mode;
 
 /* 8001BB50: Set the battle setup flags, initialize battle setup data, wait for disc I/O,
- * then install the three initial bytes and the phase selector. */
+ * then set the window colour (0x88, 0x76, 0x54) and the windows'
+ * semi-transparency mode (2). */
 void mode_init_game_data(void) {
     mode_battle_standalone = 1;
     mode_unread_battle_setup_byte = 0;

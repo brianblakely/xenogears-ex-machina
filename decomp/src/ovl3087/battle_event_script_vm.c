@@ -69,7 +69,7 @@ ModelArchive *battle_event_script_model_archive = NULL; /* 801E9C38 */
  * its calls convert the actor, animation and target arguments differently
  * from the definitions (bytes and halfwords where those take words). */
 void battle_event_script_play_model_animation(s32 model, u16 animation);
-s32 battle_event_script_create_model(void *file, s32 *info);
+s32 battle_event_script_create_model(void *file, s32 *position);
 void battle_event_script_start_actor_animation(u8 actor, s16 animation);
 void battle_event_script_return_actor_to_idle(u8 actor);
 void battle_event_script_stop_actor_commands(u8 actor);

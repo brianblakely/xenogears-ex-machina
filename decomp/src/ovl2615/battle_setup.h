@@ -44,7 +44,7 @@
  * (a narrow result, u16 coordinates or another parameter count there):
  * random numbers, text rendering and the text palettes. */
 s32 mode_get_random_byte_in_range(s32 low, s32 high); /* random number in [low, high] */
-void window_render_text_line(void *text, void *image, s32 mode, s32 flags);
+void window_render_text_line(void *text, void *image, s32 width, s32 flags);
 void text_load_palette(s32 x, s32 y);                 /* upload the text palettes */
 
 /* The game data's inGear bytes (+0x22B1) as the setup reads them, one per
@@ -66,8 +66,8 @@ extern SetupWork battle_setup_work_area __asm__("battle_work_area");
 extern u8 battle_unread_setup_flag;
 
 /* The battle's allocators, which it declares with integer results. */
-void *battle_heap_alloc_text_image(s32 kind);
-void *battle_heap_alloc(s32 size, s32 flags); /* heap allocation */
+void *battle_heap_alloc_text_image(s32 count);
+void *battle_heap_alloc(s32 size, s32 mode); /* heap allocation */
 
 void battle_setup_reset_outcome_and_slots(void);
 void battle_setup_place_formation(void);
@@ -138,7 +138,7 @@ u8 battle_is_target_at_lower_x(u8 slot, u8 target); /* facing towards the target
 extern BattleScene *battle_formation;
 extern u8 battle_enemy_name_indices_by_slot[SLOT_COUNT];
 
-u16 battle_get_slot_bit(s32 index); /* bit of a group member index */
+u16 battle_get_slot_bit(s32 slot); /* bit of a group member index */
 
 /* The enemy files' disc read list (0x800D33E8): entries of a file number
  * and a destination, ended by file 0. Its fields are separate variables. */

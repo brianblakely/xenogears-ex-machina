@@ -15,7 +15,7 @@ typedef struct TextImage {
 extern TextImage battle_digit_text_images[10]; /* text images of battle messages 0-9: the decimal digits */
 extern u32 *battle_blank_text_image;           /* blank text image */
 
-extern u8 battle_combo_menu_glyph_ids[16];  /* gear page glyph ids */
+extern u8 battle_combo_menu_glyph_ids[16];  /* combo page glyph ids */
 extern s32 battle_combo_menu_glyph_x[16];   /* their x */
 extern s32 battle_combo_menu_glyph_y[16];   /* their y */
 

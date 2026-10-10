@@ -1272,8 +1272,11 @@ s32 cd_read_file_list(FileRequest *list, s32 mode, s32 unused) {
     return 0;
 }
 
-/* 80029EB0: Start streaming a file through a ring of at least two slots with six stream parameters; with the PC file server the whole stream is pumped now. Returns 0, -3 for a bad file, -4 for a bad ring, -6 when the file does not close. */
-s32 stream_start_image_load(s32 file, StreamRing *ring, s32 mode, s32 unused, u16 a, u16 b, u16 c, u16 d, u16 e, u16 f) {
+/* 80029EB0: Start streaming a file through a ring of at least two slots, with the
+ * placement mode and VRAM base of its 0x1200 and 0x1201 images; with the PC
+ * file server the whole stream is pumped now. Returns 0, -3 for a bad file,
+ * -4 for a bad ring, -6 when the file does not close. */
+s32 stream_start_image_load(s32 file, StreamRing *ring, s32 mode, s32 unused, u16 mode_1200, u16 base_x_1200, u16 base_y_1200, u16 mode_1201, u16 base_x_1201, u16 base_y_1201) {
     s32 count;
     char *name;
     s16 i;
@@ -1307,12 +1310,12 @@ s32 stream_start_image_load(s32 file, StreamRing *ring, s32 mode, s32 unused, u1
     cd_current_file_list = NULL;
     cd_stop_requested = 0;
     cd_error_count = 0;
-    stream_image_1200_mode = a;
-    stream_image_1200_base_x = b;
-    stream_image_1200_base_y = c;
-    stream_image_1201_mode = d;
-    stream_image_1201_base_x = e;
-    stream_image_1201_base_y = f;
+    stream_image_1200_mode = mode_1200;
+    stream_image_1200_base_x = base_x_1200;
+    stream_image_1200_base_y = base_y_1200;
+    stream_image_1201_mode = mode_1201;
+    stream_image_1201_base_x = base_x_1201;
+    stream_image_1201_base_y = base_y_1201;
     stream_image_remaining_count = 0;
     stream_image_strip_x = 0;
     stream_image_strip_y = 0;

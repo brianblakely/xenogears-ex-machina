@@ -12,8 +12,8 @@
 
 /* Resident functions whose callers convert arguments/result differently
  * from the resident definition (decomp/src/resident/own_declarations.h). */
-void sprite_set_direction(Sprite *sprite, s32 arg);
-void sprite_set_facing(Sprite *sprite, s32 arg);
+void sprite_set_direction(Sprite *sprite, s32 direction);
+void sprite_set_facing(Sprite *sprite, s32 angle);
 
 /* Defined u8 in the battle (own_declarations.h); u8 here adds andi 0xff to the result's test. */
 s32 battle_single_action_start(void);

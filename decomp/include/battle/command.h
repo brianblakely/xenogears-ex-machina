@@ -28,7 +28,7 @@ extern u16 battle_gear_hud_charge;                 /* fuel gained by charging */
 /* The timer reload by maximum and remaining AP: battle_ap_timer_reload_table (maximum 3-7) from
  * three rows before (battle.data.ld). */
 extern u8 battle_ap_timer_reload_table_by_max_ap[][8];
-extern u8 battle_unread_gear_attack_step_flag;       /* healing ignores the gear */
+extern u8 battle_unread_gear_attack_step_flag;       /* set when the gear page takes a fuel-paid step; never read */
 extern u8 *battle_combo_patterns[13];                /* combo input patterns (seven inputs each) */
 /* The next combo step by step and AP paid: battle_combo_next_step_table from one byte before
  * (battle.data.ld). */

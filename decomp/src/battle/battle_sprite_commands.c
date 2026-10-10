@@ -293,7 +293,7 @@ void battle_sprite_command_run(Sprite *sprite, s32 command, u8 *args) {
         }
         sprite->script -= 2;
         break;
-    /* 46 u8: load the battle's sound bank set u8 (800b61f8, 800a96b4); both hit counts
+    /* 46 u8: read object set u8's files (800b61f8, 800a96b4); both hit counts
      * (800d36bc, 800d2d4c) = 0. */
     case 0x46:
         battle_sprite_command_load_object_set(sprite, args);
@@ -1210,8 +1210,8 @@ void battle_parent_line_start(Sprite *sprite) {
     sprite->colour_flags = 0x40;
 }
 
-/* 800B61F8: Script command: reset battle_pending_hit_count and load sound bank set args[0]
- * (800A96B4, on a stack in a heap block). */
+/* 800B61F8: Script command: reset battle_pending_hit_count and read object set args[0]'s
+ * files (battle_read_object_set_files, 800A96B4) on a stack in a heap block. */
 void battle_sprite_command_load_object_set(Sprite *sprite, u8 *args) {
     u8 *stack = heap_alloc(0x4000, 1);
 
@@ -1472,8 +1472,8 @@ void battle_sprite_command_break_image(Sprite *sprite, u8 *args) {
     sprite->renderer->parts[1] = NULL;
 }
 
-/* 800B6B98: Script command: start a burst from the sprite (801FC53C) with the
- * script's parameters. */
+/* 800B6B98: Script command: start the spin effect from the sprite (the spin module's
+ * battle_module_spin_start, 801FC53C) with the script's parameters. */
 void battle_sprite_command_spin(Sprite *sprite, u8 *args) {
     u8 *data = SCRIPT_DATA(args);
 

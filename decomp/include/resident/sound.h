@@ -375,7 +375,7 @@ void sound_free_memory(void *data);                                             
 void sound_copy_memory(void *dst, void *src, s32 size);                              /* copy */
 void sound_clear_memory(void *data, s32 size);                                       /* clear */
 void sound_release_wave_bank(SoundSequence *bank);                                   /* release a wave bank */
-void sound_play_effect(s32 sound);
+void sound_play_effect(s32 effect);
 void sound_clear_reverb_work_part(void);
 void sound_set_stereo_volume(s32 volume, SpuVolume *out, s32 channel);
 void *sound_alloc_memory_low(s32 size);
@@ -397,11 +397,11 @@ void sound_start_seq_channels(SoundSeq *seq);
 void sound_free_seq_snapshots(SoundSeq *seq);
 void sound_link_seq(SoundSeq *seq);
 s32 sound_unlink_seq(SoundSeq *seq);
-s32 sound_get_seq_size(s32 channels);                                                /* size of a sequence with `channels` */
+s32 sound_get_seq_size(s32 index);                                                /* size of a sequence with `channels` */
 s16 sound_check_seq_header(SoundSeqHeader *header);                                  /* error code of sequence data, 0 when valid */
 s32 sound_check_file(u32 *data, u32 magic, s32 id);                                  /* check a sound file */
 void sound_stop_bank_effects(SoundBank *bank);
-void sound_start_effect(s16 id, s32 channel, s16 volume, s16 pan);
+void sound_start_effect(s16 code, s32 id, s16 volume, s16 pan);
 void sound_queue_transfer(u32 address, u8 *data, s32 size, void (*callback)(void), u16 type);
 void sound_request_seq_channel_updates(s32 bits, SoundSeq *seq);
 void sound_release_voice(SoundChannel *state, u32 voice);
@@ -419,8 +419,8 @@ void sound_set_output_mode(s32 mode);
 s32 sound_get_output_mode(void);
 void sound_set_cd_volume(s32 volume, s32 frames);
 void sound_restart_seq(SoundSeq *seq, s32 fade, s32 frames);
-void sound_play_effect_on_channels_12_13(s32 channel);
-void sound_play_effect_on_channel(s32 channel, s32 sound);
+void sound_play_effect_on_channels_12_13(s32 effect);
+void sound_play_effect_on_channel(s32 effect, s32 channel);
 void sound_stop_effect(s32 id);
 void sound_stop_effect_on_channel(s32 sound);
 void sound_set_effect_volume_on_channel(s32 sound, s32 volume);

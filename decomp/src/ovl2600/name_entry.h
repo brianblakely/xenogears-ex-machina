@@ -38,13 +38,13 @@ typedef struct NameEntry {
 /* Resident calls declared here: these callers convert arguments or results
  * differently from the resident definitions
  * (decomp/src/resident/own_declarations.h). */
-void sound_play_effect_on_last_channels(s32 sound);                                                  /* play a sound effect */
-void text_decode_codes(void *codes, u8 *text, s32 count);                                            /* decode text codes */
-s32 sprite_sheet_draw_scaled(void *sheet, s32 id, void *parts, s32 buffer, s32 x, s32 y, s32 scale); /* a sprite */
-s32 sprite_sheet_draw_scaled_flip(void *sheet, s32 id, void *parts, s32 buffer, s32 x, s32 y, s32 scale, s32 flip_x,
+void sound_play_effect_on_last_channels(s32 effect);                                                  /* play a sound effect */
+void text_decode_codes(void *codes, u8 *out, s32 count);                                            /* decode text codes */
+s32 sprite_sheet_draw_scaled(void *sheet, s32 id, void *parts, s32 index, s32 x, s32 y, s32 scale); /* a sprite */
+s32 sprite_sheet_draw_scaled_flip(void *sheet, s32 id, void *parts, s32 index, s32 x, s32 y, s32 scale, s32 flip_x,
                   s32 flip_y); /* a mirrored sprite */
 void *text_get_resource_entry(void *table, s32 index);                   /* message address */
-u8 window_render_text_line(void *text, u8 *pixels, s32 width, s32 line); /* render a text line; its width */
+u8 window_render_text_line(void *text, u8 *image, s32 width, s32 flags); /* render a text line; its width */
 void text_load_palette(s32 x, s32 y);                                    /* text palettes */
 
 #endif

@@ -176,7 +176,7 @@ typedef struct {
 extern MATRIX arena_identity_matrix;       /* identity */
 extern s32 arena_node_players_share_keys;  /* nonzero: model set players do not own their keys */
 extern s32 arena_node_compose_parent_view; /* nonzero: model sets compose with their parent's view */
-extern VECTOR arena_view_origin;           /* the scene origin: the last eye position */
+extern VECTOR arena_view_origin;           /* the scene origin: the focus the view was last aimed at */
 extern VECTOR arena_look_at_axis_x;        /* look-at work: third axis */
 extern VECTOR arena_look_at_forward;       /* look-at work: forward */
 extern VECTOR arena_mesh_light_direction;  /* mesh light direction */

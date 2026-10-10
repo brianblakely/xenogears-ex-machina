@@ -44,15 +44,15 @@ SoundSeq *sound_create_and_play_seq(SoundSeqHeader *header, s32 fade, s32 frames
 s32 sound_sync_transfer(s32 wait);
 
 /* sprite.h */
-void sprite_vm_run_generic_command(Sprite *sprite, u8 op, u8 *args); /* run a script command */
+void sprite_vm_run_generic_command(Sprite *sprite, u8 op, u8 *code); /* run a script command */
 s32 sprite_add_clamp_byte(s32 value, s32 delta);
 void sprite_set_svector(SVECTOR *vector, s16 x, s16 y, s16 z);
 u8 sprite_stack_pop_byte(Sprite *sprite);
 void sprite_set_direction(Sprite *sprite, s16 direction);
 void sprite_resolve_resource(SpriteResource *resource, s32 *data, SVECTOR origin, s32 mode);
 void sprite_set_facing(Sprite *sprite, s16 angle);
-s32 sprite_get_ground_direction(DVECTOR from, DVECTOR to); /* the direction from `from` to `to` */
-Sprite *sprite_create(s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused);
+s32 sprite_get_ground_direction(DVECTOR to, DVECTOR from); /* the direction from `from` to `to` */
+Sprite *sprite_create(s32 *data, s16 clut_x, s16 clut_y, s16 texture_x, s16 texture_y, s16 unused);
 
 /* text.h */
 u8 *text_get_resource_entry(u8 *resource, s32 index);

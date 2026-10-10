@@ -34,7 +34,7 @@
 
 /* This unit's functions, declared before their first use (the formula
  * functions its tables name are declared with the tables below). */
-void battle_gear_menu_build_page(u8 member, u8 *ids, u16 *costs); /* build the gear command menu's list */
+void battle_gear_menu_build_page(u8 member, u8 *present, u16 *values); /* build the gear command menu's list */
 void battle_gear_menu_show_command(u8 member, u8 kind);
 void battle_resolve_follow_up(void);
 void battle_add_to_party_damage_totals(void);
@@ -46,7 +46,7 @@ void battle_resolve_counterattack(void);
 s32 battle_resolve_hit_outcome(void);
 s16 battle_resolve_attack_value(void);
 s16 battle_resolve_defense_value(void);
-s8 battle_resolve_status_roll(u8 a, u8 b, u16 c);
+s8 battle_resolve_status_roll(u8 chance, u8 kind, u16 flags);
 void battle_clear_damage_and_results(void);
 void battle_apply_item_effect_to_slot(u8 slot, u8 param);
 s32 battle_can_put_member_out_of_action(void);
@@ -1157,9 +1157,9 @@ void battle_combo_menu_show_list_image(void) {
     battle_ui->unkB7 = 3;
 }
 
-/* 80092298: Set up the gear page's shaded bar and black box primitives, then build its
- * glyphs (from the 800c33b4 table) for every entry of `shown` that is not
- * 0xff into the +0x1e68 list. */
+/* 80092298: Set up the combo page's shaded bar and black box primitives, then build
+ * its glyphs (from the 800c33b4 table) for every entry of `shown` that is
+ * not 0xff into the +0x1e68 list. */
 void battle_combo_menu_build_glyphs(u8 member, u8 *shown) {
     s32 i;
     s32 glyph;
@@ -1212,10 +1212,10 @@ void battle_combo_menu_build_glyphs(u8 member, u8 *shown) {
     battle_ui->unk9D = 1;
 }
 
-/* 80092784: Build the member's gear page: set up the graphics block, render the name
- * and two-digit count of each of the seven gear parts in `steps` (0xff none)
- * and the fixed eighth entry (system text 10) into VRAM text images, then
- * the page glyphs and quads. */
+/* 80092784: Build the member's combo page: set up the graphics block, render the name
+ * and two-digit AP cost (`costs`) of each of the seven combo steps in `steps`
+ * (0xff none) and the fixed eighth entry (battle message 10) into VRAM text
+ * images, then the page glyphs and quads. */
 void battle_combo_menu_build_page(u8 member, u8 *steps, u8 *costs) {
     RECT nameRect;
     RECT tensRect;
@@ -2003,10 +2003,10 @@ void battle_formula0_deal_damage(void) {
     battle_work_ptr->damage[battle_target_slot] = amount;
 }
 
-/* 80095690: Formula 1 (battle_formula_table[1]): amount = attacker +0x5b times the descriptor's
- * +0x11 (doubled with attacker +0x8a bit 0x2000), scaled 0.7 / 1.3 by the
- * target's +0x8c|+0x8e bits 0x100 / 0x200, none for a +0x15a 0x80 target;
- * code 2. */
+/* 80095690: Formula 1 (battle_formula_table[1]): a heal (result code 2) of the attacker's
+ * ether (+0x5b) times the descriptor's +0x11 (doubled with attacker +0x8a bit
+ * 0x2000), scaled 0.7 / 1.3 by the target's +0x8c|+0x8e bits 0x100 / 0x200,
+ * none for a +0x15a 0x80 target. */
 void battle_formula1_heal_by_ether(void) {
     s16 amount = battle_attacker_record->pilot.ether * battle_current_command->power;
     u16 status;
@@ -4470,8 +4470,8 @@ void battle_choose_automatic_action(u8 slot, u8 *choice, s16 *busy) {
     }
 }
 
-/* 8009BD94: Formula 7 (battle_formula_table[7]): damage the target by the command's power in
- * twentieths of its gear's maximum HP. */
+/* 8009BD94: Formula 7 (battle_formula_table[7]): heal the target (result code 2) by the
+ * command's power in twentieths of its gear's maximum HP. */
 void battle_formula7_heal_by_gear_max_hp(void) {
     battle_work_ptr->resultCode[battle_target_slot] = 2;
     battle_work_ptr->damage[battle_target_slot] = battle_current_command->power * battle_target_gear->maxHp / 20;
@@ -5241,31 +5241,31 @@ void battle_gear_formula2_clear_defense(void) {
     battle_target_gear->defense = 0;
 }
 
-/* 8009E278: Gear formula 3 (battle_gear_formula_table[3]): damage the target gear by field 0x4F
- * tenths of its maximum HP. */
+/* 8009E278: Gear formula 3 (battle_gear_formula_table[3]): heal the target gear (result
+ * code 2) by field 0x4F tenths of its maximum HP. */
 void battle_gear_formula3_heal_by_part_amount(void) {
-    u32 damage = battle_target_gear->field4F * battle_target_gear->maxHp / 10;
+    u32 amount = battle_target_gear->field4F * battle_target_gear->maxHp / 10;
 
     battle_work_ptr->resultCode[battle_target_slot] = 2;
-    battle_work_ptr->damage[battle_target_slot] = damage;
+    battle_work_ptr->damage[battle_target_slot] = amount;
 }
 
-/* 8009E2EC: Gear formula 4 (battle_gear_formula_table[4]): damage the target gear by the command's
- * power in twentieths of its maximum HP. */
+/* 8009E2EC: Gear formula 4 (battle_gear_formula_table[4]): heal the target gear (result
+ * code 2) by the command's power in twentieths of its maximum HP. */
 void battle_gear_formula4_heal_by_power(void) {
-    u32 damage = battle_current_command->power * battle_target_gear->maxHp / 20;
+    u32 amount = battle_current_command->power * battle_target_gear->maxHp / 20;
 
     battle_work_ptr->resultCode[battle_target_slot] = 2;
-    battle_work_ptr->damage[battle_target_slot] = damage;
+    battle_work_ptr->damage[battle_target_slot] = amount;
 }
 
-/* 8009E364: Gear formula 10 (battle_gear_formula_table[10]): damage the target by the attacker's
- * accuracy times the command's power. */
+/* 8009E364: Gear formula 10 (battle_gear_formula_table[10]): heal the target (result code
+ * 2) by the attacker's ether times the command's power. */
 void battle_gear_formula10_heal_by_ether(void) {
-    u32 damage = battle_attacker_record->pilot.ether * battle_current_command->power;
+    u32 amount = battle_attacker_record->pilot.ether * battle_current_command->power;
 
     battle_work_ptr->resultCode[battle_target_slot] = 2;
-    battle_work_ptr->damage[battle_target_slot] = damage;
+    battle_work_ptr->damage[battle_target_slot] = amount;
 }
 
 /* 8009E3C8: Gear formula 5 (battle_gear_formula_table[5]): put the target into state 4 with timer 6

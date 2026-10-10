@@ -41,7 +41,7 @@ extern SoundSeq *sound_effect_channels;          /* the sound effect channels */
 extern u32 sound_tick_count;                     /* the driver's tick count, the effects' start clock */
 extern u32 sound_pending_key_on_mask;            /* voices held (keyed on) */
 extern u32 sound_pending_key_off_mask;           /* voices to key off */
-extern u32 sound_changed_voice_mask;             /* voices whose registers changed */
+extern u32 sound_fast_key_off_mask;             /* voices to cut: a fast release, then key off */
 extern s32 sound_unread_spu_irq_count;           /* SPU interrupts counted */
 extern void (*sound_spu_irq_hook)(void);         /* the SPU interrupt hook (8003c010) */
 extern s32 sound_unread_tick_time_total;         /* root counter time spent in ticks */

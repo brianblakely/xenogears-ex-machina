@@ -98,8 +98,9 @@ s16 field_compass_style_pages[4][6] = { /* 800ADE00 */
     {0, 0, 0x2A0, 0x1C0, 0, 0xFB},
 };
 
-/* The compass letters: corners (x, z per corner) and texture coordinates
- * (u, v per corner), one row per letter. */
+/* The compass's four quadrant quads (markers 21-24): corners (x, z per corner, a
+ * 0x600 square in each quadrant) and texture coordinates (u, v per corner),
+ * one row per quad. */
 s16 field_compass_quadrant_corners[32] = { /* 800ADE30 */
     -0x600, -0x600, 0, -0x600, -0x600, 0, 0, 0,
     0x600, -0x600, 0, -0x600, 0x600, 0, 0, 0,
@@ -233,9 +234,9 @@ void field_set_quad_uvs_clamped(POLY_FT4 *poly, s16 u0, s16 v0, s16 u1, s16 v1, 
     poly->v3 = v3;
 }
 
-/* 8007A5C4: Build the four compass letters (markers 21-24): corners from 800ade30,
- * texture coordinates from 800ade70 (v offset c0), semi-transparent, then
- * copy the quad to the second buffer. */
+/* 8007A5C4: Build the compass's four quadrant quads (markers 21-24; the letters are
+ * 16-19): corners from 800ade30, texture coordinates from 800ade70 (v offset
+ * c0), semi-transparent (mode 2), then copy the quad to the second buffer. */
 void field_compass_build_quadrant_quads(void) {
     FieldMarker *record;
     POLY_FT4 *quad;
@@ -2767,7 +2768,7 @@ typedef struct {
 
 /* The debug monitor's box report (field/monitor.h lists its other entries);
  * declared beside the box type only this unit has. */
-extern void field_debug_outline_collision_box(FieldBox *box);
+extern void field_debug_outline_collision_box(FieldBox *actor);
 
 /* 8008237C: -1 unless point (x, z) lies inside `box` grown by `margin`; inside, run
  * 80281678 on it (unless 800c268c is set) and return 0. */

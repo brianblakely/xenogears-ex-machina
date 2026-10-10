@@ -43,7 +43,7 @@
 
 /* Functions of other units declared as this unit calls them, which differs
  * from their definitions. */
-void battle_tick_frame(s32 skipped);                              /* the result-screen step (a u8 member there) */
+void battle_tick_frame(s32 catch_up);                             /* the frame tick (a u8 there) */
 void battle_start_object_script(u16 index, u16 mask, s32 script); /* start a stage object's effect (an s16 mask there) */
 
 /* This unit's functions, declared before their first use. */

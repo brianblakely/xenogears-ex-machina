@@ -340,11 +340,11 @@ s32 battle_get_svector_distance(SVECTOR *a, SVECTOR *b) {
 }
 
 /* 800C07CC: The distance between two points on the ground. */
-s32 battle_get_ground_distance(GroundPoint a, GroundPoint b) {
+s32 battle_get_ground_distance(GroundPoint from, GroundPoint to) {
     VECTOR d;
 
-    d.vx = a.x - b.x;
-    d.vz = a.z - b.z;
+    d.vx = from.x - to.x;
+    d.vz = from.z - to.z;
     Square0(&d, &d);
     return SquareRoot0(d.vx + d.vz);
 }

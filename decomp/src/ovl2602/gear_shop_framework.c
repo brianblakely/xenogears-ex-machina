@@ -2023,13 +2023,13 @@ void gear_shop_markers_close() {
     heap_free(menu_state_current->markers);
 }
 
-/* 801CC520: The view zoom-out of ovl2601's 801cb340, empty in the Gear shop (which
- * moves its own camera) and called by nothing. */
+/* 801CC520: The view zoom-in of ovl2601's 801cb340 (item_shop_view_start_zoom_in),
+ * empty in the Gear shop (which moves its own camera) and called by nothing. */
 void gear_shop_view_start_zoom_in_empty(void) {
 }
 
-/* 801CC528: The view zoom-in of ovl2601's 801cb370, empty here; a command that redraws
- * its screen still calls it. */
+/* 801CC528: The view zoom-out of ovl2601's 801cb370 (item_shop_view_start_zoom_out),
+ * empty here; a command that redraws its screen still calls it. */
 void gear_shop_view_start_zoom_out_empty(void) {
 }
 

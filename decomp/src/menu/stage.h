@@ -45,7 +45,7 @@ extern u8 arena_stage_row_right_limits[];          /* per map row: rightmost all
 extern MapTable arena_stage_ground_draw_table;
 extern POLY_FT3 *arena_stage_ground_triangles[2];  /* map triangle pool per draw buffer */
 extern Environment *arena_current_stage_colors;    /* current stage colours */
-extern s32 arena_stage_uses_narrow_view;           /* selects the look-at marker (arena_stage_mark_narrow_view_cells or arena_stage_mark_wide_view_cells) */
+extern s32 arena_stage_uses_narrow_view;           /* the ground cells in view take the narrow wedge, else the wide one */
 extern u8 arena_stage_index;                       /* stage */
 extern GroundSquare *arena_stage_height_map;       /* the height map */
 extern s32 arena_stage_back_color_blue;            /* back colour blue */

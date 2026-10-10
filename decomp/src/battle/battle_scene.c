@@ -57,7 +57,7 @@ s16 battle_step_image_anim(ImageAnim *anim, s32 ticks);
 void battle_stop_image_anim(ImageAnim *anim);
 void battle_fade_image_anim_colors(ImageAnim *anim, s16 level);
 void battle_blend_image_anim_colors(ImageAnim *anim, s16 level);
-void battle_draw_stage_hierarchy(ModelTable *models, ModelPart *root, MATRIX *view, s32 unused_light, s32 unused_mode, u32 *ot, s32 buffer,
+void battle_draw_stage_hierarchy(ModelTable *models, ModelPart *part, MATRIX *view, s32 unused_light, s32 unused_mode, u32 *ot, s32 buffer,
                    s32 depth);
 void battle_draw_stage_sky(StageGeometry *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot, s32 buffer);
 s32 battle_is_point_in_triangle(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point);
@@ -2687,20 +2687,21 @@ s32 battle_push_point_out_of_circles(SVECTOR *origin, SVECTOR *point) {
     return pushed;
 }
 
-/* 800A4CF8: Place a copy of stage object index (800B10EC) at every listed point, its
- * height raised by the object's size. */
+/* 800A4CF8: Keep stage object index out of every listed circle (x, z, radius):
+ * battle_keep_object_away_from_point (800B10EC) moves it back from each
+ * centre to the circle's radius plus its own size. */
 void battle_keep_object_out_of_circles(s32 index) {
     u16 *point = battle_stage_circles;
     s32 i;
     s16 x;
     s16 z;
-    s16 y;
+    s16 radius;
 
     for (i = 0; i < battle_stage_circle_count; i++) {
         x = *point++;
         z = *point++;
-        y = *point++;
-        battle_keep_object_away_from_point(index, x, z, battle_get_object_radius(index) + y);
+        radius = *point++;
+        battle_keep_object_away_from_point(index, x, z, battle_get_object_radius(index) + radius);
     }
 }
 
@@ -4036,29 +4037,30 @@ void battle_read_gear_files(s32 slot) {
     cd_select_directory(saved0, saved1);
 }
 
-/* 800A96B4: Load the battle's sound banks for set: banks 2 * set + 1 and 2 * set + 2,
- * each with a buffer of its size (800288EC), into a new record battle_object_file_list. */
+/* 800A96B4: Read object set `set`'s files from directory 0x28/0: files 2 * set + 1 and
+ * 2 * set + 2 (docs/scripts/battle-effect-vm.md, object_set), each into a
+ * buffer of its size (800288EC), as the new file list battle_object_file_list. */
 void battle_read_object_set_files(s32 set) {
     s32 saved0;
     s32 saved1;
-    FileRequest *banks;
-    s32 bank;
+    FileRequest *files;
+    s32 file;
 
     cd_get_selected_directory(&saved0, &saved1);
     cd_select_directory(0x28, 0);
     heap_select_owner_tag(4, 0);
-    banks = heap_alloc(sizeof(FileRequest) * 3, 1);
+    files = heap_alloc(sizeof(FileRequest) * 3, 1);
     set *= 2;
-    bank = set + 1;
-    battle_object_file_list = banks;
-    cd_get_pc_file_name(bank);
-    banks[0].file = bank;
-    banks[0].destination = heap_alloc(cd_get_aligned_file_size(bank), 1);
-    bank = set + 2;
-    banks[1].file = bank;
-    banks[1].destination = heap_alloc(cd_get_aligned_file_size(bank), 1);
-    banks[2].file = 0;
-    banks[2].destination = NULL;
+    file = set + 1;
+    battle_object_file_list = files;
+    cd_get_pc_file_name(file);
+    files[0].file = file;
+    files[0].destination = heap_alloc(cd_get_aligned_file_size(file), 1);
+    file = set + 2;
+    files[1].file = file;
+    files[1].destination = heap_alloc(cd_get_aligned_file_size(file), 1);
+    files[2].file = 0;
+    files[2].destination = NULL;
     cd_read_file_list(battle_object_file_list, 0, 0);
     cd_select_directory(saved0, saved1);
 }

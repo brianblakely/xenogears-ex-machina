@@ -119,9 +119,9 @@ u8 battle_triangle_visit_stamp;                       /* 800D2F64: triangle visi
 struct IconCell battle_icon_cells[22];                /* 800D2F68 */
 MATRIX *battle_stage_color_matrix;                    /* 800D2FC0: the stage colour matrix */
 u8 battle_exit_requested;                             /* 800D2FC4: battle exit requested */
-s16 battle_stage_circle_count;                        /* 800D2FC8: point count of battle_stage_circles */
+s16 battle_stage_circle_count;                        /* 800D2FC8: circle count of battle_stage_circles */
 s32 battle_curve_segments_drawn;                      /* 800D2FCC: segments drawn of the current curve */
-u16 *battle_stage_circles;                            /* 800D2FD0: (x, z, y) points */
+u16 *battle_stage_circles;                            /* 800D2FD0: (x, z, radius) circles objects keep out of */
 s32 battle_unreferenced_word_07;                      /* 800D2FD4: unreferenced */
 u8 *battle_trail_colors;                              /* 800D2FD8: the trail being drawn: its colours */
 u8 battle_unread_single_action_loaded;                /* 800D2FDC */

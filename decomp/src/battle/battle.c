@@ -1890,9 +1890,9 @@ u8 battle_choose_target(u16 target, u8 member, s32 mode) {
     return state - 1;
 }
 
-/* 80085310: Whether slot b's slot-info +0xa is below slot a's. */
-s32 battle_is_target_at_lower_x(u8 a, u8 b) {
-    return (u16)battle_area_slots[a].x > (u16)battle_area_slots[b].x;
+/* 80085310: Whether slot `target`'s slot-info +0xa (x) is below slot `slot`'s. */
+s32 battle_is_target_at_lower_x(u8 slot, u8 target) {
+    return (u16)battle_area_slots[slot].x > (u16)battle_area_slots[target].x;
 }
 
 /* 80085350: Reset the running result accumulation of every slot. */
@@ -3498,14 +3498,14 @@ void battle_step_clut_cycle(void) {
     }
 }
 
-/* 8008A274: Result-screen tick of end state 1: the ATB while 800ccc58, input for the
- * member, counters, the pulsing shade, the scroll by 800d39d4 and the CLUT
- * cycle. */
-void battle_tick_turns(u8 member) {
+/* 8008A274: The frame tick of frame mode 1 (the turns): the ATB while 800ccc58, the
+ * input unless catching up, counters, the pulsing shade, the scroll by
+ * 800d39d4 and the CLUT cycle. */
+void battle_tick_turns(u8 catch_up) {
     if (battle_turns_active != 0) {
         battle_tick_atb();
     }
-    if (member == 0) {
+    if (catch_up == 0) {
         battle_read_input(0);
     }
     battle_ui->unkA9 += 6;
@@ -3538,14 +3538,15 @@ void battle_tick_turns(u8 member) {
     battle_step_clut_cycle();
 }
 
-/* 8008A3EC: Wait for a controller (pausing the sound and the vsync count while there
- * is none), run a result-screen tick, count down the active 800d3278 entry
- * timers, then read the input: an overflowed queue is reset; otherwise
+/* 8008A3EC: The frame tick of frame mode 2 (the event script): wait for a controller
+ * (pausing the sound and the vsync count while there is none), step the CLUT
+ * cycle, count down the waiting script threads' timers (800d3278) while a
+ * script is loaded, then read the input: an overflowed queue is reset; otherwise
  * entries are dequeued until one matters. Confirm (0x20) sets input code 4;
  * start (0x800, while 800ccc58) pauses or resumes the battle, and while
  * paused holding both 4 and 8 with a disc ends it (outcome 1). Loops while
  * paused. */
-void battle_tick_event_script(u8 member) {
+void battle_tick_event_script(u8 catch_up) {
     u8 waiting = 1;
     u8 paused = 0;
     s32 vsyncs;
@@ -3617,13 +3618,14 @@ void battle_tick_event_script(u8 member) {
     } while (battle_paused != 0);
 }
 
-/* 8008A684: Result screen input: wait for a controller as 8008a3ec does, read the
+/* 8008A684: The frame tick of frame mode 0 (the result screens): wait for a
+ * controller as battle_tick_event_script (8008a3ec) does, read the
  * input (confirm sets input code 4, start pauses or resumes) while paused,
  * then count each member's two result values one step; while any is still
  * counting redraw the panels (801df270, 801df4c0), else stop counting.
  * Reads use the work table; stores use its position in the battle area.
  * These are two views of the same counters at 800cdcb8/800cdcd0. */
-void battle_tick_result_screens(u8 member) {
+void battle_tick_result_screens(u8 catch_up) {
     u8 done = 1;
     u8 waiting = 1;
     u8 paused = 0;
@@ -3708,17 +3710,19 @@ void battle_tick_result_screens(u8 member) {
     }
 }
 
-/* 8008A9C0: Result-screen step by the battle end state 800c3e4c. */
-void battle_tick_frame(u8 member) {
+/* 8008A9C0: Run the frame tick of battle_frame_mode (800c3e4c): the result screens
+ * (0), the turns (1) or the event script (2); catch_up is 1 for each frame
+ * the loop catches up after a slow one. */
+void battle_tick_frame(u8 catch_up) {
     switch (battle_frame_mode) {
     case 0:
-        battle_tick_result_screens(member);
+        battle_tick_result_screens(catch_up);
         break;
     case 1:
-        battle_tick_turns(member);
+        battle_tick_turns(catch_up);
         break;
     case 2:
-        battle_tick_event_script(member);
+        battle_tick_event_script(catch_up);
         break;
     }
 }

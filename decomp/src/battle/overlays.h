@@ -38,8 +38,8 @@ void battle_event_script_run(s32);
  * pieces (ovl3384: the model bound at a model sprite's renderer +0x34, its
  * packets and matrix), start an effect circling a sprite (ovl3383), and the
  * sprite script commands of ovl3385, ovl3386 and ovl3387. */
-void battle_module_debris_start(void *model, void *prims, MATRIX *m, s32 a, s32 b, s32 c, s32 d, s32 e);
-void battle_module_spin_start(Sprite *sprite, s32 a, s32 b, s32 c, s32 d, s32 e, s32 f);
+void battle_module_debris_start(void *model, void *prims, MATRIX *matrix, s32 gravity, s32 speed, s32 speed_range, s32 spin_range, s32 life);
+void battle_module_spin_start(Sprite *actor, s32 angle, s32 radius, s32 swing_growth, s32 row_angle_step, s32 angle_step_growth, s32 step);
 void battle_module_scroll_start(Sprite *sprite, u8 *args);
 void battle_module_hold_start(Sprite *sprite, u8 *args);
 void battle_module_burst_play(void);

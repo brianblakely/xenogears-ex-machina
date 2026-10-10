@@ -87,13 +87,13 @@ extern s32 field_dialogue_pass_open_count;      /* dialogue windows opened this 
 extern s16 field_unread_text_pair1[2];          /* only cleared (80077620, the text images) */
 extern s16 field_unread_text_pair2[2];          /* only cleared (80077620) */
 
-s32 field_dialogue_open_window(s16 x, s16 y, s32 message, s32 window, s32 columns, s32 rows, s32 owner, s32 speaker,
+s32 field_dialogue_open_window(s16 x, s16 y, s32 message, s32 w, s32 columns, s32 rows, s32 owner, s32 speaker,
                   s32 mode, s32 turned, s32 flags); /* open a window */
 void field_dialogue_reset_windows(void);                                       /* reset the text texture windows and the windows */
-void field_dialogue_build_packets(s32 window);                                 /* build a window's packets */
+void field_dialogue_build_packets(s32 w);                                 /* build a window's packets */
 void field_load_text_palette(void);                                            /* load the text palette */
 void field_load_tim_list(u32 *tim);                                            /* load the images of a TIM list */
-void field_dialogue_draw_frame(u_long *ot, s32 buffer, s32 window);            /* draw a window's frame */
+void field_dialogue_draw_frame(u_long *ot, s32 buffer, s32 w);            /* draw a window's frame */
 void field_dialogue_draw_windows(u_long *ot, s32 buffer);                      /* draw the windows */
 void field_dialogue_close_expired_windows(void);                               /* close the idle windows whose time ran out */
 s32 field_dialogue_close_window(s16 window);                                   /* close a window unless busy; -1 when busy */

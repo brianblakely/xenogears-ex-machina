@@ -36,18 +36,18 @@ extern u16 stream_frame_number;
 
 StreamRing *stream_select_ring(StreamRing *ring);
 s32 stream_reset_ring(void);
-void cd_copy_file_sector(u8 intr, u8 *result);
-void stream_store_sector(u8 intr, u8 *result);
+void cd_copy_file_sector(u8 status, u8 *result);
+void stream_store_sector(u8 status, u8 *result);
 void stream_mark_sector_complete(void);
-void stream_store_image_sector(u8 intr, u8 *result);
+void stream_store_image_sector(u8 status, u8 *result);
 void stream_load_image_strip(void);
 /* Defined without parameters; 80029EB0 calls it with the (0, 0) of a CD
  * callback. */
 void stream_read_pc_sector();
 /* Defined without parameters; 80029EB0 calls it like a CD callback. */
 void stream_load_pc_image_strip();
-void cd_advance_command_state(u8 intr, u8 *result);
-void cd_copy_list_sector(u8 intr, u8 *result);
+void cd_advance_command_state(u8 status, u8 *result);
+void cd_copy_list_sector(u8 status, u8 *result);
 void cd_update_pending_read_count(void);
 
 /* More of the stream services. */

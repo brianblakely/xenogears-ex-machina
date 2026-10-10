@@ -3,8 +3,8 @@
 
 /* The field camera: its initial state, look-at and follow helpers, the angle
  * steps and octants, and the matrix utilities of field.c. The camera state
- * itself is the view field_view (field.h); its distance field_ground_override_height and the
- * octant field_camera_get_octant are in field/monitor.h. */
+ * itself is the view field_view (field.h); its octant field_camera_get_octant is in
+ * field/monitor.h. */
 
 #include "common.h"
 #include "psyq/libgte.h"

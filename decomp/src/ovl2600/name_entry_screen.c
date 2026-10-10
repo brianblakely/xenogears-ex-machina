@@ -170,7 +170,8 @@ void name_entry_alloc_or_free_name_entry_block(u8 allocate) {
 /* 801C5318: Load the screen's resources: the card icon TIM and file name into the work
  * block's save header, the palette data, sprite sheet and label texts, the
  * named character's entry length and three portraits (uploaded to the
- * portrait sprites' VRAM), and the menu sound bank when sound is on. */
+ * portrait sprites' VRAM), and the menu sound bank on a debug start
+ * (menu_state_debug_start). */
 void name_entry_load_resources(void) {
     enum {
         ENTRY_UNUSED, ENTRY_MODE, ENTRY_CLUT_X, ENTRY_CLUT_Y,
@@ -1408,9 +1409,9 @@ void name_entry_view_update(void) {
     SetTransMatrix(&menu_state_current->matrix);
 }
 
-/* 801C9C34: Run one menu frame: check the stack guard, read input, check the reset
- * combination, swap to the other draw buffer, draw the screen and present
- * it. */
+/* 801C9C34: Run one menu frame: poll the debugger host (break 1024) unless the disc
+ * mode is -1, read input, check the reset combination, swap to the other
+ * draw buffer, draw the screen and present it. */
 void name_entry_run_frame(void) {
     MenuState *state;
     MenuBuffer *env;

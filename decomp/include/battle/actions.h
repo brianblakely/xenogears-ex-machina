@@ -84,7 +84,7 @@ void battle_action_list_event_fc(u8 actor, u8 index, u8 target);
 void battle_action_list_event(u8 actor, u8 index, u8 target);
 void battle_action_list_together(u8 actor, u8 index, u8 target);
 void battle_action_list_leave(u8 actor, u8 index, u8 target);
-void battle_action_list_split(u8 actor, u8 index, u8 target);
+void battle_action_list_split(u8 slot, u8 index, u8 target);
 void battle_action_list_set_attr8(u8 actor, u8 index, u8 target);
 void battle_action_list_add_attr8(u8 actor, u8 index, u8 target);
 void battle_action_list_set_attr16(u8 actor, u8 index, u8 target);

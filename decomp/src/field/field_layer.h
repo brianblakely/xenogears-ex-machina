@@ -13,7 +13,9 @@
 
 /* The field's side (field.c). */
 extern void *field_layer_module;                  /* the module */
-extern s32 field_event_runs_per_frame;            /* the module is loaded */
+extern s32 field_event_runs_per_frame;            /* 1 while event scripts run a step per frame; 0 while
+                                                    * they run to their end at once (the map's set-up,
+                                                    * field_event_run_actor0_event), reads then waited on */
 extern FileRequest field_layer_file_requests[10]; /* its file list: two files per layer, the module, the zero end */
 void field_layer_load(void);                      /* load the module and its layers' files */
 void field_layer_start(void);                     /* start its layers */

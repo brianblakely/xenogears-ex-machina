@@ -483,12 +483,13 @@ void sprite_destroy(Sprite *sprite) {
     heap_free(sprite);
 }
 
-/* 80023124: The direction (0-0xfff) from one ground point to another. */
-s32 sprite_get_ground_direction(DVECTOR from, DVECTOR to) {
+/* 80023124: The direction (0-0xfff) from ground point `from` toward `to`, the first
+ * argument (the battle's callers turn a sprite toward its target so). */
+s32 sprite_get_ground_direction(DVECTOR to, DVECTOR from) {
     VECTOR delta;
 
-    delta.vx = from.vx - to.vx;
-    delta.vz = from.vy - to.vy;
+    delta.vx = to.vx - from.vx;
+    delta.vz = to.vy - from.vy;
     return -ratan2(delta.vz, delta.vx) & 0xFFF;
 }
 
@@ -993,9 +994,9 @@ void sprite_construct_with_palette_bank(void *sprite, s32 data, s16 clut_x, s16 
 /* 8002435C: Construct a sprite from resource block `data`: defaults, inline storage,
  * unit scale, one-sided rendering, the sequencer (reset, or owned when
  * 800591ad is clear), render modes from 800591b8, a part list for its
- * first frame, the image origin (width, height, x, y), the resource binding
- * and animation 0. */
-Sprite *sprite_construct(Sprite *self, s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused) {
+ * first frame, the texture origin (texture_x, texture_y) and CLUT position
+ * (clut_x, clut_y) of its source, the resource binding and animation 0. */
+Sprite *sprite_construct(Sprite *self, s32 *data, s16 clut_x, s16 clut_y, s16 texture_x, s16 texture_y, s16 unused) {
     s32 *block = data;
     Sprite *sprite = self;
 
@@ -1016,10 +1017,10 @@ Sprite *sprite_construct(Sprite *self, s32 *data, s16 x, s16 y, s16 width, s16 h
     sprite->render.bits.mode = sprite_palette_bank;
     sprite->render.bits.field16 = sprite_palette_bank;
     sprite->renderer->parts[1] = sprite->renderer->parts[0] = heap_alloc(sprite_get_part_count((u16 *)(block[2] + (s32)block)) * 24, 0);
-    ((SpriteResource *)sprite->image)->origin.vx = width;
-    ((SpriteResource *)sprite->image)->origin.vy = height;
-    ((SpriteResource *)sprite->image)->origin.vz = x;
-    ((SpriteResource *)sprite->image)->origin.pad = y;
+    ((SpriteResource *)sprite->image)->origin.vx = texture_x;
+    ((SpriteResource *)sprite->image)->origin.vy = texture_y;
+    ((SpriteResource *)sprite->image)->origin.vz = clut_x;
+    ((SpriteResource *)sprite->image)->origin.pad = clut_y;
     sprite->animations = data;
     sprite_bind_resource(sprite, data);
     sprite->word60 = (u16 *)((s32)((SpriteResource *)sprite->image)->section1 + ((*((SpriteResource *)sprite->image)->section1 & 0x3F) + 1) * 2);
@@ -1029,11 +1030,11 @@ Sprite *sprite_construct(Sprite *self, s32 *data, s16 x, s16 y, s16 width, s16 h
 
 /* 80024524: Allocate a sprite (356 bytes, its inline storage included) and construct
  * it from resource block `data` (8002435c). */
-Sprite *sprite_create(s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused) {
+Sprite *sprite_create(s32 *data, s16 clut_x, s16 clut_y, s16 texture_x, s16 texture_y, s16 unused) {
     Sprite *sprite = heap_alloc(0x164, 0);
 
     sprite->size = 0x164;
-    return sprite_construct(sprite, data, x, y, width, height, unused);
+    return sprite_construct(sprite, data, clut_x, clut_y, texture_x, texture_y, unused);
 }
 
 /* 800245D8: Select animation `animation` (negative: ~animation from the alternate

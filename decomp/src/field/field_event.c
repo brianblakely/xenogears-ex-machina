@@ -1067,9 +1067,10 @@ void field_event_set_battle_sounds(void) {
     field_current_event_actor->pc += 4;
 }
 
-/* 80087E5C: Event: set the battle-entry override (800b234c) from operand 1. */
-void field_event_set_battle_override(void) {
-    field_work.battle_override = field_event_read_imm_or_var(1);
+/* 80087E5C: Event: set the override of mode_gear_riding_lock (800b234c) from operand
+ * 1 (0xff none). */
+void field_event_set_gear_riding_lock_override(void) {
+    field_work.gear_riding_lock_override = field_event_read_imm_or_var(1);
     field_current_event_actor->pc += 3;
 }
 
@@ -4824,7 +4825,7 @@ void field_event_walk_player_to(void) {
     }
 }
 
-s32 field_event_walk_player(s32 a, s32 b, s32 c, s32 d);
+s32 field_event_walk_player(s32 angle, s32 mode, s32 x, s32 z);
 
 /* 80092DFC: Once field control allows it (yielding until then), set flag 0x80 on the
  * controlled actor and walk it a step per frame toward the point 40 units
@@ -7939,7 +7940,7 @@ void field_event_release_party_position(void) {
     field_current_event_actor->pc += 1;
 }
 
-s32 field_party_walk_member_toward(s32 member, s32 x, s32 z, s32 range);
+s32 field_party_walk_member_toward(s32 slot, s32 x, s32 z, s32 facing);
 void field_party_release_motion_overrides(void);
 
 /* 8009B210: Event fe 24: walk each party member one gather step (8009aee0) toward the
@@ -8284,7 +8285,7 @@ void field_event_message_as_actor(void) {
     field_current_event_actor->pc += 6;
 }
 
-s32 field_event_open_message_window(s32 index, s32 mode);
+s32 field_event_open_message_window(s32 speaker, s32 mode);
 
 /* 8009C01C: Open this actor's dialogue window for message operand 2 by the speaker
  * the actor selector byte 1 picks (8009c5a8 mode 0), byte 4 overriding the
@@ -10635,7 +10636,7 @@ void field_event_run_actor0_event(s32 event) {
     heap_free(saved);
 }
 
-void field_event_run_actor0_event(s32 mode);
+void field_event_run_actor0_event(s32 event);
 
 /* 800A2488: Rebuild the party (mode 3) with 800adb8c set. */
 void field_event_rebuild_party(void) {
@@ -11197,7 +11198,7 @@ void (*field_event_extended_handlers[227])(void) = { /* 800AE6A0 */
     /* A8 */ field_event_store_camera_target, field_event_store_camera_eye, field_event_set_camera_actor, field_event_add_gear_hp,
     /* AC */ field_event_take_gear_hp, field_event_store_party_hp, field_event_set_jump_mode, field_event_transform_vector,
     /* B0 */ field_event_sound_bank, field_event_build_status_panel, field_event_set_party_hp, field_event_set_party_ep,
-    /* B4 */ field_event_store_party_ep, field_event_warp_gathering, field_event_set_controlled, field_event_set_battle_override,
+    /* B4 */ field_event_store_party_ep, field_event_warp_gathering, field_event_set_controlled, field_event_set_gear_riding_lock_override,
     /* B8 */ field_event_set_battle_sounds, field_event_store_vehicle_place, field_event_set_vehicle_place, field_event_store_vehicle_flags,
     /* BC */ field_event_set_vehicle_flags, field_event_set_template_flag, field_event_enable_movie_overlay, field_event_open_menu_task,
     /* C0 */ field_event_store_bout_outcome, field_event_store_member_animation, field_event_begin_effect, field_event_hide_sprite_and_shadow,

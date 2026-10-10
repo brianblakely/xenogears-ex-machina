@@ -60,18 +60,18 @@ extern s32 menu_label_mode6_y_table[];      /* label y (mode 6) */
  * differently from the resident definitions (decomp/src/resident/own_declarations.h). */
 void cd_set_mode(s32 mode);
 void mode_get_random_byte_in_range(s32 low, s32 high);
-void sprite_sheet_draw_scaled_flip(void *sheet, s32 image, void *dst, s32 buffer, s32 x, s32 y, s32 scale, s32 flipX, s32 flipY);
-s32 sprite_sheet_draw_scaled(void *sheet, s32 image, void *dst, s32 buffer, s32 x, s32 y, s32 scale);
+void sprite_sheet_draw_scaled_flip(void *sheet, s32 id, void *dst, s32 index, s32 x, s32 y, s32 scale, s32 flip_x, s32 flip_y);
+s32 sprite_sheet_draw_scaled(void *sheet, s32 id, void *dst, s32 index, s32 x, s32 y, s32 scale);
 void text_load_palette(s32 x, s32 y);
 void sound_play_effect_on_last_channels(s32 id, s32 sound);              /* play a sound effect */
-u8 *text_get_accessory_name(u8 id);
-u8 *text_get_weapon_name(u8 id);                                         /* weapon name */
-u8 *text_get_gear_accessory_name(u8 id);                                 /* gear accessory name */
-u8 *text_get_gear_part_name(u8 id);                                      /* gear part name */
-u8 *text_get_resource_entry(u8 *table, s32 index);                       /* message of a table */
-u8 *text_get_item_name(u8 item);                                         /* item name text */
-u8 window_render_text_line(u8 *text, void *pixels, s32 width, s32 line); /* render a text line; its width */
-s32 text_decode_codes(u8 *codes, u8 *text, s32 count);                   /* decode a name */
+u8 *text_get_accessory_name(u8 index);
+u8 *text_get_weapon_name(u8 index);                                         /* weapon name */
+u8 *text_get_gear_accessory_name(u8 index);                                 /* gear accessory name */
+u8 *text_get_gear_part_name(u8 index);                                      /* gear part name */
+u8 *text_get_resource_entry(u8 *resource, s32 index);                       /* message of a table */
+u8 *text_get_item_name(u8 index);                                         /* item name text */
+u8 window_render_text_line(u8 *text, void *pixels, s32 width, s32 flags); /* render a text line; its width */
+s32 text_decode_codes(u8 *codes, u8 *out, s32 count);                   /* decode a name */
 
 /* The framework's functions that another unit calls, or its own before
  * defining them. */
@@ -115,7 +115,7 @@ void menu_command_window_set_cursor(u8 count, u8 cursor, MenuCommandImages *imag
 void menu_choice_window_set_cursor(u8 offset);
 void menu_name_image_render(u8 image, u8 row);
 void menu_quad_set_blending(POLY_FT4 *poly, u8 mode);
-void menu_panel_set_dimmed(u8 index, u8 dim);
+void menu_panel_set_dimmed(u8 index, u8 mode);
 void menu_quad_set_semi_transparent(POLY_FT4 *poly);
 void menu_quad_place(POLY_FT4 *poly, u16 x, u16 y, u8 u, u8 v, u16 w, u16 h);
 void menu_quad_init(POLY_FT4 *poly);

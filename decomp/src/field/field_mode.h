@@ -52,7 +52,7 @@ void field_sync_draw_and_vsync(void);                       /* DrawSync, then VS
 void field_sync_and_flush_cache(void);                      /* sync, then flush the instruction cache */
 void field_brighten_text_strip(void);                       /* brighten the text strip (with 800b2344 set) */
 s32 field_encounter_count_down(void);                       /* count down the random-encounter steps */
-void field_update_gear_riding_lock(void);                   /* set the battle-entry flag (80059179) */
+void field_update_gear_riding_lock(void);                   /* set mode_gear_riding_lock (80059179) */
 s32 field_is_exit_blocked(void);                            /* 0 when nothing keeps the field from leaving */
 void field_run_menu(void);                                  /* run a menu over the field */
 void field_exit_to_mode(s32 kind);                          /* leave the field for another mode */

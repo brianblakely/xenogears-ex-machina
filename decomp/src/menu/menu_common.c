@@ -38,7 +38,7 @@ s32 arena_node_compose_parent_view; /* 8009289C */
 u8 arena_draw_buffer_index; /* 800928A0: buffer being built */
 s32 arena_unused_common_pair_1[2]; /* 800928A4: unreferenced */
 s32 arena_bout_replay_timer; /* 800928AC */
-s32 arena_stage_uses_narrow_view; /* 800928B0: selects the look-at marker (arena_stage_mark_narrow_view_cells or arena_stage_mark_wide_view_cells) */
+s32 arena_stage_uses_narrow_view; /* 800928B0: the ground cells in view take the narrow wedge (the replay), else the wide one */
 u8 arena_stage_index; /* 800928B4: stage */
 s32 arena_unused_common_pair_2[2]; /* 800928B8: unreferenced */
 u8 arena_bout_pose_ring_index; /* 800928C0 */
@@ -79,14 +79,14 @@ struct SoundSeq *arena_mode_music_seq; /* 80092948 */
 s32 arena_bout_round_frame_count; /* 8009294C */
 s32 arena_bout_round_number; /* 80092950 */
 
-VECTOR arena_view_origin; /* 80096FA8: last eye position: the scene origin */
+VECTOR arena_view_origin; /* 80096FA8: the focus the view was last aimed at: the scene origin */
 struct SideHits arena_actor_side_move_info[2]; /* 80096FB8 */
 MATRIX arena_display_screen_scale; /* 80096FE0: screen scale */
 VECTOR arena_look_at_axis_x; /* 80097000: look-at work: third axis */
 struct Actor arena_second_actor; /* 80097010: scene actor */
-VECTOR arena_camera_focus; /* 8009867C: camera eye */
+VECTOR arena_camera_focus; /* 8009867C: camera look-at point */
 Window arena_scene_message_window; /* 8009868C: message window */
-VECTOR arena_camera_position; /* 8009871C: camera look-at point */
+VECTOR arena_camera_position; /* 8009871C: camera eye */
 struct Actor arena_first_actor; /* 8009872C: scene actor */
 struct Settings arena_settings; /* 80099D98: current option settings */
 struct PolyFT4Words arena_select_wheel_quads[2][10]; /* 80099DA8 */

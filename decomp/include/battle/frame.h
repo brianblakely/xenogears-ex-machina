@@ -93,13 +93,13 @@ typedef struct {
 extern s32 (*battle_curve_cell_weights)[4]; /* four weights per cell, 8 cells a row */
 
 /* The frame loop and the battle menu. */
-void battle_show_status_drain_amounts(s32 slot, s32 a, s32 b, s32 c);                              /* run commands on a slot's sprite and wait */
+void battle_show_status_drain_amounts(s32 slot, s32 first, s32 second, s32 third);                              /* run commands on a slot's sprite and wait */
 void battle_run_frame(void);                                                                       /* run one battle frame */
 void battle_load_module(void);                                                                     /* load the requested battle module */
 void battle_menu_clear(void);                                                                      /* clear the battle menu state */
 BattleMenu *battle_menu_open(void);                                                                /* open the battle menu */
 void battle_menu_close(void);                                                                      /* close the battle menu */
-void battle_start_object_script_on_own_stack(s32 index, s32 mask, s32 mode);                           /* 800AA320 on a stack of its own */
+void battle_start_object_script_on_own_stack(s32 index, s32 mask, s32 script);                           /* 800AA320 on a stack of its own */
 s32 battle_list_slot_sprites(u32 mask, Sprite **list, Sprite *target);                             /* list the sprites of the slots in mask */
 s16 battle_get_sprite_direction(Sprite *from, Sprite *to);                                         /* the direction between two sprites */
 s16 battle_get_target_direction(Sprite *sprite);                                                   /* the direction to a sprite's target point */
@@ -116,7 +116,7 @@ s32 battle_count_active_tasks(void);
 s32 battle_is_total_popup_shown(void);                                                             /* whether a number popup shows */
 void battle_request_single_action_start(s32 value);
 void battle_distance_watch_start(Sprite *sprite, s32 threshold, void (*callback)(Sprite *sprite)); /* watch its value against threshold */
-void battle_set_single_target(s32 index, s32 slot);
+void battle_set_single_target(s32 slot, s32 target);
 void battle_sprite_next_target(Sprite *sprite);                                                    /* move a sprite's target to the next target */
 s32 battle_get_target_index(Sprite *sprite);                                                       /* a sprite's index among the targets */
 void battle_count_effect_hit(void);                                                                /* count an effect hit */
