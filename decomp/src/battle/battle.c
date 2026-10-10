@@ -2795,7 +2795,11 @@ u8 battle_execute_attack_step(u8 member, u8 cost) {
  * hoist the else or make a store-flag mask of it. combine leaves a copy,
  * jump2 hoists the zero above the branch and reorg fills the delay slot
  * with it. A ternary or if/else over `side`, or an s32 `side`, leaves a
- * one-insn arm that jump1 folds into `side & -(target < 3)`. */
+ * one-insn arm that jump1 folds into `side & -(target < 3)`. `side` gets a
+ * statement of its own: written inline (`(actor >= 3) * 8 * (target < 3)`),
+ * the offset is computed after the target test (its sltu in that branch's
+ * delay slot, its xori and sll in the arm), while the original computes it
+ * before. */
 void battle_join_target_group(u8 actor, u8 target) {
     u8 base;
     u8 side;
