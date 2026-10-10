@@ -1,0 +1,58 @@
+# Runtime (Phase 2)
+
+The shared Rust/C runtime of [plan.md](../plan.md) Phases 2 onward. The recovered
+C in `decomp/` stays the only game implementation; this document records how it
+is built for native and browser hosts and how the hosts are layered. The
+[later-phases handbook](later-phases.md) holds the program facts it relies on.
+
+## Approved foundations
+
+| Decision | Choice |
+| --- | --- |
+| Rust workspace | `runtime/` (`runtime/Cargo.toml`, crates in `runtime/crates/*`, committed `Cargo.lock`) |
+| Toolchain | `nix develop path:./nix/runtime` (Rust 1.97.1 with wasm32/Android targets via rust-overlay, clang/lld 21.1.8, wabt 1.0.41, binaryen 132, wasm-bindgen-cli 0.2.127, SDL3 3.4.14, mesa 26.2.2, Monado 25.1.0, Chromium 152, Node 24); `#android` adds the Android SDK/NDK r29, emulator and API-34 x86_64 image, JDK 17, Gradle 8.14.4, cargo-ndk |
+| Data model and link | the recovered C is compiled once to a wasm32 *game module* (ILP32, the original data model); natively it is translated ahead of time with wasm2c, in browsers it runs as is beside the wasm-bindgen runtime |
+| Versions | slint =1.18.1 (`unstable-wgpu-30`, FemtoVG wgpu renderer), wgpu/wgpu-hal =30.0.1, sdl3-sys =0.6.8+SDL-3.4.14, openxr 0.22.0, wasm-bindgen =0.2.127, iwer 2.5.0, playwright-core 1.64.0 |
+| Slint license | Royalty-free 2.0 (attribution shown in the settings panel); GPLv3 is the alternative |
+
+## The game module
+
+`make -C decomp game-wasm` builds `build/game/game.wasm` from the same C units
+the PS1 targets link, plus `decomp/port/` (the SDK, the BIOS and the handwritten
+routines as portable C over host imports). It needs the matched PS1 links
+(`make -C decomp all-verify`), whose symbol tables give every object its
+original address.
+
+- **Original memory layout.** Game memory is the PS1 address space: RAM at its
+  KSEG0 addresses 0x80000000-0x801FFFFF and the scratchpad at 0x1F800000, inside
+  one wasm32 linear memory. Every global the C defines resolves to its original
+  address; its bytes come from the images the game itself loads (the host loads
+  the executable as the BIOS did, the game decodes its overlays), so heap
+  placement, overlay slots, overruns into neighbouring objects and pointer-laden
+  data behave as on the console, and game RAM compares directly with captures.
+- **Code addresses.** A function's address, wherever C takes it, is its original
+  address. Indirect calls go through generated dispatchers that select the
+  function by address and check, from a fingerprint of its original code bytes in
+  game memory, that the image holding it is the one loaded there; a call into an
+  absent or overwritten image traps.
+- **Suspension.** `wasm-opt --asyncify` instruments the module so that the yield
+  imports (frame waits, polls, mode exits) unwind the game stack into linear
+  memory. The host loop resumes it; a snapshot at a yield point is game memory,
+  the module's globals and the host services' state.
+- **Native.** `wasm2c` output is compiled into `xem-game` with explicit bounds
+  checks (no signal handlers). Nothing interprets or emulates a CPU.
+- **Browser.** The same `game.wasm` is instantiated next to the Rust runtime
+  (wasm32-unknown-unknown, wasm-bindgen); the two modules keep separate
+  memories and exchange scalars and bounds-checked offsets.
+
+## Crates
+
+| Crate | Role |
+| --- | --- |
+| `xem-core` | headless authority: game instance, virtual clock, commands, introspection, stepping, snapshots, services |
+| `xem-game` | the game module binding (wasm2c natively, imports in browsers) |
+| `xem-gpu`, `xem-spu`, `xem-media`, `xem-disc` | the console devices as host services, and disc import |
+| `xem-render` | the wgpu renderer for flat, stereo and XR views |
+| `xem-ui` | the Slint settings panel as a custom platform rendered into a texture on the shared wgpu device |
+| `xem-xr` | the OpenXR adapter |
+| `xem-desktop`, `xem-headless`, `xem-android`, `xem-web` | hosts |

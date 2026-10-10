@@ -1,0 +1,39 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97"
+license = "MIT"
+publish = false
+
+# Pins approved for Phase 2 (docs/runtime.md). Slint's wgpu integration is
+# unstable: slint 1.18.1's `unstable-wgpu-30` requires wgpu 30, so the two move
+# together.
+[workspace.dependencies]
+slint = { version = "=1.18.1", default-features = false }
+i-slint-renderer-femtovg = { version = "=1.18.1", default-features = false }
+wgpu = { version = "=30.0.1", default-features = false }
+wgpu-hal = { version = "=30.0.1", default-features = false }
+sdl3-sys = { version = "=0.6.8" }
+openxr = { version = "=0.22.0" }
+wasm-bindgen = { version = "=0.2.127" }
+js-sys = { version = "0.3" }
+web-sys = { version = "0.3" }
+raw-window-handle = { version = "0.6.2" }
+cc = { version = "1.2" }
+bytemuck = { version = "1", features = ["derive"] }
+glam = { version = "0.30" }
+pollster = { version = "0.4" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1" }
+log = { version = "0.4" }
+
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.release]
+lto = "thin"
+debug = 1
