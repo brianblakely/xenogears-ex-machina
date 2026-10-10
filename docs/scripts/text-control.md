@@ -49,9 +49,9 @@ it from three sources:
 - The number code. `text_format_number` writes a number's digits as the codes
   palette × 16 + digit and its sign as palette × 16 + 10 (negative) or + 11. The
   window controls pass palettes 0 and 1. The menus write the blank of a number's
-  leading zeros as code 0xC3 (slot39 `menu_arts_screen_build_list`, ovl2601 `func_801CDD14`,
-  ovl2602 `func_801D1304`), which the name entry also enters for an empty cell
-  (ovl2600 `func_801CB33C`). Resource 27 gives these codes 25 one-byte glyphs on
+  leading zeros as code 0xC3 (slot39 `menu_arts_screen_build_list`, ovl2601 `item_shop_layout_stock_rows`,
+  ovl2602 `gear_shop_show_sell_entry`), which the name entry also enters for an empty cell
+  (ovl2600 `name_entry_run`). Resource 27 gives these codes 25 one-byte glyphs on
   both discs: 0x61-0x6A and 0x16-0x1F the digits, 0x7E and 0x13 the minus sign,
   0x7D and 0x11 the plus sign, 0x10 the blank.
 - The memory card titles, directory (0x10, 1) file 1. `menu_card_init_and_read_title` copies line
@@ -70,7 +70,7 @@ it from three sources:
   names (Lahan Village, Mountain Path, Road to Nisan, Babel Tower, Dazil), and
   give 25 letters: B D L M N P R T V and a b d e g h i l n o r s t u w z. Night
   Purge is the only other title that ever fits exactly one whole text.
-- The name entry grid (ovl2600 `D_801CBEC0`): `func_801CA558` shows its 36
+- The name entry grid (ovl2600 `name_entry_grid_codes`): `name_entry_build_grid` shows its 36
   entries of five codes in four columns of nine, so screen row r shows entries
   r, r + 9, r + 18 and r + 27. In that order it holds two runs of 26 ascending
   codes, 0x20-0x39 across the first two rows and 0x3D-0x56 across the next two,

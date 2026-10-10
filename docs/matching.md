@@ -612,7 +612,7 @@ every placeholder (7797 rows, 390 files) kept all 26 images, cross-image and cov
   palettes below. None remains: the others are lookups by a key the code computes,
   also where an end value closes them (the picture table `field_picture_table` searched by
   map, the battle modes' sound programs `mode_battle_sound_programs`, the gear shop lamps' frames
-  `D_801D6FE0` on the code's timing), lists one call processes whole (the battle
+  `gear_shop_lamp_frame_images` on the code's timing), lists one call processes whole (the battle
   panel glyph sets ended by 0xFFFF, the world map's object links `worldmap_airship_object_links`),
   geometry the code interpolates or steps through on its own count (the world
   map's camera and flight paths, which `worldmap_eval_quadratic_bspline` interpolates at the
@@ -819,7 +819,7 @@ converted to C per unit. What converting the targets' `.data` established:
 - An object that ends its unit's section can be followed by stray bytes up to the
   next unit's. In the targets' links eleven included objects end their unit's section
   so: the strings field_clear_otag_label and field_error_id0_format (field), arena_debug_rate_format (menu6), battle_debug_state_page_char_format
-  (debug2611's pages.c) and D_801C5000 (ovl2601) and the .data objects arena_actor_combo_inputs
+  (debug2611's pages.c) and item_shop_save_file_prefix (ovl2601) and the .data objects arena_actor_combo_inputs
   (menu7, `ind` before menu2's .sbss) and battle_unreferenced_stray_byte (battle), all of ASPSX 2.34
   units, and battle_music_lowered (battle) and battle_setup_next_member_image_column (ovl2615) of 2.56 units and the world
   map's worldmap_scene15_flame_sizes and worldmap_gear_sprite_height of 2.79 units; so does the world map's cue sequence
@@ -958,7 +958,7 @@ converted to C per unit. What converting the targets' `.data` established:
   is kept. The commons, which the original linker
   allocated after every unit's own in an order of its own (mdec's five player commons
   among the 20 of libcd's CDROM.OBJ), are defined by a commons unit linked last
-  (menu_overlay_common.c, menu_common.c, ovl2602_common.c, battle_common.c,
+  (menu_overlay_common.c, menu_common.c, gear_shop_common.c, battle_common.c,
   field_common.c, worldmap_common.c, mdec commons/; the resident's commons/ units
   lie between the PsyQ libraries' generated ranges), which reproduces the linker's
   placement rather than modelling it. It

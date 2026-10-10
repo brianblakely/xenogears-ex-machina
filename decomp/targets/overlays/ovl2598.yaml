@@ -42,7 +42,7 @@ segments:
     start: 0x0
     vram: 0x801c5000
     subsegments:
-      - [0x0, .rodata, ovl2598]
-      - [0x18, c, ovl2598]
-      - [0x6180, .data, ovl2598]
+      - [0x0, .rodata, member_change_screen]
+      - [0x18, c, member_change_screen]
+      - [0x6180, .data, member_change_screen]
   - [0x659c]

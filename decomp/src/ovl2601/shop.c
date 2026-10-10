@@ -1,7 +1,7 @@
 /*
  * The item shop's own screens: member stat views, the buy and sell lists,
  * prices and the sale. Rodata 801c5010-801c5040, text 801cce1c-801d1f50,
- * data 801d2210-801d2260 and the variable D_801D2260 that ends the file. A
+ * data 801d2210-801d2260 and the variable item_shop_held_count that ends the file. A
  * separate translation unit from the shared screen code before it: it calls
  * the party-bit helpers 801c50b0 and 801c50cc without a prototype in scope
  * (arguments and results unmasked), which the shared unit's own callers do
@@ -20,28 +20,28 @@
 #include "item_shop.h"
 
 /* The four heading sprites and the two alternative ones: ids and positions. */
-u8 D_801D2210[4] = {0xF2, 0xDE, 0xE0, 0xE5};
-u8 D_801D2214[2] = {0xF2, 0xE3};
-s32 D_801D2218[4] = {150, 48, 48, 224}; /* x */
-s32 D_801D2228[2] = {150, 224};
-s32 D_801D2230[4] = {158, 190, 198, 88}; /* y */
-s32 D_801D2240[2] = {158, 88};
+u8 item_shop_buy_heading_images[4] = {0xF2, 0xDE, 0xE0, 0xE5}; /* 801D2210 */
+u8 item_shop_sell_heading_images[2] = {0xF2, 0xE3}; /* 801D2214 */
+s32 item_shop_buy_heading_x_table[4] = {150, 48, 48, 224}; /* 801D2218: x */
+s32 item_shop_sell_heading_x_table[2] = {150, 224}; /* 801D2228 */
+s32 item_shop_buy_heading_y_table[4] = {158, 190, 198, 88}; /* 801D2230: y */
+s32 item_shop_sell_heading_y_table[2] = {158, 88}; /* 801D2240 */
 /* The three nine-digit numbers' positions. */
-s32 D_801D2248 = 232;
-s32 D_801D224C = 78;
-s32 D_801D2250 = 232;
-s32 D_801D2254 = 88;
-s32 D_801D2258 = 232;
-s32 D_801D225C = 100;
+s32 item_shop_gold_x = 232; /* 801D2248 */
+s32 item_shop_gold_y = 78; /* 801D224C */
+s32 item_shop_total_x = 232; /* 801D2250 */
+s32 item_shop_total_y = 88; /* 801D2254 */
+s32 item_shop_new_gold_x = 232; /* 801D2258 */
+s32 item_shop_new_gold_y = 100; /* 801D225C */
 /* Uninitialized: the file holds it as zeros in a four-byte slot. */
-u16 D_801D2260;
+u16 item_shop_held_count; /* 801D2260 */
 
 /* This unit passes quad coordinates as words; the shared screen unit sees
  * the helper's narrow definition before its local calls. */
-void func_801C6E90();
+void item_shop_set_rect_verts();
 
-/* Fill a view's nine stat words from character `id`'s base and bonus bytes, capped at 999 or 99. */
-void func_801CCE1C(MenuTables *view, u8 id) {
+/* 801CCE1C: Fill a view's nine stat words from character `id`'s base and bonus bytes, capped at 999 or 99. */
+void item_shop_compute_character_stats(MenuTables *view, u8 id) {
     CharacterRecord *c;
 
     c = &game_data.characters[id];
@@ -88,8 +88,8 @@ void func_801CCE1C(MenuTables *view, u8 id) {
     }
 }
 
-/* Draw the shop's detail packets: member bars, portraits, headings, list rows, labels and numbers. */
-void func_801CCFF4(void) {
+/* 801CCFF4: Draw the shop's detail packets: member bars, portraits, headings, list rows, labels and numbers. */
+void item_shop_draw_details(void) {
     s32 i;
 
     if (menu_state_current->flags->unknown5a[0] != 0) {
@@ -101,60 +101,60 @@ void func_801CCFF4(void) {
                         &menu_state_current->details->bar_lower[i * 2 + menu_state_current->buffer_index]);
             }
         }
-        func_801C8D58(menu_state_current->details->heading_count, menu_state_current->details->heading,
+        item_shop_draw_quads(menu_state_current->details->heading_count, menu_state_current->details->heading,
                       menu_state_current->details->heading_buffer);
-        func_801C8D58(menu_state_current->details->group2D0_count, menu_state_current->details->group2D0,
+        item_shop_draw_quads(menu_state_current->details->group2D0_count, menu_state_current->details->group2D0,
                       menu_state_current->details->group2D0_buffer);
-        func_801C8D58(menu_state_current->details->members_count, menu_state_current->details->members,
+        item_shop_draw_quads(menu_state_current->details->members_count, menu_state_current->details->members,
                       menu_state_current->details->members_buffer);
         for (i = 0; i < 8; i++) {
             if (menu_state_current->details->name_shown[i] != 0) {
-                func_801C8C3C(1, menu_state_current->details->names_a[i].verts, menu_state_current->details->names_a[i].polys,
+                item_shop_draw_projected_quads(1, menu_state_current->details->names_a[i].verts, menu_state_current->details->names_a[i].polys,
                               menu_state_current->details->names_a[i].buffer);
-                func_801C8C3C(1, menu_state_current->details->names_b[i].verts, menu_state_current->details->names_b[i].polys,
+                item_shop_draw_projected_quads(1, menu_state_current->details->names_b[i].verts, menu_state_current->details->names_b[i].polys,
                               menu_state_current->details->names_b[i].buffer);
             }
         }
         if (menu_state_current->details->label4430_shown != 0) {
-            func_801C8C3C(1, menu_state_current->details->label4430.verts, menu_state_current->details->label4430.polys,
+            item_shop_draw_projected_quads(1, menu_state_current->details->label4430.verts, menu_state_current->details->label4430.polys,
                           menu_state_current->details->label4430.buffer);
         }
         if (menu_state_current->details->label44B0_shown != 0) {
-            func_801C8C3C(1, menu_state_current->details->label44B0.verts, menu_state_current->details->label44B0.polys,
+            item_shop_draw_projected_quads(1, menu_state_current->details->label44B0.verts, menu_state_current->details->label44B0.polys,
                           menu_state_current->details->label44B0.buffer);
         }
         if (menu_state_current->details->label45B0_shown != 0) {
-            func_801C8C3C(1, menu_state_current->details->label45B0.verts, menu_state_current->details->label45B0.polys,
+            item_shop_draw_projected_quads(1, menu_state_current->details->label45B0.verts, menu_state_current->details->label45B0.polys,
                           menu_state_current->details->label45B0.buffer);
         }
         if (menu_state_current->details->digits_shown != 0) {
             AddPrim(&menu_state_current->current->ot[4], &menu_state_current->details->frame[menu_state_current->buffer_index]);
-            func_801C8D58(menu_state_current->details->digits1_count, menu_state_current->details->digits1,
+            item_shop_draw_quads(menu_state_current->details->digits1_count, menu_state_current->details->digits1,
                           menu_state_current->details->digits1_buffer);
-            func_801C8D58(menu_state_current->details->digits2_count, menu_state_current->details->digits2,
+            item_shop_draw_quads(menu_state_current->details->digits2_count, menu_state_current->details->digits2,
                           menu_state_current->details->digits2_buffer);
-            func_801C8D58(menu_state_current->details->digits3_count, menu_state_current->details->digits3,
+            item_shop_draw_quads(menu_state_current->details->digits3_count, menu_state_current->details->digits3,
                           menu_state_current->details->digits3_buffer);
         }
         for (i = 0; i < 8; i++) {
-            func_801C8D58(menu_state_current->details->row_count[i], menu_state_current->details->rows[i],
+            item_shop_draw_quads(menu_state_current->details->row_count[i], menu_state_current->details->rows[i],
                           menu_state_current->details->row_buffer[i]);
         }
         for (i = 0; i < 9; i++) {
-            func_801C8D58(menu_state_current->details->cells_a_count[i], menu_state_current->details->cells_a[i],
+            item_shop_draw_quads(menu_state_current->details->cells_a_count[i], menu_state_current->details->cells_a[i],
                           menu_state_current->details->cells_a_buffer[i]);
-            func_801C8D58(menu_state_current->details->cells_b_count[i], menu_state_current->details->cells_b[i],
+            item_shop_draw_quads(menu_state_current->details->cells_b_count[i], menu_state_current->details->cells_b[i],
                           menu_state_current->details->cells_b_buffer[i]);
         }
     }
     if (menu_state_current->flags->unknown5a[1] == 1) {
-        func_801C8D58(menu_state_current->details->group1220_count, menu_state_current->details->group1220,
+        item_shop_draw_quads(menu_state_current->details->group1220_count, menu_state_current->details->group1220,
                       menu_state_current->details->group1220_buffer);
     }
 }
 
-/* Tint `count` packet pairs of this buffer red (0) or blue (1). */
-void func_801CD404(s32 count, POLY_FT4 *packets, u8 color) {
+/* 801CD404: Tint `count` packet pairs of this buffer red (0) or blue (1). */
+void item_shop_tint_quads(s32 count, POLY_FT4 *packets, u8 color) {
     s32 i;
 
     for (i = 0; i < count; i++) {
@@ -174,8 +174,8 @@ void func_801CD404(s32 count, POLY_FT4 *packets, u8 color) {
     }
 }
 
-/* Reveal the available party members' portraits one member per frame. */
-void func_801CD5D0(void) {
+/* 801CD5D0: Reveal the available party members' portraits one member per frame. */
+void item_shop_reveal_portraits(void) {
     s32 step;
     s32 shown;
     s32 i;
@@ -188,85 +188,85 @@ void func_801CD5D0(void) {
             if (menu_state_current->present[i] != 0) {
                 menu_state_current->details->members_count +=
                     sprite_sheet_draw_scaled(menu_state_current->sheet, i + 0x14E, &menu_state_current->details->members[shown * 2],
-                                  menu_state_current->buffer_index, D_801D21CC[shown], 0xA6, 0x1000);
+                                  menu_state_current->buffer_index, item_shop_portrait_x_table[shown], 0xA6, 0x1000);
                 shown++;
             }
         }
         menu_state_current->details->members_buffer = menu_state_current->buffer_index;
-        func_801CB014();
+        item_shop_run_frame();
     }
 }
 
-/* Draw the four heading sprites. */
-void func_801CD6F8(void) {
+/* 801CD6F8: Draw the four heading sprites. */
+void item_shop_layout_buy_headings(void) {
     s32 i;
 
     menu_state_current->details->heading_count = 0;
     for (i = 0; i < 4; i++) {
         menu_state_current->details->heading_count +=
-            sprite_sheet_draw_scaled(menu_state_current->sheet, D_801D2210[i],
+            sprite_sheet_draw_scaled(menu_state_current->sheet, item_shop_buy_heading_images[i],
                           menu_state_current->details->heading + menu_state_current->details->heading_count * 2,
-                          menu_state_current->buffer_index, D_801D2218[i], D_801D2230[i], 0x1000);
+                          menu_state_current->buffer_index, item_shop_buy_heading_x_table[i], item_shop_buy_heading_y_table[i], 0x1000);
     }
     menu_state_current->details->heading_buffer = menu_state_current->buffer_index;
 }
 
-/* Draw the two alternative heading sprites. */
-void func_801CD7E4(void) {
+/* 801CD7E4: Draw the two alternative heading sprites. */
+void item_shop_layout_sell_headings(void) {
     s32 i;
 
     menu_state_current->details->heading_count = 0;
     for (i = 0; i < 2; i++) {
         menu_state_current->details->heading_count +=
-            sprite_sheet_draw_scaled(menu_state_current->sheet, D_801D2214[i],
+            sprite_sheet_draw_scaled(menu_state_current->sheet, item_shop_sell_heading_images[i],
                           menu_state_current->details->heading + menu_state_current->details->heading_count * 2,
-                          menu_state_current->buffer_index, D_801D2228[i], D_801D2240[i], 0x1000);
+                          menu_state_current->buffer_index, item_shop_sell_heading_x_table[i], item_shop_sell_heading_y_table[i], 0x1000);
     }
     menu_state_current->details->heading_buffer = menu_state_current->buffer_index;
 }
 
-/* Draw three nine-digit numbers (leading zeros blank) at their three positions. */
-void func_801CD8D0(u32 first, u32 second, u32 third) {
+/* 801CD8D0: Draw three nine-digit numbers (leading zeros blank) at their three positions. */
+void item_shop_layout_gold_numbers(u32 first, u32 second, u32 third) {
     s32 i;
 
-    func_801C50E8(first);
+    item_shop_split_digits(first);
     menu_state_current->details->digits1_count = 0;
     for (i = 0; i < 9; i++) {
         if (menu_state_current->digits[i] != 0xFF) {
             menu_state_current->details->digits1_count +=
                 sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i],
                               menu_state_current->details->digits1 + menu_state_current->details->digits1_count * 2,
-                              menu_state_current->buffer_index, i * 8 + D_801D2248, D_801D224C, 0x1000);
+                              menu_state_current->buffer_index, i * 8 + item_shop_gold_x, item_shop_gold_y, 0x1000);
         }
     }
     menu_state_current->details->digits1_buffer = menu_state_current->buffer_index;
-    func_801C50E8(second);
+    item_shop_split_digits(second);
     menu_state_current->details->digits2_count = 0;
     for (i = 0; i < 9; i++) {
         if (menu_state_current->digits[i] != 0xFF) {
             menu_state_current->details->digits2_count +=
                 sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i],
                               menu_state_current->details->digits2 + menu_state_current->details->digits2_count * 2,
-                              menu_state_current->buffer_index, i * 8 + D_801D2250, D_801D2254, 0x1000);
+                              menu_state_current->buffer_index, i * 8 + item_shop_total_x, item_shop_total_y, 0x1000);
         }
     }
     menu_state_current->details->digits2_buffer = menu_state_current->buffer_index;
-    func_801C50E8(third);
+    item_shop_split_digits(third);
     menu_state_current->details->digits3_count = 0;
     for (i = 0; i < 9; i++) {
         if (menu_state_current->digits[i] != 0xFF) {
             menu_state_current->details->digits3_count +=
                 sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i],
                               menu_state_current->details->digits3 + menu_state_current->details->digits3_count * 2,
-                              menu_state_current->buffer_index, i * 8 + D_801D2258, D_801D225C, 0x1000);
+                              menu_state_current->buffer_index, i * 8 + item_shop_new_gold_x, item_shop_new_gold_y, 0x1000);
         }
     }
     menu_state_current->details->digits3_buffer = menu_state_current->buffer_index;
     menu_state_current->details->digits_shown = 1;
 }
 
-/* Party bits of the available members holding item `item` in their gear (kind 0) or accessories (kind 1). */
-u16 func_801CDBA0(u8 item, u8 kind) {
+/* 801CDBA0: Party bits of the available members holding item `item` in their gear (kind 0) or accessories (kind 1). */
+u16 item_shop_find_item_holders(u8 item, u8 kind) {
     u16 members;
     u8 found;
     s32 i;
@@ -302,19 +302,19 @@ u16 func_801CDBA0(u8 item, u8 kind) {
                 }
             }
             if (found) {
-                members |= func_801C50CC(i);
+                members |= item_shop_get_bit_mask(i);
             }
         }
     }
     return members;
 }
 
-/*
+/* 801CDD14
  * Draw the eight visible rows of the shop's stock from entry `top`: each
  * item's name and price (dimmed, `dims[row]` 0, when it costs more than
  * `gold`) and, when some are chosen, "x" and the amount.
  */
-void func_801CDD14(s32 top, s32 gold, u8 *dims) {
+void item_shop_layout_stock_rows(s32 top, s32 gold, u8 *dims) {
     RECT rect;
     u8 codes[14];
     u8 text[16];
@@ -384,8 +384,8 @@ void func_801CDD14(s32 top, s32 gold, u8 *dims) {
             rect.w = 0x28;
             rect.h = 13;
             LoadImage(&rect, (u_long *)pixels);
-            func_801C5A7C(&menu_state_current->details->names_a[row], row, 0x80, dims[row] + 1);
-            func_801C6E90(menu_state_current->details->names_a[row].verts, 0x24, row * 13 + 0x32,
+            item_shop_label_init_quads(&menu_state_current->details->names_a[row], row, 0x80, dims[row] + 1);
+            item_shop_set_rect_verts(menu_state_current->details->names_a[row].verts, 0x24, row * 13 + 0x32,
                           menu_state_current->details->names_a[row].width, 13);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = (row / 2) * 13 + 0x80;
@@ -393,8 +393,8 @@ void func_801CDD14(s32 top, s32 gold, u8 *dims) {
             rect.h = 13;
             LoadImage(&rect, (u_long *)pixels);
             DrawSync(0);
-            func_801C5A7C(&menu_state_current->details->names_b[row], row, 0x80, dims[row] + 2);
-            func_801C6E90(menu_state_current->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
+            item_shop_label_init_quads(&menu_state_current->details->names_b[row], row, 0x80, dims[row] + 2);
+            item_shop_set_rect_verts(menu_state_current->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
                           menu_state_current->details->names_b[row].width, 13);
             menu_state_current->details->names_a[row].buffer = menu_state_current->buffer_index;
             menu_state_current->details->names_a[row].buffer = menu_state_current->buffer_index;
@@ -423,14 +423,14 @@ void func_801CDD14(s32 top, s32 gold, u8 *dims) {
     heap_free(pixels);
 }
 
-/*
+/* 801CE480
  * Compare member `member`'s attack (kind 0) or defence (kind 1) with item
  * `id` equipped: `diffs` gets the two differences and `worse` whether each
  * would drop. Member 4 equips four armour slots from the equipment table;
  * accessories of one group replace each other, otherwise the weakest is
  * replaced.
  */
-void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
+void item_shop_compare_equipped_stats(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
     s16 after[2];
     s16 before[2];
     EquipInfo *current;
@@ -516,8 +516,8 @@ void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
     }
 }
 
-/* The count held of item `id` in an inventory of `n` ids and counts (0 if absent). */
-u16 func_801CE8D8(u8 *ids, u8 *counts, s32 n, u8 id) {
+/* 801CE8D8: The count held of item `id` in an inventory of `n` ids and counts (0 if absent). */
+u16 item_shop_find_inventory_count(u8 *ids, u8 *counts, s32 n, u8 id) {
     u8 count;
     s32 i;
 
@@ -531,8 +531,8 @@ u16 func_801CE8D8(u8 *ids, u8 *counts, s32 n, u8 id) {
     return count;
 }
 
-/* Show how many of item `id` the party holds in inventory `kind` (label beside the list). */
-void func_801CE91C(u8 kind, u8 id) {
+/* 801CE91C: Show how many of item `id` the party holds in inventory `kind` (label beside the list). */
+void item_shop_show_held_count(u8 kind, u8 id) {
     RECT rect;
     u8 codes[4];
     u8 text[8];
@@ -559,8 +559,8 @@ void func_801CE91C(u8 kind, u8 id) {
         n = 150;
         break;
     }
-    count = func_801CE8D8(ids, counts, n, id);
-    D_801D2260 = count;
+    count = item_shop_find_inventory_count(ids, counts, n, id);
+    item_shop_held_count = count;
     pixels = heap_alloc(0x3F6, 0);
     codes[1] = 0;
     codes[3] = 0;
@@ -578,21 +578,21 @@ void func_801CE91C(u8 kind, u8 id) {
     rect.h = 13;
     LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
-    func_801C5A7C(&menu_state_current->details->label45B0, 9, 0x80, 0x82);
-    func_801C6E90(menu_state_current->details->label45B0.verts, 0xF8, 0x8E, menu_state_current->details->label45B0.width,
+    item_shop_label_init_quads(&menu_state_current->details->label45B0, 9, 0x80, 0x82);
+    item_shop_set_rect_verts(menu_state_current->details->label45B0.verts, 0xF8, 0x8E, menu_state_current->details->label45B0.width,
                   13);
     menu_state_current->details->label45B0.buffer = menu_state_current->buffer_index;
     menu_state_current->details->label45B0_shown = 1;
     heap_free(pixels);
 }
 
-/*
+/* 801CEB3C
  * Show stock entry `top + row` (`dims` unused): its name label, the bars of the members who
  * can equip it, the marks of those holding it and, for each member who can,
  * the attack and defence change (tinted by whether it drops), then how many
  * the party holds. Returns its price.
  */
-u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
+u32 item_shop_show_stock_entry(s32 row, s32 top, u8 *dims) {
     RECT rect;
     s32 diffs[2];
     u8 worse[2];
@@ -632,17 +632,17 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
         price = menu_state_current->tables->items[id].price;
         break;
     }
-    holders = func_801CDBA0(id, kind);
+    holders = item_shop_find_item_holders(id, kind);
     rect.x = 0x140;
     rect.y = 0x4E;
     rect.w = 0x3C;
     rect.h = 13;
     LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
-    func_801C5A7C(&menu_state_current->details->label4430, 0, 0, 0);
-    func_801C5040(&menu_state_current->details->label4430.polys[menu_state_current->buffer_index], 0x2C, 0x12, 0, 0x4E,
+    item_shop_label_init_quads(&menu_state_current->details->label4430, 0, 0, 0);
+    item_shop_quad_place(&menu_state_current->details->label4430.polys[menu_state_current->buffer_index], 0x2C, 0x12, 0, 0x4E,
                   menu_state_current->details->label4430.width, 13);
-    func_801C6E90(menu_state_current->details->label4430.verts, 0x2C, 0x12, menu_state_current->details->label4430.width, 13);
+    item_shop_set_rect_verts(menu_state_current->details->label4430.verts, 0x2C, 0x12, menu_state_current->details->label4430.width, 13);
     menu_state_current->details->label4430.buffer = menu_state_current->buffer_index;
     heap_free(pixels);
     if (id) {
@@ -655,25 +655,25 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
     menu_state_current->details->group2D0_count = 0;
     for (; i < 16; i++) {
         if (menu_state_current->present[i] != 0) {
-            if (func_801C50B0(users, i)) {
+            if (item_shop_test_bit(users, i)) {
                 menu_state_current->details->bar_shown[shown] = 1;
             } else {
                 menu_state_current->details->bar_shown[shown] = 0;
             }
-            if (func_801C50B0(holders, i)) {
+            if (item_shop_test_bit(holders, i)) {
                 menu_state_current->details->group2D0_count +=
                     sprite_sheet_draw_scaled(menu_state_current->sheet, 0xE,
                                   &menu_state_current->details->group2D0[menu_state_current->details->group2D0_count * 2],
-                                  menu_state_current->buffer_index, D_801D21CC[shown] + 0xE, 0xB4, 0x1000);
+                                  menu_state_current->buffer_index, item_shop_portrait_x_table[shown] + 0xE, 0xB4, 0x1000);
             }
             menu_state_current->details->cells_a_count[shown] = 0;
             menu_state_current->details->cells_b_count[shown] = 0;
             if (menu_state_current->details->bar_shown[shown] != 0) {
                 diffs[1] = 0;
                 diffs[0] = 0;
-                func_801CE480(diffs, worse, id, kind, i);
+                item_shop_compare_equipped_stats(diffs, worse, id, kind, i);
                 if (diffs[0] != 0) {
-                    func_801C50E8(diffs[0]);
+                    item_shop_split_digits(diffs[0]);
                     for (k = 0, xa = shown * 26 + 0x49; k < 3; k++) {
                         if (menu_state_current->digits[k + 6] != 0xFF) {
                             menu_state_current->details->cells_a_count[shown] += sprite_sheet_draw_scaled(
@@ -682,12 +682,12 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
                                 menu_state_current->buffer_index, xa + k * 8, 0xBE, 0x1000);
                         }
                     }
-                    func_801CD404(menu_state_current->details->cells_a_count[shown], menu_state_current->details->cells_a[shown],
+                    item_shop_tint_quads(menu_state_current->details->cells_a_count[shown], menu_state_current->details->cells_a[shown],
                                   worse[0]);
                     menu_state_current->details->cells_a_buffer[shown] = menu_state_current->buffer_index;
                 }
                 if (diffs[1] != 0) {
-                    func_801C50E8(diffs[1]);
+                    item_shop_split_digits(diffs[1]);
                     for (k = 0, xb = shown * 26 + 0x49; k < 3; k++) {
                         if (menu_state_current->digits[k + 6] != 0xFF) {
                             menu_state_current->details->cells_b_count[shown] += sprite_sheet_draw_scaled(
@@ -696,7 +696,7 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
                                 menu_state_current->buffer_index, xb + k * 8, 0xC6, 0x1000);
                         }
                     }
-                    func_801CD404(menu_state_current->details->cells_b_count[shown], menu_state_current->details->cells_b[shown],
+                    item_shop_tint_quads(menu_state_current->details->cells_b_count[shown], menu_state_current->details->cells_b[shown],
                                   worse[1]);
                     menu_state_current->details->cells_b_buffer[shown] = menu_state_current->buffer_index;
                 }
@@ -705,22 +705,22 @@ u32 func_801CEB3C(s32 row, s32 top, u8 *dims) {
         }
     }
     menu_state_current->details->group2D0_buffer = menu_state_current->buffer_index;
-    func_801CE91C(kind, id);
+    item_shop_show_held_count(kind, id);
     return price;
 }
 
-/*
+/* 801CF2A0
  * Set the party's gold (capped at 9999999) and put the bought amounts into
  * the inventories: added to an item already held (at most 99), otherwise
  * into the first free slot.
  */
-void func_801CF2A0(u32 gold) {
+void item_shop_settle_purchase(u32 gold) {
     u32 *party_gold;
     s32 i;
     s32 j;
     u8 new_item;
 
-    func_801CAC7C(0xD1);
+    item_shop_play_sound(0xD1);
     party_gold = &game_data.gold;
     *party_gold = gold;
     if (gold > 9999999) {
@@ -794,12 +794,12 @@ void func_801CF2A0(u32 gold) {
     }
 }
 
-/* Draw a nine-digit number (the party's gold) at (6bh, 54h). */
-void func_801CF678(u32 value) {
+/* 801CF678: Draw a nine-digit number (the party's gold) at (6bh, 54h). */
+void item_shop_layout_notice_total(u32 value) {
     s32 i;
     s32 x;
 
-    func_801C50E8(value);
+    item_shop_split_digits(value);
     i = 0;
     x = 0x6B;
     menu_state_current->details->group1220_count = 0;
@@ -815,12 +815,12 @@ void func_801CF678(u32 value) {
     menu_state_current->flags->unknown5a[1] = 2;
 }
 
-/*
+/* 801CF780
  * Command 2 (buy): choose amounts of the shop's stock, eight rows at a time,
  * with the running total and the gold left; confirming settles the
  * purchase. Returns 1 (the command screen is redrawn).
  */
-u8 func_801CF780(void) {
+u8 item_shop_buy_command_run(void) {
     u8 dims[8];
     u8 first;
     u8 running;
@@ -847,51 +847,51 @@ u8 func_801CF780(void) {
     total = 0;
     new_gold = gold;
     for (i = 0; i < 11; i++) {
-        func_801CCE1C(menu_state_current->tables, i);
+        item_shop_compute_character_stats(menu_state_current->tables, i);
         menu_state_current->details->attack[i] = menu_state_current->tables->stats[0];
         menu_state_current->details->defense[i] = menu_state_current->tables->stats[2];
     }
     bzero(menu_state_current->details->amounts, 0x30);
     menu_state_current->images->dim = 1;
-    func_801C70FC(0);
+    item_shop_list_cursor_alloc(0);
     while (running) {
-        func_801CB014();
+        item_shop_run_frame();
         if (top != last_top || redraw) {
-            func_801CDD14(top, new_gold, dims);
-            func_801C6F30(0xC, 0x32, 0x3C, D_801D1F50, top);
+            item_shop_layout_stock_rows(top, new_gold, dims);
+            item_shop_scroll_bar_show(0xC, 0x32, 0x3C, item_shop_stock_count, top);
         }
         if (row != last_row || top != last_top) {
-            price = func_801CEB3C(row, top, dims);
+            price = item_shop_show_stock_entry(row, top, dims);
             last_row = row;
             last_top = top;
             menu_state_current->flags->unknown5a[0] = 1;
         }
-        func_801C7178(row, top, 0, 0);
+        item_shop_list_cursor_place(row, top, 0, 0);
         if (first) {
-            func_801CBC88(1, 2, menu_state_current->list_labels, D_801D1FD4, menu_state_current->flags->list_labels_shown);
-            func_801CBCF0(2, menu_state_current->list_labels, D_801D1FD4, D_801D1FE8, menu_state_current->flags->list_labels_shown, 0,
+            item_shop_label_render_or_clear_shown(1, 2, menu_state_current->list_labels, item_shop_buy_label_ids, menu_state_current->flags->list_labels_shown);
+            item_shop_label_place(2, menu_state_current->list_labels, item_shop_buy_label_ids, item_shop_sell_label_x_offsets, menu_state_current->flags->list_labels_shown, 0,
                           0, 1);
             menu_state_current->flags->list_labels_shown[0] = 0;
-            func_801C896C(2, 0xC, 0x2A, 0xC4, 0x74, 0, 1, 4, 1);
-            func_801C896C(3, 0x20, 0xE, 0xFC, 0x14, 0, 1, 4, 0);
-            func_801C896C(5, 0xE0, 0x7A, 0x40, 0x24, 0, 1, 4, 0);
-            func_801CB340();
-            func_801CD5D0();
-            func_801CD6F8();
+            item_shop_panel_open(2, 0xC, 0x2A, 0xC4, 0x74, 0, 1, 4, 1);
+            item_shop_panel_open(3, 0x20, 0xE, 0xFC, 0x14, 0, 1, 4, 0);
+            item_shop_panel_open(5, 0xE0, 0x7A, 0x40, 0x24, 0, 1, 4, 0);
+            item_shop_view_start_zoom_in();
+            item_shop_reveal_portraits();
+            item_shop_layout_buy_headings();
             first = 0;
             while (menu_state_current->view_motion != 0) {
-                func_801CB014();
+                item_shop_run_frame();
             }
             menu_state_current->flags->list_labels_shown[0] = 1;
         }
         if (redraw) {
-            func_801CD8D0(gold, total, new_gold);
+            item_shop_layout_gold_numbers(gold, total, new_gold);
             redraw = 0;
         }
         switch (menu_state_current->input) {
         case 4:
             if (total != 0) {
-                func_801CAC7C(2);
+                item_shop_play_sound(2);
                 menu_state_current->flags->unknown5a[0] = 0;
                 menu_state_current->flags->panels_shown[2] = 0;
                 menu_state_current->flags->panels_shown[3] = 0;
@@ -900,10 +900,10 @@ u8 func_801CF780(void) {
                 menu_state_current->flags->cursors_shown[0] = 0;
                 running = 0;
                 menu_state_current->flags->list_labels_shown[0] = 0;
-                func_801CB13C(0);
-                func_801CF678(total);
-                if (func_801CBA50(0x8F, 0xFF, 1)) {
-                    func_801CF2A0(new_gold);
+                item_shop_markers_open(0);
+                item_shop_layout_notice_total(total);
+                if (item_shop_notice_ask_yes_no(0x8F, 0xFF, 1)) {
+                    item_shop_settle_purchase(new_gold);
                 } else {
                     running = 1;
                     menu_state_current->flags->panels_shown[2] = 1;
@@ -915,9 +915,9 @@ u8 func_801CF780(void) {
                     last_row = 0xFF;
                     menu_state_current->flags->list_labels_shown[0] = 1;
                 }
-                func_801CB2FC();
+                item_shop_markers_close();
             } else {
-                func_801CAC7C(4);
+                item_shop_play_sound(4);
             }
             break;
         case 5:
@@ -930,8 +930,8 @@ u8 func_801CF780(void) {
                 menu_state_current->flags->panels_shown[5] = 0;
                 menu_state_current->flags->scroll_shown = 0;
                 menu_state_current->flags->cursors_shown[0] = 0;
-                func_801CB13C(0);
-                if (!func_801CBA50(0x8C, 0xFF, 1)) {
+                item_shop_markers_open(0);
+                if (!item_shop_notice_ask_yes_no(0x8C, 0xFF, 1)) {
                     running = 1;
                     menu_state_current->flags->panels_shown[2] = 1;
                     menu_state_current->flags->panels_shown[3] = 1;
@@ -942,16 +942,16 @@ u8 func_801CF780(void) {
                     last_row = 0xFF;
                     menu_state_current->flags->list_labels_shown[0] = 1;
                 }
-                func_801CB2FC();
+                item_shop_markers_close();
             }
-            func_801CB014();
+            item_shop_run_frame();
             break;
         case 1:
             row++;
             if (row >= 8) {
                 row = 7;
                 top++;
-                if (D_801D1F50 - 8 < top) {
+                if (item_shop_stock_count - 8 < top) {
                     top--;
                 }
             }
@@ -967,7 +967,7 @@ u8 func_801CF780(void) {
             }
             break;
         case 0:
-            if (dims[row] != 0 && menu_state_current->details->amounts[top + row] + (held_next = D_801D2260 + 1) < 100) {
+            if (dims[row] != 0 && menu_state_current->details->amounts[top + row] + (held_next = item_shop_held_count + 1) < 100) {
                 total += price;
                 new_gold -= price;
                 menu_state_current->details->amounts[top + row] += 1;
@@ -988,12 +988,12 @@ u8 func_801CF780(void) {
     return 1;
 }
 
-/*
+/* 801CFF58
  * Show item `id` of kind `kind` (0 equipment, 1 accessory, 2 item): its name and
  * sell price (half the table price) labels, the bars of the members who can
  * equip it and the marks of those holding it. Returns the sell price.
  */
-u32 func_801CFF58(u8 id, u8 kind) {
+u32 item_shop_show_sell_entry(u8 id, u8 kind) {
     RECT rect;
     u8 unused[16]; /* unused in the original; reserves 16 bytes */
     u8 codes[14];
@@ -1037,7 +1037,7 @@ u32 func_801CFF58(u8 id, u8 kind) {
         value = price;
         break;
     }
-    holders = func_801CDBA0(id, kind);
+    holders = item_shop_find_item_holders(id, kind);
     started = 0;
     for (i = 0, j = 4; j > 0; i++, j--) {
         digit = value / divisors[j];
@@ -1058,15 +1058,15 @@ u32 func_801CFF58(u8 id, u8 kind) {
     rect.h = 13;
     LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
-    func_801C5A7C(&menu_state_current->details->label4430, 0, 0, 0);
-    func_801C5A7C(&menu_state_current->details->label44B0, 0, 0, 0);
+    item_shop_label_init_quads(&menu_state_current->details->label4430, 0, 0, 0);
+    item_shop_label_init_quads(&menu_state_current->details->label44B0, 0, 0, 0);
     menu_state_current->details->label44B0.polys[menu_state_current->buffer_index].clut = text_plane1_clut;
-    func_801C5040(&menu_state_current->details->label4430.polys[menu_state_current->buffer_index], 0x2C, 0x12, 0, 0x4E,
+    item_shop_quad_place(&menu_state_current->details->label4430.polys[menu_state_current->buffer_index], 0x2C, 0x12, 0, 0x4E,
                   menu_state_current->details->label4430.width, 13);
-    func_801C5040(&menu_state_current->details->label44B0.polys[menu_state_current->buffer_index], 0x98, 0x12, 0, 0x4E,
+    item_shop_quad_place(&menu_state_current->details->label44B0.polys[menu_state_current->buffer_index], 0x98, 0x12, 0, 0x4E,
                   menu_state_current->details->label44B0.width, 13);
-    func_801C6E90(menu_state_current->details->label4430.verts, 0x2C, 0x12, menu_state_current->details->label4430.width, 13);
-    func_801C6E90(menu_state_current->details->label44B0.verts, 0x98, 0x12, menu_state_current->details->label44B0.width, 13);
+    item_shop_set_rect_verts(menu_state_current->details->label4430.verts, 0x2C, 0x12, menu_state_current->details->label4430.width, 13);
+    item_shop_set_rect_verts(menu_state_current->details->label44B0.verts, 0x98, 0x12, menu_state_current->details->label44B0.width, 13);
     menu_state_current->details->label4430.buffer = menu_state_current->buffer_index;
     menu_state_current->details->label44B0.buffer = menu_state_current->buffer_index;
     heap_free(pixels);
@@ -1082,16 +1082,16 @@ u32 func_801CFF58(u8 id, u8 kind) {
     menu_state_current->details->group2D0_count = 0;
     for (; i < 16; i++) {
         if (menu_state_current->present[i] != 0) {
-            if (func_801C50B0(users, i)) {
+            if (item_shop_test_bit(users, i)) {
                 menu_state_current->details->bar_shown[j] = 1;
             } else {
                 menu_state_current->details->bar_shown[j] = 0;
             }
-            if (func_801C50B0(holders, i)) {
+            if (item_shop_test_bit(holders, i)) {
                 menu_state_current->details->group2D0_count +=
                     sprite_sheet_draw_scaled(menu_state_current->sheet, 0xE,
                                   &menu_state_current->details->group2D0[menu_state_current->details->group2D0_count * 2],
-                                  menu_state_current->buffer_index, D_801D21CC[j] + 0xE, 0xB4, 0x1000);
+                                  menu_state_current->buffer_index, item_shop_portrait_x_table[j] + 0xE, 0xB4, 0x1000);
             }
             j++;
         }
@@ -1100,11 +1100,11 @@ u32 func_801CFF58(u8 id, u8 kind) {
     return price;
 }
 
-/*
+/* 801D05BC
  * Draw the eight visible rows of a list from entry `top`: each item's name,
  * the count held and, when some are chosen, "x" and the chosen count.
  */
-void func_801D05BC(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
+void item_shop_layout_sell_rows(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
     RECT rect;
     u8 codes[14];
     u8 text[16];
@@ -1162,8 +1162,8 @@ void func_801D05BC(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
             rect.w = 0x28;
             rect.h = 13;
             LoadImage(&rect, (u_long *)pixels);
-            func_801C5A7C(&menu_state_current->details->names_a[row], row, 0x80, 0x81);
-            func_801C6E90(menu_state_current->details->names_a[row].verts, 0x24, row * 13 + 0x32,
+            item_shop_label_init_quads(&menu_state_current->details->names_a[row], row, 0x80, 0x81);
+            item_shop_set_rect_verts(menu_state_current->details->names_a[row].verts, 0x24, row * 13 + 0x32,
                           menu_state_current->details->names_a[row].width, 13);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = (row / 2) * 13 + 0x80;
@@ -1171,8 +1171,8 @@ void func_801D05BC(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
             rect.h = 13;
             LoadImage(&rect, (u_long *)pixels);
             DrawSync(0);
-            func_801C5A7C(&menu_state_current->details->names_b[row], row, 0x80, 0x82);
-            func_801C6E90(menu_state_current->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
+            item_shop_label_init_quads(&menu_state_current->details->names_b[row], row, 0x80, 0x82);
+            item_shop_set_rect_verts(menu_state_current->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
                           menu_state_current->details->names_b[row].width, 13);
             menu_state_current->details->names_a[row].buffer = menu_state_current->buffer_index;
             menu_state_current->details->names_a[row].buffer = menu_state_current->buffer_index;
@@ -1201,18 +1201,18 @@ void func_801D05BC(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
     heap_free(pixels);
 }
 
-/*
+/* 801D0C18
  * Set the party's gold (capped at 9999999) and take the sold items away: with
  * `inventory`, the chosen amounts out of an inventory's counts; otherwise
  * each sold item (kind 0 gear, 1 accessory) out of member `member`'s equipment.
  */
-void func_801D0C18(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_counts, u8 *kinds,
+void item_shop_settle_sale(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_counts, u8 *kinds,
                    u8 inventory, u8 member) {
     u32 *party_gold;
     s32 i;
     s32 j;
 
-    func_801CAC7C(0xD1);
+    item_shop_play_sound(0xD1);
     party_gold = &game_data.gold;
     *party_gold = gold;
     if (gold > 9999999) {
@@ -1261,14 +1261,14 @@ void func_801D0C18(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_c
     }
 }
 
-/*
+/* 801D0E68
  * The sell list: choose how many of each of `n` held items (ids and counts)
  * to sell, eight rows at a time, with the running total and the gold after
  * the sale; confirming settles the sale. Items of kind 2 flagged unsellable
  * are left out. With `same_kind` every item is of kind `kind`, otherwise
  * `kinds` gives each one's kind; `member` is the member selling equipment.
  */
-void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds, u8 member) {
+void item_shop_sell_list_run(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds, u8 member) {
     u8 running = 1;
     u8 first = 1;
     u8 redraw = 1;
@@ -1325,51 +1325,51 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
             }
         }
     }
-    func_801C70FC(0);
+    item_shop_list_cursor_alloc(0);
     while (running) {
-        func_801CB014();
+        item_shop_run_frame();
         if (top != last_top || redraw) {
-            func_801D05BC(top, sell_ids, sell_kinds, chosen, held);
-            func_801C6F30(0xC, 0x32, 0x3C, count, top);
+            item_shop_layout_sell_rows(top, sell_ids, sell_kinds, chosen, held);
+            item_shop_scroll_bar_show(0xC, 0x32, 0x3C, count, top);
         }
         if (row != last_row || top != last_top) {
             last_row = row;
-            price = func_801CFF58(sell_ids[top + row], sell_kinds[top + row]);
+            price = item_shop_show_sell_entry(sell_ids[top + row], sell_kinds[top + row]);
             last_top = top;
             menu_state_current->flags->unknown5a[0] = 1;
         }
-        func_801C7178(row, top, 0, 0);
+        item_shop_list_cursor_place(row, top, 0, 0);
         if (first) {
-            func_801C896C(2, 0xC, 0x2A, 0xC4, 0x74, 0, 1, 4, 1);
-            func_801C896C(3, 0x20, 0xE, 0xFC, 0x14, 0, 1, 4, 0);
-            func_801CB340();
+            item_shop_panel_open(2, 0xC, 0x2A, 0xC4, 0x74, 0, 1, 4, 1);
+            item_shop_panel_open(3, 0x20, 0xE, 0xFC, 0x14, 0, 1, 4, 0);
+            item_shop_view_start_zoom_in();
             if (same_kind) {
-                func_801CD5D0();
+                item_shop_reveal_portraits();
             }
             while (menu_state_current->view_motion != 0) {
-                func_801CB014();
+                item_shop_run_frame();
             }
-            func_801CD7E4();
+            item_shop_layout_sell_headings();
             first = 0;
         }
         if (redraw) {
-            func_801CD8D0(gold, total, new_gold);
+            item_shop_layout_gold_numbers(gold, total, new_gold);
             redraw = 0;
         }
         switch (menu_state_current->input) {
         case 4:
             if (total != 0) {
-                func_801CAC7C(2);
+                item_shop_play_sound(2);
                 menu_state_current->flags->unknown5a[0] = 0;
                 menu_state_current->flags->panels_shown[2] = 0;
                 menu_state_current->flags->panels_shown[3] = 0;
                 menu_state_current->flags->scroll_shown = 0;
                 running = 0;
                 menu_state_current->flags->cursors_shown[0] = 0;
-                func_801CB13C(0);
-                func_801CF678(total);
-                if (func_801CBA50(0x95, 0xFF, 1)) {
-                    func_801D0C18(new_gold, sell_ids, chosen, n, ids, counts, sell_kinds, same_kind, member);
+                item_shop_markers_open(0);
+                item_shop_layout_notice_total(total);
+                if (item_shop_notice_ask_yes_no(0x95, 0xFF, 1)) {
+                    item_shop_settle_sale(new_gold, sell_ids, chosen, n, ids, counts, sell_kinds, same_kind, member);
                 } else {
                     running = 1;
                     menu_state_current->flags->panels_shown[2] = 1;
@@ -1379,9 +1379,9 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
                     last_row = 0xFF;
                     menu_state_current->flags->cursors_shown[0] = running;
                 }
-                func_801CB2FC();
+                item_shop_markers_close();
             } else {
-                func_801CAC7C(4);
+                item_shop_play_sound(4);
             }
             break;
         case 5:
@@ -1392,8 +1392,8 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
                 menu_state_current->flags->panels_shown[3] = 0;
                 menu_state_current->flags->scroll_shown = 0;
                 menu_state_current->flags->cursors_shown[0] = 0;
-                func_801CB13C(0);
-                if (!func_801CBA50(0x92, 0xFF, 1)) {
+                item_shop_markers_open(0);
+                if (!item_shop_notice_ask_yes_no(0x92, 0xFF, 1)) {
                     running = 1;
                     menu_state_current->flags->panels_shown[2] = 1;
                     menu_state_current->flags->panels_shown[3] = 1;
@@ -1402,7 +1402,7 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
                     last_row = 0xFF;
                     menu_state_current->flags->cursors_shown[0] = running;
                 }
-                func_801CB2FC();
+                item_shop_markers_close();
             }
             break;
         case 1:
@@ -1448,11 +1448,11 @@ void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds,
     }
 }
 
-/*
+/* 801D1658
  * Sell list 0: choose a party member by portrait, then sell from that
  * member's accessories. Returns 0 when cancelled, 1 when chosen.
  */
-u8 func_801D1658(void) {
+u8 item_shop_member_sell_list_run(void) {
     u8 ids[8];
     u8 amounts[8];
     u8 kinds[8];
@@ -1466,16 +1466,16 @@ u8 func_801D1658(void) {
     cursor = 0;
     shown = 1;
     result = 2;
-    func_801CD5D0();
-    func_801CB384(0x98);
+    item_shop_reveal_portraits();
+    item_shop_notice_open(0x98);
     do {
-        func_801CB014();
+        item_shop_run_frame();
         switch (menu_state_current->input) {
         case 5:
             result = 0;
             break;
         case 4:
-            func_801CAC7C(2);
+            item_shop_play_sound(2);
             result = 1;
             break;
         case 2:
@@ -1497,7 +1497,7 @@ u8 func_801D1658(void) {
             shown = cursor;
         }
     } while (result == 2);
-    func_801CB7F4();
+    item_shop_notice_close();
     if (result != 0) {
         member = 0;
         while (cursor != 0) {
@@ -1518,28 +1518,28 @@ u8 func_801D1658(void) {
                 n++;
             }
         }
-        func_801D0E68(8, ids, amounts, 1, 0, kinds, member);
+        item_shop_sell_list_run(8, ids, amounts, 1, 0, kinds, member);
     }
     return result;
 }
 
-/* Run the sell list for inventory 1 (200 entries). */
-void func_801D18A8(void) {
-    func_801D0E68(200, game_data.accessoryIds, game_data.accessoryIds - 200, 1, 1, game_data.accessoryIds - 200, 0);
+/* 801D18A8: Run the sell list for inventory 1 (200 entries). */
+void item_shop_accessory_sell_list_run(void) {
+    item_shop_sell_list_run(200, game_data.accessoryIds, game_data.accessoryIds - 200, 1, 1, game_data.accessoryIds - 200, 0);
 }
 
-/* Run the sell list for inventory 0 (100 entries). */
-void func_801D18E8(void) {
-    func_801D0E68(100, game_data.weaponIds, game_data.weaponIds - 100, 0, 1, game_data.weaponIds - 100, 0);
+/* 801D18E8: Run the sell list for inventory 0 (100 entries). */
+void item_shop_weapon_sell_list_run(void) {
+    item_shop_sell_list_run(100, game_data.weaponIds, game_data.weaponIds - 100, 0, 1, game_data.weaponIds - 100, 0);
 }
 
-/* Run the sell list for inventory 2 (150 entries). */
-void func_801D1928(void) {
-    func_801D0E68(150, game_data.itemIds, game_data.itemIds - 150, 2, 1, game_data.itemIds - 150, 0);
+/* 801D1928: Run the sell list for inventory 2 (150 entries). */
+void item_shop_item_sell_list_run(void) {
+    item_shop_sell_list_run(150, game_data.itemIds, game_data.itemIds - 150, 2, 1, game_data.itemIds - 150, 0);
 }
 
-/* Hide the shop list's packets; with `close` also close its panels (5 too with `all`), scroll bar and marker. */
-void func_801D1968(u8 close, u8 all) {
+/* 801D1968: Hide the shop list's packets; with `close` also close its panels (5 too with `all`), scroll bar and marker. */
+void item_shop_hide_details(u8 close, u8 all) {
     s32 i;
 
     menu_state_current->flags->unknown5a[0] = 0;
@@ -1559,48 +1559,48 @@ void func_801D1968(u8 close, u8 all) {
         menu_state_current->details->row_count[i] = 0;
     }
     if (close) {
-        func_801C88E0(2);
-        func_801C88E0(3);
+        item_shop_panel_close(2);
+        item_shop_panel_close(3);
         if (all) {
-            func_801C88E0(5);
+            item_shop_panel_close(5);
         }
-        func_801C70B8();
-        func_801C7314(0);
+        item_shop_scroll_bar_hide();
+        item_shop_list_cursor_free(0);
     }
 }
 
-/* Run the chosen sell list (0 a member's equipment, 1-3 the three inventories), then restore the list labels. */
-void func_801D1B18(void) {
+/* 801D1B18: Run the chosen sell list (0 a member's equipment, 1-3 the three inventories), then restore the list labels. */
+void item_shop_chosen_sell_list_run(void) {
     u8 close;
 
     menu_state_current->flags->sprite_shown = 0;
     menu_state_current->flags->cursor_shown = 0;
     menu_state_current->flags->lists_shown = 0;
-    func_801CBC88(0, 4, menu_state_current->list_labels, D_801D1FD0, menu_state_current->flags->list_labels_shown);
+    item_shop_label_render_or_clear_shown(0, 4, menu_state_current->list_labels, item_shop_sell_label_ids, menu_state_current->flags->list_labels_shown);
     close = 1;
     switch (menu_state_current->choice) {
     case 0:
-        close = func_801D1658();
+        close = item_shop_member_sell_list_run();
         break;
     case 1:
-        func_801D18A8();
+        item_shop_accessory_sell_list_run();
         break;
     case 2:
-        func_801D18E8();
+        item_shop_weapon_sell_list_run();
         break;
     case 3:
-        func_801D1928();
+        item_shop_item_sell_list_run();
         break;
     }
-    func_801D1968(close, 0);
+    item_shop_hide_details(close, 0);
     menu_state_current->flags->lists_shown = 1;
     menu_state_current->flags->sprite_shown = 1;
     menu_state_current->flags->cursor_shown = 1;
-    func_801CBC88(1, 4, menu_state_current->list_labels, D_801D1FD0, menu_state_current->flags->list_labels_shown);
+    item_shop_label_render_or_clear_shown(1, 4, menu_state_current->list_labels, item_shop_sell_label_ids, menu_state_current->flags->list_labels_shown);
 }
 
-/* Command 1 (sell): choose one of the sell lists until cancelled. */
-u8 func_801D1CA4(void) {
+/* 801D1CA4: Command 1 (sell): choose one of the sell lists until cancelled. */
+u8 item_shop_sell_command_run(void) {
     u8 running;
     u8 first;
 
@@ -1609,23 +1609,23 @@ u8 func_801D1CA4(void) {
     menu_state_current->choice = 3;
     menu_state_current->choice_shown = 0xFF;
     do {
-        func_801CB014();
+        item_shop_run_frame();
         if (first) {
-            func_801CBC88(1, 4, menu_state_current->list_labels, D_801D1FD0, menu_state_current->flags->list_labels_shown);
+            item_shop_label_render_or_clear_shown(1, 4, menu_state_current->list_labels, item_shop_sell_label_ids, menu_state_current->flags->list_labels_shown);
             first = 0;
-            func_801CB340();
-            func_801CC278(0);
+            item_shop_view_start_zoom_in();
+            item_shop_choice_window_open(0);
         }
         if (menu_state_current->choice != menu_state_current->choice_shown) {
-            func_801CBCF0(4, menu_state_current->list_labels, D_801D1FD0, D_801D1FE8,
+            item_shop_label_place(4, menu_state_current->list_labels, item_shop_sell_label_ids, item_shop_sell_label_x_offsets,
                           menu_state_current->flags->list_labels_shown, menu_state_current->choice, 3, 0);
-            func_801CC720(0);
+            item_shop_choice_window_set_cursor(0);
             menu_state_current->choice_shown = menu_state_current->choice;
         }
         switch (menu_state_current->input) {
         case 4:
-            func_801CAC7C(2);
-            func_801D1B18();
+            item_shop_play_sound(2);
+            item_shop_chosen_sell_list_run();
             menu_state_current->choice_shown = 0xFF;
             break;
         case 5:
@@ -1647,17 +1647,17 @@ u8 func_801D1CA4(void) {
     } while (running);
     menu_state_current->flags->sprite_shown = 0;
     menu_state_current->flags->cursor_shown = 0;
-    func_801CBC88(0, 4, menu_state_current->list_labels, D_801D1FD0, menu_state_current->flags->list_labels_shown);
+    item_shop_label_render_or_clear_shown(0, 4, menu_state_current->list_labels, item_shop_sell_label_ids, menu_state_current->flags->list_labels_shown);
     return 1;
 }
 
-/* Follow-up after a command returns: command 2 redraws its screen. */
-void func_801D1F10(void) {
+/* 801D1F10: Follow-up after a command returns: command 2 redraws its screen. */
+void item_shop_finish_top_command(void) {
     switch (menu_state_current->cursor) {
     case 1:
         break;
     case 2:
-        func_801D1968(1, 1);
+        item_shop_hide_details(1, 1);
         break;
     }
 }

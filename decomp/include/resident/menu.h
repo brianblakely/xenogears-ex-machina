@@ -200,10 +200,10 @@ extern u32 *menu_state_big_ots[2]; /* the menu's large ordering tables, one per 
 
 /* Menu overlay (801c5000) entries. */
 void menu_main(void);
-void func_801CB0A8(void);
-void func_801CBDBC(void);
-void func_801CCD28(void);
-void func_801CE024(void);
+void member_change_main(void);
+void name_entry_main(void);
+void item_shop_main(void);
+void gear_shop_main(void);
 
 void menu_state_init_buffer(MenuBuffer *buffer);
 void menu_state_init_display(void);

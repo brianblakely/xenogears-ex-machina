@@ -23,43 +23,43 @@
 
 /* Headings: two sets of four sprites and the two alternative ones, with
  * their positions. */
-u8 D_801D6D08[8] = {0xF2, 0xDE, 0xF3, 0xE5, 0xE5, 0xE3, 0xE5, 0xE5};
-u8 D_801D6D10[2] = {0xF2, 0xE3};
-s32 D_801D6D14[8] = {150, 48, 48, 224, 208, 208, 208, 208}; /* x */
-s32 D_801D6D34[2] = {150, 224};
-s32 D_801D6D3C[8] = {158, 190, 198, 88, 72, 80, 72, 72}; /* y */
-s32 D_801D6D5C[2] = {158, 88};
+u8 gear_shop_buy_heading_images[8] = {0xF2, 0xDE, 0xF3, 0xE5, 0xE5, 0xE3, 0xE5, 0xE5}; /* 801D6D08 */
+u8 gear_shop_sell_heading_images[2] = {0xF2, 0xE3}; /* 801D6D10 */
+s32 gear_shop_buy_heading_x_table[8] = {150, 48, 48, 224, 208, 208, 208, 208}; /* 801D6D14: x */
+s32 gear_shop_sell_heading_x_table[2] = {150, 224}; /* 801D6D34 */
+s32 gear_shop_buy_heading_y_table[8] = {158, 190, 198, 88, 72, 80, 72, 72}; /* 801D6D3C: y */
+s32 gear_shop_sell_heading_y_table[2] = {158, 88}; /* 801D6D5C */
 /* The three nine-digit numbers' positions. */
-s32 D_801D6D64 = 232;
-s32 D_801D6D68 = 78;
-s32 D_801D6D6C = 232;
-s32 D_801D6D70 = 88;
-s32 D_801D6D74 = 232;
-s32 D_801D6D78 = 100;
+s32 gear_shop_gold_x = 232; /* 801D6D64 */
+s32 gear_shop_gold_y = 78; /* 801D6D68 */
+s32 gear_shop_total_x = 232; /* 801D6D6C */
+s32 gear_shop_total_y = 88; /* 801D6D70 */
+s32 gear_shop_new_gold_x = 232; /* 801D6D74 */
+s32 gear_shop_new_gold_y = 100; /* 801D6D78 */
 
 /* Per gear (17; gear 7 has no model values): the model's first file id,
  * variant and two model values. */
-u16 D_801D6D7C[17] = {
+u16 gear_shop_model_file_ids[17] = { /* 801D6D7C */
     0x6BA, 0x70E, 0x6BC, 0x6DC, 0x6D4, 0x6DE, 0x6E8, 0x702, 0x6E4,
     0x700, 0x6BA, 0x710, 0x712, 0x714, 0x716, 0x72C, 0x6DC,
 };
-u8 D_801D6DA0[17] = {13, 4, 12, 4, 7, 8, 10, 0, 13, 4, 1, 4, 4, 4, 4, 4, 4};
-u16 D_801D6DB4[17] = {
+u8 gear_shop_model_variants[17] = {13, 4, 12, 4, 7, 8, 10, 0, 13, 4, 1, 4, 4, 4, 4, 4, 4}; /* 801D6DA0 */
+u16 gear_shop_model_field60_values[17] = { /* 801D6DB4 */
     200, 200, 192, 192, 204, 192, 192, 0, 200,
     215, 200, 187, 187, 178, 178, 210, 192,
 };
-u16 D_801D6DD8[17] = {
+u16 gear_shop_model_field1c_values[17] = { /* 801D6DD8 */
     240, 215, 243, 244, 235, 231, 221, 0, 211,
     178, 250, 212, 195, 213, 189, 180, 244,
 };
 /* The camera's targets: x per gear; y per gear, command (1-3) and list
- * entry; the distance per command and list entry. func_801CFC60 indexes the
+ * entry; the distance per command and list entry. gear_shop_gear_view_open indexes the
  * last two from the command's row, one row before their first entries. */
-s16 D_801D6DFC[17] = {
+s16 gear_shop_camera_x_targets[17] = { /* 801D6DFC */
     352, 352, 312, 352, 352, 400, 596, 0, 564,
     300, 352, 452, 500, 508, 676, 396, 352,
 };
-s16 D_801D6E20[17 * 12] = {
+s16 gear_shop_camera_y_targets[17 * 12] = { /* 801D6E20 */
     128, 0, 0, 0, 128, 0, 0, 0, 64, 0, 64, -48,
     128, 0, 0, 0, 128, 0, 0, 0, 84, 0, 84, -40,
     128, 12, 0, 0, 128, 12, 0, 0, 96, 0, 96, -40,
@@ -78,20 +78,20 @@ s16 D_801D6E20[17 * 12] = {
     68, -20, 0, 0, 68, -20, 0, 0, 36, 0, 36, -44,
     128, 0, 0, 0, 128, 0, 0, 0, 88, 0, 88, -60,
 };
-s16 D_801D6FB8[3 * 4] = {
+s16 gear_shop_camera_distance_targets[3 * 4] = { /* 801D6FB8 */
     1024, 0, 0, 0,
     -1024, -2048, 0, 0,
     1024, -1024, -1024, 1024,
 };
 
 /* The two second markers' x. */
-s32 D_801D6FD0[2] = {16, 276};
-s32 D_801D6FD8 = 0; /* available members 1-10 */
-s32 D_801D6FDC = 0; /* index of the gear screen's member among the available ones */
+s32 gear_shop_member_mark_x_table[2] = {16, 276}; /* 801D6FD0 */
+s32 gear_shop_available_member_count = 0; /* 801D6FD8: available members 1-10 */
+s32 gear_shop_current_member_index = 0; /* 801D6FDC: index of the gear screen's member among the available ones */
 
 /* The two lamps: their sprite ids, four per frame and five frames per lamp
  * (0xFFFF none). */
-u16 D_801D6FE0[40] = {
+u16 gear_shop_lamp_frame_images[40] = { /* 801D6FE0 */
     0x169, 0xFFFF, 0xFFFF, 0xFFFF,
     0x169, 0x16A, 0xFFFF, 0xFFFF,
     0x169, 0x16A, 0x16B, 0xFFFF,
@@ -104,79 +104,79 @@ u16 D_801D6FE0[40] = {
     0x169, 0x16E, 0x16F, 0x171,
 };
 /* Lamp and indicator position per command and list cursor. */
-u8 D_801D7030[16] = {
+u8 gear_shop_lamp_positions_by_cursor[16] = { /* 801D7030 */
     0xFF, 0xFF, 0xFF, 0xFF,
     0, 1, 0xFF, 0xFF,
     0, 1, 0xFF, 0xFF,
     2, 3, 4, 5,
 };
-u16 D_801D7040[2] = {100, 230}; /* lamp x */
+u16 gear_shop_lamp_x_table[2] = {100, 230}; /* 801D7040: lamp x */
 /* Lamp y choices, six per lamp. */
-u16 D_801D7044[12] = {
+u16 gear_shop_lamp_y_choices[12] = { /* 801D7044 */
     50, 66, 82, 98, 114, 130,
     150, 134, 118, 102, 86, 70,
 };
-u16 D_801D705C[6] = {238, 238, 150, 150, 50, 50}; /* indicator x choices */
-u16 D_801D7068[6] = {42, 150, 42, 150, 42, 150};  /* indicator y choices */
-u16 D_801D7074[6] = {42, 42, 100, 100, 150, 150}; /* flicker x choices */
-u16 D_801D7080[6] = {110, 30, 110, 30, 110, 30};  /* flicker y choices */
+u16 gear_shop_indicator_x_choices[6] = {238, 238, 150, 150, 50, 50}; /* 801D705C: indicator x choices */
+u16 gear_shop_indicator_y_choices[6] = {42, 150, 42, 150, 42, 150};  /* 801D7068: indicator y choices */
+u16 gear_shop_flicker_x_choices[6] = {42, 42, 100, 100, 150, 150}; /* 801D7074: flicker x choices */
+u16 gear_shop_flicker_y_choices[6] = {110, 30, 110, 30, 110, 30};  /* 801D7080: flicker y choices */
 
 /* The gear parts frame: sprite ids and positions. */
-u16 D_801D708C[14] = {0x11, 0x19, 0x3E, 0xF, 0x1E, 0xE, 0x15, 0x3E, 0x20, 0xE, 0x12, 0x10, 0x11, 0x1D};
-u16 D_801D70A8[14] = {210, 218, 250, 210, 218, 226, 234, 250, 210, 218, 226, 234, 242, 250};
-u16 D_801D70C4[14] = {50, 50, 58, 66, 66, 66, 66, 74, 82, 82, 82, 82, 82, 82};
+u16 gear_shop_gear_values_frame_images[14] = {0x11, 0x19, 0x3E, 0xF, 0x1E, 0xE, 0x15, 0x3E, 0x20, 0xE, 0x12, 0x10, 0x11, 0x1D}; /* 801D708C */
+u16 gear_shop_gear_values_frame_x_table[14] = {210, 218, 250, 210, 218, 226, 234, 250, 210, 218, 226, 234, 242, 250}; /* 801D70A8 */
+u16 gear_shop_gear_values_frame_y_table[14] = {50, 50, 58, 66, 66, 66, 66, 74, 82, 82, 82, 82, 82, 82}; /* 801D70C4 */
 /* Gear value positions (x, y). */
-u16 D_801D70E0 = 210;
-u16 D_801D70E2 = 58;
-u16 D_801D70E4 = 258;
-u16 D_801D70E6 = 58;
-u16 D_801D70E8 = 218;
-u16 D_801D70EA = 74;
-u16 D_801D70EC = 258;
-u16 D_801D70EE = 74;
-u16 D_801D70F0 = 234;
-u16 D_801D70F2 = 90;
+u16 gear_shop_gear_hp_x = 210; /* 801D70E0 */
+u16 gear_shop_gear_hp_y = 58; /* 801D70E2 */
+u16 gear_shop_gear_max_hp_x = 258; /* 801D70E4 */
+u16 gear_shop_gear_max_hp_y = 58; /* 801D70E6 */
+u16 gear_shop_gear_fuel_x = 218; /* 801D70E8 */
+u16 gear_shop_gear_fuel_y = 74; /* 801D70EA */
+u16 gear_shop_gear_max_fuel_x = 258; /* 801D70EC */
+u16 gear_shop_gear_max_fuel_y = 74; /* 801D70EE */
+u16 gear_shop_gear_value68_x = 234; /* 801D70F0 */
+u16 gear_shop_gear_value68_y = 90; /* 801D70F2 */
 /* The pilot of each gear. */
-u8 D_801D70F4[20] = {0, 0, 1, 2, 3, 4, 5, 7, 8, 6, 1, 9, 3, 4, 5, 0, 9, 15, 15, 15};
+u8 gear_shop_gear_pilots[20] = {0, 0, 1, 2, 3, 4, 5, 7, 8, 6, 1, 9, 3, 4, 5, 0, 9, 15, 15, 15}; /* 801D70F4 */
 
-/* The unit's own uninitialized variable, after ovl2602.c's in the file
- * (zero there); the overlay's commons follow (ovl2602_common.c). */
-static u16 D_801D904C; /* count of the item last looked up */
+/* The unit's own uninitialized variable, after gear_shop_framework.c's in the file
+ * (zero there); the overlay's commons follow (gear_shop_common.c). */
+static u16 gear_shop_held_count; /* 801D904C: count of the item last looked up */
 
-/* This unit passes quad coordinates as words; ovl2602.c defines the helper
+/* This unit passes quad coordinates as words; gear_shop_framework.c defines the helper
  * with u16 parameters, and that prototype here would mask them (four more
- * 16-bit masks: two in func_801CE1D0, one each in func_801D18F8 and
- * func_801D2B74). */
-void func_801C7604();
+ * 16-bit masks: two in gear_shop_member_marks_layout, one each in gear_shop_layout_sell_rows and
+ * gear_shop_layout_stock_rows). */
+void gear_shop_set_rect_verts();
 
-/* Draw the two second-marker sprites and set their four quads. */
-void func_801CE1D0(void) {
+/* 801CE1D0: Draw the two second-marker sprites and set their four quads. */
+void gear_shop_member_marks_layout(void) {
     POLY_FT4 *poly;
     MenuMarkerQuads *marks;
     s32 i;
 
     for (i = 0; i < 2; i++) {
         sprite_sheet_draw_scaled(menu_state_current->sheet, i + 0x164, &menu_state_current->marks->polys[i * 4],
-                      menu_state_current->buffer_index, D_801D6FD0[i], 0x64, 0x1000);
+                      menu_state_current->buffer_index, gear_shop_member_mark_x_table[i], 0x64, 0x1000);
     }
     for (i = 0; i < 4; i++) {
         marks = menu_state_current->marks;
         poly = &marks->polys[i * 2 + menu_state_current->buffer_index];
-        func_801C7604(&menu_state_current->marks->verts[i * 4], poly->x0, poly->y0, poly->x1 - poly->x0,
+        gear_shop_set_rect_verts(&menu_state_current->marks->verts[i * 4], poly->x0, poly->y0, poly->x1 - poly->x0,
                       poly->y3 - poly->y0);
     }
     menu_state_current->marks->buffer = menu_state_current->buffer_index;
 }
 
-/* Hide the second marker block, let a frame pass, and release it. */
-void func_801CE2E8(void) {
+/* 801CE2E8: Hide the second marker block, let a frame pass, and release it. */
+void gear_shop_member_marks_close(void) {
     menu_state_current->flags->marks_shown = 0;
-    func_801CC1C4();
+    gear_shop_run_frame();
     heap_free(menu_state_current->marks);
 }
 
-/* Draw the shop's detail packets: member bars, portraits, headings, list rows, labels, numbers and prices. */
-void func_801CE32C(void) {
+/* 801CE32C: Draw the shop's detail packets: member bars, portraits, headings, list rows, labels, numbers and prices. */
+void gear_shop_draw_details(void) {
     s32 i;
 
     if (menu_state_current->flags->unknown5a[0] != 0) {
@@ -188,119 +188,119 @@ void func_801CE32C(void) {
                         &menu_state_current->details->bar_lower[i * 2 + menu_state_current->buffer_index]);
             }
         }
-        func_801C94CC(menu_state_current->details->heading_count, menu_state_current->details->heading,
+        gear_shop_draw_quads(menu_state_current->details->heading_count, menu_state_current->details->heading,
                       menu_state_current->details->heading_buffer);
-        func_801C94CC(menu_state_current->details->group2D0_count, menu_state_current->details->group2D0,
+        gear_shop_draw_quads(menu_state_current->details->group2D0_count, menu_state_current->details->group2D0,
                       menu_state_current->details->group2D0_buffer);
-        func_801C94CC(menu_state_current->details->members_count, menu_state_current->details->members,
+        gear_shop_draw_quads(menu_state_current->details->members_count, menu_state_current->details->members,
                       menu_state_current->details->members_buffer);
         for (i = 0; i < 8; i++) {
             if (menu_state_current->details->name_shown[i] != 0) {
-                func_801C93B0(1, menu_state_current->details->names_a[i].verts, menu_state_current->details->names_a[i].polys,
+                gear_shop_draw_projected_quads(1, menu_state_current->details->names_a[i].verts, menu_state_current->details->names_a[i].polys,
                               menu_state_current->details->names_a[i].buffer);
-                func_801C93B0(1, menu_state_current->details->names_b[i].verts, menu_state_current->details->names_b[i].polys,
+                gear_shop_draw_projected_quads(1, menu_state_current->details->names_b[i].verts, menu_state_current->details->names_b[i].polys,
                               menu_state_current->details->names_b[i].buffer);
             }
         }
         if (menu_state_current->details->label4530_shown != 0) {
-            func_801C93B0(1, menu_state_current->details->label4530.verts, menu_state_current->details->label4530.polys,
+            gear_shop_draw_projected_quads(1, menu_state_current->details->label4530.verts, menu_state_current->details->label4530.polys,
                           menu_state_current->details->label4530.buffer);
         }
         if (menu_state_current->details->label4430_shown != 0) {
-            func_801C93B0(1, menu_state_current->details->label4430.verts, menu_state_current->details->label4430.polys,
+            gear_shop_draw_projected_quads(1, menu_state_current->details->label4430.verts, menu_state_current->details->label4430.polys,
                           menu_state_current->details->label4430.buffer);
         }
         if (menu_state_current->details->label44B0_shown != 0) {
-            func_801C93B0(1, menu_state_current->details->label44B0.verts, menu_state_current->details->label44B0.polys,
+            gear_shop_draw_projected_quads(1, menu_state_current->details->label44B0.verts, menu_state_current->details->label44B0.polys,
                           menu_state_current->details->label44B0.buffer);
         }
         if (menu_state_current->details->label45B0_shown != 0) {
-            func_801C93B0(1, menu_state_current->details->label45B0.verts, menu_state_current->details->label45B0.polys,
+            gear_shop_draw_projected_quads(1, menu_state_current->details->label45B0.verts, menu_state_current->details->label45B0.polys,
                           menu_state_current->details->label45B0.buffer);
         }
         if (menu_state_current->details->digits_shown != 0) {
             AddPrim(&menu_state_current->current->ot[4], &menu_state_current->details->frame[menu_state_current->buffer_index]);
-            func_801C94CC(menu_state_current->details->digits1_count, menu_state_current->details->digits1,
+            gear_shop_draw_quads(menu_state_current->details->digits1_count, menu_state_current->details->digits1,
                           menu_state_current->details->digits1_buffer);
-            func_801C94CC(menu_state_current->details->digits2_count, menu_state_current->details->digits2,
+            gear_shop_draw_quads(menu_state_current->details->digits2_count, menu_state_current->details->digits2,
                           menu_state_current->details->digits2_buffer);
-            func_801C94CC(menu_state_current->details->digits3_count, menu_state_current->details->digits3,
+            gear_shop_draw_quads(menu_state_current->details->digits3_count, menu_state_current->details->digits3,
                           menu_state_current->details->digits3_buffer);
             if (menu_state_current->details->digits4_shown != 0) {
-                func_801C94CC(menu_state_current->details->digits4_count, menu_state_current->details->digits4,
+                gear_shop_draw_quads(menu_state_current->details->digits4_count, menu_state_current->details->digits4,
                               menu_state_current->details->digits4_buffer);
             }
         }
         for (i = 0; i < 8; i++) {
-            func_801C94CC(menu_state_current->details->row_count[i], menu_state_current->details->rows[i],
+            gear_shop_draw_quads(menu_state_current->details->row_count[i], menu_state_current->details->rows[i],
                           menu_state_current->details->row_buffer[i]);
         }
         for (i = 0; i < 9; i++) {
-            func_801C94CC(menu_state_current->details->cells_a_count[i], menu_state_current->details->cells_a[i],
+            gear_shop_draw_quads(menu_state_current->details->cells_a_count[i], menu_state_current->details->cells_a[i],
                           menu_state_current->details->cells_a_buffer[i]);
-            func_801C94CC(menu_state_current->details->cells_b_count[i], menu_state_current->details->cells_b[i],
+            gear_shop_draw_quads(menu_state_current->details->cells_b_count[i], menu_state_current->details->cells_b[i],
                           menu_state_current->details->cells_b_buffer[i]);
         }
     }
     if (menu_state_current->flags->unknown5a[1] == 1) {
-        func_801C94CC(menu_state_current->details->group1220_count, menu_state_current->details->group1220,
+        gear_shop_draw_quads(menu_state_current->details->group1220_count, menu_state_current->details->group1220,
                       menu_state_current->details->group1220_buffer);
     }
     if (menu_state_current->flags->price_shown != 0) {
-        func_801C94CC(menu_state_current->details->price_count, menu_state_current->details->price,
+        gear_shop_draw_quads(menu_state_current->details->price_count, menu_state_current->details->price,
                       menu_state_current->details->price_buffer);
     }
 }
 
-/* Draw the separately loaded model when shown. */
-void func_801CE7E0(void) {
+/* 801CE7E0: Draw the separately loaded model when shown. */
+void gear_shop_draw_model(void) {
     if (menu_state_current->flags->model_shown != 0) {
         gear_model_step_and_draw(&menu_state_current->matrix2, &menu_state_current->light, menu_state_current->current->ot_big, menu_state_current->buffer_index);
     }
 }
 
-/* Draw the gear screen's animated sprites, then its backdrop, frame and part pictures when shown. */
-void func_801CE82C(void) {
+/* 801CE82C: Draw the gear screen's animated sprites, then its backdrop, frame and part pictures when shown. */
+void gear_shop_draw_gear_screen(void) {
     s32 i;
 
     if (menu_state_current->flags->gear_shown != 0) {
         if (menu_state_current->gear_screen->flicker_shown != 0) {
-            func_801C94CC(menu_state_current->gear_screen->flicker_count, menu_state_current->gear_screen->flicker[0],
+            gear_shop_draw_quads(menu_state_current->gear_screen->flicker_count, menu_state_current->gear_screen->flicker[0],
                           menu_state_current->gear_screen->flicker_buffer);
-            func_801C94CC(menu_state_current->gear_screen->flicker_count, menu_state_current->gear_screen->flicker[1],
+            gear_shop_draw_quads(menu_state_current->gear_screen->flicker_count, menu_state_current->gear_screen->flicker[1],
                           menu_state_current->gear_screen->flicker_buffer);
-            func_801C94CC(menu_state_current->gear_screen->flicker_count, menu_state_current->gear_screen->flicker[2],
+            gear_shop_draw_quads(menu_state_current->gear_screen->flicker_count, menu_state_current->gear_screen->flicker[2],
                           menu_state_current->gear_screen->flicker_buffer);
         }
         for (i = 0; i < 2; i++) {
             if (menu_state_current->gear_screen->lamp_state[i] != 0) {
-                func_801C94CC(menu_state_current->gear_screen->lamp_count[i], &menu_state_current->gear_screen->lamps[i * 22],
+                gear_shop_draw_quads(menu_state_current->gear_screen->lamp_count[i], &menu_state_current->gear_screen->lamps[i * 22],
                               menu_state_current->gear_screen->lamp_buffer[i]);
             }
         }
         if (menu_state_current->gear_screen->lamp_state[2] != 0) {
-            func_801C94CC(menu_state_current->gear_screen->lamp_count[2], menu_state_current->gear_screen->indicator,
+            gear_shop_draw_quads(menu_state_current->gear_screen->lamp_count[2], menu_state_current->gear_screen->indicator,
                           menu_state_current->gear_screen->lamp_buffer[2]);
         }
     }
     if (menu_state_current->flags->gear_parts_shown != 0) {
-        func_801C94CC(1, menu_state_current->gear_screen->backdrop, menu_state_current->buffer_index);
-        func_801C94CC(0xE, menu_state_current->gear_screen->frame, menu_state_current->gear_screen->parts_buffer);
-        func_801C94CC(menu_state_current->gear_screen->part_count[0], menu_state_current->gear_screen->parts[0],
+        gear_shop_draw_quads(1, menu_state_current->gear_screen->backdrop, menu_state_current->buffer_index);
+        gear_shop_draw_quads(0xE, menu_state_current->gear_screen->frame, menu_state_current->gear_screen->parts_buffer);
+        gear_shop_draw_quads(menu_state_current->gear_screen->part_count[0], menu_state_current->gear_screen->parts[0],
                       menu_state_current->gear_screen->parts_buffer);
-        func_801C94CC(menu_state_current->gear_screen->part_count[1], menu_state_current->gear_screen->parts[1],
+        gear_shop_draw_quads(menu_state_current->gear_screen->part_count[1], menu_state_current->gear_screen->parts[1],
                       menu_state_current->gear_screen->parts_buffer);
-        func_801C94CC(menu_state_current->gear_screen->part_count[2], menu_state_current->gear_screen->parts[2],
+        gear_shop_draw_quads(menu_state_current->gear_screen->part_count[2], menu_state_current->gear_screen->parts[2],
                       menu_state_current->gear_screen->parts_buffer);
-        func_801C94CC(menu_state_current->gear_screen->part_count[3], menu_state_current->gear_screen->parts[3],
+        gear_shop_draw_quads(menu_state_current->gear_screen->part_count[3], menu_state_current->gear_screen->parts[3],
                       menu_state_current->gear_screen->parts_buffer);
-        func_801C94CC(menu_state_current->gear_screen->part_count[4], menu_state_current->gear_screen->parts[4],
+        gear_shop_draw_quads(menu_state_current->gear_screen->part_count[4], menu_state_current->gear_screen->parts[4],
                       menu_state_current->gear_screen->parts_buffer);
     }
 }
 
-/* Animate the two lamps: pick their position (from the cursor while opening, now and then at random while idle), draw the frame's sprites and step the frame. */
-void func_801CEA68(void) {
+/* 801CEA68: Animate the two lamps: pick their position (from the cursor while opening, now and then at random while idle), draw the frame's sprites and step the frame. */
+void gear_shop_animate_lamps(void) {
     u16 at[2][4];
     u8 moved;
     s32 i;
@@ -314,14 +314,14 @@ void func_801CEA68(void) {
         }
         switch (menu_state_current->gear_screen->lamp_state[i]) {
         case 1:
-            at[0][i] = D_801D7040[i];
-            at[1][i] = D_801D7044[i * 6 + D_801D7030[menu_state_current->cursor * 4 + menu_state_current->choice]];
+            at[0][i] = gear_shop_lamp_x_table[i];
+            at[1][i] = gear_shop_lamp_y_choices[i * 6 + gear_shop_lamp_positions_by_cursor[menu_state_current->cursor * 4 + menu_state_current->choice]];
             moved = 1;
             break;
         case 2:
             if (mode_get_random_byte_in_range(0, 0xFF) < 0x10) {
-                at[0][i] = D_801D7040[i];
-                at[1][i] = D_801D7044[i * 6 + mode_get_random_byte_in_range(0, 5)];
+                at[0][i] = gear_shop_lamp_x_table[i];
+                at[1][i] = gear_shop_lamp_y_choices[i * 6 + mode_get_random_byte_in_range(0, 5)];
                 moved = 1;
             }
             break;
@@ -336,7 +336,7 @@ void func_801CEA68(void) {
         }
         menu_state_current->gear_screen->lamp_count[i] = 0;
         for (j = 0; j < 4; j++) {
-            id = D_801D6FE0[i * 20 + (menu_state_current->gear_screen->lamp_frame[i] * 4 + j)];
+            id = gear_shop_lamp_frame_images[i * 20 + (menu_state_current->gear_screen->lamp_frame[i] * 4 + j)];
             if (id != 0xFFFF) {
                 menu_state_current->gear_screen->lamp_count[i] +=
                     sprite_sheet_draw_scaled(menu_state_current->sheet, id,
@@ -370,8 +370,8 @@ void func_801CEA68(void) {
     }
 }
 
-/* Animate the indicator: its position (from the cursor while opening, now and then at random while idle), its sprite, and its open-idle-close frame steps. */
-void func_801CEEA8(void) {
+/* 801CEEA8: Animate the indicator: its position (from the cursor while opening, now and then at random while idle), its sprite, and its open-idle-close frame steps. */
+void gear_shop_animate_indicator(void) {
     u8 moved;
     u16 x;
     u16 y;
@@ -385,15 +385,15 @@ void func_801CEEA8(void) {
         moved = 0;
         switch (menu_state_current->gear_screen->lamp_state[2]) {
         case 1:
-            index = D_801D7030[menu_state_current->cursor * 4 + menu_state_current->choice];
-            x = D_801D705C[index];
+            index = gear_shop_lamp_positions_by_cursor[menu_state_current->cursor * 4 + menu_state_current->choice];
+            x = gear_shop_indicator_x_choices[index];
             moved = 1;
-            y = D_801D7068[index];
+            y = gear_shop_indicator_y_choices[index];
             break;
         case 2:
             if (mode_get_random_byte_in_range(0, 0xFF) < 4) {
-                x = D_801D705C[mode_get_random_byte_in_range(0, 5)];
-                y = D_801D7068[mode_get_random_byte_in_range(0, 5)];
+                x = gear_shop_indicator_x_choices[mode_get_random_byte_in_range(0, 5)];
+                y = gear_shop_indicator_y_choices[mode_get_random_byte_in_range(0, 5)];
                 moved = 1;
             }
             break;
@@ -432,8 +432,8 @@ void func_801CEEA8(void) {
     }
 }
 
-/* Animate the flicker every fifth frame: now and then move it to a random place, draw its three sprites (a diagonal row) and toggle their frame. */
-void func_801CF184(void) {
+/* 801CF184: Animate the flicker every fifth frame: now and then move it to a random place, draw its three sprites (a diagonal row) and toggle their frame. */
+void gear_shop_animate_flicker(void) {
     u16 x;
     u16 y;
     s32 i;
@@ -444,8 +444,8 @@ void func_801CF184(void) {
             return;
         }
         if (mode_get_random_byte_in_range(0, 0xFF) < 8) {
-            x = D_801D7074[mode_get_random_byte_in_range(0, 5)];
-            y = D_801D7080[mode_get_random_byte_in_range(0, 5)];
+            x = gear_shop_flicker_x_choices[mode_get_random_byte_in_range(0, 5)];
+            y = gear_shop_flicker_y_choices[mode_get_random_byte_in_range(0, 5)];
             menu_state_current->gear_screen->flicker_x = x;
             menu_state_current->gear_screen->flicker_y = y;
         }
@@ -462,152 +462,152 @@ void func_801CF184(void) {
     }
 }
 
-/* Build the gear screen's packets when shown. */
-void func_801CF33C(void) {
+/* 801CF33C: Build the gear screen's packets when shown. */
+void gear_shop_animate_gear_screen(void) {
     if (menu_state_current->flags->gear_shown != 0) {
-        func_801CEA68();
-        func_801CEEA8();
-        func_801CF184();
+        gear_shop_animate_lamps();
+        gear_shop_animate_indicator();
+        gear_shop_animate_flicker();
     }
 }
 
-/* Render name `index` of the name table into VRAM at (180h, 48h). */
-void func_801CF38C(u8 index) {
+/* 801CF38C: Render name `index` of the name table into VRAM at (180h, 48h). */
+void gear_shop_render_name(u8 index) {
     RECT rect;
 
-    D_801D9088 = heap_alloc(0x3F6, 0);
-    bzero(D_801D9088, 0x3F6);
-    window_render_text_line(game_data.names[index], D_801D9088, 0x24, 0);
+    gear_shop_name_pixels = heap_alloc(0x3F6, 0);
+    bzero(gear_shop_name_pixels, 0x3F6);
+    window_render_text_line(game_data.names[index], gear_shop_name_pixels, 0x24, 0);
     rect.x = 0x180;
     rect.y = 0x48;
     rect.w = 0x28;
     rect.h = 13;
-    LoadImage(&rect, (u_long *)D_801D9088);
+    LoadImage(&rect, (u_long *)gear_shop_name_pixels);
     DrawSync(0);
-    heap_free(D_801D9088);
+    heap_free(gear_shop_name_pixels);
 }
 
-/* Build the gear parts panel: its fourteen frame sprites, five of the gear's values in decimal, and the gear's name. */
-void func_801CF448(void) {
+/* 801CF448: Build the gear parts panel: its fourteen frame sprites, five of the gear's values in decimal, and the gear's name. */
+void gear_shop_layout_gear_values(void) {
     s32 i;
     s32 j;
 
     for (j = 0; j < 14; j++) {
-        sprite_sheet_draw_scaled(menu_state_current->sheet, D_801D708C[j], &menu_state_current->gear_screen->frame[j * 2],
-                      menu_state_current->buffer_index, D_801D70A8[j], D_801D70C4[j], 0x1000);
+        sprite_sheet_draw_scaled(menu_state_current->sheet, gear_shop_gear_values_frame_images[j], &menu_state_current->gear_screen->frame[j * 2],
+                      menu_state_current->buffer_index, gear_shop_gear_values_frame_x_table[j], gear_shop_gear_values_frame_y_table[j], 0x1000);
     }
-    func_801C5298(game_data.gears[D_801D9084].hp);
+    gear_shop_split_digits(game_data.gears[gear_shop_edited_gear].hp);
     menu_state_current->gear_screen->part_count[0] = 0;
     for (i = 0; i < 5; i++) {
         if (menu_state_current->digits[i + 4] != 0xFF) {
             menu_state_current->gear_screen->part_count[0] +=
                 sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i + 4],
                               &menu_state_current->gear_screen->parts[0][menu_state_current->gear_screen->part_count[0] * 2],
-                              menu_state_current->buffer_index, D_801D70E0 + i * 8, D_801D70E2, 0x1000);
+                              menu_state_current->buffer_index, gear_shop_gear_hp_x + i * 8, gear_shop_gear_hp_y, 0x1000);
         }
     }
-    func_801C5298(game_data.gears[D_801D9084].maxHp);
+    gear_shop_split_digits(game_data.gears[gear_shop_edited_gear].maxHp);
     menu_state_current->gear_screen->part_count[1] = 0;
     for (i = 0, j = 0; i < 5; i++) {
         if (menu_state_current->digits[i + 4] != 0xFF) {
             menu_state_current->gear_screen->part_count[1] +=
                 sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i + 4],
                               &menu_state_current->gear_screen->parts[1][menu_state_current->gear_screen->part_count[1] * 2],
-                              menu_state_current->buffer_index, D_801D70E4 + j * 8, D_801D70E6, 0x1000);
+                              menu_state_current->buffer_index, gear_shop_gear_max_hp_x + j * 8, gear_shop_gear_max_hp_y, 0x1000);
             j++;
         }
     }
-    func_801C5298(game_data.gears[D_801D9084].fuel);
+    gear_shop_split_digits(game_data.gears[gear_shop_edited_gear].fuel);
     menu_state_current->gear_screen->part_count[2] = 0;
     for (i = 0; i < 4; i++) {
         if (menu_state_current->digits[i + 5] != 0xFF) {
             menu_state_current->gear_screen->part_count[2] +=
                 sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i + 5],
                               &menu_state_current->gear_screen->parts[2][menu_state_current->gear_screen->part_count[2] * 2],
-                              menu_state_current->buffer_index, D_801D70E8 + i * 8, D_801D70EA, 0x1000);
+                              menu_state_current->buffer_index, gear_shop_gear_fuel_x + i * 8, gear_shop_gear_fuel_y, 0x1000);
         }
     }
-    func_801C5298(game_data.gears[D_801D9084].maxFuel);
+    gear_shop_split_digits(game_data.gears[gear_shop_edited_gear].maxFuel);
     menu_state_current->gear_screen->part_count[3] = 0;
     for (i = 0, j = 0; i < 4; i++) {
         if (menu_state_current->digits[i + 5] != 0xFF) {
             menu_state_current->gear_screen->part_count[3] +=
                 sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i + 5],
                               &menu_state_current->gear_screen->parts[3][menu_state_current->gear_screen->part_count[3] * 2],
-                              menu_state_current->buffer_index, D_801D70EC + j * 8, D_801D70EE, 0x1000);
+                              menu_state_current->buffer_index, gear_shop_gear_max_fuel_x + j * 8, gear_shop_gear_max_fuel_y, 0x1000);
             j++;
         }
     }
-    func_801C5298(game_data.gears[D_801D9084].field68);
+    gear_shop_split_digits(game_data.gears[gear_shop_edited_gear].field68);
     menu_state_current->gear_screen->part_count[4] = 0;
     for (i = 0; i < 5; i++) {
         if (menu_state_current->digits[i + 4] != 0xFF) {
             menu_state_current->gear_screen->part_count[4] +=
                 sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i + 4],
                               &menu_state_current->gear_screen->parts[4][menu_state_current->gear_screen->part_count[4] * 2],
-                              menu_state_current->buffer_index, D_801D70F0 + i * 8, D_801D70F2, 0x1000);
+                              menu_state_current->buffer_index, gear_shop_gear_value68_x + i * 8, gear_shop_gear_value68_y, 0x1000);
         }
     }
-    func_801CF38C(D_801D9084 + 0xB);
+    gear_shop_render_name(gear_shop_edited_gear + 0xB);
     menu_state_current->gear_screen->parts_buffer = menu_state_current->buffer_index;
 }
 
-/* Load model `model`'s two files (ids from the model table) into part block `slot`. */
-void func_801CF9BC(u8 model, u8 slot) {
+/* 801CF9BC: Load model `model`'s two files (ids from the model table) into part block `slot`. */
+void gear_shop_model_read_files(u8 model, u8 slot) {
     cd_select_directory(4, 0);
-    menu_state_current->model_parts[slot]->data0 = heap_alloc(cd_get_aligned_file_size(D_801D6D7C[model]), 0);
-    cd_read_file(D_801D6D7C[model], menu_state_current->model_parts[slot]->data0, 0, 0x80);
+    menu_state_current->model_parts[slot]->data0 = heap_alloc(cd_get_aligned_file_size(gear_shop_model_file_ids[model]), 0);
+    cd_read_file(gear_shop_model_file_ids[model], menu_state_current->model_parts[slot]->data0, 0, 0x80);
     cd_sync_reads(0);
-    menu_state_current->model_parts[slot]->data1 = heap_alloc(cd_get_aligned_file_size(D_801D6D7C[model] + 1), 0);
-    cd_read_file(D_801D6D7C[model] + 1, menu_state_current->model_parts[slot]->data1, 0, 0x80);
+    menu_state_current->model_parts[slot]->data1 = heap_alloc(cd_get_aligned_file_size(gear_shop_model_file_ids[model] + 1), 0);
+    cd_read_file(gear_shop_model_file_ids[model] + 1, menu_state_current->model_parts[slot]->data1, 0, 0x80);
     cd_sync_reads(0);
     cd_select_directory(0x10, 0);
 }
 
-/*
+/* 801CFAB8
  * Create gear `gear`'s model as actor `slot` of the actor module (ovl2143)
  * with its ground height and scale, turn actor 1 a quarter turn back and
  * tilt it, run the script entry of the gear's variant, and show the parts
  * panel.
  */
-void func_801CFAB8(u8 slot, u8 gear) {
+void gear_shop_model_load_gear(u8 slot, u8 gear) {
     u8 variant;
 
     variant = 0;
     gear_model_create_actor(slot, 0, menu_state_current->model_parts[slot]->data0, menu_state_current->model_parts[slot]->data1,
                   slot * 64 + 0x200, 0, 0, slot + 0x1C0, menu_state_current->model_parts[slot]->position);
-    gear_model_actors[slot]->groundY = D_801D6DB4[gear];
-    gear_model_actors[slot]->scale = D_801D6DD8[gear];
+    gear_model_actors[slot]->groundY = gear_shop_model_field60_values[gear];
+    gear_model_actors[slot]->scale = gear_shop_model_field1c_values[gear];
     gear_model_actors[1]->parts->rotation.vy -= 0x400;
     model_ot_depth_shift = 0;
     gear_model_actors[1]->parts->rotation.vx -= 0x20;
     if (gear != 0xFF) {
-        variant = D_801D6DA0[gear];
+        variant = gear_shop_model_variants[gear];
     }
     gear_model_select_and_call_entry(slot, 0, variant);
     heap_free(menu_state_current->model_parts[slot]->data1);
     menu_state_current->model_parts[slot]->unk12 = 1;
-    func_801CF448();
+    gear_shop_layout_gear_values();
     menu_state_current->flags->gear_parts_shown = 1;
 }
 
-/*
+/* 801CFC60
  * Swing the camera to the edited gear's view for the current command, open
  * the lamps, indicator and flicker, and wait until the lamps and indicator
  * are open. The y table holds three command rows (commands 1-3) of four list
  * entries per gear, the distance table one such row set.
  */
-void func_801CFC60(void) {
+void gear_shop_gear_view_open(void) {
     s32 row;
 
-    D_801D9050.from[0] = D_801D9050.to[0];
-    D_801D9050.from[1] = D_801D9050.to[1];
-    D_801D9050.from[2] = D_801D9050.to[2];
-    D_801D9050.to[0] = D_801D6DFC[D_801D9084];
-    row = D_801D9084 * 3;
-    D_801D9050.to[1] = D_801D6E20[(menu_state_current->cursor + row - 1) * 4 + menu_state_current->choice];
-    D_801D9050.to[2] = D_801D6FB8[(menu_state_current->cursor - 1) * 4 + menu_state_current->choice];
-    func_801CB690();
+    gear_shop_camera_move.from[0] = gear_shop_camera_move.to[0];
+    gear_shop_camera_move.from[1] = gear_shop_camera_move.to[1];
+    gear_shop_camera_move.from[2] = gear_shop_camera_move.to[2];
+    gear_shop_camera_move.to[0] = gear_shop_camera_x_targets[gear_shop_edited_gear];
+    row = gear_shop_edited_gear * 3;
+    gear_shop_camera_move.to[1] = gear_shop_camera_y_targets[(menu_state_current->cursor + row - 1) * 4 + menu_state_current->choice];
+    gear_shop_camera_move.to[2] = gear_shop_camera_distance_targets[(menu_state_current->cursor - 1) * 4 + menu_state_current->choice];
+    gear_shop_camera_plan_move();
     menu_state_current->view_motion = 7;
     menu_state_current->gear_screen->flicker_shown = 1;
     menu_state_current->gear_screen->lamp_state[0] = 1;
@@ -625,15 +625,15 @@ void func_801CFC60(void) {
     menu_state_current->gear_screen->flicker_y = 0x6E;
     menu_state_current->flags->gear_shown = 1;
     while (menu_state_current->gear_screen->lamp_state[0] != 2) {
-        func_801CC1C4();
+        gear_shop_run_frame();
     }
     while (menu_state_current->gear_screen->lamp_state[2] != 2) {
-        func_801CC1C4();
+        gear_shop_run_frame();
     }
 }
 
-/* Show the gear screen: close its lamps and indicator, swing the camera and start its motion (7). */
-void func_801CFF18(void) {
+/* 801CFF18: Show the gear screen: close its lamps and indicator, swing the camera and start its motion (7). */
+void gear_shop_gear_view_close(void) {
     menu_state_current->gear_screen->lamp_state[0] = 3;
     menu_state_current->gear_screen->lamp_state[1] = 3;
     menu_state_current->gear_screen->lamp_state[2] = 3;
@@ -642,18 +642,18 @@ void func_801CFF18(void) {
     menu_state_current->gear_screen->lamp_timer[1] = 0;
     menu_state_current->gear_screen->lamp_timer[2] = 0;
     menu_state_current->flags->gear_shown = 1;
-    D_801D9050.from[0] = D_801D9050.to[0];
-    D_801D9050.from[1] = D_801D9050.to[1];
-    D_801D9050.from[2] = D_801D9050.to[2];
-    D_801D9050.to[0] = 0x400;
-    D_801D9050.to[1] = 0;
-    D_801D9050.to[2] = -0x400;
-    func_801CB690();
+    gear_shop_camera_move.from[0] = gear_shop_camera_move.to[0];
+    gear_shop_camera_move.from[1] = gear_shop_camera_move.to[1];
+    gear_shop_camera_move.from[2] = gear_shop_camera_move.to[2];
+    gear_shop_camera_move.to[0] = 0x400;
+    gear_shop_camera_move.to[1] = 0;
+    gear_shop_camera_move.to[2] = -0x400;
+    gear_shop_camera_plan_move();
     menu_state_current->view_motion = 7;
 }
 
-/* Tint `count` packet pairs of this buffer red (0) or blue (1). */
-void func_801D0054(s32 count, POLY_FT4 *packets, u8 color) {
+/* 801D0054: Tint `count` packet pairs of this buffer red (0) or blue (1). */
+void gear_shop_tint_quads(s32 count, POLY_FT4 *packets, u8 color) {
     s32 i;
 
     for (i = 0; i < count; i++) {
@@ -673,8 +673,8 @@ void func_801D0054(s32 count, POLY_FT4 *packets, u8 color) {
     }
 }
 
-/* Reveal the available party members' portraits one member per frame. */
-void func_801D0220(void) {
+/* 801D0220: Reveal the available party members' portraits one member per frame. */
+void gear_shop_reveal_portraits(void) {
     s32 step;
     s32 shown;
     s32 i;
@@ -687,43 +687,43 @@ void func_801D0220(void) {
             if (menu_state_current->present[i] != 0) {
                 menu_state_current->details->members_count +=
                     sprite_sheet_draw_scaled(menu_state_current->sheet, i + 0x14E, &menu_state_current->details->members[shown * 2],
-                                  menu_state_current->buffer_index, D_801D6C44[shown], 0xA6, 0x1000);
+                                  menu_state_current->buffer_index, gear_shop_portrait_x_table[shown], 0xA6, 0x1000);
                 shown++;
             }
         }
         menu_state_current->details->members_buffer = menu_state_current->buffer_index;
-        func_801CC1C4();
+        gear_shop_run_frame();
     }
 }
 
-/* Count the available members 0-10 into D_801D6FD8. */
-void func_801D0348(void) {
+/* 801D0348: Count the available members 0-10 into gear_shop_available_member_count. */
+void gear_shop_count_available_members(void) {
     s32 i;
 
     for (i = 0; i < 11; i++) {
         if (menu_state_current->present[i] != 0) {
-            D_801D6FD8++;
+            gear_shop_available_member_count++;
         }
     }
 }
 
-/* Switch the gear screen to the previous (`back`) or next available member and load its gear. */
-void func_801D0398(u8 back) {
+/* 801D0398: Switch the gear screen to the previous (`back`) or next available member and load its gear. */
+void gear_shop_switch_member(u8 back) {
     s32 next;
     s32 member;
 
-    if (menu_state_current->view_motion == 0 && D_801D6FD8 >= 2) {
-        next = D_801D6FDC;
+    if (menu_state_current->view_motion == 0 && gear_shop_available_member_count >= 2) {
+        next = gear_shop_current_member_index;
         if (!back) {
-            if (++next >= D_801D6FD8) {
+            if (++next >= gear_shop_available_member_count) {
                 next = 0;
             }
         } else {
             if (--next < 0) {
-                next = D_801D6FD8 - 1;
+                next = gear_shop_available_member_count - 1;
             }
         }
-        D_801D6FDC = next;
+        gear_shop_current_member_index = next;
         next++;
         member = -1;
         while (next != 0) {
@@ -732,47 +732,47 @@ void func_801D0398(u8 back) {
                 next--;
             }
         }
-        func_801CC1C4();
+        gear_shop_run_frame();
         menu_state_current->model_parts[1]->unk12 = 0;
         gear_model_free_actor(1);
-        func_801CC1C4();
-        func_801CF9BC(game_data.characters[member].gearId, 1);
-        D_801D9084 = game_data.characters[member].gearId;
-        func_801CFAB8(1, game_data.characters[member].gearId);
-        func_801CC1C4();
+        gear_shop_run_frame();
+        gear_shop_model_read_files(game_data.characters[member].gearId, 1);
+        gear_shop_edited_gear = game_data.characters[member].gearId;
+        gear_shop_model_load_gear(1, game_data.characters[member].gearId);
+        gear_shop_run_frame();
     }
 }
 
-/* Draw heading set `set` (four sprites). */
-void func_801D04E8(u8 set) {
+/* 801D04E8: Draw heading set `set` (four sprites). */
+void gear_shop_layout_buy_headings(u8 set) {
     s32 i;
 
     menu_state_current->details->heading_count = 0;
     for (i = 0; i < 4; i++) {
         menu_state_current->details->heading_count +=
-            sprite_sheet_draw_scaled(menu_state_current->sheet, D_801D6D08[set * 4 + i],
+            sprite_sheet_draw_scaled(menu_state_current->sheet, gear_shop_buy_heading_images[set * 4 + i],
                           menu_state_current->details->heading + menu_state_current->details->heading_count * 2,
-                          menu_state_current->buffer_index, D_801D6D14[set * 4 + i], D_801D6D3C[set * 4 + i], 0x1000);
+                          menu_state_current->buffer_index, gear_shop_buy_heading_x_table[set * 4 + i], gear_shop_buy_heading_y_table[set * 4 + i], 0x1000);
     }
     menu_state_current->details->heading_buffer = menu_state_current->buffer_index;
 }
 
-/* Draw the two alternative heading sprites. */
-void func_801D05EC(void) {
+/* 801D05EC: Draw the two alternative heading sprites. */
+void gear_shop_layout_sell_headings(void) {
     s32 i;
 
     menu_state_current->details->heading_count = 0;
     for (i = 0; i < 2; i++) {
         menu_state_current->details->heading_count +=
-            sprite_sheet_draw_scaled(menu_state_current->sheet, D_801D6D10[i],
+            sprite_sheet_draw_scaled(menu_state_current->sheet, gear_shop_sell_heading_images[i],
                           menu_state_current->details->heading + menu_state_current->details->heading_count * 2,
-                          menu_state_current->buffer_index, D_801D6D34[i], D_801D6D5C[i], 0x1000);
+                          menu_state_current->buffer_index, gear_shop_sell_heading_x_table[i], gear_shop_sell_heading_y_table[i], 0x1000);
     }
     menu_state_current->details->heading_buffer = menu_state_current->buffer_index;
 }
 
-/* Show the number panel: its two frame lines and three numbers, plus a fourth when `lower` (shifted left and up by `lower`). */
-void func_801D06D8(u32 first, u32 second, u32 third, u32 fourth, u8 lower) {
+/* 801D06D8: Show the number panel: its two frame lines and three numbers, plus a fourth when `lower` (shifted left and up by `lower`). */
+void gear_shop_layout_gold_numbers(u32 first, u32 second, u32 third, u32 fourth, u8 lower) {
     s32 i;
 
     for (i = 0; i < 2; i++) {
@@ -780,43 +780,43 @@ void func_801D06D8(u32 first, u32 second, u32 third, u32 fourth, u8 lower) {
         (menu_state_current->details->frame + i)->r0 = 0xFF;
         (menu_state_current->details->frame + i)->g0 = 0xFF;
         (menu_state_current->details->frame + i)->b0 = 0xFF;
-        (menu_state_current->details->frame + i)->x0 = D_801D6D6C - 8 - lower * 16;
-        (menu_state_current->details->frame + i)->y0 = D_801D6D70 + 9 - lower * 8;
-        (menu_state_current->details->frame + i)->x1 = D_801D6D6C + 0x4E - lower * 16;
-        (menu_state_current->details->frame + i)->y1 = D_801D6D70 + 9 - lower * 8;
+        (menu_state_current->details->frame + i)->x0 = gear_shop_total_x - 8 - lower * 16;
+        (menu_state_current->details->frame + i)->y0 = gear_shop_total_y + 9 - lower * 8;
+        (menu_state_current->details->frame + i)->x1 = gear_shop_total_x + 0x4E - lower * 16;
+        (menu_state_current->details->frame + i)->y1 = gear_shop_total_y + 9 - lower * 8;
     }
-    func_801C5298(first);
+    gear_shop_split_digits(first);
     menu_state_current->details->digits1_count = 0;
     for (i = 0; i < 9; i++) {
         if (menu_state_current->digits[i] != 0xFF) {
             menu_state_current->details->digits1_count +=
                 sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i],
                               &menu_state_current->details->digits1[menu_state_current->details->digits1_count * 2],
-                              menu_state_current->buffer_index, D_801D6D64 + i * 8 - lower * 16, D_801D6D68 - lower * 16,
+                              menu_state_current->buffer_index, gear_shop_gold_x + i * 8 - lower * 16, gear_shop_gold_y - lower * 16,
                               0x1000);
         }
     }
     menu_state_current->details->digits1_buffer = menu_state_current->buffer_index;
-    func_801C5298(second);
+    gear_shop_split_digits(second);
     menu_state_current->details->digits2_count = 0;
     for (i = 0; i < 9; i++) {
         if (menu_state_current->digits[i] != 0xFF) {
             menu_state_current->details->digits2_count +=
                 sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i],
                               &menu_state_current->details->digits2[menu_state_current->details->digits2_count * 2],
-                              menu_state_current->buffer_index, D_801D6D6C + i * 8 - lower * 16, D_801D6D70 - lower * 16,
+                              menu_state_current->buffer_index, gear_shop_total_x + i * 8 - lower * 16, gear_shop_total_y - lower * 16,
                               0x1000);
         }
     }
     menu_state_current->details->digits2_buffer = menu_state_current->buffer_index;
-    func_801C5298(third);
+    gear_shop_split_digits(third);
     menu_state_current->details->digits3_count = 0;
     for (i = 0; i < 9; i++) {
         if (menu_state_current->digits[i] != 0xFF) {
             menu_state_current->details->digits3_count +=
                 sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i],
                               &menu_state_current->details->digits3[menu_state_current->details->digits3_count * 2],
-                              menu_state_current->buffer_index, D_801D6D74 + i * 8 - lower * 16, D_801D6D78 - lower * 8,
+                              menu_state_current->buffer_index, gear_shop_new_gold_x + i * 8 - lower * 16, gear_shop_new_gold_y - lower * 8,
                               0x1000);
         }
     }
@@ -824,13 +824,13 @@ void func_801D06D8(u32 first, u32 second, u32 third, u32 fourth, u8 lower) {
     menu_state_current->details->digits4_count = 0;
     menu_state_current->details->digits4_shown = 0;
     if (lower) {
-        func_801C5298(fourth);
+        gear_shop_split_digits(fourth);
         for (i = 0; i < 9; i++) {
             if (menu_state_current->digits[i] != 0xFF) {
                 menu_state_current->details->digits4_count +=
                     sprite_sheet_draw_scaled(menu_state_current->sheet, menu_state_current->digits[i],
                                   &menu_state_current->details->digits4[menu_state_current->details->digits4_count * 2],
-                                  menu_state_current->buffer_index, D_801D6D6C + i * 8 - lower * 16, D_801D6D70 - lower * 8,
+                                  menu_state_current->buffer_index, gear_shop_total_x + i * 8 - lower * 16, gear_shop_total_y - lower * 8,
                                   0x1000);
             }
         }
@@ -840,8 +840,8 @@ void func_801D06D8(u32 first, u32 second, u32 third, u32 fourth, u8 lower) {
     menu_state_current->details->digits_shown = 1;
 }
 
-/* Draw a nine-digit number (the party's gold) at (6bh, 54h), or lower at (53h, 64h). */
-void func_801D0C20(u32 value, u8 lower) {
+/* 801D0C20: Draw a nine-digit number (the party's gold) at (6bh, 54h), or lower at (53h, 64h). */
+void gear_shop_layout_notice_total(u32 value, u8 lower) {
     s32 i;
     s32 x;
     s32 y;
@@ -852,7 +852,7 @@ void func_801D0C20(u32 value, u8 lower) {
         x = 0x50;
         y = 0x64;
     }
-    func_801C5298(value);
+    gear_shop_split_digits(value);
     i = 0;
     menu_state_current->details->group1220_count = 0;
     for (; i < 9; i++, x += 8) {
@@ -867,12 +867,12 @@ void func_801D0C20(u32 value, u8 lower) {
     menu_state_current->flags->unknown5a[1] = 2;
 }
 
-/* Draw a nine-digit price and its unit sprite at (aah, aeh). */
-void func_801D0D4C(u32 value) {
+/* 801D0D4C: Draw a nine-digit price and its unit sprite at (aah, aeh). */
+void gear_shop_layout_price_digits(u32 value) {
     s32 i;
     s32 x;
 
-    func_801C5298(value);
+    gear_shop_split_digits(value);
     i = 0;
     x = 0xAA;
     menu_state_current->details->price_count = 0;
@@ -892,8 +892,8 @@ void func_801D0D4C(u32 value) {
     menu_state_current->flags->price_shown = 1;
 }
 
-/* Hide the shop list's packets; with `close` also close its panels, scroll bar and marker. */
-void func_801D0EC8(u8 close) {
+/* 801D0EC8: Hide the shop list's packets; with `close` also close its panels, scroll bar and marker. */
+void gear_shop_hide_details(u8 close) {
     s32 i;
 
     menu_state_current->flags->unknown5a[0] = 0;
@@ -914,15 +914,15 @@ void func_801D0EC8(u8 close) {
     }
     menu_state_current->details->label4530_shown = 0;
     if (close) {
-        func_801C9054(2);
-        func_801C9054(3);
-        func_801C782C();
-        func_801C7A88(0);
+        gear_shop_panel_close(2);
+        gear_shop_panel_close(3);
+        gear_shop_scroll_bar_hide();
+        gear_shop_list_cursor_free(0);
     }
 }
 
-/* Party bits of the available members whose gear has part `item` of kind `kind` fitted. */
-u32 func_801D1078(u8 item, u8 kind) {
+/* 801D1078: Party bits of the available members whose gear has part `item` of kind `kind` fitted. */
+u32 gear_shop_find_part_holders(u8 item, u8 kind) {
     u16 members;
     u8 found;
     s32 i;
@@ -973,19 +973,19 @@ u32 func_801D1078(u8 item, u8 kind) {
                 }
             }
             if (found) {
-                members |= func_801C5260(game_data.characters[i].gearId);
+                members |= gear_shop_get_bit_mask32(game_data.characters[i].gearId);
             }
         }
     }
     return members;
 }
 
-/*
+/* 801D1304
  * Show part `id` of kind `kind` (3 or 4): its name and sell price (half the
  * table price) labels, the bars of the members who can use it and the marks
  * of those holding it. Returns the sell price.
  */
-u32 func_801D1304(u8 id, u8 kind) {
+u32 gear_shop_show_sell_entry(u8 id, u8 kind) {
     RECT rect;
     u8 unused[16]; /* unused in the original; reserves 16 bytes */
     u8 codes[14];
@@ -1025,7 +1025,7 @@ u32 func_801D1304(u8 id, u8 kind) {
         value = price;
         break;
     }
-    holders = func_801D1078(id, kind);
+    holders = gear_shop_find_part_holders(id, kind);
     started = 0;
     for (i = 0, j = 4; j > 0; i++, j--) {
         digit = value / divisors[j];
@@ -1046,15 +1046,15 @@ u32 func_801D1304(u8 id, u8 kind) {
     rect.h = 13;
     LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
-    func_801C5CA8(&menu_state_current->details->label4430, 0, 0, 0);
-    func_801C5CA8(&menu_state_current->details->label44B0, 0, 0, 0);
+    gear_shop_label_init_quads(&menu_state_current->details->label4430, 0, 0, 0);
+    gear_shop_label_init_quads(&menu_state_current->details->label44B0, 0, 0, 0);
     menu_state_current->details->label44B0.polys[menu_state_current->buffer_index].clut = text_plane1_clut;
-    func_801C51B8(&menu_state_current->details->label4430.polys[menu_state_current->buffer_index], 0x2C, 0x12, 0, 0x4E,
+    gear_shop_quad_place(&menu_state_current->details->label4430.polys[menu_state_current->buffer_index], 0x2C, 0x12, 0, 0x4E,
                   menu_state_current->details->label4430.width, 13);
-    func_801C51B8(&menu_state_current->details->label44B0.polys[menu_state_current->buffer_index], 0x98, 0x12, 0, 0x4E,
+    gear_shop_quad_place(&menu_state_current->details->label44B0.polys[menu_state_current->buffer_index], 0x98, 0x12, 0, 0x4E,
                   menu_state_current->details->label44B0.width, 13);
-    func_801C7604(menu_state_current->details->label4430.verts, 0x2C, 0x12, menu_state_current->details->label4430.width, 13);
-    func_801C7604(menu_state_current->details->label44B0.verts, 0x98, 0x12, menu_state_current->details->label44B0.width, 13);
+    gear_shop_set_rect_verts(menu_state_current->details->label4430.verts, 0x2C, 0x12, menu_state_current->details->label4430.width, 13);
+    gear_shop_set_rect_verts(menu_state_current->details->label44B0.verts, 0x98, 0x12, menu_state_current->details->label44B0.width, 13);
     menu_state_current->details->label4430.buffer = menu_state_current->buffer_index;
     menu_state_current->details->label44B0.buffer = menu_state_current->buffer_index;
     heap_free(pixels);
@@ -1071,16 +1071,16 @@ u32 func_801D1304(u8 id, u8 kind) {
     for (; i < 16; i++) {
         if (menu_state_current->present[i] != 0) {
             gear = game_data.characters[i].gearId;
-            if (func_801C527C(users, gear)) {
+            if (gear_shop_test_bit32(users, gear)) {
                 menu_state_current->details->bar_shown[j] = 1;
             } else {
                 menu_state_current->details->bar_shown[j] = 0;
             }
-            if (func_801C527C(holders, gear)) {
+            if (gear_shop_test_bit32(holders, gear)) {
                 menu_state_current->details->group2D0_count +=
                     sprite_sheet_draw_scaled(menu_state_current->sheet, 0xE,
                                   &menu_state_current->details->group2D0[menu_state_current->details->group2D0_count * 2],
-                                  menu_state_current->buffer_index, D_801D6C44[j] + 0xE, 0xB4, 0x1000);
+                                  menu_state_current->buffer_index, gear_shop_portrait_x_table[j] + 0xE, 0xB4, 0x1000);
             }
             j++;
         }
@@ -1089,11 +1089,11 @@ u32 func_801D1304(u8 id, u8 kind) {
     return price;
 }
 
-/*
+/* 801D18F8
  * Draw the eight visible rows of a list from entry `top`: each part's name,
  * the count held and, when some are chosen, "x" and the chosen count.
  */
-void func_801D18F8(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
+void gear_shop_layout_sell_rows(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
     RECT rect;
     u8 codes[14];
     u8 text[16];
@@ -1147,8 +1147,8 @@ void func_801D18F8(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
             rect.w = 0x28;
             rect.h = 13;
             LoadImage(&rect, (u_long *)pixels);
-            func_801C5CA8(&menu_state_current->details->names_a[row], row, 0x80, 0x81);
-            func_801C7604(menu_state_current->details->names_a[row].verts, 0x24, row * 13 + 0x32,
+            gear_shop_label_init_quads(&menu_state_current->details->names_a[row], row, 0x80, 0x81);
+            gear_shop_set_rect_verts(menu_state_current->details->names_a[row].verts, 0x24, row * 13 + 0x32,
                           menu_state_current->details->names_a[row].width, 13);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = (row / 2) * 13 + 0x80;
@@ -1156,8 +1156,8 @@ void func_801D18F8(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
             rect.h = 13;
             LoadImage(&rect, (u_long *)pixels);
             DrawSync(0);
-            func_801C5CA8(&menu_state_current->details->names_b[row], row, 0x80, 0x82);
-            func_801C7604(menu_state_current->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
+            gear_shop_label_init_quads(&menu_state_current->details->names_b[row], row, 0x80, 0x82);
+            gear_shop_set_rect_verts(menu_state_current->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
                           menu_state_current->details->names_b[row].width, 13);
             menu_state_current->details->names_a[row].buffer = menu_state_current->buffer_index;
             menu_state_current->details->names_a[row].buffer = menu_state_current->buffer_index;
@@ -1186,14 +1186,14 @@ void func_801D18F8(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held) {
     heap_free(pixels);
 }
 
-/* Set the party's gold (capped at 9999999) and, with `remove`, take the chosen amounts out of the inventory. */
-void func_801D1F20(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_counts, u8 *unused,
+/* 801D1F20: Set the party's gold (capped at 9999999) and, with `remove`, take the chosen amounts out of the inventory. */
+void gear_shop_settle_sale(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_counts, u8 *unused,
                    u8 remove, u8 unused_member) {
     u32 *party_gold;
     s32 i;
     s32 j;
 
-    func_801CB498(0xD1);
+    gear_shop_play_sound(0xD1);
     party_gold = &game_data.gold;
     *party_gold = gold;
     if (gold > 9999999) {
@@ -1215,13 +1215,13 @@ void func_801D1F20(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_c
     }
 }
 
-/*
+/* 801D2054
  * The sell list (twin of the item shop's): choose how many of each of `n`
  * held parts to sell, eight rows at a time, with the running total and the
  * gold after the sale; confirming settles the sale. Every row uses `kind`;
  * `remove` controls inventory removal and the settlement ignores `member`.
  */
-void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_kinds, u8 member) {
+void gear_shop_sell_list_run(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_kinds, u8 member) {
     u8 running = 1;
     u8 first = 1;
     u8 redraw = 1;
@@ -1265,45 +1265,45 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_ki
         }
     }
     count = collected;
-    func_801C7870(0);
+    gear_shop_list_cursor_alloc(0);
     while (running) {
-        func_801CC1C4();
+        gear_shop_run_frame();
         if (top != last_top || redraw) {
-            func_801D18F8(top, sell_ids, sell_kinds, chosen, held);
-            func_801C76A4(0xC, 0x32, 0x3C, count, top);
+            gear_shop_layout_sell_rows(top, sell_ids, sell_kinds, chosen, held);
+            gear_shop_scroll_bar_show(0xC, 0x32, 0x3C, count, top);
         }
         if (row != last_row || top != last_top) {
             last_row = row;
-            price = func_801D1304(sell_ids[top + row], sell_kinds[top + row]);
+            price = gear_shop_show_sell_entry(sell_ids[top + row], sell_kinds[top + row]);
             last_top = top;
             menu_state_current->flags->unknown5a[0] = 1;
         }
-        func_801C78EC(row, top, 0, 0);
+        gear_shop_list_cursor_place(row, top, 0, 0);
         if (first) {
-            func_801C90E0(2, 0xC, 0x2A, 0xC4, 0x74, 0, 1, 4, 1);
-            func_801C90E0(3, 0x20, 0xE, 0xFC, 0x14, 0, 1, 4, 0);
-            func_801D0220();
-            func_801D05EC();
+            gear_shop_panel_open(2, 0xC, 0x2A, 0xC4, 0x74, 0, 1, 4, 1);
+            gear_shop_panel_open(3, 0x20, 0xE, 0xFC, 0x14, 0, 1, 4, 0);
+            gear_shop_reveal_portraits();
+            gear_shop_layout_sell_headings();
             first = 0;
         }
         if (redraw) {
-            func_801D06D8(gold, total, new_gold, 0, 0);
+            gear_shop_layout_gold_numbers(gold, total, new_gold, 0, 0);
             redraw = 0;
         }
         switch (menu_state_current->input) {
         case 4:
             if (total != 0) {
-                func_801CB498(2);
+                gear_shop_play_sound(2);
                 menu_state_current->flags->unknown5a[0] = 0;
                 menu_state_current->flags->panels_shown[2] = 0;
                 menu_state_current->flags->panels_shown[3] = 0;
                 menu_state_current->flags->scroll_shown = 0;
                 running = 0;
                 menu_state_current->flags->cursors_shown[0] = 0;
-                func_801CC31C(0);
-                func_801D0C20(total, 0);
-                if (func_801CCC18(0x95, 0xFF, 1)) {
-                    func_801D1F20(new_gold, sell_ids, chosen, n, ids, counts, sell_kinds, remove, member);
+                gear_shop_markers_open(0);
+                gear_shop_layout_notice_total(total, 0);
+                if (gear_shop_notice_ask_yes_no(0x95, 0xFF, 1)) {
+                    gear_shop_settle_sale(new_gold, sell_ids, chosen, n, ids, counts, sell_kinds, remove, member);
                 } else {
                     running = 1;
                     menu_state_current->flags->panels_shown[2] = 1;
@@ -1313,9 +1313,9 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_ki
                     last_row = 0xFF;
                     menu_state_current->flags->cursors_shown[0] = running;
                 }
-                func_801CC4DC();
+                gear_shop_markers_close();
             } else {
-                func_801CB498(4);
+                gear_shop_play_sound(4);
             }
             break;
         case 5:
@@ -1326,8 +1326,8 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_ki
                 menu_state_current->flags->panels_shown[3] = 0;
                 menu_state_current->flags->scroll_shown = 0;
                 menu_state_current->flags->cursors_shown[0] = 0;
-                func_801CC31C(0);
-                if (!func_801CCC18(0x92, 0xFF, 1)) {
+                gear_shop_markers_open(0);
+                if (!gear_shop_notice_ask_yes_no(0x92, 0xFF, 1)) {
                     running = 1;
                     menu_state_current->flags->panels_shown[2] = 1;
                     menu_state_current->flags->panels_shown[3] = 1;
@@ -1336,7 +1336,7 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_ki
                     last_row = 0xFF;
                     menu_state_current->flags->cursors_shown[0] = running;
                 }
-                func_801CC4DC();
+                gear_shop_markers_close();
             }
             break;
         case 1:
@@ -1382,42 +1382,42 @@ void func_801D2054(s32 n, u8 *ids, u8 *counts, u8 kind, u8 remove, u8 *unused_ki
     }
 }
 
-/* Run the sell list for inventory 3 (150 entries). */
-void func_801D2784(void) {
-    func_801D2054(150, game_data.gearAccessoryIds, game_data.gearAccessoryIds - 150, 3, 1, game_data.gearAccessoryIds - 150, 0);
+/* 801D2784: Run the sell list for inventory 3 (150 entries). */
+void gear_shop_gear_accessory_sell_list_run(void) {
+    gear_shop_sell_list_run(150, game_data.gearAccessoryIds, game_data.gearAccessoryIds - 150, 3, 1, game_data.gearAccessoryIds - 150, 0);
 }
 
-/* Run the sell list for inventory 4 (100 entries). */
-void func_801D27C4(void) {
-    func_801D2054(100, game_data.gearPartIds, game_data.gearPartIds - 100, 4, 1, game_data.gearPartIds - 100, 0);
+/* 801D27C4: Run the sell list for inventory 4 (100 entries). */
+void gear_shop_gear_part_sell_list_run(void) {
+    gear_shop_sell_list_run(100, game_data.gearPartIds, game_data.gearPartIds - 100, 4, 1, game_data.gearPartIds - 100, 0);
 }
 
-/* Run sell list `page` * 3 + cursor (3 and 4 are the two inventories), then restore the list labels. */
-void func_801D2804(u8 page) {
+/* 801D2804: Run sell list `page` * 3 + cursor (3 and 4 are the two inventories), then restore the list labels. */
+void gear_shop_chosen_sell_list_run(u8 page) {
     u8 close;
 
     menu_state_current->flags->sprite_shown = 0;
     menu_state_current->flags->cursor_shown = 0;
     menu_state_current->flags->lists_shown = 0;
-    func_801CCEBC(4, menu_state_current->flags->list_labels_shown);
+    gear_shop_label_clear_shown(4, menu_state_current->flags->list_labels_shown);
     close = 1;
     switch (menu_state_current->choice + page * 3) {
     case 3:
-        func_801D2784();
+        gear_shop_gear_accessory_sell_list_run();
         break;
     case 4:
-        func_801D27C4();
+        gear_shop_gear_part_sell_list_run();
         break;
     }
-    func_801D0EC8(close);
+    gear_shop_hide_details(close);
     menu_state_current->flags->lists_shown = 1;
     menu_state_current->flags->sprite_shown = 1;
     menu_state_current->flags->cursor_shown = 1;
-    func_801CCE90(4, menu_state_current->list_labels, D_801D6A24, menu_state_current->flags->list_labels_shown);
+    gear_shop_label_render_table(4, menu_state_current->list_labels, gear_shop_choice_label_ids, menu_state_current->flags->list_labels_shown);
 }
 
-/* Render the edited gear's part name of list `kind` (0 frame, 1 engine, 2 armour) into its label and show it. */
-void func_801D2950(u8 kind) {
+/* 801D2950: Render the edited gear's part name of list `kind` (0 frame, 1 engine, 2 armour) into its label and show it. */
+void gear_shop_show_fitted_part_name(u8 kind) {
     RECT rect;
     u8 *pixels;
 
@@ -1425,15 +1425,15 @@ void func_801D2950(u8 kind) {
     switch (kind) {
     case 0:
         menu_state_current->details->label4530.width = window_render_text_line(
-            text_get_resource_entry(menu_state_current->details->resources[6], game_data.gears[D_801D9084].frame), pixels, 0x24, 0);
+            text_get_resource_entry(menu_state_current->details->resources[6], game_data.gears[gear_shop_edited_gear].frame), pixels, 0x24, 0);
         break;
     case 1:
         menu_state_current->details->label4530.width = window_render_text_line(
-            text_get_resource_entry(menu_state_current->details->resources[7], game_data.gears[D_801D9084].engine), pixels, 0x24, 0);
+            text_get_resource_entry(menu_state_current->details->resources[7], game_data.gears[gear_shop_edited_gear].engine), pixels, 0x24, 0);
         break;
     case 2:
         menu_state_current->details->label4530.width = window_render_text_line(
-            text_get_resource_entry(menu_state_current->details->resources[8], game_data.gears[D_801D9084].field3), pixels, 0x24, 0);
+            text_get_resource_entry(menu_state_current->details->resources[8], game_data.gears[gear_shop_edited_gear].field3), pixels, 0x24, 0);
         break;
     }
     rect.x = 0x198;
@@ -1441,22 +1441,22 @@ void func_801D2950(u8 kind) {
     rect.w = 0x28;
     rect.h = 0xD;
     LoadImage(&rect, (u_long *)pixels);
-    func_801C5CA8(&menu_state_current->details->label4530, 9, 0x80, 0x81);
-    func_801C7604(menu_state_current->details->label4530.verts, 0xD4, 0x8E, menu_state_current->details->label4530.width, 0xD);
+    gear_shop_label_init_quads(&menu_state_current->details->label4530, 9, 0x80, 0x81);
+    gear_shop_set_rect_verts(menu_state_current->details->label4530.verts, 0xD4, 0x8E, menu_state_current->details->label4530.width, 0xD);
     DrawSync(0);
     menu_state_current->details->label4530.buffer = menu_state_current->buffer_index;
     menu_state_current->details->label4530_shown = 1;
     heap_free(pixels);
 }
 
-/*
+/* 801D2B74
  * Draw the eight visible rows of the parts shop's stock from entry `top`:
  * each part's name and price (`dims[row]` 80h when `gold` covers it and, for
  * kinds 0-2, the edited gear can fit it) and, when some are chosen, "x" and
  * the amount. Returns half the price of the edited gear's fitted part of the
  * last row's kind (0-2): its trade-in value.
  */
-u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
+u32 gear_shop_layout_stock_rows(s32 top, s32 gold, u8 *dims) {
     RECT rect;
     u8 codes[14];
     u8 text[16];
@@ -1489,7 +1489,7 @@ u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
         if (menu_state_current->shop_items[top + row] != 0) {
             switch (menu_state_current->shop_kinds[top + row]) {
             case 0:
-                frame = &menu_state_current->tables->frames[game_data.gears[D_801D9084].frame];
+                frame = &menu_state_current->tables->frames[game_data.gears[gear_shop_edited_gear].frame];
                 trade = frame->price >> 1;
                 menu_state_current->details->names_a[row].width = window_render_text_line(
                     text_get_resource_entry(menu_state_current->details->resources[6], menu_state_current->shop_items[top + row]), pixels, 0x24, 0);
@@ -1499,7 +1499,7 @@ u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
                 users = frame->users;
                 break;
             case 1:
-                engine = &menu_state_current->tables->engines[game_data.gears[D_801D9084].engine];
+                engine = &menu_state_current->tables->engines[game_data.gears[gear_shop_edited_gear].engine];
                 trade = engine->price >> 1;
                 menu_state_current->details->names_a[row].width = window_render_text_line(
                     text_get_resource_entry(menu_state_current->details->resources[7], menu_state_current->shop_items[top + row]), pixels, 0x24, 0);
@@ -1509,7 +1509,7 @@ u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
                 users = engine->users;
                 break;
             case 2:
-                armour = &menu_state_current->tables->parts[game_data.gears[D_801D9084].field3];
+                armour = &menu_state_current->tables->parts[game_data.gears[gear_shop_edited_gear].field3];
                 trade = armour->price >> 1;
                 menu_state_current->details->names_a[row].width = window_render_text_line(
                     text_get_resource_entry(menu_state_current->details->resources[8], menu_state_current->shop_items[top + row]), pixels, 0x24, 0);
@@ -1534,7 +1534,7 @@ u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
                 break;
             }
             if (gold >= price) {
-                if (func_801C527C(users, D_801D9084)) {
+                if (gear_shop_test_bit32(users, gear_shop_edited_gear)) {
                     dims[row] = 0x80;
                 }
             }
@@ -1557,8 +1557,8 @@ u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
             rect.w = 0x28;
             rect.h = 13;
             LoadImage(&rect, (u_long *)pixels);
-            func_801C5CA8(&menu_state_current->details->names_a[row], row, 0x80, dims[row] + 1);
-            func_801C7604(menu_state_current->details->names_a[row].verts, 0x24, row * 13 + 0x32,
+            gear_shop_label_init_quads(&menu_state_current->details->names_a[row], row, 0x80, dims[row] + 1);
+            gear_shop_set_rect_verts(menu_state_current->details->names_a[row].verts, 0x24, row * 13 + 0x32,
                           menu_state_current->details->names_a[row].width, 13);
             rect.x = (row & 1) * 0x18 + 0x180;
             rect.y = (row / 2) * 13 + 0x80;
@@ -1566,8 +1566,8 @@ u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
             rect.h = 13;
             LoadImage(&rect, (u_long *)pixels);
             DrawSync(0);
-            func_801C5CA8(&menu_state_current->details->names_b[row], row, 0x80, dims[row] + 2);
-            func_801C7604(menu_state_current->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
+            gear_shop_label_init_quads(&menu_state_current->details->names_b[row], row, 0x80, dims[row] + 2);
+            gear_shop_set_rect_verts(menu_state_current->details->names_b[row].verts, 0x8C, row * 13 + 0x32,
                           menu_state_current->details->names_b[row].width, 13);
             menu_state_current->details->names_a[row].buffer = menu_state_current->buffer_index;
             menu_state_current->details->names_a[row].buffer = menu_state_current->buffer_index;
@@ -1597,14 +1597,14 @@ u32 func_801D2B74(s32 top, s32 gold, u8 *dims) {
     return trade;
 }
 
-/*
+/* 801D3558
  * Preview fitting part `part` of list `kind` (3 parts, 4 weapons) to member
  * `member`'s gear: fit it (a part of the same type, else in place of the
  * lowest-ranked part; a weapon of the same class), recompute the gear, and
  * return the change of its two shown values against the stored ones as
  * magnitudes and signs (1 a decrease); then restore the gear.
  */
-void func_801D3558(s32 *change, u8 *decrease, u8 part, u8 kind, u8 member) {
+void gear_shop_compare_fitted_stats(s32 *change, u8 *decrease, u8 part, u8 kind, u8 member) {
     s16 values[2][4]; /* preview and saved stats, with an eight-byte row stride */
     u8 saved[8];
     GearWeaponInfo *weapon;
@@ -1661,8 +1661,8 @@ void func_801D3558(s32 *change, u8 *decrease, u8 part, u8 kind, u8 member) {
         }
         break;
     }
-    func_801D6150(menu_state_current->tables, game_data.characters[member].gearId);
-    func_801D5F94(menu_state_current->tables, game_data.characters[member].gearId);
+    gear_shop_rebuild_gear_values(menu_state_current->tables, game_data.characters[member].gearId);
+    gear_shop_compute_gear_summary(menu_state_current->tables, game_data.characters[member].gearId);
     values[0][0] = menu_state_current->tables->gear.attack;
     values[0][1] = menu_state_current->tables->gear.defense;
     values[1][0] = menu_state_current->details->attack[member];
@@ -1684,11 +1684,11 @@ void func_801D3558(s32 *change, u8 *decrease, u8 part, u8 kind, u8 member) {
     game_data.gears[gear].parts[0] = saved[5];
     game_data.gears[gear].parts[1] = saved[6];
     game_data.gears[gear].parts[2] = saved[7];
-    func_801D6150(menu_state_current->tables, game_data.characters[member].gearId);
+    gear_shop_rebuild_gear_values(menu_state_current->tables, game_data.characters[member].gearId);
 }
 
-/* The count held of item `id` in an inventory of `n` ids and counts (0 if absent). */
-u16 func_801D3A3C(u8 *ids, u8 *counts, s32 n, u8 id) {
+/* 801D3A3C: The count held of item `id` in an inventory of `n` ids and counts (0 if absent). */
+u16 gear_shop_find_inventory_count(u8 *ids, u8 *counts, s32 n, u8 id) {
     u8 count;
     s32 i;
 
@@ -1702,8 +1702,8 @@ u16 func_801D3A3C(u8 *ids, u8 *counts, s32 n, u8 id) {
     return count;
 }
 
-/* Show how many of item `id` the party holds in inventory `kind` (3 or 4) beside the list. */
-void func_801D3A80(u8 kind, u8 id) {
+/* 801D3A80: Show how many of item `id` the party holds in inventory `kind` (3 or 4) beside the list. */
+void gear_shop_show_held_count(u8 kind, u8 id) {
     RECT rect;
     u8 codes[4];
     u8 text[8];
@@ -1732,8 +1732,8 @@ void func_801D3A80(u8 kind, u8 id) {
     if (!known) {
         return;
     }
-    count = func_801D3A3C(ids, counts, n, id);
-    D_801D904C = count;
+    count = gear_shop_find_inventory_count(ids, counts, n, id);
+    gear_shop_held_count = count;
     pixels = heap_alloc(0x3F6, 0);
     codes[1] = 0;
     codes[3] = 0;
@@ -1751,22 +1751,22 @@ void func_801D3A80(u8 kind, u8 id) {
     rect.h = 13;
     LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
-    func_801C5CA8(&menu_state_current->details->label45B0, 9, 0x80, 0x82);
-    func_801C7604(menu_state_current->details->label45B0.verts, 0xF8, 0x8E, menu_state_current->details->label45B0.width,
+    gear_shop_label_init_quads(&menu_state_current->details->label45B0, 9, 0x80, 0x82);
+    gear_shop_set_rect_verts(menu_state_current->details->label45B0.verts, 0xF8, 0x8E, menu_state_current->details->label45B0.width,
                   13);
     menu_state_current->details->label45B0.buffer = menu_state_current->buffer_index;
     menu_state_current->details->label45B0_shown = 1;
     heap_free(pixels);
 }
 
-/*
+/* 801D3C78
  * Show parts-shop entry `top + row` (`dims` unused): its name label, the bars
  * of the members whose gear can fit it, the marks of those whose gear holds it
  * and, for parts (kinds 3 and 4) each fitting member's attack and defence
  * change (tinted by whether it drops), then how many the party holds.
  * Returns its price.
  */
-u32 func_801D3C78(s32 row, s32 top, u8 *dims) {
+u32 gear_shop_show_stock_entry(s32 row, s32 top, u8 *dims) {
     RECT rect;
     s32 diffs[2];
     u8 worse[2];
@@ -1820,17 +1820,17 @@ u32 func_801D3C78(s32 row, s32 top, u8 *dims) {
         users = menu_state_current->tables->gear_accessories[id].users;
         break;
     }
-    holders = func_801D1078(id, kind);
+    holders = gear_shop_find_part_holders(id, kind);
     rect.x = 0x140;
     rect.y = 0x4E;
     rect.w = 0x3C;
     rect.h = 13;
     LoadImage(&rect, (u_long *)pixels);
     DrawSync(0);
-    func_801C5CA8(&menu_state_current->details->label4430, 0, 0, 0);
-    func_801C51B8(&menu_state_current->details->label4430.polys[menu_state_current->buffer_index], 0x2C, 0x12, 0, 0x4E,
+    gear_shop_label_init_quads(&menu_state_current->details->label4430, 0, 0, 0);
+    gear_shop_quad_place(&menu_state_current->details->label4430.polys[menu_state_current->buffer_index], 0x2C, 0x12, 0, 0x4E,
                   menu_state_current->details->label4430.width, 13);
-    func_801C7604(menu_state_current->details->label4430.verts, 0x2C, 0x12, menu_state_current->details->label4430.width, 13);
+    gear_shop_set_rect_verts(menu_state_current->details->label4430.verts, 0x2C, 0x12, menu_state_current->details->label4430.width, 13);
     menu_state_current->details->label4430.buffer = menu_state_current->buffer_index;
     heap_free(pixels);
     if (id) {
@@ -1844,25 +1844,25 @@ u32 func_801D3C78(s32 row, s32 top, u8 *dims) {
     for (; i < 16; i++) {
         if (menu_state_current->present[i] != 0) {
             gear = game_data.characters[i].gearId;
-            if (func_801C527C(users, gear)) {
+            if (gear_shop_test_bit32(users, gear)) {
                 menu_state_current->details->bar_shown[shown] = 1;
             } else {
                 menu_state_current->details->bar_shown[shown] = 0;
             }
-            if (func_801C527C(holders, gear)) {
+            if (gear_shop_test_bit32(holders, gear)) {
                 menu_state_current->details->group2D0_count +=
                     sprite_sheet_draw_scaled(menu_state_current->sheet, 0xE,
                                   &menu_state_current->details->group2D0[menu_state_current->details->group2D0_count * 2],
-                                  menu_state_current->buffer_index, D_801D6C44[shown] + 0xE, 0xB4, 0x1000);
+                                  menu_state_current->buffer_index, gear_shop_portrait_x_table[shown] + 0xE, 0xB4, 0x1000);
             }
             menu_state_current->details->cells_a_count[shown] = 0;
             menu_state_current->details->cells_b_count[shown] = 0;
             if ((kind == 3 || kind == 4) && menu_state_current->details->bar_shown[shown] != 0) {
                 diffs[1] = 0;
                 diffs[0] = 0;
-                func_801D3558(diffs, worse, id, kind, i);
+                gear_shop_compare_fitted_stats(diffs, worse, id, kind, i);
                 if (diffs[0] != 0) {
-                    func_801C5298(diffs[0]);
+                    gear_shop_split_digits(diffs[0]);
                     for (k = 0, xa = shown * 26 + 0x49; k < 3; k++) {
                         if (menu_state_current->digits[k + 6] != 0xFF) {
                             menu_state_current->details->cells_a_count[shown] += sprite_sheet_draw_scaled(
@@ -1871,12 +1871,12 @@ u32 func_801D3C78(s32 row, s32 top, u8 *dims) {
                                 menu_state_current->buffer_index, xa + k * 8, 0xBE, 0x1000);
                         }
                     }
-                    func_801D0054(menu_state_current->details->cells_a_count[shown], menu_state_current->details->cells_a[shown],
+                    gear_shop_tint_quads(menu_state_current->details->cells_a_count[shown], menu_state_current->details->cells_a[shown],
                                   worse[0]);
                     menu_state_current->details->cells_a_buffer[shown] = menu_state_current->buffer_index;
                 }
                 if (diffs[1] != 0) {
-                    func_801C5298(diffs[1]);
+                    gear_shop_split_digits(diffs[1]);
                     for (k = 0, xb = shown * 26 + 0x49; k < 3; k++) {
                         if (menu_state_current->digits[k + 6] != 0xFF) {
                             menu_state_current->details->cells_b_count[shown] += sprite_sheet_draw_scaled(
@@ -1885,7 +1885,7 @@ u32 func_801D3C78(s32 row, s32 top, u8 *dims) {
                                 menu_state_current->buffer_index, xb + k * 8, 0xC6, 0x1000);
                         }
                     }
-                    func_801D0054(menu_state_current->details->cells_b_count[shown], menu_state_current->details->cells_b[shown],
+                    gear_shop_tint_quads(menu_state_current->details->cells_b_count[shown], menu_state_current->details->cells_b[shown],
                                   worse[1]);
                     menu_state_current->details->cells_b_buffer[shown] = menu_state_current->buffer_index;
                 }
@@ -1894,23 +1894,23 @@ u32 func_801D3C78(s32 row, s32 top, u8 *dims) {
         }
     }
     menu_state_current->details->group2D0_buffer = menu_state_current->buffer_index;
-    func_801D3A80(kind, id);
+    gear_shop_show_held_count(kind, id);
     return price;
 }
 
-/*
+/* 801D44FC
  * Set the party's gold (capped at 9999999) and apply the purchases: kinds
  * 0-2 are fitted to the gear being edited, kinds 3 and 4 go into their
  * inventories (added to a part already held, at most 99, or into the first
  * free slot).
  */
-void func_801D44FC(u32 gold) {
+void gear_shop_settle_purchase(u32 gold) {
     u32 *party_gold;
     s32 i;
     s32 j;
     u8 new_item;
 
-    func_801CB498(0xD1);
+    gear_shop_play_sound(0xD1);
     party_gold = &game_data.gold;
     *party_gold = gold;
     if (gold > 9999999) {
@@ -1920,13 +1920,13 @@ void func_801D44FC(u32 gold) {
         if (menu_state_current->shop_items[i] != 0 && menu_state_current->details->amounts[i] != 0) {
             switch (menu_state_current->shop_kinds[i]) {
             case 0:
-                game_data.gears[D_801D9084].frame = menu_state_current->shop_items[i];
+                game_data.gears[gear_shop_edited_gear].frame = menu_state_current->shop_items[i];
                 break;
             case 1:
-                game_data.gears[D_801D9084].engine = menu_state_current->shop_items[i];
+                game_data.gears[gear_shop_edited_gear].engine = menu_state_current->shop_items[i];
                 break;
             case 2:
-                game_data.gears[D_801D9084].field3 = menu_state_current->shop_items[i];
+                game_data.gears[gear_shop_edited_gear].field3 = menu_state_current->shop_items[i];
                 break;
             case 4:
                 new_item = 1;
@@ -1973,24 +1973,24 @@ void func_801D44FC(u32 gold) {
     }
 }
 
-/* Whether shop part `index` differs from the edited gear's part of that kind (0 when the gear already has it or better). */
-u8 func_801D4888(s32 index) {
+/* 801D4888: Whether shop part `index` differs from the edited gear's part of that kind (0 when the gear already has it or better). */
+u8 gear_shop_is_part_upgrade(s32 index) {
     u8 wanted;
 
     wanted = 1;
     switch (menu_state_current->shop_kinds[index]) {
     case 0:
-        if (game_data.gears[D_801D9084].frame >= menu_state_current->shop_items[index]) {
+        if (game_data.gears[gear_shop_edited_gear].frame >= menu_state_current->shop_items[index]) {
             wanted = 0;
         }
         break;
     case 1:
-        if (game_data.gears[D_801D9084].engine >= menu_state_current->shop_items[index]) {
+        if (game_data.gears[gear_shop_edited_gear].engine >= menu_state_current->shop_items[index]) {
             wanted = 0;
         }
         break;
     case 2:
-        if (game_data.gears[D_801D9084].field3 >= menu_state_current->shop_items[index]) {
+        if (game_data.gears[gear_shop_edited_gear].field3 >= menu_state_current->shop_items[index]) {
             wanted = 0;
         }
         break;
@@ -1998,12 +1998,12 @@ u8 func_801D4888(s32 index) {
     return wanted;
 }
 
-/*
+/* 801D498C
  * The parts shop's buy list `page` * 3 + cursor. With `fit` (lists 0-2) one
  * part is fitted to the edited gear, trading in its current part; otherwise
  * (lists 3 and 4) parts are bought by amount into the inventories.
  */
-u8 func_801D498C(u8 page, u8 fit) {
+u8 gear_shop_buy_list_run(u8 page, u8 fit) {
     u8 dims[8];
     u8 running;
     u8 redraw;
@@ -2046,8 +2046,8 @@ u8 func_801D498C(u8 page, u8 fit) {
     funds = new_gold;
     for (i = 0; i < 11; i++) {
         if (game_data.characters[i].gearId != 0xFF) {
-            func_801D6150(menu_state_current->tables, game_data.characters[i].gearId);
-            func_801D5F94(menu_state_current->tables, game_data.characters[i].gearId);
+            gear_shop_rebuild_gear_values(menu_state_current->tables, game_data.characters[i].gearId);
+            gear_shop_compute_gear_summary(menu_state_current->tables, game_data.characters[i].gearId);
             menu_state_current->details->attack[i] = menu_state_current->tables->gear.attack;
             menu_state_current->details->defense[i] = menu_state_current->tables->gear.defense;
         }
@@ -2061,21 +2061,21 @@ u8 func_801D498C(u8 page, u8 fit) {
         menu_state_current->shop_items[i] = *stock;
         menu_state_current->shop_kinds[i] = page * 3 + menu_state_current->choice;
     }
-    count = D_801D908C[page * 3 + menu_state_current->choice];
+    count = gear_shop_stock_list_counts[page * 3 + menu_state_current->choice];
     menu_state_current->images->dim = 1;
-    func_801C7870(0);
+    gear_shop_list_cursor_alloc(0);
     while (running) {
-        func_801CC1C4();
+        gear_shop_run_frame();
         if (top != last_top || redraw) {
             if (fit) {
-                trade_in = func_801D2B74(top, funds, dims);
+                trade_in = gear_shop_layout_stock_rows(top, funds, dims);
             } else {
-                trade_in = func_801D2B74(top, new_gold, dims);
+                trade_in = gear_shop_layout_stock_rows(top, new_gold, dims);
             }
-            func_801C76A4(0xC, 0x32, 0x3C, count, top);
+            gear_shop_scroll_bar_show(0xC, 0x32, 0x3C, count, top);
         }
         if (row != last_row || top != last_top) {
-            price = func_801D3C78(row, top, dims);
+            price = gear_shop_show_stock_entry(row, top, dims);
             last_row = row;
             last_top = top;
             menu_state_current->flags->unknown5a[0] = 1;
@@ -2094,29 +2094,29 @@ u8 func_801D498C(u8 page, u8 fit) {
                 }
             }
         }
-        func_801C78EC(row, top, 0, 0);
+        gear_shop_list_cursor_place(row, top, 0, 0);
         if (first) {
-            func_801C90E0(2, 0xC, 0x2A, 0xC4 - fit * 0x14, 0x74, 0, 1, 4, 1);
-            func_801C90E0(3, 0x20, 0xE, 0xFC, 0x14, 0, 1, 4, 0);
-            func_801C90E0(5, panel_x, 0x7A, panel_w, 0x24, 0, 1, 4, 0);
-            func_801CCE90(2, menu_state_current->list_labels, D_801D6A2C, menu_state_current->flags->list_labels_shown);
-            func_801CCEE8(2, menu_state_current->list_labels, D_801D6A2C, D_801D6A40, menu_state_current->flags->list_labels_shown,
+            gear_shop_panel_open(2, 0xC, 0x2A, 0xC4 - fit * 0x14, 0x74, 0, 1, 4, 1);
+            gear_shop_panel_open(3, 0x20, 0xE, 0xFC, 0x14, 0, 1, 4, 0);
+            gear_shop_panel_open(5, panel_x, 0x7A, panel_w, 0x24, 0, 1, 4, 0);
+            gear_shop_label_render_table(2, menu_state_current->list_labels, gear_shop_buy_label_ids, menu_state_current->flags->list_labels_shown);
+            gear_shop_label_place(2, menu_state_current->list_labels, gear_shop_buy_label_ids, gear_shop_choice_label_x_offsets, menu_state_current->flags->list_labels_shown,
                           fit, 0, 1);
             if (fit) {
-                func_801D2950(menu_state_current->choice + page * 3);
+                gear_shop_show_fitted_part_name(menu_state_current->choice + page * 3);
             }
-            func_801D0220();
-            func_801D04E8(fit);
+            gear_shop_reveal_portraits();
+            gear_shop_layout_buy_headings(fit);
             first = 0;
         }
         if (redraw) {
-            func_801D06D8(gold, total, new_gold, credit, fit);
+            gear_shop_layout_gold_numbers(gold, total, new_gold, credit, fit);
             redraw = 0;
         }
         switch (menu_state_current->input) {
         case 4:
             if (total != 0) {
-                func_801CB498(2);
+                gear_shop_play_sound(2);
                 menu_state_current->flags->unknown5a[0] = 0;
                 menu_state_current->flags->panels_shown[2] = 0;
                 menu_state_current->flags->panels_shown[3] = 0;
@@ -2126,21 +2126,21 @@ u8 func_801D498C(u8 page, u8 fit) {
                 running = 0;
                 menu_state_current->flags->list_labels_shown[fit] = 0;
                 if (fit) {
-                    if (func_801D4888(top + row)) {
+                    if (gear_shop_is_part_upgrade(top + row)) {
                         message = 0xA3;
                     } else {
                         message = 0xAF;
                         confirm = 0xB2;
                     }
                 } else {
-                    func_801D0C20(total, 0);
+                    gear_shop_layout_notice_total(total, 0);
                 }
-                func_801CC31C(0);
-                if (func_801CCC18(message, confirm, 1)) {
+                gear_shop_markers_open(0);
+                if (gear_shop_notice_ask_yes_no(message, confirm, 1)) {
                     if (fit) {
                         menu_state_current->details->amounts[top + row] = 1;
                     }
-                    func_801D44FC(new_gold);
+                    gear_shop_settle_purchase(new_gold);
                 } else {
                     running = 1;
                     menu_state_current->flags->panels_shown[2] = 1;
@@ -2152,10 +2152,10 @@ u8 func_801D498C(u8 page, u8 fit) {
                     last_row = 0xFF;
                     menu_state_current->flags->cursors_shown[0] = 1;
                 }
-                func_801CC4DC();
+                gear_shop_markers_close();
                 confirm = 0xFF;
             } else {
-                func_801CB498(4);
+                gear_shop_play_sound(4);
             }
             break;
         case 5:
@@ -2168,8 +2168,8 @@ u8 func_801D498C(u8 page, u8 fit) {
                 menu_state_current->flags->panels_shown[3] = 0;
                 menu_state_current->flags->scroll_shown = 0;
                 menu_state_current->flags->cursors_shown[0] = 0;
-                func_801CC31C(0);
-                if (!func_801CCC18(0x8C, 0xFF, 1)) {
+                gear_shop_markers_open(0);
+                if (!gear_shop_notice_ask_yes_no(0x8C, 0xFF, 1)) {
                     running = 1;
                     menu_state_current->flags->panels_shown[2] = 1;
                     menu_state_current->flags->panels_shown[3] = 1;
@@ -2180,7 +2180,7 @@ u8 func_801D498C(u8 page, u8 fit) {
                     last_row = 0xFF;
                     menu_state_current->flags->cursors_shown[0] = 1;
                 }
-                func_801CC4DC();
+                gear_shop_markers_close();
             }
             break;
         case 1:
@@ -2205,7 +2205,7 @@ u8 func_801D498C(u8 page, u8 fit) {
             break;
         case 0:
             if (dims[row] != 0 && !fit &&
-                menu_state_current->details->amounts[top + row] + (held_next = D_801D904C + 1) < 100) {
+                menu_state_current->details->amounts[top + row] + (held_next = gear_shop_held_count + 1) < 100) {
                 total += price;
                 new_gold -= price;
                 redraw = 1;
@@ -2223,18 +2223,18 @@ u8 func_801D498C(u8 page, u8 fit) {
         }
     }
     menu_state_current->details->label45B0_shown = 0;
-    func_801C9054(5);
-    func_801CCEBC(2, menu_state_current->flags->list_labels_shown);
-    func_801D0EC8(1);
+    gear_shop_panel_close(5);
+    gear_shop_label_clear_shown(2, menu_state_current->flags->list_labels_shown);
+    gear_shop_hide_details(1);
     return 1;
 }
 
-/*
+/* 801D5398
  * Refuel and repair the edited gear. Fuel costs 10 gold per 100 missing (at
  * least 10); with too little gold, buy what the gold covers. Repairs are free
  * and come with any purchase. A full tank can be repaired without buying fuel.
  */
-void func_801D5398(void) {
+void gear_shop_refuel_and_repair(void) {
     u8 message;
     u8 mode;
     u8 confirm;
@@ -2246,9 +2246,9 @@ void func_801D5398(void) {
     message = 0xA6;
     mode = 1;
     confirm = 1;
-    if (game_data.gears[D_801D9084].maxFuel == game_data.gears[D_801D9084].fuel) {
+    if (game_data.gears[gear_shop_edited_gear].maxFuel == game_data.gears[gear_shop_edited_gear].fuel) {
         message = 0xB5;
-        if (game_data.gears[D_801D9084].hp == game_data.gears[D_801D9084].maxHp) {
+        if (game_data.gears[gear_shop_edited_gear].hp == game_data.gears[gear_shop_edited_gear].maxHp) {
             message = 0xB8;
             mode = 0;
             confirm = 0;
@@ -2256,37 +2256,37 @@ void func_801D5398(void) {
             mode = 2;
         }
     }
-    units = (game_data.gears[D_801D9084].maxFuel - game_data.gears[D_801D9084].fuel) / 100;
+    units = (game_data.gears[gear_shop_edited_gear].maxFuel - game_data.gears[gear_shop_edited_gear].fuel) / 100;
     if (units == 0) {
         units = 1;
     }
     price = units * 10;
-    func_801C90E0(5, 0xA2, 0xA6, 0x60, 0x14, 0, 1, 4, 0);
-    func_801D0D4C(game_data.gold);
+    gear_shop_panel_open(5, 0xA2, 0xA6, 0x60, 0x14, 0, 1, 4, 0);
+    gear_shop_layout_price_digits(game_data.gold);
     if (mode != 0) {
-        func_801D0C20(price, 1);
+        gear_shop_layout_notice_total(price, 1);
     }
-    func_801CC1C4();
-    func_801CC31C(0);
-    if (func_801CCC18(message, 0xFF, confirm) != 0) {
+    gear_shop_run_frame();
+    gear_shop_markers_open(0);
+    if (gear_shop_notice_ask_yes_no(message, 0xFF, confirm) != 0) {
         menu_state_current->flags->unknown5a[1] = 0;
         switch (mode) {
         case 1:
             if (game_data.gold < price) {
-                if (func_801CCC18(0xA9, 0xFF, 1) != 0) {
+                if (gear_shop_notice_ask_yes_no(0xA9, 0xFF, 1) != 0) {
                     if (game_data.gold != 0) {
                         done = 1;
                     }
                     price = game_data.gold / 10;
-                    game_data.gears[D_801D9084].fuel += price * 100;
+                    game_data.gears[gear_shop_edited_gear].fuel += price * 100;
                     game_data.gold %= 10;
-                    if (game_data.gears[D_801D9084].maxFuel < game_data.gears[D_801D9084].fuel) {
-                        game_data.gears[D_801D9084].fuel = game_data.gears[D_801D9084].maxFuel;
+                    if (game_data.gears[gear_shop_edited_gear].maxFuel < game_data.gears[gear_shop_edited_gear].fuel) {
+                        game_data.gears[gear_shop_edited_gear].fuel = game_data.gears[gear_shop_edited_gear].maxFuel;
                     }
                 }
             } else {
                 game_data.gold -= price;
-                game_data.gears[D_801D9084].fuel = game_data.gears[D_801D9084].maxFuel;
+                game_data.gears[gear_shop_edited_gear].fuel = game_data.gears[gear_shop_edited_gear].maxFuel;
                 done = 1;
             }
             break;
@@ -2296,44 +2296,44 @@ void func_801D5398(void) {
         }
     }
     if (done) {
-        game_data.gears[D_801D9084].hp = game_data.gears[D_801D9084].maxHp;
-        func_801CB498(0xD1);
+        game_data.gears[gear_shop_edited_gear].hp = game_data.gears[gear_shop_edited_gear].maxHp;
+        gear_shop_play_sound(0xD1);
     }
-    func_801CC4DC(0);
+    gear_shop_markers_close(0);
     menu_state_current->flags->price_shown = 0;
-    func_801C9054(5);
+    gear_shop_panel_close(5);
 }
 
-/* Leave the gear list: hide the cursor and labels and the shop list packets. */
-u8 func_801D573C(void) {
+/* 801D573C: Leave the gear list: hide the cursor and labels and the shop list packets. */
+u8 gear_shop_leave_gear_list(void) {
     menu_state_current->flags->sprite_shown = 0;
     menu_state_current->flags->cursor_shown = 0;
-    func_801CCEBC(4, menu_state_current->flags->list_labels_shown);
-    func_801D0EC8(0);
+    gear_shop_label_clear_shown(4, menu_state_current->flags->list_labels_shown);
+    gear_shop_hide_details(0);
     return 2;
 }
 
-/* Redraw the current gear list: parts (0-2) or the fourth list. */
-void func_801D57A8(void) {
+/* 801D57A8: Redraw the current gear list: parts (0-2) or the fourth list. */
+void gear_shop_fit_or_refuel(void) {
     switch (menu_state_current->choice) {
     case 0:
     case 1:
     case 2:
-        func_801D498C(0, 1);
-        func_801D6150(menu_state_current->tables, D_801D9084);
+        gear_shop_buy_list_run(0, 1);
+        gear_shop_rebuild_gear_values(menu_state_current->tables, gear_shop_edited_gear);
         break;
     case 3:
-        func_801D5398();
+        gear_shop_refuel_and_repair();
         break;
     }
 }
 
-/*
+/* 801D5828
  * The gear parts list of the current command (the fourth command starts at
- * its fourth entry, when func_801D573C allows it): move the cursor, open the
+ * its fourth entry, when gear_shop_leave_gear_list allows it): move the cursor, open the
  * gear view for the chosen list (4), page the members (9, 10), leave (5).
  */
-u8 func_801D5828(void) {
+u8 gear_shop_choice_list_run(void) {
     u8 running;
     u8 first;
     u8 base;
@@ -2341,7 +2341,7 @@ u8 func_801D5828(void) {
     running = 1;
     first = 1;
     base = 0;
-    if (menu_state_current->cursor == 3 && !func_801D573C()) {
+    if (menu_state_current->cursor == 3 && !gear_shop_leave_gear_list()) {
         return 1;
     }
     menu_state_current->choice = 0;
@@ -2351,19 +2351,19 @@ u8 func_801D5828(void) {
         base = 4;
     }
     while (running) {
-        func_801CC1C4();
-        if (menu_state_current->view_motion == 0 && D_801D6FD8 >= 2) {
+        gear_shop_run_frame();
+        if (menu_state_current->view_motion == 0 && gear_shop_available_member_count >= 2) {
             menu_state_current->flags->marks_shown = 1;
         }
         if (first) {
-            func_801CCE90(4, menu_state_current->list_labels, &D_801D6A24[base], menu_state_current->flags->list_labels_shown);
-            func_801CD564(0);
+            gear_shop_label_render_table(4, menu_state_current->list_labels, &gear_shop_choice_label_ids[base], menu_state_current->flags->list_labels_shown);
+            gear_shop_choice_window_open(0);
             first = 0;
         }
         if (menu_state_current->choice != menu_state_current->choice_shown) {
-            func_801CCEE8(4, menu_state_current->list_labels, &D_801D6A24[base], &D_801D6A40[base],
+            gear_shop_label_place(4, menu_state_current->list_labels, &gear_shop_choice_label_ids[base], &gear_shop_choice_label_x_offsets[base],
                           menu_state_current->flags->list_labels_shown, menu_state_current->choice, 4, 0);
-            func_801CDA0C(0);
+            gear_shop_choice_window_set_cursor(0);
             menu_state_current->choice_shown = menu_state_current->choice;
         }
         if (menu_state_current->gear_screen->lamp_state[0] == 0) {
@@ -2376,29 +2376,29 @@ u8 func_801D5828(void) {
             menu_state_current->flags->cursor_shown = 0;
             menu_state_current->flags->lists_shown = 0;
             menu_state_current->flags->gear_parts_shown = 0;
-            func_801CCEBC(4, menu_state_current->flags->list_labels_shown);
-            func_801CB498(2);
-            func_801CFC60();
+            gear_shop_label_clear_shown(4, menu_state_current->flags->list_labels_shown);
+            gear_shop_play_sound(2);
+            gear_shop_gear_view_open();
             menu_state_current->flags->marks_shown = 0;
             switch (menu_state_current->cursor) {
             case 1:
-                func_801D2804(1);
+                gear_shop_chosen_sell_list_run(1);
                 break;
             case 2:
-                func_801D498C(1, 0);
+                gear_shop_buy_list_run(1, 0);
                 break;
             case 3:
-                func_801D57A8();
+                gear_shop_fit_or_refuel();
                 break;
             }
-            func_801CFF18();
-            func_801CC1C4();
-            func_801CF448();
-            func_801CC1C4();
+            gear_shop_gear_view_close();
+            gear_shop_run_frame();
+            gear_shop_layout_gear_values();
+            gear_shop_run_frame();
             menu_state_current->flags->sprite_shown = 1;
             menu_state_current->flags->cursor_shown = 1;
             menu_state_current->flags->lists_shown = 1;
-            func_801CCE90(4, menu_state_current->list_labels, &D_801D6A24[base], menu_state_current->flags->list_labels_shown);
+            gear_shop_label_render_table(4, menu_state_current->list_labels, &gear_shop_choice_label_ids[base], menu_state_current->flags->list_labels_shown);
             menu_state_current->choice_shown = 0xFF;
             break;
         case 5:
@@ -2417,21 +2417,21 @@ u8 func_801D5828(void) {
             }
             break;
         case 9:
-            func_801D0398(0);
+            gear_shop_switch_member(0);
             break;
         case 10:
-            func_801D0398(1);
+            gear_shop_switch_member(1);
             break;
         }
     }
     menu_state_current->flags->sprite_shown = 0;
     menu_state_current->flags->cursor_shown = 0;
-    func_801CCEBC(4, menu_state_current->flags->list_labels_shown);
+    gear_shop_label_clear_shown(4, menu_state_current->flags->list_labels_shown);
     return 1;
 }
 
-/* Set up the Gear model: the actor module, its light, both large ordering tables and the two model blocks, then show the first present member's gear. */
-void func_801D5D38(void) {
+/* 801D5D38: Set up the Gear model: the actor module, its light, both large ordering tables and the two model blocks, then show the first present member's gear. */
+void gear_shop_model_init(void) {
     s32 i;
 
     i = 0;
@@ -2465,19 +2465,19 @@ void func_801D5D38(void) {
     while (menu_state_current->present[i] == 0) {
         i++;
     }
-    D_801D9084 = game_data.characters[i].gearId;
-    func_801CF9BC(D_801D9084, 1);
-    func_801D0348();
+    gear_shop_edited_gear = game_data.characters[i].gearId;
+    gear_shop_model_read_files(gear_shop_edited_gear, 1);
+    gear_shop_count_available_members();
 }
 
-/* Close the gear model once the view has stopped moving, and release its two blocks. */
-void func_801D5EB8(void) {
+/* 801D5EB8: Close the gear model once the view has stopped moving, and release its two blocks. */
+void gear_shop_model_close(void) {
     while (menu_state_current->view_motion != 0) {
-        func_801CC1C4();
+        gear_shop_run_frame();
     }
-    D_801D697C = 0;
+    gear_shop_debug_values_on = 0;
     menu_state_current->flags->model_shown = 0;
-    func_801CC1C4();
+    gear_shop_run_frame();
     gear_model_shut_down();
     menu_state_current->model_parts[0]->unk12 = 0;
     menu_state_current->model_parts[1]->unk12 = 0;
@@ -2485,20 +2485,20 @@ void func_801D5EB8(void) {
     heap_free(menu_state_current->model_parts[1]);
 }
 
-/*
+/* 801D5F94
  * Summarise gear `id` for the parts screen: its values plus its parts' and
  * its pilot's bonuses.
  */
-void func_801D5F94(MenuTables *table, u8 id) {
+void gear_shop_compute_gear_summary(MenuTables *table, u8 id) {
     GearRecord *gear;
     CharacterRecord *pilot;
     s32 bonus;
 
     if (game_data.flags & 0x1000) {
-        D_801D70F4[9] = 10; /* gear 9's pilot */
+        gear_shop_gear_pilots[9] = 10; /* gear 9's pilot */
     }
     gear = &game_data.gears[id];
-    pilot = &game_data.characters[D_801D70F4[id]];
+    pilot = &game_data.characters[gear_shop_gear_pilots[id]];
     table->gear.hp = gear->hp;
     table->gear.max_hp = gear->maxHp;
     table->gear.defense = gear->bodyDefense + gear->equipBodyDefense;
@@ -2520,17 +2520,17 @@ void func_801D5F94(MenuTables *table, u8 id) {
     table->gear.guard = gear->guard;
 }
 
-/* Rebuild gear `id`'s derived values. */
-void func_801D6150(MenuTables *table, u8 id) {
-    func_801D61B8(table, id);
-    func_801D62A4(table, id);
-    func_801D6250(table, id);
-    func_801D6334(table, id);
-    func_801D6738(table, id);
+/* 801D6150: Rebuild gear `id`'s derived values. */
+void gear_shop_rebuild_gear_values(MenuTables *table, u8 id) {
+    gear_shop_set_gear_engine_values(table, id);
+    gear_shop_set_gear_part_values(table, id);
+    gear_shop_set_gear_frame_values(table, id);
+    gear_shop_sum_gear_accessories(table, id);
+    gear_shop_set_gear_weapon_values(table, id);
 }
 
-/* Copy gear `id`'s values from its +2 entry of the table's 18h-byte records, capping +60. */
-void func_801D61B8(MenuTables *table, u8 id) {
+/* 801D61B8: Copy gear `id`'s values from its +2 entry of the table's 18h-byte records, capping +60. */
+void gear_shop_set_gear_engine_values(MenuTables *table, u8 id) {
     GearRecord *gear;
     GearEngineInfo *record;
 
@@ -2548,8 +2548,8 @@ void func_801D61B8(MenuTables *table, u8 id) {
     }
 }
 
-/* Copy gear `id`'s two words from its entry (+8) of the table's 14h-byte records. */
-void func_801D6250(MenuTables *table, u8 id) {
+/* 801D6250: Copy gear `id`'s two words from its entry (+8) of the table's 14h-byte records. */
+void gear_shop_set_gear_frame_values(MenuTables *table, u8 id) {
     GearRecord *gear;
     GearFrameInfo *entry;
 
@@ -2560,8 +2560,8 @@ void func_801D6250(MenuTables *table, u8 id) {
     gear->armor = entry->unkA;
 }
 
-/* Copy gear `id`'s values from its +3 entry of the table's 10h-byte records, capping +38. */
-void func_801D62A4(MenuTables *table, u8 id) {
+/* 801D62A4: Copy gear `id`'s values from its +3 entry of the table's 10h-byte records, capping +38. */
+void gear_shop_set_gear_part_values(MenuTables *table, u8 id) {
     GearRecord *gear;
     GearPartInfo *record;
     u16 limit;
@@ -2580,8 +2580,8 @@ void func_801D62A4(MenuTables *table, u8 id) {
     }
 }
 
-/* Sum gear `id`'s three parts into its derived values and effect bits, and update its pilot's ability bits. */
-void func_801D6334(MenuTables *table, u8 id) {
+/* 801D6334: Sum gear `id`'s three parts into its derived values and effect bits, and update its pilot's ability bits. */
+void gear_shop_sum_gear_accessories(MenuTables *table, u8 id) {
     GearRecord *gear;
     GearAccessoryInfo *part;
     u16 *abilities;
@@ -2590,8 +2590,8 @@ void func_801D6334(MenuTables *table, u8 id) {
     u8 k;
 
     gear = &game_data.gears[id];
-    abilities = &game_data.skills[D_801D70F4[id]].unlocksA;
-    status = &game_data.skills[D_801D70F4[id]].flags1A;
+    abilities = &game_data.skills[gear_shop_gear_pilots[id]].unlocksA;
+    status = &game_data.skills[gear_shop_gear_pilots[id]].flags1A;
     gear->equipBodyDefense = 0;
     gear->equipArmor = 0;
     gear->equip68a = 0;
@@ -2673,16 +2673,16 @@ void func_801D6334(MenuTables *table, u8 id) {
             break;
         }
     }
-    gear->speedPenalty = func_801D690C(id);
+    gear->speedPenalty = gear_shop_compute_gear_speed_penalty(id);
     if (gear->field4F != 0) {
         *status |= 0x8000;
-    } else if (id == game_data.characters[D_801D70F4[id]].gearId) {
+    } else if (id == game_data.characters[gear_shop_gear_pilots[id]].gearId) {
         *status &= 0x7FFF;
     }
 }
 
-/* Copy gear `id`'s weapon values from the weapon table; gear 5 and 13 carry three weapons. */
-void func_801D6738(MenuTables *table, u8 id) {
+/* 801D6738: Copy gear `id`'s weapon values from the weapon table; gear 5 and 13 carry three weapons. */
+void gear_shop_set_gear_weapon_values(MenuTables *table, u8 id) {
     GearRecord *gear;
     GearWeaponInfo *weapon;
 
@@ -2726,8 +2726,8 @@ void func_801D6738(MenuTables *table, u8 id) {
     }
 }
 
-/* Half of (gear `id`'s +44 / 120 less its +75), not below zero. */
-u8 func_801D690C(u8 id) {
+/* 801D690C: Half of (gear `id`'s +44 / 120 less its +75), not below zero. */
+u8 gear_shop_compute_gear_speed_penalty(u8 id) {
     GearRecord *gear;
     s16 value;
 

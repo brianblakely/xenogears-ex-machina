@@ -43,15 +43,15 @@ segments:
     vram: 0x801c5000
     subsegments:
       # The save file name prefix: the shared screen unit's rodata.
-      - [0x0, .rodata, ovl2601]
+      - [0x0, .rodata, item_shop_framework]
       - [0x10, .rodata, shop]
-      - [0x40, c, ovl2601]
+      - [0x40, c, item_shop_framework]
       # The shop's own unit; see the head of shop.c.
       - [0x7E1C, c, shop]
-      - [0xcf50, .data, ovl2601]
+      - [0xcf50, .data, item_shop_framework]
       - [0xd210, .data, shop]
       # The file ends with the units' uninitialized variables (their .bss,
-      # loaded): the shop's common u16 D_801D2260, whose slot of whole words
+      # loaded): the shop's common u16 item_shop_held_count, whose slot of whole words
       # (decomp/Makefile) ends the file at 801D2264, as a word-rounded
       # section or file would.
       - [0xd260, .bss, shop]

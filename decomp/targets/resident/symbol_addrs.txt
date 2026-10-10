@@ -2050,3 +2050,7 @@ battle_area_outcome = 0x800C48EA;
 battle_continue_to_movie_mode = 0x800D3338;
 battle_area_event_target_sprites = 0x800D363C;
 menu_main = 0x801C62A8; // type:func
+member_change_main = 0x801CB0A8; // type:func
+name_entry_main = 0x801CBDBC; // type:func
+item_shop_main = 0x801CCD28; // type:func
+gear_shop_main = 0x801CE024; // type:func

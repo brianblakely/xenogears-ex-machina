@@ -451,13 +451,13 @@ void menu_state_run_screen(void) {
         menu_main();
         break;
     case 1:
-        func_801CB0A8();
+        member_change_main();
         break;
     case 3:
-        func_801CBDBC();
+        name_entry_main();
         break;
     case 4:
-        func_801CCD28();
+        item_shop_main();
         break;
     case 2:
     case 6:
@@ -465,7 +465,7 @@ void menu_state_run_screen(void) {
         mode_select_next_mode(1);
         break;
     case 5:
-        func_801CE024();
+        gear_shop_main();
         break;
     }
     if (menu_state_debug_start != 0) {

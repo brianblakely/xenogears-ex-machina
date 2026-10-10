@@ -42,17 +42,17 @@ segments:
     start: 0x0
     vram: 0x801c5000
     subsegments:
-      - [0x0, .rodata, ovl2602]
+      - [0x0, .rodata, gear_shop_framework]
       - [0x38, .rodata, gear_shop]
-      - [0x11c, c, ovl2602]
+      - [0x11c, c, gear_shop_framework]
       - [0x91D0, c, gear_shop]
-      - [0x1197c, .data, ovl2602]
+      - [0x1197c, .data, gear_shop_framework]
       - [0x11d08, .data, gear_shop]
       # The file ends with the uninitialized variables (loaded .bss) as
       # zeros, each in a slot of whole words (decomp/Makefile): each unit's
       # own, which only its code reads, in unit order, then the commons
       # both units read (tools/data_users.py).
-      - [0x12108, .bss, ovl2602]
+      - [0x12108, .bss, gear_shop_framework]
       - [0x1404c, .bss, gear_shop]
-      - [0x14050, .bss, ovl2602_common]
+      - [0x14050, .bss, gear_shop_common]
   - [0x140a0]

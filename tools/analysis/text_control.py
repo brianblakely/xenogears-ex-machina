@@ -442,8 +442,8 @@ def text_tables(disc: Disc):
 # codes palette * 16 + digit and its sign as palette * 16 + 10 (negative) or
 # + 11, and the window controls pass palettes 0 and 1 (0F 09, 0F 0A, 0F 0C).
 # The menus write the blank that replaces a number's leading zeros as code 0xC3
-# (slot39 menu_arts_screen_build_list, ovl2601 func_801CDD14, ovl2602 func_801D1304), which
-# the name entry also enters for an empty cell (ovl2600 func_801CB33C).
+# (slot39 menu_arts_screen_build_list, ovl2601 item_shop_layout_stock_rows, ovl2602 gear_shop_show_sell_entry), which
+# the name entry also enters for an empty cell (ovl2600 name_entry_run).
 # Resource 27 gives each code's glyph.
 NUMBER_PALETTES = (0, 1)
 SIGN_CODES = {10: "-", 11: "+"}
@@ -456,10 +456,10 @@ BLANK_CODE = 0xC3
 TITLE_FILE = (0x10, 1, 1)
 TITLE_BYTES = 30
 SJIS_TABLE = 0x801EA610 - 0x801C5000  # offset of menu_ascii_to_sjis_table in the slot-39 image
-# The name entry grid (ovl2600 D_801CBEC0): 36 entries of six character codes,
-# of which func_801CA558 shows five, in four columns of nine, so screen row r
+# The name entry grid (ovl2600 name_entry_grid_codes): 36 entries of six character codes,
+# of which name_entry_build_grid shows five, in four columns of nine, so screen row r
 # shows entries r, r + 9, r + 18 and r + 27 from left to right.
-GRID = 0x801CBEC0 - 0x801C5000  # offset of D_801CBEC0 in the ovl2600 image
+GRID = 0x801CBEC0 - 0x801C5000  # offset of name_entry_grid_codes in the ovl2600 image
 GRID_ENTRIES, GRID_CODES, GRID_SHOWN, GRID_ROWS = 36, 6, 5, 9
 ALPHABETS = ("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")
 

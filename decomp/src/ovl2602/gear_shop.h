@@ -9,8 +9,8 @@
 #include "ovl2143/actors.h"
 
 /* The Gear parts shop (ovl2602): what its units share, the menu screen code
- * (ovl2602.c), the Gear screen and shop (gear_shop.c) and the commons
- * (ovl2602_common.c), and its view of the actor module that draws the gear
+ * (gear_shop_framework.c), the Gear screen and shop (gear_shop.c) and the commons
+ * (gear_shop_common.c), and its view of the actor module that draws the gear
  * (ovl2143/actors.h). Its other blocks are the menu screens'
  * (decomp/include/menu). */
 
@@ -59,7 +59,7 @@ typedef struct ModelParts {
     u8 unk12;    /* 12 */
 } ModelParts;
 
-/* The camera's move between two points (the common D_801D9050). */
+/* The camera's move between two points (the common gear_shop_camera_move). */
 typedef struct CameraMove {
     s32 from[3];     /* 00: previous target */
     s32 to[3];       /* 0c: target */
@@ -91,58 +91,58 @@ u8 mode_get_random_byte_in_range(u8 low, u8 high); /* random number in [low, hig
  * whose first 0x20 bytes the module reads as the light matrix. */
 void gear_model_step_and_draw(MATRIX *m, MenuLight *light, u32 *ot, s32 buffer);
 
-/* The screen code's data and calls the Gear screen uses (ovl2602.c). */
-extern u8 D_801D697C;    /* the model values debug display is on */
-extern u8 D_801D6A24[];  /* sell list label text ids */
-extern u8 D_801D6A2C[];  /* buy list label text ids */
-extern s32 D_801D6A40[]; /* gear list label x offsets */
-extern s32 D_801D6C44[]; /* member portrait x */
-u32 func_801C5260(u8 id);
-u32 func_801C527C(u32 mask, u8 id);
-void func_801C5298(u32 value);
-void func_801C5CA8(MenuLabel *label, s32 index, s32 row, s32 mode);
-void func_801C782C(void);
-void func_801C7A88(u8 index);
-void func_801C9054(u8 index);
-void func_801C90E0(u8 index, s16 x, s16 y, s16 w, u16 h, u8 grow, u8 flat, s32 ot_entry, u8 has_bar);
-void func_801C93B0(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first);
-void func_801C94CC(s32 count, POLY_FT4 *packets, s32 first);
-void func_801CB498(u8 sound);
-void func_801CB690(void);
-void func_801CC1C4(void);
-void func_801CCE90(u8 count, MenuLabel *labels, u8 *text_ids, u8 *shown);
-void func_801CCEBC(u8 count, u8 *shown);
-void func_801CCEE8(u8 count, MenuLabel *labels, u8 *text_ids, s32 *offsets, u8 *shown, u8 index, u8 row,
+/* The screen code's data and calls the Gear screen uses (gear_shop_framework.c). */
+extern u8 gear_shop_debug_values_on;    /* the model values debug display is on */
+extern u8 gear_shop_choice_label_ids[];  /* sell list label text ids */
+extern u8 gear_shop_buy_label_ids[];  /* buy list label text ids */
+extern s32 gear_shop_choice_label_x_offsets[]; /* gear list label x offsets */
+extern s32 gear_shop_portrait_x_table[]; /* member portrait x */
+u32 gear_shop_get_bit_mask32(u8 id);
+u32 gear_shop_test_bit32(u32 mask, u8 id);
+void gear_shop_split_digits(u32 value);
+void gear_shop_label_init_quads(MenuLabel *label, s32 index, s32 row, s32 mode);
+void gear_shop_scroll_bar_hide(void);
+void gear_shop_list_cursor_free(u8 index);
+void gear_shop_panel_close(u8 index);
+void gear_shop_panel_open(u8 index, s16 x, s16 y, s16 w, u16 h, u8 grow, u8 flat, s32 ot_entry, u8 has_bar);
+void gear_shop_draw_projected_quads(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first);
+void gear_shop_draw_quads(s32 count, POLY_FT4 *packets, s32 first);
+void gear_shop_play_sound(u8 sound);
+void gear_shop_camera_plan_move(void);
+void gear_shop_run_frame(void);
+void gear_shop_label_render_table(u8 count, MenuLabel *labels, u8 *text_ids, u8 *shown);
+void gear_shop_label_clear_shown(u8 count, u8 *shown);
+void gear_shop_label_place(u8 count, MenuLabel *labels, u8 *text_ids, s32 *offsets, u8 *shown, u8 index, u8 row,
                    u8 mode);
-void func_801CD564(u8 menu);
+void gear_shop_choice_window_open(u8 menu);
 
 /* The Gear screen's data and calls the screen code uses (gear_shop.c), and
  * the gear summary and rebuild steps that its unit calls before defining
  * them. */
-extern s32 D_801D6FD8; /* available members 1-10 */
-void func_801CE1D0(void);
-void func_801CE2E8(void);
-void func_801CE7E0(void);
-void func_801CE82C(void);
-void func_801CF33C(void);
-void func_801CFAB8(u8 unk0, u8 id);
-void func_801D0398(u8 back);
-u8 func_801D5828(void);
-void func_801D5D38(void);
-void func_801D5F94(MenuTables *table, u8 id);
-void func_801D6150(MenuTables *table, u8 id);
-void func_801D61B8(MenuTables *table, u8 id);
-void func_801D6250(MenuTables *table, u8 id);
-void func_801D62A4(MenuTables *table, u8 id);
-void func_801D6334(MenuTables *table, u8 id);
-void func_801D6738(MenuTables *table, u8 id);
-u8 func_801D690C(u8 id);
+extern s32 gear_shop_available_member_count; /* available members 1-10 */
+void gear_shop_member_marks_layout(void);
+void gear_shop_member_marks_close(void);
+void gear_shop_draw_model(void);
+void gear_shop_draw_gear_screen(void);
+void gear_shop_animate_gear_screen(void);
+void gear_shop_model_load_gear(u8 unk0, u8 id);
+void gear_shop_switch_member(u8 back);
+u8 gear_shop_choice_list_run(void);
+void gear_shop_model_init(void);
+void gear_shop_compute_gear_summary(MenuTables *table, u8 id);
+void gear_shop_rebuild_gear_values(MenuTables *table, u8 id);
+void gear_shop_set_gear_engine_values(MenuTables *table, u8 id);
+void gear_shop_set_gear_frame_values(MenuTables *table, u8 id);
+void gear_shop_set_gear_part_values(MenuTables *table, u8 id);
+void gear_shop_sum_gear_accessories(MenuTables *table, u8 id);
+void gear_shop_set_gear_weapon_values(MenuTables *table, u8 id);
+u8 gear_shop_compute_gear_speed_penalty(u8 id);
 
-/* The overlay's commons (ovl2602_common.c, which defines them ahead of this
+/* The overlay's commons (gear_shop_common.c, which defines them ahead of this
  * header). */
-extern CameraMove D_801D9050;
-extern u8 D_801D9084;     /* gear being edited */
-extern u8 *D_801D9088;    /* name pixel buffer */
-extern s32 D_801D908C[5]; /* entries in each of the five gear part lists */
+extern CameraMove gear_shop_camera_move;
+extern u8 gear_shop_edited_gear;     /* gear being edited */
+extern u8 *gear_shop_name_pixels;    /* name pixel buffer */
+extern s32 gear_shop_stock_list_counts[5]; /* entries in each of the five gear part lists */
 
 #endif

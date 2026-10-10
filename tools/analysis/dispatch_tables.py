@@ -36,7 +36,7 @@ ones by model_relocate_sprite_model) come from these loaders:
 * field map bundles, directory (4, 0) file 0xb8 + 2 * map: every model group of
   the geometry component (component 2, field field_load_from_bundle);
 * ovl2143 actors, the model file of each pair after ovl2143 in (4, 0), files
-  0x6bb + 2k (field field_layer_load, the gear shop's func_801CF9BC);
+  0x6bb + 2k (field field_layer_load, the gear shop's gear_shop_model_read_files);
 * battle objects (battle_create_object: the group between the model file's entries 2
   and 3): stage files (12, 3) 6 + 2s (resident mode_load_battle_stage), the model entries
   of enemy set files (12, 1) 2n + 3 (ovl2615 battle_setup_build_enemy_sources_and_models), object sets

@@ -42,7 +42,7 @@ segments:
     start: 0x0
     vram: 0x801c5000
     subsegments:
-      - [0x0, .rodata, ovl2600]
-      - [0x40, c, ovl2600]
-      - [0x6ea0, .data, ovl2600]
+      - [0x0, .rodata, name_entry_screen]
+      - [0x40, c, name_entry_screen]
+      - [0x6ea0, .data, name_entry_screen]
   - [0x7134]

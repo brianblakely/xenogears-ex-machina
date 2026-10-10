@@ -39,66 +39,66 @@
 #include "item_shop.h"
 
 /* The save file name prefix, this unit's only rodata (the struct copy in
- * func_801C54B4 reads its 13 bytes). A stray byte (0x03) that nothing reads
+ * item_shop_load_resources reads its 13 bytes). A stray byte (0x03) that nothing reads
  * follows it at the end of the unit's rodata, so it is linked as original
  * rodata. */
-INCLUDE_RODATA(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", D_801C5000);
-extern const CardPrefix D_801C5000; /* "BISLPS-00800" */
+INCLUDE_RODATA(".local/decomp/ovl2601/asm/nonmatchings/item_shop_framework", item_shop_save_file_prefix); /* 801C5000 */
+extern const CardPrefix item_shop_save_file_prefix; /* "BISLPS-00800" */
 
 /* The shared screen data. */
-s32 D_801D1F50 = 0; /* items the shop sells */
+s32 item_shop_stock_count = 0; /* 801D1F50: items the shop sells */
 /* Command pictures: two per command. */
-s32 D_801D1F54[6] = {0x109, 0x135, 0x10A, 0x136, 0x10B, 0x137};
+s32 item_shop_command_images[6] = {0x109, 0x135, 0x10A, 0x136, 0x10B, 0x137}; /* 801D1F54 */
 /* List pictures: four pairs (sprite, second layer) per command, 0xFFFF none. */
-s32 D_801D1F6C[24] = {
+s32 item_shop_choice_window_images[24] = { /* 801D1F6C */
     0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
     0x110, 0x13B, 0x111, 0x13A, 0x112, 0x139, 0x113, 0x138,
     0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
 };
 /* List label text ids: commands, the sell lists, the buy lists. */
-u8 D_801D1FCC[4] = {0x7B, 0x7B, 0x7B, 0x7B};
-u8 D_801D1FD0[4] = {0x7B, 0x7B, 0x7B, 0x7B};
-u8 D_801D1FD4[2] = {0x7C, 0x7B};
+u8 item_shop_top_label_ids[4] = {0x7B, 0x7B, 0x7B, 0x7B}; /* 801D1FCC */
+u8 item_shop_sell_label_ids[4] = {0x7B, 0x7B, 0x7B, 0x7B}; /* 801D1FD0 */
+u8 item_shop_buy_label_ids[2] = {0x7C, 0x7B}; /* 801D1FD4 */
 /* List label x offsets: commands, then the sell and buy lists. */
-s32 D_801D1FD8[4] = {0x12, 0x12, 0x12, 0};
-s32 D_801D1FE8[4] = {0x12, 0, 0x18, 0xC};
+s32 item_shop_top_label_x_offsets[4] = {0x12, 0x12, 0x12, 0}; /* 801D1FD8 */
+s32 item_shop_sell_label_x_offsets[4] = {0x12, 0, 0x18, 0xC}; /* 801D1FE8 */
 /* The four cursor markers' home positions. */
-s32 D_801D1FF8[4] = {0, 0, 132, 228}; /* x */
-s32 D_801D2008[4] = {0, 0, 120, 120}; /* y */
+s32 item_shop_marker_x_table[4] = {0, 0, 132, 228}; /* 801D1FF8: x */
+s32 item_shop_marker_y_table[4] = {0, 0, 120, 120}; /* 801D2008: y */
 /* The four command labels' text ids. */
-u8 D_801D2018[4] = {9, 10, 11, 12};
+u8 item_shop_command_label_ids[4] = {9, 10, 11, 12}; /* 801D2018 */
 /* File slot -> list position (positions 15 and 31 are skipped). */
-s32 D_801D201C[30] = {
+s32 item_shop_file_cursor_card_slots[30] = { /* 801D201C */
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
     10, 11, 12, 13, 14, 16, 17, 18, 19, 20,
     21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
 };
 /* Marker position per list position. */
-s32 D_801D2094[32] = { /* x */
+s32 item_shop_file_slot_x_table[32] = { /* 801D2094: x */
     32, 40, 48, 56, 64, 72, 80, 88,
     96, 104, 112, 120, 128, 136, 144, 320,
     176, 184, 192, 200, 208, 216, 224, 232,
     240, 248, 256, 264, 272, 280, 288, 320,
 };
-s32 D_801D2114[32] = { /* y */
+s32 item_shop_file_slot_y_table[32] = { /* 801D2114: y */
     14, 34, 54, 14, 34, 54, 14, 34,
     54, 14, 34, 54, 14, 34, 54, 256,
     14, 34, 54, 14, 34, 54, 14, 34,
     54, 14, 34, 54, 14, 34, 54, 256,
 };
 /* Cursor position per position. */
-s32 D_801D2194[7] = {73, 72, 67, 37, 36, 31, 24};       /* x */
-s32 D_801D21B0[7] = {205, 185, 166, 201, 181, 162, 144}; /* y */
+s32 item_shop_highlight_x_table[7] = {73, 72, 67, 37, 36, 31, 24};       /* 801D2194: x */
+s32 item_shop_highlight_y_table[7] = {205, 185, 166, 201, 181, 162, 144}; /* 801D21B0: y */
 /* Member portrait x by shown member. */
-s32 D_801D21CC[9] = {72, 98, 124, 150, 176, 202, 228, 254, 280};
+s32 item_shop_portrait_x_table[9] = {72, 98, 124, 150, 176, 202, 228, 254, 280}; /* 801D21CC */
 /* Each member's party bit. */
-u16 D_801D21F0[16] = {
+u16 item_shop_bit_masks[16] = { /* 801D21F0 */
     0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80,
     0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000,
 };
 
-/* Place a textured quad at (x, y) of size w x h showing texels (u, v)..(u + w, v + h). */
-void func_801C5040(POLY_FT4 *poly, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h) {
+/* 801C5040: Place a textured quad at (x, y) of size w x h showing texels (u, v)..(u + w, v + h). */
+void item_shop_quad_place(POLY_FT4 *poly, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h) {
     poly->x0 = x;
     poly->y0 = y;
     poly->y1 = y;
@@ -117,18 +117,18 @@ void func_801C5040(POLY_FT4 *poly, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h) {
     poly->v3 = v + h;
 }
 
-/* Test member `id`'s bit of a party bit mask. */
-u16 func_801C50B0(u16 mask, u8 id) {
-    return D_801D21F0[id] & mask;
+/* 801C50B0: Test member `id`'s bit of a party bit mask. */
+u16 item_shop_test_bit(u16 mask, u8 id) {
+    return item_shop_bit_masks[id] & mask;
 }
 
-/* The party bit of member `id`. */
-u16 func_801C50CC(u8 id) {
-    return D_801D21F0[id];
+/* 801C50CC: The party bit of member `id`. */
+u16 item_shop_get_bit_mask(u8 id) {
+    return item_shop_bit_masks[id];
 }
 
-/* Split `value` into nine decimal digits (menu state +31c), leading zeros blanked (ff). */
-void func_801C50E8(u32 value) {
+/* 801C50E8: Split `value` into nine decimal digits (menu state +31c), leading zeros blanked (ff). */
+void item_shop_split_digits(u32 value) {
     s32 i;
     u32 divisor;
 
@@ -149,8 +149,8 @@ void func_801C50E8(u32 value) {
     }
 }
 
-/* Allocate (nonzero) or release the card state block. */
-void func_801C5194(u8 allocate) {
+/* 801C5194: Allocate (nonzero) or release the card state block. */
+void item_shop_alloc_or_free_card_state(u8 allocate) {
     if (allocate) {
         menu_state_current->card = heap_alloc(sizeof(MenuCard), 0);
         bzero((u_char *)menu_state_current->card, sizeof(MenuCard));
@@ -159,8 +159,8 @@ void func_801C5194(u8 allocate) {
     }
 }
 
-/* Allocate (nonzero) or release the screen flag block. */
-void func_801C51F8(u8 allocate) {
+/* 801C51F8: Allocate (nonzero) or release the screen flag block. */
+void item_shop_alloc_or_free_flags(u8 allocate) {
     if (allocate) {
         menu_state_current->flags = heap_alloc(sizeof(MenuFlags), 0);
         bzero((u_char *)menu_state_current->flags, sizeof(MenuFlags));
@@ -169,8 +169,8 @@ void func_801C51F8(u8 allocate) {
     }
 }
 
-/* Allocate (nonzero) or release the image packet block. */
-void func_801C525C(u8 allocate) {
+/* 801C525C: Allocate (nonzero) or release the image packet block. */
+void item_shop_alloc_or_free_screen_images(u8 allocate) {
     if (allocate) {
         menu_state_current->images = heap_alloc(sizeof(MenuImages), 0);
         bzero((u_char *)menu_state_current->images, sizeof(MenuImages));
@@ -179,8 +179,8 @@ void func_801C525C(u8 allocate) {
     }
 }
 
-/* Allocate (nonzero) or release the list packet block. */
-void func_801C52C0(u8 allocate) {
+/* 801C52C0: Allocate (nonzero) or release the list packet block. */
+void item_shop_alloc_or_free_sprite_lists(u8 allocate) {
     if (allocate) {
         menu_state_current->lists = heap_alloc(sizeof(MenuSpriteLists), 0);
         bzero((u_char *)menu_state_current->lists, sizeof(MenuSpriteLists));
@@ -189,8 +189,8 @@ void func_801C52C0(u8 allocate) {
     }
 }
 
-/* Allocate (nonzero) or release the unpacked resource table. */
-void func_801C5324(u8 allocate) {
+/* 801C5324: Allocate (nonzero) or release the unpacked resource table. */
+void item_shop_alloc_or_free_table_directory(u8 allocate) {
     if (allocate) {
         menu_state_current->tables = heap_alloc(0xCC, 0);
         bzero((u_char *)menu_state_current->tables, 0xCC);
@@ -199,8 +199,8 @@ void func_801C5324(u8 allocate) {
     }
 }
 
-/* Allocate (nonzero) or release the cursor block. */
-void func_801C5388(u8 allocate) {
+/* 801C5388: Allocate (nonzero) or release the cursor block. */
+void item_shop_alloc_or_free_prims(u8 allocate) {
     if (allocate) {
         menu_state_current->prims = heap_alloc(sizeof(MenuPrims), 0);
         bzero((u_char *)menu_state_current->prims, sizeof(MenuPrims));
@@ -209,8 +209,8 @@ void func_801C5388(u8 allocate) {
     }
 }
 
-/* Allocate (nonzero) or release the block at menu state +1e20. */
-void func_801C53EC(u8 allocate) {
+/* 801C53EC: Allocate (nonzero) or release the block at menu state +1e20. */
+void item_shop_alloc_or_free_name_entry_block(u8 allocate) {
     if (allocate) {
         menu_state_current->name_entry = heap_alloc(0xDEC, 0);
         bzero((u_char *)menu_state_current->name_entry, 0xDEC);
@@ -219,8 +219,8 @@ void func_801C53EC(u8 allocate) {
     }
 }
 
-/* Allocate (nonzero) or release the shop screen's packet block. */
-void func_801C5450(u8 allocate) {
+/* 801C5450: Allocate (nonzero) or release the shop screen's packet block. */
+void item_shop_alloc_or_free_shop_details(u8 allocate) {
     if (allocate) {
         menu_state_current->details = heap_alloc(sizeof(ShopDetails), 0);
         bzero((u_char *)menu_state_current->details, sizeof(ShopDetails));
@@ -229,8 +229,8 @@ void func_801C5450(u8 allocate) {
     }
 }
 
-/* Load the screen's resources: the card header (prefix, icon), text images, sprite sheet, labels, the party's portraits, the sound bank and the shop tables. */
-void func_801C54B4(void) {
+/* 801C54B4: Load the screen's resources: the card header (prefix, icon), text images, sprite sheet, labels, the party's portraits, the sound bank and the shop tables. */
+void item_shop_load_resources(void) {
     enum {
         ENTRY_UNUSED, ENTRY_MODE, ENTRY_CLUT_X, ENTRY_CLUT_Y,
         ENTRY_PAGE_X, ENTRY_PAGE_Y, ENTRY_WORDS
@@ -247,7 +247,7 @@ void func_801C54B4(void) {
     packed = text_unpack_lzss_alloc(res->files[0], 1);
     OpenTIM((u_long *)packed);
     ReadTIM(&menu_state_current->card->icon);
-    *(CardPrefix *)menu_state_current->card->prefix = D_801C5000;
+    *(CardPrefix *)menu_state_current->card->prefix = item_shop_save_file_prefix;
     menu_state_current->card->save_magic[0] = 'S';
     menu_state_current->card->save_magic[1] = 'C';
     menu_state_current->card->save_icon_flag = 0x11;
@@ -304,8 +304,8 @@ void func_801C54B4(void) {
     heap_free(res);
 }
 
-/* Reset the screen state, note which party members are available and load the resources. */
-void func_801C58F4(void) {
+/* 801C58F4: Reset the screen state, note which party members are available and load the resources. */
+void item_shop_init_party(void) {
     u16 available;
     s32 i;
     s32 id;
@@ -317,7 +317,7 @@ void func_801C58F4(void) {
     menu_state_current->unknown335 = 0;
     available = game_data.joined & game_data.available & 0x7FF;
     for (i = 0; i < 16; i++) {
-        if (func_801C50B0(available, i)) {
+        if (item_shop_test_bit(available, i)) {
             menu_state_current->present[i] = 1;
         } else {
             menu_state_current->present[i] = 0;
@@ -331,20 +331,20 @@ void func_801C58F4(void) {
             menu_state_current->flags->party[i] = 0xFF;
         }
     }
-    func_801C54B4();
+    item_shop_load_resources();
 }
 
-/* Start building draw buffer 0. */
-void func_801C5A6C(void) {
+/* 801C5A6C: Start building draw buffer 0. */
+void item_shop_reset_buffer_index(void) {
     menu_state_current->buffer_index = 0;
 }
 
-/* Set up both buffers' quads of label `index` (two columns, 13-pixel rows
+/* 801C5A7C: Set up both buffers' quads of label `index` (two columns, 13-pixel rows
  * from `row`): mode 0 maps the text rendered for the command column;
  * otherwise the list layout, dimmed unless bit 7 is set, with the highlight
  * from the low bits. Old-style definition: mode arrives as a promoted int
  * and is narrowed where it is tested. */
-void func_801C5A7C(label, index, row, mode)
+void item_shop_label_init_quads(label, index, row, mode)
     MenuLabel *label;
     s32 index;
     s32 row;
@@ -398,8 +398,8 @@ void func_801C5A7C(label, index, row, mode)
     label->projected = 0;
 }
 
-/* Render `count` labels (text ids in pairs) into VRAM and set up their quads. */
-void func_801C5CBC(MenuLabel *labels, u8 *text_ids, s32 row, s32 count) {
+/* 801C5CBC: Render `count` labels (text ids in pairs) into VRAM and set up their quads. */
+void item_shop_label_render_pairs(MenuLabel *labels, u8 *text_ids, s32 row, s32 count) {
     RECT *rect;
     s32 i;
 
@@ -414,15 +414,15 @@ void func_801C5CBC(MenuLabel *labels, u8 *text_ids, s32 row, s32 count) {
         rect->w = 0x1C;
         rect->h = 13;
         labels[i + 1].rect = *rect;
-        func_801C5A7C(&labels[i], i, row, 0);
-        func_801C5A7C(&labels[i + 1], i + 1, row, 0);
+        item_shop_label_init_quads(&labels[i], i, row, 0);
+        item_shop_label_init_quads(&labels[i + 1], i + 1, row, 0);
         LoadImage(rect, (u_long *)menu_state_current->labels[0].pixels);
         DrawSync(0);
     }
 }
 
-/* Upload a 16-colour palette with only colour 1 set (7fff, white) at (0, 1c0). */
-void func_801C5E6C(void) {
+/* 801C5E6C: Upload a 16-colour palette with only colour 1 set (7fff, white) at (0, 1c0). */
+void item_shop_upload_label_palette(void) {
     RECT rect;
     RECT unused; /* unused in the original; reserves 8 bytes */
     u16 *palette;
@@ -439,16 +439,16 @@ void func_801C5E6C(void) {
     heap_free(palette);
 }
 
-/* Load the text palettes and render the four command labels. */
-void func_801C5EE8(void) {
+/* 801C5EE8: Load the text palettes and render the four command labels. */
+void item_shop_init_labels(void) {
     text_load_palette(0, 0x1D1);
     menu_state_current->labels[0].pixels = heap_alloc(0x38E, 0);
-    func_801C5CBC(menu_state_current->labels, D_801D2018, 0, 4);
-    func_801C5E6C();
+    item_shop_label_render_pairs(menu_state_current->labels, item_shop_command_label_ids, 0, 4);
+    item_shop_upload_label_palette();
 }
 
-/* Look up the four sprite sheet entries the screen draws. */
-void func_801C5F44(void) {
+/* 801C5F44: Look up the four sprite sheet entries the screen draws. */
+void item_shop_read_sheet_entries(void) {
     s32 unused[10]; /* unused in the original; reserves 40 bytes */
     MenuSheetEntry *e;
 
@@ -462,45 +462,45 @@ void func_801C5F44(void) {
     sprite_sheet_get_texture(menu_state_current->sheet, 0x101, &e->first, &e->mode, &e->clut_x, &e->clut_y, &e->page_x, &e->page_y);
 }
 
-/* Draw the cursor at `position`; with `frame` also place its shade and edge lines. */
-void func_801C604C(s32 position, u8 frame) {
-    sprite_sheet_draw_scaled(menu_state_current->sheet, 0x108, menu_state_current->prims, menu_state_current->buffer_index, D_801D2194[position], D_801D21B0[position],
+/* 801C604C: Draw the cursor at `position`; with `frame` also place its shade and edge lines. */
+void item_shop_highlight_place(s32 position, u8 frame) {
+    sprite_sheet_draw_scaled(menu_state_current->sheet, 0x108, menu_state_current->prims, menu_state_current->buffer_index, item_shop_highlight_x_table[position], item_shop_highlight_y_table[position],
                   0x1000);
     menu_state_current->prims->sprite_buffer = menu_state_current->buffer_index;
     if (frame) {
-        (menu_state_current->prims->shade + menu_state_current->buffer_index)->x0 = D_801D2194[position] + 0x14;
-        (menu_state_current->prims->shade + menu_state_current->buffer_index)->y0 = D_801D21B0[position] - 0x24;
-        (menu_state_current->prims->shade + menu_state_current->buffer_index)->x1 = D_801D2194[position] + (menu_state_current->prims->width + 0x14);
-        (menu_state_current->prims->shade + menu_state_current->buffer_index)->y1 = D_801D21B0[position] - 0x24;
-        (menu_state_current->prims->shade + menu_state_current->buffer_index)->x2 = D_801D2194[position] + 0x14;
-        (menu_state_current->prims->shade + menu_state_current->buffer_index)->y2 = D_801D21B0[position] - 0x14;
-        (menu_state_current->prims->shade + menu_state_current->buffer_index)->x3 = D_801D2194[position] + (menu_state_current->prims->width + 0x14);
-        (menu_state_current->prims->shade + menu_state_current->buffer_index)->y3 = D_801D21B0[position] - 0x14;
-        (menu_state_current->prims->upper + menu_state_current->buffer_index)->x0 = D_801D2194[position] + 0x14;
-        (menu_state_current->prims->upper + menu_state_current->buffer_index)->y0 = D_801D21B0[position] - 0x24;
-        (menu_state_current->prims->upper + menu_state_current->buffer_index)->x1 = D_801D2194[position] + (menu_state_current->prims->width + 0x14);
-        (menu_state_current->prims->upper + menu_state_current->buffer_index)->y1 = D_801D21B0[position] - 0x24;
-        (menu_state_current->prims->upper + menu_state_current->buffer_index)->x2 = D_801D2194[position] + (menu_state_current->prims->width + 0x14);
-        (menu_state_current->prims->upper + menu_state_current->buffer_index)->y2 = D_801D21B0[position] - 0x14;
-        (menu_state_current->prims->lower + menu_state_current->buffer_index)->x0 = D_801D2194[position] + 0x14;
-        (menu_state_current->prims->lower + menu_state_current->buffer_index)->y0 = D_801D21B0[position] - 0x24;
-        (menu_state_current->prims->lower + menu_state_current->buffer_index)->x1 = D_801D2194[position] + 0x14;
-        (menu_state_current->prims->lower + menu_state_current->buffer_index)->y1 = D_801D21B0[position] - 0x14;
-        (menu_state_current->prims->lower + menu_state_current->buffer_index)->x2 = D_801D2194[position] + (menu_state_current->prims->width + 0x14);
-        (menu_state_current->prims->lower + menu_state_current->buffer_index)->y2 = D_801D21B0[position] - 0x14;
+        (menu_state_current->prims->shade + menu_state_current->buffer_index)->x0 = item_shop_highlight_x_table[position] + 0x14;
+        (menu_state_current->prims->shade + menu_state_current->buffer_index)->y0 = item_shop_highlight_y_table[position] - 0x24;
+        (menu_state_current->prims->shade + menu_state_current->buffer_index)->x1 = item_shop_highlight_x_table[position] + (menu_state_current->prims->width + 0x14);
+        (menu_state_current->prims->shade + menu_state_current->buffer_index)->y1 = item_shop_highlight_y_table[position] - 0x24;
+        (menu_state_current->prims->shade + menu_state_current->buffer_index)->x2 = item_shop_highlight_x_table[position] + 0x14;
+        (menu_state_current->prims->shade + menu_state_current->buffer_index)->y2 = item_shop_highlight_y_table[position] - 0x14;
+        (menu_state_current->prims->shade + menu_state_current->buffer_index)->x3 = item_shop_highlight_x_table[position] + (menu_state_current->prims->width + 0x14);
+        (menu_state_current->prims->shade + menu_state_current->buffer_index)->y3 = item_shop_highlight_y_table[position] - 0x14;
+        (menu_state_current->prims->upper + menu_state_current->buffer_index)->x0 = item_shop_highlight_x_table[position] + 0x14;
+        (menu_state_current->prims->upper + menu_state_current->buffer_index)->y0 = item_shop_highlight_y_table[position] - 0x24;
+        (menu_state_current->prims->upper + menu_state_current->buffer_index)->x1 = item_shop_highlight_x_table[position] + (menu_state_current->prims->width + 0x14);
+        (menu_state_current->prims->upper + menu_state_current->buffer_index)->y1 = item_shop_highlight_y_table[position] - 0x24;
+        (menu_state_current->prims->upper + menu_state_current->buffer_index)->x2 = item_shop_highlight_x_table[position] + (menu_state_current->prims->width + 0x14);
+        (menu_state_current->prims->upper + menu_state_current->buffer_index)->y2 = item_shop_highlight_y_table[position] - 0x14;
+        (menu_state_current->prims->lower + menu_state_current->buffer_index)->x0 = item_shop_highlight_x_table[position] + 0x14;
+        (menu_state_current->prims->lower + menu_state_current->buffer_index)->y0 = item_shop_highlight_y_table[position] - 0x24;
+        (menu_state_current->prims->lower + menu_state_current->buffer_index)->x1 = item_shop_highlight_x_table[position] + 0x14;
+        (menu_state_current->prims->lower + menu_state_current->buffer_index)->y1 = item_shop_highlight_y_table[position] - 0x14;
+        (menu_state_current->prims->lower + menu_state_current->buffer_index)->x2 = item_shop_highlight_x_table[position] + (menu_state_current->prims->width + 0x14);
+        (menu_state_current->prims->lower + menu_state_current->buffer_index)->y2 = item_shop_highlight_y_table[position] - 0x14;
         menu_state_current->prims->shade_buffer = menu_state_current->buffer_index;
         menu_state_current->flags->cursor_shown = 1;
     }
 }
 
-/* Hide the cursor. */
-void func_801C6430(void) {
+/* 801C6430: Hide the cursor. */
+void item_shop_highlight_hide(void) {
     menu_state_current->flags->sprite_shown = 0;
     menu_state_current->flags->cursor_shown = 0;
 }
 
-/* Initialise a gouraud quad fading from (r, g, b) on the top edge to black on the bottom. */
-void func_801C6460(POLY_G4 *poly, u8 r, u8 g, u8 b) {
+/* 801C6460: Initialise a gouraud quad fading from (r, g, b) on the top edge to black on the bottom. */
+void item_shop_init_gradient_quad(POLY_G4 *poly, u8 r, u8 g, u8 b) {
     SetPolyG4(poly);
     poly->r0 = r;
     poly->g0 = g;
@@ -516,8 +516,8 @@ void func_801C6460(POLY_G4 *poly, u8 r, u8 g, u8 b) {
     poly->b3 = 0;
 }
 
-/* Initialise both buffers' cursor shade, edge lines, screen quad and draw modes. */
-void func_801C64DC(void) {
+/* 801C64DC: Initialise both buffers' cursor shade, edge lines, screen quad and draw modes. */
+void item_shop_init_highlight_and_fade_prims(void) {
     RECT window;
     s32 i;
 
@@ -525,9 +525,9 @@ void func_801C64DC(void) {
     window.x = 0;
     window.h = 0x100;
     window.w = 0x100;
-    func_801C6430();
+    item_shop_highlight_hide();
     for (i = 0; i < 2; i++) {
-        func_801C6460(&menu_state_current->prims->shade[i], 0x80, 0x80, 0);
+        item_shop_init_gradient_quad(&menu_state_current->prims->shade[i], 0x80, 0x80, 0);
         SetSemiTrans(&menu_state_current->prims->shade[i], 1);
         SetLineF3(&menu_state_current->prims->upper[i]);
         (menu_state_current->prims->upper + i)->r0 = 0;
@@ -557,8 +557,8 @@ void func_801C64DC(void) {
     }
 }
 
-/* Unpack (mode 0) or release (mode 10h) the item tables and pictures from file 2. */
-void func_801C6828(u8 mode) {
+/* 801C6828: Unpack (mode 0) or release (mode 10h) the item tables and pictures from file 2. */
+void item_shop_load_or_release_data_set(u8 mode) {
     void **list;
 
     if (mode < 0x10) {
@@ -590,8 +590,8 @@ void func_801C6828(u8 mode) {
     }
 }
 
-/* Collect the shop's items (id and kind), unpack the item tables and set up the bars and frame lines. */
-void func_801C6A6C(void) {
+/* 801C6A6C: Collect the shop's items (id and kind), unpack the item tables and set up the bars and frame lines. */
+void item_shop_init_stock(void) {
     u8 *entry;
     s32 j;
     s32 i;
@@ -609,8 +609,8 @@ void func_801C6A6C(void) {
             j++;
         }
     }
-    D_801D1F50 = j;
-    func_801C6828(0);
+    item_shop_stock_count = j;
+    item_shop_load_or_release_data_set(0);
     for (i = 0; i < 9; i++) {
         for (j = 0; j < 2; j++) {
             SetLineF3(menu_state_current->details->bar_upper + (i * 2 + j));
@@ -621,17 +621,17 @@ void func_801C6A6C(void) {
             (menu_state_current->details->bar_lower + (i * 2 + j))->r0 = 0xFF;
             (menu_state_current->details->bar_lower + (i * 2 + j))->g0 = 0;
             (menu_state_current->details->bar_lower + (i * 2 + j))->b0 = 0;
-            (menu_state_current->details->bar_upper + (i * 2 + j))->x0 = D_801D21CC[i];
+            (menu_state_current->details->bar_upper + (i * 2 + j))->x0 = item_shop_portrait_x_table[i];
             (menu_state_current->details->bar_upper + (i * 2 + j))->y0 = 0xA6;
-            (menu_state_current->details->bar_upper + (i * 2 + j))->x1 = D_801D21CC[i] + 0x18;
+            (menu_state_current->details->bar_upper + (i * 2 + j))->x1 = item_shop_portrait_x_table[i] + 0x18;
             (menu_state_current->details->bar_upper + (i * 2 + j))->y1 = 0xA6;
-            (menu_state_current->details->bar_upper + (i * 2 + j))->x2 = D_801D21CC[i] + 0x18;
+            (menu_state_current->details->bar_upper + (i * 2 + j))->x2 = item_shop_portrait_x_table[i] + 0x18;
             (menu_state_current->details->bar_upper + (i * 2 + j))->y2 = 0xBC;
-            (menu_state_current->details->bar_lower + (i * 2 + j))->x0 = D_801D21CC[i];
+            (menu_state_current->details->bar_lower + (i * 2 + j))->x0 = item_shop_portrait_x_table[i];
             (menu_state_current->details->bar_lower + (i * 2 + j))->y0 = 0xA6;
-            (menu_state_current->details->bar_lower + (i * 2 + j))->x1 = D_801D21CC[i];
+            (menu_state_current->details->bar_lower + (i * 2 + j))->x1 = item_shop_portrait_x_table[i];
             (menu_state_current->details->bar_lower + (i * 2 + j))->y1 = 0xBC;
-            (menu_state_current->details->bar_lower + (i * 2 + j))->x2 = D_801D21CC[i] + 0x18;
+            (menu_state_current->details->bar_lower + (i * 2 + j))->x2 = item_shop_portrait_x_table[i] + 0x18;
             (menu_state_current->details->bar_lower + (i * 2 + j))->y2 = 0xBC;
         }
         menu_state_current->details->bar_shown[i] = 0;
@@ -641,15 +641,15 @@ void func_801C6A6C(void) {
         (menu_state_current->details->frame + j)->r0 = 0xFF;
         (menu_state_current->details->frame + j)->g0 = 0xFF;
         (menu_state_current->details->frame + j)->b0 = 0xFF;
-        (menu_state_current->details->frame + j)->x0 = D_801D2250 - 8;
-        (menu_state_current->details->frame + j)->y0 = D_801D2254 + 9;
-        (menu_state_current->details->frame + j)->x1 = D_801D2250 + 0x4E;
-        (menu_state_current->details->frame + j)->y1 = D_801D2254 + 9;
+        (menu_state_current->details->frame + j)->x0 = item_shop_total_x - 8;
+        (menu_state_current->details->frame + j)->y0 = item_shop_total_y + 9;
+        (menu_state_current->details->frame + j)->x1 = item_shop_total_x + 0x4E;
+        (menu_state_current->details->frame + j)->y1 = item_shop_total_y + 9;
     }
 }
 
-/* Set a quad's four corners for the rectangle (x, y, w, h), centred on the screen. */
-void func_801C6E90(SVECTOR *quad, u16 x, u16 y, u16 w, u16 h) {
+/* 801C6E90: Set a quad's four corners for the rectangle (x, y, w, h), centred on the screen. */
+void item_shop_set_rect_verts(SVECTOR *quad, u16 x, u16 y, u16 w, u16 h) {
     quad[0].vx = x - 0xA0;
     quad[0].vy = y - 0x70;
     quad[0].vz = 0;
@@ -664,8 +664,8 @@ void func_801C6E90(SVECTOR *quad, u16 x, u16 y, u16 w, u16 h) {
     quad[3].vz = 0;
 }
 
-/* Make a textured quad semi-transparent, unshaded and neutral grey. */
-void func_801C6EE8(POLY_FT4 *poly) {
+/* 801C6EE8: Make a textured quad semi-transparent, unshaded and neutral grey. */
+void item_shop_quad_set_semi_transparent(POLY_FT4 *poly) {
     SetSemiTrans(poly, 1);
     SetShadeTex(poly, 0);
     poly->r0 = 0x80;
@@ -673,8 +673,8 @@ void func_801C6EE8(POLY_FT4 *poly) {
     poly->b0 = 0x80;
 }
 
-/* Draw the scroll bar at (x, y): the thumb position follows `top` of `count` rows. */
-void func_801C6F30(s32 x, s32 y, s32 height, s32 count, s32 top) {
+/* 801C6F30: Draw the scroll bar at (x, y): the thumb position follows `top` of `count` rows. */
+void item_shop_scroll_bar_show(s32 x, s32 y, s32 height, s32 count, s32 top) {
     s32 offset;
 
     offset = 0;
@@ -690,28 +690,28 @@ void func_801C6F30(s32 x, s32 y, s32 height, s32 count, s32 top) {
     }
     sprite_sheet_draw_scaled(menu_state_current->sheet, 0x107, menu_state_current->scroll, menu_state_current->buffer_index, x, y,
                   0x1000);
-    func_801C6E90(menu_state_current->scroll->verts, x, y + offset, 8, height);
+    item_shop_set_rect_verts(menu_state_current->scroll->verts, x, y + offset, 8, height);
     menu_state_current->scroll->buffer = menu_state_current->buffer_index;
     menu_state_current->flags->scroll_shown = 1;
 }
 
-/* Remove the scroll bar. */
-void func_801C70B8(void) {
+/* 801C70B8: Remove the scroll bar. */
+void item_shop_scroll_bar_hide(void) {
     menu_state_current->flags->scroll_shown = 0;
     heap_free(menu_state_current->scroll);
 }
 
-/* Create marker `index`, starting on its first frame. */
-void func_801C70FC(u8 index) {
+/* 801C70FC: Create marker `index`, starting on its first frame. */
+void item_shop_list_cursor_alloc(u8 index) {
     menu_state_current->cursors[index] = heap_alloc(sizeof(MenuCursor), 0);
     bzero((u_char *)menu_state_current->cursors[index], sizeof(MenuCursor));
     menu_state_current->cursors[index]->frame = 4;
     menu_state_current->cursors[index]->timer = 0;
 }
 
-/* Animate marker `index` beside row `row`. Both shop callers pass fixed = 0;
+/* 801C7178: Animate marker `index` beside row `row`. Both shop callers pass fixed = 0;
  * the original leaves the row offset uninitialized for a nonzero fixed value. */
-void func_801C7178(s32 row, s32 unused, u8 fixed, u8 index) {
+void item_shop_list_cursor_place(s32 row, s32 unused, u8 fixed, u8 index) {
     MenuCursor *marker;
     POLY_FT4 *poly;
     s32 visible;
@@ -734,7 +734,7 @@ void func_801C7178(s32 row, s32 unused, u8 fixed, u8 index) {
         sprite_sheet_draw_scaled(menu_state_current->sheet, marker->frame + 0x15B, marker, menu_state_current->buffer_index, 0,
                       0, 0x1000);
         poly = &marker->polys[menu_state_current->buffer_index];
-        func_801C6E90(marker->verts, poly->x0 + 0x1C, poly->y0 + y, poly->x1 - poly->x0,
+        item_shop_set_rect_verts(marker->verts, poly->x0 + 0x1C, poly->y0 + y, poly->x1 - poly->x0,
                       poly->y3 - poly->y0);
         marker->buffer = menu_state_current->buffer_index;
         menu_state_current->flags->cursors_shown[index] = 1;
@@ -743,14 +743,14 @@ void func_801C7178(s32 row, s32 unused, u8 fixed, u8 index) {
     }
 }
 
-/* Remove marker `index`. */
-void func_801C7314(u8 index) {
+/* 801C7314: Remove marker `index`. */
+void item_shop_list_cursor_free(u8 index) {
     heap_free(menu_state_current->cursors[index]);
     menu_state_current->flags->cursors_shown[index] = 0;
 }
 
-/* Initialise panel `index`'s background, draw modes and edge sprite parts. */
-void func_801C7370(u8 index) {
+/* 801C7370: Initialise panel `index`'s background, draw modes and edge sprite parts. */
+void item_shop_panel_init(u8 index) {
     MenuPanel *panel;
     RECT window;
     u8 i;
@@ -825,8 +825,8 @@ void func_801C7370(u8 index) {
     }
 }
 
-/* Place panel `index`'s scroll bar (top arrow, bottom arrow, track) at its right edge. */
-void func_801C768C(u8 index, u16 x, u16 y, u16 w, u16 h) {
+/* 801C768C: Place panel `index`'s scroll bar (top arrow, bottom arrow, track) at its right edge. */
+void item_shop_panel_layout_scroll_bar(u8 index, u16 x, u16 y, u16 w, u16 h) {
     MenuPanel *panel;
 
     panel = menu_state_current->panels[index];
@@ -835,13 +835,13 @@ void func_801C768C(u8 index, u16 x, u16 y, u16 w, u16 h) {
                   y + h - 8, 0x1000, 0, 1);
     sprite_sheet_draw_scaled(menu_state_current->sheet, 0x106, &panel->bar_side[0], menu_state_current->buffer_index, x, y + 8,
                   0x1000);
-    func_801C6E90(&panel->ends_at[0], x, y, 8, 8);
-    func_801C6E90(&panel->ends_at[4], x, y + h, 8, -8);
-    func_801C6E90(&panel->side_at[0], x, y + 8, 8, h - 8);
+    item_shop_set_rect_verts(&panel->ends_at[0], x, y, 8, 8);
+    item_shop_set_rect_verts(&panel->ends_at[4], x, y + h, 8, -8);
+    item_shop_set_rect_verts(&panel->side_at[0], x, y + 8, 8, h - 8);
 }
 
-/* Build panel `index`'s four corners around (x, y, w, h). */
-void func_801C77F0(u8 index, u16 x, u16 y, u16 w, u16 h) {
+/* 801C77F0: Build panel `index`'s four corners around (x, y, w, h). */
+void item_shop_panel_layout_corners(u8 index, u16 x, u16 y, u16 w, u16 h) {
     MenuPanel *panel;
     s32 i;
 
@@ -855,17 +855,17 @@ void func_801C77F0(u8 index, u16 x, u16 y, u16 w, u16 h) {
                                        menu_state_current->buffer_index, 0, 0, 0x1000);
     panel->corner_parts += sprite_sheet_draw_scaled(menu_state_current->sheet, 0x104, &panel->corner[panel->corner_parts * 2],
                                        menu_state_current->buffer_index, 0, 0, 0x1000);
-    func_801C6E90(&panel->corner_at[0], x - 8, y + 8, 0x10, -0x10);
-    func_801C6E90(&panel->corner_at[4], x + w + 8, y + 8, -0x10, -0x10);
-    func_801C6E90(&panel->corner_at[8], x - 8, y + h - 8, 0x10, 0x10);
-    func_801C6E90(&panel->corner_at[12], x + w + 8, y + h - 8, -0x10, 0x10);
+    item_shop_set_rect_verts(&panel->corner_at[0], x - 8, y + 8, 0x10, -0x10);
+    item_shop_set_rect_verts(&panel->corner_at[4], x + w + 8, y + 8, -0x10, -0x10);
+    item_shop_set_rect_verts(&panel->corner_at[8], x - 8, y + h - 8, 0x10, 0x10);
+    item_shop_set_rect_verts(&panel->corner_at[12], x + w + 8, y + h - 8, -0x10, 0x10);
     for (i = 0; i < 4; i++) {
-        func_801C6EE8(&panel->corner[i * 2 + menu_state_current->buffer_index]);
+        item_shop_quad_set_semi_transparent(&panel->corner[i * 2 + menu_state_current->buffer_index]);
     }
 }
 
-/* Build panel `index`'s top edge, two pieces across the width. */
-void func_801C7A38(u8 index, u16 x, u16 y, u16 w) {
+/* 801C7A38: Build panel `index`'s top edge, two pieces across the width. */
+void item_shop_panel_layout_top_edge(u8 index, u16 x, u16 y, u16 w) {
     MenuPanel *panel;
     s32 half;
     s32 i;
@@ -888,15 +888,15 @@ void func_801C7A38(u8 index, u16 x, u16 y, u16 w) {
     (panel->edge[0] + menu_state_current->buffer_index + 2)->u3 = 7;
     (panel->edge[0] + menu_state_current->buffer_index + 2)->v3 = 0x94;
     half = (w - 0x10) / 2;
-    func_801C6E90(&panel->edge_at[0][0][0], x + 8, y - 8, half, 0x10);
-    func_801C6E90(&panel->edge_at[0][1][0], x + (half + 8), y - 8, half, 0x10);
+    item_shop_set_rect_verts(&panel->edge_at[0][0][0], x + 8, y - 8, half, 0x10);
+    item_shop_set_rect_verts(&panel->edge_at[0][1][0], x + (half + 8), y - 8, half, 0x10);
     for (i = 0; i < 2; i++) {
-        func_801C6EE8(&panel->edge[0][i * 2 + menu_state_current->buffer_index]);
+        item_shop_quad_set_semi_transparent(&panel->edge[0][i * 2 + menu_state_current->buffer_index]);
     }
 }
 
-/* Build panel `index`'s bottom edge, two pieces across the width. */
-void func_801C7D7C(u8 index, u16 x, u16 y, u16 w, u16 h) {
+/* 801C7D7C: Build panel `index`'s bottom edge, two pieces across the width. */
+void item_shop_panel_layout_bottom_edge(u8 index, u16 x, u16 y, u16 w, u16 h) {
     MenuPanel *panel;
     s32 half;
     s32 i;
@@ -919,15 +919,15 @@ void func_801C7D7C(u8 index, u16 x, u16 y, u16 w, u16 h) {
     (panel->edge[1] + menu_state_current->buffer_index + 2)->u3 = 0xF;
     (panel->edge[1] + menu_state_current->buffer_index + 2)->v3 = 0x94;
     half = (w - 0x10) / 2;
-    func_801C6E90(&panel->edge_at[1][0][0], x + 8, y + h - 8, half, 0x10);
-    func_801C6E90(&panel->edge_at[1][1][0], x + (half + 8), y + h - 8, half, 0x10);
+    item_shop_set_rect_verts(&panel->edge_at[1][0][0], x + 8, y + h - 8, half, 0x10);
+    item_shop_set_rect_verts(&panel->edge_at[1][1][0], x + (half + 8), y + h - 8, half, 0x10);
     for (i = 0; i < 2; i++) {
-        func_801C6EE8(&panel->edge[1][i * 2 + menu_state_current->buffer_index]);
+        item_shop_quad_set_semi_transparent(&panel->edge[1][i * 2 + menu_state_current->buffer_index]);
     }
 }
 
-/* Build panel `index`'s left edge, two pieces down the height. */
-void func_801C80C8(u8 index, u16 x, u16 y, u16 h) {
+/* 801C80C8: Build panel `index`'s left edge, two pieces down the height. */
+void item_shop_panel_layout_left_edge(u8 index, u16 x, u16 y, u16 h) {
     MenuPanel *panel;
     s32 half;
     s32 i;
@@ -950,15 +950,15 @@ void func_801C80C8(u8 index, u16 x, u16 y, u16 h) {
     (panel->edge[2] + menu_state_current->buffer_index + 2)->u3 = 0x20;
     (panel->edge[2] + menu_state_current->buffer_index + 2)->v3 = 0x8B;
     half = (h - 0x10) / 2;
-    func_801C6E90(&panel->edge_at[2][0][0], x - 8, y + 8, 0x10, half);
-    func_801C6E90(&panel->edge_at[2][1][0], x - 8, y + (half + 8), 0x10, half);
+    item_shop_set_rect_verts(&panel->edge_at[2][0][0], x - 8, y + 8, 0x10, half);
+    item_shop_set_rect_verts(&panel->edge_at[2][1][0], x - 8, y + (half + 8), 0x10, half);
     for (i = 0; i < 2; i++) {
-        func_801C6EE8(&panel->edge[2][i * 2 + menu_state_current->buffer_index]);
+        item_shop_quad_set_semi_transparent(&panel->edge[2][i * 2 + menu_state_current->buffer_index]);
     }
 }
 
-/* Build panel `index`'s right edge, two pieces down the height. */
-void func_801C8410(u8 index, u16 x, u16 y, u16 w, u16 h) {
+/* 801C8410: Build panel `index`'s right edge, two pieces down the height. */
+void item_shop_panel_layout_right_edge(u8 index, u16 x, u16 y, u16 w, u16 h) {
     MenuPanel *panel;
     s32 half;
     s32 i;
@@ -981,27 +981,27 @@ void func_801C8410(u8 index, u16 x, u16 y, u16 w, u16 h) {
     (panel->edge[3] + menu_state_current->buffer_index + 2)->u3 = 0x20;
     (panel->edge[3] + menu_state_current->buffer_index + 2)->v3 = 0x93;
     half = (h - 0x10) / 2;
-    func_801C6E90(&panel->edge_at[3][0][0], x + w - 8, y + 8, 0x10, half);
-    func_801C6E90(&panel->edge_at[3][1][0], x + w - 8, y + (half + 8), 0x10, half);
+    item_shop_set_rect_verts(&panel->edge_at[3][0][0], x + w - 8, y + 8, 0x10, half);
+    item_shop_set_rect_verts(&panel->edge_at[3][1][0], x + w - 8, y + (half + 8), 0x10, half);
     for (i = 0; i < 2; i++) {
-        func_801C6EE8(&panel->edge[3][i * 2 + menu_state_current->buffer_index]);
+        item_shop_quad_set_semi_transparent(&panel->edge[3][i * 2 + menu_state_current->buffer_index]);
     }
 }
 
-/* Lay out panel `index` at (x, y, w, h) for this buffer and mark it shown. */
-void func_801C875C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 flat, s32 ot_entry, u8 has_bar) {
+/* 801C875C: Lay out panel `index` at (x, y, w, h) for this buffer and mark it shown. */
+void item_shop_panel_layout(u8 index, u16 x, u16 y, u16 w, u16 h, u8 flat, s32 ot_entry, u8 has_bar) {
     MenuPanel *panel;
 
     panel = menu_state_current->panels[index];
     menu_state_current->flags->panels_shown[index] = 0;
-    func_801C6E90(&panel->fill_at[0], x, y, w, h);
-    func_801C77F0(index, x, y, w, h);
-    func_801C7A38(index, x, y, w);
-    func_801C7D7C(index, x, y, w, h);
-    func_801C80C8(index, x, y, h);
-    func_801C8410(index, x, y, w, h);
+    item_shop_set_rect_verts(&panel->fill_at[0], x, y, w, h);
+    item_shop_panel_layout_corners(index, x, y, w, h);
+    item_shop_panel_layout_top_edge(index, x, y, w);
+    item_shop_panel_layout_bottom_edge(index, x, y, w, h);
+    item_shop_panel_layout_left_edge(index, x, y, h);
+    item_shop_panel_layout_right_edge(index, x, y, w, h);
     if (has_bar) {
-        func_801C768C(index, x, y, w, h);
+        item_shop_panel_layout_scroll_bar(index, x, y, w, h);
     }
     panel->has_bar = has_bar;
     panel->flat = flat;
@@ -1010,16 +1010,16 @@ void func_801C875C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 flat, s32 ot_entry, 
     menu_state_current->flags->panels_shown[index] = 1;
 }
 
-/* Remove panel `index`. */
-void func_801C88E0(u8 index) {
+/* 801C88E0: Remove panel `index`. */
+void item_shop_panel_close(u8 index) {
     menu_state_current->flags->panels_shown[index] = 0;
     menu_state_current->flags->panels_growing[index] = 0;
     heap_free(menu_state_current->panels[index]);
     heap_free(menu_state_current->growth[index]);
 }
 
-/* Open panel `index` at (x, y, w, h): at once, or growing from its centre when `grow`. */
-void func_801C896C(u8 index, s16 x, s16 y, s16 w, u16 h, u8 grow, u8 flat, s32 ot_entry,
+/* 801C896C: Open panel `index` at (x, y, w, h): at once, or growing from its centre when `grow`. */
+void item_shop_panel_open(u8 index, s16 x, s16 y, s16 w, u16 h, u8 grow, u8 flat, s32 ot_entry,
                    u8 has_bar) {
     MenuGrowth *growth;
 
@@ -1028,7 +1028,7 @@ void func_801C896C(u8 index, s16 x, s16 y, s16 w, u16 h, u8 grow, u8 flat, s32 o
         bzero((u_char *)menu_state_current->panels[index], sizeof(MenuPanel));
         menu_state_current->growth[index] = heap_alloc(sizeof(MenuGrowth), 0);
         bzero((u_char *)menu_state_current->growth[index], sizeof(MenuGrowth));
-        func_801C7370(index);
+        item_shop_panel_init(index);
     }
     growth = menu_state_current->growth[index];
     if (grow) {
@@ -1044,12 +1044,12 @@ void func_801C896C(u8 index, s16 x, s16 y, s16 w, u16 h, u8 grow, u8 flat, s32 o
         growth->flat = flat;
         growth->ot_entry = ot_entry;
     } else {
-        func_801C875C(index, x, y, w, h, flat, ot_entry, has_bar);
+        item_shop_panel_layout(index, x, y, w, h, flat, ot_entry, has_bar);
     }
 }
 
-/* Grow each opening panel by 20h in both directions until it reaches its size. */
-void func_801C8AF0(void) {
+/* 801C8AF0: Grow each opening panel by 20h in both directions until it reaches its size. */
+void item_shop_panel_grow_opening(void) {
     MenuGrowth *growth;
     s32 i;
     u8 finished;
@@ -1073,15 +1073,15 @@ void func_801C8AF0(void) {
             if (finished == 2) {
                 growth->done = 1;
             }
-            func_801C875C(growth->index, growth->x + growth->w / 2 - growth->cur_w / 2,
+            item_shop_panel_layout(growth->index, growth->x + growth->w / 2 - growth->cur_w / 2,
                           growth->y + growth->h / 2 - growth->cur_h / 2, growth->cur_w,
                           growth->cur_h, growth->flat, growth->ot_entry, growth->has_bar);
         }
     }
 }
 
-/* Project `count` quads and link their packets (every other one from `first`) into OT entry 4. */
-void func_801C8C3C(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first) {
+/* 801C8C3C: Project `count` quads and link their packets (every other one from `first`) into OT entry 4. */
+void item_shop_draw_projected_quads(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first) {
     long depth;
     long flag;
     s32 i;
@@ -1095,8 +1095,8 @@ void func_801C8C3C(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first) {
     }
 }
 
-/* Link `count` packets (every other one from `first`) into OT entry 4. */
-void func_801C8D58(s32 count, POLY_FT4 *packets, s32 first) {
+/* 801C8D58: Link `count` packets (every other one from `first`) into OT entry 4. */
+void item_shop_draw_quads(s32 count, POLY_FT4 *packets, s32 first) {
     s32 i;
 
     for (i = 0; i < count; i++) {
@@ -1104,18 +1104,18 @@ void func_801C8D58(s32 count, POLY_FT4 *packets, s32 first) {
     }
 }
 
-/* Draw the scroll bar when shown. */
-void func_801C8DDC(void) {
+/* 801C8DDC: Draw the scroll bar when shown. */
+void item_shop_draw_scroll_bar(void) {
     MenuScrollBar *scroll;
 
     if (menu_state_current->flags->scroll_shown != 0) {
         scroll = menu_state_current->scroll;
-        func_801C8C3C(1, scroll->verts, scroll->polys, scroll->buffer);
+        item_shop_draw_projected_quads(1, scroll->verts, scroll->polys, scroll->buffer);
     }
 }
 
-/* Draw the cursor's label draw mode, and the cursor when shown. */
-void func_801C8E28(void) {
+/* 801C8E28: Draw the cursor's label draw mode, and the cursor when shown. */
+void item_shop_draw_highlight_sprite(void) {
     AddPrim(&menu_state_current->current->ot[4],
                   &menu_state_current->prims->mode_label[menu_state_current->prims->shade_buffer]);
     if (menu_state_current->flags->sprite_shown != 0) {
@@ -1124,8 +1124,8 @@ void func_801C8E28(void) {
     }
 }
 
-/* Project and link panel `index`'s top edge. */
-void func_801C8EB8(s32 index) {
+/* 801C8EB8: Project and link panel `index`'s top edge. */
+void item_shop_draw_panel_top_edge(s32 index) {
     long depth;
     long flag;
     MenuPanel *panel;
@@ -1145,8 +1145,8 @@ void func_801C8EB8(s32 index) {
     AddPrim(&menu_state_current->current->ot[panel->ot_entry], &panel->edge[0][panel->buffer + 2]);
 }
 
-/* Project and link panel `index`'s bottom edge. */
-void func_801C908C(s32 index) {
+/* 801C908C: Project and link panel `index`'s bottom edge. */
+void item_shop_draw_panel_bottom_edge(s32 index) {
     long depth;
     long flag;
     MenuPanel *panel;
@@ -1166,8 +1166,8 @@ void func_801C908C(s32 index) {
     AddPrim(&menu_state_current->current->ot[panel->ot_entry], &panel->edge[1][panel->buffer + 2]);
 }
 
-/* Project and link panel `index`'s left edge. */
-void func_801C9260(s32 index) {
+/* 801C9260: Project and link panel `index`'s left edge. */
+void item_shop_draw_panel_left_edge(s32 index) {
     long depth;
     long flag;
     MenuPanel *panel;
@@ -1187,8 +1187,8 @@ void func_801C9260(s32 index) {
     AddPrim(&menu_state_current->current->ot[panel->ot_entry], &panel->edge[2][panel->buffer + 2]);
 }
 
-/* Project and link panel `index`'s right edge. */
-void func_801C9434(s32 index) {
+/* 801C9434: Project and link panel `index`'s right edge. */
+void item_shop_draw_panel_right_edge(s32 index) {
     long depth;
     long flag;
     MenuPanel *panel;
@@ -1208,8 +1208,8 @@ void func_801C9434(s32 index) {
     AddPrim(&menu_state_current->current->ot[panel->ot_entry], &panel->edge[3][panel->buffer + 2]);
 }
 
-/* Project and link panel `index`'s background and its draw mode. */
-void func_801C9608(s32 index) {
+/* 801C9608: Project and link panel `index`'s background and its draw mode. */
+void item_shop_draw_panel_fill(s32 index) {
     long depth;
     long flag;
     MenuPanel *panel;
@@ -1224,8 +1224,8 @@ void func_801C9608(s32 index) {
     AddPrim(&menu_state_current->current->ot[panel->ot_entry], &panel->fill_mode[panel->buffer]);
 }
 
-/* Project and link panel `index`'s four corners. */
-void func_801C9744(s32 index) {
+/* 801C9744: Project and link panel `index`'s four corners. */
+void item_shop_draw_panel_corners(s32 index) {
     long depth;
     long flag;
     MenuPanel *panel;
@@ -1243,8 +1243,8 @@ void func_801C9744(s32 index) {
     }
 }
 
-/* Project and link panel `index`'s scroll bar: both arrows, then the track. */
-void func_801C9890(s32 index) {
+/* 801C9890: Project and link panel `index`'s scroll bar: both arrows, then the track. */
+void item_shop_draw_panel_scroll_bar(s32 index) {
     long depth;
     long flag;
     MenuPanel *panel;
@@ -1268,8 +1268,8 @@ void func_801C9890(s32 index) {
     AddPrim(&menu_state_current->current->ot[panel->ot_entry], &panel->bar_side[panel->buffer]);
 }
 
-/* Draw every shown panel; panels that are not flat get their own 3D matrices. */
-void func_801C9AB4(void) {
+/* 801C9AB4: Draw every shown panel; panels that are not flat get their own 3D matrices. */
+void item_shop_draw_panels(void) {
     SVECTOR rotation;
     VECTOR translation;
     MATRIX matrix;
@@ -1292,33 +1292,33 @@ void func_801C9AB4(void) {
                 TransMatrix(&matrix, &translation);
                 SetRotMatrix(&matrix);
                 SetTransMatrix(&matrix);
-                func_801C9744(i);
+                item_shop_draw_panel_corners(i);
                 if (panel->has_bar) {
-                    func_801C9890(i);
+                    item_shop_draw_panel_scroll_bar(i);
                 }
-                func_801C8EB8(i);
-                func_801C908C(i);
-                func_801C9260(i);
-                func_801C9434(i);
-                func_801C9608(i);
+                item_shop_draw_panel_top_edge(i);
+                item_shop_draw_panel_bottom_edge(i);
+                item_shop_draw_panel_left_edge(i);
+                item_shop_draw_panel_right_edge(i);
+                item_shop_draw_panel_fill(i);
                 PopMatrix();
             } else {
-                func_801C9744(i);
+                item_shop_draw_panel_corners(i);
                 if (panel->has_bar) {
-                    func_801C9890(i);
+                    item_shop_draw_panel_scroll_bar(i);
                 }
-                func_801C8EB8(i);
-                func_801C908C(i);
-                func_801C9260(i);
-                func_801C9434(i);
-                func_801C9608(i);
+                item_shop_draw_panel_top_edge(i);
+                item_shop_draw_panel_bottom_edge(i);
+                item_shop_draw_panel_left_edge(i);
+                item_shop_draw_panel_right_edge(i);
+                item_shop_draw_panel_fill(i);
             }
         }
     }
 }
 
-/* Link the shown markers; markers that follow the file cursor move to its slot first. */
-void func_801C9C2C(void) {
+/* 801C9C2C: Link the shown markers; markers that follow the file cursor move to its slot first. */
+void item_shop_draw_markers(void) {
     s32 i;
 
     if (menu_state_current->flags->markers_shown != 0) {
@@ -1326,21 +1326,21 @@ void func_801C9C2C(void) {
             if (menu_state_current->markers->shown[i] != 0) {
                 if (menu_state_current->markers->at_cursor[i] != 0) {
                     (menu_state_current->markers->polys + (i * 2 + menu_state_current->markers->buffer[i]))->x0 =
-                        D_801D2094[D_801D201C[menu_state_current->card->cursor]] + 8;
+                        item_shop_file_slot_x_table[item_shop_file_cursor_card_slots[menu_state_current->card->cursor]] + 8;
                     (menu_state_current->markers->polys + (i * 2 + menu_state_current->markers->buffer[i]))->y0 =
-                        D_801D2114[D_801D201C[menu_state_current->card->cursor]] - 6;
+                        item_shop_file_slot_y_table[item_shop_file_cursor_card_slots[menu_state_current->card->cursor]] - 6;
                     (menu_state_current->markers->polys + (i * 2 + menu_state_current->markers->buffer[i]))->x1 =
-                        D_801D2094[D_801D201C[menu_state_current->card->cursor]] + 0x18;
+                        item_shop_file_slot_x_table[item_shop_file_cursor_card_slots[menu_state_current->card->cursor]] + 0x18;
                     (menu_state_current->markers->polys + (i * 2 + menu_state_current->markers->buffer[i]))->y1 =
-                        D_801D2114[D_801D201C[menu_state_current->card->cursor]] - 6;
+                        item_shop_file_slot_y_table[item_shop_file_cursor_card_slots[menu_state_current->card->cursor]] - 6;
                     (menu_state_current->markers->polys + (i * 2 + menu_state_current->markers->buffer[i]))->x2 =
-                        D_801D2094[D_801D201C[menu_state_current->card->cursor]] + 8;
+                        item_shop_file_slot_x_table[item_shop_file_cursor_card_slots[menu_state_current->card->cursor]] + 8;
                     (menu_state_current->markers->polys + (i * 2 + menu_state_current->markers->buffer[i]))->y2 =
-                        D_801D2114[D_801D201C[menu_state_current->card->cursor]] + 0xA;
+                        item_shop_file_slot_y_table[item_shop_file_cursor_card_slots[menu_state_current->card->cursor]] + 0xA;
                     (menu_state_current->markers->polys + (i * 2 + menu_state_current->markers->buffer[i]))->x3 =
-                        D_801D2094[D_801D201C[menu_state_current->card->cursor]] + 0x18;
+                        item_shop_file_slot_x_table[item_shop_file_cursor_card_slots[menu_state_current->card->cursor]] + 0x18;
                     (menu_state_current->markers->polys + (i * 2 + menu_state_current->markers->buffer[i]))->y3 =
-                        D_801D2114[D_801D201C[menu_state_current->card->cursor]] + 0xA;
+                        item_shop_file_slot_y_table[item_shop_file_cursor_card_slots[menu_state_current->card->cursor]] + 0xA;
                 }
                 AddPrim(&menu_state_current->current->ot[4],
                               menu_state_current->markers->polys + (i * 2 + menu_state_current->markers->buffer[i]));
@@ -1349,8 +1349,8 @@ void func_801C9C2C(void) {
     }
 }
 
-/* Link the shown command labels. */
-void func_801C9F7C(void) {
+/* 801C9F7C: Link the shown command labels. */
+void item_shop_draw_command_labels(void) {
     s32 i;
 
     for (i = 0; i < 4; i++) {
@@ -1361,8 +1361,8 @@ void func_801C9F7C(void) {
     }
 }
 
-/* Link the shown list labels. */
-void func_801CA00C(void) {
+/* 801CA00C: Link the shown list labels. */
+void item_shop_draw_list_labels(void) {
     s32 i;
 
     for (i = 0; i < 8; i++) {
@@ -1373,8 +1373,8 @@ void func_801CA00C(void) {
     }
 }
 
-/* Link the shown info labels, projecting the 3D ones first. */
-void func_801CA09C(void) {
+/* 801CA09C: Link the shown info labels, projecting the 3D ones first. */
+void item_shop_draw_row_labels(void) {
     long depth;
     long flag;
     s32 i;
@@ -1399,16 +1399,16 @@ void func_801CA09C(void) {
     }
 }
 
-/* An empty loop over six entries; whatever it drew was removed. */
-void func_801CA214(void) {
+/* 801CA214: An empty loop over six entries; whatever it drew was removed. */
+void item_shop_draw_extra_labels_empty(void) {
     s32 i;
 
     for (i = 0; i < 6; i++) {
     }
 }
 
-/* Link the message labels while the message is shown, projecting the 3D ones first. */
-void func_801CA22C(void) {
+/* 801CA22C: Link the message labels while the message is shown, projecting the 3D ones first. */
+void item_shop_draw_notice_labels(void) {
     long depth;
     long flag;
     MenuLabel *label;
@@ -1431,23 +1431,23 @@ void func_801CA22C(void) {
     }
 }
 
-/* Link the full-screen quad and its draw mode into OT entry 8. */
-void func_801CA388(void) {
+/* 801CA388: Link the full-screen quad and its draw mode into OT entry 8. */
+void item_shop_draw_fade(void) {
     AddPrim(&menu_state_current->current->ot[8], menu_state_current->prims->fade + menu_state_current->buffer_index);
     AddPrim(&menu_state_current->current->ot[8], menu_state_current->prims->mode_sprite + menu_state_current->buffer_index);
 }
 
-/* Link every label group. */
-void func_801CA404(void) {
-    func_801C9F7C();
-    func_801CA00C();
-    func_801CA09C();
-    func_801CA214();
-    func_801CA22C();
+/* 801CA404: Link every label group. */
+void item_shop_draw_label_layers(void) {
+    item_shop_draw_command_labels();
+    item_shop_draw_list_labels();
+    item_shop_draw_row_labels();
+    item_shop_draw_extra_labels_empty();
+    item_shop_draw_notice_labels();
 }
 
-/* Link both image packet groups, first applying a changed dimming (semi-transparent, 20h grey). */
-void func_801CA444(void) {
+/* 801CA444: Link both image packet groups, first applying a changed dimming (semi-transparent, 20h grey). */
+void item_shop_draw_screen_images(void) {
     s32 i;
 
     if (menu_state_current->flags->images_shown != 0) {
@@ -1489,57 +1489,57 @@ void func_801CA444(void) {
             }
             menu_state_current->images->dimmed = menu_state_current->images->dim;
         }
-        func_801C8D58(menu_state_current->images->count2, menu_state_current->images->packets2, menu_state_current->images->buffer2);
-        func_801C8D58(menu_state_current->images->count, menu_state_current->images->packets, menu_state_current->images->buffer);
+        item_shop_draw_quads(menu_state_current->images->count2, menu_state_current->images->packets2, menu_state_current->images->buffer2);
+        item_shop_draw_quads(menu_state_current->images->count, menu_state_current->images->packets, menu_state_current->images->buffer);
     }
 }
 
-/* Link both list packet groups when shown. */
-void func_801CAB0C(void) {
+/* 801CAB0C: Link both list packet groups when shown. */
+void item_shop_draw_sprite_lists(void) {
     if (menu_state_current->flags->lists_shown != 0) {
-        func_801C8D58(menu_state_current->lists->second_count, menu_state_current->lists->second, menu_state_current->lists->second_buffer);
-        func_801C8D58(menu_state_current->lists->first_count, menu_state_current->lists->first, menu_state_current->lists->first_buffer);
+        item_shop_draw_quads(menu_state_current->lists->second_count, menu_state_current->lists->second, menu_state_current->lists->second_buffer);
+        item_shop_draw_quads(menu_state_current->lists->first_count, menu_state_current->lists->first, menu_state_current->lists->first_buffer);
     }
 }
 
-/* Project and link the shown markers. */
-void func_801CAB80(void) {
+/* 801CAB80: Project and link the shown markers. */
+void item_shop_draw_list_cursors(void) {
     s32 i;
 
     for (i = 0; i < 2; i++) {
         if (menu_state_current->flags->cursors_shown[i] != 0) {
-            func_801C8C3C(1, menu_state_current->cursors[i]->verts, menu_state_current->cursors[i]->polys,
+            item_shop_draw_projected_quads(1, menu_state_current->cursors[i]->verts, menu_state_current->cursors[i]->polys,
                           menu_state_current->cursors[i]->buffer);
         }
     }
 }
 
-/* Build the frame's packets: every element while the screen is drawn, then the screen quad. */
-void func_801CABF4(void) {
+/* 801CABF4: Build the frame's packets: every element while the screen is drawn, then the screen quad. */
+void item_shop_draw_screen(void) {
     if (menu_state_current->drawing != 0) {
-        func_801C8AF0();
-        func_801C9C2C();
-        func_801CA404();
-        func_801C8E28();
-        func_801CAB80();
-        func_801CCFF4();
-        func_801C8DDC();
-        func_801CA444();
-        func_801CAB0C();
-        func_801C9AB4();
+        item_shop_panel_grow_opening();
+        item_shop_draw_markers();
+        item_shop_draw_label_layers();
+        item_shop_draw_highlight_sprite();
+        item_shop_draw_list_cursors();
+        item_shop_draw_details();
+        item_shop_draw_scroll_bar();
+        item_shop_draw_screen_images();
+        item_shop_draw_sprite_lists();
+        item_shop_draw_panels();
     }
-    func_801CA388();
+    item_shop_draw_fade();
 }
 
-/* Play menu sound `sound` of the effect bank when sounds are on. */
-void func_801CAC7C(u8 sound) {
+/* 801CAC7C: Play menu sound `sound` of the effect bank when sounds are on. */
+void item_shop_play_sound(u8 sound) {
     if (menu_state_current->sounds != 0) {
         sound_play_effect_on_last_channels((menu_state_current->effects->id << 16) | sound);
     }
 }
 
-/* Wait for a controller (sound paused meanwhile), then decode the frame's input into +325. */
-void func_801CACC8(void) {
+/* 801CACC8: Wait for a controller (sound paused meanwhile), then decode the frame's input into +325. */
+void item_shop_read_input(void) {
     s32 saved;
     u8 waiting;
     u8 paused;
@@ -1569,26 +1569,26 @@ void func_801CACC8(void) {
         while (pad_dequeue_state() != 0) {
             if (pad_port0_repeated & 0x2000) {
                 code = 0;
-                func_801CAC7C(1);
+                item_shop_play_sound(1);
                 break;
             } else if (pad_port0_repeated & 0x4000) {
                 code = 1;
-                func_801CAC7C(1);
+                item_shop_play_sound(1);
                 break;
             } else if (pad_port0_repeated & 0x8000) {
                 code = 2;
-                func_801CAC7C(1);
+                item_shop_play_sound(1);
                 break;
             } else if (pad_port0_repeated & 0x1000) {
                 code = 3;
-                func_801CAC7C(1);
+                item_shop_play_sound(1);
                 break;
             } else if (pad_port0_pressed & 0x20) {
                 code = 4;
                 break;
             } else if (pad_port0_pressed & 0x40) {
                 code = 5;
-                func_801CAC7C(3);
+                item_shop_play_sound(3);
                 break;
             } else if (pad_port0_pressed & 0x80) {
                 code = 6;
@@ -1618,8 +1618,8 @@ void func_801CACC8(void) {
     menu_state_current->input = code;
 }
 
-/* Advance the view's zoom (+329) and load the view matrices. */
-void func_801CAED4(void) {
+/* 801CAED4: Advance the view's zoom (+329) and load the view matrices. */
+void item_shop_view_update(void) {
     switch (menu_state_current->view_motion) {
     case 4:
         menu_state_current->offset.vz = 0x200;
@@ -1664,21 +1664,21 @@ void func_801CAED4(void) {
     SetTransMatrix(&menu_state_current->matrix);
 }
 
-/* Run one frame: input, buffer swap, view, packets, then present the finished buffer. */
-void func_801CB014(void) {
+/* 801CB014: Run one frame: input, buffer swap, view, packets, then present the finished buffer. */
+void item_shop_run_frame(void) {
     s32 shown;
 
     if (*mode_disc_mode_pointer != -1) {
         __asm__ volatile("break 1024");
     }
-    func_801CACC8();
+    item_shop_read_input();
     boot_check_soft_reset();
     menu_state_current->current =
         menu_state_current->current == &menu_state_current->buffers[0] ? &menu_state_current->buffers[1] : &menu_state_current->buffers[0];
     menu_state_current->buffer_index = menu_state_current->buffer_index == 0;
     ClearOTagR(menu_state_current->current->ot, 16);
-    func_801CAED4();
-    func_801CABF4();
+    item_shop_view_update();
+    item_shop_draw_screen();
     shown = menu_state_current->buffer_index == 0;
     DrawSync(0);
     VSync(0);
@@ -1688,8 +1688,8 @@ void func_801CB014(void) {
     DrawOTag(&menu_state_current->current->ot[15]);
 }
 
-/* Create the marker block: both yes/no markers at the cursor (0), the four markers (2) or one (3). */
-void func_801CB13C(u8 mode) {
+/* 801CB13C: Create the marker block: both yes/no markers at the cursor (0), the four markers (2) or one (3). */
+void item_shop_markers_open(u8 mode) {
     s32 i;
 
     menu_state_current->markers = heap_alloc(sizeof(MenuMarkers), 0);
@@ -1702,7 +1702,7 @@ void func_801CB13C(u8 mode) {
     case 2:
         for (i = 0; i < 4; i++) {
             sprite_sheet_draw_scaled(menu_state_current->sheet, 0x108, &menu_state_current->markers->polys[i * 2],
-                          menu_state_current->buffer_index, D_801D1FF8[i], D_801D2008[i], 0x800);
+                          menu_state_current->buffer_index, item_shop_marker_x_table[i], item_shop_marker_y_table[i], 0x800);
             menu_state_current->markers->buffer[i] = menu_state_current->buffer_index;
         }
         break;
@@ -1717,36 +1717,36 @@ void func_801CB13C(u8 mode) {
     }
 }
 
-/* Hide the markers, let a frame pass, and release them. */
-void func_801CB2FC(void) {
+/* 801CB2FC: Hide the markers, let a frame pass, and release them. */
+void item_shop_markers_close(void) {
     menu_state_current->flags->markers_shown = 0;
-    func_801CB014();
+    item_shop_run_frame();
     heap_free(menu_state_current->markers);
 }
 
-/* Start zooming the view out, with its sound. */
-void func_801CB340(void) {
+/* 801CB340: Start zooming the view out, with its sound. */
+void item_shop_view_start_zoom_in(void) {
     menu_state_current->view_motion = 3;
-    func_801CAC7C(0x5B);
+    item_shop_play_sound(0x5B);
 }
 
-/* Start zooming the view in. */
-void func_801CB370(void) {
+/* 801CB370: Start zooming the view in. */
+void item_shop_view_start_zoom_out(void) {
     menu_state_current->view_motion = 4;
 }
 
-/* Open the message panel and show three lines of label text from entry `first`. */
-void func_801CB384(u8 first) {
+/* 801CB384: Open the message panel and show three lines of label text from entry `first`. */
+void item_shop_notice_open(u8 first) {
     MenuGrowth *growth;
     MenuLabel *label;
     s32 i;
     s32 x;
 
     x = 0x50;
-    func_801C896C(4, 0x42, 0x46, 0xBC, 0x40, 1, 1, 4, 0);
+    item_shop_panel_open(4, 0x42, 0x46, 0xBC, 0x40, 1, 1, 4, 0);
     growth = menu_state_current->growth[4];
     while (growth->done == 0) {
-        func_801CB014();
+        item_shop_run_frame();
     }
     for (i = 0; i < 4; i++) {
         menu_state_current->message_labels[i] = heap_alloc(sizeof(MenuLabel), 0);
@@ -1766,8 +1766,8 @@ void func_801CB384(u8 first) {
         label = menu_state_current->message_labels[i];
         label->width = window_render_text_line(text_get_resource_entry(menu_state_current->label_text, first + i), label->pixels,
                                      0x36, i % 2);
-        func_801C5A7C(label, i, 0, 0);
-        func_801C6E90(label->verts, x, i * 16 + 0x50, label->width, 13);
+        item_shop_label_init_quads(label, i, 0, 0);
+        item_shop_set_rect_verts(label->verts, x, i * 16 + 0x50, label->width, 13);
         (label->polys + menu_state_current->buffer_index)->u0 = 0;
         (label->polys + menu_state_current->buffer_index)->v0 = (i / 2) * 13 + 0x4E;
         (label->polys + menu_state_current->buffer_index)->u1 = label->width;
@@ -1791,27 +1791,27 @@ void func_801CB384(u8 first) {
     if (menu_state_current->flags->unknown5a[1] == 2) {
         menu_state_current->flags->unknown5a[1] = 1;
     }
-    func_801CB014();
-    func_801CB014();
+    item_shop_run_frame();
+    item_shop_run_frame();
 }
 
-/* Close the message panel and release its labels, then let a frame pass. */
-void func_801CB7F4(void) {
+/* 801CB7F4: Close the message panel and release its labels, then let a frame pass. */
+void item_shop_notice_close(void) {
     s32 i;
 
     if (menu_state_current->flags->panels_shown[4] != 0) {
-        func_801C88E0(4);
+        item_shop_panel_close(4);
         menu_state_current->flags->messages_shown = 0;
         for (i = 0; i < 4; i++) {
             heap_free(menu_state_current->message_labels[i]);
         }
     }
     menu_state_current->flags->unknown5a[1] = 0;
-    func_801CB014();
+    item_shop_run_frame();
 }
 
-/* Let the player choose yes or no (1 = yes); without `wait` the choice ends after 60 idle frames. */
-u8 func_801CB894(u8 wait) {
+/* 801CB894: Let the player choose yes or no (1 = yes); without `wait` the choice ends after 60 idle frames. */
+u8 item_shop_ask_yes_no(u8 wait) {
     u8 choosing;
     u8 yes;
     u8 timer;
@@ -1830,10 +1830,10 @@ u8 func_801CB894(u8 wait) {
                 break;
             }
         }
-        func_801CB014();
+        item_shop_run_frame();
         switch (menu_state_current->input) {
         case 4:
-            func_801CAC7C(2);
+            item_shop_play_sound(2);
             choosing = 0;
             break;
         case 5:
@@ -1857,61 +1857,61 @@ u8 func_801CB894(u8 wait) {
     return yes;
 }
 
-/* Ask message `message` as a yes/no question; a yes is confirmed by `confirm` unless it is ff. */
-u8 func_801CBA50(u8 message, u8 confirm, u8 wait) {
+/* 801CBA50: Ask message `message` as a yes/no question; a yes is confirmed by `confirm` unless it is ff. */
+u8 item_shop_notice_ask_yes_no(u8 message, u8 confirm, u8 wait) {
     u8 answer;
 
-    func_801CB384(message);
+    item_shop_notice_open(message);
     menu_state_current->markers->shown[3] = 1;
-    answer = func_801CB894(wait);
-    func_801CB7F4();
+    answer = item_shop_ask_yes_no(wait);
+    item_shop_notice_close();
     if (confirm != 0xFF && answer) {
-        func_801CB384(confirm);
+        item_shop_notice_open(confirm);
         menu_state_current->markers->shown[3] = 1;
-        answer = func_801CB894(wait);
-        func_801CB7F4();
+        answer = item_shop_ask_yes_no(wait);
+        item_shop_notice_close();
     }
     return answer;
 }
 
-/* Close the screen: stop drawing, release every block and resource, then the menu state itself. */
-void func_801CBB08(void) {
-    func_801CB014();
-    func_801CB014();
+/* 801CBB08: Close the screen: stop drawing, release every block and resource, then the menu state itself. */
+void item_shop_shut_down(void) {
+    item_shop_run_frame();
+    item_shop_run_frame();
     menu_state_current->drawing = 0;
-    func_801CB014();
+    item_shop_run_frame();
     do {
-        func_801CB014();
+        item_shop_run_frame();
     } while (menu_state_current->buffer_index != 0);
-    func_801C5194(0);
-    func_801C51F8(0);
-    func_801C525C(0);
-    func_801C52C0(0);
-    func_801C5324(0);
-    func_801C5388(0);
-    func_801C6828(0x10);
-    func_801C5450(0);
+    item_shop_alloc_or_free_card_state(0);
+    item_shop_alloc_or_free_flags(0);
+    item_shop_alloc_or_free_screen_images(0);
+    item_shop_alloc_or_free_sprite_lists(0);
+    item_shop_alloc_or_free_table_directory(0);
+    item_shop_alloc_or_free_prims(0);
+    item_shop_load_or_release_data_set(0x10);
+    item_shop_alloc_or_free_shop_details(0);
     heap_free(menu_state_current->sheet);
     heap_free(menu_state_current->label_text);
     heap_free(menu_state_current->labels[0].pixels);
     if (menu_state_debug_start != 0) {
         sound_stop_bank_effects(menu_state_current->effects);
-        func_801CB014();
+        item_shop_run_frame();
         sound_remove_effect_bank(menu_state_current->effects);
-        func_801CB014();
+        item_shop_run_frame();
         heap_free(menu_state_current->effects);
     }
     heap_free(menu_state_current->shop_tables);
-    func_801C53EC(0);
+    item_shop_alloc_or_free_name_entry_block(0);
     heap_free(menu_state_current);
 }
 
-/* Render `count` labels (render != 0) or clear their shown flags. */
-void func_801CBC88(u8 render, u8 count, MenuLabel *labels, u8 *text_ids, u8 *shown) {
+/* 801CBC88: Render `count` labels (render != 0) or clear their shown flags. */
+void item_shop_label_render_or_clear_shown(u8 render, u8 count, MenuLabel *labels, u8 *text_ids, u8 *shown) {
     s32 i;
 
     if (render) {
-        func_801C5CBC(labels, text_ids, 2, count);
+        item_shop_label_render_pairs(labels, text_ids, 2, count);
     } else {
         for (i = 0; i < count; i++) {
             shown[i] = 0;
@@ -1919,22 +1919,22 @@ void func_801CBC88(u8 render, u8 count, MenuLabel *labels, u8 *text_ids, u8 *sho
     }
 }
 
-/* Show label `index`: in list row `row` (mode 0, offset by its column) or at the info position (mode 1). */
-void func_801CBCF0(u8 count, MenuLabel *labels, u8 *text_ids, s32 *offsets, u8 *shown, u8 index, u8 row,
+/* 801CBCF0: Show label `index`: in list row `row` (mode 0, offset by its column) or at the info position (mode 1). */
+void item_shop_label_place(u8 count, MenuLabel *labels, u8 *text_ids, s32 *offsets, u8 *shown, u8 index, u8 row,
                    u8 mode) {
     switch (mode) {
     case 0:
-        func_801CBC88(0, count, labels, text_ids, shown);
-        (labels[index].polys + menu_state_current->buffer_index)->x0 = D_801D2194[row + index] + 0x16 + offsets[index];
-        (labels[index].polys + menu_state_current->buffer_index)->y0 = D_801D21B0[row + index] - 0x22;
+        item_shop_label_render_or_clear_shown(0, count, labels, text_ids, shown);
+        (labels[index].polys + menu_state_current->buffer_index)->x0 = item_shop_highlight_x_table[row + index] + 0x16 + offsets[index];
+        (labels[index].polys + menu_state_current->buffer_index)->y0 = item_shop_highlight_y_table[row + index] - 0x22;
         (labels[index].polys + menu_state_current->buffer_index)->x1 =
-            labels[index].width + (D_801D2194[row + index] + 0x16 + offsets[index]);
-        (labels[index].polys + menu_state_current->buffer_index)->y1 = D_801D21B0[row + index] - 0x22;
-        (labels[index].polys + menu_state_current->buffer_index)->x2 = D_801D2194[row + index] + 0x16 + offsets[index];
-        (labels[index].polys + menu_state_current->buffer_index)->y2 = D_801D21B0[row + index] - 0x15;
+            labels[index].width + (item_shop_highlight_x_table[row + index] + 0x16 + offsets[index]);
+        (labels[index].polys + menu_state_current->buffer_index)->y1 = item_shop_highlight_y_table[row + index] - 0x22;
+        (labels[index].polys + menu_state_current->buffer_index)->x2 = item_shop_highlight_x_table[row + index] + 0x16 + offsets[index];
+        (labels[index].polys + menu_state_current->buffer_index)->y2 = item_shop_highlight_y_table[row + index] - 0x15;
         (labels[index].polys + menu_state_current->buffer_index)->x3 =
-            labels[index].width + (D_801D2194[row + index] + 0x16 + offsets[index]);
-        (labels[index].polys + menu_state_current->buffer_index)->y3 = D_801D21B0[row + index] - 0x15;
+            labels[index].width + (item_shop_highlight_x_table[row + index] + 0x16 + offsets[index]);
+        (labels[index].polys + menu_state_current->buffer_index)->y3 = item_shop_highlight_y_table[row + index] - 0x15;
         break;
     case 1:
         (labels[index].polys + menu_state_current->buffer_index)->x0 = 0xEC;
@@ -1951,8 +1951,8 @@ void func_801CBCF0(u8 count, MenuLabel *labels, u8 *text_ids, s32 *offsets, u8 *
     shown[index] = 1;
 }
 
-/* Reveal `count` image pairs one step at a time (two frames each), the second of each pair one step behind. */
-void func_801CC024(s32 count, s32 *ids) {
+/* 801CC024: Reveal `count` image pairs one step at a time (two frames each), the second of each pair one step behind. */
+void item_shop_command_window_open(s32 count, s32 *ids) {
     s32 step;
     s32 i;
 
@@ -1981,13 +1981,13 @@ void func_801CC024(s32 count, s32 *ids) {
             menu_state_current->images->buffer2 = menu_state_current->buffer_index;
         }
         for (i = 0; i < 2; i++) {
-            func_801CB014();
+            item_shop_run_frame();
         }
     }
 }
 
-/* Reveal the list pictures of the current command (up to four pairs), two frames per step. */
-void func_801CC278(u8 menu) {
+/* 801CC278: Reveal the list pictures of the current command (up to four pairs), two frames per step. */
+void item_shop_choice_window_open(u8 menu) {
     s32 animate;
     s32 step;
     s32 i;
@@ -2001,7 +2001,7 @@ void func_801CC278(u8 menu) {
     menu_state_current->images->dimmed = 0;
     command = menu;
     menu_state_current->lists->first_count = 0;
-    ids = D_801D1F6C;
+    ids = item_shop_choice_window_images;
     menu_state_current->lists->second_count = 0;
     paired = ids + 1;
     menu_state_current->flags->lists_shown = 1;
@@ -2026,7 +2026,7 @@ void func_801CC278(u8 menu) {
         menu_state_current->lists->first_buffer = menu_state_current->buffer_index;
         if (animate) {
             for (i = 0; i < 2; i++) {
-                func_801CB014();
+                item_shop_run_frame();
             }
         }
         menu_state_current->lists->second_count = 0;
@@ -2045,14 +2045,14 @@ void func_801CC278(u8 menu) {
         menu_state_current->lists->second_buffer = menu_state_current->buffer_index;
         if (animate) {
             for (i = 0; i < 2; i++) {
-                func_801CB014();
+                item_shop_run_frame();
             }
         }
     }
 }
 
-/* Draw `count` image pairs with pair `selected` highlighted (+0dh), and put the cursor on it. */
-void func_801CC54C(u8 count, u8 selected, s32 *ids) {
+/* 801CC54C: Draw `count` image pairs with pair `selected` highlighted (+0dh), and put the cursor on it. */
+void item_shop_command_window_set_cursor(u8 count, u8 selected, s32 *ids) {
     s32 id;
     s32 i;
 
@@ -2075,12 +2075,12 @@ void func_801CC54C(u8 count, u8 selected, s32 *ids) {
     }
     menu_state_current->images->buffer = menu_state_current->buffer_index;
     menu_state_current->images->buffer2 = menu_state_current->buffer_index;
-    func_801C604C(selected, 1);
+    item_shop_highlight_place(selected, 1);
     menu_state_current->flags->sprite_shown = 1;
 }
 
-/* Draw the current command's list pictures with the chosen one highlighted (+0dh), and put the cursor on it. */
-void func_801CC720(u8 menu) {
+/* 801CC720: Draw the current command's list pictures with the chosen one highlighted (+0dh), and put the cursor on it. */
+void item_shop_choice_window_set_cursor(u8 menu) {
     s32 id;
     s32 i;
 
@@ -2088,27 +2088,27 @@ void func_801CC720(u8 menu) {
     menu_state_current->lists->second_count = 0;
     for (i = 0; i < menu_state_current->choice_count; i++) {
         if (i == menu_state_current->choice) {
-            id = D_801D1F6C[(menu + menu_state_current->cursor) * 8 + i * 2] + 0xD;
+            id = item_shop_choice_window_images[(menu + menu_state_current->cursor) * 8 + i * 2] + 0xD;
         } else {
-            id = D_801D1F6C[(menu + menu_state_current->cursor) * 8 + i * 2];
+            id = item_shop_choice_window_images[(menu + menu_state_current->cursor) * 8 + i * 2];
         }
         menu_state_current->lists->first_count +=
             sprite_sheet_draw_scaled(menu_state_current->sheet, id,
                           menu_state_current->lists->first + menu_state_current->lists->first_count * 2, menu_state_current->buffer_index,
                           0xA0, 0x96, 0x1000);
         menu_state_current->lists->second_count += sprite_sheet_draw_scaled(
-            menu_state_current->sheet, D_801D1F6C[(menu + menu_state_current->cursor) * 8 + i * 2 + 1],
+            menu_state_current->sheet, item_shop_choice_window_images[(menu + menu_state_current->cursor) * 8 + i * 2 + 1],
             menu_state_current->lists->second + menu_state_current->lists->second_count * 2, menu_state_current->buffer_index, 0xA0, 0x96,
             0x1000);
     }
     menu_state_current->lists->first_buffer = menu_state_current->buffer_index;
     menu_state_current->lists->second_buffer = menu_state_current->buffer_index;
-    func_801C604C(menu_state_current->choice + 3, 1);
+    item_shop_highlight_place(menu_state_current->choice + 3, 1);
     menu_state_current->flags->sprite_shown = 1;
 }
 
-/* Run the chosen top command (0 leaves); afterwards restore the command screen. Returns 0 to leave. */
-u8 func_801CC97C(void) {
+/* 801CC97C: Run the chosen top command (0 leaves); afterwards restore the command screen. Returns 0 to leave. */
+u8 item_shop_top_command_run(void) {
     u8 running;
     u8 redraw;
 
@@ -2118,17 +2118,17 @@ u8 func_801CC97C(void) {
         running = 0;
         break;
     case 1:
-        redraw = func_801D1CA4();
+        redraw = item_shop_sell_command_run();
         break;
     case 2:
-        redraw = func_801CF780();
+        redraw = item_shop_buy_command_run();
         break;
     }
     if (redraw) {
-        func_801CB370();
-        func_801CBC88(1, 4, menu_state_current->list_labels, D_801D1FCC, menu_state_current->flags->list_labels_shown);
+        item_shop_view_start_zoom_out();
+        item_shop_label_render_or_clear_shown(1, 4, menu_state_current->list_labels, item_shop_top_label_ids, menu_state_current->flags->list_labels_shown);
     }
-    func_801D1F10();
+    item_shop_finish_top_command();
     menu_state_current->images->dim = 0;
     menu_state_current->images->dimmed = 1;
     menu_state_current->flags->sprite_shown = 1;
@@ -2138,24 +2138,24 @@ u8 func_801CC97C(void) {
     return running;
 }
 
-/* The command screen: move between leave, sell and buy and run the chosen one until leaving. */
-void func_801CCAD8(void) {
+/* 801CCAD8: The command screen: move between leave, sell and buy and run the chosen one until leaving. */
+void item_shop_run(void) {
     u8 running;
 
     running = 1;
     menu_state_current->cursor = 2;
-    func_801CC024(4, D_801D1F54);
-    func_801CBC88(1, 4, menu_state_current->list_labels, D_801D1FCC, menu_state_current->flags->list_labels_shown);
+    item_shop_command_window_open(4, item_shop_command_images);
+    item_shop_label_render_or_clear_shown(1, 4, menu_state_current->list_labels, item_shop_top_label_ids, menu_state_current->flags->list_labels_shown);
     do {
-        func_801CB014();
+        item_shop_run_frame();
         switch (menu_state_current->input) {
         case 4:
-            func_801CAC7C(2);
+            item_shop_play_sound(2);
             menu_state_current->images->dim = 1;
-            func_801C6430();
-            func_801CBC88(0, 4, menu_state_current->list_labels, D_801D1FCC, menu_state_current->flags->list_labels_shown);
+            item_shop_highlight_hide();
+            item_shop_label_render_or_clear_shown(0, 4, menu_state_current->list_labels, item_shop_top_label_ids, menu_state_current->flags->list_labels_shown);
             menu_state_current->prims->width = 0x4C;
-            running = func_801CC97C();
+            running = item_shop_top_command_run();
             menu_state_current->prims->width = 0x40;
             break;
         case 5:
@@ -2175,37 +2175,37 @@ void func_801CCAD8(void) {
             break;
         }
         if (menu_state_current->cursor != menu_state_current->cursor_shown) {
-            func_801CC54C(3, menu_state_current->cursor, D_801D1F54);
-            func_801CBCF0(4, menu_state_current->list_labels, D_801D1FCC, D_801D1FD8,
+            item_shop_command_window_set_cursor(3, menu_state_current->cursor, item_shop_command_images);
+            item_shop_label_place(4, menu_state_current->list_labels, item_shop_top_label_ids, item_shop_top_label_x_offsets,
                           menu_state_current->flags->list_labels_shown, menu_state_current->cursor, 0, 0);
             menu_state_current->cursor_shown = menu_state_current->cursor;
         }
     } while (running);
 }
 
-/* Overlay entry: build the card screen, run it, and tear it down. */
-void func_801CCD28(void) {
-    func_801C5194(1);
-    func_801C51F8(1);
-    func_801C525C(1);
-    func_801C52C0(1);
-    func_801C5324(1);
-    func_801C5388(1);
-    func_801C53EC(1);
-    func_801C5450(1);
+/* 801CCD28: Overlay entry: build the card screen, run it, and tear it down. */
+void item_shop_main(void) {
+    item_shop_alloc_or_free_card_state(1);
+    item_shop_alloc_or_free_flags(1);
+    item_shop_alloc_or_free_screen_images(1);
+    item_shop_alloc_or_free_sprite_lists(1);
+    item_shop_alloc_or_free_table_directory(1);
+    item_shop_alloc_or_free_prims(1);
+    item_shop_alloc_or_free_name_entry_block(1);
+    item_shop_alloc_or_free_shop_details(1);
     menu_state_current->images->screen.x = 0x2C0;
     menu_state_current->images->screen.y = 0x100;
     menu_state_current->images->screen.w = 0x140;
     menu_state_current->images->screen.h = 0xE0;
     menu_state_current->prims->width = 0x40;
-    func_801C58F4();
-    func_801C5A6C();
-    func_801C5EE8();
-    func_801C64DC();
-    func_801C5F44();
-    func_801C6A6C();
+    item_shop_init_party();
+    item_shop_reset_buffer_index();
+    item_shop_init_labels();
+    item_shop_init_highlight_and_fade_prims();
+    item_shop_read_sheet_entries();
+    item_shop_init_stock();
     menu_state_current->drawing = 1;
     menu_state_current->sounds = 1;
-    func_801CCAD8();
-    func_801CBB08();
+    item_shop_run();
+    item_shop_shut_down();
 }

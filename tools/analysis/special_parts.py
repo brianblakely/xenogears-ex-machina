@@ -27,9 +27,9 @@ or the gear part list:
   clears those variables for each map;
 * the shops the field opens: fe 59 (menu kind 4, ovl2601) with the first 30 ids
   of each 0x5c-byte record of the menu resources' file 6 as weapons
-  (func_801C6A6C, func_801CF2A0), fe 5a (kind 5, ovl2602) with bytes
-  0x3c-0x4f of each 0x64-byte record of file 7 as gear parts (func_801C6E74,
-  func_801D44FC), and every whole record of both tables, whose record counts
+  (item_shop_init_stock, item_shop_settle_purchase), fe 5a (kind 5, ovl2602) with bytes
+  0x3c-0x4f of each 0x64-byte record of file 7 as gear parts (gear_shop_init_stock,
+  gear_shop_settle_purchase), and every whole record of both tables, whose record counts
   it prints: a shop number past them reads the memory after the unpacked
   table, which the sweep cannot see;
 * the enemies' two drops (combatant record +0x150 chances, +0x152 ids, +0x154

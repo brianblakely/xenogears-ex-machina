@@ -470,8 +470,8 @@ VSync(-1) 4, and VSync(8), VSync(arena_mode_vblanks_per_frame), VSync(sprite_fra
   saves and restores it, so paused time is not counted. These are field
   field_main, world map worldmap_run_pause_screen and worldmap_wait_for_controller, the battle input
   readers battle_read_input, battle_tick_event_script and battle_tick_result_screens (battle.c), and the
-  menu input readers slot39 menu_read_input, ovl2598 func_801C92AC, ovl2600
-  func_801C98E8, ovl2601 func_801CACC8 and ovl2602 func_801CB4E4.
+  menu input readers slot39 menu_read_input, ovl2598 member_change_read_input, ovl2600
+  name_entry_read_input, ovl2601 item_shop_read_input and ovl2602 gear_shop_read_input.
 - The vblank handler's h:m:s clock (main2.c pad_advance_play_time) counts blanks in
   pad_play_time_frames (60 to the second), then seconds in pad_play_time_seconds, minutes in
   pad_play_time_minutes and hours in pad_play_time_hours; pad_play_time_stopped stops it at 100 h. The
@@ -506,7 +506,7 @@ VSync(-1) 4, and VSync(8), VSync(arena_mode_vblanks_per_frame), VSync(sprite_fra
 | 3 world-map pause (worldmap_open_map.c worldmap_run_pause_screen, worldmap_wait_for_controller) | DrawSync, VSync(0) | 1 | A Start press (the pressed word worldmap_pad_port0_pressed & 0x800) enters worldmap_run_pause_screen until the next press, and a missing first pad enters worldmap_wait_for_controller until one answers (worldmap.c worldmap_run_frame_loop). Both draw on the other buffer, suspend voices and tick, and restore pad_vblank_count |
 | 4 Battling arena (`menu` target, arena_mode_main) | VSync(arena_mode_vblanks_per_frame) | 1 or 2 | the arena task sets arena_mode_vblanks_per_frame to 0 or 2 (menu5.c arena_mode_task); the arena coroutine runs once per frame (Control flow) |
 | 5 in-game menu (resident mode_run_menu; frames menu_state_update_frame, slot39 menu_run_frame) | DrawSync, VSync(0) | 1 | also the ovl2598/2600/2601/2602 screens; card and disc-change waits inside |
-| 5 menu missing pad (slot39 menu_read_input; ovl2598 func_801C92AC, ovl2600 func_801C98E8, ovl2601 func_801CACC8, ovl2602 func_801CB4E4) | none: spins | — | each screen's input reader spins on pad_get_controller_kind(0), with no VSync, until the first pad answers; voices and tick suspended, pad_vblank_count restored |
+| 5 menu missing pad (slot39 menu_read_input; ovl2598 member_change_read_input, ovl2600 name_entry_read_input, ovl2601 item_shop_read_input, ovl2602 gear_shop_read_input) | none: spins | — | each screen's input reader spins on pad_get_controller_kind(0), with no VSync, until the first pad answers; voices and tick suspended, pad_vblank_count restored |
 | 6 movie (movie_mode_main, player movie_mode_play_movie) | VSync(0) per pass, three decode steps per frame (movie_poll) | 1 | mdec's DecDCTout callback delivers frames |
 | battle screen effects (ovl2615 load/burst modes, ovl3387) | DrawSync, VSync(2) | 2 | |
 
@@ -707,7 +707,7 @@ state and an image at one address can be any of its tenants:
 
 | Address | Images | Loaded by |
 | --- | --- | --- |
-| 0x801C5000 | slot39, ovl2598, ovl2600, ovl2601, ovl2602 (directory 0x10, file kind + 5) | field field_run_menu (reads the file), world map worldmap_suspend_open_map (decodes its packed copy worldmap_packed_menu_overlay), resident menu_state_run_screen on the debug start; menu_state_run_screen then calls the tenant's entry: menu_main, func_801CB0A8, func_801CBDBC, func_801CCD28 or func_801CE024 |
+| 0x801C5000 | slot39, ovl2598, ovl2600, ovl2601, ovl2602 (directory 0x10, file kind + 5) | field field_run_menu (reads the file), world map worldmap_suspend_open_map (decodes its packed copy worldmap_packed_menu_overlay), resident menu_state_run_screen on the debug start; menu_state_run_screen then calls the tenant's entry: menu_main, member_change_main, name_entry_main, item_shop_main or gear_shop_main |
 | 0x801D3000 | mdec movie library | movie movie_mode_main (directory 0x18 file 1); field field_movie_play copies directory 4 file 0xA9 there |
 | 0x801DC000 | ovl2143 (actor module) | field field_layer_load (directory 4 file 0x6B9); for the gear shop field_run_menu reads directory 0x10 file 0xC to 0x1DC000, the slot's KUSEG mirror; resident menu_state_run_screen on the debug start. The world map's directory 0x24 holds a third copy (file 0x28) that no world map code reads; its worldmap_draw_distant_landmark, which would draw actor 0, has no caller |
 | 0x801DE000 | ovl2596 (battle results) | battle battle_main |
