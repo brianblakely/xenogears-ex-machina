@@ -145,11 +145,11 @@ Outside the libraries the game itself uses:
 ### Controllers
 
 - InitPAD fills `pad_receive_buffers[2]` (0x22-byte receive buffers); StartPAD and
-  ChangeClearPAD(0) follow (text_windows_and_pads.c pad_start_controllers). pad_read_buttons accepts types
-  0x40 (digital), 0x50 (analog joystick) and 0x70 (analog pad) with status 0;
-  pad_get_controller_kind reports 0 none (status 0xFF), 1 digital, 2 mouse, 3 joystick,
-  4 analog pad, -1 other. Field, world-map, battle and menu loops pause while
-  the first pad is missing.
+  ChangeClearPAD(0) follow (text_windows_and_pads.c pad_start_controllers).
+  pad_read_buttons accepts types 0x40 (digital), 0x50 (analog joystick) and 0x70 (analog
+  pad) with status 0; pad_get_controller_kind reports 0 none (status 0xFF), 1 digital, 2
+  mouse, 3 joystick, 4 analog pad, -1 other. Field, world-map, battle and menu loops
+  pause while the first pad is missing.
 - pad_read_controllers remaps the low button byte through the assignment
   pad_button_assignment (pad_remap_buttons; default {1,0,3,2,4,5,6,7}) and swaps
   the shoulder and face bits of a 0x50 pad (pad_swap_button_layout). Analog pads
@@ -159,14 +159,15 @@ Outside the libraries the game itself uses:
   pad_port1_right_stick_x/pad_port1_right_stick_y/pad_port1_left_stick_x/pad_port1_left_stick_y
   (port 1); a digital pad gets pad_port0_left_stick_x/pad_port0_left_stick_y from
   the d-pad (tables pad_dpad_stick_x_table/pad_dpad_stick_y_table). Only the arena
-  reads them (arena_fighters_bout_and_effects.c arena_actor_read_pad, arena_menu_screens.c arena_menu_apply_pad_input).
+  reads them (arena_fighters_bout_and_effects.c arena_actor_read_pad,
+  arena_menu_screens.c arena_menu_apply_pad_input).
 - Vibration: `pad_actuators[2]` hold each port's four transmit bytes, registered
   once with libapi_register_pad_send_buffers(act0, 4, act1, 4)
   (pad_init_actuators). The vblank handler steps them
   (pad_step_actuators/pad_step_actuator): {1, 0x40, 1, 0} while the timer runs,
   {1, 0x40, 0, 0} once, then off. pad_run_actuator(port, frames) starts one; only
-  the arena calls it (arena_fighters_bout_and_effects.c arena_actor_vibrate_pad, per side, gated by the
-  settings' port vibration options arena_settings.option4/.option5).
+  the arena calls it (arena_fighters_bout_and_effects.c arena_actor_vibrate_pad, per
+  side, gated by the settings' port vibration options arena_settings.option4/.option5).
 - Input is sampled once per vertical blank, not per game frame: the vblank
   handler queues held, pressed and repeat words for both ports in a 16-entry
   ring (pad_queue_state; overflow sets pad_queue_overflowed); loops dequeue
@@ -487,8 +488,9 @@ VSync(-1) 4, and VSync(8), VSync(arena_mode_vblanks_per_frame), VSync(sprite_fra
   movie_mode_unread_decode_vsync_times).
 - GetRCnt: the sound tick times itself on root counter 2 (sound_unread_tick_time_total,
   sound_unread_timed_tick_count; profiling); the arena compacts its ordering table while root
-  counter 1 (horizontal blanks) stays within a budget (arena_scene_graph_and_opponent.c arena_display_note_frame_start,
-  arena_display_compact_layer), which changes which empty tags are skipped, not the image.
+  counter 1 (horizontal blanks) stays within a budget (arena_scene_graph_and_opponent.c
+  arena_display_note_frame_start, arena_display_compact_layer), which changes which
+  empty tags are skipped, not the image.
 - pad_vblank_count, the game's own blank count (vblank handler), is the play time
   stored in saves; it also drives input repeat, arena colour cycles and the
   arena's vblank hook. Every pause and missing-pad loop (Pacing per mode) saves
@@ -511,7 +513,7 @@ VSync(-1) 4, and VSync(8), VSync(arena_mode_vblanks_per_frame), VSync(sprite_fra
   saves do not store it (the payload keeps pad_vblank_count). Scripts can read it:
   in each field frame (field_run_pre_frame) field_update_play_record copies it
   into event variables 0xC (seconds | minutes << 8) and 0xE (hours)
-  (field_event.c:10932-10933). The kernel menu also prints it (main.c
+  (field_event.c:10937-10938). The kernel menu also prints it (main.c
   mode_kernel_menu_update). Decoding all 935 maps of both discs with
   `tools/analysis/events.py` (walking from each entry) finds no instruction that
   names variables 0xC-0xF as a variable or bit operand. Shipped scripts are
@@ -553,7 +555,7 @@ The next frame consumes them:
   battle_turns_active is set). The ATB therefore advances once per blank of the
   previous frame, up to five times a frame. task_run_main_list zeroes
   task_catch_up_frame_count when its pause count task_main_pause_timer runs out.
-- Stage steps (battle_scene.c:4144-4152, battle_update_stage).
+- Stage steps (battle_scene.c:4147-4155, battle_update_stage).
   battle_stage_frame_remainder += 1 + frameTicks, capped at 6, yields up to three
   steps of two blanks, and the remainder carries over. The steps advance:
   - the wave phase (battle_surface_wind_phase += 56 each);
@@ -654,15 +656,15 @@ callback never leaves these:
   - sound_sync_transfer(0x10) re-reads the flag until it clears (the loop at
     8003be08). Every such call is a busy-wait (`grep -rn
     'sound_sync_transfer(0x10)' decomp/src`). They are boot boot_main
-    (main.c:123), the driver's error beep sound_report_error (sound.c:3960), field
+    (main.c:127), the driver's error beep sound_report_error (sound.c:3972), field
     field_movie_load_sound_bank, field_sound_load_effect_bank,
     field_music_gather_wave_chunk, field_music_advance_track_load,
     field_music_open_shared_wave_bank and field_event_sound_bank
-    (field_event.c:182, 216, 245, 306, 379, 1960), and ovl3087
+    (field_event.c:182, 216, 245, 306, 379, 1961), and ovl3087
     battle_event_script_load (battle_event_script_vm.c:160).
   - `while (sound_sync_transfer(0) != 0)` runs battle frames in battle
     battle_play_sound_to_end, battle_close and battle_menu_open_turn (battle_flow.c:241, 305,
-    439) and battle_load_wave_bank_5 (battle_frame.c:1207). It spins in battle
+    439) and battle_load_wave_bank_5 (battle_frame.c:1208). It spins in battle
     battle_install_command_file_parts (battle_settle.c:547), trapping to the debugger on each
     pass on a development kit, and in movie.c's unreferenced host-PC loaders
     movie_mode_load_host_effect_wave_banks and movie_mode_load_host_battle_music.
@@ -670,7 +672,7 @@ callback never leaves these:
   - Outside a transfer callback, sound_queue_transfer spins while at least six of the
     eight ring entries are queued (sound_is_transfer_ring_full).
   - Not a wait: the world map's `while (sound_driver_flags & 0x10) {}` in
-    worldmap_open_map_start (worldmap_open_map.c:296), and its
+    worldmap_open_map_start (worldmap_open_map.c:298), and its
     `if (debug) while (debug)` form in worldmap_scene15_start, worldmap_scene16_start and
     worldmap_scene17_start. Each runs after a wave-bank load (sound_load_wave_bank) and the
     terrain-stream wait. All four compile to a single test followed by a
@@ -703,8 +705,8 @@ Development only:
 
 - The ovl2606 battle-scene selector battle_scene_select_run_screen loops DrawSync and VSync(0)
   until Start. Battle battle_main runs it only while mode_battle_standalone is set
-  (battle_turns_and_hud.c:382), and the field's and world map's battle requests
-  clear that flag (field.c:3418, field_event.c:4984 and 5011,
+  (battle_turns_and_hud.c:383), and the field's and world map's battle requests
+  clear that flag (field.c:3418, field_event.c:4986 and 5013,
   worldmap.c:152).
 - The vblank handler's pollhost() trap (above).
 
@@ -821,10 +823,12 @@ GTE with H 0x1000 (sprite_sheet.c).
   - The linked images hold 62 and 20 such calls, because the two branches of arena
     arena_glow_draw_shade_tile and of world map worldmap_screen_fade_update each
     share one call.
-  - Dither 1 goes to the arena's screen fades (arena_glow_draw_shade_tile at arena_scene_graph_and_opponent.c:2154
-    and 2156, arena_glow_draw at arena_scene_graph_and_opponent.c:2203), its HUD packets (arena_hud_build_overlay_buffer
-    at arena_stage_views_and_hud.c:1605 and 1675, arena_hud_build_packets at arena_stage_views_and_hud.c:1832 and 1834) and the
-    world map's dithered saved-screen fade (worldmap_open_map.c:511 in
+  - Dither 1 goes to the arena's screen fades (arena_glow_draw_shade_tile at
+    arena_scene_graph_and_opponent.c:2164 and 2166, arena_glow_draw at
+    arena_scene_graph_and_opponent.c:2213), its HUD packets
+    (arena_hud_build_overlay_buffer at arena_stage_views_and_hud.c:1608 and 1678,
+    arena_hud_build_packets at arena_stage_views_and_hud.c:1835 and 1837) and the world
+    map's dithered saved-screen fade (worldmap_open_map.c:513 in
     worldmap_fade_saved_screen, a DR_TPAGE drawn before its translucent black quad).
   - ovl2615's stage backdrops copy the draw environment's dfe and dtd
     (stage.c battle_setup_create_stage_sky, two sites, after GetDrawEnv).

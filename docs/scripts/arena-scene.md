@@ -1,7 +1,8 @@
 # Arena scene scripts
 
-- **Interpreter:** `arena_scene_run_script` (`decomp/src/menu/arena_camera_and_scenes.c`) in the `menu` overlay
-  (Disc 1 file 35, Disc 2 file 30), run each frame by `arena_scene_update` (scenes) and
+- **Interpreter:** `arena_scene_run_script`
+  (`decomp/src/menu/arena_camera_and_scenes.c`) in the `menu` overlay (Disc 1 file 35,
+  Disc 2 file 30), run each frame by `arena_scene_update` (scenes) and
   `arena_scene_update_bout_end` (bout end).
 - **Dispatch:** a `switch` on the command byte, each case commented with its operands
   and effect. Cases 1-34 take one to three bytes (unsigned byte operands). 0 and the
