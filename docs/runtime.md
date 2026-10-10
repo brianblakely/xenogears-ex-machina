@@ -82,6 +82,44 @@ original address.
   (wasm32-unknown-unknown, wasm-bindgen); the two modules keep separate
   memories and exchange scalars and bounds-checked offsets.
 
+## Commands, introspection and snapshots
+
+`xem_core::control::Session` is the one command layer for humans, agents,
+tests and browser clients: a JSON command in, a JSON result out
+(`xem-headless --control` reads one per line). Commands: `status`,
+`frames {count}`, bounded `run_until {max_frames, until: {vblanks} |
+{path, equals|not_equals}}`, `pad {port, buttons}`, `press {buttons, frames}`,
+`connect_pad`, `inspect {path, depth}`, `write {path, value}`, `globals
+{prefix}`, `read_memory`/`write_memory`, `snapshot`/`restore {name}`,
+`memory_hash`, `record`/`stop_recording`/`replay {changes}` (pad states per
+vertical blank) and `scenario {writes, mode}`, which writes values through the
+schema and enters a mode through the original dispatcher on an empty stack.
+Pads are set as the BIOS driver reports them; nothing simulates lower-level
+input.
+
+- **Introspection.** `tools/game_schema.py` compiles every unit again with
+  debug information and writes `build/game/schema.json`: each global the C
+  defines, at its original address, with its full type (records, arrays,
+  bit-fields, enums, pointers to named records), plus the matched links' other
+  data symbols untyped. `inspect` decodes paths such as
+  `game_data.characters[0]` or `mode_table[1].entry`; `write` stores scalars.
+  The commons units, which define arrays of types completed by later headers
+  (accepted by GCC, not clang), are described through a temporary wrapper that
+  includes their target's headers first.
+- **Snapshots** (`Runtime::snapshot`/`restore`) hold the module's low memory
+  (port data, shadow stack, asyncify area), the scratchpad and I/O pages and
+  the PS1's 2 MB of RAM (zero runs compressed), the module's stack pointer and
+  suspension, the clock, the pads, pending interrupts and every device's state.
+  They are taken at waits, where the whole game stack lives in game-module
+  memory. `memory_hash` hashes RAM and scratchpad: the authoritative state the
+  native and browser hosts compare.
+- **Time.** The game runs in zero time between its waits; the clock advances
+  only there (a frame wait to the next vertical blank, a poll to the next
+  interrupt), and every loop back-edge of the game polls now and then
+  (`xem_loop_poll`), so waits that spin on memory an interrupt writes reach the
+  clock. Headless runs are unlocked (as fast as the host computes) and
+  reproducible.
+
 ## Crates
 
 | Crate | Role |

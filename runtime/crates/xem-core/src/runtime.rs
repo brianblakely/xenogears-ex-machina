@@ -265,6 +265,13 @@ impl<M: GameModule> Runtime<M> {
         }
     }
 
+    /// Abandon the game stack and continue with `xem_run(kind, arg)` at the
+    /// next step (as the game's own restarts do).
+    pub fn restart(&mut self, kind: u32, arg: u32) {
+        self.entry = (kind, arg);
+        self.suspended = false;
+    }
+
     /// Deliver an interrupt while the game is suspended, on the stack below
     /// the suspended frames.
     pub fn interrupt(&mut self, irq: u32, detail: u32) -> Result<(), Trap> {

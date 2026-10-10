@@ -5203,6 +5203,8 @@ dependencies = [
 name = "xem-core"
 version = "0.1.0"
 dependencies = [
+ "serde",
+ "serde_json",
  "xem-disc",
  "xem-gpu",
  "xem-media",
@@ -5247,6 +5249,7 @@ version = "0.1.0"
 name = "xem-headless"
 version = "0.1.0"
 dependencies = [
+ "serde_json",
  "xem-core",
  "xem-disc",
  "xem-game",
