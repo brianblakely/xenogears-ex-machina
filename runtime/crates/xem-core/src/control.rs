@@ -264,9 +264,7 @@ impl<M: GameModule> Session<M> {
             "restore" => {
                 let name = arg_str("name").unwrap_or("default");
                 let data = self.snapshots.get(name).ok_or_else(|| format!("no snapshot {name}"))?.clone();
-                self.runtime.restore(&data).map_err(|e| e.to_string())?;
-                self.stopped = None;
-                self.scheduled.clear();
+                self.restore_bytes(&data)?;
                 Ok(self.status())
             }
             "memory_hash" => Ok(json!(format!("{:016x}", self.memory_hash()?))),
@@ -312,6 +310,15 @@ impl<M: GameModule> Session<M> {
             }
             other => Err(format!("unknown command {other}")),
         }
+    }
+
+    /// Return to a snapshot (`Runtime::snapshot` bytes, e.g. a saved file),
+    /// as `restore` does for a named one.
+    pub fn restore_bytes(&mut self, data: &[u8]) -> Result<(), String> {
+        self.runtime.restore(data).map_err(|e| e.to_string())?;
+        self.stopped = None;
+        self.scheduled.clear();
+        Ok(())
     }
 
     /// FNV-1a over the PS1 RAM, the scratchpad and the I/O pages: the

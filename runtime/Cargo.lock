@@ -5322,6 +5322,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "xem-web"
+version = "0.1.0"
+dependencies = [
+ "js-sys",
+ "serde",
+ "serde_json",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "xem-core",
+ "xem-disc",
+ "xem-render",
+ "xem-settings",
+ "xem-ui",
+]
+
+[[package]]
 name = "xem-webxr"
 version = "0.1.0"
 dependencies = [
