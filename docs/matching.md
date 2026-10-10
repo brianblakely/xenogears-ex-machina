@@ -381,7 +381,7 @@ memchr take `void *` where MEMORY.H has `unsigned char *` and memchr's byte is a
 `void (*)()`), in result types (CdDataCallback, DrawSyncCallback,
 EnterCriticalSection, InitCARD, InitPAD, StartPAD, VectorNormalSS) or in having a
 prototype (strlen, strcpy, InitGeom, PushMatrix, PopMatrix, ReadGeomScreen). Every
-unit compiles to the same code under 4.6's declarations, which would warn at 21
+unit compiles to the same code under 4.6's declarations, which would warn at 23
 memmove calls and both SpuReadDecodedData calls. Data the SDK names has its type
 where the code handles it only in that form: VRAM words saved and reloaded through
 StoreImage and LoadImage `u_long` (battle's CLUT strips, the field's saved VRAM
