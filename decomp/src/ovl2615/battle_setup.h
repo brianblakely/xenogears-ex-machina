@@ -63,6 +63,10 @@ typedef struct {
 } SetupWork;
 extern SetupWork battle_setup_work_area __asm__("battle_work_area");
 
+/* Battle's commons word 800d2d44 (battle_common.c, s32), whose first byte
+ * battle_setup_reset_outcome_and_slots clears with a byte store, the only access
+ * in any image: no battle code addresses it, so the word there decides only
+ * its whole-word slot, which a byte takes too. */
 extern u8 battle_unread_setup_flag;
 
 /* The battle's allocators, which it declares with integer results. */

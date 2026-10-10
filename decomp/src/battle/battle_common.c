@@ -88,7 +88,7 @@ s16 battle_stage_image_y;                             /* 800D2D34: stage image y
 s16 battle_panel_hp_remainder;                        /* 800D2D38: the panel member HP's digits' remainder */
 s32 battle_heap_mark_for_post_battle_module;          /* 800D2D3C: 801de000 module blocks */
 s32 battle_buffer0_background_color_ptr;              /* 800D2D40 */
-s32 battle_unread_setup_flag;                         /* 800D2D44: unreferenced */
+s32 battle_unread_setup_flag;                         /* 800D2D44: ovl2615 clears its first byte; unread */
 s32 battle_buffer1_background_color_ptr;              /* 800D2D48 */
 s16 battle_effect_hit_count;                          /* 800D2D4C: effect hits */
 u8 battle_skip_result_screens;                        /* 800D2D50 */
