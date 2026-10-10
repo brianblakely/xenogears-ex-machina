@@ -62,7 +62,7 @@ ROOT = Path(__file__).resolve().parents[2]
 FIRST, COUNT = 50, 48  # slot39 menu_equip_screen_build_candidates ids >= 50; ovl2615 battle_setup_load_party_and_enemy_files records 50-97
 BATTLE_END = 73  # ovl2615 battle_setup_build_item_lists: weapon ids 50..72 enter the battle's list
 BATTLE_RECORDS = 0x25  # battle_setup_load_party_and_enemy_files: archive[0x25] + 0x320, 0x300 bytes, to +0x5818
-ITEM_BASE, GEAR_BASE = 0x2286, 0x22B6  # D_8006F8BA, D_8006F8EA as game data offsets
+ITEM_BASE, GEAR_BASE = 0x2286, 0x22B6  # 8006f8ba, 8006f8ea as game data offsets
 GAME_DATA, GAME_DATA_SIZE = 0x8006D634, 0x2358  # game_data, sizeof(GameData)
 # The game data around the arrays (gamedata.h): (offset, size, member).
 LAYOUT = (

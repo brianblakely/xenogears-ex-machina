@@ -55,7 +55,7 @@ it from three sources:
   both discs: 0x61-0x6A and 0x16-0x1F the digits, 0x7E and 0x13 the minus sign,
   0x7D and 0x11 the plus sign, 0x10 the blank.
 - The memory card titles, directory (0x10, 1) file 1. `menu_card_init_and_read_title` copies line
-  `D_8006EF64` (30 bytes of two-byte Shift-JIS) into the save header. The menu
+  `game_data.vars[0]`, the scene id (30 bytes of two-byte Shift-JIS) into the save header. The menu
   turns ASCII into Shift-JIS through its table `menu_ascii_to_sjis_table` (`menu_save_title_find_glyph`), so
   the inverse of that table reads the titles as text: 68 distinct ones. A title
   with known and unknown characters names the glyphs of the one whole text that

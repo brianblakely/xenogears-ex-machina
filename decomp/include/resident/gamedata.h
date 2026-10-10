@@ -33,7 +33,7 @@ typedef union {
 } StatusPair;
 
 /* A character record (0xA4 bytes): the game data's eleven from +0x26C
- * (D_8006D8A0) and the battle copy at each combatant's start. */
+ * (8006d8a0) and the battle copy at each combatant's start. */
 typedef struct {
     CharacterEntry entries[4]; /* 0x00 */
     u8 pad20[0x28 - 0x20];
@@ -115,7 +115,7 @@ typedef struct {
 } GearEntry;
 
 /* A gear record (0xA4 bytes): the game data's twenty from +0x978
- * (D_8006DFAC) and the battle copy at each combatant's +0xA4. Record 7 holds
+ * (8006dfac) and the battle copy at each combatant's +0xA4. Record 7 holds
  * character 7's derived values (the results screen). */
 typedef struct GearRecord {
     u8 pad0[2];
@@ -181,13 +181,13 @@ typedef struct GearRecord {
     u8 padA0[0xA4 - 0xA0];
 } GearRecord;
 
-/* A character's skill record (0x20 bytes, eleven from +0x16C0, D_8006ECF4):
+/* A character's skill record (0x20 bytes, eleven from +0x16C0, 8006ecf4):
  * its deathblow and ability bits and its tier. 801e5178 (slot39) resets
  * them. */
 typedef struct {
     u16 counterSkills; /* 0x00 */
     u16 levelSkills;   /* 0x02: the arts known (slot39) */
-    u16 unlocksA;      /* 0x04: battle's combo bits (D_8006ECF8), the pilot ability bits (ovl2602) */
+    u16 unlocksA;      /* 0x04: battle's combo bits (8006ecf8), the pilot ability bits (ovl2602) */
     u16 unlocksB;      /* 0x06 */
     u8 pad8[0x17 - 0x8];
     u8 tier;           /* 0x17 */
@@ -196,7 +196,7 @@ typedef struct {
     u8 pad1C[0x20 - 0x1C];
 } CharacterSkills;
 
-/* The world map's return state (+0x1820, D_8006EE54). */
+/* The world map's return state (+0x1820, 8006ee54). */
 typedef struct {
     u16 x;
     u16 z;
@@ -227,7 +227,7 @@ typedef struct {
     u16 count; /* flights started */
 } FlightSave;
 
-/* The saved system options word (+0x234C, D_8006F980). */
+/* The saved system options word (+0x234C, 8006f980). */
 typedef struct {
     u32 version : 4;   /* 1 once written */
     u32 option4 : 1;
@@ -241,20 +241,20 @@ typedef struct {
 typedef struct GameData {
     u8 names[31][0x14];           /* 0x0000: text codes, two bytes per code; 0-10 the
                                    * characters' names (slot39 reads ten line pairs) */
-    CharacterRecord characters[11]; /* 0x026C: D_8006D8A0 */
-    GearRecord gears[20];         /* 0x0978: D_8006DFAC */
+    CharacterRecord characters[11]; /* 0x026C: 8006d8a0 */
+    GearRecord gears[20];         /* 0x0978: 8006dfac */
     u8 unk1648[0x16C0 - 0x1648];
-    CharacterSkills skills[11];   /* 0x16C0: D_8006ECF4 */
-    WorldmapReturn worldmap;      /* 0x1820: D_8006EE54 */
-    u16 unk1844[3];               /* 0x1844: D_8006EE78 (the world map) */
+    CharacterSkills skills[11];   /* 0x16C0: 8006ecf4 */
+    WorldmapReturn worldmap;      /* 0x1820: 8006ee54 */
+    u16 unk1844[3];               /* 0x1844: 8006ee78 (the world map) */
     u16 unk184A;                  /* 0x184A */
-    FlightSave flight;            /* 0x184C: D_8006EE80 */
+    FlightSave flight;            /* 0x184C: 8006ee80 */
     u16 unk1856;                  /* 0x1856 */
     u8 unk1858[0x1924 - 0x1858];
     u32 gold;                     /* 0x1924: at most 999999999 */
     u8 unk1928[0x1930 - 0x1928];
     u16 vars[0x200];              /* 0x1930: the saved event variables (the field's 800c3a68);
-                                   * [0] the scene id (D_8006EF64) */
+                                   * [0] the scene id (8006ef64) */
     u16 joined;                   /* 0x1D30: characters who may join (game_data_party_state) */
     u16 available;                /* 0x1D32: characters available */
     u8 party[3];                  /* 0x1D34: character per party slot, 0xff empty */
@@ -283,8 +283,8 @@ typedef struct GameData {
      * slots its command number names (battle battle_wear_weapon_items, battle_wear_down_attacker_gear_parts), and
      * a command whose descriptor names a slot at 0 misses (battle_resolve_hit_outcome,
      * battle_resolve_gear_hit_outcome). The code forms
-     * an id's address from 50 bytes before each array, splat's D_8006F8BA
-     * (+0x2286) and D_8006F8EA (+0x22B6, the address of `flags`). An empty
+     * an id's address from 50 bytes before each array, 8006f8ba (+0x2286)
+     * and 8006f8ea (+0x22B6, the address of `flags`). An empty
      * slot (id 0) reads gearAccessoryIds[108] or the low byte of `flags`,
      * which no code sets; ids 98 and 99 would reach gearAmmo[0-1] and
      * `locked`. */
@@ -295,7 +295,7 @@ typedef struct GameData {
     u16 entry[3];                 /* 0x231C: its entry parameters (heading, area); the world
                                    * map reads entry[2] as its first flag word (game_data_worldmap_flag_word) */
     u16 flagWords[17];            /* 0x2322 */
-    u8 progress[8];               /* 0x2344: progress flags, one bit each (D_8006F978) */
+    u8 progress[8];               /* 0x2344: progress flags, one bit each (8006f978) */
     SystemOptions options;        /* 0x234C */
     u8 unk2350[0x2355 - 0x2350];
     u8 flags2355;                 /* 0x2355: 0x80 once character 9 was raised */

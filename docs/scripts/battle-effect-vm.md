@@ -4,7 +4,7 @@ Battle objects (the stage model, stage object sets, gears and their part
 objects, 3D enemies and their copies) run effect scripts.
 
 - Interpreter: battle `battle_run_effect_script` (`decomp/src/battle/battle_scene.c`,
-  matching; switch on `jtbl_8007056C`, 118 cases 00-75). Each case's operands
+  matching; switch on the original's jump table at 8007056c, 118 cases 00-75). Each case's operands
   and effect are listed in `decomp/src/battle/effect_vm.h`.
 - Sibling: ovl2143 `gear_model_run_effect_script` (`decomp/src/ovl2143/gear_model_scene.c`, matching;
   113 cases 00-70) runs the same format for the field and menu gear models.

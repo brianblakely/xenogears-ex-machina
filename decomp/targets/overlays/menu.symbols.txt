@@ -3,9 +3,9 @@ arena_debug_draw_sync_callback = 0x80088C00; // type:func
 // Preserve the last result string's nonzero bytes after its terminator as data.
 arena_bout_com2_victory_text = 0x8006FDD8; // force_not_migration:True
 // The gear list's last string, "ply_01", with the stray byte after its
-// terminator; the heap tag names follow.
+// terminator; the heap tag names' strings follow, from "PT_PART".
 arena_select_first_gear_model_name = 0x800705F0; // size:0x8 force_not_migration:True
-D_800705F8 = 0x800705F8; // type:asciz
+arena_mode_heap_tag_name_strings = 0x800705F8; // type:asciz
 // The rate format, with stray bytes after its terminator.
 arena_debug_rate_format = 0x800706D4; // size:0x14 force_not_migration:True
 // The extents of the objects the code addresses inside, so that splat takes

@@ -798,7 +798,7 @@ converted to C per unit. What converting the targets' `.data` established:
   that continued its structure's pattern would pass this review too. The
   unreferenced ones are words, structures, strings, documented unread tables and
   copies, or tables read through a base formed before
-  them (`battle_combo_next_step_table_by_paid`, `D_801EA5D0`, `[text[0] - 1]`, `[(top_cursor - 1) * 4 +
+  them (`battle_combo_next_step_table_by_paid`, `menu_ascii_to_sjis_table[hi - 0x20]`, `[text[0] - 1]`, `[(top_cursor - 1) * 4 +
   list_cursor]`). slot39's unreferenced bytes 08 00 at 801E96A6, between the flags
   menu_save_command_stays_open and menu_saving_at_cd_change and the u16 masks menu_bit_masks (GCC 2.6.3 emits consecutive
   byte scalars back to back and aligns the arrays to a word), are taken as the flag's

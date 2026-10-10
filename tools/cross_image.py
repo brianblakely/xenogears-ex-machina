@@ -16,7 +16,7 @@ address (splat's D_, func_ and jtbl_ names) must hold that address; then
   target whose ELF exports it (a global or weak symbol) wherever the value
   points, and a target holding the value also by a local symbol;
 * by view, where none defines the name: the script gives it as another name
-  plus or minus a constant (``D_8006D8A0 = game_data + 0x26C``), that name
+  plus or minus a constant (``game_data_party_state = game_data + 0x1D30``), that name
   agrees by name, and the value lies in the object that holds that name in
   each target defining it (up to the next symbol its link places in a
   section, or its end): a member of a named object;

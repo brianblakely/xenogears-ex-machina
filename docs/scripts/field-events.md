@@ -121,8 +121,8 @@ maps are identical to Disc 1's.
   field setup's (0x100 three times, then 0x200).
 - Named from their readers: ext `b9`-`bc` the world map vehicle's saved
   position, heading and flags (game `+182c`-`+1834`, `WorldmapReturn`), `d5` the
-  ferry's saved place (`+1844`, `+1846`; `D_8006EE78`), `d6`/`d7` the circling
-  flight's (`+184e`, `+1852`; `D_8006EE80`), `c0` the arena bout's outcome
+  ferry's saved place (`+1844`, `+1846`; `8006ee78`), `d6`/`d7` the circling
+  flight's (`+184e`, `+1852`; `8006ee80`), `c0` the arena bout's outcome
   (`80050622`, menu3 `arena_bout_record_outcome`), `61` the field movie's start (`800adb7c`,
   `800a7c58`), `b5` the gathering warp (`800b2348`), and `2a`/`2b` and `cd`/`ce`
   the actor flags 0x20000 and 0x800000 that keep talk and touch, or touch alone,
@@ -180,8 +180,8 @@ maps are identical to Disc 1's.
   or a gear's 0x20 the fourth; `80096ab8`, `8009d3a0`), and the battle window
   prints the count beside the name (`80093b08`).
 - The round counts lie between the words of `d1` and `9f`. The code addresses
-  an id's byte from 50 bytes before its array (splat's `D_8006F8BA`, `+2286`,
-  and `D_8006F8EA`, `+22b6`), so ids 50-97 are the 48-byte arrays at `+22b8`
+  an id's byte from 50 bytes before its array (`8006f8ba`, `+2286`, and
+  `8006f8ea`, `+22b6`), so ids 50-97 are the 48-byte arrays at `+22b8`
   and `+22e8`. A gear's empty slot (id 0) reads the low byte of `d1`'s word
   (below), a gear part id 98 or 99 would reach `9f`'s word `+2318`, and a
   weapon id from 98 the gears' array. The sweep finds no source of ids from

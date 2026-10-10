@@ -28,7 +28,7 @@ extern u8 battle_sprite_script_finished;
  * late unit addresses it inside the area. */
 #define AREA_PARTNER_ACTION (((u8 *)&BATTLE_AREA)[0xA78])
 
-/* D_800C4923, after the acting slot, as the late unit addresses it. */
+/* The area byte at 800c4923, after the acting slot, as the late unit addresses it. */
 #define AREA_BYTE_A73 (((u8 *)&BATTLE_AREA)[0xA73])
 
 extern u16 battle_requested_single_action; /* the single action to request (effect VM 71, 73) */

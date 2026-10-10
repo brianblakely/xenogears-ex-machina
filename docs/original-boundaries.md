@@ -177,7 +177,7 @@ Outside the libraries the game itself uses:
   (no VSync); menu_card_check_channel starts a check with A(ABh) and waits there. The
   file screens save and clear the CD callbacks around card access
   (menu_file_screen_enter_card_mode, restored by menu_file_screen_leave_card_mode).
-- Files: devices "bu00:" and "bu10:" (D_801C50A8/D_801C50B0); a save is
+- Files: devices "bu00:" and "bu10:" (slot39's strings at 801c50a8/801c50b0); a save is
   "BASLUS-00664" followed by the character '0' + digit, digit 0-14
   (menu_save_choose_digit), so digits 10-14 give ':' ';' '<' '=' '>', which a host
   filesystem may reject. menu_card_list_directory lists a card with B(42h)/B(43h);
@@ -330,7 +330,7 @@ restore (Memory card and saves) and the dormant CdMix.
   selects an XA channel. The read statistics, which cd_init_disc_access zeroes
   (cd_stat_setloc_count, cd_stat_command_ok_count, cd_stat_command_fail_count, cd_stat_retry_setloc_count, cd_stat_retry_fail_count, cd_stat_lesmem_count,
   which nothing increments, cd_stat_error_limit_count, cd_stat_stop_ok_count and cd_stat_stop_fail_count; the blocks
-  mode_preloaded_text_images, menu_state_big_ots and D_8005A4B0 among them are other data), feed only
+  mode_preloaded_text_images and both words of menu_state_big_ots among them are other data), feed only
   the movie overlay's development screens (movie.c movie_mode_run_cd_check, and
   movie_mode_main, which prints and clears cd_stat_lesmem_count, cd_stat_error_limit_count, cd_stat_stop_ok_count
   and cd_stat_stop_fail_count). On a stalled movie, movie_poll overwrites cd_stat_stop_ok_count and
@@ -395,14 +395,14 @@ restore (Memory card and saves) and the dormant CdMix.
   request (main.c boot_main: cd_movie_request_index = 0x10 on Disc 1, else 7, played as
   file 0x12 or 9 of directory (0x18, 1), movie.c movie_mode_play_movie), the title file
   screen's exit after 600 idle frames, on Disc 1 only (menu_framework.c menu_title_load_menu_run),
-  the swap (menu_cd_ask_for_disc), the save (menu_save_build_payload: D_8006F008 = disc - 1, or
+  the swap (menu_cd_ask_for_disc), the save (menu_save_build_payload: game data 8006f008 = disc - 1, or
   1 for the save offered at the change), field event `fe cd` (store_disc_number,
   field_event_store_disc_number) and the movie overlay's development screens.
 
   The swap runs in the in-game menu (mode 5). Menu kind 6 (field event `fe da`,
   menu_framework.c menu_cd_change_run) offers a save and then asks for Disc 2
   (menu_cd_ask_for_disc(1)); after the title file screen (kind 2, menu_main) the
-  menu asks for Disc 1 or, after a load, for the file's disc D_8006F008
+  menu asks for Disc 1 or, after a load, for the file's disc (8006f008)
   ([EVID-REF-003](../analysis/findings/EVID-REF-003.json) saw Disc 2's New Game
   ask for Disc 1). menu_cd_ask_for_disc(d) repeats while the reported disc is not
   d + 1. menu_cd_stop_drive stops the read, sets Setmode 0 and retries Stop every

@@ -1474,7 +1474,7 @@ void worldmap_apply_party_riding_changes(void) {
 }
 
 /* 80075E7C: Roll an encounter for the terrain at a position and the scene id (event
- * variable 0, D_8006EF64): pick a formation by the weights of the scene id's
+ * variable 0, game data 8006ef64): pick a formation by the weights of the scene id's
  * bracket and copy the terrain's encounter set. Returns 0 when the bracket
  * has no formations. */
 s32 worldmap_encounter_roll(VECTOR *position, s32 scene) {

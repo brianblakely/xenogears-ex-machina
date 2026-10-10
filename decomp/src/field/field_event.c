@@ -969,7 +969,7 @@ void field_event_open_menu_task(void) {
 }
 
 /* 80087960: Event: store the world map ferry's saved x and z (+1844, +1846;
- * D_8006EE78) in variables op1 and op3. */
+ * 8006ee78) in variables op1 and op3. */
 void field_event_store_ferry_place(void) {
     field_event_write_variable(field_event_read_u16(1) & 0xFFFF, game_current_data->unk1844[0]);
     field_event_write_variable(field_event_read_u16(3) & 0xFFFF, game_current_data->unk1844[1]);
@@ -977,7 +977,7 @@ void field_event_store_ferry_place(void) {
 }
 
 /* 800879D0: Event: store the circling flight's saved x and z (+184e, +1852;
- * D_8006EE80) in variables op1 and op3, read unsigned (the world map's
+ * 8006ee80) in variables op1 and op3, read unsigned (the world map's
  * halves are signed). */
 void field_event_store_flight_place(void) {
     field_event_write_variable(field_event_read_u16(1) & 0xFFFF, (u16)game_current_data->flight.x);
@@ -999,7 +999,7 @@ void field_event_set_dpad_table(void) {
     field_current_event_actor->pc += 2;
 }
 
-/* 80087AB8: Event: set the circling flight's saved x and z (+184e, +1852; D_8006EE80)
+/* 80087AB8: Event: set the circling flight's saved x and z (+184e, +1852; 8006ee80)
  * from operands 1 and 3, immediate by flags 0x80/0x40 of byte 9 (past the
  * instruction's 6 bytes), clear +1850 and +1854 and set +1856 to 1. */
 void field_event_set_flight_place(void) {

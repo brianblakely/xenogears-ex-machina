@@ -130,7 +130,7 @@ _EXTENDED = (
         "insert_name",
         ("name",),
         3,
-        "insert character name `name` (0x80 and up through D_8006F2E8; slot 0xFF: "
+        "insert character name `name` (0x80 and up: the party member's; slot 0xFF: "
         "resource 26 entry 0)",
     ),
     (0x06, "insert_23", ("entry",), 3, "insert entry `entry` of system resource 23"),
@@ -449,7 +449,7 @@ NUMBER_PALETTES = (0, 1)
 SIGN_CODES = {10: "-", 11: "+"}
 BLANK_CODE = 0xC3
 # The memory card title lines (directory (0x10, 1) file 1): menu_card_init_and_read_title
-# skips D_8006EF64 lines, a byte of 0x80 or more taking the next byte with it,
+# skips game_data.vars[0] lines (the scene id), a byte of 0x80 or more taking the next byte with it,
 # and copies the next 30 bytes of two-byte Shift-JIS into the save header. The
 # menu's menu_save_title_find_glyph turns ASCII 0x20-0x7F into Shift-JIS through the
 # 96-entry table menu_ascii_to_sjis_table of the slot-39 image; its inverse reads the titles.

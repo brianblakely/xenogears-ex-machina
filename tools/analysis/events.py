@@ -1235,10 +1235,10 @@ d4/1=03 color_overlay_sprite field_event_overlay_sprites 10 next u8@1 iv@2 iv@4 
 d4/1=* overlay_sprites_rerun field_event_overlay_sprites 0 rerun
     no case: the extended byte runs next as primary d4
 d5 store_ferry_place field_event_store_ferry_place 5 next var@1 var@3
-    store the world map ferry's saved x and z (+1844, +1846; D_8006EE78)
+    store the world map ferry's saved x and z (+1844, +1846; 8006ee78)
     in variables
 d6 store_flight_place field_event_store_flight_place 5 next var@1 var@3
-    store the circling flight's saved x and z (+184e, +1852; D_8006EE80)
+    store the circling flight's saved x and z (+184e, +1852; 8006ee80)
     in variables
 d7 set_flight_place field_event_set_flight_place 6 next sel@1:9/80 sel@3:9/40
     set the circling flight's saved x and z (+184e, +1852; flags byte 9,

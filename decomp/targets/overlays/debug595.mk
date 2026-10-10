@@ -1,6 +1,6 @@
 # debug595: decoded overlay image at 0x80280000 (0x61c8 bytes).
 # GCC 2.7.2: only 2.7.2 reproduces 80284fb4's product in $t0, 80281b90's
-# operand order and 80284ea4's word load of D_80065858 (2.6.3 loads a
+# operand order and 80284ea4's word load of mode_field_pointer_state[4] (2.6.3 loads a
 # halfword); the other 26 functions build the same code under 2.6.3.
 CC_VERSION := 2.7.2
 SPLAT_CONFIG := decomp/targets/overlays/debug595.yaml

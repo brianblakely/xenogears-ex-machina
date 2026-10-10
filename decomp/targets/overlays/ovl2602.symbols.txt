@@ -1,4 +1,3 @@
-D_8006D8A0 = 0x8006D8A0; // size:0x13EC
 gear_shop_gear_hp_y = 0x801D70E2; // defined:True
 gear_shop_gear_max_hp_y = 0x801D70E6; // defined:True
 gear_shop_gear_fuel_y = 0x801D70EA; // defined:True
