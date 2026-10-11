@@ -329,10 +329,160 @@ ordering table and transform). The wrappers record and then run the original
 unchanged (`WRAPPED` in tools/game_module.py). The host keeps the records of
 the last complete frame (`xem_core::presentation`, the `presentation` command);
 capture is off until asked for. Cameras are read through the schema
-(`field_view`, the battle and world map camera state). A renderer for other
-views (widescreen, stereo, XR) re-traverses these records and the meshes in
-game memory with its own cameras; the original camera and screen keep
-deciding gameplay (on-screen tests, culling).
+(`field_view`, the battle and world map camera state). The original camera and
+screen keep deciding gameplay (on-screen tests, culling).
+
+### The renderer (Phase 5)
+
+The software GPU (`xem-gpu`) stays the authority: VRAM, GPUSTAT, readbacks and
+snapshots are its. The renderer only draws again what it drew:
+
+- **GTE projections.** The port's GTE appends every RTPS/RTPT vertex to a ring
+  (`src/port/include/xem/gte.h`: SXY2, SZ3, the 16.16 screen point before
+  saturation, OFX/OFY, H, and the sprite or model `present.c` says is being
+  drawn). The ring lives at the fixed address 0x70000000 in the game module,
+  outside the port's data and stack and every snapshot region, and it is
+  written whether or not anyone presents: the port's memory layout does not
+  change, and with it neither the stack addresses the game keeps in RAM (a
+  static ring shifted the shadow stack and changed the slice hashes). libgpu
+  hands its position to the GPU device before each transfer
+  (`xem.gpu_projections`); 65 536 entries hold a battle frame.
+- **Draw trace.** `xem_gpu::Gpu::set_trace(true)` records every primitive with
+  its environment (draw mode, texture window, drawing area, mask), each
+  vertex's GTE projection matched by its packet SXY word (depth, sub-pixel
+  position, class: model, sprite, world or flat interface), the DMA node it
+  came from, fills, copies and VRAM writes: CPU transfers as uploads, and drawn
+  pixels a later command samples as a texture before that command, so the
+  renderer's 16-bit VRAM copy equals the device's at every command. The trace
+  is not part of `Gpu::save`; a snapshot load restarts it from all of VRAM.
+- **PS1 renderer** (`xem_render::ps1::Ps1Renderer`, `draw.wgsl`). Draws the
+  trace into a scaled picture of all of VRAM (colour, and an auxiliary target
+  with each pixel's GTE depth, class and baked-shading flag), so double
+  buffering, the saved-screen slot and copies between screen regions work as
+  on the console; textures are decoded in the shader from the native VRAM copy
+  (4/8-bit CLUT, 15-bit, texture window, texel 0000h transparency, the STP bit
+  selecting semi-transparency, modulation, raw textures). The four blend modes
+  use one blend state for both targets (WebGL2 has no per-target blending: the
+  weight goes in the source alpha, the auxiliary output keeps its pixel with
+  weight 0), affine texture coordinates interpolate as (uv·w, w) (GLSL ES 3.0
+  has no `noperspective`), and the GPU's 1023x511 size limit is kept. At
+  scale 1 with every original limit it matches the software rasterizer but
+  for edge pixels of triangles and lines (`tests/ps1.rs`: 74 of 76 800 pixels
+  of its test scene).
+- **Frame** (`FrameRenderer`). The displayed area of the picture, or, for
+  wider framing and interpolation, a replay of the primitives drawn into the
+  displayed buffer since its last clear (`Ps1Renderer::frame_log`): wider
+  framing widens the target by 53 VRAM pixels a side (16:9) and lets scene
+  primitives (not interface ones) draw past the drawing area; interpolation
+  moves each primitive of the newest frame from its match in the frame before
+  (same shape, page, CLUT and texture coordinates, or colours; the nearest,
+  within 48 pixels) by the time since that frame arrived, one game frame late.
+- **Effects** (`EffectsRenderer`, `effects.wgsl`). See below.
+- **GameView** (`view.rs`) is what hosts use: it resolves the graphics
+  settings for a host class, accumulates the trace between presentations and
+  presents. 24-bit movie frames are not traced pictures: hosts show the
+  device's display for them, unscaled in aspect.
+
+The trace, the projections and every renderer object observe only: the native
+test `xem-headless/tests/render.rs` runs the same 240 frames from a field 12
+snapshot with nothing drawn, with every frame drawn under switching profiles
+(HD-2D with wider framing and interpolation, PS1, Custom, Modern), and with a
+second view attaching, changing and detaching, and checks one RAM hash; the
+browser test `web/tests/render.test.mjs` does the same per profile on WebGPU
+and WebGL2, and the slice logs still replay to their hashes.
+
+### Profiles and settings
+
+`xem_settings::Graphics` (the Graphics section of the panel, `SettingChange::Graphics`):
+
+| Setting | Values |
+| --- | --- |
+| profile | Modern (default), HD-2D, PS1, Custom |
+| original limits (Custom) | affine textures, vertex snapping, 15-bit colour, dithering, native resolution, painter's ordering (off: depth-tested by the GTE depth) |
+| HD-2D effect levels | lighting, shadows, ambient occlusion, fog, light shafts, bloom, colour grading, depth of field (0-100), focus (-100..100); HD-2D's and Custom's are separate |
+| quality | Auto (desktop High, mobile and browser Medium, headset Low), Low, Medium, High, Ultra: sample counts only |
+| internal scale | Auto (the output area the picture fills, at most 8 on desktops and 4 elsewhere), 1-8; PS1 and native resolution draw at 1 |
+| presentation | every display refresh, or game frames only; interpolation; wider framing |
+| filtering | world, sprites, interface: nearest or linear, each |
+| culling | back faces, primitives outside the drawing area (both off) |
+| headset screen | distance, width, depth of field in a headset (off) |
+
+Modern draws at high resolution, perspective-correct and sub-pixel, in full
+colour, in the original's drawing order. PS1 keeps every limit at the native
+resolution. No tier or device replaces the chosen profile; a tier changes
+sample counts. Settings apply on the next presented frame; a new internal
+scale restarts the trace from all of VRAM.
+
+Culling here is renderer culling of submitted primitives (counted in
+`DrawStats`). It is distinct from the game's own culling (its model renderers
+drop back faces, off-screen faces and OTZ 0 before anything reaches the GPU),
+from clipping (the drawing area, and the GPU size limit, always kept), and
+from intentional hiding and gameplay activation (game state, decided against
+the original camera and screen whatever is drawn).
+
+### HD-2D effects
+
+The effects use only the game's own pictures and the frame's per-pixel GTE
+depth and class; no art is added, redrawn or replaced, and sprites keep their
+pixels and animation (no smoothing unless a filter is chosen). Interface
+pixels (primitives without a GTE projection, or projected with another screen
+offset than the scene's, such as the field compass) keep their colours
+through every pass; full-screen translucent fades count as scene. In order:
+the frame's average scene colour; lighting from depth-derived normals (key
+light and ambient, gentler over baked Gouraud or modulated shading, sprites
+facing the camera); ambient occlusion from nearer neighbours; sprite shadows
+(each sprite the game drew, by its owner address, casts its silhouette onto
+the ground towards the camera plus a soft contact ellipse at its feet,
+received only at or behind its feet); depth fog towards a tint at the scene's
+own brightness; bloom (13-tap down, tent up); light shafts from bright
+depthless or distant pixels; depth of field around the sprite nearest the
+screen centre (relative depth band, interface pixels never blurred into the
+scene); grading (exposure, saturation, warmth, contrast, vignette). Scene
+tuning (light direction and colour, fog tint and range, shaft source,
+thresholds, grading, shadow lean) is presentation metadata in
+`crates/xem-render/src/ps1/scenes.json`, keyed by `Session::scene()`
+("field:22", "battle", "worldmap", ...).
+
+`cargo run --release -p xem-headless --example validation` writes
+`build/validation/` (local only: pictures of the game): a sheet of nine scenes
+(Lahan's exterior, an interior with a dialogue window and portrait, a room
+with characters, the forest, the world map, an on-foot and a Gear battle
+reached through the original's debug battle selector, the opening text, a
+movie frame) under Modern, HD-2D, PS1 and wider framing, and a report: the RAM
+hash after each look (equal), the pixels each look changes, and the interface
+pixels HD-2D changed (0 in every scene). `--example render -- --map N
+--profile hd2d --compare` draws one scene beside Modern;
+`XEM_DEBUG_VIEW=shadows|depth|class` shows the effects' inputs.
+
+### Headsets
+
+The game is shown as a flat, monoscopic virtual screen in front of a seated
+player: each eye or view draws the same presented frame with its own view and
+projection; nothing claims reconstructed 3D. The game runs from the host's
+clock (at most four catch-up frames per host frame, so a 15 Hz session still
+runs all 60), once per headset frame, never per eye; the settings use the
+Headset class (Low tier, depth of field off unless enabled).
+
+- **OpenXR** (`xem-desktop --xr --disc DISC`, `crates/xem-desktop/src/xr.rs`): the
+  screen 2.5 m ahead (Settings: headset screen), the settings panel a quad
+  layer (left menu button), movie frames on the same screen; controllers
+  stand in for a pad (left stick D-pad, A/B/X/Y Cross/Circle/Square/Triangle,
+  triggers L1/R1, grips L2/R2, left stick click Start, right Select). One
+  `xrframe` line per frame. `src/runtime/scripts/xr-game-smoke.sh` (Monado's simulated
+  HMD, null compositor) checks 57-63 game frames a second against the
+  simulated 20 Hz headset, a paused game with head tracking and rendering
+  continuing, the RAM at frame N equal to `xem-headless`'s, stereo eye
+  captures of the screen, and an HD-2D field on it.
+- **WebXR** (browser host): a browser that offers immersive VR renders
+  through an XR-compatible WebGL2 context from the start (WebXR layers on
+  WebGPU are not testable; flat WebGPU stays for the others); Enter VR runs
+  the session (`local` space), whose animation frames step the game exactly
+  as the canvas's did while the canvas loop rests, and draw each view's screen
+  into the layer (eye buffers assembled and flipped on the GPU). `?xrScale=F`
+  sets the layer's framebuffer scale. `web/tests/xr-game.test.mjs` (IWER's
+  Quest 3) checks the backend, two views, the game near 60 frames a second at
+  a slower session rate, both views showing the screen, paused head tracking,
+  exit, and an unchanged RAM hash.
 
 ## Crates
 

@@ -13,12 +13,13 @@
 use serde_json::json;
 use xem_render::ps1::{DebugView, GameView, HostClass, ViewConfig};
 use xem_render::{Gpu, read_rgba8};
+use std::path::PathBuf;
 use xem_settings::{EffectLevels, Graphics, GraphicsProfile};
 
 type Session = xem_core::control::Session<xem_game::NativeModule>;
 
 fn picture(gpu: &Gpu, view: &mut GameView, session: &mut Session, graphics: &Graphics, scene: &str) -> (u32, u32, Vec<u8>) {
-    let config = ViewConfig::resolve(graphics, HostClass::Desktop, 224 * 4, view.max_scale());
+    let config = ViewConfig::resolve(graphics, HostClass::Desktop, (1280, 896), view.max_scale());
     view.configure(config);
     session.runtime.services().gpu.device_mut().set_trace(true);
     let _ = view.take_restart();
@@ -43,6 +44,8 @@ fn main() {
     let mut frames = 400u64;
     let mut graphics = Graphics::default();
     let mut compare = false;
+    let mut state: Option<PathBuf> = None;
+    let mut classes = false;
     let mut out = std::path::PathBuf::from("render.png");
     let mut disc = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../discs/Xenogears disc 1.chd");
     let mut args = std::env::args().skip(1);
@@ -77,13 +80,17 @@ fn main() {
             }
             "--widescreen" => graphics.widescreen = true,
             "--compare" => compare = true,
+            "--state" => state = Some(value().into()),
+            "--classes" => classes = true,
             "--out" => out = value().into(),
             "--disc" => disc = value().into(),
             other => panic!("unknown option {other}"),
         }
     }
     let (mut session, _) = xem_game::boot(&disc, &Default::default()).expect("boot");
-    if map != 0 {
+    if let Some(path) = &state {
+        session.restore_bytes(&std::fs::read(path).expect("state")).expect("restore");
+    } else if map != 0 {
         session.execute(&json!({"cmd": "enter_field", "map": map}));
     }
     session.execute(&json!({"cmd": "frames", "count": frames}));
@@ -99,6 +106,22 @@ fn main() {
     let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
     view.effects_mut().set_debug_view(debug);
     let (width, height, rgba) = picture(&gpu, &mut view, &mut session, &graphics, &scene);
+    if classes {
+        // What the displayed frame's primitives are, by class and projection.
+        let info = session.runtime.services().gpu.device().display();
+        let area = xem_render::ps1::DisplayArea { x: info.x.into(), y: info.y.into(), width: info.width, height: info.height };
+        let ops = view.renderer().frame_log(area).map(|log| log.ops.clone()).unwrap_or_default();
+        let mut counts = std::collections::BTreeMap::new();
+        for op in &ops {
+            if let xem_gpu::TraceOp::Draw(p) = op {
+                let projected = p.vertices[..p.vertex_count()].iter().filter(|v| v.z > 0.0).count();
+                *counts.entry(format!("{:?} {:?} {} {:?} projected {projected}/{}", p.class, p.projection.map(|(o, _)| o), if p.textured { "textured" } else { "flat" }, p.shape, p.vertex_count())).or_insert(0) += 1;
+            }
+        }
+        for (key, count) in counts {
+            println!("{count:6} {key}");
+        }
+    }
     let (width, rgba) = if compare {
         // The same frames again under Modern.
         session.restore_bytes(&snapshot).expect("restore");

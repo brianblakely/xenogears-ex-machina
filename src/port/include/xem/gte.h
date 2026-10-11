@@ -50,7 +50,7 @@ void xem_gte_execute(unsigned int command);
  * reads it back into the game. In the game module the ring lives at a fixed
  * address outside the port's data, stack and every snapshot region, so it
  * changes neither the port's memory layout nor any saved state. */
-#define XEM_GTE_PROJECTIONS 8192
+#define XEM_GTE_PROJECTIONS 65536
 #define XEM_GTE_RING_ADDRESS 0x70000000u
 
 typedef struct {

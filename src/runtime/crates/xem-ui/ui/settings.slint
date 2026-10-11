@@ -18,6 +18,7 @@ export component SettingsPanel inherits Window {
     in-out property <int> gfx-filter-sprites;
     in-out property <int> gfx-filter-interface;
     in-out property <bool> gfx-cull-back-faces;
+    in-out property <bool> gfx-cull-outside;
     // Custom profile limits, in the order of fidelity-names.
     in-out property <[bool]> gfx-fidelity;
     // Effect levels of the selected profile (HD-2D or Custom), in the order of effect-names.
@@ -271,6 +272,7 @@ export component SettingsPanel inherits Window {
                                         ComboBox { accessible-label: "Interface filtering"; model: ["Nearest", "Linear"]; current-index <=> root.gfx-filter-interface; selected => { root.graphics-edited("filter-interface", self.current-index); } }
                                     }
                                     CheckBox { text: "Cull back faces (off: as the game draws)"; checked <=> root.gfx-cull-back-faces; toggled => { root.graphics-edited("cull", self.checked ? 1 : 0); } }
+                                    CheckBox { text: "Skip primitives outside the drawing area"; checked <=> root.gfx-cull-outside; toggled => { root.graphics-edited("cull-outside", self.checked ? 1 : 0); } }
                                 }
                             }
                             if root.selected-section == 1: GroupBox {

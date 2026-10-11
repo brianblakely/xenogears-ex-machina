@@ -321,9 +321,9 @@ impl WebRenderer {
     /// the whole VRAM.
     pub fn configure_game(&mut self, graphics: &xem_settings::Graphics, headset: bool) -> bool {
         let class = if headset { HostClass::Headset } else { HostClass::Browser };
-        // The virtual screen fills about half of a view's height.
-        let height = if headset { self.xr_eye_height / 2 } else { self.config.height };
-        let config = ViewConfig::resolve(graphics, class, height, self.renderer.max_scale());
+        // The virtual screen fills about half of a view.
+        let size = if headset { (self.xr_eye_height / 2, self.xr_eye_height / 2) } else { (self.config.width, self.config.height) };
+        let config = ViewConfig::resolve(graphics, class, size, self.renderer.max_scale());
         self.renderer.configure(config);
         self.renderer.take_restart()
     }

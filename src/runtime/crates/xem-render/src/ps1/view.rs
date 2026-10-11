@@ -36,9 +36,10 @@ pub struct ViewConfig {
 pub const WIDE_SIDE: u32 = 53;
 
 impl ViewConfig {
-    /// `graphics` for `host`, drawing for an output `output` pixels high
-    /// (auto scale), on a device allowing `max_scale`.
-    pub fn resolve(graphics: &Graphics, host: HostClass, output_height: u32, max_scale: u32) -> ViewConfig {
+    /// `graphics` for `host`, drawing for an output area of `output` pixels
+    /// (the automatic scale follows the part of it the game picture fills),
+    /// on a device allowing `max_scale`.
+    pub fn resolve(graphics: &Graphics, host: HostClass, output: (u32, u32), max_scale: u32) -> ViewConfig {
         let f = graphics.fidelity();
         let fidelity = Fidelity {
             affine_textures: f.affine_textures,
@@ -56,12 +57,21 @@ impl ViewConfig {
                 sprites_linear: linear(graphics.filtering.sprites),
                 interface_linear: linear(graphics.filtering.interface),
             },
-            culling: super::Culling { back_faces: graphics.culling.back_faces },
+            culling: super::Culling { back_faces: graphics.culling.back_faces, outside_frame: graphics.culling.outside_frame },
+        };
+        let side = if graphics.widescreen { WIDE_SIDE } else { 0 };
+        // The picture (about 320x224, wider with wider framing) fitted into
+        // the output: its height there, in original lines.
+        let fitted = output.1.min(output.0 * 224 / (320 + 2 * side));
+        // Automatic scales stop where the host's budget does.
+        let budget = match host {
+            HostClass::Desktop => 8,
+            HostClass::Mobile | HostClass::Browser | HostClass::Headset => 4,
         };
         let scale = if fidelity.native_resolution {
             1
         } else if graphics.internal_scale == 0 {
-            output_height.div_ceil(224).clamp(1, max_scale)
+            fitted.div_ceil(224).clamp(1, budget.min(max_scale))
         } else {
             u32::from(graphics.internal_scale).clamp(1, max_scale)
         };
@@ -92,7 +102,7 @@ impl ViewConfig {
             scale,
             effects,
             quality,
-            side: if graphics.widescreen { WIDE_SIDE } else { 0 },
+            side,
             interpolation: graphics.interpolation,
         }
     }
@@ -234,12 +244,23 @@ impl GameView {
         display.enabled && !display.color24 && display.width > 0 && display.height > 0
     }
 
+    /// The frame the last [`GameView::present`] drew (its colour and
+    /// auxiliary textures), before the effects.
+    pub fn frame(&self) -> &FrameRenderer {
+        &self.frame
+    }
+
     /// The texture the last [`GameView::present`] returned a view of.
     pub fn presented_texture(&self) -> Option<&wgpu::Texture> {
         match self.presented_effects? {
             true => self.effects.output(),
             false => Some(self.frame.color()),
         }
+    }
+
+    /// What the renderer drew and dropped at the last presentation.
+    pub fn stats(&self) -> super::DrawStats {
+        self.renderer.stats()
     }
 
     pub fn renderer(&self) -> &Ps1Renderer {

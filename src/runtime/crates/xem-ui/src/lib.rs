@@ -340,6 +340,7 @@ fn graphics_edit(graphics: &Graphics, key: &str, value: i32) -> Option<Graphics>
         "filter-sprites" => next.filtering.sprites = filter()?,
         "filter-interface" => next.filtering.interface = filter()?,
         "cull" => next.culling.back_faces = value != 0,
+        "cull-outside" => next.culling.outside_frame = value != 0,
         "xr-distance" => next.xr.distance_cm = u16::try_from(value).ok()?,
         "xr-width" => next.xr.width_cm = u16::try_from(value).ok()?,
         "xr-dof" => next.xr.depth_of_field = value != 0,
@@ -373,6 +374,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_gfx_filter_sprites(index_of(&FILTERS, &graphics.filtering.sprites));
     panel.set_gfx_filter_interface(index_of(&FILTERS, &graphics.filtering.interface));
     panel.set_gfx_cull_back_faces(graphics.culling.back_faces);
+    panel.set_gfx_cull_outside(graphics.culling.outside_frame);
     panel.set_gfx_fidelity(slint::ModelRc::new(slint::VecModel::from(fidelity_flags(&graphics.custom_fidelity).to_vec())));
     let levels = edited_levels(graphics);
     let levels: Vec<i32> = EffectLevels::NAMES.iter().map(|name| levels.get(name).unwrap_or(0)).collect();

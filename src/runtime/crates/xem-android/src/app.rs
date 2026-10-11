@@ -425,7 +425,8 @@ impl Host {
                 match SDL_EventType(unsafe { event.r#type }) {
                     SDL_EVENT_QUIT => return Ok(()),
                     SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED
-                    | SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED => {
+                    | SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED
+                    | SDL_EVENT_WINDOW_SAFE_AREA_CHANGED => {
                         let mut live = self.live.borrow_mut();
                         if live.presenter.resize(&self.gpu, window) {
                             self.view
@@ -433,6 +434,10 @@ impl Host {
                             let (width, height) = live.presenter.size();
                             log(&format!("resized {width}x{height}"));
                         }
+                        // The game picture stays clear of cutouts and system bars.
+                        let safe = window.safe_area();
+                        self.view.set_safe_area(safe);
+                        log(&format!("safe area {safe:?}"));
                     }
                     // SAFETY: event comes from SDL_PollEvent.
                     _ => unsafe { self.view.handle(window, &event) },
@@ -558,6 +563,7 @@ impl Host {
             }
             self.view
                 .resize(live.presenter.size(), window.display_scale());
+            self.view.set_safe_area(window.safe_area());
             let (width, height) = live.presenter.size();
             log(&format!("surface recreated {width}x{height}"));
         }

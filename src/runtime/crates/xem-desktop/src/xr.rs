@@ -225,7 +225,7 @@ pub fn run(options: &Options, settings: Rc<RefCell<SettingsService>>, mut game: 
             ran = game.update(buttons, &current, || focused)?;
         }
         // The virtual screen fills about half of a view's height.
-        let config = ViewConfig::resolve(&current.graphics, HostClass::Headset, session.eye_size().1 / 2, view.max_scale());
+        let config = ViewConfig::resolve(&current.graphics, HostClass::Headset, (session.eye_size().0 / 2, session.eye_size().1 / 2), view.max_scale());
         view.configure(config);
         let restart = view.take_restart();
         let (trace, display, scene) = game.take_frame(restart);
@@ -308,7 +308,8 @@ pub fn run(options: &Options, settings: Rc<RefCell<SettingsService>>, mut game: 
         let ended = session.end_frame(visible.then_some(panel)).map_err(|e| e.to_string())?;
         let head = head.map_or("-".into(), |p| format!("{:.5},{:.5},{:.5};{:.5},{:.5},{:.5},{:.5}", p.position.x, p.position.y, p.position.z, p.orientation.x, p.orientation.y, p.orientation.z, p.orientation.w));
         println!(
-            "xrframe n={frames} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} head={head}",
+            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} head={head}",
+            start.elapsed().as_micros(),
             u8::from(should_render),
             ended.layers.len(),
             game.frames_run(),

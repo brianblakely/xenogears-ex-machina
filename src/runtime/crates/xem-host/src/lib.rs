@@ -249,6 +249,8 @@ pub struct View {
     /// A new trace arrived since the last presentation.
     fresh_frame: bool,
     host_class: HostClass,
+    /// Where the game picture may go: the window's safe area, in pixels.
+    safe_area: Option<Rect>,
     app_input: AppInput,
     app_requests: Rc<RefCell<Vec<AppRequest>>>,
     operations: operations::Operations,
@@ -322,6 +324,7 @@ impl View {
             game_frame: None,
             fresh_frame: false,
             host_class: HostClass::Desktop,
+            safe_area: None,
             app_input: AppInput::default(),
             app_requests,
             operations: operations::Operations::default(),
@@ -528,6 +531,13 @@ impl View {
         }
     }
 
+    /// The window's safe area (x, y, width, height in pixels): the game
+    /// picture is placed inside it; the panel and counters may use all of
+    /// the window.
+    pub fn set_safe_area(&mut self, (x, y, width, height): (u32, u32, u32, u32)) {
+        self.safe_area = Some(Rect { x: x as f32, y: y as f32, width: width as f32, height: height as f32 });
+    }
+
     /// The kind of host (its automatic graphics choices: quality tier).
     pub fn set_host_class(&mut self, class: HostClass) {
         self.host_class = class;
@@ -538,7 +548,7 @@ impl View {
     /// frames) is shown as the device holds it.
     pub fn set_game_frame(&mut self, gpu: &Gpu, game: &mut Game) {
         let graphics = self.settings.borrow().settings().graphics;
-        let config = ViewConfig::resolve(&graphics, self.host_class, self.target_size.1, self.renderer.max_scale());
+        let config = ViewConfig::resolve(&graphics, self.host_class, self.target_size, self.renderer.max_scale());
         self.renderer.configure(config);
         let restart = self.renderer.take_restart();
         let (trace, display, scene) = game.take_frame(restart);
@@ -682,11 +692,15 @@ impl View {
         let presentation = self.settings.borrow().settings().presentation.clone();
         self.frame_rate.frame(self.frame_rate_started.elapsed(),self.ui.scale_factor(),presentation.show_fps)
             .map_err(|error| error.to_string())?;
-        let mut game = Quad::screen(
-            game_view,
-            present_rect(game_size, target_size, presentation.scale),
-            target_size,
-        );
+        // Inside the safe area (all of the target when the host gave none).
+        let safe = self
+            .safe_area
+            .filter(|a| a.x + a.width <= target_size.0 as f32 && a.y + a.height <= target_size.1 as f32 && a.width >= 1.0 && a.height >= 1.0)
+            .unwrap_or(Rect { x: 0.0, y: 0.0, width: target_size.0 as f32, height: target_size.1 as f32 });
+        let mut placed = present_rect(game_size, (safe.width as u32, safe.height as u32), presentation.scale);
+        placed.x += safe.x;
+        placed.y += safe.y;
+        let mut game = Quad::screen(game_view, placed, target_size);
         // The renderer's frames hold sRGB-encoded values in a linear format.
         game.srgb_encoded = encoded;
         game.filter = match presentation.filter {

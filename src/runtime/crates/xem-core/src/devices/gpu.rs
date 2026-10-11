@@ -23,7 +23,7 @@ pub const CHCR_BUSY: u32 = 0x0100_0000;
 const LIST_WORD_LIMIT: u32 = RAM_SIZE / 4;
 
 /// Entries of the port's GTE projection ring (`XEM_GTE_PROJECTIONS`, xem/gte.h).
-const PROJECTION_RING: u32 = 8192;
+const PROJECTION_RING: u32 = 65536;
 
 const SNAPSHOT_MAGIC: &[u8; 8] = b"XEMGPUD1";
 

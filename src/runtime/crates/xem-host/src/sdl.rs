@@ -147,6 +147,21 @@ impl Window {
         (width.max(0) as u32, height.max(0) as u32)
     }
 
+    /// The part of the window clear of display cutouts, notches and system
+    /// bars, in pixels: x, y, width, height.
+    pub fn safe_area(&self) -> (u32, u32, u32, u32) {
+        let mut rect = SDL_Rect::default();
+        let density = self.pixel_density();
+        // SAFETY: live window; rect is a valid out pointer.
+        if unsafe { SDL_GetWindowSafeArea(self.raw, &mut rect) } && rect.w > 0 && rect.h > 0 {
+            let px = |v: i32| (v.max(0) as f32 * density).round() as u32;
+            (px(rect.x), px(rect.y), px(rect.w), px(rect.h))
+        } else {
+            let (width, height) = self.pixel_size();
+            (0, 0, width, height)
+        }
+    }
+
     /// Pixels per window coordinate (SDL event positions are window coordinates).
     pub fn pixel_density(&self) -> f32 {
         // SAFETY: live window.

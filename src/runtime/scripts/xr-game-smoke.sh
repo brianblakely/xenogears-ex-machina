@@ -99,6 +99,13 @@ check(57 <= rate <= 63, f"game ran {rate:.1f} frames a second at a {1e9 / period
 check(max(int(r["game_ran"]) for r in rows) <= 4, "a headset frame ran a burst of game frames")
 check(sum(1 for r in rows if r["picture"] != "-") > len(rows) // 2, "the game picture is missing from most frames")
 print(f"running: {len(rows)} headset frames, period {period / 1e6:.2f} ms, game {rate:.1f} fps")
+# Sustained pacing: the loop's wall-clock intervals (xrWaitFrame paces it).
+walls = [int(r["wall_us"]) for r in rows[len(rows) // 10:]]
+gaps = sorted(b - a for a, b in zip(walls, walls[1:]))
+p50, p99 = gaps[len(gaps) // 2], gaps[int(len(gaps) * 0.99)]
+missed = sum(1 for g in gaps if g > 1.5 * period / 1000)
+print(f"pacing: interval p50 {p50 / 1000:.2f} ms, p99 {p99 / 1000:.2f} ms, {missed} of {len(gaps)} beyond 1.5 periods")
+check(missed <= len(gaps) // 20, f"{missed} of {len(gaps)} headset frames late")
 
 rows = records("paused.log")
 paused = [r for r in rows if r["paused"] == "1"]

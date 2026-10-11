@@ -99,14 +99,39 @@ pub struct Filtering {
     pub interface_linear: bool,
 }
 
-/// Renderer culling beyond what the game itself culls. Every kind is off by
-/// default: the game culls back faces and off-screen faces itself, keeps
-/// double-sided faces it means to show, and hides objects by its own
-/// state; nothing here changes what the game considers visible.
+/// Renderer culling: dropping submitted primitives before drawing them.
+/// Every kind is off by default. It is distinct from what the game decides
+/// and the renderer never changes:
+/// - the game's own culling (its model renderers drop back faces by NCLIP,
+///   faces outside its screen bounds and OTZ 0; the world map drops far
+///   terrain), which happens before anything reaches the GPU;
+/// - clipping, which the original GPU does to the drawing area and which
+///   the renderer reproduces with scissors (and its size limit: triangles
+///   1024 or more wide or 512 or more high are not drawn, counted apart in
+///   [`DrawStats::rejected_size`]);
+/// - intentional hiding (actor flags, fades, masks) and gameplay activation
+///   (on-screen tests against the original camera and screen), which are
+///   game state.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Culling {
-    /// Drop projected triangles wound against the frame's majority.
+    /// Drop projected triangles wound against the frame's majority (the
+    /// game already culled its back faces; this also drops the double-sided
+    /// faces it meant to show).
     pub back_faces: bool,
+    /// Skip primitives entirely outside their drawing area (the scissor would
+    /// clip all of them: the picture is the same, the work less).
+    pub outside_frame: bool,
+}
+
+/// What the renderer did with the primitives of a draw (observation only).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct DrawStats {
+    pub primitives: u32,
+    pub triangles: u32,
+    /// The original GPU's size limit (original behaviour, not culling).
+    pub rejected_size: u32,
+    pub culled_back_faces: u32,
+    pub culled_outside_frame: u32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -363,6 +388,7 @@ pub(crate) struct Builder<'a> {
     front: i32,
     /// The scene's projection offset (see [`scene_offset`]).
     scene: Option<(i16, i16)>,
+    pub(crate) stats: DrawStats,
     /// Horizontal VRAM range treated as inside the drawing area beyond it
     /// (wider framing): scene primitives may spill this far.
     pub(crate) spill: u32,
@@ -427,6 +453,7 @@ impl<'a> Builder<'a> {
             staging: Vec::new(),
             front: if balance < 0 { -1 } else { 1 },
             scene: scene_offset(ops),
+            stats: DrawStats::default(),
             spill: 0,
             remap: None,
         }
@@ -500,6 +527,11 @@ impl<'a> Builder<'a> {
 
     /// One traced primitive as triangles under its pipelines.
     pub(crate) fn primitive(&mut self, p: &Primitive) {
+        self.stats.primitives += 1;
+        if self.options.culling.outside_frame && outside_area(p, self.spill) {
+            self.stats.culled_outside_frame += 1;
+            return;
+        }
         let start = self.triangles(p);
         self.commands_for(p, start);
     }
@@ -557,11 +589,14 @@ impl<'a> Builder<'a> {
             Shape::Triangle | Shape::Quad => {
                 for triangle in [[0, 1, 2], [1, 2, 3]].iter().take(if p.shape == Shape::Quad { 2 } else { 1 }) {
                     if !fits(p, *triangle) {
+                        self.stats.rejected_size += 1;
                         continue;
                     }
                     if self.options.culling.back_faces && class.is_scene() && winding(p, *triangle) * self.front < 0 {
+                        self.stats.culled_back_faces += 1;
                         continue;
                     }
+                    self.stats.triangles += 1;
                     for &i in triangle {
                         self.vertices.push(vertex(i));
                     }
@@ -648,6 +683,18 @@ impl<'a> Builder<'a> {
             TraceOp::VBlank => {}
         }
     }
+}
+
+/// Whether a primitive lies entirely outside its drawing area (widened by
+/// `spill` on the sides for wider framing).
+fn outside_area(p: &Primitive, spill: u32) -> bool {
+    let [left, top, right, bottom] = p.environment.area.map(i32::from);
+    let spill = spill as i32;
+    let vertices = &p.vertices[..p.vertex_count()];
+    let (min_x, max_x) = vertices.iter().fold((i32::MAX, i32::MIN), |(a, b), v| (a.min(v.x), b.max(v.x)));
+    let (min_y, max_y) = vertices.iter().fold((i32::MAX, i32::MIN), |(a, b), v| (a.min(v.y), b.max(v.y)));
+    // Rectangles and lines reach one pixel past their last vertex.
+    max_x + 1 < left - spill || min_x > right + spill || max_y + 1 < top || min_y > bottom
 }
 
 /// Whether a triangle is inside the GPU's size limits (1023x511).
@@ -912,6 +959,7 @@ pub struct Ps1Renderer {
     pub(crate) synced: bool,
     /// What was drawn into each screen buffer since it was last cleared.
     logs: Vec<FrameLog>,
+    stats: DrawStats,
 }
 
 /// The primitives of one screen buffer: since its last clear (a fill or a
@@ -976,6 +1024,7 @@ impl Ps1Renderer {
             requested_scale: scale,
             synced: false,
             logs: Vec::new(),
+            stats: DrawStats::default(),
         }
     }
 
@@ -1042,6 +1091,7 @@ impl Ps1Renderer {
             _pad: [0; 2],
         };
         self.queue.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&uniform));
+        self.stats = builder.stats;
         self.vertices.write(&self.device, &self.queue, bytemuck::cast_slice(&builder.vertices));
         self.staging.write(&self.device, &self.queue, &builder.staging);
         let depth_view = self.depth.create_view(&Default::default());
@@ -1114,6 +1164,11 @@ impl Ps1Renderer {
         let rect = VramRect { x: area.x as u16, y: area.y as u16, width: area.width as u16, height: area.height as u16 };
         let size = area.width * area.height;
         self.logs.iter().find(|l| overlap(&l.rect, &rect) * 2 >= size)
+    }
+
+    /// What the last [`Ps1Renderer::draw`] drew and dropped.
+    pub fn stats(&self) -> DrawStats {
+        self.stats
     }
 
     /// The scaled picture of all of VRAM.

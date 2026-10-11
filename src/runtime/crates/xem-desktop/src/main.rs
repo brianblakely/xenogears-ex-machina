@@ -260,7 +260,8 @@ impl Host {
                         if let Some(game) = &mut self.game { game.resume(); }
                     },
                     SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED
-                    | SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED => self.resize(window),
+                    | SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED
+                    | SDL_EVENT_WINDOW_SAFE_AREA_CHANGED => self.resize(window),
                     // SAFETY: event comes from SDL_PollEvent.
                     _ => unsafe { self.view.handle(window, &event) },
                 }
@@ -304,6 +305,7 @@ impl Host {
             self.view
                 .resize(self.presenter.size(), window.display_scale());
         }
+        self.view.set_safe_area(window.safe_area());
     }
 
     /// Renders and presents one frame; false if no frame could be acquired.

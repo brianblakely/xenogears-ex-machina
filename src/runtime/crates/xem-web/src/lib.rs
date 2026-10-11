@@ -186,7 +186,14 @@ impl XemApp {
     pub fn frame(&mut self, now: f64) -> Result<(), JsValue> {
         self.stats.animation_frames += 1;
         self.step(now)?;
+        let fresh = self.display_dirty || self.session.is_none();
         self.take_game_frame(false);
+        // Game-paced presentation draws only when the game drew (or the
+        // panel shows); the canvas keeps the last picture meanwhile.
+        let game_paced = self.settings.borrow().settings().graphics.present_rate == xem_settings::PresentRate::Game;
+        if game_paced && !fresh && !self.panel_visible() {
+            return Ok(());
+        }
         if let Some(renderer) = &mut self.renderer {
             renderer.frame(now / 1000.0, &self.settings.borrow()).map_err(error)?;
         }

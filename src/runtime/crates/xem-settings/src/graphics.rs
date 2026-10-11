@@ -190,11 +190,16 @@ pub struct TextureFiltering {
     pub interface: crate::Filter,
 }
 
-/// Renderer culling beyond the game's own; off by default.
+/// Renderer culling beyond the game's own; off by default. The game's
+/// culling, clipping, hiding and on-screen tests are game logic and are not
+/// settings (xem_render::ps1::Culling).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Culling {
+    /// Drop projected back faces (also the game's intended double-sided ones).
     pub back_faces: bool,
+    /// Skip primitives wholly outside their drawing area (same picture).
+    pub outside_frame: bool,
 }
 
 /// The game screen in a headset: a flat virtual screen in front of a seated
