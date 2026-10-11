@@ -3,6 +3,11 @@
 //! an overlay (`xem_host::View`). One wgpu device and queue serve the game
 //! image, the compositor and Slint.
 
+#[cfg(has_game_module)]
+mod readback;
+#[cfg(has_game_module)]
+mod xr;
+
 use sdl3_sys::everything::*;
 use std::cell::RefCell;
 use std::path::PathBuf;
@@ -24,6 +29,12 @@ struct Options {
     script: Option<PathBuf>,
     /// Exit when the game has run this many frames, reporting its memory hash.
     exit_at_frame: Option<u64>,
+    /// Play in an OpenXR headset on a virtual screen (xr.rs).
+    xr: bool,
+    /// Headset tests: pause the game at headset frame N for M frames.
+    xr_pause: Option<(u64, u64)>,
+    /// Headset tests: save both eyes of the last frame here.
+    xr_capture: Option<PathBuf>,
 }
 
 fn options() -> Result<Options, String> {
@@ -36,6 +47,9 @@ fn options() -> Result<Options, String> {
         bios: None,
         script: None,
         exit_at_frame: None,
+        xr: false,
+        xr_pause: None,
+        xr_capture: None,
     };
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -60,10 +74,21 @@ fn options() -> Result<Options, String> {
                 let count = args.next().ok_or("--exit-at-frame needs a frame")?;
                 options.exit_at_frame = Some(count.parse().map_err(|_| format!("bad frame {count:?}"))?);
             }
+            "--xr" => options.xr = true,
+            "--xr-pause" => {
+                let value = args.next().ok_or("--xr-pause needs FRAME,COUNT")?;
+                let (at, count) = value.split_once(',').ok_or("--xr-pause needs FRAME,COUNT")?;
+                options.xr_pause = Some((at.parse().map_err(|_| "bad --xr-pause")?, count.parse().map_err(|_| "bad --xr-pause")?));
+            }
+            "--xr-capture" => options.xr_capture = Some(args.next().ok_or("--xr-capture needs a directory")?.into()),
             "--help" => {
                 println!(
                     "xem-desktop [--disc DISC [--cards DIR] [--bios FILE] [--script LOG] \
-                     [--exit-at-frame N]] [--show-settings] [--exit-after-frames N] [--screenshot out.png]\n\
+                     [--exit-at-frame N] [--xr [--xr-pause N,M] [--xr-capture DIR]]] [--show-settings] \
+                     [--exit-after-frames N] [--screenshot out.png]\n\
+                     --xr plays in an OpenXR headset on a virtual screen (controllers: left stick \
+                     D-pad, A/B/X/Y Cross/Circle/Square/Triangle, triggers L1/R1, grips L2/R2, \
+                     left stick click Start, left menu the settings panel).\n\
                      --script plays a session log (tools/native_scenario.py --log); \
                      --exit-at-frame prints the memory hash at that game frame and exits.\n\
                      F1 or Escape toggles the settings panel. Pad: arrows, Z cross, X circle, \
@@ -100,6 +125,9 @@ fn open_settings() -> SettingsService {
 }
 
 fn run(options: Options) -> Result<(), String> {
+    if options.xr {
+        return run_xr(&options);
+    }
     let sdl = sdl::Sdl::init()?;
     let window = sdl::Window::new(&sdl, "Xenogears Ex Machina", 1280, 800)?;
     let result = Host::new(&window, &options).and_then(|mut host| host.run(&window, &options));
@@ -115,6 +143,26 @@ struct Host {
     gpu: Gpu,
     start: Instant,
     game: Option<Game>,
+}
+
+#[cfg(has_game_module)]
+fn run_xr(options: &Options) -> Result<(), String> {
+    let _sdl = sdl::Sdl::init_without_video()?;
+    let disc = options.disc.as_deref().ok_or("--xr needs --disc")?;
+    let mut game = open_game(options, disc)?;
+    if let Some(path) = &options.script {
+        let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
+        let log: serde_json::Value = serde_json::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))?;
+        game.schedule(&log)?;
+    }
+    game.set_frame_limit(options.exit_at_frame);
+    let settings = Rc::new(RefCell::new(open_settings()));
+    xr::run(options, settings, game)
+}
+
+#[cfg(not(has_game_module))]
+fn run_xr(_options: &Options) -> Result<(), String> {
+    Err("this build has no game module (python3 tools/game_module.py builds it)".into())
 }
 
 /// A build without the game module cannot play a disc.

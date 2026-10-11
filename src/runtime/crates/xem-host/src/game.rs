@@ -10,6 +10,10 @@ use xem_game::NativeModule;
 
 const FRAME: Duration = Duration::from_nanos(1_000_000_000 / 60);
 const BATCH_BUDGET: Duration = Duration::from_millis(12);
+/// Frames one update may catch up: a host presenting as slowly as 15 Hz (a
+/// headset runtime's frame loop, a slow display) still runs every game
+/// frame; a longer stall drops time instead of catching up.
+const MAX_CATCH_UP: u32 = 4;
 
 pub struct Game {
     pub session: Session<NativeModule>,
@@ -184,7 +188,7 @@ impl Game {
             if !self.audio.is_null() { unsafe { SDL_ClearAudioStream(self.audio); SDL_ResumeAudioStreamDevice(self.audio); } }
         }
         let mut due = 0;
-        while self.paced + FRAME <= Instant::now() && due < 2 {
+        while self.paced + FRAME <= Instant::now() && due < MAX_CATCH_UP {
             self.paced += FRAME;
             due += 1;
         }

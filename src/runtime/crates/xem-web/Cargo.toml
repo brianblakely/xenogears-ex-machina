@@ -28,7 +28,10 @@ web-sys = { workspace = true, features = [
     "Navigator",
     "Performance",
     "Storage",
+    "WebGl2RenderingContext",
+    "WebGlFramebuffer",
     "Window",
+    "XrWebGlLayer",
 ] }
 serde.workspace = true
 serde_json.workspace = true

@@ -5239,6 +5239,8 @@ dependencies = [
  "xem-host",
  "xem-render",
  "xem-settings",
+ "xem-ui",
+ "xem-xr",
 ]
 
 [[package]]

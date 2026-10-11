@@ -40,8 +40,10 @@ pub use render::WebRenderer;
 
 /// One game frame (a vertical blank of the virtual clock) per 1/60 s of page time…
 const FRAME_MS: f64 = 1000.0 / 60.0;
-/// …at most this many per animation frame; time beyond that is dropped…
-const MAX_FRAMES_PER_ANIMATION: u64 = 2;
+/// …at most this many per animation frame (a page or headset session
+/// presenting as slowly as 15 Hz still runs every game frame); time beyond
+/// that is dropped…
+const MAX_FRAMES_PER_ANIMATION: u64 = 4;
 /// …and no further frame once a batch has taken this long.
 const BATCH_BUDGET_MS: f64 = 12.0;
 /// The bound on one `frames` or `run_until` command, which runs inside one
@@ -65,6 +67,8 @@ fn error(message: impl std::fmt::Display) -> JsValue {
 #[derive(Default)]
 struct LoopStats {
     animation_frames: u64,
+    /// Immersive frames (the session's animation frames).
+    xr_frames: u64,
     game_frames: u64,
     last_batch: u64,
     max_batch: u64,
@@ -180,8 +184,77 @@ impl XemApp {
     /// canvas. Time a throttled or frozen page missed, or a frame spent
     /// waiting for a disc sector, is dropped, not caught up.
     pub fn frame(&mut self, now: f64) -> Result<(), JsValue> {
-        self.sync_time_controls()?;
         self.stats.animation_frames += 1;
+        self.step(now)?;
+        self.take_game_frame(false);
+        if let Some(renderer) = &mut self.renderer {
+            renderer.frame(now / 1000.0, &self.settings.borrow()).map_err(error)?;
+        }
+        Ok(())
+    }
+
+    /// One immersive frame at page time `now` (ms), from the session's
+    /// animation frame: the game frames due, as [`XemApp::frame`] runs them
+    /// (never per view), then every view of `layer`. `matrices` holds each
+    /// view's world-to-eye and projection (WebXR's, OpenGL clip space) as 32
+    /// floats, column major; `viewports` its layer rectangle (x, y from the
+    /// bottom, width, height).
+    pub fn xr_frame(&mut self, now: f64, layer: web_sys::XrWebGlLayer, matrices: &[f32], viewports: &[i32]) -> Result<(), JsValue> {
+        self.step(now)?;
+        let eye_height = viewports.chunks_exact(4).map(|v| v[3]).max().unwrap_or(0).max(0) as u32;
+        if let Some(renderer) = &mut self.renderer {
+            renderer.set_xr_eye_height(eye_height);
+        }
+        self.take_game_frame(true);
+        // OpenGL clip depth (-1..1) to wgpu's (0..1).
+        let depth = xem_render::glam::Mat4::from_cols(
+            xem_render::glam::Vec4::X,
+            xem_render::glam::Vec4::Y,
+            xem_render::glam::Vec4::new(0.0, 0.0, 0.5, 0.0),
+            xem_render::glam::Vec4::new(0.0, 0.0, 0.5, 1.0),
+        );
+        let views: Vec<render::XrView> = matrices
+            .chunks_exact(32)
+            .zip(viewports.chunks_exact(4))
+            .map(|(m, v)| render::XrView {
+                view: xem_render::glam::Mat4::from_cols_slice(&m[..16]),
+                proj: depth * xem_render::glam::Mat4::from_cols_slice(&m[16..]),
+                viewport: [v[0], v[1], v[2], v[3]],
+            })
+            .collect();
+        self.stats.xr_frames += 1;
+        if let Some(renderer) = &mut self.renderer {
+            renderer.render_xr(&layer, &views, now / 1000.0, &self.settings.borrow()).map_err(error)?;
+        }
+        Ok(())
+    }
+
+    /// RGBA bytes at `points` (x, y pairs, layer pixels from the bottom left)
+    /// of the immersive layer just drawn; for tests.
+    pub fn xr_readback(&self, layer: web_sys::XrWebGlLayer, points: &[i32]) -> Result<Vec<u8>, JsValue> {
+        let points: Vec<[i32; 2]> = points.chunks_exact(2).map(|p| [p[0], p[1]]).collect();
+        match &self.renderer {
+            Some(renderer) => renderer.read_layer_pixels(&layer, &points).map_err(error),
+            None => Err(error("no renderer")),
+        }
+    }
+
+    /// The immersive session ended: the canvas shows the game again.
+    pub fn xr_ended(&mut self) {
+        if let Some(renderer) = &mut self.renderer {
+            renderer.release_xr();
+        }
+        self.display_dirty = true;
+    }
+
+    /// Whether the renderer can draw immersive frames.
+    pub fn xr_capable(&self) -> bool {
+        self.renderer.as_ref().is_some_and(|r| r.xr_capable())
+    }
+
+    /// The game frames due since the last step (see [`XemApp::frame`]).
+    fn step(&mut self, now: f64) -> Result<(), JsValue> {
+        self.sync_time_controls()?;
         if self.running && self.rewind_held.iter().any(|held| *held) {
             if now >= self.rewind_next {
                 if let Some(session) = self.session.as_mut() {
@@ -253,6 +326,12 @@ impl XemApp {
         if self.panel_closed.replace(false) {
             self.set_panel_visible(false);
         }
+        Ok(())
+    }
+
+    /// Hands what the game drew to the renderer (configured for the canvas or
+    /// a headset) and updates the panel's status.
+    fn take_game_frame(&mut self, headset: bool) {
         if let Some(renderer) = &mut self.renderer {
             if let (Some(panel),Some(session)) = (renderer.panel(),self.session.as_ref()) {
                 panel.set_time_status(Some(session.fast_forward), &format!("{:.0} of {} seconds available · {:.1} MiB used{}",
@@ -264,7 +343,7 @@ impl XemApp {
             match self.session.as_mut() {
                 Some(session) if self.display_dirty => {
                     let graphics = self.settings.borrow().settings().graphics;
-                    let restart = renderer.configure_game(&graphics);
+                    let restart = renderer.configure_game(&graphics, headset);
                     let scene = session.scene();
                     let gpu = &mut session.runtime.services().gpu;
                     let device = gpu.device_mut();
@@ -279,9 +358,7 @@ impl XemApp {
                 Some(_) => {}
                 None => renderer.clear_game_image(),
             }
-            renderer.frame(now / 1000.0, &self.settings.borrow()).map_err(error)?;
         }
-        Ok(())
     }
 
     /// After game frames ran: keep the SPU's samples for the page and show
@@ -706,6 +783,7 @@ impl XemApp {
             "running": self.running,
             "loop": {
                 "animationFrames": self.stats.animation_frames,
+                "xrFrames": self.stats.xr_frames,
                 "gameFrames": self.stats.game_frames,
                 "lastBatch": self.stats.last_batch,
                 "maxBatch": self.stats.max_batch,

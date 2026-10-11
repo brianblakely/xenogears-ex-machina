@@ -36,6 +36,18 @@ impl Sdl {
             Err(format!("SDL_Init: {}", error()))
         }
     }
+
+    /// SDL for a host whose picture goes elsewhere (a headset): audio,
+    /// events and gamepads, no video.
+    pub fn init_without_video() -> Result<Self, String> {
+        // SAFETY: as in `init`.
+        let ok = unsafe { SDL_Init(SDL_INIT_EVENTS | SDL_INIT_GAMEPAD | SDL_INIT_AUDIO) };
+        if ok {
+            Ok(Sdl)
+        } else {
+            Err(format!("SDL_Init: {}", error()))
+        }
+    }
 }
 
 impl Drop for Sdl {

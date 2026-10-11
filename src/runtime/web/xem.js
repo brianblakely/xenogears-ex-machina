@@ -92,6 +92,13 @@ export function createAutomation(host) {
       export: () => app.export_settings(),
       import: (text) => parse(app.import_settings(text)),
     }),
+    /** Immersive play (WebXR): enter needs a user activation (the page's VR button). */
+    xr: Object.freeze({
+      enter: () => host.enterVr(),
+      exit: () => host.exitVr(),
+      /** RGBA bytes of the immersive layer at [[x, y], ...] (from the bottom left). */
+      readback: (points) => host.xrReadback(points),
+    }),
     panel: Object.freeze({
       show: (visible) => app.set_panel_visible(Boolean(visible)),
       visible: () => app.panel_visible(),

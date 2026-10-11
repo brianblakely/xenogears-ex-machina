@@ -16,6 +16,13 @@ pub struct HandInput {
     pub trigger: f32,
     pub select: bool,
     pub menu: bool,
+    /// Thumbstick x (right) and y (up), -1..1.
+    pub thumbstick: [f32; 2],
+    /// A or X (the lower face button), B or Y (the upper).
+    pub primary: bool,
+    pub secondary: bool,
+    pub squeeze: bool,
+    pub thumbstick_click: bool,
 }
 
 /// A tracked hand joint (XR_EXT_hand_tracking joint order).
@@ -45,6 +52,11 @@ pub(crate) struct Input {
     trigger: xr::Action<f32>,
     select: xr::Action<bool>,
     menu: xr::Action<bool>,
+    thumbstick: xr::Action<xr::Vector2f>,
+    primary: xr::Action<bool>,
+    secondary: xr::Action<bool>,
+    squeeze: xr::Action<f32>,
+    thumbstick_click: xr::Action<bool>,
     aim_spaces: [xr::Space; 2],
     grip_spaces: [xr::Space; 2],
     gaze: Option<(xr::Action<xr::Posef>, xr::Space)>,
@@ -84,6 +96,21 @@ impl Input {
         let menu = set
             .create_action::<bool>("menu", "Menu", &hands)
             .map_err(XrError::xr(create))?;
+        let thumbstick = set
+            .create_action::<xr::Vector2f>("thumbstick", "Thumbstick", &hands)
+            .map_err(XrError::xr(create))?;
+        let primary = set
+            .create_action::<bool>("primary", "Lower face button", &hands)
+            .map_err(XrError::xr(create))?;
+        let secondary = set
+            .create_action::<bool>("secondary", "Upper face button", &hands)
+            .map_err(XrError::xr(create))?;
+        let squeeze = set
+            .create_action::<f32>("squeeze", "Squeeze", &hands)
+            .map_err(XrError::xr(create))?;
+        let thumbstick_click = set
+            .create_action::<bool>("thumbstick_click", "Thumbstick click", &hands)
+            .map_err(XrError::xr(create))?;
 
         let suggest = |profile: &str, bindings: &[(&str, Binding)]| -> Result<(), XrError> {
             let mut list = Vec::new();
@@ -99,6 +126,11 @@ impl Input {
                         Kind::Trigger => xr::Binding::new(&trigger, binding),
                         Kind::Select => xr::Binding::new(&select, binding),
                         Kind::Menu => xr::Binding::new(&menu, binding),
+                        Kind::Thumbstick => xr::Binding::new(&thumbstick, binding),
+                        Kind::Primary => xr::Binding::new(&primary, binding),
+                        Kind::Secondary => xr::Binding::new(&secondary, binding),
+                        Kind::Squeeze => xr::Binding::new(&squeeze, binding),
+                        Kind::ThumbstickClick => xr::Binding::new(&thumbstick_click, binding),
                     });
                 }
             }
@@ -125,6 +157,13 @@ impl Input {
                 ("trigger/value", Binding::both(Kind::Select)),
                 // The right controller's menu button is reserved for the system.
                 ("menu/click", Binding::left(Kind::Menu)),
+                ("thumbstick", Binding::both(Kind::Thumbstick)),
+                ("thumbstick/click", Binding::both(Kind::ThumbstickClick)),
+                ("squeeze/value", Binding::both(Kind::Squeeze)),
+                ("x/click", Binding::left(Kind::Primary)),
+                ("y/click", Binding::left(Kind::Secondary)),
+                ("a/click", Binding::right(Kind::Primary)),
+                ("b/click", Binding::right(Kind::Secondary)),
             ],
         )?;
 
@@ -181,6 +220,11 @@ impl Input {
             trigger,
             select,
             menu,
+            thumbstick,
+            primary,
+            secondary,
+            squeeze,
+            thumbstick_click,
             aim_spaces,
             grip_spaces,
             gaze,
@@ -219,6 +263,11 @@ impl Input {
                 .map_err(XrError::xr(get))?;
             let select = self.select.state(session, hand).map_err(XrError::xr(get))?;
             let menu = self.menu.state(session, hand).map_err(XrError::xr(get))?;
+            let thumbstick = self.thumbstick.state(session, hand).map_err(XrError::xr(get))?;
+            let primary = self.primary.state(session, hand).map_err(XrError::xr(get))?;
+            let secondary = self.secondary.state(session, hand).map_err(XrError::xr(get))?;
+            let squeeze = self.squeeze.state(session, hand).map_err(XrError::xr(get))?;
+            let thumbstick_click = self.thumbstick_click.state(session, hand).map_err(XrError::xr(get))?;
             let aim_active = self
                 .aim
                 .is_active(session, hand)
@@ -246,6 +295,11 @@ impl Input {
                 trigger: trigger.current_state,
                 select: select.current_state,
                 menu: menu.current_state,
+                thumbstick: [thumbstick.current_state.x, thumbstick.current_state.y],
+                primary: primary.current_state,
+                secondary: secondary.current_state,
+                squeeze: squeeze.current_state > 0.5,
+                thumbstick_click: thumbstick_click.current_state,
             };
             state.profiles[index] = match session.current_interaction_profile(hand) {
                 Ok(profile) if profile != xr::Path::NULL => {
@@ -288,6 +342,11 @@ enum Kind {
     Trigger,
     Select,
     Menu,
+    Thumbstick,
+    Primary,
+    Secondary,
+    Squeeze,
+    ThumbstickClick,
 }
 
 #[derive(Clone, Copy)]
@@ -308,6 +367,13 @@ impl Binding {
         Self {
             kind,
             hand_only: Some(HANDS[0]),
+        }
+    }
+
+    fn right(kind: Kind) -> Self {
+        Self {
+            kind,
+            hand_only: Some(HANDS[1]),
         }
     }
 }

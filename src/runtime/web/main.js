@@ -30,6 +30,12 @@ const page = {
   storageError: null,
   operationStatus: null,
   storage: await storage.status(),
+  // An immersive session (WebXR) while one runs; its frames replace the
+  // canvas's animation frames.
+  xr: null,
+  xrSupported: false,
+  xrSessions: 0,
+  xrError: null,
 };
 
 // --- Game module (optional: the page runs without one) ----------------------
@@ -109,7 +115,15 @@ function wireCanvas() {
   canvas.addEventListener('wheel', forward('wheel'), { passive: false });
 }
 wireCanvas();
-const prefer = params.get('backend') ?? 'auto';
+// Immersive play is submitted through an XR-compatible WebGL2 context
+// (WebXR layers on WebGPU are not available to test): a browser that offers
+// immersive VR renders with one from the start; others use WebGPU first.
+try {
+  page.xrSupported = Boolean(navigator.xr) && await navigator.xr.isSessionSupported('immersive-vr');
+} catch (error) {
+  page.xrError = String(error);
+}
+const prefer = params.get('backend') ?? (page.xrSupported ? 'webgl2-xr' : 'auto');
 if (!(await startRenderer(prefer)) && prefer !== 'webgl2') await startRenderer('webgl2');
 new ResizeObserver(sizeCanvas).observe(document.querySelector('main'));
 
@@ -181,8 +195,23 @@ const host = {
       fileSystemAccess: disc.fileSystemAccess,
       hidden: page.hidden,
       crossOriginIsolated: window.crossOriginIsolated,
+      xr: {
+        supported: page.xrSupported,
+        capable: app.xr_capable(),
+        active: Boolean(page.xr),
+        sessions: page.xrSessions,
+        frames: page.xr?.frames ?? 0,
+        views: page.xr?.views ?? 0,
+        viewer: page.xr?.viewer ?? null,
+        visibility: page.xr?.session.visibilityState ?? null,
+        error: page.xrError,
+      },
     };
   },
+  enterVr: () => enterVr(),
+  exitVr: () => page.xr?.session.end(),
+  /** RGBA bytes of the immersive layer at [x, y] points (from the bottom left). */
+  xrReadback: (points) => page.xr && new Promise((resolve) => { page.xr.readbackRequest = { points, resolve }; }),
 };
 window.xem = createAutomation(host);
 
@@ -203,9 +232,101 @@ function pollGamepad() {
 window.addEventListener('blur', () => app.release_input());
 window.addEventListener('focus', () => app.resume_input());
 
+// --- Immersive play (WebXR): a flat virtual screen in front of the player --
+// The game runs from the session's animation frames exactly as from the
+// canvas's (the frames due by the clock, never per view); every view draws
+// the same game picture as a screen. Controllers stand in for a pad
+// (xr-standard mapping): left stick the D-pad, A/B/X/Y Cross/Circle/Square/
+// Triangle, triggers L1/R1, squeeze L2/R2, stick clicks Start/Select.
+async function enterVr() {
+  if (page.xr || !navigator.xr) return;
+  const session = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor'] });
+  page.xrSessions += 1;
+  const gl = canvas.getContext('webgl2');
+  // ?xrScale=F asks for a smaller (or larger) layer than the headset's default.
+  const framebufferScaleFactor = Number(params.get('xrScale') ?? 1);
+  const layer = new XRWebGLLayer(session, gl, { antialias: false, depth: false, stencil: false, alpha: false, framebufferScaleFactor });
+  session.updateRenderState({ baseLayer: layer });
+  const space = await session.requestReferenceSpace('local');
+  page.xr = { session, layer, space, frames: 0, views: 0 };
+  session.addEventListener('end', () => {
+    page.xr = null;
+    app.xr_ended();
+    requestAnimationFrame(frame);
+  });
+  session.requestAnimationFrame(xrFrame);
+}
+
+function xrButtons(session) {
+  const pressed = new Uint8Array(17);
+  for (const source of session.inputSources) {
+    const pad = source.gamepad;
+    if (!pad || pad.mapping !== 'xr-standard') continue;
+    const button = (i) => (pad.buttons[i]?.pressed ? 1 : 0);
+    if (source.handedness === 'right') {
+      pressed[0] |= button(4); // A: Cross
+      pressed[1] |= button(5); // B: Circle
+      pressed[5] |= button(0); // trigger: R1
+      pressed[7] |= button(1); // squeeze: R2
+      pressed[8] |= button(3); // stick click: Select
+    } else {
+      pressed[2] |= button(4); // X: Square
+      pressed[3] |= button(5); // Y: Triangle
+      pressed[4] |= button(0); // trigger: L1
+      pressed[6] |= button(1); // squeeze: L2
+      pressed[9] |= button(3); // stick click: Start
+      const [x, y] = [pad.axes[2] ?? 0, pad.axes[3] ?? 0];
+      pressed[12] |= y < -0.5 ? 1 : 0;
+      pressed[13] |= y > 0.5 ? 1 : 0;
+      pressed[14] |= x < -0.5 ? 1 : 0;
+      pressed[15] |= x > 0.5 ? 1 : 0;
+    }
+  }
+  return pressed;
+}
+
+function xrFrame(time, xrframe) {
+  const xr = page.xr;
+  if (!xr) return;
+  xr.session.requestAnimationFrame(xrFrame);
+  const pose = xrframe.getViewerPose(xr.space);
+  try {
+    if (pose) {
+      const matrices = new Float32Array(pose.views.length * 32);
+      const viewports = new Int32Array(pose.views.length * 4);
+      pose.views.forEach((view, i) => {
+        matrices.set(view.transform.inverse.matrix, i * 32);
+        matrices.set(view.projectionMatrix, i * 32 + 16);
+        const v = xr.layer.getViewport(view);
+        viewports.set([v.x, v.y, v.width, v.height], i * 4);
+      });
+      app.gamepad(xrButtons(xr.session));
+      app.xr_frame(time, xr.layer, matrices, viewports);
+      // A readback asked for reads the layer just drawn, inside the frame
+      // (an emulated layer may be the canvas's default framebuffer).
+      if (xr.readbackRequest) {
+        const { points, resolve } = xr.readbackRequest;
+        xr.readbackRequest = null;
+        resolve(Array.from(app.xr_readback(xr.layer, Int32Array.from(points.flat()))));
+      }
+      xr.views = pose.views.length;
+      const p = pose.transform.position;
+      xr.viewer = [p.x, p.y, p.z];
+    }
+    disc.serveGameReads(app, page.discFile);
+    audio.pump();
+    xr.frames += 1;
+    page.frameError = null;
+  } catch (error) {
+    page.frameError = String(error.message ?? error);
+  }
+}
+
 // --- Animation: the game frames due (bounded) and one render per frame -----
 let recovering = false;
 function frame(time) {
+  // An immersive session schedules its own frames.
+  if (page.xr) return;
   try {
     pollGamepad();
     app.frame(time);
@@ -238,6 +359,12 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // --- Controls ----------------------------------------------------------------
+const vrButton = $('vr');
+vrButton.hidden = !(page.xrSupported && app.xr_capable());
+vrButton.addEventListener('click', () => {
+  if (page.xr) page.xr.session.end();
+  else enterVr().catch((error) => { page.xrError = String(error.message ?? error); });
+});
 function show(message) {
   $('message').textContent = message;
 }

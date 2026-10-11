@@ -573,7 +573,7 @@ test('20× and uncapped fast-forward keep music on host time', async () => {
     assert.ok(result.after.session.frames - result.before.session.frames > 60, 'gameplay accelerates');
     assert.equal(result.after.session.fast_forward,true);
     assert.deepEqual(result.after.session.fast_forward_rate,rate);
-    assert.equal(result.after.loop.maxFramesPerAnimation,rate === 'Uncapped' ? null : 40);
+    assert.equal(result.after.loop.maxFramesPerAnimation,rate === 'Uncapped' ? null : 80);
     }
     assert.deepEqual(page.errors, []);
   } finally { await browser.close(); }
