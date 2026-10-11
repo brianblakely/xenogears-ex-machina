@@ -37,10 +37,8 @@
 //!
 //! Images live in a [`CardStorage`]: files under a directory natively, memory
 //! in tests, IndexedDB in browsers. Every call that changes a card writes its
-//! image back. Snapshots hold the images, so a restore brings back the cards
-//! as they were; they reach storage at the next change.
-
-use std::path::PathBuf;
+//! image back. Card images are persistent saves, independent of a game-state
+//! snapshot. Restoring game progress keeps the currently inserted cards.
 
 use super::{Context, Device, unknown};
 use crate::clock::CPU_HZ;
@@ -70,43 +68,13 @@ const NAME_LENGTH: usize = 20;
 const FILES: usize = 16;
 /// The BIOS's first file descriptor for a file (0 and 1 are the console).
 const FIRST_FD: u32 = 2;
-const SNAPSHOT_VERSION: u32 = 1;
+const SNAPSHOT_VERSION: u32 = 2;
 
 /// Where the card images persist.
 pub trait CardStorage {
     /// The image in `slot` (0, 1), or None when no card is inserted there.
     fn load(&mut self, slot: usize) -> std::io::Result<Option<Vec<u8>>>;
     fn store(&mut self, slot: usize, image: &[u8]) -> std::io::Result<()>;
-}
-
-/// Images as files `card1.mcd` and `card2.mcd` in a directory; a missing
-/// file is a fresh formatted card.
-pub struct FileStorage {
-    pub dir: PathBuf,
-}
-
-impl FileStorage {
-    pub fn path(&self, slot: usize) -> PathBuf {
-        self.dir.join(format!("card{}.mcd", slot + 1))
-    }
-}
-
-impl CardStorage for FileStorage {
-    fn load(&mut self, slot: usize) -> std::io::Result<Option<Vec<u8>>> {
-        match std::fs::read(self.path(slot)) {
-            Ok(image) => Ok(Some(image)),
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(Some(formatted())),
-            Err(error) => Err(error),
-        }
-    }
-
-    fn store(&mut self, slot: usize, image: &[u8]) -> std::io::Result<()> {
-        std::fs::create_dir_all(&self.dir)?;
-        let path = self.path(slot);
-        let partial = path.with_extension("mcd.partial");
-        std::fs::write(&partial, image)?;
-        std::fs::rename(partial, path)
-    }
 }
 
 /// Images in memory (tests, hosts without storage).
@@ -278,17 +246,29 @@ pub struct Card {
     check: Option<(u64, u32)>,
     /// Storage errors, for the host to report.
     pub errors: Vec<String>,
+    pending: [bool; 2],
 }
 
 impl Card {
+    pub(crate) fn restore_state(&mut self, mut state: Self) {
+        state.storage = self.storage.take();
+        state.images = std::mem::take(&mut self.images);
+        state.pending = self.pending;
+        state.errors = std::mem::take(&mut self.errors);
+        *self = state;
+    }
     /// Use `storage` and insert the cards it holds.
     pub fn attach_storage(&mut self, mut storage: Box<dyn CardStorage>) -> std::io::Result<()> {
+        let mut images = [None, None];
         for slot in 0..2 {
-            self.images[slot] = storage.load(slot)?.map(|mut image| {
-                image.resize(CARD_SIZE, 0);
-                image
-            });
+            match storage.load(slot) {
+                Ok(Some(image)) if image.len() == CARD_SIZE => images[slot] = Some(image),
+                Ok(None) => {},
+                Ok(Some(_)) => self.errors.push(format!("memory card {}: expected a raw 128 KiB image; slot left empty, file unchanged", slot + 1)),
+                Err(error) => self.errors.push(format!("memory card {}: {error}; slot left empty, file unchanged", slot + 1)),
+            }
         }
+        self.images = images;
         self.storage = Some(storage);
         Ok(())
     }
@@ -310,15 +290,40 @@ impl Card {
         self.images[slot].as_deref()
     }
 
+    /// Import an exact original raw .mcd image without resizing or conversions.
+    /// Do this between frames; replacing a card closes its file descriptors.
+    pub fn import_image(&mut self, slot: usize, image: Vec<u8>) -> Result<(), String> {
+        if slot > 1 || image.len() != CARD_SIZE { return Err("card slot is 0 or 1; image must be exactly 128 KiB (.mcd)".into()); }
+        if let Some(storage) = &mut self.storage {
+            storage.store(slot, &image).map_err(|e| e.to_string())?;
+        }
+        self.insert(slot, Some(image));
+        self.pending[slot] = false;
+        Ok(())
+    }
+
+    pub fn retry_writes(&mut self) -> Result<(), String> {
+        self.errors.clear();
+        for slot in 0..2 {
+            if self.pending[slot] { self.persist(slot); }
+        }
+        if self.pending.iter().any(|p| *p) { Err(self.errors.join("; ")) } else { Ok(()) }
+    }
+
+    pub fn pending_writes(&self) -> usize { self.pending.iter().filter(|p| **p).count() }
+
     /// Write `slot`'s image back to storage; false when that failed.
     fn persist(&mut self, slot: usize) -> bool {
         let (Some(storage), Some(image)) = (self.storage.as_mut(), self.images[slot].as_ref()) else {
+            self.pending[slot] = false;
             return true;
         };
         match storage.store(slot, image) {
-            Ok(()) => true,
+            Ok(()) => { self.pending[slot] = false; true },
             Err(error) => {
-                self.errors.push(format!("memory card {}: {error}", slot + 1));
+                self.pending[slot] = true;
+                let message = format!("memory card {}: {error}", slot + 1);
+                if !self.errors.contains(&message) { self.errors.push(message); }
                 false
             }
         }
@@ -617,15 +622,6 @@ impl Device for Card {
     fn save(&self) -> Vec<u8> {
         let mut w = Writer::default();
         w.u32(SNAPSHOT_VERSION);
-        for image in &self.images {
-            match image {
-                Some(image) => {
-                    w.u32(1);
-                    w.memory(image);
-                }
-                None => w.u32(0),
-            }
-        }
         w.u32(self.started as u32);
         for file in &self.files {
             match file {
@@ -660,21 +656,11 @@ impl Device for Card {
     }
 
     fn load(&mut self, state: &[u8]) -> Result<(), String> {
-        type Loaded = ([Option<Vec<u8>>; 2], bool, [Option<OpenFile>; FILES], Option<Search>, u64, Option<(u64, u32)>);
+        type Loaded = (bool, [Option<OpenFile>; FILES], Option<Search>, u64, Option<(u64, u32)>);
         let read = |state: &[u8]| -> Result<Loaded, SnapshotError> {
             let mut r = Reader::new(state);
             if r.u32()? != SNAPSHOT_VERSION {
                 return Err(SnapshotError::Format("card device version"));
-            }
-            let mut images: [Option<Vec<u8>>; 2] = Default::default();
-            for image in &mut images {
-                if r.u32()? != 0 {
-                    let data = r.memory()?;
-                    if data.len() != CARD_SIZE {
-                        return Err(SnapshotError::Format("card image size"));
-                    }
-                    *image = Some(data);
-                }
             }
             let started = r.u32()? != 0;
             let mut files: [Option<OpenFile>; FILES] = Default::default();
@@ -704,10 +690,9 @@ impl Device for Card {
             if !r.done() {
                 return Err(SnapshotError::Format("trailing card device bytes"));
             }
-            Ok((images, started, files, search, busy_until, check))
+            Ok((started, files, search, busy_until, check))
         };
-        let (images, started, files, search, busy_until, check) = read(state).map_err(|e| e.to_string())?;
-        self.images = images;
+        let (started, files, search, busy_until, check) = read(state).map_err(|e| e.to_string())?;
         self.started = started;
         self.files = files;
         self.search = search;
@@ -937,18 +922,6 @@ mod tests {
     }
 
     #[test]
-    fn file_storage_round_trips_and_starts_with_a_formatted_card() {
-        let dir = std::env::temp_dir().join(format!("xem-card-test-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        let mut card = Card::default();
-        card.attach_storage(Box::new(FileStorage { dir: dir.clone() })).unwrap();
-        assert_eq!(card.image(0).unwrap(), &formatted()[..]);
-        assert!(card.persist(0));
-        assert_eq!(std::fs::read(dir.join("card1.mcd")).unwrap(), formatted());
-        std::fs::remove_dir_all(dir).unwrap();
-    }
-
-    #[test]
     fn save_and_load_restore_the_device() {
         let mut b = Bench::new(storage_with_formatted_card());
         b.call("start", &[]);
@@ -959,6 +932,7 @@ mod tests {
         b.call("firstfile", &[first, ENTRY]);
         let state = b.card.save();
         let mut other = Card::default();
+        other.insert(0, b.card.image(0).map(<[u8]>::to_vec));
         other.load(&state).unwrap();
         assert_eq!(other.save(), state);
         assert_eq!(other.next_event(), b.card.next_event());

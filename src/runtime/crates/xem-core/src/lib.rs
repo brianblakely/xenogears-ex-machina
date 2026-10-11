@@ -7,6 +7,8 @@
 pub mod bios;
 pub mod clock;
 pub mod control;
+mod focus;
+pub mod time;
 pub mod devices;
 pub mod exe;
 pub mod inspect;
@@ -15,6 +17,7 @@ pub mod module;
 pub mod pad;
 pub mod presentation;
 pub mod runtime;
+pub mod rewind;
 pub mod snapshot;
 
 pub use memory::{GameMemory, SliceMemory};

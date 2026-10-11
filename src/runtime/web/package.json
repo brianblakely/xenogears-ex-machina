@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test --test-concurrency=1 tests/page.test.mjs tests/disc.test.mjs",
+    "test": "node --test --test-concurrency=1 tests/page.test.mjs tests/disc.test.mjs tests/persistence.test.mjs",
     "test:slice": "node --test --test-concurrency=1 tests/slice.test.mjs",
     "test:xr": "node xr/tests/run.mjs"
   },

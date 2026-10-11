@@ -65,6 +65,7 @@ enum Pending {
 #[derive(Default)]
 pub struct Services {
     pending: Option<Pending>,
+    pub(crate) focus_pause: crate::focus::FocusPause,
     pub clock: Clock,
     pub pads: Pads,
     pub presentation: crate::presentation::Presentation,
@@ -107,6 +108,11 @@ impl Services {
         self.cd.insert_disc(disc);
     }
 
+    pub fn set_playback_speed(&mut self, speed: u32) {
+        self.clock.set_audio_speed(speed);
+        self.spu.set_speed(speed);
+    }
+
     /// Feed the CD device's decoded audio to the SPU's CD input.
     fn route_cd_audio(&mut self) {
         let mut pcm = Vec::new();
@@ -131,6 +137,8 @@ impl Services {
         }
         self.raised = raised;
         self.trap_reason = reason;
+        self.clock.audio_now = self.spu.audio_cycles();
+        if self.clock.external_audio { self.clock.reconcile_audio_due(); }
     }
 
     /// Run the device events due now.
@@ -216,6 +224,11 @@ impl ImportHandler for Services {
                 self.input_reads += 1;
                 Action::Return(0)
             }
+            "pause_requested" => Action::Return(u32::from(self.focus_pause.requested())),
+            "pause_reached" => {
+                self.focus_pause.reached();
+                Action::Return(0)
+            }
             "present" => {
                 if self.presentation.enabled {
                     let mut bytes = vec![0; arg(2).min(0x1000) as usize];
@@ -289,6 +302,7 @@ enum Fiber {
 
 /// The game module with its services.
 pub struct Runtime<M: GameModule> {
+    pub identity: crate::snapshot::StateIdentity,
     module: M,
     services: *mut Services,
     entry: (u32, u32),
@@ -317,7 +331,9 @@ impl<M: GameModule> Runtime<M> {
         // export calls.
         unsafe { module.set_import_handler(services as *mut dyn ImportHandler) };
         let stack_top = module.stack_pointer();
+        let identity = crate::snapshot::StateIdentity { module: module.content_id(), ..Default::default() };
         Runtime {
+            identity,
             module,
             services,
             entry: (RESTART_BOOT, 0),
@@ -467,6 +483,40 @@ impl<M: GameModule> Runtime<M> {
         services.each_device(self.module.memory(), |device, context| device.advance(context));
     }
 
+    pub fn set_external_music(&mut self, enabled: bool) {
+        let services = self.services();
+        if services.clock.external_audio == enabled { return; }
+        services.clock.external_audio = enabled;
+        services.spu.set_external_audio(enabled);
+        services.clock.reconcile_audio_due();
+    }
+
+    /// Drive the original music interrupt and SPU from normal elapsed time.
+    /// The host calls this once per pacing batch, never per rendered eye/view.
+    pub fn advance_music(&mut self, cycles: u64) -> Result<(),Trap> {
+        if cycles > crate::clock::CPU_HZ / 10 { return Err(Trap::Host("music advance is bounded to 100 ms".into())); }
+        if !self.services().clock.external_audio { return Err(Trap::Host("music clock is paced by game frames".into())); }
+        let target = self.services().clock.audio_now + cycles;
+        loop {
+            let clock = &self.services().clock;
+            let tick = clock.audio_running() && clock.audio_due <= target;
+            let at = if tick { clock.audio_due.max(clock.audio_now) } else { target };
+            // SAFETY: no game export runs while the devices advance.
+            let services = unsafe { &mut *self.services };
+            let delta = at.saturating_sub(services.clock.audio_now);
+            services.spu.advance_audio(delta,&mut Context { memory: self.module.memory(), now: services.clock.now,
+                raised: &mut services.raised, trap_reason: &mut services.trap_reason });
+            services.clock.audio_now = at;
+            if tick { services.clock.audio_due += services.clock.audio_period(); }
+            services.clock.reconcile_audio_due();
+            let raised = std::mem::take(&mut services.raised);
+            for (irq,detail) in raised { self.interrupt(irq,detail)?; }
+            if !tick { break; }
+            self.interrupt(IRQ_RCNT0+2,0)?;
+        }
+        Ok(())
+    }
+
     /// Advance the clock to `limit` (or until the first interrupt when
     /// `first_only`), delivering interrupts in time order.
     fn advance(&mut self, limit: u64, first_only: bool, frame_end: u64, report: &mut FrameReport) -> Result<bool, Trap> {
@@ -584,14 +634,27 @@ impl<M: GameModule> Runtime<M> {
     pub fn frames(&self) -> u64 {
         self.frames
     }
+
+    pub fn game_paused(&mut self) -> bool {
+        let mode = self.services().mode.unwrap_or(u32::MAX);
+        self.module.game_paused(mode)
+    }
 }
 
 impl<M: GameModule> Runtime<M> {
-    /// The whole runtime at a wait (between steps), as bytes.
+    /// Game state at a wait (between steps), independent of app pacing.
     pub fn snapshot(&mut self) -> Result<Vec<u8>, crate::snapshot::SnapshotError> {
+        Ok(crate::snapshot::seal(self.snapshot_content()?))
+    }
+
+    /// The identical save-state payload for the trusted, in-memory queue.
+    /// File integrity hashing belongs at the import/export boundary, outside
+    /// the periodic game-frame checkpoint.
+    pub(crate) fn snapshot_content(&mut self) -> Result<Vec<u8>, crate::snapshot::SnapshotError> {
         use crate::snapshot::*;
         let mut w = Writer::default();
         write_header(&mut w);
+        w.bytes(&serde_json::to_vec(&self.identity).expect("state identity"));
         w.u32(self.entry.0);
         w.u32(self.entry.1);
         w.u32(self.current);
@@ -617,7 +680,9 @@ impl<M: GameModule> Runtime<M> {
         }
         write_memory(&mut w, self.module.memory())?;
         let services = unsafe { &mut *self.services };
-        write_clock(&mut w, &services.clock);
+        let mut clock = services.clock.clone();
+        clock.set_audio_speed(1);
+        write_clock(&mut w, &clock);
         write_pads(&mut w, &services.pads);
         w.u32(services.raised.len() as u32);
         for &(irq, detail) in &services.raised {
@@ -625,6 +690,23 @@ impl<M: GameModule> Runtime<M> {
             w.u32(detail);
         }
         w.u64(self.frames);
+        w.u32(self.stack_top);
+        w.u32(self.stopped_before_vblank as u32);
+        match self.dispatch_write {
+            None => w.u32(0),
+            Some((address, value)) => { w.u32(1); w.u32(address); w.u32(value); }
+        }
+        w.u64(services.mode.map(u64::from).unwrap_or(u64::MAX));
+        w.u64(services.dispatches);
+        w.u32(services.input_reads);
+        w.u32(services.input_reads_last_frame);
+        w.u64(match services.last_wait {
+            None => u64::MAX,
+            Some(YieldReason::VSync) => 1,
+            Some(YieldReason::DrawSync) => 2,
+            Some(YieldReason::Poll) => 3,
+            Some(YieldReason::Other(n)) => u64::from(n),
+        });
         match self.resume_advance {
             None => w.u32(0),
             Some((frame_end, limit, first_only)) => {
@@ -637,14 +719,26 @@ impl<M: GameModule> Runtime<M> {
         for (_, device) in services.devices() {
             w.bytes(&device.save());
         }
+        if w.0.len() + 32 > MAX_STATE { return Err(SnapshotError::Format("state exceeds 64 MiB")); }
+        w.0.shrink_to_fit();
         Ok(w.0)
     }
 
     /// Restore a snapshot taken by `snapshot` from the same game module.
     pub fn restore(&mut self, data: &[u8]) -> Result<(), crate::snapshot::SnapshotError> {
+        self.restore_content(crate::snapshot::checked(data)?)
+    }
+
+    /// Only runtime-produced rewind payloads bypass the file checksum. All
+    /// bounds, identity and device validation below remain failure-atomic.
+    pub(crate) fn restore_content(&mut self, data: &[u8]) -> Result<(), crate::snapshot::SnapshotError> {
         use crate::snapshot::*;
         let mut r = Reader::new(data);
         read_header(&mut r)?;
+        let identity: StateIdentity = serde_json::from_slice(r.bytes()?).map_err(|_| SnapshotError::Format("identity"))?;
+        if identity != self.identity {
+            return Err(SnapshotError::Format("incompatible game module, disc or packages"));
+        }
         let entry = (r.u32()?, r.u32()?);
         let current = r.u32()?;
         let mut fibers = [None, None];
@@ -657,39 +751,106 @@ impl<M: GameModule> Runtime<M> {
             };
         }
         let stack_pointer = r.u32()?;
-        let count = r.u32()? as usize;
+        if current > FIBER_TASK || fibers[current as usize].is_none() {
+            return Err(SnapshotError::Format("active fiber"));
+        }
+        let expected_globals = self.module.globals().len();
+        let count = r.count(4, expected_globals)?;
+        if count != expected_globals {
+            return Err(SnapshotError::Format("module globals"));
+        }
         let mut globals = Vec::with_capacity(count);
         for _ in 0..count {
             globals.push(r.u32()?);
         }
-        read_memory(&mut r, self.module.memory())?;
-        let clock = read_clock(&mut r)?;
+        let regions = read_memory(&mut r)?;
+        let mut clock = read_clock(&mut r)?;
         let pads = read_pads(&mut r)?;
-        let raised_count = r.u32()? as usize;
+        let raised_count = r.count(8, 65536)?;
         let mut raised = Vec::with_capacity(raised_count);
         for _ in 0..raised_count {
             raised.push((r.u32()?, r.u32()?));
         }
         let frames = r.u64()?;
+        let stack_top = r.u32()?;
+        let stopped_before_vblank = r.u32()? != 0;
+        let dispatch_write = match r.u32()? {
+            0 => None,
+            1 => Some((r.u32()?, r.u32()?)),
+            _ => return Err(SnapshotError::Format("dispatch write")),
+        };
+        let mode = match r.u64()? {
+            u64::MAX => None,
+            n => Some(u32::try_from(n).map_err(|_| SnapshotError::Format("mode"))?),
+        };
+        let dispatches = r.u64()?;
+        let input_reads = r.u32()?;
+        let input_reads_last_frame = r.u32()?;
+        let last_wait = match r.u64()? {
+            u64::MAX => None,
+            n => Some(YieldReason::from_raw(u32::try_from(n).map_err(|_| SnapshotError::Format("wait"))?)),
+        };
         let resume_advance = match r.u32()? {
             0 => None,
             1 => Some((r.u64()?, r.u64()?, r.u32()? != 0)),
             _ => return Err(SnapshotError::Format("resume advance")),
         };
-        let services = unsafe { &mut *self.services };
-        for (_, device) in services.devices() {
+        // Decode into detached devices. A corrupt late device must not change
+        // memory, clocks, cards or an earlier device in the live session.
+        let mut loaded = Services::default();
+        for (_, device) in loaded.devices() {
             device.load(r.bytes()?).map_err(SnapshotError::Device)?;
+        }
+        if loaded.spu.audio_cycles() != clock.audio_now {
+            return Err(SnapshotError::Format("inconsistent music clock speed"));
         }
         if !r.done() {
             return Err(SnapshotError::Format("trailing bytes"));
         }
+        let memory = self.module.memory();
+        let mut previous = Vec::new();
+        for (start, len) in REGIONS {
+            let mut bytes = vec![0; len as usize];
+            memory.read(start, &mut bytes)?;
+            previous.push(bytes);
+        }
+        for (i, ((start, _), bytes)) in REGIONS.into_iter().zip(&regions).enumerate() {
+            if let Err(error) = memory.write(start, bytes) {
+                for ((address, _), original) in REGIONS.into_iter().zip(&previous).take(i + 1) {
+                    memory.write(address, original)?;
+                }
+                return Err(error.into());
+            }
+        }
+        let services = unsafe { &mut *self.services };
+        let speed = services.clock.audio_speed;
+        clock.external_audio = services.clock.external_audio;
+        services.gpu = loaded.gpu;
+        services.cd.restore_state(loaded.cd);
+        services.mdec = loaded.mdec;
+        services.spu.restore_state(loaded.spu);
+        services.card.restore_state(loaded.card);
         services.clock = clock;
+        services.set_playback_speed(speed);
         services.pads = pads;
         services.raised = raised;
         services.pending = None;
+        services.mode = mode;
+        services.dispatches = dispatches;
+        services.input_reads = input_reads;
+        services.input_reads_last_frame = input_reads_last_frame;
+        services.last_wait = last_wait;
+        services.trap_reason = None;
+        let capture = services.presentation.enabled;
+        services.presentation = Default::default();
+        services.presentation.enabled = capture;
+        services.missing.clear();
+        services.log.clear();
         self.resume_advance = resume_advance;
         self.frames = frames;
-        self.stopped_before_vblank = false;
+        self.stack_top = stack_top;
+        self.stopped_before_vblank = stopped_before_vblank;
+        self.dispatch_write = dispatch_write;
         self.entry = entry;
         self.current = current;
         self.fibers = fibers;

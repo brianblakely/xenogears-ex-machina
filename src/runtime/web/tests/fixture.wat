@@ -33,6 +33,7 @@
     (i32.const 0x10000))
 
   (func (export "xem_call") (param $address i32))
+  (func (export "xem_game_paused") (param $mode i32) (result i32) (i32.const 0))
 
   (func (export "xem_task_run") (unreachable))
 

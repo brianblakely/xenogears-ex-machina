@@ -11,24 +11,26 @@ pub mod game;
 #[path = "game_absent.rs"]
 pub mod game;
 pub mod sdl;
+mod operations;
 
 pub use game::Game;
 
 use sdl3_sys::everything::*;
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::time::Instant;
 use xem_render::{
     Compositor, Gpu, Quad, Rect, SceneRenderer, ViewTarget, Viewport, demo_camera, present_rect,
     wgpu,
 };
-use xem_settings::{Filter, SettingsService};
-use xem_ui::{Key, LogicalPosition, PointerEventButton, SettingsUi, SharedGpu, WindowEvent};
+use xem_settings::{AppInput, AppRequest, Filter, SettingsService};
+use xem_ui::{FrameRateUi, Key, LogicalPosition, PointerEventButton, SettingsUi, SharedGpu, WindowEvent};
 
 /// The stand-in game picture's size (the original's typical display mode).
 pub const GAME_SIZE: (u32, u32) = (320, 240);
 const GAME_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
 /// The panel's size in logical pixels.
-const PANEL_SIZE: (f32, f32) = (440.0, 560.0);
+const PANEL_SIZE: (f32, f32) = (640.0, 560.0);
 
 /// A wgpu surface for `window`.
 pub fn create_surface(
@@ -231,11 +233,16 @@ pub struct View {
     target_size: (u32, u32),
     settings: Rc<RefCell<SettingsService>>,
     ui: SettingsUi,
+    frame_rate: FrameRateUi,
+    frame_rate_started: Instant,
     panel_visible: Rc<RefCell<bool>>,
     gamepads: Vec<*mut SDL_Gamepad>,
     /// The game's display (from the GPU device), shown instead of the test
     /// scene once a host sets it.
     game_image: Option<(wgpu::Texture, wgpu::TextureView, (u32, u32))>,
+    app_input: AppInput,
+    app_requests: Rc<RefCell<Vec<AppRequest>>>,
+    operations: operations::Operations,
 }
 
 impl View {
@@ -273,16 +280,22 @@ impl View {
             queue: gpu.queue.clone(),
         };
         let ui = SettingsUi::new(
-            shared,
+            shared.clone(),
             settings.clone(),
             panel_size(target_size, scale),
             scale,
         )
         .map_err(|error| error.to_string())?;
+        let frame_rate = FrameRateUi::new(shared,scale).map_err(|error| error.to_string())?;
         let panel_visible = Rc::new(RefCell::new(show_panel));
         ui.on_close({
             let visible = panel_visible.clone();
             move || *visible.borrow_mut() = false
+        });
+        let app_requests = Rc::new(RefCell::new(Vec::new()));
+        ui.on_app_request({
+            let requests = app_requests.clone();
+            move |request| requests.borrow_mut().push(request)
         });
         Ok(Self {
             scene: SceneRenderer::new(&gpu.device, &gpu.queue, GAME_FORMAT),
@@ -291,10 +304,63 @@ impl View {
             target_size,
             settings,
             ui,
+            frame_rate,
+            frame_rate_started: Instant::now(),
             panel_visible,
             gamepads: Vec::new(),
             game_image: None,
+            app_input: AppInput::default(),
+            app_requests,
+            operations: operations::Operations::default(),
         })
+    }
+
+    pub fn set_state_directory(&mut self, path: std::path::PathBuf) { self.operations.directory = Some(path); }
+
+    /// Runs Settings requests and bound actions under the host's one game owner.
+    /// Returns false while the platform file picker has paused play.
+    pub fn update_app(&mut self, window: &sdl::Window, game: &mut Option<Game>) -> bool {
+        if !self.panel_visible() { self.ui.cancel_pointer(); }
+        let was_busy = self.operations.busy;
+        if let Some(result) = self.operations.poll(game,&mut self.settings.borrow_mut()) {
+            self.ui.set_operation_status(&result.unwrap_or_else(|e| e));
+        }
+        let bindings = self.settings.borrow().settings().app_bindings.clone();
+        let invert_triggers = self.settings.borrow().settings().invert_trigger_chords;
+        let editing = self.panel_visible() && self.ui.text_editor_focused();
+        if editing { self.app_input.release_keyboard(); }
+        let mut count = 0;
+        let keys = unsafe { SDL_GetKeyboardState(&mut count) };
+        if !keys.is_null() {
+            let keys = unsafe { std::slice::from_raw_parts(keys,count.max(0) as usize) };
+            for binding in bindings.values() {
+                for code in &binding.keyboard {
+                    let held = !editing && keys.get(scancode(code).0 as usize).copied().unwrap_or(false);
+                    self.app_input.key(code,held);
+                }
+            }
+        }
+        self.app_input.pad(&standard_pad(self.gamepads.first().copied()));
+        self.app_requests.borrow_mut().extend(self.app_input.requests(&bindings,invert_triggers));
+        let requests = std::mem::take(&mut *self.app_requests.borrow_mut());
+        for request in requests {
+            let result = self.operations.execute(request,window,game,&mut self.settings.borrow_mut());
+            self.ui.set_operation_status(&result.unwrap_or_else(|e| e));
+        }
+        if let Some(game) = game {
+            let settings = self.settings.borrow();
+            let result = game.sync_time_settings(settings.settings());
+            drop(settings);
+            if let Err(error) = result { self.ui.set_operation_status(&error); }
+            if !was_busy && self.operations.busy { game.pause(); }
+            if was_busy && !self.operations.busy { game.resume(); }
+            let (fast_forward,status) = game.time_status();
+            self.ui.set_time_status(Some(fast_forward),&status);
+            self.ui.set_storage_status(&game.storage_status());
+        } else {
+            self.ui.set_time_status(None,"Boot a game to use save states and time controls.");
+        }
+        !self.operations.busy
     }
 
     pub fn settings(&self) -> &Rc<RefCell<SettingsService>> {
@@ -310,6 +376,7 @@ impl View {
     }
 
     pub fn set_panel_visible(&self, visible: bool) {
+        if self.panel_visible() && !visible { self.ui.cancel_pointer(); }
         *self.panel_visible.borrow_mut() = visible;
     }
 
@@ -413,12 +480,25 @@ impl View {
                     delta_y: wheel.y * 40.0,
                 });
             }
+            SDL_EVENT_WINDOW_FOCUS_LOST => {
+                self.ui.cancel_pointer();
+                self.app_requests.borrow_mut().extend(self.app_input.set_focused(false));
+            }
+            SDL_EVENT_WINDOW_FOCUS_GAINED => {
+                let _ = self.app_input.set_focused(true);
+            }
             SDL_EVENT_WINDOW_MOUSE_LEAVE if visible => self.ui.dispatch(WindowEvent::PointerExited),
             SDL_EVENT_GAMEPAD_ADDED => {
                 let pad = unsafe { SDL_OpenGamepad(event.gdevice.which) };
                 if !pad.is_null() {
                     self.gamepads.push(pad);
                 }
+            }
+            SDL_EVENT_GAMEPAD_REMOVED => {
+                let id = unsafe { event.gdevice.which };
+                self.gamepads.retain(|&pad| {
+                    if unsafe { SDL_GetGamepadID(pad) } == id { unsafe { SDL_CloseGamepad(pad); } false } else { true }
+                });
             }
             SDL_EVENT_GAMEPAD_BUTTON_DOWN => {
                 let button = SDL_GamepadButton(i32::from(unsafe { event.gbutton.button }));
@@ -468,7 +548,7 @@ impl View {
     /// pad's data halfword has them (bit 0 Select .. bit 15 Square), unless
     /// the settings panel has the input.
     pub fn pad_buttons(&self) -> u16 {
-        if self.panel_visible() {
+        if self.panel_visible() || !self.app_input.focused() {
             return 0;
         }
         const KEYS: [(SDL_Scancode, u16); 16] = [
@@ -489,47 +569,26 @@ impl View {
             (SDL_SCANCODE_BACKSPACE, 1 << 0),
             (SDL_SCANCODE_SPACE, 1 << 14),
         ];
-        const PAD: [(SDL_GamepadButton, u16); 14] = [
-            (SDL_GAMEPAD_BUTTON_BACK, 1 << 0),
-            (SDL_GAMEPAD_BUTTON_LEFT_STICK, 1 << 1),
-            (SDL_GAMEPAD_BUTTON_RIGHT_STICK, 1 << 2),
-            (SDL_GAMEPAD_BUTTON_START, 1 << 3),
-            (SDL_GAMEPAD_BUTTON_DPAD_UP, 1 << 4),
-            (SDL_GAMEPAD_BUTTON_DPAD_RIGHT, 1 << 5),
-            (SDL_GAMEPAD_BUTTON_DPAD_DOWN, 1 << 6),
-            (SDL_GAMEPAD_BUTTON_DPAD_LEFT, 1 << 7),
-            (SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, 1 << 10),
-            (SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER, 1 << 11),
-            (SDL_GAMEPAD_BUTTON_NORTH, 1 << 12),
-            (SDL_GAMEPAD_BUTTON_EAST, 1 << 13),
-            (SDL_GAMEPAD_BUTTON_SOUTH, 1 << 14),
-            (SDL_GAMEPAD_BUTTON_WEST, 1 << 15),
-        ];
+        const PAD: [u16;16] = [1 << 14,1 << 13,1 << 15,1 << 12,1 << 10,1 << 11,1 << 8,1 << 9,
+            1 << 0,1 << 3,1 << 1,1 << 2,1 << 4,1 << 6,1 << 7,1 << 5];
         let mut buttons = 0;
+        let bindings = self.settings.borrow().settings().app_bindings.clone();
         let mut count = 0;
         // SAFETY: SDL owns the array and keeps it valid while SDL runs.
         let keys = unsafe { SDL_GetKeyboardState(&mut count) };
         if !keys.is_null() {
             let keys = unsafe { std::slice::from_raw_parts(keys, count.max(0) as usize) };
             for (scancode, bit) in KEYS {
-                if keys.get(scancode.0 as usize).copied().unwrap_or(false) {
+                let captured = bindings.values().flat_map(|b| &b.keyboard).any(|code|
+                    self.app_input.captures_key(code,&bindings) && crate::scancode(code) == scancode);
+                if !captured && keys.get(scancode.0 as usize).copied().unwrap_or(false) {
                     buttons |= bit;
                 }
             }
         }
-        if let Some(&pad) = self.gamepads.first() {
-            for (button, bit) in PAD {
-                // SAFETY: an open gamepad.
-                if unsafe { SDL_GetGamepadButton(pad, button) } {
-                    buttons |= bit;
-                }
-            }
-            for (axis, bit) in [(SDL_GAMEPAD_AXIS_LEFT_TRIGGER, 1 << 8), (SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 1 << 9)] {
-                if unsafe { SDL_GetGamepadAxis(pad, axis) } > 16000 {
-                    buttons |= bit;
-                }
-            }
-        }
+        let invert_triggers = self.settings.borrow().settings().invert_trigger_chords;
+        let gamepad = self.app_input.gamepad_for_game(&bindings,invert_triggers);
+        for (pressed,bit) in gamepad.into_iter().zip(PAD) { if pressed != 0 { buttons |= bit; } }
         buttons
     }
 
@@ -568,6 +627,8 @@ impl View {
 
         let target_size = self.target_size;
         let presentation = self.settings.borrow().settings().presentation.clone();
+        self.frame_rate.frame(self.frame_rate_started.elapsed(),self.ui.scale_factor(),presentation.show_fps)
+            .map_err(|error| error.to_string())?;
         let mut game = Quad::screen(
             game_view,
             present_rect(game_size, target_size, presentation.scale),
@@ -578,6 +639,14 @@ impl View {
             Filter::Linear => wgpu::FilterMode::Linear,
         };
         let mut quads = vec![game];
+        if presentation.show_fps {
+            let (width,height) = self.frame_rate.size();
+            let margin = 8.0*self.ui.scale_factor();
+            let mut counter = Quad::screen(self.frame_rate.view(),Rect { x:margin,y:margin,width:width as f32,height:height as f32 },target_size);
+            counter.srgb_encoded = true;
+            counter.filter = wgpu::FilterMode::Nearest;
+            quads.push(counter);
+        }
         if visible {
             let mut panel = Quad::screen(self.ui.view(), self.panel_rect(), target_size);
             panel.srgb_encoded = true;
@@ -590,6 +659,43 @@ impl View {
         gpu.queue.submit([encoder.finish()]);
         Ok(())
     }
+}
+
+/// KeyboardEvent.code to SDL's physical scancode names, shared with browser
+/// bindings. Settings validation only accepts codes this mapping supports.
+fn scancode(code: &str) -> SDL_Scancode {
+    let name = if let Some(key) = code.strip_prefix("Key") { key.to_owned() }
+        else if let Some(digit) = code.strip_prefix("Digit") { digit.to_owned() }
+        else if let Some(digit) = code.strip_prefix("Numpad") {
+            format!("Keypad {}",match digit { "Decimal" => ".", "Add" => "+", "Subtract" => "-", "Multiply" => "*", "Divide" => "/", "Enter" => "Enter", _ => digit })
+        } else {
+            match code {
+                "ControlLeft" => "Left Ctrl", "ControlRight" => "Right Ctrl", "ShiftLeft" => "Left Shift", "ShiftRight" => "Right Shift",
+                "AltLeft" => "Left Alt", "AltRight" => "Right Alt", "MetaLeft" => "Left GUI", "MetaRight" => "Right GUI",
+                "ArrowUp" => "Up", "ArrowDown" => "Down", "ArrowLeft" => "Left", "ArrowRight" => "Right",
+                "Enter" => "Return", "PageUp" => "PageUp", "PageDown" => "PageDown", "CapsLock" => "CapsLock",
+                "NumLock" => "Numlock", "ScrollLock" => "ScrollLock", "PrintScreen" => "PrintScreen",
+                "BracketLeft" => "[", "BracketRight" => "]", "Backslash" => "\\", "Semicolon" => ";", "Quote" => "'",
+                "Backquote" => "`", "Comma" => ",", "Period" => ".", "Slash" => "/", "Minus" => "-", "Equal" => "=",
+                other => other,
+            }.to_owned()
+        };
+    let Ok(name) = std::ffi::CString::new(name) else { return SDL_SCANCODE_UNKNOWN };
+    unsafe { SDL_GetScancodeFromName(name.as_ptr()) }
+}
+
+fn standard_pad(pad: Option<*mut SDL_Gamepad>) -> [u8;16] {
+    let mut pressed = [0;16];
+    let Some(pad) = pad else { return pressed };
+    for (i,button) in [(0,SDL_GAMEPAD_BUTTON_SOUTH),(1,SDL_GAMEPAD_BUTTON_EAST),(2,SDL_GAMEPAD_BUTTON_WEST),(3,SDL_GAMEPAD_BUTTON_NORTH),
+        (4,SDL_GAMEPAD_BUTTON_LEFT_SHOULDER),(5,SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER),(8,SDL_GAMEPAD_BUTTON_BACK),(9,SDL_GAMEPAD_BUTTON_START),
+        (10,SDL_GAMEPAD_BUTTON_LEFT_STICK),(11,SDL_GAMEPAD_BUTTON_RIGHT_STICK),(12,SDL_GAMEPAD_BUTTON_DPAD_UP),(13,SDL_GAMEPAD_BUTTON_DPAD_DOWN),
+        (14,SDL_GAMEPAD_BUTTON_DPAD_LEFT),(15,SDL_GAMEPAD_BUTTON_DPAD_RIGHT)] {
+        pressed[i] = u8::from(unsafe { SDL_GetGamepadButton(pad,button) });
+    }
+    pressed[6] = u8::from(unsafe { SDL_GetGamepadAxis(pad,SDL_GAMEPAD_AXIS_LEFT_TRIGGER) } > 16000);
+    pressed[7] = u8::from(unsafe { SDL_GetGamepadAxis(pad,SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) } > 16000);
+    pressed
 }
 
 impl Drop for View {
@@ -638,4 +744,55 @@ fn slint_key(key: SDL_Keycode) -> Option<xem_ui::SharedString> {
         _ => return None,
     };
     Some(key.into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn show_fps_draws_over_the_game_with_settings_closed() {
+        let gpu=pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+        let settings=Rc::new(RefCell::new(SettingsService::with_defaults(xem_settings::MemoryStore::default())));
+        let mut view=View::new(&gpu,wgpu::TextureFormat::Rgba8UnormSrgb,(640,480),1.0,settings.clone(),false).unwrap();
+        let black:Vec<_>=(0..320*240).flat_map(|_| [0,0,0,255]).collect();
+        view.set_game_image(&gpu,(320,240),&black);
+        let target=gpu.device.create_texture(&wgpu::TextureDescriptor {
+            label:Some("FPS regression target"),
+            size:wgpu::Extent3d { width:640,height:480,depth_or_array_layers:1 },
+            mip_level_count:1,sample_count:1,dimension:wgpu::TextureDimension::D2,
+            format:wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage:wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats:&[],
+        });
+        let output=target.create_view(&Default::default());
+        let pixels=|view:&mut View| {
+            view.render(&gpu,&output,0.0).unwrap();
+            xem_render::read_rgba8(&gpu.device,&gpu.queue,&target)
+        };
+        assert!(pixels(&mut view).chunks_exact(4).all(|p| p[..3]==[0,0,0]));
+        settings.borrow_mut().apply(xem_settings::SettingChange::ShowFps(true)).unwrap();
+        let image=pixels(&mut view);
+        let bright:Vec<_>=image.chunks_exact(4).enumerate().filter(|(_,p)| p[0]>180 && p[1]>180 && p[2]>180).map(|(i,_)| (i%640,i/640)).collect();
+        assert!(bright.len()>30,"the counter text is visible over the game");
+        assert!(bright.iter().all(|&(x,y)| (8..104).contains(&x) && (8..36).contains(&y)),"the counter stays in its corner");
+        assert!(!view.panel_visible());
+        settings.borrow_mut().apply(xem_settings::SettingChange::ShowFps(false)).unwrap();
+        assert!(pixels(&mut view).chunks_exact(4).all(|p| p[..3]==[0,0,0]),"disabling Show FPS removes the counter");
+    }
+
+    #[test]
+    fn shared_keyboard_codes_map_to_physical_sdl_keys() {
+        let mut codes = vec!["ControlLeft".to_string(),"ControlRight".into(),"ShiftLeft".into(),"ShiftRight".into(),
+            "AltLeft".into(),"AltRight".into(),"MetaLeft".into(),"MetaRight".into(),"ArrowUp".into(),"ArrowDown".into(),
+            "ArrowLeft".into(),"ArrowRight".into(),"Enter".into(),"Space".into(),"Tab".into(),"Backspace".into(),"Delete".into(),
+            "Insert".into(),"Home".into(),"End".into(),"PageUp".into(),"PageDown".into(),"CapsLock".into(),"NumLock".into(),
+            "ScrollLock".into(),"Pause".into(),"PrintScreen".into(),"BracketLeft".into(),"BracketRight".into(),"Backslash".into(),
+            "Semicolon".into(),"Quote".into(),"Backquote".into(),"Comma".into(),"Period".into(),"Slash".into(),"Minus".into(),"Equal".into()];
+        codes.extend(('A'..='Z').map(|key| format!("Key{key}")));
+        codes.extend((0..=9).flat_map(|n| [format!("Digit{n}"),format!("Numpad{n}")]));
+        codes.extend((2..=24).map(|n| format!("F{n}")));
+        codes.extend(["Decimal","Add","Subtract","Multiply","Divide","Enter"].map(|key| format!("Numpad{key}")));
+        for code in codes { assert_ne!(scancode(&code).0,SDL_SCANCODE_UNKNOWN.0,"{code}"); }
+    }
 }

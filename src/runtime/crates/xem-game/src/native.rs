@@ -33,6 +33,7 @@ unsafe extern "C" {
     fn xem_game_async_state(instance: *mut Instance) -> u32;
     fn xem_game_stop_unwind(instance: *mut Instance);
     fn xem_game_start_rewind(instance: *mut Instance, area: u32);
+    fn xem_game_paused(instance: *mut Instance, mode: u32) -> u32;
 }
 
 /// The handler pointer the glue's `host` carries.
@@ -58,6 +59,14 @@ impl RawMemory {
 }
 
 impl GameMemory for RawMemory {
+    fn with_bytes(&self, address: u32, len: usize, visit: &mut dyn FnMut(&[u8])) -> Result<(), OutOfBounds> {
+        let start = self.check(address, len)?;
+        // SAFETY: in bounds of the stable module allocation. The runtime is
+        // borrowed throughout this visit and cannot run an export or import.
+        visit(unsafe { std::slice::from_raw_parts(self.data.add(start), len) });
+        Ok(())
+    }
+
     fn read(&self, address: u32, out: &mut [u8]) -> Result<(), OutOfBounds> {
         let start = self.check(address, out.len())?;
         // SAFETY: in bounds of the module's memory, which never grows or moves.
@@ -135,6 +144,11 @@ impl Drop for NativeModule {
 }
 
 impl GameModule for NativeModule {
+    fn game_paused(&mut self, mode: u32) -> bool {
+        // SAFETY: read-only port export on the live module, between frames.
+        unsafe { xem_game_paused(self.instance, mode) != 0 }
+    }
+    fn content_id(&self) -> String { env!("XEM_MODULE_ID").to_owned() }
     unsafe fn set_import_handler(&mut self, handler: *mut dyn ImportHandler) {
         self.host.handler = Some(handler);
     }

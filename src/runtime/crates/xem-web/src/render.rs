@@ -16,7 +16,7 @@ use xem_ui::{LogicalPosition, PointerEventButton, SettingsUi, SharedGpu, WindowE
 const GAME_SIZE: (u32, u32) = (320, 240);
 const GAME_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
 /// The panel's size in logical pixels.
-const PANEL_SIZE: (f32, f32) = (440.0, 560.0);
+const PANEL_SIZE: (f32, f32) = (640.0, 560.0);
 
 pub struct WebRenderer {
     gpu: Gpu,
@@ -31,6 +31,7 @@ pub struct WebRenderer {
     pub adapter: String,
     scale: f32,
     panel: Option<SettingsUi>,
+    pub frame_rate: Option<xem_ui::FrameRateUi>,
     pub panel_error: Option<String>,
     pub panel_visible: bool,
     pub frames: u64,
@@ -100,6 +101,7 @@ pub async fn create(canvas: HtmlCanvasElement, prefer: &str) -> Result<WebRender
         game_image: None,
         scale: 1.0,
         panel: None,
+        frame_rate: None,
         panel_error: None,
         panel_visible: false,
         frames: 0,
@@ -116,11 +118,15 @@ impl WebRenderer {
             queue: self.gpu.queue.clone(),
         };
         let size = panel_size(self.config.width, self.config.height, self.scale);
-        match SettingsUi::new(shared, settings, size, self.scale) {
+        match SettingsUi::new(shared.clone(), settings, size, self.scale) {
             Ok(panel) => {
                 panel.on_close(on_close);
                 self.panel = Some(panel);
             }
+            Err(error) => self.panel_error = Some(error.to_string()),
+        }
+        match xem_ui::FrameRateUi::new(shared,self.scale) {
+            Ok(frame_rate) => self.frame_rate = Some(frame_rate),
             Err(error) => self.panel_error = Some(error.to_string()),
         }
     }
@@ -163,6 +169,8 @@ impl WebRenderer {
             height: height as f32,
         })
     }
+
+    pub fn panel(&self) -> Option<&SettingsUi> { self.panel.as_ref() }
 
     /// Forward pointer input (canvas pixels) to the visible panel; returns
     /// whether the panel took it.
@@ -232,7 +240,7 @@ impl WebRenderer {
 
     /// Render one frame: the game's display (or, without a session, the test
     /// scene at `time` seconds) with the panel on top.
-    pub fn frame(&mut self, time: f32, settings: &SettingsService) -> Result<(), String> {
+    pub fn frame(&mut self, time: f64, settings: &SettingsService) -> Result<(), String> {
         if self.lost().is_some() {
             return Ok(());
         }
@@ -254,23 +262,34 @@ impl WebRenderer {
         let (game_view, game_size) = match &self.game_image {
             Some((_, view, size)) => (view, *size),
             None => {
-                let (view, proj) = demo_camera(GAME_SIZE.0 as f32 / GAME_SIZE.1 as f32, time);
+                let (view, proj) = demo_camera(GAME_SIZE.0 as f32 / GAME_SIZE.1 as f32, time as f32);
                 self.scene.render_views(
                     &mut encoder,
                     &[ViewTarget { view, proj, target: &self.game_view, viewport: Viewport::full(GAME_SIZE.0, GAME_SIZE.1) }],
-                    time,
+                    time as f32,
                 );
                 (&self.game_view, GAME_SIZE)
             }
         };
         let target = self.size();
         let presentation = &settings.settings().presentation;
+        if let Some(counter) = &mut self.frame_rate {
+            counter.frame(std::time::Duration::from_secs_f64(time),self.scale,presentation.show_fps).map_err(|error| error.to_string())?;
+        }
         let mut game = Quad::screen(game_view, present_rect(game_size, target, presentation.scale), target);
         game.filter = match presentation.filter {
             Filter::Nearest => wgpu::FilterMode::Nearest,
             Filter::Linear => wgpu::FilterMode::Linear,
         };
         let mut quads = vec![game];
+        if presentation.show_fps && let Some(counter) = &self.frame_rate {
+            let (width,height) = counter.size();
+            let margin = 8.0*self.scale;
+            let mut quad = Quad::screen(counter.view(),Rect { x:margin,y:margin,width:width as f32,height:height as f32 },target);
+            quad.srgb_encoded = true;
+            quad.filter = wgpu::FilterMode::Nearest;
+            quads.push(quad);
+        }
         if let (true, Some(panel), Some(rect)) = (self.panel_visible, &self.panel, self.panel_rect()) {
             let mut quad = Quad::screen(panel.view(), rect, target);
             quad.srgb_encoded = true;

@@ -262,6 +262,11 @@ impl Default for Cd {
 }
 
 impl Cd {
+    pub(crate) fn restore_state(&mut self, mut state: Self) {
+        state.disc = self.disc.take();
+        state.sector_log = self.sector_log.take();
+        *self = state;
+    }
     /// Put the user's disc in the drive (the lid closed on it).
     pub fn insert_disc(&mut self, disc: Box<dyn SectorSource>) {
         self.disc = Some(disc);
@@ -540,7 +545,7 @@ impl Cd {
     }
 
     /// The next sector reaches the head: deliver it, play it or drop it.
-    fn sector(&mut self, now: u64, raised: &mut Vec<(u32, u32)>) {
+    fn sector(&mut self, now: u64, sequence: u64, raised: &mut Vec<(u32, u32)>) {
         let period = self.sector_cycles();
         let Some(disc) = self.disc.as_mut() else {
             self.drive = Drive::Idle;
@@ -560,7 +565,7 @@ impl Cd {
                 // and the runtime stops until the host has fetched it, so I/O
                 // latency never moves the virtual clock.
                 self.blocked = true;
-                self.schedule(now, Event::Sector);
+                self.events.push((now, sequence, Event::Sector));
                 return;
             }
             Err(_) => {
@@ -597,10 +602,10 @@ impl Cd {
         self.push_response(Response { intr: intr::DATA_READY, bytes: vec![s], sector: Some(raw) }, raised);
     }
 
-    fn run_event(&mut self, at: u64, event: Event, raised: &mut Vec<(u32, u32)>) {
+    fn run_event(&mut self, at: u64, sequence: u64, event: Event, raised: &mut Vec<(u32, u32)>) {
         match event {
             Event::Respond(response) => self.push_response(response, raised),
-            Event::Sector => self.sector(at, raised),
+            Event::Sector => self.sector(at, sequence, raised),
             Event::SeekDone => {
                 self.drive = Drive::Idle;
                 let s = self.status(at);
@@ -609,17 +614,16 @@ impl Cd {
         }
     }
 
-    fn take_next_event(&mut self) -> Option<(u64, Event)> {
+    fn take_next_event(&mut self) -> Option<(u64, u64, Event)> {
         let index = (0..self.events.len()).min_by_key(|&i| (self.events[i].0, self.events[i].1))?;
-        let (at, _, event) = self.events.remove(index);
-        Some((at, event))
+        Some(self.events.remove(index))
     }
 
     /// Run every event due at `now`.
     pub fn run_due(&mut self, now: u64, raised: &mut Vec<(u32, u32)>) {
         while !self.blocked && self.events.iter().any(|(at, _, _)| *at <= now) {
-            let (at, event) = self.take_next_event().expect("a due event");
-            self.run_event(at, event, raised);
+            let (at, sequence, event) = self.take_next_event().expect("a due event");
+            self.run_event(at, sequence, event, raised);
         }
     }
 
@@ -627,8 +631,8 @@ impl Cd {
     /// spinning on the drive). Returns whether there was one.
     pub fn run_next_now(&mut self, now: u64, raised: &mut Vec<(u32, u32)>) -> bool {
         match self.take_next_event() {
-            Some((_, event)) => {
-                self.run_event(now, event, raised);
+            Some((_, sequence, event)) => {
+                self.run_event(now, sequence, event, raised);
                 true
             }
             None => false,
@@ -828,6 +832,9 @@ impl Device for Cd {
         self.buffer_read = r.u64().map_err(e)? as usize;
         self.xa.load(r.bytes().map_err(e)?).map_err(|error| error.to_string())?;
         self.atv.copy_from_slice(r.bytes().map_err(e)?.get(..4).ok_or("bad cd mix")?);
+        if self.buffer_read > self.buffer.len() || !r.done() {
+            return Err("bad cd buffer or trailing bytes".into());
+        }
         Ok(())
     }
 
@@ -849,6 +856,36 @@ mod tests {
             let data: Vec<u8> = (0..FORM1_DATA_SIZE).map(|i| (lba as usize * 7 + i) as u8).collect();
             build_mode2_sector(lba, DATA, &data)
         })))
+    }
+
+    #[test]
+    fn a_blocked_sector_retries_the_same_event_without_changing_its_sequence() {
+        struct Delayed { source: Box<dyn SectorSource>, retries: usize }
+        impl SectorSource for Delayed {
+            fn sector_count(&self) -> u32 { self.source.sector_count() }
+            fn read_sector(&mut self, lba: u32, out: &mut [u8; SECTOR_SIZE]) -> xem_disc::Result<()> {
+                if self.retries > 0 { self.retries -= 1; Err(DiscError::NotReady) }
+                else { self.source.read_sector(lba,out) }
+            }
+        }
+        let mut immediate = Cd::default(); immediate.insert_disc(disc(8));
+        immediate.drive = Drive::Reading { from: 0 };
+        immediate.schedule(123,Event::Sector);
+        let initial = immediate.save();
+        let mut delayed = Cd::default();
+        delayed.insert_disc(Box::new(Delayed { source: disc(8), retries: 3 }));
+        delayed.load(&initial).unwrap();
+        let mut raised = Vec::new(); immediate.run_due(123,&mut raised);
+        for _ in 0..3 {
+            delayed.blocked = false;
+            delayed.run_due(123,&mut Vec::new());
+            assert!(delayed.blocked);
+            assert_eq!(delayed.save(),initial,"fetch retries do not become new events");
+        }
+        delayed.blocked = false;
+        delayed.run_due(123,&mut Vec::new());
+        assert!(!delayed.blocked);
+        assert_eq!(delayed.save(),immediate.save(),"native and browser drives continue identically");
     }
 
     /// Run the drive to `until`, collecting interrupts in order as the port takes them.

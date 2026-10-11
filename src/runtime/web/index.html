@@ -19,8 +19,6 @@
       <button id="step">Step</button>
       <button id="settings" title="Settings (F1)">Settings</button>
       <button id="audio">Start audio</button>
-      <button id="save">Save</button>
-      <button id="load">Load</button>
     </nav>
   </header>
   <main>
@@ -28,6 +26,9 @@
   </main>
   <footer>
     <p id="message">Your disc image is read in place on this device; nothing is uploaded.</p>
+    <input id="import-state" type="file" accept=".xemstate" hidden>
+    <input id="import-card" type="file" accept=".mcd" hidden>
+    <input id="import-settings" type="file" accept=".json" hidden>
     <pre id="status"></pre>
   </footer>
 </body>

@@ -71,6 +71,83 @@ fn step_to(session: &mut Session<NativeModule>, to: u64) {
 }
 
 #[test]
+fn original_start_pause_preserves_the_rewind_queue_until_play_resumes() {
+    use std::{cell::Cell,rc::Rc,time::Duration};
+    let Some(disc) = disc() else { eprintln!("skipping: no disc 1 (set XEM_DISC1)"); return };
+    let options = BootOptions { cards: Some(cards("pause-rewind")), ..Default::default() };
+    let booted = boot(&disc,&options).expect("boot").0;
+    let clock = Rc::new(Cell::new(Duration::ZERO));
+    let source = clock.clone();
+    let mut s = Session::new(booted.runtime,booted.schema,move || source.get());
+    let reply = s.execute(&json!({"cmd":"enter_field","map":22}));
+    assert!(reply.get("error").is_none(),"{reply}");
+    s.execute(&json!({"cmd":"frames","count":300}));
+    s.configure_rewind(xem_core::rewind::DEFAULT_REWIND_BYTES,1,30).unwrap();
+    clock.set(Duration::from_secs(1));
+    assert!(s.frame().unwrap());
+    let retained = s.rewind.status();
+    let press_start = |s: &mut Session<NativeModule>| {
+        s.execute(&json!({"cmd":"press","buttons":["start"],"frames":4}));
+        let reply = s.execute(&json!({"cmd":"frames","count":8}));
+        assert!(reply.get("error").is_none(),"{reply}");
+    };
+    let silenced = |s: &mut Session<NativeModule>| {
+        s.execute(&json!({"cmd":"inspect","path":"sound_driver_flags"})).as_i64().unwrap() & 0x40 != 0
+    };
+    press_start(&mut s);
+    assert!(silenced(&mut s),"Start must enter the original field pause screen");
+    for second in 2..=40 {
+        clock.set(Duration::from_secs(second));
+        assert!(s.frame().unwrap());
+    }
+    assert_eq!(s.rewind.status(),retained,"the original pause loop must not replace playing snapshots");
+    clock.set(Duration::from_secs(4000));
+    press_start(&mut s);
+    assert!(!silenced(&mut s),"Start must resume play");
+    assert_eq!(s.rewind.status(),retained,"resume must exclude time spent in the pause loop");
+    clock.set(Duration::from_secs(4001));
+    assert!(s.frame().unwrap());
+    assert_eq!(s.rewind.status()["states"],3);
+    assert_eq!(s.rewind.available_seconds(),2.0);
+    assert!(s.rewind_step().unwrap());
+    assert_eq!(s.runtime.frames(),retained["newest_frame"].as_u64().unwrap());
+    assert!(!silenced(&mut s),"rewind must land on playing history");
+}
+
+#[test]
+fn fast_forward_preserves_the_original_music_tick_and_sample_rates() {
+    let Some(disc) = disc() else { eprintln!("skipping: no disc 1 (set XEM_DISC1)"); return };
+    let options = BootOptions { cards: Some(cards("music-time")), audio_output: true, ..Default::default() };
+    let mut s = boot(&disc,&options).expect("boot").0;
+    let reply = s.execute(&json!({"cmd":"enter_field","map":22}));
+    assert!(reply.get("error").is_none(),"{reply}");
+    s.execute(&json!({"cmd":"frames","count":300}));
+    let saved = s.snapshot_bytes().unwrap();
+    let ticks = s.execute(&json!({"cmd":"inspect","path":"sound_tick_count","depth":0})).as_u64().unwrap();
+    let audio = s.runtime.services().spu.chip().clock();
+    let frame = s.runtime.frames();
+    for speed in [1,5,10,15,20] {
+        s.restore_bytes(&saved).unwrap();
+        assert!(s.execute(&json!({"cmd":"fast_forward_configure","rate":{"Fixed":speed}})).get("error").is_none());
+        assert_eq!(s.execute(&json!({"cmd":"fast_forward","enabled":true}))["fast_forward"],true);
+        let reply = s.execute(&json!({"cmd":"frames","count":60*speed}));
+        assert!(reply.get("error").is_none(),"{reply}");
+        assert_eq!(s.runtime.frames()-frame,60*speed);
+        let now = s.execute(&json!({"cmd":"inspect","path":"sound_tick_count","depth":0})).as_u64().unwrap();
+        assert_eq!(now-ticks,240,"original driver at {speed}×");
+        assert_eq!(s.runtime.services().spu.chip().clock()-audio,44100,"SPU at {speed}×");
+        let fast = s.snapshot_bytes().unwrap();
+        s.execute(&json!({"cmd":"frames","count":30*speed}));
+        let reference = s.snapshot_bytes().unwrap();
+        s.restore_bytes(&fast).unwrap();
+        assert!(s.fast_forward);
+        assert_eq!(s.frame_factor(),Some(speed as u32));
+        s.execute(&json!({"cmd":"frames","count":30*speed}));
+        assert_eq!(s.snapshot_bytes().unwrap(),reference,"music and gameplay continuation at {speed}×");
+    }
+}
+
+#[test]
 fn forest_route_runs_stepped_or_unthrottled_to_the_same_rewarded_end() {
     let Some(disc) = disc() else {
         eprintln!("skipping: no disc 1 (set XEM_DISC1)");
@@ -161,11 +238,12 @@ fn a_snapshot_taken_in_battle_and_a_recording_replay_the_same_end() {
     let recording = session.execute(&json!({ "cmd": "stop_recording" }));
     assert_eq!(hash(&mut session), forest.memory_hash);
 
-    // Restored in battle (the schedule's later commands given again).
+    // Restore the battle's game progress, then supply the remaining external
+    // inputs again. App command queues are not part of a game save.
     session.execute(&json!({ "cmd": "restore", "name": "battle" }));
+    let remaining: Vec<_> = forest.commands.iter().filter(|c| c[0].as_u64().unwrap() >= 7000).cloned().collect();
+    session.execute(&json!({"cmd":"schedule","commands":remaining}));
     assert_eq!(session.runtime.frames(), 7000);
-    let later: Vec<Value> = forest.commands.iter().filter(|c| c[0].as_u64().unwrap() >= 7000).cloned().collect();
-    session.execute(&json!({ "cmd": "schedule", "commands": later }));
     step_to(&mut session, forest.frames);
     assert_eq!(hash(&mut session), forest.memory_hash, "a restored snapshot diverged");
 
@@ -193,9 +271,15 @@ fn the_agent_saves_at_field_22_and_the_title_screen_loads_it() {
     let save_cards = cards("save");
     std::fs::write(save_cards.join("card2.mcd"), vec![0u8; 0x20000]).unwrap();
     let mut saving = session(&disc, &save_cards, &save);
+    let before_save = saving.snapshot_bytes().unwrap();
     saving.execute(&json!({ "cmd": "frames", "count": save.frames }));
     assert_eq!(hash(&mut saving), save.memory_hash);
     let saved_data = saving.execute(&json!({ "cmd": "inspect", "path": "game_data.itemIds", "depth": 1 }));
+    let persisted = std::fs::read(save_cards.join("card2.mcd")).unwrap();
+    saving.restore_bytes(&before_save).unwrap();
+    saving.runtime.services().card.retry_writes().unwrap();
+    assert_eq!(saving.runtime.services().card.image(1).unwrap(),persisted,"loading an older state keeps the original in-game save on card 2");
+    assert_eq!(std::fs::read(save_cards.join("card2.mcd")).unwrap(),persisted,"state restore must never write an older card to disk");
     drop(saving);
     let card = std::fs::read(save_cards.join("card2.mcd")).unwrap();
     assert_eq!(&card[..2], b"MC", "formatted");

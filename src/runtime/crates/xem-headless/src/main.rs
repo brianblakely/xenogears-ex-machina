@@ -151,7 +151,7 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
                     }
                     None => serde_json::json!({ "error": "vram needs path" }),
                 },
-                Ok(command) => session.execute(&command),
+                Ok(command) => xem_game::storage::command(&mut session,&command),
                 Err(error) => serde_json::json!({ "error": format!("bad json: {error}") }),
             };
             println!("{reply}");

@@ -348,6 +348,131 @@ deciding gameplay (on-screen tests, culling).
 | `xem-desktop`, `xem-headless`, `xem-android`, `xem-web` | hosts |
 | `xem-host` | what the SDL3 hosts share: the window and its native handles, the wgpu surface (dropped and recreated with the native window), the presented view (game display or test scene, and settings panel), the game paced at 60 frames a second with its sound (`Game`) |
 | `xem-settings` | typed application settings: validation, acknowledgement, change notification, JSON persistence |
+| `xem-storage` | bounded reads and durable replacement of native settings, cards and state files |
+
+## Saves and time controls
+
+The app Settings screen has Audio, Graphics, Controls, Time and Saves sections.
+Desktop widths use a sidebar; narrow windows use a section picker. Rewind and
+the notched FF rate slider live in Time, with compact interval and history fields
+and the retained queue's available seconds and memory usage. Graphics contains
+Show FPS, which draws a counter over the game on desktop, Android and browser;
+it can also be toggled through a keyboard or gamepad binding.
+Settings contains save-state, rewind, backup and binding controls.
+All these operations accept keyboard and gamepad chords. Fast-forward is an
+on/off toggle, bound to backtick (`Backquote`) or Back+RT by default, with no
+Settings checkbox for the toggle. Its separate
+saved rate defaults to 10×. The slider snaps to 1×, 5×, 10×, 15×, 20× and
+Uncapped; changing the rate does not turn fast-forward on. Uncapped has no
+game-frame multiplier or frame-count ceiling: each host runs as much game work
+as its responsive update budget permits. The original music driver and SPU
+continue on a normal-time clock, including when the host cannot run every
+requested game frame in one batch. At fixed rates the music clock advances by
+game time divided by the chosen multiplier, independent of batch size; a host
+that cannot sustain the selected rate drops presentation work and may underrun
+audio. Uncapped play uses elapsed host time for music. Recordings include FF
+rate changes, toggles and uncapped music-clock inputs, so replay uses the same
+timing on another host. Presentation remains owned by the host.
+
+Normal-tempo music is an explicit player requirement. The original sound driver
+also gates gameplay: scenes waiting on its progress run at normal speed during
+FF. Consequently FF play can differ from 1× play with the same per-frame pads.
+This is an intentional exception to the simulation/pacing independence in
+plan.md (host scheduling, Phase 2 authority, and Phase 8 timing semantics).
+Fixed-rate FF remains reproducible for the same timed inputs. Uncapped play's
+host clock is an additional input and must be included in a recording for
+reproducible replay. CD/movie audio retains only the latest 100 ms when input
+outruns playback; stale cutscene audio cannot accumulate behind the music.
+
+Settings → Time has **Pause when window loses focus**, enabled by default.
+Focus loss releases held inputs and requests the original game's pause screen.
+The game pauses at its next legal Start check in field play, battles, the world
+map or the arena; original script locks and transitions still defer pausing.
+Title screens, app menus and movies receive no synthetic Start input. Focus is
+sampled before each game frame (also when retrying a disc-blocked frame), so
+refocusing before the legal check cancels the request. Refocusing after the game
+pauses leaves it paused until the player resumes with the normal Enter/Start
+binding. The pause screen keeps running its original input and display logic;
+rewind snapshots and history time remain frozen. Pause flags are read by the
+port itself, so this also works when the browser cannot load `schema.json`.
+The focus-loss preference is
+bindable to keyboard/gamepad, persists with Settings and is included in settings
+backups. Pending focus requests are outside game snapshots; input recordings
+include their requests and cancellations so replay reaches the same game pause.
+
+Rewind runs while R (`KeyR`) or Back+LT is held and resumes on release. History
+is enabled by Settings for interactive play. Headless sessions, scripted native
+playback and browser command-driven boots have history off unless requested;
+browser automation can boot with `rewind: true` or use `rewind_configure`.
+The queue stores the same serialized game-state content as save files. File
+checksums are generated for export and checked on import, outside the periodic
+checkpoint; restoring a queued state still validates its identity and devices.
+Settings controls the seconds between states (default 1)
+and the history length (default 30 seconds). Both use real elapsed play time,
+independent of FF speed; paused time is excluded. The interval cannot exceed
+the history length. The original game's pause screens stop snapshots and freeze
+the queue's elapsed-play time, preserving history for when play resumes. Pausing
+restarts the snapshot interval on resume. Increasing and decreasing either value
+can be bound to keyboard/gamepad chords.
+The Settings checkbox **Invert LT/RT chords** makes LT alone
+rewind and RT alone toggle fast-forward; Back+LT and Back+RT then send L2 and R2
+to the game, without also sending Select. This preference is saved, included
+in settings backups, and can itself be bound to a keyboard or gamepad chord.
+App bindings remain available while Settings is open; editing a settings text field
+captures keyboard input.
+Rewind queues the same serialized game saves used by save states and steps
+back through them. Loading or rewinding keeps app commands, recording controls,
+the FF toggle, FF rate and app settings as currently set.
+
+Ordinary saves still use the original game save menu and its two memory cards.
+Settings can import or export an exact 128 KiB raw `.mcd` card. Browser card
+imports apply to the next boot; native imports replace the inserted card.
+State backups use `.xemstate`; settings have a separate JSON backup. Native
+writes acknowledge after writing, syncing and replacing the file. Document
+providers on Android acknowledge after write, flush and close; their own
+replacement guarantees apply.
+
+`Session::snapshot_bytes` contains only the runtime's game state: game memory,
+globals, suspended fibers, event queues, clock phase, card protocol, GPU, SPU and media
+decoder/drive progress. The state identifies the exact game module, disc
+executable and ordered package digests. Checksums, versions, identity, buffer
+bounds and device data are validated before committing the restore. Incompatible
+states are rejected explicitly. Host disc/storage attachments and presentation
+settings and current memory-card images stay attached; queued future audio is discarded. App pacing is omitted
+from the state and reapplied after restoring the game's music phase. The game
+state format is version 7; older snapshots are rejected explicitly. Card device
+protocol state is saved, but persistent card contents are excluded. Loading,
+importing and rewinding never roll back or write ordinary card saves; card
+backups are separate explicit operations.
+Rewind expires states beyond the configured history length and discards the
+future after stepping back. Retained allocations also stay within a 256 MiB
+maximum (64 MiB by default); Settings reports the actual seconds available and
+memory used. The real-time queue's landing points depend on elapsed play time;
+they are player conveniences, not deterministic replay checkpoints. An oversized
+checkpoint reports an error without stopping play.
+Loading a state starts a new rewind history with that state; state backups
+contain game progress rather than the app or the retained queue of states.
+
+The shared control commands are available through `xem-headless --control` and
+`window.xem.command`. For example:
+
+```json
+{"cmd":"fast_forward_configure","rate":{"Fixed":10}}
+{"cmd":"fast_forward"}
+{"cmd":"fast_forward","enabled":false}
+{"cmd":"rewind_configure","max_bytes":67108864,"interval_seconds":1,"history_seconds":30}
+{"cmd":"rewind","steps":1}
+```
+
+Native file commands are `state_save`/`state_load` with `path`, and
+`card_import`/`card_export` with `path` and `slot` (0 or 1). File commands are
+accepted only as explicit native host requests; scheduled logs accept game
+input, setup and pacing commands and cannot access files. Browsers use explicit
+Settings operations or `window.xem.appOperation({Action: 'ExportState'})` and
+the snapshot/card/settings automation methods. Browser file pickers require a
+recognized activation; a refusal is shown in Settings and operation status.
+There is no Lua runtime or XR game session in the current hosts to qualify;
+these state paths cover the existing game, event, audio and media services.
 
 ## Desktop host and settings panel
 
@@ -406,7 +531,7 @@ as JSON text or bytes.
   layer `xem-headless --control` serves: `XemApp::command` takes the same JSON
   commands (a command runs at most 10 000 frames per call), so a client drives
   either host identically; disc 1 answers the same replies in both.
-  `XemApp::snapshot_bytes`/`restore_bytes` carry `Runtime::snapshot` bytes for
+  `XemApp::snapshot_bytes`/`restore_bytes` carry game state bytes for
   saves. `boot` starts the game as `xem_game::boot` does natively (the
   executable's text, blank Kanji glyphs, the memory cards, the user's disc in
   the drive read in place through `DiscImport::game_source`) and takes the
@@ -462,17 +587,24 @@ as JSON text or bytes.
 - **Persistence.** Settings: `SettingsService` over `localStorage`
   (`xem.settings`). Memory cards: two 128 KB images in IndexedDB (`xem`
   database, `cards` store, `card1`/`card2`; none stored is a fresh formatted
-  card). The card device's `CardStorage` is synchronous and IndexedDB is not:
+  card, with a visible missing/eviction notice). The card device's `CardStorage` is synchronous and IndexedDB is not:
   the page loads both images before any session boots, the storage
   (`BrowserCards`) answers loads from that copy and takes the device's writes
   into it at once, marking the card dirty; after each animation frame and
-  automation step the page takes the dirty images and writes them to
-  IndexedDB on a chain of transactions, so they land in order. The runtime's
+  automation step the page writes the latest dirty images to IndexedDB in
+  order and acknowledges only completed transactions. A failed write retains
+  the image for explicit retry and export, with the error visible in Settings.
+  Quota exhaustion, denied storage, interrupted transactions, corrupt states
+  and missing/evicted saves have explicit errors. The runtime's
   copy is the authority; IndexedDB trails it by the writes in flight
   (`status().cards`, `status().page.cards`). Saves: the `saves` store holds
-  session snapshots with their SHA-256, checked when read back.
+  game snapshots with their SHA-256, checked when read back.
+  Storage belongs to the current origin/browser profile and can be cleared or
+  evicted; Settings offers persistence requests and explicit backups. No write
+  depends on an unload handler and persistence is not a permanent-storage promise.
   `window.xem.cards.store(slot, image)` puts a card image (a `.mcd`) in
-  IndexedDB for the next session. `npm run test:slice` (local, with disc 1)
+  IndexedDB and inserts it into the live session; import pauses play until the
+  write completes. `npm run test:slice` (local, with disc 1)
   plays the slice's session logs on a desktop browser, a phone (Playwright's
   Pixel 7) and a headset browser (Quest Browser's user agent, IWER's Quest 3
   as navigator.xr) to their native hashes; the save goes through a reload

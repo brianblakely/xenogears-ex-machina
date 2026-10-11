@@ -33,7 +33,7 @@ use wasm_bindgen::prelude::*;
 use xem_core::control::Session;
 use xem_core::inspect::Schema;
 use xem_core::{Runtime, bios, exe};
-use xem_settings::{MemoryStore, Rejected, SettingChange, SettingsService};
+use xem_settings::{AppInput, AppRequest, Rejected, SettingChange, SettingsService};
 
 pub use game::{WebModule, xem_game_import};
 pub use render::WebRenderer;
@@ -51,7 +51,7 @@ pub const MAX_FRAMES_PER_COMMAND: u64 = 10_000;
 const SETTINGS_KEY: &str = "xem.settings";
 
 fn now_ms() -> f64 {
-    js_sys::Date::now()
+    web_sys::window().expect("browser window").performance().expect("browser performance clock").now()
 }
 
 fn to_json(value: &impl serde::Serialize) -> String {
@@ -90,6 +90,10 @@ pub struct XemApp {
     audio_scratch: Vec<i16>,
     cards: storage::BrowserCards,
     input: input::HostInput,
+    app_input: AppInput,
+    rewind_held: [bool;2],
+    rewind_next: f64,
+    app_requests: Rc<RefCell<Vec<AppRequest>>>,
     /// The buttons the player's input last put on pad 1.
     host_buttons: u16,
     /// Frames ran since the display was last shown.
@@ -97,7 +101,9 @@ pub struct XemApp {
     running: bool,
     /// Page time up to which game frames have been run or dropped.
     paced: Option<f64>,
+    music_paced: Option<f64>,
     stats: LoopStats,
+    applied_time_settings: Option<(xem_settings::FastForwardRate, bool, u32, u32)>,
 }
 
 #[wasm_bindgen]
@@ -114,12 +120,6 @@ impl XemApp {
                     Some(error.to_string()),
                 ),
             };
-        // Without localStorage (blocked storage) settings still work for the page's life.
-        let service = if web_sys::window().and_then(|w| w.local_storage().ok().flatten()).is_some() {
-            service
-        } else {
-            SettingsService::with_defaults(MemoryStore::default())
-        };
         XemApp {
             settings: Rc::new(RefCell::new(service)),
             settings_error,
@@ -134,11 +134,17 @@ impl XemApp {
             audio_scratch: Vec::new(),
             cards: storage::BrowserCards::default(),
             input: input::HostInput::default(),
+            app_input: AppInput::default(),
+            rewind_held: [false;2],
+            rewind_next: 0.0,
+            app_requests: Rc::new(RefCell::new(Vec::new())),
             host_buttons: 0,
             display_dirty: false,
             running: false,
             paced: None,
+            music_paced: None,
             stats: LoopStats::default(),
+            applied_time_settings: None,
         }
     }
 
@@ -149,6 +155,10 @@ impl XemApp {
         let mut renderer = renderer.0;
         let closed = self.panel_closed.clone();
         renderer.attach_panel(self.settings.clone(), move || closed.set(true));
+        if let Some(panel) = renderer.panel() {
+            let requests = self.app_requests.clone();
+            panel.on_app_request(move |request| requests.borrow_mut().push(request));
+        }
         self.renderer = Some(renderer);
         self.display_dirty = true;
     }
@@ -170,8 +180,19 @@ impl XemApp {
     /// canvas. Time a throttled or frozen page missed, or a frame spent
     /// waiting for a disc sector, is dropped, not caught up.
     pub fn frame(&mut self, now: f64) -> Result<(), JsValue> {
+        self.sync_time_controls()?;
         self.stats.animation_frames += 1;
-        if self.running {
+        if self.running && self.rewind_held.iter().any(|held| *held) {
+            if now >= self.rewind_next {
+                if let Some(session) = self.session.as_mut() {
+                    if session.rewind_step().map_err(error)? { self.display_dirty = true; }
+                }
+                self.rewind_next = now + xem_core::rewind::REWIND_STEP_MS as f64;
+            }
+            self.paced = Some(now);
+            self.music_paced = Some(now);
+            self.stats.last_batch = 0;
+        } else if self.running {
             // The player's input reaches pad 1 when it changes, so a pad an
             // automation client set stays until the player presses something.
             let buttons = if self.panel_visible() { 0 } else { self.input.buttons() };
@@ -182,13 +203,24 @@ impl XemApp {
                 self.host_buttons = buttons;
             }
             let paced = *self.paced.get_or_insert(now - FRAME_MS);
-            let due = ((now - paced) / FRAME_MS).floor().max(0.0) as u64;
+            let factor = self.session.as_ref().map_or(Some(1), |s| s.frame_factor());
+            let fast_forward = self.session.as_ref().is_some_and(|s| s.fast_forward);
+            let elapsed_frames = ((now - paced) / FRAME_MS).floor().max(0.0) as u64;
+            let music_paced = self.music_paced.replace(now).unwrap_or(now - FRAME_MS);
+            let music_cycles = ((now - music_paced).clamp(0.0, 100.0) * xem_core::clock::CPU_HZ as f64 / 1000.0) as u64;
+            let live_music = self.session.as_ref().is_some_and(|s| s.live_music());
+            let due = factor.map(|factor| elapsed_frames.saturating_mul(u64::from(factor)));
+            let limit = due.map(|due| due.min(MAX_FRAMES_PER_ANIMATION * u64::from(factor.unwrap())));
             let start = now_ms();
             let mut batch = 0;
-            while batch < due.min(MAX_FRAMES_PER_ANIMATION) && (batch == 0 || now_ms() - start < BATCH_BUDGET_MS) {
+            let pause_on_focus_loss = self.settings.borrow().settings().pause_on_focus_loss;
+            while limit.is_none_or(|frames| batch < frames) && (batch == 0 || now_ms() - start < BATCH_BUDGET_MS) {
                 let Some(session) = self.session.as_mut() else { break };
+                session.set_window_focus(self.app_input.focused(),pause_on_focus_loss);
                 match session.frame() {
-                    Ok(true) => batch += 1,
+                    Ok(true) => {
+                        batch += 1;
+                    },
                     // A disc sector is still being fetched: no time passed;
                     // the next animation frame retries after the fetch.
                     Ok(false) => break,
@@ -198,26 +230,37 @@ impl XemApp {
                     }
                 }
             }
-            if batch < due {
-                self.stats.dropped += due - batch;
-                self.paced = Some(now);
-            } else {
-                self.paced = Some(paced + due as f64 * FRAME_MS);
-            }
+            self.paced = match due {
+                Some(due) if batch >= due => Some(paced + elapsed_frames as f64 * FRAME_MS),
+                Some(due) => { self.stats.dropped += due - batch; Some(now) },
+                None => Some(paced + elapsed_frames as f64 * FRAME_MS),
+            };
             if self.session.as_ref().is_none_or(|s| s.stopped.is_some()) {
                 self.running = false;
+            }
+            if live_music && let Some(session) = self.session.as_mut() {
+                session.advance_live_music(music_cycles).map_err(error)?;
             }
             self.stats.game_frames += batch;
             self.stats.last_batch = batch;
             self.stats.max_batch = self.stats.max_batch.max(batch);
-            if batch > 0 {
+            if batch > 0 || (fast_forward && music_cycles > 0) {
                 self.ran_frames();
             }
+        } else {
+            self.stats.last_batch = 0;
         }
         if self.panel_closed.replace(false) {
             self.set_panel_visible(false);
         }
         if let Some(renderer) = &mut self.renderer {
+            if let (Some(panel),Some(session)) = (renderer.panel(),self.session.as_ref()) {
+                panel.set_time_status(Some(session.fast_forward), &format!("{:.0} of {} seconds available · {:.1} MiB used{}",
+                    session.rewind.available_seconds(), session.rewind.history_seconds, session.rewind.bytes as f64/1048576.0,
+                    session.rewind.error.as_ref().map(|e| format!(" — {e}")).unwrap_or_default()));
+            } else if let Some(panel) = renderer.panel() {
+                panel.set_time_status(None,"Boot a game to use save states and time controls.");
+            }
             match self.session.as_mut() {
                 Some(session) if self.display_dirty => {
                     let (width, height, rgba) = session.runtime.services().gpu.display_rgba8();
@@ -227,7 +270,7 @@ impl XemApp {
                 Some(_) => {}
                 None => renderer.clear_game_image(),
             }
-            renderer.frame((now / 1000.0) as f32, &self.settings.borrow()).map_err(error)?;
+            renderer.frame(now / 1000.0, &self.settings.borrow()).map_err(error)?;
         }
         Ok(())
     }
@@ -247,6 +290,19 @@ impl XemApp {
     /// pad 1's keys (the page then keeps it from the browser). Ignored while
     /// the settings panel has the input.
     pub fn game_key(&mut self, code: &str, down: bool) -> bool {
+        if !self.app_input.focused() { return true; }
+        let editing = self.text_editor_focused();
+        if editing { self.app_input.release_keyboard(); } else { self.app_input.key(code, down); }
+        let settings = self.settings.borrow();
+        let bindings = &settings.settings().app_bindings;
+        self.app_requests.borrow_mut().extend(self.app_input.requests(bindings,settings.settings().invert_trigger_chords));
+        let captured = self.app_input.captures_key(code,bindings);
+        if captured {
+            for binding in bindings.values() { for key in &binding.keyboard { self.input.key(key,false); } }
+        }
+        drop(settings);
+        if editing { return true; }
+        if captured { return true; }
         if down && self.panel_visible() {
             return false;
         }
@@ -255,22 +311,69 @@ impl XemApp {
 
     /// The first gamepad's buttons (Gamepad API standard mapping, 1 = pressed).
     pub fn gamepad(&mut self, pressed: &[u8]) {
-        self.input.gamepad(pressed);
+        if self.text_editor_focused() { self.app_input.release_keyboard(); }
+        self.app_input.pad(pressed);
+        let settings = self.settings.borrow();
+        let bindings = &settings.settings().app_bindings;
+        self.app_requests.borrow_mut().extend(self.app_input.requests(bindings,settings.settings().invert_trigger_chords));
+        self.input.gamepad(&self.app_input.gamepad_for_game(bindings,settings.settings().invert_trigger_chords));
     }
 
     /// Release the player's keys and buttons (the page lost focus).
     pub fn release_input(&mut self) {
         self.input.clear();
+        let _ = self.app_input.set_focused(false);
+        if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) { panel.cancel_pointer(); }
+        self.app_requests.borrow_mut().retain(|r| matches!(r,AppRequest::Action(_)));
+        let _ = self.set_rewind_held(false,false);
+        let _ = self.set_rewind_held(false,true);
+    }
+
+    /// Resume input polling after the page regains focus.
+    pub fn resume_input(&mut self) {
+        let _ = self.app_input.set_focused(true);
+    }
+
+    pub fn set_rewind_held(&mut self, held: bool, from_panel: bool) -> Result<(), JsValue> {
+        self.sync_time_controls()?;
+        let session = self.session.as_mut().ok_or_else(|| error("no game session"))?;
+        if held && session.rewind.budget == 0 { return Err(error("Enable rewind history in Settings first.")); }
+        if held && let Some(reason) = &session.rewind.error { return Err(error(reason)); }
+        let was_held = self.rewind_held.iter().any(|held| *held);
+        self.rewind_held[usize::from(from_panel)] = held;
+        let held = self.rewind_held.iter().any(|held| *held);
+        if was_held != held {
+            self.rewind_next = 0.0;
+            session.timeline_revision += 1;
+            session.reset_rewind_timer();
+            self.audio = Default::default();
+            self.paced = None;
+            self.music_paced = None;
+        }
+        Ok(())
+    }
+
+    pub fn take_app_requests(&self) -> String { to_json(&std::mem::take(&mut *self.app_requests.borrow_mut())) }
+    pub fn set_operation_status(&self, text: &str) {
+        if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) { panel.set_operation_status(text); }
+    }
+    pub fn set_storage_status(&self, text: &str) {
+        if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) { panel.set_storage_status(text); }
     }
 
     pub fn set_panel_visible(&mut self, visible: bool) {
         if let Some(renderer) = &mut self.renderer {
+            if renderer.panel_visible && !visible && let Some(panel) = renderer.panel() { panel.cancel_pointer(); }
             renderer.panel_visible = visible && renderer.has_panel();
         }
     }
 
     pub fn panel_visible(&self) -> bool {
         self.renderer.as_ref().is_some_and(|r| r.panel_visible)
+    }
+
+    fn text_editor_focused(&self) -> bool {
+        self.panel_visible() && self.renderer.as_ref().and_then(|r| r.panel()).is_some_and(|p| p.text_editor_focused())
     }
 
     /// Host pointer input over the canvas (canvas pixels); true when the panel took it.
@@ -290,6 +393,7 @@ impl XemApp {
     pub fn take_audio(&mut self) -> Vec<f32> {
         self.audio.take(self.settings.borrow().settings())
     }
+    pub fn timeline_revision(&self) -> u64 { self.session.as_ref().map_or(0, |s| s.timeline_revision) }
 
     // --- Settings -----------------------------------------------------------
 
@@ -308,11 +412,57 @@ impl XemApp {
     pub fn apply_setting(&mut self, change: &str) -> Result<String, JsValue> {
         let change: SettingChange = serde_json::from_str(change).map_err(|e| error(format!("bad change: {e}")))?;
         let result = self.settings.borrow_mut().apply(change);
+        if result.is_ok() { self.sync_time_controls()?; }
         Ok(to_json(&match result {
             Ok(ack) => json!({ "ok": true, "revision": ack.revision, "settings": ack.settings }),
             Err(Rejected::Invalid { reason, .. }) => json!({ "ok": false, "rejected": "invalid", "reason": reason }),
             Err(Rejected::Storage { reason, .. }) => json!({ "ok": false, "rejected": "storage", "reason": reason }),
         }))
+    }
+
+    pub fn export_settings(&self) -> String { self.settings.borrow().export() }
+
+    pub fn step_fast_forward_rate(&mut self, increase: bool) -> Result<String, JsValue> {
+        let rate = self.settings.borrow().settings().fast_forward_rate;
+        self.apply_setting(&to_json(&SettingChange::FastForwardRate(if increase { rate.increase() } else { rate.decrease() })))
+    }
+    pub fn step_rewind_interval(&mut self, increase: bool) -> Result<String, JsValue> {
+        let seconds = self.settings.borrow().settings().rewind_interval_seconds;
+        let next = if increase { seconds.saturating_add(1).min(self.settings.borrow().settings().rewind_history_seconds) }
+            else { seconds.saturating_sub(1).max(1) };
+        self.apply_setting(&to_json(&SettingChange::RewindIntervalSeconds(next)))
+    }
+    pub fn step_rewind_history(&mut self, increase: bool) -> Result<String, JsValue> {
+        let seconds = self.settings.borrow().settings().rewind_history_seconds;
+        let next = if increase { seconds.saturating_add(1).min(xem_settings::MAX_REWIND_HISTORY_SECONDS) }
+            else { seconds.saturating_sub(1).max(self.settings.borrow().settings().rewind_interval_seconds) };
+        self.apply_setting(&to_json(&SettingChange::RewindHistorySeconds(next)))
+    }
+
+    pub fn import_settings(&mut self, text: &str) -> Result<String, JsValue> {
+        self.settings.borrow_mut().import(text).map_err(error)?;
+        self.sync_time_controls()?;
+        Ok(self.settings())
+    }
+
+    fn sync_time_controls(&mut self) -> Result<(), JsValue> {
+        self.apply_time_settings(true)
+    }
+
+    fn apply_time_settings(&mut self, history: bool) -> Result<(), JsValue> {
+        if let Some(session) = self.session.as_mut() {
+            let settings = self.settings.borrow();
+            let settings = settings.settings();
+            let next = (settings.fast_forward_rate, settings.rewind_enabled, settings.rewind_interval_seconds, settings.rewind_history_seconds);
+            if self.applied_time_settings.is_none_or(|old| old.0 != next.0) { session.configure_fast_forward(next.0).map_err(error)?; }
+            let budget = if history && next.1 { xem_core::rewind::DEFAULT_REWIND_BYTES } else { 0 };
+            if self.applied_time_settings.is_none_or(|old| (old.1,old.2,old.3) != (next.1,next.2,next.3)) {
+                session.configure_rewind(budget,next.2,next.3).map_err(error)?;
+                if budget == 0 { self.rewind_held = [false;2]; }
+            }
+            self.applied_time_settings = Some(next);
+        }
+        Ok(())
     }
 
     // --- Disc import --------------------------------------------------------
@@ -370,6 +520,8 @@ impl XemApp {
         instance: js_sys::WebAssembly::Instance,
         import_names: Vec<String>,
         load_executable: bool,
+        module_id: String,
+        rewind: bool,
     ) -> Result<String, JsValue> {
         let (executable, game_disc) = if load_executable {
             let disc = self.disc.as_ref().ok_or_else(|| error("no identified disc"))?;
@@ -381,11 +533,18 @@ impl XemApp {
         };
         let schema = self.schema.as_deref().map(Schema::parse).transpose().map_err(|e| error(format!("schema: {e}")))?;
         self.session = None;
+        self.audio = Default::default();
         self.running = false;
-        let module = WebModule::new(&instance, import_names).map_err(error)?;
+        if module_id.len() != 64 || !module_id.bytes().all(|b| b.is_ascii_hexdigit()) {
+            return Err(error("module identity must be its SHA-256"));
+        }
+        let module = WebModule::new(&instance, import_names, module_id).map_err(error)?;
         self.memory_bytes = module.memory_bytes();
         // As xem_game::boot does natively (without a BIOS image: blank Kanji glyphs).
         let mut runtime = Runtime::new(module);
+        if load_executable {
+            runtime.identity.disc = xem_disc::identify::hex(&self.disc.as_ref().unwrap().identification().unwrap().sha256);
+        }
         runtime.services().stub_names = self.stub_names.clone();
         runtime.services().card.attach_storage(Box::new(self.cards.clone())).map_err(error)?;
         runtime.services().spu.set_output(true);
@@ -398,7 +557,11 @@ impl XemApp {
         if let Some(source) = game_disc {
             runtime.services().insert_disc(source);
         }
-        self.session = Some(Session::new(runtime, schema));
+        self.session = Some(Session::new(runtime,schema,|| std::time::Duration::from_secs_f64(now_ms()/1000.0)));
+        self.applied_time_settings = None;
+        self.rewind_held = [false;2];
+        self.rewind_next = 0.0;
+        self.apply_time_settings(rewind)?;
         self.host_buttons = 0;
         self.display_dirty = true;
         Ok(self.status())
@@ -408,6 +571,10 @@ impl XemApp {
     pub fn set_running(&mut self, running: bool) {
         self.running = running && self.session.as_ref().is_some_and(|s| s.stopped.is_none());
         self.paced = None;
+        self.music_paced = None;
+        if let Some(session) = self.session.as_mut() {
+            session.reset_rewind_timer();
+        }
     }
 
     /// One command of the shared control layer (`xem_core::control`, as
@@ -430,7 +597,14 @@ impl XemApp {
                         json!({ "error": format!("a command runs at most {MAX_FRAMES_PER_COMMAND} frames") })
                     }
                     Some(session) => {
+                        let revision = session.timeline_revision;
                         let reply = session.execute(&command);
+                        if session.timeline_revision != revision {
+                            self.audio = Default::default();
+                            self.display_dirty = true;
+                            self.paced = None;
+                            self.music_paced = None;
+                        }
                         if frames > 0 {
                             self.ran_frames();
                         }
@@ -448,13 +622,16 @@ impl XemApp {
     /// The runtime between frames as snapshot bytes (`Runtime::snapshot`), for saves.
     pub fn snapshot_bytes(&mut self) -> Result<Vec<u8>, JsValue> {
         let session = self.session.as_mut().ok_or_else(|| error("no game session"))?;
-        session.runtime.snapshot().map_err(error)
+        session.snapshot_bytes().map_err(error)
     }
 
     /// Return to snapshot bytes of the same game module.
     pub fn restore_bytes(&mut self, bytes: &[u8]) -> Result<(), JsValue> {
         let session = self.session.as_mut().ok_or_else(|| error("no game session"))?;
         session.restore_bytes(bytes).map_err(error)?;
+        self.audio = Default::default();
+        self.paced = None;
+        self.music_paced = None;
         self.display_dirty = true;
         Ok(())
     }
@@ -467,7 +644,16 @@ impl XemApp {
         if slot > 1 {
             return Err(error("cards are 0 and 1"));
         }
+        if image.as_ref().is_some_and(|i| i.len() != xem_core::devices::card::CARD_SIZE) {
+            return Err(error("memory card image must be exactly 128 KiB (.mcd)"));
+        }
         self.cards.set_image(slot, image);
+        if let Some(session) = self.session.as_mut() {
+            // Update the live device too: its next in-game save must use the
+            // imported image rather than replace it with the old session card.
+            let image = self.cards.image(slot);
+            session.runtime.services().card.insert(slot, image);
+        }
         Ok(())
     }
 
@@ -495,6 +681,9 @@ impl XemApp {
                 "panel": if r.has_panel() { "slint" } else { "none" },
                 "panelError": r.panel_error,
                 "panelVisible": r.panel_visible,
+                "panelTextEditorFocused": r.panel_visible && r.panel().is_some_and(|panel| panel.text_editor_focused()),
+                "panelSection": r.panel().map(|panel| panel.component().get_selected_section()),
+                "fps": r.frame_rate.as_ref().map(|counter| counter.label()),
                 "lost": r.lost(),
             })
         });
@@ -512,7 +701,7 @@ impl XemApp {
                 "lastBatch": self.stats.last_batch,
                 "maxBatch": self.stats.max_batch,
                 "dropped": self.stats.dropped,
-                "maxFramesPerAnimation": MAX_FRAMES_PER_ANIMATION,
+                "maxFramesPerAnimation": self.session.as_ref().map_or(Some(MAX_FRAMES_PER_ANIMATION), |s| s.frame_factor().map(|factor| MAX_FRAMES_PER_ANIMATION*u64::from(factor))),
                 "batchBudgetMs": BATCH_BUDGET_MS,
             },
             "audio": { "frames": self.audio.frames, "dropped": self.audio.dropped, "sampleRate": audio::SAMPLE_RATE },

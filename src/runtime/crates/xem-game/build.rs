@@ -7,6 +7,7 @@ use std::fmt::Write as _;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
+use sha2::{Digest, Sha256};
 
 fn main() {
     println!("cargo::rustc-check-cfg=cfg(has_game_module)");
@@ -27,6 +28,9 @@ fn main() {
     };
     let include = env::var("XEM_WASM2C_INCLUDE").expect("XEM_WASM2C_INCLUDE");
     let out = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let digest = Sha256::digest(fs::read(&wasm).expect("game module"));
+    let module_id: String = digest.iter().map(|b| format!("{b:02x}")).collect();
+    println!("cargo::rustc-env=XEM_MODULE_ID={module_id}");
     // tools/game_module.py writes the module's schema beside it: the session's
     // introspection, embedded so every host has it.
     let schema = wasm.with_file_name("schema.json");
@@ -203,6 +207,7 @@ u8 *xem_game_memory(w2c_game *instance, u64 *size) {
 
 u32 *xem_game_stack_pointer(w2c_game *instance) { return w2c_game_0x5F_stack_pointer(instance); }
 u32 xem_game_async_state(w2c_game *instance) { return w2c_game_asyncify_get_state(instance); }
+u32 xem_game_paused(w2c_game *instance, u32 mode) { return w2c_game_xem_game_paused(instance, mode); }
 void xem_game_stop_unwind(w2c_game *instance) { w2c_game_asyncify_stop_unwind(instance); }
 void xem_game_start_rewind(w2c_game *instance, u32 area) { w2c_game_asyncify_start_rewind(instance, area); }
 "#,

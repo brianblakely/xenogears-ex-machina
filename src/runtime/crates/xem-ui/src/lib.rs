@@ -10,8 +10,10 @@ use slint::platform::{Platform, Renderer, WindowAdapter};
 use slint::{ComponentHandle, PhysicalSize, PlatformError};
 use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
+use std::time::Duration;
 use xem_settings::{
-    AudioOutput, Filter, Rejected, Scale, SettingChange, Settings, SettingsService,
+    APP_ACTIONS, AppAction, AppBinding, AppRequest, AudioOutput, FAST_FORWARD_RATES, Filter,
+    Rejected, Scale, SettingChange, Settings, SettingsService,
 };
 
 // Slint compiles its FemtoVG renderer module out on Android; the renderer
@@ -47,6 +49,14 @@ thread_local! {
 
 /// Slint's platform on the host thread: it only creates texture-backed windows.
 struct HostPlatform;
+
+fn provide_gpu(gpu: SharedGpu) -> Result<(), PlatformError> {
+    NEXT_GPU.set(Some(gpu));
+    match slint::platform::set_platform(Box::new(HostPlatform)) {
+        Ok(()) | Err(slint::platform::SetPlatformError::AlreadySet) => Ok(()),
+        Err(error) => Err(PlatformError::Other(error.to_string())),
+    }
+}
 
 impl Platform for HostPlatform {
     fn create_window_adapter(&self) -> Result<Rc<dyn WindowAdapter>, PlatformError> {
@@ -94,6 +104,7 @@ impl WindowAdapter for PanelWindow {
 pub struct SettingsUi {
     window: Rc<PanelWindow>,
     panel: SettingsPanel,
+    rewind_held: Rc<Cell<bool>>,
     device: wgpu::Device,
     texture: wgpu::Texture,
     view: wgpu::TextureView,
@@ -110,11 +121,7 @@ impl SettingsUi {
         scale_factor: f32,
     ) -> Result<Self, PlatformError> {
         let device = gpu.device.clone();
-        NEXT_GPU.set(Some(gpu));
-        match slint::platform::set_platform(Box::new(HostPlatform)) {
-            Ok(()) | Err(slint::platform::SetPlatformError::AlreadySet) => {}
-            Err(error) => return Err(PlatformError::Other(error.to_string())),
-        }
+        provide_gpu(gpu)?;
         let panel = SettingsPanel::new()?;
         let window = CREATED
             .take()
@@ -124,6 +131,7 @@ impl SettingsUi {
         let ui = Self {
             window,
             panel,
+            rewind_held: Rc::new(Cell::new(false)),
             device,
             texture,
             view,
@@ -134,6 +142,8 @@ impl SettingsUi {
     }
 
     fn resize_window(&self, size: (u32, u32), scale_factor: f32) {
+        self.panel
+            .set_wide_layout(size.0 as f32 / scale_factor >= 560.0);
         self.window.size.set(PhysicalSize::new(size.0, size.1));
         let window = &self.window.window;
         window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor });
@@ -163,6 +173,8 @@ impl SettingsUi {
     /// Forwards host input. Positions are logical pixels from the panel's top left.
     pub fn dispatch(&self, event: WindowEvent) {
         self.window.window.dispatch_event(event);
+        // Publish held-control transitions before the host's next game frame.
+        slint::platform::update_timers_and_animations();
     }
 
     /// Advances Slint's timers and animations to now and, if Slint asked for a
@@ -202,6 +214,64 @@ impl SettingsUi {
     /// What the Disc group says about the imported disc.
     pub fn set_disc_status(&self, text: &str) {
         self.panel.set_disc_status(text.into());
+    }
+
+    pub fn on_app_request(&self, f: impl FnMut(AppRequest) + 'static) {
+        let f = Rc::new(RefCell::new(f));
+        self.panel.on_app_action_requested({
+            let f = f.clone();
+            move |index| {
+                if let Some((action, _)) =
+                    usize::try_from(index).ok().and_then(|i| APP_ACTIONS.get(i))
+                {
+                    f.borrow_mut()(AppRequest::Action(*action));
+                }
+            }
+        });
+        self.panel.on_backup_action_requested({
+            let f = f.clone();
+            move |index| {
+                if let Some((action, _)) = usize::try_from(index)
+                    .ok()
+                    .and_then(|i| backup_actions().nth(i))
+                {
+                    f.borrow_mut()(AppRequest::Action(action));
+                }
+            }
+        });
+        let rewind_held = self.rewind_held.clone();
+        self.panel.on_rewind_held(move |held| {
+            if rewind_held.replace(held) != held {
+                f.borrow_mut()(AppRequest::UiRewind(held));
+            }
+        });
+    }
+
+    pub fn set_time_status(&self, fast_forward: Option<bool>, text: &str) {
+        self.panel.set_fast_forward(fast_forward.unwrap_or(false));
+        self.panel.set_time_status(text.into());
+    }
+
+    pub fn set_storage_status(&self, text: &str) {
+        self.panel.set_storage_status(text.into());
+    }
+    pub fn set_operation_status(&self, text: &str) {
+        self.panel.set_status(text.into());
+    }
+    pub fn text_editor_focused(&self) -> bool {
+        self.panel.get_text_editor_focused()
+    }
+
+    /// A hidden panel must release a held pointer control even when its next
+    /// mouse-up belongs to the game or another window.
+    pub fn cancel_pointer(&self) {
+        if self.rewind_held.get() {
+            self.panel.invoke_rewind_held(false);
+        }
+        self.dispatch(WindowEvent::PointerReleased {
+            position: LogicalPosition::new(-1.0, -1.0),
+            button: PointerEventButton::Left,
+        });
     }
 
     /// The Slint component, for inspection.
@@ -252,17 +322,75 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_scale(index_of(&SCALES, &settings.presentation.scale));
     panel.set_filter(index_of(&FILTERS, &settings.presentation.filter));
     panel.set_show_fps(settings.presentation.show_fps);
+    panel.set_pause_on_focus_loss(settings.pause_on_focus_loss);
+    panel.set_fast_forward_rate(index_of(&FAST_FORWARD_RATES, &settings.fast_forward_rate));
+    panel.set_fast_forward_position(panel.get_fast_forward_rate() as f32);
+    panel.set_invert_trigger_chords(settings.invert_trigger_chords);
+    panel.set_rewind_enabled(settings.rewind_enabled);
+    panel.set_rewind_interval_seconds(settings.rewind_interval_seconds as i32);
+    panel.set_rewind_interval_max(xem_settings::MAX_REWIND_INTERVAL_SECONDS as i32);
+    panel.set_rewind_history_seconds(settings.rewind_history_seconds as i32);
+    panel.set_rewind_history_max(xem_settings::MAX_REWIND_HISTORY_SECONDS as i32);
+    show_binding(panel, settings);
+}
+
+fn show_binding(panel: &SettingsPanel, settings: &Settings) {
+    if let Some((action, _)) = usize::try_from(panel.get_selected_action())
+        .ok()
+        .and_then(|i| APP_ACTIONS.get(i))
+    {
+        let binding = settings
+            .app_bindings
+            .get(action)
+            .cloned()
+            .unwrap_or_default();
+        panel.set_keyboard_binding(binding.keyboard.join("+").into());
+        panel.set_gamepad_binding(binding.gamepad.join("+").into());
+    }
 }
 
 /// Routes panel edits through the settings service and shows every
 /// acknowledged change, whoever made it.
 fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
+    panel.set_app_actions(
+        Rc::new(slint::VecModel::from(
+            APP_ACTIONS
+                .iter()
+                .map(|(_, title)| slint::SharedString::from(*title))
+                .collect::<Vec<_>>(),
+        ))
+        .into(),
+    );
+    panel.set_backup_actions(
+        Rc::new(slint::VecModel::from(
+            backup_actions()
+                .map(|(_, title)| slint::SharedString::from(title))
+                .collect::<Vec<_>>(),
+        ))
+        .into(),
+    );
+    panel.set_fast_forward_rates(
+        Rc::new(slint::VecModel::from(
+            FAST_FORWARD_RATES
+                .iter()
+                .map(|rate| slint::SharedString::from(rate.to_string()))
+                .collect::<Vec<_>>(),
+        ))
+        .into(),
+    );
     show(panel, settings.borrow().settings());
     let weak = panel.as_weak();
     settings.borrow_mut().subscribe(move |ack| {
         if let Some(panel) = weak.upgrade() {
             show(&panel, &ack.settings);
-            panel.set_status(format!("Applied {:?}", ack.change).into());
+            panel.set_status(
+                match ack.change {
+                    SettingChange::BindApp { .. } => "Binding saved.",
+                    SettingChange::Replace(_) => "Settings imported and saved.",
+                    _ => "Settings saved.",
+                }
+                .into(),
+            );
         }
     });
 
@@ -282,6 +410,38 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
             }
         }
     };
+    panel.on_invert_trigger_chords_edited({
+        let apply = apply.clone();
+        move |invert| apply(Some(SettingChange::InvertTriggerChords(invert)))
+    });
+    panel.on_rewind_enabled_edited({
+        let apply = apply.clone();
+        move |enabled| apply(Some(SettingChange::RewindEnabled(enabled)))
+    });
+    panel.on_pause_on_focus_loss_edited({
+        let apply = apply.clone();
+        move |enabled| apply(Some(SettingChange::PauseOnFocusLoss(enabled)))
+    });
+    panel.on_rewind_interval_edited({
+        let apply = apply.clone();
+        move |seconds| {
+            apply(
+                u32::try_from(seconds)
+                    .ok()
+                    .map(SettingChange::RewindIntervalSeconds),
+            )
+        }
+    });
+    panel.on_rewind_history_edited({
+        let apply = apply.clone();
+        move |seconds| {
+            apply(
+                u32::try_from(seconds)
+                    .ok()
+                    .map(SettingChange::RewindHistorySeconds),
+            )
+        }
+    });
     panel.on_master_volume_edited({
         let apply = apply.clone();
         move |volume| apply(Some(SettingChange::MasterVolume(volume)))
@@ -298,7 +458,156 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
         let apply = apply.clone();
         move |index| apply(pick(&FILTERS, index).map(SettingChange::Filter))
     });
-    panel.on_show_fps_edited(move |show| apply(Some(SettingChange::ShowFps(show))));
+    panel.on_show_fps_edited({
+        let apply = apply.clone();
+        move |show| apply(Some(SettingChange::ShowFps(show)))
+    });
+    panel.on_fast_forward_rate_edited({
+        let apply = apply.clone();
+        move |index| apply(pick(&FAST_FORWARD_RATES, index).map(SettingChange::FastForwardRate))
+    });
+    panel.on_binding_edited(move |index, keyboard, gamepad| {
+        if let Some((action, _)) = usize::try_from(index).ok().and_then(|i| APP_ACTIONS.get(i)) {
+            apply(Some(SettingChange::BindApp {
+                action: *action,
+                binding: AppBinding::parse(&keyboard, &gamepad),
+            }));
+        }
+    });
+    panel.on_action_selected({
+        let weak = panel.as_weak();
+        let settings = settings.clone();
+        move |_| {
+            if let Some(panel) = weak.upgrade() {
+                show_binding(&panel, settings.borrow().settings());
+            }
+        }
+    });
+}
+
+fn backup_actions() -> impl Iterator<Item = (AppAction, &'static str)> {
+    APP_ACTIONS.into_iter().filter(|(action, _)| {
+        matches!(
+            action,
+            AppAction::ExportState
+                | AppAction::ImportState
+                | AppAction::ExportCard1
+                | AppAction::ImportCard1
+                | AppAction::ExportCard2
+                | AppAction::ImportCard2
+                | AppAction::ExportSettings
+                | AppAction::ImportSettings
+                | AppAction::RetryStorage
+                | AppAction::RequestPersistence
+        )
+    })
+}
+
+/// A frame counter drawn over the game, independently of the Settings window.
+pub struct FrameRateUi {
+    window: Rc<PanelWindow>,
+    component: FrameRateOverlay,
+    device: wgpu::Device,
+    texture: wgpu::Texture,
+    view: wgpu::TextureView,
+    started: Option<Duration>,
+    previous: Duration,
+    frames: u32,
+}
+
+impl FrameRateUi {
+    pub fn new(gpu: SharedGpu, scale_factor: f32) -> Result<Self, PlatformError> {
+        let device = gpu.device.clone();
+        provide_gpu(gpu)?;
+        let component = FrameRateOverlay::new()?;
+        let window = CREATED
+            .take()
+            .ok_or_else(|| PlatformError::Other("Slint created no FPS window".into()))?;
+        let size = Self::physical_size(scale_factor);
+        let (texture, view) = panel_texture(&device, size);
+        let mut ui = Self {
+            window,
+            component,
+            device,
+            texture,
+            view,
+            started: None,
+            previous: Duration::ZERO,
+            frames: 0,
+        };
+        ui.resize(scale_factor);
+        ui.component.show()?;
+        Ok(ui)
+    }
+    fn physical_size(scale_factor: f32) -> (u32, u32) {
+        (
+            (96.0 * scale_factor).round().max(1.0) as u32,
+            (28.0 * scale_factor).round().max(1.0) as u32,
+        )
+    }
+    fn resize(&mut self, scale_factor: f32) {
+        let size = Self::physical_size(scale_factor);
+        if self.size() != size {
+            (self.texture, self.view) = panel_texture(&self.device, size);
+        }
+        self.window.size.set(PhysicalSize::new(size.0, size.1));
+        self.window
+            .window
+            .dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor });
+        self.window.window.dispatch_event(WindowEvent::Resized {
+            size: PhysicalSize::new(size.0, size.1).to_logical(scale_factor),
+        });
+        self.window.redraw.set(true);
+    }
+    pub fn size(&self) -> (u32, u32) {
+        let size = self.window.size.get();
+        (size.width, size.height)
+    }
+    pub fn view(&self) -> &wgpu::TextureView {
+        &self.view
+    }
+    pub fn label(&self) -> String {
+        self.component.get_counter().into()
+    }
+    pub fn frame(
+        &mut self,
+        now: Duration,
+        scale_factor: f32,
+        enabled: bool,
+    ) -> Result<(), PlatformError> {
+        if !enabled {
+            self.started = None;
+            self.frames = 0;
+            return Ok(());
+        }
+        if self.window.window.scale_factor() != scale_factor {
+            self.resize(scale_factor);
+        }
+        if self.started.is_none()
+            || now < self.previous
+            || now.saturating_sub(self.previous) > Duration::from_secs(1)
+        {
+            self.started = Some(now);
+            self.frames = 0;
+            self.component.set_counter("— FPS".into());
+        } else {
+            self.frames += 1;
+        }
+        self.previous = now;
+        let elapsed = now.saturating_sub(self.started.unwrap());
+        if elapsed >= Duration::from_secs(1) {
+            self.component.set_counter(
+                format!("{:.0} FPS", self.frames as f64 / elapsed.as_secs_f64()).into(),
+            );
+            self.started = Some(now);
+            self.frames = 0;
+        }
+        slint::platform::update_timers_and_animations();
+        if self.window.redraw.take() {
+            self.window.renderer.render_to_texture(&self.texture)?;
+        }
+        Ok(())
+    }
 }
 
 fn pick<T: Copy>(options: &[T], index: i32) -> Option<T> {

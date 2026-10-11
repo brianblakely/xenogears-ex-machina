@@ -4,8 +4,11 @@
 //! BIOS reports them, and state is read and written through the schema.
 
 use std::collections::HashMap;
+use std::time::Duration;
 
 use serde_json::{Value, json};
+use serde::{Deserialize, Serialize};
+use crate::time::FastForwardRate;
 
 use crate::inspect::{InspectError, Schema, Type};
 use crate::module::{GameModule, Trap};
@@ -13,11 +16,13 @@ use crate::pad::button;
 use crate::runtime::{RESTART_DISPATCH, Runtime};
 
 /// Pad states per vertical blank from where a recording started.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct InputLog {
     pub start_vblank: u64,
     /// (vblank, port, buttons) whenever a pad changed.
     pub changes: Vec<(u64, u32, u16)>,
+    pub controls: Vec<(u64, Value)>,
+    pub end_vblank: u64,
 }
 
 pub struct Session<M: GameModule> {
@@ -31,8 +36,18 @@ pub struct Session<M: GameModule> {
     /// Scheduled pad changes (vblank, port, buttons), applied before the frame
     /// that reaches the vertical blank.
     scheduled: Vec<(u64, u32, u16)>,
+    replay_controls: Vec<(u64, Value)>,
+    replay_end: Option<u64>,
     /// The last trap; the game stays stopped after one.
     pub stopped: Option<String>,
+    pub rewind: crate::rewind::Rewind,
+    /// An on/off switch, independent of the user's configured rate.
+    pub fast_forward: bool,
+    pub fast_forward_rate: FastForwardRate,
+    /// Hosts clear queued output after a restore (never future audio).
+    pub timeline_revision: u64,
+    rewind_clock: Box<dyn Fn() -> Duration>,
+    rewind_game_paused: bool,
 }
 
 const BUTTONS: [(&str, u16); 16] = [
@@ -73,20 +88,123 @@ fn names_of(bits: u16) -> Vec<&'static str> {
 }
 
 impl<M: GameModule> Session<M> {
-    pub fn new(runtime: Runtime<M>, schema: Option<Schema>) -> Self {
-        Session {
+    pub fn new(runtime: Runtime<M>, schema: Option<Schema>, rewind_clock: impl Fn() -> Duration + 'static) -> Self {
+        let mut session = Session {
             runtime,
             schema,
             snapshots: HashMap::new(),
             script: Vec::new(),
             recording: None,
             scheduled: Vec::new(),
+            replay_controls: Vec::new(),
+            replay_end: None,
             stopped: None,
+            rewind: Default::default(),
+            fast_forward: false,
+            fast_forward_rate: FastForwardRate::default(),
+            timeline_revision: 0,
+            rewind_clock: Box::new(rewind_clock),
+            rewind_game_paused: false,
+        };
+        session.configure_rewind(0,crate::time::DEFAULT_REWIND_INTERVAL_SECONDS,crate::time::DEFAULT_REWIND_HISTORY_SECONDS).expect("valid default rewind settings");
+        session
+    }
+
+    pub fn configure_rewind(&mut self, budget: usize, interval_seconds: u32, history_seconds: u32) -> Result<(),String> {
+        self.rewind.configure(budget,interval_seconds,history_seconds,(self.rewind_clock)())?;
+        self.checkpoint();
+        Ok(())
+    }
+
+    /// Pausing or changing the timeline starts a fresh elapsed-play interval.
+    pub fn reset_rewind_timer(&mut self) { self.rewind.reset_time((self.rewind_clock)()); }
+
+    /// Sample focus before each game frame, including retries after disc waits.
+    /// Refocusing cancels a pending request, but never resumes an actual pause.
+    pub fn set_window_focus(&mut self, focused: bool, enabled: bool) {
+        if self.replay_end.is_some() { return; }
+        self.request_focus_pause(!focused && enabled);
+    }
+
+    fn request_focus_pause(&mut self, requested: bool) {
+        if self.runtime.services().focus_pause.active() != requested {
+            self.record_control(json!({"cmd":"focus_pause","requested":requested}));
+            self.runtime.services().focus_pause.set_active(requested);
+        }
+        if requested && self.game_paused() { self.runtime.services().focus_pause.reached(); }
+    }
+
+    /// The game-frame multiplier, or no limit when uncapped is enabled.
+    pub fn frame_factor(&self) -> Option<u32> {
+        if self.fast_forward { self.fast_forward_rate.factor() } else { Some(1) }
+    }
+
+    pub fn configure_fast_forward(&mut self, rate: FastForwardRate) -> Result<(), String> {
+        rate.validate()?;
+        if rate != self.fast_forward_rate {
+            self.record_control(json!({"cmd":"fast_forward_configure","rate":rate}));
+            self.fast_forward_rate = rate;
+            if self.fast_forward {
+                let factor = self.frame_factor();
+                self.runtime.services().set_playback_speed(factor.unwrap_or(1));
+                self.runtime.set_external_music(factor.is_none());
+                self.timeline_revision += 1;
+            }
+        }
+        Ok(())
+    }
+
+    fn set_fast_forward(&mut self, enabled: bool) {
+        if self.fast_forward != enabled {
+            self.record_control(json!({"cmd":"fast_forward","enabled":enabled}));
+            self.fast_forward = enabled;
+            let factor = self.frame_factor();
+            self.runtime.services().set_playback_speed(factor.unwrap_or(1));
+            self.runtime.set_external_music(factor.is_none());
+            self.timeline_revision += 1;
         }
     }
 
     fn vblank(&mut self) -> u64 {
         self.runtime.services().clock.vblanks
+    }
+
+    fn record_control(&mut self, command: Value) {
+        let vblank = self.vblank();
+        if let Some(log) = &mut self.recording { log.controls.push((vblank, command)); }
+    }
+
+    /// Numeric rates use the deterministic game clock divided by their rate.
+    /// Only uncapped play needs live elapsed music time; recordings capture it.
+    pub fn live_music(&self) -> bool {
+        self.frame_factor().is_none() && self.replay_end.is_none() && self.stopped.is_none()
+    }
+
+    pub fn advance_live_music(&mut self, cycles: u64) -> Result<(), String> {
+        if self.live_music() { self.advance_music(cycles)?; }
+        Ok(())
+    }
+
+    fn advance_music(&mut self, cycles: u64) -> Result<(), String> {
+        if cycles > crate::clock::CPU_HZ/10 { return Err("music advance is bounded to 100 ms".into()); }
+        self.runtime.set_external_music(true);
+        if let Err(error) = self.runtime.advance_music(cycles) {
+            let reason = error.to_string();
+            self.stopped = Some(reason.clone());
+            return Err(reason);
+        }
+        self.record_control(json!({"cmd":"music_advance","cycles":cycles}));
+        Ok(())
+    }
+
+    fn apply_replay_controls(&mut self) -> Result<(), Trap> {
+        let now = self.vblank();
+        while self.replay_controls.first().is_some_and(|(at, _)| *at <= now) {
+            let (_, command) = self.replay_controls.remove(0);
+            self.try_execute(&command).map_err(Trap::Host)?;
+        }
+        if self.replay_end.is_some_and(|end| now >= end) { self.replay_end = None; }
+        Ok(())
     }
 
     /// Set a pad's buttons now, as `pad` does (a recording keeps the change).
@@ -108,6 +226,7 @@ impl<M: GameModule> Session<M> {
         if let Some(reason) = &self.stopped {
             return Err(Trap::Host(reason.clone()));
         }
+        self.apply_replay_controls()?;
         while self.script.first().is_some_and(|(at, _)| *at <= self.runtime.frames()) {
             let (at, command) = self.script.remove(0);
             let reply = self.execute(&command);
@@ -124,7 +243,10 @@ impl<M: GameModule> Session<M> {
             self.set_pad(port, buttons);
         }
         match self.runtime.run_frame() {
-            Ok(report) => Ok(!report.blocked),
+            Ok(report) => {
+                if !report.blocked { self.apply_replay_controls()?; self.checkpoint(); }
+                Ok(!report.blocked)
+            },
             Err(trap) => {
                 self.stopped = Some(trap.to_string());
                 Err(trap)
@@ -205,6 +327,9 @@ impl<M: GameModule> Session<M> {
             "recording": self.recording.is_some(),
             "snapshots": self.snapshots.keys().cloned().collect::<Vec<_>>(),
             "frames": self.runtime.frames(),
+            "fast_forward": self.fast_forward,
+            "fast_forward_rate": self.fast_forward_rate,
+            "rewind": self.rewind.status(),
         })
     }
 
@@ -214,6 +339,47 @@ impl<M: GameModule> Session<M> {
         let arg_str = |name: &str| command.get(name).and_then(Value::as_str);
         match cmd {
             "status" => Ok(self.status()),
+            "fast_forward_configure" => {
+                let rate: FastForwardRate = serde_json::from_value(command.get("rate").ok_or("fast_forward_configure needs rate")?.clone())
+                    .map_err(|e| e.to_string())?;
+                self.configure_fast_forward(rate)?;
+                Ok(self.status())
+            }
+            "fast_forward" => {
+                let enabled = command.get("enabled").map(|v| v.as_bool().ok_or("fast_forward enabled must be boolean"))
+                    .transpose()?.unwrap_or(!self.fast_forward);
+                self.set_fast_forward(enabled);
+                Ok(self.status())
+            }
+            "music_advance" => {
+                let cycles = arg_u64("cycles").ok_or("music_advance needs cycles (at most 100 ms)")?;
+                self.advance_music(cycles)?;
+                Ok(self.status())
+            }
+            "focus_pause" => {
+                let requested = command.get("requested").and_then(Value::as_bool).ok_or("focus_pause needs requested boolean")?;
+                self.request_focus_pause(requested);
+                Ok(self.status())
+            }
+            "rewind_configure" => {
+                if command.get("interval_frames").is_some() { return Err("rewind intervals use interval_seconds".into()); }
+                let budget = usize::try_from(arg_u64("max_bytes").ok_or("rewind_configure needs max_bytes (0 disables)")?)
+                    .map_err(|_| "rewind budget too large")?;
+                let seconds = u32::try_from(arg_u64("interval_seconds").unwrap_or(u64::from(crate::time::DEFAULT_REWIND_INTERVAL_SECONDS)))
+                    .map_err(|_| "rewind interval too large")?;
+                let history = u32::try_from(arg_u64("history_seconds").unwrap_or(u64::from(crate::time::DEFAULT_REWIND_HISTORY_SECONDS)))
+                    .map_err(|_| "rewind history too large")?;
+                self.configure_rewind(budget,seconds,history)?;
+                Ok(self.status())
+            }
+            "rewind" => {
+                if command.get("frames").is_some() { return Err("rewind steps through saved states; use steps".into()); }
+                let steps = usize::try_from(arg_u64("steps").unwrap_or(1)).map_err(|_| "rewind step count too large")?;
+                let (at,data) = self.rewind.previous(self.runtime.frames(),steps).ok_or("requested state is outside retained rewind history")?;
+                self.restore_rewind_state(&data)?;
+                self.rewind.truncate(at);
+                Ok(self.status())
+            }
             "frames" => {
                 let n = arg_u64("count").unwrap_or(1);
                 for done in 0..n {
@@ -292,7 +458,7 @@ impl<M: GameModule> Session<M> {
             }
             "snapshot" => {
                 let name = arg_str("name").unwrap_or("default").to_string();
-                let data = self.runtime.snapshot().map_err(|e| e.to_string())?;
+                let data = self.snapshot_bytes()?;
                 let size = data.len();
                 self.snapshots.insert(name.clone(), data);
                 Ok(json!({ "name": name, "bytes": size }))
@@ -339,34 +505,67 @@ impl<M: GameModule> Session<M> {
                     "pad_queue_reads_last_frame": services.input_reads_last_frame,
                     "stopped": stopped,
                     "valid_commands": ["pad", "press", "frames", "run_until", "inspect", "write", "snapshot",
-                                        "restore", "scenario", "boot_mode", "enter_field", "schedule", "record", "replay"],
+                                        "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "schedule", "record", "replay"],
                 }))
             }
             "memory_hash" => Ok(json!(format!("{:016x}", self.memory_hash()?))),
             "record" => {
                 let vblank = self.vblank();
-                self.recording = Some(InputLog { start_vblank: vblank, changes: Vec::new() });
+                let changes = self.runtime.services().pads.0.iter().enumerate().map(|(port,pad)| (vblank,port as u32,pad.buttons)).collect();
+                self.recording = Some(InputLog { start_vblank: vblank, changes, end_vblank: vblank,
+                    controls: vec![(vblank,json!({"cmd":"fast_forward_configure","rate":self.fast_forward_rate})),
+                        (vblank,json!({"cmd":"fast_forward","enabled":self.fast_forward}))] });
+                if self.runtime.services().focus_pause.active() {
+                    let requested = self.runtime.services().focus_pause.requested();
+                    self.record_control(json!({"cmd":"focus_pause","requested":requested}));
+                }
                 Ok(self.status())
             }
             "stop_recording" => {
-                let log = self.recording.take().ok_or("not recording")?;
-                Ok(json!({
-                    "start_vblank": log.start_vblank,
-                    "changes": log.changes.iter().map(|(v, p, b)| json!([v, p, b])).collect::<Vec<_>>(),
-                }))
+                let mut log = self.recording.take().ok_or("not recording")?;
+                log.end_vblank = self.vblank();
+                Ok(serde_json::to_value(log).expect("input log"))
             }
             "replay" => {
                 // Schedule a recorded input log (from stop_recording) relative to now.
                 let changes = command.get("changes").and_then(Value::as_array).ok_or("replay needs changes")?;
                 let start = command.get("start_vblank").and_then(Value::as_u64).unwrap_or(0);
                 let now = self.vblank();
+                let mut scheduled = Vec::new();
                 for change in changes {
                     let c = change.as_array().ok_or("changes are [vblank, port, buttons]")?;
                     let at = c.first().and_then(Value::as_u64).ok_or("vblank")?;
                     let port = c.get(1).and_then(Value::as_u64).ok_or("port")? as u32;
                     let buttons = c.get(2).and_then(Value::as_u64).ok_or("buttons")? as u16;
-                    self.scheduled.push((now + at.saturating_sub(start), port, buttons));
+                    if port > 1 { return Err("port is 0 or 1".into()); }
+                    scheduled.push((now + at.saturating_sub(start), port, buttons));
                 }
+                let mut controls = Vec::new();
+                if let Some(entries) = command.get("controls") {
+                    for entry in entries.as_array().ok_or("controls are [vblank, command]")? {
+                        let pair = entry.as_array().filter(|p| p.len() == 2).ok_or("controls are [vblank, command]")?;
+                        let at = pair[0].as_u64().ok_or("control vblank")?;
+                        let control = &pair[1];
+                        match control.get("cmd").and_then(Value::as_str) {
+                            Some("fast_forward") if control.get("enabled").is_some_and(Value::is_boolean) => {},
+                            Some("focus_pause") if control.get("requested").is_some_and(Value::is_boolean) => {},
+                            Some("fast_forward_configure") => {
+                                let rate: FastForwardRate = serde_json::from_value(control.get("rate").ok_or("control rate")?.clone()).map_err(|e| e.to_string())?;
+                                rate.validate()?;
+                            },
+                            Some("music_advance") if control.get("cycles").and_then(Value::as_u64).is_some_and(|c| c <= crate::clock::CPU_HZ/10) => {},
+                            _ => return Err("recorded controls contain only explicit fast-forward, focus-pause and music-clock inputs".into()),
+                        }
+                        controls.push((now + at.saturating_sub(start),control.clone()));
+                    }
+                }
+                scheduled.sort_by_key(|(at,_,_)| *at);
+                controls.sort_by_key(|(at,_)| *at);
+                self.scheduled = scheduled;
+                self.runtime.services().focus_pause = Default::default();
+                self.replay_end = command.get("end_vblank").and_then(Value::as_u64).map(|end| now + end.saturating_sub(start));
+                self.replay_controls = controls;
+                self.apply_replay_controls().map_err(|e| e.to_string())?;
                 Ok(self.status())
             }
             "boot_mode" => {
@@ -391,14 +590,20 @@ impl<M: GameModule> Session<M> {
                 // `frames` in the status): a recorded session replays on any
                 // host that speaks these commands.
                 let list = command.get("commands").and_then(Value::as_array).ok_or("schedule needs commands")?;
+                let mut commands = Vec::new();
                 for item in list {
                     let pair = item.as_array().filter(|p| p.len() == 2).ok_or("commands are [frame, command]")?;
+                    let cmd = pair[1].get("cmd").and_then(Value::as_str).ok_or("scheduled command needs cmd")?;
+                    if !matches!(cmd, "pad" | "press" | "connect_pad" | "enter_field" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "music_advance") {
+                        return Err(format!("{cmd} cannot be scheduled; session logs contain only game input, setup and pacing"));
+                    }
                     let at = pair[0].as_u64().ok_or("a command's frame is a number")?;
                     if at < self.runtime.frames() {
                         return Err(format!("frame {at} has passed"));
                     }
-                    self.script.push((at, pair[1].clone()));
+                    commands.push((at, pair[1].clone()));
                 }
+                self.script.extend(commands);
                 self.script.sort_by_key(|(at, _)| *at);
                 Ok(json!({ "scheduled": self.script.len() }))
             }
@@ -442,12 +647,67 @@ impl<M: GameModule> Session<M> {
         }
     }
 
-    /// Return to a snapshot (`Runtime::snapshot` bytes, e.g. a saved file),
-    /// as `restore` does for a named one.
-    pub fn restore_bytes(&mut self, data: &[u8]) -> Result<(), String> {
+    pub fn snapshot_bytes(&mut self) -> Result<Vec<u8>, String> {
+        self.runtime.snapshot().map_err(|e| e.to_string())
+    }
+
+    fn game_paused(&mut self) -> bool {
+        self.runtime.game_paused()
+    }
+
+    fn checkpoint(&mut self) {
+        if self.rewind.budget == 0 { return; }
+        let paused = self.game_paused();
+        if paused || self.rewind_game_paused {
+            self.reset_rewind_timer();
+            self.rewind_game_paused = paused;
+            if paused { return; }
+        }
+        let frame = self.runtime.frames();
+        let now = (self.rewind_clock)();
+        if self.rewind.due(now) {
+            match self.runtime.snapshot_content() {
+                Ok(data) => self.rewind.push(frame,data,now),
+                Err(error) => self.rewind.error = Some(error.to_string()),
+            }
+        }
+    }
+
+    /// One older checkpoint for a host's held rewind. Reaching the beginning
+    /// leaves the game there until the player releases the input.
+    pub fn rewind_step(&mut self) -> Result<bool, String> {
+        if let Some(error) = &self.rewind.error { return Err(error.clone()); }
+        if self.rewind.budget == 0 { return Err("Enable rewind history in Settings first.".into()); }
+        let Some((at,data)) = self.rewind.previous(self.runtime.frames(),1) else { return Ok(false) };
+        self.restore_rewind_state(&data)?;
+        self.rewind.truncate(at);
+        Ok(true)
+    }
+
+    /// Rewind game progress, keeping the app's current controls and commands.
+    fn restore_game_state(&mut self, data: &[u8]) -> Result<(), String> {
         self.runtime.restore(data).map_err(|e| e.to_string())?;
+        self.game_state_restored();
+        Ok(())
+    }
+
+    fn restore_rewind_state(&mut self, data: &[u8]) -> Result<(), String> {
+        self.runtime.restore_content(data).map_err(|e| e.to_string())?;
+        self.game_state_restored();
+        Ok(())
+    }
+
+    fn game_state_restored(&mut self) {
         self.stopped = None;
-        self.scheduled.clear();
+        self.timeline_revision += 1;
+        self.reset_rewind_timer();
+    }
+
+    /// Restore game progress, keeping current app controls and settings.
+    pub fn restore_bytes(&mut self, data: &[u8]) -> Result<(), String> {
+        self.restore_game_state(data)?;
+        self.rewind.clear();
+        self.checkpoint();
         Ok(())
     }
 

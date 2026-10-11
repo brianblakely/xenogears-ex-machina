@@ -50,11 +50,14 @@ export function createAutomation(host) {
     status: () => ({ ...parse(app.status()), page: host.pageStatus() }),
     /** Start a session on a fresh game module instance: `{executable: false}`
      * boots a module without a disc (test fixtures), `{run: true}` lets the
-     * animation loop advance it. */
+     * animation loop advance it. Rewind follows Settings when `run: true`;
+     * command-driven boots opt in with `rewind: true`. */
     boot: (options = {}) => host.boot(options),
     setRunning: (running) => app.set_running(Boolean(running)),
     /** Any control command, e.g. {cmd: 'inspect', path: 'mode_next_mode'}; errors come back as {error}. */
     command,
+    /** The typed Settings/bindings operation, e.g. {Action:'SaveState'}. */
+    appOperation: (request) => host.appOperation(request),
     /** `frames` or `run_until` to completion, fetching the disc sectors frames wait
      * for (resolves to the reply xem-headless --control gives); other commands as `command`. */
     run,
@@ -76,6 +79,9 @@ export function createAutomation(host) {
     /** Named snapshots kept in the session. */
     snapshot: (name = 'default') => command({ cmd: 'snapshot', name }),
     restore: (name = 'default') => command({ cmd: 'restore', name }),
+    rewind: (steps = 1) => command({ cmd: 'rewind', steps }),
+    configureRewind: (maxBytes = 64 * 1024 * 1024, intervalSeconds = 1, historySeconds = 30) => command({ cmd: 'rewind_configure', max_bytes: maxBytes, interval_seconds: intervalSeconds, history_seconds: historySeconds }),
+    fastForward: (enabled) => command({ cmd: 'fast_forward', ...(enabled === undefined ? {} : { enabled }) }),
     /** Snapshot bytes (Uint8Array) for files and saves, and back. */
     exportSnapshot: () => app.snapshot_bytes(),
     importSnapshot: (bytes) => app.restore_bytes(bytes),
@@ -83,6 +89,8 @@ export function createAutomation(host) {
       get: () => parse(app.settings()),
       /** A SettingChange, e.g. {MasterVolume: 40} or {Scale: 'Integer'}. */
       apply: (change) => parse(app.apply_setting(JSON.stringify(change))),
+      export: () => app.export_settings(),
+      import: (text) => parse(app.import_settings(text)),
     }),
     panel: Object.freeze({
       show: (visible) => app.set_panel_visible(Boolean(visible)),
@@ -99,10 +107,11 @@ export function createAutomation(host) {
       image: (slot) => app.card_image(slot),
       /** The image IndexedDB holds for slot 0 or 1. */
       stored: (slot) => host.cards.stored(slot),
-      /** Put an image (Uint8Array, a .mcd) in slot 0 or 1 for the next session. */
+      /** Persist and insert an image (Uint8Array, a .mcd) in slot 0 or 1. */
       store: (slot, image) => host.cards.store(slot, image),
       /** Resolves when the card device's writes so far are in IndexedDB. */
       flush: () => host.flushCards(),
+      retry: () => host.cards.flush({ retry: true }),
     }),
   });
 }

@@ -2,6 +2,8 @@
 //! compiled into the host (docs/runtime.md). Ahead-of-time compiled C with
 //! explicit bounds checks; nothing interprets or emulates a CPU.
 
+pub mod storage;
+
 #[cfg(has_game_module)]
 mod native;
 

@@ -51,6 +51,7 @@ struct Cards {
 }
 
 impl BrowserCards {
+    pub fn image(&self, slot: usize) -> Option<Vec<u8>> { self.0.borrow().images[slot].clone() }
     /// The image IndexedDB holds for `slot` (None: a fresh formatted card).
     pub fn set_image(&self, slot: usize, image: Option<Vec<u8>>) {
         let mut cards = self.0.borrow_mut();

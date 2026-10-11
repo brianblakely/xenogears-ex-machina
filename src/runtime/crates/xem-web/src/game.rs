@@ -21,6 +21,7 @@ use xem_core::module::{Action, AsyncState, GameModule, Import, ImportHandler, Tr
 #[derive(Clone)]
 pub struct WebMemory {
     memory: WebAssembly::Memory,
+    copy_buffer: Rc<RefCell<Vec<u8>>>,
 }
 
 impl WebMemory {
@@ -35,6 +36,15 @@ impl WebMemory {
 }
 
 impl GameMemory for WebMemory {
+    fn with_bytes(&self, address: u32, len: usize, visit: &mut dyn FnMut(&[u8])) -> Result<(), OutOfBounds> {
+        let view = self.view(address, len)?;
+        let mut bytes = self.copy_buffer.borrow_mut();
+        if bytes.len() < len { bytes.resize(len, 0); }
+        view.copy_to(&mut bytes[..len]);
+        visit(&bytes[..len]);
+        Ok(())
+    }
+
     fn read(&self, address: u32, out: &mut [u8]) -> Result<(), OutOfBounds> {
         self.view(address, out.len())?.copy_to(out);
         Ok(())
@@ -60,6 +70,7 @@ struct Link {
     start_rewind: Function,
     stop_rewind: Function,
     get_state: Function,
+    game_paused: Function,
     stack_pointer: WebAssembly::Global,
     handler: Cell<Option<*mut dyn ImportHandler>>,
     resume_value: Cell<u32>,
@@ -99,6 +110,7 @@ impl Link {
 
 /// The game module as [`GameModule`].
 pub struct WebModule {
+    content_id: String,
     link: Rc<Link>,
     memory: WebMemory,
 }
@@ -106,11 +118,11 @@ pub struct WebModule {
 impl WebModule {
     /// Bind an instance of game.wasm whose "xem" imports, in `names` order,
     /// call [`xem_game_import`]. Replaces the module the imports reach.
-    pub fn new(instance: &WebAssembly::Instance, names: Vec<String>) -> Result<Self, String> {
+    pub fn new(instance: &WebAssembly::Instance, names: Vec<String>, content_id: String) -> Result<Self, String> {
         let exports: JsValue = instance.exports().into();
         let function = |name: &str| export(&exports, name).map(|v| v.unchecked_into::<Function>());
         let global = |name: &str| export(&exports, name).map(|v| v.unchecked_into::<WebAssembly::Global>());
-        let memory = WebMemory { memory: export(&exports, "memory")?.unchecked_into() };
+        let memory = WebMemory { memory: export(&exports, "memory")?.unchecked_into(), copy_buffer: Rc::new(RefCell::new(Vec::new())) };
         let link = Rc::new(Link {
             names,
             memory: memory.clone(),
@@ -124,13 +136,14 @@ impl WebModule {
             start_rewind: function("asyncify_start_rewind")?,
             stop_rewind: function("asyncify_stop_rewind")?,
             get_state: function("asyncify_get_state")?,
+            game_paused: function("xem_game_paused")?,
             stack_pointer: global("__stack_pointer")?,
             handler: Cell::new(None),
             resume_value: Cell::new(0),
             area: Cell::new(0),
         });
         LINK.set(Some(link.clone()));
-        Ok(WebModule { link, memory })
+        Ok(WebModule { link, memory, content_id })
     }
 
     pub fn memory_bytes(&self) -> u64 {
@@ -179,6 +192,10 @@ pub fn xem_game_import(index: u32, args: &[u32]) -> Result<u32, JsValue> {
 }
 
 impl GameModule for WebModule {
+    fn game_paused(&mut self, mode: u32) -> bool {
+        self.link.game_paused.call1(&JsValue::NULL, &mode.into()).is_ok_and(|value| number(value) != 0)
+    }
+    fn content_id(&self) -> String { self.content_id.clone() }
     unsafe fn set_import_handler(&mut self, handler: *mut dyn ImportHandler) {
         self.link.handler.set(Some(handler));
     }

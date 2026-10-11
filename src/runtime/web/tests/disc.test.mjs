@@ -44,6 +44,8 @@ describe('the user\'s disc 1', { skip: !available && `needs ${USER_DISC} and the
   before(async () => {
     browser = await start({ args: NO_WEBGPU });
     page = await browser.page();
+    // Real-time app history is qualified separately; compare game commands
+    // with it disabled on both hosts, independent of host execution speed.
     page.on('request', (request) => requests.push(`${request.method()} ${new URL(request.url()).pathname}`));
   });
   after(() => browser.close());

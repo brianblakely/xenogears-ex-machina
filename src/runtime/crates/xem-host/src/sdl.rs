@@ -100,6 +100,15 @@ impl Window {
         SdlDisplay(self.display)
     }
 
+    /// Read the focus state last updated by the host's event loop. Never pump
+    /// here: Android lifecycle watches synchronously borrow the host state.
+    pub fn focused(&self) -> bool {
+        // SAFETY: a live window, on SDL's main thread.
+        unsafe {
+            SDL_GetWindowFlags(self.raw) & SDL_WINDOW_INPUT_FOCUS != SDL_WindowFlags(0)
+        }
+    }
+
     /// The identity of the native surface the window presents to now: on
     /// Android none while the activity is in the background, and a new one
     /// whenever the activity's surface is recreated.

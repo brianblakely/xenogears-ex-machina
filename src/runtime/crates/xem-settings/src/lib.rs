@@ -9,8 +9,11 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fmt;
 use std::path::{Path, PathBuf};
+pub mod controls;
+pub use controls::{AppAction, AppBinding, AppInput, AppRequest, APP_ACTIONS};
 
 pub const MAX_VOLUME: u8 = 100;
+pub use xem_core::time::{FastForwardRate, FAST_FORWARD_RATES, DEFAULT_REWIND_INTERVAL_SECONDS, MAX_REWIND_INTERVAL_SECONDS, DEFAULT_REWIND_HISTORY_SECONDS, MAX_REWIND_HISTORY_SECONDS};
 
 /// How the audio mix is sent to the output device.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -76,7 +79,7 @@ pub struct Presentation {
 
 /// The complete application settings.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct Settings {
     pub master_volume: u8,
     pub audio_output: AudioOutput,
@@ -84,6 +87,13 @@ pub struct Settings {
     /// Placeholder until the input phase defines the binding model: an action
     /// mapped to a host input name. Unbound actions use the host default.
     pub bindings: BTreeMap<Action, String>,
+    pub app_bindings: BTreeMap<AppAction, AppBinding>,
+    pub fast_forward_rate: FastForwardRate,
+    pub invert_trigger_chords: bool,
+    pub rewind_enabled: bool,
+    pub rewind_interval_seconds: u32,
+    pub rewind_history_seconds: u32,
+    pub pause_on_focus_loss: bool,
 }
 
 impl Default for Settings {
@@ -93,6 +103,13 @@ impl Default for Settings {
             audio_output: AudioOutput::default(),
             presentation: Presentation::default(),
             bindings: BTreeMap::new(),
+            app_bindings: controls::defaults(),
+            fast_forward_rate: FastForwardRate::default(),
+            invert_trigger_chords: false,
+            rewind_enabled: true,
+            rewind_interval_seconds: DEFAULT_REWIND_INTERVAL_SECONDS,
+            rewind_history_seconds: DEFAULT_REWIND_HISTORY_SECONDS,
+            pause_on_focus_loss: true,
         }
     }
 }
@@ -101,11 +118,19 @@ impl Default for Settings {
 /// validated by [`SettingsService::apply`].
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SettingChange {
+    Replace(Settings),
+    BindApp { action: AppAction, binding: AppBinding },
+    FastForwardRate(FastForwardRate),
+    InvertTriggerChords(bool),
+    RewindEnabled(bool),
+    RewindIntervalSeconds(u32),
+    RewindHistorySeconds(u32),
     MasterVolume(i32),
     AudioOutput(AudioOutput),
     Scale(Scale),
     Filter(Filter),
     ShowFps(bool),
+    PauseOnFocusLoss(bool),
     Bind { action: Action, input: String },
     Unbind(Action),
 }
@@ -149,6 +174,13 @@ impl Settings {
     fn with(&self, change: &SettingChange) -> Result<Settings, String> {
         let mut next = self.clone();
         match change {
+            SettingChange::Replace(settings) => { settings.validate()?; next = settings.clone(); }
+            SettingChange::BindApp { action, binding } => { binding.validate()?; next.app_bindings.insert(*action,binding.clone()); }
+            SettingChange::FastForwardRate(rate) => next.fast_forward_rate = *rate,
+            SettingChange::InvertTriggerChords(invert) => next.invert_trigger_chords = *invert,
+            SettingChange::RewindEnabled(enabled) => next.rewind_enabled = *enabled,
+            SettingChange::RewindIntervalSeconds(seconds) => next.rewind_interval_seconds = *seconds,
+            SettingChange::RewindHistorySeconds(seconds) => next.rewind_history_seconds = *seconds,
             SettingChange::MasterVolume(volume) => {
                 next.master_volume = u8::try_from(*volume)
                     .ok()
@@ -159,6 +191,7 @@ impl Settings {
             SettingChange::Scale(scale) => next.presentation.scale = *scale,
             SettingChange::Filter(filter) => next.presentation.filter = *filter,
             SettingChange::ShowFps(show) => next.presentation.show_fps = *show,
+            SettingChange::PauseOnFocusLoss(enabled) => next.pause_on_focus_loss = *enabled,
             SettingChange::Bind { action, input } => {
                 let input = input.trim();
                 if input.is_empty() {
@@ -170,16 +203,38 @@ impl Settings {
                 next.bindings.remove(action);
             }
         }
+        next.validate()?;
         Ok(next)
     }
 
     /// Checks values that the types alone do not constrain (for loaded files).
     fn validate(&self) -> Result<(), String> {
+        self.fast_forward_rate.validate()?;
+        if !(1..=MAX_REWIND_INTERVAL_SECONDS).contains(&self.rewind_interval_seconds) {
+            return Err(format!("rewind interval must be 1–{MAX_REWIND_INTERVAL_SECONDS} seconds"));
+        }
+        if !(1..=MAX_REWIND_HISTORY_SECONDS).contains(&self.rewind_history_seconds) {
+            return Err(format!("rewind history must be 1–{MAX_REWIND_HISTORY_SECONDS} seconds"));
+        }
+        if self.rewind_interval_seconds > self.rewind_history_seconds {
+            return Err("rewind interval cannot exceed the history length".into());
+        }
         if self.master_volume > MAX_VOLUME {
             return Err(format!("volume must be 0-{MAX_VOLUME}"));
         }
         if self.bindings.values().any(|input| input.trim().is_empty()) {
             return Err("input name is empty".into());
+        }
+        for binding in self.app_bindings.values() { binding.validate()?; }
+        let bindings: Vec<_> = self.app_bindings.iter().collect();
+        for (i,(action,binding)) in bindings.iter().enumerate() {
+            for (other,candidate) in &bindings[i+1..] {
+                for (a,b) in [(&binding.keyboard,&candidate.keyboard),(&binding.gamepad,&candidate.gamepad)] {
+                    if !a.is_empty() && a.len() == b.len() && a.iter().all(|key| b.contains(key)) {
+                        return Err(format!("{action:?} and {other:?} use the same binding chord"));
+                    }
+                }
+            }
         }
         Ok(())
     }
@@ -255,12 +310,7 @@ impl SettingsStore for FileStore {
     }
 
     fn save(&mut self, json: &str) -> std::io::Result<()> {
-        if let Some(dir) = self.path.parent() {
-            std::fs::create_dir_all(dir)?;
-        }
-        let temporary = self.path.with_extension("json.tmp");
-        std::fs::write(&temporary, json)?;
-        std::fs::rename(&temporary, &self.path)
+        xem_storage::replace(&self.path, json.as_bytes())
     }
 }
 
@@ -293,6 +343,18 @@ pub struct SettingsService {
 }
 
 impl SettingsService {
+    pub fn export(&self) -> String {
+        serde_json::to_string_pretty(&serde_json::json!({ "version": 1, "settings": self.settings })).expect("settings backup")
+    }
+
+    pub fn import(&mut self, text: &str) -> Result<Ack, String> {
+        #[derive(Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct Backup { version: u32, settings: Settings }
+        let backup: Backup = serde_json::from_str(text).map_err(|e| e.to_string())?;
+        if backup.version != 1 { return Err("incompatible settings backup version".into()); }
+        self.apply(SettingChange::Replace(backup.settings)).map_err(|e| e.to_string())
+    }
     /// Opens the settings saved in `store`, or the defaults if none were saved.
     pub fn open(store: impl SettingsStore + 'static) -> Result<Self, LoadError> {
         let settings = match store.load().map_err(LoadError::Io)? {
@@ -364,6 +426,72 @@ impl SettingsService {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn focus_pause_is_on_by_default_and_persists_acknowledged_changes() {
+        use super::*;
+        let store = SharedStore::default();
+        let mut service = SettingsService::open(store.clone()).unwrap();
+        assert!(service.settings().pause_on_focus_loss);
+        service.apply(SettingChange::PauseOnFocusLoss(false)).unwrap();
+        assert!(!SettingsService::open(store.clone()).unwrap().settings().pause_on_focus_loss);
+        *store.1.borrow_mut() = true;
+        assert!(service.apply(SettingChange::PauseOnFocusLoss(true)).is_err());
+        assert!(!service.settings().pause_on_focus_loss);
+    }
+
+    #[test]
+    fn rewind_history_defaults_to_thirty_seconds_and_bounds_the_interval() {
+        use super::*;
+        let store = SharedStore::default();
+        let mut service = SettingsService::open(store.clone()).unwrap();
+        assert_eq!(service.settings().rewind_history_seconds,30);
+        service.apply(SettingChange::RewindHistorySeconds(5)).unwrap();
+        service.apply(SettingChange::RewindIntervalSeconds(5)).unwrap();
+        for change in [SettingChange::RewindHistorySeconds(0),SettingChange::RewindHistorySeconds(4),
+            SettingChange::RewindHistorySeconds(MAX_REWIND_HISTORY_SECONDS+1),SettingChange::RewindIntervalSeconds(6)] {
+            assert!(service.apply(change).is_err());
+        }
+        assert_eq!(SettingsService::open(store.clone()).unwrap().settings().rewind_history_seconds,5);
+        *store.1.borrow_mut() = true;
+        assert!(service.apply(SettingChange::RewindHistorySeconds(30)).is_err());
+        assert_eq!(service.settings().rewind_history_seconds,5);
+    }
+    #[test]
+    fn rewind_interval_defaults_to_one_second_and_is_persisted_and_validated() {
+        use super::*;
+        let store = SharedStore::default();
+        let mut service = SettingsService::open(store.clone()).unwrap();
+        assert_eq!(service.settings().rewind_interval_seconds,1);
+        service.apply(SettingChange::RewindIntervalSeconds(3)).unwrap();
+        assert_eq!(SettingsService::open(store.clone()).unwrap().settings().rewind_interval_seconds,3);
+        for invalid in [0,MAX_REWIND_INTERVAL_SECONDS+1] {
+            assert!(service.apply(SettingChange::RewindIntervalSeconds(invalid)).is_err());
+            assert_eq!(service.settings().rewind_interval_seconds,3);
+        }
+        *store.1.borrow_mut() = true;
+        assert!(service.apply(SettingChange::RewindIntervalSeconds(2)).is_err());
+        assert_eq!(service.settings().rewind_interval_seconds,3);
+    }
+    #[test]
+    fn fast_forward_rates_are_validated_saved_and_rejected_when_storage_fails() {
+        use super::*;
+        let store = SharedStore::default();
+        let mut service = SettingsService::open(store.clone()).unwrap();
+        assert_eq!(service.settings().fast_forward_rate, FastForwardRate::Fixed(10));
+        for rate in [FastForwardRate::Fixed(20), FastForwardRate::Uncapped] {
+            service.apply(SettingChange::FastForwardRate(rate)).unwrap();
+            assert_eq!(SettingsService::open(store.clone()).unwrap().settings().fast_forward_rate,rate);
+        }
+        for rate in [FastForwardRate::Fixed(0), FastForwardRate::Fixed(2), FastForwardRate::Fixed(25)] {
+            assert!(service.apply(SettingChange::FastForwardRate(rate)).is_err());
+        }
+        assert_eq!(FastForwardRate::Fixed(20).increase(),FastForwardRate::Uncapped);
+        assert_eq!(FastForwardRate::Uncapped.decrease(),FastForwardRate::Fixed(20));
+        assert_eq!(FastForwardRate::Fixed(1).decrease(),FastForwardRate::Fixed(1));
+        *store.1.borrow_mut() = true;
+        assert!(service.apply(SettingChange::FastForwardRate(FastForwardRate::Fixed(3))).is_err());
+        assert_eq!(service.settings().fast_forward_rate,FastForwardRate::Uncapped);
+    }
     use super::*;
     use std::cell::RefCell;
     use std::rc::Rc;

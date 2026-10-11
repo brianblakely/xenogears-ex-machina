@@ -15,7 +15,8 @@
 # (settings and the persisted document grant survive). With the user's disc
 # 1 the game boots from it and plays for ~25 s (screenshots), with its frame
 # rate measured, a pad press, and a background and return during which the
-# game's frame count does not move. XEM_SMOKE_GAME_ONLY=1 runs only the
+# game's frame count does not move, plus repeated Home/return at 20x FF.
+# XEM_SMOKE_GAME_ONLY=1 runs only the
 # start and the game. XEM_SMOKE_SLICE=1 then plays the Phase 3 slice's session
 # logs (tests/reference-inputs/slice-*.json) to their native memory hashes:
 # the forest route with a background and return on the way, the save to card
@@ -156,12 +157,22 @@ shot 01-started
 if [ -z "${XEM_SMOKE_GAME_ONLY:-}" ]; then
 echo "== settings change by touch (Show FPS)"
 mark
-tap 73 1260
+tap 540 670
+sleep 1
+tap 540 780
+sleep 1
+shot 01-graphics
+tap 73 1082
 wait_for "xem: settings applied ShowFps\(true\)"
 
 echo "== disc import through the document picker (Import disc... button)"
 mark
-tap 907 1476
+tap 540 670
+sleep 1
+tap 540 1095
+sleep 1
+shot 01-saves
+tap 540 1572
 wait_for "xem: disc picker opened"
 pick_document synthetic "xem-synthetic\.bin"
 wait_for "I/xem.*persisted read permission for content://"
@@ -251,7 +262,26 @@ if [ -f "$disc1" ]; then
     mark
     game_start=$mark
     "${adb[@]}" shell am force-stop "$package"
+    # Configure only this disposable smoke installation before its restart.
+    if "${adb[@]}" shell run-as "$package" test -f files/settings.json; then
+        "${adb[@]}" exec-out run-as "$package" cat files/settings.json >"$out/ff-settings.json"
+    else
+        echo '{}' >"$out/ff-settings.json"
+    fi
+    python3 - "$out/ff-settings.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+path = Path(sys.argv[1])
+settings = json.loads(path.read_text())
+settings["fast_forward_rate"] = {"Fixed": 20}
+path.write_text(json.dumps(settings))
+PY
+    "${adb[@]}" push "$out/ff-settings.json" /data/local/tmp/xem-ff-settings.json >/dev/null
+    "${adb[@]}" shell run-as "$package" cp /data/local/tmp/xem-ff-settings.json files/settings.json
+    "${adb[@]}" shell rm /data/local/tmp/xem-ff-settings.json
     "${adb[@]}" shell am start -n "$activity" --esa xem.args --pick-disc >/dev/null
+    wait_for "xem: settings .*fast_forward_rate: Fixed\(20\)" 60
     wait_for "xem: disc picker opened" 60
     pick_document disc1 "xem-disc1\.chd"
     wait_for "xem: disc identified source=content://.*boot=SLUS_006\.64;1 sha256=dc0b2dd7[0-9a-f]* disc=Xenogears disc 1 \(SLUS-00664\)" 180
@@ -302,6 +332,35 @@ if [ -f "$disc1" ]; then
     sleep 5
     shot 09-game-resumed
     wait_for "xem: fps rendered=.* game=" 15
+
+    echo "== repeated Home during 20x fast-forward"
+    # The game boot hides Settings; press the default keyboard FF binding.
+    "${adb[@]}" shell input keyevent --longpress KEYCODE_GRAVE
+    wait_for "xem: frame rendered .*fast_forward=true" 30
+    for attempt in $(seq 6); do
+        sleep 0.2
+        mark
+        "${adb[@]}" shell input keyevent KEYCODE_HOME
+        background=$(wait_for "xem: lifecycle WILL_ENTER_BACKGROUND .*game_vblank=.*fast_forward=true")
+        wait_for "xem: game paused"
+        wait_for "xem: surface dropped"
+        wait_for "xem: lifecycle DID_ENTER_BACKGROUND"
+        sleep 1
+        mark
+        "${adb[@]}" shell am start -n "$activity" >/dev/null
+        foreground=$(wait_for "xem: lifecycle DID_ENTER_FOREGROUND .*game_vblank=")
+        wait_for "xem: game resumed"
+        wait_for "xem: surface recreated"
+        wait_for "xem: frame rendered .*game_vblank=.*fast_forward=true"
+        before=$(echo "$background" | vblank_of)
+        during=$(echo "$foreground" | vblank_of)
+        [ "$before" = "$during" ] || fail "FF game advanced in the background ($before -> $during)"
+        echo "  FF lifecycle round $attempt handled at vblank $before; rendering resumed"
+    done
+    if tail -n "+$game_start" "$log" | grep -E "lifecycle event .* while rendering ignored"; then
+        fail "Android lifecycle event was pumped while the live host state was borrowed"
+    fi
+    shot 09-fast-forward-resumed
 
     if tail -n "+$game_start" "$log" |
         grep -E "xem: (panic|game stopped|error)|FATAL EXCEPTION|SIGSEGV|SIGABRT|Fatal signal" | sed 's/^/  /'; then

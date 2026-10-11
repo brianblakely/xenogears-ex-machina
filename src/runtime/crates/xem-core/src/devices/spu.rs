@@ -45,7 +45,10 @@ pub const DMA_SPU: u32 = 4;
 /// Output samples (interleaved L/R) the ring keeps for a slow host: 2 s.
 pub const OUTPUT_LIMIT: usize = 2 * 2 * xem_spu::SAMPLE_RATE as usize;
 
-const SNAPSHOT_VERSION: u32 = 1;
+const SNAPSHOT_VERSION: u32 = 4;
+// Divisible by every supported factor (1..20), preserving fractional audio
+// cycles across arbitrary speed changes and snapshot/rewind.
+const AUDIO_UNITS: u64 = 232_792_560;
 
 pub struct Spu {
     chip: xem_spu::Spu,
@@ -56,6 +59,11 @@ pub struct Spu {
     /// Output ring (interleaved L/R) when a host consumes audio.
     output: Option<VecDeque<i16>>,
     scratch: Vec<i16>,
+    virtual_now: u64,
+    audio_cycles: u64,
+    audio_fraction: u64,
+    speed: u32,
+    external_audio: bool,
 }
 
 impl Default for Spu {
@@ -66,11 +74,31 @@ impl Default for Spu {
             irq_raised: false,
             output: None,
             scratch: Vec::new(),
+            virtual_now: 0,
+            audio_cycles: 0,
+            audio_fraction: 0,
+            speed: 1,
+            external_audio: false,
         }
     }
 }
 
 impl Spu {
+    pub fn speed(&self) -> u32 { self.speed }
+    pub fn audio_cycles(&self) -> u64 { self.audio_cycles }
+    pub fn set_external_audio(&mut self, enabled: bool) { self.external_audio = enabled; }
+
+    pub fn set_speed(&mut self, speed: u32) {
+        assert!((1..=20).contains(&speed));
+        if self.speed != speed && let Some(ring) = &mut self.output { ring.clear(); }
+        self.speed = speed;
+    }
+    pub(crate) fn restore_state(&mut self, mut state: Self) {
+        state.set_output(self.output.is_some());
+        state.external_audio = self.external_audio;
+        state.speed = self.speed;
+        *self = state;
+    }
     /// The SPU itself (RAM, voices, registers), for inspection.
     pub fn chip(&self) -> &xem_spu::Spu {
         &self.chip
@@ -175,7 +203,24 @@ impl Spu {
 
     /// Run the SPU up to cycle `now`.
     fn run_until(&mut self, now: u64, context: &mut Context<'_>) {
-        let target = now / CYCLES_PER_SAMPLE;
+        if self.external_audio { self.virtual_now = self.virtual_now.max(now); return; }
+        let delta = now.saturating_sub(self.virtual_now);
+        let units = u128::from(delta) * u128::from(AUDIO_UNITS / u64::from(self.speed)) + u128::from(self.audio_fraction);
+        self.audio_cycles += (units / u128::from(AUDIO_UNITS)) as u64;
+        self.audio_fraction = (units % u128::from(AUDIO_UNITS)) as u64;
+        self.virtual_now = self.virtual_now.max(now);
+        self.render_audio(context);
+    }
+
+    /// Normal music time supplied by the pacing owner, independent of how many
+    /// accelerated game frames fit its work budget.
+    pub fn advance_audio(&mut self, cycles: u64, context: &mut Context<'_>) {
+        self.audio_cycles += cycles;
+        self.render_audio(context);
+    }
+
+    fn render_audio(&mut self, context: &mut Context<'_>) {
+        let target = self.audio_cycles / CYCLES_PER_SAMPLE;
         while self.chip.clock() < target {
             let n = (target - self.chip.clock()).min(4096) as u32;
             match self.output.as_mut() {
@@ -233,36 +278,46 @@ impl Device for Spu {
         w.u32(SNAPSHOT_VERSION);
         w.bytes(&self.chip.save());
         w.u32(self.transfers.len() as u32);
-        for &at in &self.transfers {
-            w.u64(at);
-        }
+        for &at in &self.transfers { w.u64(at); }
         w.u32(self.irq_raised as u32);
+        w.u64(self.virtual_now);
+        w.u64(self.audio_cycles);
+        w.u64(self.audio_fraction);
         w.0
     }
 
     fn load(&mut self, state: &[u8]) -> Result<(), String> {
-        let read = |state: &[u8]| -> Result<(xem_spu::Spu, VecDeque<u64>, bool), SnapshotError> {
+        let read = |state: &[u8]| -> Result<_, SnapshotError> {
             let mut r = Reader::new(state);
             if r.u32()? != SNAPSHOT_VERSION {
                 return Err(SnapshotError::Format("SPU device version"));
             }
             let mut chip = xem_spu::Spu::new();
             chip.load(r.bytes()?).map_err(|e| SnapshotError::Device(e.to_string()))?;
-            let count = r.u32()? as usize;
+            let count = r.count(8, 65536)?;
             let mut transfers = VecDeque::with_capacity(count);
             for _ in 0..count {
                 transfers.push_back(r.u64()?);
             }
             let irq_raised = r.u32()? != 0;
+            let virtual_now = r.u64()?;
+            let audio_cycles = r.u64()?;
+            let audio_fraction = r.u64()?;
+            if audio_fraction >= AUDIO_UNITS || audio_cycles / CYCLES_PER_SAMPLE != chip.clock() {
+                return Err(SnapshotError::Format("SPU audio clock"));
+            }
             if !r.done() {
                 return Err(SnapshotError::Format("trailing SPU device bytes"));
             }
-            Ok((chip, transfers, irq_raised))
+            Ok((chip, transfers, irq_raised, virtual_now, audio_cycles, audio_fraction))
         };
-        let (chip, transfers, irq_raised) = read(state).map_err(|e| e.to_string())?;
+        let (chip, transfers, irq_raised, virtual_now, audio_cycles, audio_fraction) = read(state).map_err(|e| e.to_string())?;
         self.chip = chip;
         self.transfers = transfers;
         self.irq_raised = irq_raised;
+        self.virtual_now = virtual_now;
+        self.audio_cycles = audio_cycles;
+        self.audio_fraction = audio_fraction;
         if let Some(ring) = self.output.as_mut() {
             ring.clear();
         }
@@ -398,6 +453,57 @@ mod tests {
         let mut out = [1i16; 64];
         assert_eq!(spu.take_audio(&mut out), 64);
         assert_eq!(spu.audio_queued(), 36);
+    }
+
+    #[test]
+    fn fast_forward_preserves_audio_samples_and_pitch() {
+        for speed in 1..=20 {
+            let mut normal = Spu::default();
+            let mut fast = Spu::default();
+            let mut mem = memory();
+            let mut raised = Vec::new();
+            normal.set_output(true);
+            fast.set_output(true);
+            // Looping ADPCM tone, fixed voice pitch and ADSR. Compare actual
+            // rendered samples and voice phase, rather than just sample counts.
+            for spu in [&mut normal, &mut fast] {
+                let mut block = [0x11; 16]; block[0] = 0; block[1] = 7;
+                spu.chip.ram_mut()[0x1000..0x1010].copy_from_slice(&block);
+                for (reg, value) in [(0,0x3fff), (2,0x3fff), (4,0x1000), (6,0x200), (8,0x00ff), (10,0x1fc0),
+                    (reg::MAIN_VOLUME_LEFT,0x3fff), (reg::MAIN_VOLUME_RIGHT,0x3fff),
+                    (reg::CONTROL,control::ENABLE | control::UNMUTE), (reg::KEY_ON,1)] {
+                    spu.chip.write16(reg,value);
+                }
+            }
+            fast.set_speed(speed);
+            with_context(&mut mem, CPU_HZ / 10, &mut raised, |c| normal.advance(c));
+            with_context(&mut mem, CPU_HZ / 10 * u64::from(speed), &mut raised, |c| fast.advance(c));
+            assert_eq!(fast.chip.clock(), 4410);
+            assert_eq!(fast.chip.save(), normal.chip.save());
+            let mut a = vec![0; normal.audio_queued()];
+            let mut b = vec![0; fast.audio_queued()];
+            normal.take_audio(&mut a); fast.take_audio(&mut b);
+            assert!(a.iter().any(|s| *s != 0));
+            assert_eq!(a,b);
+        }
+    }
+
+    #[test]
+    fn restore_preserves_fractional_audio_time_across_speed_changes() {
+        let mut mem = memory();
+        let mut raised = Vec::new();
+        let mut spu = Spu::default();
+        spu.set_speed(7);
+        with_context(&mut mem, 1001, &mut raised, |c| spu.advance(c));
+        let saved = spu.save();
+        let mut restored = Spu::default(); restored.load(&saved).unwrap();
+        for (at,speed) in [(5001,3),(9012,16),(15003,1)] {
+            for s in [&mut spu,&mut restored] {
+                s.set_speed(speed);
+                with_context(&mut mem,at,&mut raised,|c| s.advance(c));
+            }
+            assert_eq!(spu.save(),restored.save());
+        }
     }
 
     #[test]

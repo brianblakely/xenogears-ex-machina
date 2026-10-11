@@ -5220,6 +5220,7 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
+ "sha2",
  "xem-disc",
  "xem-gpu",
  "xem-media",
@@ -5253,8 +5254,11 @@ name = "xem-game"
 version = "0.1.0"
 dependencies = [
  "cc",
+ "serde_json",
+ "sha2",
  "xem-core",
  "xem-disc",
+ "xem-storage",
 ]
 
 [[package]]
@@ -5286,6 +5290,7 @@ dependencies = [
  "xem-game",
  "xem-render",
  "xem-settings",
+ "xem-storage",
  "xem-ui",
 ]
 
@@ -5310,10 +5315,16 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
+ "xem-core",
+ "xem-storage",
 ]
 
 [[package]]
 name = "xem-spu"
+version = "0.1.0"
+
+[[package]]
+name = "xem-storage"
 version = "0.1.0"
 
 [[package]]

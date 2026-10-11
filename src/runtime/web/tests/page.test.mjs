@@ -5,7 +5,7 @@
 
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
-import { NO_WEBGPU, WEBGPU, pixelStats, shot, start, status, syntheticDisc } from './support.mjs';
+import { NO_WEBGPU, WEBGPU, pixelStats, settingsSection, shot, start, status, syntheticDisc } from './support.mjs';
 
 async function canvasShot(page, name) {
   const png = await page.locator('canvas').screenshot({ path: shot(name) });
@@ -36,6 +36,17 @@ describe('rendering', () => {
         assert.ok(withPanel.colours > 200);
         await page.keyboard.press('Escape');
         assert.equal(await page.evaluate(() => window.xem.panel.visible()), false);
+
+        // Show FPS must draw a counter on the canvas even with Settings closed.
+        const box=await page.locator('canvas').boundingBox();
+        const counter=()=>page.screenshot({clip:{x:box.x+8,y:box.y+8,width:96,height:28}});
+        assert.equal(pixelStats(await counter()).lit,0,'the corner starts black');
+        await page.evaluate(()=>window.xem.settings.apply({ShowFps:true}));
+        await page.waitForFunction(()=>/^\d+ FPS$/.test(window.xem.status().renderer.fps));
+        assert.ok(pixelStats(await counter()).lit>0.1,'the FPS counter is visible');
+        await page.evaluate(()=>window.xem.settings.apply({ShowFps:false}));
+        await page.waitForTimeout(100);
+        assert.equal(pixelStats(await counter()).lit,0,'disabling Show FPS removes the counter');
         assert.deepEqual(page.errors, []);
       } finally {
         await browser.close();
@@ -83,10 +94,9 @@ describe('page services', () => {
     const page = await browser.page();
     await page.evaluate(() => window.xem.panel.show(true));
     await page.waitForTimeout(300);
-    // The panel is centred on the canvas; "Show FPS" sits at its left.
-    const box = await page.locator('canvas').boundingBox();
+    const panel=await settingsSection(page,1);
     const before = (await page.evaluate(() => window.xem.settings.get())).settings.presentation.show_fps;
-    await page.mouse.click(box.x + box.width / 2 - 195, box.y + box.height / 2 + 62);
+    await page.mouse.click(panel.left+140,panel.top+192);
     await page.waitForTimeout(200);
     await page.locator('canvas').screenshot({ path: shot('panel-click.png') });
     const after = (await page.evaluate(() => window.xem.settings.get())).settings.presentation.show_fps;
@@ -162,6 +172,10 @@ describe('automation over a game module fixture', () => {
   test('control commands: frames, run_until, memory, snapshots', async () => {
     const result = await page.evaluate(async () => {
       const xem = window.xem;
+      // This baseline compares the complete command replies before/after a
+      // restore. Rewind history is deliberately reset when loading a state;
+      // held rewind and its retained allocations have their own tests.
+      xem.settings.apply({ RewindEnabled: false });
       await xem.boot({ executable: false });
       const first = xem.step(1);
       const until = xem.runUntil({ maxFrames: 10, until: { frames: 3 } });

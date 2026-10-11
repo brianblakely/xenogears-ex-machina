@@ -66,6 +66,8 @@ pub trait ImportHandler {
 }
 
 pub trait GameModule {
+    /// Digest of the exact suspendable module. Stand-ins use their Rust type.
+    fn content_id(&self) -> String { std::any::type_name::<Self>().to_owned() }
     /// Install the handler for imports. The runtime keeps it alive and does not
     /// touch it while an export runs.
     ///
@@ -92,6 +94,8 @@ pub trait GameModule {
     fn stack_pointer(&mut self) -> u32;
     fn set_stack_pointer(&mut self, value: u32);
     fn memory(&mut self) -> &mut dyn GameMemory;
+    /// Original pause flags, read by the port without the inspection schema.
+    fn game_paused(&mut self, _mode: u32) -> bool { false }
     /// The module's mutable globals other than the stack pointer, for snapshots.
     fn globals(&mut self) -> Vec<u32>;
     fn set_globals(&mut self, values: &[u32]);

@@ -62,12 +62,12 @@ FINGERPRINT_BYTES = 32
 # through them).
 YIELD_IMPORTS = ["xem.yield", "xem.restart", "xem.task_switch"]
 # The module's exports, defined in src/port/.
-EXPORTS = ["xem_run", "xem_task_run", "xem_call", "xem_interrupt", "xem_unwind_area"]
+EXPORTS = ["xem_run", "xem_task_run", "xem_call", "xem_interrupt", "xem_unwind_area", "xem_game_paused"]
 HOST_PREFIX = "xem_host_"
 # Game functions the port wraps (src/decomp or src/port): the game's definition is
 # renamed xem_original_<name> and the port's definition calls it.
 WRAPPED = {"mode_dispatch", "model_draw_sprite_model", "sprite_set_draw_matrix", "sprite_draw_parts",
-           "pad_dequeue_state"}
+           "pad_dequeue_state", "sound_silence_voices", "arena_menu_open_pause"}
 
 CFLAGS = [
     # The MIPS front end accepts the original inline assembly; the IR is then
@@ -552,6 +552,9 @@ class Rewriter:
                     continue
             lines.extend(self.rewrite_call(unit, line))
         if not is_port:
+            lines, pause_helpers = focus_pause_checks(lines)
+            for helper in sorted(pause_helpers):
+                self.declare(unit, helper, "i32", ["i32"])
             lines = poll_back_edges(lines)
             lines = valueless_returns(lines, self.returns)
             self.declare(unit, "xem_loop_poll", "void", [])
@@ -800,6 +803,40 @@ def valueless_returns(lines, returns):
 
 LABEL_RE = re.compile(r"^([-\w.]+):")
 BRANCH_RE = re.compile(r"^\s*br (?:label %([-\w.]+)|i1 [^,]+, label %([-\w.]+), label %([-\w.]+))")
+
+
+def focus_pause_checks(lines):
+    """Offer focus pause only at the original pause screens' Start checks.
+
+    Leave every original guard in place, including script locks and transitions.
+    Field's second check resumes; the acknowledged host request is already off.
+    Arena's second check selects the driving controller. Start in title screens
+    and movies must never be synthesized (it selects/skips instead of pausing).
+    """
+    expected = {"field_main": ("xem_field_pause_start", 2),
+                "battle_read_input": ("xem_battle_pause_start", 1),
+                "battle_tick_event_script": ("xem_battle_pause_start", 1),
+                "battle_tick_result_screens": ("xem_pause_start", 1),
+                "worldmap_run_frame_loop": ("xem_pause_start", 1),
+                "arena_bout_update": ("xem_arena_pause_start", 2)}
+    out, function, count, helpers = [], None, 0, set()
+    for line in lines:
+        if line.startswith("define "):
+            function = name_of(parse_function_head(line)[1])
+            count = 0
+        if function in expected:
+            helper, checks = expected[function]
+            match = re.fullmatch(r"(\s+%\S+) = and i32 (%\S+), 2048", line)
+            if match:
+                line = f"{match[1]} = call i32 @{helper}(i32 {match[2]})"
+                count += 1
+                helpers.add(helper)
+            if line == "}":
+                if count != checks:
+                    raise ValueError(f"{function}: expected {checks} pause Start checks, found {count}")
+                function = None
+        out.append(line)
+    return out, helpers
 
 
 def poll_back_edges(lines):

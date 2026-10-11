@@ -1,0 +1,8 @@
+[package]
+name = "xem-storage"
+description = "Durable replacement and bounded reads for player persistence"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true

@@ -147,8 +147,10 @@ impl Device for Mdec {
         self.decoder.load(r.bytes().map_err(e)?).map_err(|error| error.to_string())?;
         self.out = match r.u32().map_err(e)? {
             0 => None,
-            _ => Some(Out { at: r.u64().map_err(e)?, address: r.u32().map_err(e)?, words: r.u32().map_err(e)? }),
+            1 => Some(Out { at: r.u64().map_err(e)?, address: r.u32().map_err(e)?, words: r.u32().map_err(e)? }),
+            _ => return Err("bad mdec output".into()),
         };
+        if !r.done() { return Err("trailing mdec bytes".into()); }
         Ok(())
     }
 }

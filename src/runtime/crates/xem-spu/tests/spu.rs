@@ -775,6 +775,18 @@ fn snapshot_round_trip_continues_identically() {
 }
 
 #[test]
+fn accelerated_cd_input_retains_only_recent_audio_and_stays_bounded_in_states() {
+    let mut spu = Spu::new();
+    for value in 0..1000i16 { spu.push_cd_audio(&vec![value; 2*4410]); }
+    assert_eq!(spu.cd_audio_queued(),4410);
+    assert!(spu.save().len() < 600_000);
+    spu.run(4410,None);
+    assert_eq!(spu.cd_audio_queued(),0,"no stale movie audio after 100 ms");
+    spu.push_cd_audio(&vec![7; 2*44100]);
+    assert_eq!(spu.cd_audio_queued(),4410,"one large input is bounded too");
+}
+
+#[test]
 fn headless_run_matches_run_with_output() {
     let mut a = busy_spu();
     let mut b = busy_spu();

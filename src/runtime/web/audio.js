@@ -14,6 +14,7 @@ export class AudioOut {
     this.stats = { buffered: 0, played: 0, underruns: 0, overflows: 0 };
     this.posted = 0;
     this.error = null;
+    this.revision = null;
   }
 
   /** Call from a user gesture (click, key): creates or resumes the context. */
@@ -41,8 +42,15 @@ export class AudioOut {
     await this.context?.suspend();
   }
 
+  reset() { this.node?.port.postMessage({ reset: true }); this.revision = null; }
+
   /** Post the game's new samples to the worklet (dropped while nothing plays them). */
   pump() {
+    const revision = this.app.timeline_revision();
+    if (revision !== this.revision) {
+      this.revision = revision;
+      this.node?.port.postMessage({ reset: true });
+    }
     const samples = this.app.take_audio();
     if (samples.length === 0 || this.context?.state !== 'running' || !this.node) return;
     this.posted += samples.length / 2;

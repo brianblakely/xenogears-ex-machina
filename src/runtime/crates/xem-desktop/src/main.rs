@@ -195,7 +195,6 @@ impl Host {
     fn run(&mut self, window: &sdl::Window, options: &Options) -> Result<(), String> {
         let mut frames = 0u64;
         let mut minimized = false;
-        let mut fps_window = (Instant::now(), 0u32);
         loop {
             let was_visible = self.view.panel_visible();
             let mut event = SDL_Event::default();
@@ -204,8 +203,14 @@ impl Host {
                 // SAFETY: the union is read according to its type tag.
                 match SDL_EventType(unsafe { event.r#type }) {
                     SDL_EVENT_QUIT | SDL_EVENT_WINDOW_CLOSE_REQUESTED => return Ok(()),
-                    SDL_EVENT_WINDOW_MINIMIZED => minimized = true,
-                    SDL_EVENT_WINDOW_RESTORED => minimized = false,
+                    SDL_EVENT_WINDOW_MINIMIZED => {
+                        minimized = true;
+                        if let Some(game) = &mut self.game { game.pause(); }
+                    },
+                    SDL_EVENT_WINDOW_RESTORED => {
+                        minimized = false;
+                        if let Some(game) = &mut self.game { game.resume(); }
+                    },
                     SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED
                     | SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED => self.resize(window),
                     // SAFETY: event comes from SDL_PollEvent.
@@ -233,7 +238,6 @@ impl Host {
             };
             if self.frame(window, screenshot)? {
                 frames += 1;
-                fps_window.1 += 1;
             }
             if last && frames > 0 {
                 return Ok(());
@@ -243,25 +247,6 @@ impl Host {
             {
                 println!("xem-desktop: frame {} memory_hash {}", game.frames_run(), game.memory_hash());
                 return Ok(());
-            }
-            let elapsed = fps_window.0.elapsed().as_secs_f32();
-            if elapsed >= 1.0 {
-                if self
-                    .view
-                    .settings()
-                    .borrow()
-                    .settings()
-                    .presentation
-                    .show_fps
-                {
-                    window.set_title(&format!(
-                        "Xenogears Ex Machina - {:.0} fps",
-                        fps_window.1 as f32 / elapsed
-                    ));
-                } else {
-                    window.set_title("Xenogears Ex Machina");
-                }
-                fps_window = (Instant::now(), 0);
             }
         }
     }
@@ -283,9 +268,13 @@ impl Host {
             // The surface was lost.
             self.presenter.resume(&self.gpu, window)?;
         }
-        if let Some(game) = &mut self.game {
+        if self.view.update_app(window,&mut self.game) && let Some(game) = &mut self.game {
             let settings = self.view.settings().borrow().settings().clone();
-            game.update(self.view.pad_buttons(), &settings)?;
+            if let Err(error) = game.update(self.view.pad_buttons(), &settings, || window.focused()) {
+                self.view.ui().set_operation_status(&format!("Game stopped: {error}. Load a state to recover."));
+                self.view.set_panel_visible(true);
+                game.pause();
+            }
             let (width, height, rgba) = game.display();
             self.view.set_game_image(&self.gpu, (width, height), &rgba);
         }

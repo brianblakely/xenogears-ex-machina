@@ -13,6 +13,15 @@ pub trait GameMemory {
     fn read(&self, address: u32, out: &mut [u8]) -> Result<(), OutOfBounds>;
     fn write(&mut self, address: u32, data: &[u8]) -> Result<(), OutOfBounds>;
 
+    /// Inspect a region between module calls. Backends may borrow their own
+    /// memory directly or reuse a copy buffer when the memory is external.
+    fn with_bytes(&self, address: u32, len: usize, visit: &mut dyn FnMut(&[u8])) -> Result<(), OutOfBounds> {
+        let mut bytes = vec![0; len];
+        self.read(address, &mut bytes)?;
+        visit(&bytes);
+        Ok(())
+    }
+
     fn read_u32(&self, address: u32) -> Result<u32, OutOfBounds> {
         let mut word = [0; 4];
         self.read(address, &mut word)?;

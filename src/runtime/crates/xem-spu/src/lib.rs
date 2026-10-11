@@ -460,8 +460,16 @@ impl Spu {
 
     /// Queues interleaved L/R 44.1 kHz CD audio (CD-DA or decoded XA).
     pub fn push_cd_audio(&mut self, interleaved: &[i16]) {
+        // CD sectors can arrive faster than normal-tempo audio is consumed
+        // during fast-forward. Retain at most 100 ms of the newest samples;
+        // old movie audio must not play after the movie has ended.
+        const MAX_CD_FRAMES: usize = 4410;
+        let frames = interleaved.len() / 2;
+        let retained = frames.min(MAX_CD_FRAMES);
+        let excess = self.cd_queue.len().saturating_add(retained).saturating_sub(MAX_CD_FRAMES);
+        self.cd_queue.drain(..excess);
         self.cd_queue
-            .extend(interleaved.chunks_exact(2).map(|p| [p[0], p[1]]));
+            .extend(interleaved.chunks_exact(2).skip(frames - retained).map(|p| [p[0], p[1]]));
     }
 
     /// Stereo frames waiting in the CD audio queue.
@@ -1046,6 +1054,7 @@ impl Spu {
         }
         s.clock = r.u64()?;
         let frames = r.u32()? as usize;
+        if frames > 4410 { return Err(SnapshotError::InvalidValue("CD audio queue length")); }
         let bytes = r.bytes(frames.checked_mul(4).ok_or(SnapshotError::Truncated)?)?;
         s.cd_queue = bytes
             .chunks_exact(4)

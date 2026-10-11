@@ -11,6 +11,9 @@ links = "xem_game"
 [dependencies]
 xem-core = { path = "../xem-core" }
 xem-disc = { path = "../xem-disc" }
+xem-storage = { path = "../xem-storage" }
+serde_json.workspace = true
 
 [build-dependencies]
 cc.workspace = true
+sha2 = "=0.11.0"

@@ -9,9 +9,47 @@
 use crate::clock::{Clock, RootCounter};
 use crate::memory::{GameMemory, OutOfBounds};
 use crate::pad::{Pad, Pads};
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 const MAGIC: &[u8; 8] = b"XEMSNAP\0";
-const VERSION: u32 = 3;
+const VERSION: u32 = 7;
+/// Hard bound on any decoded snapshot region/device buffer.
+pub const MAX_BUFFER: usize = 32 * 1024 * 1024;
+pub const MAX_STATE: usize = 64 * 1024 * 1024;
+
+/// Content identities, not machine architecture or presentation settings.
+/// Packages are ordered in their actual load order and use content digests.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct StateIdentity {
+    pub module: String,
+    pub disc: String,
+    pub packages: Vec<String>,
+}
+
+pub fn digest(bytes: &[u8]) -> [u8; 32] {
+    Sha256::digest(bytes).into()
+}
+
+pub fn seal(mut bytes: Vec<u8>) -> Vec<u8> {
+    let hash = digest(&bytes);
+    bytes.reserve_exact(hash.len());
+    bytes.extend_from_slice(&hash);
+    bytes.shrink_to_fit();
+    bytes
+}
+
+pub fn checked(bytes: &[u8]) -> Result<&[u8], SnapshotError> {
+    if bytes.len() < 32 || bytes.len() > MAX_STATE {
+        return Err(SnapshotError::Format("state size"));
+    }
+    let (data, hash) = bytes.split_at(bytes.len() - 32);
+    if digest(data) != hash {
+        return Err(SnapshotError::Format("checksum"));
+    }
+    Ok(data)
+}
 
 /// The linear-memory regions a snapshot keeps: KUSEG below 8 MB (where stray
 /// game stores land), the port's data, shadow stack and asyncify areas
@@ -65,12 +103,21 @@ impl Writer {
         self.u32(data.len() as u32);
         let mut literal = 0;
         let mut i = 0;
-        while i < data.len() {
-            if data[i] != 0 {
-                i += 1;
+        while let Some(word) = word_at(data, i) {
+            // Every compressible run (>=16 zeros) contains a whole 8-byte
+            // word, regardless of alignment. Skip mixed words, including
+            // short zeros in assets, and refine only all-zero words.
+            if word != 0 {
+                i += 8;
                 continue;
             }
-            let zeros = i;
+            let mut zeros = i;
+            while zeros > literal && data[zeros - 1] == 0 {
+                zeros -= 1;
+            }
+            while word_at(data, i) == Some(0) {
+                i += 8;
+            }
             while i < data.len() && data[i] == 0 {
                 i += 1;
             }
@@ -87,6 +134,51 @@ impl Writer {
         if !data.is_empty() {
             self.u32(data.len() as u32);
             self.0.extend_from_slice(data);
+        }
+    }
+}
+
+#[inline]
+fn word_at(data: &[u8], at: usize) -> Option<u64> {
+    data.get(at..at + 8).map(|word| u64::from_le_bytes(word.try_into().unwrap()))
+}
+
+#[cfg(test)]
+mod word_scan_tests {
+    use super::*;
+
+    #[test]
+    fn word_scan_preserves_byte_runs_at_every_alignment_and_length() {
+        fn byte_scan(data: &[u8]) -> Vec<u8> {
+            let mut w = Writer::default();
+            w.u32(data.len() as u32);
+            let (mut literal, mut i) = (0, 0);
+            while i < data.len() {
+                if data[i] != 0 { i += 1; continue; }
+                let zeros = i;
+                while i < data.len() && data[i] == 0 { i += 1; }
+                if i - zeros >= 16 {
+                    w.literal(&data[literal..zeros]);
+                    w.u32((i - zeros) as u32 | 0x8000_0000);
+                    literal = i;
+                }
+            }
+            w.literal(&data[literal..]);
+            w.0
+        }
+        for offset in 0..16 {
+            for zeros in 0..80 {
+                for tail in 0..16 {
+                    let mut data = vec![0xff; offset];
+                    data.extend(std::iter::repeat_n(0, zeros));
+                    data.extend(std::iter::repeat_n(1, tail));
+                    data.extend_from_slice(&[2, 1, 0, 0xff, 0, 0, 3]);
+                    let mut w = Writer::default();
+                    w.memory(&data);
+                    assert_eq!(w.0, byte_scan(&data),"offset={offset}, zeros={zeros}, tail={tail}");
+                    assert_eq!(Reader::new(&w.0).memory().unwrap(),data);
+                }
+            }
         }
     }
 }
@@ -117,14 +209,24 @@ impl<'a> Reader<'a> {
         self.take(n)
     }
     pub fn memory(&mut self) -> Result<Vec<u8>, SnapshotError> {
+        self.memory_limit(MAX_BUFFER)
+    }
+    pub fn memory_limit(&mut self, limit: usize) -> Result<Vec<u8>, SnapshotError> {
         let len = self.u32()? as usize;
+        if len > limit {
+            return Err(SnapshotError::Format("memory size exceeds limit"));
+        }
         let mut out = Vec::with_capacity(len);
         while out.len() < len {
             let run = self.u32()?;
+            let count = (run & 0x7FFF_FFFF) as usize;
+            if count == 0 || count > len - out.len() {
+                return Err(SnapshotError::Format("invalid memory run"));
+            }
             if run & 0x8000_0000 != 0 {
-                out.resize(out.len() + (run & 0x7FFF_FFFF) as usize, 0);
+                out.resize(out.len() + count, 0);
             } else {
-                out.extend_from_slice(self.take(run as usize)?);
+                out.extend_from_slice(self.take(count)?);
             }
         }
         if out.len() != len {
@@ -134,6 +236,14 @@ impl<'a> Reader<'a> {
     }
     pub fn done(&self) -> bool {
         self.at == self.data.len()
+    }
+    /// A length for fixed-width records, checked before allocating.
+    pub fn count(&mut self, width: usize, limit: usize) -> Result<usize, SnapshotError> {
+        let count = self.u32()? as usize;
+        if count > limit || count > (self.data.len() - self.at) / width {
+            return Err(SnapshotError::Format("record count exceeds limit"));
+        }
+        Ok(count)
     }
 }
 
@@ -154,27 +264,28 @@ pub(crate) fn read_header(r: &mut Reader<'_>) -> Result<(), SnapshotError> {
 
 pub(crate) fn write_memory(w: &mut Writer, memory: &dyn GameMemory) -> Result<(), SnapshotError> {
     for (start, len) in REGIONS {
-        let mut data = vec![0; len as usize];
-        memory.read(start, &mut data)?;
-        w.memory(&data);
+        memory.with_bytes(start, len as usize, &mut |data| w.memory(data))?;
     }
     Ok(())
 }
 
-pub(crate) fn read_memory(r: &mut Reader<'_>, memory: &mut dyn GameMemory) -> Result<(), SnapshotError> {
-    for (start, len) in REGIONS {
-        let data = r.memory()?;
+pub(crate) fn read_memory(r: &mut Reader<'_>) -> Result<Vec<Vec<u8>>, SnapshotError> {
+    let mut regions = Vec::new();
+    for (_, len) in REGIONS {
+        let data = r.memory_limit(len as usize)?;
         if data.len() != len as usize {
             return Err(SnapshotError::Format("region size"));
         }
-        memory.write(start, &data)?;
+        regions.push(data);
     }
-    Ok(())
+    Ok(regions)
 }
 
 pub(crate) fn write_clock(w: &mut Writer, clock: &Clock) {
     w.u64(clock.now);
     w.u64(clock.vblanks);
+    w.u64(clock.audio_now);
+    w.u64(clock.audio_due);
     for c in &clock.counters {
         w.u32(c.target);
         w.u32(c.mode);
@@ -186,6 +297,8 @@ pub(crate) fn write_clock(w: &mut Writer, clock: &Clock) {
 
 pub(crate) fn read_clock(r: &mut Reader<'_>) -> Result<Clock, SnapshotError> {
     let mut clock = Clock { now: r.u64()?, vblanks: r.u64()?, ..Clock::default() };
+    clock.audio_now = r.u64()?;
+    clock.audio_due = r.u64()?;
     for c in clock.counters.iter_mut() {
         *c = RootCounter { target: r.u32()?, mode: r.u32()?, running: r.u32()? != 0, origin: r.u64()?, due: r.u64()? };
     }
@@ -224,5 +337,13 @@ mod tests {
         let mut r = Reader::new(&w.0);
         assert_eq!(r.memory().unwrap(), data);
         assert!(r.done());
+    }
+
+    #[test]
+    fn malformed_runs_and_unbounded_allocations_are_rejected() {
+        for words in [[1, 0], [1, 0x8000_0000], [1, 0x8000_0002], [u32::MAX, 1]] {
+            let bytes: Vec<_> = words.into_iter().flat_map(u32::to_le_bytes).collect();
+            assert!(Reader::new(&bytes).memory().is_err());
+        }
     }
 }

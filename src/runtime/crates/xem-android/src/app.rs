@@ -181,7 +181,7 @@ struct Live {
 impl Live {
     fn status(&mut self) -> String {
         let game = match &mut self.game {
-            Some(game) => format!(" game_vblank={}", game.vblanks()),
+            Some(game) => format!(" game_vblank={} fast_forward={}", game.vblanks(), game.time_status().0),
             None => String::new(),
         };
         format!(
@@ -367,6 +367,7 @@ impl Host {
             true,
         )?;
         let import_requested = Rc::new(Cell::new(false));
+        view.set_state_directory(files.clone());
         view.ui().on_import_disc({
             let requested = import_requested.clone();
             move || requested.set(true)
@@ -562,16 +563,17 @@ impl Host {
 
         let live = &mut *live;
         let time = live.clock.tick(Instant::now());
-        if let Some(game) = &mut live.game {
+        if self.view.update_app(window,&mut live.game) && let Some(game) = &mut live.game {
             let settings = self.view.settings().borrow().settings().clone();
             let buttons = self.view.pad_buttons();
             if buttons != live.buttons {
                 log(&format!("pad buttons {buttons:#06x} game_vblank={}", game.vblanks()));
                 live.buttons = buttons;
             }
-            if let Err(trap) = game.update(buttons, &settings) {
+            if let Err(trap) = game.update(buttons, &settings, || window.focused()) {
                 log(&format!("game stopped: {trap}"));
-                live.game = None;
+                game.pause();
+                self.view.ui().set_operation_status(&format!("Game stopped: {trap}. Load a state to recover."));
                 self.view.set_panel_visible(true);
             } else {
                 let (width, height, rgba) = game.display();

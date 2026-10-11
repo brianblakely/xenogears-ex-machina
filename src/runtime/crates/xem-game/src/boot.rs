@@ -7,7 +7,7 @@ use std::error::Error;
 use std::path::{Path, PathBuf};
 
 use xem_core::control::Session;
-use xem_core::devices::card::FileStorage;
+use crate::storage::FileStorage;
 use xem_core::inspect::Schema;
 use xem_core::{Runtime, bios, exe};
 use xem_disc::{Identification, SectorSource};
@@ -41,12 +41,14 @@ pub fn boot_source(
     let header = exe::parse(&identity.executable)?;
 
     let mut runtime = Runtime::new(NativeModule::new());
+    runtime.identity.disc = xem_disc::identify::hex(&identity.sha256);
     if let Some(text) = options.stubs.as_ref().and_then(|p| std::fs::read_to_string(p).ok()) {
         runtime.services().stub_names =
             text.lines().filter_map(|l| l.split_once(' ').map(|(_, n)| n.to_string())).collect();
     }
     if let Some(dir) = &options.cards {
         runtime.services().card.attach_storage(Box::new(FileStorage { dir: dir.clone() }))?;
+        for error in &runtime.services().card.errors { eprintln!("{error}"); }
     }
     let rom = options.bios.as_ref().map(std::fs::read).transpose()?;
     if bios::install_kanji_font(runtime.memory(), rom.as_deref())? == bios::KanjiFont::Blank {
@@ -58,5 +60,6 @@ pub fn boot_source(
     runtime.services().insert_disc(source);
     // The module's schema (build/game/schema.json, embedded by build.rs).
     let schema = Schema::parse(include_str!(concat!(env!("OUT_DIR"), "/schema.json")))?;
-    Ok((Session::new(runtime, Some(schema)), identity))
+    let started = std::time::Instant::now();
+    Ok((Session::new(runtime,Some(schema),move || started.elapsed()),identity))
 }

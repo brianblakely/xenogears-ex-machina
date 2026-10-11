@@ -9,17 +9,23 @@ use xem_core::control::Session;
 use xem_game::NativeModule;
 
 const FRAME: Duration = Duration::from_nanos(1_000_000_000 / 60);
+const BATCH_BUDGET: Duration = Duration::from_millis(12);
 
 pub struct Game {
     pub session: Session<NativeModule>,
     audio: *mut SDL_AudioStream,
     paced: Instant,
+    music_paced: Instant,
     samples: Vec<i16>,
     /// A session log drives the pads (`schedule`): the player's buttons are
     /// not applied.
     scripted: bool,
     /// Frames the game runs at most (a scripted session's end).
     frame_limit: Option<u64>,
+    timeline_revision: u64,
+    rewind_held: [bool;2],
+    rewind_next: Instant,
+    applied_time_settings: Option<(xem_settings::FastForwardRate, bool, u32, u32)>,
 }
 
 impl Game {
@@ -44,14 +50,21 @@ impl Game {
             // SAFETY: an open stream.
             unsafe { SDL_ResumeAudioStreamDevice(audio) };
         }
-        Game {
+        let mut game = Game {
             session,
             audio,
             paced: Instant::now(),
+            music_paced: Instant::now(),
             samples: Vec::new(),
             scripted: false,
             frame_limit: None,
-        }
+            timeline_revision: 0,
+            rewind_held: [false;2],
+            rewind_next: Instant::now(),
+            applied_time_settings: None,
+        };
+        game.sync_time_settings(&xem_settings::Settings::default()).expect("valid interactive defaults");
+        game
     }
 
     /// Plays a session log (`{"commands": [[frame, command], ...]}`, as
@@ -63,6 +76,8 @@ impl Game {
             return Err(format!("schedule: {error}"));
         }
         self.scripted = true;
+        // Scripted playback has the same opt-in history policy as headless.
+        self.configure_rewind(false,self.session.rewind.interval_seconds,self.session.rewind.history_seconds)?;
         Ok(())
     }
 
@@ -81,6 +96,61 @@ impl Game {
         format!("{:016x}", self.session.memory_hash().unwrap_or(0))
     }
 
+    pub fn command(&mut self, command: &serde_json::Value) -> Result<serde_json::Value,String> {
+        let reply = xem_game::storage::command(&mut self.session,command);
+        if let Some(error) = reply.get("error") { return Err(error.to_string()); }
+        Ok(reply)
+    }
+    pub fn snapshot_bytes(&mut self) -> Result<Vec<u8>,String> { self.session.snapshot_bytes() }
+    pub fn restore_bytes(&mut self, bytes: &[u8]) -> Result<(),String> { self.session.restore_bytes(bytes) }
+    pub fn card_image(&mut self, slot: usize) -> Option<Vec<u8>> { self.session.runtime.services().card.image(slot).map(<[u8]>::to_vec) }
+    pub fn import_card(&mut self, slot: usize, bytes: Vec<u8>) -> Result<(),String> { self.session.runtime.services().card.import_image(slot,bytes) }
+    pub fn retry_storage(&mut self) -> Result<(),String> { self.session.runtime.services().card.retry_writes() }
+    pub fn configure_fast_forward(&mut self, rate: xem_settings::FastForwardRate) -> Result<(),String> {
+        self.session.configure_fast_forward(rate)
+    }
+    /// Apply changed preferences once. Agent commands keep authority until
+    /// the player changes the corresponding preference again.
+    pub fn sync_time_settings(&mut self, settings: &xem_settings::Settings) -> Result<(), String> {
+        let next = (settings.fast_forward_rate,settings.rewind_enabled,settings.rewind_interval_seconds,settings.rewind_history_seconds);
+        if self.applied_time_settings.is_none_or(|old| old.0 != next.0) { self.configure_fast_forward(next.0)?; }
+        if self.applied_time_settings.is_none_or(|old| (old.1,old.2,old.3) != (next.1,next.2,next.3)) {
+            self.configure_rewind(next.1,next.2,next.3)?;
+        }
+        self.applied_time_settings = Some(next);
+        Ok(())
+    }
+    pub fn configure_rewind(&mut self, enabled: bool, interval_seconds: u32, history_seconds: u32) -> Result<(),String> {
+        let budget = if enabled { xem_core::rewind::DEFAULT_REWIND_BYTES } else { 0 };
+        if self.session.rewind.budget != budget || self.session.rewind.interval_seconds != interval_seconds || self.session.rewind.history_seconds != history_seconds {
+            self.session.configure_rewind(budget,interval_seconds,history_seconds)?;
+            if !enabled { self.set_rewind_held(false,false)?; self.set_rewind_held(false,true)?; }
+        }
+        Ok(())
+    }
+    pub fn set_rewind_held(&mut self, held: bool, from_panel: bool) -> Result<(),String> {
+        if held && self.session.rewind.budget == 0 { return Err("Enable rewind history in Settings first.".into()); }
+        if held && let Some(error) = &self.session.rewind.error { return Err(error.clone()); }
+        let was_held = self.rewind_held.iter().any(|held| *held);
+        self.rewind_held[usize::from(from_panel)] = held;
+        let held = self.rewind_held.iter().any(|held| *held);
+        if was_held != held {
+            self.rewind_next = Instant::now();
+            if held { self.pause(); } else { self.resume(); self.timeline_revision = self.session.timeline_revision; }
+        }
+        Ok(())
+    }
+    pub fn time_status(&mut self) -> (bool,String) {
+        let rewind = &self.session.rewind;
+        let time = format!("{:.0} of {} seconds available · {:.1} MiB used{}", rewind.available_seconds(), rewind.history_seconds, rewind.bytes as f64/1048576.0,
+            rewind.error.as_ref().map(|e| format!(" — {e}")).unwrap_or_default());
+        (self.session.fast_forward,time)
+    }
+    pub fn storage_status(&mut self) -> String {
+        let card = &self.session.runtime.services().card;
+        format!("{} card writes pending. {}",card.pending_writes(),card.errors.join("; "))
+    }
+
     /// Whether the SPU's output reaches an audio device.
     pub fn has_audio(&self) -> bool {
         !self.audio.is_null()
@@ -91,11 +161,28 @@ impl Game {
         self.session.runtime.services().clock.vblanks
     }
 
-    /// Runs the frames due by the wall clock (at most two per call: a stalled
-    /// host drops time rather than catching up) with pad 1 holding
+    /// Runs a bounded batch of frames due by the wall clock with pad 1 holding
     /// `buttons`, then queues their sound at the master volume and audio
     /// output of `settings`. Returns the frames run.
-    pub fn update(&mut self, buttons: u16, settings: &xem_settings::Settings) -> Result<u32, String> {
+    pub fn update(&mut self, buttons: u16, settings: &xem_settings::Settings, mut focused: impl FnMut() -> bool) -> Result<u32, String> {
+        self.sync_time_settings(settings)?;
+        if self.rewind_held.iter().any(|held| *held) {
+            let now = Instant::now();
+            if now >= self.rewind_next {
+                self.session.rewind_step()?;
+                self.rewind_next = now + Duration::from_millis(xem_core::rewind::REWIND_STEP_MS);
+            }
+            self.paced = now;
+            self.music_paced = now;
+            return Ok(0);
+        }
+        if self.session.stopped.is_some() { return Ok(0); }
+        if self.timeline_revision != self.session.timeline_revision {
+            self.timeline_revision = self.session.timeline_revision;
+            self.paced = Instant::now();
+            self.music_paced = self.paced;
+            if !self.audio.is_null() { unsafe { SDL_ClearAudioStream(self.audio); SDL_ResumeAudioStreamDevice(self.audio); } }
+        }
         let mut due = 0;
         while self.paced + FRAME <= Instant::now() && due < 2 {
             self.paced += FRAME;
@@ -104,15 +191,27 @@ impl Game {
         if self.paced + FRAME <= Instant::now() {
             self.paced = Instant::now();
         }
-        if let Some(limit) = self.frame_limit {
-            due = due.min(limit.saturating_sub(self.session.runtime.frames()) as u32);
-        }
-        for _ in 0..due {
+        let music_now = Instant::now();
+        let music_cycles = (music_now.duration_since(self.music_paced).min(Duration::from_millis(100)).as_nanos()
+            * u128::from(xem_core::clock::CPU_HZ) / 1_000_000_000) as u64;
+        self.music_paced = music_now;
+        let live_music = self.session.live_music();
+        let factor = self.session.frame_factor();
+        let requested = factor.map(|factor| due * factor);
+        let start = Instant::now();
+        let mut batch = 0;
+        while requested.is_none_or(|frames| batch < frames)
+            && self.frame_limit.is_none_or(|limit| self.session.runtime.frames() < limit)
+            && (batch == 0 || start.elapsed() < BATCH_BUDGET)
+        {
             if !self.scripted {
-                self.session.runtime.services().pads.0[0].buttons = buttons;
+                if self.session.runtime.services().pads.0[0].buttons != buttons { self.session.set_pad(0,buttons); }
             }
-            self.session.frame().map_err(|trap| trap.to_string())?;
+            if !self.scripted { self.session.set_window_focus(focused(),settings.pause_on_focus_loss); }
+            if !self.session.frame().map_err(|trap| trap.to_string())? { break; }
+            batch += 1;
         }
+        if live_music { self.session.advance_live_music(music_cycles)?; }
         let spu = &mut self.session.runtime.services().spu;
         self.samples.resize(spu.audio_queued(), 0);
         spu.take_audio(&mut self.samples);
@@ -133,7 +232,7 @@ impl Game {
                 );
             }
         }
-        Ok(due)
+        Ok(batch)
     }
 
     /// Stops the game clock and the sound (the host went to the background):
@@ -152,6 +251,8 @@ impl Game {
     /// Continues from now: the paused span is not run.
     pub fn resume(&mut self) {
         self.paced = Instant::now();
+        self.music_paced = self.paced;
+        self.session.reset_rewind_timer();
         if !self.audio.is_null() {
             // SAFETY: an open stream.
             unsafe { SDL_ResumeAudioStreamDevice(self.audio) };
@@ -170,5 +271,204 @@ impl Drop for Game {
             // SAFETY: opened by SDL_OpenAudioDeviceStream, destroyed once.
             unsafe { SDL_DestroyAudioStream(self.audio) };
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use xem_settings::FastForwardRate;
+
+    #[test]
+    #[ignore = "needs the original disc 1 and built game module"]
+    fn original_game_rewind_frame_latency_and_scheduled_setup() {
+        use serde_json::json;
+        let disc = std::env::var_os("XEM_DISC1").map(std::path::PathBuf::from)
+            .unwrap_or_else(|| std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../discs/Xenogears disc 1.chd"));
+        let (mut session,_) = xem_game::boot(&disc,&Default::default()).unwrap();
+        let log = json!({"cmd":"schedule","commands":[
+            [0,{"cmd":"connect_pad","port":1,"connected":false}],
+            [0,{"cmd":"enter_field","map":22}],
+            [0,{"cmd":"press","buttons":["start"],"frames":4}]
+        ]});
+        assert!(session.execute(&log).get("error").is_none());
+        session.frame().unwrap();
+        session.execute(&json!({"cmd":"frames","count":300}));
+        assert_eq!(session.execute(&json!({"cmd":"inspect","path":"mode_field_map_id"})),22);
+        assert!(!session.runtime.services().pads.0[1].connected);
+        assert!(session.execute(&json!({"cmd":"status"})).get("error").is_none());
+        let clock = std::rc::Rc::new(std::cell::Cell::new(Duration::ZERO));
+        let source = clock.clone();
+        let mut session = Session::new(session.runtime,session.schema,move || source.get());
+        session.configure_rewind(xem_core::rewind::DEFAULT_REWIND_BYTES,1,30).unwrap();
+        let mut samples = Vec::new();
+        let mut checkpoint_samples = Vec::new();
+        // Put a one-second checkpoint every ten sampled frames, so the p99
+        // includes serialization rather than hiding its cost in a small tail.
+        for frame in 0..300 {
+            clock.set(Duration::from_millis((frame / 10 + 1) * 1000));
+            let before = session.rewind.status()["newest_frame"].clone();
+            let start = Instant::now();
+            assert!(session.frame().unwrap());
+            let elapsed = start.elapsed().as_secs_f64() * 1000.0;
+            samples.push(elapsed);
+            if session.rewind.status()["newest_frame"] != before { checkpoint_samples.push(elapsed); }
+        }
+        assert!(checkpoint_samples.len() >= 29,"the timing run must actually create checkpoints");
+        samples.sort_by(f64::total_cmp);
+        checkpoint_samples.sort_by(f64::total_cmp);
+        let p99 = samples[296];
+        eprintln!("rewind frame latency: p99={p99:.3} ms; checkpoint median={:.3} ms, max={:.3} ms",
+            checkpoint_samples[checkpoint_samples.len()/2],checkpoint_samples.last().unwrap());
+        assert!(p99 < 16.0,"rewind frame p99 was {p99:.3} ms");
+    }
+
+    #[test]
+    #[ignore = "needs the original disc 1 and built game module"]
+    fn original_game_focus_loss_uses_original_pause_and_waits_for_legal_play() {
+        use serde_json::json;
+        let disc = std::env::var_os("XEM_DISC1").map(std::path::PathBuf::from)
+            .unwrap_or_else(|| std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../discs/Xenogears disc 1.chd"));
+        let (mut session,_) = xem_game::boot(&disc,&Default::default()).unwrap();
+        assert!(session.execute(&json!({"cmd":"enter_field","map":22})).get("error").is_none());
+        assert!(session.execute(&json!({"cmd":"frames","count":300})).get("error").is_none());
+        let clock = std::rc::Rc::new(std::cell::Cell::new(Duration::ZERO));
+        let source = clock.clone();
+        let session = Session::new(session.runtime,session.schema,move || source.get());
+        let mut game = Game::new(session);
+        let settings = xem_settings::Settings { fast_forward_rate: FastForwardRate::Fixed(20), ..Default::default() };
+        let paused = |game: &mut Game| game.session.execute(&json!({"cmd":"inspect","path":"sound_driver_flags"})).as_i64().unwrap() & 0x40 != 0;
+        let update = |game: &mut Game, focused: bool, settings: &xem_settings::Settings, buttons| {
+            game.paced = Instant::now()-FRAME*2;
+            game.update(buttons,settings,|| focused).unwrap()
+        };
+        assert!(!paused(&mut game));
+        update(&mut game,true,&settings,0);
+        clock.set(Duration::from_secs(1));
+        update(&mut game,true,&settings,0);
+        game.command(&json!({"cmd":"fast_forward","enabled":true})).unwrap();
+        game.command(&json!({"cmd":"write","path":"field_work.unk2358","value":1})).unwrap();
+        let before = game.frames_run();
+        for _ in 0..4 { update(&mut game,false,&settings,0); }
+        assert!(game.frames_run()>before,"unpausable play continues until an original pause check permits it");
+        assert!(!paused(&mut game),"the game's script pause lock must be respected");
+        // Refocus before unlocking: a cancelled focus request must not pause later.
+        update(&mut game,true,&settings,0);
+        game.command(&json!({"cmd":"write","path":"field_work.unk2358","value":0})).unwrap();
+        for _ in 0..4 { update(&mut game,true,&settings,0); }
+        assert!(!paused(&mut game));
+        let input_mask = game.command(&json!({"cmd":"inspect","path":"field_work.input_mask"})).unwrap().as_i64().unwrap();
+        game.command(&json!({"cmd":"write","path":"field_work.input_mask","value":input_mask & !0x800})).unwrap();
+        for _ in 0..4 { update(&mut game,false,&settings,0); }
+        assert!(!paused(&mut game),"a script's Start input mask must also defer focus pausing");
+        game.command(&json!({"cmd":"write","path":"field_work.input_mask","value":input_mask})).unwrap();
+        for _ in 0..8 {
+            update(&mut game,false,&settings,0);
+            if paused(&mut game) { break; }
+        }
+        assert!(paused(&mut game),"focus loss must enter the original pause screen even during FF");
+        let retained = game.session.rewind.status();
+        let paused_at = game.frames_run();
+        clock.set(Duration::from_secs(60));
+        for _ in 0..4 { update(&mut game,false,&settings,0); }
+        for _ in 0..4 { update(&mut game,true,&settings,0); }
+        assert!(game.frames_run()>paused_at,"the original pause screen still runs frames and reads resume input");
+        assert!(paused(&mut game),"neither holding focus loss nor refocusing may resume the game");
+        assert_eq!(game.session.rewind.status(),retained,"in-game pause freezes the rewind queue");
+        game.command(&json!({"cmd":"fast_forward","enabled":false})).unwrap();
+        for _ in 0..2 { update(&mut game,true,&settings,xem_core::pad::button::START); }
+        for _ in 0..4 { update(&mut game,true,&settings,0); }
+        assert!(!paused(&mut game),"normal Start input resumes the game");
+        let disabled = xem_settings::Settings { pause_on_focus_loss:false, ..settings };
+        for _ in 0..4 { update(&mut game,false,&disabled,0); }
+        assert!(!paused(&mut game),"disabling the setting keeps unfocused play running");
+
+        // Record an automatic pause, refocus and an ordinary Start resume;
+        // replay must produce the same game state without window events.
+        game.session.set_window_focus(true,true);
+        let initial = game.session.snapshot_bytes().unwrap();
+        game.session.execute(&json!({"cmd":"record"}));
+        game.session.set_window_focus(false,true);
+        assert!(game.session.execute(&json!({"cmd":"frames","count":8})).get("error").is_none());
+        assert!(paused(&mut game));
+        game.session.set_window_focus(true,true);
+        assert!(game.session.execute(&json!({"cmd":"frames","count":4})).get("error").is_none());
+        assert!(paused(&mut game));
+        game.session.execute(&json!({"cmd":"press","buttons":["start"],"frames":4}));
+        assert!(game.session.execute(&json!({"cmd":"frames","count":12})).get("error").is_none());
+        assert!(!paused(&mut game));
+        let mut log = game.session.execute(&json!({"cmd":"stop_recording"}));
+        let final_hash = game.session.execute(&json!({"cmd":"memory_hash"}));
+        game.session.restore_bytes(&initial).unwrap();
+        log["cmd"] = json!("replay");
+        assert!(game.session.execute(&log).get("error").is_none());
+        assert!(game.session.execute(&json!({"cmd":"frames","count":24})).get("error").is_none());
+        assert_eq!(game.session.execute(&json!({"cmd":"memory_hash"})),final_hash,"focus pause recordings replay exactly");
+    }
+
+    #[test]
+    #[ignore = "needs the original disc 1 and built game module"]
+    fn original_game_held_rewind_stops_at_history_start_and_resumes_on_release() {
+        let disc = std::env::var_os("XEM_DISC1").map(std::path::PathBuf::from)
+            .unwrap_or_else(|| std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../discs/Xenogears disc 1.chd"));
+        let (session,_) = xem_game::boot(&disc,&Default::default()).unwrap();
+        let clock = std::rc::Rc::new(std::cell::Cell::new(Duration::ZERO));
+        let source = clock.clone();
+        let session = Session::new(session.runtime,session.schema,move || source.get());
+        // An SDL host without an audio device runs the same game silently.
+        let mut game = Game::new(session);
+        let settings = xem_settings::Settings { fast_forward_rate: FastForwardRate::Fixed(20), ..Default::default() };
+        game.configure_rewind(true,settings.rewind_interval_seconds,settings.rewind_history_seconds).unwrap();
+        game.command(&serde_json::json!({"cmd":"fast_forward","enabled":true})).unwrap();
+        for frame in 1..=150 {
+            clock.set(Duration::from_millis(frame*1000/30));
+            assert!(game.session.frame().unwrap());
+        }
+        game.command(&serde_json::json!({"cmd":"fast_forward","enabled":false})).unwrap();
+        game.configure_fast_forward(FastForwardRate::Fixed(20)).unwrap();
+        game.set_rewind_held(true,false).unwrap();
+        game.set_rewind_held(true,true).unwrap();
+        game.set_rewind_held(false,true).unwrap();
+        assert!(game.rewind_held[0],"releasing a panel hold does not release the bound input");
+        assert_eq!(game.update(0,&settings,|| true).unwrap(),0);
+        assert_eq!(game.frames_run(),120);
+        assert!(!game.session.fast_forward,"rewind must keep the current FF switch off");
+        assert_eq!(game.session.fast_forward_rate,FastForwardRate::Fixed(20));
+        for expected in [90,60,30,0] {
+            game.rewind_next = Instant::now();
+            assert_eq!(game.update(0,&settings,|| true).unwrap(),0);
+            assert_eq!(game.frames_run(),expected);
+            assert!(!game.session.fast_forward);
+            assert_eq!(game.session.runtime.services().clock.audio_speed,1);
+            assert_eq!(game.session.runtime.services().spu.speed(),1);
+        }
+        let first = game.snapshot_bytes().unwrap();
+        game.rewind_next = Instant::now();
+        assert_eq!(game.update(0,&settings,|| true).unwrap(),0);
+        assert_eq!(game.snapshot_bytes().unwrap(),first);
+        game.set_rewind_held(false,false).unwrap();
+        game.paced = Instant::now() - FRAME*2;
+        assert!(game.update(0,&settings,|| true).unwrap()>0);
+        assert!(game.frames_run()>0);
+        let saved = game.snapshot_bytes().unwrap();
+        game.command(&serde_json::json!({"cmd":"fast_forward_configure","rate":{"Fixed":5}})).unwrap();
+        game.command(&serde_json::json!({"cmd":"rewind_configure","max_bytes":16*1024*1024,"interval_seconds":3,"history_seconds":12})).unwrap();
+        let oldest = game.session.rewind.status()["oldest_frame"].clone();
+        let mut changed = settings.clone(); changed.master_volume = 55;
+        game.update(0,&changed,|| true).unwrap();
+        assert_eq!(game.session.fast_forward_rate,FastForwardRate::Fixed(5));
+        assert_eq!(game.session.rewind.budget,16*1024*1024);
+        assert_eq!(game.session.rewind.interval_seconds,3);
+        assert_eq!(game.session.rewind.status()["oldest_frame"],oldest);
+        game.pause();
+        clock.set(Duration::from_secs(3600));
+        game.resume();
+        game.paced = Instant::now() - FRAME;
+        game.update(0,&changed,|| true).unwrap();
+        assert_eq!(game.session.rewind.status()["oldest_frame"],oldest,"minimized time must not expire retained states");
+        game.session.stopped = Some("test trap".into());
+        assert_eq!(game.update(0,&changed,|| true).unwrap(),0,"a stopped game stays available for recovery");
+        game.restore_bytes(&saved).unwrap();
+        assert!(game.session.stopped.is_none());
     }
 }

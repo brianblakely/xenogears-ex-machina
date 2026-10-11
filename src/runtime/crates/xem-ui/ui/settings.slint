@@ -1,7 +1,5 @@
-// The settings panel. Widgets edit the in-out properties; the host turns each
-// edit into a typed settings change and writes back the acknowledged values.
-
-import { AboutSlint, Button, CheckBox, ComboBox, GroupBox, Palette, Slider } from "std-widgets.slint";
+// Shared app Settings, with sidebar navigation and a compact section picker.
+import { AboutSlint, Button, CheckBox, ComboBox, GroupBox, LineEdit, Palette, ScrollView, Slider, SpinBox, TabWidget } from "std-widgets.slint";
 
 export component SettingsPanel inherits Window {
     in-out property <float> master-volume;
@@ -9,138 +7,332 @@ export component SettingsPanel inherits Window {
     in-out property <int> scale;
     in-out property <int> filter;
     in-out property <bool> show-fps;
+    in-out property <bool> pause-on-focus-loss;
     in property <string> status;
-    // Hosts that can import a disc image set this and answer import-disc-requested.
     in property <bool> can-import-disc;
     in property <string> disc-status: "No disc imported";
-
+    in property <[string]> app-actions;
+    in-out property <int> selected-action;
+    in-out property <string> keyboard-binding;
+    in-out property <string> gamepad-binding;
+    in property <[string]> backup-actions;
+    in-out property <int> selected-backup;
+    in-out property <int> selected-section: 0;
+    in property <bool> wide-layout;
+    private property <[string]> sections: ["Audio", "Graphics", "Controls", "Time", "Saves"];
+    in property <string> time-status: "Boot a game to use rewind.";
+    in property <string> storage-status;
+    in property <bool> fast-forward;
+    in property <int> fast-forward-rate;
+    in property <[string]> fast-forward-rates;
+    in-out property <float> fast-forward-position;
+    in-out property <bool> invert-trigger-chords;
+    in-out property <bool> rewind-enabled;
+    in-out property <int> rewind-interval-seconds;
+    in property <int> rewind-interval-max;
+    in-out property <int> rewind-history-seconds;
+    in property <int> rewind-history-max;
+    private property <bool> keyboard-editor-focused;
+    private property <bool> gamepad-editor-focused;
+    private property <bool> rewind-interval-focused;
+    private property <bool> rewind-history-focused;
+    out property <bool> text-editor-focused: keyboard-editor-focused || gamepad-editor-focused || rewind-interval-focused || rewind-history-focused;
+    callback action-selected(int);
+    callback binding-edited(int, string, string);
+    callback app-action-requested(int);
+    callback backup-action-requested(int);
+    callback fast-forward-rate-edited(int);
+    callback invert-trigger-chords-edited(bool);
+    callback rewind-enabled-edited(bool);
+    callback rewind-interval-edited(int);
+    callback rewind-history-edited(int);
+    callback rewind-held(bool);
     callback master-volume-edited(int);
     callback audio-output-edited(int);
     callback scale-edited(int);
     callback filter-edited(int);
     callback show-fps-edited(bool);
+    callback pause-on-focus-loss-edited(bool);
     callback close-requested();
     callback import-disc-requested();
 
+    changed selected-section => {
+        section-scroll.content-y = 0px;
+        root.keyboard-editor-focused = false;
+        root.gamepad-editor-focused = false;
+        root.rewind-interval-focused = false;
+        root.rewind-history-focused = false;
+        root.rewind-held(false);
+    }
+
     title: "Settings";
     background: transparent;
-    preferred-width: 440px;
+    preferred-width: 640px;
     preferred-height: 560px;
+    min-width: 280px;
+    min-height: 280px;
 
     Rectangle {
         background: Palette.background.with-alpha(0.96);
         border-radius: 12px;
         border-width: 1px;
         border-color: Palette.border;
-
         VerticalLayout {
             padding: 16px;
-            spacing: 10px;
-
+            padding-right: 8px;
+            spacing: 12px;
             HorizontalLayout {
-                Text {
-                    text: "Settings";
-                    font-size: 20px;
-                    font-weight: 600;
-                    vertical-alignment: center;
-                }
-                Button {
-                    text: "Close";
+                padding-right: 8px;
+                Text { text: "Settings"; font-size: 20px; font-weight: 600; vertical-alignment: center; horizontal-stretch: 1; }
+                Button { text: "Close"; horizontal-stretch: 0; preferred-width: 72px; clicked => { root.close-requested(); } }
+            }
+            HorizontalLayout {
+                spacing: 12px;
+                if root.wide-layout: VerticalLayout {
+                    min-width: 104px;
+                    max-width: 104px;
                     horizontal-stretch: 0;
-                    clicked => { root.close-requested(); }
+                    TabWidget {
+                        orientation: Orientation.vertical;
+                        current-index <=> root.selected-section;
+                        min-height: 200px;
+                        max-height: 200px;
+                        // The tab bar navigates the single shared content view.
+                        Tab { title: root.sections[0]; Rectangle { accessible-role: none; } }
+                        Tab { title: root.sections[1]; Rectangle { accessible-role: none; } }
+                        Tab { title: root.sections[2]; Rectangle { accessible-role: none; } }
+                        Tab { title: root.sections[3]; Rectangle { accessible-role: none; } }
+                        Tab { title: root.sections[4]; Rectangle { accessible-role: none; } }
+                    }
+                    Rectangle { accessible-role: none; vertical-stretch: 1; }
                 }
-            }
-
-            GroupBox {
-                title: "Audio";
                 VerticalLayout {
-                    spacing: 8px;
-                    HorizontalLayout {
-                        spacing: 8px;
-                        Text { text: "Master volume"; vertical-alignment: center; min-width: 110px; }
-                        Slider {
-                            accessible-label: "Master volume";
-                            minimum: 0;
-                            maximum: 100;
-                            value <=> root.master-volume;
-                            changed(value) => { root.master-volume-edited(round(value)); }
-                        }
-                        Text { text: round(root.master-volume); vertical-alignment: center; min-width: 30px; }
+                    spacing: 12px;
+                    if !root.wide-layout: ComboBox {
+                        accessible-label: "Settings section";
+                        model: root.sections;
+                        current-index <=> root.selected-section;
                     }
-                    HorizontalLayout {
-                        spacing: 8px;
-                        Text { text: "Output"; vertical-alignment: center; min-width: 110px; }
-                        ComboBox {
-                            accessible-label: "Audio output";
-                            model: ["Mono", "Stereo", "Wide"];
-                            current-index <=> root.audio-output;
-                            selected => { root.audio-output-edited(self.current-index); }
+                    section-scroll := ScrollView {
+                        accessible-role: tab-panel;
+                        accessible-label: root.sections[root.selected-section];
+                        horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
+                        // Compact touch hosts pan the form; desktop mouse
+                        // presses reach sliders immediately without a pan delay.
+                        mouse-drag-pan-enabled: !root.wide-layout;
+                        content-width: self.visible-width;
+                        VerticalLayout {
+                            spacing: 12px;
+                            alignment: start;
+                            // Reserve a gutter for the scrollbar at the outer edge.
+                            padding-right: 20px;
+                            if root.selected-section == 0: GroupBox {
+                                title: "Audio";
+                                vertical-stretch: 0;
+                                VerticalLayout {
+                                    spacing: 10px;
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Text { text: "Master volume"; vertical-alignment: center; horizontal-stretch: 0; }
+                                        Slider { accessible-label: "Master volume"; minimum: 0; maximum: 100; value <=> root.master-volume; changed(value) => { root.master-volume-edited(round(value)); } }
+                                        Text { text: round(root.master-volume); vertical-alignment: center; min-width: 28px; horizontal-stretch: 0; }
+                                    }
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Text { text: "Output"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
+                                        ComboBox { accessible-label: "Audio output"; model: ["Mono", "Stereo", "Wide"]; current-index <=> root.audio-output; selected => { root.audio-output-edited(self.current-index); } }
+                                    }
+                                }
+                            }
+                            if root.selected-section == 1: GroupBox {
+                                title: "Graphics";
+                                vertical-stretch: 0;
+                                VerticalLayout {
+                                    spacing: 10px;
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Text { text: "Scale"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
+                                        ComboBox { accessible-label: "Scale"; model: ["Fit", "Integer", "Stretch"]; current-index <=> root.scale; selected => { root.scale-edited(self.current-index); } }
+                                    }
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Text { text: "Filter"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
+                                        ComboBox { accessible-label: "Filter"; model: ["Nearest", "Linear"]; current-index <=> root.filter; selected => { root.filter-edited(self.current-index); } }
+                                    }
+                                    CheckBox { text: "Show FPS"; checked <=> root.show-fps; toggled => { root.show-fps-edited(self.checked); } }
+                                }
+                            }
+                            if root.selected-section == 2: GroupBox {
+                                title: "Controls";
+                                vertical-stretch: 0;
+                                VerticalLayout {
+                                    spacing: 10px;
+                                    CheckBox { text: "Invert LT/RT chords"; checked <=> root.invert-trigger-chords; toggled => { root.invert-trigger-chords-edited(self.checked); } }
+                                    Text { text: root.invert-trigger-chords ? "LT: hold to rewind · RT: toggle fast-forward\nBack+LT/RT: game L2/R2" : "Back+LT: hold to rewind · Back+RT: toggle fast-forward\nLT/RT: game L2/R2"; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+                                    ComboBox { accessible-label: "App operation"; model: root.app-actions; current-index <=> root.selected-action; selected => { root.action-selected(self.current-index); } }
+                                    Text { text: "Keyboard binding"; }
+                                    LineEdit {
+                                        accessible-label: "Keyboard binding";
+                                        placeholder-text: "F5 or ControlLeft+KeyS";
+                                        text <=> root.keyboard-binding;
+                                        changed has-focus => { root.keyboard-editor-focused = self.has-focus; }
+                                    }
+                                    Text { text: "Gamepad binding"; }
+                                    LineEdit {
+                                        accessible-label: "Gamepad binding";
+                                        placeholder-text: "Back+South";
+                                        text <=> root.gamepad-binding;
+                                        changed has-focus => { root.gamepad-editor-focused = self.has-focus; }
+                                    }
+                                    Button { text: "Save binding"; clicked => { root.binding-edited(root.selected-action, root.keyboard-binding, root.gamepad-binding); } }
+                                }
+                            }
+                            if root.selected-section == 3: GroupBox {
+                                title: "Rewind";
+                                vertical-stretch: 0;
+                                VerticalLayout {
+                                    spacing: 8px;
+                                    CheckBox { text: "Enable rewind history"; checked <=> root.rewind-enabled; toggled => { root.rewind-enabled-edited(self.checked); } }
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Text { text: "Interval"; vertical-alignment: center; horizontal-stretch: 1; }
+                                        SpinBox {
+                                            accessible-label: "Rewind interval in seconds";
+                                            min-width: 104px;
+                                            max-width: 104px;
+                                            horizontal-stretch: 0;
+                                            minimum: 1;
+                                            maximum: min(root.rewind-interval-max, root.rewind-history-seconds);
+                                            value <=> root.rewind-interval-seconds;
+                                            edited(value) => { root.rewind-interval-edited(value); }
+                                            changed has-focus => { root.rewind-interval-focused = self.has-focus; }
+                                        }
+                                        Text { text: "seconds"; vertical-alignment: center; horizontal-stretch: 0; }
+                                    }
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Text { text: "History length"; vertical-alignment: center; horizontal-stretch: 1; }
+                                        SpinBox {
+                                            accessible-label: "Rewind history length in seconds";
+                                            min-width: 104px;
+                                            max-width: 104px;
+                                            horizontal-stretch: 0;
+                                            minimum: root.rewind-interval-seconds;
+                                            maximum: root.rewind-history-max;
+                                            value <=> root.rewind-history-seconds;
+                                            edited(value) => { root.rewind-history-edited(value); }
+                                            changed has-focus => { root.rewind-history-focused = self.has-focus; }
+                                        }
+                                        Text { text: "seconds"; vertical-alignment: center; horizontal-stretch: 0; }
+                                    }
+                                    Text { text: "Snapshots use elapsed play time, including during fast-forward."; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+                                    Text { text: root.time-status; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+                                    Button { text: "Hold to rewind"; changed pressed => { root.rewind-held(self.pressed); } }
+                                }
+                            }
+                            if root.selected-section == 3: GroupBox {
+                                title: "Fast-forward";
+                                vertical-stretch: 0;
+                                VerticalLayout {
+                                    spacing: 8px;
+                                    HorizontalLayout {
+                                        Text { text: "Speed"; vertical-alignment: center; horizontal-stretch: 1; }
+                                        Text { text: root.fast-forward-rates[root.fast-forward-rate]; vertical-alignment: center; horizontal-stretch: 0; }
+                                    }
+                                    Slider {
+                                        accessible-label: "Fast-forward rate";
+                                        minimum: 0;
+                                        maximum: root.fast-forward-rates.length - 1;
+                                        step: 1;
+                                        value <=> root.fast-forward-position;
+                                        changed(value) => { root.fast-forward-position = round(value); if round(value) != root.fast-forward-rate { root.fast-forward-rate-edited(round(value)); } }
+                                    }
+                                    Rectangle {
+                                        height: 7px;
+                                        for index in root.fast-forward-rates.length: Rectangle {
+                                            x: 10px + index * (parent.width - 20px) / (root.fast-forward-rates.length - 1) - 0.5px;
+                                            width: 1px;
+                                            height: index == root.fast-forward-rate ? 7px : 4px;
+                                            background: Palette.foreground.with-alpha(index == root.fast-forward-rate ? 0.9 : 0.4);
+                                        }
+                                    }
+                                    Rectangle {
+                                        height: self.width < 380px ? 36px : 18px;
+                                        for label[index] in root.fast-forward-rates: Text {
+                                            width: label == "Uncapped" ? 58px : 30px;
+                                            height: 18px;
+                                            y: parent.width < 380px ? (index - 2 * floor(index / 2)) * 18px : 0px;
+                                            x: clamp(10px + index * (parent.width - 20px) / (root.fast-forward-rates.length - 1) - self.width / 2, 0px, parent.width - self.width);
+                                            text: label;
+                                            horizontal-alignment: center;
+                                            font-size: 11px;
+                                        }
+                                    }
+                                    Text { text: root.fast-forward ? "Fast-forward is on. Toggle it with its binding." : "Toggle fast-forward with its binding."; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+                                    Text { text: "Music stays at normal tempo and pitch."; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+                                }
+                            }
+                            if root.selected-section == 3: GroupBox {
+                                title: "Pause";
+                                vertical-stretch: 0;
+                                VerticalLayout {
+                                    spacing: 8px;
+                                    CheckBox { text: "Pause when window loses focus"; checked <=> root.pause-on-focus-loss; toggled => { root.pause-on-focus-loss-edited(self.checked); } }
+                                    Text { text: "Uses the game’s pause screen when pausing is allowed. Resume with Start after refocusing."; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+                                }
+                            }
+                            if root.selected-section == 4: GroupBox {
+                                title: "Save states";
+                                vertical-stretch: 0;
+                                VerticalLayout {
+                                    spacing: 10px;
+                                    Text { text: "Save states capture game progress. App settings stay as currently set."; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Button { text: "Save state"; clicked => { root.app-action-requested(0); } }
+                                        Button { text: "Load state"; clicked => { root.app-action-requested(1); } }
+                                    }
+                                    ComboBox { accessible-label: "Backup operation"; model: root.backup-actions; current-index <=> root.selected-backup; }
+                                    Button { text: "Run backup operation"; clicked => { root.backup-action-requested(root.selected-backup); } }
+                                    Text { text: root.storage-status; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+                                }
+                            }
+                            if root.selected-section == 4 && root.can-import-disc: GroupBox {
+                                title: "Game disc";
+                                vertical-stretch: 0;
+                                VerticalLayout {
+                                    spacing: 8px;
+                                    Text { text: root.disc-status; wrap: word-wrap; }
+                                    Button { text: "Import disc…"; clicked => { root.import-disc-requested(); } }
+                                }
+                            }
+                            if root.selected-section == 4: AboutSlint { max-height: 120px; }
+                            Rectangle { accessible-role: none; vertical-stretch: 1; }
                         }
                     }
                 }
             }
+            Text { text: root.status; color: Palette.foreground.with-alpha(0.7); wrap: word-wrap; }
+        }
+    }
+}
 
-            GroupBox {
-                title: "Presentation";
-                VerticalLayout {
-                    spacing: 8px;
-                    HorizontalLayout {
-                        spacing: 8px;
-                        Text { text: "Scale"; vertical-alignment: center; min-width: 110px; }
-                        ComboBox {
-                            accessible-label: "Scale";
-                            model: ["Fit", "Integer", "Stretch"];
-                            current-index <=> root.scale;
-                            selected => { root.scale-edited(self.current-index); }
-                        }
-                    }
-                    HorizontalLayout {
-                        spacing: 8px;
-                        Text { text: "Filter"; vertical-alignment: center; min-width: 110px; }
-                        ComboBox {
-                            accessible-label: "Filter";
-                            model: ["Nearest", "Linear"];
-                            current-index <=> root.filter;
-                            selected => { root.filter-edited(self.current-index); }
-                        }
-                    }
-                    CheckBox {
-                        text: "Show FPS";
-                        checked <=> root.show-fps;
-                        toggled => { root.show-fps-edited(self.checked); }
-                    }
-                }
-            }
-
-            if root.can-import-disc: GroupBox {
-                title: "Disc";
-                HorizontalLayout {
-                    spacing: 8px;
-                    Text {
-                        text: root.disc-status;
-                        vertical-alignment: center;
-                        wrap: word-wrap;
-                        horizontal-stretch: 1;
-                    }
-                    Button {
-                        text: "Import disc…";
-                        horizontal-stretch: 0;
-                        clicked => { root.import-disc-requested(); }
-                    }
-                }
-            }
-
-            Text {
-                text: root.status;
-                color: Palette.foreground.with-alpha(0.7);
-                wrap: word-wrap;
-            }
-
-            Rectangle { vertical-stretch: 1; }
-
-            AboutSlint {
-                max-height: 120px;
-            }
+export component FrameRateOverlay inherits Window {
+    in property <string> counter: "— FPS";
+    background: transparent;
+    preferred-width: 96px;
+    preferred-height: 28px;
+    Rectangle {
+        background: #101114d9;
+        border-radius: 5px;
+        Text {
+            text: root.counter;
+            color: #f5f5f5;
+            font-family: "monospace";
+            font-size: 14px;
+            font-weight: 600;
+            horizontal-alignment: center;
+            vertical-alignment: center;
         }
     }
 }

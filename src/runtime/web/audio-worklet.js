@@ -17,7 +17,10 @@ class XemOutput extends AudioWorkletProcessor {
     this.underruns = 0;
     this.overflows = 0;
     this.reported = 0;
-    this.port.onmessage = (event) => this.push(event.data);
+    this.port.onmessage = (event) => {
+      if (event.data.reset) { this.read = 0; this.buffered = 0; }
+      else this.push(event.data);
+    };
   }
 
   push(samples) {
