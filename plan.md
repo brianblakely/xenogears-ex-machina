@@ -276,15 +276,15 @@ Unknown behavior and progression workarounds cannot be reported as completion.
 **Goal:** Modern flat/stereo presentation by default, with optional HD-2D-inspired
 visual effects and selectable original quirks on native and browser hosts.
 
-- [ ] Use the qualified native and browser wgpu backends across the targets;
+- [x] Use the qualified native and browser wgpu backends across the targets;
   support arbitrary resolution/aspect ratio and presentation framerate,
   resizing/high-DPI, correct projection/FOV/UI safe areas and interpolation
   without changing simulation/RNG/script/animation timing.
-- [ ] Implement Modern, HD-2D-inspired, PS1-style and Custom profiles. Keep affine
+- [x] Implement Modern, HD-2D-inspired, PS1-style and Custom profiles. Keep affine
   texturing, projected vertex snapping, color precision, dithering, low-resolution
   rasterization and recovered ordering/transparency quirks independently selectable
   at their appropriate rendering stages; adding HD-2D does not change the default.
-- [ ] Make the HD-2D-inspired profile apply only Square Enix HD-2D-like visual
+- [x] Make the HD-2D-inspired profile apply only Square Enix HD-2D-like visual
   effects to existing game assets: coherent sprite/world lighting, contact/cast
   shadows, ambient occlusion, atmospheric fog or light shafts, restrained bloom,
   color grading and adjustable depth of field for a miniature/diorama feel.
@@ -293,33 +293,33 @@ visual effects and selectable original quirks on native and browser hosts.
   or require new sprites, textures, models, animations or other art assets for
   this mode; no original-art production or replacement art pack is in scope.
   Preserve the existing sprite pixels/animation and 3D Gear/world geometry.
-- [ ] Keep new lighting/material/scene-tuning metadata in the presentation layer,
+- [x] Keep new lighting/material/scene-tuning metadata in the presentation layer,
   separate from recovered logic and original assets. Do not make new texture maps
   or other authored art a dependency. Preserve cutout silhouettes,
   transparency, intentional masks, important color cues and original scene layout;
   handle existing baked shading deliberately. UI/text/portraits/FMVs and Seraph
   Glass controls stay legible and outside world depth-of-field/post effects.
-- [ ] Provide HD-2D effect controls and explicit quality tiers for desktop, mobile,
+- [x] Provide HD-2D effect controls and explicit quality tiers for desktop, mobile,
   browser and XR budgets. Preserve the pixel-art/lit-world identity at lower tiers;
   never silently replace the selected profile. Default depth of field off in XR,
   keep stereo effects and sprite planes coherent between eyes, and make bloom,
   blur and atmospheric effects reducible without changing gameplay or camera mode.
-- [ ] Validate side-by-side representative interiors/exteriors, on-foot/Gear
+- [x] Validate side-by-side representative interiors/exteriors, on-foot/Gear
   battles, world map, effects and cutscenes against the intended HD-2D look and
   original readability. Verify profile switching and native/browser/flat/XR output
   leave authoritative state, RNG and timing unchanged; HD-2D requires no mod tools.
-- [ ] Preserve intentional masking, palettes, fog and compositing. Keep world,
+- [x] Preserve intentional masking, palettes, fog and compositing. Keep world,
   sprite and UI filtering independent; do not stretch text, portraits or FMVs.
-- [ ] Default optional culling to off; distinguish visibility/frustum/occlusion/
+- [x] Default optional culling to off; distinguish visibility/frustum/occlusion/
   back-face rejection from clipping, intentional hiding and gameplay activation.
-- [ ] Validate wider framing/content issues separately, cross-backend visuals and
+- [x] Validate wider framing/content issues separately, cross-backend visuals and
   unchanged gameplay with rendering skipped, offscreen or spectator-streamed.
-- [ ] Qualify native Horizon and browser flat virtual-screen play, then seated
+- [x] Qualify native Horizon and browser flat virtual-screen play, then seated
   stereo-screen play through OpenXR and WebXR respectively. Render both eyes from
   the same simulation state using the headset's views/projections; place game UI,
   sprite planes and FMVs deliberately.
   Preserve monoscopic media as such rather than claiming reconstructed 3D content.
-- [ ] Verify paused-game head tracking, display-paced XR rendering independent of
+- [x] Verify paused-game head tracking, display-paced XR rendering independent of
   simulation rate, and spectator attach/detach without extra game updates or RNG
   changes. Measure sustained headset frame pacing; never run game logic per eye.
 

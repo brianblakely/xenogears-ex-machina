@@ -10,7 +10,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
-import { HEADLESS, NO_WEBGPU, SHOTS, USER_DISC, WEB, WEBGPU, pixelStats, shot, start, status } from './support.mjs';
+import { HEADLESS, NO_WEBGPU, SHOTS, USER_DISC, WEB, WEBGPU, decodePng, pixelStats, shot, start, status } from './support.mjs';
 
 const available = existsSync(USER_DISC) && existsSync(join(WEB, 'game', 'game.wasm')) && existsSync(HEADLESS);
 mkdirSync(SHOTS, { recursive: true });
@@ -103,5 +103,25 @@ describe('the game renderer in browsers', { skip: !available && `needs ${USER_DI
 
   test('WebGL2 draws every profile without changing the game', { timeout: 600_000 }, async () => {
     await profiles(NO_WEBGPU, 'webgl2');
+  });
+
+  test('WebGPU and WebGL2 draw the same pictures', () => {
+    // The same state and frames on both backends (the tests above).
+    for (const name of ['modern', 'hd2d', 'ps1', 'wide']) {
+      const a = decodePng(readFileSync(shot(`render-webgpu-${name}.png`)));
+      const b = decodePng(readFileSync(shot(`render-webgl2-${name}.png`)));
+      assert.equal(a.width, b.width);
+      assert.equal(a.height, b.height);
+      let close = 0;
+      let total = 0;
+      for (let i = 0; i < a.width * a.height; i++) {
+        const d = Math.max(...[0, 1, 2].map((k) => Math.abs(a.rgba[i * 4 + k] - b.rgba[i * 4 + k])));
+        if (d <= 8) close++;
+        total += d;
+      }
+      const share = close / (a.width * a.height);
+      console.log(`${name}: ${(share * 100).toFixed(2)}% of pixels within 8 levels, mean difference ${(total / (a.width * a.height)).toFixed(2)}`);
+      assert.ok(share > 0.97, `${name}: the backends agree (${share})`);
+    }
   });
 });

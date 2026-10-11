@@ -5212,6 +5212,7 @@ dependencies = [
  "xem-host",
  "xem-render",
  "xem-settings",
+ "xem-xr",
 ]
 
 [[package]]
@@ -5239,8 +5240,6 @@ dependencies = [
  "xem-host",
  "xem-render",
  "xem-settings",
- "xem-ui",
- "xem-xr",
 ]
 
 [[package]]
@@ -5287,6 +5286,7 @@ dependencies = [
 name = "xem-host"
 version = "0.1.0"
 dependencies = [
+ "png",
  "pollster",
  "raw-window-handle",
  "sdl3-sys",
@@ -5298,6 +5298,7 @@ dependencies = [
  "xem-settings",
  "xem-storage",
  "xem-ui",
+ "xem-xr",
 ]
 
 [[package]]

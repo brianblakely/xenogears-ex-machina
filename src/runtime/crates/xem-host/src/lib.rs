@@ -11,6 +11,10 @@ pub mod game;
 #[path = "game_absent.rs"]
 pub mod game;
 pub mod sdl;
+#[cfg(has_game_module)]
+mod readback;
+#[cfg(has_game_module)]
+pub mod xr_play;
 mod operations;
 
 pub use game::Game;

@@ -1,4 +1,5 @@
-//! Seated virtual-screen play in an OpenXR headset (`--xr`).
+//! Seated virtual-screen play in an OpenXR headset (`xem-desktop --xr`,
+//! and the Android host's `--xr` on a standalone headset such as Horizon).
 //!
 //! The game runs as in the window: paced by the wall clock at 60 frames a
 //! second (`xem_host::Game`), never per eye and never by the headset's
@@ -17,11 +18,10 @@
 //!
 //! Every frame prints one `key=value` line for scripts/xr-game-smoke.sh.
 
-use crate::Options;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Instant;
-use xem_host::Game;
+use crate::Game;
 use xem_render::glam::{Mat4, Quat, Vec2, Vec3};
 use xem_render::ps1::{GameView, HostClass, ViewConfig};
 use xem_render::{Compositor, Quad, wgpu};
@@ -138,8 +138,24 @@ fn screen_pose(distance: f32) -> Pose {
     Pose { position: Vec3::new(0.0, 0.0, -distance), orientation: Quat::IDENTITY }
 }
 
-pub fn run(options: &Options, settings: Rc<RefCell<SettingsService>>, mut game: Game) -> Result<(), String> {
-    let context = XrContext::new(&()).map_err(|e| e.to_string())?;
+/// What a headset run is asked for (tests and captures besides play).
+#[derive(Clone, Debug, Default)]
+pub struct XrPlay {
+    /// Show the settings panel at entry.
+    pub show_settings: bool,
+    /// Pause the game at headset frame N for M frames.
+    pub pause: Option<(u64, u64)>,
+    /// Save both eyes of a late frame here.
+    pub capture: Option<std::path::PathBuf>,
+    /// End the session after this many headset frames.
+    pub exit_after_frames: Option<u64>,
+    /// End the session when the game has run this many frames, reporting its RAM hash.
+    pub exit_at_frame: Option<u64>,
+}
+
+/// Plays `game` in a headset until the session ends; returns the game.
+pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<SettingsService>>, mut game: Game) -> Result<Game, String> {
+    let context = XrContext::new(platform).map_err(|e| e.to_string())?;
     let caps = context.capabilities();
     println!("xr runtime={:?} system={:?} eye_size={}x{} blend={:?}", caps.runtime, caps.system, caps.eye_size.0, caps.eye_size.1, caps.blend_mode);
     let gpu = context.gpu().clone();
@@ -157,7 +173,7 @@ pub fn run(options: &Options, settings: Rc<RefCell<SettingsService>>, mut game: 
         move || *visible.borrow_mut() = false
     });
     let mut session: XrSession = context
-        .create_session(&SessionConfig { panel: Some(panel_px), readback: options.xr_capture.is_some(), ..Default::default() })
+        .create_session(&SessionConfig { panel: Some(panel_px), readback: options.capture.is_some(), ..Default::default() })
         .map_err(|e| e.to_string())?;
     let mut compositor = Compositor::new(&gpu.device, &gpu.queue, session.eye_format());
     let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
@@ -211,7 +227,7 @@ pub fn run(options: &Options, settings: Rc<RefCell<SettingsService>>, mut game: 
 
         // The game: whatever frames are due by the wall clock, once per
         // headset frame (never per eye), unless paused for a test.
-        let pause = options.xr_pause.is_some_and(|(at, count)| frames >= at && frames < at + count);
+        let pause = options.pause.is_some_and(|(at, count)| frames >= at && frames < at + count);
         if pause != game_paused {
             game_paused = pause;
             if pause { game.pause() } else { game.resume() }
@@ -271,7 +287,7 @@ pub fn run(options: &Options, settings: Rc<RefCell<SettingsService>>, mut game: 
             let late = options.exit_after_frames.is_some_and(|n| frames * 3 >= n * 2)
                 || options.exit_at_frame.is_some_and(|at| game.frames_run() * 3 >= at * 2);
             let facing = head.is_some_and(|head| (head.orientation * Vec3::NEG_Z).dot(Vec3::NEG_Z) > 0.95);
-            let capture = options.xr_capture.as_ref().filter(|_| late && facing && !captured);
+            let capture = options.capture.as_ref().filter(|_| late && facing && !captured);
             let mut readback = None;
             session
                 .render_eyes(|encoder, target| {
@@ -328,5 +344,5 @@ pub fn run(options: &Options, settings: Rc<RefCell<SettingsService>>, mut game: 
         }
     }
     println!("exit frames={frames} game_frames={} memory_hash {}", game.frames_run(), game.memory_hash());
-    Ok(())
+    Ok(game)
 }

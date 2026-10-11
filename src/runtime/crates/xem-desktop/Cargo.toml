@@ -15,5 +15,3 @@ xem-host = { path = "../xem-host" }
 xem-render = { path = "../xem-render" }
 xem-settings = { path = "../xem-settings" }
 xem-game = { path = "../xem-game" }
-xem-ui = { path = "../xem-ui" }
-xem-xr = { path = "../xem-xr" }

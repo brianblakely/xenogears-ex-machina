@@ -463,14 +463,19 @@ clock (at most four catch-up frames per host frame, so a 15 Hz session still
 runs all 60), once per headset frame, never per eye; the settings use the
 Headset class (Low tier, depth of field off unless enabled).
 
-- **OpenXR** (`xem-desktop --xr --disc DISC`, `crates/xem-desktop/src/xr.rs`): the
+- **OpenXR** (`xem-desktop --xr --disc DISC`; the Android host's `--xr`
+  argument, for a standalone headset such as Horizon OS, enters the same loop
+  once the game is booted, with the activity and JavaVM as the loader's
+  platform data; `crates/xem-host/src/xr_play.rs`): the
   screen 2.5 m ahead (Settings: headset screen), the settings panel a quad
   layer (left menu button), movie frames on the same screen; controllers
   stand in for a pad (left stick D-pad, A/B/X/Y Cross/Circle/Square/Triangle,
   triggers L1/R1, grips L2/R2, left stick click Start, right Select). One
   `xrframe` line per frame. `src/runtime/scripts/xr-game-smoke.sh` (Monado's simulated
   HMD, null compositor) checks 57-63 game frames a second against the
-  simulated 20 Hz headset, a paused game with head tracking and rendering
+  simulated 20 Hz headset, sustained pacing (wall-clock frame intervals: p50
+  50.06 ms, p99 under 57 ms, at most 5% beyond 1.5 periods; measured on
+  lavapipe), a paused game with head tracking and rendering
   continuing, the RAM at frame N equal to `xem-headless`'s, stereo eye
   captures of the screen, and an HD-2D field on it.
 - **WebXR** (browser host): a browser that offers immersive VR renders
@@ -479,7 +484,9 @@ Headset class (Low tier, depth of field off unless enabled).
   the session (`local` space), whose animation frames step the game exactly
   as the canvas's did while the canvas loop rests, and draw each view's screen
   into the layer (eye buffers assembled and flipped on the GPU). `?xrScale=F`
-  sets the layer's framebuffer scale. `web/tests/xr-game.test.mjs` (IWER's
+  sets the layer's framebuffer scale. `web/tests/render.test.mjs` also
+  compares WebGPU's and WebGL2's pictures of the same frames (99.97-100% of
+  pixels within 8 levels). `web/tests/xr-game.test.mjs` (IWER's
   Quest 3) checks the backend, two views, the game near 60 frames a second at
   a slower session rate, both views showing the screen, paused head tracking,
   exit, and an unchanged RAM hash.
@@ -1009,6 +1016,11 @@ compiled and linked); Horizon OS's OpenXR runtime with Meta's loader in the APK,
 its Vulkan driver, reprojection, hand tracking and eye gaze; Quest Browser's
 WebXR compositor and whether it offers WebGPU XR layers (`XRGPUBinding`);
 whether the 2 GiB read-write reservation of game memory fits Quest memory
-limits; audible AAudio output; Bluetooth gamepad mapping. The game's sound
+limits; audible AAudio output; Bluetooth gamepad mapping. Phase 5 adds:
+the Android host's `--xr` entry into OpenXR (compiled for both ABIs; its
+loop is the one Monado runs through `xem-desktop --xr`), headset frame pacing
+at 72-120 Hz on a mobile GPU, the HD-2D effects' cost at Medium and Low tiers
+on mobile and headset GPUs, and D3D12 and Metal (only Vulkan, WebGPU and
+WebGL2 run here). The game's sound
 level (about 1.3x the reference emulator's recordings in every sound mode)
 needs a console recording to settle.

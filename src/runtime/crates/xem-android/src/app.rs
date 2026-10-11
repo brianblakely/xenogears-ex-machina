@@ -64,18 +64,23 @@ struct Options {
     open: Option<String>,
     /// Show the document picker at startup (tests).
     pick: bool,
+    /// Play in the headset (OpenXR) once the game is booted: a standalone
+    /// headset (Horizon OS) launches the app with this.
+    xr: bool,
 }
 
 fn options(args: &[String]) -> Result<Options, String> {
     let mut options = Options {
         open: None,
         pick: false,
+        xr: false,
     };
     let mut args = args.iter();
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--open" => options.open = Some(args.next().ok_or("--open needs a URI")?.clone()),
             "--pick-disc" => options.pick = true,
+            "--xr" => options.xr = true,
             other => return Err(format!("unknown argument {other:?}")),
         }
     }
@@ -415,7 +420,15 @@ impl Host {
         if options.pick {
             self.discs.pick(window.raw);
         }
+        let mut headset = options.xr;
         loop {
+            #[cfg(has_game_module)]
+            if headset && self.live.borrow().game.is_some() {
+                headset = false;
+                self.play_in_headset();
+            }
+            #[cfg(not(has_game_module))]
+            let _ = &mut headset;
             let mut event = SDL_Event::default();
             // SAFETY: SDL is initialised; event is a valid out pointer. While
             // the activity is paused SDL blocks in here until it resumes, after
@@ -539,6 +552,30 @@ impl Host {
                 self.view.set_panel_visible(false);
             }
             Err(error) => log(&format!("game not booted source={source}: {error}")),
+        }
+    }
+
+    /// Hands the booted game to an OpenXR session (xem_host::xr_play) until
+    /// it ends, then takes it back to the flat window.
+    #[cfg(has_game_module)]
+    fn play_in_headset(&mut self) {
+        let Some(game) = self.live.borrow_mut().game.take() else { return };
+        // SAFETY: SDL's JNI environment and activity on its thread; the
+        // JavaVM pointer and the activity reference outlive the session.
+        let platform = unsafe {
+            let env = SDL_GetAndroidJNIEnv() as *mut jni_sys::JNIEnv;
+            let mut vm: *mut jni_sys::JavaVM = std::ptr::null_mut();
+            ((**env).v1_1.GetJavaVM)(env, &mut vm);
+            xem_xr::openxr::AndroidPlatformInfo::new(vm.cast(), SDL_GetAndroidActivity().cast())
+        };
+        log("entering the headset");
+        let settings = self.view.settings().clone();
+        match xem_host::xr_play::run(&platform, &Default::default(), settings, game) {
+            Ok(game) => {
+                log("headset session ended");
+                self.live.borrow_mut().game = Some(game);
+            }
+            Err(error) => log(&format!("headset: {error}")),
         }
     }
 

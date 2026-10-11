@@ -3,11 +3,6 @@
 //! an overlay (`xem_host::View`). One wgpu device and queue serve the game
 //! image, the compositor and Slint.
 
-#[cfg(has_game_module)]
-mod readback;
-#[cfg(has_game_module)]
-mod xr;
-
 use sdl3_sys::everything::*;
 use std::cell::RefCell;
 use std::path::PathBuf;
@@ -157,7 +152,14 @@ fn run_xr(options: &Options) -> Result<(), String> {
     }
     game.set_frame_limit(options.exit_at_frame);
     let settings = Rc::new(RefCell::new(open_settings()));
-    xr::run(options, settings, game)
+    let play = xem_host::xr_play::XrPlay {
+        show_settings: options.show_settings,
+        pause: options.xr_pause,
+        capture: options.xr_capture.clone(),
+        exit_after_frames: options.exit_after_frames,
+        exit_at_frame: options.exit_at_frame,
+    };
+    xem_host::xr_play::run(&(), &play, settings, game).map(|_| ())
 }
 
 #[cfg(not(has_game_module))]

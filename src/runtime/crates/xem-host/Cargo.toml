@@ -19,3 +19,5 @@ xem-settings = { path = "../xem-settings" }
 xem-core = { path = "../xem-core" }
 xem-game = { path = "../xem-game" }
 xem-storage = { path = "../xem-storage" }
+xem-xr = { path = "../xem-xr" }
+png.workspace = true
