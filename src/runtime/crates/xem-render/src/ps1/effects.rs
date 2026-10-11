@@ -559,9 +559,10 @@ impl EffectsRenderer {
             }
         }
         let shadow_vertices = std::mem::take(&mut builder.vertices);
+        let side = frame.side() as f32;
         let uniform = PassUniform {
-            origin: [area.x as f32, area.y as f32],
-            extent: [area.width as f32, area.height as f32],
+            origin: [area.x as f32 - side, area.y as f32],
+            extent: [area.width as f32 + 2.0 * side, area.height as f32],
             scale: scale as f32,
             options: super::pass_options(&options.fidelity),
             _pad: [0; 2],
@@ -572,7 +573,7 @@ impl EffectsRenderer {
             let targets = self.targets.as_ref().expect("created above");
             let view = targets.shadow.create_view(&Default::default());
             let group = bind_group(device, &ps1.pipelines.layout, &self.shadow_uniform, &ps1.vram);
-            let pipeline = ps1.pipelines.get(device, PipelineKey { fragment: Fragment::Shadow, blend: 0, aux: false, depth: DepthMode::Over }).clone();
+            let pipeline = ps1.pipelines.get(device, PipelineKey { fragment: Fragment::Shadow, blend: 0, depth: DepthMode::Over }).clone();
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("sprite shadows"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {

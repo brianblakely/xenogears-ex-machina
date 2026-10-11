@@ -33,6 +33,7 @@ const LINEAR: u32 = 32u;
 const RECTANGLE: u32 = 64u;
 const BAKED: u32 = 128u;
 const BLEND_SHIFT: u32 = 8u;
+const AUX_SEMI: u32 = 1024u;
 const CLASS_SHIFT: u32 = 12u;
 
 struct VertexIn {
@@ -51,9 +52,12 @@ struct VertexOut {
     @builtin(position) clip: vec4<f32>,
     @location(0) color: vec4<f32>,
     @location(1) @interpolate(perspective) uv_perspective: vec2<f32>,
-    @location(2) @interpolate(linear) uv_affine: vec2<f32>,
+    // Screen-linear (affine) texture coordinates without `noperspective`,
+    // which GLSL ES 3.0 lacks: (uv * w, w) interpolate perspective-correctly
+    // and their quotient is the screen-linear uv.
+    @location(2) uv_affine_w: vec3<f32>,
     @location(3) @interpolate(flat) mode: vec4<u32>,
-    @location(4) @interpolate(linear) depth: f32,
+    @location(4) depth: f32,
 };
 
 @vertex
@@ -69,10 +73,14 @@ fn vs_main(in: VertexIn) -> VertexOut {
     out.clip = vec4<f32>(ndc * in.w, z * in.w, in.w);
     out.color = in.color;
     out.uv_perspective = in.uv;
-    out.uv_affine = in.uv;
+    out.uv_affine_w = vec3<f32>(in.uv * in.w, in.w);
     out.mode = in.mode;
     out.depth = in.depth;
     return out;
+}
+
+fn affine(in: VertexOut) -> vec2<f32> {
+    return in.uv_affine_w.xy / in.uv_affine_w.z;
 }
 
 fn vram_at(x: i32, y: i32) -> u32 {
@@ -170,7 +178,7 @@ fn shade(in: VertexOut, frag: vec4<f32>) -> Shaded {
     var mask = (flags & MASK_SET) != 0u;
     let fifteen = (pass_.options & 2u) != 0u;
     if (flags & TEXTURED) != 0u {
-        var uv = in.uv_affine;
+        var uv = affine(in);
         if (pass_.options & 1u) != 0u && (flags & RECTANGLE) == 0u {
             uv = in.uv_perspective;
         }
@@ -244,18 +252,30 @@ fn fs_opaque_texels(in: VertexOut) -> Targets {
     return Targets(s.color, aux(in));
 }
 
-// The semi-transparent fragments; blend mode 3 (B + F/4) quarters F here.
+// The semi-transparent fragments. One blend state serves both targets
+// (GLES and WebGL2 have no per-target blending): the source alpha is the
+// blend weight, colour factors (SrcAlpha, OneMinusSrcAlpha) for mode 0 and
+// (SrcAlpha, One) for the others, alpha (Zero, One). So the colour gets
+// B/2+F/2, B+F, B-F or B+F/4 from weights 0.5, 1, 1 and 0.25, the
+// auxiliary target stays as it was under weight 0 (scene effects keep the
+// depth and class beneath) or takes this primitive's under weight 1 (an
+// interface window in mode 0), and both keep their stored alpha.
 @fragment
 fn fs_semi(in: VertexOut) -> Targets {
     let s = shade(in, in.clip);
     if !s.semi {
         discard;
     }
-    var color = s.color;
-    if ((in.mode.w >> BLEND_SHIFT) & 3u) == 3u {
-        color = vec4<f32>(color.rgb * 0.25, color.a);
+    let mode = (in.mode.w >> BLEND_SHIFT) & 3u;
+    var weight = 1.0;
+    if mode == 0u {
+        weight = 0.5;
+    } else if mode == 3u {
+        weight = 0.25;
     }
-    return Targets(color, aux(in));
+    var info = aux(in);
+    info.a = select(0.0, 1.0, mode == 0u && (in.mode.w & AUX_SEMI) != 0u);
+    return Targets(vec4<f32>(s.color.rgb, weight), info);
 }
 
 // GP0(02h) fills and uploads: a VRAM rectangle shown as itself.
@@ -298,12 +318,12 @@ fn fs_rect(in: BlitOut) -> Targets {
 fn fs_shadow(in: VertexOut) -> @location(0) vec4<f32> {
     var intensity = in.color.r;
     if (in.mode.w & TEXTURED) != 0u {
-        let s = sample_nearest(in.mode, in.uv_affine);
+        let s = sample_nearest(in.mode, affine(in));
         if s.coverage < 0.5 {
             discard;
         }
     } else {
-        intensity *= 1.0 - smoothstep(0.35, 1.0, length(in.uv_affine));
+        intensity *= 1.0 - smoothstep(0.35, 1.0, length(affine(in)));
     }
     if intensity <= 0.0 {
         discard;

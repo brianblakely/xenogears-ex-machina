@@ -437,3 +437,45 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
         "the compact section menu supports pointer selection at Android density"
     );
 }
+
+#[test]
+fn graphics_choices_go_through_the_settings_service() {
+    use xem_settings::{GraphicsProfile, SettingChange};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let acks = Rc::new(RefCell::new(Vec::new()));
+    settings.borrow_mut().subscribe({
+        let acks = acks.clone();
+        move |ack| acks.borrow_mut().push(ack.change.clone())
+    });
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 560), 1.0).unwrap();
+    ui.update().unwrap();
+    section(&mut ui, "Graphics", 1);
+    assert!(
+        ElementHandle::find_by_accessible_label(ui.component(), "Bloom").next().is_none(),
+        "Modern (the default) shows no effect sliders"
+    );
+    let panel = ui.component();
+    panel.invoke_graphics_edited("profile".into(), 1);
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().graphics.profile, GraphicsProfile::Hd2d);
+    // The effect rows are created as the section scrolls to them.
+    ui.update().unwrap();
+    scroll(&mut ui, -400.0);
+    element(&ui, "Bloom", AccessibleRole::Slider);
+    ui.component().invoke_effect_edited(5, 20);
+    assert_eq!(settings.borrow().settings().graphics.hd2d.bloom, 20);
+    ui.component().invoke_graphics_edited("profile".into(), 3);
+    ui.component().invoke_fidelity_edited(3, true);
+    ui.component().invoke_effect_edited(8, -40);
+    let graphics = settings.borrow().settings().graphics;
+    assert!(graphics.custom_fidelity.dithering, "Custom's own limits change");
+    assert_eq!(graphics.custom_effects.focus, -40, "Custom's own levels change");
+    assert_eq!(graphics.hd2d.bloom, 20, "HD-2D's levels are kept");
+    ui.component().invoke_graphics_edited("scale".into(), 99);
+    assert_eq!(settings.borrow().settings().graphics.internal_scale, 3 - 3, "an invalid scale is refused");
+    ui.component().invoke_graphics_edited("widescreen".into(), 1);
+    assert!(settings.borrow().settings().graphics.widescreen);
+    assert!(acks.borrow().iter().all(|change| matches!(change, SettingChange::Graphics(_))));
+}

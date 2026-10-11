@@ -263,8 +263,17 @@ impl XemApp {
             }
             match self.session.as_mut() {
                 Some(session) if self.display_dirty => {
-                    let (width, height, rgba) = session.runtime.services().gpu.display_rgba8();
-                    renderer.set_game_image((width, height), &rgba);
+                    let graphics = self.settings.borrow().settings().graphics;
+                    let restart = renderer.configure_game(&graphics);
+                    let scene = session.scene();
+                    let gpu = &mut session.runtime.services().gpu;
+                    let device = gpu.device_mut();
+                    if restart || !device.trace_enabled() {
+                        device.set_trace(true);
+                    }
+                    let trace = device.take_trace();
+                    let display = device.display();
+                    renderer.set_game_frame(trace, display, scene, || gpu.display_rgba8());
                     self.display_dirty = false;
                 }
                 Some(_) => {}

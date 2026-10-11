@@ -7,6 +7,8 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 use web_sys::HtmlCanvasElement;
+use xem_render::ps1::{GameView, HostClass, ViewConfig};
+use xem_render::xem_gpu::{DisplayInfo, Trace};
 use xem_render::{Compositor, Gpu, Quad, Rect, SceneRenderer, ViewTarget, Viewport, demo_camera, present_rect, wgpu};
 use xem_settings::{Filter, SettingsService};
 use xem_ui::{LogicalPosition, PointerEventButton, SettingsUi, SharedGpu, WindowEvent};
@@ -25,8 +27,13 @@ pub struct WebRenderer {
     scene: SceneRenderer,
     compositor: Compositor,
     game_view: wgpu::TextureView,
-    /// The game's display (texture, view, size) once a session shows one.
+    /// The game's display (texture, view, size) as the device holds it
+    /// (24-bit movie frames).
     game_image: Option<(wgpu::Texture, wgpu::TextureView, (u32, u32))>,
+    /// The game drawn by the renderer from its draw trace, and the display
+    /// and scene to present.
+    renderer: GameView,
+    game_frame: Option<(DisplayInfo, String)>,
     pub backend: &'static str,
     pub adapter: String,
     scale: f32,
@@ -89,6 +96,7 @@ pub async fn create(canvas: HtmlCanvasElement, prefer: &str) -> Result<WebRender
             view_formats: &[],
         })
         .create_view(&Default::default());
+    let renderer = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
     Ok(WebRenderer {
         scene: SceneRenderer::new(&gpu.device, &gpu.queue, GAME_FORMAT),
         compositor: Compositor::new(&gpu.device, &gpu.queue, format),
@@ -99,6 +107,8 @@ pub async fn create(canvas: HtmlCanvasElement, prefer: &str) -> Result<WebRender
         config,
         game_view,
         game_image: None,
+        renderer,
+        game_frame: None,
         scale: 1.0,
         panel: None,
         frame_rate: None,
@@ -236,6 +246,28 @@ impl WebRenderer {
     /// Go back to the test scene (no session).
     pub fn clear_game_image(&mut self) {
         self.game_image = None;
+        self.game_frame = None;
+    }
+
+    /// The renderer's configuration for `graphics` on this canvas; returns
+    /// whether the device's draw trace must restart from the whole VRAM.
+    pub fn configure_game(&mut self, graphics: &xem_settings::Graphics) -> bool {
+        let config = ViewConfig::resolve(graphics, HostClass::Browser, self.config.height, self.renderer.max_scale());
+        self.renderer.configure(config);
+        self.renderer.take_restart()
+    }
+
+    /// What the game drew, its display and scene. A 24-bit display (movie
+    /// frames) is shown from `display_rgba8` as the device holds it.
+    pub fn set_game_frame(&mut self, trace: Trace, display: DisplayInfo, scene: String, display_rgba8: impl FnOnce() -> (u32, u32, Vec<u8>)) {
+        self.renderer.push(trace);
+        if GameView::shows(&display) {
+            self.game_frame = Some((display, scene));
+        } else {
+            self.game_frame = None;
+            let (width, height, rgba) = display_rgba8();
+            self.set_game_image((width, height), &rgba);
+        }
     }
 
     /// Render one frame: the game's display (or, without a session, the test
@@ -258,10 +290,18 @@ impl WebRenderer {
             }
             wgpu::CurrentSurfaceTexture::Validation => return Err("surface validation error".into()),
         };
+        let target = self.size();
+        let panel_rect = self.panel_rect();
         let mut encoder = self.gpu.device.create_command_encoder(&Default::default());
-        let (game_view, game_size) = match &self.game_image {
-            Some((_, view, size)) => (view, *size),
-            None => {
+        let presented = match &self.game_frame {
+            Some((display, scene)) => self.renderer.present(&mut encoder, display, scene, time).map(|p| (p.view, p.size)),
+            None => None,
+        };
+        let encoded = presented.is_some();
+        let (game_view, game_size) = match (presented, &self.game_image) {
+            (Some(presented), _) => presented,
+            (None, Some((_, view, size))) => (view, *size),
+            (None, None) => {
                 let (view, proj) = demo_camera(GAME_SIZE.0 as f32 / GAME_SIZE.1 as f32, time as f32);
                 self.scene.render_views(
                     &mut encoder,
@@ -271,12 +311,12 @@ impl WebRenderer {
                 (&self.game_view, GAME_SIZE)
             }
         };
-        let target = self.size();
         let presentation = &settings.settings().presentation;
         if let Some(counter) = &mut self.frame_rate {
             counter.frame(std::time::Duration::from_secs_f64(time),self.scale,presentation.show_fps).map_err(|error| error.to_string())?;
         }
         let mut game = Quad::screen(game_view, present_rect(game_size, target, presentation.scale), target);
+        game.srgb_encoded = encoded;
         game.filter = match presentation.filter {
             Filter::Nearest => wgpu::FilterMode::Nearest,
             Filter::Linear => wgpu::FilterMode::Linear,
@@ -290,7 +330,7 @@ impl WebRenderer {
             quad.filter = wgpu::FilterMode::Nearest;
             quads.push(quad);
         }
-        if let (true, Some(panel), Some(rect)) = (self.panel_visible, &self.panel, self.panel_rect()) {
+        if let (true, Some(panel), Some(rect)) = (self.panel_visible, &self.panel, panel_rect) {
             let mut quad = Quad::screen(panel.view(), rect, target);
             quad.srgb_encoded = true;
             quad.filter = wgpu::FilterMode::Nearest;

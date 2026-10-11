@@ -243,7 +243,7 @@ impl Compositor {
 
     /// Records one pass drawing `quads` in order onto `target`, cleared to
     /// `clear` first when given. Quad data is written through the queue: call
-    /// this at most once per queue submission.
+    /// this (or [`Compositor::draw_targets`]) at most once per queue submission.
     pub fn draw(
         &mut self,
         encoder: &mut wgpu::CommandEncoder,
@@ -251,8 +251,19 @@ impl Compositor {
         clear: Option<wgpu::Color>,
         quads: &[Quad],
     ) {
-        if quads.len() > self.capacity {
-            self.capacity = quads.len();
+        self.draw_targets(encoder, &[(target, clear, quads)]);
+    }
+
+    /// One pass per target (both eyes of a stereo frame, say), each drawing
+    /// its quads in order, with every quad's data written once.
+    pub fn draw_targets(
+        &mut self,
+        encoder: &mut wgpu::CommandEncoder,
+        targets: &[(&wgpu::TextureView, Option<wgpu::Color>, &[Quad])],
+    ) {
+        let total: usize = targets.iter().map(|(_, _, quads)| quads.len()).sum();
+        if total > self.capacity {
+            self.capacity = total;
             (self.uniforms, self.uniform_group) = Self::quad_uniforms(
                 &self.device,
                 &self.uniform_layout,
@@ -261,65 +272,67 @@ impl Compositor {
             );
         }
         let encode = !self.format.is_srgb();
-        let groups: Vec<_> = quads
-            .iter()
-            .enumerate()
-            .map(|(index, quad)| {
-                let uniform = QuadUniform {
-                    transform: quad.transform.to_cols_array_2d(),
-                    opacity: quad.opacity,
-                    decode: quad.srgb_encoded.into(),
-                    encode: encode.into(),
-                    _pad: 0,
-                };
-                self.queue.write_buffer(
-                    &self.uniforms,
-                    index as u64 * self.stride,
-                    bytemuck::bytes_of(&uniform),
+        let mut bytes = vec![0u8; total * self.stride as usize];
+        let mut groups = Vec::with_capacity(total);
+        for (index, quad) in targets.iter().flat_map(|(_, _, quads)| quads.iter()).enumerate() {
+            let uniform = QuadUniform {
+                transform: quad.transform.to_cols_array_2d(),
+                opacity: quad.opacity,
+                decode: quad.srgb_encoded.into(),
+                encode: encode.into(),
+                _pad: 0,
+            };
+            let at = index * self.stride as usize;
+            bytes[at..at + size_of::<QuadUniform>()].copy_from_slice(bytemuck::bytes_of(&uniform));
+            let sampler = match quad.filter {
+                wgpu::FilterMode::Nearest => &self.nearest,
+                wgpu::FilterMode::Linear => &self.linear,
+            };
+            groups.push(self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("quad texture"),
+                layout: &self.texture_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(quad.texture),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(sampler),
+                    },
+                ],
+            }));
+        }
+        if !bytes.is_empty() {
+            self.queue.write_buffer(&self.uniforms, 0, &bytes);
+        }
+        let mut index = 0;
+        for (target, clear, quads) in targets {
+            let load = clear.map_or(wgpu::LoadOp::Load, wgpu::LoadOp::Clear);
+            let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("compositor"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: target,
+                    depth_slice: None,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                ..Default::default()
+            });
+            pass.set_pipeline(&self.pipeline);
+            for _ in quads.iter() {
+                pass.set_bind_group(
+                    0,
+                    &self.uniform_group,
+                    &[(index as u64 * self.stride) as u32],
                 );
-                let sampler = match quad.filter {
-                    wgpu::FilterMode::Nearest => &self.nearest,
-                    wgpu::FilterMode::Linear => &self.linear,
-                };
-                self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    label: Some("quad texture"),
-                    layout: &self.texture_layout,
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: wgpu::BindingResource::TextureView(quad.texture),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: wgpu::BindingResource::Sampler(sampler),
-                        },
-                    ],
-                })
-            })
-            .collect();
-        let load = clear.map_or(wgpu::LoadOp::Load, wgpu::LoadOp::Clear);
-        let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("compositor"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: target,
-                depth_slice: None,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load,
-                    store: wgpu::StoreOp::Store,
-                },
-            })],
-            ..Default::default()
-        });
-        pass.set_pipeline(&self.pipeline);
-        for (index, group) in groups.iter().enumerate() {
-            pass.set_bind_group(
-                0,
-                &self.uniform_group,
-                &[(index as u64 * self.stride) as u32],
-            );
-            pass.set_bind_group(1, group, &[]);
-            pass.draw(0..6, 0..1);
+                pass.set_bind_group(1, &groups[index], &[]);
+                pass.draw(0..6, 0..1);
+                index += 1;
+            }
         }
     }
 }

@@ -724,6 +724,25 @@ impl<M: GameModule> Session<M> {
         Err(format!("{path} did not become {value} within {max_frames} frames"))
     }
 
+    /// What the game shows, for presentation tuning (scene metadata):
+    /// "field:<map>", "battle", "worldmap", "arena", "menu", "movie",
+    /// "kernel" or "boot". Read-only.
+    pub fn scene(&mut self) -> String {
+        match self.runtime.services().mode {
+            Some(1) => match self.inspect("mode_field_map_id", 0) {
+                Ok(map) => format!("field:{map}"),
+                Err(_) => "field".into(),
+            },
+            Some(0) => "kernel".into(),
+            Some(2) => "battle".into(),
+            Some(3) => "worldmap".into(),
+            Some(4) => "arena".into(),
+            Some(5) => "menu".into(),
+            Some(6) => "movie".into(),
+            _ => "boot".into(),
+        }
+    }
+
     /// FNV-1a over the PS1 RAM, the scratchpad and the I/O pages: the
     /// authoritative game state (comparable across hosts and runs).
     pub fn memory_hash(&mut self) -> Result<u64, String> {

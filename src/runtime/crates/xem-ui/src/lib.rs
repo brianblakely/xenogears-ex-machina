@@ -12,8 +12,8 @@ use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
 use std::time::Duration;
 use xem_settings::{
-    APP_ACTIONS, AppAction, AppBinding, AppRequest, AudioOutput, FAST_FORWARD_RATES, Filter,
-    Rejected, Scale, SettingChange, Settings, SettingsService,
+    APP_ACTIONS, AppAction, AppBinding, AppRequest, AudioOutput, EffectLevels, FAST_FORWARD_RATES, Fidelity, Filter, Graphics,
+    GraphicsProfile, PresentRate, QualityTier, Rejected, Scale, SettingChange, Settings, SettingsService,
 };
 
 // Slint compiles its FemtoVG renderer module out on Android; the renderer
@@ -308,6 +308,46 @@ const AUDIO_OUTPUTS: [AudioOutput; 3] = [AudioOutput::Mono, AudioOutput::Stereo,
 const SCALES: [Scale; 3] = [Scale::Fit, Scale::Integer, Scale::Stretch];
 const FILTERS: [Filter; 2] = [Filter::Nearest, Filter::Linear];
 
+const PROFILES: [GraphicsProfile; 4] = [GraphicsProfile::Modern, GraphicsProfile::Hd2d, GraphicsProfile::Ps1, GraphicsProfile::Custom];
+const QUALITIES: [QualityTier; 5] = [QualityTier::Auto, QualityTier::Low, QualityTier::Medium, QualityTier::High, QualityTier::Ultra];
+const RATES: [PresentRate; 2] = [PresentRate::Display, PresentRate::Game];
+
+fn fidelity_flags(f: &Fidelity) -> [bool; 6] {
+    [f.affine_textures, f.vertex_snapping, f.color_15bit, f.dithering, f.native_resolution, f.painter_ordering]
+}
+
+/// The effect levels the panel edits: the selected profile's own.
+fn edited_levels(graphics: &Graphics) -> EffectLevels {
+    match graphics.profile {
+        GraphicsProfile::Custom => graphics.custom_effects,
+        _ => graphics.hd2d,
+    }
+}
+
+/// The graphics settings with one panel edit applied (`None`: not a choice).
+fn graphics_edit(graphics: &Graphics, key: &str, value: i32) -> Option<Graphics> {
+    let mut next = *graphics;
+    let index = usize::try_from(value).ok();
+    let filter = || index.and_then(|i| FILTERS.get(i)).copied();
+    match key {
+        "profile" => next.profile = *PROFILES.get(index?)?,
+        "scale" => next.internal_scale = u8::try_from(value).ok()?,
+        "quality" => next.quality = *QUALITIES.get(index?)?,
+        "rate" => next.present_rate = *RATES.get(index?)?,
+        "interpolation" => next.interpolation = value != 0,
+        "widescreen" => next.widescreen = value != 0,
+        "filter-world" => next.filtering.world = filter()?,
+        "filter-sprites" => next.filtering.sprites = filter()?,
+        "filter-interface" => next.filtering.interface = filter()?,
+        "cull" => next.culling.back_faces = value != 0,
+        "xr-distance" => next.xr.distance_cm = u16::try_from(value).ok()?,
+        "xr-width" => next.xr.width_cm = u16::try_from(value).ok()?,
+        "xr-dof" => next.xr.depth_of_field = value != 0,
+        _ => return None,
+    }
+    Some(next)
+}
+
 fn index_of<T: PartialEq>(options: &[T], value: &T) -> i32 {
     options
         .iter()
@@ -322,6 +362,24 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_scale(index_of(&SCALES, &settings.presentation.scale));
     panel.set_filter(index_of(&FILTERS, &settings.presentation.filter));
     panel.set_show_fps(settings.presentation.show_fps);
+    let graphics = &settings.graphics;
+    panel.set_gfx_profile(index_of(&PROFILES, &graphics.profile));
+    panel.set_gfx_scale(i32::from(graphics.internal_scale));
+    panel.set_gfx_quality(index_of(&QUALITIES, &graphics.quality));
+    panel.set_gfx_rate(index_of(&RATES, &graphics.present_rate));
+    panel.set_gfx_interpolation(graphics.interpolation);
+    panel.set_gfx_widescreen(graphics.widescreen);
+    panel.set_gfx_filter_world(index_of(&FILTERS, &graphics.filtering.world));
+    panel.set_gfx_filter_sprites(index_of(&FILTERS, &graphics.filtering.sprites));
+    panel.set_gfx_filter_interface(index_of(&FILTERS, &graphics.filtering.interface));
+    panel.set_gfx_cull_back_faces(graphics.culling.back_faces);
+    panel.set_gfx_fidelity(slint::ModelRc::new(slint::VecModel::from(fidelity_flags(&graphics.custom_fidelity).to_vec())));
+    let levels = edited_levels(graphics);
+    let levels: Vec<i32> = EffectLevels::NAMES.iter().map(|name| levels.get(name).unwrap_or(0)).collect();
+    panel.set_gfx_effects(slint::ModelRc::new(slint::VecModel::from(levels)));
+    panel.set_gfx_xr_distance(i32::from(graphics.xr.distance_cm));
+    panel.set_gfx_xr_width(i32::from(graphics.xr.width_cm));
+    panel.set_gfx_xr_dof(graphics.xr.depth_of_field);
     panel.set_pause_on_focus_loss(settings.pause_on_focus_loss);
     panel.set_fast_forward_rate(index_of(&FAST_FORWARD_RATES, &settings.fast_forward_rate));
     panel.set_fast_forward_position(panel.get_fast_forward_rate() as f32);
@@ -457,6 +515,51 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
     panel.on_filter_edited({
         let apply = apply.clone();
         move |index| apply(pick(&FILTERS, index).map(SettingChange::Filter))
+    });
+    panel.on_graphics_edited({
+        let apply = apply.clone();
+        let settings = Rc::downgrade(settings);
+        move |key, value| {
+            let Some(settings) = settings.upgrade() else { return };
+            let graphics = settings.borrow().settings().graphics;
+            apply(graphics_edit(&graphics, &key, value).map(SettingChange::Graphics));
+        }
+    });
+    panel.on_fidelity_edited({
+        let apply = apply.clone();
+        let settings = Rc::downgrade(settings);
+        move |index, on| {
+            let Some(settings) = settings.upgrade() else { return };
+            let mut graphics = settings.borrow().settings().graphics;
+            let f = &mut graphics.custom_fidelity;
+            let flag = match index {
+                0 => &mut f.affine_textures,
+                1 => &mut f.vertex_snapping,
+                2 => &mut f.color_15bit,
+                3 => &mut f.dithering,
+                4 => &mut f.native_resolution,
+                5 => &mut f.painter_ordering,
+                _ => return,
+            };
+            *flag = on;
+            apply(Some(SettingChange::Graphics(graphics)));
+        }
+    });
+    panel.on_effect_edited({
+        let apply = apply.clone();
+        let settings = Rc::downgrade(settings);
+        move |index, value| {
+            let Some(settings) = settings.upgrade() else { return };
+            let mut graphics = settings.borrow().settings().graphics;
+            let Some(name) = usize::try_from(index).ok().and_then(|i| EffectLevels::NAMES.get(i)) else { return };
+            let levels = match graphics.profile {
+                GraphicsProfile::Custom => &mut graphics.custom_effects,
+                _ => &mut graphics.hd2d,
+            };
+            if levels.set(name, value).is_ok() {
+                apply(Some(SettingChange::Graphics(graphics)));
+            }
+        }
     });
     panel.on_show_fps_edited({
         let apply = apply.clone();

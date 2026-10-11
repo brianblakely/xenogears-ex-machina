@@ -367,6 +367,7 @@ impl Host {
             true,
         )?;
         let import_requested = Rc::new(Cell::new(false));
+        view.set_host_class(xem_render::ps1::HostClass::Mobile);
         view.set_state_directory(files.clone());
         view.ui().on_import_disc({
             let requested = import_requested.clone();
@@ -576,8 +577,7 @@ impl Host {
                 self.view.ui().set_operation_status(&format!("Game stopped: {trap}. Load a state to recover."));
                 self.view.set_panel_visible(true);
             } else {
-                let (width, height, rgba) = game.display();
-                self.view.set_game_image(&self.gpu, (width, height), &rgba);
+                self.view.set_game_frame(&self.gpu, game);
                 if live.script_end.is_some_and(|end| game.frames_run() >= end) {
                     log(&format!("script frame {} memory_hash {}", game.frames_run(), game.memory_hash()));
                     live.script_end = None;

@@ -227,7 +227,7 @@ fn fs_average(in: Out) -> @location(0) vec4<f32> {
 // parts), at half resolution. tex0 lit, tex1 auxiliary.
 @fragment
 fn fs_bright(in: Out) -> @location(0) vec4<f32> {
-    let lit = textureSample(tex0, linear_sampler, in.uv);
+    let lit = textureSampleLevel(tex0, linear_sampler, in.uv, 0.0);
     let pixel = vec2<i32>(in.uv * vec2<f32>(textureDimensions(tex1)));
     let a = aux_at(pixel);
     if lit.a < 0.5 {
@@ -252,19 +252,19 @@ fn fs_bright(in: Out) -> @location(0) vec4<f32> {
 @fragment
 fn fs_down(in: Out) -> @location(0) vec4<f32> {
     let t = p.step.xy;
-    var c = textureSample(tex0, linear_sampler, in.uv).rgb * 0.125;
-    c += (textureSample(tex0, linear_sampler, in.uv + t * vec2<f32>(-1.0, -1.0)).rgb
-        + textureSample(tex0, linear_sampler, in.uv + t * vec2<f32>(1.0, -1.0)).rgb
-        + textureSample(tex0, linear_sampler, in.uv + t * vec2<f32>(-1.0, 1.0)).rgb
-        + textureSample(tex0, linear_sampler, in.uv + t * vec2<f32>(1.0, 1.0)).rgb) * 0.125;
-    c += (textureSample(tex0, linear_sampler, in.uv + t * vec2<f32>(-2.0, 0.0)).rgb
-        + textureSample(tex0, linear_sampler, in.uv + t * vec2<f32>(2.0, 0.0)).rgb
-        + textureSample(tex0, linear_sampler, in.uv + t * vec2<f32>(0.0, -2.0)).rgb
-        + textureSample(tex0, linear_sampler, in.uv + t * vec2<f32>(0.0, 2.0)).rgb) * 0.0625;
-    c += (textureSample(tex0, linear_sampler, in.uv + t * vec2<f32>(-2.0, -2.0)).rgb
-        + textureSample(tex0, linear_sampler, in.uv + t * vec2<f32>(2.0, -2.0)).rgb
-        + textureSample(tex0, linear_sampler, in.uv + t * vec2<f32>(-2.0, 2.0)).rgb
-        + textureSample(tex0, linear_sampler, in.uv + t * vec2<f32>(2.0, 2.0)).rgb) * 0.03125;
+    var c = textureSampleLevel(tex0, linear_sampler, in.uv, 0.0).rgb * 0.125;
+    c += (textureSampleLevel(tex0, linear_sampler, in.uv + t * vec2<f32>(-1.0, -1.0), 0.0).rgb
+        + textureSampleLevel(tex0, linear_sampler, in.uv + t * vec2<f32>(1.0, -1.0), 0.0).rgb
+        + textureSampleLevel(tex0, linear_sampler, in.uv + t * vec2<f32>(-1.0, 1.0), 0.0).rgb
+        + textureSampleLevel(tex0, linear_sampler, in.uv + t * vec2<f32>(1.0, 1.0), 0.0).rgb) * 0.125;
+    c += (textureSampleLevel(tex0, linear_sampler, in.uv + t * vec2<f32>(-2.0, 0.0), 0.0).rgb
+        + textureSampleLevel(tex0, linear_sampler, in.uv + t * vec2<f32>(2.0, 0.0), 0.0).rgb
+        + textureSampleLevel(tex0, linear_sampler, in.uv + t * vec2<f32>(0.0, -2.0), 0.0).rgb
+        + textureSampleLevel(tex0, linear_sampler, in.uv + t * vec2<f32>(0.0, 2.0), 0.0).rgb) * 0.0625;
+    c += (textureSampleLevel(tex0, linear_sampler, in.uv + t * vec2<f32>(-2.0, -2.0), 0.0).rgb
+        + textureSampleLevel(tex0, linear_sampler, in.uv + t * vec2<f32>(2.0, -2.0), 0.0).rgb
+        + textureSampleLevel(tex0, linear_sampler, in.uv + t * vec2<f32>(-2.0, 2.0), 0.0).rgb
+        + textureSampleLevel(tex0, linear_sampler, in.uv + t * vec2<f32>(2.0, 2.0), 0.0).rgb) * 0.03125;
     return vec4<f32>(c, 1.0);
 }
 
@@ -272,15 +272,15 @@ fn fs_down(in: Out) -> @location(0) vec4<f32> {
 @fragment
 fn fs_up(in: Out) -> @location(0) vec4<f32> {
     let t = p.step.xy;
-    var c = textureSample(tex0, linear_sampler, in.uv).rgb * 4.0;
-    c += (textureSample(tex0, linear_sampler, in.uv + vec2<f32>(t.x, 0.0)).rgb
-        + textureSample(tex0, linear_sampler, in.uv - vec2<f32>(t.x, 0.0)).rgb
-        + textureSample(tex0, linear_sampler, in.uv + vec2<f32>(0.0, t.y)).rgb
-        + textureSample(tex0, linear_sampler, in.uv - vec2<f32>(0.0, t.y)).rgb) * 2.0;
-    c += textureSample(tex0, linear_sampler, in.uv + t).rgb
-        + textureSample(tex0, linear_sampler, in.uv - t).rgb
-        + textureSample(tex0, linear_sampler, in.uv + vec2<f32>(t.x, -t.y)).rgb
-        + textureSample(tex0, linear_sampler, in.uv + vec2<f32>(-t.x, t.y)).rgb;
+    var c = textureSampleLevel(tex0, linear_sampler, in.uv, 0.0).rgb * 4.0;
+    c += (textureSampleLevel(tex0, linear_sampler, in.uv + vec2<f32>(t.x, 0.0), 0.0).rgb
+        + textureSampleLevel(tex0, linear_sampler, in.uv - vec2<f32>(t.x, 0.0), 0.0).rgb
+        + textureSampleLevel(tex0, linear_sampler, in.uv + vec2<f32>(0.0, t.y), 0.0).rgb
+        + textureSampleLevel(tex0, linear_sampler, in.uv - vec2<f32>(0.0, t.y), 0.0).rgb) * 2.0;
+    c += textureSampleLevel(tex0, linear_sampler, in.uv + t, 0.0).rgb
+        + textureSampleLevel(tex0, linear_sampler, in.uv - t, 0.0).rgb
+        + textureSampleLevel(tex0, linear_sampler, in.uv + vec2<f32>(t.x, -t.y), 0.0).rgb
+        + textureSampleLevel(tex0, linear_sampler, in.uv + vec2<f32>(-t.x, t.y), 0.0).rgb;
     return vec4<f32>(c / 16.0, 1.0);
 }
 
@@ -332,7 +332,7 @@ fn fs_dof(in: Out) -> @location(0) vec4<f32> {
     let own = coc(a.depth, a.kind);
     let samples = p.quality.y;
     let radius = 4.0 * p.scale * p.grade2.z;
-    var sum = textureSample(tex0, linear_sampler, in.uv).rgb;
+    var sum = textureSampleLevel(tex0, linear_sampler, in.uv, 0.0).rgb;
     var weight = 1.0;
     let rotation = hash(in.clip.xy) * 6.2831853;
     for (var i = 0u; i < samples; i++) {
@@ -364,12 +364,12 @@ fn fs_composite(in: Out) -> @location(0) vec4<f32> {
     var color = lit.rgb;
     let a = aux_at(pixel);
     if p.grade2.z > 0.0 && p.quality.y > 0u {
-        let dof = textureSample(tex4, linear_sampler, in.uv);
+        let dof = textureSampleLevel(tex4, linear_sampler, in.uv, 0.0);
         let own = coc(a.depth, a.kind);
         color = mix(color, dof.rgb, smoothstep(0.0, 0.6, own) * min(p.grade2.z * 1.5, 1.0));
     }
-    color += textureSample(tex2, linear_sampler, in.uv).rgb * p.bloom.x;
-    let shafts = textureSample(tex3, linear_sampler, in.uv).r;
+    color += textureSampleLevel(tex2, linear_sampler, in.uv, 0.0).rgb * p.bloom.x;
+    let shafts = textureSampleLevel(tex3, linear_sampler, in.uv, 0.0).r;
     color += (p.light_color.rgb + p.ambient.rgb) * shafts * p.shaft.z * 0.35;
 
     // Grading: exposure, filmic contrast, saturation, warmth, vignette.

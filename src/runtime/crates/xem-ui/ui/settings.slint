@@ -7,6 +7,27 @@ export component SettingsPanel inherits Window {
     in-out property <int> scale;
     in-out property <int> filter;
     in-out property <bool> show-fps;
+    // Graphics (xem_settings::Graphics): indexes into the models below.
+    in-out property <int> gfx-profile;
+    in-out property <int> gfx-scale;
+    in-out property <int> gfx-quality;
+    in-out property <int> gfx-rate;
+    in-out property <bool> gfx-interpolation;
+    in-out property <bool> gfx-widescreen;
+    in-out property <int> gfx-filter-world;
+    in-out property <int> gfx-filter-sprites;
+    in-out property <int> gfx-filter-interface;
+    in-out property <bool> gfx-cull-back-faces;
+    // Custom profile limits, in the order of fidelity-names.
+    in-out property <[bool]> gfx-fidelity;
+    // Effect levels of the selected profile (HD-2D or Custom), in the order of effect-names.
+    in-out property <[int]> gfx-effects;
+    in-out property <int> gfx-xr-distance;
+    in-out property <int> gfx-xr-width;
+    in-out property <bool> gfx-xr-dof;
+    in property <string> gfx-status;
+    private property <[string]> fidelity-names: ["Affine textures", "Vertex snapping", "15-bit colour", "Dithering", "Native resolution", "Painter's ordering"];
+    private property <[string]> effect-names: ["Lighting", "Shadows", "Ambient occlusion", "Fog", "Light shafts", "Bloom", "Colour grading", "Depth of field", "Focus"];
     in-out property <bool> pause-on-focus-loss;
     in property <string> status;
     in property <bool> can-import-disc;
@@ -52,6 +73,12 @@ export component SettingsPanel inherits Window {
     callback scale-edited(int);
     callback filter-edited(int);
     callback show-fps-edited(bool);
+    // A graphics choice by name (profile, scale, quality, rate, interpolation,
+    // widescreen, filter-world, filter-sprites, filter-interface, cull,
+    // xr-distance, xr-width, xr-dof) and value.
+    callback graphics-edited(string, int);
+    callback fidelity-edited(int, bool);
+    callback effect-edited(int, int);
     callback pause-on-focus-loss-edited(bool);
     callback close-requested();
     callback import-disc-requested();
@@ -160,6 +187,110 @@ export component SettingsPanel inherits Window {
                                         ComboBox { accessible-label: "Filter"; model: ["Nearest", "Linear"]; current-index <=> root.filter; selected => { root.filter-edited(self.current-index); } }
                                     }
                                     CheckBox { text: "Show FPS"; checked <=> root.show-fps; toggled => { root.show-fps-edited(self.checked); } }
+                                }
+                            }
+                            if root.selected-section == 1: GroupBox {
+                                title: "Profile";
+                                vertical-stretch: 0;
+                                VerticalLayout {
+                                    spacing: 10px;
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Text { text: "Look"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
+                                        ComboBox { accessible-label: "Graphics profile"; model: ["Modern", "HD-2D", "PS1", "Custom"]; current-index <=> root.gfx-profile; selected => { root.graphics-edited("profile", self.current-index); } }
+                                    }
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Text { text: "Resolution"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
+                                        ComboBox { accessible-label: "Internal resolution"; model: ["Auto", "1x", "2x", "3x", "4x", "5x", "6x", "7x", "8x"]; current-index <=> root.gfx-scale; selected => { root.graphics-edited("scale", self.current-index); } }
+                                    }
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Text { text: "Quality"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
+                                        ComboBox { accessible-label: "Effects quality tier"; model: ["Auto", "Low", "Medium", "High", "Ultra"]; current-index <=> root.gfx-quality; selected => { root.graphics-edited("quality", self.current-index); } }
+                                    }
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Text { text: "Present"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
+                                        ComboBox { accessible-label: "Presentation rate"; model: ["Every display refresh", "Game frames only"]; current-index <=> root.gfx-rate; selected => { root.graphics-edited("rate", self.current-index); } }
+                                    }
+                                    CheckBox { text: "Interpolate motion (one frame later)"; checked <=> root.gfx-interpolation; toggled => { root.graphics-edited("interpolation", self.checked ? 1 : 0); } }
+                                    CheckBox { text: "Wider framing (the sides may show gaps)"; checked <=> root.gfx-widescreen; toggled => { root.graphics-edited("widescreen", self.checked ? 1 : 0); } }
+                                    Text { text: root.gfx-status; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+                                }
+                            }
+                            if root.selected-section == 1 && (root.gfx-profile == 1 || root.gfx-profile == 3): GroupBox {
+                                title: "HD-2D effects";
+                                vertical-stretch: 0;
+                                VerticalLayout {
+                                    spacing: 6px;
+                                    for name[index] in root.effect-names: HorizontalLayout {
+                                        spacing: 8px;
+                                        Text { text: name; vertical-alignment: center; min-width: 120px; horizontal-stretch: 0; }
+                                        Slider {
+                                            accessible-label: name;
+                                            minimum: index == 8 ? -100 : 0;
+                                            maximum: 100;
+                                            value: root.gfx-effects[index];
+                                            released(value) => { root.effect-edited(index, round(value)); }
+                                        }
+                                        Text { text: root.gfx-effects[index]; vertical-alignment: center; min-width: 32px; horizontal-stretch: 0; }
+                                    }
+                                }
+                            }
+                            if root.selected-section == 1 && root.gfx-profile == 3: GroupBox {
+                                title: "Original limits";
+                                vertical-stretch: 0;
+                                VerticalLayout {
+                                    spacing: 6px;
+                                    for name[index] in root.fidelity-names: CheckBox {
+                                        text: name;
+                                        checked: root.gfx-fidelity[index];
+                                        toggled => { root.fidelity-edited(index, self.checked); }
+                                    }
+                                }
+                            }
+                            if root.selected-section == 1: GroupBox {
+                                title: "Texture filtering and culling";
+                                vertical-stretch: 0;
+                                VerticalLayout {
+                                    spacing: 10px;
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Text { text: "World"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
+                                        ComboBox { accessible-label: "World filtering"; model: ["Nearest", "Linear"]; current-index <=> root.gfx-filter-world; selected => { root.graphics-edited("filter-world", self.current-index); } }
+                                    }
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Text { text: "Sprites"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
+                                        ComboBox { accessible-label: "Sprite filtering"; model: ["Nearest", "Linear"]; current-index <=> root.gfx-filter-sprites; selected => { root.graphics-edited("filter-sprites", self.current-index); } }
+                                    }
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Text { text: "Interface"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
+                                        ComboBox { accessible-label: "Interface filtering"; model: ["Nearest", "Linear"]; current-index <=> root.gfx-filter-interface; selected => { root.graphics-edited("filter-interface", self.current-index); } }
+                                    }
+                                    CheckBox { text: "Cull back faces (off: as the game draws)"; checked <=> root.gfx-cull-back-faces; toggled => { root.graphics-edited("cull", self.checked ? 1 : 0); } }
+                                }
+                            }
+                            if root.selected-section == 1: GroupBox {
+                                title: "Headset screen";
+                                vertical-stretch: 0;
+                                VerticalLayout {
+                                    spacing: 10px;
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Text { text: "Distance"; vertical-alignment: center; horizontal-stretch: 1; }
+                                        SpinBox { accessible-label: "Headset screen distance in centimetres"; min-width: 104px; max-width: 104px; horizontal-stretch: 0; minimum: 50; maximum: 2000; step-size: 10; value <=> root.gfx-xr-distance; edited(value) => { root.graphics-edited("xr-distance", value); } }
+                                        Text { text: "cm"; vertical-alignment: center; horizontal-stretch: 0; }
+                                    }
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Text { text: "Width"; vertical-alignment: center; horizontal-stretch: 1; }
+                                        SpinBox { accessible-label: "Headset screen width in centimetres"; min-width: 104px; max-width: 104px; horizontal-stretch: 0; minimum: 50; maximum: 2000; step-size: 10; value <=> root.gfx-xr-width; edited(value) => { root.graphics-edited("xr-width", value); } }
+                                        Text { text: "cm"; vertical-alignment: center; horizontal-stretch: 0; }
+                                    }
+                                    CheckBox { text: "Depth of field in the headset"; checked <=> root.gfx-xr-dof; toggled => { root.graphics-edited("xr-dof", self.checked ? 1 : 0); } }
                                 }
                             }
                             if root.selected-section == 2: GroupBox {

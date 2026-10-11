@@ -19,6 +19,8 @@ use sdl3_sys::everything::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Instant;
+use xem_render::ps1::{GameView, HostClass, ViewConfig};
+use xem_render::xem_gpu::DisplayInfo;
 use xem_render::{
     Compositor, Gpu, Quad, Rect, SceneRenderer, ViewTarget, Viewport, demo_camera, present_rect,
     wgpu,
@@ -237,9 +239,16 @@ pub struct View {
     frame_rate_started: Instant,
     panel_visible: Rc<RefCell<bool>>,
     gamepads: Vec<*mut SDL_Gamepad>,
-    /// The game's display (from the GPU device), shown instead of the test
-    /// scene once a host sets it.
+    /// The game's display as the device shows it (24-bit movie frames, and
+    /// hosts that set a picture directly), instead of the test scene.
     game_image: Option<(wgpu::Texture, wgpu::TextureView, (u32, u32))>,
+    /// The game drawn by the renderer: the trace is pushed into `renderer`
+    /// as the game runs; `game_frame` is the display and scene to present.
+    renderer: GameView,
+    game_frame: Option<(DisplayInfo, String)>,
+    /// A new trace arrived since the last presentation.
+    fresh_frame: bool,
+    host_class: HostClass,
     app_input: AppInput,
     app_requests: Rc<RefCell<Vec<AppRequest>>>,
     operations: operations::Operations,
@@ -309,6 +318,10 @@ impl View {
             panel_visible,
             gamepads: Vec::new(),
             game_image: None,
+            renderer: GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter)),
+            game_frame: None,
+            fresh_frame: false,
+            host_class: HostClass::Desktop,
             app_input: AppInput::default(),
             app_requests,
             operations: operations::Operations::default(),
@@ -505,7 +518,7 @@ impl View {
                 // Start and Back are the game's pad buttons while it runs;
                 // Guide toggles the panel always.
                 if button == SDL_GAMEPAD_BUTTON_GUIDE
-                    || (self.game_image.is_none()
+                    || (self.game_image.is_none() && self.game_frame.is_none()
                         && (button == SDL_GAMEPAD_BUTTON_START || button == SDL_GAMEPAD_BUTTON_BACK))
                 {
                     self.set_panel_visible(!visible);
@@ -513,6 +526,38 @@ impl View {
             }
             _ => {}
         }
+    }
+
+    /// The kind of host (its automatic graphics choices: quality tier).
+    pub fn set_host_class(&mut self, class: HostClass) {
+        self.host_class = class;
+    }
+
+    /// Takes what `game` drew since the last call for the renderer (the
+    /// graphics settings choose how it is drawn). A 24-bit display (movie
+    /// frames) is shown as the device holds it.
+    pub fn set_game_frame(&mut self, gpu: &Gpu, game: &mut Game) {
+        let graphics = self.settings.borrow().settings().graphics;
+        let config = ViewConfig::resolve(&graphics, self.host_class, self.target_size.1, self.renderer.max_scale());
+        self.renderer.configure(config);
+        let restart = self.renderer.take_restart();
+        let (trace, display, scene) = game.take_frame(restart);
+        self.fresh_frame |= !trace.ops.is_empty();
+        self.renderer.push(trace);
+        if GameView::shows(&display) {
+            self.game_frame = Some((display, scene));
+        } else {
+            self.game_frame = None;
+            let (width, height, rgba) = game.display();
+            self.set_game_image(gpu, (width, height), &rgba);
+        }
+    }
+
+    /// Whether a presentation is due: always at the display's rate, or
+    /// under the game-paced setting only when the game drew or the panel shows.
+    pub fn wants_present(&self) -> bool {
+        let rate = self.settings.borrow().settings().graphics.present_rate;
+        rate == xem_settings::PresentRate::Display || self.fresh_frame || self.panel_visible() || self.game_frame.is_none()
     }
 
     /// Show the game's display: `rgba` is `width` x `height` RGBA8 pixels
@@ -605,10 +650,18 @@ impl View {
             self.ui.update().map_err(|error| error.to_string())?;
         }
 
+        let panel_rect = self.panel_rect();
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
-        let (game_view, game_size) = match &self.game_image {
-            Some((_, view, size)) => (view, *size),
-            None => {
+        self.fresh_frame = false;
+        let presented = match &self.game_frame {
+            Some((display, scene)) => self.renderer.present(&mut encoder, display, scene, f64::from(time)).map(|p| (p.view, p.size)),
+            None => None,
+        };
+        let encoded = presented.is_some();
+        let (game_view, game_size) = match (presented, &self.game_image) {
+            (Some(presented), _) => presented,
+            (None, Some((_, view, size))) => (view, *size),
+            (None, None) => {
                 // No game: the test scene stands in for it.
                 let (view, proj) = demo_camera(GAME_SIZE.0 as f32 / GAME_SIZE.1 as f32, time);
                 self.scene.render_views(
@@ -634,6 +687,8 @@ impl View {
             present_rect(game_size, target_size, presentation.scale),
             target_size,
         );
+        // The renderer's frames hold sRGB-encoded values in a linear format.
+        game.srgb_encoded = encoded;
         game.filter = match presentation.filter {
             Filter::Nearest => wgpu::FilterMode::Nearest,
             Filter::Linear => wgpu::FilterMode::Linear,
@@ -648,7 +703,7 @@ impl View {
             quads.push(counter);
         }
         if visible {
-            let mut panel = Quad::screen(self.ui.view(), self.panel_rect(), target_size);
+            let mut panel = Quad::screen(self.ui.view(), panel_rect, target_size);
             panel.srgb_encoded = true;
             panel.filter = wgpu::FilterMode::Nearest;
             quads.push(panel);

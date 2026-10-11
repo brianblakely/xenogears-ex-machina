@@ -275,8 +275,12 @@ impl Host {
                 self.view.set_panel_visible(true);
                 game.pause();
             }
-            let (width, height, rgba) = game.display();
-            self.view.set_game_image(&self.gpu, (width, height), &rgba);
+            self.view.set_game_frame(&self.gpu, game);
+        }
+        if !self.view.wants_present() {
+            // Game-paced presentation: nothing new to show yet.
+            std::thread::sleep(std::time::Duration::from_millis(1));
+            return Ok(false);
         }
         let Some(frame) = self.presenter.acquire(&self.gpu, window)? else {
             return Ok(false);

@@ -16,3 +16,4 @@ pub use scene::{SceneRenderer, ViewTarget, Viewport, demo_camera};
 
 pub use glam;
 pub use wgpu;
+pub use xem_gpu;

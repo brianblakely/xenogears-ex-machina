@@ -41,6 +41,10 @@ impl Game {
         match *self {}
     }
 
+    pub fn take_frame(&mut self, _restart: bool) -> (xem_render::xem_gpu::Trace, xem_render::xem_gpu::DisplayInfo, String) {
+        match *self {}
+    }
+
     pub fn schedule(&mut self, _log: &serde_json::Value) -> Result<(), String> {
         match *self {}
     }

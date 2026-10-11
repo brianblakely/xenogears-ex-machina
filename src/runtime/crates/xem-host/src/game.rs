@@ -259,6 +259,18 @@ impl Game {
         }
     }
 
+    /// What the game drew since the last call (its GPU's draw trace, which
+    /// this turns on; `restart` starts it again from the whole VRAM), the
+    /// display and the scene, for the renderer. Presentation only.
+    pub fn take_frame(&mut self, restart: bool) -> (xem_render::xem_gpu::Trace, xem_render::xem_gpu::DisplayInfo, String) {
+        let scene = self.session.scene();
+        let device = self.session.runtime.services().gpu.device_mut();
+        if restart || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        (device.take_trace(), device.display(), scene)
+    }
+
     /// The display as RGBA8: (width, height, pixels).
     pub fn display(&mut self) -> (u32, u32, Vec<u8>) {
         self.session.runtime.services().gpu.display_rgba8()
