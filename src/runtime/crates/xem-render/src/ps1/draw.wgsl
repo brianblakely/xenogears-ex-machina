@@ -33,7 +33,6 @@ const LINEAR: u32 = 32u;
 const RECTANGLE: u32 = 64u;
 const BAKED: u32 = 128u;
 const BLEND_SHIFT: u32 = 8u;
-const AUX_SEMI: u32 = 1024u;
 const CLAMP: u32 = 2048u;
 const CLASS_SHIFT: u32 = 12u;
 const ORIGINAL: u32 = 65536u;
@@ -306,8 +305,8 @@ fn fs_opaque_texels(in: VertexOut) -> Targets {
 // (SrcAlpha, One) for the others, alpha (Zero, One). So the colour gets
 // B/2+F/2, B+F, B-F or B+F/4 from weights 0.5, 1, 1 and 0.25, the
 // auxiliary target stays as it was under weight 0 (scene effects keep the
-// depth and class beneath) or takes this primitive's under weight 1 (an
-// interface window in mode 0), and both keep their stored alpha.
+// depth and class beneath; fs_mark marks an interface window's pixels), and
+// both keep their stored alpha.
 @fragment
 fn fs_semi(in: VertexOut) -> Targets {
     let s = shade(in, in.clip);
@@ -321,14 +320,12 @@ fn fs_semi(in: VertexOut) -> Targets {
     } else if mode == 3u {
         weight = 0.25;
     }
-    var info = aux(in);
-    info.a = select(0.0, 1.0, mode == 0u && (in.mode.w & AUX_SEMI) != 0u);
-    return Targets(vec4<f32>(s.color.rgb, weight), info);
+    return Targets(vec4<f32>(s.color.rgb, weight), vec4<f32>(0.0));
 }
 
-// The semi-transparent pixels of an interface primitive drawn in an
-// additive or subtractive mode, marked as interface in the auxiliary target
-// (weight 1 there) with the colour left as that draw made it (weight 0).
+// The semi-transparent pixels of an interface primitive, marked as
+// interface in the auxiliary target (weight 1 there, its alpha included:
+// flags 255) with the colour left as fs_semi made it (weight 0).
 @fragment
 fn fs_mark(in: VertexOut) -> Targets {
     let s = shade(in, in.clip);

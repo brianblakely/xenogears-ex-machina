@@ -148,8 +148,9 @@ fn draw(gpu: &Gpu, session: &mut Session, graphics: &Graphics) -> Picture {
 /// The interface pixels of `picture` against the console's own picture:
 /// opaque and semi-transparent ones, and how many of each differ from the
 /// native pixel under them by more than one 5-bit step in a channel. With
-/// `diff`, an image of them: differing interface pixels red, matching ones
-/// green, the rest dimmed.
+/// `diff`, an image of them: differing opaque interface pixels red,
+/// differing semi-transparent ones orange, matching ones green, the rest
+/// dimmed.
 fn against_console(picture: &Picture, diff: Option<&std::path::Path>) -> Value {
     let (Some(classes), Some(flags)) = (&picture.classes, &picture.flags) else { return Value::Null };
     let (cw, ch, console) = &picture.console;
@@ -171,7 +172,11 @@ fn against_console(picture: &Picture, diff: Option<&std::path::Path>) -> Value {
             let semi = usize::from(flags[i] == 255);
             counts[semi][0] += 1;
             counts[semi][1] += u64::from(differs);
-            image[i * 4..i * 4 + 3].copy_from_slice(if differs { &[255, 0, 0] } else { &[0, 160, 0] });
+            image[i * 4..i * 4 + 3].copy_from_slice(match (differs, semi) {
+                (true, 0) => &[255, 0, 0],
+                (true, _) => &[255, 170, 0],
+                (false, _) => &[0, 160, 0],
+            });
         }
     }
     if let Some(path) = diff {

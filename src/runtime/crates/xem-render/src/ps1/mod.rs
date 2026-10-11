@@ -27,7 +27,8 @@ pub const VRAM_HEIGHT: u32 = 512;
 /// The scaled VRAM picture's colour format (8-bit sRGB-encoded values, as
 /// the console's DAC outputs them; alpha is the mask bit).
 pub const COLOR_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
-/// Per pixel: depth (r, g: 16 bits), class (b), flags (a).
+/// Per pixel: depth (r, g: 16 bits), class (b), flags (a: bit 0 baked
+/// shading; 255 a semi-transparent interface pixel).
 pub const AUX_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
 const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 
@@ -47,8 +48,6 @@ const FLAG_LINEAR: u32 = 32;
 const FLAG_RECTANGLE: u32 = 64;
 const FLAG_BAKED: u32 = 128;
 const BLEND_SHIFT: u32 = 8;
-/// A semi-transparent primitive that writes the auxiliary target (mode 0 only).
-const FLAG_AUX_SEMI: u32 = 1024;
 /// Texels are clamped to the polygon's own texture coordinates ([`Vertex::limits`]).
 const FLAG_CLAMP: u32 = 2048;
 const CLASS_SHIFT: u32 = 12;
@@ -170,7 +169,9 @@ pub(crate) struct Vertex {
     position: [f32; 2],
     depth: f32,
     w: f32,
-    color: [u8; 4],
+    /// 0-1 per channel; a row of an interface triangle may extrapolate
+    /// past them at its corners.
+    color: [f32; 4],
     uv: [f32; 2],
     mode: [u32; 4],
     /// The texel range of the polygon (with [`FLAG_CLAMP`]): u and v
@@ -179,7 +180,7 @@ pub(crate) struct Vertex {
 }
 
 const VERTEX_ATTRIBUTES: [wgpu::VertexAttribute; 7] = wgpu::vertex_attr_array![
-    0 => Float32x2, 1 => Float32, 2 => Float32, 3 => Unorm8x4, 4 => Float32x2, 5 => Uint32x4, 6 => Uint32
+    0 => Float32x2, 1 => Float32, 2 => Float32, 3 => Float32x4, 4 => Float32x2, 5 => Uint32x4, 6 => Uint32
 ];
 
 #[repr(C)]
@@ -293,11 +294,12 @@ impl Pipelines {
             // targets keep their stored alpha.
             let keep = C { src_factor: F::Zero, dst_factor: F::One, operation: O::Add };
             let blend = match key.fragment {
-                // Weight 0 for the colour, 1 for the auxiliary target.
-                Fragment::Mark => Some(wgpu::BlendState {
-                    color: C { src_factor: F::SrcAlpha, dst_factor: F::OneMinusSrcAlpha, operation: O::Add },
-                    alpha: keep,
-                }),
+                // Weight 0 for the colour, 1 for the auxiliary target, its
+                // alpha included (flags 255).
+                Fragment::Mark => {
+                    let over = C { src_factor: F::SrcAlpha, dst_factor: F::OneMinusSrcAlpha, operation: O::Add };
+                    Some(wgpu::BlendState { color: over, alpha: over })
+                }
                 Fragment::Semi => Some(wgpu::BlendState {
                     color: match key.blend {
                         0 => C { src_factor: F::SrcAlpha, dst_factor: F::OneMinusSrcAlpha, operation: O::Add },
@@ -426,10 +428,16 @@ pub(crate) struct Builder<'a> {
     pub(crate) reveal: Reveal,
     /// Moves every vertex (shadows, interpolated replays).
     pub(crate) remap: Option<Box<dyn Fn(&mut Vertex) + 'a>>,
+    /// Row quads the interface may still take ([`push_rows`]); past them
+    /// its polygons are drawn whole.
+    rows_left: usize,
 }
 
-fn color(rgb: u32) -> [u8; 4] {
-    [rgb as u8, (rgb >> 8) as u8, (rgb >> 16) as u8, 255]
+/// Row quads one build may draw the interface with (about 24 MB of vertices).
+const ROW_BUDGET: usize = 65_536;
+
+fn color(rgb: u32) -> [f32; 4] {
+    [f32::from(rgb as u8) / 255.0, f32::from((rgb >> 8) as u8) / 255.0, f32::from((rgb >> 16) as u8) / 255.0, 1.0]
 }
 
 /// The screen offset most of the scene is projected with. Projections
@@ -489,6 +497,7 @@ impl<'a> Builder<'a> {
             spill: 0,
             reveal: Reveal::Hidden,
             remap: None,
+            rows_left: ROW_BUDGET,
         }
     }
 
@@ -564,7 +573,9 @@ impl<'a> Builder<'a> {
         let count = p.vertex_count();
         let class = effective_class(p, self.scene);
         let projected = p.vertices[..count].iter().all(|v| v.z > 0.0);
-        let perspective = projected && !fidelity.affine_textures && p.shape != Shape::Rectangle;
+        // The interface's attributes are screen-linear, as the original's
+        // (a projected one too: the field compass, the world map's).
+        let perspective = projected && !fidelity.affine_textures && p.shape != Shape::Rectangle && class != Class::Flat;
         let linear = match class {
             Class::Flat => self.options.filtering.interface_linear,
             Class::Sprite => self.options.filtering.sprites_linear,
@@ -572,9 +583,6 @@ impl<'a> Builder<'a> {
         };
         let blend = p.environment.draw_mode >> 5 & 3;
         let baked = p.gouraud || (p.textured && !p.raw && p.vertices[..count].iter().any(|v| v.color & 0xFF_FFFF != 0x80_8080));
-        // Semi-transparent interface pixels stay interface (no effects on
-        // them); a full-screen one (a fade) is a screen effect.
-        let marked = p.semi && class == Class::Flat && !self.covers_screen(p);
         let mut flags = (blend << BLEND_SHIFT) | (aux_class(class) << CLASS_SHIFT);
         for (on, flag) in [
             (p.textured, FLAG_TEXTURED),
@@ -585,7 +593,6 @@ impl<'a> Builder<'a> {
             (linear && p.textured, FLAG_LINEAR),
             (p.shape == Shape::Rectangle, FLAG_RECTANGLE),
             (baked, FLAG_BAKED),
-            (marked, FLAG_AUX_SEMI),
             (class == Class::Flat, FLAG_ORIGINAL),
             (p.shape == Shape::Line, FLAG_LINE),
         ] {
@@ -631,6 +638,8 @@ impl<'a> Builder<'a> {
         let start = self.vertices.len() as u32;
         match p.shape {
             Shape::Triangle | Shape::Quad => {
+                let rows = class == Class::Flat && self.remap.is_none() && self.rows_left > 0 && needs_rows(p);
+                let [left, top, right, bottom] = p.environment.area.map(i32::from);
                 for triangle in [[0, 1, 2], [1, 2, 3]].iter().take(if p.shape == Shape::Quad { 2 } else { 1 }) {
                     // A face the game culled never met the GPU's limit.
                     if !p.revealed && !fits(p, *triangle) {
@@ -642,14 +651,26 @@ impl<'a> Builder<'a> {
                         continue;
                     }
                     self.stats.triangles += 1;
-                    for &i in triangle {
-                        self.vertices.push(vertex(i));
+                    if rows {
+                        let points = triangle.map(|i| (p.vertices[i].x, p.vertices[i].y));
+                        let drawn = push_rows(&mut self.vertices, triangle.map(&vertex), points, (left, top, right, bottom));
+                        self.rows_left = self.rows_left.saturating_sub(drawn);
+                    } else {
+                        for &i in triangle {
+                            self.vertices.push(vertex(i));
+                        }
                     }
                 }
             }
             Shape::Rectangle => {
                 for i in [0, 1, 2, 1, 3, 2] {
                     self.vertices.push(vertex(i));
+                }
+            }
+            Shape::Line if class == Class::Flat && self.remap.is_none() => {
+                let (a, b) = (&p.vertices[0], &p.vertices[1]);
+                if (b.x - a.x).abs() < 1024 && (b.y - a.y).abs() < 512 {
+                    push_line(&mut self.vertices, [vertex(0), vertex(1)], [(a.x, a.y), (b.x, b.y)]);
                 }
             }
             Shape::Line => {
@@ -693,12 +714,11 @@ impl<'a> Builder<'a> {
         };
         let depth = if !fidelity.painter_ordering && projected { DepthMode::Test } else { DepthMode::Over };
         let end = self.vertices.len() as u32;
-        // Mode 0 marks its interface pixels in its own draw; the others need a mark draw.
-        let mark = p.semi && blend != 0 && effective_class(p, self.scene) == Class::Flat && !self.covers_screen(p);
+        // Semi-transparent pixels leave the depth and class under them; those
+        // of the interface (windows) are then marked as interface, so no
+        // effect touches them (a full-screen one, a fade, is a screen effect).
+        let mark = p.semi && effective_class(p, self.scene) == Class::Flat && !self.covers_screen(p);
         for scissor in scissors {
-            // Semi-transparent interface pixels (windows) keep the interface
-            // class (FLAG_AUX_SEMI); semi-transparent scene pixels (glows,
-            // water) leave the depth and class under them.
             if !p.semi {
                 self.push_range(PipelineKey { fragment: Fragment::Opaque, blend: 0, depth }, scissor, start..end);
             } else if p.textured {
@@ -751,6 +771,98 @@ impl<'a> Builder<'a> {
             TraceOp::Write { rect, pixels, upload } => self.upload(*rect, pixels, *upload),
             TraceOp::VBlank => {}
         }
+    }
+}
+
+/// Whether an interface polygon is drawn a row of native pixels at a time,
+/// as the GPU fills it, to cover whole native pixels at any scale: one with a
+/// slanted outer edge (a rectangle's halves meet where both planes agree).
+fn needs_rows(p: &Primitive) -> bool {
+    let v = &p.vertices;
+    let slanted = |a: usize, b: usize| v[a].x != v[b].x && v[a].y != v[b].y;
+    match p.shape {
+        Shape::Triangle => slanted(0, 1) || slanted(1, 2) || slanted(2, 0),
+        Shape::Quad => slanted(0, 1) || slanted(1, 3) || slanted(3, 2) || slanted(2, 0),
+        _ => false,
+    }
+}
+
+/// An interface triangle as the GPU fills it (`xem_gpu::TriangleRows`): a
+/// quad over each row of native pixels it covers, with colour, texture
+/// coordinates and depth from the triangle's plane through `corners`.
+/// Returns the rows drawn.
+fn push_rows(vertices: &mut Vec<Vertex>, corners: [Vertex; 3], points: [(i32, i32); 3], bounds: (i32, i32, i32, i32)) -> usize {
+    let Some(rows) = xem_gpu::TriangleRows::new(points, bounds) else { return 0 };
+    let [(ax, ay), (bx, by), (cx, cy)] = points.map(|(x, y)| (f64::from(x), f64::from(y)));
+    let det = (bx - ax) * (cy - ay) - (cx - ax) * (by - ay);
+    let [a, b, c] = corners;
+    let at = |x: i32, y: i32| {
+        let (px, py) = (f64::from(x), f64::from(y));
+        let s = ((px - ax) * (cy - ay) - (cx - ax) * (py - ay)) / det;
+        let t = ((bx - ax) * (py - ay) - (px - ax) * (by - ay)) / det;
+        let mix = |pa: f32, pb: f32, pc: f32| (f64::from(pa) + (f64::from(pb) - f64::from(pa)) * s + (f64::from(pc) - f64::from(pa)) * t) as f32;
+        Vertex {
+            position: [x as f32 + 0.5, y as f32 + 0.5],
+            depth: mix(a.depth, b.depth, c.depth),
+            color: std::array::from_fn(|k| mix(a.color[k], b.color[k], c.color[k])),
+            uv: std::array::from_fn(|k| mix(a.uv[k], b.uv[k], c.uv[k])),
+            ..a
+        }
+    };
+    let mut drawn = 0;
+    for (y, first, last) in rows {
+        if first <= last {
+            let quad = [at(first, y), at(last + 1, y), at(first, y + 1), at(last + 1, y + 1)];
+            vertices.extend([0, 1, 2, 1, 3, 2].map(|i| quad[i]));
+            drawn += 1;
+        }
+    }
+    drawn
+}
+
+/// An interface line as the GPU draws it (`xem_gpu`: a pixel per step
+/// along the longer axis, the other coordinate rounded to the nearest pixel,
+/// halves up): a quad over each run of pixels in a row (a column when steep),
+/// covering whole native pixels like a polygon, its colour along the line.
+fn push_line(vertices: &mut Vec<Vertex>, [a, b]: [Vertex; 2], [(x0, y0), (x1, y1)]: [(i32, i32); 2]) {
+    let (dx, dy) = (x1 - x0, y1 - y0);
+    let steps = dx.abs().max(dy.abs());
+    let along = |from: i32, delta: i32, i: i32| if steps == 0 { from } else { from + (2 * delta * i + steps).div_euclid(2 * steps) };
+    let steep = dy.abs() > dx.abs();
+    // The colour at step i (the GPU's, before it rounds down).
+    let color = |i: i32| -> [f32; 4] {
+        let t = if steps == 0 { 0.0 } else { f64::from(i) / f64::from(steps) };
+        std::array::from_fn(|k| (f64::from(a.color[k]) + (f64::from(b.color[k]) - f64::from(a.color[k])) * t) as f32)
+    };
+    let corner = |x: i32, y: i32, i: i32| Vertex {
+        position: [x as f32 + 0.5, y as f32 + 0.5],
+        color: color(i),
+        // A polygon's whole pixels, not a line's centres (draw.wgsl).
+        mode: [a.mode[0], a.mode[1], a.mode[2], a.mode[3] & !FLAG_LINE],
+        ..a
+    };
+    let mut i = 0;
+    while i <= steps {
+        let (x, y) = (along(x0, dx, i), along(y0, dy, i));
+        // The run: the next steps sharing this row (column).
+        let mut j = i;
+        while j < steps && if steep { along(x0, dx, j + 1) == x } else { along(y0, dy, j + 1) == y } {
+            j += 1;
+        }
+        // Its pixels' span along the longer axis, and the steps at its ends
+        // (one past the last: the colour keeps its slope to the far edge).
+        let (from, to) = if steep { (y, along(y0, dy, j)) } else { (x, along(x0, dx, j)) };
+        let (low, high) = (from.min(to), from.max(to) + 1);
+        let sign = if steep { dy.signum() } else { dx.signum() };
+        let start = if steep { y0 } else { x0 };
+        let step_at = |at: i32| (at - start) * sign;
+        let quad = if steep {
+            [corner(x, low, step_at(low)), corner(x + 1, low, step_at(low)), corner(x, high, step_at(high)), corner(x + 1, high, step_at(high))]
+        } else {
+            [corner(low, y, step_at(low)), corner(high, y, step_at(high)), corner(low, y + 1, step_at(low)), corner(high, y + 1, step_at(high))]
+        };
+        vertices.extend([0, 1, 2, 1, 3, 2].map(|k| quad[k]));
+        i = j + 1;
     }
 }
 

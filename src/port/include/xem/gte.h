@@ -63,11 +63,14 @@ typedef struct {
     unsigned int unused;
 } XemProjection;
 
-/* What draws the projections (present.c sets it around the wrapped seams). */
+/* What draws the projections (present.c sets it around the wrapped seams):
+ * INTERFACE is interface the GTE places (the world map's player marker),
+ * drawn as the original draws it. */
 enum {
     XEM_PROJECTION_OTHER = 0,
     XEM_PROJECTION_MODEL = 1,
     XEM_PROJECTION_SPRITE = 2,
+    XEM_PROJECTION_INTERFACE = 5,
 };
 
 typedef struct {

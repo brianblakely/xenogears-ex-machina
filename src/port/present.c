@@ -56,6 +56,7 @@ void xem_original_sprite_set_draw_matrix(Sprite *sprite);
 void xem_original_sprite_draw_parts(Sprite *sprite, u_long *ot);
 void xem_original_sprite_draw_parts_cut_below(Sprite *sprite, u_long *ot, s32 height);
 void xem_original_sprite_draw_parts_cut_above(Sprite *sprite, u_long *ot, s32 height);
+void xem_original_worldmap_map_overlay_draw(void);
 
 /* Whether the host wants the faces the game culls (xem/gte.h), and no model
  * is being drawn again for the record. */
@@ -329,4 +330,15 @@ void sprite_draw_parts_cut_below(Sprite *sprite, u_long *ot, s32 height) {
 
 void sprite_draw_parts_cut_above(Sprite *sprite, u_long *ot, s32 height) {
     xem_present_sprite_parts(sprite, ot, 2, height);
+}
+
+/* The world map's overlay: its player marker is four triangles the GTE
+ * turns with the camera, interface for the renderer (XEM_PROJECTION_INTERFACE
+ * projections). */
+void worldmap_map_overlay_draw(void) {
+    u32 previous = xem_gte_ring->class_;
+
+    xem_gte_ring->class_ = XEM_PROJECTION_INTERFACE;
+    xem_original_worldmap_map_overlay_draw();
+    xem_gte_ring->class_ = previous;
 }

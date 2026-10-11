@@ -5,7 +5,8 @@
 //
 // The auxiliary target gives each pixel the GTE depth (SZ, 16 bits in r, g)
 // and class (b: 0 background, 1 interface, 2 world, 3 model, 4 sprite) of
-// the primitive that drew it last; flags (a) bit 0 marks baked shading.
+// the primitive that drew it last; flags (a) bit 0 marks baked shading
+// (255: a semi-transparent interface pixel).
 
 struct Params {
     size: vec2<f32>,
@@ -38,6 +39,8 @@ struct Params {
     quality: vec4<u32>,
     // Blur pass: source texel size (xy); the scene average's easing (z).
     step: vec4<f32>,
+    // Depth of field: the blur's ramp towards (x) and away from (y) the camera, SZ units.
+    ramps: vec4<f32>,
 };
 
 @group(0) @binding(0) var<uniform> p: Params;
@@ -344,13 +347,13 @@ fn coc(depth: f32, kind: u32) -> f32 {
     // Background without depth is far.
     var z = depth;
     if z <= 0.0 {
-        z = far * 4.0;
+        z = far + 2.0 * p.ramps.y;
     }
     if z > far {
-        return clamp((z - far) / far, 0.0, 1.0);
+        return clamp((z - far) / max(p.ramps.y, 1.0), 0.0, 1.0);
     }
     if z < near {
-        return clamp((near - z) / (near * 0.45), 0.0, 1.0);
+        return clamp((near - z) / max(p.ramps.x, 1.0), 0.0, 1.0);
     }
     return 0.0;
 }

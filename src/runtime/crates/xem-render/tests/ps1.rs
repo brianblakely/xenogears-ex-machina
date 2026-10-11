@@ -415,10 +415,12 @@ fn interpolation_moves_matched_primitives_and_leaves_cuts() {
 
 #[test]
 fn the_interface_draws_as_the_original_at_any_scale() {
-    // The 2D scene (windows, text sprites, bars, lines: no projections) at
-    // three times the original under Modern against the software GPU's own
-    // pixels scaled up: alike but for diagonal edges and semi-transparent
-    // blends (the GPU blends at 5 bits).
+    // The 2D scene (windows, text sprites, bars, slanted polygons, lines: no
+    // projections) at three times the original under Modern against the
+    // software GPU's own pixels scaled up: whole native pixels alike, slanted
+    // edges and lines included, but for semi-transparent blends (the GPU
+    // blends at 5 bits) and a few texels and colours its exact interpolation
+    // rounds the other way.
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let (sync, trace) = traced(|device| {
         upload_texture(device);
@@ -446,7 +448,7 @@ fn the_interface_draws_as_the_original_at_any_scale() {
         }
     }
     eprintln!("{differ} of {total} scaled pixels differ from the original's");
-    assert!(differ * 100 < total * 2, "{differ} of {total} pixels differ");
+    assert!(differ * 1000 < total, "{differ} of {total} pixels differ");
 }
 
 #[test]

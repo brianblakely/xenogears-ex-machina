@@ -73,7 +73,7 @@ fn main() {
             "--only" => {
                 graphics.profile = GraphicsProfile::Custom;
                 let mut levels = EffectLevels::OFF;
-                for name in value().split(',') {
+                for name in value().split(',').filter(|n| !n.is_empty()) {
                     let name = match name {
                         "ao" => "ambient_occlusion",
                         "shafts" => "light_shafts",

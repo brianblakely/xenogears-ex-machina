@@ -177,6 +177,7 @@ struct Params {
     grade2: [f32; 4],
     quality: [u32; 4],
     step: [f32; 4],
+    ramps: [f32; 4],
 }
 
 /// What the frame's primitives tell the effects.
@@ -288,8 +289,11 @@ impl SceneAnalysis {
             let x = (s.bounds[0] + s.bounds[2]) / 2.0;
             w >= 3.0 && h >= 6.0 && w <= width * 0.35 && h <= height * 0.6 && (x - cx).abs() < width * 0.45
         });
-        // The playfield: the subjects within reach of the one nearest the
-        // middle of the screen (a little below it, where the party stands).
+        // The playfield: the subjects near in depth to the one nearest the
+        // middle of the screen (a little below it, where the party stands),
+        // nearness measured against the depths the scene spans (a camera
+        // pulled back keeps its foreground and background soft).
+        let span = depths_at.map_or(1.0, |d| (d[2] - d[0]).max(1.0));
         let anchor = (cx, area.y as f32 + height * 0.6);
         let distance = |s: &Subject| {
             let (x, y) = ((s.bounds[0] + s.bounds[2]) / 2.0, (s.bounds[1] + s.bounds[3]) / 2.0);
@@ -298,17 +302,23 @@ impl SceneAnalysis {
         let primary = subjects.iter().min_by(|a, b| distance(a).total_cmp(&distance(b))).map(|s| (s.near + s.far) / 2.0);
         let focus = match primary {
             Some(at) => {
+                // Also every subject in the middle of the screen, whatever its
+                // depth (all who take part in a conversation).
+                let central_subject = |s: &Subject| {
+                    let (x, y) = ((s.bounds[0] + s.bounds[2]) / 2.0, (s.bounds[1] + s.bounds[3]) / 2.0);
+                    (x - cx).abs() < width * 0.3 && (y - cy).abs() < height * 0.3
+                };
                 let (near, far) = subjects
                     .iter()
-                    .filter(|s| s.far > at * 0.6 && s.near < at * 1.6)
+                    .filter(|s| central_subject(s) || (s.far > at - span * 0.3 && s.near < at + span * 0.3))
                     .fold((at, at), |(n, f), s| (n.min(s.near), f.max(s.far)));
                 Some([near, far])
             }
             None if !central.is_empty() => {
                 central.sort_by(f32::total_cmp);
-                Some([percentile(&central, 0.3), percentile(&central, 0.6)])
+                Some([percentile(&central, 0.35), percentile(&central, 0.55)])
             }
-            None => depths_at.map(|d| [d[1] * 0.9, d[1] * 1.1]),
+            None => depths_at.map(|d| [d[1] - span * 0.05, d[1] + span * 0.05]),
         };
         SceneAnalysis { sprites: groups, depths: depths_at, focus }
     }
@@ -364,9 +374,10 @@ pub struct EffectsRenderer {
     shadow_group: Option<(wgpu::Texture, wgpu::BindGroup)>,
     /// The targets were just made: the scene average starts afresh.
     fresh: bool,
-    /// Fog start and end, nearest and farthest sharp depth, eased between
-    /// frames (a cut takes the new ones at once).
-    ranges: Option<[f32; 4]>,
+    /// Fog start and end, nearest and farthest sharp depth and the blur's
+    /// ramps towards and away from the camera, eased between frames (a cut
+    /// takes the new ones at once).
+    ranges: Option<[f32; 6]>,
 }
 
 /// What [`EffectsRenderer::set_debug_view`] shows instead of the effects.
@@ -660,7 +671,7 @@ impl EffectsRenderer {
                 };
                 let lift = ((ground.1 - feet.1) / height).clamp(0.0, 1.0);
                 let (lean, length) = (lighting.shadow_lean, lighting.shadow_length);
-                let cast = (255.0 * lighting.cast_shadow * (1.0 - 0.7 * lift)) as u8;
+                let cast = lighting.cast_shadow * (1.0 - 0.7 * lift);
                 builder.remap = Some(Box::new(move |v| {
                     let dx = v.position[0] - feet.0;
                     // Height above the floor: above the feet, plus the jump.
@@ -668,7 +679,7 @@ impl EffectsRenderer {
                     v.position = [ground.0 + dx + up * lean, ground.1 - up * length];
                     v.depth = depth;
                     v.w = 1.0;
-                    v.color = [cast, 0, 0, 255];
+                    v.color = [cast, 0.0, 0.0, 1.0];
                 }));
                 for &index in &group.primitives {
                     if let TraceOp::Draw(p) = &ops[index] {
@@ -677,7 +688,7 @@ impl EffectsRenderer {
                 }
                 builder.remap = None;
                 let shrink = 1.0 - 0.45 * lift;
-                let strength = (255.0 * lighting.contact_shadow * (1.0 - 0.6 * lift)) as u8;
+                let strength = lighting.contact_shadow * (1.0 - 0.6 * lift);
                 contact(&mut builder.vertices, ground, (width * 0.4 * shrink, (width * 0.13).max(2.0) * shrink), depth, strength);
             }
         }
@@ -727,14 +738,16 @@ impl EffectsRenderer {
         // Parameters.
         let depths = analysis.depths.unwrap_or([1000.0, 4000.0, 8000.0]);
         let span = (depths[2] - depths[0]).max(500.0);
-        // The playfield stays sharp, with a margin; the focus setting moves it.
-        let [near, far] = analysis.focus.unwrap_or([depths[1] * 0.9, depths[1] * 1.1]);
+        // The playfield stays sharp, with a margin; the focus setting moves
+        // it; the blur grows over parts of the scene's depth span beyond it,
+        // faster towards the camera.
+        let [near, far] = analysis.focus.unwrap_or([depths[1] - span * 0.05, depths[1] + span * 0.05]);
         let shift = effects.focus * span * 0.5;
-        let near = (near * 0.9 + shift).max(1.0);
-        let far = (far * 1.12 + shift).max(near + 1.0);
+        let near = (near - span * 0.06 + shift).max(1.0);
+        let far = (far + span * 0.08 + shift).max(near + 1.0);
         let fog_start = depths[0] + span * lighting.fog_range[0];
         let fog_end = depths[0] + span * lighting.fog_range[1];
-        let wanted = [fog_start, fog_end, near, far];
+        let wanted = [fog_start, fog_end, near, far, span * 0.35, span * 0.6];
         let eased = match self.ranges {
             Some(old) if old.iter().zip(&wanted).all(|(o, w)| (w / o.max(1.0) - 1.0).abs() < 0.6) => {
                 std::array::from_fn(|i| old[i] + (wanted[i] - old[i]) * 0.15)
@@ -742,7 +755,7 @@ impl EffectsRenderer {
             _ => wanted,
         };
         self.ranges = Some(eased);
-        let [fog_start, fog_end, near, far] = eased;
+        let [fog_start, fog_end, near, far, near_ramp, far_ramp] = eased;
         let ease = if std::mem::take(&mut self.fresh) { 1.0 } else { 0.12 };
         let light = glam::Vec3::from(lighting.direction).normalize_or_zero();
         let s = |c: [f32; 3], k: f32| [c[0] * k, c[1] * k, c[2] * k, 0.0];
@@ -757,6 +770,7 @@ impl EffectsRenderer {
             ambient: [lighting.ambient[0], lighting.ambient[1], lighting.ambient[2], effects.ambient_occlusion],
             fog: [lighting.fog_color[0], lighting.fog_color[1], lighting.fog_color[2], effects.fog * 0.7],
             ranges: [fog_start, fog_end, near, far],
+            ramps: [near_ramp, far_ramp, 0.0, 0.0],
             shaft: [lighting.shaft_source[0], lighting.shaft_source[1], effects.light_shafts, lighting.shaft_threshold],
             bloom: [effects.bloom * 0.7, lighting.bloom_threshold, 0.3, effects.lighting],
             grade: [lighting.exposure, lighting.contrast, lighting.saturation, lighting.warmth],
@@ -850,12 +864,12 @@ impl EffectsRenderer {
 }
 
 /// A soft ellipse on the floor under a sprite (untextured; uv spans -1..1).
-fn contact(vertices: &mut Vec<super::Vertex>, (x, y): (f32, f32), (rx, ry): (f32, f32), depth: f32, strength: u8) {
+fn contact(vertices: &mut Vec<super::Vertex>, (x, y): (f32, f32), (rx, ry): (f32, f32), depth: f32, strength: f32) {
     let corner = |sx: f32, sy: f32| super::Vertex {
         position: [x + sx * rx, y - 1.0 + sy * ry],
         depth,
         w: 1.0,
-        color: [strength, 0, 0, 255],
+        color: [strength, 0.0, 0.0, 1.0],
         uv: [sx, sy],
         mode: [0, 0, 0, 0],
         limits: 0,

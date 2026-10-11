@@ -27,7 +27,7 @@ const LIST_WORD_LIMIT: u32 = RAM_SIZE / 4;
 /// culled faces (`XEM_PRESENT_REVEALS`), with their entry sizes.
 const PROJECTION_RING: (u32, u32) = (65536, 32);
 const STORE_RING: (u32, u32) = (65536, 16);
-const REVEAL_RING: (u32, u32) = (16384, 64);
+const REVEAL_RING: (u32, u32) = (65536, 64);
 
 const SNAPSHOT_MAGIC: &[u8; 8] = b"XEMGPUD1";
 

@@ -115,6 +115,83 @@ impl Stepper {
     }
 }
 
+/// The rows of a triangle as the GPU fills them: pixels at integer
+/// coordinates, top-left rule, within `bounds` (left, top, right, bottom,
+/// inclusive: the drawing area). Each row is its y and the first and last x
+/// drawn (none when first > last).
+pub struct TriangleRows {
+    /// Per edge: its function at (x0, y0) less the fill rule's bias, and its
+    /// steps along x and y (inside where >= 0).
+    edges: [(i64, i64, i64); 3],
+    x0: i32,
+    x1: i32,
+    y0: i32,
+    y1: i32,
+    y: i32,
+}
+
+impl TriangleRows {
+    /// None for a triangle without area or outside `bounds`. The size limits
+    /// are the caller's.
+    pub fn new(points: [(i32, i32); 3], bounds: (i32, i32, i32, i32)) -> Option<TriangleRows> {
+        let mut v = points;
+        let cross = |a: (i32, i32), b: (i32, i32), c: (i32, i32)| {
+            i64::from(b.0 - a.0) * i64::from(c.1 - a.1) - i64::from(b.1 - a.1) * i64::from(c.0 - a.0)
+        };
+        let area = cross(v[0], v[1], v[2]);
+        if area == 0 {
+            return None;
+        }
+        if area < 0 {
+            v.swap(1, 2);
+        }
+        let (left, top, right, bottom) = bounds;
+        let (x0, x1) = (v.iter().map(|p| p.0).min()?.max(left), v.iter().map(|p| p.0).max()?.min(right));
+        let (y0, y1) = (v.iter().map(|p| p.1).min()?.max(top), v.iter().map(|p| p.1).max()?.min(bottom));
+        if x0 > x1 || y0 > y1 {
+            return None;
+        }
+        // Edge a->b: w(p) = (b.x-a.x)(p.y-a.y) - (b.y-a.y)(p.x-a.x), positive
+        // inside. A pixel on an edge is drawn only if the edge is a left edge
+        // (going up) or a top edge (horizontal, going right).
+        let mut edges = [(0i64, 0i64, 0i64); 3];
+        for (edge, (a, b)) in edges.iter_mut().zip([(0, 1), (1, 2), (2, 0)]) {
+            let (a, b) = (v[a], v[b]);
+            let dx = i64::from(b.0 - a.0);
+            let dy = i64::from(b.1 - a.1);
+            let top_left = dy < 0 || (dy == 0 && dx > 0);
+            let at_origin = dx * i64::from(y0 - a.1) - dy * i64::from(x0 - a.0);
+            *edge = (at_origin - i64::from(!top_left), -dy, dx);
+        }
+        Some(TriangleRows { edges, x0, x1, y0, y1, y: y0 })
+    }
+}
+
+impl Iterator for TriangleRows {
+    type Item = (i32, i32, i32);
+
+    fn next(&mut self) -> Option<(i32, i32, i32)> {
+        if self.y > self.y1 {
+            return None;
+        }
+        let y = self.y;
+        self.y += 1;
+        // Every edge function is >= 0 from `first` to `last` (an edge
+        // function is linear in x).
+        let row = i64::from(y - self.y0);
+        let (mut first, mut last) = (i64::from(self.x0), i64::from(self.x1));
+        for &(origin, step_x, step_y) in &self.edges {
+            let w = origin + step_y * row;
+            match step_x.signum() {
+                1 => first = first.max(i64::from(self.x0) - w.div_euclid(step_x)),
+                -1 => last = last.min(i64::from(self.x0) + w.div_euclid(-step_x)),
+                _ if w < 0 => last = first - 1,
+                _ => {}
+            }
+        }
+        Some((y, first as i32, last.max(first - 1) as i32))
+    }
+}
 impl Gpu {
     pub(crate) fn vertex(&self, word: u32) -> (i32, i32) {
         (
@@ -337,25 +414,7 @@ impl Gpu {
             v.swap(1, 2);
             area = -area;
         }
-        let (left, top, right, bottom) = self.drawing_area();
-        let (x0, x1) = (min_x.max(left), max_x.min(right));
-        let (y0, y1) = (min_y.max(top), max_y.min(bottom));
-        if x0 > x1 || y0 > y1 {
-            return;
-        }
-
-        // Edge a->b: w(p) = (b.x-a.x)(p.y-a.y) - (b.y-a.y)(p.x-a.x), positive
-        // inside. A pixel on an edge is drawn only if the edge is a left edge
-        // (going up) or a top edge (horizontal, going right).
-        let mut edges = [(0i64, 0i64, 0i64); 3];
-        for (edge, (a, b)) in edges.iter_mut().zip([(0, 1), (1, 2), (2, 0)]) {
-            let (a, b) = (&v[a], &v[b]);
-            let dx = i64::from(b.x - a.x);
-            let dy = i64::from(b.y - a.y);
-            let top_left = dy < 0 || (dy == 0 && dx > 0);
-            let at_origin = dx * i64::from(y0 - a.y) - dy * i64::from(x0 - a.x);
-            *edge = (at_origin - i64::from(!top_left), -dy, dx);
-        }
+        let Some(rows) = TriangleRows::new(v.map(|p| (p.x, p.y)), self.drawing_area()) else { return };
 
         // Attribute a at p: (a0*area + nx*(p.x-x0') + ny*(p.y-y0')) / area,
         // rounded down, with x0', y0' the first vertex.
@@ -373,23 +432,11 @@ impl Gpu {
         let steps = gradients.map(|(nx, _)| Stepper::new(nx, area));
         let mut attributes = v[0].attributes;
 
-        for y in y0..=y1 {
-            // The row's span: every edge function is >= 0 from `first` to
-            // `last` (an edge function is linear in x).
-            let row = i64::from(y - y0);
-            let (mut first, mut last) = (i64::from(x0), i64::from(x1));
-            for &(origin, step_x, step_y) in &edges {
-                let w = origin + step_y * row;
-                match step_x.signum() {
-                    1 => first = first.max(i64::from(x0) - w.div_euclid(step_x)),
-                    -1 => last = last.min(i64::from(x0) + w.div_euclid(-step_x)),
-                    _ if w < 0 => last = first - 1,
-                    _ => {}
-                }
-            }
+        for (y, first, last) in rows {
             if first > last {
                 continue;
             }
+            let (first, last) = (i64::from(first), i64::from(last));
             let mut values = [Stepper::default(); 5];
             if interpolate {
                 for (k, value) in values.iter_mut().enumerate() {

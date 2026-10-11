@@ -872,3 +872,34 @@ fn traced_points_take_the_projection_stored_at_their_address_and_culled_faces_th
     assert_eq!((p.vertices[0].fx, p.vertices[0].z), (5.0, 0.0));
     assert_eq!(p.class, xem_gpu::Class::Flat);
 }
+
+#[test]
+fn interface_projections_trace_as_flat_whole_pixels() {
+    use xem_gpu::{Class, Projection, SxyStore, TraceOp};
+    let mut ram = Ram::new();
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    // A triangle the GTE placed for the interface (the world map's player
+    // marker, class 5): its points match but stay the original's.
+    let point = |x: i32, y: i32| Projection {
+        sxy: xy(x, y),
+        sz: 256,
+        class: 5,
+        x: x * 65536 + 0x4000,
+        y: y * 65536 + 0x4000,
+        offset: (160, 120),
+        h: 256,
+        owner: 0,
+    };
+    ram.node(0x1000, 0xFF_FFFF, &[0x2000_FFFF, xy(10, 20), xy(40, 60), xy(5, 50)]);
+    let store = |address: u32, value: u32, source: u32| SxyStore { address, value, source: Some(source) };
+    let stores = [store(0x1008, xy(10, 20), 0), store(0x100C, xy(40, 60), 1), store(0x1010, xy(5, 50), 2)];
+    gpu.trace_projections(0, &[point(10, 20), point(40, 60), point(5, 50)], &stores, &[]);
+    gpu.dma_linked_list(&ram, 0x1000, 1000).unwrap();
+    let trace = gpu.take_trace();
+    let TraceOp::Draw(p) = trace.ops.iter().find(|op| matches!(op, TraceOp::Draw(_))).unwrap() else { unreachable!() };
+    assert_eq!(p.class, Class::Flat);
+    assert_eq!((p.vertices[0].fx, p.vertices[0].fy, p.vertices[0].z), (10.0, 20.0, 0.0));
+    assert_eq!(p.projection, None);
+}

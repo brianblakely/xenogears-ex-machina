@@ -21,6 +21,7 @@ mod trace;
 
 pub use display::DisplayInfo;
 pub use dma::{DmaError, DmaSummary, Memory, MemoryMut};
+pub use raster::TriangleRows;
 pub use snapshot::SnapshotError;
 pub use trace::{Class, Environment, Primitive, Projection, Reveal, Shape, SxyStore, Trace, TraceOp, TraceVertex, VramRect};
 

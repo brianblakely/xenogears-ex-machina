@@ -364,12 +364,15 @@ snapshots are its. The renderer only draws again what it drew:
   the ring's bookkeeping are put back, so the game sees nothing of it. Each
   sprite's floor point (its x and z at `ground` through the sprite view) and,
   in the field, the depth of the camera's target are ring entries of their
-  own. libgpu hands the three rings' headers to the GPU device before each
-  transfer (`xem.gpu_projections`).
+  own; the points the world map's overlay projects (its player marker,
+  `worldmap_map_overlay_draw`) are marked as interface. libgpu hands the
+  three rings' headers to the GPU device before each transfer
+  (`xem.gpu_projections`).
 - **Draw trace.** `xem_gpu::Gpu::set_trace(true)` records every primitive with
   its environment (draw mode, texture window, drawing area, mask, drawing
   offset), each vertex's GTE projection (depth, sub-pixel position, class:
-  model, sprite, world or flat interface), the DMA node it came from, fills,
+  model, sprite, world or flat interface, the last also for points the port
+  marks as interface), the DMA node it came from, fills,
   copies and VRAM writes: CPU transfers as uploads, and drawn pixels a later
   command samples as a texture before that command, so the renderer's 16-bit
   VRAM copy equals the device's at every command. A vertex takes the
@@ -380,8 +383,10 @@ snapshots are its. The renderer only draws again what it drew:
   their ordering-table entry, never drawn into VRAM; sprite parts carry their
   sprite's floor point, and a take carries the field camera's focus depth.
   The trace is not part of `Gpu::save`; a snapshot load restarts it from all
-  of VRAM. In the scenes measured every 3D point matches (Lahan: 41 640
-  matched, the 420 others 2D).
+  of VRAM, and so does a trace past 100 000 ops at a vertical blank (tens of
+  frames not taken: a host running frames without presenting them, such as
+  a long browser command, keeps no backlog to replay). In the scenes
+  measured every 3D point matches (Lahan: 41 640 matched, the 420 others 2D).
 - **PS1 renderer** (`xem_render::ps1::Ps1Renderer`, `draw.wgsl`). Draws the
   trace into a scaled picture of all of VRAM (colour, and an auxiliary target
   with each pixel's GTE depth, class and baked-shading flag), so double
@@ -392,12 +397,16 @@ snapshots are its. The renderer only draws again what it drew:
   its own sub-pixel point when it has one (a point shared by neighbouring
   faces lands in the same place in each), and a polygon samples only its own
   texels (no bleeding from the page at higher scales or when filtered). The
-  interface (flat primitives) is drawn as the original draws it whatever the
-  profile: whole native pixels at any scale, colour and texture coordinates
-  taken at each native pixel's sample point, 15-bit colour and the
-  original's dithering, and its translucent pixels stay interface in the
-  auxiliary target (an extra marking draw after additive or subtractive
-  ones). The four blend modes use one blend state for both targets (WebGL2
+  interface (flat primitives, and those projected with another screen
+  offset than the scene's, such as the field compass) is drawn as the
+  original draws it whatever the profile: whole native pixels at any scale,
+  slanted edges and lines included (a quad over each row of native pixels
+  the GPU fills, from `xem_gpu::TriangleRows` and its line stepping),
+  screen-linear colour and texture coordinates taken at each native pixel's
+  sample point, 15-bit colour and the original's dithering, and its
+  translucent pixels stay interface in the auxiliary target (a marking draw
+  after each translucent interface primitive, which also sets their flags
+  to 255). The four blend modes use one blend state for both targets (WebGL2
   has no per-target blending: the weight goes in the source alpha, the
   auxiliary output keeps its pixel with weight 0), affine texture
   coordinates interpolate as (uv·w, w) (GLSL ES 3.0 has no `noperspective`),
@@ -499,14 +508,16 @@ brightness); bloom (13-tap down, tent up; coloured lights more than white
 walls, characters barely), which also lights the surfaces around bright
 sources; light shafts from bright depthless or distant pixels; depth of
 field keeping the playfield sharp (the subjects, sprites and models of a
-character's size, around the one nearest the screen's middle, else the
-middle depths there; blur growing beyond, faster towards the camera,
-weighted towards bright samples; eased between frames); grading (exposure
-towards a bright middle grey within limits, cool-shadow and warm-highlight
-toning, saturation, a highlight shoulder, contrast, vignette). Passes whose
-effect is off are not drawn. Scene tuning (light direction and colour, fog
-tint and range, shaft source, thresholds, grading, shadow lean, length and
-strengths) is presentation metadata in
+character's size, near in depth to the one nearest the screen's middle,
+and every subject in the middle of the screen, else the middle depths
+there; blur growing beyond over parts of the scene's depth span, faster
+towards the camera, weighted towards bright samples; eased between
+frames); grading (exposure towards a bright middle grey within limits,
+cool-shadow and warm-highlight toning, saturation, a highlight shoulder,
+contrast, vignette). Passes whose effect is off are not drawn. Scene
+tuning (light direction and colour, fog tint and range, shaft source,
+thresholds, grading, shadow lean, length and strengths) is presentation
+metadata in
 `crates/xem-render/src/ps1/scenes.json`, keyed by `Session::scene()`
 ("field:22", "battle", "worldmap", ...).
 
@@ -519,10 +530,14 @@ opening text, a movie frame) under Modern, HD-2D, PS1, wider framing (16:9)
 and wider framing with the camera pulled back to 2.5x, and a report: the RAM
 hash after each look (equal), the pixels each look changes, the interface
 pixels HD-2D changed (0 in every scene), and the interface pixels that
-differ from the console's own picture scaled up (with an image of them): 0
-in the dialogue and menu scenes under every look; in battles and on the
-world map only where translucent interface (the Gear HUD, the minimap) lies
-over the scene drawn at the finer scale. `--example render -- --map N
+differ from the console's own picture scaled up (with an image of them;
+opaque and translucent apart): opaque ones 0 in every field, menu, text and
+world map scene under every look (the compass and the map's marker
+included); in battles only on the flat forest backdrop where the battle's
+translucent 3D light shafts and the models' edges, drawn at the finer
+scale, lie over it (the HUD itself matches). Translucent interface pixels
+(windows, the Gear HUD, the minimap) show the scene beneath, drawn at the
+finer scale. `--example render -- --map N
 --profile hd2d --compare` draws one scene beside Modern;
 `XEM_DEBUG_VIEW=shadows|depth|class` shows the effects' inputs.
 
@@ -530,16 +545,19 @@ over the scene drawn at the finer scale. `--example render -- --map N
 world map or a battle (optionally won, for the result screens), holding or
 tapping buttons, each game frame presented one or more times through
 `GameView`, it writes a contact sheet (beside the console's picture with
-`--compare`), an animated PNG, a probe of the primitives at a point, and the
+`--compare`), an animated PNG of the last 240 pictures, a probe of the
+primitives at a point, how many culled faces each game frame drew, and the
 mean, 95th-percentile and worst cost of the game frame, the trace, the
 presentation's CPU work and the GPU's. Measured on Lahan walking (1080p
 output at three times the original, this machine's CPU and lavapipe, means
-per game frame): the game alone 2.35 ms; traced, under Modern 2.57 ms with
-0.5 ms of presentation CPU; wider framing 2.96 and 0.66 ms; pulled back three
-times 3.9 and 1.2 ms (the recorded scenery); HD-2D adds 0.4 ms of CPU. GPU
-times there are a software rasterizer's (Modern 3.8 ms, HD-2D 35 ms at
-1080p), useful only relative to each other: lighting, ambient occlusion,
-depth of field and light shafts are the costly effects.
+per game frame over 90 frames): the game alone 2.36 ms; traced, under Modern
+2.71 ms with 0.68 ms of presentation CPU (0.40 ms over 300 frames); wider
+framing 2.90 and 0.88 ms; pulled back three times 4.55 and 1.70 ms (it draws
+2 840-3 080 faces the game culled each frame, steady over 900 frames); HD-2D
+adds 0.4 ms of CPU. GPU times there are a software rasterizer's (Modern
+4.4 ms, pulled back 12.9 ms, HD-2D 36 ms at 1080p), useful only relative to
+each other: lighting, ambient occlusion, depth of field and light shafts are
+the costly effects.
 
 ### Headsets
 

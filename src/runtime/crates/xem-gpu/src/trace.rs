@@ -112,6 +112,9 @@ pub enum Class {
 /// sprite and the depth of the field camera's target.
 const GROUND: u8 = 3;
 const FOCUS: u8 = 4;
+/// Points the interface projects (xem/gte.h: the world map's player marker),
+/// traced as interface: flat, at the original's whole pixels.
+const INTERFACE: u8 = 5;
 
 impl Class {
     fn from_projection(class: u8) -> Class {
@@ -353,6 +356,11 @@ const HISTORY: usize = 65536;
 const ADDRESS_MASK: u32 = 0xFF_FFFC;
 /// Vertical blanks a culled face waits for its ordering table's walk.
 const REVEAL_FRAMES: u32 = 3;
+/// Ops a trace holds at most between takes (tens of frames; a battle frame
+/// is a few thousand): past it, at a vertical blank, it starts again from
+/// the whole VRAM, so a host that runs frames without presenting them
+/// keeps no backlog.
+const TRACE_LIMIT: usize = 100_000;
 
 /// The indices of a polygon command's vertex words.
 fn polygon_points(op: u32) -> impl Iterator<Item = usize> {
@@ -577,6 +585,10 @@ impl Gpu {
                 !faces.is_empty()
             });
             trace.ops.push(TraceOp::VBlank);
+            if trace.ops.len() > TRACE_LIMIT {
+                trace.ops.clear();
+                trace.full_sync = true;
+            }
         }
     }
 
@@ -709,7 +721,7 @@ impl Gpu {
         let mut counts = trace.matches.get();
         counts[usize::from(point.is_none())] += 1;
         trace.matches.set(counts);
-        let class = point.map(|p| {
+        let class = point.filter(|p| p.class != INTERFACE).map(|p| {
             // The sub-pixel point, also where the GTE saturated the word.
             vertex.fx = p.x as f32 / 65536.0 + dx as f32;
             vertex.fy = p.y as f32 / 65536.0 + dy as f32;

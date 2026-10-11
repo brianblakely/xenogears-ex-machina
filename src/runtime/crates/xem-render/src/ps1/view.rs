@@ -135,9 +135,10 @@ impl ViewConfig {
     }
 }
 
-/// Ops kept between presentations at most; past it the trace restarts
-/// from the whole VRAM (a host that stopped presenting).
-const PENDING_LIMIT: usize = 400_000;
+/// Ops kept between presentations at most (as the device's trace keeps
+/// between takes); past it the trace restarts from the whole VRAM (a host
+/// that stopped presenting): one replay's vertices stay tens of MB.
+const PENDING_LIMIT: usize = 100_000;
 
 /// A presented frame: an `Rgba8Unorm` texture of sRGB-encoded values.
 pub struct Presented<'a> {

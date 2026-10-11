@@ -61,15 +61,16 @@ async function profiles(args, backend) {
     const page = await field(browser);
     assert.equal((await status(page)).renderer.backend, backend);
     const shots = {};
-    for (const [name, settings] of [
-      ['modern', graphics({})],
-      ['hd2d', graphics({ profile: 'Hd2d' })],
-      ['ps1', graphics({ profile: 'Ps1' })],
-      ['wide', graphics({ widescreen: true })],
-      ['zoom', graphics({ widescreen: true, zoom_out: 300 })],
+    // Pulled back three times, the small room fills about a tenth of the frame.
+    for (const [name, settings, lit] of [
+      ['modern', graphics({}), 0.2],
+      ['hd2d', graphics({ profile: 'Hd2d' }), 0.2],
+      ['ps1', graphics({ profile: 'Ps1' }), 0.2],
+      ['wide', graphics({ widescreen: true }), 0.2],
+      ['zoom', graphics({ widescreen: true, zoom_out: 300 }), 0.05],
     ]) {
       shots[name] = await picture(page, `render-${backend}-${name}.png`, settings);
-      assert.ok(shots[name].stats.lit > 0.2, `${name} shows the room (${shots[name].stats.lit})`);
+      assert.ok(shots[name].stats.lit > lit, `${name} shows the room (${shots[name].stats.lit})`);
       assert.ok(shots[name].stats.colours > 500, `${name} has detail (${shots[name].stats.colours} colours)`);
     }
     // Each look is its own picture.

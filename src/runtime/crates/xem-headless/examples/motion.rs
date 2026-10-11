@@ -17,14 +17,14 @@
 //! host times through the hosts' GameView. Written: every `every`th
 //! presented frame (cropped when asked; with `--compare` beside the
 //! console's own picture of it, scaled up) in a contact sheet `NAME-sheet.png`,
-//! all of them as an animated PNG `NAME.png`, the last one and the
+//! the last 240 as an animated PNG `NAME.png`, the last one and the
 //! console's own picture of it (`NAME-last.png`, `NAME-console.png`), and
 //! `NAME.json` with the mean and worst cost per stage (the game frame, which
 //! includes the port's presentation records and the trace's matching;
 //! taking and pushing the trace; the presentation's CPU work; the GPU's)
 //! and, per presented frame, the share of pixels that changed since the one
 //! before (a still camera over still scenery changes only where something
-//! moves). `--bench` reads nothing back and writes only the costs;
+//! moves), and per game frame how many faces the game culled were drawn. `--bench` reads nothing back and writes only the costs;
 //! `--no-trace` runs the game alone, presenting nothing (its cost without
 //! any presentation work). `--probe` lists the last frame's primitives
 //! covering a point of the original screen (class, projection, depth,
@@ -56,6 +56,25 @@ impl Stage {
         let worst = sorted.last().copied().unwrap_or(0.0);
         json!({"mean_ms": mean, "p95_ms": p95, "worst_ms": worst})
     }
+}
+
+/// The animated PNG keeps the last this many presented frames.
+const ANIMATED: usize = 240;
+
+/// `rgba` (of `from` pixels) on a black picture of `to` pixels, top left.
+fn fit(rgba: &[u8], from: (u32, u32), to: (u32, u32)) -> ((u32, u32), Vec<u8>) {
+    if from == to {
+        return (to, rgba.to_vec());
+    }
+    let mut out = vec![0u8; (to.0 * to.1 * 4) as usize];
+    out.chunks_exact_mut(4).for_each(|p| p[3] = 255);
+    let w = (from.0.min(to.0) * 4) as usize;
+    for row in 0..from.1.min(to.1) {
+        let a = (row * from.0 * 4) as usize;
+        let b = (row * to.0 * 4) as usize;
+        out[b..b + w].copy_from_slice(&rgba[a..a + w]);
+    }
+    (to, out)
 }
 
 fn main() {
@@ -213,9 +232,10 @@ fn main() {
     let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
     let buttons = hold.iter().map(|b| xem_core::control::button_bit(b).unwrap_or_else(|| panic!("no button {b}"))).fold(0, |a, b| a | b);
     let mut stages = [Stage::new("game_frame"), Stage::new("trace"), Stage::new("present_cpu"), Stage::new("gpu")];
-    let mut sheet_frames = Vec::new();
-    let mut animation = Vec::new();
+    let mut sheet_frames: Vec<((u32, u32), Vec<u8>)> = Vec::new();
+    let mut animation = std::collections::VecDeque::new();
     let mut changes = Vec::new();
+    let mut revealed = Vec::new();
     let mut previous: Option<Vec<u8>> = None;
     let mut size = (0, 0);
     let mut clock = 0.0f64;
@@ -239,6 +259,7 @@ fn main() {
         device.set_reveals(view.reveal_reach());
         view.push(device.take_trace());
         let display = device.display();
+        revealed.push(view.frame().newest().iter().filter(|op| matches!(op, xem_render::xem_gpu::TraceOp::Draw(p) if p.revealed)).count());
         stages[1].samples.push(started.elapsed().as_secs_f64() * 1000.0);
         let scene = session.scene();
         for step in 0..present {
@@ -290,16 +311,21 @@ fn main() {
                     }
                     cell = both;
                 }
-                sheet_frames.push(cell);
+                let width = if compare && crop.is_none() { size.0 * 2 } else { size.0 };
+                sheet_frames.push(((width, size.1), cell));
             }
-            animation.push(rgba.clone());
+            if animation.len() == ANIMATED {
+                animation.pop_front();
+            }
+            animation.push_back((size, rgba.clone()));
             previous = Some(rgba);
         }
     }
-    if let (Some((x, y)), Some((area, _))) = (probe, view.frame().area()) {
-        let (x, y) = (x + area.x as f32, y + area.y as f32);
-        for op in view.frame().newest() {
+    if let Some((x, y)) = probe {
+        for op in view.frame().primitives() {
             let xem_render::xem_gpu::TraceOp::Draw(p) = op else { continue };
+            // The point in the buffer the primitive was drawn into.
+            let (x, y) = (x + f32::from(p.environment.area[0]), y + f32::from(p.environment.area[1]));
             let v = &p.vertices[..p.vertex_count()];
             let (x0, x1) = v.iter().fold((f32::MAX, f32::MIN), |(a, b), v| (a.min(v.fx), b.max(v.fx)));
             let (y0, y1) = v.iter().fold((f32::MAX, f32::MIN), |(a, b), v| (a.min(v.fy), b.max(v.fy)));
@@ -307,24 +333,28 @@ fn main() {
                 let depths: Vec<f32> = v.iter().map(|v| v.z).collect();
                 eprintln!("{:?} {:?} textured {} semi {} offset {:?} owner {:#x} depths {depths:?} bounds {x0:.1},{y0:.1}-{x1:.1},{y1:.1} mode {:#x}",
                     p.class, p.shape, p.textured, p.semi, p.projection, p.owner, p.environment.draw_mode);
+                eprintln!("    points (x, y, u, v): {:?}", v.iter().map(|v| (v.x, v.y, v.u, v.v)).collect::<Vec<_>>());
             }
         }
     }
     let [matched, unmatched] = session.runtime.services().gpu.device().trace_matches();
-    // Contact sheet: four columns (two pairs when comparing).
-    let cell_width = if compare && crop.is_none() { size.0 * 2 } else { size.0 };
+    // Contact sheet: four columns (two pairs when comparing), each cell as
+    // large as the largest picture (the display's size can change).
+    let cell = sheet_frames.iter().fold((0, 0), |(w, h), ((pw, ph), _)| (w.max(*pw), h.max(*ph)));
     let columns = (if compare { 2u32 } else { 4 }).min(sheet_frames.len() as u32).max(1);
     let rows = (sheet_frames.len() as u32).div_ceil(columns);
-    let (sw, sh) = (cell_width * columns, size.1 * rows);
+    let (sw, sh) = (cell.0 * columns, cell.1 * rows);
     let mut sheet = vec![0u8; (sw * sh * 4) as usize];
-    for (i, picture) in sheet_frames.iter().enumerate() {
-        let (cx, cy) = (i as u32 % columns * cell_width, i as u32 / columns * size.1);
-        for row in 0..size.1 {
-            let from = (row * cell_width * 4) as usize;
+    for (i, ((pw, ph), picture)) in sheet_frames.iter().enumerate() {
+        let (cx, cy) = (i as u32 % columns * cell.0, i as u32 / columns * cell.1);
+        for row in 0..*ph {
+            let from = (row * pw * 4) as usize;
             let to = (((cy + row) * sw + cx) * 4) as usize;
-            sheet[to..to + (cell_width * 4) as usize].copy_from_slice(&picture[from..from + (cell_width * 4) as usize]);
+            sheet[to..to + (pw * 4) as usize].copy_from_slice(&picture[from..from + (pw * 4) as usize]);
         }
     }
+    // The animation at the last picture's size.
+    let animation: Vec<Vec<u8>> = animation.iter().map(|(picture_size, rgba)| fit(rgba, *picture_size, size)).map(|(_, rgba)| rgba).collect();
     let write = |path: PathBuf, (w, h): (u32, u32), pictures: &[Vec<u8>]| {
         let file = std::fs::File::create(&path).expect("output");
         let mut encoder = png::Encoder::new(std::io::BufWriter::new(file), w, h);
@@ -361,7 +391,8 @@ fn main() {
         "stages": stages.iter().map(|s| (s.name.to_string(), s.report())).collect::<serde_json::Map<_, _>>(),
         "changed_pixels": {"mean": mean_change, "per_frame": changes},
         "points": {"matched": matched, "unmatched": unmatched},
+        "revealed": revealed,
     });
     std::fs::write(out.join(format!("{name}.json")), serde_json::to_string_pretty(&report).unwrap()).unwrap();
-    println!("{}", serde_json::to_string(&json!({"stages": report["stages"], "changed_mean": mean_change, "points": report["points"]})).unwrap());
+    println!("{}", serde_json::to_string(&json!({"stages": report["stages"], "changed_mean": mean_change, "points": report["points"], "revealed": [revealed.first(), revealed.iter().min(), revealed.iter().max(), revealed.last()]})).unwrap());
 }
