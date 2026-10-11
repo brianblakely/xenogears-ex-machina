@@ -11,7 +11,7 @@ use std::fmt;
 use std::path::{Path, PathBuf};
 pub mod controls;
 pub mod graphics;
-pub use graphics::{EffectLevels, Fidelity, Graphics, GraphicsProfile, PresentRate, QualityTier, XrScreen};
+pub use graphics::{EffectLevels, Fidelity, Graphics, GraphicsProfile, MAX_ZOOM_OUT, PresentRate, QualityTier, XrScreen, ZOOM_STEP};
 pub use controls::{AppAction, AppBinding, AppInput, AppRequest, APP_ACTIONS};
 
 pub const MAX_VOLUME: u8 = 100;

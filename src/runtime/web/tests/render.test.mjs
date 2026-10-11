@@ -1,7 +1,7 @@
 // The game renderer in browsers (local only: it needs the user's disc 1 and
 // the game module): field 12 (an interior with a dialogue window and a
-// portrait) under the Modern, HD-2D and PS1 profiles and wider framing, on
-// WebGPU and on WebGL2. Each profile draws a picture of its own; none of them
+// portrait) under the Modern, HD-2D and PS1 profiles, wider framing and the
+// field camera pulled back, on WebGPU and on WebGL2. Each profile draws a picture of its own; none of them
 // changes the game: the same frames from the same snapshot end at the same
 // RAM hash whatever is selected and however often the page renders.
 
@@ -66,13 +66,14 @@ async function profiles(args, backend) {
       ['hd2d', graphics({ profile: 'Hd2d' })],
       ['ps1', graphics({ profile: 'Ps1' })],
       ['wide', graphics({ widescreen: true })],
+      ['zoom', graphics({ widescreen: true, zoom_out: 300 })],
     ]) {
       shots[name] = await picture(page, `render-${backend}-${name}.png`, settings);
       assert.ok(shots[name].stats.lit > 0.2, `${name} shows the room (${shots[name].stats.lit})`);
       assert.ok(shots[name].stats.colours > 500, `${name} has detail (${shots[name].stats.colours} colours)`);
     }
     // Each look is its own picture.
-    for (const [a, b] of [['modern', 'hd2d'], ['modern', 'ps1'], ['modern', 'wide']]) {
+    for (const [a, b] of [['modern', 'hd2d'], ['modern', 'ps1'], ['modern', 'wide'], ['wide', 'zoom']]) {
       assert.notDeepEqual(shots[a].png, shots[b].png, `${a} and ${b} differ`);
     }
     assert.deepEqual(page.errors, []);
@@ -89,8 +90,10 @@ async function profiles(args, backend) {
     const modern = await run(graphics({}));
     const hd2d = await run(graphics({ profile: 'Hd2d', widescreen: true, interpolation: true }));
     const ps1 = await run(graphics({ profile: 'Ps1' }));
+    const zoomed = await run(graphics({ widescreen: true, zoom_out: 400 }));
     assert.equal(hd2d, modern, 'HD-2D, wider framing and interpolation leave the game unchanged');
     assert.equal(ps1, modern, 'the PS1 profile leaves the game unchanged');
+    assert.equal(zoomed, modern, 'pulling the camera back (the port records the culled scenery) leaves the game unchanged');
   } finally {
     await browser.close();
   }
@@ -107,7 +110,7 @@ describe('the game renderer in browsers', { skip: !available && `needs ${USER_DI
 
   test('WebGPU and WebGL2 draw the same pictures', () => {
     // The same state and frames on both backends (the tests above).
-    for (const name of ['modern', 'hd2d', 'ps1', 'wide']) {
+    for (const name of ['modern', 'hd2d', 'ps1', 'wide', 'zoom']) {
       const a = decodePng(readFileSync(shot(`render-webgpu-${name}.png`)));
       const b = decodePng(readFileSync(shot(`render-webgl2-${name}.png`)));
       assert.equal(a.width, b.width);

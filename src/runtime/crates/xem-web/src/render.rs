@@ -319,6 +319,12 @@ impl WebRenderer {
     /// The renderer's configuration for `graphics` on this canvas (or in a
     /// headset); returns whether the device's draw trace must restart from
     /// the whole VRAM.
+    /// How far beyond its screen the game's trace should record the faces
+    /// it culls (a wider or pulled-back view).
+    pub fn reveal_reach(&self) -> Option<[u16; 2]> {
+        self.renderer.reveal_reach()
+    }
+
     pub fn configure_game(&mut self, graphics: &xem_settings::Graphics, headset: bool) -> bool {
         let class = if headset { HostClass::Headset } else { HostClass::Browser };
         // The virtual screen fills about half of a view.

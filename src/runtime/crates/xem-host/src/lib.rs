@@ -258,6 +258,8 @@ pub struct View {
     app_input: AppInput,
     app_requests: Rc<RefCell<Vec<AppRequest>>>,
     operations: operations::Operations,
+    /// Mouse wheel notches not yet turned into zoom steps (smooth wheels).
+    wheel: f32,
 }
 
 impl View {
@@ -332,7 +334,24 @@ impl View {
             app_input: AppInput::default(),
             app_requests,
             operations: operations::Operations::default(),
+            wheel: 0.0,
         })
+    }
+
+    /// The mouse wheel over the game: down pulls the field camera back,
+    /// up brings it in (graphics `zoom_out`, a step per notch).
+    fn zoom_wheel(&mut self, notches: f32) {
+        self.wheel += notches;
+        let steps = self.wheel.trunc();
+        if steps == 0.0 {
+            return;
+        }
+        self.wheel -= steps;
+        let graphics = self.settings.borrow().settings().graphics;
+        let zoomed = graphics.zoomed(steps as i32);
+        if zoomed != graphics {
+            let _ = self.settings.borrow_mut().apply(xem_settings::SettingChange::Graphics(zoomed));
+        }
     }
 
     pub fn set_state_directory(&mut self, path: std::path::PathBuf) { self.operations.directory = Some(path); }
@@ -500,6 +519,12 @@ impl View {
                     delta_y: wheel.y * 40.0,
                 });
             }
+            SDL_EVENT_MOUSE_WHEEL => {
+                let wheel = unsafe { event.wheel };
+                // Positive y scrolls up (away from the user) unless flipped.
+                let up = if wheel.direction == SDL_MOUSEWHEEL_FLIPPED { -wheel.y } else { wheel.y };
+                self.zoom_wheel(-up);
+            }
             SDL_EVENT_WINDOW_FOCUS_LOST => {
                 self.ui.cancel_pointer();
                 self.app_requests.borrow_mut().extend(self.app_input.set_focused(false));
@@ -555,7 +580,7 @@ impl View {
         let config = ViewConfig::resolve(&graphics, self.host_class, self.target_size, self.renderer.max_scale());
         self.renderer.configure(config);
         let restart = self.renderer.take_restart();
-        let (trace, display, scene) = game.take_frame(restart);
+        let (trace, display, scene) = game.take_frame(restart, self.renderer.reveal_reach());
         self.fresh_frame |= !trace.ops.is_empty();
         self.renderer.push(trace);
         if GameView::shows(&display) {

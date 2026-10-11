@@ -3,21 +3,28 @@
 //! and stays in build/validation, which is ignored).
 //!
 //!     cargo run --release -p xem-headless --example validation -- [--out DIR] [--scale N]
+//!         [--scenes name,...]
 //!
 //! Each representative scene (exterior, interiors with characters and a
 //! dialogue window and portrait, a dark forest, the world map, an on-foot
-//! and a Gear battle, an opening text scene, a movie frame) is reached by
-//! game commands (enter_field, boot_mode and the original's debug battle
-//! selector), then drawn under Modern, HD-2D, PS1 and Modern with wider
-//! framing, from the same snapshot. Written: sheet.png (rows: scenes;
-//! columns: the looks), one PNG per scene and look, and report.json with,
-//! per scene and look, the frame size, the RAM hash after drawing (equal
-//! across looks), the share of pixels the look changes against Modern, and
-//! the interface pixels (text, windows, portraits) HD-2D changed (none).
+//! and a Gear battle, the main menu, an opening text scene, a movie frame)
+//! is reached by game commands (enter_field, boot_mode, the original's
+//! debug battle selector, pad presses), then drawn under Modern, HD-2D,
+//! PS1, Modern with wider framing (16:9) and Modern with wider framing and
+//! the field camera pulled back to 2.5x, from the same snapshot. Written:
+//! sheet.png (rows: scenes; columns: the looks), one PNG per scene and look,
+//! and report.json with, per scene and look, the frame size, the RAM hash
+//! after drawing (equal across looks), the share of pixels the look changes
+//! against Modern, the interface pixels (text, windows, portraits) HD-2D
+//! changed against Modern (none), and the interface pixels that differ from
+//! the console's own picture (the device's display, each native pixel
+//! scaled up) by more than one 5-bit step: opaque ones (none expected) and
+//! semi-transparent window pixels (over a scene drawn at a finer scale, so
+//! some may).
 
 use serde_json::{Value, json};
 use std::path::PathBuf;
-use xem_render::ps1::{GameView, HostClass, ViewConfig, WIDE_SIDE};
+use xem_render::ps1::{GameView, HostClass, ViewConfig, wide_side};
 use xem_render::{Gpu, read_rgba8};
 use xem_settings::{Graphics, GraphicsProfile};
 
@@ -56,12 +63,18 @@ fn scenes() -> Vec<(&'static str, Vec<Value>)> {
         ("world-map", vec![json!({"cmd": "boot_mode", "mode": 3}), json!({"cmd": "frames", "count": 900})]),
         ("battle-on-foot", battle(false)),
         ("battle-gear", battle(true)),
+        ("menu", {
+            let mut commands = field(30, 400);
+            commands.extend(press("square"));
+            commands.push(json!({"cmd": "frames", "count": 90}));
+            commands
+        }),
         ("opening-text", field(4, 400)),
         ("movie", vec![json!({"cmd": "frames", "count": 480})]),
     ]
 }
 
-const LOOKS: [&str; 4] = ["modern", "hd2d", "ps1", "modern-wide"];
+const LOOKS: [&str; 5] = ["modern", "hd2d", "ps1", "modern-wide", "modern-zoom"];
 
 fn graphics(look: &str, scale: u8) -> Graphics {
     let base = Graphics { internal_scale: scale, ..Default::default() };
@@ -69,6 +82,7 @@ fn graphics(look: &str, scale: u8) -> Graphics {
         "hd2d" => Graphics { profile: GraphicsProfile::Hd2d, ..base },
         "ps1" => Graphics { profile: GraphicsProfile::Ps1, ..base },
         "modern-wide" => Graphics { widescreen: true, ..base },
+        "modern-zoom" => Graphics { widescreen: true, zoom_out: 250, ..base },
         _ => base,
     }
 }
@@ -76,8 +90,15 @@ fn graphics(look: &str, scale: u8) -> Graphics {
 struct Picture {
     size: (u32, u32),
     rgba: Vec<u8>,
-    /// Per pixel: the auxiliary class (1 = interface), when the renderer drew it.
+    /// Per pixel: the auxiliary class (1 = interface) and flags (255: a
+    /// semi-transparent interface pixel), when the renderer drew it.
     classes: Option<Vec<u8>>,
+    flags: Option<Vec<u8>>,
+    /// The frame's scale and wider framing's side, and the console's own
+    /// picture: (width, height, RGBA).
+    scale: u32,
+    side: u32,
+    console: (u32, u32, Vec<u8>),
 }
 
 /// Eight frames under `graphics`, the last one's picture.
@@ -90,6 +111,7 @@ fn draw(gpu: &Gpu, session: &mut Session, graphics: &Graphics) -> Picture {
     for frame in 0..8 {
         session.frame().expect("frame");
         let device = session.runtime.services().gpu.device_mut();
+        device.set_reveals(view.reveal_reach());
         view.push(device.take_trace());
         let display = device.display();
         let scene = session.scene();
@@ -98,19 +120,64 @@ fn draw(gpu: &Gpu, session: &mut Session, graphics: &Graphics) -> Picture {
         gpu.queue.submit([encoder.finish()]);
     }
     session.runtime.services().gpu.device_mut().set_trace(false);
+    let console = session.runtime.services().gpu.display_rgba8();
     match presented {
         Some(size) => {
             let mut rgba = read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().expect("presented"));
             rgba.chunks_exact_mut(4).for_each(|p| p[3] = 255);
             let aux = read_rgba8(&gpu.device, &gpu.queue, view.frame().aux());
-            Picture { size, rgba, classes: Some(aux.chunks(4).map(|p| p[2]).collect()) }
+            let (scale, side) = view.frame().area().map_or((1, 0), |(_, scale)| (scale, view.frame().side()));
+            Picture {
+                size,
+                rgba,
+                classes: Some(aux.chunks(4).map(|p| p[2]).collect()),
+                flags: Some(aux.chunks(4).map(|p| p[3]).collect()),
+                scale,
+                side,
+                console,
+            }
         }
         None => {
             // A 24-bit movie frame: the device's own picture, as hosts show it.
-            let (width, height, rgba) = session.runtime.services().gpu.display_rgba8();
-            Picture { size: (width, height), rgba, classes: None }
+            let (width, height, rgba) = console.clone();
+            Picture { size: (width, height), rgba, classes: None, flags: None, scale: 1, side: 0, console }
         }
     }
+}
+
+/// The interface pixels of `picture` against the console's own picture:
+/// opaque and semi-transparent ones, and how many of each differ from the
+/// native pixel under them by more than one 5-bit step in a channel. With
+/// `diff`, an image of them: differing interface pixels red, matching ones
+/// green, the rest dimmed.
+fn against_console(picture: &Picture, diff: Option<&std::path::Path>) -> Value {
+    let (Some(classes), Some(flags)) = (&picture.classes, &picture.flags) else { return Value::Null };
+    let (cw, ch, console) = &picture.console;
+    let mut counts = [[0u64; 2]; 2];
+    let mut image: Vec<u8> = picture.rgba.iter().enumerate().map(|(i, v)| if i % 4 == 3 { 255 } else { v / 4 }).collect();
+    for y in 0..picture.size.1 {
+        for x in 0..picture.size.0 {
+            let i = (y * picture.size.0 + x) as usize;
+            if classes[i] != 1 {
+                continue;
+            }
+            let nx = (x / picture.scale) as i64 - i64::from(picture.side);
+            let ny = (y / picture.scale) as i64;
+            if nx < 0 || ny < 0 || nx >= i64::from(*cw) || ny >= i64::from(*ch) {
+                continue;
+            }
+            let at = ((ny as u32 * cw + nx as u32) * 4) as usize;
+            let differs = (0..3).any(|c| (i32::from(picture.rgba[i * 4 + c]) - i32::from(console[at + c])).abs() > 8);
+            let semi = usize::from(flags[i] == 255);
+            counts[semi][0] += 1;
+            counts[semi][1] += u64::from(differs);
+            image[i * 4..i * 4 + 3].copy_from_slice(if differs { &[255, 0, 0] } else { &[0, 160, 0] });
+        }
+    }
+    if let Some(path) = diff {
+        write_png(path, picture.size, &image);
+    }
+    json!({"opaque": {"pixels": counts[0][0], "differ": counts[0][1]}, "semi": {"pixels": counts[1][0], "differ": counts[1][1]}})
 }
 
 fn write_png(path: &std::path::Path, (width, height): (u32, u32), rgba: &[u8]) {
@@ -144,11 +211,13 @@ fn fit(picture: &Picture, cell: (u32, u32)) -> Vec<u8> {
 fn main() {
     let mut out = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../build/validation");
     let mut scale = 3u8;
+    let mut only: Option<Vec<String>> = None;
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--out" => out = args.next().expect("a directory").into(),
             "--scale" => scale = args.next().expect("a scale").parse().unwrap(),
+            "--scenes" => only = Some(args.next().expect("scene names").split(',').map(String::from).collect()),
             other => panic!("unknown option {other}"),
         }
     }
@@ -158,7 +227,10 @@ fn main() {
         .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../discs/Xenogears disc 1.chd"));
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let cell = (480u32, 324u32);
-    let scenes = scenes();
+    let mut scenes = scenes();
+    if let Some(only) = &only {
+        scenes.retain(|(name, _)| only.iter().any(|o| o == name));
+    }
     let mut sheet = vec![0u8; (cell.0 * LOOKS.len() as u32 * cell.1 * scenes.len() as u32 * 4) as usize];
     let mut report = serde_json::Map::new();
     for (row, (name, setup)) in scenes.iter().enumerate() {
@@ -176,6 +248,7 @@ fn main() {
             let picture = draw(&gpu, &mut session, &graphics(look, scale));
             hashes.push(format!("{:016x}", session.memory_hash().unwrap()));
             write_png(&out.join(format!("{name}-{look}.png")), picture.size, &picture.rgba);
+            write_png(&out.join(format!("{name}-console.png")), (picture.console.0, picture.console.1), &picture.console.2);
             pictures.push(picture);
         }
         assert!(hashes.iter().all(|h| *h == hashes[0]), "{name}: the looks changed the game: {hashes:?}");
@@ -205,6 +278,7 @@ fn main() {
             looks.insert(
                 look.to_string(),
                 json!({"size": [picture.size.0, picture.size.1], "changed_vs_modern": changed, "interface": interface,
+                       "interface_vs_console": against_console(picture, Some(&out.join(format!("{name}-{look}-ui.png")))),
                        "rendered": picture.classes.is_some()}),
             );
             let tile = fit(picture, cell);
@@ -220,7 +294,7 @@ fn main() {
     }
     write_png(&out.join("sheet.png"), (cell.0 * LOOKS.len() as u32, cell.1 * scenes.len() as u32), &sheet);
     std::fs::write(out.join("report.json"), serde_json::to_string_pretty(&json!({
-        "looks": LOOKS, "scale": scale, "wide_side": WIDE_SIDE, "scenes": report,
+        "looks": LOOKS, "scale": scale, "wide_side": wide_side((1920, 1080)), "scenes": report,
     })).unwrap()).unwrap();
     println!("{}", out.join("sheet.png").display());
 }

@@ -93,8 +93,11 @@ impl Gpu {
             }
             self.trace_source(node);
             for k in 1..=count {
-                self.write_gp0(memory.read_u32(node.wrapping_add(4 * k) & ADDRESS_MASK));
+                let address = node.wrapping_add(4 * k) & ADDRESS_MASK;
+                self.trace_word_address(address);
+                self.write_gp0(memory.read_u32(address));
             }
+            self.trace_word_address(0);
             self.trace_source(0);
             summary.nodes += 1;
             summary.words += count;

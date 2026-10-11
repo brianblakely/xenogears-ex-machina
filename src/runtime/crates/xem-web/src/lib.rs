@@ -108,6 +108,8 @@ pub struct XemApp {
     music_paced: Option<f64>,
     stats: LoopStats,
     applied_time_settings: Option<(xem_settings::FastForwardRate, bool, u32, u32)>,
+    /// Wheel movement (notches) not yet turned into zoom steps.
+    wheel: f32,
 }
 
 #[wasm_bindgen]
@@ -149,6 +151,7 @@ impl XemApp {
             music_paced: None,
             stats: LoopStats::default(),
             applied_time_settings: None,
+            wheel: 0.0,
         }
     }
 
@@ -351,12 +354,14 @@ impl XemApp {
                 Some(session) if self.display_dirty => {
                     let graphics = self.settings.borrow().settings().graphics;
                     let restart = renderer.configure_game(&graphics, headset);
+                    let reveals = renderer.reveal_reach();
                     let scene = session.scene();
                     let gpu = &mut session.runtime.services().gpu;
                     let device = gpu.device_mut();
                     if restart || !device.trace_enabled() {
                         device.set_trace(true);
                     }
+                    device.set_reveals(reveals);
                     let trace = device.take_trace();
                     let display = device.display();
                     renderer.set_game_frame(trace, display, scene, || gpu.display_rgba8());
@@ -469,9 +474,27 @@ impl XemApp {
         self.panel_visible() && self.renderer.as_ref().and_then(|r| r.panel()).is_some_and(|p| p.text_editor_focused())
     }
 
-    /// Host pointer input over the canvas (canvas pixels); true when the panel took it.
+    /// Host pointer input over the canvas (canvas pixels); true when the
+    /// panel took it, or when the wheel zoomed the field camera (down pulls
+    /// it back, up brings it in; `dy` in pixels, about 100 a notch).
     pub fn pointer(&mut self, kind: &str, x: f32, y: f32, button: i32, dx: f32, dy: f32) -> bool {
-        self.renderer.as_mut().is_some_and(|r| r.pointer(kind, x, y, button, (dx, dy)))
+        if self.renderer.as_mut().is_some_and(|r| r.pointer(kind, x, y, button, (dx, dy))) {
+            return true;
+        }
+        if kind != "wheel" || self.panel_visible() {
+            return false;
+        }
+        self.wheel += dy / 100.0;
+        let steps = self.wheel.trunc();
+        if steps != 0.0 {
+            self.wheel -= steps;
+            let graphics = self.settings.borrow().settings().graphics;
+            let zoomed = graphics.zoomed(steps as i32);
+            if zoomed != graphics {
+                let _ = self.settings.borrow_mut().apply(SettingChange::Graphics(zoomed));
+            }
+        }
+        true
     }
 
     /// Host key input for the panel, as Slint key text.

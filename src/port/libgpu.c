@@ -164,9 +164,10 @@ u_long _param(int index) {
     return xem_host_gpu_read() & 0xFFFFFF;
 }
 
-/* Presentation: where the packets' screen points came from (xem/gte.h). */
+/* Presentation: where the packets' screen points came from, and what the
+ * renderers culled (xem/gte.h). */
 static void xem_gpu_hand_projections(void) {
-    xem_host_gpu_projections((u32)xem_gte_ring->entries, xem_gte_ring->count);
+    xem_host_gpu_projections((u32)xem_gte_ring, (u32)xem_present_stores, (u32)xem_present_reveals);
 }
 
 /* Words to GP0 by the CPU. */

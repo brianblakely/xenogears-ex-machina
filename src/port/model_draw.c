@@ -167,17 +167,22 @@ static u32 xem_ot_entry(XemDraw *d, u32 depth, s32 shift) {
     return d->ot + ((u32)((s32)depth >> (shift & 31)) << 2);
 }
 
-/* Link the slot at an OT entry whose old word was read as `old`. */
+/* Link the slot at an OT entry whose old word was read as `old` (while
+ * present.c draws a model again for the record, only note the link). */
 static void xem_link(XemDraw *d, u32 entry, u32 old, u32 tag) {
+    if (xem_present_capture->active) {
+        xem_present_capture_link(entry, d->slot, tag);
+        return;
+    }
     XEM_U32(entry) = d->slot;
     XEM_U32(d->slot) = old | tag;
 }
 
 /* The three (or four) SXY words, `step` bytes apart from slot + 8. */
 static void xem_store_xy3(XemDraw *d, u32 step, u32 a, u32 b, u32 c) {
-    XEM_U32(d->slot + 8) = a;
-    XEM_U32(d->slot + step + 8) = b;
-    XEM_U32(d->slot + step * 2 + 8) = c;
+    xem_store_face_sxy(d->slot + 8, a, 0, 3);
+    xem_store_face_sxy(d->slot + step + 8, b, 1, 3);
+    xem_store_face_sxy(d->slot + step * 2 + 8, c, 2, 3);
 }
 
 /* A depth step of the far and near sorts: the branch after slt of
@@ -190,6 +195,55 @@ static u32 xem_depth_keep(u32 current, u32 candidate, int far) {
         return current;
     }
     return candidate;
+}
+
+/* ---------------------------------------------------------------- presentation */
+
+/* How a culled face's depth is found, as the renderer that culled it sorts. */
+enum { XEM_SORT_AVG, XEM_SORT_FAR, XEM_SORT_NEAR };
+
+/* Presentation only (xem/gte.h): a face the screen-bounds test just culled,
+ * recorded with the GP0 words of its packet slot (the screen points put in)
+ * when the host wants culled faces and xem_present_face_visible keeps it,
+ * at the OT entry of its depth as the renderer sorts. Reads the GTE and
+ * memory only. */
+static void xem_reveal(XemDraw *d, u32 vertices, u32 step, u32 tag, int sort, u32 sxy0, u32 sxy1, u32 sxy2, u32 sxy3) {
+    u32 sxy[4], words[12], count = tag >> 24, projections = xem_gte_ring->count, i;
+    s32 depth, sz;
+    long long sum;
+
+    if (!xem_present_reveals->wanted || count == 0 || count > 12 ||
+        !xem_present_face_visible(projections, vertices, (s32)d->x_limit + 1, (s32)(d->y_limit >> 16) + 1)) {
+        return;
+    }
+    sxy[0] = sxy0, sxy[1] = sxy1, sxy[2] = sxy2, sxy[3] = sxy3;
+    if (sort == XEM_SORT_AVG) {
+        if (vertices == 4) {
+            sum = (long long)(s16)xem_gte_read_control(30) *
+                  ((s32)xem_mfc2(XEM_GTE_SZ0) + (s32)xem_mfc2(XEM_GTE_SZ1) + (s32)xem_mfc2(XEM_GTE_SZ2) + (s32)xem_mfc2(XEM_GTE_SZ3));
+        } else {
+            sum = (long long)(s16)xem_gte_read_control(29) *
+                  ((s32)xem_mfc2(XEM_GTE_SZ1) + (s32)xem_mfc2(XEM_GTE_SZ2) + (s32)xem_mfc2(XEM_GTE_SZ3));
+        }
+        sum >>= 12;
+        depth = sum < 0 ? 0 : sum > 0xFFFF ? 0xFFFF : (s32)sum;
+    } else {
+        depth = (s32)xem_mfc2(vertices == 4 ? XEM_GTE_SZ0 : XEM_GTE_SZ1);
+        for (i = vertices == 4 ? XEM_GTE_SZ1 : XEM_GTE_SZ2; i <= XEM_GTE_SZ3; i++) {
+            sz = (s32)xem_mfc2((int)i);
+            depth = (u32)xem_depth_keep((u32)depth, (u32)sz, sort == XEM_SORT_FAR);
+        }
+    }
+    if (depth == 0) {
+        return;
+    }
+    for (i = 0; i < count; i++) {
+        words[i] = XEM_U32(d->slot + 4 + i * 4);
+    }
+    for (i = 0; i < vertices; i++) {
+        words[1 + i * step / 4] = sxy[i];
+    }
+    xem_present_reveal(xem_ot_entry(d, (u32)depth, d->shift), vertices, projections, words, count);
 }
 
 /* A colour word: the 24-bit RGB with a code byte. */
@@ -272,6 +326,7 @@ static void xem_draw_avg_triangles(u8 *records, s32 count, u32 step, u32 tag, u3
         sxy2 = xem_mfc2(XEM_GTE_SXY2);
         xem_cop2(XEM_GTE_NCLIP);
         if (!xem_y_test3(&d, sxy0, sxy1, sxy2) || !xem_x_test3(&d, sxy0, sxy1, sxy2)) {
+            xem_reveal(&d, 3, step, tag, XEM_SORT_AVG, sxy0, sxy1, sxy2, 0);
             continue;
         }
         nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
@@ -344,6 +399,7 @@ static void xem_draw_avg_quads(u8 *records, s32 count, u32 step, u32 tag, u32 si
             continue;
         }
         if (!xem_y_test4(&d, sxy0, sxy1, sxy2, sxy3) || !xem_x_test4(&d, sxy0, sxy1, sxy2, sxy3)) {
+            xem_reveal(&d, 4, step, tag, XEM_SORT_AVG, sxy0, sxy1, sxy2, sxy3);
             continue;
         }
         otz = xem_mfc2(XEM_GTE_OTZ);
@@ -354,10 +410,10 @@ static void xem_draw_avg_quads(u8 *records, s32 count, u32 step, u32 tag, u32 si
         entry = xem_ot_entry(&d, otz, d.shift);
         old = XEM_U32(entry);
         xem_link(&d, entry, old, tag);
-        XEM_U32(d.slot + 8) = sxy0;
-        XEM_U32(d.slot + step + 8) = sxy1;
-        XEM_U32(d.slot + step * 2 + 8) = sxy2;
-        XEM_U32(d.slot + step * 3 + 8) = sxy3;
+        xem_store_face_sxy(d.slot + 8, sxy0, 0, 4);
+        xem_store_face_sxy(d.slot + step + 8, sxy1, 1, 4);
+        xem_store_face_sxy(d.slot + step * 2 + 8, sxy2, 2, 4);
+        xem_store_face_sxy(d.slot + step * 3 + 8, sxy3, 3, 4);
     }
     xem_draw_end(&d, size);
 }
@@ -410,16 +466,17 @@ static void xem_draw_depth_triangles(u8 *records, s32 count, u32 step, u32 tag, 
         sxy2 = xem_mfc2(XEM_GTE_SXY2);
         xem_cop2(XEM_GTE_NCLIP);
         if (!xem_y_test3(&d, sxy0, sxy1, sxy2) || !xem_x_test3(&d, sxy0, sxy1, sxy2)) {
+            xem_reveal(&d, 3, step, tag, far ? XEM_SORT_FAR : XEM_SORT_NEAR, sxy0, sxy1, sxy2, 0);
             continue;
         }
         nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
         sz2 = xem_mfc2(XEM_GTE_SZ2);
-        XEM_U32(d.slot + 8) = sxy0;
+        xem_store_face_sxy(d.slot + 8, sxy0, 0, 3);
         if (nclip <= 0) {
             continue;
         }
-        XEM_U32(d.slot + step + 8) = sxy1;
-        XEM_U32(d.slot + step * 2 + 8) = sxy2;
+        xem_store_face_sxy(d.slot + step + 8, sxy1, 1, 3);
+        xem_store_face_sxy(d.slot + step * 2 + 8, sxy2, 2, 3);
         depth = xem_mfc2(XEM_GTE_SZ1);
         sz3 = xem_mfc2(XEM_GTE_SZ3);
         depth = xem_depth_keep(depth, sz2, far);
@@ -484,20 +541,22 @@ static void xem_draw_depth_quads(u8 *records, s32 count, u32 step, u32 tag, u32 
         }
         sxy3 = xem_mfc2(XEM_GTE_SXY2);
         if (!xem_y_test4(&d, sxy0, sxy1, sxy2, sxy3)) {
+            xem_reveal(&d, 4, step, tag, far ? XEM_SORT_FAR : XEM_SORT_NEAR, sxy0, sxy1, sxy2, sxy3);
             continue;
         }
-        XEM_U32(d.slot + 8) = sxy0;
+        xem_store_face_sxy(d.slot + 8, sxy0, 0, 4);
         if (!xem_x_test4(&d, sxy0, sxy1, sxy2, sxy3)) {
+            xem_reveal(&d, 4, step, tag, far ? XEM_SORT_FAR : XEM_SORT_NEAR, sxy0, sxy1, sxy2, sxy3);
             continue;
         }
-        XEM_U32(d.slot + step + 8) = sxy1;
+        xem_store_face_sxy(d.slot + step + 8, sxy1, 1, 4);
         sz0 = xem_mfc2(XEM_GTE_SZ0);
-        XEM_U32(d.slot + step * 2 + 8) = sxy2;
+        xem_store_face_sxy(d.slot + step * 2 + 8, sxy2, 2, 4);
         if (sz0 == 0) {
             continue;
         }
         sz1 = xem_mfc2(XEM_GTE_SZ1);
-        XEM_U32(d.slot + step * 3 + 8) = sxy3;
+        xem_store_face_sxy(d.slot + step * 3 + 8, sxy3, 3, 4);
         if (sz1 == 0) {
             continue;
         }
@@ -581,13 +640,14 @@ void model_draw_f3_lit(u8 *records, s32 count) {
         sxy2 = xem_mfc2(XEM_GTE_SXY2);
         xem_cop2(XEM_GTE_NCLIP);
         if (!xem_y_test3(&d, sxy0, sxy1, sxy2) || !xem_x_test3(&d, sxy0, sxy1, sxy2)) {
+            xem_reveal(&d, 3, 4, 0x04000000, XEM_SORT_AVG, sxy0, sxy1, sxy2, 0);
             continue;
         }
         nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
-        XEM_U32(d.slot + 8) = sxy0;
+        xem_store_face_sxy(d.slot + 8, sxy0, 0, 3);
         xem_cop2(XEM_GTE_AVSZ3);
-        XEM_U32(d.slot + 12) = sxy1;
-        XEM_U32(d.slot + 16) = sxy2;
+        xem_store_face_sxy(d.slot + 12, sxy1, 1, 3);
+        xem_store_face_sxy(d.slot + 16, sxy2, 2, 3);
         if (nclip <= 0) {
             continue;
         }
@@ -650,6 +710,7 @@ static void xem_draw_cued_triangles(u8 *records, s32 count, u32 step, u32 tag, u
         sxy2 = xem_mfc2(XEM_GTE_SXY2);
         xem_cop2(XEM_GTE_NCLIP);
         if (!xem_y_test3(&d, sxy0, sxy1, sxy2) || !xem_x_test3(&d, sxy0, sxy1, sxy2)) {
+            xem_reveal(&d, 3, step, tag, XEM_SORT_AVG, sxy0, sxy1, sxy2, 0);
             continue;
         }
         nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
@@ -716,6 +777,7 @@ void model_draw_ft3_cued_far(u8 *records, s32 count) {
         y = xem_y_test3(&d, sxy0, sxy1, sxy2);
         xem_cop2(XEM_GTE_DPCS);
         if (!y || !xem_x_test3(&d, sxy0, sxy1, sxy2)) {
+            xem_reveal(&d, 3, 8, 0x07000000, XEM_SORT_FAR, sxy0, sxy1, sxy2, 0);
             continue;
         }
         nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
@@ -781,16 +843,17 @@ void model_draw_ft3_lit(u8 *records, s32 count) {
         sxy2 = xem_mfc2(XEM_GTE_SXY2);
         xem_cop2(XEM_GTE_NCLIP);
         if (!xem_y_test3(&d, sxy0, sxy1, sxy2) || !xem_x_test3(&d, sxy0, sxy1, sxy2)) {
+            xem_reveal(&d, 3, 8, 0x07000000, XEM_SORT_AVG, sxy0, sxy1, sxy2, 0);
             continue;
         }
         nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
-        XEM_U32(d.slot + 8) = sxy0;
-        XEM_U32(d.slot + 16) = sxy1;
+        xem_store_face_sxy(d.slot + 8, sxy0, 0, 3);
+        xem_store_face_sxy(d.slot + 16, sxy1, 1, 3);
         if (nclip <= 0) {
             continue;
         }
         xem_cop2(XEM_GTE_AVSZ3);
-        XEM_U32(d.slot + 24) = sxy2;
+        xem_store_face_sxy(d.slot + 24, sxy2, 2, 3);
         d.slot &= XEM_DMA_MASK;
         otz = xem_mfc2(XEM_GTE_OTZ);
         d.drawn++;
@@ -902,16 +965,17 @@ static void xem_draw_vertex_lit(u8 *records, s32 count, int cached) {
         sxy2 = xem_mfc2(XEM_GTE_SXY2);
         xem_cop2(XEM_GTE_NCLIP);
         if (!xem_y_test3(&d, sxy0, sxy1, sxy2) || !xem_x_test3(&d, sxy0, sxy1, sxy2)) {
+            xem_reveal(&d, 3, cached ? 8 : 12, cached ? 0x06000000 : 0x09000000, XEM_SORT_AVG, sxy0, sxy1, sxy2, 0);
             continue;
         }
         nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
-        XEM_U32(d.slot + 8) = sxy0;
-        XEM_U32(d.slot + (cached ? 16 : 20)) = sxy1;
+        xem_store_face_sxy(d.slot + 8, sxy0, 0, 3);
+        xem_store_face_sxy(d.slot + (cached ? 16 : 20), sxy1, 1, 3);
         if (nclip <= 0) {
             continue;
         }
         xem_cop2(XEM_GTE_AVSZ3);
-        XEM_U32(d.slot + (cached ? 24 : 32)) = sxy2;
+        xem_store_face_sxy(d.slot + (cached ? 24 : 32), sxy2, 2, 3);
         d.slot &= XEM_DMA_MASK;
         otz = xem_mfc2(XEM_GTE_OTZ);
         normal = XEM_U32(XEM_SPILL);
@@ -1000,6 +1064,7 @@ static void xem_draw_quad_lit(u8 *records, s32 count, int textured) {
         }
         if (!(y0 || xem_y_in(&d, sxy1) || xem_y_in(&d, sxy2) || xem_y_in(&d, sxy3)) ||
             !xem_x_test4(&d, sxy0, sxy1, sxy2, sxy3)) {
+            xem_reveal(&d, 4, step, textured ? 0x09000000 : 0x05000000, XEM_SORT_AVG, sxy0, sxy1, sxy2, sxy3);
             continue;
         }
         otz = xem_mfc2(XEM_GTE_OTZ);
@@ -1022,10 +1087,10 @@ static void xem_draw_quad_lit(u8 *records, s32 count, int textured) {
             old = XEM_U32(entry);
             code = colour & 0xFF000000;
         }
-        XEM_U32(d.slot + 8) = sxy0;
-        XEM_U32(d.slot + step + 8) = sxy1;
-        XEM_U32(d.slot + step * 2 + 8) = sxy2;
-        XEM_U32(d.slot + step * 3 + 8) = sxy3;
+        xem_store_face_sxy(d.slot + 8, sxy0, 0, 4);
+        xem_store_face_sxy(d.slot + step + 8, sxy1, 1, 4);
+        xem_store_face_sxy(d.slot + step * 2 + 8, sxy2, 2, 4);
+        xem_store_face_sxy(d.slot + step * 3 + 8, sxy3, 3, 4);
         XEM_U32(d.slot + 4) = xem_colour(code, xem_mfc2(XEM_GTE_RGB2));
         xem_link(&d, entry, old, textured ? 0x09000000 : 0x05000000);
     }
@@ -1100,15 +1165,17 @@ static void xem_draw_cued_quads(u8 *records, s32 count, int far) {
             xem_cop2(XEM_GTE_DPCS);
         }
         if (!y) {
+            xem_reveal(&d, 4, 8, 0x09000000, far ? XEM_SORT_FAR : XEM_SORT_AVG, sxy0, sxy1, sxy2, sxy3);
             continue;
         }
-        XEM_U32(d.slot + 8) = sxy0;
+        xem_store_face_sxy(d.slot + 8, sxy0, 0, 4);
         if (!xem_x_test4(&d, sxy0, sxy1, sxy2, sxy3)) {
+            xem_reveal(&d, 4, 8, 0x09000000, far ? XEM_SORT_FAR : XEM_SORT_AVG, sxy0, sxy1, sxy2, sxy3);
             continue;
         }
-        XEM_U32(d.slot + 16) = sxy1;
-        XEM_U32(d.slot + 24) = sxy2;
-        XEM_U32(d.slot + 32) = sxy3;
+        xem_store_face_sxy(d.slot + 16, sxy1, 1, 4);
+        xem_store_face_sxy(d.slot + 24, sxy2, 2, 4);
+        xem_store_face_sxy(d.slot + 32, sxy3, 3, 4);
         if (far) {
             depth = xem_depth_keep(xem_mfc2(XEM_GTE_SZ0), xem_mfc2(XEM_GTE_SZ1), 1);
             code = XEM_U8(d.slot + 7);
@@ -1217,16 +1284,17 @@ void model_draw_ft3_envmap(u8 *records, s32 count) {
         sxy2 = xem_mfc2(XEM_GTE_SXY2);
         xem_cop2(XEM_GTE_NCLIP);
         if (!xem_y_test3(&d, sxy0, sxy1, sxy2) || !xem_x_test3(&d, sxy0, sxy1, sxy2)) {
+            xem_reveal(&d, 3, 8, 0x07000000, XEM_SORT_AVG, sxy0, sxy1, sxy2, 0);
             continue;
         }
         nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
-        XEM_U32(d.slot + 8) = sxy0;
-        XEM_U32(d.slot + 16) = sxy1;
+        xem_store_face_sxy(d.slot + 8, sxy0, 0, 3);
+        xem_store_face_sxy(d.slot + 16, sxy1, 1, 3);
         if (nclip <= 0) {
             continue;
         }
         xem_cop2(XEM_GTE_AVSZ3);
-        XEM_U32(d.slot + 24) = sxy2;
+        xem_store_face_sxy(d.slot + 24, sxy2, 2, 3);
         otz = xem_mfc2(XEM_GTE_OTZ);
         d.slot &= XEM_DMA_MASK;
         xem_lwc2(XEM_GTE_VXY0, normal[0]);

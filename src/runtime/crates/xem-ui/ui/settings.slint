@@ -14,11 +14,13 @@ export component SettingsPanel inherits Window {
     in-out property <int> gfx-rate;
     in-out property <bool> gfx-interpolation;
     in-out property <bool> gfx-widescreen;
+    // The field camera pulled back, percent (100-500).
+    in-out property <int> gfx-zoom-out: 100;
     in-out property <int> gfx-filter-world;
     in-out property <int> gfx-filter-sprites;
     in-out property <int> gfx-filter-interface;
     in-out property <bool> gfx-cull-back-faces;
-    in-out property <bool> gfx-cull-outside;
+    in-out property <bool> gfx-cull-viewport;
     // Custom profile limits, in the order of fidelity-names.
     in-out property <[bool]> gfx-fidelity;
     // Effect levels of the selected profile (HD-2D or Custom), in the order of effect-names.
@@ -75,8 +77,8 @@ export component SettingsPanel inherits Window {
     callback filter-edited(int);
     callback show-fps-edited(bool);
     // A graphics choice by name (profile, scale, quality, rate, interpolation,
-    // widescreen, filter-world, filter-sprites, filter-interface, cull,
-    // xr-distance, xr-width, xr-dof) and value.
+    // widescreen, zoom-out, filter-world, filter-sprites, filter-interface,
+    // cull, cull-viewport, xr-distance, xr-width, xr-dof) and value.
     callback graphics-edited(string, int);
     callback fidelity-edited(int, bool);
     callback effect-edited(int, int);
@@ -216,7 +218,21 @@ export component SettingsPanel inherits Window {
                                         ComboBox { accessible-label: "Presentation rate"; model: ["Every display refresh", "Game frames only"]; current-index <=> root.gfx-rate; selected => { root.graphics-edited("rate", self.current-index); } }
                                     }
                                     CheckBox { text: "Interpolate motion (one frame later)"; checked <=> root.gfx-interpolation; toggled => { root.graphics-edited("interpolation", self.checked ? 1 : 0); } }
-                                    CheckBox { text: "Wider framing (the sides may show gaps)"; checked <=> root.gfx-widescreen; toggled => { root.graphics-edited("widescreen", self.checked ? 1 : 0); } }
+                                    CheckBox { text: "Wider framing (to the window's shape)"; checked <=> root.gfx-widescreen; toggled => { root.graphics-edited("widescreen", self.checked ? 1 : 0); } }
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Text { text: "Zoom out"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
+                                        Text { text: "1x"; vertical-alignment: center; horizontal-stretch: 0; }
+                                        Slider {
+                                            accessible-label: "Field camera zoom out (mouse wheel)";
+                                            minimum: 100;
+                                            maximum: 500;
+                                            value: root.gfx-zoom-out;
+                                            changed(value) => { root.graphics-edited("zoom-out", round(value / 25) * 25); }
+                                        }
+                                        Text { text: "5x"; vertical-alignment: center; horizontal-stretch: 0; }
+                                        Text { text: "\{root.gfx-zoom-out / 100}x"; vertical-alignment: center; min-width: 40px; horizontal-stretch: 0; }
+                                    }
                                     Text { text: root.gfx-status; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
                                 }
                             }
@@ -272,7 +288,7 @@ export component SettingsPanel inherits Window {
                                         ComboBox { accessible-label: "Interface filtering"; model: ["Nearest", "Linear"]; current-index <=> root.gfx-filter-interface; selected => { root.graphics-edited("filter-interface", self.current-index); } }
                                     }
                                     CheckBox { text: "Cull back faces (off: as the game draws)"; checked <=> root.gfx-cull-back-faces; toggled => { root.graphics-edited("cull", self.checked ? 1 : 0); } }
-                                    CheckBox { text: "Skip primitives outside the drawing area"; checked <=> root.gfx-cull-outside; toggled => { root.graphics-edited("cull-outside", self.checked ? 1 : 0); } }
+                                    CheckBox { text: "Cull at the original screen's edges (off: wider and zoomed-out views show the scenery the game culled)"; checked <=> root.gfx-cull-viewport; toggled => { root.graphics-edited("cull-viewport", self.checked ? 1 : 0); } }
                                 }
                             }
                             if root.selected-section == 1: GroupBox {

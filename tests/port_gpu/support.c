@@ -63,10 +63,19 @@ struct {
     unsigned int header[8];
     unsigned int entries[65536][8];
 } xem_gte_ring_storage;
+struct {
+    unsigned int header[4];
+    unsigned int entries[65536][4];
+} xem_present_store_storage;
+struct {
+    unsigned int header[4];
+    unsigned int entries[65536][16];
+} xem_present_reveal_storage;
 
-void xem_host_gpu_projections(unsigned int ring, unsigned int count) {
+void xem_host_gpu_projections(unsigned int ring, unsigned int stores, unsigned int reveals) {
     (void)ring;
-    (void)count;
+    (void)stores;
+    (void)reveals;
 }
 
 void xem_host_gpu_dma(unsigned int madr, unsigned int bcr, unsigned int chcr) {

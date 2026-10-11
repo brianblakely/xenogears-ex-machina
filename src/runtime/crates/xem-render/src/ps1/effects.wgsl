@@ -22,7 +22,8 @@ struct Params {
     ambient: vec4<f32>,
     // Fog colour; w: fog strength.
     fog: vec4<f32>,
-    // Fog start and end depth, focus depth, focus range (all SZ units).
+    // Fog start and end depth, the nearest and farthest depth kept sharp
+    // (all SZ units).
     ranges: vec4<f32>,
     // Light-shaft source (0-1 frame coordinates), strength, threshold.
     shaft: vec4<f32>,
@@ -35,7 +36,7 @@ struct Params {
     // Samples: ambient occlusion, depth of field, light shafts; debug view
     // (0 off, 1 shadow received, 2 depth, 3 class).
     quality: vec4<u32>,
-    // Blur pass: source texel size (xy), unused.
+    // Blur pass: source texel size (xy); the scene average's easing (z).
     step: vec4<f32>,
 };
 
@@ -46,6 +47,7 @@ struct Params {
 @group(1) @binding(2) var tex2: texture_2d<f32>;
 @group(1) @binding(3) var tex3: texture_2d<f32>;
 @group(1) @binding(4) var tex4: texture_2d<f32>;
+@group(1) @binding(5) var tex5: texture_2d<f32>;
 
 struct Out {
     @builtin(position) clip: vec4<f32>,
@@ -121,18 +123,23 @@ fn fs_light(in: Out) -> @location(0) vec4<f32> {
     }
     if a.depth > 0.0 {
         let center = view_position(in.clip.xy, a.depth);
-        // Normal from the neighbouring depths (nearest-difference to keep edges).
-        let r = aux_at(pixel + vec2<i32>(1, 0));
-        let l = aux_at(pixel - vec2<i32>(1, 0));
-        let d = aux_at(pixel + vec2<i32>(0, 1));
-        let u = aux_at(pixel - vec2<i32>(0, 1));
-        var dx = view_position(in.clip.xy + vec2<f32>(1.0, 0.0), r.depth) - center;
-        let dx2 = center - view_position(in.clip.xy - vec2<f32>(1.0, 0.0), l.depth);
+        // Normal from the depths a native pixel away (the depth is stored in
+        // whole GTE units, which neighbouring scaled pixels share and then
+        // step: nearer ones would light in bands), the nearest difference
+        // of the two sides to keep edges.
+        let span = max(round(p.scale), 1.0);
+        let reach = i32(span);
+        let r = aux_at(pixel + vec2<i32>(reach, 0));
+        let l = aux_at(pixel - vec2<i32>(reach, 0));
+        let d = aux_at(pixel + vec2<i32>(0, reach));
+        let u = aux_at(pixel - vec2<i32>(0, reach));
+        var dx = view_position(in.clip.xy + vec2<f32>(span, 0.0), r.depth) - center;
+        let dx2 = center - view_position(in.clip.xy - vec2<f32>(span, 0.0), l.depth);
         if r.depth <= 0.0 || (l.depth > 0.0 && abs(dx2.z) < abs(dx.z)) {
             dx = dx2;
         }
-        var dy = view_position(in.clip.xy + vec2<f32>(0.0, 1.0), d.depth) - center;
-        let dy2 = center - view_position(in.clip.xy - vec2<f32>(0.0, 1.0), u.depth);
+        var dy = view_position(in.clip.xy + vec2<f32>(0.0, span), d.depth) - center;
+        let dy2 = center - view_position(in.clip.xy - vec2<f32>(0.0, span), u.depth);
         if d.depth <= 0.0 || (u.depth > 0.0 && abs(dy2.z) < abs(dy.z)) {
             dy = dy2;
         }
@@ -175,36 +182,46 @@ fn fs_light(in: Out) -> @location(0) vec4<f32> {
             color *= 1.0 - p.ambient.w * 0.8 * occlusion / f32(samples);
         }
 
-        // Sprite shadows on what lies at or behind the caster's feet.
+        // Sprite shadows on what lies around or behind the caster's floor
+        // point. No hard depth test: a surface takes the shadow in full from
+        // a little in front of the floor point backwards, fading out nearer
+        // than that, so a surface at about the caster's depth never flickers
+        // between the two. Floors take it in full, upright surfaces less.
         if p.grade2.w > 0.0 && a.kind != 4u {
             var shadow = 0.0;
+            let spacing = i32(max(p.scale, 1.0)) * 2;
+            let weights = array<f32, 3>(0.25, 0.5, 0.25);
             for (var y = -1; y <= 1; y++) {
                 for (var x = -1; x <= 1; x++) {
-                    let m = textureLoad(tex2, clamp(pixel + vec2<i32>(x, y) * i32(max(p.scale, 1.0)), vec2<i32>(0), vec2<i32>(p.size) - 1), 0);
-                    let caster = (m.g * 255.0 * 256.0 + m.b * 255.0);
-                    if m.r > 0.0 && a.depth >= caster - 0.12 * caster {
-                        shadow += m.r;
+                    let m = textureLoad(tex2, clamp(pixel + vec2<i32>(x, y) * spacing, vec2<i32>(0), vec2<i32>(p.size) - 1), 0);
+                    if m.r > 0.0 {
+                        let caster = m.g * 255.0 * 256.0 + m.b * 255.0;
+                        let receive = smoothstep(caster * 0.76, caster * 0.9, a.depth);
+                        shadow += m.r * receive * weights[x + 1] * weights[y + 1];
                     }
                 }
             }
-            color *= 1.0 - p.grade2.w * 0.85 * shadow / 9.0;
+            let floor = mix(0.55, 1.0, smoothstep(0.15, 0.6, normal.y));
+            color *= 1.0 - p.grade2.w * 0.85 * shadow * floor;
             if p.quality.w == 1u {
-                return vec4<f32>(shadow / 9.0, textureLoad(tex2, pixel, 0).r, 0.0, 1.0);
+                return vec4<f32>(shadow, textureLoad(tex2, pixel, 0).r, 0.0, 1.0);
             }
         }
 
-        // Atmospheric fog by depth, towards the tint at the scene's own
-        // brightness (tex3: the frame's average scene colour), so dark
-        // places stay dark.
+        // Aerial perspective: distance lightens and desaturates the scene
+        // towards the haze tint at the scene's own brightness (tex3: the
+        // frame's average scene colour), so dark places stay dark.
         let average = textureLoad(tex3, vec2<i32>(0, 0), 0).rgb;
-        let haze = mix(average * 1.6, p.fog.rgb * max(luma(average) * 2.2, 0.02), 0.5);
+        let haze = mix(p.fog.rgb * clamp(luma(average) * 2.6, 0.03, 0.85), average * 1.8, 0.35);
         let fog = smoothstep(p.ranges.x, p.ranges.y, a.depth) * p.fog.w;
-        color = mix(color, haze, fog);
+        let faded = mix(vec3<f32>(luma(color)), color, 1.0 - 0.6 * fog);
+        color = mix(faded, haze, fog);
     }
     return vec4<f32>(color, 1.0);
 }
 
-// Pass 0: the average colour of the frame's scene pixels (one texel).
+// Pass 0: the average colour of the frame's scene pixels (one texel),
+// eased over frames (step.z).
 // tex0 frame colour, tex1 auxiliary.
 @fragment
 fn fs_average(in: Out) -> @location(0) vec4<f32> {
@@ -220,7 +237,7 @@ fn fs_average(in: Out) -> @location(0) vec4<f32> {
             }
         }
     }
-    return vec4<f32>(sum / max(count, 1.0), 1.0);
+    return vec4<f32>(sum / max(count, 1.0), p.step.z);
 }
 
 // Pass 2: bright parts for bloom (rgb) and light shafts (a: far bright
@@ -238,7 +255,14 @@ fn fs_bright(in: Out) -> @location(0) vec4<f32> {
     let knee = max(p.bloom.z, 1e-4);
     let soft = clamp(l - threshold + knee, 0.0, 2.0 * knee);
     let contribution = max(soft * soft / (4.0 * knee), l - threshold) / max(l, 1e-4);
-    let bloom = lit.rgb * max(contribution, 0.0);
+    // Coloured lights (lamps, fire, magic) glow more than white walls, and
+    // characters' bright pixels (hair, cloth) barely at all.
+    let saturation = max(max(lit.r, lit.g), lit.b) - min(min(lit.r, lit.g), lit.b);
+    var glow = 1.0 + 0.6 * saturation;
+    if a.kind == 4u {
+        glow *= 0.25;
+    }
+    let bloom = lit.rgb * max(contribution, 0.0) * glow;
     // Shaft sources: bright pixels without depth (sky, light) or beyond
     // the fog's end.
     var shaft = 0.0;
@@ -307,18 +331,28 @@ fn fs_shafts(in: Out) -> @location(0) vec4<f32> {
     return vec4<f32>(sum / f32(samples), 0.0, 0.0, 1.0);
 }
 
+// The circle of confusion, 0 (sharp) to 1: the playfield between the
+// nearest and farthest depths kept sharp is; beyond it the blur grows with
+// the relative distance, faster towards the camera (a miniature's shallow
+// focus: foreground and far background soft, the subjects crisp).
 fn coc(depth: f32, kind: u32) -> f32 {
     if !is_scene(kind) {
         return 0.0;
     }
+    let near = p.ranges.z;
+    let far = p.ranges.w;
     // Background without depth is far.
     var z = depth;
     if z <= 0.0 {
-        z = p.ranges.z * 3.0;
+        z = far * 4.0;
     }
-    // Relative distance from the focus: the playfield around it stays sharp.
-    let band = p.ranges.w;
-    return clamp((abs(z - p.ranges.z) / max(p.ranges.z, 1.0) - band) / (band * 2.0), 0.0, 1.0);
+    if z > far {
+        return clamp((z - far) / far, 0.0, 1.0);
+    }
+    if z < near {
+        return clamp((near - z) / (near * 0.45), 0.0, 1.0);
+    }
+    return 0.0;
 }
 
 // Depth of field: a disc gather at half resolution weighted by each
@@ -331,7 +365,7 @@ fn fs_dof(in: Out) -> @location(0) vec4<f32> {
     let a = aux_at(pixel);
     let own = coc(a.depth, a.kind);
     let samples = p.quality.y;
-    let radius = 4.0 * p.scale * p.grade2.z;
+    let radius = 6.0 * p.scale * p.grade2.z;
     var sum = textureSampleLevel(tex0, linear_sampler, in.uv, 0.0).rgb;
     var weight = 1.0;
     let rotation = hash(in.clip.xy) * 6.2831853;
@@ -343,17 +377,28 @@ fn fs_dof(in: Out) -> @location(0) vec4<f32> {
         let s = aux_at(vec2<i32>(s_uv * full));
         let c = coc(s.depth, s.kind);
         let lit = textureSampleLevel(tex0, linear_sampler, s_uv, 0.0);
-        // Interface pixels never blur into the scene.
-        let w = select(0.0, max(c, own * 0.5) + 0.02, lit.a > 0.5);
+        // Interface pixels never blur into the scene; bright samples weigh
+        // more, so out-of-focus lights open into discs.
+        let bokeh = 1.0 + 2.0 * max(luma(lit.rgb) - 0.6, 0.0);
+        let w = select(0.0, (max(c, own * 0.5) + 0.02) * bokeh, lit.a > 0.5);
         sum += lit.rgb * w;
         weight += w;
     }
     return vec4<f32>(sum / weight, own);
 }
 
+// Highlights ease into white instead of clipping (bloom and exposure add
+// light); below the knee colours stay as they are.
+fn shoulder(c: vec3<f32>) -> vec3<f32> {
+    let k = 0.62;
+    let over = max(c - vec3<f32>(k), vec3<f32>(0.0));
+    return min(c, vec3<f32>(k)) + over / (vec3<f32>(1.0) + over / (1.0 - k));
+}
+
 // Composite: depth of field, bloom and shafts over the lit scene, graded,
 // with interface pixels from the original frame. Output sRGB-encoded.
-// tex0 lit, tex1 auxiliary, tex2 bloom, tex3 shafts, tex4 depth of field.
+// tex0 lit, tex1 auxiliary, tex2 bloom, tex3 shafts, tex4 depth of field,
+// tex5 the average scene colour.
 @fragment
 fn fs_composite(in: Out) -> @location(0) vec4<f32> {
     let pixel = vec2<i32>(in.clip.xy);
@@ -366,22 +411,30 @@ fn fs_composite(in: Out) -> @location(0) vec4<f32> {
     if p.grade2.z > 0.0 && p.quality.y > 0u {
         let dof = textureSampleLevel(tex4, linear_sampler, in.uv, 0.0);
         let own = coc(a.depth, a.kind);
-        color = mix(color, dof.rgb, smoothstep(0.0, 0.6, own) * min(p.grade2.z * 1.5, 1.0));
+        color = mix(color, dof.rgb, smoothstep(0.0, 0.5, own) * min(p.grade2.z * 1.6, 1.0));
     }
-    color += textureSampleLevel(tex2, linear_sampler, in.uv, 0.0).rgb * p.bloom.x;
+    // Bloom: the glow of bright parts, and the light it throws on the
+    // surfaces around them.
+    let glow = textureSampleLevel(tex2, linear_sampler, in.uv, 0.0).rgb * p.bloom.x;
+    color += glow + color * glow * 0.6;
     let shafts = textureSampleLevel(tex3, linear_sampler, in.uv, 0.0).r;
-    color += (p.light_color.rgb + p.ambient.rgb) * shafts * p.shaft.z * 0.35;
+    color += (p.light_color.rgb + p.ambient.rgb) * shafts * p.shaft.z * 0.5;
 
-    // Grading: exposure, filmic contrast, saturation, warmth, vignette.
     let g = p.grade2.y;
-    var graded = color * exp2(p.grade.x * g);
-    let l = luma(graded);
-    graded = mix(vec3<f32>(l), graded, mix(1.0, p.grade.z, g));
-    graded *= mix(vec3<f32>(1.0), vec3<f32>(1.0 + 0.08 * p.grade.w, 1.0, 1.0 - 0.08 * p.grade.w), g);
+    // Exposure towards a bright, airy middle grey; dark places brighten
+    // only so far.
+    let average = luma(textureLoad(tex5, vec2<i32>(0, 0), 0).rgb);
+    let automatic = clamp(0.18 / max(average, 0.01), 0.85, 1.5);
+    var graded = color * mix(1.0, automatic, g) * exp2(p.grade.x * g);
+    // Split toning: cool shadows, warm highlights.
+    let tone = mix(vec3<f32>(0.9, 0.98, 1.1), vec3<f32>(1.08, 1.0, 0.88), smoothstep(0.05, 0.6, luma(graded)));
+    graded *= mix(vec3<f32>(1.0), tone, g * clamp(p.grade.w, 0.0, 1.0));
+    graded = mix(vec3<f32>(luma(graded)), graded, mix(1.0, p.grade.z, g));
+    graded = mix(graded, shoulder(graded), g);
     // Contrast around mid grey in a perceptual space.
     var s = to_srgb(graded);
     s = clamp((s - 0.5) * mix(1.0, p.grade.y, g) + 0.5, vec3<f32>(0.0), vec3<f32>(1.0));
     let centered = in.uv * 2.0 - 1.0;
-    let vignette = 1.0 - p.grade2.x * g * smoothstep(0.4, 1.5, dot(centered, centered));
+    let vignette = 1.0 - p.grade2.x * g * smoothstep(0.35, 1.6, dot(centered, centered));
     return vec4<f32>(s * vignette, 1.0);
 }

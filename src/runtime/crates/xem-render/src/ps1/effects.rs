@@ -10,6 +10,7 @@
 use super::{Builder, DepthMode, Fragment, FrameRenderer, PassUniform, PipelineKey, Ps1Renderer, Stream, bind_group, texture};
 use bytemuck::{Pod, Zeroable};
 use serde::Deserialize;
+use std::collections::HashMap;
 use xem_gpu::{Class, TraceOp};
 
 /// Effect strengths, 0 (off) to 1 (full), and the focus shift.
@@ -117,6 +118,9 @@ pub struct Lighting {
     /// negative towards the camera).
     pub shadow_lean: f32,
     pub shadow_length: f32,
+    /// Strength of a sprite's cast (directional) and contact shadows, 0-1.
+    pub cast_shadow: f32,
+    pub contact_shadow: f32,
 }
 
 impl Default for Lighting {
@@ -129,14 +133,16 @@ impl Default for Lighting {
             fog_range: [0.45, 1.25],
             shaft_source: [0.25, -0.15],
             shaft_threshold: 0.55,
-            bloom_threshold: 0.62,
-            exposure: 0.05,
-            contrast: 1.12,
-            saturation: 1.12,
-            warmth: 0.4,
-            vignette: 0.35,
+            bloom_threshold: 0.56,
+            exposure: 0.0,
+            contrast: 1.08,
+            saturation: 1.18,
+            warmth: 0.7,
+            vignette: 0.4,
             shadow_lean: 0.5,
             shadow_length: -0.28,
+            cast_shadow: 0.4,
+            contact_shadow: 0.9,
         }
     }
 }
@@ -176,12 +182,16 @@ struct Params {
 /// What the frame's primitives tell the effects.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct SceneAnalysis {
-    /// Sprite groups (characters): bounds in VRAM pixels and feet depth.
+    /// Sprite groups (characters): bounds in VRAM pixels, feet depth and
+    /// the floor point under them.
     pub sprites: Vec<SpriteGroup>,
     /// Depth percentiles of the scene primitives: 10th, 50th, 90th.
     pub depths: Option<[f32; 3]>,
-    /// The depth to keep sharp.
-    pub focus: Option<f32>,
+    /// The depths kept sharp, nearest and farthest: the subjects (sprites,
+    /// and models of a character's size) in the playfield around the one
+    /// nearest the middle of the screen, else the scene's middle depths
+    /// there.
+    pub focus: Option<[f32; 2]>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -190,26 +200,40 @@ pub struct SpriteGroup {
     pub owner: u32,
     pub bounds: [f32; 4],
     pub depth: f32,
+    /// The point on the floor under the sprite (VRAM x, y, depth), where
+    /// the game keeps one.
+    pub ground: Option<[f32; 3]>,
     /// Indices of the group's primitives in the analysed operations.
     pub primitives: Vec<usize>,
+}
+
+/// A sprite or model the game drew: bounds and depth range.
+struct Subject {
+    bounds: [f32; 4],
+    near: f32,
+    far: f32,
 }
 
 impl SceneAnalysis {
     /// Groups the sprite parts of `ops` and measures the scene's depths.
     pub fn of(ops: &[TraceOp], area: super::DisplayArea) -> SceneAnalysis {
         let mut groups: Vec<SpriteGroup> = Vec::new();
+        let mut subjects: Vec<Subject> = Vec::new();
+        // Where each owner's group and subject are in the lists.
+        let mut group_of: HashMap<u32, usize> = HashMap::new();
+        let mut subject_of: HashMap<(bool, u32), usize> = HashMap::new();
         let mut depths = Vec::new();
+        let mut central = Vec::new();
         let scene = super::scene_offset(ops);
+        let (cx, cy) = (area.x as f32 + area.width as f32 / 2.0, area.y as f32 + area.height as f32 / 2.0);
         for (index, op) in ops.iter().enumerate() {
             let TraceOp::Draw(p) = op else { continue };
             let class = super::effective_class(p, scene);
             let depth = p.depth();
-            if depth > 0.0 && class.is_scene() {
-                depths.push(depth);
-            }
-            if class != Class::Sprite || depth <= 0.0 {
+            if depth <= 0.0 || !class.is_scene() {
                 continue;
             }
+            depths.push(depth);
             let vertices = &p.vertices[..p.vertex_count()];
             let bounds = [
                 vertices.iter().map(|v| v.fx).fold(f32::MAX, f32::min),
@@ -217,36 +241,89 @@ impl SceneAnalysis {
                 vertices.iter().map(|v| v.fx).fold(f32::MIN, f32::max),
                 vertices.iter().map(|v| v.fy).fold(f32::MIN, f32::max),
             ];
+            let middle = ((bounds[0] + bounds[2]) / 2.0, (bounds[1] + bounds[3]) / 2.0);
+            if (middle.0 - cx).abs() < area.width as f32 / 6.0 && (middle.1 - cy).abs() < area.height as f32 / 5.0 {
+                central.push(depth);
+            }
+            if p.owner != 0 && matches!(class, Class::Sprite | Class::Model) && !p.revealed {
+                match subject_of.get(&(class == Class::Sprite, p.owner)) {
+                    Some(&at) => {
+                        let s = &mut subjects[at];
+                        s.bounds = [s.bounds[0].min(bounds[0]), s.bounds[1].min(bounds[1]), s.bounds[2].max(bounds[2]), s.bounds[3].max(bounds[3])];
+                        s.near = s.near.min(depth);
+                        s.far = s.far.max(depth);
+                    }
+                    None => {
+                        subject_of.insert((class == Class::Sprite, p.owner), subjects.len());
+                        subjects.push(Subject { bounds, near: depth, far: depth });
+                    }
+                }
+            }
+            if class != Class::Sprite {
+                continue;
+            }
             // One group per sprite the game drew (its parts share the owner).
-            match groups.iter_mut().find(|g| g.owner == p.owner) {
-                Some(g) => {
+            match group_of.get(&p.owner) {
+                Some(&at) => {
+                    let g = &mut groups[at];
                     g.bounds = [g.bounds[0].min(bounds[0]), g.bounds[1].min(bounds[1]), g.bounds[2].max(bounds[2]), g.bounds[3].max(bounds[3])];
                     g.depth = g.depth.max(depth);
+                    g.ground = g.ground.or(p.ground);
                     g.primitives.push(index);
                 }
-                None => groups.push(SpriteGroup { owner: p.owner, bounds, depth, primitives: vec![index] }),
+                None => {
+                    group_of.insert(p.owner, groups.len());
+                    groups.push(SpriteGroup { owner: p.owner, bounds, depth, ground: p.ground, primitives: vec![index] });
+                }
             }
         }
         groups.retain(|g| g.bounds[2] - g.bounds[0] >= 4.0 && g.bounds[3] - g.bounds[1] >= 8.0);
         depths.sort_by(f32::total_cmp);
-        let percentile = |q: f32| depths[((depths.len() - 1) as f32 * q) as usize];
-        let depths = (!depths.is_empty()).then(|| [percentile(0.1), percentile(0.5), percentile(0.9)]);
-        // Focus on the sprite group nearest the screen's centre (the party
-        // leader on fields), else the median depth.
-        let center = (area.x as f32 + area.width as f32 / 2.0, area.y as f32 + area.height as f32 * 0.6);
-        let focus = groups
-            .iter()
-            .min_by(|a, b| {
-                let d = |g: &SpriteGroup| {
-                    let (x, y) = ((g.bounds[0] + g.bounds[2]) / 2.0, (g.bounds[1] + g.bounds[3]) / 2.0);
-                    (x - center.0).powi(2) + (y - center.1).powi(2)
-                };
-                d(a).total_cmp(&d(b))
-            })
-            .map(|g| g.depth)
-            .or(depths.map(|d| d[1]));
-        SceneAnalysis { sprites: groups, depths, focus }
+        let percentile = |values: &[f32], q: f32| values[((values.len() - 1) as f32 * q) as usize];
+        let depths_at = (!depths.is_empty()).then(|| [percentile(&depths, 0.1), percentile(&depths, 0.5), percentile(&depths, 0.9)]);
+        // Subjects: of a character's size, on the screen's middle part.
+        let (width, height) = (area.width as f32, area.height as f32);
+        subjects.retain(|s| {
+            let (w, h) = (s.bounds[2] - s.bounds[0], s.bounds[3] - s.bounds[1]);
+            let x = (s.bounds[0] + s.bounds[2]) / 2.0;
+            w >= 3.0 && h >= 6.0 && w <= width * 0.35 && h <= height * 0.6 && (x - cx).abs() < width * 0.45
+        });
+        // The playfield: the subjects within reach of the one nearest the
+        // middle of the screen (a little below it, where the party stands).
+        let anchor = (cx, area.y as f32 + height * 0.6);
+        let distance = |s: &Subject| {
+            let (x, y) = ((s.bounds[0] + s.bounds[2]) / 2.0, (s.bounds[1] + s.bounds[3]) / 2.0);
+            (x - anchor.0).powi(2) + (y - anchor.1).powi(2)
+        };
+        let primary = subjects.iter().min_by(|a, b| distance(a).total_cmp(&distance(b))).map(|s| (s.near + s.far) / 2.0);
+        let focus = match primary {
+            Some(at) => {
+                let (near, far) = subjects
+                    .iter()
+                    .filter(|s| s.far > at * 0.6 && s.near < at * 1.6)
+                    .fold((at, at), |(n, f), s| (n.min(s.near), f.max(s.far)));
+                Some([near, far])
+            }
+            None if !central.is_empty() => {
+                central.sort_by(f32::total_cmp);
+                Some([percentile(&central, 0.3), percentile(&central, 0.6)])
+            }
+            None => depths_at.map(|d| [d[1] * 0.9, d[1] * 1.1]),
+        };
+        SceneAnalysis { sprites: groups, depths: depths_at, focus }
     }
+}
+
+/// How an effects pass writes its target.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+enum Blend {
+    /// Cleared and written.
+    Replace,
+    /// Added to what is there (the bloom chain's way up).
+    Add,
+    /// Eased towards by the output's alpha (the scene average, so exposure
+    /// adapts over a few frames instead of flickering).
+    Ease,
 }
 
 const STRIDE: u64 = 256;
@@ -272,7 +349,7 @@ pub struct EffectsRenderer {
     params_layout: wgpu::BindGroupLayout,
     textures_layout: wgpu::BindGroupLayout,
     layout: wgpu::PipelineLayout,
-    pipelines: std::collections::HashMap<(&'static str, wgpu::TextureFormat, bool), wgpu::RenderPipeline>,
+    pipelines: std::collections::HashMap<(&'static str, wgpu::TextureFormat, Blend), wgpu::RenderPipeline>,
     params: wgpu::Buffer,
     params_group: wgpu::BindGroup,
     dummy: wgpu::TextureView,
@@ -280,6 +357,16 @@ pub struct EffectsRenderer {
     shadow_vertices: Stream,
     targets: Option<Targets>,
     debug: u32,
+    /// Bind groups and views of the passes, by their textures (they live
+    /// as long as the textures; dropped when the targets are made again).
+    groups: HashMap<(&'static str, Vec<wgpu::Texture>), wgpu::BindGroup>,
+    views: HashMap<wgpu::Texture, wgpu::TextureView>,
+    shadow_group: Option<(wgpu::Texture, wgpu::BindGroup)>,
+    /// The targets were just made: the scene average starts afresh.
+    fresh: bool,
+    /// Fog start and end, nearest and farthest sharp depth, eased between
+    /// frames (a cut takes the new ones at once).
+    ranges: Option<[f32; 4]>,
 }
 
 /// What [`EffectsRenderer::set_debug_view`] shows instead of the effects.
@@ -333,7 +420,7 @@ impl EffectsRenderer {
         });
         let textures_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("effects textures"),
-            entries: &(0..5)
+            entries: &(0..6)
                 .map(|binding| wgpu::BindGroupLayoutEntry {
                     binding,
                     visibility: wgpu::ShaderStages::FRAGMENT,
@@ -401,6 +488,11 @@ impl EffectsRenderer {
             shadow_vertices: Stream::new(device, "shadow vertices", wgpu::BufferUsages::VERTEX),
             targets: None,
             debug: 0,
+            groups: HashMap::new(),
+            views: HashMap::new(),
+            shadow_group: None,
+            fresh: true,
+            ranges: None,
         }
     }
 
@@ -416,6 +508,9 @@ impl EffectsRenderer {
     fn targets(&mut self, device: &wgpu::Device, size: (u32, u32), levels: usize) -> &Targets {
         let stale = self.targets.as_ref().is_none_or(|t| t.size != size || t.bloom.len() != levels);
         if stale {
+            self.fresh = true;
+            self.groups.clear();
+            self.views.clear();
             let usage = wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_SRC;
             let half = ((size.0 / 2).max(1), (size.1 / 2).max(1));
             let bloom = (0..levels)
@@ -437,14 +532,19 @@ impl EffectsRenderer {
         self.targets.as_ref().expect("created above")
     }
 
-    fn pipeline(&mut self, device: &wgpu::Device, entry: &'static str, format: wgpu::TextureFormat, additive: bool) -> wgpu::RenderPipeline {
+    fn pipeline(&mut self, device: &wgpu::Device, entry: &'static str, format: wgpu::TextureFormat, mode: Blend) -> wgpu::RenderPipeline {
         self.pipelines
-            .entry((entry, format, additive))
+            .entry((entry, format, mode))
             .or_insert_with(|| {
-                let blend = additive.then_some(wgpu::BlendState {
-                    color: wgpu::BlendComponent { src_factor: wgpu::BlendFactor::One, dst_factor: wgpu::BlendFactor::One, operation: wgpu::BlendOperation::Add },
-                    alpha: wgpu::BlendComponent::REPLACE,
-                });
+                use wgpu::{BlendComponent as C, BlendFactor as F, BlendOperation as O};
+                let blend = match mode {
+                    Blend::Replace => None,
+                    Blend::Add => Some(wgpu::BlendState { color: C { src_factor: F::One, dst_factor: F::One, operation: O::Add }, alpha: C::REPLACE }),
+                    Blend::Ease => Some(wgpu::BlendState {
+                        color: C { src_factor: F::SrcAlpha, dst_factor: F::OneMinusSrcAlpha, operation: O::Add },
+                        alpha: C::REPLACE,
+                    }),
+                };
                 device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                     label: Some(entry),
                     layout: Some(&self.layout),
@@ -459,7 +559,7 @@ impl EffectsRenderer {
                         targets: &[Some(wgpu::ColorTargetState {
                             format,
                             blend,
-                            write_mask: if additive { wgpu::ColorWrites::COLOR } else { wgpu::ColorWrites::ALL },
+                            write_mask: if mode == Blend::Add { wgpu::ColorWrites::COLOR } else { wgpu::ColorWrites::ALL },
                         })],
                     }),
                     multiview_mask: None,
@@ -476,20 +576,31 @@ impl EffectsRenderer {
         encoder: &mut wgpu::CommandEncoder,
         entry: &'static str,
         target: &wgpu::Texture,
-        additive: bool,
+        mode: Blend,
         slot: u32,
         inputs: &[&wgpu::Texture],
     ) {
-        let pipeline = self.pipeline(device, entry, target.format(), additive);
-        let views: Vec<wgpu::TextureView> = inputs.iter().map(|t| t.create_view(&Default::default())).collect();
-        let entries: Vec<wgpu::BindGroupEntry> = (0..5)
-            .map(|i| wgpu::BindGroupEntry {
-                binding: i as u32,
-                resource: wgpu::BindingResource::TextureView(views.get(i).unwrap_or(&self.dummy)),
-            })
-            .collect();
-        let group = device.create_bind_group(&wgpu::BindGroupDescriptor { label: Some(entry), layout: &self.textures_layout, entries: &entries });
-        let view = target.create_view(&Default::default());
+        let pipeline = self.pipeline(device, entry, target.format(), mode);
+        // The frame's own textures change with its size: a cache that only
+        // grows past a few sizes' worth starts again.
+        if self.groups.len() > 64 || self.views.len() > 64 {
+            self.groups.clear();
+            self.views.clear();
+        }
+        let key = (entry, inputs.iter().map(|t| (*t).clone()).collect::<Vec<_>>());
+        if !self.groups.contains_key(&key) {
+            let views: Vec<wgpu::TextureView> = inputs.iter().map(|t| t.create_view(&Default::default())).collect();
+            let entries: Vec<wgpu::BindGroupEntry> = (0..6)
+                .map(|i| wgpu::BindGroupEntry {
+                    binding: i as u32,
+                    resource: wgpu::BindingResource::TextureView(views.get(i).unwrap_or(&self.dummy)),
+                })
+                .collect();
+            let group = device.create_bind_group(&wgpu::BindGroupDescriptor { label: Some(entry), layout: &self.textures_layout, entries: &entries });
+            self.groups.insert(key.clone(), group);
+        }
+        let group = self.groups[&key].clone();
+        let view = self.views.entry(target.clone()).or_insert_with(|| target.create_view(&Default::default())).clone();
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some(entry),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -497,7 +608,7 @@ impl EffectsRenderer {
                 depth_slice: None,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: if additive { wgpu::LoadOp::Load } else { wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT) },
+                    load: if mode == Blend::Replace { wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT) } else { wgpu::LoadOp::Load },
                     store: wgpu::StoreOp::Store,
                 },
             })],
@@ -533,20 +644,31 @@ impl EffectsRenderer {
         self.targets(device, size, levels);
         let analysis = SceneAnalysis::of(ops, area);
 
-        // Shadow mask: sprite silhouettes laid on the ground and contact ellipses.
+        // Shadow mask: sprite silhouettes laid on the floor and contact
+        // ellipses, both at the floor point under the sprite (the game's
+        // own, where it keeps one): a sprite that jumps leaves its shadow
+        // on the floor, smaller and fainter the higher it is.
         let options = *ps1.options();
         let mut builder = Builder::new(&options, &[]);
         if effects.shadows > 0.0 {
             for group in &analysis.sprites {
-                let foot = ((group.bounds[0] + group.bounds[2]) / 2.0, group.bounds[3]);
-                let (lean, length, depth) = (lighting.shadow_lean, lighting.shadow_length, group.depth);
+                let (width, height) = (group.bounds[2] - group.bounds[0], (group.bounds[3] - group.bounds[1]).max(1.0));
+                let feet = ((group.bounds[0] + group.bounds[2]) / 2.0, group.bounds[3]);
+                let (ground, depth) = match group.ground {
+                    Some([x, y, z]) if y >= feet.1 - height * 0.15 && y - feet.1 < height * 2.5 && (z / group.depth - 1.0).abs() < 0.35 => ((x, y), z),
+                    _ => (feet, group.depth),
+                };
+                let lift = ((ground.1 - feet.1) / height).clamp(0.0, 1.0);
+                let (lean, length) = (lighting.shadow_lean, lighting.shadow_length);
+                let cast = (255.0 * lighting.cast_shadow * (1.0 - 0.7 * lift)) as u8;
                 builder.remap = Some(Box::new(move |v| {
-                    let dx = v.position[0] - foot.0;
-                    let height = (foot.1 - v.position[1]).max(0.0);
-                    v.position = [foot.0 + dx + height * lean, foot.1 - height * length];
+                    let dx = v.position[0] - feet.0;
+                    // Height above the floor: above the feet, plus the jump.
+                    let up = (feet.1 - v.position[1]).max(0.0) + (ground.1 - feet.1).max(0.0);
+                    v.position = [ground.0 + dx + up * lean, ground.1 - up * length];
                     v.depth = depth;
                     v.w = 1.0;
-                    v.color = [200, 0, 0, 255];
+                    v.color = [cast, 0, 0, 255];
                 }));
                 for &index in &group.primitives {
                     if let TraceOp::Draw(p) = &ops[index] {
@@ -554,8 +676,9 @@ impl EffectsRenderer {
                     }
                 }
                 builder.remap = None;
-                let width = group.bounds[2] - group.bounds[0];
-                contact(&mut builder.vertices, foot, (width * 0.42, (width * 0.14).max(2.0)), depth);
+                let shrink = 1.0 - 0.45 * lift;
+                let strength = (255.0 * lighting.contact_shadow * (1.0 - 0.6 * lift)) as u8;
+                contact(&mut builder.vertices, ground, (width * 0.4 * shrink, (width * 0.13).max(2.0) * shrink), depth, strength);
             }
         }
         let shadow_vertices = std::mem::take(&mut builder.vertices);
@@ -569,10 +692,19 @@ impl EffectsRenderer {
         };
         queue.write_buffer(&self.shadow_uniform, 0, bytemuck::bytes_of(&uniform));
         self.shadow_vertices.write(device, queue, bytemuck::cast_slice(&shadow_vertices));
-        {
+        // Passes whose effect is off are not drawn (the light and composite
+        // passes do not read their textures then).
+        if effects.shadows > 0.0 {
             let targets = self.targets.as_ref().expect("created above");
-            let view = targets.shadow.create_view(&Default::default());
-            let group = bind_group(device, &ps1.pipelines.layout, &self.shadow_uniform, &ps1.vram);
+            let view = self.views.entry(targets.shadow.clone()).or_insert_with(|| targets.shadow.create_view(&Default::default())).clone();
+            let group = match &self.shadow_group {
+                Some((vram, group)) if *vram == ps1.vram => group.clone(),
+                _ => {
+                    let group = bind_group(device, &ps1.pipelines.layout, &self.shadow_uniform, &ps1.vram);
+                    self.shadow_group = Some((ps1.vram.clone(), group.clone()));
+                    group
+                }
+            };
             let pipeline = ps1.pipelines.get(device, PipelineKey { fragment: Fragment::Shadow, blend: 0, depth: DepthMode::Over }).clone();
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("sprite shadows"),
@@ -595,9 +727,23 @@ impl EffectsRenderer {
         // Parameters.
         let depths = analysis.depths.unwrap_or([1000.0, 4000.0, 8000.0]);
         let span = (depths[2] - depths[0]).max(500.0);
-        let focus = analysis.focus.unwrap_or(depths[1]) + effects.focus * span * 0.5;
+        // The playfield stays sharp, with a margin; the focus setting moves it.
+        let [near, far] = analysis.focus.unwrap_or([depths[1] * 0.9, depths[1] * 1.1]);
+        let shift = effects.focus * span * 0.5;
+        let near = (near * 0.9 + shift).max(1.0);
+        let far = (far * 1.12 + shift).max(near + 1.0);
         let fog_start = depths[0] + span * lighting.fog_range[0];
         let fog_end = depths[0] + span * lighting.fog_range[1];
+        let wanted = [fog_start, fog_end, near, far];
+        let eased = match self.ranges {
+            Some(old) if old.iter().zip(&wanted).all(|(o, w)| (w / o.max(1.0) - 1.0).abs() < 0.6) => {
+                std::array::from_fn(|i| old[i] + (wanted[i] - old[i]) * 0.15)
+            }
+            _ => wanted,
+        };
+        self.ranges = Some(eased);
+        let [fog_start, fog_end, near, far] = eased;
+        let ease = if std::mem::take(&mut self.fresh) { 1.0 } else { 0.12 };
         let light = glam::Vec3::from(lighting.direction).normalize_or_zero();
         let s = |c: [f32; 3], k: f32| [c[0] * k, c[1] * k, c[2] * k, 0.0];
         let base = Params {
@@ -609,10 +755,10 @@ impl EffectsRenderer {
             light_dir: [light.x, light.y, light.z, 0.0],
             light_color: s(lighting.color, 1.0),
             ambient: [lighting.ambient[0], lighting.ambient[1], lighting.ambient[2], effects.ambient_occlusion],
-            fog: [lighting.fog_color[0], lighting.fog_color[1], lighting.fog_color[2], effects.fog * 0.55],
-            ranges: [fog_start, fog_end, focus, 0.12],
+            fog: [lighting.fog_color[0], lighting.fog_color[1], lighting.fog_color[2], effects.fog * 0.7],
+            ranges: [fog_start, fog_end, near, far],
             shaft: [lighting.shaft_source[0], lighting.shaft_source[1], effects.light_shafts, lighting.shaft_threshold],
-            bloom: [effects.bloom * 0.6, lighting.bloom_threshold, 0.25, effects.lighting],
+            bloom: [effects.bloom * 0.7, lighting.bloom_threshold, 0.3, effects.lighting],
             grade: [lighting.exposure, lighting.contrast, lighting.saturation, lighting.warmth],
             grade2: [lighting.vignette, effects.color_grading, effects.depth_of_field, effects.shadows],
             quality: [
@@ -621,7 +767,7 @@ impl EffectsRenderer {
                 if effects.light_shafts > 0.0 { shafts } else { 0 },
                 self.debug,
             ],
-            step: [0.0; 4],
+            step: [0.0, 0.0, ease, 0.0],
         };
         let targets = self.targets.as_ref().expect("created above");
         let bloom_sizes: Vec<(u32, u32)> = targets.bloom.iter().map(|t| (t.width(), t.height())).collect();
@@ -667,20 +813,26 @@ impl EffectsRenderer {
         queue.write_buffer(&self.params, 0, &bytes);
 
         let t = self.targets.take().expect("created above");
-        self.pass(device, encoder, "fs_average", &t.average, false, 0, &[frame.color(), frame.aux()]);
-        self.pass(device, encoder, "fs_light", &t.lit, false, 0, &[frame.color(), frame.aux(), &t.shadow, &t.average]);
-        self.pass(device, encoder, "fs_bright", &t.bloom[0], false, 0, &[&t.lit, frame.aux()]);
-        for level in 1..t.bloom.len() {
-            self.pass(device, encoder, "fs_down", &t.bloom[level], false, level as u32, &[&t.bloom[level - 1]]);
+        self.pass(device, encoder, "fs_average", &t.average, Blend::Ease, 0, &[frame.color(), frame.aux()]);
+        self.pass(device, encoder, "fs_light", &t.lit, Blend::Replace, 0, &[frame.color(), frame.aux(), &t.shadow, &t.average]);
+        if effects.bloom > 0.0 || effects.light_shafts > 0.0 {
+            self.pass(device, encoder, "fs_bright", &t.bloom[0], Blend::Replace, 0, &[&t.lit, frame.aux()]);
         }
-        for level in (0..t.bloom.len() - 1).rev() {
-            self.pass(device, encoder, "fs_up", &t.bloom[level], true, level as u32 + 2, &[&t.bloom[level + 1]]);
+        if effects.bloom > 0.0 {
+            for level in 1..t.bloom.len() {
+                self.pass(device, encoder, "fs_down", &t.bloom[level], Blend::Replace, level as u32, &[&t.bloom[level - 1]]);
+            }
+            for level in (0..t.bloom.len() - 1).rev() {
+                self.pass(device, encoder, "fs_up", &t.bloom[level], Blend::Add, level as u32 + 2, &[&t.bloom[level + 1]]);
+            }
         }
-        self.pass(device, encoder, "fs_shafts", &t.shafts, false, 0, &[&t.bloom[0]]);
+        if effects.light_shafts > 0.0 {
+            self.pass(device, encoder, "fs_shafts", &t.shafts, Blend::Replace, 0, &[&t.bloom[0]]);
+        }
         if base.quality[1] > 0 {
-            self.pass(device, encoder, "fs_dof", &t.dof, false, 0, &[&t.lit, frame.aux()]);
+            self.pass(device, encoder, "fs_dof", &t.dof, Blend::Replace, 0, &[&t.lit, frame.aux()]);
         }
-        self.pass(device, encoder, "fs_composite", &t.output, false, 0, &[&t.lit, frame.aux(), &t.bloom[0], &t.shafts, &t.dof]);
+        self.pass(device, encoder, "fs_composite", &t.output, Blend::Replace, 0, &[&t.lit, frame.aux(), &t.bloom[0], &t.shafts, &t.dof, &t.average]);
         self.targets = Some(t);
         &self.targets.as_ref().expect("restored").output_view
     }
@@ -697,15 +849,16 @@ impl EffectsRenderer {
     }
 }
 
-/// A soft ellipse at a sprite's feet (untextured; uv spans -1..1).
-fn contact(vertices: &mut Vec<super::Vertex>, (x, y): (f32, f32), (rx, ry): (f32, f32), depth: f32) {
+/// A soft ellipse on the floor under a sprite (untextured; uv spans -1..1).
+fn contact(vertices: &mut Vec<super::Vertex>, (x, y): (f32, f32), (rx, ry): (f32, f32), depth: f32, strength: u8) {
     let corner = |sx: f32, sy: f32| super::Vertex {
         position: [x + sx * rx, y - 1.0 + sy * ry],
         depth,
         w: 1.0,
-        color: [230, 0, 0, 255],
+        color: [strength, 0, 0, 255],
         uv: [sx, sy],
         mode: [0, 0, 0, 0],
+        limits: 0,
     };
     for (sx, sy) in [(-1.0, -1.0), (1.0, -1.0), (-1.0, 1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0)] {
         vertices.push(corner(sx, sy));

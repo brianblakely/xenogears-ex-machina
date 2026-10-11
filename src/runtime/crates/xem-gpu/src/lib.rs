@@ -22,7 +22,7 @@ mod trace;
 pub use display::DisplayInfo;
 pub use dma::{DmaError, DmaSummary, Memory, MemoryMut};
 pub use snapshot::SnapshotError;
-pub use trace::{Class, Environment, Primitive, Projection, Shape, Trace, TraceOp, TraceVertex, VramRect};
+pub use trace::{Class, Environment, Primitive, Projection, Reveal, Shape, SxyStore, Trace, TraceOp, TraceVertex, VramRect};
 
 /// VRAM width in 16-bit pixels.
 pub const VRAM_WIDTH: usize = 1024;
@@ -236,7 +236,7 @@ impl Default for Gpu {
 
 /// Number of words of the command whose first word is `command`; for a
 /// polyline, the words of its first segment.
-fn command_words(command: u32) -> usize {
+pub(crate) fn command_words(command: u32) -> usize {
     let op = command >> 24;
     let gouraud = op & 0x10 != 0;
     let textured = usize::from(op & 0x04 != 0);
@@ -321,6 +321,7 @@ impl Gpu {
     /// GP1(01h): drops a partly received command, polyline or transfer.
     fn reset_command_buffer(&mut self) {
         self.fifo.clear();
+        self.trace_fifo_clear();
         self.receive = Receive::Command;
         self.read = None;
     }
@@ -333,6 +334,7 @@ impl Gpu {
             Receive::Command => {}
         }
         self.fifo.push(word);
+        self.trace_fifo_word();
         if self.fifo.len() < command_words(self.fifo[0]) {
             return;
         }
@@ -342,6 +344,7 @@ impl Gpu {
         self.trace_command(&words);
         self.fifo = words;
         self.fifo.clear();
+        self.trace_fifo_clear();
     }
 
     /// Writes GP0 words in order.

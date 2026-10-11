@@ -34,7 +34,10 @@ const RECTANGLE: u32 = 64u;
 const BAKED: u32 = 128u;
 const BLEND_SHIFT: u32 = 8u;
 const AUX_SEMI: u32 = 1024u;
+const CLAMP: u32 = 2048u;
 const CLASS_SHIFT: u32 = 12u;
+const ORIGINAL: u32 = 65536u;
+const LINE: u32 = 131072u;
 
 struct VertexIn {
     @location(0) position: vec2<f32>,
@@ -46,6 +49,8 @@ struct VertexIn {
     @location(4) uv: vec2<f32>,
     // Draw mode (GP0(E1h) bits 0-13), CLUT word, texture window, flags.
     @location(5) mode: vec4<u32>,
+    // The polygon's texel range (CLAMP): u, v minimum and maximum bytes.
+    @location(6) limits: u32,
 };
 
 struct VertexOut {
@@ -58,12 +63,21 @@ struct VertexOut {
     @location(2) uv_affine_w: vec3<f32>,
     @location(3) @interpolate(flat) mode: vec4<u32>,
     @location(4) depth: f32,
+    @location(5) @interpolate(flat) limits: u32,
 };
 
 @vertex
 fn vs_main(in: VertexIn) -> VertexOut {
     var out: VertexOut;
-    let ndc = (in.position - pass_.origin) / pass_.extent * vec2<f32>(2.0, -2.0) + vec2<f32>(-1.0, 1.0);
+    // Vertices sit at native pixel centres (x + 0.5), where the original
+    // samples. An interface polygon instead covers whole native pixels at
+    // any scale (x + 0.5 / scale: the same at scale 1), as the original's
+    // picture does scaled up; lines are drawn around their pixels' centres.
+    var position = in.position;
+    if (in.mode.w & ORIGINAL) != 0u && (in.mode.w & LINE) == 0u {
+        position -= vec2<f32>(0.5 - 0.5 / pass_.scale);
+    }
+    let ndc = (position - pass_.origin) / pass_.extent * vec2<f32>(2.0, -2.0) + vec2<f32>(-1.0, 1.0);
     // Depth-tested ordering: projected primitives by their depth, the
     // rest drawn over (the pipeline's compare decides).
     var z = 0.0;
@@ -76,6 +90,7 @@ fn vs_main(in: VertexIn) -> VertexOut {
     out.uv_affine_w = vec3<f32>(in.uv * in.w, in.w);
     out.mode = in.mode;
     out.depth = in.depth;
+    out.limits = in.limits;
     return out;
 }
 
@@ -126,13 +141,25 @@ struct Sample {
     semi: bool,
 };
 
-fn sample_nearest(mode: vec4<u32>, uv: vec2<f32>) -> Sample {
-    let t = texel(mode, vec2<i32>(floor(uv + vec2<f32>(0.001))));
+// A texel coordinate kept inside the polygon's own texels (CLAMP): beyond
+// the original resolution, or filtered, a sample near an edge would
+// otherwise reach the neighbouring texels of the page.
+fn inside(limits: u32, flags: u32, at: vec2<i32>) -> vec2<i32> {
+    if (flags & CLAMP) == 0u {
+        return at;
+    }
+    let lo = vec2<i32>(i32(limits & 255u), i32((limits >> 8u) & 255u));
+    let hi = vec2<i32>(i32((limits >> 16u) & 255u), i32(limits >> 24u));
+    return clamp(at, lo, hi);
+}
+
+fn sample_nearest(mode: vec4<u32>, limits: u32, uv: vec2<f32>) -> Sample {
+    let t = texel(mode, inside(limits, mode.w, vec2<i32>(floor(uv + vec2<f32>(0.001)))));
     return Sample(rgb5(t), select(1.0, 0.0, t == 0u), (t & 0x8000u) != 0u);
 }
 
 // Bilinear filtering of the decoded texels, transparent texels excluded.
-fn sample_linear(mode: vec4<u32>, uv: vec2<f32>) -> Sample {
+fn sample_linear(mode: vec4<u32>, limits: u32, uv: vec2<f32>) -> Sample {
     let base = uv - vec2<f32>(0.5);
     let cell = vec2<i32>(floor(base));
     let f = base - floor(base);
@@ -141,7 +168,7 @@ fn sample_linear(mode: vec4<u32>, uv: vec2<f32>) -> Sample {
     var total = 0.0;
     for (var k = 0; k < 4; k++) {
         let d = vec2<i32>(k & 1, k >> 1);
-        let t = texel(mode, cell + d);
+        let t = texel(mode, inside(limits, mode.w, cell + d));
         let w = select(1.0 - f.x, f.x, d.x == 1) * select(1.0 - f.y, f.y, d.y == 1);
         total += w;
         if t != 0u {
@@ -149,7 +176,7 @@ fn sample_linear(mode: vec4<u32>, uv: vec2<f32>) -> Sample {
             weight += w;
         }
     }
-    let nearest = texel(mode, vec2<i32>(floor(uv + vec2<f32>(0.001))));
+    let nearest = texel(mode, inside(limits, mode.w, vec2<i32>(floor(uv + vec2<f32>(0.001)))));
     var out = Sample(vec3<f32>(0.0), 0.0, (nearest & 0x8000u) != 0u);
     if weight > 0.0 {
         out.color = color / weight;
@@ -173,20 +200,41 @@ struct Shaded {
 // The primitive's colour at this fragment in 8-bit units, before blending.
 fn shade(in: VertexOut, frag: vec4<f32>) -> Shaded {
     let flags = in.mode.w;
-    var color8 = in.color.rgb * 255.0;
+    // The interface as the original draws it (ORIGINAL), whatever the pass
+    // draws the scene with: colour and texture coordinates taken at the
+    // native pixel's sample point (so each native pixel is one colour, as
+    // on the console), 15-bit colour and the original's dithering.
+    let original = (flags & ORIGINAL) != 0u;
+    let color_dx = dpdx(in.color);
+    let color_dy = dpdy(in.color);
+    let affine_uv = affine(in);
+    let uv_dx = dpdx(affine_uv);
+    let uv_dy = dpdy(affine_uv);
+    var delta = vec2<f32>(0.0);
+    if original {
+        // The native pixel's sample point: where its first scaled pixel is
+        // (a line's: its centre).
+        let native = floor(pass_.origin + frag.xy / pass_.scale);
+        var point = (native - pass_.origin) * pass_.scale + vec2<f32>(0.5);
+        if (flags & LINE) != 0u {
+            point = (native + vec2<f32>(0.5) - pass_.origin) * pass_.scale;
+        }
+        delta = point - frag.xy;
+    }
+    var color8 = (in.color.rgb + color_dx.rgb * delta.x + color_dy.rgb * delta.y) * 255.0;
     var semi = (flags & SEMI) != 0u;
     var mask = (flags & MASK_SET) != 0u;
-    let fifteen = (pass_.options & 2u) != 0u;
+    let fifteen = (pass_.options & 2u) != 0u || original;
     if (flags & TEXTURED) != 0u {
-        var uv = affine(in);
-        if (pass_.options & 1u) != 0u && (flags & RECTANGLE) == 0u {
+        var uv = affine_uv + uv_dx * delta.x + uv_dy * delta.y;
+        if (pass_.options & 1u) != 0u && (flags & RECTANGLE) == 0u && !original {
             uv = in.uv_perspective;
         }
         var s: Sample;
         if (flags & LINEAR) != 0u {
-            s = sample_linear(in.mode, uv);
+            s = sample_linear(in.mode, in.limits, uv);
         } else {
-            s = sample_nearest(in.mode, uv);
+            s = sample_nearest(in.mode, in.limits, uv);
         }
         if s.coverage < 0.5 {
             discard;
@@ -205,7 +253,7 @@ fn shade(in: VertexOut, frag: vec4<f32>) -> Shaded {
             color8 = texel8 * color8 / 128.0;
         }
     }
-    if (flags & DITHER) != 0u && (pass_.options & 4u) != 0u {
+    if (flags & DITHER) != 0u && ((pass_.options & 4u) != 0u || original) {
         let native = vec2<i32>(floor(pass_.origin + floor(frag.xy) / pass_.scale));
         color8 += DITHER_MATRIX[(native.y & 3) * 4 + (native.x & 3)];
     }
@@ -278,6 +326,20 @@ fn fs_semi(in: VertexOut) -> Targets {
     return Targets(vec4<f32>(s.color.rgb, weight), info);
 }
 
+// The semi-transparent pixels of an interface primitive drawn in an
+// additive or subtractive mode, marked as interface in the auxiliary target
+// (weight 1 there) with the colour left as that draw made it (weight 0).
+@fragment
+fn fs_mark(in: VertexOut) -> Targets {
+    let s = shade(in, in.clip);
+    if !s.semi {
+        discard;
+    }
+    var info = aux(in);
+    info.a = 1.0;
+    return Targets(vec4<f32>(0.0), info);
+}
+
 // GP0(02h) fills and uploads: a VRAM rectangle shown as itself.
 struct BlitOut {
     @builtin(position) clip: vec4<f32>,
@@ -318,7 +380,7 @@ fn fs_rect(in: BlitOut) -> Targets {
 fn fs_shadow(in: VertexOut) -> @location(0) vec4<f32> {
     var intensity = in.color.r;
     if (in.mode.w & TEXTURED) != 0u {
-        let s = sample_nearest(in.mode, affine(in));
+        let s = sample_nearest(in.mode, in.limits, affine(in));
         if s.coverage < 0.5 {
             discard;
         }

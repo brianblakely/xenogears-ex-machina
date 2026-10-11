@@ -22,8 +22,12 @@ pub const CHCR_BUSY: u32 = 0x0100_0000;
 /// revisits nodes; xem-gpu also stops at a loop).
 const LIST_WORD_LIMIT: u32 = RAM_SIZE / 4;
 
-/// Entries of the port's GTE projection ring (`XEM_GTE_PROJECTIONS`, xem/gte.h).
-const PROJECTION_RING: u32 = 65536;
+/// Entries of the port's presentation rings (xem/gte.h): GTE projections
+/// (`XEM_GTE_PROJECTIONS`), stored screen points (`XEM_PRESENT_STORES`) and
+/// culled faces (`XEM_PRESENT_REVEALS`), with their entry sizes.
+const PROJECTION_RING: (u32, u32) = (65536, 32);
+const STORE_RING: (u32, u32) = (65536, 16);
+const REVEAL_RING: (u32, u32) = (16384, 64);
 
 const SNAPSHOT_MAGIC: &[u8; 8] = b"XEMGPUD1";
 
@@ -60,8 +64,9 @@ pub struct Gpu {
     completion: Option<u64>,
     /// Vertical blanks seen (the interlaced field toggles at each).
     vblanks: u64,
-    /// Presentation only: GTE projections already handed to the draw trace.
-    projections_traced: u32,
+    /// Presentation only: the port's ring counts already handed to the
+    /// draw trace (projections, stores, reveals).
+    traced: [u32; 3],
 }
 
 impl Gpu {
@@ -94,35 +99,74 @@ impl Gpu {
         self.chcr
     }
 
-    /// Hands the GTE projections made since the last call (the port's ring
-    /// at `ring` holds the last [`PROJECTION_RING`] of `count`) to the draw
-    /// trace. Reads only; without a trace it only notes the count.
-    fn trace_projections(&mut self, ring: u32, count: u32, memory: &mut dyn GameMemory) {
-        let new = count.wrapping_sub(self.projections_traced).min(PROJECTION_RING);
-        self.projections_traced = count;
-        if !self.gpu.trace_enabled() || new == 0 {
-            return;
-        }
-        let mut projections = Vec::with_capacity(new as usize);
-        let mut entry = [0u8; 32];
-        for n in count.wrapping_sub(new)..count {
-            let at = ring.wrapping_add((n % PROJECTION_RING) * 32);
-            if memory.read(at, &mut entry).is_err() {
+    /// Hands what the port's presentation records gained since the last
+    /// call to the draw trace: `args` are the headers (each starting with
+    /// how many entries were ever written) of the projection, store and
+    /// culled-face rings. Reads only, except for the culled-face ring's
+    /// `wanted` word, which tells the port how far beyond its screen the
+    /// trace wants culled faces; without a trace it only notes the counts.
+    fn trace_projections(&mut self, args: &[u32], memory: &mut dyn GameMemory) {
+        let arg = |i: usize| args.get(i).copied().unwrap_or(0);
+        // Entries follow headers of 32, 16 and 16 bytes.
+        let rings = [(arg(0), 32, PROJECTION_RING), (arg(1), 16, STORE_RING), (arg(2), 16, REVEAL_RING)];
+        let tracing = self.gpu.trace_enabled();
+        let _ = memory.write_u32(arg(2).wrapping_add(4), self.gpu.reveal_reach());
+        let mut entries: [Vec<u8>; 3] = Default::default();
+        let mut counts = [0u32; 3];
+        for (n, &(header, offset, (size, bytes))) in rings.iter().enumerate() {
+            let Ok(count) = memory.read_u32(header) else { return };
+            counts[n] = count;
+            let new = count.wrapping_sub(self.traced[n]).min(size);
+            self.traced[n] = count;
+            if !tracing || new == 0 {
+                continue;
+            }
+            // The newest `new` entries, oldest first, in at most two pieces.
+            let first = count.wrapping_sub(new) % size;
+            let head = new.min(size - first);
+            let base = header.wrapping_add(offset);
+            entries[n] = vec![0; (new * bytes) as usize];
+            let (a, b) = entries[n].split_at_mut((head * bytes) as usize);
+            if memory.read(base.wrapping_add(first * bytes), a).is_err() || memory.read(base, b).is_err() {
                 return;
             }
-            let word = |i: usize| u32::from_le_bytes(entry[i * 4..i * 4 + 4].try_into().unwrap());
-            projections.push(xem_gpu::Projection {
-                sxy: word(0),
-                sz: word(1) as u16,
-                class: (word(1) >> 16) as u8,
-                x: word(2) as i32,
-                y: word(3) as i32,
-                offset: (word(4) as i16, (word(4) >> 16) as i16),
-                h: word(5) as u16,
-                owner: word(6),
-            });
         }
-        self.gpu.trace_projections(projections);
+        if !tracing {
+            return;
+        }
+        let word = |entry: &[u8], i: usize| u32::from_le_bytes(entry[i * 4..i * 4 + 4].try_into().unwrap());
+        let projections: Vec<xem_gpu::Projection> = entries[0]
+            .chunks_exact(PROJECTION_RING.1 as usize)
+            .map(|e| xem_gpu::Projection {
+                sxy: word(e, 0),
+                sz: word(e, 1) as u16,
+                class: (word(e, 1) >> 16) as u8,
+                x: word(e, 2) as i32,
+                y: word(e, 3) as i32,
+                offset: (word(e, 4) as i16, (word(e, 4) >> 16) as i16),
+                h: word(e, 5) as u16,
+                owner: word(e, 6),
+            })
+            .collect();
+        let stores: Vec<xem_gpu::SxyStore> = entries[1]
+            .chunks_exact(STORE_RING.1 as usize)
+            .map(|e| xem_gpu::SxyStore { address: word(e, 0), value: word(e, 1), source: word(e, 3).checked_sub(1) })
+            .collect();
+        let reveals: Vec<xem_gpu::Reveal> = entries[2]
+            .chunks_exact(REVEAL_RING.1 as usize)
+            .map(|e| {
+                let shape = word(e, 1);
+                let count = (shape & 0xFF).min(12) as usize;
+                xem_gpu::Reveal {
+                    entry: word(e, 0),
+                    vertices: (shape >> 8) as u8,
+                    projections: word(e, 2),
+                    words: (0..count).map(|i| word(e, 4 + i)).collect(),
+                }
+            })
+            .collect();
+        let first = counts[0].wrapping_sub(projections.len() as u32);
+        self.gpu.trace_projections(first, &projections, &stores, &reveals);
     }
 
     /// End the transfer if the clock reached its end: the channel is free and
@@ -176,7 +220,7 @@ impl Device for Gpu {
         let arg = |i: usize| args.get(i).copied().unwrap_or(0);
         match op {
             "gp0" => self.gpu.write_gp0(arg(0)),
-            "projections" => self.trace_projections(arg(0), arg(1), context.memory),
+            "projections" => self.trace_projections(args, context.memory),
             "gp1" => self.gpu.write_gp1(arg(0)),
             "read" => return Action::Return(self.gpu.read_gpuread()),
             "status" => return Action::Return(self.gpu.gpustat()),

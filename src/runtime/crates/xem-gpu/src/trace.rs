@@ -14,13 +14,46 @@
 //! there is one (`xem/gte.h` in the port keeps a ring of every RTPS/RTPT
 //! vertex): its depth, sub-pixel position and what drew it (a model, a
 //! sprite). A packet whose points did not come from the GTE (text, windows,
-//! rectangles) has no depth.
+//! rectangles) has no depth. The port also records where the game stored
+//! each screen point and which projection made it, so a packet's point is
+//! matched by the address the DMA read it from, and only so: matching by
+//! the point's value would tie interface points (window corners, glyphs)
+//! to unrelated 3D points at the same pixel in busy scenes.
+//!
+//! The port records the faces its renderers culled at the edges of the
+//! original screen as well; they are traced as [`Primitive::revealed`]
+//! where the game would have linked them, for wider views, and never drawn.
 
 use crate::{Gpu, VRAM_HEIGHT, VRAM_WIDTH};
 use std::collections::HashMap;
+use std::hash::{BuildHasherDefault, Hasher};
+
+/// The trace's tables are keyed by 32-bit words (screen points, addresses,
+/// owners) and touched tens of thousands of times a frame: a multiply and a
+/// fold spread such keys well enough, for far less than the default hasher.
+#[derive(Clone, Copy, Debug, Default)]
+struct WordHasher(u64);
+
+impl Hasher for WordHasher {
+    fn finish(&self) -> u64 {
+        self.0 ^ self.0 >> 29
+    }
+
+    fn write(&mut self, bytes: &[u8]) {
+        for &byte in bytes {
+            self.write_u32(u32::from(byte));
+        }
+    }
+
+    fn write_u32(&mut self, word: u32) {
+        self.0 = (self.0 ^ u64::from(word)).wrapping_mul(0x9E37_79B9_7F4A_7C15);
+    }
+}
+
+type WordMap<V> = HashMap<u32, V, BuildHasherDefault<WordHasher>>;
 
 /// A GTE projection as the port's ring holds it.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Projection {
     /// SXY2 as the GTE left it (the word a packet stores).
     pub sxy: u32,
@@ -38,6 +71,29 @@ pub struct Projection {
     pub owner: u32,
 }
 
+/// A screen point the game stored (the port's store ring).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct SxyStore {
+    /// Where the word went (24-bit physical).
+    pub address: u32,
+    /// The SXY word.
+    pub value: u32,
+    /// The projection that made it, when the port knows it.
+    pub source: Option<u32>,
+}
+
+/// A face a renderer of the game culled at the original screen's edges
+/// (the port's reveal ring): the GP0 words it would have sent and the
+/// ordering-table entry it would have been linked at. Its points are the
+/// last `vertices` projections made before `projections`, in order.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Reveal {
+    pub entry: u32,
+    pub vertices: u8,
+    pub projections: u32,
+    pub words: Vec<u32>,
+}
+
 /// What a vertex belongs to.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum Class {
@@ -51,6 +107,11 @@ pub enum Class {
     /// A sprite's parts (`sprite_draw_parts`).
     Sprite,
 }
+
+/// Ring entries that are not drawn points (xem/gte.h): the floor under a
+/// sprite and the depth of the field camera's target.
+const GROUND: u8 = 3;
+const FOCUS: u8 = 4;
 
 impl Class {
     fn from_projection(class: u8) -> Class {
@@ -99,6 +160,8 @@ pub struct Environment {
     pub area: [u16; 4],
     /// GP0(E6h) bits 0-1.
     pub mask: u32,
+    /// GP0(E5h): the drawing offset added to every vertex.
+    pub offset: (i16, i16),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -137,6 +200,13 @@ pub struct Primitive {
     /// and the primitive's index in it (bits 0-7), or 0 for words the CPU
     /// wrote.
     pub source: u32,
+    /// A face the game culled at its screen's edges ([`Reveal`]), traced
+    /// where it would have been drawn. The GPU never drew it: a renderer
+    /// draws it only beyond the original screen, for a wider view.
+    pub revealed: bool,
+    /// For a sprite part: the point on the floor under its sprite (VRAM x,
+    /// y and GTE depth), where the port records one.
+    pub ground: Option<[f32; 3]>,
 }
 
 impl Primitive {
@@ -225,14 +295,41 @@ pub enum TraceOp {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Trace {
     pub ops: Vec<TraceOp>,
+    /// The GTE depth of the field camera's target, when the port recorded
+    /// one since the last take (it does while culled faces are wanted).
+    pub focus: Option<u16>,
 }
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Recorder {
     ops: Vec<TraceOp>,
-    /// Projections of this frame and the one before, by SXY word (11-bit fields).
-    current: HashMap<u32, Projection>,
-    previous: HashMap<u32, Projection>,
+    /// The newest [`HISTORY`] projections by their index in the port's
+    /// ring (its count when made); `history_end` is one past the newest.
+    history: Vec<Projection>,
+    history_end: u32,
+    history_len: u32,
+    /// Screen points the game stored, by word address: the value and the
+    /// projection that made it.
+    stored: WordMap<(u32, u32)>,
+    /// Culled faces by the ordering-table entry they would have been linked
+    /// at, until the DMA walk reaches it.
+    reveals: WordMap<Vec<Revealed>>,
+    /// The address each word of the GPU's partly received command was read
+    /// from (0 for words the CPU wrote), and the word being written's.
+    fifo_addresses: Vec<u32>,
+    word_address: u32,
+    /// While a revealed face is traced: its vertices' projections.
+    revealing: Option<[Option<u32>; 4]>,
+    /// How far beyond the original screen the host wants culled faces
+    /// recorded, in pixels (x, y; none when `None`). The port reads it.
+    reveal_reach: Option<[u16; 2]>,
+    /// Points traced: matched to their projection, and not (2D points).
+    matches: std::cell::Cell<[u64; 2]>,
+    /// The newest floor point of each sprite (by owner), and the camera
+    /// focus depth since the last take.
+    grounds: WordMap<u32>,
+    focus: Option<u16>,
+    vblanks: u32,
     /// Drawn pixels not yet written to the trace.
     dirty: Option<VramRect>,
     /// The next take starts with all of VRAM (enabled, or a snapshot loaded).
@@ -243,7 +340,115 @@ pub(crate) struct Recorder {
     source_index: u32,
 }
 
-const SXY_MASK: u32 = 0x07FF_07FF;
+#[derive(Clone, Debug)]
+struct Revealed {
+    words: Vec<u32>,
+    projections: [Option<u32>; 4],
+    vblank: u32,
+}
+
+/// Projections kept for matching: as many as the port's ring holds.
+const HISTORY: usize = 65536;
+/// DMA addresses: 24-bit, word aligned.
+const ADDRESS_MASK: u32 = 0xFF_FFFC;
+/// Vertical blanks a culled face waits for its ordering table's walk.
+const REVEAL_FRAMES: u32 = 3;
+
+/// The indices of a polygon command's vertex words.
+fn polygon_points(op: u32) -> impl Iterator<Item = usize> {
+    let stride = 1 + usize::from(op & 0x04 != 0) + usize::from(op & 0x10 != 0);
+    let count = if op & 0x08 != 0 { 4 } else { 3 };
+    (0..count).map(move |k| 1 + k * stride)
+}
+
+impl Recorder {
+    /// Projection `index` while the history holds it.
+    fn projection(&self, index: u32) -> Option<&Projection> {
+        let age = self.history_end.wrapping_sub(index);
+        (age >= 1 && age <= self.history_len).then(|| &self.history[index as usize % HISTORY])
+    }
+
+    fn ingest(&mut self, first: u32, projections: &[Projection], stores: &[SxyStore], reveals: &[Reveal]) {
+        if self.history.is_empty() {
+            self.history = vec![Projection::default(); HISTORY];
+        }
+        if first != self.history_end {
+            // The trace just started or the port's ring overflowed: the
+            // projections before these are unknown.
+            self.history_end = first;
+            self.history_len = 0;
+        }
+        for projection in projections {
+            match projection.class {
+                GROUND => {
+                    self.grounds.insert(projection.owner, self.history_end);
+                }
+                FOCUS => self.focus = Some(projection.sz),
+                _ => {}
+            }
+            self.history[self.history_end as usize % HISTORY] = *projection;
+            self.history_end = self.history_end.wrapping_add(1);
+        }
+        self.history_len = (self.history_len as usize + projections.len()).min(HISTORY) as u32;
+        for store in stores {
+            let address = store.address & ADDRESS_MASK;
+            match store.source.filter(|&index| self.projection(index).is_some_and(|p| p.sxy == store.value)) {
+                Some(index) => {
+                    self.stored.insert(address, (store.value, index));
+                }
+                None => {
+                    self.stored.remove(&address);
+                }
+            }
+        }
+        if self.stored.len() > 4 * HISTORY {
+            let (end, len) = (self.history_end, self.history_len);
+            self.stored.retain(|_, (_, index)| {
+                let age = end.wrapping_sub(*index);
+                age >= 1 && age <= len
+            });
+        }
+        for reveal in reveals {
+            let Some(&command) = reveal.words.first() else { continue };
+            let vertices = usize::from(reveal.vertices);
+            if !(0x20..=0x3F).contains(&(command >> 24)) || vertices > 4 || reveal.words.len() != crate::command_words(command) {
+                continue;
+            }
+            let mut points = [None; 4];
+            for (k, at) in polygon_points(command >> 24).enumerate().take(vertices) {
+                let index = reveal.projections.wrapping_sub(vertices as u32).wrapping_add(k as u32);
+                points[k] = self.projection(index).is_some_and(|p| p.sxy == reveal.words[at]).then_some(index);
+            }
+            self.reveals.entry(reveal.entry & ADDRESS_MASK).or_default().push(Revealed {
+                words: reveal.words.clone(),
+                projections: points,
+                vblank: self.vblanks,
+            });
+        }
+        if self.grounds.len() > 1024 {
+            let (end, len) = (self.history_end, self.history_len);
+            self.grounds.retain(|_, index| {
+                let age = end.wrapping_sub(*index);
+                age >= 1 && age <= len
+            });
+        }
+    }
+
+    /// The projection that made the point `word`, the `at`th word of the
+    /// command (its `vertex`th point): the one stored at the word's address
+    /// while the word still holds it, or a culled face's own.
+    fn point(&self, word: u32, at: usize, vertex: usize) -> Option<&Projection> {
+        if let Some(revealed) = &self.revealing {
+            return revealed[vertex].and_then(|index| self.projection(index));
+        }
+        let address = *self.fifo_addresses.get(at).filter(|&&a| a != 0)?;
+        let &(value, index) = self.stored.get(&address)?;
+        if value != word {
+            return None;
+        }
+        self.projection(index)
+    }
+}
 
 fn sign11(value: u32) -> i32 {
     ((value << 21) as i32) >> 21
@@ -253,8 +458,9 @@ impl Gpu {
     /// Turns the draw trace on or off. Turning it on starts the next trace
     /// with the whole VRAM.
     pub fn set_trace(&mut self, enabled: bool) {
+        let pending = self.fifo.len();
         self.trace = enabled.then(|| {
-            Box::new(Recorder { full_sync: true, ..Default::default() })
+            Box::new(Recorder { full_sync: true, fifo_addresses: vec![0; pending], ..Default::default() })
         });
     }
 
@@ -262,12 +468,35 @@ impl Gpu {
         self.trace.is_some()
     }
 
-    /// Projections the GTE made since the last call, oldest first.
-    pub fn trace_projections(&mut self, projections: impl IntoIterator<Item = Projection>) {
+    /// How far beyond its screen (pixels, x and y) the port should record
+    /// the faces the game culls against it, for a view wider or farther out
+    /// than the original's; `None` records none. Kept while the trace is
+    /// on; none without a trace.
+    pub fn set_reveals(&mut self, reach: Option<[u16; 2]>) {
         if let Some(trace) = &mut self.trace {
-            for projection in projections {
-                trace.current.insert(projection.sxy & SXY_MASK, projection);
-            }
+            trace.reveal_reach = reach.filter(|r| *r != [0, 0]);
+        }
+    }
+
+    /// [`Gpu::set_reveals`]'s reach as the port's word: x in bits 0-15, y
+    /// in bits 16-31, 0 for none.
+    pub fn reveal_reach(&self) -> u32 {
+        self.trace.as_ref().and_then(|t| t.reveal_reach).map_or(0, |[x, y]| u32::from(x) | u32::from(y) << 16)
+    }
+
+    /// Points traced since the trace started: matched to their projection
+    /// (by address or a culled face's record), and not (2D points). For
+    /// validation.
+    pub fn trace_matches(&self) -> [u64; 2] {
+        self.trace.as_ref().map_or([0; 2], |t| t.matches.get())
+    }
+
+    /// What the port recorded since the last call, oldest first: the GTE's
+    /// projections (the first one's index in the port's ring is `first`),
+    /// the screen points stored and the faces culled at the screen's edges.
+    pub fn trace_projections(&mut self, first: u32, projections: &[Projection], stores: &[SxyStore], reveals: &[Reveal]) {
+        if let Some(trace) = &mut self.trace {
+            trace.ingest(first, projections, stores, reveals);
         }
     }
 
@@ -278,6 +507,7 @@ impl Gpu {
             return Trace::default();
         };
         let mut ops = std::mem::take(&mut trace.ops);
+        let focus = trace.focus.take();
         if trace.full_sync {
             trace.full_sync = false;
             trace.dirty = None;
@@ -287,12 +517,12 @@ impl Gpu {
                 pixels: self.vram.clone(),
                 upload: true,
             });
-            return Trace { ops };
+            return Trace { ops, focus };
         }
         if let Some(rect) = trace.dirty.take() {
             ops.push(TraceOp::Write { rect, pixels: read_rect(&self.vram, rect), upload: false });
         }
-        Trace { ops }
+        Trace { ops, focus }
     }
 
     /// The trace must start again from the whole VRAM (a snapshot replaced it).
@@ -302,16 +532,50 @@ impl Gpu {
         }
     }
 
+    /// The DMA walk reached `node` (0: it left a node). The faces culled
+    /// at an ordering-table entry are traced when the walk reaches it.
     pub(crate) fn trace_source(&mut self, node: u32) {
+        let Some(trace) = &mut self.trace else { return };
+        trace.source = node;
+        trace.source_index = 0;
+        let Some(faces) = trace.reveals.remove(&node) else { return };
+        for face in faces {
+            self.trace.as_mut().expect("checked above").revealing = Some(face.projections);
+            self.trace_before_command(&face.words);
+            self.trace_polygon(&face.words, true);
+            self.trace.as_mut().expect("checked above").revealing = None;
+        }
+    }
+
+    /// The address of the next GP0 word (0 for the CPU's).
+    pub(crate) fn trace_word_address(&mut self, address: u32) {
         if let Some(trace) = &mut self.trace {
-            trace.source = node;
-            trace.source_index = 0;
+            trace.word_address = address;
+        }
+    }
+
+    /// A word joined the command buffer.
+    pub(crate) fn trace_fifo_word(&mut self) {
+        if let Some(trace) = &mut self.trace {
+            trace.fifo_addresses.push(trace.word_address);
+        }
+    }
+
+    /// The command buffer emptied.
+    pub(crate) fn trace_fifo_clear(&mut self) {
+        if let Some(trace) = &mut self.trace {
+            trace.fifo_addresses.clear();
         }
     }
 
     pub(crate) fn trace_vblank(&mut self) {
         if let Some(trace) = &mut self.trace {
-            trace.previous = std::mem::take(&mut trace.current);
+            trace.vblanks = trace.vblanks.wrapping_add(1);
+            let now = trace.vblanks;
+            trace.reveals.retain(|_, faces| {
+                faces.retain(|face| now.wrapping_sub(face.vblank) < REVEAL_FRAMES);
+                !faces.is_empty()
+            });
             trace.ops.push(TraceOp::VBlank);
         }
     }
@@ -327,6 +591,7 @@ impl Gpu {
             texture_window: self.texture_window,
             area: self.trace_area(),
             mask: self.mask,
+            offset: (sign11(self.draw_offset) as i16, sign11(self.draw_offset >> 11) as i16),
         }
     }
 
@@ -396,7 +661,7 @@ impl Gpu {
                     trace.ops.push(TraceOp::Write { rect, pixels, upload: false });
                 }
             }
-            0x20..=0x3F => self.trace_polygon(words),
+            0x20..=0x3F => self.trace_polygon(words, false),
             0x60..=0x7F => self.trace_rectangle(words),
             0x80..=0x9F => {
                 let source = crate::Image::from_words(words[1], words[3]);
@@ -425,7 +690,9 @@ impl Gpu {
         }
     }
 
-    fn trace_vertex(&self, trace: &Recorder, word: u32, color: u32, uv: u32) -> (TraceVertex, Option<(Class, (i16, i16), u16, u32)>) {
+    /// The vertex `word`, the `at`th word of the command (usize::MAX when
+    /// it is not in the command buffer) and its `index`th point.
+    fn trace_vertex(&self, trace: &Recorder, word: u32, at: usize, index: usize, color: u32, uv: u32) -> (TraceVertex, Option<(Class, (i16, i16), u16, u32)>) {
         let (x, y) = self.vertex(word);
         let (dx, dy) = (x - sign11(word), y - sign11(word >> 16));
         let mut vertex = TraceVertex {
@@ -438,22 +705,30 @@ impl Gpu {
             u: (uv & 0xFF) as i16,
             v: (uv >> 8 & 0xFF) as i16,
         };
-        let key = word & SXY_MASK;
-        let projection = trace.current.get(&key).or_else(|| trace.previous.get(&key));
-        let class = projection.map(|p| {
-            let (px, py) = (p.x as f32 / 65536.0, p.y as f32 / 65536.0);
-            // A saturated point keeps the integer position.
-            if (px.floor() as i32 - sign11(word)).abs() <= 1 && (py.floor() as i32 - sign11(word >> 16)).abs() <= 1 {
-                vertex.fx = px + dx as f32;
-                vertex.fy = py + dy as f32;
-            }
+        let point = trace.point(word, at, index);
+        let mut counts = trace.matches.get();
+        counts[usize::from(point.is_none())] += 1;
+        trace.matches.set(counts);
+        let class = point.map(|p| {
+            // The sub-pixel point, also where the GTE saturated the word.
+            vertex.fx = p.x as f32 / 65536.0 + dx as f32;
+            vertex.fy = p.y as f32 / 65536.0 + dy as f32;
             vertex.z = f32::from(p.sz.max(1));
             (Class::from_projection(p.class), p.offset, p.h, p.owner)
         });
         (vertex, class)
     }
 
-    fn trace_polygon(&mut self, words: &[u32]) {
+    /// The floor point under sprite `owner` in VRAM coordinates, with its depth.
+    fn ground(&self, trace: &Recorder, owner: u32) -> Option<[f32; 3]> {
+        let p = trace.projection(*trace.grounds.get(&owner)?)?;
+        let offset = (sign11(self.draw_offset), sign11(self.draw_offset >> 11));
+        (p.sz > 0).then(|| [p.x as f32 / 65536.0 + offset.0 as f32, p.y as f32 / 65536.0 + offset.1 as f32, f32::from(p.sz)])
+    }
+
+    /// A polygon command after it executed, or a culled face (`revealed`)
+    /// that never reaches the GPU.
+    fn trace_polygon(&mut self, words: &[u32], revealed: bool) {
         let trace = self.trace.as_ref().expect("checked by the caller");
         let op = words[0] >> 24;
         let gouraud = op & 0x10 != 0;
@@ -462,7 +737,7 @@ impl Gpu {
         let raw = op & 0x01 != 0;
         let mut vertices = [TraceVertex::default(); 4];
         let mut classes = Vec::new();
-        let mut clut = 0;
+        let (mut clut, mut page) = (0, 0);
         let mut next = 1;
         for (index, vertex) in vertices.iter_mut().take(count).enumerate() {
             let color = if index > 0 && gouraud {
@@ -471,24 +746,32 @@ impl Gpu {
             } else {
                 words[0]
             };
-            let position = words[next];
+            let at = next;
             next += 1;
             let mut uv = 0;
             if op & 0x04 != 0 {
                 uv = words[next];
                 next += 1;
-                if index == 0 {
-                    clut = (uv >> 16) as u16;
+                match index {
+                    0 => clut = (uv >> 16) as u16,
+                    1 => page = uv >> 16,
+                    _ => {}
                 }
             }
-            let (traced, class) = self.trace_vertex(trace, position, color, uv);
+            let (traced, class) = self.trace_vertex(trace, words[at], at, index, color, uv);
             *vertex = traced;
             classes.extend(class);
+        }
+        let mut environment = self.trace_environment();
+        if revealed && op & 0x04 != 0 {
+            // Executed, the polygon's page would have set GP0(E1h) bits 0-8 and 11.
+            environment.draw_mode = (environment.draw_mode & !0x9FF) | (page & 0x9FF);
         }
         let projection = classes.first().map(|&(_, offset, h, _)| (offset, h));
         let owner = classes.first().map_or(0, |c| c.3);
         let classes: Vec<Class> = classes.iter().map(|c| c.0).collect();
         let class = primitive_class(&classes, count);
+        let ground = if class == Class::Sprite { self.ground(trace, owner) } else { None };
         let dither = self.draw_mode & 0x200 != 0 && (gouraud || (textured && !raw));
         let primitive = Primitive {
             shape: if count == 4 { Shape::Quad } else { Shape::Triangle },
@@ -499,11 +782,13 @@ impl Gpu {
             semi: op & 0x02 != 0,
             dither,
             clut,
-            environment: self.trace_environment(),
+            environment,
             class,
             projection,
             owner,
             source: 0,
+            revealed,
+            ground,
         };
         self.trace_drawn(primitive);
     }
@@ -524,7 +809,7 @@ impl Gpu {
             2 => (8, 8),
             _ => (16, 16),
         };
-        let (corner, _) = self.trace_vertex(trace, words[1], words[0], uv);
+        let (corner, _) = self.trace_vertex(trace, words[1], 1, 0, words[0], uv);
         let flip_x = self.draw_mode & 0x1000 != 0;
         let flip_y = self.draw_mode & 0x2000 != 0;
         let (u0, v0) = (i32::from(corner.u), i32::from(corner.v));
@@ -562,6 +847,8 @@ impl Gpu {
             projection: None,
             owner: 0,
             source: 0,
+            revealed: false,
+            ground: None,
         };
         self.trace_drawn(primitive);
     }
@@ -571,8 +858,8 @@ impl Gpu {
         let Some(trace) = self.trace.as_ref() else { return };
         let op = command >> 24;
         let gouraud = op & 0x10 != 0;
-        let (a, class_a) = self.trace_vertex(trace, vertex0, color0, 0);
-        let (b, class_b) = self.trace_vertex(trace, vertex1, if gouraud { color1 } else { color0 }, 0);
+        let (a, class_a) = self.trace_vertex(trace, vertex0, usize::MAX, 0, color0, 0);
+        let (b, class_b) = self.trace_vertex(trace, vertex1, usize::MAX, 1, if gouraud { color1 } else { color0 }, 0);
         let projection = class_a.or(class_b).map(|(_, offset, h, _)| (offset, h));
         let owner = class_a.or(class_b).map_or(0, |c| c.3);
         let classes: Vec<Class> = class_a.into_iter().chain(class_b).map(|c| c.0).collect();
@@ -590,6 +877,8 @@ impl Gpu {
             projection,
             owner,
             source: 0,
+            revealed: false,
+            ground: None,
         };
         self.trace_drawn(primitive);
     }
@@ -603,6 +892,11 @@ impl Gpu {
         let max_y = vertices.iter().map(|v| v.y).max().unwrap_or(0).min(i32::from(bottom));
         let trace = self.trace.as_mut().expect("checked by the caller");
         let mut primitive = primitive;
+        if primitive.revealed {
+            // Never drawn: VRAM is unchanged.
+            trace.ops.push(TraceOp::Draw(primitive));
+            return;
+        }
         if trace.source != 0 {
             primitive.source = trace.source << 8 | (trace.source_index & 0xFF);
             trace.source_index += 1;

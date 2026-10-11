@@ -183,7 +183,13 @@ void xem_gte_stflg(void *flag) { WORD(flag, 0) = xem_gte_read_control(31); }
 /* SZ3 / 4 as an ordering-table depth. */
 void xem_gte_stszotz(void *otz) { WORD(otz, 0) = (unsigned int)((int)xem_gte_read_data(19) >> 2); }
 
-static void store(void *p, int reg) { WORD(p, 0) = xem_gte_read_data(reg); }
+static void store(void *p, int reg) {
+    WORD(p, 0) = xem_gte_read_data(reg);
+    if (reg >= 12 && reg <= 15) {
+        /* Presentation (xem/gte.h): where a screen point went. */
+        xem_present_store_at(p, WORD(p, 0), xem_present_sxy_source(reg));
+    }
+}
 
 void xem_gte_stsxy0(void *sxy) { store(sxy, 12); }
 

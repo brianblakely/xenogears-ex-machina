@@ -14,8 +14,8 @@ mod frame;
 mod view;
 
 pub use effects::{DebugView, Effects, EffectsRenderer, Lighting, Quality, SceneAnalysis, SpriteGroup};
-pub use frame::{FrameRenderer, Framing, interpolate};
-pub use view::{GameView, HostClass, Presented, ViewConfig, WIDE_SIDE};
+pub use frame::{FrameRenderer, Framing, central_depth, interpolate, pull_back};
+pub use view::{GameView, HostClass, MAX_WIDE_SIDE, Presented, ViewConfig, scene_zoom, wide_side};
 
 use bytemuck::{Pod, Zeroable};
 use std::collections::HashMap;
@@ -49,7 +49,13 @@ const FLAG_BAKED: u32 = 128;
 const BLEND_SHIFT: u32 = 8;
 /// A semi-transparent primitive that writes the auxiliary target (mode 0 only).
 const FLAG_AUX_SEMI: u32 = 1024;
+/// Texels are clamped to the polygon's own texture coordinates ([`Vertex::limits`]).
+const FLAG_CLAMP: u32 = 2048;
 const CLASS_SHIFT: u32 = 12;
+/// Drawn as the original draws it whatever the pass's fidelity (the
+/// interface: text, windows, portraits, menus).
+const FLAG_ORIGINAL: u32 = 1 << 16;
+const FLAG_LINE: u32 = 1 << 17;
 
 /// Which of the original GPU's limits a picture keeps. Each is independent.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -99,28 +105,26 @@ pub struct Filtering {
     pub interface_linear: bool,
 }
 
-/// Renderer culling: dropping submitted primitives before drawing them.
-/// Every kind is off by default. It is distinct from what the game decides
-/// and the renderer never changes:
-/// - the game's own culling (its model renderers drop back faces by NCLIP,
-///   faces outside its screen bounds and OTZ 0; the world map drops far
-///   terrain), which happens before anything reaches the GPU;
-/// - clipping, which the original GPU does to the drawing area and which
-///   the renderer reproduces with scissors (and its size limit: triangles
-///   1024 or more wide or 512 or more high are not drawn, counted apart in
-///   [`DrawStats::rejected_size`]);
-/// - intentional hiding (actor flags, fades, masks) and gameplay activation
-///   (on-screen tests against the original camera and screen), which are
-///   game state.
+/// Optional culling. Both kinds are off by default. Neither changes what
+/// the game decides: its own culling (back faces by NCLIP, OTZ 0, the world
+/// map's far terrain) happens before anything reaches the GPU, clipping to
+/// the drawing area is reproduced with scissors (with the GPU's size limit:
+/// triangles 1024 or more wide or 512 or more high are not drawn, counted
+/// in [`DrawStats::rejected_size`]), and intentional hiding (actor flags,
+/// fades, masks) and gameplay activation (on-screen tests against the
+/// original camera and screen) are game state.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Culling {
+    /// Viewport culling as the game does it: a view wider or farther out
+    /// than the original's shows only what the game drew for its own 4:3
+    /// screen. Off (the default), it also shows the faces the game culled
+    /// against that screen ([`Primitive::revealed`]): beside the original
+    /// screen with wider framing, everywhere when the camera is pulled back.
+    pub viewport: bool,
     /// Drop projected triangles wound against the frame's majority (the
     /// game already culled its back faces; this also drops the double-sided
     /// faces it meant to show).
     pub back_faces: bool,
-    /// Skip primitives entirely outside their drawing area (the scissor would
-    /// clip all of them: the picture is the same, the work less).
-    pub outside_frame: bool,
 }
 
 /// What the renderer did with the primitives of a draw (observation only).
@@ -131,7 +135,20 @@ pub struct DrawStats {
     /// The original GPU's size limit (original behaviour, not culling).
     pub rejected_size: u32,
     pub culled_back_faces: u32,
-    pub culled_outside_frame: u32,
+    /// Faces the game culled that this draw showed.
+    pub revealed: u32,
+}
+
+/// Where a draw shows the faces the game culled against its screen.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) enum Reveal {
+    /// Nowhere (the VRAM picture, the original framing, viewport culling).
+    #[default]
+    Hidden,
+    /// Beside the drawing area only, in the wider framing's sides.
+    Sides,
+    /// Wherever they fall (a pulled-back camera).
+    Everywhere,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -156,10 +173,13 @@ pub(crate) struct Vertex {
     color: [u8; 4],
     uv: [f32; 2],
     mode: [u32; 4],
+    /// The texel range of the polygon (with [`FLAG_CLAMP`]): u and v
+    /// minimum (bits 0-7, 8-15) and maximum (16-23, 24-31).
+    limits: u32,
 }
 
-const VERTEX_ATTRIBUTES: [wgpu::VertexAttribute; 6] = wgpu::vertex_attr_array![
-    0 => Float32x2, 1 => Float32, 2 => Float32, 3 => Unorm8x4, 4 => Float32x2, 5 => Uint32x4
+const VERTEX_ATTRIBUTES: [wgpu::VertexAttribute; 7] = wgpu::vertex_attr_array![
+    0 => Float32x2, 1 => Float32, 2 => Float32, 3 => Unorm8x4, 4 => Float32x2, 5 => Uint32x4, 6 => Uint32
 ];
 
 #[repr(C)]
@@ -181,6 +201,10 @@ pub(crate) enum Fragment {
     Rect,
     /// Sprite shadows into the shadow mask (effects.rs).
     Shadow,
+    /// An interface primitive's semi-transparent pixels marked as interface
+    /// in the auxiliary target, the colour unchanged (after an additive or
+    /// subtractive interface draw, whose blend cannot also set the class).
+    Mark,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -269,6 +293,11 @@ impl Pipelines {
             // targets keep their stored alpha.
             let keep = C { src_factor: F::Zero, dst_factor: F::One, operation: O::Add };
             let blend = match key.fragment {
+                // Weight 0 for the colour, 1 for the auxiliary target.
+                Fragment::Mark => Some(wgpu::BlendState {
+                    color: C { src_factor: F::SrcAlpha, dst_factor: F::OneMinusSrcAlpha, operation: O::Add },
+                    alpha: keep,
+                }),
                 Fragment::Semi => Some(wgpu::BlendState {
                     color: match key.blend {
                         0 => C { src_factor: F::SrcAlpha, dst_factor: F::OneMinusSrcAlpha, operation: O::Add },
@@ -285,6 +314,7 @@ impl Pipelines {
                 Fragment::Semi => ("vs_main", "fs_semi"),
                 Fragment::Rect => ("vs_rect", "fs_rect"),
                 Fragment::Shadow => ("vs_main", "fs_shadow"),
+                Fragment::Mark => ("vs_main", "fs_mark"),
             };
             let shadow = key.fragment == Fragment::Shadow;
             let picture_targets = [
@@ -392,6 +422,8 @@ pub(crate) struct Builder<'a> {
     /// Horizontal VRAM range treated as inside the drawing area beyond it
     /// (wider framing): scene primitives may spill this far.
     pub(crate) spill: u32,
+    /// Where the faces the game culled are shown.
+    pub(crate) reveal: Reveal,
     /// Moves every vertex (shadows, interpolated replays).
     pub(crate) remap: Option<Box<dyn Fn(&mut Vertex) + 'a>>,
 }
@@ -455,24 +487,13 @@ impl<'a> Builder<'a> {
             scene: scene_offset(ops),
             stats: DrawStats::default(),
             spill: 0,
+            reveal: Reveal::Hidden,
             remap: None,
         }
     }
 
     fn push_draw(&mut self, key: PipelineKey, scissor: Option<Scissor>, start: u32) {
-        let end = self.vertices.len() as u32;
-        if start == end {
-            return;
-        }
-        if let Some(Command::Draw { key: last_key, scissor: last_scissor, vertices }) = self.commands.last_mut()
-            && *last_key == key
-            && *last_scissor == scissor
-            && vertices.end == start
-        {
-            vertices.end = end;
-            return;
-        }
-        self.commands.push(Command::Draw { key, scissor, vertices: start..end });
+        self.push_range(key, scissor, start..self.vertices.len() as u32);
     }
 
     fn rect_vertices(&mut self, rect: VramRect, rgb: u32, upload: bool) {
@@ -491,6 +512,7 @@ impl<'a> Builder<'a> {
             color: color(rgb),
             uv: [0.0, 0.0],
             mode: [0, 0, 0, u32::from(upload)],
+            limits: 0,
         };
         for (x, y) in [(x0, y0), (x1, y0), (x0, y1), (x1, y0), (x1, y1), (x0, y1)] {
             self.vertices.push(vertex(x, y));
@@ -527,11 +549,11 @@ impl<'a> Builder<'a> {
 
     /// One traced primitive as triangles under its pipelines.
     pub(crate) fn primitive(&mut self, p: &Primitive) {
-        self.stats.primitives += 1;
-        if self.options.culling.outside_frame && outside_area(p, self.spill) {
-            self.stats.culled_outside_frame += 1;
+        if p.revealed && (self.reveal == Reveal::Hidden || self.options.culling.viewport) {
             return;
         }
+        self.stats.primitives += 1;
+        self.stats.revealed += u32::from(p.revealed);
         let start = self.triangles(p);
         self.commands_for(p, start);
     }
@@ -550,6 +572,9 @@ impl<'a> Builder<'a> {
         };
         let blend = p.environment.draw_mode >> 5 & 3;
         let baked = p.gouraud || (p.textured && !p.raw && p.vertices[..count].iter().any(|v| v.color & 0xFF_FFFF != 0x80_8080));
+        // Semi-transparent interface pixels stay interface (no effects on
+        // them); a full-screen one (a fade) is a screen effect.
+        let marked = p.semi && class == Class::Flat && !self.covers_screen(p);
         let mut flags = (blend << BLEND_SHIFT) | (aux_class(class) << CLASS_SHIFT);
         for (on, flag) in [
             (p.textured, FLAG_TEXTURED),
@@ -560,17 +585,35 @@ impl<'a> Builder<'a> {
             (linear && p.textured, FLAG_LINEAR),
             (p.shape == Shape::Rectangle, FLAG_RECTANGLE),
             (baked, FLAG_BAKED),
-            (p.semi && class == Class::Flat && !self.covers_screen(p), FLAG_AUX_SEMI),
+            (marked, FLAG_AUX_SEMI),
+            (class == Class::Flat, FLAG_ORIGINAL),
+            (p.shape == Shape::Line, FLAG_LINE),
         ] {
             if on {
                 flags |= flag;
             }
         }
+        // A polygon samples only its own texels (no bleeding into neighbours
+        // on a texture page at higher scales or with filtering).
+        let mut limits = 0;
+        if p.textured && matches!(p.shape, Shape::Triangle | Shape::Quad) {
+            let vertices = &p.vertices[..count];
+            let range = |values: &mut dyn Iterator<Item = i16>| {
+                values.fold((255, 0), |(lo, hi), x| (lo.min(x.clamp(0, 255) as u32), hi.max(x.clamp(0, 255) as u32)))
+            };
+            let (u0, u1) = range(&mut vertices.iter().map(|v| v.u));
+            let (v0, v1) = range(&mut vertices.iter().map(|v| v.v));
+            limits = u0 | v0 << 8 | u1 << 16 | v1 << 24;
+            flags |= FLAG_CLAMP;
+        }
         let mode = [p.environment.draw_mode, u32::from(p.clut), p.environment.texture_window, flags];
-        let snapped = fidelity.vertex_snapping || !projected;
         let vertex = |i: usize| {
             let v = &p.vertices[i];
-            let (x, y) = if snapped { (v.x as f32, v.y as f32) } else { (v.fx, v.fy) };
+            // Each vertex at the GTE's sub-pixel point when it has one, so
+            // a point shared by neighbouring faces is the same in each; the
+            // interface at the original's whole pixels.
+            let snap = fidelity.vertex_snapping || v.z <= 0.0 || class == Class::Flat;
+            let (x, y) = if snap { (v.x as f32, v.y as f32) } else { (v.fx, v.fy) };
             let mut out = Vertex {
                 position: [x + 0.5, y + 0.5],
                 depth: if projected { v.z } else { 0.0 },
@@ -578,6 +621,7 @@ impl<'a> Builder<'a> {
                 color: color(v.color),
                 uv: [f32::from(v.u), f32::from(v.v)],
                 mode,
+                limits,
             };
             if let Some(remap) = &self.remap {
                 remap(&mut out);
@@ -588,7 +632,8 @@ impl<'a> Builder<'a> {
         match p.shape {
             Shape::Triangle | Shape::Quad => {
                 for triangle in [[0, 1, 2], [1, 2, 3]].iter().take(if p.shape == Shape::Quad { 2 } else { 1 }) {
-                    if !fits(p, *triangle) {
+                    // A face the game culled never met the GPU's limit.
+                    if !p.revealed && !fits(p, *triangle) {
                         self.stats.rejected_size += 1;
                         continue;
                     }
@@ -639,26 +684,50 @@ impl<'a> Builder<'a> {
         let blend = p.environment.draw_mode >> 5 & 3;
         let [left, top, right, bottom] = p.environment.area.map(i32::from);
         let spill = if effective_class(p, self.scene).is_scene() { self.spill as i32 } else { 0 };
-        let (left, right) = (left - spill, right + spill);
-        let scissor = Some(Scissor { x: left, y: top, width: (right + 1 - left).max(0), height: (bottom + 1 - top).max(0) });
-        let depth = if !fidelity.painter_ordering && projected { DepthMode::Test } else { DepthMode::Over };
-        // Semi-transparent interface pixels (windows) keep the interface
-        // class (FLAG_AUX_SEMI); semi-transparent scene pixels (glows,
-        // water) leave the depth and class under them.
-        if !p.semi {
-            self.push_draw(PipelineKey { fragment: Fragment::Opaque, blend: 0, depth }, scissor, start);
-        } else if p.textured {
-            // Opaque texels, then semi-transparent ones, over the same vertices.
-            let end = self.vertices.len() as u32;
-            self.push_draw(PipelineKey { fragment: Fragment::OpaqueTexels, blend: 0, depth }, scissor, start);
-            self.commands.push(Command::Draw {
-                key: PipelineKey { fragment: Fragment::Semi, blend, depth },
-                scissor,
-                vertices: start..end,
-            });
+        let rect = |left: i32, right: i32| Some(Scissor { x: left, y: top, width: (right + 1 - left).max(0), height: (bottom + 1 - top).max(0) });
+        // A culled face beside the original screen shows only in the sides.
+        let scissors = if p.revealed && self.reveal == Reveal::Sides {
+            vec![rect(left - spill, left - 1), rect(right + 1, right + spill)]
         } else {
-            self.push_draw(PipelineKey { fragment: Fragment::Semi, blend, depth }, scissor, start);
+            vec![rect(left - spill, right + spill)]
+        };
+        let depth = if !fidelity.painter_ordering && projected { DepthMode::Test } else { DepthMode::Over };
+        let end = self.vertices.len() as u32;
+        // Mode 0 marks its interface pixels in its own draw; the others need a mark draw.
+        let mark = p.semi && blend != 0 && effective_class(p, self.scene) == Class::Flat && !self.covers_screen(p);
+        for scissor in scissors {
+            // Semi-transparent interface pixels (windows) keep the interface
+            // class (FLAG_AUX_SEMI); semi-transparent scene pixels (glows,
+            // water) leave the depth and class under them.
+            if !p.semi {
+                self.push_range(PipelineKey { fragment: Fragment::Opaque, blend: 0, depth }, scissor, start..end);
+            } else if p.textured {
+                // Opaque texels, then semi-transparent ones, over the same vertices.
+                self.push_range(PipelineKey { fragment: Fragment::OpaqueTexels, blend: 0, depth }, scissor, start..end);
+                self.push_range(PipelineKey { fragment: Fragment::Semi, blend, depth }, scissor, start..end);
+            } else {
+                self.push_range(PipelineKey { fragment: Fragment::Semi, blend, depth }, scissor, start..end);
+            }
+            if mark {
+                self.push_range(PipelineKey { fragment: Fragment::Mark, blend: 0, depth }, scissor, start..end);
+            }
         }
+    }
+
+    /// A draw of `vertices`, merged into the last when it continues it.
+    fn push_range(&mut self, key: PipelineKey, scissor: Option<Scissor>, vertices: std::ops::Range<u32>) {
+        if vertices.is_empty() {
+            return;
+        }
+        if let Some(Command::Draw { key: last_key, scissor: last_scissor, vertices: last }) = self.commands.last_mut()
+            && *last_key == key
+            && *last_scissor == scissor
+            && last.end == vertices.start
+        {
+            last.end = vertices.end;
+            return;
+        }
+        self.commands.push(Command::Draw { key, scissor, vertices });
     }
 
     /// A full-screen translucent primitive (a fade) is a screen effect, not interface.
@@ -683,18 +752,6 @@ impl<'a> Builder<'a> {
             TraceOp::VBlank => {}
         }
     }
-}
-
-/// Whether a primitive lies entirely outside its drawing area (widened by
-/// `spill` on the sides for wider framing).
-fn outside_area(p: &Primitive, spill: u32) -> bool {
-    let [left, top, right, bottom] = p.environment.area.map(i32::from);
-    let spill = spill as i32;
-    let vertices = &p.vertices[..p.vertex_count()];
-    let (min_x, max_x) = vertices.iter().fold((i32::MAX, i32::MIN), |(a, b), v| (a.min(v.x), b.max(v.x)));
-    let (min_y, max_y) = vertices.iter().fold((i32::MAX, i32::MIN), |(a, b), v| (a.min(v.y), b.max(v.y)));
-    // Rectangles and lines reach one pixel past their last vertex.
-    max_x + 1 < left - spill || min_x > right + spill || max_y + 1 < top || min_y > bottom
 }
 
 /// Whether a triangle is inside the GPU's size limits (1023x511).
@@ -1110,6 +1167,12 @@ impl Ps1Renderer {
     }
 
     fn log(&mut self, ops: &[TraceOp]) {
+        // A replay draws from the native VRAM copy: the logs keep where VRAM
+        // changed, not the pixels.
+        let logged = |op: &TraceOp| match op {
+            TraceOp::Write { rect, upload, .. } => TraceOp::Write { rect: *rect, pixels: Vec::new(), upload: *upload },
+            _ => op.clone(),
+        };
         for op in ops {
             let cleared = match op {
                 TraceOp::Fill { rect, .. } => Some(*rect),
@@ -1129,11 +1192,11 @@ impl Ps1Renderer {
                     overlap(&l.rect, &rect) * 10 >= size.max(area) * 9
                 }) {
                     log.previous = std::mem::take(&mut log.ops);
-                    log.ops.push(op.clone());
+                    log.ops.push(logged(op));
                     log.rect = rect;
                     log.frames += 1;
                 } else if self.logs.iter().all(|l| overlap(&l.rect, &rect) == 0) {
-                    self.logs.push(FrameLog { rect, ops: vec![op.clone()], previous: Vec::new(), frames: 1 });
+                    self.logs.push(FrameLog { rect, ops: vec![logged(op)], previous: Vec::new(), frames: 1 });
                     if self.logs.len() > 6 {
                         self.logs.remove(0);
                     }
@@ -1153,7 +1216,7 @@ impl Ps1Renderer {
                     log.ops.clear();
                     log.previous.clear();
                 }
-                log.ops.push(op.clone());
+                log.ops.push(logged(op));
             }
         }
     }

@@ -3,7 +3,9 @@
 //! runtime shell). From the same snapshot on field 12, the same frames end at
 //! the same RAM hash whether nothing renders, the renderer draws every frame
 //! under switching profiles (HD-2D with wider framing and interpolation,
-//! PS1, Custom), or a spectator view attaches, changes and detaches midway.
+//! wider framing with the camera pulled back, which has the port record the
+//! scenery the game culls, PS1, Custom), or a spectator view attaches,
+//! changes and detaches midway.
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test render
 
@@ -44,6 +46,7 @@ fn run(session: &mut Session<NativeModule>, gpu: &Gpu, mut view: impl FnMut(u64)
                 if view.take_restart() || !device.trace_enabled() {
                     device.set_trace(true);
                 }
+                device.set_reveals(view.reveal_reach());
                 view.push(device.take_trace());
                 let display = device.display();
                 let scene = session.scene();
@@ -77,6 +80,7 @@ fn rendering_skipped_offscreen_or_as_a_spectator_leaves_the_game_unchanged() {
 
     let profiles = [
         Graphics { profile: GraphicsProfile::Hd2d, widescreen: true, interpolation: true, ..Default::default() },
+        Graphics { widescreen: true, zoom_out: 400, ..Default::default() },
         Graphics { profile: GraphicsProfile::Ps1, ..Default::default() },
         Graphics {
             profile: GraphicsProfile::Custom,

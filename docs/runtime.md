@@ -344,49 +344,96 @@ snapshots are its. The renderer only draws again what it drew:
   outside the port's data and stack and every snapshot region, and it is
   written whether or not anyone presents: the port's memory layout does not
   change, and with it neither the stack addresses the game keeps in RAM (a
-  static ring shifted the shadow stack and changed the slice hashes). libgpu
-  hands its position to the GPU device before each transfer
-  (`xem.gpu_projections`); 65 536 entries hold a battle frame.
+  static ring shifted the shadow stack and changed the slice hashes). 65 536
+  entries hold a battle frame. Beside it, by the same rules: a ring of every
+  screen-point word a port routine stores (swc2 of SXY0-SXYP, with the
+  projection each GTE screen-point register holds, which the GTE tracks; the
+  handwritten renderers' stores, with their face's projections) at
+  0x70300000, and a ring of culled faces at 0x70500000 with a capture area at
+  0x70A00000. While the host asks (the culled-face ring's `wanted` word: how
+  far beyond the original screen a wider or pulled-back view reaches), the
+  renderers' screen-bounds tests record each face they cull (front-facing,
+  projected without overflow, within that reach) as the GP0 words it would
+  have had and the ordering-table entry it would have been linked at, and
+  `present.c` draws again, for the record, the field scenery pieces the
+  field's bounding test culls (`field_instance_is_off_screen`, when the same
+  test with margins widened by the reach keeps them) and the models a box
+  test leaves undrawn: with the GTE as their drawing would have used it and
+  the renderers' links captured instead of made; their packets, the
+  scratchpad words the renderers spill to, the renderers' state, the GTE and
+  the ring's bookkeeping are put back, so the game sees nothing of it. Each
+  sprite's floor point (its x and z at `ground` through the sprite view) and,
+  in the field, the depth of the camera's target are ring entries of their
+  own. libgpu hands the three rings' headers to the GPU device before each
+  transfer (`xem.gpu_projections`).
 - **Draw trace.** `xem_gpu::Gpu::set_trace(true)` records every primitive with
-  its environment (draw mode, texture window, drawing area, mask), each
-  vertex's GTE projection matched by its packet SXY word (depth, sub-pixel
-  position, class: model, sprite, world or flat interface), the DMA node it
-  came from, fills, copies and VRAM writes: CPU transfers as uploads, and drawn
-  pixels a later command samples as a texture before that command, so the
-  renderer's 16-bit VRAM copy equals the device's at every command. The trace
-  is not part of `Gpu::save`; a snapshot load restarts it from all of VRAM.
+  its environment (draw mode, texture window, drawing area, mask, drawing
+  offset), each vertex's GTE projection (depth, sub-pixel position, class:
+  model, sprite, world or flat interface), the DMA node it came from, fills,
+  copies and VRAM writes: CPU transfers as uploads, and drawn pixels a later
+  command samples as a texture before that command, so the renderer's 16-bit
+  VRAM copy equals the device's at every command. A vertex takes the
+  projection stored at its packet word's address while the word still holds
+  it, and only that: matching by screen value tied interface points (window
+  corners, glyphs) to unrelated 3D points at the same pixel in busy battles.
+  Culled faces are traced as `revealed` primitives when the DMA walk reaches
+  their ordering-table entry, never drawn into VRAM; sprite parts carry their
+  sprite's floor point, and a take carries the field camera's focus depth.
+  The trace is not part of `Gpu::save`; a snapshot load restarts it from all
+  of VRAM. In the scenes measured every 3D point matches (Lahan: 41 640
+  matched, the 420 others 2D).
 - **PS1 renderer** (`xem_render::ps1::Ps1Renderer`, `draw.wgsl`). Draws the
   trace into a scaled picture of all of VRAM (colour, and an auxiliary target
   with each pixel's GTE depth, class and baked-shading flag), so double
   buffering, the saved-screen slot and copies between screen regions work as
   on the console; textures are decoded in the shader from the native VRAM copy
   (4/8-bit CLUT, 15-bit, texture window, texel 0000h transparency, the STP bit
-  selecting semi-transparency, modulation, raw textures). The four blend modes
-  use one blend state for both targets (WebGL2 has no per-target blending: the
-  weight goes in the source alpha, the auxiliary output keeps its pixel with
-  weight 0), affine texture coordinates interpolate as (uv·w, w) (GLSL ES 3.0
-  has no `noperspective`), and the GPU's 1023x511 size limit is kept. At
-  scale 1 with every original limit it matches the software rasterizer but
-  for edge pixels of triangles and lines (`tests/ps1.rs`: 74 of 76 800 pixels
-  of its test scene).
+  selecting semi-transparency, modulation, raw textures). Each vertex sits at
+  its own sub-pixel point when it has one (a point shared by neighbouring
+  faces lands in the same place in each), and a polygon samples only its own
+  texels (no bleeding from the page at higher scales or when filtered). The
+  interface (flat primitives) is drawn as the original draws it whatever the
+  profile: whole native pixels at any scale, colour and texture coordinates
+  taken at each native pixel's sample point, 15-bit colour and the
+  original's dithering, and its translucent pixels stay interface in the
+  auxiliary target (an extra marking draw after additive or subtractive
+  ones). The four blend modes use one blend state for both targets (WebGL2
+  has no per-target blending: the weight goes in the source alpha, the
+  auxiliary output keeps its pixel with weight 0), affine texture
+  coordinates interpolate as (uv·w, w) (GLSL ES 3.0 has no `noperspective`),
+  and the GPU's 1023x511 size limit is kept. At scale 1 with every original
+  limit it matches the software rasterizer but for edge pixels of triangles
+  and lines (`tests/ps1.rs`); at three times the original under Modern the
+  interface matches it on 99.3% of the scaled pixels (diagonal edges and
+  5-bit blends aside).
 - **Frame** (`FrameRenderer`). The displayed area of the picture, or, for
-  wider framing and interpolation, a replay of the primitives drawn into the
-  displayed buffer since its last clear (`Ps1Renderer::frame_log`): wider
-  framing widens the target by 53 VRAM pixels a side (16:9) and lets scene
-  primitives (not interface ones) draw past the drawing area; interpolation
-  moves each primitive of the newest frame from its match in the frame before
-  (same shape, page, CLUT and texture coordinates, or colours; the nearest,
-  within 48 pixels) by the time since that frame arrived, one game frame late.
+  wider framing, a pulled-back camera and interpolation, a replay of the
+  primitives drawn into the displayed buffer since its last clear
+  (`Ps1Renderer::frame_log`). Wider framing widens the target to the output's
+  aspect ratio (39 VRAM pixels a side for 16:9, 101 for 21:9, at most 160)
+  and lets scene primitives (not interface ones) draw past the drawing area,
+  the culled faces filling the sides. Pulling the camera back moves every
+  projected vertex where the game's camera would see it from further back
+  along its own axis (z / (z + d) towards the projection centre, depth
+  + d, d a multiple of the camera target's depth), the culled faces showing
+  wherever they fall and the interface keeping its place and size.
+  Interpolation moves each scene primitive of the newest frame from its
+  match in the frame before (same shape, page, CLUT and texture coordinates,
+  or colours; the nearest, within 48 pixels) by the time since that frame
+  arrived, one game frame late; the interface moves as the game moves it.
 - **Effects** (`EffectsRenderer`, `effects.wgsl`). See below.
 - **GameView** (`view.rs`) is what hosts use: it resolves the graphics
-  settings for a host class, accumulates the trace between presentations and
-  presents. 24-bit movie frames are not traced pictures: hosts show the
-  device's display for them, unscaled in aspect.
+  settings for a host class, accumulates the trace between presentations,
+  tells the host how far beyond the screen the trace should record culled
+  faces (`reveal_reach`, passed to `Gpu::set_reveals`), and presents. 24-bit
+  movie frames are not traced pictures: hosts show the device's display for
+  them, unscaled in aspect.
 
-The trace, the projections and every renderer object observe only: the native
-test `xem-headless/tests/render.rs` runs the same 240 frames from a field 12
-snapshot with nothing drawn, with every frame drawn under switching profiles
-(HD-2D with wider framing and interpolation, PS1, Custom, Modern), and with a
+The trace, the projections, the recording and every renderer object observe
+only: the native test `xem-headless/tests/render.rs` runs the same 240 frames
+from a field 12 snapshot with nothing drawn, with every frame drawn under
+switching profiles (HD-2D with wider framing and interpolation, wider framing
+with the camera pulled back four times, PS1, Custom, Modern), and with a
 second view attaching, changing and detaching, and checks one RAM hash; the
 browser test `web/tests/render.test.mjs` does the same per profile on WebGPU
 and WebGL2, and the slice logs still replay to their hashes.
@@ -402,9 +449,10 @@ and WebGL2, and the slice logs still replay to their hashes.
 | HD-2D effect levels | lighting, shadows, ambient occlusion, fog, light shafts, bloom, colour grading, depth of field (0-100), focus (-100..100); HD-2D's and Custom's are separate |
 | quality | Auto (desktop High, mobile and browser Medium, headset Low), Low, Medium, High, Ultra: sample counts only |
 | internal scale | Auto (the output area the picture fills, at most 8 on desktops and 4 elsewhere), 1-8; PS1 and native resolution draw at 1 |
-| presentation | every display refresh, or game frames only; interpolation; wider framing |
+| presentation | every display refresh, or game frames only; interpolation; wider framing (to the output's aspect ratio) |
+| zoom out | the field camera pulled back along its axis, 1x (default) to 5x in quarter steps; the mouse wheel over the game moves it (down out, up in); the world map takes a tenth of it, other modes none; independent of the aspect ratio |
 | filtering | world, sprites, interface: nearest or linear, each |
-| culling | back faces, primitives outside the drawing area (both off) |
+| culling | viewport culling (the game's own against its 4:3 screen: off, wider and pulled-back views show the scenery the game culled), back faces (both off) |
 | headset screen | distance, width, depth of field in a headset (off) |
 
 Modern draws at high resolution, perspective-correct and sub-pixel, in full
@@ -413,12 +461,16 @@ resolution. No tier or device replaces the chosen profile; a tier changes
 sample counts. Settings apply on the next presented frame; a new internal
 scale restarts the trace from all of VRAM.
 
-Culling here is renderer culling of submitted primitives (counted in
-`DrawStats`). It is distinct from the game's own culling (its model renderers
-drop back faces, off-screen faces and OTZ 0 before anything reaches the GPU),
-from clipping (the drawing area, and the GPU size limit, always kept), and
-from intentional hiding and gameplay activation (game state, decided against
-the original camera and screen whatever is drawn).
+Viewport culling is the game's own: its model renderers drop faces outside
+their screen and the field drops whole scenery pieces before anything reaches
+the GPU. With it off (the default) a wider or pulled-back view shows what
+the port recorded of that (above); with it on, only what the game drew.
+Back-face culling drops submitted triangles wound against the frame's
+majority (counted in `DrawStats`). Both are distinct from clipping (the
+drawing area, and the GPU size limit, always kept) and from intentional
+hiding and gameplay activation (game state, decided against the original
+camera and screen whatever is drawn: an actor just outside the original
+screen stops moving even when a wider view shows it).
 
 ### HD-2D effects
 
@@ -426,33 +478,68 @@ The effects use only the game's own pictures and the frame's per-pixel GTE
 depth and class; no art is added, redrawn or replaced, and sprites keep their
 pixels and animation (no smoothing unless a filter is chosen). Interface
 pixels (primitives without a GTE projection, or projected with another screen
-offset than the scene's, such as the field compass) keep their colours
-through every pass; full-screen translucent fades count as scene. In order:
-the frame's average scene colour; lighting from depth-derived normals (key
-light and ambient, gentler over baked Gouraud or modulated shading, sprites
-facing the camera); ambient occlusion from nearer neighbours; sprite shadows
-(each sprite the game drew, by its owner address, casts its silhouette onto
-the ground towards the camera plus a soft contact ellipse at its feet,
-received only at or behind its feet); depth fog towards a tint at the scene's
-own brightness; bloom (13-tap down, tent up); light shafts from bright
-depthless or distant pixels; depth of field around the sprite nearest the
-screen centre (relative depth band, interface pixels never blurred into the
-scene); grading (exposure, saturation, warmth, contrast, vignette). Scene
-tuning (light direction and colour, fog tint and range, shaft source,
-thresholds, grading, shadow lean) is presentation metadata in
+offset than the scene's, such as the field compass, translucent ones
+included) keep their colours through every pass; full-screen translucent
+fades count as scene. The look aims at Square Enix's HD-2D (Final Fantasy
+Resonance's field and battle pictures: a sharp playfield with soft
+foreground and background, glowing lamps that light what is near them, airy
+distance haze, warm highlights and cool shadows). In order: the frame's
+average scene colour, eased over frames; lighting from depth-derived normals
+taken a native pixel apart (key light and ambient, gentler over baked
+Gouraud or modulated shading, sprites facing the camera); ambient occlusion
+from nearer neighbours; sprite shadows (each sprite the game drew, by its
+owner address, lays its silhouette on the floor and a soft contact ellipse
+under it, both at the floor point the game keeps for it, so a jumping
+character's shadow stays on the ground, smaller and fainter the higher it
+is; a surface takes them in full from a little in front of that point
+backwards, fading out nearer, with floors taking more than upright
+surfaces, so nothing flickers at the caster's depth); aerial perspective
+(distance lightens and desaturates towards a haze at the scene's own
+brightness); bloom (13-tap down, tent up; coloured lights more than white
+walls, characters barely), which also lights the surfaces around bright
+sources; light shafts from bright depthless or distant pixels; depth of
+field keeping the playfield sharp (the subjects, sprites and models of a
+character's size, around the one nearest the screen's middle, else the
+middle depths there; blur growing beyond, faster towards the camera,
+weighted towards bright samples; eased between frames); grading (exposure
+towards a bright middle grey within limits, cool-shadow and warm-highlight
+toning, saturation, a highlight shoulder, contrast, vignette). Passes whose
+effect is off are not drawn. Scene tuning (light direction and colour, fog
+tint and range, shaft source, thresholds, grading, shadow lean, length and
+strengths) is presentation metadata in
 `crates/xem-render/src/ps1/scenes.json`, keyed by `Session::scene()`
 ("field:22", "battle", "worldmap", ...).
 
 `cargo run --release -p xem-headless --example validation` writes
-`build/validation/` (local only: pictures of the game): a sheet of nine scenes
+`build/validation/` (local only: pictures of the game): a sheet of ten scenes
 (Lahan's exterior, an interior with a dialogue window and portrait, a room
 with characters, the forest, the world map, an on-foot and a Gear battle
-reached through the original's debug battle selector, the opening text, a
-movie frame) under Modern, HD-2D, PS1 and wider framing, and a report: the RAM
-hash after each look (equal), the pixels each look changes, and the interface
-pixels HD-2D changed (0 in every scene). `--example render -- --map N
+reached through the original's debug battle selector, the field menu, the
+opening text, a movie frame) under Modern, HD-2D, PS1, wider framing (16:9)
+and wider framing with the camera pulled back to 2.5x, and a report: the RAM
+hash after each look (equal), the pixels each look changes, the interface
+pixels HD-2D changed (0 in every scene), and the interface pixels that
+differ from the console's own picture scaled up (with an image of them): 0
+in the dialogue and menu scenes under every look; in battles and on the
+world map only where translucent interface (the Gear HUD, the minimap) lies
+over the scene drawn at the finer scale. `--example render -- --map N
 --profile hd2d --compare` draws one scene beside Modern;
 `XEM_DEBUG_VIEW=shadows|depth|class` shows the effects' inputs.
+
+`--example motion` checks frames in motion and their cost: from a field, the
+world map or a battle (optionally won, for the result screens), holding or
+tapping buttons, each game frame presented one or more times through
+`GameView`, it writes a contact sheet (beside the console's picture with
+`--compare`), an animated PNG, a probe of the primitives at a point, and the
+mean, 95th-percentile and worst cost of the game frame, the trace, the
+presentation's CPU work and the GPU's. Measured on Lahan walking (1080p
+output at three times the original, this machine's CPU and lavapipe, means
+per game frame): the game alone 2.35 ms; traced, under Modern 2.57 ms with
+0.5 ms of presentation CPU; wider framing 2.96 and 0.66 ms; pulled back three
+times 3.9 and 1.2 ms (the recorded scenery); HD-2D adds 0.4 ms of CPU. GPU
+times there are a software rasterizer's (Modern 3.8 ms, HD-2D 35 ms at
+1080p), useful only relative to each other: lighting, ambient occlusion,
+depth of field and light shafts are the costly effects.
 
 ### Headsets
 

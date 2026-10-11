@@ -264,14 +264,16 @@ impl Game {
     }
 
     /// What the game drew since the last call (its GPU's draw trace, which
-    /// this turns on; `restart` starts it again from the whole VRAM), the
-    /// display and the scene, for the renderer. Presentation only.
-    pub fn take_frame(&mut self, restart: bool) -> (xem_render::xem_gpu::Trace, xem_render::xem_gpu::DisplayInfo, String) {
+    /// this turns on; `restart` starts it again from the whole VRAM, and
+    /// `reveals` is how far beyond its screen to record the faces the game
+    /// culls), the display and the scene, for the renderer. Presentation only.
+    pub fn take_frame(&mut self, restart: bool, reveals: Option<[u16; 2]>) -> (xem_render::xem_gpu::Trace, xem_render::xem_gpu::DisplayInfo, String) {
         let scene = self.session.scene();
         let device = self.session.runtime.services().gpu.device_mut();
         if restart || !device.trace_enabled() {
             device.set_trace(true);
         }
+        device.set_reveals(reveals);
         (device.take_trace(), device.display(), scene)
     }
 

@@ -5,12 +5,103 @@
  * FIFO, SZ3, OTZ, SX2, SY2 and IR0 saturate from the shifted value. MAC0
  * results are checked against 32 bits (bits 16, 15). */
 #include "xem/gte.h"
+#include "xem/memory.h"
 
 XemGte xem_gte;
 
 #ifndef __psx__
 XemProjectionRing xem_gte_ring_storage;
+XemStoreRing xem_present_store_storage;
+XemRevealRing xem_present_reveal_storage;
+XemCaptureArea xem_present_capture_storage;
 #endif
+
+void xem_present_store(unsigned int address, unsigned int value, unsigned int source) {
+    XemStoreRing *ring = xem_present_stores;
+    XemSxyStore *s = &ring->entries[ring->count % XEM_PRESENT_STORES];
+
+    /* Only RAM reaches the GPU's DMA (not the scratchpad, the port's stack
+     * or its own data, whose low 24 bits would alias RAM). */
+    if ((address & 0x1FE00000u) != 0) {
+        return;
+    }
+    s->address = address & 0x00FFFFFF;
+    s->value = value;
+    s->projections = xem_gte_ring->count;
+    s->source = source;
+    ring->count++;
+}
+
+void xem_present_store_at(const void *p, unsigned int value, unsigned int source) {
+    xem_present_store((unsigned int)(XemUintptr)p, value, source);
+}
+
+unsigned int xem_present_sxy_source(int reg) {
+    return reg >= 12 && reg <= 14 ? xem_gte_ring->fifo[reg - 12] : reg == 15 ? xem_gte_ring->fifo[2] : 0;
+}
+
+int xem_present_face_visible(unsigned int projections, unsigned int vertices, int width, int height) {
+    XemProjectionRing *ring = xem_gte_ring;
+    XemProjection *p;
+    long long x[4], y[4], cross;
+    int i, near_x = 0, near_y = 0, sx, sy;
+    int reach_x = (int)(xem_present_reveals->wanted & 0xFFFF), reach_y = (int)(xem_present_reveals->wanted >> 16);
+
+    if (vertices < 3 || vertices > 4 || ring->count - (projections - vertices) > XEM_GTE_PROJECTIONS) {
+        return 0;
+    }
+    for (i = 0; i < (int)vertices; i++) {
+        p = &ring->entries[(projections - vertices + (unsigned int)i) % XEM_GTE_PROJECTIONS];
+        /* The divide overflows (a point at or behind the near plane) when H >= SZ3 * 2. */
+        if ((p->h & 0xFFFF) >= (p->sz & 0xFFFF) * 2) {
+            return 0;
+        }
+        x[i] = (long long)p->x >> 8;
+        y[i] = (long long)p->y >> 8;
+        sx = p->x >> 16;
+        sy = p->y >> 16;
+        if (sx >= -reach_x && sx < width + reach_x) {
+            near_x = 1;
+        }
+        if (sy >= -reach_y && sy < height + reach_y) {
+            near_y = 1;
+        }
+    }
+    cross = x[0] * y[1] + x[1] * y[2] + x[2] * y[0] - x[0] * y[2] - x[1] * y[0] - x[2] * y[1];
+    return cross > 0 && near_x && near_y;
+}
+
+void xem_present_reveal(unsigned int entry, unsigned int vertices, unsigned int projections, const unsigned int *words,
+                        unsigned int count) {
+    XemRevealRing *ring = xem_present_reveals;
+    XemReveal *r = &ring->entries[ring->count % XEM_PRESENT_REVEALS];
+    unsigned int i;
+
+    if (count > 12) {
+        return;
+    }
+    r->entry = entry & 0x00FFFFFF;
+    r->shape = count | vertices << 8;
+    r->projections = projections;
+    for (i = 0; i < count; i++) {
+        r->words[i] = words[i];
+    }
+    ring->count++;
+}
+
+void xem_present_capture_link(unsigned int entry, unsigned int slot, unsigned int tag) {
+    XemCaptureArea *area = xem_present_capture;
+    XemCapture *c;
+
+    if (area->count >= XEM_PRESENT_CAPTURES) {
+        return;
+    }
+    c = &area->entries[area->count++];
+    c->entry = entry;
+    c->slot = slot;
+    c->tag = tag;
+    c->projections = xem_gte_ring->count;
+}
 
 typedef long long gte_i64;
 
@@ -301,6 +392,9 @@ static void record_projection(gte_i64 x, gte_i64 y) {
     p->offset = ((unsigned int)((int)C[OFX] >> 16) & 0xFFFF) | (unsigned int)((int)C[OFY] >> 16) << 16;
     p->h = C[H] & 0xFFFF;
     p->owner = ring->owner;
+    ring->fifo[0] = ring->fifo[1];
+    ring->fifo[1] = ring->fifo[2];
+    ring->fifo[2] = ring->count + 1;
     ring->count++;
 }
 
@@ -438,6 +532,9 @@ void xem_gte_reset(void) {
         C[i] = 0;
     }
     D[LZCR] = 32;
+    for (i = 0; i < 3; i++) {
+        xem_gte_ring->fifo[i] = 0;
+    }
 }
 
 void xem_gte_write_data(int reg, unsigned int value) {
@@ -464,6 +561,15 @@ void xem_gte_write_data(int reg, unsigned int value) {
         D[SXY0] = D[SXY1];
         D[SXY1] = D[SXY2];
         D[SXY2] = value;
+        xem_gte_ring->fifo[0] = xem_gte_ring->fifo[1];
+        xem_gte_ring->fifo[1] = xem_gte_ring->fifo[2];
+        xem_gte_ring->fifo[2] = 0;
+        break;
+    case SXY0:
+    case SXY1:
+    case SXY2:
+        D[reg] = value;
+        xem_gte_ring->fifo[reg - SXY0] = 0;
         break;
     case IRGB:
         D[IR1] = (value & 0x1F) << 7;

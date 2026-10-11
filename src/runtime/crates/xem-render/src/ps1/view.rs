@@ -4,7 +4,7 @@
 //! settings. The host hands over traces and the display; nothing here
 //! reaches the game.
 
-use super::{DisplayArea, DrawOptions, Effects, EffectsRenderer, Fidelity, Filtering, FrameRenderer, Framing, Lighting, Ps1Renderer, Quality};
+use super::{DisplayArea, DrawOptions, Effects, EffectsRenderer, Fidelity, Filtering, FrameRenderer, Framing, Lighting, Ps1Renderer, Quality, central_depth};
 use xem_gpu::{DisplayInfo, Trace, TraceOp};
 use xem_settings::{Filter, Graphics, QualityTier};
 
@@ -29,11 +29,32 @@ pub struct ViewConfig {
     /// Wider framing: VRAM pixels added on each side.
     pub side: u32,
     pub interpolation: bool,
+    /// How far the field camera is pulled back (1 the original, up to 5):
+    /// the subject the camera looks at appears this many times smaller.
+    /// The world map takes a tenth of the effect; other modes none.
+    pub zoom: f32,
 }
 
-/// Wider framing's sides for a 16:9 frame from the original's 320-pixel
-/// screen (4:3 at 240 lines): 320 * (16/9) / (4/3) = 426.7.
-pub const WIDE_SIDE: u32 = 53;
+/// The widest wider framing: VRAM pixels on each side.
+pub const MAX_WIDE_SIDE: u32 = 160;
+
+/// Wider framing's sides for an output of `width` x `height` pixels: the
+/// original's 320x224 picture widened at the same height to the output's
+/// aspect ratio (39 for 16:9, 101 for 21:9), at most [`MAX_WIDE_SIDE`].
+pub fn wide_side((width, height): (u32, u32)) -> u32 {
+    let wide = 224.0 * width as f32 / height.max(1) as f32;
+    (((wide - 320.0) / 2.0).round().max(0.0) as u32).min(MAX_WIDE_SIDE)
+}
+
+/// The share of the field camera's pull-back a scene takes ("field:12",
+/// "worldmap", ...): the field all of it, the world map a tenth.
+pub fn scene_zoom(zoom: f32, scene: &str) -> f32 {
+    match scene.split(':').next() {
+        Some("field") => zoom,
+        Some("worldmap") => 1.0 + (zoom - 1.0) / 10.0,
+        _ => 1.0,
+    }
+}
 
 impl ViewConfig {
     /// `graphics` for `host`, drawing for an output area of `output` pixels
@@ -57,9 +78,14 @@ impl ViewConfig {
                 sprites_linear: linear(graphics.filtering.sprites),
                 interface_linear: linear(graphics.filtering.interface),
             },
-            culling: super::Culling { back_faces: graphics.culling.back_faces, outside_frame: graphics.culling.outside_frame },
+            culling: super::Culling { viewport: graphics.culling.viewport, back_faces: graphics.culling.back_faces },
         };
-        let side = if graphics.widescreen { WIDE_SIDE } else { 0 };
+        // A headset's virtual screen takes a 16:9 shape when widened.
+        let side = match (graphics.widescreen, host) {
+            (false, _) => 0,
+            (true, HostClass::Headset) => wide_side((16, 9)),
+            (true, _) => wide_side(output),
+        };
         // The picture (about 320x224, wider with wider framing) fitted into
         // the output: its height there, in original lines.
         let fitted = output.1.min(output.0 * 224 / (320 + 2 * side));
@@ -104,6 +130,7 @@ impl ViewConfig {
             quality,
             side,
             interpolation: graphics.interpolation,
+            zoom: f32::from(graphics.zoom_out.clamp(100, xem_settings::MAX_ZOOM_OUT)) / 100.0,
         }
     }
 }
@@ -136,6 +163,11 @@ pub struct GameView {
     /// (seconds, the host's clock), for interpolation.
     arrived: f64,
     interval: f64,
+    /// The scene last presented, the depth the field camera looks at as
+    /// the port recorded it, and the depth the camera is pulled back from.
+    scene: String,
+    recorded_focus: Option<f32>,
+    focus: Option<f32>,
 }
 
 impl GameView {
@@ -152,6 +184,9 @@ impl GameView {
             presented_effects: None,
             arrived: 0.0,
             interval: 1.0 / 30.0,
+            scene: String::new(),
+            recorded_focus: None,
+            focus: None,
         }
     }
 
@@ -181,12 +216,40 @@ impl GameView {
         std::mem::take(&mut self.restart)
     }
 
+    /// How far beyond its screen the device's trace should record the faces
+    /// the game culls against it (`set_reveals`; pixels, x and y): the
+    /// wider framing's sides, or everywhere when the camera is pulled back
+    /// in the scene last presented; none with viewport culling.
+    pub fn reveal_reach(&self) -> Option<[u16; 2]> {
+        let config = self.config?;
+        let zoom = scene_zoom(config.zoom, &self.scene);
+        if config.draw.culling.viewport {
+            None
+        } else if zoom > 1.0 {
+            // Pulled back k times, what lies at the camera's target depth
+            // within k frames of the middle shows, and nearer things from
+            // farther out still: twice that, enough down to half the depth.
+            let width = 320.0 + 2.0 * config.side as f32;
+            let x = (2.0 * (zoom - 1.0) * width + config.side as f32 + 16.0).min(2048.0);
+            let y = (2.0 * (zoom - 1.0) * 240.0 + 16.0).min(2048.0);
+            Some([x as u16, y as u16])
+        } else if config.side > 0 {
+            // The sides, and a little more for faces leaning into them.
+            Some([config.side as u16 + 16, 16])
+        } else {
+            None
+        }
+    }
+
     /// Adds what the game drew since the last push.
     pub fn push(&mut self, trace: Trace) {
         if let Some(TraceOp::Write { rect, upload: true, .. }) = trace.ops.first()
             && u32::from(rect.width) == super::VRAM_WIDTH
         {
             self.pending.clear();
+        }
+        if let Some(focus) = trace.focus {
+            self.recorded_focus = Some(f32::from(focus));
         }
         self.pending.extend(trace.ops);
         if self.pending.len() > PENDING_LIMIT {
@@ -202,25 +265,32 @@ impl GameView {
     /// device's own picture instead; see [`GameView::shows`]).
     pub fn present(&mut self, encoder: &mut wgpu::CommandEncoder, display: &DisplayInfo, scene: &str, now: f64) -> Option<Presented<'_>> {
         let config = self.config?;
-        let trace = Trace { ops: std::mem::take(&mut self.pending) };
+        let trace = Trace { ops: std::mem::take(&mut self.pending), focus: None };
         self.renderer.draw(encoder, &trace);
         if !Self::shows(display) || self.renderer.needs_full_vram() {
             return None;
         }
         let area = DisplayArea { x: display.x.into(), y: display.y.into(), width: display.width, height: display.height };
         let new_frame = self.frame.track(&self.renderer, area);
+        if scene != self.scene {
+            self.scene = scene.to_string();
+            self.recorded_focus = None;
+            self.focus = None;
+        }
         if new_frame {
             // Game frames come every 1-4 vertical blanks; a long gap (a
             // pause, a load) is not an interval to interpolate over.
             self.interval = (now - self.arrived).clamp(1.0 / 60.0, 4.0 / 60.0);
             self.arrived = now;
+            self.update_focus(area);
         }
         let alpha = ((now - self.arrived) / self.interval).clamp(0.0, 1.0) as f32;
-        let framing = Framing { side: config.side, interpolate: config.interpolation.then_some(alpha) };
+        let zoom = scene_zoom(config.zoom, scene);
+        let pull_back = if zoom > 1.0 { self.focus.map_or(0.0, |focus| (zoom - 1.0) * focus) } else { 0.0 };
+        let framing = Framing { side: config.side, interpolate: config.interpolation.then_some(alpha), pull_back };
         self.frame.prepare(&self.device, &self.queue, encoder, &mut self.renderer, area, framing);
         self.presented_effects = Some(config.effects.any());
         if config.effects.any() {
-            let ops = self.frame.primitives().to_vec();
             let lighting = Lighting::for_scene(scene);
             let view = self.effects.render(
                 &self.device,
@@ -228,7 +298,7 @@ impl GameView {
                 encoder,
                 &mut self.renderer,
                 &self.frame,
-                &ops,
+                self.frame.primitives(),
                 &config.effects,
                 config.quality,
                 &lighting,
@@ -236,6 +306,21 @@ impl GameView {
             return Some(Presented { view, size: self.frame.size(), new_frame });
         }
         Some(Presented { view: self.frame.color_view(), size: self.frame.size(), new_frame })
+    }
+
+    /// The depth a pulled-back camera keeps its zoom at: the field camera's
+    /// target where the port records it, else the depth in the middle of
+    /// the screen, eased between frames (and taken at once after a cut).
+    fn update_focus(&mut self, area: DisplayArea) {
+        if let Some(recorded) = self.recorded_focus.filter(|f| *f > 0.0) {
+            self.focus = Some(recorded);
+            return;
+        }
+        let Some(measured) = central_depth(self.frame.newest(), area) else { return };
+        self.focus = Some(match self.focus {
+            Some(focus) if (measured / focus - 1.0).abs() < 0.5 => focus + (measured - focus) * 0.1,
+            _ => measured,
+        });
     }
 
     /// Whether this view draws `display` (15-bit and on); 24-bit movie

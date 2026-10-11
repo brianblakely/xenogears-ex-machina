@@ -813,3 +813,62 @@ fn random_triangles_cover_by_the_rule_and_shared_edges_do_not_overlap() {
         }
     }
 }
+
+#[test]
+fn traced_points_take_the_projection_stored_at_their_address_and_culled_faces_their_entry() {
+    use xem_gpu::{Projection, Reveal, SxyStore, TraceOp};
+    let mut ram = Ram::new();
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    // Projections 0 and 1 round to the same screen point at different
+    // sub-pixel positions; 2 and 3 are the other corners.
+    let point = |x: f32, y: f32| Projection {
+        sxy: xy(x.floor() as i32, y.floor() as i32),
+        sz: 1000,
+        class: 1,
+        x: (x * 65536.0) as i32,
+        y: (y * 65536.0) as i32,
+        offset: (160, 112),
+        h: 256,
+        owner: 0,
+    };
+    let projections = [point(10.25, 20.5), point(10.75, 20.25), point(40.5, 60.5), point(5.5, 50.5)];
+    // An ordering-table entry, then two triangles whose first corners came
+    // from projections 0 and 1, stored at their packets' words.
+    ram.node(0x1000, 0x2000, &[]);
+    ram.node(0x2000, 0x3000, &[0x2000_FFFF, xy(10, 20), xy(40, 60), xy(5, 50)]);
+    ram.node(0x3000, 0xFF_FFFF, &[0x2000_FFFF, xy(10, 20), xy(40, 60), xy(5, 50)]);
+    let store = |address: u32, value: u32, source: u32| SxyStore { address, value, source: Some(source) };
+    let stores = [
+        store(0x2008, xy(10, 20), 0),
+        store(0x200C, xy(40, 60), 2),
+        store(0x2010, xy(5, 50), 3),
+        store(0x3008, xy(10, 20), 1),
+        store(0x300C, xy(40, 60), 2),
+        store(0x3010, xy(5, 50), 3),
+    ];
+    // A culled face at the entry, its points the last three projections.
+    let reveal = Reveal { entry: 0x1000, vertices: 3, projections: 4, words: vec![0x2000_00FF, xy(10, 20), xy(40, 60), xy(5, 50)] };
+    gpu.trace_projections(0, &projections, &stores, &[reveal]);
+    gpu.dma_linked_list(&ram, 0x1000, 1000).unwrap();
+    let trace = gpu.take_trace();
+    let draws: Vec<_> = trace.ops.iter().filter_map(|op| if let TraceOp::Draw(p) = op { Some(p) } else { None }).collect();
+    assert_eq!(draws.len(), 3);
+    assert!(draws[0].revealed && !draws[1].revealed && !draws[2].revealed, "the culled face comes at its entry, before the packets linked there");
+    assert_eq!(draws[0].vertices[0].fx, 10.75, "a culled face's points are its own projections");
+    assert_eq!(draws[1].vertices[0].fx, 10.25, "the first packet's point is the projection stored at its word");
+    assert_eq!(draws[2].vertices[0].fx, 10.75, "the second packet's, at the same screen point, is its own");
+    assert_eq!(draws[1].vertices[1].fy, 60.5);
+    // The culled face (red) never reached VRAM; the packets (yellow) did.
+    assert!(gpu.vram().contains(&rgb15(31, 31, 0)) && !gpu.vram().contains(&rgb15(31, 0, 0)), "only the drawn packets are in VRAM");
+    // A word rewritten since its store is a 2D point, even where a projection
+    // made the same screen point: values alone match nothing.
+    ram.put(0x2008, &[xy(5, 50)]);
+    gpu.trace_projections(4, &[], &[], &[]);
+    gpu.dma_linked_list(&ram, 0x2000, 1000).unwrap();
+    let trace = gpu.take_trace();
+    let TraceOp::Draw(p) = trace.ops.iter().find(|op| matches!(op, TraceOp::Draw(_))).unwrap() else { unreachable!() };
+    assert_eq!((p.vertices[0].fx, p.vertices[0].z), (5.0, 0.0));
+    assert_eq!(p.class, xem_gpu::Class::Flat);
+}

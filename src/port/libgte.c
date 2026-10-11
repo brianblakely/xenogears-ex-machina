@@ -79,7 +79,13 @@ static void cop2(unsigned int command) { xem_gte_execute(command); }
 /* lwc2/swc2: a data register from or to the word at p + offset. */
 static void lwc2(int reg, void *p, int offset) { mtc2(reg, WORD(p, offset)); }
 
-static void swc2(int reg, void *p, int offset) { WORD(p, offset) = mfc2(reg); }
+static void swc2(int reg, void *p, int offset) {
+    WORD(p, offset) = mfc2(reg);
+    if (reg >= 12 && reg <= 15) {
+        /* Presentation (xem/gte.h): where a screen point went. */
+        xem_present_store_at((char *)p + offset, WORD(p, offset), xem_present_sxy_source(reg));
+    }
+}
 
 /* mult/multu then mflo: the product's low word. */
 static int mul(int a, int b) { return (int)((unsigned int)a * (unsigned int)b); }

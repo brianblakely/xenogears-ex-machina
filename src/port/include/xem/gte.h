@@ -74,16 +74,130 @@ typedef struct {
     unsigned int count;      /* projections ever written */
     unsigned int class_;     /* XEM_PROJECTION_* for the next ones */
     unsigned int owner;      /* the sprite or model for the next ones */
-    unsigned int unused[5];
+    unsigned int fifo[3];    /* 1 + the projection SXY0, SXY1, SXY2 hold, 0 for another point */
+    unsigned int unused[2];
     XemProjection entries[XEM_GTE_PROJECTIONS];
 } XemProjectionRing;
+
+/* More presentation records beside it, by the same rules:
+ * - every screen-coordinate word a port routine stores to memory (swc2 of
+ *   SXY0-SXYP, and the handwritten renderers' stores of SXY values), with
+ *   the projection that made it, so a renderer tells which projection made
+ *   a packet's vertex by the packet word's address even when two points
+ *   round to the same screen pixel;
+ * - while the host asks for them (`wanted`: how far beyond the original
+ *   screen a view wider or farther out than the original's reaches), the
+ *   faces the game culls against its own screen: the
+ *   renderers' per-face screen tests and the model and field-piece bounding
+ *   tests that skip whole models (present.c then draws the model again with
+ *   its links captured, and memory, the GTE and the renderers' state put
+ *   back). Each is recorded as the GP0 words it would have had and the
+ *   ordering-table entry it would have been linked at, when its points
+ *   projected without overflow, it faces the camera and it lies within the
+ *   reach (field scenery pieces the field's bounding test culls are drawn
+ *   again only when their bounds reach that far).
+ * None of them changes what the game draws, links or keeps. */
+#define XEM_PRESENT_STORES 65536
+#define XEM_PRESENT_STORE_ADDRESS 0x70300000u
+#define XEM_PRESENT_REVEALS 65536
+#define XEM_PRESENT_REVEAL_ADDRESS 0x70500000u
+#define XEM_PRESENT_CAPTURES 8192
+#define XEM_PRESENT_BACKUP 0x40000
+#define XEM_PRESENT_CAPTURE_ADDRESS 0x70A00000u
+
+typedef struct {
+    unsigned int address;     /* where the word went (24-bit physical) */
+    unsigned int value;       /* the SXY word */
+    unsigned int projections; /* the projection count at the store */
+    unsigned int source;      /* 1 + the projection that made it, 0 unknown */
+} XemSxyStore;
+
+typedef struct {
+    unsigned int count;
+    unsigned int unused[3];
+    XemSxyStore entries[XEM_PRESENT_STORES];
+} XemStoreRing;
+
+typedef struct {
+    unsigned int entry;       /* the OT entry it would be linked at (24-bit) */
+    unsigned int shape;       /* GP0 words (bits 0-7), vertices (bits 8-15) */
+    unsigned int projections; /* its points are the projections just before this count */
+    unsigned int unused;
+    unsigned int words[12];   /* the GP0 words, without the packet's tag */
+} XemReveal;
+
+typedef struct {
+    unsigned int count;
+    /* Set by the host: the reach beyond the original screen within which
+     * culled faces are recorded, in pixels (x bits 0-15, y bits 16-31); 0
+     * records none. */
+    unsigned int wanted;
+    unsigned int unused[2];
+    XemReveal entries[XEM_PRESENT_REVEALS];
+} XemRevealRing;
+
+/* A model drawn again for the record (present.c): the renderers' links,
+ * captured instead of made, and the packets they wrote, saved beforehand. */
+typedef struct {
+    unsigned int entry, slot, tag, projections;
+} XemCapture;
+
+typedef struct {
+    unsigned int active;
+    unsigned int count;
+    unsigned int unused[2];
+    XemCapture entries[XEM_PRESENT_CAPTURES];
+    unsigned int backup[XEM_PRESENT_BACKUP / 4];
+} XemCaptureArea;
+
+/* What a non-drawn point in the ring is: the floor under a sprite
+ * (present.c), and the depth of the field camera's target. */
+enum {
+    XEM_PROJECTION_GROUND = 3,
+    XEM_PROJECTION_FOCUS = 4,
+};
 
 #ifdef __psx__
 /* The game module (tools/game_module.py defines __psx__). */
 #define xem_gte_ring ((XemProjectionRing *)XEM_GTE_RING_ADDRESS)
+#define xem_present_stores ((XemStoreRing *)XEM_PRESENT_STORE_ADDRESS)
+#define xem_present_reveals ((XemRevealRing *)XEM_PRESENT_REVEAL_ADDRESS)
+#define xem_present_capture ((XemCaptureArea *)XEM_PRESENT_CAPTURE_ADDRESS)
 #else
 extern XemProjectionRing xem_gte_ring_storage;
+extern XemStoreRing xem_present_store_storage;
+extern XemRevealRing xem_present_reveal_storage;
+extern XemCaptureArea xem_present_capture_storage;
 #define xem_gte_ring (&xem_gte_ring_storage)
+#define xem_present_stores (&xem_present_store_storage)
+#define xem_present_reveals (&xem_present_reveal_storage)
+#define xem_present_capture (&xem_present_capture_storage)
 #endif
+
+/* Record a screen-coordinate word stored at `address` (presentation), made
+ * by projection `source` - 1 (0 unknown). */
+void xem_present_store(unsigned int address, unsigned int value, unsigned int source);
+
+/* The same for a store through a C pointer. */
+void xem_present_store_at(const void *p, unsigned int value, unsigned int source);
+
+/* The `source` of the point a data register (SXY0-SXYP) holds. */
+unsigned int xem_present_sxy_source(int reg);
+
+/* Whether a culled face is worth recording: its `vertices` points are the
+ * projections just before `projections`; each projected without overflow,
+ * the first three wind as NCLIP keeps, and one lies within the host's reach
+ * of a `width` x `height` screen. */
+int xem_present_face_visible(unsigned int projections, unsigned int vertices, int width, int height);
+
+/* Record a culled face (presentation): `count` GP0 words of a primitive
+ * whose `vertices` points are the projections just before `projections`,
+ * which would have been linked at the ordering-table entry `entry`. */
+void xem_present_reveal(unsigned int entry, unsigned int vertices, unsigned int projections, const unsigned int *words,
+                        unsigned int count);
+
+/* While a capture is active (present.c), a renderer's link at `entry` of
+ * the packet at `slot` with tag `tag`. */
+void xem_present_capture_link(unsigned int entry, unsigned int slot, unsigned int tag);
 
 #endif

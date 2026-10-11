@@ -141,9 +141,9 @@ fn original_fidelity_matches_the_software_gpu() {
     assert!(differ * 100 < total, "{differ} of {total} pixels differ");
 }
 
-use xem_gpu::{Class, Environment, Primitive, Projection, Shape, TraceOp, TraceVertex};
+use xem_gpu::{Class, Environment, Primitive, Projection, Reveal, Shape, SxyStore, TraceOp, TraceVertex};
 use xem_render::ps1::{
-    Culling, DisplayArea, Effects, EffectsRenderer, FrameRenderer, Framing, Lighting, Quality, interpolate,
+    Culling, DisplayArea, Effects, EffectsRenderer, FrameRenderer, Framing, Lighting, Quality, interpolate, pull_back,
 };
 
 /// A packed GP0 vertex word.
@@ -177,16 +177,50 @@ fn projected_scene(gpu: &mut xem_gpu::Gpu) {
     for &(x, y, z) in quad.iter().chain(&tri).chain(&near).chain(&far) {
         projections.push(project(x, y, z));
     }
-    gpu.trace_projections(projections);
     let word = |(x, y, _): (f32, f32, u16)| xy(x.floor() as i32, y.floor() as i32);
     let clut = (480 << 6) << 16;
     let page = 8u32 << 16;
-    gpu.write_gp0_words(&[0x2C80_8080, word(quad[0]), clut, word(quad[1]), page | 63, word(quad[2]), 63 << 8, word(quad[3]), 63 << 8 | 63]);
-    gpu.write_gp0_words(&[0x3000_40C0, word(tri[0]), 0x00C0_4000, word(tri[1]), 0x0040_C080, word(tri[2])]);
-    gpu.write_gp0_words(&[0x2800_20E0, word(near[0]), word(near[1]), word(near[2]), word(near[3])]);
-    gpu.write_gp0_words(&[0x2800_E020, word(far[0]), word(far[1]), word(far[2]), word(far[3])]);
+    // The packets go by DMA, each point stored by the game from its
+    // projection (as the port records it).
+    let packets: [(Vec<u32>, Vec<(usize, usize)>); 4] = [
+        (vec![0x2C80_8080, word(quad[0]), clut, word(quad[1]), page | 63, word(quad[2]), 63 << 8, word(quad[3]), 63 << 8 | 63], vec![(1, 0), (3, 1), (5, 2), (7, 3)]),
+        (vec![0x3000_40C0, word(tri[0]), 0x00C0_4000, word(tri[1]), 0x0040_C080, word(tri[2])], vec![(1, 4), (3, 5), (5, 6)]),
+        (vec![0x2800_20E0, word(near[0]), word(near[1]), word(near[2]), word(near[3])], vec![(1, 7), (2, 8), (3, 9), (4, 10)]),
+        (vec![0x2800_E020, word(far[0]), word(far[1]), word(far[2]), word(far[3])], vec![(1, 11), (2, 12), (3, 13), (4, 14)]),
+    ];
+    submit(gpu, &projections, &packets);
     // Interface: a flat rectangle drawn last.
     gpu.write_gp0_words(&[0x6000_FFFF, xy(250, 200), 30 << 16 | 60]);
+}
+
+/// Game memory for DMA in the tests: 64 KB of words.
+struct Ram(Vec<u32>);
+
+impl xem_gpu::Memory for Ram {
+    fn read_u32(&self, address: u32) -> u32 {
+        self.0[(address as usize & 0xFFFF) >> 2]
+    }
+}
+
+/// `packets` as a DMA list from 0x1000 (a node each), their words at
+/// `(word index, projection index)` stored from those projections.
+fn submit(gpu: &mut xem_gpu::Gpu, projections: &[Projection], packets: &[(Vec<u32>, Vec<(usize, usize)>)]) {
+    let mut ram = Ram(vec![0; 0x4000]);
+    let mut stores = Vec::new();
+    let mut node = 0x1000u32;
+    for (i, (words, points)) in packets.iter().enumerate() {
+        let next = if i + 1 == packets.len() { 0xFF_FFFF } else { node + 0x100 };
+        ram.0[node as usize >> 2] = (words.len() as u32) << 24 | next;
+        for (k, &w) in words.iter().enumerate() {
+            ram.0[(node as usize >> 2) + 1 + k] = w;
+        }
+        for &(at, projection) in points {
+            stores.push(SxyStore { address: node + 4 + 4 * at as u32, value: words[at], source: Some(projection as u32) });
+        }
+        node += 0x100;
+    }
+    gpu.trace_projections(0, projections, &stores, &[]);
+    gpu.dma_linked_list(&ram, 0x1000, 1 << 16).unwrap();
 }
 
 fn draw(gpu: &Gpu, traces: &(xem_gpu::Trace, xem_gpu::Trace), fidelity: Fidelity, culling: Culling) -> (Ps1Renderer, Vec<u8>) {
@@ -237,19 +271,71 @@ fn culling_is_off_by_default_and_counted_apart_from_the_gpu_limits() {
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let trace = traced(|device| {
         projected_scene(device);
-        // Outside the drawing area, and a triangle beyond the GPU's size limit.
-        device.write_gp0_words(&[0x2000_FFFF, xy(400, 10), xy(420, 10), xy(410, 30)]);
+        // A triangle beyond the GPU's size limit.
         device.write_gp0_words(&[0x2000_FFFF, xy(-600, 10), xy(500, 10), xy(0, 100)]);
     });
-    let (plain, plain_pixels) = draw(&gpu, &trace, Fidelity::MODERN, Culling::default());
+    let (plain, _) = draw(&gpu, &trace, Fidelity::MODERN, Culling::default());
     let stats = plain.stats();
-    assert_eq!((stats.culled_back_faces, stats.culled_outside_frame), (0, 0), "nothing is culled by default");
+    assert_eq!(stats.culled_back_faces, 0, "nothing is culled by default");
     assert_eq!(stats.rejected_size, 1, "the GPU's own size limit applies always");
-    let (culled, culled_pixels) = draw(&gpu, &trace, Fidelity::MODERN, Culling { back_faces: false, outside_frame: true });
-    assert_eq!(culled.stats().culled_outside_frame, 1);
-    assert_eq!(culled_pixels, plain_pixels, "skipping what the drawing area clips changes nothing");
-    let (back, _) = draw(&gpu, &trace, Fidelity::MODERN, Culling { back_faces: true, outside_frame: false });
+    let (back, _) = draw(&gpu, &trace, Fidelity::MODERN, Culling { back_faces: true, viewport: false });
     assert!(back.stats().culled_back_faces > 0, "the minority winding is dropped when asked");
+}
+
+/// A frame whose OT entry carries a face the game culled beside its
+/// screen (a red triangle spanning x 330-360), and a drawn blue one.
+fn revealing_scene() -> (xem_gpu::Trace, xem_gpu::Trace) {
+    let mut ram = Ram(vec![0; 0x4000]);
+    let mut put = |address: usize, words: &[u32]| ram.0[address >> 2..(address >> 2) + words.len()].copy_from_slice(words);
+    put(0x100, &[0x0000_0200]);
+    put(0x200, &[0x04FF_FFFF, 0x2000_FF00, xy(100, 50), xy(140, 50), xy(100, 90)]);
+    let project = |x: f32, y: f32| Projection { sxy: xy(x as i32, y as i32), sz: 1000, class: 0, x: (x * 65536.0) as i32, y: (y * 65536.0) as i32, offset: (160, 120), h: 256, owner: 0 };
+    let projections = [project(330.0, 50.0), project(360.0, 50.0), project(330.0, 90.0)];
+    let reveal = Reveal { entry: 0x100, vertices: 3, projections: 3, words: vec![0x2000_00FF, xy(330, 50), xy(360, 50), xy(330, 90)] };
+    traced(|device| {
+        device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000]);
+        device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+        device.trace_projections(0, &projections, &[], &[reveal]);
+        device.dma_linked_list(&ram, 0x100, 1000).unwrap();
+    })
+}
+
+#[test]
+fn culled_faces_show_beside_the_screen_and_wherever_a_pulled_back_camera_sees_them() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let trace = revealing_scene();
+    let red_at = |culling: Culling, framing: Framing| -> Vec<u8> {
+        let (mut renderer, picture) = draw(&gpu, &trace, Fidelity::MODERN, culling);
+        // The VRAM picture never shows the culled face.
+        assert!(!(0..2048 * 480).any(|i| picture[i * 4..i * 4 + 3] == [255, 0, 0]), "no culled face in VRAM");
+        let mut frame = FrameRenderer::new(&gpu.device);
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, DisplayArea { x: 0, y: 0, width: 320, height: 240 }, framing);
+        gpu.queue.submit([encoder.finish()]);
+        let (width, height) = frame.size();
+        let pixels = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+        (0..width * height).filter(|&i| pixels[i as usize * 4..i as usize * 4 + 3] == [255, 0, 0]).map(|i| (i % width) as u8 / 1).collect()
+    };
+    let wide = Framing { side: 60, ..Default::default() };
+    assert!(!red_at(Culling::default(), wide).is_empty(), "wider framing shows the culled face in its side");
+    assert!(red_at(Culling { viewport: true, ..Default::default() }, wide).is_empty(), "viewport culling keeps the game's gaps");
+    assert!(!red_at(Culling::default(), Framing { pull_back: 1000.0, ..Default::default() }).is_empty(), "pulled back, it falls inside the frame");
+}
+
+#[test]
+fn pulling_back_moves_the_scene_towards_the_projection_centre_and_leaves_the_interface() {
+    let scene = primitive(260, 120, 0);
+    let mut interface = primitive(260, 120, 0);
+    if let TraceOp::Draw(p) = &mut interface {
+        p.class = Class::Flat;
+        p.projection = None;
+    }
+    let mut pulled = [scene, interface.clone()];
+    pull_back(&mut pulled, 1000.0);
+    let TraceOp::Draw(p) = &pulled[0] else { unreachable!() };
+    // z 1000 seen from 1000 further back: halfway to the centre (160, 120).
+    assert_eq!((p.vertices[0].fx, p.vertices[0].fy, p.vertices[0].z), (210.0, 120.0, 2000.0));
+    assert_eq!(pulled[1], interface);
 }
 
 #[test]
@@ -299,11 +385,13 @@ fn primitive(x: i32, y: i32, u: i16) -> TraceOp {
         semi: false,
         dither: false,
         clut: 0,
-        environment: Environment { draw_mode: 8, texture_window: 0, area: [0, 0, 319, 239], mask: 0 },
+        environment: Environment { draw_mode: 8, texture_window: 0, area: [0, 0, 319, 239], mask: 0, offset: (0, 0) },
         class: Class::Model,
         projection: Some(((160, 120), 256)),
         owner: 0,
         source: 0,
+        revealed: false,
+        ground: None,
     })
 }
 
@@ -323,4 +411,81 @@ fn interpolation_moves_matched_primitives_and_leaves_cuts() {
     assert_eq!(x(&half[2]), 250.0, "a jump is a cut, not motion");
     assert_eq!(x(&interpolate(&newest, &previous, 0.0)[0]), 10.0);
     assert_eq!(x(&interpolate(&newest, &previous, 1.0)[0]), 30.0);
+}
+
+#[test]
+fn the_interface_draws_as_the_original_at_any_scale() {
+    // The 2D scene (windows, text sprites, bars, lines: no projections) at
+    // three times the original under Modern against the software GPU's own
+    // pixels scaled up: alike but for diagonal edges and semi-transparent
+    // blends (the GPU blends at 5 bits).
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let (sync, trace) = traced(|device| {
+        upload_texture(device);
+        scene(device);
+    });
+    let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 3);
+    renderer.set_options(DrawOptions { fidelity: Fidelity::MODERN, ..Default::default() }, 3);
+    for trace in [&sync, &trace] {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer.draw(&mut encoder, trace);
+        gpu.queue.submit([encoder.finish()]);
+    }
+    let pixels = read_rgba8(&gpu.device, &gpu.queue, renderer.picture().0);
+    let vram = DEVICE.with(|d| d.borrow().vram().to_vec());
+    let (mut differ, mut total) = (0, 0);
+    for y in 0..240 * 3 {
+        for x in 0..320 * 3 {
+            let want = vram[(y / 3) * 1024 + x / 3];
+            let want = [expand5(want), expand5(want >> 5), expand5(want >> 10)];
+            let at = (y * 3072 + x) * 4;
+            total += 1;
+            if (0..3).any(|c| (i32::from(pixels[at + c]) - i32::from(want[c])).abs() > 8) {
+                differ += 1;
+            }
+        }
+    }
+    eprintln!("{differ} of {total} scaled pixels differ from the original's");
+    assert!(differ * 100 < total * 2, "{differ} of {total} pixels differ");
+}
+
+#[test]
+fn a_jumping_sprite_leaves_its_shadow_on_the_floor() {
+    // A floor across the screen and a sprite whose feet are at y 100 but
+    // whose floor point (the game's ground under it) is at y 140: it jumps.
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let project = |x: f32, y: f32, z: u16| Projection { sxy: xy(x as i32, y as i32), sz: z, class: 0, x: (x * 65536.0) as i32, y: (y * 65536.0) as i32, offset: (160, 120), h: 256, owner: 0 };
+    let sprite = |x: f32, y: f32| Projection { class: 2, owner: 0x8010_0000, ..project(x, y, 1000) };
+    let ground = Projection { class: 3, owner: 0x8010_0000, ..project(160.0, 140.0, 1000) };
+    let projections = [
+        project(0.0, 0.0, 1000), project(319.0, 0.0, 1000), project(0.0, 239.0, 1000), project(319.0, 239.0, 1000),
+        ground,
+        sprite(150.0, 60.0), sprite(170.0, 60.0), sprite(150.0, 100.0), sprite(170.0, 100.0),
+    ];
+    let (sync, trace) = traced(|device| {
+        device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000]);
+        let floor = vec![0x2860_6060, xy(0, 0), xy(319, 0), xy(0, 239), xy(319, 239)];
+        let body = vec![0x2880_8080, xy(150, 60), xy(170, 60), xy(150, 100), xy(170, 100)];
+        submit(device, &projections, &[(floor, vec![(1, 0), (2, 1), (3, 2), (4, 3)]), (body, vec![(1, 5), (2, 6), (3, 7), (4, 8)])]);
+    });
+    let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 2);
+    renderer.set_options(DrawOptions::default(), 2);
+    for trace in [&sync, &trace] {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer.draw(&mut encoder, trace);
+        gpu.queue.submit([encoder.finish()]);
+    }
+    let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
+    let mut frame = FrameRenderer::new(&gpu.device);
+    let mut effects = EffectsRenderer::new(&gpu.device, Some(&gpu.adapter));
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, area, Framing::default());
+    let shadows = Effects { shadows: 1.0, ..Effects::OFF };
+    effects.render(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, &frame, &trace.ops, &shadows, Quality::High, &Lighting::default());
+    gpu.queue.submit([encoder.finish()]);
+    let mask = read_rgba8(&gpu.device, &gpu.queue, effects.shadow_mask().unwrap());
+    let at = |x: usize, y: usize| mask[(y * 2 * 640 + x * 2) * 4];
+    // A body's height up, the contact shadow is fainter (0.4 of its strength).
+    assert!(at(160, 139) > 60, "the contact shadow lies at the floor point ({})", at(160, 139));
+    assert_eq!(at(160, 101), 0, "not at the raised feet");
 }

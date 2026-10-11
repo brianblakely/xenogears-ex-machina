@@ -47,7 +47,20 @@ static inline void xem_lwc2(int reg, unsigned int address) {
 }
 
 static inline void xem_swc2(int reg, unsigned int address) {
-    XEM_U32(address) = xem_gte_read_data(reg);
+    unsigned int value = xem_gte_read_data(reg);
+
+    XEM_U32(address) = value;
+    if (reg >= XEM_GTE_SXY0 && reg <= XEM_GTE_SXYP) {
+        xem_present_store(address, value, xem_present_sxy_source(reg));
+    }
+}
+
+/* A screen-coordinate word a routine read from the GTE, stored to a packet
+ * (and recorded for presentation, xem/gte.h): point `vertex` of a face whose
+ * `vertices` points are the last projections made. */
+static inline void xem_store_face_sxy(unsigned int address, unsigned int value, unsigned int vertex, unsigned int vertices) {
+    XEM_U32(address) = value;
+    xem_present_store(address, value, xem_gte_ring->count - vertices + vertex + 1);
 }
 
 #endif

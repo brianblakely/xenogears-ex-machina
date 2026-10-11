@@ -190,16 +190,18 @@ pub struct TextureFiltering {
     pub interface: crate::Filter,
 }
 
-/// Renderer culling beyond the game's own; off by default. The game's
-/// culling, clipping, hiding and on-screen tests are game logic and are not
-/// settings (xem_render::ps1::Culling).
+/// Optional culling; off by default. The game's own culling, clipping,
+/// hiding and on-screen tests are game logic and are not settings
+/// (xem_render::ps1::Culling).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Culling {
+    /// Viewport culling as the game does it: a wider or pulled-back view
+    /// shows only what the game drew for its original screen. Off, it also
+    /// shows the scenery the game culled against that screen.
+    pub viewport: bool,
     /// Drop projected back faces (also the game's intended double-sided ones).
     pub back_faces: bool,
-    /// Skip primitives wholly outside their drawing area (same picture).
-    pub outside_frame: bool,
 }
 
 /// The game screen in a headset: a flat virtual screen in front of a seated
@@ -222,6 +224,10 @@ impl Default for XrScreen {
 }
 
 pub const MAX_INTERNAL_SCALE: u8 = 8;
+/// The farthest the field camera can be pulled back, in percent (5x).
+pub const MAX_ZOOM_OUT: u16 = 500;
+/// A mouse wheel notch moves the zoom by this much (percent).
+pub const ZOOM_STEP: u16 = 25;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -239,10 +245,14 @@ pub struct Graphics {
     /// Interpolate presented frames between the game's frames (one game
     /// frame of latency; matched primitives move smoothly).
     pub interpolation: bool,
-    /// Wider framing than the original 4:3 screen, filled by scene geometry
-    /// that reaches past it (the game culls what is outside its own screen,
-    /// so the sides may show gaps).
+    /// Wider framing than the original 4:3 screen, to the output's aspect
+    /// ratio: the sides show the scene beyond the original screen.
     pub widescreen: bool,
+    /// The field camera pulled back along its own axis, without turning:
+    /// 100 (the original, default) to [`MAX_ZOOM_OUT`] percent, the subject
+    /// appearing that many times smaller. The world map takes a tenth of
+    /// it. Independent of the aspect ratio.
+    pub zoom_out: u16,
     pub filtering: TextureFiltering,
     pub culling: Culling,
     pub xr: XrScreen,
@@ -260,6 +270,7 @@ impl Default for Graphics {
             present_rate: PresentRate::Display,
             interpolation: false,
             widescreen: false,
+            zoom_out: 100,
             filtering: TextureFiltering::default(),
             culling: Culling::default(),
             xr: XrScreen::default(),
@@ -268,6 +279,13 @@ impl Default for Graphics {
 }
 
 impl Graphics {
+    /// The settings `notches` wheel notches further out (negative: back in),
+    /// within 100 to [`MAX_ZOOM_OUT`] percent.
+    pub fn zoomed(&self, notches: i32) -> Graphics {
+        let zoom = i32::from(self.zoom_out) + notches * i32::from(ZOOM_STEP);
+        Graphics { zoom_out: zoom.clamp(100, i32::from(MAX_ZOOM_OUT)) as u16, ..*self }
+    }
+
     /// The limits the selected profile draws with.
     pub fn fidelity(&self) -> Fidelity {
         match self.profile {
@@ -291,6 +309,9 @@ impl Graphics {
         self.custom_effects.validate()?;
         if self.internal_scale > MAX_INTERNAL_SCALE {
             return Err(format!("internal scale must be 0 (auto) to {MAX_INTERNAL_SCALE}"));
+        }
+        if !(100..=MAX_ZOOM_OUT).contains(&self.zoom_out) {
+            return Err(format!("zoom out must be 100 to {MAX_ZOOM_OUT} percent"));
         }
         if !(50..=2000).contains(&self.xr.distance_cm) || !(50..=2000).contains(&self.xr.width_cm) {
             return Err("headset screen distance and width must be 50-2000 cm".into());
@@ -323,6 +344,20 @@ mod tests {
         };
         assert!(custom.fidelity().dithering && !custom.fidelity().affine_textures);
         assert_eq!(custom.effects().bloom, 30);
+    }
+
+    #[test]
+    fn zoom_out_is_bounded_and_off_by_default() {
+        let graphics = Graphics::default();
+        assert_eq!(graphics.zoom_out, 100);
+        assert!(graphics.validate().is_ok());
+        assert!(Graphics { zoom_out: MAX_ZOOM_OUT, ..graphics }.validate().is_ok());
+        assert!(Graphics { zoom_out: 99, ..graphics }.validate().is_err());
+        assert!(Graphics { zoom_out: MAX_ZOOM_OUT + 1, ..graphics }.validate().is_err());
+        assert!(!graphics.culling.viewport && !graphics.culling.back_faces);
+        assert_eq!(graphics.zoomed(2).zoom_out, 150);
+        assert_eq!(graphics.zoomed(-1).zoom_out, 100, "1x is the nearest");
+        assert_eq!(graphics.zoomed(100).zoom_out, MAX_ZOOM_OUT);
     }
 
     #[test]

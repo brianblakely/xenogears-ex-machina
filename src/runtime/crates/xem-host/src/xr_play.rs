@@ -244,7 +244,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         let config = ViewConfig::resolve(&current.graphics, HostClass::Headset, (session.eye_size().0 / 2, session.eye_size().1 / 2), view.max_scale());
         view.configure(config);
         let restart = view.take_restart();
-        let (trace, display, scene) = game.take_frame(restart);
+        let (trace, display, scene) = game.take_frame(restart, view.reveal_reach());
         view.push(trace);
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
         let picture = if GameView::shows(&display) {

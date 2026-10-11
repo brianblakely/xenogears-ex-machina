@@ -67,7 +67,8 @@ HOST_PREFIX = "xem_host_"
 # Game functions the port wraps (src/decomp or src/port): the game's definition is
 # renamed xem_original_<name> and the port's definition calls it.
 WRAPPED = {"mode_dispatch", "model_draw_sprite_model", "sprite_set_draw_matrix", "sprite_draw_parts",
-           "pad_dequeue_state", "sound_silence_voices", "arena_menu_open_pause"}
+           "sprite_draw_parts_cut_below", "sprite_draw_parts_cut_above", "field_instance_is_off_screen",
+           "field_draw_models", "pad_dequeue_state", "sound_silence_voices", "arena_menu_open_pause"}
 
 CFLAGS = [
     # The MIPS front end accepts the original inline assembly; the IR is then

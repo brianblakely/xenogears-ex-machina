@@ -3,7 +3,7 @@
 //!
 //!     cargo run --release -p xem-headless --example render -- [--map N] [--frames N]
 //!         [--scale N] [--profile modern|hd2d|ps1] [--only effect,...] [--widescreen]
-//!         [--compare] [--out out.png]
+//!         [--zoom PERCENT] [--viewport-culling] [--size WxH] [--compare] [--out out.png]
 //!
 //! `--compare` puts the Modern picture beside the chosen profile's.
 //! `--only` draws the Custom profile with just the named HD-2D effects
@@ -18,15 +18,17 @@ use xem_settings::{EffectLevels, Graphics, GraphicsProfile};
 
 type Session = xem_core::control::Session<xem_game::NativeModule>;
 
-fn picture(gpu: &Gpu, view: &mut GameView, session: &mut Session, graphics: &Graphics, scene: &str) -> (u32, u32, Vec<u8>) {
-    let config = ViewConfig::resolve(graphics, HostClass::Desktop, (1280, 896), view.max_scale());
+fn picture(gpu: &Gpu, view: &mut GameView, session: &mut Session, graphics: &Graphics, scene: &str, output: (u32, u32)) -> (u32, u32, Vec<u8>) {
+    let config = ViewConfig::resolve(graphics, HostClass::Desktop, output, view.max_scale());
     view.configure(config);
     session.runtime.services().gpu.device_mut().set_trace(true);
     let _ = view.take_restart();
     let mut size = None;
     for frame in 0..8 {
         session.frame().expect("frame");
-        let trace = session.runtime.services().gpu.device_mut().take_trace();
+        let device = session.runtime.services().gpu.device_mut();
+        device.set_reveals(view.reveal_reach());
+        let trace = device.take_trace();
         view.push(trace);
         let display = session.runtime.services().gpu.device().display();
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
@@ -34,6 +36,10 @@ fn picture(gpu: &Gpu, view: &mut GameView, session: &mut Session, graphics: &Gra
         gpu.queue.submit([encoder.finish()]);
     }
     let (width, height) = size.expect("a presented frame");
+    let revealed = view.frame().primitives().iter().filter(|op| matches!(op, xem_gpu::TraceOp::Draw(p) if p.revealed)).count();
+    eprintln!("{} primitives drawn, {revealed} of them culled by the game", view.frame().primitives().len());
+    let [matched, unmatched] = session.runtime.services().gpu.device().trace_matches();
+    eprintln!("points matched to their projection {matched}, 2D {unmatched}");
     let mut rgba = read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().expect("presented"));
     rgba.chunks_exact_mut(4).for_each(|p| p[3] = 255);
     (width, height, rgba)
@@ -47,6 +53,7 @@ fn main() {
     let mut state: Option<PathBuf> = None;
     let mut classes = false;
     let mut out = std::path::PathBuf::from("render.png");
+    let mut output = (1280u32, 896u32);
     let mut disc = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../discs/Xenogears disc 1.chd");
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -79,6 +86,13 @@ fn main() {
                 graphics.custom_effects = levels;
             }
             "--widescreen" => graphics.widescreen = true,
+            "--zoom" => graphics.zoom_out = value().parse().unwrap(),
+            "--viewport-culling" => graphics.culling.viewport = true,
+            "--size" => {
+                let size = value();
+                let (w, h) = size.split_once('x').expect("WxH");
+                output = (w.parse().unwrap(), h.parse().unwrap());
+            }
             "--compare" => compare = true,
             "--state" => state = Some(value().into()),
             "--classes" => classes = true,
@@ -105,7 +119,7 @@ fn main() {
     let snapshot = session.snapshot_bytes().expect("snapshot");
     let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
     view.effects_mut().set_debug_view(debug);
-    let (width, height, rgba) = picture(&gpu, &mut view, &mut session, &graphics, &scene);
+    let (width, height, rgba) = picture(&gpu, &mut view, &mut session, &graphics, &scene, output);
     if classes {
         // What the displayed frame's primitives are, by class and projection.
         let info = session.runtime.services().gpu.device().display();
@@ -126,8 +140,8 @@ fn main() {
         // The same frames again under Modern.
         session.restore_bytes(&snapshot).expect("restore");
         let mut modern = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
-        let plain = Graphics { profile: GraphicsProfile::Modern, widescreen: false, ..graphics };
-        let (w, h, left) = picture(&gpu, &mut modern, &mut session, &plain, &scene);
+        let plain = Graphics { profile: GraphicsProfile::Modern, widescreen: false, zoom_out: 100, ..graphics };
+        let (w, h, left) = picture(&gpu, &mut modern, &mut session, &plain, &scene, output);
         assert_eq!(h, height, "both pictures are as high");
         let mut both = Vec::with_capacity(left.len() + rgba.len());
         for (a, b) in left.chunks(w as usize * 4).zip(rgba.chunks(width as usize * 4)) {
