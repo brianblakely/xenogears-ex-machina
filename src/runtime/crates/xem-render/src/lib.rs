@@ -5,6 +5,7 @@
 
 mod compositor;
 mod gpu;
+pub mod ps1;
 mod scene;
 
 pub use compositor::{Compositor, Quad, Rect, present_rect};

@@ -5270,11 +5270,14 @@ name = "xem-headless"
 version = "0.1.0"
 dependencies = [
  "png",
+ "pollster",
  "serde_json",
  "xem-core",
  "xem-disc",
  "xem-game",
+ "xem-gpu",
  "xem-media",
+ "xem-render",
 ]
 
 [[package]]
@@ -5305,7 +5308,10 @@ dependencies = [
  "bytemuck",
  "glam",
  "pollster",
+ "serde",
+ "serde_json",
  "wgpu",
+ "xem-gpu",
  "xem-settings",
 ]
 

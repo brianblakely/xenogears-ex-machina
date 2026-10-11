@@ -43,4 +43,47 @@ unsigned int xem_gte_read_control(int reg);
  * upper bits of an instruction word (0x4A000000) are ignored. */
 void xem_gte_execute(unsigned int command);
 
+/* Presentation (docs/runtime.md, Presentation): every RTPS/RTPT vertex is
+ * also appended to a ring of the last XEM_GTE_PROJECTIONS projections, which
+ * libgpu hands the GPU device before each transfer so a renderer can give
+ * the packets' screen points their depth and sub-pixel position. Nothing
+ * reads it back into the game. In the game module the ring lives at a fixed
+ * address outside the port's data, stack and every snapshot region, so it
+ * changes neither the port's memory layout nor any saved state. */
+#define XEM_GTE_PROJECTIONS 8192
+#define XEM_GTE_RING_ADDRESS 0x70000000u
+
+typedef struct {
+    unsigned int sxy;    /* SXY2 as the command left it */
+    unsigned int sz;     /* bits 0-15 SZ3, bits 16-23 the projection class */
+    int x, y;            /* the screen point in 16.16, before saturation */
+    unsigned int offset; /* OFX, OFY in whole pixels (16 bits each) */
+    unsigned int h;      /* H, the projection distance */
+    unsigned int owner;  /* the sprite or model being drawn (present.c), else 0 */
+    unsigned int unused;
+} XemProjection;
+
+/* What draws the projections (present.c sets it around the wrapped seams). */
+enum {
+    XEM_PROJECTION_OTHER = 0,
+    XEM_PROJECTION_MODEL = 1,
+    XEM_PROJECTION_SPRITE = 2,
+};
+
+typedef struct {
+    unsigned int count;      /* projections ever written */
+    unsigned int class_;     /* XEM_PROJECTION_* for the next ones */
+    unsigned int owner;      /* the sprite or model for the next ones */
+    unsigned int unused[5];
+    XemProjection entries[XEM_GTE_PROJECTIONS];
+} XemProjectionRing;
+
+#ifdef __psx__
+/* The game module (tools/game_module.py defines __psx__). */
+#define xem_gte_ring ((XemProjectionRing *)XEM_GTE_RING_ADDRESS)
+#else
+extern XemProjectionRing xem_gte_ring_storage;
+#define xem_gte_ring (&xem_gte_ring_storage)
+#endif
+
 #endif

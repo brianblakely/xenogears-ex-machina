@@ -10,6 +10,8 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::path::{Path, PathBuf};
 pub mod controls;
+pub mod graphics;
+pub use graphics::{EffectLevels, Fidelity, Graphics, GraphicsProfile, PresentRate, QualityTier, XrScreen};
 pub use controls::{AppAction, AppBinding, AppInput, AppRequest, APP_ACTIONS};
 
 pub const MAX_VOLUME: u8 = 100;
@@ -84,6 +86,7 @@ pub struct Settings {
     pub master_volume: u8,
     pub audio_output: AudioOutput,
     pub presentation: Presentation,
+    pub graphics: Graphics,
     /// Placeholder until the input phase defines the binding model: an action
     /// mapped to a host input name. Unbound actions use the host default.
     pub bindings: BTreeMap<Action, String>,
@@ -102,6 +105,7 @@ impl Default for Settings {
             master_volume: 80,
             audio_output: AudioOutput::default(),
             presentation: Presentation::default(),
+            graphics: Graphics::default(),
             bindings: BTreeMap::new(),
             app_bindings: controls::defaults(),
             fast_forward_rate: FastForwardRate::default(),
@@ -130,6 +134,8 @@ pub enum SettingChange {
     Scale(Scale),
     Filter(Filter),
     ShowFps(bool),
+    /// The whole graphics block, validated.
+    Graphics(Graphics),
     PauseOnFocusLoss(bool),
     Bind { action: Action, input: String },
     Unbind(Action),
@@ -191,6 +197,7 @@ impl Settings {
             SettingChange::Scale(scale) => next.presentation.scale = *scale,
             SettingChange::Filter(filter) => next.presentation.filter = *filter,
             SettingChange::ShowFps(show) => next.presentation.show_fps = *show,
+            SettingChange::Graphics(graphics) => next.graphics = *graphics,
             SettingChange::PauseOnFocusLoss(enabled) => next.pause_on_focus_loss = *enabled,
             SettingChange::Bind { action, input } => {
                 let input = input.trim();
@@ -210,6 +217,7 @@ impl Settings {
     /// Checks values that the types alone do not constrain (for loaded files).
     fn validate(&self) -> Result<(), String> {
         self.fast_forward_rate.validate()?;
+        self.graphics.validate()?;
         if !(1..=MAX_REWIND_INTERVAL_SECONDS).contains(&self.rewind_interval_seconds) {
             return Err(format!("rewind interval must be 1–{MAX_REWIND_INTERVAL_SECONDS} seconds"));
         }

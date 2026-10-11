@@ -11,8 +11,11 @@ publish.workspace = true
 xem-core = { path = "../xem-core" }
 xem-disc = { path = "../xem-disc" }
 xem-game = { path = "../xem-game" }
+xem-gpu = { path = "../xem-gpu" }
 serde_json.workspace = true
 png.workspace = true
 
 [dev-dependencies]
+xem-render = { path = "../xem-render" }
+pollster.workspace = true
 xem-media = { path = "../xem-media" }

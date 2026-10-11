@@ -1,0 +1,6 @@
+{
+  "default": {},
+  "field": {},
+  "battle": {"fog_range": [0.6, 1.6], "vignette": 0.25},
+  "worldmap": {"fog_range": [0.35, 1.0], "fog_color": [0.62, 0.7, 0.82], "shaft_source": [0.7, -0.2]}
+}

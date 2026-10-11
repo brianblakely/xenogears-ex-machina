@@ -8,6 +8,10 @@
 
 XemGte xem_gte;
 
+#ifndef __psx__
+XemProjectionRing xem_gte_ring_storage;
+#endif
+
 typedef long long gte_i64;
 
 #define D xem_gte.data
@@ -281,6 +285,25 @@ static gte_i64 divide(unsigned int h, unsigned int sz3) {
     return n < 0x1FFFF ? n : 0x1FFFF;
 }
 
+static int clamp_projection(gte_i64 value) {
+    return value < -0x7FFFFFFF ? -0x7FFFFFFF : value > 0x7FFFFFFF ? 0x7FFFFFFF : (int)value;
+}
+
+/* Presentation only: the vertex just projected (xem/gte.h). */
+static void record_projection(gte_i64 x, gte_i64 y) {
+    XemProjectionRing *ring = xem_gte_ring;
+    XemProjection *p = &ring->entries[ring->count % XEM_GTE_PROJECTIONS];
+
+    p->sxy = D[SXY2];
+    p->sz = (D[SZ3] & 0xFFFF) | (ring->class_ & 0xFF) << 16;
+    p->x = clamp_projection(x);
+    p->y = clamp_projection(y);
+    p->offset = ((unsigned int)((int)C[OFX] >> 16) & 0xFFFF) | (unsigned int)((int)C[OFY] >> 16) << 16;
+    p->h = C[H] & 0xFFFF;
+    p->owner = ring->owner;
+    ring->count++;
+}
+
 /* One vertex of RTPS/RTPT: V = RT * Vv + TR, the screen depth, the
  * perspective division, the screen point and, for the last vertex only,
  * the depth-cue factor IR0. */
@@ -337,6 +360,7 @@ static void transform_perspective(int v, int shift, int lm, int last) {
     D[SXY0] = D[SXY1];
     D[SXY1] = D[SXY2];
     D[SXY2] = ((unsigned int)sx & 0xFFFF) | (unsigned int)sy << 16;
+    record_projection(n * ir(1) + (int)C[OFX], n * ir(2) + (int)C[OFY]);
 
     if (last) {
         value = mac0_check(n * sign16(C[DQA]) + (int)C[DQB]);

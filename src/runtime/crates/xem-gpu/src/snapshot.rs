@@ -222,6 +222,7 @@ impl Gpu {
             receive: Receive::Command,
             read: None,
             stats: crate::PrimitiveStats::default(),
+            trace: None,
         };
         let pending = usize::from(r.u8()?);
         for _ in 0..pending {
@@ -264,7 +265,10 @@ impl Gpu {
             return Err(SnapshotError::Length);
         }
         gpu.stats = std::mem::take(&mut self.stats);
+        let trace = self.trace.take();
         *self = gpu;
+        self.trace = trace;
+        self.trace_resync();
         Ok(())
     }
 }

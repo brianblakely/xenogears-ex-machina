@@ -24,6 +24,7 @@
 #include "psyq/libetc.h"
 #include "xem/port.h"
 #include "xem/gpu.h"
+#include "xem/gte.h"
 
 /* libetc (src/port/libetc.c). */
 void *DMACallback(int channel, void (*func)(void));
@@ -163,8 +164,14 @@ u_long _param(int index) {
     return xem_host_gpu_read() & 0xFFFFFF;
 }
 
+/* Presentation: where the packets' screen points came from (xem/gte.h). */
+static void xem_gpu_hand_projections(void) {
+    xem_host_gpu_projections((u32)xem_gte_ring->entries, xem_gte_ring->count);
+}
+
 /* Words to GP0 by the CPU. */
 int _cwb(u_long *words, u_long count) {
+    xem_gpu_hand_projections();
     xem_host_gpu_gp1(0x04000000);
     while (count-- != 0) {
         xem_host_gpu_gp0(*words++);
@@ -187,6 +194,7 @@ int _cwc(u_long *list, u_long unused) {
     u_long *word;
     u32 count;
 
+    xem_gpu_hand_projections();
     if (!xem_gpu_dma_reaches(list)) {
         /* The first node by the CPU; the rest of the list is in RAM. */
         count = *list >> 24;

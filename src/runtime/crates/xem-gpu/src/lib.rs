@@ -17,10 +17,12 @@ mod display;
 mod dma;
 mod raster;
 mod snapshot;
+mod trace;
 
 pub use display::DisplayInfo;
 pub use dma::{DmaError, DmaSummary, Memory, MemoryMut};
 pub use snapshot::SnapshotError;
+pub use trace::{Class, Environment, Primitive, Projection, Shape, Trace, TraceOp, TraceVertex, VramRect};
 
 /// VRAM width in 16-bit pixels.
 pub const VRAM_WIDTH: usize = 1024;
@@ -222,6 +224,8 @@ pub struct Gpu {
     receive: Receive,
     read: Option<Image>,
     stats: PrimitiveStats,
+    /// The draw trace (presentation only; not saved).
+    trace: Option<Box<trace::Recorder>>,
 }
 
 impl Default for Gpu {
@@ -287,6 +291,7 @@ impl Gpu {
             receive: Receive::Command,
             read: None,
             stats: PrimitiveStats::default(),
+            trace: None,
         };
         gpu.reset();
         gpu
@@ -332,7 +337,9 @@ impl Gpu {
             return;
         }
         let words = std::mem::take(&mut self.fifo);
+        self.trace_before_command(&words);
         self.execute(&words);
+        self.trace_command(&words);
         self.fifo = words;
         self.fifo.clear();
     }
@@ -457,6 +464,7 @@ impl Gpu {
             }
         }
         self.receive = if image.index >= total {
+            self.trace_write(image.x, image.y, image.width, image.height, true);
             Receive::Command
         } else {
             Receive::ImageLoad(image)
@@ -563,6 +571,7 @@ impl Gpu {
         if self.display_mode & 0x20 != 0 {
             self.odd_field = !self.odd_field;
         }
+        self.trace_vblank();
     }
 
     /// Whether GP0(1Fh) has requested an interrupt not yet acknowledged.
@@ -577,6 +586,7 @@ impl Gpu {
 
     /// Mutable VRAM, for hosts that restore or inspect it directly.
     pub fn vram_mut(&mut self) -> &mut [u16] {
+        self.trace_resync();
         &mut self.vram
     }
 

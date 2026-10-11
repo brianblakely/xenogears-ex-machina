@@ -28,6 +28,10 @@ unsigned int xem_host_gpu_status(void);
  * GPUREAD words to memory; a CHCR without bit 24 stops the channel. */
 void xem_host_gpu_dma(unsigned int madr, unsigned int bcr, unsigned int chcr);
 
+/* Presentation: the GTE's projection ring (xem/gte.h) and how many
+ * projections were ever written, before libgpu sends a list or packets. */
+void xem_host_gpu_projections(unsigned int ring, unsigned int count);
+
 /* DMA2's CHCR: bit 24 is set while a transfer is in progress. */
 unsigned int xem_host_gpu_dma_control(void);
 

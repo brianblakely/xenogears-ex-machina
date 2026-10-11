@@ -22,6 +22,9 @@ pub const CHCR_BUSY: u32 = 0x0100_0000;
 /// revisits nodes; xem-gpu also stops at a loop).
 const LIST_WORD_LIMIT: u32 = RAM_SIZE / 4;
 
+/// Entries of the port's GTE projection ring (`XEM_GTE_PROJECTIONS`, xem/gte.h).
+const PROJECTION_RING: u32 = 8192;
+
 const SNAPSHOT_MAGIC: &[u8; 8] = b"XEMGPUD1";
 
 /// DMA addresses are 24-bit physical: RAM mirrors over the low 8 MB.
@@ -57,6 +60,8 @@ pub struct Gpu {
     completion: Option<u64>,
     /// Vertical blanks seen (the interlaced field toggles at each).
     vblanks: u64,
+    /// Presentation only: GTE projections already handed to the draw trace.
+    projections_traced: u32,
 }
 
 impl Gpu {
@@ -87,6 +92,37 @@ impl Gpu {
     /// DMA2's CHCR (bit 24 while a transfer runs).
     pub fn dma_control(&self) -> u32 {
         self.chcr
+    }
+
+    /// Hands the GTE projections made since the last call (the port's ring
+    /// at `ring` holds the last [`PROJECTION_RING`] of `count`) to the draw
+    /// trace. Reads only; without a trace it only notes the count.
+    fn trace_projections(&mut self, ring: u32, count: u32, memory: &mut dyn GameMemory) {
+        let new = count.wrapping_sub(self.projections_traced).min(PROJECTION_RING);
+        self.projections_traced = count;
+        if !self.gpu.trace_enabled() || new == 0 {
+            return;
+        }
+        let mut projections = Vec::with_capacity(new as usize);
+        let mut entry = [0u8; 32];
+        for n in count.wrapping_sub(new)..count {
+            let at = ring.wrapping_add((n % PROJECTION_RING) * 32);
+            if memory.read(at, &mut entry).is_err() {
+                return;
+            }
+            let word = |i: usize| u32::from_le_bytes(entry[i * 4..i * 4 + 4].try_into().unwrap());
+            projections.push(xem_gpu::Projection {
+                sxy: word(0),
+                sz: word(1) as u16,
+                class: (word(1) >> 16) as u8,
+                x: word(2) as i32,
+                y: word(3) as i32,
+                offset: (word(4) as i16, (word(4) >> 16) as i16),
+                h: word(5) as u16,
+                owner: word(6),
+            });
+        }
+        self.gpu.trace_projections(projections);
     }
 
     /// End the transfer if the clock reached its end: the channel is free and
@@ -140,6 +176,7 @@ impl Device for Gpu {
         let arg = |i: usize| args.get(i).copied().unwrap_or(0);
         match op {
             "gp0" => self.gpu.write_gp0(arg(0)),
+            "projections" => self.trace_projections(arg(0), arg(1), context.memory),
             "gp1" => self.gpu.write_gp1(arg(0)),
             "read" => return Action::Return(self.gpu.read_gpuread()),
             "status" => return Action::Return(self.gpu.gpustat()),
@@ -195,9 +232,8 @@ impl Device for Gpu {
         }
         let word = |at: usize| u32::from_le_bytes(data[at..at + 4].try_into().unwrap());
         let wide = |at: usize| u64::from_le_bytes(data[at..at + 8].try_into().unwrap());
-        let mut gpu = xem_gpu::Gpu::new();
-        gpu.load(&data[header..]).map_err(|error| error.to_string())?;
-        self.gpu = gpu;
+        // xem-gpu's load changes nothing on error and keeps the draw trace.
+        self.gpu.load(&data[header..]).map_err(|error| error.to_string())?;
         self.madr = word(8);
         self.bcr = word(12);
         self.chcr = word(16);

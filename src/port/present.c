@@ -57,6 +57,9 @@ s32 model_draw_sprite_model(SpriteModel *model, RenderPacket *packets, u32 *ot, 
         s32 mode;
         XemTransform transform;
     } record;
+    u32 previous = xem_gte_ring->class_;
+    u32 owner = xem_gte_ring->owner;
+    s32 result;
 
     record.model = (u32)model;
     record.packets = (u32)packets;
@@ -64,7 +67,12 @@ s32 model_draw_sprite_model(SpriteModel *model, RenderPacket *packets, u32 *ot, 
     record.mode = mode;
     xem_capture_transform(&record.transform);
     xem_host_present(XEM_PRESENT_MODEL, &record, sizeof(record));
-    return xem_original_model_draw_sprite_model(model, packets, ot, mode);
+    xem_gte_ring->class_ = XEM_PROJECTION_MODEL;
+    xem_gte_ring->owner = (u32)model;
+    result = xem_original_model_draw_sprite_model(model, packets, ot, mode);
+    xem_gte_ring->class_ = previous;
+    xem_gte_ring->owner = owner;
+    return result;
 }
 
 /* A sprite's draw matrix: its position through the view matrix, as the GTE
@@ -87,10 +95,16 @@ void sprite_draw_parts(Sprite *sprite, u_long *ot) {
         u32 sprite, ot;
         XemTransform transform;
     } record;
+    u32 previous = xem_gte_ring->class_;
+    u32 owner = xem_gte_ring->owner;
 
     record.sprite = (u32)sprite;
     record.ot = (u32)ot;
     xem_capture_transform(&record.transform);
     xem_host_present(XEM_PRESENT_SPRITE_PARTS, &record, sizeof(record));
+    xem_gte_ring->class_ = XEM_PROJECTION_SPRITE;
+    xem_gte_ring->owner = (u32)sprite;
     xem_original_sprite_draw_parts(sprite, ot);
+    xem_gte_ring->class_ = previous;
+    xem_gte_ring->owner = owner;
 }

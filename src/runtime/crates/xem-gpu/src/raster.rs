@@ -116,7 +116,7 @@ impl Stepper {
 }
 
 impl Gpu {
-    fn vertex(&self, word: u32) -> (i32, i32) {
+    pub(crate) fn vertex(&self, word: u32) -> (i32, i32) {
         (
             sign11(word) + sign11(self.draw_offset),
             sign11(word >> 16) + sign11(self.draw_offset >> 11),
@@ -124,7 +124,7 @@ impl Gpu {
     }
 
     /// Drawing area as inclusive (left, top, right, bottom).
-    fn drawing_area(&self) -> (i32, i32, i32, i32) {
+    pub(crate) fn drawing_area(&self) -> (i32, i32, i32, i32) {
         (
             (self.area_top_left & 0x3FF) as i32,
             (self.area_top_left >> 10 & 0x1FF) as i32,
@@ -133,7 +133,7 @@ impl Gpu {
         )
     }
 
-    fn texture_disabled(&self) -> bool {
+    pub(crate) fn texture_disabled(&self) -> bool {
         self.texture_disable_allowed && self.draw_mode & 0x800 != 0
     }
 
@@ -437,6 +437,7 @@ impl Gpu {
             self.stats.rejected += 1;
             return;
         }
+        self.trace_line(command, color0, vertex0, color1, vertex1);
         let start = color_attributes(color0);
         let end = if gouraud {
             color_attributes(color1)
