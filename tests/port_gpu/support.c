@@ -57,6 +57,18 @@ unsigned int xem_host_gpu_status(void) {
     return test_status;
 }
 
+/* The GTE's projection ring (src/port/gte.c, not built here) and its
+ * hand-over before transfers: presentation only, not logged. */
+struct {
+    unsigned int header[8];
+    unsigned int entries[65536][8];
+} xem_gte_ring_storage;
+
+void xem_host_gpu_projections(unsigned int ring, unsigned int count) {
+    (void)ring;
+    (void)count;
+}
+
 void xem_host_gpu_dma(unsigned int madr, unsigned int bcr, unsigned int chcr) {
     test_log(LOG_DMA, madr);
     test_log(LOG_DMA, bcr);
