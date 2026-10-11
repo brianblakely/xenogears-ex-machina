@@ -236,15 +236,15 @@ engine or full application UI is required before play.
 
 **Goal:** Prove original gameplay through the shared runtime, not a replacement demo.
 
-- [ ] Integrate the established original field/dialogue/encounter/reward/return/
+- [x] Integrate the established original field/dialogue/encounter/reward/return/
   menu/save-load/media route from recovered source, including required branches.
-- [ ] Compare meaningful original states, outcomes and timing. Test continuous
+- [x] Compare meaningful original states, outcomes and timing. Test continuous
   legal play separately from debug-launched scenarios; no corrective state injection.
-- [ ] Demonstrate human and direct-agent control, complete relevant state/debug
+- [x] Demonstrate human and direct-agent control, complete relevant state/debug
   access, valid setup, snapshots, replay and equivalent stepped/unthrottled runs.
-- [ ] Attach/change/disconnect optional spectator output without changing state
+- [x] Attach/change/disconnect optional spectator output without changing state
   or simulation pacing. Image-free headless play must need no GPU or audio device.
-- [ ] Run the same slice on native desktop/Android/Horizon flat-panel hosts and
+- [x] Run the same slice on native desktop/Android/Horizon flat-panel hosts and
   desktop, mobile and headset browsers. Verify local asset import, audio/media,
   saves across reload and lifecycle recovery on actual devices; do not maintain
   separate platform-specific game logic.
