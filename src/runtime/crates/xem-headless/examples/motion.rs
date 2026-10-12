@@ -37,7 +37,9 @@
 //! and, per presented frame, the share of pixels that changed since the one
 //! before (a still camera over still scenery changes only where something
 //! moves), and per game frame how many faces the game culled were drawn
-//! (`revealed`; `shown_revealed`: in the frame shown).
+//! (`revealed`; `shown_revealed`: in the frame shown), and whether a
+//! 24-bit (movie) display was rebuilt from the MDEC's macroblocks (`movies`:
+//! 1, else 0 for the device's own picture; -1 for any other display).
 //! `--bench` reads nothing back and writes only the costs;
 //! `--no-trace` runs the game alone, presenting nothing (its cost without
 //! any presentation work). `--probe` lists the last frame's primitives
@@ -336,6 +338,7 @@ fn main() {
     let mut revealed = Vec::new();
     let mut revealed_sprites = Vec::new();
     let mut shown_revealed = Vec::new();
+    let mut movies = Vec::new();
     let mut still = Vec::new();
     let mut previous: Option<Vec<u8>> = None;
     let mut size = (0, 0);
@@ -382,6 +385,7 @@ fn main() {
         device.set_reveals(view.reveals());
         view.push(device.take_trace());
         let display = device.display();
+        movies.push(if display.color24 { i8::from(view.shows_movie(&display)) } else { -1 });
         revealed.push(view.frame().newest().iter().filter(|op| matches!(op, xem_render::xem_gpu::TraceOp::Draw(p) if p.revealed)).count());
         revealed_sprites.push(view.frame().newest().iter().filter(|op| matches!(op, xem_render::xem_gpu::TraceOp::Draw(p) if p.revealed && p.class == xem_render::xem_gpu::Class::Sprite)).count());
         stages[1].samples.push(started.elapsed().as_secs_f64() * 1000.0);
@@ -523,6 +527,7 @@ fn main() {
         "revealed": revealed,
         "revealed_sprites": revealed_sprites,
         "shown_revealed": shown_revealed,
+        "movies": movies,
         "still": still,
     });
     std::fs::write(out.join(format!("{name}.json")), serde_json::to_string_pretty(&report).unwrap()).unwrap();

@@ -307,7 +307,7 @@ fn panel_texture(
 const AUDIO_OUTPUTS: [AudioOutput; 3] = [AudioOutput::Mono, AudioOutput::Stereo, AudioOutput::Wide];
 const SCALES: [Scale; 3] = [Scale::Fit, Scale::Integer, Scale::Stretch];
 const FILTERS: [Filter; 2] = [Filter::Nearest, Filter::Linear];
-const MOVIE_FILTERS: [xem_settings::MovieFilter; 2] = [xem_settings::MovieFilter::Bicubic, xem_settings::MovieFilter::Nearest];
+const MOVIE_FILTERS: [xem_settings::MovieFilter; 2] = [xem_settings::MovieFilter::Enhanced, xem_settings::MovieFilter::Original];
 
 const RENDERERS: [xem_settings::Renderer; 2] = [xem_settings::Renderer::Original, xem_settings::Renderer::ExMachina];
 const PROFILES: [GraphicsProfile; 4] = [GraphicsProfile::Modern, GraphicsProfile::Hd2d, GraphicsProfile::Ps1, GraphicsProfile::Custom];

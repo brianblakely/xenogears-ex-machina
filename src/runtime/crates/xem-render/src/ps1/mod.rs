@@ -11,10 +11,12 @@
 
 mod effects;
 mod frame;
+mod movie;
 mod view;
 
 pub use effects::{DebugView, Effects, EffectsRenderer, Lighting, Quality, SceneAnalysis, SpriteGroup};
 pub use frame::{FrameRenderer, Framing, Welder, central_depth, interpolate, pull_back, weld};
+pub use movie::{MovieRenderer, MovieTiles, Planes, fitted, planes};
 pub use view::{GameView, HostClass, MAX_WIDE_SIDE, Presented, ViewConfig, scene_zoom, wide_side};
 
 use bytemuck::{Pod, Zeroable};
@@ -886,7 +888,7 @@ impl<'a> Builder<'a> {
                 let show = *upload && self.shown.is_none_or(|area| overlap(&area, rect) > 0);
                 self.upload(*rect, pixels, show);
             }
-            TraceOp::VBlank => {}
+            TraceOp::VBlank | TraceOp::Movie { .. } | TraceOp::MovieFramesLeft(_) => {}
         }
     }
 }

@@ -51,6 +51,16 @@ impl Mdec {
         &self.decoder
     }
 
+    /// Whether the decoder keeps the colour macroblocks it decodes, and
+    /// those it kept since the last take (presentation only).
+    pub fn keep_decoded(&mut self, keep: bool) {
+        self.decoder.keep_decoded(keep);
+    }
+
+    pub fn take_decoded(&mut self) -> Vec<xem_media::mdec::Macroblock> {
+        self.decoder.take_decoded()
+    }
+
     /// Cycles the decoder takes for `words` output words at its depth.
     fn cycles(&self, words: u32) -> u64 {
         let depth = Depth::from_bits(self.decoder.status() >> 25);

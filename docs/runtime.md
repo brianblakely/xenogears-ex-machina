@@ -123,7 +123,12 @@ original address.
   runs `src/port/fiber.c` and `src/port/arena_task.c` under asyncify, wasm2c and the
   runtime end to end.
 - **Native.** `wasm2c` output is compiled into `xem-game` with explicit bounds
-  checks (no signal handlers). Nothing interprets or emulates a CPU.
+  checks (no signal handlers). Nothing interprets or emulates a CPU. The
+  translation comes in 16 parts compiled in parallel (one file took GCC
+  nearly four minutes, the parts 41 s on 16 threads), built without
+  semantic interposition so the parts' global functions inline as one
+  file's static ones did (a Lahan frame's game work: 1.395 ms, one file
+  1.396).
 - **Browser.** The same `game.wasm` is instantiated next to the Rust runtime
   (wasm32-unknown-unknown, wasm-bindgen); the two modules keep separate
   memories and exchange scalars and bounds-checked offsets.
@@ -462,10 +467,12 @@ snapshots are its. The renderer only draws again what it drew:
   each trace's scene points of different faces within half a native pixel
   and 1% in depth of each other are welded to one point (`weld`), closing
   the cracks between pieces the game places with different matrices. A
-  sprite's part takes each texel where the GPU starts it, at a native
-  pixel's leading edge, so a mirrored part (its coordinates falling across
-  the screen, the game's u - 1 compensating) keeps its first column at any
-  scale instead of losing it. The interface's own models (primitives
+  mirrored sprite part (its coordinates falling across the screen) samples
+  one texel further on, as the game's u - 1 means for the GPU, which takes
+  each texel at a native pixel's leading edge: the part keeps its first
+  column at any scale, and pulled back, where a native pixel spans several
+  of its texels (a native pixel's worth of texels there slid the parts of
+  a sprite facing left apart). The interface's own models (primitives
   projected with another screen offset than the scene's: the field
   compass, the world map's, menu models) stay interface (in place, untouched
   by the effects) but are drawn as the scene is, at their sub-pixel points
@@ -501,8 +508,11 @@ snapshots are its. The renderer only draws again what it drew:
   its zoom into a map change and back from a battle, the battle's shatter
   show the zoomed-out, wider picture the player saw, not the original's.
   What is drawn of it is a screen effect (interface class, never pulled
-  back, no effects), and the polygons the GTE projects at depth 0 (the
-  field's screen pieces, scaled with RotAverage4) are traced as interface;
+  back, no effects), and the polygons the game draws with every point the
+  GTE projected at depth 0 (the field's screen pieces, scaled with
+  RotAverage4) are traced as interface (a culled face there lies behind the
+  game's camera, where a pulled-back camera sees it: the ground at the
+  bottom of a field zoomed out to 5x);
   a piece whose edge lies on the screen's left or right edge carries a
   strip of the picture's sides beyond it, mapped as the piece maps its
   texture, so the pieces fill a wider frame as they move, turn and grow.
@@ -566,12 +576,44 @@ snapshots are its. The renderer only draws again what it drew:
   presents. A presentation with nothing new to draw (the display refreshing
   faster than the game draws: the same frame, its ops drawn so far, framing,
   settings and no interpolation) shows the picture presented last: no
-  replay, no effects. 24-bit movie frames are not traced pictures: hosts show the
-  device's display for them, unscaled in aspect, under Ex Machina's
-  renderer enlarged with its movie filter: Catmull-Rom bicubic (default;
-  nine bilinear taps in the compositor: smooth and sharp at four times and
-  more, where the nearest texel was blocky) or nearest; the Original
-  renderer keeps the chosen filter.
+  replay, no effects. 24-bit movie frames are not traced pictures. Under
+  the Enhanced movies setting (the default) the view rebuilds them from
+  what the MDEC decoded (`ps1::MovieRenderer`): while a trace runs, the
+  decoder keeps each colour macroblock's planes from before its RGB
+  conversion (the luminance, the two half-resolution chrominance blocks,
+  each block's quantization scale) with a key of its output's bytes
+  (`xem_media::mdec::Mdec::keep_decoded`; not in states); the runtime hands
+  them to the draw trace, which finds them in the transfers that load the
+  movie player's slices into VRAM (`TraceOp::Movie`, by those bytes), and
+  the view keeps each until something else writes over it. The trace keeps
+  the 4096 newest by their latest decoding: a block decoded again (a still
+  part of the picture, every frame) stays while it comes (kept by its first
+  decoding, it was dropped every few hundred blocks, and that frame showed
+  the device's picture). When every
+  macroblock of a 24-bit display is one of them, the frame is rebuilt: on
+  the CPU the seams between 8x8 blocks are smoothed where the step at the
+  seam is within the compression's error at the larger quantization scale
+  of the two blocks and both sides are flat (H.264's in-loop filter rules,
+  in float; real edges stay); on the GPU the chrominance is brought to
+  full resolution from the 4x4 nearest samples, weighted by distance and by
+  how close the luminance under each is to the pixel's (colour follows the
+  brightness's edges instead of spreading over 2x2 pixels), converted with
+  the MDEC's coefficients, enlarged to the output edge-adaptively (FSR 1's
+  EASU) and sharpened (RCAS): about 0.5 ms of CPU when the frame changes
+  and 0.2 ms of GPU (the attract movie at 1600x1080). A GPU that
+  rasterizes in software (`wgpu::DeviceType::Cpu`: lavapipe, SwiftShader)
+  enlarges the rebuilt frame bilinearly instead: FSR 1's passes cost it
+  53 ms a new frame at 1080x729 (the Android emulator showed movies at 4
+  frames a second), the bilinear one 4.4 ms. Otherwise, and under
+  the Original setting, hosts show the device's display, unscaled in
+  aspect, each pixel a block; the Original renderer keeps the chosen
+  filter. The title movie ends on the title screen's picture, which the
+  game shows next from VRAM: after each of its game frames the session
+  notes the frames its player has left (the movie mode playing the boot's
+  request; `TraceOp::MovieFramesLeft`), and over its last second the
+  rebuilt picture eases into the MDEC's own (the 24-bit pixels in the
+  native VRAM, each a block), its last frame the device's picture. Other
+  movies stay rebuilt to their end.
 
 The trace, the projections, the recording and every renderer object observe
 only: the native test `xem-headless/tests/render.rs` runs the same 240 frames
@@ -597,7 +639,7 @@ and WebGL2, and the slice logs still replay to their hashes.
 | presentation | every display refresh, or game frames only; interpolation; wider framing (to the output's aspect ratio) |
 | zoom out | the field camera pulled back along its axis, 1x (default) to 5x in quarter steps; the mouse wheel over the game moves it (down out, up in); the world map takes a tenth of it, other modes none; independent of the aspect ratio |
 | characters in view | field characters keep moving wherever the zoomed-out or wider view shows them (on, the default; changes gameplay, recorded with the inputs; nothing while the view is the original's), or stop just beyond the original screen as the original's do (off) |
-| filtering | world, sprites, interface: nearest or linear, each; movies: bicubic (default) or nearest |
+| filtering | world, sprites, interface: nearest or linear, each; movies: Enhanced (default: rebuilt from the decoder's planes, deblocked, colour following the brightness, enlarged and sharpened with FSR 1) or Original (the decoder's picture as it is) |
 | culling | viewport culling (the game's own against its 4:3 screen: off, wider and pulled-back views show the scenery the game culled), back faces (both off) |
 | headset screen | distance, width, depth of field in a headset (off) |
 
@@ -947,6 +989,9 @@ Slint runs as a custom platform under the host loop and renders into a texture
 only when it asks for a redraw. Settings live in
 `xem_settings::SettingsService` (`$XDG_CONFIG_HOME/xenogears-ex-machina/settings.json`
 on the desktop); the panel and agents change them only through `apply`.
+A saved setting that does not read (a value no longer offered) or keeps the
+whole from validating takes its default alone, the others staying as saved
+(`Settings::read`, also for imported backups).
 With a disc, the game runs paced by the wall clock at 60 frames a second (a
 stalled host drops time rather than catching up), pad 1 follows the keyboard
 and the first gamepad, the GPU's display is uploaded as the game image after

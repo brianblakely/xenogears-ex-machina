@@ -525,3 +525,79 @@ fn a_jumping_sprite_leaves_its_shadow_on_the_floor() {
     assert!(at(160, 139) > 60, "the contact shadow lies at the floor point ({})", at(160, 139));
     assert_eq!(at(160, 101), 0, "not at the raised feet");
 }
+
+/// Enhanced movie frames: converted as the MDEC converts, and colour kept
+/// on its side of a brightness edge through the GPU's upsampling and
+/// enlargement.
+#[test]
+fn movie_frames_convert_as_the_mdec_and_keep_colour_on_its_side() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    // FSR 1's enlargement, and the bilinear one of a GPU that rasterizes in
+    // software.
+    for software in [false, true] {
+        check_movie_frame(&gpu, software);
+    }
+}
+
+fn check_movie_frame(gpu: &Gpu, software: bool) {
+    use std::sync::Arc;
+    use xem_gpu::{DisplayInfo, MovieBlock};
+    use xem_render::ps1::MovieRenderer;
+    // A dark grey macroblock beside a bright red one.
+    let grey = MovieBlock { luma: [-60; 256], cb: [0; 64], cr: [0; 64], quant: [2; 6], bits24: true };
+    let red = MovieBlock { luma: [60; 256], cb: [0; 64], cr: [80; 64], quant: [2; 6], bits24: true };
+    let mut movie = MovieRenderer::new(software);
+    movie.observe(&[
+        TraceOp::Movie { x: 0, y: 0, block: Arc::new(grey) },
+        TraceOp::Movie { x: 24, y: 0, block: Arc::new(red) },
+    ]);
+    let display = DisplayInfo { enabled: true, x: 0, y: 0, width: 32, height: 16, mode_width: 320, color24: true, interlaced: false, pal: false };
+    assert!(movie.shows(&display));
+    // The native VRAM, the MDEC's own picture there blue (24-bit pixels
+    // 0, 0, 240: three bytes each across the 16-bit words).
+    let vram = gpu.device.create_texture(&wgpu::TextureDescriptor {
+        label: None,
+        size: wgpu::Extent3d { width: 1024, height: 512, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::R16Uint,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        view_formats: &[],
+    });
+    let row: Vec<u8> = [0u8, 0, 240].repeat(32);
+    let words: Vec<u8> = row.repeat(16);
+    gpu.queue.write_texture(
+        wgpu::TexelCopyTextureInfo { texture: &vram, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+        &words,
+        wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(96), rows_per_image: Some(16) },
+        wgpu::Extent3d { width: 48, height: 16, depth_or_array_layers: 1 },
+    );
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    let (_, size, new) = movie.present(&gpu.device, &gpu.queue, &mut encoder, &display, (128, 72), &vram).expect("a movie frame");
+    assert_eq!((size, new), ((128, 64), true));
+    gpu.queue.submit([encoder.finish()]);
+    let pixels = read_rgba8(&gpu.device, &gpu.queue, movie.output().expect("presented"));
+    let pixel = |x: usize, y: usize| -> [i32; 3] { std::array::from_fn(|c| i32::from(pixels[(y * 128 + x) * 4 + c])) };
+    // R = Y + 1.402 Cr and so on, plus 128, clamped: grey 68; red (255, 131, 188).
+    let near = |got: [i32; 3], want: [i32; 3]| got.iter().zip(want).all(|(g, w)| (g - w).abs() <= 2);
+    assert!(near(pixel(8, 32), [68, 68, 68]), "grey {:?} (software {software})", pixel(8, 32));
+    assert!(near(pixel(120, 32), [255, 131, 188]), "red {:?} (software {software})", pixel(120, 32));
+    // Two native pixels either side of the edge (output pixels 52 and 76):
+    // no red on the dark side, all of it on the bright one.
+    let redness = |[r, g, _]: [i32; 3]| r - g;
+    assert!(redness(pixel(52, 32)) < 8, "dark side tinted {:?} (software {software})", pixel(52, 32));
+    assert!(redness(pixel(76, 32)) > 110, "bright side {:?} (software {software})", pixel(76, 32));
+    // Five frames from the end of a movie that ends on the game's picture,
+    // a third of the rebuilt one over the MDEC's own; at its last frame, the
+    // MDEC's own alone (the device's picture: none rebuilt).
+    movie.observe(&[TraceOp::VBlank, TraceOp::MovieFramesLeft(5)]);
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    assert!(movie.present(&gpu.device, &gpu.queue, &mut encoder, &display, (128, 72), &vram).expect("a movie frame").2);
+    gpu.queue.submit([encoder.finish()]);
+    let pixels = read_rgba8(&gpu.device, &gpu.queue, movie.output().expect("presented"));
+    let pixel = |x: usize, y: usize| -> [i32; 3] { std::array::from_fn(|c| i32::from(pixels[(y * 128 + x) * 4 + c])) };
+    assert!(near(pixel(8, 32), [23, 23, 183]), "grey a third over blue {:?} (software {software})", pixel(8, 32));
+    movie.observe(&[TraceOp::VBlank, TraceOp::MovieFramesLeft(0)]);
+    assert!(!movie.shows(&display));
+}

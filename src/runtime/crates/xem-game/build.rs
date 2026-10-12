@@ -9,6 +9,9 @@ use std::path::PathBuf;
 use std::process::Command;
 use sha2::{Digest, Sha256};
 
+/// The C files wasm2c writes the module's translation in.
+const PARTS: usize = 16;
+
 fn main() {
     println!("cargo::rustc-check-cfg=cfg(has_game_module)");
     println!("cargo::rerun-if-env-changed=XEM_GAME_WASM");
@@ -36,8 +39,13 @@ fn main() {
     let schema = wasm.with_file_name("schema.json");
     println!("cargo::rerun-if-changed={}", schema.display());
     fs::copy(&schema, out.join("schema.json")).expect("build/game/schema.json (tools/game_module.py writes it)");
+    // The translation in parts (game_0.c...) that compile in parallel (cc's
+    // `parallel` feature, under cargo's jobs): as one file it took GCC
+    // nearly four minutes, in 16 parts 41 seconds on 16 threads, the part
+    // with the largest game functions (the menu's and the battle's mode
+    // loops) the longest.
     let status = Command::new("wasm2c")
-        .args(["-n", "game", "-o"])
+        .args(["-n", "game", "--num-outputs", &PARTS.to_string(), "-o"])
         .arg(out.join("game.c"))
         .arg(&wasm)
         .status()
@@ -56,7 +64,8 @@ fn main() {
 
     let mut build = cc::Build::new();
     build
-        .files([out.join("game.c"), out.join("glue.c")])
+        .files((0..PARTS).map(|part| out.join(format!("game_{part}.c"))))
+        .file(out.join("glue.c"))
         .file(format!("{runtime}/wasm-rt-impl.c"))
         .file(format!("{runtime}/wasm-rt-mem-impl.c"))
         .file(format!("{runtime}/wasm-rt-exceptions-impl.c"))
@@ -70,9 +79,13 @@ fn main() {
         // variable tracking fail on it; the game's debugging goes through the
         // schema and commands instead.
         .debug(false)
-        .warnings(false);
-    // XEM_GAME_DEBUG=1: line tables (no variable tracking), so backtraces name
-    // the file-static functions of the translated module.
+        .warnings(false)
+        // The parts' functions are global, and position-independent code
+        // would otherwise keep each call open to interposition: no inlining
+        // even within a part.
+        .flag_if_supported("-fno-semantic-interposition");
+    // XEM_GAME_DEBUG=1: line tables (no variable tracking), so backtraces
+    // through the translated module name its lines.
     if env::var_os("XEM_GAME_DEBUG").is_some() {
         build.flag("-g1").flag("-fno-var-tracking");
     }

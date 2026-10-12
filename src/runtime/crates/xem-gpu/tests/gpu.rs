@@ -909,3 +909,60 @@ fn interface_projections_trace_as_flat_whole_pixels() {
     assert_eq!((p.vertices[0].fx, p.vertices[0].fy, p.vertices[0].z), (10.0, 20.0, 0.0));
     assert_eq!(p.projection, None);
 }
+
+/// FNV-1a over bytes, as the MDEC keys a macroblock's output.
+fn fnv1a(bytes: impl IntoIterator<Item = u8>) -> u64 {
+    bytes.into_iter().fold(0xCBF2_9CE4_8422_2325, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x100_0000_01B3))
+}
+
+#[test]
+fn transfers_of_decoded_macroblocks_are_traced_as_movie_blocks() {
+    use xem_gpu::{MovieBlock, TraceOp};
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    // Two 24-bit macroblocks' output (16 rows of 24 VRAM pixels each), loaded
+    // as one slice, as the movie player loads what the MDEC decoded.
+    let first: Vec<u16> = (0..24 * 16).map(|i| i as u16 * 7 + 1).collect();
+    let second: Vec<u16> = (0..24 * 16).map(|i| i as u16 * 13 + 5).collect();
+    let key = |pixels: &[u16]| fnv1a(pixels.iter().flat_map(|p| p.to_le_bytes()));
+    let block = |luma| MovieBlock { luma: [luma; 256], cb: [0; 64], cr: [0; 64], quant: [3; 6], bits24: true };
+    gpu.trace_macroblocks([(key(&first), block(1)), (key(&second), block(2))]);
+    let slice: Vec<u16> = first.iter().chain(&second).copied().collect();
+    upload(&mut gpu, 48, 240, 24, 32, &slice);
+    // A transfer of other pixels carries no movie.
+    upload(&mut gpu, 100, 0, 24, 16, &[3; 24 * 16]);
+    let trace = gpu.take_trace();
+    let movie: Vec<(u16, u16, i16)> = trace
+        .ops
+        .iter()
+        .filter_map(|op| match op {
+            TraceOp::Movie { x, y, block } => Some((*x, *y, block.luma[0])),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(movie, [(48, 240, 1), (48, 256, 2)]);
+    let write = trace.ops.iter().position(|op| matches!(op, TraceOp::Write { upload: true, .. })).expect("the slice's write");
+    assert!(matches!(trace.ops[write + 1], TraceOp::Movie { .. }), "the blocks follow their transfer's write");
+}
+
+/// A macroblock the MDEC decodes again (a still part of a moving picture) is
+/// as new as its latest decoding: the oldest kept when it came again, it
+/// outlasts the blocks that follow it.
+#[test]
+fn a_macroblock_decoded_again_stays_known() {
+    use xem_gpu::{MovieBlock, TraceOp};
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    let _ = gpu.take_trace();
+    let still: Vec<u16> = vec![0x1234; 24 * 16];
+    let key = fnv1a(still.iter().flat_map(|p| p.to_le_bytes()));
+    let block = |luma| MovieBlock { luma: [luma; 256], cb: [0; 64], cr: [0; 64], quant: [3; 6], bits24: true };
+    // As many blocks as the trace keeps, the still one first; then it again
+    // and one more.
+    gpu.trace_macroblocks(std::iter::once((key, block(9))).chain((0..4095).map(|other| (other, block(0)))));
+    gpu.trace_macroblocks([(key, block(9)), (1 << 40, block(0))]);
+    upload(&mut gpu, 0, 0, 24, 16, &still);
+    let trace = gpu.take_trace();
+    assert!(trace.ops.iter().any(|op| matches!(op, TraceOp::Movie { block, .. } if block.luma[0] == 9)), "the still block is loaded as a movie block");
+}

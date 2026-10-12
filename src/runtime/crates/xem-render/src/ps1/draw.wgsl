@@ -254,12 +254,13 @@ fn shade(in: VertexOut, frag: vec4<f32>) -> Shaded {
         if (pass_.options & 1u) != 0u && (flags & RECTANGLE) == 0u && !original {
             uv = in.uv_perspective;
         }
-        // A sprite's part takes each texel where the GPU starts it, at a
-        // native pixel's leading edge: a mirrored part (its coordinates
-        // falling across the screen, the game's u - 1 compensating) keeps
-        // its first column instead of starting a texel further in.
+        // A mirrored sprite part (its coordinates falling across the
+        // screen) samples one texel further on: the game's u - 1 meets the
+        // GPU taking each texel at a native pixel's leading edge, so the
+        // part keeps its first column at any scale, and at any size
+        // (pulled back, a native pixel spans several of its texels).
         if ((flags >> CLASS_SHIFT) & 15u) == CLASS_SPRITE && !original {
-            uv += max(-vec2<f32>(uv_dx.x, uv_dy.y) * pass_.scale, vec2<f32>(0.0));
+            uv += select(vec2<f32>(0.0), vec2<f32>(1.0), vec2<f32>(uv_dx.x, uv_dy.y) < vec2<f32>(0.0));
         }
         var s: Sample;
         if (flags & CAPTURE) != 0u && pass_.capture.z > 0u {

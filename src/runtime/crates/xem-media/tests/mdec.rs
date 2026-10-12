@@ -474,3 +474,44 @@ fn decode_frame_lays_macroblocks_in_columns() {
     assert_eq!(image.len(), 8 * 16);
     assert_eq!(image[8 * 8 + 4] >> 4, (flat(50) + 128) as u8 >> 4);
 }
+
+/// FNV-1a over bytes, as `Macroblock::key` hashes a macroblock's output.
+fn fnv1a(bytes: &[u8]) -> u64 {
+    bytes.iter().fold(0xCBF2_9CE4_8422_2325, |hash, &byte| (hash ^ u64::from(byte)).wrapping_mul(0x100_0000_01B3))
+}
+
+#[test]
+fn kept_macroblocks_hold_the_planes_their_output_came_from() {
+    let levels = [80, -30, -200, -60, 60, 200];
+    for depth in [Depth::Bits24, Depth::Bits15] {
+        let mut mdec = Mdec::new();
+        let input = words(&flat_macroblock(levels));
+        mdec.command(decode_command(depth, false, false, input.len() as u16));
+        mdec.push_input(&input);
+        assert!(mdec.take_decoded().is_empty(), "nothing is kept unless asked");
+
+        mdec.keep_decoded(true);
+        mdec.command(decode_command(depth, false, false, input.len() as u16));
+        mdec.push_input(&input);
+        let mut out = vec![0; mdec.output_len()];
+        mdec.pop_output(&mut out);
+        let decoded = mdec.take_decoded();
+        assert_eq!(decoded.len(), 1);
+        let block = &decoded[0];
+        assert_eq!(block.bits24, depth == Depth::Bits24);
+        assert_eq!(block.quant, [1; 6]);
+        assert_eq!(block.key, fnv1a(&bytes(&out[out.len() - depth.macroblock_words()..])));
+        assert!(block.cr.iter().all(|&v| i32::from(v) == flat(levels[0])));
+        assert!(block.cb.iter().all(|&v| i32::from(v) == flat(levels[1])));
+        // The four luminance blocks in their quadrants of the 16x16 plane.
+        for (q, (x0, y0)) in [(0, 0), (8, 0), (0, 8), (8, 8)].into_iter().enumerate() {
+            for y in y0..y0 + 8 {
+                for x in x0..x0 + 8 {
+                    assert_eq!(i32::from(block.luma[x + y * 16]), flat(levels[2 + q]), "luma {x},{y}");
+                }
+            }
+        }
+        assert!(mdec.take_decoded().is_empty());
+        mdec.keep_decoded(false);
+    }
+}

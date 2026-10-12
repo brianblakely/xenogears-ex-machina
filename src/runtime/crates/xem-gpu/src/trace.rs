@@ -342,6 +342,39 @@ pub enum TraceOp {
     Write { rect: VramRect, pixels: std::sync::Arc<[u16]>, upload: bool },
     /// A vertical blank: the game's frame ended.
     VBlank,
+    /// The VRAM at (`x`, `y`) holds a movie macroblock the MDEC decoded, as
+    /// it output it: 16 rows of 24 VRAM pixels at 24 bits (16 pixels), or of
+    /// 16 at 15 bits. Follows the [`TraceOp::Write`] of the transfer that
+    /// loaded it ([`Gpu::trace_macroblocks`]).
+    Movie { x: u16, y: u16, block: std::sync::Arc<MovieBlock> },
+    /// The frames a movie has after the one its player loaded last, for a
+    /// movie that ends on the picture the game goes on from (the title
+    /// movie, which the session notes after each of its game frames:
+    /// [`Gpu::trace_movie_frames_left`]). Presentation only.
+    MovieFramesLeft(u16),
+}
+
+/// A movie macroblock as the MDEC decoded it, before its conversion to RGB:
+/// for a renderer that converts and filters the movie itself.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MovieBlock {
+    /// Luminance, 16x16 row by row, and the chrominance blocks, 8x8 each, as
+    /// the IDCT left them (signed, before the output's clamp and offset).
+    pub luma: [i16; 256],
+    pub cb: [i16; 64],
+    pub cr: [i16; 64],
+    /// Each block's quantization scale: Cr, Cb, then the four luminance blocks.
+    pub quant: [u8; 6],
+    /// 24-bit output (else 15-bit).
+    pub bits24: bool,
+}
+
+/// Movie macroblocks kept for the transfers that load them.
+const MACROBLOCKS: usize = 4096;
+
+/// FNV-1a, 64-bit (the key the MDEC gives a macroblock's output bytes).
+fn fnv1a(bytes: impl IntoIterator<Item = u8>) -> u64 {
+    bytes.into_iter().fold(0xCBF2_9CE4_8422_2325, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x100_0000_01B3))
 }
 
 /// The trace since the last [`Gpu::take_trace`].
@@ -390,6 +423,12 @@ pub(crate) struct Recorder {
     /// its last list and its faces with it.
     frames: u32,
     recorded: bool,
+    /// Movie macroblocks the MDEC decoded, by their output's key, with the
+    /// count of the decoding that last gave each; `macroblock_keys` holds
+    /// keys and counts, oldest first (a key decoded again is as new as that).
+    macroblocks: HashMap<u64, (std::sync::Arc<MovieBlock>, u64)>,
+    macroblock_keys: std::collections::VecDeque<(u64, u64)>,
+    decoded_macroblocks: u64,
     /// Drawn pixels not yet written to the trace.
     dirty: Option<VramRect>,
     /// The next take starts with all of VRAM (enabled, or a snapshot loaded).
@@ -434,6 +473,22 @@ impl Recorder {
     fn projection(&self, index: u32) -> Option<&Projection> {
         let age = self.history_end.wrapping_sub(index);
         (age >= 1 && age <= self.history_len).then(|| &self.history[index as usize % HISTORY])
+    }
+
+    /// The movie macroblocks a transfer to `rect` carries, found by their
+    /// output's bytes: a column of them, 16 rows each, as the MDEC output
+    /// them (the movie player loads each slice it decoded as it is).
+    fn movie_blocks(&mut self, rect: VramRect, pixels: &[u16]) {
+        let width = usize::from(rect.width);
+        if self.macroblocks.is_empty() || !(width == 16 || width == 24) || rect.height % 16 != 0 {
+            return;
+        }
+        for (k, chunk) in pixels.chunks_exact(width * 16).enumerate() {
+            let key = fnv1a(chunk.iter().flat_map(|pixel| pixel.to_le_bytes()));
+            if let Some((block, _)) = self.macroblocks.get(&key).filter(|(block, _)| block.bits24 == (width == 24)) {
+                self.ops.push(TraceOp::Movie { x: rect.x, y: rect.y + 16 * k as u16, block: block.clone() });
+            }
+        }
     }
 
     fn ingest(&mut self, first: u32, projections: &[Projection], stores: &[SxyStore], reveals: &[Reveal]) {
@@ -763,8 +818,42 @@ impl Gpu {
             return;
         }
         for rect in VramRect::wrapped(x.into(), y.into(), width.into(), height.into()) {
-            let pixels = read_rect(&self.vram, rect);
-            self.trace.as_mut().expect("checked above").ops.push(TraceOp::Write { rect, pixels: pixels.into(), upload });
+            let pixels: std::sync::Arc<[u16]> = read_rect(&self.vram, rect).into();
+            let trace = self.trace.as_mut().expect("checked above");
+            trace.ops.push(TraceOp::Write { rect, pixels: pixels.clone(), upload });
+            if upload {
+                trace.movie_blocks(rect, &pixels);
+            }
+        }
+    }
+
+    /// The colour macroblocks the MDEC decoded, by the key of their output's
+    /// bytes (xem_media's `Macroblock::key`), for the transfers that load
+    /// that output into VRAM ([`TraceOp::Movie`]). Presentation only.
+    pub fn trace_macroblocks(&mut self, blocks: impl IntoIterator<Item = (u64, MovieBlock)>) {
+        let Some(trace) = &mut self.trace else { return };
+        for (key, block) in blocks {
+            // A block the MDEC decodes again (a still part of the picture)
+            // stays as long as it keeps coming: its earlier place lapses.
+            trace.decoded_macroblocks += 1;
+            trace.macroblocks.insert(key, (std::sync::Arc::new(block), trace.decoded_macroblocks));
+            trace.macroblock_keys.push_back((key, trace.decoded_macroblocks));
+            while trace.macroblock_keys.len() > MACROBLOCKS
+                && let Some((oldest, count)) = trace.macroblock_keys.pop_front()
+            {
+                if trace.macroblocks.get(&oldest).is_some_and(|(_, latest)| *latest == count) {
+                    trace.macroblocks.remove(&oldest);
+                }
+            }
+        }
+    }
+
+    /// The frames a movie that ends on the picture the game goes on from has
+    /// after the one its player loaded last ([`TraceOp::MovieFramesLeft`]).
+    /// Presentation only.
+    pub fn trace_movie_frames_left(&mut self, frames: u16) {
+        if let Some(trace) = &mut self.trace {
+            trace.ops.push(TraceOp::MovieFramesLeft(frames));
         }
     }
 
@@ -845,11 +934,13 @@ impl Gpu {
         // Every point projected at the projection distance (H) is drawn at
         // its screen size: interface the GTE places (the field menu's
         // counter backing, the world map's marker), traced as interface.
-        // So is a polygon whose every point the GTE put at depth 0, the
-        // divide overflowing (the field's screen pieces: the GTE used to
-        // zoom a picture of the screen about its centre).
+        // So is a polygon the game draws with every point the GTE put at
+        // depth 0, the divide overflowing (the field's screen pieces: the
+        // GTE used to zoom a picture of the screen about its centre); a
+        // culled face there lies behind the game's camera, in the view of
+        // a camera pulled back.
         let at_h = classes.iter().zip(&vertices).all(|(&(_, _, h, _, _), v)| v.z == f32::from(h));
-        let at_zero = classes.iter().all(|&(_, _, _, _, sz)| sz == 0);
+        let at_zero = !revealed && classes.iter().all(|&(_, _, _, _, sz)| sz == 0);
         if classes.len() == count && (at_h || at_zero) {
             for v in &mut vertices[..count] {
                 (v.fx, v.fy, v.z, v.view) = (v.x as f32, v.y as f32, 0.0, None);

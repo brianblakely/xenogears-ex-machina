@@ -108,6 +108,7 @@ fn draw(gpu: &Gpu, session: &mut Session, graphics: &Graphics) -> Picture {
     session.runtime.services().gpu.device_mut().set_trace(true);
     let _ = view.take_restart();
     let mut presented = None;
+    let mut movie = false;
     for frame in 0..8 {
         session.frame().expect("frame");
         let device = session.runtime.services().gpu.device_mut();
@@ -115,6 +116,7 @@ fn draw(gpu: &Gpu, session: &mut Session, graphics: &Graphics) -> Picture {
         view.push(device.take_trace());
         let display = device.display();
         let scene = session.scene();
+        movie = display.color24;
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
         presented = view.present(&mut encoder, &display, &scene, frame as f64 / 60.0).map(|p| p.size);
         gpu.queue.submit([encoder.finish()]);
@@ -122,6 +124,12 @@ fn draw(gpu: &Gpu, session: &mut Session, graphics: &Graphics) -> Picture {
     session.runtime.services().gpu.device_mut().set_trace(false);
     let console = session.runtime.services().gpu.display_rgba8();
     match presented {
+        // A movie frame the view rebuilt (Enhanced): a picture without classes.
+        Some(size) if movie => {
+            let mut rgba = read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().expect("presented"));
+            rgba.chunks_exact_mut(4).for_each(|p| p[3] = 255);
+            Picture { size, rgba, classes: None, flags: None, scale: 1, side: 0, console }
+        }
         Some(size) => {
             let mut rgba = read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().expect("presented"));
             rgba.chunks_exact_mut(4).for_each(|p| p[3] = 255);
@@ -138,7 +146,8 @@ fn draw(gpu: &Gpu, session: &mut Session, graphics: &Graphics) -> Picture {
             }
         }
         None => {
-            // A 24-bit movie frame: the device's own picture, as hosts show it.
+            // A 24-bit movie frame the view does not rebuild: the device's
+            // own picture, as hosts show it.
             let (width, height, rgba) = console.clone();
             Picture { size: (width, height), rgba, classes: None, flags: None, scale: 1, side: 0, console }
         }

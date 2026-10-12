@@ -175,6 +175,33 @@ const G_CB: i32 = -1408;
 const G_CR: i32 = -2926;
 const B_CB: i32 = 7258;
 
+/// A colour macroblock as the decoder made it, before its conversion to
+/// RGB, for a presentation that converts and filters it itself (kept while
+/// asked: [`Mdec::keep_decoded`]).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Macroblock {
+    /// Luminance, 16x16 row by row, and the chrominance blocks, 8x8 each, as
+    /// the IDCT left them (signed, before the output's clamp and offset).
+    pub luma: [i16; 256],
+    pub cb: [i16; 64],
+    pub cr: [i16; 64],
+    /// Each block's quantization scale: Cr, Cb, then the four luminance blocks.
+    pub quant: [u8; 6],
+    /// 24-bit output (else 15-bit).
+    pub bits24: bool,
+    /// FNV-1a over the bytes of the output words it made (little-endian):
+    /// a transfer of them to VRAM carries the same bytes.
+    pub key: u64,
+}
+
+/// Macroblocks kept at most until taken.
+const KEPT: usize = 4096;
+
+/// FNV-1a, 64-bit.
+fn fnv1a(bytes: impl IntoIterator<Item = u8>) -> u64 {
+    bytes.into_iter().fold(0xCBF2_9CE4_8422_2325, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x100_0000_01B3))
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Phase {
     Idle = 0,
@@ -209,6 +236,11 @@ pub struct Mdec {
     coefficients: [i16; 64],
     /// IDCT results: Cr, Cb, Y1, Y2, Y3, Y4 (monochrome uses the first).
     blocks: [[i16; 64]; 6],
+    /// Their quantization scales.
+    quants: [u8; 6],
+    /// Colour macroblocks decoded since the last take, while kept.
+    keep: bool,
+    decoded: VecDeque<Macroblock>,
     output: VecDeque<u32>,
     /// Words of the head macroblock already read, for the current-block field.
     output_read: u32,
@@ -242,6 +274,9 @@ impl Mdec {
             q_scale: 0,
             coefficients: [0; 64],
             blocks: [[0; 64]; 6],
+            quants: [0; 6],
+            keep: false,
+            decoded: VecDeque::new(),
             output: VecDeque::new(),
             output_read: 0,
         }
@@ -321,6 +356,21 @@ impl Mdec {
                 (self.output_read + n as u32) % self.depth().macroblock_words() as u32;
         }
         n
+    }
+
+    /// Whether to keep the colour macroblocks it decodes (presentation
+    /// only: nothing it outputs depends on it, and states do not hold them).
+    pub fn keep_decoded(&mut self, keep: bool) {
+        self.keep = keep;
+        if !keep {
+            self.decoded.clear();
+        }
+    }
+
+    /// The colour macroblocks decoded since the last call, oldest first (at
+    /// most the newest 4096).
+    pub fn take_decoded(&mut self) -> Vec<Macroblock> {
+        self.decoded.drain(..).collect()
     }
 
     /// Decoded words waiting for DMA1.
@@ -499,6 +549,7 @@ impl Mdec {
         let depth = self.depth();
         if depth.is_color() {
             self.blocks[usize::from(self.block)] = block;
+            self.quants[usize::from(self.block)] = self.q_scale;
             self.block += 1;
             if self.block == 6 {
                 self.block = 0;
@@ -541,6 +592,7 @@ impl Mdec {
                 }
             }
         }
+        let first = self.output.len();
         if depth == Depth::Bits24 {
             let bytes: Vec<u8> = rgb.iter().flatten().copied().collect();
             for word in bytes.chunks_exact(4) {
@@ -555,6 +607,26 @@ impl Mdec {
                 };
                 self.output.push_back(pixel(pair[0]) | pixel(pair[1]) << 16);
             }
+        }
+        if self.keep {
+            let mut luma = [0i16; 256];
+            for (quarter, (xx, yy)) in [(0, 0), (8, 0), (0, 8), (8, 8)].into_iter().enumerate() {
+                for y in 0..8 {
+                    luma[(y + yy) * 16 + xx..(y + yy) * 16 + xx + 8].copy_from_slice(&self.blocks[2 + quarter][y * 8..y * 8 + 8]);
+                }
+            }
+            let key = fnv1a(self.output.range(first..).flat_map(|word| word.to_le_bytes()));
+            if self.decoded.len() == KEPT {
+                self.decoded.pop_front();
+            }
+            self.decoded.push_back(Macroblock {
+                luma,
+                cb: self.blocks[1],
+                cr: self.blocks[0],
+                quant: self.quants,
+                bits24: depth == Depth::Bits24,
+                key,
+            });
         }
     }
 

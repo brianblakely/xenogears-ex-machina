@@ -126,6 +126,21 @@ impl Services {
         }
     }
 
+    /// Hand the colour macroblocks the MDEC decoded to the GPU's draw trace,
+    /// which finds them in the transfers that load their output into VRAM
+    /// (presentation only: the MDEC keeps them only while a trace is on).
+    fn route_movie(&mut self) {
+        let tracing = self.gpu.device().trace_enabled();
+        self.mdec.keep_decoded(tracing);
+        let blocks = self.mdec.take_decoded();
+        if !blocks.is_empty() {
+            self.gpu.device_mut().trace_macroblocks(blocks.into_iter().map(|block| {
+                let xem_media::mdec::Macroblock { luma, cb, cr, quant, bits24, key } = block;
+                (key, xem_gpu::MovieBlock { luma, cb, cr, quant, bits24 })
+            }));
+        }
+    }
+
     /// The earliest scheduled device event.
     pub fn next_device_event(&mut self) -> Option<u64> {
         self.devices().into_iter().filter_map(|(_, d)| d.next_event()).min()
@@ -157,6 +172,7 @@ impl Services {
         }
         self.raised = raised;
         self.trap_reason = reason;
+        self.route_movie();
     }
 
     fn stub_name(&self, id: u32) -> String {

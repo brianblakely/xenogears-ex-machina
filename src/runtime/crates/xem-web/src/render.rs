@@ -347,10 +347,11 @@ impl WebRenderer {
     }
 
     /// What the game drew, its display and scene. A 24-bit display (movie
-    /// frames) is shown from `display_rgba8` as the device holds it.
+    /// frames) the view does not rebuild is shown from `display_rgba8` as
+    /// the device holds it.
     pub fn set_game_frame(&mut self, trace: Trace, display: DisplayInfo, scene: String, display_rgba8: impl FnOnce() -> (u32, u32, Vec<u8>)) {
         self.renderer.push(trace);
-        if GameView::shows(&display) {
+        if GameView::shows(&display) || self.renderer.shows_movie(&display) {
             self.game_frame = Some((display, scene));
         } else {
             self.game_frame = None;
@@ -410,11 +411,12 @@ impl WebRenderer {
             Filter::Nearest => wgpu::FilterMode::Nearest,
             Filter::Linear => wgpu::FilterMode::Linear,
         };
-        // Movie frames take Ex Machina's movie filter; the Original renderer
-        // keeps the chosen one.
+        // Movie frames the device shows itself (the Original movies setting,
+        // or one Ex Machina cannot rebuild) stay as the decoder made them,
+        // each pixel a block; the Original renderer keeps the chosen filter.
         let graphics = settings.settings().graphics;
         if !encoded && self.game_frame.is_none() && self.game_image.is_some() && graphics.renderer == xem_settings::Renderer::ExMachina {
-            movie_filter(&mut game, graphics.filtering.movies);
+            game.filter = wgpu::FilterMode::Nearest;
         }
         let mut quads = vec![game];
         if presentation.show_fps && let Some(counter) = &self.frame_rate {
@@ -520,7 +522,7 @@ impl WebRenderer {
                         quad.srgb_encoded = encoded;
                         quad.filter = filter;
                         if !encoded && graphics.renderer == xem_settings::Renderer::ExMachina {
-                            movie_filter(&mut quad, graphics.filtering.movies);
+                            quad.filter = wgpu::FilterMode::Nearest;
                         }
                         quad
                     })
@@ -656,11 +658,3 @@ fn panel_size(width: u32, height: u32, scale: f32) -> (u32, u32) {
     (fit(PANEL_SIZE.0, width), fit(PANEL_SIZE.1, height))
 }
 
-/// A movie frame's quad under Ex Machina's renderer, enlarged as its movie
-/// filter says.
-fn movie_filter(quad: &mut Quad, filter: xem_settings::MovieFilter) {
-    match filter {
-        xem_settings::MovieFilter::Bicubic => quad.smooth = true,
-        xem_settings::MovieFilter::Nearest => quad.filter = wgpu::FilterMode::Nearest,
-    }
-}

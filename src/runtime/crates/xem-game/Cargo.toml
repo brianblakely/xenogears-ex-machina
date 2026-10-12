@@ -15,5 +15,5 @@ xem-storage = { path = "../xem-storage" }
 serde_json.workspace = true
 
 [build-dependencies]
-cc.workspace = true
+cc = { workspace = true, features = ["parallel"] }
 sha2 = "=0.11.0"

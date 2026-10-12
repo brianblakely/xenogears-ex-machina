@@ -214,6 +214,47 @@ impl Settings {
         Ok(next)
     }
 
+    /// Settings read from `value` one setting at a time: an object whole
+    /// when the settings it makes read and validate, else each of its values
+    /// in turn; a value that does not (a variant no longer offered, a number
+    /// out of range) leaves its setting at the default, and its path (such as
+    /// `graphics.filtering.movies`) is returned. Only a value that is not an
+    /// object is refused.
+    pub fn read(value: &serde_json::Value) -> Result<(Settings, Vec<String>), String> {
+        fn take(settings: &mut serde_json::Value, path: &mut Vec<String>, value: &serde_json::Value, reset: &mut Vec<String>) {
+            let mut candidate = settings.clone();
+            let mut at = &mut candidate;
+            for key in path.iter() {
+                if !at.get(key).is_some_and(serde_json::Value::is_object) {
+                    at[key.as_str()] = serde_json::Value::Object(Default::default());
+                }
+                at = &mut at[key.as_str()];
+            }
+            *at = value.clone();
+            if serde_json::from_value::<Settings>(candidate.clone()).is_ok_and(|read| read.validate().is_ok()) {
+                *settings = candidate;
+                return;
+            }
+            match value {
+                serde_json::Value::Object(map) if !map.is_empty() => {
+                    for (key, value) in map {
+                        path.push(key.clone());
+                        take(settings, path, value, reset);
+                        path.pop();
+                    }
+                }
+                _ => reset.push(path.join(".")),
+            }
+        }
+        if !value.is_object() {
+            return Err("settings are not a JSON object".into());
+        }
+        let mut settings = serde_json::to_value(Settings::default()).expect("settings serialize");
+        let mut reset = Vec::new();
+        take(&mut settings, &mut Vec::new(), value, &mut reset);
+        Ok((serde_json::from_value(settings).expect("read when taken"), reset))
+    }
+
     /// Checks values that the types alone do not constrain (for loaded files).
     fn validate(&self) -> Result<(), String> {
         self.fast_forward_rate.validate()?;
@@ -358,19 +399,18 @@ impl SettingsService {
     pub fn import(&mut self, text: &str) -> Result<Ack, String> {
         #[derive(Deserialize)]
         #[serde(deny_unknown_fields)]
-        struct Backup { version: u32, settings: Settings }
+        struct Backup { version: u32, settings: serde_json::Value }
         let backup: Backup = serde_json::from_str(text).map_err(|e| e.to_string())?;
         if backup.version != 1 { return Err("incompatible settings backup version".into()); }
-        self.apply(SettingChange::Replace(backup.settings)).map_err(|e| e.to_string())
+        let (settings, _) = Settings::read(&backup.settings)?;
+        self.apply(SettingChange::Replace(settings)).map_err(|e| e.to_string())
     }
     /// Opens the settings saved in `store`, or the defaults if none were saved.
     pub fn open(store: impl SettingsStore + 'static) -> Result<Self, LoadError> {
         let settings = match store.load().map_err(LoadError::Io)? {
             Some(json) => {
-                let settings: Settings = serde_json::from_str(&json)
-                    .map_err(|error| LoadError::Invalid(error.to_string()))?;
-                settings.validate().map_err(LoadError::Invalid)?;
-                settings
+                let value: serde_json::Value = serde_json::from_str(&json).map_err(|error| LoadError::Invalid(error.to_string()))?;
+                Settings::read(&value).map_err(LoadError::Invalid)?.0
             }
             None => Settings::default(),
         };
@@ -599,13 +639,25 @@ mod tests {
 
     #[test]
     fn invalid_or_partial_files() {
-        let store = MemoryStore {
-            json: Some(r#"{"master_volume": 250}"#.into()),
-        };
-        assert!(matches!(
-            SettingsService::open(store),
-            Err(LoadError::Invalid(_))
-        ));
+        // An invalid setting (a volume out of range, a movie mode no longer
+        // offered) takes its default alone; the others stay as saved.
+        let json = r#"{"master_volume": 250, "audio_output": "Mono",
+            "app_bindings": {"ImportState": {"keyboard": ["F11"], "gamepad": ["Start", "North"]}},
+            "graphics": {"zoom_out": 300, "filtering": {"movies": "Bicubic", "world": "Linear"}}}"#;
+        let service = SettingsService::open(MemoryStore { json: Some(json.into()) }).unwrap();
+        let settings = service.settings();
+        // A binding is one setting: kept whole.
+        assert_eq!(
+            serde_json::to_value(&settings.app_bindings).unwrap()["ImportState"],
+            serde_json::json!({"keyboard": ["F11"], "gamepad": ["Start", "North"]})
+        );
+        assert_eq!(settings.master_volume, Settings::default().master_volume);
+        assert_eq!(settings.audio_output, AudioOutput::Mono);
+        assert_eq!(settings.graphics.zoom_out, 300);
+        assert_eq!(settings.graphics.filtering.movies, MovieFilter::Enhanced);
+        assert_eq!(settings.graphics.filtering.world, Filter::Linear);
+        let (_, reset) = Settings::read(&serde_json::from_str(json).unwrap()).unwrap();
+        assert_eq!(reset, ["graphics.filtering.movies", "master_volume"]);
         let store = MemoryStore {
             json: Some("not json".into()),
         };

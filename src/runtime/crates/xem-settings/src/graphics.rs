@@ -201,19 +201,21 @@ pub struct TextureFiltering {
     pub world: crate::Filter,
     pub sprites: crate::Filter,
     pub interface: crate::Filter,
-    /// Movie frames (24-bit pictures the renderer shows as the device holds
-    /// them), enlarged to the window.
+    /// Movie frames (the MDEC's 24-bit pictures).
     pub movies: MovieFilter,
 }
 
-/// How Ex Machina's renderer enlarges movie frames.
+/// How Ex Machina's renderer shows movie frames.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MovieFilter {
-    /// Catmull-Rom bicubic: smooth and sharp many times enlarged.
+    /// Rebuilt from what the MDEC decoded: its block seams smoothed where
+    /// the compression made them, its colour (stored at half resolution)
+    /// following the brightness's edges, and enlarged edge-adaptively and
+    /// sharpened (FSR 1).
     #[default]
-    Bicubic,
-    /// Each pixel a block, as the console's picture enlarged.
-    Nearest,
+    Enhanced,
+    /// The decoder's output as it is, each pixel a block.
+    Original,
 }
 
 /// Optional culling; off by default. The game's own culling, clipping,
@@ -394,12 +396,12 @@ mod tests {
     }
 
     #[test]
-    fn movies_are_bicubic_unless_nearest_is_chosen() {
-        assert_eq!(Graphics::default().filtering.movies, MovieFilter::Bicubic);
+    fn movies_are_enhanced_unless_original_is_chosen() {
+        assert_eq!(Graphics::default().filtering.movies, MovieFilter::Enhanced);
         let older: Graphics = serde_json::from_str(r#"{"filtering":{"world":"Linear"}}"#).unwrap();
-        assert_eq!((older.filtering.world, older.filtering.movies), (crate::Filter::Linear, MovieFilter::Bicubic));
-        let nearest = Graphics { filtering: TextureFiltering { movies: MovieFilter::Nearest, ..Default::default() }, ..Graphics::default() };
-        assert_eq!(serde_json::from_str::<Graphics>(&serde_json::to_string(&nearest).unwrap()).unwrap(), nearest);
+        assert_eq!((older.filtering.world, older.filtering.movies), (crate::Filter::Linear, MovieFilter::Enhanced));
+        let original = Graphics { filtering: TextureFiltering { movies: MovieFilter::Original, ..Default::default() }, ..Graphics::default() };
+        assert_eq!(serde_json::from_str::<Graphics>(&serde_json::to_string(&original).unwrap()).unwrap(), original);
     }
 
     #[test]

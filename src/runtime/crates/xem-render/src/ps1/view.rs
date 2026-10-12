@@ -36,6 +36,10 @@ pub struct ViewConfig {
     /// the subject the camera looks at appears this many times smaller.
     /// The world map takes a tenth of the effect; other modes none.
     pub zoom: f32,
+    /// Enhanced movies ([`super::MovieRenderer`]): the output the rebuilt
+    /// picture is fitted into. `None` leaves movie frames to the device's
+    /// own picture (the Original setting).
+    pub movies: Option<(u32, u32)>,
 }
 
 /// The widest wider framing: VRAM pixels on each side.
@@ -142,6 +146,7 @@ impl ViewConfig {
             aspect,
             interpolation: graphics.interpolation,
             zoom: f32::from(graphics.zoom_out.clamp(100, xem_settings::MAX_ZOOM_OUT)) / 100.0,
+            movies: (graphics.filtering.movies == xem_settings::MovieFilter::Enhanced).then_some(output),
         }
     }
 }
@@ -190,6 +195,10 @@ pub struct GameView {
     /// to draw (the display refreshing faster than the game draws), its
     /// picture stands.
     shown: Option<Shown>,
+    /// Movie frames rebuilt from what the MDEC decoded, and whether the last
+    /// presentation was one.
+    movie: super::MovieRenderer,
+    presented_movie: bool,
 }
 
 /// What a presentation shows: the frame (its identity and the ops that
@@ -224,6 +233,8 @@ impl GameView {
             frame_scenes: Vec::new(),
             welder: super::Welder::default(),
             shown: None,
+            movie: super::MovieRenderer::new(adapter.is_some_and(|adapter| adapter.get_info().device_type == wgpu::DeviceType::Cpu)),
+            presented_movie: false,
         }
     }
 
@@ -300,6 +311,7 @@ impl GameView {
 
     /// Adds what the game drew since the last push.
     pub fn push(&mut self, mut trace: Trace) {
+        self.movie.observe(&trace.ops);
         self.welder.weld(&mut trace.ops);
         if let Some(TraceOp::Write { rect, upload: true, .. }) = trace.ops.first()
             && u32::from(rect.width) == super::VRAM_WIDTH
@@ -332,8 +344,10 @@ impl GameView {
                 height: display.height.min(512) as u16,
             });
         }
-        // A screen the game takes in this trace is the picture last presented.
-        let presented = self.presented_texture().cloned().zip(self.frame.area()).map(|(texture, (_, scale))| {
+        // A screen the game takes in this trace is the picture last presented
+        // (a frame's; after a movie frame, the native pixels it took).
+        let frame = self.presented_texture().filter(|_| !self.presented_movie).cloned();
+        let presented = frame.zip(self.frame.area()).map(|(texture, (_, scale))| {
             super::PresentedPicture { texture, side: self.frame.side(), scale }
         });
         self.renderer.set_presented(presented);
@@ -349,6 +363,16 @@ impl GameView {
                 self.frame_scenes.push((identity, scene.to_string()));
             }
         }
+        // A movie frame the MDEC decoded, rebuilt (the Enhanced setting).
+        if let Some(output) = config.movies
+            && self.movie.shows(display)
+        {
+            self.presented_movie = true;
+            self.shown = None;
+            let (view, size, new_frame) = self.movie.present(&self.device, &self.queue, encoder, display, output, &self.renderer.vram)?;
+            return Some(Presented { view, size, new_frame });
+        }
+        self.presented_movie = false;
         if !Self::shows(display) || self.renderer.needs_full_vram() {
             return None;
         }
@@ -424,8 +448,15 @@ impl GameView {
         });
     }
 
+    /// Whether this view draws a movie frame `display` shows: rebuilt from
+    /// what the MDEC decoded (the Enhanced setting), when every macroblock
+    /// of it is one the game loaded.
+    pub fn shows_movie(&self, display: &DisplayInfo) -> bool {
+        self.config.is_some_and(|config| config.movies.is_some()) && self.movie.shows(display)
+    }
+
     /// Whether this view draws `display` (15-bit and on); 24-bit movie
-    /// frames are shown from the device's VRAM as they are.
+    /// frames are the device's own picture unless [`GameView::shows_movie`].
     pub fn shows(display: &DisplayInfo) -> bool {
         display.enabled && !display.color24 && display.width > 0 && display.height > 0
     }
@@ -438,6 +469,9 @@ impl GameView {
 
     /// The texture the last [`GameView::present`] returned a view of.
     pub fn presented_texture(&self) -> Option<&wgpu::Texture> {
+        if self.presented_movie {
+            return self.movie.output();
+        }
         match self.presented_effects? {
             true => self.effects.output(),
             false => Some(self.frame.color()),

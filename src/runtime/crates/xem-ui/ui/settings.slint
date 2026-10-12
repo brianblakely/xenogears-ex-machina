@@ -300,7 +300,7 @@ export component SettingsPanel inherits Window {
                                     HorizontalLayout {
                                         spacing: 8px;
                                         Text { text: "Movies"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
-                                        ComboBox { accessible-label: "Movie filtering"; model: ["Bicubic", "Nearest"]; current-index <=> root.gfx-filter-movies; selected => { root.graphics-edited("filter-movies", self.current-index); } }
+                                        ComboBox { accessible-label: "Movies"; model: ["Enhanced", "Original"]; current-index <=> root.gfx-filter-movies; selected => { root.graphics-edited("filter-movies", self.current-index); } }
                                     }
                                     CheckBox { text: "Cull back faces (off: as the game draws)"; checked <=> root.gfx-cull-back-faces; toggled => { root.graphics-edited("cull", self.checked ? 1 : 0); } }
                                     CheckBox { text: "Cull at the original screen's edges (off: wider and zoomed-out views show the scenery the game culled)"; checked <=> root.gfx-cull-viewport; toggled => { root.graphics-edited("cull-viewport", self.checked ? 1 : 0); } }

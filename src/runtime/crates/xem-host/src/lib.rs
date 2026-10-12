@@ -593,7 +593,7 @@ impl View {
         let (trace, display, scene) = game.take_frame(restart, self.renderer.reveals());
         self.fresh_frame |= !trace.ops.is_empty();
         self.renderer.push(trace);
-        if GameView::shows(&display) {
+        if GameView::shows(&display) || self.renderer.shows_movie(&display) {
             self.game_frame = Some((display, scene));
         } else {
             self.game_frame = None;
@@ -750,14 +750,12 @@ impl View {
             Filter::Nearest => wgpu::FilterMode::Nearest,
             Filter::Linear => wgpu::FilterMode::Linear,
         };
-        // Movie frames (shown as the device holds them) take Ex Machina's
-        // movie filter; the Original renderer keeps the chosen one.
+        // Movie frames the device shows itself (the Original movies setting,
+        // or one Ex Machina cannot rebuild) stay as the decoder made them,
+        // each pixel a block; the Original renderer keeps the chosen filter.
         let graphics = self.settings.borrow().settings().graphics;
         if !encoded && self.game_frame.is_none() && self.game_image.is_some() && graphics.renderer == xem_settings::Renderer::ExMachina {
-            match graphics.filtering.movies {
-                xem_settings::MovieFilter::Bicubic => game.smooth = true,
-                xem_settings::MovieFilter::Nearest => game.filter = wgpu::FilterMode::Nearest,
-            }
+            game.filter = wgpu::FilterMode::Nearest;
         }
         let mut quads = vec![game];
         if presentation.show_fps {

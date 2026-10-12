@@ -255,7 +255,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             view.push(trace);
             (display, scene)
         };
-        let from_view = !original && GameView::shows(&display);
+        let from_view = !original && (GameView::shows(&display) || view.shows_movie(&display));
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
         let picture = if from_view {
             view.present(&mut encoder, &display, &scene, start.elapsed().as_secs_f64()).map(|p| p.size)
@@ -311,12 +311,10 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                                 // format; movie frames are an sRGB texture.
                                 quad.srgb_encoded = from_view;
                                 quad.filter = filter;
-                                // Movie frames take Ex Machina's movie filter.
+                                // Movie frames the device shows itself stay as the
+                                // decoder made them, each pixel a block.
                                 if !from_view && !original {
-                                    match current.graphics.filtering.movies {
-                                        xem_settings::MovieFilter::Bicubic => quad.smooth = true,
-                                        xem_settings::MovieFilter::Nearest => quad.filter = wgpu::FilterMode::Nearest,
-                                    }
+                                    quad.filter = wgpu::FilterMode::Nearest;
                                 }
                                 quad
                             })

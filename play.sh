@@ -8,7 +8,8 @@
 # file) or --bios FILE (the BIOS image's Kanji font). XEM_BIOS=FILE adds --bios.
 #
 # It builds what is missing or out of date, each step in its pinned Nix shell:
-#   1. the matched PS1 builds (make -C src/decomp all-verify; needs the discs),
+#   1. the matched PS1 builds (make -C src/decomp all-verify, a job per core;
+#      needs the discs),
 #   2. the game module and schema (tools/game_module.py),
 #   3. xem-desktop (release).
 # Then it runs on the host's NVIDIA driver when there is one
@@ -35,7 +36,7 @@ args=(--disc "$(realpath "$disc")" "$@")
 # 1. The matched links give every object its original address.
 if ! compgen -G ".local/decomp/build/*.elf" >/dev/null; then
     echo "play.sh: building the matched PS1 images (once; several minutes)"
-    "${nix[@]}" path:./nix/ghidra#matching -c make -C src/decomp all-verify
+    "${nix[@]}" path:./nix/ghidra#matching -c make -j"$(nproc)" -C src/decomp all-verify
 fi
 
 # 2. The game module, again whenever the decomp, the port or the tool changed.

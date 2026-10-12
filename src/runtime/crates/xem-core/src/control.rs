@@ -301,13 +301,37 @@ impl<M: GameModule> Session<M> {
         }
         match self.runtime.run_frame() {
             Ok(report) => {
-                if !report.blocked { self.apply_replay_controls()?; self.checkpoint(); }
+                if !report.blocked { self.apply_replay_controls()?; self.checkpoint(); self.trace_title_movie(); }
                 Ok(!report.blocked)
             },
             Err(trap) => {
                 self.stopped = Some(trap.to_string());
                 Err(trap)
             }
+        }
+    }
+
+    /// For a draw trace showing the title movie, the frames its player has
+    /// left after the one it loaded last, by the player's own count: the
+    /// renderer eases its movie filter out over the last of them, as the
+    /// movie's last frame is the title screen's picture. The title movie is
+    /// the movie mode's (6) playing the boot's request (kind 1; the battle
+    /// events' requests set bit 7). Read only.
+    fn trace_title_movie(&mut self) {
+        let services = self.runtime.services();
+        let device = services.gpu.device();
+        if services.mode != Some(6) || !device.trace_enabled() || !device.display().color24 {
+            return;
+        }
+        let mut read = |path: &str| self.inspect(path, 0).ok().and_then(|value| value.as_i64());
+        // Playing to its end (1), or stopped there (-1), its last frame shown.
+        let (Some(1), Some(1 | -1), Some(shown), Some(end)) =
+            (read("cd_movie_request_kind"), read("movie_player_state"), read("movie_shown_frame"), read("movie_end_frame"))
+        else {
+            return;
+        };
+        if let Some(left) = (0..=end).contains(&shown).then(|| u16::try_from(end - shown).ok()).flatten() {
+            self.runtime.services().gpu.device_mut().trace_movie_frames_left(left);
         }
     }
 
