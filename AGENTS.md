@@ -15,6 +15,10 @@
   captures only for a concrete unresolved question.
 - Do not preserve obsolete compatibility paths, fallbacks, migrations or duplicated
   requirement registries. Prefer the simplest implementation and existing tools.
-- Use the pinned Nix shells. Run focused tests while editing and the public build
-  before review. Record exact commands/results and missing private inputs honestly.
+- Use the pinned Nix shells. While developing, test only the platform whose host you
+  are changing: `src/runtime/scripts/suite.sh desktop` (native and shared code, about
+  two minutes), `web`, `android` or `xr`, or narrower focused tests. Run
+  `suite.sh full` (every platform and the build without a game module, about twelve
+  minutes) once, at the end, before review or a merge, never after each change.
+  Record exact commands/results and missing private inputs honestly.
 - Keep original assets and generated disassembly local. Do not modify prompt.md.

@@ -852,15 +852,19 @@ Headset class (Low tier, depth of field off unless enabled).
 
 ## The test suite
 
-`src/runtime/scripts/suite.sh [quick|full]` runs the tests from anywhere in
-the repository, in the runtime shell. `quick` (while editing) builds the game
-module and runs the port's unit tests, the Rust workspace's tests and the
-validation run; `full` (before a merge) adds the workspace's libraries,
-binaries and tests checked without a game module (as a clone without the
-user's discs builds them; the xem-headless examples are tools for the
-user's disc), the web build and the browser suites, and the XR and Android
-smoke tests. The builds run side by side, each in a cargo target directory
-of its own (`src/runtime/target-*`, none of them play.sh's): the native one,
+`src/runtime/scripts/suite.sh [desktop|web|android|xr|full]` runs the tests
+from anywhere in the repository, in the runtime shell. While developing,
+run only the platform whose host is changing, and `full` once at the end,
+before review or a merge (AGENTS.md): `desktop` (the default, for the
+native and shared code) builds the game module and runs the port's unit
+tests, the Rust workspace's tests and the validation run; `web` the web
+build, the browser suites and the browser tests that measure time
+(WebXR's among them); `android` the APK and the emulator's smoke test; `xr`
+the native build and the OpenXR smoke test. `full` runs them all and checks
+the workspace's libraries, binaries and tests without a game module (as a
+clone without the user's discs builds them; the xem-headless examples are
+tools for the user's disc). In `full`, the builds run side by side, each in
+a cargo target directory of its own (`src/runtime/target-*`, none of them play.sh's): the native one,
 then the Rust tests and the validation run at once; the check without a
 game module; the web build, then the browser suites (the slice's, the
 longest, from the start beside the others two files at a time; the slice's
@@ -887,7 +891,7 @@ the system's "isn't responding" dialogs on its AVD (on a loaded host one
 took its taps). Logs, and each stage's result and time: `build/suite/`.
 Measured here (16 threads, warm builds): `full` 709 s with every stage
 passing, where the same stages run one after another took about 26 minutes;
-`quick` 114 s.
+`desktop` 114 s.
 
 ## Saves and time controls
 

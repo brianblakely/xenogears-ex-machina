@@ -1,16 +1,24 @@
 #!/usr/bin/env bash
 # The test suite, from anywhere in the repository:
 #
-#   src/runtime/scripts/suite.sh [quick|full]
+#   src/runtime/scripts/suite.sh [desktop|web|android|xr|full]
 #
-# quick (while editing): the game module, the port's unit tests, the Rust
-# workspace's tests and the validation run. full (before a merge): also the
-# workspace's libraries, binaries and tests checked without a game module (as
-# a clone without the user's discs builds them; the xem-headless examples are
-# tools for the user's disc), the web build and the browser suites, and the
-# XR and Android smoke tests.
+# While developing, run only the platform whose host you are changing
+# (desktop for the native and shared code), and full once at the end, before
+# review or a merge (AGENTS.md):
 #
-# The builds run side by side, each in a cargo target directory of its own
+#   desktop  (the default) the game module, the port's unit tests, the Rust
+#            workspace's tests and the validation run
+#   web      the game module, the web build and the browser suites, the
+#            browser tests that measure time (WebXR's among them) last
+#   android  the game module, the APK and the emulator's smoke test
+#   xr       the game module, the native build and the OpenXR smoke test
+#   full     all of them, and the workspace's libraries, binaries and tests
+#            checked without a game module (as a clone without the user's
+#            discs builds them; the xem-headless examples are tools for the
+#            user's disc)
+#
+# In full, the builds run side by side, each in a cargo target directory of its own
 # (src/runtime/target-*, none of them play.sh's): the native one, then the
 # Rust tests and the validation run at once; the check without a game
 # module; the web build, then the browser suites (the slice's, the longest,
@@ -38,8 +46,11 @@ set -uo pipefail
 
 root=$(cd "$(dirname "$0")/../../.." && pwd)
 runtime=$root/src/runtime
-tier=${1:-quick}
-[[ $tier == quick || $tier == full ]] || { echo "usage: $0 [quick|full]" >&2; exit 2; }
+tier=${1:-desktop}
+case $tier in
+desktop | web | android | xr | full) ;;
+*) echo "usage: $0 [desktop|web|android|xr|full]" >&2; exit 2 ;;
+esac
 
 # Everything runs in the runtime shell (the Android stage enters its own).
 nix=(nix --extra-experimental-features 'nix-command flakes' develop)
@@ -186,31 +197,37 @@ summary() {
 }
 
 passed() { grep -q '^pass' "$logs/$1.result" 2>/dev/null; }
+# covers PLATFORM...: whether this tier runs one of their stages.
+covers() { [[ $tier == full || " $* " == *" $tier "* ]]; }
 
 stage module module || { summary; exit 1; }
-stage port port &
-{
-    stage native native || exit
-    stage rust rust &
-    [[ ! -f $disc ]] || stage validation validation &
-    wait
-} &
-if [[ $tier == full ]]; then
-    stage public public &
-    { stage web web && stage browser browser; } &
+covers desktop && stage port port &
+if covers desktop web xr; then
+    {
+        stage native native || exit
+        if covers desktop; then
+            stage rust rust &
+            [[ ! -f $disc ]] || stage validation validation &
+            wait
+        fi
+    } &
+fi
+[[ $tier != full ]] || stage public public &
+covers web && { stage web web && stage browser browser; } &
+if covers android; then
     stage android-build android_build &
     stage android-boot android_boot &
 fi
 wait
-if [[ $tier == full ]]; then
+if covers android; then
     if passed android-build; then
         stage android android
     elif passed android-boot; then
         # No APK to test: stop the emulator booted for it (android-smoke.sh's port).
         in_android adb -s emulator-5584 emu kill >/dev/null 2>&1
     fi
-    ! passed native || [[ ! -f $disc ]] || stage xr xr
-    # The timed tests need the web build the browser suites ran on.
-    ! passed web || ! passed native || stage timing timing
 fi
+! covers xr || ! passed native || [[ ! -f $disc ]] || stage xr xr
+# The timed tests need the web build the browser suites ran on.
+! covers web || ! passed web || ! passed native || stage timing timing
 summary
