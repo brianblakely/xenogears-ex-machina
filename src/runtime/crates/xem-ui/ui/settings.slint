@@ -55,6 +55,7 @@ export component SettingsPanel inherits Window {
     in property <[string]> fast-forward-rates;
     in-out property <float> fast-forward-position;
     in-out property <bool> invert-trigger-chords;
+    in-out property <bool> mouse-camera;
     in-out property <bool> rewind-enabled;
     in-out property <int> rewind-interval-seconds;
     in property <int> rewind-interval-max;
@@ -71,6 +72,7 @@ export component SettingsPanel inherits Window {
     callback backup-action-requested(int);
     callback fast-forward-rate-edited(int);
     callback invert-trigger-chords-edited(bool);
+    callback mouse-camera-edited(bool);
     callback rewind-enabled-edited(bool);
     callback rewind-interval-edited(int);
     callback rewind-history-edited(int);
@@ -333,6 +335,8 @@ export component SettingsPanel inherits Window {
                                     spacing: 10px;
                                     CheckBox { text: "Invert LT/RT chords"; checked <=> root.invert-trigger-chords; toggled => { root.invert-trigger-chords-edited(self.checked); } }
                                     Text { text: root.invert-trigger-chords ? "LT: hold to rewind · RT: toggle fast-forward\nBack+LT/RT: game L2/R2" : "Back+LT: hold to rewind · Back+RT: toggle fast-forward\nLT/RT: game L2/R2"; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+                                    CheckBox { text: "Turn the camera with the mouse"; checked <=> root.mouse-camera; toggled => { root.mouse-camera-edited(self.checked); } }
+                                    Text { text: root.mouse-camera ? "The game holds the mouse while it has the input; Escape releases it." : "The mouse stays free; Left/Right turn the camera."; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
                                     ComboBox { accessible-label: "App operation"; model: root.app-actions; current-index <=> root.selected-action; selected => { root.action-selected(self.current-index); } }
                                     Text { text: "Keyboard binding"; }
                                     LineEdit {

@@ -260,6 +260,10 @@ pub struct View {
     operations: operations::Operations,
     /// Mouse wheel notches not yet turned into zoom steps (smooth wheels).
     wheel: f32,
+    /// The game's mouse buttons and camera turn, and whether SDL's relative
+    /// mouse mode is on (while the game has the input).
+    mouse: xem_settings::game_keys::Mouse,
+    relative_mouse: bool,
 }
 
 impl View {
@@ -335,6 +339,8 @@ impl View {
             app_requests,
             operations: operations::Operations::default(),
             wheel: 0.0,
+            mouse: Default::default(),
+            relative_mouse: false,
         })
     }
 
@@ -359,7 +365,20 @@ impl View {
     /// Runs Settings requests and bound actions under the host's one game owner.
     /// Returns false while the platform file picker has paused play.
     pub fn update_app(&mut self, window: &sdl::Window, game: &mut Option<Game>) -> bool {
+        if self.app_input.pad(&standard_pad(self.gamepads.first().copied())) {
+            self.set_panel_visible(!self.panel_visible());
+        }
         if !self.panel_visible() { self.ui.cancel_pointer(); }
+        // With the mouse camera on, the game holds the mouse (hidden,
+        // unbounded motion) while it has the input.
+        let relative = !cfg!(target_os = "android") && self.settings.borrow().settings().mouse_camera
+            && !self.panel_visible() && self.app_input.focused();
+        if relative != self.relative_mouse {
+            // SAFETY: the window is SDL's and live.
+            unsafe { SDL_SetWindowRelativeMouseMode(window.raw, relative) };
+            self.relative_mouse = relative;
+            self.mouse.clear();
+        }
         let was_busy = self.operations.busy;
         if let Some(result) = self.operations.poll(game,&mut self.settings.borrow_mut()) {
             self.ui.set_operation_status(&result.unwrap_or_else(|e| e));
@@ -379,7 +398,6 @@ impl View {
                 }
             }
         }
-        self.app_input.pad(&standard_pad(self.gamepads.first().copied()));
         self.app_requests.borrow_mut().extend(self.app_input.requests(&bindings,invert_triggers));
         let requests = std::mem::take(&mut *self.app_requests.borrow_mut());
         for request in requests {
@@ -447,9 +465,8 @@ impl View {
         )
     }
 
-    /// Routes input to the panel and toggles it (F1, Escape while shown, a
-    /// gamepad's Guide, or its Start/Back while no game runs, Android's Back
-    /// key).
+    /// Routes input to the panel and toggles it with Escape or Android's Back
+    /// key. The gamepad's Back+Start chord is polled in `update_app`.
     ///
     /// # Safety
     /// `event` must come from SDL_PollEvent.
@@ -461,9 +478,7 @@ impl View {
                 let key = unsafe { event.key };
                 if key.down
                     && !key.repeat
-                    && (key.key == SDLK_F1
-                        || key.key == SDLK_AC_BACK
-                        || (key.key == SDLK_ESCAPE && visible))
+                    && (key.key == SDLK_ESCAPE || key.key == SDLK_AC_BACK)
                 {
                     self.set_panel_visible(!visible);
                 } else if visible && let Some(text) = slint_key(key.key) {
@@ -509,6 +524,15 @@ impl View {
                     }
                 });
             }
+            // A real mouse over the game (touches stay the game view's own).
+            SDL_EVENT_MOUSE_MOTION if unsafe { event.motion }.which != SDL_TOUCH_MOUSEID => {
+                if self.relative_mouse { self.mouse.moved(unsafe { event.motion }.xrel); }
+            }
+            SDL_EVENT_MOUSE_BUTTON_DOWN | SDL_EVENT_MOUSE_BUTTON_UP if unsafe { event.button }.which != SDL_TOUCH_MOUSEID => {
+                let button = unsafe { event.button };
+                let index = match i32::from(button.button) { SDL_BUTTON_LEFT => 0, SDL_BUTTON_RIGHT => 2, _ => -1 };
+                self.mouse.button(index, button.down);
+            }
             SDL_EVENT_MOUSE_WHEEL if visible => {
                 let wheel = unsafe { event.wheel };
                 let position = self.panel_position(window, wheel.mouse_x, wheel.mouse_y);
@@ -527,6 +551,7 @@ impl View {
             }
             SDL_EVENT_WINDOW_FOCUS_LOST => {
                 self.ui.cancel_pointer();
+                self.mouse.clear();
                 self.app_requests.borrow_mut().extend(self.app_input.set_focused(false));
             }
             SDL_EVENT_WINDOW_FOCUS_GAINED => {
@@ -544,17 +569,6 @@ impl View {
                 self.gamepads.retain(|&pad| {
                     if unsafe { SDL_GetGamepadID(pad) } == id { unsafe { SDL_CloseGamepad(pad); } false } else { true }
                 });
-            }
-            SDL_EVENT_GAMEPAD_BUTTON_DOWN => {
-                let button = SDL_GamepadButton(i32::from(unsafe { event.gbutton.button }));
-                // Start and Back are the game's pad buttons while it runs;
-                // Guide toggles the panel always.
-                if button == SDL_GAMEPAD_BUTTON_GUIDE
-                    || (self.game_image.is_none() && self.game_frame.is_none()
-                        && (button == SDL_GAMEPAD_BUTTON_START || button == SDL_GAMEPAD_BUTTON_BACK))
-                {
-                    self.set_panel_visible(!visible);
-                }
             }
             _ => {}
         }
@@ -642,44 +656,28 @@ impl View {
         );
     }
 
-    /// The PS1 pad buttons the keyboard and the first gamepad hold, as the
-    /// pad's data halfword has them (bit 0 Select .. bit 15 Square), unless
-    /// the settings panel has the input.
-    pub fn pad_buttons(&self) -> u16 {
+    /// The PS1 pad buttons the keyboard, mouse and the first gamepad hold,
+    /// as the pad's data halfword has them (bit 0 Select .. bit 15 Square),
+    /// unless the settings panel has the input (`combo`: the battle's attack
+    /// inputs have the buttons, `xem_settings::game_keys`).
+    pub fn pad_buttons(&mut self, combo: bool) -> u16 {
         if self.panel_visible() || !self.app_input.focused() {
             return 0;
         }
-        const KEYS: [(SDL_Scancode, u16); 16] = [
-            (SDL_SCANCODE_RSHIFT, 1 << 0),
-            (SDL_SCANCODE_RETURN, 1 << 3),
-            (SDL_SCANCODE_UP, 1 << 4),
-            (SDL_SCANCODE_RIGHT, 1 << 5),
-            (SDL_SCANCODE_DOWN, 1 << 6),
-            (SDL_SCANCODE_LEFT, 1 << 7),
-            (SDL_SCANCODE_1, 1 << 8),
-            (SDL_SCANCODE_2, 1 << 9),
-            (SDL_SCANCODE_Q, 1 << 10),
-            (SDL_SCANCODE_W, 1 << 11),
-            (SDL_SCANCODE_S, 1 << 12),
-            (SDL_SCANCODE_X, 1 << 13),
-            (SDL_SCANCODE_Z, 1 << 14),
-            (SDL_SCANCODE_A, 1 << 15),
-            (SDL_SCANCODE_BACKSPACE, 1 << 0),
-            (SDL_SCANCODE_SPACE, 1 << 14),
-        ];
         const PAD: [u16;16] = [1 << 14,1 << 13,1 << 15,1 << 12,1 << 10,1 << 11,1 << 8,1 << 9,
             1 << 0,1 << 3,1 << 1,1 << 2,1 << 4,1 << 6,1 << 7,1 << 5];
-        let mut buttons = 0;
+        let mut buttons = self.mouse.buttons(self.frame_rate_started.elapsed().as_secs_f64() * 1000.0);
         let bindings = self.settings.borrow().settings().app_bindings.clone();
         let mut count = 0;
         // SAFETY: SDL owns the array and keeps it valid while SDL runs.
         let keys = unsafe { SDL_GetKeyboardState(&mut count) };
         if !keys.is_null() {
             let keys = unsafe { std::slice::from_raw_parts(keys, count.max(0) as usize) };
-            for (scancode, bit) in KEYS {
-                let captured = bindings.values().flat_map(|b| &b.keyboard).any(|code|
-                    self.app_input.captures_key(code,&bindings) && crate::scancode(code) == scancode);
-                if !captured && keys.get(scancode.0 as usize).copied().unwrap_or(false) {
+            for code in xem_settings::game_keys::game_keys() {
+                let scancode = scancode(code);
+                let captured = self.app_input.captures_key(code,&bindings);
+                if !captured && keys.get(scancode.0 as usize).copied().unwrap_or(false)
+                    && let Some(bit) = xem_settings::game_keys::key_button(code, combo) {
                     buttons |= bit;
                 }
             }
@@ -814,7 +812,9 @@ fn standard_pad(pad: Option<*mut SDL_Gamepad>) -> [u8;16] {
     }
     pressed[6] = u8::from(unsafe { SDL_GetGamepadAxis(pad,SDL_GAMEPAD_AXIS_LEFT_TRIGGER) } > 16000);
     pressed[7] = u8::from(unsafe { SDL_GetGamepadAxis(pad,SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) } > 16000);
-    pressed
+    let axes = [SDL_GAMEPAD_AXIS_LEFTX, SDL_GAMEPAD_AXIS_LEFTY, SDL_GAMEPAD_AXIS_RIGHTX]
+        .map(|axis| f32::from(unsafe { SDL_GetGamepadAxis(pad, axis) }) / 32768.0);
+    xem_settings::controls::gamepad_buttons(&pressed, &axes)
 }
 
 impl Drop for View {

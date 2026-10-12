@@ -1,28 +1,10 @@
-//! Pad 1 from the keyboard and the first gamepad, with xem-host's default
-//! mapping (`View::pad_buttons`): keys by `KeyboardEvent.code`, gamepad
-//! buttons by the Gamepad API's standard mapping. The bits are the pad's
-//! data halfword as the BIOS driver reports it (bit 0 Select .. bit 15 Square).
+//! Pad 1 from the keyboard, the mouse and the first gamepad: keys and mouse
+//! by the hosts' shared layout (`xem_settings::game_keys`), gamepad buttons
+//! by the Gamepad API's standard mapping. The bits are the pad's data
+//! halfword as the BIOS driver reports it (bit 0 Select .. bit 15 Square).
 
 use xem_core::pad::button;
-
-const KEYS: [(&str, u16); 16] = [
-    ("ShiftRight", button::SELECT),
-    ("Enter", button::START),
-    ("ArrowUp", button::UP),
-    ("ArrowRight", button::RIGHT),
-    ("ArrowDown", button::DOWN),
-    ("ArrowLeft", button::LEFT),
-    ("Digit1", button::L2),
-    ("Digit2", button::R2),
-    ("KeyQ", button::L1),
-    ("KeyW", button::R1),
-    ("KeyS", button::TRIANGLE),
-    ("KeyX", button::CIRCLE),
-    ("KeyZ", button::CROSS),
-    ("KeyA", button::SQUARE),
-    ("Backspace", button::SELECT),
-    ("Space", button::CROSS),
-];
+use xem_settings::game_keys::{self, Mouse};
 
 /// The standard mapping's buttons 0-15 (South, East, West, North, LB, RB,
 /// LT, RT, Back, Start, LS, RS, D-pad up, down, left, right).
@@ -45,25 +27,21 @@ const GAMEPAD: [u16; 16] = [
     button::RIGHT,
 ];
 
-/// The pad bit a key (`KeyboardEvent.code`) holds, if it is a game key.
-pub fn key_bit(code: &str) -> Option<u16> {
-    KEYS.iter().find(|(name, _)| *name == code).map(|(_, bit)| *bit)
-}
-
 #[derive(Default)]
 pub struct HostInput {
-    /// Held game keys, by their bits (two keys may share one).
-    keys: Vec<(String, u16)>,
+    /// Held game keys (`KeyboardEvent.code`).
+    keys: Vec<String>,
+    pub mouse: Mouse,
     gamepad: u16,
 }
 
 impl HostInput {
     /// A key went down or up; false when it is not a game key.
     pub fn key(&mut self, code: &str, down: bool) -> bool {
-        let Some(bit) = key_bit(code) else { return false };
-        self.keys.retain(|(held, _)| held != code);
+        if !game_keys::game_keys().any(|key| key == code) { return false; }
+        self.keys.retain(|held| held != code);
         if down {
-            self.keys.push((code.to_string(), bit));
+            self.keys.push(code.to_string());
         }
         true
     }
@@ -76,10 +54,14 @@ impl HostInput {
     /// Release everything (the page lost focus).
     pub fn clear(&mut self) {
         self.keys.clear();
+        self.mouse.clear();
         self.gamepad = 0;
     }
 
-    pub fn buttons(&self) -> u16 {
-        self.keys.iter().fold(self.gamepad, |bits, (_, bit)| bits | bit)
+    /// The held buttons at `now` (milliseconds; `combo`: the battle's attack
+    /// inputs have the buttons).
+    pub fn buttons(&mut self, now: f64, combo: bool) -> u16 {
+        let held = self.mouse.buttons(now) | self.gamepad;
+        self.keys.iter().filter_map(|code| game_keys::key_button(code, combo)).fold(held, |bits, bit| bits | bit)
     }
 }

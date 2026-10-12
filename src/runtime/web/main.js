@@ -105,9 +105,17 @@ function wireCanvas() {
   };
   const forward = (kind) => (event) => {
     const [x, y] = position(event);
-    if (app.pointer(kind, x, y, event.button ?? 0, event.deltaX ?? 0, event.deltaY ?? 0)) event.preventDefault();
+    // Sideways mouse motion turns the field camera; the wheel zooms it.
+    if (app.pointer(kind, x, y, event.button ?? 0, event.deltaX ?? event.movementX ?? 0, event.deltaY ?? 0)) event.preventDefault();
+    // With the mouse camera on, the game keeps the mouse (hidden, unbounded
+    // motion) while it has the input.
+    if (kind === 'down' && !app.panel_visible() && document.pointerLockElement !== canvas
+        && window.xem.settings.get().settings.mouse_camera) {
+      canvas.requestPointerLock?.()?.catch?.(() => {});
+    }
     dispatchAppRequests();
   };
+  canvas.addEventListener('contextmenu', (event) => event.preventDefault());
   canvas.addEventListener('pointermove', forward('move'));
   canvas.addEventListener('pointerdown', forward('down'));
   canvas.addEventListener('pointerup', forward('up'));
@@ -217,17 +225,27 @@ window.xem = createAutomation(host);
 
 // --- Input: the keyboard and the first gamepad to pad 1 (the runtime maps them) --
 let gamepadName = null;
-let gamepadHome = false;
 function pollGamepad() {
   const pad = navigator.getGamepads?.().find((p) => p?.connected);
   gamepadName = pad?.id ?? null;
   const pressed = Uint8Array.from(pad?.buttons ?? [], (b) => (b.pressed ? 1 : 0));
-  // Its Home button toggles the settings panel.
-  const home = pressed[16] === 1;
-  if (home && !gamepadHome) app.set_panel_visible(!app.panel_visible());
-  gamepadHome = home;
-  app.gamepad(pressed);
+  app.gamepad(pressed, Float32Array.from(pad?.axes ?? []));
+  releasePointerForPanel();
   dispatchAppRequests();
+}
+// The browser takes Escape to release the mouse: that release opens the
+// settings panel, as Escape does otherwise.
+let pointerReleasedAt = -Infinity;
+document.addEventListener('pointerlockchange', () => {
+  if (document.pointerLockElement || !document.hasFocus() || app.panel_visible()
+      || !window.xem.settings.get().settings.mouse_camera) return;
+  pointerReleasedAt = performance.now();
+  app.set_panel_visible(true);
+});
+function releasePointerForPanel() {
+  if ((app.panel_visible() || !window.xem.settings.get().settings.mouse_camera) && document.pointerLockElement) {
+    document.exitPointerLock();
+  }
 }
 window.addEventListener('blur', () => app.release_input());
 window.addEventListener('focus', () => app.resume_input());
@@ -300,7 +318,7 @@ function xrFrame(time, xrframe) {
         const v = xr.layer.getViewport(view);
         viewports.set([v.x, v.y, v.width, v.height], i * 4);
       });
-      app.gamepad(xrButtons(xr.session));
+      app.gamepad(xrButtons(xr.session), new Float32Array());
       app.xr_frame(time, xr.layer, matrices, viewports);
       // A readback asked for reads the layer just drawn, inside the frame
       // (an emulated layer may be the canvas's default framebuffer).
@@ -556,15 +574,17 @@ function dispatchAppRequests() {
   }
 }
 
-// Settings stay reachable while playing: F1 toggles the panel, Escape closes it.
+// Settings stay reachable while playing: Escape toggles the panel.
 const slintKeys = { Tab: '\t', Enter: '\n', Backspace: '\u0008', ArrowLeft: '', ArrowRight: '',
                     ArrowUp: '', ArrowDown: '', Home: '', End: '', Escape: '\u001b', ' ': ' ' };
 for (const type of ['keydown', 'keyup']) {
   window.addEventListener(type, (event) => {
     if (event.target instanceof HTMLInputElement) return;
     const down = type === 'keydown';
-    if (down && (event.key === 'F1' || (event.key === 'Escape' && app.panel_visible()))) {
-      app.set_panel_visible(event.key === 'F1' && !app.panel_visible());
+    if (down && event.key === 'Escape') {
+      // Unless this Escape released the mouse and opened the panel already.
+      if (performance.now() - pointerReleasedAt > 250) app.set_panel_visible(!app.panel_visible());
+      releasePointerForPanel();
       event.preventDefault();
       return;
     }

@@ -34,6 +34,7 @@ unsafe extern "C" {
     fn xem_game_stop_unwind(instance: *mut Instance);
     fn xem_game_start_rewind(instance: *mut Instance, area: u32);
     fn xem_game_paused(instance: *mut Instance, mode: u32) -> u32;
+    fn xem_game_combo_input(instance: *mut Instance, mode: u32) -> u32;
 }
 
 /// The handler pointer the glue's `host` carries.
@@ -147,6 +148,10 @@ impl GameModule for NativeModule {
     fn game_paused(&mut self, mode: u32) -> bool {
         // SAFETY: read-only port export on the live module, between frames.
         unsafe { xem_game_paused(self.instance, mode) != 0 }
+    }
+    fn combo_input(&mut self, mode: u32) -> bool {
+        // SAFETY: read-only port export on the live module, between frames.
+        unsafe { xem_game_combo_input(self.instance, mode) != 0 }
     }
     fn content_id(&self) -> String { env!("XEM_MODULE_ID").to_owned() }
     unsafe fn set_import_handler(&mut self, handler: *mut dyn ImportHandler) {

@@ -90,9 +90,11 @@ fn options() -> Result<Options, String> {
                      left stick click Start, left menu the settings panel).\n\
                      --script plays a session log (tools/native_scenario.py --log); \
                      --exit-at-frame prints the memory hash at that game frame and exits.\n\
-                     F1 or Escape toggles the settings panel. Pad: arrows, Z cross, X circle, \
-                     A square, S triangle, Q/W L1/R1, 1/2 L2/R2, Enter start, right Shift select, \
-                     or a gamepad (its Guide button toggles the panel while the game runs)."
+                     Escape toggles the settings panel. Pad: WASD move, E or left click confirm, \
+                     F or right click cancel, Shift run, Space jump, Tab menu, Left/Right (and the \
+                     mouse, with the mouse camera setting) turn the camera; in a battle attack W/A/S light/medium/heavy, D/F cancel. Enter start, \
+                     Backspace select, 1/2 L2/R2, or a gamepad (D-pad or left stick move, \
+                     L1/R1 or right stick left/right turn the camera, Back+Start toggles settings)."
                 );
                 std::process::exit(0);
             }
@@ -381,7 +383,8 @@ impl Host {
         if self.view.update_app(window,&mut self.game) && let Some(game) = &mut self.game {
             marks[0] = Instant::now();
             let settings = self.view.settings().borrow().settings().clone();
-            match game.update(self.view.pad_buttons(), &settings, || window.focused()) {
+            let buttons = self.view.pad_buttons(game.combo_input());
+            match game.update(buttons, &settings, || window.focused()) {
                 Ok(frames) => ran = frames,
                 Err(error) => {
                     self.view.ui().set_operation_status(&format!("Game stopped: {error}. Load a state to recover."));

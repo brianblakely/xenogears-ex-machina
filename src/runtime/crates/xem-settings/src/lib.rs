@@ -10,6 +10,7 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::path::{Path, PathBuf};
 pub mod controls;
+pub mod game_keys;
 pub mod graphics;
 pub use graphics::{EffectLevels, Fidelity, Graphics, GraphicsProfile, MAX_ZOOM_OUT, MovieFilter, PresentRate, QualityTier, Renderer, TextureFiltering, XrScreen, ZOOM_STEP};
 pub use controls::{AppAction, AppBinding, AppInput, AppRequest, APP_ACTIONS};
@@ -93,6 +94,9 @@ pub struct Settings {
     pub app_bindings: BTreeMap<AppAction, AppBinding>,
     pub fast_forward_rate: FastForwardRate,
     pub invert_trigger_chords: bool,
+    /// Sideways mouse motion turns the field camera; the game then holds the
+    /// mouse (hidden, unbounded motion) while it has the input.
+    pub mouse_camera: bool,
     pub rewind_enabled: bool,
     pub rewind_interval_seconds: u32,
     pub rewind_history_seconds: u32,
@@ -110,6 +114,7 @@ impl Default for Settings {
             app_bindings: controls::defaults(),
             fast_forward_rate: FastForwardRate::default(),
             invert_trigger_chords: false,
+            mouse_camera: false,
             rewind_enabled: true,
             rewind_interval_seconds: DEFAULT_REWIND_INTERVAL_SECONDS,
             rewind_history_seconds: DEFAULT_REWIND_HISTORY_SECONDS,
@@ -126,6 +131,7 @@ pub enum SettingChange {
     BindApp { action: AppAction, binding: AppBinding },
     FastForwardRate(FastForwardRate),
     InvertTriggerChords(bool),
+    MouseCamera(bool),
     RewindEnabled(bool),
     RewindIntervalSeconds(u32),
     RewindHistorySeconds(u32),
@@ -184,6 +190,7 @@ impl Settings {
             SettingChange::BindApp { action, binding } => { binding.validate()?; next.app_bindings.insert(*action,binding.clone()); }
             SettingChange::FastForwardRate(rate) => next.fast_forward_rate = *rate,
             SettingChange::InvertTriggerChords(invert) => next.invert_trigger_chords = *invert,
+            SettingChange::MouseCamera(enabled) => next.mouse_camera = *enabled,
             SettingChange::RewindEnabled(enabled) => next.rewind_enabled = *enabled,
             SettingChange::RewindIntervalSeconds(seconds) => next.rewind_interval_seconds = *seconds,
             SettingChange::RewindHistorySeconds(seconds) => next.rewind_history_seconds = *seconds,

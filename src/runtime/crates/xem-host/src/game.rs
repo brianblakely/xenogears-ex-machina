@@ -174,6 +174,12 @@ impl Game {
         self.session.runtime.services().clock.vblanks
     }
 
+    /// Whether the battle's attack inputs take the player's buttons (the
+    /// keyboard's combo layout applies).
+    pub fn combo_input(&mut self) -> bool {
+        self.session.runtime.combo_input()
+    }
+
     /// Runs a bounded batch of frames due by the wall clock with pad 1 holding
     /// `buttons`, then queues their sound at the master volume and audio
     /// output of `settings`. Returns the frames run.

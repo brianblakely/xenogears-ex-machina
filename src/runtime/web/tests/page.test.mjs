@@ -27,9 +27,9 @@ describe('rendering', () => {
         assert.ok(pixels.colours > 200, `only ${pixels.colours} colours`);
         assert.ok(pixels.lit > 0.4, `only ${pixels.lit} of the canvas is lit`);
 
-        // The Slint panel: shown by F1 (as a player would) and by automation.
+        // The Slint panel: shown by Escape (as a player would) and by automation.
         assert.equal(renderer.panel, 'slint');
-        await page.keyboard.press('F1');
+        await page.keyboard.press('Escape');
         assert.equal(await page.evaluate(() => window.xem.panel.visible()), true);
         await page.waitForTimeout(300);
         const withPanel = await canvasShot(page, `panel-${expected}.png`);
@@ -313,11 +313,11 @@ describe('automation over a game module fixture', () => {
       return out;
     });
     assert.deepEqual(pads.automation, ['triangle'], 'the player\'s idle input leaves an automation pad alone');
-    await page.keyboard.down('KeyZ');
+    await page.keyboard.down('KeyE');
     await page.keyboard.down('Enter');
     await page.waitForTimeout(100);
     const held = await page.evaluate(() => window.xem.command({ cmd: 'status' }).pads[0].buttons);
-    await page.keyboard.up('KeyZ');
+    await page.keyboard.up('KeyE');
     await page.keyboard.up('Enter');
     await page.waitForTimeout(100);
     const released = await page.evaluate(() => window.xem.command({ cmd: 'status' }).pads[0].buttons);
@@ -330,6 +330,51 @@ describe('automation over a game module fixture', () => {
     assert.deepEqual(held, ['start', 'cross']);
     assert.deepEqual(released, []);
     assert.deepEqual(withPanel, [], 'the panel has the input');
+  });
+
+  test('gamepad sticks drive movement and camera, and Back+Start owns the settings toggle', async () => {
+    const controls = await browser.page('?game=/fixtures/fixture.wasm');
+    try {
+      await controls.evaluate(async () => {
+        await window.xem.boot({ executable: false });
+        window.xem.command({ cmd: 'write_memory', address: 0x80000100, hex: '01000000' });
+        window.testPad = { id: 'Test gamepad', connected: true, mapping: 'standard',
+          buttons: Array.from({ length: 17 }, () => ({ pressed: false })), axes: [0, 0, 0, 0] };
+        Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [window.testPad] });
+        window.xem.setRunning(true);
+      });
+      const sample = (buttons = [], axes = [0, 0, 0, 0], connected = true) => controls.evaluate(async ({ buttons, axes, connected }) => {
+        window.testPad.buttons.forEach((button, i) => { button.pressed = buttons.includes(i); });
+        window.testPad.axes = axes;
+        window.testPad.connected = connected;
+        for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
+        return { buttons: window.xem.command({ cmd: 'status' }).pads[0].buttons.sort(),
+          panel: window.xem.panel.visible() };
+      }, { buttons, axes, connected });
+      assert.deepEqual(await sample([0, 13], [-0.8, 0, 0.8, 0]),
+        { buttons: ['cross', 'down', 'left', 'r1'], panel: false });
+      assert.deepEqual(await sample([], [0.8, 0.8, -0.8, 0]),
+        { buttons: ['down', 'l1', 'right'], panel: false });
+      assert.deepEqual(await sample([], [-0.8, -0.8, 0, 0]),
+        { buttons: ['left', 'up'], panel: false });
+      assert.deepEqual(await sample([], [0.2, -0.2, 0.2, 1]), { buttons: [], panel: false });
+      assert.deepEqual(await sample([16]), { buttons: [], panel: false }, 'Guide has no app binding');
+      assert.deepEqual(await sample([8]), { buttons: ['select'], panel: false });
+      assert.deepEqual(await sample([9]), { buttons: ['start'], panel: false });
+      assert.deepEqual(await sample([8, 9]), { buttons: [], panel: true });
+      assert.deepEqual(await sample([8, 9]), { buttons: [], panel: true }, 'holding the chord does not repeat');
+      assert.deepEqual(await sample([8]), { buttons: [], panel: true });
+      assert.deepEqual(await sample(), { buttons: [], panel: true });
+      assert.deepEqual(await sample([8, 9]), { buttons: [], panel: false });
+      assert.deepEqual(await sample([9]), { buttons: [], panel: false }, 'releasing Back first does not send Start');
+      assert.deepEqual(await sample(), { buttons: [], panel: false });
+      assert.deepEqual(await sample([9]), { buttons: ['start'], panel: false }, 'Start works again after releasing the chord');
+      assert.deepEqual(await sample([], [0.8, 0, 0.8, 0]), { buttons: ['r1', 'right'], panel: false });
+      assert.deepEqual(await sample([], [0.8, 0, 0.8, 0], false), { buttons: [], panel: false }, 'disconnect releases the sticks');
+      assert.deepEqual(controls.errors, []);
+    } finally {
+      await controls.close();
+    }
   });
 
   test('a snapshot save survives a reload byte for byte', async () => {

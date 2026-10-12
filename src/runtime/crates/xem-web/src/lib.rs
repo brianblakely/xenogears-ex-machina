@@ -287,7 +287,8 @@ impl XemApp {
         } else if self.running {
             // The player's input reaches pad 1 when it changes, so a pad an
             // automation client set stays until the player presses something.
-            let buttons = if self.panel_visible() { 0 } else { self.input.buttons() };
+            let combo = self.session.as_mut().is_some_and(|s| s.runtime.combo_input());
+            let buttons = if self.panel_visible() { 0 } else { self.input.buttons(now, combo) };
             if buttons != self.host_buttons
                 && let Some(session) = self.session.as_mut()
             {
@@ -447,10 +448,14 @@ impl XemApp {
         self.input.key(code, down)
     }
 
-    /// The first gamepad's buttons (Gamepad API standard mapping, 1 = pressed).
-    pub fn gamepad(&mut self, pressed: &[u8]) {
+    /// The first gamepad's buttons and axes (Gamepad API standard mapping,
+    /// 1 = pressed). Back+Start toggles Settings.
+    pub fn gamepad(&mut self, pressed: &[u8], axes: &[f32]) {
+        let pressed = xem_settings::controls::gamepad_buttons(pressed, axes);
+        if self.app_input.pad(&pressed) {
+            self.set_panel_visible(!self.panel_visible());
+        }
         if self.text_editor_focused() { self.app_input.release_keyboard(); }
-        self.app_input.pad(pressed);
         let settings = self.settings.borrow();
         let bindings = &settings.settings().app_bindings;
         self.app_requests.borrow_mut().extend(self.app_input.requests(bindings,settings.settings().invert_trigger_chords));
@@ -515,14 +520,26 @@ impl XemApp {
     }
 
     /// Host pointer input over the canvas (canvas pixels); true when the
-    /// panel took it, or when the wheel zoomed the field camera (down pulls
-    /// it back, up brings it in; `dy` in pixels, about 100 a notch).
+    /// panel took it, when the game took a button (`dx`: sideways movement
+    /// turns the field camera under the mouse camera setting), or when the wheel zoomed the field
+    /// camera (down pulls it back, up brings it in; `dy` in pixels, about
+    /// 100 a notch).
     pub fn pointer(&mut self, kind: &str, x: f32, y: f32, button: i32, dx: f32, dy: f32) -> bool {
         if self.renderer.as_mut().is_some_and(|r| r.pointer(kind, x, y, button, (dx, dy))) {
             return true;
         }
-        if kind != "wheel" || self.panel_visible() {
+        if self.panel_visible() {
+            if kind == "up" { self.input.mouse.button(button, false); }
             return false;
+        }
+        match kind {
+            "down" | "up" => return self.input.mouse.button(button, kind == "down"),
+            "move" => {
+                if self.settings.borrow().settings().mouse_camera { self.input.mouse.moved(dx); }
+                return false;
+            }
+            "wheel" => {}
+            _ => return false,
         }
         self.wheel += dy / 100.0;
         let steps = self.wheel.trunc();

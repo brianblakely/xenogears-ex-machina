@@ -514,23 +514,28 @@ loss. Use shared legal commands, not automated gameplay sequences.
 
 #### Seraph Glass visual language
 
-**Seraph Glass** applies only to bespoke widgets added for VR functionality: hand/
-gaze cursors, targeting rings, scaling handles, VR shop/arcade decks and other
-native/browser VR controls. It does not apply to settings, launcher, bindings,
-save/mod management, editors, in-XR settings panels or other ordinary application
-UI, which use a plain application style. It is not a glass coating over the
-original game world or a reason to rebuild original game UI. Give these widgets
-iOS Liquid Glass-like material behavior with Xenogears' Seraph Angels-inspired
-structure. Use faceted silver-white shells, hollow halos, tapered fins, dark
-recesses and sparse gold/copper accents around translucent inner surfaces, not
-generic blue holograms.
+**Seraph Glass** applies to all bespoke widgets added for VR or touchscreen
+interaction: hand/gaze cursors, targeting rings, scaling handles, shop/arcade decks
+and other custom native/browser VR or touchscreen controls. It does not apply to
+settings, launcher, bindings, save/mod management, editors, in-XR settings panels
+or other ordinary application UI, which use a plain application style. It is not
+a glass coating over the original game world or a reason to rebuild original game
+UI. Give these widgets iOS Liquid Glass-like material behavior with Xenogears'
+Seraph Angels-inspired structure. Use faceted silver-white shells, hollow halos,
+tapered fins, dark recesses and sparse gold/copper accents around translucent
+inner surfaces, not generic blue holograms.
+
+Use the same UI elements for VR and touchscreen wherever their actions and
+interaction needs align. Share their visual design, labels, states and command
+semantics; adapt placement, sizing and input handling to each mode.
 
 Keep cursor centers stable, silhouettes related across surface/2D targeting and
 committed destinations, and feedback restrained. Give ornate shapes generous,
 simple hit areas; communicate state through shape/contrast as well as color.
 Text and essential symbols stay solid and readable, with reduced-transparency
-and reduced-motion options. External controls retain comfortable angular sizes
-independent of diorama scale and do not obscure the play area.
+and reduced-motion options. External VR controls retain comfortable angular sizes
+independent of diorama scale; touchscreen controls have generous touch targets.
+Keep controls clear of the play area in both modes.
 
 **Exit:** Every original system and application settings are usable through the
 appropriate desktop, browser, touch and headset controls, including qualified
@@ -574,7 +579,7 @@ source-preserving human/agent edits and prebuilt headless play are demonstrated.
 
 - [ ] Complete ordinary saves and supported original-save import/export; implement
   save states, rewind and fast-forward, including event/Lua/audio/media progress.
-- [ ] Persist browser saves/settings in qualified origin-local storage (such as
+- [x] Persist browser saves/settings in qualified origin-local storage (such as
   IndexedDB/OPFS), acknowledge completed writes and offer explicit import/export
   backup and native/browser interchange. Handle quota exhaustion, denied storage,
   eviction and interrupted writes visibly; do not rely on unload-time saving or
@@ -608,7 +613,8 @@ source-preserving human/agent edits and prebuilt headless play are demonstrated.
   supported, allow the same diorama over passthrough without making AR-specific
   sensing a requirement for VR or ordinary browser play.
 - [ ] Implement stationary first-person inspection on both VR and flat displays,
-  using the Phase 6 underhanded-grab binding and equivalent conventional inputs.
+  using the Phase 6 underhanded-grab binding. In field mode, **Select** is the
+  keyboard/gamepad binding for toggling this viewpoint.
   This is look-around only, not FPS locomotion: keep the character stationary,
   disable navigation/approach-and-interact/jump commands, and cancel the route on
   entry. Head tracking supplies VR looking; flat-display look input rotates the

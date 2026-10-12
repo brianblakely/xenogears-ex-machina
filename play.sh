@@ -15,9 +15,11 @@
 # Then it runs on the host's NVIDIA driver when there is one
 # (src/runtime/scripts/xem-gpu-host), else on the shell's software Vulkan.
 #
-# Keys: arrows; Z or Space Cross, X Circle, A Square, S Triangle; Q/W L1/R1;
-# 1/2 L2/R2; Enter Start; Right Shift or Backspace Select. F1 or Escape opens
-# the settings panel. A gamepad works too (its Guide button: the panel).
+# Keys (src/runtime/crates/xem-settings/src/game_keys.rs): WASD the D-pad;
+# E or the left mouse button Cross (confirm), F or the right button Circle
+# (cancel), Shift Circle held (run), Space Triangle (jump), Tab Square (menu);
+# Left/Right L1/R1 (camera); 1/2 L2/R2; Enter Start; Backspace Select. Escape
+# opens the settings panel. A gamepad works too (Back+Start: the panel).
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")" && pwd)

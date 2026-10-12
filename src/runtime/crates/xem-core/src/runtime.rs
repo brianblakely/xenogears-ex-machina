@@ -660,6 +660,12 @@ impl<M: GameModule> Runtime<M> {
         let mode = self.services().mode.unwrap_or(u32::MAX);
         self.module.game_paused(mode)
     }
+
+    /// Whether the battle's attack inputs take the player's buttons.
+    pub fn combo_input(&mut self) -> bool {
+        let mode = self.services().mode.unwrap_or(u32::MAX);
+        self.module.combo_input(mode)
+    }
 }
 
 impl<M: GameModule> Runtime<M> {

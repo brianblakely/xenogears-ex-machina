@@ -96,6 +96,9 @@ pub trait GameModule {
     fn memory(&mut self) -> &mut dyn GameMemory;
     /// Original pause flags, read by the port without the inspection schema.
     fn game_paused(&mut self, _mode: u32) -> bool { false }
+    /// Whether the battle's attack inputs take the player's buttons (the
+    /// port's `xem_game_combo_input`).
+    fn combo_input(&mut self, _mode: u32) -> bool { false }
     /// The module's mutable globals other than the stack pointer, for snapshots.
     fn globals(&mut self) -> Vec<u32>;
     fn set_globals(&mut self, values: &[u32]);

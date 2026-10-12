@@ -396,6 +396,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_fast_forward_rate(index_of(&FAST_FORWARD_RATES, &settings.fast_forward_rate));
     panel.set_fast_forward_position(panel.get_fast_forward_rate() as f32);
     panel.set_invert_trigger_chords(settings.invert_trigger_chords);
+    panel.set_mouse_camera(settings.mouse_camera);
     panel.set_rewind_enabled(settings.rewind_enabled);
     panel.set_rewind_interval_seconds(settings.rewind_interval_seconds as i32);
     panel.set_rewind_interval_max(xem_settings::MAX_REWIND_INTERVAL_SECONDS as i32);
@@ -483,6 +484,10 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
     panel.on_invert_trigger_chords_edited({
         let apply = apply.clone();
         move |invert| apply(Some(SettingChange::InvertTriggerChords(invert)))
+    });
+    panel.on_mouse_camera_edited({
+        let apply = apply.clone();
+        move |enabled| apply(Some(SettingChange::MouseCamera(enabled)))
     });
     panel.on_rewind_enabled_edited({
         let apply = apply.clone();

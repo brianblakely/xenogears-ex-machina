@@ -40,6 +40,22 @@ pub const APP_ACTIONS: [(AppAction, &str); 24] = [
 ];
 pub const PAD_NAMES: [&str; 16] = ["South", "East", "West", "North", "L1", "R1", "LT", "RT", "Back", "Start", "L3", "R3", "Up", "Down", "Left", "Right"];
 
+/// Standard gamepad buttons plus left-stick movement and right-stick camera
+/// turns. Axes are left X/Y, right X/Y, with negative Y pointing up. Each
+/// direction uses a half-travel dead zone and combines with physical buttons.
+pub fn gamepad_buttons(pressed: &[u8], axes: &[f32]) -> [u8; 16] {
+    let mut buttons = std::array::from_fn(|i| u8::from(pressed.get(i).is_some_and(|p| *p != 0)));
+    let axis = |i| axes.get(i).copied().unwrap_or(0.0);
+    for (on, button) in [(axis(0) < -0.5, 14), (axis(0) > 0.5, 15),
+        (axis(1) < -0.5, 12), (axis(1) > 0.5, 13),
+        (axis(2) < -0.5, 4), (axis(2) > 0.5, 5)] {
+        buttons[button] |= u8::from(on);
+    }
+    buttons
+}
+
+const SETTINGS_CHORD: u16 = (1 << 8) | (1 << 9); // Back+Start
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AppBinding {
@@ -89,10 +105,11 @@ pub struct AppInput {
     pad: u16,
     active: BTreeSet<AppAction>,
     focused: bool,
+    settings_chord: bool,
 }
 impl Default for AppInput {
     fn default() -> Self {
-        Self { keys: BTreeSet::new(), pad: 0, active: BTreeSet::new(), focused: true }
+        Self { keys: BTreeSet::new(), pad: 0, active: BTreeSet::new(), focused: true, settings_chord: false }
     }
 }
 impl AppInput {
@@ -106,9 +123,18 @@ impl AppInput {
         if !self.focused { return; }
         if down { self.keys.insert(code.to_owned()); } else { self.keys.remove(code); }
     }
-    pub fn pad(&mut self, pressed: &[u8]) {
-        if !self.focused { return; }
+    /// Update the pad and return whether Back+Start should toggle Settings.
+    /// Consume both buttons until both are released, including after closing
+    /// the panel, so releasing the chord cannot pause the game.
+    pub fn pad(&mut self, pressed: &[u8]) -> bool {
+        if !self.focused { return false; }
         self.pad = pressed.iter().take(16).enumerate().filter(|(_, p)| **p != 0).fold(0, |n,(i,_)| n | (1 << i));
+        let settings = self.pad & SETTINGS_CHORD == SETTINGS_CHORD;
+        let toggle = settings && !self.settings_chord;
+        if settings { self.settings_chord = true; }
+        if self.pad & SETTINGS_CHORD == 0 { self.settings_chord = false; }
+        if self.settings_chord { self.pad &= !SETTINGS_CHORD; }
+        toggle
     }
     pub fn release_keyboard(&mut self) { self.keys.clear(); }
     pub fn clear(&mut self) -> Vec<AppRequest> {
@@ -165,6 +191,48 @@ impl AppInput {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn sticks_combine_with_buttons_and_release_in_the_dead_zone() {
+        let mut physical = [0;16]; physical[0] = 1; physical[4] = 1; physical[13] = 1;
+        let mut expected = physical; expected[12] = 1; expected[14] = 1; expected[5] = 1;
+        assert_eq!(gamepad_buttons(&physical, &[-0.8, -0.8, 0.8, 0.0]), expected);
+        let mut expected = [0;16]; expected[15] = 1; expected[13] = 1; expected[4] = 1;
+        assert_eq!(gamepad_buttons(&[], &[0.8, 0.8, -0.8, 0.0]), expected);
+        // Small movement, including the boundary, releases the virtual buttons;
+        // right-stick vertical motion has no game binding.
+        assert_eq!(gamepad_buttons(&physical, &[0.5, -0.5, 0.25, 1.0]), physical);
+        assert_eq!(gamepad_buttons(&physical, &[]), physical);
+        assert_eq!(gamepad_buttons(&[], &[]), [0;16]);
+    }
+    #[test]
+    fn settings_chord_toggles_once_and_is_consumed_until_both_buttons_release() {
+        let bindings = defaults();
+        let mut input = AppInput::default();
+        for first in [8, 9] {
+            let mut pad = [0;17]; pad[first] = 1;
+            assert!(!input.pad(&pad));
+            assert_eq!(input.gamepad_for_game(&bindings,false), pad[..16]);
+            pad[8] = 1; pad[9] = 1;
+            assert!(input.pad(&pad));
+            for _ in 0..3 {
+                assert!(!input.pad(&pad));
+                assert!(input.requests(&bindings,false).is_empty());
+                assert_eq!(input.gamepad_for_game(&bindings,false), [0;16]);
+            }
+            pad[first] = 0;
+            assert!(!input.pad(&pad));
+            assert_eq!(input.gamepad_for_game(&bindings,false), [0;16]);
+            assert!(!input.pad(&[]));
+        }
+        let mut guide = [0;17]; guide[16] = 1;
+        assert!(!input.pad(&guide));
+        assert_eq!(input.gamepad_for_game(&bindings,false), [0;16]);
+        let mut chord = [0;16]; chord[8] = 1; chord[9] = 1;
+        input.set_focused(false);
+        assert!(!input.pad(&chord));
+        input.set_focused(true);
+        assert!(input.pad(&chord));
+    }
     #[test]
     fn focus_loss_releases_rewind_and_prevents_background_polling_from_reasserting_it() {
         let bindings = defaults();

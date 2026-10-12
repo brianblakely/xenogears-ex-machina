@@ -982,8 +982,8 @@ these state paths cover the existing game, event, audio and media services.
 `xem-desktop` opens an SDL3 window (Wayland or X11), presents through wgpu with
 FIFO vsync and draws the game (`--disc DISC [--cards DIR] [--bios FILE]`; the
 test scene without a disc), placed by the presentation settings, under the
-Slint settings panel (F1, Escape or a gamepad's Guide toggles it, and its
-Start/Back while no game runs). One `xem_render::Gpu` (instance, adapter,
+Slint settings panel (Escape or a gamepad's Back+Start toggles it).
+One `xem_render::Gpu` (instance, adapter,
 device, queue) serves `SceneRenderer`, `Compositor` and `xem_ui::SettingsUi`;
 Slint runs as a custom platform under the host loop and renders into a texture
 only when it asks for a redraw. Settings live in
@@ -993,11 +993,18 @@ A saved setting that does not read (a value no longer offered) or keeps the
 whole from validating takes its default alone, the others staying as saved
 (`Settings::read`, also for imported backups).
 With a disc, the game runs paced by the wall clock at 60 frames a second (a
-stalled host drops time rather than catching up), pad 1 follows the keyboard
-and the first gamepad, the GPU's display is uploaded as the game image after
+stalled host drops time rather than catching up), pad 1 follows the keyboard,
+the mouse (held in relative mode while the game has the input, only under
+the Controls section's mouse camera setting, off by default) and the first
+gamepad, the GPU's display is uploaded as the game image after
 each frame and the SPU's output is queued to an SDL3 audio stream at the
 master volume and audio output (`xem_host::Game`; `AudioOutput::mix` is the
 browser's mix too). Memory cards default to `cards/` beside the settings file.
+On desktop, Android and browser gamepads, the left stick also sends D-pad
+directions (including diagonals), and right-stick left/right sends L1/R1 to
+turn the camera. Each axis uses a half-travel dead zone; physical D-pad and
+shoulder buttons still work. Back+Start toggles Settings once and consumes
+both buttons until both are released. Guide/Home has no app binding.
 `--script LOG` plays a session log instead of the player's input (its pad
 states replace the keyboard's) and `--exit-at-frame N` prints the memory hash
 when the game has run N frames and exits: the slice's logs end at their native
@@ -1066,8 +1073,9 @@ as JSON text or bytes.
   (`display_rgba8`, uploaded to an sRGB texture after frames ran and placed by
   the presentation scale and filter, as xem-host's `View::set_game_image`);
   without one, the test scene. The Slint panel (FemtoVG's wgpu renderer on the same device,
-  composited over the scene) works on both; F1 or the Settings button shows it,
-  Escape or Close hides it. A lost device is replaced on a new canvas (WebGL2
+  composited over the scene) works on both; Escape or the Settings button
+  toggles it, and Close hides it. With the mouse camera setting the game holds the mouse with pointer lock
+  after a click; the browser's Escape that releases it opens the panel. A lost device is replaced on a new canvas (WebGL2
   after repeated WebGPU losses).
 - **Disc import.** A file input (and, where available, the File System Access
   API, whose handle is kept in IndexedDB for "Reopen") gives a `File`; the image
@@ -1085,11 +1093,19 @@ as JSON text or bytes.
   at most about 0.19 s and plays silence when dry (no SharedArrayBuffer).
   "Start audio" creates the `AudioContext` inside the click, at the SPU's
   44.1 kHz; the browser resamples to the device.
-- **Input.** While the settings panel is hidden, the keyboard
-  (`KeyboardEvent.code`, xem-host's default mapping: arrows, Enter Start,
-  Right Shift or Backspace Select, Z or Space Cross, X Circle, A Square, S
-  Triangle, Q/W L1/R1, 1/2 L2/R2) and the first gamepad (Gamepad API standard
-  mapping; Home toggles the panel) hold pad 1's buttons (`src/runtime/crates/xem-web/src/input.rs`). The
+- **Input.** While the settings panel is hidden, the keyboard and mouse
+  (`KeyboardEvent.code`, the hosts' shared layout in
+  `src/runtime/crates/xem-settings/src/game_keys.rs`; the game swaps a
+  digital pad's Circle/Cross and Triangle/Square, `pad_start_controllers`:
+  WASD the D-pad, E or the left button Cross (confirm), F or the right
+  button Circle (cancel), Shift Circle (held, run), Space Triangle (jump),
+  Tab Square (menu), Left/Right and, under the mouse camera setting (off
+  by default), sideways mouse motion L1/R1 (camera),
+  Enter Start, Backspace Select, 1/2 L2/R2; while the battle's attack
+  inputs take the buttons, the port's `xem_game_combo_input` (the on-foot
+  and Gear attack pages until the combo closes), W/A/S are Triangle/Square/Cross (light, medium, heavy) and D
+  Circle (cancel)) and the first gamepad (Gamepad
+  API standard mapping, with the same stick controls; Back+Start toggles the panel) hold pad 1's buttons (`src/runtime/crates/xem-web/src/input.rs`). The
   animation loop sets the pad when the player's buttons change, so a pad an
   automation client set (`pad`, `press`, `replay`) stays until the player
   presses something.
@@ -1312,8 +1328,8 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
   (at most two per rendered frame, never catching up), the GPU device's
   display becomes the game image and the SPU's output plays through an SDL3
   audio stream (AAudio) at the master volume and audio output; pad 1 is the keyboard (arrows,
-  Z/X/A/S, Enter Start) or the first gamepad (its Guide button toggles the
-  panel while the game runs). A trap stops the game and shows the panel.
+  Z/X/A/S, Enter Start) or the first gamepad (Back+Start toggles the
+  panel). A trap stops the game and shows the panel.
   wasm2c's output compiles with the NDK clang for both ABIs; game memory is
   one 2 GiB private anonymous mapping (the module's whole linear memory, made
   read-write at once), committed only as pages are touched.
