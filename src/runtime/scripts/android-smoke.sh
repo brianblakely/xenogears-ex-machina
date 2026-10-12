@@ -3,8 +3,9 @@
 #
 #   nix develop path:./nix/runtime#android -c src/runtime/scripts/android-smoke.sh
 #
-# Builds the x86_64 APK (XEM_SKIP_BUILD=1 reuses it), boots a headless API-34
-# AVD (swiftshader_indirect: guest Vulkan on SwiftShader) kept under
+# Builds the x86_64 APK (XEM_SKIP_BUILD=1 reuses it) while it boots a headless
+# API-34 AVD (swiftshader_indirect: guest Vulkan on SwiftShader; XEM_SMOKE_BOOT=1
+# only boots it, for a later run to use) kept under
 # .local/android, installs the app fresh and checks from logcat and
 # screenshots (build/android/smoke/*.png): first frame, bundled asset,
 # Vulkan device, a settings change by touch, disc import through the system
@@ -43,6 +44,48 @@ fail() {
     exit 1
 }
 
+# The emulator boots while the APK and the synthetic disc build; a watcher
+# notes when its boot completes. XEM_SMOKE_BOOT=1 only boots it and leaves it
+# running: a later run finds it booted (its boot noted) and uses it.
+if [ ! -f "$ANDROID_AVD_HOME/xem-smoke.avd/config.ini" ]; then
+    mkdir -p "$ANDROID_AVD_HOME"
+    echo no | avdmanager create avd -n xem-smoke -d pixel_6 \
+        -k "system-images;android-34;google_apis;x86_64" >/dev/null
+fi
+booted=$out/booted-at
+emulator_pid=
+watcher_pid=
+if [ -f "$booted" ] && [ "$("${adb[@]}" get-state 2>/dev/null)" = device ]; then
+    echo "using the emulator booted before"
+else
+    rm -f "$booted"
+    emulator -avd xem-smoke -port "$port" -no-window -no-audio -no-boot-anim -no-snapshot \
+        -gpu "${XEM_EMULATOR_GPU:-swiftshader_indirect}" >"$out/emulator.log" 2>&1 &
+    emulator_pid=$!
+    (
+        "${adb[@]}" wait-for-device
+        for _ in $(seq 150); do
+            [ "$("${adb[@]}" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ] && date +%s >"$booted" && exit 0
+            sleep 2
+        done
+    ) &
+    watcher_pid=$!
+fi
+logcat_pid=
+cleanup() {
+    [ -z "$watcher_pid" ] || kill "$watcher_pid" 2>/dev/null || true
+    [ -n "$logcat_pid" ] && kill "$logcat_pid" 2>/dev/null
+    "${adb[@]}" emu kill >/dev/null 2>&1 || { [ -n "$emulator_pid" ] && kill "$emulator_pid" 2>/dev/null; } || true
+    [ -z "$emulator_pid" ] || wait "$emulator_pid" 2>/dev/null || true
+}
+if [ -n "${XEM_SMOKE_BOOT:-}" ]; then
+    [ -z "$watcher_pid" ] || wait "$watcher_pid" || true
+    [ -f "$booted" ] || { cleanup; fail "emulator did not boot"; }
+    echo "emulator booted; left running for the smoke test"
+    exit 0
+fi
+trap cleanup EXIT
+
 if [ -z "${XEM_SKIP_BUILD:-}" ]; then
     XEM_ANDROID_ABIS=x86_64 "$root/src/runtime/scripts/android-build.sh"
 fi
@@ -52,38 +95,23 @@ fi
 synthetic=$out/xem-synthetic.bin
 synthetic_sha=$(cd "$root/src/runtime" && cargo run -q -p xem-disc --example synthetic-disc -- "$synthetic")
 
-if [ ! -f "$ANDROID_AVD_HOME/xem-smoke.avd/config.ini" ]; then
-    mkdir -p "$ANDROID_AVD_HOME"
-    echo no | avdmanager create avd -n xem-smoke -d pixel_6 \
-        -k "system-images;android-34;google_apis;x86_64" >/dev/null
-fi
-emulator -avd xem-smoke -port "$port" -no-window -no-audio -no-boot-anim -no-snapshot \
-    -gpu "${XEM_EMULATOR_GPU:-swiftshader_indirect}" >"$out/emulator.log" 2>&1 &
-emulator_pid=$!
-logcat_pid=
-cleanup() {
-    [ -n "$logcat_pid" ] && kill "$logcat_pid" 2>/dev/null
-    "${adb[@]}" emu kill >/dev/null 2>&1 || kill "$emulator_pid" 2>/dev/null || true
-    wait "$emulator_pid" 2>/dev/null || true
-}
-trap cleanup EXIT
-
-"${adb[@]}" wait-for-device
-for _ in $(seq 150); do
-    [ "$("${adb[@]}" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ] && break
-    sleep 2
-done
-[ "$("${adb[@]}" shell getprop sys.boot_completed | tr -d '\r')" = 1 ] || fail "emulator did not boot"
+[ -z "$watcher_pid" ] || wait "$watcher_pid" || true
+[ -f "$booted" ] || fail "emulator did not boot"
 echo "emulator booted: $("${adb[@]}" shell getprop ro.build.fingerprint | tr -d '\r')"
 # Right after boot the system still changes app configurations (asset
-# paths), which recreates activities; let that settle.
-sleep 20
+# paths), which recreates activities; let that settle for 20 s from the boot
+# (the build may have taken them already).
+settle=$(( $(cat "$booted") + 20 - $(date +%s) ))
+[ "$settle" -gt 0 ] && sleep "$settle"
 # No "viewing full screen" hint over the app; portrait to start.
 "${adb[@]}" shell settings put secure immersive_mode_confirmations confirmed
 "${adb[@]}" shell settings put system accelerometer_rotation 0
 "${adb[@]}" shell settings put system user_rotation 0
 # The AVD keeps its data between runs: undo what a previous run may have left.
 "${adb[@]}" shell settings put global always_finish_activities 0
+# No "isn't responding" dialog over the app when the system UI is slow on a
+# loaded host (it took the taps); the app's own stalls still fail the checks.
+"${adb[@]}" shell settings put global hide_error_dialogs 1
 "${adb[@]}" shell wm density reset
 for _ in $(seq 15); do
     [[ $("${adb[@]}" shell dumpsys window displays) == *"mRotation=0 "* ]] && break

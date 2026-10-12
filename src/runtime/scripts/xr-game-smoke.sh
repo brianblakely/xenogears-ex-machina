@@ -26,9 +26,12 @@ export VK_ICD_FILENAMES=${VK_ICD_FILENAMES:-$XEM_LAVAPIPE_ICD}
 export XR_RUNTIME_JSON=$XEM_MONADO_RUNTIME
 export SDL_AUDIO_DRIVER=dummy
 
-(cd "$runtime" && cargo build --release -p xem-desktop -p xem-headless)
-desktop=$runtime/target/release/xem-desktop
-headless=$runtime/target/release/xem-headless
+# XEM_CARGO_PROFILE (default release) is the cargo profile it builds and runs;
+# XEM_SKIP_BUILD=1 runs that profile's existing builds.
+profile=${XEM_CARGO_PROFILE:-release}
+[[ -n ${XEM_SKIP_BUILD:-} ]] || (cd "$runtime" && cargo build --profile "$profile" -p xem-desktop -p xem-headless)
+desktop=${CARGO_TARGET_DIR:-$runtime/target}/$profile/xem-desktop
+headless=${CARGO_TARGET_DIR:-$runtime/target}/$profile/xem-headless
 
 rm -rf "$out"
 mkdir -p "$out/config/xenogears-ex-machina"

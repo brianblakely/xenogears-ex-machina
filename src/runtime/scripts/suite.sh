@@ -1,0 +1,216 @@
+#!/usr/bin/env bash
+# The test suite, from anywhere in the repository:
+#
+#   src/runtime/scripts/suite.sh [quick|full]
+#
+# quick (while editing): the game module, the port's unit tests, the Rust
+# workspace's tests and the validation run. full (before a merge): also the
+# workspace's libraries, binaries and tests checked without a game module (as
+# a clone without the user's discs builds them; the xem-headless examples are
+# tools for the user's disc), the web build and the browser suites, and the
+# XR and Android smoke tests.
+#
+# The builds run side by side, each in a cargo target directory of its own
+# (src/runtime/target-*, none of them play.sh's): the native one, then the
+# Rust tests and the validation run at once; the check without a game
+# module; the web build, then the browser suites (the slice's, the longest,
+# from the start beside the others two files at a time; the slice's and the
+# persistence tests two at a time within them: at most five browsers); the
+# Android APK, and the emulator boots (its boot measures nothing). Then what
+# measures frame rates runs alone, one after another (their emulator, headset and browsers render on the
+# processor: beside the browser suites the Android smoke's frame rate fell
+# from 56 to 10 a second, the XR smoke's headset frames came late, and
+# their checks failed): the Android smoke, the XR smoke, and the browser
+# tests that measure time (the headset's frame rate, rewind frame times,
+# fast-forward's music, the stalled page, a resume read within the rewind's
+# one-second interval).
+#
+# Rust builds use the `suite` profile (Cargo.toml: release's optimization
+# without link-time optimization or debug information); a failing test
+# target is built again with line tables (`suite-debug`) and run with a
+# backtrace into rust-debug.log. The game module keeps its file when a build
+# changes nothing, so nothing downstream rebuilds.
+#
+# Logs: build/suite/<stage>.log, with the stages' results and times in
+# build/suite/summary.txt. The user's disc 1 (discs/"Xenogears disc 1.chd")
+# enables what needs it. Exits non-zero when any stage failed.
+set -uo pipefail
+
+root=$(cd "$(dirname "$0")/../../.." && pwd)
+runtime=$root/src/runtime
+tier=${1:-quick}
+[[ $tier == quick || $tier == full ]] || { echo "usage: $0 [quick|full]" >&2; exit 2; }
+
+# Everything runs in the runtime shell (the Android stage enters its own).
+nix=(nix --extra-experimental-features 'nix-command flakes' develop)
+if [[ -z ${XEM_SUITE_SHELL:-} ]]; then
+    exec "${nix[@]}" "path:$root/nix/runtime" -c env XEM_SUITE_SHELL=1 "$0" "$@"
+fi
+
+logs=$root/build/suite
+rm -rf "$logs"
+mkdir -p "$logs"
+# The Rust disc tests read the raw image (.local/discs/disc1.bin); every
+# other stage finds discs/"Xenogears disc 1.chd" itself.
+unset XEM_DISC1
+disc="$root/discs/Xenogears disc 1.chd"
+# The native builds' own directory; the stages beside them set theirs.
+export CARGO_TARGET_DIR=$runtime/target-suite
+headless=$CARGO_TARGET_DIR/suite/xem-headless
+# Cargo builds side by side would each start a compiler per core: the web
+# build (the browser suites wait for it) takes half the cores, the others a
+# quarter.
+jobs=$(nproc)
+web_jobs=$((jobs > 1 ? jobs / 2 : 1))
+side_jobs=$((jobs > 3 ? jobs / 4 : 1))
+began=$(date +%s)
+
+# stage NAME COMMAND...: run COMMAND into NAME.log and note its result.
+stage() {
+    local name=$1 start=$(date +%s) result=pass
+    shift
+    "$@" >"$logs/$name.log" 2>&1 || result=FAIL
+    echo "$result $(($(date +%s) - start))" >"$logs/$name.result"
+    [[ $result == pass ]]
+}
+
+module() {
+    cd "$root" && python3 tools/game_module.py --stubs
+}
+
+port() {
+    cd "$root" && python3 -m unittest tests.test_port_model_draw tests.test_port_gte tests.test_port_gpu \
+        tests.test_game_module_pause tests.test_port_original_traces tests.test_port_resident tests.test_port_arena \
+        tests.test_port_worldmap tests.test_dispatch_tables
+}
+
+# What the native stages run: the tests, the validation example and the
+# hosts (the browser suites compare with xem-headless).
+native() {
+    cd "$runtime" && cargo test --profile suite --workspace --no-run &&
+        cargo build --profile suite -p xem-headless -p xem-desktop --bins --example validation
+}
+
+# The workspace's tests; each failing target again with line tables.
+rust() {
+    cd "$runtime" || return 1
+    local status=0
+    VK_ICD_FILENAMES=$XEM_LAVAPIPE_ICD cargo test --profile suite --workspace --no-fail-fast || status=1
+    if ((status)); then
+        grep -o 'to rerun pass `[^`]*`' "$logs/rust.log" | sed 's/.*`\(.*\)`/\1/' | sort -u | while read -r target; do
+            echo "== $target"
+            # shellcheck disable=SC2086 # the target's own arguments
+            VK_ICD_FILENAMES=$XEM_LAVAPIPE_ICD RUST_BACKTRACE=1 cargo test --profile suite-debug $target
+        done >"$logs/rust-debug.log" 2>&1
+    fi
+    return $status
+}
+
+validation() {
+    cd "$runtime" && "$CARGO_TARGET_DIR/suite/examples/validation"
+}
+
+# The workspace builds without a game module (none at that path).
+public() {
+    cd "$runtime" && CARGO_TARGET_DIR=$runtime/target-public CARGO_BUILD_JOBS=$side_jobs \
+        XEM_GAME_WASM=/nonexistent/game.wasm cargo check --workspace --lib --bins --tests
+}
+
+web() {
+    cd "$root" && CARGO_TARGET_DIR=$runtime/target-web CARGO_BUILD_JOBS=$web_jobs python3 src/runtime/web/build.py
+}
+
+# The browser suites but the timed tests, once the native build has made
+# the host they compare with: the slice's (the longest) from the start, the
+# others two files at a time (node runs them in name order).
+timed='rewind frame p99|keep music on host time|drops missed time|Start pause freezes rewind history'
+browser() {
+    until [[ -f $logs/native.result ]]; do sleep 1; done
+    grep -q '^pass' "$logs/native.result" || return 1
+    cd "$runtime/web" || return 1
+    local status=0
+    XEM_HEADLESS=$headless node --test tests/slice.test.mjs >"$logs/browser-slice.log" 2>&1 &
+    local slice=$!
+    XEM_HEADLESS=$headless node --test --test-concurrency=2 --test-skip-pattern="$timed" \
+        tests/disc.test.mjs tests/page.test.mjs tests/persistence.test.mjs tests/render.test.mjs || status=1
+    wait "$slice" || status=1
+    return $status
+}
+
+# The timed tests, one at a time.
+timing() {
+    cd "$runtime/web" || return 1
+    local status=0 pattern
+    while read -r file pattern; do
+        echo "== $file: $pattern"
+        XEM_HEADLESS=$headless node --test --test-name-pattern="$pattern" "tests/$file" || status=1
+    done <<'TESTS'
+persistence.test.mjs rewind frame p99
+persistence.test.mjs keep music on host time
+persistence.test.mjs Start pause freezes rewind history
+page.test.mjs drops missed time
+xr-game.test.mjs .
+TESTS
+    return $status
+}
+
+xr() {
+    cd "$root" && XEM_CARGO_PROFILE=suite XEM_SKIP_BUILD=1 src/runtime/scripts/xr-game-smoke.sh
+}
+
+# The Android stages, in the Android shell and their own target directory.
+in_android() {
+    cd "$root" && "${nix[@]}" "path:$root/nix/runtime#android" -c env CARGO_TARGET_DIR="$runtime/target-android" \
+        CARGO_BUILD_JOBS="$side_jobs" "$@"
+}
+android_build() {
+    in_android env XEM_ANDROID_ABIS=x86_64 src/runtime/scripts/android-build.sh
+}
+android_boot() {
+    in_android env XEM_SMOKE_BOOT=1 src/runtime/scripts/android-smoke.sh
+}
+android() {
+    in_android env XEM_SKIP_BUILD=1 src/runtime/scripts/android-smoke.sh
+}
+
+summary() {
+    {
+        for result in "$logs"/*.result; do
+            name=$(basename "$result" .result)
+            read -r outcome seconds <"$result"
+            printf '%-10s %-4s %4d s\n' "$name" "$outcome" "$seconds"
+        done
+        echo "$tier suite: $(($(date +%s) - began)) s"
+    } | tee "$logs/summary.txt"
+    ! grep -q '^FAIL' "$logs"/*.result
+}
+
+passed() { grep -q '^pass' "$logs/$1.result" 2>/dev/null; }
+
+stage module module || { summary; exit 1; }
+stage port port &
+{
+    stage native native || exit
+    stage rust rust &
+    [[ ! -f $disc ]] || stage validation validation &
+    wait
+} &
+if [[ $tier == full ]]; then
+    stage public public &
+    { stage web web && stage browser browser; } &
+    stage android-build android_build &
+    stage android-boot android_boot &
+fi
+wait
+if [[ $tier == full ]]; then
+    if passed android-build; then
+        stage android android
+    elif passed android-boot; then
+        # No APK to test: stop the emulator booted for it (android-smoke.sh's port).
+        in_android adb -s emulator-5584 emu kill >/dev/null 2>&1
+    fi
+    ! passed native || [[ ! -f $disc ]] || stage xr xr
+    # The timed tests need the web build the browser suites ran on.
+    ! passed web || ! passed native || stage timing timing
+fi
+summary

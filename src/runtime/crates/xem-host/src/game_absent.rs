@@ -25,6 +25,10 @@ impl Game {
         match *self {}
     }
 
+    pub fn combo_input(&mut self) -> bool {
+        match *self {}
+    }
+
     pub fn update(&mut self, _buttons: u16, _settings: &xem_settings::Settings, _focused: impl FnMut() -> bool) -> Result<u32, String> {
         match *self {}
     }
@@ -41,7 +45,15 @@ impl Game {
         match *self {}
     }
 
-    pub fn take_frame(&mut self, _restart: bool) -> (xem_render::xem_gpu::Trace, xem_render::xem_gpu::DisplayInfo, String) {
+    pub fn take_frame(&mut self, _restart: bool, _reveals: Option<xem_render::xem_gpu::Reveals>) -> (xem_render::xem_gpu::Trace, xem_render::xem_gpu::DisplayInfo, String) {
+        match *self {}
+    }
+
+    pub fn want_actor_view(&mut self, _view: u32) {
+        match *self {}
+    }
+
+    pub fn stop_trace(&mut self) {
         match *self {}
     }
 

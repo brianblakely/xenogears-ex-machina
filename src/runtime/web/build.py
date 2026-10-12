@@ -35,7 +35,9 @@ def main():
         cargo.append("--release")
     subprocess.run(cargo, cwd=ROOT / "src" / "runtime", env=env, check=True)
     target = "release" if args.profile == "release" else "debug"
-    wasm = ROOT / "src" / "runtime" / "target" / "wasm32-unknown-unknown" / target / "xem_web.wasm"
+    # Cargo's own target directory (CARGO_TARGET_DIR, from src/runtime when relative).
+    target_dir = ROOT / "src" / "runtime" / os.environ.get("CARGO_TARGET_DIR", "target")
+    wasm = target_dir / "wasm32-unknown-unknown" / target / "xem_web.wasm"
 
     if out.exists():
         shutil.rmtree(out)

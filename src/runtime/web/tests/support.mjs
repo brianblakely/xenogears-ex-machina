@@ -18,7 +18,8 @@ export const WEB = join(ROOT, 'build', 'web');
 /** Screenshots the tests take, for people to look at. */
 export const SHOTS = join(ROOT, 'build', 'web-test');
 export const USER_DISC = process.env.XEM_DISC1 ?? join(ROOT, 'discs', 'Xenogears disc 1.chd');
-export const HEADLESS = join(ROOT, 'src', 'runtime', 'target', 'release', 'xem-headless');
+// The native host the tests compare with (XEM_HEADLESS: another build's, as the test suite's).
+export const HEADLESS = process.env.XEM_HEADLESS ?? join(ROOT, 'src', 'runtime', 'target', 'release', 'xem-headless');
 
 /** Chromium flags. WebGPU on SwiftShader's Vulkan: with Chromium's default
  * Vulkan selection the headless browser destroys a WebGPU device after its
@@ -47,6 +48,9 @@ export async function start({ args = [], fixtures: withFixtures = false, context
   const server = await serve(mounts);
   const browser = await chromium.launch({ executablePath: process.env.XEM_CHROMIUM, headless: true, args });
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, ...contextOptions });
+  // The suite runs browsers side by side: a page can take longer than
+  // Playwright's 30 s to start on a loaded machine (a hang still fails).
+  context.setDefaultTimeout(120_000);
   for (const script of initScripts) await context.addInitScript(script);
   const base = `http://localhost:${server.address().port}/`;
   return {

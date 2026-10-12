@@ -63,28 +63,9 @@ async function forest(options) {
   }
 }
 
-describe('the Phase 3 slice in browsers', { skip: !available && `needs ${USER_DISC} and the game module` }, () => {
-  test('a desktop browser plays the forest route to the native end', { timeout: 1_800_000 }, async () => {
-    await forest({});
-  });
-
-  test('a phone browser plays it to the same end', { timeout: 1_800_000 }, async () => {
-    await forest({ context: { ...devices['Pixel 7'] } });
-  });
-
-  test('a headset browser plays it to the same end', { timeout: 1_800_000 }, async () => {
-    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST }] });
-    try {
-      const page = await booted(browser);
-      assert.ok(await page.evaluate(() => navigator.xr.isSessionSupported('immersive-vr')), 'an emulated headset');
-      const forest = log('forest');
-      assert.equal(await play(page, forest.commands, forest.frames), forest.memory_hash);
-      assert.deepEqual(page.errors, []);
-    } finally {
-      await browser.close();
-    }
-  });
-
+// Each test plays in its own browser, two at a time: the longest (the save
+// and its reload) beside the three forest routes in turn.
+describe('the Phase 3 slice in browsers', { concurrency: 2, skip: !available && `needs ${USER_DISC} and the game module` }, () => {
   test('the save survives a reload mid-route and the next page loads it', { timeout: 3_600_000 }, async () => {
     const save = log('save');
     const load = log('load-card2');
@@ -124,6 +105,27 @@ describe('the Phase 3 slice in browsers', { skip: !available && `needs ${USER_DI
       assert.equal(await play(page, load.commands, load.frames), load.memory_hash);
       const map = await page.evaluate(() => window.xem.command({ cmd: 'inspect', path: 'mode_field_map_id', depth: 0 }));
       assert.equal(map, 22);
+      assert.deepEqual(page.errors, []);
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test('a desktop browser plays the forest route to the native end', { timeout: 1_800_000 }, async () => {
+    await forest({});
+  });
+
+  test('a phone browser plays it to the same end', { timeout: 1_800_000 }, async () => {
+    await forest({ context: { ...devices['Pixel 7'] } });
+  });
+
+  test('a headset browser plays it to the same end', { timeout: 1_800_000 }, async () => {
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST }] });
+    try {
+      const page = await booted(browser);
+      assert.ok(await page.evaluate(() => navigator.xr.isSessionSupported('immersive-vr')), 'an emulated headset');
+      const forest = log('forest');
+      assert.equal(await play(page, forest.commands, forest.frames), forest.memory_hash);
       assert.deepEqual(page.errors, []);
     } finally {
       await browser.close();

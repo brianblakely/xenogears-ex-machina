@@ -850,6 +850,45 @@ Headset class (Low tier, depth of field off unless enabled).
 | `xem-settings` | typed application settings: validation, acknowledgement, change notification, JSON persistence |
 | `xem-storage` | bounded reads and durable replacement of native settings, cards and state files |
 
+## The test suite
+
+`src/runtime/scripts/suite.sh [quick|full]` runs the tests from anywhere in
+the repository, in the runtime shell. `quick` (while editing) builds the game
+module and runs the port's unit tests, the Rust workspace's tests and the
+validation run; `full` (before a merge) adds the workspace's libraries,
+binaries and tests checked without a game module (as a clone without the
+user's discs builds them; the xem-headless examples are tools for the
+user's disc), the web build and the browser suites, and the XR and Android
+smoke tests. The builds run side by side, each in a cargo target directory
+of its own (`src/runtime/target-*`, none of them play.sh's): the native one,
+then the Rust tests and the validation run at once; the check without a
+game module; the web build, then the browser suites (the slice's, the
+longest, from the start beside the others two files at a time; the slice's
+and the persistence tests two at a time within them: at most five
+browsers); the Android APK, and the emulator boots (its boot measures
+nothing). What measures frame rates then runs alone, one after another,
+since their emulator, headset and browsers render on the
+processor (beside the browser suites the Android smoke's frame rate fell
+from 56 to 10 a second, the XR smoke's headset frames came late, and their
+checks failed): the Android smoke, the XR smoke, and the browser tests that
+measure time (the headset's frame rate, rewind frame times, fast-forward's
+music, the stalled page, a resume read within the rewind's one-second
+interval). Rust builds use the `suite` profile
+(release's optimization without link-time optimization or debug
+information: after a change to xem-gpu the test binaries rebuild in 37 s,
+against release's 161 s); a failing test target is built again with line
+tables (`suite-debug`) and run with a backtrace into `rust-debug.log`. A
+module build that changes nothing keeps `build/game/game.wasm` and its time,
+so nothing downstream rebuilds (play.sh compares the sources with
+`build/game/stamp`, which each finished module build touches). The Android
+smoke, run by itself, boots its emulator while the APK builds
+(`XEM_SMOKE_BOOT=1` only boots it, and a later run uses it), and turns off
+the system's "isn't responding" dialogs on its AVD (on a loaded host one
+took its taps). Logs, and each stage's result and time: `build/suite/`.
+Measured here (16 threads, warm builds): `full` 709 s with every stage
+passing, where the same stages run one after another took about 26 minutes;
+`quick` 114 s.
+
 ## Saves and time controls
 
 The app Settings screen has Audio, Graphics, Controls, Time and Saves sections.

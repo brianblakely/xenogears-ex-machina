@@ -46,3 +46,17 @@ opt-level = 2
 [profile.release]
 lto = "thin"
 debug = 1
+
+# The test suite's builds (src/runtime/scripts/suite.sh): release's
+# optimization without link-time optimization or debug information, so a
+# change rebuilds the test binaries in a quarter of release's time (37 s
+# against 161 s after touching xem-gpu). A failing test target is built again
+# with release's line tables (suite-debug) for its backtrace.
+[profile.suite]
+inherits = "release"
+lto = false
+debug = false
+
+[profile.suite-debug]
+inherits = "suite"
+debug = 1

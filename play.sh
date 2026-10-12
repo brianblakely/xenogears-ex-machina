@@ -41,10 +41,13 @@ if ! compgen -G ".local/decomp/build/*.elf" >/dev/null; then
     "${nix[@]}" path:./nix/ghidra#matching -c make -j"$(nproc)" -C src/decomp all-verify
 fi
 
-# 2. The game module, again whenever the decomp, the port or the tool changed.
+# 2. The game module, again whenever the decomp, the port or the tool changed
+#    since its last build finished (its stamp; game.wasm keeps its time when
+#    a build changes nothing).
 module=build/game/game.wasm
-if [[ ! -f $module ]] || [[ -n $(find src/decomp/src src/decomp/include src/port tools/game_module.py \
-    tools/game_schema.py -newer "$module" -type f -print -quit) ]]; then
+stamp=build/game/stamp
+if [[ ! -f $module || ! -f $stamp ]] || [[ -n $(find src/decomp/src src/decomp/include src/port tools/game_module.py \
+    tools/game_schema.py -newer "$stamp" -type f -print -quit) ]]; then
     echo "play.sh: building the game module"
     "${nix[@]}" path:./nix/runtime -c python3 tools/game_module.py --stubs
 fi

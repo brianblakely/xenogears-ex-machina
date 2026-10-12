@@ -200,5 +200,9 @@ def build_schema(out, units, addresses, cflags, jobs):
                 and name not in addresses.functions:
             schema[name] = {"address": address, "image": None, "type": None}
     path = out / "schema.json"
-    path.write_text(json.dumps({"globals": schema, "types": types.entries, "records": types.records}, sort_keys=True))
+    text = json.dumps({"globals": schema, "types": types.entries, "records": types.records}, sort_keys=True)
+    # Unchanged, the file keeps its time: xem-game's build script, which
+    # watches it, has nothing to redo.
+    if not path.exists() or path.read_text() != text:
+        path.write_text(text)
     return path, len(schema), len(types.entries)

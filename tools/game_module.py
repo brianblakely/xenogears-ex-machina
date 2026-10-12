@@ -1128,10 +1128,20 @@ def link(out, objects, args, units):
     # -g keeps the name section: wasm2c and native backtraces name game functions.
     # XEM_WASM_OPT=-O0 keeps every function separate (wasm-opt -O2 merges
     # identical functions and inlines, which makes backtraces misleading).
+    built = out / "game.wasm.new"
     run(["wasm-opt", os.environ.get("XEM_WASM_OPT", "-O2"), "-g", "--asyncify", f"--pass-arg=asyncify-imports@{imports}",
          "--enable-bulk-memory", "--enable-sign-ext", "--enable-mutable-globals", "--enable-nontrapping-float-to-int",
-         str(raw), "-o", str(final)])
-    print(f"wrote {final} ({final.stat().st_size} bytes)")
+         str(raw), "-o", str(built)])
+    # The same module keeps its file and time: what watches it (xem-game's
+    # build script, the web build) has nothing to redo.
+    if final.exists() and final.read_bytes() == built.read_bytes():
+        built.unlink()
+        print(f"unchanged {final} ({final.stat().st_size} bytes)")
+    else:
+        built.replace(final)
+        print(f"wrote {final} ({final.stat().st_size} bytes)")
+    # When the last build finished (play.sh compares the sources with it).
+    (out / "stamp").touch()
 
 
 def main():
