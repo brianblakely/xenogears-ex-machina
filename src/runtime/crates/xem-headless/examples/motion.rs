@@ -408,14 +408,6 @@ fn main() {
             previous = Some(rgba);
         }
     }
-    if std::env::var_os("XEM_LIST_REVEALED_SPRITES").is_some() {
-        for op in view.frame().primitives() {
-            let xem_render::xem_gpu::TraceOp::Draw(p) = op else { continue };
-            if !(p.revealed && p.class == xem_render::xem_gpu::Class::Sprite) { continue; }
-            let v = &p.vertices[..p.vertex_count()];
-            eprintln!("revealed sprite owner {:#x} points {:?}", p.owner, v.iter().map(|v| (v.fx as i32, v.fy as i32, v.z as i32)).collect::<Vec<_>>());
-        }
-    }
     if let Some((x, y)) = probe {
         for op in view.frame().primitives() {
             let xem_render::xem_gpu::TraceOp::Draw(p) = op else { continue };
