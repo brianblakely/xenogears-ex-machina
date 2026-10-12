@@ -10,7 +10,7 @@ is built for native and browser hosts and how the hosts are layered. The
 | Decision | Choice |
 | --- | --- |
 | Rust workspace | `src/runtime/` (`src/runtime/Cargo.toml`, crates in `src/runtime/crates/*`, committed `Cargo.lock`) |
-| Toolchain | `nix develop path:./nix/runtime` (Rust 1.97.1 with wasm32/Android targets via rust-overlay, clang/lld 21.1.8, wabt 1.0.41, binaryen 132, wasm-bindgen-cli 0.2.127, SDL3 3.4.14, mesa 26.2.2, Monado 25.1.0, Chromium 152, Node 24); `#android` adds the Android SDK/NDK r29, emulator and API-34 x86_64 image, JDK 17, Gradle 8.14.4, cargo-ndk |
+| Toolchain | `nix develop path:./nix/runtime` (Rust 1.97.1 with wasm32/Android targets via rust-overlay, clang/lld 21.1.8, wabt 1.0.41, binaryen 132, wasm-bindgen-cli 0.2.127, SDL3 3.4.14, mesa 26.2.2, Monado 25.1.0, Chromium 152, Node 24, perf 7.2.3); `#android` adds the Android SDK/NDK r29, emulator and API-34 x86_64 image, JDK 17, Gradle 8.14.4, cargo-ndk |
 | Data model and link | the recovered C is compiled once to a wasm32 *game module* (ILP32, the original data model); natively it is translated ahead of time with wasm2c, in browsers it runs as is beside the wasm-bindgen runtime |
 | Versions | slint =1.18.1 (`unstable-wgpu-30`, FemtoVG wgpu renderer), wgpu/wgpu-hal =30.0.1, sdl3-sys =0.6.8+SDL-3.4.14, openxr 0.22.0, wasm-bindgen =0.2.127, iwer 2.5.0, playwright-core 1.64.0 |
 | Slint license | Royalty-free 2.0 (attribution shown in the settings panel); GPLv3 is the alternative |
@@ -547,7 +547,10 @@ snapshots are its. The renderer only draws again what it drew:
   tells the host which culled faces the trace should record (`reveals`:
   the reach and the pull-back, passed to `Gpu::set_reveals`) and the view
   the field's characters keep moving in (`actor_view`, below), and
-  presents. 24-bit movie frames are not traced pictures: hosts show the
+  presents. A presentation with nothing new to draw (the display refreshing
+  faster than the game draws: the same frame, its ops drawn so far, framing,
+  settings and no interpolation) shows the picture presented last: no
+  replay, no effects. 24-bit movie frames are not traced pictures: hosts show the
   device's display for them, unscaled in aspect, under Ex Machina's
   renderer enlarged with its movie filter: Catmull-Rom bicubic (default;
   nine bilinear taps in the compositor: smooth and sharp at four times and
@@ -701,7 +704,8 @@ it writes a contact sheet (beside the console's picture with
 `--compare`), an animated PNG of the last 240 pictures, a probe of the
 primitives at a point, how many culled faces each game frame drew (sprite
 parts among them: `revealed_sprites`), how many sprite actors the field
-stopped as off screen (`still`), the final RAM hash (`memory_hash`), and the
+stopped as off screen (`still`), the final RAM and VRAM hashes
+(`memory_hash`, `vram_hash`: the software GPU's picture), and the
 mean, 95th-percentile and worst cost of the game frame, the trace, the
 presentation's CPU work and the GPU's. Measured on Lahan walking (1080p
 output at three times the original, this machine's CPU and lavapipe, means
@@ -712,7 +716,24 @@ framing 2.90 and 0.88 ms; pulled back three times 4.55 and 1.70 ms (it draws
 adds 0.4 ms of CPU. GPU times there are a software rasterizer's (Modern
 4.4 ms, pulled back 12.9 ms, HD-2D 36 ms at 1080p), useful only relative to
 each other: lighting, ambient occlusion, depth of field and light shafts are
-the costly effects.
+the costly effects. On the host's GPU (`scripts/xem-gpu-host`, an RTX 5070
+Ti, i9-9900K; 4K output at the automatic scale, eight times the original,
+each game frame presented twice as a 120 Hz display does; means in ms, the
+game frame including the port's records and the software GPU, presentation
+CPU per presentation): Lahan walking under Modern 1.62 game, 0.19
+presentation, 0.17 GPU; wider 1.79, 0.52, 0.29; wider and pulled back five
+times 2.68, 0.92, 0.29; HD-2D wider 1.80, 0.67, 0.89 (pulled back: 2.73,
+1.17, 0.92); a debug battle wider 4.94, 1.16, 0.44; the world map's battle
+wider and pulled back three times 3.04, 0.72, 0.33. Where the time goes
+(`perf record --all-user --call-graph lbr` in the runtime shell, which pins
+`perf`): the software GPU and the GTE in the game frame, then the replay's
+vertices and its uploads. For them the GTE's steps are inlined (the module's
+units otherwise reach its optimizer `noinline`), the software GPU steps its
+triangle edges and only the attributes that vary, the trace's stores sit in
+a table of RAM's words and culled faces' words in place, the replay keeps its
+buffers and uploads only the rows of VRAM a new frame changed; none of it
+changes the game's RAM or the software GPU's VRAM (`memory_hash`,
+`vram_hash`).
 
 ### Headsets
 

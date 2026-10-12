@@ -475,6 +475,9 @@ fn main() {
         write(out.join(format!("{name}.png")), size, &animation);
     }
     let mean_change = changes.iter().sum::<f64>() / changes.len().max(1) as f64;
+    // FNV-1a over the native VRAM: the software GPU's picture of everything drawn.
+    let vram_hash = format!("{:016x}", session.runtime.services().gpu.device().vram().iter()
+        .fold(0xCBF2_9CE4_8422_2325u64, |h, &p| (h ^ u64::from(p)).wrapping_mul(0x100_0000_01B3)));
     let report = json!({
         "adapter": format!("{} ({:?})", adapter.name, adapter.backend),
         "scene": session.scene(),
@@ -488,7 +491,7 @@ fn main() {
         "still": still,
     });
     std::fs::write(out.join(format!("{name}.json")), serde_json::to_string_pretty(&report).unwrap()).unwrap();
-    println!("{}", serde_json::to_string(&json!({"stages": report["stages"], "changed_mean": mean_change, "points": report["points"], "revealed": [revealed.first(), revealed.iter().min(), revealed.iter().max(), revealed.last()], "still": [still.first(), still.iter().min(), still.iter().max(), still.last()], "revealed_sprites": [revealed_sprites.iter().min(), revealed_sprites.iter().max()], "memory_hash": session.execute(&json!({"cmd": "memory_hash"}))})).unwrap());
+    println!("{}", serde_json::to_string(&json!({"stages": report["stages"], "changed_mean": mean_change, "points": report["points"], "revealed": [revealed.first(), revealed.iter().min(), revealed.iter().max(), revealed.last()], "still": [still.first(), still.iter().min(), still.iter().max(), still.last()], "revealed_sprites": [revealed_sprites.iter().min(), revealed_sprites.iter().max()], "memory_hash": session.execute(&json!({"cmd": "memory_hash"})), "vram_hash": vram_hash})).unwrap());
 }
 
 /// The field's sprite actors (not the 801e layer's) marked off screen

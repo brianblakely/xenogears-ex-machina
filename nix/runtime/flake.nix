@@ -98,6 +98,9 @@
                 ninja
                 pkg-config
                 vulkan-tools
+                # Sampling profiles of the native hosts and examples (user space:
+                # perf record --all-user --call-graph dwarf).
+                perf
                 mesa
                 monado
                 openxr-loader

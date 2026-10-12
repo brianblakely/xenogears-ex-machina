@@ -816,7 +816,7 @@ fn random_triangles_cover_by_the_rule_and_shared_edges_do_not_overlap() {
 
 #[test]
 fn traced_points_take_the_projection_stored_at_their_address_and_culled_faces_their_entry() {
-    use xem_gpu::{Projection, Reveal, SxyStore, TraceOp};
+    use xem_gpu::{FaceWords, Projection, Reveal, SxyStore, TraceOp};
     let mut ram = Ram::new();
     let mut gpu = fresh();
     gpu.set_trace(true);
@@ -852,8 +852,8 @@ fn traced_points_take_the_projection_stored_at_their_address_and_culled_faces_th
     // A culled face at the entry, its points the last three projections, and
     // one drawn just before the second packet with its points out of order
     // (as a sprite part stores its corners): projections 1, 3 and 2.
-    let reveal = Reveal { entry: 0x1000, vertices: 3, projections: 4, order: 0, words: vec![0x2000_00FF, xy(10, 20), xy(40, 60), xy(5, 50)] };
-    let ordered = Reveal { entry: 0x3000, vertices: 3, projections: 4, order: 3 | 1 << 8 | 2 << 16, words: vec![0x2000_00FF, xy(10, 20), xy(5, 50), xy(40, 60)] };
+    let reveal = Reveal { entry: 0x1000, vertices: 3, projections: 4, order: 0, words: FaceWords::from(&[0x2000_00FF, xy(10, 20), xy(40, 60), xy(5, 50)][..]) };
+    let ordered = Reveal { entry: 0x3000, vertices: 3, projections: 4, order: 3 | 1 << 8 | 2 << 16, words: FaceWords::from(&[0x2000_00FF, xy(10, 20), xy(5, 50), xy(40, 60)][..]) };
     gpu.trace_projections(0, &projections, &stores, &[reveal, ordered]);
     gpu.dma_linked_list(&ram, 0x1000, 1000).unwrap();
     let trace = gpu.take_trace();

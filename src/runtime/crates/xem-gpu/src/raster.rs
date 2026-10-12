@@ -58,6 +58,28 @@ struct Shader {
     depth: u32,
     clut_x: usize,
     clut_y: usize,
+    /// The texture window (GP0(E2h)) as masks: u and v are kept by `keep`
+    /// and given `set`.
+    keep: (u32, u32),
+    set: (u32, u32),
+}
+
+/// floor(n / d) and n - d * floor(n / d) for d > 0 (div_euclid and
+/// rem_euclid), from a float division set right by whole steps: exact for
+/// the magnitudes here (far below 2^52), without a 64-bit integer division.
+#[inline(always)]
+fn floor_div(n: i64, d: i64) -> (i64, i64) {
+    let mut q = (n as f64 / d as f64) as i64;
+    let mut r = n - q * d;
+    while r < 0 {
+        q -= 1;
+        r += d;
+    }
+    while r >= d {
+        q += 1;
+        r -= d;
+    }
+    (q, r)
 }
 
 fn color_attributes(color: u32) -> [i32; 3] {
@@ -69,11 +91,13 @@ fn color_attributes(color: u32) -> [i32; 3] {
 }
 
 /// 8-bit channel to 5 bits, with the dither offset when enabled.
+#[inline(always)]
 fn to5(value: i32, dither: Option<i32>) -> u16 {
     let value = value + dither.unwrap_or(0);
     (value.clamp(0, 255) >> 3) as u16
 }
 
+#[inline(always)]
 fn blend(back: u16, front: u16, mode: u32) -> u16 {
     let mut out = 0;
     for shift in [0, 5, 10] {
@@ -98,13 +122,13 @@ struct Stepper {
 }
 
 impl Stepper {
+    #[inline(always)]
     fn new(numerator: i64, denominator: i64) -> Stepper {
-        Stepper {
-            quotient: numerator.div_euclid(denominator),
-            remainder: numerator.rem_euclid(denominator),
-        }
+        let (quotient, remainder) = floor_div(numerator, denominator);
+        Stepper { quotient, remainder }
     }
 
+    #[inline(always)]
     fn step(&mut self, by: Stepper, denominator: i64) {
         self.quotient += by.quotient;
         self.remainder += by.remainder;
@@ -123,6 +147,9 @@ pub struct TriangleRows {
     /// Per edge: its function at (x0, y0) less the fill rule's bias, and its
     /// steps along x and y (inside where >= 0).
     edges: [(i64, i64, i64); 3],
+    /// Per edge with a step along x: its function over that step's size,
+    /// rounded down, at the current row, and the step per row.
+    bounds: [(Stepper, Stepper); 3],
     x0: i32,
     x1: i32,
     y0: i32,
@@ -163,7 +190,11 @@ impl TriangleRows {
             let at_origin = dx * i64::from(y0 - a.1) - dy * i64::from(x0 - a.0);
             *edge = (at_origin - i64::from(!top_left), -dy, dx);
         }
-        Some(TriangleRows { edges, x0, x1, y0, y1, y: y0 })
+        let bounds = edges.map(|(origin, step_x, step_y)| match step_x.abs() {
+            0 => (Stepper::default(), Stepper::default()),
+            size => (Stepper::new(origin, size), Stepper::new(step_y, size)),
+        });
+        Some(TriangleRows { edges, bounds, x0, x1, y0, y1, y: y0 })
     }
 }
 
@@ -177,16 +208,19 @@ impl Iterator for TriangleRows {
         let y = self.y;
         self.y += 1;
         // Every edge function is >= 0 from `first` to `last` (an edge
-        // function is linear in x).
+        // function is linear in x): w / |step x| rounded down, stepped from
+        // row to row.
         let row = i64::from(y - self.y0);
         let (mut first, mut last) = (i64::from(self.x0), i64::from(self.x1));
-        for &(origin, step_x, step_y) in &self.edges {
-            let w = origin + step_y * row;
+        for (&(origin, step_x, step_y), (bound, step)) in self.edges.iter().zip(&mut self.bounds) {
             match step_x.signum() {
-                1 => first = first.max(i64::from(self.x0) - w.div_euclid(step_x)),
-                -1 => last = last.min(i64::from(self.x0) + w.div_euclid(-step_x)),
-                _ if w < 0 => last = first - 1,
+                1 => first = first.max(i64::from(self.x0) - bound.quotient),
+                -1 => last = last.min(i64::from(self.x0) + bound.quotient),
+                _ if origin + step_y * row < 0 => last = first - 1,
                 _ => {}
+            }
+            if step_x != 0 {
+                bound.step(*step, step_x.abs());
             }
         }
         Some((y, first as i32, last.max(first - 1) as i32))
@@ -217,6 +251,9 @@ impl Gpu {
     fn shader(&self, textured: bool, raw: bool, gouraud: bool, semi: bool, clut: u32) -> Shader {
         let mode = self.draw_mode;
         let dither = mode & 0x200 != 0 && (gouraud || (textured && !raw));
+        let window = self.texture_window;
+        let (mask_x, mask_y) = (window & 0x1F, window >> 5 & 0x1F);
+        let (offset_x, offset_y) = (window >> 10 & 0x1F, window >> 15 & 0x1F);
         Shader {
             textured,
             raw,
@@ -228,15 +265,15 @@ impl Gpu {
             depth: mode >> 7 & 3,
             clut_x: (clut & 0x3F) as usize * 16,
             clut_y: (clut >> 6 & 0x1FF) as usize,
+            keep: (0xFF & !(mask_x * 8), 0xFF & !(mask_y * 8)),
+            set: ((offset_x & mask_x) * 8, (offset_y & mask_y) * 8),
         }
     }
 
+    #[inline(always)]
     fn texel(&self, shader: &Shader, u: i32, v: i32) -> u16 {
-        let window = self.texture_window;
-        let (mask_x, mask_y) = (window & 0x1F, window >> 5 & 0x1F);
-        let (offset_x, offset_y) = (window >> 10 & 0x1F, window >> 15 & 0x1F);
-        let u = (u as u32 & 0xFF & !(mask_x * 8)) | ((offset_x & mask_x) * 8);
-        let v = (v as u32 & 0xFF & !(mask_y * 8)) | ((offset_y & mask_y) * 8);
+        let u = (u as u32 & shader.keep.0) | shader.set.0;
+        let v = (v as u32 & shader.keep.1) | shader.set.1;
         let row = (shader.page_y + v as usize) & (VRAM_HEIGHT - 1);
         let at = |x: usize, y: usize| self.vram[y * VRAM_WIDTH + (x & (VRAM_WIDTH - 1))];
         match shader.depth {
@@ -256,6 +293,7 @@ impl Gpu {
 
     /// Colours and writes one pixel already known to be inside the drawing
     /// area. `attributes` are r, g, b, u, v.
+    #[inline(always)]
     fn shade(&mut self, x: i32, y: i32, attributes: &[i32; 5], shader: &Shader) {
         let dither = shader
             .dither
@@ -430,33 +468,55 @@ impl Gpu {
             }
         }
         let steps = gradients.map(|(nx, _)| Stepper::new(nx, area));
-        let mut attributes = v[0].attributes;
+        // Only what varies is stepped: a flat-shaded polygon's colour and an
+        // untextured one's coordinates stay their first vertex's.
+        match (shader.gouraud, shader.textured) {
+            (false, false) => self.fill_rows::<false, false>(rows, &v, area, &gradients, &steps, shader),
+            (false, true) => self.fill_rows::<false, true>(rows, &v, area, &gradients, &steps, shader),
+            (true, false) => self.fill_rows::<true, false>(rows, &v, area, &gradients, &steps, shader),
+            (true, true) => self.fill_rows::<true, true>(rows, &v, area, &gradients, &steps, shader),
+        }
+    }
 
+    /// A triangle's rows, its colour interpolated with `GOURAUD` and its
+    /// texture coordinates with `TEXTURED` (attribute a at p: (a0*area +
+    /// nx*(p.x-x0) + ny*(p.y-y0)) / area, rounded down, with x0, y0 the first
+    /// vertex).
+    #[allow(clippy::too_many_arguments)]
+    fn fill_rows<const GOURAUD: bool, const TEXTURED: bool>(
+        &mut self,
+        rows: TriangleRows,
+        v: &[Vertex; 3],
+        area: i64,
+        gradients: &[(i64, i64); 5],
+        steps: &[Stepper; 5],
+        shader: &Shader,
+    ) {
+        let varying = match (GOURAUD, TEXTURED) {
+            (true, true) => 0..5,
+            (true, false) => 0..3,
+            (false, true) => 3..5,
+            (false, false) => 0..0,
+        };
+        let mut attributes = v[0].attributes;
         for (y, first, last) in rows {
             if first > last {
                 continue;
             }
-            let (first, last) = (i64::from(first), i64::from(last));
             let mut values = [Stepper::default(); 5];
-            if interpolate {
-                for (k, value) in values.iter_mut().enumerate() {
-                    let (nx, ny) = gradients[k];
-                    let numerator = i64::from(v[0].attributes[k]) * area
-                        + nx * (first - i64::from(v[0].x))
-                        + ny * i64::from(y - v[0].y);
-                    *value = Stepper::new(numerator, area);
-                }
+            for k in varying.clone() {
+                let (nx, ny) = gradients[k];
+                let numerator = i64::from(v[0].attributes[k]) * area + nx * (i64::from(first) - i64::from(v[0].x)) + ny * i64::from(y - v[0].y);
+                values[k] = Stepper::new(numerator, area);
             }
-            for x in first as i32..=last as i32 {
-                if interpolate {
-                    for (attribute, value) in attributes.iter_mut().zip(&values) {
-                        *attribute = value.quotient as i32;
-                    }
+            for x in first..=last {
+                for k in varying.clone() {
+                    attributes[k] = values[k].quotient as i32;
+                    values[k].step(steps[k], area);
+                }
+                if GOURAUD {
                     for channel in &mut attributes[..3] {
                         *channel = (*channel).clamp(0, 255);
-                    }
-                    for (value, &step) in values.iter_mut().zip(&steps) {
-                        value.step(step, area);
                     }
                 }
                 self.shade(x, y, &attributes, shader);

@@ -63,10 +63,13 @@ int xem_present_face_visible(unsigned int projections, unsigned int vertices, in
             if (z * 2 <= h) {
                 return 0;
             }
-            sx = (long long)p->view[0] * h / z + (short)(p->offset & 0xFFFF);
-            sy = (long long)p->view[1] * h / z + (short)(p->offset >> 16);
             fx[i] = (double)p->view[0] * (double)h / (double)z;
             fy[i] = (double)p->view[1] * (double)h / (double)z;
+            /* The quotients truncated: the integer division's below 2^21
+             * (the product is exact in a double), and either way far beyond
+             * any reach above it. */
+            sx = (long long)fx[i] + (short)(p->offset & 0xFFFF);
+            sy = (long long)fy[i] + (short)(p->offset >> 16);
         } else {
             /* The divide overflows (a point at or behind the near plane) when H >= SZ3 * 2. */
             if (h >= (p->sz & 0xFFFF) * 2) {
@@ -151,6 +154,11 @@ void xem_present_capture_link(unsigned int entry, unsigned int slot, unsigned in
 
 typedef long long gte_i64;
 
+/* The game module's units reach its optimizer marked noinline (they are
+ * compiled to IR at -O0 first); the GTE's small steps are inlined here, as
+ * every vertex the game projects runs them. */
+#define GTE_INLINE static inline __attribute__((always_inline))
+
 #define D xem_gte.data
 #define C xem_gte.control
 
@@ -210,22 +218,22 @@ typedef long long gte_i64;
 #define FLAG_ERROR 0x80000000u
 #define FLAG_ERROR_BITS 0x7F87E000u /* 30-23 and 18-13 */
 
-static int sign16(unsigned int value) { return (int)((value & 0xFFFF) ^ 0x8000) - 0x8000; }
+GTE_INLINE int sign16(unsigned int value) { return (int)((value & 0xFFFF) ^ 0x8000) - 0x8000; }
 
-static int low16(unsigned int value) { return sign16(value); }
+GTE_INLINE int low16(unsigned int value) { return sign16(value); }
 
-static int high16(unsigned int value) { return sign16(value >> 16); }
+GTE_INLINE int high16(unsigned int value) { return sign16(value >> 16); }
 
 /* Element (row, column) of the matrix whose first word is base: nine
  * halfwords packed two to a word, row by row. */
-static int matrix_element(int base, int row, int column) {
+GTE_INLINE int matrix_element(int base, int row, int column) {
     int index = row * 3 + column;
     unsigned int word = C[base + index / 2];
 
     return index & 1 ? high16(word) : low16(word);
 }
 
-static gte_i64 mac_check(int i, gte_i64 value) {
+GTE_INLINE gte_i64 mac_check(int i, gte_i64 value) {
     if (value > 0x7FFFFFFFFFFLL) {
         C[FLAG] |= FLAG_MAC_POSITIVE(i);
     } else if (value < -0x80000000000LL) {
@@ -236,7 +244,7 @@ static gte_i64 mac_check(int i, gte_i64 value) {
     return (value ^ 0x80000000000LL) - 0x80000000000LL;
 }
 
-static gte_i64 mac0_check(gte_i64 value) {
+GTE_INLINE gte_i64 mac0_check(gte_i64 value) {
     if (value > 0x7FFFFFFFLL) {
         C[FLAG] |= FLAG_MAC0_POSITIVE;
     } else if (value < -0x80000000LL) {
@@ -246,7 +254,7 @@ static gte_i64 mac0_check(gte_i64 value) {
 }
 
 /* IRi from a shifted MAC value: -8000h..7FFFh, or 0..7FFFh with lm. */
-static int ir_saturate(int i, gte_i64 value, int lm, int flag) {
+GTE_INLINE int ir_saturate(int i, gte_i64 value, int lm, int flag) {
     gte_i64 low = lm ? 0 : -0x8000;
 
     if (value < low) {
@@ -260,21 +268,21 @@ static int ir_saturate(int i, gte_i64 value, int lm, int flag) {
     return (int)value;
 }
 
-static void set_ir(int i, gte_i64 value, int lm) {
+GTE_INLINE void set_ir(int i, gte_i64 value, int lm) {
     D[IR0 + i] = (unsigned int)ir_saturate(i, value, lm, 1);
 }
 
 /* MACi and IRi from a 44-bit sum. */
-static void set_mac_ir(int i, gte_i64 value, int shift, int lm) {
+GTE_INLINE void set_mac_ir(int i, gte_i64 value, int shift, int lm) {
     value >>= shift;
     D[MAC0 + i] = (unsigned int)value;
     set_ir(i, value, lm);
 }
 
-static int ir(int i) { return (int)D[IR0 + i]; }
+GTE_INLINE int ir(int i) { return (int)D[IR0 + i]; }
 
 /* Component i (1-3) of vector v: V0-V2, or IR1-IR3 for v = 3. */
-static int vector(int v, int i) {
+GTE_INLINE int vector(int v, int i) {
     if (v == 3) {
         return ir(i);
     }
@@ -286,7 +294,7 @@ static int vector(int v, int i) {
 
 /* Element (row, column), both 1-3, of matrix mx: RT, LLM, LCM, or for mx = 3
  * the hardware's garbage matrix: -R*10h, R*10h, IR0 / RT13 x3 / RT22 x3. */
-static int matrix(int mx, int row, int column) {
+GTE_INLINE int matrix(int mx, int row, int column) {
     int red;
 
     if (mx < 3) {
@@ -327,7 +335,7 @@ static void multiply_matrix_vector(int mx, int v, int cv, int shift, int lm) {
     }
 }
 
-static unsigned int color_saturate(int i, int value) {
+GTE_INLINE unsigned int color_saturate(int i, int value) {
     if (value < 0) {
         C[FLAG] |= FLAG_COLOR(i);
         return 0;
@@ -351,7 +359,7 @@ static void push_color(void) {
 }
 
 /* Component i (1-3) of the colour in data register reg. */
-static int color(int reg, int i) { return (int)(D[reg] >> (i - 1) * 8 & 0xFF); }
+GTE_INLINE int color(int reg, int i) { return (int)(D[reg] >> (i - 1) * 8 & 0xFF); }
 
 /* MAC = [R*IR1, G*IR2, B*IR3] << 4, from RGBC. */
 static void color_times_ir(gte_i64 *mac) {
@@ -409,8 +417,8 @@ static gte_i64 divide(unsigned int h, unsigned int sz3) {
         C[FLAG] |= FLAG_DIVIDE;
         return 0x1FFFF;
     }
-    for (z = 0; z < 15 && !(sz3 << z & 0x8000); z++) {
-    }
+    /* sz3 is 1..FFFFh here: its leading zeros within 16 bits, 0..15. */
+    z = __builtin_clz(sz3) - 16;
     n = (gte_i64)h << z;
     d = (gte_i64)sz3 << z;
     index = (int)((d - 0x7FC0) >> 7);
@@ -422,7 +430,7 @@ static gte_i64 divide(unsigned int h, unsigned int sz3) {
     return n < 0x1FFFF ? n : 0x1FFFF;
 }
 
-static int clamp_projection(gte_i64 value) {
+GTE_INLINE int clamp_projection(gte_i64 value) {
     return value < -0x7FFFFFFF ? -0x7FFFFFFF : value > 0x7FFFFFFF ? 0x7FFFFFFF : (int)value;
 }
 
@@ -461,12 +469,18 @@ static void transform_perspective(int v, int shift, int lm, int last) {
     int i;
     int sx;
     int sy;
+    /* RT's nine halfwords, two to a word, and the vertex. */
+    int m[9] = {low16(C[RT]), high16(C[RT]), low16(C[RT + 1]), high16(C[RT + 1]), low16(C[RT + 2]),
+                high16(C[RT + 2]), low16(C[RT + 3]), high16(C[RT + 3]), low16(C[RT + 4])};
+    int x = low16(D[VXY0 + v * 2]);
+    int y = high16(D[VXY0 + v * 2]);
+    int z = (int)D[VZ0 + v * 2];
 
     for (i = 1; i <= 3; i++) {
         value = mac_check(i, (gte_i64)(int)C[TR + i - 1] * 0x1000);
-        value = mac_check(i, value + (gte_i64)matrix(0, i, 1) * vector(v, 1));
-        value = mac_check(i, value + (gte_i64)matrix(0, i, 2) * vector(v, 2));
-        sum[i - 1] = mac_check(i, value + (gte_i64)matrix(0, i, 3) * vector(v, 3));
+        value = mac_check(i, value + (gte_i64)m[i * 3 - 3] * x);
+        value = mac_check(i, value + (gte_i64)m[i * 3 - 2] * y);
+        sum[i - 1] = mac_check(i, value + (gte_i64)m[i * 3 - 1] * z);
         D[MAC0 + i] = (unsigned int)(sum[i - 1] >> shift);
     }
     set_ir(1, sum[0] >> shift, lm);
@@ -647,7 +661,10 @@ void xem_gte_write_data(int reg, unsigned int value) {
         D[reg] = value;
         break;
     }
-    refresh();
+    /* SXYP, IRGB and ORGB follow SXY2 and IR1-IR3 (FLAG does not change). */
+    if ((reg >= IR1 && reg <= IR1 + 2) || reg == SXY2 || reg == SXYP || reg == IRGB) {
+        refresh();
+    }
 }
 
 unsigned int xem_gte_read_data(int reg) { return D[reg & 31]; }

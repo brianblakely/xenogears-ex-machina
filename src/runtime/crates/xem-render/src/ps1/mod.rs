@@ -14,7 +14,7 @@ mod frame;
 mod view;
 
 pub use effects::{DebugView, Effects, EffectsRenderer, Lighting, Quality, SceneAnalysis, SpriteGroup};
-pub use frame::{FrameRenderer, Framing, central_depth, interpolate, pull_back, weld};
+pub use frame::{FrameRenderer, Framing, Welder, central_depth, interpolate, pull_back, weld};
 pub use view::{GameView, HostClass, MAX_WIDE_SIDE, Presented, ViewConfig, scene_zoom, wide_side};
 
 use bytemuck::{Pod, Zeroable};
@@ -467,6 +467,15 @@ pub(crate) struct Builder<'a> {
     rows_left: usize,
 }
 
+/// A builder's buffers kept between builds: a frame's vertices run to
+/// megabytes, which allocated anew would fault their pages in each time.
+#[derive(Default)]
+pub(crate) struct Storage {
+    vertices: Vec<Vertex>,
+    commands: Vec<Command>,
+    staging: Vec<u8>,
+}
+
 /// Row quads one build may draw the interface with (about 24 MB of vertices).
 const ROW_BUDGET: usize = 65_536;
 
@@ -478,16 +487,25 @@ fn color(rgb: u32) -> [f32; 4] {
 /// with another offset (the field compass, 3D interface models) are
 /// interface, not scene.
 pub fn scene_offset(ops: &[TraceOp]) -> Option<(i16, i16)> {
-    let mut counts: HashMap<(i16, i16), usize> = HashMap::new();
+    // A frame has few offsets, mostly in runs: counted in a short list (the
+    // first counted wins a tie).
+    let mut counts: Vec<((i16, i16), usize)> = Vec::new();
+    let mut last = 0;
     for op in ops {
         if let TraceOp::Draw(p) = op
             && p.class.is_scene()
             && let Some((offset, _)) = p.projection
         {
-            *counts.entry(offset).or_default() += 1;
+            if counts.get(last).is_none_or(|(known, _)| *known != offset) {
+                last = counts.iter().position(|(known, _)| *known == offset).unwrap_or_else(|| {
+                    counts.push((offset, 0));
+                    counts.len() - 1
+                });
+            }
+            counts[last].1 += 1;
         }
     }
-    counts.into_iter().max_by_key(|(_, n)| *n).map(|(offset, _)| offset)
+    counts.iter().rev().max_by_key(|(_, n)| *n).map(|(offset, _)| *offset)
 }
 
 /// A primitive's class with off-centre projections as interface.
@@ -536,6 +554,26 @@ impl<'a> Builder<'a> {
             seal: false,
             capture: None,
         }
+    }
+
+    /// [`Builder::new`] filling `storage`'s buffers ([`Builder::store`] gives
+    /// them back).
+    pub(crate) fn reusing(options: &'a DrawOptions, ops: &[TraceOp], storage: &mut Storage) -> Self {
+        let mut builder = Self::new(options, ops);
+        builder.vertices = std::mem::take(&mut storage.vertices);
+        builder.commands = std::mem::take(&mut storage.commands);
+        builder.staging = std::mem::take(&mut storage.staging);
+        builder.vertices.clear();
+        builder.commands.clear();
+        builder.staging.clear();
+        builder
+    }
+
+    /// Keeps the buffers for the next build.
+    pub(crate) fn store(self, storage: &mut Storage) {
+        storage.vertices = self.vertices;
+        storage.commands = self.commands;
+        storage.staging = self.staging;
     }
 
     fn push_draw(&mut self, key: PipelineKey, scissor: Option<Scissor>, start: u32) {
@@ -680,6 +718,8 @@ impl<'a> Builder<'a> {
         };
         let start = self.vertices.len() as u32;
         let widened = self.widens(p);
+        // Each point once (a quad's triangles share two).
+        let corners: [Vertex; 4] = std::array::from_fn(|i| if i < count { vertex(i) } else { Vertex::default() });
         match p.shape {
             Shape::Triangle | Shape::Quad => {
                 let rows = original && self.remap.is_none() && self.rows_left > 0 && needs_rows(p) && !widened;
@@ -697,30 +737,26 @@ impl<'a> Builder<'a> {
                     self.stats.triangles += 1;
                     if rows {
                         let points = triangle.map(|i| (p.vertices[i].x, p.vertices[i].y));
-                        let drawn = push_rows(&mut self.vertices, triangle.map(&vertex), points, (left, top, right, bottom));
+                        let drawn = push_rows(&mut self.vertices, triangle.map(|i| corners[i]), points, (left, top, right, bottom));
                         self.rows_left = self.rows_left.saturating_sub(drawn);
                     } else if self.seal && class == Class::World && !p.semi && projected {
-                        self.vertices.extend(grow(triangle.map(&vertex), SEAL));
+                        self.vertices.extend(grow(triangle.map(|i| corners[i]), SEAL));
                     } else {
-                        for &i in triangle {
-                            self.vertices.push(vertex(i));
-                        }
+                        self.vertices.extend(triangle.map(|i| corners[i]));
                     }
                 }
             }
             Shape::Rectangle => {
-                for i in [0, 1, 2, 1, 3, 2] {
-                    self.vertices.push(vertex(i));
-                }
+                self.vertices.extend([0, 1, 2, 1, 3, 2].map(|i| corners[i]));
             }
             Shape::Line if class == Class::Flat && self.remap.is_none() => {
                 let (a, b) = (&p.vertices[0], &p.vertices[1]);
                 if (b.x - a.x).abs() < 1024 && (b.y - a.y).abs() < 512 {
-                    push_line(&mut self.vertices, [vertex(0), vertex(1)], [(a.x, a.y), (b.x, b.y)]);
+                    push_line(&mut self.vertices, [corners[0], corners[1]], [(a.x, a.y), (b.x, b.y)]);
                 }
             }
             Shape::Line => {
-                let (a, b) = (vertex(0), vertex(1));
+                let (a, b) = (corners[0], corners[1]);
                 let (dx, dy) = (b.position[0] - a.position[0], b.position[1] - a.position[1]);
                 // One pixel wide, end points included.
                 let (ex, ey, nx, ny) = if dx.abs() >= dy.abs() {
@@ -745,9 +781,8 @@ impl<'a> Builder<'a> {
         if let Some((rect, side)) = self.capture.filter(|&(_, side)| captured && side > 0)
             && matches!(p.shape, Shape::Triangle | Shape::Quad)
         {
-            let corners: Vec<Vertex> = (0..count).map(&vertex).collect();
             let page_x = (p.environment.draw_mode & 15) as f32 * 64.0;
-            push_capture_sides(&mut self.vertices, &corners, page_x, (rect, side));
+            push_capture_sides(&mut self.vertices, &corners[..count], page_x, (rect, side));
         }
         if widened {
             // Its points at or past the drawing area's sides move out by the
@@ -1356,6 +1391,7 @@ pub struct Ps1Renderer {
     pub(crate) capture: Capture,
     presented: Option<PresentedPicture>,
     draws: u64,
+    storage: Storage,
 }
 
 /// The primitives of one screen buffer: since its last clear (a fill or a
@@ -1390,21 +1426,22 @@ fn covers(ops: &[TraceOp], rect: VramRect) -> bool {
     }
     let stride = width.div_ceil(64);
     let mut bits = vec![0u64; stride * height];
-    let span = |bits: &mut Vec<u64>, y: i32, x0: i32, x1: i32| {
+    // Pixels not yet covered: done as soon as there are none.
+    let mut left = width * height;
+    let span = |bits: &mut Vec<u64>, left: &mut usize, y: i32, x0: i32, x1: i32| {
         let y = y - i32::from(rect.y);
         let (x0, x1) = ((x0 - i32::from(rect.x)).max(0) as usize, (x1 - i32::from(rect.x)).clamp(0, width as i32) as usize);
         if y < 0 || y >= height as i32 || x0 >= x1 {
             return;
         }
         let row = &mut bits[y as usize * stride..(y as usize + 1) * stride];
-        for (i, word) in row.iter_mut().enumerate() {
+        for (i, word) in row.iter_mut().enumerate().take(x1.div_ceil(64)).skip(x0 / 64) {
             let (lo, hi) = (i * 64, i * 64 + 64);
-            if x1 <= lo || x0 >= hi {
-                continue;
-            }
             let a = x0.max(lo) - lo;
             let b = x1.min(hi) - lo;
-            *word |= if b - a == 64 { u64::MAX } else { ((1u64 << (b - a)) - 1) << a };
+            let set = if b - a == 64 { u64::MAX } else { ((1u64 << (b - a)) - 1) << a };
+            *left -= (set & !*word).count_ones() as usize;
+            *word |= set;
         }
     };
     for op in ops {
@@ -1415,7 +1452,10 @@ fn covers(ops: &[TraceOp], rect: VramRect) -> bool {
         };
         if let Some(r) = fill {
             for y in i32::from(r.y)..i32::from(r.y) + i32::from(r.height) {
-                span(&mut bits, y, i32::from(r.x), i32::from(r.x) + i32::from(r.width));
+                span(&mut bits, &mut left, y, i32::from(r.x), i32::from(r.x) + i32::from(r.width));
+            }
+            if left == 0 {
+                return true;
             }
             continue;
         }
@@ -1424,7 +1464,11 @@ fn covers(ops: &[TraceOp], rect: VramRect) -> bool {
         if p.semi || p.revealed || !solid || p.environment.mask & 2 != 0 || !matches!(p.shape, Shape::Triangle | Shape::Quad | Shape::Rectangle) {
             continue;
         }
-        let [left, top, right, bottom] = p.environment.area.map(i32::from);
+        let [area_left, top, right, bottom] = p.environment.area.map(i32::from);
+        // Drawn elsewhere (the other buffer): nothing here.
+        if right < i32::from(rect.x) || area_left >= i32::from(rect.x) + width as i32 || bottom < i32::from(rect.y) || top >= i32::from(rect.y) + height as i32 {
+            continue;
+        }
         let triangles: &[[usize; 3]] = if p.shape == Shape::Triangle { &[[0, 1, 2]] } else { &[[0, 1, 2], [1, 2, 3]] };
         for t in triangles {
             let v = t.map(|i| (p.vertices[i].x as f32, p.vertices[i].y as f32));
@@ -1441,15 +1485,17 @@ fn covers(ops: &[TraceOp], rect: VramRect) -> bool {
                     }
                 }
                 if lo <= hi {
-                    let x0 = ((lo - 0.5).ceil() as i32).max(left);
+                    let x0 = ((lo - 0.5).ceil() as i32).max(area_left);
                     let x1 = ((hi - 0.5).ceil() as i32).min(right + 1);
-                    span(&mut bits, y, x0, x1);
+                    span(&mut bits, &mut left, y, x0, x1);
                 }
             }
         }
+        if left == 0 {
+            return true;
+        }
     }
-    let tail = if width % 64 == 0 { u64::MAX } else { (1u64 << (width % 64)) - 1 };
-    bits.chunks(stride).all(|row| row[..stride - 1].iter().all(|w| *w == u64::MAX) && row[stride - 1] == tail)
+    false
 }
 
 fn contains(rect: &VramRect, x: u16, y: u16) -> bool {
@@ -1508,6 +1554,7 @@ impl Ps1Renderer {
             capture,
             presented: None,
             draws: 0,
+            storage: Storage::default(),
         }
     }
 
@@ -1687,7 +1734,7 @@ impl Ps1Renderer {
         let captured = self.watch_captures(encoder, &trace.ops);
         self.log(&trace.ops);
         let options = self.options;
-        let mut builder = Builder::new(&options, &trace.ops);
+        let mut builder = Builder::reusing(&options, &trace.ops, &mut self.storage);
         builder.seal = self.seal;
         // (Its sides have no place in VRAM.)
         builder.capture = self.capture.rect.map(|rect| (rect, 0));
@@ -1721,6 +1768,7 @@ impl Ps1Renderer {
             &target,
             &builder.commands,
         );
+        builder.store(&mut self.storage);
         if captured {
             self.place_capture(encoder);
         }

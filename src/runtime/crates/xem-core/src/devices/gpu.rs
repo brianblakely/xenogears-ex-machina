@@ -65,8 +65,13 @@ pub struct Gpu {
     /// Vertical blanks seen (the interlaced field toggles at each).
     vblanks: u64,
     /// Presentation only: the port's ring counts already handed to the
-    /// draw trace (projections, stores, reveals).
+    /// draw trace (projections, stores, reveals), and the buffers they are
+    /// read and decoded into, kept between transfers.
     traced: [u32; 3],
+    entries: [Vec<u8>; 3],
+    projections: Vec<xem_gpu::Projection>,
+    stores: Vec<xem_gpu::SxyStore>,
+    reveals: Vec<xem_gpu::Reveal>,
 }
 
 impl Gpu {
@@ -117,9 +122,9 @@ impl Gpu {
         let _ = memory.write_u32(arg(0).wrapping_add(24), u32::from(tracing));
         let _ = memory.write_u32(arg(2).wrapping_add(4), self.gpu.reveal_reach());
         let _ = memory.write_u32(arg(2).wrapping_add(8), self.gpu.reveal_pull_back());
-        let mut entries: [Vec<u8>; 3] = Default::default();
         let mut counts = [0u32; 3];
         for (n, &(header, offset, (size, bytes))) in rings.iter().enumerate() {
+            self.entries[n].clear();
             let Ok(count) = memory.read_u32(header) else { return };
             counts[n] = count;
             let new = count.wrapping_sub(self.traced[n]).min(size);
@@ -131,8 +136,8 @@ impl Gpu {
             let first = count.wrapping_sub(new) % size;
             let head = new.min(size - first);
             let base = header.wrapping_add(offset);
-            entries[n] = vec![0; (new * bytes) as usize];
-            let (a, b) = entries[n].split_at_mut((head * bytes) as usize);
+            self.entries[n].resize((new * bytes) as usize, 0);
+            let (a, b) = self.entries[n].split_at_mut((head * bytes) as usize);
             if memory.read(base.wrapping_add(first * bytes), a).is_err() || memory.read(base, b).is_err() {
                 return;
             }
@@ -141,9 +146,8 @@ impl Gpu {
             return;
         }
         let word = |entry: &[u8], i: usize| u32::from_le_bytes(entry[i * 4..i * 4 + 4].try_into().unwrap());
-        let projections: Vec<xem_gpu::Projection> = entries[0]
-            .chunks_exact(PROJECTION_RING.1 as usize)
-            .map(|e| xem_gpu::Projection {
+        self.projections.clear();
+        self.projections.extend(self.entries[0].chunks_exact(PROJECTION_RING.1 as usize).map(|e| xem_gpu::Projection {
                 sxy: word(e, 0),
                 sz: word(e, 1) as u16,
                 class: (word(e, 1) >> 16) as u8,
@@ -153,28 +157,31 @@ impl Gpu {
                 h: word(e, 5) as u16,
                 owner: word(e, 6),
                 view: [word(e, 7) as i32, word(e, 8) as i32, word(e, 9) as i32],
-            })
-            .collect();
-        let stores: Vec<xem_gpu::SxyStore> = entries[1]
-            .chunks_exact(STORE_RING.1 as usize)
-            .map(|e| xem_gpu::SxyStore { address: word(e, 0), value: word(e, 1), source: word(e, 3).checked_sub(1) })
-            .collect();
-        let reveals: Vec<xem_gpu::Reveal> = entries[2]
-            .chunks_exact(REVEAL_RING.1 as usize)
-            .map(|e| {
-                let shape = word(e, 1);
-                let count = (shape & 0xFF).min(12) as usize;
-                xem_gpu::Reveal {
-                    entry: word(e, 0),
-                    vertices: (shape >> 8) as u8,
-                    projections: word(e, 2),
-                    order: word(e, 3),
-                    words: (0..count).map(|i| word(e, 4 + i)).collect(),
-                }
-            })
-            .collect();
-        let first = counts[0].wrapping_sub(projections.len() as u32);
-        self.gpu.trace_projections(first, &projections, &stores, &reveals);
+            }));
+        self.stores.clear();
+        self.stores.extend(
+            self.entries[1]
+                .chunks_exact(STORE_RING.1 as usize)
+                .map(|e| xem_gpu::SxyStore { address: word(e, 0), value: word(e, 1), source: word(e, 3).checked_sub(1) }),
+        );
+        self.reveals.clear();
+        self.reveals.extend(self.entries[2].chunks_exact(REVEAL_RING.1 as usize).map(|e| {
+            let shape = word(e, 1);
+            let count = (shape & 0xFF).min(12) as usize;
+            let mut words = [0u32; 12];
+            for (i, w) in words.iter_mut().enumerate().take(count) {
+                *w = word(e, 4 + i);
+            }
+            xem_gpu::Reveal {
+                entry: word(e, 0),
+                vertices: (shape >> 8) as u8,
+                projections: word(e, 2),
+                order: word(e, 3),
+                words: xem_gpu::FaceWords::from(&words[..count]),
+            }
+        }));
+        let first = counts[0].wrapping_sub(self.projections.len() as u32);
+        self.gpu.trace_projections(first, &self.projections, &self.stores, &self.reveals);
     }
 
     /// End the transfer if the clock reached its end: the channel is free and

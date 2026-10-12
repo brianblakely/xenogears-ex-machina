@@ -22,7 +22,7 @@
 //!   presents one game frame late and never touches game state.
 
 use super::{
-    AUX_FORMAT, Builder, COLOR_FORMAT, Copies, DisplayArea, DrawOptions, PassUniform, Ps1Renderer, Reveal, Stream, Target, VRAM_HEIGHT,
+    AUX_FORMAT, Builder, COLOR_FORMAT, Copies, DisplayArea, DrawOptions, PassUniform, Ps1Renderer, Reveal, Storage, Stream, Target, VRAM_HEIGHT,
     VRAM_WIDTH, bind_group, effective_class, encode, overlap, pass_options, picture_usage, samples, scene_offset, texture,
 };
 use std::collections::HashMap;
@@ -69,6 +69,9 @@ pub struct FrameRenderer {
     /// primitives, and the frame before.
     newest: Option<((u16, u16), u64)>,
     newest_ops: Vec<TraceOp>,
+    /// How many of them change the picture (not the native pixels a copy,
+    /// fill or drawing left, which only follow what was drawn).
+    drawn: usize,
     previous_ops: Vec<TraceOp>,
     /// Primitives the last replay drew (for the effects), when it replayed.
     replayed: Vec<TraceOp>,
@@ -78,13 +81,16 @@ pub struct FrameRenderer {
     /// The native VRAM a replay samples: the snapshot, changed by the
     /// frame's writes in order as the replay goes (a texture slot the game
     /// fills again later in the frame shows each primitive its own texels),
-    /// its staged writes, and the snapshot it holds unchanged, if any.
+    /// its staged writes, and a copy of what that texture holds (the rows of
+    /// a new snapshot that differ from it are all a new frame uploads).
     vram: wgpu::Texture,
     staging: Stream,
-    vram_holds: Option<usize>,
-    /// The replay's bind group.
+    held: Vec<u16>,
     /// The replay's bind group, made with the capture texture of a generation.
     group: Option<(u64, wgpu::BindGroup)>,
+    /// The replay's and the overlay's builder buffers.
+    storage: Storage,
+    overlay_storage: Storage,
 }
 
 /// A pass uniform of `size_of::<PassUniform>()` bytes.
@@ -119,6 +125,7 @@ impl FrameRenderer {
             overlay_staging: Stream::new(device, "frame overlay staging", wgpu::BufferUsages::COPY_SRC),
             newest: None,
             newest_ops: Vec::new(),
+            drawn: 0,
             previous_ops: Vec::new(),
             replayed: Vec::new(),
             replaying: false,
@@ -126,8 +133,10 @@ impl FrameRenderer {
             vram: texture(device, "frame replay vram", (VRAM_WIDTH, VRAM_HEIGHT), wgpu::TextureFormat::R16Uint,
                 wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST),
             staging: Stream::new(device, "frame replay staging", wgpu::BufferUsages::COPY_SRC),
-            vram_holds: None,
+            held: vec![0; (VRAM_WIDTH * VRAM_HEIGHT) as usize],
             group: None,
+            storage: Storage::default(),
+            overlay_storage: Storage::default(),
         }
     }
 
@@ -152,6 +161,7 @@ impl FrameRenderer {
             self.newest_ops.clear();
             self.previous_ops.clear();
             self.snapshot = None;
+            self.drawn = 0;
             return false;
         };
         let identity = ((log.rect.x, log.rect.y), log.frames);
@@ -161,15 +171,23 @@ impl FrameRenderer {
             let known = self.newest_ops.len();
             if log.ops.len() > known {
                 self.newest_ops.extend_from_slice(&log.ops[known..]);
+                self.drawn += drawn(&log.ops[known..]);
             } else if log.ops.len() < known {
                 self.newest_ops.clone_from(&log.ops);
+                self.drawn = drawn(&self.newest_ops);
             }
             return false;
         }
         self.previous_ops = std::mem::replace(&mut self.newest_ops, log.ops.clone());
+        self.drawn = drawn(&self.newest_ops);
         self.newest = Some(identity);
         self.snapshot = Some(log.start.clone());
         true
+    }
+
+    /// How many of the newest frame's ops change its picture.
+    pub fn drawn(&self) -> usize {
+        self.drawn
     }
 
     /// Takes `area` of the renderer's picture as the frame, replayed when
@@ -200,7 +218,13 @@ impl FrameRenderer {
         }
         let mut ops = match framing.interpolate {
             Some(alpha) if !self.previous_ops.is_empty() => interpolate(&self.newest_ops, &self.previous_ops, alpha.clamp(0.0, 1.0)),
-            _ => self.newest_ops.clone(),
+            _ => {
+                // The last replay's buffer, refilled.
+                let mut ops = std::mem::take(&mut self.replayed);
+                ops.clear();
+                ops.extend_from_slice(&self.newest_ops);
+                ops
+            }
         };
         settle_copies(&mut ops);
         // What the game draws of a screen it took (its pieces, zoomed,
@@ -224,20 +248,44 @@ impl FrameRenderer {
         // The replay samples VRAM as it was when the frame began, then as the
         // frame's writes changed it, in order.
         if let Some(start) = &self.snapshot {
-            let held = Arc::as_ptr(start) as usize;
-            if self.vram_holds != Some(held) {
+            // The rows that differ from what the texture holds, in runs.
+            let width = VRAM_WIDTH as usize;
+            let mut row = 0;
+            while row < VRAM_HEIGHT as usize {
+                let same = |row: usize| start[row * width..(row + 1) * width] == self.held[row * width..(row + 1) * width];
+                if same(row) {
+                    row += 1;
+                    continue;
+                }
+                let first = row;
+                while row < VRAM_HEIGHT as usize && !same(row) {
+                    row += 1;
+                }
+                let rows = first * width..row * width;
                 queue.write_texture(
-                    self.vram.as_image_copy(),
-                    bytemuck::cast_slice(start),
-                    wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(VRAM_WIDTH * 2), rows_per_image: Some(VRAM_HEIGHT) },
-                    wgpu::Extent3d { width: VRAM_WIDTH, height: VRAM_HEIGHT, depth_or_array_layers: 1 },
+                    wgpu::TexelCopyTextureInfo { texture: &self.vram, mip_level: 0, origin: wgpu::Origin3d { x: 0, y: first as u32, z: 0 }, aspect: wgpu::TextureAspect::All },
+                    bytemuck::cast_slice(&start[rows.clone()]),
+                    wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(VRAM_WIDTH * 2), rows_per_image: None },
+                    wgpu::Extent3d { width: VRAM_WIDTH, height: (row - first) as u32, depth_or_array_layers: 1 },
                 );
+                self.held[rows.clone()].copy_from_slice(&start[rows]);
             }
-            let writes = ops.iter().chain(&self.overlay).any(|op| matches!(op, TraceOp::Write { .. }));
-            self.vram_holds = (!writes).then_some(held);
+            // The frame's writes (the replay's and the overlay's) as they will
+            // leave it.
+            for op in ops.iter().chain(&self.overlay) {
+                if let TraceOp::Write { rect, pixels, .. } = op {
+                    let (x, w) = (usize::from(rect.x), usize::from(rect.width));
+                    for (k, line) in pixels.chunks(w.max(1)).enumerate() {
+                        let at = (usize::from(rect.y) + k) * width + x;
+                        if let Some(target) = self.held.get_mut(at..at + line.len()) {
+                            target.copy_from_slice(line);
+                        }
+                    }
+                }
+            }
         }
         let options: DrawOptions = *renderer.options();
-        let mut builder = Builder::new(&options, &ops);
+        let mut builder = Builder::reusing(&options, &ops, &mut self.storage);
         builder.shown = Some(VramRect { x: area.x as u16, y: area.y as u16, width: area.width as u16, height: area.height as u16 });
         builder.seal = renderer.seal;
         builder.spill = side;
@@ -301,7 +349,6 @@ impl FrameRenderer {
             .clone();
         let (picture_color, picture_aux) = (renderer.color.clone(), renderer.aux.clone());
         let target = Target { color: &self.color, aux: &self.aux, depth: &depth_view, origin, scale };
-        let commands = builder.commands;
         encode(
             device,
             &mut renderer.pipelines,
@@ -311,8 +358,9 @@ impl FrameRenderer {
             Some((self.staging.buffer(), &self.vram)),
             Copies::From { color: &picture_color, aux: &picture_aux, scale, capture: Some(&renderer.capture) },
             &target,
-            &commands,
+            &builder.commands,
         );
+        builder.store(&mut self.storage);
         self.replayed = ops;
     }
 
@@ -334,7 +382,7 @@ impl FrameRenderer {
             return;
         }
         let options: DrawOptions = *renderer.options();
-        let mut builder = Builder::new(&options, &self.overlay);
+        let mut builder = Builder::reusing(&options, &self.overlay, &mut self.overlay_storage);
         builder.scene = self.overlay_scene;
         builder.shown = Some(VramRect { x: area.x as u16, y: area.y as u16, width: area.width as u16, height: area.height as u16 });
         builder.spill = self.side;
@@ -352,6 +400,7 @@ impl FrameRenderer {
         let copies = Copies::From { color: &picture_color, aux: &picture_aux, scale: self.scale, capture: Some(&renderer.capture) };
         let staging = Some((self.overlay_staging.buffer(), &self.vram));
         encode(device, &mut renderer.pipelines, encoder, &group, self.overlay_vertices.buffer(), staging, copies, &target, &builder.commands);
+        builder.store(&mut self.overlay_storage);
     }
 
     /// The identity of the newest frame shown (its buffer's position and
@@ -397,6 +446,12 @@ impl FrameRenderer {
     pub fn aux(&self) -> &wgpu::Texture {
         &self.aux
     }
+}
+
+/// The ops that change a frame's picture: all but the native pixels a copy,
+/// fill or drawing left.
+fn drawn(ops: &[TraceOp]) -> usize {
+    ops.iter().filter(|op| !matches!(op, TraceOp::Write { upload: false, .. })).count()
 }
 
 /// What identifies a primitive between frames: its shape, page, CLUT,
@@ -492,66 +547,96 @@ pub fn interpolate(newest: &[TraceOp], previous: &[TraceOp], alpha: f32) -> Vec<
 /// scales (the original's whole pixels close them). Sprites and the
 /// interface keep their points.
 pub fn weld(ops: &mut [TraceOp]) {
-    struct Anchor {
-        fx: f32,
-        fy: f32,
-        z: f32,
-        view: Option<[f32; 3]>,
-        primitive: usize,
-        next: u32,
-    }
-    /// Cell keys hashed by one multiplication.
-    #[derive(Default)]
-    struct CellHasher(u64);
-    impl std::hash::Hasher for CellHasher {
-        fn finish(&self) -> u64 {
-            self.0
+    Welder::default().weld(ops);
+}
+
+/// [`weld`] with its tables kept from one trace to the next.
+#[derive(Default)]
+pub struct Welder {
+    /// One-pixel cells, open-addressed: a cell's key and its newest anchor
+    /// (its index + 1; 0 an empty slot).
+    cells: Vec<(u64, u32)>,
+    anchors: Vec<Anchor>,
+}
+
+/// A point other points weld to, and the anchor before it in its cell.
+struct Anchor {
+    fx: f32,
+    fy: f32,
+    z: f32,
+    view: Option<[f32; 3]>,
+    primitive: usize,
+    next: u32,
+}
+
+/// The whole pixel at or below `x`, as `x.floor() as i32` (without libm's
+/// floor, which a baseline x86-64 build calls).
+fn whole(x: f32) -> i32 {
+    let t = x as i32;
+    if t as f32 > x && t != i32::MIN { t - 1 } else { t }
+}
+
+impl Welder {
+    pub fn weld(&mut self, ops: &mut [TraceOp]) {
+        let welded = |p: &Primitive| matches!(p.class, Class::World | Class::Model) && matches!(p.shape, Shape::Triangle | Shape::Quad);
+        let points: usize = ops.iter().map(|op| match op {
+            TraceOp::Draw(p) if welded(p) => p.vertex_count(),
+            _ => 0,
+        }).sum();
+        if points == 0 {
+            return;
         }
-        fn write(&mut self, bytes: &[u8]) {
-            bytes.iter().for_each(|&b| self.0 = (self.0 ^ u64::from(b)).wrapping_mul(0x9E37_79B9_7F4A_7C15));
-        }
-        fn write_u64(&mut self, value: u64) {
-            self.0 = (value ^ value >> 29).wrapping_mul(0x9E37_79B9_7F4A_7C15);
-        }
-    }
-    let cell = |fx: f32, fy: f32| ((fx * 2.0).floor() as i32 as u32 as u64) << 32 | ((fy * 2.0).floor() as i32 as u32 as u64);
-    let mut heads: HashMap<u64, u32, std::hash::BuildHasherDefault<CellHasher>> = HashMap::default();
-    let mut anchors: Vec<Anchor> = Vec::new();
-    for (primitive, op) in ops.iter_mut().enumerate() {
-        let TraceOp::Draw(p) = op else { continue };
-        if !matches!(p.class, Class::World | Class::Model) || !matches!(p.shape, Shape::Triangle | Shape::Quad) {
-            continue;
-        }
-        let count = p.vertex_count();
-        for v in p.vertices.iter_mut().take(count).filter(|v| v.z > 0.0) {
-            let (cx, cy) = ((v.fx * 2.0).floor() as i32, (v.fy * 2.0).floor() as i32);
-            let mut found = None;
-            'search: for dx in -1..=1 {
-                for dy in -1..=1 {
-                    let mut at = heads.get(&cell((cx + dx) as f32 / 2.0, (cy + dy) as f32 / 2.0)).copied();
-                    while let Some(i) = at.filter(|&i| i != u32::MAX) {
-                        let a = &anchors[i as usize];
-                        if a.primitive != primitive && (a.fx - v.fx).abs() <= 0.5 && (a.fy - v.fy).abs() <= 0.5 && (a.z - v.z).abs() <= (v.z * 0.01).max(4.0) {
-                            found = Some(i);
-                            break 'search;
-                        }
-                        at = Some(a.next);
-                    }
-                }
+        let size = (points * 2).next_power_of_two();
+        self.cells.clear();
+        self.cells.resize(size, (0, 0));
+        self.anchors.clear();
+        let mask = size - 1;
+        let key = |x: i32, y: i32| (u64::from(x as u32) << 32) | u64::from(y as u32);
+        let slot = |cells: &[(u64, u32)], key: u64| {
+            let mut i = ((key ^ key >> 29).wrapping_mul(0x9E37_79B9_7F4A_7C15) >> 32) as usize & mask;
+            while cells[i].1 != 0 && cells[i].0 != key {
+                i = (i + 1) & mask;
             }
-            match found {
-                Some(i) => {
-                    let a = &anchors[i as usize];
-                    (v.fx, v.fy) = (a.fx, a.fy);
-                    if a.view.is_some() && v.view.is_some() {
-                        v.view = a.view;
+            i
+        };
+        for (primitive, op) in ops.iter_mut().enumerate() {
+            let TraceOp::Draw(p) = op else { continue };
+            if !welded(p) {
+                continue;
+            }
+            let count = p.vertex_count();
+            for v in p.vertices.iter_mut().take(count).filter(|v| v.z > 0.0) {
+                // The cells within half a pixel: at most two each way.
+                let (x0, x1) = (whole(v.fx - 0.5), whole(v.fx + 0.5));
+                let (y0, y1) = (whole(v.fy - 0.5), whole(v.fy + 0.5));
+                let mut found = None;
+                'search: for cx in x0..=x1 {
+                    for cy in y0..=y1 {
+                        let mut at = self.cells[slot(&self.cells, key(cx, cy))].1;
+                        while at != 0 {
+                            let a = &self.anchors[at as usize - 1];
+                            if a.primitive != primitive && (a.fx - v.fx).abs() <= 0.5 && (a.fy - v.fy).abs() <= 0.5 && (a.z - v.z).abs() <= (v.z * 0.01).max(4.0) {
+                                found = Some(at as usize - 1);
+                                break 'search;
+                            }
+                            at = a.next;
+                        }
                     }
                 }
-                None => {
-                    let key = cell(cx as f32 / 2.0, cy as f32 / 2.0);
-                    let next = heads.get(&key).copied().unwrap_or(u32::MAX);
-                    heads.insert(key, anchors.len() as u32);
-                    anchors.push(Anchor { fx: v.fx, fy: v.fy, z: v.z, view: v.view, primitive, next });
+                match found {
+                    Some(i) => {
+                        let a = &self.anchors[i];
+                        (v.fx, v.fy) = (a.fx, a.fy);
+                        if a.view.is_some() && v.view.is_some() {
+                            v.view = a.view;
+                        }
+                    }
+                    None => {
+                        let i = slot(&self.cells, key(whole(v.fx), whole(v.fy)));
+                        let next = self.cells[i].1;
+                        self.cells[i] = (key(whole(v.fx), whole(v.fy)), self.anchors.len() as u32 + 1);
+                        self.anchors.push(Anchor { fx: v.fx, fy: v.fy, z: v.z, view: v.view, primitive, next });
+                    }
                 }
             }
         }
@@ -565,17 +650,14 @@ pub fn weld(ops: &mut [TraceOp]) {
 fn split_overlay(ops: &mut Vec<TraceOp>) -> Vec<TraceOp> {
     let scene = scene_offset(ops);
     let last = ops.iter().rposition(|op| matches!(op, TraceOp::Draw(p) if !p.revealed && effective_class(p, scene).is_scene()));
-    let start = last.map_or(0, |i| i + 1);
-    let mut overlay = Vec::new();
-    let mut kept = Vec::with_capacity(start);
-    for (i, op) in ops.drain(..).enumerate() {
+    let tail = ops.split_off(last.map_or(0, |i| i + 1));
+    let mut overlay = Vec::with_capacity(tail.len());
+    for op in tail {
         match &op {
-            TraceOp::Draw(p) if i >= start && !p.revealed => overlay.push(op),
-            _ if i >= start && !matches!(op, TraceOp::Draw(_)) => overlay.push(op),
-            _ => kept.push(op),
+            TraceOp::Draw(p) if p.revealed => ops.push(op),
+            _ => overlay.push(op),
         }
     }
-    *ops = kept;
     overlay
 }
 
@@ -644,8 +726,8 @@ pub fn pull_back(ops: &mut Vec<TraceOp>, distance: f32) {
                 None if v.z > 0.0 => moved(center, &mut v.fx, &mut v.fy, &mut v.z),
                 None => continue,
             }
-            v.x = v.fx.floor() as i32;
-            v.y = v.fy.floor() as i32;
+            v.x = whole(v.fx);
+            v.y = whole(v.fy);
         }
         if let Some([x, y, z]) = &mut p.ground {
             moved(center, x, y, z);

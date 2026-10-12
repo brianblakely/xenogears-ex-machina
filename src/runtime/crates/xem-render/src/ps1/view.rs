@@ -184,6 +184,23 @@ pub struct GameView {
     side: u32,
     /// The scene that drew each frame the renderer logs (by its identity).
     frame_scenes: Vec<(((u16, u16), u64), String)>,
+    /// Welds each trace's scene points ([`super::weld`]), its tables kept.
+    welder: super::Welder,
+    /// What the last presentation showed: presented again with nothing new
+    /// to draw (the display refreshing faster than the game draws), its
+    /// picture stands.
+    shown: Option<Shown>,
+}
+
+/// What a presentation shows: the frame (its identity and the ops that
+/// drew it so far), where and how.
+#[derive(Clone, Copy, PartialEq)]
+struct Shown {
+    identity: Option<((u16, u16), u64)>,
+    drawn: usize,
+    area: DisplayArea,
+    config: ViewConfig,
+    framing: Framing,
 }
 
 impl GameView {
@@ -205,6 +222,8 @@ impl GameView {
             focus: None,
             side: 0,
             frame_scenes: Vec::new(),
+            welder: super::Welder::default(),
+            shown: None,
         }
     }
 
@@ -281,7 +300,7 @@ impl GameView {
 
     /// Adds what the game drew since the last push.
     pub fn push(&mut self, mut trace: Trace) {
-        super::weld(&mut trace.ops);
+        self.welder.weld(&mut trace.ops);
         if let Some(TraceOp::Write { rect, upload: true, .. }) = trace.ops.first()
             && u32::from(rect.width) == super::VRAM_WIDTH
         {
@@ -359,6 +378,12 @@ impl GameView {
         // The sides widen this display at its own height to the output's shape.
         self.side = config.aspect.map_or(0, |aspect| display_side((area.width, area.height), aspect));
         let framing = Framing { side: self.side, interpolate: config.interpolation.then_some(alpha), pull_back, replay: config.effects.any() };
+        let shown = Shown { identity: self.frame.identity(), drawn: self.frame.drawn(), area, config, framing };
+        if !new_frame && self.shown == Some(shown) && self.presented_effects == Some(config.effects.any()) {
+            let view = if config.effects.any() { self.effects.output_view()? } else { self.frame.color_view() };
+            return Some(Presented { view, size: self.frame.size(), new_frame });
+        }
+        self.shown = Some(shown);
         self.frame.prepare(&self.device, &self.queue, encoder, &mut self.renderer, area, framing);
         self.presented_effects = Some(config.effects.any());
         if config.effects.any() {

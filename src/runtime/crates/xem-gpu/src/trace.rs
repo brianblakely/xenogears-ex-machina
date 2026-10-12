@@ -105,13 +105,38 @@ pub struct SxyStore {
 /// flat one, such as a backdrop continued into the sides), or with `order`
 /// point k the projection `order >> 8k & 0xFF` before that count (a sprite
 /// part stores its corners out of order).
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Reveal {
     pub entry: u32,
     pub vertices: u8,
     pub projections: u32,
     pub order: u32,
-    pub words: Vec<u32>,
+    pub words: FaceWords,
+}
+
+/// A face's GP0 words: at most 12 (a Gouraud-shaded textured quad), held
+/// in place (thousands of culled faces a frame allocate nothing).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct FaceWords {
+    words: [u32; 12],
+    len: u8,
+}
+
+impl From<&[u32]> for FaceWords {
+    /// The first 12 of `words`.
+    fn from(words: &[u32]) -> Self {
+        let mut face = FaceWords { words: [0; 12], len: words.len().min(12) as u8 };
+        face.words[..usize::from(face.len)].copy_from_slice(&words[..usize::from(face.len)]);
+        face
+    }
+}
+
+impl std::ops::Deref for FaceWords {
+    type Target = [u32];
+
+    fn deref(&self) -> &[u32] {
+        &self.words[..usize::from(self.len)]
+    }
 }
 
 /// What a vertex belongs to.
@@ -312,7 +337,9 @@ pub enum TraceOp {
     /// no drawing command produced. Otherwise the pixels result from the
     /// fill, copy or drawing commands before it, which a renderer drew
     /// itself: it updates only its copy for texture sampling.
-    Write { rect: VramRect, pixels: Vec<u16>, upload: bool },
+    /// The pixels are shared: the trace, a renderer's logs and replays hold
+    /// the same ones.
+    Write { rect: VramRect, pixels: std::sync::Arc<[u16]>, upload: bool },
     /// A vertical blank: the game's frame ended.
     VBlank,
 }
@@ -334,12 +361,15 @@ pub(crate) struct Recorder {
     history: Vec<Projection>,
     history_end: u32,
     history_len: u32,
-    /// Screen points the game stored, by word address: the value and the
-    /// projection that made it.
-    stored: WordMap<(u32, u32)>,
+    /// Screen points the game stored, by word of RAM: the value and the
+    /// projection that made it plus 1 (0 none). The port records stores to
+    /// RAM only.
+    stored: Vec<(u32, u32)>,
     /// Culled faces by the ordering-table entry they would have been linked
-    /// at, until the DMA walk reaches it.
+    /// at, until the DMA walk reaches it, and emptied lists kept for new
+    /// entries (thousands a frame when zoomed out).
     reveals: WordMap<Vec<Revealed>>,
+    spare: Vec<Vec<Revealed>>,
     /// The address each word of the GPU's partly received command was read
     /// from (0 for words the CPU wrote), and the word being written's.
     fifo_addresses: Vec<u32>,
@@ -366,9 +396,9 @@ pub(crate) struct Recorder {
     source_index: u32,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 struct Revealed {
-    words: Vec<u32>,
+    words: FaceWords,
     projections: [Option<u32>; 4],
     vblank: u32,
 }
@@ -377,6 +407,8 @@ struct Revealed {
 const HISTORY: usize = 65536;
 /// DMA addresses: 24-bit, word aligned.
 const ADDRESS_MASK: u32 = 0xFF_FFFC;
+/// Words of RAM ([`Recorder::stored`]).
+const RAM_WORDS: usize = 0x20_0000 / 4;
 /// Vertical blanks a culled face waits for its ordering table's walk.
 const REVEAL_FRAMES: u32 = 3;
 /// Ops a trace holds at most between takes (tens of frames; a battle frame
@@ -402,6 +434,7 @@ impl Recorder {
     fn ingest(&mut self, first: u32, projections: &[Projection], stores: &[SxyStore], reveals: &[Reveal]) {
         if self.history.is_empty() {
             self.history = vec![Projection::default(); HISTORY];
+            self.stored = vec![(0, 0); RAM_WORDS];
         }
         if first != self.history_end {
             // The trace just started or the port's ring overflowed: the
@@ -422,22 +455,12 @@ impl Recorder {
         }
         self.history_len = (self.history_len as usize + projections.len()).min(HISTORY) as u32;
         for store in stores {
-            let address = store.address & ADDRESS_MASK;
-            match store.source.filter(|&index| self.projection(index).is_some_and(|p| p.sxy == store.value)) {
-                Some(index) => {
-                    self.stored.insert(address, (store.value, index));
-                }
-                None => {
-                    self.stored.remove(&address);
-                }
-            }
-        }
-        if self.stored.len() > 4 * HISTORY {
-            let (end, len) = (self.history_end, self.history_len);
-            self.stored.retain(|_, (_, index)| {
-                let age = end.wrapping_sub(*index);
-                age >= 1 && age <= len
+            let Some(slot) = self.stored.get_mut((store.address & ADDRESS_MASK) as usize / 4) else { continue };
+            let source = store.source.filter(|&index| {
+                let age = self.history_end.wrapping_sub(index);
+                age >= 1 && age <= self.history_len && self.history[index as usize % HISTORY].sxy == store.value
             });
+            *slot = (store.value, source.map_or(0, |index| index.wrapping_add(1)));
         }
         for reveal in reveals {
             let Some(&command) = reveal.words.first() else { continue };
@@ -453,8 +476,9 @@ impl Recorder {
                 };
                 points[k] = self.projection(index).is_some_and(|p| p.sxy == reveal.words[at]).then_some(index);
             }
-            self.reveals.entry(reveal.entry & ADDRESS_MASK).or_default().push(Revealed {
-                words: reveal.words.clone(),
+            let spare = &mut self.spare;
+            self.reveals.entry(reveal.entry & ADDRESS_MASK).or_insert_with(|| spare.pop().unwrap_or_default()).push(Revealed {
+                words: reveal.words,
                 projections: points,
                 vblank: self.vblanks,
             });
@@ -476,11 +500,11 @@ impl Recorder {
             return revealed[vertex].and_then(|index| self.projection(index));
         }
         let address = *self.fifo_addresses.get(at).filter(|&&a| a != 0)?;
-        let &(value, index) = self.stored.get(&address)?;
-        if value != word {
+        let &(value, source) = self.stored.get(address as usize / 4)?;
+        if source == 0 || value != word {
             return None;
         }
-        self.projection(index)
+        self.projection(source.wrapping_sub(1))
     }
 }
 
@@ -552,13 +576,13 @@ impl Gpu {
             ops.clear();
             ops.push(TraceOp::Write {
                 rect: VramRect { x: 0, y: 0, width: VRAM_WIDTH as u16, height: VRAM_HEIGHT as u16 },
-                pixels: self.vram.clone(),
+                pixels: self.vram.as_slice().into(),
                 upload: true,
             });
             return Trace { ops, focus };
         }
         if let Some(rect) = trace.dirty.take() {
-            ops.push(TraceOp::Write { rect, pixels: read_rect(&self.vram, rect), upload: false });
+            ops.push(TraceOp::Write { rect, pixels: read_rect(&self.vram, rect).into(), upload: false });
         }
         Trace { ops, focus }
     }
@@ -576,15 +600,17 @@ impl Gpu {
         let Some(trace) = &mut self.trace else { return };
         trace.source = node;
         trace.source_index = 0;
-        let Some(faces) = trace.reveals.remove(&node) else { return };
+        let Some(mut faces) = trace.reveals.remove(&node) else { return };
         // Linked in front of the same packet, the newest goes first, as the
         // GPU walks an entry's packets.
-        for face in faces.into_iter().rev() {
+        for face in faces.iter().rev() {
             self.trace.as_mut().expect("checked above").revealing = Some(face.projections);
             self.trace_before_command(&face.words);
             self.trace_polygon(&face.words, true);
             self.trace.as_mut().expect("checked above").revealing = None;
         }
+        faces.clear();
+        self.trace.as_mut().expect("checked above").spare.push(faces);
     }
 
     /// The address of the next GP0 word (0 for the CPU's).
@@ -681,7 +707,7 @@ impl Gpu {
         // Write the whole dirty rectangle once: later samples need it too.
         let pixels = read_rect(&self.vram, dirty);
         let trace = self.trace.as_mut().expect("checked above");
-        trace.ops.push(TraceOp::Write { rect: dirty, pixels, upload: false });
+        trace.ops.push(TraceOp::Write { rect: dirty, pixels: pixels.into(), upload: false });
         trace.dirty = None;
     }
 
@@ -702,7 +728,7 @@ impl Gpu {
                     let pixels = read_rect(&self.vram, rect);
                     let trace = self.trace.as_mut().expect("checked above");
                     trace.ops.push(TraceOp::Fill { rect, color });
-                    trace.ops.push(TraceOp::Write { rect, pixels, upload: false });
+                    trace.ops.push(TraceOp::Write { rect, pixels: pixels.into(), upload: false });
                 }
             }
             0x20..=0x3F => self.trace_polygon(words, false),
@@ -730,7 +756,7 @@ impl Gpu {
         }
         for rect in VramRect::wrapped(x.into(), y.into(), width.into(), height.into()) {
             let pixels = read_rect(&self.vram, rect);
-            self.trace.as_mut().expect("checked above").ops.push(TraceOp::Write { rect, pixels, upload });
+            self.trace.as_mut().expect("checked above").ops.push(TraceOp::Write { rect, pixels: pixels.into(), upload });
         }
     }
 
