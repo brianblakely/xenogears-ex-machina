@@ -10,14 +10,28 @@
 //! (lighting, shadows, ao, fog, shafts, bloom, grading, dof).
 //! `XEM_DEBUG_VIEW=shadows|depth|class` shows an effects debug view.
 
+/// A build without the game module has nothing to run.
+#[cfg(not(has_game_module))]
+fn main() {
+    eprintln!("this build has no game module (python3 tools/game_module.py builds it)");
+    std::process::exit(1);
+}
+
+#[cfg(has_game_module)]
 use serde_json::json;
+#[cfg(has_game_module)]
 use xem_render::ps1::{DebugView, GameView, HostClass, ViewConfig};
+#[cfg(has_game_module)]
 use xem_render::{Gpu, read_rgba8};
+#[cfg(has_game_module)]
 use std::path::PathBuf;
+#[cfg(has_game_module)]
 use xem_settings::{EffectLevels, Graphics, GraphicsProfile};
 
+#[cfg(has_game_module)]
 type Session = xem_core::control::Session<xem_game::NativeModule>;
 
+#[cfg(has_game_module)]
 fn picture(gpu: &Gpu, view: &mut GameView, session: &mut Session, graphics: &Graphics, scene: &str, output: (u32, u32)) -> (u32, u32, Vec<u8>) {
     let config = ViewConfig::resolve(graphics, HostClass::Desktop, output, view.max_scale());
     view.configure(config);
@@ -45,6 +59,7 @@ fn picture(gpu: &Gpu, view: &mut GameView, session: &mut Session, graphics: &Gra
     (width, height, rgba)
 }
 
+#[cfg(has_game_module)]
 fn main() {
     let mut map = 22u64;
     let mut frames = 400u64;

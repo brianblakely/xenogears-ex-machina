@@ -49,19 +49,34 @@
 //! `--original-actors`; the JSON counts the sprite actors the field stops
 //! as off screen per frame (`still`).
 
+/// A build without the game module has nothing to run.
+#[cfg(not(has_game_module))]
+fn main() {
+    eprintln!("this build has no game module (python3 tools/game_module.py builds it)");
+    std::process::exit(1);
+}
+
+#[cfg(has_game_module)]
 use serde_json::{Value, json};
+#[cfg(has_game_module)]
 use std::path::PathBuf;
+#[cfg(has_game_module)]
 use std::time::Instant;
+#[cfg(has_game_module)]
 use xem_render::ps1::{GameView, HostClass, ViewConfig};
+#[cfg(has_game_module)]
 use xem_render::{Gpu, read_rgba8};
+#[cfg(has_game_module)]
 use xem_settings::{Graphics, GraphicsProfile};
 
 
+#[cfg(has_game_module)]
 struct Stage {
     name: &'static str,
     samples: Vec<f64>,
 }
 
+#[cfg(has_game_module)]
 impl Stage {
     fn new(name: &'static str) -> Self {
         Self { name, samples: Vec::new() }
@@ -78,9 +93,11 @@ impl Stage {
 }
 
 /// The animated PNG keeps the last this many presented frames.
+#[cfg(has_game_module)]
 const ANIMATED: usize = 240;
 
 /// `rgba` (of `from` pixels) on a black picture of `to` pixels, top left.
+#[cfg(has_game_module)]
 fn fit(rgba: &[u8], from: (u32, u32), to: (u32, u32)) -> ((u32, u32), Vec<u8>) {
     if from == to {
         return (to, rgba.to_vec());
@@ -96,6 +113,7 @@ fn fit(rgba: &[u8], from: (u32, u32), to: (u32, u32)) -> ((u32, u32), Vec<u8>) {
     (to, out)
 }
 
+#[cfg(has_game_module)]
 fn main() {
     let mut map = 1u32;
     let mut mode: Option<&str> = None;
@@ -536,6 +554,7 @@ fn main() {
 
 /// The field's sprite actors (not the 801e layer's) marked off screen
 /// (layer_flags 0x200: they stop moving), outside the field none.
+#[cfg(has_game_module)]
 fn still_actors(session: &mut xem_core::control::Session<xem_game::NativeModule>) -> usize {
     if !session.scene().starts_with("field") {
         return 0;

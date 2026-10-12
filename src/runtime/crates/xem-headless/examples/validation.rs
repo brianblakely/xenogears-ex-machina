@@ -22,20 +22,35 @@
 //! semi-transparent window pixels (over a scene drawn at a finer scale, so
 //! some may).
 
+/// A build without the game module has nothing to run.
+#[cfg(not(has_game_module))]
+fn main() {
+    eprintln!("this build has no game module (python3 tools/game_module.py builds it)");
+    std::process::exit(1);
+}
+
+#[cfg(has_game_module)]
 use serde_json::{Value, json};
+#[cfg(has_game_module)]
 use std::path::PathBuf;
+#[cfg(has_game_module)]
 use xem_render::ps1::{GameView, HostClass, ViewConfig, wide_side};
+#[cfg(has_game_module)]
 use xem_render::{Gpu, read_rgba8};
+#[cfg(has_game_module)]
 use xem_settings::{Graphics, GraphicsProfile};
 
+#[cfg(has_game_module)]
 type Session = xem_core::control::Session<xem_game::NativeModule>;
 
+#[cfg(has_game_module)]
 fn press(button: &str) -> Vec<Value> {
     vec![json!({"cmd": "press", "buttons": [button], "frames": 1}), json!({"cmd": "frames", "count": 20})]
 }
 
 /// The original's debug battle selector (ovl2606): Start with the default
 /// scene and party; `gears` sets each member's gear column to Nml first.
+#[cfg(has_game_module)]
 fn battle(gears: bool) -> Vec<Value> {
     let mut commands = vec![
         json!({"cmd": "frames", "count": 60}),
@@ -53,6 +68,7 @@ fn battle(gears: bool) -> Vec<Value> {
     commands
 }
 
+#[cfg(has_game_module)]
 fn scenes() -> Vec<(&'static str, Vec<Value>)> {
     let field = |map: u32, frames: u32| vec![json!({"cmd": "enter_field", "map": map}), json!({"cmd": "frames", "count": frames})];
     vec![
@@ -74,8 +90,10 @@ fn scenes() -> Vec<(&'static str, Vec<Value>)> {
     ]
 }
 
+#[cfg(has_game_module)]
 const LOOKS: [&str; 5] = ["modern", "hd2d", "ps1", "modern-wide", "modern-zoom"];
 
+#[cfg(has_game_module)]
 fn graphics(look: &str, scale: u8) -> Graphics {
     let base = Graphics { internal_scale: scale, ..Default::default() };
     match look {
@@ -87,6 +105,7 @@ fn graphics(look: &str, scale: u8) -> Graphics {
     }
 }
 
+#[cfg(has_game_module)]
 struct Picture {
     size: (u32, u32),
     rgba: Vec<u8>,
@@ -102,6 +121,7 @@ struct Picture {
 }
 
 /// Eight frames under `graphics`, the last one's picture.
+#[cfg(has_game_module)]
 fn draw(gpu: &Gpu, session: &mut Session, graphics: &Graphics) -> Picture {
     let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
     view.configure(ViewConfig::resolve(graphics, HostClass::Desktop, (1920, 1080), view.max_scale()));
@@ -160,6 +180,7 @@ fn draw(gpu: &Gpu, session: &mut Session, graphics: &Graphics) -> Picture {
 /// `diff`, an image of them: differing opaque interface pixels red,
 /// differing semi-transparent ones orange, matching ones green, the rest
 /// dimmed.
+#[cfg(has_game_module)]
 fn against_console(picture: &Picture, diff: Option<&std::path::Path>) -> Value {
     let (Some(classes), Some(flags)) = (&picture.classes, &picture.flags) else { return Value::Null };
     let (cw, ch, console) = &picture.console;
@@ -194,6 +215,7 @@ fn against_console(picture: &Picture, diff: Option<&std::path::Path>) -> Value {
     json!({"opaque": {"pixels": counts[0][0], "differ": counts[0][1]}, "semi": {"pixels": counts[1][0], "differ": counts[1][1]}})
 }
 
+#[cfg(has_game_module)]
 fn write_png(path: &std::path::Path, (width, height): (u32, u32), rgba: &[u8]) {
     let file = std::fs::File::create(path).expect("output");
     let mut encoder = png::Encoder::new(std::io::BufWriter::new(file), width, height);
@@ -202,6 +224,7 @@ fn write_png(path: &std::path::Path, (width, height): (u32, u32), rgba: &[u8]) {
 }
 
 /// `picture` scaled (nearest) into a `cell`-sized box, centred, on black.
+#[cfg(has_game_module)]
 fn fit(picture: &Picture, cell: (u32, u32)) -> Vec<u8> {
     let mut out = vec![0u8; (cell.0 * cell.1 * 4) as usize];
     for chunk in out.chunks_exact_mut(4) {
@@ -222,6 +245,7 @@ fn fit(picture: &Picture, cell: (u32, u32)) -> Vec<u8> {
     out
 }
 
+#[cfg(has_game_module)]
 fn main() {
     let mut out = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../build/validation");
     let mut scale = 3u8;

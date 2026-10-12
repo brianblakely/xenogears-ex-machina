@@ -143,6 +143,10 @@ class Lzss(unittest.TestCase):
             try:
                 mem.write(address, stream)
                 libc = ctypes.CDLL(None)
+                # The fault is the expected outcome: no core dump of it
+                # (PR_SET_DUMPABLE 0).
+                if libc.prctl(4, 0, 0, 0, 0) != 0:
+                    os._exit(2)
                 libc.mprotect.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int]
                 if libc.mprotect(mem.RAM + mem.RAM_BYTES - PAGE, PAGE, 0) != 0:
                     os._exit(2)

@@ -13,25 +13,25 @@
 #            browser tests that measure time (WebXR's among them) last
 #   android  the game module, the APK and the emulator's smoke test
 #   xr       the game module, the native build and the OpenXR smoke test
-#   full     all of them, and the workspace's libraries, binaries and tests
-#            checked without a game module (as a clone without the user's
-#            discs builds them; the xem-headless examples are tools for the
-#            user's disc)
+#   full     all of them, and what CI runs (.github/workflows/ci.yml) as on
+#            a clone without the user's discs: tools/repository/check.py,
+#            which builds and tests the workspace (here without a game
+#            module), and the matching toolchain's smoke test
 #
-# In full, the builds run side by side, each in a cargo target directory of its own
-# (src/runtime/target-*, none of them play.sh's): the native one, then the
-# Rust tests and the validation run at once; the check without a game
-# module; the web build, then the browser suites (the slice's, the longest,
-# from the start beside the others two files at a time; the slice's and the
-# persistence tests two at a time within them: at most five browsers); the
-# Android APK, and the emulator boots (its boot measures nothing). Then what
-# measures frame rates runs alone, one after another (their emulator, headset and browsers render on the
-# processor: beside the browser suites the Android smoke's frame rate fell
-# from 56 to 10 a second, the XR smoke's headset frames came late, and
-# their checks failed): the Android smoke, the XR smoke, and the browser
-# tests that measure time (the headset's frame rate, rewind frame times,
-# fast-forward's music, the stalled page, a resume read within the rewind's
-# one-second interval).
+# In full, the builds run side by side, each in a cargo target directory of
+# its own (src/runtime/target-*, none of them play.sh's): the native one,
+# then the Rust tests and the validation run at once; CI's checks; the web
+# build, then the browser suites (the slice's, the longest, from the start
+# beside the others two files at a time; the slice's and the persistence
+# tests two at a time within them: at most five browsers); the Android APK,
+# and the emulator boots (its boot measures nothing). Then what measures
+# frame rates runs alone, one after another (their emulator, headset and
+# browsers render on the processor: beside the browser suites the Android
+# smoke's frame rate fell from 56 to 10 a second, the XR smoke's headset
+# frames came late, and their checks failed): the Android smoke, the XR
+# smoke, and the browser tests that measure time (the headset's frame rate,
+# rewind frame times, fast-forward's music, the stalled page, a resume read
+# within the rewind's one-second interval).
 #
 # Rust builds use the `suite` profile (Cargo.toml: release's optimization
 # without link-time optimization or debug information); a failing test
@@ -121,10 +121,12 @@ validation() {
     cd "$runtime" && "$CARGO_TARGET_DIR/suite/examples/validation"
 }
 
-# The workspace builds without a game module (none at that path).
-public() {
-    cd "$runtime" && CARGO_TARGET_DIR=$runtime/target-public CARGO_BUILD_JOBS=$side_jobs \
-        XEM_GAME_WASM=/nonexistent/game.wasm cargo check --workspace --lib --bins --tests
+# CI's two steps, without a game module (none at that path) as on a clone
+# without the user's discs.
+ci() {
+    cd "$root" && CARGO_TARGET_DIR=$runtime/target-public CARGO_BUILD_JOBS=$side_jobs \
+        XEM_GAME_WASM=/nonexistent/game.wasm python3 tools/repository/check.py &&
+        "${nix[@]}" "path:$root/nix/ghidra#matching" -c make -C src/decomp smoke
 }
 
 web() {
@@ -212,7 +214,7 @@ if covers desktop web xr; then
         fi
     } &
 fi
-[[ $tier != full ]] || stage public public &
+[[ $tier != full ]] || stage ci ci &
 covers web && { stage web web && stage browser browser; } &
 if covers android; then
     stage android-build android_build &

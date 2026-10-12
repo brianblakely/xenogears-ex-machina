@@ -860,13 +860,14 @@ native and shared code) builds the game module and runs the port's unit
 tests, the Rust workspace's tests and the validation run; `web` the web
 build, the browser suites and the browser tests that measure time
 (WebXR's among them); `android` the APK and the emulator's smoke test; `xr`
-the native build and the OpenXR smoke test. `full` runs them all and checks
-the workspace's libraries, binaries and tests without a game module (as a
-clone without the user's discs builds them; the xem-headless examples are
-tools for the user's disc). In `full`, the builds run side by side, each in
-a cargo target directory of its own (`src/runtime/target-*`, none of them play.sh's): the native one,
-then the Rust tests and the validation run at once; the check without a
-game module; the web build, then the browser suites (the slice's, the
+the native build and the OpenXR smoke test. `full` runs them all and what
+CI runs (`.github/workflows/ci.yml`) as on a clone without the user's discs:
+`tools/repository/check.py`, which builds and tests the workspace (here
+without a game module), and the matching toolchain's smoke test
+(`make -C src/decomp smoke`). In `full`, the builds run side by side, each
+in a cargo target directory of its own (`src/runtime/target-*`, none of
+them play.sh's): the native one, then the Rust tests and the validation run
+at once; CI's checks; the web build, then the browser suites (the slice's, the
 longest, from the start beside the others two files at a time; the slice's
 and the persistence tests two at a time within them: at most five
 browsers); the Android APK, and the emulator boots (its boot measures
@@ -889,9 +890,9 @@ smoke, run by itself, boots its emulator while the APK builds
 (`XEM_SMOKE_BOOT=1` only boots it, and a later run uses it), and turns off
 the system's "isn't responding" dialogs on its AVD (on a loaded host one
 took its taps). Logs, and each stage's result and time: `build/suite/`.
-Measured here (16 threads, warm builds): `full` 709 s with every stage
-passing, where the same stages run one after another took about 26 minutes;
-`desktop` 114 s.
+Measured here (16 threads, warm builds): `full` 723 s with every stage
+passing (709 s before CI's checks joined it), where the same stages run
+one after another took about 26 minutes; `desktop` 114 s.
 
 ## Saves and time controls
 
