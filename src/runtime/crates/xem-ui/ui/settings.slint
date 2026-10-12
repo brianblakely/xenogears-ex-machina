@@ -22,6 +22,7 @@ export component SettingsPanel inherits Window {
     in-out property <int> gfx-filter-world;
     in-out property <int> gfx-filter-sprites;
     in-out property <int> gfx-filter-interface;
+    in-out property <int> gfx-filter-movies;
     in-out property <bool> gfx-cull-back-faces;
     in-out property <bool> gfx-cull-viewport;
     // Custom profile limits, in the order of fidelity-names.
@@ -295,6 +296,11 @@ export component SettingsPanel inherits Window {
                                         spacing: 8px;
                                         Text { text: "Interface"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
                                         ComboBox { accessible-label: "Interface filtering"; model: ["Nearest", "Linear"]; current-index <=> root.gfx-filter-interface; selected => { root.graphics-edited("filter-interface", self.current-index); } }
+                                    }
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Text { text: "Movies"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
+                                        ComboBox { accessible-label: "Movie filtering"; model: ["Bicubic", "Nearest"]; current-index <=> root.gfx-filter-movies; selected => { root.graphics-edited("filter-movies", self.current-index); } }
                                     }
                                     CheckBox { text: "Cull back faces (off: as the game draws)"; checked <=> root.gfx-cull-back-faces; toggled => { root.graphics-edited("cull", self.checked ? 1 : 0); } }
                                     CheckBox { text: "Cull at the original screen's edges (off: wider and zoomed-out views show the scenery the game culled)"; checked <=> root.gfx-cull-viewport; toggled => { root.graphics-edited("cull-viewport", self.checked ? 1 : 0); } }

@@ -310,6 +310,7 @@ fn main() {
     let mut animation = std::collections::VecDeque::new();
     let mut changes = Vec::new();
     let mut revealed = Vec::new();
+    let mut revealed_sprites = Vec::new();
     let mut still = Vec::new();
     let mut previous: Option<Vec<u8>> = None;
     let mut size = (0, 0);
@@ -345,6 +346,7 @@ fn main() {
         view.push(device.take_trace());
         let display = device.display();
         revealed.push(view.frame().newest().iter().filter(|op| matches!(op, xem_render::xem_gpu::TraceOp::Draw(p) if p.revealed)).count());
+        revealed_sprites.push(view.frame().newest().iter().filter(|op| matches!(op, xem_render::xem_gpu::TraceOp::Draw(p) if p.revealed && p.class == xem_render::xem_gpu::Class::Sprite)).count());
         stages[1].samples.push(started.elapsed().as_secs_f64() * 1000.0);
         let scene = session.scene();
         for step in 0..present {
@@ -404,6 +406,14 @@ fn main() {
             }
             animation.push_back((size, rgba.clone()));
             previous = Some(rgba);
+        }
+    }
+    if std::env::var_os("XEM_LIST_REVEALED_SPRITES").is_some() {
+        for op in view.frame().primitives() {
+            let xem_render::xem_gpu::TraceOp::Draw(p) = op else { continue };
+            if !(p.revealed && p.class == xem_render::xem_gpu::Class::Sprite) { continue; }
+            let v = &p.vertices[..p.vertex_count()];
+            eprintln!("revealed sprite owner {:#x} points {:?}", p.owner, v.iter().map(|v| (v.fx as i32, v.fy as i32, v.z as i32)).collect::<Vec<_>>());
         }
     }
     if let Some((x, y)) = probe {
@@ -477,10 +487,11 @@ fn main() {
         "changed_pixels": {"mean": mean_change, "per_frame": changes},
         "points": {"matched": matched, "unmatched": unmatched},
         "revealed": revealed,
+        "revealed_sprites": revealed_sprites,
         "still": still,
     });
     std::fs::write(out.join(format!("{name}.json")), serde_json::to_string_pretty(&report).unwrap()).unwrap();
-    println!("{}", serde_json::to_string(&json!({"stages": report["stages"], "changed_mean": mean_change, "points": report["points"], "revealed": [revealed.first(), revealed.iter().min(), revealed.iter().max(), revealed.last()], "still": [still.first(), still.iter().min(), still.iter().max(), still.last()]})).unwrap());
+    println!("{}", serde_json::to_string(&json!({"stages": report["stages"], "changed_mean": mean_change, "points": report["points"], "revealed": [revealed.first(), revealed.iter().min(), revealed.iter().max(), revealed.last()], "still": [still.first(), still.iter().min(), still.iter().max(), still.last()], "revealed_sprites": [revealed_sprites.iter().min(), revealed_sprites.iter().max()], "memory_hash": session.execute(&json!({"cmd": "memory_hash"}))})).unwrap());
 }
 
 /// The field's sprite actors (not the 801e layer's) marked off screen

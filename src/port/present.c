@@ -7,13 +7,16 @@
  */
 #include "common.h"
 #include "xem/gte.h"
+#include "xem/gte_ops.h"
 #include "xem/memory.h"
 #include "resident/gpu.h"
+#include "resident/mode.h"
 #include "resident/model.h"
 #include "resident/sprite.h"
 #include "../decomp/src/field/field.h"
 #include "../decomp/src/field/field_camera.h"
 #include "../decomp/src/field/field_draw.h"
+#include "../decomp/src/field/field_resident.h"
 
 /* Hand a record to the host: `kind`, then `length` bytes at `data`. */
 void xem_host_present(unsigned int kind, void *data, unsigned int length);
@@ -61,6 +64,7 @@ void xem_original_worldmap_map_overlay_draw(void);
 s32 xem_original_gpu_draw_panorama(Panorama *panorama, SVECTOR *eye, SVECTOR *target, MATRIX *view, u_long *ot, s32 buffer);
 void xem_original_gpu_draw_panorama_strip(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *ot, s32 buffer);
 void xem_original_battle_draw_stage_sky(void *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot, s32 buffer);
+void field_sprite_set_color_unless_fog(void *target, u8 *color);
 
 /* Whether the host wants the faces the game culls (xem/gte.h), and no model
  * is being drawn again for the record. */
@@ -76,7 +80,7 @@ static s32 xem_reveals_wanted(void) {
  * packets, the scratchpad words the renderers spill to, the renderers'
  * state, the GTE and the ring's bookkeeping are put back afterwards, so the
  * game sees nothing of it. */
-static void xem_reveal_model(SpriteModel *model, RenderPacket *packets, u32 *ot, s32 mode, XemGte *placed) {
+void xem_reveal_model(SpriteModel *model, RenderPacket *packets, u32 *ot, s32 mode, XemGte *placed) {
     XemCaptureArea *area = xem_present_capture;
     XemGte after = xem_gte;
     RenderPacket *packet = model_current_packet;
@@ -535,4 +539,266 @@ void battle_draw_stage_sky(void *sky, SVECTOR *eye, SVECTOR *target, MATRIX *vie
     if (reach != 0) {
         xem_reveal_backdrop_fills(XEM_ADDRESS_OF(*ot), head, reach);
     }
+}
+
+/* ---------------------------------------------------------------- sprites the field skips */
+
+/* Game memory a drawing for the record writes, kept in the capture area's
+ * backup to be put back. */
+#define XEM_SAVED 8
+
+typedef struct {
+    u32 address[XEM_SAVED], words[XEM_SAVED], start[XEM_SAVED];
+    u32 count, used;
+} XemSaved;
+
+static s32 xem_save(XemSaved *saved, u32 address, u32 bytes) {
+    u32 words = (bytes + 3) / 4, i;
+
+    if (saved->count >= XEM_SAVED || saved->used + words > XEM_PRESENT_BACKUP / 4) {
+        return 0;
+    }
+    for (i = 0; i < words; i++) {
+        xem_present_capture->backup[saved->used + i] = XEM_U32(address + i * 4);
+    }
+    saved->address[saved->count] = address;
+    saved->words[saved->count] = words;
+    saved->start[saved->count++] = saved->used;
+    saved->used += words;
+    return 1;
+}
+
+/* Put back the regions saved from the `first` on, and forget them. */
+static void xem_restore(XemSaved *saved, u32 first) {
+    u32 r, i;
+
+    for (r = first; r < saved->count; r++) {
+        for (i = 0; i < saved->words[r]; i++) {
+            XEM_U32(saved->address[r] + i * 4) = xem_present_capture->backup[saved->start[r] + i];
+        }
+    }
+    if (first < saved->count) {
+        saved->used = saved->start[first];
+        saved->count = first;
+    }
+}
+
+/* The projection that made the screen point stored at `address` since the
+ * store ring's count was `stores` (1 + its index, 0 when none did). */
+static u32 xem_stored_by(u32 address, u32 stores) {
+    XemStoreRing *ring = xem_present_stores;
+    XemSxyStore *s;
+    u32 n;
+
+    for (n = ring->count; n != stores && ring->count - n < XEM_PRESENT_STORES; n--) {
+        s = &ring->entries[(n - 1) % XEM_PRESENT_STORES];
+        if (s->address == (address & 0x00FFFFFF)) {
+            return s->value == XEM_U32(address) ? s->source : 0;
+        }
+    }
+    return 0;
+}
+
+/* The textured quads a drawing for the record linked into the ordering
+ * table saved as region 0 (each entry whose word changed, from its new
+ * head back to its old one), recorded oldest first as culled faces drawn
+ * just before the packet they were linked in front of, when the GTE
+ * projected their four points (since the store ring's count was
+ * `stores`); the entries are put back. */
+static void xem_reveal_linked(XemSaved *saved, u32 stores) {
+    u32 packets[64], words[9], index[4], j, k, n, at, old, base, order, entry;
+
+    for (j = 0; j < saved->words[0]; j++) {
+        entry = saved->address[0] + j * 4;
+        old = xem_present_capture->backup[saved->start[0] + j];
+        if (XEM_U32(entry) == old) {
+            continue;
+        }
+        n = 0;
+        for (at = XEM_U32(entry) & 0x00FFFFFF; at != (old & 0x00FFFFFF) && at != 0x00FFFFFF && n < 64;) {
+            packets[n++] = at;
+            at = XEM_U32(at) & 0x00FFFFFF;
+        }
+        while (n > 0) {
+            at = packets[--n];
+            if (XEM_U32(at) >> 24 != 9 || (XEM_U32(at + 4) >> 24 & 0xFC) != 0x2C) {
+                continue;
+            }
+            base = 0;
+            for (k = 0; k < 4; k++) {
+                index[k] = xem_stored_by(at + 8 + k * 8, stores);
+                base = index[k] > base ? index[k] : base;
+            }
+            order = 0;
+            for (k = 0; k < 4; k++) {
+                if (index[k] == 0 || base - index[k] + 1 > 0xFF) {
+                    break;
+                }
+                order |= (base - index[k] + 1) << (k * 8);
+            }
+            if (k < 4) {
+                continue;
+            }
+            for (k = 0; k < 9; k++) {
+                words[k] = XEM_U32(at + 4 + k * 4);
+            }
+            xem_present_reveal_at((old & 0x00FFFFFF) == 0x00FFFFFF ? entry : old, 4, base, order, words, 9);
+        }
+        XEM_U32(entry) = old;
+    }
+}
+
+/* One sprite actor drawn for the record as field_draw_sprite_actors draws
+ * it (from its scale on) into `ot`, `depth` its raised point's depth, with
+ * the GTE as the pass leaves it after that point's projection; what the
+ * drawing writes is put back. */
+static void xem_record_sprite(XemSaved *saved, FieldActor *actor, Sprite *sprite, MATRIX *orient, s32 octant, s32 elevation,
+                              s32 depth, u_long *ot) {
+    SpriteRenderer *renderer = sprite->renderer;
+    u32 parts = (u8)sprite->flags >> 2, queue = (u32)sprite_queue_next_free, stores = xem_present_stores->count, first = saved->count;
+    u32 room = (u32)sprite_queue_block_end - queue, rgb;
+    VECTOR scale;
+    SVECTOR v;
+    long sxy, interpolation, flag;
+    s32 side, upper;
+
+    if (!xem_save(saved, (u32)sprite, sizeof(Sprite)) || !xem_save(saved, (u32)renderer, sizeof(SpriteRenderer)) ||
+        !xem_save(saved, (u32)renderer->parts[1], parts * sizeof(SpritePart)) ||
+        !xem_save(saved, XEM_ADDRESS_OF(sprite_quad_corners[0]), sizeof(sprite_quad_corners)) ||
+        !xem_save(saved, XEM_ADDRESS_OF(sprite_shadow_corners[0]), sizeof(sprite_shadow_corners)) ||
+        !xem_save(saved, XEM_ADDRESS_OF(sprite_queue_next_free), 4) ||
+        !xem_save(saved, queue, parts * sizeof(POLY_FT4) * 4 < room ? parts * sizeof(POLY_FT4) * 4 : room)) {
+        xem_restore(saved, first);
+        return;
+    }
+    scale.vx = actor->scale[0] * 3 >> 2;
+    scale.vy = actor->scale[1] * 3 >> 2;
+    scale.vz = actor->scale[2] * 3 >> 2;
+    if (actor->unkE4 == 7 && field_work.unk2268 != 0) {
+        scale.vx = scale.vx * 5 >> 2;
+        scale.vy = scale.vy * 5 >> 2;
+        scale.vz = scale.vz * 5 >> 2;
+    }
+    renderer->matrix = *orient;
+    ScaleMatrix(&renderer->matrix, &scale);
+    if (actor->floor_attribute & 0x200000) {
+        side = (octant - (((actor->floor_attribute >> 11) - 2) & 7)) & 7;
+        if (side != 0 && (side < 4 || side >= 5)) {
+            v.vx = 0;
+            v.vy = side < 4 ? -0x80 : 0x80;
+            v.vz = 0;
+            depth = RotTransPers(&v, &sxy, &interpolation, &flag);
+        }
+    }
+    if (field_work.unk2357 == 0 && field_work.sprite_gate != 0) {
+        xem_lwc2(XEM_GTE_RGBC, XEM_ADDRESS_OF(model_color)); /* gte_ldrgb, gte_dpcs, gte_strgb */
+        xem_gte_execute(XEM_GTE_DPCS);
+        rgb = xem_gte_read_data(XEM_GTE_RGB2);
+        sprite_set_part_color(sprite, rgb & 0xFF, rgb >> 8 & 0xFF, rgb >> 16 & 0xFF);
+    }
+    depth >>= model_ot_depth_shift;
+    if (depth >= 2) {
+        depth -= 2;
+    }
+    if ((u16)(actor->unkE8 + 0x22) < 2) {
+        sprite_set_part_color(sprite, actor->color0[0], actor->color0[1], actor->color0[2]);
+        sprite->render.bytes[1] = 0xEF;
+        sprite_draw(sprite, ot + depth - 0x10);
+        v.vx = 0;
+        v.vy = 300;
+        v.vz = 0;
+        upper = RotTransPers(&v, &sxy, &interpolation, &flag) >> model_ot_depth_shift;
+        sprite_set_part_color(sprite, actor->color1[0], actor->color1[1], actor->color1[2]);
+        sprite->render.bytes[1] = 0xF7;
+        sprite_draw(sprite, ot + upper);
+    } else {
+        sprite->render.bytes[1] = 0;
+        if (!(actor->unk134 & 0x60)) {
+            field_sprite_set_color_unless_fog(sprite, actor->color0);
+            sprite_draw(sprite, ot + depth);
+        } else {
+            if ((actor->unk134 >> 5) & 1) {
+                field_sprite_set_color_unless_fog(sprite, actor->color0);
+                v.vx = 0;
+                v.vy = (actor->unkEE - elevation / 3) * 2;
+                v.vz = 0;
+                upper = RotTransPers(&v, &sxy, &interpolation, &flag) >> model_ot_depth_shift;
+                if (upper >= 2) {
+                    upper -= 2;
+                }
+                sprite_draw_cut_below(sprite, ot + upper, actor->unkEE);
+            }
+            if ((actor->unk134 >> 5) & 2) {
+                field_sprite_set_color_unless_fog(sprite, actor->color1);
+                sprite_draw_cut_above(sprite, ot + depth, actor->unkEE);
+            }
+        }
+    }
+    xem_reveal_linked(saved, stores);
+    xem_restore(saved, first);
+}
+
+/* Presentation only (xem/gte.h), while a camera pulled back wants culled
+ * faces: the field's sprite actors the character pass (field.c
+ * field_draw_sprite_actors) leaves undrawn because the projection of their
+ * raised point overflowed (`flag < 0`: far off the original screen, or near
+ * or behind its camera) and that camera sees are drawn again for the
+ * record into `ot`, as the pass draws them, everything that writes (the
+ * sprite, its renderer and parts, the sprite queue, the ordering table,
+ * the scratch corners, the GTE and the ring's bookkeeping) put back; their
+ * parts become culled faces where they were linked. Intentionally hidden
+ * actors stay hidden. */
+void xem_present_skipped_sprites(u_long *ot) {
+    XemProjectionRing *ring = xem_gte_ring;
+    FieldDescriptor *d;
+    XemProjection *p;
+    XemSaved saved;
+    XemGte gte;
+    MATRIX orient, placed;
+    SVECTOR raised;
+    long sxy, interpolation, flag;
+    u32 fifo[3], class_ = ring->class_, owner = ring->owner, i;
+    s32 depth, elevation, octant;
+
+    if (!xem_reveals_wanted() || xem_present_reveals->pull_back == 0) {
+        return;
+    }
+    gte = xem_gte;
+    for (i = 0; i < 3; i++) {
+        fifo[i] = ring->fifo[i];
+    }
+    saved.count = saved.used = 0;
+    elevation = (s16)field_view.elevation;
+    octant = field_camera_get_octant() & 0xFFFF;
+    field_matrix_copy_rotation(&orient, &field_view.orbit);
+    raised.vx = 0;
+    raised.vz = 0;
+    raised.vy = -(elevation / 3 * 2);
+    for (i = 0; i < (u32)field_event_actor_count; i++) {
+        d = &field_view.components.descriptors[i];
+        if (!(d->flags & 0x40) || (d->flags & 0x20) || mode_debug_hide_sprites != 0 || (d->actor->layer_flags & 0x02002000)) {
+            continue;
+        }
+        CompMatrix(&field_view.scaled_world, &d->matrix, &placed);
+        SetRotMatrix(&placed);
+        SetTransMatrix(&placed);
+        depth = RotTransPers(&raised, &sxy, &interpolation, &flag);
+        p = &ring->entries[(ring->count - 1) % XEM_GTE_PROJECTIONS];
+        if (flag >= 0 || !xem_present_square_visible(p->view[0], p->view[1], p->view[2], 0, 0x140, 0xE0, 0x27, 0x5A)) {
+            continue;
+        }
+        /* The ordering table, and the entries the pass may link below it. */
+        if (saved.count == 0 && !xem_save(&saved, (u32)(ot - 0x18), (0x18 + 0x1001) * 4)) {
+            break;
+        }
+        ring->class_ = XEM_PROJECTION_OTHER;
+        xem_record_sprite(&saved, d->actor, d->model, &orient, octant, elevation, depth, ot);
+    }
+    xem_restore(&saved, 0);
+    xem_gte = gte;
+    for (i = 0; i < 3; i++) {
+        ring->fifo[i] = fifo[i];
+    }
+    ring->class_ = class_;
+    ring->owner = owner;
 }

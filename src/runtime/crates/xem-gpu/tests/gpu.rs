@@ -849,18 +849,22 @@ fn traced_points_take_the_projection_stored_at_their_address_and_culled_faces_th
         store(0x300C, xy(40, 60), 2),
         store(0x3010, xy(5, 50), 3),
     ];
-    // A culled face at the entry, its points the last three projections.
-    let reveal = Reveal { entry: 0x1000, vertices: 3, projections: 4, words: vec![0x2000_00FF, xy(10, 20), xy(40, 60), xy(5, 50)] };
-    gpu.trace_projections(0, &projections, &stores, &[reveal]);
+    // A culled face at the entry, its points the last three projections, and
+    // one drawn just before the second packet with its points out of order
+    // (as a sprite part stores its corners): projections 1, 3 and 2.
+    let reveal = Reveal { entry: 0x1000, vertices: 3, projections: 4, order: 0, words: vec![0x2000_00FF, xy(10, 20), xy(40, 60), xy(5, 50)] };
+    let ordered = Reveal { entry: 0x3000, vertices: 3, projections: 4, order: 3 | 1 << 8 | 2 << 16, words: vec![0x2000_00FF, xy(10, 20), xy(5, 50), xy(40, 60)] };
+    gpu.trace_projections(0, &projections, &stores, &[reveal, ordered]);
     gpu.dma_linked_list(&ram, 0x1000, 1000).unwrap();
     let trace = gpu.take_trace();
     let draws: Vec<_> = trace.ops.iter().filter_map(|op| if let TraceOp::Draw(p) = op { Some(p) } else { None }).collect();
-    assert_eq!(draws.len(), 3);
-    assert!(draws[0].revealed && !draws[1].revealed && !draws[2].revealed, "the culled face comes at its entry, before the packets linked there");
+    assert_eq!(draws.len(), 4);
+    assert_eq!(draws.iter().map(|p| p.revealed).collect::<Vec<_>>(), [true, false, true, false], "each culled face comes just before the packet it was linked in front of");
     assert_eq!(draws[0].vertices[0].fx, 10.75, "a culled face's points are its own projections");
     assert_eq!(draws[1].vertices[0].fx, 10.25, "the first packet's point is the projection stored at its word");
-    assert_eq!(draws[2].vertices[0].fx, 10.75, "the second packet's, at the same screen point, is its own");
+    assert_eq!(draws[3].vertices[0].fx, 10.75, "the second packet's, at the same screen point, is its own");
     assert_eq!(draws[1].vertices[1].fy, 60.5);
+    assert_eq!(draws[2].vertices[..3].iter().map(|v| (v.fx, v.fy)).collect::<Vec<_>>(), [(10.75, 20.25), (5.5, 50.5), (40.5, 60.5)], "points in the order given");
     // The culled face (red) never reached VRAM; the packets (yellow) did.
     assert!(gpu.vram().contains(&rgb15(31, 31, 0)) && !gpu.vram().contains(&rgb15(31, 0, 0)), "only the drawn packets are in VRAM");
     // A word rewritten since its store is a 2D point, even where a projection

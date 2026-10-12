@@ -109,6 +109,15 @@ int xem_present_square_visible(int x, int y, int z, int radius, int width, int h
 
 void xem_present_reveal(unsigned int entry, unsigned int vertices, unsigned int projections, const unsigned int *words,
                         unsigned int count) {
+    unsigned int head = XEM_U32(entry) & 0x00FFFFFF;
+
+    /* Linked now, it would go in front of the entry's newest packet and be
+     * drawn just before it (at the entry itself when that is the last). */
+    xem_present_reveal_at(head == 0x00FFFFFF ? entry : head, vertices, projections, 0, words, count);
+}
+
+void xem_present_reveal_at(unsigned int node, unsigned int vertices, unsigned int projections, unsigned int order,
+                           const unsigned int *words, unsigned int count) {
     XemRevealRing *ring = xem_present_reveals;
     XemReveal *r = &ring->entries[ring->count % XEM_PRESENT_REVEALS];
     unsigned int i;
@@ -116,11 +125,10 @@ void xem_present_reveal(unsigned int entry, unsigned int vertices, unsigned int 
     if (count > 12) {
         return;
     }
-    /* Linked now, it would go in front of the entry's newest packet and be
-     * drawn just before it (at the entry itself when that is the last). */
-    r->entry = (XEM_U32(entry) & 0x00FFFFFF) == 0x00FFFFFF ? entry & 0x00FFFFFF : XEM_U32(entry) & 0x00FFFFFF;
+    r->entry = node & 0x00FFFFFF;
     r->shape = count | vertices << 8;
     r->projections = projections;
+    r->order = order;
     for (i = 0; i < count; i++) {
         r->words[i] = words[i];
     }

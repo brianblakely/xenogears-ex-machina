@@ -102,12 +102,15 @@ pub struct SxyStore {
 /// of the ordering table it would have been drawn just before (`entry`: the
 /// packet it would have been linked in front of). Its points are the last
 /// `vertices` projections made before `projections`, in order (none for a
-/// flat one, such as a backdrop continued into the sides).
+/// flat one, such as a backdrop continued into the sides), or with `order`
+/// point k the projection `order >> 8k & 0xFF` before that count (a sprite
+/// part stores its corners out of order).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Reveal {
     pub entry: u32,
     pub vertices: u8,
     pub projections: u32,
+    pub order: u32,
     pub words: Vec<u32>,
 }
 
@@ -444,7 +447,10 @@ impl Recorder {
             }
             let mut points = [None; 4];
             for (k, at) in polygon_points(command >> 24).enumerate().take(vertices) {
-                let index = reveal.projections.wrapping_sub(vertices as u32).wrapping_add(k as u32);
+                let index = match reveal.order {
+                    0 => reveal.projections.wrapping_sub(vertices as u32).wrapping_add(k as u32),
+                    order => reveal.projections.wrapping_sub(order >> (8 * k) & 0xFF),
+                };
                 points[k] = self.projection(index).is_some_and(|p| p.sxy == reveal.words[at]).then_some(index);
             }
             self.reveals.entry(reveal.entry & ADDRESS_MASK).or_default().push(Revealed {

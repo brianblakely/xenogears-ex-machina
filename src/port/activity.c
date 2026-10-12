@@ -20,6 +20,7 @@
 u32 xem_host_actor_view(void);
 
 void xem_original_field_draw_sprite_actors(u_long *ot, s32 buffer);
+void xem_present_skipped_sprites(u_long *ot);
 
 /* `m` times `n` (rotations 4.12, translations whole), as CompMatrix forms
  * them, in plain arithmetic: row `i`'s second column and translation. */
@@ -36,19 +37,15 @@ static void xem_actor_place(MATRIX *m, MATRIX *n, s32 i, long long *column, long
     *translation = (*translation >> 12) + m->t[i];
 }
 
-void field_draw_sprite_actors(u_long *ot, s32 buffer) {
+/* The actors the pass marked off screen that the host's `view` shows are
+ * marked on screen again. */
+static void xem_keep_actors_in_view(u32 view) {
     MATRIX *world = &field_view.scaled_world;
     FieldDescriptor *descriptor;
     FieldActor *actor;
     long long point[3], column, translation, h, back, target, depth, x, y;
-    u32 view;
     s32 raised, side, zoom, i, k;
 
-    xem_original_field_draw_sprite_actors(ot, buffer);
-    view = xem_host_actor_view();
-    if (view == 0) {
-        return;
-    }
     zoom = (s32)(view & 0xFFFF);
     side = (s32)(view >> 16);
     /* The pull-back: the zoom's share of the depth of the camera's target
@@ -80,4 +77,18 @@ void field_draw_sprite_actors(u_long *ot, s32 buffer) {
             actor->layer_flags &= ~0x200;
         }
     }
+}
+
+/* The original pass, the actors the host's view shows kept moving, and
+ * (presentation only, present.c) the sprites it left undrawn for overflow
+ * that a pulled-back camera sees drawn for the record. */
+void field_draw_sprite_actors(u_long *ot, s32 buffer) {
+    u32 view;
+
+    xem_original_field_draw_sprite_actors(ot, buffer);
+    view = xem_host_actor_view();
+    if (view != 0) {
+        xem_keep_actors_in_view(view);
+    }
+    xem_present_skipped_sprites(ot);
 }

@@ -378,7 +378,18 @@ snapshots are its. The renderer only draws again what it drew:
   strip continued from the texture column the original ends at
   (`gpu_draw_panorama_strip`), and the sky, fade and ground fills and the
   battle sky's horizon bands that cross the screen copied beside it
-  (`gpu_draw_panorama`, `battle_draw_stage_sky`). Each
+  (`gpu_draw_panorama`, `battle_draw_stage_sky`). Things the game leaves
+  undrawn only because a projection overflowed (an object far off the
+  original screen, or near or behind its camera), which a pulled-back
+  camera sees, are drawn again for the record: the field's sprite actors
+  the character pass skips (`field_draw_sprite_actors`'s `flag < 0`; drawn
+  as the pass draws them, with the sprite, its renderer and parts, the
+  sprite queue, the ordering table, the scratch corners and the GTE put
+  back, their parts recorded with their corners' own projections, out of
+  order as RotTransPers4 stores them: a record's `order`), and the world
+  map's scene objects (`worldmap_objects_draw`, within its draw distance;
+  `src/port/worldmap_present.c`). Intentionally hidden ones stay hidden;
+  RAM stays the same (Lahan 150 frames at 1x, 3x and 5x wider: one hash). Each
   sprite's floor point (its x and z at `ground` through the sprite view) and,
   in the field, the depth of the camera's target are ring entries of their
   own; the points the world map's overlay projects (its player marker,
@@ -481,9 +492,10 @@ snapshots are its. The renderer only draws again what it drew:
   the field's characters keep moving in (`actor_view`, below), and
   presents. 24-bit movie frames are not traced pictures: hosts show the
   device's display for them, unscaled in aspect, under Ex Machina's
-  renderer enlarged with a Catmull-Rom bicubic filter (nine bilinear taps
-  in the compositor: smooth and sharp at four times and more, where the
-  nearest texel was blocky); the Original renderer keeps the chosen filter.
+  renderer enlarged with its movie filter: Catmull-Rom bicubic (default;
+  nine bilinear taps in the compositor: smooth and sharp at four times and
+  more, where the nearest texel was blocky) or nearest; the Original
+  renderer keeps the chosen filter.
 
 The trace, the projections, the recording and every renderer object observe
 only: the native test `xem-headless/tests/render.rs` runs the same 240 frames
@@ -509,7 +521,7 @@ and WebGL2, and the slice logs still replay to their hashes.
 | presentation | every display refresh, or game frames only; interpolation; wider framing (to the output's aspect ratio) |
 | zoom out | the field camera pulled back along its axis, 1x (default) to 5x in quarter steps; the mouse wheel over the game moves it (down out, up in); the world map takes a tenth of it, other modes none; independent of the aspect ratio |
 | characters in view | field characters keep moving wherever the zoomed-out or wider view shows them (on, the default; changes gameplay, recorded with the inputs; nothing while the view is the original's), or stop just beyond the original screen as the original's do (off) |
-| filtering | world, sprites, interface: nearest or linear, each |
+| filtering | world, sprites, interface: nearest or linear, each; movies: bicubic (default) or nearest |
 | culling | viewport culling (the game's own against its 4:3 screen: off, wider and pulled-back views show the scenery the game culled), back faces (both off) |
 | headset screen | distance, width, depth of field in a headset (off) |
 
@@ -550,7 +562,10 @@ set it before each frame from `GameView::actor_view` with
 recorded one and ignores the host's), so replays and hashes stay
 deterministic. A view no wider than the original's (1x, no wider framing)
 or the setting off changes nothing: the game runs as the original, and the
-slice logs replay to their hashes. Over Lahan (`--example motion -- --map
+slice logs replay to their hashes. The user accepts this as a gameplay
+exception to Phase 5's unchanged game rules, as they do keeping things
+from visibly vanishing because of the original's optimizations (above:
+those fixes are presentation only). Over Lahan (`--example motion -- --map
 1 --zoom N`, `still` in its JSON) the original leaves 43 sprite actors
 still at every zoom; with the setting, 43 at 1x, 32 at 1.5x, 16-17 at 2x,
 7 at 3x and none at 5x.
@@ -624,8 +639,9 @@ presented one or more times through
 `GameView` (the characters following the view unless `--original-actors`),
 it writes a contact sheet (beside the console's picture with
 `--compare`), an animated PNG of the last 240 pictures, a probe of the
-primitives at a point, how many culled faces each game frame drew and how
-many sprite actors the field stopped as off screen (`still`), and the
+primitives at a point, how many culled faces each game frame drew (sprite
+parts among them: `revealed_sprites`), how many sprite actors the field
+stopped as off screen (`still`), the final RAM hash (`memory_hash`), and the
 mean, 95th-percentile and worst cost of the game frame, the trace, the
 presentation's CPU work and the GPU's. Measured on Lahan walking (1080p
 output at three times the original, this machine's CPU and lavapipe, means

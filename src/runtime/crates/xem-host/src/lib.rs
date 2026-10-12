@@ -750,10 +750,15 @@ impl View {
             Filter::Nearest => wgpu::FilterMode::Nearest,
             Filter::Linear => wgpu::FilterMode::Linear,
         };
-        // Ex Machina's renderer scales movie frames (shown as the device
-        // holds them) smoothly; the Original keeps the chosen filter.
-        game.smooth = !encoded && self.game_frame.is_none() && self.game_image.is_some()
-            && self.settings.borrow().settings().graphics.renderer == xem_settings::Renderer::ExMachina;
+        // Movie frames (shown as the device holds them) take Ex Machina's
+        // movie filter; the Original renderer keeps the chosen one.
+        let graphics = self.settings.borrow().settings().graphics;
+        if !encoded && self.game_frame.is_none() && self.game_image.is_some() && graphics.renderer == xem_settings::Renderer::ExMachina {
+            match graphics.filtering.movies {
+                xem_settings::MovieFilter::Bicubic => game.smooth = true,
+                xem_settings::MovieFilter::Nearest => game.filter = wgpu::FilterMode::Nearest,
+            }
+        }
         let mut quads = vec![game];
         if presentation.show_fps {
             let (width,height) = self.frame_rate.size();

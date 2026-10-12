@@ -410,10 +410,12 @@ impl WebRenderer {
             Filter::Nearest => wgpu::FilterMode::Nearest,
             Filter::Linear => wgpu::FilterMode::Linear,
         };
-        // Ex Machina's renderer scales movie frames smoothly; the Original
-        // keeps the chosen filter.
-        game.smooth = !encoded && self.game_frame.is_none() && self.game_image.is_some()
-            && settings.settings().graphics.renderer == xem_settings::Renderer::ExMachina;
+        // Movie frames take Ex Machina's movie filter; the Original renderer
+        // keeps the chosen one.
+        let graphics = settings.settings().graphics;
+        if !encoded && self.game_frame.is_none() && self.game_image.is_some() && graphics.renderer == xem_settings::Renderer::ExMachina {
+            movie_filter(&mut game, graphics.filtering.movies);
+        }
         let mut quads = vec![game];
         if presentation.show_fps && let Some(counter) = &self.frame_rate {
             let (width,height) = counter.size();
@@ -517,6 +519,9 @@ impl WebRenderer {
                         let mut quad = Quad::world(screen, view.proj * view.view, pose, Vec2::new(width, height));
                         quad.srgb_encoded = encoded;
                         quad.filter = filter;
+                        if !encoded && graphics.renderer == xem_settings::Renderer::ExMachina {
+                            movie_filter(&mut quad, graphics.filtering.movies);
+                        }
                         quad
                     })
                     .collect()
@@ -649,4 +654,13 @@ fn eye_texture(device: &wgpu::Device, (width, height): (u32, u32), format: wgpu:
 fn panel_size(width: u32, height: u32, scale: f32) -> (u32, u32) {
     let fit = |logical: f32, available: u32| ((logical * scale) as u32).min(available.saturating_sub(16)).max(1);
     (fit(PANEL_SIZE.0, width), fit(PANEL_SIZE.1, height))
+}
+
+/// A movie frame's quad under Ex Machina's renderer, enlarged as its movie
+/// filter says.
+fn movie_filter(quad: &mut Quad, filter: xem_settings::MovieFilter) {
+    match filter {
+        xem_settings::MovieFilter::Bicubic => quad.smooth = true,
+        xem_settings::MovieFilter::Nearest => quad.filter = wgpu::FilterMode::Nearest,
+    }
 }

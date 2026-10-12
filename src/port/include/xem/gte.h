@@ -108,7 +108,9 @@ typedef struct {
  *   reach is measured on its screen, and the faces the renderers drop as
  *   facing away or at depth 0 count too (a quad's fourth point, not yet
  *   projected when it is dropped, is projected for the record with the GTE
- *   put back).
+ *   put back), and what the game skips because a projection overflowed and
+ *   that camera sees is drawn again for the record (the field's sprite
+ *   actors, present.c; the world map's scene objects, worldmap_present.c).
  * None of them changes what the game draws, links or keeps. */
 #define XEM_PRESENT_STORES 65536
 #define XEM_PRESENT_STORE_ADDRESS 0x70300000u
@@ -138,7 +140,8 @@ typedef struct {
                                * list (24-bit) */
     unsigned int shape;       /* GP0 words (bits 0-7), vertices (bits 8-15) */
     unsigned int projections; /* its points are the projections just before this count */
-    unsigned int unused;
+    unsigned int order;       /* 0: in that order; else point k is the projection
+                               * (order >> 8k & 0xFF) before the count */
     unsigned int words[12];   /* the GP0 words, without the packet's tag */
 } XemReveal;
 
@@ -222,6 +225,11 @@ int xem_present_square_visible(int x, int y, int z, int radius, int width, int h
  * `entry`. */
 void xem_present_reveal(unsigned int entry, unsigned int vertices, unsigned int projections, const unsigned int *words,
                         unsigned int count);
+
+/* The same, drawn just before the packet (or ordering-table entry) `node`,
+ * its points in the projection `order` (XemReveal). */
+void xem_present_reveal_at(unsigned int node, unsigned int vertices, unsigned int projections, unsigned int order,
+                           const unsigned int *words, unsigned int count);
 
 /* While a capture is active (present.c), a renderer's link at `entry` of
  * the packet at `slot` with tag `tag`. */

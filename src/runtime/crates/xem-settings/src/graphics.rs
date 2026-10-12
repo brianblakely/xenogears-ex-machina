@@ -201,6 +201,19 @@ pub struct TextureFiltering {
     pub world: crate::Filter,
     pub sprites: crate::Filter,
     pub interface: crate::Filter,
+    /// Movie frames (24-bit pictures the renderer shows as the device holds
+    /// them), enlarged to the window.
+    pub movies: MovieFilter,
+}
+
+/// How Ex Machina's renderer enlarges movie frames.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum MovieFilter {
+    /// Catmull-Rom bicubic: smooth and sharp many times enlarged.
+    #[default]
+    Bicubic,
+    /// Each pixel a block, as the console's picture enlarged.
+    Nearest,
 }
 
 /// Optional culling; off by default. The game's own culling, clipping,
@@ -378,6 +391,15 @@ mod tests {
         let text = serde_json::to_string(&original).unwrap();
         assert!(text.contains(r#""renderer":"Original""#), "{text}");
         assert_eq!(serde_json::from_str::<Graphics>(&text).unwrap(), original);
+    }
+
+    #[test]
+    fn movies_are_bicubic_unless_nearest_is_chosen() {
+        assert_eq!(Graphics::default().filtering.movies, MovieFilter::Bicubic);
+        let older: Graphics = serde_json::from_str(r#"{"filtering":{"world":"Linear"}}"#).unwrap();
+        assert_eq!((older.filtering.world, older.filtering.movies), (crate::Filter::Linear, MovieFilter::Bicubic));
+        let nearest = Graphics { filtering: TextureFiltering { movies: MovieFilter::Nearest, ..Default::default() }, ..Graphics::default() };
+        assert_eq!(serde_json::from_str::<Graphics>(&serde_json::to_string(&nearest).unwrap()).unwrap(), nearest);
     }
 
     #[test]

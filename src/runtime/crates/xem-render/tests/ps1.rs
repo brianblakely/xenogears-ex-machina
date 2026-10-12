@@ -298,7 +298,7 @@ fn revealing_scene() -> (xem_gpu::Trace, xem_gpu::Trace) {
     put(0x200, &[0x04FF_FFFF, 0x2000_FF00, xy(100, 50), xy(140, 50), xy(100, 90)]);
     let project = |x: f32, y: f32| Projection { sxy: xy(x as i32, y as i32), sz: 1000, class: 0, x: (x * 65536.0) as i32, y: (y * 65536.0) as i32, offset: (160, 120), h: 256, owner: 0, view: view(x, y, 1000.0) };
     let projections = [project(330.0, 50.0), project(360.0, 50.0), project(330.0, 90.0)];
-    let reveal = Reveal { entry: 0x100, vertices: 3, projections: 3, words: vec![0x2000_00FF, xy(330, 50), xy(360, 50), xy(330, 90)] };
+    let reveal = Reveal { entry: 0x100, vertices: 3, projections: 3, order: 0, words: vec![0x2000_00FF, xy(330, 50), xy(360, 50), xy(330, 90)] };
     traced(|device| {
         device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000]);
         device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);

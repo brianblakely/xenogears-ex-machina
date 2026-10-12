@@ -307,6 +307,7 @@ fn panel_texture(
 const AUDIO_OUTPUTS: [AudioOutput; 3] = [AudioOutput::Mono, AudioOutput::Stereo, AudioOutput::Wide];
 const SCALES: [Scale; 3] = [Scale::Fit, Scale::Integer, Scale::Stretch];
 const FILTERS: [Filter; 2] = [Filter::Nearest, Filter::Linear];
+const MOVIE_FILTERS: [xem_settings::MovieFilter; 2] = [xem_settings::MovieFilter::Bicubic, xem_settings::MovieFilter::Nearest];
 
 const RENDERERS: [xem_settings::Renderer; 2] = [xem_settings::Renderer::Original, xem_settings::Renderer::ExMachina];
 const PROFILES: [GraphicsProfile; 4] = [GraphicsProfile::Modern, GraphicsProfile::Hd2d, GraphicsProfile::Ps1, GraphicsProfile::Custom];
@@ -341,6 +342,7 @@ fn graphics_edit(graphics: &Graphics, key: &str, value: i32) -> Option<Graphics>
         "filter-world" => next.filtering.world = filter()?,
         "filter-sprites" => next.filtering.sprites = filter()?,
         "filter-interface" => next.filtering.interface = filter()?,
+        "filter-movies" => next.filtering.movies = *MOVIE_FILTERS.get(index?)?,
         "zoom-out" => next.zoom_out = u16::try_from(value).ok()?,
         "actors-in-view" => next.actors_in_view = value != 0,
         "cull" => next.culling.back_faces = value != 0,
@@ -380,6 +382,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_gfx_filter_world(index_of(&FILTERS, &graphics.filtering.world));
     panel.set_gfx_filter_sprites(index_of(&FILTERS, &graphics.filtering.sprites));
     panel.set_gfx_filter_interface(index_of(&FILTERS, &graphics.filtering.interface));
+    panel.set_gfx_filter_movies(index_of(&MOVIE_FILTERS, &graphics.filtering.movies));
     panel.set_gfx_cull_back_faces(graphics.culling.back_faces);
     panel.set_gfx_cull_viewport(graphics.culling.viewport);
     panel.set_gfx_fidelity(slint::ModelRc::new(slint::VecModel::from(fidelity_flags(&graphics.custom_fidelity).to_vec())));

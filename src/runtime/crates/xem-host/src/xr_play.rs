@@ -311,8 +311,13 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                                 // format; movie frames are an sRGB texture.
                                 quad.srgb_encoded = from_view;
                                 quad.filter = filter;
-                                // Movie frames, smoothly under Ex Machina's renderer.
-                                quad.smooth = !from_view && !original;
+                                // Movie frames take Ex Machina's movie filter.
+                                if !from_view && !original {
+                                    match current.graphics.filtering.movies {
+                                        xem_settings::MovieFilter::Bicubic => quad.smooth = true,
+                                        xem_settings::MovieFilter::Nearest => quad.filter = wgpu::FilterMode::Nearest,
+                                    }
+                                }
                                 quad
                             })
                             .collect()

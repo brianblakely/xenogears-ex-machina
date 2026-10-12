@@ -168,6 +168,7 @@ impl Gpu {
                     entry: word(e, 0),
                     vertices: (shape >> 8) as u8,
                     projections: word(e, 2),
+                    order: word(e, 3),
                     words: (0..count).map(|i| word(e, 4 + i)).collect(),
                 }
             })
