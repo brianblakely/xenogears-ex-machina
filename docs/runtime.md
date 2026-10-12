@@ -1390,7 +1390,13 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
   `LOW_MEMORY` is logged; on `TERMINATING` the run ends. A recreated activity
   (changes outside `configChanges`, such as density or asset paths) runs
   `SDL_main` again in the same process (`SDL_ANDROID_ALLOW_RECREATE_ACTIVITY`),
-  which reloads settings and reopens the imported disc.
+  which reloads settings and reopens the imported disc. `XemActivity`'s
+  `onDestroy` sends the run its quit and waits up to 5 s for it to end
+  before SDL's own, which waits a second and then drops the quit: a run
+  still booting the game when Android recreated the activity twice in a row
+  missed it, kept its window, and the next run could not create one ("Android
+  only supports one window"). A run still waiting for its first surface ends
+  when the quit comes.
 
 In `nix develop path:./nix/runtime#android`:
 

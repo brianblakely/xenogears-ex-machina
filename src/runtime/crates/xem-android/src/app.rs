@@ -334,6 +334,11 @@ impl Host {
                     // SAFETY: SDL is initialised.
                     unsafe {
                         SDL_PumpEvents();
+                        // The activity ended while this run waited for it
+                        // (XemActivity's onDestroy waits for the run).
+                        if SDL_HasEvent(SDL_EVENT_QUIT.0) {
+                            return Err("the activity ended before its surface was ready".into());
+                        }
                         SDL_Delay(100);
                     }
                 }

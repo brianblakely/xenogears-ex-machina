@@ -49,4 +49,30 @@ public class XemActivity extends SDLActivity {
         // SDL ends its file dialog (its callback only reports a cancel).
         super.onActivityResult(requestCode, resultCode, data);
     }
+
+    /** How long a quitting SDL_main has to end before SDL's own onDestroy. */
+    private static final long QUIT_WAIT_MS = 5000;
+
+    /**
+     * SDL's onDestroy sends SDL_main its quit and waits a second, then drops
+     * the quit with the lifecycle queue: a run busy longer than that (booting
+     * the game when Android recreates the activity twice in a row) missed it,
+     * kept its window, and the next activity's run could not create its own
+     * ("Android only supports one window"). The quit goes first here, with
+     * time to be taken; the run ends as it would have, SDL's wait then
+     * returns at once, and the next activity starts on this thread after.
+     */
+    @Override
+    protected void onDestroy() {
+        Thread thread = mSDLThread;
+        if (thread != null && !mBrokenLibraries) {
+            nativeSendQuit();
+            try {
+                thread.join(QUIT_WAIT_MS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        super.onDestroy();
+    }
 }
