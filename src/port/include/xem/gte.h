@@ -213,6 +213,10 @@ unsigned int xem_present_sxy_source(int reg);
  * the host pulls it back). */
 int xem_present_face_visible(unsigned int projections, unsigned int vertices, int width, int height);
 
+/* The same without the winding: a primitive the game draws whichever way
+ * its points wind (the world map's clouds). */
+int xem_present_points_visible(unsigned int projections, unsigned int vertices, int width, int height);
+
 /* Whether a square of half-size `radius` facing the camera around the
  * view-space point (x, y, z) reaches a `width` x `height` screen widened by
  * `margin_x`, `margin_y` and the host's reach, as the pulled-back camera

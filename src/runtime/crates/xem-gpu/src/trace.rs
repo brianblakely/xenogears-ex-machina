@@ -385,7 +385,11 @@ pub(crate) struct Recorder {
     /// focus depth since the last take.
     grounds: WordMap<u32>,
     focus: Option<u16>,
-    vblanks: u32,
+    /// The age of culled faces: vertical blanks after which the port had
+    /// recorded something new. A game that records nothing (paused) holds
+    /// its last list and its faces with it.
+    frames: u32,
+    recorded: bool,
     /// Drawn pixels not yet written to the trace.
     dirty: Option<VramRect>,
     /// The next take starts with all of VRAM (enabled, or a snapshot loaded).
@@ -400,7 +404,7 @@ pub(crate) struct Recorder {
 struct Revealed {
     words: FaceWords,
     projections: [Option<u32>; 4],
-    vblank: u32,
+    frame: u32,
 }
 
 /// Projections kept for matching: as many as the port's ring holds.
@@ -409,7 +413,8 @@ const HISTORY: usize = 65536;
 const ADDRESS_MASK: u32 = 0xFF_FFFC;
 /// Words of RAM ([`Recorder::stored`]).
 const RAM_WORDS: usize = 0x20_0000 / 4;
-/// Vertical blanks a culled face waits for its ordering table's walk.
+/// Recording frames ([`Recorder::frames`]) a culled face waits for its
+/// ordering table's walk.
 const REVEAL_FRAMES: u32 = 3;
 /// Ops a trace holds at most between takes (tens of frames; a battle frame
 /// is a few thousand): past it, at a vertical blank, it starts again from
@@ -432,6 +437,7 @@ impl Recorder {
     }
 
     fn ingest(&mut self, first: u32, projections: &[Projection], stores: &[SxyStore], reveals: &[Reveal]) {
+        self.recorded |= !projections.is_empty() || !reveals.is_empty();
         if self.history.is_empty() {
             self.history = vec![Projection::default(); HISTORY];
             self.stored = vec![(0, 0); RAM_WORDS];
@@ -480,7 +486,7 @@ impl Recorder {
             self.reveals.entry(reveal.entry & ADDRESS_MASK).or_insert_with(|| spare.pop().unwrap_or_default()).push(Revealed {
                 words: reveal.words,
                 projections: points,
-                vblank: self.vblanks,
+                frame: self.frames,
             });
         }
         if self.grounds.len() > 1024 {
@@ -636,10 +642,12 @@ impl Gpu {
 
     pub(crate) fn trace_vblank(&mut self) {
         if let Some(trace) = &mut self.trace {
-            trace.vblanks = trace.vblanks.wrapping_add(1);
-            let now = trace.vblanks;
+            if std::mem::take(&mut trace.recorded) {
+                trace.frames = trace.frames.wrapping_add(1);
+            }
+            let now = trace.frames;
             trace.reveals.retain(|_, faces| {
-                faces.retain(|face| now.wrapping_sub(face.vblank) < REVEAL_FRAMES);
+                faces.retain(|face| now.wrapping_sub(face.frame) < REVEAL_FRAMES);
                 !faces.is_empty()
             });
             trace.ops.push(TraceOp::VBlank);

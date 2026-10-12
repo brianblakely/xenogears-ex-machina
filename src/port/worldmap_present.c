@@ -11,9 +11,12 @@
 #include "../decomp/src/worldmap/camera.h"
 #include "../decomp/src/worldmap/scene.h"
 #include "../decomp/src/worldmap/terrain.h"
+#include "../decomp/src/worldmap/effect.h"
 
 extern s16 worldmap_object_draw_modes[10];
-extern void *worldmap_cloud_quads[2];
+extern u16 worldmap_cloud_texture_origins[8];
+extern SVECTOR worldmap_cloud_far_corners[12];
+extern SVECTOR worldmap_cloud_near_corners[48];
 void xem_original_worldmap_objects_draw(void);
 void xem_original_worldmap_clouds_draw(void);
 void xem_original_worldmap_terrain_draw(u_long *ot, s32 packets, Camera *camera);
@@ -106,19 +109,17 @@ void worldmap_objects_draw(void) {
  * backup, which nothing uses meanwhile). */
 #define XEM_CLOUD_SLOTS 4096
 
-/* The clouds: the original, then (presentation only) the screen points of
- * the quads it filled this frame recorded as stored with the projections
- * that made them, as swc2 records a point: the original reads them from
- * the GTE (mfc2) and stores them with plain writes, so without this the
- * renderer could not tell them from 2D points and would keep them inside
- * the original screen. Each point takes the latest projection of the pass
- * with its value. */
-void worldmap_clouds_draw(void) {
+/* The clouds: the screen points of the quads the original filled this frame
+ * recorded as stored with the projections that made them, as swc2 records a
+ * point: the original reads them from the GTE (mfc2) and stores them with
+ * plain writes, so without this the renderer could not tell them from 2D
+ * points and would keep them inside the original screen. Each point takes
+ * the latest projection of the pass (made since `first`) with its value. */
+static void xem_cloud_stores(u32 first) {
     XemProjectionRing *ring = xem_gte_ring;
     u32 *table = xem_present_capture->backup;
-    u32 first = ring->count, n, i, k, slot, word, at, quads;
+    u32 n, i, k, slot, word, at, quads;
 
-    xem_original_worldmap_clouds_draw();
     if (!ring->recording || ring->count - first > XEM_CLOUD_SLOTS / 2 || xem_present_capture->active) {
         return;
     }
@@ -147,6 +148,294 @@ void worldmap_clouds_draw(void) {
             }
         }
     }
+}
+
+/* The cloud pass's work area words the reveal reads: its view cone's edges
+ * and view point, and its rotation (DriftScratch.edge, .view and .local,
+ * whose translation alone changes from cloud to cloud). */
+#define XEM_CLOUD_EDGES 0x1F800230u
+#define XEM_CLOUD_VIEW 0x1F800240u
+#define XEM_CLOUD_LOCAL 0x1F800250u
+/* The flags that drop a cloud, a near layer or a near quad. */
+#define XEM_CLOUD_ERRORS 0x7F85E000u
+/* Half the size of a cloud (its quads span -192..192). */
+#define XEM_CLOUD_RADIUS 0x180
+
+/* A vector into V0, V1 or V2 (`reg` its xy register), as lwc2 loads it. */
+static void xem_cloud_load(s32 reg, const SVECTOR *v) {
+    xem_gte_write_data(reg, (u32)(u16)v->vx | (u32)(u16)v->vy << 16);
+    xem_gte_write_data(reg + 1, (u32)(u16)v->vz);
+}
+
+/* A matrix's rotation and translation into the GTE, as gte_SetRotMatrix and
+ * gte_SetTransMatrix load them. */
+static void xem_cloud_set_matrix(const MATRIX *m) {
+    xem_gte_write_control(0, (u32)(u16)m->m[0][0] | (u32)(u16)m->m[0][1] << 16);
+    xem_gte_write_control(1, (u32)(u16)m->m[0][2] | (u32)(u16)m->m[1][0] << 16);
+    xem_gte_write_control(2, (u32)(u16)m->m[1][1] | (u32)(u16)m->m[1][2] << 16);
+    xem_gte_write_control(3, (u32)(u16)m->m[2][0] | (u32)(u16)m->m[2][1] << 16);
+    xem_gte_write_control(4, (u32)(u16)m->m[2][2]);
+    xem_gte_write_control(5, (u32)m->t[0]);
+    xem_gte_write_control(6, (u32)m->t[1]);
+    xem_gte_write_control(7, (u32)m->t[2]);
+}
+
+/* gte_CompMatrix(&worldmap_camera_matrix, local, screen) on the GTE: the
+ * product's columns through IR, then the translation through RT and TR. */
+static void xem_cloud_matrix(const MATRIX *local, MATRIX *screen) {
+    s32 c, r;
+
+    xem_cloud_set_matrix(&worldmap_camera_matrix);
+    for (c = 0; c < 3; c++) {
+        for (r = 0; r < 3; r++) {
+            xem_gte_write_data(XEM_GTE_IR1 + r, (u16)local->m[r][c]);
+        }
+        xem_gte_execute(XEM_GTE_MVMVA(1, 0, 3, 3, 0));
+        for (r = 0; r < 3; r++) {
+            screen->m[r][c] = (s16)xem_gte_read_data(XEM_GTE_IR1 + r);
+        }
+    }
+    xem_gte_write_data(XEM_GTE_VXY0, (u32)(u16)local->t[0] | (u32)(u16)local->t[1] << 16);
+    xem_gte_write_data(XEM_GTE_VZ0, (u32)local->t[2]);
+    xem_gte_execute(XEM_GTE_MVMVA(1, 0, 0, 0, 0));
+    for (r = 0; r < 3; r++) {
+        screen->t[r] = (s32)xem_gte_read_data(XEM_GTE_MAC1 + r);
+    }
+}
+
+/* A quad projected as the original projects it: RTPT of its first three
+ * corners, then RTPS of the fourth unless the first raised `errors`. Its
+ * screen points into `sxy`; 0 when a projection raised `errors`. */
+static s32 xem_cloud_project(const SVECTOR *v, u32 errors, u32 *sxy) {
+    xem_cloud_load(XEM_GTE_VXY0, &v[0]);
+    xem_cloud_load(XEM_GTE_VXY1, &v[1]);
+    xem_cloud_load(XEM_GTE_VXY2, &v[2]);
+    xem_gte_execute(XEM_GTE_RTPT);
+    if (xem_gte_read_control(31) & errors) {
+        return 0;
+    }
+    sxy[0] = xem_gte_read_data(XEM_GTE_SXY0);
+    sxy[1] = xem_gte_read_data(XEM_GTE_SXY1);
+    sxy[2] = xem_gte_read_data(XEM_GTE_SXY2);
+    xem_cloud_load(XEM_GTE_VXY0, &v[3]);
+    xem_gte_execute(XEM_GTE_RTPS);
+    if (xem_gte_read_control(31) & errors) {
+        return 0;
+    }
+    sxy[3] = xem_gte_read_data(XEM_GTE_SXY2);
+    return 1;
+}
+
+/* The original's screen test (ON_SCREEN): some corner's x and some
+ * corner's y on its 320x216 screen. */
+static s32 xem_cloud_on_screen(const u32 *sxy) {
+    return ((u16)sxy[0] < 0x140 || (u16)sxy[1] < 0x140 || (u16)sxy[2] < 0x140 || (u16)sxy[3] < 0x140) &&
+           (sxy[0] >> 16 < 0xD8 || sxy[1] >> 16 < 0xD8 || sxy[2] >> 16 < 0xD8 || sxy[3] >> 16 < 0xD8);
+}
+
+/* The depth a quad is sorted at, as the original takes the largest of its
+ * corners' (SZ0-SZ3, the third and fourth compared only when the third is
+ * not the larger). */
+static s32 xem_cloud_depth(void) {
+    s32 sz0 = (s32)xem_gte_read_data(XEM_GTE_SZ0), sz1 = (s32)xem_gte_read_data(XEM_GTE_SZ1);
+    s32 sz2 = (s32)xem_gte_read_data(XEM_GTE_SZ2), sz3 = (s32)xem_gte_read_data(XEM_GTE_SZ3);
+    s32 z = sz0 > sz1 ? sz0 : sz1;
+
+    if (sz2 > z) {
+        z = sz2;
+    } else if (sz3 > z) {
+        z = sz3;
+    }
+    return z;
+}
+
+/* A quad the original leaves out recorded as the POLY_FT4 it would have
+ * filled (the pool's colour, CLUT and page; its texture origin `uv` and
+ * size `span`), at the ordering-table entry of `depth`, its corners the
+ * last four projections. */
+static void xem_cloud_reveal(u32 quads, u32 ot, s32 depth, u32 uv, u32 span, const u32 *sxy) {
+    u32 words[9];
+
+    words[0] = XEM_U32(quads + 4);
+    words[1] = sxy[0];
+    words[2] = (XEM_U32(quads + 12) & 0xFFFF0000u) | (uv & 0xFFFF);
+    words[3] = sxy[1];
+    words[4] = (XEM_U32(quads + 20) & 0xFFFF0000u) | ((uv | span) & 0xFFFF);
+    words[5] = sxy[2];
+    words[6] = (uv | span << 8) & 0xFFFF;
+    words[7] = sxy[3];
+    words[8] = (uv | span << 8 | span) & 0xFFFF;
+    xem_present_reveal(ot + ((u32)depth >> 4 << 2), 4, xem_gte_ring->count, words, 9);
+}
+
+/* Presentation only (xem/gte.h), while the host wants culled faces: the
+ * cloud quads the original leaves out as outside its view cone or screen
+ * that the wider (or pulled-back) view reaches, recorded as the quads it
+ * would have filled. The original's pass is replayed on the GTE as it ran
+ * (its matrices, view-cone test, distances, flags and quad budget), so the
+ * quads it filled are known and not recorded again, and the depths past
+ * which it stops a far cloud's layers stop the recorded ones too. The GTE
+ * and the ring's register provenance are put back. */
+static void xem_clouds_reveal(void) {
+    XemProjectionRing *ring = xem_gte_ring;
+    XemProjection *p;
+    XemGte saved;
+    MATRIX local, screen;
+    SVECTOR corner[4];
+    const SVECTOR *base = &worldmap_cloud_far_corners[0];
+    u32 fifo[3], sxy[4], quads, ot, uv, cone;
+    s32 i, k, x, z, x0, z0, y, layer, row, column, count, depth, index, drawn, ended;
+
+    if (!xem_present_reveals->wanted || xem_present_capture->active || !ring->recording) {
+        return;
+    }
+    saved = xem_gte;
+    for (k = 0; k < 3; k++) {
+        fifo[k] = ring->fifo[k];
+    }
+    local = XEM_AT(MATRIX, XEM_CLOUD_LOCAL);
+    quads = (u32)worldmap_cloud_quads[worldmap_display_buffer_index];
+    ot = (u32)worldmap_current_display_buffer->ot;
+    count = 0;
+    for (i = 0; i < 0x50 && count <= 0xF0; i++) {
+        x = (worldmap_cloud_positions[i].x - (worldmap_camera.target.vx & 0x1FFFFFF)) >> 12;
+        z = (worldmap_cloud_positions[i].z - (worldmap_camera.target.vz & 0x1FFFFFF)) >> 12;
+        if (x < -0x1000) {
+            x += 0x2000;
+        } else if (x >= 0x1000) {
+            x -= 0x2000;
+        }
+        if (z < -0x1000) {
+            z += 0x2000;
+        } else if (z >= 0x1000) {
+            z -= 0x2000;
+        }
+        z = -z;
+        /* The view cone, as the original tests it. */
+        cone = ((u32)(z - (s32)XEM_U32(XEM_CLOUD_VIEW + 8)) << 16) | ((u32)(x - (s32)XEM_U32(XEM_CLOUD_VIEW)) & 0xFFFF);
+        xem_gte_write_data(XEM_GTE_SXY0, cone);
+        xem_gte_write_data(XEM_GTE_SXY1, XEM_U32(XEM_CLOUD_EDGES + 4));
+        xem_gte_write_data(XEM_GTE_SXY2, 0);
+        xem_gte_execute(XEM_GTE_NCLIP);
+        drawn = (s32)xem_gte_read_data(XEM_GTE_MAC0) <= 0;
+        xem_gte_write_data(XEM_GTE_SXY0, 0);
+        xem_gte_write_data(XEM_GTE_SXY1, XEM_U32(XEM_CLOUD_EDGES));
+        xem_gte_write_data(XEM_GTE_SXY2, cone);
+        xem_gte_execute(XEM_GTE_NCLIP);
+        drawn = drawn && (s32)xem_gte_read_data(XEM_GTE_MAC0) <= 0;
+        local.t[0] = x;
+        local.t[1] = worldmap_cloud_positions[i].unk4 >> 12;
+        local.t[2] = z;
+        xem_cloud_matrix(&local, &screen);
+        xem_cloud_set_matrix(&screen);
+        xem_gte_write_data(XEM_GTE_VXY0, 0);
+        xem_gte_write_data(XEM_GTE_VZ0, 0);
+        xem_gte_execute(XEM_GTE_RTPS);
+        drawn = drawn && !(xem_gte_read_control(31) & XEM_CLOUD_ERRORS);
+        /* One the original leaves out that the wider view does not reach
+         * is left out (one it draws is replayed for its quads' count). */
+        p = &ring->entries[(ring->count - 1) % XEM_GTE_PROJECTIONS];
+        if (!drawn && !xem_present_square_visible(p->view[0], p->view[1], p->view[2], XEM_CLOUD_RADIUS, 0x140, 0xD8, 0, 0)) {
+            continue;
+        }
+        index = worldmap_cloud_velocities[i].unk2 * 4;
+        depth = (s32)xem_gte_read_data(XEM_GTE_SZ3);
+        if (depth > 0x580) {
+            /* Far: up to three 64-texel quads. */
+            for (layer = 0, ended = 0; layer < 3 && !ended; layer++) {
+                uv = worldmap_cloud_texture_origins[index++];
+                if (!xem_cloud_project(&worldmap_cloud_far_corners[layer * 4], 0x80000000u, sxy)) {
+                    continue;
+                }
+                depth = xem_cloud_depth();
+                if (drawn && xem_cloud_on_screen(sxy)) {
+                    ended = depth > 0xB00;
+                    count += depth <= 0xD00;
+                    continue;
+                }
+                if (!xem_present_points_visible(ring->count, 4, 0x140, 0xD8)) {
+                    continue;
+                }
+                ended = depth > 0xB00;
+                if (depth <= 0xD00) {
+                    xem_cloud_reveal(quads, ot, depth, uv, 0x3F, sxy);
+                }
+            }
+        } else if (depth > 0x400) {
+            /* Middle: three layers of four 32-texel quads. */
+            for (layer = 0; layer < 3; layer++) {
+                for (column = 0; column < 4; column++) {
+                    uv = worldmap_cloud_texture_origins[layer + index] + ((column & 2) << 12) + ((column & 1) << 5);
+                    if (!xem_cloud_project(&worldmap_cloud_near_corners[(layer * 4 + column) * 4], 0x80000000u, sxy)) {
+                        continue;
+                    }
+                    depth = xem_cloud_depth();
+                    if (drawn && xem_cloud_on_screen(sxy)) {
+                        count++;
+                    } else if (xem_present_points_visible(ring->count, 4, 0x140, 0xD8)) {
+                        xem_cloud_reveal(quads, ot, depth, uv, 0x1F, sxy);
+                    }
+                }
+            }
+        } else {
+            /* Near: three layers of 4x4 16-texel quads over a 0x180 square. */
+            x0 = base->vx;
+            z0 = base->vz;
+            for (layer = 0; layer < 3; layer++) {
+                y = base->vy - layer * 8;
+                for (k = 0; k < 4; k++) {
+                    corner[k].vx = (s16)(x0 + (k & 1) * 0x180);
+                    corner[k].vy = (s16)y;
+                    corner[k].vz = (s16)(z0 - (k >> 1) * 0x180);
+                }
+                xem_cloud_load(XEM_GTE_VXY0, &corner[0]);
+                xem_gte_execute(XEM_GTE_RTPS);
+                if (xem_gte_read_control(31) & XEM_CLOUD_ERRORS) {
+                    continue;
+                }
+                xem_cloud_load(XEM_GTE_VXY0, &corner[1]);
+                xem_cloud_load(XEM_GTE_VXY1, &corner[2]);
+                xem_cloud_load(XEM_GTE_VXY2, &corner[3]);
+                xem_gte_execute(XEM_GTE_RTPT);
+                if (xem_gte_read_control(31) & XEM_CLOUD_ERRORS) {
+                    continue;
+                }
+                for (row = 0; row < 4; row++) {
+                    for (column = 0; column < 4; column++) {
+                        for (k = 0; k < 4; k++) {
+                            corner[k].vx = (s16)(x0 + column * 0x60 + (k & 1) * 0x60);
+                            corner[k].vz = (s16)(z0 - row * 0x60 - (k >> 1) * 0x60);
+                        }
+                        uv = worldmap_cloud_texture_origins[layer + index] + (row << 12) + (column << 4);
+                        if (!xem_cloud_project(corner, XEM_CLOUD_ERRORS, sxy)) {
+                            continue;
+                        }
+                        depth = xem_cloud_depth();
+                        if (drawn && xem_cloud_on_screen(sxy)) {
+                            count++;
+                        } else if (xem_present_points_visible(ring->count, 4, 0x140, 0xD8)) {
+                            xem_cloud_reveal(quads, ot, depth, uv, 0xF, sxy);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    xem_gte = saved;
+    for (k = 0; k < 3; k++) {
+        ring->fifo[k] = fifo[k];
+    }
+}
+
+/* The clouds: the original, then (presentation only) its quads' screen
+ * points recorded as stored (xem_cloud_stores) and, while the host wants
+ * culled faces, the quads it leaves out (xem_clouds_reveal). */
+void worldmap_clouds_draw(void) {
+    u32 first = xem_gte_ring->count;
+
+    xem_original_worldmap_clouds_draw();
+    xem_cloud_stores(first);
+    xem_clouds_reveal();
 }
 
 /* A quarter block's 9x9 vertices as worldmap_terrain_build_and_draw_quarter

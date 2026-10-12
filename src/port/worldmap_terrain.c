@@ -45,7 +45,8 @@ static s32 xem_worldmap_on_screen(u32 sxy0, u32 sxy1, u32 sxy2) {
 enum { XEM_TERRAIN_DRAWN, XEM_TERRAIN_REJECTED, XEM_TERRAIN_FLAG_ERROR };
 
 /* Presentation only (xem/gte.h): a terrain triangle the screen-bounds test
- * culled, recorded as the POLY_FT3 it would have been (the pool's command
+ * culled (or, with the camera pulled back, the winding test dropped),
+ * recorded as the POLY_FT3 it would have been (the pool's command
  * word, the page and CLUT as drawn triangles get them) when the host wants
  * culled faces, xem_present_face_visible keeps it and it is nearer than the
  * far cutoff. */
@@ -118,6 +119,12 @@ static s32 xem_terrain_triangle(u32 word, u32 ot, u32 *packet, u32 *count, u32 u
     }
     xem_gte_execute(XEM_GTE_NCLIP);
     if ((s32)xem_gte_read_data(XEM_GTE_MAC0) <= 0) {
+        /* Facing away at the original's whole pixels: a sliver far off has
+         * none, which a camera pulled back sees, and the faces round it
+         * then leave its gap open. */
+        if (xem_present_reveals->pull_back != 0) {
+            xem_terrain_reveal(word, ot, *packet, uv0, uv1, uv2, sxy0, sxy1, sxy2);
+        }
         return XEM_TERRAIN_REJECTED;
     }
     entry = ot + ((u32)(depth >> 4) << 2);

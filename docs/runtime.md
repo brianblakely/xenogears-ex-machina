@@ -393,10 +393,17 @@ snapshots are its. The renderer only draws again what it drew:
   window's blocks and quarters outside the game's camera) are built as the
   original builds a quarter (the water's waves too, into a local array,
   not the scratchpad) where the wanted view reaches their centre, and
-  their triangles recorded as culled faces. The clouds' screen points,
-  which the original reads from the GTE and stores with plain writes, are
-  recorded as stored with the projections that made them
-  (`worldmap_clouds_draw`), so they are scene and go on into the sides.
+  their triangles recorded as culled faces; with the camera pulled back, so
+  are the terrain triangles its winding test drops (a far sliver has no
+  area at the original's whole pixels, and its neighbours then left a
+  crack showing the sky). The clouds' screen points, which the original
+  reads from the GTE and stores with plain writes, are recorded as stored
+  with the projections that made them (`worldmap_clouds_draw`), so they are
+  scene; and the cloud quads it leaves out as outside its view cone or
+  screen are recorded as the quads it would have filled, its pass replayed
+  on the GTE as it ran (matrices, view-cone test, distances, flags and
+  quad budget) so its own quads are known and the depths that stop a far
+  cloud's layers stop the recorded ones too.
   Intentionally hidden ones stay hidden;
   RAM stays the same (Lahan 150 frames at 1x, 3x and 5x wider: one hash). Each
   sprite's floor point (its x and z at `ground` through the sprite view) and,
@@ -426,7 +433,13 @@ snapshots are its. The renderer only draws again what it drew:
   same packet newest first, as the GPU walks an entry), never drawn into
   VRAM; a projected vertex carries its point before the division, sprite
   parts their sprite's floor point, and a take the field camera's focus
-  depth.
+  depth. A culled face waits for that walk through up to three frames in
+  which the port recorded something new, so a paused game, which holds its
+  last list and draws it when it goes on (the world map), keeps its faces.
+  Hosts ask for them in every frame they run, a fast-forward batch's too:
+  the list a frame shows was built two to six game frames before it (the
+  field and the world map draw every other vertical blank, from double
+  buffers), so a batch that asked only in its last frames showed none.
   The trace is not part of `Gpu::save`; a snapshot load restarts it from all
   of VRAM, and so does a trace past 100 000 ops at a vertical blank (tens of
   frames not taken: a host running frames without presenting them, such as
@@ -505,7 +518,10 @@ snapshots are its. The renderer only draws again what it drew:
   that snapshot through the frame's writes in order, so a texture slot the
   game fills again later in the frame shows each primitive its own texels;
   writes outside the display area are not shown; with no log for the shown
-  buffer, as after a load, nothing is replayed until its next clear). A
+  buffer, as after a load, nothing is replayed until its next clear; a trace
+  started again on all of VRAM that holds what the logs left, as after a new
+  scale or the Original renderer shown while the game was paused, keeps
+  them). A
   game frame whose opaque drawing leaves none of a buffer's displayed
   pixels as they were (fills, copies, uploads, untextured polygons and
   textured scenery; a battle's stage drawn over the last frame instead of
@@ -697,13 +713,17 @@ world map, a battle (optionally won, for the result screens), boot
 traced and presented from boot as a host does with `--from-boot` (`--load-at`
 loads a field's state over the title screen, as a player loads a save;
 `--cards DIR` inserts memory card images, for the title screen's Continue),
-holding or tapping buttons (taps over a script's pads too), each game frame
+holding or tapping buttons (taps over a script's pads too; `--press` one at
+a kept frame), each game frame
 presented one or more times through
-`GameView` (the characters following the view unless `--original-actors`),
+`GameView` (the characters following the view unless `--original-actors`;
+`--ff N` runs N game frames for each presented one, as fast-forward does;
+`--original FROM,TO` shows those frames with the Original renderer, then the
+view again),
 it writes a contact sheet (beside the console's picture with
 `--compare`), an animated PNG of the last 240 pictures, a probe of the
 primitives at a point, how many culled faces each game frame drew (sprite
-parts among them: `revealed_sprites`), how many sprite actors the field
+parts among them: `revealed_sprites`; in the frame shown: `shown_revealed`), how many sprite actors the field
 stopped as off screen (`still`), the final RAM and VRAM hashes
 (`memory_hash`, `vram_hash`: the software GPU's picture), and the
 mean, 95th-percentile and worst cost of the game frame, the trace, the

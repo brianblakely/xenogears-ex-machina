@@ -41,7 +41,9 @@ unsigned int xem_present_sxy_source(int reg) {
     return reg >= 12 && reg <= 14 ? xem_gte_ring->fifo[reg - 12] : reg == 15 ? xem_gte_ring->fifo[2] : 0;
 }
 
-int xem_present_face_visible(unsigned int projections, unsigned int vertices, int width, int height) {
+/* xem_present_face_visible's test, the winding only when `facing`. */
+static inline __attribute__((always_inline)) int present_visible(unsigned int projections, unsigned int vertices, int width,
+                                                                 int height, int facing) {
     XemProjectionRing *ring = xem_gte_ring;
     XemProjection *p;
     long long x[4], y[4], cross, z, sx, sy, h, back = xem_present_reveals->pull_back;
@@ -87,11 +89,25 @@ int xem_present_face_visible(unsigned int projections, unsigned int vertices, in
             near_y = 1;
         }
     }
+    if (!near_x || !near_y) {
+        return 0;
+    }
+    if (!facing) {
+        return 1;
+    }
     if (back != 0) {
-        return fx[0] * fy[1] + fx[1] * fy[2] + fx[2] * fy[0] - fx[0] * fy[2] - fx[1] * fy[0] - fx[2] * fy[1] > 0.0 && near_x && near_y;
+        return fx[0] * fy[1] + fx[1] * fy[2] + fx[2] * fy[0] - fx[0] * fy[2] - fx[1] * fy[0] - fx[2] * fy[1] > 0.0;
     }
     cross = x[0] * y[1] + x[1] * y[2] + x[2] * y[0] - x[0] * y[2] - x[1] * y[0] - x[2] * y[1];
-    return cross > 0 && near_x && near_y;
+    return cross > 0;
+}
+
+int xem_present_face_visible(unsigned int projections, unsigned int vertices, int width, int height) {
+    return present_visible(projections, vertices, width, height, 1);
+}
+
+int xem_present_points_visible(unsigned int projections, unsigned int vertices, int width, int height) {
+    return present_visible(projections, vertices, width, height, 0);
 }
 
 int xem_present_square_visible(int x, int y, int z, int radius, int width, int height, int margin_x, int margin_y) {

@@ -1775,6 +1775,18 @@ impl Ps1Renderer {
     }
 
     fn log(&mut self, ops: &[TraceOp]) {
+        // All of VRAM again (a trace started again: a new scale, the Original
+        // renderer shown meanwhile) holding what the logs left: nothing was
+        // drawn meanwhile (a paused game draws nothing new), and the frames
+        // they replay are still the ones shown.
+        let ops = match ops.first() {
+            Some(TraceOp::Write { rect, pixels, upload: true })
+                if u32::from(rect.width) == VRAM_WIDTH && u32::from(rect.height) == VRAM_HEIGHT && pixels[..] == self.native[..] =>
+            {
+                &ops[1..]
+            }
+            _ => ops,
+        };
         // A buffer the game draws over completely instead of clearing it
         // (a battle's stage, every frame) starts its log again at this
         // trace, which hides everything before it.

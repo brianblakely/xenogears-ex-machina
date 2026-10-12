@@ -4,7 +4,8 @@
 //!
 //!     cargo run --release -p xem-headless --example motion -- [--map N | --worldmap | --battle [--gears] [--win]
 //!         | --title | --script LOG | --state FILE] [--from-boot] [--skip N] [--load-at N]
-//!         [--hold right,cross] [--tap BUTTON,FRAMES] [--frames 120] [--present 2]
+//!         [--hold right,cross] [--tap BUTTON,FRAMES] [--press BUTTON,FRAME] [--frames 120] [--present 2]
+//!         [--ff FRAMES] [--original FROM,TO]
 //!         [--profile modern|hd2d|ps1] [--only effect,...] [--widescreen] [--zoom PERCENT] [--interpolate]
 //!         [--scale N] [--size WxH] [--every N] [--crop x,y,w,h] [--compare] [--bench] [--no-trace]
 //!         [--probe x,y] [--original-actors] [--cards DIR]
@@ -20,8 +21,12 @@
 //! frames before the ones kept; `--load-at` starts at the title screen and
 //! loads a state of the field `--map` at that frame. From the scene, the game runs `frames` frames holding the given
 //! buttons (and tapping one every so many frames, through menus and result
-//! screens, over a script's pads too); each game frame is presented `present` times at evenly spaced
-//! host times through the hosts' GameView. Written: every `every`th
+//! screens, over a script's pads too; `--press` presses one at a kept
+//! frame, for two frames); each game frame is presented `present` times at evenly spaced
+//! host times through the hosts' GameView. `--ff` runs that many game
+//! frames for each presented one, as a host's fast-forward does;
+//! `--original` shows those kept frames with the Original renderer (no
+//! trace) and then this view again, as a host switched to it and back. Written: every `every`th
 //! presented frame (cropped when asked; with `--compare` beside the
 //! console's own picture of it, scaled up) in a contact sheet `NAME-sheet.png`,
 //! the last 240 as an animated PNG `NAME.png`, the last one and the
@@ -31,7 +36,8 @@
 //! taking and pushing the trace; the presentation's CPU work; the GPU's)
 //! and, per presented frame, the share of pixels that changed since the one
 //! before (a still camera over still scenery changes only where something
-//! moves), and per game frame how many faces the game culled were drawn.
+//! moves), and per game frame how many faces the game culled were drawn
+//! (`revealed`; `shown_revealed`: in the frame shown).
 //! `--bench` reads nothing back and writes only the costs;
 //! `--no-trace` runs the game alone, presenting nothing (its cost without
 //! any presentation work). `--probe` lists the last frame's primitives
@@ -94,6 +100,9 @@ fn main() {
     let mut win = false;
     let mut gears = false;
     let mut tap: Option<(u16, u32)> = None;
+    let mut presses: Vec<(u16, u32)> = Vec::new();
+    let mut fast_forward = 1u32;
+    let mut original: Option<std::ops::Range<u32>> = None;
     let mut compare = false;
     let mut bench = false;
     let mut traced = true;
@@ -140,6 +149,17 @@ fn main() {
                 let v = value();
                 let (button, period) = v.split_once(',').expect("BUTTON,FRAMES");
                 tap = Some((xem_core::control::button_bit(button).expect("a button"), period.parse().unwrap()));
+            }
+            "--press" => {
+                let v = value();
+                let (button, at) = v.split_once(',').expect("BUTTON,FRAME");
+                presses.push((xem_core::control::button_bit(button).expect("a button"), at.parse().unwrap()));
+            }
+            "--ff" => fast_forward = value().parse::<u32>().unwrap().max(1),
+            "--original" => {
+                let v = value();
+                let (from, to) = v.split_once(',').expect("FROM,TO");
+                original = Some(from.parse().unwrap()..to.parse().unwrap());
             }
             "--hold" => hold = value().split(',').map(String::from).collect(),
             "--frames" => frames = value().parse().unwrap(),
@@ -315,6 +335,7 @@ fn main() {
     let mut changes = Vec::new();
     let mut revealed = Vec::new();
     let mut revealed_sprites = Vec::new();
+    let mut shown_revealed = Vec::new();
     let mut still = Vec::new();
     let mut previous: Option<Vec<u8>> = None;
     let mut size = (0, 0);
@@ -329,16 +350,27 @@ fn main() {
             session.restore_bytes(saved.as_ref().expect("saved")).expect("load");
         }
         let tapped = tap.filter(|(_, period)| frame % period < 2).map_or(0, |(button, _)| button);
-        // A script's pads stand unless a tap is asked for too.
-        if script.is_none() || tap.is_some() {
-            session.set_pad(0, buttons | tapped);
+        let pressed = presses.iter().filter(|(_, at)| (*at..*at + 2).contains(&frame)).fold(0, |all, (button, _)| all | button);
+        // A script's pads stand unless a tap or a press is asked for too.
+        if script.is_none() || tap.is_some() || !presses.is_empty() {
+            session.set_pad(0, buttons | tapped | pressed);
         }
         session.set_actor_view(if graphics.actors_in_view { view.actor_view() } else { 0 }).expect("actor view");
+        // `--ff`: the frames a fast-forward batch runs before this one.
+        for _ in 1..fast_forward {
+            session.frame().expect("frame");
+        }
         let started = Instant::now();
         session.frame().expect("frame");
         stages[0].samples.push(started.elapsed().as_secs_f64() * 1000.0);
         still.push(still_actors(&mut session));
         if !traced {
+            continue;
+        }
+        // `--original`: the Original renderer shown for these frames (no
+        // trace), then this view again, as a host switched does.
+        if original.as_ref().is_some_and(|frames| frames.contains(&frame)) {
+            session.runtime.services().gpu.device_mut().set_trace(false);
             continue;
         }
         let started = Instant::now();
@@ -412,6 +444,8 @@ fn main() {
             animation.push_back((size, rgba.clone()));
             previous = Some(rgba);
         }
+        // The culled faces drawn in the frame shown.
+        shown_revealed.push(view.frame().newest().iter().filter(|op| matches!(op, xem_render::xem_gpu::TraceOp::Draw(p) if p.revealed)).count());
     }
     if let Some((x, y)) = probe {
         for op in view.frame().primitives() {
@@ -488,6 +522,7 @@ fn main() {
         "points": {"matched": matched, "unmatched": unmatched},
         "revealed": revealed,
         "revealed_sprites": revealed_sprites,
+        "shown_revealed": shown_revealed,
         "still": still,
     });
     std::fs::write(out.join(format!("{name}.json")), serde_json::to_string_pretty(&report).unwrap()).unwrap();

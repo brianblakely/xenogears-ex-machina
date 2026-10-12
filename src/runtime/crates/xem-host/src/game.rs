@@ -33,8 +33,6 @@ pub struct Game {
     /// Fast-forward's pace: the rate the batches reach.
     pacer: xem_core::time::FastForwardPacer,
     last_update: Instant,
-    /// How far beyond its screen the presentation wants culled faces.
-    reveals: Option<xem_render::xem_gpu::Reveals>,
     /// The view the field's characters keep moving in (see
     /// `Session::set_actor_view`), set by the presentation.
     actor_view: u32,
@@ -76,7 +74,6 @@ impl Game {
             applied_time_settings: None,
             pacer: Default::default(),
             last_update: Instant::now(),
-            reveals: None,
             actor_view: 0,
         };
         game.sync_time_settings(&xem_settings::Settings::default()).expect("valid interactive defaults");
@@ -227,14 +224,6 @@ impl Game {
                 self.session.set_window_focus(focused(),settings.pause_on_focus_loss);
                 self.session.set_actor_view(self.actor_view)?;
             }
-            // A long batch (fast-forward) shows only its last frames: the
-            // faces the game culls are recorded for those alone (the port
-            // reads the reach a frame late).
-            if self.reveals.is_some() {
-                let per_frame = if batch == 0 { Duration::ZERO } else { start.elapsed() / batch };
-                let ending = requested.is_some_and(|frames| batch + 3 >= frames) || start.elapsed() + per_frame * 3 >= BATCH_BUDGET;
-                self.session.runtime.services().gpu.device_mut().set_reveals(if ending { self.reveals } else { None });
-            }
             if !self.session.frame().map_err(|trap| trap.to_string())? { break; }
             batch += 1;
         }
@@ -311,7 +300,6 @@ impl Game {
             device.set_trace(true);
         }
         device.set_reveals(reveals);
-        self.reveals = reveals;
         (device.take_trace(), device.display(), scene)
     }
 
@@ -328,7 +316,6 @@ impl Game {
         if device.trace_enabled() {
             device.set_trace(false);
         }
-        self.reveals = None;
     }
 
     /// The display's mode and position.
