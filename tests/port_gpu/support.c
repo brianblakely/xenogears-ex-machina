@@ -61,7 +61,7 @@ unsigned int xem_host_gpu_status(void) {
  * hand-over before transfers: presentation only, not logged. */
 struct {
     unsigned int header[8];
-    unsigned int entries[65536][8];
+    unsigned int entries[65536][10];
 } xem_gte_ring_storage;
 struct {
     unsigned int header[4];

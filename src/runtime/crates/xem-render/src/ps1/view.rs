@@ -5,7 +5,7 @@
 //! reaches the game.
 
 use super::{DisplayArea, DrawOptions, Effects, EffectsRenderer, Fidelity, Filtering, FrameRenderer, Framing, Lighting, Ps1Renderer, Quality, central_depth};
-use xem_gpu::{DisplayInfo, Trace, TraceOp};
+use xem_gpu::{DisplayInfo, Reveals, Trace, TraceOp};
 use xem_settings::{Filter, Graphics, QualityTier};
 
 /// What kind of host presents, for the settings' automatic choices.
@@ -26,8 +26,11 @@ pub struct ViewConfig {
     pub scale: u32,
     pub effects: Effects,
     pub quality: Quality,
-    /// Wider framing: VRAM pixels added on each side.
+    /// Wider framing: VRAM pixels added on each side of a 224-line picture
+    /// (the automatic scale's estimate), and the output's aspect ratio the
+    /// sides widen the picture to (the display's own height decides them).
     pub side: u32,
+    pub aspect: Option<f32>,
     pub interpolation: bool,
     /// How far the field camera is pulled back (1 the original, up to 5):
     /// the subject the camera looks at appears this many times smaller.
@@ -42,8 +45,14 @@ pub const MAX_WIDE_SIDE: u32 = 160;
 /// original's 320x224 picture widened at the same height to the output's
 /// aspect ratio (39 for 16:9, 101 for 21:9), at most [`MAX_WIDE_SIDE`].
 pub fn wide_side((width, height): (u32, u32)) -> u32 {
-    let wide = 224.0 * width as f32 / height.max(1) as f32;
-    (((wide - 320.0) / 2.0).round().max(0.0) as u32).min(MAX_WIDE_SIDE)
+    display_side((320, 224), width as f32 / height.max(1) as f32)
+}
+
+/// Wider framing's sides for a display of `width` x `height` VRAM pixels
+/// widened at its own height to `aspect` (a 320x216 display: 32 for 16:9).
+pub fn display_side((width, height): (u32, u32), aspect: f32) -> u32 {
+    let wide = height as f32 * aspect;
+    (((wide - width as f32) / 2.0).round().max(0.0) as u32).min(MAX_WIDE_SIDE)
 }
 
 /// The share of the field camera's pull-back a scene takes ("field:12",
@@ -81,11 +90,12 @@ impl ViewConfig {
             culling: super::Culling { viewport: graphics.culling.viewport, back_faces: graphics.culling.back_faces },
         };
         // A headset's virtual screen takes a 16:9 shape when widened.
-        let side = match (graphics.widescreen, host) {
-            (false, _) => 0,
-            (true, HostClass::Headset) => wide_side((16, 9)),
-            (true, _) => wide_side(output),
+        let aspect = match (graphics.widescreen, host) {
+            (false, _) => None,
+            (true, HostClass::Headset) => Some(16.0 / 9.0),
+            (true, _) => Some(output.0 as f32 / output.1.max(1) as f32),
         };
+        let side = aspect.map_or(0, |aspect| display_side((320, 224), aspect));
         // The picture (about 320x224, wider with wider framing) fitted into
         // the output: its height there, in original lines.
         let fitted = output.1.min(output.0 * 224 / (320 + 2 * side));
@@ -129,6 +139,7 @@ impl ViewConfig {
             effects,
             quality,
             side,
+            aspect,
             interpolation: graphics.interpolation,
             zoom: f32::from(graphics.zoom_out.clamp(100, xem_settings::MAX_ZOOM_OUT)) / 100.0,
         }
@@ -169,6 +180,8 @@ pub struct GameView {
     scene: String,
     recorded_focus: Option<f32>,
     focus: Option<f32>,
+    /// Wider framing's sides at the last presentation (the display's).
+    side: u32,
 }
 
 impl GameView {
@@ -188,6 +201,7 @@ impl GameView {
             scene: String::new(),
             recorded_focus: None,
             focus: None,
+            side: 0,
         }
     }
 
@@ -217,29 +231,49 @@ impl GameView {
         std::mem::take(&mut self.restart)
     }
 
-    /// How far beyond its screen the device's trace should record the faces
-    /// the game culls against it (`set_reveals`; pixels, x and y): the
-    /// wider framing's sides, or everywhere when the camera is pulled back
-    /// in the scene last presented; none with viewport culling.
-    pub fn reveal_reach(&self) -> Option<[u16; 2]> {
+    /// Which of the faces the game culls against its screen the device's
+    /// trace should record (`set_reveals`): those in the wider framing's
+    /// sides, or, with the camera pulled back in the scene last presented,
+    /// those the pulled-back camera sees (judged on its own screen once the
+    /// depth it pulls back by is known); none with viewport culling.
+    pub fn reveals(&self) -> Option<Reveals> {
         let config = self.config?;
         let zoom = scene_zoom(config.zoom, &self.scene);
+        let side = config.side.max(self.side);
         if config.draw.culling.viewport {
             None
         } else if zoom > 1.0 {
-            // Pulled back k times, what lies at the camera's target depth
-            // within k frames of the middle shows, and nearer things from
-            // farther out still: twice that, enough down to half the depth.
-            let width = 320.0 + 2.0 * config.side as f32;
-            let x = (2.0 * (zoom - 1.0) * width + config.side as f32 + 16.0).min(2048.0);
-            let y = (2.0 * (zoom - 1.0) * 240.0 + 16.0).min(2048.0);
-            Some([x as u16, y as u16])
-        } else if config.side > 0 {
+            match self.focus {
+                // The margin covers the camera moving between frames.
+                Some(focus) => Some(Reveals { reach: [side as u16 + 32, 32], pull_back: ((zoom - 1.0) * focus).round() as u32 }),
+                None => {
+                    // Pulled back k times, what lies at the camera's target
+                    // depth within k frames of the middle shows, and nearer
+                    // things from farther out still: twice that, enough down
+                    // to half the depth.
+                    let width = 320.0 + 2.0 * side as f32;
+                    let x = (2.0 * (zoom - 1.0) * width + side as f32 + 16.0).min(2048.0);
+                    let y = (2.0 * (zoom - 1.0) * 240.0 + 16.0).min(2048.0);
+                    Some(Reveals { reach: [x as u16, y as u16], pull_back: 0 })
+                }
+            }
+        } else if side > 0 {
             // The sides, and a little more for faces leaning into them.
-            Some([config.side as u16 + 16, 16])
+            Some(Reveals { reach: [side as u16 + 16, 16], pull_back: 0 })
         } else {
             None
         }
+    }
+
+    /// The view the game's field characters keep moving in (the session's
+    /// `set_actor_view`): the camera's pull-back in percent plus 100 (bits
+    /// 0-15) and the pixels shown beyond each side (bits 16-31); 0 while the
+    /// view is the original's.
+    pub fn actor_view(&self) -> u32 {
+        let Some(config) = self.config else { return 0 };
+        let zoom = (config.zoom * 100.0).round().clamp(100.0, 1000.0) as u32;
+        let side = config.side.max(self.side).min(1024);
+        if zoom == 100 && side == 0 { 0 } else { zoom | side << 16 }
     }
 
     /// Adds what the game drew since the last push.
@@ -267,6 +301,12 @@ impl GameView {
     pub fn present(&mut self, encoder: &mut wgpu::CommandEncoder, display: &DisplayInfo, scene: &str, now: f64) -> Option<Presented<'_>> {
         let config = self.config?;
         let trace = Trace { ops: std::mem::take(&mut self.pending), focus: None };
+        if Self::shows(display) {
+            self.renderer.set_display(display.width.min(1024) as u16, display.height.min(512) as u16);
+        }
+        // The world map's terrain blocks meet in T-junctions that open at
+        // higher scales; the original's whole pixels hide them.
+        self.renderer.set_seal(scene.starts_with("worldmap") && !config.draw.fidelity.vertex_snapping);
         self.renderer.draw(encoder, &trace);
         if !Self::shows(display) || self.renderer.needs_full_vram() {
             return None;
@@ -288,7 +328,9 @@ impl GameView {
         let alpha = ((now - self.arrived) / self.interval).clamp(0.0, 1.0) as f32;
         let zoom = scene_zoom(config.zoom, scene);
         let pull_back = if zoom > 1.0 { self.focus.map_or(0.0, |focus| (zoom - 1.0) * focus) } else { 0.0 };
-        let framing = Framing { side: config.side, interpolate: config.interpolation.then_some(alpha), pull_back };
+        // The sides widen this display at its own height to the output's shape.
+        self.side = config.aspect.map_or(0, |aspect| display_side((area.width, area.height), aspect));
+        let framing = Framing { side: self.side, interpolate: config.interpolation.then_some(alpha), pull_back };
         self.frame.prepare(&self.device, &self.queue, encoder, &mut self.renderer, area, framing);
         self.presented_effects = Some(config.effects.any());
         if config.effects.any() {

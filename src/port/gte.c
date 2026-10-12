@@ -21,8 +21,9 @@ void xem_present_store(unsigned int address, unsigned int value, unsigned int so
     XemSxyStore *s = &ring->entries[ring->count % XEM_PRESENT_STORES];
 
     /* Only RAM reaches the GPU's DMA (not the scratchpad, the port's stack
-     * or its own data, whose low 24 bits would alias RAM). */
-    if ((address & 0x1FE00000u) != 0) {
+     * or its own data, whose low 24 bits would alias RAM); nothing while no
+     * trace takes the records. */
+    if ((address & 0x1FE00000u) != 0 || !xem_gte_ring->recording) {
         return;
     }
     s->address = address & 0x00FFFFFF;
@@ -43,8 +44,9 @@ unsigned int xem_present_sxy_source(int reg) {
 int xem_present_face_visible(unsigned int projections, unsigned int vertices, int width, int height) {
     XemProjectionRing *ring = xem_gte_ring;
     XemProjection *p;
-    long long x[4], y[4], cross;
-    int i, near_x = 0, near_y = 0, sx, sy;
+    long long x[4], y[4], cross, z, sx, sy, h, back = xem_present_reveals->pull_back;
+    double fx[4], fy[4];
+    int i, near_x = 0, near_y = 0;
     int reach_x = (int)(xem_present_reveals->wanted & 0xFFFF), reach_y = (int)(xem_present_reveals->wanted >> 16);
 
     if (vertices < 3 || vertices > 4 || ring->count - (projections - vertices) > XEM_GTE_PROJECTIONS) {
@@ -52,14 +54,29 @@ int xem_present_face_visible(unsigned int projections, unsigned int vertices, in
     }
     for (i = 0; i < (int)vertices; i++) {
         p = &ring->entries[(projections - vertices + (unsigned int)i) % XEM_GTE_PROJECTIONS];
-        /* The divide overflows (a point at or behind the near plane) when H >= SZ3 * 2. */
-        if ((p->h & 0xFFFF) >= (p->sz & 0xFFFF) * 2) {
-            return 0;
+        h = p->h & 0xFFFF;
+        if (back != 0) {
+            /* Seen from `back` farther: in front of its near plane (half
+             * the projection distance, as the GTE's divide allows) or not
+             * at all; the winding from the unrounded points. */
+            z = (long long)p->view[2] + back;
+            if (z * 2 <= h) {
+                return 0;
+            }
+            sx = (long long)p->view[0] * h / z + (short)(p->offset & 0xFFFF);
+            sy = (long long)p->view[1] * h / z + (short)(p->offset >> 16);
+            fx[i] = (double)p->view[0] * (double)h / (double)z;
+            fy[i] = (double)p->view[1] * (double)h / (double)z;
+        } else {
+            /* The divide overflows (a point at or behind the near plane) when H >= SZ3 * 2. */
+            if (h >= (p->sz & 0xFFFF) * 2) {
+                return 0;
+            }
+            x[i] = (long long)p->x >> 8;
+            y[i] = (long long)p->y >> 8;
+            sx = p->x >> 16;
+            sy = p->y >> 16;
         }
-        x[i] = (long long)p->x >> 8;
-        y[i] = (long long)p->y >> 8;
-        sx = p->x >> 16;
-        sy = p->y >> 16;
         if (sx >= -reach_x && sx < width + reach_x) {
             near_x = 1;
         }
@@ -67,8 +84,27 @@ int xem_present_face_visible(unsigned int projections, unsigned int vertices, in
             near_y = 1;
         }
     }
+    if (back != 0) {
+        return fx[0] * fy[1] + fx[1] * fy[2] + fx[2] * fy[0] - fx[0] * fy[2] - fx[1] * fy[0] - fx[2] * fy[1] > 0.0 && near_x && near_y;
+    }
     cross = x[0] * y[1] + x[1] * y[2] + x[2] * y[0] - x[0] * y[2] - x[1] * y[0] - x[2] * y[1];
     return cross > 0 && near_x && near_y;
+}
+
+int xem_present_square_visible(int x, int y, int z, int radius, int width, int height, int margin_x, int margin_y) {
+    long long h = (long long)(xem_gte_read_control(26) & 0xFFFF), back = xem_present_reveals->pull_back;
+    long long depth = (long long)z + back, ofx = (int)xem_gte_read_control(24) >> 16, ofy = (int)xem_gte_read_control(25) >> 16;
+    long long reach_x = margin_x + (int)(xem_present_reveals->wanted & 0xFFFF);
+    long long reach_y = margin_y + (int)(xem_present_reveals->wanted >> 16);
+
+    if ((depth + radius) * 2 <= h) {
+        return 0; /* wholly behind the near plane */
+    }
+    if ((depth - radius) * 2 <= h) {
+        return 1; /* reaching through it: kept, its faces are judged one by one */
+    }
+    return ofx + ((long long)x - radius) * h / depth < width + reach_x && ofx + ((long long)x + radius) * h / depth > -reach_x &&
+           ofy + ((long long)y - radius) * h / depth < height + reach_y && ofy + ((long long)y + radius) * h / depth > -reach_y;
 }
 
 void xem_present_reveal(unsigned int entry, unsigned int vertices, unsigned int projections, const unsigned int *words,
@@ -80,7 +116,9 @@ void xem_present_reveal(unsigned int entry, unsigned int vertices, unsigned int 
     if (count > 12) {
         return;
     }
-    r->entry = entry & 0x00FFFFFF;
+    /* Linked now, it would go in front of the entry's newest packet and be
+     * drawn just before it (at the entry itself when that is the last). */
+    r->entry = (XEM_U32(entry) & 0x00FFFFFF) == 0x00FFFFFF ? entry & 0x00FFFFFF : XEM_U32(entry) & 0x00FFFFFF;
     r->shape = count | vertices << 8;
     r->projections = projections;
     for (i = 0; i < count; i++) {
@@ -380,11 +418,15 @@ static int clamp_projection(gte_i64 value) {
     return value < -0x7FFFFFFF ? -0x7FFFFFFF : value > 0x7FFFFFFF ? 0x7FFFFFFF : (int)value;
 }
 
-/* Presentation only: the vertex just projected (xem/gte.h). */
-static void record_projection(gte_i64 x, gte_i64 y) {
+/* Presentation only: the vertex just projected (xem/gte.h), at the screen
+ * point (x, y) in 16.16 from MAC1, MAC2 and the depth `z`. */
+static void record_projection(gte_i64 x, gte_i64 y, gte_i64 z) {
     XemProjectionRing *ring = xem_gte_ring;
     XemProjection *p = &ring->entries[ring->count % XEM_GTE_PROJECTIONS];
 
+    if (!ring->recording) {
+        return;
+    }
     p->sxy = D[SXY2];
     p->sz = (D[SZ3] & 0xFFFF) | (ring->class_ & 0xFF) << 16;
     p->x = clamp_projection(x);
@@ -392,6 +434,9 @@ static void record_projection(gte_i64 x, gte_i64 y) {
     p->offset = ((unsigned int)((int)C[OFX] >> 16) & 0xFFFF) | (unsigned int)((int)C[OFY] >> 16) << 16;
     p->h = C[H] & 0xFFFF;
     p->owner = ring->owner;
+    p->view[0] = (int)D[MAC1];
+    p->view[1] = (int)D[MAC1 + 1];
+    p->view[2] = clamp_projection(z);
     ring->fifo[0] = ring->fifo[1];
     ring->fifo[1] = ring->fifo[2];
     ring->fifo[2] = ring->count + 1;
@@ -454,7 +499,7 @@ static void transform_perspective(int v, int shift, int lm, int last) {
     D[SXY0] = D[SXY1];
     D[SXY1] = D[SXY2];
     D[SXY2] = ((unsigned int)sx & 0xFFFF) | (unsigned int)sy << 16;
-    record_projection(n * ir(1) + (int)C[OFX], n * ir(2) + (int)C[OFY]);
+    record_projection(n * ir(1) + (int)C[OFX], n * ir(2) + (int)C[OFY], sum[2] >> 12);
 
     if (last) {
         value = mac0_check(n * sign16(C[DQA]) + (int)C[DQB]);

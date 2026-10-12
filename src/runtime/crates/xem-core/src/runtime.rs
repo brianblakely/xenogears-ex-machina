@@ -66,6 +66,10 @@ enum Pending {
 pub struct Services {
     pending: Option<Pending>,
     pub(crate) focus_pause: crate::focus::FocusPause,
+    /// The host's view for the game's actors (src/port/activity.c): the
+    /// field camera's pull-back in percent plus 100 (bits 0-15) and the
+    /// pixels shown beyond each side (bits 16-31); 0 the original's.
+    pub(crate) actor_view: u32,
     pub clock: Clock,
     pub pads: Pads,
     pub presentation: crate::presentation::Presentation,
@@ -225,6 +229,7 @@ impl ImportHandler for Services {
                 Action::Return(0)
             }
             "pause_requested" => Action::Return(u32::from(self.focus_pause.requested())),
+            "actor_view" => Action::Return(self.actor_view),
             "pause_reached" => {
                 self.focus_pause.reached();
                 Action::Return(0)

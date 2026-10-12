@@ -562,3 +562,56 @@ fn music_keeps_normal_time_when_a_host_cannot_run_all_requested_fast_frames() {
     }
     assert_eq!(s.snapshot_bytes().unwrap(),other.snapshot_bytes().unwrap());
 }
+
+#[test]
+fn a_fast_forward_pace_is_recorded_and_replayed_with_the_frames() {
+    let mut s = session();
+    s.runtime.services().clock.set_counter(2,0x44e8,xem_core::clock::RCNT_MODE_INTERRUPT);
+    s.runtime.services().clock.start_counter(2);
+    let initial = s.snapshot_bytes().unwrap();
+    s.execute(&json!({"cmd":"record"}));
+    s.execute(&json!({"cmd":"fast_forward","enabled":true}));
+    assert_eq!(s.frame_factor(),Some(10));
+    s.execute(&json!({"cmd":"frames","count":20}));
+    s.pace_fast_forward(Some(4)).unwrap();
+    assert_eq!(s.frame_factor(),Some(4));
+    assert_eq!(s.runtime.services().clock.audio_speed,4,"the music is timed by the frames the host reaches");
+    s.execute(&json!({"cmd":"frames","count":20}));
+    s.execute(&json!({"cmd":"fast_forward","enabled":false}));
+    assert_eq!(s.fast_forward_pace,None,"a new fast-forward starts at the configured rate");
+    s.execute(&json!({"cmd":"frames","count":5}));
+    let mut log = s.execute(&json!({"cmd":"stop_recording"})); log["cmd"] = json!("replay");
+    let mut other = session(); other.restore_bytes(&initial).unwrap();
+    other.runtime.services().clock.set_counter(2,0x44e8,xem_core::clock::RCNT_MODE_INTERRUPT);
+    other.runtime.services().clock.start_counter(2);
+    assert!(other.execute(&log).get("error").is_none());
+    other.execute(&json!({"cmd":"frames","count":45}));
+    assert!(s.snapshot_bytes().unwrap() == other.snapshot_bytes().unwrap());
+    assert!(s.pace_fast_forward(Some(21)).is_err());
+}
+
+#[test]
+fn the_actor_view_is_recorded_and_a_replay_keeps_it() {
+    let mut s = session();
+    let initial = s.snapshot_bytes().unwrap();
+    s.execute(&json!({"cmd":"record"}));
+    s.execute(&json!({"cmd":"frames","count":5}));
+    let view = 300 | 32 << 16;
+    s.set_actor_view(view).unwrap();
+    s.execute(&json!({"cmd":"frames","count":5}));
+    s.set_actor_view(0).unwrap();
+    s.execute(&json!({"cmd":"frames","count":5}));
+    let mut log = s.execute(&json!({"cmd":"stop_recording"}));
+    let views: Vec<serde_json::Value> = log["controls"].as_array().unwrap().iter().filter(|c| c[1]["cmd"] == "actor_view").map(|c| c[1]["view"].clone()).collect();
+    assert_eq!(views, [json!(view), json!(0)]);
+    log["cmd"] = json!("replay");
+    let mut other = session();
+    other.restore_bytes(&initial).unwrap();
+    assert!(other.execute(&log).get("error").is_none());
+    other.execute(&json!({"cmd":"frames","count":7}));
+    other.set_actor_view(500).unwrap();
+    assert_eq!(other.execute(&json!({"cmd":"status"}))["actor_view"], json!(view), "a replay keeps the recorded view, not the host's");
+    other.execute(&json!({"cmd":"frames","count":8}));
+    assert_eq!(other.execute(&json!({"cmd":"status"}))["actor_view"], json!(0));
+    assert!(s.set_actor_view(99).is_err(), "a pull-back below 100 percent is no view");
+}

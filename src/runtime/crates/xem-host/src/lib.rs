@@ -577,10 +577,20 @@ impl View {
     /// frames) is shown as the device holds it.
     pub fn set_game_frame(&mut self, gpu: &Gpu, game: &mut Game) {
         let graphics = self.settings.borrow().settings().graphics;
+        if graphics.renderer == xem_settings::Renderer::Original {
+            // The console's own picture, as the device shows it.
+            game.stop_trace();
+            game.want_actor_view(0);
+            self.game_frame = None;
+            let (width, height, rgba) = game.display();
+            self.set_game_image(gpu, (width, height), &rgba);
+            return;
+        }
         let config = ViewConfig::resolve(&graphics, self.host_class, self.target_size, self.renderer.max_scale());
         self.renderer.configure(config);
         let restart = self.renderer.take_restart();
-        let (trace, display, scene) = game.take_frame(restart, self.renderer.reveal_reach());
+        game.want_actor_view(if graphics.actors_in_view { self.renderer.actor_view() } else { 0 });
+        let (trace, display, scene) = game.take_frame(restart, self.renderer.reveals());
         self.fresh_frame |= !trace.ops.is_empty();
         self.renderer.push(trace);
         if GameView::shows(&display) {
@@ -595,8 +605,12 @@ impl View {
     /// Whether a presentation is due: always at the display's rate, or
     /// under the game-paced setting only when the game drew or the panel shows.
     pub fn wants_present(&self) -> bool {
-        let rate = self.settings.borrow().settings().graphics.present_rate;
-        rate == xem_settings::PresentRate::Display || self.fresh_frame || self.panel_visible() || self.game_frame.is_none()
+        let graphics = self.settings.borrow().settings().graphics;
+        graphics.renderer == xem_settings::Renderer::Original
+            || graphics.present_rate == xem_settings::PresentRate::Display
+            || self.fresh_frame
+            || self.panel_visible()
+            || self.game_frame.is_none()
     }
 
     /// Show the game's display: `rgba` is `width` x `height` RGBA8 pixels
@@ -736,6 +750,10 @@ impl View {
             Filter::Nearest => wgpu::FilterMode::Nearest,
             Filter::Linear => wgpu::FilterMode::Linear,
         };
+        // Ex Machina's renderer scales movie frames (shown as the device
+        // holds them) smoothly; the Original keeps the chosen filter.
+        game.smooth = !encoded && self.game_frame.is_none() && self.game_image.is_some()
+            && self.settings.borrow().settings().graphics.renderer == xem_settings::Renderer::ExMachina;
         let mut quads = vec![game];
         if presentation.show_fps {
             let (width,height) = self.frame_rate.size();

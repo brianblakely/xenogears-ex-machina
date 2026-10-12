@@ -339,8 +339,9 @@ snapshots are its. The renderer only draws again what it drew:
 
 - **GTE projections.** The port's GTE appends every RTPS/RTPT vertex to a ring
   (`src/port/include/xem/gte.h`: SXY2, SZ3, the 16.16 screen point before
-  saturation, OFX/OFY, H, and the sprite or model `present.c` says is being
-  drawn). The ring lives at the fixed address 0x70000000 in the game module,
+  saturation, OFX/OFY, H, the sprite or model `present.c` says is being
+  drawn, and the point before the division: MAC1, MAC2 and the depth SZ3
+  saturates from, also behind the camera). The ring lives at the fixed address 0x70000000 in the game module,
   outside the port's data and stack and every snapshot region, and it is
   written whether or not anyone presents: the port's memory layout does not
   change, and with it neither the stack addresses the game keeps in RAM (a
@@ -354,25 +355,46 @@ snapshots are its. The renderer only draws again what it drew:
   far beyond the original screen a wider or pulled-back view reaches), the
   renderers' screen-bounds tests record each face they cull (front-facing,
   projected without overflow, within that reach) as the GP0 words it would
-  have had and the ordering-table entry it would have been linked at, and
+  have had and the packet it would have been linked in front of (the
+  newest at its ordering-table entry, so it is drawn just where the
+  original would have drawn it), and
   `present.c` draws again, for the record, the field scenery pieces the
   field's bounding test culls (`field_instance_is_off_screen`, when the same
   test with margins widened by the reach keeps them) and the models a box
   test leaves undrawn: with the GTE as their drawing would have used it and
   the renderers' links captured instead of made; their packets, the
   scratchpad words the renderers spill to, the renderers' state, the GTE and
-  the ring's bookkeeping are put back, so the game sees nothing of it. Each
+  the ring's bookkeeping are put back, so the game sees nothing of it. With
+  the camera pulled back (the ring's `pull_back` word: how far behind the
+  game's camera, in depth units) all of that is judged as the pulled-back
+  camera sees the points before the division, nearer than the game's near
+  plane and behind its camera too: winding, a bounding box on its screen
+  within the reach (now its sides), and a field piece's bounding square
+  around its centre in view space; the faces the renderers drop as facing
+  away or at depth 0 are recorded as well (a quad's fourth point, not yet
+  projected when the winding drops it, is projected for the record with the
+  GTE put back). The flat backdrops that only span the original screen go
+  on into the sides as culled faces without projections: a panorama's
+  strip continued from the texture column the original ends at
+  (`gpu_draw_panorama_strip`), and the sky, fade and ground fills and the
+  battle sky's horizon bands that cross the screen copied beside it
+  (`gpu_draw_panorama`, `battle_draw_stage_sky`). Each
   sprite's floor point (its x and z at `ground` through the sprite view) and,
   in the field, the depth of the camera's target are ring entries of their
   own; the points the world map's overlay projects (its player marker,
   `worldmap_map_overlay_draw`) are marked as interface. libgpu hands the
   three rings' headers to the GPU device before each transfer
-  (`xem.gpu_projections`).
+  (`xem.gpu_projections`); the device writes the projection ring's
+  `recording` word back (1 while a draw trace takes the records), and
+  without it the port records nothing (the Original renderer).
 - **Draw trace.** `xem_gpu::Gpu::set_trace(true)` records every primitive with
   its environment (draw mode, texture window, drawing area, mask, drawing
   offset), each vertex's GTE projection (depth, sub-pixel position, class:
   model, sprite, world or flat interface, the last also for points the port
-  marks as interface), the DMA node it came from, fills,
+  marks as interface and for polygons whose every point the GTE projected
+  at the projection distance H, drawn at their screen size: the field
+  menu's counter backing, the world map's marker), the DMA node it came
+  from, fills,
   copies and VRAM writes: CPU transfers as uploads, and drawn pixels a later
   command samples as a texture before that command, so the renderer's 16-bit
   VRAM copy equals the device's at every command. A vertex takes the
@@ -380,8 +402,11 @@ snapshots are its. The renderer only draws again what it drew:
   it, and only that: matching by screen value tied interface points (window
   corners, glyphs) to unrelated 3D points at the same pixel in busy battles.
   Culled faces are traced as `revealed` primitives when the DMA walk reaches
-  their ordering-table entry, never drawn into VRAM; sprite parts carry their
-  sprite's floor point, and a take carries the field camera's focus depth.
+  the packet they would have been linked in front of (several before the
+  same packet newest first, as the GPU walks an entry), never drawn into
+  VRAM; a projected vertex carries its point before the division, sprite
+  parts their sprite's floor point, and a take the field camera's focus
+  depth.
   The trace is not part of `Gpu::save`; a snapshot load restarts it from all
   of VRAM, and so does a trace past 100 000 ops at a vertical blank (tens of
   frames not taken: a host running frames without presenting them, such as
@@ -396,7 +421,11 @@ snapshots are its. The renderer only draws again what it drew:
   selecting semi-transparency, modulation, raw textures). Each vertex sits at
   its own sub-pixel point when it has one (a point shared by neighbouring
   faces lands in the same place in each), and a polygon samples only its own
-  texels (no bleeding from the page at higher scales or when filtered). The
+  texels (no bleeding from the page at higher scales or when filtered). On
+  the world map, whose terrain blocks of different detail meet in
+  T-junctions that open into hairline cracks at higher scales (the
+  original's whole pixels hide them), opaque world triangles are grown by
+  half a native pixel, their attributes taken from their own plane. The
   interface (flat primitives, and those projected with another screen
   offset than the scene's, such as the field compass) is drawn as the
   original draws it whatever the profile: whole native pixels at any scale,
@@ -413,19 +442,33 @@ snapshots are its. The renderer only draws again what it drew:
   and the GPU's 1023x511 size limit is kept. At scale 1 with every original
   limit it matches the software rasterizer but for edge pixels of triangles
   and lines (`tests/ps1.rs`); at three times the original under Modern the
-  interface matches it on 99.3% of the scaled pixels (diagonal edges and
-  5-bit blends aside).
+  interface matches it on 99.96% of the scaled pixels (slanted edges and
+  lines included; 5-bit blends and a few texels the GPU's exact
+  interpolation rounds the other way aside).
 - **Frame** (`FrameRenderer`). The displayed area of the picture, or, for
   wider framing, a pulled-back camera and interpolation, a replay of the
   primitives drawn into the displayed buffer since its last clear
-  (`Ps1Renderer::frame_log`). Wider framing widens the target to the output's
-  aspect ratio (39 VRAM pixels a side for 16:9, 101 for 21:9, at most 160)
-  and lets scene primitives (not interface ones) draw past the drawing area,
-  the culled faces filling the sides. Pulling the camera back moves every
-  projected vertex where the game's camera would see it from further back
-  along its own axis (z / (z + d) towards the projection centre, depth
-  + d, d a multiple of the camera target's depth), the culled faces showing
-  wherever they fall and the interface keeping its place and size.
+  (`Ps1Renderer::frame_log`: a fill or copy of the display's size starts its
+  buffer's log, replacing an older, larger one, so a log holds one frame
+  even after both buffers were cleared at once; it keeps every VRAM write
+  of the frame, anywhere, with its pixels, and a copy of the native VRAM
+  when the buffer was cleared, and a replay samples its own VRAM copy, from
+  that snapshot through the frame's writes in order, so a texture slot the
+  game fills again later in the frame shows each primitive its own texels;
+  writes outside the display area are not shown; with no log for the shown
+  buffer, as after a load, nothing is replayed until its next clear).
+  Wider framing widens the target to the output's aspect ratio at the
+  display's own height (a 320x216 display: 32 VRAM pixels a side for 16:9,
+  so Fit fills the screen; at most 160) and lets scene primitives (not
+  interface ones) draw past the drawing area,
+  the culled faces filling the sides (the backdrops' continuations, flat,
+  only there). Pulling the camera back projects every projected vertex
+  again from its point before the division as the game's camera would see
+  it from further back along its own axis (x = OFX + H·X / (Z + d), depth
+  Z + d, d a multiple of the camera target's depth; points near or behind
+  the game's camera included, a primitive reaching within the new camera's
+  near plane, half H, dropped), the culled faces showing wherever they fall
+  and the interface keeping its place and size.
   Interpolation moves each scene primitive of the newest frame from its
   match in the frame before (same shape, page, CLUT and texture coordinates,
   or colours; the nearest, within 48 pixels) by the time since that frame
@@ -433,10 +476,14 @@ snapshots are its. The renderer only draws again what it drew:
 - **Effects** (`EffectsRenderer`, `effects.wgsl`). See below.
 - **GameView** (`view.rs`) is what hosts use: it resolves the graphics
   settings for a host class, accumulates the trace between presentations,
-  tells the host how far beyond the screen the trace should record culled
-  faces (`reveal_reach`, passed to `Gpu::set_reveals`), and presents. 24-bit
-  movie frames are not traced pictures: hosts show the device's display for
-  them, unscaled in aspect.
+  tells the host which culled faces the trace should record (`reveals`:
+  the reach and the pull-back, passed to `Gpu::set_reveals`) and the view
+  the field's characters keep moving in (`actor_view`, below), and
+  presents. 24-bit movie frames are not traced pictures: hosts show the
+  device's display for them, unscaled in aspect, under Ex Machina's
+  renderer enlarged with a Catmull-Rom bicubic filter (nine bilinear taps
+  in the compositor: smooth and sharp at four times and more, where the
+  nearest texel was blocky); the Original renderer keeps the chosen filter.
 
 The trace, the projections, the recording and every renderer object observe
 only: the native test `xem-headless/tests/render.rs` runs the same 240 frames
@@ -453,6 +500,7 @@ and WebGL2, and the slice logs still replay to their hashes.
 
 | Setting | Values |
 | --- | --- |
+| renderer | Ex Machina (default: everything below) or Original: the console's own picture (the software GPU's display) scaled to the window as before Phase 5, with no draw trace and no presentation records (the port's rings stay idle), every setting below hidden |
 | profile | Modern (default), HD-2D, PS1, Custom |
 | original limits (Custom) | affine textures, vertex snapping, 15-bit colour, dithering, native resolution, painter's ordering (off: depth-tested by the GTE depth) |
 | HD-2D effect levels | lighting, shadows, ambient occlusion, fog, light shafts, bloom, colour grading, depth of field (0-100), focus (-100..100); HD-2D's and Custom's are separate |
@@ -460,6 +508,7 @@ and WebGL2, and the slice logs still replay to their hashes.
 | internal scale | Auto (the output area the picture fills, at most 8 on desktops and 4 elsewhere), 1-8; PS1 and native resolution draw at 1 |
 | presentation | every display refresh, or game frames only; interpolation; wider framing (to the output's aspect ratio) |
 | zoom out | the field camera pulled back along its axis, 1x (default) to 5x in quarter steps; the mouse wheel over the game moves it (down out, up in); the world map takes a tenth of it, other modes none; independent of the aspect ratio |
+| characters in view | field characters keep moving wherever the zoomed-out or wider view shows them (on, the default; changes gameplay, recorded with the inputs; nothing while the view is the original's), or stop just beyond the original screen as the original's do (off) |
 | filtering | world, sprites, interface: nearest or linear, each |
 | culling | viewport culling (the game's own against its 4:3 screen: off, wider and pulled-back views show the scenery the game culled), back faces (both off) |
 | headset screen | distance, width, depth of field in a headset (off) |
@@ -478,8 +527,33 @@ Back-face culling drops submitted triangles wound against the frame's
 majority (counted in `DrawStats`). Both are distinct from clipping (the
 drawing area, and the GPU size limit, always kept) and from intentional
 hiding and gameplay activation (game state, decided against the original
-camera and screen whatever is drawn: an actor just outside the original
-screen stops moving even when a wider view shows it).
+camera and screen whatever is drawn, except as the next section says).
+
+### Characters in a wider view
+
+The field's character pass marks each sprite actor whose raised point
+projects outside the original screen (x -39..359, y -9..313) as off screen,
+and such an actor stops walking, turning and animating
+([later-phases.md](later-phases.md#presentation): projection feeds
+gameplay), so zoomed out the townspeople the view shows stood still. With
+characters in view on (the default), `src/port/activity.c` wraps
+`field_draw_sprite_actors`: after the original, an actor it marked off
+screen is marked on screen again when the host's view still shows its
+raised point, projected as the pulled-back camera sees it (the camera's
+target depth times the zoom less one, from the field's own view matrix)
+into the original's box widened by the view's sides. The view comes from
+the host import `xem.actor_view` (the pull-back in percent plus 100, bits
+0-15, and the sides in pixels, bits 16-31; 0 the original's): the hosts
+set it before each frame from `GameView::actor_view` with
+`Session::set_actor_view`, which records it with the inputs as a control
+(`actor_view`, also in session logs and replays; a replay keeps the
+recorded one and ignores the host's), so replays and hashes stay
+deterministic. A view no wider than the original's (1x, no wider framing)
+or the setting off changes nothing: the game runs as the original, and the
+slice logs replay to their hashes. Over Lahan (`--example motion -- --map
+1 --zoom N`, `still` in its JSON) the original leaves 43 sprite actors
+still at every zoom; with the setting, 43 at 1x, 32 at 1.5x, 16-17 at 2x,
+7 at 3x and none at 5x.
 
 ### HD-2D effects
 
@@ -542,11 +616,16 @@ finer scale. `--example render -- --map N
 `XEM_DEBUG_VIEW=shadows|depth|class` shows the effects' inputs.
 
 `--example motion` checks frames in motion and their cost: from a field, the
-world map or a battle (optionally won, for the result screens), holding or
-tapping buttons, each game frame presented one or more times through
-`GameView`, it writes a contact sheet (beside the console's picture with
+world map, a battle (optionally won, for the result screens), boot
+(`--title`), a host's saved state (`--state`) or a session log (`--script`),
+traced and presented from boot as a host does with `--from-boot` (`--load-at`
+loads a field's state over the title screen, as a player loads a save), holding or tapping buttons, each game frame
+presented one or more times through
+`GameView` (the characters following the view unless `--original-actors`),
+it writes a contact sheet (beside the console's picture with
 `--compare`), an animated PNG of the last 240 pictures, a probe of the
-primitives at a point, how many culled faces each game frame drew, and the
+primitives at a point, how many culled faces each game frame drew and how
+many sprite actors the field stopped as off screen (`still`), and the
 mean, 95th-percentile and worst cost of the game frame, the trace, the
 presentation's CPU work and the GPU's. Measured on Lahan walking (1080p
 output at three times the original, this machine's CPU and lavapipe, means
@@ -630,9 +709,12 @@ game-frame multiplier or frame-count ceiling: each host runs as much game work
 as its responsive update budget permits. The original music driver and SPU
 continue on a normal-time clock, including when the host cannot run every
 requested game frame in one batch. At fixed rates the music clock advances by
-game time divided by the chosen multiplier, independent of batch size; a host
-that cannot sustain the selected rate drops presentation work and may underrun
-audio. Uncapped play uses elapsed host time for music. Recordings include FF
+game time divided by the rate in use, independent of batch size: the chosen
+one, or, when a host cannot sustain it, the rate its batches reach
+(`Session::pace_fast_forward`, measured every half second by
+`xem_core::time::FastForwardPacer` and raised a step at a time while the host
+keeps up; recorded like the rate), so the sound keeps up instead of
+underrunning. Uncapped play uses elapsed host time for music. Recordings include FF
 rate changes, toggles and uncapped music-clock inputs, so replay uses the same
 timing on another host. Presentation remains owned by the host.
 
@@ -768,7 +850,10 @@ From `src/runtime/` in `nix develop path:./nix/runtime`:
 
 - tests on lavapipe: `VK_ICD_FILENAMES=$XEM_LAVAPIPE_ICD cargo test -p xem-settings -p xem-render -p xem-ui`
 - on the host NVIDIA driver: `scripts/xem-gpu-host target/debug/xem-desktop`
-  (`--show-settings --exit-after-frames N --screenshot out.png` for a smoke run)
+  (`--show-settings --exit-after-frames N --screenshot out.png` for a smoke run;
+  `--fullscreen` covers the display; `XEM_FRAME_STATS=1` prints a line a
+  second of the frame loop's time per stage: settings, game frames, taking
+  the trace, acquiring, rendering, presenting)
 - Android, in `#android`: `cargo ndk -t arm64-v8a -P 26 build -p xem-ui -p xem-render`
   (Slint compiles its FemtoVG module out on Android, so `xem-ui` takes the
   renderer from `i-slint-renderer-femtovg` there)

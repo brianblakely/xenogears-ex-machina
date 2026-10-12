@@ -308,6 +308,7 @@ const AUDIO_OUTPUTS: [AudioOutput; 3] = [AudioOutput::Mono, AudioOutput::Stereo,
 const SCALES: [Scale; 3] = [Scale::Fit, Scale::Integer, Scale::Stretch];
 const FILTERS: [Filter; 2] = [Filter::Nearest, Filter::Linear];
 
+const RENDERERS: [xem_settings::Renderer; 2] = [xem_settings::Renderer::Original, xem_settings::Renderer::ExMachina];
 const PROFILES: [GraphicsProfile; 4] = [GraphicsProfile::Modern, GraphicsProfile::Hd2d, GraphicsProfile::Ps1, GraphicsProfile::Custom];
 const QUALITIES: [QualityTier; 5] = [QualityTier::Auto, QualityTier::Low, QualityTier::Medium, QualityTier::High, QualityTier::Ultra];
 const RATES: [PresentRate; 2] = [PresentRate::Display, PresentRate::Game];
@@ -330,6 +331,7 @@ fn graphics_edit(graphics: &Graphics, key: &str, value: i32) -> Option<Graphics>
     let index = usize::try_from(value).ok();
     let filter = || index.and_then(|i| FILTERS.get(i)).copied();
     match key {
+        "renderer" => next.renderer = *RENDERERS.get(index?)?,
         "profile" => next.profile = *PROFILES.get(index?)?,
         "scale" => next.internal_scale = u8::try_from(value).ok()?,
         "quality" => next.quality = *QUALITIES.get(index?)?,
@@ -340,6 +342,7 @@ fn graphics_edit(graphics: &Graphics, key: &str, value: i32) -> Option<Graphics>
         "filter-sprites" => next.filtering.sprites = filter()?,
         "filter-interface" => next.filtering.interface = filter()?,
         "zoom-out" => next.zoom_out = u16::try_from(value).ok()?,
+        "actors-in-view" => next.actors_in_view = value != 0,
         "cull" => next.culling.back_faces = value != 0,
         "cull-viewport" => next.culling.viewport = value != 0,
         "xr-distance" => next.xr.distance_cm = u16::try_from(value).ok()?,
@@ -365,6 +368,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_filter(index_of(&FILTERS, &settings.presentation.filter));
     panel.set_show_fps(settings.presentation.show_fps);
     let graphics = &settings.graphics;
+    panel.set_gfx_renderer(index_of(&RENDERERS, &graphics.renderer));
     panel.set_gfx_profile(index_of(&PROFILES, &graphics.profile));
     panel.set_gfx_scale(i32::from(graphics.internal_scale));
     panel.set_gfx_quality(index_of(&QUALITIES, &graphics.quality));
@@ -372,6 +376,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_gfx_interpolation(graphics.interpolation);
     panel.set_gfx_widescreen(graphics.widescreen);
     panel.set_gfx_zoom_out(i32::from(graphics.zoom_out));
+    panel.set_gfx_actors_in_view(graphics.actors_in_view);
     panel.set_gfx_filter_world(index_of(&FILTERS, &graphics.filtering.world));
     panel.set_gfx_filter_sprites(index_of(&FILTERS, &graphics.filtering.sprites));
     panel.set_gfx_filter_interface(index_of(&FILTERS, &graphics.filtering.interface));

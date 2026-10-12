@@ -60,7 +60,8 @@ typedef struct {
     unsigned int offset; /* OFX, OFY in whole pixels (16 bits each) */
     unsigned int h;      /* H, the projection distance */
     unsigned int owner;  /* the sprite or model being drawn (present.c), else 0 */
-    unsigned int unused;
+    int view[3];         /* the point before the division: MAC1, MAC2 and the
+                          * depth SZ3 saturates from (also behind the camera) */
 } XemProjection;
 
 /* What draws the projections (present.c sets it around the wrapped seams):
@@ -78,7 +79,10 @@ typedef struct {
     unsigned int class_;     /* XEM_PROJECTION_* for the next ones */
     unsigned int owner;      /* the sprite or model for the next ones */
     unsigned int fifo[3];    /* 1 + the projection SXY0, SXY1, SXY2 hold, 0 for another point */
-    unsigned int unused[2];
+    /* Set by the host: whether a draw trace takes these records (0: the
+     * projection and store rings record nothing, as without a renderer). */
+    unsigned int recording;
+    unsigned int unused;
     XemProjection entries[XEM_GTE_PROJECTIONS];
 } XemProjectionRing;
 
@@ -98,7 +102,13 @@ typedef struct {
  *   ordering-table entry it would have been linked at, when its points
  *   projected without overflow, it faces the camera and it lies within the
  *   reach (field scenery pieces the field's bounding test culls are drawn
- *   again only when their bounds reach that far).
+ *   again only when their bounds reach that far). With a camera pulled back
+ *   (`pull_back`: how many depth units behind the game's), all of that is
+ *   judged as that camera sees the points (their view-space positions), the
+ *   reach is measured on its screen, and the faces the renderers drop as
+ *   facing away or at depth 0 count too (a quad's fourth point, not yet
+ *   projected when it is dropped, is projected for the record with the GTE
+ *   put back).
  * None of them changes what the game draws, links or keeps. */
 #define XEM_PRESENT_STORES 65536
 #define XEM_PRESENT_STORE_ADDRESS 0x70300000u
@@ -122,7 +132,10 @@ typedef struct {
 } XemStoreRing;
 
 typedef struct {
-    unsigned int entry;       /* the OT entry it would be linked at (24-bit) */
+    unsigned int entry;       /* the node it would be drawn just before: the
+                               * newest packet of the OT entry it would be
+                               * linked at, or that entry when it ends the
+                               * list (24-bit) */
     unsigned int shape;       /* GP0 words (bits 0-7), vertices (bits 8-15) */
     unsigned int projections; /* its points are the projections just before this count */
     unsigned int unused;
@@ -135,7 +148,10 @@ typedef struct {
      * culled faces are recorded, in pixels (x bits 0-15, y bits 16-31); 0
      * records none. */
     unsigned int wanted;
-    unsigned int unused[2];
+    /* Set by the host: how far behind the game's camera, in depth units,
+     * the view that wants them looks from (0: the game's camera). */
+    unsigned int pull_back;
+    unsigned int unused;
     XemReveal entries[XEM_PRESENT_REVEALS];
 } XemRevealRing;
 
@@ -190,12 +206,20 @@ unsigned int xem_present_sxy_source(int reg);
 /* Whether a culled face is worth recording: its `vertices` points are the
  * projections just before `projections`; each projected without overflow,
  * the first three wind as NCLIP keeps, and one lies within the host's reach
- * of a `width` x `height` screen. */
+ * of a `width` x `height` screen (as the pulled-back camera sees them, when
+ * the host pulls it back). */
 int xem_present_face_visible(unsigned int projections, unsigned int vertices, int width, int height);
 
+/* Whether a square of half-size `radius` facing the camera around the
+ * view-space point (x, y, z) reaches a `width` x `height` screen widened by
+ * `margin_x`, `margin_y` and the host's reach, as the pulled-back camera
+ * sees it (with the GTE's screen offset and projection distance). */
+int xem_present_square_visible(int x, int y, int z, int radius, int width, int height, int margin_x, int margin_y);
+
 /* Record a culled face (presentation): `count` GP0 words of a primitive
- * whose `vertices` points are the projections just before `projections`,
- * which would have been linked at the ordering-table entry `entry`. */
+ * whose `vertices` points are the projections just before `projections`
+ * (none for a flat one), as if linked now at the ordering-table entry
+ * `entry`. */
 void xem_present_reveal(unsigned int entry, unsigned int vertices, unsigned int projections, const unsigned int *words,
                         unsigned int count);
 

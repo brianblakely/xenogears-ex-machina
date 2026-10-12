@@ -2,16 +2,22 @@
 //! game module; the frames are pictures of the original game and stay in
 //! build/validation/motion, which is ignored).
 //!
-//!     cargo run --release -p xem-headless --example motion -- [--map N | --worldmap | --battle [--gears] [--win]]
+//!     cargo run --release -p xem-headless --example motion -- [--map N | --worldmap | --battle [--gears] [--win]
+//!         | --title | --script LOG | --state FILE] [--from-boot] [--skip N] [--load-at N]
 //!         [--hold right,cross] [--tap BUTTON,FRAMES] [--frames 120] [--present 2]
 //!         [--profile modern|hd2d|ps1] [--only effect,...] [--widescreen] [--zoom PERCENT] [--interpolate]
 //!         [--scale N] [--size WxH] [--every N] [--crop x,y,w,h] [--compare] [--bench] [--no-trace]
-//!         [--probe x,y]
+//!         [--probe x,y] [--original-actors]
 //!         [--name NAME] [--out DIR]
 //!
 //! `--win` ends the battle in victory first (the enemies' HP set to 1, then
 //! the confirm button until the results module runs), for the result
-//! screens. From the scene, the game runs `frames` frames holding the given
+//! screens. `--title` starts at boot; `--state` from a saved state (a
+//! host's state.xemstate); `--script` plays a session log (its pads, not
+//! `--hold`); `--from-boot` traces and presents every frame of the
+//! setup too, as a host does from boot, and `--skip` presents that many
+//! frames before the ones kept; `--load-at` starts at the title screen and
+//! loads a state of the field `--map` at that frame. From the scene, the game runs `frames` frames holding the given
 //! buttons (and tapping one every so many frames, through menus and result
 //! screens); each game frame is presented `present` times at evenly spaced
 //! host times through the hosts' GameView. Written: every `every`th
@@ -24,11 +30,15 @@
 //! taking and pushing the trace; the presentation's CPU work; the GPU's)
 //! and, per presented frame, the share of pixels that changed since the one
 //! before (a still camera over still scenery changes only where something
-//! moves), and per game frame how many faces the game culled were drawn. `--bench` reads nothing back and writes only the costs;
+//! moves), and per game frame how many faces the game culled were drawn.
+//! `--bench` reads nothing back and writes only the costs;
 //! `--no-trace` runs the game alone, presenting nothing (its cost without
 //! any presentation work). `--probe` lists the last frame's primitives
 //! covering a point of the original screen (class, projection, depth,
-//! owner).
+//! owner). The field's characters keep moving in the wider or zoomed-out
+//! view as in the hosts (`Session::set_actor_view`), unless
+//! `--original-actors`; the JSON counts the sprite actors the field stops
+//! as off screen per frame (`still`).
 
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -87,6 +97,11 @@ fn main() {
     let mut bench = false;
     let mut traced = true;
     let mut probe: Option<(f32, f32)> = None;
+    let mut from_boot = false;
+    let mut script: Option<PathBuf> = None;
+    let mut skip = 0u32;
+    let mut load_at: Option<u32> = None;
+    let mut state: Option<PathBuf> = None;
     let mut hold: Vec<String> = Vec::new();
     let mut frames = 120u32;
     let mut present = 1u32;
@@ -102,6 +117,12 @@ fn main() {
         match arg.as_str() {
             "--map" => map = value().parse().unwrap(),
             "--worldmap" => mode = Some("worldmap"),
+            "--title" => mode = Some("title"),
+            "--script" => script = Some(value().into()),
+            "--from-boot" => from_boot = true,
+            "--skip" => skip = value().parse().unwrap(),
+            "--load-at" => load_at = Some(value().parse().unwrap()),
+            "--state" => state = Some(value().into()),
             "--battle" => mode = Some("battle"),
             "--win" => win = true,
             "--gears" => gears = true,
@@ -151,6 +172,7 @@ fn main() {
             "--widescreen" => graphics.widescreen = true,
             "--zoom" => graphics.zoom_out = value().parse().unwrap(),
             "--interpolate" => graphics.interpolation = true,
+            "--original-actors" => graphics.actors_in_view = false,
             "--scale" => graphics.internal_scale = value().parse().unwrap(),
             "--name" => name = value(),
             "--out" => out = value().into(),
@@ -162,6 +184,20 @@ fn main() {
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../discs/Xenogears disc 1.chd"));
     let (mut session, _) = xem_game::boot(&disc, &Default::default()).expect("boot");
+    // `--load-at`: the scene's state, saved from a session of its own; this
+    // one starts at the title screen and loads it at that frame (as a player
+    // loads a save).
+    let saved = load_at.map(|_| {
+        let (mut scene, _) = xem_game::boot(&disc, &Default::default()).expect("boot");
+        for command in [json!({"cmd": "enter_field", "map": map}), json!({"cmd": "frames", "count": 400})] {
+            assert!(scene.execute(&command).get("error").is_none());
+        }
+        scene.snapshot_bytes().expect("a state")
+    });
+    if load_at.is_some() {
+        mode = Some("title");
+        skip = skip.max(700);
+    }
     let setup: Vec<Value> = match mode {
         Some("worldmap") => vec![json!({"cmd": "boot_mode", "mode": 3}), json!({"cmd": "frames", "count": 900})],
         Some("battle") => {
@@ -184,11 +220,53 @@ fn main() {
             commands.push(json!({"cmd": "frames", "count": 1520}));
             commands
         }
+        Some("title") => Vec::new(),
+        _ if script.is_some() || state.is_some() => Vec::new(),
         _ => vec![json!({"cmd": "enter_field", "map": map}), json!({"cmd": "frames", "count": 400})],
     };
+    if let Some(path) = &state {
+        // A saved state (the hosts' state.xemstate), then a moment for the game to show it.
+        let reply = xem_game::storage::command(&mut session, &json!({"cmd": "state_load", "path": path}));
+        assert!(reply.get("error").is_none(), "state_load -> {reply}");
+    }
+    if let Some(path) = &script {
+        let log: Value = serde_json::from_str(&std::fs::read_to_string(path).expect("a session log")).expect("JSON");
+        let reply = session.execute(&json!({"cmd": "schedule", "commands": log["commands"]}));
+        assert!(reply.get("error").is_none(), "schedule -> {reply}");
+    }
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let adapter = gpu.adapter.get_info();
+    eprintln!("adapter: {} ({:?}, {:?})", adapter.name, adapter.device_type, adapter.backend);
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    // From boot the trace and the presentation run through the setup too,
+    // as a host's do (a frame at a time, nothing kept).
+    let presented_frame = |session: &mut xem_core::control::Session<xem_game::NativeModule>, view: &mut GameView| {
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, output, view.max_scale()));
+        session.set_actor_view(if graphics.actors_in_view { view.actor_view() } else { 0 }).expect("actor view");
+        session.frame().expect("frame");
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        view.push(device.take_trace());
+        let display = device.display();
+        let scene = session.scene();
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        let _ = view.present(&mut encoder, &display, &scene, 0.0);
+        gpu.queue.submit([encoder.finish()]);
+    };
     for command in &setup {
-        let reply = session.execute(command);
-        assert!(reply.get("error").is_none(), "{command} -> {reply}");
+        match command.get("count").and_then(Value::as_u64).filter(|_| from_boot && command["cmd"] == "frames") {
+            Some(count) => (0..count).for_each(|_| presented_frame(&mut session, &mut view)),
+            None => {
+                let reply = session.execute(command);
+                assert!(reply.get("error").is_none(), "{command} -> {reply}");
+            }
+        }
+    }
+    for _ in 0..skip {
+        presented_frame(&mut session, &mut view);
     }
     if win {
         // battle_work_area's combatants (0x170 bytes; slots 3-10 the
@@ -226,37 +304,44 @@ fn main() {
         assert!(won, "the battle did not end in victory");
         session.execute(&json!({"cmd": "frames", "count": 120}));
     }
-    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
-    let adapter = gpu.adapter.get_info();
-    eprintln!("adapter: {} ({:?}, {:?})", adapter.name, adapter.device_type, adapter.backend);
-    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
     let buttons = hold.iter().map(|b| xem_core::control::button_bit(b).unwrap_or_else(|| panic!("no button {b}"))).fold(0, |a, b| a | b);
     let mut stages = [Stage::new("game_frame"), Stage::new("trace"), Stage::new("present_cpu"), Stage::new("gpu")];
     let mut sheet_frames: Vec<((u32, u32), Vec<u8>)> = Vec::new();
     let mut animation = std::collections::VecDeque::new();
     let mut changes = Vec::new();
     let mut revealed = Vec::new();
+    let mut still = Vec::new();
     let mut previous: Option<Vec<u8>> = None;
     let mut size = (0, 0);
     let mut clock = 0.0f64;
-    session.runtime.services().gpu.device_mut().set_trace(traced);
-    let _ = view.take_restart();
+    if !from_boot && skip == 0 {
+        session.runtime.services().gpu.device_mut().set_trace(traced);
+        let _ = view.take_restart();
+    }
     for frame in 0..frames {
         view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, output, view.max_scale()));
+        if load_at == Some(frame) {
+            session.restore_bytes(saved.as_ref().expect("saved")).expect("load");
+        }
         let tapped = tap.filter(|(_, period)| frame % period < 2).map_or(0, |(button, _)| button);
-        session.set_pad(0, buttons | tapped);
+        if script.is_none() {
+            session.set_pad(0, buttons | tapped);
+        }
+        session.set_actor_view(if graphics.actors_in_view { view.actor_view() } else { 0 }).expect("actor view");
         let started = Instant::now();
         session.frame().expect("frame");
         stages[0].samples.push(started.elapsed().as_secs_f64() * 1000.0);
+        still.push(still_actors(&mut session));
         if !traced {
             continue;
         }
         let started = Instant::now();
         let device = session.runtime.services().gpu.device_mut();
-        if view.take_restart() {
+        // A loaded state's device starts without a trace, as hosts find it.
+        if view.take_restart() || !device.trace_enabled() {
             device.set_trace(true);
         }
-        device.set_reveals(view.reveal_reach());
+        device.set_reveals(view.reveals());
         view.push(device.take_trace());
         let display = device.display();
         revealed.push(view.frame().newest().iter().filter(|op| matches!(op, xem_render::xem_gpu::TraceOp::Draw(p) if p.revealed)).count());
@@ -392,7 +477,30 @@ fn main() {
         "changed_pixels": {"mean": mean_change, "per_frame": changes},
         "points": {"matched": matched, "unmatched": unmatched},
         "revealed": revealed,
+        "still": still,
     });
     std::fs::write(out.join(format!("{name}.json")), serde_json::to_string_pretty(&report).unwrap()).unwrap();
-    println!("{}", serde_json::to_string(&json!({"stages": report["stages"], "changed_mean": mean_change, "points": report["points"], "revealed": [revealed.first(), revealed.iter().min(), revealed.iter().max(), revealed.last()]})).unwrap());
+    println!("{}", serde_json::to_string(&json!({"stages": report["stages"], "changed_mean": mean_change, "points": report["points"], "revealed": [revealed.first(), revealed.iter().min(), revealed.iter().max(), revealed.last()], "still": [still.first(), still.iter().min(), still.iter().max(), still.last()]})).unwrap());
+}
+
+/// The field's sprite actors (not the 801e layer's) marked off screen
+/// (layer_flags 0x200: they stop moving), outside the field none.
+fn still_actors(session: &mut xem_core::control::Session<xem_game::NativeModule>) -> usize {
+    if !session.scene().starts_with("field") {
+        return 0;
+    }
+    // field_event_actor_count (only the linker script names it).
+    let mut count = [0u8; 4];
+    if session.runtime.memory().read(0x800A_DBFC, &mut count).is_err() {
+        return 0;
+    }
+    let count = u64::from(u32::from_le_bytes(count));
+    let mut read = |path: String| session.execute(&json!({"cmd": "inspect", "path": path})).as_u64();
+    (0..count.min(64))
+        .filter(|i| {
+            let flags = read(format!("field_view.components.descriptors[{i}].flags")).unwrap_or(0);
+            let layer = read(format!("field_view.components.descriptors[{i}].actor->layer_flags")).unwrap_or(0);
+            flags & 0x40 != 0 && layer & 0x2200 == 0x200
+        })
+        .count()
 }

@@ -244,10 +244,20 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         let config = ViewConfig::resolve(&current.graphics, HostClass::Headset, (session.eye_size().0 / 2, session.eye_size().1 / 2), view.max_scale());
         view.configure(config);
         let restart = view.take_restart();
-        let (trace, display, scene) = game.take_frame(restart, view.reveal_reach());
-        view.push(trace);
+        // The Original renderer shows the display as the device holds it.
+        let original = current.graphics.renderer == xem_settings::Renderer::Original;
+        game.want_actor_view(if !original && current.graphics.actors_in_view { view.actor_view() } else { 0 });
+        let (display, scene) = if original {
+            game.stop_trace();
+            (game.display_info(), String::new())
+        } else {
+            let (trace, display, scene) = game.take_frame(restart, view.reveals());
+            view.push(trace);
+            (display, scene)
+        };
+        let from_view = !original && GameView::shows(&display);
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
-        let picture = if GameView::shows(&display) {
+        let picture = if from_view {
             view.present(&mut encoder, &display, &scene, start.elapsed().as_secs_f64()).map(|p| p.size)
         } else {
             // 24-bit movie frames, as the device shows them.
@@ -259,7 +269,6 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         if let Some(size) = picture {
             presented_size = size;
         }
-        let from_view = GameView::shows(&display);
 
         if visible && ui.update().map_err(|e| e.to_string())? {
             session
@@ -302,6 +311,8 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                                 // format; movie frames are an sRGB texture.
                                 quad.srgb_encoded = from_view;
                                 quad.filter = filter;
+                                // Movie frames, smoothly under Ex Machina's renderer.
+                                quad.smooth = !from_view && !original;
                                 quad
                             })
                             .collect()

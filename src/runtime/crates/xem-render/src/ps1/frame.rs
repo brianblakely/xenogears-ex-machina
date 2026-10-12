@@ -22,11 +22,12 @@
 //!   presents one game frame late and never touches game state.
 
 use super::{
-    AUX_FORMAT, Builder, COLOR_FORMAT, Copies, DisplayArea, DrawOptions, PassUniform, Ps1Renderer, Reveal, Stream, Target, bind_group,
-    effective_class, encode, pass_options, picture_usage, scene_offset, texture,
+    AUX_FORMAT, Builder, COLOR_FORMAT, Copies, DisplayArea, DrawOptions, PassUniform, Ps1Renderer, Reveal, Stream, Target, VRAM_HEIGHT,
+    VRAM_WIDTH, bind_group, effective_class, encode, pass_options, picture_usage, scene_offset, texture,
 };
 use std::collections::HashMap;
-use xem_gpu::{Primitive, Shape, TraceOp};
+use std::sync::Arc;
+use xem_gpu::{Primitive, Shape, TraceOp, VramRect};
 
 /// How the frame is framed.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -61,8 +62,17 @@ pub struct FrameRenderer {
     /// Primitives the last replay drew (for the effects), when it replayed.
     replayed: Vec<TraceOp>,
     replaying: bool,
-    /// The replay's bind group, for the native VRAM copy it samples.
-    group: Option<(wgpu::Texture, wgpu::BindGroup)>,
+    /// The native VRAM when the newest frame began (its log's start).
+    snapshot: Option<Arc<Vec<u16>>>,
+    /// The native VRAM a replay samples: the snapshot, changed by the
+    /// frame's writes in order as the replay goes (a texture slot the game
+    /// fills again later in the frame shows each primitive its own texels),
+    /// its staged writes, and the snapshot it holds unchanged, if any.
+    vram: wgpu::Texture,
+    staging: Stream,
+    vram_holds: Option<usize>,
+    /// The replay's bind group.
+    group: Option<wgpu::BindGroup>,
 }
 
 /// A pass uniform of `size_of::<PassUniform>()` bytes.
@@ -96,6 +106,11 @@ impl FrameRenderer {
             previous_ops: Vec::new(),
             replayed: Vec::new(),
             replaying: false,
+            snapshot: None,
+            vram: texture(device, "frame replay vram", (VRAM_WIDTH, VRAM_HEIGHT), wgpu::TextureFormat::R16Uint,
+                wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST),
+            staging: Stream::new(device, "frame replay staging", wgpu::BufferUsages::COPY_SRC),
+            vram_holds: None,
             group: None,
         }
     }
@@ -114,6 +129,13 @@ impl FrameRenderer {
     /// is shown since the last call.
     pub fn track(&mut self, renderer: &Ps1Renderer, area: DisplayArea) -> bool {
         let Some(log) = renderer.frame_log(area) else {
+            // No log of what the shown buffer holds (a trace started again,
+            // a state loaded): nothing to replay until its next clear, rather
+            // than an older frame's primitives over the new VRAM.
+            self.newest = None;
+            self.newest_ops.clear();
+            self.previous_ops.clear();
+            self.snapshot = None;
             return false;
         };
         let identity = ((log.rect.x, log.rect.y), log.frames);
@@ -130,6 +152,7 @@ impl FrameRenderer {
         }
         self.previous_ops = std::mem::replace(&mut self.newest_ops, log.ops.clone());
         self.newest = Some(identity);
+        self.snapshot = Some(log.start.clone());
         true
     }
 
@@ -165,8 +188,25 @@ impl FrameRenderer {
         if pulled {
             pull_back(&mut ops, framing.pull_back);
         }
+        // The replay samples VRAM as it was when the frame began, then as the
+        // frame's writes changed it, in order.
+        if let Some(start) = &self.snapshot {
+            let held = Arc::as_ptr(start) as usize;
+            if self.vram_holds != Some(held) {
+                queue.write_texture(
+                    self.vram.as_image_copy(),
+                    bytemuck::cast_slice(start),
+                    wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(VRAM_WIDTH * 2), rows_per_image: Some(VRAM_HEIGHT) },
+                    wgpu::Extent3d { width: VRAM_WIDTH, height: VRAM_HEIGHT, depth_or_array_layers: 1 },
+                );
+            }
+            let writes = ops.iter().any(|op| matches!(op, TraceOp::Write { .. }));
+            self.vram_holds = (!writes).then_some(held);
+        }
         let options: DrawOptions = *renderer.options();
         let mut builder = Builder::new(&options, &ops);
+        builder.shown = Some(VramRect { x: area.x as u16, y: area.y as u16, width: area.width as u16, height: area.height as u16 });
+        builder.seal = renderer.seal;
         builder.spill = side;
         builder.reveal = if pulled {
             Reveal::Everywhere
@@ -188,6 +228,7 @@ impl FrameRenderer {
         };
         queue.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&uniform));
         self.vertices.write(device, queue, bytemuck::cast_slice(&builder.vertices));
+        self.staging.write(device, queue, &builder.staging);
         // Start from black (the replayed clear covers what the game cleared).
         for view in [self.color.create_view(&Default::default()), self.aux.create_view(&Default::default())] {
             encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -212,14 +253,7 @@ impl FrameRenderer {
             }),
             ..Default::default()
         });
-        let group = match &self.group {
-            Some((vram, group)) if *vram == renderer.vram => group.clone(),
-            _ => {
-                let group = bind_group(device, &renderer.pipelines.layout, &self.uniform, &renderer.vram);
-                self.group = Some((renderer.vram.clone(), group.clone()));
-                group
-            }
-        };
+        let group = self.group.get_or_insert_with(|| bind_group(device, &renderer.pipelines.layout, &self.uniform, &self.vram)).clone();
         let (picture_color, picture_aux) = (renderer.color.clone(), renderer.aux.clone());
         let target = Target { color: &self.color, aux: &self.aux, depth: &depth_view, origin, scale };
         let commands = builder.commands;
@@ -229,7 +263,7 @@ impl FrameRenderer {
             encoder,
             &group,
             self.vertices.buffer(),
-            None,
+            Some((self.staging.buffer(), &self.vram)),
             Copies::From { color: &picture_color, aux: &picture_aux, scale },
             &target,
             &commands,
@@ -352,6 +386,9 @@ pub fn interpolate(newest: &[TraceOp], previous: &[TraceOp], alpha: f32) -> Vec<
                 if v.z > 0.0 && w.z > 0.0 {
                     v.z = lerp(v.z, w.z);
                 }
+                if let (Some(a), Some(b)) = (v.view, w.view) {
+                    v.view = Some(std::array::from_fn(|i| lerp(a[i], b[i])));
+                }
             }
             TraceOp::Draw(moved)
         })
@@ -359,10 +396,14 @@ pub fn interpolate(newest: &[TraceOp], previous: &[TraceOp], alpha: f32) -> Vec<
 }
 
 /// `ops` seen from `distance` GTE depth units further back along the
-/// camera's axis: each projected vertex of the scene (and a sprite's floor
-/// point) moves towards its projection centre by z / (z + distance), and
-/// its depth grows by `distance`. Interface primitives stay as they are.
-pub fn pull_back(ops: &mut [TraceOp], distance: f32) {
+/// camera's axis: each projected vertex of the scene is projected again
+/// from its point before the division (also one behind the game's camera),
+/// and its depth grows by `distance`; a point without one (and a sprite's
+/// floor point) moves towards its projection centre by z / (z + distance).
+/// A primitive with a point within the new camera's near plane (half the
+/// projection distance, as the GTE allows) is dropped. Interface
+/// primitives stay as they are.
+pub fn pull_back(ops: &mut Vec<TraceOp>, distance: f32) {
     let scene = scene_offset(ops);
     let moved = |center: (f32, f32), x: &mut f32, y: &mut f32, z: &mut f32| {
         let k = *z / (*z + distance);
@@ -370,24 +411,36 @@ pub fn pull_back(ops: &mut [TraceOp], distance: f32) {
         *y = center.1 + (*y - center.1) * k;
         *z += distance;
     };
-    for op in ops {
-        let TraceOp::Draw(p) = op else { continue };
-        let Some(((ox, oy), _)) = p.projection else { continue };
+    ops.retain_mut(|op| {
+        let TraceOp::Draw(p) = op else { return true };
+        let Some(((ox, oy), h)) = p.projection else { return true };
         if !effective_class(p, scene).is_scene() {
-            continue;
+            return true;
+        }
+        let h = f32::from(h);
+        let count = p.vertex_count();
+        if p.vertices[..count].iter().any(|v| v.view.is_some_and(|[_, _, z]| (z + distance) * 2.0 <= h)) {
+            return false;
         }
         // The projection centre in VRAM: the GTE's offset plus the drawing offset.
         let center = (f32::from(ox) + f32::from(p.environment.offset.0), f32::from(oy) + f32::from(p.environment.offset.1));
-        let count = p.vertex_count();
-        for v in p.vertices.iter_mut().take(count).filter(|v| v.z > 0.0) {
-            moved(center, &mut v.fx, &mut v.fy, &mut v.z);
+        for v in p.vertices.iter_mut().take(count) {
+            match v.view {
+                Some([x, y, z]) => {
+                    let depth = z + distance;
+                    (v.fx, v.fy, v.z) = (center.0 + h * x / depth, center.1 + h * y / depth, depth);
+                }
+                None if v.z > 0.0 => moved(center, &mut v.fx, &mut v.fy, &mut v.z),
+                None => continue,
+            }
             v.x = v.fx.floor() as i32;
             v.y = v.fy.floor() as i32;
         }
         if let Some([x, y, z]) = &mut p.ground {
             moved(center, x, y, z);
         }
-    }
+        true
+    });
 }
 
 /// The depth the camera looks at, measured: the median depth of the scene

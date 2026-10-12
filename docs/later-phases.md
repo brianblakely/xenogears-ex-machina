@@ -735,7 +735,9 @@ well:
   inside x 33-287, y 33-191 (`field_event_branch_unless_on_screen`,
   `field_event_branch_unless_well_on_screen`). Keep computing these from the
   original camera and screen, headless too: an actor just outside the original
-  screen stops moving even when a wider view shows it.
+  screen stops moving even when a wider view shows it, unless the player asks
+  otherwise (the runtime's characters-in-view option widens the off-screen
+  test to the view, recorded with the inputs; docs/runtime.md).
 - **Buffer parity and fades are state.** The field leaves for battle, the world
   map, the arena or another mode, and starts a movie, only when the draw-buffer
   index `field_draw_buffer_index` is 1; it opens the menu only when it is 0. A

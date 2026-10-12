@@ -171,6 +171,19 @@ pub enum QualityTier {
     Ultra,
 }
 
+/// What draws the game.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Renderer {
+    /// The console's own picture (the software GPU's display) scaled to the
+    /// window, as the original shows it; none of the renderer's settings
+    /// apply and no draw trace is kept.
+    Original,
+    /// Ex Machina's renderer: the game's drawing at a higher resolution,
+    /// with its profiles, wider framing, the camera pulled back and effects.
+    #[default]
+    ExMachina,
+}
+
 /// How often frames are presented. The game always runs at its own 60
 /// frames a second; presentation never changes simulation timing.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -232,6 +245,8 @@ pub const ZOOM_STEP: u16 = 25;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Graphics {
+    /// What draws the game; the rest applies to Ex Machina's renderer.
+    pub renderer: Renderer,
     pub profile: GraphicsProfile,
     /// The HD-2D profile's effect levels.
     pub hd2d: EffectLevels,
@@ -253,6 +268,11 @@ pub struct Graphics {
     /// appearing that many times smaller. The world map takes a tenth of
     /// it. Independent of the aspect ratio.
     pub zoom_out: u16,
+    /// Field characters keep moving wherever the zoomed-out or wider view
+    /// shows them; the original stops one just beyond its own screen. This
+    /// changes the game (it is recorded with the inputs); it does nothing
+    /// while the view is the original's.
+    pub actors_in_view: bool,
     pub filtering: TextureFiltering,
     pub culling: Culling,
     pub xr: XrScreen,
@@ -261,6 +281,7 @@ pub struct Graphics {
 impl Default for Graphics {
     fn default() -> Self {
         Graphics {
+            renderer: Renderer::ExMachina,
             profile: GraphicsProfile::Modern,
             hd2d: EffectLevels::HD2D,
             custom_fidelity: Fidelity::MODERN,
@@ -271,6 +292,7 @@ impl Default for Graphics {
             interpolation: false,
             widescreen: false,
             zoom_out: 100,
+            actors_in_view: true,
             filtering: TextureFiltering::default(),
             culling: Culling::default(),
             xr: XrScreen::default(),
@@ -344,6 +366,27 @@ mod tests {
         };
         assert!(custom.fidelity().dithering && !custom.fidelity().affine_textures);
         assert_eq!(custom.effects().bloom, 30);
+    }
+
+    #[test]
+    fn the_renderer_is_ex_machina_unless_the_original_is_chosen() {
+        assert_eq!(Graphics::default().renderer, Renderer::ExMachina);
+        // Settings saved before the choice existed keep Ex Machina's renderer.
+        let older: Graphics = serde_json::from_str(r#"{"profile":"Hd2d","zoom_out":300}"#).unwrap();
+        assert_eq!((older.renderer, older.profile, older.zoom_out), (Renderer::ExMachina, GraphicsProfile::Hd2d, 300));
+        let original = Graphics { renderer: Renderer::Original, ..Graphics::default() };
+        let text = serde_json::to_string(&original).unwrap();
+        assert!(text.contains(r#""renderer":"Original""#), "{text}");
+        assert_eq!(serde_json::from_str::<Graphics>(&text).unwrap(), original);
+    }
+
+    #[test]
+    fn characters_follow_the_view_unless_turned_off() {
+        assert!(Graphics::default().actors_in_view);
+        let older: Graphics = serde_json::from_str(r#"{"zoom_out":300}"#).unwrap();
+        assert!(older.actors_in_view, "settings saved before the choice existed follow the view");
+        let off = Graphics { actors_in_view: false, ..Graphics::default() };
+        assert_eq!(serde_json::from_str::<Graphics>(&serde_json::to_string(&off).unwrap()).unwrap(), off);
     }
 
     #[test]

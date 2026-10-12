@@ -832,6 +832,7 @@ fn traced_points_take_the_projection_stored_at_their_address_and_culled_faces_th
         offset: (160, 112),
         h: 256,
         owner: 0,
+        view: [0; 3],
     };
     let projections = [point(10.25, 20.5), point(10.75, 20.25), point(40.5, 60.5), point(5.5, 50.5)];
     // An ordering-table entry, then two triangles whose first corners came
@@ -891,6 +892,7 @@ fn interface_projections_trace_as_flat_whole_pixels() {
         offset: (160, 120),
         h: 256,
         owner: 0,
+        view: [0; 3],
     };
     ram.node(0x1000, 0xFF_FFFF, &[0x2000_FFFF, xy(10, 20), xy(40, 60), xy(5, 50)]);
     let store = |address: u32, value: u32, source: u32| SxyStore { address, value, source: Some(source) };

@@ -44,6 +44,9 @@ pub struct Session<M: GameModule> {
     /// An on/off switch, independent of the user's configured rate.
     pub fast_forward: bool,
     pub fast_forward_rate: FastForwardRate,
+    /// The fixed rate fast-forward reaches, when the host cannot keep up with
+    /// the configured one (`pace_fast_forward`); none until it falls behind.
+    pub fast_forward_pace: Option<u32>,
     /// Hosts clear queued output after a restore (never future audio).
     pub timeline_revision: u64,
     rewind_clock: Box<dyn Fn() -> Duration>,
@@ -102,6 +105,7 @@ impl<M: GameModule> Session<M> {
             rewind: Default::default(),
             fast_forward: false,
             fast_forward_rate: FastForwardRate::default(),
+            fast_forward_pace: None,
             timeline_revision: 0,
             rewind_clock: Box::new(rewind_clock),
             rewind_game_paused: false,
@@ -134,9 +138,31 @@ impl<M: GameModule> Session<M> {
         if requested && self.game_paused() { self.runtime.services().focus_pause.reached(); }
     }
 
-    /// The game-frame multiplier, or no limit when uncapped is enabled.
+    /// The game-frame multiplier (the configured rate, or the pace below it
+    /// the host reaches), or no limit when uncapped is enabled.
     pub fn frame_factor(&self) -> Option<u32> {
-        if self.fast_forward { self.fast_forward_rate.factor() } else { Some(1) }
+        if self.fast_forward {
+            self.fast_forward_rate.factor().map(|factor| self.fast_forward_pace.map_or(factor, |pace| pace.clamp(1, factor)))
+        } else {
+            Some(1)
+        }
+    }
+
+    /// The fixed rate the host reaches: frames and the music they time run
+    /// at it instead of the configured rate (whose music would starve), until
+    /// fast-forward or its rate changes. Recorded, so replays match.
+    pub fn pace_fast_forward(&mut self, pace: Option<u32>) -> Result<(), String> {
+        if pace.is_some_and(|pace| !(1..=20).contains(&pace)) {
+            return Err("fast-forward pace must be 1-20".into());
+        }
+        if pace != self.fast_forward_pace {
+            self.record_control(json!({"cmd":"fast_forward_pace","pace":pace}));
+            self.fast_forward_pace = pace;
+            if self.fast_forward && let Some(factor) = self.frame_factor() {
+                self.runtime.services().set_playback_speed(factor);
+            }
+        }
+        Ok(())
     }
 
     pub fn configure_fast_forward(&mut self, rate: FastForwardRate) -> Result<(), String> {
@@ -144,6 +170,7 @@ impl<M: GameModule> Session<M> {
         if rate != self.fast_forward_rate {
             self.record_control(json!({"cmd":"fast_forward_configure","rate":rate}));
             self.fast_forward_rate = rate;
+            self.fast_forward_pace = None;
             if self.fast_forward {
                 let factor = self.frame_factor();
                 self.runtime.services().set_playback_speed(factor.unwrap_or(1));
@@ -158,6 +185,7 @@ impl<M: GameModule> Session<M> {
         if self.fast_forward != enabled {
             self.record_control(json!({"cmd":"fast_forward","enabled":enabled}));
             self.fast_forward = enabled;
+            self.fast_forward_pace = None;
             let factor = self.frame_factor();
             self.runtime.services().set_playback_speed(factor.unwrap_or(1));
             self.runtime.set_external_music(factor.is_none());
@@ -172,6 +200,35 @@ impl<M: GameModule> Session<M> {
     fn record_control(&mut self, command: Value) {
         let vblank = self.vblank();
         if let Some(log) = &mut self.recording { log.controls.push((vblank, command)); }
+    }
+
+    /// The host's view for the game's actors (src/port/activity.c): a field
+    /// actor this view still shows keeps moving when the original screen
+    /// would stop it. `view` is the field camera's pull-back in percent plus
+    /// 100 (bits 0-15) and the pixels shown beyond each side (bits 16-31);
+    /// 0 is the original's. It changes the game, so it is recorded with the
+    /// inputs, and a replay keeps the recorded one.
+    pub fn set_actor_view(&mut self, view: u32) -> Result<(), String> {
+        if self.replay_end.is_some() {
+            return Ok(());
+        }
+        self.apply_actor_view(view)
+    }
+
+    fn apply_actor_view(&mut self, view: u32) -> Result<(), String> {
+        if view != 0 && (!(100..=1000).contains(&(view & 0xFFFF)) || view >> 16 > 1024) {
+            return Err("actor_view is 0, or a pull-back of 100-1000 percent with sides of at most 1024 pixels".into());
+        }
+        if self.runtime.services().actor_view != view {
+            self.record_control(json!({"cmd":"actor_view","view":view}));
+            self.runtime.services().actor_view = view;
+        }
+        Ok(())
+    }
+
+    /// Whether a recording is replaying (its controls drive fast-forward).
+    pub fn replaying(&self) -> bool {
+        self.replay_end.is_some()
     }
 
     /// Numeric rates use the deterministic game clock divided by their rate.
@@ -318,6 +375,7 @@ impl<M: GameModule> Session<M> {
 
     fn status(&mut self) -> Value {
         let stopped = self.stopped.clone();
+        let actor_view = self.runtime.services().actor_view;
         let services = self.runtime.services();
         json!({
             "vblanks": services.clock.vblanks,
@@ -329,6 +387,8 @@ impl<M: GameModule> Session<M> {
             "frames": self.runtime.frames(),
             "fast_forward": self.fast_forward,
             "fast_forward_rate": self.fast_forward_rate,
+            "fast_forward_pace": self.fast_forward_pace,
+            "actor_view": actor_view,
             "rewind": self.rewind.status(),
         })
     }
@@ -351,9 +411,21 @@ impl<M: GameModule> Session<M> {
                 self.set_fast_forward(enabled);
                 Ok(self.status())
             }
+            "fast_forward_pace" => {
+                let pace = command.get("pace").map(|v| if v.is_null() { Ok(None) } else {
+                    v.as_u64().and_then(|p| u32::try_from(p).ok()).map(Some).ok_or("fast_forward_pace pace must be a number or null")
+                }).transpose()?.flatten();
+                self.pace_fast_forward(pace)?;
+                Ok(self.status())
+            }
             "music_advance" => {
                 let cycles = arg_u64("cycles").ok_or("music_advance needs cycles (at most 100 ms)")?;
                 self.advance_music(cycles)?;
+                Ok(self.status())
+            }
+            "actor_view" => {
+                let view = arg_u64("view").and_then(|v| u32::try_from(v).ok()).ok_or("actor_view needs view")?;
+                self.apply_actor_view(view)?;
                 Ok(self.status())
             }
             "focus_pause" => {
@@ -505,7 +577,7 @@ impl<M: GameModule> Session<M> {
                     "pad_queue_reads_last_frame": services.input_reads_last_frame,
                     "stopped": stopped,
                     "valid_commands": ["pad", "press", "frames", "run_until", "inspect", "write", "snapshot",
-                                        "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "schedule", "record", "replay"],
+                                        "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "schedule", "record", "replay"],
                 }))
             }
             "memory_hash" => Ok(json!(format!("{:016x}", self.memory_hash()?))),
@@ -514,10 +586,15 @@ impl<M: GameModule> Session<M> {
                 let changes = self.runtime.services().pads.0.iter().enumerate().map(|(port,pad)| (vblank,port as u32,pad.buttons)).collect();
                 self.recording = Some(InputLog { start_vblank: vblank, changes, end_vblank: vblank,
                     controls: vec![(vblank,json!({"cmd":"fast_forward_configure","rate":self.fast_forward_rate})),
-                        (vblank,json!({"cmd":"fast_forward","enabled":self.fast_forward}))] });
+                        (vblank,json!({"cmd":"fast_forward","enabled":self.fast_forward})),
+                        (vblank,json!({"cmd":"fast_forward_pace","pace":self.fast_forward_pace}))] });
                 if self.runtime.services().focus_pause.active() {
                     let requested = self.runtime.services().focus_pause.requested();
                     self.record_control(json!({"cmd":"focus_pause","requested":requested}));
+                }
+                let view = self.runtime.services().actor_view;
+                if view != 0 {
+                    self.record_control(json!({"cmd":"actor_view","view":view}));
                 }
                 Ok(self.status())
             }
@@ -554,7 +631,9 @@ impl<M: GameModule> Session<M> {
                                 rate.validate()?;
                             },
                             Some("music_advance") if control.get("cycles").and_then(Value::as_u64).is_some_and(|c| c <= crate::clock::CPU_HZ/10) => {},
-                            _ => return Err("recorded controls contain only explicit fast-forward, focus-pause and music-clock inputs".into()),
+                            Some("fast_forward_pace") if control.get("pace").is_some_and(|p| p.is_null() || p.as_u64().is_some_and(|p| (1..=20).contains(&p))) => {},
+                            Some("actor_view") if control.get("view").and_then(Value::as_u64).is_some_and(|v| v <= u64::from(u32::MAX)) => {},
+                            _ => return Err("recorded controls contain only explicit fast-forward, focus-pause, actor-view and music-clock inputs".into()),
                         }
                         controls.push((now + at.saturating_sub(start),control.clone()));
                     }
@@ -563,6 +642,7 @@ impl<M: GameModule> Session<M> {
                 controls.sort_by_key(|(at,_)| *at);
                 self.scheduled = scheduled;
                 self.runtime.services().focus_pause = Default::default();
+                self.runtime.services().actor_view = 0;
                 self.replay_end = command.get("end_vblank").and_then(Value::as_u64).map(|end| now + end.saturating_sub(start));
                 self.replay_controls = controls;
                 self.apply_replay_controls().map_err(|e| e.to_string())?;
@@ -594,7 +674,7 @@ impl<M: GameModule> Session<M> {
                 for item in list {
                     let pair = item.as_array().filter(|p| p.len() == 2).ok_or("commands are [frame, command]")?;
                     let cmd = pair[1].get("cmd").and_then(Value::as_str).ok_or("scheduled command needs cmd")?;
-                    if !matches!(cmd, "pad" | "press" | "connect_pad" | "enter_field" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "music_advance") {
+                    if !matches!(cmd, "pad" | "press" | "connect_pad" | "enter_field" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "music_advance") {
                         return Err(format!("{cmd} cannot be scheduled; session logs contain only game input, setup and pacing"));
                     }
                     let at = pair[0].as_u64().ok_or("a command's frame is a number")?;

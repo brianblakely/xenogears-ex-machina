@@ -8,6 +8,8 @@ export component SettingsPanel inherits Window {
     in-out property <int> filter;
     in-out property <bool> show-fps;
     // Graphics (xem_settings::Graphics): indexes into the models below.
+    // 0 Original (the console's picture), 1 Ex Machina's renderer.
+    in-out property <int> gfx-renderer: 1;
     in-out property <int> gfx-profile;
     in-out property <int> gfx-scale;
     in-out property <int> gfx-quality;
@@ -16,6 +18,7 @@ export component SettingsPanel inherits Window {
     in-out property <bool> gfx-widescreen;
     // The field camera pulled back, percent (100-500).
     in-out property <int> gfx-zoom-out: 100;
+    in-out property <bool> gfx-actors-in-view: true;
     in-out property <int> gfx-filter-world;
     in-out property <int> gfx-filter-sprites;
     in-out property <int> gfx-filter-interface;
@@ -76,7 +79,7 @@ export component SettingsPanel inherits Window {
     callback scale-edited(int);
     callback filter-edited(int);
     callback show-fps-edited(bool);
-    // A graphics choice by name (profile, scale, quality, rate, interpolation,
+    // A graphics choice by name (renderer, profile, scale, quality, rate, interpolation,
     // widescreen, zoom-out, filter-world, filter-sprites, filter-interface,
     // cull, cull-viewport, xr-distance, xr-width, xr-dof) and value.
     callback graphics-edited(string, int);
@@ -181,6 +184,11 @@ export component SettingsPanel inherits Window {
                                     spacing: 10px;
                                     HorizontalLayout {
                                         spacing: 8px;
+                                        Text { text: "Renderer"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
+                                        ComboBox { accessible-label: "Renderer"; model: ["Original", "Ex Machina"]; current-index <=> root.gfx-renderer; selected => { root.graphics-edited("renderer", self.current-index); } }
+                                    }
+                                    HorizontalLayout {
+                                        spacing: 8px;
                                         Text { text: "Scale"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
                                         ComboBox { accessible-label: "Scale"; model: ["Fit", "Integer", "Stretch"]; current-index <=> root.scale; selected => { root.scale-edited(self.current-index); } }
                                     }
@@ -192,7 +200,7 @@ export component SettingsPanel inherits Window {
                                     CheckBox { text: "Show FPS"; checked <=> root.show-fps; toggled => { root.show-fps-edited(self.checked); } }
                                 }
                             }
-                            if root.selected-section == 1: GroupBox {
+                            if root.selected-section == 1 && root.gfx-renderer == 1: GroupBox {
                                 title: "Profile";
                                 vertical-stretch: 0;
                                 VerticalLayout {
@@ -233,10 +241,11 @@ export component SettingsPanel inherits Window {
                                         Text { text: "5x"; vertical-alignment: center; horizontal-stretch: 0; }
                                         Text { text: "\{root.gfx-zoom-out / 100}x"; vertical-alignment: center; min-width: 40px; horizontal-stretch: 0; }
                                     }
+                                    CheckBox { text: "Characters keep moving in the wider view (changes gameplay)"; checked <=> root.gfx-actors-in-view; toggled => { root.graphics-edited("actors-in-view", self.checked ? 1 : 0); } }
                                     Text { text: root.gfx-status; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
                                 }
                             }
-                            if root.selected-section == 1 && (root.gfx-profile == 1 || root.gfx-profile == 3): GroupBox {
+                            if root.selected-section == 1 && root.gfx-renderer == 1 && (root.gfx-profile == 1 || root.gfx-profile == 3): GroupBox {
                                 title: "HD-2D effects";
                                 vertical-stretch: 0;
                                 VerticalLayout {
@@ -255,7 +264,7 @@ export component SettingsPanel inherits Window {
                                     }
                                 }
                             }
-                            if root.selected-section == 1 && root.gfx-profile == 3: GroupBox {
+                            if root.selected-section == 1 && root.gfx-renderer == 1 && root.gfx-profile == 3: GroupBox {
                                 title: "Original limits";
                                 vertical-stretch: 0;
                                 VerticalLayout {
@@ -267,7 +276,7 @@ export component SettingsPanel inherits Window {
                                     }
                                 }
                             }
-                            if root.selected-section == 1: GroupBox {
+                            if root.selected-section == 1 && root.gfx-renderer == 1: GroupBox {
                                 title: "Texture filtering and culling";
                                 vertical-stretch: 0;
                                 VerticalLayout {
@@ -308,7 +317,7 @@ export component SettingsPanel inherits Window {
                                         SpinBox { accessible-label: "Headset screen width in centimetres"; min-width: 104px; max-width: 104px; horizontal-stretch: 0; minimum: 50; maximum: 2000; step-size: 10; value <=> root.gfx-xr-width; edited(value) => { root.graphics-edited("xr-width", value); } }
                                         Text { text: "cm"; vertical-alignment: center; horizontal-stretch: 0; }
                                     }
-                                    CheckBox { text: "Depth of field in the headset"; checked <=> root.gfx-xr-dof; toggled => { root.graphics-edited("xr-dof", self.checked ? 1 : 0); } }
+                                    if root.gfx-renderer == 1: CheckBox { text: "Depth of field in the headset"; checked <=> root.gfx-xr-dof; toggled => { root.graphics-edited("xr-dof", self.checked ? 1 : 0); } }
                                 }
                             }
                             if root.selected-section == 2: GroupBox {

@@ -16,6 +16,8 @@ struct Options {
     exit_after_frames: Option<u64>,
     screenshot: Option<PathBuf>,
     show_settings: bool,
+    /// Start over the whole display.
+    fullscreen: bool,
     /// The user's disc (CHD, cue or bin): play the game.
     disc: Option<PathBuf>,
     cards: Option<PathBuf>,
@@ -37,6 +39,7 @@ fn options() -> Result<Options, String> {
         exit_after_frames: None,
         screenshot: None,
         show_settings: false,
+        fullscreen: false,
         disc: None,
         cards: None,
         bios: None,
@@ -61,6 +64,7 @@ fn options() -> Result<Options, String> {
                 options.screenshot = Some(args.next().ok_or("--screenshot needs a path")?.into());
             }
             "--show-settings" => options.show_settings = true,
+            "--fullscreen" => options.fullscreen = true,
             "--disc" => options.disc = Some(args.next().ok_or("--disc needs a path")?.into()),
             "--cards" => options.cards = Some(args.next().ok_or("--cards needs a directory")?.into()),
             "--bios" => options.bios = Some(args.next().ok_or("--bios needs a path")?.into()),
@@ -80,7 +84,7 @@ fn options() -> Result<Options, String> {
                 println!(
                     "xem-desktop [--disc DISC [--cards DIR] [--bios FILE] [--script LOG] \
                      [--exit-at-frame N] [--xr [--xr-pause N,M] [--xr-capture DIR]]] [--show-settings] \
-                     [--exit-after-frames N] [--screenshot out.png]\n\
+                     [--fullscreen] [--exit-after-frames N] [--screenshot out.png]\n\
                      --xr plays in an OpenXR headset on a virtual screen (controllers: left stick \
                      D-pad, A/B/X/Y Cross/Circle/Square/Triangle, triggers L1/R1, grips L2/R2, \
                      left stick click Start, left menu the settings panel).\n\
@@ -125,6 +129,9 @@ fn run(options: Options) -> Result<(), String> {
     }
     let sdl = sdl::Sdl::init()?;
     let window = sdl::Window::new(&sdl, "Xenogears Ex Machina", 1280, 800)?;
+    if options.fullscreen {
+        window.set_fullscreen(true);
+    }
     let result = Host::new(&window, &options).and_then(|mut host| host.run(&window, &options));
     drop(window);
     drop(sdl);
@@ -138,6 +145,53 @@ struct Host {
     gpu: Gpu,
     start: Instant,
     game: Option<Game>,
+    /// XEM_FRAME_STATS: a line a second of where the frame loop's time goes.
+    stats: Option<Stats>,
+}
+
+/// The frame loop's time per stage, printed once a second.
+struct Stats {
+    since: Instant,
+    iterations: u32,
+    frames: u32,
+    /// Total and worst milliseconds of: settings and actions, game frames,
+    /// taking the trace, acquiring the surface, rendering, presenting, and
+    /// the whole iteration.
+    stages: [(f64, f64); 7],
+    slow: u32,
+}
+
+impl Stats {
+    const NAMES: [&str; 7] = ["app", "game", "take", "acquire", "render", "present", "loop"];
+
+    fn new() -> Self {
+        Stats { since: Instant::now(), iterations: 0, frames: 0, stages: [(0.0, 0.0); 7], slow: 0 }
+    }
+
+    fn add(&mut self, stage: usize, from: Instant, to: Instant) {
+        let ms = to.duration_since(from).as_secs_f64() * 1000.0;
+        let (total, worst) = &mut self.stages[stage];
+        *total += ms;
+        *worst = worst.max(ms);
+    }
+
+    fn end_iteration(&mut self, began: Instant, frames: u32) {
+        let now = Instant::now();
+        self.add(6, began, now);
+        self.iterations += 1;
+        self.frames += frames;
+        if now.duration_since(began).as_secs_f64() > 0.02 {
+            self.slow += 1;
+        }
+        if now.duration_since(self.since).as_secs_f64() >= 1.0 {
+            let n = f64::from(self.iterations.max(1));
+            let stages: Vec<String> = Self::NAMES.iter().zip(&self.stages)
+                .map(|(name, (total, worst))| format!("{name} {:.2}/{:.1}", total / n, worst)).collect();
+            eprintln!("xem-desktop stats: {} iterations, {} game frames, {} over 20 ms; ms mean/worst: {}",
+                self.iterations, self.frames, self.slow, stages.join(", "));
+            *self = Stats::new();
+        }
+    }
 }
 
 #[cfg(has_game_module)]
@@ -239,6 +293,7 @@ impl Host {
             gpu,
             start: Instant::now(),
             game,
+            stats: std::env::var_os("XEM_FRAME_STATS").map(|_| Stats::new()),
         })
     }
 
@@ -320,15 +375,24 @@ impl Host {
             // The surface was lost.
             self.presenter.resume(&self.gpu, window)?;
         }
+        let began = Instant::now();
+        let mut ran = 0;
+        let mut marks = [began; 6];
         if self.view.update_app(window,&mut self.game) && let Some(game) = &mut self.game {
+            marks[0] = Instant::now();
             let settings = self.view.settings().borrow().settings().clone();
-            if let Err(error) = game.update(self.view.pad_buttons(), &settings, || window.focused()) {
-                self.view.ui().set_operation_status(&format!("Game stopped: {error}. Load a state to recover."));
-                self.view.set_panel_visible(true);
-                game.pause();
+            match game.update(self.view.pad_buttons(), &settings, || window.focused()) {
+                Ok(frames) => ran = frames,
+                Err(error) => {
+                    self.view.ui().set_operation_status(&format!("Game stopped: {error}. Load a state to recover."));
+                    self.view.set_panel_visible(true);
+                    game.pause();
+                }
             }
+            marks[1] = Instant::now();
             self.view.set_game_frame(&self.gpu, game);
         }
+        marks[2] = Instant::now();
         if !self.view.wants_present() {
             // Game-paced presentation: nothing new to show yet.
             std::thread::sleep(std::time::Duration::from_millis(1));
@@ -337,6 +401,7 @@ impl Host {
         let Some(frame) = self.presenter.acquire(&self.gpu, window)? else {
             return Ok(false);
         };
+        marks[3] = Instant::now();
         let output = frame.texture.create_view(&Default::default());
         self.view
             .render(&self.gpu, &output, self.start.elapsed().as_secs_f32())?;
@@ -345,7 +410,17 @@ impl Host {
             save_png(path, self.presenter.size(), &pixels)?;
             eprintln!("xem-desktop: wrote {}", path.display());
         }
+        marks[4] = Instant::now();
         self.gpu.queue.present(frame);
+        marks[5] = Instant::now();
+        if let Some(stats) = &mut self.stats {
+            let mut from = began;
+            for (stage, &to) in marks.iter().enumerate() {
+                stats.add(stage, from, to.max(from));
+                from = to.max(from);
+            }
+            stats.end_iteration(began, ran);
+        }
         Ok(true)
     }
 }

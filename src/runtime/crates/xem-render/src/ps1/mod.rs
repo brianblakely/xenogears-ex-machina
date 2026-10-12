@@ -428,6 +428,12 @@ pub(crate) struct Builder<'a> {
     pub(crate) reveal: Reveal,
     /// Moves every vertex (shadows, interpolated replays).
     pub(crate) remap: Option<Box<dyn Fn(&mut Vertex) + 'a>>,
+    /// The area writes are shown in (a replay's display area; everywhere
+    /// when none): elsewhere they only change the VRAM textures sample.
+    pub(crate) shown: Option<VramRect>,
+    /// Grow opaque world triangles by [`SEAL`] (the world map's terrain,
+    /// whose blocks of different detail meet in T-junctions).
+    pub(crate) seal: bool,
     /// Row quads the interface may still take ([`push_rows`]); past them
     /// its polygons are drawn whole.
     rows_left: usize,
@@ -498,6 +504,8 @@ impl<'a> Builder<'a> {
             reveal: Reveal::Hidden,
             remap: None,
             rows_left: ROW_BUDGET,
+            shown: None,
+            seal: false,
         }
     }
 
@@ -655,6 +663,8 @@ impl<'a> Builder<'a> {
                         let points = triangle.map(|i| (p.vertices[i].x, p.vertices[i].y));
                         let drawn = push_rows(&mut self.vertices, triangle.map(&vertex), points, (left, top, right, bottom));
                         self.rows_left = self.rows_left.saturating_sub(drawn);
+                    } else if self.seal && class == Class::World && !p.semi && projected {
+                        self.vertices.extend(grow(triangle.map(&vertex), SEAL));
                     } else {
                         for &i in triangle {
                             self.vertices.push(vertex(i));
@@ -704,7 +714,9 @@ impl<'a> Builder<'a> {
         let projected = p.vertices[..p.vertex_count()].iter().all(|v| v.z > 0.0);
         let blend = p.environment.draw_mode >> 5 & 3;
         let [left, top, right, bottom] = p.environment.area.map(i32::from);
-        let spill = if effective_class(p, self.scene).is_scene() { self.spill as i32 } else { 0 };
+        // The scene, and what the game culled beside its screen (a backdrop's
+        // continuation too), may spill into the sides.
+        let spill = if p.revealed || effective_class(p, self.scene).is_scene() { self.spill as i32 } else { 0 };
         let rect = |left: i32, right: i32| Some(Scissor { x: left, y: top, width: (right + 1 - left).max(0), height: (bottom + 1 - top).max(0) });
         // A culled face beside the original screen shows only in the sides.
         let scissors = if p.revealed && self.reveal == Reveal::Sides {
@@ -768,10 +780,58 @@ impl<'a> Builder<'a> {
             TraceOp::Draw(p) => self.primitive(p),
             TraceOp::Fill { rect, color } => self.fill(*rect, *color),
             TraceOp::Copy { source, destination, width, height } => self.copy(*source, *destination, *width, *height),
-            TraceOp::Write { rect, pixels, upload } => self.upload(*rect, pixels, *upload),
+            TraceOp::Write { rect, pixels, upload } => {
+                let show = *upload && self.shown.is_none_or(|area| overlap(&area, rect) > 0);
+                self.upload(*rect, pixels, show);
+            }
             TraceOp::VBlank => {}
         }
     }
+}
+
+/// How far (native pixels) [`Builder::seal`] grows a triangle's edges.
+const SEAL: f32 = 0.5;
+
+/// `corners` moved out so each edge lies `by` native pixels further out
+/// (mitred, at most four times that at a sharp corner), their attributes
+/// from the triangle's own plane: depth linear in the screen, the rest
+/// perspective-correct through `w`. Neighbours that do not quite meet
+/// (blocks of terrain detail meeting in T-junctions) then overlap by a hair.
+fn grow(corners: [Vertex; 3], by: f32) -> [Vertex; 3] {
+    let p = corners.map(|v| glam::Vec2::from(v.position));
+    let area = (p[1] - p[0]).perp_dot(p[2] - p[0]);
+    if area.abs() < 1e-3 {
+        return corners;
+    }
+    // Each edge's outward normal (away from the third corner).
+    let normal = |a: usize, b: usize, c: usize| {
+        let n = (p[b] - p[a]).perp().normalize_or_zero();
+        if n.dot(p[c] - p[a]) > 0.0 { -n } else { n }
+    };
+    let normals = [normal(0, 1, 2), normal(1, 2, 0), normal(2, 0, 1)];
+    let moved = std::array::from_fn::<_, 3, _>(|i| {
+        let (before, after) = (normals[(i + 2) % 3], normals[i]);
+        let miter = (before + after) * by / (1.0 + before.dot(after)).max(0.125);
+        p[i] + miter.clamp_length_max(4.0 * by)
+    });
+    let inverse_w = corners.map(|v| 1.0 / v.w);
+    moved.map(|q| {
+        // Barycentric weights of q in the original triangle.
+        let b1 = (q - p[0]).perp_dot(p[2] - p[0]) / (p[1] - p[0]).perp_dot(p[2] - p[0]);
+        let b2 = (p[1] - p[0]).perp_dot(q - p[0]) / area;
+        let b = [1.0 - b1 - b2, b1, b2];
+        let per_w: f32 = (0..3).map(|i| b[i] * inverse_w[i]).sum();
+        let w = 1.0 / per_w;
+        let mix = |f: &dyn Fn(&Vertex) -> f32| (0..3).map(|i| b[i] * inverse_w[i] * f(&corners[i])).sum::<f32>() * w;
+        Vertex {
+            position: q.into(),
+            depth: (0..3).map(|i| b[i] * corners[i].depth).sum(),
+            w,
+            color: std::array::from_fn(|k| mix(&|v| v.color[k])),
+            uv: std::array::from_fn(|k| mix(&|v| v.uv[k])),
+            ..corners[0]
+        }
+    })
 }
 
 /// Whether an interface polygon is drawn a row of native pixels at a time,
@@ -1128,6 +1188,13 @@ pub struct Ps1Renderer {
     pub(crate) synced: bool,
     /// What was drawn into each screen buffer since it was last cleared.
     logs: Vec<FrameLog>,
+    /// The display's size in VRAM pixels (a screen buffer's), when known.
+    display: Option<(u16, u16)>,
+    /// The native VRAM as the trace's writes left it (the start of each
+    /// buffer's log copies it).
+    native: Vec<u16>,
+    /// Seal the world's T-junction cracks ([`Builder::seal`]).
+    pub(crate) seal: bool,
     stats: DrawStats,
 }
 
@@ -1136,10 +1203,15 @@ pub struct Ps1Renderer {
 #[derive(Clone, Debug, Default)]
 pub struct FrameLog {
     pub rect: VramRect,
+    /// Its primitives, and every VRAM write since (anywhere: textures the
+    /// frame samples), with their pixels.
     pub ops: Vec<TraceOp>,
     pub previous: Vec<TraceOp>,
     /// Clears so far (one per frame drawn into the buffer).
     pub frames: u64,
+    /// The native VRAM when the buffer was cleared: a replay samples VRAM
+    /// as it was then, changed by the writes in `ops` as it goes.
+    pub start: std::sync::Arc<Vec<u16>>,
 }
 
 /// A log grows without a clear in modes that never clear; it is dropped
@@ -1193,8 +1265,23 @@ impl Ps1Renderer {
             requested_scale: scale,
             synced: false,
             logs: Vec::new(),
+            display: None,
+            native: vec![0; (VRAM_WIDTH * VRAM_HEIGHT) as usize],
+            seal: false,
             stats: DrawStats::default(),
         }
+    }
+
+    /// The size of the display (a screen buffer) the frames are drawn for:
+    /// a fill or copy of about that size clears a buffer.
+    pub fn set_display(&mut self, width: u16, height: u16) {
+        self.display = Some((width, height));
+    }
+
+    /// Grow opaque world triangles so terrain blocks meeting in T-junctions
+    /// show no cracks at higher scales (the world map).
+    pub fn set_seal(&mut self, seal: bool) {
+        self.seal = seal;
     }
 
     fn pictures(device: &wgpu::Device, scale: u32) -> (wgpu::Texture, wgpu::Texture, wgpu::Texture, wgpu::Texture) {
@@ -1249,6 +1336,7 @@ impl Ps1Renderer {
         self.log(&trace.ops);
         let options = self.options;
         let mut builder = Builder::new(&options, &trace.ops);
+        builder.seal = self.seal;
         for op in &trace.ops {
             builder.op(op);
         }
@@ -1279,45 +1367,65 @@ impl Ps1Renderer {
     }
 
     fn log(&mut self, ops: &[TraceOp]) {
-        // A replay draws from the native VRAM copy: the logs keep where VRAM
-        // changed, not the pixels.
-        let logged = |op: &TraceOp| match op {
-            TraceOp::Write { rect, upload, .. } => TraceOp::Write { rect: *rect, pixels: Vec::new(), upload: *upload },
-            _ => op.clone(),
-        };
         for op in ops {
+            if let TraceOp::Write { rect, pixels, upload } = op {
+                // The native VRAM, as replays start from it.
+                for (row, line) in pixels.chunks(usize::from(rect.width).max(1)).enumerate() {
+                    let at = (usize::from(rect.y) + row) * VRAM_WIDTH as usize + usize::from(rect.x);
+                    if let Some(native) = self.native.get_mut(at..at + line.len()) {
+                        native.copy_from_slice(line);
+                    }
+                }
+                if *upload && u32::from(rect.width) == VRAM_WIDTH && u32::from(rect.height) == VRAM_HEIGHT {
+                    self.logs.clear();
+                    continue;
+                }
+                // A replay samples VRAM as it was at each primitive: every
+                // buffer's log keeps every write, in order.
+                for log in &mut self.logs {
+                    log.ops.push(op.clone());
+                }
+                continue;
+            }
             let cleared = match op {
                 TraceOp::Fill { rect, .. } => Some(*rect),
                 TraceOp::Copy { destination, width, height, .. } => {
                     Some(VramRect { x: destination.0, y: destination.1, width: *width, height: *height })
                 }
-                TraceOp::Write { rect, upload: true, .. } if u32::from(rect.width) == VRAM_WIDTH => {
-                    self.logs.clear();
-                    continue;
-                }
                 _ => None,
             };
             if let Some(rect) = cleared.filter(|r| r.width >= 128 && r.height >= 128) {
                 let area = u32::from(rect.width) * u32::from(rect.height);
+                // A clear of a whole screen buffer (the display's size, or
+                // about 256x192 before the display is known) starts that
+                // buffer's log even inside an older, larger one (both buffers
+                // cleared at once before, a mode change), which it replaces.
+                let (width, height) = self.display.unwrap_or((256, 192));
+                let buffer = u32::from(rect.width) * 10 >= u32::from(width) * 9 && u32::from(rect.height) * 10 >= u32::from(height) * 8;
                 if let Some(log) = self.logs.iter_mut().find(|l| {
                     let size = u32::from(l.rect.width) * u32::from(l.rect.height);
                     overlap(&l.rect, &rect) * 10 >= size.max(area) * 9
                 }) {
-                    log.previous = std::mem::take(&mut log.ops);
-                    log.ops.push(logged(op));
+                    log.previous = std::mem::replace(&mut log.ops, vec![op.clone()]);
                     log.rect = rect;
                     log.frames += 1;
-                } else if self.logs.iter().all(|l| overlap(&l.rect, &rect) == 0) {
-                    self.logs.push(FrameLog { rect, ops: vec![logged(op)], previous: Vec::new(), frames: 1 });
+                    log.start = std::sync::Arc::new(self.native.clone());
+                    continue;
+                }
+                if buffer || self.logs.iter().all(|l| overlap(&l.rect, &rect) == 0) {
+                    let previous = self.logs.iter().find(|l| overlap(&l.rect, &rect) > 0).map_or(0, |l| l.frames);
+                    self.logs.retain(|l| overlap(&l.rect, &rect) == 0);
+                    let start = std::sync::Arc::new(self.native.clone());
+                    self.logs.push(FrameLog { rect, ops: vec![op.clone()], previous: Vec::new(), frames: previous + 1, start });
                     if self.logs.len() > 6 {
                         self.logs.remove(0);
                     }
+                    continue;
                 }
-                continue;
             }
             let at = match op {
                 TraceOp::Draw(p) => Some((p.environment.area[0], p.environment.area[1])),
-                TraceOp::Fill { rect, .. } | TraceOp::Write { rect, upload: true, .. } => Some((rect.x, rect.y)),
+                TraceOp::Fill { rect, .. } => Some((rect.x, rect.y)),
                 TraceOp::Copy { destination, .. } => Some(*destination),
                 _ => None,
             };
@@ -1328,7 +1436,7 @@ impl Ps1Renderer {
                     log.ops.clear();
                     log.previous.clear();
                 }
-                log.ops.push(logged(op));
+                log.ops.push(op.clone());
             }
         }
     }

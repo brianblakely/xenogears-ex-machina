@@ -10,7 +10,7 @@ use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer, XrWebGlLayer};
 use xem_render::glam::{Mat4, Vec2, Vec3, Vec4};
 use xem_render::ps1::{GameView, HostClass, ViewConfig};
-use xem_render::xem_gpu::{DisplayInfo, Trace};
+use xem_render::xem_gpu::{DisplayInfo, Reveals, Trace};
 use xem_render::{Compositor, Gpu, Quad, Rect, SceneRenderer, ViewTarget, Viewport, demo_camera, present_rect, wgpu};
 use xem_settings::{Filter, SettingsService};
 use xem_ui::{LogicalPosition, PointerEventButton, SettingsUi, SharedGpu, WindowEvent};
@@ -316,15 +316,21 @@ impl WebRenderer {
         self.game_frame = None;
     }
 
+    /// Which faces the game culls against its screen its trace should
+    /// record (a wider or pulled-back view).
+    pub fn reveals(&self) -> Option<Reveals> {
+        self.renderer.reveals()
+    }
+
+    /// The view the game's field characters keep moving in
+    /// (`GameView::actor_view`).
+    pub fn actor_view(&self) -> u32 {
+        self.renderer.actor_view()
+    }
+
     /// The renderer's configuration for `graphics` on this canvas (or in a
     /// headset); returns whether the device's draw trace must restart from
     /// the whole VRAM.
-    /// How far beyond its screen the game's trace should record the faces
-    /// it culls (a wider or pulled-back view).
-    pub fn reveal_reach(&self) -> Option<[u16; 2]> {
-        self.renderer.reveal_reach()
-    }
-
     pub fn configure_game(&mut self, graphics: &xem_settings::Graphics, headset: bool) -> bool {
         let class = if headset { HostClass::Headset } else { HostClass::Browser };
         // The virtual screen fills about half of a view.
@@ -332,6 +338,12 @@ impl WebRenderer {
         let config = ViewConfig::resolve(graphics, class, size, self.renderer.max_scale());
         self.renderer.configure(config);
         self.renderer.take_restart()
+    }
+
+    /// The display as the device holds it (the Original renderer).
+    pub fn set_display_image(&mut self, (width, height, rgba): (u32, u32, Vec<u8>)) {
+        self.game_frame = None;
+        self.set_game_image((width, height), &rgba);
     }
 
     /// What the game drew, its display and scene. A 24-bit display (movie
@@ -398,6 +410,10 @@ impl WebRenderer {
             Filter::Nearest => wgpu::FilterMode::Nearest,
             Filter::Linear => wgpu::FilterMode::Linear,
         };
+        // Ex Machina's renderer scales movie frames smoothly; the Original
+        // keeps the chosen filter.
+        game.smooth = !encoded && self.game_frame.is_none() && self.game_image.is_some()
+            && settings.settings().graphics.renderer == xem_settings::Renderer::ExMachina;
         let mut quads = vec![game];
         if presentation.show_fps && let Some(counter) = &self.frame_rate {
             let (width,height) = counter.size();

@@ -30,6 +30,14 @@ pub struct Game {
     rewind_held: [bool;2],
     rewind_next: Instant,
     applied_time_settings: Option<(xem_settings::FastForwardRate, bool, u32, u32)>,
+    /// Fast-forward's pace: the rate the batches reach.
+    pacer: xem_core::time::FastForwardPacer,
+    last_update: Instant,
+    /// How far beyond its screen the presentation wants culled faces.
+    reveals: Option<xem_render::xem_gpu::Reveals>,
+    /// The view the field's characters keep moving in (see
+    /// `Session::set_actor_view`), set by the presentation.
+    actor_view: u32,
 }
 
 impl Game {
@@ -66,6 +74,10 @@ impl Game {
             rewind_held: [false;2],
             rewind_next: Instant::now(),
             applied_time_settings: None,
+            pacer: Default::default(),
+            last_update: Instant::now(),
+            reveals: None,
+            actor_view: 0,
         };
         game.sync_time_settings(&xem_settings::Settings::default()).expect("valid interactive defaults");
         game
@@ -211,11 +223,36 @@ impl Game {
             if !self.scripted {
                 if self.session.runtime.services().pads.0[0].buttons != buttons { self.session.set_pad(0,buttons); }
             }
-            if !self.scripted { self.session.set_window_focus(focused(),settings.pause_on_focus_loss); }
+            if !self.scripted {
+                self.session.set_window_focus(focused(),settings.pause_on_focus_loss);
+                self.session.set_actor_view(self.actor_view)?;
+            }
+            // A long batch (fast-forward) shows only its last frames: the
+            // faces the game culls are recorded for those alone (the port
+            // reads the reach a frame late).
+            if self.reveals.is_some() {
+                let per_frame = if batch == 0 { Duration::ZERO } else { start.elapsed() / batch };
+                let ending = requested.is_some_and(|frames| batch + 3 >= frames) || start.elapsed() + per_frame * 3 >= BATCH_BUDGET;
+                self.session.runtime.services().gpu.device_mut().set_reveals(if ending { self.reveals } else { None });
+            }
             if !self.session.frame().map_err(|trap| trap.to_string())? { break; }
             batch += 1;
         }
         if live_music { self.session.advance_live_music(music_cycles)?; }
+        // A fixed fast-forward rate the batches cannot reach runs at the
+        // rate they do reach, so the music it times keeps up with the sound.
+        let now = Instant::now();
+        let seconds = now.duration_since(self.last_update).as_secs_f64();
+        self.last_update = now;
+        match (self.session.fast_forward, self.session.fast_forward_rate.factor(), factor) {
+            (true, Some(rate), Some(pace)) if !self.scripted && !self.session.replaying() => {
+                let behind = requested.is_some_and(|frames| batch < frames);
+                if let Some(next) = self.pacer.note(seconds, batch, behind, pace, rate) {
+                    self.session.pace_fast_forward(Some(next))?;
+                }
+            }
+            _ => self.pacer.reset(),
+        }
         let spu = &mut self.session.runtime.services().spu;
         self.samples.resize(spu.audio_queued(), 0);
         spu.take_audio(&mut self.samples);
@@ -265,16 +302,38 @@ impl Game {
 
     /// What the game drew since the last call (its GPU's draw trace, which
     /// this turns on; `restart` starts it again from the whole VRAM, and
-    /// `reveals` is how far beyond its screen to record the faces the game
-    /// culls), the display and the scene, for the renderer. Presentation only.
-    pub fn take_frame(&mut self, restart: bool, reveals: Option<[u16; 2]>) -> (xem_render::xem_gpu::Trace, xem_render::xem_gpu::DisplayInfo, String) {
+    /// `reveals` says which of the faces the game culls to record), the
+    /// display and the scene, for the renderer. Presentation only.
+    pub fn take_frame(&mut self, restart: bool, reveals: Option<xem_render::xem_gpu::Reveals>) -> (xem_render::xem_gpu::Trace, xem_render::xem_gpu::DisplayInfo, String) {
         let scene = self.session.scene();
         let device = self.session.runtime.services().gpu.device_mut();
         if restart || !device.trace_enabled() {
             device.set_trace(true);
         }
         device.set_reveals(reveals);
+        self.reveals = reveals;
         (device.take_trace(), device.display(), scene)
+    }
+
+    /// The view the field's characters should keep moving in from the next
+    /// frame (`GameView::actor_view`; 0 the original's).
+    pub fn want_actor_view(&mut self, view: u32) {
+        self.actor_view = view;
+    }
+
+    /// Ends the draw trace (the Original renderer shows the display as it
+    /// is): nothing is recorded for a renderer, nor faces the game culls.
+    pub fn stop_trace(&mut self) {
+        let device = self.session.runtime.services().gpu.device_mut();
+        if device.trace_enabled() {
+            device.set_trace(false);
+        }
+        self.reveals = None;
+    }
+
+    /// The display's mode and position.
+    pub fn display_info(&mut self) -> xem_render::xem_gpu::DisplayInfo {
+        self.session.runtime.services().gpu.device().display()
     }
 
     /// The display as RGBA8: (width, height, pixels).

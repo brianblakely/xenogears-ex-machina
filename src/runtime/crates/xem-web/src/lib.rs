@@ -106,6 +106,12 @@ pub struct XemApp {
     /// Page time up to which game frames have been run or dropped.
     paced: Option<f64>,
     music_paced: Option<f64>,
+    /// Fast-forward's pace: the rate the batches reach, and the last batch's time.
+    pacer: xem_core::time::FastForwardPacer,
+    batched: Option<f64>,
+    /// The view the field's characters keep moving in (see
+    /// `Session::set_actor_view`), set by the presentation.
+    actor_view: u32,
     stats: LoopStats,
     applied_time_settings: Option<(xem_settings::FastForwardRate, bool, u32, u32)>,
     /// Wheel movement (notches) not yet turned into zoom steps.
@@ -149,6 +155,9 @@ impl XemApp {
             running: false,
             paced: None,
             music_paced: None,
+            pacer: Default::default(),
+            batched: None,
+            actor_view: 0,
             stats: LoopStats::default(),
             applied_time_settings: None,
             wheel: 0.0,
@@ -296,17 +305,22 @@ impl XemApp {
             let limit = due.map(|due| due.min(MAX_FRAMES_PER_ANIMATION * u64::from(factor.unwrap())));
             let start = now_ms();
             let mut batch = 0;
+            let mut fetching = false;
             let pause_on_focus_loss = self.settings.borrow().settings().pause_on_focus_loss;
             while limit.is_none_or(|frames| batch < frames) && (batch == 0 || now_ms() - start < BATCH_BUDGET_MS) {
                 let Some(session) = self.session.as_mut() else { break };
                 session.set_window_focus(self.app_input.focused(),pause_on_focus_loss);
+                session.set_actor_view(self.actor_view).map_err(error)?;
                 match session.frame() {
                     Ok(true) => {
                         batch += 1;
                     },
                     // A disc sector is still being fetched: no time passed;
                     // the next animation frame retries after the fetch.
-                    Ok(false) => break,
+                    Ok(false) => {
+                        fetching = true;
+                        break;
+                    }
                     Err(_) => {
                         batch += 1;
                         break;
@@ -323,6 +337,20 @@ impl XemApp {
             }
             if live_music && let Some(session) = self.session.as_mut() {
                 session.advance_live_music(music_cycles).map_err(error)?;
+            }
+            // A fixed fast-forward rate the batches cannot reach runs at the
+            // rate they do reach, so the music it times keeps up with the sound.
+            let seconds = self.batched.replace(now).map_or(0.0, |at| (now - at).max(0.0) / 1000.0);
+            if let Some(session) = self.session.as_mut() {
+                match (session.fast_forward, session.fast_forward_rate.factor(), factor) {
+                    (true, Some(rate), Some(pace)) if !session.replaying() => {
+                        let behind = !fetching && limit.is_some_and(|frames| batch < frames);
+                        if let Some(next) = self.pacer.note(seconds, batch as u32, behind, pace, rate) {
+                            session.pace_fast_forward(Some(next)).map_err(error)?;
+                        }
+                    }
+                    _ => self.pacer.reset(),
+                }
             }
             self.stats.game_frames += batch;
             self.stats.last_batch = batch;
@@ -353,8 +381,20 @@ impl XemApp {
             match self.session.as_mut() {
                 Some(session) if self.display_dirty => {
                     let graphics = self.settings.borrow().settings().graphics;
+                    if graphics.renderer == xem_settings::Renderer::Original {
+                        // The console's own picture, as the device shows it.
+                        self.actor_view = 0;
+                        let gpu = &mut session.runtime.services().gpu;
+                        if gpu.device().trace_enabled() {
+                            gpu.device_mut().set_trace(false);
+                        }
+                        renderer.set_display_image(gpu.display_rgba8());
+                        self.display_dirty = false;
+                        return;
+                    }
                     let restart = renderer.configure_game(&graphics, headset);
-                    let reveals = renderer.reveal_reach();
+                    let reveals = renderer.reveals();
+                    self.actor_view = if graphics.actors_in_view { renderer.actor_view() } else { 0 };
                     let scene = session.scene();
                     let gpu = &mut session.runtime.services().gpu;
                     let device = gpu.device_mut();

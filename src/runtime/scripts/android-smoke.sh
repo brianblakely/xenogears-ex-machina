@@ -162,7 +162,7 @@ sleep 1
 tap 540 780
 sleep 1
 shot 01-graphics
-tap 73 1082
+tap 73 1194
 wait_for "xem: settings applied ShowFps\(true\)"
 
 echo "== disc import through the document picker (Import disc... button)"

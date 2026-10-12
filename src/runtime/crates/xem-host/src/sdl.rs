@@ -112,6 +112,12 @@ impl Window {
         SdlDisplay(self.display)
     }
 
+    /// Shows the window over all of its display (or back in its own size).
+    pub fn set_fullscreen(&self, fullscreen: bool) {
+        // SAFETY: a live window, on SDL's main thread.
+        unsafe { SDL_SetWindowFullscreen(self.raw, fullscreen) };
+    }
+
     /// Read the focus state last updated by the host's event loop. Never pump
     /// here: Android lifecycle watches synchronously borrow the host state.
     pub fn focused(&self) -> bool {

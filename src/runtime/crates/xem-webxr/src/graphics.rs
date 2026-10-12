@@ -257,6 +257,7 @@ impl XrGraphics {
                 filter: wgpu::FilterMode::Nearest,
                 opacity: 1.0,
                 srgb_encoded: false,
+                smooth: false,
             }],
         );
         self.gpu.queue.submit([encoder.finish()]);

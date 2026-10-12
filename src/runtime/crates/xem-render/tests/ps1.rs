@@ -151,6 +151,12 @@ fn xy(x: i32, y: i32) -> u32 {
     (x as u32 & 0xFFFF) | ((y as u32 & 0xFFFF) << 16)
 }
 
+/// The view-space point the GTE (offset 160, 120; H 256) projects to the
+/// screen point (x, y) at depth z.
+fn view(x: f32, y: f32, z: f32) -> [i32; 3] {
+    [((x - 160.0) * z / 256.0) as i32, ((y - 120.0) * z / 256.0) as i32, z as i32]
+}
+
 /// A scene drawn through the GTE: a textured quad receding in depth (near
 /// at the bottom), a dithered Gouraud triangle at sub-pixel positions, then
 /// a far flat quad drawn after a near one where they overlap, and an
@@ -168,6 +174,7 @@ fn projected_scene(gpu: &mut xem_gpu::Gpu) {
         offset: (160, 120),
         h: 256,
         owner: 0x8010_0000,
+        view: view(x, y, f32::from(z)),
     };
     let quad = [(100.3, 20.6, 3000), (220.7, 20.2, 3000), (40.4, 200.9, 400), (280.6, 200.3, 400)];
     let tri = [(30.5, 30.5, 1000), (90.75, 40.25, 1000), (50.25, 110.6, 1000)];
@@ -289,7 +296,7 @@ fn revealing_scene() -> (xem_gpu::Trace, xem_gpu::Trace) {
     let mut put = |address: usize, words: &[u32]| ram.0[address >> 2..(address >> 2) + words.len()].copy_from_slice(words);
     put(0x100, &[0x0000_0200]);
     put(0x200, &[0x04FF_FFFF, 0x2000_FF00, xy(100, 50), xy(140, 50), xy(100, 90)]);
-    let project = |x: f32, y: f32| Projection { sxy: xy(x as i32, y as i32), sz: 1000, class: 0, x: (x * 65536.0) as i32, y: (y * 65536.0) as i32, offset: (160, 120), h: 256, owner: 0 };
+    let project = |x: f32, y: f32| Projection { sxy: xy(x as i32, y as i32), sz: 1000, class: 0, x: (x * 65536.0) as i32, y: (y * 65536.0) as i32, offset: (160, 120), h: 256, owner: 0, view: view(x, y, 1000.0) };
     let projections = [project(330.0, 50.0), project(360.0, 50.0), project(330.0, 90.0)];
     let reveal = Reveal { entry: 0x100, vertices: 3, projections: 3, words: vec![0x2000_00FF, xy(330, 50), xy(360, 50), xy(330, 90)] };
     traced(|device| {
@@ -330,12 +337,38 @@ fn pulling_back_moves_the_scene_towards_the_projection_centre_and_leaves_the_int
         p.class = Class::Flat;
         p.projection = None;
     }
-    let mut pulled = [scene, interface.clone()];
+    let mut pulled = vec![scene, interface.clone()];
     pull_back(&mut pulled, 1000.0);
     let TraceOp::Draw(p) = &pulled[0] else { unreachable!() };
     // z 1000 seen from 1000 further back: halfway to the centre (160, 120).
     assert_eq!((p.vertices[0].fx, p.vertices[0].fy, p.vertices[0].z), (210.0, 120.0, 2000.0));
     assert_eq!(pulled[1], interface);
+}
+
+#[test]
+fn a_pulled_back_camera_projects_points_from_view_space_and_drops_what_lies_behind_it() {
+    // Points before the GTE's division: one in front of the game's camera,
+    // one behind it (its screen point is the saturated garbage the GTE left,
+    // its depth clamped to 1), and, in a second triangle, one that is
+    // behind the pulled-back camera too.
+    let with_view = |op: TraceOp, points: [[f32; 3]; 3]| {
+        let TraceOp::Draw(mut p) = op else { unreachable!() };
+        p.projection = Some(((160, 120), 256));
+        for (v, point) in p.vertices.iter_mut().zip(points) {
+            v.view = Some(point);
+        }
+        TraceOp::Draw(p)
+    };
+    let mut ops = vec![
+        with_view(primitive(0, 0, 0), [[100.0, 0.0, 1000.0], [-200.0, 50.0, -500.0], [0.0, 0.0, 1000.0]]),
+        with_view(primitive(0, 0, 0), [[0.0, 0.0, 1000.0], [0.0, 0.0, -1950.0], [10.0, 0.0, 1000.0]]),
+    ];
+    pull_back(&mut ops, 2000.0);
+    assert_eq!(ops.len(), 1, "the triangle reaching behind the pulled-back camera's near plane is dropped");
+    let TraceOp::Draw(p) = &ops[0] else { unreachable!() };
+    let points: Vec<_> = p.vertices[..3].iter().map(|v| (v.fx, v.fy, v.z)).collect();
+    // x = 160 + 256 * X / (Z + 2000), y likewise.
+    assert_eq!(points, [(160.0 + 256.0 * 100.0 / 3000.0, 120.0, 3000.0), (160.0 - 256.0 * 200.0 / 1500.0, 120.0 + 256.0 * 50.0 / 1500.0, 1500.0), (160.0, 120.0, 3000.0)]);
 }
 
 #[test]
@@ -372,6 +405,7 @@ fn primitive(x: i32, y: i32, u: i16) -> TraceOp {
         fx: (x + dx) as f32,
         fy: (y + dy) as f32,
         z: 1000.0,
+        view: None,
         color: 0x80_8080,
         u,
         v: 0,
@@ -456,7 +490,7 @@ fn a_jumping_sprite_leaves_its_shadow_on_the_floor() {
     // A floor across the screen and a sprite whose feet are at y 100 but
     // whose floor point (the game's ground under it) is at y 140: it jumps.
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
-    let project = |x: f32, y: f32, z: u16| Projection { sxy: xy(x as i32, y as i32), sz: z, class: 0, x: (x * 65536.0) as i32, y: (y * 65536.0) as i32, offset: (160, 120), h: 256, owner: 0 };
+    let project = |x: f32, y: f32, z: u16| Projection { sxy: xy(x as i32, y as i32), sz: z, class: 0, x: (x * 65536.0) as i32, y: (y * 65536.0) as i32, offset: (160, 120), h: 256, owner: 0, view: view(x, y, f32::from(z)) };
     let sprite = |x: f32, y: f32| Projection { class: 2, owner: 0x8010_0000, ..project(x, y, 1000) };
     let ground = Projection { class: 3, owner: 0x8010_0000, ..project(160.0, 140.0, 1000) };
     let projections = [

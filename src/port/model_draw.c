@@ -205,8 +205,9 @@ enum { XEM_SORT_AVG, XEM_SORT_FAR, XEM_SORT_NEAR };
 /* Presentation only (xem/gte.h): a face the screen-bounds test just culled,
  * recorded with the GP0 words of its packet slot (the screen points put in)
  * when the host wants culled faces and xem_present_face_visible keeps it,
- * at the OT entry of its depth as the renderer sorts. Reads the GTE and
- * memory only. */
+ * at the OT entry of its depth as the renderer sorts (depth 0, which the
+ * renderers leave unlinked, only for a camera pulled back). Reads the GTE
+ * and memory only. */
 static void xem_reveal(XemDraw *d, u32 vertices, u32 step, u32 tag, int sort, u32 sxy0, u32 sxy1, u32 sxy2, u32 sxy3) {
     u32 sxy[4], words[12], count = tag >> 24, projections = xem_gte_ring->count, i;
     s32 depth, sz;
@@ -234,7 +235,7 @@ static void xem_reveal(XemDraw *d, u32 vertices, u32 step, u32 tag, int sort, u3
             depth = (u32)xem_depth_keep((u32)depth, (u32)sz, sort == XEM_SORT_FAR);
         }
     }
-    if (depth == 0) {
+    if (depth == 0 && xem_present_reveals->pull_back == 0) {
         return;
     }
     for (i = 0; i < count; i++) {
@@ -244,6 +245,39 @@ static void xem_reveal(XemDraw *d, u32 vertices, u32 step, u32 tag, int sort, u3
         words[1 + i * step / 4] = sxy[i];
     }
     xem_present_reveal(xem_ot_entry(d, (u32)depth, d->shift), vertices, projections, words, count);
+}
+
+/* Presentation only: a face the renderer dropped as facing away or at
+ * depth 0, which a camera pulled back (xem/gte.h) may still see: recorded
+ * as a culled face while the host pulls the camera back. */
+static void xem_reveal_dropped(XemDraw *d, u32 vertices, u32 step, u32 tag, int sort, u32 sxy0, u32 sxy1, u32 sxy2, u32 sxy3) {
+    if (xem_present_reveals->pull_back != 0) {
+        xem_reveal(d, vertices, step, tag, sort, sxy0, sxy1, sxy2, sxy3);
+    }
+}
+
+/* The same for a quad dropped as facing away before its fourth point was
+ * projected: that point is projected for the record (from `fourth`), and
+ * the GTE and the ring's register provenance are put back afterwards. */
+static void xem_reveal_dropped_quad(XemDraw *d, u32 fourth, u32 step, u32 tag, int sort) {
+    XemGte saved;
+    u32 fifo[3], sxy[3], i;
+
+    if (xem_present_reveals->pull_back == 0) {
+        return;
+    }
+    saved = xem_gte;
+    for (i = 0; i < 3; i++) {
+        fifo[i] = xem_gte_ring->fifo[i];
+        sxy[i] = xem_mfc2(XEM_GTE_SXY0 + (int)i);
+    }
+    xem_load_vector(0, fourth);
+    xem_cop2(XEM_GTE_RTPS);
+    xem_reveal(d, 4, step, tag, sort, sxy[0], sxy[1], sxy[2], xem_mfc2(XEM_GTE_SXY2));
+    xem_gte = saved;
+    for (i = 0; i < 3; i++) {
+        xem_gte_ring->fifo[i] = fifo[i];
+    }
 }
 
 /* A colour word: the 24-bit RGB with a code byte. */
@@ -333,12 +367,14 @@ static void xem_draw_avg_triangles(u8 *records, s32 count, u32 step, u32 tag, u3
         xem_cop2(XEM_GTE_AVSZ3);
         d.slot &= XEM_DMA_MASK;
         if (nclip <= 0) {
+            xem_reveal_dropped(&d, 3, step, tag, XEM_SORT_AVG, sxy0, sxy1, sxy2, 0);
             continue;
         }
         xem_store_xy3(&d, step, sxy0, sxy1, sxy2);
         otz = xem_mfc2(XEM_GTE_OTZ);
         d.drawn++;
         if (otz == 0) {
+            xem_reveal_dropped(&d, 3, step, tag, XEM_SORT_AVG, sxy0, sxy1, sxy2, 0);
             continue;
         }
         entry = xem_ot_entry(&d, otz, d.shift);
@@ -386,6 +422,7 @@ static void xem_draw_avg_quads(u8 *records, s32 count, u32 step, u32 tag, u32 si
         sxy0 = xem_mfc2(XEM_GTE_SXY0);
         nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
         if (nclip <= 0) {
+            xem_reveal_dropped_quad(&d, fourth, step, tag, XEM_SORT_AVG);
             continue;
         }
         sxy1 = xem_mfc2(XEM_GTE_SXY1);
@@ -405,6 +442,7 @@ static void xem_draw_avg_quads(u8 *records, s32 count, u32 step, u32 tag, u32 si
         otz = xem_mfc2(XEM_GTE_OTZ);
         d.drawn++;
         if (otz == 0) {
+            xem_reveal_dropped(&d, 4, step, tag, XEM_SORT_AVG, sxy0, sxy1, sxy2, sxy3);
             continue;
         }
         entry = xem_ot_entry(&d, otz, d.shift);
@@ -473,6 +511,7 @@ static void xem_draw_depth_triangles(u8 *records, s32 count, u32 step, u32 tag, 
         sz2 = xem_mfc2(XEM_GTE_SZ2);
         xem_store_face_sxy(d.slot + 8, sxy0, 0, 3);
         if (nclip <= 0) {
+            xem_reveal_dropped(&d, 3, step, tag, far ? XEM_SORT_FAR : XEM_SORT_NEAR, sxy0, sxy1, sxy2, 0);
             continue;
         }
         xem_store_face_sxy(d.slot + step + 8, sxy1, 1, 3);
@@ -484,6 +523,7 @@ static void xem_draw_depth_triangles(u8 *records, s32 count, u32 step, u32 tag, 
         depth = xem_depth_keep(depth, sz3, far);
         d.drawn++;
         if (depth == 0) {
+            xem_reveal_dropped(&d, 3, step, tag, far ? XEM_SORT_FAR : XEM_SORT_NEAR, sxy0, sxy1, sxy2, 0);
             continue;
         }
         entry = xem_ot_entry(&d, depth, d.shift);
@@ -532,6 +572,7 @@ static void xem_draw_depth_quads(u8 *records, s32 count, u32 step, u32 tag, u32 
         fourth = xem_vertex3(&d);
         nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
         if (nclip <= 0) {
+            xem_reveal_dropped_quad(&d, fourth, step, tag, far ? XEM_SORT_FAR : XEM_SORT_NEAR);
             continue;
         }
         xem_load_vector(0, fourth);
@@ -553,27 +594,32 @@ static void xem_draw_depth_quads(u8 *records, s32 count, u32 step, u32 tag, u32 
         sz0 = xem_mfc2(XEM_GTE_SZ0);
         xem_store_face_sxy(d.slot + step * 2 + 8, sxy2, 2, 4);
         if (sz0 == 0) {
+            xem_reveal_dropped(&d, 4, step, tag, far ? XEM_SORT_FAR : XEM_SORT_NEAR, sxy0, sxy1, sxy2, sxy3);
             continue;
         }
         sz1 = xem_mfc2(XEM_GTE_SZ1);
         xem_store_face_sxy(d.slot + step * 3 + 8, sxy3, 3, 4);
         if (sz1 == 0) {
+            xem_reveal_dropped(&d, 4, step, tag, far ? XEM_SORT_FAR : XEM_SORT_NEAR, sxy0, sxy1, sxy2, sxy3);
             continue;
         }
         depth = xem_depth_keep(sz0, sz1, far);
         sz2 = xem_mfc2(XEM_GTE_SZ2);
         if (sz2 == 0) {
+            xem_reveal_dropped(&d, 4, step, tag, far ? XEM_SORT_FAR : XEM_SORT_NEAR, sxy0, sxy1, sxy2, sxy3);
             continue;
         }
         sz3 = xem_mfc2(XEM_GTE_SZ3);
         depth = xem_depth_keep(depth, sz2, far);
         d.slot &= XEM_DMA_MASK;
         if (sz3 == 0) {
+            xem_reveal_dropped(&d, 4, step, tag, far ? XEM_SORT_FAR : XEM_SORT_NEAR, sxy0, sxy1, sxy2, sxy3);
             continue;
         }
         depth = xem_depth_keep(depth, sz3, far);
         d.drawn++;
         if (depth == 0) {
+            xem_reveal_dropped(&d, 4, step, tag, far ? XEM_SORT_FAR : XEM_SORT_NEAR, sxy0, sxy1, sxy2, sxy3);
             continue;
         }
         entry = xem_ot_entry(&d, depth, d.shift);
@@ -649,6 +695,7 @@ void model_draw_f3_lit(u8 *records, s32 count) {
         xem_store_face_sxy(d.slot + 12, sxy1, 1, 3);
         xem_store_face_sxy(d.slot + 16, sxy2, 2, 3);
         if (nclip <= 0) {
+            xem_reveal_dropped(&d, 3, 4, 0x04000000, XEM_SORT_AVG, sxy0, sxy1, sxy2, 0);
             continue;
         }
         d.slot &= XEM_DMA_MASK;
@@ -717,6 +764,7 @@ static void xem_draw_cued_triangles(u8 *records, s32 count, u32 step, u32 tag, u
         xem_cop2(XEM_GTE_AVSZ3);
         d.slot &= XEM_DMA_MASK;
         if (nclip <= 0) {
+            xem_reveal_dropped(&d, 3, step, tag, XEM_SORT_AVG, sxy0, sxy1, sxy2, 0);
             continue;
         }
         xem_store_xy3(&d, step, sxy0, sxy1, sxy2);
@@ -724,6 +772,7 @@ static void xem_draw_cued_triangles(u8 *records, s32 count, u32 step, u32 tag, u
         d.drawn++;
         xem_cop2(XEM_GTE_DPCS);
         if (otz == 0) {
+            xem_reveal_dropped(&d, 3, step, tag, XEM_SORT_AVG, sxy0, sxy1, sxy2, 0);
             continue;
         }
         entry = xem_ot_entry(&d, otz, d.shift);
@@ -784,6 +833,7 @@ void model_draw_ft3_cued_far(u8 *records, s32 count) {
         sz2 = xem_mfc2(XEM_GTE_SZ2);
         d.slot &= XEM_DMA_MASK;
         if (nclip <= 0) {
+            xem_reveal_dropped(&d, 3, 8, 0x07000000, XEM_SORT_FAR, sxy0, sxy1, sxy2, 0);
             continue;
         }
         xem_store_xy3(&d, 8, sxy0, sxy1, sxy2);
@@ -794,6 +844,7 @@ void model_draw_ft3_cued_far(u8 *records, s32 count) {
         d.drawn++;
         rgb = xem_mfc2(XEM_GTE_RGB2);
         if (depth == 0) {
+            xem_reveal_dropped(&d, 3, 8, 0x07000000, XEM_SORT_FAR, sxy0, sxy1, sxy2, 0);
             continue;
         }
         entry = xem_ot_entry(&d, depth, d.shift);
@@ -850,6 +901,7 @@ void model_draw_ft3_lit(u8 *records, s32 count) {
         xem_store_face_sxy(d.slot + 8, sxy0, 0, 3);
         xem_store_face_sxy(d.slot + 16, sxy1, 1, 3);
         if (nclip <= 0) {
+            xem_reveal_dropped(&d, 3, 8, 0x07000000, XEM_SORT_AVG, sxy0, sxy1, sxy2, 0);
             continue;
         }
         xem_cop2(XEM_GTE_AVSZ3);
@@ -859,6 +911,7 @@ void model_draw_ft3_lit(u8 *records, s32 count) {
         d.drawn++;
         xem_lwc2(XEM_GTE_VXY0, cache - 8);
         if (otz == 0) {
+            xem_reveal_dropped(&d, 3, 8, 0x07000000, XEM_SORT_AVG, sxy0, sxy1, sxy2, 0);
             continue;
         }
         xem_lwc2(XEM_GTE_VZ0, cache - 4);
@@ -972,6 +1025,7 @@ static void xem_draw_vertex_lit(u8 *records, s32 count, int cached) {
         xem_store_face_sxy(d.slot + 8, sxy0, 0, 3);
         xem_store_face_sxy(d.slot + (cached ? 16 : 20), sxy1, 1, 3);
         if (nclip <= 0) {
+            xem_reveal_dropped(&d, 3, cached ? 8 : 12, cached ? 0x06000000 : 0x09000000, XEM_SORT_AVG, sxy0, sxy1, sxy2, 0);
             continue;
         }
         xem_cop2(XEM_GTE_AVSZ3);
@@ -980,6 +1034,7 @@ static void xem_draw_vertex_lit(u8 *records, s32 count, int cached) {
         otz = xem_mfc2(XEM_GTE_OTZ);
         normal = XEM_U32(XEM_SPILL);
         if (otz == 0) {
+            xem_reveal_dropped(&d, 3, cached ? 8 : 12, cached ? 0x06000000 : 0x09000000, XEM_SORT_AVG, sxy0, sxy1, sxy2, 0);
             continue;
         }
         d.drawn++;
@@ -1049,6 +1104,7 @@ static void xem_draw_quad_lit(u8 *records, s32 count, int textured) {
         sxy0 = xem_mfc2(XEM_GTE_SXY0);
         nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
         if (nclip <= 0) {
+            xem_reveal_dropped_quad(&d, fourth, step, textured ? 0x09000000 : 0x05000000, XEM_SORT_AVG);
             continue;
         }
         sxy1 = xem_mfc2(XEM_GTE_SXY1);
@@ -1070,6 +1126,7 @@ static void xem_draw_quad_lit(u8 *records, s32 count, int textured) {
         otz = xem_mfc2(XEM_GTE_OTZ);
         d.drawn++;
         if (otz == 0) {
+            xem_reveal_dropped(&d, 4, step, textured ? 0x09000000 : 0x05000000, XEM_SORT_AVG, sxy0, sxy1, sxy2, sxy3);
             continue;
         }
         if (textured) {
@@ -1148,6 +1205,7 @@ static void xem_draw_cued_quads(u8 *records, s32 count, int far) {
         d.slot &= XEM_DMA_MASK;
         nclip = (s32)xem_mfc2(XEM_GTE_MAC0);
         if (nclip <= 0) {
+            xem_reveal_dropped_quad(&d, fourth, 8, 0x09000000, far ? XEM_SORT_FAR : XEM_SORT_AVG);
             continue;
         }
         xem_load_vector(0, fourth);
@@ -1184,6 +1242,7 @@ static void xem_draw_cued_quads(u8 *records, s32 count, int far) {
             depth = xem_depth_keep(depth, xem_mfc2(XEM_GTE_SZ3), 1);
             d.drawn++;
             if (depth == 0) {
+                xem_reveal_dropped(&d, 4, 8, 0x09000000, far ? XEM_SORT_FAR : XEM_SORT_AVG, sxy0, sxy1, sxy2, sxy3);
                 continue;
             }
             entry = xem_ot_entry(&d, depth, d.shift);
@@ -1193,6 +1252,7 @@ static void xem_draw_cued_quads(u8 *records, s32 count, int far) {
             d.drawn++;
             xem_cop2(XEM_GTE_DPCS);
             if (depth == 0) {
+                xem_reveal_dropped(&d, 4, 8, 0x09000000, far ? XEM_SORT_FAR : XEM_SORT_AVG, sxy0, sxy1, sxy2, sxy3);
                 continue;
             }
             entry = xem_ot_entry(&d, depth, d.shift);
@@ -1291,6 +1351,7 @@ void model_draw_ft3_envmap(u8 *records, s32 count) {
         xem_store_face_sxy(d.slot + 8, sxy0, 0, 3);
         xem_store_face_sxy(d.slot + 16, sxy1, 1, 3);
         if (nclip <= 0) {
+            xem_reveal_dropped(&d, 3, 8, 0x07000000, XEM_SORT_AVG, sxy0, sxy1, sxy2, 0);
             continue;
         }
         xem_cop2(XEM_GTE_AVSZ3);
@@ -1299,6 +1360,7 @@ void model_draw_ft3_envmap(u8 *records, s32 count) {
         d.slot &= XEM_DMA_MASK;
         xem_lwc2(XEM_GTE_VXY0, normal[0]);
         if (otz == 0) {
+            xem_reveal_dropped(&d, 3, 8, 0x07000000, XEM_SORT_AVG, sxy0, sxy1, sxy2, 0);
             continue;
         }
         xem_lwc2(XEM_GTE_VZ0, normal[0] + 4);

@@ -96,7 +96,7 @@ describe('page services', () => {
     await page.waitForTimeout(300);
     const panel=await settingsSection(page,1);
     const before = (await page.evaluate(() => window.xem.settings.get())).settings.presentation.show_fps;
-    await page.mouse.click(panel.left+140,panel.top+192);
+    await page.mouse.click(panel.left+140,panel.top+234);
     await page.waitForTimeout(200);
     await page.locator('canvas').screenshot({ path: shot('panel-click.png') });
     const after = (await page.evaluate(() => window.xem.settings.get())).settings.presentation.show_fps;

@@ -111,7 +111,7 @@ fn draw(gpu: &Gpu, session: &mut Session, graphics: &Graphics) -> Picture {
     for frame in 0..8 {
         session.frame().expect("frame");
         let device = session.runtime.services().gpu.device_mut();
-        device.set_reveals(view.reveal_reach());
+        device.set_reveals(view.reveals());
         view.push(device.take_trace());
         let display = device.display();
         let scene = session.scene();

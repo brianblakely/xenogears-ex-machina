@@ -27,7 +27,7 @@ fn picture(gpu: &Gpu, view: &mut GameView, session: &mut Session, graphics: &Gra
     for frame in 0..8 {
         session.frame().expect("frame");
         let device = session.runtime.services().gpu.device_mut();
-        device.set_reveals(view.reveal_reach());
+        device.set_reveals(view.reveals());
         let trace = device.take_trace();
         view.push(trace);
         let display = session.runtime.services().gpu.device().display();

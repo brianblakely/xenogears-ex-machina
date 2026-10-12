@@ -25,7 +25,7 @@ const LIST_WORD_LIMIT: u32 = RAM_SIZE / 4;
 /// Entries of the port's presentation rings (xem/gte.h): GTE projections
 /// (`XEM_GTE_PROJECTIONS`), stored screen points (`XEM_PRESENT_STORES`) and
 /// culled faces (`XEM_PRESENT_REVEALS`), with their entry sizes.
-const PROJECTION_RING: (u32, u32) = (65536, 32);
+const PROJECTION_RING: (u32, u32) = (65536, 40);
 const STORE_RING: (u32, u32) = (65536, 16);
 const REVEAL_RING: (u32, u32) = (65536, 64);
 
@@ -102,15 +102,21 @@ impl Gpu {
     /// Hands what the port's presentation records gained since the last
     /// call to the draw trace: `args` are the headers (each starting with
     /// how many entries were ever written) of the projection, store and
-    /// culled-face rings. Reads only, except for the culled-face ring's
-    /// `wanted` word, which tells the port how far beyond its screen the
-    /// trace wants culled faces; without a trace it only notes the counts.
+    /// culled-face rings. Reads only, except for the projection ring's
+    /// `recording` word (whether a trace takes the records) and the
+    /// culled-face ring's `wanted` and `pull_back` words (how far beyond its
+    /// screen the trace wants culled faces, and from how far behind the
+    /// game's camera); without a trace it only notes the counts.
     fn trace_projections(&mut self, args: &[u32], memory: &mut dyn GameMemory) {
         let arg = |i: usize| args.get(i).copied().unwrap_or(0);
         // Entries follow headers of 32, 16 and 16 bytes.
         let rings = [(arg(0), 32, PROJECTION_RING), (arg(1), 16, STORE_RING), (arg(2), 16, REVEAL_RING)];
         let tracing = self.gpu.trace_enabled();
+        // The projection ring's `recording` word: the port records nothing
+        // while no trace takes it (the Original renderer).
+        let _ = memory.write_u32(arg(0).wrapping_add(24), u32::from(tracing));
         let _ = memory.write_u32(arg(2).wrapping_add(4), self.gpu.reveal_reach());
+        let _ = memory.write_u32(arg(2).wrapping_add(8), self.gpu.reveal_pull_back());
         let mut entries: [Vec<u8>; 3] = Default::default();
         let mut counts = [0u32; 3];
         for (n, &(header, offset, (size, bytes))) in rings.iter().enumerate() {
@@ -146,6 +152,7 @@ impl Gpu {
                 offset: (word(e, 4) as i16, (word(e, 4) >> 16) as i16),
                 h: word(e, 5) as u16,
                 owner: word(e, 6),
+                view: [word(e, 7) as i32, word(e, 8) as i32, word(e, 9) as i32],
             })
             .collect();
         let stores: Vec<xem_gpu::SxyStore> = entries[1]

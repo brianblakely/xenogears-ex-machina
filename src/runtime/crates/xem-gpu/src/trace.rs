@@ -69,6 +69,21 @@ pub struct Projection {
     pub h: u16,
     /// The sprite or model whose drawing made it (its address), or 0.
     pub owner: u32,
+    /// The point before the GTE's division: MAC1, MAC2 and the depth SZ3
+    /// saturates from (also behind the camera).
+    pub view: [i32; 3],
+}
+
+/// What a view wider or farther out than the original's asks of the port's
+/// culled-face records ([`Gpu::set_reveals`]).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Reveals {
+    /// How far beyond the screen (pixels, x and y) a culled face may lie:
+    /// on the pulled-back camera's screen when there is one.
+    pub reach: [u16; 2],
+    /// How far behind the game's camera the view looks from (GTE depth
+    /// units; 0 for the game's own camera).
+    pub pull_back: u32,
 }
 
 /// A screen point the game stored (the port's store ring).
@@ -83,9 +98,11 @@ pub struct SxyStore {
 }
 
 /// A face a renderer of the game culled at the original screen's edges
-/// (the port's reveal ring): the GP0 words it would have sent and the
-/// ordering-table entry it would have been linked at. Its points are the
-/// last `vertices` projections made before `projections`, in order.
+/// (the port's reveal ring): the GP0 words it would have sent and the node
+/// of the ordering table it would have been drawn just before (`entry`: the
+/// packet it would have been linked in front of). Its points are the last
+/// `vertices` projections made before `projections`, in order (none for a
+/// flat one, such as a backdrop continued into the sides).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Reveal {
     pub entry: u32,
@@ -143,6 +160,9 @@ pub struct TraceVertex {
     pub fy: f32,
     /// The GTE's screen depth (SZ), 0 without a projection.
     pub z: f32,
+    /// The projected point before the division (its projection's `view`),
+    /// for a camera pulled back.
+    pub view: Option<[f32; 3]>,
     /// Colour as the command gives it: 0xBBGGRR.
     pub color: u32,
     /// Texture coordinates. A rectangle's far corners hold the coordinate one
@@ -323,9 +343,9 @@ pub(crate) struct Recorder {
     word_address: u32,
     /// While a revealed face is traced: its vertices' projections.
     revealing: Option<[Option<u32>; 4]>,
-    /// How far beyond the original screen the host wants culled faces
-    /// recorded, in pixels (x, y; none when `None`). The port reads it.
-    reveal_reach: Option<[u16; 2]>,
+    /// What the host wants of culled faces (none when `None`). The port
+    /// reads it.
+    wanted: Option<Reveals>,
     /// Points traced: matched to their projection, and not (2D points).
     matches: std::cell::Cell<[u64; 2]>,
     /// The newest floor point of each sprite (by owner), and the camera
@@ -476,20 +496,24 @@ impl Gpu {
         self.trace.is_some()
     }
 
-    /// How far beyond its screen (pixels, x and y) the port should record
-    /// the faces the game culls against it, for a view wider or farther out
-    /// than the original's; `None` records none. Kept while the trace is
-    /// on; none without a trace.
-    pub fn set_reveals(&mut self, reach: Option<[u16; 2]>) {
+    /// Which faces the game culls against its screen the port should
+    /// record, for a view wider or farther out than the original's; `None`
+    /// records none. Kept while the trace is on; none without a trace.
+    pub fn set_reveals(&mut self, reveals: Option<Reveals>) {
         if let Some(trace) = &mut self.trace {
-            trace.reveal_reach = reach.filter(|r| *r != [0, 0]);
+            trace.wanted = reveals.filter(|r| r.reach != [0, 0]);
         }
     }
 
     /// [`Gpu::set_reveals`]'s reach as the port's word: x in bits 0-15, y
     /// in bits 16-31, 0 for none.
     pub fn reveal_reach(&self) -> u32 {
-        self.trace.as_ref().and_then(|t| t.reveal_reach).map_or(0, |[x, y]| u32::from(x) | u32::from(y) << 16)
+        self.trace.as_ref().and_then(|t| t.wanted).map_or(0, |r| u32::from(r.reach[0]) | u32::from(r.reach[1]) << 16)
+    }
+
+    /// [`Gpu::set_reveals`]'s pull-back as the port's word (0 for none).
+    pub fn reveal_pull_back(&self) -> u32 {
+        self.trace.as_ref().and_then(|t| t.wanted).map_or(0, |r| r.pull_back)
     }
 
     /// Points traced since the trace started: matched to their projection
@@ -547,7 +571,9 @@ impl Gpu {
         trace.source = node;
         trace.source_index = 0;
         let Some(faces) = trace.reveals.remove(&node) else { return };
-        for face in faces {
+        // Linked in front of the same packet, the newest goes first, as the
+        // GPU walks an entry's packets.
+        for face in faces.into_iter().rev() {
             self.trace.as_mut().expect("checked above").revealing = Some(face.projections);
             self.trace_before_command(&face.words);
             self.trace_polygon(&face.words, true);
@@ -713,6 +739,7 @@ impl Gpu {
             fx: x as f32,
             fy: y as f32,
             z: 0.0,
+            view: None,
             color: color & 0xFF_FFFF,
             u: (uv & 0xFF) as i16,
             v: (uv >> 8 & 0xFF) as i16,
@@ -726,6 +753,7 @@ impl Gpu {
             vertex.fx = p.x as f32 / 65536.0 + dx as f32;
             vertex.fy = p.y as f32 / 65536.0 + dy as f32;
             vertex.z = f32::from(p.sz.max(1));
+            vertex.view = Some(p.view.map(|c| c as f32));
             (Class::from_projection(p.class), p.offset, p.h, p.owner)
         });
         (vertex, class)
@@ -773,6 +801,15 @@ impl Gpu {
             let (traced, class) = self.trace_vertex(trace, words[at], at, index, color, uv);
             *vertex = traced;
             classes.extend(class);
+        }
+        // Every point projected at the projection distance (H) is drawn at
+        // its screen size: interface the GTE places (the field menu's
+        // counter backing, the world map's marker), traced as interface.
+        if classes.len() == count && classes.iter().zip(&vertices).all(|(&(_, _, h, _), v)| v.z == f32::from(h)) {
+            for v in &mut vertices[..count] {
+                (v.fx, v.fy, v.z, v.view) = (v.x as f32, v.y as f32, 0.0, None);
+            }
+            classes.clear();
         }
         let mut environment = self.trace_environment();
         if revealed && op & 0x04 != 0 {
@@ -835,6 +872,7 @@ impl Gpu {
             fx: (corner.x + dx) as f32,
             fy: (corner.y + dy) as f32,
             z: 0.0,
+            view: None,
             color: corner.color,
             u: u as i16,
             v: v as i16,

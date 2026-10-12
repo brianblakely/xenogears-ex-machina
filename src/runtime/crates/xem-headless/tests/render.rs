@@ -46,7 +46,7 @@ fn run(session: &mut Session<NativeModule>, gpu: &Gpu, mut view: impl FnMut(u64)
                 if view.take_restart() || !device.trace_enabled() {
                     device.set_trace(true);
                 }
-                device.set_reveals(view.reveal_reach());
+                device.set_reveals(view.reveals());
                 view.push(device.take_trace());
                 let display = device.display();
                 let scene = session.scene();

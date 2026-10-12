@@ -52,6 +52,9 @@ pub struct Quad<'a> {
     /// The texture has a linear format but holds sRGB-encoded values, as Slint's
     /// panel texture does.
     pub srgb_encoded: bool,
+    /// Bicubic (Catmull-Rom) scaling through the linear sampler: a small
+    /// picture (a movie frame) enlarged many times stays smooth and sharp.
+    pub smooth: bool,
 }
 
 impl<'a> Quad<'a> {
@@ -86,6 +89,7 @@ impl<'a> Quad<'a> {
             filter: wgpu::FilterMode::Linear,
             opacity: 1.0,
             srgb_encoded: false,
+            smooth: false,
         }
     }
 }
@@ -97,7 +101,7 @@ struct QuadUniform {
     opacity: f32,
     decode: u32,
     encode: u32,
-    _pad: u32,
+    bicubic: u32,
 }
 
 /// Draws textures (the game image, application panels) onto targets of one format.
@@ -280,13 +284,13 @@ impl Compositor {
                 opacity: quad.opacity,
                 decode: quad.srgb_encoded.into(),
                 encode: encode.into(),
-                _pad: 0,
+                bicubic: quad.smooth.into(),
             };
             let at = index * self.stride as usize;
             bytes[at..at + size_of::<QuadUniform>()].copy_from_slice(bytemuck::bytes_of(&uniform));
             let sampler = match quad.filter {
-                wgpu::FilterMode::Nearest => &self.nearest,
-                wgpu::FilterMode::Linear => &self.linear,
+                wgpu::FilterMode::Nearest if !quad.smooth => &self.nearest,
+                _ => &self.linear,
             };
             groups.push(self.device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some("quad texture"),
