@@ -182,6 +182,8 @@ pub struct GameView {
     focus: Option<f32>,
     /// Wider framing's sides at the last presentation (the display's).
     side: u32,
+    /// The scene that drew each frame the renderer logs (by its identity).
+    frame_scenes: Vec<(((u16, u16), u64), String)>,
 }
 
 impl GameView {
@@ -202,6 +204,7 @@ impl GameView {
             recorded_focus: None,
             focus: None,
             side: 0,
+            frame_scenes: Vec::new(),
         }
     }
 
@@ -277,7 +280,8 @@ impl GameView {
     }
 
     /// Adds what the game drew since the last push.
-    pub fn push(&mut self, trace: Trace) {
+    pub fn push(&mut self, mut trace: Trace) {
+        super::weld(&mut trace.ops);
         if let Some(TraceOp::Write { rect, upload: true, .. }) = trace.ops.first()
             && u32::from(rect.width) == super::VRAM_WIDTH
         {
@@ -302,19 +306,43 @@ impl GameView {
         let config = self.config?;
         let trace = Trace { ops: std::mem::take(&mut self.pending), focus: None };
         if Self::shows(display) {
-            self.renderer.set_display(display.width.min(1024) as u16, display.height.min(512) as u16);
+            self.renderer.set_display(xem_gpu::VramRect {
+                x: display.x,
+                y: display.y,
+                width: display.width.min(1024) as u16,
+                height: display.height.min(512) as u16,
+            });
         }
+        // A screen the game takes in this trace is the picture last presented.
+        let presented = self.presented_texture().cloned().zip(self.frame.area()).map(|(texture, (_, scale))| {
+            super::PresentedPicture { texture, side: self.frame.side(), scale }
+        });
+        self.renderer.set_presented(presented);
         // The world map's terrain blocks meet in T-junctions that open at
         // higher scales; the original's whole pixels hide them.
         self.renderer.set_seal(scene.starts_with("worldmap") && !config.draw.fidelity.vertex_snapping);
         self.renderer.draw(encoder, &trace);
+        // The frames this trace began are the current scene's.
+        let identities: Vec<_> = self.renderer.log_identities().collect();
+        self.frame_scenes.retain(|(identity, _)| identities.contains(identity));
+        for identity in identities {
+            if !self.frame_scenes.iter().any(|(known, _)| *known == identity) {
+                self.frame_scenes.push((identity, scene.to_string()));
+            }
+        }
         if !Self::shows(display) || self.renderer.needs_full_vram() {
             return None;
         }
         let area = DisplayArea { x: display.x.into(), y: display.y.into(), width: display.width, height: display.height };
         let new_frame = self.frame.track(&self.renderer, area);
-        if scene != self.scene {
-            self.scene = scene.to_string();
+        // The scene that drew the frame shown frames it: the field's last
+        // frame stays pulled back while a battle loads behind it (and its
+        // shatter takes it so), a battle's last one stays as the battle drew
+        // it while the field loads.
+        let shown = self.frame.identity().and_then(|identity| self.frame_scenes.iter().find(|(known, _)| *known == identity));
+        let shown = shown.map_or(scene, |(_, drawn)| drawn.as_str());
+        if shown != self.scene {
+            self.scene = shown.to_string();
             self.recorded_focus = None;
             self.focus = None;
         }
@@ -326,16 +354,16 @@ impl GameView {
             self.update_focus(area);
         }
         let alpha = ((now - self.arrived) / self.interval).clamp(0.0, 1.0) as f32;
-        let zoom = scene_zoom(config.zoom, scene);
+        let zoom = scene_zoom(config.zoom, &self.scene);
         let pull_back = if zoom > 1.0 { self.focus.map_or(0.0, |focus| (zoom - 1.0) * focus) } else { 0.0 };
         // The sides widen this display at its own height to the output's shape.
         self.side = config.aspect.map_or(0, |aspect| display_side((area.width, area.height), aspect));
-        let framing = Framing { side: self.side, interpolate: config.interpolation.then_some(alpha), pull_back };
+        let framing = Framing { side: self.side, interpolate: config.interpolation.then_some(alpha), pull_back, replay: config.effects.any() };
         self.frame.prepare(&self.device, &self.queue, encoder, &mut self.renderer, area, framing);
         self.presented_effects = Some(config.effects.any());
         if config.effects.any() {
-            let lighting = Lighting::for_scene(scene);
-            let view = self.effects.render(
+            let lighting = Lighting::for_scene(&self.scene);
+            self.effects.render(
                 &self.device,
                 &self.queue,
                 encoder,
@@ -346,8 +374,13 @@ impl GameView {
                 config.quality,
                 &lighting,
             );
+            // The interface the game drew after its scene, over the effects.
+            let output = self.effects.output().cloned();
+            self.frame.draw_overlay(&self.device, &self.queue, encoder, &mut self.renderer, output.as_ref());
+            let view = self.effects.output_view()?;
             return Some(Presented { view, size: self.frame.size(), new_frame });
         }
+        self.frame.draw_overlay(&self.device, &self.queue, encoder, &mut self.renderer, None);
         Some(Presented { view: self.frame.color_view(), size: self.frame.size(), new_frame })
     }
 

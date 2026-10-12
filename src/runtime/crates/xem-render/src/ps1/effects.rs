@@ -371,7 +371,7 @@ pub struct EffectsRenderer {
     /// as long as the textures; dropped when the targets are made again).
     groups: HashMap<(&'static str, Vec<wgpu::Texture>), wgpu::BindGroup>,
     views: HashMap<wgpu::Texture, wgpu::TextureView>,
-    shadow_group: Option<(wgpu::Texture, wgpu::BindGroup)>,
+    shadow_group: Option<(wgpu::Texture, u64, wgpu::BindGroup)>,
     /// The targets were just made: the scene average starts afresh.
     fresh: bool,
     /// Fog start and end, nearest and farthest sharp depth and the blur's
@@ -527,7 +527,9 @@ impl EffectsRenderer {
             let bloom = (0..levels)
                 .map(|level| texture(device, "bloom", ((half.0 >> level).max(1), (half.1 >> level).max(1)), self.hdr, usage))
                 .collect();
-            let output = texture(device, "effects output", size, wgpu::TextureFormat::Rgba8Unorm, usage | wgpu::TextureUsages::COPY_SRC);
+            // The frame's interface is drawn over it afterwards, copies too.
+            let output = texture(device, "effects output", size, wgpu::TextureFormat::Rgba8Unorm,
+                usage | wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::COPY_DST);
             self.targets = Some(Targets {
                 size,
                 lit: texture(device, "lit", size, self.hdr, usage),
@@ -699,7 +701,9 @@ impl EffectsRenderer {
             extent: [area.width as f32 + 2.0 * side, area.height as f32],
             scale: scale as f32,
             options: super::pass_options(&options.fidelity),
-            _pad: [0; 2],
+            capture_scale: 0.0,
+            capture_side: 0,
+            capture: [0; 4],
         };
         queue.write_buffer(&self.shadow_uniform, 0, bytemuck::bytes_of(&uniform));
         self.shadow_vertices.write(device, queue, bytemuck::cast_slice(&shadow_vertices));
@@ -709,10 +713,10 @@ impl EffectsRenderer {
             let targets = self.targets.as_ref().expect("created above");
             let view = self.views.entry(targets.shadow.clone()).or_insert_with(|| targets.shadow.create_view(&Default::default())).clone();
             let group = match &self.shadow_group {
-                Some((vram, group)) if *vram == ps1.vram => group.clone(),
+                Some((vram, generation, group)) if *vram == ps1.vram && *generation == ps1.capture.generation => group.clone(),
                 _ => {
-                    let group = bind_group(device, &ps1.pipelines.layout, &self.shadow_uniform, &ps1.vram);
-                    self.shadow_group = Some((ps1.vram.clone(), group.clone()));
+                    let group = bind_group(device, &ps1.pipelines.layout, &self.shadow_uniform, &ps1.vram, &ps1.capture);
+                    self.shadow_group = Some((ps1.vram.clone(), ps1.capture.generation, group.clone()));
                     group
                 }
             };
@@ -860,6 +864,11 @@ impl EffectsRenderer {
     /// The last [`EffectsRenderer::render`] result.
     pub fn output(&self) -> Option<&wgpu::Texture> {
         self.targets.as_ref().map(|t| &t.output)
+    }
+
+    /// A view of [`EffectsRenderer::output`].
+    pub fn output_view(&self) -> Option<&wgpu::TextureView> {
+        self.targets.as_ref().map(|t| &t.output_view)
     }
 }
 

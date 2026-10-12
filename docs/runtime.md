@@ -388,7 +388,16 @@ snapshots are its. The renderer only draws again what it drew:
   back, their parts recorded with their corners' own projections, out of
   order as RotTransPers4 stores them: a record's `order`), and the world
   map's scene objects (`worldmap_objects_draw`, within its draw distance;
-  `src/port/worldmap_present.c`). Intentionally hidden ones stay hidden;
+  `src/port/worldmap_present.c`). The world map's terrain quarter blocks
+  its frustum test leaves undrawn (`worldmap_terrain_draw`: the 5x5
+  window's blocks and quarters outside the game's camera) are built as the
+  original builds a quarter (the water's waves too, into a local array,
+  not the scratchpad) where the wanted view reaches their centre, and
+  their triangles recorded as culled faces. The clouds' screen points,
+  which the original reads from the GTE and stores with plain writes, are
+  recorded as stored with the projections that made them
+  (`worldmap_clouds_draw`), so they are scene and go on into the sides.
+  Intentionally hidden ones stay hidden;
   RAM stays the same (Lahan 150 frames at 1x, 3x and 5x wider: one hash). Each
   sprite's floor point (its x and z at `ground` through the sprite view) and,
   in the field, the depth of the camera's target are ring entries of their
@@ -436,9 +445,19 @@ snapshots are its. The renderer only draws again what it drew:
   the world map, whose terrain blocks of different detail meet in
   T-junctions that open into hairline cracks at higher scales (the
   original's whole pixels hide them), opaque world triangles are grown by
-  half a native pixel, their attributes taken from their own plane. The
-  interface (flat primitives, and those projected with another screen
-  offset than the scene's, such as the field compass) is drawn as the
+  half a native pixel, their attributes taken from their own plane; and
+  each trace's scene points of different faces within half a native pixel
+  and 1% in depth of each other are welded to one point (`weld`), closing
+  the cracks between pieces the game places with different matrices. A
+  sprite's part takes each texel where the GPU starts it, at a native
+  pixel's leading edge, so a mirrored part (its coordinates falling across
+  the screen, the game's u - 1 compensating) keeps its first column at any
+  scale instead of losing it. The interface's own models (primitives
+  projected with another screen offset than the scene's: the field
+  compass, the world map's, menu models) stay interface (in place, untouched
+  by the effects) but are drawn as the scene is, at their sub-pixel points
+  and the picture's resolution with the world's filtering. The rest of the
+  interface (flat primitives) is drawn as the
   original draws it whatever the profile: whole native pixels at any scale,
   slanted edges and lines included (a quad over each row of native pixels
   the GPU fills, from `xem_gpu::TriangleRows` and its line stepping),
@@ -456,6 +475,25 @@ snapshots are its. The renderer only draws again what it drew:
   interface matches it on 99.96% of the scaled pixels (slanted edges and
   lines included; 5-bit blends and a few texels the GPU's exact
   interpolation rounds the other way aside).
+- **Screen captures** (`Capture`). When the game takes the screen into
+  VRAM (a copy of a displayed area elsewhere of at least 256x192, or its
+  pixels read back and written there with every texel's semi-transparency
+  bit set: the field's saved screen at (2C0h, 100h), the battle's
+  shatter), the renderer keeps the picture last presented, its wider
+  framing's sides included, as that screen; uploads, copies and fills over
+  it let it go (the native mirror of a copy or fill does not). The scaled
+  picture's VRAM there holds it, and whatever is textured from it (15-bit
+  texels within it) samples it at its own resolution, every texel drawn,
+  semi-transparent as the screen's texel: the field's menu fading over it,
+  its zoom into a map change and back from a battle, the battle's shatter
+  show the zoomed-out, wider picture the player saw, not the original's.
+  What is drawn of it is a screen effect (interface class, never pulled
+  back, no effects), and the polygons the GTE projects at depth 0 (the
+  field's screen pieces, scaled with RotAverage4) are traced as interface;
+  a piece whose edge lies on the screen's left or right edge carries a
+  strip of the picture's sides beyond it, mapped as the piece maps its
+  texture, so the pieces fill a wider frame as they move, turn and grow.
+  A replayed copy of the screen back into a buffer brings the sides too.
 - **Frame** (`FrameRenderer`). The displayed area of the picture, or, for
   wider framing, a pulled-back camera and interpolation, a replay of the
   primitives drawn into the displayed buffer since its last clear
@@ -467,7 +505,26 @@ snapshots are its. The renderer only draws again what it drew:
   that snapshot through the frame's writes in order, so a texture slot the
   game fills again later in the frame shows each primitive its own texels;
   writes outside the display area are not shown; with no log for the shown
-  buffer, as after a load, nothing is replayed until its next clear).
+  buffer, as after a load, nothing is replayed until its next clear). A
+  game frame whose opaque drawing leaves none of a buffer's displayed
+  pixels as they were (fills, copies, uploads, untextured polygons and
+  textured scenery; a battle's stage drawn over the last frame instead of
+  a clear) also starts its log, so a log holds about one frame where the
+  game never clears (a world map battle's log had grown to 88 000 primitives
+  replayed every presentation). A copy whose source the game changed after
+  it shows the native pixels it copied then (the loading screen after a
+  save is loaded copies the saved screen while the loader fills VRAM beside
+  it), not the scaled picture's source as it is when replayed. The
+  interface the game drew after its last scene primitive (in order, with
+  the VRAM writes and copies its textures follow) is held back and drawn
+  over the finished picture (`draw_overlay`), after the effects: they keep
+  off it, its translucent pixels show what they produced, and culled faces
+  the replay draws late stay beneath it. Untextured interface primitives
+  over the whole screen (fades, flashes) cover the sides too. The scene
+  that drew the shown frame frames it (each log is tagged with the
+  session's scene when it starts): the field's last frame stays pulled
+  back while a battle loads behind it, and a battle's last frame stays as
+  the battle drew it while the field loads.
   Wider framing widens the target to the output's aspect ratio at the
   display's own height (a 320x216 display: 32 VRAM pixels a side for 16:9,
   so Fit fills the screen; at most 160) and lets scene primitives (not
@@ -620,13 +677,14 @@ and wider framing with the camera pulled back to 2.5x, and a report: the RAM
 hash after each look (equal), the pixels each look changes, the interface
 pixels HD-2D changed (0 in every scene), and the interface pixels that
 differ from the console's own picture scaled up (with an image of them;
-opaque and translucent apart): opaque ones 0 in every field, menu, text and
-world map scene under every look (the compass and the map's marker
-included); in battles only on the flat forest backdrop where the battle's
-translucent 3D light shafts and the models' edges, drawn at the finer
-scale, lie over it (the HUD itself matches). Translucent interface pixels
-(windows, the Gear HUD, the minimap) show the scene beneath, drawn at the
-finer scale. `--example render -- --map N
+opaque and translucent apart): opaque ones 0 in every menu, text and world
+map scene under every look (the map's marker included) and in the fields
+but for the field compass, a model drawn at the picture's resolution (4 120
+to 4 702 of the scaled pixels); in battles only on the flat forest backdrop
+where the battle's translucent 3D light shafts and the models' edges, drawn
+at the finer scale, lie over it (the HUD itself matches). Translucent
+interface pixels (windows, the Gear HUD, the minimap) show the scene
+beneath, drawn at the finer scale, after the effects under HD-2D. `--example render -- --map N
 --profile hd2d --compare` draws one scene beside Modern;
 `XEM_DEBUG_VIEW=shadows|depth|class` shows the effects' inputs.
 
@@ -634,7 +692,9 @@ finer scale. `--example render -- --map N
 world map, a battle (optionally won, for the result screens), boot
 (`--title`), a host's saved state (`--state`) or a session log (`--script`),
 traced and presented from boot as a host does with `--from-boot` (`--load-at`
-loads a field's state over the title screen, as a player loads a save), holding or tapping buttons, each game frame
+loads a field's state over the title screen, as a player loads a save;
+`--cards DIR` inserts memory card images, for the title screen's Continue),
+holding or tapping buttons (taps over a script's pads too), each game frame
 presented one or more times through
 `GameView` (the characters following the view unless `--original-actors`),
 it writes a contact sheet (beside the console's picture with

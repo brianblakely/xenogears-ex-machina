@@ -70,7 +70,8 @@ WRAPPED = {"mode_dispatch", "model_draw_sprite_model", "sprite_set_draw_matrix",
            "sprite_draw_parts_cut_below", "sprite_draw_parts_cut_above", "field_instance_is_off_screen",
            "field_draw_models", "worldmap_map_overlay_draw", "pad_dequeue_state", "sound_silence_voices",
            "arena_menu_open_pause", "gpu_draw_panorama", "gpu_draw_panorama_strip", "battle_draw_stage_sky",
-           "field_draw_sprite_actors", "worldmap_objects_draw"}
+           "field_draw_sprite_actors", "worldmap_objects_draw", "worldmap_clouds_draw",
+           "worldmap_terrain_draw"}
 
 CFLAGS = [
     # The MIPS front end accepts the original inline assembly; the IR is then

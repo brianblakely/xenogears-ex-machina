@@ -17,11 +17,19 @@ struct Pass {
     // Bit 0 perspective-correct texturing, 1 15-bit colour, 2 dithering,
     // 3 depth-tested ordering.
     options: u32,
-    _pad: vec2<u32>,
+    // A screen the game took into VRAM (ps1/mod.rs Capture): its picture's
+    // scale and sides (VRAM pixels on each side of the screen, the left one
+    // first in the picture), and where it lies (x, y, width, height; width 0
+    // for none).
+    capture_scale: f32,
+    capture_side: u32,
+    capture: vec4<u32>,
 };
 
 @group(0) @binding(0) var<uniform> pass_: Pass;
 @group(0) @binding(1) var vram: texture_2d<u32>;
+@group(0) @binding(2) var capture: texture_2d<f32>;
+@group(0) @binding(3) var capture_sampler: sampler;
 
 // Primitive flags (ps1/mod.rs, FLAG_*).
 const TEXTURED: u32 = 1u;
@@ -36,7 +44,10 @@ const BLEND_SHIFT: u32 = 8u;
 const CLAMP: u32 = 2048u;
 const CLASS_SHIFT: u32 = 12u;
 const ORIGINAL: u32 = 65536u;
+// The auxiliary class of a sprite's parts (ps1/mod.rs AUX_SPRITE).
+const CLASS_SPRITE: u32 = 4u;
 const LINE: u32 = 131072u;
+const CAPTURE: u32 = 262144u;
 
 struct VertexIn {
     @location(0) position: vec2<f32>,
@@ -184,6 +195,20 @@ fn sample_linear(mode: vec4<u32>, limits: u32, uv: vec2<f32>) -> Sample {
     return out;
 }
 
+// A texel of the screen the game took (CAPTURE), from the picture presented
+// then, its sides included (beyond the screen's left and right edges): every
+// texel drawn (the picture's own pixels decide nothing about transparency),
+// semi-transparent as the screen's nearest texel.
+fn sample_capture(mode: vec4<u32>, uv: vec2<f32>) -> Sample {
+    let page = vec2<f32>(f32((mode.x & 15u) * 64u), f32(((mode.x >> 4u) & 1u) * 256u));
+    let at = page + uv - vec2<f32>(pass_.capture.xy);
+    let edge = clamp(vec2<i32>(floor(at)), vec2<i32>(0), vec2<i32>(pass_.capture.zw) - vec2<i32>(1));
+    let t = vram_at(i32(pass_.capture.x) + edge.x, i32(pass_.capture.y) + edge.y);
+    let size = vec2<f32>(textureDimensions(capture));
+    let point = (at + vec2<f32>(f32(pass_.capture_side), 0.0)) * pass_.capture_scale / size;
+    return Sample(textureSampleLevel(capture, capture_sampler, point, 0.0).rgb * 31.0, 1.0, (t & 0x8000u) != 0u);
+}
+
 const DITHER_MATRIX = array<f32, 16>(
     -4.0, 0.0, -3.0, 1.0,
     2.0, -2.0, 3.0, -1.0,
@@ -229,8 +254,17 @@ fn shade(in: VertexOut, frag: vec4<f32>) -> Shaded {
         if (pass_.options & 1u) != 0u && (flags & RECTANGLE) == 0u && !original {
             uv = in.uv_perspective;
         }
+        // A sprite's part takes each texel where the GPU starts it, at a
+        // native pixel's leading edge: a mirrored part (its coordinates
+        // falling across the screen, the game's u - 1 compensating) keeps
+        // its first column instead of starting a texel further in.
+        if ((flags >> CLASS_SHIFT) & 15u) == CLASS_SPRITE && !original {
+            uv += max(-vec2<f32>(uv_dx.x, uv_dy.y) * pass_.scale, vec2<f32>(0.0));
+        }
         var s: Sample;
-        if (flags & LINEAR) != 0u {
+        if (flags & CAPTURE) != 0u && pass_.capture.z > 0u {
+            s = sample_capture(in.mode, uv);
+        } else if (flags & LINEAR) != 0u {
             s = sample_linear(in.mode, in.limits, uv);
         } else {
             s = sample_nearest(in.mode, in.limits, uv);

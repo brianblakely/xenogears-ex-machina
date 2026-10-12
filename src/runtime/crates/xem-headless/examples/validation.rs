@@ -265,18 +265,25 @@ fn main() {
                 picture.rgba.chunks(4).zip(modern.rgba.chunks(4)).filter(|(a, b)| a[..3] != b[..3]).count() as f64
                     / (picture.size.0 * picture.size.1) as f64
             });
-            let interface = match (&modern.classes, comparable) {
-                (Some(classes), true) => {
-                    let (mut total, mut differ) = (0, 0);
+            // Opaque interface pixels are the game's own (HD-2D changes
+            // none); translucent ones show the scene beneath, as the look
+            // draws it.
+            let interface = match (&modern.classes, &modern.flags, comparable) {
+                (Some(classes), Some(flags), true) => {
+                    let (mut total, mut differ, mut semi, mut semi_differ) = (0, 0, 0, 0);
                     for (i, class) in classes.iter().enumerate() {
                         if *class == 1 {
-                            total += 1;
-                            if picture.rgba[i * 4..i * 4 + 3] != modern.rgba[i * 4..i * 4 + 3] {
-                                differ += 1;
+                            let changed = picture.rgba[i * 4..i * 4 + 3] != modern.rgba[i * 4..i * 4 + 3];
+                            if flags[i] == 255 {
+                                semi += 1;
+                                semi_differ += usize::from(changed);
+                            } else {
+                                total += 1;
+                                differ += usize::from(changed);
                             }
                         }
                     }
-                    json!({"pixels": total, "changed": differ})
+                    json!({"pixels": total, "changed": differ, "semi": {"pixels": semi, "changed": semi_differ}})
                 }
                 _ => Value::Null,
             };

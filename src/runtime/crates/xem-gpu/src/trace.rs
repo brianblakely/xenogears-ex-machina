@@ -736,7 +736,7 @@ impl Gpu {
 
     /// The vertex `word`, the `at`th word of the command (usize::MAX when
     /// it is not in the command buffer) and its `index`th point.
-    fn trace_vertex(&self, trace: &Recorder, word: u32, at: usize, index: usize, color: u32, uv: u32) -> (TraceVertex, Option<(Class, (i16, i16), u16, u32)>) {
+    fn trace_vertex(&self, trace: &Recorder, word: u32, at: usize, index: usize, color: u32, uv: u32) -> (TraceVertex, Option<(Class, (i16, i16), u16, u32, u16)>) {
         let (x, y) = self.vertex(word);
         let (dx, dy) = (x - sign11(word), y - sign11(word >> 16));
         let mut vertex = TraceVertex {
@@ -760,7 +760,7 @@ impl Gpu {
             vertex.fy = p.y as f32 / 65536.0 + dy as f32;
             vertex.z = f32::from(p.sz.max(1));
             vertex.view = Some(p.view.map(|c| c as f32));
-            (Class::from_projection(p.class), p.offset, p.h, p.owner)
+            (Class::from_projection(p.class), p.offset, p.h, p.owner, p.sz)
         });
         (vertex, class)
     }
@@ -811,7 +811,12 @@ impl Gpu {
         // Every point projected at the projection distance (H) is drawn at
         // its screen size: interface the GTE places (the field menu's
         // counter backing, the world map's marker), traced as interface.
-        if classes.len() == count && classes.iter().zip(&vertices).all(|(&(_, _, h, _), v)| v.z == f32::from(h)) {
+        // So is a polygon whose every point the GTE put at depth 0, the
+        // divide overflowing (the field's screen pieces: the GTE used to
+        // zoom a picture of the screen about its centre).
+        let at_h = classes.iter().zip(&vertices).all(|(&(_, _, h, _, _), v)| v.z == f32::from(h));
+        let at_zero = classes.iter().all(|&(_, _, _, _, sz)| sz == 0);
+        if classes.len() == count && (at_h || at_zero) {
             for v in &mut vertices[..count] {
                 (v.fx, v.fy, v.z, v.view) = (v.x as f32, v.y as f32, 0.0, None);
             }
@@ -822,7 +827,7 @@ impl Gpu {
             // Executed, the polygon's page would have set GP0(E1h) bits 0-8 and 11.
             environment.draw_mode = (environment.draw_mode & !0x9FF) | (page & 0x9FF);
         }
-        let projection = classes.first().map(|&(_, offset, h, _)| (offset, h));
+        let projection = classes.first().map(|&(_, offset, h, _, _)| (offset, h));
         let owner = classes.first().map_or(0, |c| c.3);
         let classes: Vec<Class> = classes.iter().map(|c| c.0).collect();
         let class = primitive_class(&classes, count);
@@ -916,7 +921,7 @@ impl Gpu {
         let gouraud = op & 0x10 != 0;
         let (a, class_a) = self.trace_vertex(trace, vertex0, usize::MAX, 0, color0, 0);
         let (b, class_b) = self.trace_vertex(trace, vertex1, usize::MAX, 1, if gouraud { color1 } else { color0 }, 0);
-        let projection = class_a.or(class_b).map(|(_, offset, h, _)| (offset, h));
+        let projection = class_a.or(class_b).map(|(_, offset, h, _, _)| (offset, h));
         let owner = class_a.or(class_b).map_or(0, |c| c.3);
         let classes: Vec<Class> = class_a.into_iter().chain(class_b).map(|c| c.0).collect();
         let primitive = Primitive {

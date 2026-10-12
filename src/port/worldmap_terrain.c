@@ -219,6 +219,75 @@ done:
     worldmap_terrain_packet_count = (s32)count;
 }
 
+/* Presentation only (xem/gte.h): a quarter block the original left undrawn
+ * (worldmap_terrain_draw: outside its camera's view), from its cell words
+ * and its 9x9 vertices (`vertices`: the vxy, vz words the original builds
+ * in the scratchpad), each triangle projected as the original projects it
+ * (a FLAG error skipping the cell's second triangle too) and recorded as
+ * culled where xem_terrain_reveal keeps it. `packet` holds the pool's
+ * command word, `ot` is the ordering table the original links into. */
+void xem_worldmap_terrain_reveal_quarter(u32 cells, u32 ot, u32 packet, const u32 *vertices) {
+    const u32 *tl, *tr, *bl, *br, *a, *b, *c;
+    u32 word, base, uv_tl, uv_tr, uv_bl, uv_br, uv_b, uv_c;
+    s32 row, column;
+
+    for (row = 0; row < 8; row++) {
+        for (column = 0; column < 8; column++) {
+            word = XEM_U32(cells + (u32)(row * 9 + column) * 4);
+            base = ((word >> 12) & 0xF0) | ((word >> 8) & 0xF000);
+            switch ((word >> 13) & 3) {
+            case 0:
+                uv_tl = base, uv_tr = base + 0xF, uv_bl = base + 0xF00, uv_br = base + 0xF0F;
+                break;
+            case 1:
+                uv_tl = base + 0xF, uv_tr = base, uv_bl = base + 0xF0F, uv_br = base + 0xF00;
+                break;
+            case 2:
+                uv_tl = base + 0xF00, uv_tr = base + 0xF0F, uv_bl = base, uv_br = base + 0xF;
+                break;
+            default:
+                uv_tl = base + 0xF0F, uv_tr = base + 0xF00, uv_bl = base + 0xF, uv_br = base;
+                break;
+            }
+            tl = vertices + (row * 9 + column) * 2;
+            tr = tl + 2;
+            bl = tl + 18;
+            br = tl + 20;
+            /* (TL, TR, BL), or with bit 15 (TL, BR, BL); then (TR, BR, BL),
+             * or (TR, BR, TL). */
+            b = word & 0x8000 ? br : tr;
+            uv_b = word & 0x8000 ? uv_br : uv_tr;
+            xem_gte_write_data(XEM_GTE_VXY0, tl[0]);
+            xem_gte_write_data(XEM_GTE_VZ0, tl[1]);
+            xem_gte_write_data(XEM_GTE_VXY1, b[0]);
+            xem_gte_write_data(XEM_GTE_VZ1, b[1]);
+            xem_gte_write_data(XEM_GTE_VXY2, bl[0]);
+            xem_gte_write_data(XEM_GTE_VZ2, bl[1]);
+            xem_gte_execute(XEM_GTE_RTPT);
+            if ((s32)xem_gte_read_control(31) < 0) {
+                continue;
+            }
+            xem_terrain_reveal(word, ot, packet, uv_tl, uv_b, uv_bl, xem_gte_read_data(XEM_GTE_SXY0),
+                               xem_gte_read_data(XEM_GTE_SXY1), xem_gte_read_data(XEM_GTE_SXY2));
+            a = tr;
+            c = word & 0x8000 ? tl : bl;
+            uv_c = word & 0x8000 ? uv_tl : uv_bl;
+            xem_gte_write_data(XEM_GTE_VXY0, a[0]);
+            xem_gte_write_data(XEM_GTE_VZ0, a[1]);
+            xem_gte_write_data(XEM_GTE_VXY1, br[0]);
+            xem_gte_write_data(XEM_GTE_VZ1, br[1]);
+            xem_gte_write_data(XEM_GTE_VXY2, c[0]);
+            xem_gte_write_data(XEM_GTE_VZ2, c[1]);
+            xem_gte_execute(XEM_GTE_RTPT);
+            if ((s32)xem_gte_read_control(31) < 0) {
+                continue;
+            }
+            xem_terrain_reveal(word, ot, packet, uv_tr, uv_br, uv_c, xem_gte_read_data(XEM_GTE_SXY0),
+                               xem_gte_read_data(XEM_GTE_SXY1), xem_gte_read_data(XEM_GTE_SXY2));
+        }
+    }
+}
+
 /* Presentation only (xem/gte.h): a billboard the screen-bounds test culled,
  * recorded as the POLY_FT4 it would have been (the slot's words, its fourth
  * corner and CLUT as a drawn billboard gets them) when the host wants

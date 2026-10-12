@@ -7,19 +7,20 @@
 //!         [--hold right,cross] [--tap BUTTON,FRAMES] [--frames 120] [--present 2]
 //!         [--profile modern|hd2d|ps1] [--only effect,...] [--widescreen] [--zoom PERCENT] [--interpolate]
 //!         [--scale N] [--size WxH] [--every N] [--crop x,y,w,h] [--compare] [--bench] [--no-trace]
-//!         [--probe x,y] [--original-actors]
+//!         [--probe x,y] [--original-actors] [--cards DIR]
 //!         [--name NAME] [--out DIR]
 //!
 //! `--win` ends the battle in victory first (the enemies' HP set to 1, then
 //! the confirm button until the results module runs), for the result
-//! screens. `--title` starts at boot; `--state` from a saved state (a
+//! screens. `--title` starts at boot (`--cards`: a directory of memory
+//! card images to insert); `--state` from a saved state (a
 //! host's state.xemstate); `--script` plays a session log (its pads, not
 //! `--hold`); `--from-boot` traces and presents every frame of the
 //! setup too, as a host does from boot, and `--skip` presents that many
 //! frames before the ones kept; `--load-at` starts at the title screen and
 //! loads a state of the field `--map` at that frame. From the scene, the game runs `frames` frames holding the given
 //! buttons (and tapping one every so many frames, through menus and result
-//! screens); each game frame is presented `present` times at evenly spaced
+//! screens, over a script's pads too); each game frame is presented `present` times at evenly spaced
 //! host times through the hosts' GameView. Written: every `every`th
 //! presented frame (cropped when asked; with `--compare` beside the
 //! console's own picture of it, scaled up) in a contact sheet `NAME-sheet.png`,
@@ -110,6 +111,7 @@ fn main() {
     let mut output = (1920u32, 1080u32);
     let mut graphics = Graphics::default();
     let mut name = String::from("motion");
+    let mut cards: Option<PathBuf> = None;
     let mut out = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../build/validation/motion");
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -175,6 +177,7 @@ fn main() {
             "--original-actors" => graphics.actors_in_view = false,
             "--scale" => graphics.internal_scale = value().parse().unwrap(),
             "--name" => name = value(),
+            "--cards" => cards = Some(value().into()),
             "--out" => out = value().into(),
             other => panic!("unknown option {other}"),
         }
@@ -183,7 +186,8 @@ fn main() {
     let disc = std::env::var_os("XEM_DISC1")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../discs/Xenogears disc 1.chd"));
-    let (mut session, _) = xem_game::boot(&disc, &Default::default()).expect("boot");
+    let options = xem_game::BootOptions { cards, ..Default::default() };
+    let (mut session, _) = xem_game::boot(&disc, &options).expect("boot");
     // `--load-at`: the scene's state, saved from a session of its own; this
     // one starts at the title screen and loads it at that frame (as a player
     // loads a save).
@@ -325,7 +329,8 @@ fn main() {
             session.restore_bytes(saved.as_ref().expect("saved")).expect("load");
         }
         let tapped = tap.filter(|(_, period)| frame % period < 2).map_or(0, |(button, _)| button);
-        if script.is_none() {
+        // A script's pads stand unless a tap is asked for too.
+        if script.is_none() || tap.is_some() {
             session.set_pad(0, buttons | tapped);
         }
         session.set_actor_view(if graphics.actors_in_view { view.actor_view() } else { 0 }).expect("actor view");
