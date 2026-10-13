@@ -140,10 +140,14 @@ pub struct XemApp {
     xr_panel_inside: bool,
     /// The last immersive frame's gestures (`status().xr.gestures`).
     xr_gestures: Vec<xem_assist::gesture::Gesture>,
-    /// A controller's select (trigger) came since the last frame.
-    xr_select: bool,
+    /// A controller's select (trigger) came since the last frame, by hand.
+    xr_select: Option<usize>,
     /// What a headset's control deck holds.
     xr_held: std::collections::BTreeSet<xem_core::action::GameAction>,
+    /// Where the pointer last met the panel in the session (u, v), and
+    /// where it last clicked (logical pixels).
+    xr_panel_hit: Option<(f32, f32)>,
+    xr_panel_click: Option<(f32, f32)>,
 }
 
 /// The browser's game and player's input, as the headset's effects reach them.
@@ -230,8 +234,10 @@ impl XemApp {
             xr_scaling: Default::default(),
             xr_panel_inside: false,
             xr_gestures: Vec::new(),
-            xr_select: false,
+            xr_select: None,
             xr_held: Default::default(),
+            xr_panel_hit: None,
+            xr_panel_click: None,
         }
     }
 
@@ -340,7 +346,7 @@ impl XemApp {
     /// the session is visible (1), then for the left and right hands each:
     /// a target ray (present, position, orientation) and the 25 joints
     /// (present, then x, y, z each), all in the session's reference space.
-    pub fn xr_input(&mut self, now: f64, data: &[f32], select: bool) {
+    pub fn xr_input(&mut self, now: f64, data: &[f32], select: i32) {
         use xem_render::glam::{Quat, Vec3};
         const HAND: usize = 8 + 1 + 75;
         if data.len() < 8 + 2 * HAND {
@@ -358,7 +364,10 @@ impl XemApp {
                 input.hands[hand] = Some(std::array::from_fn(|j| Vec3::new(d[9 + j * 3], d[10 + j * 3], d[11 + j * 3])));
             }
         }
-        self.xr_select |= select;
+        // A controller's select (its trigger): the hand that pressed it.
+        if (0..2).contains(&select) {
+            self.xr_select = Some(select as usize);
+        }
         self.xr_input = Some(input);
     }
 
@@ -477,13 +486,22 @@ impl XemApp {
             renderer.overlay.style = xem_render::glass::Style { reduced_transparency: settings.assisted.reduced_transparency };
             if renderer.panel_visible && let Some(panel) = renderer.panel() {
                 let quad = render::xr_panel_quad(panel.size());
-                match self.headset.hit(&input, &quad) {
+                // A controller's select clicks where that controller points;
+                // otherwise the pointer source aims and a pinch clicks.
+                let selected_ray = self.xr_select.and_then(|hand| input.rays[hand]);
+                let hit = match selected_ray {
+                    Some(ray) => quad.hit(ray.position, ray.forward()),
+                    None => self.headset.hit(&input, &quad),
+                };
+                match hit {
                     Some(((u, v), _)) => {
+                        self.xr_panel_hit = Some((u, v));
                         let scale = panel.scale_factor();
                         let (w, h) = panel.size();
                         let position = xem_ui::LogicalPosition::new(u * w as f32 / scale, v * h as f32 / scale);
                         panel.dispatch(xem_ui::WindowEvent::PointerMoved { position });
-                        if pinched || self.xr_select {
+                        if pinched || self.xr_select.is_some() {
+                            self.xr_panel_click = Some((position.x, position.y));
                             let button = xem_ui::PointerEventButton::Left;
                             panel.dispatch(xem_ui::WindowEvent::PointerPressed { position, button });
                             panel.dispatch(xem_ui::WindowEvent::PointerReleased { position, button });
@@ -491,6 +509,7 @@ impl XemApp {
                         self.xr_panel_inside = true;
                     }
                     None if self.xr_panel_inside => {
+                        self.xr_panel_hit = None;
                         panel.dispatch(xem_ui::WindowEvent::PointerExited);
                         self.xr_panel_inside = false;
                     }
@@ -498,7 +517,7 @@ impl XemApp {
                 }
             }
         }
-        self.xr_select = false;
+        self.xr_select = None;
     }
 
     /// The game frames due since the last step (see [`XemApp::frame`]).
@@ -507,6 +526,10 @@ impl XemApp {
         // The player's Pause in a headset (or settings' own pause there):
         // time stands still, nothing to catch up afterwards.
         if self.headset.pauses.paused() && self.xr_input.is_some() {
+            // The panel's own Close still closes it (and its pause).
+            if self.panel_closed.replace(false) {
+                self.set_panel_visible(false);
+            }
             self.paced = Some(now);
             self.music_paced = Some(now);
             self.stats.last_batch = 0;
@@ -1260,6 +1283,11 @@ impl XemApp {
                 "pauses": self.headset.pauses,
                 "settings": self.headset.settings_open,
                 "scale": self.xr_scaling.scale,
+                "panelHit": self.xr_panel_hit,
+                "panelClick": self.xr_panel_click,
+                // The panel's logical size (where its controls are).
+                "panelSize": self.renderer.as_ref().and_then(|r| r.panel()).map(|p| { let (w, h) = p.size(); [w as f32 / p.scale_factor(), h as f32 / p.scale_factor()] }),
+                "rays": self.xr_input.as_ref().map(|i| i.rays.map(|r| r.map(|r| { let f = r.forward(); [r.position.x, r.position.y, r.position.z, f.x, f.y, f.z] }))),
             },
             "loop": {
                 "animationFrames": self.stats.animation_frames,

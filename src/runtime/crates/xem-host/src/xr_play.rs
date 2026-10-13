@@ -227,7 +227,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     // The virtual screen as the last frame showed it (where gestures aim).
     let mut last_screen: Option<xem_assist::headset::Screen> = None;
     let mut scripted = std::collections::VecDeque::new();
-    let mut scripted_aim: Option<(f32, f32)> = None;
+    let mut scripted_aim: Option<(bool, (f32, f32))> = None;
     let mut wanted_disc = None;
     let start = Instant::now();
     let mut frames = 0u64;
@@ -278,13 +278,24 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                 // `name@x/y` also aims eye gaze at that screen pixel (the
                 // scripted gaze stands in for eye tracking from then on).
                 let (name, aim) = entry.split_once('@').map_or((entry.as_str(), None), |(n, a)| (n, Some(a)));
+                // `name@panel:x/y` aims at the settings panel's logical pixel.
+                let (on_panel, aim) = match aim.and_then(|a| a.strip_prefix("panel:")) {
+                    Some(rest) => (true, Some(rest)),
+                    None => (false, aim),
+                };
                 if let Some((x, y)) = aim.and_then(|a| a.split_once('/')) {
-                    scripted_aim = x.parse().ok().zip(y.parse().ok());
+                    scripted_aim = x.parse().ok().zip(y.parse().ok()).map(|p| (on_panel, p));
                 }
                 scripted.extend(xem_assist::synthetic::gesture(name).expect("a known gesture"));
             }
-            if let (Some(aim), Some(screen), Some(head)) = (scripted_aim, last_screen, head) {
-                let direction = (screen.point(aim) - head.position).normalize();
+            if let (Some((on_panel, aim)), Some(screen), Some(head)) = (scripted_aim, last_screen, head) {
+                let target = if on_panel {
+                    let (u, v) = (aim.0 / PANEL_LOGICAL.0, aim.1 / PANEL_LOGICAL.1);
+                    panel.pose.position + panel.pose.orientation * Vec3::new((u - 0.5) * panel.size.0, (0.5 - v) * panel.size.1, 0.0)
+                } else {
+                    screen.point(aim)
+                };
+                let direction = (target - head.position).normalize();
                 assisted_input.gaze = Some(xem_assist::headset::Pose { position: head.position, orientation: Quat::from_rotation_arc(Vec3::NEG_Z, direction) });
             }
             if let Some(head) = head {
@@ -305,10 +316,11 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         }
         let visible = *panel_visible.borrow();
         if visible {
-            if input.hands[1].active {
+            if input.hands[1].active && assisted_input.hands.iter().all(Option::is_none) {
                 pointer.update(&ui, &panel, panel_px, &input.hands[1]);
             } else {
-                // No controller: the pointer source's ray, and a pinch to click.
+                // Hands tracked (or no controller): the pointer source's ray,
+                // and a pinch to click.
                 let quad = xem_assist::headset::Quad { pose: xem_assist::headset::Pose { position: panel.pose.position, orientation: panel.pose.orientation }, size: panel.size };
                 let pinched = assist.gestures.iter().any(|g| matches!(g, xem_assist::gesture::Gesture::Pinch { .. }));
                 pointer.hand(&ui, panel_px, assist.headset.hit(&assisted_input, &quad).map(|(uv, _)| uv), pinched);

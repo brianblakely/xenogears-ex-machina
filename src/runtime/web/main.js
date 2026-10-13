@@ -224,6 +224,7 @@ const host = {
         views: page.xr?.views ?? 0,
         viewer: page.xr?.viewer ?? null,
         visibility: page.xr?.session.visibilityState ?? null,
+        selects: page.xr?.selects ?? 0,
         error: page.xrError,
       },
     };
@@ -302,11 +303,13 @@ async function enterVr() {
   const layer = new XRWebGLLayer(session, gl, { antialias: false, depth: false, stencil: false, alpha: false, framebufferScaleFactor });
   session.updateRenderState({ baseLayer: layer });
   const space = await session.requestReferenceSpace('local');
-  page.xr = { session, layer, space, frames: 0, views: 0, select: false };
+  page.xr = { session, layer, space, frames: 0, views: 0, select: -1 };
   vrButton.textContent = 'Exit VR';
   // A controller's select (trigger) clicks on the settings panel; a hidden
   // session (the runtime's own menu) lets go of everything held.
-  session.addEventListener('select', () => { if (page.xr) page.xr.select = true; });
+  session.addEventListener('select', (event) => {
+    if (page.xr) { page.xr.select = event.inputSource?.handedness === 'left' ? 0 : 1; page.xr.selects = (page.xr.selects ?? 0) + 1; }
+  });
   session.addEventListener('visibilitychange', () => {
     if (session.visibilityState !== 'visible') app.release_input();
     else if (document.hasFocus()) app.resume_input();
@@ -396,7 +399,7 @@ function xrFrame(time, xrframe) {
       const { pressed, axes } = xrGamepad(xr.session);
       app.gamepad(pressed, axes);
       app.xr_input(time, xrInput(xrframe, pose, xr.session, xr.space), xr.select);
-      xr.select = false;
+      xr.select = -1;
       app.xr_frame(time, xr.layer, matrices, viewports);
       // A readback asked for reads the layer just drawn, inside the frame
       // (an emulated layer may be the canvas's default framebuffer).

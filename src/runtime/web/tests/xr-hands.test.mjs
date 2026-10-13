@@ -99,6 +99,7 @@ describe('hand gestures in a headset browser', { skip: !IWER && 'needs iwer (npm
         window.handModel.set(device, 'left', 'open');
         window.handModel.set(device, 'right', 'open');
       });
+      await page.evaluate(() => { const p = window.xrDevice.position; window.xemHeadStart = [p.x, p.y, p.z]; });
       await page.click('#vr');
       await page.waitForFunction(() => window.xem.status().xr.input && window.xem.status().page.xr.frames > 20, null, { timeout: 60_000 });
       const frames = (n) => page.evaluate(async (n) => {
@@ -153,6 +154,52 @@ describe('hand gestures in a headset browser', { skip: !IWER && 'needs iwer (npm
       assert.equal(state.settings, false, 'closed again');
       assert.equal(await page.evaluate(() => window.xem.panel.visible()), false);
       assert.equal(state.pauses.player, false, 'the player\'s Pause was never set');
+
+      // A controller's trigger clicks where it points on the panel: open
+      // Settings with prayer hands, then point the right controller at the
+      // panel's Close button (440x560 logical, Close at 410, 30) and pull.
+      await prayer();
+      assert.equal(await page.evaluate(() => window.xem.panel.visible()), true);
+      const [panelWidth, panelHeight] = (await xr()).panelSize;
+      await page.evaluate(({ panelWidth, panelHeight }) => {
+        const d = window.xrDevice;
+        d.hands.left.quaternion.set(0, 0, 0, 1);
+        d.hands.right.quaternion.set(0, 0, 0, 1);
+        d.primaryInputMode = 'controller';
+        // The panel's Close button (the header's last control, 30 logical
+        // pixels in from the top right) in the session's space (origin at
+        // the head as the session began): the panel 1.1 m ahead, 0.75 m
+        // down, tilted 25 degrees, 0.55 m wide.
+        const tilt = -25 * Math.PI / 180;
+        const height = 0.55 * panelHeight / panelWidth;
+        const [x, y] = [((panelWidth - 30) / panelWidth - 0.5) * 0.55, (0.5 - 30 / panelHeight) * height];
+        const target = [x, -0.75 + y * Math.cos(tilt), -1.1 + y * Math.sin(tilt)];
+        const head = window.xemHeadStart;
+        const from = [0.2, -0.3, -0.3];
+        const dir = target.map((v, i) => v - from[i]);
+        const len = Math.hypot(...dir);
+        const d3 = dir.map((v) => v / len);
+        // The rotation taking -Z to the direction.
+        const axis = [-d3[1] * -1 * 0 + (0 * d3[2] - (-1) * d3[1]), (-1) * d3[0] - 0 * d3[2], 0 * d3[1] - 0 * d3[0]];
+        const angle = Math.acos(-d3[2]);
+        const n = Math.hypot(...axis) || 1;
+        const s = Math.sin(angle / 2) / n;
+        const right = d.controllers.right;
+        right.position.set(head[0] + from[0], head[1] + from[1], head[2] + from[2]);
+        right.quaternion.set(axis[0] * s, axis[1] * s, axis[2] * s, Math.cos(angle / 2));
+      }, { panelWidth, panelHeight });
+      await frames(4);
+      await page.evaluate(() => window.xrDevice.controllers.right.updateButtonValue('trigger', 1));
+      await frames(3);
+      await page.evaluate(() => window.xrDevice.controllers.right.updateButtonValue('trigger', 0));
+      await frames(6);
+      const clicked = await xr();
+      assert.equal(await page.evaluate(() => window.xem.panel.visible()), false, `the trigger on Close closed the panel: ${JSON.stringify(clicked)}`);
+      assert.equal((await xr()).settings, false);
+      await page.evaluate(() => { window.xrDevice.primaryInputMode = 'hand'; });
+      await frames(4);
+      for (const name of ['open', 'half', 'fist', 'open']) await shape('right', name);
+      if ((await xr()).pauses.player) for (const name of ['open', 'half', 'fist', 'open']) await shape('right', name);
 
       // Losing tracking pauses until the player's Pause.
       await page.evaluate(() => {
