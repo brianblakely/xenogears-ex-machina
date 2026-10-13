@@ -796,8 +796,12 @@ mod tests {
         let player = *f.player().unwrap();
         let goal = f.layers[0].locate(150.0, 180.0).unwrap();
         let route = f.route(&player, goal, V3::new(150.0, 0.0, 180.0)).unwrap();
+        // One bend near the inner corner (100, 100), kept a body's width
+        // (16) off it.
         assert_eq!(route.corners.len(), 2, "{route:?}");
-        assert!((route.corners[0].x - 100.0).abs() < 1.0 && (route.corners[0].z - 100.0).abs() < 1.0, "{route:?}");
+        let bend = route.corners[0];
+        let off = bend.planar(V3::new(100.0, 0.0, 100.0));
+        assert!((8.0..=24.0).contains(&off) && bend.x > 100.0 && bend.z < 100.0, "{route:?}");
     }
 
     #[test]
