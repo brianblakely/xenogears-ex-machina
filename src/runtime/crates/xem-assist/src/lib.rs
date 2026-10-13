@@ -9,3 +9,4 @@ pub mod overlay;
 pub mod touch;
 pub mod draw;
 pub mod arcade;
+pub mod reliability;

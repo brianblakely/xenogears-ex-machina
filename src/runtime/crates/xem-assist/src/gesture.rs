@@ -120,7 +120,7 @@ pub struct Frame {
 }
 
 /// Measures of one hand's pose.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Shape {
     /// Each finger's curl, 0 straight to 1 folded into the palm.
     pub curl: [f32; 4],
@@ -138,6 +138,13 @@ pub struct Shape {
     pub thumb_side: f32,
     pub thumb_along: f32,
     pub thumb_tip: Vec3,
+    /// From the index finger's side out to the thumb tip (unit).
+    pub thumb_out: Vec3,
+    /// The index finger's bone the thumb is nearest, toward the tip (unit).
+    pub thumb_bone: Vec3,
+    /// The thumb tip from the index finger's knuckle (its travel on the
+    /// finger, whatever the whole hand does).
+    pub thumb_rel: Vec3,
     /// The thumb tip's distance to the middle and index fingers' middle
     /// joints (closing around a fist).
     pub thumb_wrap: f32,
@@ -158,11 +165,14 @@ const PRAYER_NEAR: f32 = 0.07;
 const PRAYER_APART: f32 = 0.15;
 const THUMB_CONTACT: f32 = 0.014;
 const THUMB_LIFT: f32 = 0.024;
-const SWIPE_TRAVEL: f32 = 0.015;
+const SWIPE_TRAVEL: f32 = 0.012;
 const TAP_SECONDS: f64 = 0.35;
 /// Frames a pinch must hold its shape before it commits (a closing fist
 /// passes through pinch-like shapes for a frame or so).
 const PINCH_FRAMES: u32 = 2;
+/// How far a frame moves the thumb's smoothed travel toward the tracked one
+/// (a tracker's frame-to-frame jitter is not a swipe).
+const SMOOTHING: f32 = 0.5;
 /// Seconds within which the other hand's matching grab coalesces.
 const COALESCE_SECONDS: f64 = 0.2;
 
@@ -196,8 +206,15 @@ impl Shape {
         let (d1, t1) = segment(thumb_tip, a, b);
         let (d2, t2) = segment(thumb_tip, b, c);
         let (thumb_side, thumb_along) = if d1 <= d2 { (d1, t1 * 0.5) } else { (d2, 0.5 + t2 * 0.5) };
+        let closest = if d1 <= d2 { a + (b - a) * t1 } else { b + (c - b) * t2 };
+        // The finger's axis where the thumb is: the two bones about the
+        // joint blended by nearness (no flip from one to the other there).
+        let (w1, w2) = (d2 / (d1 + d2).max(1e-6), d1 / (d1 + d2).max(1e-6));
+        let thumb_bone = ((b - a).normalize_or_zero() * w1 + (c - b).normalize_or_zero() * w2).normalize_or_zero();
+        let thumb_out = (thumb_tip - closest).normalize_or_zero();
         let thumb_wrap = thumb_tip.distance(finger(joints, MIDDLE, INTERMEDIATE)).min(thumb_tip.distance(b));
-        Shape { curl, normal, palm, forward, pinch, gather, thumb_side, thumb_along, thumb_tip, thumb_wrap }
+        let thumb_rel = thumb_tip - index_base;
+        Shape { curl, normal, palm, forward, pinch, gather, thumb_side, thumb_along, thumb_tip, thumb_out, thumb_bone, thumb_rel, thumb_wrap }
     }
 
     pub fn open(&self) -> bool {
@@ -215,7 +232,7 @@ impl Shape {
 
     /// Thumb and index tips together, the other fingers open.
     fn pinching(&self) -> bool {
-        self.pinch < PINCH_ON && self.gather > GATHER_ON + 0.01 && self.curl[1..].iter().all(|c| *c < 0.55)
+        self.pinch < PINCH_ON && self.gather > GATHER_ON + 0.004 && self.curl[1..].iter().all(|c| *c < 0.55)
     }
 
     pub fn palm(&self) -> Palm {
@@ -250,8 +267,11 @@ enum Grab {
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum Thumb {
     Off,
-    /// On the finger since `since`, from `along` and `at`.
-    On { since: f64, along: f32, at: Vec3, travelled: bool },
+    /// On the finger since `since`, from `along` and `at` (the thumb from
+    /// the knuckle), `away` the direction away from the finger there; `rel`
+    /// the thumb's smoothed place and `last` its latest, `contact` the
+    /// hand's shape as contact began.
+    On { since: f64, along: f32, at: Vec3, away: Vec3, travelled: bool, rel: Vec3, last: Vec3, contact: Shape },
 }
 
 #[derive(Clone, Debug)]
@@ -282,8 +302,9 @@ pub struct Recognizer {
     scale_release: bool,
     prayer: bool,
     prayer_armed: bool,
-    /// The last grab toggle (gesture kind, time) for coalescing.
-    last_toggle: Option<(bool, f64)>,
+    /// The last grab toggle (gesture kind, time, hand) for coalescing the
+    /// other hand's simultaneous one.
+    last_toggle: Option<(bool, f64, Hand)>,
 }
 
 impl Recognizer {
@@ -363,13 +384,16 @@ impl Recognizer {
             // Grabs.
             let open = shape.open();
             let mut grabbing = false;
-            state.grab = match state.grab {
+            // An armed hand that closed between two frames closed from open:
+            // its palm's region now is the one it closed in.
+            let closing = match state.grab {
+                Grab::Armed if shape.fist() => Grab::Closing(shape.palm()),
+                other => other,
+            };
+            state.grab = match closing {
                 _ if open => Grab::Armed,
-                Grab::Armed if !shape.fist() => {
-                    // Closing begins once the fingers start to fold.
-                    if shape.curl.iter().sum::<f32>() / 4.0 > OPEN_CURL + 0.05 { Grab::Closing(shape.palm()) } else { Grab::Armed }
-                }
-                Grab::Armed => Grab::Spent, // closed within a frame: no orientation seen closing
+                // Closing begins once the fingers start to fold.
+                Grab::Armed => Grab::Closing(shape.palm()),
                 Grab::Closing(palm) if shape.palm() != palm => Grab::Spent,
                 Grab::Closing(palm) if shape.fist() => {
                     let toggle = match palm {
@@ -379,11 +403,11 @@ impl Recognizer {
                     };
                     if let Some(gesture) = toggle && !two_handed {
                         let pause = matches!(gesture, Gesture::Pause { .. });
-                        let coalesced = self.last_toggle.is_some_and(|(kind, at)| kind == pause && frame.time - at < COALESCE_SECONDS);
+                        let coalesced = self.last_toggle.is_some_and(|(kind, at, by)| kind == pause && by != hand && frame.time - at < COALESCE_SECONDS);
                         if !coalesced {
                             out.push(gesture);
                         }
-                        self.last_toggle = Some((pause, frame.time));
+                        self.last_toggle = Some((pause, frame.time, hand));
                     }
                     Grab::Spent
                 }
@@ -425,36 +449,33 @@ impl Recognizer {
                     None => {}
                 }
             } else if !state.pinched && shape.pinch > PINCH_OFF {
-                let forward = (shape_index_axis(frame.hands[hand.index()].as_ref().expect("tracked"))).normalize_or_zero();
                 state.thumb = match state.thumb {
-                    Thumb::Off if shape.thumb_side < THUMB_CONTACT => Thumb::On { since: frame.time, along: shape.thumb_along, at: shape.thumb_tip, travelled: false },
-                    Thumb::On { since, travelled, .. } if shape.thumb_side > THUMB_LIFT => {
-                        if !travelled && frame.time - since <= TAP_SECONDS {
+                    Thumb::Off if shape.thumb_side < THUMB_CONTACT => Thumb::On { since: frame.time, along: shape.thumb_along, at: shape.thumb_rel, away: shape.thumb_out, travelled: false, rel: shape.thumb_rel, last: shape.thumb_rel, contact: shape },
+                    Thumb::On { since, travelled, at, away, rel, last, contact, .. } if shape.thumb_side > THUMB_LIFT => {
+                        // Lifted: a swipe if its last contact had travelled
+                        // the distance along the surface (and its smoothed
+                        // travel most of it), else a tap.
+                        let raw = last - at;
+                        let swept = (rel - at).length() > SWIPE_TRAVEL * 0.6 && raw.length() > SWIPE_TRAVEL && raw.dot(away).abs() < 0.6 * raw.length();
+                        if !travelled && swept {
+                            out.push(Gesture::Swipe { hand, direction: swipe_direction(raw, &contact, hand) });
+                        } else if !travelled && frame.time - since <= TAP_SECONDS {
                             out.push(Gesture::Tap { hand });
                         }
                         Thumb::Off
                     }
-                    Thumb::On { since, along, at, travelled } => {
-                        let moved = shape.thumb_tip - at;
-                        if !travelled && moved.length() > SWIPE_TRAVEL {
-                            let lengthwise = moved.dot(forward);
-                            // Across the finger's side: toward the back of
-                            // the hand is Right for the right hand (held
-                            // sideways, its back faces right) and Left for
-                            // the left.
-                            let dorsal = -shape.normal * if hand == Hand::Right { 1.0 } else { -1.0 };
-                            let across = moved.dot(dorsal);
-                            let direction = if lengthwise.abs() >= across.abs() {
-                                if lengthwise > 0.0 { Swipe::Up } else { Swipe::Down }
-                            } else if across > 0.0 {
-                                Swipe::Right
-                            } else {
-                                Swipe::Left
-                            };
-                            out.push(Gesture::Swipe { hand, direction });
-                            Thumb::On { since, along, at, travelled: true }
+                    Thumb::On { since, along, at, away, travelled, rel, contact, .. } => {
+                        let last = shape.thumb_rel;
+                        let rel = rel + (shape.thumb_rel - rel) * SMOOTHING;
+                        let moved = rel - at;
+                        // A swipe slides along the finger's surface; a thumb
+                        // moving away from it is lifting (a tap's end).
+                        let sliding = shape.thumb_side < THUMB_LIFT && moved.dot(away).abs() < 0.6 * moved.length();
+                        if !travelled && sliding && moved.length() > SWIPE_TRAVEL {
+                            out.push(Gesture::Swipe { hand, direction: swipe_direction(last - at, &contact, hand) });
+                            Thumb::On { since, along, at, away, travelled: true, rel, last, contact }
                         } else {
-                            Thumb::On { since, along, at, travelled }
+                            Thumb::On { since, along, at, away, travelled, rel, last, contact }
                         }
                     }
                     off => off,
@@ -468,10 +489,26 @@ impl Recognizer {
     }
 }
 
-/// Along the index finger, knuckle to tip.
-fn shape_index_axis(joints: &[Vec3; JOINTS]) -> Vec3 {
-    finger(joints, INDEX, TIP) - finger(joints, INDEX, PROXIMAL)
+/// A swipe's direction from the thumb's travel: along the index finger
+/// toward its tip Up, back Down; across its side toward the back of the
+/// hand Right for the right hand (held sideways, its back faces right) and
+/// Left for the left.
+fn swipe_direction(moved: Vec3, shape: &Shape, hand: Hand) -> Swipe {
+    // Along the bone the thumb is on, and across it toward the back of the
+    // hand.
+    let lengthwise = moved.dot(shape.thumb_bone);
+    let dorsal = -shape.normal * if hand == Hand::Right { 1.0 } else { -1.0 };
+    let dorsal = (dorsal - shape.thumb_bone * dorsal.dot(shape.thumb_bone)).normalize_or_zero();
+    let across = moved.dot(dorsal);
+    if lengthwise.abs() >= across.abs() {
+        if lengthwise > 0.0 { Swipe::Up } else { Swipe::Down }
+    } else if across > 0.0 {
+        Swipe::Right
+    } else {
+        Swipe::Left
+    }
 }
+
 
 /// Gestures a source of hand input can produce: joints give every hand
 /// gesture; without them none is available (controllers and pointers

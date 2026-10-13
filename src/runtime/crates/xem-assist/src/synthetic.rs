@@ -74,6 +74,13 @@ pub fn thumb_on_index(along: f32) -> [Vec3; JOINTS] {
     hand
 }
 
+/// The thumb lifted off its index finger's side at `along`: 3 cm out from it.
+pub fn thumb_lifted(along: f32) -> [Vec3; JOINTS] {
+    let mut hand = thumb_on_index(along);
+    hand[THUMB_TIP] += Vec3::new(-0.03, -0.005, 0.0);
+    hand
+}
+
 pub fn relaxed() -> [Vec3; JOINTS] {
     right_hand([0.25; 4], THUMB_REST)
 }
@@ -105,17 +112,29 @@ pub fn gesture(name: &str) -> Option<Frames> {
         "pause" => right(&[open(), open(), half(), fist(), fist(), open(), open()]),
         "inspect" => right(&[open(), open(), half(), fist(), fist(), open()].map(|p| place(p, up, Vec3::new(0.0, 0.05, 0.0)))),
         "pinch" => right(&[open(), open(), pinch(), pinch(), pinch(), open(), open()]),
-        "tap" => right(&[relaxed(), relaxed(), thumb_on_index(0.5), thumb_on_index(0.5), relaxed(), relaxed()]),
-        "swipe-up" => right(&[relaxed(), thumb_on_index(0.1), thumb_on_index(0.9), relaxed(), relaxed()]),
-        "swipe-down" => right(&[relaxed(), thumb_on_index(0.9), thumb_on_index(0.1), relaxed(), relaxed()]),
+        "tap" => right(&[relaxed(), relaxed(), thumb_on_index(0.5), thumb_on_index(0.5), thumb_lifted(0.5), relaxed(), relaxed()]),
+        // Swipes travel over a few frames, as a thumb does (80 ms and more).
+        "swipe-up" => right(&[relaxed(), thumb_on_index(0.1), thumb_on_index(0.37), thumb_on_index(0.63), thumb_on_index(0.9), thumb_lifted(0.9), relaxed(), relaxed()]),
+        "swipe-down" => right(&[relaxed(), thumb_on_index(0.9), thumb_on_index(0.63), thumb_on_index(0.37), thumb_on_index(0.1), thumb_lifted(0.1), relaxed(), relaxed()]),
         "swipe-left" | "swipe-right" => {
             // Across the finger's side: toward the back of the hand (+Y for
             // the palm-down model) is Right for the right hand.
-            let side = if name == "swipe-left" { -0.018 } else { 0.018 };
+            // Across the finger at its middle joint (perpendicular to its
+            // axis there, toward the back of the hand for Right), 2 cm,
+            // staying in contact.
             let on = thumb_on_index(0.5);
-            let mut moved = on;
-            moved[THUMB_TIP] += Vec3::new(0.0, side, 0.0);
-            right(&[relaxed(), on, moved, relaxed(), relaxed()])
+            let (a, b, c) = (on[INDEX + PROXIMAL], on[INDEX + INTERMEDIATE], on[INDEX + 3]);
+            let axis = ((b - a).normalize() + (c - b).normalize()).normalize();
+            let back = (Vec3::Y - axis * axis.y).normalize();
+            let side = if name == "swipe-left" { -0.02 } else { 0.02 };
+            let step = |t: f32| {
+                let mut moved = on;
+                moved[THUMB_TIP] += (back * side + Vec3::new(0.004, 0.0, 0.0)) * t;
+                moved
+            };
+            let mut lifted = step(1.0);
+            lifted[THUMB_TIP] += Vec3::new(-0.03, 0.0, 0.0);
+            right(&[relaxed(), on, step(0.33), step(0.67), step(1.0), lifted, relaxed(), relaxed()])
         }
         "prayer" => {
             let r = place(open(), Quat::from_rotation_z(-std::f32::consts::FRAC_PI_2), Vec3::new(0.02, 0.0, 0.0));
