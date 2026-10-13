@@ -5390,6 +5390,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
+ "xem-assist",
  "xem-core",
  "xem-disc",
  "xem-render",

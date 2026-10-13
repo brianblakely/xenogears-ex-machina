@@ -13,6 +13,7 @@ crate-type = ["cdylib", "rlib"]
 # The host exists only on wasm32; elsewhere the crate is empty.
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 xem-core = { path = "../xem-core" }
+xem-assist = { path = "../xem-assist" }
 xem-disc = { path = "../xem-disc" }
 xem-render = { path = "../xem-render" }
 xem-settings = { path = "../xem-settings" }

@@ -104,7 +104,21 @@ function wireCanvas() {
   };
   const forward = (kind) => (event) => {
     const [x, y] = position(event);
+    // Fingers play the touch controls and tap the picture (the panel takes
+    // them while it shows).
+    if (event.pointerType === 'touch' && kind !== 'wheel' && kind !== 'leave') {
+      // Keep a finger's moves even when it slides off the canvas (a touch
+      // the browser no longer tracks cannot be captured).
+      if (kind === 'down') try { canvas.setPointerCapture(event.pointerId); } catch {}
+      if (app.touch(kind, event.pointerId, x, y, performance.now())) {
+        event.preventDefault();
+        startAudioOnGesture();
+        dispatchAppRequests();
+        return;
+      }
+    }
     // Sideways mouse motion turns the field camera; the wheel zooms it.
+    if (kind === 'down') startAudioOnGesture();
     if (app.pointer(kind, x, y, event.button ?? 0, event.deltaX ?? event.movementX ?? 0, event.deltaY ?? 0)) event.preventDefault();
     // With the mouse camera on, the game keeps the mouse (hidden, unbounded
     // motion) while it has the input.
@@ -119,6 +133,7 @@ function wireCanvas() {
   canvas.addEventListener('pointerdown', forward('down'));
   canvas.addEventListener('pointerup', forward('up'));
   canvas.addEventListener('pointerleave', forward('leave'));
+  canvas.addEventListener('pointercancel', forward('cancel'));
   canvas.addEventListener('wheel', forward('wheel'), { passive: false });
 }
 wireCanvas();
@@ -247,6 +262,30 @@ function releasePointerForPanel() {
 window.addEventListener('blur', () => app.release_input());
 window.addEventListener('focus', () => app.resume_input());
 
+// --- Audio starts with the player's first gesture (a click, a key, a touch):
+// browsers allow an AudioContext to run only from one. "Start audio" stays
+// for the explicit start; a context the browser suspends resumes the same way.
+function startAudioOnGesture() {
+  const state = audio.status().state;
+  if (state === 'running') return;
+  audio.start().catch((error) => { page.audioError = String(error.message ?? error); });
+}
+
+// --- Fullscreen: a button, never a key the browser reserves. Entering or
+// leaving it lets go of held input (the browser may have taken keys).
+const fullscreenButton = $('fullscreen');
+fullscreenButton.hidden = !document.documentElement.requestFullscreen;
+fullscreenButton.addEventListener('click', () => {
+  if (document.fullscreenElement) document.exitFullscreen?.();
+  else document.documentElement.requestFullscreen?.().catch((error) => { page.fullscreenError = String(error.message ?? error); });
+});
+document.addEventListener('fullscreenchange', () => {
+  page.fullscreen = Boolean(document.fullscreenElement);
+  fullscreenButton.textContent = page.fullscreen ? 'Exit fullscreen' : 'Fullscreen';
+  app.release_input();
+  if (document.hasFocus()) app.resume_input();
+});
+
 // --- Immersive play (WebXR): a flat virtual screen in front of the player --
 // The game runs from the session's animation frames exactly as from the
 // canvas's (the frames due by the clock, never per view); every view draws
@@ -255,7 +294,7 @@ window.addEventListener('focus', () => app.resume_input());
 // Triangle, triggers L1/R1, squeeze L2/R2, stick clicks Start/Select.
 async function enterVr() {
   if (page.xr || !navigator.xr) return;
-  const session = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor'] });
+  const session = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'hand-tracking'] });
   page.xrSessions += 1;
   const gl = canvas.getContext('webgl2');
   // ?xrScale=F asks for a smaller (or larger) layer than the headset's default.
@@ -263,10 +302,21 @@ async function enterVr() {
   const layer = new XRWebGLLayer(session, gl, { antialias: false, depth: false, stencil: false, alpha: false, framebufferScaleFactor });
   session.updateRenderState({ baseLayer: layer });
   const space = await session.requestReferenceSpace('local');
-  page.xr = { session, layer, space, frames: 0, views: 0 };
+  page.xr = { session, layer, space, frames: 0, views: 0, select: false };
+  vrButton.textContent = 'Exit VR';
+  // A controller's select (trigger) clicks on the settings panel; a hidden
+  // session (the runtime's own menu) lets go of everything held.
+  session.addEventListener('select', () => { if (page.xr) page.xr.select = true; });
+  session.addEventListener('visibilitychange', () => {
+    if (session.visibilityState !== 'visible') app.release_input();
+    else if (document.hasFocus()) app.resume_input();
+  });
   session.addEventListener('end', () => {
     page.xr = null;
+    vrButton.textContent = 'Enter VR';
     app.xr_ended();
+    app.release_input();
+    if (document.hasFocus()) app.resume_input();
     requestAnimationFrame(frame);
   });
   session.requestAnimationFrame(xrFrame);
@@ -294,6 +344,40 @@ function xrGamepad(session) {
   return { pressed, axes };
 }
 
+// A headset frame's input for the runtime's gestures (XemApp.xr_input): the
+// viewer's pose and visibility, then each hand's target ray and its 25 joints.
+const XR_HAND = 8 + 1 + 75;
+const xrData = new Float32Array(8 + 2 * XR_HAND);
+function xrInput(xrframe, viewer, session, space) {
+  xrData.fill(0);
+  const put = (at, pose) => {
+    const p = pose.transform.position, o = pose.transform.orientation;
+    xrData.set([p.x, p.y, p.z, o.x, o.y, o.z, o.w], at);
+  };
+  put(0, viewer);
+  xrData[7] = session.visibilityState === 'visible' ? 1 : 0;
+  for (const source of session.inputSources) {
+    const hand = source.handedness === 'left' ? 0 : source.handedness === 'right' ? 1 : -1;
+    if (hand < 0) continue;
+    const base = 8 + hand * XR_HAND;
+    const ray = xrframe.getPose(source.targetRaySpace, space);
+    if (ray) { xrData[base] = 1; put(base + 1, ray); }
+    if (source.hand) {
+      let tracked = true;
+      let j = 0;
+      for (const joint of source.hand.values()) {
+        const pose = xrframe.getJointPose?.(joint, space);
+        if (!pose) { tracked = false; break; }
+        const p = pose.transform.position;
+        xrData.set([p.x, p.y, p.z], base + 9 + j * 3);
+        j += 1;
+      }
+      xrData[base + 8] = tracked && j === 25 ? 1 : 0;
+    }
+  }
+  return xrData;
+}
+
 function xrFrame(time, xrframe) {
   const xr = page.xr;
   if (!xr) return;
@@ -311,6 +395,8 @@ function xrFrame(time, xrframe) {
       });
       const { pressed, axes } = xrGamepad(xr.session);
       app.gamepad(pressed, axes);
+      app.xr_input(time, xrInput(xrframe, pose, xr.session, xr.space), xr.select);
+      xr.select = false;
       app.xr_frame(time, xr.layer, matrices, viewports);
       // A readback asked for reads the layer just drawn, inside the frame
       // (an emulated layer may be the canvas's default framebuffer).
@@ -581,6 +667,7 @@ for (const type of ['keydown', 'keyup']) {
   window.addEventListener(type, (event) => {
     if (event.target instanceof HTMLInputElement) return;
     const down = type === 'keydown';
+    if (down) startAudioOnGesture();
     if (down && event.key === 'Escape') {
       // Unless this Escape released the mouse and opened the panel already.
       if (performance.now() - pointerReleasedAt > 250) app.set_panel_visible(!app.panel_visible());

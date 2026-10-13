@@ -22,6 +22,29 @@ const GAME_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
 /// The panel's size in logical pixels.
 const PANEL_SIZE: (f32, f32) = (640.0, 560.0);
 
+/// The assisted controls a frame draws (Seraph Glass): marks over the
+/// picture and the touch deck on the canvas; in a headset, room quads (marks
+/// on and keys beside the screen) and the settings panel.
+#[derive(Default)]
+pub struct Overlay {
+    pub marks: Vec<xem_assist::overlay::Mark>,
+    pub deck: Vec<(xem_assist::touch::Control, xem_assist::touch::Rect, bool)>,
+    pub ui: Option<xem_core::context::Context>,
+    pub style: xem_render::glass::Style,
+    pub room: Vec<xem_assist::draw::Placed>,
+}
+
+/// The settings panel's place in a headset (as the OpenXR host's): below
+/// the screen, tilted toward the player, 55 cm wide.
+pub fn xr_panel_quad(panel_px: (u32, u32)) -> xem_assist::headset::Quad {
+    use xem_render::glam::Quat;
+    let width = 0.55;
+    xem_assist::headset::Quad {
+        pose: xem_assist::headset::Pose { position: Vec3::new(0.0, -0.75, -1.1), orientation: Quat::from_rotation_x(-25f32.to_radians()) },
+        size: (width, width * panel_px.1.max(1) as f32 / panel_px.0.max(1) as f32),
+    }
+}
+
 pub struct WebRenderer {
     gpu: Gpu,
     surface: wgpu::Surface<'static>,
@@ -53,6 +76,11 @@ pub struct WebRenderer {
     gl: Option<WebGl2RenderingContext>,
     xr: Option<XrTargets>,
     xr_eye_height: u32,
+    /// Two-hand scaling of the headset's screen.
+    pub xr_scale: f32,
+    /// The assisted controls to draw this frame, and their textures.
+    pub overlay: Overlay,
+    atlas: xem_render::glass::Atlas,
 }
 
 /// One WebXR view of an immersive frame, in wgpu conventions except for
@@ -171,6 +199,9 @@ pub async fn create(canvas: HtmlCanvasElement, prefer: &str) -> Result<WebRender
         gl,
         xr: None,
         xr_eye_height: 1080,
+        xr_scale: 1.0,
+        overlay: Overlay::default(),
+        atlas: Default::default(),
     })
 }
 
@@ -219,6 +250,11 @@ impl WebRenderer {
 
     pub fn has_panel(&self) -> bool {
         self.panel.is_some()
+    }
+
+    /// Pixels per logical pixel (the page's device pixel ratio).
+    pub fn scale_factor(&self) -> f32 {
+        self.scale
     }
 
     pub fn size(&self) -> (u32, u32) {
@@ -433,7 +469,34 @@ impl WebRenderer {
         if !encoded && self.game_frame.is_none() && self.game_image.is_some() && graphics.renderer == xem_settings::Renderer::ExMachina {
             game.filter = wgpu::FilterMode::Nearest;
         }
+        // The assisted controls' marks and the touch deck.
+        let mut glass = Vec::new();
+        if let Some(picture) = self.picture {
+            let scale = picture.placed.width / (picture.display.0 + 2.0 * picture.side);
+            for mark in &self.overlay.marks {
+                let widget = xem_assist::draw::mark_widget(mark.kind);
+                let view = self.atlas.view(&self.gpu.device, &self.gpu.queue, &widget, xem_assist::draw::WIDGET_PIXELS, self.overlay.style).clone();
+                glass.push((view, Some((picture.from_screen(mark.centre), (mark.x.0 * scale, mark.x.1 * scale), (mark.y.0 * scale, mark.y.1 * scale))), None));
+            }
+        }
+        if !self.panel_visible && let Some(ui) = self.overlay.ui {
+            for (control, rect, held) in &self.overlay.deck {
+                let state = if *held { xem_render::glass::State::Pressed } else { xem_render::glass::State::Normal };
+                let (widget, rect) = xem_assist::draw::deck_widget(*control, control.label(ui), state, *rect);
+                let view = self.atlas.view(&self.gpu.device, &self.gpu.queue, &widget, xem_assist::draw::WIDGET_PIXELS, self.overlay.style).clone();
+                glass.push((view, None, Some(Rect { x: rect.x, y: rect.y, width: rect.width, height: rect.height })));
+            }
+        }
         let mut quads = vec![game];
+        for (view, affine, rect) in &glass {
+            let mut quad = match (affine, rect) {
+                (Some((centre, x, y)), _) => Quad::screen_affine(view, *centre, *x, *y, target),
+                (None, Some(rect)) => Quad::screen(view, *rect, target),
+                (None, None) => continue,
+            };
+            quad.srgb_encoded = true;
+            quads.push(quad);
+        }
         if presentation.show_fps && let Some(counter) = &self.frame_rate {
             let (width,height) = counter.size();
             let margin = 8.0*self.scale;
@@ -459,6 +522,26 @@ impl WebRenderer {
 }
 
 impl WebRenderer {
+    /// The headset's screen as the last immersive frame drew it.
+    pub fn xr_screen(&self, settings: &SettingsService) -> Option<xem_assist::headset::Screen> {
+        let xr = settings.settings().graphics.xr;
+        let (display, side) = match (&self.game_frame, &self.game_image) {
+            (Some((display, _)), _) => ((display.width as f32, display.height as f32), self.renderer.config().map_or(0, |c| c.side) as f32),
+            (None, Some((_, _, size))) => ((size.0 as f32, size.1 as f32), 0.0),
+            (None, None) => return None,
+        };
+        let width = f32::from(xr.width_cm) / 100.0 * self.xr_scale;
+        let aspect = (display.1) / (display.0 + 2.0 * side);
+        Some(xem_assist::headset::Screen {
+            quad: xem_assist::headset::Quad {
+                pose: xem_assist::headset::Pose { position: Vec3::new(0.0, 0.0, -f32::from(xr.distance_cm) / 100.0), orientation: xem_render::glam::Quat::IDENTITY },
+                size: (width, width * aspect),
+            },
+            display,
+            side,
+        })
+    }
+
     /// The height of the immersive views, for the automatic internal scale.
     pub fn set_xr_eye_height(&mut self, height: u32) {
         if height > 0 {
@@ -519,8 +602,18 @@ impl WebRenderer {
                 *eye = (wanted, eye_texture(&self.gpu.device, wanted, self.compositor.format()));
             }
         }
+        if self.panel_visible && let Some(panel) = &mut self.panel {
+            panel.update().map_err(|error| error.to_string())?;
+        }
+        let room: Vec<(wgpu::TextureView, Mat4, Vec2)> = self.overlay.room.iter()
+            .map(|p| (self.atlas.view(&self.gpu.device, &self.gpu.queue, &p.widget, xem_assist::draw::WIDGET_PIXELS, self.overlay.style).clone(), p.pose, p.size))
+            .collect();
+        let panel_quad = self.panel.as_ref().filter(|_| self.panel_visible).map(|panel| {
+            let quad = xr_panel_quad(panel.size());
+            (panel.view().clone(), Mat4::from_rotation_translation(quad.pose.orientation, quad.pose.position), Vec2::new(quad.size.0, quad.size.1))
+        });
         let targets = self.xr.as_ref().expect("made above");
-        let width = f32::from(graphics.xr.width_cm) / 100.0;
+        let width = f32::from(graphics.xr.width_cm) / 100.0 * self.xr_scale;
         let height = width * screen_size.1 as f32 / screen_size.0 as f32;
         let pose = Mat4::from_translation(Vec3::new(0.0, 0.0, -f32::from(graphics.xr.distance_cm) / 100.0));
         let filter = match presentation.filter {
@@ -541,6 +634,11 @@ impl WebRenderer {
                         }
                         quad
                     })
+                    .chain(room.iter().chain(panel_quad.iter()).map(|(texture, pose, size)| {
+                        let mut quad = Quad::world(texture, view.proj * view.view, *pose, *size);
+                        quad.srgb_encoded = true;
+                        quad
+                    }))
                     .collect()
             })
             .collect();

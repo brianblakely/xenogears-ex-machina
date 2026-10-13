@@ -124,6 +124,51 @@ pub struct XemApp {
     applied_time_settings: Option<(xem_settings::FastForwardRate, bool, u32, u32)>,
     /// Wheel movement (notches) not yet turned into zoom steps.
     wheel: f32,
+    /// Touch: the control deck, whether a finger has touched the game, and
+    /// what touches asked for (taps on the picture, shop quantity keys).
+    deck: xem_assist::touch::Deck,
+    touched: bool,
+    taps: Vec<(f32, f32)>,
+    quantity: Vec<xem_assist::overlay::QuantityKey>,
+    /// A headset's hands and gaze (WebXR): the shared headset core, this
+    /// frame's input, the screen as last shown, and two-hand scaling.
+    headset: xem_assist::headset::Headset,
+    xr_input: Option<xem_assist::headset::Input>,
+    xr_screen: Option<xem_assist::headset::Screen>,
+    xr_scaling: xem_assist::headset::Scaling,
+    /// The panel pointer inside a headset was on the panel.
+    xr_panel_inside: bool,
+    /// The last immersive frame's gestures (`status().xr.gestures`).
+    xr_gestures: Vec<xem_assist::gesture::Gesture>,
+    /// A controller's select (trigger) came since the last frame.
+    xr_select: bool,
+}
+
+/// The browser's game and player's input, as the headset's effects reach them.
+struct WebCarry<'a> {
+    session: Option<&'a mut Session<WebModule>>,
+    input: &'a mut xem_settings::player::PlayerInput,
+}
+
+impl xem_assist::headset::Carry for WebCarry<'_> {
+    fn command(&mut self, command: Value) {
+        if let Some(session) = self.session.as_mut() {
+            let reply = session.execute(&command);
+            if let Some(error) = reply.get("error") {
+                web_sys::console::warn_1(&format!("assist command {command} failed: {error}").into());
+            }
+        }
+    }
+    fn press(&mut self, actions: Vec<xem_core::action::GameAction>) {
+        self.input.pulse(xem_settings::player::Pulse::new(actions));
+    }
+    fn select(&mut self, index: usize, confirm: bool) {
+        self.input.select(index, confirm);
+    }
+    fn inspect(&mut self) {}
+    fn release(&mut self) {
+        self.input.clear();
+    }
 }
 
 #[wasm_bindgen]
@@ -173,6 +218,17 @@ impl XemApp {
             stats: LoopStats::default(),
             applied_time_settings: None,
             wheel: 0.0,
+            deck: Default::default(),
+            touched: false,
+            taps: Vec::new(),
+            quantity: Vec::new(),
+            headset: Default::default(),
+            xr_input: None,
+            xr_screen: None,
+            xr_scaling: Default::default(),
+            xr_panel_inside: false,
+            xr_gestures: Vec::new(),
+            xr_select: false,
         }
     }
 
@@ -245,6 +301,7 @@ impl XemApp {
     /// floats, column major; `viewports` its layer rectangle (x, y from the
     /// bottom, width, height).
     pub fn xr_frame(&mut self, now: f64, layer: web_sys::XrWebGlLayer, matrices: &[f32], viewports: &[i32]) -> Result<(), JsValue> {
+        self.assist_xr();
         self.step(now)?;
         let eye_height = viewports.chunks_exact(4).map(|v| v[3]).max().unwrap_or(0).max(0) as u32;
         if let Some(renderer) = &mut self.renderer {
@@ -270,8 +327,36 @@ impl XemApp {
         self.stats.xr_frames += 1;
         if let Some(renderer) = &mut self.renderer {
             renderer.render_xr(&layer, &views, now / 1000.0, &self.settings.borrow()).map_err(error)?;
+            self.xr_screen = renderer.xr_screen(&self.settings.borrow());
         }
         Ok(())
+    }
+
+    /// A headset frame's input, before [`XemApp::xr_frame`]: `data` holds
+    /// the viewer's pose (position, then orientation x, y, z, w), whether
+    /// the session is visible (1), then for the left and right hands each:
+    /// a target ray (present, position, orientation) and the 25 joints
+    /// (present, then x, y, z each), all in the session's reference space.
+    pub fn xr_input(&mut self, now: f64, data: &[f32], select: bool) {
+        use xem_render::glam::{Quat, Vec3};
+        const HAND: usize = 8 + 1 + 75;
+        if data.len() < 8 + 2 * HAND {
+            self.xr_input = None;
+            return;
+        }
+        let pose = |d: &[f32]| xem_assist::headset::Pose { position: Vec3::new(d[0], d[1], d[2]), orientation: Quat::from_xyzw(d[3], d[4], d[5], d[6]).normalize() };
+        let mut input = xem_assist::headset::Input { time: now / 1000.0, head: Some(pose(&data[..7])), focused: data[7] != 0.0, ..Default::default() };
+        for hand in 0..2 {
+            let d = &data[8 + hand * HAND..][..HAND];
+            if d[0] != 0.0 {
+                input.rays[hand] = Some(pose(&d[1..8]));
+            }
+            if d[8] != 0.0 {
+                input.hands[hand] = Some(std::array::from_fn(|j| Vec3::new(d[9 + j * 3], d[10 + j * 3], d[11 + j * 3])));
+            }
+        }
+        self.xr_select |= select;
+        self.xr_input = Some(input);
     }
 
     /// RGBA bytes at `points` (x, y pairs, layer pixels from the bottom left)
@@ -286,6 +371,9 @@ impl XemApp {
 
     /// The immersive session ended: the canvas shows the game again.
     pub fn xr_ended(&mut self) {
+        self.xr_input = None;
+        self.headset = Default::default();
+        self.input.clear();
         if let Some(renderer) = &mut self.renderer {
             renderer.release_xr();
         }
@@ -297,9 +385,130 @@ impl XemApp {
         self.renderer.as_ref().is_some_and(|r| r.xr_capable())
     }
 
+    /// Touch play: the deck laid out by the picture, taps on the picture
+    /// resolved in the game's context, quantity keys, the destination's
+    /// mark, and the deck's held actions.
+    fn assist_touch(&mut self) {
+        let ui = self.ui;
+        let picture = self.renderer.as_ref().and_then(|r| r.picture);
+        if let (Some(picture), Some(renderer)) = (picture, &self.renderer) {
+            let placed = xem_assist::touch::Rect { x: picture.placed.x, y: picture.placed.y, width: picture.placed.width, height: picture.placed.height };
+            let (width, height) = renderer.size();
+            self.deck.arrange((width as f32, height as f32), placed, renderer.scale_factor(), ui);
+        }
+        let Some(session) = self.session.as_mut() else { return };
+        let field = (session.runtime.services().mode == Some(1)).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten();
+        for tap in std::mem::take(&mut self.taps) {
+            let Some(at) = picture.and_then(|p| p.to_screen(tap.0, tap.1)) else { continue };
+            let outs = xem_assist::dispatch::tap_at(at, ui, field.as_ref(), self.targets.as_ref()).into_iter().collect();
+            xem_assist::headset::carry(outs, &mut WebCarry { session: Some(session), input: &mut self.input }, &mut self.xr_scaling);
+        }
+        for key in std::mem::take(&mut self.quantity) {
+            session.execute(&json!({"cmd": "shop_quantity", "op": key.op()}));
+        }
+        let destination = match session.assist.as_ref().map(|a| &a.intent) {
+            Some(xem_core::assist::Intent::Walk { to, .. }) => Some(*to),
+            _ => None,
+        };
+        let marks = xem_assist::overlay::marks(ui, None, field.as_ref(), destination);
+        let shown = self.touched && self.settings.borrow().settings().assisted.touch_controls;
+        let style = xem_render::glass::Style { reduced_transparency: self.settings.borrow().settings().assisted.reduced_transparency };
+        let held = self.deck.held();
+        if let Some(renderer) = &mut self.renderer {
+            renderer.overlay.marks = marks;
+            renderer.overlay.ui = shown.then_some(ui);
+            renderer.overlay.style = style;
+            renderer.overlay.deck = self.deck.controls.iter().map(|(c, r)| (*c, *r, held.contains(c))).collect();
+        }
+        self.input.touch = self.deck.actions();
+    }
+
+    /// A headset frame's gestures, before its game frames: aimed at the
+    /// screen as last shown, resolved in the game's context and carried
+    /// out; the panel opens and closes with prayer hands and takes the
+    /// pointer's clicks (a pinch, or a controller's select).
+    fn assist_xr(&mut self) {
+        let Some(input) = self.xr_input.clone() else { return };
+        let settings = self.settings.borrow().settings().clone();
+        self.headset.source = match settings.assisted.pointer {
+            xem_settings::XrPointer::Eye => xem_assist::headset::PointerSource::Eye,
+            xem_settings::XrPointer::Head => xem_assist::headset::PointerSource::Head,
+            xem_settings::XrPointer::LeftHand => xem_assist::headset::PointerSource::LeftRay,
+            xem_settings::XrPointer::RightHand => xem_assist::headset::PointerSource::RightRay,
+        };
+        let panel_visible = self.panel_visible();
+        if self.headset.settings_open != panel_visible {
+            self.headset.set_settings(panel_visible);
+        }
+        let Some(screen) = self.xr_screen else { return };
+        let ui = self.ui;
+        let (field, targets) = match self.session.as_mut() {
+            Some(session) => (
+                (session.runtime.services().mode == Some(1)).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten(),
+                session.runtime.targets(),
+            ),
+            None => (None, None),
+        };
+        let keys = if xem_assist::overlay::quantity_keys(ui) { xem_assist::draw::quantity_keys(&screen) } else { vec![] };
+        let hovered = keys.iter().find(|(_, q)| self.headset.hit(&input, q).is_some()).map(|(k, _)| *k);
+        let effects = if settings.assisted.gestures {
+            self.headset.update_with_keys(&input, &screen, ui, field.as_ref(), targets.as_ref(), &keys)
+        } else {
+            xem_assist::headset::Effects { aim: self.headset.aim(&input, &screen), ..Default::default() }
+        };
+        let pinched = effects.gestures.iter().any(|g| matches!(g, xem_assist::gesture::Gesture::Pinch { .. }));
+        xem_assist::headset::carry(effects.outs, &mut WebCarry { session: self.session.as_mut(), input: &mut self.input }, &mut self.xr_scaling);
+        self.xr_gestures = effects.gestures;
+        if self.headset.settings_open != panel_visible {
+            self.set_panel_visible(self.headset.settings_open);
+        }
+        // The panel takes the pointer's ray and clicks.
+        if let Some(renderer) = &mut self.renderer {
+            renderer.xr_scale = self.xr_scaling.scale;
+            let destination = match self.session.as_ref().and_then(|s| s.assist.as_ref()).map(|a| &a.intent) {
+                Some(xem_core::assist::Intent::Walk { to, .. }) => Some(*to),
+                _ => None,
+            };
+            let marks = if settings.assisted.gestures { xem_assist::overlay::marks(ui, effects.aim, field.as_ref(), destination) } else { vec![] };
+            renderer.overlay.room = xem_assist::draw::room(&marks, &screen, !keys.is_empty(), hovered);
+            renderer.overlay.style = xem_render::glass::Style { reduced_transparency: settings.assisted.reduced_transparency };
+            if renderer.panel_visible && let Some(panel) = renderer.panel() {
+                let quad = render::xr_panel_quad(panel.size());
+                match self.headset.hit(&input, &quad) {
+                    Some(((u, v), _)) => {
+                        let scale = panel.scale_factor();
+                        let (w, h) = panel.size();
+                        let position = xem_ui::LogicalPosition::new(u * w as f32 / scale, v * h as f32 / scale);
+                        panel.dispatch(xem_ui::WindowEvent::PointerMoved { position });
+                        if pinched || self.xr_select {
+                            let button = xem_ui::PointerEventButton::Left;
+                            panel.dispatch(xem_ui::WindowEvent::PointerPressed { position, button });
+                            panel.dispatch(xem_ui::WindowEvent::PointerReleased { position, button });
+                        }
+                        self.xr_panel_inside = true;
+                    }
+                    None if self.xr_panel_inside => {
+                        panel.dispatch(xem_ui::WindowEvent::PointerExited);
+                        self.xr_panel_inside = false;
+                    }
+                    None => {}
+                }
+            }
+        }
+        self.xr_select = false;
+    }
+
     /// The game frames due since the last step (see [`XemApp::frame`]).
     fn step(&mut self, now: f64) -> Result<(), JsValue> {
         self.sync_time_controls()?;
+        // The player's Pause in a headset (or settings' own pause there):
+        // time stands still, nothing to catch up afterwards.
+        if self.headset.pauses.paused() && self.xr_input.is_some() {
+            self.paced = Some(now);
+            self.music_paced = Some(now);
+            self.stats.last_batch = 0;
+            return Ok(());
+        }
         if self.running && self.rewind_held.iter().any(|held| *held) {
             if now >= self.rewind_next {
                 if let Some(session) = self.session.as_mut() {
@@ -321,6 +530,7 @@ impl XemApp {
             });
             self.ui = context.ui;
             self.targets = self.session.as_mut().and_then(|s| s.runtime.targets());
+            self.assist_touch();
             let bindings = self.settings.borrow().settings().game_bindings.clone();
             if self.panel_visible() { self.input.clear(); }
             self.input.browse(self.targets.as_ref());
@@ -512,6 +722,7 @@ impl XemApp {
     /// Release the player's keys and buttons (the page lost focus).
     pub fn release_input(&mut self) {
         self.input.clear();
+        self.deck.release();
         let _ = self.app_input.set_focused(false);
         if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) { panel.cancel_pointer(); }
         self.app_requests.borrow_mut().retain(|r| matches!(r,AppRequest::Action(_)));
@@ -609,6 +820,34 @@ impl XemApp {
                 let _ = self.settings.borrow_mut().apply(SettingChange::Graphics(zoomed));
             }
         }
+        true
+    }
+
+    /// A finger on the canvas (`kind` down, move, up or cancel; canvas
+    /// pixels): the control deck, and taps on the picture. True when it was
+    /// the game's (the panel takes touches while it shows).
+    pub fn touch(&mut self, kind: &str, id: u32, x: f32, y: f32, now: f64) -> bool {
+        if self.panel_visible() {
+            self.deck.release();
+            return false;
+        }
+        self.touched = true;
+        let time = now / 1000.0;
+        use xem_assist::touch::Touched;
+        match kind {
+            "down" => match self.deck.down(u64::from(id), (x, y), time) {
+                Touched::Settings => self.set_panel_visible(true),
+                Touched::Quantity(key) => self.quantity.push(key),
+                _ => {}
+            },
+            "move" => self.deck.moved(u64::from(id), (x, y)),
+            _ => {
+                if let Touched::Tap(at) = self.deck.up(u64::from(id), (x, y), time, kind == "cancel") {
+                    self.taps.push(at);
+                }
+            }
+        }
+        self.input.touch = self.deck.actions();
         true
     }
 
@@ -1003,6 +1242,22 @@ impl XemApp {
             "session": session,
             "gameMemoryBytes": self.memory_bytes,
             "running": self.running,
+            // The assisted controls: the touch deck (canvas pixels, what
+            // fingers hold) and a headset's gestures and pauses.
+            "touch": {
+                "touched": self.touched,
+                "controls": self.deck.controls.iter().map(|(c, r)| json!({
+                    "control": format!("{c:?}"), "x": r.x, "y": r.y, "width": r.width, "height": r.height,
+                })).collect::<Vec<_>>(),
+                "held": self.deck.held().iter().map(|c| format!("{c:?}")).collect::<Vec<_>>(),
+            },
+            "xr": {
+                "input": self.xr_input.is_some(),
+                "gestures": self.xr_gestures,
+                "pauses": self.headset.pauses,
+                "settings": self.headset.settings_open,
+                "scale": self.xr_scaling.scale,
+            },
             "loop": {
                 "animationFrames": self.stats.animation_frames,
                 "xrFrames": self.stats.xr_frames,

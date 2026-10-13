@@ -333,6 +333,46 @@ describe('automation over a game module fixture', () => {
     assert.deepEqual(withPanel, [], 'the panel has the input');
   });
 
+  test('fingers play the touch controls beside the picture and let go when lifted', async () => {
+    const touch = await browser.page('?game=/fixtures/fixture.wasm');
+    try {
+      await touch.evaluate(async () => {
+        await window.xem.boot({ executable: false });
+        window.xem.command({ cmd: 'write_memory', address: 0x80000100, hex: '01000000' });
+        window.xem.setRunning(true);
+        for (let i = 0; i < 4; i++) await new Promise(requestAnimationFrame);
+      });
+      const finger = (type, id, control) => touch.evaluate(async ({ type, id, control }) => {
+        const canvas = document.querySelector('canvas');
+        const scale = window.devicePixelRatio || 1;
+        const c = window.xem.status().touch.controls.find((k) => k.control === control);
+        const box = canvas.getBoundingClientRect();
+        const x = box.left + (c ? c.x + c.width / 2 : canvas.width / 2) / scale;
+        const y = box.top + (c ? c.y + c.height / 2 : canvas.height / 2) / scale;
+        canvas.dispatchEvent(new PointerEvent(type, { pointerType: 'touch', pointerId: id, clientX: x, clientY: y, bubbles: true, isPrimary: id === 1 }));
+        for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
+        const s = window.xem.status();
+        return { held: s.touch.held, buttons: window.xem.command({ cmd: 'status' }).pads[0].buttons.sort(), touched: s.touch.touched };
+      }, { type, id, control });
+      // The first touch shows the deck (laid out from the picture's place).
+      await finger('pointerdown', 9, null);
+      await finger('pointerup', 9, null);
+      const controls = await touch.evaluate(() => window.xem.status().touch.controls.map((c) => c.control));
+      assert.ok(controls.includes('Up') && controls.includes('Confirm') && controls.includes('Settings'), JSON.stringify(controls));
+      assert.deepEqual(await finger('pointerdown', 1, 'Up'), { held: ['Up'], buttons: ['up'], touched: true });
+      assert.deepEqual(await finger('pointerdown', 2, 'Confirm'), { held: ['Up', 'Confirm'], buttons: ['cross', 'up'], touched: true });
+      assert.deepEqual(await finger('pointermove', 1, 'Right'), { held: ['Right', 'Confirm'], buttons: ['cross', 'right'], touched: true }, 'a finger slides across the D-pad');
+      assert.deepEqual(await finger('pointerup', 2, 'Confirm'), { held: ['Right'], buttons: ['right'], touched: true });
+      assert.deepEqual(await finger('pointercancel', 1, 'Right'), { held: [], buttons: [], touched: true }, 'a cancelled touch lets go');
+      // Settings is a touch away (not only Escape).
+      await finger('pointerdown', 3, 'Settings');
+      assert.equal(await touch.evaluate(() => window.xem.panel.visible()), true);
+      assert.deepEqual(touch.errors, []);
+    } finally {
+      await touch.close();
+    }
+  });
+
   test('gamepad sticks drive movement and camera, and Back+Start owns the settings toggle', async () => {
     const controls = await browser.page('?game=/fixtures/fixture.wasm');
     try {
