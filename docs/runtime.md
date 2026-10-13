@@ -1030,7 +1030,8 @@ natively (`xem_host::xr_play::gamepad`) and in the browser (`xrGamepad`).
 
 `xem_core::context` reads what the player's input reaches from the game's
 memory (`context` command): `walk` (the player has control in a field),
-`event`, `dialogue` (with its open `choice`: count and index), `menu`
+`event` (with the map and the pad buttons its scripts test, from
+`python3 -m tools.analysis.events --buttons`), `dialogue` (with its open `choice`: count and index), `menu`
 (`menu_state_screen` and its cursors; the field menu runs inside the field
 mode), `battle` (the command page, whether the attack inputs have the
 buttons, AP left), `world_map` and `arena`. `xem_core::menu` (`targets`)
@@ -1179,9 +1180,13 @@ the browser's WebXR sessions (plan.md, the hand/gaze contract):
   held; the world map: tap OK, down the menu, left and right the camera,
   up the throttle held). Keys beside the screen, gazed at and tapped,
   press once or toggle a held button (lit while held); the world map's
-  Board presses L2 and R2 together. Everything lets go when the context
-  ends. The field's script-driven activities play with the field's
-  controls and the controller or touch deck.
+  Board presses L2 and R2 together. The field's script-driven activities
+  (an event on one of the 84 maps whose scripts test the pad: puzzles,
+  button prompts, mashing) get a deck of exactly the buttons those
+  scripts test (their symbols as the game's prompts name them), the tap
+  the first face button, the swipes the directions they read and the
+  stick the held ones and diagonals. Everything lets go when the context
+  ends.
 - **Drawing.** `xem_assist::overlay` and `xem_render::glass`: the live
   cursor (a hollow halo with fins and a gold centre; on the floor it lies
   as the floor projects, silver where walkable, a gold chevron where a

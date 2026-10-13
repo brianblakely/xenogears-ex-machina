@@ -1,7 +1,9 @@
 //! Control decks for the game's bespoke inputs in a headset (plan.md:
 //! battles and bespoke minigames): Battling's bouts (the arena's fighters,
-//! mode 4) and the world map's walking, Gears and vehicles (mode 3). Each
-//! is played one-handed:
+//! mode 4), the world map's walking, Gears and vehicles (mode 3), and the
+//! field's script-driven activities (an event on a map whose scripts test
+//! the pad: its deck has exactly the buttons those scripts test). Each is
+//! played one-handed:
 //!
 //! - **A captured stick.** A pinch captures it at the pinching hand; the
 //!   hand's travel from there (across and ahead, as the player faces) holds
@@ -33,6 +35,8 @@ pub enum Deck {
     Bout,
     /// The world map, open (not a scripted scene).
     WorldMap,
+    /// A field event on a map whose scripts test `buttons`.
+    Activity { buttons: u16 },
 }
 
 /// The deck a context plays with.
@@ -40,6 +44,7 @@ pub fn deck(ui: Context) -> Option<Deck> {
     match ui {
         Context::Arena { state: 1 } => Some(Deck::Bout),
         Context::WorldMap { scene, .. } if scene < 8 => Some(Deck::WorldMap),
+        Context::Event { buttons, .. } if buttons != 0 => Some(Deck::Activity { buttons }),
         _ => None,
     }
 }
@@ -53,10 +58,30 @@ pub struct Key {
     pub hold: bool,
 }
 
+/// The game's buttons as the field reads them (after its button
+/// assignment), the action each is, and its key's label: the symbol the
+/// button has under the default assignment (the game's prompts name those).
+const ACTIVITY_BUTTONS: [(u16, &[GameAction], &str); 14] = [
+    (0x0020, &[GameAction::Confirm], "circle"),
+    (0x0040, &[GameAction::Cancel], "cross"),
+    (0x0010, &[GameAction::Menu], "triangle"),
+    (0x0080, &[GameAction::Jump], "square"),
+    (0x0004, &[GameAction::CameraLeft], "L1"),
+    (0x0008, &[GameAction::CameraRight], "R1"),
+    (0x0001, &[GameAction::L2], "L2"),
+    (0x0002, &[GameAction::R2], "R2"),
+    (0x0800, &[GameAction::Start], "START"),
+    (0x0100, &[GameAction::Select], "SELECT"),
+    (0x1000, &[GameAction::Up], "^"),
+    (0x4000, &[GameAction::Down], "v"),
+    (0x8000, &[GameAction::Left], "<"),
+    (0x2000, &[GameAction::Right], ">"),
+];
+
 /// A deck's keys, top to bottom.
-pub fn keys(deck: Deck) -> &'static [Key] {
+pub fn keys(deck: Deck) -> Vec<Key> {
     use GameAction::*;
-    match deck {
+    let fixed: &[Key] = match deck {
         // The bout's names: Cross is A, Square B, Triangle jumps, R1 the
         // special, Circle held dashes, L1 held charges.
         Deck::Bout => &[
@@ -79,7 +104,13 @@ pub fn keys(deck: Deck) -> &'static [Key] {
             Key { label: "BOARD", actions: &[L2, R2], hold: false },
             Key { label: "START", actions: &[Start], hold: false },
         ],
-    }
+        // The buttons the activity's scripts test, each pressed once.
+        Deck::Activity { buttons } => {
+            return ACTIVITY_BUTTONS.iter().filter(|(bit, ..)| buttons & bit != 0)
+                .map(|&(_, actions, label)| Key { label, actions, hold: false }).collect();
+        }
+    };
+    fixed.to_vec()
 }
 
 /// The thumb's actions on a deck.
@@ -96,6 +127,24 @@ fn thumb(deck: Deck, gesture: &Gesture) -> Option<(GameAction, bool)> {
         (Deck::WorldMap, Gesture::Swipe { direction: Swipe::Left, .. }) => (CameraLeft, false),
         (Deck::WorldMap, Gesture::Swipe { direction: Swipe::Right, .. }) => (CameraRight, false),
         (Deck::WorldMap, Gesture::Swipe { direction: Swipe::Up, .. }) => (Jump, true),
+        // An activity: a tap is its first face button (Confirm when it reads
+        // it), the swipes the directions it reads.
+        (Deck::Activity { buttons }, Gesture::Tap { .. }) => {
+            let (_, actions, _) = ACTIVITY_BUTTONS[..4].iter().find(|(bit, ..)| buttons & bit != 0)?;
+            (actions[0], false)
+        }
+        (Deck::Activity { buttons }, Gesture::Swipe { direction, .. }) => {
+            let (bit, action) = match direction {
+                Swipe::Up => (0x1000, Up),
+                Swipe::Down => (0x4000, Down),
+                Swipe::Left => (0x8000, Left),
+                Swipe::Right => (0x2000, Right),
+            };
+            if buttons & bit == 0 {
+                return None;
+            }
+            (action, false)
+        }
         _ => return None,
     })
 }
@@ -265,5 +314,25 @@ mod tests {
         let board = keys(Deck::WorldMap).iter().position(|k| k.label == "BOARD").unwrap();
         assert_eq!(arcade.key(Deck::WorldMap, board).presses, vec![vec![GameAction::L2, GameAction::R2]]);
         assert!(deck(Context::WorldMap { movement: 2, scene: 9 }).is_none(), "scripted scenes keep the game's own controls");
+    }
+
+    #[test]
+    fn an_activity_deck_has_the_buttons_its_scripts_test() {
+        // Map 699's scripts test the four face buttons and the directions.
+        let ui = Context::Event { map: 699, buttons: 0xF0F0 };
+        let deck = deck(ui).unwrap();
+        let labels: Vec<_> = keys(deck).iter().map(|k| k.label).collect();
+        assert_eq!(labels, ["circle", "cross", "triangle", "square", "^", "v", "<", ">"]);
+        let mut arcade = Arcade::default();
+        let played = arcade.update(ui, &[Gesture::Tap { hand: Hand::Left }, Gesture::Swipe { hand: Hand::Left, direction: Swipe::Left }], palm(0.0, 0.0), Vec3::X, Vec3::NEG_Z).unwrap();
+        assert_eq!(played.presses, vec![vec![GameAction::Confirm], vec![GameAction::Left]]);
+        // The stick holds diagonals (the scripts test Up and Right together).
+        arcade.update(ui, &[Gesture::Pinch { hand: Hand::Right }], palm(0.0, -0.3), Vec3::X, Vec3::NEG_Z);
+        let held = arcade.update(ui, &[], palm(0.05, -0.35), Vec3::X, Vec3::NEG_Z).unwrap().held;
+        assert_eq!(held, BTreeSet::from([GameAction::Up, GameAction::Right]));
+        // Only Cross: a tap presses it, swipes nothing; events elsewhere have no deck.
+        let cross = Context::Event { map: 100, buttons: 0x0040 };
+        assert_eq!(arcade.update(cross, &[Gesture::Tap { hand: Hand::Left }, Gesture::Swipe { hand: Hand::Left, direction: Swipe::Up }], palm(0.0, 0.0), Vec3::X, Vec3::NEG_Z).unwrap().presses, vec![vec![GameAction::Cancel]]);
+        assert!(super::deck(Context::Event { map: 1, buttons: 0 }).is_none());
     }
 }

@@ -55,7 +55,7 @@ pub fn room(marks: &[Mark], screen: &Screen, keys: &[KeyMark]) -> Vec<Placed> {
         }
     }).collect();
     for ((_, quad), key) in side_keys(screen, keys.len()).into_iter().zip(keys) {
-        let icon = match key.label.as_str() { "+" => Icon::Plus, "-" => Icon::Minus, text => Icon::Text(text.into()) };
+        let icon = icon_of(&key.label);
         placed.push(Placed {
             widget: Widget::Key(icon, key.state),
             pose: Mat4::from_rotation_translation(quad.pose.orientation, quad.pose.position + normal * 0.002),
@@ -82,12 +82,11 @@ pub fn mark_widget(kind: crate::overlay::Kind) -> xem_render::glass::Widget {
     }
 }
 
-/// A touch control's widget, and the square it is drawn in (wide keys
-/// fill the middle of their square image).
-pub fn deck_widget(control: crate::touch::Control, label: &str, state: xem_render::glass::State, rect: Rect) -> (xem_render::glass::Widget, Rect) {
-    use crate::touch::Control;
-    use xem_render::glass::{Dir, Icon, Widget};
-    let icon = match label {
+/// A control's symbol from its label: the arrows and the face buttons'
+/// shapes by name, else the text.
+fn icon_of(label: &str) -> Icon {
+    use xem_render::glass::Dir;
+    match label {
         "^" => Icon::Arrow(Dir::Up),
         "v" => Icon::Arrow(Dir::Down),
         "<" => Icon::Arrow(Dir::Left),
@@ -99,7 +98,15 @@ pub fn deck_widget(control: crate::touch::Control, label: &str, state: xem_rende
         "+" => Icon::Plus,
         "-" => Icon::Minus,
         text => Icon::Text(text.into()),
-    };
+    }
+}
+
+/// A touch control's widget, and the square it is drawn in (wide keys
+/// fill the middle of their square image).
+pub fn deck_widget(control: crate::touch::Control, label: &str, state: xem_render::glass::State, rect: Rect) -> (xem_render::glass::Widget, Rect) {
+    use crate::touch::Control;
+    use xem_render::glass::Widget;
+    let icon = icon_of(label);
     let round = matches!(control, Control::Up | Control::Down | Control::Left | Control::Right | Control::Jump | Control::Cancel | Control::Confirm | Control::Menu);
     if round {
         (Widget::Button(icon, state), Rect { x: rect.x, y: rect.y, width: rect.width, height: rect.height })

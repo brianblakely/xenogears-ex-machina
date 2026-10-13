@@ -157,7 +157,7 @@ fn tap(ui: Context, aim: Aim, field: Option<&Field>, targets: Option<&Targets>) 
         Context::Battle { attack: true, .. } => None,
         Context::Battle { .. } => Some(press([GameAction::Confirm])),
         Context::WorldMap { .. } => Some(press([GameAction::Confirm])),
-        Context::Event | Context::None | Context::Arena { .. } => None,
+        Context::Event { .. } | Context::None | Context::Arena { .. } => None,
     }
 }
 

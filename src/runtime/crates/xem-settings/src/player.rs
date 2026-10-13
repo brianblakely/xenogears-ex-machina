@@ -106,7 +106,7 @@ fn epoch(ui: Ui) -> Epoch {
     match ui {
         Ui::None => Epoch::None,
         Ui::Walk => Epoch::Walk,
-        Ui::Event => Epoch::Event,
+        Ui::Event { .. } => Epoch::Event,
         Ui::Dialogue { choice } => Epoch::Dialogue { choice: choice.is_some() },
         Ui::Menu { screen, .. } => Epoch::Menu { screen },
         Ui::Battle { attack, list, targeting, .. } => Epoch::Battle { attack, list, targeting },

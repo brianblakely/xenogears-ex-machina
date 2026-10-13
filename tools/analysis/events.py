@@ -34,7 +34,7 @@ following, those that land inside an instruction and 12's movie-pending
 continuation, and follows a variable a6 index into each consecutive three-byte
 jump after it. `--sweep` decodes every map of both discs and prints aggregate
 counts only; `--list MAP` prints one map's listing to stdout (keep listings
-under .local/).
+under .local/); `--buttons` prints the pad buttons each map's scripts test.
 """
 
 from __future__ import annotations
@@ -2053,13 +2053,48 @@ def listing(package: EventPackage) -> list[str]:
     return lines
 
 
+BUTTON_TESTS = {
+    "branch_unless_buttons",
+    "branch_unless_buttons_seen",
+    "branch_unless_buttons_equal",
+    "branch_unless_buttons_seen_equal",
+}
+
+
+def script_buttons(root: Path) -> dict[int, int]:
+    """The pad buttons each field map's reachable scripts test (31, 32, fe e2,
+    fe e3 operand 1), both discs' maps of the same number together."""
+    buttons: dict[int, int] = {}
+    for disc in (1, 2):
+        extract = root / "extract" / f"disc{disc}"
+        for map_id, path in map_files(extract, root / "discs" / f"disc{disc}.bin"):
+            try:
+                package = map_events(path.read_bytes())
+            except (FieldError, PackedError):
+                continue
+            if package is None:
+                continue
+            starts, _ = script_entries(package)
+            for ins in walk(package.bytecode, [pc for _, _, pc in starts]).instructions.values():
+                if ins.name in BUTTON_TESTS:
+                    buttons[map_id] = buttons.get(map_id, 0) | ins.operands[0]
+    return buttons
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--sweep", action="store_true", help="decode every map of both discs")
+    parser.add_argument(
+        "--buttons", action="store_true", help="print each map's script-tested pad buttons"
+    )
     parser.add_argument("--list", type=int, metavar="MAP", help="print one map's listing")
     parser.add_argument("--disc", type=int, choices=(1, 2), default=1)
     parser.add_argument("--root", type=Path, default=ROOT / ".local", help="extract/ and discs/")
     args = parser.parse_args(argv)
+    if args.buttons:
+        for map_id, mask in sorted(script_buttons(args.root).items()):
+            print(f"{map_id} 0x{mask:04x}")
+        return 0
     if args.sweep:
         results = sweep(args.root)
         print("\n".join(report(results)))

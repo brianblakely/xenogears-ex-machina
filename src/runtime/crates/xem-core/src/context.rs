@@ -13,6 +13,8 @@ use serde::Serialize;
 /// `field_work.open_windows` (a bit per open dialogue window).
 const FIELD_MENU_REQUEST: u32 = 0x800A_DB64;
 const FIELD_PLAYER_CONTROL_POLLED: u32 = 0x800A_DB68;
+/// The field map number (`mode_field_map_id`, low 12 bits).
+const FIELD_MAP_ID: u32 = 0x8004_F34C;
 const FIELD_OPEN_WINDOWS: u32 = 0x800B_2174;
 /// `field_dialogue_windows[4]`: `busy` 0 while in use, `age` 0 for the
 /// newest (the one that takes input), the choice (`status` 0 while open,
@@ -58,8 +60,10 @@ pub enum Context {
     None,
     /// A field, the player walking.
     Walk,
-    /// A field without the player's control (an event runs).
-    Event,
+    /// A field without the player's control (an event runs) on map `map`
+    /// (`mode_field_map_id`); `buttons` the pad buttons its scripts test
+    /// (the field's script-driven activities read the pad only so).
+    Event { map: u16, buttons: u16 },
     /// A field dialogue the player advances, or answers.
     Dialogue { choice: Option<Choice> },
     /// A menu screen (`screen`, `menu_state_screen`) with its top cursor and
@@ -151,8 +155,36 @@ fn field(memory: &dyn GameMemory) -> Option<Context> {
         }
         return Some(Context::Dialogue { choice });
     }
-    Some(if u32_at(memory, FIELD_PLAYER_CONTROL_POLLED)? == 1 { Context::Walk } else { Context::Event })
+    if u32_at(memory, FIELD_PLAYER_CONTROL_POLLED)? == 1 {
+        return Some(Context::Walk);
+    }
+    let map = (u32_at(memory, FIELD_MAP_ID)? & 0xFFF) as u16;
+    Some(Context::Event { map, buttons: script_buttons(map) })
 }
+
+/// The pad buttons field map `map`'s scripts test (`branch_unless_buttons`
+/// 31, 32, fe e2, fe e3), as `python3 -m tools.analysis.events --buttons`
+/// finds them on both discs' scripts (maps of the same number together).
+pub fn script_buttons(map: u16) -> u16 {
+    SCRIPT_BUTTONS.binary_search_by_key(&map, |(m, _)| *m).map_or(0, |i| SCRIPT_BUTTONS[i].1)
+}
+
+const SCRIPT_BUTTONS: [(u16, u16); 84] = [
+    (0, 0x004c), (4, 0x00e0), (14, 0x0020), (15, 0xf080), (94, 0x0020), (95, 0x0040),
+    (98, 0x0020), (100, 0x0040), (118, 0x0020), (123, 0x0020), (125, 0x0022), (129, 0x0020),
+    (130, 0xf040), (131, 0xf070), (132, 0xf070), (133, 0xf070), (135, 0xf070), (144, 0xf070),
+    (147, 0xf040), (153, 0xf070), (154, 0xf070), (194, 0x0020), (197, 0xf000), (198, 0x0020),
+    (228, 0xa000), (293, 0x0020), (296, 0x0020), (305, 0x5040), (306, 0x5040), (307, 0x5040),
+    (312, 0xf080), (318, 0xf080), (319, 0x0020), (321, 0xf1dc), (326, 0x0020), (336, 0x0040),
+    (406, 0xb080), (423, 0x0020), (424, 0x0020), (426, 0x0020), (428, 0x0020), (430, 0x0020),
+    (431, 0x0020), (432, 0xf0f0), (435, 0x0020), (436, 0x0020), (444, 0x0020), (445, 0x0020),
+    (447, 0x0020), (448, 0x0020), (449, 0x0020), (450, 0x0020), (475, 0xf040), (476, 0xf040),
+    (477, 0xf040), (478, 0xf040), (479, 0xf040), (480, 0xf040), (481, 0xf040), (482, 0xf040),
+    (483, 0x0020), (484, 0xf040), (485, 0xf040), (486, 0xf040), (487, 0xf040), (488, 0xf0ff),
+    (490, 0x0020), (491, 0xf040), (492, 0xf040), (516, 0x0010), (565, 0xf060), (596, 0x0010),
+    (603, 0x0010), (628, 0x0010), (641, 0x0010), (642, 0x0010), (685, 0x0020), (695, 0x0020),
+    (699, 0xf0f0), (709, 0x0010), (717, 0x0010), (720, 0xf060), (722, 0x5000), (723, 0xf0ff),
+];
 
 fn battle(memory: &dyn GameMemory) -> Option<Context> {
     let turn = ram_pointer(u32_at(memory, BATTLE_TURN_STATE)?)?;
