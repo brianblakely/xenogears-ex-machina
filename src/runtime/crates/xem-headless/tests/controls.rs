@@ -180,3 +180,145 @@ fn tab_toggles_the_field_menu_from_any_of_its_screens() {
     }
     assert!(!player.pulsing() || frames < 600);
 }
+
+/// The field as the assisted controls read it: the walkmesh under the
+/// player, the camera that projects the player onto the screen and picks
+/// the floor back, and the D-pad's directions by the camera's angle.
+#[test]
+fn the_field_reads_its_walkmesh_camera_and_dpad_directions() {
+    use xem_core::field::{Field, heading, screen_direction};
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    run(&mut session, json!({"cmd": "enter_field", "map": 30}));
+    run(&mut session, json!({"cmd": "frames", "count": 400}));
+    let field = Field::read(session.runtime.memory()).expect("a field");
+    let player = *field.player().expect("the player");
+    let mesh = &field.layers[player.layer];
+    eprintln!("player {player:?} layers {} triangles {} camera {:?}", field.layers.len(), mesh.triangles.len(), field.camera);
+    assert!(mesh.locate(player.position.x, player.position.z).is_some(), "the player stands on its layer");
+    let screen = field.camera.project(player.position).expect("in front of the camera");
+    eprintln!("player on screen {screen:?}");
+    assert!((0.0..320.0).contains(&screen.0) && (0.0..224.0).contains(&screen.1), "{screen:?}");
+    let hit = field.pick(screen).expect("the floor under the player");
+    eprintln!("pick {hit:?}");
+    assert!(hit.point.planar(player.position) < 40.0, "{hit:?}");
+    // Each D-pad direction moves the player the way the camera's angle says.
+    for (buttons, direction) in [(["right"], 0), (["down"], 0x400), (["left"], 0x800), (["up"], 0xC00)] {
+        let before = Field::read(session.runtime.memory()).unwrap();
+        let from = before.player().unwrap().position;
+        run(&mut session, json!({"cmd": "press", "buttons": buttons, "frames": 12}));
+        run(&mut session, json!({"cmd": "frames", "count": 14}));
+        let after = Field::read(session.runtime.memory()).unwrap();
+        let to = after.player().unwrap().position;
+        let moved = heading(to.x - from.x, to.z - from.z);
+        let dir = screen_direction(moved, before.camera.angle, before.alt_dpad);
+        let error = ((dir - direction + 0x800).rem_euclid(0x1000) - 0x800).abs();
+        eprintln!("{buttons:?}: moved {:.1} heading {moved:#x} dir {dir:#x} (angle {:#x})", from.planar(to), before.camera.angle);
+        assert!(from.planar(to) > 8.0, "it moved");
+        assert!(error < 0x100, "{buttons:?} {dir:#x}");
+    }
+}
+
+/// Assisted movement walks the player to a floor point by the pad alone,
+/// running for distance; the player's own direction replaces it.
+#[test]
+fn navigate_walks_to_a_floor_point_and_the_players_direction_replaces_it() {
+    use xem_core::field::{Field, Reach};
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    run(&mut session, json!({"cmd": "enter_field", "map": 30}));
+    run(&mut session, json!({"cmd": "frames", "count": 400}));
+    let field = Field::read(session.runtime.memory()).unwrap();
+    let player = *field.player().unwrap();
+    let mesh = &field.layers[player.layer];
+    // The farthest walkable triangle's centre.
+    let goal = (0..mesh.triangles.len())
+        .map(|t| mesh.centroid(t))
+        .filter(|c| field.reach(&player, mesh.locate(c.x, c.z).unwrap(), *c) == Reach::Walk)
+        .max_by(|a, b| a.planar(player.position).total_cmp(&b.planar(player.position)))
+        .unwrap();
+    eprintln!("from {:?} to {goal:?} ({:.0} away)", player.position, goal.planar(player.position));
+    let reply = session.execute(&json!({"cmd": "navigate", "to": [goal.x, goal.z]}));
+    assert!(reply.get("error").is_none(), "{reply}");
+    let mut ran = 0;
+    let mut ran_with_run = false;
+    while session.assist.is_some() && ran < 1200 {
+        run(&mut session, json!({"cmd": "frames", "count": 1}));
+        ran_with_run |= session.runtime.services().pads.0[0].buttons & xem_core::pad::button::CIRCLE != 0;
+        ran += 1;
+    }
+    let at = Field::read(session.runtime.memory()).unwrap().player().unwrap().position;
+    eprintln!("outcome {:?} after {ran} frames at {at:?} ({:.1} off)", session.assist_outcome, at.planar(goal));
+    assert_eq!(session.assist_outcome, Some(xem_core::assist::Outcome::Arrived));
+    assert!(at.planar(goal) < 12.0);
+    assert!(ran_with_run, "it ran for the distance");
+    assert_eq!(session.runtime.services().pads.0[0].buttons, 0, "released");
+    // Back again, interrupted by the player's own Left.
+    run(&mut session, json!({"cmd": "navigate", "to": [player.position.x, player.position.z]}));
+    run(&mut session, json!({"cmd": "frames", "count": 10}));
+    run(&mut session, json!({"cmd": "hold", "actions": ["Left"]}));
+    run(&mut session, json!({"cmd": "frames", "count": 1}));
+    assert!(session.assist.is_none());
+    assert_eq!(session.assist_outcome, Some(xem_core::assist::Outcome::Replaced));
+}
+
+/// Walks a map's opening event through (Confirm on each dialogue page)
+/// until the player walks.
+fn until_walking(session: &mut Session<NativeModule>) {
+    for _ in 0..120 {
+        match context(session)["kind"].as_str() {
+            Some("walk") => return,
+            Some("dialogue") => run(session, json!({"cmd": "act", "actions": ["Confirm"], "frames": 2})),
+            _ => {}
+        }
+        run(session, json!({"cmd": "frames", "count": 30}));
+    }
+    panic!("the player never walked: {}", context(session));
+}
+
+/// Approach-and-interact walks to a villager and presses Confirm once in
+/// reach: the villager's dialogue opens. A recorded session with assisted
+/// moves replays to the same state from the recorded intents.
+#[test]
+fn interact_talks_to_a_villager_and_assisted_moves_replay() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    run(&mut session, json!({"cmd": "enter_field", "map": 5}));
+    run(&mut session, json!({"cmd": "frames", "count": 300}));
+    until_walking(&mut session);
+    run(&mut session, json!({"cmd": "snapshot", "name": "village"}));
+    run(&mut session, json!({"cmd": "record"}));
+    run(&mut session, json!({"cmd": "interact", "actor": 11}));
+    let mut confirms = 0;
+    let mut held = false;
+    for _ in 0..600 {
+        if session.assist.is_none() { break; }
+        run(&mut session, json!({"cmd": "frames", "count": 1}));
+        let confirm = session.runtime.services().pads.0[0].buttons & xem_core::pad::button::CROSS != 0;
+        if confirm && !held { confirms += 1; }
+        held = confirm;
+    }
+    assert_eq!(session.assist_outcome, Some(xem_core::assist::Outcome::Confirmed));
+    assert_eq!(confirms, 1, "Confirm exactly once");
+    run(&mut session, json!({"cmd": "frames", "count": 30}));
+    assert_eq!(context(&mut session)["kind"], "dialogue");
+    let log = session.execute(&json!({"cmd": "stop_recording"}));
+    let recorded = session.execute(&json!({"cmd": "memory_hash"}));
+    // The same from the snapshot, by the recorded intent alone.
+    run(&mut session, json!({"cmd": "restore", "name": "village"}));
+    let mut replay = log.clone();
+    replay["cmd"] = json!("replay");
+    run(&mut session, replay);
+    let frames = log["end_vblank"].as_u64().unwrap() - log["start_vblank"].as_u64().unwrap();
+    run(&mut session, json!({"cmd": "frames", "count": frames}));
+    assert_eq!(session.execute(&json!({"cmd": "memory_hash"})), recorded);
+}

@@ -5,6 +5,7 @@
 //! and owns the virtual clock. It needs no window, GPU, audio or input device.
 
 pub mod action;
+pub mod assist;
 pub mod bios;
 pub mod clock;
 pub mod context;
@@ -12,6 +13,7 @@ pub mod control;
 mod focus;
 pub mod time;
 pub mod devices;
+pub mod field;
 pub mod exe;
 pub mod inspect;
 pub mod memory;

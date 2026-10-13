@@ -5227,6 +5227,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "xem-assist"
+version = "0.1.0"
+dependencies = [
+ "glam",
+ "serde",
+ "serde_json",
+ "xem-core",
+ "xem-settings",
+]
+
+[[package]]
 name = "xem-core"
 version = "0.1.0"
 dependencies = [

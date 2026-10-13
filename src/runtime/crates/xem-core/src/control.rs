@@ -51,6 +51,13 @@ pub struct Session<M: GameModule> {
     pub timeline_revision: u64,
     rewind_clock: Box<dyn Fn() -> Duration>,
     rewind_game_paused: bool,
+    /// Assisted movement (`navigate`, `interact`), and the pad 1 the host
+    /// and scheduled input set beneath it.
+    pub assist: Option<crate::assist::Assist>,
+    pub assist_outcome: Option<crate::assist::Outcome>,
+    base_pad: u16,
+    /// Stop at a jump's takeoff instead of pressing on (an assistance option).
+    pub ledge_brake: bool,
 }
 
 const BUTTONS: [(&str, u16); 16] = [
@@ -109,6 +116,10 @@ impl<M: GameModule> Session<M> {
             timeline_revision: 0,
             rewind_clock: Box::new(rewind_clock),
             rewind_game_paused: false,
+            assist: None,
+            assist_outcome: None,
+            base_pad: 0,
+            ledge_brake: false,
         };
         session.configure_rewind(0,crate::time::DEFAULT_REWIND_INTERVAL_SECONDS,crate::time::DEFAULT_REWIND_HISTORY_SECONDS).expect("valid default rewind settings");
         session
@@ -267,6 +278,9 @@ impl<M: GameModule> Session<M> {
     /// Set a pad's buttons now, as `pad` does (a recording keeps the change).
     pub fn set_pad(&mut self, port: u32, buttons: u16) {
         let vblank = self.vblank();
+        if port == 0 {
+            self.base_pad = buttons;
+        }
         let pads = &mut self.runtime.services().pads.0;
         if let Some(pad) = pads.get_mut(port as usize) {
             pad.buttons = buttons;
@@ -299,6 +313,7 @@ impl<M: GameModule> Session<M> {
         for (_, port, buttons) in due {
             self.set_pad(port, buttons);
         }
+        self.apply_assist();
         match self.runtime.run_frame() {
             Ok(report) => {
                 if !report.blocked { self.apply_replay_controls()?; self.checkpoint(); self.trace_title_movie(); }
@@ -309,6 +324,51 @@ impl<M: GameModule> Session<M> {
                 Err(trap)
             }
         }
+    }
+
+    /// Starts assisted movement (replacing any under way).
+    pub fn start_assist(&mut self, intent: crate::assist::Intent) {
+        self.assist_outcome = None;
+        let assist = crate::assist::Assist::new(intent, self.runtime.memory(), self.ledge_brake);
+        self.record_control(json!({"cmd": "assist", "intent": assist.intent}));
+        self.assist = Some(assist);
+    }
+
+    /// Ends assisted movement, releasing what it held.
+    pub fn stop_assist(&mut self, outcome: crate::assist::Outcome) {
+        if self.assist.take().is_some() {
+            self.assist_outcome = Some(outcome);
+            if outcome == crate::assist::Outcome::Stopped {
+                self.record_control(json!({"cmd": "assist_stop"}));
+            }
+        }
+        let base = self.base_pad;
+        if let Some(pad) = self.runtime.services().pads.0.get_mut(0) {
+            pad.buttons = base;
+        }
+    }
+
+    /// Pad 1 for the next frame: the base input, and the assist's D-pad and
+    /// Run over it while it runs. A direction of the player's own ends it.
+    fn apply_assist(&mut self) {
+        let Some(mut assist) = self.assist.take() else { return };
+        if self.base_pad & crate::assist::direction_buttons() != 0 {
+            self.assist = Some(assist);
+            return self.stop_assist(crate::assist::Outcome::Replaced);
+        }
+        let ui = self.runtime.context();
+        let assignment = self.runtime.button_assignment();
+        let step = assist.step(self.runtime.memory(), ui);
+        if let Some(outcome) = step.done {
+            self.assist = Some(assist);
+            return self.stop_assist(outcome);
+        }
+        let held = crate::action::buttons_with(step.actions, &assignment);
+        let base = self.base_pad;
+        if let Some(pad) = self.runtime.services().pads.0.get_mut(0) {
+            pad.buttons = (base & !crate::assist::owned_buttons(&assignment)) | held;
+        }
+        self.assist = Some(assist);
     }
 
     /// For a draw trace showing the title movie, the frames its player has
@@ -414,6 +474,8 @@ impl<M: GameModule> Session<M> {
             "fast_forward_pace": self.fast_forward_pace,
             "actor_view": actor_view,
             "rewind": self.rewind.status(),
+            "assist": self.assist.as_ref().map(|a| json!({"intent": a.intent, "phase": a.phase})),
+            "assist_outcome": self.assist_outcome,
         })
     }
 
@@ -516,6 +578,70 @@ impl<M: GameModule> Session<M> {
                 Ok(self.status())
             }
             "context" => Ok(serde_json::to_value(self.runtime.context()).expect("context")),
+            "field" => {
+                // The field as the assisted controls see it: the player, the
+                // actors and where they show on the screen.
+                let field = crate::field::Field::read(self.runtime.memory()).ok_or("no field")?;
+                let actors: Vec<_> = field.actors.iter().flatten().map(|a| json!({
+                    "index": a.index, "position": a.position, "screen": field.camera.project(a.position), "radius": a.radius,
+                })).collect();
+                Ok(json!({ "player": field.player, "camera_angle": field.camera.angle, "actors": actors }))
+            }
+            "pick" => {
+                // The floor a screen point (field screen pixels) picks.
+                let screen = command.get("screen").and_then(Value::as_array).ok_or("pick needs screen [x, y]")?;
+                let point = (screen.first().and_then(Value::as_f64).ok_or("screen x")? as f32, screen.get(1).and_then(Value::as_f64).ok_or("screen y")? as f32);
+                let field = crate::field::Field::read(self.runtime.memory()).ok_or("no field")?;
+                Ok(serde_json::to_value(field.pick(point)).expect("hit"))
+            }
+            "navigate" => {
+                // Walk to a floor point: `to` [x, z] in world units, or the
+                // floor a `screen` point picks.
+                if self.runtime.context() != crate::context::Context::Walk {
+                    return Err("navigate needs the player walking in a field".into());
+                }
+                let field = crate::field::Field::read(self.runtime.memory()).ok_or("no field")?;
+                let player = *field.player().ok_or("no player")?;
+                let hit = if let Some(to) = command.get("to").and_then(Value::as_array) {
+                    let (x, z) = (to.first().and_then(Value::as_f64).ok_or("to x")? as f32, to.get(1).and_then(Value::as_f64).ok_or("to z")? as f32);
+                    let mesh = &field.layers[player.layer];
+                    let triangle = mesh.locate(x, z).ok_or("not on the player's floor")?;
+                    let point = crate::field::V3::new(x, mesh.height(triangle, x, z), z);
+                    crate::field::Hit { point, triangle, layer: player.layer, reach: field.reach(&player, triangle, point) }
+                } else {
+                    let screen = command.get("screen").and_then(Value::as_array).ok_or("navigate needs to [x, z] or screen [x, y]")?;
+                    let point = (screen.first().and_then(Value::as_f64).ok_or("screen x")? as f32, screen.get(1).and_then(Value::as_f64).ok_or("screen y")? as f32);
+                    field.pick(point).ok_or("no floor there")?
+                };
+                if hit.reach == crate::field::Reach::Invalid {
+                    return Err("the player cannot reach that point".into());
+                }
+                self.start_assist(crate::assist::Intent::Walk { to: hit.point, triangle: hit.triangle, layer: hit.layer });
+                Ok(json!({ "hit": hit, "status": self.status() }))
+            }
+            "interact" => {
+                if self.runtime.context() != crate::context::Context::Walk {
+                    return Err("interact needs the player walking in a field".into());
+                }
+                let actor = arg_u64("actor").ok_or("interact needs actor")? as usize;
+                let field = crate::field::Field::read(self.runtime.memory()).ok_or("no field")?;
+                if field.player == Some(actor) || field.actors.get(actor).is_none_or(Option::is_none) {
+                    return Err(format!("no other actor {actor}"));
+                }
+                self.start_assist(crate::assist::Intent::Interact { actor });
+                Ok(self.status())
+            }
+            "assist" => {
+                // A recorded intent, as resolved when it was given.
+                let intent: crate::assist::Intent = serde_json::from_value(command.get("intent").ok_or("assist needs intent")?.clone())
+                    .map_err(|e| e.to_string())?;
+                self.start_assist(intent);
+                Ok(self.status())
+            }
+            "assist_stop" => {
+                self.stop_assist(crate::assist::Outcome::Stopped);
+                Ok(self.status())
+            }
             "hold" => {
                 // Hold the named game actions on pad 1 (the buttons they mean)
                 // until the next hold; an empty list releases them.
@@ -619,7 +745,7 @@ impl<M: GameModule> Session<M> {
                     // mean the game ignores the pad.
                     "pad_queue_reads_last_frame": services.input_reads_last_frame,
                     "stopped": stopped,
-                    "valid_commands": ["pad", "press", "hold", "act", "context", "frames", "run_until", "inspect", "write", "snapshot",
+                    "valid_commands": ["pad", "press", "hold", "act", "context", "field", "pick", "navigate", "interact", "assist", "assist_stop", "frames", "run_until", "inspect", "write", "snapshot",
                                         "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "schedule", "record", "replay"],
                 }))
             }
@@ -676,7 +802,9 @@ impl<M: GameModule> Session<M> {
                             Some("music_advance") if control.get("cycles").and_then(Value::as_u64).is_some_and(|c| c <= crate::clock::CPU_HZ/10) => {},
                             Some("fast_forward_pace") if control.get("pace").is_some_and(|p| p.is_null() || p.as_u64().is_some_and(|p| (1..=20).contains(&p))) => {},
                             Some("actor_view") if control.get("view").and_then(Value::as_u64).is_some_and(|v| v <= u64::from(u32::MAX)) => {},
-                            _ => return Err("recorded controls contain only explicit fast-forward, focus-pause, actor-view and music-clock inputs".into()),
+                            Some("assist") if control.get("intent").is_some() => {},
+                            Some("assist_stop") => {},
+                            _ => return Err("recorded controls contain only explicit fast-forward, focus-pause, actor-view, assist and music-clock inputs".into()),
                         }
                         controls.push((now + at.saturating_sub(start),control.clone()));
                     }
@@ -717,7 +845,7 @@ impl<M: GameModule> Session<M> {
                 for item in list {
                     let pair = item.as_array().filter(|p| p.len() == 2).ok_or("commands are [frame, command]")?;
                     let cmd = pair[1].get("cmd").and_then(Value::as_str).ok_or("scheduled command needs cmd")?;
-                    if !matches!(cmd, "pad" | "press" | "hold" | "act" | "connect_pad" | "enter_field" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "music_advance") {
+                    if !matches!(cmd, "pad" | "press" | "hold" | "act" | "assist" | "assist_stop" | "connect_pad" | "enter_field" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "music_advance") {
                         return Err(format!("{cmd} cannot be scheduled; session logs contain only game input, setup and pacing"));
                     }
                     let at = pair[0].as_u64().ok_or("a command's frame is a number")?;
@@ -822,6 +950,10 @@ impl<M: GameModule> Session<M> {
 
     fn game_state_restored(&mut self) {
         self.stopped = None;
+        // Assisted movement belonged to the timeline left behind.
+        if self.assist.take().is_some() {
+            self.assist_outcome = Some(crate::assist::Outcome::Interrupted);
+        }
         self.timeline_revision += 1;
         self.reset_rewind_timer();
     }

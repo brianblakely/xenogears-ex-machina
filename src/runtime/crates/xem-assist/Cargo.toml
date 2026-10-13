@@ -1,0 +1,15 @@
+[package]
+name = "xem-assist"
+description = "Assisted input: hand gestures, gaze and pointer targets resolved to the game's legal commands"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+glam.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+xem-core = { path = "../xem-core" }
+xem-settings = { path = "../xem-settings" }
