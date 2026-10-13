@@ -1134,24 +1134,30 @@ pointers.
 the browser's WebXR sessions (plan.md, the hand/gaze contract):
 
 - **Pointer.** The player's explicit choice (Settings: eye gaze, head,
-  left or right hand ray; a hand's ray is the controller's aim, else from
-  an estimated shoulder through the index knuckle) aims at the virtual
-  screen (`Screen`: game screen pixels, sides included) and the panel and
+  left or right hand ray; a hand's ray is the runtime's aim, a
+  controller's or the hand's own: `XR_EXT_hand_interaction`'s aim pose,
+  WebXR's target ray) aims at the virtual screen (`Screen`: game screen pixels, sides included) and the panel and
   keys beside it. An unavailable source aims at nothing; nothing else
   stands in.
-- **Gestures** (`xem_assist::gesture`, from 25 room-space joints: WebXR's
-  order, OpenXR's without the palm): a pinch; thumb taps and swipes on the
-  index finger (the thumb's travel relative to the knuckle, smoothed,
-  sliding along the finger's surface: up toward the tip, down back, right
-  toward the back of a right hand and the reverse for the left; a
-  runtime's own microgestures replace these where offered); five-finger
-  grabs, the palm's region (down, up, sideways) classified as closing
+- **Gestures** (`xem_assist::gesture`). The standard ones are the
+  runtime's, never imitated from joints: the pinch (OpenXR's
+  `XR_EXT_hand_interaction` `pinch_ext`, begun at 0.9 and ended below
+  0.6; WebXR's select of a hand source) and the thumb's taps and swipes
+  (`XR_META_hand_tracking_microgestures`: forward up, backward down, left,
+  right). A runtime without them has none (WebXR has no microgestures):
+  its hands play as a pointer, a pinch clicking where it aims as a
+  touch's tap does (walking to the floor, talking to an actor, choosing
+  an entry, advancing dialogue) and a column of keys left of the screen
+  pressing what the swipes would (the directions, OK, BACK, MENU, JUMP,
+  the camera's turns). The plan's own gestures come from 25 room-space
+  joints (WebXR's order, OpenXR's without the palm): five-finger grabs, the palm's region (down, up, sideways) classified as closing
   begins and kept through closure, firing on closure from an open hand
   (no hold or cooldown; reopening rearms; a fist found closed fires
   nothing; the other hand's simultaneous grab coalesces); whole-hand
   pinches (two of them scale, owning both hands until both open); prayer
   hands (open aligned palms near-touching, once until they part). A
-  closing hand emits no pinch or thumb event.
+  closing hand emits no pinch or thumb event, nor does a pinch held
+  through a grab once the grab ends.
 - **Resolution** (`xem_assist::dispatch`, table in its documentation):
   walking, a pinch walks to the floor under the pointer (`navigate`, if
   reachable), a tap approaches and talks to the actor under it
@@ -1225,21 +1231,27 @@ chooses a battle item under the gaze and battle targets (a swipe to the
 nearest that way, a tap under the gaze, a key of the target list),
 flies the world map by the captured stick and boards with L2+R2, plays a
 Battling bout (A, Dash held, the stick, Pause) and jumps from a running
-route (two frames from the thumb's touch to the air; the route goes on
-after landing). `xem_assist::reliability` measures the recognizers on the
-hand model under per-joint jitter (2 mm), tremor (2 mm), varied speed,
-size (±10%) and turn (±20°) (`cargo run -p xem-assist --example
-reliability`, 1000 tries each): grabs and prayer 100%, pinch 99.8%,
-taps 99.1%, swipes up and down 99.2-99.5%, swipes across 94.4-94.9%
-(the weakest: a sideways thumb slide is short), latency within a frame or
-so of the closing pose; 30 minutes of idle play (relaxed, curling,
-reaching, turning hands) fire nothing; 200 pause grabs a twelfth of a
-second apart toggle 200 times; a hand lost mid-grab and found closed
-toggles nothing; every one-hand gesture works with either hand alone. The
-XR game smoke plays scripted gestures in OpenXR (`--xr-hands`: Pause,
-prayer hands, a pinch on the panel's Close, a pinch that walks) and the
-browser's `tests/xr-hands.test.mjs` drives IWER's hands (grabs, prayer,
-lost tracking) and controllers (the trigger on the panel's Close).
+route (two frames from the thumb's microgesture to the air; the route
+goes on after landing); its scripted hands stand in for a runtime with
+the standard gestures (`synthetic::Runtime::HORIZON`: each step's pinch
+and microgestures as the runtime would report them). As a browser's
+hands (`Runtime::WEBXR`) it talks to a villager by a pinch on him,
+pinches through the dialogue and opens and leaves the menu with the
+pointer's MENU and BACK keys. `xem_assist::reliability` measures the
+plan's own recognizers on the hand model under per-joint jitter (2 mm),
+tremor (2 mm), varied speed, size (±10%) and turn (±20°) (`cargo run -p
+xem-assist --example reliability`, 1000 tries each): grabs and prayer
+100%, latency within a frame of the closing pose; 30 minutes of idle play
+(relaxed, curling, reaching, turning hands) fire nothing; 200 pause grabs
+a twelfth of a second apart toggle 200 times; a hand lost mid-grab and
+found closed toggles nothing; every one-hand gesture works with either
+hand alone. The standard gestures' reliability is the runtime's. The XR
+game smoke plays scripted gestures in OpenXR (`--xr-hands`: Pause,
+prayer hands, a pinch on the panel's Close, a pinch that walks) and logs
+the hand gestures the runtime offers; the browser's
+`tests/xr-hands.test.mjs` drives IWER's hands (grabs, prayer, lost
+tracking, a standard pinch that counts once and the pointer it makes)
+and controllers (the trigger on the panel's Close).
 
 The game-level harness also covers every field map whose scripts read the
 pad (84, from `events.py --buttons`): its event reports the map and those
@@ -1253,18 +1265,15 @@ gaze lost a pinch aims nowhere while the head or a hand's ray aims instead.
 
 Sustained use is measured by its physical proxies (`cargo run -p
 xem-assist --example reliability`): from a relaxed posture (wrists dropped
-35 degrees and turned in 15, either hand alone) taps reach 97.7%, swipes
-up and down 99.7-99.8%, across 93.6-95.0%, grabs 100%; over an hour of
-tiring hands (tremor from 2 to 6 mm, poses held up to 8 frames, wrists
-dropping from 10 to 40 degrees, the hands taking turns alone) every
-ten-minute stretch recognises 97.9-99.0% of gestures within a frame or so
-and fires nothing during idle play. The recognizers need no held pose,
-dwell or raised arm, and the decks keep hands low. A tracker noisier than
-2 mm per joint costs the thumb gestures first: at 3 mm taps fall to 80.9%
-and swipes across to 73-75% (1.3 idle activations a minute), at 4 mm to
-70% and 50% (32 a minute); grabs, pinch and prayer hold. A device's own
-noise, its eye tracking and Meta's microgestures need that device, and
-people's comfort needs people.
+35 degrees and turned in 15, either hand alone) the grabs stay at 100%;
+over an hour of tiring hands (tremor from 2 to 6 mm, poses held up to 8
+frames, wrists dropping from 10 to 40 degrees, the hands taking turns
+alone) every ten-minute stretch recognises all of them and fires nothing
+during idle play; at 3 and 4 mm of per-joint jitter (noisier trackers)
+grabs and prayer still hold at 100% with no idle activation. Nothing
+needs a held pose, dwell or raised arm, and the decks keep hands low. A
+device's own noise, its eye tracking, its standard pinch and
+microgestures need that device, and people's comfort needs people.
 
 ## Crates
 

@@ -101,13 +101,15 @@ pub fn keys(deck: Deck) -> Vec<Key> {
         ],
         // Cross enters a path or interacts, Square the menu, Circle takes
         // off and lands, Triangle held throttles in flight, L2 and R2
-        // together board or leave a Gear.
+        // together board or leave a Gear, L1 and R1 turn the camera.
         Deck::WorldMap => &[
             Key { label: "OK", actions: &[Confirm], hold: false },
             Key { label: "MENU", actions: &[Menu], hold: false },
             Key { label: "LAND", actions: &[Cancel], hold: false },
             Key { label: "THROTTLE", actions: &[Jump], hold: true },
             Key { label: "BOARD", actions: &[L2, R2], hold: false },
+            Key { label: "CAM L", actions: &[CameraLeft], hold: false },
+            Key { label: "CAM R", actions: &[CameraRight], hold: false },
             Key { label: "START", actions: &[Start], hold: false },
         ],
         // The buttons the activity's scripts test, each pressed once.

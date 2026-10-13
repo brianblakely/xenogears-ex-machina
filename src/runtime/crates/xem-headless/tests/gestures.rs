@@ -13,7 +13,7 @@
 use serde_json::{Value, json};
 use std::path::PathBuf;
 use xem_assist::headset::{Carry, Headset, Input, PointerSource, Pose, Quad, Scaling, Screen};
-use xem_assist::synthetic;
+use xem_assist::synthetic::{self, Runtime, Step};
 use xem_core::action::GameAction;
 use xem_core::control::Session;
 use xem_game::{NativeModule, boot};
@@ -68,6 +68,8 @@ struct Player {
     ran: u64,
     /// The interface context to play in instead of the one read each frame.
     ui: Option<xem_core::context::Context>,
+    /// What the runtime offers of the standard gestures.
+    runtime: Runtime,
 }
 
 impl Player {
@@ -79,15 +81,17 @@ impl Player {
         };
         let mut headset = Headset::default();
         headset.source = PointerSource::Eye;
-        Player { session, input: PlayerInput::default(), headset, scaling: Scaling::default(), bindings: Default::default(), screen, time: 0.0, ran: 0, ui: None }
+        Player { session, input: PlayerInput::default(), headset, scaling: Scaling::default(), bindings: Default::default(), screen, time: 0.0, ran: 0, ui: None, runtime: Runtime::HORIZON }
     }
 
     fn context(&mut self) -> Value {
         self.session.execute(&json!({"cmd": "context"}))
     }
 
-    /// One headset frame with these hands and the gaze on `aim`.
-    fn frame(&mut self, hands: [Option<[Vec3; 25]>; 2], aim: Option<(f32, f32)>) {
+    /// One headset frame of this step (its hands, and the runtime's
+    /// standard signals as `self.runtime` reports them) with the pointer on
+    /// `aim`.
+    fn frame(&mut self, step: Step, aim: Option<(f32, f32)>) {
         // The aim comes from the pointer source chosen: the eyes, the head
         // turned toward it, or a hand's ray (a controller's or the
         // runtime's) from beside the body.
@@ -101,14 +105,18 @@ impl Player {
                 (Pose { position: eyes, orientation: Quat::IDENTITY }, None, [None, toward(hand)])
             }
         };
+        let hands = synthetic::in_front(step.hands, head.position, Quat::IDENTITY);
+        let signals = step.frame(self.time, hands, Vec3::X, self.runtime);
         let input = Input {
             time: self.time,
             head: Some(head),
             gaze,
             rays,
-            hands: synthetic::in_front(hands, head.position, Quat::IDENTITY),
+            hands,
+            pinch: signals.pinch,
+            micro: signals.micro,
+            micro_capable: signals.micro_capable,
             focused: true,
-            ..Input::default()
         };
         self.time += 1.0 / 60.0;
         let ui = self.ui.unwrap_or_else(|| self.session.runtime.context());
@@ -497,7 +505,7 @@ fn the_world_maps_deck_steers_by_the_captured_stick() {
     player.gesture("pinch", None);
     assert!(player.headset.arcade.steering(), "the stick is captured");
     let rest = synthetic::gesture("pause").unwrap()[0];
-    let ahead = [rest[0], rest[1].map(|h| synthetic::place(h, Quat::IDENTITY, Vec3::new(0.0, 0.0, -0.07)))];
+    let ahead = Step::of([rest.hands[0], rest.hands[1].map(|h| synthetic::place(h, Quat::IDENTITY, Vec3::new(0.0, 0.0, -0.07)))]);
     let before = run(&mut player.session, json!({"cmd": "memory_hash"}));
     let mut up = 0;
     for _ in 0..30 {
@@ -570,7 +578,7 @@ fn a_battling_bout_plays_one_handed() {
     // The captured stick steers toward the opponent (right).
     player.gesture("pinch", None);
     let rest = synthetic::gesture("pause").unwrap()[0];
-    let right = [rest[0], rest[1].map(|h| synthetic::place(h, Quat::IDENTITY, Vec3::new(0.07, 0.0, 0.0)))];
+    let right = Step::of([rest.hands[0], rest.hands[1].map(|h| synthetic::place(h, Quat::IDENTITY, Vec3::new(0.07, 0.0, 0.0)))]);
     player.frame(right, None);
     player.frame(right, None);
     assert_ne!(pad(&mut player) & button::RIGHT, 0, "Right held");
@@ -681,7 +689,7 @@ fn every_script_activity_deck_reaches_the_buttons_its_scripts_test() {
                 player.frame(*hands, None);
             }
             let open = synthetic::gesture("pause").unwrap()[0];
-            let moved = open.map(|hand| hand.map(|j| j.map(|p| p + Vec3::new(0.06, 0.0, -0.06))));
+            let moved = Step::of(open.hands.map(|hand| hand.map(|j| j.map(|p| p + Vec3::new(0.06, 0.0, -0.06)))));
             let mut seen = 0;
             for _ in 0..8 {
                 player.frame(moved, None);
@@ -756,4 +764,53 @@ fn without_gaze_nothing_is_aimed_and_the_head_or_a_ray_aims_instead() {
         player.rest(2);
         assert!(player.session.assist.is_none(), "{source:?}: a tap on the ground stops");
     }
+}
+
+/// Hands without the thumb's microgestures (a browser's WebXR) play as a
+/// pointer: a pinch on the villager approaches and talks, a pinch on the
+/// picture advances the dialogue (a choice under the pointer answers it),
+/// the MENU key beside the screen opens the menu and BACK leaves it.
+#[test]
+fn hands_without_microgestures_play_as_a_pointer_with_keys() {
+    let Some(mut player) = walking(5) else { return };
+    player.runtime = Runtime::WEBXR;
+    let key = |player: &Player, label: &str| {
+        let keys = xem_assist::overlay::POINTER_KEYS;
+        let i = keys.iter().position(|k| k.0 == label).unwrap();
+        let quad = xem_assist::draw::pad_keys(&player.screen, keys.len())[i].1;
+        let local = quad.pose.position - player.screen.quad.pose.position;
+        ((local.x / player.screen.quad.size.0 + 0.5) * 320.0, (0.5 - local.y / player.screen.quad.size.1) * 224.0)
+    };
+    let field = player.field();
+    let villager = field.actors[11].unwrap().position;
+    player.gesture("pinch", Some(field.camera.project(villager).unwrap()));
+    assert!(player.headset.pointer, "no microgestures: a pointer");
+    for _ in 0..600 {
+        if player.session.assist.is_none() { break; }
+        player.rest(1);
+    }
+    assert_eq!(player.session.assist_outcome, Some(xem_core::assist::Outcome::Confirmed));
+    player.rest(30);
+    let mut pinches = 0;
+    while player.context()["kind"] != "walk" {
+        let aim = match player.context()["choice"].is_object() {
+            true => player.session.runtime.targets().expect("the choice's lines").entries[0].rect.centre(),
+            false => (160.0, 112.0),
+        };
+        player.gesture("pinch", Some(aim));
+        player.rest(20);
+        pinches += 1;
+        assert!(pinches < 120, "the dialogue ends: {}", player.context());
+    }
+    let aim = key(&player, "MENU");
+    player.gesture("pinch", Some(aim));
+    player.rest(200);
+    assert_eq!(player.context()["kind"], "menu", "{}", player.context());
+    for _ in 0..4 {
+        if player.context()["kind"] == "walk" { break; }
+        let aim = key(&player, "BACK");
+        player.gesture("pinch", Some(aim));
+        player.rest(60);
+    }
+    assert_eq!(player.context()["kind"], "walk");
 }

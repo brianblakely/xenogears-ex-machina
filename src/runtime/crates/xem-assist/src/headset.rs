@@ -13,9 +13,16 @@
 //! - Inspection changes the view, never the pause.
 //!
 //! The pointer source is the player's explicit choice (eye gaze where the
-//! runtime grants it, the head's direction, or one hand's ray); an
-//! unavailable source aims at nothing rather than another source standing
-//! in, and the source in use when a gesture begins stays until it ends.
+//! runtime grants it, the head's direction, or one hand's ray as the
+//! runtime gives it); an unavailable source aims at nothing rather than
+//! another source standing in, and the source in use when a gesture
+//! begins stays until it ends.
+//!
+//! The pinch and the thumb's taps and swipes are the runtime's standard
+//! gestures. Hands the runtime offers no microgestures for (WebXR has
+//! none) play as a pointer: the pinch clicks where it aims (as a touch's
+//! tap does) and a column of keys left of the screen presses what the
+//! swipes would (directions, OK, BACK, MENU, JUMP, the camera's turns).
 use crate::dispatch::{self, Aim, Out};
 use crate::gesture::{Frame, Gesture, Recognizer};
 use glam::{Quat, Vec3};
@@ -110,6 +117,9 @@ pub struct Input {
     pub rays: [Option<Pose>; 2],
     /// Hand joints in WebXR's order (room space).
     pub hands: [Option<[Vec3; crate::gesture::JOINTS]>; 2],
+    /// Each hand's standard pinch (OpenXR's `pinch_ext`, WebXR's select of
+    /// a hand input source), where the runtime gives one.
+    pub pinch: [Option<bool>; 2],
     pub micro: [Option<crate::gesture::Micro>; 2],
     pub micro_capable: [bool; 2],
     /// The app has the runtime's focus (OpenXR FOCUSED, WebXR visible).
@@ -121,25 +131,10 @@ fn ray(source: PointerSource, input: &Input) -> Option<(Vec3, Vec3)> {
     let pose = match source {
         PointerSource::Eye => input.gaze?,
         PointerSource::Head => input.head?,
-        PointerSource::LeftRay => input.rays[0].or_else(|| hand_ray(input, 0))?,
-        PointerSource::RightRay => input.rays[1].or_else(|| hand_ray(input, 1))?,
+        PointerSource::LeftRay => input.rays[0]?,
+        PointerSource::RightRay => input.rays[1]?,
     };
     Some((pose.position, pose.forward()))
-}
-
-/// A tracked hand's ray where the runtime gives none: from an estimated
-/// shoulder through the index knuckle.
-fn hand_ray(input: &Input, hand: usize) -> Option<Pose> {
-    let joints = input.hands[hand]?;
-    let head = input.head?;
-    let right = head.orientation * Vec3::X;
-    let shoulder = head.position - Vec3::Y * 0.15 + right * if hand == 1 { 0.18 } else { -0.18 };
-    let knuckle = joints[crate::gesture::INDEX + 1];
-    let direction = (knuckle - shoulder).normalize_or_zero();
-    if direction == Vec3::ZERO {
-        return None;
-    }
-    Some(Pose { position: knuckle, orientation: Quat::from_rotation_arc(Vec3::NEG_Z, direction) })
 }
 
 /// The app's pauses: the game runs only when none holds.
@@ -178,6 +173,10 @@ pub struct Headset {
     pub arcade: crate::arcade::Arcade,
     /// The deck key the pointer is on.
     pub hovered_key: Option<u32>,
+    /// The pointer key (left of the screen) it is on.
+    pub hovered_pad: Option<u32>,
+    /// The hands play as a pointer (no microgestures): its keys show.
+    pub pointer: bool,
     pub pauses: Pauses,
     pub settings_open: bool,
     was_focused: bool,
@@ -213,6 +212,19 @@ impl Headset {
         }
     }
 
+    /// The pointer's keys left of the screen this frame (hands without
+    /// microgestures, outside a control deck).
+    pub fn pad_marks(&self, ui: Context) -> Vec<crate::draw::KeyMark> {
+        use xem_render::glass::State;
+        if !self.pointer || crate::arcade::deck(ui).is_some() || self.settings_open {
+            return vec![];
+        }
+        crate::overlay::POINTER_KEYS.iter().enumerate().map(|(i, (label, _))| crate::draw::KeyMark {
+            label: label.to_string(),
+            state: if self.hovered_pad == Some(i as u32) { State::Hover } else { State::Normal },
+        }).collect()
+    }
+
     /// Opens or closes settings (prayer hands, a menu button): their pause
     /// comes and goes with them; the player's own Pause stays as it was.
     pub fn set_settings(&mut self, open: bool) {
@@ -243,9 +255,11 @@ impl Headset {
             time: input.time,
             hands: input.hands,
             view_right: input.head.map_or(Vec3::X, |h| h.orientation * Vec3::X),
+            pinch: input.pinch,
             micro: input.micro,
             micro_capable: input.micro_capable,
         };
+        self.pointer = (0..2).any(|i| input.hands[i].is_some()) && !(0..2).any(|i| input.hands[i].is_some() && input.micro_capable[i]);
         let gestures = self.recognizer.update(&frame);
         for (i, hand) in input.hands.iter().enumerate() {
             self.tracked[i] = hand.is_some();
@@ -259,10 +273,25 @@ impl Headset {
         let side_keys = if deck.is_some() { vec![] } else { crate::overlay::side_keys(ui, targets) };
         let keys = crate::draw::side_keys(screen, deck.map_or(side_keys.len(), |deck| crate::arcade::keys(deck).len()));
         // A tap or pinch aimed at a deck key is the key's.
-        let aimed_key = ray(self.source, input).and_then(|(origin, direction)| {
+        let nearest = |keys: &[(u32, Quad)]| ray(self.source, input).and_then(|(origin, direction)| {
             keys.iter().filter_map(|(key, quad)| quad.hit(origin, direction).map(|(_, t)| (t, *key))).min_by(|a, b| a.0.total_cmp(&b.0)).map(|(_, key)| key)
         });
+        let aimed_key = nearest(&keys);
         self.hovered_key = aimed_key;
+        // The pointer's keys, outside a deck.
+        let pad = self.pointer && deck.is_none() && !self.settings_open;
+        let pad_keys = if pad { crate::draw::pad_keys(screen, crate::overlay::POINTER_KEYS.len()) } else { vec![] };
+        let aimed_pad = nearest(&pad_keys);
+        self.hovered_pad = aimed_pad;
+        if let Some(key) = aimed_pad {
+            game_gestures.retain(|g| {
+                let pressed = matches!(g, Gesture::Pinch { .. });
+                if pressed {
+                    effects.outs.push(Out::Press { actions: vec![crate::overlay::POINTER_KEYS[key as usize].1] });
+                }
+                !pressed
+            });
+        }
         if let Some(key) = aimed_key.filter(|_| !self.settings_open) {
             game_gestures.retain(|g| {
                 let pressed = matches!(g, Gesture::Tap { .. } | Gesture::Pinch { .. });
@@ -296,7 +325,13 @@ impl Headset {
         } else {
             effects.held.clear();
         }
-        for out in dispatch::dispatch(&game_gestures, ui, effects.aim, field, targets) {
+        // As a pointer, a pinch on the picture clicks there.
+        let pointer = self.pointer;
+        let resolved: Vec<Out> = game_gestures.iter().flat_map(|g| match g {
+            Gesture::Pinch { .. } if pointer && deck.is_none() => effects.aim.and_then(|at| dispatch::tap_at(at, ui, field, targets)).into_iter().collect(),
+            other => dispatch::dispatch(std::slice::from_ref(other), ui, effects.aim, field, targets),
+        }).collect();
+        for out in resolved {
             match out {
                 Out::TogglePause => self.pauses.player = !self.pauses.player,
                 Out::ToggleSettings => {
@@ -346,11 +381,49 @@ mod tests {
         let input = Input { head: Some(head()), focused: true, ..Input::default() };
         let headset = Headset { source: PointerSource::Eye, ..Headset::default() };
         assert_eq!(headset.aim(&input, &screen()), None, "no gaze: no aim, not the head's");
-        // A hand's ray from its joints where no controller gives one.
+        // A hand's ray is the runtime's only: joints alone give none.
         let hand = right_hand([0.2; 4], THUMB_REST).map(|j| j + Vec3::new(0.2, -0.2, -0.3));
         let input = Input { hands: [None, Some(hand)], ..input };
         let headset = Headset { source: PointerSource::RightRay, ..Headset::default() };
-        assert!(headset.aim(&input, &screen()).is_some());
+        assert_eq!(headset.aim(&input, &screen()), None);
+        let ray = Pose { position: Vec3::new(0.2, -0.2, -0.3), orientation: Quat::IDENTITY };
+        assert!(headset.aim(&Input { rays: [None, Some(ray)], ..input }, &screen()).is_some());
+    }
+
+    #[test]
+    fn hands_without_microgestures_play_as_a_pointer_with_keys() {
+        use crate::synthetic::{Runtime, Step, gesture, in_front};
+        let mut headset = Headset::default();
+        let play = |headset: &mut Headset, steps: &[Step], aim: (f32, f32), runtime: Runtime, ui: Context| -> Vec<Out> {
+            let mut outs = Vec::new();
+            for (i, step) in steps.iter().enumerate() {
+                let target = screen().point(aim);
+                let head = Pose { position: Vec3::ZERO, orientation: Quat::from_rotation_arc(Vec3::NEG_Z, target.normalize()) };
+                let hands = in_front(step.hands, Vec3::ZERO, Quat::IDENTITY);
+                let frame = step.frame(i as f64 / 72.0, hands, Vec3::X, runtime);
+                let input = Input { time: frame.time, head: Some(head), hands, pinch: frame.pinch, micro: frame.micro, micro_capable: frame.micro_capable, focused: true, ..Input::default() };
+                outs.extend(headset.update(&input, &screen(), ui, None, None).outs);
+            }
+            outs
+        };
+        let pinch = gesture("pinch").unwrap();
+        // In dialogue a pinch clicks: it advances.
+        let outs = play(&mut headset, &pinch, (160.0, 112.0), Runtime::WEBXR, Context::Dialogue { choice: None });
+        assert!(headset.pointer);
+        assert_eq!(outs, [Out::Press { actions: vec![xem_core::action::GameAction::Confirm] }]);
+        // A pinch on the BACK key presses Cancel.
+        let back = crate::overlay::POINTER_KEYS.iter().position(|k| k.0 == "BACK").unwrap();
+        let quad = crate::draw::pad_keys(&screen(), crate::overlay::POINTER_KEYS.len())[back].1;
+        let local = quad.pose.position - screen().quad.pose.position;
+        let at = ((local.x / 3.2 + 0.5) * 320.0, (0.5 - local.y / 2.24) * 224.0);
+        let outs = play(&mut headset, &pinch, at, Runtime::WEBXR, Context::Battle { page: 2, attack: false, ap: 6, list: true, targeting: false });
+        assert_eq!(outs, [Out::Press { actions: vec![xem_core::action::GameAction::Cancel] }]);
+        assert_eq!(headset.pad_marks(Context::Walk).len(), crate::overlay::POINTER_KEYS.len());
+        // With microgestures the thumb plays and no keys show.
+        let mut headset = Headset::default();
+        let outs = play(&mut headset, &gesture("tap").unwrap(), (160.0, 112.0), Runtime::HORIZON, Context::Dialogue { choice: None });
+        assert!(!headset.pointer && headset.pad_marks(Context::Walk).is_empty());
+        assert_eq!(outs, [Out::Press { actions: vec![xem_core::action::GameAction::Confirm] }]);
     }
 
     #[test]

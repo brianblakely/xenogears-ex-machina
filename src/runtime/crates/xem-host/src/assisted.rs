@@ -6,7 +6,7 @@
 //! the virtual screen.
 use crate::Game;
 use xem_assist::draw::{Placed, WIDGET_PIXELS};
-use xem_assist::gesture::{Gesture, JOINTS};
+use xem_assist::gesture::{Gesture, JOINTS, Micro, Swipe};
 use xem_assist::headset::{Carry, Headset, Input, PointerSource, Pose, Scaling, Screen};
 use xem_assist::overlay;
 use xem_render::glass::{self, Style, Widget};
@@ -18,8 +18,15 @@ fn pose(p: xem_xr::Pose) -> Pose {
     Pose { position: p.position, orientation: p.orientation }
 }
 
-/// One frame's input from OpenXR's raw state.
-pub fn input(state: &xem_xr::InputState, head: Option<xem_xr::Pose>, time: f64, focused: bool) -> Input {
+/// The standard pinch's value at which a pinch begins, and below which it
+/// has ended (`pinch_ext/value` runs 0..1, 1 the fingertips touching).
+const PINCH_ON: f32 = 0.9;
+const PINCH_OFF: f32 = 0.6;
+
+/// One frame's input from OpenXR's raw state: the hands' joints (for the
+/// plan's own gestures), the runtime's aim, pinch and microgestures (the
+/// standard ones); `pinched` keeps each hand's pinch between frames.
+pub fn input(state: &xem_xr::InputState, head: Option<xem_xr::Pose>, time: f64, focused: bool, pinched: &mut [bool; 2]) -> Input {
     let hands = [0, 1].map(|i| {
         // XR_EXT_hand_tracking's 26 joints begin with the palm; WebXR's 25
         // (the recognizers') leave it out.
@@ -33,8 +40,19 @@ pub fn input(state: &xem_xr::InputState, head: Option<xem_xr::Pose>, time: f64, 
         gaze: state.gaze.map(pose),
         rays: [0, 1].map(|i| state.hands[i].aim.filter(|_| state.hands[i].active).map(pose)),
         hands,
-        micro: [None; 2],
-        micro_capable: [false; 2],
+        pinch: [0, 1].map(|i| {
+            let (value, ready) = state.hands[i].pinch?;
+            pinched[i] = if pinched[i] { value >= PINCH_OFF } else { ready && value >= PINCH_ON };
+            Some(pinched[i])
+        }),
+        micro: [0, 1].map(|i| state.hands[i].microgesture.map(|m| match m {
+            xem_xr::Microgesture::Tap => Micro::Tap,
+            xem_xr::Microgesture::Left => Micro::Swipe(Swipe::Left),
+            xem_xr::Microgesture::Right => Micro::Swipe(Swipe::Right),
+            xem_xr::Microgesture::Forward => Micro::Swipe(Swipe::Up),
+            xem_xr::Microgesture::Backward => Micro::Swipe(Swipe::Down),
+        })),
+        micro_capable: [0, 1].map(|i| state.hands[i].microgestures),
         focused,
     }
 }
@@ -127,7 +145,7 @@ impl Assisted {
         let aim = self.headset.aim(input, screen);
         let targets = game.targets();
         let marks = overlay::marks(ui, aim, field.as_ref(), game.destination(), targets.as_ref());
-        xem_assist::draw::room(&marks, screen, &self.headset.key_marks(ui, targets.as_ref()))
+        xem_assist::draw::room(&marks, screen, &self.headset.key_marks(ui, targets.as_ref()), &self.headset.pad_marks(ui))
     }
 
     /// The widgets' style from the settings.

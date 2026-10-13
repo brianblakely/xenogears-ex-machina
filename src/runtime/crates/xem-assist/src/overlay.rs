@@ -7,6 +7,7 @@
 //! (320x224, with the wider framing's sides); hosts place them on their
 //! picture or virtual screen.
 use crate::dispatch::Out;
+use xem_core::action::GameAction;
 use xem_core::context::Context;
 use xem_core::field::{Field, Reach, V3};
 use xem_core::menu::Targets;
@@ -114,6 +115,21 @@ pub fn marks(ui: Context, aim: Option<(f32, f32)>, field: Option<&Field>, destin
     }
     marks
 }
+
+/// The pointer's keys (left of the screen) for hands without the thumb's
+/// microgestures: what the swipes and taps would press.
+pub const POINTER_KEYS: [(&str, GameAction); 10] = [
+    ("^", GameAction::Up),
+    ("v", GameAction::Down),
+    ("<", GameAction::Left),
+    (">", GameAction::Right),
+    ("OK", GameAction::Confirm),
+    ("BACK", GameAction::Cancel),
+    ("MENU", GameAction::Menu),
+    ("JUMP", GameAction::Jump),
+    ("CAM L", GameAction::CameraLeft),
+    ("CAM R", GameAction::CameraRight),
+];
 
 /// Whether the shop's quantity keys show.
 pub fn quantity_keys(ui: Context) -> bool {

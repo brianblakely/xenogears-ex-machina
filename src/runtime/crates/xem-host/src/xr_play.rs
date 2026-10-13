@@ -191,6 +191,8 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     let context = XrContext::new(platform).map_err(|e| e.to_string())?;
     let caps = context.capabilities();
     println!("xr runtime={:?} system={:?} eye_size={}x{} blend={:?}", caps.runtime, caps.system, caps.eye_size.0, caps.eye_size.1, caps.blend_mode);
+    // The standard hand gestures the runtime offers (none is imitated).
+    println!("xr hands: tracking={} hand_interaction={} microgestures={} eye_gaze={}", caps.hand_tracking, caps.hand_interaction, caps.microgestures, caps.eye_gaze);
     let gpu = context.gpu().clone();
     let panel_px = ((PANEL_LOGICAL.0 * PANEL_SCALE) as u32, (PANEL_LOGICAL.1 * PANEL_SCALE) as u32);
     let mut ui = SettingsUi::new(
@@ -227,6 +229,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     // The virtual screen as the last frame showed it (where gestures aim).
     let mut last_screen: Option<xem_assist::headset::Screen> = None;
     let mut scripted = std::collections::VecDeque::new();
+    let mut pinched = [false; 2];
     let mut scripted_aim: Option<(bool, (f32, f32))> = None;
     let mut wanted_disc = None;
     let start = Instant::now();
@@ -272,7 +275,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         // The assisted controls: gestures aimed at the screen as last shown
         // (prayer hands toggle the panel; a pinch clicks on it).
         let focused = session.state() == xem_xr::SessionState::FOCUSED;
-        let mut assisted_input = assisted::input(&input, head, start.elapsed().as_secs_f64(), focused);
+        let mut assisted_input = assisted::input(&input, head, start.elapsed().as_secs_f64(), focused, &mut pinched);
         if !options.hands.is_empty() {
             for (_, entry) in options.hands.iter().filter(|(at, _)| *at == frames) {
                 // `name@x/y` also aims eye gaze at that screen pixel (the
@@ -299,9 +302,16 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                 assisted_input.gaze = Some(xem_assist::headset::Pose { position: head.position, orientation: Quat::from_rotation_arc(Vec3::NEG_Z, direction) });
             }
             if let Some(head) = head {
+                // The scripted hands stand in for a runtime with the
+                // standard gestures (its pinch and microgestures with them).
                 let rest = xem_assist::synthetic::gesture("pause").expect("a known gesture")[0];
-                let hands = scripted.pop_front().unwrap_or(rest);
-                assisted_input.hands = xem_assist::synthetic::in_front(hands, head.position, head.orientation);
+                let step = scripted.pop_front().unwrap_or(rest);
+                let hands = xem_assist::synthetic::in_front(step.hands, head.position, head.orientation);
+                let frame = step.frame(assisted_input.time, hands, head.orientation * Vec3::X, xem_assist::synthetic::Runtime::HORIZON);
+                assisted_input.hands = hands;
+                assisted_input.pinch = frame.pinch;
+                assisted_input.micro = frame.micro;
+                assisted_input.micro_capable = frame.micro_capable;
             }
         }
         if let Some(screen) = last_screen {

@@ -142,6 +142,8 @@ pub struct XemApp {
     xr_gestures: Vec<xem_assist::gesture::Gesture>,
     /// A controller's select (trigger) came since the last frame, by hand.
     xr_select: Option<usize>,
+    /// The hands' standard pinches recognised in the session (for tests).
+    xr_pinches: u32,
     /// What a headset's control deck holds.
     xr_held: std::collections::BTreeSet<xem_core::action::GameAction>,
     /// Where the pointer last met the panel in the session (u, v), and
@@ -235,6 +237,7 @@ impl XemApp {
             xr_panel_inside: false,
             xr_gestures: Vec::new(),
             xr_select: None,
+            xr_pinches: 0,
             xr_held: Default::default(),
             xr_panel_hit: None,
             xr_panel_click: None,
@@ -348,7 +351,7 @@ impl XemApp {
     /// (present, then x, y, z each), all in the session's reference space.
     pub fn xr_input(&mut self, now: f64, data: &[f32], select: i32) {
         use xem_render::glam::{Quat, Vec3};
-        const HAND: usize = 8 + 1 + 75;
+        const HAND: usize = 8 + 1 + 75 + 2;
         if data.len() < 8 + 2 * HAND {
             self.xr_input = None;
             return;
@@ -362,6 +365,11 @@ impl XemApp {
             }
             if d[8] != 0.0 {
                 input.hands[hand] = Some(std::array::from_fn(|j| Vec3::new(d[9 + j * 3], d[10 + j * 3], d[11 + j * 3])));
+            }
+            // A hand source's select: WebXR's standard pinch. WebXR has no
+            // thumb microgestures: the hands play as a pointer.
+            if d[84] != 0.0 {
+                input.pinch[hand] = Some(d[85] != 0.0);
             }
         }
         // A controller's select (its trigger): the hand that pressed it.
@@ -467,6 +475,7 @@ impl XemApp {
             xem_assist::headset::Effects { aim: self.headset.aim(&input, &screen), ..Default::default() }
         };
         let pinched = effects.gestures.iter().any(|g| matches!(g, xem_assist::gesture::Gesture::Pinch { .. }));
+        self.xr_pinches += u32::from(pinched);
         self.xr_held = effects.held.clone();
         xem_assist::headset::carry(effects.outs, &mut WebCarry { session: self.session.as_mut(), input: &mut self.input }, &mut self.xr_scaling);
         self.xr_gestures = effects.gestures;
@@ -481,7 +490,7 @@ impl XemApp {
                 _ => None,
             };
             let marks = if settings.assisted.gestures { xem_assist::overlay::marks(ui, effects.aim, field.as_ref(), destination, targets.as_ref()) } else { vec![] };
-            renderer.overlay.room = xem_assist::draw::room(&marks, &screen, &self.headset.key_marks(ui, targets.as_ref()));
+            renderer.overlay.room = xem_assist::draw::room(&marks, &screen, &self.headset.key_marks(ui, targets.as_ref()), &self.headset.pad_marks(ui));
             renderer.overlay.style = xem_render::glass::Style { reduced_transparency: settings.assisted.reduced_transparency };
             if renderer.panel_visible && let Some(panel) = renderer.panel() {
                 let quad = render::xr_panel_quad(panel.size());
@@ -1279,6 +1288,8 @@ impl XemApp {
             "xr": {
                 "input": self.xr_input.is_some(),
                 "gestures": self.xr_gestures,
+                "pinches": self.xr_pinches,
+                "pointer": self.headset.pointer,
                 "pauses": self.headset.pauses,
                 "settings": self.headset.settings_open,
                 "scale": self.xr_scaling.scale,

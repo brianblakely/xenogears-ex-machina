@@ -1,15 +1,18 @@
-//! Hand gestures from tracked hand joints (plan.md, the shared headset
-//! hand/gaze contract): the same recognizers serve OpenXR
-//! (XR_EXT_hand_tracking) and WebXR hand input, both reduced to WebXR's 25
-//! joints in room space (metres, +Y up).
+//! Hand gestures (plan.md, the shared headset hand/gaze contract). The
+//! standard ones are the runtime's, never derived here:
 //!
-//! - A **pinch** joins the thumb and index fingertips, the other fingers
-//!   open.
-//! - A **thumb tap** touches the radial side of the index finger and lifts
-//!   again without travelling; a **thumb swipe** travels along it (toward
-//!   the fingertip Up, back Down) or across it (toward the back of the
-//!   hand Right for the right hand, Left for the left: as the player sees a
-//!   hand held sideways). A runtime's own microgestures replace these where offered.
+//! - A **pinch** is the runtime's: OpenXR's `XR_EXT_hand_interaction`
+//!   (`pinch_ext`), WebXR's select of a hand input source. Without it a
+//!   hand has no pinch.
+//! - A **thumb tap** and the **thumb swipes** are the runtime's
+//!   microgestures (`XR_META_hand_tracking_microgestures`: forward Up,
+//!   backward Down, left, right). Without them a hand has none (WebXR has
+//!   no such standard).
+//!
+//! The gestures plan.md describes beyond the standard ones are recognised
+//! here from tracked joints (OpenXR's XR_EXT_hand_tracking and WebXR's,
+//! both reduced to WebXR's 25 joints in room space, metres, +Y up):
+//!
 //! - A **five-finger grab** curls the four fingers into the palm with the
 //!   thumb closing around them: palm down (overhand) toggles Pause, palm up
 //!   (underhand) first-person inspection, sideways neither.
@@ -97,7 +100,7 @@ pub enum Gesture {
     TrackingLost { hand: Hand },
 }
 
-/// A runtime's own thumb microgesture (XR_META_hand_tracking_microgestures).
+/// A runtime's thumb microgesture (XR_META_hand_tracking_microgestures).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Micro {
     Tap,
@@ -113,8 +116,11 @@ pub struct Frame {
     pub hands: [Option<[Vec3; JOINTS]>; 2],
     /// The viewer's right (room space), for swipes across the finger.
     pub view_right: Vec3,
-    /// Microgestures the runtime recognised this frame. A hand with
-    /// runtime microgestures (`micro_capable`) gets no joint-derived ones.
+    /// Each hand's standard pinch as the runtime reports it (pinching or
+    /// not); `None` where the runtime gives that hand none.
+    pub pinch: [Option<bool>; 2],
+    /// Microgestures the runtime recognised this frame, and the hands it
+    /// offers them for.
     pub micro: [Option<Micro>; 2],
     pub micro_capable: [bool; 2],
 }
@@ -129,30 +135,15 @@ pub struct Shape {
     pub palm: Vec3,
     /// Along the hand toward the fingers.
     pub forward: Vec3,
-    pub pinch: f32,
     /// The farthest of the index, middle and ring fingertips from the
     /// thumb's (whole-hand pinch).
     pub gather: f32,
-    /// How far the thumb tip lies from the index finger's radial side,
-    /// and where along the finger (0 knuckle .. 1 tip).
-    pub thumb_side: f32,
-    pub thumb_along: f32,
-    pub thumb_tip: Vec3,
-    /// From the index finger's side out to the thumb tip (unit).
-    pub thumb_out: Vec3,
-    /// The index finger's bone the thumb is nearest, toward the tip (unit).
-    pub thumb_bone: Vec3,
-    /// The thumb tip from the index finger's knuckle (its travel on the
-    /// finger, whatever the whole hand does).
-    pub thumb_rel: Vec3,
     /// The thumb tip's distance to the middle and index fingers' middle
     /// joints (closing around a fist).
     pub thumb_wrap: f32,
 }
 
 /// Recognition thresholds (metres unless noted).
-const PINCH_ON: f32 = 0.018;
-const PINCH_OFF: f32 = 0.035;
 const OPEN_CURL: f32 = 0.35;
 const FIST_CURL: f32 = 0.7;
 const THUMB_WRAP: f32 = 0.045;
@@ -163,16 +154,6 @@ const GATHER_ON: f32 = 0.03;
 const GATHER_OFF: f32 = 0.045;
 const PRAYER_NEAR: f32 = 0.07;
 const PRAYER_APART: f32 = 0.15;
-const THUMB_CONTACT: f32 = 0.014;
-const THUMB_LIFT: f32 = 0.024;
-const SWIPE_TRAVEL: f32 = 0.012;
-const TAP_SECONDS: f64 = 0.35;
-/// Frames a pinch must hold its shape before it commits (a closing fist
-/// passes through pinch-like shapes for a frame or so).
-const PINCH_FRAMES: u32 = 2;
-/// How far a frame moves the thumb's smoothed travel toward the tracked one
-/// (a tracker's frame-to-frame jitter is not a swipe).
-const SMOOTHING: f32 = 0.5;
 /// Seconds within which the other hand's matching grab coalesces.
 const COALESCE_SECONDS: f64 = 0.2;
 
@@ -197,24 +178,10 @@ impl Shape {
         let palm = (wrist + index_base + finger(joints, MIDDLE, PROXIMAL) + finger(joints, RING, PROXIMAL) + little_base) / 5.0;
         let forward = (finger(joints, MIDDLE, PROXIMAL) - wrist).normalize_or_zero();
         let thumb_tip = joints[THUMB_TIP];
-        let pinch = thumb_tip.distance(finger(joints, INDEX, TIP));
         // All fingertips at the thumb's: the farthest of index, middle, ring.
         let gather = [INDEX, MIDDLE, RING].map(|b| thumb_tip.distance(finger(joints, b, TIP))).into_iter().fold(0.0, f32::max);
-        // The radial side of the index finger: its proximal and
-        // intermediate bones.
-        let (a, b, c) = (index_base, finger(joints, INDEX, INTERMEDIATE), finger(joints, INDEX, DISTAL));
-        let (d1, t1) = segment(thumb_tip, a, b);
-        let (d2, t2) = segment(thumb_tip, b, c);
-        let (thumb_side, thumb_along) = if d1 <= d2 { (d1, t1 * 0.5) } else { (d2, 0.5 + t2 * 0.5) };
-        let closest = if d1 <= d2 { a + (b - a) * t1 } else { b + (c - b) * t2 };
-        // The finger's axis where the thumb is: the two bones about the
-        // joint blended by nearness (no flip from one to the other there).
-        let (w1, w2) = (d2 / (d1 + d2).max(1e-6), d1 / (d1 + d2).max(1e-6));
-        let thumb_bone = ((b - a).normalize_or_zero() * w1 + (c - b).normalize_or_zero() * w2).normalize_or_zero();
-        let thumb_out = (thumb_tip - closest).normalize_or_zero();
-        let thumb_wrap = thumb_tip.distance(finger(joints, MIDDLE, INTERMEDIATE)).min(thumb_tip.distance(b));
-        let thumb_rel = thumb_tip - index_base;
-        Shape { curl, normal, palm, forward, pinch, gather, thumb_side, thumb_along, thumb_tip, thumb_out, thumb_bone, thumb_rel, thumb_wrap }
+        let thumb_wrap = thumb_tip.distance(finger(joints, MIDDLE, INTERMEDIATE)).min(thumb_tip.distance(finger(joints, INDEX, INTERMEDIATE)));
+        Shape { curl, normal, palm, forward, gather, thumb_wrap }
     }
 
     pub fn open(&self) -> bool {
@@ -230,11 +197,6 @@ impl Shape {
         self.gather < GATHER_ON && self.curl[1] < FIST_CURL
     }
 
-    /// Thumb and index tips together, the other fingers open.
-    fn pinching(&self) -> bool {
-        self.pinch < PINCH_ON && self.gather > GATHER_ON + 0.004 && self.curl[1..].iter().all(|c| *c < 0.55)
-    }
-
     pub fn palm(&self) -> Palm {
         let down = self.normal.dot(Vec3::NEG_Y);
         if down > PALM_CONE {
@@ -247,13 +209,6 @@ impl Shape {
     }
 }
 
-/// The distance from `p` to the segment `a`-`b`, and where along it.
-fn segment(p: Vec3, a: Vec3, b: Vec3) -> (f32, f32) {
-    let ab = b - a;
-    let t = ((p - a).dot(ab) / ab.length_squared().max(1e-8)).clamp(0.0, 1.0);
-    (p.distance(a + ab * t), t)
-}
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum Grab {
     /// Open: the next closure fires.
@@ -264,23 +219,12 @@ enum Grab {
     Spent,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-enum Thumb {
-    Off,
-    /// On the finger since `since`, from `along` and `at` (the thumb from
-    /// the knuckle), `away` the direction away from the finger there; `rel`
-    /// the thumb's smoothed place and `last` its latest, `contact` the
-    /// hand's shape as contact began.
-    On { since: f64, along: f32, at: Vec3, away: Vec3, travelled: bool, rel: Vec3, last: Vec3, contact: Shape },
-}
-
 #[derive(Clone, Debug)]
 struct HandState {
     tracked: bool,
     grab: Grab,
-    pinch_frames: u32,
+    /// The runtime's pinch was on (its rising edge is the gesture).
     pinched: bool,
-    thumb: Thumb,
     whole_pinch: bool,
     last: Option<Shape>,
 }
@@ -288,7 +232,7 @@ struct HandState {
 impl Default for HandState {
     fn default() -> Self {
         // A hand first seen fires nothing until it has been open.
-        HandState { tracked: false, grab: Grab::Spent, pinch_frames: 0, pinched: false, thumb: Thumb::Off, whole_pinch: false, last: None }
+        HandState { tracked: false, grab: Grab::Spent, pinched: false, whole_pinch: false, last: None }
     }
 }
 
@@ -421,67 +365,29 @@ impl Recognizer {
                 // after them.
                 state.grab = Grab::Spent;
             }
+            let pinching = frame.pinch[hand.index()] == Some(true);
             if two_handed || grabbing || state.whole_pinch {
-                state.pinch_frames = 0;
-                state.thumb = Thumb::Off;
-                if shape.pinch > PINCH_OFF {
+                // A grab, scaling or prayer owns the hand: a pinch held
+                // through it fires nothing, now or when it ends.
+                state.pinched |= pinching;
+                if !pinching {
                     state.pinched = false;
                 }
                 state.last = Some(shape);
                 continue;
             }
-            // Pinch.
-            if shape.pinching() && !state.pinched {
-                state.pinch_frames += 1;
-                if state.pinch_frames >= PINCH_FRAMES {
-                    state.pinched = true;
-                    out.push(Gesture::Pinch { hand });
-                }
-            } else if shape.pinch > PINCH_OFF {
-                state.pinched = false;
-                state.pinch_frames = 0;
+            // The runtime's pinch: its start.
+            if pinching && !state.pinched {
+                out.push(Gesture::Pinch { hand });
             }
-            // Thumb taps and swipes on the index finger.
+            state.pinched = pinching;
+            // The runtime's microgestures.
             if frame.micro_capable[hand.index()] {
                 match frame.micro[hand.index()] {
                     Some(Micro::Tap) => out.push(Gesture::Tap { hand }),
                     Some(Micro::Swipe(direction)) => out.push(Gesture::Swipe { hand, direction }),
                     None => {}
                 }
-            } else if !state.pinched && shape.pinch > PINCH_OFF {
-                state.thumb = match state.thumb {
-                    Thumb::Off if shape.thumb_side < THUMB_CONTACT => Thumb::On { since: frame.time, along: shape.thumb_along, at: shape.thumb_rel, away: shape.thumb_out, travelled: false, rel: shape.thumb_rel, last: shape.thumb_rel, contact: shape },
-                    Thumb::On { since, travelled, at, away, rel, last, contact, .. } if shape.thumb_side > THUMB_LIFT => {
-                        // Lifted: a swipe if its last contact had travelled
-                        // the distance along the surface (and its smoothed
-                        // travel most of it), else a tap.
-                        let raw = last - at;
-                        let swept = (rel - at).length() > SWIPE_TRAVEL * 0.6 && raw.length() > SWIPE_TRAVEL && raw.dot(away).abs() < 0.6 * raw.length();
-                        if !travelled && swept {
-                            out.push(Gesture::Swipe { hand, direction: swipe_direction(raw, &contact, hand) });
-                        } else if !travelled && frame.time - since <= TAP_SECONDS {
-                            out.push(Gesture::Tap { hand });
-                        }
-                        Thumb::Off
-                    }
-                    Thumb::On { since, along, at, away, travelled, rel, contact, .. } => {
-                        let last = shape.thumb_rel;
-                        let rel = rel + (shape.thumb_rel - rel) * SMOOTHING;
-                        let moved = rel - at;
-                        // A swipe slides along the finger's surface; a thumb
-                        // moving away from it is lifting (a tap's end).
-                        let sliding = shape.thumb_side < THUMB_LIFT && moved.dot(away).abs() < 0.6 * moved.length();
-                        if !travelled && sliding && moved.length() > SWIPE_TRAVEL {
-                            out.push(Gesture::Swipe { hand, direction: swipe_direction(last - at, &contact, hand) });
-                            Thumb::On { since, along, at, away, travelled: true, rel, last, contact }
-                        } else {
-                            Thumb::On { since, along, at, away, travelled, rel, last, contact }
-                        }
-                    }
-                    off => off,
-                };
-            } else {
-                state.thumb = Thumb::Off;
             }
             state.last = Some(shape);
         }
@@ -489,35 +395,16 @@ impl Recognizer {
     }
 }
 
-/// A swipe's direction from the thumb's travel: along the index finger
-/// toward its tip Up, back Down; across its side toward the back of the
-/// hand Right for the right hand (held sideways, its back faces right) and
-/// Left for the left.
-fn swipe_direction(moved: Vec3, shape: &Shape, hand: Hand) -> Swipe {
-    // Along the bone the thumb is on, and across it toward the back of the
-    // hand.
-    let lengthwise = moved.dot(shape.thumb_bone);
-    let dorsal = -shape.normal * if hand == Hand::Right { 1.0 } else { -1.0 };
-    let dorsal = (dorsal - shape.thumb_bone * dorsal.dot(shape.thumb_bone)).normalize_or_zero();
-    let across = moved.dot(dorsal);
-    if lengthwise.abs() >= across.abs() {
-        if lengthwise > 0.0 { Swipe::Up } else { Swipe::Down }
-    } else if across > 0.0 {
-        Swipe::Right
-    } else {
-        Swipe::Left
-    }
-}
 
-
-/// Gestures a source of hand input can produce: joints give every hand
-/// gesture; without them none is available (controllers and pointers
-/// remain).
+/// Gestures a source of hand input can produce: joints give the grabs,
+/// the whole-hand pinch and prayer hands; the runtime's pinch and
+/// microgestures give theirs; without them those are unavailable (the
+/// pointer, its keys and controllers remain).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
 pub struct Availability {
     pub hands: bool,
-    /// Thumb microgestures from the runtime (else derived from joints).
-    pub runtime_microgestures: bool,
+    pub pinch: bool,
+    pub microgestures: bool,
     pub gaze: bool,
 }
 
@@ -556,11 +443,6 @@ pub(crate) mod tests {
         let side = Shape::of(&place(super::tests::open(), Quat::from_rotation_z(std::f32::consts::FRAC_PI_2), Vec3::ZERO), Hand::Right);
         assert_eq!(side.palm(), Palm::Sideways);
         assert_eq!(Shape::of(&left(super::tests::open()), Hand::Left).palm(), Palm::Down, "the left hand mirrors");
-        let hand = right_hand([0.0; 4], Vec3::ZERO);
-        let mut pinch = hand;
-        pinch[THUMB_TIP] = hand[INDEX + TIP] + Vec3::new(0.005, 0.0, 0.0);
-        let shape = Shape::of(&pinch, Hand::Right);
-        assert!(shape.pinching(), "{shape:?}");
     }
 
     /// Runs poses one frame each at 90 Hz.
@@ -613,51 +495,41 @@ pub(crate) mod tests {
         assert!(matches!(gestures[0], Gesture::Pause { .. }));
     }
 
-    #[test]
-    fn a_pinch_commits_once_and_a_closing_fist_emits_no_pinch() {
-        let mut recognizer = Recognizer::default();
-        let hand = open();
-        let mut pinch = hand;
-        pinch[THUMB_TIP] = hand[INDEX + TIP] + Vec3::new(0.004, 0.0, 0.0);
-        let poses = [(None, Some(hand)), (None, Some(pinch)), (None, Some(pinch)), (None, Some(pinch)), (None, Some(hand))];
-        assert_eq!(run(&mut recognizer, 0.0, &poses), [Gesture::Pinch { hand: Hand::Right }]);
-        let mut recognizer = Recognizer::default();
-        let gestures = run(&mut recognizer, 0.0, &[(None, Some(open())), (None, Some(half())), (None, Some(fist())), (None, Some(fist()))]);
-        assert!(!gestures.iter().any(|g| matches!(g, Gesture::Pinch { .. } | Gesture::Tap { .. } | Gesture::Swipe { .. })), "{gestures:?}");
+    /// Frames of the right hand with the runtime's standard signals.
+    fn signals(time: f64, hand: [Vec3; JOINTS], pinch: Option<bool>, micro: Option<Micro>, micro_capable: bool) -> Frame {
+        Frame { time, hands: [None, Some(hand)], view_right: Vec3::X, pinch: [None, pinch], micro: [None, micro], micro_capable: [false, micro_capable] }
     }
 
     #[test]
-    fn thumb_taps_and_swipes_on_the_index_finger() {
+    fn the_runtimes_pinch_commits_once_and_not_through_a_grab() {
+        let mut recognizer = Recognizer::default();
+        let states = [false, true, true, true, false, true, false];
+        let gestures: Vec<_> = states.iter().enumerate().flat_map(|(i, p)| recognizer.update(&signals(i as f64 / 90.0, open(), Some(*p), None, false))).collect();
+        assert_eq!(gestures, [Gesture::Pinch { hand: Hand::Right }, Gesture::Pinch { hand: Hand::Right }], "each start once");
+        // A pinch the runtime reports while the hand closes into a grab,
+        // and still after it, fires nothing.
+        let mut recognizer = Recognizer::default();
+        let poses = [(open(), false), (half(), true), (fist(), true), (fist(), true), (open(), true), (open(), false)];
+        let gestures: Vec<_> = poses.iter().enumerate().flat_map(|(i, (h, p))| recognizer.update(&signals(i as f64 / 90.0, *h, Some(*p), None, false))).collect();
+        assert_eq!(gestures, [Gesture::Pause { hand: Hand::Right }], "{gestures:?}");
+        // No runtime pinch, no pinch: the joints' closeness is not one.
+        let mut recognizer = Recognizer::default();
+        let iwer = IWER_PINCH.map(Vec3::from);
+        assert!(recognizer.update(&signals(0.0, open(), None, None, false)).is_empty());
+        assert!(recognizer.update(&signals(0.1, iwer, None, None, false)).is_empty());
+    }
+
+    #[test]
+    fn taps_and_swipes_are_the_runtimes_microgestures_only() {
         let relaxed = right_hand([0.25; 4], THUMB_REST);
-        let side = |along: f32| {
-            let mut hand = relaxed;
-            let a = hand[INDEX + PROXIMAL];
-            let b = hand[INDEX + INTERMEDIATE];
-            // On the radial side (toward the thumb, -X).
-            hand[THUMB_TIP] = a + (b - a) * along + Vec3::new(-0.009, 0.0, 0.0);
-            hand
-        };
         let mut recognizer = Recognizer::default();
-        let tap = [(None, Some(relaxed)), (None, Some(side(0.5))), (None, Some(side(0.5))), (None, Some(relaxed))];
-        assert_eq!(run(&mut recognizer, 0.0, &tap), [Gesture::Tap { hand: Hand::Right }]);
-        // Toward the fingertip: up; back: down.
-        let up = [(None, Some(relaxed)), (None, Some(side(0.1))), (None, Some(side(0.9))), (None, Some(relaxed))];
-        assert_eq!(run(&mut recognizer, 1.0, &up), [Gesture::Swipe { hand: Hand::Right, direction: Swipe::Up }]);
-        let down = [(None, Some(relaxed)), (None, Some(side(0.9))), (None, Some(side(0.1))), (None, Some(relaxed))];
-        assert_eq!(run(&mut recognizer, 2.0, &down), [Gesture::Swipe { hand: Hand::Right, direction: Swipe::Down }]);
-        // A slow lift is no tap.
-        let mut slow = vec![(None, Some(relaxed))];
-        slow.extend(std::iter::repeat_n((None, Some(side(0.5))), 60));
-        slow.push((None, Some(relaxed)));
-        assert!(run(&mut recognizer, 3.0, &slow).is_empty());
-        // A runtime's microgestures replace the joints'.
-        let mut recognizer = Recognizer::default();
-        let mut micro = frame(0.0, None, Some(relaxed));
-        micro.micro_capable = [false, true];
-        micro.micro[1] = Some(Micro::Swipe(Swipe::Left));
-        assert_eq!(recognizer.update(&micro), [Gesture::Swipe { hand: Hand::Right, direction: Swipe::Left }]);
+        let tap = recognizer.update(&signals(0.0, relaxed, Some(false), Some(Micro::Tap), true));
+        assert_eq!(tap, [Gesture::Tap { hand: Hand::Right }]);
+        let swipe = recognizer.update(&signals(0.1, relaxed, Some(false), Some(Micro::Swipe(Swipe::Left)), true));
+        assert_eq!(swipe, [Gesture::Swipe { hand: Hand::Right, direction: Swipe::Left }]);
+        // A hand the runtime offers none for has none.
+        assert!(recognizer.update(&signals(0.2, relaxed, Some(false), Some(Micro::Tap), false)).is_empty());
     }
-
 
     #[test]
     fn two_whole_hand_pinches_scale_and_own_the_hands_until_release() {
@@ -700,13 +572,13 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn iwers_recorded_poses_read_as_a_relaxed_hand_and_a_pinch() {
+    fn iwers_recorded_poses_are_no_grab_or_whole_hand_pinch() {
         let pose = |p: [[f32; 3]; 25]| p.map(Vec3::from);
         let relaxed = Shape::of(&pose(IWER_DEFAULT), Hand::Left);
-        assert!(!relaxed.pinching() && !relaxed.fist() && !relaxed.whole_pinch(), "{relaxed:?}");
+        assert!(!relaxed.fist() && !relaxed.whole_pinch(), "{relaxed:?}");
         let pinch = Shape::of(&pose(IWER_PINCH), Hand::Left);
-        assert!(pinch.pinching() && !pinch.fist(), "{pinch:?}");
+        assert!(!pinch.fist() && !pinch.whole_pinch(), "a pinch is no grab or whole-hand pinch: {pinch:?}");
         let point = Shape::of(&pose(IWER_POINT), Hand::Left);
-        assert!(!point.pinching() && !point.fist(), "{point:?}");
+        assert!(!point.fist(), "{point:?}");
     }
 }

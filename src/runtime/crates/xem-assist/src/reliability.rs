@@ -1,4 +1,6 @@
-//! Measures the gesture recognizers under hand-tracking noise (plan.md:
+//! Measures this crate's own gesture recognizers (the grabs and prayer
+//! hands; the pinch, taps and swipes are the runtime's standard ones, its
+//! to qualify) under hand-tracking noise (plan.md:
 //! false activations, missed gestures, response latency, rapid pause and
 //! resume, tracking-loss recovery). Hands are the synthetic model with
 //! per-joint jitter (a tracker's), slow drift and tremor, varied speed,
@@ -12,7 +14,15 @@
 //! turned in, either hand alone), and an hour's session whose tremor,
 //! slowness and wrist droop grow as a tiring hand's would.
 use crate::gesture::{Frame, Gesture, Hand, Recognizer, Swipe, JOINTS};
-use crate::synthetic::{self, Frames};
+use crate::synthetic::{self, Hands};
+
+/// Frames of hands.
+type Frames = Vec<Hands>;
+
+/// A scripted gesture's hands.
+fn script(name: &str) -> Option<Frames> {
+    synthetic::gesture(name).map(|steps| steps.iter().map(|s| s.hands).collect())
+}
 use glam::{Quat, Vec3};
 
 /// A small seeded generator (xorshift64*).
@@ -143,7 +153,7 @@ fn completing(name: &str) -> usize {
 }
 
 fn open_hands() -> [Option<[Vec3; JOINTS]>; 2] {
-    synthetic::gesture("pause").expect("known")[0]
+    script("pause").expect("known")[0]
 }
 
 /// How the hands are held during a measure: turned as a whole (`posture`,
@@ -186,14 +196,8 @@ pub fn measure(name: &'static str, tries: usize, noise: &Noise, seed: u64) -> Me
 /// [`measure`] with the hands held as `setup` says.
 pub fn measure_with(name: &'static str, tries: usize, noise: &Noise, seed: u64, setup: &Setup) -> Measure {
     let mut rng = Rng::new(seed);
-    // The left hand mirrors the right's motion: across the finger, its
-    // swipe goes the other way on the screen.
-    let expected = match (setup.alone, name) {
-        (Some(Hand::Left), "swipe-left") => "swipe-right",
-        (Some(Hand::Left), "swipe-right") => "swipe-left",
-        _ => name,
-    };
-    let base = synthetic::gesture(name).expect("a known gesture");
+    let expected = name;
+    let base = script(name).expect("a known gesture");
     let mut measure = Measure { name, tries, ..Measure::default() };
     let mut latency = 0usize;
     for _ in 0..tries {
@@ -319,7 +323,8 @@ pub fn rapid_pauses(count: usize, frames: usize, noise: &Noise, seed: u64) -> us
     let mut recognizer = Recognizer::default();
     let mut toggles = 0;
     let mut time = 0.0;
-    let cycle = [open_hands(), synthetic::gesture("pause").expect("known")[2], synthetic::gesture("pause").expect("known")[3]];
+    let pause = script("pause").expect("known");
+    let cycle = [open_hands(), pause[2], pause[3]];
     for _ in 0..count {
         for (k, hands) in cycle.iter().enumerate() {
             let hold = if k == 0 { frames.saturating_sub(2).max(1) } else { 1 };
@@ -341,7 +346,7 @@ pub fn reacquired_fists(count: usize, noise: &Noise, seed: u64) -> usize {
     let mut recognizer = Recognizer::default();
     let mut fired = 0;
     let mut time = 0.0;
-    let pause = synthetic::gesture("pause").expect("known");
+    let pause = script("pause").expect("known");
     let sequence = [pause[0], pause[2], [pause[0][0], None], [pause[0][0], None], pause[3], pause[3], pause[0]];
     for _ in 0..count {
         for hands in sequence {
@@ -354,7 +359,8 @@ pub fn reacquired_fists(count: usize, noise: &Noise, seed: u64) -> usize {
     fired
 }
 
-pub const GESTURES: [&str; 9] = ["pause", "inspect", "pinch", "tap", "swipe-up", "swipe-down", "swipe-left", "swipe-right", "prayer"];
+/// The gestures recognised here (the standard ones are the runtime's).
+pub const GESTURES: [&str; 3] = ["pause", "inspect", "prayer"];
 
 #[cfg(test)]
 mod tests {

@@ -29,7 +29,7 @@ mod input;
 mod math;
 mod vulkan;
 
-pub use input::{HandInput, InputState, Joint};
+pub use input::{HandInput, InputState, Joint, Microgesture};
 pub use math::{Fov, Pose};
 pub use openxr;
 pub use vulkan::VulkanBinding;
@@ -85,6 +85,12 @@ pub struct Capabilities {
     pub hand_tracking: bool,
     /// XR_EXT_eye_gaze_interaction is enabled and the system supports it.
     pub eye_gaze: bool,
+    /// XR_EXT_hand_interaction is enabled: the hands' standard aim and
+    /// pinch (`/interaction_profiles/ext/hand_interaction_ext`).
+    pub hand_interaction: bool,
+    /// XR_META_hand_tracking_microgestures is enabled: the thumb's
+    /// standard taps and swipes on that profile.
+    pub microgestures: bool,
     /// Recommended per-eye image size.
     pub eye_size: (u32, u32),
     pub max_layers: u32,
@@ -132,6 +138,8 @@ impl XrContext {
         extensions.khr_vulkan_enable2 = true;
         extensions.ext_hand_tracking = available.ext_hand_tracking;
         extensions.ext_eye_gaze_interaction = available.ext_eye_gaze_interaction;
+        extensions.ext_hand_interaction = available.ext_hand_interaction;
+        extensions.meta_hand_tracking_microgestures = available.ext_hand_interaction && available.meta_hand_tracking_microgestures;
         #[cfg(target_os = "android")]
         {
             extensions.khr_android_create_instance = true;
@@ -187,6 +195,8 @@ impl XrContext {
             vendor_id: system_properties.vendor_id,
             hand_tracking,
             eye_gaze,
+            hand_interaction: extensions.ext_hand_interaction,
+            microgestures: extensions.meta_hand_tracking_microgestures,
             eye_size: (
                 views[0].recommended_image_rect_width,
                 views[0].recommended_image_rect_height,

@@ -1,7 +1,10 @@
 //! Synthetic hands for tests and emulator runs without hand tracking
 //! (Monado's simulated headset has none): poses built from a simple hand
-//! model, and each gesture's frames, placed in front of a head.
-use crate::gesture::{FINGERS, INDEX, INTERMEDIATE, JOINTS, LITTLE, MIDDLE, PROXIMAL, THUMB_TIP, TIP};
+//! model, and each gesture's steps, placed in front of a head. A step also
+//! carries what a runtime offering the standard gestures reports with it
+//! (`XR_EXT_hand_interaction`'s pinch, `XR_META_hand_tracking_microgestures`'
+//! taps and swipes): those are the runtime's, not derived from the joints.
+use crate::gesture::{FINGERS, Frame, INDEX, INTERMEDIATE, JOINTS, LITTLE, MIDDLE, Micro, PROXIMAL, Swipe, THUMB_TIP, TIP};
 use glam::{Quat, Vec3};
 
 /// A right hand in its own frame: wrist at the origin, fingers along -Z,
@@ -95,54 +98,97 @@ pub fn whole_pinch() -> [Vec3; JOINTS] {
     hand
 }
 
-/// A gesture's frames (left, right hands in the hand model's frame).
-pub type Frames = Vec<[Option<[Vec3; JOINTS]>; 2]>;
+/// Left and right hands' joints, when tracked.
+pub type Hands = [Option<[Vec3; JOINTS]>; 2];
 
-/// The frames of a named gesture with the right hand (the left open): `pause` (an
-/// overhand grab), `inspect` (underhand), `pinch`, `tap`, `swipe-up`,
-/// `swipe-down`, `swipe-left`, `swipe-right`; `prayer` with both, `lose`
-/// (the right hand untracked for a while).
+/// One frame of a scripted gesture: the hands (in the hand model's frame)
+/// and the runtime's standard signals with them.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Step {
+    pub hands: Hands,
+    /// The runtime's pinch, per hand.
+    pub pinch: [bool; 2],
+    /// The runtime's microgesture this frame, per hand.
+    pub micro: [Option<Micro>; 2],
+}
+
+/// A gesture's steps.
+pub type Frames = Vec<Step>;
+
+/// What a runtime offers of the standard gestures (a Quest's Horizon OS
+/// both; a browser's WebXR the pinch only).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Runtime {
+    pub pinch: bool,
+    pub microgestures: bool,
+}
+
+impl Runtime {
+    pub const HORIZON: Runtime = Runtime { pinch: true, microgestures: true };
+    pub const WEBXR: Runtime = Runtime { pinch: true, microgestures: false };
+}
+
+impl Step {
+    /// Hands alone, no signal.
+    pub fn of(hands: Hands) -> Step {
+        Step { hands, ..Step::default() }
+    }
+
+    /// The recognizer's frame for this step at `time` with `hands` (the
+    /// step's, placed), as `runtime` reports it.
+    pub fn frame(&self, time: f64, hands: Hands, view_right: Vec3, runtime: Runtime) -> Frame {
+        Frame {
+            time,
+            hands,
+            view_right,
+            pinch: [0, 1].map(|i| (runtime.pinch && hands[i].is_some()).then_some(self.pinch[i])),
+            micro: if runtime.microgestures { self.micro } else { [None; 2] },
+            micro_capable: [0, 1].map(|i| runtime.microgestures && hands[i].is_some()),
+        }
+    }
+
+    /// The left hand doing the right's step (mirrored), the right absent.
+    pub fn mirrored(&self) -> Step {
+        Step { hands: [self.hands[1].map(left), None], pinch: [self.pinch[1], false], micro: [self.micro[1].map(|m| match m {
+            Micro::Swipe(Swipe::Left) => Micro::Swipe(Swipe::Right),
+            Micro::Swipe(Swipe::Right) => Micro::Swipe(Swipe::Left),
+            other => other,
+        }), None] }
+    }
+}
+
+/// The steps of a named gesture with the right hand (the left open):
+/// `pause` (an overhand grab), `inspect` (underhand), `pinch`, `tap`,
+/// `swipe-up`, `swipe-down`, `swipe-left`, `swipe-right`; `prayer` with
+/// both, `lose` (both hands untracked for a while).
 pub fn gesture(name: &str) -> Option<Frames> {
     // The left hand rests open beside the right's gestures.
-    let right = |poses: &[[Vec3; JOINTS]]| -> Frames {
-        poses.iter().map(|p| [Some(place(left(open()), Quat::IDENTITY, Vec3::new(-0.12, 0.0, 0.0))), Some(place(*p, Quat::IDENTITY, Vec3::new(0.12, 0.0, 0.0)))]).collect()
+    let place_both = |p: [Vec3; JOINTS]| -> Hands {
+        [Some(place(left(open()), Quat::IDENTITY, Vec3::new(-0.12, 0.0, 0.0))), Some(place(p, Quat::IDENTITY, Vec3::new(0.12, 0.0, 0.0)))]
+    };
+    let right = |poses: &[[Vec3; JOINTS]]| -> Frames { poses.iter().map(|p| Step::of(place_both(*p))).collect() };
+    // A thumb gesture's poses, the runtime's event on the lifting one.
+    let micro = |poses: &[[Vec3; JOINTS]], at: usize, event: Micro| -> Frames {
+        poses.iter().enumerate().map(|(i, p)| Step { hands: place_both(*p), pinch: [false; 2], micro: [None, (i == at).then_some(event)] }).collect()
     };
     let up = Quat::from_rotation_z(std::f32::consts::PI);
     Some(match name {
         "pause" => right(&[open(), open(), half(), fist(), fist(), open(), open()]),
         "inspect" => right(&[open(), open(), half(), fist(), fist(), open()].map(|p| place(p, up, Vec3::new(0.0, 0.05, 0.0)))),
-        "pinch" => right(&[open(), open(), pinch(), pinch(), pinch(), open(), open()]),
-        "tap" => right(&[relaxed(), relaxed(), thumb_on_index(0.5), thumb_on_index(0.5), thumb_lifted(0.5), relaxed(), relaxed()]),
-        // Swipes travel over a few frames, as a thumb does (80 ms and more).
-        "swipe-up" => right(&[relaxed(), thumb_on_index(0.1), thumb_on_index(0.37), thumb_on_index(0.63), thumb_on_index(0.9), thumb_lifted(0.9), relaxed(), relaxed()]),
-        "swipe-down" => right(&[relaxed(), thumb_on_index(0.9), thumb_on_index(0.63), thumb_on_index(0.37), thumb_on_index(0.1), thumb_lifted(0.1), relaxed(), relaxed()]),
-        "swipe-left" | "swipe-right" => {
-            // Across the finger's side: toward the back of the hand (+Y for
-            // the palm-down model) is Right for the right hand.
-            // Across the finger at its middle joint (perpendicular to its
-            // axis there, toward the back of the hand for Right), 2 cm,
-            // staying in contact.
-            let on = thumb_on_index(0.5);
-            let (a, b, c) = (on[INDEX + PROXIMAL], on[INDEX + INTERMEDIATE], on[INDEX + 3]);
-            let axis = ((b - a).normalize() + (c - b).normalize()).normalize();
-            let back = (Vec3::Y - axis * axis.y).normalize();
-            let side = if name == "swipe-left" { -0.02 } else { 0.02 };
-            let step = |t: f32| {
-                let mut moved = on;
-                moved[THUMB_TIP] += (back * side + Vec3::new(0.004, 0.0, 0.0)) * t;
-                moved
-            };
-            let mut lifted = step(1.0);
-            lifted[THUMB_TIP] += Vec3::new(-0.03, 0.0, 0.0);
-            right(&[relaxed(), on, step(0.33), step(0.67), step(1.0), lifted, relaxed(), relaxed()])
-        }
+        "pinch" => [open(), open(), pinch(), pinch(), pinch(), open(), open()].iter().enumerate()
+            .map(|(i, p)| Step { hands: place_both(*p), pinch: [false, (2..5).contains(&i)], micro: [None; 2] }).collect(),
+        "tap" => micro(&[relaxed(), relaxed(), thumb_on_index(0.5), thumb_on_index(0.5), thumb_lifted(0.5), relaxed(), relaxed()], 4, Micro::Tap),
+        "swipe-up" => micro(&[relaxed(), thumb_on_index(0.1), thumb_on_index(0.5), thumb_on_index(0.9), thumb_lifted(0.9), relaxed()], 4, Micro::Swipe(Swipe::Up)),
+        "swipe-down" => micro(&[relaxed(), thumb_on_index(0.9), thumb_on_index(0.5), thumb_on_index(0.1), thumb_lifted(0.1), relaxed()], 4, Micro::Swipe(Swipe::Down)),
+        "swipe-left" => micro(&[relaxed(), thumb_on_index(0.5), thumb_on_index(0.5), thumb_lifted(0.5), relaxed()], 3, Micro::Swipe(Swipe::Left)),
+        "swipe-right" => micro(&[relaxed(), thumb_on_index(0.5), thumb_on_index(0.5), thumb_lifted(0.5), relaxed()], 3, Micro::Swipe(Swipe::Right)),
         "prayer" => {
             let r = place(open(), Quat::from_rotation_z(-std::f32::consts::FRAC_PI_2), Vec3::new(0.02, 0.0, 0.0));
             let l = place(left(open()), Quat::from_rotation_z(std::f32::consts::FRAC_PI_2), Vec3::new(-0.02, 0.0, 0.0));
             let apart = |x: f32, h: [Vec3; JOINTS]| place(h, Quat::IDENTITY, Vec3::new(x, 0.0, 0.0));
-            vec![[Some(apart(-0.2, l)), Some(apart(0.2, r))], [Some(l), Some(r)], [Some(l), Some(r)], [Some(apart(-0.2, l)), Some(apart(0.2, r))], [Some(apart(-0.2, l)), Some(apart(0.2, r))]]
+            [[Some(apart(-0.2, l)), Some(apart(0.2, r))], [Some(l), Some(r)], [Some(l), Some(r)], [Some(apart(-0.2, l)), Some(apart(0.2, r))], [Some(apart(-0.2, l)), Some(apart(0.2, r))]].map(Step::of).to_vec()
         }
-        "lose" => std::iter::repeat_n([None, None], 30).collect(),
+        "lose" => std::iter::repeat_n(Step::default(), 30).collect(),
         _ => return None,
     })
 }
@@ -157,7 +203,20 @@ pub fn in_front(frame: [Option<[Vec3; JOINTS]>; 2], position: Vec3, orientation:
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::gesture::{Frame, Gesture, Hand, Recognizer, Swipe};
+    use crate::gesture::{Gesture, Hand, Recognizer, Swipe};
+
+    fn run(steps: &[Step], head: (Vec3, Quat), runtime: Runtime) -> Vec<Gesture> {
+        let mut recognizer = Recognizer::default();
+        steps.iter().enumerate().flat_map(|(i, step)| {
+            let hands = in_front(step.hands, head.0, head.1);
+            recognizer.update(&step.frame(i as f64 / 72.0, hands, head.1 * Vec3::X, runtime))
+        }).collect()
+    }
+
+    fn opened() -> Vec<Step> {
+        // Hands first seen open (so grabs are armed).
+        vec![Step::of([Some(place(left(open()), Quat::IDENTITY, Vec3::new(-0.12, 0.0, 0.0))), Some(place(open(), Quat::IDENTITY, Vec3::new(0.12, 0.0, 0.0)))]); 3]
+    }
 
     #[test]
     fn every_scripted_gesture_reads_as_itself_in_front_of_a_turned_head() {
@@ -174,24 +233,27 @@ mod tests {
             ("swipe-right", Gesture::Swipe { hand: right, direction: Swipe::Right }),
             ("prayer", Gesture::Settings),
         ] {
-            let mut recognizer = Recognizer::default();
-            let mut seen = Vec::new();
-            // Hands first seen open (so grabs are armed), then the gesture.
-            let mut frames = vec![[Some(place(left(open()), Quat::IDENTITY, Vec3::new(-0.12, 0.0, 0.0))), Some(place(open(), Quat::IDENTITY, Vec3::new(0.12, 0.0, 0.0)))]; 3];
-            frames.extend(gesture(name).unwrap());
-            for (i, hands) in frames.into_iter().enumerate() {
-                let hands = in_front(hands, head.0, head.1);
-                seen.extend(recognizer.update(&Frame { time: i as f64 / 72.0, hands, view_right: head.1 * Vec3::X, ..Frame::default() }));
-            }
-            assert_eq!(seen, [expected], "{name}");
+            let steps: Vec<Step> = opened().into_iter().chain(gesture(name).unwrap()).collect();
+            assert_eq!(run(&steps, head, Runtime::HORIZON), [expected], "{name}");
         }
+    }
+
+    #[test]
+    fn a_runtime_without_microgestures_has_no_taps_or_swipes() {
+        let head = (Vec3::new(0.0, 1.6, 0.0), Quat::IDENTITY);
+        for name in ["tap", "swipe-up", "swipe-down", "swipe-left", "swipe-right"] {
+            let steps: Vec<Step> = opened().into_iter().chain(gesture(name).unwrap()).collect();
+            assert!(run(&steps, head, Runtime::WEBXR).is_empty(), "{name}");
+        }
+        let steps: Vec<Step> = opened().into_iter().chain(gesture("pinch").unwrap()).collect();
+        assert_eq!(run(&steps, head, Runtime::WEBXR), [Gesture::Pinch { hand: Hand::Right }], "WebXR's select is the pinch");
     }
 }
 
 #[cfg(test)]
 mod one_hand {
     use super::*;
-    use crate::gesture::{Frame, Gesture, Hand, Recognizer};
+    use crate::gesture::{Gesture, Hand, Recognizer, Swipe};
 
     /// Each hand alone, the other absent from tracking: every one-hand
     /// gesture reads as itself, with the right hand's and (mirrored) the
@@ -201,23 +263,26 @@ mod one_hand {
         for name in ["pause", "inspect", "pinch", "tap", "swipe-up", "swipe-down", "swipe-left", "swipe-right"] {
             for hand in [Hand::Right, Hand::Left] {
                 let mut recognizer = Recognizer::default();
-                let mut seen = Vec::new();
-                let frames: Vec<_> = std::iter::repeat_n([None, Some(open())], 3).chain(gesture(name).unwrap()).collect();
-                for (i, hands) in frames.into_iter().enumerate() {
-                    let right = hands[1];
-                    let hands = match hand {
-                        Hand::Right => [None, right],
-                        // The left hand: the right one mirrored.
-                        Hand::Left => [right.map(left), None],
+                let steps: Vec<Step> = std::iter::repeat_n(Step::of([None, Some(open())]), 3).chain(gesture(name).unwrap()).collect();
+                let seen: Vec<Gesture> = steps.iter().enumerate().flat_map(|(i, step)| {
+                    let step = match hand {
+                        Hand::Right => Step { hands: [None, step.hands[1]], ..*step },
+                        Hand::Left => step.mirrored(),
                     };
-                    seen.extend(recognizer.update(&Frame { time: i as f64 / 72.0, hands, view_right: Vec3::X, ..Frame::default() }));
-                }
+                    recognizer.update(&step.frame(i as f64 / 72.0, step.hands, Vec3::X, Runtime::HORIZON))
+                }).collect();
                 assert_eq!(seen.len(), 1, "{name} with {hand:?}: {seen:?}");
-                let expected_hand = |g: &Gesture| match g {
-                    Gesture::Pause { hand: h } | Gesture::Inspect { hand: h } | Gesture::Pinch { hand: h } | Gesture::Tap { hand: h } | Gesture::Swipe { hand: h, .. } => *h == hand,
+                let ok = match seen[0] {
+                    Gesture::Pause { hand: h } | Gesture::Inspect { hand: h } | Gesture::Pinch { hand: h } | Gesture::Tap { hand: h } => h == hand,
+                    // The left hand's mirrored swipe across goes the other way.
+                    Gesture::Swipe { hand: h, direction } => h == hand && match (name, hand) {
+                        ("swipe-left", Hand::Left) => direction == Swipe::Right,
+                        ("swipe-right", Hand::Left) => direction == Swipe::Left,
+                        _ => true,
+                    },
                     _ => false,
                 };
-                assert!(expected_hand(&seen[0]), "{name} with {hand:?}: {seen:?}");
+                assert!(ok, "{name} with {hand:?}: {seen:?}");
             }
         }
     }

@@ -303,12 +303,21 @@ async function enterVr() {
   const layer = new XRWebGLLayer(session, gl, { antialias: false, depth: false, stencil: false, alpha: false, framebufferScaleFactor });
   session.updateRenderState({ baseLayer: layer });
   const space = await session.requestReferenceSpace('local');
-  page.xr = { session, layer, space, frames: 0, views: 0, select: -1 };
+  page.xr = { session, layer, space, frames: 0, views: 0, select: -1, pinching: [false, false], pinched: [false, false] };
   vrButton.textContent = 'Exit VR';
-  // A controller's select (trigger) clicks on the settings panel; a hidden
+  // A controller's select (trigger) clicks on the settings panel. A hand's
+  // select is WebXR's standard pinch: held from selectstart to selectend
+  // (one that starts and ends within a frame still counts). A hidden
   // session (the runtime's own menu) lets go of everything held.
+  const handOf = (source) => (source?.handedness === 'left' ? 0 : 1);
   session.addEventListener('select', (event) => {
-    if (page.xr) { page.xr.select = event.inputSource?.handedness === 'left' ? 0 : 1; page.xr.selects = (page.xr.selects ?? 0) + 1; }
+    if (page.xr && !event.inputSource?.hand) { page.xr.select = handOf(event.inputSource); page.xr.selects = (page.xr.selects ?? 0) + 1; }
+  });
+  session.addEventListener('selectstart', (event) => {
+    if (page.xr && event.inputSource?.hand) { const i = handOf(event.inputSource); page.xr.pinching[i] = true; page.xr.pinched[i] = true; }
+  });
+  session.addEventListener('selectend', (event) => {
+    if (page.xr && event.inputSource?.hand) page.xr.pinching[handOf(event.inputSource)] = false;
   });
   session.addEventListener('visibilitychange', () => {
     if (session.visibilityState !== 'visible') app.release_input();
@@ -348,8 +357,9 @@ function xrGamepad(session) {
 }
 
 // A headset frame's input for the runtime's gestures (XemApp.xr_input): the
-// viewer's pose and visibility, then each hand's target ray and its 25 joints.
-const XR_HAND = 8 + 1 + 75;
+// viewer's pose and visibility, then each hand's target ray, its 25 joints
+// and its standard pinch (1 a hand source, 1 pinching).
+const XR_HAND = 8 + 1 + 75 + 2;
 const xrData = new Float32Array(8 + 2 * XR_HAND);
 function xrInput(xrframe, viewer, session, space) {
   xrData.fill(0);
@@ -376,6 +386,9 @@ function xrInput(xrframe, viewer, session, space) {
         j += 1;
       }
       xrData[base + 8] = tracked && j === 25 ? 1 : 0;
+      xrData[base + 84] = 1;
+      xrData[base + 85] = page.xr.pinching[hand] || page.xr.pinched[hand] ? 1 : 0;
+      page.xr.pinched[hand] = false;
     }
   }
   return xrData;

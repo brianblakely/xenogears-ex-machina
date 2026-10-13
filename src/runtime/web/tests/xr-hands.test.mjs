@@ -4,8 +4,8 @@
 // overhand grab toggles the player's Pause (the game's clock stands still
 // while head tracking and drawing go on), prayer hands open and close the
 // settings panel in the session (with their own pause), and a hand that
-// is lost pauses the game until the player's Pause resumes it. Needs no
-// private inputs.
+// is lost pauses the game until the player's Pause resumes it; the pinch is
+// the hand's standard select. Needs no private inputs.
 
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -217,6 +217,18 @@ describe('hand gestures in a headset browser', { skip: !IWER && 'needs iwer (npm
       assert.equal((await xr()).pauses.player, true, 'a lost hand paused the game');
       for (const name of ['open', 'half', 'fist', 'open']) await shape('right', name);
       assert.equal((await xr()).pauses.player, false, 'the player resumed it');
+
+      // The pinch is the hand's standard select (IWER's pinch value), not
+      // the joints' closeness; WebXR has no thumb microgestures, so the
+      // hands play as a pointer (its keys beside the screen).
+      const before = (await xr()).pinches;
+      await page.evaluate(() => window.xrDevice.hands.right.updatePinchValue(1));
+      await frames(3);
+      await page.evaluate(() => window.xrDevice.hands.right.updatePinchValue(0));
+      await frames(3);
+      state = await xr();
+      assert.equal(state.pinches, before + 1, `one select, one pinch: ${JSON.stringify(state)}`);
+      assert.equal(state.pointer, true, 'no microgestures: a pointer');
       assert.deepEqual(page.errors, []);
     } finally {
       await browser.close();

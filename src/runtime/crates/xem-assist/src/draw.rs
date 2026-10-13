@@ -25,6 +25,17 @@ pub fn side_keys(screen: &Screen, count: usize) -> Vec<(u32, Quad)> {
     }).collect()
 }
 
+/// `count` keys' quads in a column beside the screen's left edge, the
+/// first at the top.
+pub fn pad_keys(screen: &Screen, count: usize) -> Vec<(u32, Quad)> {
+    let right = screen.quad.pose.orientation * Vec3::X;
+    side_keys(screen, count).into_iter().map(|(i, mut quad)| {
+        let offset = (quad.pose.position - screen.quad.pose.position).dot(right);
+        quad.pose.position -= right * (2.0 * offset);
+        (i, quad)
+    }).collect()
+}
+
 /// A key to draw beside the screen: its label and state.
 #[derive(Clone, Debug, PartialEq)]
 pub struct KeyMark {
@@ -39,9 +50,9 @@ pub struct Placed {
     pub size: Vec2,
 }
 
-/// Marks on a headset's screen (floor marks lie as the floor projects) and
-/// the keys beside it.
-pub fn room(marks: &[Mark], screen: &Screen, keys: &[KeyMark]) -> Vec<Placed> {
+/// Marks on a headset's screen (floor marks lie as the floor projects),
+/// the keys beside it on the right and the pointer's keys on the left.
+pub fn room(marks: &[Mark], screen: &Screen, keys: &[KeyMark], pad: &[KeyMark]) -> Vec<Placed> {
     let normal = screen.quad.pose.orientation * Vec3::Z;
     let mut placed: Vec<Placed> = marks.iter().map(|mark| {
         let centre = screen.point(mark.centre);
@@ -54,7 +65,8 @@ pub fn room(marks: &[Mark], screen: &Screen, keys: &[KeyMark]) -> Vec<Placed> {
             size: Vec2::ONE,
         }
     }).collect();
-    for ((_, quad), key) in side_keys(screen, keys.len()).into_iter().zip(keys) {
+    let columns = side_keys(screen, keys.len()).into_iter().zip(keys).chain(pad_keys(screen, pad.len()).into_iter().zip(pad));
+    for ((_, quad), key) in columns {
         let icon = icon_of(&key.label);
         placed.push(Placed {
             widget: Widget::Key(icon, key.state),

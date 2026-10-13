@@ -23,7 +23,38 @@ pub struct HandInput {
     pub secondary: bool,
     pub squeeze: bool,
     pub thumbstick_click: bool,
+    /// The hand's standard pinch (XR_EXT_hand_interaction's `pinch_ext`):
+    /// its value 0..1 and whether the hand is posed for it; `None` while
+    /// nothing is bound to it.
+    pub pinch: Option<(f32, bool)>,
+    /// The runtime's thumb microgesture this frame
+    /// (XR_META_hand_tracking_microgestures).
+    pub microgesture: Option<Microgesture>,
+    /// Microgestures are bound for this hand.
+    pub microgestures: bool,
 }
+
+/// A thumb microgesture on the index finger.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Microgesture {
+    Tap,
+    Left,
+    Right,
+    /// Toward the fingertip.
+    Forward,
+    /// Toward the knuckle.
+    Backward,
+}
+
+/// XR_META_hand_tracking_microgestures' components, in [`Microgesture`]
+/// order.
+const MICROGESTURES: [(&str, Microgesture); 5] = [
+    ("tap_thumb_meta/click", Microgesture::Tap),
+    ("swipe_left_meta/click", Microgesture::Left),
+    ("swipe_right_meta/click", Microgesture::Right),
+    ("swipe_forward_meta/click", Microgesture::Forward),
+    ("swipe_backward_meta/click", Microgesture::Backward),
+];
 
 /// A tracked hand joint (XR_EXT_hand_tracking joint order).
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -61,6 +92,10 @@ pub(crate) struct Input {
     grip_spaces: [xr::Space; 2],
     gaze: Option<(xr::Action<xr::Posef>, xr::Space)>,
     trackers: Option<[xr::HandTracker; 2]>,
+    /// XR_EXT_hand_interaction's pinch value and readiness.
+    pinch: Option<(xr::Action<f32>, xr::Action<bool>)>,
+    /// XR_META_hand_tracking_microgestures' clicks.
+    microgestures: Vec<(xr::Action<bool>, Microgesture)>,
 }
 
 const HANDS: [&str; 2] = ["/user/hand/left", "/user/hand/right"];
@@ -167,6 +202,42 @@ impl Input {
             ],
         )?;
 
+        // The hands' standard profile: their aim and grip, the pinch, and
+        // (where offered) the thumb's microgestures, in one suggestion.
+        let mut pinch = None;
+        let mut microgestures = Vec::new();
+        if capabilities.hand_interaction {
+            let value = set
+                .create_action::<f32>("pinch", "Pinch", &hands)
+                .map_err(XrError::xr(create))?;
+            let ready = set
+                .create_action::<bool>("pinch_ready", "Pinch ready", &hands)
+                .map_err(XrError::xr(create))?;
+            if capabilities.microgestures {
+                for (component, gesture) in MICROGESTURES {
+                    let name = component.split('/').next().unwrap_or(component);
+                    let action = set
+                        .create_action::<bool>(name, name, &hands)
+                        .map_err(XrError::xr(create))?;
+                    microgestures.push((action, gesture));
+                }
+            }
+            let mut list = Vec::new();
+            for hand in HANDS {
+                list.push(xr::Binding::new(&aim, path(&format!("{hand}/input/aim/pose"))?));
+                list.push(xr::Binding::new(&grip, path(&format!("{hand}/input/grip/pose"))?));
+                list.push(xr::Binding::new(&value, path(&format!("{hand}/input/pinch_ext/value"))?));
+                list.push(xr::Binding::new(&ready, path(&format!("{hand}/input/pinch_ext/ready_ext"))?));
+                for ((action, _), (component, _)) in microgestures.iter().zip(MICROGESTURES) {
+                    list.push(xr::Binding::new(action, path(&format!("{hand}/input/{component}"))?));
+                }
+            }
+            instance
+                .suggest_interaction_profile_bindings(path("/interaction_profiles/ext/hand_interaction_ext")?, &list)
+                .map_err(XrError::xr("xrSuggestInteractionProfileBindings"))?;
+            pinch = Some((value, ready));
+        }
+
         let gaze = if capabilities.eye_gaze {
             let action = set
                 .create_action::<xr::Posef>("gaze", "Eye gaze", &[])
@@ -229,6 +300,8 @@ impl Input {
             grip_spaces,
             gaze,
             trackers,
+            pinch,
+            microgestures,
         })
     }
 
@@ -300,7 +373,28 @@ impl Input {
                 secondary: secondary.current_state,
                 squeeze: squeeze.current_state > 0.5,
                 thumbstick_click: thumbstick_click.current_state,
+                pinch: None,
+                microgesture: None,
+                microgestures: false,
             };
+            if let Some((value, ready)) = &self.pinch {
+                let value = value.state(session, hand).map_err(XrError::xr(get))?;
+                let ready = ready.state(session, hand).map_err(XrError::xr(get))?;
+                if value.is_active {
+                    state.hands[index].pinch = Some((value.current_state, ready.current_state));
+                    state.hands[index].active = true;
+                }
+            }
+            for (action, gesture) in &self.microgestures {
+                let click = action.state(session, hand).map_err(XrError::xr(get))?;
+                if click.is_active {
+                    state.hands[index].microgestures = true;
+                    // A click's start is the gesture.
+                    if click.current_state && click.changed_since_last_sync && state.hands[index].microgesture.is_none() {
+                        state.hands[index].microgesture = Some(*gesture);
+                    }
+                }
+            }
             state.profiles[index] = match session.current_interaction_profile(hand) {
                 Ok(profile) if profile != xr::Path::NULL => {
                     session.instance().path_to_string(profile).ok()
