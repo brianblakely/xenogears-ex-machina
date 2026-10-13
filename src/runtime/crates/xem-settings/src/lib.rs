@@ -12,6 +12,7 @@ use std::path::{Path, PathBuf};
 pub mod controls;
 pub mod game_keys;
 pub mod graphics;
+pub mod look;
 pub use graphics::{EffectLevels, Fidelity, Graphics, GraphicsProfile, MAX_ZOOM_OUT, MovieFilter, PresentRate, QualityTier, Renderer, TextureFiltering, XrScreen, ZOOM_STEP};
 pub use controls::{AppAction, AppBinding, AppInput, AppRequest, APP_ACTIONS};
 

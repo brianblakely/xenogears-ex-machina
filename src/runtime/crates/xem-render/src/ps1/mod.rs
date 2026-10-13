@@ -15,7 +15,7 @@ mod movie;
 mod view;
 
 pub use effects::{DebugView, Effects, EffectsRenderer, Lighting, Quality, SceneAnalysis, SpriteGroup};
-pub use frame::{FrameRenderer, Framing, Welder, central_depth, interpolate, pull_back, weld};
+pub use frame::{FrameRenderer, Framing, Look, Welder, central_depth, first_person, interpolate, pull_back, weld};
 pub use movie::{MovieRenderer, MovieTiles, Planes, fitted, planes};
 pub use view::{GameView, HostClass, MAX_WIDE_SIDE, Presented, ViewConfig, scene_zoom, wide_side};
 
@@ -151,9 +151,24 @@ pub(crate) enum Reveal {
     Hidden,
     /// Beside the drawing area only, in the wider framing's sides.
     Sides,
-    /// Wherever they fall (a pulled-back camera).
+    /// Wherever they fall (a pulled-back camera, or one looking around).
     Everywhere,
 }
+
+/// A camera within the scene (first-person inspection, [`frame::first_person`]):
+/// the scene's points are in its space ([`xem_gpu::TraceVertex::view`]:
+/// right, down, forward), polygons reaching nearer than `distance` are
+/// clipped there, and `h` projects their points.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct Near {
+    pub(crate) distance: f32,
+    pub(crate) h: f32,
+}
+
+/// [`PassUniform::options`]: depth from its reciprocal, which interpolates
+/// across the screen as the true depth does (a camera within the scene sees
+/// polygons spanning much of its depth range; draw.wgsl).
+pub(crate) const PASS_RECIPROCAL_DEPTH: u32 = 16;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct DrawOptions {
@@ -453,6 +468,10 @@ pub(crate) struct Builder<'a> {
     pub(crate) spill: u32,
     /// Where the faces the game culled are shown.
     pub(crate) reveal: Reveal,
+    /// A camera within the scene: its near plane clips the scene's
+    /// polygons, which neither the GPU's size limit nor back-face culling
+    /// drops, and depth is tested whatever the ordering.
+    pub(crate) near: Option<Near>,
     /// Moves every vertex (shadows, interpolated replays).
     pub(crate) remap: Option<Box<dyn Fn(&mut Vertex) + 'a>>,
     /// The area writes are shown in (a replay's display area; everywhere
@@ -550,6 +569,7 @@ impl<'a> Builder<'a> {
             stats: DrawStats::default(),
             spill: 0,
             reveal: Reveal::Hidden,
+            near: None,
             remap: None,
             rows_left: ROW_BUDGET,
             shown: None,
@@ -635,7 +655,9 @@ impl<'a> Builder<'a> {
 
     /// One traced primitive as triangles under its pipelines.
     pub(crate) fn primitive(&mut self, p: &Primitive) {
-        if p.revealed && (self.reveal == Reveal::Hidden || self.options.culling.viewport) {
+        // Viewport culling is the game's against its own screen, which a
+        // camera within the scene does not look through.
+        if p.revealed && (self.reveal == Reveal::Hidden || (self.options.culling.viewport && self.near.is_none())) {
             return;
         }
         self.stats.primitives += 1;
@@ -722,17 +744,29 @@ impl<'a> Builder<'a> {
         let widened = self.widens(p);
         // Each point once (a quad's triangles share two).
         let corners: [Vertex; 4] = std::array::from_fn(|i| if i < count { vertex(i) } else { Vertex::default() });
+        // A camera within the scene: its scene, seen from anywhere, at any size.
+        let near = self.near.filter(|_| class.is_scene());
         match p.shape {
             Shape::Triangle | Shape::Quad => {
                 let rows = original && self.remap.is_none() && self.rows_left > 0 && needs_rows(p) && !widened;
                 let [left, top, right, bottom] = p.environment.area.map(i32::from);
+                // Reaching behind that camera's near plane, clipped there.
+                let clipped = near.filter(|near| p.vertices[..count].iter().any(|v| v.view.is_some_and(|[_, _, z]| z < near.distance)));
                 for triangle in [[0, 1, 2], [1, 2, 3]].iter().take(if p.shape == Shape::Quad { 2 } else { 1 }) {
+                    if let Some(near) = clipped {
+                        let ((ox, oy), _) = p.projection.unwrap_or_default();
+                        let center = (f32::from(ox) + f32::from(p.environment.offset.0), f32::from(oy) + f32::from(p.environment.offset.1));
+                        let points = triangle.map(|i| (p.vertices[i].view.unwrap_or_default(), corners[i]));
+                        self.stats.triangles += 1;
+                        push_clipped(&mut self.vertices, points, near, center, perspective, fidelity.vertex_snapping);
+                        continue;
+                    }
                     // A face the game culled never met the GPU's limit.
-                    if !p.revealed && !fits(p, *triangle) {
+                    if !p.revealed && near.is_none() && !fits(p, *triangle) {
                         self.stats.rejected_size += 1;
                         continue;
                     }
-                    if self.options.culling.back_faces && class.is_scene() && winding(p, *triangle) * self.front < 0 {
+                    if self.options.culling.back_faces && near.is_none() && class.is_scene() && winding(p, *triangle) * self.front < 0 {
                         self.stats.culled_back_faces += 1;
                         continue;
                     }
@@ -817,7 +851,7 @@ impl<'a> Builder<'a> {
         } else {
             vec![rect(left - spill, right + spill)]
         };
-        let depth = if !fidelity.painter_ordering && projected { DepthMode::Test } else { DepthMode::Over };
+        let depth = if (!fidelity.painter_ordering || self.near.is_some()) && projected { DepthMode::Test } else { DepthMode::Over };
         let end = self.vertices.len() as u32;
         // Semi-transparent pixels leave the depth and class under them; those
         // of the interface (windows) are then marked as interface, so no
@@ -888,7 +922,7 @@ impl<'a> Builder<'a> {
                 let show = *upload && self.shown.is_none_or(|area| overlap(&area, rect) > 0);
                 self.upload(*rect, pixels, show);
             }
-            TraceOp::VBlank | TraceOp::Movie { .. } | TraceOp::MovieFramesLeft(_) => {}
+            TraceOp::VBlank | TraceOp::Movie { .. } | TraceOp::MovieFramesLeft(_) | TraceOp::Eye(_) => {}
         }
     }
 }
@@ -1072,6 +1106,40 @@ fn push_line(vertices: &mut Vec<Vertex>, [a, b]: [Vertex; 2], [(x0, y0), (x1, y1
         };
         vertices.extend([0, 1, 2, 1, 3, 2].map(|k| quad[k]));
         i = j + 1;
+    }
+}
+
+/// A triangle of a camera within the scene ([`Near`]: its points in the
+/// camera's space, each with the vertex it was built as) clipped to what
+/// lies beyond the near plane, as triangles: a point on an edge takes the
+/// colour and texture coordinates of its place along it, and each point is
+/// projected about `center` (sub-pixel unless `snap`).
+fn push_clipped(vertices: &mut Vec<Vertex>, corners: [([f32; 3], Vertex); 3], near: Near, center: (f32, f32), perspective: bool, snap: bool) {
+    let mut polygon = [([0.0f32; 3], Vertex::default()); 4];
+    let mut n = 0;
+    for i in 0..3 {
+        let ((a, va), (b, vb)) = (corners[i], corners[(i + 1) % 3]);
+        if a[2] >= near.distance {
+            polygon[n] = (a, va);
+            n += 1;
+        }
+        if (a[2] >= near.distance) != (b[2] >= near.distance) {
+            let t = (near.distance - a[2]) / (b[2] - a[2]);
+            let lerp = |x: f32, y: f32| x + (y - x) * t;
+            let point = std::array::from_fn(|k| lerp(a[k], b[k]));
+            let vertex = Vertex { color: std::array::from_fn(|k| lerp(va.color[k], vb.color[k])), uv: std::array::from_fn(|k| lerp(va.uv[k], vb.uv[k])), ..va };
+            polygon[n] = (point, vertex);
+            n += 1;
+        }
+    }
+    let project = |(point, vertex): ([f32; 3], Vertex)| {
+        let z = point[2].max(near.distance);
+        let (x, y) = (center.0 + near.h * point[0] / z, center.1 + near.h * point[1] / z);
+        let (x, y) = if snap { (x.floor(), y.floor()) } else { (x, y) };
+        Vertex { position: [x + 0.5, y + 0.5], depth: z, w: if perspective { z / 1024.0 } else { 1.0 }, ..vertex }
+    };
+    for k in 1..n.saturating_sub(1) {
+        vertices.extend([polygon[0], polygon[k], polygon[k + 1]].map(project));
     }
 }
 
@@ -1378,6 +1446,10 @@ pub struct Ps1Renderer {
     pub(crate) synced: bool,
     /// What was drawn into each screen buffer since it was last cleared.
     logs: Vec<FrameLog>,
+    /// Where the field's controlled character stood as the port recorded it
+    /// last ([`TraceOp::Eye`]), and the vertical blanks since: the next
+    /// buffer cleared is the frame it was recorded for.
+    eye: Option<(xem_gpu::Eye, u32)>,
     /// The display's size in VRAM pixels (a screen buffer's), when known,
     /// and the last few areas displayed (the screen buffers).
     display: Option<(u16, u16)>,
@@ -1410,6 +1482,9 @@ pub struct FrameLog {
     /// The native VRAM when the buffer was cleared: a replay samples VRAM
     /// as it was then, changed by the writes in `ops` as it goes.
     pub start: std::sync::Arc<Vec<u16>>,
+    /// Where the field's controlled character stood in this frame, when
+    /// the port recorded it (a view looking around: [`TraceOp::Eye`]).
+    pub eye: Option<xem_gpu::Eye>,
 }
 
 /// A log grows without a clear in modes that never clear nor draw over all
@@ -1548,6 +1623,7 @@ impl Ps1Renderer {
             requested_scale: scale,
             synced: false,
             logs: Vec::new(),
+            eye: None,
             display: None,
             shown: Vec::new(),
             native: vec![0; (VRAM_WIDTH * VRAM_HEIGHT) as usize],
@@ -1806,13 +1882,28 @@ impl Ps1Renderer {
             let shown = VramRect { width: rect.width.min(width), height: rect.height.min(height), ..rect };
             if !cleared && self.logs[index].ops.len() > 64 && covers(ops, shown) {
                 let start = std::sync::Arc::new(self.native.clone());
+                let eye = self.frame_eye();
                 let log = &mut self.logs[index];
                 log.previous = std::mem::take(&mut log.ops);
                 log.frames += 1;
                 log.start = start;
+                log.eye = eye;
             }
         }
         for op in ops {
+            match op {
+                TraceOp::Eye(eye) => {
+                    self.eye = Some((*eye, 0));
+                    continue;
+                }
+                // Recorded each frame the field draws (every other blank)
+                // while the view looks around; older, it is not this frame's.
+                TraceOp::VBlank => {
+                    self.eye = self.eye.and_then(|(eye, blanks)| (blanks < 4).then_some((eye, blanks + 1)));
+                    continue;
+                }
+                _ => {}
+            }
             if let TraceOp::Write { rect, pixels, upload } = op {
                 // The native VRAM, as replays start from it.
                 for (row, line) in pixels.chunks(usize::from(rect.width).max(1)).enumerate() {
@@ -1850,6 +1941,7 @@ impl Ps1Renderer {
                 // cleared at once before, a mode change), which it replaces.
                 let (width, height) = self.display.unwrap_or((256, 192));
                 let buffer = u32::from(rect.width) * 10 >= u32::from(width) * 9 && u32::from(rect.height) * 10 >= u32::from(height) * 8;
+                let eye = self.frame_eye();
                 if let Some(log) = self.logs.iter_mut().find(|l| {
                     let size = u32::from(l.rect.width) * u32::from(l.rect.height);
                     overlap(&l.rect, &rect) * 10 >= size.max(area) * 9
@@ -1858,13 +1950,14 @@ impl Ps1Renderer {
                     log.rect = rect;
                     log.frames += 1;
                     log.start = std::sync::Arc::new(self.native.clone());
+                    log.eye = eye;
                     continue;
                 }
                 if buffer || self.logs.iter().all(|l| overlap(&l.rect, &rect) == 0) {
                     let previous = self.logs.iter().find(|l| overlap(&l.rect, &rect) > 0).map_or(0, |l| l.frames);
                     self.logs.retain(|l| overlap(&l.rect, &rect) == 0);
                     let start = std::sync::Arc::new(self.native.clone());
-                    self.logs.push(FrameLog { rect, ops: vec![op.clone()], previous: Vec::new(), frames: previous + 1, start });
+                    self.logs.push(FrameLog { rect, ops: vec![op.clone()], previous: Vec::new(), frames: previous + 1, start, eye });
                     if self.logs.len() > 6 {
                         self.logs.remove(0);
                     }
@@ -1887,6 +1980,11 @@ impl Ps1Renderer {
                 log.ops.push(op.clone());
             }
         }
+    }
+
+    /// The character's place a frame starting now was recorded with.
+    fn frame_eye(&self) -> Option<xem_gpu::Eye> {
+        self.eye.map(|(eye, _)| eye)
     }
 
     /// The logs' identities (where each buffer lies and how many frames it
@@ -1933,6 +2031,8 @@ impl Ps1Renderer {
 
 }
 
+/// A pass's option bits for `fidelity` (draw.wgsl's `Pass::options`; a
+/// camera within the scene adds [`PASS_RECIPROCAL_DEPTH`]).
 pub(crate) fn pass_options(fidelity: &Fidelity) -> u32 {
     u32::from(!fidelity.affine_textures)
         | u32::from(fidelity.color_15bit) << 1
@@ -2007,4 +2107,33 @@ pub struct PresentedPicture {
     pub texture: wgpu::Texture,
     pub side: u32,
     pub scale: u32,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_triangle_reaching_behind_the_near_plane_is_cut_there() {
+        let corner = |u: f32, red: f32| Vertex { uv: [u, 0.0], color: [red, 0.0, 0.0, 1.0], ..Vertex::default() };
+        // One point 90 units behind the near plane (10), two 90 ahead of it.
+        let corners = [([0.0, 100.0, -80.0], corner(0.0, 0.0)), ([-100.0, 100.0, 100.0], corner(10.0, 1.0)), ([100.0, 100.0, 100.0], corner(20.0, 1.0))];
+        let mut vertices = Vec::new();
+        push_clipped(&mut vertices, corners, Near { distance: 10.0, h: 100.0 }, (160.0, 120.0), true, false);
+        assert_eq!(vertices.len(), 6, "a quad: two triangles");
+        // The cuts lie on the near plane halfway along the edges from the
+        // point behind it, with the colour and texture coordinates there.
+        let cuts: Vec<&Vertex> = vertices.iter().filter(|v| v.depth == 10.0).collect();
+        assert_eq!(cuts.len(), 3, "a fan from the first cut: in both triangles, the second in one");
+        assert!(cuts.iter().all(|v| v.color[0] == 0.5 && v.w == 10.0 / 1024.0 && v.position[1] == 120.5 + 1000.0));
+        let mut cut: Vec<(f32, f32)> = cuts.iter().map(|v| (v.position[0], v.uv[0])).collect();
+        cut.sort_by(|a, b| a.0.total_cmp(&b.0));
+        cut.dedup();
+        assert_eq!(cut, [(160.5 - 500.0, 5.0), (160.5 + 500.0, 10.0)], "x ±50 on the near plane, projected");
+        // Wholly behind it, nothing.
+        let behind = corners.map(|(point, vertex)| ([point[0], point[1], 5.0], vertex));
+        let mut none = Vec::new();
+        push_clipped(&mut none, behind, Near { distance: 10.0, h: 100.0 }, (160.0, 120.0), true, false);
+        assert!(none.is_empty());
+    }
 }

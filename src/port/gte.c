@@ -41,6 +41,10 @@ unsigned int xem_present_sxy_source(int reg) {
     return reg >= 12 && reg <= 14 ? xem_gte_ring->fifo[reg - 12] : reg == 15 ? xem_gte_ring->fifo[2] : 0;
 }
 
+int xem_present_elsewhere(void) {
+    return xem_present_reveals->pull_back != 0 || xem_present_reveals->around != 0;
+}
+
 /* xem_present_face_visible's test, the winding only when `facing`. */
 static inline __attribute__((always_inline)) int present_visible(unsigned int projections, unsigned int vertices, int width,
                                                                  int height, int facing) {
@@ -53,6 +57,11 @@ static inline __attribute__((always_inline)) int present_visible(unsigned int pr
 
     if (vertices < 3 || vertices > 4 || ring->count - (projections - vertices) > XEM_GTE_PROJECTIONS) {
         return 0;
+    }
+    /* Looking around from within the field, any way it faces and wherever
+     * it lies (its points before the division place it). */
+    if (xem_present_reveals->around != 0) {
+        return 1;
     }
     for (i = 0; i < (int)vertices; i++) {
         p = &ring->entries[(projections - vertices + (unsigned int)i) % XEM_GTE_PROJECTIONS];
@@ -116,6 +125,9 @@ int xem_present_square_visible(int x, int y, int z, int radius, int width, int h
     long long reach_x = margin_x + (int)(xem_present_reveals->wanted & 0xFFFF);
     long long reach_y = margin_y + (int)(xem_present_reveals->wanted >> 16);
 
+    if (xem_present_reveals->around != 0) {
+        return 1;
+    }
     if ((depth + radius) * 2 <= h) {
         return 0; /* wholly behind the near plane */
     }

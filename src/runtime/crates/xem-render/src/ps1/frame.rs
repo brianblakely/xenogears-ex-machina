@@ -20,14 +20,19 @@
 //!   coordinates, or colours when untextured, nearest to it) was in the
 //!   frame before, by `alpha`; the interface moves as the game moves it. It
 //!   presents one game frame late and never touches game state.
+//! - **Looking around** from within the scene (first-person inspection)
+//!   moves every projected vertex into a camera of its own ([`Look`],
+//!   [`first_person`]); polygons reaching behind its near plane are clipped
+//!   there as they are drawn, and depth is tested whatever the ordering.
 
 use super::{
-    AUX_FORMAT, Builder, COLOR_FORMAT, Copies, DisplayArea, DrawOptions, PassUniform, Ps1Renderer, Reveal, Storage, Stream, Target, VRAM_HEIGHT,
-    VRAM_WIDTH, bind_group, effective_class, encode, overlap, pass_options, picture_usage, samples, scene_offset, texture,
+    AUX_FORMAT, Builder, COLOR_FORMAT, Copies, DisplayArea, DrawOptions, Near, PASS_RECIPROCAL_DEPTH, PassUniform, Ps1Renderer, Reveal, Storage,
+    Stream, Target, VRAM_HEIGHT, VRAM_WIDTH, bind_group, effective_class, encode, overlap, pass_options, picture_usage, samples, scene_offset,
+    texture,
 };
 use std::collections::HashMap;
 use std::sync::Arc;
-use xem_gpu::{Class, Primitive, Shape, TraceOp, VramRect};
+use xem_gpu::{Class, Eye, Primitive, Shape, TraceOp, VramRect};
 
 /// How the frame is framed.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -43,6 +48,25 @@ pub struct Framing {
     /// Replay the frame even framed as the game framed it (for effects
     /// that need the interface drawn after them: [`FrameRenderer::draw_overlay`]).
     pub replay: bool,
+    /// Look around from within the scene instead of the game's camera.
+    pub look: Option<Look>,
+}
+
+/// A camera within the scene (first-person inspection): where it stands and
+/// its right, down and forward axes (unit vectors), in the game camera's
+/// view space (the space of [`xem_gpu::TraceVertex::view`]).
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Look {
+    pub eye: [f32; 3],
+    pub axes: [[f32; 3]; 3],
+    /// The world's up in that space: sprites stand along it.
+    pub up: [f32; 3],
+    /// The projection distance (VRAM pixels: the field of view) and the
+    /// near plane's distance (view-space units).
+    pub h: f32,
+    pub near: f32,
+    /// The sprite whose parts are left out (the viewer's own; 0 none).
+    pub hide: u32,
 }
 
 /// Holds the presented frame.
@@ -69,6 +93,9 @@ pub struct FrameRenderer {
     /// primitives, and the frame before.
     newest: Option<((u16, u16), u64)>,
     newest_ops: Vec<TraceOp>,
+    /// Where the field's controlled character stood in the newest frame,
+    /// when the port recorded it ([`xem_gpu::TraceOp::Eye`]).
+    eye: Option<Eye>,
     /// How many of them change the picture (not the native pixels a copy,
     /// fill or drawing left, which only follow what was drawn).
     drawn: usize,
@@ -125,6 +152,7 @@ impl FrameRenderer {
             overlay_staging: Stream::new(device, "frame overlay staging", wgpu::BufferUsages::COPY_SRC),
             newest: None,
             newest_ops: Vec::new(),
+            eye: None,
             drawn: 0,
             previous_ops: Vec::new(),
             replayed: Vec::new(),
@@ -161,6 +189,7 @@ impl FrameRenderer {
             self.newest_ops.clear();
             self.previous_ops.clear();
             self.snapshot = None;
+            self.eye = None;
             self.drawn = 0;
             return false;
         };
@@ -182,7 +211,14 @@ impl FrameRenderer {
         self.drawn = drawn(&self.newest_ops);
         self.newest = Some(identity);
         self.snapshot = Some(log.start.clone());
+        self.eye = log.eye;
         true
+    }
+
+    /// Where the field's controlled character stood in the newest frame
+    /// shown, when the port recorded it (while a view looks around).
+    pub fn eye(&self) -> Option<Eye> {
+        self.eye
     }
 
     /// How many of the newest frame's ops change its picture.
@@ -204,7 +240,8 @@ impl FrameRenderer {
         let scale = renderer.scale();
         self.track(renderer, area);
         let pulled = framing.pull_back > 0.0;
-        let replay = (framing.side > 0 || framing.interpolate.is_some() || pulled || framing.replay) && !self.newest_ops.is_empty();
+        let replay = (framing.side > 0 || framing.interpolate.is_some() || pulled || framing.look.is_some() || framing.replay)
+            && !self.newest_ops.is_empty();
         let side = if replay { framing.side } else { 0 };
         self.resize(device, ((area.width.max(1) + 2 * side) * scale, area.height.max(1) * scale));
         self.area = Some(area);
@@ -240,7 +277,9 @@ impl FrameRenderer {
                 }
             }
         }
-        if pulled {
+        if let Some(look) = &framing.look {
+            first_person(&mut ops, look);
+        } else if pulled {
             pull_back(&mut ops, framing.pull_back);
         }
         self.overlay_scene = scene_offset(&ops);
@@ -290,13 +329,16 @@ impl FrameRenderer {
         builder.seal = renderer.seal;
         builder.spill = side;
         builder.capture = capture;
-        builder.reveal = if pulled {
+        // A frame recorded looking around holds faces from anywhere, not
+        // only beside the screen: seen from the game's camera, none.
+        builder.reveal = if pulled || framing.look.is_some() {
             Reveal::Everywhere
-        } else if side > 0 {
+        } else if side > 0 && self.eye.is_none() {
             Reveal::Sides
         } else {
             Reveal::Hidden
         };
+        builder.near = framing.look.map(|look| Near { distance: look.near, h: look.h });
         for op in &ops {
             builder.op(op);
         }
@@ -306,7 +348,7 @@ impl FrameRenderer {
             origin: [origin.0, origin.1],
             extent: [(area.width + 2 * side) as f32, area.height as f32],
             scale: scale as f32,
-            options: pass_options(&options.fidelity),
+            options: pass_options(&options.fidelity) | if framing.look.is_some() { PASS_RECIPROCAL_DEPTH } else { 0 },
             capture_scale,
             capture_side,
             capture,
@@ -731,6 +773,106 @@ pub fn pull_back(ops: &mut Vec<TraceOp>, distance: f32) {
         }
         if let Some([x, y, z]) = &mut p.ground {
             moved(center, x, y, z);
+        }
+        true
+    });
+}
+
+/// `ops` seen from `look`, a camera within the scene: each projected vertex
+/// of the scene moves into its space (its [`xem_gpu::TraceVertex::view`]
+/// holds it there, for the near plane's clipping when drawn) and is
+/// projected with `look.h` about its projection centre; a point without a
+/// point before the division is taken back through the game's projection
+/// first. A sprite's parts face the camera, standing along the world's up
+/// at the sprite's floor point (as the game's camera showed them, sized by
+/// their distance); the viewer's own sprite is left out. A primitive wholly
+/// behind the near plane is dropped, and points behind it are placed at it
+/// until the primitive is clipped there. Interface primitives stay as they
+/// are.
+pub fn first_person(ops: &mut Vec<TraceOp>, look: &Look) {
+    let scene = scene_offset(ops);
+    let dot = |a: [f32; 3], b: [f32; 3]| a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    let camera = |q: [f32; 3]| {
+        let d = [q[0] - look.eye[0], q[1] - look.eye[1], q[2] - look.eye[2]];
+        look.axes.map(|axis| dot(d, axis))
+    };
+    // The world's up in the camera's space: a sprite stands along it, as
+    // wide along the camera's right as the game's camera showed it.
+    let up = look.axes.map(|axis| dot(look.up, axis));
+    // A point on the screen and its depth, back in the game's view space.
+    let unproject = |p: &Primitive, (x, y, z): (f32, f32, f32)| {
+        let ((ox, oy), h) = p.projection.unwrap_or_default();
+        let h = f32::from(h).max(1.0);
+        let center = (f32::from(ox) + f32::from(p.environment.offset.0), f32::from(oy) + f32::from(p.environment.offset.1));
+        [(x - center.0) * z / h, (y - center.1) * z / h, z]
+    };
+    let point = |p: &Primitive, i: usize| {
+        let v = &p.vertices[i];
+        v.view.or_else(|| (v.z > 0.0).then(|| unproject(p, (v.fx, v.fy, v.z))))
+    };
+    // Where each sprite stands: its floor point, else below the middle of
+    // all its parts' points, at the lowest (y grows downwards).
+    let mut feet: HashMap<u32, [f32; 3]> = HashMap::new();
+    let mut parts: HashMap<u32, ([f32; 3], f32)> = HashMap::new();
+    for op in ops.iter() {
+        let TraceOp::Draw(p) = op else { continue };
+        if p.class != Class::Sprite || p.projection.is_none() {
+            continue;
+        }
+        if let Some([x, y, z]) = p.ground {
+            feet.insert(p.owner, unproject(p, (x, y, z)));
+        }
+        for q in (0..p.vertex_count()).filter_map(|i| point(p, i)) {
+            let (sums, n) = parts.entry(p.owner).or_insert(([0.0, f32::MIN, 0.0], 0.0));
+            *sums = [sums[0] + q[0], sums[1].max(q[1]), sums[2] + q[2]];
+            *n += 1.0;
+        }
+    }
+    for (owner, (sums, n)) in parts {
+        feet.entry(owner).or_insert([sums[0] / n, sums[1], sums[2] / n]);
+    }
+    ops.retain_mut(|op| {
+        let TraceOp::Draw(p) = op else { return true };
+        let Some(((ox, oy), _)) = p.projection else { return true };
+        if !effective_class(p, scene).is_scene() {
+            return true;
+        }
+        if look.hide != 0 && p.class == Class::Sprite && p.owner == look.hide {
+            return false;
+        }
+        let count = p.vertex_count();
+        let mut moved = [[0.0f32; 3]; 4];
+        let anchor = feet.get(&p.owner).copied().filter(|_| p.class == Class::Sprite);
+        for (i, m) in moved.iter_mut().enumerate().take(count) {
+            let Some(q) = point(p, i) else { return false };
+            *m = match anchor {
+                Some(anchor) => {
+                    let base = camera(anchor);
+                    let (right, down) = (q[0] - anchor[0], q[1] - anchor[1]);
+                    [base[0] + right - down * up[0], base[1] - down * up[1], base[2] - down * up[2]]
+                }
+                None => camera(q),
+            };
+        }
+        if moved[..count].iter().all(|m| m[2] < look.near) {
+            return false;
+        }
+        let center = (f32::from(ox) + f32::from(p.environment.offset.0), f32::from(oy) + f32::from(p.environment.offset.1));
+        let project = |m: [f32; 3]| {
+            let z = m[2].max(look.near);
+            (center.0 + look.h * m[0] / z, center.1 + look.h * m[1] / z, z)
+        };
+        for (v, m) in p.vertices.iter_mut().zip(&moved[..count]) {
+            (v.fx, v.fy, v.z) = project(*m);
+            v.x = whole(v.fx);
+            v.y = whole(v.fy);
+            v.view = Some(*m);
+        }
+        if let Some(anchor) = anchor
+            && let Some(ground) = &mut p.ground
+        {
+            let (x, y, z) = project(camera(anchor));
+            *ground = [x, y, z];
         }
         true
     });

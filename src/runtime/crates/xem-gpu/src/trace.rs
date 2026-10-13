@@ -84,6 +84,22 @@ pub struct Reveals {
     /// How far behind the game's camera the view looks from (GTE depth
     /// units; 0 for the game's own camera).
     pub pull_back: u32,
+    /// The view looks around from the field's controlled character
+    /// (first-person inspection): every face counts wherever it lies, and
+    /// the port records where the character stands ([`TraceOp::Eye`]).
+    pub around: bool,
+}
+
+/// Where the field's controlled character stands, as the port records it
+/// while the view looks around ([`Reveals::around`]): its position and the
+/// world's x, y and z axes (4.12 times the field's scale) through the field
+/// camera, in the camera's view space (the space of [`TraceVertex::view`]),
+/// and its sprite (the owner of its parts).
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Eye {
+    pub position: [f32; 3],
+    pub axes: [[f32; 3]; 3],
+    pub sprite: u32,
 }
 
 /// A screen point the game stored (the port's store ring).
@@ -154,9 +170,12 @@ pub enum Class {
 }
 
 /// Ring entries that are not drawn points (xem/gte.h): the floor under a
-/// sprite and the depth of the field camera's target.
+/// sprite, the depth of the field camera's target, and the world's axes and
+/// the controlled character's position through the field camera.
 const GROUND: u8 = 3;
 const FOCUS: u8 = 4;
+const AXIS: u8 = 6;
+const EYE: u8 = 7;
 /// Points the interface projects (xem/gte.h: the world map's player marker),
 /// traced as interface: flat, at the original's whole pixels.
 const INTERFACE: u8 = 5;
@@ -352,6 +371,10 @@ pub enum TraceOp {
     /// movie, which the session notes after each of its game frames:
     /// [`Gpu::trace_movie_frames_left`]). Presentation only.
     MovieFramesLeft(u16),
+    /// Where the field's controlled character stands in the frame the game
+    /// draws next (while the view looks around: [`Reveals::around`]), in
+    /// order with the commands: the port records it as it builds the frame.
+    Eye(Eye),
 }
 
 /// A movie macroblock as the MDEC decoded it, before its conversion to RGB:
@@ -414,10 +437,12 @@ pub(crate) struct Recorder {
     wanted: Option<Reveals>,
     /// Points traced: matched to their projection, and not (2D points).
     matches: std::cell::Cell<[u64; 2]>,
-    /// The newest floor point of each sprite (by owner), and the camera
-    /// focus depth since the last take.
+    /// The newest floor point of each sprite (by owner), the camera focus
+    /// depth since the last take, and the world's axes the port recorded
+    /// last (before the controlled character's position).
     grounds: WordMap<u32>,
     focus: Option<u16>,
+    axes: [[f32; 3]; 3],
     /// The age of culled faces: vertical blanks after which the port had
     /// recorded something new. A game that records nothing (paused) holds
     /// its last list and its faces with it.
@@ -509,6 +534,15 @@ impl Recorder {
                     self.grounds.insert(projection.owner, self.history_end);
                 }
                 FOCUS => self.focus = Some(projection.sz),
+                AXIS => {
+                    if let Some(axis) = self.axes.get_mut(projection.owner as usize) {
+                        *axis = projection.view.map(|c| c as f32);
+                    }
+                }
+                EYE => {
+                    let eye = Eye { position: projection.view.map(|c| c as f32), axes: self.axes, sprite: projection.owner };
+                    self.ops.push(TraceOp::Eye(eye));
+                }
                 _ => {}
             }
             self.history[self.history_end as usize % HISTORY] = *projection;
@@ -605,6 +639,11 @@ impl Gpu {
     /// [`Gpu::set_reveals`]'s pull-back as the port's word (0 for none).
     pub fn reveal_pull_back(&self) -> u32 {
         self.trace.as_ref().and_then(|t| t.wanted).map_or(0, |r| r.pull_back)
+    }
+
+    /// Whether [`Gpu::set_reveals`]'s view looks around, as the port's word.
+    pub fn reveal_around(&self) -> u32 {
+        self.trace.as_ref().and_then(|t| t.wanted).map_or(0, |r| u32::from(r.around))
     }
 
     /// Points traced since the trace started: matched to their projection

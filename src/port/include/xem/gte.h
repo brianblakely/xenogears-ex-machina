@@ -111,6 +111,11 @@ typedef struct {
  *   put back), and what the game skips because a projection overflowed and
  *   that camera sees is drawn again for the record (the field's sprite
  *   actors, present.c; the world map's scene objects, worldmap_present.c).
+ *   With a view that looks around from within the field (`around`:
+ *   first-person inspection), every face counts wherever it lies, as for a
+ *   camera elsewhere but without a screen to reach: also behind the game's
+ *   camera, facing away or at depth 0, and every scenery piece and sprite
+ *   actor the field culls or skips is drawn for the record.
  * None of them changes what the game draws, links or keeps. */
 #define XEM_PRESENT_STORES 65536
 #define XEM_PRESENT_STORE_ADDRESS 0x70300000u
@@ -154,7 +159,9 @@ typedef struct {
     /* Set by the host: how far behind the game's camera, in depth units,
      * the view that wants them looks from (0: the game's camera). */
     unsigned int pull_back;
-    unsigned int unused;
+    /* Set by the host: nonzero while that view looks around from the
+     * field's controlled character (first-person inspection). */
+    unsigned int around;
     XemReveal entries[XEM_PRESENT_REVEALS];
 } XemRevealRing;
 
@@ -173,10 +180,16 @@ typedef struct {
 } XemCaptureArea;
 
 /* What a non-drawn point in the ring is: the floor under a sprite
- * (present.c), and the depth of the field camera's target. */
+ * (present.c), the depth of the field camera's target, and, while the host
+ * looks around (`around`), the world's x, y and z axes through the field
+ * camera's rotation (`view`, 4.12 times the field's scale; `owner` the
+ * axis) and the controlled character's position through the camera (its
+ * sprite the owner), after its axes. */
 enum {
     XEM_PROJECTION_GROUND = 3,
     XEM_PROJECTION_FOCUS = 4,
+    XEM_PROJECTION_AXIS = 6,
+    XEM_PROJECTION_EYE = 7,
 };
 
 #ifdef __psx__
@@ -206,11 +219,15 @@ void xem_present_store_at(const void *p, unsigned int value, unsigned int source
 /* The `source` of the point a data register (SXY0-SXYP) holds. */
 unsigned int xem_present_sxy_source(int reg);
 
+/* Whether the view that wants culled faces looks from elsewhere than the
+ * game's camera: pulled back, or around from within the field. */
+int xem_present_elsewhere(void);
+
 /* Whether a culled face is worth recording: its `vertices` points are the
  * projections just before `projections`; each projected without overflow,
  * the first three wind as NCLIP keeps, and one lies within the host's reach
  * of a `width` x `height` screen (as the pulled-back camera sees them, when
- * the host pulls it back). */
+ * the host pulls it back; any face while it looks around). */
 int xem_present_face_visible(unsigned int projections, unsigned int vertices, int width, int height);
 
 /* The same without the winding: a primitive the game draws whichever way
@@ -220,7 +237,8 @@ int xem_present_points_visible(unsigned int projections, unsigned int vertices, 
 /* Whether a square of half-size `radius` facing the camera around the
  * view-space point (x, y, z) reaches a `width` x `height` screen widened by
  * `margin_x`, `margin_y` and the host's reach, as the pulled-back camera
- * sees it (with the GTE's screen offset and projection distance). */
+ * sees it (with the GTE's screen offset and projection distance); any
+ * square while the host looks around. */
 int xem_present_square_visible(int x, int y, int z, int radius, int width, int height, int margin_x, int margin_y);
 
 /* Record a culled face (presentation): `count` GP0 words of a primitive

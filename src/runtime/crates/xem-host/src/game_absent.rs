@@ -25,7 +25,7 @@ impl Game {
         match *self {}
     }
 
-    pub fn combo_input(&mut self) -> bool {
+    pub fn pad_context(&mut self) -> crate::PadContext {
         match *self {}
     }
 

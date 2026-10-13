@@ -94,7 +94,10 @@ fn options() -> Result<Options, String> {
                      F or right click cancel, Shift run, Space jump, Tab menu, Left/Right (and the \
                      mouse, with the mouse camera setting) turn the camera; in a battle attack W/A/S light/medium/heavy, D/F cancel. Enter start, \
                      Backspace select, 1/2 L2/R2, or a gamepad (D-pad or left stick move, \
-                     L1/R1 or right stick left/right turn the camera, Back+Start toggles settings)."
+                     L1/R1 or right stick left/right turn the camera, Back+Start toggles settings).\n\
+                     Walking in a field, Select (Backspace, or Back alone) toggles a first-person view where \
+                     Select shows no map, as does the right stick's click; in it the arrow keys, the right \
+                     stick and (with the mouse camera setting) the mouse look around, and the character stays put."
                 );
                 std::process::exit(0);
             }
@@ -383,7 +386,7 @@ impl Host {
         if self.view.update_app(window,&mut self.game) && let Some(game) = &mut self.game {
             marks[0] = Instant::now();
             let settings = self.view.settings().borrow().settings().clone();
-            let buttons = self.view.pad_buttons(game.combo_input());
+            let buttons = self.view.pad_buttons(game.pad_context());
             match game.update(buttons, &settings, || window.focused()) {
                 Ok(frames) => ran = frames,
                 Err(error) => {

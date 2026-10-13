@@ -4,8 +4,8 @@
 //! settings. The host hands over traces and the display; nothing here
 //! reaches the game.
 
-use super::{DisplayArea, DrawOptions, Effects, EffectsRenderer, Fidelity, Filtering, FrameRenderer, Framing, Lighting, Ps1Renderer, Quality, central_depth};
-use xem_gpu::{DisplayInfo, Reveals, Trace, TraceOp};
+use super::{DisplayArea, DrawOptions, Effects, EffectsRenderer, Fidelity, Filtering, FrameRenderer, Framing, Lighting, Look, Ps1Renderer, Quality, central_depth};
+use xem_gpu::{Class, DisplayInfo, Reveals, Trace, TraceOp};
 use xem_settings::{Filter, Graphics, QualityTier};
 
 /// What kind of host presents, for the settings' automatic choices.
@@ -156,6 +156,31 @@ impl ViewConfig {
 /// that stopped presenting): one replay's vertices stay tens of MB.
 const PENDING_LIMIT: usize = 100_000;
 
+/// First-person inspection's projection distance: a 70-degree field of
+/// view across the original's 320 pixels (160 / tan 35°).
+const LOOK_H: f32 = 228.5;
+/// Its eye on the character's sprite, as a share of the sprite's height, and
+/// that height in world units where the frame does not draw the sprite
+/// (Fei's, measured in four fields: 70 to 78).
+const EYE_LEVEL: f32 = 0.9;
+const SPRITE_HEIGHT: f32 = 74.0;
+/// How far it looks up or down at most (radians: 80 degrees).
+const MAX_PITCH: f32 = 1.396;
+
+/// First-person inspection (docs/runtime.md): the view's turn from the field
+/// camera's heading when it began (`yaw` to the right, `pitch` up, radians),
+/// that heading and the eye's height above the character's feet (from the
+/// first frame showing where the character stood), and the field it began
+/// in (leaving it ends the view).
+#[derive(Clone, Debug, Default, PartialEq)]
+struct FirstPerson {
+    yaw: f32,
+    pitch: f32,
+    heading: Option<f32>,
+    height: Option<f32>,
+    field: Option<String>,
+}
+
 /// A presented frame: an `Rgba8Unorm` texture of sRGB-encoded values.
 pub struct Presented<'a> {
     pub view: &'a wgpu::TextureView,
@@ -199,6 +224,8 @@ pub struct GameView {
     /// presentation was one.
     movie: super::MovieRenderer,
     presented_movie: bool,
+    /// First-person inspection, while it is on.
+    first_person: Option<FirstPerson>,
 }
 
 /// What a presentation shows: the frame (its identity and the ops that
@@ -235,6 +262,7 @@ impl GameView {
             shown: None,
             movie: super::MovieRenderer::new(adapter.is_some_and(|adapter| adapter.get_info().device_type == wgpu::DeviceType::Cpu)),
             presented_movie: false,
+            first_person: None,
         }
     }
 
@@ -273,12 +301,16 @@ impl GameView {
         let config = self.config?;
         let zoom = scene_zoom(config.zoom, &self.scene);
         let side = config.side.max(self.side);
-        if config.draw.culling.viewport {
+        if self.first_person.is_some() && self.scene.starts_with("field") {
+            // Looking around from the controlled character: every face,
+            // and where the character stands.
+            Some(Reveals { reach: [side as u16 + 32, 32], pull_back: 0, around: true })
+        } else if config.draw.culling.viewport {
             None
         } else if zoom > 1.0 {
             match self.focus {
                 // The margin covers the camera moving between frames.
-                Some(focus) => Some(Reveals { reach: [side as u16 + 32, 32], pull_back: ((zoom - 1.0) * focus).round() as u32 }),
+                Some(focus) => Some(Reveals { reach: [side as u16 + 32, 32], pull_back: ((zoom - 1.0) * focus).round() as u32, around: false }),
                 None => {
                     // Pulled back k times, what lies at the camera's target
                     // depth within k frames of the middle shows, and nearer
@@ -287,12 +319,12 @@ impl GameView {
                     let width = 320.0 + 2.0 * side as f32;
                     let x = (2.0 * (zoom - 1.0) * width + side as f32 + 16.0).min(2048.0);
                     let y = (2.0 * (zoom - 1.0) * 240.0 + 16.0).min(2048.0);
-                    Some(Reveals { reach: [x as u16, y as u16], pull_back: 0 })
+                    Some(Reveals { reach: [x as u16, y as u16], pull_back: 0, around: false })
                 }
             }
         } else if side > 0 {
             // The sides, and a little more for faces leaning into them.
-            Some(Reveals { reach: [side as u16 + 16, 16], pull_back: 0 })
+            Some(Reveals { reach: [side as u16 + 16, 16], pull_back: 0, around: false })
         } else {
             None
         }
@@ -301,12 +333,82 @@ impl GameView {
     /// The view the game's field characters keep moving in (the session's
     /// `set_actor_view`): the camera's pull-back in percent plus 100 (bits
     /// 0-15) and the pixels shown beyond each side (bits 16-31); 0 while the
-    /// view is the original's.
+    /// view is the original's. Looking around, the widest: the view may
+    /// turn anywhere.
     pub fn actor_view(&self) -> u32 {
         let Some(config) = self.config else { return 0 };
+        if self.first_person.is_some() {
+            return 1000 | 1024 << 16;
+        }
         let zoom = (config.zoom * 100.0).round().clamp(100.0, 1000.0) as u32;
         let side = config.side.max(self.side).min(1024);
         if zoom == 100 && side == 0 { 0 } else { zoom | side << 16 }
+    }
+
+    /// Turns first-person inspection on (looking along the field camera's
+    /// heading, level, from the controlled character's eyes, once a frame
+    /// shows where it stands) or off. It shows only in a field and ends
+    /// when the field (or its map) is left.
+    pub fn set_first_person(&mut self, on: bool) {
+        self.first_person = on.then(FirstPerson::default);
+    }
+
+    /// Whether first-person inspection is on.
+    pub fn first_person(&self) -> bool {
+        self.first_person.is_some()
+    }
+
+    /// Turns the first-person view by `yaw` radians to the right and
+    /// `pitch` up (within 80 degrees of level).
+    pub fn look_around(&mut self, yaw: f32, pitch: f32) {
+        if let Some(view) = &mut self.first_person {
+            view.yaw = (view.yaw + yaw) % std::f32::consts::TAU;
+            view.pitch = (view.pitch + pitch).clamp(-MAX_PITCH, MAX_PITCH);
+        }
+    }
+
+    /// The first-person view of the frame shown, when it shows where the
+    /// controlled character stood: from its eyes (by its sprite's height
+    /// above its feet), turned from the heading it began with.
+    fn look(&mut self) -> Option<Look> {
+        let eye = self.frame.eye()?;
+        let view = self.first_person.as_mut()?;
+        let unit = |v: [f32; 3]| {
+            let length = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
+            (length > 0.0).then(|| v.map(|c| c / length))
+        };
+        let axes = [unit(eye.axes[0])?, unit(eye.axes[1])?, unit(eye.axes[2])?];
+        // A direction of the world (y down) in the game camera's view space.
+        let world = |w: [f32; 3]| -> [f32; 3] { std::array::from_fn(|i| w[0] * axes[0][i] + w[1] * axes[1][i] + w[2] * axes[2][i]) };
+        let up = world([0.0, -1.0, 0.0]);
+        // The heading the game's camera looked along: its axis in the world.
+        let heading = *view.heading.get_or_insert_with(|| axes[0][2].atan2(axes[2][2]));
+        let height = match view.height {
+            Some(height) => height,
+            None => {
+                // A sprite the frame does not draw stands as tall as the
+                // field's characters do (the axes carry the field's scale).
+                let scale = eye.axes[0].iter().map(|c| c * c).sum::<f32>().sqrt() / 4096.0;
+                let top = sprite_height(self.frame.newest(), eye.sprite, eye.position, up).unwrap_or(SPRITE_HEIGHT * scale);
+                *view.height.insert(top * EYE_LEVEL)
+            }
+        };
+        let (yaw, pitch) = (heading + view.yaw, view.pitch);
+        let forward = world([yaw.sin() * pitch.cos(), -pitch.sin(), yaw.cos() * pitch.cos()]);
+        let right = world([yaw.cos(), 0.0, -yaw.sin()]);
+        let down = [
+            forward[1] * right[2] - forward[2] * right[1],
+            forward[2] * right[0] - forward[0] * right[2],
+            forward[0] * right[1] - forward[1] * right[0],
+        ];
+        Some(Look {
+            eye: std::array::from_fn(|i| eye.position[i] + up[i] * height),
+            axes: [right, down, forward],
+            up,
+            h: LOOK_H,
+            near: (height / 32.0).max(1.0),
+            hide: eye.sprite,
+        })
     }
 
     /// Adds what the game drew since the last push.
@@ -389,6 +491,15 @@ impl GameView {
             self.recorded_focus = None;
             self.focus = None;
         }
+        // First-person inspection is the field's it began in.
+        if let Some(view) = &mut self.first_person {
+            match &view.field {
+                _ if !self.scene.starts_with("field") => self.first_person = None,
+                Some(field) if *field != self.scene => self.first_person = None,
+                Some(_) => {}
+                None => view.field = Some(self.scene.clone()),
+            }
+        }
         if new_frame {
             // Game frames come every 1-4 vertical blanks; a long gap (a
             // pause, a load) is not an interval to interpolate over.
@@ -398,10 +509,11 @@ impl GameView {
         }
         let alpha = ((now - self.arrived) / self.interval).clamp(0.0, 1.0) as f32;
         let zoom = scene_zoom(config.zoom, &self.scene);
-        let pull_back = if zoom > 1.0 { self.focus.map_or(0.0, |focus| (zoom - 1.0) * focus) } else { 0.0 };
+        let look = self.look();
+        let pull_back = if zoom > 1.0 && look.is_none() { self.focus.map_or(0.0, |focus| (zoom - 1.0) * focus) } else { 0.0 };
         // The sides widen this display at its own height to the output's shape.
         self.side = config.aspect.map_or(0, |aspect| display_side((area.width, area.height), aspect));
-        let framing = Framing { side: self.side, interpolate: config.interpolation.then_some(alpha), pull_back, replay: config.effects.any() };
+        let framing = Framing { side: self.side, interpolate: config.interpolation.then_some(alpha), pull_back, replay: config.effects.any(), look };
         let shown = Shown { identity: self.frame.identity(), drawn: self.frame.drawn(), area, config, framing };
         if !new_frame && self.shown == Some(shown) && self.presented_effects == Some(config.effects.any()) {
             let view = if config.effects.any() { self.effects.output_view()? } else { self.frame.color_view() };
@@ -490,4 +602,18 @@ impl GameView {
     pub fn effects_mut(&mut self) -> &mut EffectsRenderer {
         &mut self.effects
     }
+}
+
+/// How high the parts of sprite `owner` in `ops` reach above `feet` along
+/// `up` (view-space units), if it has any.
+fn sprite_height(ops: &[TraceOp], owner: u32, feet: [f32; 3], up: [f32; 3]) -> Option<f32> {
+    ops.iter()
+        .filter_map(|op| match op {
+            TraceOp::Draw(p) if p.class == Class::Sprite && p.owner == owner => Some(p),
+            _ => None,
+        })
+        .flat_map(|p| p.vertices[..p.vertex_count()].iter().filter_map(|v| v.view))
+        .map(|q| (0..3).map(|i| (q[i] - feet[i]) * up[i]).sum::<f32>())
+        .reduce(f32::max)
+        .filter(|height| *height > 0.0)
 }

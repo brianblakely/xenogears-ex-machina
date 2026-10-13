@@ -22,4 +22,4 @@ pub mod snapshot;
 
 pub use memory::{GameMemory, SliceMemory};
 pub use module::{Action, GameModule, Import, Trap};
-pub use runtime::{FrameReport, Runtime, Services, Stop, YieldReason};
+pub use runtime::{FieldControls, FrameReport, Runtime, Services, Stop, YieldReason};

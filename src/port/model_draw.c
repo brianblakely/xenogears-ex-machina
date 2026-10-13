@@ -235,7 +235,7 @@ static void xem_reveal(XemDraw *d, u32 vertices, u32 step, u32 tag, int sort, u3
             depth = (u32)xem_depth_keep((u32)depth, (u32)sz, sort == XEM_SORT_FAR);
         }
     }
-    if (depth == 0 && xem_present_reveals->pull_back == 0) {
+    if (depth == 0 && !xem_present_elsewhere()) {
         return;
     }
     for (i = 0; i < count; i++) {
@@ -248,10 +248,10 @@ static void xem_reveal(XemDraw *d, u32 vertices, u32 step, u32 tag, int sort, u3
 }
 
 /* Presentation only: a face the renderer dropped as facing away or at
- * depth 0, which a camera pulled back (xem/gte.h) may still see: recorded
- * as a culled face while the host pulls the camera back. */
+ * depth 0, which a camera pulled back or looking around (xem/gte.h) may
+ * still see: recorded as a culled face while the host's view is there. */
 static void xem_reveal_dropped(XemDraw *d, u32 vertices, u32 step, u32 tag, int sort, u32 sxy0, u32 sxy1, u32 sxy2, u32 sxy3) {
-    if (xem_present_reveals->pull_back != 0) {
+    if (xem_present_elsewhere()) {
         xem_reveal(d, vertices, step, tag, sort, sxy0, sxy1, sxy2, sxy3);
     }
 }
@@ -263,7 +263,7 @@ static void xem_reveal_dropped_quad(XemDraw *d, u32 fourth, u32 step, u32 tag, i
     XemGte saved;
     u32 fifo[3], sxy[3], i;
 
-    if (xem_present_reveals->pull_back == 0) {
+    if (!xem_present_elsewhere()) {
         return;
     }
     saved = xem_gte;

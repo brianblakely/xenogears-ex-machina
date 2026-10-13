@@ -312,6 +312,19 @@ pub struct FrameReport {
     pub interrupts: u64,
 }
 
+/// What the field says of the player's buttons ([`Runtime::field_controls`]):
+/// whether it runs, whether the player walks there (the player control read
+/// the pad in the last event pass, with no dialogue open, and no menu
+/// runs), whether a menu runs, and whether Select shows the map's picture
+/// there (else the hosts' first-person toggle).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct FieldControls {
+    pub field: bool,
+    pub walking: bool,
+    pub menu: bool,
+    pub picture: bool,
+}
+
 /// A fiber's state between steps: where it starts, or where it suspended.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Fiber {
@@ -665,6 +678,13 @@ impl<M: GameModule> Runtime<M> {
     pub fn combo_input(&mut self) -> bool {
         let mode = self.services().mode.unwrap_or(u32::MAX);
         self.module.combo_input(mode)
+    }
+
+    /// What the field says of the player's buttons (nothing outside it).
+    pub fn field_controls(&mut self) -> FieldControls {
+        let mode = self.services().mode.unwrap_or(u32::MAX);
+        let bits = self.module.field_controls(mode);
+        FieldControls { field: mode == 1, walking: bits & 1 != 0, menu: bits & 4 != 0, picture: bits & 2 != 0 }
     }
 }
 

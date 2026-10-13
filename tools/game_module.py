@@ -63,7 +63,7 @@ FINGERPRINT_BYTES = 32
 YIELD_IMPORTS = ["xem.yield", "xem.restart", "xem.task_switch"]
 # The module's exports, defined in src/port/.
 EXPORTS = ["xem_run", "xem_task_run", "xem_call", "xem_interrupt", "xem_unwind_area", "xem_game_paused",
-           "xem_game_combo_input"]
+           "xem_game_combo_input", "xem_game_field_controls"]
 HOST_PREFIX = "xem_host_"
 # Game functions the port wraps (src/decomp or src/port): the game's definition is
 # renamed xem_original_<name> and the port's definition calls it.

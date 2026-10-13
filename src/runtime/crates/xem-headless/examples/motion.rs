@@ -8,7 +8,7 @@
 //!         [--ff FRAMES] [--original FROM,TO]
 //!         [--profile modern|hd2d|ps1] [--only effect,...] [--widescreen] [--zoom PERCENT] [--interpolate]
 //!         [--scale N] [--size WxH] [--every N] [--crop x,y,w,h] [--compare] [--bench] [--no-trace]
-//!         [--probe x,y] [--original-actors] [--cards DIR]
+//!         [--probe x,y] [--original-actors] [--cards DIR] [--look YAW,PITCH[,TURN]]
 //!         [--name NAME] [--out DIR]
 //!
 //! `--win` ends the battle in victory first (the enemies' HP set to 1, then
@@ -47,7 +47,10 @@
 //! owner). The field's characters keep moving in the wider or zoomed-out
 //! view as in the hosts (`Session::set_actor_view`), unless
 //! `--original-actors`; the JSON counts the sprite actors the field stops
-//! as off screen per frame (`still`).
+//! as off screen per frame (`still`). `--look` shows the field in
+//! first-person inspection, turned YAW degrees to the right and PITCH up
+//! from the camera's heading (and TURN degrees more each kept frame), and
+//! reports where the controlled character stood (`eye`).
 
 /// A build without the game module has nothing to run.
 #[cfg(not(has_game_module))]
@@ -141,6 +144,7 @@ fn main() {
     let mut graphics = Graphics::default();
     let mut name = String::from("motion");
     let mut cards: Option<PathBuf> = None;
+    let mut look: Option<(f32, f32, f32)> = None;
     let mut out = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../build/validation/motion");
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -218,6 +222,10 @@ fn main() {
             "--scale" => graphics.internal_scale = value().parse().unwrap(),
             "--name" => name = value(),
             "--cards" => cards = Some(value().into()),
+            "--look" => {
+                let v: Vec<f32> = value().split(',').map(|n| n.parse().unwrap()).collect();
+                look = Some((v[0], v.get(1).copied().unwrap_or(0.0), v.get(2).copied().unwrap_or(0.0)));
+            }
             "--out" => out = value().into(),
             other => panic!("unknown option {other}"),
         }
@@ -282,6 +290,10 @@ fn main() {
     let adapter = gpu.adapter.get_info();
     eprintln!("adapter: {} ({:?}, {:?})", adapter.name, adapter.device_type, adapter.backend);
     let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    if let Some((yaw, pitch, _)) = look {
+        view.set_first_person(true);
+        view.look_around(yaw.to_radians(), pitch.to_radians());
+    }
     // From boot the trace and the presentation run through the setup too,
     // as a host's do (a frame at a time, nothing kept).
     let presented_frame = |session: &mut xem_core::control::Session<xem_game::NativeModule>, view: &mut GameView| {
@@ -377,6 +389,9 @@ fn main() {
             session.set_pad(0, buttons | tapped | pressed);
         }
         session.set_actor_view(if graphics.actors_in_view { view.actor_view() } else { 0 }).expect("actor view");
+        if let Some((_, _, turn)) = look {
+            view.look_around(turn.to_radians(), 0.0);
+        }
         // `--ff`: the frames a fast-forward batch runs before this one.
         for _ in 1..fast_forward {
             session.frame().expect("frame");
@@ -547,6 +562,8 @@ fn main() {
         "shown_revealed": shown_revealed,
         "movies": movies,
         "still": still,
+        "eye": view.frame().eye().map(|eye| json!({"position": eye.position, "axes": eye.axes, "sprite": eye.sprite})),
+        "first_person": view.first_person(),
     });
     std::fs::write(out.join(format!("{name}.json")), serde_json::to_string_pretty(&report).unwrap()).unwrap();
     println!("{}", serde_json::to_string(&json!({"stages": report["stages"], "changed_mean": mean_change, "points": report["points"], "revealed": [revealed.first(), revealed.iter().min(), revealed.iter().max(), revealed.last()], "still": [still.first(), still.iter().min(), still.iter().max(), still.last()], "revealed_sprites": [revealed_sprites.iter().min(), revealed_sprites.iter().max()], "memory_hash": session.execute(&json!({"cmd": "memory_hash"})), "vram_hash": vram_hash})).unwrap());

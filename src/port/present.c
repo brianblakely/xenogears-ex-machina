@@ -191,7 +191,7 @@ s32 model_draw_sprite_model(SpriteModel *model, RenderPacket *packets, u32 *ot, 
  * finds it within (that test runs with the GTE, its matrix and the margins
  * put back afterwards), or, with the camera pulled back, its bounding
  * square (around its centre in view space, which the test leaves in its
- * matrix) reaches that camera's screen. */
+ * matrix) reaches that camera's screen (any piece, looking around). */
 s32 field_instance_is_off_screen(FieldInstance *instance) {
     XemGte placed, tested;
     MATRIX cull;
@@ -206,7 +206,7 @@ s32 field_instance_is_off_screen(FieldInstance *instance) {
     if (off != 0) {
         tested = xem_gte;
         cull = field_instance_cull_matrix;
-        if (xem_present_reveals->pull_back != 0) {
+        if (xem_present_elsewhere()) {
             within = xem_present_square_visible(cull.t[0], cull.t[1], cull.t[2], instance->radius, 0x140, 0xE0, margin_x, margin_y);
         } else {
             xem_gte = placed;
@@ -232,14 +232,61 @@ s32 field_instance_is_off_screen(FieldInstance *instance) {
     return off;
 }
 
+/* A ring entry that is no drawn point (xem/gte.h): `class_`, the depth
+ * `sz`, `owner` and the point (x, y, z) as its `view`, with the GTE's
+ * screen offset and projection distance. Written to the ring only. */
+static void xem_record_entry(u32 class_, s32 sz, u32 owner, s32 x, s32 y, s32 z) {
+    XemProjectionRing *ring = xem_gte_ring;
+    XemProjection *p = &ring->entries[ring->count % XEM_GTE_PROJECTIONS];
+
+    p->sxy = 0;
+    p->sz = (u32)(sz < 0 ? 0 : sz > 0xFFFF ? 0xFFFF : sz) | class_ << 16;
+    p->x = 0;
+    p->y = 0;
+    p->offset = ((u32)((s32)xem_gte_read_control(24) >> 16) & 0xFFFF) | (u32)((s32)xem_gte_read_control(25) >> 16) << 16;
+    p->h = xem_gte_read_control(26) & 0xFFFF;
+    p->owner = owner;
+    p->view[0] = x;
+    p->view[1] = y;
+    p->view[2] = z;
+    ring->count++;
+}
+
+/* For a view looking around from the controlled character (xem/gte.h
+ * `around`): the world's axes through the camera's rotation (the columns
+ * of field_view.scaled_world) as XEM_PROJECTION_AXIS entries, then the
+ * character's position (its descriptor's translation) through the camera
+ * as an XEM_PROJECTION_EYE entry its sprite owns. */
+static void xem_record_eye(void) {
+    MATRIX *m = &field_view.scaled_world;
+    FieldDescriptor *d;
+    long long v[3];
+    s32 i, k;
+
+    if (field_work.controlled < 0 || field_work.controlled >= field_event_actor_count) {
+        return;
+    }
+    d = &field_view.components.descriptors[field_work.controlled];
+    for (k = 0; k < 3; k++) {
+        xem_record_entry(XEM_PROJECTION_AXIS, 0, (u32)k, m->m[0][k], m->m[1][k], m->m[2][k]);
+    }
+    for (i = 0; i < 3; i++) {
+        v[i] = 0;
+        for (k = 0; k < 3; k++) {
+            v[i] += (long long)m->m[i][k] * d->matrix.t[k];
+        }
+        v[i] = (v[i] >> 12) + m->t[i];
+    }
+    xem_record_entry(XEM_PROJECTION_EYE, (s32)v[2], (u32)d->model, (s32)v[0], (s32)v[1], (s32)v[2]);
+}
+
 /* The field's models: first, when the host wants culled faces (a view
  * wider or farther out than the original's), the depth of the camera's
  * target through the sprites' view (field_view.scaled_world) as an
  * XEM_PROJECTION_FOCUS entry of the ring: a view pulled back moves the
- * camera by multiples of it. Written to the ring only. */
+ * camera by multiples of it; and, looking around, the controlled
+ * character's place. Written to the ring only. */
 void field_draw_models(void) {
-    XemProjectionRing *ring = xem_gte_ring;
-    XemProjection *p;
     MATRIX *m = &field_view.scaled_world;
     s32 x, y, z, depth;
 
@@ -248,18 +295,10 @@ void field_draw_models(void) {
         y = field_view.target.vy >> 16;
         z = field_view.target.vz >> 16;
         depth = ((m->m[2][0] * x + m->m[2][1] * y + m->m[2][2] * z) >> 12) + m->t[2];
-        p = &ring->entries[ring->count % XEM_GTE_PROJECTIONS];
-        p->sxy = 0;
-        p->sz = (u32)(depth < 0 ? 0 : depth > 0xFFFF ? 0xFFFF : depth) | (u32)XEM_PROJECTION_FOCUS << 16;
-        p->x = 0;
-        p->y = 0;
-        p->offset = ((u32)((s32)xem_gte_read_control(24) >> 16) & 0xFFFF) | (u32)((s32)xem_gte_read_control(25) >> 16) << 16;
-        p->h = xem_gte_read_control(26) & 0xFFFF;
-        p->owner = 0;
-        p->view[0] = 0;
-        p->view[1] = 0;
-        p->view[2] = depth;
-        ring->count++;
+        xem_record_entry(XEM_PROJECTION_FOCUS, depth, 0, 0, 0, depth);
+        if (xem_present_reveals->around != 0) {
+            xem_record_eye();
+        }
     }
     xem_original_field_draw_models();
 }
@@ -738,16 +777,16 @@ static void xem_record_sprite(XemSaved *saved, FieldActor *actor, Sprite *sprite
     xem_restore(saved, first);
 }
 
-/* Presentation only (xem/gte.h), while a camera pulled back wants culled
- * faces: the field's sprite actors the character pass (field.c
- * field_draw_sprite_actors) leaves undrawn because the projection of their
- * raised point overflowed (`flag < 0`: far off the original screen, or near
- * or behind its camera) and that camera sees are drawn again for the
- * record into `ot`, as the pass draws them, everything that writes (the
- * sprite, its renderer and parts, the sprite queue, the ordering table,
- * the scratch corners, the GTE and the ring's bookkeeping) put back; their
- * parts become culled faces where they were linked. Intentionally hidden
- * actors stay hidden. */
+/* Presentation only (xem/gte.h), while a camera pulled back (or a view
+ * looking around) wants culled faces: the field's sprite actors the
+ * character pass (field.c field_draw_sprite_actors) leaves undrawn because
+ * the projection of their raised point overflowed (`flag < 0`: far off the
+ * original screen, or near or behind its camera) and that camera sees are
+ * drawn again for the record into `ot`, as the pass draws them, everything
+ * that writes (the sprite, its renderer and parts, the sprite queue, the
+ * ordering table, the scratch corners, the GTE and the ring's bookkeeping)
+ * put back; their parts become culled faces where they were linked.
+ * Intentionally hidden actors stay hidden. */
 void xem_present_skipped_sprites(u_long *ot) {
     XemProjectionRing *ring = xem_gte_ring;
     FieldDescriptor *d;
@@ -760,7 +799,7 @@ void xem_present_skipped_sprites(u_long *ot) {
     u32 fifo[3], class_ = ring->class_, owner = ring->owner, i;
     s32 depth, elevation, octant;
 
-    if (!xem_reveals_wanted() || xem_present_reveals->pull_back == 0) {
+    if (!xem_reveals_wanted() || !xem_present_elsewhere()) {
         return;
     }
     gte = xem_gte;

@@ -637,10 +637,10 @@ and WebGL2, and the slice logs still replay to their hashes.
 | quality | Auto (desktop High, mobile and browser Medium, headset Low), Low, Medium, High, Ultra: sample counts only |
 | internal scale | Auto (the output area the picture fills, at most 8 on desktops and 4 elsewhere), 1-8; PS1 and native resolution draw at 1 |
 | presentation | every display refresh, or game frames only; interpolation; wider framing (to the output's aspect ratio) |
-| zoom out | the field camera pulled back along its axis, 1x (default) to 5x in quarter steps; the mouse wheel over the game moves it (down out, up in); the world map takes a tenth of it, other modes none; independent of the aspect ratio |
+| zoom out | the field camera pulled back along its axis, 1x (default) to 5x in quarter steps; the mouse wheel over the game moves it (down out, up in; not while looking around in first person); the world map takes a tenth of it, other modes none; independent of the aspect ratio |
 | characters in view | field characters keep moving wherever the zoomed-out or wider view shows them (on, the default; changes gameplay, recorded with the inputs; nothing while the view is the original's), or stop just beyond the original screen as the original's do (off) |
 | filtering | world, sprites, interface: nearest or linear, each; movies: Enhanced (default: rebuilt from the decoder's planes, deblocked, colour following the brightness, enlarged and sharpened with FSR 1) or Original (the decoder's picture as it is) |
-| culling | viewport culling (the game's own against its 4:3 screen: off, wider and pulled-back views show the scenery the game culled), back faces (both off) |
+| culling | viewport culling (the game's own against its 4:3 screen: off, wider and pulled-back views show the scenery the game culled; a first-person view shows it either way), back faces (both off) |
 | headset screen | distance, width, depth of field in a headset (off) |
 
 Modern draws at high resolution, perspective-correct and sub-pixel, in full
@@ -687,6 +687,77 @@ those fixes are presentation only). Over Lahan (`--example motion -- --map
 1 --zoom N`, `still` in its JSON) the original leaves 43 sprite actors
 still at every zoom; with the setting, 43 at 1x, 32 at 1.5x, 16-17 at 2x,
 7 at 3x and none at 5x.
+
+### First-person inspection
+
+The SDL hosts (`xem_host::View`: desktop, and Android with a gamepad) look
+around a field from its controlled character's eyes (plan.md Phase 10's
+stationary first-person inspection, on a flat display; the browser and
+headset hosts do not offer it yet). While the player walks in a field (the
+player control read the pad in the field's last event pass, which it does
+with no dialogue open, and no menu runs), Select toggles the view where the
+original's Select shows nothing: `field_picture_show` shows a map's picture
+on ten maps once their item is held, and there Select stays the game's
+(the port's `xem_game_field_controls` tells the hosts whether the player
+walks, a menu runs and the picture shows). The right stick's click toggles
+it anywhere in a field but a menu; a gamepad's Back toggles when it is
+released alone, since Back begins the app chords. While the view is on, the
+arrow keys (2 radians a second across, 1.5 up and down), the right stick (3
+and 2 at full tilt, past a fifth of its travel) and, under the mouse camera
+setting, the mouse (0.0025 radians a pixel) turn it, within 80 degrees of
+level, and the mouse wheel's zoom rests. L1/R1 (the field camera's turns,
+which the field takes whoever has control) are held back, so the game's
+camera stays; while the player walks so are the directions and Triangle
+(jump), so the character stays where it stands, while a dialogue's choices
+keep the directions. A menu (the field's own, with the view as the screen
+it takes, or a script's) keeps every button, and the view does not turn
+under it (`xem_settings::look`). It ends when toggled again, when the field
+or its map is left, and under the Original renderer.
+
+It is presentation only. While it is on, `GameView::reveals` asks for every
+face the game culls (`Reveals::around`, the culled-face ring's `around`
+word): the port's visibility tests keep any face wherever it lies (behind
+the game's camera, facing away or at depth 0 too), the scenery pieces the
+field's bounding test culls and the sprite actors the character pass skips
+for overflow are all drawn for the record, and `field_draw_models` records
+the world's axes through the field camera (`field_view.scaled_world`'s
+columns) and the controlled character's position through it (its
+descriptor's translation) with its sprite (`XEM_PROJECTION_AXIS`,
+`XEM_PROJECTION_EYE`). The trace hands the place over in order with the
+commands (`TraceOp::Eye`), and each buffer's log keeps the one recorded for
+its frame (the newest within four vertical blanks when the buffer is
+cleared), so the view stands where the character stood in the frame shown.
+From the first frame recorded so it looks along the heading of the game's
+camera, level, from 0.9 of the character's sprite's height above its feet,
+with a 70-degree field of view across the original's 320 pixels (H 228.5).
+`frame::first_person` moves every scene vertex's point before the division
+into that camera (a vertex without one is taken back through the game's
+projection); a sprite's parts face the view, standing along the world's up
+at the sprite's floor point as wide and tall as the game's camera showed
+them; the character's own sprite is left out. Polygons reaching behind its
+near plane (a 32nd of the eye's height) are clipped there as they are drawn,
+in the camera's space, colour and texture coordinates taken at the cut;
+neither the GPU's size limit nor back-face culling drops scene polygons, and
+depth is tested whatever the ordering, from its reciprocal, which
+interpolates across the screen as depth does (polygons span much of the
+view's depth). The interface stays as the game drew it (the compass too).
+A frame recorded looking around but shown from the game's camera (the view
+just turned off) shows none of its culled faces: they lie anywhere, not
+only beside the screen.
+
+With characters in view on, the view the field's characters keep moving in
+is the widest (`actor_view` 1000% with 1024-pixel sides: the view may turn
+anywhere; in the forest, map 22, the 30 sprite actors the original stops
+keep moving); off, the game runs as the original. `xem-headless/tests/render.rs`
+looks around in field 12 for 160 frames (more than 100 shown from the eyes)
+and ends at the same RAM hash; `tests/controls.rs` checks the field query
+(the map's picture, walking, the menu) on the original's maps. `--example motion -- --map 30 --look
+YAW,PITCH[,TURN]` shows a field from the eyes (degrees from the camera's
+heading, TURN more each frame kept: map 30's room with its townspeople
+standing round the table). Measured in the forest (960x720 output, this
+machine's CPU and lavapipe, means per game frame): the game frame 1.5 ms
+without the view and 2.5 ms with it (4 763 culled faces recorded a frame),
+the presentation's CPU work 1.9 and 5.5 ms.
 
 ### HD-2D effects
 
@@ -1049,6 +1120,11 @@ directions (including diagonals), and right-stick left/right sends L1/R1 to
 turn the camera. Each axis uses a half-travel dead zone; physical D-pad and
 shoulder buttons still work. Back+Start toggles Settings once and consumes
 both buttons until both are released. Guide/Home has no app binding.
+Walking in a field, Select (Backspace, or Back released alone) toggles the
+first-person view where the original's Select shows no map's picture, and
+the right stick's click anywhere in a field; in it the arrow keys, the
+right stick and the mouse (under the mouse camera setting) look around
+([First-person inspection](#first-person-inspection)).
 `--script LOG` plays a session log instead of the player's input (its pad
 states replace the keyboard's) and `--exit-at-frame N` prints the memory hash
 when the game has run N frames and exits: the slice's logs end at their native

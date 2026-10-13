@@ -109,9 +109,10 @@ impl Gpu {
     /// how many entries were ever written) of the projection, store and
     /// culled-face rings. Reads only, except for the projection ring's
     /// `recording` word (whether a trace takes the records) and the
-    /// culled-face ring's `wanted` and `pull_back` words (how far beyond its
-    /// screen the trace wants culled faces, and from how far behind the
-    /// game's camera); without a trace it only notes the counts.
+    /// culled-face ring's `wanted`, `pull_back` and `around` words (how far
+    /// beyond its screen the trace wants culled faces, from how far behind
+    /// the game's camera, and whether from the controlled character, looking
+    /// around); without a trace it only notes the counts.
     fn trace_projections(&mut self, args: &[u32], memory: &mut dyn GameMemory) {
         let arg = |i: usize| args.get(i).copied().unwrap_or(0);
         // Entries follow headers of 32, 16 and 16 bytes.
@@ -122,6 +123,7 @@ impl Gpu {
         let _ = memory.write_u32(arg(0).wrapping_add(24), u32::from(tracing));
         let _ = memory.write_u32(arg(2).wrapping_add(4), self.gpu.reveal_reach());
         let _ = memory.write_u32(arg(2).wrapping_add(8), self.gpu.reveal_pull_back());
+        let _ = memory.write_u32(arg(2).wrapping_add(12), self.gpu.reveal_around());
         let mut counts = [0u32; 3];
         for (n, &(header, offset, (size, bytes))) in rings.iter().enumerate() {
             self.entries[n].clear();

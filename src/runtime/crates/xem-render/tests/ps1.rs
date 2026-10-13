@@ -143,7 +143,7 @@ fn original_fidelity_matches_the_software_gpu() {
 
 use xem_gpu::{Class, Environment, Primitive, Projection, Reveal, Shape, SxyStore, TraceOp, TraceVertex};
 use xem_render::ps1::{
-    Culling, DisplayArea, Effects, EffectsRenderer, FrameRenderer, Framing, Lighting, Quality, interpolate, pull_back,
+    Culling, DisplayArea, Effects, EffectsRenderer, FrameRenderer, Framing, Lighting, Look, Quality, first_person, interpolate, pull_back,
 };
 
 /// A packed GP0 vertex word.
@@ -369,6 +369,122 @@ fn a_pulled_back_camera_projects_points_from_view_space_and_drops_what_lies_behi
     let points: Vec<_> = p.vertices[..3].iter().map(|v| (v.fx, v.fy, v.z)).collect();
     // x = 160 + 256 * X / (Z + 2000), y likewise.
     assert_eq!(points, [(160.0 + 256.0 * 100.0 / 3000.0, 120.0, 3000.0), (160.0 - 256.0 * 200.0 / 1500.0, 120.0 + 256.0 * 50.0 / 1500.0, 1500.0), (160.0, 120.0, 3000.0)]);
+}
+
+/// `op` with these points before the division (projected at (160, 120), H 256).
+fn with_view(op: TraceOp, points: &[[f32; 3]]) -> TraceOp {
+    let TraceOp::Draw(mut p) = op else { unreachable!() };
+    p.projection = Some(((160, 120), 256));
+    for (v, point) in p.vertices.iter_mut().zip(points) {
+        v.view = Some(*point);
+    }
+    TraceOp::Draw(p)
+}
+
+/// The game's own camera as a view from within the scene.
+const AHEAD: Look = Look { eye: [0.0; 3], axes: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], up: [0.0, -1.0, 0.0], h: 256.0, near: 1.0, hide: 0 };
+
+#[test]
+fn looking_around_moves_the_scene_into_the_views_camera_and_leaves_the_interface() {
+    let mut interface = primitive(260, 120, 0);
+    if let TraceOp::Draw(p) = &mut interface {
+        p.class = Class::Flat;
+        p.projection = None;
+    }
+    // Behind the game's camera, and a triangle wholly behind the view's near plane.
+    let mut ops = vec![
+        with_view(primitive(0, 0, 0), &[[0.0, 0.0, -1000.0], [100.0, 0.0, -1000.0], [0.0, 100.0, -1000.0]]),
+        with_view(primitive(0, 0, 0), &[[0.0, 0.0, 5.0], [10.0, 0.0, 5.0], [0.0, 10.0, 5.0]]),
+        interface.clone(),
+    ];
+    // Turned around (forward along the game camera's -z, right along its -x).
+    let around = Look { axes: [[-1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, -1.0]], near: 10.0, ..AHEAD };
+    first_person(&mut ops, &around);
+    assert_eq!(ops.len(), 2, "what lies wholly behind the view is dropped");
+    let TraceOp::Draw(p) = &ops[0] else { unreachable!() };
+    let expected = [(160.0, 120.0), (160.0 - 25.6, 120.0), (160.0, 120.0 + 25.6)];
+    for (v, (x, y)) in p.vertices[..3].iter().zip(expected) {
+        assert!((v.fx - x).abs() < 1e-3 && (v.fy - y).abs() < 1e-3 && v.z == 1000.0, "{v:?}");
+        assert_eq!((v.x, v.y), (v.fx.floor() as i32, v.fy.floor() as i32));
+    }
+    assert_eq!(p.vertices[0].view, Some([0.0, 0.0, 1000.0]), "the point in the view's camera space");
+    assert_eq!(ops[1], interface);
+}
+
+#[test]
+fn sprites_stand_facing_the_view_at_their_feet_and_the_viewers_own_is_left_out() {
+    let sprite = |owner: u32| {
+        let TraceOp::Draw(mut p) = primitive(0, 0, 0) else { unreachable!() };
+        p.shape = Shape::Quad;
+        p.class = Class::Sprite;
+        p.owner = owner;
+        p.vertices[3] = p.vertices[0];
+        // Facing the game's camera, a thousand units to its right.
+        with_view(TraceOp::Draw(p), &[[950.0, -200.0, 0.0], [1050.0, -200.0, 0.0], [950.0, 0.0, 0.0], [1050.0, 0.0, 0.0]])
+    };
+    let mut ops = vec![sprite(0x8010_0000), sprite(0x8020_0000)];
+    // Turned right, towards it: seen from the side the sprite would be an
+    // edge; it faces the view instead, as wide as the game showed it.
+    let right = Look { axes: [[0.0, 0.0, -1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]], hide: 0x8020_0000, ..AHEAD };
+    first_person(&mut ops, &right);
+    assert_eq!(ops.len(), 1, "the viewer's own sprite is left out");
+    let TraceOp::Draw(p) = &ops[0] else { unreachable!() };
+    for (v, (x, y)) in p.vertices.iter().zip([(147.2, 68.8), (172.8, 68.8), (147.2, 120.0), (172.8, 120.0)]) {
+        assert!((v.fx - x).abs() < 1e-3 && (v.fy - y).abs() < 1e-3 && v.z == 1000.0, "{v:?}");
+    }
+}
+
+/// A red floor through the GTE (offset 160, 120; H 256): 200 units below
+/// the camera, 300 wide, from 100 to 3000 ahead, over a black screen.
+fn floor_scene(gpu: &mut xem_gpu::Gpu) {
+    gpu.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0200]);
+    gpu.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+    let points = [[-150.0, 200.0, 100.0], [150.0, 200.0, 100.0], [-150.0, 200.0, 3000.0], [150.0, 200.0, 3000.0]];
+    let projections: Vec<Projection> = points
+        .iter()
+        .map(|&[x, y, z]: &[f32; 3]| {
+            let (sx, sy) = (160.0 + 256.0 * x / z, 120.0 + 256.0 * y / z);
+            Projection {
+                sxy: xy(sx.floor() as i32, sy.floor() as i32),
+                sz: z as u16,
+                class: 0,
+                x: (sx * 65536.0) as i32,
+                y: (sy * 65536.0) as i32,
+                offset: (160, 120),
+                h: 256,
+                owner: 0,
+                view: [x as i32, y as i32, z as i32],
+            }
+        })
+        .collect();
+    let words: Vec<u32> = std::iter::once(0x2800_00FF).chain(projections.iter().map(|p| p.sxy)).collect();
+    submit(gpu, &projections, &[(words, vec![(1, 0), (2, 1), (3, 2), (4, 3)])]);
+}
+
+#[test]
+fn a_view_from_within_the_scene_shows_its_picture_and_clips_what_reaches_behind_it() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let frame = |trace: &(xem_gpu::Trace, xem_gpu::Trace), framing: Framing| -> Vec<u8> {
+        let (mut renderer, _) = draw(&gpu, trace, Fidelity::MODERN, Culling::default());
+        let mut frame = FrameRenderer::new(&gpu.device);
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, DisplayArea { x: 0, y: 0, width: 320, height: 240 }, framing);
+        gpu.queue.submit([encoder.finish()]);
+        read_rgba8(&gpu.device, &gpu.queue, frame.color())
+    };
+    // Its points before the division are exact: looking along the game's
+    // camera shows the game's picture.
+    let floor = traced(floor_scene);
+    let plain = frame(&floor, Framing { replay: true, ..Default::default() });
+    let ahead = frame(&floor, Framing { look: Some(AHEAD), ..Default::default() });
+    let differ = (0..640 * 480).filter(|i| plain[i * 4..i * 4 + 3] != ahead[i * 4..i * 4 + 3]).count();
+    assert!(differ * 1000 < 640 * 480, "looking along the game's camera shows its picture ({differ} pixels differ)");
+    // Stepped 400 units in, the floor's near end lies behind the view:
+    // clipped at its near plane, the rest still reaches the screen's bottom.
+    let inside = frame(&floor, Framing { look: Some(Look { eye: [0.0, 0.0, 400.0], near: 10.0, ..AHEAD }), ..Default::default() });
+    let at = |pixels: &[u8], x: usize, y: usize| pixels[(y * 640 + x) * 4..(y * 640 + x) * 4 + 3].to_vec();
+    assert_eq!(at(&inside, 320, 470), [255, 0, 0], "the clipped floor reaches the screen's bottom");
+    assert_eq!(at(&inside, 320, 200), [0, 0, 0], "above its far end, nothing");
 }
 
 #[test]

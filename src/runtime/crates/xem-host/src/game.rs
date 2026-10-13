@@ -174,10 +174,13 @@ impl Game {
         self.session.runtime.services().clock.vblanks
     }
 
-    /// Whether the battle's attack inputs take the player's buttons (the
-    /// keyboard's combo layout applies).
-    pub fn combo_input(&mut self) -> bool {
-        self.session.runtime.combo_input()
+    /// What the game's state says of the player's buttons: whether the
+    /// battle's attack inputs take them (the keyboard's combo layout
+    /// applies), and in a field whether the player walks and Select shows
+    /// the map's picture (first-person inspection's toggle and the buttons
+    /// it holds back).
+    pub fn pad_context(&mut self) -> crate::PadContext {
+        crate::PadContext { combo: self.session.runtime.combo_input(), field: self.session.runtime.field_controls() }
     }
 
     /// Runs a bounded batch of frames due by the wall clock with pad 1 holding

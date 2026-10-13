@@ -15,7 +15,8 @@ struct Pass {
     // Target pixels per VRAM pixel.
     scale: f32,
     // Bit 0 perspective-correct texturing, 1 15-bit colour, 2 dithering,
-    // 3 depth-tested ordering.
+    // 3 depth-tested ordering, 4 depth from its reciprocal (a camera within
+    // the scene: ps1/mod.rs PASS_RECIPROCAL_DEPTH).
     options: u32,
     // A screen the game took into VRAM (ps1/mod.rs Capture): its picture's
     // scale and sides (VRAM pixels on each side of the screen, the left one
@@ -89,10 +90,16 @@ fn vs_main(in: VertexIn) -> VertexOut {
     }
     let ndc = (position - pass_.origin) / pass_.extent * vec2<f32>(2.0, -2.0) + vec2<f32>(-1.0, 1.0);
     // Depth-tested ordering: projected primitives by their depth, the
-    // rest drawn over (the pipeline's compare decides).
+    // rest drawn over (the pipeline's compare decides). A camera within the
+    // scene sees polygons from near it to far away, across which only the
+    // reciprocal of depth interpolates as the depth does.
     var z = 0.0;
     if in.depth > 0.0 {
-        z = clamp(in.depth / 65536.0, 0.0, 1.0);
+        if (pass_.options & 16u) != 0u {
+            z = clamp(1.0 - 1.0 / max(in.depth, 1.0), 0.0, 1.0);
+        } else {
+            z = clamp(in.depth / 65536.0, 0.0, 1.0);
+        }
     }
     out.clip = vec4<f32>(ndc * in.w, z * in.w, in.w);
     out.color = in.color;
