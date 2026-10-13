@@ -75,6 +75,41 @@ pub struct Presentation {
     pub fullscreen: bool,
 }
 
+/// Where a headset's pointer comes from (the assisted controls' aim).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum XrPointer {
+    /// Eye gaze, where the runtime offers it and it is permitted.
+    Eye,
+    /// The head's direction.
+    #[default]
+    Head,
+    LeftHand,
+    RightHand,
+}
+
+/// The assisted controls (plan.md, the headset hand/gaze contract; touch
+/// shares the same widgets).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct Assisted {
+    /// Hand gestures in a headset (controllers and pointers always work).
+    pub gestures: bool,
+    pub pointer: XrPointer,
+    /// Assisted walking stops at a jump's takeoff instead of pressing on.
+    pub ledge_brake: bool,
+    /// The bespoke widgets' glass drawn solid, and their motion still.
+    pub reduced_transparency: bool,
+    pub reduced_motion: bool,
+    /// Touch screens show the game's controls over the picture.
+    pub touch_controls: bool,
+}
+
+impl Default for Assisted {
+    fn default() -> Self {
+        Self { gestures: true, pointer: XrPointer::Head, ledge_brake: false, reduced_transparency: false, reduced_motion: false, touch_controls: true }
+    }
+}
+
 /// The complete application settings.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -95,6 +130,7 @@ pub struct Settings {
     pub rewind_interval_seconds: u32,
     pub rewind_history_seconds: u32,
     pub pause_on_focus_loss: bool,
+    pub assisted: Assisted,
 }
 
 impl Default for Settings {
@@ -113,6 +149,7 @@ impl Default for Settings {
             rewind_interval_seconds: DEFAULT_REWIND_INTERVAL_SECONDS,
             rewind_history_seconds: DEFAULT_REWIND_HISTORY_SECONDS,
             pause_on_focus_loss: true,
+            assisted: Assisted::default(),
         }
     }
 }
@@ -142,6 +179,8 @@ pub enum SettingChange {
     BindGame { context: InputContext, action: GameAction, binding: GameBinding },
     /// Every game binding back to the defaults.
     ResetGameBindings,
+    /// The assisted controls' block, whole.
+    Assisted(Assisted),
 }
 
 /// An applied and persisted change.
@@ -208,6 +247,7 @@ impl Settings {
                 next.game_bindings.context_mut(*context).insert(*action, binding.clone());
             }
             SettingChange::ResetGameBindings => next.game_bindings = GameBindings::default(),
+            SettingChange::Assisted(assisted) => next.assisted = *assisted,
         }
         next.validate()?;
         Ok(next)

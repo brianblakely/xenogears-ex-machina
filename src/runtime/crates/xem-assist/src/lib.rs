@@ -3,3 +3,4 @@
 //! and typed actions. Nothing here moves the game but through the pad.
 pub mod gesture;
 pub mod dispatch;
+pub mod headset;

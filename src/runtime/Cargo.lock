@@ -5335,6 +5335,7 @@ version = "0.1.0"
 dependencies = [
  "bytemuck",
  "glam",
+ "png",
  "pollster",
  "serde",
  "serde_json",

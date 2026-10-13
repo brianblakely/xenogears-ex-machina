@@ -23,3 +23,4 @@ wgpu = { workspace = true, features = ["webgpu", "webgl"] }
 
 [dev-dependencies]
 pollster.workspace = true
+png.workspace = true

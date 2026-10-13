@@ -5,6 +5,7 @@
 
 mod compositor;
 mod gpu;
+pub mod glass;
 pub mod ps1;
 mod scene;
 
