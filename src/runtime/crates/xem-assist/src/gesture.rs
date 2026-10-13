@@ -7,8 +7,9 @@
 //!   open.
 //! - A **thumb tap** touches the radial side of the index finger and lifts
 //!   again without travelling; a **thumb swipe** travels along it (toward
-//!   the fingertip Up, back Down) or across it (Left, Right as the player
-//!   sees them). A runtime's own microgestures replace these where offered.
+//!   the fingertip Up, back Down) or across it (toward the back of the
+//!   hand Right for the right hand, Left for the left: as the player sees a
+//!   hand held sideways). A runtime's own microgestures replace these where offered.
 //! - A **five-finger grab** curls the four fingers into the palm with the
 //!   thumb closing around them: palm down (overhand) toggles Pause, palm up
 //!   (underhand) first-person inspection, sideways neither.
@@ -37,12 +38,14 @@ pub const INDEX: usize = 5;
 pub const MIDDLE: usize = 10;
 pub const RING: usize = 15;
 pub const LITTLE: usize = 20;
-const METACARPAL: usize = 0;
-const PROXIMAL: usize = 1;
-const INTERMEDIATE: usize = 2;
-const DISTAL: usize = 3;
-const TIP: usize = 4;
-const FINGERS: [usize; 4] = [INDEX, MIDDLE, RING, LITTLE];
+/// Each finger's joints from its first: metacarpal, proximal,
+/// intermediate, distal, tip.
+pub const METACARPAL: usize = 0;
+pub const PROXIMAL: usize = 1;
+pub const INTERMEDIATE: usize = 2;
+pub const DISTAL: usize = 3;
+pub const TIP: usize = 4;
+pub const FINGERS: [usize; 4] = [INDEX, MIDDLE, RING, LITTLE];
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub enum Hand {
@@ -435,7 +438,12 @@ impl Recognizer {
                         let moved = shape.thumb_tip - at;
                         if !travelled && moved.length() > SWIPE_TRAVEL {
                             let lengthwise = moved.dot(forward);
-                            let across = moved.dot(frame.view_right);
+                            // Across the finger's side: toward the back of
+                            // the hand is Right for the right hand (held
+                            // sideways, its back faces right) and Left for
+                            // the left.
+                            let dorsal = -shape.normal * if hand == Hand::Right { 1.0 } else { -1.0 };
+                            let across = moved.dot(dorsal);
                             let direction = if lengthwise.abs() >= across.abs() {
                                 if lengthwise > 0.0 { Swipe::Up } else { Swipe::Down }
                             } else if across > 0.0 {
@@ -479,37 +487,8 @@ pub struct Availability {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
+    use crate::synthetic::*;
     use glam::{Quat, Vec3};
-
-    /// A right hand in its own frame: wrist at the origin, fingers along -Z,
-    /// thumb toward -X, palm facing -Y (down), each finger curled by
-    /// `curl` (0 straight, 1 folded) and the thumb's tip at `thumb`.
-    pub fn right_hand(curl: [f32; 4], thumb: Vec3) -> [Vec3; JOINTS] {
-        let mut joints = [Vec3::ZERO; JOINTS];
-        let lateral = [-0.035, -0.012, 0.01, 0.03];
-        let bones = [[0.065, 0.04, 0.025, 0.022], [0.064, 0.045, 0.028, 0.024], [0.06, 0.042, 0.027, 0.024], [0.056, 0.034, 0.02, 0.02]];
-        for (f, base) in FINGERS.into_iter().enumerate() {
-            let mut at = Vec3::new(lateral[f] * 0.6, 0.0, 0.0);
-            joints[base] = at;
-            // Each joint bends the next bone further down toward the palm.
-            let mut angle = 0.0f32;
-            let mut point = Vec3::new(lateral[f], 0.0, -bones[f][0]);
-            joints[base + PROXIMAL] = point;
-            at = point;
-            for (k, length) in bones[f][1..].iter().enumerate() {
-                angle += curl[f] * [1.4, 1.6, 1.2][k];
-                let direction = Vec3::new(0.0, -angle.sin(), -angle.cos());
-                point = at + direction * *length;
-                joints[base + PROXIMAL + k + 1] = point;
-                at = point;
-            }
-        }
-        joints[1] = Vec3::new(-0.02, -0.01, -0.02);
-        joints[2] = Vec3::new(-0.04, -0.015, -0.04);
-        joints[3] = (joints[2] + thumb) / 2.0;
-        joints[THUMB_TIP] = thumb;
-        joints
-    }
 
     /// IWER 2.5.0's left-hand "default" pose (oculusHandConfig, MIT, Meta), its
     /// joints in its grip space.
@@ -521,36 +500,12 @@ pub(crate) mod tests {
     /// joints in its grip space.
     pub const IWER_POINT: [[f32; 3]; 25] = [[-0.0579, 0.0167, 0.1118], [-0.0165, 0.0127, 0.0886], [0.0131, 0.0125, 0.0752], [0.0415, 0.016, 0.0572], [0.0655, 0.0168, 0.0517], [-0.0259, 0.02, 0.0848], [-0.0016, 0.0431, 0.0347], [0.014, 0.0528, 0.0015], [0.0235, 0.0563, -0.0206], [0.031, 0.0628, -0.0407], [-0.0418, 0.0225, 0.0818], [-0.0221, 0.0504, 0.0297], [-0.0172, 0.0226, -0.0027], [-0.0217, -0.0006, 0.0115], [-0.0244, -0.0027, 0.0363], [-0.0594, 0.0265, 0.0748], [-0.0425, 0.0467, 0.0277], [-0.0375, 0.0163, 0.0039], [-0.0381, -0.0021, 0.0231], [-0.0391, 0.0042, 0.0467], [-0.0672, 0.0242, 0.0714], [-0.0627, 0.0386, 0.0283], [-0.0543, 0.0139, 0.0121], [-0.0517, 0.0014, 0.0279], [-0.051, 0.0085, 0.0487]];
 
-    /// The thumb resting beside the index finger, off it.
-    pub const THUMB_REST: Vec3 = Vec3::new(-0.06, -0.01, -0.06);
-
-    pub fn place(joints: [Vec3; JOINTS], rotation: Quat, at: Vec3) -> [Vec3; JOINTS] {
-        joints.map(|j| rotation * j + at)
-    }
-
-    pub fn left(joints: [Vec3; JOINTS]) -> [Vec3; JOINTS] {
-        joints.map(|j| Vec3::new(-j.x, j.y, j.z))
-    }
-
     fn frame(time: f64, left: Option<[Vec3; JOINTS]>, right: Option<[Vec3; JOINTS]>) -> Frame {
         Frame { time, hands: [left, right], view_right: Vec3::X, ..Frame::default() }
     }
 
-    fn open() -> [Vec3; JOINTS] {
-        right_hand([0.0; 4], THUMB_REST)
-    }
 
-    /// The thumb's tip wrapped over the middle finger's middle bone.
-    fn fist() -> [Vec3; JOINTS] {
-        let mut hand = right_hand([1.0; 4], Vec3::ZERO);
-        hand[THUMB_TIP] = hand[MIDDLE + INTERMEDIATE] + Vec3::new(-0.01, -0.012, 0.0);
-        hand[3] = (hand[2] + hand[THUMB_TIP]) / 2.0;
-        hand
-    }
 
-    fn half() -> [Vec3; JOINTS] {
-        right_hand([0.5; 4], THUMB_REST)
-    }
 
     #[test]
     fn shapes_measure_open_hands_fists_and_pinches() {
@@ -666,14 +621,6 @@ pub(crate) mod tests {
         assert_eq!(recognizer.update(&micro), [Gesture::Swipe { hand: Hand::Right, direction: Swipe::Left }]);
     }
 
-    fn whole_pinch() -> [Vec3; JOINTS] {
-        let mut hand = right_hand([0.45; 4], THUMB_REST);
-        let centre = (hand[INDEX + TIP] + hand[LITTLE + TIP]) / 2.0;
-        for tip in [THUMB_TIP, INDEX + TIP, MIDDLE + TIP, RING + TIP, LITTLE + TIP] {
-            hand[tip] = centre + (hand[tip] - centre) * 0.15;
-        }
-        hand
-    }
 
     #[test]
     fn two_whole_hand_pinches_scale_and_own_the_hands_until_release() {

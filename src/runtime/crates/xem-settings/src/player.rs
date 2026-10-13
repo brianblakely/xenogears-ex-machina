@@ -67,6 +67,8 @@ impl Pulse {
 pub struct PlayerInput {
     held: Held,
     pub mouse: Mouse,
+    /// Actions a touch screen's controls hold.
+    pub touch: BTreeSet<GameAction>,
     pulses: VecDeque<Pulse>,
     /// Cancel presses left to close the field menu.
     closing: u32,
@@ -142,6 +144,7 @@ impl PlayerInput {
     pub fn clear(&mut self) {
         self.held = Held::default();
         self.mouse.clear();
+        self.touch.clear();
         self.pulses.clear();
         self.closing = 0;
         self.menu_held = false;
@@ -167,6 +170,13 @@ impl PlayerInput {
         self.goal = Some(entry);
         self.click = CLICK_FRAMES;
         true
+    }
+
+    /// Selects entry `index` of the interface's targets with the D-pad, then
+    /// (`confirm`) presses Confirm once it is selected (gaze and a tap).
+    pub fn select(&mut self, index: usize, confirm: bool) {
+        self.goal = Some(index);
+        self.click = if confirm { CLICK_FRAMES } else { 0 };
     }
 
     /// Steers the game's cursor to the entry the pointer moved onto, and
@@ -256,6 +266,7 @@ impl PlayerInput {
         self.held.mouse = self.mouse.buttons();
         let mut actions = bindings.actions(&self.held, context.attack);
         actions.extend(self.mouse.turn(now));
+        actions.extend(self.touch.iter().copied());
         // Menu toggles the field menu: pressed while it runs, it backs out
         // with Cancel until the menu has closed.
         let field_menu = matches!(context.ui, Ui::Menu { screen: 0, .. }) && context.field.field;

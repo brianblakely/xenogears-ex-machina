@@ -407,7 +407,9 @@ pub fn draw(widget: &Widget, size: u32, style: Style) -> Vec<u8> {
     out
 }
 
-/// Widget textures on a device, drawn once each.
+/// Widget textures on a device, drawn once each. The textures hold
+/// sRGB-encoded colour premultiplied by alpha in a linear format, as the
+/// compositor takes them: quads drawing them set `srgb_encoded`.
 pub struct Atlas {
     textures: HashMap<(Widget, u32, Style), (wgpu::Texture, wgpu::TextureView)>,
 }
@@ -419,7 +421,7 @@ impl Default for Atlas {
 }
 
 impl Atlas {
-    /// The widget's texture (an sRGB texture with straight alpha).
+    /// The widget's texture.
     pub fn view(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, widget: &Widget, size: u32, style: Style) -> &wgpu::TextureView {
         let key = (widget.clone(), size, style);
         &self.textures.entry(key).or_insert_with(|| {
@@ -429,13 +431,20 @@ impl Atlas {
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                format: wgpu::TextureFormat::Rgba8Unorm,
                 usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
                 view_formats: &[],
             });
+            let mut pixels = draw(widget, size, style);
+            for p in pixels.chunks_mut(4) {
+                let a = u16::from(p[3]);
+                for c in &mut p[..3] {
+                    *c = ((u16::from(*c) * a + 127) / 255) as u8;
+                }
+            }
             queue.write_texture(
                 texture.as_image_copy(),
-                &draw(widget, size, style),
+                &pixels,
                 wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(size * 4), rows_per_image: Some(size) },
                 wgpu::Extent3d { width: size, height: size, depth_or_array_layers: 1 },
             );

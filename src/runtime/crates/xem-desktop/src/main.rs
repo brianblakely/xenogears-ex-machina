@@ -31,6 +31,8 @@ struct Options {
     xr_pause: Option<(u64, u64)>,
     /// Headset tests: save both eyes of the last frame here.
     xr_capture: Option<PathBuf>,
+    /// Headset tests: scripted hand gestures (headset frame, gesture name).
+    xr_hands: Vec<(u64, String)>,
 }
 
 fn options() -> Result<Options, String> {
@@ -46,6 +48,7 @@ fn options() -> Result<Options, String> {
         xr: false,
         xr_pause: None,
         xr_capture: None,
+        xr_hands: Vec::new(),
     };
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -77,23 +80,35 @@ fn options() -> Result<Options, String> {
                 options.xr_pause = Some((at.parse().map_err(|_| "bad --xr-pause")?, count.parse().map_err(|_| "bad --xr-pause")?));
             }
             "--xr-capture" => options.xr_capture = Some(args.next().ok_or("--xr-capture needs a directory")?.into()),
+            "--xr-hands" => {
+                let value = args.next().ok_or("--xr-hands needs FRAME:GESTURE,...")?;
+                for item in value.split(',') {
+                    let (at, name) = item.split_once(':').ok_or("--xr-hands needs FRAME:GESTURE,...")?;
+                    if xem_assist::synthetic::gesture(name.split('@').next().unwrap_or(name)).is_none() {
+                        return Err(format!("unknown gesture {name}"));
+                    }
+                    options.xr_hands.push((at.parse().map_err(|_| "bad --xr-hands frame")?, name.to_string()));
+                }
+            }
             "--help" => {
                 println!(
                     "xem-desktop [--disc DISC [--cards DIR] [--bios FILE] [--script LOG] \
-                     [--exit-at-frame N] [--xr [--xr-pause N,M] [--xr-capture DIR]]] [--show-settings] \
+                     [--exit-at-frame N] [--xr [--xr-pause N,M] [--xr-capture DIR] [--xr-hands N:GESTURE,...]]] [--show-settings] \
                      [--exit-after-frames N] [--screenshot out.png]\n\
                      DISC is a CHD, a cue sheet or a Redump-verified ISO; the game's other disc, \
                      when it is beside it, goes in when the game asks for it.\n\
-                     --xr plays in an OpenXR headset on a virtual screen (controllers: left stick \
-                     D-pad, A/B/X/Y Cross/Circle/Square/Triangle, triggers L1/R1, grips L2/R2, \
-                     left stick click Start, left menu the settings panel).\n\
+                     --xr plays in an OpenXR headset on a virtual screen: the controllers are the \
+                     game bindings' gamepad, hands gesture (overhand grab Pause, prayer hands Settings, \
+                     pinch to walk, thumb taps and swipes), the left menu button toggles Settings; \
+                     --xr-hands plays synthetic gestures (pause, inspect, pinch, tap, swipe-up/down/left/right, \
+                     prayer, lose; NAME@X/Y also aims eye gaze at that screen pixel) at headset frames, for tests without hand tracking.\n\
                      --script plays a session log (tools/native_scenario.py --log); \
                      --exit-at-frame prints the memory hash at that game frame and exits.\n\
-                     Escape toggles the settings panel (Graphics has Fullscreen; Quit ends the app). Pad: WASD move, E or left click confirm, \
-                     F or right click cancel, Shift run, Space jump, Tab menu, Left/Right (and the \
-                     mouse, with the mouse camera setting) turn the camera; in a battle attack W/A/S light/medium/heavy, D/F cancel. Enter start, \
-                     Backspace select, 1/2 L2/R2, or a gamepad (D-pad or left stick move, \
-                     L1/R1 or right stick left/right turn the camera, Back+Start toggles settings).\n\
+                     Escape toggles the settings panel (Graphics has Fullscreen; Quit ends the app); its \
+                     Controls section lists and rebinds the game's keys, buttons and mouse buttons \
+                     (by default WASD move, E confirm, F cancel, Shift run, Space jump, Tab the game menu, \
+                     which Tab also closes, Left/Right the camera, Enter start, Backspace select). \
+                     The mouse points at menu entries and the wheel scrolls them; Back+Start toggles settings.\n\
                      Walking in a field, Select (Backspace, or Back alone) toggles a first-person view where \
                      Select shows no map, as does the right stick's click; in it the arrow keys, the right \
                      stick and (with the mouse camera setting) the mouse look around, and the character stays put."
@@ -220,6 +235,7 @@ fn run_xr(options: &Options) -> Result<(), String> {
         show_settings: options.show_settings,
         pause: options.xr_pause,
         capture: options.xr_capture.clone(),
+        hands: options.xr_hands.clone(),
         exit_after_frames: options.exit_after_frames,
         exit_at_frame: options.exit_at_frame,
     };
@@ -411,6 +427,7 @@ impl Host {
         if self.view.update_app(window,&mut self.game) && let Some(game) = &mut self.game {
             marks[0] = Instant::now();
             let settings = self.view.settings().borrow().settings().clone();
+            self.view.assist(game);
             let (context, targets) = (game.pad_context(), game.targets());
             let buttons = self.view.pad_buttons(context, targets);
             match game.update(buttons, &settings, || window.focused()) {

@@ -35,6 +35,18 @@ impl Game {
         match *self {}
     }
 
+    pub fn field(&mut self) -> Option<xem_core::field::Field> {
+        match *self {}
+    }
+
+    pub fn destination(&self) -> Option<xem_core::field::V3> {
+        match *self {}
+    }
+
+    pub fn assist_state(&self) -> String {
+        match *self {}
+    }
+
     pub fn update(&mut self, _buttons: u16, _settings: &xem_settings::Settings, _focused: impl FnMut() -> bool) -> Result<u32, String> {
         match *self {}
     }

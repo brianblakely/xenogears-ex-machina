@@ -96,6 +96,23 @@ impl<'a> Quad<'a> {
         Self::new(texture, transform)
     }
 
+    /// A quad centred at `centre` (target pixels) spanning ±`x` across and
+    /// ±`y` down (pixel vectors, so it may lie skewed: a mark on the floor).
+    pub fn screen_affine(texture: &'a wgpu::TextureView, centre: (f32, f32), x: (f32, f32), y: (f32, f32), target: (u32, u32)) -> Self {
+        let (tw, th) = (target.0 as f32, target.1 as f32);
+        // Unit square (u right, v down) to pixels, then pixels to clip space.
+        let to_clip = |px: f32, py: f32| (2.0 * px / tw - 1.0, 1.0 - 2.0 * py / th);
+        let origin = (centre.0 - x.0 - y.0, centre.1 - x.1 - y.1);
+        let (ox, oy) = to_clip(origin.0, origin.1);
+        let transform = Mat4::from_cols(
+            Vec4::new(2.0 * 2.0 * x.0 / tw, -2.0 * 2.0 * x.1 / th, 0.0, 0.0),
+            Vec4::new(2.0 * 2.0 * y.0 / tw, -2.0 * 2.0 * y.1 / th, 0.0, 0.0),
+            Vec4::Z,
+            Vec4::new(ox, oy, 0.0, 1.0),
+        );
+        Self::new(texture, transform)
+    }
+
     /// A `size`-metre panel centred on the origin of `pose` (x right, y up,
     /// facing +z), seen through `view_proj`.
     pub fn world(texture: &'a wgpu::TextureView, view_proj: Mat4, pose: Mat4, size: Vec2) -> Self {

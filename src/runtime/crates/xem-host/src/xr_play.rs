@@ -27,6 +27,7 @@ use xem_render::{Compositor, Quad, wgpu};
 use xem_settings::{Filter, SettingsService};
 use xem_ui::{LogicalPosition, PointerEventButton, SettingsUi, SharedGpu, WindowEvent};
 use xem_xr::{HandInput, InputState, PanelPlacement, Pose, SessionConfig, SessionEvent, XrContext, XrSession};
+use crate::assisted::{self, Assisted};
 
 const PANEL_LOGICAL: (f32, f32) = (440.0, 560.0);
 const PANEL_SCALE: f32 = 2.0;
@@ -98,6 +99,28 @@ impl PanelPointer {
     }
 }
 
+impl PanelPointer {
+    /// A hand's pointer on the panel at (u, v), and a pinch: one click there.
+    fn hand(&mut self, ui: &SettingsUi, panel_px: (u32, u32), uv: Option<(f32, f32)>, pinched: bool) {
+        let Some((u, v)) = uv else {
+            if self.inside {
+                ui.dispatch(WindowEvent::PointerExited);
+            }
+            self.inside = false;
+            return;
+        };
+        self.inside = true;
+        let scale = ui.scale_factor();
+        let position = LogicalPosition::new(u * panel_px.0 as f32 / scale, v * panel_px.1 as f32 / scale);
+        ui.dispatch(WindowEvent::PointerMoved { position });
+        if pinched {
+            let button = PointerEventButton::Left;
+            ui.dispatch(WindowEvent::PointerPressed { position, button });
+            ui.dispatch(WindowEvent::PointerReleased { position, button });
+        }
+    }
+}
+
 /// The device's own picture (24-bit movie frames) as an sRGB texture.
 #[derive(Default)]
 struct MovieFrame {
@@ -150,6 +173,10 @@ pub struct XrPlay {
     pub exit_after_frames: Option<u64>,
     /// End the session when the game has run this many frames, reporting its RAM hash.
     pub exit_at_frame: Option<u64>,
+    /// Synthetic hand gestures (headset frame, `xem_assist::synthetic`
+    /// gesture name) for runtimes without hand tracking: from the first,
+    /// the hands rest open in front of the head between gestures.
+    pub hands: Vec<(u64, String)>,
 }
 
 /// How a headset run ended.
@@ -196,6 +223,11 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     let mut pointer = PanelPointer::default();
     let mut menu_held = false;
     let mut player = xem_settings::player::PlayerInput::default();
+    let mut assist = Assisted::new();
+    // The virtual screen as the last frame showed it (where gestures aim).
+    let mut last_screen: Option<xem_assist::headset::Screen> = None;
+    let mut scripted = std::collections::VecDeque::new();
+    let mut scripted_aim: Option<(f32, f32)> = None;
     let mut wanted_disc = None;
     let start = Instant::now();
     let mut frames = 0u64;
@@ -237,14 +269,56 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             }
         }
         menu_held = input.hands[0].menu;
+        // The assisted controls: gestures aimed at the screen as last shown
+        // (prayer hands toggle the panel; a pinch clicks on it).
+        let focused = session.state() == xem_xr::SessionState::FOCUSED;
+        let mut assisted_input = assisted::input(&input, head, start.elapsed().as_secs_f64(), focused);
+        if !options.hands.is_empty() {
+            for (_, entry) in options.hands.iter().filter(|(at, _)| *at == frames) {
+                // `name@x/y` also aims eye gaze at that screen pixel (the
+                // scripted gaze stands in for eye tracking from then on).
+                let (name, aim) = entry.split_once('@').map_or((entry.as_str(), None), |(n, a)| (n, Some(a)));
+                if let Some((x, y)) = aim.and_then(|a| a.split_once('/')) {
+                    scripted_aim = x.parse().ok().zip(y.parse().ok());
+                }
+                scripted.extend(xem_assist::synthetic::gesture(name).expect("a known gesture"));
+            }
+            if let (Some(aim), Some(screen), Some(head)) = (scripted_aim, last_screen, head) {
+                let direction = (screen.point(aim) - head.position).normalize();
+                assisted_input.gaze = Some(xem_assist::headset::Pose { position: head.position, orientation: Quat::from_rotation_arc(Vec3::NEG_Z, direction) });
+            }
+            if let Some(head) = head {
+                let rest = xem_assist::synthetic::gesture("pause").expect("a known gesture")[0];
+                let hands = scripted.pop_front().unwrap_or(rest);
+                assisted_input.hands = xem_assist::synthetic::in_front(hands, head.position, head.orientation);
+            }
+        }
+        if let Some(screen) = last_screen {
+            let current = settings.borrow().settings().clone();
+            let open = assist.update(&current, &assisted_input, &screen, &mut game, &mut player, &mut view, *panel_visible.borrow());
+            if open != *panel_visible.borrow() {
+                *panel_visible.borrow_mut() = open;
+                if !open {
+                    ui.cancel_dialog();
+                }
+            }
+        }
         let visible = *panel_visible.borrow();
         if visible {
-            pointer.update(&ui, &panel, panel_px, &input.hands[1]);
+            if input.hands[1].active {
+                pointer.update(&ui, &panel, panel_px, &input.hands[1]);
+            } else {
+                // No controller: the pointer source's ray, and a pinch to click.
+                let quad = xem_assist::headset::Quad { pose: xem_assist::headset::Pose { position: panel.pose.position, orientation: panel.pose.orientation }, size: panel.size };
+                let pinched = assist.gestures.iter().any(|g| matches!(g, xem_assist::gesture::Gesture::Pinch { .. }));
+                pointer.hand(&ui, panel_px, assist.headset.hit(&assisted_input, &quad).map(|(uv, _)| uv), pinched);
+            }
         }
 
         // The game: whatever frames are due by the wall clock, once per
-        // headset frame (never per eye), unless paused for a test.
-        let pause = options.pause.is_some_and(|(at, count)| frames >= at && frames < at + count);
+        // headset frame (never per eye), unless paused for a test or by the
+        // player (the Pause grab, settings' own pause, lost tracking).
+        let pause = options.pause.is_some_and(|(at, count)| frames >= at && frames < at + count) || assist.headset.pauses.paused();
         if pause != game_paused {
             game_paused = pause;
             if pause { game.pause() } else { game.resume() }
@@ -308,10 +382,27 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                 .map_err(|e| e.to_string())?;
         }
 
+        // The virtual screen: its size (the setting's, scaled by two-hand
+        // scaling) and the display pixels it spans.
+        let xr = current.graphics.xr;
+        let width = f32::from(xr.width_cm) / 100.0 * assist.scale;
+        let height = width * presented_size.1 as f32 / presented_size.0 as f32;
+        let side = if from_view { view.config().map_or(0, |c| c.side) as f32 } else { 0.0 };
+        let screen = xem_assist::headset::Screen {
+            quad: xem_assist::headset::Quad {
+                pose: xem_assist::headset::Pose { position: screen_pose(f32::from(xr.distance_cm) / 100.0).position, orientation: Quat::IDENTITY },
+                size: (width, height),
+            },
+            display: if from_view { (display.width as f32, display.height as f32) } else { (presented_size.0 as f32, presented_size.1 as f32) },
+            side,
+        };
+        last_screen = Some(screen);
+        let style = Assisted::style(&current);
+        let marks: Vec<(wgpu::TextureView, Mat4, Vec2)> = assist.placed(&current, &assisted_input, &screen, &mut game).into_iter()
+            .map(|placed| (assist.texture(&gpu, &placed.widget, style), placed.pose, placed.size))
+            .collect();
+
         if should_render {
-            let xr = current.graphics.xr;
-            let width = f32::from(xr.width_cm) / 100.0;
-            let height = width * presented_size.1 as f32 / presented_size.0 as f32;
             let pose = screen_pose(f32::from(xr.distance_cm) / 100.0).matrix();
             let filter = match current.presentation.filter {
                 Filter::Nearest => wgpu::FilterMode::Nearest,
@@ -333,6 +424,11 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                     let screen = texture.as_ref().map(|t| t.create_view(&Default::default()));
                     let quads: [Vec<Quad>; 2] = [0, 1].map(|eye| {
                         let view_proj: Mat4 = eyes[eye].proj * eyes[eye].view;
+                        let glass = marks.iter().map(|(texture, pose, size)| {
+                            let mut quad = Quad::world(texture, view_proj, *pose, *size);
+                            quad.srgb_encoded = true;
+                            quad
+                        });
                         screen
                             .iter()
                             .map(|screen| {
@@ -348,6 +444,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                                 }
                                 quad
                             })
+                            .chain(glass)
                             .collect()
                     });
                     compositor.draw_targets(
@@ -368,7 +465,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         let ended = session.end_frame(visible.then_some(panel)).map_err(|e| e.to_string())?;
         let head = head.map_or("-".into(), |p| format!("{:.5},{:.5},{:.5};{:.5},{:.5},{:.5},{:.5}", p.position.x, p.position.y, p.position.z, p.orientation.x, p.orientation.y, p.orientation.z, p.orientation.w));
         println!(
-            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} head={head}",
+            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} head={head} gestures={} player_pause={} marks={} assist={} context={}",
             start.elapsed().as_micros(),
             u8::from(should_render),
             ended.layers.len(),
@@ -376,6 +473,11 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             game.vblanks(),
             u8::from(game_paused),
             picture.map_or("-".into(), |(w, h)| format!("{w}x{h}")),
+            serde_json::to_string(&assist.gestures).unwrap_or_default(),
+            u8::from(assist.headset.pauses.player),
+            marks.len(),
+            game.assist_state(),
+            serde_json::to_string(&game.pad_context().ui).unwrap_or_default(),
         );
         frames += 1;
         if quit.get() && !exit_requested {

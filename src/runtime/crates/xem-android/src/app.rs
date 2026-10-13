@@ -660,6 +660,7 @@ impl Host {
         let time = live.clock.tick(Instant::now());
         if self.view.update_app(window,&mut live.game) && let Some(game) = &mut live.game {
             let settings = self.view.settings().borrow().settings().clone();
+            self.view.assist(game);
             let (context, targets) = (game.pad_context(), game.targets());
             let buttons = self.view.pad_buttons(context, targets);
             if buttons != live.buttons {

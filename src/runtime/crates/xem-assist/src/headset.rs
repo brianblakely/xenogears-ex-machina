@@ -203,6 +203,12 @@ impl Headset {
     /// (`field` and `targets` as read this frame). Gestures act on the game
     /// only while settings are closed; app gestures act always.
     pub fn update(&mut self, input: &Input, screen: &Screen, ui: Context, field: Option<&Field>, targets: Option<&Targets>) -> Effects {
+        self.update_with_keys(input, screen, ui, field, targets, &[])
+    }
+
+    /// [`Headset::update`] with control deck keys beside the picture: a tap
+    /// or a pinch aimed at one is that key's, and nothing else's.
+    pub fn update_with_keys(&mut self, input: &Input, screen: &Screen, ui: Context, field: Option<&Field>, targets: Option<&Targets>, keys: &[(u32, Quad)]) -> Effects {
         let mut effects = Effects { aim: self.aim(input, screen), ..Effects::default() };
         // Focus lost: everything pending is dropped, and the game pauses.
         if !input.focused {
@@ -227,8 +233,21 @@ impl Headset {
             self.tracked[i] = hand.is_some();
         }
         // The game's own gestures go nowhere while settings are open.
-        let game_gestures: Vec<Gesture> = gestures.iter().copied().filter(|g| !self.settings_open || matches!(g,
+        let mut game_gestures: Vec<Gesture> = gestures.iter().copied().filter(|g| !self.settings_open || matches!(g,
             Gesture::Pause { .. } | Gesture::Settings | Gesture::TrackingLost { .. } | Gesture::ScaleBegin | Gesture::Scale { .. } | Gesture::ScaleEnd)).collect();
+        // A tap or pinch aimed at a deck key is the key's.
+        let aimed_key = ray(self.source, input).and_then(|(origin, direction)| {
+            keys.iter().filter_map(|(key, quad)| quad.hit(origin, direction).map(|(_, t)| (t, *key))).min_by(|a, b| a.0.total_cmp(&b.0)).map(|(_, key)| key)
+        });
+        if let Some(key) = aimed_key.filter(|_| !self.settings_open) {
+            game_gestures.retain(|g| {
+                let pressed = matches!(g, Gesture::Tap { .. } | Gesture::Pinch { .. });
+                if pressed {
+                    effects.outs.push(Out::Key { key });
+                }
+                !pressed
+            });
+        }
         for out in dispatch::dispatch(&game_gestures, ui, effects.aim, field, targets) {
             match out {
                 Out::TogglePause => self.pauses.player = !self.pauses.player,
@@ -252,7 +271,7 @@ impl Headset {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::gesture::tests::{THUMB_REST, right_hand};
+    use crate::synthetic::{THUMB_REST, right_hand};
 
     fn screen() -> Screen {
         Screen { quad: Quad { pose: Pose { position: Vec3::new(0.0, 0.0, -2.5), orientation: Quat::IDENTITY }, size: (3.2, 2.24) }, display: (320.0, 224.0), side: 0.0 }

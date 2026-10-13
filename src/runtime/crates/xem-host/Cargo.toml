@@ -17,6 +17,7 @@ xem-render = { path = "../xem-render" }
 xem-ui = { path = "../xem-ui" }
 xem-settings = { path = "../xem-settings" }
 xem-core = { path = "../xem-core" }
+xem-assist = { path = "../xem-assist" }
 xem-disc = { path = "../xem-disc" }
 xem-game = { path = "../xem-game" }
 xem-storage = { path = "../xem-storage" }

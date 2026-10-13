@@ -15,6 +15,8 @@ pub mod sdl;
 mod readback;
 #[cfg(has_game_module)]
 pub mod xr_play;
+#[cfg(has_game_module)]
+mod assisted;
 mod operations;
 
 pub use game::Game;
@@ -37,6 +39,15 @@ pub const GAME_SIZE: (u32, u32) = (320, 240);
 const GAME_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
 /// The panel's size in logical pixels.
 const PANEL_SIZE: (f32, f32) = (640.0, 560.0);
+
+/// A finger's touch phase ([`View::finger`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Finger {
+    Down,
+    Moved,
+    Up,
+    Cancelled,
+}
 
 /// What the game's state says of the player's buttons ([`Game::pad_context`]).
 pub use xem_settings::player::Context as PadContext;
@@ -273,6 +284,15 @@ pub struct View {
     game_ui: xem_core::context::Context,
     targets: Option<xem_core::menu::Targets>,
     picture: Option<Picture>,
+    /// Touch: the control deck, whether a finger has touched the game, what
+    /// touches asked for (taps on the picture in target pixels, quantity
+    /// keys), the marks over the picture, and the widgets' textures.
+    deck: xem_assist::touch::Deck,
+    touched: bool,
+    taps: Vec<(f32, f32)>,
+    quantity: Vec<xem_assist::overlay::QuantityKey>,
+    marks: Vec<xem_assist::overlay::Mark>,
+    atlas: xem_render::glass::Atlas,
     relative_mouse: bool,
     /// The first gamepad's buttons as they are (before app chords take
     /// theirs), first-person inspection's toggle, the mouse motion that
@@ -371,6 +391,12 @@ impl View {
             game_ui: xem_core::context::Context::None,
             targets: None,
             picture: None,
+            deck: Default::default(),
+            touched: false,
+            taps: Vec::new(),
+            quantity: Vec::new(),
+            marks: Vec::new(),
+            atlas: Default::default(),
             relative_mouse: false,
             pad: [0; 16],
             axes: [0.0; 4],
@@ -493,7 +519,10 @@ impl View {
         *self.panel_visible.borrow()
     }
 
-    pub fn set_panel_visible(&self, visible: bool) {
+    pub fn set_panel_visible(&mut self, visible: bool) {
+        if visible {
+            self.deck.release();
+        }
         if self.panel_visible() && !visible {
             self.ui.cancel_pointer();
             self.ui.cancel_dialog();
@@ -653,6 +682,17 @@ impl View {
                 if !(self.app_input.focused() && self.player.wheel(-up, self.game_ui)) {
                     self.zoom_wheel(-up);
                 }
+            }
+            // Touches on the game: the control deck, and taps on the picture.
+            SDL_EVENT_FINGER_DOWN | SDL_EVENT_FINGER_MOTION | SDL_EVENT_FINGER_UP | SDL_EVENT_FINGER_CANCELED if !visible => {
+                let finger = unsafe { event.tfinger };
+                let phase = match kind {
+                    SDL_EVENT_FINGER_DOWN => Finger::Down,
+                    SDL_EVENT_FINGER_MOTION => Finger::Moved,
+                    SDL_EVENT_FINGER_UP => Finger::Up,
+                    _ => Finger::Cancelled,
+                };
+                self.finger(phase, finger.fingerID.0, (finger.x, finger.y));
             }
             SDL_EVENT_WINDOW_FOCUS_LOST => {
                 self.ui.cancel_pointer();
@@ -824,6 +864,73 @@ impl View {
         xem_settings::look::game_buttons(buttons, on, field)
     }
 
+    /// A finger on the game (`at` across the target, 0..1).
+    pub fn finger(&mut self, phase: Finger, id: u64, at: (f32, f32)) {
+        let at = (at.0 * self.target_size.0 as f32, at.1 * self.target_size.1 as f32);
+        let time = self.frame_rate_started.elapsed().as_secs_f64();
+        self.touched = true;
+        use xem_assist::touch::Touched;
+        match phase {
+            Finger::Down => match self.deck.down(id, at, time) {
+                Touched::Settings => self.set_panel_visible(true),
+                Touched::Quantity(key) => self.quantity.push(key),
+                _ => {}
+            },
+            Finger::Moved => self.deck.moved(id, at),
+            Finger::Up | Finger::Cancelled => {
+                if let Touched::Tap(at) = self.deck.up(id, at, time, phase == Finger::Cancelled) {
+                    self.taps.push(at);
+                }
+            }
+        }
+        self.player.touch = self.deck.actions();
+    }
+
+    /// Lays the touch deck out by the picture last shown.
+    fn arrange(&mut self, ui: xem_core::context::Context) {
+        if let Some(picture) = self.picture {
+            let placed = xem_assist::touch::Rect { x: picture.placed.x, y: picture.placed.y, width: picture.placed.width, height: picture.placed.height };
+            let density = self.ui.scale_factor();
+            self.deck.arrange((self.target_size.0 as f32, self.target_size.1 as f32), placed, density, ui);
+        }
+    }
+
+    /// Touch play, before [`View::pad_buttons`]: the deck laid out by the
+    /// picture, taps on the picture resolved in the game's context (walk or
+    /// talk there, select a menu entry), shop quantity keys, and the marks
+    /// (the committed destination) to draw.
+    pub fn assist(&mut self, game: &mut Game) {
+        let ui = game.pad_context().ui;
+        self.arrange(ui);
+        let taps = std::mem::take(&mut self.taps);
+        let field = game.field();
+        if !taps.is_empty() {
+            let targets = game.targets();
+            for tap in taps {
+                let Some(at) = self.picture.and_then(|p| p.to_screen(tap.0, tap.1)) else { continue };
+                match xem_assist::dispatch::tap_at(at, ui, field.as_ref(), targets.as_ref()) {
+                    Some(xem_assist::dispatch::Out::Command { command }) => {
+                        let _ = game.command(&command);
+                    }
+                    Some(xem_assist::dispatch::Out::Select { index, confirm }) => self.player.select(index, confirm),
+                    Some(xem_assist::dispatch::Out::Press { actions }) => self.player.pulse(xem_settings::player::Pulse::new(actions)),
+                    _ => {}
+                }
+            }
+        }
+        for key in std::mem::take(&mut self.quantity) {
+            let _ = game.command(&serde_json::json!({"cmd": "shop_quantity", "op": key.op()}));
+        }
+        self.marks = xem_assist::overlay::marks(ui, None, field.as_ref(), game.destination());
+        self.player.touch = self.deck.actions();
+    }
+
+    /// Whether the touch controls show: the setting, on Android, or once a
+    /// finger has touched the game.
+    fn touch_shown(&self) -> bool {
+        self.settings.borrow().settings().assisted.touch_controls && (cfg!(target_os = "android") || self.touched)
+    }
+
     /// The game ran `frames` frames with the last [`View::pad_buttons`].
     pub fn frames_ran(&mut self, frames: u32) {
         self.player.frames_ran(frames);
@@ -843,6 +950,7 @@ impl View {
         }
 
         let panel_rect = self.panel_rect();
+        let touch_shown = self.touch_shown();
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
         self.fresh_frame = false;
         let side = self.renderer.config().map_or(0, |c| c.side) as f32;
@@ -906,7 +1014,38 @@ impl View {
         if !encoded && self.game_frame.is_none() && self.game_image.is_some() && graphics.renderer == xem_settings::Renderer::ExMachina {
             game.filter = wgpu::FilterMode::Nearest;
         }
+        // The assisted controls' marks and the touch deck, as Seraph Glass.
+        let style = xem_render::glass::Style { reduced_transparency: self.settings.borrow().settings().assisted.reduced_transparency };
+        let mut glass = Vec::new();
+        if let Some(picture) = self.picture {
+            let scale = picture.placed.width / (picture.display.0 + 2.0 * picture.side);
+            for mark in &self.marks {
+                let widget = xem_assist_widget(mark.kind);
+                let view = self.atlas.view(&gpu.device, &gpu.queue, &widget, 128, style).clone();
+                let centre = picture.from_screen(mark.centre);
+                glass.push((view, Some((centre, (mark.x.0 * scale, mark.x.1 * scale), (mark.y.0 * scale, mark.y.1 * scale))), None));
+            }
+        }
+        if touch_shown && !visible {
+            let ui = self.game_ui;
+            let held = self.deck.held();
+            for (control, rect) in self.deck.controls.clone() {
+                let state = if held.contains(&control) { xem_render::glass::State::Pressed } else { xem_render::glass::State::Normal };
+                let (widget, rect) = deck_widget(control, control.label(ui), state, rect);
+                let view = self.atlas.view(&gpu.device, &gpu.queue, &widget, 128, style).clone();
+                glass.push((view, None, Some(rect)));
+            }
+        }
         let mut quads = vec![game];
+        for (view, affine, rect) in &glass {
+            let mut quad = match (affine, rect) {
+                (Some((centre, x, y)), _) => Quad::screen_affine(view, *centre, *x, *y, target_size),
+                (None, Some(rect)) => Quad::screen(view, *rect, target_size),
+                (None, None) => continue,
+            };
+            quad.srgb_encoded = true;
+            quads.push(quad);
+        }
         if presentation.show_fps {
             let (width,height) = self.frame_rate.size();
             let margin = 8.0*self.ui.scale_factor();
@@ -984,6 +1123,49 @@ impl Drop for View {
     }
 }
 
+/// The glass widget of an assisted-controls mark.
+pub fn xem_assist_widget(kind: xem_assist::overlay::Kind) -> xem_render::glass::Widget {
+    use xem_render::glass::{Reach, Widget};
+    match kind {
+        xem_assist::overlay::Kind::Cursor => Widget::Cursor,
+        xem_assist::overlay::Kind::Floor(reach) => Widget::Floor(match reach {
+            xem_core::field::Reach::Walk => Reach::Walk,
+            xem_core::field::Reach::Jump => Reach::Jump,
+            xem_core::field::Reach::Invalid => Reach::Invalid,
+        }),
+        xem_assist::overlay::Kind::Destination => Widget::Destination,
+        xem_assist::overlay::Kind::Pages { count, current } => Widget::Pages { count, current },
+    }
+}
+
+/// A touch control's widget, and the square it is drawn in (wide keys
+/// fill the middle of their square image).
+pub fn deck_widget(control: xem_assist::touch::Control, label: &str, state: xem_render::glass::State, rect: xem_assist::touch::Rect) -> (xem_render::glass::Widget, Rect) {
+    use xem_assist::touch::Control;
+    use xem_render::glass::{Dir, Icon, Widget};
+    let icon = match label {
+        "^" => Icon::Arrow(Dir::Up),
+        "v" => Icon::Arrow(Dir::Down),
+        "<" => Icon::Arrow(Dir::Left),
+        ">" => Icon::Arrow(Dir::Right),
+        "triangle" => Icon::Triangle,
+        "circle" => Icon::Circle,
+        "cross" => Icon::Cross,
+        "square" => Icon::Square,
+        "+" => Icon::Plus,
+        "-" => Icon::Minus,
+        text => Icon::Text(text.into()),
+    };
+    let round = matches!(control, Control::Up | Control::Down | Control::Left | Control::Right | Control::Jump | Control::Cancel | Control::Confirm | Control::Menu);
+    if round {
+        (Widget::Button(icon, state), Rect { x: rect.x, y: rect.y, width: rect.width, height: rect.height })
+    } else {
+        let side = rect.width.max(rect.height * 2.0);
+        let (cx, cy) = rect.centre();
+        (Widget::Key(icon, state), Rect { x: cx - side / 2.0, y: cy - side / 2.0, width: side, height: side })
+    }
+}
+
 /// The panel's pixel size for a target of `width` x `height` pixels.
 fn panel_size((width, height): (u32, u32), scale: f32) -> (u32, u32) {
     let fit = |logical: f32, available: u32| {
@@ -1056,6 +1238,52 @@ mod tests {
         assert!(!view.panel_visible());
         settings.borrow_mut().apply(xem_settings::SettingChange::ShowFps(false)).unwrap();
         assert!(pixels(&mut view).chunks_exact(4).all(|p| p[..3]==[0,0,0]),"disabling Show FPS removes the counter");
+    }
+
+    #[test]
+    fn touch_controls_hold_their_buttons_and_taps_on_the_picture_are_kept() {
+        use xem_core::pad::button;
+        let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+        let settings = Rc::new(RefCell::new(SettingsService::with_defaults(xem_settings::MemoryStore::default())));
+        let (width, height) = (1280u32, 720u32);
+        let mut view = View::new(&gpu, wgpu::TextureFormat::Rgba8UnormSrgb, (width, height), 1.0, settings, false).unwrap();
+        let black: Vec<_> = (0..320 * 240).flat_map(|_| [0, 0, 0, 255]).collect();
+        view.set_game_image(&gpu, (320, 240), &black);
+        let target = gpu.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("touch target"),
+            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            mip_level_count: 1, sample_count: 1, dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+        let output = target.create_view(&Default::default());
+        view.render(&gpu, &output, 0.0).unwrap();
+        let picture = view.picture.expect("the picture's place").placed;
+        assert!(picture.x >= 150.0, "a letterboxed 4:3 picture: {picture:?}");
+        // No touch yet (not Android): no deck.
+        let lit = |image: &[u8]| image.chunks_exact(4).enumerate()
+            .filter(|(i, p)| { let x = (i % width as usize) as f32; (x < picture.x || x >= picture.x + picture.width) && p[0] > 120 })
+            .count();
+        assert_eq!(lit(&xem_render::read_rgba8(&gpu.device, &gpu.queue, &target)), 0);
+        // A finger on the D-pad's Up: the deck shows, Up is held.
+        view.arrange(xem_core::context::Context::Walk);
+        let up = view.deck.controls.iter().find(|(c, _)| *c == xem_assist::touch::Control::Up).unwrap().1;
+        assert!(up.x + up.width <= picture.x, "beside the picture: {up:?}");
+        let (cx, cy) = up.centre();
+        view.finger(Finger::Down, 7, (cx / width as f32, cy / height as f32));
+        assert_eq!(view.pad_buttons(PadContext::default(), None) & button::UP, button::UP);
+        view.render(&gpu, &output, 0.0).unwrap();
+        assert!(lit(&xem_render::read_rgba8(&gpu.device, &gpu.queue, &target)) > 1000, "the glass deck is drawn");
+        view.finger(Finger::Up, 7, (cx / width as f32, cy / height as f32));
+        assert_eq!(view.pad_buttons(PadContext::default(), None), 0);
+        // A tap on the picture is kept for the game's context.
+        let (px, py) = (picture.x + picture.width / 2.0, picture.y + picture.height / 2.0);
+        view.finger(Finger::Down, 8, (px / width as f32, py / height as f32));
+        view.finger(Finger::Up, 8, (px / width as f32, py / height as f32));
+        assert_eq!(view.taps.len(), 1);
+        let screen = view.picture.unwrap().to_screen(view.taps[0].0, view.taps[0].1).unwrap();
+        assert!((screen.0 - 160.0).abs() < 1.0 && (screen.1 - 120.0).abs() < 1.0, "{screen:?}");
     }
 
     #[test]

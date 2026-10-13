@@ -131,6 +131,7 @@ impl Game {
             self.configure_rewind(next.1,next.2,next.3)?;
         }
         self.applied_time_settings = Some(next);
+        self.session.ledge_brake = settings.assisted.ledge_brake;
         Ok(())
     }
     pub fn configure_rewind(&mut self, enabled: bool, interval_seconds: u32, history_seconds: u32) -> Result<(),String> {
@@ -195,6 +196,32 @@ impl Game {
             field: self.session.runtime.field_controls(),
             assignment: self.session.runtime.button_assignment(),
             ui: self.session.runtime.context(),
+        }
+    }
+
+    /// The field as the assisted controls read it (in a field).
+    pub fn field(&mut self) -> Option<xem_core::field::Field> {
+        if self.session.runtime.services().mode != Some(1) {
+            return None;
+        }
+        xem_core::field::Field::read(self.session.runtime.memory())
+    }
+
+    /// Assisted movement as the frame log shows it: its phase, else how it
+    /// last ended.
+    pub fn assist_state(&self) -> String {
+        match (&self.session.assist, self.session.assist_outcome) {
+            (Some(assist), _) => format!("{:?}", assist.phase).to_lowercase(),
+            (None, Some(outcome)) => format!("{outcome:?}").to_lowercase(),
+            (None, None) => "-".into(),
+        }
+    }
+
+    /// Where assisted walking is headed.
+    pub fn destination(&self) -> Option<xem_core::field::V3> {
+        match self.session.assist.as_ref()?.intent {
+            xem_core::assist::Intent::Walk { to, .. } => Some(to),
+            xem_core::assist::Intent::Interact { .. } => None,
         }
     }
 

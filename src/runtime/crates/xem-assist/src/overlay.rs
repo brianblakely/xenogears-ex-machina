@@ -1,0 +1,127 @@
+//! What the assisted controls show over the game (as Seraph Glass widgets,
+//! `xem_render::glass`), the same in a headset and on a touch screen: the
+//! live cursor and the committed destination (related silhouettes, never
+//! the same), the battle ring's page mark, and the shop's quantity keys
+//! (outside the game's picture). Positions are the game screen's pixels
+//! (320x224, with the wider framing's sides); hosts place them on their
+//! picture or virtual screen.
+use xem_core::context::Context;
+use xem_core::field::{Field, Reach, V3};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Kind {
+    /// The 2D cursor (menus, dialogue, battle, anywhere off the floor).
+    Cursor,
+    /// The floor under the cursor, by how it is reached.
+    Floor(Reach),
+    /// The committed destination.
+    Destination,
+    /// The battle ring's pages: `current` of `count`.
+    Pages { count: u8, current: u8 },
+}
+
+/// A mark: flat on the screen at `centre`, or lying on the floor (its
+/// half-axes `x` and `z` as they project).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Mark {
+    pub kind: Kind,
+    pub centre: (f32, f32),
+    /// The mark's half-axes on the screen: across and up for flat marks
+    /// (`size` pixels), the floor's x and z directions for floor marks.
+    pub x: (f32, f32),
+    pub y: (f32, f32),
+}
+
+/// A shop quantity key beside the picture.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum QuantityKey {
+    Plus,
+    Minus,
+    All,
+    None,
+}
+
+impl QuantityKey {
+    pub const ALL: [QuantityKey; 4] = [QuantityKey::Plus, QuantityKey::Minus, QuantityKey::All, QuantityKey::None];
+    pub fn op(self) -> &'static str {
+        match self {
+            QuantityKey::Plus => "plus",
+            QuantityKey::Minus => "minus",
+            QuantityKey::All => "all",
+            QuantityKey::None => "none",
+        }
+    }
+    pub fn label(self) -> &'static str {
+        match self {
+            QuantityKey::Plus => "+",
+            QuantityKey::Minus => "-",
+            QuantityKey::All => "ALL",
+            QuantityKey::None => "NONE",
+        }
+    }
+}
+
+/// The floor cursor's radius (world units) and the screen cursor's (pixels).
+const FLOOR_RADIUS: f32 = 14.0;
+const CURSOR_RADIUS: f32 = 9.0;
+/// Where the command ring's centre is drawn (it is fixed on the screen),
+/// and its page mark below it.
+const RING_PAGES_AT: (f32, f32) = (112.0, 120.0);
+
+fn flat(kind: Kind, centre: (f32, f32), half: (f32, f32)) -> Mark {
+    Mark { kind, centre, x: (half.0, 0.0), y: (0.0, half.1) }
+}
+
+/// A mark lying on the floor at `point`, as the field camera shows it.
+fn floor(kind: Kind, field: &Field, point: V3, radius: f32) -> Option<Mark> {
+    let centre = field.camera.project(point)?;
+    let along = |dx: f32, dz: f32| field.camera.project(V3::new(point.x + dx, point.y, point.z + dz)).map(|p| (p.0 - centre.0, p.1 - centre.1));
+    Some(Mark { kind, centre, x: along(radius, 0.0)?, y: along(0.0, -radius)? })
+}
+
+/// The marks for this frame: the cursor where `aim` points, the
+/// destination of the assist under way (`destination`), the ring's pages.
+pub fn marks(ui: Context, aim: Option<(f32, f32)>, field: Option<&Field>, destination: Option<V3>) -> Vec<Mark> {
+    let mut marks = Vec::new();
+    if let (Some(field), Some(point)) = (field, destination) {
+        marks.extend(floor(Kind::Destination, field, point, FLOOR_RADIUS * 1.2));
+    }
+    match ui {
+        Context::Walk => {
+            if let Some(aim) = aim {
+                let on_floor = field.and_then(|f| f.pick(aim).and_then(|hit| floor(Kind::Floor(hit.reach), f, hit.point, FLOOR_RADIUS)));
+                marks.push(on_floor.unwrap_or_else(|| flat(Kind::Cursor, aim, (CURSOR_RADIUS, CURSOR_RADIUS))));
+            }
+        }
+        Context::Battle { page, attack: false, list: false, targeting: false, .. } => {
+            if let Some((_, layer)) = crate::dispatch::ring_slot(page) {
+                marks.push(flat(Kind::Pages { count: 2, current: layer as u8 }, RING_PAGES_AT, (24.0, 8.0)));
+            }
+            marks.extend(aim.map(|aim| flat(Kind::Cursor, aim, (CURSOR_RADIUS, CURSOR_RADIUS))));
+        }
+        Context::None => {}
+        _ => marks.extend(aim.map(|aim| flat(Kind::Cursor, aim, (CURSOR_RADIUS, CURSOR_RADIUS)))),
+    }
+    marks
+}
+
+/// Whether the shop's quantity keys show.
+pub fn quantity_keys(ui: Context) -> bool {
+    matches!(ui, Context::Menu { quantities: true, .. })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_ring_shows_its_page_and_menus_a_flat_cursor() {
+        let ring = Context::Battle { page: 9, attack: false, ap: 6, list: false, targeting: false };
+        let marks = marks(ring, Some((50.0, 60.0)), None, None);
+        assert_eq!(marks[0].kind, Kind::Pages { count: 2, current: 1 });
+        assert_eq!(marks[1].kind, Kind::Cursor);
+        assert_eq!(marks[1].centre, (50.0, 60.0));
+        assert!(super::marks(Context::None, Some((1.0, 1.0)), None, None).is_empty());
+        assert!(quantity_keys(Context::Menu { screen: 4, cursor: 2, choice: 0, choices: 0, switch: false, quantities: true }));
+    }
+}

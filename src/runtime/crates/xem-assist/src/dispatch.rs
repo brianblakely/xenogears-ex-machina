@@ -43,6 +43,8 @@ pub enum Out {
     /// A command for the command layer (`navigate`, `interact`,
     /// `assist_stop`, `shop_quantity`).
     Command { command: Value },
+    /// A key of a control deck beside the picture was tapped (or pinched).
+    Key { key: u32 },
 }
 
 /// The screen pixels (320x224) the active pointer (eye gaze, head or a
@@ -92,6 +94,29 @@ pub fn dispatch(gestures: &[Gesture], ui: Context, aim: Aim, field: Option<&Fiel
         }
     }
     out
+}
+
+/// A touch screen's tap (or a click that stands for one) on the picture at
+/// screen pixel `at`: walking, an actor is approached and talked to, the
+/// floor walked to (a tap is both the pointer's pinch and its tap there);
+/// a menu's or a choice's entry is selected and confirmed; a dialogue
+/// advances. Elsewhere the deck's controls play.
+pub fn tap_at(at: (f32, f32), ui: Context, field: Option<&Field>, targets: Option<&Targets>) -> Option<Out> {
+    match ui {
+        Context::Walk => {
+            let field = field?;
+            if let Some(actor) = field.actor_at(at, ACTOR_REACH) {
+                return Some(Out::Command { command: json!({"cmd": "interact", "actor": actor}) });
+            }
+            pinch(ui, Some(at), Some(field))
+        }
+        Context::Dialogue { choice: None } => Some(press([GameAction::Confirm])),
+        Context::Dialogue { choice: Some(_) } | Context::Menu { .. } => {
+            let index = targets?.at(at)?;
+            Some(Out::Select { index, confirm: true })
+        }
+        _ => None,
+    }
 }
 
 fn pinch(ui: Context, aim: Aim, field: Option<&Field>) -> Option<Out> {
