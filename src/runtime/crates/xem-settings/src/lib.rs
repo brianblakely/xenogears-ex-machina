@@ -139,6 +139,8 @@ pub struct Settings {
     /// Sideways mouse motion turns the field camera; the game then holds the
     /// mouse (hidden, unbounded motion) while it has the input.
     pub mouse_camera: bool,
+    /// Field movement runs unless the player holds the run button.
+    pub run_by_default: bool,
     pub rewind_enabled: bool,
     pub rewind_interval_seconds: u32,
     pub rewind_history_seconds: u32,
@@ -159,6 +161,7 @@ impl Default for Settings {
             fast_forward_rate: FastForwardRate::default(),
             invert_trigger_chords: false,
             mouse_camera: false,
+            run_by_default: false,
             rewind_enabled: true,
             rewind_interval_seconds: DEFAULT_REWIND_INTERVAL_SECONDS,
             rewind_history_seconds: DEFAULT_REWIND_HISTORY_SECONDS,
@@ -177,6 +180,7 @@ pub enum SettingChange {
     FastForwardRate(FastForwardRate),
     InvertTriggerChords(bool),
     MouseCamera(bool),
+    RunByDefault(bool),
     RewindEnabled(bool),
     RewindIntervalSeconds(u32),
     RewindHistorySeconds(u32),
@@ -252,6 +256,7 @@ impl Settings {
             SettingChange::FastForwardRate(rate) => next.fast_forward_rate = *rate,
             SettingChange::InvertTriggerChords(invert) => next.invert_trigger_chords = *invert,
             SettingChange::MouseCamera(enabled) => next.mouse_camera = *enabled,
+            SettingChange::RunByDefault(enabled) => next.run_by_default = *enabled,
             SettingChange::RewindEnabled(enabled) => next.rewind_enabled = *enabled,
             SettingChange::RewindIntervalSeconds(seconds) => next.rewind_interval_seconds = *seconds,
             SettingChange::RewindHistorySeconds(seconds) => next.rewind_history_seconds = *seconds,

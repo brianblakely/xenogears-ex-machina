@@ -696,6 +696,31 @@ class AsmStatementTests(GteTest):
         self.call("xem_gte_stflg", address(flag))
         self.assertEqual(struct.unpack("<I", flag.raw)[0], 0x80800000)
 
+    def test_presentation_store_accepts_only_the_active_private_packet_range(self):
+        projections = (ctypes.c_uint * 8).in_dll(LIB, "xem_gte_ring_storage")
+        stores = (ctypes.c_uint * 20).in_dll(LIB, "xem_present_store_storage")
+        stores[0] = stores[1] = stores[2] = 0
+        projections[6] = 1
+        try:
+            LIB.xem_present_store(0x70B00400, 123, 1)
+            self.assertEqual(stores[0], 0)
+            stores[1], stores[2] = 0x70B00400, 0x70B00E00
+            LIB.xem_present_store(0x70B00408, 123, 1)
+            self.assertEqual(stores[0], 1)
+            self.assertEqual(list(stores[4:6]), [0xB00408, 123])
+            for rejected in (0x70B003FC, 0x70B00E00, 0x1F800000, 0x71000400):
+                LIB.xem_present_store(rejected, 456, 2)
+            self.assertEqual(stores[0], 1)
+            stores[1] = stores[2] = 0
+            LIB.xem_present_store(0x70B00408, 789, 3)
+            self.assertEqual(stores[0], 1)
+            LIB.xem_present_store(ctypes.c_uint(0x80000408), 321, 4)
+            self.assertEqual(stores[0], 2)
+            self.assertEqual(list(stores[8:10]), [0x408, 321])
+        finally:
+            projections[6] = 0
+            stores[0] = stores[1] = stores[2] = 0
+
     def test_gtemac_matrix_product_sequence(self):
         # gte_MulMatrix0's three column steps through rtir and the column moves.
         m0 = buffer(matrix_bytes(((0x2000, 0, 0), (0, 0x2000, 0), (0, 0, 0x2000))))

@@ -1261,6 +1261,10 @@ On every host, `PlayerInput` turns these into presses the game reads as
 any player's (held and released for whole game frames, counted as the host
 reports the frames run):
 
+- **Run by default** (`SettingChange::RunByDefault`, off initially) inverts
+  the assigned run button during directional field movement: holding it
+  walks. Keyboard, gamepad, touch and headset inputs share the preference;
+  menus, dialogue, scripted events and battles retain their buttons.
 - **Menu toggles the field menu**: pressed while it runs (any screen of
   it), it backs out with Cancel presses until the menu has closed; other
   screens (shops) keep the button.
@@ -1552,8 +1556,14 @@ and About sections ([Desktop host and settings panel](#desktop-host-and-settings
 Desktop widths use a sidebar; narrow windows use a strip of section tabs. Rewind and
 the notched FF rate slider live in Time, with compact interval and history fields
 and the retained queue's available seconds and memory usage. Graphics contains
-Show FPS, which draws a counter over the game on desktop, Android and browser;
-it can also be toggled through a keyboard or gamepad binding.
+Show FPS, which draws a counter over the game on desktop, Android, browser and
+headsets; it can also be toggled through a keyboard or gamepad binding.
+The same HUD shows icons during active fast-forward and successful held rewind,
+including with Show FPS off. Paused play and exhausted rewind history hide their
+indicators. Save-state saves/loads and state backup imports/exports show a result
+for four seconds; failures show the cause for eight seconds. Ordinary memory-card
+saves do not produce HUD notifications. Native headset play uses the same quick
+save/load and time controls; file pickers remain available in windowed play.
 Settings contains save-state, rewind, backup and binding controls.
 All these operations accept keyboard and gamepad chords. Fast-forward is an
 on/off toggle, bound to backtick (`Backquote`) or Back+RT by default, with no
@@ -1563,15 +1573,17 @@ Uncapped; changing the rate does not turn fast-forward on. Uncapped has no
 game-frame multiplier or frame-count ceiling: each host runs as much game work
 as its responsive update budget permits. The original music driver and SPU
 continue on a normal-time clock, including when the host cannot run every
-requested game frame in one batch. At fixed rates the music clock advances by
-game time divided by the rate in use, independent of batch size: the chosen
-one, or, when a host cannot sustain it, the rate its batches reach
-(`Session::pace_fast_forward`, measured every half second by
-`xem_core::time::FastForwardPacer` and raised a step at a time while the host
-keeps up; recorded like the rate), so the sound keeps up instead of
-underrunning. Uncapped play uses elapsed host time for music. Recordings include FF
-rate changes, toggles and uncapped music-clock inputs, so replay uses the same
-timing on another host. Presentation remains owned by the host.
+requested game frame in one batch. Interactive fast-forward uses elapsed host
+time for music at both fixed and uncapped rates. A fixed rate the host cannot
+sustain adapts to the rate its batches reach (`Session::pace_fast_forward`,
+measured every half second by `xem_core::time::FastForwardPacer` and raised a
+step at a time while the host keeps up). Fixed-rate headless and scripted
+stepping keeps the deterministic game clock divided by its rate unless
+explicit music-clock commands attach another clock. Recordings include FF
+rate changes, toggles, the initial music-clock attachment and elapsed music
+time, so replay uses the same timing on another host. Speed changes preserve
+queued PCM; native and browser output accumulate 50 ms before starting or
+resuming playback. Presentation remains owned by the host.
 
 Normal-tempo music is an explicit player requirement. The original sound driver
 also gates gameplay: scenes waiting on its progress run at normal speed during
@@ -1664,7 +1676,12 @@ The shared control commands are available through `xem-headless --control` and
 {"cmd":"fast_forward","enabled":false}
 {"cmd":"rewind_configure","max_bytes":67108864,"interval_seconds":1,"history_seconds":30}
 {"cmd":"rewind","steps":1}
+{"cmd":"reset"}
 ```
+
+`reset` abandons the current game stack and enters the original console boot
+routine. It releases held pads, clears rewind history and retains attached
+discs, memory cards and app preferences.
 
 Native file commands are `state_save`/`state_load` with `path`, and
 `card_import`/`card_export` with `path` and `slot` (0 or 1). File commands are
@@ -1689,11 +1706,13 @@ The panel (`xem-ui/ui/settings.slint`) lists its sections in a sidebar at
 560 logical pixels wide and more, else in a strip of tabs above the section;
 each section is a column of cards of settings, and the status line under
 them says what the last change or operation did (a note, done, or a
-problem in red), beside how the host closes the panel. Controls edits
+problem in red). Controls edits
 the game's bindings ([Controls](#controls)) and the assisted controls
-(hand gestures, the headset pointer, the ledge brake, touch controls,
+(hand gestures, the headset pointer, Stop at ledges, touch controls,
 reduced transparency and motion); Shortcuts lists every app operation with
-its bindings and edits the chosen one in place. The header's Quit (desktop,
+its bindings and edits the chosen one in place. Cancel closes either binding
+editor without saving its changes. The header's Reset sends the shared
+`reset` command. The header's Quit (desktop,
 Android, a headset; not the browser) asks first: Cancel, a press beside the
 question, Escape or Android's Back keep playing, and hiding the panel drops
 the question. A confirmed Quit ends the run as closing the window does

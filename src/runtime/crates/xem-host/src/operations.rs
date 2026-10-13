@@ -29,11 +29,11 @@ impl Default for Operations {
     }
 }
 impl Operations {
-    pub fn poll(&mut self, game: &mut Option<Game>, settings: &mut SettingsService) -> Option<Result<String,String>> {
+    pub fn poll(&mut self, mut game: Option<&mut Game>, settings: &mut SettingsService) -> Option<(AppAction,Result<String,String>)> {
         let dialog = self.results.try_recv().ok()?;
         self.busy = false;
         let export = self.export.take();
-        Some((|| {
+        Some((dialog.action,(|| {
             let Some(path) = dialog.path? else { return Ok("File operation canceled.".into()) };
             if let Some(bytes) = export {
                 write(&path,&bytes)?;
@@ -44,28 +44,32 @@ impl Operations {
                     let bytes = read(&path,1024*1024)?;
                     settings.import(std::str::from_utf8(&bytes).map_err(|e| e.to_string())?)?;
                 }
-                AppAction::ImportState => game.as_mut().ok_or("Boot a game before importing a state.")?.restore_bytes(&read(&path,64*1024*1024)?)?,
+                AppAction::ImportState => game.as_deref_mut().ok_or("Boot a game before importing a state.")?.restore_bytes(&read(&path,64*1024*1024)?)?,
                 AppAction::ImportCard1 | AppAction::ImportCard2 => {
                     let slot = usize::from(dialog.action == AppAction::ImportCard2);
-                    game.as_mut().ok_or("Boot a game before importing a card.")?.import_card(slot,read(&path,0x20000)?)?;
+                    game.as_deref_mut().ok_or("Boot a game before importing a card.")?.import_card(slot,read(&path,0x20000)?)?;
                 }
                 _ => return Err("Unexpected file operation.".into()),
             }
             Ok("Backup imported.".into())
-        })())
+        })()))
     }
 
-    pub fn execute(&mut self, request: AppRequest, window: &sdl::Window, game: &mut Option<Game>, settings: &mut SettingsService) -> Result<String,String> {
+    pub fn execute(&mut self, request: AppRequest, window: Option<&sdl::Window>, mut game: Option<&mut Game>, settings: &mut SettingsService) -> Result<String,String> {
         if let AppRequest::Rewind(held) | AppRequest::UiRewind(held) = request {
-            game.as_mut().ok_or("No game session.")?.set_rewind_held(held,matches!(request,AppRequest::UiRewind(_)))?;
+            game.as_deref_mut().ok_or("No game session.")?.set_rewind_held(held,matches!(request,AppRequest::UiRewind(_)))?;
             return Ok(if held { "Rewinding while held." } else { "Rewind released." }.into());
         }
         if self.busy { return Err("Finish the open file picker first.".into()); }
         let AppRequest::Action(action) = request else { unreachable!() };
         match action {
+            AppAction::Reset => {
+                game.as_deref_mut().ok_or("No game session.")?.command(&serde_json::json!({"cmd":"reset"}))?;
+                Ok("Console reset.".into())
+            }
             AppAction::SaveState | AppAction::LoadState => {
                 let path = self.directory.as_ref().ok_or("No application storage directory.")?.join("state.xemstate");
-                let game = game.as_mut().ok_or("No game session.")?;
+                let game = game.as_deref_mut().ok_or("No game session.")?;
                 game.command(&serde_json::json!({"cmd":if action == AppAction::SaveState { "state_save" } else { "state_load" },"path":path}))?;
                 Ok(format!("State {}: {}",if action == AppAction::SaveState {"written"} else {"restored"},path.display()))
             }
@@ -84,7 +88,7 @@ impl Operations {
                 Ok("LT/RT chord preference saved.".into())
             }
             AppAction::ToggleFastForward => {
-                let game = game.as_mut().ok_or("No game session.")?;
+                let game = game.as_deref_mut().ok_or("No game session.")?;
                 let reply = game.command(&serde_json::json!({"cmd":"fast_forward"}))?;
                 Ok(if reply["fast_forward"] == true { "Fast-forward on. Music keeps its normal tempo and pitch." } else { "Fast-forward off." }.into())
             }
@@ -113,17 +117,18 @@ impl Operations {
                 Ok("FPS display preference saved.".into())
             }
             AppAction::RetryStorage => {
-                game.as_mut().ok_or("No game session.")?.retry_storage()?;
+                game.as_deref_mut().ok_or("No game session.")?.retry_storage()?;
                 Ok("Pending card writes completed.".into())
             }
             AppAction::RequestPersistence => Ok("Native saves use application files. Export backups for another device.".into()),
             _ => {
+                let window = window.ok_or("File pickers are available in windowed play.")?;
                 self.export = match action {
                     AppAction::ExportSettings => Some(settings.export().into_bytes()),
-                    AppAction::ExportState => Some(game.as_mut().ok_or("No game session.")?.snapshot_bytes()?),
+                    AppAction::ExportState => Some(game.as_deref_mut().ok_or("No game session.")?.snapshot_bytes()?),
                     AppAction::ExportCard1 | AppAction::ExportCard2 => {
                         let slot = usize::from(action == AppAction::ExportCard2);
-                        Some(game.as_mut().ok_or("No game session.")?.card_image(slot).ok_or("No card in slot.")?)
+                        Some(game.as_deref_mut().ok_or("No game session.")?.card_image(slot).ok_or("No card in slot.")?)
                     }
                     _ => None,
                 };

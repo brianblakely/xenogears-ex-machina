@@ -263,7 +263,8 @@ impl FrameRenderer {
                 ops
             }
         };
-        settle_copies(&mut ops);
+        let screen_copy = renderer.capture.rect.filter(|_| renderer.capture.screen && renderer.capture.scale == scale);
+        settle_copies(&mut ops, screen_copy);
         // What the game draws of a screen it took (its pieces, zoomed,
         // shattered) is that screen, as presented then: a screen effect,
         // where the game put it.
@@ -707,7 +708,7 @@ fn split_overlay(ops: &mut Vec<TraceOp>) -> Vec<TraceOp> {
 /// overwritten while the copy is still shown) shows the pixels it copied:
 /// the native ones its destination's write carries, not the scaled
 /// picture's source as it is when the frame is replayed.
-fn settle_copies(ops: &mut [TraceOp]) {
+fn settle_copies(ops: &mut [TraceOp], screen_copy: Option<VramRect>) {
     let mut later: Vec<VramRect> = Vec::new();
     for i in (0..ops.len()).rev() {
         match &ops[i] {
@@ -715,6 +716,11 @@ fn settle_copies(ops: &mut [TraceOp]) {
             &TraceOp::Copy { source, destination, width, height } => {
                 let from = VramRect { x: source.0, y: source.1, width, height };
                 let to = VramRect { x: destination.0, y: destination.1, width, height };
+                // A pause/transition copied the displayed picture to this
+                // buffer. Its held presentation survives source overwrites.
+                if screen_copy == Some(to) {
+                    continue;
+                }
                 // Its own destination's write follows it.
                 let own = matches!(ops.get(i + 1), Some(TraceOp::Write { rect, .. }) if *rect == to);
                 let changed = &later[..later.len() - usize::from(own && !later.is_empty())];
@@ -790,6 +796,48 @@ pub fn pull_back(ops: &mut Vec<TraceOp>, distance: f32) {
 /// until the primitive is clipped there. Interface primitives stay as they
 /// are.
 pub fn first_person(ops: &mut Vec<TraceOp>, look: &Look) {
+    // Each original part carries the same alternative for its drawing pass.
+    // Replace that pass once, including the original builder's texture cells,
+    // and put those cells back before another sprite/scenery samples VRAM.
+    let mut replaced = std::collections::HashSet::new();
+    let mut facing_ops = Vec::with_capacity(ops.len());
+    for op in ops.drain(..) {
+        let TraceOp::Draw(p) = &op else { facing_ops.push(op); continue };
+        let Some(facing) = &p.facing else { facing_ops.push(op); continue };
+        if !replaced.insert(std::sync::Arc::as_ptr(facing)) { continue; }
+        for (rect, pixels) in &facing.textures {
+            facing_ops.push(TraceOp::Write { rect: *rect, pixels: pixels.clone(), upload: true });
+        }
+        for part in &facing.parts {
+            let mut p = p.clone();
+            p.facing = None;
+            p.shape = xem_gpu::Shape::Quad;
+            p.raw = part.words[0] & 0x01000000 != 0;
+            p.semi = part.words[0] & 0x02000000 != 0;
+            p.clut = (part.words[2] >> 16) as u16;
+            p.environment.draw_mode = (p.environment.draw_mode & !0x9FF) | (part.words[4] >> 16 & 0x9FF);
+            p.projection = Some((part.points[0].offset, part.points[0].h));
+            for (i, v) in p.vertices.iter_mut().enumerate() {
+                let q = part.points[i];
+                let xy = part.words[i * 2 + 1];
+                let uv = part.words[i * 2 + 2];
+                v.x = i32::from(xy as i16) + i32::from(p.environment.offset.0);
+                v.y = i32::from((xy >> 16) as i16) + i32::from(p.environment.offset.1);
+                v.fx = q.x as f32 / 65536.0 + f32::from(p.environment.offset.0);
+                v.fy = q.y as f32 / 65536.0 + f32::from(p.environment.offset.1);
+                v.z = f32::from(q.sz.max(1));
+                v.view = Some(q.view.map(|value| value as f32));
+                v.color = part.words[0] & 0xFFFFFF;
+                v.u = (uv & 0xFF) as i16;
+                v.v = (uv >> 8 & 0xFF) as i16;
+            }
+            facing_ops.push(TraceOp::Draw(p));
+        }
+        for (rect, pixels) in &facing.restore {
+            facing_ops.push(TraceOp::Write { rect: *rect, pixels: pixels.clone(), upload: true });
+        }
+    }
+    *ops = facing_ops;
     let scene = scene_offset(ops);
     let dot = |a: [f32; 3], b: [f32; 3]| a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
     let camera = |q: [f32; 3]| {

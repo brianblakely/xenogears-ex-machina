@@ -277,6 +277,24 @@ pub struct Primitive {
     /// For a sprite part: the point on the floor under its sprite (VRAM x,
     /// y and GTE depth), where the port records one.
     pub ground: Option<[f32; 3]>,
+    /// The original animation assembled from the first-person viewing angle.
+    /// Presentation only; the GPU's commands and VRAM remain original.
+    pub facing: Option<std::sync::Arc<SpriteFacing>>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct SpriteFacingPart {
+    pub words: [u32; 9],
+    pub points: [Projection; 4],
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct SpriteFacing {
+    pub parts: Vec<SpriteFacingPart>,
+    /// Alternate cells, in the original upload queue's execution order.
+    pub textures: Vec<(VramRect, std::sync::Arc<[u16]>)>,
+    /// Original pixels to put back after this sprite's alternative is drawn.
+    pub restore: Vec<(VramRect, std::sync::Arc<[u16]>)>,
 }
 
 impl Primitive {
@@ -425,6 +443,7 @@ pub(crate) struct Recorder {
     /// at, until the DMA walk reaches it, and emptied lists kept for new
     /// entries (thousands a frame when zoomed out).
     reveals: WordMap<Vec<Revealed>>,
+    facings: Vec<(u32, u32, std::sync::Arc<SpriteFacing>)>,
     spare: Vec<Vec<Revealed>>,
     /// The address each word of the GPU's partly received command was read
     /// from (0 for words the CPU wrote), and the word being written's.
@@ -591,15 +610,19 @@ impl Recorder {
     /// command (its `vertex`th point): the one stored at the word's address
     /// while the word still holds it, or a culled face's own.
     fn point(&self, word: u32, at: usize, vertex: usize) -> Option<&Projection> {
+        self.point_index(word, at, vertex).and_then(|index| self.projection(index))
+    }
+
+    fn point_index(&self, word: u32, at: usize, vertex: usize) -> Option<u32> {
         if let Some(revealed) = &self.revealing {
-            return revealed[vertex].and_then(|index| self.projection(index));
+            return revealed[vertex];
         }
         let address = *self.fifo_addresses.get(at).filter(|&&a| a != 0)?;
         let &(value, source) = self.stored.get(address as usize / 4)?;
         if source == 0 || value != word {
             return None;
         }
-        self.projection(source.wrapping_sub(1))
+        Some(source.wrapping_sub(1))
     }
 }
 
@@ -608,6 +631,15 @@ fn sign11(value: u32) -> i32 {
 }
 
 impl Gpu {
+    /// The port assembled an alternate facing for these original projections.
+    pub fn trace_sprite_facing(&mut self, first: u32, last: u32, facing: SpriteFacing) {
+        if let Some(trace) = &mut self.trace {
+            trace.facings.push((first, last, std::sync::Arc::new(facing)));
+            // A DMA may consume the previous frame; retain its records too.
+            let end = last;
+            trace.facings.retain(|(start, _, _)| end.wrapping_sub(*start) < HISTORY as u32);
+        }
+    }
     /// Turns the draw trace on or off. Turning it on starts the next trace
     /// with the whole VRAM.
     pub fn set_trace(&mut self, enabled: bool) {
@@ -996,6 +1028,17 @@ impl Gpu {
         let classes: Vec<Class> = classes.iter().map(|c| c.0).collect();
         let class = primitive_class(&classes, count);
         let ground = if class == Class::Sprite { self.ground(trace, owner) } else { None };
+        let facing_index = trace.point_index(words[1], 1, 0).and_then(|point| {
+            trace.facings.iter().rposition(|(first, last, _)| point.wrapping_sub(*first) < last.wrapping_sub(*first))
+        });
+        let facing = facing_index.map(|index| {
+            let facing = &mut self.trace.as_mut().expect("tracing").facings[index].2;
+            if facing.restore.is_empty() && !facing.textures.is_empty() {
+                let facing = std::sync::Arc::make_mut(facing);
+                facing.restore = facing.textures.iter().map(|(rect, _)| (*rect, read_rect(&self.vram, *rect).into())).collect();
+            }
+            facing.clone()
+        });
         let dither = self.draw_mode & 0x200 != 0 && (gouraud || (textured && !raw));
         let primitive = Primitive {
             shape: if count == 4 { Shape::Quad } else { Shape::Triangle },
@@ -1013,6 +1056,7 @@ impl Gpu {
             source: 0,
             revealed,
             ground,
+            facing,
         };
         self.trace_drawn(primitive);
     }
@@ -1074,6 +1118,7 @@ impl Gpu {
             source: 0,
             revealed: false,
             ground: None,
+            facing: None,
         };
         self.trace_drawn(primitive);
     }
@@ -1104,6 +1149,7 @@ impl Gpu {
             source: 0,
             revealed: false,
             ground: None,
+            facing: None,
         };
         self.trace_drawn(primitive);
     }

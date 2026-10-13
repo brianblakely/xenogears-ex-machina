@@ -21,9 +21,10 @@ void xem_present_store(unsigned int address, unsigned int value, unsigned int so
     XemSxyStore *s = &ring->entries[ring->count % XEM_PRESENT_STORES];
 
     /* Only RAM reaches the GPU's DMA (not the scratchpad, the port's stack
-     * or its own data, whose low 24 bits would alias RAM); nothing while no
-     * trace takes the records. */
-    if ((address & 0x1FE00000u) != 0 || !xem_gte_ring->recording) {
+     * or its own data, whose low 24 bits would alias RAM). The presentation
+     * replay also reads its private sprite packets, at non-aliasing addresses. */
+    if (!xem_gte_ring->recording || ((address & 0x1FE00000u) != 0 &&
+        !(address >= ring->private_begin && address < ring->private_end))) {
         return;
     }
     s->address = address & 0x00FFFFFF;

@@ -62,6 +62,7 @@ fn main() {
     let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
     let mut ui = SettingsUi::new(shared, settings, size, scale).expect("the panel");
     ui.set_operation_status("Settings saved.");
+    ui.on_app_request(|request| eprintln!("{request:?}"));
     if desktop {
         ui.on_quit(|| eprintln!("quit"));
         ui.set_fullscreen_offered(true);

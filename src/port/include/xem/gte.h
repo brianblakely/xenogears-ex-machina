@@ -134,7 +134,11 @@ typedef struct {
 
 typedef struct {
     unsigned int count;
-    unsigned int unused[3];
+    /* Temporary packet range used by the presentation-only sprite replay.
+     * Its low 24-bit addresses lie beyond original RAM, so they never match
+     * a packet in the game's DMA trace. Zero outside that replay. */
+    unsigned int private_begin, private_end;
+    unsigned int unused;
     XemSxyStore entries[XEM_PRESENT_STORES];
 } XemStoreRing;
 

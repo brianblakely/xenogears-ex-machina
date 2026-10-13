@@ -118,6 +118,7 @@ void xem_wait(int reason) {
 static u32 xem_loop_iterations;
 
 s32 xem_in_critical_section(void);
+s32 xem_present_sprite_facing_active(void);
 
 /* A read the game repeats without waiting in between (a spin on a value only
  * an interrupt changes): from the second read on, the clock reaches the next
@@ -141,6 +142,7 @@ void xem_spin_waiting(u32 *last) {
 void xem_loop_poll(void) {
     extern s32 xem_in_interrupt;
 
+    if (xem_present_sprite_facing_active()) { return; }
     if (++xem_loop_iterations >= 0x10000 && !xem_in_critical_section() && !xem_in_interrupt) {
         xem_loop_iterations = 0;
         xem_host_yield(XEM_YIELD_POLL);

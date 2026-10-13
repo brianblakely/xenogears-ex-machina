@@ -280,6 +280,12 @@ impl ImportHandler for Services {
                 Action::Return(0)
             }
             "present" => {
+                if arg(0) == crate::presentation::SPRITE_FACING && self.gpu.device().trace_enabled() {
+                    match crate::presentation::sprite_facing(memory, arg(1)) {
+                        Ok((first, last, facing)) => self.gpu.device_mut().trace_sprite_facing(first, last, facing),
+                        Err(error) => { self.trap_reason = Some(error); return Action::Trap; }
+                    }
+                }
                 if self.presentation.enabled {
                     let mut bytes = vec![0; arg(2).min(0x1000) as usize];
                     if memory.read(arg(1), &mut bytes).is_err() {
@@ -512,6 +518,22 @@ impl<M: GameModule> Runtime<M> {
         self.entry = (kind, arg);
         self.fibers = [Some(Fiber::Fresh { stack_top: self.stack_top }), None];
         self.current = 0;
+    }
+
+    /// The console's soft reset: abandon suspended work and enter the
+    /// original boot routine, which clears BSS and initializes the game.
+    /// Attached discs and memory cards remain attached.
+    pub fn reset(&mut self) {
+        self.restart(RESTART_BOOT, 0);
+        self.resume_advance = None;
+        self.stopped_before_vblank = false;
+        self.dispatch_write = None;
+        let services = self.services();
+        services.pending = None;
+        services.trap_reason = None;
+        services.mode = None;
+        services.last_wait = None;
+        services.focus_pause.set_active(false);
     }
 
     /// Deliver an interrupt while the game is suspended, on the stack below

@@ -438,3 +438,84 @@ fn shop_quantities_all_none_plus_and_minus() {
         assert_eq!(amounts(&mut session), expected, "{op}");
     }
 }
+
+/// The settings Reset action uses the same command available to agents,
+/// re-entering the original boot code with the disc and cards still attached.
+#[test]
+fn console_reset_reboots_the_original_game_and_keeps_memory_cards() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    run(&mut session, json!({"cmd": "enter_field", "map": 30}));
+    run(&mut session, json!({"cmd": "frames", "count": 400}));
+    assert_eq!(context(&mut session)["kind"], "walk");
+    let cards: Vec<_> = (0..2).map(|slot| {
+        let mut image = xem_core::devices::card::formatted();
+        image[0x2000..0x2004].copy_from_slice(&[b'X', b'E', b'M', slot as u8]);
+        session.runtime.services().card.import_image(slot, image.clone()).unwrap();
+        image
+    }).collect();
+    session.configure_rewind(xem_core::rewind::DEFAULT_REWIND_BYTES, 1, 30).unwrap();
+    let revision = session.timeline_revision;
+    run(&mut session, json!({"cmd": "hold", "actions": ["Up", "Run"]}));
+    run(&mut session, json!({"cmd": "reset"}));
+    assert_eq!(session.runtime.services().pads.0[0].buttons, 0);
+    assert_eq!(session.timeline_revision, revision + 1);
+    assert_eq!(session.rewind.status()["states"], 0);
+    assert_eq!(session.runtime.services().mode, None);
+    run(&mut session, json!({"cmd": "frames", "count": 300}));
+    assert_eq!(session.runtime.services().mode, Some(6), "boot enters the opening movie");
+    for (slot, card) in cards.iter().enumerate() {
+        assert_eq!(session.runtime.services().card.image(slot), Some(card.as_slice()));
+    }
+}
+
+/// Leave Lahan through its south exit, then walk until the original world
+/// map rolls an encounter. Query input exactly as the desktop does through
+/// every dispatcher wait, overlay load and battle initialization frame.
+#[test]
+fn control_queries_survive_a_world_map_encounter() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    for command in [
+        json!({"cmd":"enter_field", "map":1}),
+        json!({"cmd":"frames", "count":400}),
+        json!({"cmd":"navigate", "to":[-300,-1800]}),
+        json!({"cmd":"frames", "count":600}),
+        json!({"cmd":"press", "buttons":["right","down","cross"], "frames":100}),
+        json!({"cmd":"frames", "count":100}),
+        json!({"cmd":"navigate", "to":[-300,-1800]}),
+        json!({"cmd":"frames", "count":500}),
+        json!({"cmd":"press", "buttons":["down","cross"], "frames":250}),
+        json!({"cmd":"frames", "count":550}),
+    ] {
+        run(&mut session, command);
+    }
+    assert!(matches!(session.runtime.context(), xem_core::context::Context::WorldMap { movement: 1, .. }));
+    let bindings = xem_settings::GameBindings::default();
+    let mut player = xem_settings::player::PlayerInput::default();
+    player.key(&bindings, "KeyS", true);
+    let mut loading = 0;
+    let mut battle = false;
+    for _ in 0..600 {
+        if session.runtime.services().mode == Some(2) {
+            player.clear();
+            if session.execute(&json!({"cmd":"inspect", "path":"mode_next_mode"})) == 2 {
+                loading += 1;
+                assert!(!session.runtime.combo_input(), "no attack input before the overlay's entry");
+                assert_eq!(session.runtime.field_controls(), Default::default());
+            }
+            battle |= matches!(session.runtime.context(), xem_core::context::Context::Battle { .. });
+        }
+        host_frame(&mut session, &mut player, &bindings);
+    }
+    assert!(loading > 0, "the host observed the dispatcher before overlay entry");
+    assert!(battle, "the naturally rolled encounter reached the battle interface");
+    assert_eq!(session.runtime.services().mode, Some(2));
+    assert!(session.stopped.is_none());
+}

@@ -65,6 +65,7 @@ s32 xem_original_gpu_draw_panorama(Panorama *panorama, SVECTOR *eye, SVECTOR *ta
 void xem_original_gpu_draw_panorama_strip(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *ot, s32 buffer);
 void xem_original_battle_draw_stage_sky(void *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot, s32 buffer);
 void field_sprite_set_color_unless_fog(void *target, u8 *color);
+void xem_present_sprite_facing(Sprite *sprite, u32 first, u32 last, s32 cut, s32 height);
 
 /* Whether the host wants the faces the game culls (xem/gte.h), and no model
  * is being drawn again for the record. */
@@ -360,6 +361,7 @@ static void xem_present_sprite_parts(Sprite *sprite, u_long *ot, s32 cut, s32 he
     } record;
     u32 previous = xem_gte_ring->class_;
     u32 owner = xem_gte_ring->owner;
+    u32 first;
 
     record.sprite = (u32)sprite;
     record.ot = (u32)ot;
@@ -368,6 +370,7 @@ static void xem_present_sprite_parts(Sprite *sprite, u_long *ot, s32 cut, s32 he
     xem_gte_ring->owner = (u32)sprite;
     xem_record_ground(sprite);
     xem_gte_ring->class_ = XEM_PROJECTION_SPRITE;
+    first = xem_gte_ring->count;
     if (cut == 1) {
         xem_original_sprite_draw_parts_cut_below(sprite, ot, height);
     } else if (cut == 2) {
@@ -375,6 +378,7 @@ static void xem_present_sprite_parts(Sprite *sprite, u_long *ot, s32 cut, s32 he
     } else {
         xem_original_sprite_draw_parts(sprite, ot);
     }
+    xem_present_sprite_facing(sprite, first, xem_gte_ring->count, cut, height);
     xem_gte_ring->class_ = previous;
     xem_gte_ring->owner = owner;
 }

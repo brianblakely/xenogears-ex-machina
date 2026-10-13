@@ -657,13 +657,25 @@ impl<'a> Builder<'a> {
     pub(crate) fn primitive(&mut self, p: &Primitive) {
         // Viewport culling is the game's against its own screen, which a
         // camera within the scene does not look through.
-        if p.revealed && (self.reveal == Reveal::Hidden || (self.options.culling.viewport && self.near.is_none())) {
+        if p.revealed && !self.restores_sliver(p) && (self.reveal == Reveal::Hidden || (self.options.culling.viewport && self.near.is_none())) {
             return;
         }
         self.stats.primitives += 1;
         self.stats.revealed += u32::from(p.revealed);
         let start = self.triangles(p);
         self.commands_for(p, start);
+    }
+
+    /// Terrain triangles that collapse at whole-pixel precision were
+    /// discarded by NCLIP. Their sub-pixel area still fills seams at 1x.
+    fn restores_sliver(&self, p: &Primitive) -> bool {
+        if !self.seal || self.options.fidelity.vertex_snapping || self.options.culling.viewport
+            || p.class != Class::World || p.shape != Shape::Triangle || winding(p, [0, 1, 2]) != 0
+        {
+            return false;
+        }
+        let [a, b, c, _] = &p.vertices;
+        (b.fx - a.fx) * (c.fy - a.fy) - (b.fy - a.fy) * (c.fx - a.fx) > 0.0
     }
 
     /// A primitive's triangles; returns the index of its first vertex.
@@ -846,7 +858,7 @@ impl<'a> Builder<'a> {
         let spill = if p.revealed || effective_class(p, self.scene).is_scene() || self.widens(p) || self.captures(p) { self.spill as i32 } else { 0 };
         let rect = |left: i32, right: i32| Some(Scissor { x: left, y: top, width: (right + 1 - left).max(0), height: (bottom + 1 - top).max(0) });
         // A culled face beside the original screen shows only in the sides.
-        let scissors = if p.revealed && self.reveal == Reveal::Sides {
+        let scissors = if p.revealed && self.reveal == Reveal::Sides && !self.restores_sliver(p) {
             vec![rect(left - spill, left - 1), rect(right + 1, right + spill)]
         } else {
             vec![rect(left - spill, right + spill)]
@@ -937,9 +949,38 @@ pub(crate) fn samples(p: &Primitive, rect: &VramRect) -> bool {
     let page = (i32::from(mode as u16 & 15) * 64, i32::from(mode as u16 >> 4 & 1) * 256);
     let (x0, y0) = (i32::from(rect.x), i32::from(rect.y));
     let (x1, y1) = (x0 + i32::from(rect.width), y0 + i32::from(rect.height));
-    p.vertices[..p.vertex_count()].iter().all(|v| {
+    if p.vertices[..p.vertex_count()].iter().all(|v| {
         let (x, y) = (page.0 + i32::from(v.u), page.1 + i32::from(v.v));
         x >= x0 && x <= x1 && y >= y0 && y <= y1
+    }) {
+        return true;
+    }
+    // The world map fades a saved 216-line screen with 239-line quads.
+    // Their excess is outside the draw area and never samples VRAM. Test
+    // the clipped polygon, so those quads still use the presented capture.
+    let count = p.vertex_count();
+    let order = if count == 4 { &[0, 1, 3, 2][..] } else { &[0, 1, 2][..] };
+    let mut polygon: Vec<[f32; 4]> = order.iter().map(|&i| {
+        let v = &p.vertices[i];
+        [v.x as f32, v.y as f32, (page.0 + i32::from(v.u)) as f32, (page.1 + i32::from(v.v)) as f32]
+    }).collect();
+    let [left, top, right, bottom] = p.environment.area.map(f32::from);
+    for (axis, edge, greater) in [(0, left, true), (0, right + 1.0, false), (1, top, true), (1, bottom + 1.0, false)] {
+        let mut clipped = Vec::new();
+        let Some(mut a) = polygon.last().copied() else { return false };
+        let inside = |v: [f32; 4]| if greater { v[axis] >= edge } else { v[axis] <= edge };
+        for &b in &polygon {
+            if inside(a) != inside(b) {
+                let t = (edge - a[axis]) / (b[axis] - a[axis]);
+                clipped.push(std::array::from_fn(|k| a[k] + t * (b[k] - a[k])));
+            }
+            if inside(b) { clipped.push(b); }
+            a = b;
+        }
+        polygon = clipped;
+    }
+    !polygon.is_empty() && polygon.iter().all(|p| {
+        p[2] >= x0 as f32 - 0.001 && p[2] <= x1 as f32 + 0.001 && p[3] >= y0 as f32 - 0.001 && p[3] <= y1 as f32 + 0.001
     })
 }
 
@@ -1208,7 +1249,12 @@ pub(crate) fn encode(
             }
             Command::Copy { source, destination, width, height } => {
                 match copies {
-                    Copies::InPlace(scratch) => copy_region(encoder, target, scratch, *source, *destination, (*width, *height)),
+                    Copies::InPlace { scratch, capture } => {
+                        copy_region(encoder, target, scratch, *source, *destination, (*width, *height));
+                        if capture.screen {
+                            copy_capture(encoder, target, capture, *source, *destination, (*width, *height));
+                        }
+                    }
                     Copies::From { color, aux, scale, capture } => {
                         copy_from(encoder, target, (color, aux, scale), *source, *destination, (*width, *height));
                         if let Some(capture) = capture {
@@ -1274,7 +1320,7 @@ pub(crate) fn encode(
 #[derive(Clone, Copy)]
 pub(crate) enum Copies<'a> {
     /// Inside the target, through a scratch texture.
-    InPlace(&'a wgpu::Texture),
+    InPlace { scratch: &'a wgpu::Texture, capture: &'a Capture },
     /// From the scaled VRAM picture (colour, auxiliary, scale) into the
     /// target; a copy of the screen the game took, from its picture.
     From { color: &'a wgpu::Texture, aux: &'a wgpu::Texture, scale: u32, capture: Option<&'a Capture> },
@@ -1291,7 +1337,10 @@ fn copy_capture(
     (width, height): (u16, u16),
 ) {
     let s = target.scale;
-    let Some(rect) = capture.rect.filter(|r| (r.x, r.y, r.width, r.height) == (source.0, source.1, width, height)) else { return };
+    let Some(rect) = capture.rect.filter(|r| {
+        (r.width, r.height) == (width, height)
+            && ((r.x, r.y) == source || (capture.screen && (r.x, r.y) == destination))
+    }) else { return };
     if capture.scale != s {
         return;
     }
@@ -1657,7 +1706,7 @@ impl Ps1Renderer {
                 TraceOp::Copy { source, destination, width, height } => {
                     let from = VramRect { x: source.0, y: source.1, width: *width, height: *height };
                     let to = VramRect { x: destination.0, y: destination.1, width: *width, height: *height };
-                    if *width >= 256 && *height >= 192 && self.is_screen(&from) && !self.is_screen(&to) {
+                    if *width >= 256 && *height >= 192 && source != destination && self.is_screen(&from) {
                         written |= self.take_capture(encoder, to);
                     } else if self.capture.rect.is_some_and(|c| overlap(&c, &to) > 0) {
                         self.capture.rect = None;
@@ -1677,7 +1726,7 @@ impl Ps1Renderer {
                         written = true;
                     } else if marked && rect.width >= 256 && rect.height >= 192 && !self.is_screen(rect) {
                         written |= self.take_capture(encoder, *rect);
-                    } else if over.is_some() {
+                    } else if over.is_some_and(|c| !self.capture.screen || overlap(&c, rect) == u32::from(c.width) * u32::from(c.height)) {
                         self.capture.rect = None;
                     }
                 }
@@ -1712,6 +1761,7 @@ impl Ps1Renderer {
             wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
         );
         self.capture.rect = Some(rect);
+        self.capture.screen = self.is_screen(&rect);
         self.capture.scale = picture.scale;
         self.capture.side = picture.side;
         self.capture.taken = self.draws;
@@ -1842,12 +1892,12 @@ impl Ps1Renderer {
             &self.group,
             self.vertices.buffer(),
             Some((self.staging.buffer(), &self.vram)),
-            Copies::InPlace(&self.scratch),
+            Copies::InPlace { scratch: &self.scratch, capture: &self.capture },
             &target,
             &builder.commands,
         );
         builder.store(&mut self.storage);
-        if captured {
+        if captured && !self.capture.screen {
             self.place_capture(encoder);
         }
     }
@@ -2073,6 +2123,9 @@ pub(crate) struct Capture {
     pub(crate) rect: Option<VramRect>,
     pub(crate) scale: u32,
     pub(crate) side: u32,
+    /// A buffer-to-buffer copy (pause/transition): its partial uploads are
+    /// overlays, and a replay of the original copy uses this held picture.
+    pub(crate) screen: bool,
     /// The draw it was taken at.
     taken: u64,
     /// Counts new textures (bind groups made with an older one are stale).
@@ -2088,7 +2141,7 @@ impl Capture {
             min_filter: wgpu::FilterMode::Linear,
             ..Default::default()
         });
-        Capture { view: texture.create_view(&Default::default()), texture, sampler, rect: None, scale: 1, side: 0, taken: 0, generation: 0 }
+        Capture { view: texture.create_view(&Default::default()), texture, sampler, rect: None, scale: 1, side: 0, screen: false, taken: 0, generation: 0 }
     }
 
     /// The pass uniform's capture fields.
@@ -2112,6 +2165,25 @@ pub struct PresentedPicture {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_worldmap_fade_samples_only_the_visible_part_of_its_saved_screen() {
+        let mut gpu = xem_gpu::Gpu::new();
+        gpu.set_trace(true);
+        let _ = gpu.take_trace();
+        // The original fade uses 239-line quads over a 216-line capture.
+        gpu.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 215 << 10 | 319, 0xE500_0000]);
+        gpu.write_gp0_words(&[0x2D80_8080, 0, 0, 128, (0x11B << 16) | 128, 239 << 16, 239 << 8, (239 << 16) | 128, (239 << 8) | 128]);
+        let trace = gpu.take_trace();
+        let mut p = trace.ops.into_iter().find_map(|op| match op { TraceOp::Draw(p) => Some(p), _ => None }).unwrap();
+        let capture = VramRect { x: 704, y: 256, width: 320, height: 216 };
+        assert!(samples(&p, &capture), "the clipped excess does not sample uncaptured VRAM");
+        p.environment.area[3] = 239;
+        assert!(!samples(&p, &capture), "visible pixels beyond the capture must keep their original texture");
+        p.environment.area[3] = 215;
+        p.environment.draw_mode -= 1;
+        assert!(!samples(&p, &capture), "neighbouring texture pages are not the captured screen");
+    }
 
     #[test]
     fn a_triangle_reaching_behind_the_near_plane_is_cut_there() {

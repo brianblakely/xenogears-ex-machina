@@ -348,7 +348,6 @@ impl View {
         )
         .map_err(|error| error.to_string())?;
         let frame_rate = FrameRateUi::new(shared,scale).map_err(|error| error.to_string())?;
-        ui.set_close_hint(if cfg!(target_os = "android") { "Back closes Settings" } else { "Esc or Back+Start closes Settings" });
         ui.set_first_person(true);
         let panel_visible = Rc::new(RefCell::new(show_panel));
         ui.on_close({
@@ -450,7 +449,9 @@ impl View {
             self.player.mouse.clear();
         }
         let was_busy = self.operations.busy;
-        if let Some(result) = self.operations.poll(game,&mut self.settings.borrow_mut()) {
+        let completed = self.operations.poll(game.as_mut(),&mut self.settings.borrow_mut());
+        if let Some((action,result)) = completed {
+            self.state_notice(action,&result);
             self.show_result(result);
         }
         let bindings = self.settings.borrow().settings().app_bindings.clone();
@@ -471,10 +472,15 @@ impl View {
         self.app_requests.borrow_mut().extend(self.app_input.requests(&bindings,invert_triggers));
         let requests = std::mem::take(&mut *self.app_requests.borrow_mut());
         for request in requests {
-            let result = self.operations.execute(request,window,game,&mut self.settings.borrow_mut());
+            let result = self.operations.execute(request,Some(window),game.as_mut(),&mut self.settings.borrow_mut());
+            if let AppRequest::Action(action) = request {
+                if result.is_err() || !self.operations.busy { self.state_notice(action,&result); }
+            }
             self.show_result(result);
         }
         if let Some(game) = game {
+            let (forward,rewind) = game.time_activity();
+            self.frame_rate.set_activity(forward,rewind);
             let settings = self.settings.borrow();
             let result = game.sync_time_settings(settings.settings());
             drop(settings);
@@ -494,9 +500,17 @@ impl View {
                 }
             }
         } else {
+            self.frame_rate.set_activity(false,false);
             self.ui.set_time_status(None,"Boot a game to use save states and time controls.");
         }
         !self.operations.busy
+    }
+
+    fn state_notice(&mut self, action: xem_settings::AppAction, result: &Result<String,String>) {
+        use xem_settings::AppAction::*;
+        let saved = match action { SaveState | ExportState => true, LoadState | ImportState => false, _ => return };
+        if result.as_ref().is_ok_and(|text| text == "File operation canceled.") { return; }
+        self.frame_rate.notify_state(saved,result.as_ref().err().map(String::as_str),self.frame_rate_started.elapsed());
     }
 
     /// An operation's outcome on the panel's status line.
@@ -745,6 +759,8 @@ impl View {
     /// graphics settings choose how it is drawn). A 24-bit display (movie
     /// frames) is shown as the device holds it.
     pub fn set_game_frame(&mut self, gpu: &Gpu, game: &mut Game) {
+        let (forward,rewind) = game.time_activity();
+        self.frame_rate.set_activity(forward,rewind);
         let graphics = self.settings.borrow().settings().graphics;
         if graphics.renderer == xem_settings::Renderer::Original {
             // The console's own picture, as the device shows it (nothing to
@@ -846,6 +862,7 @@ impl View {
         let invert_triggers = self.settings.borrow().settings().invert_trigger_chords;
         self.player.gamepad(&self.app_input.gamepad_for_game(&app_bindings, invert_triggers), &self.axes);
         self.player.browse(self.targets.as_ref());
+        self.player.run_by_default = self.settings.borrow().settings().run_by_default;
         let buttons = self.player.buttons(&bindings, now, context);
         let select_key = bindings.play.get(&xem_settings::GameAction::Select).is_some_and(|b| b.keyboard.iter().any(|k| held(k)));
         // First-person inspection: toggled in a field (Ex Machina draws it),
@@ -1064,10 +1081,10 @@ impl View {
             quad.srgb_encoded = true;
             quads.push(quad);
         }
-        if presentation.show_fps {
+        if self.frame_rate.visible() {
             let (width,height) = self.frame_rate.size();
             let margin = 8.0*self.ui.scale_factor();
-            let mut counter = Quad::screen(self.frame_rate.view(),Rect { x:margin,y:margin,width:width as f32,height:height as f32 },target_size);
+            let mut counter = Quad::screen(self.frame_rate.view(),Rect { x:safe.x+margin,y:safe.y+margin,width:width as f32,height:height as f32 },target_size);
             counter.srgb_encoded = true;
             counter.filter = wgpu::FilterMode::Nearest;
             quads.push(counter);
@@ -1213,6 +1230,19 @@ mod tests {
         assert!(!view.panel_visible());
         settings.borrow_mut().apply(xem_settings::SettingChange::ShowFps(false)).unwrap();
         assert!(pixels(&mut view).chunks_exact(4).all(|p| p[..3]==[0,0,0]),"disabling Show FPS removes the counter");
+        view.frame_rate.set_activity(true,false);
+        assert!(pixels(&mut view).chunks_exact(4).any(|p| p[0]>180),"FF icon is visible with FPS off");
+        view.frame_rate.set_activity(false,true);
+        assert!(pixels(&mut view).chunks_exact(4).any(|p| p[0]>180),"rewind icon is visible with FPS off");
+        view.frame_rate.set_activity(false,false);
+        view.state_notice(xem_settings::AppAction::ImportCard1,&Err("card error".into()));
+        assert!(view.frame_rate.notice().is_none(),"memory-card operations do not create state notices");
+        view.state_notice(xem_settings::AppAction::SaveState,&Ok("written".into()));
+        assert_eq!(view.frame_rate.notice().as_deref(),Some("State saved"));
+        assert!(pixels(&mut view).chunks_exact(4).any(|p| p[0]>180),"state notice is visible with Settings closed");
+        view.state_notice(xem_settings::AppAction::LoadState,&Err("checksum failed".into()));
+        assert!(view.frame_rate.notice().unwrap().contains("checksum failed"));
+        assert!(!view.panel_visible());
     }
 
     #[test]

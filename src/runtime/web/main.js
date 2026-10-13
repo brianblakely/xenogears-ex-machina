@@ -553,9 +553,15 @@ const operationGuard = (action) => async (event) => {
 };
 $('import-state').addEventListener('change', operationGuard(async (event) => {
   const file = event.target.files[0]; if (!file) return;
-  if (file.size > 64 * 1024 * 1024) throw new Error('State file exceeds 64 MiB.');
-  app.restore_bytes(new Uint8Array(await file.arrayBuffer()));
-  event.target.value = ''; operationStatus('State restored.');
+  try {
+    if (file.size > 64 * 1024 * 1024) throw new Error('State file exceeds 64 MiB.');
+    app.restore_bytes(new Uint8Array(await file.arrayBuffer()));
+    app.state_notice(false, undefined);
+    event.target.value = ''; operationStatus('State restored.');
+  } catch (error) {
+    app.state_notice(false, String(error.message ?? error));
+    throw error;
+  }
 }));
 $('import-card').addEventListener('change', operationGuard(async (event) => {
   const file = event.target.files[0]; if (!file) return;
@@ -581,6 +587,15 @@ function chooseBackup(id) {
   operationStatus('Choose a backup file.');
 }
 async function appOperation(request) {
+  try { return await executeAppOperation(request); }
+  catch (error) {
+    if (['SaveState', 'LoadState', 'ExportState', 'ImportState'].includes(request.Action)) {
+      app.state_notice(['SaveState', 'ExportState'].includes(request.Action), String(error.message ?? error));
+    }
+    throw error;
+  }
+}
+async function executeAppOperation(request) {
   if ('Rewind' in request || 'UiRewind' in request) {
     const panel = 'UiRewind' in request;
     const held = panel ? request.UiRewind : request.Rewind;
@@ -590,14 +605,21 @@ async function appOperation(request) {
   }
   const action = request.Action;
   switch (action) {
+    case 'Reset': {
+      const reply = control({ cmd: 'reset' });
+      app.set_running(true);
+      operationStatus('Console reset.'); return reply;
+    }
     case 'SaveState': {
       const saved = await host.save('slot0');
+      app.state_notice(true, undefined);
       operationStatus(`Saved state (${saved.bytes} bytes); browser write completed.`); return saved;
     }
     case 'LoadState': {
       const loaded = await host.load('slot0');
       if (!loaded) throw new Error(page.storageError);
       app.restore_bytes(loaded.data);
+      app.state_notice(false, undefined);
       operationStatus('Stored state verified and restored.'); return { ok: true };
     }
     case 'Rewind': throw new Error('Rewind requires a held input.');
@@ -646,7 +668,7 @@ async function appOperation(request) {
       operationStatus('Fast-forward rate saved.'); return reply;
     }
     case 'ExportState':
-      download('xenogears.xemstate', app.snapshot_bytes()); operationStatus('State backup exported.'); break;
+      download('xenogears.xemstate', app.snapshot_bytes()); app.state_notice(true, undefined); operationStatus('State backup exported.'); break;
     case 'ImportState': chooseBackup('import-state'); break;
     case 'ExportCard1': case 'ExportCard2': {
       const slot = action === 'ExportCard1' ? 0 : 1;
