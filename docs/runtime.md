@@ -1160,8 +1160,10 @@ the browser's WebXR sessions (plan.md, the hand/gaze contract):
   up Weak, left Strong, down Fierce, right ends the sequence; lists
   confirm on a tap and back out to the right; targets take the one under
   the gaze on a tap (else confirm the selected one), move up, down and
-  left with those swipes and back out to the right. Presses queued for
-  one interface never reach the next (`PlayerInput`).
+  left with those swipes and back out to the right; beside the screen
+  they also stand as a list (ALLY 1-3, FOE n; the selected one lit) for
+  targets that overlap or hide one another. Presses queued for one
+  interface never reach the next (`PlayerInput`).
 - **Pauses.** The overhand grab toggles the player's Pause in every
   context (no game frame runs; head tracking, drawing, the panel and app
   input stay live); the underhand grab toggles first-person inspection in
@@ -1185,7 +1187,9 @@ the browser's WebXR sessions (plan.md, the hand/gaze contract):
   as the floor projects, silver where walkable, a gold chevron where a
   jump is needed, broken and struck through where unreachable), the
   committed destination (gilded, related but distinct), the ring's page
-  mark, and keys beside the screen. Seraph Glass is drawn on the
+  mark, the region a swipe up or down would scroll (corner brackets
+  around the list; on a character screen only while the gaze is on the
+  list), and keys beside the screen. Seraph Glass is drawn on the
   processor (faceted silver shells, halos, fins, dark recesses, gold
   accents, solid outlined symbols; state by shape and contrast; reduced
   transparency makes bodies dark and opaque) and composited as room or
@@ -1205,6 +1209,8 @@ dialogue pages (a choice answered under the gaze), opens and leaves the
 menu, buys with the quantity keys, stops and pauses on lost tracking,
 plays both battle rings (on foot: pages, slots, AP spent by Weak and
 Strong, the sequence ended; in Gears: the Gear's ring and a strike),
+chooses battle targets (a swipe to the nearest that way, a tap under the
+gaze, a key of the target list),
 flies the world map by the captured stick and boards with L2+R2, plays a
 Battling bout (A, Dash held, the stick, Pause) and jumps from a running
 route (two frames from the thumb's touch to the air; the route goes on

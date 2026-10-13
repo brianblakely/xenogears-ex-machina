@@ -422,7 +422,7 @@ impl XemApp {
             Some(xem_core::assist::Intent::Walk { to, .. }) => Some(*to),
             _ => None,
         };
-        let marks = xem_assist::overlay::marks(ui, None, field.as_ref(), destination);
+        let marks = xem_assist::overlay::marks(ui, None, field.as_ref(), destination, None);
         let shown = self.touched && self.settings.borrow().settings().assisted.touch_controls;
         let style = xem_render::glass::Style { reduced_transparency: self.settings.borrow().settings().assisted.reduced_transparency };
         let held = self.deck.held();
@@ -461,9 +461,8 @@ impl XemApp {
             ),
             None => (None, None),
         };
-        let keys = if xem_assist::overlay::quantity_keys(ui) { xem_assist::draw::quantity_keys(&screen) } else { vec![] };
         let effects = if settings.assisted.gestures {
-            self.headset.update_with_keys(&input, &screen, ui, field.as_ref(), targets.as_ref(), &keys)
+            self.headset.update(&input, &screen, ui, field.as_ref(), targets.as_ref())
         } else {
             xem_assist::headset::Effects { aim: self.headset.aim(&input, &screen), ..Default::default() }
         };
@@ -481,8 +480,8 @@ impl XemApp {
                 Some(xem_core::assist::Intent::Walk { to, .. }) => Some(*to),
                 _ => None,
             };
-            let marks = if settings.assisted.gestures { xem_assist::overlay::marks(ui, effects.aim, field.as_ref(), destination) } else { vec![] };
-            renderer.overlay.room = xem_assist::draw::room(&marks, &screen, &self.headset.key_marks(ui));
+            let marks = if settings.assisted.gestures { xem_assist::overlay::marks(ui, effects.aim, field.as_ref(), destination, targets.as_ref()) } else { vec![] };
+            renderer.overlay.room = xem_assist::draw::room(&marks, &screen, &self.headset.key_marks(ui, targets.as_ref()));
             renderer.overlay.style = xem_render::glass::Style { reduced_transparency: settings.assisted.reduced_transparency };
             if renderer.panel_visible && let Some(panel) = renderer.panel() {
                 let quad = render::xr_panel_quad(panel.size());

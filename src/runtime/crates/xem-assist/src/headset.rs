@@ -199,8 +199,8 @@ impl Headset {
     }
 
     /// The keys beside the screen this frame: a control deck's (held ones
-    /// lit), else a shop list's quantity keys.
-    pub fn key_marks(&self, ui: Context) -> Vec<crate::draw::KeyMark> {
+    /// lit), else a shop list's quantity keys or a battle's target list.
+    pub fn key_marks(&self, ui: Context, targets: Option<&Targets>) -> Vec<crate::draw::KeyMark> {
         use xem_render::glass::State;
         let state = |i: usize, active: bool| if active { State::Active } else if self.hovered_key == Some(i as u32) { State::Hover } else { State::Normal };
         match crate::arcade::deck(ui) {
@@ -208,9 +208,8 @@ impl Headset {
                 label: key.label.to_string(),
                 state: state(i, key.hold && key.actions.iter().all(|a| self.arcade.toggled.contains(a))),
             }).collect(),
-            None if crate::overlay::quantity_keys(ui) => crate::overlay::QuantityKey::ALL.iter().enumerate()
-                .map(|(i, key)| crate::draw::KeyMark { label: key.label().to_string(), state: state(i, false) }).collect(),
-            None => vec![],
+            None => crate::overlay::side_keys(ui, targets).into_iter().enumerate()
+                .map(|(i, key)| crate::draw::KeyMark { label: key.label, state: state(i, key.lit) }).collect(),
         }
     }
 
@@ -223,14 +222,11 @@ impl Headset {
 
     /// One frame: gestures recognised and resolved in the game's context
     /// (`field` and `targets` as read this frame). Gestures act on the game
-    /// only while settings are closed; app gestures act always.
+    /// only while settings are closed; app gestures act always. A tap or a
+    /// pinch aimed at a key beside the picture (a control deck's, a shop's
+    /// quantity keys, a battle's target list) is that key's, and nothing
+    /// else's.
     pub fn update(&mut self, input: &Input, screen: &Screen, ui: Context, field: Option<&Field>, targets: Option<&Targets>) -> Effects {
-        self.update_with_keys(input, screen, ui, field, targets, &[])
-    }
-
-    /// [`Headset::update`] with control deck keys beside the picture: a tap
-    /// or a pinch aimed at one is that key's, and nothing else's.
-    pub fn update_with_keys(&mut self, input: &Input, screen: &Screen, ui: Context, field: Option<&Field>, targets: Option<&Targets>, keys: &[(u32, Quad)]) -> Effects {
         let mut effects = Effects { aim: self.aim(input, screen), ..Effects::default() };
         // Focus lost: everything pending is dropped, and the game pauses.
         if !input.focused {
@@ -260,14 +256,8 @@ impl Headset {
         // A control deck (Battling, the world map) takes the game's
         // gestures and its keys beside the screen.
         let deck = crate::arcade::deck(ui).filter(|_| !self.settings_open);
-        let deck_keys;
-        let keys = match deck {
-            Some(deck) => {
-                deck_keys = crate::draw::side_keys(screen, crate::arcade::keys(deck).len());
-                &deck_keys[..]
-            }
-            None => keys,
-        };
+        let side_keys = if deck.is_some() { vec![] } else { crate::overlay::side_keys(ui, targets) };
+        let keys = crate::draw::side_keys(screen, deck.map_or(side_keys.len(), |deck| crate::arcade::keys(deck).len()));
         // A tap or pinch aimed at a deck key is the key's.
         let aimed_key = ray(self.source, input).and_then(|(origin, direction)| {
             keys.iter().filter_map(|(key, quad)| quad.hit(origin, direction).map(|(_, t)| (t, *key))).min_by(|a, b| a.0.total_cmp(&b.0)).map(|(_, key)| key)
@@ -282,7 +272,7 @@ impl Headset {
                             let played = self.arcade.key(deck, key as usize);
                             effects.outs.extend(played.presses.into_iter().map(|actions| Out::Press { actions }));
                         }
-                        None => effects.outs.push(Out::Key { key }),
+                        None => effects.outs.extend(side_keys.get(key as usize).map(|k| k.out.clone())),
                     }
                 }
                 !pressed

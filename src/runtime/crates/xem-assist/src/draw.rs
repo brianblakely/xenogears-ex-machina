@@ -1,14 +1,14 @@
 //! The assisted controls' marks and touch controls as Seraph Glass widgets
 //! (`xem_render::glass`), for every host that draws them.
 use crate::headset::{Pose, Quad, Screen};
-use crate::overlay::{Kind, Mark, QuantityKey};
+use crate::overlay::{Kind, Mark};
 use crate::touch::Rect;
 use xem_render::glam::{Mat4, Vec2, Vec3};
 use xem_render::glass::{Icon, State, Widget};
 
 /// The widgets' texture size in pixels.
 pub const WIDGET_PIXELS: u32 = 128;
-/// The quantity keys beside a headset's screen: size in metres and the gap.
+/// The keys beside a headset's screen: size in metres and the gap.
 const KEY_SIZE: (f32, f32) = (0.22, 0.11);
 const KEY_GAP: f32 = 0.04;
 
@@ -23,11 +23,6 @@ pub fn side_keys(screen: &Screen, count: usize) -> Vec<(u32, Quad)> {
             + up * (middle - i as f32) * (KEY_SIZE.1 + KEY_GAP);
         (i as u32, Quad { pose: Pose { position, orientation: screen.quad.pose.orientation }, size: KEY_SIZE })
     }).collect()
-}
-
-/// The quantity keys' quads.
-pub fn quantity_keys(screen: &Screen) -> Vec<(u32, Quad)> {
-    side_keys(screen, QuantityKey::ALL.len())
 }
 
 /// A key to draw beside the screen: its label and state.
@@ -83,6 +78,7 @@ pub fn mark_widget(kind: crate::overlay::Kind) -> xem_render::glass::Widget {
         }),
         crate::overlay::Kind::Destination => Widget::Destination,
         crate::overlay::Kind::Pages { count, current } => Widget::Pages { count, current },
+        crate::overlay::Kind::Region => Widget::Region,
     }
 }
 

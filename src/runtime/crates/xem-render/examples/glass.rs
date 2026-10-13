@@ -27,15 +27,19 @@ fn main() {
         Widget::Key(Icon::Plus, State::Normal),
         Widget::Key(Icon::Minus, State::Pressed),
         Widget::Key(Icon::Text("JUMP".into()), State::Active),
+        Widget::Region,
+        Widget::Key(Icon::Text("FOE 3".into()), State::Active),
+        Widget::Key(Icon::Text("ALLY 2".into()), State::Normal),
     ];
     let columns = 8u32;
-    let rows = (widgets.len() as u32).div_ceil(columns) * 3;
+    let band_rows = (widgets.len() as u32).div_ceil(columns);
+    let rows = band_rows * 3;
     let (width, height) = (columns * size, rows * size);
     let mut sheet = vec![0u8; (width * height * 4) as usize];
     for (band, (backdrop, style)) in [([18u8, 20, 26], Style::default()), ([150, 160, 150], Style::default()), ([18, 20, 26], Style { reduced_transparency: true })].into_iter().enumerate() {
         for (i, widget) in widgets.iter().enumerate() {
             let image = draw(widget, size, style);
-            let (cx, cy) = ((i as u32 % columns) * size, (band as u32 * 2 + i as u32 / columns) * size);
+            let (cx, cy) = ((i as u32 % columns) * size, (band as u32 * band_rows + i as u32 / columns) * size);
             for y in 0..size {
                 for x in 0..size {
                     let s = &image[((y * size + x) * 4) as usize..][..4];

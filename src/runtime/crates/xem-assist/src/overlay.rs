@@ -1,12 +1,15 @@
 //! What the assisted controls show over the game (as Seraph Glass widgets,
 //! `xem_render::glass`), the same in a headset and on a touch screen: the
 //! live cursor and the committed destination (related silhouettes, never
-//! the same), the battle ring's page mark, and the shop's quantity keys
-//! (outside the game's picture). Positions are the game screen's pixels
+//! the same), the battle ring's page mark, the region a swipe scrolls, and
+//! the keys beside the picture (a shop's quantity keys, a battle's target
+//! list). Positions are the game screen's pixels
 //! (320x224, with the wider framing's sides); hosts place them on their
 //! picture or virtual screen.
+use crate::dispatch::Out;
 use xem_core::context::Context;
 use xem_core::field::{Field, Reach, V3};
+use xem_core::menu::Targets;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kind {
@@ -18,6 +21,8 @@ pub enum Kind {
     Destination,
     /// The battle ring's pages: `current` of `count`.
     Pages { count: u8, current: u8 },
+    /// The list a swipe up or down scrolls now.
+    Region,
 }
 
 /// A mark: flat on the screen at `centre`, or lying on the floor (its
@@ -80,9 +85,14 @@ fn floor(kind: Kind, field: &Field, point: V3, radius: f32) -> Option<Mark> {
 }
 
 /// The marks for this frame: the cursor where `aim` points, the
-/// destination of the assist under way (`destination`), the ring's pages.
-pub fn marks(ui: Context, aim: Option<(f32, f32)>, field: Option<&Field>, destination: Option<V3>) -> Vec<Mark> {
+/// destination of the assist under way (`destination`), the ring's pages,
+/// the list a swipe would scroll.
+pub fn marks(ui: Context, aim: Option<(f32, f32)>, field: Option<&Field>, destination: Option<V3>, targets: Option<&Targets>) -> Vec<Mark> {
     let mut marks = Vec::new();
+    if let Some((x0, y0, x1, y1)) = aim.zip(targets).and_then(|(aim, targets)| crate::dispatch::receiving_region(ui, targets, aim)) {
+        let pad = 3.0;
+        marks.push(flat(Kind::Region, ((x0 + x1) / 2.0, (y0 + y1) / 2.0), ((x1 - x0) / 2.0 + pad, (y1 - y0) / 2.0 + pad)));
+    }
     if let (Some(field), Some(point)) = (field, destination) {
         marks.extend(floor(Kind::Destination, field, point, FLOOR_RADIUS * 1.2));
     }
@@ -110,6 +120,32 @@ pub fn quantity_keys(ui: Context) -> bool {
     matches!(ui, Context::Menu { quantities: true, .. })
 }
 
+/// A key beside the picture: its label, what aiming a tap at it does, and
+/// whether it is lit (the target selected now).
+#[derive(Clone, Debug, PartialEq)]
+pub struct SideKey {
+    pub label: String,
+    pub out: Out,
+    pub lit: bool,
+}
+
+/// The keys beside the picture outside a control deck: a shop list's
+/// quantity keys, or a battle's targets as a list (slots 0-2 the party,
+/// the rest the enemies), for targets that overlap or hide one another.
+pub fn side_keys(ui: Context, targets: Option<&Targets>) -> Vec<SideKey> {
+    if quantity_keys(ui) {
+        return QuantityKey::ALL.iter().enumerate()
+            .map(|(i, key)| SideKey { label: key.label().to_string(), out: Out::Key { key: i as u32 }, lit: false }).collect();
+    }
+    let Some(targets) = targets.filter(|t| t.what == "battle_targets") else { return vec![] };
+    let (mut ally, mut foe) = (0, 0);
+    targets.entries.iter().enumerate().filter_map(|(index, entry)| {
+        let ground = entry.ground?;
+        let label = if ground.slot < 3 { ally += 1; format!("ALLY {ally}") } else { foe += 1; format!("FOE {foe}") };
+        ground.selectable.then(|| SideKey { label, out: Out::Select { index, confirm: true }, lit: targets.selected == Some(index) })
+    }).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -117,11 +153,11 @@ mod tests {
     #[test]
     fn the_ring_shows_its_page_and_menus_a_flat_cursor() {
         let ring = Context::Battle { page: 9, attack: false, ap: 6, list: false, targeting: false };
-        let marks = marks(ring, Some((50.0, 60.0)), None, None);
+        let marks = marks(ring, Some((50.0, 60.0)), None, None, None);
         assert_eq!(marks[0].kind, Kind::Pages { count: 2, current: 1 });
         assert_eq!(marks[1].kind, Kind::Cursor);
         assert_eq!(marks[1].centre, (50.0, 60.0));
-        assert!(super::marks(Context::None, Some((1.0, 1.0)), None, None).is_empty());
+        assert!(super::marks(Context::None, Some((1.0, 1.0)), None, None, None).is_empty());
         assert!(quantity_keys(Context::Menu { screen: 4, cursor: 2, choice: 0, choices: 0, switch: false, quantities: true }));
     }
 }

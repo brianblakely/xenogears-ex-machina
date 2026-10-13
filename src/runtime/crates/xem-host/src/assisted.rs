@@ -108,8 +108,7 @@ impl Assisted {
         let context = game.pad_context();
         let field = game.field();
         let targets = game.targets();
-        let keys = if overlay::quantity_keys(context.ui) { xem_assist::draw::quantity_keys(screen) } else { vec![] };
-        let effects = self.headset.update_with_keys(input, screen, context.ui, field.as_ref(), targets.as_ref(), &keys);
+        let effects = self.headset.update(input, screen, context.ui, field.as_ref(), targets.as_ref());
         // What a control deck holds (its stick, its held keys).
         player.touch = effects.held.clone();
         let inspectable = context.field.field && !context.field.menu;
@@ -126,8 +125,9 @@ impl Assisted {
         let ui = game.pad_context().ui;
         let field = game.field();
         let aim = self.headset.aim(input, screen);
-        let marks = overlay::marks(ui, aim, field.as_ref(), game.destination());
-        xem_assist::draw::room(&marks, screen, &self.headset.key_marks(ui))
+        let targets = game.targets();
+        let marks = overlay::marks(ui, aim, field.as_ref(), game.destination(), targets.as_ref());
+        xem_assist::draw::room(&marks, screen, &self.headset.key_marks(ui, targets.as_ref()))
     }
 
     /// The widgets' style from the settings.

@@ -931,7 +931,7 @@ impl View {
         for key in std::mem::take(&mut self.quantity) {
             let _ = game.command(&serde_json::json!({"cmd": "shop_quantity", "op": key.op()}));
         }
-        self.marks = xem_assist::overlay::marks(ui, None, field.as_ref(), game.destination());
+        self.marks = xem_assist::overlay::marks(ui, None, field.as_ref(), game.destination(), None);
         self.player.touch = self.deck.actions();
     }
 

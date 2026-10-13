@@ -238,7 +238,8 @@ fn swipe(direction: Swipe, ui: Context, aim: Aim, targets: Option<&Targets>) -> 
     }
 }
 
-fn bounds_contain(targets: &Targets, aim: (f32, f32)) -> bool {
+/// The entries' bounds: left, top, right, bottom.
+fn bounds(targets: &Targets) -> (f32, f32, f32, f32) {
     let (mut x0, mut y0, mut x1, mut y1) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
     for e in &targets.entries {
         x0 = x0.min(e.rect.x);
@@ -246,7 +247,25 @@ fn bounds_contain(targets: &Targets, aim: (f32, f32)) -> bool {
         x1 = x1.max(e.rect.x + e.rect.width);
         y1 = y1.max(e.rect.y + e.rect.height);
     }
+    (x0, y0, x1, y1)
+}
+
+fn bounds_contain(targets: &Targets, aim: (f32, f32)) -> bool {
+    let (x0, y0, x1, y1) = bounds(targets);
     aim.0 >= x0 && aim.0 < x1 && aim.1 >= y0 && aim.1 < y1
+}
+
+/// The list a thumb swipe up or down would scroll with the gaze on `aim`
+/// (its bounds), as [`dispatch`] decides it: a menu's list (on a
+/// character screen only under the gaze; beside it the swipe changes the
+/// character) or a dialogue's choice.
+pub fn receiving_region(ui: Context, targets: &Targets, aim: (f32, f32)) -> Option<(f32, f32, f32, f32)> {
+    let scrolls = match ui {
+        Context::Menu { switch, .. } => targets.what != "yes_no" && (!switch || targets.at(aim).is_some() || bounds_contain(targets, aim)),
+        Context::Dialogue { choice: Some(_) } => true,
+        _ => false,
+    };
+    (scrolls && !targets.entries.is_empty()).then(|| bounds(targets))
 }
 
 fn opposite(action: GameAction) -> GameAction {
@@ -294,6 +313,18 @@ mod tests {
     fn list() -> Targets {
         let rect = |y: f32| Rect { x: 100.0, y, width: 100.0, height: 14.0 };
         Targets { what: "dialogue_choice", entries: vec![Entry { rect: rect(100.0), select: None, ground: None }, Entry { rect: rect(114.0), select: None, ground: None }], selected: Some(0), steps: Steps::Ring { count: 2, next: GameAction::Down } }
+    }
+
+    #[test]
+    fn the_receiving_region_is_the_list_a_swipe_scrolls() {
+        let menu = |switch| Context::Menu { screen: 0, cursor: 0, choice: 0, choices: 2, switch, quantities: false };
+        let bounds = Some((100.0, 100.0, 200.0, 128.0));
+        assert_eq!(receiving_region(menu(false), &list(), (10.0, 10.0)), bounds, "the only list, wherever the gaze is");
+        assert_eq!(receiving_region(menu(true), &list(), (150.0, 110.0)), bounds, "on a character screen, under the gaze");
+        assert_eq!(receiving_region(menu(true), &list(), (10.0, 10.0)), None, "beside it a swipe changes the character");
+        let yes_no = Targets { what: "yes_no", steps: Steps::Direct, ..list() };
+        assert_eq!(receiving_region(menu(false), &yes_no, (150.0, 110.0)), None);
+        assert_eq!(receiving_region(Context::Dialogue { choice: Some(xem_core::context::Choice { count: 2, index: 0 }) }, &list(), (0.0, 0.0)), bounds);
     }
 
     #[test]

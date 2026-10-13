@@ -103,8 +103,7 @@ impl Player {
         let ui = self.session.runtime.context();
         let field = (self.session.runtime.services().mode == Some(1)).then(|| xem_core::field::Field::read(self.session.runtime.memory())).flatten();
         let targets = self.session.runtime.targets();
-        let keys = if xem_assist::overlay::quantity_keys(ui) { xem_assist::draw::quantity_keys(&self.screen) } else { vec![] };
-        let effects = self.headset.update_with_keys(&input, &self.screen, ui, field.as_ref(), targets.as_ref(), &keys);
+        let effects = self.headset.update(&input, &self.screen, ui, field.as_ref(), targets.as_ref());
         self.input.touch = effects.held.clone();
         xem_assist::headset::carry(effects.outs, &mut Carried { session: &mut self.session, input: &mut self.input }, &mut self.scaling);
         if self.headset.pauses.paused() {
@@ -270,7 +269,7 @@ fn shop_commands_and_quantity_keys_take_gaze_and_taps() {
     assert_eq!(player.context()["quantities"], true, "{}", player.context());
     // The keys stand beside the picture: the gaze reaches them through the
     // screen's plane, past its edge.
-    let keys = xem_assist::draw::quantity_keys(&player.screen);
+    let keys = xem_assist::draw::side_keys(&player.screen, xem_assist::overlay::QuantityKey::ALL.len());
     let gaze_at = |player: &mut Player, i: usize, name: &str| {
         let local = keys[i].1.pose.position - player.screen.quad.pose.position;
         let x = (local.x / player.screen.quad.size.0 + 0.5) * 320.0;
@@ -414,6 +413,34 @@ fn battle_targets_take_swipes_and_gaze() {
     assert_eq!(player.context()["targeting"], false, "confirmed: {}", player.context());
     let cursor = run(&mut player.session, json!({"cmd": "inspect", "path": "battle_target_cursor_slot"}));
     assert_eq!(cursor, json!(wanted), "the cursor reached entry {index}");
+}
+
+/// A battle's target list beside the screen (for targets that overlap or
+/// hide one another): a tap with the gaze on a key chooses its target the
+/// same way, the selected one lit.
+#[test]
+fn battle_target_list_beside_the_screen_takes_gaze_and_taps() {
+    let Some(mut player) = battle(false) else { return };
+    player.gesture("swipe-down", None);
+    player.rest(60);
+    player.gesture("tap", None);
+    player.rest(40);
+    assert_eq!(player.context()["targeting"], true, "{}", player.context());
+    let targets = player.session.runtime.targets().unwrap();
+    let keys = xem_assist::overlay::side_keys(player.session.runtime.context(), Some(&targets));
+    let labels: Vec<_> = keys.iter().map(|k| (k.label.as_str(), k.lit)).collect();
+    assert_eq!(labels, [("ALLY 1", true), ("ALLY 2", false), ("ALLY 3", false), ("FOE 1", false)]);
+    let quads = xem_assist::draw::side_keys(&player.screen, keys.len());
+    let local = quads[1].1.pose.position - player.screen.quad.pose.position;
+    let aim = ((local.x / player.screen.quad.size.0 + 0.5) * 320.0, (0.5 - local.y / player.screen.quad.size.1) * 224.0);
+    player.gesture("tap", Some(aim));
+    for _ in 0..120 {
+        if player.context()["targeting"] != true { break; }
+        player.rest(1);
+    }
+    assert_eq!(player.context()["targeting"], false, "confirmed: {}", player.context());
+    let cursor = run(&mut player.session, json!({"cmd": "inspect", "path": "battle_target_cursor_slot"}));
+    assert_eq!(cursor, json!(1), "Elly, the second ally");
 }
 
 /// The world map's control deck: a pinch captures the stick, the hand's
