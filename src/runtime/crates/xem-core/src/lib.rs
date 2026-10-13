@@ -6,6 +6,7 @@
 
 pub mod action;
 pub mod assist;
+pub mod binaural;
 pub mod bios;
 pub mod clock;
 pub mod context;

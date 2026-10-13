@@ -23,6 +23,9 @@ struct Options {
     bios: Option<PathBuf>,
     /// Write the SPU's output as a 16-bit stereo 44.1 kHz WAV file.
     wav: Option<PathBuf>,
+    /// The Binaural sound mode's settings (`--binaural` alone: the
+    /// defaults), with the game in Stereo: the WAV file holds its mix.
+    binaural: Option<xem_core::binaural::Config>,
     screenshot: Option<PathBuf>,
     /// The whole 1024x512 VRAM as a PNG at the end (15-bit colours).
     vram: Option<PathBuf>,
@@ -45,6 +48,7 @@ fn main() -> ExitCode {
         cards: None,
         bios: None,
         wav: None,
+        binaural: None,
         screenshot: None,
         cd_trace: false,
         inputs: None,
@@ -62,6 +66,17 @@ fn main() -> ExitCode {
             "--cards" => options.cards = args.next().map(PathBuf::from),
             "--bios" => options.bios = args.next().map(PathBuf::from),
             "--wav" => options.wav = args.next().map(PathBuf::from),
+            "--binaural" => options.binaural = Some(xem_core::binaural::Config { enabled: true, ..Default::default() }),
+            "--binaural-config" => {
+                let parsed = args.next().map(|text| serde_json::from_str::<xem_core::binaural::Config>(&text));
+                match parsed {
+                    Some(Ok(config)) if config.validate().is_ok() => options.binaural = Some(config),
+                    _ => {
+                        eprintln!("--binaural-config takes the settings as JSON, e.g. '{{\"enabled\":true,\"music_immersion\":100}}'");
+                        return ExitCode::FAILURE;
+                    }
+                }
+            }
             "--screenshot" => options.screenshot = args.next().map(PathBuf::from),
             "--vram" => options.vram = args.next().map(PathBuf::from),
             "--inputs" => options.inputs = args.next().map(PathBuf::from),
@@ -71,7 +86,8 @@ fn main() -> ExitCode {
             _ => {
                 eprintln!(
                     "usage: xem-headless --disc <chd|cue|bin> [--frames N | --control] [--stubs FILE] \
-                     [--screenshot out.png] [--cd-trace] [--cards DIR] [--bios FILE] [--wav FILE]"
+                     [--screenshot out.png] [--cd-trace] [--cards DIR] [--bios FILE] [--wav FILE] \
+                     [--binaural | --binaural-config JSON]"
                 );
                 return ExitCode::FAILURE;
             }
@@ -110,6 +126,11 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
     eprintln!("disc {} ({}), {}", known.number(), known.serial(), identity.boot_path);
     if options.cd_trace {
         session.runtime.services().cd.sector_log = Some(Vec::new());
+    }
+    if let Some(config) = options.binaural {
+        // As the hosts do: the game in its Stereo, the mix presented.
+        session.set_sound_mode(1)?;
+        session.set_binaural(config);
     }
 
     if options.control {
@@ -224,10 +245,14 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
         let peak = audio.iter().map(|s| s.unsigned_abs()).max().unwrap_or(0);
         println!("audio: {} samples, peak {peak}, {}", audio.len() / 2, path.display());
     }
+
     if let Some(path) = &options.screenshot {
         let (width, height, rgba) = services.gpu.display_rgba8();
         write_png(path, width, height, &rgba)?;
         println!("screenshot: {width}x{height} {}", path.display());
+    }
+    if options.binaural.is_some() {
+        println!("binaural: {}", session.execute(&serde_json::json!({"cmd": "binaural"})));
     }
     Ok(())
 }

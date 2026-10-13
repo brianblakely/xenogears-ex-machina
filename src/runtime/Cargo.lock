@@ -5239,12 +5239,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "xem-binaural"
+version = "0.1.0"
+dependencies = [
+ "xem-spu",
+]
+
+[[package]]
 name = "xem-core"
 version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "xem-binaural",
  "xem-disc",
  "xem-gpu",
  "xem-media",
@@ -5300,6 +5308,7 @@ dependencies = [
  "pollster",
  "serde_json",
  "xem-assist",
+ "xem-binaural",
  "xem-core",
  "xem-disc",
  "xem-game",

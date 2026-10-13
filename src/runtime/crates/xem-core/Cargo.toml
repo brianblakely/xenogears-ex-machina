@@ -13,5 +13,6 @@ serde_json.workspace = true
 sha2 = "=0.11.0"
 xem-gpu = { path = "../xem-gpu" }
 xem-spu = { path = "../xem-spu" }
+xem-binaural = { path = "../xem-binaural" }
 xem-disc = { path = "../xem-disc" }
 xem-media = { path = "../xem-media" }

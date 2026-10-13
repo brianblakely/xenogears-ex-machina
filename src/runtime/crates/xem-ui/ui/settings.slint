@@ -566,7 +566,14 @@ component ControlRow inherits HorizontalLayout {
 
 export component SettingsPanel inherits Window {
     in-out property <float> master-volume;
+    // 0 Mono, 1 Stereo, 2 Wide (the game's own modes), 3 Binaural.
     in-out property <int> audio-output;
+    // The Binaural mode's options (xem_settings::Binaural).
+    in-out property <bool> binaural-music: true;
+    in-out property <bool> binaural-effects: true;
+    in-out property <float> binaural-immersion: 70;
+    in-out property <bool> binaural-head;
+    in-out property <bool> binaural-bypass;
     in-out property <int> scale;
     in-out property <int> filter;
     in-out property <bool> show-fps;
@@ -687,6 +694,8 @@ export component SettingsPanel inherits Window {
     callback rewind-held(bool);
     callback master-volume-edited(int);
     callback audio-output-edited(int);
+    // A Binaural option by name (music, effects, immersion, head, bypass) and value.
+    callback binaural-edited(string, int);
     callback scale-edited(int);
     callback filter-edited(int);
     callback show-fps-edited(bool);
@@ -853,8 +862,39 @@ export component SettingsPanel inherits Window {
                                 Divider { }
                                 Row {
                                     label: "Sound mode";
-                                    help: root.audio-output == 0 ? "The game's Mono: every sound from the centre." : root.audio-output == 1 ? "The game's Stereo." : "The game's Wide-Stereo: its right side in opposite phase.";
-                                    Segmented { accessible-label: "Sound mode"; options: ["Mono", "Stereo", "Wide"]; current <=> root.audio-output; selected(index) => { root.audio-output-edited(index); } }
+                                    help: root.audio-output == 0 ? "The game's Mono: every sound from the centre." : root.audio-output == 1 ? "The game's Stereo." : root.audio-output == 2 ? "The game's Wide-Stereo: its right side in opposite phase." : "For headphones: the music around you and the world's sounds from where they are, each as loud as the game makes it. The game plays in Stereo.";
+                                    Segmented { accessible-label: "Sound mode"; options: ["Mono", "Stereo", "Wide", "Binaural"]; current <=> root.audio-output; selected(index) => { root.audio-output-edited(index); } }
+                                }
+                                if root.audio-output == 3: Divider { }
+                                if root.audio-output == 3: ToggleRow {
+                                    label: "Spatial music";
+                                    help: "The music's own parts placed around you: the melody and the bass ahead, the rest beside and behind. Off: its stereo mix.";
+                                    checked <=> root.binaural-music;
+                                    toggled(on) => { root.binaural-edited("music", on ? 1 : 0); }
+                                }
+                                if root.audio-output == 3: ToggleRow {
+                                    label: "Positional effects";
+                                    help: "Sounds of things in the world come from where they are, turning with the camera. Others keep their stereo mix.";
+                                    checked <=> root.binaural-effects;
+                                    toggled(on) => { root.binaural-edited("effects", on ? 1 : 0); }
+                                }
+                                if root.audio-output == 3: SliderRow {
+                                    label: "Music immersion";
+                                    help: "How far the music spreads: from its stereo arc ahead to all around you.";
+                                    value-text: "\{round(root.binaural-immersion)}%";
+                                    Slider { accessible-label: "Music immersion"; minimum: 0; maximum: 100; value <=> root.binaural-immersion; changed(value) => { root.binaural-edited("immersion", round(value)); } }
+                                }
+                                if root.audio-output == 3: ToggleRow {
+                                    label: "Music stays as you turn";
+                                    help: "In a headset the music's stage stays where it is when you turn your head. Off: it turns with you.";
+                                    checked <=> root.binaural-head;
+                                    toggled(on) => { root.binaural-edited("head", on ? 1 : 0); }
+                                }
+                                if root.audio-output == 3: ToggleRow {
+                                    label: "Compare with Stereo";
+                                    help: "Hear the game's own Stereo mix instead, to compare; Binaural stays chosen.";
+                                    checked <=> root.binaural-bypass;
+                                    toggled(on) => { root.binaural-edited("bypass", on ? 1 : 0); }
                                 }
                             }
 
@@ -1474,6 +1514,10 @@ export component SettingsPanel inherits Window {
                                 title: "Built with Slint";
                                 description: "Its interface toolkit, under the Slint Royalty-free License 2.0.";
                                 AboutSlint { max-height: 120px; }
+                            }
+                            if root.selected-section == 6: Card {
+                                title: "Binaural sound";
+                                description: "Places sounds with the MIT Media Lab's KEMAR head-related transfer functions: B. Gardner and K. Martin, \"HRTF Measurements of a KEMAR Dummy-Head Microphone\", MIT Media Lab, 1994. Copyright 1994 MIT Media Laboratory, provided free with no restrictions on use.";
                             }
                         }
                     }

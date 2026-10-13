@@ -546,6 +546,20 @@ impl<M: GameModule> Runtime<M> {
         services.each_device(self.module.memory(), |device, context| device.advance(context));
     }
 
+    /// Shows the Binaural presentation the scene the frame left: the
+    /// listener, the positional emitters, whether a movie plays (its decoder
+    /// ran within half a second). Reads only.
+    pub fn update_binaural(&mut self) {
+        // SAFETY: no game export runs here; services and module memory are disjoint.
+        let services = unsafe { &mut *self.services };
+        let now = services.clock.now;
+        let movie = services.mdec.decoded_at().is_some_and(|at| now.saturating_sub(at) < crate::clock::CPU_HZ / 2);
+        let mode = services.mode;
+        if let Some(presenter) = services.spu.binaural_mut() {
+            presenter.update_scene(&*self.module.memory(), mode, movie);
+        }
+    }
+
     pub fn set_external_music(&mut self, enabled: bool) {
         let services = self.services();
         if services.clock.external_audio == enabled { return; }

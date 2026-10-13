@@ -358,6 +358,13 @@ impl GameView {
         self.first_person.is_some()
     }
 
+    /// The first-person view's axes (right, down, forward) in the game
+    /// camera's view space, while it looks around: where a listener faces
+    /// (the Binaural mode's first-person listener).
+    pub fn listener_axes(&mut self) -> Option<[[f32; 3]; 3]> {
+        self.look().map(|look| look.axes)
+    }
+
     /// Turns the first-person view by `yaw` radians to the right and
     /// `pitch` up (within 80 degrees of level).
     pub fn look_around(&mut self, yaw: f32, pitch: f32) {

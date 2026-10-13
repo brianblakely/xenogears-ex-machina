@@ -20,6 +20,10 @@ pub use controls::{AppAction, AppBinding, AppInput, AppRequest, APP_ACTIONS};
 
 pub const MAX_VOLUME: u8 = 100;
 pub use xem_core::time::{FastForwardRate, FAST_FORWARD_RATES, DEFAULT_REWIND_INTERVAL_SECONDS, MAX_REWIND_INTERVAL_SECONDS, DEFAULT_REWIND_HISTORY_SECONDS, MAX_REWIND_HISTORY_SECONDS};
+/// The Binaural sound mode's settings (`xem_core::binaural::Config`): the
+/// mode is on with `enabled`; [`Settings::audio_output`] keeps the original
+/// mode it returns to.
+pub use xem_core::binaural::Config as Binaural;
 
 /// The game's own sound mode, as its Sound screen chooses it (the sound
 /// driver's output modes; the host plays what the console outputs).
@@ -120,7 +124,11 @@ impl Default for Assisted {
 #[serde(default, deny_unknown_fields)]
 pub struct Settings {
     pub master_volume: u8,
+    /// The game's own sound mode; under Binaural, the one it returns to.
     pub audio_output: AudioOutput,
+    /// The Binaural sound mode (headphones): on, the game runs in Stereo and
+    /// the hosts present its voices binaurally.
+    pub binaural: Binaural,
     pub presentation: Presentation,
     pub graphics: Graphics,
     /// The game's bindings: the inputs that hold each typed action.
@@ -143,6 +151,7 @@ impl Default for Settings {
         Self {
             master_volume: 80,
             audio_output: AudioOutput::default(),
+            binaural: Binaural::default(),
             presentation: Presentation::default(),
             graphics: Graphics::default(),
             game_bindings: GameBindings::default(),
@@ -172,7 +181,11 @@ pub enum SettingChange {
     RewindIntervalSeconds(u32),
     RewindHistorySeconds(u32),
     MasterVolume(i32),
+    /// An original sound mode: Binaural, if on, goes off.
     AudioOutput(AudioOutput),
+    /// The Binaural block, whole: on, off (back to the original mode
+    /// `audio_output` keeps), and its options.
+    Binaural(Binaural),
     Scale(Scale),
     Filter(Filter),
     ShowFps(bool),
@@ -224,6 +237,13 @@ impl fmt::Display for Rejected {
 impl std::error::Error for Rejected {}
 
 impl Settings {
+    /// The game's sound mode the hosts run it in (`Session::set_sound_mode`):
+    /// Stereo under Binaural, whose placement reads the Stereo pan law;
+    /// else the original mode chosen.
+    pub fn game_sound_mode(&self) -> u32 {
+        if self.binaural.enabled { AudioOutput::Stereo.game_mode() } else { self.audio_output.game_mode() }
+    }
+
     fn with(&self, change: &SettingChange) -> Result<Settings, String> {
         let mut next = self.clone();
         match change {
@@ -241,7 +261,11 @@ impl Settings {
                     .filter(|v| *v <= MAX_VOLUME)
                     .ok_or_else(|| format!("volume must be 0-{MAX_VOLUME}"))?;
             }
-            SettingChange::AudioOutput(mode) => next.audio_output = *mode,
+            SettingChange::AudioOutput(mode) => {
+                next.audio_output = *mode;
+                next.binaural.enabled = false;
+            }
+            SettingChange::Binaural(binaural) => next.binaural = *binaural,
             SettingChange::Scale(scale) => next.presentation.scale = *scale,
             SettingChange::Filter(filter) => next.presentation.filter = *filter,
             SettingChange::ShowFps(show) => next.presentation.show_fps = *show,
@@ -315,6 +339,7 @@ impl Settings {
         if self.master_volume > MAX_VOLUME {
             return Err(format!("volume must be 0-{MAX_VOLUME}"));
         }
+        self.binaural.validate()?;
         self.game_bindings.validate()?;
         for binding in self.app_bindings.values() { binding.validate()?; }
         let bindings: Vec<_> = self.app_bindings.iter().collect();
@@ -646,6 +671,33 @@ mod tests {
         assert_eq!(service.settings().game_bindings.play[&GameAction::Jump].keyboard, ["KeyJ"]);
         service.apply(SettingChange::ResetGameBindings).unwrap();
         assert_eq!(service.settings().game_bindings, GameBindings::default());
+    }
+
+    #[test]
+    fn binaural_runs_the_game_in_stereo_and_gives_back_the_original_mode() {
+        let mut service = SettingsService::with_defaults(MemoryStore::default());
+        service.apply(SettingChange::AudioOutput(AudioOutput::Wide)).unwrap();
+        assert_eq!(service.settings().game_sound_mode(), 2);
+        let on = Binaural { enabled: true, ..service.settings().binaural };
+        service.apply(SettingChange::Binaural(on)).unwrap();
+        assert_eq!(service.settings().game_sound_mode(), 1, "Stereo under Binaural, not Wide");
+        assert_eq!(service.settings().audio_output, AudioOutput::Wide, "the original preference is kept");
+        service.apply(SettingChange::Binaural(Binaural { enabled: false, ..on })).unwrap();
+        assert_eq!(service.settings().game_sound_mode(), 2, "disabling restores Wide");
+        // Choosing an original mode (the panel, the game's own Sound screen)
+        // ends Binaural.
+        service.apply(SettingChange::Binaural(on)).unwrap();
+        service.apply(SettingChange::AudioOutput(AudioOutput::Mono)).unwrap();
+        assert!(!service.settings().binaural.enabled);
+        assert_eq!(service.settings().game_sound_mode(), 0);
+        let rejected = service.apply(SettingChange::Binaural(Binaural { music_immersion: 101, ..on })).unwrap_err();
+        assert!(matches!(rejected, Rejected::Invalid { .. }));
+        // An old file without the block reads with its defaults, a bad value
+        // alone resets.
+        let (read, reset) = Settings::read(&serde_json::json!({"audio_output": "Mono", "binaural": {"enabled": true, "music_immersion": 400}})).unwrap();
+        assert!(read.binaural.enabled);
+        assert_eq!(read.binaural.music_immersion, Binaural::default().music_immersion);
+        assert_eq!(reset, ["binaural.music_immersion"]);
     }
 
     #[test]

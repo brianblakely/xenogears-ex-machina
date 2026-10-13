@@ -415,6 +415,43 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
 }
 
 #[test]
+fn binaural_is_a_fourth_sound_mode_with_its_options() {
+    use xem_settings::{AudioOutput, SettingChange};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let acks = Rc::new(RefCell::new(Vec::new()));
+    settings.borrow_mut().subscribe({
+        let acks = acks.clone();
+        move |ack| acks.borrow_mut().push(ack.change.clone())
+    });
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 560), 1.0).unwrap();
+    ui.update().unwrap();
+    assert!(ElementHandle::find_by_accessible_label(ui.component(), "Music immersion").next().is_none(), "only under Binaural");
+    ui.component().invoke_audio_output_edited(2);
+    ui.component().invoke_audio_output_edited(3);
+    ui.update().unwrap();
+    {
+        let current = settings.borrow();
+        assert!(current.settings().binaural.enabled);
+        assert_eq!(current.settings().audio_output, AudioOutput::Wide, "Wide is what disabling gives back");
+        assert_eq!(current.settings().game_sound_mode(), 1, "the game plays in Stereo");
+    }
+    assert_eq!(ui.component().get_audio_output(), 3);
+    element(&ui, "Music immersion", AccessibleRole::Slider);
+    ui.component().invoke_binaural_edited("immersion".into(), 40);
+    ui.component().invoke_binaural_edited("effects".into(), 0);
+    ui.component().invoke_binaural_edited("bypass".into(), 1);
+    let binaural = settings.borrow().settings().binaural;
+    assert_eq!((binaural.music_immersion, binaural.positional_effects, binaural.bypass, binaural.spatial_music), (40, false, true, true));
+    ui.component().invoke_audio_output_edited(1);
+    ui.update().unwrap();
+    assert!(!settings.borrow().settings().binaural.enabled, "an original mode ends Binaural");
+    assert_eq!(settings.borrow().settings().binaural.music_immersion, 40, "its options are kept");
+    assert!(acks.borrow().iter().all(|change| matches!(change, SettingChange::Binaural(_) | SettingChange::AudioOutput(_))));
+}
+
+#[test]
 fn graphics_choices_go_through_the_settings_service() {
     use xem_settings::{GraphicsProfile, SettingChange};
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");

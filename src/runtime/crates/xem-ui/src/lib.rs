@@ -420,7 +420,14 @@ fn index_of<T: PartialEq>(options: &[T], value: &T) -> i32 {
 /// Shows acknowledged settings in the panel.
 fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_master_volume(f32::from(settings.master_volume));
-    panel.set_audio_output(index_of(&AUDIO_OUTPUTS, &settings.audio_output));
+    // The game's own modes, then Binaural (the mode it returns to stays in
+    // `audio_output`).
+    panel.set_audio_output(if settings.binaural.enabled { AUDIO_OUTPUTS.len() as i32 } else { index_of(&AUDIO_OUTPUTS, &settings.audio_output) });
+    panel.set_binaural_music(settings.binaural.spatial_music);
+    panel.set_binaural_effects(settings.binaural.positional_effects);
+    panel.set_binaural_immersion(f32::from(settings.binaural.music_immersion));
+    panel.set_binaural_head(settings.binaural.head_tracked_music);
+    panel.set_binaural_bypass(settings.binaural.bypass);
     panel.set_scale(index_of(&SCALES, &settings.presentation.scale));
     panel.set_filter(index_of(&FILTERS, &settings.presentation.filter));
     panel.set_show_fps(settings.presentation.show_fps);
@@ -665,7 +672,32 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
     });
     panel.on_audio_output_edited({
         let apply = apply.clone();
-        move |index| apply(pick(&AUDIO_OUTPUTS, index).map(SettingChange::AudioOutput))
+        let settings = settings.clone();
+        move |index| {
+            if index == AUDIO_OUTPUTS.len() as i32 {
+                let binaural = settings.borrow().settings().binaural;
+                apply(Some(SettingChange::Binaural(xem_settings::Binaural { enabled: true, ..binaural })))
+            } else {
+                apply(pick(&AUDIO_OUTPUTS, index).map(SettingChange::AudioOutput))
+            }
+        }
+    });
+    panel.on_binaural_edited({
+        let apply = apply.clone();
+        let settings = settings.clone();
+        move |name, value| {
+            let mut binaural = settings.borrow().settings().binaural;
+            let on = value != 0;
+            match name.as_str() {
+                "music" => binaural.spatial_music = on,
+                "effects" => binaural.positional_effects = on,
+                "immersion" => binaural.music_immersion = value.clamp(0, 100) as u8,
+                "head" => binaural.head_tracked_music = on,
+                "bypass" => binaural.bypass = on,
+                _ => return,
+            }
+            apply(Some(SettingChange::Binaural(binaural)))
+        }
     });
     panel.on_scale_edited({
         let apply = apply.clone();

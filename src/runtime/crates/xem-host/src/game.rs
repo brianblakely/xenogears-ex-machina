@@ -36,6 +36,9 @@ pub struct Game {
     /// The view the field's characters keep moving in (see
     /// `Session::set_actor_view`), set by the presentation.
     actor_view: u32,
+    /// The listener's axes while the presentation looks from within the
+    /// scene (first-person inspection; `Session::set_listener_view`).
+    listener_view: Option<[[f32; 3]; 3]>,
 }
 
 impl Game {
@@ -75,6 +78,7 @@ impl Game {
             pacer: Default::default(),
             last_update: Instant::now(),
             actor_view: 0,
+            listener_view: None,
         };
         game.sync_time_settings(&xem_settings::Settings::default()).expect("valid interactive defaults");
         game
@@ -231,10 +235,13 @@ impl Game {
     }
 
     /// Runs a bounded batch of frames due by the wall clock with pad 1 holding
-    /// `buttons` and the game in the sound mode of `settings`, then queues
-    /// their sound at its master volume. Returns the frames run.
+    /// `buttons` and the game in the sound mode of `settings` (Stereo under
+    /// Binaural, which presents the sound), then queues their sound at its
+    /// master volume. Returns the frames run.
     pub fn update(&mut self, buttons: u16, settings: &xem_settings::Settings, mut focused: impl FnMut() -> bool) -> Result<u32, String> {
         self.sync_time_settings(settings)?;
+        self.session.set_binaural(settings.binaural);
+        self.session.set_listener_view(self.listener_view);
         if self.rewind_held.iter().any(|held| *held) {
             let now = Instant::now();
             if now >= self.rewind_next {
@@ -279,7 +286,7 @@ impl Game {
             if !self.scripted {
                 self.session.set_window_focus(focused(),settings.pause_on_focus_loss);
                 self.session.set_actor_view(self.actor_view)?;
-                self.session.set_sound_mode(settings.audio_output.game_mode())?;
+                self.session.set_sound_mode(settings.game_sound_mode())?;
             }
             if !self.session.frame().map_err(|trap| trap.to_string())? { break; }
             batch += 1;
@@ -370,6 +377,19 @@ impl Game {
     /// frame (`GameView::actor_view`; 0 the original's).
     pub fn want_actor_view(&mut self, view: u32) {
         self.actor_view = view;
+    }
+
+    /// The listener's axes while the presentation looks from within the
+    /// scene (`GameView::listener_axes`: first-person inspection), for the
+    /// Binaural mode.
+    pub fn want_listener_view(&mut self, axes: Option<[[f32; 3]; 3]>) {
+        self.listener_view = axes;
+    }
+
+    /// The headset's head in the presentation's reference space, for the
+    /// Binaural mode (none: tracking lost, the last stays).
+    pub fn set_head(&mut self, axes: Option<[[f32; 3]; 3]>) {
+        self.session.set_head(axes);
     }
 
     /// Ends the draw trace (the Original renderer shows the display as it

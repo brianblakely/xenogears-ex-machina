@@ -26,7 +26,9 @@
 //! - [`Spu::run`] advances exactly `samples` 44.1 kHz cycles, writing
 //!   interleaved L/R `i16` output only when a buffer is given. All state
 //!   (RAM written by reverb and capture, IRQs, envelopes) advances the same
-//!   either way.
+//!   either way. [`Spu::run_tapped`] also says what each output sample was
+//!   mixed from ([`TapFrame`]), for presentations that mix the voices
+//!   themselves; it changes nothing the SPU does.
 //! - [`Spu::save`] / [`Spu::load`] snapshot everything except the IRQ hook.
 //!
 //! # Register window
@@ -233,6 +235,30 @@ pub struct VoiceInfo {
     pub output: i16,
     /// Current left/right volume.
     pub volume: [i16; 2],
+}
+
+/// What one output sample was mixed from ([`Spu::run_tapped`]). The output
+/// is, as [`Spu::run`] mixes it, per side `s`: `sat(sat(m + cd[s]) * main[s] >> 15)`,
+/// where `m` is the sum over the voices of `voice * volume[s] >> 15`, plus
+/// `reverb[s]`, or 0 when muted.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct TapFrame {
+    /// Each voice's sample after its envelope, before its volume (VxOUTX);
+    /// 0 for a silent voice.
+    pub voice: [i16; VOICES],
+    /// The current volumes (left, right) each voice was mixed with.
+    pub volume: [[i16; 2]; VOICES],
+    /// The reverb unit's return, after its output volume.
+    pub reverb: [i16; 2],
+    /// The CD input as mixed: after the CD volume, 0 while SPUCNT leaves CD
+    /// audio out.
+    pub cd: [i32; 2],
+    /// The current main volume the sum was scaled by.
+    pub main: [i16; 2],
+    /// SPUCNT's unmute bit was clear: voices and reverb left out.
+    pub muted: bool,
+    /// The sample the SPU output.
+    pub output: [i16; 2],
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -721,7 +747,7 @@ impl Spu {
             );
         }
         for n in 0..samples as usize {
-            let frame = self.tick();
+            let frame = self.tick(None);
             if let Some(buf) = out.as_deref_mut() {
                 buf[2 * n] = frame[0];
                 buf[2 * n + 1] = frame[1];
@@ -729,8 +755,26 @@ impl Spu {
         }
     }
 
-    /// One 44.1 kHz cycle.
-    fn tick(&mut self) -> [i16; 2] {
+    /// As [`Spu::run`] with output, also appending to `tap` what each
+    /// sample was mixed from. The SPU advances exactly as without it.
+    ///
+    /// # Panics
+    /// If `out` is shorter than `2 * samples`.
+    pub fn run_tapped(&mut self, samples: u32, out: &mut [i16], tap: &mut Vec<TapFrame>) {
+        assert!(out.len() >= samples as usize * 2, "output buffer shorter than 2 * samples");
+        tap.reserve(samples as usize);
+        for n in 0..samples as usize {
+            let mut frame = TapFrame::default();
+            let output = self.tick(Some(&mut frame));
+            frame.output = output;
+            out[2 * n] = output[0];
+            out[2 * n + 1] = output[1];
+            tap.push(frame);
+        }
+    }
+
+    /// One 44.1 kHz cycle; `tap` receives what it was mixed from.
+    fn tick(&mut self, mut tap: Option<&mut TapFrame>) -> [i16; 2] {
         let mut probe = self.probe();
         let ctrl = self.reg(reg::CONTROL);
         let enabled = ctrl & control::ENABLE != 0;
@@ -770,6 +814,10 @@ impl Spu {
             };
             let out = sat((raw * voice.level as i32) >> 15) as i16;
             voice.output = out;
+            if let Some(tap) = tap.as_deref_mut() {
+                tap.voice[v] = out;
+                tap.volume[v] = voice.volume;
+            }
             let l = (out as i32 * voice.volume[0] as i32) >> 15;
             let r = (out as i32 * voice.volume[1] as i32) >> 15;
             dry[0] += l;
@@ -858,6 +906,12 @@ impl Spu {
         );
 
         let muted = ctrl & control::UNMUTE == 0;
+        if let Some(tap) = tap {
+            tap.reverb = returned;
+            tap.cd = cd_dry;
+            tap.main = self.main_volume;
+            tap.muted = muted;
+        }
         let mut frame = [0i16; 2];
         for s in 0..2 {
             let spu = if muted {

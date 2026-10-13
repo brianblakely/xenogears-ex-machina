@@ -31,7 +31,7 @@
 # frames came late, and their checks failed): the Android smoke, the XR
 # smoke, and the browser tests that measure time (the headset's frame rate,
 # rewind frame times, fast-forward's music, the stalled page, a resume read
-# within the rewind's one-second interval).
+# within the rewind's one-second interval, the Binaural mode's cost).
 #
 # Rust builds use the `suite` profile (Cargo.toml: release's optimization
 # without link-time optimization or debug information); a failing test
@@ -136,7 +136,7 @@ web() {
 # The browser suites but the timed tests, once the native build has made
 # the host they compare with: the slice's (the longest) from the start, the
 # others two files at a time (node runs them in name order).
-timed='rewind frame p99|keep music on host time|drops missed time|Start pause freezes rewind history'
+timed='rewind frame p99|keep music on host time|drops missed time|Start pause freezes rewind history|phone-class processor'
 browser() {
     until [[ -f $logs/native.result ]]; do sleep 1; done
     grep -q '^pass' "$logs/native.result" || return 1
@@ -145,7 +145,8 @@ browser() {
     XEM_HEADLESS=$headless node --test tests/slice.test.mjs >"$logs/browser-slice.log" 2>&1 &
     local slice=$!
     XEM_HEADLESS=$headless node --test --test-concurrency=2 --test-skip-pattern="$timed" \
-        tests/disc.test.mjs tests/page.test.mjs tests/persistence.test.mjs tests/render.test.mjs tests/xr-hands.test.mjs || status=1
+        tests/binaural.test.mjs tests/disc.test.mjs tests/page.test.mjs tests/persistence.test.mjs tests/render.test.mjs \
+        tests/xr-hands.test.mjs || status=1
     wait "$slice" || status=1
     return $status
 }
@@ -162,6 +163,7 @@ persistence.test.mjs rewind frame p99
 persistence.test.mjs keep music on host time
 persistence.test.mjs Start pause freezes rewind history
 page.test.mjs drops missed time
+binaural.test.mjs phone-class processor
 xr-game.test.mjs .
 TESTS
     return $status

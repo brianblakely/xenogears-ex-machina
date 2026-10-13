@@ -1,0 +1,11 @@
+[package]
+name = "xem-binaural"
+description = "Binaural presentation of the SPU's voices: HRTF placement for headphones, shared by native and browser hosts"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+xem-spu = { path = "../xem-spu" }

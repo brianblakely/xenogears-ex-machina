@@ -805,6 +805,40 @@ fn headless_run_matches_run_with_output() {
 }
 
 #[test]
+fn the_tap_says_what_each_sample_was_mixed_from_and_changes_nothing() {
+    let mut plain = busy_spu();
+    let mut tapped = busy_spu();
+    // Pan the voices apart and sweep the main volume, so every term moves.
+    for spu in [&mut plain, &mut tapped] {
+        spu.write16(voice_reg(1, reg::VOICE_VOLUME_RIGHT), 0x0400);
+        spu.write16(voice_reg(2, reg::VOICE_VOLUME_LEFT), 0x1000);
+        spu.write16(reg::MAIN_VOLUME_RIGHT, 0x8000 | (20 << 2) | 2);
+    }
+    let mut expected = vec![0i16; 2 * 9000];
+    plain.run(9000, Some(&mut expected));
+    let mut out = vec![0i16; 2 * 9000];
+    let mut tap = Vec::new();
+    tapped.run_tapped(4000, &mut out[..8000], &mut tap);
+    tapped.run_tapped(5000, &mut out[8000..], &mut tap);
+    assert_eq!(out, expected);
+    assert_eq!(tapped.save(), plain.save(), "the tap leaves the SPU as run does");
+    assert_eq!(tap.len(), 9000);
+    let sat = |v: i32| v.clamp(i16::MIN as i32, i16::MAX as i32);
+    let mut voiced = 0;
+    for (n, frame) in tap.iter().enumerate() {
+        assert_eq!(frame.output, [out[2 * n], out[2 * n + 1]]);
+        for s in 0..2 {
+            let voices: i32 = (0..24).map(|v| (frame.voice[v] as i32 * frame.volume[v][s] as i32) >> 15).sum();
+            let spu = if frame.muted { 0 } else { voices + frame.reverb[s] as i32 };
+            let sum = sat(spu + frame.cd[s]);
+            assert_eq!(sat((sum * frame.main[s] as i32) >> 15) as i16, frame.output[s], "sample {n} side {s}");
+        }
+        voiced += usize::from(frame.voice.iter().any(|v| *v != 0) && frame.reverb != [0, 0] && frame.cd != [0, 0]);
+    }
+    assert!(voiced > 1000, "voices, the reverb return and CD audio all take part");
+}
+
+#[test]
 fn disabling_the_spu_keys_everything_off() {
     let mut spu = busy_spu();
     spu.run(100, None);

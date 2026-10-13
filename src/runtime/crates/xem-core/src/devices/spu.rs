@@ -21,10 +21,17 @@
 //!   the SPU advances the same state without producing them.
 //! - **CD input.** The runtime feeds the CD device's decoded audio to
 //!   [`Spu::push_cd_audio`] before the SPU advances (`Services::route_cd_audio`).
+//! - **Binaural.** While the Binaural sound mode presents the output
+//!   ([`Spu::configure_binaural`], `crate::binaural`), the SPU says what each
+//!   sample was mixed from (`xem_spu::Spu::run_tapped`) and the presenter
+//!   mixes the ring's samples from that; at each register sync it reads who
+//!   keyed on the voices the sync keys on. Neither touches the SPU's state
+//!   or game memory, and a restore keeps the presenter but forgets its sound.
 
 use std::collections::VecDeque;
 
 use super::{Context, Device, unknown};
+use crate::binaural::{Config as BinauralConfig, Presenter};
 use crate::clock::CPU_HZ;
 use crate::module::Action;
 use crate::runtime::IRQ_DMA;
@@ -64,6 +71,11 @@ pub struct Spu {
     audio_fraction: u64,
     speed: u32,
     external_audio: bool,
+    /// The Binaural presentation while it is on or fading out (output only).
+    presenter: Option<Box<Presenter>>,
+    tap: Vec<xem_spu::TapFrame>,
+    /// The output as presented, kept for an agent (`audio_capture`).
+    capture: Option<Vec<i16>>,
 }
 
 impl Default for Spu {
@@ -79,6 +91,9 @@ impl Default for Spu {
             audio_fraction: 0,
             speed: 1,
             external_audio: false,
+            presenter: None,
+            tap: Vec::new(),
+            capture: None,
         }
     }
 }
@@ -97,6 +112,12 @@ impl Spu {
         state.set_output(self.output.is_some());
         state.external_audio = self.external_audio;
         state.speed = self.speed;
+        // The presentation stays, without the abandoned timeline's sound.
+        state.presenter = self.presenter.take().map(|mut presenter| {
+            presenter.reset();
+            presenter
+        });
+        state.capture = self.capture.take();
         *self = state;
     }
     /// The SPU itself (RAM, voices, registers), for inspection.
@@ -107,6 +128,29 @@ impl Spu {
     /// Produce output samples from now on (a host plays them), or stop.
     pub fn set_output(&mut self, enabled: bool) {
         self.output = enabled.then(VecDeque::new);
+        if !enabled {
+            self.presenter = None;
+        }
+    }
+
+    /// The Binaural sound mode's settings: the presentation starts (output
+    /// only: nothing is rendered for a host that plays no sound), changes,
+    /// or fades out and ends.
+    pub fn configure_binaural(&mut self, config: BinauralConfig) {
+        match self.presenter.as_mut() {
+            Some(presenter) => presenter.configure(config),
+            None if config.enabled && self.output.is_some() => self.presenter = Some(Box::new(Presenter::new(config))),
+            None => {}
+        }
+    }
+
+    /// The Binaural presentation, while there is one.
+    pub fn binaural(&self) -> Option<&Presenter> {
+        self.presenter.as_deref()
+    }
+
+    pub fn binaural_mut(&mut self) -> Option<&mut Presenter> {
+        self.presenter.as_deref_mut()
     }
 
     /// Move up to `out.len()` produced samples (interleaved L/R) into `out`;
@@ -118,6 +162,23 @@ impl Spu {
             *slot = sample;
         }
         n
+    }
+
+    /// Starts keeping a copy of the output as presented (interleaved L/R),
+    /// whoever takes the ring; `false` when no output is kept.
+    pub fn start_capture(&mut self) -> bool {
+        self.capture = self.output.is_some().then(Vec::new);
+        self.capture.is_some()
+    }
+
+    /// The output kept since [`start_capture`](Self::start_capture), ending it.
+    pub fn take_capture(&mut self) -> Option<Vec<i16>> {
+        self.capture.take()
+    }
+
+    /// Whether the samples are kept for a host ([`set_output`](Self::set_output)).
+    pub fn output_kept(&self) -> bool {
+        self.output.is_some()
     }
 
     /// Samples waiting in the output ring.
@@ -136,10 +197,21 @@ impl Spu {
             *context.trap_reason = Some(error.to_string());
             return false;
         }
+        let half = |at: usize| u32::from(u16::from_le_bytes([window[at], window[at + 1]]));
+        let keyed = half(xem_spu::reg::KEY_ON) | half(xem_spu::reg::KEY_ON + 2) << 16;
         self.chip.sync_window(&mut window);
         if let Err(error) = context.memory.write(REGISTERS, &window) {
             *context.trap_reason = Some(error.to_string());
             return false;
+        }
+        if let Some(presenter) = self.presenter.as_mut() {
+            if presenter.wants_retag() {
+                let sounding = (0..xem_spu::VOICES).filter(|&v| self.chip.voice(v).phase != xem_spu::Phase::Off).fold(0, |m, v| m | 1 << v);
+                presenter.retag(sounding, &*context.memory);
+            }
+            if keyed != 0 {
+                presenter.key_on(keyed, &*context.memory);
+            }
         }
         self.check_irq(context);
         true
@@ -223,15 +295,36 @@ impl Spu {
         let target = self.audio_cycles / CYCLES_PER_SAMPLE;
         while self.chip.clock() < target {
             let n = (target - self.chip.clock()).min(4096) as u32;
+            let mut finished = false;
             match self.output.as_mut() {
                 Some(ring) => {
                     self.scratch.resize(n as usize * 2, 0);
-                    self.chip.run(n, Some(&mut self.scratch));
-                    ring.extend(self.scratch.iter().copied());
+                    let before = ring.len();
+                    match self.presenter.as_mut() {
+                        Some(presenter) => {
+                            self.tap.clear();
+                            self.chip.run_tapped(n, &mut self.scratch, &mut self.tap);
+                            presenter.render(&self.tap, ring);
+                            if presenter.finished() {
+                                presenter.finish(ring);
+                                finished = true;
+                            }
+                        }
+                        None => {
+                            self.chip.run(n, Some(&mut self.scratch));
+                            ring.extend(self.scratch.iter().copied());
+                        }
+                    }
+                    if let Some(capture) = self.capture.as_mut() {
+                        capture.extend(ring.range(before..));
+                    }
                     let excess = ring.len().saturating_sub(OUTPUT_LIMIT);
                     ring.drain(..excess);
                 }
                 None => self.chip.run(n, None),
+            }
+            if finished {
+                self.presenter = None;
             }
             self.check_irq(context);
         }

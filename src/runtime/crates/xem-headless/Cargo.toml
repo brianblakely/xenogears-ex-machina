@@ -16,6 +16,7 @@ serde_json.workspace = true
 png.workspace = true
 
 [dev-dependencies]
+xem-binaural = { path = "../xem-binaural" }
 xem-render = { path = "../xem-render" }
 xem-settings = { path = "../xem-settings" }
 xem-assist = { path = "../xem-assist" }

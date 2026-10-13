@@ -44,9 +44,18 @@ struct Out {
 pub struct Mdec {
     decoder: Decoder,
     out: Option<Out>,
+    /// When the decoder's output last reached memory (presentation only: a
+    /// movie plays; not part of the state).
+    decoded_at: Option<u64>,
 }
 
 impl Mdec {
+    /// The clock when decoded output last reached game memory, if ever
+    /// (a movie playing; the Binaural mode leaves its audio as it is).
+    pub fn decoded_at(&self) -> Option<u64> {
+        self.decoded_at
+    }
+
     pub fn decoder(&self) -> &Decoder {
         &self.decoder
     }
@@ -79,6 +88,9 @@ impl Mdec {
         let bytes: Vec<u8> = words[..n].iter().flat_map(|w| w.to_le_bytes()).collect();
         if let Err(error) = context.memory.write(out.address, &bytes) {
             *context.trap_reason = Some(format!("mdec DMA1: {error}"));
+        }
+        if n > 0 {
+            self.decoded_at = Some(context.now);
         }
         if (n as u32) < out.words {
             // DMA1 waits for the rest of the decoder's output.

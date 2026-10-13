@@ -356,6 +356,11 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             }
         }
         let current = settings.borrow().settings().clone();
+        // The Binaural listener turns with the head, paused or not (lost
+        // tracking keeps the last turn); the game never sees it.
+        if let Some(head) = head {
+            game.set_head(Some(xem_core::binaural::head_axes(head.orientation.to_array())));
+        }
         let mut ran = 0;
         if !game_paused {
             let (pressed, axes) = gamepad(&input);

@@ -292,6 +292,31 @@ impl<M: GameModule> Session<M> {
         Ok(())
     }
 
+    /// The Binaural sound mode's settings (`crate::binaural`): presentation
+    /// only, never recorded; it works where the SPU's output is kept for a
+    /// host. Hosts run the game in Stereo under it (`set_sound_mode(1)`).
+    pub fn set_binaural(&mut self, config: crate::binaural::Config) {
+        self.runtime.services().spu.configure_binaural(config);
+    }
+
+    /// The listener's axes (right, down, forward) in the game camera's view
+    /// space while the presentation looks from elsewhere (first-person
+    /// inspection); none: the camera's own.
+    pub fn set_listener_view(&mut self, axes: Option<[[f32; 3]; 3]>) {
+        if let Some(presenter) = self.runtime.services().spu.binaural_mut() {
+            presenter.set_view(axes);
+        }
+    }
+
+    /// The head's axes in the presentation's reference space (headsets), as
+    /// the game camera's view space is oriented; none (tracking lost) keeps
+    /// the last. Presentation only: it never reaches the game.
+    pub fn set_head(&mut self, axes: Option<[[f32; 3]; 3]>) {
+        if let Some(presenter) = self.runtime.services().spu.binaural_mut() {
+            presenter.set_head(axes);
+        }
+    }
+
     /// Whether a recording is replaying (its controls drive fast-forward).
     pub fn replaying(&self) -> bool {
         self.replay_end.is_some()
@@ -371,7 +396,7 @@ impl<M: GameModule> Session<M> {
         self.apply_assist();
         match self.runtime.run_frame() {
             Ok(report) => {
-                if !report.blocked { self.apply_replay_controls()?; self.checkpoint(); self.trace_title_movie(); }
+                if !report.blocked { self.apply_replay_controls()?; self.checkpoint(); self.trace_title_movie(); self.runtime.update_binaural(); }
                 Ok(!report.blocked)
             },
             Err(trap) => {
@@ -560,6 +585,7 @@ impl<M: GameModule> Session<M> {
         let stopped = self.stopped.clone();
         let actor_view = self.runtime.services().actor_view;
         let sound_mode = self.runtime.services().sound_mode;
+        let binaural = self.runtime.services().spu.binaural().map(|p| p.config());
         let services = self.runtime.services();
         json!({
             "vblanks": services.clock.vblanks,
@@ -574,6 +600,7 @@ impl<M: GameModule> Session<M> {
             "fast_forward_pace": self.fast_forward_pace,
             "actor_view": actor_view,
             "sound_mode": sound_mode,
+            "binaural": binaural,
             "rewind": self.rewind.status(),
             "assist": self.assist.as_ref().map(|a| json!({"intent": a.intent, "phase": a.phase})),
             "assist_outcome": self.assist_outcome,
@@ -621,6 +648,74 @@ impl<M: GameModule> Session<M> {
                 self.apply_sound_mode(mode, taken)?;
                 self.runtime.services().sound_mode_chosen = None;
                 Ok(self.status())
+            }
+            "binaural" => {
+                // The Binaural presentation: the given settings change (the
+                // rest stay), and what it does now comes back.
+                let current = self.runtime.services().spu.binaural().map(|p| p.config()).unwrap_or_default();
+                let mut value = serde_json::to_value(current).map_err(|e| e.to_string())?;
+                let mut changed = false;
+                for (key, setting) in command.as_object().into_iter().flatten().filter(|(key, _)| *key != "cmd") {
+                    if value.get(key).is_none() {
+                        return Err(format!("binaural has no setting {key}"));
+                    }
+                    value[key.as_str()] = setting.clone();
+                    changed = true;
+                }
+                let config: crate::binaural::Config = serde_json::from_value(value).map_err(|e| format!("binaural: {e}"))?;
+                config.validate()?;
+                if changed {
+                    self.set_binaural(config);
+                }
+                let spu = &self.runtime.services().spu;
+                Ok(match spu.binaural() {
+                    Some(presenter) => presenter.status(),
+                    None => json!({
+                        "config": config,
+                        "presenting": false,
+                        "why": if spu.output_kept() { "off" } else { "the SPU's output is not kept for a host (headless without --wav): nothing to present" },
+                    }),
+                })
+            }
+            "audio_capture" => {
+                // The output as presented (Binaural or the original mix),
+                // kept from "start" to "stop": its length, levels, an FNV-1a
+                // hash of its samples and, with "samples": true, the
+                // samples as little-endian hex.
+                let spu = &mut self.runtime.services().spu;
+                match arg_str("action").ok_or("audio_capture needs action: start or stop")? {
+                    "start" => {
+                        if !spu.start_capture() {
+                            return Err("the SPU's output is not kept for a host (headless without --wav): nothing to capture".into());
+                        }
+                        Ok(json!({"capturing": true}))
+                    }
+                    "stop" => {
+                        let samples = spu.take_capture().ok_or("no audio capture under way")?;
+                        let side = |s: usize| samples.iter().skip(s).step_by(2);
+                        let rms = |s: usize| {
+                            let n = side(s).count().max(1) as f64;
+                            let mean = side(s).map(|x| f64::from(*x).powi(2)).sum::<f64>() / n;
+                            if mean > 0.0 { Some(10.0 * (mean / (32768.0 * 32768.0)).log10()) } else { None }
+                        };
+                        let bytes: Vec<u8> = samples.iter().flat_map(|x| x.to_le_bytes()).collect();
+                        let mut hash: u64 = 0xCBF2_9CE4_8422_2325;
+                        for byte in &bytes {
+                            hash = (hash ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01B3);
+                        }
+                        let mut reply = json!({
+                            "frames": samples.len() / 2,
+                            "hash": format!("{hash:016x}"),
+                            "peak": [side(0).map(|x| x.unsigned_abs()).max(), side(1).map(|x| x.unsigned_abs()).max()],
+                            "rms_db": [rms(0), rms(1)],
+                        });
+                        if command.get("samples").and_then(Value::as_bool) == Some(true) {
+                            reply["samples"] = json!(hex(&bytes));
+                        }
+                        Ok(reply)
+                    }
+                    other => Err(format!("audio_capture action {other}: start or stop")),
+                }
             }
             "focus_pause" => {
                 let requested = command.get("requested").and_then(Value::as_bool).ok_or("focus_pause needs requested boolean")?;
@@ -877,7 +972,7 @@ impl<M: GameModule> Session<M> {
                     "pad_queue_reads_last_frame": services.input_reads_last_frame,
                     "stopped": stopped,
                     "valid_commands": ["pad", "press", "hold", "act", "context", "targets", "field", "pick", "navigate", "interact", "assist", "assist_stop", "shop_quantity", "frames", "run_until", "inspect", "write", "snapshot",
-                                        "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "sound_mode", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "schedule", "record", "replay"],
+                                        "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "sound_mode", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "schedule", "record", "replay"],
                 }))
             }
             "memory_hash" => Ok(json!(format!("{:016x}", self.memory_hash()?))),
@@ -1099,6 +1194,9 @@ impl<M: GameModule> Session<M> {
         // The restored game takes the host's sound mode again.
         let services = self.runtime.services();
         services.sound_mode_changed = services.sound_mode.is_some();
+        // The Binaural presentation forgot its sound with the state; it sees
+        // the restored scene before the restored voices are identified.
+        self.runtime.update_binaural();
     }
 
     /// Restore game progress, keeping current app controls and settings.

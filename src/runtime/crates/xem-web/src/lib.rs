@@ -376,6 +376,10 @@ impl XemApp {
         if (0..2).contains(&select) {
             self.xr_select = Some(select as usize);
         }
+        // The Binaural listener turns with the head (presentation only).
+        if let (Some(session), Some(head)) = (self.session.as_mut(), input.head) {
+            session.set_head(Some(xem_core::binaural::head_axes(head.orientation.to_array())));
+        }
         self.xr_input = Some(input);
     }
 
@@ -392,6 +396,9 @@ impl XemApp {
     /// The immersive session ended: the canvas shows the game again.
     pub fn xr_ended(&mut self) {
         self.xr_input = None;
+        if let Some(session) = self.session.as_mut() {
+            session.set_head(None);
+        }
         self.headset = Default::default();
         self.input.clear();
         if let Some(renderer) = &mut self.renderer {
@@ -587,10 +594,13 @@ impl XemApp {
             let start = now_ms();
             let mut batch = 0;
             let mut fetching = false;
-            let (pause_on_focus_loss, sound_mode) = {
+            let (pause_on_focus_loss, sound_mode, binaural) = {
                 let settings = self.settings.borrow();
-                (settings.settings().pause_on_focus_loss, settings.settings().audio_output.game_mode())
+                (settings.settings().pause_on_focus_loss, settings.settings().game_sound_mode(), settings.settings().binaural)
             };
+            if let Some(session) = self.session.as_mut() {
+                session.set_binaural(binaural);
+            }
             while limit.is_none_or(|frames| batch < frames) && (batch == 0 || now_ms() - start < BATCH_BUDGET_MS) {
                 let Some(session) = self.session.as_mut() else { break };
                 session.set_window_focus(self.app_input.focused(),pause_on_focus_loss);
