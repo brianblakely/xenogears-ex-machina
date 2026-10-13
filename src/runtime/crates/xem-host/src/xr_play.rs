@@ -202,12 +202,21 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         PANEL_SCALE,
     )
     .map_err(|e| e.to_string())?;
-    ui.set_close_hint("The left menu button closes Settings");
     let panel_visible = Rc::new(RefCell::new(options.show_settings));
     ui.on_close({
         let visible = panel_visible.clone();
         move || *visible.borrow_mut() = false
     });
+    let requests = Rc::new(RefCell::new(Vec::new()));
+    ui.on_app_request({
+        let requests = requests.clone();
+        move |request| requests.borrow_mut().push(request)
+    });
+    let mut operations = crate::operations::Operations::default();
+    let mut hud = xem_ui::FrameRateUi::new(
+        SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() },
+        PANEL_SCALE,
+    ).map_err(|e| e.to_string())?;
     let quit = Rc::new(Cell::new(false));
     ui.on_quit({
         let quit = quit.clone();
@@ -337,6 +346,22 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             }
         }
 
+        for request in std::mem::take(&mut *requests.borrow_mut()) {
+            let result = operations.execute(request,None,Some(&mut game),&mut settings.borrow_mut());
+            if let xem_settings::AppRequest::Action(action) = request {
+                use xem_settings::AppAction::*;
+                let saved = match action { SaveState | ExportState => Some(true), LoadState | ImportState => Some(false), _ => None };
+                if let Some(saved) = saved { hud.notify_state(saved,result.as_ref().err().map(String::as_str),start.elapsed()); }
+            }
+            match result {
+                Ok(message) => ui.set_operation_status(&message),
+                Err(error) => ui.set_operation_error(&error),
+            }
+        }
+        let (fast_forward,status) = game.time_status();
+        ui.set_time_status(Some(fast_forward),&status);
+        ui.set_storage_status(&game.storage_status());
+
         // The game: whatever frames are due by the wall clock, once per
         // headset frame (never per eye), unless paused for a test or by the
         // player (the Pause grab, settings' own pause, lost tracking).
@@ -366,12 +391,16 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             let (pressed, axes) = gamepad(&input);
             if visible { player.clear() } else { player.gamepad(&pressed, &axes) }
             let context = game.pad_context();
+            player.run_by_default = current.run_by_default;
             let buttons = if visible { 0 } else { player.buttons(&current.game_bindings, start.elapsed().as_secs_f64() * 1000.0, context) };
             let focused = session.state() == xem_xr::SessionState::FOCUSED;
             ran = game.update(buttons, &current, || focused)?;
             game.follow_sound_mode(&settings);
             player.frames_ran(ran);
         }
+        let (forward,rewind) = game.time_activity();
+        hud.set_activity(forward,rewind);
+        hud.frame(start.elapsed(),PANEL_SCALE,current.presentation.show_fps).map_err(|e| e.to_string())?;
         // The virtual screen fills about half of a view's height.
         let config = ViewConfig::resolve(&current.graphics, HostClass::Headset, (session.eye_size().0 / 2, session.eye_size().1 / 2), view.max_scale());
         view.configure(config);
@@ -432,6 +461,13 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
 
         if should_render {
             let pose = screen_pose(f32::from(xr.distance_cm) / 100.0).matrix();
+            let hud_quad = hud.visible().then(|| {
+                let (w,h) = hud.size();
+                let unit = width / 640.0 / PANEL_SCALE;
+                let size = Vec2::new(w as f32*unit,h as f32*unit);
+                let placement = pose * Mat4::from_translation(Vec3::new(-width/2.0+size.x/2.0+width/80.0,height/2.0-size.y/2.0-width/80.0,0.002));
+                (hud.view().clone(),placement,size)
+            });
             let filter = match current.presentation.filter {
                 Filter::Nearest => wgpu::FilterMode::Nearest,
                 Filter::Linear => wgpu::FilterMode::Linear,
@@ -452,7 +488,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                     let screen = texture.as_ref().map(|t| t.create_view(&Default::default()));
                     let quads: [Vec<Quad>; 2] = [0, 1].map(|eye| {
                         let view_proj: Mat4 = eyes[eye].proj * eyes[eye].view;
-                        let glass = marks.iter().map(|(texture, pose, size)| {
+                        let glass = marks.iter().chain(hud_quad.iter()).map(|(texture, pose, size)| {
                             let mut quad = Quad::world(texture, view_proj, *pose, *size);
                             quad.srgb_encoded = true;
                             quad

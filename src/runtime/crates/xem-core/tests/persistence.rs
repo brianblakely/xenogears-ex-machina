@@ -540,11 +540,11 @@ fn music_keeps_normal_time_when_a_host_cannot_run_all_requested_fast_frames() {
     assert_eq!(s.execute(&json!({"cmd":"fast_forward"}))["fast_forward"],true);
     s.runtime.services().clock.set_counter(2,0x44e8,xem_core::clock::RCNT_MODE_INTERRUPT);
     s.runtime.services().clock.start_counter(2);
-    s.runtime.set_external_music(true);
+    assert!(s.begin_live_music().unwrap());
     for _ in 0..60 {
         // Three game frames fit this host's budget, although 20 were requested.
         s.execute(&json!({"cmd":"frames","count":3}));
-        s.execute(&json!({"cmd":"music_advance","cycles":xem_core::clock::VBLANK_CYCLES}));
+        s.advance_live_music(xem_core::clock::VBLANK_CYCLES).unwrap();
     }
     assert_eq!(s.runtime.frames(),180);
     assert_eq!(s.runtime.memory().read_u32(0x8000_0008).unwrap(),240);
@@ -561,6 +561,76 @@ fn music_keeps_normal_time_when_a_host_cannot_run_all_requested_fast_frames() {
         }
     }
     assert_eq!(s.snapshot_bytes().unwrap(),other.snapshot_bytes().unwrap());
+}
+
+#[test]
+fn interactive_fixed_fast_forward_records_music_before_the_first_batch_and_keeps_queued_audio() {
+    let mut s = session();
+    s.runtime.services().clock.set_counter(2,0x44e8,xem_core::clock::RCNT_MODE_INTERRUPT);
+    s.runtime.services().clock.start_counter(2);
+    s.runtime.services().spu.set_output(true);
+    let initial = s.snapshot_bytes().unwrap();
+    s.execute(&json!({"cmd":"record"}));
+    let revision = s.timeline_revision;
+    s.execute(&json!({"cmd":"fast_forward","enabled":true}));
+    for (frames, cycles, pace) in [(3,563200,3),(8,800000,4),(2,400000,2)] {
+        assert!(s.begin_live_music().unwrap());
+        s.execute(&json!({"cmd":"frames","count":frames}));
+        s.advance_live_music(cycles).unwrap();
+        let queued = s.runtime.services().spu.audio_queued();
+        assert!(queued > 0);
+        s.pace_fast_forward(Some(pace)).unwrap();
+        assert_eq!(s.runtime.services().spu.audio_queued(),queued,"adjusting pace must preserve pending audio");
+    }
+    let queued = s.runtime.services().spu.audio_queued();
+    assert_eq!(queued,2*((563200+800000+400000)/768));
+    s.configure_fast_forward(xem_core::time::FastForwardRate::Fixed(20)).unwrap();
+    assert!(s.begin_live_music().unwrap());
+    s.execute(&json!({"cmd":"frames","count":1}));
+    s.advance_live_music(563200).unwrap();
+    s.execute(&json!({"cmd":"fast_forward","enabled":false}));
+    assert_eq!(s.timeline_revision,revision,"changing speed must not reset a host's playback queue");
+    s.execute(&json!({"cmd":"frames","count":2}));
+    let mut log = s.execute(&json!({"cmd":"stop_recording"})); log["cmd"] = json!("replay");
+    let mut replayed = session();
+    replayed.restore_bytes(&initial).unwrap();
+    replayed.runtime.services().spu.set_output(true);
+    assert!(replayed.execute(&log).get("error").is_none());
+    assert!(!replayed.begin_live_music().unwrap(),"replay uses recorded elapsed time");
+    assert!(replayed.execute(&json!({"cmd":"frames","count":16})).get("error").is_none());
+    assert_eq!(s.runtime.services().spu.audio_queued(),replayed.runtime.services().spu.audio_queued());
+    assert_eq!(s.snapshot_bytes().unwrap(),replayed.snapshot_bytes().unwrap());
+}
+
+#[test]
+fn recording_during_live_fixed_fast_forward_preserves_the_attached_music_clock() {
+    let mut s = session();
+    s.runtime.services().clock.set_counter(2,0x44e8,xem_core::clock::RCNT_MODE_INTERRUPT);
+    s.runtime.services().clock.start_counter(2);
+    s.runtime.services().spu.set_output(true);
+    s.execute(&json!({"cmd":"fast_forward","enabled":true}));
+    assert!(s.begin_live_music().unwrap());
+    s.execute(&json!({"cmd":"frames","count":3}));
+    s.advance_live_music(xem_core::clock::VBLANK_CYCLES).unwrap();
+    let mut previous = vec![0;s.runtime.services().spu.audio_queued()];
+    s.runtime.services().spu.take_audio(&mut previous);
+    let initial = s.snapshot_bytes().unwrap();
+    s.execute(&json!({"cmd":"record"}));
+    for frames in [3,5] {
+        assert!(s.begin_live_music().unwrap());
+        s.execute(&json!({"cmd":"frames","count":frames}));
+        s.advance_live_music(xem_core::clock::VBLANK_CYCLES).unwrap();
+    }
+    let mut log = s.execute(&json!({"cmd":"stop_recording"}));
+    log["cmd"] = json!("replay");
+    let mut replayed = session();
+    replayed.restore_bytes(&initial).unwrap();
+    replayed.runtime.services().spu.set_output(true);
+    assert!(replayed.execute(&log).get("error").is_none());
+    assert!(replayed.execute(&json!({"cmd":"frames","count":8})).get("error").is_none());
+    assert_eq!(s.runtime.services().spu.audio_queued(),replayed.runtime.services().spu.audio_queued(),
+        "the first recorded batch must not advance music before its elapsed-time input");
+    assert_eq!(s.snapshot_bytes().unwrap(),replayed.snapshot_bytes().unwrap());
 }
 
 #[test]

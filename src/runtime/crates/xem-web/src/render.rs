@@ -232,7 +232,6 @@ impl WebRenderer {
         match SettingsUi::new(shared.clone(), settings, size, self.scale) {
             Ok(panel) => {
                 panel.on_close(on_close);
-                panel.set_close_hint("Esc closes Settings");
                 self.panel = Some(panel);
             }
             Err(error) => self.panel_error = Some(error.to_string()),
@@ -497,7 +496,7 @@ impl WebRenderer {
             quad.srgb_encoded = true;
             quads.push(quad);
         }
-        if presentation.show_fps && let Some(counter) = &self.frame_rate {
+        if let Some(counter) = &self.frame_rate && counter.visible() {
             let (width,height) = counter.size();
             let margin = 8.0*self.scale;
             let mut quad = Quad::screen(counter.view(),Rect { x:margin,y:margin,width:width as f32,height:height as f32 },target);
@@ -581,6 +580,9 @@ impl WebRenderer {
         }
         let graphics = settings.settings().graphics;
         let presentation = &settings.settings().presentation;
+        if let Some(hud) = &mut self.frame_rate {
+            hud.frame(std::time::Duration::from_secs_f64(time), self.scale, presentation.show_fps).map_err(|e| e.to_string())?;
+        }
         let mut encoder = self.gpu.device.create_command_encoder(&Default::default());
         let presented = match &self.game_frame {
             Some((display, scene)) => self.renderer.present(&mut encoder, display, scene, time).map(|p| (p.view, p.size, true)),
@@ -616,6 +618,15 @@ impl WebRenderer {
         let width = f32::from(graphics.xr.width_cm) / 100.0 * self.xr_scale;
         let height = width * screen_size.1 as f32 / screen_size.0 as f32;
         let pose = Mat4::from_translation(Vec3::new(0.0, 0.0, -f32::from(graphics.xr.distance_cm) / 100.0));
+        // The HUD is anchored inside the virtual screen, at a readable size
+        // shared by both eyes, and stays visible with Settings closed.
+        let hud_quad = self.frame_rate.as_ref().filter(|hud| hud.visible()).map(|hud| {
+            let (w,h) = hud.size();
+            let unit = width / 640.0 / self.scale;
+            let size = Vec2::new(w as f32 * unit,h as f32 * unit);
+            let position = pose * Mat4::from_translation(Vec3::new(-width/2.0+size.x/2.0+width/80.0,height/2.0-size.y/2.0-width/80.0,0.002));
+            (hud.view().clone(),position,size)
+        });
         let filter = match presentation.filter {
             Filter::Nearest => wgpu::FilterMode::Nearest,
             Filter::Linear => wgpu::FilterMode::Linear,
@@ -634,7 +645,7 @@ impl WebRenderer {
                         }
                         quad
                     })
-                    .chain(room.iter().chain(panel_quad.iter()).map(|(texture, pose, size)| {
+                    .chain(room.iter().chain(hud_quad.iter()).chain(panel_quad.iter()).map(|(texture, pose, size)| {
                         let mut quad = Quad::world(texture, view.proj * view.view, *pose, *size);
                         quad.srgb_encoded = true;
                         quad

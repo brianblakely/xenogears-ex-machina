@@ -190,7 +190,9 @@ mark
 tap 250 722
 sleep 1
 shot 01-graphics
-tap 930 1655
+# The compact Graphics card has no heading/help rows; its Show FPS switch
+# is centred here in 01-graphics.png (the old position hit Resolution).
+tap 930 1350
 wait_for "xem: settings applied ShowFps\(true\)"
 
 echo "== disc import through the document picker (Import disc... button)"
@@ -198,7 +200,8 @@ mark
 tap 830 722
 sleep 1
 shot 01-saves
-tap 858 1132
+# Import disc is now the first row directly below the tabs.
+tap 858 915
 wait_for "xem: disc picker opened"
 pick_document synthetic "xem-synthetic\.bin"
 wait_for "I/xem.*persisted read permission for content://"

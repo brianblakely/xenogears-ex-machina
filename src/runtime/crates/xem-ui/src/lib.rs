@@ -218,6 +218,12 @@ impl SettingsUi {
         self.panel.on_quit_requested(f);
     }
 
+    /// Shows Reset in the header; hosts route it to the console reset command.
+    pub fn on_reset(&self, f: impl FnMut() + 'static) {
+        self.panel.set_can_reset(true);
+        self.panel.on_reset_requested(f);
+    }
+
     /// Escape or Back on the open panel, and the panel hidden: closes the
     /// quit confirmation, saying whether it showed (then the panel stays).
     pub fn cancel_dialog(&self) -> bool {
@@ -254,6 +260,10 @@ impl SettingsUi {
 
     pub fn on_app_request(&self, f: impl FnMut(AppRequest) + 'static) {
         let f = Rc::new(RefCell::new(f));
+        self.on_reset({
+            let f = f.clone();
+            move || f.borrow_mut()(AppRequest::Action(AppAction::Reset))
+        });
         self.panel.on_app_action_requested({
             let f = f.clone();
             move |index| {
@@ -300,12 +310,6 @@ impl SettingsUi {
     /// The status line: a problem (an operation failed, the game stopped).
     pub fn set_operation_error(&self, text: &str) {
         set_status(&self.panel, text, Status::Problem);
-    }
-
-    /// How this host closes the panel, beside the status line ("Esc closes
-    /// Settings"); empty for none.
-    pub fn set_close_hint(&self, text: &str) {
-        self.panel.set_close_hint(text.into());
     }
 
     /// Whether this host offers first-person inspection (the Controls
@@ -400,8 +404,6 @@ fn graphics_edit(graphics: &Graphics, key: &str, value: i32) -> Option<Graphics>
         "filter-movies" => next.filtering.movies = *MOVIE_FILTERS.get(index?)?,
         "zoom-out" => next.zoom_out = u16::try_from(value).ok()?,
         "actors-in-view" => next.actors_in_view = value != 0,
-        "cull" => next.culling.back_faces = value != 0,
-        "cull-viewport" => next.culling.viewport = value != 0,
         "xr-distance" => next.xr.distance_cm = u16::try_from(value).ok()?,
         "xr-width" => next.xr.width_cm = u16::try_from(value).ok()?,
         "xr-dof" => next.xr.depth_of_field = value != 0,
@@ -446,8 +448,6 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_gfx_filter_sprites(index_of(&FILTERS, &graphics.filtering.sprites));
     panel.set_gfx_filter_interface(index_of(&FILTERS, &graphics.filtering.interface));
     panel.set_gfx_filter_movies(index_of(&MOVIE_FILTERS, &graphics.filtering.movies));
-    panel.set_gfx_cull_back_faces(graphics.culling.back_faces);
-    panel.set_gfx_cull_viewport(graphics.culling.viewport);
     panel.set_gfx_fidelity(slint::ModelRc::new(slint::VecModel::from(fidelity_flags(&graphics.custom_fidelity).to_vec())));
     let levels = edited_levels(graphics);
     let levels: Vec<i32> = EffectLevels::NAMES.iter().map(|name| levels.get(name).unwrap_or(0)).collect();
@@ -460,6 +460,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_fast_forward_position(panel.get_fast_forward_rate() as f32);
     panel.set_invert_trigger_chords(settings.invert_trigger_chords);
     panel.set_mouse_camera(settings.mouse_camera);
+    panel.set_run_by_default(settings.run_by_default);
     let assisted = settings.assisted;
     panel.set_assist_gestures(assisted.gestures);
     panel.set_assist_pointer(match assisted.pointer {
@@ -536,7 +537,7 @@ fn show_game_binding(panel: &SettingsPanel, settings: &Settings) {
             let mut keys: Vec<&str> = binding.keyboard.iter().map(|code| key_label(code)).collect();
             keys.extend(binding.mouse.iter().map(|m| match m.as_str() { "MouseLeft" => "Click", "MouseRight" => "Right-click", _ => "Middle-click" }));
             keys.dedup();
-            BindingRow { name: (*title).into(), keyboard: keys.join(" ").into(), gamepad: binding.gamepad.join(" ").into() }
+            BindingRow { name: (if *action == xem_settings::GameAction::Run && settings.run_by_default { "Walk (held)" } else { *title }).into(), keyboard: keys.join(" ").into(), gamepad: binding.gamepad.join(" ").into() }
         })
         .collect();
     if let Some((context, action, _)) = usize::try_from(panel.get_selected_game_action()).ok().and_then(|i| GAME_ACTION_ROWS.get(i)) {
@@ -633,6 +634,10 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
             }
             apply(Some(SettingChange::Assisted(assisted)))
         }
+    });
+    panel.on_run_by_default_edited({
+        let apply = apply.clone();
+        move |enabled| apply(Some(SettingChange::RunByDefault(enabled)))
     });
     panel.on_mouse_camera_edited({
         let apply = apply.clone();
@@ -858,7 +863,7 @@ fn backup_actions() -> impl Iterator<Item = (AppAction, &'static str)> {
     })
 }
 
-/// A frame counter drawn over the game, independently of the Settings window.
+/// The frame counter, playback activity and state results over the game.
 pub struct FrameRateUi {
     window: Rc<PanelWindow>,
     component: FrameRateOverlay,
@@ -868,6 +873,7 @@ pub struct FrameRateUi {
     started: Option<Duration>,
     previous: Duration,
     frames: u32,
+    notice_until: Option<Duration>,
 }
 
 impl FrameRateUi {
@@ -889,6 +895,7 @@ impl FrameRateUi {
             started: None,
             previous: Duration::ZERO,
             frames: 0,
+            notice_until: None,
         };
         ui.resize(scale_factor);
         ui.component.show()?;
@@ -896,8 +903,8 @@ impl FrameRateUi {
     }
     fn physical_size(scale_factor: f32) -> (u32, u32) {
         (
-            (96.0 * scale_factor).round().max(1.0) as u32,
-            (28.0 * scale_factor).round().max(1.0) as u32,
+            (304.0 * scale_factor).round().max(1.0) as u32,
+            (110.0 * scale_factor).round().max(1.0) as u32,
         )
     }
     fn resize(&mut self, scale_factor: f32) {
@@ -924,21 +931,52 @@ impl FrameRateUi {
     pub fn label(&self) -> String {
         self.component.get_counter().into()
     }
+    pub fn component(&self) -> &FrameRateOverlay {
+        &self.component
+    }
+    pub fn texture(&self) -> &wgpu::Texture {
+        &self.texture
+    }
+    pub fn set_activity(&mut self, fast_forward: bool, rewinding: bool) {
+        self.component.set_fast_forward(fast_forward);
+        self.component.set_rewinding(rewinding);
+    }
+    /// A result from an explicit save-state operation, never a memory-card write.
+    pub fn notify_state(&mut self, saved: bool, error: Option<&str>, now: Duration) {
+        let notice = match error {
+            Some(error) => format!("Could not {} state: {error}", if saved { "save" } else { "load" }),
+            None => format!("State {}", if saved { "saved" } else { "loaded" }),
+        };
+        self.component.set_notice(notice.into());
+        self.component.set_notice_error(error.is_some());
+        self.notice_until = Some(now.saturating_add(Duration::from_secs(if error.is_some() { 8 } else { 4 })));
+    }
+    pub fn notice(&self) -> Option<String> {
+        self.notice_until.map(|_| self.component.get_notice().into())
+    }
+    /// Call after `frame` so an expired notification has been removed.
+    pub fn visible(&self) -> bool {
+        self.component.get_show_fps() || self.component.get_fast_forward()
+            || self.component.get_rewinding() || self.notice_until.is_some()
+    }
     pub fn frame(
         &mut self,
         now: Duration,
         scale_factor: f32,
         enabled: bool,
     ) -> Result<(), PlatformError> {
-        if !enabled {
-            self.started = None;
-            self.frames = 0;
-            return Ok(());
+        self.component.set_show_fps(enabled);
+        if self.notice_until.is_some_and(|until| now >= until) {
+            self.notice_until = None;
+            self.component.set_notice("".into());
         }
         if self.window.window.scale_factor() != scale_factor {
             self.resize(scale_factor);
         }
-        if self.started.is_none()
+        if !enabled {
+            self.started = None;
+            self.frames = 0;
+        } else if self.started.is_none()
             || now < self.previous
             || now.saturating_sub(self.previous) > Duration::from_secs(1)
         {
@@ -949,13 +987,19 @@ impl FrameRateUi {
             self.frames += 1;
         }
         self.previous = now;
-        let elapsed = now.saturating_sub(self.started.unwrap());
+        let elapsed = self.started.map_or(Duration::ZERO, |started| now.saturating_sub(started));
         if elapsed >= Duration::from_secs(1) {
             self.component.set_counter(
                 format!("{:.0} FPS", self.frames as f64 / elapsed.as_secs_f64()).into(),
             );
             self.started = Some(now);
             self.frames = 0;
+        }
+        if !self.visible() {
+            // The host does not composite this texture while hidden. Keep
+            // the next visible frame dirty without submitting a GPU pass.
+            self.window.redraw.set(true);
+            return Ok(());
         }
         slint::platform::update_timers_and_animations();
         if self.window.redraw.take() {

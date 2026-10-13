@@ -68,6 +68,8 @@ impl Pulse {
 
 #[derive(Default)]
 pub struct PlayerInput {
+    /// Invert the run button during player-controlled field movement.
+    pub run_by_default: bool,
     held: Held,
     pub mouse: Mouse,
     /// Actions a touch screen's controls hold.
@@ -321,7 +323,16 @@ impl PlayerInput {
 
     /// The pad buttons held at `now` (milliseconds).
     pub fn buttons(&mut self, bindings: &GameBindings, now: f64, context: Context) -> u16 {
-        xem_core::action::buttons_with(self.actions(bindings, now, context), &context.assignment)
+        let mut buttons = xem_core::action::buttons_with(self.actions(bindings, now, context), &context.assignment);
+        // Cancel and Run share the game's assigned button. Invert that
+        // resolved button so a controller's East (bound to both) walks too.
+        // No synthetic button reaches dialogue, menus, events or battles.
+        let directions = xem_core::pad::button::UP | xem_core::pad::button::DOWN
+            | xem_core::pad::button::LEFT | xem_core::pad::button::RIGHT;
+        if self.run_by_default && context.ui == Ui::Walk && buttons & directions != 0 {
+            buttons ^= GameAction::Run.button_with(&context.assignment);
+        }
+        buttons
     }
 }
 
@@ -345,6 +356,42 @@ mod tests {
         assert_eq!(input.buttons(&bindings, 0.0, attack), button::TRIANGLE | button::L1 | button::CROSS);
         input.clear();
         assert_eq!(input.buttons(&bindings, 0.0, Context::default()), 0);
+    }
+
+    #[test]
+    fn run_by_default_inverts_movement_only_and_respects_remapped_buttons() {
+        let mut bindings = GameBindings::default();
+        bindings.play.get_mut(&GameAction::Run).unwrap().keyboard = vec!["KeyQ".into()];
+        let mut input = PlayerInput { run_by_default: true, ..Default::default() };
+        let walk = field(Ui::Walk);
+        assert_eq!(input.buttons(&bindings, 0.0, walk), 0, "idle sends no synthetic button");
+        input.key(&bindings, "KeyW", true);
+        assert_eq!(input.buttons(&bindings, 0.0, walk), button::UP | button::CIRCLE);
+        input.key(&bindings, "KeyQ", true);
+        assert_eq!(input.buttons(&bindings, 0.0, walk), button::UP, "the rebound run key walks");
+        input.key(&bindings, "KeyQ", false);
+        let mut pad = [0; 16];
+        pad[1] = 1;
+        input.gamepad(&pad, &[]);
+        assert_eq!(input.buttons(&bindings, 0.0, walk), button::UP, "East also binds Cancel");
+        let dialogue = field(Ui::Dialogue { choice: None });
+        assert_eq!(input.buttons(&bindings, 0.0, dialogue), button::UP | button::CIRCLE, "Cancel still cancels");
+        input.clear();
+        input.touch.extend([GameAction::Up, GameAction::Run, GameAction::Cancel]);
+        assert_eq!(input.buttons(&bindings, 0.0, walk), button::UP, "the touch run button walks");
+        input.touch.remove(&GameAction::Run);
+        input.touch.remove(&GameAction::Cancel);
+        let mut reassigned = walk;
+        reassigned.assignment.0.swap(0, 1);
+        assert_eq!(input.buttons(&bindings, 0.0, reassigned), button::UP | GameAction::Run.button_with(&reassigned.assignment));
+        for ui in [Ui::Event { map: 1, buttons: 0xffff }, Ui::None, Ui::WorldMap { movement: 1, scene: 0 },
+            Ui::Battle { page: 0, attack: false, ap: 0, list: false, targeting: false },
+            Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, switch: false, quantities: false }]
+        {
+            assert_eq!(input.buttons(&bindings, 0.0, field(ui)), button::UP, "{ui:?} gets no automatic Run");
+        }
+        input.run_by_default = false;
+        assert_eq!(input.buttons(&bindings, 0.0, walk), button::UP);
     }
 
     #[test]

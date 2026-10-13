@@ -105,6 +105,8 @@ pub struct XemApp {
     app_input: AppInput,
     rewind_held: [bool;2],
     rewind_next: f64,
+    hud_forward: Option<f64>,
+    hud_rewind: Option<f64>,
     app_requests: Rc<RefCell<Vec<AppRequest>>>,
     /// The buttons the player's input last put on pad 1.
     host_buttons: u16,
@@ -214,6 +216,8 @@ impl XemApp {
             app_input: AppInput::default(),
             rewind_held: [false;2],
             rewind_next: 0.0,
+            hud_forward: None,
+            hud_rewind: None,
             app_requests: Rc::new(RefCell::new(Vec::new())),
             host_buttons: 0,
             display_dirty: false,
@@ -541,6 +545,8 @@ impl XemApp {
         // The player's Pause in a headset (or settings' own pause there):
         // time stands still, nothing to catch up afterwards.
         if self.headset.pauses.paused() && self.xr_input.is_some() {
+            self.hud_forward = None;
+            self.hud_rewind = None;
             // The panel's own Close still closes it (and its pause).
             if self.panel_closed.replace(false) {
                 self.set_panel_visible(false);
@@ -553,7 +559,9 @@ impl XemApp {
         if self.running && self.rewind_held.iter().any(|held| *held) {
             if now >= self.rewind_next {
                 if let Some(session) = self.session.as_mut() {
-                    if session.rewind_step().map_err(error)? { self.display_dirty = true; }
+                    let advanced = session.rewind_step().map_err(error)?;
+                    self.hud_rewind = advanced.then_some(now);
+                    if advanced { self.display_dirty = true; }
                 }
                 self.rewind_next = now + xem_core::rewind::REWIND_STEP_MS as f64;
             }
@@ -575,6 +583,7 @@ impl XemApp {
             let bindings = self.settings.borrow().settings().game_bindings.clone();
             if self.panel_visible() { self.input.clear(); }
             self.input.browse(self.targets.as_ref());
+            self.input.run_by_default = self.settings.borrow().settings().run_by_default;
             let buttons = if self.panel_visible() { 0 } else { self.input.buttons(&bindings, now, context) };
             if buttons != self.host_buttons
                 && let Some(session) = self.session.as_mut()
@@ -588,7 +597,10 @@ impl XemApp {
             let elapsed_frames = ((now - paced) / FRAME_MS).floor().max(0.0) as u64;
             let music_paced = self.music_paced.replace(now).unwrap_or(now - FRAME_MS);
             let music_cycles = ((now - music_paced).clamp(0.0, 100.0) * xem_core::clock::CPU_HZ as f64 / 1000.0) as u64;
-            let live_music = self.session.as_ref().is_some_and(|s| s.live_music());
+            let live_music = match self.session.as_mut() {
+                Some(session) => session.begin_live_music().map_err(error)?,
+                None => false,
+            };
             let due = factor.map(|factor| elapsed_frames.saturating_mul(u64::from(factor)));
             let limit = due.map(|due| due.min(MAX_FRAMES_PER_ANIMATION * u64::from(factor.unwrap())));
             let start = now_ms();
@@ -622,6 +634,9 @@ impl XemApp {
                     }
                 }
             }
+            if batch > 0 {
+                self.hud_forward = (fast_forward && self.session.as_mut().is_some_and(|s| !s.runtime.game_paused())).then_some(now);
+            }
             self.input.frames_ran(batch as u32);
             // The setting follows the game's own Sound screen.
             if let Some(output) = self.session.as_mut().and_then(|s| s.take_sound_mode_choice()).and_then(xem_settings::AudioOutput::from_game_mode) {
@@ -638,8 +653,8 @@ impl XemApp {
             if live_music && let Some(session) = self.session.as_mut() {
                 session.advance_live_music(music_cycles).map_err(error)?;
             }
-            // A fixed fast-forward rate the batches cannot reach runs at the
-            // rate they do reach, so the music it times keeps up with the sound.
+            // Adapt fixed fast-forward to the rate the batches actually reach;
+            // the elapsed-time music clock keeps playing throughout.
             let seconds = self.batched.replace(now).map_or(0.0, |at| (now - at).max(0.0) / 1000.0);
             if let Some(session) = self.session.as_mut() {
                 match (session.fast_forward, session.fast_forward_rate.factor(), factor) {
@@ -679,7 +694,14 @@ impl XemApp {
     /// Hands what the game drew to the renderer (configured for the canvas or
     /// a headset) and updates the panel's status.
     fn take_game_frame(&mut self, headset: bool) {
+        let now = now_ms();
+        let held = self.rewind_held.iter().any(|held| *held);
+        let active = self.running && !(self.headset.pauses.paused() && self.xr_input.is_some());
+        let forward = active && !held && self.session.as_ref().is_some_and(|s| s.fast_forward && s.stopped.is_none())
+            && self.hud_forward.is_some_and(|at| now - at < 150.0);
+        let rewind = active && held && self.hud_rewind.is_some_and(|at| now - at < xem_core::rewind::REWIND_STEP_MS as f64 + 100.0);
         if let Some(renderer) = &mut self.renderer {
+            if let Some(hud) = &mut renderer.frame_rate { hud.set_activity(forward,rewind); }
             if let (Some(panel),Some(session)) = (renderer.panel(),self.session.as_ref()) {
                 panel.set_time_status(Some(session.fast_forward), &format!("{:.0} of {} seconds available · {:.1} MiB used{}",
                     session.rewind.available_seconds(), session.rewind.history_seconds, session.rewind.bytes as f64/1048576.0,
@@ -807,6 +829,12 @@ impl XemApp {
     }
 
     pub fn take_app_requests(&self) -> String { to_json(&std::mem::take(&mut *self.app_requests.borrow_mut())) }
+    /// Save-state feedback after the host completes storage or restoration.
+    pub fn state_notice(&mut self, saved: bool, failure: Option<String>) {
+        if let Some(hud) = self.renderer.as_mut().and_then(|r| r.frame_rate.as_mut()) {
+            hud.notify_state(saved,failure.as_deref(),std::time::Duration::from_secs_f64(now_ms()/1000.0));
+        }
+    }
     pub fn set_operation_status(&self, text: &str) {
         if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) { panel.set_operation_status(text); }
     }
@@ -1162,6 +1190,7 @@ impl XemApp {
 
     /// Let the animation loop advance the game (in bounded batches) or stop it.
     pub fn set_running(&mut self, running: bool) {
+        if !running { self.hud_forward = None; self.hud_rewind = None; }
         self.running = running && self.session.as_ref().is_some_and(|s| s.stopped.is_none());
         self.paced = None;
         self.music_paced = None;
@@ -1277,6 +1306,7 @@ impl XemApp {
                 "panelTextEditorFocused": r.panel_visible && r.panel().is_some_and(|panel| panel.text_editor_focused()),
                 "panelSection": r.panel().map(|panel| panel.component().get_selected_section()),
                 "fps": r.frame_rate.as_ref().map(|counter| counter.label()),
+                "hud": r.frame_rate.as_ref().map(|hud| json!({"visible":hud.visible(),"notice":hud.notice(),"fast_forward":hud.component().get_fast_forward(),"rewinding":hud.component().get_rewinding()})),
                 "lost": r.lost(),
             })
         });

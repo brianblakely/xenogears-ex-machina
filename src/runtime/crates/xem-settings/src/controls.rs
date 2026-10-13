@@ -10,7 +10,7 @@ pub enum AppAction {
     IncreaseRewindHistory, DecreaseRewindHistory,
     ExportState, ImportState, ExportCard1, ImportCard1, ExportCard2, ImportCard2,
     ExportSettings, ImportSettings, RetryStorage, RequestPersistence,
-    ToggleFps, TogglePauseOnFocusLoss,
+    ToggleFps, TogglePauseOnFocusLoss, Reset,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -19,7 +19,7 @@ pub enum AppRequest {
     Rewind(bool),
     UiRewind(bool),
 }
-pub const APP_ACTIONS: [(AppAction, &str); 24] = [
+pub const APP_ACTIONS: [(AppAction, &str); 25] = [
     (AppAction::SaveState, "Save state"), (AppAction::LoadState, "Load state"),
     (AppAction::Rewind, "Rewind (hold)"), (AppAction::ToggleRewind, "Toggle rewind history"),
     (AppAction::ToggleFastForward, "Toggle fast-forward"),
@@ -37,6 +37,7 @@ pub const APP_ACTIONS: [(AppAction, &str); 24] = [
     (AppAction::RetryStorage, "Retry pending card writes"), (AppAction::RequestPersistence, "Request browser persistence"),
     (AppAction::ToggleFps, "Toggle FPS display"),
     (AppAction::TogglePauseOnFocusLoss, "Toggle pause on focus loss"),
+    (AppAction::Reset, "Reset"),
 ];
 pub const PAD_NAMES: [&str; 16] = ["South", "East", "West", "North", "L1", "R1", "LT", "RT", "Back", "Start", "L3", "R3", "Up", "Down", "Left", "Right"];
 

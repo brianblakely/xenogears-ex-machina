@@ -16,7 +16,6 @@ export struct BindingRow {
 struct Section {
     label: string,
     icon: string,
-    description: string,
 }
 
 global Theme {
@@ -47,6 +46,7 @@ global Icons {
     out property <string> saves: "M5 4 L15.5 4 L20 8.5 L20 20 L5 20 Z M8 4 L8 8.5 L15 8.5 L15 4 M8 20 L8 13.5 L17 13.5 L17 20";
     out property <string> about: "M12 3.5 A8.5 8.5 0 1 1 11.99 3.5 Z M12 11 L12 16.5 M12 7.6 L12 7.7";
     out property <string> close: "M6.5 6.5 L17.5 17.5 M17.5 6.5 L6.5 17.5";
+    out property <string> reset: "M19.5 8 A8 8 0 1 0 20 15 M19.5 3.5 L19.5 8.5 L14.5 8.5";
     out property <string> power: "M12 3.5 L12 11.5 M6.7 7.7 A7.5 7.5 0 1 0 17.3 7.7";
     out property <string> check: "M5 12.5 L10 17 L19 7.5";
     out property <string> alert: "M12 3.5 A8.5 8.5 0 1 1 11.99 3.5 Z M12 7.8 L12 12.6 M12 16 L12 16.1";
@@ -208,10 +208,9 @@ component Nav inherits FocusScope {
     }
 }
 
-// A group of settings, with its title and what it is for.
+// A group of settings, labelled for assistive navigation.
 component Card inherits Rectangle {
     in property <string> title;
-    in property <string> description;
     background: Theme.raised;
     border-radius: 10px;
     border-width: 1px;
@@ -222,19 +221,13 @@ component Card inherits Rectangle {
         padding: 14px;
         padding-top: 12px;
         spacing: 12px;
-        if root.title != "" || root.description != "": VerticalLayout {
-            spacing: 3px;
-            if root.title != "": Text { text: root.title; font-size: 13.5px; font-weight: 600; color: Theme.text; }
-            if root.description != "": Text { text: root.description; font-size: 11.5px; color: Theme.text-tertiary; wrap: word-wrap; }
-        }
         @children
     }
 }
 
-// A setting: its name and help on the left, its control on the right.
+// A setting: its name on the left, its control on the right.
 component Row inherits HorizontalLayout {
     in property <string> label;
-    in property <string> help;
     in property <bool> enabled: true;
     spacing: 16px;
     VerticalLayout {
@@ -242,7 +235,6 @@ component Row inherits HorizontalLayout {
         spacing: 2px;
         horizontal-stretch: 1;
         Text { text: root.label; font-size: 13px; color: root.enabled ? Theme.text : Theme.text-tertiary; wrap: word-wrap; }
-        if root.help != "": Text { text: root.help; font-size: 11.5px; color: Theme.text-tertiary; wrap: word-wrap; }
     }
     VerticalLayout {
         alignment: center;
@@ -255,7 +247,6 @@ component Row inherits HorizontalLayout {
 // it; the row lights up under the pointer.
 component ToggleRow inherits Rectangle {
     in property <string> label;
-    in property <string> help;
     in-out property <bool> checked;
     callback toggled(bool);
     function toggle() {
@@ -283,7 +274,6 @@ component ToggleRow inherits Rectangle {
             spacing: 2px;
             horizontal-stretch: 1;
             Text { text: root.label; font-size: 13px; color: Theme.text; wrap: word-wrap; }
-            if root.help != "": Text { text: root.help; font-size: 11.5px; color: Theme.text-tertiary; wrap: word-wrap; }
         }
         VerticalLayout {
             alignment: center;
@@ -296,7 +286,6 @@ component ToggleRow inherits Rectangle {
 // A setting with a slider under its name, its value at the right.
 component SliderRow inherits VerticalLayout {
     in property <string> label;
-    in property <string> help;
     in property <string> value-text;
     spacing: 4px;
     HorizontalLayout {
@@ -304,7 +293,6 @@ component SliderRow inherits VerticalLayout {
         Text { text: root.label; font-size: 13px; color: Theme.text; horizontal-stretch: 1; vertical-alignment: center; }
         Text { text: root.value-text; font-size: 12.5px; font-weight: 600; color: Theme.accent; horizontal-stretch: 0; vertical-alignment: center; }
     }
-    if root.help != "": Text { text: root.help; font-size: 11.5px; color: Theme.text-tertiary; wrap: word-wrap; }
     @children
 }
 
@@ -593,8 +581,6 @@ export component SettingsPanel inherits Window {
     in-out property <int> gfx-filter-sprites;
     in-out property <int> gfx-filter-interface;
     in-out property <int> gfx-filter-movies;
-    in-out property <bool> gfx-cull-back-faces;
-    in-out property <bool> gfx-cull-viewport;
     // Custom profile limits, in the order of fidelity-names.
     in-out property <[bool]> gfx-fidelity;
     // Effect levels of the selected profile (HD-2D or Custom), in the order of effect-names.
@@ -609,14 +595,13 @@ export component SettingsPanel inherits Window {
     // The status line: 0 a note, 1 something done, 2 a problem.
     in property <string> status;
     in property <int> status-kind;
-    // How the host closes the panel ("Esc closes Settings"), shown beside the status.
-    in property <string> close-hint;
     // The host offers first-person inspection (the game controls list it).
     in property <bool> first-person;
     in property <bool> can-import-disc;
     // The host can quit (desktop, Android, a headset): Quit in the header,
     // which asks first.
     in property <bool> can-quit;
+    in property <bool> can-reset;
     in-out property <bool> quit-confirming;
     // The host places its own window (desktop): Graphics offers Fullscreen.
     in property <bool> can-fullscreen;
@@ -624,7 +609,7 @@ export component SettingsPanel inherits Window {
     in property <string> disc-status: "No disc imported";
     // Every app operation with its bindings; the selected one is edited.
     in property <[BindingRow]> bindings;
-    in-out property <int> selected-action;
+    in-out property <int> selected-action: -1;
     in-out property <string> keyboard-binding;
     in-out property <string> gamepad-binding;
     in property <[string]> backup-actions;
@@ -638,13 +623,13 @@ export component SettingsPanel inherits Window {
     in-out property <int> selected-section: 0;
     in property <bool> wide-layout;
     private property <[Section]> sections: [
-        { label: "Audio", icon: Icons.audio, description: "Volume and how the mix reaches your speakers." },
-        { label: "Graphics", icon: Icons.graphics, description: "How the game is drawn and shown." },
-        { label: "Controls", icon: Icons.controls, description: "The mouse and the game's keys and buttons." },
-        { label: "Shortcuts", icon: Icons.shortcuts, description: "Keys and buttons for the app's own operations." },
-        { label: "Time", icon: Icons.time, description: "Rewind, fast-forward and pausing." },
-        { label: "Saves", icon: Icons.saves, description: "Save states, backups and memory cards." },
-        { label: "About", icon: Icons.about, description: "This app and what it is built with." },
+        { label: "Audio", icon: Icons.audio },
+        { label: "Graphics", icon: Icons.graphics },
+        { label: "Controls", icon: Icons.controls },
+        { label: "Shortcuts", icon: Icons.shortcuts },
+        { label: "Time", icon: Icons.time },
+        { label: "Saves", icon: Icons.saves },
+        { label: "About", icon: Icons.about },
     ];
     out property <int> section-count: root.sections.length;
     in property <string> time-status: "Boot a game to use rewind.";
@@ -655,6 +640,7 @@ export component SettingsPanel inherits Window {
     in-out property <float> fast-forward-position;
     in-out property <bool> invert-trigger-chords;
     in-out property <bool> mouse-camera;
+    in-out property <bool> run-by-default;
     // The assisted controls (xem_settings::Assisted): hand gestures, the
     // headset pointer (0 eye gaze, 1 head, 2 left hand, 3 right hand), the
     // ledge brake, touch controls, reduced transparency and motion.
@@ -685,6 +671,7 @@ export component SettingsPanel inherits Window {
     callback fast-forward-rate-edited(int);
     callback invert-trigger-chords-edited(bool);
     callback mouse-camera-edited(bool);
+    callback run-by-default-edited(bool);
     // An assisted-controls choice by name (gestures, pointer, ledge-brake,
     // touch, solid, still) and value.
     callback assist-edited(string, int);
@@ -701,7 +688,7 @@ export component SettingsPanel inherits Window {
     callback show-fps-edited(bool);
     // A graphics choice by name (renderer, profile, scale, quality, rate, interpolation,
     // widescreen, zoom-out, filter-world, filter-sprites, filter-interface,
-    // cull, cull-viewport, xr-distance, xr-width, xr-dof) and value.
+    // xr-distance, xr-width, xr-dof) and value.
     callback graphics-edited(string, int);
     callback fidelity-edited(int, bool);
     callback effect-edited(int, int);
@@ -709,6 +696,7 @@ export component SettingsPanel inherits Window {
     callback close-requested();
     callback import-disc-requested();
     callback quit-requested();
+    callback reset-requested();
     callback fullscreen-edited(bool);
 
     changed selected-section => {
@@ -730,7 +718,7 @@ export component SettingsPanel inherits Window {
     }
 
     function select-action(index: int) {
-        if index >= 0 && index < root.bindings.length && index != root.selected-action {
+        if index >= -1 && index < root.bindings.length && index != root.selected-action {
             root.selected-action = index;
             root.keyboard-editor-focused = false;
             root.gamepad-editor-focused = false;
@@ -778,13 +766,17 @@ export component SettingsPanel inherits Window {
                     spacing: 1px;
                     horizontal-stretch: 1;
                     Text { text: "Settings"; font-size: 17px; font-weight: 650; color: Theme.text; }
-                    Text { text: "Xenogears Ex Machina"; font-size: 11px; color: Theme.text-tertiary; }
+                }
+                if root.can-reset: VerticalLayout {
+                    alignment: center;
+                    IconButton { icon: Icons.reset; label: "Reset"; text: root.wide-layout ? "Reset" : ""; clicked => { root.reset-requested(); } }
                 }
                 if root.can-quit: VerticalLayout {
                     alignment: center;
                     IconButton {
                         icon: Icons.power;
-                        text: "Quit";
+                        label: "Quit";
+                        text: root.wide-layout ? "Quit" : "";
                         hover-icon-color: Theme.bad;
                         clicked => { root.quit-confirming = true; }
                     }
@@ -824,16 +816,6 @@ export component SettingsPanel inherits Window {
                         }
                     }
                     if !root.wide-layout: Divider { }
-                    VerticalLayout {
-                        padding-left: 20px;
-                        padding-right: 20px;
-                        padding-top: 14px;
-                        padding-bottom: 6px;
-                        spacing: 3px;
-                        vertical-stretch: 0;
-                        Text { text: root.sections[root.selected-section].label; font-size: 16px; font-weight: 650; color: Theme.text; }
-                        Text { text: root.sections[root.selected-section].description; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
-                    }
                     section-scroll := ScrollView {
                         accessible-role: tab-panel;
                         accessible-label: root.sections[root.selected-section].label;
@@ -853,7 +835,7 @@ export component SettingsPanel inherits Window {
                             // Audio
                             if root.selected-section == 0: Card {
                                 title: "Sound";
-                                description: "The game's mix as it leaves the console.";
+
                                 SliderRow {
                                     label: "Master volume";
                                     value-text: "\{round(root.master-volume)}%";
@@ -862,37 +844,31 @@ export component SettingsPanel inherits Window {
                                 Divider { }
                                 Row {
                                     label: "Sound mode";
-                                    help: root.audio-output == 0 ? "The game's Mono: every sound from the centre." : root.audio-output == 1 ? "The game's Stereo." : root.audio-output == 2 ? "The game's Wide-Stereo: its right side in opposite phase." : "For headphones: the music around you, the world's sounds from where they are. The game plays in Stereo.";
                                     Segmented { accessible-label: "Sound mode"; options: ["Mono", "Stereo", "Wide", "Binaural"]; current <=> root.audio-output; selected(index) => { root.audio-output-edited(index); } }
                                 }
                                 if root.audio-output == 3: Divider { }
                                 if root.audio-output == 3: ToggleRow {
                                     label: "Spatial music";
-                                    help: "The music's own parts placed around you: the melody and the bass ahead, the rest beside and behind. Off: its stereo mix.";
                                     checked <=> root.binaural-music;
                                     toggled(on) => { root.binaural-edited("music", on ? 1 : 0); }
                                 }
                                 if root.audio-output == 3: ToggleRow {
                                     label: "Positional effects";
-                                    help: "Sounds of things in the world come from where they are, turning with the camera. Others keep their stereo mix.";
                                     checked <=> root.binaural-effects;
                                     toggled(on) => { root.binaural-edited("effects", on ? 1 : 0); }
                                 }
                                 if root.audio-output == 3: SliderRow {
                                     label: "Music immersion";
-                                    help: "How far the music spreads: from its stereo arc ahead to all around you.";
                                     value-text: "\{round(root.binaural-immersion)}%";
                                     Slider { accessible-label: "Music immersion"; minimum: 0; maximum: 100; value <=> root.binaural-immersion; changed(value) => { root.binaural-edited("immersion", round(value)); } }
                                 }
                                 if root.audio-output == 3: ToggleRow {
                                     label: "Music stays as you turn";
-                                    help: "In a headset the music's stage stays where it is when you turn your head. Off: it turns with you.";
                                     checked <=> root.binaural-head;
                                     toggled(on) => { root.binaural-edited("head", on ? 1 : 0); }
                                 }
                                 if root.audio-output == 3: ToggleRow {
                                     label: "Compare with Stereo";
-                                    help: "Hear the game's own Stereo mix instead, to compare; Binaural stays chosen.";
                                     checked <=> root.binaural-bypass;
                                     toggled(on) => { root.binaural-edited("bypass", on ? 1 : 0); }
                                 }
@@ -901,57 +877,49 @@ export component SettingsPanel inherits Window {
                             // Graphics
                             if root.selected-section == 1: Card {
                                 title: "Picture";
-                                description: "How the console's picture reaches the window.";
+
                                 if root.can-fullscreen: ToggleRow {
                                     label: "Fullscreen";
-                                    help: "The window covers its whole display.";
                                     checked <=> root.fullscreen;
                                     toggled(on) => { root.fullscreen-edited(on); }
                                 }
                                 if root.can-fullscreen: Divider { }
                                 Row {
                                     label: "Renderer";
-                                    help: root.gfx-renderer == 0 ? "The console's own picture, scaled to the window." : "Drawn again at the window's resolution, in the look below.";
                                     Segmented { accessible-label: "Renderer"; options: ["Original", "Ex Machina"]; current <=> root.gfx-renderer; selected(index) => { root.graphics-edited("renderer", index); } }
                                 }
                                 Divider { }
                                 Row {
                                     label: "Scale";
-                                    help: "How the picture fills the window.";
                                     ComboBox { accessible-label: "Scale"; width: 150px; model: ["Fit", "Integer", "Stretch"]; current-index <=> root.scale; selected => { root.scale-edited(self.current-index); } }
                                 }
                                 Divider { }
                                 Row {
                                     label: "Filter";
-                                    help: "Smoothing as the picture is scaled.";
                                     Segmented { accessible-label: "Filter"; options: ["Nearest", "Linear"]; current <=> root.filter; selected(index) => { root.filter-edited(index); } }
                                 }
                                 Divider { }
                                 ToggleRow {
                                     label: "Show FPS";
-                                    help: "A frame counter in the corner.";
                                     checked <=> root.show-fps;
                                     toggled(on) => { root.show-fps-edited(on); }
                                 }
                             }
                             if root.selected-section == 1 && root.gfx-renderer == 1: Card {
                                 title: "Look";
-                                description: "Ex Machina's profile; each keeps the game's own art.";
+
                                 Row {
                                     label: "Profile";
-                                    help: root.gfx-profile == 0 ? "Sharp and smooth, in full colour." : root.gfx-profile == 1 ? "Lit like a diorama: light, shadows, haze." : root.gfx-profile == 2 ? "The PS1's own limits, at its resolution." : "Your own choice of effects and limits.";
                                     ComboBox { accessible-label: "Graphics profile"; width: 150px; model: ["Modern", "HD-2D", "PS1", "Custom"]; current-index <=> root.gfx-profile; selected => { root.graphics-edited("profile", self.current-index); } }
                                 }
                                 Divider { }
                                 Row {
                                     label: "Resolution";
-                                    help: "Auto follows the window's size.";
                                     ComboBox { accessible-label: "Internal resolution"; width: 150px; model: ["Auto", "1x", "2x", "3x", "4x", "5x", "6x", "7x", "8x"]; current-index <=> root.gfx-scale; selected => { root.graphics-edited("scale", self.current-index); } }
                                 }
                                 Divider { }
                                 Row {
                                     label: "Effects quality";
-                                    help: "Samples the effects take; the look stays.";
                                     ComboBox { accessible-label: "Effects quality tier"; width: 150px; model: ["Auto", "Low", "Medium", "High", "Ultra"]; current-index <=> root.gfx-quality; selected => { root.graphics-edited("quality", self.current-index); } }
                                 }
                                 if root.gfx-status != "": Text { text: root.gfx-status; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
@@ -960,27 +928,23 @@ export component SettingsPanel inherits Window {
                                 title: "Motion and framing";
                                 Row {
                                     label: "Presentation";
-                                    help: "When a new picture is shown.";
                                     ComboBox { accessible-label: "Presentation rate"; width: 150px; model: ["Every refresh", "Game frames"]; current-index <=> root.gfx-rate; selected => { root.graphics-edited("rate", self.current-index); } }
                                 }
                                 Divider { }
                                 ToggleRow {
                                     label: "Interpolate motion";
-                                    help: "Smoother movement, shown one game frame later.";
                                     checked <=> root.gfx-interpolation;
                                     toggled(on) => { root.graphics-edited("interpolation", on ? 1 : 0); }
                                 }
                                 Divider { }
                                 ToggleRow {
                                     label: "Wider framing";
-                                    help: "Widens the picture to the window's shape.";
                                     checked <=> root.gfx-widescreen;
                                     toggled(on) => { root.graphics-edited("widescreen", on ? 1 : 0); }
                                 }
                                 Divider { }
                                 SliderRow {
                                     label: "Zoom out";
-                                    help: "Pulls the field camera back; the mouse wheel over the game zooms too.";
                                     value-text: "\{root.gfx-zoom-out / 100}x";
                                     Slider {
                                         accessible-label: "Field camera zoom out (mouse wheel)";
@@ -993,14 +957,13 @@ export component SettingsPanel inherits Window {
                                 Divider { }
                                 ToggleRow {
                                     label: "Characters keep moving";
-                                    help: "Townspeople a wider or zoomed-out view shows go on walking. Changes gameplay.";
                                     checked <=> root.gfx-actors-in-view;
                                     toggled(on) => { root.graphics-edited("actors-in-view", on ? 1 : 0); }
                                 }
                             }
                             if root.selected-section == 1 && root.gfx-renderer == 1 && (root.gfx-profile == 1 || root.gfx-profile == 3): Card {
                                 title: root.gfx-profile == 1 ? "HD-2D effects" : "Effects";
-                                description: "Light and atmosphere over the game's own pictures.";
+
                                 for name[index] in root.effect-names: HorizontalLayout {
                                     spacing: 12px;
                                     Text { text: name; font-size: 12.5px; color: Theme.text-secondary; vertical-alignment: center; min-width: 118px; horizontal-stretch: 0; }
@@ -1016,7 +979,7 @@ export component SettingsPanel inherits Window {
                             }
                             if root.selected-section == 1 && root.gfx-renderer == 1 && root.gfx-profile == 3: Card {
                                 title: "Original limits";
-                                description: "The PS1's quirks, each on its own.";
+
                                 for name[index] in root.fidelity-names: ToggleRow {
                                     label: name;
                                     checked: root.gfx-fidelity[index];
@@ -1024,7 +987,7 @@ export component SettingsPanel inherits Window {
                                 }
                             }
                             if root.selected-section == 1 && root.gfx-renderer == 1: Card {
-                                title: "Filtering and culling";
+                                title: "Filtering";
                                 Row {
                                     label: "World";
                                     Segmented { accessible-label: "World filtering"; options: ["Nearest", "Linear"]; current <=> root.gfx-filter-world; selected(index) => { root.graphics-edited("filter-world", index); } }
@@ -1039,27 +1002,12 @@ export component SettingsPanel inherits Window {
                                 }
                                 Row {
                                     label: "Movies";
-                                    help: root.gfx-filter-movies == 0 ? "Rebuilt sharper from the decoded video." : "The decoder's own picture.";
                                     Segmented { accessible-label: "Movies"; options: ["Enhanced", "Original"]; current <=> root.gfx-filter-movies; selected(index) => { root.graphics-edited("filter-movies", index); } }
-                                }
-                                Divider { }
-                                ToggleRow {
-                                    label: "Cull back faces";
-                                    help: "Off draws every face, as the game does.";
-                                    checked <=> root.gfx-cull-back-faces;
-                                    toggled(on) => { root.graphics-edited("cull", on ? 1 : 0); }
-                                }
-                                Divider { }
-                                ToggleRow {
-                                    label: "Cull at the screen's edges";
-                                    help: "Off lets wider and zoomed-out views show the scenery the game culls.";
-                                    checked <=> root.gfx-cull-viewport;
-                                    toggled(on) => { root.graphics-edited("cull-viewport", on ? 1 : 0); }
                                 }
                             }
                             if root.selected-section == 1: Card {
                                 title: "Headset screen";
-                                description: "The virtual screen in a VR headset.";
+
                                 Row {
                                     label: "Distance";
                                     HorizontalLayout {
@@ -1080,7 +1028,6 @@ export component SettingsPanel inherits Window {
                                 if root.gfx-renderer == 1: Divider { }
                                 if root.gfx-renderer == 1: ToggleRow {
                                     label: "Depth of field";
-                                    help: "Off in a headset unless you want it.";
                                     checked <=> root.gfx-xr-dof;
                                     toggled(on) => { root.graphics-edited("xr-dof", on ? 1 : 0); }
                                 }
@@ -1088,24 +1035,28 @@ export component SettingsPanel inherits Window {
 
                             // Controls
                             if root.selected-section == 2: Card {
-                                title: "Mouse and triggers";
+                                title: "Movement, mouse and triggers";
+                                ToggleRow {
+                                    label: "Run by default";
+                                    checked <=> root.run-by-default;
+                                    toggled(on) => { root.run-by-default-edited(on); }
+                                }
+                                Divider { }
                                 ToggleRow {
                                     label: "Turn the camera with the mouse";
-                                    help: root.mouse-camera ? "The game holds the mouse while it has the input; Escape releases it." : "The mouse stays free; the arrow keys turn the camera.";
                                     checked <=> root.mouse-camera;
                                     toggled(on) => { root.mouse-camera-edited(on); }
                                 }
                                 Divider { }
                                 ToggleRow {
                                     label: "Invert LT/RT chords";
-                                    help: root.invert-trigger-chords ? "LT holds rewind, RT toggles fast-forward; Back+LT/RT are the game's L2/R2." : "Back+LT holds rewind, Back+RT toggles fast-forward; LT/RT are the game's L2/R2.";
                                     checked <=> root.invert-trigger-chords;
                                     toggled(on) => { root.invert-trigger-chords-edited(on); }
                                 }
                             }
                             if root.selected-section == 2: Card {
                                 title: "Game controls";
-                                description: "Choose an action to change its keys (KeyW, Space), gamepad inputs (South, LStickUp) or mouse buttons (MouseLeft). While the battle's attack inputs take the buttons, the attack rows come first.";
+
                                 game-actions := FocusScope {
                                     accessible-role: list;
                                     accessible-label: "Game controls";
@@ -1166,7 +1117,6 @@ export component SettingsPanel inherits Window {
                                                         Text { text: "Keys"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
                                                         LineEdit {
                                                             accessible-label: "Game keys";
-                                                            placeholder-text: "KeyW ArrowUp";
                                                             text <=> root.game-keys;
                                                             changed has-focus => { root.game-editor-focused = self.has-focus; }
                                                             accepted => { root.game-binding-edited(root.selected-game-action, root.game-keys, root.game-buttons, root.game-mouse); }
@@ -1177,7 +1127,6 @@ export component SettingsPanel inherits Window {
                                                         Text { text: "Gamepad"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
                                                         LineEdit {
                                                             accessible-label: "Game gamepad inputs";
-                                                            placeholder-text: "South LStickUp";
                                                             text <=> root.game-buttons;
                                                             changed has-focus => { root.game-editor-focused = self.has-focus; }
                                                             accepted => { root.game-binding-edited(root.selected-game-action, root.game-keys, root.game-buttons, root.game-mouse); }
@@ -1188,7 +1137,6 @@ export component SettingsPanel inherits Window {
                                                         Text { text: "Mouse"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
                                                         LineEdit {
                                                             accessible-label: "Game mouse buttons";
-                                                            placeholder-text: "MouseLeft";
                                                             text <=> root.game-mouse;
                                                             changed has-focus => { root.game-editor-focused = self.has-focus; }
                                                             accepted => { root.game-binding-edited(root.selected-game-action, root.game-keys, root.game-buttons, root.game-mouse); }
@@ -1197,6 +1145,7 @@ export component SettingsPanel inherits Window {
                                                     HorizontalLayout {
                                                         spacing: 8px;
                                                         alignment: end;
+                                                        Button { text: "Cancel"; clicked => { root.select-game-action(-1); } }
                                                         Button { text: "Clear"; clicked => { root.game-binding-edited(root.selected-game-action, "", "", ""); } }
                                                         Button { text: "Save"; primary: true; clicked => { root.game-binding-edited(root.selected-game-action, root.game-keys, root.game-buttons, root.game-mouse); } }
                                                     }
@@ -1212,44 +1161,38 @@ export component SettingsPanel inherits Window {
                             }
                             if root.selected-section == 2: Card {
                                 title: "Headsets and touch screens";
-                                description: "Assisted controls: hand gestures and a pointer in a headset, the control deck on a touch screen.";
+
                                 ToggleRow {
                                     label: "Hand gestures";
-                                    help: root.assist-gestures ? "Grab to pause, pinch to walk, thumb taps and swipes; prayer hands open Settings." : "Controllers and pointers only.";
                                     checked <=> root.assist-gestures;
                                     toggled(on) => { root.assist-edited("gestures", on ? 1 : 0); }
                                 }
                                 Divider { }
                                 Row {
                                     label: "Pointer";
-                                    help: "What aims gestures in a headset; an unavailable one aims at nothing.";
                                     ComboBox { accessible-label: "Headset pointer"; width: 150px; model: ["Eye gaze", "Head", "Left hand", "Right hand"]; current-index <=> root.assist-pointer; selected => { root.assist-edited("pointer", self.current-index); } }
                                 }
                                 Divider { }
                                 ToggleRow {
-                                    label: "Ledge brake";
-                                    help: root.assist-ledge-brake ? "Assisted walking stops at a jump's edge for your jump." : "Assisted walking keeps heading over a jump's edge; the jump stays yours.";
+                                    label: "Stop at ledges";
                                     checked <=> root.assist-ledge-brake;
                                     toggled(on) => { root.assist-edited("ledge-brake", on ? 1 : 0); }
                                 }
                                 Divider { }
                                 ToggleRow {
                                     label: "Touch controls";
-                                    help: "A control deck beside the picture once you touch the screen.";
                                     checked <=> root.assist-touch;
                                     toggled(on) => { root.assist-edited("touch", on ? 1 : 0); }
                                 }
                                 Divider { }
                                 ToggleRow {
                                     label: "Reduce transparency";
-                                    help: "Draws the cursors and controls solid.";
                                     checked <=> root.assist-solid;
                                     toggled(on) => { root.assist-edited("solid", on ? 1 : 0); }
                                 }
                                 Divider { }
                                 ToggleRow {
                                     label: "Reduce motion";
-                                    help: "Keeps the cursors and controls still.";
                                     checked <=> root.assist-still;
                                     toggled(on) => { root.assist-edited("still", on ? 1 : 0); }
                                 }
@@ -1257,13 +1200,13 @@ export component SettingsPanel inherits Window {
                             if root.selected-section == 2: Card {
                                 title: "App keys and views";
                                 if root.first-person: ControlRow { action: "First-person view (in a field)"; inputs: ["Select", "R3"]; }
-                                if root.first-person: ControlRow { action: "Look around in it"; inputs: root.mouse-camera ? ["Arrows", "Right stick", "Mouse"] : ["Arrows", "Right stick"]; }
+                                if root.first-person: ControlRow { action: "Look around in FPV"; inputs: root.mouse-camera ? ["Arrows", "Right stick", "Mouse"] : ["Arrows", "Right stick"]; }
                                 ControlRow { action: "Settings"; inputs: ["Esc", "Back+Start"]; }
                             }
                             // Shortcuts
                             if root.selected-section == 3: Card {
                                 title: "App shortcuts";
-                                description: "Choose an operation to change its keys (F5, ControlLeft+KeyS) or buttons (Back+South).";
+
                                 actions := FocusScope {
                                     accessible-role: list;
                                     accessible-label: "App shortcuts";
@@ -1327,7 +1270,6 @@ export component SettingsPanel inherits Window {
                                                         Text { text: "Keys"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
                                                         LineEdit {
                                                             accessible-label: "Keyboard binding";
-                                                            placeholder-text: "F5 or ControlLeft+KeyS";
                                                             text <=> root.keyboard-binding;
                                                             changed has-focus => { root.keyboard-editor-focused = self.has-focus; }
                                                             accepted => { root.binding-edited(root.selected-action, root.keyboard-binding, root.gamepad-binding); }
@@ -1338,7 +1280,6 @@ export component SettingsPanel inherits Window {
                                                         Text { text: "Buttons"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
                                                         LineEdit {
                                                             accessible-label: "Gamepad binding";
-                                                            placeholder-text: "Back+South";
                                                             text <=> root.gamepad-binding;
                                                             changed has-focus => { root.gamepad-editor-focused = self.has-focus; }
                                                             accepted => { root.binding-edited(root.selected-action, root.keyboard-binding, root.gamepad-binding); }
@@ -1347,6 +1288,7 @@ export component SettingsPanel inherits Window {
                                                     HorizontalLayout {
                                                         spacing: 8px;
                                                         alignment: end;
+                                                        Button { text: "Cancel"; clicked => { root.select-action(-1); } }
                                                         Button { text: "Clear"; clicked => { root.binding-edited(root.selected-action, "", ""); } }
                                                         Button { text: "Save shortcut"; primary: true; clicked => { root.binding-edited(root.selected-action, root.keyboard-binding, root.gamepad-binding); } }
                                                     }
@@ -1360,17 +1302,15 @@ export component SettingsPanel inherits Window {
                             // Time
                             if root.selected-section == 4: Card {
                                 title: "Rewind";
-                                description: "Snapshots taken as you play, over elapsed play time (fast-forward included).";
+
                                 ToggleRow {
                                     label: "Rewind history";
-                                    help: "Keeps recent states to step back through.";
                                     checked <=> root.rewind-enabled;
                                     toggled(on) => { root.rewind-enabled-edited(on); }
                                 }
                                 Divider { }
                                 Row {
                                     label: "Interval";
-                                    help: "Between snapshots.";
                                     HorizontalLayout {
                                         spacing: 8px;
                                         SpinBox {
@@ -1388,7 +1328,6 @@ export component SettingsPanel inherits Window {
                                 Divider { }
                                 Row {
                                     label: "History length";
-                                    help: "How far back you can go.";
                                     HorizontalLayout {
                                         spacing: 8px;
                                         SpinBox {
@@ -1416,7 +1355,7 @@ export component SettingsPanel inherits Window {
                             }
                             if root.selected-section == 4: Card {
                                 title: "Fast-forward";
-                                description: root.fast-forward ? "On now; its shortcut toggles it. Music keeps its tempo and pitch." : "Its shortcut toggles it. Music keeps its tempo and pitch.";
+
                                 SliderRow {
                                     label: "Speed";
                                     value-text: root.fast-forward-rates[root.fast-forward-rate];
@@ -1461,7 +1400,6 @@ export component SettingsPanel inherits Window {
                                 title: "Pause";
                                 ToggleRow {
                                     label: "Pause when the window loses focus";
-                                    help: "Uses the game's own pause screen where it allows one; Start resumes after you return.";
                                     checked <=> root.pause-on-focus-loss;
                                     toggled(on) => { root.pause-on-focus-loss-edited(on); }
                                 }
@@ -1484,7 +1422,7 @@ export component SettingsPanel inherits Window {
 
                             if root.selected-section == 5: Card {
                                 title: "Save states";
-                                description: "A save state keeps the game where it is; the app's settings stay as they are.";
+
                                 HorizontalLayout {
                                     spacing: 8px;
                                     Button { text: "Save state"; primary: true; clicked => { root.app-action-requested(0); } }
@@ -1493,7 +1431,7 @@ export component SettingsPanel inherits Window {
                             }
                             if root.selected-section == 5: Card {
                                 title: "Backups";
-                                description: "Files to keep, or to carry to another device.";
+
                                 VerticalLayout {
                                     spacing: 8px;
                                     for row in ceil(root.backup-actions.length / 2): HorizontalLayout {
@@ -1508,16 +1446,16 @@ export component SettingsPanel inherits Window {
                             // About
                             if root.selected-section == 6: Card {
                                 title: "Xenogears Ex Machina";
-                                description: "Plays Xenogears from your own discs through its recovered original program. Your discs, saves and settings stay on this device.";
+                                Text { text: "Plays Xenogears from your own discs through its recovered original program. Your discs, saves and settings stay on this device."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
                             if root.selected-section == 6: Card {
                                 title: "Built with Slint";
-                                description: "Its interface toolkit, under the Slint Royalty-free License 2.0.";
+                                Text { text: "Its interface toolkit, under the Slint Royalty-free License 2.0."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                                 AboutSlint { max-height: 120px; }
                             }
                             if root.selected-section == 6: Card {
                                 title: "Binaural sound";
-                                description: "Places sounds with the MIT Media Lab's KEMAR head-related transfer functions: B. Gardner and K. Martin, \"HRTF Measurements of a KEMAR Dummy-Head Microphone\", MIT Media Lab, 1994. Copyright 1994 MIT Media Laboratory, provided free with no restrictions on use.";
+                                Text { text: "Places sounds with the MIT Media Lab's KEMAR head-related transfer functions: B. Gardner and K. Martin, \"HRTF Measurements of a KEMAR Dummy-Head Microphone\", MIT Media Lab, 1994. Copyright 1994 MIT Media Laboratory, provided free with no restrictions on use."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
                         }
                     }
@@ -1551,13 +1489,6 @@ export component SettingsPanel inherits Window {
                     vertical-alignment: center;
                     horizontal-stretch: 1;
                 }
-                if root.close-hint != "": Text {
-                    text: root.close-hint;
-                    font-size: 11px;
-                    color: Theme.text-tertiary;
-                    vertical-alignment: center;
-                    horizontal-stretch: 0;
-                }
             }
         }
         if root.quit-confirming: QuitDialog {
@@ -1574,19 +1505,84 @@ export component SettingsPanel inherits Window {
 
 export component FrameRateOverlay inherits Window {
     in property <string> counter: "— FPS";
+    in property <bool> show-fps;
+    in property <bool> fast-forward;
+    in property <bool> rewinding;
+    in property <string> notice;
+    in property <bool> notice-error;
     background: transparent;
-    preferred-width: 96px;
-    preferred-height: 28px;
-    Rectangle {
+    preferred-width: 304px;
+    preferred-height: 110px;
+    HorizontalLayout {
+        x: 0px;
+        y: 0px;
+        width: parent.width;
+        height: 28px;
+        alignment: start;
+        spacing: 6px;
+        if root.show-fps: Rectangle {
+            width: 96px;
+            background: #101114d9;
+            border-radius: 5px;
+            Text {
+                text: root.counter;
+                color: Theme.text;
+                font-family: "monospace";
+                font-size: 14px;
+                font-weight: 600;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+        if root.fast-forward: Rectangle {
+            width: 36px;
+            background: #101114d9;
+            border-radius: 5px;
+            accessible-role: text;
+            accessible-label: "Fast-forwarding";
+            Icon {
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                data: "M3 5 L11 12 L3 19 Z M13 5 L21 12 L13 19 Z";
+                color: Theme.text;
+            }
+        }
+        if root.rewinding: Rectangle {
+            width: 36px;
+            background: #101114d9;
+            border-radius: 5px;
+            accessible-role: text;
+            accessible-label: "Rewinding";
+            Icon {
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                data: "M11 5 L3 12 L11 19 Z M21 5 L13 12 L21 19 Z";
+                color: Theme.text;
+            }
+        }
+    }
+    if root.notice != "": Rectangle {
+        y: 34px;
+        width: parent.width;
+        height: 76px;
         background: #101114d9;
         border-radius: 5px;
+        Icon {
+            x: 10px;
+            y: 13px;
+            data: root.notice-error ? Icons.alert : Icons.check;
+            color: root.notice-error ? Theme.bad : Theme.good;
+        }
         Text {
-            text: root.counter;
-            color: #f5f5f5;
-            font-family: "monospace";
-            font-size: 14px;
-            font-weight: 600;
-            horizontal-alignment: center;
+            x: 38px;
+            y: 8px;
+            width: parent.width - 48px;
+            height: parent.height - 16px;
+            text: root.notice;
+            color: Theme.text;
+            font-size: 13px;
+            wrap: word-wrap;
+            overflow: elide;
             vertical-alignment: center;
         }
     }

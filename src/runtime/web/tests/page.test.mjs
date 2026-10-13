@@ -4,13 +4,67 @@
 // IndexedDB and snapshot saves. Needs no private inputs.
 
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { after, before, describe, test } from 'node:test';
+import { runInNewContext } from 'node:vm';
 import { NO_WEBGPU, WEBGPU, pixelStats, settingsSection, shot, start, status, syntheticDisc } from './support.mjs';
 
 async function canvasShot(page, name) {
   const png = await page.locator('canvas').screenshot({ path: shot(name) });
   return pixelStats(png);
 }
+
+test('audio worklet keeps consecutive samples through animation scheduling jitter', () => {
+  let Output;
+  runInNewContext(readFileSync(new URL('../audio-worklet.js', import.meta.url), 'utf8'), {
+    AudioWorkletProcessor: class { constructor() { this.port = { postMessage() {} }; } },
+    registerProcessor(_name, processor) { Output = processor; },
+  });
+  const output = new Output();
+  const sample = (at) => Math.fround(Math.sin(at * 0.07) * 0.5);
+  let produced = 0;
+  const push = (count) => {
+    const samples = new Float32Array(count * 2);
+    for (let i = 0; i < count; i++) {
+      samples[i * 2] = sample(produced + i);
+      samples[i * 2 + 1] = -samples[i * 2];
+    }
+    produced += count;
+    output.push(samples);
+  };
+  const process = () => {
+    const left = new Float32Array(128), right = new Float32Array(128);
+    output.process([], [[left, right]]);
+    return [left, right];
+  };
+  push(735);
+  assert.ok(process()[0].every((value) => value === 0));
+  assert.equal(output.buffered,735,'one animation frame is retained until playback has a cushion');
+  push(1470);
+  let consumed = 0;
+  // Audio runs every 128 samples. A busy page alternates between 11.6 and
+  // 23.2 ms batches; it supplies exactly elapsed audio time, as FF does.
+  let nextPush = 512, lastPush = 0, interval = 0;
+  const underruns = output.underruns;
+  for (let elapsed = 0; elapsed < 44100; elapsed += 128) {
+    if (elapsed >= nextPush) {
+      push(elapsed - lastPush);
+      lastPush = elapsed;
+      nextPush += ++interval % 2 ? 1024 : 512;
+    }
+    const [left, right] = process();
+    for (let i = 0; i < left.length; i++, consumed++) {
+      assert.equal(left[i],sample(consumed));
+      assert.equal(right[i],-sample(consumed));
+    }
+  }
+  assert.equal(output.underruns,underruns,'jitter must not insert silence into the stream');
+  assert.equal(output.overflows,0);
+  output.port.onmessage({ data: { reset: true } });
+  push(735);
+  assert.ok(process()[0].every((value) => value === 0));
+  assert.equal(output.buffered,735,'a restored timeline primes from its new audio');
+});
 
 describe('rendering', () => {
   for (const [label, args, expected] of [['webgpu', WEBGPU, 'webgpu'], ['webgl2 (WebGPU disabled)', NO_WEBGPU, 'webgl2']]) {
@@ -97,7 +151,7 @@ describe('page services', () => {
     const panel=await settingsSection(page,1);
     const before = (await page.evaluate(() => window.xem.settings.get())).settings.presentation.show_fps;
     // The Show FPS switch, at the end of the Picture card's last row.
-    await page.mouse.click(panel.left+586,panel.top+380);
+    await page.mouse.click(panel.left+586,panel.top+262);
     await page.waitForTimeout(200);
     await page.locator('canvas').screenshot({ path: shot('panel-click.png') });
     const after = (await page.evaluate(() => window.xem.settings.get())).settings.presentation.show_fps;

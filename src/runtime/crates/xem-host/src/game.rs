@@ -14,10 +14,14 @@ const BATCH_BUDGET: Duration = Duration::from_millis(12);
 /// headset runtime's frame loop, a slow display) still runs every game
 /// frame; a longer stall drops time instead of catching up.
 const MAX_CATCH_UP: u32 = 4;
+/// Fifty milliseconds of stereo S16 PCM before starting the device absorbs
+/// the jitter between a busy game batch and the audio callback.
+const AUDIO_PREROLL_BYTES: i32 = 44_100 / 20 * 2 * 2;
 
 pub struct Game {
     pub session: Session<NativeModule>,
     audio: *mut SDL_AudioStream,
+    audio_started: bool,
     paced: Instant,
     music_paced: Instant,
     samples: Vec<i16>,
@@ -29,6 +33,8 @@ pub struct Game {
     timeline_revision: u64,
     rewind_held: [bool;2],
     rewind_next: Instant,
+    hud_forward: Option<Instant>,
+    hud_rewind: Option<Instant>,
     applied_time_settings: Option<(xem_settings::FastForwardRate, bool, u32, u32)>,
     /// Fast-forward's pace: the rate the batches reach.
     pacer: xem_core::time::FastForwardPacer,
@@ -59,13 +65,10 @@ impl Game {
                 std::ptr::null_mut(),
             )
         };
-        if !audio.is_null() {
-            // SAFETY: an open stream.
-            unsafe { SDL_ResumeAudioStreamDevice(audio) };
-        }
         let mut game = Game {
             session,
             audio,
+            audio_started: false,
             paced: Instant::now(),
             music_paced: Instant::now(),
             samples: Vec::new(),
@@ -74,6 +77,8 @@ impl Game {
             timeline_revision: 0,
             rewind_held: [false;2],
             rewind_next: Instant::now(),
+            hud_forward: None,
+            hud_rewind: None,
             applied_time_settings: None,
             pacer: Default::default(),
             last_update: Instant::now(),
@@ -157,6 +162,13 @@ impl Game {
             if held { self.pause(); } else { self.resume(); self.timeline_revision = self.session.timeline_revision; }
         }
         Ok(())
+    }
+    /// Recent completed work, rather than the time-control preference alone.
+    pub fn time_activity(&self) -> (bool, bool) {
+        let held = self.rewind_held.iter().any(|held| *held);
+        let recent = |at: Option<Instant>, ms| at.is_some_and(|at| at.elapsed() < Duration::from_millis(ms));
+        (self.session.fast_forward && !held && self.session.stopped.is_none() && recent(self.hud_forward, 150),
+         held && recent(self.hud_rewind, xem_core::rewind::REWIND_STEP_MS + 100))
     }
     pub fn time_status(&mut self) -> (bool,String) {
         let rewind = &self.session.rewind;
@@ -245,7 +257,7 @@ impl Game {
         if self.rewind_held.iter().any(|held| *held) {
             let now = Instant::now();
             if now >= self.rewind_next {
-                self.session.rewind_step()?;
+                self.hud_rewind = self.session.rewind_step()?.then_some(now);
                 self.rewind_next = now + Duration::from_millis(xem_core::rewind::REWIND_STEP_MS);
             }
             self.paced = now;
@@ -257,7 +269,7 @@ impl Game {
             self.timeline_revision = self.session.timeline_revision;
             self.paced = Instant::now();
             self.music_paced = self.paced;
-            if !self.audio.is_null() { unsafe { SDL_ClearAudioStream(self.audio); SDL_ResumeAudioStreamDevice(self.audio); } }
+            self.pause();
         }
         let mut due = 0;
         while self.paced + FRAME <= Instant::now() && due < MAX_CATCH_UP {
@@ -271,7 +283,11 @@ impl Game {
         let music_cycles = (music_now.duration_since(self.music_paced).min(Duration::from_millis(100)).as_nanos()
             * u128::from(xem_core::clock::CPU_HZ) / 1_000_000_000) as u64;
         self.music_paced = music_now;
-        let live_music = self.session.live_music();
+        let live_music = if self.scripted {
+            self.session.frame_factor().is_none() && self.session.live_music()
+        } else {
+            self.session.begin_live_music()?
+        };
         let factor = self.session.frame_factor();
         let requested = factor.map(|factor| due * factor);
         let start = Instant::now();
@@ -291,9 +307,12 @@ impl Game {
             if !self.session.frame().map_err(|trap| trap.to_string())? { break; }
             batch += 1;
         }
+        if batch > 0 {
+            self.hud_forward = (self.session.fast_forward && !self.session.runtime.game_paused()).then(Instant::now);
+        }
         if live_music { self.session.advance_live_music(music_cycles)?; }
-        // A fixed fast-forward rate the batches cannot reach runs at the
-        // rate they do reach, so the music it times keeps up with the sound.
+        // Adapt fixed fast-forward to the rate the batches actually reach.
+        // Music has its own elapsed-time clock and keeps playing throughout.
         let now = Instant::now();
         let seconds = now.duration_since(self.last_update).as_secs_f64();
         self.last_update = now;
@@ -322,6 +341,9 @@ impl Game {
                     self.samples.as_ptr().cast(),
                     (self.samples.len() * 2) as i32,
                 );
+                if !self.audio_started && SDL_GetAudioStreamQueued(self.audio) >= AUDIO_PREROLL_BYTES {
+                    self.audio_started = SDL_ResumeAudioStreamDevice(self.audio);
+                }
             }
         }
         Ok(batch)
@@ -339,6 +361,9 @@ impl Game {
     /// nothing runs until [`resume`](Self::resume), and queued sound is
     /// dropped.
     pub fn pause(&mut self) {
+        self.hud_forward = None;
+        self.hud_rewind = None;
+        self.audio_started = false;
         if !self.audio.is_null() {
             // SAFETY: an open stream.
             unsafe {
@@ -353,10 +378,7 @@ impl Game {
         self.paced = Instant::now();
         self.music_paced = self.paced;
         self.session.reset_rewind_timer();
-        if !self.audio.is_null() {
-            // SAFETY: an open stream.
-            unsafe { SDL_ResumeAudioStreamDevice(self.audio) };
-        }
+        // The next updates refill the short pre-roll before playback resumes.
     }
 
     /// What the game drew since the last call (its GPU's draw trace, which
@@ -499,6 +521,7 @@ mod tests {
         for _ in 0..4 { update(&mut game,false,&settings,0); }
         assert!(game.frames_run()>before,"unpausable play continues until an original pause check permits it");
         assert!(!paused(&mut game),"the game's script pause lock must be respected");
+        assert_eq!(game.time_activity(),(true,false),"running FF appears in the HUD");
         // Refocus before unlocking: a cancelled focus request must not pause later.
         update(&mut game,true,&settings,0);
         game.command(&json!({"cmd":"write","path":"field_work.unk2358","value":0})).unwrap();
@@ -514,6 +537,7 @@ mod tests {
             if paused(&mut game) { break; }
         }
         assert!(paused(&mut game),"focus loss must enter the original pause screen even during FF");
+        assert_eq!(game.time_activity(),(false,false),"the original pause hides FF despite its enabled setting");
         let retained = game.session.rewind.status();
         let paused_at = game.frames_run();
         clock.set(Duration::from_secs(60));
@@ -579,6 +603,7 @@ mod tests {
         assert!(game.rewind_held[0],"releasing a panel hold does not release the bound input");
         assert_eq!(game.update(0,&settings,|| true).unwrap(),0);
         assert_eq!(game.frames_run(),120);
+        assert_eq!(game.time_activity(),(false,true),"only completed rewind steps show the rewind icon");
         assert!(!game.session.fast_forward,"rewind must keep the current FF switch off");
         assert_eq!(game.session.fast_forward_rate,FastForwardRate::Fixed(20));
         for expected in [90,60,30,0] {
@@ -593,6 +618,7 @@ mod tests {
         game.rewind_next = Instant::now();
         assert_eq!(game.update(0,&settings,|| true).unwrap(),0);
         assert_eq!(game.snapshot_bytes().unwrap(),first);
+        assert_eq!(game.time_activity(),(false,false),"holding at history start does not claim to rewind");
         game.set_rewind_held(false,false).unwrap();
         game.paced = Instant::now() - FRAME*2;
         assert!(game.update(0,&settings,|| true).unwrap()>0);

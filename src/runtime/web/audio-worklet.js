@@ -6,6 +6,7 @@
 const CAPACITY = 16384; // frames, about 0.37 s at 44.1 kHz
 const LIMIT = 8192; // frames kept waiting at most, about 0.19 s
 const REPORT = 2048; // report about every this many frames played
+const PREROLL = 2205; // 50 ms: absorb a busy animation frame before playback
 
 class XemOutput extends AudioWorkletProcessor {
   constructor() {
@@ -17,8 +18,9 @@ class XemOutput extends AudioWorkletProcessor {
     this.underruns = 0;
     this.overflows = 0;
     this.reported = 0;
+    this.primed = false;
     this.port.onmessage = (event) => {
-      if (event.data.reset) { this.read = 0; this.buffered = 0; }
+      if (event.data.reset) { this.read = 0; this.buffered = 0; this.primed = false; }
       else this.push(event.data);
     };
   }
@@ -48,14 +50,16 @@ class XemOutput extends AudioWorkletProcessor {
 
   process(_inputs, outputs) {
     const [left, right] = outputs[0];
+    if (!this.primed && this.buffered >= PREROLL) this.primed = true;
     for (let i = 0; i < left.length; i++) {
-      if (this.buffered > 0) {
+      if (this.primed && this.buffered > 0) {
         left[i] = this.ring[this.read * 2];
         right[i] = this.ring[this.read * 2 + 1];
         this.read = (this.read + 1) % CAPACITY;
         this.buffered--;
         this.played++;
       } else {
+        if (this.buffered === 0) this.primed = false;
         left[i] = right[i] = 0;
         this.underruns++;
       }

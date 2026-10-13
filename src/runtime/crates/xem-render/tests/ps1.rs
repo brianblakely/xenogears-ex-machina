@@ -330,6 +330,91 @@ fn culled_faces_show_beside_the_screen_and_wherever_a_pulled_back_camera_sees_th
 }
 
 #[test]
+fn copying_a_display_buffer_keeps_the_presented_zoom_and_sides_under_pause_uploads() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let trace = traced(projected_scene);
+    let (mut renderer, _) = draw(&gpu, &trace, Fidelity::MODERN, Culling::default());
+    let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
+    renderer.set_display(xem_gpu::VramRect { x: 0, y: 0, width: 320, height: 240 });
+    renderer.set_display(xem_gpu::VramRect { x: 0, y: 256, width: 320, height: 240 });
+    let mut frame = FrameRenderer::new(&gpu.device);
+    let framing = Framing { side: 40, pull_back: 1000.0, ..Default::default() };
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, area, framing);
+    frame.draw_overlay(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, None);
+    gpu.queue.submit([encoder.finish()]);
+    let expected = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+    renderer.set_presented(Some(xem_render::ps1::PresentedPicture { texture: frame.color().clone(), side: 40, scale: 2 }));
+
+    // Pause takes the current screen into the other display buffer. Later
+    // drawing may reuse the source, and PAUSE is an ordinary small upload.
+    let copied = DEVICE.with(|device| {
+        let mut device = device.borrow_mut();
+        device.write_gp0_words(&[0x8000_0000, xy(0, 0), xy(0, 256), 240 << 16 | 320]);
+        device.write_gp0_words(&[0x0200_FF00, xy(0, 0), 240 << 16 | 320]);
+        device.write_gp0_words(&[0xA000_0000, xy(136, 356), 1 << 16 | 2, 0x7FFF_7FFF]);
+        device.take_trace()
+    });
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    renderer.draw(&mut encoder, &copied);
+    frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, DisplayArea { y: 256, ..area }, framing);
+    frame.draw_overlay(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, None);
+    gpu.queue.submit([encoder.finish()]);
+    let paused = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+    let (width, _) = frame.size();
+    for (i, (before, after)) in expected.chunks_exact(4).zip(paused.chunks_exact(4)).enumerate() {
+        let (x, y) = (i as u32 % width, i as u32 / width);
+        if (352..356).contains(&x) && (200..202).contains(&y) {
+            assert_eq!(&after[..3], [255, 255, 255], "the pause label stays over the held picture");
+        } else {
+            assert_eq!(before, after, "the displayed picture is preserved at ({x}, {y})");
+        }
+    }
+}
+
+#[test]
+fn terrain_slivers_culled_at_whole_pixels_fill_seams_at_one_times_zoom() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let (sync, mut scene) = traced(|device| {
+        device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+    });
+    let TraceOp::Draw(mut sliver) = primitive(0, 0, 0) else { unreachable!() };
+    sliver.shape = Shape::Triangle;
+    sliver.class = Class::World;
+    sliver.revealed = true;
+    sliver.textured = false;
+    for (v, (x, fy)) in sliver.vertices.iter_mut().zip([(50, 100.1), (250, 100.1), (150, 100.9)]) {
+        v.x = x;
+        v.y = 100;
+        v.fx = x as f32;
+        v.fy = fy;
+        v.color = 0x0000FF;
+    }
+    scene.ops.push(TraceOp::Draw(sliver));
+    for snapping in [false, true] {
+        let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 2);
+        renderer.set_options(DrawOptions { fidelity: Fidelity { vertex_snapping: snapping, ..Fidelity::MODERN }, ..Default::default() }, 2);
+        renderer.set_seal(true);
+        for trace in [&sync, &scene] {
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            renderer.draw(&mut encoder, trace);
+            gpu.queue.submit([encoder.finish()]);
+        }
+        // Both the normal picture and a widescreen replay must restore
+        // the sliver inside the original screen, without pulling back.
+        let pixels = read_rgba8(&gpu.device, &gpu.queue, renderer.picture().0);
+        assert_eq!(pixels[(201 * 2048 + 300) * 4] != 0, !snapping);
+        let mut frame = FrameRenderer::new(&gpu.device);
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer,
+            DisplayArea { x: 0, y: 0, width: 320, height: 240 }, Framing { side: 40, ..Default::default() });
+        gpu.queue.submit([encoder.finish()]);
+        let pixels = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+        assert_eq!(pixels[(201 * 800 + 380) * 4] != 0, !snapping);
+    }
+}
+
+#[test]
 fn pulling_back_moves_the_scene_towards_the_projection_centre_and_leaves_the_interface() {
     let scene = primitive(260, 120, 0);
     let mut interface = primitive(260, 120, 0);
@@ -432,6 +517,39 @@ fn sprites_stand_facing_the_view_at_their_feet_and_the_viewers_own_is_left_out()
     for (v, (x, y)) in p.vertices.iter().zip([(147.2, 68.8), (172.8, 68.8), (147.2, 120.0), (172.8, 120.0)]) {
         assert!((v.fx - x).abs() < 1e-3 && (v.fy - y).abs() < 1e-3 && v.z == 1000.0, "{v:?}");
     }
+}
+
+#[test]
+fn first_person_replaces_a_directional_sprite_once_and_restores_its_texture_cells() {
+    use xem_gpu::{Projection, SpriteFacing, SpriteFacingPart, VramRect};
+    let rect = VramRect { x:512,y:256,width:1,height:1 };
+    let points = [[-50,-100,1000],[50,-100,1000],[-50,0,1000],[50,0,1000]].map(|view| Projection {
+        view, sz:1000, class:2, offset:(160,120), h:256, owner:1,
+        x:((160.0 + view[0] as f32 * 256.0 / 1000.0)*65536.0) as i32,
+        y:((120.0 + view[1] as f32 * 256.0 / 1000.0)*65536.0) as i32,
+        ..Default::default()
+    });
+    let facing = std::sync::Arc::new(SpriteFacing {
+        parts:vec![SpriteFacingPart { words:[0x2C808080,0,24,0,32,0,24|16<<8,0,32|16<<8],points }],
+        textures:vec![(rect,vec![0x1234].into())], restore:vec![(rect,vec![0x5678].into())],
+    });
+    let TraceOp::Draw(mut sprite) = primitive(150,95,0) else { unreachable!() };
+    sprite.class = Class::Sprite;
+    sprite.owner = 1;
+    sprite.ground = Some([160.0,120.0,1000.0]);
+    sprite.facing = Some(facing);
+    // An alternative frame can have a different number of parts. Two
+    // original parts are replaced by its one assembled part, exactly once.
+    let original = vec![TraceOp::Draw(sprite.clone()),TraceOp::Draw(sprite)];
+    let mut ops = original.clone();
+    first_person(&mut ops,&AHEAD);
+    assert_eq!(ops.len(),3);
+    assert!(matches!(&ops[0], TraceOp::Write { pixels, .. } if pixels.as_ref()==[0x1234]));
+    let TraceOp::Draw(p) = &ops[1] else { unreachable!() };
+    assert_eq!(p.vertices.map(|v| (v.u,v.v)),[(24,0),(32,0),(24,16),(32,16)]);
+    assert!(p.facing.is_none());
+    assert!(matches!(&ops[2], TraceOp::Write { pixels, .. } if pixels.as_ref()==[0x5678]));
+    assert_eq!(original.len(),2,"the normal-camera trace remains available unchanged");
 }
 
 /// A red floor through the GTE (offset 160, 120; H 256): 200 units below
@@ -542,6 +660,7 @@ fn primitive(x: i32, y: i32, u: i16) -> TraceOp {
         source: 0,
         revealed: false,
         ground: None,
+        facing: None,
     })
 }
 

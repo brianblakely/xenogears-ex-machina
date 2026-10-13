@@ -37,6 +37,58 @@ const faultInjector = () => {
 
 // Each test opens its own browser and storage: two run at once.
 describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, () => {
+  test('HUD shows active time controls and state results without memory-card notices', async () => {
+    const browser = await start({ args: NO_WEBGPU, fixtures: true, initScripts: [faultInjector] });
+    try {
+      const page = await browser.page(fixture); await forever(page);
+      await page.evaluate(() => {
+        const x = window.xem;
+        x.settings.apply({ ShowFps: false });
+        x.command({ cmd: 'fast_forward', enabled: true });
+      });
+      assert.equal((await status(page)).renderer.hud.fast_forward,false,'enabled FF without play is idle');
+      await history(page);
+      await page.evaluate(() => window.xem.setRunning(true));
+      await page.waitForFunction(() => window.xem.status().renderer.hud.fast_forward);
+      await page.evaluate(() => window.xem.setRunning(false));
+      await page.waitForFunction(() => !window.xem.status().renderer.hud.fast_forward);
+      await page.evaluate(async () => {
+        await window.xem.appOperation({ Rewind: true });
+        window.xem.setRunning(true);
+      });
+      await page.waitForFunction(() => window.xem.status().renderer.hud.rewinding);
+      assert.equal((await status(page)).renderer.hud.fast_forward,false,'rewind takes precedence over enabled FF');
+      await page.waitForFunction(() => !window.xem.status().renderer.hud.rewinding);
+      await page.evaluate(async () => {
+        await window.xem.appOperation({ Rewind: false });
+        window.xem.setRunning(false);
+        await window.xem.appOperation({ Action: 'SaveState' });
+      });
+      assert.equal((await status(page)).renderer.hud.notice,'State saved');
+      await page.evaluate(async () => {
+        const x = window.xem;
+        await x.cards.store(0,x.cards.image(0));
+      });
+      assert.equal((await status(page)).renderer.hud.notice,'State saved','ordinary card writes do not replace the state notice');
+      await page.evaluate(() => window.xem.appOperation({ Action: 'LoadState' }));
+      assert.equal((await status(page)).renderer.hud.notice,'State loaded');
+      await page.evaluate(async () => {
+        window.storageFault = 'quota';
+        try { await window.xem.appOperation({ Action: 'SaveState' }); } catch {}
+        window.storageFault = null;
+      });
+      assert.match((await status(page)).renderer.hud.notice,/Could not save state:.*quota/i);
+      await page.evaluate(async () => {
+        const storage = await import('/storage.js');
+        await storage.remove('saves','slot0');
+        try { await window.xem.appOperation({ Action: 'LoadState' }); } catch {}
+      });
+      assert.match((await status(page)).renderer.hud.notice,/Could not load state:.*No stored state/);
+      assert.equal((await status(page)).renderer.panelVisible,false);
+      assert.deepEqual(page.errors,[]);
+    } finally { await browser.close(); }
+  });
+
   test('quota and interrupted writes retain the previous state and pending cards for retry', async () => {
     const browser = await start({ args: NO_WEBGPU, fixtures: true, initScripts: [faultInjector] });
     try {
@@ -248,11 +300,25 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
     try {
       const page = await browser.page(fixture); await forever(page);
       await history(page); await page.evaluate(() => window.xem.setRunning(true));
-      const before = (await status(page)).session.frames;
+      // Observe each animation in the page: a slow automation round-trip
+      // can otherwise read the oldest state after both held rewind steps.
+      const before = await page.evaluate(() => {
+        const initial = window.xem.status().session.frames;
+        let previous = initial;
+        window.heldRewindSteps = [];
+        const sample = () => {
+          const frame = window.xem.status().session.frames;
+          if (frame < previous) window.heldRewindSteps.push(frame);
+          previous = frame;
+          if (window.heldRewindSteps.length < 2) requestAnimationFrame(sample);
+        };
+        requestAnimationFrame(sample);
+        return initial;
+      });
       await page.keyboard.down('KeyR');
-      await page.waitForFunction((before) => window.xem.status().session.frames < before,before);
-      const first = (await status(page)).session.frames;
-      await page.waitForFunction((first) => window.xem.status().session.frames < first,first);
+      await page.waitForFunction(() => window.heldRewindSteps.length >= 2);
+      const steps = await page.evaluate(() => window.heldRewindSteps);
+      assert.ok(steps[0] < before && steps[1] < steps[0], `held rewind must restore two distinct earlier frames: ${before} -> ${steps}`);
       await page.keyboard.up('KeyR');
       const released = (await status(page)).session.frames;
       await page.waitForFunction((released) => window.xem.status().session.frames > released,released);
@@ -266,8 +332,11 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
       await page.keyboard.up('KeyR');
       await page.evaluate(() => window.dispatchEvent(new Event('focus')));
       await history(page);
-      await page.evaluate(() => { window.xem.setRunning(true); window.padButtons[6]=true; window.padButtons[8]=true; });
-      const padBefore = (await status(page)).session.frames;
+      const padBefore = await page.evaluate(() => {
+        const before = window.xem.status().session.frames;
+        window.xem.setRunning(true); window.padButtons[6]=true; window.padButtons[8]=true;
+        return before;
+      });
       await page.waitForFunction((padBefore) => window.xem.status().session.frames < padBefore,padBefore);
       await page.evaluate(() => window.dispatchEvent(new Event('blur')));
       const padFocusReleased = (await status(page)).session.frames;
@@ -512,15 +581,16 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
       const page=await browser.page(fixture); await forever(page);
       await page.evaluate(async()=>{await window.xem.runFrames(150);window.xem.setRunning(true)});
       await page.click('#settings');
-      // Time (its rewind fields), then Shortcuts (the open shortcut's editors).
+      // Time (its rewind fields), then select a shortcut to open its editors.
       for(const section of [4,3]) {
-        await settingsSection(page,section);
+        const panel = await settingsSection(page,section);
+        if(section === 3) await page.mouse.click(panel.left+270,panel.top+97); // Save state row
         for(let field=0;field<2;field++) {
           for(let tabs=0;tabs<40;tabs++) {
             await page.keyboard.press('Tab');
             if((await status(page)).renderer.panelTextEditorFocused) break;
           }
-          assert.equal((await status(page)).renderer.panelTextEditorFocused,true,'a Settings text editor has focus');
+          assert.equal((await status(page)).renderer.panelTextEditorFocused,true,`Settings section ${section}, field ${field} has focus`);
           const before=(await status(page)).session.frames;
           await page.keyboard.down('KeyR'); await page.waitForTimeout(250);
           const after=await status(page); await page.keyboard.up('KeyR');

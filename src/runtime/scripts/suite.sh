@@ -136,7 +136,7 @@ web() {
 # The browser suites but the timed tests, once the native build has made
 # the host they compare with: the slice's (the longest) from the start, the
 # others two files at a time (node runs them in name order).
-timed='rewind frame p99|keep music on host time|drops missed time|Start pause freezes rewind history|phone-class processor'
+timed='rewind frame p99|keep music on host time|rewind uses elapsed seconds during FF|the configured history length expires game saves by elapsed play time|drops missed time|Start pause freezes rewind history|phone-class processor'
 browser() {
     until [[ -f $logs/native.result ]]; do sleep 1; done
     grep -q '^pass' "$logs/native.result" || return 1
@@ -161,6 +161,8 @@ timing() {
     done <<'TESTS'
 persistence.test.mjs rewind frame p99
 persistence.test.mjs keep music on host time
+persistence.test.mjs rewind uses elapsed seconds during FF
+persistence.test.mjs the configured history length expires game saves by elapsed play time
 persistence.test.mjs Start pause freezes rewind history
 page.test.mjs drops missed time
 binaural.test.mjs phone-class processor

@@ -322,8 +322,10 @@ impl GameView {
                     Some(Reveals { reach: [x as u16, y as u16], pull_back: 0, around: false })
                 }
             }
-        } else if side > 0 {
+        } else if side > 0 || (self.scene.starts_with("worldmap") && !config.draw.fidelity.vertex_snapping) {
             // The sides, and a little more for faces leaning into them.
+            // Modern world terrain also needs sub-pixel slivers the
+            // original's whole-pixel winding test discarded inside them.
             Some(Reveals { reach: [side as u16 + 16, 16], pull_back: 0, around: false })
         } else {
             None

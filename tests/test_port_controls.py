@@ -24,6 +24,14 @@ class FieldControls(unittest.TestCase):
         support.write_text('''#include "common.h"
 #include "battle/turn.h"
 TurnState *battle_turn_state;
+s32 mode_next_mode;
+static TurnState test_turn;
+void test_battle_turn(s32 page, s32 closed, s32 done) {
+    test_turn.page = page;
+    test_turn.unk2E1[0] = closed;
+    test_turn.eventsDone = done;
+    battle_turn_state = &test_turn;
+}
 s32 mode_field_map_id;
 s32 field_player_control_polled;
 s32 field_menu_request;
@@ -43,6 +51,7 @@ s32 field_inventory_is_item_not_held(s32 item) { return item == test_held ? 0 : 
         ctypes.c_int.in_dll(self.lib, name).value = value
 
     def setUp(self):
+        self.set("mode_next_mode", 0)
         self.set("mode_field_map_id", 0x4007)
         self.set("test_held", -1)
         self.set("field_player_control_polled", 1)
@@ -86,6 +95,27 @@ s32 field_inventory_is_item_not_held(s32 item) { return item == test_held ? 0 : 
         self.set("test_held", 0x40)
         for mode in (0, 2, 3, 4, 5, 6, 0xFFFFFFFF):
             self.assertEqual(self.lib.xem_game_field_controls(mode), 0, f"mode {mode:#x} has no field overlay")
+
+    def test_loading_an_overlay_does_not_read_the_previous_modes_turn_pointer(self):
+        # A texture word at the battle pointer's address while world-map
+        # memory still occupies the overlay. It must never be dereferenced.
+        ctypes.c_void_p.in_dll(self.lib, "battle_turn_state").value = 0x7FFF7FFF
+        self.set("mode_next_mode", 2)
+        self.assertEqual(self.lib.xem_game_combo_input(2), 0)
+        self.set("mode_next_mode", 1)
+        self.assertEqual(self.lib.xem_game_field_controls(1), 0)
+
+    def test_loaded_battles_report_only_open_attack_pages(self):
+        for page in (5, 0x19, 0x64, 0x65):
+            self.lib.test_battle_turn(page, 0, 0)
+            self.assertEqual(self.lib.xem_game_combo_input(2), 1)
+            self.assertEqual(self.lib.xem_game_combo_input(3), 0)
+            self.lib.test_battle_turn(page, 1, 0)
+            self.assertEqual(self.lib.xem_game_combo_input(2), 0)
+            self.lib.test_battle_turn(page, 0, 1)
+            self.assertEqual(self.lib.xem_game_combo_input(2), 0)
+        self.lib.test_battle_turn(0, 0, 0)
+        self.assertEqual(self.lib.xem_game_combo_input(2), 0)
 
 
 if __name__ == "__main__":

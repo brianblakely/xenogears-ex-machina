@@ -203,7 +203,6 @@ impl<M: GameModule> Session<M> {
                 let factor = self.frame_factor();
                 self.runtime.services().set_playback_speed(factor.unwrap_or(1));
                 self.runtime.set_external_music(factor.is_none());
-                self.timeline_revision += 1;
             }
         }
         Ok(())
@@ -217,7 +216,6 @@ impl<M: GameModule> Session<M> {
             let factor = self.frame_factor();
             self.runtime.services().set_playback_speed(factor.unwrap_or(1));
             self.runtime.set_external_music(factor.is_none());
-            self.timeline_revision += 1;
         }
     }
 
@@ -322,10 +320,22 @@ impl<M: GameModule> Session<M> {
         self.replay_end.is_some()
     }
 
-    /// Numeric rates use the deterministic game clock divided by their rate.
-    /// Only uncapped play needs live elapsed music time; recordings capture it.
-    pub fn live_music(&self) -> bool {
-        self.frame_factor().is_none() && self.replay_end.is_none() && self.stopped.is_none()
+    /// Whether live elapsed time drives music. Fixed-rate headless stepping
+    /// keeps its deterministic divided game clock until a host attaches it.
+    pub fn live_music(&mut self) -> bool {
+        self.fast_forward && self.replay_end.is_none() && self.stopped.is_none()
+            && self.runtime.services().clock.external_audio
+    }
+
+    /// Attach the interactive host's music clock before its first accelerated
+    /// batch. A bounded batch may run fewer frames than requested, so dividing
+    /// those frames by the requested speed would starve the audio device.
+    /// Record the attachment before any frames, so replay does not run their
+    /// music twice before it reaches the first elapsed-time input.
+    pub fn begin_live_music(&mut self) -> Result<bool, String> {
+        if !self.fast_forward || self.replay_end.is_some() || self.stopped.is_some() { return Ok(false); }
+        if !self.runtime.services().clock.external_audio { self.advance_music(0)?; }
+        Ok(true)
     }
 
     pub fn advance_live_music(&mut self, cycles: u64) -> Result<(), String> {
@@ -613,6 +623,18 @@ impl<M: GameModule> Session<M> {
         let arg_str = |name: &str| command.get(name).and_then(Value::as_str);
         match cmd {
             "status" => Ok(self.status()),
+            "reset" => {
+                self.record_control(json!({"cmd":"reset"}));
+                self.runtime.reset();
+                self.quantity = None;
+                self.set_pad(0, 0);
+                self.set_pad(1, 0);
+                self.rewind.clear();
+                self.rewind.error = None;
+                self.rewind_game_paused = false;
+                self.game_state_restored();
+                Ok(self.status())
+            }
             "fast_forward_configure" => {
                 let rate: FastForwardRate = serde_json::from_value(command.get("rate").ok_or("fast_forward_configure needs rate")?.clone())
                     .map_err(|e| e.to_string())?;
@@ -972,7 +994,7 @@ impl<M: GameModule> Session<M> {
                     "pad_queue_reads_last_frame": services.input_reads_last_frame,
                     "stopped": stopped,
                     "valid_commands": ["pad", "press", "hold", "act", "context", "targets", "field", "pick", "navigate", "interact", "assist", "assist_stop", "shop_quantity", "frames", "run_until", "inspect", "write", "snapshot",
-                                        "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "sound_mode", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "schedule", "record", "replay"],
+                                        "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "sound_mode", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "reset", "schedule", "record", "replay"],
                 }))
             }
             "memory_hash" => Ok(json!(format!("{:016x}", self.memory_hash()?))),
@@ -983,6 +1005,12 @@ impl<M: GameModule> Session<M> {
                     controls: vec![(vblank,json!({"cmd":"fast_forward_configure","rate":self.fast_forward_rate})),
                         (vblank,json!({"cmd":"fast_forward","enabled":self.fast_forward})),
                         (vblank,json!({"cmd":"fast_forward_pace","pace":self.fast_forward_pace}))] });
+                // Recording may begin after an interactive host attached its
+                // music clock. Save that attachment before the first batch;
+                // game snapshots deliberately omit the host's clock source.
+                if self.runtime.services().clock.external_audio {
+                    self.record_control(json!({"cmd":"music_advance","cycles":0}));
+                }
                 if self.runtime.services().focus_pause.active() {
                     let requested = self.runtime.services().focus_pause.requested();
                     self.record_control(json!({"cmd":"focus_pause","requested":requested}));
@@ -1035,9 +1063,9 @@ impl<M: GameModule> Session<M> {
                             Some("sound_mode") if control.get("mode").and_then(Value::as_u64).is_some_and(|m| m <= 2)
                                 && control.get("taken").is_none_or(Value::is_boolean) => {},
                             Some("assist") if control.get("intent").is_some() => {},
-                            Some("assist_stop") => {},
+                            Some("assist_stop" | "reset") => {},
                             Some("shop_quantity") if control.get("op").is_some_and(Value::is_string) => {},
-                            _ => return Err("recorded controls contain only explicit fast-forward, focus-pause, actor-view, sound-mode, assist and music-clock inputs".into()),
+                            _ => return Err("recorded controls contain only explicit reset, fast-forward, focus-pause, actor-view, sound-mode, assist and music-clock inputs".into()),
                         }
                         controls.push((now + at.saturating_sub(start),control.clone()));
                     }
@@ -1080,7 +1108,7 @@ impl<M: GameModule> Session<M> {
                 for item in list {
                     let pair = item.as_array().filter(|p| p.len() == 2).ok_or("commands are [frame, command]")?;
                     let cmd = pair[1].get("cmd").and_then(Value::as_str).ok_or("scheduled command needs cmd")?;
-                    if !matches!(cmd, "pad" | "press" | "hold" | "act" | "assist" | "assist_stop" | "shop_quantity" | "connect_pad" | "enter_field" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "sound_mode" | "music_advance") {
+                    if !matches!(cmd, "pad" | "press" | "hold" | "act" | "assist" | "assist_stop" | "shop_quantity" | "connect_pad" | "enter_field" | "reset" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "sound_mode" | "music_advance") {
                         return Err(format!("{cmd} cannot be scheduled; session logs contain only game input, setup and pacing"));
                     }
                     let at = pair[0].as_u64().ok_or("a command's frame is a number")?;

@@ -109,7 +109,8 @@ impl Spu {
 
     pub fn set_speed(&mut self, speed: u32) {
         assert!((1..=20).contains(&speed));
-        if self.speed != speed && let Some(ring) = &mut self.output { ring.clear(); }
+        // Speed changes affect future emulated time. Already rendered PCM is
+        // still consecutive, normal-pitch audio and must reach the host.
         self.speed = speed;
     }
     pub(crate) fn restore_state(&mut self, mut state: Self) {
@@ -590,6 +591,9 @@ mod tests {
             with_context(&mut mem, CPU_HZ / 10 * u64::from(speed), &mut raised, |c| fast.advance(c));
             assert_eq!(fast.chip.clock(), 4410);
             assert_eq!(fast.chip.save(), normal.chip.save());
+            // The host adjusts its achieved FF pace before draining this
+            // batch. Keep every PCM sample when that adjustment happens.
+            fast.set_speed(speed % 20 + 1);
             let mut a = vec![0; normal.audio_queued()];
             let mut b = vec![0; fast.audio_queued()];
             normal.take_audio(&mut a); fast.take_audio(&mut b);

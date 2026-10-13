@@ -20,11 +20,17 @@ s32 field_inventory_is_item_not_held(s32 item);
 /* The on-foot and Gear attack pages (5 and 0x19, entered again as 0x64 and
  * 0x65 after an attack) until the combo closes (turn state 0x2e1) or its
  * events finish. Battle overlay memory is only meaningful while the battle
- * mode (2) runs. */
+ * mode (2) runs. The host learns the next mode before the dispatcher waits
+ * for the previous frame and clears/loads the overlay. mode_next_mode is
+ * cleared only after that load, just before the mode's entry is called. */
 u32 xem_game_combo_input(u32 mode) {
-    TurnState *turn = battle_turn_state;
+    TurnState *turn;
 
-    if (mode != 2 || turn == NULL || turn->unk2E1[0] != 0 || turn->eventsDone != 0) {
+    if (mode != 2 || mode_next_mode != 0) {
+        return 0;
+    }
+    turn = battle_turn_state;
+    if (turn == NULL || turn->unk2E1[0] != 0 || turn->eventsDone != 0) {
         return 0;
     }
     return turn->page == 5 || turn->page == 0x64 || turn->page == 0x19 || turn->page == 0x65;
@@ -42,7 +48,7 @@ u32 xem_game_field_controls(u32 mode) {
     u32 controls;
     s32 i;
 
-    if (mode != 1) {
+    if (mode != 1 || mode_next_mode != 0) {
         return 0;
     }
     controls = field_menu_request != 0xFF ? 4 : field_player_control_polled == 1;

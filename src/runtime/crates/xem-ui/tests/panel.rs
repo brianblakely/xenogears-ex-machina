@@ -167,12 +167,11 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
         .unwrap();
     assert_eq!(checkbox.accessible_checked(), Some(false));
     // A toggle's whole row toggles it, its label too.
-    let label = ElementHandle::find_by_accessible_label(ui.component(), "A frame counter in the corner.")
-        .next()
-        .expect("the Show FPS help");
+    assert!(ElementHandle::find_by_accessible_label(ui.component(), "A frame counter in the corner.").next().is_none());
+    let label = element(&ui, "Show FPS", AccessibleRole::Switch);
     let at = label.absolute_position();
     click(&ui, LogicalPosition::new(at.x + 4.0, at.y + label.size().height / 2.0));
-    assert!(settings.borrow().settings().presentation.show_fps, "clicking the row's help toggles it");
+    assert!(settings.borrow().settings().presentation.show_fps, "clicking the row toggles it");
     settings
         .borrow_mut()
         .apply(xem_settings::SettingChange::ShowFps(false))
@@ -340,6 +339,8 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
         "a later widget update cannot repeat the release"
     );
     section(&mut ui, "Shortcuts", 3);
+    press(&ui, &element(&ui, "Save state", AccessibleRole::ListItem));
+    ui.update().unwrap();
     let editor = element(&ui, "Keyboard binding", AccessibleRole::TextInput);
     let at = editor.absolute_position();
     let size = editor.size();
@@ -375,20 +376,17 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
             "{label} leaves room for the scrollbar"
         );
     }
+    ui.resize((360, 300), 1.0);
+    ui.update().unwrap();
     let rate_below = |ui: &SettingsUi| {
         ElementHandle::find_by_accessible_label(ui.component(), "Fast-forward rate")
             .filter(|e| e.accessible_role() == Some(AccessibleRole::Slider))
-            .all(|e| e.absolute_position().y >= 440.0)
+            .all(|e| e.absolute_position().y >= 300.0)
     };
     assert!(rate_below(&ui), "the speed slider starts below the compact viewport");
-    let help = ElementHandle::find_by_accessible_label(
-        ui.component(),
-        "Snapshots taken as you play, over elapsed play time (fast-forward included).",
-    )
-    .next()
-    .unwrap();
-    let at = help.absolute_position();
-    let size = help.size();
+    let row = element(&ui, "Rewind history", AccessibleRole::Switch);
+    let at = row.absolute_position();
+    let size = row.size();
     let from = LogicalPosition::new(at.x + size.width / 2.0, at.y + size.height / 2.0);
     let to = LogicalPosition::new(from.x, 20.0);
     ui.dispatch(WindowEvent::PointerMoved { position: from });
@@ -579,4 +577,58 @@ fn a_missing_disc_is_asked_for_over_the_saves_section() {
     assert_eq!(ui.component().get_status_kind(), 2, "a problem");
     assert!(ui.component().get_status().contains("disc 2: import it below"));
     assert_eq!(ui.component().get_selected_section(), 5);
+}
+
+#[test]
+fn movement_preference_reset_and_binding_cancel_use_the_shared_services() {
+    use xem_settings::{AppAction, AppRequest, SettingChange};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 560), 1.0).unwrap();
+    let requests = Rc::new(RefCell::new(Vec::new()));
+    ui.on_app_request({ let requests = requests.clone(); move |request| requests.borrow_mut().push(request) });
+    ui.on_quit(|| {});
+    ui.set_first_person(true);
+    ui.update().unwrap();
+    let reset = element(&ui, "Reset", AccessibleRole::Button);
+    let quit = element(&ui, "Quit", AccessibleRole::Button);
+    assert!(reset.absolute_position().x < quit.absolute_position().x);
+    press(&ui, &reset);
+    assert_eq!(requests.borrow().as_slice(), [AppRequest::Action(AppAction::Reset)]);
+    section(&mut ui, "Controls", 2);
+    press(&ui, &element(&ui, "Run by default", AccessibleRole::Switch));
+    assert!(settings.borrow().settings().run_by_default);
+    assert!(ElementHandle::find_by_accessible_label(ui.component(), "Walk (held)").next().is_some());
+    let exported = settings.borrow().export();
+    let mut reloaded = SettingsService::with_defaults(MemoryStore::default());
+    reloaded.import(&exported).unwrap();
+    assert!(reloaded.settings().run_by_default);
+    settings.borrow_mut().apply(SettingChange::RunByDefault(false)).unwrap();
+    assert!(!ui.component().get_run_by_default());
+    ui.resize((640, 2000), 1.0);
+    ui.update().unwrap();
+    assert!(ElementHandle::find_by_accessible_label(ui.component(), "Stop at ledges").next().is_some());
+    assert!(ElementHandle::find_by_accessible_label(ui.component(), "Look around in FPV").next().is_some());
+    let saved = settings.borrow().settings().clone();
+    press(&ui, &element(&ui, "Up", AccessibleRole::ListItem));
+    ui.update().unwrap();
+    ui.component().set_game_keys("KeyQ".into());
+    let cancel = element(&ui, "Cancel", AccessibleRole::Button);
+    let clear = element(&ui, "Clear", AccessibleRole::Button);
+    assert!(cancel.absolute_position().x < clear.absolute_position().x);
+    press(&ui, &cancel);
+    assert_eq!(ui.component().get_selected_game_action(), -1);
+    assert_eq!(*settings.borrow().settings(), saved, "Cancel discards unsaved edits");
+    section(&mut ui, "Shortcuts", 3);
+    press(&ui, &element(&ui, "Save state", AccessibleRole::ListItem));
+    ui.update().unwrap();
+    ui.component().set_keyboard_binding("KeyQ".into());
+    press(&ui, &element(&ui, "Cancel", AccessibleRole::Button));
+    assert_eq!(ui.component().get_selected_action(), -1);
+    assert_eq!(*settings.borrow().settings(), saved);
+    section(&mut ui, "Graphics", 1);
+    for removed in ["Cull back faces", "Cull at the screen's edges", "How the game is drawn and shown."] {
+        assert!(ElementHandle::find_by_accessible_label(ui.component(), removed).next().is_none(), "{removed}");
+    }
 }
