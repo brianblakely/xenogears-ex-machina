@@ -86,8 +86,6 @@ pub struct Assisted {
     pub scaling: Scaling,
     /// The last frame's gestures, for the frame log.
     pub gestures: Vec<Gesture>,
-    /// The quantity key the pointer is on.
-    hovered_key: Option<u32>,
 }
 
 impl Assisted {
@@ -111,8 +109,9 @@ impl Assisted {
         let field = game.field();
         let targets = game.targets();
         let keys = if overlay::quantity_keys(context.ui) { xem_assist::draw::quantity_keys(screen) } else { vec![] };
-        self.hovered_key = keys.iter().find(|(_, q)| self.headset.hit(input, q).is_some()).map(|(k, _)| *k);
         let effects = self.headset.update_with_keys(input, screen, context.ui, field.as_ref(), targets.as_ref(), &keys);
+        // What a control deck holds (its stick, its held keys).
+        player.touch = effects.held.clone();
         let inspectable = context.field.field && !context.field.menu;
         xem_assist::headset::carry(effects.outs, &mut Native { game, player, view, inspectable }, &mut self.scaling);
         self.gestures = effects.gestures;
@@ -128,7 +127,7 @@ impl Assisted {
         let field = game.field();
         let aim = self.headset.aim(input, screen);
         let marks = overlay::marks(ui, aim, field.as_ref(), game.destination());
-        xem_assist::draw::room(&marks, screen, overlay::quantity_keys(ui), self.hovered_key)
+        xem_assist::draw::room(&marks, screen, &self.headset.key_marks(ui))
     }
 
     /// The widgets' style from the settings.

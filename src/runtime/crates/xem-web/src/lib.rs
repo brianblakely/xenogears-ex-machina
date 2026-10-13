@@ -142,6 +142,8 @@ pub struct XemApp {
     xr_gestures: Vec<xem_assist::gesture::Gesture>,
     /// A controller's select (trigger) came since the last frame.
     xr_select: bool,
+    /// What a headset's control deck holds.
+    xr_held: std::collections::BTreeSet<xem_core::action::GameAction>,
 }
 
 /// The browser's game and player's input, as the headset's effects reach them.
@@ -229,6 +231,7 @@ impl XemApp {
             xr_panel_inside: false,
             xr_gestures: Vec::new(),
             xr_select: false,
+            xr_held: Default::default(),
         }
     }
 
@@ -420,7 +423,7 @@ impl XemApp {
             renderer.overlay.style = style;
             renderer.overlay.deck = self.deck.controls.iter().map(|(c, r)| (*c, *r, held.contains(c))).collect();
         }
-        self.input.touch = self.deck.actions();
+        self.input.touch = self.deck.actions().union(&self.xr_held).copied().collect();
     }
 
     /// A headset frame's gestures, before its game frames: aimed at the
@@ -450,13 +453,13 @@ impl XemApp {
             None => (None, None),
         };
         let keys = if xem_assist::overlay::quantity_keys(ui) { xem_assist::draw::quantity_keys(&screen) } else { vec![] };
-        let hovered = keys.iter().find(|(_, q)| self.headset.hit(&input, q).is_some()).map(|(k, _)| *k);
         let effects = if settings.assisted.gestures {
             self.headset.update_with_keys(&input, &screen, ui, field.as_ref(), targets.as_ref(), &keys)
         } else {
             xem_assist::headset::Effects { aim: self.headset.aim(&input, &screen), ..Default::default() }
         };
         let pinched = effects.gestures.iter().any(|g| matches!(g, xem_assist::gesture::Gesture::Pinch { .. }));
+        self.xr_held = effects.held.clone();
         xem_assist::headset::carry(effects.outs, &mut WebCarry { session: self.session.as_mut(), input: &mut self.input }, &mut self.xr_scaling);
         self.xr_gestures = effects.gestures;
         if self.headset.settings_open != panel_visible {
@@ -470,7 +473,7 @@ impl XemApp {
                 _ => None,
             };
             let marks = if settings.assisted.gestures { xem_assist::overlay::marks(ui, effects.aim, field.as_ref(), destination) } else { vec![] };
-            renderer.overlay.room = xem_assist::draw::room(&marks, &screen, !keys.is_empty(), hovered);
+            renderer.overlay.room = xem_assist::draw::room(&marks, &screen, &self.headset.key_marks(ui));
             renderer.overlay.style = xem_render::glass::Style { reduced_transparency: settings.assisted.reduced_transparency };
             if renderer.panel_visible && let Some(panel) = renderer.panel() {
                 let quad = render::xr_panel_quad(panel.size());

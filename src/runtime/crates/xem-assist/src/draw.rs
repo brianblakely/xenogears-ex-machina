@@ -12,15 +12,29 @@ pub const WIDGET_PIXELS: u32 = 128;
 const KEY_SIZE: (f32, f32) = (0.22, 0.11);
 const KEY_GAP: f32 = 0.04;
 
-/// The quantity keys' quads, beside the screen's right edge.
-pub fn quantity_keys(screen: &Screen) -> Vec<(u32, Quad)> {
+/// `count` keys' quads in a column beside the screen's right edge, the
+/// first at the top.
+pub fn side_keys(screen: &Screen, count: usize) -> Vec<(u32, Quad)> {
     let right = screen.quad.pose.orientation * Vec3::X;
     let up = screen.quad.pose.orientation * Vec3::Y;
-    (0..QuantityKey::ALL.len()).map(|i| {
+    let middle = (count as f32 - 1.0) / 2.0;
+    (0..count).map(|i| {
         let position = screen.quad.pose.position + right * (screen.quad.size.0 / 2.0 + KEY_GAP + KEY_SIZE.0 / 2.0)
-            + up * (1.5 - i as f32) * (KEY_SIZE.1 + KEY_GAP);
+            + up * (middle - i as f32) * (KEY_SIZE.1 + KEY_GAP);
         (i as u32, Quad { pose: Pose { position, orientation: screen.quad.pose.orientation }, size: KEY_SIZE })
     }).collect()
+}
+
+/// The quantity keys' quads.
+pub fn quantity_keys(screen: &Screen) -> Vec<(u32, Quad)> {
+    side_keys(screen, QuantityKey::ALL.len())
+}
+
+/// A key to draw beside the screen: its label and state.
+#[derive(Clone, Debug, PartialEq)]
+pub struct KeyMark {
+    pub label: String,
+    pub state: State,
 }
 
 /// A widget at a room pose (`size` metres across its square image).
@@ -30,9 +44,9 @@ pub struct Placed {
     pub size: Vec2,
 }
 
-/// Marks on a headset's screen (floor marks lie as the floor projects) and,
-/// with `keys`, the quantity keys beside it (`hovered` lit).
-pub fn room(marks: &[Mark], screen: &Screen, keys: bool, hovered: Option<u32>) -> Vec<Placed> {
+/// Marks on a headset's screen (floor marks lie as the floor projects) and
+/// the keys beside it.
+pub fn room(marks: &[Mark], screen: &Screen, keys: &[KeyMark]) -> Vec<Placed> {
     let normal = screen.quad.pose.orientation * Vec3::Z;
     let mut placed: Vec<Placed> = marks.iter().map(|mark| {
         let centre = screen.point(mark.centre);
@@ -45,17 +59,14 @@ pub fn room(marks: &[Mark], screen: &Screen, keys: bool, hovered: Option<u32>) -
             size: Vec2::ONE,
         }
     }).collect();
-    if keys {
-        for (key, quad) in quantity_keys(screen) {
-            let state = if hovered == Some(key) { State::Hover } else { State::Normal };
-            let icon = match QuantityKey::ALL[key as usize].label() { "+" => Icon::Plus, "-" => Icon::Minus, text => Icon::Text(text.into()) };
-            placed.push(Placed {
-                widget: Widget::Key(icon, state),
-                pose: Mat4::from_rotation_translation(quad.pose.orientation, quad.pose.position + normal * 0.002),
-                // The key image is square; the key fills its middle half.
-                size: Vec2::new(quad.size.0, quad.size.0),
-            });
-        }
+    for ((_, quad), key) in side_keys(screen, keys.len()).into_iter().zip(keys) {
+        let icon = match key.label.as_str() { "+" => Icon::Plus, "-" => Icon::Minus, text => Icon::Text(text.into()) };
+        placed.push(Placed {
+            widget: Widget::Key(icon, key.state),
+            pose: Mat4::from_rotation_translation(quad.pose.orientation, quad.pose.position + normal * 0.002),
+            // The key image is square; the key fills its middle half.
+            size: Vec2::new(quad.size.0, quad.size.0),
+        });
     }
     placed
 }

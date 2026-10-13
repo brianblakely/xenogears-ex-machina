@@ -164,6 +164,8 @@ pub struct Effects {
     pub aim: Aim,
     /// What the gestures resolved to, in order.
     pub outs: Vec<Out>,
+    /// Actions a control deck holds now (its stick and held keys).
+    pub held: std::collections::BTreeSet<xem_core::action::GameAction>,
     /// The gestures recognised (for feedback and tests).
     pub gestures: Vec<Gesture>,
 }
@@ -172,6 +174,10 @@ pub struct Effects {
 pub struct Headset {
     pub source: PointerSource,
     recognizer: Recognizer,
+    /// The control decks of Battling and the world map.
+    pub arcade: crate::arcade::Arcade,
+    /// The deck key the pointer is on.
+    pub hovered_key: Option<u32>,
     pub pauses: Pauses,
     pub settings_open: bool,
     was_focused: bool,
@@ -190,6 +196,22 @@ impl Headset {
     pub fn hit(&self, input: &Input, quad: &Quad) -> Option<((f32, f32), f32)> {
         let (origin, direction) = ray(self.source, input)?;
         quad.hit(origin, direction)
+    }
+
+    /// The keys beside the screen this frame: a control deck's (held ones
+    /// lit), else a shop list's quantity keys.
+    pub fn key_marks(&self, ui: Context) -> Vec<crate::draw::KeyMark> {
+        use xem_render::glass::State;
+        let state = |i: usize, active: bool| if active { State::Active } else if self.hovered_key == Some(i as u32) { State::Hover } else { State::Normal };
+        match crate::arcade::deck(ui) {
+            Some(deck) => crate::arcade::keys(deck).iter().enumerate().map(|(i, key)| crate::draw::KeyMark {
+                label: key.label.to_string(),
+                state: state(i, key.hold && key.actions.iter().all(|a| self.arcade.toggled.contains(a))),
+            }).collect(),
+            None if crate::overlay::quantity_keys(ui) => crate::overlay::QuantityKey::ALL.iter().enumerate()
+                .map(|(i, key)| crate::draw::KeyMark { label: key.label().to_string(), state: state(i, false) }).collect(),
+            None => vec![],
+        }
     }
 
     /// Opens or closes settings (prayer hands, a menu button): their pause
@@ -235,18 +257,54 @@ impl Headset {
         // The game's own gestures go nowhere while settings are open.
         let mut game_gestures: Vec<Gesture> = gestures.iter().copied().filter(|g| !self.settings_open || matches!(g,
             Gesture::Pause { .. } | Gesture::Settings | Gesture::TrackingLost { .. } | Gesture::ScaleBegin | Gesture::Scale { .. } | Gesture::ScaleEnd)).collect();
+        // A control deck (Battling, the world map) takes the game's
+        // gestures and its keys beside the screen.
+        let deck = crate::arcade::deck(ui).filter(|_| !self.settings_open);
+        let deck_keys;
+        let keys = match deck {
+            Some(deck) => {
+                deck_keys = crate::draw::side_keys(screen, crate::arcade::keys(deck).len());
+                &deck_keys[..]
+            }
+            None => keys,
+        };
         // A tap or pinch aimed at a deck key is the key's.
         let aimed_key = ray(self.source, input).and_then(|(origin, direction)| {
             keys.iter().filter_map(|(key, quad)| quad.hit(origin, direction).map(|(_, t)| (t, *key))).min_by(|a, b| a.0.total_cmp(&b.0)).map(|(_, key)| key)
         });
+        self.hovered_key = aimed_key;
         if let Some(key) = aimed_key.filter(|_| !self.settings_open) {
             game_gestures.retain(|g| {
                 let pressed = matches!(g, Gesture::Tap { .. } | Gesture::Pinch { .. });
                 if pressed {
-                    effects.outs.push(Out::Key { key });
+                    match deck {
+                        Some(deck) => {
+                            let played = self.arcade.key(deck, key as usize);
+                            effects.outs.extend(played.presses.into_iter().map(|actions| Out::Press { actions }));
+                        }
+                        None => effects.outs.push(Out::Key { key }),
+                    }
                 }
                 !pressed
             });
+        }
+        let palms = [0, 1].map(|i| input.hands[i].map(|j| crate::gesture::Shape::of(&j, crate::gesture::Hand::BOTH[i]).palm));
+        let facing = input.head.map_or(Vec3::NEG_Z, |h| h.forward());
+        let forward = Vec3::new(facing.x, 0.0, facing.z).normalize_or(Vec3::NEG_Z);
+        let right = Vec3::new(-forward.z, 0.0, forward.x);
+        let arcade_gestures: Vec<Gesture> = if deck.is_some() {
+            let (deck_gestures, rest): (Vec<Gesture>, Vec<Gesture>) = game_gestures.iter().copied().partition(|g| matches!(g,
+                Gesture::Tap { .. } | Gesture::Pinch { .. } | Gesture::Swipe { .. } | Gesture::TrackingLost { .. }));
+            game_gestures = rest.into_iter().chain(deck_gestures.iter().copied().filter(|g| matches!(g, Gesture::TrackingLost { .. }))).collect();
+            deck_gestures
+        } else {
+            vec![]
+        };
+        if let Some(played) = self.arcade.update(ui, &arcade_gestures, palms, right, forward) {
+            effects.outs.extend(played.presses.into_iter().map(|actions| Out::Press { actions }));
+            effects.held = played.held;
+        } else {
+            effects.held.clear();
         }
         for out in dispatch::dispatch(&game_gestures, ui, effects.aim, field, targets) {
             match out {

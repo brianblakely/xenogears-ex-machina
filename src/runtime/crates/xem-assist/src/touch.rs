@@ -15,7 +15,8 @@
 //!   pointer's tap: walking, on an actor it approaches and talks, on the
 //!   floor it walks there; in a menu or a choice it selects the entry and
 //!   confirms it; in a dialogue it advances.
-//! - A shop's quantity list adds the +, -, ALL and NONE keys.
+//! - A shop's quantity list adds the +, -, ALL and NONE keys; the world
+//!   map adds Board (L2 and R2 together: a Gear boarded or left).
 use crate::overlay::QuantityKey;
 use std::collections::{BTreeMap, BTreeSet};
 use xem_core::action::GameAction;
@@ -35,6 +36,8 @@ pub enum Control {
     CameraRight,
     Start,
     Settings,
+    /// The world map's Board: L2 and R2 together (a Gear boarded or left).
+    Board,
     Quantity(u8),
 }
 
@@ -53,6 +56,7 @@ impl Control {
             Control::CameraLeft => vec![GameAction::CameraLeft],
             Control::CameraRight => vec![GameAction::CameraRight],
             Control::Start => vec![GameAction::Start],
+            Control::Board => vec![GameAction::L2, GameAction::R2],
             Control::Settings | Control::Quantity(_) => vec![],
         }
     }
@@ -73,6 +77,7 @@ impl Control {
             Control::CameraRight => if arena { "SPECIAL" } else { "R1" },
             Control::Start => "START",
             Control::Settings => "SETTINGS",
+            Control::Board => "BOARD",
             Control::Quantity(k) => QuantityKey::ALL[k as usize].label(),
         }
     }
@@ -137,6 +142,10 @@ pub fn layout(target: (f32, f32), picture: Rect, density: f32, ui: Context) -> V
     let small = |x: f32| Rect { x: x - size * 0.7, y: top - size * 0.35, width: size * 1.4, height: size * 0.7 };
     controls.push((Control::Settings, small(w / 2.0 - size * 0.85)));
     controls.push((Control::Start, small(w / 2.0 + size * 0.85)));
+    if matches!(ui, Context::WorldMap { .. }) {
+        let (cx, cy) = (right_x, low - 2.3 * (size + gap));
+        controls.push((Control::Board, Rect { x: cx - size * 0.8, y: cy - size * 0.35, width: size * 1.6, height: size * 0.7 }));
+    }
     if matches!(ui, Context::Menu { quantities: true, .. }) {
         let x = right_x;
         for (i, _) in QuantityKey::ALL.iter().enumerate() {
