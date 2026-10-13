@@ -272,32 +272,26 @@ async function enterVr() {
   session.requestAnimationFrame(xrFrame);
 }
 
-function xrButtons(session) {
+// The controllers as a standard gamepad (the layout the game bindings name):
+// A South, B East, X West, Y North, triggers L1/R1, grips LT/RT, the right
+// stick's click Back, the left's Start, and both sticks.
+function xrGamepad(session) {
   const pressed = new Uint8Array(17);
+  const axes = new Float32Array(4);
   for (const source of session.inputSources) {
     const pad = source.gamepad;
     if (!pad || pad.mapping !== 'xr-standard') continue;
     const button = (i) => (pad.buttons[i]?.pressed ? 1 : 0);
-    if (source.handedness === 'right') {
-      pressed[0] |= button(4); // A: Cross
-      pressed[1] |= button(5); // B: Circle
-      pressed[5] |= button(0); // trigger: R1
-      pressed[7] |= button(1); // squeeze: R2
-      pressed[8] |= button(3); // stick click: Select
-    } else {
-      pressed[2] |= button(4); // X: Square
-      pressed[3] |= button(5); // Y: Triangle
-      pressed[4] |= button(0); // trigger: L1
-      pressed[6] |= button(1); // squeeze: L2
-      pressed[9] |= button(3); // stick click: Start
-      const [x, y] = [pad.axes[2] ?? 0, pad.axes[3] ?? 0];
-      pressed[12] |= y < -0.5 ? 1 : 0;
-      pressed[13] |= y > 0.5 ? 1 : 0;
-      pressed[14] |= x < -0.5 ? 1 : 0;
-      pressed[15] |= x > 0.5 ? 1 : 0;
-    }
+    const right = source.handedness === 'right';
+    pressed[right ? 0 : 2] |= button(4);
+    pressed[right ? 1 : 3] |= button(5);
+    pressed[right ? 5 : 4] |= button(0);
+    pressed[right ? 7 : 6] |= button(1);
+    pressed[right ? 8 : 9] |= button(3);
+    axes[right ? 2 : 0] = pad.axes[2] ?? 0;
+    axes[right ? 3 : 1] = pad.axes[3] ?? 0;
   }
-  return pressed;
+  return { pressed, axes };
 }
 
 function xrFrame(time, xrframe) {
@@ -315,7 +309,8 @@ function xrFrame(time, xrframe) {
         const v = xr.layer.getViewport(view);
         viewports.set([v.x, v.y, v.width, v.height], i * 4);
       });
-      app.gamepad(xrButtons(xr.session), new Float32Array());
+      const { pressed, axes } = xrGamepad(xr.session);
+      app.gamepad(pressed, axes);
       app.xr_frame(time, xr.layer, matrices, viewports);
       // A readback asked for reads the layer just drawn, inside the frame
       // (an emulated layer may be the canvas's default framebuffer).

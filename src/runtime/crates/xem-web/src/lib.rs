@@ -21,7 +21,6 @@
 mod audio;
 mod disc;
 mod game;
-mod input;
 mod render;
 mod storage;
 
@@ -98,7 +97,7 @@ pub struct XemApp {
     audio: audio::Mixer,
     audio_scratch: Vec<i16>,
     cards: storage::BrowserCards,
-    input: input::HostInput,
+    input: xem_settings::player::PlayerInput,
     app_input: AppInput,
     rewind_held: [bool;2],
     rewind_next: f64,
@@ -152,7 +151,7 @@ impl XemApp {
             audio: audio::Mixer::default(),
             audio_scratch: Vec::new(),
             cards: storage::BrowserCards::default(),
-            input: input::HostInput::default(),
+            input: Default::default(),
             app_input: AppInput::default(),
             rewind_held: [false;2],
             rewind_next: 0.0,
@@ -308,8 +307,13 @@ impl XemApp {
         } else if self.running {
             // The player's input reaches pad 1 when it changes, so a pad an
             // automation client set stays until the player presses something.
-            let combo = self.session.as_mut().is_some_and(|s| s.runtime.combo_input());
-            let buttons = if self.panel_visible() { 0 } else { self.input.buttons(now, combo) };
+            let context = self.session.as_mut().map_or_else(Default::default, |s| xem_settings::player::Context {
+                attack: s.runtime.combo_input(),
+                field: s.runtime.field_controls(),
+                assignment: s.runtime.button_assignment(),
+            });
+            let bindings = self.settings.borrow().settings().game_bindings.clone();
+            let buttons = if self.panel_visible() { 0 } else { self.input.buttons(&bindings, now, context) };
             if buttons != self.host_buttons
                 && let Some(session) = self.session.as_mut()
             {
@@ -467,7 +471,8 @@ impl XemApp {
         self.app_requests.borrow_mut().extend(self.app_input.requests(bindings,settings.settings().invert_trigger_chords));
         let captured = self.app_input.captures_key(code,bindings);
         if captured {
-            for binding in bindings.values() { for key in &binding.keyboard { self.input.key(key,false); } }
+            let game = &settings.settings().game_bindings;
+            for binding in bindings.values() { for key in &binding.keyboard { self.input.key(game,key,false); } }
         }
         drop(settings);
         if editing { return true; }
@@ -475,21 +480,21 @@ impl XemApp {
         if down && self.panel_visible() {
             return false;
         }
-        self.input.key(code, down)
+        let game = self.settings.borrow().settings().game_bindings.clone();
+        self.input.key(&game, code, down)
     }
 
     /// The first gamepad's buttons and axes (Gamepad API standard mapping,
     /// 1 = pressed). Back+Start toggles Settings.
     pub fn gamepad(&mut self, pressed: &[u8], axes: &[f32]) {
-        let pressed = xem_settings::controls::gamepad_buttons(pressed, axes);
-        if self.app_input.pad(&pressed) {
+        if self.app_input.pad(pressed) {
             self.set_panel_visible(!self.panel_visible());
         }
         if self.text_editor_focused() { self.app_input.release_keyboard(); }
         let settings = self.settings.borrow();
         let bindings = &settings.settings().app_bindings;
         self.app_requests.borrow_mut().extend(self.app_input.requests(bindings,settings.settings().invert_trigger_chords));
-        self.input.gamepad(&self.app_input.gamepad_for_game(bindings,settings.settings().invert_trigger_chords));
+        self.input.gamepad(&self.app_input.gamepad_for_game(bindings,settings.settings().invert_trigger_chords), axes);
     }
 
     /// Release the player's keys and buttons (the page lost focus).

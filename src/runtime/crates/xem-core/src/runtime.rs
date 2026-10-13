@@ -686,6 +686,16 @@ impl<M: GameModule> Runtime<M> {
         self.module.combo_input(mode)
     }
 
+    /// The game's button assignment, which the typed actions resolve
+    /// through (`xem_core::action`).
+    pub fn button_assignment(&mut self) -> crate::action::Assignment {
+        let mut bytes = [0; 8];
+        match self.memory().read(crate::action::ASSIGNMENT_ADDRESS, &mut bytes) {
+            Ok(()) => crate::action::Assignment::from_bytes(bytes),
+            Err(_) => crate::action::Assignment::default(),
+        }
+    }
+
     /// What the field says of the player's buttons (nothing outside it).
     pub fn field_controls(&mut self) -> FieldControls {
         let mode = self.services().mode.unwrap_or(u32::MAX);

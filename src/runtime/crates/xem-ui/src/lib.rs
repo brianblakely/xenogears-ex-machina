@@ -14,6 +14,7 @@ use std::time::Duration;
 use xem_settings::{
     APP_ACTIONS, AppAction, AppBinding, AppRequest, AudioOutput, EffectLevels, FAST_FORWARD_RATES, Fidelity, Filter, Graphics,
     GraphicsProfile, PresentRate, QualityTier, Rejected, Scale, SettingChange, Settings, SettingsService,
+    GAME_ACTION_ROWS, GameBinding,
 };
 
 // Slint compiles its FemtoVG renderer module out on Android; the renderer
@@ -458,6 +459,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_rewind_history_seconds(settings.rewind_history_seconds as i32);
     panel.set_rewind_history_max(xem_settings::MAX_REWIND_HISTORY_SECONDS as i32);
     show_binding(panel, settings);
+    show_game_binding(panel, settings);
 }
 
 /// The Saves section's index (settings.slint's `sections`).
@@ -502,6 +504,37 @@ fn show_binding(panel: &SettingsPanel, settings: &Settings) {
         }
     } else {
         panel.set_bindings(slint::ModelRc::new(slint::VecModel::from(rows)));
+    }
+}
+
+/// Every game action with its inputs, in [`GAME_ACTION_ROWS`] order, and the
+/// selected one's in its editors.
+fn show_game_binding(panel: &SettingsPanel, settings: &Settings) {
+    let rows: Vec<BindingRow> = GAME_ACTION_ROWS
+        .iter()
+        .map(|(context, action, title)| {
+            let binding = settings.game_bindings.context(*context).get(action).cloned().unwrap_or_default();
+            let mut keys: Vec<&str> = binding.keyboard.iter().map(|code| key_label(code)).collect();
+            keys.extend(binding.mouse.iter().map(|m| match m.as_str() { "MouseLeft" => "Click", "MouseRight" => "Right-click", _ => "Middle-click" }));
+            keys.dedup();
+            BindingRow { name: (*title).into(), keyboard: keys.join(" ").into(), gamepad: binding.gamepad.join(" ").into() }
+        })
+        .collect();
+    if let Some((context, action, _)) = usize::try_from(panel.get_selected_game_action()).ok().and_then(|i| GAME_ACTION_ROWS.get(i)) {
+        let binding = settings.game_bindings.context(*context).get(action).cloned().unwrap_or_default();
+        panel.set_game_keys(binding.keyboard.join(" ").into());
+        panel.set_game_buttons(binding.gamepad.join(" ").into());
+        panel.set_game_mouse(binding.mouse.join(" ").into());
+    }
+    let model = panel.get_game_bindings();
+    if model.row_count() == rows.len() {
+        for (index, row) in rows.into_iter().enumerate() {
+            if model.row_data(index).as_ref() != Some(&row) {
+                model.set_row_data(index, row);
+            }
+        }
+    } else {
+        panel.set_game_bindings(slint::ModelRc::new(slint::VecModel::from(rows)));
     }
 }
 
@@ -664,12 +697,37 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
         let apply = apply.clone();
         move |index| apply(pick(&FAST_FORWARD_RATES, index).map(SettingChange::FastForwardRate))
     });
-    panel.on_binding_edited(move |index, keyboard, gamepad| {
-        if let Some((action, _)) = usize::try_from(index).ok().and_then(|i| APP_ACTIONS.get(i)) {
-            apply(Some(SettingChange::BindApp {
-                action: *action,
-                binding: AppBinding::parse(&keyboard, &gamepad),
-            }));
+    panel.on_binding_edited({
+        let apply = apply.clone();
+        move |index, keyboard, gamepad| {
+            if let Some((action, _)) = usize::try_from(index).ok().and_then(|i| APP_ACTIONS.get(i)) {
+                apply(Some(SettingChange::BindApp {
+                    action: *action,
+                    binding: AppBinding::parse(&keyboard, &gamepad),
+                }));
+            }
+        }
+    });
+    panel.on_game_binding_edited({
+        let apply = apply.clone();
+        move |index, keys, buttons, mouse| {
+            if let Some((context, action, _)) = usize::try_from(index).ok().and_then(|i| GAME_ACTION_ROWS.get(i)) {
+                apply(Some(SettingChange::BindGame {
+                    context: *context,
+                    action: *action,
+                    binding: GameBinding::parse(&keys, &buttons, &mouse),
+                }));
+            }
+        }
+    });
+    panel.on_game_bindings_reset(move || apply(Some(SettingChange::ResetGameBindings)));
+    panel.on_game_action_selected({
+        let weak = panel.as_weak();
+        let settings = settings.clone();
+        move |_| {
+            if let Some(panel) = weak.upgrade() {
+                show_game_binding(&panel, settings.borrow().settings());
+            }
         }
     });
     panel.on_action_selected({

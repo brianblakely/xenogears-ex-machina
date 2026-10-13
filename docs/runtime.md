@@ -140,6 +140,8 @@ tests and browser clients: a JSON command in, a JSON result out
 (`xem-headless --control` reads one per line). Commands: `status`,
 `frames {count}`, bounded `run_until {max_frames, until: {frames} | {vblanks} |
 {path, equals|not_equals}}`, `pad {port, buttons}`, `press {buttons, frames}`,
+`hold {actions}` and `act {actions, frames}` (pad 1 by typed actions,
+[Controls](#controls)),
 `connect_pad`, `inspect {path, depth}`, `write {path, value}`, `globals
 {prefix}`, `read_memory`/`write_memory`, `snapshot`/`restore {name}`,
 `memory_hash`, `record`/`stop_recording`/`replay {changes}` (pad states per
@@ -946,8 +948,7 @@ Headset class (Low tier, depth of field off unless enabled).
   platform data; `crates/xem-host/src/xr_play.rs`): the
   screen 2.5 m ahead (Settings: headset screen), the settings panel a quad
   layer (left menu button), movie frames on the same screen; controllers
-  stand in for a pad (left stick D-pad, A/B/X/Y Cross/Circle/Square/Triangle,
-  triggers L1/R1, grips L2/R2, left stick click Start, right Select). One
+  are the game bindings' gamepad ([Controls](#controls)). One
   `xrframe` line per frame. `src/runtime/scripts/xr-game-smoke.sh` (Monado's simulated
   HMD, null compositor) checks 57-63 game frames a second against the
   simulated 20 Hz headset, sustained pacing (wall-clock frame intervals: p50
@@ -967,6 +968,59 @@ Headset class (Low tier, depth of field off unless enabled).
   Quest 3) checks the backend, two views, the game near 60 frames a second at
   a slower session rate, both views showing the screen, paused head tracking,
   exit, and an unchanged RAM hash.
+
+## Controls
+
+Humans and agents play through one vocabulary of typed actions
+(`xem_core::action::GameAction`): Up, Down, Left, Right, Confirm, Cancel,
+Run, Jump, Menu, CameraLeft, CameraRight, Start, Select, L2, R2, and the
+battle's attack inputs AttackWeak, AttackStrong, AttackFierce and
+AttackEnd. Each holds one pad button. The game reassigns its face and
+shoulder buttons through `pad_button_assignment` (0x80050238; `pad_init`
+swaps Circle/Cross and Triangle/Square), so an action resolves through the
+table as the game holds it (`Runtime::button_assignment`): Confirm is the
+button the game reads as talk and confirm whatever the table says.
+Agents send `hold {actions}` (held until the next hold) or `act {actions,
+frames}` (held for that many frames) to the command layer; nothing passes
+through SDL, the DOM or the operating system. `actions` is a list of names.
+
+Hosts translate their platform events into actions through the game
+bindings (`xem_settings::bindings`, saved as `game_bindings`): for each
+action, any of its keys (`KeyboardEvent.code`), gamepad inputs (the standard
+mapping's buttons South, East, West, North, L1, R1, LT, RT, Back, Start, L3,
+R3, Up, Down, Left, Right, and each stick's directions past half travel,
+`LStickUp` .. `RStickRight`) and mouse buttons (`MouseLeft`, `MouseRight`,
+`MouseMiddle`) holds it. Bindings have two contexts: Play everywhere, and
+Attack while the battle's attack inputs take the buttons
+(`xem_game_combo_input`), where an input Attack binds means its attack
+action instead of what Play binds it to. An input may not hold two
+different buttons in one context. `xem_settings::player::PlayerInput` holds
+the inputs and resolves them, the same code on desktop, Android, headsets
+and the browser; the mouse camera's sideways motion holds CameraLeft or
+CameraRight while it lasts. A headset's controllers are the gamepad
+(`xr-standard` layout: A South, B East, X West, Y North, triggers L1/R1,
+grips LT/RT, the right stick's click Back, the left's Start, both sticks),
+natively (`xem_host::xr_play::gamepad`) and in the browser (`xrGamepad`).
+
+| Action | Keys | Gamepad | Mouse |
+| --- | --- | --- | --- |
+| Up, Down, Left, Right | W, S, A, D | D-pad, left stick | |
+| Confirm | E | South | left button |
+| Cancel | F | East | right button |
+| Run (held) | Shift | East | |
+| Jump | Space | North | |
+| Menu | Tab | West | |
+| CameraLeft, CameraRight | Left, Right | L1, R1, right stick | sideways motion (setting) |
+| Start, Select | Enter, Backspace | Start, Back | |
+| L2, R2 | 1, 2 | LT, RT | |
+| AttackWeak, AttackStrong, AttackFierce, AttackEnd | W, A, S, D | North, West, South, East | |
+
+Settings' Controls section lists every action and edits its inputs in
+place (`SettingChange::BindGame {context, action, binding}`, and
+`ResetGameBindings`); agents change them through the same
+`SettingsService::apply`. `tests/controls.rs` (xem-headless, local) checks
+that an agent's `act` and a player's bound key reach the game as the same
+pad.
 
 ## Crates
 
@@ -1200,10 +1254,8 @@ gamepad, the GPU's display is uploaded as the game image after
 each frame and the SPU's output is queued to an SDL3 audio stream at the
 master volume and audio output (`xem_host::Game`; `AudioOutput::mix` is the
 browser's mix too). Memory cards default to `cards/` beside the settings file.
-On desktop, Android and browser gamepads, the left stick also sends D-pad
-directions (including diagonals), and right-stick left/right sends L1/R1 to
-turn the camera. Each axis uses a half-travel dead zone; physical D-pad and
-shoulder buttons still work. Back+Start toggles Settings once and consumes
+Pad 1's buttons come from the game bindings ([Controls](#controls)).
+Back+Start toggles Settings once and consumes
 both buttons until both are released. Guide/Home has no app binding.
 Walking in a field, Select (Backspace, or Back released alone) toggles the
 first-person view where the original's Select shows no map's picture, and
@@ -1304,21 +1356,12 @@ as JSON text or bytes.
   at most about 0.19 s and plays silence when dry (no SharedArrayBuffer).
   "Start audio" creates the `AudioContext` inside the click, at the SPU's
   44.1 kHz; the browser resamples to the device.
-- **Input.** While the settings panel is hidden, the keyboard and mouse
-  (`KeyboardEvent.code`, the hosts' shared layout in
-  `src/runtime/crates/xem-settings/src/game_keys.rs`; the game swaps a
-  digital pad's Circle/Cross and Triangle/Square, `pad_start_controllers`:
-  WASD the D-pad, E or the left button Cross (confirm), F or the right
-  button Circle (cancel), Shift Circle (held, run), Space Triangle (jump),
-  Tab Square (menu), Left/Right and, under the mouse camera setting (off
-  by default), sideways mouse motion L1/R1 (camera),
-  Enter Start, Backspace Select, 1/2 L2/R2; while the battle's attack
-  inputs take the buttons, the port's `xem_game_combo_input` (the on-foot
-  and Gear attack pages until the combo closes), W/A/S are Triangle/Square/Cross (light, medium, heavy) and D
-  Circle (cancel)) and the first gamepad (Gamepad
-  API standard mapping, with the same stick controls; Back+Start toggles the panel) hold pad 1's buttons (`src/runtime/crates/xem-web/src/input.rs`). The
+- **Input.** While the settings panel is hidden, the keyboard
+  (`KeyboardEvent.code`), the mouse and the first gamepad (Gamepad API
+  standard mapping; Back+Start toggles the panel) hold pad 1 through the
+  game bindings ([Controls](#controls)). The
   animation loop sets the pad when the player's buttons change, so a pad an
-  automation client set (`pad`, `press`, `replay`) stays until the player
+  automation client set (`pad`, `press`, `hold`, `act`, `replay`) stays until the player
   presses something.
 - **Persistence.** Settings: `SettingsService` over `localStorage`
   (`xem.settings`). Memory cards: two 128 KB images in IndexedDB (`xem`

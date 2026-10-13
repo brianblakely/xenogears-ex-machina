@@ -515,6 +515,24 @@ impl<M: GameModule> Session<M> {
                 self.scheduled.push((now + frames, port, 0));
                 Ok(self.status())
             }
+            "hold" => {
+                // Hold the named game actions on pad 1 (the buttons they mean)
+                // until the next hold; an empty list releases them.
+                let actions = crate::action::actions_of(command.get("actions").ok_or("hold needs actions")?)?;
+                let assignment = self.runtime.button_assignment();
+                self.set_pad(0, crate::action::buttons_with(actions, &assignment));
+                Ok(self.status())
+            }
+            "act" => {
+                // Hold the named actions for `frames` frames from now, then release.
+                let actions = crate::action::actions_of(command.get("actions").ok_or("act needs actions")?)?;
+                let frames = arg_u64("frames").unwrap_or(1);
+                let now = self.vblank();
+                let assignment = self.runtime.button_assignment();
+                self.set_pad(0, crate::action::buttons_with(actions, &assignment));
+                self.scheduled.push((now + frames, 0, 0));
+                Ok(self.status())
+            }
             "connect_pad" => {
                 let port = arg_u64("port").ok_or("connect_pad needs port")? as usize;
                 let connected = command.get("connected").and_then(Value::as_bool).unwrap_or(true);
@@ -600,7 +618,7 @@ impl<M: GameModule> Session<M> {
                     // mean the game ignores the pad.
                     "pad_queue_reads_last_frame": services.input_reads_last_frame,
                     "stopped": stopped,
-                    "valid_commands": ["pad", "press", "frames", "run_until", "inspect", "write", "snapshot",
+                    "valid_commands": ["pad", "press", "hold", "act", "frames", "run_until", "inspect", "write", "snapshot",
                                         "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "schedule", "record", "replay"],
                 }))
             }
@@ -698,7 +716,7 @@ impl<M: GameModule> Session<M> {
                 for item in list {
                     let pair = item.as_array().filter(|p| p.len() == 2).ok_or("commands are [frame, command]")?;
                     let cmd = pair[1].get("cmd").and_then(Value::as_str).ok_or("scheduled command needs cmd")?;
-                    if !matches!(cmd, "pad" | "press" | "connect_pad" | "enter_field" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "music_advance") {
+                    if !matches!(cmd, "pad" | "press" | "hold" | "act" | "connect_pad" | "enter_field" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "music_advance") {
                         return Err(format!("{cmd} cannot be scheduled; session logs contain only game input, setup and pacing"));
                     }
                     let at = pair[0].as_u64().ok_or("a command's frame is a number")?;

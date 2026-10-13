@@ -11,10 +11,9 @@
 //! screen, not reconstructed 3D. The settings panel is a quad layer beside
 //! it (left menu button); the right controller points at it.
 //!
-//! The controllers stand in for a pad: left stick the D-pad, A Cross, B
-//! Circle, X Square, Y Triangle, triggers L1/R1, grips L2/R2, left stick
-//! click Start, right stick click Select. (Phase 5 owns the full headset
-//! controls.)
+//! The controllers are the game bindings' gamepad ([`gamepad`]): by default
+//! the left stick moves, A confirms, B cancels and runs, Y jumps, X opens
+//! the menu, the triggers and the right stick turn the camera.
 //!
 //! Every frame prints one `key=value` line for scripts/xr-game-smoke.sh.
 
@@ -35,31 +34,19 @@ const PANEL_WIDTH: f32 = 0.55;
 /// The room around the screen.
 const BACKDROP: wgpu::Color = wgpu::Color { r: 0.012, g: 0.014, b: 0.02, a: 1.0 };
 
-/// The PS1 pad halfword from the controllers (bit 0 Select .. bit 15 Square).
-pub fn pad_buttons(input: &InputState) -> u16 {
+/// The controllers as a standard gamepad (the `xr-standard` layout the
+/// game bindings name, `xem_settings::bindings`): A South, B East, X West,
+/// Y North, triggers L1/R1, grips LT/RT, the right stick's click Back, the
+/// left's Start; the sticks are its sticks (negative y up).
+pub fn gamepad(input: &InputState) -> ([u8; 16], [f32; 4]) {
     let [left, right]: &[HandInput; 2] = &input.hands;
-    let mut buttons = 0u16;
-    let mut set = |on: bool, bit: u16| {
-        if on {
-            buttons |= 1 << bit;
-        }
-    };
-    let [x, y] = left.thumbstick;
-    set(y > 0.5, 4);
-    set(x > 0.5, 5);
-    set(y < -0.5, 6);
-    set(x < -0.5, 7);
-    set(right.primary, 14);
-    set(right.secondary, 13);
-    set(left.primary, 15);
-    set(left.secondary, 12);
-    set(left.trigger > 0.5, 10);
-    set(right.trigger > 0.5, 11);
-    set(left.squeeze, 8);
-    set(right.squeeze, 9);
-    set(left.thumbstick_click, 3);
-    set(right.thumbstick_click, 0);
-    buttons
+    let mut pressed = [0u8; 16];
+    for (i, on) in [right.primary, right.secondary, left.primary, left.secondary,
+        left.trigger > 0.5, right.trigger > 0.5, left.squeeze, right.squeeze,
+        right.thumbstick_click, left.thumbstick_click].into_iter().enumerate() {
+        pressed[i] = u8::from(on);
+    }
+    (pressed, [left.thumbstick[0], -left.thumbstick[1], right.thumbstick[0], -right.thumbstick[1]])
 }
 
 /// Points at the panel with the right controller's aim ray.
@@ -208,6 +195,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     };
     let mut pointer = PanelPointer::default();
     let mut menu_held = false;
+    let mut player = xem_settings::player::PlayerInput::default();
     let mut wanted_disc = None;
     let start = Instant::now();
     let mut frames = 0u64;
@@ -274,7 +262,10 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         let current = settings.borrow().settings().clone();
         let mut ran = 0;
         if !game_paused {
-            let buttons = if visible { 0 } else { pad_buttons(&input) };
+            let (pressed, axes) = gamepad(&input);
+            if visible { player.clear() } else { player.gamepad(&pressed, &axes) }
+            let context = game.pad_context();
+            let buttons = if visible { 0 } else { player.buttons(&current.game_bindings, start.elapsed().as_secs_f64() * 1000.0, context) };
             let focused = session.state() == xem_xr::SessionState::FOCUSED;
             ran = game.update(buttons, &current, || focused)?;
         }

@@ -9,11 +9,13 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fmt;
 use std::path::{Path, PathBuf};
+pub mod bindings;
 pub mod controls;
-pub mod game_keys;
 pub mod graphics;
 pub mod look;
+pub mod player;
 pub use graphics::{EffectLevels, Fidelity, Graphics, GraphicsProfile, MAX_ZOOM_OUT, MovieFilter, PresentRate, QualityTier, Renderer, TextureFiltering, XrScreen, ZOOM_STEP};
+pub use bindings::{GameAction, GameBinding, GameBindings, InputContext, GAME_ACTION_ROWS};
 pub use controls::{AppAction, AppBinding, AppInput, AppRequest, APP_ACTIONS};
 
 pub const MAX_VOLUME: u8 = 100;
@@ -62,17 +64,6 @@ pub enum Filter {
     Linear,
 }
 
-/// Game actions that can be rebound.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub enum Action {
-    Confirm,
-    Cancel,
-    Run,
-    Jump,
-    CameraLeft,
-    CameraRight,
-}
-
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Presentation {
@@ -92,9 +83,8 @@ pub struct Settings {
     pub audio_output: AudioOutput,
     pub presentation: Presentation,
     pub graphics: Graphics,
-    /// Placeholder until the input phase defines the binding model: an action
-    /// mapped to a host input name. Unbound actions use the host default.
-    pub bindings: BTreeMap<Action, String>,
+    /// The game's bindings: the inputs that hold each typed action.
+    pub game_bindings: GameBindings,
     pub app_bindings: BTreeMap<AppAction, AppBinding>,
     pub fast_forward_rate: FastForwardRate,
     pub invert_trigger_chords: bool,
@@ -114,7 +104,7 @@ impl Default for Settings {
             audio_output: AudioOutput::default(),
             presentation: Presentation::default(),
             graphics: Graphics::default(),
-            bindings: BTreeMap::new(),
+            game_bindings: GameBindings::default(),
             app_bindings: controls::defaults(),
             fast_forward_rate: FastForwardRate::default(),
             invert_trigger_chords: false,
@@ -148,8 +138,10 @@ pub enum SettingChange {
     /// The whole graphics block, validated.
     Graphics(Graphics),
     PauseOnFocusLoss(bool),
-    Bind { action: Action, input: String },
-    Unbind(Action),
+    /// One action's inputs in a context, validated with the rest.
+    BindGame { context: InputContext, action: GameAction, binding: GameBinding },
+    /// Every game binding back to the defaults.
+    ResetGameBindings,
 }
 
 /// An applied and persisted change.
@@ -212,16 +204,10 @@ impl Settings {
             SettingChange::Fullscreen(on) => next.presentation.fullscreen = *on,
             SettingChange::Graphics(graphics) => next.graphics = *graphics,
             SettingChange::PauseOnFocusLoss(enabled) => next.pause_on_focus_loss = *enabled,
-            SettingChange::Bind { action, input } => {
-                let input = input.trim();
-                if input.is_empty() {
-                    return Err("input name is empty".into());
-                }
-                next.bindings.insert(*action, input.to_owned());
+            SettingChange::BindGame { context, action, binding } => {
+                next.game_bindings.context_mut(*context).insert(*action, binding.clone());
             }
-            SettingChange::Unbind(action) => {
-                next.bindings.remove(action);
-            }
+            SettingChange::ResetGameBindings => next.game_bindings = GameBindings::default(),
         }
         next.validate()?;
         Ok(next)
@@ -284,9 +270,7 @@ impl Settings {
         if self.master_volume > MAX_VOLUME {
             return Err(format!("volume must be 0-{MAX_VOLUME}"));
         }
-        if self.bindings.values().any(|input| input.trim().is_empty()) {
-            return Err("input name is empty".into());
-        }
+        self.game_bindings.validate()?;
         for binding in self.app_bindings.values() { binding.validate()?; }
         let bindings: Vec<_> = self.app_bindings.iter().collect();
         for (i,(action,binding)) in bindings.iter().enumerate() {
@@ -609,28 +593,21 @@ mod tests {
             let rejected = service.apply(SettingChange::MasterVolume(bad)).unwrap_err();
             assert!(matches!(rejected, Rejected::Invalid { .. }));
         }
-        assert!(
-            service
-                .apply(SettingChange::Bind {
-                    action: Action::Jump,
-                    input: " ".into()
-                })
-                .is_err()
-        );
+        let jump = |keyboard: &str| SettingChange::BindGame {
+            context: InputContext::Play, action: GameAction::Jump, binding: GameBinding::parse(keyboard, "North", ""),
+        };
+        assert!(service.apply(jump("KeyE")).is_err());
         assert_eq!(service.settings().master_volume, 35);
         assert_eq!(service.revision(), 1);
 
         service
             .apply(SettingChange::AudioOutput(AudioOutput::Wide))
             .unwrap();
-        service
-            .apply(SettingChange::Bind {
-                action: Action::Jump,
-                input: "Space".into(),
-            })
-            .unwrap();
+        service.apply(jump("KeyJ")).unwrap();
         assert_eq!(*seen.borrow(), vec![1, 2, 3]);
-        assert_eq!(service.settings().bindings[&Action::Jump], "Space");
+        assert_eq!(service.settings().game_bindings.play[&GameAction::Jump].keyboard, ["KeyJ"]);
+        service.apply(SettingChange::ResetGameBindings).unwrap();
+        assert_eq!(service.settings().game_bindings, GameBindings::default());
     }
 
     #[test]

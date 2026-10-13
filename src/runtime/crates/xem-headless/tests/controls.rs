@@ -51,3 +51,36 @@ fn select_shows_a_field_maps_picture_only_where_it_has_one_and_its_item_is_held(
     let controls = session.runtime.field_controls();
     assert!(controls.field && controls.menu && !controls.walking, "the menu runs: {controls:?}");
 }
+
+/// An agent's typed actions and a player's bound keys reach the game as the
+/// same pad: the menu opens from either, and the two runs end equal.
+#[test]
+fn agents_actions_and_players_keys_are_one_command_path() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let bindings = xem_settings::GameBindings::default();
+    let mut hashes = Vec::new();
+    for human in [false, true] {
+        let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+        run(&mut session, json!({"cmd": "enter_field", "map": 30}));
+        run(&mut session, json!({"cmd": "frames", "count": 400}));
+        assert_eq!(session.runtime.button_assignment(), xem_core::action::Assignment::default(), "pad_init's assignment");
+        if human {
+            // The player's Tab, through the bindings, held for two frames.
+            let mut player = xem_settings::player::PlayerInput::default();
+            player.key(&bindings, "Tab", true);
+            let context = xem_settings::player::Context { assignment: session.runtime.button_assignment(), ..Default::default() };
+            let buttons = player.buttons(&bindings, 0.0, context);
+            assert_eq!(buttons, xem_core::pad::button::SQUARE);
+            run(&mut session, json!({"cmd": "press", "buttons": ["square"], "frames": 2}));
+        } else {
+            run(&mut session, json!({"cmd": "act", "actions": ["Menu"], "frames": 2}));
+        }
+        run(&mut session, json!({"cmd": "frames", "count": 60}));
+        assert!(session.runtime.field_controls().menu, "the menu runs");
+        hashes.push(session.execute(&json!({"cmd": "memory_hash"})));
+    }
+    assert_eq!(hashes[0], hashes[1]);
+}

@@ -190,7 +190,11 @@ impl Game {
     /// the map's picture (first-person inspection's toggle and the buttons
     /// it holds back).
     pub fn pad_context(&mut self) -> crate::PadContext {
-        crate::PadContext { combo: self.session.runtime.combo_input(), field: self.session.runtime.field_controls() }
+        crate::PadContext {
+            attack: self.session.runtime.combo_input(),
+            field: self.session.runtime.field_controls(),
+            assignment: self.session.runtime.button_assignment(),
+        }
     }
 
     /// Runs a bounded batch of frames due by the wall clock with pad 1 holding

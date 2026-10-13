@@ -621,6 +621,13 @@ export component SettingsPanel inherits Window {
     in-out property <string> keyboard-binding;
     in-out property <string> gamepad-binding;
     in property <[string]> backup-actions;
+    // Every game action with its inputs (xem_settings::bindings); the
+    // selected one (-1 none) is edited: keys, gamepad inputs, mouse buttons.
+    in property <[BindingRow]> game-bindings;
+    in-out property <int> selected-game-action: -1;
+    in-out property <string> game-keys;
+    in-out property <string> game-buttons;
+    in-out property <string> game-mouse;
     in-out property <int> selected-section: 0;
     in property <bool> wide-layout;
     private property <[Section]> sections: [
@@ -650,9 +657,13 @@ export component SettingsPanel inherits Window {
     private property <bool> gamepad-editor-focused;
     private property <bool> rewind-interval-focused;
     private property <bool> rewind-history-focused;
-    out property <bool> text-editor-focused: keyboard-editor-focused || gamepad-editor-focused || rewind-interval-focused || rewind-history-focused;
+    private property <bool> game-editor-focused;
+    out property <bool> text-editor-focused: keyboard-editor-focused || gamepad-editor-focused || rewind-interval-focused || rewind-history-focused || game-editor-focused;
     callback action-selected(int);
     callback binding-edited(int, string, string);
+    callback game-action-selected(int);
+    callback game-binding-edited(int, string, string, string);
+    callback game-bindings-reset();
     callback app-action-requested(int);
     callback backup-action-requested(int);
     callback fast-forward-rate-edited(int);
@@ -685,7 +696,16 @@ export component SettingsPanel inherits Window {
         root.gamepad-editor-focused = false;
         root.rewind-interval-focused = false;
         root.rewind-history-focused = false;
+        root.game-editor-focused = false;
         root.rewind-held(false);
+    }
+
+    function select-game-action(index: int) {
+        if index >= -1 && index < root.game-bindings.length && index != root.selected-game-action {
+            root.selected-game-action = index;
+            root.game-editor-focused = false;
+            root.game-action-selected(index);
+        }
     }
 
     function select-action(index: int) {
@@ -1032,30 +1052,117 @@ export component SettingsPanel inherits Window {
                                 }
                             }
                             if root.selected-section == 2: Card {
-                                title: "Keyboard";
-                                description: "The game's keys (the battle's attack inputs take W A S D).";
-                                ControlRow { action: "Move"; inputs: ["W", "A", "S", "D"]; }
-                                ControlRow { action: "Confirm, talk"; inputs: ["E", "Left click"]; }
-                                ControlRow { action: "Cancel; run while held"; inputs: ["F", "Shift", "Right click"]; }
-                                ControlRow { action: "Jump"; inputs: ["Space"]; }
-                                ControlRow { action: "Menu"; inputs: ["Tab"]; }
-                                ControlRow { action: "Turn the camera"; inputs: root.mouse-camera ? ["Left", "Right", "Mouse"] : ["Left", "Right"]; }
-                                ControlRow { action: "Start, Select"; inputs: ["Enter", "Backspace"]; }
-                                ControlRow { action: "L2, R2"; inputs: ["1", "2"]; }
-                                if root.first-person: ControlRow { action: "First-person view (in a field)"; inputs: ["Backspace"]; }
-                                if root.first-person: ControlRow { action: "Look around in it"; inputs: root.mouse-camera ? ["Arrows", "Mouse"] : ["Arrows"]; }
-                                ControlRow { action: "Settings"; inputs: ["Esc"]; }
+                                title: "Game controls";
+                                description: "Choose an action to change its keys (KeyW, Space), gamepad inputs (South, LStickUp) or mouse buttons (MouseLeft). While the battle's attack inputs take the buttons, the attack rows come first.";
+                                game-actions := FocusScope {
+                                    accessible-role: list;
+                                    accessible-label: "Game controls";
+                                    key-pressed(event) => {
+                                        if event.text == Key.UpArrow {
+                                            root.select-game-action(max(0, root.selected-game-action - 1));
+                                            return accept;
+                                        }
+                                        if event.text == Key.DownArrow {
+                                            root.select-game-action(root.selected-game-action + 1);
+                                            return accept;
+                                        }
+                                        reject
+                                    }
+                                    VerticalLayout {
+                                        spacing: 1px;
+                                        for binding[index] in root.game-bindings: Rectangle {
+                                            accessible-role: list-item;
+                                            accessible-label: binding.name;
+                                            accessible-item-selectable: true;
+                                            accessible-item-selected: index == root.selected-game-action;
+                                            accessible-item-index: index;
+                                            accessible-action-default => { root.select-game-action(index); }
+                                            border-radius: 7px;
+                                            background: index == root.selected-game-action ? Theme.selected : game-touch.pressed ? Theme.pressed : game-touch.has-hover ? Theme.hover : transparent;
+                                            border-width: index == root.selected-game-action ? 1px : 0px;
+                                            border-color: Theme.stroke;
+                                            animate background { duration: 140ms; easing: ease-out; }
+                                            game-touch := TouchArea {
+                                                mouse-cursor: index == root.selected-game-action ? MouseCursor.default : MouseCursor.pointer;
+                                                clicked => { root.select-game-action(index); }
+                                            }
+                                            VerticalLayout {
+                                                HorizontalLayout {
+                                                    min-height: 30px;
+                                                    padding-left: 10px;
+                                                    padding-right: 8px;
+                                                    spacing: 6px;
+                                                    Text {
+                                                        text: binding.name;
+                                                        font-size: 12.5px;
+                                                        font-weight: index == root.selected-game-action ? 600 : 400;
+                                                        color: index == root.selected-game-action || game-touch.has-hover ? Theme.text : Theme.text-secondary;
+                                                        vertical-alignment: center;
+                                                        horizontal-stretch: 1;
+                                                        overflow: elide;
+                                                    }
+                                                    VerticalLayout { alignment: center; Keycap { text: binding.keyboard; } }
+                                                    VerticalLayout { alignment: center; Keycap { text: binding.gamepad; } }
+                                                }
+                                                if index == root.selected-game-action: VerticalLayout {
+                                                    padding: 10px;
+                                                    padding-top: 2px;
+                                                    spacing: 8px;
+                                                    Divider { }
+                                                    HorizontalLayout {
+                                                        spacing: 8px;
+                                                        Text { text: "Keys"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
+                                                        LineEdit {
+                                                            accessible-label: "Game keys";
+                                                            placeholder-text: "KeyW ArrowUp";
+                                                            text <=> root.game-keys;
+                                                            changed has-focus => { root.game-editor-focused = self.has-focus; }
+                                                            accepted => { root.game-binding-edited(root.selected-game-action, root.game-keys, root.game-buttons, root.game-mouse); }
+                                                        }
+                                                    }
+                                                    HorizontalLayout {
+                                                        spacing: 8px;
+                                                        Text { text: "Gamepad"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
+                                                        LineEdit {
+                                                            accessible-label: "Game gamepad inputs";
+                                                            placeholder-text: "South LStickUp";
+                                                            text <=> root.game-buttons;
+                                                            changed has-focus => { root.game-editor-focused = self.has-focus; }
+                                                            accepted => { root.game-binding-edited(root.selected-game-action, root.game-keys, root.game-buttons, root.game-mouse); }
+                                                        }
+                                                    }
+                                                    HorizontalLayout {
+                                                        spacing: 8px;
+                                                        Text { text: "Mouse"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
+                                                        LineEdit {
+                                                            accessible-label: "Game mouse buttons";
+                                                            placeholder-text: "MouseLeft";
+                                                            text <=> root.game-mouse;
+                                                            changed has-focus => { root.game-editor-focused = self.has-focus; }
+                                                            accepted => { root.game-binding-edited(root.selected-game-action, root.game-keys, root.game-buttons, root.game-mouse); }
+                                                        }
+                                                    }
+                                                    HorizontalLayout {
+                                                        spacing: 8px;
+                                                        alignment: end;
+                                                        Button { text: "Clear"; clicked => { root.game-binding-edited(root.selected-game-action, "", "", ""); } }
+                                                        Button { text: "Save"; primary: true; clicked => { root.game-binding-edited(root.selected-game-action, root.game-keys, root.game-buttons, root.game-mouse); } }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                HorizontalLayout {
+                                    alignment: end;
+                                    Button { text: "Restore defaults"; clicked => { root.game-bindings-reset(); } }
+                                }
                             }
                             if root.selected-section == 2: Card {
-                                title: "Gamepad";
-                                ControlRow { action: "Move"; inputs: ["D-pad", "Left stick"]; }
-                                ControlRow { action: "Confirm, cancel"; inputs: ["South", "East"]; }
-                                ControlRow { action: "Jump, menu"; inputs: ["North", "West"]; }
-                                ControlRow { action: "Turn the camera"; inputs: ["L1", "R1", "Right stick"]; }
-                                ControlRow { action: "Start, Select"; inputs: ["Start", "Back"]; }
-                                if root.first-person: ControlRow { action: "First-person view (in a field)"; inputs: ["Back", "Stick click"]; }
-                                if root.first-person: ControlRow { action: "Look around in it"; inputs: ["Right stick"]; }
-                                ControlRow { action: "Settings"; inputs: ["Back+Start"]; }
+                                title: "App keys and views";
+                                if root.first-person: ControlRow { action: "First-person view (in a field)"; inputs: ["Select", "R3"]; }
+                                if root.first-person: ControlRow { action: "Look around in it"; inputs: root.mouse-camera ? ["Arrows", "Right stick", "Mouse"] : ["Arrows", "Right stick"]; }
+                                ControlRow { action: "Settings"; inputs: ["Esc", "Back+Start"]; }
                             }
                             // Shortcuts
                             if root.selected-section == 3: Card {

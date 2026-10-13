@@ -40,20 +40,6 @@ pub const APP_ACTIONS: [(AppAction, &str); 24] = [
 ];
 pub const PAD_NAMES: [&str; 16] = ["South", "East", "West", "North", "L1", "R1", "LT", "RT", "Back", "Start", "L3", "R3", "Up", "Down", "Left", "Right"];
 
-/// Standard gamepad buttons plus left-stick movement and right-stick camera
-/// turns. Axes are left X/Y, right X/Y, with negative Y pointing up. Each
-/// direction uses a half-travel dead zone and combines with physical buttons.
-pub fn gamepad_buttons(pressed: &[u8], axes: &[f32]) -> [u8; 16] {
-    let mut buttons = std::array::from_fn(|i| u8::from(pressed.get(i).is_some_and(|p| *p != 0)));
-    let axis = |i| axes.get(i).copied().unwrap_or(0.0);
-    for (on, button) in [(axis(0) < -0.5, 14), (axis(0) > 0.5, 15),
-        (axis(1) < -0.5, 12), (axis(1) > 0.5, 13),
-        (axis(2) < -0.5, 4), (axis(2) > 0.5, 5)] {
-        buttons[button] |= u8::from(on);
-    }
-    buttons
-}
-
 const SETTINGS_CHORD: u16 = (1 << 8) | (1 << 9); // Back+Start
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -82,7 +68,7 @@ impl AppBinding {
         Ok(())
     }
 }
-fn keyboard_code(code: &str) -> bool {
+pub(crate) fn keyboard_code(code: &str) -> bool {
     if let Some(key) = code.strip_prefix("Key") { return key.len() == 1 && key.bytes().all(|b| b.is_ascii_uppercase()); }
     if let Some(key) = code.strip_prefix("Digit") { return key.len() == 1 && key.bytes().all(|b| b.is_ascii_digit()); }
     if let Some(key) = code.strip_prefix('F') { return key.parse::<u8>().is_ok_and(|n| (2..=24).contains(&n) && key == n.to_string()); }
@@ -191,19 +177,6 @@ impl AppInput {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[test]
-    fn sticks_combine_with_buttons_and_release_in_the_dead_zone() {
-        let mut physical = [0;16]; physical[0] = 1; physical[4] = 1; physical[13] = 1;
-        let mut expected = physical; expected[12] = 1; expected[14] = 1; expected[5] = 1;
-        assert_eq!(gamepad_buttons(&physical, &[-0.8, -0.8, 0.8, 0.0]), expected);
-        let mut expected = [0;16]; expected[15] = 1; expected[13] = 1; expected[4] = 1;
-        assert_eq!(gamepad_buttons(&[], &[0.8, 0.8, -0.8, 0.0]), expected);
-        // Small movement, including the boundary, releases the virtual buttons;
-        // right-stick vertical motion has no game binding.
-        assert_eq!(gamepad_buttons(&physical, &[0.5, -0.5, 0.25, 1.0]), physical);
-        assert_eq!(gamepad_buttons(&physical, &[]), physical);
-        assert_eq!(gamepad_buttons(&[], &[]), [0;16]);
-    }
     #[test]
     fn settings_chord_toggles_once_and_is_consumed_until_both_buttons_release() {
         let bindings = defaults();
