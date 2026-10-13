@@ -57,6 +57,15 @@ for _ in $(seq 100); do [[ -S $rundir/monado_comp_ipc ]] && break; sleep 0.1; do
 
 "$desktop" --xr --disc "$disc" --exit-at-frame "$frames" --xr-capture "$out/eyes" >"$out/running.log" 2>"$out/running.err"
 "$desktop" --xr --disc "$disc" --exit-at-frame "$frames" --xr-pause 60,120 >"$out/paused.log" 2>"$out/paused.err"
+# Hand gestures, scripted (Monado's simulated headset tracks no hands): an
+# overhand grab pauses and another resumes, prayer hands open and close
+# Settings, and in field 30 a pinch with the gaze on the floor walks there.
+echo '{"commands": [[0, {"cmd": "enter_field", "map": 30}]]}' >"$out/field30.json"
+cp "$out/config/xenogears-ex-machina/settings.json" "$out/settings.saved"
+echo '{"graphics": {"profile": "Hd2d"}, "assisted": {"pointer": "Eye"}}' >"$out/config/xenogears-ex-machina/settings.json"
+"$desktop" --xr --disc "$disc" --script "$out/field30.json" --exit-after-frames 330 \
+    --xr-hands "60:pause,120:pause,140:prayer,170:prayer,200:pinch@120/150" >"$out/gestures.log" 2>"$out/gestures.err"
+cp "$out/settings.saved" "$out/config/xenogears-ex-machina/settings.json"
 # Field 12 (a room, a dialogue window and a portrait) under the HD-2D profile.
 echo '{"commands": [[0, {"cmd": "enter_field", "map": 12}]]}' >"$out/field.json"
 "$desktop" --xr --disc "$disc" --script "$out/field.json" --exit-at-frame 750 --xr-capture "$out/field" >"$out/field.log" 2>"$out/field.err"
@@ -117,6 +126,20 @@ check(len({r["game_frames"] for r in paused}) == 1, "the game advanced while pau
 check(all(r["render"] == "1" for r in paused), "a paused frame was not rendered")
 check(len({r["head"] for r in paused}) > len(paused) // 2, "head tracking stopped while paused")
 print(f"paused: {len(paused)} frames at game frame {paused[0]['game_frames']}, {len({r['head'] for r in paused})} head poses")
+
+rows = records("gestures.log")
+by = {int(r["n"]): r for r in rows}
+gestures = [(int(r["n"]), r["gestures"]) for r in rows if r["gestures"] != "[]"]
+print(f"gestures: {gestures}")
+paused = [r for r in rows if r["player_pause"] == "1"]
+check(len(paused) >= 40, f"the Pause grab held the game for only {len(paused)} frames")
+check(len({r["game_frames"] for r in paused}) == 1, "the game ran while the player paused it")
+check(all(by[n]["player_pause"] == "0" for n in range(130, 140)), "the second grab did not resume")
+panel = [r for r in rows if r["layers"] == "2"]
+check(20 <= len(panel) <= 40, f"prayer hands showed the panel for {len(panel)} frames")
+check(len({r["game_frames"] for r in panel}) == 1, "the game ran while Settings were open")
+walked = [r["assist"] for r in rows if int(r["n"]) > 200]
+check("moving" in walked and walked[-1] == "arrived", f"the pinch did not walk the player there: {walked[:5]}..{walked[-3:]}")
 
 def png(path):
     data = open(path, "rb").read()
