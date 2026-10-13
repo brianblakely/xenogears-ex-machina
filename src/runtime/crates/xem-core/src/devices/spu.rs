@@ -76,6 +76,9 @@ pub struct Spu {
     tap: Vec<xem_spu::TapFrame>,
     /// The output as presented, kept for an agent (`audio_capture`).
     capture: Option<Vec<i16>>,
+    /// The sprite running a script command that plays a sound
+    /// (`xem.spu_sound_source`, src/port/binaural.c), 0 between them.
+    sound_source: u32,
 }
 
 impl Default for Spu {
@@ -94,6 +97,7 @@ impl Default for Spu {
             presenter: None,
             tap: Vec::new(),
             capture: None,
+            sound_source: 0,
         }
     }
 }
@@ -343,6 +347,19 @@ impl Device for Spu {
             }
             "transfer" => self.transfer(args, context),
             "write_io" => self.write_io(args, context),
+            // What starts the effects, for the Binaural mode (src/port/binaural.c);
+            // nothing changes for the game.
+            "sound_source" => {
+                self.sound_source = args.first().copied().unwrap_or(0);
+                Action::Return(0)
+            }
+            "effect_started" => {
+                if let Some(presenter) = self.presenter.as_mut() {
+                    let arg = |i: usize| args.get(i).copied().unwrap_or(0);
+                    presenter.effect_started(arg(0), arg(1), self.sound_source, &*context.memory);
+                }
+                Action::Return(0)
+            }
             _ => unknown("spu", op, context),
         }
     }

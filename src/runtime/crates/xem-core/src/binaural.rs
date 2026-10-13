@@ -43,6 +43,15 @@ const EFFECT_CHANNELS: u32 = 0x8005_95D8;
 const EFFECT_CHANNEL_COUNT: u32 = 0x8005_9478;
 /// `sound_playing_seq_list`, linked through SoundSeq.next (+0).
 const PLAYING_SEQS: u32 = 0x8005_9564;
+/// `sound_channels_per_effect`: the effect channels an effect start takes.
+const CHANNELS_PER_EFFECT: u32 = 0x8005_9404;
+/// `sprite_view_matrix`, the view every sprite is drawn through
+/// (`sprite_set_draw_matrix`), in the field, battles and the world map.
+const SPRITE_VIEW_MATRIX: u32 = 0x8004_FBB8;
+/// A sprite: its position (16.16 each, +0), and the words that say which
+/// sprite it is (its resource block, animations, sound bank and allocation:
+/// a freed and reused sprite changes them).
+const SPRITE_IDENTITY: [u32; 4] = [0x44, 0x48, 0x50, 0x6C];
 /// SoundSeq: its data's header, its channel count, its channels.
 const SEQ_HEADER: u32 = 0x08;
 const SEQ_CHANNELS: u32 = 0x14;
@@ -69,6 +78,13 @@ const FIELD_DESCRIPTOR_SIZE: u32 = 0x5C;
 /// sound (u16 each; 0xFFFF free).
 const FIELD_EMITTER_SLOTS: u32 = 0x800A_FE88;
 
+// Battles (src/decomp/include/battle/area.h).
+/// `battle_area`: its formation (+0), the slots' placements (+4, 0x1C bytes
+/// each: whether occupied, +2, 0x7F none; x, z, y at +0x0A) and the slots'
+/// sprites (+0x8C8C).
+const BATTLE_AREA: u32 = 0x800C_3EB0;
+const BATTLE_SLOTS: u32 = 11;
+
 // The arena (src/decomp/src/menu/sound.h, actor.h, node.h).
 /// `arena_sound_voices[4]` (0x24 bytes each).
 const ARENA_SOUND_VOICES: u32 = 0x8009_6EA0;
@@ -78,6 +94,7 @@ const ARENA_PLAYER: u32 = 0x8009_872C;
 
 /// `Services::mode` values.
 const MODE_FIELD: u32 = 1;
+const MODE_BATTLE: u32 = 2;
 const MODE_ARENA: u32 = 4;
 
 /// Note ticks by key (`sound_note_durations[k] = DURATIONS[k % 19]`; 0: the
@@ -141,8 +158,9 @@ enum Tag {
     /// Part `part` of the sequence at `seq` (its data's fingerprint).
     Music { seq: u32, song: u64, part: u8 },
     /// Effect channel `channel` playing effect `id` (bank << 16 | effect)
-    /// started at driver tick `stamp`.
-    Effect { channel: u8, id: u32, stamp: u32 },
+    /// started at driver tick `stamp`, by a script command of `sprite` (0:
+    /// not a sprite's).
+    Effect { channel: u8, id: u32, stamp: u32, sprite: u32 },
     /// No sequence or effect channel of the driver (`owner`, 0: none).
     Other { owner: u32 },
 }
@@ -183,6 +201,10 @@ struct Scene {
     /// The listening position in the world.
     listener: Option<[f32; 3]>,
     emitters: Vec<Emitter>,
+    /// The sprites' view (`sprite_view_matrix`) and where the sprites that
+    /// started sounding effects are, while they are still those sprites.
+    sprite_camera: Option<[[f32; 3]; 3]>,
+    sprites: HashMap<u32, [f32; 3]>,
     movie: bool,
 }
 
@@ -347,6 +369,14 @@ pub struct Presenter {
     retag: bool,
     /// Effects that played without a position: (mode, id) -> voices keyed on.
     unresolved: BTreeMap<(u32, u32), u64>,
+    /// Each effect channel's latest start (`effect_started`): its id and the
+    /// sprite whose command started it (0: none).
+    starts: [Option<(u32, u32)>; VOICES],
+    /// The sprites effects came from, by the words that identify them then.
+    sprite_identity: HashMap<u32, [u32; 4]>,
+    /// A battle's listening position (its formation, the centre of its
+    /// occupied slots), fixed for the battle.
+    battle_anchor: Option<(u32, [f32; 3])>,
     out: Vec<i16>,
 }
 
@@ -366,7 +396,22 @@ impl Presenter {
             head: None,
             retag: true,
             unresolved: BTreeMap::new(),
+            starts: [None; VOICES],
+            sprite_identity: HashMap::new(),
+            battle_anchor: None,
             out: Vec::new(),
+        }
+    }
+
+    /// An effect start (src/port/binaural.c): `code`'s low byte its first
+    /// effect channel, `id` the effect, `sprite` the sprite whose script
+    /// command started it (0: none).
+    pub fn effect_started(&mut self, code: u32, id: u32, sprite: u32, memory: &dyn GameMemory) {
+        let first = (code & 0xFF) as usize;
+        let count = u32_at(memory, CHANNELS_PER_EFFECT).unwrap_or(2).clamp(1, 4) as usize;
+        let sprite = ram(sprite).unwrap_or(0);
+        for channel in first..(first + count).min(VOICES) {
+            self.starts[channel] = Some((id, sprite));
         }
     }
 
@@ -419,6 +464,9 @@ impl Presenter {
         self.tags = [None; VOICES];
         self.ids.clear();
         self.scene = Scene::default();
+        self.starts = [None; VOICES];
+        self.sprite_identity.clear();
+        self.battle_anchor = None;
         self.retag = true;
     }
 
@@ -430,24 +478,30 @@ impl Presenter {
     /// Reads who keyed on the voices of `mask` (the SPU's key-on bits of
     /// one register sync) and routes them.
     pub fn key_on(&mut self, mask: u32, memory: &dyn GameMemory) {
-        let mut emitters_read = false;
-        for v in 0..VOICES {
-            if mask & (1 << v) == 0 {
-                continue;
-            }
+        let keyed: Vec<usize> = (0..VOICES).filter(|v| mask & (1 << v) != 0).collect();
+        let mut effects = false;
+        for &v in &keyed {
             let tag = self.identify(v, memory);
-            if let Tag::Effect { id, .. } = tag {
-                // An emitter starting now: the game wrote its slot before the
-                // effect, so the slot is read with the key-on, not a frame later.
-                if !emitters_read {
-                    self.read_scene(memory, self.scene.mode, self.scene.movie);
-                    emitters_read = true;
-                }
-                if matches!(self.place_effect(tag), Placing::Unresolved(_)) {
-                    *self.unresolved.entry((self.scene.mode.unwrap_or(u32::MAX), id)).or_default() += 1;
+            if let Tag::Effect { sprite, .. } = tag {
+                effects = true;
+                if sprite != 0 && !self.sprite_identity.contains_key(&sprite) {
+                    self.sprite_identity.insert(sprite, sprite_identity(memory, sprite));
                 }
             }
             self.tags[v] = Some(tag);
+        }
+        // An emitter starting now: the game wrote its slot (or ran its
+        // sprite's command) before the effect started, so the scene is read
+        // with the key-on, not a frame later.
+        if effects {
+            self.read_scene(memory, self.scene.mode, self.scene.movie);
+        }
+        for &v in &keyed {
+            if let Some(tag @ Tag::Effect { id, .. }) = self.tags[v]
+                && matches!(self.place_effect(tag), Placing::Unresolved(_))
+            {
+                *self.unresolved.entry((self.scene.mode.unwrap_or(u32::MAX), id)).or_default() += 1;
+            }
             self.route(v, false);
         }
         self.retag = false;
@@ -473,11 +527,9 @@ impl Presenter {
             let count = u32_at(memory, EFFECT_CHANNEL_COUNT).unwrap_or(0).min(24);
             if let Some(c) = channel_of(effects, count) {
                 let record = effects + SEQ_CHANNEL_ARRAY + c * CHANNEL_SIZE;
-                return Tag::Effect {
-                    channel: c as u8,
-                    id: u32_at(memory, record + CHANNEL_ID).unwrap_or(0),
-                    stamp: u32_at(memory, record + CHANNEL_STAMP).unwrap_or(0),
-                };
+                let id = u32_at(memory, record + CHANNEL_ID).unwrap_or(0);
+                let sprite = self.starts[c as usize].filter(|(started, _)| *started == id).map_or(0, |(_, sprite)| sprite);
+                return Tag::Effect { channel: c as u8, id, stamp: u32_at(memory, record + CHANNEL_STAMP).unwrap_or(0), sprite };
             }
         }
         let mut seq = u32_at(memory, PLAYING_SEQS).and_then(ram);
@@ -542,25 +594,36 @@ impl Presenter {
         id
     }
 
-    /// Where an effect is heard, by the scene's emitters.
+    /// Where an effect is heard: by the mode's positional emitters, else by
+    /// the sprite whose script started it.
     fn place_effect(&self, tag: Tag) -> Placing {
-        let Tag::Effect { channel, id, .. } = tag else { return Placing::Unresolved("not an effect") };
+        let Tag::Effect { channel, id, sprite, .. } = tag else { return Placing::Unresolved("not an effect") };
         let pair = channel & !1;
-        let Some(emitter) = self.scene.emitters.iter().find(|e| e.pair == pair && if e.full_id { e.sound == id } else { e.sound == id & 0xFFFF }) else {
-            return Placing::Unresolved(match self.scene.mode {
-                Some(MODE_FIELD) | Some(MODE_ARENA) => "not one of the mode's positional emitters",
-                _ => "no positional emitters recovered in this mode",
-            });
+        let slot = self.scene.emitters.iter().find(|e| e.pair == pair && if e.full_id { e.sound == id } else { e.sound == id & 0xFFFF });
+        let (position, camera, follows, emitter) = match (slot, sprite) {
+            (Some(slot), _) => {
+                let kind = if self.scene.mode == Some(MODE_ARENA) { "arena voice" } else { "field emitter" };
+                (slot.position, self.scene.camera, slot.follows, kind)
+            }
+            (None, 0) => {
+                return Placing::Unresolved(match self.scene.mode {
+                    Some(MODE_FIELD) | Some(MODE_ARENA) => "not one of the mode's positional emitters, nor a sprite's",
+                    _ => "not a sprite's, and no positional emitters recovered in this mode",
+                });
+            }
+            (None, sprite) => match self.scene.sprites.get(&sprite) {
+                Some(position) => (*position, self.scene.sprite_camera, sprite, "sprite"),
+                None => return Placing::Unresolved("its sprite is gone"),
+            },
         };
-        let (Some(camera), Some(listener)) = (self.scene.camera, self.scene.listener) else {
-            return Placing::Unresolved("no listener");
+        let (Some(camera), Some(listener)) = (camera, self.scene.listener) else {
+            return Placing::Unresolved("no listener in this mode");
         };
-        let world = [0, 1, 2].map(|i| emitter.position[i] - listener[i]);
+        let world = [0, 1, 2].map(|i| position[i] - listener[i]);
         let distance = world.iter().map(|c| c * c).sum::<f32>().sqrt();
         // At the listener the direction is kept (zero), not made up.
         let direction = if distance < 1.0 { [0.0; 3] } else { self.to_listener(apply(&camera, world.map(|c| c / distance))) };
-        let kind = if self.scene.mode == Some(MODE_ARENA) { "arena voice" } else { "field emitter" };
-        Placing::Placed { direction, follows: emitter.follows, emitter: kind }
+        Placing::Placed { direction, follows, emitter }
     }
 
     /// A direction in the game camera's view space as the listener hears it:
@@ -581,7 +644,7 @@ impl Presenter {
                 let id = self.source_id(SourceKey::Music { seq, song, part });
                 self.music_target(seq, part).and_then(|target| self.choose(id, target, self.config.spatial_music, current, sounding))
             }
-            Some(tag @ Tag::Effect { channel, id, stamp }) => {
+            Some(tag @ Tag::Effect { channel, id, stamp, .. }) => {
                 let source = self.source_id(SourceKey::Effect { pair: channel & !1, stamp, id });
                 match self.place_effect(tag) {
                     Placing::Placed { direction, .. } => self.choose(source, Target::Listener(direction), self.config.positional_effects, current, sounding),
@@ -644,12 +707,66 @@ impl Presenter {
     /// positional emitters.
     fn read_scene(&mut self, memory: &dyn GameMemory, mode: Option<u32>, movie: bool) {
         let mut scene = Scene { mode, movie, ..Scene::default() };
+        if mode != Some(MODE_BATTLE) {
+            self.battle_anchor = None;
+        }
         match mode {
             Some(MODE_FIELD) => read_field(memory, &mut scene),
+            Some(MODE_BATTLE) => scene.listener = self.battle_anchor(memory),
             Some(MODE_ARENA) => read_arena(memory, &mut scene),
             _ => {}
         }
+        // The sprites still sounding, while they are the sprites that started
+        // the sound (a freed sprite's memory reused changes its identity).
+        scene.sprite_camera = rotation_at(memory, SPRITE_VIEW_MATRIX);
+        let sounding: std::collections::HashSet<u32> =
+            self.tags.iter().filter_map(|tag| match tag { Some(Tag::Effect { sprite, .. }) if *sprite != 0 => Some(*sprite), _ => None }).collect();
+        self.sprite_identity.retain(|sprite, _| sounding.contains(sprite));
+        for (&sprite, identity) in &self.sprite_identity {
+            if sprite_identity(memory, sprite) == *identity
+                && let Some(position) = vector_at(memory, sprite)
+            {
+                scene.sprites.insert(sprite, position.map(|c| c / 65536.0));
+            }
+        }
         self.scene = scene;
+    }
+
+    /// A battle's listening position: the centre of its formation's
+    /// occupied slots on the floor (their placements, fixed for the battle,
+    /// so that no turn moves it from one combatant to another), at the
+    /// height its combatants' sprites stand at on average.
+    fn battle_anchor(&mut self, memory: &dyn GameMemory) -> Option<[f32; 3]> {
+        let formation = u32_at(memory, BATTLE_AREA)?;
+        let occupied: Vec<u32> = (0..BATTLE_SLOTS).filter(|slot| u8_at(memory, BATTLE_AREA + 4 + slot * 0x1C + 2).is_some_and(|f| f != 0x7F)).collect();
+        // Until the battle has placed every occupied slot's sprite there is
+        // no listener (its sounds keep their mix).
+        let sprite_of = |slot: &u32| u32_at(memory, BATTLE_AREA + 0x8C8C + 4 * slot).and_then(ram);
+        if occupied.is_empty() || !occupied.iter().all(|slot| sprite_of(slot).is_some()) {
+            return None;
+        }
+        let floor = match self.battle_anchor {
+            Some((seen, floor)) if seen == formation => floor,
+            _ => {
+                let mut sum = [0f32; 3];
+                for slot in &occupied {
+                    let at = BATTLE_AREA + 4 + slot * 0x1C;
+                    sum[0] += f32::from(s16_at(memory, at + 0x0A)?);
+                    sum[2] += f32::from(s16_at(memory, at + 0x0C)?);
+                }
+                let floor = sum.map(|c| c / occupied.len() as f32);
+                self.battle_anchor = Some((formation, floor));
+                floor
+            }
+        };
+        let heights: Vec<f32> = occupied
+            .iter()
+            .filter_map(sprite_of)
+            .filter_map(|sprite| vector_at(memory, sprite))
+            .map(|p| p[1] / 65536.0)
+            .collect();
+        let height = if heights.is_empty() { 0.0 } else { heights.iter().sum::<f32>() / heights.len() as f32 };
+        Some([floor[0], height, floor[2]])
     }
 
     /// Reads the scene (once a frame, after it ran): the camera, the
@@ -708,10 +825,17 @@ impl Presenter {
                         entry["kind"] = json!("effect");
                         entry["effect"] = json!(format!("{id:#x}"));
                         entry["channels"] = json!([pair, pair + 1]);
-                        let tag = Tag::Effect { channel: *pair, id: *id, stamp: *stamp };
+                        let sprite = self.tags.iter().find_map(|tag| match tag {
+                            Some(Tag::Effect { channel, stamp: s, id: i, sprite }) if channel & !1 == *pair && s == stamp && i == id => Some(*sprite),
+                            _ => None,
+                        });
+                        let tag = Tag::Effect { channel: *pair, id: *id, stamp: *stamp, sprite: sprite.unwrap_or(0) };
                         if let Placing::Placed { follows, emitter, .. } = self.place_effect(tag) {
                             entry["emitter"] = json!(emitter);
-                            entry["follows"] = json!(follows);
+                            entry["follows"] = json!(if emitter == "sprite" { json!(format!("{follows:#x}")) } else { json!(follows) });
+                            if let Some(position) = self.scene.sprites.get(&follows).filter(|_| emitter == "sprite") {
+                                entry["position"] = json!(position);
+                            }
                         } else {
                             entry["emitter"] = json!("gone: keeps its last direction");
                         }
@@ -732,12 +856,12 @@ impl Presenter {
                 };
                 Some(match (*tag)? {
                     Tag::Music { part, .. } => json!({"voice": v, "music_part": part, "route": route}),
-                    Tag::Effect { channel, id, .. } => {
+                    Tag::Effect { channel, id, sprite, .. } => {
                         let why = match self.place_effect(tag.expect("some")) {
                             Placing::Unresolved(why) => json!(why),
                             Placing::Placed { .. } => Value::Null,
                         };
-                        json!({"voice": v, "effect_channel": channel, "effect": format!("{id:#x}"), "route": route, "unresolved": why})
+                        json!({"voice": v, "effect_channel": channel, "effect": format!("{id:#x}"), "sprite": (sprite != 0).then(|| format!("{sprite:#x}")), "route": route, "unresolved": why})
                     }
                     Tag::Other { owner } => json!({"voice": v, "owner": format!("{owner:#x}"), "route": route}),
                 })
@@ -750,6 +874,7 @@ impl Presenter {
             .collect();
         let listener = match (self.scene.mode, self.scene.listener) {
             (Some(MODE_FIELD), Some(_)) => "field: the controlled character, the camera's orientation",
+            (Some(MODE_BATTLE), Some(_)) => "battle: the centre of the formation, the camera's orientation",
             (Some(MODE_ARENA), Some(_)) => "arena: the player's Gear, the camera's orientation",
             _ => "none: no world positions in this mode (music and original mixes only)",
         };
@@ -757,6 +882,7 @@ impl Presenter {
             "config": self.config,
             "presenting": !self.renderer.presenting_original(),
             "listener": listener,
+            "listening_position": self.scene.listener,
             "first_person": self.view.map(|axes| facing(axes[2])),
             "head": self.head.map(|axes| facing(axes[2])),
             "cd": if self.scene.movie { "original (a movie plays)" } else if self.config.spatial_music { "estimated arrangement (premixed music)" } else { "original" },
@@ -772,6 +898,11 @@ impl Presenter {
 fn facing(forward: [f32; 3]) -> Value {
     let [x, y, z] = forward;
     json!({"yaw": x.atan2(z).to_degrees(), "pitch": (-y).atan2(x.hypot(z)).to_degrees()})
+}
+
+/// The words that say which sprite is at `sprite` (`SPRITE_IDENTITY`).
+fn sprite_identity(memory: &dyn GameMemory, sprite: u32) -> [u32; 4] {
+    SPRITE_IDENTITY.map(|offset| u32_at(memory, sprite + offset).unwrap_or(0))
 }
 
 /// The field's camera, controlled character and emitters.
@@ -907,7 +1038,7 @@ mod tests {
         let mut presenter = Presenter::new(on());
         presenter.key_on((1 << 0) | (1 << 22) | (1 << 23) | (1 << 5), &ram);
         assert!(matches!(presenter.tags[0], Some(Tag::Music { seq: MUSIC, part: 2, .. })));
-        assert_eq!(presenter.tags[22], Some(Tag::Effect { channel: 14, id: 0x0004_0021, stamp: 77 }));
+        assert_eq!(presenter.tags[22], Some(Tag::Effect { channel: 14, id: 0x0004_0021, stamp: 77, sprite: 0 }));
         assert_eq!(presenter.tags[5], Some(Tag::Other { owner: 0x8015_0000 }));
         // Music is placed; an effect without an emitter keeps its mix and is
         // counted as a gap; so does a voice nobody owns.
@@ -1073,6 +1204,70 @@ mod tests {
         effect(&mut ram, 10, 10, 0x0006_0005, 4);
         presenter.key_on(1 << 10, &ram);
         assert_eq!(presenter.renderer.route(10), Route::Original);
+    }
+
+    #[test]
+    fn a_sound_a_sprite_starts_is_heard_from_that_sprite_until_it_is_gone() {
+        let mut ram = driver();
+        ram.word(CHANNELS_PER_EFFECT, 2);
+        // Sprites draw through a view looking along the world's +z.
+        let rows: [i16; 9] = [4096, 0, 0, 0, 4096, 0, 0, 0, 4096];
+        ram.put(SPRITE_VIEW_MATRIX, &rows.iter().flat_map(|r| r.to_le_bytes()).collect::<Vec<u8>>());
+        // A battle: two occupied slots (x 1000 and 1200, z 500), their sprites
+        // standing at height -100; the formation's centre is the listener.
+        ram.word(BATTLE_AREA, 0x8016_0000);
+        let sprites = [0x8015_0000u32, 0x8015_0400];
+        for slot in 0..BATTLE_SLOTS {
+            let at = BATTLE_AREA + 4 + slot * 0x1C;
+            if slot < 2 {
+                ram.put(at, &[0, 0, 1, 0]);
+                ram.put(at + 0x0A, &[(1000 + 200 * slot as i16).to_le_bytes(), 500i16.to_le_bytes()].concat());
+                ram.word(BATTLE_AREA + 0x8C8C + 4 * slot, sprites[slot as usize]);
+                let position = [(1000 + 200 * slot as i32) << 16, -100 << 16, 500 << 16];
+                ram.put(sprites[slot as usize], &position.iter().flat_map(|c| c.to_le_bytes()).collect::<Vec<u8>>());
+                ram.word(sprites[slot as usize] + 0x50, 0x8017_0000 + slot);
+            } else {
+                ram.put(at, &[0, 0, 0x7F, 0]);
+            }
+        }
+        let mut presenter = Presenter::new(on());
+        presenter.update_scene(&ram, Some(MODE_BATTLE), false);
+        assert_eq!(presenter.scene.listener, Some([1100.0, -100.0, 500.0]), "the formation's centre");
+        // The right-hand sprite's command starts effect 0x70009 on channels
+        // 4 and 5 (src/port/binaural.c), which the driver then keys on.
+        presenter.effect_started(0x2004, 0x0007_0009, sprites[1], &ram);
+        effect(&mut ram, 4, 4, 0x0007_0009, 40);
+        effect(&mut ram, 5, 5, 0x0007_0009, 40);
+        presenter.key_on((1 << 4) | (1 << 5), &ram);
+        assert_eq!(presenter.tags[4], Some(Tag::Effect { channel: 4, id: 0x0007_0009, stamp: 40, sprite: sprites[1] }));
+        assert_eq!(presenter.renderer.route(4), presenter.renderer.route(5), "one source for both channels");
+        let direction = match presenter.place_effect(presenter.tags[4].unwrap()) {
+            Placing::Placed { direction, emitter, .. } => {
+                assert_eq!(emitter, "sprite");
+                direction
+            }
+            other => panic!("{other:?}"),
+        };
+        assert!(direction[0] > 0.999, "to the right: {direction:?}");
+        // The sprite runs to the other side: its sound follows it.
+        ram.put(sprites[1], &[(800i32 << 16), -100 << 16, 500 << 16].iter().flat_map(|c| c.to_le_bytes()).collect::<Vec<u8>>());
+        presenter.update_scene(&ram, Some(MODE_BATTLE), false);
+        assert_eq!(presenter.scene.listener, Some([1100.0, -100.0, 500.0]), "the listener stays where the formation is");
+        match presenter.place_effect(presenter.tags[4].unwrap()) {
+            Placing::Placed { direction, .. } => assert!(direction[0] < -0.999, "{direction:?}"),
+            other => panic!("{other:?}"),
+        }
+        // Freed and reused for another sprite: the sound keeps its last
+        // direction rather than following a stranger.
+        ram.word(sprites[1] + 0x50, 0x8018_0000);
+        presenter.update_scene(&ram, Some(MODE_BATTLE), false);
+        assert_eq!(presenter.place_effect(presenter.tags[4].unwrap()), Placing::Unresolved("its sprite is gone"));
+        assert!(matches!(presenter.renderer.route(4), Route::Source(_)), "its voices keep their place to the end");
+        // A start nobody's sprite made stays in its mix.
+        effect(&mut ram, 6, 6, 0x0001_005a, 41);
+        presenter.effect_started(0x2006, 0x0001_005a, 0, &ram);
+        presenter.key_on(1 << 6, &ram);
+        assert_eq!(presenter.renderer.route(6), Route::Original);
     }
 
     #[test]

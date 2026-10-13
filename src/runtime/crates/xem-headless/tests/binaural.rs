@@ -252,3 +252,52 @@ fn fast_forward_and_rewind_keep_presenting() {
     assert_eq!(status["presenting"], true);
     assert!(status["sources"].as_array().unwrap().iter().any(|s| s["kind"] == "effect"), "the emitters are placed again: {status}");
 }
+
+#[test]
+fn battle_sounds_come_from_their_combatants_around_a_fixed_centre() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    // The slice's forest route: its encounter's battle runs from about
+    // frame 6000.
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../tests/reference-inputs/slice-forest.json");
+    let log: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    let (mut session, _) = boot(&disc, &BootOptions { audio_output: true, ..Default::default() }).expect("boot");
+    session.set_sound_mode(1).unwrap();
+    session.set_binaural(on());
+    execute(&mut session, json!({"cmd": "schedule", "commands": log["commands"]}));
+    frames(&mut session, 6000);
+    let mut anchors = Vec::new();
+    let mut placed = std::collections::HashSet::new();
+    for _ in 0..180 {
+        frames(&mut session, 20);
+        if session.runtime.services().mode != Some(2) {
+            continue;
+        }
+        let status = execute(&mut session, json!({"cmd": "binaural"}));
+        if status["listening_position"].is_null() {
+            // The battle is placing its combatants, or has removed them.
+            continue;
+        }
+        assert!(status["listener"].as_str().unwrap().starts_with("battle"), "{status}");
+        anchors.push(status["listening_position"].clone());
+        for source in status["sources"].as_array().unwrap().iter().filter(|s| s["emitter"] == "sprite") {
+            // Where the sprite is now, as the scene read it at the frame's end.
+            let sprite = u32::from_str_radix(source["follows"].as_str().unwrap().trim_start_matches("0x"), 16).unwrap();
+            let mut bytes = [0u8; 12];
+            session.runtime.memory().read(sprite, &mut bytes).unwrap();
+            let at: Vec<f64> = bytes.chunks(4).map(|c| f64::from(i32::from_le_bytes([c[0], c[1], c[2], c[3]])) / 65536.0).collect();
+            let position: Vec<f64> = source["position"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap()).collect();
+            assert_eq!(position, at, "{source}");
+            placed.insert(source["effect"].as_str().unwrap().to_owned());
+        }
+    }
+    assert!(anchors.len() > 50, "the battle ran");
+    // The listener stays at the formation's centre on the floor (its height
+    // follows the combatants' average) whoever acts.
+    let floor = |a: &Value| (a[0].as_f64().unwrap(), a[2].as_f64().unwrap());
+    assert!(anchors.iter().all(|a| floor(a) == floor(&anchors[0])), "{anchors:?}");
+    assert!(placed.len() >= 5, "the combatants' sounds are placed at them: {placed:?}");
+    eprintln!("battle: {} effects placed at their sprites: {placed:?}", placed.len());
+}

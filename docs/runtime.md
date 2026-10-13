@@ -471,21 +471,32 @@ or on the game's own Sound screen, turns it off.
   *Music stays as you turn* a headset's head turns are heard against it.
   Reviewed per-song changes would go in `OVERRIDES`; none were needed yet.
 - **Effects.** World effects go where their emitters are: the field's three
-  positional emitters (`field_sound_emitter_slots`, each following an actor)
-  and the arena's four positional voices (`arena_sound_voices`, a fixed
-  point or a followed vector). The direction is from the listening
-  position, the field's controlled character or the arena's player Gear, to
-  the emitter, in the camera's orientation (its view matrix's rows), then
-  through the first-person view's axes (desktop inspection) and a headset's
-  head, each once. The distance is dropped: the game's own volume keeps its
+  positional emitters (`field_sound_emitter_slots`, each following an
+  actor), the arena's four positional voices (`arena_sound_voices`, a fixed
+  point or a followed vector), and the sprites whose animation scripts play
+  sounds (a character's swing, a spell's burst, a Gear's step: sprite
+  commands b9 and b0, the battle's 4f, 52 and 56). For those the port tells
+  the host which sprite runs the command and which effect the driver starts
+  (`src/port/binaural.c` wraps `sprite_vm_run_generic_command`,
+  `battle_sprite_command_run` and `sound_start_effect`; the calls only
+  tell, the game runs as the original), and the sound follows the sprite's
+  position, in the view sprites are drawn with (`sprite_view_matrix`), while
+  the sprite is still that sprite (its resource, animation, bank and
+  allocation words unchanged). The direction is from the listening
+  position to the emitter, in the camera's orientation, then through the
+  first-person view's axes (desktop inspection) and a headset's head, each
+  once. The listening position is the field's controlled character, the
+  arena's player Gear, and in a battle the centre of its formation's
+  occupied slots on the floor (their placements, fixed for the battle, at
+  the combatants' average height), which no turn moves from one combatant
+  to another. The distance is dropped: the game's own volume keeps its
   distance law. An emitter at the listener keeps the direction it had.
   Emitters are read with the key-on that starts them and after every frame.
-  Every other effect (interface sounds, effects field scripts pan
-  themselves, battles, the world map) keeps its original mix and is counted
-  as a coverage gap by mode and effect id; an emitter that is gone (its
-  scene left, its slot reused) leaves its last voices where they were.
-  Battles and other modes without a recovered emitter have no world
-  listener: only the music's stage, which no turn moves.
+  Every other effect (interface sounds, effects field and battle scripts
+  start and pan themselves, the world map's) keeps its original mix and is
+  counted as a coverage gap by mode and effect id; an emitter that is gone
+  (its scene left, its slot reused, its sprite freed) leaves its last voices
+  where they were.
 - **The rest.** The reverb return is the SPU's own (the original sends,
   type and depth changes), mixed once as it came. Voices nobody owns keep
   their mix. CD input keeps its mix while a movie plays (the MDEC decoded
@@ -542,7 +553,8 @@ matched against every measured direction) within 1.5 degrees (median), 3.5
 at worst, left and right, front and back and up and down always right; the
 model listener there is the measured head, not people. `xem_core::binaural`
 on synthetic driver memory (identities, songs, field and arena emitters,
-distance, zoom and scale changing nothing, restores, head turns). On the
+sprites followed until freed, the battle's fixed centre, distance, zoom and
+scale changing nothing, restores, head turns). On the
 original game, `xem-headless/tests/binaural.rs` (field 15: three emitters
 and its music): with the mode on, music only, effects only or bypassed, game
 memory and the SPU (voice volumes, the driver's pre-pan gains, included)
@@ -551,7 +563,9 @@ sample for sample; the presented mix is within 0.3 dB of the original's
 level; each part keeps one source, every emitter is placed and on the side
 the original pans it to; the opening movie's sound stays within 1 of the
 original mix; fast-forward and rewind keep presenting; a restored state
-sounds the same every time. `web/tests/binaural.test.mjs`: one state
+sounds the same every time; in the forest's battle (the slice's route) the
+combatants' sounds are placed at their sprites (8 effects) around the
+formation's centre, which stays put through the battle. `web/tests/binaural.test.mjs`: one state
 restored natively and in Chromium presents the same mix (99.6% of the
 samples identical, the rest within 1; the declared tolerance is 2, each
 host's own sin, cos and atan2 making the filters), and the presentation
@@ -564,10 +578,12 @@ Not done or not measured: no listening tests with people (direction and
 musical coherence were checked with the measured head as the listener, and
 the arrangement rules are not tuned by ear); a generic head, so a listener's
 own front and back may differ; positional effects cover the field's
-emitters and the arena's voices only (each effect left out is reported, not
-guessed); no per-song overrides were reviewed; the arena path is tested on
-synthetic memory, not reached in the game; headsets and phones only through
-IWER and a throttled processor.
+emitters, the arena's voices and sprites' animation sounds (each effect left out is reported, not
+guessed), and sounds that event scripts start (field and battle) are left
+out, since the actor running a script is not necessarily the emitter; no
+per-song overrides were reviewed; the arena path is tested on synthetic
+memory, not reached in the game; headsets and phones only through IWER and a
+throttled processor.
 
 ## Presentation
 
