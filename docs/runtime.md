@@ -460,11 +460,13 @@ or on the game's own Sound screen, turns it off.
   lowest melodic part, 9 semitones or more below the median), pad (half
   notes or longer on average), lead (the busiest part at or above the
   median, 16 notes or more), supporting parts, and uncertain ones (under 4
-  notes, or data not read to its end). The lead, bass and rhythm stay ahead,
-  pads rise to the sides (25 degrees up), supporting parts spread over the
-  sides and rear by their own pan, and uncertain parts keep the stereo arc
-  (their pan as a direction within 30 degrees of ahead), where every part
-  is at music immersion 0. A part keeps its place for the whole song,
+  notes, or data not read to its end). The lead, bass and rhythm stay where
+  the music panned them ahead (the stereo arc: their pan as a direction
+  within 30 degrees of ahead), as do uncertain parts; supporting parts and
+  pads the music panned a quarter of the way or more to a side go to that
+  side (supports at 70 to 130 degrees, pads 25 degrees up), and those it
+  left near the centre keep the mix's balance (supports at the rear centre,
+  pads 40 degrees up); at music immersion 0 every part is on the arc. A part keeps its place for the whole song,
   turned by the music's own pan movement (pan slides, autopan:
   `Target::Stage`, `spread` degrees per 0x4000). The stage is the
   listener's: character turns, camera swings and cuts leave it; under
@@ -559,8 +561,11 @@ original game, `xem-headless/tests/binaural.rs` (field 15: three emitters
 and its music): with the mode on, music only, effects only or bypassed, game
 memory and the SPU (voice volumes, the driver's pre-pan gains, included)
 match a Stereo run after 900 frames; the bypass is the original output
-sample for sample; the presented mix is within 0.3 dB of the original's
-level; each part keeps one source, every emitter is placed and on the side
+sample for sample; the presented mix is within 2 dB of the original's level
+(1.5 dB louder there: each ear also hears the other side of a mix the
+original leans far to the right, and the driver's pan law dips 0.7 dB at
+quarter pans where the levelled filters do not), and the arranged music
+leans the way the original does; each part keeps one source, every emitter is placed and on the side
 the original pans it to; the opening movie's sound stays within 1 of the
 original mix; fast-forward and rewind keep presenting; a restored state
 sounds the same every time; in the forest's battle (the slice's route) the

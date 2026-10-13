@@ -79,7 +79,7 @@ fn binaural_reads_and_never_writes() {
     let original = frames(&mut plain, 900);
     let binaural = frames(&mut placed, 900);
     let bypass = frames(&mut bypassed, 900);
-    frames(&mut music_only, 900);
+    let arranged = frames(&mut music_only, 900);
     frames(&mut effects_only, 900);
     // The game, the driver and the SPU run exactly as without it, whatever
     // it presents: the effects the game starts, their voices and gains.
@@ -103,6 +103,14 @@ fn binaural_reads_and_never_writes() {
     let ratio = 10.0 * (energy(&binaural) / energy(&original)).log10();
     assert!(ratio.abs() < 2.0, "the placed mix is as loud as the original within 2 dB: {ratio:.2} dB");
     eprintln!("binaural level against the original: {ratio:+.2} dB");
+    // The arranged music leans the way the original leans (less far: heard
+    // around the head, each ear also hears the other side).
+    let side = |s: &[i16], e: usize| s.iter().skip(e).step_by(2).map(|x| f64::from(*x).powi(2)).sum::<f64>();
+    let balance = |s: &[i16]| 10.0 * (side(s, 0) / side(s, 1)).log10();
+    let (before, after) = (balance(&original), balance(&arranged));
+    eprintln!("left/right balance: original {before:+.2} dB, arranged music {after:+.2} dB");
+    assert!(before.abs() < 2.0 || (after.signum() == before.signum() && after.abs() <= before.abs() + 1.0),
+        "the music's balance is kept: {before:+.2} against {after:+.2} dB");
 }
 
 #[test]

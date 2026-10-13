@@ -17,13 +17,16 @@
 //! - **uncertain**: fewer than 4 notes, or data the profile could not read
 //!   to its end.
 //!
-//! At full immersion the lead, bass and rhythm stay ahead (the lead and
-//! bass close to the centre, the rhythm across the front), pads rise to
-//! the sides (25 degrees up), and supporting parts spread over the sides
-//! and rear, alternately by their own pan; an uncertain part keeps the
-//! stereo arc (its pan as a direction within 30 degrees either side of
-//! ahead), which is also where every part is at immersion 0. A part's pan
-//! movement in the music turns its place (`spread` degrees per 0x4000).
+//! At full immersion the lead, bass and rhythm stay where the music put
+//! them ahead: their own pan within the stereo arc (30 degrees either side
+//! of ahead), steady. Supporting parts and pads the music panned a quarter
+//! of the way or more to a side go to that side (supports from 70 to 130
+//! degrees, pads at 70 to 110 and 25 up); those it left near the centre
+//! keep the mix's balance, supports at the rear centre (180, then 160 and
+//! 140 either side) and pads above (40 up, ahead then behind). An uncertain
+//! part keeps the stereo arc, which is where every part is at immersion 0.
+//! A part's pan movement in the music turns its place (`spread` degrees per
+//! 0x4000).
 
 /// What a part plays, from its sequence data.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -105,6 +108,9 @@ pub struct Placement {
 /// The stereo arc: the original pan as a direction ahead, within 30
 /// degrees either side.
 const ARC: f32 = 30.0;
+/// A pan this far from the centre (a quarter of the way to an edge) puts a
+/// supporting part or pad on that side.
+const SIDE_PAN: f32 = 4096.0;
 
 fn arc(pan: f32) -> f32 {
     (pan - 16384.0) / 16384.0 * ARC
@@ -171,36 +177,27 @@ pub fn roles(parts: &[PartProfile], overrides: &[(usize, Role)]) -> Vec<Role> {
 /// Arranges the parts: their roles ([`roles`]) and places.
 pub fn arrange(parts: &[PartProfile], overrides: &[(usize, Role)]) -> Vec<Placement> {
     let roles = roles(parts, overrides);
-    // Supporting parts and pads go to a side by their pan (centred ones
-    // alternately), taking the next free angle there.
-    let mut next_side = [0usize; 2];
-    let mut alternate = 0usize;
+    // A supporting part or pad the music panned to a side goes to that side,
+    // taking the next free angle there; one it left near the centre goes to
+    // the rear centre or above, where it keeps the mix's balance.
+    let mut next = [0usize; 3];
     roles
         .iter()
         .enumerate()
         .map(|(i, &role)| {
             let pan = parts[i].pan();
-            let mut side = |angles: &[f32]| -> f32 {
-                let right = if pan > 16384.0 + 512.0 {
-                    true
-                } else if pan < 16384.0 - 512.0 {
-                    false
-                } else {
-                    alternate += 1;
-                    alternate % 2 == 1
-                };
-                let slot = &mut next_side[usize::from(right)];
-                let angle = angles[*slot % angles.len()];
+            let lean = if pan > 16384.0 + SIDE_PAN { 1 } else if pan < 16384.0 - SIDE_PAN { -1 } else { 0 };
+            let mut take = |angles: &[f32], centre: &[f32]| -> f32 {
+                let slot = &mut next[(lean + 1) as usize];
+                let angle = if lean == 0 { centre[*slot % centre.len()] } else { angles[*slot % angles.len()] * lean as f32 };
                 *slot += 1;
-                if right { angle } else { -angle }
+                angle
             };
             let (azimuth, elevation, spread) = match role {
-                Role::Lead => (arc(pan) * 0.5, 0.0, 15.0),
-                Role::Bass => (arc(pan) * 0.3, 0.0, 10.0),
-                Role::Rhythm => (arc(pan), 0.0, ARC),
-                Role::Pad => (side(&[90.0, 110.0, 70.0]), 25.0, 20.0),
-                Role::Support => (side(&[65.0, 100.0, 130.0, 150.0]), 5.0, 20.0),
-                Role::Uncertain => (arc(pan), 0.0, ARC),
+                Role::Lead | Role::Bass | Role::Rhythm | Role::Uncertain => (arc(pan), 0.0, ARC),
+                Role::Pad if lean == 0 => (take(&[], &[0.0, 180.0]), 40.0, 20.0),
+                Role::Pad => (take(&[90.0, 110.0, 70.0], &[]), 25.0, 20.0),
+                Role::Support => (take(&[70.0, 100.0, 130.0], &[180.0, 160.0, -160.0, 140.0, -140.0]), 5.0, 20.0),
             };
             Placement { role, azimuth, elevation, home_pan: pan, spread }
         })
@@ -239,9 +236,10 @@ mod tests {
         let placed = arrange(&parts, &[]);
         let roles: Vec<Role> = placed.iter().map(|p| p.role).collect();
         assert_eq!(roles, [Role::Lead, Role::Bass, Role::Rhythm, Role::Pad, Role::Support, Role::Support, Role::Uncertain]);
-        assert_eq!(placed[0].azimuth, 0.0, "the lead ahead");
+        assert_eq!(placed[0].azimuth, 0.0, "the lead ahead, where its pan put it");
         assert!(placed[3].azimuth < -45.0 && placed[3].elevation > 0.0, "the pad up on its own side");
         assert!(placed[4].azimuth > 45.0, "a support on its side");
+        assert_eq!(placed[5].azimuth, 180.0, "a centred support behind, keeping the balance");
         // At immersion 0 everything is the stereo arc.
         for p in &placed {
             let (azimuth, elevation, _) = p.at(0.0);
