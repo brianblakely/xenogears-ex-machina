@@ -665,7 +665,11 @@ impl Host {
                 log(&format!("pad buttons {buttons:#06x} game_vblank={}", game.vblanks()));
                 live.buttons = buttons;
             }
-            if let Err(trap) = game.update(buttons, &settings, || window.focused()) {
+            let result = game.update(buttons, &settings, || window.focused());
+            if let Ok(frames) = result {
+                self.view.frames_ran(frames);
+            }
+            if let Err(trap) = result {
                 log(&format!("game stopped: {trap}"));
                 game.pause();
                 self.view.ui().set_operation_error(&format!("Game stopped: {trap}. Load a state to recover."));

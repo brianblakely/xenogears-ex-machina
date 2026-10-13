@@ -515,6 +515,7 @@ impl<M: GameModule> Session<M> {
                 self.scheduled.push((now + frames, port, 0));
                 Ok(self.status())
             }
+            "context" => Ok(serde_json::to_value(self.runtime.context()).expect("context")),
             "hold" => {
                 // Hold the named game actions on pad 1 (the buttons they mean)
                 // until the next hold; an empty list releases them.
@@ -618,7 +619,7 @@ impl<M: GameModule> Session<M> {
                     // mean the game ignores the pad.
                     "pad_queue_reads_last_frame": services.input_reads_last_frame,
                     "stopped": stopped,
-                    "valid_commands": ["pad", "press", "hold", "act", "frames", "run_until", "inspect", "write", "snapshot",
+                    "valid_commands": ["pad", "press", "hold", "act", "context", "frames", "run_until", "inspect", "write", "snapshot",
                                         "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "schedule", "record", "replay"],
                 }))
             }

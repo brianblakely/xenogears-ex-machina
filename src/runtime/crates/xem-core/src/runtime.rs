@@ -696,6 +696,12 @@ impl<M: GameModule> Runtime<M> {
         }
     }
 
+    /// The interface context the player's input reaches now.
+    pub fn context(&mut self) -> crate::context::Context {
+        let mode = self.services().mode;
+        crate::context::read_context(self.memory(), mode)
+    }
+
     /// What the field says of the player's buttons (nothing outside it).
     pub fn field_controls(&mut self) -> FieldControls {
         let mode = self.services().mode.unwrap_or(u32::MAX);

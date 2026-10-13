@@ -194,6 +194,7 @@ impl Game {
             attack: self.session.runtime.combo_input(),
             field: self.session.runtime.field_controls(),
             assignment: self.session.runtime.button_assignment(),
+            ui: self.session.runtime.context(),
         }
     }
 

@@ -7,6 +7,7 @@
 pub mod action;
 pub mod bios;
 pub mod clock;
+pub mod context;
 pub mod control;
 mod focus;
 pub mod time;

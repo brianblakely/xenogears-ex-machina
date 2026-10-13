@@ -84,3 +84,99 @@ fn agents_actions_and_players_keys_are_one_command_path() {
     }
     assert_eq!(hashes[0], hashes[1]);
 }
+
+fn context(session: &mut Session<NativeModule>) -> Value {
+    session.execute(&json!({"cmd": "context"}))
+}
+
+/// The interface context follows the game: walking, the field menu and its
+/// cursor, back to walking; a dialogue on the forest map.
+#[test]
+fn the_context_follows_walking_the_menu_and_dialogue() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    run(&mut session, json!({"cmd": "enter_field", "map": 30}));
+    run(&mut session, json!({"cmd": "frames", "count": 400}));
+    assert_eq!(context(&mut session)["kind"], "walk");
+    run(&mut session, json!({"cmd": "act", "actions": ["Menu"], "frames": 2}));
+    // The menu's files load first.
+    run(&mut session, json!({"cmd": "frames", "count": 200}));
+    let menu = context(&mut session);
+    assert_eq!(menu["kind"], "menu", "{menu}");
+    assert_eq!(menu["screen"], 0, "{menu}");
+    let cursor = menu["cursor"].as_i64().unwrap();
+    run(&mut session, json!({"cmd": "act", "actions": ["Up"], "frames": 2}));
+    run(&mut session, json!({"cmd": "frames", "count": 20}));
+    assert_eq!(context(&mut session)["cursor"].as_i64().unwrap(), (cursor + 1) % 7, "Up steps the arc's cursor");
+    run(&mut session, json!({"cmd": "act", "actions": ["Cancel"], "frames": 2}));
+    run(&mut session, json!({"cmd": "frames", "count": 300}));
+    assert_eq!(context(&mut session)["kind"], "walk");
+    // The forest's opening dialogue.
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    run(&mut session, json!({"cmd": "enter_field", "map": 23}));
+    let reply = session.execute(&json!({"cmd": "run_until", "max_frames": 1500, "until": {"path": "field_work.open_windows", "not_equals": 0}}));
+    assert_eq!(reply["met"], true, "{reply}");
+    assert_eq!(context(&mut session)["kind"], "dialogue");
+}
+
+/// One host frame: the player's input resolved in the game's context, one
+/// game frame run with it.
+fn host_frame(session: &mut Session<NativeModule>, player: &mut xem_settings::player::PlayerInput, bindings: &xem_settings::GameBindings) {
+    let context = xem_settings::player::Context {
+        attack: session.runtime.combo_input(),
+        field: session.runtime.field_controls(),
+        assignment: session.runtime.button_assignment(),
+        ui: session.runtime.context(),
+    };
+    let buttons = player.buttons(bindings, 0.0, context);
+    session.set_pad(0, buttons);
+    run(session, json!({"cmd": "frames", "count": 1}));
+    player.frames_ran(1);
+}
+
+fn tap(session: &mut Session<NativeModule>, player: &mut xem_settings::player::PlayerInput, bindings: &xem_settings::GameBindings, key: &str, then: usize) {
+    player.key(bindings, key, true);
+    for _ in 0..2 { host_frame(session, player, bindings); }
+    player.key(bindings, key, false);
+    for _ in 0..then { host_frame(session, player, bindings); }
+}
+
+/// Tab opens the field menu and, pressed again from a screen inside it,
+/// backs out with Cancel presses until the menu has closed; the wheel
+/// steps the menu's cursor.
+#[test]
+fn tab_toggles_the_field_menu_from_any_of_its_screens() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let bindings = xem_settings::GameBindings::default();
+    let mut player = xem_settings::player::PlayerInput::default();
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    run(&mut session, json!({"cmd": "enter_field", "map": 30}));
+    run(&mut session, json!({"cmd": "frames", "count": 400}));
+    tap(&mut session, &mut player, &bindings, "Tab", 200);
+    let menu = context(&mut session);
+    assert_eq!(menu["kind"], "menu", "{menu}");
+    // The wheel (a notch toward the player) steps the arc's cursor down.
+    let cursor = menu["cursor"].as_u64().unwrap();
+    assert!(player.wheel(1.0, session.runtime.context()));
+    for _ in 0..10 { host_frame(&mut session, &mut player, &bindings); }
+    assert_eq!(context(&mut session)["cursor"].as_u64().unwrap(), (cursor + 6) % 7, "{}", context(&mut session));
+    // Into the items screen (cursor 4), then Tab.
+    while context(&mut session)["cursor"].as_u64().unwrap() != 4 {
+        tap(&mut session, &mut player, &bindings, "KeyW", 6);
+    }
+    tap(&mut session, &mut player, &bindings, "KeyE", 60);
+    tap(&mut session, &mut player, &bindings, "Tab", 0);
+    let mut frames = 0;
+    while context(&mut session)["kind"] != "walk" {
+        host_frame(&mut session, &mut player, &bindings);
+        frames += 1;
+        assert!(frames < 600, "the menu closes: {}", context(&mut session));
+    }
+    assert!(!player.pulsing() || frames < 600);
+}

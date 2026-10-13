@@ -413,7 +413,10 @@ impl Host {
             let settings = self.view.settings().borrow().settings().clone();
             let buttons = self.view.pad_buttons(game.pad_context());
             match game.update(buttons, &settings, || window.focused()) {
-                Ok(frames) => ran = frames,
+                Ok(frames) => {
+                    ran = frames;
+                    self.view.frames_ran(frames);
+                }
                 Err(error) => {
                     self.view.ui().set_operation_error(&format!("Game stopped: {error}. Load a state to recover."));
                     self.view.set_panel_visible(true);

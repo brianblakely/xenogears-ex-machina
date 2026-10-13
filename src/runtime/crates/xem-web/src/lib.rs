@@ -98,6 +98,8 @@ pub struct XemApp {
     audio_scratch: Vec<i16>,
     cards: storage::BrowserCards,
     input: xem_settings::player::PlayerInput,
+    /// The interface the player's input reached last (the wheel's).
+    ui: xem_core::context::Context,
     app_input: AppInput,
     rewind_held: [bool;2],
     rewind_next: f64,
@@ -152,6 +154,7 @@ impl XemApp {
             audio_scratch: Vec::new(),
             cards: storage::BrowserCards::default(),
             input: Default::default(),
+            ui: xem_core::context::Context::None,
             app_input: AppInput::default(),
             rewind_held: [false;2],
             rewind_next: 0.0,
@@ -311,8 +314,11 @@ impl XemApp {
                 attack: s.runtime.combo_input(),
                 field: s.runtime.field_controls(),
                 assignment: s.runtime.button_assignment(),
+                ui: s.runtime.context(),
             });
+            self.ui = context.ui;
             let bindings = self.settings.borrow().settings().game_bindings.clone();
+            if self.panel_visible() { self.input.clear(); }
             let buttons = if self.panel_visible() { 0 } else { self.input.buttons(&bindings, now, context) };
             if buttons != self.host_buttons
                 && let Some(session) = self.session.as_mut()
@@ -353,6 +359,7 @@ impl XemApp {
                     }
                 }
             }
+            self.input.frames_ran(batch as u32);
             self.paced = match due {
                 Some(due) if batch >= due => Some(paced + elapsed_frames as f64 * FRAME_MS),
                 Some(due) => { self.stats.dropped += due - batch; Some(now) },
@@ -573,6 +580,8 @@ impl XemApp {
                 if self.settings.borrow().settings().mouse_camera { self.input.mouse.moved(dx); }
                 return false;
             }
+            // In a menu or a choice the wheel steps the cursor.
+            "wheel" if self.input.wheel(dy / 100.0, self.ui) => return true,
             "wheel" => {}
             _ => return false,
         }

@@ -268,6 +268,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             let buttons = if visible { 0 } else { player.buttons(&current.game_bindings, start.elapsed().as_secs_f64() * 1000.0, context) };
             let focused = session.state() == xem_xr::SessionState::FOCUSED;
             ran = game.update(buttons, &current, || focused)?;
+            player.frames_ran(ran);
         }
         // The virtual screen fills about half of a view's height.
         let config = ViewConfig::resolve(&current.graphics, HostClass::Headset, (session.eye_size().0 / 2, session.eye_size().1 / 2), view.max_scale());

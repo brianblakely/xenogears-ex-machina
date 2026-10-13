@@ -268,6 +268,8 @@ pub struct View {
     /// The game's mouse buttons and camera turn, and whether SDL's relative
     /// mouse mode is on (while the game has the input).
     player: xem_settings::player::PlayerInput,
+    /// The interface the player's input reached last (the wheel's).
+    game_ui: xem_core::context::Context,
     relative_mouse: bool,
     /// The first gamepad's buttons as they are (before app chords take
     /// theirs), first-person inspection's toggle, the mouse motion that
@@ -363,6 +365,7 @@ impl View {
             operations: operations::Operations::default(),
             wheel: 0.0,
             player: Default::default(),
+            game_ui: xem_core::context::Context::None,
             relative_mouse: false,
             pad: [0; 16],
             axes: [0.0; 4],
@@ -620,7 +623,10 @@ impl View {
                 let wheel = unsafe { event.wheel };
                 // Positive y scrolls up (away from the user) unless flipped.
                 let up = if wheel.direction == SDL_MOUSEWHEEL_FLIPPED { -wheel.y } else { wheel.y };
-                self.zoom_wheel(-up);
+                // In a menu or a choice it steps the cursor; elsewhere it zooms.
+                if !(self.app_input.focused() && self.player.wheel(-up, self.game_ui)) {
+                    self.zoom_wheel(-up);
+                }
             }
             SDL_EVENT_WINDOW_FOCUS_LOST => {
                 self.ui.cancel_pointer();
@@ -739,7 +745,9 @@ impl View {
     /// holds back the buttons that would walk, jump or turn the camera
     /// (`xem_settings::look`).
     pub fn pad_buttons(&mut self, context: PadContext) -> u16 {
+        self.game_ui = context.ui;
         if self.panel_visible() || !self.app_input.focused() {
+            self.player.clear();
             self.look_toggle.clear();
             self.look_mouse = [0.0; 2];
             self.looked = None;
@@ -786,6 +794,11 @@ impl View {
             self.renderer.look_around(yaw, pitch);
         }
         xem_settings::look::game_buttons(buttons, on, field)
+    }
+
+    /// The game ran `frames` frames with the last [`View::pad_buttons`].
+    pub fn frames_ran(&mut self, frames: u32) {
+        self.player.frames_ran(frames);
     }
 
     /// Records one frame into `output` (a target of the view's size) at scene
