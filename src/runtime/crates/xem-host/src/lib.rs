@@ -935,6 +935,11 @@ impl View {
         self.player.touch = self.deck.actions();
     }
 
+    /// The touch deck's controls and where they stand (target pixels).
+    pub fn deck_controls(&self) -> Vec<(xem_assist::touch::Control, xem_assist::touch::Rect)> {
+        self.deck.controls.clone()
+    }
+
     /// Whether the touch controls show: the setting, on Android, or once a
     /// finger has touched the game.
     fn touch_shown(&self) -> bool {

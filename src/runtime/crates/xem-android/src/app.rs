@@ -178,6 +178,8 @@ struct Live {
     frames: u64,
     background: bool,
     terminating: bool,
+    /// The touch deck's layout was logged.
+    deck_logged: bool,
     log_next_frame: bool,
     /// Start of the current frame-rate span: (time, rendered frames, game vblanks).
     fps: (Instant, u64, u64),
@@ -398,6 +400,7 @@ impl Host {
             frames: 0,
             background: false,
             terminating: false,
+            deck_logged: false,
             log_next_frame: true,
             fps: (Instant::now(), 0, 0),
         }));
@@ -661,6 +664,14 @@ impl Host {
         if self.view.update_app(window,&mut live.game) && let Some(game) = &mut live.game {
             let settings = self.view.settings().borrow().settings().clone();
             self.view.assist(game);
+            // The touch deck's place, once laid out (for tests that touch it).
+            let deck = self.view.deck_controls();
+            if !deck.is_empty() && !live.deck_logged {
+                live.deck_logged = true;
+                for (control, rect) in &deck {
+                    log(&format!("touch deck {control:?} {:.0} {:.0} {:.0} {:.0}", rect.x, rect.y, rect.width, rect.height));
+                }
+            }
             let (context, targets) = (game.pad_context(), game.targets());
             let buttons = self.view.pad_buttons(context, targets);
             if buttons != live.buttons {

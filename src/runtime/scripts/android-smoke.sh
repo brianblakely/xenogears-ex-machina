@@ -15,7 +15,7 @@
 # rotation, activity recreation (teardown and a new SDL_main run) and restart
 # (settings and the persisted document grant survive). With the user's disc
 # 1 the game boots from it and plays for ~25 s (screenshots), with its frame
-# rate measured, a pad press, and a background and return during which the
+# rate measured, a pad press, a touch on the control deck, and a background and return during which the
 # game's frame count does not move, plus repeated Home/return at 20x FF.
 # XEM_SMOKE_GAME_ONLY=1 runs only the
 # start and the game. XEM_SMOKE_SLICE=1 then plays the Phase 3 slice's session
@@ -333,6 +333,15 @@ PY
     wait_for "xem: pad buttons 0x0000 "
     sleep 3
     shot 08-game-start-pressed
+
+    echo "== the touch deck: a finger held on Confirm holds Cross"
+    deck=$(wait_for "xem: touch deck Confirm " 30)
+    read -r x y w h <<<"$(sed -E 's/.*touch deck Confirm ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+).*/\1 \2 \3 \4/' <<<"$deck")"
+    mark
+    "${adb[@]}" shell input swipe $((x + w / 2)) $((y + h / 2)) $((x + w / 2)) $((y + h / 2)) 800
+    wait_for "xem: pad buttons 0x4000 "
+    wait_for "xem: pad buttons 0x0000 "
+    shot 08-game-touch-deck
 
     echo "== background and return: the game's clock stops"
     mark
