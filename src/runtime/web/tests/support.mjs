@@ -76,20 +76,18 @@ export async function start({ args = [], fixtures: withFixtures = false, context
 
 export const status = (page) => page.evaluate(() => window.xem.status());
 
-/** Select a section through the rendered Slint navigation at 1× scale. */
+/** Select a section through the rendered Slint navigation at 1× scale:
+ *  the sidebar's rows (38 high, 40 apart from 75 under the panel's top), or,
+ *  in a narrow panel, the strip of seven tabs (98 under its top). */
 export async function settingsSection(page, index) {
   const canvas = await page.locator('canvas').boundingBox();
   const width = Math.min(640, canvas.width - 16), height = Math.min(560, canvas.height - 16);
   const left = canvas.x + (canvas.width - width) / 2, top = canvas.y + (canvas.height - height) / 2;
   if (width >= 560) {
-    await page.mouse.click(left + 52, top + 82 + index * 40);
+    await page.mouse.click(left + 52, top + 94 + index * 40);
   } else {
-    const current = (await status(page)).renderer.panelSection;
-    await page.mouse.click(left + width / 2, top + 78);
-    for (let n = 0; n < Math.abs(index - current); n++) {
-      await page.keyboard.press(index < current ? 'ArrowUp' : 'ArrowDown');
-    }
-    await page.keyboard.press('Enter');
+    const tab = (width - 32) / 7;
+    await page.mouse.click(left + 10 + index * (tab + 2) + tab / 2, top + 98);
   }
   await page.waitForFunction((index) => window.xem.status().renderer.panelSection === index, index);
   return { left, top, width, height };

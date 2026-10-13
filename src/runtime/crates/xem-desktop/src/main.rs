@@ -16,8 +16,6 @@ struct Options {
     exit_after_frames: Option<u64>,
     screenshot: Option<PathBuf>,
     show_settings: bool,
-    /// Start over the whole display.
-    fullscreen: bool,
     /// The user's disc (CHD, cue or bin): play the game.
     disc: Option<PathBuf>,
     cards: Option<PathBuf>,
@@ -39,7 +37,6 @@ fn options() -> Result<Options, String> {
         exit_after_frames: None,
         screenshot: None,
         show_settings: false,
-        fullscreen: false,
         disc: None,
         cards: None,
         bios: None,
@@ -64,7 +61,6 @@ fn options() -> Result<Options, String> {
                 options.screenshot = Some(args.next().ok_or("--screenshot needs a path")?.into());
             }
             "--show-settings" => options.show_settings = true,
-            "--fullscreen" => options.fullscreen = true,
             "--disc" => options.disc = Some(args.next().ok_or("--disc needs a path")?.into()),
             "--cards" => options.cards = Some(args.next().ok_or("--cards needs a directory")?.into()),
             "--bios" => options.bios = Some(args.next().ok_or("--bios needs a path")?.into()),
@@ -84,13 +80,13 @@ fn options() -> Result<Options, String> {
                 println!(
                     "xem-desktop [--disc DISC [--cards DIR] [--bios FILE] [--script LOG] \
                      [--exit-at-frame N] [--xr [--xr-pause N,M] [--xr-capture DIR]]] [--show-settings] \
-                     [--fullscreen] [--exit-after-frames N] [--screenshot out.png]\n\
+                     [--exit-after-frames N] [--screenshot out.png]\n\
                      --xr plays in an OpenXR headset on a virtual screen (controllers: left stick \
                      D-pad, A/B/X/Y Cross/Circle/Square/Triangle, triggers L1/R1, grips L2/R2, \
                      left stick click Start, left menu the settings panel).\n\
                      --script plays a session log (tools/native_scenario.py --log); \
                      --exit-at-frame prints the memory hash at that game frame and exits.\n\
-                     Escape toggles the settings panel. Pad: WASD move, E or left click confirm, \
+                     Escape toggles the settings panel (Graphics has Fullscreen; Quit ends the app). Pad: WASD move, E or left click confirm, \
                      F or right click cancel, Shift run, Space jump, Tab menu, Left/Right (and the \
                      mouse, with the mouse camera setting) turn the camera; in a battle attack W/A/S light/medium/heavy, D/F cancel. Enter start, \
                      Backspace select, 1/2 L2/R2, or a gamepad (D-pad or left stick move, \
@@ -133,11 +129,15 @@ fn run(options: Options) -> Result<(), String> {
         return run_xr(&options);
     }
     let sdl = sdl::Sdl::init()?;
+    let settings = Rc::new(RefCell::new(open_settings()));
     let window = sdl::Window::new(&sdl, "Xenogears Ex Machina", 1280, 800)?;
-    if options.fullscreen {
+    // The saved choice before anything is drawn (the window manager's own
+    // fullscreen is left alone: windowed asks nothing of it).
+    let fullscreen = settings.borrow().settings().presentation.fullscreen;
+    if fullscreen {
         window.set_fullscreen(true);
     }
-    let result = Host::new(&window, &options).and_then(|mut host| host.run(&window, &options));
+    let result = Host::new(&window, &options, settings, fullscreen).and_then(|mut host| host.run(&window, &options));
     drop(window);
     drop(sdl);
     result
@@ -150,6 +150,8 @@ struct Host {
     gpu: Gpu,
     start: Instant,
     game: Option<Game>,
+    /// What the window was last asked: the Fullscreen setting when it was.
+    fullscreen: bool,
     /// XEM_FRAME_STATS: a line a second of where the frame loop's time goes.
     stats: Option<Stats>,
 }
@@ -258,7 +260,12 @@ fn open_game(options: &Options, disc: &std::path::Path) -> Result<Game, String> 
 }
 
 impl Host {
-    fn new(window: &sdl::Window, options: &Options) -> Result<Self, String> {
+    fn new(
+        window: &sdl::Window,
+        options: &Options,
+        settings: Rc<RefCell<SettingsService>>,
+        fullscreen: bool,
+    ) -> Result<Self, String> {
         let descriptor =
             wgpu::InstanceDescriptor::new_with_display_handle_from_env(Box::new(window.display()));
         let (gpu, surface) = xem_host::open_gpu(window, descriptor, None)?;
@@ -273,8 +280,7 @@ impl Host {
             wgpu::TextureUsages::empty()
         };
         let presenter = Presenter::new(&gpu, surface, window, usage)?;
-        let settings = Rc::new(RefCell::new(open_settings()));
-        let view = View::new(
+        let mut view = View::new(
             &gpu,
             presenter.format(),
             presenter.size(),
@@ -282,6 +288,7 @@ impl Host {
             settings,
             options.show_settings,
         )?;
+        view.ui().set_fullscreen_offered(true);
         window.set_text_input(options.show_settings);
         let mut game = options.disc.as_deref().map(|disc| open_game(options, disc)).transpose()?;
         if let (Some(game), Some(path)) = (&mut game, &options.script) {
@@ -298,6 +305,7 @@ impl Host {
             gpu,
             start: Instant::now(),
             game,
+            fullscreen,
             stats: std::env::var_os("XEM_FRAME_STATS").map(|_| Stats::new()),
         })
     }
@@ -328,10 +336,14 @@ impl Host {
                     _ => unsafe { self.view.handle(window, &event) },
                 }
             }
+            if self.view.quit_requested() {
+                return Ok(());
+            }
             let visible = self.view.panel_visible();
             if visible != was_visible {
                 window.set_text_input(visible);
             }
+            self.follow_fullscreen(window);
             if minimized {
                 // Nothing is presented while minimized: sleep until the next event.
                 // SAFETY: a null event pointer leaves the event queued.
@@ -359,6 +371,16 @@ impl Host {
                 println!("xem-desktop: frame {} memory_hash {}", game.frames_run(), game.memory_hash());
                 return Ok(());
             }
+        }
+    }
+
+    /// Asks the window for the Fullscreen setting when it changes, so a
+    /// window manager's own fullscreen is not undone.
+    fn follow_fullscreen(&mut self, window: &sdl::Window) {
+        let fullscreen = self.view.settings().borrow().settings().presentation.fullscreen;
+        if fullscreen != self.fullscreen {
+            window.set_fullscreen(fullscreen);
+            self.fullscreen = fullscreen;
         }
     }
 
@@ -390,7 +412,7 @@ impl Host {
             match game.update(buttons, &settings, || window.focused()) {
                 Ok(frames) => ran = frames,
                 Err(error) => {
-                    self.view.ui().set_operation_status(&format!("Game stopped: {error}. Load a state to recover."));
+                    self.view.ui().set_operation_error(&format!("Game stopped: {error}. Load a state to recover."));
                     self.view.set_panel_visible(true);
                     game.pause();
                 }

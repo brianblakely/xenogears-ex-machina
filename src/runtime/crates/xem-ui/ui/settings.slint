@@ -1,5 +1,568 @@
-// Shared app Settings, with sidebar navigation and a compact section picker.
-import { AboutSlint, Button, CheckBox, ComboBox, GroupBox, LineEdit, Palette, ScrollView, Slider, SpinBox, TabWidget } from "std-widgets.slint";
+// The app's Settings: sections in a sidebar (a strip of icons when the panel
+// is narrow), each a column of cards of rows, under a header with Quit (on
+// hosts that can quit) and Close and over a status line. An ordinary
+// application style (plan.md: not Seraph Glass) on Slint's fluent-dark
+// widgets; every edit goes through the settings service (lib.rs), and the
+// panel shows what it acknowledged.
+import { AboutSlint, Button, ComboBox, LineEdit, Palette, ScrollView, Slider, SpinBox, Switch } from "std-widgets.slint";
+
+/// An app operation and its bindings, as the Shortcuts section lists them.
+export struct BindingRow {
+    name: string,
+    keyboard: string,
+    gamepad: string,
+}
+
+struct Section {
+    label: string,
+    icon: string,
+    description: string,
+}
+
+global Theme {
+    out property <brush> panel: #15171cf7;
+    out property <brush> raised: #ffffff08;
+    out property <brush> hover: #ffffff0f;
+    out property <brush> pressed: #ffffff1a;
+    out property <brush> selected: #ffffff17;
+    out property <brush> selected-hover: #ffffff1f;
+    out property <brush> stroke: #ffffff17;
+    out property <brush> divider: #ffffff10;
+    out property <brush> well: #00000033;
+    out property <brush> text: #ffffffeb;
+    out property <brush> text-secondary: #ffffffa8;
+    out property <brush> text-tertiary: #ffffff73;
+    out property <brush> accent: Palette.accent-background;
+    out property <brush> good: #8fd9a8;
+    out property <brush> bad: #ffa3a3;
+}
+
+// Outline icons on a 24-unit grid.
+global Icons {
+    out property <string> audio: "M4 9.5 L8 9.5 L13 5.5 L13 18.5 L8 14.5 L4 14.5 Z M16.4 9.2 A4 4 0 0 1 16.4 14.8 M18.8 6.8 A7.4 7.4 0 0 1 18.8 17.2";
+    out property <string> graphics: "M3.5 5 L20.5 5 L20.5 16 L3.5 16 Z M8.5 20 L15.5 20 M12 16 L12 20";
+    out property <string> shortcuts: "M5 6.5 L19 6.5 A2 2 0 0 1 21 8.5 L21 15.5 A2 2 0 0 1 19 17.5 L5 17.5 A2 2 0 0 1 3 15.5 L3 8.5 A2 2 0 0 1 5 6.5 Z M7 10 L7.1 10 M10.3 10 L10.4 10 M13.6 10 L13.7 10 M16.9 10 L17 10 M8 14 L16 14";
+    out property <string> controls: "M7 8 L17 8 A4.5 4.5 0 0 1 21.5 12.5 L21.5 14 A2.8 2.8 0 0 1 16.6 15.8 L15.4 14.5 L8.6 14.5 L7.4 15.8 A2.8 2.8 0 0 1 2.5 14 L2.5 12.5 A4.5 4.5 0 0 1 7 8 Z M7.5 9.8 L7.5 12.8 M6 11.3 L9 11.3 M15.8 10.2 L15.8 10.3 M17.6 12.2 L17.6 12.3";
+    out property <string> time: "M12 3.5 A8.5 8.5 0 1 1 11.99 3.5 Z M12 7.5 L12 12 L15 14";
+    out property <string> saves: "M5 4 L15.5 4 L20 8.5 L20 20 L5 20 Z M8 4 L8 8.5 L15 8.5 L15 4 M8 20 L8 13.5 L17 13.5 L17 20";
+    out property <string> about: "M12 3.5 A8.5 8.5 0 1 1 11.99 3.5 Z M12 11 L12 16.5 M12 7.6 L12 7.7";
+    out property <string> close: "M6.5 6.5 L17.5 17.5 M17.5 6.5 L6.5 17.5";
+    out property <string> power: "M12 3.5 L12 11.5 M6.7 7.7 A7.5 7.5 0 1 0 17.3 7.7";
+    out property <string> check: "M5 12.5 L10 17 L19 7.5";
+    out property <string> alert: "M12 3.5 A8.5 8.5 0 1 1 11.99 3.5 Z M12 7.8 L12 12.6 M12 16 L12 16.1";
+    out property <string> dot: "M12 10.5 A1.5 1.5 0 1 1 11.99 10.5 Z";
+    out property <string> emblem: "M12 2.6 L20.2 7.3 L20.2 16.7 L12 21.4 L3.8 16.7 L3.8 7.3 Z M12 8.4 A3.6 3.6 0 1 1 11.99 8.4 Z";
+}
+
+component Icon inherits Path {
+    in property <string> data;
+    in property <brush> color: Theme.text-secondary;
+    width: 18px;
+    height: 18px;
+    viewbox-width: 24;
+    viewbox-height: 24;
+    commands: root.data;
+    stroke: root.color;
+    stroke-width: 1.7px;
+    stroke-line-cap: round;
+    stroke-line-join: round;
+    fill: transparent;
+    accessible-role: none;
+}
+
+component Divider inherits Rectangle {
+    height: 1px;
+    background: Theme.divider;
+}
+
+// A section in the navigation: a row in the sidebar, or a stacked icon and
+// label in the narrow panel's strip.
+component NavItem inherits Rectangle {
+    in property <string> label;
+    in property <string> icon;
+    in property <bool> selected;
+    in property <bool> stacked;
+    callback activated();
+
+    accessible-role: tab;
+    accessible-label: root.label;
+    accessible-item-selectable: true;
+    accessible-item-selected: root.selected;
+    accessible-action-default => { root.activated(); }
+    private property <bool> hovered: touch.has-hover;
+    private property <brush> label-color: root.selected || root.hovered ? Theme.text : Theme.text-secondary;
+    private property <brush> icon-color: root.selected ? Theme.accent : root.hovered ? Theme.text : Theme.text-secondary;
+    min-height: root.stacked ? 54px : 38px;
+    max-height: root.stacked ? 54px : 38px;
+    border-radius: 8px;
+    background: touch.pressed ? Theme.pressed : root.selected ? (root.hovered ? Theme.selected-hover : Theme.selected) : root.hovered ? Theme.hover : transparent;
+    animate background { duration: 140ms; easing: ease-out; }
+
+    Rectangle {
+        background: Theme.accent;
+        border-radius: 1.5px;
+        width: root.stacked ? (root.selected ? 18px : 0px) : 3px;
+        height: root.stacked ? 3px : (root.selected ? 16px : 0px);
+        x: root.stacked ? (parent.width - self.width) / 2 : 0px;
+        y: root.stacked ? parent.height - self.height - 2px : (parent.height - self.height) / 2;
+        animate width, height { duration: 160ms; easing: ease-out; }
+    }
+    if !root.stacked: HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 8px;
+        spacing: 10px;
+        VerticalLayout {
+            alignment: center;
+            Icon { data: root.icon; color: root.icon-color; }
+        }
+        Text {
+            text: root.label;
+            font-size: 13px;
+            font-weight: root.selected ? 600 : 400;
+            color: root.label-color;
+            vertical-alignment: center;
+            overflow: elide;
+            animate color { duration: 140ms; }
+        }
+    }
+    if root.stacked: VerticalLayout {
+        padding-top: 7px;
+        padding-bottom: 9px;
+        spacing: 3px;
+        HorizontalLayout {
+            alignment: center;
+            Icon { data: root.icon; color: root.icon-color; }
+        }
+        Text {
+            text: root.label;
+            font-size: 10.5px;
+            font-weight: root.selected ? 600 : 400;
+            color: root.label-color;
+            horizontal-alignment: center;
+            overflow: elide;
+            animate color { duration: 140ms; }
+        }
+    }
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.activated(); }
+    }
+}
+
+// The sections, chosen with the pointer or (once focused) the arrow keys.
+component Nav inherits FocusScope {
+    in property <[Section]> sections;
+    in-out property <int> current;
+    in property <bool> stacked;
+
+    accessible-role: tab-list;
+    accessible-label: "Settings sections";
+    // Its items' height (a strip's, or a column's of rows of 38 and gaps of 2).
+    min-height: root.stacked ? 58px : root.sections.length * 40px + 2px;
+    key-pressed(event) => {
+        if event.text == Key.UpArrow || event.text == Key.LeftArrow {
+            root.current = max(0, root.current - 1);
+            return accept;
+        }
+        if event.text == Key.DownArrow || event.text == Key.RightArrow {
+            root.current = min(root.sections.length - 1, root.current + 1);
+            return accept;
+        }
+        if event.text == Key.Home {
+            root.current = 0;
+            return accept;
+        }
+        if event.text == Key.End {
+            root.current = root.sections.length - 1;
+            return accept;
+        }
+        reject
+    }
+    Rectangle {
+        border-radius: 10px;
+        border-width: root.has-focus ? 1px : 0px;
+        border-color: Theme.accent;
+    }
+    if !root.stacked: VerticalLayout {
+        padding: 2px;
+        spacing: 2px;
+        alignment: start;
+        for section[index] in root.sections: NavItem {
+            label: section.label;
+            icon: section.icon;
+            selected: index == root.current;
+            activated => { root.current = index; }
+        }
+    }
+    if root.stacked: HorizontalLayout {
+        padding: 2px;
+        spacing: 2px;
+        for section[index] in root.sections: NavItem {
+            stacked: true;
+            horizontal-stretch: 1;
+            label: section.label;
+            icon: section.icon;
+            selected: index == root.current;
+            activated => { root.current = index; }
+        }
+    }
+}
+
+// A group of settings, with its title and what it is for.
+component Card inherits Rectangle {
+    in property <string> title;
+    in property <string> description;
+    background: Theme.raised;
+    border-radius: 10px;
+    border-width: 1px;
+    border-color: Theme.stroke;
+    accessible-role: groupbox;
+    accessible-label: root.title;
+    VerticalLayout {
+        padding: 14px;
+        padding-top: 12px;
+        spacing: 12px;
+        if root.title != "" || root.description != "": VerticalLayout {
+            spacing: 3px;
+            if root.title != "": Text { text: root.title; font-size: 13.5px; font-weight: 600; color: Theme.text; }
+            if root.description != "": Text { text: root.description; font-size: 11.5px; color: Theme.text-tertiary; wrap: word-wrap; }
+        }
+        @children
+    }
+}
+
+// A setting: its name and help on the left, its control on the right.
+component Row inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> help;
+    in property <bool> enabled: true;
+    spacing: 16px;
+    VerticalLayout {
+        alignment: center;
+        spacing: 2px;
+        horizontal-stretch: 1;
+        Text { text: root.label; font-size: 13px; color: root.enabled ? Theme.text : Theme.text-tertiary; wrap: word-wrap; }
+        if root.help != "": Text { text: root.help; font-size: 11.5px; color: Theme.text-tertiary; wrap: word-wrap; }
+    }
+    VerticalLayout {
+        alignment: center;
+        horizontal-stretch: 0;
+        @children
+    }
+}
+
+// A setting that is on or off: the switch, or anywhere on its row, toggles
+// it; the row lights up under the pointer.
+component ToggleRow inherits Rectangle {
+    in property <string> label;
+    in property <string> help;
+    in-out property <bool> checked;
+    callback toggled(bool);
+    function toggle() {
+        root.checked = !root.checked;
+        root.toggled(root.checked);
+    }
+    min-height: layout.min-height;
+    Rectangle {
+        x: -8px;
+        width: parent.width + 16px;
+        y: -5px;
+        height: parent.height + 10px;
+        border-radius: 8px;
+        background: row-touch.pressed ? Theme.pressed : row-touch.has-hover ? Theme.hover : transparent;
+        animate background { duration: 140ms; easing: ease-out; }
+    }
+    row-touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.toggle(); }
+    }
+    layout := HorizontalLayout {
+        spacing: 16px;
+        VerticalLayout {
+            alignment: center;
+            spacing: 2px;
+            horizontal-stretch: 1;
+            Text { text: root.label; font-size: 13px; color: Theme.text; wrap: word-wrap; }
+            if root.help != "": Text { text: root.help; font-size: 11.5px; color: Theme.text-tertiary; wrap: word-wrap; }
+        }
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 0;
+            Switch { accessible-label: root.label; checked <=> root.checked; toggled => { root.toggled(self.checked); } }
+        }
+    }
+}
+
+// A setting with a slider under its name, its value at the right.
+component SliderRow inherits VerticalLayout {
+    in property <string> label;
+    in property <string> help;
+    in property <string> value-text;
+    spacing: 4px;
+    HorizontalLayout {
+        spacing: 12px;
+        Text { text: root.label; font-size: 13px; color: Theme.text; horizontal-stretch: 1; vertical-alignment: center; }
+        Text { text: root.value-text; font-size: 12.5px; font-weight: 600; color: Theme.accent; horizontal-stretch: 0; vertical-alignment: center; }
+    }
+    if root.help != "": Text { text: root.help; font-size: 11.5px; color: Theme.text-tertiary; wrap: word-wrap; }
+    @children
+}
+
+// A short choice of a few options side by side; the arrow keys move it once
+// it has the focus.
+component Segmented inherits FocusScope {
+    in property <[string]> options;
+    in-out property <int> current;
+    callback selected(int);
+
+    function pick(index: int) {
+        if root.enabled && index >= 0 && index < root.options.length && index != root.current {
+            root.current = index;
+            root.selected(index);
+        }
+    }
+
+    accessible-role: radio-group;
+    accessible-enabled: root.enabled;
+    horizontal-stretch: 0;
+    min-height: 32px;
+    key-pressed(event) => {
+        if event.text == Key.LeftArrow {
+            root.pick(root.current - 1);
+            return accept;
+        }
+        if event.text == Key.RightArrow {
+            root.pick(root.current + 1);
+            return accept;
+        }
+        reject
+    }
+    Rectangle {
+        border-radius: 8px;
+        background: Theme.well;
+        border-width: 1px;
+        border-color: root.has-focus ? Theme.accent : Theme.stroke;
+        HorizontalLayout {
+            padding: 3px;
+            spacing: 2px;
+            for option[index] in root.options: Rectangle {
+                accessible-role: radio-button;
+                accessible-label: option;
+                accessible-checkable: true;
+                accessible-checked: index == root.current;
+                accessible-enabled: root.enabled;
+                accessible-action-default => { root.pick(index); }
+                min-width: max(52px, label.preferred-width + 20px);
+                border-radius: 6px;
+                background: index == root.current ? (touch.has-hover && root.enabled ? #ffffff2e : #ffffff26)
+                    : touch.pressed && root.enabled ? Theme.pressed : touch.has-hover && root.enabled ? Theme.hover : transparent;
+                // The chosen one lifted off the track; the others flat on it.
+                drop-shadow-blur: 4px;
+                drop-shadow-color: index == root.current ? #00000059 : transparent;
+                drop-shadow-offset-y: 1px;
+                animate background { duration: 140ms; easing: ease-out; }
+                label := Text {
+                    text: option;
+                    font-size: 12.5px;
+                    font-weight: index == root.current ? 600 : 400;
+                    color: !root.enabled ? Theme.text-tertiary : index == root.current || touch.has-hover ? Theme.text : Theme.text-secondary;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    animate color { duration: 140ms; }
+                }
+                touch := TouchArea {
+                    mouse-cursor: root.enabled && index != root.current ? MouseCursor.pointer : MouseCursor.default;
+                    clicked => { root.pick(index); }
+                }
+            }
+        }
+    }
+}
+
+// A header button: an icon, and its text beside it when it has one (an
+// icon alone is named by its label). Tab reaches it; Space or Return presses it.
+component IconButton inherits Rectangle {
+    in property <string> icon;
+    in property <string> label;
+    in property <string> text;
+    // The icon's colour under the pointer (Quit's warns).
+    in property <brush> hover-icon-color: Theme.text;
+    callback clicked();
+    accessible-role: button;
+    accessible-label: root.text != "" ? root.text : root.label;
+    accessible-action-default => { root.clicked(); }
+    forward-focus: focus;
+    width: root.text == "" ? 34px : content.preferred-width;
+    height: 34px;
+    border-radius: 8px;
+    background: touch.pressed ? Theme.pressed : touch.has-hover ? Theme.hover : transparent;
+    border-width: 1px;
+    border-color: touch.has-hover ? Theme.stroke : transparent;
+    animate background, border-color { duration: 140ms; easing: ease-out; }
+    content := HorizontalLayout {
+        padding-left: root.text == "" ? 8px : 10px;
+        padding-right: root.text == "" ? 8px : 13px;
+        spacing: 6px;
+        VerticalLayout {
+            alignment: center;
+            Icon { data: root.icon; color: touch.has-hover ? root.hover-icon-color : Theme.text-secondary; }
+        }
+        if root.text != "": Text {
+            text: root.text;
+            font-size: 12.5px;
+            color: touch.has-hover ? Theme.text : Theme.text-secondary;
+            vertical-alignment: center;
+            animate color { duration: 140ms; }
+        }
+    }
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+    // As the toolkit's Button: no area of its own, so a click does not focus it.
+    focus := FocusScope {
+        x: 0;
+        width: 0;
+        key-pressed(event) => {
+            if event.text == Key.Space || event.text == Key.Return {
+                root.clicked();
+                return accept;
+            }
+            reject
+        }
+    }
+    if focus.has-focus: Rectangle {
+        border-radius: root.border-radius;
+        border-width: 1.5px;
+        border-color: Theme.accent;
+    }
+}
+
+// Asks before the app quits, over the dimmed panel. A press beside it, or
+// the host's Escape or Back, cancels; Tab moves between its two buttons only.
+component QuitDialog inherits Rectangle {
+    callback cancelled();
+    callback confirmed();
+    private property <float> shown;
+    init => { root.shown = 1; }
+    opacity: root.shown;
+    animate opacity { duration: 120ms; easing: ease-out; }
+    background: #0a0b0eb8;
+    TouchArea {
+        clicked => { root.cancelled(); }
+        scroll-event(event) => { accept }
+    }
+    // The dialog takes the keys at once (no ring shows); Tab reaches its buttons.
+    FocusScope {
+        focus-on-click: false;
+        focus-on-tab-navigation: false;
+        init => { self.focus(); }
+        width: min(340px, root.width - 32px);
+        height: card.min-height;
+        x: (root.width - self.width) / 2;
+        y: (root.height - self.height) / 2;
+        capture-key-pressed(event) => {
+            if event.text == Key.Tab || event.text == Key.Backtab {
+                if cancel.has-focus {
+                    quit.focus();
+                } else {
+                    cancel.focus();
+                }
+                return accept;
+            }
+            reject
+        }
+        card := Rectangle {
+            accessible-role: groupbox;
+            accessible-label: "Quit Xenogears Ex Machina?";
+            min-height: layout.min-height;
+            background: #1c1f26;
+            border-radius: 12px;
+            border-width: 1px;
+            border-color: Theme.stroke;
+            drop-shadow-blur: 28px;
+            drop-shadow-offset-y: 10px;
+            drop-shadow-color: #00000099;
+            // A press on the dialog is not one beside it.
+            TouchArea { }
+            layout := VerticalLayout {
+                padding: 20px;
+                padding-bottom: 16px;
+                spacing: 18px;
+                HorizontalLayout {
+                    spacing: 14px;
+                    VerticalLayout {
+                        alignment: start;
+                        Rectangle {
+                            width: 36px;
+                            height: 36px;
+                            border-radius: 18px;
+                            background: Theme.bad.with-alpha(0.13);
+                            Icon {
+                                data: Icons.power;
+                                color: Theme.bad;
+                                x: (parent.width - self.width) / 2;
+                                y: (parent.height - self.height) / 2;
+                            }
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        spacing: 4px;
+                        Text { text: "Quit Xenogears Ex Machina?"; font-size: 15px; font-weight: 650; color: Theme.text; wrap: word-wrap; }
+                        Text { text: "Progress since your last save is lost."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: end;
+                    cancel := Button {
+                        text: "Cancel";
+                        clicked => { root.cancelled(); }
+                    }
+                    quit := Button {
+                        text: "Quit";
+                        primary: true;
+                        clicked => { root.confirmed(); }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// A key or button, as a keycap; "-" for none.
+component Keycap inherits Rectangle {
+    in property <string> text;
+    min-width: label.preferred-width + 12px;
+    height: 20px;
+    border-radius: 4px;
+    background: root.text == "" ? transparent : #ffffff12;
+    border-width: root.text == "" ? 0px : 1px;
+    border-color: #ffffff1f;
+    accessible-role: none;
+    label := Text {
+        text: root.text == "" ? "—" : root.text;
+        font-size: 11px;
+        color: root.text == "" ? Theme.text-tertiary : Theme.text;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}
+
+// A game control and what plays it: keycaps on the right.
+component ControlRow inherits HorizontalLayout {
+    in property <string> action;
+    in property <[string]> inputs;
+    spacing: 12px;
+    Text { text: root.action; font-size: 12.5px; color: Theme.text-secondary; horizontal-stretch: 1; vertical-alignment: center; wrap: word-wrap; }
+    HorizontalLayout {
+        horizontal-stretch: 0;
+        spacing: 4px;
+        alignment: end;
+        for input in root.inputs: Keycap { text: input; }
+    }
+}
 
 export component SettingsPanel inherits Window {
     in-out property <float> master-volume;
@@ -36,18 +599,40 @@ export component SettingsPanel inherits Window {
     private property <[string]> fidelity-names: ["Affine textures", "Vertex snapping", "15-bit colour", "Dithering", "Native resolution", "Painter's ordering"];
     private property <[string]> effect-names: ["Lighting", "Shadows", "Ambient occlusion", "Fog", "Light shafts", "Bloom", "Colour grading", "Depth of field", "Focus"];
     in-out property <bool> pause-on-focus-loss;
+    // The status line: 0 a note, 1 something done, 2 a problem.
     in property <string> status;
+    in property <int> status-kind;
+    // How the host closes the panel ("Esc closes Settings"), shown beside the status.
+    in property <string> close-hint;
+    // The host offers first-person inspection (the game controls list it).
+    in property <bool> first-person;
     in property <bool> can-import-disc;
+    // The host can quit (desktop, Android, a headset): Quit in the header,
+    // which asks first.
+    in property <bool> can-quit;
+    in-out property <bool> quit-confirming;
+    // The host places its own window (desktop): Graphics offers Fullscreen.
+    in property <bool> can-fullscreen;
+    in-out property <bool> fullscreen;
     in property <string> disc-status: "No disc imported";
-    in property <[string]> app-actions;
+    // Every app operation with its bindings; the selected one is edited.
+    in property <[BindingRow]> bindings;
     in-out property <int> selected-action;
     in-out property <string> keyboard-binding;
     in-out property <string> gamepad-binding;
     in property <[string]> backup-actions;
-    in-out property <int> selected-backup;
     in-out property <int> selected-section: 0;
     in property <bool> wide-layout;
-    private property <[string]> sections: ["Audio", "Graphics", "Controls", "Time", "Saves"];
+    private property <[Section]> sections: [
+        { label: "Audio", icon: Icons.audio, description: "Volume and how the mix reaches your speakers." },
+        { label: "Graphics", icon: Icons.graphics, description: "How the game is drawn and shown." },
+        { label: "Controls", icon: Icons.controls, description: "The mouse and the game's keys and buttons." },
+        { label: "Shortcuts", icon: Icons.shortcuts, description: "Keys and buttons for the app's own operations." },
+        { label: "Time", icon: Icons.time, description: "Rewind, fast-forward and pausing." },
+        { label: "Saves", icon: Icons.saves, description: "Save states, backups and memory cards." },
+        { label: "About", icon: Icons.about, description: "This app and what it is built with." },
+    ];
+    out property <int> section-count: root.sections.length;
     in property <string> time-status: "Boot a game to use rewind.";
     in property <string> storage-status;
     in property <bool> fast-forward;
@@ -91,6 +676,8 @@ export component SettingsPanel inherits Window {
     callback pause-on-focus-loss-edited(bool);
     callback close-requested();
     callback import-disc-requested();
+    callback quit-requested();
+    callback fullscreen-edited(bool);
 
     changed selected-section => {
         section-scroll.content-y = 0px;
@@ -101,6 +688,15 @@ export component SettingsPanel inherits Window {
         root.rewind-held(false);
     }
 
+    function select-action(index: int) {
+        if index >= 0 && index < root.bindings.length && index != root.selected-action {
+            root.selected-action = index;
+            root.keyboard-editor-focused = false;
+            root.gamepad-editor-focused = false;
+            root.action-selected(index);
+        }
+    }
+
     title: "Settings";
     background: transparent;
     preferred-width: 640px;
@@ -109,378 +705,662 @@ export component SettingsPanel inherits Window {
     min-height: 280px;
 
     Rectangle {
-        background: Palette.background.with-alpha(0.96);
-        border-radius: 12px;
+        background: Theme.panel;
+        border-radius: 14px;
         border-width: 1px;
-        border-color: Palette.border;
+        border-color: Theme.stroke;
+        clip: true;
         VerticalLayout {
-            padding: 16px;
-            padding-right: 8px;
-            spacing: 12px;
+            // The header.
             HorizontalLayout {
-                padding-right: 8px;
-                Text { text: "Settings"; font-size: 20px; font-weight: 600; vertical-alignment: center; horizontal-stretch: 1; }
-                Button { text: "Close"; horizontal-stretch: 0; preferred-width: 72px; clicked => { root.close-requested(); } }
-            }
-            HorizontalLayout {
+                padding: 13px;
+                padding-left: 16px;
                 spacing: 12px;
-                if root.wide-layout: VerticalLayout {
-                    min-width: 104px;
-                    max-width: 104px;
-                    horizontal-stretch: 0;
-                    TabWidget {
-                        orientation: Orientation.vertical;
-                        current-index <=> root.selected-section;
-                        min-height: 200px;
-                        max-height: 200px;
-                        // The tab bar navigates the single shared content view.
-                        Tab { title: root.sections[0]; Rectangle { accessible-role: none; } }
-                        Tab { title: root.sections[1]; Rectangle { accessible-role: none; } }
-                        Tab { title: root.sections[2]; Rectangle { accessible-role: none; } }
-                        Tab { title: root.sections[3]; Rectangle { accessible-role: none; } }
-                        Tab { title: root.sections[4]; Rectangle { accessible-role: none; } }
+                Rectangle {
+                    width: 34px;
+                    height: 34px;
+                    border-radius: 9px;
+                    background: Palette.accent-background.with-alpha(0.14);
+                    border-width: 1px;
+                    border-color: Palette.accent-background.with-alpha(0.3);
+                    Icon {
+                        data: Icons.emblem;
+                        color: Theme.accent;
+                        width: 20px;
+                        height: 20px;
+                        x: (parent.width - self.width) / 2;
+                        y: (parent.height - self.height) / 2;
                     }
-                    Rectangle { accessible-role: none; vertical-stretch: 1; }
                 }
                 VerticalLayout {
-                    spacing: 12px;
-                    if !root.wide-layout: ComboBox {
-                        accessible-label: "Settings section";
-                        model: root.sections;
-                        current-index <=> root.selected-section;
+                    alignment: center;
+                    spacing: 1px;
+                    horizontal-stretch: 1;
+                    Text { text: "Settings"; font-size: 17px; font-weight: 650; color: Theme.text; }
+                    Text { text: "Xenogears Ex Machina"; font-size: 11px; color: Theme.text-tertiary; }
+                }
+                if root.can-quit: VerticalLayout {
+                    alignment: center;
+                    IconButton {
+                        icon: Icons.power;
+                        text: "Quit";
+                        hover-icon-color: Theme.bad;
+                        clicked => { root.quit-confirming = true; }
+                    }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    IconButton { icon: Icons.close; label: "Close"; clicked => { root.close-requested(); } }
+                }
+            }
+            Divider { }
+            HorizontalLayout {
+                vertical-stretch: 1;
+                if root.wide-layout: Rectangle {
+                    width: 164px;
+                    VerticalLayout {
+                        padding: 10px;
+                        padding-top: 12px;
+                        Nav {
+                            sections: root.sections;
+                            current <=> root.selected-section;
+                            vertical-stretch: 0;
+                        }
+                        Rectangle { vertical-stretch: 1; }
+                    }
+                }
+                if root.wide-layout: Rectangle { width: 1px; background: Theme.divider; }
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    if !root.wide-layout: VerticalLayout {
+                        padding: 8px;
+                        padding-bottom: 6px;
+                        vertical-stretch: 0;
+                        Nav {
+                            stacked: true;
+                            sections: root.sections;
+                            current <=> root.selected-section;
+                        }
+                    }
+                    if !root.wide-layout: Divider { }
+                    VerticalLayout {
+                        padding-left: 20px;
+                        padding-right: 20px;
+                        padding-top: 14px;
+                        padding-bottom: 6px;
+                        spacing: 3px;
+                        vertical-stretch: 0;
+                        Text { text: root.sections[root.selected-section].label; font-size: 16px; font-weight: 650; color: Theme.text; }
+                        Text { text: root.sections[root.selected-section].description; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                     }
                     section-scroll := ScrollView {
                         accessible-role: tab-panel;
-                        accessible-label: root.sections[root.selected-section];
+                        accessible-label: root.sections[root.selected-section].label;
                         horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
-                        // Compact touch hosts pan the form; desktop mouse
-                        // presses reach sliders immediately without a pan delay.
+                        // Narrow touch hosts pan the form; desktop mouse
+                        // presses reach sliders at once, without a pan delay.
                         mouse-drag-pan-enabled: !root.wide-layout;
                         content-width: self.visible-width;
                         VerticalLayout {
+                            padding-left: 16px;
+                            padding-right: 20px;
+                            padding-top: 8px;
+                            padding-bottom: 16px;
                             spacing: 12px;
                             alignment: start;
-                            // Reserve a gutter for the scrollbar at the outer edge.
-                            padding-right: 20px;
-                            if root.selected-section == 0: GroupBox {
-                                title: "Audio";
-                                vertical-stretch: 0;
-                                VerticalLayout {
-                                    spacing: 10px;
-                                    HorizontalLayout {
-                                        spacing: 8px;
-                                        Text { text: "Master volume"; vertical-alignment: center; horizontal-stretch: 0; }
-                                        Slider { accessible-label: "Master volume"; minimum: 0; maximum: 100; value <=> root.master-volume; changed(value) => { root.master-volume-edited(round(value)); } }
-                                        Text { text: round(root.master-volume); vertical-alignment: center; min-width: 28px; horizontal-stretch: 0; }
-                                    }
-                                    HorizontalLayout {
-                                        spacing: 8px;
-                                        Text { text: "Output"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
-                                        ComboBox { accessible-label: "Audio output"; model: ["Mono", "Stereo", "Wide"]; current-index <=> root.audio-output; selected => { root.audio-output-edited(self.current-index); } }
-                                    }
+
+                            // Audio
+                            if root.selected-section == 0: Card {
+                                title: "Sound";
+                                description: "The game's mix as it leaves the console.";
+                                SliderRow {
+                                    label: "Master volume";
+                                    value-text: "\{round(root.master-volume)}%";
+                                    Slider { accessible-label: "Master volume"; minimum: 0; maximum: 100; value <=> root.master-volume; changed(value) => { root.master-volume-edited(round(value)); } }
+                                }
+                                Divider { }
+                                Row {
+                                    label: "Output";
+                                    help: root.audio-output == 0 ? "Both speakers play the same sound." : root.audio-output == 1 ? "The console's stereo mix." : "Stereo with its sides widened.";
+                                    Segmented { accessible-label: "Audio output"; options: ["Mono", "Stereo", "Wide"]; current <=> root.audio-output; selected(index) => { root.audio-output-edited(index); } }
                                 }
                             }
-                            if root.selected-section == 1: GroupBox {
-                                title: "Graphics";
-                                vertical-stretch: 0;
-                                VerticalLayout {
-                                    spacing: 10px;
-                                    HorizontalLayout {
-                                        spacing: 8px;
-                                        Text { text: "Renderer"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
-                                        ComboBox { accessible-label: "Renderer"; model: ["Original", "Ex Machina"]; current-index <=> root.gfx-renderer; selected => { root.graphics-edited("renderer", self.current-index); } }
-                                    }
-                                    HorizontalLayout {
-                                        spacing: 8px;
-                                        Text { text: "Scale"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
-                                        ComboBox { accessible-label: "Scale"; model: ["Fit", "Integer", "Stretch"]; current-index <=> root.scale; selected => { root.scale-edited(self.current-index); } }
-                                    }
-                                    HorizontalLayout {
-                                        spacing: 8px;
-                                        Text { text: "Filter"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
-                                        ComboBox { accessible-label: "Filter"; model: ["Nearest", "Linear"]; current-index <=> root.filter; selected => { root.filter-edited(self.current-index); } }
-                                    }
-                                    CheckBox { text: "Show FPS"; checked <=> root.show-fps; toggled => { root.show-fps-edited(self.checked); } }
+
+                            // Graphics
+                            if root.selected-section == 1: Card {
+                                title: "Picture";
+                                description: "How the console's picture reaches the window.";
+                                if root.can-fullscreen: ToggleRow {
+                                    label: "Fullscreen";
+                                    help: "The window covers its whole display.";
+                                    checked <=> root.fullscreen;
+                                    toggled(on) => { root.fullscreen-edited(on); }
+                                }
+                                if root.can-fullscreen: Divider { }
+                                Row {
+                                    label: "Renderer";
+                                    help: root.gfx-renderer == 0 ? "The console's own picture, scaled to the window." : "Drawn again at the window's resolution, in the look below.";
+                                    Segmented { accessible-label: "Renderer"; options: ["Original", "Ex Machina"]; current <=> root.gfx-renderer; selected(index) => { root.graphics-edited("renderer", index); } }
+                                }
+                                Divider { }
+                                Row {
+                                    label: "Scale";
+                                    help: "How the picture fills the window.";
+                                    ComboBox { accessible-label: "Scale"; width: 150px; model: ["Fit", "Integer", "Stretch"]; current-index <=> root.scale; selected => { root.scale-edited(self.current-index); } }
+                                }
+                                Divider { }
+                                Row {
+                                    label: "Filter";
+                                    help: "Smoothing as the picture is scaled.";
+                                    Segmented { accessible-label: "Filter"; options: ["Nearest", "Linear"]; current <=> root.filter; selected(index) => { root.filter-edited(index); } }
+                                }
+                                Divider { }
+                                ToggleRow {
+                                    label: "Show FPS";
+                                    help: "A frame counter in the corner.";
+                                    checked <=> root.show-fps;
+                                    toggled(on) => { root.show-fps-edited(on); }
                                 }
                             }
-                            if root.selected-section == 1 && root.gfx-renderer == 1: GroupBox {
-                                title: "Profile";
-                                vertical-stretch: 0;
-                                VerticalLayout {
-                                    spacing: 10px;
-                                    HorizontalLayout {
-                                        spacing: 8px;
-                                        Text { text: "Look"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
-                                        ComboBox { accessible-label: "Graphics profile"; model: ["Modern", "HD-2D", "PS1", "Custom"]; current-index <=> root.gfx-profile; selected => { root.graphics-edited("profile", self.current-index); } }
-                                    }
-                                    HorizontalLayout {
-                                        spacing: 8px;
-                                        Text { text: "Resolution"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
-                                        ComboBox { accessible-label: "Internal resolution"; model: ["Auto", "1x", "2x", "3x", "4x", "5x", "6x", "7x", "8x"]; current-index <=> root.gfx-scale; selected => { root.graphics-edited("scale", self.current-index); } }
-                                    }
-                                    HorizontalLayout {
-                                        spacing: 8px;
-                                        Text { text: "Quality"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
-                                        ComboBox { accessible-label: "Effects quality tier"; model: ["Auto", "Low", "Medium", "High", "Ultra"]; current-index <=> root.gfx-quality; selected => { root.graphics-edited("quality", self.current-index); } }
-                                    }
-                                    HorizontalLayout {
-                                        spacing: 8px;
-                                        Text { text: "Present"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
-                                        ComboBox { accessible-label: "Presentation rate"; model: ["Every display refresh", "Game frames only"]; current-index <=> root.gfx-rate; selected => { root.graphics-edited("rate", self.current-index); } }
-                                    }
-                                    CheckBox { text: "Interpolate motion (one frame later)"; checked <=> root.gfx-interpolation; toggled => { root.graphics-edited("interpolation", self.checked ? 1 : 0); } }
-                                    CheckBox { text: "Wider framing (to the window's shape)"; checked <=> root.gfx-widescreen; toggled => { root.graphics-edited("widescreen", self.checked ? 1 : 0); } }
-                                    HorizontalLayout {
-                                        spacing: 8px;
-                                        Text { text: "Zoom out"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
-                                        Text { text: "1x"; vertical-alignment: center; horizontal-stretch: 0; }
-                                        Slider {
-                                            accessible-label: "Field camera zoom out (mouse wheel)";
-                                            minimum: 100;
-                                            maximum: 500;
-                                            value: root.gfx-zoom-out;
-                                            changed(value) => { root.graphics-edited("zoom-out", round(value / 25) * 25); }
-                                        }
-                                        Text { text: "5x"; vertical-alignment: center; horizontal-stretch: 0; }
-                                        Text { text: "\{root.gfx-zoom-out / 100}x"; vertical-alignment: center; min-width: 40px; horizontal-stretch: 0; }
-                                    }
-                                    CheckBox { text: "Characters keep moving in the wider view (changes gameplay)"; checked <=> root.gfx-actors-in-view; toggled => { root.graphics-edited("actors-in-view", self.checked ? 1 : 0); } }
-                                    Text { text: root.gfx-status; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+                            if root.selected-section == 1 && root.gfx-renderer == 1: Card {
+                                title: "Look";
+                                description: "Ex Machina's profile; each keeps the game's own art.";
+                                Row {
+                                    label: "Profile";
+                                    help: root.gfx-profile == 0 ? "Sharp and smooth, in full colour." : root.gfx-profile == 1 ? "Lit like a diorama: light, shadows, haze." : root.gfx-profile == 2 ? "The PS1's own limits, at its resolution." : "Your own choice of effects and limits.";
+                                    ComboBox { accessible-label: "Graphics profile"; width: 150px; model: ["Modern", "HD-2D", "PS1", "Custom"]; current-index <=> root.gfx-profile; selected => { root.graphics-edited("profile", self.current-index); } }
                                 }
+                                Divider { }
+                                Row {
+                                    label: "Resolution";
+                                    help: "Auto follows the window's size.";
+                                    ComboBox { accessible-label: "Internal resolution"; width: 150px; model: ["Auto", "1x", "2x", "3x", "4x", "5x", "6x", "7x", "8x"]; current-index <=> root.gfx-scale; selected => { root.graphics-edited("scale", self.current-index); } }
+                                }
+                                Divider { }
+                                Row {
+                                    label: "Effects quality";
+                                    help: "Samples the effects take; the look stays.";
+                                    ComboBox { accessible-label: "Effects quality tier"; width: 150px; model: ["Auto", "Low", "Medium", "High", "Ultra"]; current-index <=> root.gfx-quality; selected => { root.graphics-edited("quality", self.current-index); } }
+                                }
+                                if root.gfx-status != "": Text { text: root.gfx-status; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
-                            if root.selected-section == 1 && root.gfx-renderer == 1 && (root.gfx-profile == 1 || root.gfx-profile == 3): GroupBox {
-                                title: "HD-2D effects";
-                                vertical-stretch: 0;
-                                VerticalLayout {
-                                    spacing: 6px;
-                                    for name[index] in root.effect-names: HorizontalLayout {
-                                        spacing: 8px;
-                                        Text { text: name; vertical-alignment: center; min-width: 120px; horizontal-stretch: 0; }
-                                        Slider {
-                                            accessible-label: name;
-                                            minimum: index == 8 ? -100 : 0;
-                                            maximum: 100;
-                                            value: root.gfx-effects[index];
-                                            released(value) => { root.effect-edited(index, round(value)); }
-                                        }
-                                        Text { text: root.gfx-effects[index]; vertical-alignment: center; min-width: 32px; horizontal-stretch: 0; }
+                            if root.selected-section == 1 && root.gfx-renderer == 1: Card {
+                                title: "Motion and framing";
+                                Row {
+                                    label: "Presentation";
+                                    help: "When a new picture is shown.";
+                                    ComboBox { accessible-label: "Presentation rate"; width: 150px; model: ["Every refresh", "Game frames"]; current-index <=> root.gfx-rate; selected => { root.graphics-edited("rate", self.current-index); } }
+                                }
+                                Divider { }
+                                ToggleRow {
+                                    label: "Interpolate motion";
+                                    help: "Smoother movement, shown one game frame later.";
+                                    checked <=> root.gfx-interpolation;
+                                    toggled(on) => { root.graphics-edited("interpolation", on ? 1 : 0); }
+                                }
+                                Divider { }
+                                ToggleRow {
+                                    label: "Wider framing";
+                                    help: "Widens the picture to the window's shape.";
+                                    checked <=> root.gfx-widescreen;
+                                    toggled(on) => { root.graphics-edited("widescreen", on ? 1 : 0); }
+                                }
+                                Divider { }
+                                SliderRow {
+                                    label: "Zoom out";
+                                    help: "Pulls the field camera back; the mouse wheel over the game zooms too.";
+                                    value-text: "\{root.gfx-zoom-out / 100}x";
+                                    Slider {
+                                        accessible-label: "Field camera zoom out (mouse wheel)";
+                                        minimum: 100;
+                                        maximum: 500;
+                                        value: root.gfx-zoom-out;
+                                        changed(value) => { root.graphics-edited("zoom-out", round(value / 25) * 25); }
                                     }
                                 }
+                                Divider { }
+                                ToggleRow {
+                                    label: "Characters keep moving";
+                                    help: "Townspeople a wider or zoomed-out view shows go on walking. Changes gameplay.";
+                                    checked <=> root.gfx-actors-in-view;
+                                    toggled(on) => { root.graphics-edited("actors-in-view", on ? 1 : 0); }
+                                }
                             }
-                            if root.selected-section == 1 && root.gfx-renderer == 1 && root.gfx-profile == 3: GroupBox {
+                            if root.selected-section == 1 && root.gfx-renderer == 1 && (root.gfx-profile == 1 || root.gfx-profile == 3): Card {
+                                title: root.gfx-profile == 1 ? "HD-2D effects" : "Effects";
+                                description: "Light and atmosphere over the game's own pictures.";
+                                for name[index] in root.effect-names: HorizontalLayout {
+                                    spacing: 12px;
+                                    Text { text: name; font-size: 12.5px; color: Theme.text-secondary; vertical-alignment: center; min-width: 118px; horizontal-stretch: 0; }
+                                    Slider {
+                                        accessible-label: name;
+                                        minimum: index == 8 ? -100 : 0;
+                                        maximum: 100;
+                                        value: root.gfx-effects[index];
+                                        released(value) => { root.effect-edited(index, round(value)); }
+                                    }
+                                    Text { text: root.gfx-effects[index]; font-size: 12px; color: Theme.text; vertical-alignment: center; horizontal-alignment: right; min-width: 30px; horizontal-stretch: 0; }
+                                }
+                            }
+                            if root.selected-section == 1 && root.gfx-renderer == 1 && root.gfx-profile == 3: Card {
                                 title: "Original limits";
-                                vertical-stretch: 0;
-                                VerticalLayout {
-                                    spacing: 6px;
-                                    for name[index] in root.fidelity-names: CheckBox {
-                                        text: name;
-                                        checked: root.gfx-fidelity[index];
-                                        toggled => { root.fidelity-edited(index, self.checked); }
-                                    }
+                                description: "The PS1's quirks, each on its own.";
+                                for name[index] in root.fidelity-names: ToggleRow {
+                                    label: name;
+                                    checked: root.gfx-fidelity[index];
+                                    toggled(on) => { root.fidelity-edited(index, on); }
                                 }
                             }
-                            if root.selected-section == 1 && root.gfx-renderer == 1: GroupBox {
-                                title: "Texture filtering and culling";
-                                vertical-stretch: 0;
-                                VerticalLayout {
-                                    spacing: 10px;
-                                    HorizontalLayout {
-                                        spacing: 8px;
-                                        Text { text: "World"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
-                                        ComboBox { accessible-label: "World filtering"; model: ["Nearest", "Linear"]; current-index <=> root.gfx-filter-world; selected => { root.graphics-edited("filter-world", self.current-index); } }
-                                    }
-                                    HorizontalLayout {
-                                        spacing: 8px;
-                                        Text { text: "Sprites"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
-                                        ComboBox { accessible-label: "Sprite filtering"; model: ["Nearest", "Linear"]; current-index <=> root.gfx-filter-sprites; selected => { root.graphics-edited("filter-sprites", self.current-index); } }
-                                    }
-                                    HorizontalLayout {
-                                        spacing: 8px;
-                                        Text { text: "Interface"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
-                                        ComboBox { accessible-label: "Interface filtering"; model: ["Nearest", "Linear"]; current-index <=> root.gfx-filter-interface; selected => { root.graphics-edited("filter-interface", self.current-index); } }
-                                    }
-                                    HorizontalLayout {
-                                        spacing: 8px;
-                                        Text { text: "Movies"; vertical-alignment: center; min-width: 90px; horizontal-stretch: 0; }
-                                        ComboBox { accessible-label: "Movies"; model: ["Enhanced", "Original"]; current-index <=> root.gfx-filter-movies; selected => { root.graphics-edited("filter-movies", self.current-index); } }
-                                    }
-                                    CheckBox { text: "Cull back faces (off: as the game draws)"; checked <=> root.gfx-cull-back-faces; toggled => { root.graphics-edited("cull", self.checked ? 1 : 0); } }
-                                    CheckBox { text: "Cull at the original screen's edges (off: wider and zoomed-out views show the scenery the game culled)"; checked <=> root.gfx-cull-viewport; toggled => { root.graphics-edited("cull-viewport", self.checked ? 1 : 0); } }
+                            if root.selected-section == 1 && root.gfx-renderer == 1: Card {
+                                title: "Filtering and culling";
+                                Row {
+                                    label: "World";
+                                    Segmented { accessible-label: "World filtering"; options: ["Nearest", "Linear"]; current <=> root.gfx-filter-world; selected(index) => { root.graphics-edited("filter-world", index); } }
+                                }
+                                Row {
+                                    label: "Sprites";
+                                    Segmented { accessible-label: "Sprite filtering"; options: ["Nearest", "Linear"]; current <=> root.gfx-filter-sprites; selected(index) => { root.graphics-edited("filter-sprites", index); } }
+                                }
+                                Row {
+                                    label: "Interface";
+                                    Segmented { accessible-label: "Interface filtering"; options: ["Nearest", "Linear"]; current <=> root.gfx-filter-interface; selected(index) => { root.graphics-edited("filter-interface", index); } }
+                                }
+                                Row {
+                                    label: "Movies";
+                                    help: root.gfx-filter-movies == 0 ? "Rebuilt sharper from the decoded video." : "The decoder's own picture.";
+                                    Segmented { accessible-label: "Movies"; options: ["Enhanced", "Original"]; current <=> root.gfx-filter-movies; selected(index) => { root.graphics-edited("filter-movies", index); } }
+                                }
+                                Divider { }
+                                ToggleRow {
+                                    label: "Cull back faces";
+                                    help: "Off draws every face, as the game does.";
+                                    checked <=> root.gfx-cull-back-faces;
+                                    toggled(on) => { root.graphics-edited("cull", on ? 1 : 0); }
+                                }
+                                Divider { }
+                                ToggleRow {
+                                    label: "Cull at the screen's edges";
+                                    help: "Off lets wider and zoomed-out views show the scenery the game culls.";
+                                    checked <=> root.gfx-cull-viewport;
+                                    toggled(on) => { root.graphics-edited("cull-viewport", on ? 1 : 0); }
                                 }
                             }
-                            if root.selected-section == 1: GroupBox {
+                            if root.selected-section == 1: Card {
                                 title: "Headset screen";
-                                vertical-stretch: 0;
-                                VerticalLayout {
-                                    spacing: 10px;
+                                description: "The virtual screen in a VR headset.";
+                                Row {
+                                    label: "Distance";
                                     HorizontalLayout {
                                         spacing: 8px;
-                                        Text { text: "Distance"; vertical-alignment: center; horizontal-stretch: 1; }
-                                        SpinBox { accessible-label: "Headset screen distance in centimetres"; min-width: 104px; max-width: 104px; horizontal-stretch: 0; minimum: 50; maximum: 2000; step-size: 10; value <=> root.gfx-xr-distance; edited(value) => { root.graphics-edited("xr-distance", value); } }
-                                        Text { text: "cm"; vertical-alignment: center; horizontal-stretch: 0; }
+                                        SpinBox { accessible-label: "Headset screen distance in centimetres"; width: 104px; minimum: 50; maximum: 2000; step-size: 10; value <=> root.gfx-xr-distance; edited(value) => { root.graphics-edited("xr-distance", value); } }
+                                        Text { text: "cm"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 24px; }
                                     }
+                                }
+                                Divider { }
+                                Row {
+                                    label: "Width";
                                     HorizontalLayout {
                                         spacing: 8px;
-                                        Text { text: "Width"; vertical-alignment: center; horizontal-stretch: 1; }
-                                        SpinBox { accessible-label: "Headset screen width in centimetres"; min-width: 104px; max-width: 104px; horizontal-stretch: 0; minimum: 50; maximum: 2000; step-size: 10; value <=> root.gfx-xr-width; edited(value) => { root.graphics-edited("xr-width", value); } }
-                                        Text { text: "cm"; vertical-alignment: center; horizontal-stretch: 0; }
+                                        SpinBox { accessible-label: "Headset screen width in centimetres"; width: 104px; minimum: 50; maximum: 2000; step-size: 10; value <=> root.gfx-xr-width; edited(value) => { root.graphics-edited("xr-width", value); } }
+                                        Text { text: "cm"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 24px; }
                                     }
-                                    if root.gfx-renderer == 1: CheckBox { text: "Depth of field in the headset"; checked <=> root.gfx-xr-dof; toggled => { root.graphics-edited("xr-dof", self.checked ? 1 : 0); } }
+                                }
+                                if root.gfx-renderer == 1: Divider { }
+                                if root.gfx-renderer == 1: ToggleRow {
+                                    label: "Depth of field";
+                                    help: "Off in a headset unless you want it.";
+                                    checked <=> root.gfx-xr-dof;
+                                    toggled(on) => { root.graphics-edited("xr-dof", on ? 1 : 0); }
                                 }
                             }
-                            if root.selected-section == 2: GroupBox {
-                                title: "Controls";
-                                vertical-stretch: 0;
-                                VerticalLayout {
-                                    spacing: 10px;
-                                    CheckBox { text: "Invert LT/RT chords"; checked <=> root.invert-trigger-chords; toggled => { root.invert-trigger-chords-edited(self.checked); } }
-                                    Text { text: root.invert-trigger-chords ? "LT: hold to rewind · RT: toggle fast-forward\nBack+LT/RT: game L2/R2" : "Back+LT: hold to rewind · Back+RT: toggle fast-forward\nLT/RT: game L2/R2"; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
-                                    CheckBox { text: "Turn the camera with the mouse"; checked <=> root.mouse-camera; toggled => { root.mouse-camera-edited(self.checked); } }
-                                    Text { text: root.mouse-camera ? "The game holds the mouse while it has the input; Escape releases it." : "The mouse stays free; Left/Right turn the camera."; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
-                                    ComboBox { accessible-label: "App operation"; model: root.app-actions; current-index <=> root.selected-action; selected => { root.action-selected(self.current-index); } }
-                                    Text { text: "Keyboard binding"; }
-                                    LineEdit {
-                                        accessible-label: "Keyboard binding";
-                                        placeholder-text: "F5 or ControlLeft+KeyS";
-                                        text <=> root.keyboard-binding;
-                                        changed has-focus => { root.keyboard-editor-focused = self.has-focus; }
-                                    }
-                                    Text { text: "Gamepad binding"; }
-                                    LineEdit {
-                                        accessible-label: "Gamepad binding";
-                                        placeholder-text: "Back+South";
-                                        text <=> root.gamepad-binding;
-                                        changed has-focus => { root.gamepad-editor-focused = self.has-focus; }
-                                    }
-                                    Button { text: "Save binding"; clicked => { root.binding-edited(root.selected-action, root.keyboard-binding, root.gamepad-binding); } }
+
+                            // Controls
+                            if root.selected-section == 2: Card {
+                                title: "Mouse and triggers";
+                                ToggleRow {
+                                    label: "Turn the camera with the mouse";
+                                    help: root.mouse-camera ? "The game holds the mouse while it has the input; Escape releases it." : "The mouse stays free; the arrow keys turn the camera.";
+                                    checked <=> root.mouse-camera;
+                                    toggled(on) => { root.mouse-camera-edited(on); }
+                                }
+                                Divider { }
+                                ToggleRow {
+                                    label: "Invert LT/RT chords";
+                                    help: root.invert-trigger-chords ? "LT holds rewind, RT toggles fast-forward; Back+LT/RT are the game's L2/R2." : "Back+LT holds rewind, Back+RT toggles fast-forward; LT/RT are the game's L2/R2.";
+                                    checked <=> root.invert-trigger-chords;
+                                    toggled(on) => { root.invert-trigger-chords-edited(on); }
                                 }
                             }
-                            if root.selected-section == 3: GroupBox {
+                            if root.selected-section == 2: Card {
+                                title: "Keyboard";
+                                description: "The game's keys (the battle's attack inputs take W A S D).";
+                                ControlRow { action: "Move"; inputs: ["W", "A", "S", "D"]; }
+                                ControlRow { action: "Confirm, talk"; inputs: ["E", "Left click"]; }
+                                ControlRow { action: "Cancel; run while held"; inputs: ["F", "Shift", "Right click"]; }
+                                ControlRow { action: "Jump"; inputs: ["Space"]; }
+                                ControlRow { action: "Menu"; inputs: ["Tab"]; }
+                                ControlRow { action: "Turn the camera"; inputs: root.mouse-camera ? ["Left", "Right", "Mouse"] : ["Left", "Right"]; }
+                                ControlRow { action: "Start, Select"; inputs: ["Enter", "Backspace"]; }
+                                ControlRow { action: "L2, R2"; inputs: ["1", "2"]; }
+                                if root.first-person: ControlRow { action: "First-person view (in a field)"; inputs: ["Backspace"]; }
+                                if root.first-person: ControlRow { action: "Look around in it"; inputs: root.mouse-camera ? ["Arrows", "Mouse"] : ["Arrows"]; }
+                                ControlRow { action: "Settings"; inputs: ["Esc"]; }
+                            }
+                            if root.selected-section == 2: Card {
+                                title: "Gamepad";
+                                ControlRow { action: "Move"; inputs: ["D-pad", "Left stick"]; }
+                                ControlRow { action: "Confirm, cancel"; inputs: ["South", "East"]; }
+                                ControlRow { action: "Jump, menu"; inputs: ["North", "West"]; }
+                                ControlRow { action: "Turn the camera"; inputs: ["L1", "R1", "Right stick"]; }
+                                ControlRow { action: "Start, Select"; inputs: ["Start", "Back"]; }
+                                if root.first-person: ControlRow { action: "First-person view (in a field)"; inputs: ["Back", "Stick click"]; }
+                                if root.first-person: ControlRow { action: "Look around in it"; inputs: ["Right stick"]; }
+                                ControlRow { action: "Settings"; inputs: ["Back+Start"]; }
+                            }
+                            // Shortcuts
+                            if root.selected-section == 3: Card {
+                                title: "App shortcuts";
+                                description: "Choose an operation to change its keys (F5, ControlLeft+KeyS) or buttons (Back+South).";
+                                actions := FocusScope {
+                                    accessible-role: list;
+                                    accessible-label: "App shortcuts";
+                                    key-pressed(event) => {
+                                        if event.text == Key.UpArrow {
+                                            root.select-action(root.selected-action - 1);
+                                            return accept;
+                                        }
+                                        if event.text == Key.DownArrow {
+                                            root.select-action(root.selected-action + 1);
+                                            return accept;
+                                        }
+                                        reject
+                                    }
+                                    VerticalLayout {
+                                        spacing: 1px;
+                                        for binding[index] in root.bindings: Rectangle {
+                                            accessible-role: list-item;
+                                            accessible-label: binding.name;
+                                            accessible-item-selectable: true;
+                                            accessible-item-selected: index == root.selected-action;
+                                            accessible-item-index: index;
+                                            accessible-action-default => { root.select-action(index); }
+                                            border-radius: 7px;
+                                            // The open shortcut and its editor are one piece.
+                                            background: index == root.selected-action ? Theme.selected : row-touch.pressed ? Theme.pressed : row-touch.has-hover ? Theme.hover : transparent;
+                                            border-width: index == root.selected-action ? 1px : 0px;
+                                            border-color: Theme.stroke;
+                                            animate background { duration: 140ms; easing: ease-out; }
+                                            // Beneath the editor's fields and buttons, which take their own presses.
+                                            row-touch := TouchArea {
+                                                mouse-cursor: index == root.selected-action ? MouseCursor.default : MouseCursor.pointer;
+                                                clicked => { root.select-action(index); }
+                                            }
+                                            VerticalLayout {
+                                                HorizontalLayout {
+                                                    min-height: 32px;
+                                                    padding-left: 10px;
+                                                    padding-right: 8px;
+                                                    spacing: 6px;
+                                                    Text {
+                                                        text: binding.name;
+                                                        font-size: 12.5px;
+                                                        font-weight: index == root.selected-action ? 600 : 400;
+                                                        color: index == root.selected-action || row-touch.has-hover ? Theme.text : Theme.text-secondary;
+                                                        vertical-alignment: center;
+                                                        horizontal-stretch: 1;
+                                                        overflow: elide;
+                                                        animate color { duration: 140ms; }
+                                                    }
+                                                    VerticalLayout { alignment: center; Keycap { text: binding.keyboard; } }
+                                                    VerticalLayout { alignment: center; Keycap { text: binding.gamepad; } }
+                                                }
+                                                if index == root.selected-action: VerticalLayout {
+                                                    padding: 10px;
+                                                    padding-top: 2px;
+                                                    spacing: 8px;
+                                                    Divider { }
+                                                    HorizontalLayout {
+                                                        spacing: 8px;
+                                                        Text { text: "Keys"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
+                                                        LineEdit {
+                                                            accessible-label: "Keyboard binding";
+                                                            placeholder-text: "F5 or ControlLeft+KeyS";
+                                                            text <=> root.keyboard-binding;
+                                                            changed has-focus => { root.keyboard-editor-focused = self.has-focus; }
+                                                            accepted => { root.binding-edited(root.selected-action, root.keyboard-binding, root.gamepad-binding); }
+                                                        }
+                                                    }
+                                                    HorizontalLayout {
+                                                        spacing: 8px;
+                                                        Text { text: "Buttons"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 54px; horizontal-stretch: 0; }
+                                                        LineEdit {
+                                                            accessible-label: "Gamepad binding";
+                                                            placeholder-text: "Back+South";
+                                                            text <=> root.gamepad-binding;
+                                                            changed has-focus => { root.gamepad-editor-focused = self.has-focus; }
+                                                            accepted => { root.binding-edited(root.selected-action, root.keyboard-binding, root.gamepad-binding); }
+                                                        }
+                                                    }
+                                                    HorizontalLayout {
+                                                        spacing: 8px;
+                                                        alignment: end;
+                                                        Button { text: "Clear"; clicked => { root.binding-edited(root.selected-action, "", ""); } }
+                                                        Button { text: "Save shortcut"; primary: true; clicked => { root.binding-edited(root.selected-action, root.keyboard-binding, root.gamepad-binding); } }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Time
+                            if root.selected-section == 4: Card {
                                 title: "Rewind";
-                                vertical-stretch: 0;
-                                VerticalLayout {
-                                    spacing: 8px;
-                                    CheckBox { text: "Enable rewind history"; checked <=> root.rewind-enabled; toggled => { root.rewind-enabled-edited(self.checked); } }
+                                description: "Snapshots taken as you play, over elapsed play time (fast-forward included).";
+                                ToggleRow {
+                                    label: "Rewind history";
+                                    help: "Keeps recent states to step back through.";
+                                    checked <=> root.rewind-enabled;
+                                    toggled(on) => { root.rewind-enabled-edited(on); }
+                                }
+                                Divider { }
+                                Row {
+                                    label: "Interval";
+                                    help: "Between snapshots.";
                                     HorizontalLayout {
                                         spacing: 8px;
-                                        Text { text: "Interval"; vertical-alignment: center; horizontal-stretch: 1; }
                                         SpinBox {
                                             accessible-label: "Rewind interval in seconds";
-                                            min-width: 104px;
-                                            max-width: 104px;
-                                            horizontal-stretch: 0;
+                                            width: 104px;
                                             minimum: 1;
                                             maximum: min(root.rewind-interval-max, root.rewind-history-seconds);
                                             value <=> root.rewind-interval-seconds;
                                             edited(value) => { root.rewind-interval-edited(value); }
                                             changed has-focus => { root.rewind-interval-focused = self.has-focus; }
                                         }
-                                        Text { text: "seconds"; vertical-alignment: center; horizontal-stretch: 0; }
+                                        Text { text: "s"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 12px; }
                                     }
+                                }
+                                Divider { }
+                                Row {
+                                    label: "History length";
+                                    help: "How far back you can go.";
                                     HorizontalLayout {
                                         spacing: 8px;
-                                        Text { text: "History length"; vertical-alignment: center; horizontal-stretch: 1; }
                                         SpinBox {
                                             accessible-label: "Rewind history length in seconds";
-                                            min-width: 104px;
-                                            max-width: 104px;
-                                            horizontal-stretch: 0;
+                                            width: 104px;
                                             minimum: root.rewind-interval-seconds;
                                             maximum: root.rewind-history-max;
                                             value <=> root.rewind-history-seconds;
                                             edited(value) => { root.rewind-history-edited(value); }
                                             changed has-focus => { root.rewind-history-focused = self.has-focus; }
                                         }
-                                        Text { text: "seconds"; vertical-alignment: center; horizontal-stretch: 0; }
+                                        Text { text: "s"; font-size: 12px; color: Theme.text-secondary; vertical-alignment: center; min-width: 12px; }
                                     }
-                                    Text { text: "Snapshots use elapsed play time, including during fast-forward."; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
-                                    Text { text: root.time-status; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
-                                    Button { text: "Hold to rewind"; changed pressed => { root.rewind-held(self.pressed); } }
+                                }
+                                Divider { }
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    Text { text: root.time-status; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; vertical-alignment: center; horizontal-stretch: 1; }
+                                    VerticalLayout {
+                                        alignment: center;
+                                        horizontal-stretch: 0;
+                                        Button { text: "Hold to rewind"; changed pressed => { root.rewind-held(self.pressed); } }
+                                    }
                                 }
                             }
-                            if root.selected-section == 3: GroupBox {
+                            if root.selected-section == 4: Card {
                                 title: "Fast-forward";
-                                vertical-stretch: 0;
-                                VerticalLayout {
-                                    spacing: 8px;
-                                    HorizontalLayout {
-                                        Text { text: "Speed"; vertical-alignment: center; horizontal-stretch: 1; }
-                                        Text { text: root.fast-forward-rates[root.fast-forward-rate]; vertical-alignment: center; horizontal-stretch: 0; }
-                                    }
+                                description: root.fast-forward ? "On now; its shortcut toggles it. Music keeps its tempo and pitch." : "Its shortcut toggles it. Music keeps its tempo and pitch.";
+                                SliderRow {
+                                    label: "Speed";
+                                    value-text: root.fast-forward-rates[root.fast-forward-rate];
                                     Slider {
                                         accessible-label: "Fast-forward rate";
                                         minimum: 0;
                                         maximum: root.fast-forward-rates.length - 1;
                                         step: 1;
                                         value <=> root.fast-forward-position;
-                                        changed(value) => { root.fast-forward-position = round(value); if round(value) != root.fast-forward-rate { root.fast-forward-rate-edited(round(value)); } }
-                                    }
-                                    Rectangle {
-                                        height: 7px;
-                                        for index in root.fast-forward-rates.length: Rectangle {
-                                            x: 10px + index * (parent.width - 20px) / (root.fast-forward-rates.length - 1) - 0.5px;
-                                            width: 1px;
-                                            height: index == root.fast-forward-rate ? 7px : 4px;
-                                            background: Palette.foreground.with-alpha(index == root.fast-forward-rate ? 0.9 : 0.4);
+                                        changed(value) => {
+                                            root.fast-forward-position = round(value);
+                                            if round(value) != root.fast-forward-rate {
+                                                root.fast-forward-rate-edited(round(value));
+                                            }
                                         }
                                     }
-                                    Rectangle {
-                                        height: self.width < 380px ? 36px : 18px;
-                                        for label[index] in root.fast-forward-rates: Text {
-                                            width: label == "Uncapped" ? 58px : 30px;
-                                            height: 18px;
-                                            y: parent.width < 380px ? (index - 2 * floor(index / 2)) * 18px : 0px;
-                                            x: clamp(10px + index * (parent.width - 20px) / (root.fast-forward-rates.length - 1) - self.width / 2, 0px, parent.width - self.width);
-                                            text: label;
-                                            horizontal-alignment: center;
-                                            font-size: 11px;
-                                        }
+                                }
+                                Rectangle {
+                                    height: 7px;
+                                    for index in root.fast-forward-rates.length: Rectangle {
+                                        x: 10px + index * (parent.width - 20px) / (root.fast-forward-rates.length - 1) - 0.5px;
+                                        width: 1px;
+                                        height: index == root.fast-forward-rate ? 7px : 4px;
+                                        background: index == root.fast-forward-rate ? Theme.accent : Theme.text-tertiary;
                                     }
-                                    Text { text: root.fast-forward ? "Fast-forward is on. Toggle it with its binding." : "Toggle fast-forward with its binding."; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
-                                    Text { text: "Music stays at normal tempo and pitch."; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+                                }
+                                Rectangle {
+                                    height: self.width < 380px ? 34px : 16px;
+                                    for label[index] in root.fast-forward-rates: Text {
+                                        width: label == "Uncapped" ? 58px : 30px;
+                                        height: 16px;
+                                        y: parent.width < 380px ? (index - 2 * floor(index / 2)) * 18px : 0px;
+                                        x: clamp(10px + index * (parent.width - 20px) / (root.fast-forward-rates.length - 1) - self.width / 2, 0px, parent.width - self.width);
+                                        text: label;
+                                        horizontal-alignment: center;
+                                        font-size: 11px;
+                                        color: index == root.fast-forward-rate ? Theme.text : Theme.text-tertiary;
+                                    }
                                 }
                             }
-                            if root.selected-section == 3: GroupBox {
+                            if root.selected-section == 4: Card {
                                 title: "Pause";
-                                vertical-stretch: 0;
-                                VerticalLayout {
-                                    spacing: 8px;
-                                    CheckBox { text: "Pause when window loses focus"; checked <=> root.pause-on-focus-loss; toggled => { root.pause-on-focus-loss-edited(self.checked); } }
-                                    Text { text: "Uses the game’s pause screen when pausing is allowed. Resume with Start after refocusing."; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
+                                ToggleRow {
+                                    label: "Pause when the window loses focus";
+                                    help: "Uses the game's own pause screen where it allows one; Start resumes after you return.";
+                                    checked <=> root.pause-on-focus-loss;
+                                    toggled(on) => { root.pause-on-focus-loss-edited(on); }
                                 }
                             }
-                            if root.selected-section == 4: GroupBox {
-                                title: "Save states";
-                                vertical-stretch: 0;
-                                VerticalLayout {
-                                    spacing: 10px;
-                                    Text { text: "Save states capture game progress. App settings stay as currently set."; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
-                                    HorizontalLayout {
-                                        spacing: 8px;
-                                        Button { text: "Save state"; clicked => { root.app-action-requested(0); } }
-                                        Button { text: "Load state"; clicked => { root.app-action-requested(1); } }
-                                    }
-                                    ComboBox { accessible-label: "Backup operation"; model: root.backup-actions; current-index <=> root.selected-backup; }
-                                    Button { text: "Run backup operation"; clicked => { root.backup-action-requested(root.selected-backup); } }
-                                    Text { text: root.storage-status; wrap: word-wrap; color: Palette.foreground.with-alpha(0.7); }
-                                }
-                            }
-                            if root.selected-section == 4 && root.can-import-disc: GroupBox {
+
+                            // Saves
+                            // The disc first: what a first run needs.
+                            if root.selected-section == 5 && root.can-import-disc: Card {
                                 title: "Game disc";
-                                vertical-stretch: 0;
-                                VerticalLayout {
-                                    spacing: 8px;
-                                    Text { text: root.disc-status; wrap: word-wrap; }
-                                    Button { text: "Import disc…"; clicked => { root.import-disc-requested(); } }
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    Text { text: root.disc-status; font-size: 12.5px; color: Theme.text-secondary; wrap: word-wrap; vertical-alignment: center; horizontal-stretch: 1; }
+                                    VerticalLayout {
+                                        alignment: center;
+                                        horizontal-stretch: 0;
+                                        Button { text: "Import disc…"; clicked => { root.import-disc-requested(); } }
+                                    }
                                 }
                             }
-                            if root.selected-section == 4: AboutSlint { max-height: 120px; }
-                            Rectangle { accessible-role: none; vertical-stretch: 1; }
+
+                            if root.selected-section == 5: Card {
+                                title: "Save states";
+                                description: "A save state keeps the game where it is; the app's settings stay as they are.";
+                                HorizontalLayout {
+                                    spacing: 8px;
+                                    Button { text: "Save state"; primary: true; clicked => { root.app-action-requested(0); } }
+                                    Button { text: "Load state"; clicked => { root.app-action-requested(1); } }
+                                }
+                            }
+                            if root.selected-section == 5: Card {
+                                title: "Backups";
+                                description: "Files to keep, or to carry to another device.";
+                                VerticalLayout {
+                                    spacing: 8px;
+                                    for row in ceil(root.backup-actions.length / 2): HorizontalLayout {
+                                        spacing: 8px;
+                                        Button { text: root.backup-actions[row * 2]; horizontal-stretch: 1; preferred-width: 0px; clicked => { root.backup-action-requested(row * 2); } }
+                                        if row * 2 + 1 < root.backup-actions.length: Button { text: root.backup-actions[row * 2 + 1]; horizontal-stretch: 1; preferred-width: 0px; clicked => { root.backup-action-requested(row * 2 + 1); } }
+                                        if row * 2 + 1 >= root.backup-actions.length: Rectangle { horizontal-stretch: 1; preferred-width: 0px; }
+                                    }
+                                }
+                                if root.storage-status != "": Text { text: root.storage-status; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
+                            }
+                            // About
+                            if root.selected-section == 6: Card {
+                                title: "Xenogears Ex Machina";
+                                description: "Plays Xenogears from your own discs through its recovered original program. Your discs, saves and settings stay on this device.";
+                            }
+                            if root.selected-section == 6: Card {
+                                title: "Built with Slint";
+                                description: "Its interface toolkit, under the Slint Royalty-free License 2.0.";
+                                AboutSlint { max-height: 120px; }
+                            }
                         }
                     }
                 }
             }
-            Text { text: root.status; color: Palette.foreground.with-alpha(0.7); wrap: word-wrap; }
+            Divider { }
+            // The status line.
+            HorizontalLayout {
+                padding-left: 18px;
+                padding-right: 18px;
+                padding-top: 9px;
+                padding-bottom: 10px;
+                spacing: 8px;
+                min-height: 38px;
+                if root.status != "": VerticalLayout {
+                    alignment: center;
+                    Icon {
+                        width: 15px;
+                        height: 15px;
+                        data: root.status-kind == 1 ? Icons.check : root.status-kind == 2 ? Icons.alert : Icons.dot;
+                        color: root.status-kind == 1 ? Theme.good : root.status-kind == 2 ? Theme.bad : Theme.text-secondary;
+                        stroke-width: root.status-kind == 0 ? 0px : 1.9px;
+                        fill: root.status-kind == 0 ? Theme.text-secondary : transparent;
+                    }
+                }
+                Text {
+                    text: root.status;
+                    font-size: 12px;
+                    color: root.status-kind == 2 ? Theme.bad : Theme.text-secondary;
+                    wrap: word-wrap;
+                    vertical-alignment: center;
+                    horizontal-stretch: 1;
+                }
+                if root.close-hint != "": Text {
+                    text: root.close-hint;
+                    font-size: 11px;
+                    color: Theme.text-tertiary;
+                    vertical-alignment: center;
+                    horizontal-stretch: 0;
+                }
+            }
+        }
+        if root.quit-confirming: QuitDialog {
+            width: parent.width;
+            height: parent.height;
+            cancelled => { root.quit-confirming = false; }
+            confirmed => {
+                root.quit-confirming = false;
+                root.quit-requested();
+            }
         }
     }
 }

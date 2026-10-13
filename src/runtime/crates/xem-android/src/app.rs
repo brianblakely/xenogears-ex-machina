@@ -430,7 +430,9 @@ impl Host {
             #[cfg(has_game_module)]
             if headset && self.live.borrow().game.is_some() {
                 headset = false;
-                self.play_in_headset();
+                if self.play_in_headset() {
+                    return Ok(());
+                }
             }
             #[cfg(not(has_game_module))]
             let _ = &mut headset;
@@ -461,7 +463,7 @@ impl Host {
                     _ => unsafe { self.view.handle(window, &event) },
                 }
             }
-            if self.live.borrow().terminating {
+            if self.live.borrow().terminating || self.view.quit_requested() {
                 return Ok(());
             }
             if self.import_requested.take() {
@@ -561,10 +563,11 @@ impl Host {
     }
 
     /// Hands the booted game to an OpenXR session (xem_host::xr_play) until
-    /// it ends, then takes it back to the flat window.
+    /// it ends, then takes it back to the flat window; returns whether the
+    /// player chose Quit there (the app ends).
     #[cfg(has_game_module)]
-    fn play_in_headset(&mut self) {
-        let Some(game) = self.live.borrow_mut().game.take() else { return };
+    fn play_in_headset(&mut self) -> bool {
+        let Some(game) = self.live.borrow_mut().game.take() else { return false };
         // SAFETY: SDL's JNI environment and activity on its thread; the
         // JavaVM pointer and the activity reference outlive the session.
         let platform = unsafe {
@@ -576,11 +579,15 @@ impl Host {
         log("entering the headset");
         let settings = self.view.settings().clone();
         match xem_host::xr_play::run(&platform, &Default::default(), settings, game) {
-            Ok(game) => {
+            Ok(ended) => {
                 log("headset session ended");
-                self.live.borrow_mut().game = Some(game);
+                self.live.borrow_mut().game = Some(ended.game);
+                ended.quit
             }
-            Err(error) => log(&format!("headset: {error}")),
+            Err(error) => {
+                log(&format!("headset: {error}"));
+                false
+            }
         }
     }
 
@@ -622,7 +629,7 @@ impl Host {
             if let Err(trap) = game.update(buttons, &settings, || window.focused()) {
                 log(&format!("game stopped: {trap}"));
                 game.pause();
-                self.view.ui().set_operation_status(&format!("Game stopped: {trap}. Load a state to recover."));
+                self.view.ui().set_operation_error(&format!("Game stopped: {trap}. Load a state to recover."));
                 self.view.set_panel_visible(true);
             } else {
                 self.view.set_game_frame(&self.gpu, game);

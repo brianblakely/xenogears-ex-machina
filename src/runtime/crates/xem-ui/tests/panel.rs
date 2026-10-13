@@ -2,7 +2,7 @@
 //! scene. Run on lavapipe: `VK_ICD_FILENAMES=$XEM_LAVAPIPE_ICD`.
 
 use i_slint_backend_testing::{AccessibleRole, ElementHandle};
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use xem_render::{Gpu, SceneRenderer, ViewTarget, Viewport, demo_camera, read_rgba8, wgpu};
 use xem_settings::{MemoryStore, SettingsService};
@@ -18,6 +18,17 @@ fn click(ui: &SettingsUi, position: LogicalPosition) {
         position,
         button: PointerEventButton::Left,
     });
+}
+
+/// A click at the middle of `element`.
+fn press(ui: &SettingsUi, element: &ElementHandle) {
+    let (at, size) = (element.absolute_position(), element.size());
+    click(ui, LogicalPosition::new(at.x + size.width / 2.0, at.y + size.height / 2.0));
+}
+
+fn key(ui: &SettingsUi, key: xem_ui::Key) {
+    ui.dispatch(WindowEvent::KeyPressed { text: key.into() });
+    ui.dispatch(WindowEvent::KeyReleased { text: key.into() });
 }
 
 fn element(ui: &SettingsUi, label: &str, role: AccessibleRole) -> ElementHandle {
@@ -116,8 +127,7 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
         "the panel has content ({} colours)",
         distinct.len()
     );
-    section(&mut ui, "Saves", 4);
-    scroll(&mut ui, -2000.0);
+    section(&mut ui, "About", 6);
     assert!(
         ElementHandle::find_by_accessible_label(ui.component(), "#MadeWithSlint")
             .next()
@@ -130,11 +140,10 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
             .is_some(),
         "AboutSlint element present"
     );
-    scroll(&mut ui, 2000.0);
 
     // (c) Pointer input on the panel goes through the settings service.
     section(&mut ui, "Graphics", 1);
-    let checkbox = element(&ui, "Show FPS", AccessibleRole::Checkbox);
+    let checkbox = element(&ui, "Show FPS", AccessibleRole::Switch);
     let at = checkbox.absolute_position();
     let size = checkbox.size();
     click(
@@ -157,6 +166,17 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
         .apply(xem_settings::SettingChange::ShowFps(false))
         .unwrap();
     assert_eq!(checkbox.accessible_checked(), Some(false));
+    // A toggle's whole row toggles it, its label too.
+    let label = ElementHandle::find_by_accessible_label(ui.component(), "A frame counter in the corner.")
+        .next()
+        .expect("the Show FPS help");
+    let at = label.absolute_position();
+    click(&ui, LogicalPosition::new(at.x + 4.0, at.y + label.size().height / 2.0));
+    assert!(settings.borrow().settings().presentation.show_fps, "clicking the row's help toggles it");
+    settings
+        .borrow_mut()
+        .apply(xem_settings::SettingChange::ShowFps(false))
+        .unwrap();
     section(&mut ui, "Audio", 0);
     let slider = element(&ui, "Master volume", AccessibleRole::Slider);
     let at = slider.absolute_position();
@@ -182,7 +202,7 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
 
     // Pointer edits select discrete rates, with the thumb staying exactly on
     // the selected notch even while the pointer is between notches.
-    section(&mut ui, "Time", 3);
+    section(&mut ui, "Time", 4);
     ui.component()
         .set_time_status("29 of 30 seconds available · 184.2 MiB used".into());
     ui.update().unwrap();
@@ -264,7 +284,7 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
         xem_settings::FastForwardRate::Uncapped
     );
     section(&mut ui, "Controls", 2);
-    let inversion = element(&ui, "Invert LT/RT chords", AccessibleRole::Checkbox);
+    let inversion = element(&ui, "Invert LT/RT chords", AccessibleRole::Switch);
     let at = inversion.absolute_position();
     let size = inversion.size();
     click(
@@ -279,9 +299,9 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
         let requests = requests.clone();
         move |request| requests.borrow_mut().push(request)
     });
-    section(&mut ui, "Time", 3);
+    section(&mut ui, "Time", 4);
     scroll(&mut ui,-2000.0);
-    let focus_pause = element(&ui,"Pause when window loses focus",AccessibleRole::Checkbox);
+    let focus_pause = element(&ui,"Pause when the window loses focus",AccessibleRole::Switch);
     assert_eq!(focus_pause.accessible_checked(),Some(true));
     let at = focus_pause.absolute_position();
     let size = focus_pause.size();
@@ -289,7 +309,7 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
     assert!(!settings.borrow().settings().pause_on_focus_loss);
     assert_eq!(focus_pause.accessible_checked(),Some(false));
     section(&mut ui, "Controls", 2);
-    section(&mut ui, "Time", 3);
+    section(&mut ui, "Time", 4);
     requests.borrow_mut().clear();
     let hold = element(&ui, "Hold to rewind", AccessibleRole::Button);
     let at = hold.absolute_position();
@@ -319,7 +339,7 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
         2,
         "a later widget update cannot repeat the release"
     );
-    section(&mut ui, "Controls", 2);
+    section(&mut ui, "Shortcuts", 3);
     let editor = element(&ui, "Keyboard binding", AccessibleRole::TextInput);
     let at = editor.absolute_position();
     let size = editor.size();
@@ -332,38 +352,14 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
         "the host can distinguish binding entry from app shortcuts"
     );
 
-    // A narrow window uses the same form behind a section picker.
-    section(&mut ui, "Time", 3);
+    // A narrow window shows the sections as a strip of tabs above the same form.
+    section(&mut ui, "Time", 4);
     ui.resize((360, 440), 1.0);
     ui.update().unwrap();
-    assert!(
-        ElementHandle::find_by_accessible_label(ui.component(), "Time")
-            .all(|e| e.accessible_role() != Some(AccessibleRole::Tab))
-    );
-    let picker = element(&ui, "Settings section", AccessibleRole::Combobox);
-    let at = picker.absolute_position();
-    let size = picker.size();
-    click(
-        &ui,
-        LogicalPosition::new(at.x + size.width / 2.0, at.y + size.height / 2.0),
-    );
-    for _ in 0..3 {
-        ui.dispatch(WindowEvent::KeyPressed {
-            text: xem_ui::Key::UpArrow.into(),
-        });
-        ui.dispatch(WindowEvent::KeyReleased {
-            text: xem_ui::Key::UpArrow.into(),
-        });
-    }
-    ui.dispatch(WindowEvent::KeyPressed {
-        text: xem_ui::Key::Return.into(),
-    });
-    ui.dispatch(WindowEvent::KeyReleased {
-        text: xem_ui::Key::Return.into(),
-    });
-    ui.update().unwrap();
-    assert_eq!(ui.component().get_selected_section(), 0);
-    ui.component().set_selected_section(3);
+    section(&mut ui, "Audio", 0);
+    let strip = element(&ui, "Audio", AccessibleRole::Tab);
+    assert!(strip.size().height <= 56.0, "the strip keeps its height: {:?}", strip.size());
+    ui.component().set_selected_section(4);
     ui.update().unwrap();
     for label in [
         "Rewind interval in seconds",
@@ -379,21 +375,22 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
             "{label} leaves room for the scrollbar"
         );
     }
-    assert!(
+    let rate_below = |ui: &SettingsUi| {
         ElementHandle::find_by_accessible_label(ui.component(), "Fast-forward rate")
-            .all(|e| e.accessible_role() != Some(AccessibleRole::Slider)),
-        "the speed slider starts below the compact viewport"
-    );
+            .filter(|e| e.accessible_role() == Some(AccessibleRole::Slider))
+            .all(|e| e.absolute_position().y >= 440.0)
+    };
+    assert!(rate_below(&ui), "the speed slider starts below the compact viewport");
     let help = ElementHandle::find_by_accessible_label(
         ui.component(),
-        "Snapshots use elapsed play time, including during fast-forward.",
+        "Snapshots taken as you play, over elapsed play time (fast-forward included).",
     )
     .next()
     .unwrap();
     let at = help.absolute_position();
     let size = help.size();
     let from = LogicalPosition::new(at.x + size.width / 2.0, at.y + size.height / 2.0);
-    let to = LogicalPosition::new(from.x, from.y - 100.0);
+    let to = LogicalPosition::new(from.x, 20.0);
     ui.dispatch(WindowEvent::PointerMoved { position: from });
     ui.dispatch(WindowEvent::PointerPressed {
         position: from,
@@ -408,34 +405,13 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
         button: PointerEventButton::Left,
     });
     ui.update().unwrap();
-    let rate = element(&ui, "Fast-forward rate", AccessibleRole::Slider);
-    assert!(
-        rate.absolute_position().y < 400.0,
-        "dragging the compact form reveals the speed slider"
-    );
+    assert!(!rate_below(&ui), "dragging the compact form reveals the speed slider");
 
     // Touch events on the Android host arrive as logical pointer events.
     ui.resize((1064, 1470), 2.625);
     ui.component().set_selected_section(0);
     ui.update().unwrap();
-    let picker = element(&ui, "Settings section", AccessibleRole::Combobox);
-    let at = picker.absolute_position();
-    let size = picker.size();
-    click(
-        &ui,
-        LogicalPosition::new(at.x + size.width / 2.0, at.y + size.height / 2.0),
-    );
-    ui.update().unwrap();
-    click(
-        &ui,
-        LogicalPosition::new(at.x + size.width / 2.0, at.y + 4.0 + 4.0 * 40.0 + 20.0),
-    );
-    ui.update().unwrap();
-    assert_eq!(
-        ui.component().get_selected_section(),
-        4,
-        "the compact section menu supports pointer selection at Android density"
-    );
+    section(&mut ui, "Saves", 5);
 }
 
 #[test]
@@ -462,7 +438,12 @@ fn graphics_choices_go_through_the_settings_service() {
     assert_eq!(settings.borrow().settings().graphics.profile, GraphicsProfile::Hd2d);
     // The effect rows are created as the section scrolls to them.
     ui.update().unwrap();
-    scroll(&mut ui, -400.0);
+    for _ in 0..8 {
+        if ElementHandle::find_by_accessible_label(ui.component(), "Bloom").any(|e| e.accessible_role() == Some(AccessibleRole::Slider)) {
+            break;
+        }
+        scroll(&mut ui, -200.0);
+    }
     element(&ui, "Bloom", AccessibleRole::Slider);
     ui.component().invoke_effect_edited(5, 20);
     assert_eq!(settings.borrow().settings().graphics.hd2d.bloom, 20);
@@ -478,4 +459,70 @@ fn graphics_choices_go_through_the_settings_service() {
     ui.component().invoke_graphics_edited("widescreen".into(), 1);
     assert!(settings.borrow().settings().graphics.widescreen);
     assert!(acks.borrow().iter().all(|change| matches!(change, SettingChange::Graphics(_))));
+}
+
+#[test]
+fn quit_asks_first_and_fullscreen_is_a_setting_where_hosts_offer_them() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 560), 1.0).unwrap();
+    ui.update().unwrap();
+    section(&mut ui, "Graphics", 1);
+    let shown = |ui: &SettingsUi, label: &str| ElementHandle::find_by_accessible_label(ui.component(), label).next().is_some();
+    assert!(!shown(&ui, "Quit") && !shown(&ui, "Fullscreen"), "a host that offers neither (the browser) shows neither");
+
+    let quits = Rc::new(Cell::new(0));
+    ui.on_quit({
+        let quits = quits.clone();
+        move || quits.set(quits.get() + 1)
+    });
+    ui.set_fullscreen_offered(true);
+    ui.update().unwrap();
+    press(&ui, &element(&ui, "Fullscreen", AccessibleRole::Switch));
+    assert!(settings.borrow().settings().presentation.fullscreen, "Fullscreen goes through the settings service");
+
+    let header_quit = element(&ui, "Quit", AccessibleRole::Button);
+    let open = |ui: &mut SettingsUi| {
+        press(ui, &header_quit);
+        ui.update().unwrap();
+        assert!(ui.component().get_quit_confirming(), "Quit asks first");
+    };
+    // The confirmation's own Quit, below the header's.
+    let confirm = |ui: &SettingsUi| {
+        ElementHandle::find_by_accessible_label(ui.component(), "Quit")
+            .find(|e| e.accessible_role() == Some(AccessibleRole::Button) && e.absolute_position().y > 100.0)
+            .expect("the confirmation's Quit")
+    };
+    open(&mut ui);
+    press(&ui, &element(&ui, "Cancel", AccessibleRole::Button));
+    assert!(!ui.component().get_quit_confirming(), "Cancel closes it");
+    open(&mut ui);
+    click(&ui, LogicalPosition::new(24.0, 540.0));
+    assert!(!ui.component().get_quit_confirming(), "so does a press beside it");
+    open(&mut ui);
+    assert!(ui.cancel_dialog(), "the host's Escape closes the open confirmation");
+    assert!(!ui.cancel_dialog(), "and then has none to close (the host closes the panel)");
+    // Keys stay in it: Tab moves between Cancel and Quit only, and Return
+    // presses the one it is on.
+    open(&mut ui);
+    key(&ui, xem_ui::Key::Tab);
+    key(&ui, xem_ui::Key::Return);
+    assert!(!ui.component().get_quit_confirming(), "Tab first reaches Cancel");
+    open(&mut ui);
+    for _ in 0..3 {
+        key(&ui, xem_ui::Key::Tab);
+    }
+    key(&ui, xem_ui::Key::Return);
+    assert!(!ui.component().get_quit_confirming(), "the third Tab is back on Cancel");
+    assert_eq!(quits.get(), 0, "nothing so far quits");
+    open(&mut ui);
+    key(&ui, xem_ui::Key::Tab);
+    key(&ui, xem_ui::Key::Tab);
+    key(&ui, xem_ui::Key::Return);
+    assert_eq!(quits.get(), 1, "Return on its Quit quits");
+    open(&mut ui);
+    press(&ui, &confirm(&ui));
+    assert_eq!(quits.get(), 2, "and so does a press on it");
+    assert!(!ui.component().get_quit_confirming());
 }

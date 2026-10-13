@@ -967,8 +967,9 @@ one after another took about 26 minutes; `desktop` 114 s.
 
 ## Saves and time controls
 
-The app Settings screen has Audio, Graphics, Controls, Time and Saves sections.
-Desktop widths use a sidebar; narrow windows use a section picker. Rewind and
+The app Settings screen has Audio, Graphics, Controls, Shortcuts, Time, Saves
+and About sections ([Desktop host and settings panel](#desktop-host-and-settings-panel)).
+Desktop widths use a sidebar; narrow windows use a strip of section tabs. Rewind and
 the notched FF rate slider live in Time, with compact interval and history fields
 and the retained queue's available seconds and memory usage. Graphics contains
 Show FPS, which draws a counter over the game on desktop, Android and browser;
@@ -1098,6 +1099,24 @@ these state paths cover the existing game, event, audio and media services.
 FIFO vsync and draws the game (`--disc DISC [--cards DIR] [--bios FILE]`; the
 test scene without a disc), placed by the presentation settings, under the
 Slint settings panel (Escape or a gamepad's Back+Start toggles it).
+The panel (`xem-ui/ui/settings.slint`) lists its sections in a sidebar at
+560 logical pixels wide and more, else in a strip of tabs above the section;
+each section is a column of cards of settings, and the status line under
+them says what the last change or operation did (a note, done, or a
+problem in red), beside how the host closes the panel. Controls lists the
+game's keys and buttons; Shortcuts lists every app operation with its
+bindings and edits the chosen one in place. The header's Quit (desktop,
+Android, a headset; not the browser) asks first: Cancel, a press beside the
+question, Escape or Android's Back keep playing, and hiding the panel drops
+the question. A confirmed Quit ends the run as closing the window does
+(Android's activity finishes; a headset ends its session, then the app).
+Graphics' Fullscreen (desktop, off by default, saved) asks SDL for the
+whole display at start and whenever it changes, never otherwise, so a
+window manager's own fullscreen is left as it is. `cargo run -p xem-ui
+--example panel` draws each section on a headless device for review
+(`build/validation/panel/`; `--desktop`, `--click`, `--hover` and
+`--locate` show the desktop's controls, the question, hover states and
+where elements lie for tests that tap the panel).
 One `xem_render::Gpu` (instance, adapter,
 device, queue) serves `SceneRenderer`, `Compositor` and `xem_ui::SettingsUi`;
 Slint runs as a custom platform under the host loop and renders into a texture
@@ -1140,7 +1159,7 @@ From `src/runtime/` in `nix develop path:./nix/runtime`:
 - tests on lavapipe: `VK_ICD_FILENAMES=$XEM_LAVAPIPE_ICD cargo test -p xem-settings -p xem-render -p xem-ui`
 - on the host NVIDIA driver: `scripts/xem-gpu-host target/debug/xem-desktop`
   (`--show-settings --exit-after-frames N --screenshot out.png` for a smoke run;
-  `--fullscreen` covers the display; `XEM_FRAME_STATS=1` prints a line a
+  `XEM_FRAME_STATS=1` prints a line a
   second of the frame loop's time per stage: settings, game frames, taking
   the trace, acquiring, rendering, presenting)
 - Android, in `#android`: `cargo ndk -t arm64-v8a -P 26 build -p xem-ui -p xem-render`

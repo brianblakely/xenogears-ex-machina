@@ -5343,6 +5343,7 @@ version = "0.1.0"
 dependencies = [
  "i-slint-backend-testing",
  "i-slint-renderer-femtovg",
+ "png",
  "pollster",
  "slint",
  "slint-build",

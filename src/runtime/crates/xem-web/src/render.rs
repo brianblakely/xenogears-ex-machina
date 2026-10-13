@@ -198,6 +198,7 @@ impl WebRenderer {
         match SettingsUi::new(shared.clone(), settings, size, self.scale) {
             Ok(panel) => {
                 panel.on_close(on_close);
+                panel.set_close_hint("Esc closes Settings");
                 self.panel = Some(panel);
             }
             Err(error) => self.panel_error = Some(error.to_string()),

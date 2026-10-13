@@ -7,7 +7,7 @@
 //! through [`SettingsService::apply`]; the panel shows the acknowledged values.
 
 use slint::platform::{Platform, Renderer, WindowAdapter};
-use slint::{ComponentHandle, PhysicalSize, PlatformError};
+use slint::{ComponentHandle, Model, PhysicalSize, PlatformError};
 use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
 use std::time::Duration;
@@ -211,6 +211,25 @@ impl SettingsUi {
         self.panel.on_import_disc_requested(f);
     }
 
+    /// Shows Quit in the header; `f` is called once the player confirms it.
+    pub fn on_quit(&self, f: impl FnMut() + 'static) {
+        self.panel.set_can_quit(true);
+        self.panel.on_quit_requested(f);
+    }
+
+    /// Escape or Back on the open panel, and the panel hidden: closes the
+    /// quit confirmation, saying whether it showed (then the panel stays).
+    pub fn cancel_dialog(&self) -> bool {
+        let shown = self.panel.get_quit_confirming();
+        self.panel.set_quit_confirming(false);
+        shown
+    }
+
+    /// Whether this host places its own window (Graphics offers Fullscreen).
+    pub fn set_fullscreen_offered(&self, offered: bool) {
+        self.panel.set_can_fullscreen(offered);
+    }
+
     /// What the Disc group says about the imported disc.
     pub fn set_disc_status(&self, text: &str) {
         self.panel.set_disc_status(text.into());
@@ -255,8 +274,27 @@ impl SettingsUi {
     pub fn set_storage_status(&self, text: &str) {
         self.panel.set_storage_status(text.into());
     }
+
+    /// The status line: what an operation did, or a note.
     pub fn set_operation_status(&self, text: &str) {
-        self.panel.set_status(text.into());
+        set_status(&self.panel, text, Status::Note);
+    }
+
+    /// The status line: a problem (an operation failed, the game stopped).
+    pub fn set_operation_error(&self, text: &str) {
+        set_status(&self.panel, text, Status::Problem);
+    }
+
+    /// How this host closes the panel, beside the status line ("Esc closes
+    /// Settings"); empty for none.
+    pub fn set_close_hint(&self, text: &str) {
+        self.panel.set_close_hint(text.into());
+    }
+
+    /// Whether this host offers first-person inspection (the Controls
+    /// section lists its keys and buttons).
+    pub fn set_first_person(&self, offered: bool) {
+        self.panel.set_first_person(offered);
     }
     pub fn text_editor_focused(&self) -> bool {
         self.panel.get_text_editor_focused()
@@ -369,6 +407,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_scale(index_of(&SCALES, &settings.presentation.scale));
     panel.set_filter(index_of(&FILTERS, &settings.presentation.filter));
     panel.set_show_fps(settings.presentation.show_fps);
+    panel.set_fullscreen(settings.presentation.fullscreen);
     let graphics = &settings.graphics;
     panel.set_gfx_renderer(index_of(&RENDERERS, &graphics.renderer));
     panel.set_gfx_profile(index_of(&PROFILES, &graphics.profile));
@@ -405,33 +444,51 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     show_binding(panel, settings);
 }
 
+/// The status line's kinds (the panel's `status-kind`).
+#[derive(Clone, Copy)]
+enum Status {
+    Note = 0,
+    Done = 1,
+    Problem = 2,
+}
+
+fn set_status(panel: &SettingsPanel, text: &str, kind: Status) {
+    panel.set_status(text.into());
+    panel.set_status_kind(kind as i32);
+}
+
+/// Every app operation with its bindings, in [`APP_ACTIONS`] order, and the
+/// selected one's in its editors.
 fn show_binding(panel: &SettingsPanel, settings: &Settings) {
-    if let Some((action, _)) = usize::try_from(panel.get_selected_action())
-        .ok()
-        .and_then(|i| APP_ACTIONS.get(i))
-    {
-        let binding = settings
-            .app_bindings
-            .get(action)
-            .cloned()
-            .unwrap_or_default();
+    let rows: Vec<BindingRow> = APP_ACTIONS
+        .iter()
+        .map(|(action, title)| {
+            let binding = settings.app_bindings.get(action).cloned().unwrap_or_default();
+            let keys: Vec<&str> = binding.keyboard.iter().map(|code| key_label(code)).collect();
+            BindingRow { name: (*title).into(), keyboard: keys.join("+").into(), gamepad: binding.gamepad.join("+").into() }
+        })
+        .collect();
+    if let Some((action, _)) = usize::try_from(panel.get_selected_action()).ok().and_then(|i| APP_ACTIONS.get(i)) {
+        let binding = settings.app_bindings.get(action).cloned().unwrap_or_default();
         panel.set_keyboard_binding(binding.keyboard.join("+").into());
         panel.set_gamepad_binding(binding.gamepad.join("+").into());
+    }
+    // Changed rows in place: the list keeps its rows (and the editor its focus).
+    let model = panel.get_bindings();
+    if model.row_count() == rows.len() {
+        for (index, row) in rows.into_iter().enumerate() {
+            if model.row_data(index).as_ref() != Some(&row) {
+                model.set_row_data(index, row);
+            }
+        }
+    } else {
+        panel.set_bindings(slint::ModelRc::new(slint::VecModel::from(rows)));
     }
 }
 
 /// Routes panel edits through the settings service and shows every
 /// acknowledged change, whoever made it.
 fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
-    panel.set_app_actions(
-        Rc::new(slint::VecModel::from(
-            APP_ACTIONS
-                .iter()
-                .map(|(_, title)| slint::SharedString::from(*title))
-                .collect::<Vec<_>>(),
-        ))
-        .into(),
-    );
     panel.set_backup_actions(
         Rc::new(slint::VecModel::from(
             backup_actions()
@@ -454,14 +511,12 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
     settings.borrow_mut().subscribe(move |ack| {
         if let Some(panel) = weak.upgrade() {
             show(&panel, &ack.settings);
-            panel.set_status(
-                match ack.change {
-                    SettingChange::BindApp { .. } => "Binding saved.",
-                    SettingChange::Replace(_) => "Settings imported and saved.",
-                    _ => "Settings saved.",
-                }
-                .into(),
-            );
+            let text = match ack.change {
+                SettingChange::BindApp { .. } => "Shortcut saved.",
+                SettingChange::Replace(_) => "Settings imported and saved.",
+                _ => "Settings saved.",
+            };
+            set_status(&panel, text, Status::Done);
         }
     });
 
@@ -477,7 +532,7 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
             if let Err(rejected) = result {
                 // The widget may show the refused value: restore the current one.
                 show(&panel, settings.borrow().settings());
-                panel.set_status(describe(&rejected).into());
+                set_status(&panel, &describe(&rejected), Status::Problem);
             }
         }
     };
@@ -582,6 +637,10 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
         let apply = apply.clone();
         move |show| apply(Some(SettingChange::ShowFps(show)))
     });
+    panel.on_fullscreen_edited({
+        let apply = apply.clone();
+        move |on| apply(Some(SettingChange::Fullscreen(on)))
+    });
     panel.on_fast_forward_rate_edited({
         let apply = apply.clone();
         move |index| apply(pick(&FAST_FORWARD_RATES, index).map(SettingChange::FastForwardRate))
@@ -603,6 +662,38 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
             }
         }
     });
+}
+
+/// A key's name on its keycap: `KeyboardEvent.code` without its prefix, a
+/// symbol for the punctuation keys (the editors keep the codes).
+fn key_label(code: &str) -> &str {
+    if let Some(key) = code.strip_prefix("Key").or_else(|| code.strip_prefix("Digit")).filter(|key| key.len() == 1) {
+        return key;
+    }
+    match code {
+        "ControlLeft" | "ControlRight" => "Ctrl",
+        "ShiftLeft" | "ShiftRight" => "Shift",
+        "AltLeft" | "AltRight" => "Alt",
+        "MetaLeft" | "MetaRight" => "Meta",
+        "ArrowUp" => "Up",
+        "ArrowDown" => "Down",
+        "ArrowLeft" => "Left",
+        "ArrowRight" => "Right",
+        "PageUp" => "Page Up",
+        "PageDown" => "Page Down",
+        "Backquote" => "`",
+        "Minus" => "-",
+        "Equal" => "=",
+        "BracketLeft" => "[",
+        "BracketRight" => "]",
+        "Backslash" => "\\",
+        "Semicolon" => ";",
+        "Quote" => "'",
+        "Comma" => ",",
+        "Period" => ".",
+        "Slash" => "/",
+        other => other,
+    }
 }
 
 fn backup_actions() -> impl Iterator<Item = (AppAction, &'static str)> {

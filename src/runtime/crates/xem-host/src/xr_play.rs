@@ -18,7 +18,7 @@
 //!
 //! Every frame prints one `key=value` line for scripts/xr-game-smoke.sh.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::Instant;
 use crate::Game;
@@ -66,10 +66,22 @@ pub fn pad_buttons(input: &InputState) -> u16 {
 #[derive(Default)]
 struct PanelPointer {
     pressed: bool,
+    /// The ray was on the panel at the last update.
+    inside: bool,
 }
 
 impl PanelPointer {
     fn update(&mut self, ui: &SettingsUi, panel: &PanelPlacement, panel_px: (u32, u32), hand: &HandInput) -> bool {
+        let on = self.on_panel(ui, panel, panel_px, hand);
+        // The ray leaving the panel leaves nothing on it hovered.
+        if self.inside && !on {
+            ui.dispatch(WindowEvent::PointerExited);
+        }
+        self.inside = on;
+        on
+    }
+
+    fn on_panel(&mut self, ui: &SettingsUi, panel: &PanelPlacement, panel_px: (u32, u32), hand: &HandInput) -> bool {
         let Some(aim) = hand.aim else { return false };
         let local_from_panel = panel.pose.matrix().inverse();
         let origin = local_from_panel.transform_point3(aim.position);
@@ -153,8 +165,15 @@ pub struct XrPlay {
     pub exit_at_frame: Option<u64>,
 }
 
-/// Plays `game` in a headset until the session ends; returns the game.
-pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<SettingsService>>, mut game: Game) -> Result<Game, String> {
+/// How a headset run ended.
+pub struct Ended {
+    pub game: Game,
+    /// The player confirmed the panel's Quit: the app ends, not only the session.
+    pub quit: bool,
+}
+
+/// Plays `game` in a headset until the session ends.
+pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<SettingsService>>, mut game: Game) -> Result<Ended, String> {
     let context = XrContext::new(platform).map_err(|e| e.to_string())?;
     let caps = context.capabilities();
     println!("xr runtime={:?} system={:?} eye_size={}x{} blend={:?}", caps.runtime, caps.system, caps.eye_size.0, caps.eye_size.1, caps.blend_mode);
@@ -167,10 +186,16 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         PANEL_SCALE,
     )
     .map_err(|e| e.to_string())?;
+    ui.set_close_hint("The left menu button closes Settings");
     let panel_visible = Rc::new(RefCell::new(options.show_settings));
     ui.on_close({
         let visible = panel_visible.clone();
         move || *visible.borrow_mut() = false
+    });
+    let quit = Rc::new(Cell::new(false));
+    ui.on_quit({
+        let quit = quit.clone();
+        move || quit.set(true)
     });
     let mut session: XrSession = context
         .create_session(&SessionConfig { panel: Some(panel_px), readback: options.capture.is_some(), ..Default::default() })
@@ -218,6 +243,9 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         if input.hands[0].menu && !menu_held {
             let visible = !*panel_visible.borrow();
             *panel_visible.borrow_mut() = visible;
+            if !visible {
+                ui.cancel_dialog();
+            }
         }
         menu_held = input.hands[0].menu;
         let visible = *panel_visible.borrow();
@@ -348,6 +376,10 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             picture.map_or("-".into(), |(w, h)| format!("{w}x{h}")),
         );
         frames += 1;
+        if quit.get() && !exit_requested {
+            session.request_exit().map_err(|e| e.to_string())?;
+            exit_requested = true;
+        }
         let at_frame = options.exit_at_frame.is_some_and(|at| game.frames_run() >= at);
         if (options.exit_after_frames.is_some_and(|n| frames >= n) || at_frame) && !exit_requested {
             if let Some(at) = options.exit_at_frame.filter(|_| at_frame) {
@@ -358,5 +390,5 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         }
     }
     println!("exit frames={frames} game_frames={} memory_hash {}", game.frames_run(), game.memory_hash());
-    Ok(game)
+    Ok(Ended { game, quit: quit.get() })
 }

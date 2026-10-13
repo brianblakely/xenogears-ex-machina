@@ -19,6 +19,7 @@ slint-build.workspace = true
 
 [dev-dependencies]
 pollster.workspace = true
+png.workspace = true
 xem-render = { path = "../xem-render" }
 
 [dev-dependencies.i-slint-backend-testing]

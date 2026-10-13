@@ -20,7 +20,7 @@ mod operations;
 pub use game::Game;
 
 use sdl3_sys::everything::*;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::Instant;
 use xem_render::ps1::{GameView, HostClass, ViewConfig};
@@ -253,6 +253,8 @@ pub struct View {
     frame_rate: FrameRateUi,
     frame_rate_started: Instant,
     panel_visible: Rc<RefCell<bool>>,
+    /// The player confirmed the panel's Quit: the host ends its run.
+    quit: Rc<Cell<bool>>,
     gamepads: Vec<*mut SDL_Gamepad>,
     /// The game's display as the device shows it (24-bit movie frames, and
     /// hosts that set a picture directly), instead of the test scene.
@@ -326,10 +328,17 @@ impl View {
         )
         .map_err(|error| error.to_string())?;
         let frame_rate = FrameRateUi::new(shared,scale).map_err(|error| error.to_string())?;
+        ui.set_close_hint(if cfg!(target_os = "android") { "Back closes Settings" } else { "Esc or Back+Start closes Settings" });
+        ui.set_first_person(true);
         let panel_visible = Rc::new(RefCell::new(show_panel));
         ui.on_close({
             let visible = panel_visible.clone();
             move || *visible.borrow_mut() = false
+        });
+        let quit = Rc::new(Cell::new(false));
+        ui.on_quit({
+            let quit = quit.clone();
+            move || quit.set(true)
         });
         let app_requests = Rc::new(RefCell::new(Vec::new()));
         ui.on_app_request({
@@ -346,6 +355,7 @@ impl View {
             frame_rate,
             frame_rate_started: Instant::now(),
             panel_visible,
+            quit,
             gamepads: Vec::new(),
             game_image: None,
             renderer: GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter)),
@@ -408,7 +418,7 @@ impl View {
         }
         let was_busy = self.operations.busy;
         if let Some(result) = self.operations.poll(game,&mut self.settings.borrow_mut()) {
-            self.ui.set_operation_status(&result.unwrap_or_else(|e| e));
+            self.show_result(result);
         }
         let bindings = self.settings.borrow().settings().app_bindings.clone();
         let invert_triggers = self.settings.borrow().settings().invert_trigger_chords;
@@ -429,13 +439,13 @@ impl View {
         let requests = std::mem::take(&mut *self.app_requests.borrow_mut());
         for request in requests {
             let result = self.operations.execute(request,window,game,&mut self.settings.borrow_mut());
-            self.ui.set_operation_status(&result.unwrap_or_else(|e| e));
+            self.show_result(result);
         }
         if let Some(game) = game {
             let settings = self.settings.borrow();
             let result = game.sync_time_settings(settings.settings());
             drop(settings);
-            if let Err(error) = result { self.ui.set_operation_status(&error); }
+            if let Err(error) = result { self.ui.set_operation_error(&error); }
             if !was_busy && self.operations.busy { game.pause(); }
             if was_busy && !self.operations.busy { game.resume(); }
             let (fast_forward,status) = game.time_status();
@@ -445,6 +455,14 @@ impl View {
             self.ui.set_time_status(None,"Boot a game to use save states and time controls.");
         }
         !self.operations.busy
+    }
+
+    /// An operation's outcome on the panel's status line.
+    fn show_result(&self, result: Result<String, String>) {
+        match result {
+            Ok(text) => self.ui.set_operation_status(&text),
+            Err(error) => self.ui.set_operation_error(&error),
+        }
     }
 
     pub fn settings(&self) -> &Rc<RefCell<SettingsService>> {
@@ -460,8 +478,16 @@ impl View {
     }
 
     pub fn set_panel_visible(&self, visible: bool) {
-        if self.panel_visible() && !visible { self.ui.cancel_pointer(); }
+        if self.panel_visible() && !visible {
+            self.ui.cancel_pointer();
+            self.ui.cancel_dialog();
+        }
         *self.panel_visible.borrow_mut() = visible;
+    }
+
+    /// Whether the player confirmed Quit on the panel.
+    pub fn quit_requested(&self) -> bool {
+        self.quit.get()
     }
 
     /// Follows a new target size or display scale.
@@ -493,7 +519,8 @@ impl View {
     }
 
     /// Routes input to the panel and toggles it with Escape or Android's Back
-    /// key. The gamepad's Back+Start chord is polled in `update_app`.
+    /// key (which close an open confirmation first). The gamepad's
+    /// Back+Start chord is polled in `update_app`.
     ///
     /// # Safety
     /// `event` must come from SDL_PollEvent.
@@ -507,7 +534,9 @@ impl View {
                     && !key.repeat
                     && (key.key == SDLK_ESCAPE || key.key == SDLK_AC_BACK)
                 {
-                    self.set_panel_visible(!visible);
+                    if !(visible && self.ui.cancel_dialog()) {
+                        self.set_panel_visible(!visible);
+                    }
                 } else if visible && let Some(text) = slint_key(key.key) {
                     self.ui.dispatch(match (key.down, key.repeat) {
                         (true, false) => WindowEvent::KeyPressed { text },
@@ -550,6 +579,10 @@ impl View {
                         button: button_kind,
                     }
                 });
+                // A lifted finger leaves nothing hovered (a touch has no hover).
+                if !button.down && button.which == SDL_TOUCH_MOUSEID {
+                    self.ui.dispatch(WindowEvent::PointerExited);
+                }
             }
             // A real mouse over the game (touches stay the game view's own):
             // it turns the field camera, or the first-person view.
@@ -967,6 +1000,21 @@ mod tests {
         assert!(!view.panel_visible());
         settings.borrow_mut().apply(xem_settings::SettingChange::ShowFps(false)).unwrap();
         assert!(pixels(&mut view).chunks_exact(4).all(|p| p[..3]==[0,0,0]),"disabling Show FPS removes the counter");
+    }
+
+    #[test]
+    fn a_confirmed_quit_ends_the_run_and_hiding_the_panel_drops_the_question() {
+        let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+        let settings = Rc::new(RefCell::new(SettingsService::with_defaults(xem_settings::MemoryStore::default())));
+        let mut view = View::new(&gpu, wgpu::TextureFormat::Rgba8UnormSrgb, (640, 480), 1.0, settings, true).unwrap();
+        assert!(view.ui().component().get_can_quit(), "desktop and Android offer Quit");
+        view.ui().component().set_quit_confirming(true);
+        view.set_panel_visible(false);
+        assert!(!view.ui().component().get_quit_confirming(), "a hidden panel asks nothing");
+        assert!(!view.quit_requested());
+        view.set_panel_visible(true);
+        view.ui().component().invoke_quit_requested();
+        assert!(view.quit_requested(), "the confirmed Quit");
     }
 
     #[test]

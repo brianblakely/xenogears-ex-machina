@@ -512,7 +512,8 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
       const page=await browser.page(fixture); await forever(page);
       await page.evaluate(async()=>{await window.xem.runFrames(150);window.xem.setRunning(true)});
       await page.click('#settings');
-      for(const section of [3,2]) {
+      // Time (its rewind fields), then Shortcuts (the open shortcut's editors).
+      for(const section of [4,3]) {
         await settingsSection(page,section);
         for(let field=0;field<2;field++) {
           for(let tabs=0;tabs<40;tabs++) {

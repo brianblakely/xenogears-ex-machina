@@ -183,24 +183,22 @@ wait_for "xem: frame rendered frame=120 " 60
 shot 01-started
 
 if [ -z "${XEM_SMOKE_GAME_ONLY:-}" ]; then
+# The panel (1064x1470 at 2.625, at 8,465 on the 1080x2400 screen) shows
+# its sections as a strip of tabs: Graphics at 250,722, Saves at 830,722.
 echo "== settings change by touch (Show FPS)"
 mark
-tap 540 670
-sleep 1
-tap 540 780
+tap 250 722
 sleep 1
 shot 01-graphics
-tap 73 1194
+tap 930 1655
 wait_for "xem: settings applied ShowFps\(true\)"
 
 echo "== disc import through the document picker (Import disc... button)"
 mark
-tap 540 670
-sleep 1
-tap 540 1095
+tap 830 722
 sleep 1
 shot 01-saves
-tap 540 1572
+tap 858 1132
 wait_for "xem: disc picker opened"
 pick_document synthetic "xem-synthetic\.bin"
 wait_for "I/xem.*persisted read permission for content://"

@@ -79,6 +79,9 @@ pub struct Presentation {
     pub scale: Scale,
     pub filter: Filter,
     pub show_fps: bool,
+    /// The desktop window covers its display (hosts that place their own
+    /// window; a window manager's own fullscreen leaves this as it is).
+    pub fullscreen: bool,
 }
 
 /// The complete application settings.
@@ -141,6 +144,7 @@ pub enum SettingChange {
     Scale(Scale),
     Filter(Filter),
     ShowFps(bool),
+    Fullscreen(bool),
     /// The whole graphics block, validated.
     Graphics(Graphics),
     PauseOnFocusLoss(bool),
@@ -205,6 +209,7 @@ impl Settings {
             SettingChange::Scale(scale) => next.presentation.scale = *scale,
             SettingChange::Filter(filter) => next.presentation.filter = *filter,
             SettingChange::ShowFps(show) => next.presentation.show_fps = *show,
+            SettingChange::Fullscreen(on) => next.presentation.fullscreen = *on,
             SettingChange::Graphics(graphics) => next.graphics = *graphics,
             SettingChange::PauseOnFocusLoss(enabled) => next.pause_on_focus_loss = *enabled,
             SettingChange::Bind { action, input } => {
@@ -493,6 +498,19 @@ mod tests {
         *store.1.borrow_mut() = true;
         assert!(service.apply(SettingChange::PauseOnFocusLoss(true)).is_err());
         assert!(!service.settings().pause_on_focus_loss);
+    }
+
+    #[test]
+    fn fullscreen_is_off_by_default_and_persists() {
+        use super::*;
+        let store = SharedStore::default();
+        let mut service = SettingsService::open(store.clone()).unwrap();
+        assert!(!service.settings().presentation.fullscreen);
+        service.apply(SettingChange::Fullscreen(true)).unwrap();
+        assert!(SettingsService::open(store.clone()).unwrap().settings().presentation.fullscreen);
+        // Settings saved before it existed open windowed.
+        let (read, reset) = Settings::read(&serde_json::json!({ "presentation": { "show_fps": true } })).unwrap();
+        assert!(read.presentation.show_fps && !read.presentation.fullscreen && reset.is_empty());
     }
 
     #[test]
