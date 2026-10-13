@@ -132,7 +132,7 @@ fn table(memory: &dyn GameMemory, xs: u32, ys: u32, first: usize, count: usize, 
 /// The entries `ui` shows that a pointer can select.
 pub fn targets(memory: &dyn GameMemory, ui: Context) -> Option<Targets> {
     match ui {
-        Context::Menu { screen, cursor, choice, choices } => menu(memory, screen, cursor, choice, choices),
+        Context::Menu { screen, cursor, choice, choices, .. } => menu(memory, screen, cursor, choice, choices),
         Context::Dialogue { choice: Some(_) } => dialogue_choice(memory),
         _ => None,
     }
@@ -226,4 +226,14 @@ mod tests {
         assert_eq!(pair.step_toward(0), Some(GameAction::Left));
         assert_eq!(pair.at((25.0, 5.0)), Some(1));
     }
+}
+
+/// The quantities a shop's buy list proposes, summed (`ShopDetails.amounts`,
+/// +0x4654 of the block at `menu_state_current` +0x450, a byte per stock
+/// entry): what ALL and NONE watch to stop. The sell list keeps its counts
+/// on the stack, so there is none.
+pub fn shop_amounts(memory: &dyn GameMemory) -> Option<u32> {
+    let state = ram(s32_at(memory, MENU_STATE_CURRENT)?)?;
+    let details = ram(s32_at(memory, state + 0x450)?)?;
+    bytes(memory, details + 0x4654, 0x30).map(|b| b.iter().map(|v| u32::from(*v)).sum())
 }

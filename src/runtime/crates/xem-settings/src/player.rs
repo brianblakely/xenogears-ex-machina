@@ -81,6 +81,36 @@ pub struct PlayerInput {
     hover_moved: bool,
     goal: Option<usize>,
     click: u32,
+    /// The interface the queued presses were meant for.
+    epoch: Option<Epoch>,
+}
+
+/// What a press is meant for: a press queued in one interface never acts
+/// on another (a dialogue's choice that opened, a list, a battle's next
+/// step). Ring pages of one battle step and a menu's screens stay one.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Epoch {
+    None,
+    Walk,
+    Event,
+    Dialogue { choice: bool },
+    Menu { screen: u8 },
+    Battle { attack: bool, list: bool, targeting: bool },
+    WorldMap,
+    Arena { state: u32 },
+}
+
+fn epoch(ui: Ui) -> Epoch {
+    match ui {
+        Ui::None => Epoch::None,
+        Ui::Walk => Epoch::Walk,
+        Ui::Event => Epoch::Event,
+        Ui::Dialogue { choice } => Epoch::Dialogue { choice: choice.is_some() },
+        Ui::Menu { screen, .. } => Epoch::Menu { screen },
+        Ui::Battle { attack, list, targeting, .. } => Epoch::Battle { attack, list, targeting },
+        Ui::WorldMap { .. } => Epoch::WorldMap,
+        Ui::Arena { state } => Epoch::Arena { state },
+    }
 }
 
 /// Frames a click waits for the cursor to reach its entry.
@@ -212,6 +242,17 @@ impl PlayerInput {
 
     /// The actions held at `now` (milliseconds).
     pub fn actions(&mut self, bindings: &GameBindings, now: f64, context: Context) -> BTreeSet<GameAction> {
+        let epoch = epoch(context.ui);
+        if self.epoch.is_some_and(|e| e != epoch) {
+            // A press under way finishes its release; nothing queued after
+            // it reaches the new interface.
+            let current = self.pulses.pop_front().filter(|p| !p.holding());
+            self.pulses.clear();
+            self.pulses.extend(current);
+            self.goal = None;
+            self.click = 0;
+        }
+        self.epoch = Some(epoch);
         self.held.mouse = self.mouse.buttons();
         let mut actions = bindings.actions(&self.held, context.attack);
         actions.extend(self.mouse.turn(now));
@@ -273,6 +314,20 @@ mod tests {
     }
 
     #[test]
+    fn presses_queued_for_one_interface_never_reach_the_next() {
+        let bindings = GameBindings::default();
+        let mut input = PlayerInput::default();
+        let dialogue = field(Ui::Dialogue { choice: None });
+        input.pulse(Pulse::new([GameAction::Confirm]));
+        input.pulse(Pulse::new([GameAction::Confirm]));
+        assert_eq!(run(&mut input, &bindings, dialogue, 2), [button::CROSS, button::CROSS]);
+        // The first press revealed a choice: the second is dropped.
+        let choice = field(Ui::Dialogue { choice: Some(xem_core::context::Choice { count: 2, index: 0 }) });
+        assert_eq!(run(&mut input, &bindings, choice, 4), [0, 0, 0, 0]);
+        assert!(!input.pulsing());
+    }
+
+    #[test]
     fn pointing_selects_a_menu_entry_and_clicking_confirms_it() {
         use xem_core::menu::{Entry, Rect, Steps, Targets};
         let bindings = GameBindings::default();
@@ -284,7 +339,7 @@ mod tests {
             selected: Some(0),
             steps: Steps::Ring { count: 7, next: GameAction::Up },
         };
-        let menu = field(Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0 });
+        let menu = field(Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, switch: false, quantities: false });
         input.hover(Some((10.0, 85.0)));
         assert!(input.click(Some(&targets)), "on entry 2");
         let mut pressed = Vec::new();
@@ -325,7 +380,7 @@ mod tests {
         let bindings = GameBindings::default();
         let mut input = PlayerInput::default();
         let walk = field(Ui::Walk);
-        let menu = field(Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0 });
+        let menu = field(Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, switch: false, quantities: false });
         input.key(&bindings, "Tab", true);
         assert_eq!(run(&mut input, &bindings, walk, 1), [button::SQUARE], "Tab opens the menu");
         // Held into the menu, it does nothing there.
@@ -342,7 +397,7 @@ mod tests {
         assert_eq!(run(&mut input, &bindings, walk, 4), [0, 0, 0, 0]);
         // A shop (another screen) keeps the Menu button.
         input.key(&bindings, "Tab", true);
-        let shop = field(Ui::Menu { screen: 4, cursor: 0, choice: 0, choices: 0 });
+        let shop = field(Ui::Menu { screen: 4, cursor: 0, choice: 0, choices: 0, switch: false, quantities: false });
         assert_eq!(run(&mut input, &bindings, shop, 1), [button::SQUARE]);
     }
 
@@ -351,7 +406,7 @@ mod tests {
         let bindings = GameBindings::default();
         let mut input = PlayerInput::default();
         assert!(!input.wheel(1.0, Ui::Walk));
-        let menu = Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0 };
+        let menu = Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, switch: false, quantities: false };
         assert!(input.wheel(0.5, menu));
         assert!(!input.pulsing(), "half a notch");
         assert!(input.wheel(1.5, menu));

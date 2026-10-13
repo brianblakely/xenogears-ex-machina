@@ -363,3 +363,32 @@ fn pointing_browses_the_field_menu() {
     }
     assert_eq!(context(&mut session)["kind"], "walk", "leave closed the menu");
 }
+
+/// A shop's quantity buttons edit the selected entry's proposal by the
+/// list's own presses: ALL reaches the most the shop allows (here the 99
+/// of one purchase), NONE clears it, plus and minus step it.
+#[test]
+fn shop_quantities_all_none_plus_and_minus() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    run(&mut session, json!({"cmd": "enter_field", "map": 5}));
+    run(&mut session, json!({"cmd": "frames", "count": 300}));
+    until_walking(&mut session);
+    // The village's item shop (1), as its script would open it; gold enough.
+    run(&mut session, json!({"cmd": "write", "path": "game_data.gold", "value": 5000}));
+    run(&mut session, json!({"cmd": "write_memory", "address": 0x80059171u64, "hex": "01"}));
+    run(&mut session, json!({"cmd": "write_memory", "address": 0x800ADB64u64, "hex": "84"}));
+    run(&mut session, json!({"cmd": "frames", "count": 200}));
+    run(&mut session, json!({"cmd": "act", "actions": ["Confirm"], "frames": 2}));
+    run(&mut session, json!({"cmd": "frames", "count": 60}));
+    assert_eq!(context(&mut session)["quantities"], true, "{}", context(&mut session));
+    let amounts = |session: &mut Session<NativeModule>| xem_core::menu::shop_amounts(session.runtime.memory()).unwrap();
+    for (op, frames, expected) in [("all", 400, 99), ("minus", 10, 98), ("none", 400, 0), ("plus", 10, 1)] {
+        run(&mut session, json!({"cmd": "shop_quantity", "op": op}));
+        run(&mut session, json!({"cmd": "frames", "count": frames}));
+        assert_eq!(amounts(&mut session), expected, "{op}");
+    }
+}

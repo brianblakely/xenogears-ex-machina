@@ -334,6 +334,26 @@ impl Field {
             .collect()
     }
 
+    /// The other actor shown nearest a screen point, within `reach` screen
+    /// pixels of its feet or its middle: actors the game skips, and those
+    /// standing where the player stands (followers), are not pointed at.
+    pub fn actor_at(&self, screen: (f32, f32), reach: f32) -> Option<usize> {
+        let player = self.player()?;
+        self.actors.iter().flatten()
+            .filter(|a| a.index != player.index && a.flags & 1 == 0 && a.position.planar(player.position) > 2.0)
+            .filter_map(|a| {
+                let middle = V3::new(a.position.x, a.position.y - f32::from(a.height.max(0)) / 2.0, a.position.z);
+                [a.position, middle].into_iter()
+                    .filter_map(|p| self.camera.project(p))
+                    .map(|(x, y)| ((x - screen.0).powi(2) + (y - screen.1).powi(2)).sqrt())
+                    .min_by(f32::total_cmp)
+                    .filter(|d| *d <= reach)
+                    .map(|d| (d, a.index))
+            })
+            .min_by(|a, b| a.0.total_cmp(&b.0))
+            .map(|(_, index)| index)
+    }
+
     /// The attribute word triangle `t` of `layer` has for `actor`.
     fn attribute(&self, layer: usize, t: usize, actor: &Actor) -> u32 {
         if actor.layer_flags & (1 << (layer + 3)) != 0 || self.party_processing {

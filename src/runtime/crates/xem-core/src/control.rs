@@ -58,6 +58,22 @@ pub struct Session<M: GameModule> {
     base_pad: u16,
     /// Stop at a jump's takeoff instead of pressing on (an assistance option).
     pub ledge_brake: bool,
+    /// A shop quantity edit under way (`shop_quantity`).
+    quantity: Option<Quantity>,
+}
+
+/// A shop's proposed quantity edited by presses: `more` Right or Left,
+/// `presses` left, the frame within the current press (one held, one
+/// released), and the proposals' sum when it began (none in a sell list).
+#[derive(Clone, Copy, Debug)]
+struct Quantity {
+    more: bool,
+    presses: u32,
+    frame: u32,
+    sum: Option<u32>,
+    /// Stop as soon as a press changes nothing (ALL, NONE), once one has.
+    until_unchanged: bool,
+    changed: bool,
 }
 
 const BUTTONS: [(&str, u16); 16] = [
@@ -120,6 +136,7 @@ impl<M: GameModule> Session<M> {
             assist_outcome: None,
             base_pad: 0,
             ledge_brake: false,
+            quantity: None,
         };
         session.configure_rewind(0,crate::time::DEFAULT_REWIND_INTERVAL_SECONDS,crate::time::DEFAULT_REWIND_HISTORY_SECONDS).expect("valid default rewind settings");
         session
@@ -351,6 +368,7 @@ impl<M: GameModule> Session<M> {
     /// Pad 1 for the next frame: the base input, and the assist's D-pad and
     /// Run over it while it runs. A direction of the player's own ends it.
     fn apply_assist(&mut self) {
+        self.apply_quantity();
         let Some(mut assist) = self.assist.take() else { return };
         if self.base_pad & crate::assist::direction_buttons() != 0 {
             self.assist = Some(assist);
@@ -369,6 +387,49 @@ impl<M: GameModule> Session<M> {
             pad.buttons = (base & !crate::assist::owned_buttons(&assignment)) | held;
         }
         self.assist = Some(assist);
+    }
+
+    /// Presses for a shop quantity edit, one frame held and one released,
+    /// until its presses run out, a press changes nothing (ALL, NONE), or
+    /// the quantity list closes.
+    fn apply_quantity(&mut self) {
+        let Some(mut q) = self.quantity.take() else { return };
+        if !matches!(self.runtime.context(), crate::context::Context::Menu { quantities: true, .. }) {
+            return;
+        }
+        let assignment = self.runtime.button_assignment();
+        let button = crate::action::GameAction::button_with(if q.more { crate::action::GameAction::Right } else { crate::action::GameAction::Left }, &assignment);
+        if q.frame == 0 {
+            if q.presses == 0 {
+                return self.restore_base_pad();
+            }
+            if q.until_unchanged {
+                // The buy list's proposals stop changing at the limit; a
+                // sell list's are not in memory, and it presses on (the
+                // game ignores presses past the limit).
+                let sum = crate::menu::shop_amounts(self.runtime.memory());
+                if q.changed && sum == q.sum {
+                    return self.restore_base_pad();
+                }
+                q.changed |= q.sum.is_some() && sum != q.sum && q.presses < 99;
+                q.sum = sum;
+            }
+            q.presses = q.presses.saturating_sub(1);
+        }
+        let held = if q.frame == 0 { button } else { 0 };
+        let base = self.base_pad;
+        if let Some(pad) = self.runtime.services().pads.0.get_mut(0) {
+            pad.buttons = (base & !crate::assist::direction_buttons()) | held;
+        }
+        q.frame = (q.frame + 1) % 2;
+        self.quantity = Some(q);
+    }
+
+    fn restore_base_pad(&mut self) {
+        let base = self.base_pad;
+        if let Some(pad) = self.runtime.services().pads.0.get_mut(0) {
+            pad.buttons = base;
+        }
     }
 
     /// For a draw trace showing the title movie, the frames its player has
@@ -643,6 +704,24 @@ impl<M: GameModule> Session<M> {
                 self.start_assist(intent);
                 Ok(self.status())
             }
+            "shop_quantity" => {
+                // The selected entry's proposed quantity: plus or minus one,
+                // ALL (as many as the shop allows: funds, stock, inventory)
+                // or NONE, by the list's own Right and Left.
+                if !matches!(self.runtime.context(), crate::context::Context::Menu { quantities: true, .. }) {
+                    return Err("shop_quantity needs a shop's buy or sell list".into());
+                }
+                let (more, presses, until_unchanged) = match arg_str("op").ok_or("shop_quantity needs op: plus, minus, all or none")? {
+                    "plus" => (true, 1, false),
+                    "minus" => (false, 1, false),
+                    "all" => (true, 99, true),
+                    "none" => (false, 99, true),
+                    other => return Err(format!("unknown op {other}")),
+                };
+                self.record_control(command.clone());
+                self.quantity = Some(Quantity { more, presses, frame: 0, sum: None, until_unchanged, changed: false });
+                Ok(self.status())
+            }
             "assist_stop" => {
                 self.stop_assist(crate::assist::Outcome::Stopped);
                 Ok(self.status())
@@ -750,7 +829,7 @@ impl<M: GameModule> Session<M> {
                     // mean the game ignores the pad.
                     "pad_queue_reads_last_frame": services.input_reads_last_frame,
                     "stopped": stopped,
-                    "valid_commands": ["pad", "press", "hold", "act", "context", "targets", "field", "pick", "navigate", "interact", "assist", "assist_stop", "frames", "run_until", "inspect", "write", "snapshot",
+                    "valid_commands": ["pad", "press", "hold", "act", "context", "targets", "field", "pick", "navigate", "interact", "assist", "assist_stop", "shop_quantity", "frames", "run_until", "inspect", "write", "snapshot",
                                         "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "schedule", "record", "replay"],
                 }))
             }
@@ -809,6 +888,7 @@ impl<M: GameModule> Session<M> {
                             Some("actor_view") if control.get("view").and_then(Value::as_u64).is_some_and(|v| v <= u64::from(u32::MAX)) => {},
                             Some("assist") if control.get("intent").is_some() => {},
                             Some("assist_stop") => {},
+                            Some("shop_quantity") if control.get("op").is_some_and(Value::is_string) => {},
                             _ => return Err("recorded controls contain only explicit fast-forward, focus-pause, actor-view, assist and music-clock inputs".into()),
                         }
                         controls.push((now + at.saturating_sub(start),control.clone()));
@@ -850,7 +930,7 @@ impl<M: GameModule> Session<M> {
                 for item in list {
                     let pair = item.as_array().filter(|p| p.len() == 2).ok_or("commands are [frame, command]")?;
                     let cmd = pair[1].get("cmd").and_then(Value::as_str).ok_or("scheduled command needs cmd")?;
-                    if !matches!(cmd, "pad" | "press" | "hold" | "act" | "assist" | "assist_stop" | "connect_pad" | "enter_field" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "music_advance") {
+                    if !matches!(cmd, "pad" | "press" | "hold" | "act" | "assist" | "assist_stop" | "shop_quantity" | "connect_pad" | "enter_field" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "music_advance") {
                         return Err(format!("{cmd} cannot be scheduled; session logs contain only game input, setup and pacing"));
                     }
                     let at = pair[0].as_u64().ok_or("a command's frame is a number")?;

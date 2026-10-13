@@ -32,6 +32,9 @@ const MENU_STATE_CURRENT: u32 = 0x8006_25A0;
 /// the command page +0x2DD, the closed combo or command +0x2E1, AP left
 /// +0x2D4.
 const BATTLE_TURN_STATE: u32 = 0x800C_3EAC;
+/// The battle's interface (`battle_ui`, a pointer): the list cursor shown
+/// (+0x9E) and target choosing (+0xC6).
+const BATTLE_UI: u32 = 0x800D_2D28;
 /// The world map's movement (`worldmap_movement_mode`: 1-3 on foot, 2
 /// Gears, 4/5/7 vehicles) and scene (`worldmap_mode_index`, 8+ scripted).
 const WORLDMAP_MOVEMENT_MODE: u32 = 0x8009_BE10;
@@ -60,11 +63,14 @@ pub enum Context {
     /// A field dialogue the player advances, or answers.
     Dialogue { choice: Option<Choice> },
     /// A menu screen (`screen`, `menu_state_screen`) with its top cursor and
-    /// a choice window's.
-    Menu { screen: u8, cursor: u8, choice: u8, choices: u8 },
+    /// a choice window's; `switch` while L1/R1 change the character shown
+    /// (the arrow marks, `MenuFlags.marks_shown`); `quantities` while a
+    /// shop's buy or sell list proposes quantities.
+    Menu { screen: u8, cursor: u8, choice: u8, choices: u8, switch: bool, quantities: bool },
     /// A battle: the command page, whether the attack inputs take the
-    /// buttons, and AP left.
-    Battle { page: u8, attack: bool, ap: u8 },
+    /// buttons, AP left, an item or art list open (`battle_ui.cursorShown`)
+    /// and a target being chosen.
+    Battle { page: u8, attack: bool, ap: u8, list: bool, targeting: bool },
     /// The world map: movement mode and scene.
     WorldMap { movement: u32, scene: u32 },
     /// Battling (the arena): its state.
@@ -112,11 +118,15 @@ pub fn read_context(memory: &dyn GameMemory, mode: Option<u32>) -> Context {
 fn menu(memory: &dyn GameMemory) -> Option<Context> {
     let screen = u8_at(memory, MENU_STATE_SCREEN)?;
     let state = ram_pointer(u32_at(memory, MENU_STATE_CURRENT)?)?;
+    let flags = ram_pointer(u32_at(memory, state + 0x33C)?)?;
+    let flag = |offset: u32| u8_at(memory, flags + offset).is_some_and(|f| f != 0);
     Some(Context::Menu {
         screen,
         cursor: u8_at(memory, state + 0x336)?,
         choice: u8_at(memory, state + 0x338)?,
         choices: u8_at(memory, state + 0x33A)?,
+        switch: flag(0x53),
+        quantities: matches!(screen, 4 | 5) && flag(0x5A) && flag(0x50),
     })
 }
 
@@ -124,7 +134,7 @@ fn field(memory: &dyn GameMemory) -> Option<Context> {
     if u8_at(memory, FIELD_MENU_REQUEST)? != 0xFF {
         // The menu loads for some frames after the request; its state block
         // (left behind by the last menu until then) is read once it runs.
-        return Some(menu(memory).unwrap_or(Context::Menu { screen: 0, cursor: 0, choice: 0, choices: 0 }));
+        return Some(menu(memory).unwrap_or(Context::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, switch: false, quantities: false }));
     }
     if u16_at(memory, FIELD_OPEN_WINDOWS)? != 0 {
         let mut choice = None;
@@ -148,9 +158,14 @@ fn battle(memory: &dyn GameMemory) -> Option<Context> {
     let turn = ram_pointer(u32_at(memory, BATTLE_TURN_STATE)?)?;
     let page = u8_at(memory, turn + 0x2DD)?;
     let closed = u8_at(memory, turn + 0x2E1)? != 0 || u8_at(memory, turn + 0x2DB)? != 0;
+    let ui = u32_at(memory, BATTLE_UI).and_then(ram_pointer);
+    let cursor = ui.and_then(|ui| u8_at(memory, ui + 0x9E)).is_some_and(|c| c != 0);
+    let choosing = ui.and_then(|ui| u8_at(memory, ui + 0xC6)).is_some_and(|c| c == 1);
     Some(Context::Battle {
         page,
         attack: !closed && matches!(page, 5 | 0x64 | 0x19 | 0x65),
         ap: u8_at(memory, turn + 0x2D4)?,
+        list: !closed && cursor && matches!(page, 2 | 8 | 4 | 0x11 | 0x13 | 0x16),
+        targeting: !closed && choosing && !cursor,
     })
 }
