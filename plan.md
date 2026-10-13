@@ -313,27 +313,27 @@ remains available; graphics style and viewing mode are independent choices.
 
 **Goal:** Native and browser human input use the same command path as agents.
 
-- [ ] Implement SDL3/native OpenXR input and browser keyboard/pointer/touch/
+- [x] Implement SDL3/native OpenXR input and browser keyboard/pointer/touch/
   gamepad/WebXR input, context bindings and rebinding for direction/run/jump/
   confirm/cancel and camera left/right. Translate platform events into shared typed
   actions; agents issue those actions directly without SDL, DOM or OS injection.
-- [ ] Make menus mouse-browsable with wheel scrolling; on desktop, Tab toggles the
+- [x] Make menus mouse-browsable with wheel scrolling; on desktop, Tab toggles the
   game menu and Esc toggles the app menu. Provide touch/headset equivalents and
   explicit focus/capture transitions without rebuilding original game UI in Slint.
-- [ ] Implement the shared headset hand/gaze contract below as an optional
+- [x] Implement the shared headset hand/gaze contract below as an optional
   assisted-input profile. Navigation and approach/interact use authoritative
   traversal data and shared legal commands, not coordinate rewrites, remote confirms
   or another game rules model. Expose resolved intents/actions to agents and deterministic replay;
   replay must not depend on recording raw eye movements or headset frame timing.
-- [ ] Deliver the Slint launcher/settings and available application-service
+- [x] Deliver the Slint launcher/settings and available application-service
   screens. Apply changes through shared validation, acknowledgment and persistence;
   changing settings from an agent uses the same path. Add later save/mod/editor
   screens when their owning phases implement those services.
-- [ ] Qualify the Slint application controls on actual mobile and headset devices,
+- [x] Qualify the Slint application controls on actual mobile and headset devices,
   including controller and hand-ray input on in-XR panels. Verify controller
   reconnects, live settings changes and return to play; a desktop companion is not
   a substitute for headset settings.
-- [ ] Deliver browser application controls as their shared services become
+- [x] Deliver browser application controls as their shared services become
   available, plus usable in-XR panels; do not depend on DOM overlays being available.
   Provide visible Enter/Exit XR and controller/pointer alternatives. Handle page
   focus, fullscreen/pointer-lock release, browser-reserved keys, audio activation,
