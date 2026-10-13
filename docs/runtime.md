@@ -969,7 +969,16 @@ Headset class (Low tier, depth of field off unless enabled).
   pixels within 8 levels). `web/tests/xr-game.test.mjs` (IWER's
   Quest 3) checks the backend, two views, the game near 60 frames a second at
   a slower session rate, both views showing the screen, paused head tracking,
-  exit, and an unchanged RAM hash.
+  exit, and an unchanged RAM hash. The session asks for `hand-tracking`;
+  each frame the page passes the viewer's pose, the session's visibility,
+  each hand's target ray and its 25 joints to the headset core
+  ([Headsets: hands, gaze and control decks](#headsets-hands-gaze-and-control-decks)),
+  whose Pause and settings hold the game's clock; the settings panel is a
+  quad below the screen in the session (0.55 m wide, tilted toward the
+  player) that takes the pointer source's ray with a pinch, or a
+  controller's ray with its trigger (`select`). The button reads Enter VR
+  or Exit VR; a hidden session (the browser's own menu) or its end lets go
+  of held input.
 
 ## Controls
 
@@ -1079,10 +1088,139 @@ and the actors with their screen points.
 
 Settings' Controls section lists every action and edits its inputs in
 place (`SettingChange::BindGame {context, action, binding}`, and
-`ResetGameBindings`); agents change them through the same
-`SettingsService::apply`. `tests/controls.rs` (xem-headless, local) checks
-that an agent's `act` and a player's bound key reach the game as the same
-pad.
+`ResetGameBindings`; an input may hold one button in a context, so a swap
+clears one side first); agents change them through the same
+`SettingsService::apply` (`window.xem.settings.apply` in browsers,
+`xem-desktop --control`'s `settings_apply` natively). `tests/controls.rs`
+(xem-headless, local) checks that an agent's `act` and a player's bound key
+reach the game as the same pad, and xem-host's tests that a gamepad pulled
+out mid-press holds nothing, plays again when plugged back in, and that
+bindings changed from the open panel hold when play resumes.
+
+### Touch screens
+
+On a touch screen (Android; phone and tablet browsers) the game's controls
+are a Seraph Glass deck (`xem_assist::touch`) beside the picture when the
+letterbox has room (three controls and their gaps, at least 40 dp each),
+else over its corners: a D-pad on the left, the face buttons on the right
+(Jump, Cancel and Run, Confirm, Menu), the camera's turns at the top
+corners, Settings and Start at the top. A finger holds the control it is
+on and slides across the D-pad's directions; lifting or a cancelled touch
+lets go (explicit press and release). Battling names the face buttons and
+turns as the bout does (A, B, Jump, Dash, Charge, Special), the world map
+adds Board (L2 and R2 together: a Gear boarded or left), a shop's quantity
+list adds +, -, ALL and NONE. A tap on the picture (short, not travelling)
+is the pointer's tap (`xem_assist::dispatch::tap_at`): walking, on an actor
+it approaches and talks, on the floor it walks there; in a menu or choice
+it selects the entry and confirms it; in a dialogue it advances. The deck
+shows once a finger touches the game (always on Android) under Settings'
+Touch controls. Android logs the deck's place (`touch deck ...`) and its
+smoke test holds Confirm on it; the browser suite plays it with touch
+pointers.
+
+### Headsets: hands, gaze and control decks
+
+`xem_assist::headset` is the shared headset core of the OpenXR loop and
+the browser's WebXR sessions (plan.md, the hand/gaze contract):
+
+- **Pointer.** The player's explicit choice (Settings: eye gaze, head,
+  left or right hand ray; a hand's ray is the controller's aim, else from
+  an estimated shoulder through the index knuckle) aims at the virtual
+  screen (`Screen`: game screen pixels, sides included) and the panel and
+  keys beside it. An unavailable source aims at nothing; nothing else
+  stands in.
+- **Gestures** (`xem_assist::gesture`, from 25 room-space joints: WebXR's
+  order, OpenXR's without the palm): a pinch; thumb taps and swipes on the
+  index finger (the thumb's travel relative to the knuckle, smoothed,
+  sliding along the finger's surface: up toward the tip, down back, right
+  toward the back of a right hand and the reverse for the left; a
+  runtime's own microgestures replace these where offered); five-finger
+  grabs, the palm's region (down, up, sideways) classified as closing
+  begins and kept through closure, firing on closure from an open hand
+  (no hold or cooldown; reopening rearms; a fist found closed fires
+  nothing; the other hand's simultaneous grab coalesces); whole-hand
+  pinches (two of them scale, owning both hands until both open); prayer
+  hands (open aligned palms near-touching, once until they part). A
+  closing hand emits no pinch or thumb event.
+- **Resolution** (`xem_assist::dispatch`, table in its documentation):
+  walking, a pinch walks to the floor under the pointer (`navigate`, if
+  reachable), a tap approaches and talks to the actor under it
+  (`interact`) or, on ground, stops the route; swipe up jumps, left and
+  right turn the camera, down opens the menu and stops navigation. A
+  dialogue's tap advances; a choice answers only under the gaze, with a
+  fresh tap. Menus select the entry under the gaze on a tap (else confirm
+  the selected one), swipe right backs out, up and down step the list
+  (later entries up) or, beside the list on a character screen, change
+  the character. The command ring: a swipe activates its direction's slot
+  (selecting it first unless highlighted, whose direction would flip the
+  page), a tap pages the ring (its mark drawn below it); the attack ring:
+  up Weak, left Strong, down Fierce, right ends the sequence; lists and
+  targets confirm on a tap and back out to the right. Presses queued for
+  one interface never reach the next (`PlayerInput`).
+- **Pauses.** The overhand grab toggles the player's Pause in every
+  context (no game frame runs; head tracking, drawing, the panel and app
+  input stay live); the underhand grab toggles first-person inspection in
+  a field; prayer hands toggle Settings, which hold their own pause, and
+  closing them keeps the player's. Losing the hands or the app's focus
+  drops what was pending, stops assisted movement and pauses until the
+  player's Pause (from an open hand).
+- **Control decks** (`xem_assist::arcade`) for the bespoke inputs,
+  one-handed: Battling's bouts and the open world map (walking, Gears,
+  vehicles). A pinch captures a stick at the hand, the hand's travel holds
+  the D-pad's eighth (a 3 cm dead zone) and the next pinch lets it go,
+  while the thumb plays (Battling: tap A, swipes B, Jump, Special and Dash
+  held; the world map: tap OK, down the menu, left and right the camera,
+  up the throttle held). Keys beside the screen, gazed at and tapped,
+  press once or toggle a held button (lit while held); the world map's
+  Board presses L2 and R2 together. Everything lets go when the context
+  ends. The field's script-driven activities play with the field's
+  controls and the controller or touch deck.
+- **Drawing.** `xem_assist::overlay` and `xem_render::glass`: the live
+  cursor (a hollow halo with fins and a gold centre; on the floor it lies
+  as the floor projects, silver where walkable, a gold chevron where a
+  jump is needed, broken and struck through where unreachable), the
+  committed destination (gilded, related but distinct), the ring's page
+  mark, and keys beside the screen. Seraph Glass is drawn on the
+  processor (faceted silver shells, halos, fins, dark recesses, gold
+  accents, solid outlined symbols; state by shape and contrast; reduced
+  transparency makes bodies dark and opaque) and composited as room or
+  screen quads; `cargo run -p xem-render --example glass` draws a review
+  sheet. Settings and other application interface stay plain.
+
+Agents never need any of this: they send the commands the gestures
+resolve to.
+
+**Qualification.** `xem-headless/tests/gestures.rs` plays the host's part
+headless on the original game: synthetic hands (`xem_assist::synthetic`)
+before a head whose gaze aims at the screen, the headset core, the
+player's input and the command layer, no game frame while paused. It
+walks where a pinch points (and holds the route under Pause), stops a
+route with a tap on ground, talks to a villager and taps through 71
+dialogue pages (a choice answered under the gaze), opens and leaves the
+menu, buys with the quantity keys, stops and pauses on lost tracking,
+plays both battle rings (on foot: pages, slots, AP spent by Weak and
+Strong, the sequence ended; in Gears: the Gear's ring and a strike),
+flies the world map by the captured stick and boards with L2+R2, plays a
+Battling bout (A, Dash held, the stick, Pause) and jumps from a running
+route (two frames from the thumb's touch to the air; the route goes on
+after landing). `xem_assist::reliability` measures the recognizers on the
+hand model under per-joint jitter (2 mm), tremor (2 mm), varied speed,
+size (±10%) and turn (±20°) (`cargo run -p xem-assist --example
+reliability`, 1000 tries each): grabs and prayer 100%, pinch 99.8%,
+taps 99.1%, swipes up and down 99.2-99.5%, swipes across 94.4-94.9%
+(the weakest: a sideways thumb slide is short), latency within a frame or
+so of the closing pose; 30 minutes of idle play (relaxed, curling,
+reaching, turning hands) fire nothing; 200 pause grabs a twelfth of a
+second apart toggle 200 times; a hand lost mid-grab and found closed
+toggles nothing; every one-hand gesture works with either hand alone. The
+XR game smoke plays scripted gestures in OpenXR (`--xr-hands`: Pause,
+prayer hands, a pinch on the panel's Close, a pinch that walks) and the
+browser's `tests/xr-hands.test.mjs` drives IWER's hands (grabs, prayer,
+lost tracking) and controllers (the trigger on the panel's Close). What
+emulators cannot show: a headset's own tracking noise and dropouts, eye
+tracking permission and quality, Meta's microgestures, and sustained
+comfort; the recognizers need no held pose, dwell or raised arm, and the
+decks keep hands low.
 
 ## Crates
 
@@ -1097,7 +1235,8 @@ pad.
 | `xem-webxr` | the WebXR adapter: immersive sessions, views, raw input and WebGL2 layer submission through wgpu |
 | `xem-desktop`, `xem-headless`, `xem-android`, `xem-web` | hosts |
 | `xem-host` | what the SDL3 hosts share: the window and its native handles, the wgpu surface (dropped and recreated with the native window), the presented view (game display or test scene, and settings panel), the game paced at 60 frames a second with its sound (`Game`) |
-| `xem-settings` | typed application settings: validation, acknowledgement, change notification, JSON persistence |
+| `xem-settings` | typed application settings: validation, acknowledgement, change notification, JSON persistence; the game bindings and the player's input (`player`) |
+| `xem-assist` | assisted input: hand gestures, the headset core, touch and arcade decks, gesture resolution, overlay marks, synthetic hands and reliability measures |
 | `xem-storage` | bounded reads and durable replacement of native settings, cards and state files |
 
 ## The test suite
@@ -1280,14 +1419,19 @@ these state paths cover the existing game, event, audio and media services.
 `xem-desktop` opens an SDL3 window (Wayland or X11), presents through wgpu with
 FIFO vsync and draws the game (`--disc DISC [--cards DIR] [--bios FILE]`; the
 test scene without a disc), placed by the presentation settings, under the
-Slint settings panel (Escape or a gamepad's Back+Start toggles it).
+Slint settings panel (Escape or a gamepad's Back+Start toggles it). The
+panel is the launcher too: Saves' Import disc… opens SDL's file dialog and
+plays the chosen disc (CHD, cue sheet or Redump-verified ISO), or gives it
+to a running game's disc changer.
 The panel (`xem-ui/ui/settings.slint`) lists its sections in a sidebar at
 560 logical pixels wide and more, else in a strip of tabs above the section;
 each section is a column of cards of settings, and the status line under
 them says what the last change or operation did (a note, done, or a
-problem in red), beside how the host closes the panel. Controls lists the
-game's keys and buttons; Shortcuts lists every app operation with its
-bindings and edits the chosen one in place. The header's Quit (desktop,
+problem in red), beside how the host closes the panel. Controls edits
+the game's bindings ([Controls](#controls)) and the assisted controls
+(hand gestures, the headset pointer, the ledge brake, touch controls,
+reduced transparency and motion); Shortcuts lists every app operation with
+its bindings and edits the chosen one in place. The header's Quit (desktop,
 Android, a headset; not the browser) asks first: Cancel, a press beside the
 question, Escape or Android's Back keep playing, and hiding the panel drops
 the question. A confirmed Quit ends the run as closing the window does
@@ -1324,6 +1468,12 @@ first-person view where the original's Select shows no map's picture, and
 the right stick's click anywhere in a field; in it the arrow keys, the
 right stick and the mouse (under the mouse camera setting) look around
 ([First-person inspection](#first-person-inspection)).
+`--control` answers agents' JSON commands on stdin, a line each, between
+frames while the game plays: the command layer's (`status`, `context`,
+`navigate`, `act`, ...), `settings`, `settings_apply {change}` (the panel's
+own typed, validated, persisted change), `panel {visible}` and
+`import_disc {path}` (the launcher's path); nothing passes through the
+window system.
 `--script LOG` plays a session log instead of the player's input (its pad
 states replace the keyboard's) and `--exit-at-frame N` prints the memory hash
 when the game has run N frames and exits: the slice's logs end at their native
@@ -1421,7 +1571,14 @@ as JSON text or bytes.
 - **Input.** While the settings panel is hidden, the keyboard
   (`KeyboardEvent.code`), the mouse and the first gamepad (Gamepad API
   standard mapping; Back+Start toggles the panel) hold pad 1 through the
-  game bindings ([Controls](#controls)). The
+  game bindings ([Controls](#controls)); touch pointers play the touch
+  deck and tap the picture ([Touch screens](#touch-screens)); the mouse
+  points at menu entries. The page keeps only the game's keys from the
+  browser (and Escape, which toggles the panel; the header's Settings
+  button and the deck's Settings do too, so Escape is never the only way).
+  Audio starts with the first click, key or touch on the game (or "Start
+  audio"); a Fullscreen button asks for the page's fullscreen, and
+  entering or leaving it, blur and hiding let go of held input. The
   animation loop sets the pad when the player's buttons change, so a pad an
   automation client set (`pad`, `press`, `hold`, `act`, `replay`) stays until the player
   presses something.
