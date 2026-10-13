@@ -17,6 +17,12 @@
 //! - A field dialogue's choice: its window's text lines (the text window at
 //!   +0x18: x +0x1C, y +0x1E, width +0x20, line height +0x2C, first line
 //!   +0x2E), Down to the next, wrapping.
+//! - The field menu's lists (`menu_list_cursor_place`, 801DB0A8): the item
+//!   and arts screens' two columns of eight rows 0x88 apart and 16 high,
+//!   the equipment screen's one column of rows 13 high, placed around the
+//!   list cursor where it is drawn (`menu_state_current` +0x444, its
+//!   quad's corner; `MenuFlags.cursors_shown` +0x50: 1 two columns, 2 one).
+//!   The D-pad steps rows and columns.
 //! - A battle's target choice (`battle_choose_target`): the candidates
 //!   (`battle_target_candidates` 0x800C3E90, 0xFF unused; selectable ones in
 //!   `battle_target_candidate_mask` 0x800C3D64; the selected slot
@@ -61,6 +67,9 @@ pub enum Steps {
     /// The directions move to the nearest entry that way on the battle's
     /// floor ([`Ground`]).
     Compass,
+    /// Rows of `columns` entries (in reading order): Down and Up step rows,
+    /// Right and Left columns, without wrapping.
+    Grid { columns: usize },
 }
 
 /// A battle target's slot and its place on the floor.
@@ -108,6 +117,14 @@ impl Targets {
                 let from = self.selected?;
                 let forward = (to + count - from) % count;
                 Some(if forward <= count / 2 { next } else { opposite(next) })
+            }
+            Steps::Grid { columns } => {
+                let from = self.selected?;
+                let columns = columns.max(1);
+                let (row, column) = (from / columns, from % columns);
+                let (to_row, to_column) = (to / columns, to % columns);
+                Some(if to_row > row { GameAction::Down } else if to_row < row { GameAction::Up }
+                    else if to_column > column { GameAction::Right } else { GameAction::Left })
             }
             Steps::Compass => {
                 // The first move of the fewest that reach it.
@@ -253,6 +270,9 @@ fn menu(memory: &dyn GameMemory, screen: u8, cursor: u8, choice: u8, choices: u8
             return Some(Targets { what: "yes_no", entries, selected: Some(if shown[0] != 0 { 0 } else { 1 }), steps: Steps::Direct });
         }
     }
+    if screen == 0 && let Some(list) = list(memory, state, flags) {
+        return Some(list);
+    }
     let (xs, ys, commands, rows_from, width) = match screen {
         0 => (0x801E_9A00, 0x801E_9A2C, 7, 7, 0x40),
         4 => (0x801D_2194, 0x801D_21B0, 3, 3, 0x4C),
@@ -271,6 +291,40 @@ fn menu(memory: &dyn GameMemory, screen: u8, cursor: u8, choice: u8, choices: u8
         return Some(Targets { what: "choices", entries, selected: Some(usize::from(choice)), steps: Steps::Ring { count: usize::from(choices), next: GameAction::Up } });
     }
     None
+}
+
+/// The list cursor's sprite offset from the place `menu_list_cursor_place`
+/// computes (measured on the item screen).
+const LIST_CURSOR_OFFSET: (i32, i32) = (0, 0);
+
+/// The field menu's list under its cursor (cursor 0, the one the D-pad
+/// moves), as cells around it.
+fn list(memory: &dyn GameMemory, state: u32, flags: u32) -> Option<Targets> {
+    let shown = u8_at(memory, flags + 0x50)?;
+    if shown == 0 {
+        return None;
+    }
+    let cursor = ram(s32_at(memory, state + 0x444)?)?;
+    let poly = cursor + u32::from(u8_at(memory, cursor + 0x75)? & 1) * 0x28;
+    let x = i32::from(s16_at(memory, poly + 8)?);
+    let y = i32::from(s16_at(memory, poly + 0xA)?);
+    // Kinds 0-2 (two columns from x 0x18-0x1c, rows from y 0x11-0x14) and
+    // 3 (one column at x 0xa0, rows from y 0x14).
+    let (columns, rows, column_width, row_height, left, top) = if shown == 2 { (1, 8, 0x88, 13, 0xA0, 0x14) } else { (2, 8, 0x88, 16, 0x18, 0x11) };
+    let (cx, cy) = (x - LIST_CURSOR_OFFSET.0, y - LIST_CURSOR_OFFSET.1);
+    let column = if columns == 2 { ((cx - left + column_width / 2) / column_width).clamp(0, 1) } else { 0 };
+    let row = ((cy - top + row_height / 2) / row_height).clamp(0, rows - 1);
+    let entries = (0..rows).flat_map(|r| (0..columns).map(move |c| (r, c))).map(|(r, c)| Entry {
+        rect: Rect {
+            x: (x + (c - column) * column_width) as f32,
+            y: (y + (r - row) * row_height) as f32,
+            width: (column_width - 4) as f32,
+            height: row_height as f32,
+        },
+        select: None,
+        ground: None,
+    }).collect();
+    Some(Targets { what: "list", entries, selected: Some((row * columns + column) as usize), steps: Steps::Grid { columns: columns as usize } })
 }
 
 fn dialogue_choice(memory: &dyn GameMemory) -> Option<Targets> {
@@ -364,6 +418,17 @@ mod tests {
         let pair = Targets { what: "yes_no", entries: vec![yes, no], selected: Some(1), steps: Steps::Direct };
         assert_eq!(pair.step_toward(0), Some(GameAction::Left));
         assert_eq!(pair.at((25.0, 5.0)), Some(1));
+    }
+
+    #[test]
+    fn grids_step_rows_then_columns() {
+        let entry = Entry { rect: Rect { x: 0.0, y: 0.0, width: 1.0, height: 1.0 }, select: None, ground: None };
+        let grid = Targets { what: "list", entries: vec![entry; 16], selected: Some(1), steps: Steps::Grid { columns: 2 } };
+        assert_eq!(grid.step_toward(5), Some(GameAction::Down));
+        assert_eq!(grid.step_toward(0), Some(GameAction::Left));
+        let below = Targets { selected: Some(4), ..grid.clone() };
+        assert_eq!(below.step_toward(1), Some(GameAction::Up));
+        assert_eq!(below.step_toward(5), Some(GameAction::Right));
     }
 
     #[test]

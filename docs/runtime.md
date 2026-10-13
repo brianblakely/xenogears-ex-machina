@@ -1038,8 +1038,11 @@ buttons, AP left), `world_map` and `arena`. `xem_core::menu` (`targets`)
 lists the selectable entries the screen shows (320x224 screen pixels, as
 the display shows the drawing area): the field menu's commands and a
 command's choice window (the arc tables `menu_highlight_x/y_table`; the
-labels sit about the tables' points), the shops' commands, Yes/No (their
-markers' quads), a dialogue's choice lines and a battle's targets (each
+labels sit about the tables' points), the menu's lists (the item and arts
+screens' two columns of eight rows, the equipment screen's column, as
+`menu_list_cursor_place` lays them out around the drawn list cursor), the
+shops' commands, Yes/No (their markers' quads), a dialogue's choice lines
+and a battle's targets (each
 candidate's sprite projected as `battle_get_slot_screen_box` does, about a
 person's size), with the selected entry and how the D-pad steps it (a
 battle target is reached by the moves `battle_find_candidate_in_direction`
@@ -1057,7 +1060,10 @@ reports the frames run):
 - **Pointing** at an entry (the mouse over the picture,
   `xem_render::Picture` mapping target pixels to screen pixels) steers the
   game's cursor there with the D-pad; a click on an entry selects it and
-  then confirms it once; a click elsewhere is the mouse's binding. With the
+  then confirms it once; a click elsewhere is the mouse's binding. An entry
+  the cursor stops short of (past a list's end) is given up after three
+  steps that leave the selection where it was. Battle and shop lists step
+  by the wheel and the D-pad. With the
   mouse camera on, the game holds the mouse only while nothing on the
   screen is selectable: a menu or a choice lets it go.
 

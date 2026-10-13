@@ -36,6 +36,9 @@ impl Default for Context {
 /// Game frames a pulse holds its actions, then releases them.
 const PULSE_HOLD: u32 = 2;
 const PULSE_GAP: u32 = 2;
+/// Steps toward a pointed entry that may leave the selection unchanged
+/// before the entry is given up.
+const STALLS: u32 = 3;
 /// The most Cancel presses closing the field menu takes (its deepest screen
 /// is a few levels down; each press backs out one).
 const MENU_CLOSE_PRESSES: u32 = 8;
@@ -82,6 +85,9 @@ pub struct PlayerInput {
     hover: Option<(f32, f32)>,
     hover_moved: bool,
     goal: Option<usize>,
+    /// The selection when the last step toward `goal` was pressed, and how
+    /// many steps in a row left it where it was.
+    stalls: Option<(Option<usize>, u32)>,
     click: u32,
     /// The interface the queued presses were meant for.
     epoch: Option<Epoch>,
@@ -168,6 +174,7 @@ impl PlayerInput {
     pub fn click(&mut self, targets: Option<&xem_core::menu::Targets>) -> bool {
         let Some(entry) = targets.zip(self.hover).and_then(|(t, p)| t.at(p)) else { return false };
         self.goal = Some(entry);
+        self.stalls = None;
         self.click = CLICK_FRAMES;
         true
     }
@@ -176,6 +183,7 @@ impl PlayerInput {
     /// (`confirm`) presses Confirm once it is selected (gaze and a tap).
     pub fn select(&mut self, index: usize, confirm: bool) {
         self.goal = Some(index);
+        self.stalls = None;
         self.click = if confirm { CLICK_FRAMES } else { 0 };
     }
 
@@ -192,13 +200,28 @@ impl PlayerInput {
             && let Some(entry) = self.hover.and_then(|p| targets.at(p))
         {
             self.goal = Some(entry);
+            self.stalls = None;
         }
         if self.pulsing() {
             return;
         }
-        let Some(goal) = self.goal else { return };
+        let Some(goal) = self.goal else {
+            self.stalls = None;
+            return;
+        };
         match targets.step_toward(goal) {
-            Some(action) => self.pulse(Pulse::new([action])),
+            // A goal the cursor stops short of (past a list's end, a target
+            // the game will not move to) is given up.
+            Some(_) if matches!(self.stalls, Some((before, n)) if before == targets.selected && n + 1 >= STALLS) => {
+                self.goal = None;
+                self.click = 0;
+                self.stalls = None;
+            }
+            Some(action) => {
+                let n = match self.stalls { Some((before, n)) if before == targets.selected => n + 1, _ => 0 };
+                self.stalls = Some((targets.selected, n));
+                self.pulse(Pulse::new([action]));
+            }
             None if targets.selected == Some(goal) => {
                 self.goal = None;
                 if self.click > 0 {

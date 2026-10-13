@@ -364,6 +364,52 @@ fn pointing_browses_the_field_menu() {
     assert_eq!(context(&mut session)["kind"], "walk", "leave closed the menu");
 }
 
+/// The field menu's lists are cells around their cursor: a click on Items
+/// opens the item screen, pointing at a cell steps the cursor there by
+/// rows and columns.
+#[test]
+fn pointing_browses_the_item_list() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let bindings = xem_settings::GameBindings::default();
+    let mut player = xem_settings::player::PlayerInput::default();
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    run(&mut session, json!({"cmd": "enter_field", "map": 30}));
+    run(&mut session, json!({"cmd": "frames", "count": 400}));
+    run(&mut session, json!({"cmd": "act", "actions": ["Menu"], "frames": 2}));
+    run(&mut session, json!({"cmd": "frames", "count": 200}));
+    let commands = session.runtime.targets().expect("the commands");
+    // The commands from Exit (0) up to Status (6); Items is the fourth.
+    player.hover(Some(commands.entries[4].rect.centre()));
+    assert!(player.click(Some(&commands)));
+    let mut list = None;
+    for _ in 0..300 {
+        let targets = session.runtime.targets();
+        player.browse(targets.as_ref());
+        host_frame(&mut session, &mut player, &bindings);
+        if let Some(targets) = targets.filter(|t| t.what == "list") {
+            list = Some(targets);
+            break;
+        }
+    }
+    assert!(list.is_some(), "the item list");
+    // The screen settles (its cursor is drawn where it belongs).
+    for _ in 0..60 {
+        host_frame(&mut session, &mut player, &bindings);
+    }
+    let list = session.runtime.targets().expect("the item list");
+    assert_eq!((list.entries.len(), list.selected), (16, Some(0)), "two columns of eight rows, the first selected");
+    player.hover(Some(list.entries[5].rect.centre()));
+    for _ in 0..60 {
+        let targets = session.runtime.targets();
+        player.browse(targets.as_ref());
+        host_frame(&mut session, &mut player, &bindings);
+    }
+    assert_eq!(session.runtime.targets().unwrap().selected, Some(5), "row three, the second column");
+}
+
 /// A shop's quantity buttons edit the selected entry's proposal by the
 /// list's own presses: ALL reaches the most the shop allows (here the 99
 /// of one purchase), NONE clears it, plus and minus step it.
