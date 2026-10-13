@@ -122,8 +122,8 @@ function wireCanvas() {
     if (app.pointer(kind, x, y, event.button ?? 0, event.deltaX ?? event.movementX ?? 0, event.deltaY ?? 0)) event.preventDefault();
     // With the mouse camera on, the game keeps the mouse (hidden, unbounded
     // motion) while it has the input.
-    if (kind === 'down' && !app.panel_visible() && document.pointerLockElement !== canvas
-        && window.xem.settings.get().settings.mouse_camera) {
+    if (kind === 'down' && event.pointerType !== 'touch' && document.pointerLockElement !== canvas
+        && app.mouse_camera_active()) {
       canvas.requestPointerLock?.()?.catch?.(() => {});
     }
     dispatchAppRequests();
@@ -243,20 +243,27 @@ function pollGamepad() {
   gamepadName = pad?.id ?? null;
   const pressed = Uint8Array.from(pad?.buttons ?? [], (b) => (b.pressed ? 1 : 0));
   app.gamepad(pressed, Float32Array.from(pad?.axes ?? []));
-  releasePointerForPanel();
+  releasePointerForGame();
   dispatchAppRequests();
 }
 // The browser takes Escape to release the mouse: that release opens the
 // settings panel, as Escape does otherwise.
 let pointerReleasedAt = -Infinity;
+let releasingPointer = false;
 document.addEventListener('pointerlockchange', () => {
-  if (document.pointerLockElement || !document.hasFocus() || app.panel_visible()
-      || !window.xem.settings.get().settings.mouse_camera) return;
+  const captured = document.pointerLockElement === canvas;
+  app.set_pointer_captured(captured);
+  if (captured) { releasingPointer = false; return; }
+  // A game menu or pause releases the mouse without opening Settings.
+  if (releasingPointer) { releasingPointer = false; return; }
+  if (!document.hasFocus() || !app.mouse_camera_active()) return;
   pointerReleasedAt = performance.now();
   app.set_panel_visible(true);
 });
-function releasePointerForPanel() {
-  if ((app.panel_visible() || !window.xem.settings.get().settings.mouse_camera) && document.pointerLockElement) {
+function releasePointerForGame() {
+  if (!app.mouse_camera_active() && document.pointerLockElement) {
+    releasingPointer = true;
+    app.set_pointer_captured(false);
     document.exitPointerLock();
   }
 }
@@ -709,7 +716,7 @@ for (const type of ['keydown', 'keyup']) {
     if (down && event.key === 'Escape') {
       // Unless this Escape released the mouse and opened the panel already.
       if (performance.now() - pointerReleasedAt > 250) app.set_panel_visible(!app.panel_visible());
-      releasePointerForPanel();
+      releasePointerForGame();
       event.preventDefault();
       return;
     }

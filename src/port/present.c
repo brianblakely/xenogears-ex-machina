@@ -61,6 +61,7 @@ void xem_original_sprite_draw_parts(Sprite *sprite, u_long *ot);
 void xem_original_sprite_draw_parts_cut_below(Sprite *sprite, u_long *ot, s32 height);
 void xem_original_sprite_draw_parts_cut_above(Sprite *sprite, u_long *ot, s32 height);
 void xem_original_worldmap_map_overlay_draw(void);
+void xem_original_battle_popup_draw_glyph(SpritePart *glyph, s32 colour);
 s32 xem_original_gpu_draw_panorama(Panorama *panorama, SVECTOR *eye, SVECTOR *target, MATRIX *view, u_long *ot, s32 buffer);
 void xem_original_gpu_draw_panorama_strip(Panorama *panorama, s32 start, s32 bottom, s32 zoom, u_long *ot, s32 buffer);
 void xem_original_battle_draw_stage_sky(void *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot, s32 buffer);
@@ -403,6 +404,17 @@ void worldmap_map_overlay_draw(void) {
 
     xem_gte_ring->class_ = XEM_PROJECTION_INTERFACE;
     xem_original_worldmap_map_overlay_draw();
+    xem_gte_ring->class_ = previous;
+}
+
+/* Damage and running-total glyphs use the GTE to animate screen-space
+ * text. Their artificial depth (twice H, with rotation and scale) is not
+ * scene depth: keep them out of postprocessing and focus measurements. */
+void battle_popup_draw_glyph(SpritePart *glyph, s32 colour) {
+    u32 previous = xem_gte_ring->class_;
+
+    xem_gte_ring->class_ = XEM_PROJECTION_INTERFACE;
+    xem_original_battle_popup_draw_glyph(glyph, colour);
     xem_gte_ring->class_ = previous;
 }
 

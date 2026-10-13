@@ -31,6 +31,8 @@ struct Pass {
 @group(0) @binding(1) var vram: texture_2d<u32>;
 @group(0) @binding(2) var capture: texture_2d<f32>;
 @group(0) @binding(3) var capture_sampler: sampler;
+@group(0) @binding(4) var feedback: texture_2d<f32>;
+@group(0) @binding(5) var feedback_aux: texture_2d<f32>;
 
 // Primitive flags (ps1/mod.rs, FLAG_*).
 const TEXTURED: u32 = 1u;
@@ -49,6 +51,7 @@ const ORIGINAL: u32 = 65536u;
 const CLASS_SPRITE: u32 = 4u;
 const LINE: u32 = 131072u;
 const CAPTURE: u32 = 262144u;
+const FEEDBACK: u32 = 524288u;
 
 struct VertexIn {
     @location(0) position: vec2<f32>,
@@ -270,7 +273,11 @@ fn shade(in: VertexOut, frag: vec4<f32>) -> Shaded {
             uv += select(vec2<f32>(0.0), vec2<f32>(1.0), vec2<f32>(uv_dx.x, uv_dy.y) < vec2<f32>(0.0));
         }
         var s: Sample;
-        if (flags & CAPTURE) != 0u && pass_.capture.z > 0u {
+        if (flags & FEEDBACK) != 0u {
+            let point = (uv + vec2<f32>(0.5) - pass_.origin) * pass_.scale / vec2<f32>(textureDimensions(feedback));
+            let pixel = textureSampleLevel(feedback, capture_sampler, point, 0.0);
+            s = Sample(pixel.rgb * 31.0, 1.0, pixel.a > 0.0);
+        } else if (flags & CAPTURE) != 0u && pass_.capture.z > 0u {
             s = sample_capture(in.mode, uv);
         } else if (flags & LINEAR) != 0u {
             s = sample_linear(in.mode, in.limits, uv);
@@ -314,6 +321,11 @@ struct Targets {
 };
 
 fn aux(in: VertexOut) -> vec4<f32> {
+    if (in.mode.w & FEEDBACK) != 0u {
+        let size = vec2<i32>(textureDimensions(feedback_aux));
+        let point = clamp(vec2<i32>((affine(in) + vec2<f32>(0.5) - pass_.origin) * pass_.scale), vec2<i32>(0), size - vec2<i32>(1));
+        return textureLoad(feedback_aux, point, 0);
+    }
     let depth = u32(clamp(in.depth, 0.0, 65535.0));
     let kind = (in.mode.w >> CLASS_SHIFT) & 15u;
     var flags = 0u;

@@ -440,13 +440,14 @@ impl View {
         // unbounded motion) while it has the input.
         // It lets the mouse go while the game shows entries to point at (a
         // menu, a choice), and takes it again when walking resumes.
-        let relative = !cfg!(target_os = "android") && self.settings.borrow().settings().mouse_camera
-            && !self.panel_visible() && self.app_input.focused() && !self.game_ui.navigates();
+        let relative = !cfg!(target_os = "android") && !self.panel_visible() && self.app_input.focused()
+            && game.as_mut().is_some_and(|game| game.mouse_camera_active(self.settings.borrow().settings()));
         if relative != self.relative_mouse {
             // SAFETY: the window is SDL's and live.
             unsafe { SDL_SetWindowRelativeMouseMode(window.raw, relative) };
             self.relative_mouse = relative;
             self.player.mouse.clear();
+            self.look_mouse = [0.0; 2];
         }
         let was_busy = self.operations.busy;
         let completed = self.operations.poll(game.as_mut(),&mut self.settings.borrow_mut());
@@ -658,10 +659,11 @@ impl View {
                     self.player.hover(self.picture.and_then(|p| p.to_screen(x, y)));
                 }
                 if self.relative_mouse && self.renderer.first_person() {
-                    self.look_mouse[0] += motion.xrel;
-                    self.look_mouse[1] += motion.yrel;
+                    let scale = self.settings.borrow().settings().mouse_scale();
+                    self.look_mouse[0] += motion.xrel * scale;
+                    self.look_mouse[1] += motion.yrel * scale;
                 } else if self.relative_mouse {
-                    self.player.mouse.moved(motion.xrel);
+                    self.player.mouse.moved(motion.xrel * self.settings.borrow().settings().mouse_scale());
                 }
             }
             SDL_EVENT_MOUSE_BUTTON_DOWN | SDL_EVENT_MOUSE_BUTTON_UP if unsafe { event.button }.which != SDL_TOUCH_MOUSEID => {

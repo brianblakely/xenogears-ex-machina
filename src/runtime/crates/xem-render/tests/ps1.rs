@@ -836,3 +836,148 @@ fn check_movie_frame(gpu: &Gpu, software: bool) {
     movie.observe(&[TraceOp::VBlank, TraceOp::MovieFramesLeft(0)]);
     assert!(!movie.shows(&display));
 }
+
+#[test]
+fn framebuffer_distortion_keeps_the_reconstructed_scene_and_its_depth() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let area = DisplayArea { x: 0, y: 0, width: 320, height: 216 };
+    let framing = Framing { side: 40, pull_back: 1000.0, ..Default::default() };
+    let render = |effect: u8, fidelity: Fidelity| {
+        let traces = traced(|device| {
+            projected_scene(device);
+            if effect != 0 {
+                // The field saves strips, draws its grid 32 rows down, then
+                // shifts the screen and restores its bottom saved strips.
+                for row in 0..3 {
+                    for column in 0..5 {
+                        device.write_gp0_words(&[0x8000_0000, xy(column * 64, 192 + row * 16), xy(960, (row * 5 + column) * 16), 16 << 16 | 64]);
+                    }
+                }
+                for x in (0..320).step_by(64) {
+                    device.write_gp0_words(&[0x2D80_8080, xy(x, 32), 0, xy(x + 64, 32), ((0x100 + x as u32 / 64) << 16) | 64,
+                        xy(x, 224), 192 << 8, xy(x + 64, 224), 192 << 8 | 64]);
+                }
+                device.write_gp0_words(&[0x8000_0000, xy(0, 32), 0, 192 << 16 | 320]);
+                for row in 0..3 {
+                    for column in 0..5 {
+                        let (x, y, v) = (column * 64, 192 + row * 16 - if effect == 2 && row == 2 { 32 } else { 0 }, ((row * 5 + column) * 16) as u32);
+                        device.write_gp0_words(&[0x2D80_8080, xy(x, y), v << 8, xy(x + 64, y), (0x10F << 16) | v << 8 | 64,
+                            xy(x, y + 16), (v + 16) << 8, xy(x + 64, y + 16), (v + 16) << 8 | 64]);
+                    }
+                }
+            }
+        });
+        let (mut renderer, _) = draw(&gpu, &traces, fidelity, Culling::default());
+        let mut frame = FrameRenderer::new(&gpu.device);
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, area,
+            if fidelity == Fidelity::ORIGINAL { Framing::default() } else { framing });
+        frame.draw_overlay(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, None);
+        gpu.queue.submit([encoder.finish()]);
+        let color = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+        if fidelity == Fidelity::ORIGINAL {
+            let native = read_rgba8(&gpu.device, &gpu.queue, renderer.picture().0);
+            let expected: Vec<_> = native.chunks_exact(1024 * 4).take(216).flat_map(|row| row[..320 * 4].iter().copied()).collect();
+            assert_eq!(color, expected, "exact PS1 fidelity keeps the original framebuffer path");
+        }
+        (color, read_rgba8(&gpu.device, &gpu.queue, frame.aux()))
+    };
+    render(1, Fidelity::ORIGINAL);
+    let (before, depth_before) = render(0, Fidelity::MODERN);
+    let (after, depth_after) = render(1, Fidelity::MODERN);
+    let different = before.chunks_exact(4).zip(after.chunks_exact(4))
+        .filter(|(a, b)| (0..3).any(|c| (i16::from(a[c]) - i16::from(b[c])).abs() > 12)).count();
+    assert!(different < before.len() / 4 / 100, "the neutral grid keeps the pulled-back scene and sides: {different} pixels differ");
+    let world_before = depth_before.chunks_exact(4).filter(|p| p[2] > 1).count();
+    let world_after = depth_after.chunks_exact(4).filter(|p| p[2] > 1).count();
+    assert!(world_after.abs_diff(world_before) < world_before / 20, "the distortion preserves depth/classes for HD-2D: {world_before} -> {world_after}");
+    let (warped, _) = render(2, Fidelity::MODERN);
+    let at = ((194 * 2 * 800) + (270 + 40) * 2) * 4;
+    assert_eq!(&before[at..at + 3], [0, 0, 0]);
+    assert!(warped[at] > 240 && warped[at + 1] > 240 && warped[at + 2] == 0,
+        "the wave brings the yellow pixel from hidden row226 into visible row194");
+}
+
+#[test]
+fn moving_the_back_buffer_does_not_retire_the_still_displayed_frame() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let traces = traced(projected_scene);
+    let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
+    let area = DisplayArea { x: 0, y: 0, width: 320, height: 216 };
+    renderer.set_display(xem_gpu::VramRect { x: 0, y: 0, width: 320, height: 216 });
+    let mut frame = FrameRenderer::new(&gpu.device);
+    let framing = Framing { side: 40, pull_back: 1000.0, ..Default::default() };
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, area, framing);
+    frame.draw_overlay(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, None);
+    gpu.queue.submit([encoder.finish()]);
+    let expected = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+    let clear = DEVICE.with(|device| {
+        let mut device = device.borrow_mut();
+        device.write_gp0_words(&[0x0200_0000, xy(0, 216), 216 << 16 | 320]);
+        device.take_trace()
+    });
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    renderer.draw(&mut encoder, &clear);
+    frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, area, framing);
+    frame.draw_overlay(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, None);
+    gpu.queue.submit([encoder.finish()]);
+    assert_eq!(read_rgba8(&gpu.device, &gpu.queue, frame.color()), expected, "the old first buffer remains displayed during the mode change");
+    renderer.set_presented(Some(xem_render::ps1::PresentedPicture { texture: frame.color().clone(), side: 40, scale: 2 }));
+    let copy = DEVICE.with(|device| {
+        let mut device = device.borrow_mut();
+        device.write_gp0_words(&[0x8000_0000, 0, xy(0, 216), 216 << 16 | 320]);
+        device.take_trace()
+    });
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    renderer.set_display(xem_gpu::VramRect { x: 0, y: 216, width: 320, height: 216 });
+    renderer.draw(&mut encoder, &copy);
+    frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, DisplayArea { y: 216, ..area }, framing);
+    frame.draw_overlay(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, None);
+    gpu.queue.submit([encoder.finish()]);
+    assert_eq!(frame.identity().map(|(origin, _)| origin), Some((0, 216)), "a buffer-to-buffer copy starts the new back buffer, not an internal shift of the front");
+    assert!(read_rgba8(&gpu.device, &gpu.queue, frame.color()) == expected, "the copied display keeps the presented frame");
+}
+
+#[test]
+fn a_saved_screen_survives_a_second_copy_and_clearing_that_display_alias() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let traces = traced(projected_scene);
+    let (mut renderer, _) = draw(&gpu, &traces, Fidelity::MODERN, Culling::default());
+    let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
+    for y in [0, 256] { renderer.set_display(xem_gpu::VramRect { x: 0, y, width: 320, height: 240 }); }
+    let mut frame = FrameRenderer::new(&gpu.device);
+    let framing = Framing { side: 40, pull_back: 1000.0, ..Default::default() };
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, area, framing);
+    frame.draw_overlay(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, None);
+    gpu.queue.submit([encoder.finish()]);
+    let expected = read_rgba8(&gpu.device, &gpu.queue, frame.color());
+    renderer.set_presented(Some(xem_render::ps1::PresentedPicture { texture: frame.color().clone(), side: 40, scale: 2 }));
+    // Field entry takes the picture, then copies the same source into its
+    // other display buffer. That buffer is cleared before the saved pieces
+    // are drawn; the offscreen picture must retain its independent lifetime.
+    for destination in [xy(704, 256), xy(0, 256)] {
+        let trace = DEVICE.with(|device| {
+            let mut device = device.borrow_mut();
+            device.write_gp0_words(&[0x8000_0000, 0, destination, 240 << 16 | 320]);
+            device.take_trace()
+        });
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer.draw(&mut encoder, &trace);
+        gpu.queue.submit([encoder.finish()]);
+    }
+    let trace = DEVICE.with(|device| {
+        let mut device = device.borrow_mut();
+        device.write_gp0_words(&[0x0200_0000, xy(0, 256), 240 << 16 | 320]);
+        // Copy the saved image back, as a neutral screen-piece transition.
+        device.write_gp0_words(&[0x8000_0000, xy(704, 256), xy(0, 256), 240 << 16 | 320]);
+        device.take_trace()
+    });
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    renderer.draw(&mut encoder, &trace);
+    frame.prepare(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, DisplayArea { y: 256, ..area }, framing);
+    frame.draw_overlay(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, None);
+    gpu.queue.submit([encoder.finish()]);
+    assert_eq!(read_rgba8(&gpu.device, &gpu.queue, frame.color()), expected, "both the pulled-back picture and its sides survive the cleared alias");
+}

@@ -300,24 +300,31 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
     try {
       const page = await browser.page(fixture); await forever(page);
       await history(page); await page.evaluate(() => window.xem.setRunning(true));
-      // Observe each animation in the page: a slow automation round-trip
-      // can otherwise read the oldest state after both held rewind steps.
-      const before = await page.evaluate(() => {
-        const initial = window.xem.status().session.frames;
-        let previous = initial;
+      // Capture the baseline at the real keydown: play can advance between
+      // automation calls. Observe each animation in the page so a slow
+      // round-trip cannot miss either of the two held rewind steps.
+      await page.evaluate(() => {
         window.heldRewindSteps = [];
-        const sample = () => {
-          const frame = window.xem.status().session.frames;
-          if (frame < previous) window.heldRewindSteps.push(frame);
-          previous = frame;
-          if (window.heldRewindSteps.length < 2) requestAnimationFrame(sample);
+        const begin = (event) => {
+          if (event.code !== 'KeyR' || event.repeat) return;
+          window.removeEventListener('keydown', begin, true);
+          window.heldRewindBefore = window.xem.status().session.frames;
+          let previous = window.heldRewindBefore;
+          const sample = () => {
+            const frame = window.xem.status().session.frames;
+            if (frame < previous) window.heldRewindSteps.push(frame);
+            previous = frame;
+            if (window.heldRewindSteps.length < 2) requestAnimationFrame(sample);
+          };
+          requestAnimationFrame(sample);
         };
-        requestAnimationFrame(sample);
-        return initial;
+        window.addEventListener('keydown', begin, true);
       });
       await page.keyboard.down('KeyR');
       await page.waitForFunction(() => window.heldRewindSteps.length >= 2);
-      const steps = await page.evaluate(() => window.heldRewindSteps);
+      const { before, steps } = await page.evaluate(() => ({
+        before: window.heldRewindBefore, steps: window.heldRewindSteps,
+      }));
       assert.ok(steps[0] < before && steps[1] < steps[0], `held rewind must restore two distinct earlier frames: ${before} -> ${steps}`);
       await page.keyboard.up('KeyR');
       const released = (await status(page)).session.frames;
@@ -446,6 +453,67 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
       assert.equal((await page.evaluate(()=>window.xem.settings.get())).settings.pause_on_focus_loss,false);
       assert.deepEqual(page.errors,[]);
     } finally {await browser.close();}
+  });
+
+  test('mouse camera releases on original Start pause and battle combo input without opening Settings', {
+    skip: ![USER_DISC,HEADLESS,join(WEB,'game/game.wasm')].every(existsSync) && 'needs original disc and native/browser builds',
+  }, async () => {
+    const dir = mkdtempSync(join(tmpdir(),'xem-mouse-pause-'));
+    const state = join(dir,'field.xemstate');
+    const commands = [{cmd:'enter_field',map:22},{cmd:'frames',count:300},{cmd:'state_save',path:state}];
+    const replies = execFileSync(HEADLESS,['--disc',USER_DISC,'--control','--cards',join(dir,'cards')],{
+      cwd:ROOT,input:commands.map(command=>JSON.stringify(command)).join('\n')+'\n',encoding:'utf8',maxBuffer:1<<26,
+    }).trim().split('\n').map(line=>JSON.parse(line));
+    assert.ok(replies.every(reply=>!reply.error),JSON.stringify(replies));
+    const battleState = join(dir,'battle.xemstate');
+    const battleCommands = [
+      {cmd:'frames',count:60},{cmd:'write',path:'mode_battle_standalone',value:1},
+      {cmd:'boot_mode',mode:2},{cmd:'frames',count:900},
+      {cmd:'press',buttons:['start'],frames:1},{cmd:'frames',count:1520},
+      {cmd:'press',buttons:['cross'],frames:2},{cmd:'frames',count:18},
+      {cmd:'state_save',path:battleState},
+    ];
+    const battleReplies = execFileSync(HEADLESS,['--disc',USER_DISC,'--control','--cards',join(dir,'cards')],{
+      cwd:ROOT,input:battleCommands.map(command=>JSON.stringify(command)).join('\n')+'\n',encoding:'utf8',maxBuffer:1<<26,
+    }).trim().split('\n').map(line=>JSON.parse(line));
+    assert.ok(battleReplies.every(reply=>!reply?.error),JSON.stringify(battleReplies));
+    const browser = await start({args:NO_WEBGPU});
+    try {
+      const page = await browser.page();
+      await page.setInputFiles('#file',USER_DISC);
+      await page.waitForFunction(()=>window.xem.status().disc?.state==='identified');
+      await page.evaluate(async bytes=>{
+        const x=window.xem;
+        await x.boot(); x.importSnapshot(Uint8Array.from(bytes));
+        x.settings.apply({MouseCamera:true}); x.setRunning(true);
+      },Array.from(readFileSync(state)));
+      const canvas = page.locator('canvas');
+      await canvas.click();
+      await page.waitForFunction(()=>document.pointerLockElement === document.querySelector('canvas'));
+      await page.keyboard.down('Enter');
+      await page.waitForFunction(()=>window.xem.command({cmd:'inspect',path:'sound_driver_flags'})&0x40);
+      await page.keyboard.up('Enter');
+      await page.waitForFunction(()=>!document.pointerLockElement);
+      assert.equal((await status(page)).renderer.panelVisible,false,'game pause must not open app Settings');
+      await canvas.click();
+      await page.waitForTimeout(100);
+      assert.equal(await page.evaluate(()=>!!document.pointerLockElement),false,'clicking the pause screen cannot recapture the cursor');
+      await page.keyboard.down('Enter');
+      await page.waitForFunction(()=>!(window.xem.command({cmd:'inspect',path:'sound_driver_flags'})&0x40));
+      await page.keyboard.up('Enter');
+      await canvas.click();
+      await page.waitForFunction(()=>document.pointerLockElement === document.querySelector('canvas'));
+      await page.evaluate(bytes=>window.xem.importSnapshot(Uint8Array.from(bytes)),Array.from(readFileSync(battleState)));
+      await page.waitForFunction(()=>window.xem.command({cmd:'context'}).attack);
+      await page.waitForFunction(()=>!document.pointerLockElement);
+      assert.equal((await status(page)).renderer.panelVisible,false,'battle input releases without opening Settings');
+      const ap = await page.evaluate(()=>window.xem.command({cmd:'context'}).ap);
+      await canvas.hover(); await page.mouse.down();
+      await page.waitForFunction(ap=>window.xem.command({cmd:'context'}).ap<ap,ap);
+      await page.mouse.up();
+      assert.equal(await page.evaluate(()=>!!document.pointerLockElement),false,'attacking by mouse cannot recapture the cursor');
+      assert.deepEqual(page.errors,[]);
+    } finally { await browser.close(); }
   });
 
   test('rewind keeps the current FF toggle, rate and app settings', async () => {
@@ -630,16 +698,24 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
       const page = await browser.page(fixture);
       for (const rate of [{ Fixed: 20 }, 'Uncapped']) {
       await forever(page);
-      const result = await page.evaluate(async (rate) => {
+      await page.evaluate(async (rate) => {
         const x = window.xem;
         const saved = x.settings.apply({ FastForwardRate: rate });
         if (!saved.ok) throw new Error(saved.reason);
         x.fastForward(true); await x.runFrames(3);
-        const before = x.status(); const start = performance.now(); x.setRunning(true);
+        x.setRunning(true);
+      }, rate);
+      await page.waitForFunction(() => window.xem.status().renderer.hud.fast_forward);
+      const result = await page.evaluate(async () => {
+        // Finish the first visible HUD frame before measuring: the browser
+        // may compile its GPU work after the frame callback returns.
+        await new Promise(requestAnimationFrame);
+        const x = window.xem;
+        const before = x.status(); const start = performance.now();
         await new Promise((resolve) => setTimeout(resolve, 1000)); x.setRunning(false);
         const after = x.status();
         return { before, after, elapsed: performance.now()-start };
-      }, rate);
+      });
       const samples = result.after.audio.frames - result.before.audio.frames;
       assert.ok(samples > 30_000, `music produced only ${samples} samples in ${result.elapsed} ms`);
       assert.ok(samples < 60_000, `music accelerated to ${samples} samples in ${result.elapsed} ms`);

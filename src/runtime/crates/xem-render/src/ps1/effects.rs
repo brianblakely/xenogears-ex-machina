@@ -715,7 +715,7 @@ impl EffectsRenderer {
             let group = match &self.shadow_group {
                 Some((vram, generation, group)) if *vram == ps1.vram && *generation == ps1.capture.generation => group.clone(),
                 _ => {
-                    let group = bind_group(device, &ps1.pipelines.layout, &self.shadow_uniform, &ps1.vram, &ps1.capture);
+                    let group = bind_group(device, &ps1.pipelines.layout, &self.shadow_uniform, &ps1.vram, &ps1.capture, None);
                     self.shadow_group = Some((ps1.vram.clone(), ps1.capture.generation, group.clone()));
                     group
                 }

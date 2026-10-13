@@ -22,6 +22,109 @@ use xem_settings::{EffectLevels, Fidelity, Graphics, GraphicsProfile};
 
 const FRAMES: u64 = 240;
 
+#[test]
+fn battle_damage_totals_are_interface_and_do_not_change_scene_focus() {
+    use xem_gpu::{Class, Primitive, TraceOp};
+    use xem_render::ps1::{DisplayArea, SceneAnalysis};
+
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    for gears in [false, true] {
+        let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+        for cmd in [
+            json!({"cmd":"frames", "count":60}),
+            json!({"cmd":"write", "path":"mode_battle_standalone", "value":1}),
+            json!({"cmd":"boot_mode", "mode":2}),
+            json!({"cmd":"frames", "count":900}),
+        ] { assert!(session.execute(&cmd).get("error").is_none()); }
+        if gears {
+            for button in ["down", "down", "cross", "right", "cross", "right", "cross"] {
+                session.execute(&json!({"cmd":"press", "buttons":[button], "frames":1}));
+                session.execute(&json!({"cmd":"frames", "count":20}));
+            }
+        }
+        session.execute(&json!({"cmd":"press", "buttons":["start"], "frames":1}));
+        session.execute(&json!({"cmd":"frames", "count":1520}));
+        session.runtime.services().gpu.device_mut().set_trace(true);
+        let mut checked = 0;
+        for frame in 0..420 {
+            session.execute(&json!({"cmd":"pad", "buttons":if frame % 10 < 2 { vec!["cross"] } else { vec![] }}));
+            assert!(session.frame().unwrap());
+            let trace = session.runtime.services().gpu.device_mut().take_trace();
+            let mut total = [0u8; 0x68 + 24 * 5];
+            session.runtime.memory().read(0x800D_30EC, &mut total).unwrap();
+            let count = u32::from_le_bytes(total[0x64..0x68].try_into().unwrap()) as usize;
+            if count == 0 || count > 5 { continue; }
+            // Original TotalPopup's SpriteParts identify the numeric glyphs
+            // by their texture page, palette and first texel. They are drawn
+            // by battle_popup_draw_glyph, also used for floating damage.
+            let is_glyph = |p: &Primitive| p.textured && total[0x68..0x68 + count * 24].chunks_exact(24).any(|g| {
+                let half = |i| u16::from_le_bytes([g[i], g[i + 1]]);
+                p.clut == half(12) && p.environment.draw_mode & 0x1FF == u32::from(half(10)) & 0x1FF &&
+                    p.vertices[0].u == i16::from(g[4]) && p.vertices[0].v == i16::from(g[5])
+            });
+            let mut without = Vec::new();
+            for op in &trace.ops {
+                if let TraceOp::Draw(p) = op && is_glyph(p) {
+                    assert_eq!(p.class, Class::Flat, "gears={gears}, frame={frame}: damage glyph is interface");
+                    assert_eq!(p.depth(), 0.0);
+                    checked += 1;
+                } else {
+                    without.push(op.clone());
+                }
+            }
+            let area = DisplayArea { x: 0, y: 0, width: 320, height: 216 };
+            let all = SceneAnalysis::of(&trace.ops, area);
+            let scene = SceneAnalysis::of(&without, area);
+            assert_eq!(all.depths, scene.depths, "damage glyphs cannot change the scene's depth range");
+            assert_eq!(all.focus, scene.focus, "damage glyphs cannot move the focus");
+        }
+        assert!(checked > 50, "gears={gears}: observed only {checked} damage glyphs");
+        eprintln!("gears={gears}: checked {checked} original damage glyphs");
+    }
+}
+
+#[test]
+fn worldmap_cloud_corners_keep_their_original_quad() {
+    use xem_gpu::{Class, Shape, TraceOp};
+
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    session.execute(&json!({"cmd":"boot_mode", "mode":3}));
+    session.execute(&json!({"cmd":"frames", "count":900}));
+    session.runtime.services().gpu.device_mut().set_trace(true);
+    let mut checked = 0;
+    for frame in 0..600 {
+        let buttons = if frame < 2 { vec!["up", "cross"] } else { vec!["up"] };
+        session.execute(&json!({"cmd":"pad", "buttons":buttons}));
+        assert!(session.frame().unwrap());
+        let trace = session.runtime.services().gpu.device_mut().take_trace();
+        for op in trace.ops {
+            let TraceOp::Draw(p) = op else { continue };
+            // worldmap_clouds_alloc_quads: the cloud page and palette.
+            if !p.textured || p.shape != Shape::Quad || p.clut != (0x1FE << 6 | 0x130 >> 4) ||
+                p.environment.draw_mode & 0x1FF != 0x3F { continue; }
+            assert_eq!(p.class, Class::World);
+            let v = p.vertices.map(|v| v.view.expect("each cloud corner has its own projection"));
+            // All three original cloud-detail paths project a rectangular
+            // planar quad. Fixed-point matrix rounding can lose one unit at
+            // each corner; borrowing a corner from another layer cannot.
+            for axis in 0..3 {
+                let error = (v[0][axis] + v[3][axis] - v[1][axis] - v[2][axis]).abs();
+                assert!(error <= 2.0, "frame={frame}, axis={axis}: cloud corner escaped its quad ({v:?})");
+            }
+            checked += 1;
+        }
+    }
+    assert!(checked > 100, "the flight route should draw clouds ({checked} seen)");
+    eprintln!("checked {checked} original worldmap cloud quads");
+}
+
 fn disc() -> Option<PathBuf> {
     let path = std::env::var_os("XEM_DISC1")
         .map(PathBuf::from)

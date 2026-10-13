@@ -92,7 +92,7 @@ module() {
 port() {
     cd "$root" && python3 -m unittest tests.test_port_model_draw tests.test_port_gte tests.test_port_gpu \
         tests.test_game_module_pause tests.test_port_original_traces tests.test_port_resident tests.test_port_arena \
-        tests.test_port_worldmap tests.test_port_controls tests.test_port_disc tests.test_dispatch_tables
+        tests.test_port_worldmap tests.test_port_presentation tests.test_port_controls tests.test_port_disc tests.test_dispatch_tables
 }
 
 # What the native stages run: the tests, the validation example and the

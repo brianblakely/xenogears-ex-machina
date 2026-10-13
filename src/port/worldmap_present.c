@@ -103,53 +103,6 @@ void worldmap_objects_draw(void) {
     }
 }
 
-/* The clouds' work area: the quads added this frame (DriftScratch.count). */
-#define XEM_CLOUD_COUNT 0x1F8002F0u
-/* Slots of the screen point -> projection table (in the capture area's
- * backup, which nothing uses meanwhile). */
-#define XEM_CLOUD_SLOTS 4096
-
-/* The clouds: the screen points of the quads the original filled this frame
- * recorded as stored with the projections that made them, as swc2 records a
- * point: the original reads them from the GTE (mfc2) and stores them with
- * plain writes, so without this the renderer could not tell them from 2D
- * points and would keep them inside the original screen. Each point takes
- * the latest projection of the pass (made since `first`) with its value. */
-static void xem_cloud_stores(u32 first) {
-    XemProjectionRing *ring = xem_gte_ring;
-    u32 *table = xem_present_capture->backup;
-    u32 n, i, k, slot, word, at, quads;
-
-    if (!ring->recording || ring->count - first > XEM_CLOUD_SLOTS / 2 || xem_present_capture->active) {
-        return;
-    }
-    for (i = 0; i < XEM_CLOUD_SLOTS * 2; i++) {
-        table[i] = 0;
-    }
-    for (n = first; n != ring->count; n++) {
-        word = ring->entries[n % XEM_GTE_PROJECTIONS].sxy;
-        for (slot = (word * 2654435761u) >> 20; table[slot * 2 + 1] != 0 && table[slot * 2] != word;) {
-            slot = (slot + 1) % XEM_CLOUD_SLOTS;
-        }
-        table[slot * 2] = word;
-        table[slot * 2 + 1] = n + 1;
-    }
-    quads = (u32)worldmap_cloud_quads[worldmap_display_buffer_index];
-    n = XEM_U32(XEM_CLOUD_COUNT);
-    for (i = 0; i < n && i < 0x120; i++) {
-        for (k = 0; k < 4; k++) {
-            at = quads + i * sizeof(POLY_FT4) + 8 + k * 8;
-            word = XEM_U32(at);
-            for (slot = (word * 2654435761u) >> 20; table[slot * 2 + 1] != 0; slot = (slot + 1) % XEM_CLOUD_SLOTS) {
-                if (table[slot * 2] == word) {
-                    xem_present_store(at, word, table[slot * 2 + 1]);
-                    break;
-                }
-            }
-        }
-    }
-}
-
 /* The cloud pass's work area words the reveal reads: its view cone's edges
  * and view point, and its rotation (DriftScratch.edge, .view and .local,
  * whose translation alone changes from cloud to cloud). */
@@ -427,14 +380,10 @@ static void xem_clouds_reveal(void) {
     }
 }
 
-/* The clouds: the original, then (presentation only) its quads' screen
- * points recorded as stored (xem_cloud_stores) and, while the host wants
- * culled faces, the quads it leaves out (xem_clouds_reveal). */
+/* The clouds: the original (asm.c records its quad provenance at the
+ * packet link), then, while the host wants culled faces, its omitted quads. */
 void worldmap_clouds_draw(void) {
-    u32 first = xem_gte_ring->count;
-
     xem_original_worldmap_clouds_draw();
-    xem_cloud_stores(first);
     xem_clouds_reveal();
 }
 

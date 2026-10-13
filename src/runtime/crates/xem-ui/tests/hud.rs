@@ -29,7 +29,10 @@ fn activity_and_state_results_show_without_fps_and_expire_independently() {
     hud.notify_state(true, None, at(2));
     hud.frame(at(2), 1.0, false).unwrap();
     assert_eq!(hud.notice().as_deref(), Some("State saved"));
-    assert!(ElementHandle::find_by_accessible_label(hud.component(), "State saved").next().is_some());
+    let success = ElementHandle::find_by_accessible_label(hud.component(), "State saved").next().unwrap();
+    assert_eq!((success.absolute_position().x, success.absolute_position().y), (0.0, 34.0));
+    assert_eq!((success.size().width, success.size().height), (160.0, 40.0));
+    capture(&gpu, &hud, "saved-with-rewind");
     hud.frame(at(6), 1.0, false).unwrap();
     assert!(hud.notice().is_none());
     assert!(hud.visible(), "rewind remains after the success expires");
@@ -43,13 +46,17 @@ fn activity_and_state_results_show_without_fps_and_expire_independently() {
     assert_eq!(hud.notice().as_deref(), Some("Could not load state: The selected state belongs to a different game module."));
     assert!(hud.visible());
     let error = ElementHandle::find_by_accessible_label(hud.component(), &hud.notice().unwrap()).next().unwrap();
-    assert_eq!((error.absolute_position().x, error.absolute_position().y), (38.0, 42.0));
-    assert_eq!((error.size().width, error.size().height), (256.0, 60.0));
+    assert_eq!((error.absolute_position().x, error.absolute_position().y), (0.0, 0.0));
+    assert_eq!((error.size().width, error.size().height), (304.0, 76.0));
+    capture(&gpu, &hud, "load-error-2x");
     hud.frame(at(14), 2.0, false).unwrap();
     assert!(!hud.visible(), "errors remain for eight seconds");
     hud.notify_state(false, None, at(14));
     hud.frame(at(14), 1.0, false).unwrap();
     assert_eq!(hud.notice().as_deref(), Some("State loaded"));
+    let loaded = ElementHandle::find_by_accessible_label(hud.component(), "State loaded").next().unwrap();
+    assert_eq!((loaded.absolute_position().x, loaded.absolute_position().y), (0.0, 0.0));
+    capture(&gpu, &hud, "loaded");
 
     for n in 0..=60 {
         hud.frame(at(18) + Duration::from_secs_f64(n as f64 / 60.0), 1.0, true).unwrap();
@@ -65,4 +72,20 @@ fn activity_and_state_results_show_without_fps_and_expire_independently() {
         let activity = ElementHandle::find_by_accessible_label(hud.component(), label).next().unwrap();
         assert_eq!((activity.absolute_position().x, activity.absolute_position().y), (x, 0.0));
     }
+}
+
+/// Optional review captures use the same texture and assertions as the test.
+fn capture(gpu: &Gpu, hud: &FrameRateUi, name: &str) {
+    let Some(dir) = std::env::var_os("XEM_UI_CAPTURE_DIR") else { return };
+    let dir = std::path::PathBuf::from(dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let pixels = read_rgba8(&gpu.device, &gpu.queue, hud.texture());
+    let rgb: Vec<u8> = pixels.chunks_exact(4).flat_map(|p| {
+        [0x42u16, 0x4b, 0x56].into_iter().enumerate().map(move |(c, background)|
+            (u16::from(p[c]) + background * (255 - u16::from(p[3])) / 255).min(255) as u8)
+    }).collect();
+    let file = std::fs::File::create(dir.join(format!("hud-{name}.png"))).unwrap();
+    let mut encoder = png::Encoder::new(std::io::BufWriter::new(file), hud.size().0, hud.size().1);
+    encoder.set_color(png::ColorType::Rgb);
+    encoder.write_header().unwrap().write_image_data(&rgb).unwrap();
 }

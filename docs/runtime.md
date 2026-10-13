@@ -470,7 +470,7 @@ or on the game's own Sound screen, turns it off.
   turned by the music's own pan movement (pan slides, autopan:
   `Target::Stage`, `spread` degrees per 0x4000). The stage is the
   listener's: character turns, camera swings and cuts leave it; under
-  *Music stays as you turn* a headset's head turns are heard against it.
+  *VR: Stationary music* a headset's head turns are heard against it.
   Reviewed per-song changes would go in `OVERRIDES`; none were needed yet.
 - **Effects.** World effects go where their emitters are: the field's three
   positional emitters (`field_sound_emitter_slots`, each following an
@@ -513,7 +513,7 @@ or on the game's own Sound screen, turns it off.
   (two sources to a transform) and the ears go back to time once. Directions
   glide (30 ms), a source fades between placed and its original mix (50 ms)
   and the whole presentation crossfades with the SPU's own mix (100 ms);
-  bypassed (*Compare with Stereo*) or at rest it outputs the SPU's samples
+  under the diagnostic bypass or at rest it outputs the SPU's samples
   themselves. Above -1.4 dBFS a soft knee bends peaks towards full scale
   instead of clipping.
 - **HRTF data.** MIT KEMAR, diffuse-field equalized, at 44.1 kHz
@@ -528,7 +528,8 @@ or on the game's own Sound screen, turns it off.
   restores it on the placed sound.
 - **Settings** (`xem_settings::Binaural`, which is
   `xem_core::binaural::Config`): enabled, spatial music, positional effects,
-  music immersion (0-100, 70 by default), head-tracked music, bypass. The
+  music immersion (0-100, 70 by default), head-tracked music, and a diagnostic
+  bypass available through the service (not the Settings panel). The
   hosts apply them with each frame batch (`Session::set_binaural`), with the
   first-person view's axes (`GameView::listener_axes`) and a headset's head
   (`xem_core::binaural::head_axes` of the OpenXR or WebXR viewer pose, the
@@ -1216,7 +1217,9 @@ action instead of what Play binds it to. An input may not hold two
 different buttons in one context. `xem_settings::player::PlayerInput` holds
 the inputs and resolves them, the same code on desktop, Android, headsets
 and the browser; the mouse camera's sideways motion holds CameraLeft or
-CameraRight while it lasts. A headset's controllers are the gamepad
+CameraRight while it lasts. Mouse sensitivity is saved as 10–200 percent,
+defaults to 50 percent of the previous rate, and scales both field camera
+motion and first-person mouse look. A headset's controllers are the gamepad
 (`xr-standard` layout: A South, B East, X West, Y North, triggers L1/R1,
 grips LT/RT, the right stick's click Back, the left's Start, both sticks),
 natively (`xem_host::xr_play::gamepad`) and in the browser (`xrGamepad`).
@@ -1276,8 +1279,9 @@ reports the frames run):
   then confirms it once; a click elsewhere is the mouse's binding. An entry
   the cursor stops short of (past a list's end) is given up after three
   steps that leave the selection where it was. With the
-  mouse camera on, the game holds the mouse only while nothing on the
-  screen is selectable: a menu or a choice lets it go.
+  mouse camera on, menus, choices, every battle command/attack page and
+  the original pause screen release the cursor. Camera movement resumes
+  only when play can take it again.
 
 ### Assisted movement
 
@@ -1825,7 +1829,9 @@ as JSON text or bytes.
   without one, the test scene. The Slint panel (FemtoVG's wgpu renderer on the same device,
   composited over the scene) works on both; Escape or the Settings button
   toggles it, and Close hides it. With the mouse camera setting the game holds the mouse with pointer lock
-  after a click; the browser's Escape that releases it opens the panel. A lost device is replaced on a new canvas (WebGL2
+  after a click while play can take camera input. Game menus, battle inputs
+  and pause release it without opening Settings; the browser's Escape
+  that releases it during play opens the panel. A lost device is replaced on a new canvas (WebGL2
   after repeated WebGPU losses).
 - **Disc import.** A file input (and, where available, the File System Access
   API, whose handle is kept in IndexedDB for "Reopen") gives a `File`; the image

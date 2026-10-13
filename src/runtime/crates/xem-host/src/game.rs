@@ -215,6 +215,10 @@ impl Game {
         }
     }
 
+    pub fn mouse_camera_active(&mut self, settings: &xem_settings::Settings) -> bool {
+        settings.captures_mouse(self.session.runtime.context(), self.session.runtime.game_paused())
+    }
+
     /// The field as the assisted controls read it (in a field).
     pub fn field(&mut self) -> Option<xem_core::field::Field> {
         if self.session.runtime.services().mode != Some(1) {
@@ -505,13 +509,14 @@ mod tests {
         let source = clock.clone();
         let session = Session::new(session.runtime,session.schema,move || source.get());
         let mut game = Game::new(session);
-        let settings = xem_settings::Settings { fast_forward_rate: FastForwardRate::Fixed(20), ..Default::default() };
+        let settings = xem_settings::Settings { mouse_camera: true, fast_forward_rate: FastForwardRate::Fixed(20), ..Default::default() };
         let paused = |game: &mut Game| game.session.execute(&json!({"cmd":"inspect","path":"sound_driver_flags"})).as_i64().unwrap() & 0x40 != 0;
         let update = |game: &mut Game, focused: bool, settings: &xem_settings::Settings, buttons| {
             game.paced = Instant::now()-FRAME*2;
             game.update(buttons,settings,|| focused).unwrap()
         };
         assert!(!paused(&mut game));
+        assert!(game.mouse_camera_active(&settings));
         update(&mut game,true,&settings,0);
         clock.set(Duration::from_secs(1));
         update(&mut game,true,&settings,0);
@@ -537,6 +542,7 @@ mod tests {
             if paused(&mut game) { break; }
         }
         assert!(paused(&mut game),"focus loss must enter the original pause screen even during FF");
+        assert!(!game.mouse_camera_active(&settings),"the original pause screen releases the mouse");
         assert_eq!(game.time_activity(),(false,false),"the original pause hides FF despite its enabled setting");
         let retained = game.session.rewind.status();
         let paused_at = game.frames_run();
@@ -550,6 +556,7 @@ mod tests {
         for _ in 0..2 { update(&mut game,true,&settings,xem_core::pad::button::START); }
         for _ in 0..4 { update(&mut game,true,&settings,0); }
         assert!(!paused(&mut game),"normal Start input resumes the game");
+        assert!(game.mouse_camera_active(&settings),"resuming play permits camera capture again");
         let disabled = xem_settings::Settings { pause_on_focus_loss:false, ..settings };
         for _ in 0..4 { update(&mut game,false,&disabled,0); }
         assert!(!paused(&mut game),"disabling the setting keeps unfocused play running");

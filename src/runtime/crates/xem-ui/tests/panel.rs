@@ -439,9 +439,11 @@ fn binaural_is_a_fourth_sound_mode_with_its_options() {
     element(&ui, "Music immersion", AccessibleRole::Slider);
     ui.component().invoke_binaural_edited("immersion".into(), 40);
     ui.component().invoke_binaural_edited("effects".into(), 0);
-    ui.component().invoke_binaural_edited("bypass".into(), 1);
+    ui.component().invoke_binaural_edited("head".into(), 1);
+    element(&ui, "VR: Stationary music", AccessibleRole::Switch);
+    assert!(ElementHandle::find_by_accessible_label(ui.component(), "Compare with Stereo").next().is_none());
     let binaural = settings.borrow().settings().binaural;
-    assert_eq!((binaural.music_immersion, binaural.positional_effects, binaural.bypass, binaural.spatial_music), (40, false, true, true));
+    assert_eq!((binaural.music_immersion, binaural.positional_effects, binaural.head_tracked_music, binaural.spatial_music), (40, false, true, true));
     ui.component().invoke_audio_output_edited(1);
     ui.update().unwrap();
     assert!(!settings.borrow().settings().binaural.enabled, "an original mode ends Binaural");
@@ -631,4 +633,108 @@ fn movement_preference_reset_and_binding_cancel_use_the_shared_services() {
     for removed in ["Cull back faces", "Cull at the screen's edges", "How the game is drawn and shown."] {
         assert!(ElementHandle::find_by_accessible_label(ui.component(), removed).next().is_none(), "{removed}");
     }
+}
+
+#[test]
+fn settings_choices_are_relevant_and_wheel_does_not_change_dropdowns() {
+    use xem_settings::{Scale, SettingChange};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 2000), 1.0).unwrap();
+    ui.update().unwrap();
+    section(&mut ui, "Graphics", 1);
+    let shown = |ui: &SettingsUi, label: &str| ElementHandle::find_by_accessible_label(ui.component(), label).next().is_some();
+    for (profile, resolution, quality) in [(0, true, false), (1, true, true), (2, false, false), (3, true, true)] {
+        ui.component().invoke_graphics_edited("profile".into(), profile);
+        ui.update().unwrap();
+        assert_eq!(shown(&ui, "Internal resolution"), resolution, "resolution for profile {profile}");
+        assert_eq!(shown(&ui, "HD-2D quality"), quality, "HD-2D quality for profile {profile}");
+        assert!(!shown(&ui, "Characters keep moving"));
+    }
+    let heading = element(&ui, "VR", AccessibleRole::Text);
+    let distance = element(&ui, "Headset screen distance in centimetres", AccessibleRole::Spinbox);
+    assert!(heading.absolute_position().y < distance.absolute_position().y);
+
+    // Every dropdown remains unchanged by the wheel, even after gaining focus.
+    // The widget lets the containing panel or open menu scroll instead.
+    for (section_name, section_index, label) in [
+        ("Graphics", 1, "Scale"), ("Graphics", 1, "Graphics profile"),
+        ("Graphics", 1, "Internal resolution"), ("Graphics", 1, "HD-2D quality"),
+        ("Graphics", 1, "Presentation rate"), ("Controls", 2, "Headset pointer"),
+    ] {
+        section(&mut ui, section_name, section_index);
+        let dropdown = element(&ui, label, AccessibleRole::Combobox);
+        let before = settings.borrow().settings().clone();
+        press(&ui, &dropdown);
+        ui.update().unwrap();
+        assert_eq!(dropdown.accessible_expanded(), Some(true));
+        let selected = dropdown.accessible_value().unwrap();
+        let menu_item = element(&ui, &selected, AccessibleRole::ListItem);
+        menu_item.scroll(0.0, -120.0);
+        menu_item.scroll(0.0, 120.0);
+        assert_eq!(*settings.borrow().settings(), before, "wheel in {label} menu");
+        key(&ui, xem_ui::Key::Escape);
+        ui.update().unwrap();
+        assert_eq!(dropdown.accessible_expanded(), Some(false));
+        let at = dropdown.absolute_position();
+        let position = LogicalPosition::new(at.x + dropdown.size().width / 2.0, at.y + dropdown.size().height / 2.0);
+        for delta_y in [-120.0, 120.0] {
+            ui.dispatch(WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y });
+            ui.update().unwrap();
+        }
+        assert_eq!(*settings.borrow().settings(), before, "wheel over {label}");
+    }
+
+    // Mouse selection and arrow keys still go through the settings service.
+    section(&mut ui, "Graphics", 1);
+    let dropdown = element(&ui, "Scale", AccessibleRole::Combobox);
+    press(&ui, &dropdown);
+    key(&ui, xem_ui::Key::DownArrow);
+    key(&ui, xem_ui::Key::Return);
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().presentation.scale, Scale::Integer);
+    press(&ui, &dropdown);
+    ui.update().unwrap();
+    // Use real window events: the mock click helper advances a fake clock,
+    // whereas this shared-GPU platform uses the host's monotonic clock.
+    let at = dropdown.absolute_position();
+    click(&ui, LogicalPosition::new(at.x + 40.0, at.y + dropdown.size().height + 4.0 + 4.0 + 2.0 * 32.0 + 16.0));
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().presentation.scale, Scale::Stretch);
+    for key_name in [xem_ui::Key::Home, xem_ui::Key::End] {
+        key(&ui, key_name);
+        assert_eq!(settings.borrow().settings().presentation.scale, Scale::Stretch, "Home/End do not edit dropdowns");
+    }
+    key(&ui, xem_ui::Key::Tab);
+    key(&ui, xem_ui::Key::UpArrow);
+    assert_eq!(settings.borrow().settings().presentation.scale, Scale::Stretch, "Tab leaves the closed dropdown");
+
+    section(&mut ui, "Controls", 2);
+    assert!(!shown(&ui, "Mouse sensitivity"));
+    press(&ui, &element(&ui, "Turn the camera with the mouse", AccessibleRole::Switch));
+    ui.update().unwrap();
+    let sensitivity = element(&ui, "Mouse sensitivity", AccessibleRole::Slider);
+    assert_eq!(sensitivity.accessible_value().as_deref(), Some("50"));
+    press(&ui, &sensitivity);
+    assert_eq!(settings.borrow().settings().mouse_sensitivity, 105);
+    settings.borrow_mut().apply(SettingChange::MouseSensitivity(75)).unwrap();
+    assert_eq!(ui.component().get_mouse_sensitivity(), 75);
+    press(&ui, &element(&ui, "Turn the camera with the mouse", AccessibleRole::Switch));
+    ui.update().unwrap();
+    assert!(!shown(&ui, "Mouse sensitivity"));
+    assert_eq!(settings.borrow().settings().mouse_sensitivity, 75);
+
+    ui.resize((640, 560), 1.0);
+    section(&mut ui, "Graphics", 1);
+    let dropdown = element(&ui, "Scale", AccessibleRole::Combobox);
+    press(&ui, &dropdown);
+    key(&ui, xem_ui::Key::Escape);
+    ui.update().unwrap();
+    let before_y = dropdown.absolute_position().y;
+    let before = settings.borrow().settings().clone();
+    dropdown.scroll(0.0, -120.0);
+    ui.update().unwrap();
+    assert!(dropdown.absolute_position().y < before_y, "wheel over a focused dropdown scrolls the containing panel");
+    assert_eq!(*settings.borrow().settings(), before);
 }
