@@ -411,7 +411,8 @@ impl Host {
         if self.view.update_app(window,&mut self.game) && let Some(game) = &mut self.game {
             marks[0] = Instant::now();
             let settings = self.view.settings().borrow().settings().clone();
-            let buttons = self.view.pad_buttons(game.pad_context());
+            let (context, targets) = (game.pad_context(), game.targets());
+            let buttons = self.view.pad_buttons(context, targets);
             match game.update(buttons, &settings, || window.focused()) {
                 Ok(frames) => {
                     ran = frames;

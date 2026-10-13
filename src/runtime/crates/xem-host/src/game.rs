@@ -198,6 +198,11 @@ impl Game {
         }
     }
 
+    /// The game interface's entries a pointer selects (`xem_core::menu`).
+    pub fn targets(&mut self) -> Option<xem_core::menu::Targets> {
+        self.session.runtime.targets()
+    }
+
     /// Runs a bounded batch of frames due by the wall clock with pad 1 holding
     /// `buttons`, then queues their sound at the master volume and audio
     /// output of `settings`. Returns the frames run.

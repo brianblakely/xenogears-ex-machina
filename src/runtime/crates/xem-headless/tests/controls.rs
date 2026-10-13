@@ -322,3 +322,44 @@ fn interact_talks_to_a_villager_and_assisted_moves_replay() {
     run(&mut session, json!({"cmd": "frames", "count": frames}));
     assert_eq!(session.execute(&json!({"cmd": "memory_hash"})), recorded);
 }
+
+/// Pointing at the field menu's commands selects them by the D-pad, and a
+/// click confirms: clicking the first command (leave) closes the menu.
+#[test]
+fn pointing_browses_the_field_menu() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let bindings = xem_settings::GameBindings::default();
+    let mut player = xem_settings::player::PlayerInput::default();
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    run(&mut session, json!({"cmd": "enter_field", "map": 30}));
+    run(&mut session, json!({"cmd": "frames", "count": 400}));
+    run(&mut session, json!({"cmd": "act", "actions": ["Menu"], "frames": 2}));
+    run(&mut session, json!({"cmd": "frames", "count": 200}));
+    let targets = session.runtime.targets().expect("the commands");
+    eprintln!("{targets:?}");
+    assert_eq!(targets.what, "commands");
+    assert_eq!(targets.entries.len(), 7);
+    let start = targets.selected.unwrap();
+    let goal = (start + 3) % 7;
+    player.hover(Some(targets.entries[goal].rect.centre()));
+    for _ in 0..80 {
+        let targets = session.runtime.targets();
+        player.browse(targets.as_ref());
+        host_frame(&mut session, &mut player, &bindings);
+    }
+    assert_eq!(context(&mut session)["cursor"].as_u64().unwrap() as usize, goal, "pointing moved the cursor");
+    // Click the first command.
+    let targets = session.runtime.targets().unwrap();
+    player.hover(Some(targets.entries[0].rect.centre()));
+    assert!(player.click(Some(&targets)));
+    for _ in 0..400 {
+        let targets = session.runtime.targets();
+        player.browse(targets.as_ref());
+        host_frame(&mut session, &mut player, &bindings);
+        if context(&mut session)["kind"] == "walk" { break; }
+    }
+    assert_eq!(context(&mut session)["kind"], "walk", "leave closed the menu");
+}

@@ -26,7 +26,7 @@ use std::time::Instant;
 use xem_render::ps1::{GameView, HostClass, ViewConfig};
 use xem_render::xem_gpu::DisplayInfo;
 use xem_render::{
-    Compositor, Gpu, Quad, Rect, SceneRenderer, ViewTarget, Viewport, demo_camera, present_rect,
+    Compositor, Gpu, Picture, Quad, Rect, SceneRenderer, ViewTarget, Viewport, demo_camera, present_rect,
     wgpu,
 };
 use xem_settings::{AppInput, AppRequest, Filter, SettingsService};
@@ -268,8 +268,11 @@ pub struct View {
     /// The game's mouse buttons and camera turn, and whether SDL's relative
     /// mouse mode is on (while the game has the input).
     player: xem_settings::player::PlayerInput,
-    /// The interface the player's input reached last (the wheel's).
+    /// The interface the player's input reached last (the wheel's), its
+    /// entries a pointer selects, and where the last frame showed the game.
     game_ui: xem_core::context::Context,
+    targets: Option<xem_core::menu::Targets>,
+    picture: Option<Picture>,
     relative_mouse: bool,
     /// The first gamepad's buttons as they are (before app chords take
     /// theirs), first-person inspection's toggle, the mouse motion that
@@ -366,6 +369,8 @@ impl View {
             wheel: 0.0,
             player: Default::default(),
             game_ui: xem_core::context::Context::None,
+            targets: None,
+            picture: None,
             relative_mouse: false,
             pad: [0; 16],
             axes: [0.0; 4],
@@ -408,8 +413,10 @@ impl View {
         if !self.panel_visible() { self.ui.cancel_pointer(); }
         // With the mouse camera on, the game holds the mouse (hidden,
         // unbounded motion) while it has the input.
+        // It lets the mouse go while the game shows entries to point at (a
+        // menu, a choice), and takes it again when walking resumes.
         let relative = !cfg!(target_os = "android") && self.settings.borrow().settings().mouse_camera
-            && !self.panel_visible() && self.app_input.focused();
+            && !self.panel_visible() && self.app_input.focused() && !self.game_ui.navigates();
         if relative != self.relative_mouse {
             // SAFETY: the window is SDL's and live.
             unsafe { SDL_SetWindowRelativeMouseMode(window.raw, relative) };
@@ -517,6 +524,12 @@ impl View {
     }
 
     /// An SDL window position as a logical position on the panel.
+    /// SDL's window coordinates in target pixels.
+    fn window_pixels(&self, window: &sdl::Window, x: f32, y: f32) -> (f32, f32) {
+        let density = window.pixel_density();
+        (x * density, y * density)
+    }
+
     fn panel_position(&self, window: &sdl::Window, x: f32, y: f32) -> LogicalPosition {
         let rect = self.panel_rect();
         let density = window.pixel_density();
@@ -597,6 +610,10 @@ impl View {
             // it turns the field camera, or the first-person view.
             SDL_EVENT_MOUSE_MOTION if unsafe { event.motion }.which != SDL_TOUCH_MOUSEID => {
                 let motion = unsafe { event.motion };
+                if !self.relative_mouse {
+                    let (x, y) = self.window_pixels(window, motion.x, motion.y);
+                    self.player.hover(self.picture.and_then(|p| p.to_screen(x, y)));
+                }
                 if self.relative_mouse && self.renderer.first_person() {
                     self.look_mouse[0] += motion.xrel;
                     self.look_mouse[1] += motion.yrel;
@@ -607,7 +624,16 @@ impl View {
             SDL_EVENT_MOUSE_BUTTON_DOWN | SDL_EVENT_MOUSE_BUTTON_UP if unsafe { event.button }.which != SDL_TOUCH_MOUSEID => {
                 let button = unsafe { event.button };
                 let index = match i32::from(button.button) { SDL_BUTTON_LEFT => 0, SDL_BUTTON_RIGHT => 2, SDL_BUTTON_MIDDLE => 1, _ => -1 };
-                self.player.mouse.button(index, button.down);
+                // A click on an entry of the game's interface selects it and
+                // confirms it; elsewhere it is the mouse's binding.
+                let browsed = index == 0 && button.down && !self.relative_mouse && {
+                    let (x, y) = self.window_pixels(window, button.x, button.y);
+                    self.player.hover(self.picture.and_then(|p| p.to_screen(x, y)));
+                    self.player.click(self.targets.as_ref())
+                };
+                if !browsed {
+                    self.player.mouse.button(index, button.down);
+                }
             }
             SDL_EVENT_MOUSE_WHEEL if visible => {
                 let wheel = unsafe { event.wheel };
@@ -744,8 +770,9 @@ impl View {
     /// In a field they also toggle and turn first-person inspection, which
     /// holds back the buttons that would walk, jump or turn the camera
     /// (`xem_settings::look`).
-    pub fn pad_buttons(&mut self, context: PadContext) -> u16 {
+    pub fn pad_buttons(&mut self, context: PadContext, targets: Option<xem_core::menu::Targets>) -> u16 {
         self.game_ui = context.ui;
+        self.targets = targets;
         if self.panel_visible() || !self.app_input.focused() {
             self.player.clear();
             self.look_toggle.clear();
@@ -766,6 +793,7 @@ impl View {
         }
         let invert_triggers = self.settings.borrow().settings().invert_trigger_chords;
         self.player.gamepad(&self.app_input.gamepad_for_game(&app_bindings, invert_triggers), &self.axes);
+        self.player.browse(self.targets.as_ref());
         let buttons = self.player.buttons(&bindings, now, context);
         let select_key = bindings.play.get(&xem_settings::GameAction::Select).is_some_and(|b| b.keyboard.iter().any(|k| held(k)));
         // First-person inspection: toggled in a field (Ex Machina draws it),
@@ -817,6 +845,7 @@ impl View {
         let panel_rect = self.panel_rect();
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
         self.fresh_frame = false;
+        let side = self.renderer.config().map_or(0, |c| c.side) as f32;
         let presented = match &self.game_frame {
             Some((display, scene)) => self.renderer.present(&mut encoder, display, scene, f64::from(time)).map(|p| (p.view, p.size)),
             None => None,
@@ -854,6 +883,15 @@ impl View {
         let mut placed = present_rect(game_size, (safe.width as u32, safe.height as u32), presentation.scale);
         placed.x += safe.x;
         placed.y += safe.y;
+        self.picture = match (&self.game_frame, encoded) {
+            (Some((display, _)), true) => Some(Picture {
+                placed,
+                display: (display.width as f32, display.height as f32),
+                side,
+            }),
+            (_, false) if self.game_image.is_some() => Some(Picture { placed, display: (game_size.0 as f32, game_size.1 as f32), side: 0.0 }),
+            _ => None,
+        };
         let mut game = Quad::screen(game_view, placed, target_size);
         // The renderer's frames hold sRGB-encoded values in a linear format.
         game.srgb_encoded = encoded;
@@ -1066,7 +1104,7 @@ mod tests {
         let frame = |view: &mut View, field: FieldControls| {
             (view.pad, view.axes) = standard_pad(view.gamepads.first().copied());
             view.app_input.pad(&view.pad);
-            view.pad_buttons(PadContext { field, ..PadContext::default() })
+            view.pad_buttons(PadContext { field, ..PadContext::default() }, None)
         };
         let walking = FieldControls { field: true, walking: true, menu: false, picture: false };
         let menu = FieldControls { walking: false, menu: true, ..walking };

@@ -131,6 +131,12 @@ fn run(options: &Options) -> Result<(), Box<dyn std::error::Error>> {
                     }
                     None => serde_json::json!({ "error": "screenshot needs path" }),
                 },
+                // Where the display shows VRAM, and the drawing area's offset.
+                Ok(command) if command["cmd"] == "display" => {
+                    let gpu = &mut session.runtime.services().gpu;
+                    let display = gpu.device().display();
+                    serde_json::json!({ "x": display.x, "y": display.y, "width": display.width, "height": display.height, "mode_width": display.mode_width })
+                }
                 // The whole VRAM (1024x512) as a PNG file.
                 Ok(command) if command["cmd"] == "vram" => match command["path"].as_str() {
                     // Raw little-endian halfwords for a .bin path.

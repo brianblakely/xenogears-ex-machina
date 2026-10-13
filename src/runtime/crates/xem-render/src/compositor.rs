@@ -17,6 +17,35 @@ impl Rect {
     }
 }
 
+/// Where the game's screen lies in a target: the picture's placement, and
+/// the display pixels it spans (the display's width plus the wider
+/// framing's `side` pixels each side, and its height). Maps target pixels
+/// to the game's screen pixels (its drawing area, as the display shows it).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Picture {
+    pub placed: Rect,
+    pub display: (f32, f32),
+    pub side: f32,
+}
+
+impl Picture {
+    /// The game screen point under target pixel (x, y), if on the picture.
+    pub fn to_screen(&self, x: f32, y: f32) -> Option<(f32, f32)> {
+        if !self.placed.contains(x, y) || self.placed.width < 1.0 || self.placed.height < 1.0 {
+            return None;
+        }
+        let u = (x - self.placed.x) / self.placed.width;
+        let v = (y - self.placed.y) / self.placed.height;
+        Some((u * (self.display.0 + 2.0 * self.side) - self.side, v * self.display.1))
+    }
+
+    /// The target pixel of a game screen point.
+    pub fn from_screen(&self, (sx, sy): (f32, f32)) -> (f32, f32) {
+        let u = (sx + self.side) / (self.display.0 + 2.0 * self.side);
+        (self.placed.x + u * self.placed.width, self.placed.y + sy / self.display.1 * self.placed.height)
+    }
+}
+
 /// Where an `image`-sized game picture goes inside `area` under `scale`,
 /// centred. Sizes are in pixels.
 pub fn present_rect(image: (u32, u32), area: (u32, u32), scale: Scale) -> Rect {

@@ -702,6 +702,12 @@ impl<M: GameModule> Runtime<M> {
         crate::context::read_context(self.memory(), mode)
     }
 
+    /// The interface's selectable entries on the screen (`crate::menu`).
+    pub fn targets(&mut self) -> Option<crate::menu::Targets> {
+        let ui = self.context();
+        crate::menu::targets(self.memory(), ui)
+    }
+
     /// What the field says of the player's buttons (nothing outside it).
     pub fn field_controls(&mut self) -> FieldControls {
         let mode = self.services().mode.unwrap_or(u32::MAX);

@@ -141,7 +141,9 @@ tests and browser clients: a JSON command in, a JSON result out
 `frames {count}`, bounded `run_until {max_frames, until: {frames} | {vblanks} |
 {path, equals|not_equals}}`, `pad {port, buttons}`, `press {buttons, frames}`,
 `hold {actions}` and `act {actions, frames}` (pad 1 by typed actions,
-[Controls](#controls)),
+[Controls](#controls)), `context`, `targets`, `field`, `pick {screen}`,
+`navigate`, `interact {actor}` and `assist_stop` ([Assisted
+movement](#assisted-movement)),
 `connect_pad`, `inspect {path, depth}`, `write {path, value}`, `globals
 {prefix}`, `read_memory`/`write_memory`, `snapshot`/`restore {name}`,
 `memory_hash`, `record`/`stop_recording`/`replay {changes}` (pad states per
@@ -1014,6 +1016,66 @@ natively (`xem_host::xr_play::gamepad`) and in the browser (`xrGamepad`).
 | Start, Select | Enter, Backspace | Start, Back | |
 | L2, R2 | 1, 2 | LT, RT | |
 | AttackWeak, AttackStrong, AttackFierce, AttackEnd | W, A, S, D | North, West, South, East | |
+
+### The game's interface context
+
+`xem_core::context` reads what the player's input reaches from the game's
+memory (`context` command): `walk` (the player has control in a field),
+`event`, `dialogue` (with its open `choice`: count and index), `menu`
+(`menu_state_screen` and its cursors; the field menu runs inside the field
+mode), `battle` (the command page, whether the attack inputs have the
+buttons, AP left), `world_map` and `arena`. `xem_core::menu` (`targets`)
+lists the selectable entries the screen shows (320x224 screen pixels, as
+the display shows the drawing area): the field menu's commands and a
+command's choice window (the arc tables `menu_highlight_x/y_table`; the
+labels sit about the tables' points), the shops' commands, Yes/No (their
+markers' quads) and a dialogue's choice lines, with the selected entry and
+how the D-pad steps it.
+
+On every host, `PlayerInput` turns these into presses the game reads as
+any player's (held and released for whole game frames, counted as the host
+reports the frames run):
+
+- **Menu toggles the field menu**: pressed while it runs (any screen of
+  it), it backs out with Cancel presses until the menu has closed; other
+  screens (shops) keep the button.
+- **The wheel** steps a menu's or a choice's cursor (a notch toward the
+  player is Down); elsewhere it pulls the field camera back or in.
+- **Pointing** at an entry (the mouse over the picture,
+  `xem_render::Picture` mapping target pixels to screen pixels) steers the
+  game's cursor there with the D-pad; a click on an entry selects it and
+  then confirms it once; a click elsewhere is the mouse's binding. With the
+  mouse camera on, the game holds the mouse only while nothing on the
+  screen is selectable: a menu or a choice lets it go.
+
+### Assisted movement
+
+`xem_core::field` reads the field camera (`scaled_world`, the projection,
+`field_view.angle`), the walkmesh (`FieldComponents`: per-layer
+triangles with neighbours and attributes over SVECTOR vertices) and the
+event actors. A screen point picks the floor the camera ray meets on the
+player's layer (`pick`); routes plan over the triangles the player may
+enter (an attribute blocks by the actor's flags, bit 23 blocks layer 0, a
+higher bit-22 ledge needs a jump), string-pulled a body's width off the
+walls; a goal on mesh cut off by a gap within 300 units gets a takeoff at
+the nearest edge. `xem_core::assist` plays a route as the pad: the D-pad's
+eighth by the camera's angle (Right 0, Down 0x400, Left 0x800, Up 0xC00
+less `field_view.angle`, measured on the game), held until the route turns
+well away from it; Run beyond 96 units of route, walking within 40;
+around another actor in the way; a step aside when the route stops
+shrinking, and an end when it stays so. Nothing jumps for the player: at
+a takeoff the assist waits (or presses on toward the landing unless the
+ledge brake is on), holds its direction through the player's jump and
+plans again after landing. `navigate {to: [x, z]} | {screen: [x, y]}`
+walks to a floor point, `interact {actor}` approaches an actor (or the
+nearest floor within its talk reach) and presses Confirm exactly once when
+the player walks within the original's talk reach and facing, and
+`assist_stop` ends it. A direction of the player's own replaces it; a
+dialogue, menu, battle or map change interrupts it; `status` reports the
+intent, its phase and the last outcome. Recorded sessions keep the
+intents as resolved (`assist` controls) and replay to the same state;
+nothing records pointer, gaze or headset timing. `field` lists the player
+and the actors with their screen points.
 
 Settings' Controls section lists every action and edits its inputs in
 place (`SettingChange::BindGame {context, action, binding}`, and

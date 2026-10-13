@@ -31,6 +31,10 @@ impl Game {
         match *self {}
     }
 
+    pub fn targets(&mut self) -> Option<xem_core::menu::Targets> {
+        match *self {}
+    }
+
     pub fn update(&mut self, _buttons: u16, _settings: &xem_settings::Settings, _focused: impl FnMut() -> bool) -> Result<u32, String> {
         match *self {}
     }

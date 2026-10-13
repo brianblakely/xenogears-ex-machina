@@ -98,8 +98,10 @@ pub struct XemApp {
     audio_scratch: Vec<i16>,
     cards: storage::BrowserCards,
     input: xem_settings::player::PlayerInput,
-    /// The interface the player's input reached last (the wheel's).
+    /// The interface the player's input reached last (the wheel's) and its
+    /// entries a pointer selects.
     ui: xem_core::context::Context,
+    targets: Option<xem_core::menu::Targets>,
     app_input: AppInput,
     rewind_held: [bool;2],
     rewind_next: f64,
@@ -155,6 +157,7 @@ impl XemApp {
             cards: storage::BrowserCards::default(),
             input: Default::default(),
             ui: xem_core::context::Context::None,
+            targets: None,
             app_input: AppInput::default(),
             rewind_held: [false;2],
             rewind_next: 0.0,
@@ -317,8 +320,10 @@ impl XemApp {
                 ui: s.runtime.context(),
             });
             self.ui = context.ui;
+            self.targets = self.session.as_mut().and_then(|s| s.runtime.targets());
             let bindings = self.settings.borrow().settings().game_bindings.clone();
             if self.panel_visible() { self.input.clear(); }
+            self.input.browse(self.targets.as_ref());
             let buttons = if self.panel_visible() { 0 } else { self.input.buttons(&bindings, now, context) };
             if buttons != self.host_buttons
                 && let Some(session) = self.session.as_mut()
@@ -574,9 +579,18 @@ impl XemApp {
             if kind == "up" { self.input.mouse.button(button, false); }
             return false;
         }
+        let screen = self.renderer.as_ref().and_then(|r| r.picture).and_then(|p| p.to_screen(x, y));
         match kind {
+            "down" if button == 0 => {
+                // A click on an entry of the game's interface selects it and
+                // confirms it; elsewhere it is the mouse's binding.
+                self.input.hover(screen);
+                if self.input.click(self.targets.as_ref()) { return true; }
+                return self.input.mouse.button(button, true);
+            }
             "down" | "up" => return self.input.mouse.button(button, kind == "down"),
             "move" => {
+                self.input.hover(screen);
                 if self.settings.borrow().settings().mouse_camera { self.input.mouse.moved(dx); }
                 return false;
             }

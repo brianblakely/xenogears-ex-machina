@@ -11,7 +11,7 @@ use web_sys::{HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer, XrWeb
 use xem_render::glam::{Mat4, Vec2, Vec3, Vec4};
 use xem_render::ps1::{GameView, HostClass, ViewConfig};
 use xem_render::xem_gpu::{DisplayInfo, Reveals, Trace};
-use xem_render::{Compositor, Gpu, Quad, Rect, SceneRenderer, ViewTarget, Viewport, demo_camera, present_rect, wgpu};
+use xem_render::{Compositor, Gpu, Picture, Quad, Rect, SceneRenderer, ViewTarget, Viewport, demo_camera, present_rect, wgpu};
 use xem_settings::{Filter, SettingsService};
 use xem_ui::{LogicalPosition, PointerEventButton, SettingsUi, SharedGpu, WindowEvent};
 
@@ -36,6 +36,8 @@ pub struct WebRenderer {
     /// and scene to present.
     renderer: GameView,
     game_frame: Option<(DisplayInfo, String)>,
+    /// Where the last frame showed the game (pointer mapping).
+    pub picture: Option<Picture>,
     pub backend: &'static str,
     pub adapter: String,
     scale: f32,
@@ -158,6 +160,7 @@ pub async fn create(canvas: HtmlCanvasElement, prefer: &str) -> Result<WebRender
         game_image: None,
         renderer,
         game_frame: None,
+        picture: None,
         scale: 1.0,
         panel: None,
         frame_rate: None,
@@ -384,6 +387,7 @@ impl WebRenderer {
         let target = self.size();
         let panel_rect = self.panel_rect();
         let mut encoder = self.gpu.device.create_command_encoder(&Default::default());
+        let side = self.renderer.config().map_or(0, |c| c.side) as f32;
         let presented = match &self.game_frame {
             Some((display, scene)) => self.renderer.present(&mut encoder, display, scene, time).map(|p| (p.view, p.size)),
             None => None,
@@ -406,7 +410,17 @@ impl WebRenderer {
         if let Some(counter) = &mut self.frame_rate {
             counter.frame(std::time::Duration::from_secs_f64(time),self.scale,presentation.show_fps).map_err(|error| error.to_string())?;
         }
-        let mut game = Quad::screen(game_view, present_rect(game_size, target, presentation.scale), target);
+        let placed = present_rect(game_size, target, presentation.scale);
+        self.picture = match (&self.game_frame, encoded) {
+            (Some((display, _)), true) => Some(Picture {
+                placed,
+                display: (display.width as f32, display.height as f32),
+                side,
+            }),
+            (_, false) if self.game_image.is_some() => Some(Picture { placed, display: (game_size.0 as f32, game_size.1 as f32), side: 0.0 }),
+            _ => None,
+        };
+        let mut game = Quad::screen(game_view, placed, target);
         game.srgb_encoded = encoded;
         game.filter = match presentation.filter {
             Filter::Nearest => wgpu::FilterMode::Nearest,

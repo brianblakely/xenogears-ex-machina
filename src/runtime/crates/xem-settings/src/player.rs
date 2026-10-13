@@ -74,7 +74,17 @@ pub struct PlayerInput {
     menu_held: bool,
     /// Wheel notches not yet a whole step.
     wheel: f32,
+    /// The pointer over the game's screen (320x224 pixels), whether it moved
+    /// since the last steer, the entry it moved onto (steered to until
+    /// selected), and a click waiting for it.
+    hover: Option<(f32, f32)>,
+    hover_moved: bool,
+    goal: Option<usize>,
+    click: u32,
 }
+
+/// Frames a click waits for the cursor to reach its entry.
+const CLICK_FRAMES: u32 = 90;
 
 impl PlayerInput {
     /// A key went down or up; false when no game binding names it.
@@ -106,6 +116,59 @@ impl PlayerInput {
         self.closing = 0;
         self.menu_held = false;
         self.wheel = 0.0;
+        self.goal = None;
+        self.click = 0;
+    }
+
+    /// The pointer moved over the game's screen (its 320x224 pixels), or
+    /// off it.
+    pub fn hover(&mut self, point: Option<(f32, f32)>) {
+        if point != self.hover {
+            self.hover = point;
+            self.hover_moved = true;
+        }
+    }
+
+    /// A click at the pointer: true when it lands on an entry of `targets`
+    /// (it selects that entry, then confirms it); otherwise the click is
+    /// the bindings' (the mouse's Confirm).
+    pub fn click(&mut self, targets: Option<&xem_core::menu::Targets>) -> bool {
+        let Some(entry) = targets.zip(self.hover).and_then(|(t, p)| t.at(p)) else { return false };
+        self.goal = Some(entry);
+        self.click = CLICK_FRAMES;
+        true
+    }
+
+    /// Steers the game's cursor to the entry the pointer moved onto, and
+    /// confirms a clicked one once selected. Call once a host frame with
+    /// the interface's entries.
+    pub fn browse(&mut self, targets: Option<&xem_core::menu::Targets>) {
+        let Some(targets) = targets else {
+            self.goal = None;
+            self.click = 0;
+            return;
+        };
+        if std::mem::take(&mut self.hover_moved)
+            && let Some(entry) = self.hover.and_then(|p| targets.at(p))
+        {
+            self.goal = Some(entry);
+        }
+        if self.pulsing() {
+            return;
+        }
+        let Some(goal) = self.goal else { return };
+        match targets.step_toward(goal) {
+            Some(action) => self.pulse(Pulse::new([action])),
+            None if targets.selected == Some(goal) => {
+                self.goal = None;
+                if self.click > 0 {
+                    self.click = 0;
+                    self.pulse(Pulse::new([GameAction::Confirm]));
+                }
+            }
+            None => self.goal = None,
+        }
+        self.click = self.click.saturating_sub(1);
     }
 
     /// Queue a pulse (presses an agent or a gesture resolved to).
@@ -207,6 +270,39 @@ mod tests {
         assert_eq!(input.buttons(&bindings, 0.0, attack), button::TRIANGLE | button::L1 | button::CROSS);
         input.clear();
         assert_eq!(input.buttons(&bindings, 0.0, Context::default()), 0);
+    }
+
+    #[test]
+    fn pointing_selects_a_menu_entry_and_clicking_confirms_it() {
+        use xem_core::menu::{Entry, Rect, Steps, Targets};
+        let bindings = GameBindings::default();
+        let mut input = PlayerInput::default();
+        let rect = |y: f32| Rect { x: 0.0, y, width: 50.0, height: 10.0 };
+        let mut targets = Targets {
+            what: "commands",
+            entries: (0..7).map(|i| Entry { rect: rect(100.0 - 10.0 * i as f32), select: None }).collect(),
+            selected: Some(0),
+            steps: Steps::Ring { count: 7, next: GameAction::Up },
+        };
+        let menu = field(Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0 });
+        input.hover(Some((10.0, 85.0)));
+        assert!(input.click(Some(&targets)), "on entry 2");
+        let mut pressed = Vec::new();
+        for _ in 0..16 {
+            input.browse(Some(&targets));
+            let buttons = input.buttons(&bindings, 0.0, menu);
+            // The game steps its cursor on each Up press.
+            if buttons & button::UP != 0 && !pressed.last().is_some_and(|b: &u16| b & button::UP != 0) {
+                targets.selected = targets.selected.map(|s| (s + 1) % 7);
+            }
+            pressed.push(buttons);
+            input.frames_ran(1);
+        }
+        assert_eq!(targets.selected, Some(2));
+        assert_eq!(pressed.iter().filter(|b| **b & button::CROSS != 0).count(), 2, "one Confirm press, held two frames: {pressed:?}");
+        // Off the entries a click is the mouse's own.
+        input.hover(Some((200.0, 5.0)));
+        assert!(!input.click(Some(&targets)));
     }
 
     fn field(ui: Ui) -> Context {

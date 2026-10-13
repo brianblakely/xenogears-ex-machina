@@ -17,6 +17,7 @@ pub mod field;
 pub mod exe;
 pub mod inspect;
 pub mod memory;
+pub mod menu;
 pub mod module;
 pub mod pad;
 pub mod presentation;

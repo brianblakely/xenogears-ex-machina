@@ -578,6 +578,11 @@ impl<M: GameModule> Session<M> {
                 Ok(self.status())
             }
             "context" => Ok(serde_json::to_value(self.runtime.context()).expect("context")),
+            "targets" => {
+                // The interface's selectable entries on the screen.
+                let ui = self.runtime.context();
+                Ok(serde_json::to_value(crate::menu::targets(self.runtime.memory(), ui)).expect("targets"))
+            }
             "field" => {
                 // The field as the assisted controls see it: the player, the
                 // actors and where they show on the screen.
@@ -745,7 +750,7 @@ impl<M: GameModule> Session<M> {
                     // mean the game ignores the pad.
                     "pad_queue_reads_last_frame": services.input_reads_last_frame,
                     "stopped": stopped,
-                    "valid_commands": ["pad", "press", "hold", "act", "context", "field", "pick", "navigate", "interact", "assist", "assist_stop", "frames", "run_until", "inspect", "write", "snapshot",
+                    "valid_commands": ["pad", "press", "hold", "act", "context", "targets", "field", "pick", "navigate", "interact", "assist", "assist_stop", "frames", "run_until", "inspect", "write", "snapshot",
                                         "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "schedule", "record", "replay"],
                 }))
             }

@@ -8,7 +8,7 @@ mod gpu;
 pub mod ps1;
 mod scene;
 
-pub use compositor::{Compositor, Quad, Rect, present_rect};
+pub use compositor::{Compositor, Picture, Quad, Rect, present_rect};
 #[cfg(not(target_arch = "wasm32"))]
 pub use gpu::read_rgba8;
 pub use gpu::{Gpu, GpuError};
