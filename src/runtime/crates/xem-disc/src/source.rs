@@ -79,6 +79,13 @@ pub trait SectorSource {
         debug_assert_eq!(count as usize * SECTOR_SIZE, out.len());
         Ok(())
     }
+
+    /// The SHA-1 a CHD's header records of its raw data, which verifies it in
+    /// place of its decoded track ([`Verification`](crate::identify::Verification));
+    /// None for any other image.
+    fn chd_raw_sha1(&self) -> Option<[u8; 20]> {
+        None
+    }
 }
 
 impl<S: SectorSource + ?Sized> SectorSource for Box<S> {
@@ -91,6 +98,9 @@ impl<S: SectorSource + ?Sized> SectorSource for Box<S> {
     fn read_sectors(&mut self, lba: u32, out: &mut [u8]) -> Result<()> {
         (**self).read_sectors(lba, out)
     }
+    fn chd_raw_sha1(&self) -> Option<[u8; 20]> {
+        (**self).chd_raw_sha1()
+    }
 }
 
 impl<S: SectorSource + ?Sized> SectorSource for &mut S {
@@ -102,6 +112,9 @@ impl<S: SectorSource + ?Sized> SectorSource for &mut S {
     }
     fn read_sectors(&mut self, lba: u32, out: &mut [u8]) -> Result<()> {
         (**self).read_sectors(lba, out)
+    }
+    fn chd_raw_sha1(&self) -> Option<[u8; 20]> {
+        (**self).chd_raw_sha1()
     }
 }
 
@@ -228,7 +241,9 @@ pub fn open_reader<R: ReadAt + 'static>(mut reader: R) -> Result<Box<dyn SectorS
 }
 
 /// Open a native image file: a CHD (by its signature), a `.cue` (its first
-/// track's `.bin`, relative to the sheet) or a raw MODE2/2352 track.
+/// track's `.bin`, relative to the sheet) or a raw MODE2/2352 track (a `.bin`
+/// or an `.iso`). Whether it is a known disc's dump is
+/// [`verify`](crate::identify::verify)'s.
 pub fn open_path(path: &Path) -> Result<Box<dyn SectorSource>> {
     let mut file = FileReadAt::open(path)?;
     if is_chd(&mut file)? {
@@ -246,7 +261,49 @@ pub fn open_path(path: &Path) -> Result<Box<dyn SectorSource>> {
             &track,
         )?));
     }
+    let bytes = file.len();
+    if path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case("iso"))
+        && !bytes.is_multiple_of(SECTOR_SIZE as u64)
+        && bytes.is_multiple_of(crate::sector::FORM1_DATA_SIZE as u64)
+    {
+        return Err(format_error(
+            "an ISO of 2048-byte sectors keeps none of the disc's XA audio or movie sectors: \
+             use a raw image (2352-byte sectors, as Redump records the discs) or a CHD",
+        ));
+    }
     Ok(Box::new(BinSource::whole(file)?))
+}
+
+/// The game's other discs in `path`'s directory: the images there
+/// ([`open_path`]: CHDs, cue sheets, ISOs and raw tracks, by name order) that
+/// are a known disc other than `disc`, the first of each, with their paths,
+/// each verified ([`verify`](crate::identify::verify)) or why it is refused.
+pub fn discs_beside(path: &Path, disc: crate::KnownDisc) -> Vec<(crate::KnownDisc, std::path::PathBuf, Result<Box<dyn SectorSource>>)> {
+    let directory = path.parent().filter(|d| !d.as_os_str().is_empty()).unwrap_or(Path::new("."));
+    let Ok(entries) = std::fs::read_dir(directory) else { return Vec::new() };
+    let mut candidates: Vec<std::path::PathBuf> = entries
+        .filter_map(|entry| Some(entry.ok()?.path()))
+        .filter(|candidate| {
+            candidate.extension().and_then(|ext| ext.to_str()).is_some_and(|ext| {
+                ["chd", "cue", "iso", "bin"].iter().any(|kind| ext.eq_ignore_ascii_case(kind))
+            })
+        })
+        .collect();
+    candidates.sort();
+    let this = std::fs::canonicalize(path).ok();
+    let mut found: Vec<(crate::KnownDisc, std::path::PathBuf, Result<Box<dyn SectorSource>>)> = Vec::new();
+    for candidate in candidates {
+        if this.is_some() && std::fs::canonicalize(&candidate).ok() == this {
+            continue;
+        }
+        let Ok(mut source) = open_path(&candidate) else { continue };
+        let Some(other) = crate::identify(source.as_mut()).ok().and_then(|id| id.disc) else { continue };
+        if other != disc && found.iter().all(|(known, _, _)| *known != other) {
+            let verified = crate::identify::verify(source.as_mut(), other).map(|()| source);
+            found.push((other, candidate, verified));
+        }
+    }
+    found
 }
 
 #[cfg(test)]

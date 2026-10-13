@@ -1,9 +1,11 @@
 //! Which disc this is: SYSTEM.CNF's boot program, found through ISO9660, and
-//! its SHA-256.
+//! its SHA-256; whether the image is Redump's dump of it ([`verify`]).
 
+use sha1::Sha1;
 use sha2::{Digest, Sha256};
 
-use crate::source::{Result, SectorSource, format_error};
+use crate::sector::SECTOR_SIZE;
+use crate::source::{Error, Result, SectorSource, format_error};
 use crate::{read_data, sector::FORM1_DATA_SIZE};
 
 /// A Xenogears disc this runtime knows.
@@ -42,11 +44,137 @@ impl KnownDisc {
         }
     }
 
+    /// The data track's bytes, its one MODE2/2352 track as Redump records it
+    /// (redump.org discs 177 and 178, the original and Greatest Hits editions).
+    pub fn track_bytes(self) -> u64 {
+        match self {
+            KnownDisc::Disc1 => 718_738_272,
+            KnownDisc::Disc2 => 688_700_880,
+        }
+    }
+
+    /// SHA-1 of the whole track, as Redump records it.
+    pub fn track_sha1(self) -> [u8; 20] {
+        hex20(match self {
+            KnownDisc::Disc1 => "12db8ccb93516c391630f046a143762337cc21f4",
+            KnownDisc::Disc2 => "0a4c56e6c64db11f8eada43545c2af08e948665c",
+        })
+    }
+
+    /// The SHA-1 the header of `chdman createcd`'s CHD of Redump's dump records
+    /// of its raw data (frames with zeroed subcode, the track padded to four
+    /// frames); its decoded track hashes to [`Self::track_sha1`].
+    pub fn chd_raw_sha1(self) -> [u8; 20] {
+        hex20(match self {
+            KnownDisc::Disc1 => "4c3d8621e4aaf431d5cac0f2da91e6cf45e68ef5",
+            KnownDisc::Disc2 => "de365ba58f10376a85d91f4e72c411023c2053ec",
+        })
+    }
+
     fn from_sha256(sha256: &[u8; 32]) -> Option<Self> {
         [KnownDisc::Disc1, KnownDisc::Disc2]
             .into_iter()
             .find(|disc| disc.executable_sha256() == *sha256)
     }
+}
+
+/// What save states name the game by when it boots from a known disc: both
+/// discs hold one program (their boot programs differ only in the file index
+/// each embeds, which the game loads again from the disc it changes to), so
+/// a state restores in a session booted from either, the drive holding the
+/// disc it had. Any other disc is named by its boot program's SHA-256.
+pub fn state_identity(identification: &Identification) -> String {
+    match identification.disc {
+        Some(_) => "SLUS-00664+SLUS-00669".into(),
+        None => hex(&identification.sha256),
+    }
+}
+
+/// Whether `source` is Redump's dump of `disc`: a CHD by the SHA-1 its header
+/// records of its raw data (that of chdman's CHD of Redump's dump), any other
+/// image by the size and SHA-1 of its whole track. A step at a time where
+/// the image's bytes arrive asynchronously ([`Verification::advance`]).
+pub struct Verification {
+    disc: KnownDisc,
+    /// The next sector to hash.
+    next: u32,
+    sha1: Sha1,
+}
+
+/// Sectors a [`Verification`] reads at once.
+const VERIFY_SECTORS: u32 = 64;
+
+impl Verification {
+    pub fn new(disc: KnownDisc) -> Self {
+        Verification { disc, next: 0, sha1: Sha1::new() }
+    }
+
+    /// Reads on as far as the image's bytes allow: true once the image is the
+    /// dump, false when a read waits for bytes ([`Error::NotReady`]); an error
+    /// when the image is not the dump.
+    pub fn advance(&mut self, source: &mut dyn SectorSource) -> Result<bool> {
+        let disc = self.disc;
+        let refused = |what: &str| {
+            format_error(format!("not Redump's dump of Xenogears (USA) disc {}: {what}", disc.number()))
+        };
+        if let Some(raw) = source.chd_raw_sha1() {
+            return if raw == disc.chd_raw_sha1() { Ok(true) } else { Err(refused("this CHD holds other data")) };
+        }
+        let sectors = self.sectors();
+        if source.sector_count() != sectors {
+            return Err(refused(&format!("its track has {} sectors, Redump's {sectors}", source.sector_count())));
+        }
+        let mut chunk = vec![0u8; VERIFY_SECTORS as usize * SECTOR_SIZE];
+        while self.next < sectors {
+            let bytes = &mut chunk[..(sectors - self.next).min(VERIFY_SECTORS) as usize * SECTOR_SIZE];
+            match source.read_sectors(self.next, bytes) {
+                Ok(()) => {}
+                Err(Error::NotReady) => return Ok(false),
+                Err(error) => return Err(error),
+            }
+            self.sha1.update(&bytes[..]);
+            self.next += (bytes.len() / SECTOR_SIZE) as u32;
+        }
+        if <[u8; 20]>::from(self.sha1.clone().finalize()) != disc.track_sha1() {
+            return Err(refused("its SHA-1 is not Redump's"));
+        }
+        Ok(true)
+    }
+
+    /// The byte range of the image the next reads take (a host fetching it
+    /// asynchronously reads ahead with it); empty for a CHD.
+    pub fn next_bytes(&self, source: &dyn SectorSource, budget: u64) -> std::ops::Range<u64> {
+        if source.chd_raw_sha1().is_some() {
+            return 0..0;
+        }
+        let start = u64::from(self.next) * SECTOR_SIZE as u64;
+        start..(start + budget).min(self.disc.track_bytes())
+    }
+
+    /// The share of the image hashed so far (0 to 1).
+    pub fn progress(&self) -> f32 {
+        self.next as f32 / self.sectors() as f32
+    }
+
+    fn sectors(&self) -> u32 {
+        (self.disc.track_bytes() / SECTOR_SIZE as u64) as u32
+    }
+}
+
+/// [`Verification`] at once, for images whose reads never wait (native files).
+pub fn verify(source: &mut dyn SectorSource, disc: KnownDisc) -> Result<()> {
+    match Verification::new(disc).advance(source)? {
+        true => Ok(()),
+        false => Err(Error::NotReady),
+    }
+}
+
+fn hex20(text: &str) -> [u8; 20] {
+    let mut out = [0u8; 20];
+    for (n, byte) in out.iter_mut().enumerate() {
+        *byte = u8::from_str_radix(&text[2 * n..2 * n + 2], 16).expect("hex digest");
+    }
+    out
 }
 
 fn hex32(text: &str) -> [u8; 32] {
@@ -207,6 +335,30 @@ mod tests {
             Some("GAME\\MAIN.EXE;1")
         );
         assert_eq!(boot_path("TCB = 4"), None);
+    }
+
+    #[test]
+    fn an_image_must_be_redumps_dump() {
+        use crate::{BinSource, PrefetchedFile};
+        let refused = |source: &mut dyn SectorSource| verify(source, KnownDisc::Disc2).unwrap_err().to_string();
+        let mut short = BinSource::whole(vec![0u8; 64 * SECTOR_SIZE]).unwrap();
+        assert!(refused(&mut short).contains("its track has 64 sectors, Redump's 292815"), "{}", refused(&mut short));
+        // A track of disc 2's size that waits for its bytes, a step at a time.
+        let bytes = KnownDisc::Disc2.track_bytes();
+        let file = std::rc::Rc::new(std::cell::RefCell::new(PrefetchedFile::new(bytes, 1 << 20, 4 << 20)));
+        let mut waiting = BinSource::whole(file.clone()).unwrap();
+        let mut verification = Verification::new(KnownDisc::Disc2);
+        assert!(!verification.advance(&mut waiting).unwrap(), "no bytes yet");
+        assert_eq!(verification.next_bytes(&waiting, 4 << 20), 0..4 << 20);
+        let missing = file.borrow_mut().take_missing();
+        for range in missing {
+            let length = (range.end - range.start) as usize;
+            file.borrow_mut().fill(range.start, &vec![0u8; length]).unwrap();
+        }
+        assert!(!verification.advance(&mut waiting).unwrap());
+        assert!(verification.progress() > 0.0, "it went on from where it waited");
+        assert_eq!(hex(&KnownDisc::Disc1.track_sha1())[..8], *"12db8ccb");
+        assert_eq!(hex(&KnownDisc::Disc2.chd_raw_sha1())[..8], *"de365ba5");
     }
 
     #[test]

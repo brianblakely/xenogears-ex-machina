@@ -70,7 +70,7 @@ fn port_vlc_matches_the_reference_decoder_on_the_opening_movie() {
 
     let mut runtime = Runtime::new(xem_game::NativeModule::new());
     runtime.memory().write(header.text_address, exe::text(&identity.executable, &header)).unwrap();
-    runtime.services().insert_disc(source);
+    runtime.services().insert_disc(0, source);
 
     let mut checked = Vec::new();
     for frame in 0..3000 {

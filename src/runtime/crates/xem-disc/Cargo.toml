@@ -1,6 +1,6 @@
 [package]
 name = "xem-disc"
-description = "Local import of the user's discs: raw sectors by LBA from CHD and .bin/.cue images, disc identification and the game's file index"
+description = "Local import of the user's discs: raw sectors by LBA from CHD, .bin/.cue and Redump-verified .iso images, disc identification and the game's file index"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -12,3 +12,5 @@ publish.workspace = true
 chd = { version = "=0.3.4" }
 # SHA-256 content identity of boot programs and files (MIT OR Apache-2.0).
 sha2 = { version = "=0.11.0" }
+# SHA-1 of whole ISO images, as Redump records the discs (MIT OR Apache-2.0).
+sha1 = { version = "=0.11.0" }

@@ -18,18 +18,22 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use std::sync::mpsc;
 use xem_disc::identify::hex;
-use xem_disc::{FileReadAt, identify, open_reader};
+use xem_disc::{FileReadAt, identify, open_reader, verify};
 
 use crate::app::log;
 
 /// Documents the picker returned, for the main loop.
 static PICKED: Mutex<Vec<String>> = Mutex::new(Vec::new());
 
+/// Imported documents remembered across starts: both discs and one more.
+const REMEMBERED: usize = 3;
+
 pub struct Identified {
     pub source: String,
     pub result: Result<String, String>,
-    /// The document, open, when it is a Xenogears disc: the game boots from it.
-    pub disc: Option<File>,
+    /// The document, open, when it is a Xenogears disc, and its number: the
+    /// game boots from it, or the drive's changer takes it.
+    pub disc: Option<(u8, File)>,
 }
 
 pub struct DiscImport {
@@ -39,7 +43,7 @@ pub struct DiscImport {
 }
 
 impl DiscImport {
-    /// Keeps the imported document's URI under `files_dir`.
+    /// Keeps the imported documents' URIs under `files_dir`.
     pub fn new(files_dir: &std::path::Path) -> Self {
         let (sender, results) = mpsc::channel();
         Self {
@@ -49,12 +53,14 @@ impl DiscImport {
         }
     }
 
-    /// The document imported earlier, if any.
-    pub fn persisted(&self) -> Option<String> {
+    /// The documents imported earlier, the newest last.
+    pub fn persisted(&self) -> Vec<String> {
         std::fs::read_to_string(&self.persisted)
-            .ok()
+            .unwrap_or_default()
+            .lines()
             .map(|uri| uri.trim().to_string())
             .filter(|uri| !uri.is_empty())
+            .collect()
     }
 
     /// Shows the system document picker.
@@ -113,11 +119,14 @@ impl DiscImport {
         }
         let done: Vec<Identified> = self.results.try_iter().collect();
         for identified in &done {
+            let mut remembered = self.persisted();
             if identified.result.is_ok()
                 && identified.source.starts_with("content://")
-                && self.persisted().as_deref() != Some(identified.source.as_str())
+                && !remembered.contains(&identified.source)
             {
-                match std::fs::write(&self.persisted, &identified.source) {
+                remembered.push(identified.source.clone());
+                let start = remembered.len().saturating_sub(REMEMBERED);
+                match std::fs::write(&self.persisted, remembered[start..].join("\n")) {
                     Ok(()) => log(&format!("disc import remembered {}", identified.source)),
                     Err(error) => log(&format!(
                         "disc import not remembered: {}: {error}",
@@ -210,22 +219,26 @@ fn open_document(source: &str) -> Result<File, String> {
     file
 }
 
-/// The identification summary, and the file again when it is a Xenogears disc.
-fn identify_file(file: File) -> Result<(String, Option<File>), String> {
+/// The identification summary, and the disc's number with the file again
+/// when it is a Xenogears disc and Redump's dump of it.
+fn identify_file(file: File) -> Result<(String, Option<(u8, File)>), String> {
     let again = file.try_clone().map_err(|error| error.to_string())?;
     let reader = FileReadAt::new(file).map_err(|error| error.to_string())?;
     let bytes = xem_disc::ReadAt::len(&reader);
     let mut source = open_reader(reader).map_err(|error| error.to_string())?;
     let sectors = source.sector_count();
     let id = identify(&mut source).map_err(|error| error.to_string())?;
-    let disc = match &id.disc {
-        Some(disc) => format!("Xenogears disc {} ({})", disc.number(), disc.serial()),
-        None => "not a Xenogears disc".into(),
+    let verified = id.disc.map(|disc| verify(source.as_mut(), disc));
+    let disc = match (&id.disc, &verified) {
+        (Some(disc), Some(Ok(()))) => format!("Xenogears disc {} ({})", disc.number(), disc.serial()),
+        (Some(disc), Some(Err(error))) => format!("Xenogears disc {} ({}), refused: {error}", disc.number(), disc.serial()),
+        _ => "not a Xenogears disc".into(),
     };
     let summary = format!(
         "bytes={bytes} sectors={sectors} boot={} sha256={} disc={disc}",
         id.boot_path,
         hex(&id.sha256)
     );
-    Ok((summary, id.disc.is_some().then_some(again)))
+    let usable = id.disc.filter(|_| matches!(verified, Some(Ok(()))));
+    Ok((summary, usable.map(|disc| (disc.number(), again))))
 }

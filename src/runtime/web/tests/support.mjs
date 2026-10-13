@@ -18,6 +18,7 @@ export const WEB = join(ROOT, 'build', 'web');
 /** Screenshots the tests take, for people to look at. */
 export const SHOTS = join(ROOT, 'build', 'web-test');
 export const USER_DISC = process.env.XEM_DISC1 ?? join(ROOT, 'discs', 'Xenogears disc 1.chd');
+export const USER_DISC2 = process.env.XEM_DISC2 ?? join(ROOT, 'discs', 'Xenogears disc 2.chd');
 // The native host the tests compare with (XEM_HEADLESS: another build's, as the test suite's).
 export const HEADLESS = process.env.XEM_HEADLESS ?? join(ROOT, 'src', 'runtime', 'target', 'release', 'xem-headless');
 

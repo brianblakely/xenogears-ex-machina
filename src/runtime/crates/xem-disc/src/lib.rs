@@ -5,14 +5,18 @@
 //!
 //! - [`SectorSource`]: the data track as raw MODE2/2352 sectors by LBA, header
 //!   and subheader kept, Form 1 and Form 2 alike, over a CHD
-//!   ([`ChdSource`]), a raw track or `.bin`/`.cue` ([`BinSource`],
+//!   ([`ChdSource`]), a raw track (`.bin`, `.iso`) or `.cue` ([`BinSource`],
 //!   [`parse_cue`]) or memory ([`MemorySource`]). [`open_path`] opens a native
-//!   file by its kind, [`open_reader`] an already open one (CHD or raw track).
+//!   file by its kind, [`open_reader`] an already open one (CHD or raw
+//!   track), and [`discs_beside`] the game's other discs beside one.
 //! - [`ReadAt`]: the byte access under every source. Natively a [`FileReadAt`];
 //!   in a browser a [`PrefetchedFile`].
 //! - [`ByteLru`]: the byte-budgeted cache of decoded CHD hunks and fetched chunks.
 //! - [`sector`]: header, subheader, form and user data of one sector.
-//! - [`identify`]: which disc it is, from SYSTEM.CNF's boot program and its SHA-256.
+//! - [`identify`]: which disc it is, from SYSTEM.CNF's boot program and its
+//!   SHA-256 ([`state_identity`]: what save states name the game by), and
+//!   [`verify`]: whether the image is Redump's dump of it (a CHD by the
+//!   digest its header records, any other image by its track's SHA-1).
 //! - [`game_index`]: the game's own file index, keyed as the game keys files.
 //!
 //! # Reading in a browser
@@ -45,13 +49,13 @@ pub mod source;
 pub use cache::ByteLru;
 pub use chd::ChdSource;
 pub use cue::{CueTrack, parse_cue};
-pub use identify::{Identification, KnownDisc, identify};
+pub use identify::{Identification, KnownDisc, Verification, identify, state_identity, verify};
 pub use index::{Index, Record, game_index};
 pub use read_at::{FileReadAt, PrefetchedFile, ReadAt};
 pub use sector::{Form, SECTOR_SIZE, Sector};
 pub use source::{
-    BinSource, DEFAULT_CACHE_BYTES, Error, MemorySource, Result, SectorSource, open_path,
-    open_reader,
+    BinSource, DEFAULT_CACHE_BYTES, Error, MemorySource, Result, SectorSource, discs_beside,
+    open_path, open_reader,
 };
 
 use sha2::{Digest, Sha256};

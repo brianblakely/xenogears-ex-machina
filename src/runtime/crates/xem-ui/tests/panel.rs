@@ -526,3 +526,20 @@ fn quit_asks_first_and_fullscreen_is_a_setting_where_hosts_offer_them() {
     assert_eq!(quits.get(), 2, "and so does a press on it");
     assert!(!ui.component().get_quit_confirming());
 }
+
+#[test]
+fn a_missing_disc_is_asked_for_over_the_saves_section() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let ui = SettingsUi::new(shared, settings, (640, 560), 1.0).unwrap();
+    ui.ask_for_disc(2);
+    assert_eq!(ui.component().get_selected_section(), 5, "the Saves section");
+    assert!(ui.component().get_status().contains("beside the one the game started from"), "a host without disc import");
+    ui.component().set_selected_section(0);
+    ui.on_import_disc(|| {});
+    ui.ask_for_disc(2);
+    assert_eq!(ui.component().get_status_kind(), 2, "a problem");
+    assert!(ui.component().get_status().contains("disc 2: import it below"));
+    assert_eq!(ui.component().get_selected_section(), 5);
+}

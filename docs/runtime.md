@@ -258,6 +258,69 @@ input.
   the browser suite checks the same route's `memory_hash` against
   `xem-headless --control`.
 
+## Discs
+
+`xem-disc` reads the user's images in place as raw MODE2/2352 sectors: CHDs
+(by their signature), cue sheets with their `.bin`, and raw tracks (`.bin`,
+`.iso`). An image is identified by its boot program (`identify`) and, when
+that is a Xenogears disc, accepted only as Redump's dump of the North
+American disc ([disc 1](http://redump.org/disc/177/), SLUS-00664,
+718 738 272 bytes, SHA-1 `12db8ccb…21f4`; [disc 2](http://redump.org/disc/178/),
+SLUS-00669, 688 700 880 bytes, SHA-1 `0a4c56e6…665c`; the original and
+Greatest Hits editions alike; `verify`, `Verification`). A raw image's whole
+track must have that size and SHA-1 (about a second natively); a CHD is
+checked by the SHA-1 its header records of its raw data, which must be that
+of `chdman createcd`'s CHD of Redump's dump (`KnownDisc::chd_raw_sha1`),
+since decoding a whole CHD to hash its track takes most of a minute. The
+CHDs in `discs/` are those CHDs: their decoded tracks and their extracted
+`.bin`s hash to Redump's values (`xem-disc/tests/user_discs.rs`). A
+2048-byte-sector ISO, which keeps none of the XA audio and movie sectors, is
+refused with a hint; a disc that is not Xenogears is identified as such
+and not booted. Native boot (`xem_game::boot`) verifies the disc it boots
+and the discs beside it, Android each import on its worker thread, and the
+browser each import in a `verifying` stage that reads ahead 4 MiB at a time.
+
+**The disc changer.** The game asks for its other disc in three places
+(`menu_cd_ask_for_disc`): the story's disc change at the end of disc 1 (menu
+kind 6, which offers a save first), a new game started from disc 2 (the
+title's file screen wants disc 1) and a file loaded from the other disc.
+Each waits in `menu_cd_check_disc` for the lid to open and close, the motor
+to spin and the disc's label (sector 0x17) to name the disc, then loads its
+file index. The port wraps that check (`src/port/disc.c`, game_module.py's
+`WRAPPED`) and tells the drive which disc it waits for and whether this is
+the story's change (import `cd_wanted`). The drive's changer
+(`xem-core/src/devices/cd.rs`) then opens the lid and puts that disc in, up
+to speed and with the head at its start; the lid closes a vertical blank
+after the game last read its status with it open (libcd reads the status
+again while it reports the lid open, so the check must find it open
+throughout a poll), so the check goes on at once, about half a second to
+the new disc's file index. At the story's change this happens five seconds
+of game time after the request, with the game's change-disc notice shown
+(fast-forward shortens it); elsewhere at once. All of it runs on the
+game's clock, so recordings, rewind and replays reproduce it. Without the
+wanted disc the game waits at its notice; the hosts ask for it (the panel
+opens on Saves with the request on the status line) and the change happens
+when the host adds it (`Services::add_disc`). Natively `xem_game::boot`
+gives the changer the game's other disc from the boot disc's directory
+(`xem_disc::discs_beside`: the first CHD, cue, ISO or raw track there that
+is the other disc and verifies). Android and the browser keep both
+imported discs: the game boots from disc 1 when it is there, else disc 2,
+the other goes to the changer, and a disc imported while the game runs goes
+to the changer rather than starting it again.
+
+**Save states.** A snapshot names the game rather than the boot disc
+(`state_identity`: both discs hold one program, their boot programs
+differing only in the file index each embeds, which the game loads again
+from the disc it changes to) and keeps the number of the disc in the drive;
+restoring puts that disc back in, or is refused when the session has not
+got it. A state saved with either disc in the drive restores in a session
+booted from either (`xem-headless/tests/discs.rs`, with both discs: a new
+game on disc 2 gets disc 1 at once and a state from before the change goes
+on identically in a session booted from disc 1; without disc 1 the game
+waits until it is added; the story's change waits five seconds; and
+`web/tests/disc.test.mjs`: in the browser, disc 1 imported while the game
+waits for it goes in).
+
 ## Sound and memory cards
 
 - **libspu** (`src/port/libspu.c`) is the resident's libspu from its original
@@ -1053,13 +1116,16 @@ replacement guarantees apply.
 
 `Session::snapshot_bytes` contains only the runtime's game state: game memory,
 globals, suspended fibers, event queues, clock phase, card protocol, GPU, SPU and media
-decoder/drive progress. The state identifies the exact game module, disc
-executable and ordered package digests. Checksums, versions, identity, buffer
-bounds and device data are validated before committing the restore. Incompatible
-states are rejected explicitly. Host disc/storage attachments and presentation
-settings and current memory-card images stay attached; queued future audio is discarded. App pacing is omitted
-from the state and reapplied after restoring the game's music phase. The game
-state format is version 7; older snapshots are rejected explicitly. Card device
+decoder/drive progress, with the number of the disc in the drive. The state
+identifies the exact game module, the game (both discs alike, [Discs](#discs))
+and ordered package digests. Checksums, versions, identity, buffer bounds,
+device data and the drive's disc being at hand are validated before committing
+the restore. Incompatible states are rejected explicitly. Host disc/storage
+attachments and presentation settings and current memory-card images stay
+attached (the drive takes the state's disc from them); queued future audio is
+discarded. App pacing is omitted from the state and reapplied after restoring
+the game's music phase. The game state format is version 8; older snapshots
+are rejected explicitly. Card device
 protocol state is saved, but persistent card contents are excluded. Loading,
 importing and rewinding never roll back or write ordinary card saves; card
 backups are separate explicit operations.
@@ -1220,9 +1286,15 @@ as JSON text or bytes.
   API, whose handle is kept in IndexedDB for "Reopen") gives a `File`; the image
   is read in place over `PrefetchedFile` in 256 KiB chunks with an 8 MiB chunk
   budget and a 4 MiB decoded-hunk budget, whatever its size. Identifying disc 1
-  reads 1.1 MB of its 358 MB CHD. CHD and raw MODE2/2352 `.bin` images are
-  accepted (a `.cue` is not needed for a single-track image). Nothing is sent
-  anywhere.
+  reads 1.1 MB of its 358 MB CHD. CHD and raw MODE2/2352 `.bin` and `.iso`
+  images are accepted (a `.cue` is not needed for a single-track image),
+  each verified as Redump's dump ([Discs](#discs)). Nothing is sent
+  anywhere. Each import has an id that its byte ranges carry
+  (`open_disc`, `disc_poll`, `disc_fill`, `disc_missing`); the verified
+  Xenogears discs among them are the game's (`status().discs`, and
+  `status().drive`: the disc in the drive and one the game waits for), the
+  newest import is `status().disc`, and "Reopen" reopens both remembered
+  discs. The panel's *Import disc…* opens the page's file chooser.
 - **Audio.** A browser session keeps the SPU's output (`Spu::set_output`).
   After the frames of an animation frame (or a command) the runtime takes the
   samples into a bounded queue (a quarter second; older ones are dropped, as
@@ -1459,10 +1531,14 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
   the picker), SDL opens it through the
   ContentResolver, its file descriptor is duplicated into a Rust `File` and
   `xem-disc` (`open_reader`, `identify`) reads it in place on a worker thread.
-  The URI is kept in the app's files directory and reopened on start.
-- **Game.** An identified Xenogears disc boots the game from the same
-  descriptor (`xem_game::boot_source` over `xem_disc::open_reader`), with the
-  memory cards in `<files dir>/cards`; the settings panel hides. Like the
+  The URIs of the last three imports are kept in the app's files directory
+  and reopened on start.
+- **Game.** Once the reopened documents are identified, disc 1 (else disc 2)
+  boots the game from the same descriptor (`xem_game::boot_source` over
+  `xem_disc::open_reader`), with the memory cards in `<files dir>/cards`;
+  the settings panel hides. The other disc, and a disc imported while the
+  game runs, go to the drive's changer for the game's disc changes
+  ([Discs](#discs)) instead of starting it again. Like the
   desktop, `xem_host::Game` runs the frames due at 60 per second of wall time
   (at most two per rendered frame, never catching up), the GPU device's
   display becomes the game image and the SPU's output plays through an SDL3

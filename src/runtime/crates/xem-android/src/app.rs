@@ -289,6 +289,11 @@ struct Host {
     live: Rc<RefCell<Live>>,
     gpu: Gpu,
     discs: DiscImport,
+    /// Xenogears discs identified and not yet the game's, by number.
+    known: std::collections::BTreeMap<u8, (File, String)>,
+    /// The documents reopened at start still identifying: the game boots
+    /// once they are, from disc 1 when it is among them.
+    reopening: Vec<String>,
     import_requested: Rc<Cell<bool>>,
     /// The memory cards' directory (card1.mcd, card2.mcd).
     cards: PathBuf,
@@ -409,15 +414,18 @@ impl Host {
             live,
             gpu,
             discs: DiscImport::new(&files),
+            known: Default::default(),
+            reopening: Vec::new(),
             import_requested,
             cards: files.join("cards"),
         })
     }
 
     fn run(&mut self, window: &sdl::Window, options: &Options) -> Result<(), String> {
-        if let Some(uri) = self.discs.persisted() {
+        self.reopening = self.discs.persisted();
+        for uri in &self.reopening {
             log(&format!("reopening imported disc {uri}"));
-            self.discs.open(&uri);
+            self.discs.open(uri);
         }
         if let Some(source) = &options.open {
             self.discs.open(source);
@@ -491,11 +499,42 @@ impl Host {
                     }
                 };
                 self.view.ui().set_disc_status(&text);
-                if let Some(disc) = identified.disc {
-                    self.boot(disc, &identified.source);
+                self.reopening.retain(|uri| *uri != identified.source);
+                if let Some((number, disc)) = identified.disc {
+                    self.known.insert(number, (disc, identified.source));
                 }
             }
+            self.place_discs();
             self.frame(window)?;
+        }
+    }
+
+    /// Hands the identified discs to the game: with none running (and the
+    /// documents reopened at start identified) disc 1 boots, else disc 2;
+    /// the others go to its drive's changer, for the game's disc changes.
+    fn place_discs(&mut self) {
+        if !self.reopening.is_empty() || self.known.is_empty() {
+            return;
+        }
+        if self.live.borrow().game.is_none() {
+            let number = if self.known.contains_key(&1) { 1 } else { 2 };
+            if let Some((disc, source)) = self.known.remove(&number) {
+                self.boot(disc, &source);
+            }
+        }
+        let mut live = self.live.borrow_mut();
+        let Some(game) = live.game.as_mut() else { return };
+        for (number, (disc, source)) in std::mem::take(&mut self.known) {
+            match xem_disc::FileReadAt::new(disc)
+                .map_err(|e| e.to_string())
+                .and_then(|reader| xem_disc::open_reader(reader).map_err(|e| e.to_string()))
+            {
+                Ok(disc) => {
+                    game.add_disc(number, disc);
+                    log(&format!("disc {number} for the game's disc changes: {source}"));
+                }
+                Err(error) => log(&format!("disc {number} not opened: {source}: {error}")),
+            }
         }
     }
 
@@ -505,8 +544,8 @@ impl Host {
         log(&format!("game not booted source={source}: this build has no game module"));
     }
 
-    /// Boots the game from an identified Xenogears disc (replacing a game
-    /// that runs) and hides the settings panel.
+    /// Boots the game from an identified Xenogears disc and hides the
+    /// settings panel.
     #[cfg(has_game_module)]
     fn boot(&mut self, disc: File, source: &str) {
         let booted = std::fs::create_dir_all(&self.cards)

@@ -25,6 +25,7 @@ web-sys = { workspace = true, features = [
     "Document",
     "Element",
     "HtmlCanvasElement",
+    "HtmlElement",
     "Navigator",
     "Performance",
     "Storage",

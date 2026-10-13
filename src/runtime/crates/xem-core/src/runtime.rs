@@ -107,9 +107,15 @@ impl Services {
         ]
     }
 
-    /// Put the user's disc in the drive.
-    pub fn insert_disc(&mut self, disc: Box<dyn xem_disc::SectorSource>) {
-        self.cd.insert_disc(disc);
+    /// Put the user's disc `number` (0 for a disc without one) in the drive.
+    pub fn insert_disc(&mut self, number: u8, disc: Box<dyn xem_disc::SectorSource>) {
+        self.cd.insert_disc(number, disc);
+    }
+
+    /// Give the drive's changer the game's other disc `number`, for the
+    /// game's disc changes (a game waiting for it gets it now).
+    pub fn add_disc(&mut self, number: u8, disc: Box<dyn xem_disc::SectorSource>) {
+        self.cd.add_disc(number, disc);
     }
 
     pub fn set_playback_speed(&mut self, speed: u32) {
@@ -847,6 +853,10 @@ impl<M: GameModule> Runtime<M> {
         let mut loaded = Services::default();
         for (_, device) in loaded.devices() {
             device.load(r.bytes()?).map_err(SnapshotError::Device)?;
+        }
+        let disc = loaded.cd.inserted();
+        if !self.services().cd.holds(disc) {
+            return Err(SnapshotError::Device(format!("the state has disc {disc} in the drive, which is not here")));
         }
         if loaded.spu.audio_cycles() != clock.audio_now {
             return Err(SnapshotError::Format("inconsistent music clock speed"));

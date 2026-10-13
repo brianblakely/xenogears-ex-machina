@@ -45,14 +45,24 @@
 //! SPU device the 44100 Hz stereo PCM with the CdMix attenuation applied; at
 //! most [`MAX_AUDIO_FRAMES`] wait for it, older audio is lost.
 //!
-//! # Disc and lid
+//! # Disc, lid and changer
 //!
-//! The host inserts the user's disc ([`Cd::insert_disc`]). The lid can open
-//! and close ([`Cd::open_lid`], [`Cd::close_lid`]) and the disc be changed
-//! while it is open ([`Cd::swap_disc`]): opening stops the motor and the read,
-//! the status keeps its shell-open bit (0x10) until a Getstat after the lid
-//! closed, and commands other than Getstat and the mode/filter settings fail
-//! (INT5, error 0x80) without a closed lid and a disc.
+//! The host puts the user's disc in the drive ([`Cd::insert_disc`]) and
+//! gives the changer the game's other disc ([`Cd::add_disc`]), each by its
+//! number. When the game waits for a disc (the port's `cd_wanted`, from its
+//! disc check), the changer opens the lid, puts that disc in and closes the
+//! lid: five seconds of game time later at the story's disc change
+//! ([`STORY_CHANGE_CYCLES`]), at once otherwise; without that disc it waits
+//! for the host to add it ([`Cd::wanted`]). The lid closes a vertical blank
+//! after the game last read its status with it open: libcd reads the status
+//! again while it reports the lid open (an error to it), so the game's check
+//! sees the lid open only in a poll that finds it open throughout. The disc
+//! goes in up to speed, the head at its start, so the check goes on at once.
+//! Opening stops the motor and the read, the status keeps its shell-open bit
+//! (0x10) until a Getstat after the lid closed, and commands other than
+//! Getstat and the mode/filter settings fail (INT5, error 0x80) without a
+//! closed lid and a disc. A snapshot keeps which disc is in the drive, and
+//! restoring one puts that disc back in.
 
 use std::collections::VecDeque;
 
@@ -61,7 +71,7 @@ use xem_disc::{Error as DiscError, SectorSource};
 use xem_media::xa::{Delivery, Subheader as XaSubheader, XaAudio};
 
 use super::{Context, Device, unknown};
-use crate::clock::CPU_HZ;
+use crate::clock::{CPU_HZ, VBLANK_CYCLES};
 use crate::module::Action;
 use crate::snapshot::{Reader, Writer};
 
@@ -84,6 +94,9 @@ pub const PAUSE_CYCLES: [u64; 2] = [0x21_181C, 0x10_BD93];
 pub const STOP_CYCLES: [u64; 2] = [0xD3_8ACA, 0x18A_6076];
 /// The motor's spin-up (Standby, or a seek or read with the motor off): one second.
 pub const SPIN_UP_CYCLES: u64 = CPU_HZ;
+/// The changer's wait at the story's disc change before it opens the lid: five
+/// seconds of game time with the game's change-disc notice shown.
+pub const STORY_CHANGE_CYCLES: u64 = 5 * CPU_HZ;
 /// XA audio kept for the SPU, at most (two seconds at 44100 Hz).
 pub const MAX_AUDIO_FRAMES: usize = 2 * 44_100;
 
@@ -179,6 +192,10 @@ enum Event {
     Sector,
     /// A SeekL/SeekP arrives (its completion).
     SeekDone,
+    /// The changer opens the lid, puts this disc in and closes the lid.
+    Change(u8),
+    /// The changer closes the lid on the disc it put in.
+    CloseLid,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -200,6 +217,12 @@ pub struct DeliveredSector {
 /// The drive.
 pub struct Cd {
     disc: Option<Box<dyn SectorSource>>,
+    /// The number of the disc in the drive (0: none, or a disc without one).
+    inserted: u8,
+    /// The changer's other discs, by number: the host's, never in a snapshot.
+    shelf: Vec<(u8, Box<dyn SectorSource>)>,
+    /// The disc the game waits for that the changer has not got.
+    wanted: Option<u8>,
     /// A sector the disc source has not fetched yet stopped the drive (browser
     /// hosts); the runtime waits for the host to fetch it.
     pub blocked: bool,
@@ -237,6 +260,9 @@ impl Default for Cd {
     fn default() -> Self {
         Cd {
             disc: None,
+            inserted: 0,
+            shelf: Vec::new(),
+            wanted: None,
             blocked: false,
             lid_open: false,
             shell_latch: false,
@@ -262,39 +288,111 @@ impl Default for Cd {
 }
 
 impl Cd {
+    /// The drive as a snapshot left it (`state`, loaded), with the live
+    /// discs: the one the state had in the drive goes back in
+    /// ([`Self::holds`] said it is here).
     pub(crate) fn restore_state(&mut self, mut state: Self) {
-        state.disc = self.disc.take();
+        let mut discs = std::mem::take(&mut self.shelf);
+        discs.extend(self.disc.take().map(|disc| (self.inserted, disc)));
+        state.disc = discs.iter().position(|(number, _)| *number == state.inserted).map(|i| discs.remove(i).1);
+        state.shelf = discs;
         state.sector_log = self.sector_log.take();
         *self = state;
     }
-    /// Put the user's disc in the drive (the lid closed on it).
-    pub fn insert_disc(&mut self, disc: Box<dyn SectorSource>) {
+
+    /// Whether disc `number` is here, in the drive or on the changer's shelf
+    /// (0, a disc without a number or none, always is).
+    pub fn holds(&self, number: u8) -> bool {
+        number == 0 || (self.disc.is_some() && self.inserted == number) || self.shelf.iter().any(|(n, _)| *n == number)
+    }
+
+    /// Put disc `number` (0 for a disc without one) in the drive, the lid
+    /// closed on it, as at boot.
+    pub fn insert_disc(&mut self, number: u8, disc: Box<dyn SectorSource>) {
         self.disc = Some(disc);
+        self.inserted = number;
+    }
+
+    /// Give the changer disc `number`, replacing one it had; the drive keeps
+    /// the disc it holds. A game waiting for it gets it now.
+    pub fn add_disc(&mut self, number: u8, disc: Box<dyn SectorSource>) {
+        if self.disc.is_some() && self.inserted == number {
+            return;
+        }
+        self.shelf.retain(|(n, _)| *n != number);
+        self.shelf.push((number, disc));
+        if self.wanted == Some(number) {
+            self.change(number);
+        }
+    }
+
+    /// The disc the game waits for that the changer has not got (the host
+    /// asks the player for it).
+    pub fn wanted(&self) -> Option<u8> {
+        self.wanted
+    }
+
+    /// The number of the disc in the drive.
+    pub fn inserted(&self) -> u8 {
+        self.inserted
+    }
+
+    /// The disc a scheduled change brings, and the cycle it goes in at (the
+    /// story's wait).
+    pub fn change_due(&self) -> Option<(u8, u64)> {
+        self.events.iter().find_map(|(at, _, event)| match event {
+            Event::Change(number) => Some((*number, *at)),
+            _ => None,
+        })
+    }
+
+    /// The game's disc check waits for disc `number` (the port's
+    /// `cd_wanted`): the changer brings it, after [`STORY_CHANGE_CYCLES`]
+    /// when `story` (the story's disc change), else now.
+    fn request(&mut self, number: u8, story: bool, now: u64) {
+        if !self.holds(number) {
+            self.wanted = Some(number);
+        } else if story {
+            self.schedule(now + STORY_CHANGE_CYCLES, Event::Change(number));
+        } else {
+            self.change(number);
+        }
+    }
+
+    /// The changer: the lid opens and disc `number` goes in (the one the drive
+    /// held onto the shelf); the lid closes once the game has seen it open (a
+    /// Getstat schedules it). Without that disc the game goes on waiting for it.
+    fn change(&mut self, number: u8) {
+        if !self.holds(number) {
+            self.wanted = Some(number);
+            return;
+        }
+        self.open_lid();
+        if !(self.disc.is_some() && self.inserted == number) {
+            let at = self.shelf.iter().position(|(n, _)| *n == number).expect("held");
+            let (_, disc) = self.shelf.remove(at);
+            if let Some(old) = self.disc.replace(disc) {
+                self.shelf.push((self.inserted, old));
+            }
+            self.inserted = number;
+        }
+        self.position = 0;
+        self.wanted = None;
     }
 
     /// Open the lid: the motor and any read stop.
-    pub fn open_lid(&mut self) {
+    fn open_lid(&mut self) {
         self.lid_open = true;
         self.shell_latch = true;
         self.motor = false;
         self.drive = Drive::Idle;
-        self.events.retain(|(_, _, e)| matches!(e, Event::Respond(_)));
+        self.events.retain(|(_, _, e)| matches!(e, Event::Respond(_) | Event::Change(_) | Event::CloseLid));
     }
 
-    /// Close the lid; the next command finds the disc (if any) stopped.
-    pub fn close_lid(&mut self) {
+    /// Close the lid on the changer's disc, up to speed.
+    fn close_lid(&mut self) {
         self.lid_open = false;
-    }
-
-    /// Change the disc: the lid opens (if it was closed) and the new disc
-    /// replaces the old one, which is returned; close the lid afterwards.
-    pub fn swap_disc(&mut self, disc: Option<Box<dyn SectorSource>>) -> Option<Box<dyn SectorSource>> {
-        self.open_lid();
-        std::mem::replace(&mut self.disc, disc)
-    }
-
-    pub fn lid_open(&self) -> bool {
-        self.lid_open
+        self.motor = self.disc.is_some();
     }
 
     /// Move the XA audio decoded so far into `out` as interleaved 44100 Hz
@@ -386,7 +484,11 @@ impl Cd {
             com::GETSTAT => {
                 let s = self.status(now);
                 self.respond_at(ack, intr::ACKNOWLEDGE, vec![s]);
-                if !self.lid_open {
+                if self.lid_open {
+                    // The changer closes it once the game's poll is over.
+                    self.events.retain(|(_, _, e)| !matches!(e, Event::CloseLid));
+                    self.schedule(now + VBLANK_CYCLES, Event::CloseLid);
+                } else {
                     self.shell_latch = false;
                 }
             }
@@ -611,6 +713,8 @@ impl Cd {
                 let s = self.status(at);
                 self.push_response(Response { intr: intr::COMPLETE, bytes: vec![s], sector: None }, raised);
             }
+            Event::Change(number) => self.change(number),
+            Event::CloseLid => self.close_lid(),
         }
     }
 
@@ -735,6 +839,10 @@ impl Device for Cd {
                 Action::Return(0)
             }
             "poll_now" => Action::Return(u32::from(self.run_next_now(context.now, context.raised))),
+            "wanted" => {
+                self.request(arg(0) as u8, arg(1) != 0, context.now);
+                Action::Return(0)
+            }
             _ => unknown("cd", op, context),
         }
     }
@@ -743,10 +851,11 @@ impl Device for Cd {
         self.events.iter().map(|(at, _, _)| *at).min()
     }
 
-    /// The drive's state without the disc (the host inserts the same disc
-    /// again before restoring) and without the sector log.
+    /// The drive's state without the discs (the number of the one in the
+    /// drive, which restoring puts back in) and without the sector log.
     fn save(&self) -> Vec<u8> {
         let mut w = Writer::default();
+        w.u32(u32::from(self.inserted) | u32::from(self.wanted.unwrap_or(0)) << 8);
         w.u32(u32::from(self.lid_open) | u32::from(self.shell_latch) << 1 | u32::from(self.motor) << 2 | u32::from(self.muted) << 3);
         w.u32(u32::from(self.mode) | u32::from(self.filter.0) << 8 | u32::from(self.filter.1) << 16);
         w.u64(self.target.map_or(u64::MAX, u64::from));
@@ -772,6 +881,11 @@ impl Device for Cd {
                 }
                 Event::Sector => w.u32(1),
                 Event::SeekDone => w.u32(2),
+                Event::Change(number) => {
+                    w.u32(3);
+                    w.u32(u32::from(*number));
+                }
+                Event::CloseLid => w.u32(4),
             }
         }
         w.u32(self.pending.len() as u32);
@@ -795,6 +909,9 @@ impl Device for Cd {
         self.xa_sectors = xa_sectors;
         let mut r = Reader::new(state);
         let e = |error: crate::snapshot::SnapshotError| error.to_string();
+        let discs = r.u32().map_err(e)?;
+        self.inserted = discs as u8;
+        self.wanted = Some((discs >> 8) as u8).filter(|&number| number != 0);
         let flags = r.u32().map_err(e)?;
         self.lid_open = flags & 1 != 0;
         self.shell_latch = flags & 2 != 0;
@@ -820,6 +937,8 @@ impl Device for Cd {
                 0 => Event::Respond(read_response(&mut r)?),
                 1 => Event::Sector,
                 2 => Event::SeekDone,
+                3 => Event::Change(r.u32().map_err(e)? as u8),
+                4 => Event::CloseLid,
                 _ => return Err("bad cd event".into()),
             };
             self.events.push((at, sequence, event));
@@ -868,12 +987,12 @@ mod tests {
                 else { self.source.read_sector(lba,out) }
             }
         }
-        let mut immediate = Cd::default(); immediate.insert_disc(disc(8));
+        let mut immediate = Cd::default(); immediate.insert_disc(0, disc(8));
         immediate.drive = Drive::Reading { from: 0 };
         immediate.schedule(123,Event::Sector);
         let initial = immediate.save();
         let mut delayed = Cd::default();
-        delayed.insert_disc(Box::new(Delayed { source: disc(8), retries: 3 }));
+        delayed.insert_disc(0, Box::new(Delayed { source: disc(8), retries: 3 }));
         delayed.load(&initial).unwrap();
         let mut raised = Vec::new(); immediate.run_due(123,&mut raised);
         for _ in 0..3 {
@@ -917,7 +1036,7 @@ mod tests {
     #[test]
     fn setloc_readn_delivers_sectors_at_the_read_speed() {
         let mut cd = Cd::default();
-        cd.insert_disc(disc(64));
+        cd.insert_disc(0, disc(64));
         let mut now = 1000;
         cd.command(com::SETMODE, &[0xA0], now);
         let acks = run_for(&mut cd, &mut now, 100_000);
@@ -949,7 +1068,7 @@ mod tests {
     #[test]
     fn pause_acknowledges_then_completes_and_stops_the_read() {
         let mut cd = Cd::default();
-        cd.insert_disc(disc(1000));
+        cd.insert_disc(0, disc(1000));
         let mut now = 0;
         cd.command(com::SETMODE, &[0x80], now);
         cd.command(com::READN, &[], now);
@@ -966,7 +1085,7 @@ mod tests {
     #[test]
     fn whole_sector_mode_and_data_mode_fill_the_buffer_differently() {
         let mut cd = Cd::default();
-        cd.insert_disc(disc(8));
+        cd.insert_disc(0, disc(8));
         let mut now = 0;
         cd.command(com::SETMODE, &[0x80], now);
         cd.command(com::SETLOC, &loc(3), now);
@@ -982,7 +1101,7 @@ mod tests {
     #[test]
     fn a_saved_drive_continues_identically() {
         let mut cd = Cd::default();
-        cd.insert_disc(disc(200));
+        cd.insert_disc(0, disc(200));
         let mut now = 0;
         cd.command(com::SETMODE, &[0xA0], now);
         cd.command(com::SETLOC, &loc(10), now);
@@ -994,7 +1113,7 @@ mod tests {
         now = at;
         let state = cd.save();
         let mut copy = Cd::default();
-        copy.insert_disc(disc(200));
+        copy.insert_disc(0, disc(200));
         copy.load(&state).unwrap();
         assert_eq!(copy.save(), state);
         let (mut a, mut b) = (now, now);
@@ -1005,7 +1124,7 @@ mod tests {
     #[test]
     fn reading_past_the_end_reports_data_end() {
         let mut cd = Cd::default();
-        cd.insert_disc(disc(4));
+        cd.insert_disc(0, disc(4));
         let mut now = 0;
         cd.command(com::SETLOC, &loc(2), now);
         cd.command(com::READN, &[], now);
@@ -1017,7 +1136,7 @@ mod tests {
     #[test]
     fn seekl_completes_after_the_seek_time() {
         let mut cd = Cd::default();
-        cd.insert_disc(disc(10_000));
+        cd.insert_disc(0, disc(10_000));
         let mut now = 0;
         cd.command(com::INIT, &[], now);
         run(&mut cd, &mut now, CPU_HZ);
@@ -1033,14 +1152,13 @@ mod tests {
     }
 
     #[test]
-    fn open_lid_fails_commands_and_latches_the_shell_bit() {
+    fn an_open_lid_fails_commands_and_latches_the_shell_bit_and_a_closed_one_spins_up() {
         let mut cd = Cd::default();
-        cd.insert_disc(disc(4));
+        cd.insert_disc(0, disc(4));
         let mut now = 0;
         cd.command(com::INIT, &[], now);
         run(&mut cd, &mut now, CPU_HZ);
-        let old = cd.swap_disc(Some(disc(8)));
-        assert!(old.is_some() && cd.lid_open());
+        cd.open_lid();
         cd.command(com::SEEKL, &[], now);
         cd.command(com::GETSTAT, &[], now);
         let events = run_for(&mut cd, &mut now, CPU_HZ);
@@ -1050,13 +1168,74 @@ mod tests {
         cd.close_lid();
         cd.command(com::GETSTAT, &[], now);
         cd.command(com::GETSTAT, &[], now);
-        let events = run_for(&mut cd, &mut now, CPU_HZ);
-        // The first Getstat after closing still reports the opening, the next does not.
-        assert_eq!(events[0].2, vec![stat::SHELL_OPEN]);
-        assert_eq!(events[1].2, vec![0]);
+        let events = run_for(&mut cd, &mut now, CPU_HZ / 2);
+        // The first Getstat after closing still reports the opening, the next
+        // does not; the changer's disc is up to speed.
+        assert_eq!(events[0].2, vec![stat::SHELL_OPEN | stat::MOTOR]);
+        assert_eq!(events[1].2, vec![stat::MOTOR]);
         cd.command(com::GETTD, &[0], now);
         let events = run_for(&mut cd, &mut now, CPU_HZ);
-        assert_eq!(events[0].2, vec![0, 0x00, 0x02]);
+        assert_eq!(events[0].2, vec![stat::MOTOR, 0x00, 0x02]);
+    }
+
+    /// The status a Getstat issued now reports.
+    fn getstat(cd: &mut Cd, now: &mut u64) -> u8 {
+        cd.command(com::GETSTAT, &[], *now);
+        run_for(cd, now, ACK_CYCLES)[0].2[0]
+    }
+
+    #[test]
+    fn the_changer_brings_the_wanted_disc_at_once_or_after_the_story_wait() {
+        let mut cd = Cd::default();
+        cd.insert_disc(1, disc(4));
+        cd.add_disc(2, disc(8));
+        let mut now = 0;
+        // A disc check elsewhere (the title screen's): at once.
+        cd.request(2, false, now);
+        assert_eq!((cd.inserted(), cd.wanted()), (2, None));
+        assert_eq!(cd.disc.as_ref().unwrap().sector_count(), 8);
+        run_for(&mut cd, &mut now, 3 * VBLANK_CYCLES);
+        assert!(cd.lid_open, "the lid stays open until the game reads its status");
+        for _ in 0..4 {
+            assert_eq!(getstat(&mut cd, &mut now), stat::SHELL_OPEN, "libcd's retries see the lid open throughout");
+        }
+        run_for(&mut cd, &mut now, VBLANK_CYCLES);
+        assert!(!cd.lid_open, "it closes a vertical blank after the poll");
+        assert_eq!(getstat(&mut cd, &mut now), stat::SHELL_OPEN | stat::MOTOR, "the first Getstat after closing reports the opening");
+        assert_eq!(getstat(&mut cd, &mut now), stat::MOTOR, "and the next the disc spinning");
+        assert_eq!(cd.position, 0, "the head at the disc's start");
+        // The story's disc change: five seconds of game time first.
+        let asked = now;
+        cd.request(1, true, now);
+        cd.position = 6;
+        run(&mut cd, &mut now, asked + STORY_CHANGE_CYCLES - 1);
+        assert_eq!((cd.inserted(), cd.position), (2, 6));
+        assert_eq!(getstat(&mut cd, &mut now), stat::MOTOR);
+        run(&mut cd, &mut now, asked + STORY_CHANGE_CYCLES);
+        assert_eq!((cd.inserted(), cd.position), (1, 0));
+        assert_eq!(getstat(&mut cd, &mut now), stat::SHELL_OPEN);
+        assert!(cd.lid_open);
+
+        // A snapshot puts back the disc it had in the drive.
+        let state = cd.save();
+        cd.request(2, false, now);
+        let mut loaded = Cd::default();
+        loaded.load(&state).unwrap();
+        assert!(cd.holds(loaded.inserted));
+        cd.restore_state(loaded);
+        assert_eq!((cd.inserted(), cd.disc.as_ref().unwrap().sector_count()), (1, 4));
+        assert_eq!(cd.save(), state);
+        assert!(cd.holds(2), "the other disc stays with the changer");
+
+        // Without the disc the game waits until the host adds it.
+        let mut lone = Cd::default();
+        lone.insert_disc(1, disc(4));
+        lone.request(2, false, 0);
+        assert_eq!((lone.inserted(), lone.wanted()), (1, Some(2)));
+        assert!(!lone.lid_open, "nothing changes yet");
+        lone.add_disc(2, disc(8));
+        assert_eq!((lone.inserted(), lone.wanted()), (2, None));
+        assert!(lone.shell_latch);
     }
 
     #[test]
@@ -1079,7 +1258,7 @@ mod tests {
             _ => build_mode2_sector(lba, other, &adpcm),
         });
         let mut cd = Cd::default();
-        cd.insert_disc(Box::new(MemorySource::from_sectors(sectors)));
+        cd.insert_disc(0, Box::new(MemorySource::from_sectors(sectors)));
         let mut now = 0;
         cd.command(com::SETFILTER, &[1, 1], now);
         cd.command(com::SETMODE, &[0xC8], now);

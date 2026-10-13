@@ -15,7 +15,7 @@ use xem_disc::identify::hex;
 use xem_disc::sector::Form;
 use xem_disc::{
     ChdSource, Error, FileReadAt, Index, KnownDisc, PrefetchedFile, ReadAt, SECTOR_SIZE, Sector,
-    SectorSource, file_sha256, game_index, identify, open_path, read_data,
+    SectorSource, discs_beside, file_sha256, game_index, identify, open_path, read_data, verify,
 };
 
 fn repo() -> PathBuf {
@@ -85,6 +85,7 @@ fn check_disc(n: u8, known: KnownDisc) {
     let mut source = open_path(&path).expect("open CHD");
     let id = identify(&mut source).expect("identify");
     assert_eq!(id.disc, Some(known));
+    verify(source.as_mut(), known).expect("the CHD of Redump's dump");
     assert_eq!(id.sha256, known.executable_sha256());
     assert_eq!(
         id.boot_path,
@@ -257,4 +258,37 @@ fn disc1() {
 #[test]
 fn disc2() {
     check_disc(2, KnownDisc::Disc2);
+}
+
+/// The raw tracks are Redump's (the CHDs hold the verified dumps): named
+/// `.iso`, each is its disc and verifies, and the other disc's CHD is found
+/// beside it, verified.
+#[test]
+fn raw_tracks_open_as_redump_verified_isos_beside_the_other_disc() {
+    let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("iso");
+    for n in [1u8, 2] {
+        let (Some(cue), Some(other)) = (
+            input(&format!("XEM_DISC{n}_CUE"), repo().join(format!(".local/discs/disc{n}.cue"))),
+            chd(3 - n),
+        ) else {
+            continue;
+        };
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let iso = dir.join(format!("Xenogears disc {n}.iso"));
+        std::os::unix::fs::symlink(std::fs::canonicalize(cue.with_extension("bin")).unwrap(), &iso).unwrap();
+        std::os::unix::fs::symlink(std::fs::canonicalize(&other).unwrap(), dir.join("other.chd")).unwrap();
+        let mut source = open_path(&iso).expect("an ISO");
+        let known = identify(&mut source).unwrap().disc.unwrap();
+        assert_eq!(known.number(), n);
+        verify(source.as_mut(), known).expect("Redump's dump");
+        let beside: Vec<_> = discs_beside(&iso, known)
+            .into_iter()
+            .map(|(disc, path, verified)| (disc.number(), path, verified.is_ok()))
+            .collect();
+        assert_eq!(beside, [(3 - n, dir.join("other.chd"), true)]);
+        // The other disc's track is not this disc's dump.
+        let error = verify(source.as_mut(), if n == 1 { KnownDisc::Disc2 } else { KnownDisc::Disc1 }).unwrap_err();
+        assert!(error.to_string().contains("sectors, Redump's"), "{error}");
+    }
 }

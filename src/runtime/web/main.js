@@ -23,7 +23,6 @@ const page = {
   stubs: false,
   schema: false,
   rendererError: null,
-  discFile: null,
   frameError: null,
   hidden: document.hidden,
   deviceLosses: [],
@@ -141,7 +140,7 @@ const host = {
   cards,
   flushCards: () => cards.flush(),
   appOperation: (request) => appOperation(request),
-  fillDisc: () => disc.fillGameReads(app, page.discFile),
+  fillDisc: () => disc.fillGameReads(app),
   async boot({ executable = true, run = false, rewind = run } = {}) {
     if (!page.game.available) throw new Error(`no game module: ${page.game.error}`);
     const instance = await instantiate(page.game);
@@ -152,14 +151,12 @@ const host = {
     return status;
   },
   async importDisc(file, name = file.name) {
-    page.discFile = file;
     try { localStorage.setItem('xem.disc.last', JSON.stringify({ name, bytes: file.size })); }
     catch (error) { page.storageError = String(error); }
     return disc.importDisc(app, file.name === undefined ? new File([file], name) : file);
   },
   readSectors(lba, count) {
-    if (!page.discFile) throw new Error('no disc is open');
-    return disc.readSectors(app, page.discFile, lba, count);
+    return disc.readSectors(app, lba, count);
   },
   async save(slot) {
     const bytes = app.snapshot_bytes();
@@ -331,7 +328,7 @@ function xrFrame(time, xrframe) {
       const p = pose.transform.position;
       xr.viewer = [p.x, p.y, p.z];
     }
-    disc.serveGameReads(app, page.discFile);
+    disc.serveGameReads(app);
     audio.pump();
     xr.frames += 1;
     page.frameError = null;
@@ -348,7 +345,7 @@ function frame(time) {
   try {
     pollGamepad();
     app.frame(time);
-    disc.serveGameReads(app, page.discFile);
+    disc.serveGameReads(app);
     audio.pump();
     cards.flush().catch(() => {}); // retained for explicit retry; visible in status
     page.frameError = null;
@@ -387,13 +384,18 @@ function show(message) {
   $('message').textContent = message;
 }
 
-async function runImport(file) {
+/** Import `file` (its File System Access `handle`, when it has one, is
+ * remembered for the disc it turns out to be). */
+async function runImport(file, handle = null) {
   show(`Reading ${file.name} locally…`);
   const status = await host.importDisc(file);
   const id = status.identity;
   if (status.state === 'failed') show(`${file.name}: ${status.error}`);
-  else if (id?.disc) show(`Xenogears disc ${id.disc} (${id.serial}), ${id.boot_path}`);
-  else show(`${file.name}: not a known Xenogears disc (boot program ${id?.boot_path}, SHA-256 ${id?.sha256})`);
+  else if (id?.disc) {
+    if (handle) await disc.remember(id.disc, handle);
+    const running = JSON.parse(app.status()).session;
+    show(`Xenogears disc ${id.disc} (${id.serial}), ${id.boot_path}${running ? ': ready for the game\'s disc changes' : ''}`);
+  } else show(`${file.name}: not a known Xenogears disc (boot program ${id?.boot_path}, SHA-256 ${id?.sha256})`);
 }
 
 const guarded = (action) => async (event) => {
@@ -408,17 +410,20 @@ $('file').addEventListener('change', guarded(async (event) => {
   const [file] = event.target.files;
   if (file) await runImport(file);
 }));
+$('file').accept = disc.IMAGE_TYPES.join(',');
 $('pick').hidden = !disc.fileSystemAccess;
-$('pick').addEventListener('click', guarded(async () => runImport(await disc.pickWithHandle())));
-const remembered = await disc.rememberedName();
+$('pick').addEventListener('click', guarded(async () => {
+  const { file, handle } = await disc.pickWithHandle();
+  await runImport(file, handle);
+}));
+const remembered = (await disc.rememberedNames()).join(' and ');
 let last = null;
 try { last = JSON.parse(localStorage.getItem('xem.disc.last') ?? 'null'); }
 catch (error) { page.storageError = String(error); }
 $('reopen').hidden = !remembered;
 $('reopen').textContent = remembered ? `Reopen ${remembered}` : 'Reopen';
 $('reopen').addEventListener('click', guarded(async () => {
-  const file = await disc.reopenRemembered();
-  if (file) await runImport(file);
+  for (const file of await disc.reopenRemembered()) await runImport(file);
 }));
 if (!remembered && last) show(`Last disc: ${last.name}. Choose it again to continue (this browser cannot keep file handles).`);
 $('boot').disabled = !page.game.available;

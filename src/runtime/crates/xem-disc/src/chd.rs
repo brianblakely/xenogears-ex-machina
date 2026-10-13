@@ -194,6 +194,10 @@ impl<R: ReadAt> SectorSource for ChdSource<R> {
         self.sector_count
     }
 
+    fn chd_raw_sha1(&self) -> Option<[u8; 20]> {
+        self.chd.header().raw_sha1()
+    }
+
     fn read_sector(&mut self, lba: u32, out: &mut [u8; SECTOR_SIZE]) -> Result<()> {
         check_span(lba, SECTOR_SIZE, self.sector_count)?;
         let fph = self.frames_per_hunk;

@@ -2,7 +2,8 @@
 //!
 //! The page reads a `File` only asynchronously; the sector sources read
 //! synchronously over a [`PrefetchedFile`]. Each [`DiscImport::poll`] tries to
-//! make progress (detect the image kind, open it, identify the disc); when the
+//! make progress (detect the image kind, open it, identify the disc, verify a
+//! known disc as Redump's dump: `xem_disc::Verification`); when the
 //! bytes it needs have not arrived it reports the missing ranges, which the
 //! page fetches with `Blob.slice(start, end).arrayBuffer()` and hands back with
 //! [`DiscImport::fill`]. Memory is the chunk budget plus the decoded hunk
@@ -13,7 +14,7 @@ use std::ops::Range;
 use std::rc::Rc;
 
 use serde::Serialize;
-use xem_disc::{BinSource, ChdSource, Error, Identification, PrefetchedFile, ReadAt, SECTOR_SIZE, SectorSource};
+use xem_disc::{BinSource, ChdSource, Error, Identification, PrefetchedFile, ReadAt, SECTOR_SIZE, SectorSource, Verification};
 
 /// Fetch granularity.
 pub const CHUNK_BYTES: usize = 256 << 10;
@@ -23,6 +24,8 @@ pub const CHUNK_BUDGET: usize = 8 << 20;
 pub const HUNK_BUDGET: usize = 4 << 20;
 /// The largest sector read (its chunks must fit the budget at once).
 pub const MAX_READ_SECTORS: u32 = 64;
+/// Bytes a verification asks for at once ahead of its reads.
+pub const VERIFY_AHEAD: u64 = 4 << 20;
 
 const CHD_MAGIC: &[u8; 8] = b"MComprHD";
 
@@ -32,6 +35,8 @@ enum Stage {
     Detect,
     Open { chd: bool },
     Identify(Box<dyn SectorSource>),
+    /// A known disc checked against Redump's record of it.
+    Verify(Box<dyn SectorSource>, Verification),
     Ready(Box<dyn SectorSource>),
     Failed(String),
 }
@@ -52,8 +57,11 @@ pub struct Identity {
 pub struct DiscStatus {
     pub name: String,
     pub bytes: u64,
-    /// "detecting", "opening", "identifying", "identified" or "failed".
+    /// "detecting", "opening", "identifying", "verifying", "identified" or
+    /// "failed" (a known disc that is not Redump's dump among them).
     pub state: &'static str,
+    /// The share of a raw image verified so far.
+    pub verified: f32,
     pub kind: Option<&'static str>,
     pub error: Option<String>,
     pub identity: Option<Identity>,
@@ -127,11 +135,29 @@ impl DiscImport {
                     .map(|source| Stage::Identify(Box::new(source) as Box<dyn SectorSource>)),
                 Stage::Identify(source) => match xem_disc::identify(source.as_mut()) {
                     Ok(identification) => {
+                        let known = identification.disc;
                         self.identification = Some(identification);
                         let Stage::Identify(source) = std::mem::replace(&mut self.stage, Stage::Detect) else {
                             unreachable!()
                         };
+                        Ok(match known {
+                            Some(disc) => Stage::Verify(source, Verification::new(disc)),
+                            None => Stage::Ready(source),
+                        })
+                    }
+                    Err(error) => Err(error),
+                },
+                Stage::Verify(source, verification) => match verification.advance(source.as_mut()) {
+                    Ok(true) => {
+                        let Stage::Verify(source, _) = std::mem::replace(&mut self.stage, Stage::Detect) else {
+                            unreachable!()
+                        };
                         Ok(Stage::Ready(source))
+                    }
+                    Ok(false) => {
+                        // Read ahead: the image arrives in large slices.
+                        self.file.borrow_mut().request(verification.next_bytes(source.as_ref(), VERIFY_AHEAD));
+                        Err(Error::NotReady)
                     }
                     Err(error) => Err(error),
                 },
@@ -189,19 +215,34 @@ impl DiscImport {
         self.identification.as_ref()
     }
 
+    /// The known disc it is, once verified as Redump's dump of it.
+    pub fn verified_disc(&self) -> Option<xem_disc::KnownDisc> {
+        match self.stage {
+            Stage::Ready(_) => self.identification.as_ref().and_then(|id| id.disc),
+            _ => None,
+        }
+    }
+
     pub fn status(&self) -> DiscStatus {
         let (state, error) = match &self.stage {
             Stage::Detect => ("detecting", None),
             Stage::Open { .. } => ("opening", None),
             Stage::Identify(_) => ("identifying", None),
+            Stage::Verify(..) => ("verifying", None),
             Stage::Ready(_) => ("identified", None),
             Stage::Failed(error) => ("failed", Some(error.clone())),
+        };
+        let verified = match &self.stage {
+            Stage::Verify(_, verification) => verification.progress(),
+            Stage::Ready(_) => 1.0,
+            _ => 0.0,
         };
         let kind = self.chd.map(|chd| if chd { "chd" } else { "bin" });
         DiscStatus {
             name: self.name.clone(),
             bytes: self.file.borrow().len(),
             state,
+            verified,
             kind,
             error,
             identity: self.identification.as_ref().map(|id| Identity {

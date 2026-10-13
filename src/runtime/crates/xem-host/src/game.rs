@@ -164,6 +164,16 @@ impl Game {
         format!("{} card writes pending. {}",card.pending_writes(),card.errors.join("; "))
     }
 
+    /// Give the drive's changer the game's other disc `number`.
+    pub fn add_disc(&mut self, number: u8, disc: Box<dyn xem_disc::SectorSource>) {
+        self.session.runtime.services().add_disc(number, disc);
+    }
+
+    /// The disc the game waits for that the drive's changer has not got.
+    pub fn wanted_disc(&mut self) -> Option<u8> {
+        self.session.runtime.services().cd.wanted()
+    }
+
     /// Whether the SPU's output reaches an audio device.
     pub fn has_audio(&self) -> bool {
         !self.audio.is_null()

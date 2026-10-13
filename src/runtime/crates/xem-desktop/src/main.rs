@@ -16,7 +16,8 @@ struct Options {
     exit_after_frames: Option<u64>,
     screenshot: Option<PathBuf>,
     show_settings: bool,
-    /// The user's disc (CHD, cue or bin): play the game.
+    /// The user's disc (a CHD, a cue or bin, or a Redump-verified ISO): play
+    /// the game, the other disc beside it serving its disc changes.
     disc: Option<PathBuf>,
     cards: Option<PathBuf>,
     bios: Option<PathBuf>,
@@ -81,6 +82,8 @@ fn options() -> Result<Options, String> {
                     "xem-desktop [--disc DISC [--cards DIR] [--bios FILE] [--script LOG] \
                      [--exit-at-frame N] [--xr [--xr-pause N,M] [--xr-capture DIR]]] [--show-settings] \
                      [--exit-after-frames N] [--screenshot out.png]\n\
+                     DISC is a CHD, a cue sheet or a Redump-verified ISO; the game's other disc, \
+                     when it is beside it, goes in when the game asks for it.\n\
                      --xr plays in an OpenXR headset on a virtual screen (controllers: left stick \
                      D-pad, A/B/X/Y Cross/Circle/Square/Triangle, triggers L1/R1, grips L2/R2, \
                      left stick click Start, left menu the settings panel).\n\

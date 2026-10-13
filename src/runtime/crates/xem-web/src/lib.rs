@@ -87,7 +87,12 @@ pub struct XemApp {
     schema: Option<String>,
     session: Option<Session<WebModule>>,
     memory_bytes: u64,
-    disc: Option<disc::DiscImport>,
+    /// The user's imported images by id, oldest first: the last is the one
+    /// the page shows; the verified Xenogears discs among them are the game's.
+    discs: Vec<(u32, disc::DiscImport)>,
+    next_disc: u32,
+    /// The disc the game waits for that the drive's changer has not got.
+    wanted_disc: Option<u8>,
     renderer: Option<WebRenderer>,
     panel_closed: Rc<Cell<bool>>,
     audio: audio::Mixer,
@@ -139,7 +144,9 @@ impl XemApp {
             schema: None,
             session: None,
             memory_bytes: 0,
-            disc: None,
+            discs: Vec::new(),
+            next_disc: 1,
+            wanted_disc: None,
             renderer: None,
             panel_closed: Rc::new(Cell::new(false)),
             audio: audio::Mixer::default(),
@@ -174,6 +181,20 @@ impl XemApp {
         if let Some(panel) = renderer.panel() {
             let requests = self.app_requests.clone();
             panel.on_app_request(move |request| requests.borrow_mut().push(request));
+            // The panel's Import disc… is the page's file chooser.
+            panel.on_import_disc(|| {
+                use wasm_bindgen::JsCast;
+                let input = web_sys::window()
+                    .and_then(|window| window.document())
+                    .and_then(|document| document.get_element_by_id("file"))
+                    .and_then(|element| element.dyn_into::<web_sys::HtmlElement>().ok());
+                if let Some(input) = input {
+                    input.click();
+                }
+            });
+            if let Some((_, disc)) = self.discs.last() {
+                panel.set_disc_status(&disc_summary(disc));
+            }
         }
         self.renderer = Some(renderer);
         self.display_dirty = true;
@@ -364,6 +385,15 @@ impl XemApp {
         }
         if self.panel_closed.replace(false) {
             self.set_panel_visible(false);
+        }
+        // A disc the game waits for and the changer has not got: ask for it.
+        let wanted = self.session.as_mut().and_then(|session| session.runtime.services().cd.wanted());
+        if wanted != self.wanted_disc {
+            self.wanted_disc = wanted;
+            if let (Some(number), Some(panel)) = (wanted, self.renderer.as_ref().and_then(|r| r.panel())) {
+                panel.ask_for_disc(number);
+                self.set_panel_visible(true);
+            }
         }
         Ok(())
     }
@@ -640,35 +670,78 @@ impl XemApp {
 
     // --- Disc import --------------------------------------------------------
 
-    /// Start importing the user's image of `bytes` bytes (read in place, never uploaded).
-    pub fn open_disc(&mut self, name: String, bytes: f64) {
-        self.disc = Some(disc::DiscImport::new(name, bytes as u64));
+    /// Start importing the user's image of `bytes` bytes (read in place, never
+    /// uploaded); returns its id, which its byte ranges carry. Without a game,
+    /// earlier imports that are no Xenogears disc are let go.
+    pub fn open_disc(&mut self, name: String, bytes: f64) -> u32 {
+        if self.session.is_none() {
+            self.discs.retain(|(_, disc)| disc.verified_disc().is_some());
+        }
+        let id = self.next_disc;
+        self.next_disc += 1;
+        self.discs.push((id, disc::DiscImport::new(name, bytes as u64)));
+        id
     }
 
-    /// Progress the import: `[[start, end], ...]` to fetch, empty when done.
-    pub fn disc_poll(&mut self) -> String {
-        let ranges = self.disc.as_mut().map(|d| d.poll()).unwrap_or_default();
+    /// Progress import `id`: `[[start, end], ...]` to fetch, empty when done.
+    /// A disc verified as Redump's dump joins the game's discs (without a
+    /// game, the newest of each disc boots or waits for the changer; a
+    /// running game's changer takes one it has not got).
+    pub fn disc_poll(&mut self, id: u32) -> String {
+        let Some(index) = self.discs.iter().position(|(n, _)| *n == id) else { return "[]".into() };
+        let ranges = self.discs[index].1.poll();
+        if ranges.is_empty() {
+            self.place_disc(id);
+        }
         to_json(&ranges.iter().map(|r| [r.start, r.end]).collect::<Vec<_>>())
     }
 
-    pub fn disc_fill(&mut self, offset: f64, data: &[u8]) -> Result<(), JsValue> {
-        self.disc.as_mut().ok_or_else(|| error("no disc is open"))?.fill(offset as u64, data).map_err(error)
+    fn place_disc(&mut self, id: u32) {
+        let Some(index) = self.discs.iter().position(|(n, _)| *n == id) else { return };
+        if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) {
+            panel.set_disc_status(&disc_summary(&self.discs[index].1));
+        }
+        let Some(known) = self.discs[index].1.verified_disc() else { return };
+        let Some(session) = self.session.as_mut() else {
+            self.discs.retain(|(n, disc)| *n == id || disc.verified_disc() != Some(known));
+            return;
+        };
+        let services = session.runtime.services();
+        if !services.cd.holds(known.number()) {
+            match self.discs[index].1.game_source() {
+                Ok(source) => services.add_disc(known.number(), source),
+                Err(e) => web_sys::console::error_1(&format!("xem: disc {}: {e}", known.number()).into()),
+            }
+        }
     }
 
-    /// Raw sectors of the identified disc (`count` <= 64), or undefined while
-    /// their bytes are fetched: fetch [`disc_missing`](Self::disc_missing), fill, retry.
+    pub fn disc_fill(&mut self, id: u32, offset: f64, data: &[u8]) -> Result<(), JsValue> {
+        let (_, disc) = self.discs.iter_mut().find(|(n, _)| *n == id).ok_or_else(|| error("no such disc import"))?;
+        disc.fill(offset as u64, data).map_err(error)
+    }
+
+    /// Raw sectors of the newest identified image (`count` <= 64), or
+    /// undefined while their bytes are fetched: fetch
+    /// [`disc_missing`](Self::disc_missing), fill, retry.
     pub fn disc_read(&mut self, lba: u32, count: u32) -> Result<Option<Vec<u8>>, JsValue> {
-        self.disc.as_mut().ok_or_else(|| error("no disc is open"))?.read_sectors(lba, count).map_err(error)
+        let (_, disc) = self.discs.last_mut().ok_or_else(|| error("no disc is open"))?;
+        disc.read_sectors(lba, count).map_err(error)
     }
 
-    /// The byte ranges `[[start, end], ...]` a pending read waits for.
+    /// The byte ranges `[[id, start, end], ...]` pending reads of every
+    /// import wait for (the game's drive and changer among them).
     pub fn disc_missing(&mut self) -> String {
-        let ranges = self.disc.as_mut().map(|d| d.take_missing()).unwrap_or_default();
-        to_json(&ranges.iter().map(|r| [r.start, r.end]).collect::<Vec<_>>())
+        let ranges: Vec<_> = self
+            .discs
+            .iter_mut()
+            .flat_map(|(id, disc)| disc.take_missing().into_iter().map(move |r| (*id, r.start, r.end)))
+            .collect();
+        to_json(&ranges)
     }
 
+    /// The newest import's status.
     pub fn disc_status(&self) -> String {
-        to_json(&self.disc.as_ref().map(|d| d.status()))
+        to_json(&self.discs.last().map(|(_, d)| d.status()))
     }
 
     // --- Game session -------------------------------------------------------
@@ -696,13 +769,37 @@ impl XemApp {
         module_id: String,
         rewind: bool,
     ) -> Result<String, JsValue> {
-        let (executable, game_disc) = if load_executable {
-            let disc = self.disc.as_ref().ok_or_else(|| error("no identified disc"))?;
-            let identification = disc.identification().ok_or_else(|| error("no identified disc"))?;
-            identification.disc.ok_or_else(|| error("not a known Xenogears disc"))?;
-            (Some(identification.executable.clone()), Some(disc.game_source().map_err(error)?))
+        // Disc 1 when the player has it, else disc 2; the other disc goes to
+        // the drive's changer.
+        let verified = |number: u8| {
+            self.discs.iter().rev().map(|(_, disc)| disc).find(|disc| disc.verified_disc().is_some_and(|d| d.number() == number))
+        };
+        let (boot, other) = match (verified(1), verified(2)) {
+            (Some(first), second) => (Some(first), second),
+            (None, second) => (second, None),
+        };
+        let (executable, game_disc, identity, other) = if load_executable {
+            let Some(disc) = boot else {
+                let latest = self.discs.last().map(|(_, disc)| disc.status());
+                return Err(error(match latest {
+                    Some(status) if status.state == "failed" => status.error.unwrap_or_default(),
+                    Some(status) if status.state == "identified" => "not a known Xenogears disc".into(),
+                    _ => "no identified disc".into(),
+                }));
+            };
+            let identification = disc.identification().expect("a verified disc is identified");
+            let other = match other {
+                Some(other) => Some((2, other.game_source().map_err(error)?)),
+                None => None,
+            };
+            (
+                Some(identification.executable.clone()),
+                Some((disc.verified_disc().expect("verified").number(), disc.game_source().map_err(error)?)),
+                Some(xem_disc::state_identity(identification)),
+                other,
+            )
         } else {
-            (None, None)
+            (None, None, None, None)
         };
         let schema = self.schema.as_deref().map(Schema::parse).transpose().map_err(|e| error(format!("schema: {e}")))?;
         self.session = None;
@@ -715,8 +812,8 @@ impl XemApp {
         self.memory_bytes = module.memory_bytes();
         // As xem_game::boot does natively (without a BIOS image: blank Kanji glyphs).
         let mut runtime = Runtime::new(module);
-        if load_executable {
-            runtime.identity.disc = xem_disc::identify::hex(&self.disc.as_ref().unwrap().identification().unwrap().sha256);
+        if let Some(identity) = identity {
+            runtime.identity.disc = identity;
         }
         runtime.services().stub_names = self.stub_names.clone();
         runtime.services().card.attach_storage(Box::new(self.cards.clone())).map_err(error)?;
@@ -727,9 +824,13 @@ impl XemApp {
             let header = exe::parse(&executable).map_err(error)?;
             runtime.memory().write(header.text_address, exe::text(&executable, &header)).map_err(error)?;
         }
-        if let Some(source) = game_disc {
-            runtime.services().insert_disc(source);
+        if let Some((number, source)) = game_disc {
+            runtime.services().insert_disc(number, source);
         }
+        if let Some((number, source)) = other {
+            runtime.services().add_disc(number, source);
+        }
+        self.wanted_disc = None;
         self.session = Some(Session::new(runtime,schema,|| std::time::Duration::from_secs_f64(now_ms()/1000.0)));
         self.applied_time_settings = None;
         self.rewind_held = [false;2];
@@ -862,9 +963,15 @@ impl XemApp {
         });
         let settings_revision = self.settings.borrow().revision();
         let card_errors = self.session.as_mut().map(|s| s.runtime.services().card.errors.clone()).unwrap_or_default();
+        let drive = self.session.as_mut().map(|s| {
+            let cd = &s.runtime.services().cd;
+            json!({ "disc": cd.inserted(), "wanted": cd.wanted() })
+        });
         to_json(&json!({
             "renderer": renderer,
-            "disc": self.disc.as_ref().map(|d| d.status()),
+            "disc": self.discs.last().map(|(_, d)| d.status()),
+            "discs": self.discs.iter().filter_map(|(_, d)| d.verified_disc().map(|disc| disc.number())).collect::<Vec<_>>(),
+            "drive": drive,
             "session": session,
             "gameMemoryBytes": self.memory_bytes,
             "running": self.running,
@@ -913,3 +1020,15 @@ pub fn default_settings() -> String {
     to_json(&xem_settings::Settings::default())
 }
 
+/// What the panel's Game disc card says of an import.
+fn disc_summary(disc: &disc::DiscImport) -> String {
+    let status = disc.status();
+    match (status.state, status.identity) {
+        ("failed", _) => format!("{}: {}", status.name, status.error.unwrap_or_default()),
+        ("identified", Some(identity)) => match (identity.disc, identity.serial) {
+            (Some(number), Some(serial)) => format!("Xenogears disc {number} ({serial})"),
+            _ => format!("{}: not a Xenogears disc", status.name),
+        },
+        (state, _) => format!("{}: {state}", status.name),
+    }
+}

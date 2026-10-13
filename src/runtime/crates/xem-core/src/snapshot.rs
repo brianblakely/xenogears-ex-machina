@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 const MAGIC: &[u8; 8] = b"XEMSNAP\0";
-const VERSION: u32 = 7;
+const VERSION: u32 = 8;
 /// Hard bound on any decoded snapshot region/device buffer.
 pub const MAX_BUFFER: usize = 32 * 1024 * 1024;
 pub const MAX_STATE: usize = 64 * 1024 * 1024;

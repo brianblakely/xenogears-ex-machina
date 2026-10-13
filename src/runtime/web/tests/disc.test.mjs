@@ -9,7 +9,7 @@ import { existsSync, mkdtempSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, describe, test } from 'node:test';
-import { HEADLESS, NO_WEBGPU, ROOT, USER_DISC, WEB, WEBGPU, pixelStats, shot, start, status } from './support.mjs';
+import { HEADLESS, NO_WEBGPU, ROOT, USER_DISC, USER_DISC2, WEB, WEBGPU, pixelStats, shot, start, status } from './support.mjs';
 
 const available = existsSync(USER_DISC) && existsSync(join(WEB, 'game', 'game.wasm'));
 
@@ -168,6 +168,42 @@ describe('the new-game route on disc 1', { skip: !available && `needs ${USER_DIS
       } else {
         console.log(`no ${HEADLESS}: native comparison skipped`);
       }
+    } finally {
+      await browser.close();
+    }
+  });
+});
+
+describe('the user\'s two discs', { skip: !(available && existsSync(USER_DISC2)) && `needs both discs and the game module` }, () => {
+  // route.rs's first steps on disc 2: the title's file screen and its new
+  // game, which wants disc 1 (xem-headless/tests/discs.rs natively).
+  const newGame = {
+    cmd: 'replay',
+    changes: [[901, 0, 8], [910, 0, 0], [1300, 0, 8], [1310, 0, 0], [1500, 0, 16384], [1510, 0, 0],
+      [1750, 0, 16], [1760, 0, 0], [1810, 0, 16384], [1820, 0, 0]],
+  };
+  const map = { cmd: 'inspect', path: 'mode_field_map_id', depth: 0 };
+
+  test('a new game on disc 2 waits for disc 1, which the changer takes once imported', { timeout: 900_000 }, async () => {
+    const browser = await start({ args: NO_WEBGPU });
+    try {
+      const page = await browser.page();
+      await page.setInputFiles('#file', USER_DISC2);
+      await page.waitForFunction(() => window.xem.status().disc?.state === 'identified', null, { timeout: 60_000 });
+      assert.deepEqual((await status(page)).discs, [2]);
+      await page.evaluate(() => window.xem.boot());
+      await inPage(page, [newGame]);
+      await page.evaluate(() => window.xem.runFrames(2400));
+      let s = await status(page);
+      assert.deepEqual([(await inPage(page, [map]))[0], s.drive], [490, { disc: 2, wanted: 1 }],
+        'the title waits at its change-disc notice');
+      assert.equal(s.renderer.panelSection, 5, 'Settings asks for disc 1 over its Saves section');
+      await page.setInputFiles('#file', USER_DISC);
+      await page.waitForFunction(() => window.xem.status().drive?.wanted === null, null, { timeout: 60_000 });
+      await page.evaluate(() => window.xem.runFrames(600));
+      s = await status(page);
+      assert.deepEqual([(await inPage(page, [map]))[0], s.drive, s.discs], [4, { disc: 1, wanted: null }, [2, 1]],
+        'disc 1 went in and the new game began');
     } finally {
       await browser.close();
     }

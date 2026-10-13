@@ -208,6 +208,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     };
     let mut pointer = PanelPointer::default();
     let mut menu_held = false;
+    let mut wanted_disc = None;
     let start = Instant::now();
     let mut frames = 0u64;
     let mut exit_requested = false;
@@ -260,6 +261,15 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             game_paused = pause;
             if pause { game.pause() } else { game.resume() }
             println!("game paused={}", u8::from(pause));
+        }
+        // A disc the game waits for and the changer has not got: ask for it.
+        let wanted = game.wanted_disc();
+        if wanted != wanted_disc {
+            wanted_disc = wanted;
+            if let Some(number) = wanted {
+                ui.ask_for_disc(number);
+                *panel_visible.borrow_mut() = true;
+            }
         }
         let current = settings.borrow().settings().clone();
         let mut ran = 0;

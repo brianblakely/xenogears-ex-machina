@@ -29,4 +29,9 @@ void xem_host_cd_flush(void);
  * event at once. Returns whether there was one. */
 unsigned int xem_host_cd_poll_now(void);
 
+/* The game's disc check waits for disc `disc` (1 or 2) to be put in: the
+ * drive's changer opens the lid, puts it in and closes the lid, five seconds
+ * later when `story` (the story's disc change), else at once. */
+void xem_host_cd_wanted(unsigned int disc, unsigned int story);
+
 #endif

@@ -230,6 +230,22 @@ impl SettingsUi {
         self.panel.set_can_fullscreen(offered);
     }
 
+    /// The game waits for disc `number`, which the drive's changer has not
+    /// got: the status line asks for it over the Saves section (where a host
+    /// that imports discs has its button).
+    pub fn ask_for_disc(&self, number: u8) {
+        let text = if self.panel.get_can_import_disc() {
+            format!("The game asks for disc {number}: import it below to go on.")
+        } else {
+            format!(
+                "The game asks for disc {number}. Put its image (a CHD, a cue sheet or a Redump-verified ISO) \
+                 beside the one the game started from, then start again."
+            )
+        };
+        set_status(&self.panel, &text, Status::Problem);
+        self.panel.set_selected_section(SAVES_SECTION);
+    }
+
     /// What the Disc group says about the imported disc.
     pub fn set_disc_status(&self, text: &str) {
         self.panel.set_disc_status(text.into());
@@ -443,6 +459,9 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_rewind_history_max(xem_settings::MAX_REWIND_HISTORY_SECONDS as i32);
     show_binding(panel, settings);
 }
+
+/// The Saves section's index (settings.slint's `sections`).
+const SAVES_SECTION: i32 = 5;
 
 /// The status line's kinds (the panel's `status-kind`).
 #[derive(Clone, Copy)]

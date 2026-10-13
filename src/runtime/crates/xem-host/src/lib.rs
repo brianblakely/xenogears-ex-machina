@@ -284,6 +284,8 @@ pub struct View {
     look_toggle: xem_settings::look::Toggle,
     look_mouse: [f32; 2],
     looked: Option<Instant>,
+    /// The disc the game waits for that the drive's changer has not got.
+    wanted_disc: Option<u8>,
 }
 
 impl View {
@@ -373,6 +375,7 @@ impl View {
             look_toggle: Default::default(),
             look_mouse: [0.0; 2],
             looked: None,
+            wanted_disc: None,
         })
     }
 
@@ -451,6 +454,15 @@ impl View {
             let (fast_forward,status) = game.time_status();
             self.ui.set_time_status(Some(fast_forward),&status);
             self.ui.set_storage_status(&game.storage_status());
+            // A disc the game waits for and the changer has not got: ask for it.
+            let wanted = game.wanted_disc();
+            if wanted != self.wanted_disc {
+                self.wanted_disc = wanted;
+                if let Some(number) = wanted {
+                    self.ui.ask_for_disc(number);
+                    self.set_panel_visible(true);
+                }
+            }
         } else {
             self.ui.set_time_status(None,"Boot a game to use save states and time controls.");
         }
