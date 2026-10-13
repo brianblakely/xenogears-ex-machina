@@ -18,5 +18,6 @@ png.workspace = true
 [dev-dependencies]
 xem-render = { path = "../xem-render" }
 xem-settings = { path = "../xem-settings" }
+xem-assist = { path = "../xem-assist" }
 pollster.workspace = true
 xem-media = { path = "../xem-media" }

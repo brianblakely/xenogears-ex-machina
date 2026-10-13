@@ -5298,6 +5298,7 @@ dependencies = [
  "png",
  "pollster",
  "serde_json",
+ "xem-assist",
  "xem-core",
  "xem-disc",
  "xem-game",
