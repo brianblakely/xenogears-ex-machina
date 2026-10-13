@@ -1,6 +1,6 @@
 # Later-phases handbook
 
-This handbook is for the engineer of plan.md Phases 2-5. It covers what the
+This handbook is for the engineer of plan.md Phases 2-4 and 12. It covers what the
 Phase 1 decomp gives them: how to use it as an oracle, how the program is built,
 what a port replaces, and what it must keep. Every statement cites the recovered
 source (`src/decomp/src`, by the names [Navigating the code](#navigating-the-code)
@@ -9,7 +9,7 @@ committed tool or the document that records it. Existing documents are
 summarised and linked, not repeated. Anything not established is listed under
 [Open questions](#open-questions).
 
-Read first: [plan.md](../plan.md) (shared architecture, Phases 2-5),
+Read first: [plan.md](../plan.md) (shared architecture, Phases 2-4 and 12),
 [matching.md](matching.md) (build, comparison, coverage),
 [original-boundaries.md](original-boundaries.md) (services, timing, control
 flow, display and sound modes) and
@@ -617,7 +617,7 @@ and pollhost, the stack switches, `GET_RA` and `addPrimLen9`. Natively:
 and data-indexed dispatch table, with its document and decoder. At this
 revision the `--sweep` of each of its nine decoders and of `formations`
 ([formations.md](scripts/formations.md)) exits 0 and reports nothing unknown or
-undecodable on either disc. For Phases 7, 11 and 12:
+undecodable on either disc. For Phases 6, 10 and 11:
 
 - **One source of opcode facts.** The decoder tables (mnemonic, handler, size,
   flow, operands, effect) are the source for runtime introspection, editor
@@ -796,12 +796,12 @@ software SPU:
   reverb depth pairs. The CD input pair and the CD-to-SPU mix never change with
   the mode, since `CdMix` is never called.
 - **Wide inverts polarity.** It mixes no signal into the other channel, so a
-  Phase 10 decoder treats it as a polarity trick, not a matrix encoding.
+  Phase 9 decoder treats it as a polarity trick, not a matrix encoding.
 - **Session state.** The mode lives in the driver flags, which boot and a soft
   reset set to Stereo, and no save holds it, so a replay from boot starts in
   Stereo.
 - **Unverified on hardware.** The mixer order behind Wide was observed in an
-  emulator only. Verify it on hardware before building the Phase 10 decoder.
+  emulator only. Verify it on hardware before building the Phase 9 decoder.
 
 ## Portability hazards
 
@@ -890,9 +890,9 @@ therefore the first Phase 2 decision.
 ## Original quirks and bugs a port keeps
 
 The C reproduces these as long as data stays byte-identical and loaded
-contiguously. plan.md asks for selectable original quirks (Phase 5) and for
+contiguously. plan.md asks for selectable original quirks (Phase 4) and for
 quality-of-life options kept separate from unknown behaviour, some of them on
-by default (Phase 9); it sets no policy per quirk. This handbook proposes
+by default (Phase 8); it sets no policy per quirk. This handbook proposes
 keeping each quirk below by default, with any fix an option that replays
 record.
 
@@ -917,13 +917,13 @@ record.
 | How often battle frames overrun on hardware | `task_catch_up_frame_count` is measured at run time; all captures are emulator runs ([original-boundaries.md](original-boundaries.md)) | per-frame `task_catch_up_frame_count` from captures, or an accepted lag-free definition for Phase 3 parity |
 | Conflicting shared views | the battle and slot39 read the ammo bytes as `ammo` and `gearAmmo` and 8006f8ea as the u16 `flags` (resident/gamedata.h; [field-events.md](scripts/field-events.md)), but targets still keep partial views of the game data beside resident/gamedata.h (ovl2615's `game_data_slot_in_gear`, the world map's `game_data_worldmap_flag_word` and the party and vehicle spots in src/decomp/src/worldmap/party.h) | reconcile from the readers, then one canonical type per address |
 | The disc and stream boundary | the code ([Disc and files](#disc-and-files)); no retained capture covers a disc swap, disc 2 media or the CD callback order ([matching.md](matching.md) lists the routes) | a disc-swap and streaming capture on both discs |
-| Wide on hardware | emulator recordings only ([original-boundaries.md](original-boundaries.md)) | a hardware recording before Phase 10 |
+| Wide on hardware | emulator recordings only ([original-boundaries.md](original-boundaries.md)) | a hardware recording before Phase 9 |
 | World map, Gear battle and arena presentation | no packets observed ([original-boundaries.md](original-boundaries.md)) | `tools/analysis/gpu_packets.py` on captures of those modes |
 | Missing media decoders | no SPU ADPCM in the repository; `src/runtime/crates/xem-media` implements the MDEC (dequantization, IDCT, colour conversion) and XA ADPCM with its resampler from psx-spx, whose IDCT rounding, colour fixed point, 15-bit truncation and 18900 Hz resampling are approximations, untested against captured frames and audio | SPU ADPCM in Phase 2; compare xem-media with captured MDEC output and CD audio |
 | BIOS font source | `Krom2RawAdd` users in slot39 and field | a user BIOS import or a labelled substitute |
 | Script data open items | the Open lines of [field-events.md](scripts/field-events.md), [text-control.md](scripts/text-control.md), [battle-ai.md](scripts/battle-ai.md), [battle-effect-vm.md](scripts/battle-effect-vm.md), [battle-event-vm.md](scripts/battle-event-vm.md), [arena-frame-events.md](scripts/arena-frame-events.md), [formations.md](scripts/formations.md), [timelines.md](scripts/timelines.md) | as stated there |
 
-## Suggested sequencing for Phases 2-5
+## Suggested sequencing for Phases 2-4 and 12
 
 [plan.md](../plan.md) owns the phase order. Within it, the order below follows
 the decomp's structure: the dispatcher is the only stack-free boundary, every
@@ -958,11 +958,11 @@ captures on both discs.
 5. **Presentation and audio (Phases 2-3).** Add the GPU service over a readable
    VRAM, the software SPU with Mono/Stereo/Wide in the mixer, and the software
    MDEC. Add the pre-projection capture at the seams above.
-6. **Remaining modes (Phase 4).** Add the world map with its own CD stream
-   reader, the arena with its nested fiber, disc swap through
-   `menu_cd_check_disc`'s protocol, and the rest of the field, battle and menu
-   content.
-7. **Modern presentation (Phase 5).** Re-traverse pre-projection data with
+6. **Modern presentation (Phase 4).** Re-traverse pre-projection data with
    relaxed culling, keep the on-screen bit and parity on the original camera,
    and capture render targets for the VRAM regions games sample. Layer the PS1
    fidelity toggles on the same stream.
+7. **Remaining modes (Phase 12).** Add the world map with its own CD stream
+   reader, the arena with its nested fiber, disc swap through
+   `menu_cd_check_disc`'s protocol, and the rest of the field, battle and menu
+   content.

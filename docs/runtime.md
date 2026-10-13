@@ -400,7 +400,7 @@ capture is off until asked for. Cameras are read through the schema
 (`field_view`, the battle and world map camera state). The original camera and
 screen keep deciding gameplay (on-screen tests, culling).
 
-### The renderer (Phase 5)
+### The renderer (Phase 4)
 
 The software GPU (`xem-gpu`) stays the authority: VRAM, GPUSTAT, readbacks and
 snapshots are its. The renderer only draws again what it drew:
@@ -693,7 +693,7 @@ and WebGL2, and the slice logs still replay to their hashes.
 
 | Setting | Values |
 | --- | --- |
-| renderer | Ex Machina (default: everything below) or Original: the console's own picture (the software GPU's display) scaled to the window as before Phase 5, with no draw trace and no presentation records (the port's rings stay idle), every setting below hidden |
+| renderer | Ex Machina (default: everything below) or Original: the console's own picture (the software GPU's display) scaled to the window as before Phase 4, with no draw trace and no presentation records (the port's rings stay idle), every setting below hidden |
 | profile | Modern (default), HD-2D, PS1, Custom |
 | original limits (Custom) | affine textures, vertex snapping, 15-bit colour, dithering, native resolution, painter's ordering (off: depth-tested by the GTE depth) |
 | HD-2D effect levels | lighting, shadows, ambient occlusion, fog, light shafts, bloom, colour grading, depth of field (0-100), focus (-100..100); HD-2D's and Custom's are separate |
@@ -744,7 +744,7 @@ recorded one and ignores the host's), so replays and hashes stay
 deterministic. A view no wider than the original's (1x, no wider framing)
 or the setting off changes nothing: the game runs as the original, and the
 slice logs replay to their hashes. The user accepts this as a gameplay
-exception to Phase 5's unchanged game rules, as they do keeping things
+exception to Phase 4's unchanged game rules, as they do keeping things
 from visibly vanishing because of the original's optimizations (above:
 those fixes are presentation only). Over Lahan (`--example motion -- --map
 1 --zoom N`, `still` in its JSON) the original leaves 43 sprite actors
@@ -754,7 +754,7 @@ still at every zoom; with the setting, 43 at 1x, 32 at 1.5x, 16-17 at 2x,
 ### First-person inspection
 
 The SDL hosts (`xem_host::View`: desktop, and Android with a gamepad) look
-around a field from its controlled character's eyes (plan.md Phase 10's
+around a field from its controlled character's eyes (plan.md Phase 9's
 stationary first-person inspection, on a flat display; the browser and
 headset hosts do not offer it yet). While the player walks in a field (the
 player control read the pad in the field's last event pass, which it does
@@ -1060,7 +1060,7 @@ Normal-tempo music is an explicit player requirement. The original sound driver
 also gates gameplay: scenes waiting on its progress run at normal speed during
 FF. Consequently FF play can differ from 1× play with the same per-frame pads.
 This is an intentional exception to the simulation/pacing independence in
-plan.md (host scheduling, Phase 2 authority, and Phase 8 timing semantics).
+plan.md (host scheduling, Phase 2 authority, and Phase 7 timing semantics).
 Fixed-rate FF remains reproducible for the same timed inputs. Uncapped play's
 host clock is an additional input and must be included in a recording for
 reproducible replay. CD/movie audio retains only the latest 100 ms when input
@@ -1605,7 +1605,7 @@ compiled and linked); Horizon OS's OpenXR runtime with Meta's loader in the APK,
 its Vulkan driver, reprojection, hand tracking and eye gaze; Quest Browser's
 WebXR compositor and whether it offers WebGPU XR layers (`XRGPUBinding`);
 whether the 2 GiB read-write reservation of game memory fits Quest memory
-limits; audible AAudio output; Bluetooth gamepad mapping. Phase 5 adds:
+limits; audible AAudio output; Bluetooth gamepad mapping. Phase 4 adds:
 the Android host's `--xr` entry into OpenXR (compiled for both ABIs; its
 loop is the one Monado runs through `xem-desktop --xr`), headset frame pacing
 at 72-120 Hz on a mobile GPU, the HD-2D effects' cost at Medium and Low tiers

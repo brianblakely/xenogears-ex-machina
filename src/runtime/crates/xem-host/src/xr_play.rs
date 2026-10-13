@@ -13,7 +13,7 @@
 //!
 //! The controllers stand in for a pad: left stick the D-pad, A Cross, B
 //! Circle, X Square, Y Triangle, triggers L1/R1, grips L2/R2, left stick
-//! click Start, right stick click Select. (Phase 6 owns the full headset
+//! click Start, right stick click Select. (Phase 5 owns the full headset
 //! controls.)
 //!
 //! Every frame prints one `key=value` line for scripts/xr-game-smoke.sh.

@@ -163,7 +163,7 @@ Historical observations may include `--load-state <previous>/final.state`.
 Restore checks the checkpoint hash and source, core,
 BIOS, and option identities against the previous completed observation. These
 checkpoints are specific to the external emulator; they are not native save
-states and do not satisfy Phase 8.
+states and do not satisfy Phase 7.
 
 The archived EVID-REF-006 route is
 `tests/reference-inputs/opening-observation-route.json`. Its reproducible stage

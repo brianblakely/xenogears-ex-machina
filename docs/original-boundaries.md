@@ -2,7 +2,7 @@
 
 What the recovered PS1 program needs from its platform, and where its timing,
 control flow, presentation and sound modes cross that boundary, for the native
-port (plan.md Phases 2-5). Every statement names the matching source
+port (plan.md Phases 2-4 and 12). Every statement names the matching source
 (`src/decomp/src`, functions by address) that shows it; observations of the
 original are marked with their capture and its limits.
 

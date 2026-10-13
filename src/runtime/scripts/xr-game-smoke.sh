@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Plays the game on a virtual screen in an OpenXR session against Monado
 # (no display or headset; local only: it needs the user's disc 1 and the game
-# module) and checks Phase 5's headset rules:
+# module) and checks Phase 4's headset rules:
 # - the game runs at its own 60 frames a second while the headset presents at
 #   its own rate (Monado's simulated HMD predicts 20 Hz), once per headset
 #   frame and never per eye;

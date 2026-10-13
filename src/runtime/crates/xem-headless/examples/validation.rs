@@ -1,4 +1,4 @@
-//! Phase 5's side-by-side validation sheet (local only: it needs the user's
+//! Phase 4's side-by-side validation sheet (local only: it needs the user's
 //! disc 1 and the game module; the sheet holds pictures of the original game
 //! and stays in build/validation, which is ignored).
 //!

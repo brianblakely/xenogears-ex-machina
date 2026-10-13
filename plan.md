@@ -208,7 +208,7 @@ second independently maintained game-rules implementation.
   a stereo test scene and a Slint panel through wgpu/OpenXR. Verify swapchain/
   device ownership and synchronization, frame scheduling and head tracking while
   simulation is paused. These are foundation checks, not the full UX or VR feature
-  work of Phases 5, 6 and 10.
+  work of Phases 4, 5 and 9.
 - [x] Prove the browser Rust/C WebAssembly build with a real execution path, canvas
   rendering, user-activated audio, asynchronous local asset import and persisted
   settings/save round-trip. Bound memory and stream/cache assets rather than
@@ -253,25 +253,7 @@ engine or full application UI is required before play.
 target platform hosts. Its integration evidence, not a TypeScript authoring
 prerequisite, closes this phase; full stereo/VR qualification remains later work.
 
-## Phase 4 — Complete native/browser gameplay on both discs
-
-**Goal:** Integrate the already recovered game, not resume deferred decompilation.
-
-- [ ] Complete fields, story/events, movement/collision/cameras, world map and
-  transportation, menus/shops/party/equipment, saves, on-foot and Gear battles,
-  Deathblows/status/AI/rewards/progression, minigames and optional activities.
-- [ ] Complete both-disc transitions, music/samples/effects/FMVs and original
-  Mono/Stereo/Wide behavior, including polarity/reverb and streamed-media routing.
-- [ ] Extend legal actions, introspection, semantic readiness, scenario setup,
-  debug access and unlocked headless execution alongside every subsystem.
-- [ ] Verify continuous unmodified progression, endings, optional content and
-  failure/retry paths, with targeted coverage where a playthrough is insufficient.
-
-**Exit:** Both discs and all original systems work on native and browser hosts with
-human/agent parity, including disc transitions and streamed audio/FMV playback.
-Unknown behavior and progression workarounds cannot be reported as completion.
-
-## Phase 5 — Modern/HD-2D rendering, stereo and optional PS1 fidelity
+## Phase 4 — Modern/HD-2D rendering, stereo and optional PS1 fidelity
 
 **Goal:** Modern flat/stereo presentation by default, with optional HD-2D-inspired
 visual effects and selectable original quirks on native and browser hosts.
@@ -327,7 +309,7 @@ visual effects and selectable original quirks on native and browser hosts.
 browser stereo-screen play work without altering game rules. Flat presentation
 remains available; graphics style and viewing mode are independent choices.
 
-## Phase 6 — Cross-platform controls and application UX
+## Phase 5 — Cross-platform controls and application UX
 
 **Goal:** Native and browser human input use the same command path as agents.
 
@@ -374,9 +356,9 @@ pointer controls; do not claim hand/gaze parity from a generic select event.
 
 All game functions, including Pause and inspection, must be operable with either
 single hand; app settings and presentation manipulation may use two hands.
-Qualify the Phase 6 controls on Phase 5's virtual-screen/stereo presentation.
+Qualify the Phase 5 controls on Phase 4's virtual-screen/stereo presentation.
 Diorama scaling and first-person inspection use the bindings specified here when
-Phase 10 implements those views; they are not prerequisites for Phase 6's exit.
+Phase 9 implements those views; they are not prerequisites for Phase 5's exit.
 These requirements do not add work to the Phase 1 matching decompilation.
 
 Use capability/permission checks for hand tracking, eye gaze and supported thumb
@@ -480,7 +462,7 @@ context actions expose otherwise awkward commands such as Gear boarding/exiting
 without requiring two-handed button chords or bypassing normal eligibility.
 
 In shops, put **+, -, ALL, NONE** virtual quantity buttons outside the game surface
-(and outside the Phase 10 diorama). They edit the selected item's proposed
+(and outside the Phase 9 diorama). They edit the selected item's proposed
 quantity only: ALL selects its maximum legal quantity subject to funds, stock,
 inventory and transaction limits; NONE clears that proposal. Display quantity
 and total, then separately confirm the purchase/sale. Do not reuse left/right
@@ -539,10 +521,10 @@ Keep controls clear of the play area in both modes.
 
 **Exit:** Every original system and application settings are usable through the
 appropriate desktop, browser, touch and headset controls, including qualified
-one-hand Horizon/WebXR gameplay, with human/agent action parity. Phase 10 qualifies
+one-hand Horizon/WebXR gameplay, with human/agent action parity. Phase 9 qualifies
 the diorama and stationary-inspection presentation bindings.
 
-## Phase 7 — Mods and source-oriented agent authoring
+## Phase 6 — Mods and source-oriented agent authoring
 
 **Goal:** Add authoring on the proven runtime; do not build a second game engine.
 
@@ -573,7 +555,7 @@ the diorama and stationary-inspection presentation bindings.
 **Exit:** Mods and the small authoring bridge work with protected native verification;
 source-preserving human/agent edits and prebuilt headless play are demonstrated.
 
-## Phase 8 — Persistence and time controls
+## Phase 7 — Persistence and time controls
 
 **Goal:** Robust player conveniences built on foundational runtime state/time services.
 
@@ -590,7 +572,7 @@ source-preserving human/agent edits and prebuilt headless play are demonstrated.
 
 **Exit:** Saves and time controls preserve required state and timing semantics.
 
-## Phase 9 — Gameplay quality of life
+## Phase 8 — Gameplay quality of life
 
 **Goal:** Explicit independently implemented options, separate from unknown behavior.
 
@@ -602,7 +584,7 @@ source-preserving human/agent edits and prebuilt headless play are demonstrated.
 
 **Exit:** Options work without disguising missing original logic or breaking progression.
 
-## Phase 10 — Extended camera, VR, media and headphone audio
+## Phase 9 — Extended camera, VR, media and headphone audio
 
 **Goal:** Add optional presentation features grounded in original behavior.
 
@@ -613,7 +595,7 @@ source-preserving human/agent edits and prebuilt headless play are demonstrated.
   supported, allow the same diorama over passthrough without making AR-specific
   sensing a requirement for VR or ordinary browser play.
 - [ ] Implement stationary first-person inspection on both VR and flat displays,
-  using the Phase 6 underhanded-grab binding. In field mode, **Select** is the
+  using the Phase 5 underhanded-grab binding. In field mode, **Select** is the
   keyboard/gamepad binding for toggling this viewpoint.
   This is look-around only, not FPS locomotion: keep the character stationary,
   disable navigation/approach-and-interact/jump commands, and cancel the route on
@@ -645,7 +627,7 @@ native and browser flat/VR hosts, with capability-gated AR where supported.
 Optional media/audio features are verified independently, without fidelity
 overclaims or changes to game physics.
 
-## Phase 11 — Graphical level and cutscene editors
+## Phase 10 — Graphical level and cutscene editors
 
 **Goal:** Human clients of the same source/build/runtime/debug services agents use.
 
@@ -657,7 +639,7 @@ overclaims or changes to game physics.
 
 **Exit:** Editors produce source-preserving playable packages through shared services.
 
-## Phase 12 — Battle and minigame tooling
+## Phase 11 — Battle and minigame tooling
 
 **Goal:** Extend the shared tools to custom combat and activities.
 
@@ -667,6 +649,24 @@ overclaims or changes to game physics.
   human reading/decision time. Preserve the same runtime and package contracts.
 
 **Exit:** These systems are editable and verifiable without another rules model.
+
+## Phase 12 — Complete native/browser gameplay on both discs
+
+**Goal:** Integrate the already recovered game, not resume deferred decompilation.
+
+- [ ] Complete fields, story/events, movement/collision/cameras, world map and
+  transportation, menus/shops/party/equipment, saves, on-foot and Gear battles,
+  Deathblows/status/AI/rewards/progression, minigames and optional activities.
+- [ ] Complete both-disc transitions, music/samples/effects/FMVs and original
+  Mono/Stereo/Wide behavior, including polarity/reverb and streamed-media routing.
+- [ ] Extend legal actions, introspection, semantic readiness, scenario setup,
+  debug access and unlocked headless execution alongside every subsystem.
+- [ ] Verify continuous unmodified progression, endings, optional content and
+  failure/retry paths, with targeted coverage where a playthrough is insufficient.
+
+**Exit:** Both discs and all original systems work on native and browser hosts with
+human/agent parity, including disc transitions and streamed audio/FMV playback.
+Unknown behavior and progression workarounds cannot be reported as completion.
 
 ## Phase 13 — Release qualification
 
