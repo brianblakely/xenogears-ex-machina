@@ -703,20 +703,30 @@ impl View {
                 let _ = self.app_input.set_focused(true);
             }
             SDL_EVENT_WINDOW_MOUSE_LEAVE if visible => self.ui.dispatch(WindowEvent::PointerExited),
-            SDL_EVENT_GAMEPAD_ADDED => {
-                let pad = unsafe { SDL_OpenGamepad(event.gdevice.which) };
-                if !pad.is_null() {
-                    self.gamepads.push(pad);
-                }
-            }
-            SDL_EVENT_GAMEPAD_REMOVED => {
-                let id = unsafe { event.gdevice.which };
-                self.gamepads.retain(|&pad| {
-                    if unsafe { SDL_GetGamepadID(pad) } == id { unsafe { SDL_CloseGamepad(pad); } false } else { true }
-                });
-            }
+            SDL_EVENT_GAMEPAD_ADDED => self.gamepad_added(unsafe { event.gdevice.which }),
+            SDL_EVENT_GAMEPAD_REMOVED => self.gamepad_removed(unsafe { event.gdevice.which }),
             _ => {}
         }
+    }
+
+    /// A gamepad connected (again): it plays from the next frame.
+    pub fn gamepad_added(&mut self, id: SDL_JoystickID) {
+        // SAFETY: SDL opens the device it just announced.
+        let pad = unsafe { SDL_OpenGamepad(id) };
+        if !pad.is_null() {
+            self.gamepads.push(pad);
+        }
+    }
+
+    /// A gamepad disconnected: what it held lets go at once, and the next
+    /// gamepad (if any) plays.
+    pub fn gamepad_removed(&mut self, id: SDL_JoystickID) {
+        self.gamepads.retain(|&pad| {
+            // SAFETY: the pads are SDL's open gamepads, each closed once.
+            if unsafe { SDL_GetGamepadID(pad) } == id { unsafe { SDL_CloseGamepad(pad); } false } else { true }
+        });
+        (self.pad, self.axes) = standard_pad(self.gamepads.first().copied());
+        self.app_input.pad(&self.pad);
     }
 
     /// The window's safe area (x, y, width, height in pixels): the game
@@ -1242,6 +1252,78 @@ mod tests {
         assert_eq!(view.taps.len(), 1);
         let screen = view.picture.unwrap().to_screen(view.taps[0].0, view.taps[0].1).unwrap();
         assert!((screen.0 - 160.0).abs() < 1.0 && (screen.1 - 120.0).abs() < 1.0, "{screen:?}");
+    }
+
+    #[test]
+    fn a_reconnected_gamepad_plays_again_and_settings_change_live() {
+        use xem_core::pad::button;
+        assert!(unsafe { SDL_Init(SDL_INIT_GAMEPAD) }, "SDL's gamepads");
+        let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+        let settings = Rc::new(RefCell::new(SettingsService::with_defaults(xem_settings::MemoryStore::default())));
+        let mut view = View::new(&gpu, wgpu::TextureFormat::Rgba8UnormSrgb, (640, 480), 1.0, settings.clone(), false).unwrap();
+        let attach = || {
+            let desc = SDL_VirtualJoystickDesc {
+                r#type: SDL_JOYSTICK_TYPE_GAMEPAD.0 as u16,
+                naxes: SDL_GAMEPAD_AXIS_COUNT.0 as u16,
+                nbuttons: SDL_GAMEPAD_BUTTON_COUNT.0 as u16,
+                name: c"reconnect test pad".as_ptr(),
+                ..Default::default()
+            };
+            unsafe { SDL_AttachVirtualJoystick(&desc) }
+        };
+        let press = |view: &View, held: &[SDL_GamepadButton]| unsafe {
+            let joystick = SDL_GetGamepadJoystick(*view.gamepads.first().expect("a pad"));
+            for button in 0..SDL_GAMEPAD_BUTTON_COUNT.0 {
+                SDL_SetJoystickVirtualButton(joystick, button, held.iter().any(|b| b.0 == button));
+            }
+            SDL_UpdateGamepads();
+        };
+        let frame = |view: &mut View| {
+            (view.pad, view.axes) = standard_pad(view.gamepads.first().copied());
+            view.app_input.pad(&view.pad);
+            view.pad_buttons(PadContext::default(), None)
+        };
+        let id = attach();
+        view.gamepad_added(id);
+        press(&view, &[SDL_GAMEPAD_BUTTON_SOUTH]);
+        assert_eq!(frame(&mut view), button::CROSS);
+        // Pulled out while South is held: nothing stays held.
+        view.gamepad_removed(id);
+        unsafe { SDL_DetachVirtualJoystick(id) };
+        assert_eq!(frame(&mut view), 0, "a disconnected pad holds nothing");
+        // Plugged in again: it plays.
+        let again = attach();
+        view.gamepad_added(again);
+        press(&view, &[SDL_GAMEPAD_BUTTON_NORTH]);
+        assert_eq!(frame(&mut view), button::TRIANGLE, "the reconnected pad plays");
+        press(&view, &[]);
+        // Settings changed live, from the open panel: Confirm and Menu
+        // swapped (Menu cleared first: an input holds one button).
+        view.set_panel_visible(true);
+        assert_eq!(frame(&mut view), 0, "the panel has the input");
+        settings.borrow_mut().apply(xem_settings::SettingChange::BindGame {
+            context: xem_settings::InputContext::Play,
+            action: xem_settings::GameAction::Menu,
+            binding: xem_settings::GameBinding::parse("Tab", "", ""),
+        }).unwrap();
+        settings.borrow_mut().apply(xem_settings::SettingChange::BindGame {
+            context: xem_settings::InputContext::Play,
+            action: xem_settings::GameAction::Confirm,
+            binding: xem_settings::GameBinding::parse("KeyE", "West", "MouseLeft"),
+        }).unwrap();
+        settings.borrow_mut().apply(xem_settings::SettingChange::BindGame {
+            context: xem_settings::InputContext::Play,
+            action: xem_settings::GameAction::Menu,
+            binding: xem_settings::GameBinding::parse("Tab", "South", ""),
+        }).unwrap();
+        // Back to play: the new bindings hold.
+        view.set_panel_visible(false);
+        press(&view, &[SDL_GAMEPAD_BUTTON_WEST]);
+        assert_eq!(frame(&mut view), button::CROSS, "West confirms now");
+        press(&view, &[]);
+        assert_eq!(frame(&mut view), 0);
+        view.gamepad_removed(again);
+        unsafe { SDL_DetachVirtualJoystick(again) };
     }
 
     #[test]
