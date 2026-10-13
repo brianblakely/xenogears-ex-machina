@@ -155,7 +155,6 @@ fn tap(ui: Context, aim: Aim, field: Option<&Field>, targets: Option<&Targets>) 
             Some(press([RING_DIRECTIONS[direction]]))
         }
         Context::Battle { attack: true, .. } => None,
-        Context::Battle { .. } => Some(press([GameAction::Confirm])),
         Context::WorldMap { .. } => Some(press([GameAction::Confirm])),
         Context::Event { .. } | Context::None | Context::Arena { .. } => None,
     }
