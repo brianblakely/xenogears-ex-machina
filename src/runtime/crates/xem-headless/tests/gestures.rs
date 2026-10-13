@@ -305,3 +305,214 @@ fn losing_tracking_stops_the_route_and_pauses() {
     player.gesture("pause", None);
     assert!(!player.headset.pauses.player, "the player resumed");
 }
+
+/// The debug battle selector's battle (ovl2606), on foot or in Gears, at
+/// the player's first command ring.
+fn battle(gears: bool) -> Option<Player> {
+    let disc = disc()?;
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    run(&mut session, json!({"cmd": "frames", "count": 60}));
+    run(&mut session, json!({"cmd": "write", "path": "mode_battle_standalone", "value": 1}));
+    run(&mut session, json!({"cmd": "boot_mode", "mode": 2}));
+    run(&mut session, json!({"cmd": "frames", "count": 900}));
+    if gears {
+        for button in ["down", "down", "cross", "right", "cross", "right", "cross"] {
+            run(&mut session, json!({"cmd": "press", "buttons": [button], "frames": 1}));
+            run(&mut session, json!({"cmd": "frames", "count": 20}));
+        }
+    }
+    run(&mut session, json!({"cmd": "press", "buttons": ["start"], "frames": 1}));
+    let mut player = Player::new(session);
+    let first = if gears { 0x10 } else { 1 };
+    for _ in 0..80 {
+        run(&mut player.session, json!({"cmd": "frames", "count": 50}));
+        let context = player.context();
+        if context["kind"] == "battle" && context["page"] == first {
+            player.rest(4);
+            return Some(player);
+        }
+    }
+    panic!("no command ring: {}", player.context());
+}
+
+/// On foot: a tap pages the command ring, a swipe activates the slot in
+/// its direction; on the attack ring the four swipes are Weak, Strong,
+/// Fierce and the end of the sequence, each spending its AP.
+#[test]
+fn battle_rings_on_foot_take_swipes_and_taps() {
+    let Some(mut player) = battle(false) else { return };
+    let page = |player: &mut Player| player.context()["page"].as_u64().unwrap();
+    player.gesture("tap", None);
+    player.rest(20);
+    assert_eq!(page(&mut player), 7, "the ring's other page");
+    player.gesture("tap", None);
+    player.rest(20);
+    assert_eq!(page(&mut player), 1, "and back");
+    // Attack (Right), highlighted: the swipe activates it.
+    player.gesture("swipe-right", None);
+    player.rest(30);
+    let attack = player.context();
+    assert_eq!(attack["attack"], true, "{attack}");
+    let ap = attack["ap"].as_u64().unwrap();
+    player.gesture("swipe-up", None);
+    player.rest(60);
+    assert_eq!(player.context()["ap"].as_u64().unwrap(), ap - 1, "Weak costs one: {}", player.context());
+    player.gesture("swipe-left", None);
+    player.rest(60);
+    assert_eq!(player.context()["ap"].as_u64().unwrap(), ap - 3, "Strong costs two: {}", player.context());
+    player.gesture("swipe-right", None);
+    player.rest(30);
+    assert_eq!(player.context()["attack"], false, "the sequence ended: {}", player.context());
+}
+
+/// In Gears the ring is the Gear's (pages 0x10..), and a swipe up on its
+/// attack ring strikes.
+#[test]
+fn battle_rings_in_gears_take_swipes() {
+    let Some(mut player) = battle(true) else { return };
+    player.gesture("swipe-right", None);
+    player.rest(30);
+    let attack = player.context();
+    assert_eq!(attack["page"], 0x19, "the Gear's attack ring: {attack}");
+    player.gesture("swipe-up", None);
+    player.rest(60);
+    let after = player.context();
+    assert_ne!(after["page"], 0x19, "it struck: {after}");
+}
+
+/// The world map's control deck: a pinch captures the stick, the hand's
+/// travel ahead holds Up (the vehicle flies on), a second pinch lets go,
+/// and the Board key beside the screen presses L2 and R2 together.
+#[test]
+fn the_world_maps_deck_steers_by_the_captured_stick() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    run(&mut session, json!({"cmd": "boot_mode", "mode": 3}));
+    run(&mut session, json!({"cmd": "frames", "count": 900}));
+    let mut player = Player::new(session);
+    assert_eq!(player.context()["kind"], "world_map", "{}", player.context());
+    player.rest(4);
+    player.gesture("pinch", None);
+    assert!(player.headset.arcade.steering(), "the stick is captured");
+    let rest = synthetic::gesture("pause").unwrap()[0];
+    let ahead = [rest[0], rest[1].map(|h| synthetic::place(h, Quat::IDENTITY, Vec3::new(0.0, 0.0, -0.07)))];
+    let before = run(&mut player.session, json!({"cmd": "memory_hash"}));
+    let mut up = 0;
+    for _ in 0..30 {
+        player.frame(ahead, None);
+        up += usize::from(player.session.runtime.services().pads.0[0].buttons & xem_core::pad::button::UP != 0);
+    }
+    assert!(up >= 28, "Up held while the hand is ahead ({up} of 30)");
+    assert_ne!(run(&mut player.session, json!({"cmd": "memory_hash"})), before);
+    player.gesture("pinch", None);
+    assert!(!player.headset.arcade.steering(), "let go");
+    player.rest(2);
+    assert_eq!(player.session.runtime.services().pads.0[0].buttons & xem_core::pad::button::UP, 0);
+    // Board: the key beside the screen, gazed at and tapped.
+    let keys = xem_assist::draw::side_keys(&player.screen, xem_assist::arcade::keys(xem_assist::arcade::Deck::WorldMap).len());
+    let board = xem_assist::arcade::keys(xem_assist::arcade::Deck::WorldMap).iter().position(|k| k.label == "BOARD").unwrap();
+    let local = keys[board].1.pose.position - player.screen.quad.pose.position;
+    let aim = ((local.x / player.screen.quad.size.0 + 0.5) * 320.0, (0.5 - local.y / player.screen.quad.size.1) * 224.0);
+    let both = xem_core::pad::button::L2 | xem_core::pad::button::R2;
+    let mut pressed = false;
+    for hands in synthetic::gesture("tap").unwrap() {
+        player.frame(hands, Some(aim));
+        pressed |= player.session.runtime.services().pads.0[0].buttons & both == both;
+    }
+    for _ in 0..4 {
+        player.frame(rest, Some(aim));
+        pressed |= player.session.runtime.services().pads.0[0].buttons & both == both;
+    }
+    assert!(pressed, "L2 and R2 together");
+}
+
+/// A Battling bout's control deck: steering by the captured stick, a tap
+/// for A (Cross), a swipe down holding Dash (Circle) until the next, and
+/// the Pause grab available throughout.
+#[test]
+fn a_battling_bout_plays_one_handed() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    run(&mut session, json!({"cmd": "boot_mode", "mode": 0}));
+    run(&mut session, json!({"cmd": "run_until", "max_frames": 3000, "until": {"path": "mode_kernel_menu_running", "equals": 1}}));
+    // A bout (entry kind 0) of the first model against the third.
+    let mut writes = vec![json!({"path": "mode_arena_task", "value": 0})];
+    writes.extend([0, 0, 0, 2, 2, 0].iter().enumerate().map(|(i, v)| json!({"path": format!("mode_arena_task_parameters[{i}]"), "value": v})));
+    run(&mut session, json!({"cmd": "scenario", "mode": 4, "writes": writes}));
+    let mut player = Player::new(session);
+    for _ in 0..40 {
+        if player.context() == json!({"kind": "arena", "state": 1}) { break; }
+        run(&mut player.session, json!({"cmd": "frames", "count": 30}));
+    }
+    assert_eq!(player.context(), json!({"kind": "arena", "state": 1}));
+    player.rest(4);
+    let pad = |player: &mut Player| player.session.runtime.services().pads.0[0].buttons;
+    use xem_core::pad::button;
+    // A tap: A.
+    let mut a = false;
+    for hands in synthetic::gesture("tap").unwrap() {
+        player.frame(hands, None);
+        a |= pad(&mut player) & button::CROSS != 0;
+    }
+    assert!(a, "A pressed");
+    // A swipe down holds Dash until the next.
+    player.gesture("swipe-down", None);
+    player.rest(10);
+    assert_ne!(pad(&mut player) & button::CIRCLE, 0, "Dash held");
+    player.gesture("swipe-down", None);
+    player.rest(2);
+    assert_eq!(pad(&mut player) & button::CIRCLE, 0, "Dash let go");
+    // The captured stick steers toward the opponent (right).
+    player.gesture("pinch", None);
+    let rest = synthetic::gesture("pause").unwrap()[0];
+    let right = [rest[0], rest[1].map(|h| synthetic::place(h, Quat::IDENTITY, Vec3::new(0.07, 0.0, 0.0)))];
+    player.frame(right, None);
+    player.frame(right, None);
+    assert_ne!(pad(&mut player) & button::RIGHT, 0, "Right held");
+    // Pause: the bout stands still, the stick let go when it resumes.
+    player.gesture("pause", None);
+    assert!(player.headset.pauses.player);
+    player.gesture("pause", None);
+    assert!(!player.headset.pauses.player);
+}
+
+/// A running jump on an assisted route: a swipe up while the route runs
+/// jumps (the jump is the player's: the gesture's frames to the game's
+/// jump are counted), the route holds its direction through it and goes
+/// on to arrive after landing.
+#[test]
+fn a_running_jump_keeps_the_route() {
+    let Some(mut player) = walking(30) else { return };
+    let goal = xem_core::field::V3::new(-80.0, 0.0, -90.0);
+    let aim = player.field().camera.project(goal).unwrap();
+    player.gesture("pinch", Some(aim));
+    player.rest(8);
+    assert!(player.session.assist.is_some());
+    let airborne = |player: &mut Player| player.field().player().unwrap().airborne();
+    let swipe = synthetic::gesture("swipe-up").unwrap();
+    let mut frames = 0;
+    let mut jumped = None;
+    for hands in swipe.iter().copied().chain(std::iter::repeat_n(synthetic::gesture("pause").unwrap()[0], 30)) {
+        player.frame(hands, None);
+        frames += 1;
+        if jumped.is_none() && airborne(&mut player) {
+            jumped = Some(frames);
+        }
+    }
+    // From the thumb's touch on the finger (the swipe's second frame) to
+    // the player in the air, game frames.
+    let latency = jumped.expect("the player jumped") - 2;
+    eprintln!("gesture to jump: {latency} frames from the thumb's touch");
+    assert!(latency <= 8, "{latency} frames");
+    for _ in 0..300 {
+        if player.session.assist.is_none() { break; }
+        player.rest(1);
+    }
+    assert_eq!(player.session.assist_outcome, Some(xem_core::assist::Outcome::Arrived), "the route went on after landing");
+}
