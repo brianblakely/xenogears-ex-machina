@@ -12,6 +12,7 @@ use xem_host::{Game, Presenter, View, sdl};
 use xem_render::{Gpu, read_rgba8, wgpu};
 use xem_settings::{FileStore, MemoryStore, SettingsService};
 
+#[derive(Clone)]
 struct Options {
     exit_after_frames: Option<u64>,
     screenshot: Option<PathBuf>,
@@ -108,7 +109,8 @@ fn options() -> Result<Options, String> {
                      prayer, lose; NAME@X/Y also aims eye gaze at that screen pixel) at headset frames, for tests without hand tracking.\n\
                      --control answers JSON commands on stdin, a line each, while the game plays: \
                      the command layer's (status, context, navigate, act, ...), settings, \
-                     settings_apply {{change}} (the panel's own typed change) and panel {{visible}}.\n\
+                     settings_apply {{change}} (the panel's own typed change), panel {{visible}} and \
+                     import_disc {{path}} (as the panel's Import disc…: plays it, or gives it to the changer).\n\
                      --script plays a session log (tools/native_scenario.py --log); \
                      --exit-at-frame prints the memory hash at that game frame and exits.\n\
                      Escape toggles the settings panel (Graphics has Fullscreen; Quit ends the app); its \
@@ -179,6 +181,10 @@ struct Host {
     fullscreen: bool,
     /// XEM_FRAME_STATS: a line a second of where the frame loop's time goes.
     stats: Option<Stats>,
+    /// The panel's Import disc…: asked for, and the file SDL's dialog chose.
+    disc_asked: Rc<std::cell::Cell<bool>>,
+    disc_chosen: (std::sync::mpsc::Sender<Option<String>>, std::sync::mpsc::Receiver<Option<String>>),
+    options: Options,
 }
 
 /// The frame loop's time per stage, printed once a second.
@@ -315,6 +321,13 @@ impl Host {
             options.show_settings,
         )?;
         view.ui().set_fullscreen_offered(true);
+        // The panel is the launcher too: Import disc… plays a disc (or gives
+        // the running game its other one).
+        let disc_asked = Rc::new(std::cell::Cell::new(false));
+        view.ui().on_import_disc({
+            let asked = disc_asked.clone();
+            move || asked.set(true)
+        });
         window.set_text_input(options.show_settings);
         let mut game = options.disc.as_deref().map(|disc| open_game(options, disc)).transpose()?;
         if let (Some(game), Some(path)) = (&mut game, &options.script) {
@@ -333,6 +346,9 @@ impl Host {
             game,
             fullscreen,
             stats: std::env::var_os("XEM_FRAME_STATS").map(|_| Stats::new()),
+            disc_asked,
+            disc_chosen: std::sync::mpsc::channel(),
+            options: options.clone(),
         })
     }
 
@@ -344,6 +360,7 @@ impl Host {
             if let Some(control) = &control {
                 control.poll(self);
             }
+            self.import_disc(window, options);
             let was_visible = self.view.panel_visible();
             let mut event = SDL_Event::default();
             // SAFETY: SDL is initialised; event is a valid out pointer.
@@ -404,6 +421,50 @@ impl Host {
         }
     }
 
+    /// The panel's Import disc…: SDL's file dialog, then the chosen disc
+    /// booted (when no game runs) or given to the game's disc changer.
+    fn import_disc(&mut self, window: &sdl::Window, options: &Options) {
+        if self.disc_asked.take() {
+            let sender = Box::new(self.disc_chosen.0.clone());
+            let filters = [SDL_DialogFileFilter { name: c"Disc images".as_ptr(), pattern: c"chd;cue;bin;iso".as_ptr() }];
+            // SAFETY: SDL calls `chosen` once with the box, which it owns
+            // until then; the filters are static strings.
+            unsafe {
+                SDL_ShowOpenFileDialog(Some(chosen), Box::into_raw(sender).cast(), window.raw, filters.as_ptr(), filters.len() as i32, std::ptr::null(), false);
+            }
+        }
+        let Ok(Some(path)) = self.disc_chosen.1.try_recv() else { return };
+        // The panel shows the outcome.
+        let _ = self.play_disc(&PathBuf::from(path), options);
+    }
+
+    /// A disc chosen to play: booted when no game runs, else given to the
+    /// game's disc changer. The outcome shows on the panel.
+    fn play_disc(&mut self, path: &std::path::Path, options: &Options) -> Result<String, String> {
+        let result = match &mut self.game {
+            None => open_game(options, path).map(|game| {
+                self.game = Some(game);
+                self.view.set_panel_visible(false);
+                format!("Playing {}", path.display())
+            }),
+            Some(game) => (|| {
+                let mut source = xem_disc::open_path(path).map_err(|e| e.to_string())?;
+                let known = xem_disc::identify(source.as_mut()).map_err(|e| e.to_string())?.disc.ok_or("not a known Xenogears disc")?;
+                xem_disc::verify(source.as_mut(), known).map_err(|e| e.to_string())?;
+                game.add_disc(known.number(), source);
+                Ok(format!("Disc {} is in the changer for the game's disc changes.", known.number()))
+            })(),
+        };
+        match &result {
+            Ok(text) => {
+                self.view.ui().set_disc_status(text);
+                self.view.ui().set_operation_status(text);
+            }
+            Err(error) => self.view.ui().set_operation_error(&format!("{}: {error}", path.display())),
+        }
+        result
+    }
+
     /// One agent command (`--control`): settings through the settings
     /// service (as the panel's edits), the panel shown or hidden, the rest
     /// to the game's command layer.
@@ -419,6 +480,17 @@ impl Host {
                         Err(rejected) => serde_json::json!({ "error": rejected.to_string() }),
                     },
                     Err(error) => serde_json::json!({ "error": format!("not a setting change: {error}") }),
+                }
+            }
+            Some("import_disc") => {
+                // As the panel's Import disc… does once its dialog chose a file.
+                let Some(path) = command.get("path").and_then(serde_json::Value::as_str) else {
+                    return serde_json::json!({ "error": "import_disc needs path" });
+                };
+                let options = self.options.clone();
+                match self.play_disc(std::path::Path::new(path), &options) {
+                    Ok(text) => serde_json::json!({ "status": text }),
+                    Err(error) => serde_json::json!({ "error": error }),
                 }
             }
             Some("panel") => {
@@ -569,4 +641,17 @@ impl Control {
             let _ = out.flush();
         }
     }
+}
+
+/// SDL's file dialog answered: the chosen path (or none) to the main loop.
+unsafe extern "C" fn chosen(userdata: *mut std::ffi::c_void, files: *const *const std::ffi::c_char, _filter: i32) {
+    // SAFETY: the box was handed to this callback once; SDL's strings stay
+    // valid until it returns and are copied first.
+    let sender = unsafe { Box::from_raw(userdata.cast::<std::sync::mpsc::Sender<Option<String>>>()) };
+    let path = if files.is_null() || unsafe { *files }.is_null() {
+        None
+    } else {
+        unsafe { std::ffi::CStr::from_ptr(*files) }.to_str().ok().map(str::to_owned)
+    };
+    let _ = sender.send(path);
 }

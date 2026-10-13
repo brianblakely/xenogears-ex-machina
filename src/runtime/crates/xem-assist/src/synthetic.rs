@@ -187,3 +187,38 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod one_hand {
+    use super::*;
+    use crate::gesture::{Frame, Gesture, Hand, Recognizer};
+
+    /// Each hand alone, the other absent from tracking: every one-hand
+    /// gesture reads as itself, with the right hand's and (mirrored) the
+    /// left's.
+    #[test]
+    fn every_one_hand_gesture_works_with_either_hand_alone() {
+        for name in ["pause", "inspect", "pinch", "tap", "swipe-up", "swipe-down", "swipe-left", "swipe-right"] {
+            for hand in [Hand::Right, Hand::Left] {
+                let mut recognizer = Recognizer::default();
+                let mut seen = Vec::new();
+                let frames: Vec<_> = std::iter::repeat_n([None, Some(open())], 3).chain(gesture(name).unwrap()).collect();
+                for (i, hands) in frames.into_iter().enumerate() {
+                    let right = hands[1];
+                    let hands = match hand {
+                        Hand::Right => [None, right],
+                        // The left hand: the right one mirrored.
+                        Hand::Left => [right.map(left), None],
+                    };
+                    seen.extend(recognizer.update(&Frame { time: i as f64 / 72.0, hands, view_right: Vec3::X, ..Frame::default() }));
+                }
+                assert_eq!(seen.len(), 1, "{name} with {hand:?}: {seen:?}");
+                let expected_hand = |g: &Gesture| match g {
+                    Gesture::Pause { hand: h } | Gesture::Inspect { hand: h } | Gesture::Pinch { hand: h } | Gesture::Tap { hand: h } | Gesture::Swipe { hand: h, .. } => *h == hand,
+                    _ => false,
+                };
+                assert!(expected_hand(&seen[0]), "{name} with {hand:?}: {seen:?}");
+            }
+        }
+    }
+}

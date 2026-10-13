@@ -5260,6 +5260,7 @@ dependencies = [
  "serde_json",
  "wgpu",
  "xem-assist",
+ "xem-disc",
  "xem-game",
  "xem-host",
  "xem-render",
