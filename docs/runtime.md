@@ -372,6 +372,27 @@ waits for it goes in).
   These are energy shares of the 5.1 output. "Original" means the
   PCSX-ReARMed recordings in `.local/scenarios/p1-original-sound-*-20261002`,
   which give the same picture.
+  The hosts' Sound mode setting is this mode, not a mix of their own: they
+  play the SPU's output as it is, at the master volume. `src/port/sound.c`
+  wraps `sound_start_driver` and `sound_run_tick`: the driver takes the
+  host import `xem.sound_mode` (0-2, or none) when it starts, and its tick
+  takes a mode the host changed since (`xem.sound_mode_change`, once per
+  change, and again after a state is restored), through
+  `sound_set_output_mode`. The setting follows the game's own Sound screen
+  (title screen and menu): the port wraps `menu_sound_mode_screen_run`,
+  which tells the host the mode it leaves (`xem.sound_mode_chosen`); that
+  becomes the host's mode, and the hosts apply it to their setting
+  (`Session::take_sound_mode_choice`, `Game::follow_sound_mode`), the
+  panel following through the settings service. Until a host has taken a
+  choice, its own `set_sound_mode` is ignored, so a frame batch run with
+  the old setting does not undo it. Whether the tick took it is the runtime's, not
+  the port's: a port global would move the port's stack, whose addresses
+  the game keeps in RAM (`libgpu_last_call_argument`), and change the
+  hashes. The hosts set it before each frame with `Session::set_sound_mode`,
+  recorded with the inputs as a control (`sound_mode`, also in session logs
+  and replays; a recording starts with the mode and whether the game took
+  it; a replay keeps the recorded one). Without one, and in Stereo, the
+  game runs as the original.
 - **Memory cards** (`xem_core::devices::card`) are two raw 128 KB images
   (the `.mcd` layout) in a `CardStorage`: files natively (`xem-headless
   --cards DIR` keeps `card1.mcd`, `card2.mcd`; a missing file is a fresh

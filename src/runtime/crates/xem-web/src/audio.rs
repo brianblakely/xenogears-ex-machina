@@ -1,6 +1,6 @@
 //! The game's sound for Web Audio: the SPU's 44.1 kHz output (interleaved
-//! 16-bit stereo, `Spu::take_audio`), mixed by the audio settings into the
-//! float samples the page's AudioWorklet plays (its context runs at 44.1 kHz;
+//! 16-bit stereo, `Spu::take_audio`), at the master volume, as the float
+//! samples the page's AudioWorklet plays (its context runs at 44.1 kHz;
 //! the browser resamples to the device).
 
 use std::collections::VecDeque;
@@ -34,16 +34,10 @@ impl Mixer {
         }
     }
 
-    /// Everything pending as interleaved stereo floats, mixed by the volume
-    /// and output settings.
+    /// Everything pending as interleaved stereo floats at the master volume.
     pub fn take(&mut self, settings: &Settings) -> Vec<f32> {
         let gain = f32::from(settings.master_volume) / f32::from(MAX_VOLUME) / 32768.0;
-        let mut out = Vec::with_capacity(self.pending.len());
-        let mut samples = self.pending.drain(..);
-        while let (Some(left), Some(right)) = (samples.next(), samples.next()) {
-            let (left, right) = settings.audio_output.mix(f32::from(left), f32::from(right));
-            out.extend([(left * gain).clamp(-1.0, 1.0), (right * gain).clamp(-1.0, 1.0)]);
-        }
+        let out: Vec<f32> = self.pending.drain(..).map(|sample| (f32::from(sample) * gain).clamp(-1.0, 1.0)).collect();
         self.frames += out.len() as u64 / 2;
         out
     }

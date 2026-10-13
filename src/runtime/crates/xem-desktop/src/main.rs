@@ -547,6 +547,7 @@ impl Host {
                 Ok(frames) => {
                     ran = frames;
                     self.view.frames_ran(frames);
+                    game.follow_sound_mode(self.view.settings());
                 }
                 Err(error) => {
                     self.view.ui().set_operation_error(&format!("Game stopped: {error}. Load a state to recover."));

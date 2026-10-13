@@ -70,6 +70,14 @@ pub struct Services {
     /// field camera's pull-back in percent plus 100 (bits 0-15) and the
     /// pixels shown beyond each side (bits 16-31); 0 the original's.
     pub(crate) actor_view: u32,
+    /// The host's sound mode, the game's own (src/port/sound.c): 0 Mono,
+    /// 1 Stereo, 2 Wide; none leaves the game's as the original sets it.
+    pub(crate) sound_mode: Option<u32>,
+    /// The host changed its sound mode since the driver's tick took it.
+    pub(crate) sound_mode_changed: bool,
+    /// A mode the game's Sound screen chose that the host has not taken
+    /// for its setting yet (`Session::take_sound_mode_choice`).
+    pub(crate) sound_mode_chosen: Option<u32>,
     pub clock: Clock,
     pub pads: Pads,
     pub presentation: crate::presentation::Presentation,
@@ -252,6 +260,21 @@ impl ImportHandler for Services {
             }
             "pause_requested" => Action::Return(u32::from(self.focus_pause.requested())),
             "actor_view" => Action::Return(self.actor_view),
+            "sound_mode" => Action::Return(self.sound_mode.unwrap_or(u32::MAX)),
+            "sound_mode_change" => {
+                let changed = std::mem::take(&mut self.sound_mode_changed);
+                Action::Return(self.sound_mode.filter(|_| changed).unwrap_or(u32::MAX))
+            }
+            "sound_mode_chosen" => {
+                // The game's own choice is the host's mode from now on.
+                let mode = arg(0);
+                if mode <= 2 && self.sound_mode != Some(mode) {
+                    self.sound_mode = Some(mode);
+                    self.sound_mode_chosen = Some(mode);
+                }
+                self.sound_mode_changed = false;
+                Action::Return(0)
+            }
             "pause_reached" => {
                 self.focus_pause.reached();
                 Action::Return(0)

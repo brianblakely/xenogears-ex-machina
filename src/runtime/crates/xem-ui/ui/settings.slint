@@ -852,9 +852,9 @@ export component SettingsPanel inherits Window {
                                 }
                                 Divider { }
                                 Row {
-                                    label: "Output";
-                                    help: root.audio-output == 0 ? "Both speakers play the same sound." : root.audio-output == 1 ? "The console's stereo mix." : "Stereo with its sides widened.";
-                                    Segmented { accessible-label: "Audio output"; options: ["Mono", "Stereo", "Wide"]; current <=> root.audio-output; selected(index) => { root.audio-output-edited(index); } }
+                                    label: "Sound mode";
+                                    help: root.audio-output == 0 ? "The game's Mono: every sound from the centre." : root.audio-output == 1 ? "The game's Stereo." : "The game's Wide-Stereo: its right side in opposite phase.";
+                                    Segmented { accessible-label: "Sound mode"; options: ["Mono", "Stereo", "Wide"]; current <=> root.audio-output; selected(index) => { root.audio-output-edited(index); } }
                                 }
                             }
 

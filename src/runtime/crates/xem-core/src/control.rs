@@ -254,6 +254,44 @@ impl<M: GameModule> Session<M> {
         Ok(())
     }
 
+    /// The game's sound mode the host chooses (src/port/sound.c): 0 Mono,
+    /// 1 Stereo, 2 Wide, as the game's Sound screen numbers them. The game
+    /// takes it when its sound driver starts, whenever it changes and after
+    /// a state is restored. It changes the game, so it is recorded with the
+    /// inputs, and a replay keeps the recorded one. A choice on the game's
+    /// Sound screen the host has not taken yet
+    /// ([`take_sound_mode_choice`](Self::take_sound_mode_choice)) stands
+    /// over the host's mode.
+    pub fn set_sound_mode(&mut self, mode: u32) -> Result<(), String> {
+        if self.replay_end.is_some() || self.runtime.services().sound_mode_chosen.is_some() {
+            return Ok(());
+        }
+        self.apply_sound_mode(mode, false)
+    }
+
+    /// The mode the game's Sound screen chose since the last call, for the
+    /// host's setting to follow.
+    pub fn take_sound_mode_choice(&mut self) -> Option<u32> {
+        self.runtime.services().sound_mode_chosen.take()
+    }
+
+    /// `taken`: the game has taken the mode already (a recording's start).
+    fn apply_sound_mode(&mut self, mode: u32, taken: bool) -> Result<(), String> {
+        if mode > 2 {
+            return Err("sound_mode is 0 (Mono), 1 (Stereo) or 2 (Wide)".into());
+        }
+        let services = self.runtime.services();
+        if taken {
+            services.sound_mode = Some(mode);
+            services.sound_mode_changed = false;
+        } else if services.sound_mode != Some(mode) {
+            services.sound_mode = Some(mode);
+            services.sound_mode_changed = true;
+            self.record_control(json!({"cmd":"sound_mode","mode":mode}));
+        }
+        Ok(())
+    }
+
     /// Whether a recording is replaying (its controls drive fast-forward).
     pub fn replaying(&self) -> bool {
         self.replay_end.is_some()
@@ -521,6 +559,7 @@ impl<M: GameModule> Session<M> {
     fn status(&mut self) -> Value {
         let stopped = self.stopped.clone();
         let actor_view = self.runtime.services().actor_view;
+        let sound_mode = self.runtime.services().sound_mode;
         let services = self.runtime.services();
         json!({
             "vblanks": services.clock.vblanks,
@@ -534,6 +573,7 @@ impl<M: GameModule> Session<M> {
             "fast_forward_rate": self.fast_forward_rate,
             "fast_forward_pace": self.fast_forward_pace,
             "actor_view": actor_view,
+            "sound_mode": sound_mode,
             "rewind": self.rewind.status(),
             "assist": self.assist.as_ref().map(|a| json!({"intent": a.intent, "phase": a.phase})),
             "assist_outcome": self.assist_outcome,
@@ -573,6 +613,13 @@ impl<M: GameModule> Session<M> {
             "actor_view" => {
                 let view = arg_u64("view").and_then(|v| u32::try_from(v).ok()).ok_or("actor_view needs view")?;
                 self.apply_actor_view(view)?;
+                Ok(self.status())
+            }
+            "sound_mode" => {
+                let mode = arg_u64("mode").and_then(|v| u32::try_from(v).ok()).ok_or("sound_mode needs mode")?;
+                let taken = command.get("taken").map(|v| v.as_bool().ok_or("sound_mode taken must be boolean")).transpose()?.unwrap_or(false);
+                self.apply_sound_mode(mode, taken)?;
+                self.runtime.services().sound_mode_chosen = None;
                 Ok(self.status())
             }
             "focus_pause" => {
@@ -830,7 +877,7 @@ impl<M: GameModule> Session<M> {
                     "pad_queue_reads_last_frame": services.input_reads_last_frame,
                     "stopped": stopped,
                     "valid_commands": ["pad", "press", "hold", "act", "context", "targets", "field", "pick", "navigate", "interact", "assist", "assist_stop", "shop_quantity", "frames", "run_until", "inspect", "write", "snapshot",
-                                        "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "schedule", "record", "replay"],
+                                        "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "sound_mode", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "schedule", "record", "replay"],
                 }))
             }
             "memory_hash" => Ok(json!(format!("{:016x}", self.memory_hash()?))),
@@ -848,6 +895,10 @@ impl<M: GameModule> Session<M> {
                 let view = self.runtime.services().actor_view;
                 if view != 0 {
                     self.record_control(json!({"cmd":"actor_view","view":view}));
+                }
+                if let Some(mode) = self.runtime.services().sound_mode {
+                    let taken = !self.runtime.services().sound_mode_changed;
+                    self.record_control(json!({"cmd":"sound_mode","mode":mode,"taken":taken}));
                 }
                 Ok(self.status())
             }
@@ -886,10 +937,12 @@ impl<M: GameModule> Session<M> {
                             Some("music_advance") if control.get("cycles").and_then(Value::as_u64).is_some_and(|c| c <= crate::clock::CPU_HZ/10) => {},
                             Some("fast_forward_pace") if control.get("pace").is_some_and(|p| p.is_null() || p.as_u64().is_some_and(|p| (1..=20).contains(&p))) => {},
                             Some("actor_view") if control.get("view").and_then(Value::as_u64).is_some_and(|v| v <= u64::from(u32::MAX)) => {},
+                            Some("sound_mode") if control.get("mode").and_then(Value::as_u64).is_some_and(|m| m <= 2)
+                                && control.get("taken").is_none_or(Value::is_boolean) => {},
                             Some("assist") if control.get("intent").is_some() => {},
                             Some("assist_stop") => {},
                             Some("shop_quantity") if control.get("op").is_some_and(Value::is_string) => {},
-                            _ => return Err("recorded controls contain only explicit fast-forward, focus-pause, actor-view, assist and music-clock inputs".into()),
+                            _ => return Err("recorded controls contain only explicit fast-forward, focus-pause, actor-view, sound-mode, assist and music-clock inputs".into()),
                         }
                         controls.push((now + at.saturating_sub(start),control.clone()));
                     }
@@ -899,6 +952,8 @@ impl<M: GameModule> Session<M> {
                 self.scheduled = scheduled;
                 self.runtime.services().focus_pause = Default::default();
                 self.runtime.services().actor_view = 0;
+                self.runtime.services().sound_mode = None;
+                self.runtime.services().sound_mode_changed = false;
                 self.replay_end = command.get("end_vblank").and_then(Value::as_u64).map(|end| now + end.saturating_sub(start));
                 self.replay_controls = controls;
                 self.apply_replay_controls().map_err(|e| e.to_string())?;
@@ -930,7 +985,7 @@ impl<M: GameModule> Session<M> {
                 for item in list {
                     let pair = item.as_array().filter(|p| p.len() == 2).ok_or("commands are [frame, command]")?;
                     let cmd = pair[1].get("cmd").and_then(Value::as_str).ok_or("scheduled command needs cmd")?;
-                    if !matches!(cmd, "pad" | "press" | "hold" | "act" | "assist" | "assist_stop" | "shop_quantity" | "connect_pad" | "enter_field" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "music_advance") {
+                    if !matches!(cmd, "pad" | "press" | "hold" | "act" | "assist" | "assist_stop" | "shop_quantity" | "connect_pad" | "enter_field" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "sound_mode" | "music_advance") {
                         return Err(format!("{cmd} cannot be scheduled; session logs contain only game input, setup and pacing"));
                     }
                     let at = pair[0].as_u64().ok_or("a command's frame is a number")?;
@@ -1041,6 +1096,9 @@ impl<M: GameModule> Session<M> {
         }
         self.timeline_revision += 1;
         self.reset_rewind_timer();
+        // The restored game takes the host's sound mode again.
+        let services = self.runtime.services();
+        services.sound_mode_changed = services.sound_mode.is_some();
     }
 
     /// Restore game progress, keeping current app controls and settings.

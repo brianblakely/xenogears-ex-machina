@@ -587,11 +587,15 @@ impl XemApp {
             let start = now_ms();
             let mut batch = 0;
             let mut fetching = false;
-            let pause_on_focus_loss = self.settings.borrow().settings().pause_on_focus_loss;
+            let (pause_on_focus_loss, sound_mode) = {
+                let settings = self.settings.borrow();
+                (settings.settings().pause_on_focus_loss, settings.settings().audio_output.game_mode())
+            };
             while limit.is_none_or(|frames| batch < frames) && (batch == 0 || now_ms() - start < BATCH_BUDGET_MS) {
                 let Some(session) = self.session.as_mut() else { break };
                 session.set_window_focus(self.app_input.focused(),pause_on_focus_loss);
                 session.set_actor_view(self.actor_view).map_err(error)?;
+                session.set_sound_mode(sound_mode).map_err(error)?;
                 match session.frame() {
                     Ok(true) => {
                         batch += 1;
@@ -609,6 +613,10 @@ impl XemApp {
                 }
             }
             self.input.frames_ran(batch as u32);
+            // The setting follows the game's own Sound screen.
+            if let Some(output) = self.session.as_mut().and_then(|s| s.take_sound_mode_choice()).and_then(xem_settings::AudioOutput::from_game_mode) {
+                let _ = self.settings.borrow_mut().apply(SettingChange::AudioOutput(output));
+            }
             self.paced = match due {
                 Some(due) if batch >= due => Some(paced + elapsed_frames as f64 * FRAME_MS),
                 Some(due) => { self.stats.dropped += due - batch; Some(now) },

@@ -681,6 +681,7 @@ impl Host {
             let result = game.update(buttons, &settings, || window.focused());
             if let Ok(frames) = result {
                 self.view.frames_ran(frames);
+                game.follow_sound_mode(self.view.settings());
             }
             if let Err(trap) = result {
                 log(&format!("game stopped: {trap}"));

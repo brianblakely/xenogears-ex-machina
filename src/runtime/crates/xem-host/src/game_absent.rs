@@ -51,6 +51,10 @@ impl Game {
         match *self {}
     }
 
+    pub fn follow_sound_mode(&mut self, _settings: &std::cell::RefCell<xem_settings::SettingsService>) {
+        match *self {}
+    }
+
     pub fn pause(&mut self) {
         match *self {}
     }

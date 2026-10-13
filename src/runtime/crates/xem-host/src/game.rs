@@ -231,8 +231,8 @@ impl Game {
     }
 
     /// Runs a bounded batch of frames due by the wall clock with pad 1 holding
-    /// `buttons`, then queues their sound at the master volume and audio
-    /// output of `settings`. Returns the frames run.
+    /// `buttons` and the game in the sound mode of `settings`, then queues
+    /// their sound at its master volume. Returns the frames run.
     pub fn update(&mut self, buttons: u16, settings: &xem_settings::Settings, mut focused: impl FnMut() -> bool) -> Result<u32, String> {
         self.sync_time_settings(settings)?;
         if self.rewind_held.iter().any(|held| *held) {
@@ -279,6 +279,7 @@ impl Game {
             if !self.scripted {
                 self.session.set_window_focus(focused(),settings.pause_on_focus_loss);
                 self.session.set_actor_view(self.actor_view)?;
+                self.session.set_sound_mode(settings.audio_output.game_mode())?;
             }
             if !self.session.frame().map_err(|trap| trap.to_string())? { break; }
             batch += 1;
@@ -304,10 +305,8 @@ impl Game {
         if !self.audio.is_null() && !self.samples.is_empty() {
             let gain = f32::from(settings.master_volume.min(xem_settings::MAX_VOLUME))
                 / f32::from(xem_settings::MAX_VOLUME);
-            for frame in self.samples.chunks_exact_mut(2) {
-                let (left, right) = settings.audio_output.mix(f32::from(frame[0]), f32::from(frame[1]));
-                frame[0] = (left * gain) as i16;
-                frame[1] = (right * gain) as i16;
+            for sample in &mut self.samples {
+                *sample = (f32::from(*sample) * gain) as i16;
             }
             // SAFETY: an open stream; SDL copies the bytes.
             unsafe {
@@ -319,6 +318,14 @@ impl Game {
             }
         }
         Ok(batch)
+    }
+
+    /// The setting follows the sound mode the game's own Sound screen chose
+    /// (the game follows the setting through `update`).
+    pub fn follow_sound_mode(&mut self, settings: &std::cell::RefCell<xem_settings::SettingsService>) {
+        if let Some(output) = self.session.take_sound_mode_choice().and_then(xem_settings::AudioOutput::from_game_mode) {
+            let _ = settings.borrow_mut().apply(xem_settings::SettingChange::AudioOutput(output));
+        }
     }
 
     /// Stops the game clock and the sound (the host went to the background):

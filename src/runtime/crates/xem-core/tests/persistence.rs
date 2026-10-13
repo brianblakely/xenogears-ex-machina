@@ -615,3 +615,26 @@ fn the_actor_view_is_recorded_and_a_replay_keeps_it() {
     assert_eq!(other.execute(&json!({"cmd":"status"}))["actor_view"], json!(0));
     assert!(s.set_actor_view(99).is_err(), "a pull-back below 100 percent is no view");
 }
+
+#[test]
+fn the_sound_mode_is_recorded_and_a_replay_keeps_it() {
+    let mut s = session();
+    let initial = s.snapshot_bytes().unwrap();
+    s.set_sound_mode(0).unwrap();
+    s.execute(&json!({"cmd":"record"}));
+    s.execute(&json!({"cmd":"frames","count":5}));
+    s.set_sound_mode(2).unwrap();
+    s.set_sound_mode(2).unwrap();
+    s.execute(&json!({"cmd":"frames","count":5}));
+    let mut log = s.execute(&json!({"cmd":"stop_recording"}));
+    let modes: Vec<serde_json::Value> = log["controls"].as_array().unwrap().iter().filter(|c| c[1]["cmd"] == "sound_mode").map(|c| c[1]["mode"].clone()).collect();
+    assert_eq!(modes, [json!(0), json!(2)], "the mode at the start, then each change once");
+    log["cmd"] = json!("replay");
+    let mut other = session();
+    other.restore_bytes(&initial).unwrap();
+    assert!(other.execute(&log).get("error").is_none());
+    other.execute(&json!({"cmd":"frames","count":7}));
+    other.set_sound_mode(1).unwrap();
+    assert_eq!(other.execute(&json!({"cmd":"status"}))["sound_mode"], json!(2), "a replay keeps the recorded mode, not the host's");
+    assert!(s.set_sound_mode(3).is_err(), "no menu reaches the driver's mode 3");
+}

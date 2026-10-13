@@ -21,26 +21,31 @@ pub use controls::{AppAction, AppBinding, AppInput, AppRequest, APP_ACTIONS};
 pub const MAX_VOLUME: u8 = 100;
 pub use xem_core::time::{FastForwardRate, FAST_FORWARD_RATES, DEFAULT_REWIND_INTERVAL_SECONDS, MAX_REWIND_INTERVAL_SECONDS, DEFAULT_REWIND_HISTORY_SECONDS, MAX_REWIND_HISTORY_SECONDS};
 
-/// How the audio mix is sent to the output device.
+/// The game's own sound mode, as its Sound screen chooses it (the sound
+/// driver's output modes; the host plays what the console outputs).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AudioOutput {
     Mono,
+    /// The game's default.
     #[default]
     Stereo,
-    /// Stereo with the side channel widened.
+    /// The game's Wide-Stereo.
     Wide,
 }
 
 impl AudioOutput {
-    /// One stereo frame as this output sends it (Wide widens the side
-    /// channel by half; the game's own Wide sound mode is separate).
-    pub fn mix(self, left: f32, right: f32) -> (f32, f32) {
-        let (mid, side) = ((left + right) / 2.0, (left - right) / 2.0);
+    /// The driver's mode (`Session::set_sound_mode`).
+    pub fn game_mode(self) -> u32 {
         match self {
-            AudioOutput::Mono => (mid, mid),
-            AudioOutput::Stereo => (left, right),
-            AudioOutput::Wide => (mid + side * 1.5, mid - side * 1.5),
+            AudioOutput::Mono => 0,
+            AudioOutput::Stereo => 1,
+            AudioOutput::Wide => 2,
         }
+    }
+
+    /// The setting for the driver's mode `mode` (the game's own choice).
+    pub fn from_game_mode(mode: u32) -> Option<Self> {
+        [AudioOutput::Mono, AudioOutput::Stereo, AudioOutput::Wide].into_iter().find(|output| output.game_mode() == mode)
     }
 }
 
@@ -593,13 +598,6 @@ mod tests {
     use super::*;
     use std::cell::RefCell;
     use std::rc::Rc;
-
-    #[test]
-    fn audio_outputs_mix_mid_and_side() {
-        assert_eq!(AudioOutput::Mono.mix(1.0, 0.0), (0.5, 0.5));
-        assert_eq!(AudioOutput::Stereo.mix(1.0, 0.0), (1.0, 0.0));
-        assert_eq!(AudioOutput::Wide.mix(1.0, 0.0), (1.25, -0.25));
-    }
 
     #[derive(Clone, Default)]
     struct SharedStore(Rc<RefCell<Option<String>>>, Rc<RefCell<bool>>);
