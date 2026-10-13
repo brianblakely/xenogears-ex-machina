@@ -1041,7 +1041,7 @@ command's choice window (the arc tables `menu_highlight_x/y_table`; the
 labels sit about the tables' points), the menu's lists (the item and arts
 screens' two columns of eight rows, the equipment screen's column, as
 `menu_list_cursor_place` lays them out around the drawn list cursor), the
-shops' commands, Yes/No (their markers' quads), a dialogue's choice lines,
+shops' commands and their stock and sell lists (one column of eight rows), Yes/No (their markers' quads), a dialogue's choice lines,
 a battle's lists (arts, items, the combo setup, a Gear's commands, as
 their cursor glyph is placed) and a battle's targets (each
 candidate's sprite projected as `battle_get_slot_screen_box` does, about a
@@ -1063,8 +1063,7 @@ reports the frames run):
   game's cursor there with the D-pad; a click on an entry selects it and
   then confirms it once; a click elsewhere is the mouse's binding. An entry
   the cursor stops short of (past a list's end) is given up after three
-  steps that leave the selection where it was. Shops' buy and sell lists
-  step by the wheel and the D-pad. With the
+  steps that leave the selection where it was. With the
   mouse camera on, the game holds the mouse only while nothing on the
   screen is selectable: a menu or a choice lets it go.
 

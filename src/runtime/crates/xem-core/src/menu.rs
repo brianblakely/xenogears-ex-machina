@@ -22,7 +22,8 @@
 //!   the equipment screen's one column of rows 13 high, placed around the
 //!   list cursor where it is drawn (`menu_state_current` +0x444, its
 //!   quad's corner; `MenuFlags.cursors_shown` +0x50: 1 two columns, 2 one).
-//!   The D-pad steps rows and columns.
+//!   The D-pad steps rows and columns. The shops' lists the same way: one
+//!   column of eight rows.
 //! - A battle's lists (arts, items, the combo setup, a Gear's commands):
 //!   their cells as their cursor glyph is placed (`battle_animate_cursor_glyph`).
 //! - A battle's target choice (`battle_choose_target`): the candidates
@@ -273,7 +274,7 @@ fn menu(memory: &dyn GameMemory, screen: u8, cursor: u8, choice: u8, choices: u8
             return Some(Targets { what: "yes_no", entries, selected: Some(if shown[0] != 0 { 0 } else { 1 }), steps: Steps::Direct });
         }
     }
-    if screen == 0 && let Some(list) = list(memory, state, flags) {
+    if let Some(list) = list(memory, screen, state, flags) {
         return Some(list);
     }
     let (xs, ys, commands, rows_from, width) = match screen {
@@ -300,11 +301,11 @@ fn menu(memory: &dyn GameMemory, screen: u8, cursor: u8, choice: u8, choices: u8
 /// computes (measured on the item screen).
 const LIST_CURSOR_OFFSET: (i32, i32) = (0, 0);
 
-/// The field menu's list under its cursor (cursor 0, the one the D-pad
-/// moves), as cells around it.
-fn list(memory: &dyn GameMemory, state: u32, flags: u32) -> Option<Targets> {
+/// The field menu's or a shop's list under its cursor (cursor 0, the one
+/// the D-pad moves), as cells around it.
+fn list(memory: &dyn GameMemory, screen: u8, state: u32, flags: u32) -> Option<Targets> {
     let shown = u8_at(memory, flags + 0x50)?;
-    if shown == 0 {
+    if shown == 0 || !matches!(screen, 0 | 4 | 5) {
         return None;
     }
     let cursor = ram(s32_at(memory, state + 0x444)?)?;
@@ -313,7 +314,14 @@ fn list(memory: &dyn GameMemory, state: u32, flags: u32) -> Option<Targets> {
     let y = i32::from(s16_at(memory, poly + 0xA)?);
     // Kinds 0-2 (two columns from x 0x18-0x1c, rows from y 0x11-0x14) and
     // 3 (one column at x 0xa0, rows from y 0x14).
-    let (columns, rows, column_width, row_height, left, top) = if shown == 2 { (1, 8, 0x88, 13, 0xA0, 0x14) } else { (2, 8, 0x88, 16, 0x18, 0x11) };
+    // The shops' stock and sell lists (`item_shop_list_cursor_place`,
+    // `gear_shop_list_cursor_place`): one column of eight rows from
+    // (0x1c, 0x32), 13 high, wide enough for the quantity and price.
+    let (columns, rows, column_width, row_height, left, top) = match (screen, shown) {
+        (4 | 5, _) => (1, 8, 0xE8, 13, 0x1C, 0x32),
+        (_, 2) => (1, 8, 0x88, 13, 0xA0, 0x14),
+        _ => (2, 8, 0x88, 16, 0x18, 0x11),
+    };
     let (cx, cy) = (x - LIST_CURSOR_OFFSET.0, y - LIST_CURSOR_OFFSET.1);
     let column = if columns == 2 { ((cx - left + column_width / 2) / column_width).clamp(0, 1) } else { 0 };
     let row = ((cy - top + row_height / 2) / row_height).clamp(0, rows - 1);

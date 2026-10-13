@@ -283,6 +283,19 @@ fn shop_commands_and_quantity_keys_take_gaze_and_taps() {
     gaze_at(&mut player, 3, "tap");
     player.rest(400);
     assert_eq!(xem_core::menu::shop_amounts(player.session.runtime.memory()), Some(0));
+    // The stock list is a column of rows: a tap with the gaze on the second
+    // selects it, then confirms.
+    let list = player.session.runtime.targets().expect("the stock list");
+    assert_eq!((list.what, list.entries.len(), list.selected), ("list", 8, Some(0)));
+    player.gesture("tap", Some(list.entries[1].rect.centre()));
+    let mut last = None;
+    for _ in 0..60 {
+        if let Some(t) = player.session.runtime.targets().filter(|t| t.what == "list") {
+            last = t.selected;
+        }
+        player.rest(1);
+    }
+    assert_eq!(last, Some(1), "the second row");
 }
 
 /// Losing the hands mid-route stops the route and pauses the game until
