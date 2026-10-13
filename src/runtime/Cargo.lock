@@ -5234,6 +5234,7 @@ dependencies = [
  "serde",
  "serde_json",
  "xem-core",
+ "xem-render",
  "xem-settings",
 ]
 

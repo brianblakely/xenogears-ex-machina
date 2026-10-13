@@ -1020,7 +1020,7 @@ impl View {
         if let Some(picture) = self.picture {
             let scale = picture.placed.width / (picture.display.0 + 2.0 * picture.side);
             for mark in &self.marks {
-                let widget = xem_assist_widget(mark.kind);
+                let widget = xem_assist::draw::mark_widget(mark.kind);
                 let view = self.atlas.view(&gpu.device, &gpu.queue, &widget, 128, style).clone();
                 let centre = picture.from_screen(mark.centre);
                 glass.push((view, Some((centre, (mark.x.0 * scale, mark.x.1 * scale), (mark.y.0 * scale, mark.y.1 * scale))), None));
@@ -1031,7 +1031,8 @@ impl View {
             let held = self.deck.held();
             for (control, rect) in self.deck.controls.clone() {
                 let state = if held.contains(&control) { xem_render::glass::State::Pressed } else { xem_render::glass::State::Normal };
-                let (widget, rect) = deck_widget(control, control.label(ui), state, rect);
+                let (widget, rect) = xem_assist::draw::deck_widget(control, control.label(ui), state, rect);
+                let rect = Rect { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
                 let view = self.atlas.view(&gpu.device, &gpu.queue, &widget, 128, style).clone();
                 glass.push((view, None, Some(rect)));
             }
@@ -1120,49 +1121,6 @@ impl Drop for View {
             // SAFETY: opened by SDL_OpenGamepad and closed once.
             unsafe { SDL_CloseGamepad(pad) };
         }
-    }
-}
-
-/// The glass widget of an assisted-controls mark.
-pub fn xem_assist_widget(kind: xem_assist::overlay::Kind) -> xem_render::glass::Widget {
-    use xem_render::glass::{Reach, Widget};
-    match kind {
-        xem_assist::overlay::Kind::Cursor => Widget::Cursor,
-        xem_assist::overlay::Kind::Floor(reach) => Widget::Floor(match reach {
-            xem_core::field::Reach::Walk => Reach::Walk,
-            xem_core::field::Reach::Jump => Reach::Jump,
-            xem_core::field::Reach::Invalid => Reach::Invalid,
-        }),
-        xem_assist::overlay::Kind::Destination => Widget::Destination,
-        xem_assist::overlay::Kind::Pages { count, current } => Widget::Pages { count, current },
-    }
-}
-
-/// A touch control's widget, and the square it is drawn in (wide keys
-/// fill the middle of their square image).
-pub fn deck_widget(control: xem_assist::touch::Control, label: &str, state: xem_render::glass::State, rect: xem_assist::touch::Rect) -> (xem_render::glass::Widget, Rect) {
-    use xem_assist::touch::Control;
-    use xem_render::glass::{Dir, Icon, Widget};
-    let icon = match label {
-        "^" => Icon::Arrow(Dir::Up),
-        "v" => Icon::Arrow(Dir::Down),
-        "<" => Icon::Arrow(Dir::Left),
-        ">" => Icon::Arrow(Dir::Right),
-        "triangle" => Icon::Triangle,
-        "circle" => Icon::Circle,
-        "cross" => Icon::Cross,
-        "square" => Icon::Square,
-        "+" => Icon::Plus,
-        "-" => Icon::Minus,
-        text => Icon::Text(text.into()),
-    };
-    let round = matches!(control, Control::Up | Control::Down | Control::Left | Control::Right | Control::Jump | Control::Cancel | Control::Confirm | Control::Menu);
-    if round {
-        (Widget::Button(icon, state), Rect { x: rect.x, y: rect.y, width: rect.width, height: rect.height })
-    } else {
-        let side = rect.width.max(rect.height * 2.0);
-        let (cx, cy) = rect.centre();
-        (Widget::Key(icon, state), Rect { x: cx - side / 2.0, y: cy - side / 2.0, width: side, height: side })
     }
 }
 

@@ -7,3 +7,4 @@ pub mod dispatch;
 pub mod headset;
 pub mod overlay;
 pub mod touch;
+pub mod draw;

@@ -323,3 +323,61 @@ mod tests {
         assert!(headset.pauses.player);
     }
 }
+
+/// What carries a headset's effects out on a host: the command layer and
+/// the player's input.
+pub trait Carry {
+    /// A command for the command layer (`navigate`, `interact`, ...).
+    fn command(&mut self, command: serde_json::Value);
+    /// Actions pressed once.
+    fn press(&mut self, actions: Vec<xem_core::action::GameAction>);
+    /// An interface entry selected (and confirmed).
+    fn select(&mut self, index: usize, confirm: bool);
+    /// First-person inspection toggled (where the host has it).
+    fn inspect(&mut self);
+    /// Everything held let go (tracking or focus lost).
+    fn release(&mut self);
+}
+
+/// Two-hand scaling of the headset's screen.
+#[derive(Clone, Copy, Debug)]
+pub struct Scaling {
+    pub scale: f32,
+    start: Option<f32>,
+}
+
+impl Default for Scaling {
+    fn default() -> Self {
+        Self { scale: 1.0, start: None }
+    }
+}
+
+/// Carries out resolved effects (the pauses and settings were the
+/// headset's own already).
+pub fn carry(outs: Vec<Out>, host: &mut impl Carry, scaling: &mut Scaling) {
+    for out in outs {
+        match out {
+            Out::Press { actions } => host.press(actions),
+            Out::Select { index, confirm } => host.select(index, confirm),
+            Out::Command { command } => host.command(command),
+            Out::Key { key } => {
+                if let Some(key) = crate::overlay::QuantityKey::ALL.get(key as usize) {
+                    host.command(serde_json::json!({"cmd": "shop_quantity", "op": key.op()}));
+                }
+            }
+            Out::ToggleInspect => host.inspect(),
+            Out::ScaleBegin => scaling.start = Some(scaling.scale),
+            Out::Scale { factor } => {
+                if let Some(start) = scaling.start {
+                    scaling.scale = (start * factor).clamp(0.4, 3.0);
+                }
+            }
+            Out::ScaleEnd => scaling.start = None,
+            Out::TrackingLost => {
+                host.release();
+                host.command(serde_json::json!({"cmd": "assist_stop"}));
+            }
+            Out::TogglePause | Out::ToggleSettings => {}
+        }
+    }
+}

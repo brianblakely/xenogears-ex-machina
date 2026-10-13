@@ -13,3 +13,4 @@ serde.workspace = true
 serde_json.workspace = true
 xem-core = { path = "../xem-core" }
 xem-settings = { path = "../xem-settings" }
+xem-render = { path = "../xem-render" }

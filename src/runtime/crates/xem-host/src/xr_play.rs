@@ -385,7 +385,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         // The virtual screen: its size (the setting's, scaled by two-hand
         // scaling) and the display pixels it spans.
         let xr = current.graphics.xr;
-        let width = f32::from(xr.width_cm) / 100.0 * assist.scale;
+        let width = f32::from(xr.width_cm) / 100.0 * assist.scaling.scale;
         let height = width * presented_size.1 as f32 / presented_size.0 as f32;
         let side = if from_view { view.config().map_or(0, |c| c.side) as f32 } else { 0.0 };
         let screen = xem_assist::headset::Screen {
