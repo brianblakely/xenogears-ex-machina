@@ -80,6 +80,7 @@ pub struct FrameRenderer {
     scale: u32,
     side: u32,
     uniform: wgpu::Buffer,
+    overlay_uniform: wgpu::Buffer,
     vertices: Stream,
     /// The interface the game drew after its scene, held back from the
     /// replay for [`FrameRenderer::draw_overlay`] with the frame's scene
@@ -111,10 +112,16 @@ pub struct FrameRenderer {
     /// its staged writes, and a copy of what that texture holds (the rows of
     /// a new snapshot that differ from it are all a new frame uploads).
     vram: wgpu::Texture,
+    feedback: wgpu::Texture,
+    feedback_aux: wgpu::Texture,
+    /// Extra rows the game draws below its viewport, which a framebuffer
+    /// distortion may bring into view. Cropped only after that effect.
+    work: Option<(wgpu::Texture, wgpu::Texture, wgpu::Texture)>,
     staging: Stream,
     held: Vec<u16>,
     /// The replay's bind group, made with the capture texture of a generation.
     group: Option<(u64, wgpu::BindGroup)>,
+    overlay_group: Option<(u64, wgpu::BindGroup)>,
     /// The replay's and the overlay's builder buffers.
     storage: Storage,
     overlay_storage: Storage,
@@ -145,6 +152,7 @@ impl FrameRenderer {
             scale: 1,
             side: 0,
             uniform: uniform_buffer(device),
+            overlay_uniform: uniform_buffer(device),
             vertices: Stream::new(device, "frame replay vertices", wgpu::BufferUsages::VERTEX),
             overlay: Vec::new(),
             overlay_scene: None,
@@ -160,9 +168,13 @@ impl FrameRenderer {
             snapshot: None,
             vram: texture(device, "frame replay vram", (VRAM_WIDTH, VRAM_HEIGHT), wgpu::TextureFormat::R16Uint,
                 wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST),
+            feedback: texture(device, "frame feedback", (1, 1), COLOR_FORMAT, picture_usage()),
+            feedback_aux: texture(device, "frame feedback aux", (1, 1), AUX_FORMAT, picture_usage()),
+            work: None,
             staging: Stream::new(device, "frame replay staging", wgpu::BufferUsages::COPY_SRC),
             held: vec![0; (VRAM_WIDTH * VRAM_HEIGHT) as usize],
             group: None,
+            overlay_group: None,
             storage: Storage::default(),
             overlay_storage: Storage::default(),
         }
@@ -174,6 +186,8 @@ impl FrameRenderer {
             self.aux = texture(device, "frame aux", size, AUX_FORMAT, picture_usage());
             self.depth = texture(device, "frame depth", size, wgpu::TextureFormat::Depth32Float, wgpu::TextureUsages::RENDER_ATTACHMENT);
             self.color_view = self.color.create_view(&Default::default());
+            self.group = None;
+            self.overlay_group = None;
             self.size = size;
         }
     }
@@ -239,8 +253,13 @@ impl FrameRenderer {
     ) {
         let scale = renderer.scale();
         self.track(renderer, area);
+        // The game may draw a few rows below the displayed viewport (the
+        // field draws 224 and shows 216); its distortion copies those rows.
+        let rect = renderer.frame_log(area).map(|log| log.rect)
+            .unwrap_or(VramRect { x: area.x as u16, y: area.y as u16, width: area.width as u16, height: area.height as u16 });
+        let feedback = renderer.options().fidelity != super::Fidelity::ORIGINAL && framebuffer_effect(&self.newest_ops, rect);
         let pulled = framing.pull_back > 0.0;
-        let replay = (framing.side > 0 || framing.interpolate.is_some() || pulled || framing.look.is_some() || framing.replay)
+        let replay = (framing.side > 0 || framing.interpolate.is_some() || pulled || framing.look.is_some() || framing.replay || feedback)
             && !self.newest_ops.is_empty();
         let side = if replay { framing.side } else { 0 };
         self.resize(device, ((area.width.max(1) + 2 * side) * scale, area.height.max(1) * scale));
@@ -253,6 +272,26 @@ impl FrameRenderer {
             renderer.copy_display(encoder, area, &self.color, &self.aux);
             return;
         }
+        let render_height = if feedback { u32::from(rect.height).max(area.height) } else { area.height };
+        let render_size = (self.size.0, render_height * scale);
+        if feedback && (self.feedback.size().width != render_size.0 || self.feedback.size().height != render_size.1) {
+            self.feedback = texture(device, "frame feedback", render_size, COLOR_FORMAT, picture_usage());
+            self.feedback_aux = texture(device, "frame feedback aux", render_size, AUX_FORMAT, picture_usage());
+            self.group = None;
+            self.overlay_group = None;
+        }
+        let extra = render_height > area.height;
+        if extra && self.work.as_ref().is_none_or(|(color, _, _)| (color.width(), color.height()) != render_size) {
+            self.work = Some((
+                texture(device, "frame hidden rows", render_size, COLOR_FORMAT, picture_usage()),
+                texture(device, "frame hidden rows aux", render_size, AUX_FORMAT, picture_usage()),
+                texture(device, "frame hidden rows depth", render_size, super::DEPTH_FORMAT, wgpu::TextureUsages::RENDER_ATTACHMENT),
+            ));
+        }
+        let (color, aux, depth) = match self.work.as_ref().filter(|_| extra) {
+            Some((color, aux, depth)) => (color.clone(), aux.clone(), depth.clone()),
+            None => (self.color.clone(), self.aux.clone(), self.depth.clone()),
+        };
         let mut ops = match framing.interpolate {
             Some(alpha) if !self.previous_ops.is_empty() => interpolate(&self.newest_ops, &self.previous_ops, alpha.clamp(0.0, 1.0)),
             _ => {
@@ -263,8 +302,8 @@ impl FrameRenderer {
                 ops
             }
         };
-        let screen_copy = renderer.capture.rect.filter(|_| renderer.capture.screen && renderer.capture.scale == scale);
-        settle_copies(&mut ops, screen_copy);
+        let screen_copies: Vec<_> = renderer.capture.areas().filter(|(_, screen)| *screen && renderer.capture.scale == scale).map(|(r, _)| r).collect();
+        settle_copies(&mut ops, &screen_copies, feedback.then_some(rect));
         // What the game draws of a screen it took (its pieces, zoomed,
         // shattered) is that screen, as presented then: a screen effect,
         // where the game put it.
@@ -272,7 +311,7 @@ impl FrameRenderer {
         if let Some((rect, _)) = capture {
             for op in &mut ops {
                 if let TraceOp::Draw(p) = op
-                    && samples(p, &rect)
+                    && (samples(p, &rect) || renderer.capture.aliases.iter().any(|(r, _)| samples(p, r)))
                 {
                     p.class = Class::Flat;
                 }
@@ -284,7 +323,7 @@ impl FrameRenderer {
             pull_back(&mut ops, framing.pull_back);
         }
         self.overlay_scene = scene_offset(&ops);
-        self.overlay = split_overlay(&mut ops);
+        self.overlay = split_overlay(&mut ops, feedback.then_some(rect));
         // The replay samples VRAM as it was when the frame began, then as the
         // frame's writes changed it, in order.
         if let Some(start) = &self.snapshot {
@@ -330,6 +369,8 @@ impl FrameRenderer {
         builder.seal = renderer.seal;
         builder.spill = side;
         builder.capture = capture;
+        builder.capture_aliases = &renderer.capture.aliases;
+        builder.feedback = feedback.then_some(rect);
         // A frame recorded looking around holds faces from anywhere, not
         // only beside the screen: seen from the game's camera, none.
         builder.reveal = if pulled || framing.look.is_some() {
@@ -347,7 +388,7 @@ impl FrameRenderer {
         let (capture_scale, capture_side, capture) = renderer.capture.uniform();
         let uniform = PassUniform {
             origin: [origin.0, origin.1],
-            extent: [(area.width + 2 * side) as f32, area.height as f32],
+            extent: [(area.width + 2 * side) as f32, render_height as f32],
             scale: scale as f32,
             options: pass_options(&options.fidelity) | if framing.look.is_some() { PASS_RECIPROCAL_DEPTH } else { 0 },
             capture_scale,
@@ -355,10 +396,12 @@ impl FrameRenderer {
             capture,
         };
         queue.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&uniform));
+        let overlay_uniform = PassUniform { extent: [(area.width + 2 * side) as f32, area.height as f32], ..uniform };
+        queue.write_buffer(&self.overlay_uniform, 0, bytemuck::bytes_of(&overlay_uniform));
         self.vertices.write(device, queue, bytemuck::cast_slice(&builder.vertices));
         self.staging.write(device, queue, &builder.staging);
         // Start from black (the replayed clear covers what the game cleared).
-        for view in [self.color.create_view(&Default::default()), self.aux.create_view(&Default::default())] {
+        for view in [color.create_view(&Default::default()), aux.create_view(&Default::default())] {
             encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("frame clear"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -370,28 +413,36 @@ impl FrameRenderer {
                 ..Default::default()
             });
         }
-        let depth_view = self.depth.create_view(&Default::default());
-        encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        let depth_view = depth.create_view(&Default::default());
+        let visible_depth_view = self.depth.create_view(&Default::default());
+        for view in std::iter::once(&depth_view).chain(extra.then_some(&visible_depth_view)) {
+            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("frame depth clear"),
             color_attachments: &[],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                view: &depth_view,
+                view,
                 depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Clear(1.0), store: wgpu::StoreOp::Store }),
                 stencil_ops: None,
             }),
             ..Default::default()
-        });
+            });
+        }
         if self.group.as_ref().is_some_and(|(generation, _)| *generation != renderer.capture.generation) {
             self.group = None;
         }
         let generation = renderer.capture.generation;
+        if self.overlay_group.as_ref().is_some_and(|(known, _)| *known != generation) {
+            self.overlay_group = None;
+        }
+        self.overlay_group.get_or_insert_with(|| (generation,
+            bind_group(device, &renderer.pipelines.layout, &self.overlay_uniform, &self.vram, &renderer.capture, Some((&self.feedback, &self.feedback_aux)))));
         let group = self
             .group
-            .get_or_insert_with(|| (generation, bind_group(device, &renderer.pipelines.layout, &self.uniform, &self.vram, &renderer.capture)))
+            .get_or_insert_with(|| (generation, bind_group(device, &renderer.pipelines.layout, &self.uniform, &self.vram, &renderer.capture, Some((&self.feedback, &self.feedback_aux)))))
             .1
             .clone();
         let (picture_color, picture_aux) = (renderer.color.clone(), renderer.aux.clone());
-        let target = Target { color: &self.color, aux: &self.aux, depth: &depth_view, origin, scale };
+        let target = Target { color: &color, aux: &aux, depth: &depth_view, origin, scale };
         encode(
             device,
             &mut renderer.pipelines,
@@ -399,11 +450,16 @@ impl FrameRenderer {
             &group,
             self.vertices.buffer(),
             Some((self.staging.buffer(), &self.vram)),
-            Copies::From { color: &picture_color, aux: &picture_aux, scale, capture: Some(&renderer.capture) },
+            Copies::From { color: &picture_color, aux: &picture_aux, scale, capture: Some(&renderer.capture), scratch: &renderer.scratch, feedback: &self.feedback, feedback_aux: &self.feedback_aux },
             &target,
             &builder.commands,
         );
         builder.store(&mut self.storage);
+        if extra {
+            for (from, to) in [(&color, &self.color), (&aux, &self.aux)] {
+                encoder.copy_texture_to_texture(from.as_image_copy(), to.as_image_copy(), to.size());
+            }
+        }
         self.replayed = ops;
     }
 
@@ -420,7 +476,7 @@ impl FrameRenderer {
         renderer: &mut Ps1Renderer,
         color: Option<&wgpu::Texture>,
     ) {
-        let (Some(area), Some((_, group))) = (self.area, self.group.clone()) else { return };
+        let (Some(area), Some((_, group))) = (self.area, self.overlay_group.clone()) else { return };
         if self.overlay.is_empty() {
             return;
         }
@@ -430,6 +486,7 @@ impl FrameRenderer {
         builder.shown = Some(VramRect { x: area.x as u16, y: area.y as u16, width: area.width as u16, height: area.height as u16 });
         builder.spill = self.side;
         builder.capture = renderer.capture.rect.filter(|_| renderer.capture.scale == self.scale).map(|rect| (rect, renderer.capture.side));
+        builder.capture_aliases = &renderer.capture.aliases;
         for op in &self.overlay {
             builder.op(op);
         }
@@ -440,7 +497,7 @@ impl FrameRenderer {
         let origin = (area.x as f32 - self.side as f32, area.y as f32);
         let target = Target { color: &color, aux: &self.aux, depth: &depth_view, origin, scale: self.scale };
         let (picture_color, picture_aux) = (renderer.color.clone(), renderer.aux.clone());
-        let copies = Copies::From { color: &picture_color, aux: &picture_aux, scale: self.scale, capture: Some(&renderer.capture) };
+        let copies = Copies::From { color: &picture_color, aux: &picture_aux, scale: self.scale, capture: Some(&renderer.capture), scratch: &renderer.scratch, feedback: &self.feedback, feedback_aux: &self.feedback_aux };
         let staging = Some((self.overlay_staging.buffer(), &self.vram));
         encode(device, &mut renderer.pipelines, encoder, &group, self.overlay_vertices.buffer(), staging, copies, &target, &builder.commands);
         builder.store(&mut self.overlay_storage);
@@ -690,9 +747,10 @@ impl Welder {
 /// scene (the interface over it, in order with the VRAM writes and copies
 /// its textures follow), culled faces aside (a replay draws some late):
 /// what lies over the finished scene.
-fn split_overlay(ops: &mut Vec<TraceOp>) -> Vec<TraceOp> {
+fn split_overlay(ops: &mut Vec<TraceOp>, feedback: Option<VramRect>) -> Vec<TraceOp> {
     let scene = scene_offset(ops);
-    let last = ops.iter().rposition(|op| matches!(op, TraceOp::Draw(p) if !p.revealed && effective_class(p, scene).is_scene()));
+    let last = ops.iter().rposition(|op| matches!(op, TraceOp::Draw(p) if !p.revealed && effective_class(p, scene).is_scene()))
+        .max(feedback.and_then(|area| framebuffer_end(ops, area)));
     let tail = ops.split_off(last.map_or(0, |i| i + 1));
     let mut overlay = Vec::with_capacity(tail.len());
     for op in tail {
@@ -704,11 +762,42 @@ fn split_overlay(ops: &mut Vec<TraceOp>) -> Vec<TraceOp> {
     overlay
 }
 
+/// The scene read as a texture during the same frame, including strips saved
+/// elsewhere first (the field's heat-wave distortion). Keep its copies and
+/// quads with the scene, ahead of the interface and postprocessing.
+fn framebuffer_end(ops: &[TraceOp], area: VramRect) -> Option<usize> {
+    let mut regions = vec![area];
+    let mut scene = false;
+    let mut last = None;
+    for (i, op) in ops.iter().enumerate() {
+        match op {
+            TraceOp::Draw(p) => {
+                if scene && regions.iter().any(|rect| samples(p, rect)) {
+                    last = Some(i);
+                }
+                scene |= p.class.is_scene();
+            }
+            &TraceOp::Copy { source, destination, width, height } if scene => {
+                let from = VramRect { x: source.0, y: source.1, width, height };
+                if overlap(&area, &from) == u32::from(width) * u32::from(height) {
+                    regions.push(VramRect { x: destination.0, y: destination.1, width, height });
+                }
+            }
+            _ => {}
+        }
+    }
+    last
+}
+
+fn framebuffer_effect(ops: &[TraceOp], area: VramRect) -> bool {
+    framebuffer_end(ops, area).is_some()
+}
+
 /// A copy whose source the game changed after it (a screen taken, then
 /// overwritten while the copy is still shown) shows the pixels it copied:
 /// the native ones its destination's write carries, not the scaled
 /// picture's source as it is when the frame is replayed.
-fn settle_copies(ops: &mut [TraceOp], screen_copy: Option<VramRect>) {
+fn settle_copies(ops: &mut [TraceOp], screen_copies: &[VramRect], feedback: Option<VramRect>) {
     let mut later: Vec<VramRect> = Vec::new();
     for i in (0..ops.len()).rev() {
         match &ops[i] {
@@ -718,7 +807,7 @@ fn settle_copies(ops: &mut [TraceOp], screen_copy: Option<VramRect>) {
                 let to = VramRect { x: destination.0, y: destination.1, width, height };
                 // A pause/transition copied the displayed picture to this
                 // buffer. Its held presentation survives source overwrites.
-                if screen_copy == Some(to) {
+                if screen_copies.contains(&to) || feedback.is_some_and(|area| overlap(&area, &from) == u32::from(width) * u32::from(height)) {
                     continue;
                 }
                 // Its own destination's write follows it.

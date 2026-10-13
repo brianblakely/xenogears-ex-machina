@@ -60,6 +60,7 @@ const FLAG_LINE: u32 = 1 << 17;
 /// Textured from a screen the game took ([`Capture`]): the picture presented
 /// then, its sides included.
 const FLAG_CAPTURE: u32 = 1 << 18;
+const FLAG_FEEDBACK: u32 = 1 << 19;
 
 /// Which of the original GPU's limits a picture keeps. Each is independent.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -264,7 +265,9 @@ pub(crate) enum Command {
     Draw { key: PipelineKey, scissor: Option<Scissor>, vertices: std::ops::Range<u32> },
     /// Staged pixels to the native VRAM copy.
     Upload { offset: u64, rect: VramRect },
-    Copy { source: (u16, u16), destination: (u16, u16), width: u16, height: u16 },
+    Copy { source: (u16, u16), destination: (u16, u16), width: u16, height: u16, local: Option<u32> },
+    /// The scene before an in-frame framebuffer effect reads it.
+    Snapshot,
 }
 
 /// The pipelines and layouts every PS1 target shares (the VRAM picture,
@@ -317,6 +320,26 @@ impl Pipelines {
                     binding: 3,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 4,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 5,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false,
+                    },
                     count: None,
                 },
             ],
@@ -483,6 +506,10 @@ pub(crate) struct Builder<'a> {
     /// The screen the game took ([`Capture`]): where it lies and the width
     /// of the sides its picture has (VRAM pixels).
     pub(crate) capture: Option<(VramRect, u32)>,
+    pub(crate) capture_aliases: &'a [(VramRect, bool)],
+    pub(crate) feedback: Option<VramRect>,
+    feedback_copies: Vec<(VramRect, (u16, u16))>,
+    feedback_started: bool,
     /// Row quads the interface may still take ([`push_rows`]); past them
     /// its polygons are drawn whole.
     rows_left: usize,
@@ -575,6 +602,10 @@ impl<'a> Builder<'a> {
             shown: None,
             seal: false,
             capture: None,
+            capture_aliases: &[],
+            feedback: None,
+            feedback_copies: Vec::new(),
+            feedback_started: false,
         }
     }
 
@@ -650,7 +681,31 @@ impl<'a> Builder<'a> {
     }
 
     pub(crate) fn copy(&mut self, source: (u16, u16), destination: (u16, u16), width: u16, height: u16) {
-        self.commands.push(Command::Copy { source, destination, width, height });
+        let from = VramRect { x: source.0, y: source.1, width, height };
+        let local = self.feedback.filter(|area| overlap(area, &from) == u32::from(width) * u32::from(height));
+        if local.is_some() {
+            self.start_feedback();
+            self.feedback_copies.push((VramRect { x: destination.0, y: destination.1, width, height }, source));
+        }
+        self.commands.push(Command::Copy { source, destination, width, height,
+            local: local.map(|area| if width == area.width { self.spill } else { 0 }) });
+    }
+
+    fn start_feedback(&mut self) {
+        if !self.feedback_started {
+            self.commands.push(Command::Snapshot);
+            self.feedback_started = true;
+        }
+    }
+
+    fn feedback_source(&self, p: &Primitive) -> Option<[f32; 2]> {
+        let area = self.feedback?;
+        for &(rect, source) in self.feedback_copies.iter().rev() {
+            if samples(p, &rect) {
+                return Some([f32::from(source.0) - f32::from(rect.x), f32::from(source.1) - f32::from(rect.y)]);
+            }
+        }
+        samples(p, &area).then_some([0.0, 0.0])
     }
 
     /// One traced primitive as triangles under its pipelines.
@@ -662,6 +717,9 @@ impl<'a> Builder<'a> {
         }
         self.stats.primitives += 1;
         self.stats.revealed += u32::from(p.revealed);
+        if self.feedback_source(p).is_some() {
+            self.start_feedback();
+        }
         let start = self.triangles(p);
         self.commands_for(p, start);
     }
@@ -685,12 +743,14 @@ impl<'a> Builder<'a> {
         let class = effective_class(p, self.scene);
         let projected = p.vertices[..count].iter().all(|v| v.z > 0.0);
         let captured = self.captures(p);
+        let captured_from = self.capture_source(p);
+        let feedback = self.feedback_source(p);
         // The interface is drawn as the original draws it, except what is
         // drawn of a screen the game took and the interface's own models,
         // projected with an offset of their own (the field compass, the
         // world map's, menu models): those as the scene is.
         let model = class == Class::Flat && p.class.is_scene();
-        let original = class == Class::Flat && !model && !captured;
+        let original = class == Class::Flat && !model && !captured && feedback.is_none();
         let perspective = projected && !fidelity.affine_textures && p.shape != Shape::Rectangle && (class != Class::Flat || model);
         let linear = match class {
             Class::Flat if original => self.options.filtering.interface_linear,
@@ -712,6 +772,7 @@ impl<'a> Builder<'a> {
             (original, FLAG_ORIGINAL),
             (p.shape == Shape::Line, FLAG_LINE),
             (captured, FLAG_CAPTURE),
+            (feedback.is_some(), FLAG_FEEDBACK),
         ] {
             if on {
                 flags |= flag;
@@ -749,6 +810,14 @@ impl<'a> Builder<'a> {
             };
             if let Some(remap) = &self.remap {
                 remap(&mut out);
+            }
+            if let (Some(from), Some((to, _))) = (captured_from, self.capture) {
+                out.uv[0] += f32::from(to.x) - f32::from(from.x);
+                out.uv[1] += f32::from(to.y) - f32::from(from.y);
+            }
+            if let Some(offset) = feedback {
+                out.uv[0] += (p.environment.draw_mode & 15) as f32 * 64.0 + offset[0];
+                out.uv[1] += ((p.environment.draw_mode >> 4) & 1) as f32 * 256.0 + offset[1];
             }
             out
         };
@@ -832,6 +901,11 @@ impl<'a> Builder<'a> {
             let page_x = (p.environment.draw_mode & 15) as f32 * 64.0;
             push_capture_sides(&mut self.vertices, &corners[..count], page_x, (rect, side));
         }
+        if let Some(rect) = self.feedback.filter(|_| feedback.is_some() && self.spill > 0)
+            && matches!(p.shape, Shape::Triangle | Shape::Quad)
+        {
+            push_capture_sides(&mut self.vertices, &corners[..count], 0.0, (rect, self.spill));
+        }
         if widened {
             // Its points at or past the drawing area's sides move out by the
             // sides' width.
@@ -855,7 +929,7 @@ impl<'a> Builder<'a> {
         let [left, top, right, bottom] = p.environment.area.map(i32::from);
         // The scene, and what the game culled beside its screen (a backdrop's
         // continuation too), may spill into the sides.
-        let spill = if p.revealed || effective_class(p, self.scene).is_scene() || self.widens(p) || self.captures(p) { self.spill as i32 } else { 0 };
+        let spill = if p.revealed || effective_class(p, self.scene).is_scene() || self.widens(p) || self.captures(p) || self.feedback_source(p).is_some() { self.spill as i32 } else { 0 };
         let rect = |left: i32, right: i32| Some(Scissor { x: left, y: top, width: (right + 1 - left).max(0), height: (bottom + 1 - top).max(0) });
         // A culled face beside the original screen shows only in the sides.
         let scissors = if p.revealed && self.reveal == Reveal::Sides && !self.restores_sliver(p) {
@@ -903,7 +977,12 @@ impl<'a> Builder<'a> {
 
     /// Whether `p` is textured from the screen the game took.
     fn captures(&self, p: &Primitive) -> bool {
-        self.capture.is_some_and(|(rect, _)| samples(p, &rect))
+        self.capture_source(p).is_some()
+    }
+
+    fn capture_source(&self, p: &Primitive) -> Option<VramRect> {
+        let (rect, _) = self.capture?;
+        std::iter::once(rect).chain(self.capture_aliases.iter().map(|(rect, _)| *rect)).find(|rect| samples(p, rect))
     }
 
     /// Wider framing: an untextured interface primitive over the whole
@@ -1247,16 +1326,27 @@ pub(crate) fn encode(
                 }
                 index += 1;
             }
-            Command::Copy { source, destination, width, height } => {
+            Command::Snapshot => {
+                if let Copies::From { feedback, feedback_aux, .. } = copies {
+                    encoder.copy_texture_to_texture(target.color.as_image_copy(), feedback.as_image_copy(), target.color.size());
+                    encoder.copy_texture_to_texture(target.aux.as_image_copy(), feedback_aux.as_image_copy(), target.aux.size());
+                }
+                index += 1;
+            }
+            Command::Copy { source, destination, width, height, local } => {
                 match copies {
                     Copies::InPlace { scratch, capture } => {
-                        copy_region(encoder, target, scratch, *source, *destination, (*width, *height));
-                        if capture.screen {
+                        copy_region(encoder, target, scratch, *source, *destination, (*width, *height), 0);
+                        if capture.areas().any(|(_, screen)| screen) {
                             copy_capture(encoder, target, capture, *source, *destination, (*width, *height));
                         }
                     }
-                    Copies::From { color, aux, scale, capture } => {
-                        copy_from(encoder, target, (color, aux, scale), *source, *destination, (*width, *height));
+                    Copies::From { color, aux, scale, capture, scratch, .. } => {
+                        if let Some(side) = local {
+                            copy_region(encoder, target, scratch, *source, *destination, (*width, *height), *side);
+                        } else {
+                            copy_from(encoder, target, (color, aux, scale), *source, *destination, (*width, *height));
+                        }
                         if let Some(capture) = capture {
                             copy_capture(encoder, target, capture, *source, *destination, (*width, *height));
                         }
@@ -1323,7 +1413,7 @@ pub(crate) enum Copies<'a> {
     InPlace { scratch: &'a wgpu::Texture, capture: &'a Capture },
     /// From the scaled VRAM picture (colour, auxiliary, scale) into the
     /// target; a copy of the screen the game took, from its picture.
-    From { color: &'a wgpu::Texture, aux: &'a wgpu::Texture, scale: u32, capture: Option<&'a Capture> },
+    From { color: &'a wgpu::Texture, aux: &'a wgpu::Texture, scale: u32, capture: Option<&'a Capture>, scratch: &'a wgpu::Texture, feedback: &'a wgpu::Texture, feedback_aux: &'a wgpu::Texture },
 }
 
 /// A copy of all of a captured screen ([`Capture`]) into a replay's target:
@@ -1337,9 +1427,9 @@ fn copy_capture(
     (width, height): (u16, u16),
 ) {
     let s = target.scale;
-    let Some(rect) = capture.rect.filter(|r| {
+    let Some((rect, _)) = capture.areas().find(|(r, screen)| {
         (r.width, r.height) == (width, height)
-            && ((r.x, r.y) == source || (capture.screen && (r.x, r.y) == destination))
+            && ((r.x, r.y) == source || (*screen && (r.x, r.y) == destination))
     }) else { return };
     if capture.scale != s {
         return;
@@ -1407,11 +1497,12 @@ fn copy_region(
     source: (u16, u16),
     destination: (u16, u16),
     (width, height): (u16, u16),
+    side: u32,
 ) {
     let s = target.scale;
     let size = target.color.size();
     let clip = |x: u16, y: u16| {
-        let x = (f32::from(x) - target.origin.0) * s as f32;
+        let x = (f32::from(x) - target.origin.0 - side as f32) * s as f32;
         let y = (f32::from(y) - target.origin.1) * s as f32;
         (x, y)
     };
@@ -1421,7 +1512,7 @@ fn copy_region(
         return;
     }
     let (sx, sy, dx, dy) = (sx as u32, sy as u32, dx as u32, dy as u32);
-    let w = (u32::from(width) * s).min(size.width.saturating_sub(sx)).min(size.width.saturating_sub(dx));
+    let w = ((u32::from(width) + 2 * side) * s).min(size.width.saturating_sub(sx)).min(size.width.saturating_sub(dx));
     let h = (u32::from(height) * s).min(size.height.saturating_sub(sy)).min(size.height.saturating_sub(dy));
     let scratch_size = scratch.size();
     let (w, h) = (w.min(scratch_size.width), h.min(scratch_size.height / 2));
@@ -1651,7 +1742,7 @@ impl Ps1Renderer {
             mapped_at_creation: false,
         });
         let capture = Capture::new(device, (1, 1));
-        let group = bind_group(device, &pipelines.layout, &uniform, &vram, &capture);
+        let group = bind_group(device, &pipelines.layout, &uniform, &vram, &capture, None);
         let scale = scale.clamp(1, Self::max_scale(device));
         let (color, aux, depth, scratch) = Self::pictures(device, scale);
         Self {
@@ -1702,35 +1793,46 @@ impl Ps1Renderer {
     fn watch_captures(&mut self, encoder: &mut wgpu::CommandEncoder, ops: &[TraceOp]) -> bool {
         let mut written = false;
         for op in ops {
+            // Reusing a source is only an alias while that source remains
+            // unchanged; mirrored writes also cover draws and copies.
+            if let TraceOp::Write { rect, .. } | TraceOp::Fill { rect, .. } = op
+                && self.capture.source.is_some_and(|source| overlap(&source, rect) > 0)
+            {
+                self.capture.source = None;
+            }
             match op {
                 TraceOp::Copy { source, destination, width, height } => {
                     let from = VramRect { x: source.0, y: source.1, width: *width, height: *height };
                     let to = VramRect { x: destination.0, y: destination.1, width: *width, height: *height };
                     if *width >= 256 && *height >= 192 && source != destination && self.is_screen(&from) {
-                        written |= self.take_capture(encoder, to);
-                    } else if self.capture.rect.is_some_and(|c| overlap(&c, &to) > 0) {
-                        self.capture.rect = None;
+                        if self.capture.rect.is_some() && self.capture.source == Some(from) {
+                            let screen = self.is_screen(&to);
+                            if !self.capture.areas().any(|(r, _)| r == to) {
+                                self.capture.aliases.push((to, screen));
+                            }
+                            written = true;
+                        } else {
+                            written |= self.take_capture(encoder, to);
+                            self.capture.source = Some(from);
+                        }
+                    } else {
+                        self.capture.invalidate(to, false);
                     }
                 }
-                // (A write that is not an upload mirrors the native pixels
-                // of a copy, a fill or drawing just traced.)
+                // A non-upload only mirrors the native pixels of a copy,
+                // fill or drawing just traced.
                 TraceOp::Write { rect, pixels, upload: true } => {
-                    // A screen read back and written with every texel's
-                    // semi-transparency bit set (the battle intro's), or such
-                    // a pass over a capture (the field's, frames after it).
                     let marked = !pixels.is_empty() && pixels.iter().all(|p| p & 0x8000 != 0);
-                    let over = self.capture.rect.filter(|c| overlap(c, rect) > 0);
-                    if marked && over.is_some_and(|c| overlap(&c, rect) == u32::from(rect.width) * u32::from(rect.height))
-                        && self.draws - self.capture.taken <= 16
-                    {
+                    let inside = self.capture.areas().any(|(c, _)| overlap(&c, rect) == u32::from(rect.width) * u32::from(rect.height));
+                    if marked && inside && self.draws - self.capture.taken <= 16 {
                         written = true;
                     } else if marked && rect.width >= 256 && rect.height >= 192 && !self.is_screen(rect) {
                         written |= self.take_capture(encoder, *rect);
-                    } else if over.is_some_and(|c| !self.capture.screen || overlap(&c, rect) == u32::from(c.width) * u32::from(c.height)) {
-                        self.capture.rect = None;
+                    } else {
+                        self.capture.invalidate(*rect, true);
                     }
                 }
-                TraceOp::Fill { rect, .. } if self.capture.rect.is_some_and(|c| overlap(&c, rect) > 0) => self.capture.rect = None,
+                TraceOp::Fill { rect, .. } => self.capture.invalidate(*rect, false),
                 _ => {}
             }
         }
@@ -1741,6 +1843,8 @@ impl Ps1Renderer {
     /// game took into `rect`.
     fn take_capture(&mut self, encoder: &mut wgpu::CommandEncoder, rect: VramRect) -> bool {
         self.capture.rect = None;
+        self.capture.aliases.clear();
+        self.capture.source = None;
         let Some(picture) = self.presented.clone().filter(|p| p.scale == self.scale) else { return false };
         let size = picture.texture.size();
         let width = ((u32::from(rect.width) + 2 * picture.side) * picture.scale).min(size.width);
@@ -1753,7 +1857,7 @@ impl Ps1Renderer {
             let generation = self.capture.generation + 1;
             self.capture = Capture::new(&self.device, (width.max(held.width), height.max(held.height)));
             self.capture.generation = generation;
-            self.group = bind_group(&self.device, &self.pipelines.layout, &self.uniform, &self.vram, &self.capture);
+            self.group = bind_group(&self.device, &self.pipelines.layout, &self.uniform, &self.vram, &self.capture, None);
         }
         encoder.copy_texture_to_texture(
             picture.texture.as_image_copy(),
@@ -1794,6 +1898,13 @@ impl Ps1Renderer {
     /// the screen ([`Capture`]).
     pub fn set_display(&mut self, area: VramRect) {
         self.display = Some((area.width, area.height));
+        // A destination first copied before the mode change may only now
+        // become a display buffer (and must restore the picture's sides).
+        let displayed = |rect: VramRect| overlap(&area, &rect) * 10 >= u32::from(area.width) * u32::from(area.height) * 9;
+        self.capture.screen |= self.capture.rect.is_some_and(displayed);
+        for (rect, screen) in &mut self.capture.aliases {
+            *screen |= displayed(*rect);
+        }
         if self.shown.last() != Some(&area) {
             self.shown.retain(|a| *a != area);
             self.shown.push(area);
@@ -1866,6 +1977,7 @@ impl Ps1Renderer {
         builder.seal = self.seal;
         // (Its sides have no place in VRAM.)
         builder.capture = self.capture.rect.map(|rect| (rect, 0));
+        builder.capture_aliases = &self.capture.aliases;
         for op in &trace.ops {
             builder.op(op);
         }
@@ -1976,10 +2088,16 @@ impl Ps1Renderer {
             let cleared = match op {
                 TraceOp::Fill { rect, .. } => Some(*rect),
                 TraceOp::Copy { source, destination, width, height } => {
+                    let from = VramRect { x: source.0, y: source.1, width: *width, height: *height };
                     let to = VramRect { x: destination.0, y: destination.1, width: *width, height: *height };
                     // A screen taken elsewhere is not a buffer cleared.
-                    let taken = self.is_screen(&VramRect { x: source.0, y: source.1, width: *width, height: *height }) && !self.is_screen(&to);
-                    (!taken).then_some(to)
+                    let taken = self.is_screen(&from) && !self.is_screen(&to);
+                    // Moving rows within a buffer is part of its current
+                    // frame, not a new frame (the field's distortion shift).
+                    let pixels = u32::from(*width) * u32::from(*height);
+                    let internal = overlap(&from, &to) > 0
+                        && self.logs.iter().any(|l| overlap(&l.rect, &from) == pixels && overlap(&l.rect, &to) == pixels);
+                    (!taken && !internal).then_some(to)
                 }
                 _ => None,
             };
@@ -2004,8 +2122,12 @@ impl Ps1Renderer {
                     continue;
                 }
                 if buffer || self.logs.iter().all(|l| overlap(&l.rect, &rect) == 0) {
-                    let previous = self.logs.iter().find(|l| overlap(&l.rect, &rect) > 0).map_or(0, |l| l.frames);
-                    self.logs.retain(|l| overlap(&l.rect, &rect) == 0);
+                    let replaced = |l: &FrameLog| overlap(&l.rect, &rect) * 2 >= area.min(u32::from(l.rect.width) * u32::from(l.rect.height));
+                    let previous = self.logs.iter().filter(|l| replaced(l)).max_by_key(|l| overlap(&l.rect, &rect)).map_or(0, |l| l.frames);
+                    // A mode change moves the second buffer from y=256 to
+                    // y=216. Its clear must not retire the still displayed
+                    // first buffer merely because their last eight rows meet.
+                    self.logs.retain(|l| !replaced(l));
                     let start = std::sync::Arc::new(self.native.clone());
                     self.logs.push(FrameLog { rect, ops: vec![op.clone()], previous: Vec::new(), frames: previous + 1, start, eye });
                     if self.logs.len() > 6 {
@@ -2020,9 +2142,20 @@ impl Ps1Renderer {
                 TraceOp::Copy { destination, .. } => Some(*destination),
                 _ => None,
             };
+            // Saved framebuffer strips are used later in this frame even
+            // though their destinations lie outside its drawing area.
+            if let TraceOp::Copy { source, destination, .. } = op {
+                for log in &mut self.logs {
+                    if contains(&log.rect, source.0, source.1) && !contains(&log.rect, destination.0, destination.1) {
+                        log.ops.push(op.clone());
+                    }
+                }
+            }
             if let Some((x, y)) = at
-                && let Some(log) = self.logs.iter_mut().find(|l| contains(&l.rect, x, y))
+                && let Some(index) = self.logs.iter().position(|l| (l.rect.x, l.rect.y) == (x, y))
+                    .or_else(|| self.logs.iter().position(|l| contains(&l.rect, x, y)))
             {
+                let log = &mut self.logs[index];
                 if log.ops.len() >= LOG_LIMIT {
                     log.ops.clear();
                     log.previous.clear();
@@ -2096,6 +2229,7 @@ pub(crate) fn bind_group(
     uniform: &wgpu::Buffer,
     vram: &wgpu::Texture,
     capture: &Capture,
+    feedback: Option<(&wgpu::Texture, &wgpu::Texture)>,
 ) -> wgpu::BindGroup {
     device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("ps1 pass"),
@@ -2105,6 +2239,8 @@ pub(crate) fn bind_group(
             wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&vram.create_view(&Default::default())) },
             wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&capture.view) },
             wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::Sampler(&capture.sampler) },
+            wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::TextureView(&feedback.map_or(&capture.texture, |f| f.0).create_view(&Default::default())) },
+            wgpu::BindGroupEntry { binding: 5, resource: wgpu::BindingResource::TextureView(&feedback.map_or(&capture.texture, |f| f.1).create_view(&Default::default())) },
         ],
     })
 }
@@ -2121,6 +2257,8 @@ pub(crate) struct Capture {
     /// Where it lies in VRAM, its picture's scale and the width of the
     /// picture's sides (VRAM pixels; it starts with the left one).
     pub(crate) rect: Option<VramRect>,
+    pub(crate) aliases: Vec<(VramRect, bool)>,
+    source: Option<VramRect>,
     pub(crate) scale: u32,
     pub(crate) side: u32,
     /// A buffer-to-buffer copy (pause/transition): its partial uploads are
@@ -2141,7 +2279,20 @@ impl Capture {
             min_filter: wgpu::FilterMode::Linear,
             ..Default::default()
         });
-        Capture { view: texture.create_view(&Default::default()), texture, sampler, rect: None, scale: 1, side: 0, screen: false, taken: 0, generation: 0 }
+        Capture { view: texture.create_view(&Default::default()), texture, sampler, rect: None, aliases: Vec::new(), source: None, scale: 1, side: 0, screen: false, taken: 0, generation: 0 }
+    }
+
+    pub(crate) fn areas(&self) -> impl Iterator<Item = (VramRect, bool)> + '_ {
+        self.rect.map(|r| (r, self.screen)).into_iter().chain(self.aliases.iter().copied())
+    }
+
+    fn invalidate(&mut self, rect: VramRect, partial_upload: bool) {
+        let overwritten = |r: VramRect, screen: bool| overlap(&r, &rect) > 0
+            && (!partial_upload || !screen || overlap(&r, &rect) == u32::from(r.width) * u32::from(r.height));
+        self.aliases.retain(|&(r, screen)| !overwritten(r, screen));
+        if self.rect.is_some_and(|r| overwritten(r, self.screen)) {
+            self.rect = self.aliases.pop().map(|(r, screen)| { self.screen = screen; r });
+        }
     }
 
     /// The pass uniform's capture fields.

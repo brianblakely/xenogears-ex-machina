@@ -75,7 +75,7 @@ WRAPPED = {"mode_dispatch", "model_draw_sprite_model", "sprite_set_draw_matrix",
            "worldmap_terrain_draw", "menu_cd_check_disc", "sound_start_driver", "sound_run_tick",
            "menu_sound_mode_screen_run", "sound_start_effect", "sprite_vm_run_generic_command",
            "battle_sprite_command_run"}
-WRAPPED |= {"sprite_request_frame", "sprite_queue_upload", "sprite_reserve_texture_columns"}
+WRAPPED |= {"sprite_request_frame", "sprite_queue_upload", "sprite_reserve_texture_columns", "battle_popup_draw_glyph"}
 
 CFLAGS = [
     # The MIPS front end accepts the original inline assembly; the IR is then

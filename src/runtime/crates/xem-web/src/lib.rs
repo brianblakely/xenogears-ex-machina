@@ -98,6 +98,7 @@ pub struct XemApp {
     audio_scratch: Vec<i16>,
     cards: storage::BrowserCards,
     input: xem_settings::player::PlayerInput,
+    mouse_captured: bool,
     /// The interface the player's input reached last (the wheel's) and its
     /// entries a pointer selects.
     ui: xem_core::context::Context,
@@ -211,6 +212,7 @@ impl XemApp {
             audio_scratch: Vec::new(),
             cards: storage::BrowserCards::default(),
             input: Default::default(),
+            mouse_captured: false,
             ui: xem_core::context::Context::None,
             targets: None,
             app_input: AppInput::default(),
@@ -853,6 +855,22 @@ impl XemApp {
         self.renderer.as_ref().is_some_and(|r| r.panel_visible)
     }
 
+    /// Whether play can hold the browser pointer now. A combo is a set of
+    /// clickable commands, and the original pause screen releases it too.
+    pub fn mouse_camera_active(&mut self) -> bool {
+        if !self.running || self.panel_visible() || !self.app_input.focused() { return false; }
+        let settings = self.settings.borrow();
+        self.session.as_mut().is_some_and(|session|
+            settings.settings().captures_mouse(session.runtime.context(), session.runtime.game_paused()))
+    }
+
+    pub fn set_pointer_captured(&mut self, captured: bool) {
+        if captured != self.mouse_captured {
+            self.mouse_captured = captured;
+            self.input.mouse.clear();
+        }
+    }
+
     fn text_editor_focused(&self) -> bool {
         self.panel_visible() && self.renderer.as_ref().and_then(|r| r.panel()).is_some_and(|p| p.text_editor_focused())
     }
@@ -882,7 +900,9 @@ impl XemApp {
             "down" | "up" => return self.input.mouse.button(button, kind == "down"),
             "move" => {
                 self.input.hover(screen);
-                if self.settings.borrow().settings().mouse_camera { self.input.mouse.moved(dx); }
+                if self.mouse_captured && self.mouse_camera_active() {
+                    self.input.mouse.moved(dx * self.settings.borrow().settings().mouse_scale());
+                }
                 return false;
             }
             // In a menu or a choice the wheel steps the cursor.

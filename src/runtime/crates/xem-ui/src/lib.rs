@@ -403,7 +403,6 @@ fn graphics_edit(graphics: &Graphics, key: &str, value: i32) -> Option<Graphics>
         "filter-interface" => next.filtering.interface = filter()?,
         "filter-movies" => next.filtering.movies = *MOVIE_FILTERS.get(index?)?,
         "zoom-out" => next.zoom_out = u16::try_from(value).ok()?,
-        "actors-in-view" => next.actors_in_view = value != 0,
         "xr-distance" => next.xr.distance_cm = u16::try_from(value).ok()?,
         "xr-width" => next.xr.width_cm = u16::try_from(value).ok()?,
         "xr-dof" => next.xr.depth_of_field = value != 0,
@@ -429,7 +428,6 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_binaural_effects(settings.binaural.positional_effects);
     panel.set_binaural_immersion(f32::from(settings.binaural.music_immersion));
     panel.set_binaural_head(settings.binaural.head_tracked_music);
-    panel.set_binaural_bypass(settings.binaural.bypass);
     panel.set_scale(index_of(&SCALES, &settings.presentation.scale));
     panel.set_filter(index_of(&FILTERS, &settings.presentation.filter));
     panel.set_show_fps(settings.presentation.show_fps);
@@ -443,7 +441,6 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_gfx_interpolation(graphics.interpolation);
     panel.set_gfx_widescreen(graphics.widescreen);
     panel.set_gfx_zoom_out(i32::from(graphics.zoom_out));
-    panel.set_gfx_actors_in_view(graphics.actors_in_view);
     panel.set_gfx_filter_world(index_of(&FILTERS, &graphics.filtering.world));
     panel.set_gfx_filter_sprites(index_of(&FILTERS, &graphics.filtering.sprites));
     panel.set_gfx_filter_interface(index_of(&FILTERS, &graphics.filtering.interface));
@@ -460,6 +457,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_fast_forward_position(panel.get_fast_forward_rate() as f32);
     panel.set_invert_trigger_chords(settings.invert_trigger_chords);
     panel.set_mouse_camera(settings.mouse_camera);
+    panel.set_mouse_sensitivity(i32::from(settings.mouse_sensitivity));
     panel.set_run_by_default(settings.run_by_default);
     let assisted = settings.assisted;
     panel.set_assist_gestures(assisted.gestures);
@@ -643,6 +641,10 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
         let apply = apply.clone();
         move |enabled| apply(Some(SettingChange::MouseCamera(enabled)))
     });
+    panel.on_mouse_sensitivity_edited({
+        let apply = apply.clone();
+        move |value| apply(u16::try_from(value).ok().map(SettingChange::MouseSensitivity))
+    });
     panel.on_rewind_enabled_edited({
         let apply = apply.clone();
         move |enabled| apply(Some(SettingChange::RewindEnabled(enabled)))
@@ -698,7 +700,6 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
                 "effects" => binaural.positional_effects = on,
                 "immersion" => binaural.music_immersion = value.clamp(0, 100) as u8,
                 "head" => binaural.head_tracked_music = on,
-                "bypass" => binaural.bypass = on,
                 _ => return,
             }
             apply(Some(SettingChange::Binaural(binaural)))
@@ -947,6 +948,11 @@ impl FrameRateUi {
             Some(error) => format!("Could not {} state: {error}", if saved { "save" } else { "load" }),
             None => format!("State {}", if saved { "saved" } else { "loaded" }),
         };
+        self.component.set_notice_title(match error {
+            Some(_) => format!("Could not {} state", if saved { "save" } else { "load" }),
+            None => notice.clone(),
+        }.into());
+        self.component.set_notice_detail(error.unwrap_or_default().into());
         self.component.set_notice(notice.into());
         self.component.set_notice_error(error.is_some());
         self.notice_until = Some(now.saturating_add(Duration::from_secs(if error.is_some() { 8 } else { 4 })));

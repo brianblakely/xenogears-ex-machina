@@ -139,6 +139,8 @@ pub struct Settings {
     /// Sideways mouse motion turns the field camera; the game then holds the
     /// mouse (hidden, unbounded motion) while it has the input.
     pub mouse_camera: bool,
+    /// Mouse camera rate as a percentage of the original host sensitivity.
+    pub mouse_sensitivity: u16,
     /// Field movement runs unless the player holds the run button.
     pub run_by_default: bool,
     pub rewind_enabled: bool,
@@ -161,6 +163,7 @@ impl Default for Settings {
             fast_forward_rate: FastForwardRate::default(),
             invert_trigger_chords: false,
             mouse_camera: false,
+            mouse_sensitivity: 50,
             run_by_default: false,
             rewind_enabled: true,
             rewind_interval_seconds: DEFAULT_REWIND_INTERVAL_SECONDS,
@@ -180,6 +183,7 @@ pub enum SettingChange {
     FastForwardRate(FastForwardRate),
     InvertTriggerChords(bool),
     MouseCamera(bool),
+    MouseSensitivity(u16),
     RunByDefault(bool),
     RewindEnabled(bool),
     RewindIntervalSeconds(u32),
@@ -241,6 +245,15 @@ impl fmt::Display for Rejected {
 impl std::error::Error for Rejected {}
 
 impl Settings {
+    /// Pointing at battle commands (including combo buttons) and pausing
+    /// always release the cursor, even when camera turning is enabled.
+    pub fn captures_mouse(&self, ui: xem_core::context::Context, paused: bool) -> bool {
+        self.mouse_camera && !paused && !ui.navigates()
+            && !matches!(ui, xem_core::context::Context::Battle { .. })
+    }
+
+    pub fn mouse_scale(&self) -> f32 { f32::from(self.mouse_sensitivity) / 100.0 }
+
     /// The game's sound mode the hosts run it in (`Session::set_sound_mode`):
     /// Stereo under Binaural, whose placement reads the Stereo pan law;
     /// else the original mode chosen.
@@ -256,6 +269,7 @@ impl Settings {
             SettingChange::FastForwardRate(rate) => next.fast_forward_rate = *rate,
             SettingChange::InvertTriggerChords(invert) => next.invert_trigger_chords = *invert,
             SettingChange::MouseCamera(enabled) => next.mouse_camera = *enabled,
+            SettingChange::MouseSensitivity(percent) => next.mouse_sensitivity = *percent,
             SettingChange::RunByDefault(enabled) => next.run_by_default = *enabled,
             SettingChange::RewindEnabled(enabled) => next.rewind_enabled = *enabled,
             SettingChange::RewindIntervalSeconds(seconds) => next.rewind_interval_seconds = *seconds,
@@ -332,6 +346,9 @@ impl Settings {
     fn validate(&self) -> Result<(), String> {
         self.fast_forward_rate.validate()?;
         self.graphics.validate()?;
+        if !(10..=200).contains(&self.mouse_sensitivity) {
+            return Err("mouse sensitivity must be 10–200 percent".into());
+        }
         if !(1..=MAX_REWIND_INTERVAL_SECONDS).contains(&self.rewind_interval_seconds) {
             return Err(format!("rewind interval must be 1–{MAX_REWIND_INTERVAL_SECONDS} seconds"));
         }
@@ -546,6 +563,48 @@ impl SettingsService {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn mouse_camera_releases_for_pause_menus_and_every_battle_page() {
+        use super::*;
+        use xem_core::context::{Context, Choice};
+        let settings = Settings { mouse_camera: true, ..Settings::default() };
+        for ui in [Context::Walk, Context::WorldMap { movement: 1, scene: 0 }] {
+            assert!(settings.captures_mouse(ui, false));
+            assert!(!settings.captures_mouse(ui, true));
+            assert!(!Settings::default().captures_mouse(ui, false));
+        }
+        assert!(!settings.captures_mouse(Context::Dialogue { choice: Some(Choice { count: 2, index: 0 }) }, false));
+        for page in 0..8 {
+            for attack in [false, true] {
+                assert!(!settings.captures_mouse(Context::Battle { page, attack, ap: 7, list: false, targeting: false }, false));
+            }
+        }
+    }
+
+    #[test]
+    fn mouse_sensitivity_defaults_lower_and_validates_persists_and_scales_motion() {
+        use super::*;
+        let store = SharedStore::default();
+        let mut service = SettingsService::open(store.clone()).unwrap();
+        assert_eq!(service.settings().mouse_scale(), 0.5);
+        for percent in [10, 50, 100, 200] {
+            service.apply(SettingChange::MouseSensitivity(percent)).unwrap();
+            assert_eq!(SettingsService::open(store.clone()).unwrap().settings().mouse_sensitivity, percent);
+        }
+        for percent in [0, 9, 201, u16::MAX] {
+            assert!(service.apply(SettingChange::MouseSensitivity(percent)).is_err());
+        }
+        let duration = |percent| {
+            let settings = Settings { mouse_sensitivity: percent, ..Default::default() };
+            let mut mouse = bindings::Mouse::default();
+            mouse.moved(20.0 * settings.mouse_scale());
+            (0..200).take_while(|ms| mouse.turn(f64::from(*ms)).is_some()).count()
+        };
+        assert!(duration(50) < duration(100));
+        assert!(duration(100) < duration(200));
+        assert_eq!(Settings::read(&serde_json::json!({"mouse_camera": true})).unwrap().0.mouse_sensitivity, 50);
+    }
+
     #[test]
     fn focus_pause_is_on_by_default_and_persists_acknowledged_changes() {
         use super::*;

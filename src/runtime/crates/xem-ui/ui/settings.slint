@@ -4,7 +4,7 @@
 // application style (plan.md: not Seraph Glass) on Slint's fluent-dark
 // widgets; every edit goes through the settings service (lib.rs), and the
 // panel shows what it acknowledged.
-import { AboutSlint, Button, ComboBox, LineEdit, Palette, ScrollView, Slider, SpinBox, Switch } from "std-widgets.slint";
+import { AboutSlint, Button, LineEdit, Palette, ScrollView, Slider, SpinBox, Switch } from "std-widgets.slint";
 
 /// An app operation and its bindings, as the Shortcuts section lists them.
 export struct BindingRow {
@@ -240,6 +240,86 @@ component Row inherits HorizontalLayout {
         alignment: center;
         horizontal-stretch: 0;
         @children
+    }
+}
+
+// Dropdown selection is deliberate: clicks and arrow keys select, while wheel
+// input continues to the containing scroll view (including the open menu).
+component Choice inherits FocusScope {
+    in property <[string]> model;
+    in-out property <int> current-index;
+    callback selected();
+    private property <bool> expanded;
+    function pick(index: int) {
+        root.current-index = clamp(index, 0, root.model.length - 1);
+        root.selected();
+    }
+    function open() { root.expanded = true; popup.show(); }
+    function close() { root.expanded = false; popup.close(); root.focus(); }
+    accessible-role: combobox;
+    accessible-value: root.model[root.current-index];
+    accessible-expandable: true;
+    accessible-expanded: root.expanded;
+    accessible-action-expand => { root.open(); }
+    min-width: 130px;
+    min-height: 32px;
+    vertical-stretch: 0;
+    key-pressed(event) => {
+        if event.text == Key.UpArrow { root.pick(root.current-index - 1); return accept; }
+        if event.text == Key.DownArrow { root.pick(root.current-index + 1); return accept; }
+        if event.text == Key.Return || event.text == Key.Space { root.open(); return accept; }
+        reject
+    }
+    Rectangle {
+        background: touch.pressed ? Theme.pressed : touch.has-hover ? Theme.hover : Theme.well;
+        border-radius: 5px;
+        border-width: 1px;
+        border-color: root.has-focus ? Theme.accent : Theme.stroke;
+        HorizontalLayout {
+            padding-left: 11px; padding-right: 10px; spacing: 8px;
+            Text { text: root.model[root.current-index]; color: Theme.text; font-size: 13px; vertical-alignment: center; overflow: elide; accessible-role: none; }
+            VerticalLayout {
+                alignment: center; horizontal-stretch: 0;
+                Icon { width: 12px; height: 12px; data: "M6 9 L12 15 L18 9"; color: Theme.text-secondary; }
+            }
+        }
+    }
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.focus(); root.open(); }
+    }
+    popup := PopupWindow {
+        x: 0; y: root.height + 4px; width: root.width;
+        height: min(6, root.model.length) * 32px + 8px;
+        close-policy: close-on-click-outside;
+        forward-focus: popup-focus;
+        popup-focus := FocusScope {
+            focus-changed-event => { root.expanded = self.has-focus; }
+            key-pressed(event) => {
+                if event.text == Key.UpArrow { root.pick(root.current-index - 1); return accept; }
+                if event.text == Key.DownArrow { root.pick(root.current-index + 1); return accept; }
+                if event.text == Key.Return || event.text == Key.Escape { root.close(); return accept; }
+                reject
+            }
+            Rectangle {
+                background: #202329; border-radius: 5px; border-width: 1px; border-color: Theme.stroke;
+                ScrollView {
+                    content-y: -max(0, root.current-index - 5) * 32px;
+                    VerticalLayout {
+                        padding: 4px; spacing: 0px;
+                        for value[index] in root.model: Rectangle {
+                            height: 32px; border-radius: 3px;
+                            background: item-touch.pressed ? Theme.pressed : item-touch.has-hover ? Theme.hover : index == root.current-index ? Theme.selected : transparent;
+                            accessible-role: list-item; accessible-label: value;
+                            accessible-item-selected: index == root.current-index;
+                            accessible-action-default => { root.pick(index); root.close(); }
+                            Text { x: 8px; width: parent.width - 16px; text: value; color: Theme.text; font-size: 13px; vertical-alignment: center; accessible-role: none; }
+                            item-touch := TouchArea { clicked => { root.pick(index); root.close(); } }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -561,7 +641,6 @@ export component SettingsPanel inherits Window {
     in-out property <bool> binaural-effects: true;
     in-out property <float> binaural-immersion: 70;
     in-out property <bool> binaural-head;
-    in-out property <bool> binaural-bypass;
     in-out property <int> scale;
     in-out property <int> filter;
     in-out property <bool> show-fps;
@@ -576,7 +655,6 @@ export component SettingsPanel inherits Window {
     in-out property <bool> gfx-widescreen;
     // The field camera pulled back, percent (100-500).
     in-out property <int> gfx-zoom-out: 100;
-    in-out property <bool> gfx-actors-in-view: true;
     in-out property <int> gfx-filter-world;
     in-out property <int> gfx-filter-sprites;
     in-out property <int> gfx-filter-interface;
@@ -640,6 +718,7 @@ export component SettingsPanel inherits Window {
     in-out property <float> fast-forward-position;
     in-out property <bool> invert-trigger-chords;
     in-out property <bool> mouse-camera;
+    in-out property <int> mouse-sensitivity: 50;
     in-out property <bool> run-by-default;
     // The assisted controls (xem_settings::Assisted): hand gestures, the
     // headset pointer (0 eye gaze, 1 head, 2 left hand, 3 right hand), the
@@ -671,6 +750,7 @@ export component SettingsPanel inherits Window {
     callback fast-forward-rate-edited(int);
     callback invert-trigger-chords-edited(bool);
     callback mouse-camera-edited(bool);
+    callback mouse-sensitivity-edited(int);
     callback run-by-default-edited(bool);
     // An assisted-controls choice by name (gestures, pointer, ledge-brake,
     // touch, solid, still) and value.
@@ -681,7 +761,7 @@ export component SettingsPanel inherits Window {
     callback rewind-held(bool);
     callback master-volume-edited(int);
     callback audio-output-edited(int);
-    // A Binaural option by name (music, effects, immersion, head, bypass) and value.
+    // A Binaural option by name (music, effects, immersion, head) and value.
     callback binaural-edited(string, int);
     callback scale-edited(int);
     callback filter-edited(int);
@@ -863,14 +943,9 @@ export component SettingsPanel inherits Window {
                                     Slider { accessible-label: "Music immersion"; minimum: 0; maximum: 100; value <=> root.binaural-immersion; changed(value) => { root.binaural-edited("immersion", round(value)); } }
                                 }
                                 if root.audio-output == 3: ToggleRow {
-                                    label: "Music stays as you turn";
+                                    label: "VR: Stationary music";
                                     checked <=> root.binaural-head;
                                     toggled(on) => { root.binaural-edited("head", on ? 1 : 0); }
-                                }
-                                if root.audio-output == 3: ToggleRow {
-                                    label: "Compare with Stereo";
-                                    checked <=> root.binaural-bypass;
-                                    toggled(on) => { root.binaural-edited("bypass", on ? 1 : 0); }
                                 }
                             }
 
@@ -891,7 +966,7 @@ export component SettingsPanel inherits Window {
                                 Divider { }
                                 Row {
                                     label: "Scale";
-                                    ComboBox { accessible-label: "Scale"; width: 150px; model: ["Fit", "Integer", "Stretch"]; current-index <=> root.scale; selected => { root.scale-edited(self.current-index); } }
+                                    Choice { accessible-label: "Scale"; width: 150px; model: ["Fit", "Integer", "Stretch"]; current-index <=> root.scale; selected => { root.scale-edited(self.current-index); } }
                                 }
                                 Divider { }
                                 Row {
@@ -910,17 +985,17 @@ export component SettingsPanel inherits Window {
 
                                 Row {
                                     label: "Profile";
-                                    ComboBox { accessible-label: "Graphics profile"; width: 150px; model: ["Modern", "HD-2D", "PS1", "Custom"]; current-index <=> root.gfx-profile; selected => { root.graphics-edited("profile", self.current-index); } }
+                                    Choice { accessible-label: "Graphics profile"; width: 150px; model: ["Modern", "HD-2D", "PS1", "Custom"]; current-index <=> root.gfx-profile; selected => { root.graphics-edited("profile", self.current-index); } }
                                 }
-                                Divider { }
-                                Row {
+                                if root.gfx-profile != 2: Divider { }
+                                if root.gfx-profile != 2: Row {
                                     label: "Resolution";
-                                    ComboBox { accessible-label: "Internal resolution"; width: 150px; model: ["Auto", "1x", "2x", "3x", "4x", "5x", "6x", "7x", "8x"]; current-index <=> root.gfx-scale; selected => { root.graphics-edited("scale", self.current-index); } }
+                                    Choice { accessible-label: "Internal resolution"; width: 150px; model: ["Auto", "1x", "2x", "3x", "4x", "5x", "6x", "7x", "8x"]; current-index <=> root.gfx-scale; selected => { root.graphics-edited("scale", self.current-index); } }
                                 }
-                                Divider { }
-                                Row {
-                                    label: "Effects quality";
-                                    ComboBox { accessible-label: "Effects quality tier"; width: 150px; model: ["Auto", "Low", "Medium", "High", "Ultra"]; current-index <=> root.gfx-quality; selected => { root.graphics-edited("quality", self.current-index); } }
+                                if root.gfx-profile == 1 || root.gfx-profile == 3: Divider { }
+                                if root.gfx-profile == 1 || root.gfx-profile == 3: Row {
+                                    label: "HD-2D quality";
+                                    Choice { accessible-label: "HD-2D quality"; width: 150px; model: ["Auto", "Low", "Medium", "High", "Ultra"]; current-index <=> root.gfx-quality; selected => { root.graphics-edited("quality", self.current-index); } }
                                 }
                                 if root.gfx-status != "": Text { text: root.gfx-status; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
@@ -928,7 +1003,7 @@ export component SettingsPanel inherits Window {
                                 title: "Motion and framing";
                                 Row {
                                     label: "Presentation";
-                                    ComboBox { accessible-label: "Presentation rate"; width: 150px; model: ["Every refresh", "Game frames"]; current-index <=> root.gfx-rate; selected => { root.graphics-edited("rate", self.current-index); } }
+                                    Choice { accessible-label: "Presentation rate"; width: 150px; model: ["Every refresh", "Game frames"]; current-index <=> root.gfx-rate; selected => { root.graphics-edited("rate", self.current-index); } }
                                 }
                                 Divider { }
                                 ToggleRow {
@@ -953,12 +1028,6 @@ export component SettingsPanel inherits Window {
                                         value: root.gfx-zoom-out;
                                         changed(value) => { root.graphics-edited("zoom-out", round(value / 25) * 25); }
                                     }
-                                }
-                                Divider { }
-                                ToggleRow {
-                                    label: "Characters keep moving";
-                                    checked <=> root.gfx-actors-in-view;
-                                    toggled(on) => { root.graphics-edited("actors-in-view", on ? 1 : 0); }
                                 }
                             }
                             if root.selected-section == 1 && root.gfx-renderer == 1 && (root.gfx-profile == 1 || root.gfx-profile == 3): Card {
@@ -1007,6 +1076,7 @@ export component SettingsPanel inherits Window {
                             }
                             if root.selected-section == 1: Card {
                                 title: "Headset screen";
+                                Text { text: "VR"; font-size: 12px; font-weight: 600; color: Theme.text-secondary; }
 
                                 Row {
                                     label: "Distance";
@@ -1046,6 +1116,16 @@ export component SettingsPanel inherits Window {
                                     label: "Turn the camera with the mouse";
                                     checked <=> root.mouse-camera;
                                     toggled(on) => { root.mouse-camera-edited(on); }
+                                }
+                                if root.mouse-camera: SliderRow {
+                                    label: "Mouse sensitivity";
+                                    value-text: "\{root.mouse-sensitivity}%";
+                                    Slider {
+                                        accessible-label: "Mouse sensitivity";
+                                        minimum: 10; maximum: 200;
+                                        value: root.mouse-sensitivity;
+                                        changed(value) => { root.mouse-sensitivity-edited(round(value / 5) * 5); }
+                                    }
                                 }
                                 Divider { }
                                 ToggleRow {
@@ -1170,7 +1250,7 @@ export component SettingsPanel inherits Window {
                                 Divider { }
                                 Row {
                                     label: "Pointer";
-                                    ComboBox { accessible-label: "Headset pointer"; width: 150px; model: ["Eye gaze", "Head", "Left hand", "Right hand"]; current-index <=> root.assist-pointer; selected => { root.assist-edited("pointer", self.current-index); } }
+                                    Choice { accessible-label: "Headset pointer"; width: 150px; model: ["Eye gaze", "Head", "Left hand", "Right hand"]; current-index <=> root.assist-pointer; selected => { root.assist-edited("pointer", self.current-index); } }
                                 }
                                 Divider { }
                                 ToggleRow {
@@ -1510,6 +1590,8 @@ export component FrameRateOverlay inherits Window {
     in property <bool> rewinding;
     in property <string> notice;
     in property <bool> notice-error;
+    in property <string> notice-title;
+    in property <string> notice-detail;
     background: transparent;
     preferred-width: 304px;
     preferred-height: 110px;
@@ -1562,28 +1644,41 @@ export component FrameRateOverlay inherits Window {
         }
     }
     if root.notice != "": Rectangle {
-        y: 34px;
-        width: parent.width;
-        height: 76px;
-        background: #101114d9;
-        border-radius: 5px;
-        Icon {
-            x: 10px;
-            y: 13px;
-            data: root.notice-error ? Icons.alert : Icons.check;
-            color: root.notice-error ? Theme.bad : Theme.good;
+        x: 0px;
+        y: root.show-fps || root.fast-forward || root.rewinding ? 34px : 0px;
+        width: root.notice-error ? parent.width : 160px;
+        height: root.notice-error ? 76px : 40px;
+        background: #171b23f2;
+        border-radius: 8px;
+        border-width: 1px;
+        border-color: #ffffff24;
+        accessible-role: text;
+        accessible-label: root.notice;
+        Rectangle {
+            x: 10px; y: root.notice-error ? 10px : 8px;
+            width: 24px; height: 24px; border-radius: 12px;
+            background: root.notice-error ? #ffa3a319 : #8fd9a819;
+            Icon {
+                x: 4px; y: 4px; width: 16px; height: 16px;
+                data: root.notice-error ? Icons.alert : Icons.check;
+                color: root.notice-error ? Theme.bad : Theme.good;
+            }
         }
         Text {
-            x: 38px;
-            y: 8px;
-            width: parent.width - 48px;
-            height: parent.height - 16px;
-            text: root.notice;
-            color: Theme.text;
-            font-size: 13px;
-            wrap: word-wrap;
-            overflow: elide;
+            x: 44px; y: root.notice-error ? 10px : 11px;
+            width: parent.width - 56px; height: 18px;
+            text: root.notice-title; color: #f4f6fa;
+            font-size: 13px; font-weight: 600;
             vertical-alignment: center;
+            accessible-role: none;
+        }
+        if root.notice-error: Text {
+            x: 44px; y: 30px;
+            width: parent.width - 56px; height: 36px;
+            text: root.notice-detail; color: #c2c8d3;
+            font-size: 12px;
+            wrap: word-wrap; overflow: elide;
+            accessible-role: none;
         }
     }
 }
