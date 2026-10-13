@@ -379,18 +379,30 @@ fn battle_rings_in_gears_take_swipes() {
     assert_ne!(after["page"], 0x19, "it struck: {after}");
 }
 
-/// A battle's targets: an item from the lower slot's list, then a swipe
-/// left moves to the nearest target that way (the enemy), and a tap with
-/// the gaze on a party member steers the cursor there the game's own way
-/// and confirms it.
+/// A battle's list and targets: a tap with the gaze on the item list's
+/// fourth item (the second column's second row) chooses it, a swipe left
+/// moves to the nearest target that way (the enemy), and a tap with the
+/// gaze on a party member steers the cursor there the game's own way and
+/// confirms it.
 #[test]
 fn battle_targets_take_swipes_and_gaze() {
     let Some(mut player) = battle(false) else { return };
     player.gesture("swipe-down", None);
     player.rest(60);
     assert_eq!(player.context()["list"], true, "{}", player.context());
-    player.gesture("tap", None);
-    player.rest(40);
+    let list = player.session.runtime.targets().expect("the item list");
+    assert_eq!((list.what, list.entries.len(), list.selected), ("battle_list", 16, Some(0)));
+    player.gesture("tap", Some(list.entries[3].rect.centre()));
+    let mut last = None;
+    for _ in 0..60 {
+        match player.session.runtime.targets() {
+            Some(t) if t.what == "battle_list" => last = t.selected,
+            _ => {}
+        }
+        if player.context()["targeting"] == true { break; }
+        player.rest(1);
+    }
+    assert_eq!(last, Some(3), "the fourth item was selected, then confirmed");
     assert_eq!(player.context()["targeting"], true, "{}", player.context());
     let slot = |player: &mut Player| {
         let targets = player.session.runtime.targets().expect("the targets");

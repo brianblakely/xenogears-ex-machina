@@ -23,6 +23,8 @@
 //!   list cursor where it is drawn (`menu_state_current` +0x444, its
 //!   quad's corner; `MenuFlags.cursors_shown` +0x50: 1 two columns, 2 one).
 //!   The D-pad steps rows and columns.
+//! - A battle's lists (arts, items, the combo setup, a Gear's commands):
+//!   their cells as their cursor glyph is placed (`battle_animate_cursor_glyph`).
 //! - A battle's target choice (`battle_choose_target`): the candidates
 //!   (`battle_target_candidates` 0x800C3E90, 0xFF unused; selectable ones in
 //!   `battle_target_candidate_mask` 0x800C3D64; the selected slot
@@ -241,6 +243,7 @@ pub fn targets(memory: &dyn GameMemory, ui: Context) -> Option<Targets> {
         Context::Menu { screen, cursor, choice, choices, .. } => menu(memory, screen, cursor, choice, choices),
         Context::Dialogue { choice: Some(_) } => dialogue_choice(memory),
         Context::Battle { targeting: true, .. } => battle_targets(memory),
+        Context::Battle { list: true, .. } => battle_list(memory),
         _ => None,
     }
 }
@@ -350,6 +353,49 @@ fn dialogue_choice(memory: &dyn GameMemory) -> Option<Targets> {
             ground: None,
         }).collect();
         return Some(Targets { what: "dialogue_choice", entries, selected: usize::try_from(index).ok(), steps: Steps::Ring { count, next: GameAction::Down } });
+    }
+    None
+}
+
+const BATTLE_UI: u32 = 0x800D_2D28;
+const BATTLE_GRAPHICS: u32 = 0x800C_3EA4;
+/// The cursor glyph's corner from the place it is built at.
+const GLYPH_OFFSET: (i32, i32) = (0, 0);
+/// The battle's lists as `battle_animate_cursor_glyph`'s callers place
+/// their cursor: columns, rows, column step, row height and the first
+/// cell's place (the arts list, the item list, the combo setup, a Gear's
+/// commands).
+const BATTLE_LISTS: [(i32, i32, i32, i32, i32, i32); 4] = [
+    (2, 6, 0x84, 16, 0x2A, 0x38),
+    (2, 8, 0x82, 13, 0x2A, 0x63),
+    (2, 4, 0x8C, 16, 0x1E, 0x64),
+    (1, 4, 0x80, 16, 0x8C, 0x58),
+];
+
+/// A battle list (`battle_ui.cursorShown` +0x9E): its cells, found by where
+/// the cursor glyph (`battle_graphics` +0x27C8, the buffer at
+/// `battle_ui` +0xA7) is drawn.
+fn battle_list(memory: &dyn GameMemory) -> Option<Targets> {
+    let ui = ram(s32_at(memory, BATTLE_UI)?)?;
+    if u8_at(memory, ui + 0x9E)? == 0 {
+        return None;
+    }
+    let graphics = ram(s32_at(memory, BATTLE_GRAPHICS)?)?;
+    let poly = graphics + 0x27C8 + u32::from(u8_at(memory, ui + 0xA7)? & 1) * 0x28;
+    let px = i32::from(s16_at(memory, poly + 8)?) - GLYPH_OFFSET.0;
+    let py = i32::from(s16_at(memory, poly + 0xA)?) - GLYPH_OFFSET.1;
+    for (columns, rows, step, height, x, y) in BATTLE_LISTS {
+        let column = if px == x { 0 } else if columns == 2 && px == x + step { 1 } else { continue };
+        let dy = py - y;
+        if dy < 0 || dy % height != 0 || dy / height >= rows {
+            continue;
+        }
+        let entries = (0..rows).flat_map(|r| (0..columns).map(move |c| (r, c))).map(|(r, c)| Entry {
+            rect: Rect { x: (x + c * step + GLYPH_OFFSET.0) as f32, y: (y + r * height + GLYPH_OFFSET.1) as f32, width: (step - 4) as f32, height: height as f32 },
+            select: None,
+            ground: None,
+        }).collect();
+        return Some(Targets { what: "battle_list", entries, selected: Some((dy / height * columns + column) as usize), steps: Steps::Grid { columns: columns as usize } });
     }
     None
 }

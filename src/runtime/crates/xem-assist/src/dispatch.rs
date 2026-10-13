@@ -13,7 +13,7 @@
 //! | Menus | | select the entry gazed at (or the selected one) | later entries; next character outside a list | earlier entries; previous character | | back |
 //! | Battle commands | | next page of the ring | the ring's upper slot | lower | left | right |
 //! | Battle attacks | | | Weak | Fierce | Strong | end the sequence |
-//! | Battle lists | | select | later | earlier | | back |
+//! | Battle lists | | select the entry gazed at (or the selected one) | later | earlier | | back |
 //! | Battle targets | | the target gazed at (or the selected one) | up | down | left | back |
 use crate::gesture::{Gesture, Swipe};
 use serde::Serialize;
@@ -112,7 +112,7 @@ pub fn tap_at(at: (f32, f32), ui: Context, field: Option<&Field>, targets: Optio
             pinch(ui, Some(at), Some(field))
         }
         Context::Dialogue { choice: None } => Some(press([GameAction::Confirm])),
-        Context::Dialogue { choice: Some(_) } | Context::Menu { .. } | Context::Battle { targeting: true, .. } => {
+        Context::Dialogue { choice: Some(_) } | Context::Menu { .. } | Context::Battle { targeting: true, .. } | Context::Battle { list: true, .. } => {
             let index = targets?.at(at)?;
             Some(Out::Select { index, confirm: true })
         }
@@ -145,7 +145,7 @@ fn tap(ui: Context, aim: Aim, field: Option<&Field>, targets: Option<&Targets>) 
             let index = targets.zip(aim).and_then(|(t, aim)| t.at(aim))?;
             Some(Out::Select { index, confirm: true })
         }
-        Context::Menu { .. } | Context::Battle { targeting: true, .. } => Some(match targets.zip(aim).and_then(|(t, aim)| t.at(aim)) {
+        Context::Menu { .. } | Context::Battle { targeting: true, .. } | Context::Battle { list: true, .. } => Some(match targets.zip(aim).and_then(|(t, aim)| t.at(aim)) {
             Some(index) => Out::Select { index, confirm: true },
             None => press([GameAction::Confirm]),
         }),
@@ -262,7 +262,7 @@ fn bounds_contain(targets: &Targets, aim: (f32, f32)) -> bool {
 pub fn receiving_region(ui: Context, targets: &Targets, aim: (f32, f32)) -> Option<(f32, f32, f32, f32)> {
     let scrolls = match ui {
         Context::Menu { switch, .. } => targets.what != "yes_no" && (!switch || targets.at(aim).is_some() || bounds_contain(targets, aim)),
-        Context::Dialogue { choice: Some(_) } => true,
+        Context::Dialogue { choice: Some(_) } | Context::Battle { list: true, .. } => true,
         _ => false,
     };
     (scrolls && !targets.entries.is_empty()).then(|| bounds(targets))

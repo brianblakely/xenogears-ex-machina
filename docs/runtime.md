@@ -1041,8 +1041,9 @@ command's choice window (the arc tables `menu_highlight_x/y_table`; the
 labels sit about the tables' points), the menu's lists (the item and arts
 screens' two columns of eight rows, the equipment screen's column, as
 `menu_list_cursor_place` lays them out around the drawn list cursor), the
-shops' commands, Yes/No (their markers' quads), a dialogue's choice lines
-and a battle's targets (each
+shops' commands, Yes/No (their markers' quads), a dialogue's choice lines,
+a battle's lists (arts, items, the combo setup, a Gear's commands, as
+their cursor glyph is placed) and a battle's targets (each
 candidate's sprite projected as `battle_get_slot_screen_box` does, about a
 person's size), with the selected entry and how the D-pad steps it (a
 battle target is reached by the moves `battle_find_candidate_in_direction`
@@ -1062,8 +1063,8 @@ reports the frames run):
   game's cursor there with the D-pad; a click on an entry selects it and
   then confirms it once; a click elsewhere is the mouse's binding. An entry
   the cursor stops short of (past a list's end) is given up after three
-  steps that leave the selection where it was. Battle and shop lists step
-  by the wheel and the D-pad. With the
+  steps that leave the selection where it was. Shops' buy and sell lists
+  step by the wheel and the D-pad. With the
   mouse camera on, the game holds the mouse only while nothing on the
   screen is selectable: a menu or a choice lets it go.
 
@@ -1165,7 +1166,8 @@ the browser's WebXR sessions (plan.md, the hand/gaze contract):
   (selecting it first unless highlighted, whose direction would flip the
   page), a tap pages the ring (its mark drawn below it); the attack ring:
   up Weak, left Strong, down Fierce, right ends the sequence; lists
-  confirm on a tap and back out to the right; targets take the one under
+  take the entry under the gaze on a tap (else confirm the selected one)
+  and back out to the right; targets take the one under
   the gaze on a tap (else confirm the selected one), move up, down and
   left with those swipes and back out to the right; beside the screen
   they also stand as a list (ALLY 1-3, FOE n; the selected one lit) for
@@ -1220,8 +1222,8 @@ dialogue pages (a choice answered under the gaze), opens and leaves the
 menu, buys with the quantity keys, stops and pauses on lost tracking,
 plays both battle rings (on foot: pages, slots, AP spent by Weak and
 Strong, the sequence ended; in Gears: the Gear's ring and a strike),
-chooses battle targets (a swipe to the nearest that way, a tap under the
-gaze, a key of the target list),
+chooses a battle item under the gaze and battle targets (a swipe to the
+nearest that way, a tap under the gaze, a key of the target list),
 flies the world map by the captured stick and boards with L2+R2, plays a
 Battling bout (A, Dash held, the stick, Pause) and jumps from a running
 route (two frames from the thumb's touch to the air; the route goes on
