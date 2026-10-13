@@ -6,7 +6,12 @@
 //! reaching, turning and resting fists that were never opened. All of it
 //! is seeded and repeatable. A headset's own trackers differ: these numbers
 //! qualify the recognizers' margins, not a device.
-use crate::gesture::{Frame, Gesture, Recognizer, Swipe, JOINTS};
+//!
+//! Sustained use is measured by its physical proxies, not by people: the
+//! gestures made from a relaxed posture (hands low, wrists dropped and
+//! turned in, either hand alone), and an hour's session whose tremor,
+//! slowness and wrist droop grow as a tiring hand's would.
+use crate::gesture::{Frame, Gesture, Hand, Recognizer, Swipe, JOINTS};
 use crate::synthetic::{self, Frames};
 use glam::{Quat, Vec3};
 
@@ -141,9 +146,53 @@ fn open_hands() -> [Option<[Vec3; JOINTS]>; 2] {
     synthetic::gesture("pause").expect("known")[0]
 }
 
+/// How the hands are held during a measure: turned as a whole (`posture`,
+/// about the point between them) and, with `alone`, only that hand
+/// tracked (the left one mirroring the right's gesture).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Setup {
+    pub posture: Quat,
+    pub alone: Option<Hand>,
+}
+
+impl Default for Setup {
+    fn default() -> Self {
+        Setup { posture: Quat::IDENTITY, alone: None }
+    }
+}
+
+impl Setup {
+    /// Resting: wrists dropped 35 degrees and turned in 15, as forearms
+    /// lying on the lap or the armrests hold them.
+    pub fn relaxed(alone: Option<Hand>) -> Setup {
+        Setup { posture: Quat::from_rotation_x(-0.6) * Quat::from_rotation_y(0.26), alone }
+    }
+
+    fn arrange(&self, hands: [Option<[Vec3; JOINTS]>; 2]) -> [Option<[Vec3; JOINTS]>; 2] {
+        let hands = hands.map(|h| h.map(|h| h.map(|j| self.posture * j)));
+        match self.alone {
+            None => hands,
+            Some(Hand::Right) => [None, hands[1]],
+            Some(Hand::Left) => [hands[1].map(synthetic::left), None],
+        }
+    }
+}
+
 /// Runs `tries` of a gesture, each from open hands at rest.
 pub fn measure(name: &'static str, tries: usize, noise: &Noise, seed: u64) -> Measure {
+    measure_with(name, tries, noise, seed, &Setup::default())
+}
+
+/// [`measure`] with the hands held as `setup` says.
+pub fn measure_with(name: &'static str, tries: usize, noise: &Noise, seed: u64, setup: &Setup) -> Measure {
     let mut rng = Rng::new(seed);
+    // The left hand mirrors the right's motion: across the finger, its
+    // swipe goes the other way on the screen.
+    let expected = match (setup.alone, name) {
+        (Some(Hand::Left), "swipe-left") => "swipe-right",
+        (Some(Hand::Left), "swipe-right") => "swipe-left",
+        _ => name,
+    };
     let base = synthetic::gesture(name).expect("a known gesture");
     let mut measure = Measure { name, tries, ..Measure::default() };
     let mut latency = 0usize;
@@ -152,7 +201,7 @@ pub fn measure(name: &'static str, tries: usize, noise: &Noise, seed: u64) -> Me
         let mut time = 0.0;
         let mut frame = |recognizer: &mut Recognizer, hands: [Option<[Vec3; JOINTS]>; 2]| {
             time += 1.0 / 72.0;
-            recognizer.update(&Frame { time, hands, view_right: Vec3::X, ..Frame::default() })
+            recognizer.update(&Frame { time, hands: setup.arrange(hands), view_right: Vec3::X, ..Frame::default() })
         };
         let rest = varied(&mut rng, &vec![open_hands(); 4], noise);
         for hands in rest {
@@ -177,9 +226,9 @@ pub fn measure(name: &'static str, tries: usize, noise: &Noise, seed: u64) -> Me
         let mut wrong = false;
         for (i, hands) in frames.into_iter().chain(varied(&mut rng, &vec![open_hands(); 6], noise)).enumerate() {
             for gesture in frame(&mut recognizer, hands) {
-                if matches(name, &gesture) && seen.is_none() {
+                if matches(expected, &gesture) && seen.is_none() {
                     seen = Some(i.saturating_sub(due));
-                } else if !matches(name, &gesture) && !matches!(gesture, Gesture::TrackingLost { .. }) {
+                } else if !matches(expected, &gesture) && !matches!(gesture, Gesture::TrackingLost { .. }) {
                     wrong = true;
                 }
             }
@@ -201,14 +250,66 @@ pub fn measure(name: &'static str, tries: usize, noise: &Noise, seed: u64) -> Me
 
 /// Gestures fired over `minutes` of idle play at 72 frames a second.
 pub fn false_activations(minutes: f32, noise: &Noise, seed: u64) -> Vec<Gesture> {
+    false_activations_with(minutes, noise, seed, &Setup::default())
+}
+
+/// [`false_activations`] with the hands held as `setup` says.
+pub fn false_activations_with(minutes: f32, noise: &Noise, seed: u64, setup: &Setup) -> Vec<Gesture> {
     let mut rng = Rng::new(seed);
     let frames = (minutes * 60.0 * 72.0) as usize;
     let mut recognizer = Recognizer::default();
     let mut fired = Vec::new();
     for (i, hands) in idle(&mut rng, frames, noise).into_iter().enumerate() {
-        fired.extend(recognizer.update(&Frame { time: i as f64 / 72.0, hands, view_right: Vec3::X, ..Frame::default() }));
+        fired.extend(recognizer.update(&Frame { time: i as f64 / 72.0, hands: setup.arrange(hands), view_right: Vec3::X, ..Frame::default() }));
     }
     fired
+}
+
+/// A stretch of a sustained session: every gesture tried (one-hand ones
+/// with the hands taking turns alone) and idle play, under that stretch's
+/// fatigue.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Stretch {
+    /// Minutes into the session at its start.
+    pub from: f32,
+    pub noise: (f32, f32, usize),
+    /// The wrists' droop, degrees.
+    pub droop: f32,
+    pub tries: usize,
+    pub recognised: usize,
+    pub wrong: usize,
+    pub latency: f32,
+    pub idle_activations: usize,
+    pub idle_toggles: usize,
+}
+
+/// A session of `stretches` stretches of `minutes` each: from rested hands
+/// (2 mm tremor, poses held up to 4 frames, wrists dropped 10 degrees) to
+/// tired ones (6 mm tremor, poses held up to 8 frames, wrists dropped 40
+/// degrees), `tries` of each gesture a stretch. The tracker's per-joint
+/// jitter stays its 2 mm: it is the device's, not the hand's.
+pub fn sustained(stretches: usize, minutes: f32, tries: usize, seed: u64) -> Vec<Stretch> {
+    (0..stretches).map(|k| {
+        let f = k as f32 / (stretches.max(2) - 1) as f32;
+        let noise = Noise { jitter: 0.002, tremor: 0.002 + 0.004 * f, slowest: 4 + (4.0 * f).round() as usize, turn: 0.35 };
+        let droop = 10.0 + 30.0 * f;
+        let posture = Quat::from_rotation_x(-droop.to_radians()) * Quat::from_rotation_y(0.26);
+        let mut stretch = Stretch { from: k as f32 * minutes, noise: (noise.jitter, noise.tremor, noise.slowest), droop, ..Stretch::default() };
+        let mut latency = 0.0;
+        for (i, name) in GESTURES.into_iter().enumerate() {
+            let alone = if name == "prayer" { None } else { Some(Hand::BOTH[(i + k) % 2]) };
+            let m = measure_with(name, tries, &noise, seed + (k * 16 + i) as u64, &Setup { posture, alone });
+            stretch.tries += m.tries;
+            stretch.recognised += m.recognised;
+            stretch.wrong += m.wrong;
+            latency += m.latency * m.recognised as f32;
+        }
+        stretch.latency = latency / stretch.recognised.max(1) as f32;
+        let fired = false_activations_with(minutes, &noise, seed + 1000 + k as u64, &Setup { posture, alone: None });
+        stretch.idle_activations = fired.len();
+        stretch.idle_toggles = fired.iter().filter(|g| matches!(g, Gesture::Pause { .. } | Gesture::Inspect { .. } | Gesture::Settings | Gesture::ScaleBegin)).count();
+        stretch
+    }).collect()
 }
 
 /// Pause grabs `count` times in quick succession (each closing and
@@ -276,6 +377,26 @@ mod tests {
         let toggles = fired.iter().filter(|g| matches!(g, Gesture::Pause { .. } | Gesture::Inspect { .. } | Gesture::Settings | Gesture::ScaleBegin)).count();
         assert_eq!(toggles, 0, "{fired:?}");
         assert!(fired.len() <= 5, "{} activations in five minutes: {fired:?}", fired.len());
+    }
+
+    #[test]
+    fn a_relaxed_posture_works_with_either_hand_alone() {
+        let noise = Noise::default();
+        for alone in [Hand::Right, Hand::Left] {
+            for (i, name) in GESTURES.into_iter().filter(|n| *n != "prayer").enumerate() {
+                let m = measure_with(name, 100, &noise, 31 + i as u64, &Setup::relaxed(Some(alone)));
+                assert!(m.recognised >= 92, "{alone:?} {m:?}");
+                assert!(m.latency <= 4.0, "{alone:?} {m:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn tiring_hands_keep_their_gestures_and_fire_no_toggles() {
+        for stretch in sustained(3, 1.0, 40, 77) {
+            assert!(stretch.recognised * 100 >= stretch.tries * 93, "{stretch:?}");
+            assert_eq!(stretch.idle_toggles, 0, "{stretch:?}");
+        }
     }
 
     #[test]

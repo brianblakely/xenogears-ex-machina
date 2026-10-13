@@ -78,6 +78,12 @@ const ACTIVITY_BUTTONS: [(u16, &[GameAction], &str); 14] = [
     (0x2000, &[GameAction::Right], ">"),
 ];
 
+/// The game's button (as the field reads it) an activity deck's action
+/// presses.
+pub fn activity_button(action: GameAction) -> Option<u16> {
+    ACTIVITY_BUTTONS.iter().find(|(_, actions, _)| actions[0] == action).map(|(bit, ..)| *bit)
+}
+
 /// A deck's keys, top to bottom.
 pub fn keys(deck: Deck) -> Vec<Key> {
     use GameAction::*;

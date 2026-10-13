@@ -1239,11 +1239,32 @@ toggles nothing; every one-hand gesture works with either hand alone. The
 XR game smoke plays scripted gestures in OpenXR (`--xr-hands`: Pause,
 prayer hands, a pinch on the panel's Close, a pinch that walks) and the
 browser's `tests/xr-hands.test.mjs` drives IWER's hands (grabs, prayer,
-lost tracking) and controllers (the trigger on the panel's Close). What
-emulators cannot show: a headset's own tracking noise and dropouts, eye
-tracking permission and quality, Meta's microgestures, and sustained
-comfort; the recognizers need no held pose, dwell or raised arm, and the
-decks keep hands low.
+lost tracking) and controllers (the trigger on the panel's Close).
+
+The game-level harness also covers every field map whose scripts read the
+pad (84, from `events.py --buttons`): its event reports the map and those
+buttons, and each key of its deck, gazed at and tapped, reaches the game
+(`pad_port0_held`, after the game's own button assignment, every other map
+under a swapped one) as exactly the button the scripts test; the stick
+holds diagonals where they read directions. It interrupts an approach to
+talk with the menu's swipe (the route stops, no Confirm reaches the menu,
+closing it restarts nothing) and replaces one with a pinch, and with eye
+gaze lost a pinch aims nowhere while the head or a hand's ray aims instead.
+
+Sustained use is measured by its physical proxies (`cargo run -p
+xem-assist --example reliability`): from a relaxed posture (wrists dropped
+35 degrees and turned in 15, either hand alone) taps reach 97.7%, swipes
+up and down 99.7-99.8%, across 93.6-95.0%, grabs 100%; over an hour of
+tiring hands (tremor from 2 to 6 mm, poses held up to 8 frames, wrists
+dropping from 10 to 40 degrees, the hands taking turns alone) every
+ten-minute stretch recognises 97.9-99.0% of gestures within a frame or so
+and fires nothing during idle play. The recognizers need no held pose,
+dwell or raised arm, and the decks keep hands low. A tracker noisier than
+2 mm per joint costs the thumb gestures first: at 3 mm taps fall to 80.9%
+and swipes across to 73-75% (1.3 idle activations a minute), at 4 mm to
+70% and 50% (32 a minute); grabs, pinch and prayer hold. A device's own
+noise, its eye tracking and Meta's microgestures need that device, and
+people's comfort needs people.
 
 ## Crates
 

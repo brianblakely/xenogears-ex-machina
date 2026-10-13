@@ -169,6 +169,11 @@ pub fn script_buttons(map: u16) -> u16 {
     SCRIPT_BUTTONS.binary_search_by_key(&map, |(m, _)| *m).map_or(0, |i| SCRIPT_BUTTONS[i].1)
 }
 
+/// Every map whose scripts test the pad, with the buttons they test.
+pub fn script_button_maps() -> &'static [(u16, u16)] {
+    &SCRIPT_BUTTONS
+}
+
 const SCRIPT_BUTTONS: [(u16, u16); 84] = [
     (0, 0x004c), (4, 0x00e0), (14, 0x0020), (15, 0xf080), (94, 0x0020), (95, 0x0040),
     (98, 0x0020), (100, 0x0040), (118, 0x0020), (123, 0x0020), (125, 0x0022), (129, 0x0020),

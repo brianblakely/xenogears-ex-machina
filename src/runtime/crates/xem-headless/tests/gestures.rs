@@ -66,6 +66,8 @@ struct Player {
     time: f64,
     /// Game frames run (none while paused).
     ran: u64,
+    /// The interface context to play in instead of the one read each frame.
+    ui: Option<xem_core::context::Context>,
 }
 
 impl Player {
@@ -77,7 +79,7 @@ impl Player {
         };
         let mut headset = Headset::default();
         headset.source = PointerSource::Eye;
-        Player { session, input: PlayerInput::default(), headset, scaling: Scaling::default(), bindings: Default::default(), screen, time: 0.0, ran: 0 }
+        Player { session, input: PlayerInput::default(), headset, scaling: Scaling::default(), bindings: Default::default(), screen, time: 0.0, ran: 0, ui: None }
     }
 
     fn context(&mut self) -> Value {
@@ -86,21 +88,30 @@ impl Player {
 
     /// One headset frame with these hands and the gaze on `aim`.
     fn frame(&mut self, hands: [Option<[Vec3; 25]>; 2], aim: Option<(f32, f32)>) {
-        let head = Pose { position: Vec3::new(0.0, 1.6, 0.0), orientation: Quat::IDENTITY };
-        let gaze = aim.map(|aim| Pose {
-            position: head.position,
-            orientation: Quat::from_rotation_arc(Vec3::NEG_Z, (self.screen.point(aim) - head.position).normalize()),
-        });
+        // The aim comes from the pointer source chosen: the eyes, the head
+        // turned toward it, or a hand's ray (a controller's or the
+        // runtime's) from beside the body.
+        let eyes = Vec3::new(0.0, 1.6, 0.0);
+        let toward = |from: Vec3| aim.map(|aim| Pose { position: from, orientation: Quat::from_rotation_arc(Vec3::NEG_Z, (self.screen.point(aim) - from).normalize()) });
+        let (head, gaze, rays) = match self.headset.source {
+            PointerSource::Eye => (Pose { position: eyes, orientation: Quat::IDENTITY }, toward(eyes), [None, None]),
+            PointerSource::Head => (toward(eyes).unwrap_or(Pose { position: eyes, orientation: Quat::IDENTITY }), None, [None, None]),
+            PointerSource::LeftRay | PointerSource::RightRay => {
+                let hand = Vec3::new(0.2, 1.3, -0.3);
+                (Pose { position: eyes, orientation: Quat::IDENTITY }, None, [None, toward(hand)])
+            }
+        };
         let input = Input {
             time: self.time,
             head: Some(head),
             gaze,
-            hands: synthetic::in_front(hands, head.position, head.orientation),
+            rays,
+            hands: synthetic::in_front(hands, head.position, Quat::IDENTITY),
             focused: true,
             ..Input::default()
         };
         self.time += 1.0 / 60.0;
-        let ui = self.session.runtime.context();
+        let ui = self.ui.unwrap_or_else(|| self.session.runtime.context());
         let field = (self.session.runtime.services().mode == Some(1)).then(|| xem_core::field::Field::read(self.session.runtime.memory())).flatten();
         let targets = self.session.runtime.targets();
         let effects = self.headset.update(&input, &self.screen, ui, field.as_ref(), targets.as_ref());
@@ -603,4 +614,146 @@ fn a_running_jump_keeps_the_route() {
         player.rest(1);
     }
     assert_eq!(player.session.assist_outcome, Some(xem_core::assist::Outcome::Arrived), "the route went on after landing");
+}
+
+fn pad_held(player: &mut Player) -> u16 {
+    let mut bytes = [0u8; 2];
+    player.session.runtime.memory().read(0x8005_9570, &mut bytes).expect("pad_port0_held");
+    u16::from_le_bytes(bytes)
+}
+
+/// Every field map whose scripts test the pad (84, `events.py --buttons`):
+/// its event reports the map and those buttons as the game runs it, and
+/// each key of its activity deck, gazed at and tapped, reaches the game as
+/// exactly the button the scripts test (`pad_port0_held`, after the game's
+/// own button assignment: every other map under a swapped one); where the
+/// scripts read directions, the captured stick holds a diagonal.
+#[test]
+fn every_script_activity_deck_reaches_the_buttons_its_scripts_test() {
+    let Some(disc) = disc() else { return };
+    let mut checked = Vec::new();
+    for (n, &(map, buttons)) in xem_core::context::script_button_maps().iter().enumerate() {
+        let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+        run(&mut session, json!({"cmd": "enter_field", "map": map}));
+        if n % 2 == 1 {
+            // Confirm and Cancel swapped from the default.
+            run(&mut session, json!({"cmd": "write_memory", "address": 0x8005_0238u64, "hex": "0001030204050607"}));
+        }
+        let mut event = None;
+        for _ in 0..600 {
+            let ui = session.runtime.context();
+            if let xem_core::context::Context::Event { .. } = ui {
+                event = Some(ui);
+                break;
+            }
+            run(&mut session, json!({"cmd": "frames", "count": 1}));
+        }
+        let Some(ui) = event else {
+            checked.push(format!("{map}: no event"));
+            continue;
+        };
+        assert_eq!(ui, xem_core::context::Context::Event { map, buttons }, "map {map}");
+        let mut player = Player::new(session);
+        player.ui = Some(ui);
+        let deck = xem_assist::arcade::deck(ui).expect("a deck");
+        let keys = xem_assist::arcade::keys(deck);
+        let quads = xem_assist::draw::side_keys(&player.screen, keys.len());
+        for (i, key) in keys.iter().enumerate() {
+            let local = quads[i].1.pose.position - player.screen.quad.pose.position;
+            let aim = ((local.x / player.screen.quad.size.0 + 0.5) * 320.0, (0.5 - local.y / player.screen.quad.size.1) * 224.0);
+            let mut seen = 0;
+            for hands in synthetic::gesture("tap").unwrap() {
+                player.frame(hands, Some(aim));
+                seen |= pad_held(&mut player);
+            }
+            let open = synthetic::gesture("pause").unwrap()[0];
+            for _ in 0..8 {
+                player.frame(open, Some(aim));
+                seen |= pad_held(&mut player);
+            }
+            let bit = xem_assist::arcade::activity_button(key.actions[0]).unwrap();
+            assert_eq!(seen & buttons, bit, "map {map}: key {} gave {seen:#06x}", key.label);
+        }
+        if buttons & 0x3000 == 0x3000 {
+            // Pinch to capture the stick, then the hand ahead and right.
+            let pinch = synthetic::gesture("pinch").unwrap();
+            for hands in &pinch {
+                player.frame(*hands, None);
+            }
+            let open = synthetic::gesture("pause").unwrap()[0];
+            let moved = open.map(|hand| hand.map(|j| j.map(|p| p + Vec3::new(0.06, 0.0, -0.06))));
+            let mut seen = 0;
+            for _ in 0..8 {
+                player.frame(moved, None);
+                seen |= pad_held(&mut player);
+            }
+            assert_eq!(seen & 0xF000, 0x3000, "map {map}: the stick's diagonal");
+        }
+        checked.push(format!("{map}: {} keys", keys.len()));
+    }
+    eprintln!("{}", checked.join("\n"));
+    let missing: Vec<_> = checked.iter().filter(|c| c.ends_with("no event")).collect();
+    assert!(missing.is_empty(), "{missing:?}");
+}
+
+/// An approach to talk is interrupted by the menu's swipe: the route
+/// stops, its Confirm never reaches the menu (it opens on its own top
+/// command, nothing chosen), and closing the menu does not restart it. A
+/// new pinch replaces an approach.
+#[test]
+fn interrupted_approaches_never_confirm_into_another_interface() {
+    let Some(mut player) = walking(5) else { return };
+    let field = player.field();
+    let villager = field.actors[11].unwrap().position;
+    let aim = field.camera.project(villager).unwrap();
+    player.gesture("tap", Some(aim));
+    assert!(player.session.assist.is_some(), "approaching");
+    player.rest(6);
+    player.gesture("swipe-down", None);
+    assert!(player.session.assist.is_none());
+    assert_eq!(player.session.assist_outcome, Some(xem_core::assist::Outcome::Stopped));
+    player.rest(200);
+    let menu = player.context();
+    assert_eq!(menu["kind"], "menu", "{menu}");
+    let targets = player.session.runtime.targets().expect("the commands");
+    assert_eq!(targets.what, "commands", "no command was entered");
+    for _ in 0..6 {
+        if player.context()["kind"] == "walk" { break; }
+        player.gesture("swipe-right", None);
+        player.rest(60);
+    }
+    assert_eq!(player.context()["kind"], "walk");
+    let at = player.field().player().unwrap().position;
+    player.rest(120);
+    assert!(player.session.assist.is_none(), "the route did not restart");
+    assert_eq!(player.context()["kind"], "walk", "no talk began");
+    assert!(player.field().player().unwrap().position.planar(at) < 1.0, "stood still");
+    // An approach replaced by a pinch on the floor.
+    let field = player.field();
+    let aim = field.camera.project(villager).unwrap();
+    player.gesture("tap", Some(aim));
+    player.rest(4);
+    let floor = field.camera.project(xem_core::field::V3::new(at.x + 60.0, at.y, at.z)).unwrap();
+    player.gesture("pinch", Some(floor));
+    assert!(matches!(player.session.assist.as_ref().map(|a| &a.intent), Some(xem_core::assist::Intent::Walk { .. })), "the new route");
+}
+
+/// Eye gaze lost: a pinch walks nowhere (no other target replaces it).
+/// The explicit alternatives aim the same: the head, or a hand's ray.
+#[test]
+fn without_gaze_nothing_is_aimed_and_the_head_or_a_ray_aims_instead() {
+    let Some(mut player) = walking(30) else { return };
+    let goal = xem_core::field::V3::new(-80.0, 0.0, -90.0);
+    player.gesture("pinch", None);
+    assert!(player.session.assist.is_none(), "no gaze, no destination");
+    for source in [PointerSource::Head, PointerSource::RightRay] {
+        player.headset.source = source;
+        // The camera follows the player: the goal as it shows now.
+        let aim = player.field().camera.project(goal).unwrap();
+        player.gesture("pinch", Some(aim));
+        assert!(player.session.assist.is_some(), "{source:?} aims: {:?}", player.session.assist_outcome);
+        player.gesture("tap", Some((160.0, 20.0)));
+        player.rest(2);
+        assert!(player.session.assist.is_none(), "{source:?}: a tap on the ground stops");
+    }
 }
