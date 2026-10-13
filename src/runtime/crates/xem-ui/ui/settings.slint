@@ -648,6 +648,15 @@ export component SettingsPanel inherits Window {
     in-out property <float> fast-forward-position;
     in-out property <bool> invert-trigger-chords;
     in-out property <bool> mouse-camera;
+    // The assisted controls (xem_settings::Assisted): hand gestures, the
+    // headset pointer (0 eye gaze, 1 head, 2 left hand, 3 right hand), the
+    // ledge brake, touch controls, reduced transparency and motion.
+    in-out property <bool> assist-gestures;
+    in-out property <int> assist-pointer;
+    in-out property <bool> assist-ledge-brake;
+    in-out property <bool> assist-touch;
+    in-out property <bool> assist-solid;
+    in-out property <bool> assist-still;
     in-out property <bool> rewind-enabled;
     in-out property <int> rewind-interval-seconds;
     in property <int> rewind-interval-max;
@@ -669,6 +678,9 @@ export component SettingsPanel inherits Window {
     callback fast-forward-rate-edited(int);
     callback invert-trigger-chords-edited(bool);
     callback mouse-camera-edited(bool);
+    // An assisted-controls choice by name (gestures, pointer, ledge-brake,
+    // touch, solid, still) and value.
+    callback assist-edited(string, int);
     callback rewind-enabled-edited(bool);
     callback rewind-interval-edited(int);
     callback rewind-history-edited(int);
@@ -1156,6 +1168,50 @@ export component SettingsPanel inherits Window {
                                 HorizontalLayout {
                                     alignment: end;
                                     Button { text: "Restore defaults"; clicked => { root.game-bindings-reset(); } }
+                                }
+                            }
+                            if root.selected-section == 2: Card {
+                                title: "Headsets and touch screens";
+                                description: "Assisted controls: hand gestures and a pointer in a headset, the control deck on a touch screen.";
+                                ToggleRow {
+                                    label: "Hand gestures";
+                                    help: root.assist-gestures ? "Grab to pause, pinch to walk, thumb taps and swipes; prayer hands open Settings." : "Controllers and pointers only.";
+                                    checked <=> root.assist-gestures;
+                                    toggled(on) => { root.assist-edited("gestures", on ? 1 : 0); }
+                                }
+                                Divider { }
+                                Row {
+                                    label: "Pointer";
+                                    help: "What aims gestures in a headset; an unavailable one aims at nothing.";
+                                    ComboBox { accessible-label: "Headset pointer"; width: 150px; model: ["Eye gaze", "Head", "Left hand", "Right hand"]; current-index <=> root.assist-pointer; selected => { root.assist-edited("pointer", self.current-index); } }
+                                }
+                                Divider { }
+                                ToggleRow {
+                                    label: "Ledge brake";
+                                    help: root.assist-ledge-brake ? "Assisted walking stops at a jump's edge for your jump." : "Assisted walking keeps heading over a jump's edge; the jump stays yours.";
+                                    checked <=> root.assist-ledge-brake;
+                                    toggled(on) => { root.assist-edited("ledge-brake", on ? 1 : 0); }
+                                }
+                                Divider { }
+                                ToggleRow {
+                                    label: "Touch controls";
+                                    help: "A control deck beside the picture once you touch the screen.";
+                                    checked <=> root.assist-touch;
+                                    toggled(on) => { root.assist-edited("touch", on ? 1 : 0); }
+                                }
+                                Divider { }
+                                ToggleRow {
+                                    label: "Reduce transparency";
+                                    help: "Draws the cursors and controls solid.";
+                                    checked <=> root.assist-solid;
+                                    toggled(on) => { root.assist-edited("solid", on ? 1 : 0); }
+                                }
+                                Divider { }
+                                ToggleRow {
+                                    label: "Reduce motion";
+                                    help: "Keeps the cursors and controls still.";
+                                    checked <=> root.assist-still;
+                                    toggled(on) => { root.assist-edited("still", on ? 1 : 0); }
                                 }
                             }
                             if root.selected-section == 2: Card {

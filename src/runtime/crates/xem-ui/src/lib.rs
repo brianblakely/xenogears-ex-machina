@@ -453,6 +453,18 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_fast_forward_position(panel.get_fast_forward_rate() as f32);
     panel.set_invert_trigger_chords(settings.invert_trigger_chords);
     panel.set_mouse_camera(settings.mouse_camera);
+    let assisted = settings.assisted;
+    panel.set_assist_gestures(assisted.gestures);
+    panel.set_assist_pointer(match assisted.pointer {
+        xem_settings::XrPointer::Eye => 0,
+        xem_settings::XrPointer::Head => 1,
+        xem_settings::XrPointer::LeftHand => 2,
+        xem_settings::XrPointer::RightHand => 3,
+    });
+    panel.set_assist_ledge_brake(assisted.ledge_brake);
+    panel.set_assist_touch(assisted.touch_controls);
+    panel.set_assist_solid(assisted.reduced_transparency);
+    panel.set_assist_still(assisted.reduced_motion);
     panel.set_rewind_enabled(settings.rewind_enabled);
     panel.set_rewind_interval_seconds(settings.rewind_interval_seconds as i32);
     panel.set_rewind_interval_max(xem_settings::MAX_REWIND_INTERVAL_SECONDS as i32);
@@ -591,6 +603,29 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
     panel.on_invert_trigger_chords_edited({
         let apply = apply.clone();
         move |invert| apply(Some(SettingChange::InvertTriggerChords(invert)))
+    });
+    panel.on_assist_edited({
+        let apply = apply.clone();
+        let settings = settings.clone();
+        move |name, value| {
+            let mut assisted = settings.borrow().settings().assisted;
+            let on = value != 0;
+            match name.as_str() {
+                "gestures" => assisted.gestures = on,
+                "pointer" => assisted.pointer = match value {
+                    0 => xem_settings::XrPointer::Eye,
+                    2 => xem_settings::XrPointer::LeftHand,
+                    3 => xem_settings::XrPointer::RightHand,
+                    _ => xem_settings::XrPointer::Head,
+                },
+                "ledge-brake" => assisted.ledge_brake = on,
+                "touch" => assisted.touch_controls = on,
+                "solid" => assisted.reduced_transparency = on,
+                "still" => assisted.reduced_motion = on,
+                _ => return,
+            }
+            apply(Some(SettingChange::Assisted(assisted)))
+        }
     });
     panel.on_mouse_camera_edited({
         let apply = apply.clone();

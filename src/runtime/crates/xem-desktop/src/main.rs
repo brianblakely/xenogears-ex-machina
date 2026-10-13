@@ -33,6 +33,8 @@ struct Options {
     xr_capture: Option<PathBuf>,
     /// Headset tests: scripted hand gestures (headset frame, gesture name).
     xr_hands: Vec<(u64, String)>,
+    /// Agents' commands on stdin while the game plays (`--control`).
+    control: bool,
 }
 
 fn options() -> Result<Options, String> {
@@ -49,6 +51,7 @@ fn options() -> Result<Options, String> {
         xr_pause: None,
         xr_capture: None,
         xr_hands: Vec::new(),
+        control: false,
     };
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -74,6 +77,7 @@ fn options() -> Result<Options, String> {
                 options.exit_at_frame = Some(count.parse().map_err(|_| format!("bad frame {count:?}"))?);
             }
             "--xr" => options.xr = true,
+            "--control" => options.control = true,
             "--xr-pause" => {
                 let value = args.next().ok_or("--xr-pause needs FRAME,COUNT")?;
                 let (at, count) = value.split_once(',').ok_or("--xr-pause needs FRAME,COUNT")?;
@@ -94,7 +98,7 @@ fn options() -> Result<Options, String> {
                 println!(
                     "xem-desktop [--disc DISC [--cards DIR] [--bios FILE] [--script LOG] \
                      [--exit-at-frame N] [--xr [--xr-pause N,M] [--xr-capture DIR] [--xr-hands N:GESTURE,...]]] [--show-settings] \
-                     [--exit-after-frames N] [--screenshot out.png]\n\
+                     [--exit-after-frames N] [--screenshot out.png] [--control]\n\
                      DISC is a CHD, a cue sheet or a Redump-verified ISO; the game's other disc, \
                      when it is beside it, goes in when the game asks for it.\n\
                      --xr plays in an OpenXR headset on a virtual screen: the controllers are the \
@@ -102,6 +106,9 @@ fn options() -> Result<Options, String> {
                      pinch to walk, thumb taps and swipes), the left menu button toggles Settings; \
                      --xr-hands plays synthetic gestures (pause, inspect, pinch, tap, swipe-up/down/left/right, \
                      prayer, lose; NAME@X/Y also aims eye gaze at that screen pixel) at headset frames, for tests without hand tracking.\n\
+                     --control answers JSON commands on stdin, a line each, while the game plays: \
+                     the command layer's (status, context, navigate, act, ...), settings, \
+                     settings_apply {{change}} (the panel's own typed change) and panel {{visible}}.\n\
                      --script plays a session log (tools/native_scenario.py --log); \
                      --exit-at-frame prints the memory hash at that game frame and exits.\n\
                      Escape toggles the settings panel (Graphics has Fullscreen; Quit ends the app); its \
@@ -332,7 +339,11 @@ impl Host {
     fn run(&mut self, window: &sdl::Window, options: &Options) -> Result<(), String> {
         let mut frames = 0u64;
         let mut minimized = false;
+        let control = options.control.then(Control::spawn);
         loop {
+            if let Some(control) = &control {
+                control.poll(self);
+            }
             let was_visible = self.view.panel_visible();
             let mut event = SDL_Event::default();
             // SAFETY: SDL is initialised; event is a valid out pointer.
@@ -390,6 +401,36 @@ impl Host {
                 println!("xem-desktop: frame {} memory_hash {}", game.frames_run(), game.memory_hash());
                 return Ok(());
             }
+        }
+    }
+
+    /// One agent command (`--control`): settings through the settings
+    /// service (as the panel's edits), the panel shown or hidden, the rest
+    /// to the game's command layer.
+    fn command(&mut self, command: &serde_json::Value) -> serde_json::Value {
+        let settings = self.view.settings().clone();
+        match command.get("cmd").and_then(serde_json::Value::as_str) {
+            Some("settings") => serde_json::to_value(settings.borrow().settings()).unwrap_or_default(),
+            Some("settings_apply") => {
+                let change = command.get("change").cloned().unwrap_or_default();
+                match serde_json::from_value::<xem_settings::SettingChange>(change) {
+                    Ok(change) => match settings.borrow_mut().apply(change) {
+                        Ok(ack) => serde_json::json!({ "revision": ack.revision, "settings": ack.settings }),
+                        Err(rejected) => serde_json::json!({ "error": rejected.to_string() }),
+                    },
+                    Err(error) => serde_json::json!({ "error": format!("not a setting change: {error}") }),
+                }
+            }
+            Some("panel") => {
+                if let Some(visible) = command.get("visible").and_then(serde_json::Value::as_bool) {
+                    self.view.set_panel_visible(visible);
+                }
+                serde_json::json!({ "visible": self.view.panel_visible() })
+            }
+            _ => match &mut self.game {
+                Some(game) => game.command(command).unwrap_or_else(|error| serde_json::json!({ "error": error })),
+                None => serde_json::json!({ "error": "no game: play a disc (--disc)" }),
+            },
         }
     }
 
@@ -491,4 +532,41 @@ fn save_png(
     writer
         .write_image_data(rgba)
         .map_err(|error| error.to_string())
+}
+
+/// `--control`: agents' JSON commands on stdin, one a line, each answered by
+/// a line on stdout between the game's frames.
+struct Control {
+    lines: std::sync::mpsc::Receiver<String>,
+}
+
+impl Control {
+    fn spawn() -> Control {
+        let (send, lines) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            for line in std::io::stdin().lines() {
+                let Ok(line) = line else { break };
+                if send.send(line).is_err() {
+                    break;
+                }
+            }
+        });
+        Control { lines }
+    }
+
+    fn poll(&self, host: &mut Host) {
+        use std::io::Write;
+        while let Ok(line) = self.lines.try_recv() {
+            if line.trim().is_empty() {
+                continue;
+            }
+            let reply = match serde_json::from_str::<serde_json::Value>(&line) {
+                Ok(command) => host.command(&command),
+                Err(error) => serde_json::json!({ "error": format!("not JSON: {error}") }),
+            };
+            let mut out = std::io::stdout().lock();
+            let _ = writeln!(out, "{reply}");
+            let _ = out.flush();
+        }
+    }
 }
