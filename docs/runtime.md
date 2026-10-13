@@ -373,7 +373,9 @@ waits for it goes in).
   PCSX-ReARMed recordings in `.local/scenarios/p1-original-sound-*-20261002`,
   which give the same picture.
   The hosts' Sound mode setting is this mode, not a mix of their own: they
-  play the SPU's output as it is, at the master volume. `src/port/sound.c`
+  play the SPU's output as it is, at the master volume ([Binaural sound
+  mode](#binaural-sound-mode), the one exception, presents the game's
+  Stereo again for headphones). `src/port/sound.c`
   wraps `sound_start_driver` and `sound_run_tick`: the driver takes the
   host import `xem.sound_mode` (0-2, or none) when it starts, and its tick
   takes a mode the host changed since (`xem.sound_mode_change`, once per
@@ -408,6 +410,164 @@ waits for it goes in).
   user's BIOS image (`--bios FILE`), or blank glyphs without one
   (`xem_core::bios`).
 - The PC file server (libsn `PC*`) has no development host and fails.
+
+## Binaural sound mode
+
+Binaural (Settings → Audio → Sound mode, beside the game's own Mono, Stereo
+and Wide) presents the game's sound for headphones, in two channels: the
+music's parts arranged around the listener and the world's positional
+effects from where their emitters are, each at the gain the game gives it
+(plan.md, Phase 9). It is a presentation: the game runs in its own Stereo
+under it (`Settings::game_sound_mode`; Stereo's pan law is what the
+placement reads), and nothing it does reaches game memory, the sound driver
+or the SPU. Turning it off gives back the original mode chosen before
+(`Settings::audio_output` keeps it); choosing an original mode, in the panel
+or on the game's own Sound screen, turns it off.
+
+- **What the SPU mixed.** `xem_spu::Spu::run_tapped` says what each output
+  sample was mixed from (`TapFrame`): each voice's sample after its
+  envelope, the volumes it was mixed with, the reverb return, the CD input
+  as mixed and the main volume; the SPU advances exactly as without it.
+  While the mode is on, or fading out, the SPU device (`devices/spu.rs`)
+  renders its ring from that through `xem_binaural::Renderer`. Headless runs
+  keep no output and render nothing.
+- **Who keyed a voice.** At each register sync that keys voices on, the
+  presenter (`xem_core::binaural::Presenter`) reads the driver's
+  `sound_voice_owners`: a channel of a playing sequence (a part of the
+  music), one of the effect channels (an effect start, by its id and start
+  tick; an effect's two channels are one source), or neither. A voice keeps
+  its identity through its release until it is keyed on again. A restore
+  forgets them all; the presenter reads the restored scene
+  (`Session::game_state_restored`) and then the sounding voices at the next
+  sync.
+- **Gains.** A placed voice loses its pan and keeps its gain: the driver's
+  pan law (`sound_stage_seq_voices`: two linear ramps, 0x5A00 on both sides
+  at the centre) is inverted from the voice's own volumes
+  (`xem_binaural::pan::unpan`), so the source gets exactly the gain the
+  driver resolved (its fades and the field's distance volume included),
+  once. Every direction's HRTF pair is levelled to one loudness (pink
+  noise through BS.1770's K-weighting, both ears: `hrtf::PAIR_ENERGY`), so a
+  source ahead is as loud as the original mix's centre and as loud
+  anywhere. Nothing is added: no distance law, culling, occlusion, air
+  absorption, Doppler or room. The main volume and the SPU's mute act as in
+  the SPU.
+- **Music.** The first time a part of a sequence plays, the presenter
+  profiles every part from the sequence's data in game memory (notes,
+  pitch with the instrument's note offset, lengths, drum-kit and noise
+  notes, the pan before the first note; the opcode lengths of
+  `tools/analysis/sound_sequence.py`), and `xem_binaural::music` arranges
+  them by its rules: rhythm (half its notes drum-kit or noise), bass (the
+  lowest melodic part, 9 semitones or more below the median), pad (half
+  notes or longer on average), lead (the busiest part at or above the
+  median, 16 notes or more), supporting parts, and uncertain ones (under 4
+  notes, or data not read to its end). The lead, bass and rhythm stay ahead,
+  pads rise to the sides (25 degrees up), supporting parts spread over the
+  sides and rear by their own pan, and uncertain parts keep the stereo arc
+  (their pan as a direction within 30 degrees of ahead), where every part
+  is at music immersion 0. A part keeps its place for the whole song,
+  turned by the music's own pan movement (pan slides, autopan:
+  `Target::Stage`, `spread` degrees per 0x4000). The stage is the
+  listener's: character turns, camera swings and cuts leave it; under
+  *Music stays as you turn* a headset's head turns are heard against it.
+  Reviewed per-song changes would go in `OVERRIDES`; none were needed yet.
+- **Effects.** World effects go where their emitters are: the field's three
+  positional emitters (`field_sound_emitter_slots`, each following an actor)
+  and the arena's four positional voices (`arena_sound_voices`, a fixed
+  point or a followed vector). The direction is from the listening
+  position, the field's controlled character or the arena's player Gear, to
+  the emitter, in the camera's orientation (its view matrix's rows), then
+  through the first-person view's axes (desktop inspection) and a headset's
+  head, each once. The distance is dropped: the game's own volume keeps its
+  distance law. An emitter at the listener keeps the direction it had.
+  Emitters are read with the key-on that starts them and after every frame.
+  Every other effect (interface sounds, effects field scripts pan
+  themselves, battles, the world map) keeps its original mix and is counted
+  as a coverage gap by mode and effect id; an emitter that is gone (its
+  scene left, its slot reused) leaves its last voices where they were.
+  Battles and other modes without a recovered emitter have no world
+  listener: only the music's stage, which no turn moves.
+- **The rest.** The reverb return is the SPU's own (the original sends,
+  type and depth changes), mixed once as it came. Voices nobody owns keep
+  their mix. CD input keeps its mix while a movie plays (the MDEC decoded
+  within the last half second); otherwise it is premixed music (the title
+  screen's) and is presented as a labelled estimate, `estimated
+  arrangement`: its pair as two loudspeakers 30 degrees either side of
+  ahead and part of its side signal moved to two at 110 degrees, delayed
+  apart so they stay diffuse, the mid and the side's energy kept.
+- **The renderer** (`xem-binaural`, the same Rust natively and in the
+  browser) works in blocks of 128 samples (2.9 ms, its only delay): each
+  heard source's block is convolved with its direction's HRTF pair by FFT
+  (two sources to a transform) and the ears go back to time once. Directions
+  glide (30 ms), a source fades between placed and its original mix (50 ms)
+  and the whole presentation crossfades with the SPU's own mix (100 ms);
+  bypassed (*Compare with Stereo*) or at rest it outputs the SPU's samples
+  themselves. Above -1.4 dBFS a soft knee bends peaks towards full scale
+  instead of clipping.
+- **HRTF data.** MIT KEMAR, diffuse-field equalized, at 44.1 kHz
+  (`crates/xem-binaural/hrtf/README.md`: source, checksums, terms and the
+  citation the About section repeats; `tools/binaural_hrtf.py` repacks the
+  archive). At start each response is cut from just before its onset (92
+  taps), the onsets' difference between the ears kept as a delay, applied
+  by phase after mixing the four measured directions around a source, and
+  every pair levelled. The set holds no bass (its diffuse-field mean falls
+  from 0.92 above 500 Hz to 0.65 at 172 Hz and 0.30 at 0 Hz, alike in
+  every direction): a low shelf fitted to that mean (`Hrtf::bass_shelf`)
+  restores it on the placed sound.
+- **Settings** (`xem_settings::Binaural`, which is
+  `xem_core::binaural::Config`): enabled, spatial music, positional effects,
+  music immersion (0-100, 70 by default), head-tracked music, bypass. The
+  hosts apply them with each frame batch (`Session::set_binaural`), with the
+  first-person view's axes (`GameView::listener_axes`) and a headset's head
+  (`xem_core::binaural::head_axes` of the OpenXR or WebXR viewer pose, the
+  screen's forward its reference; lost tracking keeps the last; leaving the
+  headset clears it). The hosts' audio stays plain two-channel stereo at
+  the SPU's 44.1 kHz (SDL and the browser resample to the device), so no
+  platform spatializer is stacked on it.
+- **Agents.** The `binaural` command changes settings given by name and
+  reports what is presented: each source (music: song, part and role;
+  effect: id, channels and emitter; its direction, pre-pan gain, level),
+  each voice's identity and route, the listener, the first-person and head
+  turns, the CD input's route and the coverage gaps. `audio_capture`
+  (`action` start or stop, `samples: true` for the samples as hex) keeps
+  the presented output, whoever takes the ring, for offline checks;
+  `xem-headless --binaural` (or `--binaural-config JSON`) with `--wav`
+  writes it to a file and prints the status.
+
+Tests: `xem-spu` (the tap reconstructs every sample and changes nothing);
+`xem-binaural`'s units (levelling, interaural cues, the shelf, the pan law,
+gains, crossfades, resets, the knee, the stage's rotation) and
+`tests/directions.rs`, where noise placed in 48 directions between the
+measured ones is recovered from the rendered ears alone (spectra and delay,
+matched against every measured direction) within 1.5 degrees (median), 3.5
+at worst, left and right, front and back and up and down always right; the
+model listener there is the measured head, not people. `xem_core::binaural`
+on synthetic driver memory (identities, songs, field and arena emitters,
+distance, zoom and scale changing nothing, restores, head turns). On the
+original game, `xem-headless/tests/binaural.rs` (field 15: three emitters
+and its music): with the mode on, music only, effects only or bypassed, game
+memory and the SPU (voice volumes, the driver's pre-pan gains, included)
+match a Stereo run after 900 frames; the bypass is the original output
+sample for sample; the presented mix is within 0.3 dB of the original's
+level; each part keeps one source, every emitter is placed and on the side
+the original pans it to; the opening movie's sound stays within 1 of the
+original mix; fast-forward and rewind keep presenting; a restored state
+sounds the same every time. `web/tests/binaural.test.mjs`: one state
+restored natively and in Chromium presents the same mix (99.6% of the
+samples identical, the rest within 1; the declared tolerance is 2, each
+host's own sin, cos and atan2 making the filters), and the presentation
+costs 2.1% of real time in Chromium on this machine, 5.4% with the processor
+throttled four times (a phone's budget; the cost test runs with the timed
+tests). `xr-game.test.mjs`: the listener turns with the emulated headset
+while the game is paused, and has no head after the session.
+
+Not done or not measured: no listening tests with people (direction and
+musical coherence were checked with the measured head as the listener, and
+the arrangement rules are not tuned by ear); a generic head, so a listener's
+own front and back may differ; positional effects cover the field's
+emitters and the arena's voices only (each effect left out is reported, not
+guessed); no per-song overrides were reviewed; the arena path is tested on
+synthetic memory, not reached in the game; headsets and phones only through
+IWER and a throttled processor.
 
 ## Presentation
 
@@ -1303,6 +1463,7 @@ microgestures need that device, and people's comfort needs people.
 | `xem-core` | headless authority: game instance, virtual clock, commands, introspection, stepping, snapshots, services |
 | `xem-game` | the game module binding (wasm2c natively, imports in browsers) |
 | `xem-gpu`, `xem-spu`, `xem-media`, `xem-disc` | the console devices as host services, and disc import |
+| `xem-binaural` | the Binaural sound mode's renderer: HRTF placement of the SPU's voices for headphones, music arrangement rules (native and browser) |
 | `xem-render` | the wgpu renderer for flat, stereo and XR views |
 | `xem-ui` | the Slint settings panel as a custom platform rendered into a texture on the shared wgpu device |
 | `xem-xr` | the OpenXR adapter |
@@ -1341,7 +1502,7 @@ from 56 to 10 a second, the XR smoke's headset frames came late, and their
 checks failed): the Android smoke, the XR smoke, and the browser tests that
 measure time (the headset's frame rate, rewind frame times, fast-forward's
 music, the stalled page, a resume read within the rewind's one-second
-interval). Rust builds use the `suite` profile
+interval, the Binaural mode's cost). Rust builds use the `suite` profile
 (release's optimization without link-time optimization or debug
 information: after a change to xem-gpu the test binaries rebuild in 37 s,
 against release's 161 s); a failing test target is built again with line
@@ -1532,8 +1693,8 @@ the mouse (held in relative mode while the game has the input, only under
 the Controls section's mouse camera setting, off by default) and the first
 gamepad, the GPU's display is uploaded as the game image after
 each frame and the SPU's output is queued to an SDL3 audio stream at the
-master volume and audio output (`xem_host::Game`; `AudioOutput::mix` is the
-browser's mix too). Memory cards default to `cards/` beside the settings file.
+master volume (`xem_host::Game`), as the [Binaural sound
+mode](#binaural-sound-mode) presents it when it is on. Memory cards default to `cards/` beside the settings file.
 Pad 1's buttons come from the game bindings ([Controls](#controls)).
 Back+Start toggles Settings once and consumes
 both buttons until both are released. Guide/Home has no app binding.
@@ -1637,8 +1798,9 @@ as JSON text or bytes.
   After the frames of an animation frame (or a command) the runtime takes the
   samples into a bounded queue (a quarter second; older ones are dropped, as
   when automation runs frames faster than real time); each animation frame the
-  page takes them, mixed by the master volume and output settings
-  (`XemApp::take_audio`), and posts them to an `AudioWorklet`, whose ring keeps
+  page takes them at the master volume (`XemApp::take_audio`; the
+  [Binaural sound mode](#binaural-sound-mode) presents them when it is on),
+  and posts them to an `AudioWorklet`, whose ring keeps
   at most about 0.19 s and plays silence when dry (no SharedArrayBuffer).
   "Start audio" creates the `AudioContext` inside the click, at the SPU's
   44.1 kHz; the browser resamples to the device.
@@ -1878,7 +2040,8 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
   desktop, `xem_host::Game` runs the frames due at 60 per second of wall time
   (at most two per rendered frame, never catching up), the GPU device's
   display becomes the game image and the SPU's output plays through an SDL3
-  audio stream (AAudio) at the master volume and audio output; pad 1 is the keyboard (arrows,
+  audio stream (AAudio) at the master volume (Binaural presenting it when
+  on); pad 1 is the keyboard (arrows,
   Z/X/A/S, Enter Start) or the first gamepad (Back+Start toggles the
   panel). A trap stops the game and shows the panel.
   wasm2c's output compiles with the NDK clang for both ABIs; game memory is

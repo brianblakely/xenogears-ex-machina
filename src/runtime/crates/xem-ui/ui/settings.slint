@@ -862,7 +862,7 @@ export component SettingsPanel inherits Window {
                                 Divider { }
                                 Row {
                                     label: "Sound mode";
-                                    help: root.audio-output == 0 ? "The game's Mono: every sound from the centre." : root.audio-output == 1 ? "The game's Stereo." : root.audio-output == 2 ? "The game's Wide-Stereo: its right side in opposite phase." : "For headphones: the music around you and the world's sounds from where they are, each as loud as the game makes it. The game plays in Stereo.";
+                                    help: root.audio-output == 0 ? "The game's Mono: every sound from the centre." : root.audio-output == 1 ? "The game's Stereo." : root.audio-output == 2 ? "The game's Wide-Stereo: its right side in opposite phase." : "For headphones: the music around you, the world's sounds from where they are. The game plays in Stereo.";
                                     Segmented { accessible-label: "Sound mode"; options: ["Mono", "Stereo", "Wide", "Binaural"]; current <=> root.audio-output; selected(index) => { root.audio-output-edited(index); } }
                                 }
                                 if root.audio-output == 3: Divider { }

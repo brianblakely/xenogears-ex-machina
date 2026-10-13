@@ -74,15 +74,22 @@ fn binaural_reads_and_never_writes() {
     };
     let mut placed = field(Some(on())).unwrap();
     let mut bypassed = field(Some(Config { bypass: true, ..on() })).unwrap();
+    let mut music_only = field(Some(Config { positional_effects: false, ..on() })).unwrap();
+    let mut effects_only = field(Some(Config { spatial_music: false, music_immersion: 0, ..on() })).unwrap();
     let original = frames(&mut plain, 900);
     let binaural = frames(&mut placed, 900);
     let bypass = frames(&mut bypassed, 900);
-    // The game, the driver and the SPU run exactly as without it.
+    frames(&mut music_only, 900);
+    frames(&mut effects_only, 900);
+    // The game, the driver and the SPU run exactly as without it, whatever
+    // it presents: the effects the game starts, their voices and gains.
     let hash = |s: &mut Session<NativeModule>| execute(s, json!({"cmd": "memory_hash"}));
-    assert_eq!(hash(&mut placed), hash(&mut plain), "game memory");
-    assert_eq!(hash(&mut bypassed), hash(&mut plain));
     let spu = |s: &mut Session<NativeModule>| s.runtime.services().spu.chip().save();
-    assert_eq!(spu(&mut placed), spu(&mut plain), "the SPU, voice volumes (the driver's pre-pan gains) and all");
+    let (memory, chip) = (hash(&mut plain), spu(&mut plain));
+    for session in [&mut placed, &mut bypassed, &mut music_only, &mut effects_only] {
+        assert_eq!(hash(session), memory, "game memory");
+        assert_eq!(spu(session), chip, "the SPU, voice volumes (the driver's pre-pan gains) and all");
+    }
     // The bypass is the original output, sample for sample, a block later:
     // it starts with the samples its block held when the ring was emptied.
     let held = (0..xem_binaural::BLOCK)
@@ -161,4 +168,87 @@ fn a_restored_state_starts_its_sound_afresh() {
     let again = frames(&mut session, 240);
     assert_eq!(first, again, "nothing of the abandoned timeline is heard, and the rest is deterministic");
     assert!(first.iter().any(|s| *s != 0));
+}
+
+/// Pad 1 by frame from a retained route (tests/reference-inputs), as a
+/// schedule of pad commands.
+fn route(name: &str) -> Value {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../tests/reference-inputs").join(name);
+    let holds: Vec<Value> = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    let mut commands = Vec::new();
+    for hold in holds {
+        commands.push(json!([hold["start"], {"cmd": "pad", "port": 0, "buttons": hold["buttons"]}]));
+        commands.push(json!([hold["end"], {"cmd": "pad", "port": 0, "buttons": []}]));
+    }
+    commands.sort_by_key(|c| c[0].as_u64());
+    json!({"cmd": "schedule", "commands": commands})
+}
+
+#[test]
+fn movie_audio_keeps_its_original_mix() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    // The new game's opening movie (its audio from the disc, 2960-20780 on
+    // this route), plain and under Binaural.
+    let mut runs = Vec::new();
+    for binaural in [false, true] {
+        let (mut session, _) = boot(&disc, &BootOptions { audio_output: true, ..Default::default() }).expect("boot");
+        session.set_sound_mode(1).unwrap();
+        if binaural {
+            session.set_binaural(on());
+        }
+        execute(&mut session, route("new-game-sound-mode-stereo.json"));
+        frames(&mut session, 3600);
+        let movie = frames(&mut session, 600);
+        if binaural {
+            let status = execute(&mut session, json!({"cmd": "binaural"}));
+            assert_eq!(status["cd"], "original (a movie plays)", "{status}");
+        }
+        runs.push(movie);
+    }
+    let (original, binaural) = (&runs[0], &runs[1]);
+    assert!(original.iter().filter(|s| s.abs() > 1000).count() > 10_000, "the movie has sound");
+    // The same mix a block later, within the rounding of mixing again.
+    let held = (0..xem_binaural::BLOCK)
+        .min_by_key(|held| {
+            let n = binaural.len().min(original.len()) - 2 * xem_binaural::BLOCK;
+            (0..n).step_by(97).map(|i| (i32::from(binaural[i + 2 * held]) - i32::from(original[i])).abs()).sum::<i32>()
+        })
+        .unwrap();
+    let n = binaural.len().min(original.len()) - 2 * xem_binaural::BLOCK;
+    let worst = (0..n).map(|i| (i32::from(binaural[i + 2 * held]) - i32::from(original[i])).abs()).max().unwrap();
+    eprintln!("movie: the original mix {held} samples behind, within {worst}");
+    assert!(worst <= 4, "movie audio is mixed as the original: {worst}");
+}
+
+#[test]
+fn fast_forward_and_rewind_keep_presenting() {
+    let Some(mut session) = field(Some(on())) else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    execute(&mut session, json!({"cmd": "rewind_configure", "max_bytes": 64 << 20, "interval_seconds": 1, "history_seconds": 30}));
+    frames(&mut session, 300);
+    // Fast-forward: the music keeps its tempo, so a second of game time at
+    // 10x gives a tenth of a second of sound, all presented.
+    execute(&mut session, json!({"cmd": "fast_forward", "enabled": true}));
+    let fast = frames(&mut session, 600);
+    execute(&mut session, json!({"cmd": "fast_forward", "enabled": false}));
+    let seconds = fast.len() as f64 / 2.0 / 44_100.0;
+    assert!((0.8..1.2).contains(&seconds), "{seconds} s of sound for 10 s of game");
+    assert!(fast.iter().any(|s| *s != 0));
+    let status = execute(&mut session, json!({"cmd": "binaural"}));
+    assert_eq!(status["presenting"], true);
+    // Rewind (its checkpoints a second of the host's time apart): the
+    // presentation starts again from the earlier state.
+    let history = execute(&mut session, json!({"cmd": "status"}))["rewind"]["states"].as_u64().unwrap();
+    assert!(history >= 1, "a checkpoint to go back to");
+    execute(&mut session, json!({"cmd": "rewind", "steps": 1}));
+    let after = frames(&mut session, 120);
+    assert!(after.iter().any(|s| *s != 0));
+    let status = execute(&mut session, json!({"cmd": "binaural"}));
+    assert_eq!(status["presenting"], true);
+    assert!(status["sources"].as_array().unwrap().iter().any(|s| s["kind"] == "effect"), "the emitters are placed again: {status}");
 }

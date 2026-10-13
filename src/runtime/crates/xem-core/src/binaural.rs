@@ -757,14 +757,21 @@ impl Presenter {
             "config": self.config,
             "presenting": !self.renderer.presenting_original(),
             "listener": listener,
-            "first_person": self.view.is_some(),
-            "head": self.head.is_some(),
+            "first_person": self.view.map(|axes| facing(axes[2])),
+            "head": self.head.map(|axes| facing(axes[2])),
             "cd": if self.scene.movie { "original (a movie plays)" } else if self.config.spatial_music { "estimated arrangement (premixed music)" } else { "original" },
             "sources": sources,
             "voices": voices,
             "coverage_gaps": coverage,
         })
     }
+}
+
+/// Where a listener's forward axis (in the space it turned in) faces:
+/// `{yaw, pitch}`, degrees, yaw to the right.
+fn facing(forward: [f32; 3]) -> Value {
+    let [x, y, z] = forward;
+    json!({"yaw": x.atan2(z).to_degrees(), "pitch": (-y).atan2(x.hypot(z)).to_degrees()})
 }
 
 /// The field's camera, controlled character and emitters.
@@ -982,6 +989,88 @@ mod tests {
         let placed = presenter.renderer.sources().iter().find(|s| s.id == id).map(|s| s.placed);
         assert_eq!(placed, Some(0.0), "back in the original mix within 100 ms");
         effect(&mut ram, 10, 10, 0x21, 6);
+        presenter.key_on(1 << 10, &ram);
+        assert_eq!(presenter.renderer.route(10), Route::Original);
+    }
+
+    /// The field of `a_field_emitter_...` with the camera's rotation `rows`
+    /// and translation `t`, the character at `listener` and slot 0's emitter
+    /// (actor 1, sound 0x30) at `emitter`; the direction it is heard from.
+    fn field_direction(rows: [i16; 9], t: [i32; 3], listener: [i32; 3], emitter: [i32; 3]) -> [f32; 3] {
+        let mut ram = driver();
+        let mut matrix: Vec<u8> = rows.iter().flat_map(|r| r.to_le_bytes()).collect();
+        matrix.extend([0, 0]);
+        matrix.extend(t.iter().flat_map(|c| c.to_le_bytes()));
+        ram.put(FIELD_VIEW_SCALED_WORLD, &matrix);
+        let descriptors = 0x8013_0000;
+        ram.word(FIELD_COMPONENTS, 2);
+        ram.word(FIELD_COMPONENTS + 4, descriptors);
+        ram.word(FIELD_CONTROLLED, 0);
+        for (index, at) in [listener, emitter].iter().enumerate() {
+            ram.put(descriptors + index as u32 * FIELD_DESCRIPTOR_SIZE + 0x20, &at.iter().flat_map(|c| c.to_le_bytes()).collect::<Vec<u8>>());
+        }
+        for slot in 0..3u32 {
+            let (actor, sound) = if slot == 0 { (1u16, 0x30u16) } else { (0xFFFF, 0xFFFF) };
+            ram.put(FIELD_EMITTER_SLOTS + slot * 6, &[actor.to_le_bytes(), sound.to_le_bytes()].concat());
+        }
+        effect(&mut ram, 8, 8, 0x30, 9);
+        let mut presenter = Presenter::new(on());
+        presenter.update_scene(&ram, Some(MODE_FIELD), false);
+        presenter.key_on(1 << 8, &ram);
+        match presenter.place_effect(presenter.tags[8].unwrap()) {
+            Placing::Placed { direction, .. } => direction,
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    fn distance_zoom_and_scale_change_nothing_heard() {
+        let level: [i16; 9] = [4096, 0, 0, 0, 4096, 0, 0, 0, 4096];
+        let near = field_direction(level, [0, 0, 1000], [0, 0, 0], [30, -10, 40]);
+        // Ten times as far the same way: the same direction (the game's own
+        // volume carries the distance).
+        assert_eq!(field_direction(level, [0, 0, 1000], [0, 0, 0], [300, -100, 400]), near);
+        // The camera pulled back or zoomed (its translation; a scaled
+        // matrix): the same direction.
+        assert_eq!(field_direction(level, [0, 0, 9000], [0, 0, 0], [30, -10, 40]), near);
+        let scaled: [i16; 9] = [2048, 0, 0, 0, 2048, 0, 0, 0, 2048];
+        assert_eq!(field_direction(scaled, [0, 0, 1000], [0, 0, 0], [30, -10, 40]), near);
+        // The character moving along with its emitter: the same direction.
+        assert_eq!(field_direction(level, [0, 0, 1000], [500, 0, 500], [530, -10, 540]), near);
+        // The emitter at the character: none made up (kept).
+        assert_eq!(field_direction(level, [0, 0, 1000], [7, 7, 7], [7, 7, 7]), [0.0; 3]);
+    }
+
+    #[test]
+    fn the_arenas_positional_voices_are_heard_from_the_player_gear() {
+        let mut ram = driver();
+        // The player's Gear at the origin, its node's view the camera: a
+        // quarter turn (the world's +x ahead).
+        ram.put(ARENA_PLAYER, &[0i32, 0, 0].iter().flat_map(|c| c.to_le_bytes()).collect::<Vec<u8>>());
+        let node = 0x8014_0000;
+        ram.word(ARENA_PLAYER + 0x60, node);
+        let rows: [i16; 9] = [0, 0, -4096, 0, 4096, 0, 4096, 0, 0];
+        ram.put(node + 0x0C, &rows.iter().flat_map(|r| r.to_le_bytes()).collect::<Vec<u8>>());
+        // Voice 1: mode 1 (a fixed point) at +x, effect 0x60005 on voice pair
+        // 2 (effect channels 10 and 11).
+        let voice = ARENA_SOUND_VOICES + 0x24;
+        ram.put(voice, &[1, 1, 2, 0]);
+        ram.word(voice + 8, 0x0006_0005);
+        ram.put(voice + 0x10, &[500i32, 0, 0].iter().flat_map(|c| c.to_le_bytes()).collect::<Vec<u8>>());
+        effect(&mut ram, 10, 10, 0x0006_0005, 3);
+        let mut presenter = Presenter::new(on());
+        presenter.update_scene(&ram, Some(MODE_ARENA), false);
+        presenter.key_on(1 << 10, &ram);
+        match presenter.place_effect(presenter.tags[10].unwrap()) {
+            Placing::Placed { direction, emitter, follows } => {
+                assert_eq!((emitter, follows), ("arena voice", 1));
+                assert!(direction[2] > 0.999, "ahead of the camera: {direction:?}");
+            }
+            other => panic!("{other:?}"),
+        }
+        // An unpositioned arena voice (mode 0) stays in its original mix.
+        ram.put(voice, &[0, 1, 2, 0]);
+        effect(&mut ram, 10, 10, 0x0006_0005, 4);
         presenter.key_on(1 << 10, &ram);
         assert_eq!(presenter.renderer.route(10), Route::Original);
     }

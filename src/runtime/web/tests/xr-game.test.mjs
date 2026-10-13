@@ -4,8 +4,9 @@
 // XR-compatible WebGL2 context, Enter VR starts an immersive session whose
 // frames run the game as the canvas's do (never per view) and draw it on a
 // flat screen in each view; head tracking continues while the game is
-// paused; leaving returns to the canvas; and the game's RAM after the same
-// frames is the same in and out of the headset.
+// paused (and with it the Binaural mode's listener); leaving returns to the
+// canvas; and the game's RAM after the same frames is the same in and out of
+// the headset.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -86,20 +87,30 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       console.log(`view centres ${left} / ${right}`);
       assert.ok(!backdrop(left) || !backdrop(right), 'the screen is in front of the viewer');
 
+      // The Binaural mode's listener turns with the head.
+      const binaural = await page.evaluate(() => window.xem.settings.apply({ Binaural: { ...window.xem.settings.get().settings.binaural, enabled: true } }));
+      assert.equal(binaural.ok, true, JSON.stringify(binaural));
+      await page.waitForFunction(() => window.xem.command({ cmd: 'binaural' }).head, null, { timeout: 30_000 });
+
       // Paused: head tracking and rendering continue, the game does not.
       await page.evaluate(() => window.xem.setRunning(false));
       const paused = await status(page);
       await page.evaluate(() => { window.xrDevice.position.set(0.2, 1.6, 0.1); });
+      // A quarter turn to the right (-90 degrees about +Y).
+      await page.evaluate(() => { window.xrDevice.quaternion.set(0, -Math.SQRT1_2, 0, Math.SQRT1_2); });
       await page.waitForTimeout(500);
       const moved = await status(page);
       assert.equal(moved.loop.gameFrames, paused.loop.gameFrames, 'the game stays paused');
       assert.ok(moved.page.xr.frames > paused.page.xr.frames + 5, 'the session keeps rendering');
       assert.notDeepEqual(moved.page.xr.viewer, paused.page.xr.viewer, 'the head is tracked');
+      const head = (await page.evaluate(() => window.xem.command({ cmd: 'binaural' }))).head;
+      assert.ok(Math.abs(head.yaw - 90) < 2, `the listener turned with the head, the game paused: ${JSON.stringify(head)}`);
 
       // Leaving returns to the canvas (the emulator's overlay covers the
       // page's button while a session runs).
       await page.evaluate(() => window.xem.xr.exit());
       await page.waitForFunction(() => !window.xem.status().page.xr.active, null, { timeout: 30_000 });
+      assert.equal((await page.evaluate(() => window.xem.command({ cmd: 'binaural' }))).head, null, 'no head out of the headset');
       const flat = (await status(page)).loop.animationFrames;
       await page.waitForTimeout(300);
       assert.ok((await status(page)).loop.animationFrames > flat, 'the canvas draws again');
