@@ -29,14 +29,17 @@ def main():
     args = parser.parse_args()
     out = Path(args.out)
 
-    env = dict(os.environ, CARGO_BUILD_JOBS=os.environ.get("CARGO_BUILD_JOBS", "6"))
+    # Cargo's target directory: CARGO_TARGET_DIR as the caller gave it (a
+    # relative one from the caller's directory, not from src/runtime where
+    # cargo runs), else the workspace's own.
+    given = os.environ.get("CARGO_TARGET_DIR")
+    target_dir = Path(given).resolve() if given else ROOT / "src" / "runtime" / "target"
+    env = dict(os.environ, CARGO_BUILD_JOBS=os.environ.get("CARGO_BUILD_JOBS", "6"), CARGO_TARGET_DIR=str(target_dir))
     cargo = ["cargo", "build", "-p", "xem-web", "--target", "wasm32-unknown-unknown"]
     if args.profile == "release":
         cargo.append("--release")
     subprocess.run(cargo, cwd=ROOT / "src" / "runtime", env=env, check=True)
     target = "release" if args.profile == "release" else "debug"
-    # Cargo's own target directory (CARGO_TARGET_DIR, from src/runtime when relative).
-    target_dir = ROOT / "src" / "runtime" / os.environ.get("CARGO_TARGET_DIR", "target")
     wasm = target_dir / "wasm32-unknown-unknown" / target / "xem_web.wasm"
 
     if out.exists():
