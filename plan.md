@@ -628,14 +628,14 @@ This contract replaces the earlier Wide-derived headphone requirement; retain
 the [original sound-mode findings](analysis/formats/sound-modes.md) as evidence
 for original playback, not as the enhanced mix's input specification.
 
-- [ ] Add a source-aware audio presentation path before the final stereo mix.
+- [x] Add a source-aware audio presentation path before the final stereo mix.
   Obtain continuous per-source PCM with sample-aligned sequence/channel ownership,
   musical-part and effect-instance identity from the existing driver/SPU path.
   Preserve original synthesis, voice allocation/stealing, envelopes, modulation
   and sequencing; do not rebuild game sound logic or infer sources from finished
   Wide output. Keep taps/adapters in the port/runtime layers, never `src/decomp/`,
   and make them read-only with respect to authoritative game and SPU state.
-- [ ] Preserve the original decisions about starting/stopping sounds, active
+- [x] Preserve the original decisions about starting/stopping sounds, active
   emitters, priorities, voice limits, authored levels, fades and distance-based
   volume or eligibility. Feed each source's resolved pre-pan gain into the new
   renderer exactly once, replacing positional stereo panning rather than stacking
@@ -644,7 +644,7 @@ for original playback, not as the enhanced mix's input specification.
   muffling, air absorption, propagation delay, Doppler or distance-driven reverb.
   Do not normalize sources individually, boost inferred musical leads, or apply
   automatic gain control that changes the authored mix's balance or dynamics.
-- [ ] Resolve world effects to their actual actors, objects, projectiles, impact
+- [x] Resolve world effects to their actual actors, objects, projectiles, impact
   points or fixed locations. Reuse recovered positional emitters and trace other
   effect call sites; a triggering script actor is not necessarily the emitter.
   Track moving sources and group multi-voice effects through release, reuse and
@@ -652,7 +652,7 @@ for original playback, not as the enhanced mix's input specification.
   listener-relative and broad ambience diffuse. Unresolved effects retain their
   original nonpositional presentation, with visible coverage gaps rather than
   guessed positions; do not claim one field route proves every game mode.
-- [ ] Anchor effect direction at the player character's listening position, not
+- [x] Anchor effect direction at the player character's listening position, not
   the camera's physical position. In ordinary third-person play, express the
   emitter-minus-character vector in the camera's viewing orientation and pass
   its normalized direction to the binaural renderer. Camera orbit changes where
@@ -660,7 +660,7 @@ for original playback, not as the enhanced mix's input specification.
   does not rotate it. Camera pull-back, zoom and diorama scaling add no gain,
   distance, pitch or timing changes. Character movement retains exactly the
   original game's gain/eligibility changes, not a second attenuation law.
-- [ ] Use inspection look direction in stationary first-person view and compose
+- [x] Use inspection look direction in stationary first-person view and compose
   tracked head rotation with the presentation reference exactly once in XR.
   Keep the character-centered origin rather than moving it to the distant
   diorama spectator. Define stable anchors for battles/modes without a single
@@ -668,7 +668,7 @@ for original playback, not as the enhanced mix's input specification.
   character switches, camera cuts, coincident source/listener positions, recentering
   and tracking loss without invalid directions or clicks. Keep head-pose updates
   independent of simulation, including while paused, without advancing game audio.
-- [ ] Spatially arrange sequenced music from its original parts and instrument/
+- [x] Spatially arrange sequenced music from its original parts and instrument/
   note/pan metadata, using deterministic automatic role/grouping rules and small
   reviewed per-track overrides where needed. Keep leads and the bass/rhythmic
   foundation stable, spread supporting parts across sides/rears and use restrained
@@ -677,24 +677,24 @@ for original playback, not as the enhanced mix's input specification.
   Bind spatial identity to musical parts, not recycled hardware voice slots.
   Preserve samples, notes, pitch, timing, envelopes, relative levels, dynamics
   and deliberate musical pan movement; no arbitrary orbiting or new composition.
-- [ ] Keep non-world music in a stable listener-centered musical space, independent
+- [x] Keep non-world music in a stable listener-centered musical space, independent
   of character movement/facing and ordinary camera swings or scripted cuts. An
   optional head-tracked music stage may respond to physical looking, not character
   turns; diorama scaling never rearranges it. Music produced by a real in-world
   emitter follows the world-effect rules instead. Analyze/profile music locally;
   require no live AI service, cloud upload or replacement soundtrack assets.
-- [ ] For genuinely premixed music without accessible parts, use a conservative
+- [x] For genuinely premixed music without accessible parts, use a conservative
   music-only spatial upmix that retains a stable foreground and original balance,
   with surrounding ambience rather than invented precise instrument locations.
   Label this fallback as an estimated arrangement. Do not run mixed FMV dialogue,
   music and effects through the music arranger indiscriminately; preserve their
   original routing/timing and intelligibility without guessed world emitters.
-- [ ] Preserve original reverb character, depth changes and sends separately from
+- [x] Preserve original reverb character, depth changes and sends separately from
   direct-source direction. Treat a shared music/effects return as shared ambience,
   not a clean music stem; do not double-count it or assign it wholly to one emitter.
   No new virtual room, acoustic materials or environmental-reverb model is required
   or added by this feature. Keep the original output path available for comparison.
-- [ ] Use a shared native/WebAssembly binaural processor and reviewed, distributable
+- [x] Use a shared native/WebAssembly binaural processor and reviewed, distributable
   HRTF data, with exactly two output channels. Calibrate/level-normalize directional
   filters to minimize unintended loudness swings while retaining ear-level timing
   and spectral cues; this is not per-source loudness automation or a promise of
@@ -702,7 +702,7 @@ for original playback, not as the enhanced mix's input specification.
   fixed output headroom, avoid clipping and keep latency bounded/synchronized.
   Do not stack generic widening, original Wide polarity processing or a second
   platform spatializer onto this mix; provide explicit processing bypass.
-- [ ] Expose the sound mode as **Binaural**, with independently selectable Spatial
+- [x] Expose the sound mode as **Binaural**, with independently selectable Spatial
   Music and Positional Effects plus a music-immersion control through the shared
   settings service for humans and agents. Keep original Mono, Stereo and undecoded
   Wide-Stereo independently selectable and unmodified; do not force Wide as the
@@ -716,7 +716,7 @@ for original playback, not as the enhanced mix's input specification.
   toggles and matched character trajectories; zoom/pull-back/scale must add no
   attenuation. Use calibrated listening comparisons for direction and musical
   coherence, not claims of a recovered original surround mix.
-- [ ] Verify music/effect/reverb/FMV routing, device and sample-rate changes,
+- [x] Verify music/effect/reverb/FMV routing, device and sample-rate changes,
   pause/resume, fast-forward, rewind, snapshot restore and XR transitions. Reset
   or restore presentation/filter history without playing the abandoned timeline.
   Demonstrate native/browser output agreement within declared DSP tolerances,

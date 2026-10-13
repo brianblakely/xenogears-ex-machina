@@ -777,6 +777,10 @@ impl Presenter {
         let immersion = f32::from(self.config.music_immersion) / 100.0;
         self.renderer.set_cd_route(if movie || !self.config.spatial_music { CdRoute::Original } else { CdRoute::Upmix { immersion } });
         self.update_sources();
+        // Forget the sources no voice holds any more: every effect start is
+        // one, and a long session would keep them all.
+        let live: Vec<SourceKey> = self.tags.iter().flatten().filter_map(|tag| key_of(*tag)).collect();
+        self.ids.retain(|key, _| live.contains(key));
     }
 
     /// Mixes the samples `tap` says the SPU made into `ring`.
@@ -898,6 +902,15 @@ impl Presenter {
 fn facing(forward: [f32; 3]) -> Value {
     let [x, y, z] = forward;
     json!({"yaw": x.atan2(z).to_degrees(), "pitch": (-y).atan2(x.hypot(z)).to_degrees()})
+}
+
+/// The source a voice's identity makes it part of.
+fn key_of(tag: Tag) -> Option<SourceKey> {
+    match tag {
+        Tag::Music { seq, song, part } => Some(SourceKey::Music { seq, song, part }),
+        Tag::Effect { channel, id, stamp, .. } => Some(SourceKey::Effect { pair: channel & !1, stamp, id }),
+        Tag::Other { .. } => None,
+    }
 }
 
 /// The words that say which sprite is at `sprite` (`SPRITE_IDENTITY`).
@@ -1268,6 +1281,22 @@ mod tests {
         presenter.effect_started(0x2006, 0x0001_005a, 0, &ram);
         presenter.key_on(1 << 6, &ram);
         assert_eq!(presenter.renderer.route(6), Route::Original);
+    }
+
+    #[test]
+    fn a_long_session_keeps_only_the_sources_its_voices_hold() {
+        let mut ram = driver();
+        let mut presenter = Presenter::new(on());
+        for stamp in 0..2000 {
+            effect(&mut ram, 22, 14, 0x0004_0021, stamp);
+            effect(&mut ram, 23, 15, 0x0004_0021, stamp);
+            presenter.key_on((1 << 22) | (1 << 23), &ram);
+            presenter.update_scene(&ram, Some(MODE_FIELD), false);
+        }
+        own(&mut ram, 0, MUSIC, 1);
+        presenter.key_on(1, &ram);
+        presenter.update_scene(&ram, Some(MODE_FIELD), false);
+        assert_eq!(presenter.ids.len(), 2, "the last effect start and the music part");
     }
 
     #[test]

@@ -535,9 +535,15 @@ or on the game's own Sound screen, turns it off.
   screen's forward its reference; lost tracking keeps the last; leaving the
   headset clears it). The hosts' audio stays plain two-channel stereo at
   the SPU's 44.1 kHz (SDL and the browser resample to the device), so no
-  platform spatializer is stacked on it.
-- **Agents.** The `binaural` command changes settings given by name and
-  reports what is presented: each source (music: song, part and role;
+  platform spatializer is stacked on it, and an audio device or its rate
+  changing, pausing and resuming reach the presented sound exactly as they
+  reach the original: the renderer works before the host's queue, at the
+  SPU's own rate and clock, and never reads the device or the wall clock.
+- **Agents.** Agents change the mode as people do, through the settings
+  service: `settings_apply` with `{"change": {"Binaural": {...}}}` on the
+  desktop's `--control`, `xem.settings.apply({Binaural: {...}})` in the
+  browser. Without a host (xem-headless) the session's `binaural` command
+  changes the settings given by name. It reports what is presented: each source (music: song, part and role;
   effect: id, channels and emitter; its direction, pre-pan gain, level),
   each voice's identity and route, the listener, the first-person and head
   turns, the CD input's route and the coverage gaps. `audio_capture`
@@ -574,9 +580,9 @@ formation's centre, which stays put through the battle. `web/tests/binaural.test
 restored natively and in Chromium presents the same mix (99.6% of the
 samples identical, the rest within 1; the declared tolerance is 2, each
 host's own sin, cos and atan2 making the filters), and the presentation
-costs 2.1% of real time in Chromium on this machine, 5.4% with the processor
-throttled four times (a phone's budget; the cost test runs with the timed
-tests). `xr-game.test.mjs`: the listener turns with the emulated headset
+costs 2.1% of real time in Chromium on this machine, 5.4 and 7.4% in two
+runs with the processor throttled four times (a phone's budget; the cost
+test runs with the timed tests). `xr-game.test.mjs`: the listener turns with the emulated headset
 while the game is paused, and has no head after the session.
 
 Not done or not measured: no listening tests with people (direction and
