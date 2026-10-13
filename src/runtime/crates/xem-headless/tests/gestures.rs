@@ -380,6 +380,42 @@ fn battle_rings_in_gears_take_swipes() {
     assert_ne!(after["page"], 0x19, "it struck: {after}");
 }
 
+/// A battle's targets: an item from the lower slot's list, then a swipe
+/// left moves to the nearest target that way (the enemy), and a tap with
+/// the gaze on a party member steers the cursor there the game's own way
+/// and confirms it.
+#[test]
+fn battle_targets_take_swipes_and_gaze() {
+    let Some(mut player) = battle(false) else { return };
+    player.gesture("swipe-down", None);
+    player.rest(60);
+    assert_eq!(player.context()["list"], true, "{}", player.context());
+    player.gesture("tap", None);
+    player.rest(40);
+    assert_eq!(player.context()["targeting"], true, "{}", player.context());
+    let slot = |player: &mut Player| {
+        let targets = player.session.runtime.targets().expect("the targets");
+        targets.entries[targets.selected.unwrap()].ground.unwrap().slot
+    };
+    assert_eq!(slot(&mut player), 0, "Fei first");
+    player.gesture("swipe-left", None);
+    player.rest(20);
+    assert_eq!(slot(&mut player), 3, "the enemy, left of Fei");
+    let targets = player.session.runtime.targets().unwrap();
+    let (index, member) = targets.entries.iter().enumerate()
+        .find(|(_, e)| e.ground.unwrap().slot < 3 && (0.0..320.0).contains(&e.rect.centre().0) && (0.0..224.0).contains(&e.rect.centre().1))
+        .expect("a party member on the screen");
+    let wanted = member.ground.unwrap().slot;
+    player.gesture("tap", Some(member.rect.centre()));
+    for _ in 0..120 {
+        if player.context()["targeting"] != true { break; }
+        player.rest(1);
+    }
+    assert_eq!(player.context()["targeting"], false, "confirmed: {}", player.context());
+    let cursor = run(&mut player.session, json!({"cmd": "inspect", "path": "battle_target_cursor_slot"}));
+    assert_eq!(cursor, json!(wanted), "the cursor reached entry {index}");
+}
+
 /// The world map's control deck: a pinch captures the stick, the hand's
 /// travel ahead holds Up (the vehicle flies on), a second pinch lets go,
 /// and the Board key beside the screen presses L2 and R2 together.

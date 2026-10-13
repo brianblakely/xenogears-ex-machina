@@ -1038,8 +1038,11 @@ lists the selectable entries the screen shows (320x224 screen pixels, as
 the display shows the drawing area): the field menu's commands and a
 command's choice window (the arc tables `menu_highlight_x/y_table`; the
 labels sit about the tables' points), the shops' commands, Yes/No (their
-markers' quads) and a dialogue's choice lines, with the selected entry and
-how the D-pad steps it.
+markers' quads), a dialogue's choice lines and a battle's targets (each
+candidate's sprite projected as `battle_get_slot_screen_box` does, about a
+person's size), with the selected entry and how the D-pad steps it (a
+battle target is reached by the moves `battle_find_candidate_in_direction`
+makes: nearest candidate that way on the floor).
 
 On every host, `PlayerInput` turns these into presses the game reads as
 any player's (held and released for whole game frames, counted as the host
@@ -1154,8 +1157,10 @@ the browser's WebXR sessions (plan.md, the hand/gaze contract):
   the character. The command ring: a swipe activates its direction's slot
   (selecting it first unless highlighted, whose direction would flip the
   page), a tap pages the ring (its mark drawn below it); the attack ring:
-  up Weak, left Strong, down Fierce, right ends the sequence; lists and
-  targets confirm on a tap and back out to the right. Presses queued for
+  up Weak, left Strong, down Fierce, right ends the sequence; lists
+  confirm on a tap and back out to the right; targets take the one under
+  the gaze on a tap (else confirm the selected one), move up, down and
+  left with those swipes and back out to the right. Presses queued for
   one interface never reach the next (`PlayerInput`).
 - **Pauses.** The overhand grab toggles the player's Pause in every
   context (no game frame runs; head tracking, drawing, the panel and app

@@ -13,7 +13,8 @@
 //! | Menus | | select the entry gazed at (or the selected one) | later entries; next character outside a list | earlier entries; previous character | | back |
 //! | Battle commands | | next page of the ring | the ring's upper slot | lower | left | right |
 //! | Battle attacks | | | Weak | Fierce | Strong | end the sequence |
-//! | Battle lists, targets | | select / confirm | later | earlier | | back |
+//! | Battle lists | | select | later | earlier | | back |
+//! | Battle targets | | the target gazed at (or the selected one) | up | down | left | back |
 use crate::gesture::{Gesture, Swipe};
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -111,7 +112,7 @@ pub fn tap_at(at: (f32, f32), ui: Context, field: Option<&Field>, targets: Optio
             pinch(ui, Some(at), Some(field))
         }
         Context::Dialogue { choice: None } => Some(press([GameAction::Confirm])),
-        Context::Dialogue { choice: Some(_) } | Context::Menu { .. } => {
+        Context::Dialogue { choice: Some(_) } | Context::Menu { .. } | Context::Battle { targeting: true, .. } => {
             let index = targets?.at(at)?;
             Some(Out::Select { index, confirm: true })
         }
@@ -144,7 +145,7 @@ fn tap(ui: Context, aim: Aim, field: Option<&Field>, targets: Option<&Targets>) 
             let index = targets.zip(aim).and_then(|(t, aim)| t.at(aim))?;
             Some(Out::Select { index, confirm: true })
         }
-        Context::Menu { .. } => Some(match targets.zip(aim).and_then(|(t, aim)| t.at(aim)) {
+        Context::Menu { .. } | Context::Battle { targeting: true, .. } => Some(match targets.zip(aim).and_then(|(t, aim)| t.at(aim)) {
             Some(index) => Out::Select { index, confirm: true },
             None => press([GameAction::Confirm]),
         }),
@@ -214,6 +215,13 @@ fn swipe(direction: Swipe, ui: Context, aim: Aim, targets: Option<&Targets>) -> 
                 None => vec![],
             }
         }
+        // Targets: the directions move to the nearest that way.
+        Context::Battle { targeting: true, .. } => match direction {
+            Swipe::Right => vec![press([GameAction::Cancel])],
+            Swipe::Up => vec![press([GameAction::Up])],
+            Swipe::Down => vec![press([GameAction::Down])],
+            Swipe::Left => vec![press([GameAction::Left])],
+        },
         Context::Battle { .. } => match direction {
             Swipe::Right => vec![press([GameAction::Cancel])],
             Swipe::Up => vec![press([GameAction::Down])],
@@ -285,7 +293,7 @@ mod tests {
 
     fn list() -> Targets {
         let rect = |y: f32| Rect { x: 100.0, y, width: 100.0, height: 14.0 };
-        Targets { what: "dialogue_choice", entries: vec![Entry { rect: rect(100.0), select: None }, Entry { rect: rect(114.0), select: None }], selected: Some(0), steps: Steps::Ring { count: 2, next: GameAction::Down } }
+        Targets { what: "dialogue_choice", entries: vec![Entry { rect: rect(100.0), select: None, ground: None }, Entry { rect: rect(114.0), select: None, ground: None }], selected: Some(0), steps: Steps::Ring { count: 2, next: GameAction::Down } }
     }
 
     #[test]

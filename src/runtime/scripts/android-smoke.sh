@@ -335,7 +335,9 @@ PY
     shot 08-game-start-pressed
 
     echo "== the touch deck: a finger held on Confirm holds Cross"
-    deck=$(wait_for "xem: touch deck Confirm " 30)
+    # Logged once the game shows (before this step's mark): the latest place.
+    deck=$(grep "xem: touch deck Confirm " "$log" | tail -1)
+    [ -n "$deck" ] || fail "no touch deck logged"
     read -r x y w h <<<"$(sed -E 's/.*touch deck Confirm ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+).*/\1 \2 \3 \4/' <<<"$deck")"
     mark
     "${adb[@]}" shell input swipe $((x + w / 2)) $((y + h / 2)) $((x + w / 2)) $((y + h / 2)) 800

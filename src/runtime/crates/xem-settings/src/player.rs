@@ -346,7 +346,7 @@ mod tests {
         let rect = |y: f32| Rect { x: 0.0, y, width: 50.0, height: 10.0 };
         let mut targets = Targets {
             what: "commands",
-            entries: (0..7).map(|i| Entry { rect: rect(100.0 - 10.0 * i as f32), select: None }).collect(),
+            entries: (0..7).map(|i| Entry { rect: rect(100.0 - 10.0 * i as f32), select: None, ground: None }).collect(),
             selected: Some(0),
             steps: Steps::Ring { count: 7, next: GameAction::Up },
         };

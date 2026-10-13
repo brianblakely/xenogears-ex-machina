@@ -17,6 +17,16 @@
 //! - A field dialogue's choice: its window's text lines (the text window at
 //!   +0x18: x +0x1C, y +0x1E, width +0x20, line height +0x2C, first line
 //!   +0x2E), Down to the next, wrapping.
+//! - A battle's target choice (`battle_choose_target`): the candidates
+//!   (`battle_target_candidates` 0x800C3E90, 0xFF unused; selectable ones in
+//!   `battle_target_candidate_mask` 0x800C3D64; the selected slot
+//!   `battle_target_cursor_slot` 0x800C3E2C), each at its sprite
+//!   (`battle_area.sprites` 0x800CCB3C) projected as
+//!   `battle_get_slot_screen_box` does (`battle_camera_view_matrix`
+//!   0x800D30BC, screen 512, offset (160, 164)). A direction moves to the
+//!   nearest candidate that way on the floor (`battle_find_candidate_in_direction`
+//!   on the slots' x and z, `battle_area_slots` 0x800C3EB4), so the way to a
+//!   candidate is searched over those moves.
 use crate::action::GameAction;
 use crate::context::Context;
 use crate::memory::GameMemory;
@@ -48,6 +58,19 @@ pub enum Steps {
     Ring { count: usize, next: GameAction },
     /// Each entry has its own action (Yes/No).
     Direct,
+    /// The directions move to the nearest entry that way on the battle's
+    /// floor ([`Ground`]).
+    Compass,
+}
+
+/// A battle target's slot and its place on the floor.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+pub struct Ground {
+    pub slot: u8,
+    pub x: i16,
+    pub z: i16,
+    /// The game lets the cursor onto it.
+    pub selectable: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize)]
@@ -55,6 +78,9 @@ pub struct Entry {
     pub rect: Rect,
     /// The action that selects it directly (`Steps::Direct`).
     pub select: Option<GameAction>,
+    /// Its place (`Steps::Compass`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ground: Option<Ground>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -68,7 +94,7 @@ pub struct Targets {
 impl Targets {
     /// The entry at a screen point.
     pub fn at(&self, point: (f32, f32)) -> Option<usize> {
-        self.entries.iter().position(|e| e.rect.contains(point))
+        self.entries.iter().position(|e| e.ground.is_none_or(|g| g.selectable) && e.rect.contains(point))
     }
 
     /// The next press toward entry `to`, if not selected already.
@@ -83,8 +109,71 @@ impl Targets {
                 let forward = (to + count - from) % count;
                 Some(if forward <= count / 2 { next } else { opposite(next) })
             }
+            Steps::Compass => {
+                // The first move of the fewest that reach it.
+                let from = self.selected?;
+                let mut first: Vec<Option<GameAction>> = vec![None; self.entries.len()];
+                let mut queue = std::collections::VecDeque::from([from]);
+                let mut seen = vec![false; self.entries.len()];
+                *seen.get_mut(from)? = true;
+                while let Some(at) = queue.pop_front() {
+                    for (direction, action) in COMPASS.into_iter().enumerate() {
+                        let Some(next) = self.compass_move(at, direction) else { continue };
+                        if !seen[next] {
+                            seen[next] = true;
+                            first[next] = first[at].or(Some(action));
+                            if next == to {
+                                return first[next];
+                            }
+                            queue.push_back(next);
+                        }
+                    }
+                }
+                None
+            }
         }
     }
+
+    /// Where direction `direction` (0 Right, 1 Down, 2 Left, 3 Up) moves the
+    /// cursor from entry `from`, as `battle_find_candidate_in_direction`
+    /// (80084890) finds it and `battle_choose_target` accepts it: the
+    /// nearest other candidate inside that quarter, on the slots' 16-bit
+    /// x and z.
+    fn compass_move(&self, from: usize, direction: usize) -> Option<usize> {
+        let origin = self.entries.get(from)?.ground?;
+        let mut best = 0xFF_FFFF;
+        let mut nearest = None;
+        for (i, entry) in self.entries.iter().enumerate() {
+            let Some(g) = entry.ground else { continue };
+            if g.slot == origin.slot {
+                continue;
+            }
+            let dz = i32::from(g.z as u16) - i32::from(origin.z as u16);
+            let dx = i32::from(g.x as u16) - i32::from(origin.x as u16);
+            let angle = ratan2(dz, dx);
+            let inside = match direction {
+                0 => ((angle + 0x200) as u16) < 0x400,
+                1 => ((angle + 0x600) as u16) < 0x400,
+                2 => ((angle + 0x800) as u16) < 0x200 || ((angle - 0x600) as u16) <= 0x200,
+                _ => ((angle - 0x200) as u16) < 0x400,
+            };
+            let distance = dz.wrapping_mul(dz).wrapping_add(dx.wrapping_mul(dx));
+            if inside && distance < best {
+                best = distance;
+                nearest = Some((i, g));
+            }
+        }
+        let (i, g) = nearest?;
+        g.selectable.then_some(i)
+    }
+}
+
+/// The battle's directions in `battle_pressed_key` order.
+const COMPASS: [GameAction; 4] = [GameAction::Right, GameAction::Down, GameAction::Left, GameAction::Up];
+
+/// `ratan2(y, x)`: the angle in 4096ths of a turn, -2048..=2048.
+fn ratan2(y: i32, x: i32) -> i32 {
+    (f64::from(y).atan2(f64::from(x)) / std::f64::consts::TAU * 4096.0).round() as i32
 }
 
 fn opposite(action: GameAction) -> GameAction {
@@ -125,7 +214,7 @@ fn table(memory: &dyn GameMemory, xs: u32, ys: u32, first: usize, count: usize, 
     (first..first + count).map(|i| {
         let hx = s32_at(memory, xs + i as u32 * 4)?;
         let hy = s32_at(memory, ys + i as u32 * 4)?;
-        Some(Entry { rect: highlight(hx, hy, width), select: None })
+        Some(Entry { rect: highlight(hx, hy, width), select: None, ground: None })
     }).collect()
 }
 
@@ -134,6 +223,7 @@ pub fn targets(memory: &dyn GameMemory, ui: Context) -> Option<Targets> {
     match ui {
         Context::Menu { screen, cursor, choice, choices, .. } => menu(memory, screen, cursor, choice, choices),
         Context::Dialogue { choice: Some(_) } => dialogue_choice(memory),
+        Context::Battle { targeting: true, .. } => battle_targets(memory),
         _ => None,
     }
 }
@@ -158,7 +248,7 @@ fn menu(memory: &dyn GameMemory, screen: u8, cursor: u8, choice: u8, choices: u8
                 let x = f32::from(s16_at(memory, poly + 8)?);
                 let y = f32::from(s16_at(memory, poly + 0xA)?);
                 // The marker and the word after it.
-                Some(Entry { rect: Rect { x: x - 4.0, y: y - 6.0, width: 56.0, height: 24.0 }, select: Some(if i == 2 { GameAction::Left } else { GameAction::Right }) })
+                Some(Entry { rect: Rect { x: x - 4.0, y: y - 6.0, width: 56.0, height: 24.0 }, select: Some(if i == 2 { GameAction::Left } else { GameAction::Right }), ground: None })
             }).collect::<Option<Vec<_>>>()?;
             return Some(Targets { what: "yes_no", entries, selected: Some(if shown[0] != 0 { 0 } else { 1 }), steps: Steps::Direct });
         }
@@ -203,10 +293,59 @@ fn dialogue_choice(memory: &dyn GameMemory) -> Option<Targets> {
         let entries = (0..count).map(|k| Entry {
             rect: Rect { x: x - 16.0, y: y + line * (f32::from(first) + k as f32 - top), width: width + 16.0, height: line },
             select: None,
+            ground: None,
         }).collect();
         return Some(Targets { what: "dialogue_choice", entries, selected: usize::try_from(index).ok(), steps: Steps::Ring { count, next: GameAction::Down } });
     }
     None
+}
+
+const TARGET_CANDIDATES: u32 = 0x800C_3E90;
+const TARGET_CANDIDATE_MASK: u32 = 0x800C_3D64;
+const TARGET_CURSOR_SLOT: u32 = 0x800C_3E2C;
+const AREA_SLOTS: u32 = 0x800C_3EB4;
+const AREA_SPRITES: u32 = 0x800C_CB3C;
+const CAMERA_VIEW_MATRIX: u32 = 0x800D_30BC;
+
+/// `RotTransPers` with the battle's camera: a point's screen position and depth.
+fn project(matrix: &[i32; 12], point: [i32; 3]) -> Option<(f32, f32, f32)> {
+    let row = |r: usize| (0..3).map(|c| i64::from(matrix[r * 3 + c]) * i64::from(point[c])).sum::<i64>() / 4096 + i64::from(matrix[9 + r]);
+    let (x, y, z) = (row(0), row(1), row(2));
+    (z > 0).then(|| {
+        let scale = 512.0 / z as f32;
+        (160.0 + x as f32 * scale, 164.0 + y as f32 * scale, z as f32)
+    })
+}
+
+fn battle_targets(memory: &dyn GameMemory) -> Option<Targets> {
+    let candidates = bytes(memory, TARGET_CANDIDATES, 11)?;
+    let mask = u16::from_le_bytes(bytes(memory, TARGET_CANDIDATE_MASK, 2)?.try_into().ok()?);
+    let cursor = u8_at(memory, TARGET_CURSOR_SLOT)?;
+    let m = bytes(memory, CAMERA_VIEW_MATRIX, 0x20)?;
+    let half = |o: usize| i32::from(i16::from_le_bytes([m[o], m[o + 1]]));
+    let word = |o: usize| i32::from_le_bytes([m[o], m[o + 1], m[o + 2], m[o + 3]]);
+    let matrix = [half(0), half(2), half(4), half(6), half(8), half(10), half(12), half(14), half(16), word(0x14), word(0x18), word(0x1C)];
+    let mut entries = Vec::new();
+    let mut selected = None;
+    for slot in candidates.into_iter().filter(|c| *c < 11) {
+        let place = AREA_SLOTS + u32::from(slot) * 0x1C;
+        let sprite = ram(s32_at(memory, AREA_SPRITES + u32::from(slot) * 4)?)?;
+        let at = [s32_at(memory, sprite)? >> 16, s32_at(memory, sprite + 4)? >> 16, s32_at(memory, sprite + 8)? >> 16];
+        let (x, y, depth) = project(&matrix, at)?;
+        // A box the size of a person standing on the point (about 100
+        // units tall: Fei measures 45 pixels at depth 1074), at least
+        // comfortable to point at.
+        let size = (512.0 * 100.0 / depth).clamp(24.0, 200.0);
+        if slot == cursor {
+            selected = Some(entries.len());
+        }
+        entries.push(Entry {
+            rect: Rect { x: x - size * 0.35, y: y - size, width: size * 0.7, height: size },
+            select: None,
+            ground: Some(Ground { slot, x: s16_at(memory, place + 0xA)?, z: s16_at(memory, place + 0xC)?, selectable: mask & (1 << slot) != 0 }),
+        });
+    }
+    (!entries.is_empty()).then_some(Targets { what: "battle_targets", entries, selected, steps: Steps::Compass })
 }
 
 #[cfg(test)]
@@ -215,16 +354,37 @@ mod tests {
 
     #[test]
     fn rings_step_the_short_way_and_direct_entries_their_own() {
-        let entry = Entry { rect: Rect { x: 0.0, y: 0.0, width: 10.0, height: 10.0 }, select: None };
+        let entry = Entry { rect: Rect { x: 0.0, y: 0.0, width: 10.0, height: 10.0 }, select: None, ground: None };
         let ring = Targets { what: "commands", entries: vec![entry; 7], selected: Some(1), steps: Steps::Ring { count: 7, next: GameAction::Up } };
         assert_eq!(ring.step_toward(3), Some(GameAction::Up));
         assert_eq!(ring.step_toward(6), Some(GameAction::Down));
         assert_eq!(ring.step_toward(1), None);
         let yes = Entry { select: Some(GameAction::Left), ..entry };
-        let no = Entry { select: Some(GameAction::Right), rect: Rect { x: 20.0, ..entry.rect } };
+        let no = Entry { select: Some(GameAction::Right), rect: Rect { x: 20.0, ..entry.rect }, ground: None };
         let pair = Targets { what: "yes_no", entries: vec![yes, no], selected: Some(1), steps: Steps::Direct };
         assert_eq!(pair.step_toward(0), Some(GameAction::Left));
         assert_eq!(pair.at((25.0, 5.0)), Some(1));
+    }
+
+    #[test]
+    fn battle_targets_step_the_way_the_game_moves_its_cursor() {
+        // The debug battle's party (Fei, Elly, Citan) and its enemy, on the floor.
+        let place = |slot, x, z| Entry {
+            rect: Rect { x: 0.0, y: 0.0, width: 1.0, height: 1.0 },
+            select: None,
+            ground: Some(Ground { slot, x, z, selectable: true }),
+        };
+        let entries = vec![place(0, 4360, 4160), place(1, 4420, 3840), place(2, 4460, 4000), place(3, 3820, 4040)];
+        let from = |selected| Targets { what: "battle_targets", entries: entries.clone(), selected: Some(selected), steps: Steps::Compass };
+        assert_eq!(from(0).step_toward(3), Some(GameAction::Left));
+        assert_eq!(from(0).step_toward(2), Some(GameAction::Down), "Citan is nearer than Elly");
+        // From the enemy Right reaches Fei first, then Down Citan.
+        assert_eq!(from(3).step_toward(2), Some(GameAction::Right));
+        assert_eq!(from(2).step_toward(1), Some(GameAction::Down));
+        // An unselectable target is not a place to move to.
+        let mut only = from(0);
+        only.entries[3].ground.as_mut().unwrap().selectable = false;
+        assert_eq!(only.step_toward(3), None);
     }
 }
 
