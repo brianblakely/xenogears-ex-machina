@@ -339,7 +339,7 @@ remains available; graphics style and viewing mode are independent choices.
   focus, fullscreen/pointer-lock release, browser-reserved keys, audio activation,
   session visibility/end and permission denial without stuck inputs or lost saves;
   Esc must not be the only way to reach app settings in a browser.
-- [ ] Verify human/agent parity, the pause/focus rules below and actual-device
+- [x] Verify human/agent parity, the pause/focus rules below and actual-device
   gesture reliability. Test each hand alone with the other absent from tracking,
   gaze availability/permissions and explicit pointer alternatives, running jumps,
   interaction interruptions, dialogue, shops, both battle types, world-map/vehicle
