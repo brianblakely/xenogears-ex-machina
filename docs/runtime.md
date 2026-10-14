@@ -613,10 +613,13 @@ or on the game's own Sound screen, turns it off.
 
 Tests: `xem-spu` (the tap reconstructs every sample and changes nothing);
 `xem-binaural`'s units (levelling, interaural cues, the shelf, the pan law,
-gains, crossfades, resets, the knee, the stage's rotation; a tone turned
-from right to left stays as smooth through the glide as held at either end;
-a source's status says where it heads and how its voices pan; a journal
-mixes again exactly what was mixed, its parts adding up) and
+gains, crossfades, resets, the knee, the stage's rotation; a 300 Hz tone
+turned at once from right to left glides with its largest second
+difference within one and a half times the tone's held still at either
+end, 79 and 116 against 55 and 91 on the two sides, where without the
+filters' fade a block boundary steps, 4 568; a source's status says where
+it heads and how its voices pan; a journal mixes again exactly what was
+mixed, its parts adding up) and
 `tests/directions.rs`, where noise placed in 48 directions between the
 measured ones is recovered from the rendered ears alone (spectra and delay,
 matched against every measured direction) within 1.5 degrees (median), 3.5
@@ -655,8 +658,21 @@ easing swing the camera over 97 frames: 196 placed directions follow it,
 703 degrees in all. The battle's scripts start 16 effects no sprite's
 command started: each is a coverage gap of the battle mode, heard in its
 original mix (9 022 voice frames). The battle music's 20 parts keep their
-places through the swings, and the swings and the 83 source switches stand
-out at most 0.61 and 1.10 dB more than the original's in the high band.
+places through the swings, and the swings, the 83 source switches and the
+return to the field (frame 9 515, where the game's mode goes from the
+battle back to the field) stand out at most 0.61, 1.10 and 0.62 dB more
+than the original's in the high band. In Lahan's opening scene (field 2,
+entered as the game's development menu enters it, 1 200 frames plain and
+under Binaural) the scene's script cuts the camera three times, turning it
+96, 114 and 59 degrees from one frame to the next as the field reader sees
+it, while the village's song sounds (8 to 20 parts either side of a cut)
+and nothing else is placed: each of its 20 parts keeps its place on the
+stage through the cuts, heard from it turned only by its own pan (15 857
+part frames), the parts sounding before a cut play on after it on the same
+sources from the same places, and around the cuts the high band stands
+out 0.3 to 0.6 dB less than the original's, its level no more than 1.3 dB
+over the original's (nothing placed moves there, so the band's level
+itself is checked too).
 Along a walk through
 field 509 (`tests/reference-inputs/binaural-field509-walk.json`, a session
 log: six emitter actors playing three sounds, of which the original keeps
@@ -694,9 +710,13 @@ character's five turns in place move nothing beyond what the camera's glide
 moves (within 4e-6 degree). Each of the 15 emitter starts is a source of
 its own, starting with its slot's actor and sound and following that actor
 only, both channels' voices on it (3 425 frames); no source is two starts,
-the two tails (starts whose slot moved on) keep their last direction, and
-the only coverage gaps are the menu's interface sounds, in the field mode,
-heard in their original mix. The music's 18 parts keep their places
+the two tails (starts whose slot moved on, a frame each) keep their last
+direction, and every voice on an emitter slot's channels playing the sound
+the slot holds is placed (7 209 voice frames of its three sounds). The
+only coverage gaps are the menu's interface sounds (0x3, 0x5d and 0x5e, in
+the field mode, heard in their original mix): none is a sound an emitter
+slot held, and each was keyed on with the menu open, opening or closing.
+The music's 18 parts keep their places
 (`placement`) through 372 frames of camera movement and 381 of walking,
 heard there turned only by their own pan, which is their voice's (within
 0.03 of unpanned volumes, 11 949 frames); looking around in first person
@@ -708,21 +728,26 @@ most 1.24 and 0.10 dB more than the original's, in the least of its three
 parts (8-11, 11-15, 15-20 kHz), a click being a step from one sample to the
 next and so in every part; placing a sound reshapes the band part by part,
 its level there up to 5.3 dB over the original's (1.7 dB under it over the
-walk). Before the renderer's filters cross-faded, the music's immersion
+walk), and taken whole rather than part by part the band stands out up to
+3.1 dB more than the original's there (at an attack whose waveform is
+smooth). Before the renderer's filters cross-faded, the music's immersion
 going from 0 to 70 stood out 5.8 dB there. The placed session keeps a tap
 capture over 500 frames (the camera's quarter turn, turns in place, the
-menu): mixed again it is the output sample for sample; each placed source
-alone, its voices and nothing else, is its signal through its pair once,
-for the seven parts heard from one place throughout within 0.02 dB of what
-the pair's spectrum makes of their signal's (one transform of the whole
-window; twice would be 3 dB or more over it); against their voices' energy
-in the original mix the 25 sources are within 3 dB, 18 of them within 1.5
-(the pairs are levelled for pink noise: a rhythm part ahead, half its
-energy above 4 kHz where the pair lowers it, is 2.8 dB under, supports to
-the sides up to 2 dB over); and the direct path alone (every voice routed
-to a source silenced) is the original minus those voices, the rest as the
-SPU mixed it, the menu's sounds and the reverb return among it, within 3
-LSB. Mono and Wide on the same walk differ
+menu): mixed again it is the output sample for sample; each of the 25
+sources heard in it, alone (its voices and nothing else), has the energy
+of its signal (its voices at the driver's gains before panning, times the
+main volume) through the HRTF pairs of where its status says it was heard,
+frame by frame, and the bass shelf, within 0.11 dB (0.02 for the 17 heard
+from one place throughout; the other 8 moved), where mixed in the
+original mix as well it would be 1.7 dB or more over and placed twice 3 dB
+or more: each is mixed once. Against its voices' energy in the
+original mix each source is within 3 dB, 18 of the 25 within 1.5 (the
+pairs are levelled for pink noise: a rhythm part ahead, half its energy
+above 4 kHz where the pair lowers it, is 2.8 dB under, supports to the
+sides up to 2 dB over); and the direct path alone (every voice routed to a
+source silenced) is the original minus those voices, the rest as the SPU
+mixed it, the menu's sounds and the reverb return among it, within 3 LSB.
+Mono and Wide on the same walk differ
 from Stereo only in what the sound-mode findings
 (`analysis/formats/sound-modes.md`) name: the mode bits;
 Mono's staged volumes (every channel's gain before its law the same in all
@@ -771,8 +796,28 @@ memory, not reached in the game; headsets and phones only through IWER and a
 throttled processor (OpenXR's Monado run does not check the presented
 head). The battle camera's swings the battle test hears are its own (the
 framing yaw turned in both sessions): the retained battle's camera turns
-only before any combatant sounds. The interaural delay, applied as a phase ramp, leaves
-up to 1e-4 of a filter's energy (-40 dB) past the 128 samples a block
+only before any combatant sounds. No placed effect sounds across a camera
+cut on the routes kept (Lahan's cuts carry the song alone), so an effect's
+direction jumping at a cut is measured only through the same glide
+elsewhere: the renderer's direction-jump test and the walk's immersion
+change.
+A start's tail keeping its place when its slot takes another actor for the
+same sound is checked on synthetic memory only (on the walk no slot takes
+a newcomer for the same sound, and its two tails last a frame each). Two
+measures differ from the ones first set for this verification: each
+source alone is within 1.5 dB of its voices' original energy for 18 of the
+walk's 25 sources only (narrow-band sounds take their pair's colouring, up
+to 2.8 dB here, and the 3 dB the test allows is this walk's, not a
+guarantee), so that each is mixed once rests on its energy through the
+pairs it was heard from instead; and the high band's level around an
+event is no more than 3 dB over the original's at the cuts (asserted there,
+where nothing placed moves), the swings, the settings changes, the
+restores and the return to the field (measured), but not where a placed
+sound starts (5.3 dB over in the field, 3.6 in the battle), so a click is
+measured by how far a block stands out of its surroundings, in the least
+of the band's three parts, rather than by that level. The interaural
+delay, applied as a phase ramp, leaves up to 1e-4 of a filter's energy
+(-40 dB) past the 128 samples a block
 convolves without wrapping; it wraps into the start of the block (a 300 Hz
 tone held to one side shows a second difference of 55 where its own is
 about 13).

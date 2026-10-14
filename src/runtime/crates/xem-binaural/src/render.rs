@@ -1067,8 +1067,10 @@ mod tests {
         // A tone placed on the right turns to the left at once (a camera
         // cut, a jump of the music's immersion): the glide sweeps it past
         // the front at up to 6 degrees a block, its filters remade block
-        // after block, and the output stays as smooth (its largest second
-        // difference) as the tone held still at either end.
+        // after block, and the output's largest second difference stays
+        // within one and a half times (plus 4) the tone's held still at
+        // either end: 79 and 116 against 55 and 91 on the two sides, where
+        // without the fade a block boundary steps, 4 568.
         let tone = |n: usize| ((n as f32 * std::f32::consts::TAU * 300.0 / 44_100.0).sin() * 12_000.0) as i16;
         let (start, end) = ([1.0, 0.0, 0.0], [-1.0, 0.0, 0.2]);
         let placed = |direction: [f32; 3]| {
@@ -1091,6 +1093,7 @@ mod tests {
         for e in 0..2 {
             let calm = still.iter().map(|s| roughness(&s[2 * 20 * BLOCK..], e)).max().unwrap();
             let glide = roughness(&turning, e);
+            eprintln!("side {e}: a second difference of {glide} while turning, {calm} held still");
             assert!(2 * glide <= 3 * calm + 8, "side {e}: a second difference of {glide} while turning, {calm} held still");
         }
     }
