@@ -3462,6 +3462,101 @@ kernel menu's setup gives); other characters' and gears' jumps are not
 measured, nor is a walk off a floor with Run held (the fall's 12 units an
 update are the jumps' air speed).
 
+### Cutscene skipping
+
+Phase 7 (plan.md) asks for cutscene skipping that keeps the story's
+outcome: the original scripts run unthrottled, Confirm is pressed at the
+dialogue waits, and the skip ends at the next moment the player controls.
+The user made it conditional on the game marking that moment clearly: the
+skip stops at the first frame the marker is set and lands at the real end
+of the scene on every tested scene, with no frame count or other
+heuristic. The game's control grant, its only record of that moment, is
+not such a marker, so the runtime has no cutscene skip. The measurements
+follow.
+
+**The candidate marker.** The field's only record that the player controls
+the character is its control grant, `field_player_control_polled`
+(0x800ADB68): `field_event_run_all_actors` clears it at the start of every
+event pass, and the controlled actor's `a7`
+(`field_event_request_player_control`) sets it, reading the pad, when no
+choice is open and `field_work.encounter_inhibition` is 0. A scene holds
+the field through `fe 54` (`take_script_control`: the inhibition -1 and
+both `script_control` bytes 1) or `15`, and lets it go through `fe 53` or
+`14`. The candidate: the field mode, the grant set, the inhibition 0, both
+script-control bytes 0, no menu requested (`field_menu_request` 0xFF) and
+no dialogue window open (`field_work.open_windows` 0).
+
+**Measured** headless (`xem-headless --control`, suite profile, at 1x)
+from each scene's start: Confirm held for one vertical blank and released
+for one only while a dialogue window waits (flag 8, wait state 1-3, no
+choice shown, the owner's next opcode not `a9`) or an actor rests on a
+`31 0x0020` loop; choices answered with their first option, battles fought
+with Cross, menus left with Circle; the marker read every vertical blank.
+A scene's real end is where the marker then holds without input to the end
+of the run (1 800 vertical blanks for the new game, 3 600 for the story
+routes, 600 for the two map openings). Frames are vertical blanks since
+boot. The story routes start as `tools/memcard_routes.json`'s saves do,
+from the user's first save patched to the route's start and loaded through
+the title's Continue (`tools/memcard_saves.py`).
+
+| Scene (start) | Maps | Marker set | Real end |
+| --- | --- | --- | --- |
+| New game to Fei's room (disc 1, the title's New Game) | 490 (the title: movie 13, 2 057-20 139), 4 (the narration), 2, 14 (a battle 31 919-35 562) | 37 462 | 37 462 (map 14, story 6) |
+| Kislev (`kislev-capital`: story 96, map 213) | 213, 218, 199 | 9 526-9 617 on map 218, then 15 853 | 15 853 (map 199, story 105) |
+| The pirates' lair (`pirates-lair`: story 54, map 80) | 80, 79, 74 | 13 110 | 13 110 (map 74, story 56) |
+| Shevat (`sky-city-shevat`: story 174, map 421) | 421, 420, 273, 437 | 6 998-7 107 on map 420, then 15 047 | 15 047 (map 437, story 176) |
+| Into Solaris (`into-solaris`: story 207, map 453) | 453, 456, 452, 466 | 10 912 | 10 912 (map 466, story 209) |
+| The soul vessel (disc 2, `soul-vessel`: story 258, map 622) | 622 | not before a choice at 7 279 (its first answer opens the field menu) | at the choice |
+| First and last (disc 2, `first-and-last`: story 330, map 687) | 687 | 4 135 | 4 135 (story 340) |
+| Map 286's opening (`enter_field`, story 147) | 286 | 7 193 | 7 193 |
+| Map 197's opening (`enter_field`) | 197 | 2 676 | 2 676 |
+
+In two of the seven story scenes the grant comes in the middle. On map
+218 the scene's director (actor 0's event 1, +0x017D) fades the screen out
+(`b4 fade_out #1`), brings in party member 5 (`fe 18`, `fe 1a`, which wait
+for the character's files) and only then takes the field (`fe 54` at
++0x0187, frame 9 618): the player's `a7` grants control for the 92
+vertical blanks between (about 1.5 s), and the scene goes on with dialogue
+from 10 418 to 12 346, moves to map 199 at 12 554 and talks on there until
+15 847; control comes at 15 853. On map 420 actor 18's event 1 (+0x49CA) fades out, waits for the
+music to fade (`fe 0e music_fade #0, #0`) and takes the field at +0x49DB
+(frame 7 108) after 110 vertical blanks of grant; with Up held the leader
+walks from (x, z) (-2184, 256) to (-2048, 280) in the dark before the
+scene takes over again. A skip stopping at the first frame would stop
+6 327 and 8 049 vertical blanks before these scenes end. The runs are
+deterministic: Kislev's again from its start gives the same frames.
+
+**Refinements.** Both early grants come with the screen faded out
+(`field_faded_out` 1, fade channel 0 at full), and also requiring the
+screen faded in (`field_faded_out` 0) passes all nine scenes above. It
+does not make the marker clear, because the scripts also let the field go
+in the middle of a scene with the screen shown. A sweep of both discs'
+scripts (the `tools.analysis.events` walk) finds `fe 53` or `14` followed
+on the same flow by `fe 54` or `15` 44 times on 30 maps, most behind
+exclusive branches on variables or trigger zones. Two let go and take the
+field back unconditionally, each between messages of one scene: map 197's
+zone scene (actor 26's event 1, +0x0AF9: let go, `wait_countdown #300`,
+which the slot's 8-bit countdown keeps as 44 field frames, take the field
+again, two more messages, a map change) and the talk event of map 286's
+actor 7 (+0x05DE: let go after three messages, waits of 24 and 45 field
+frames around an animation, take the field again, let go, a fourth
+message). With the player's actor in its `a7` loop there, as it was
+through both measured early grants, the grant, refined or not, is set for
+about 90 and 140 vertical blanks (two a field frame) while the scene still
+runs. Nothing the game keeps tells those windows from a scene's end:
+telling them apart takes a time threshold or reading ahead in the scripts,
+the heuristics the direction rules out. (`tools/memcard_saves.py`, which
+plays routes to a story value, takes the field's control as the player's
+only after 16 checks 8 vertical blanks apart for the same reason.)
+
+Not done or not measured: the scenes at map 197 +0x0AF9 and map 286
++0x05DE were not reached on the game (at `enter_field`'s story, map 197's
+trigger zones lie beyond a closed door and map 286's actor 7 is disabled),
+so their windows are read from the scripts; the sweep follows one actor's
+flow at a time, so a scene one actor lets go and another takes back is not
+counted. The early grants were measured headless only; the browser and the
+other hosts were not run.
+
 ## Desktop host and settings panel
 
 `xem-desktop` opens an SDL3 window (Wayland or X11), presents through wgpu with
