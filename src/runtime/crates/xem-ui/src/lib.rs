@@ -13,8 +13,8 @@ use std::rc::{Rc, Weak};
 use std::time::Duration;
 use xem_settings::{
     APP_ACTIONS, AppAction, AppBinding, AppRequest, AudioOutput, EffectLevels, FAST_FORWARD_RATES, Fidelity, Filter, Graphics,
-    GraphicsProfile, PresentRate, QualityTier, Rejected, Scale, SettingChange, Settings, SettingsService,
-    GAME_ACTION_ROWS, GameBinding,
+    GraphicsProfile, PresentRate, QualityTier, RandomBattles, Rejected, Scale, SettingChange, Settings, SettingsService,
+    GAME_ACTION_ROWS, GameBinding, PLATFORMING_AREAS,
 };
 
 // Slint compiles its FemtoVG renderer module out on Android; the renderer
@@ -474,6 +474,11 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_mouse_sensitivity(i32::from(settings.mouse_sensitivity));
     panel.set_mouse_deadzone(i32::from(settings.mouse_deadzone));
     panel.set_run_by_default(settings.run_by_default);
+    panel.set_random_battles(match settings.random_battles {
+        RandomBattles::NotWhilePlatforming => 0,
+        RandomBattles::Original => 1,
+    });
+    panel.set_random_battles_note(random_battles_note(settings.random_battles).into());
     let assisted = settings.assisted;
     panel.set_assist_gestures(assisted.gestures);
     panel.set_assist_pointer(match assisted.pointer {
@@ -493,6 +498,17 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_rewind_history_max(xem_settings::MAX_REWIND_HISTORY_SECONDS as i32);
     show_binding(panel, settings);
     show_game_binding(panel, settings);
+}
+
+/// What a random-battles policy does, naming the areas it turns them off in.
+fn random_battles_note(battles: RandomBattles) -> String {
+    match battles {
+        RandomBattles::NotWhilePlatforming => {
+            let areas: Vec<&str> = PLATFORMING_AREAS.iter().map(|(name, _)| *name).collect();
+            format!("Off where jumping meets them: {}. Scripted battles and the world map's stay.", areas.join(", "))
+        }
+        RandomBattles::Original => "Wherever the original game has them.".into(),
+    }
 }
 
 /// The Saves section's index (settings.slint's `sections`).
@@ -651,6 +667,13 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
     panel.on_run_by_default_edited({
         let apply = apply.clone();
         move |enabled| apply(Some(SettingChange::RunByDefault(enabled)))
+    });
+    panel.on_random_battles_edited({
+        let apply = apply.clone();
+        move |index| {
+            let battles = if index == 1 { RandomBattles::Original } else { RandomBattles::NotWhilePlatforming };
+            apply(Some(SettingChange::RandomBattles(battles)))
+        }
     });
     panel.on_mouse_camera_edited({
         let apply = apply.clone();

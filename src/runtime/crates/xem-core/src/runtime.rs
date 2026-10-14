@@ -85,6 +85,9 @@ pub struct Services {
     /// A mode the game's Sound screen chose that the host has not taken
     /// for its setting yet (`Session::take_sound_mode_choice`).
     pub(crate) sound_mode_chosen: Option<u32>,
+    /// The field maps whose random battles the host turns off
+    /// (src/port/encounters.c), ascending, each once; none the original's.
+    pub(crate) random_battles_off: Vec<u16>,
     pub clock: Clock,
     pub pads: Pads,
     pub presentation: crate::presentation::Presentation,
@@ -268,6 +271,10 @@ impl ImportHandler for Services {
             "pause_requested" => Action::Return(u32::from(self.focus_pause.requested())),
             "actor_view" => Action::Return(self.actor_view),
             "attack_page" => Action::Return(u32::from(self.attack_page)),
+            "random_battles" => {
+                let off = u16::try_from(arg(0)).is_ok_and(|map| self.random_battles_off.binary_search(&map).is_ok());
+                Action::Return(u32::from(!off))
+            }
             "sound_mode" => Action::Return(self.sound_mode.unwrap_or(u32::MAX)),
             "sound_mode_change" => {
                 let changed = std::mem::take(&mut self.sound_mode_changed);

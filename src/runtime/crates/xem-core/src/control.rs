@@ -61,6 +61,12 @@ fn goes_back(start: u64, vblanks: impl IntoIterator<Item = u64>) -> Option<(usiz
     None
 }
 
+/// A `random_battles` command's `off`: field map numbers 0-4095.
+fn random_battle_maps(command: &Value) -> Option<Vec<u16>> {
+    let off = command.get("off")?.as_array()?;
+    off.iter().map(|map| map.as_u64().filter(|map| *map < 0x1000).map(|map| map as u16)).collect()
+}
+
 pub struct Session<M: GameModule> {
     pub runtime: Runtime<M>,
     pub schema: Option<Schema>,
@@ -314,6 +320,37 @@ impl<M: GameModule> Session<M> {
             self.record_control(json!({"cmd":"attack_page","kept":kept}));
             self.runtime.services().attack_page = kept;
         }
+    }
+
+    /// The field maps whose random battles the host turns off
+    /// (src/port/encounters.c): player control's random draw does not run
+    /// there, so no random battle starts, while scripted battles, map
+    /// changes and the world map's encounters stay the game's. `off` holds
+    /// field map numbers (the low 12 bits of `mode_field_map_id`) in any
+    /// order; none is the original's. It changes the game, so it is
+    /// recorded with the inputs, and a replay keeps the recorded maps.
+    pub fn set_random_battles(&mut self, off: &[u16]) -> Result<(), String> {
+        if self.replay_end.is_some() {
+            return Ok(());
+        }
+        self.apply_random_battles(off)
+    }
+
+    fn apply_random_battles(&mut self, off: &[u16]) -> Result<(), String> {
+        if self.runtime.services().random_battles_off == off {
+            return Ok(());
+        }
+        if let Some(map) = off.iter().find(|map| **map >= 0x1000) {
+            return Err(format!("random_battles turns off field maps 0-4095, not {map}"));
+        }
+        let mut maps = off.to_vec();
+        maps.sort_unstable();
+        maps.dedup();
+        if self.runtime.services().random_battles_off != maps {
+            self.record_control(json!({"cmd":"random_battles","off":maps}));
+            self.runtime.services().random_battles_off = maps;
+        }
+        Ok(())
     }
 
     /// The game's sound mode the host chooses (src/port/sound.c): 0 Mono,
@@ -683,6 +720,7 @@ impl<M: GameModule> Session<M> {
         let actor_view = self.runtime.services().actor_view;
         let attack_page = self.runtime.services().attack_page;
         let sound_mode = self.runtime.services().sound_mode;
+        let random_battles_off = self.runtime.services().random_battles_off.clone();
         let binaural = self.runtime.services().spu.binaural().map(|p| p.config());
         let services = self.runtime.services();
         json!({
@@ -699,6 +737,7 @@ impl<M: GameModule> Session<M> {
             "actor_view": actor_view,
             "attack_page": attack_page,
             "sound_mode": sound_mode,
+            "random_battles_off": random_battles_off,
             "binaural": binaural,
             "rewind": self.rewind.status(),
             "assist": self.assist.as_ref().map(|a| json!({"intent": a.intent, "phase": a.phase})),
@@ -752,6 +791,11 @@ impl<M: GameModule> Session<M> {
             "attack_page" => {
                 let kept = command.get("kept").and_then(Value::as_bool).ok_or("attack_page needs kept: true or false")?;
                 self.apply_attack_page(kept);
+                Ok(self.status())
+            }
+            "random_battles" => {
+                let off = random_battle_maps(command).ok_or("random_battles needs off: a list of field maps 0-4095")?;
+                self.apply_random_battles(&off)?;
                 Ok(self.status())
             }
             "actor_view" => {
@@ -926,7 +970,12 @@ impl<M: GameModule> Session<M> {
                 let actors: Vec<_> = field.actors.iter().flatten().map(|a| json!({
                     "index": a.index, "position": a.position, "screen": field.camera.project(a.position), "radius": a.radius,
                 })).collect();
-                Ok(json!({ "player": field.player, "camera_angle": field.camera.angle, "actors": actors }))
+                // The random draw, and whether the host turns it off here.
+                let draw = crate::field::RandomDraw::read(self.runtime.memory()).ok_or("no field")?;
+                let off_here = self.runtime.services().random_battles_off.binary_search(&draw.map).is_ok();
+                let mut random_draw = serde_json::to_value(draw).expect("random draw");
+                random_draw["off_here"] = json!(off_here);
+                Ok(json!({ "player": field.player, "camera_angle": field.camera.angle, "actors": actors, "random_draw": random_draw }))
             }
             "pick" => {
                 // The floor a screen point (field screen pixels) picks.
@@ -1111,7 +1160,7 @@ impl<M: GameModule> Session<M> {
                     "pad_queue_reads_last_frame": services.input_reads_last_frame,
                     "stopped": stopped,
                     "valid_commands": ["pad", "press", "hold", "act", "context", "targets", "field", "pick", "navigate", "interact", "assist", "assist_stop", "shop_quantity", "frames", "run_until", "inspect", "write", "snapshot",
-                                        "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "attack_page", "sound_mode", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "reset", "schedule", "record", "replay"],
+                                        "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "attack_page", "sound_mode", "random_battles", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "reset", "schedule", "record", "replay"],
                 }))
             }
             "memory_hash" => Ok(json!(format!("{:016x}", self.memory_hash()?))),
@@ -1138,6 +1187,10 @@ impl<M: GameModule> Session<M> {
                 }
                 if self.runtime.services().attack_page {
                     self.record_control(json!({"cmd":"attack_page","kept":true}));
+                }
+                let off = self.runtime.services().random_battles_off.clone();
+                if !off.is_empty() {
+                    self.record_control(json!({"cmd":"random_battles","off":off}));
                 }
                 if let Some(mode) = self.runtime.services().sound_mode {
                     let taken = !self.runtime.services().sound_mode_changed;
@@ -1184,12 +1237,13 @@ impl<M: GameModule> Session<M> {
                             Some("fast_forward_pace") if control.get("pace").is_some_and(|p| p.is_null() || p.as_u64().is_some_and(|p| (1..=20).contains(&p))) => {},
                             Some("actor_view") if control.get("view").and_then(Value::as_u64).is_some_and(|v| v <= u64::from(u32::MAX)) => {},
                             Some("attack_page") if control.get("kept").is_some_and(Value::is_boolean) => {},
+                            Some("random_battles") if random_battle_maps(control).is_some() => {},
                             Some("sound_mode") if control.get("mode").and_then(Value::as_u64).is_some_and(|m| m <= 2)
                                 && control.get("taken").is_none_or(Value::is_boolean) => {},
                             Some("assist") if control.get("intent").is_some() => {},
                             Some("assist_stop" | "reset") => {},
                             Some("shop_quantity") if control.get("op").is_some_and(Value::is_string) => {},
-                            _ => return Err("recorded controls contain only explicit reset, fast-forward, focus-pause, actor-view, attack-page, sound-mode, assist and music-clock inputs".into()),
+                            _ => return Err("recorded controls contain only explicit reset, fast-forward, focus-pause, actor-view, attack-page, sound-mode, random-battles, assist and music-clock inputs".into()),
                         }
                         controls.push((now + at.saturating_sub(start),control.clone()));
                     }
@@ -1217,6 +1271,7 @@ impl<M: GameModule> Session<M> {
                 self.runtime.services().focus_pause = Default::default();
                 self.runtime.services().actor_view = 0;
                 self.runtime.services().attack_page = false;
+                self.runtime.services().random_battles_off.clear();
                 self.runtime.services().sound_mode = None;
                 self.runtime.services().sound_mode_changed = false;
                 self.replay_end = command.get("end_vblank").and_then(Value::as_u64).map(|end| now + end.saturating_sub(start));
@@ -1250,7 +1305,7 @@ impl<M: GameModule> Session<M> {
                 for item in list {
                     let pair = item.as_array().filter(|p| p.len() == 2).ok_or("commands are [frame, command]")?;
                     let cmd = pair[1].get("cmd").and_then(Value::as_str).ok_or("scheduled command needs cmd")?;
-                    if !matches!(cmd, "pad" | "press" | "hold" | "act" | "assist" | "assist_stop" | "shop_quantity" | "connect_pad" | "enter_field" | "reset" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "attack_page" | "sound_mode" | "music_advance") {
+                    if !matches!(cmd, "pad" | "press" | "hold" | "act" | "assist" | "assist_stop" | "shop_quantity" | "connect_pad" | "enter_field" | "reset" | "write" | "write_memory" | "boot_mode" | "scenario" | "fast_forward" | "fast_forward_configure" | "fast_forward_pace" | "actor_view" | "attack_page" | "sound_mode" | "random_battles" | "music_advance") {
                         return Err(format!("{cmd} cannot be scheduled; session logs contain only game input, setup and pacing"));
                     }
                     let at = pair[0].as_u64().ok_or("a command's frame is a number")?;

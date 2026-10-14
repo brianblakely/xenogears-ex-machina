@@ -271,6 +271,31 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
     } finally { await browser.close(); }
   });
 
+  test('random battles stay off in the platforming areas until Original is chosen, which persists and reaches the session', async () => {
+    const browser = await start({ args: NO_WEBGPU, fixtures: true });
+    try {
+      const page = await browser.page(fixture); await forever(page);
+      await page.evaluate(() => window.xem.setRunning(true));
+      // The running page gives the session the default policy's maps before its frames.
+      await page.waitForFunction(() => window.xem.status().session.random_battles_off.includes(414));
+      const off = (await status(page)).session.random_battles_off;
+      assert.deepEqual(off, [...off].sort((a, b) => a - b), 'ascending');
+      assert.equal((await page.evaluate(() => window.xem.settings.get())).settings.random_battles, 'NotWhilePlatforming');
+      const reply = await page.evaluate(() => window.xem.settings.apply({ RandomBattles: 'Original' }));
+      assert.equal(reply.ok, true, JSON.stringify(reply));
+      await page.waitForFunction(() => window.xem.status().session.random_battles_off.length === 0);
+      assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('xem.settings')).random_battles), 'Original');
+      // The choice lives in the panel's Gameplay section.
+      await page.evaluate(() => window.xem.panel.show(true));
+      await page.waitForTimeout(300);
+      await settingsSection(page, 6);
+      await page.evaluate(() => window.xem.setRunning(false));
+      await page.reload(); await page.waitForFunction(() => document.body.dataset.ready === 'true');
+      assert.equal((await page.evaluate(() => window.xem.settings.get())).settings.random_battles, 'Original');
+      assert.deepEqual(page.errors, []);
+    } finally { await browser.close(); }
+  });
+
   test('Settings operations have keyboard and gamepad paths and bindings survive reload', async () => {
     const browser = await start({ args: NO_WEBGPU, fixtures: true, initScripts: [() => {
       window.padButtons = Array(17).fill(false);

@@ -35,6 +35,12 @@ const SAVE_STEPS: u32 = 34;
 /// the arena task, which then waits a frame at a time.
 const FIBERS: u32 = 0x8000_0214;
 const TASK_STACK_TOP: u32 = 0x100C_0000;
+/// With `DRAW_MAP` nonzero each frame runs the stand-in's random draw on that
+/// field map as the port's field_encounter_count_down does: it asks the host
+/// (xem.random_battles with the map's low 12 bits) and counts the frames the
+/// draw ran at `DRAW_RAN`.
+const DRAW_MAP: u32 = 0x8000_0400;
+const DRAW_RAN: u32 = 0x8000_0404;
 
 /// Card images shared with the test, as a host's storage.
 #[derive(Clone)]
@@ -147,6 +153,11 @@ impl GameModule for Counter {
         self.memory.write_u32(0x8000_0000, count + 1).unwrap();
         let step = self.memory.read_u32(SAVE_STEP).unwrap();
         if step != 0 { self.save_step(step); }
+        let map = self.memory.read_u32(DRAW_MAP).unwrap();
+        if map != 0 && self.import("random_battles", &[map & 0xFFF]) != 0 {
+            let ran = self.memory.read_u32(DRAW_RAN).unwrap();
+            self.memory.write_u32(DRAW_RAN, ran + 1).unwrap();
+        }
         let fibers = self.memory.read_u32(FIBERS).unwrap();
         self.memory.write_u32(FIBERS, 0).unwrap();
         match fibers {
@@ -1162,6 +1173,84 @@ fn the_actor_view_is_recorded_and_a_replay_keeps_it() {
     other.execute(&json!({"cmd":"frames","count":8}));
     assert_eq!(other.execute(&json!({"cmd":"status"}))["actor_view"], json!(0));
     assert!(s.set_actor_view(99).is_err(), "a pull-back below 100 percent is no view");
+}
+
+fn random_battles_off(s: &mut Session<Counter>) -> serde_json::Value {
+    s.execute(&json!({"cmd":"status"}))["random_battles_off"].clone()
+}
+
+#[test]
+fn the_maps_without_random_battles_are_recorded_and_a_replay_keeps_them() {
+    let mut s = session();
+    s.runtime.memory().write_u32(DRAW_MAP, 0xC000 | 414).unwrap();
+    s.execute(&json!({"cmd":"frames","count":3}));
+    assert_eq!(word(&mut s, DRAW_RAN), 3, "the original's draw runs every frame");
+    assert_eq!(random_battles_off(&mut s), json!([]));
+    let initial = s.snapshot_bytes().unwrap();
+    s.execute(&json!({"cmd":"record"}));
+    s.execute(&json!({"cmd":"frames","count":2}));
+    s.set_random_battles(&[416, 414, 414]).unwrap();
+    s.set_random_battles(&[414, 416]).unwrap();
+    assert_eq!(random_battles_off(&mut s), json!([414, 416]));
+    s.execute(&json!({"cmd":"frames","count":4}));
+    assert_eq!(word(&mut s, DRAW_RAN), 5, "no draw runs on a map turned off (its flag bits aside)");
+    s.set_random_battles(&[22]).unwrap();
+    s.execute(&json!({"cmd":"frames","count":2}));
+    s.set_random_battles(&[]).unwrap();
+    s.execute(&json!({"cmd":"frames","count":1}));
+    assert_eq!(word(&mut s, DRAW_RAN), 8);
+    let mut log = s.execute(&json!({"cmd":"stop_recording"}));
+    let offs: Vec<serde_json::Value> = log["controls"].as_array().unwrap().iter().filter(|c| c[1]["cmd"] == "random_battles").map(|c| c[1]["off"].clone()).collect();
+    assert_eq!(offs, [json!([414, 416]), json!([22]), json!([])], "each change once, its maps ascending");
+    // A replay from the same state starts from the original's and keeps
+    // the recorded maps, not the host's.
+    log["cmd"] = json!("replay");
+    let mut other = session();
+    other.restore_bytes(&initial).unwrap();
+    other.set_random_battles(&[414]).unwrap();
+    assert!(other.execute(&log).get("error").is_none());
+    assert_eq!(random_battles_off(&mut other), json!([]));
+    other.execute(&json!({"cmd":"frames","count":3}));
+    other.set_random_battles(&[]).unwrap();
+    assert_eq!(random_battles_off(&mut other), json!([414, 416]), "a replay keeps the recorded maps, not the host's");
+    other.execute(&json!({"cmd":"frames","count":6}));
+    assert_eq!(word(&mut other, DRAW_RAN), 8, "the replay draws as the recording did");
+    assert_eq!(random_battles_off(&mut other), json!([]));
+    // A recording begun with maps off starts with them.
+    s.set_random_battles(&[407]).unwrap();
+    s.execute(&json!({"cmd":"record"}));
+    let log = s.execute(&json!({"cmd":"stop_recording"}));
+    assert!(log["controls"].as_array().unwrap().iter().any(|c| c[1] == json!({"cmd":"random_battles","off":[407]})), "{log}");
+    // Session logs and agents set it by command; only field maps are maps.
+    let frames = s.runtime.frames();
+    let scheduled = s.execute(&json!({"cmd":"schedule","commands":[[frames + 1, {"cmd":"random_battles","off":[23, 22]}]]}));
+    assert!(scheduled.get("error").is_none(), "{scheduled}");
+    s.execute(&json!({"cmd":"frames","count":2}));
+    assert_eq!(random_battles_off(&mut s), json!([22, 23]));
+    let valid = s.execute(&json!({"cmd":"readiness"}))["valid_commands"].clone();
+    assert!(valid.as_array().unwrap().contains(&json!("random_battles")));
+    for bad in [json!({"cmd":"random_battles"}), json!({"cmd":"random_battles","off":[4096]}), json!({"cmd":"random_battles","off":"414"})] {
+        assert!(s.execute(&bad)["error"].as_str().is_some_and(|e| e.contains("field maps 0-4095")), "{bad}");
+    }
+    assert!(s.set_random_battles(&[0x1000]).is_err());
+    assert_eq!(random_battles_off(&mut s), json!([22, 23]), "a refused change changes nothing");
+    let refused = s.execute(&json!({"cmd":"replay","changes":[],"controls":[[0, {"cmd":"random_battles","off":[-1]}]]}));
+    assert!(refused["error"].as_str().is_some_and(|e| e.contains("random-battles")), "{refused}");
+}
+
+#[test]
+fn the_field_command_reports_the_random_draw_and_whether_it_is_off_here() {
+    let mut s = session();
+    let memory = s.runtime.memory();
+    memory.write_u32(0x8004_F34C, 0xC000 | 414).unwrap();
+    for (at, value) in [(0x800B_2294, 120), (0x800B_2298, 300), (0x800B_229C, 1)] {
+        memory.write_u32(at, value).unwrap();
+    }
+    memory.write(0x800B_22A0, &50u16.to_le_bytes()).unwrap();
+    let draw = |s: &mut Session<Counter>| s.execute(&json!({"cmd":"field"}))["random_draw"].clone();
+    assert_eq!(draw(&mut s), json!({"map": 414, "period": 300, "count": 1, "window": 120, "steps": [50], "off_here": false}));
+    s.set_random_battles(&[414]).unwrap();
+    assert_eq!(draw(&mut s)["off_here"], json!(true));
 }
 
 #[test]

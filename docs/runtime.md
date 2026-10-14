@@ -2140,8 +2140,8 @@ one after another took about 26 minutes; `desktop` 114 s.
 
 ## Saves and time controls
 
-The app Settings screen has Audio, Graphics, Controls, Shortcuts, Time, Saves
-and About sections ([Desktop host and settings panel](#desktop-host-and-settings-panel)).
+The app Settings screen has Audio, Graphics, Controls, Shortcuts, Time, Saves,
+Gameplay and About sections ([Desktop host and settings panel](#desktop-host-and-settings-panel)).
 Desktop widths use a sidebar; narrow windows use a strip of section tabs. Rewind and
 the notched FF rate slider live in Time, with compact interval and history fields
 and the retained queue's available seconds and memory usage. Graphics contains
@@ -2427,14 +2427,113 @@ layout change pass it.
 ### Random battles in platforming areas
 
 The field's random battles come from one draw, `field_encounter_count_down`,
-which player control runs while a direction is held on a map whose scripts
-armed it (event f7; [formations](scripts/formations.md)). Phase 7 (plan.md)
-turns them off by default in platforming-heavy areas, and
-`xem_core::encounters::PLATFORMING_AREAS` is the reviewed list of those
-areas: a name and the maps there that arm the draw, `platforming_maps()`
-their union, ascending. No setting reads it yet. `python3 -m
-tools.analysis.platforming` classifies both discs' maps (disc 2's 205 map
-bundles are disc 1's of the same numbers): `--table` (the default) prints
+which player control runs every field frame a direction is held on a map
+whose scripts armed it (event f7; [formations](scripts/formations.md)): each
+period of counted frames starts the armed number of battles, one as each of
+the steps the period dealt comes down. Phase 7 (plan.md) turns them off by
+default in platforming-heavy areas. `xem_core::encounters::PLATFORMING_AREAS`
+lists those areas, a name and the maps there that arm the draw
+(`platforming_maps()` their union, ascending), classified as [below](#how-the-areas-are-classified).
+
+**The setting.** `Settings.random_battles` (the panel's Gameplay section,
+`SettingChange::RandomBattles`):
+
+| Setting | Values |
+| --- | --- |
+| random battles | Not while platforming (`NotWhilePlatforming`, the default): none on the maps of `PLATFORMING_AREAS`, the game's elsewhere; Original: wherever the game has them |
+
+The setting stores the policy's name, not its maps, so a revised table
+applies to everyone who keeps the default and a deliberate Original is
+never overwritten; a file saved before the setting existed reads the
+default, and a policy no longer offered resets alone (`Settings::read`).
+`Settings::random_battles_off()` resolves the policy to its maps. The
+Gameplay section (between Saves and About; Phase 7's other options join it)
+shows the choice and, under it, the areas it turns off by name; the browser
+renders the same panel. In the narrow panel's strip each tab is at least as
+wide as its label, so the eight labels fit a phone's width.
+
+**The control.** Before every game frame of a batch outside session logs
+the interactive hosts give the session the resolved maps, as they give it
+the actor view: `Game::update` (`xem-host`: the desktop, Android and
+OpenXR) and the browser's frame loop while it runs the session call
+`Session::set_random_battles`. `src/port/encounters.c` wraps
+`field_encounter_count_down` and asks the host import
+`xem.random_battles(map)` with `mode_field_map_id & 0xFFF` (the high bits
+mark the party's gears). On 0 the draw does not run at all: no step counts
+down, `rand()` is not called and no battle is requested, as on a map whose
+scripts never armed it. Scripted battles (events 71 and fe 84), the scripts'
+f7 arming and inhibitions, map changes and the world map's encounters
+(`worldmap_encounter_roll`) stay the game's, and a map the control leaves
+out runs as the original's. The port keeps no data: the module's shadow
+stack starts where it did (`__stack_pointer` 0x101C1340). The maps are a
+recorded control: `set_random_battles` records
+`{"cmd":"random_battles","off":[...]}` (ascending, each map once) with the
+inputs whenever they change, a recording begun with maps off starts with
+them, a replay starts from none and keeps the recorded maps over the
+host's, and session logs may schedule it. Headless sessions, session logs
+and replays play the original unless commanded, as with the actor view.
+`status` reports `random_battles_off`; `field` reports `random_draw`: the
+map, the draw's period and count as f7 armed it (a period of 0 is a draw
+the map has not armed), the frames left of the period (`window`), the
+frames left before each of its battles (`steps`, 65535 once spent) and
+`off_here`. They read the field's memory, so they mean something only
+while the field runs. Measured headless on disc 1 (suite profile): on
+Babel Tower's map 414 (period 300, one battle) Up held from entrance 0
+brought a battle request 140 frames in without the control; with the
+default setting's maps, none in 6 020 frames, the window still 300 and the
+step still 52 as dealt.
+
+**Agents** set the maps directly with `{"cmd":"random_battles","off":[407,
+414]}` on any host's command layer (`xem-headless --control` included;
+field maps 0-4095, any order), or change the setting:
+`{"cmd":"settings_apply","change":{"RandomBattles":"Original"}}` on
+`xem-desktop --control` and `window.xem.settings.apply({RandomBattles:
+'Original'})` in the browser; the next frame's `status` shows the maps the
+host gave.
+
+Tests: `xem-settings`'
+`random_battles_stay_off_in_platforming_areas_unless_the_original_is_chosen`
+checks the default policy and its maps, that the default saves its name,
+that a deliberate Original survives other changes, a reload and a backup,
+an agent's change, and that an old file or a policy no longer offered reads
+the default alone. `tests/test_port_encounters.py` (suite.sh's port stage)
+builds `src/port/encounters.c` natively with `-Wall -Werror` against an
+invented host: the draw runs where the host leaves it on and not where it
+turns it off, asked with the map's low 12 bits.
+`xem-core/tests/persistence.rs` checks on the stand-in
+module, whose draw asks the import every frame: no draw on a map turned off
+(its gear bits aside), each change recorded once with its maps ascending, a
+replay starting from none and keeping the recorded maps over the host's,
+drawing as the recording did, a recording begun with maps off, `schedule`,
+`readiness`, refused maps and refused recorded controls; and `field`'s
+`random_draw` with `off_here`. `xem-ui/tests/panel.rs` checks that the
+Gameplay section's choice applies through the service, is acknowledged,
+shows its note and follows an agent's change, and that the wheel never
+changes it. `xem-headless/tests/encounters.rs` (local, disc 1, about 23 s)
+checks on the game that on map 414 Up held brings a random battle within
+two of the draw's windows without the control and none in five under the
+default setting's maps, the draw as dealt; that map 414's door still leads
+to 415 and map 172's Repair Bot, its third choice picked, still starts its
+scripted battle (formation 3) under them; and that on the Mountain Path
+(map 15, left on) the same walk brings its battle at the same frame and to
+the same RAM with them as without. The slice logs replay to their recorded
+hashes (`xem-headless/tests/slice.rs`). A browser test
+(`persistence.test.mjs`, the fixture module) checks that the running page
+gives the session the default policy's maps, that `RandomBattles:
+'Original'` reaches it on the next frames, is saved in `localStorage` and
+survives a reload, and that the Gameplay tab is reachable.
+
+Not done or not measured: the world map's random battles stay on (no
+platforming there), and there is no option that turns all of them off or
+changes the rate. Under the default the enemies met only in the listed
+maps' random battles ([below](#how-the-areas-are-classified)) are not met.
+The Android and OpenXR hosts give the maps through `Game::update`, which
+the desktop shares; no headset or phone run checked it on the game.
+
+#### How the areas are classified
+
+`python3 -m tools.analysis.platforming` classifies both discs' maps (disc
+2's 205 map bundles are disc 1's of the same numbers): `--table` (the default) prints
 every area with its maps' metrics and the reason, then the unresolved
 areas and the enemies the table loses, `--map N` one map's layers, regions,
 links and entrances, `--rust` the table, and `--check` fails unless
@@ -2723,7 +2822,9 @@ problem in red). Controls edits
 the game's bindings ([Controls](#controls)) and the assisted controls
 (hand gestures, the headset pointer, Stop at ledges, touch controls,
 reduced transparency and motion); Shortcuts lists every app operation with
-its bindings and edits the chosen one in place. Cancel closes either binding
+its bindings and edits the chosen one in place; Gameplay holds the options
+that change the game itself ([Random battles in platforming
+areas](#random-battles-in-platforming-areas)). Cancel closes either binding
 editor without saving its changes. The header's Reset sends the shared
 `reset` command. The header's Quit (desktop,
 Android, a headset; not the browser) asks first: Cancel, a press beside the

@@ -44,6 +44,7 @@ global Icons {
     out property <string> controls: "M7 8 L17 8 A4.5 4.5 0 0 1 21.5 12.5 L21.5 14 A2.8 2.8 0 0 1 16.6 15.8 L15.4 14.5 L8.6 14.5 L7.4 15.8 A2.8 2.8 0 0 1 2.5 14 L2.5 12.5 A4.5 4.5 0 0 1 7 8 Z M7.5 9.8 L7.5 12.8 M6 11.3 L9 11.3 M15.8 10.2 L15.8 10.3 M17.6 12.2 L17.6 12.3";
     out property <string> time: "M12 3.5 A8.5 8.5 0 1 1 11.99 3.5 Z M12 7.5 L12 12 L15 14";
     out property <string> saves: "M5 4 L15.5 4 L20 8.5 L20 20 L5 20 Z M8 4 L8 8.5 L15 8.5 L15 4 M8 20 L8 13.5 L17 13.5 L17 20";
+    out property <string> gameplay: "M20 4 L20 8 L10.5 17.5 L6.5 13.5 L16 4 Z M5 12 L12 19 M7.5 16.5 L4 20";
     out property <string> about: "M12 3.5 A8.5 8.5 0 1 1 11.99 3.5 Z M12 11 L12 16.5 M12 7.6 L12 7.7";
     out property <string> close: "M6.5 6.5 L17.5 17.5 M17.5 6.5 L6.5 17.5";
     out property <string> reset: "M19.5 8 A8 8 0 1 0 20 15 M19.5 3.5 L19.5 8.5 L14.5 8.5";
@@ -94,6 +95,10 @@ component NavItem inherits Rectangle {
     private property <brush> icon-color: root.selected ? Theme.accent : root.hovered ? Theme.text : Theme.text-secondary;
     min-height: root.stacked ? 54px : 38px;
     max-height: root.stacked ? 54px : 38px;
+    // A tab in the strip is at least as wide as its label, bold as when
+    // selected, so no label elides; the strip shares out the rest.
+    min-width: root.stacked ? label-size.preferred-width + 6px : 0px;
+    label-size := Text { text: root.label; font-size: 10.5px; font-weight: 600; visible: false; accessible-role: none; }
     border-radius: 8px;
     background: touch.pressed ? Theme.pressed : root.selected ? (root.hovered ? Theme.selected-hover : Theme.selected) : root.hovered ? Theme.hover : transparent;
     animate background { duration: 140ms; easing: ease-out; }
@@ -712,6 +717,7 @@ export component SettingsPanel inherits Window {
         { label: "Shortcuts", icon: Icons.shortcuts },
         { label: "Time", icon: Icons.time },
         { label: "Saves", icon: Icons.saves },
+        { label: "Gameplay", icon: Icons.gameplay },
         { label: "About", icon: Icons.about },
     ];
     out property <int> section-count: root.sections.length;
@@ -726,6 +732,10 @@ export component SettingsPanel inherits Window {
     in-out property <int> mouse-sensitivity: 50;
     in-out property <int> mouse-deadzone: 40;
     in-out property <bool> run-by-default;
+    // Where the field's random battles happen (xem_settings::RandomBattles:
+    // 0 not while platforming, 1 the original's), and what that means.
+    in-out property <int> random-battles;
+    in property <string> random-battles-note;
     // The assisted controls (xem_settings::Assisted): hand gestures, the
     // headset pointer (0 eye gaze, 1 head, 2 left hand, 3 right hand), the
     // ledge brake, touch controls, reduced transparency and motion.
@@ -759,6 +769,7 @@ export component SettingsPanel inherits Window {
     callback mouse-sensitivity-edited(int);
     callback mouse-deadzone-edited(int);
     callback run-by-default-edited(bool);
+    callback random-battles-edited(int);
     // An assisted-controls choice by name (gestures, pointer, ledge-brake,
     // touch, solid, still) and value.
     callback assist-edited(string, int);
@@ -1549,17 +1560,26 @@ export component SettingsPanel inherits Window {
                                 }
                                 if root.storage-status != "": Text { text: root.storage-status; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
-                            // About
+                            // Gameplay
                             if root.selected-section == 6: Card {
+                                title: "Battles";
+                                Row {
+                                    label: "Random battles";
+                                    Choice { accessible-label: "Random battles"; width: 190px; model: ["Not while platforming", "Original"]; current-index <=> root.random-battles; selected => { root.random-battles-edited(self.current-index); } }
+                                }
+                                Text { text: root.random-battles-note; font-size: 11.5px; color: Theme.text-secondary; wrap: word-wrap; }
+                            }
+                            // About
+                            if root.selected-section == 7: Card {
                                 title: "Xenogears Ex Machina";
                                 Text { text: "Plays Xenogears from your own discs through its recovered original program. Your discs, saves and settings stay on this device."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                             }
-                            if root.selected-section == 6: Card {
+                            if root.selected-section == 7: Card {
                                 title: "Built with Slint";
                                 Text { text: "Its interface toolkit, under the Slint Royalty-free License 2.0."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                                 AboutSlint { max-height: 120px; }
                             }
-                            if root.selected-section == 6: Card {
+                            if root.selected-section == 7: Card {
                                 title: "Binaural sound";
                                 Text { text: "Places sounds with the MIT Media Lab's KEMAR head-related transfer functions: B. Gardner and K. Martin, \"HRTF Measurements of a KEMAR Dummy-Head Microphone\", MIT Media Lab, 1994. Copyright 1994 MIT Media Laboratory, provided free with no restrictions on use."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                             }

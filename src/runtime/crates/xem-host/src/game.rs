@@ -333,6 +333,7 @@ impl Game {
                 self.session.set_actor_view(self.actor_view)?;
                 self.session.set_attack_page(self.attack_page);
                 self.session.set_sound_mode(settings.game_sound_mode())?;
+                self.session.set_random_battles(settings.random_battles_off())?;
             }
             if !self.session.frame().map_err(|trap| trap.to_string())? { break; }
             batch += 1;

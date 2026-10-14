@@ -127,7 +127,7 @@ fn panel_renders_on_the_shared_device_and_applies_settings() {
         "the panel has content ({} colours)",
         distinct.len()
     );
-    section(&mut ui, "About", 6);
+    section(&mut ui, "About", 7);
     assert!(
         ElementHandle::find_by_accessible_label(ui.component(), "#MadeWithSlint")
             .next()
@@ -565,6 +565,43 @@ fn quit_asks_first_and_fullscreen_is_a_setting_where_hosts_offer_them() {
 }
 
 #[test]
+fn random_battles_are_chosen_in_the_gameplay_section_through_the_settings_service() {
+    use xem_settings::{RandomBattles, SettingChange};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let acks = Rc::new(RefCell::new(Vec::new()));
+    settings.borrow_mut().subscribe({
+        let acks = acks.clone();
+        move |ack| acks.borrow_mut().push(ack.change.clone())
+    });
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings.clone(), (640, 560), 1.0).unwrap();
+    ui.update().unwrap();
+    section(&mut ui, "Gameplay", 6);
+    let choice = element(&ui, "Random battles", AccessibleRole::Combobox);
+    assert_eq!(choice.accessible_value().as_deref(), Some("Not while platforming"), "the default policy");
+    let note = ui.component().get_random_battles_note().to_string();
+    assert!(note.contains("Babel Tower") && note.contains("Blackmoon Forest"), "{note}");
+    // A choice is the service's: applied, acknowledged and saved.
+    press(&ui, &choice);
+    key(&ui, xem_ui::Key::DownArrow);
+    key(&ui, xem_ui::Key::Return);
+    ui.update().unwrap();
+    assert_eq!(settings.borrow().settings().random_battles, RandomBattles::Original);
+    assert_eq!(acks.borrow().last(), Some(&SettingChange::RandomBattles(RandomBattles::Original)));
+    assert_eq!(choice.accessible_value().as_deref(), Some("Original"));
+    assert!(ui.component().get_random_battles_note().contains("Wherever the original game has them"));
+    // An agent's change shows in the panel.
+    settings.borrow_mut().apply(SettingChange::RandomBattles(RandomBattles::NotWhilePlatforming)).unwrap();
+    ui.update().unwrap();
+    assert_eq!(ui.component().get_random_battles(), 0);
+    assert_eq!(choice.accessible_value().as_deref(), Some("Not while platforming"));
+    let mut reloaded = SettingsService::with_defaults(MemoryStore::default());
+    reloaded.import(&settings.borrow().export()).unwrap();
+    assert_eq!(reloaded.settings().random_battles, RandomBattles::NotWhilePlatforming);
+}
+
+#[test]
 fn a_missing_disc_is_asked_for_over_the_saves_section() {
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
@@ -685,6 +722,7 @@ fn settings_choices_are_relevant_and_wheel_does_not_change_dropdowns() {
         ("Graphics", 1, "Scale"), ("Graphics", 1, "Graphics profile"),
         ("Graphics", 1, "Internal resolution"), ("Graphics", 1, "HD-2D quality"),
         ("Graphics", 1, "Presentation rate"), ("Controls", 2, "Headset pointer"),
+        ("Gameplay", 6, "Random battles"),
     ] {
         section(&mut ui, section_name, section_index);
         let dropdown = element(&ui, label, AccessibleRole::Combobox);

@@ -17,6 +17,8 @@ pub mod player;
 pub use graphics::{EffectLevels, Fidelity, Graphics, GraphicsProfile, MAX_ZOOM_OUT, MovieFilter, PresentRate, QualityTier, Renderer, TextureFiltering, XrScreen, ZOOM_STEP};
 pub use bindings::{GameAction, GameBinding, GameBindings, InputContext, GAME_ACTION_ROWS};
 pub use controls::{AppAction, AppBinding, AppInput, AppRequest, APP_ACTIONS};
+/// The platforming areas whose random battles NotWhilePlatforming turns off.
+pub use xem_core::encounters::PLATFORMING_AREAS;
 
 pub const MAX_VOLUME: u8 = 100;
 /// The mouse camera's deadzone, default and largest, in pixels of motion.
@@ -122,6 +124,19 @@ impl Default for Assisted {
     }
 }
 
+/// Where the field's random battles happen (plan.md, Phase 7). The setting
+/// stores the policy's name, so a revised table of platforming areas applies
+/// to the default and a deliberate Original is never overwritten.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum RandomBattles {
+    /// Off in the platforming-heavy areas
+    /// (`xem_core::encounters::PLATFORMING_AREAS`), the game's elsewhere.
+    #[default]
+    NotWhilePlatforming,
+    /// Everywhere the game has them.
+    Original,
+}
+
 /// The complete application settings.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -154,6 +169,9 @@ pub struct Settings {
     pub rewind_history_seconds: u32,
     pub pause_on_focus_loss: bool,
     pub assisted: Assisted,
+    /// Where the field's random battles happen (the hosts give the session
+    /// [`Settings::random_battles_off`]).
+    pub random_battles: RandomBattles,
 }
 
 impl Default for Settings {
@@ -177,6 +195,7 @@ impl Default for Settings {
             rewind_history_seconds: DEFAULT_REWIND_HISTORY_SECONDS,
             pause_on_focus_loss: true,
             assisted: Assisted::default(),
+            random_battles: RandomBattles::default(),
         }
     }
 }
@@ -215,6 +234,7 @@ pub enum SettingChange {
     ResetGameBindings,
     /// The assisted controls' block, whole.
     Assisted(Assisted),
+    RandomBattles(RandomBattles),
 }
 
 /// An applied and persisted change.
@@ -269,6 +289,16 @@ impl Settings {
         if self.binaural.enabled { AudioOutput::Stereo.game_mode() } else { self.audio_output.game_mode() }
     }
 
+    /// The field maps whose random battles the hosts turn off
+    /// (`Session::set_random_battles`): the platforming areas' under
+    /// NotWhilePlatforming, none under Original.
+    pub fn random_battles_off(&self) -> &'static [u16] {
+        match self.random_battles {
+            RandomBattles::NotWhilePlatforming => xem_core::encounters::platforming_maps(),
+            RandomBattles::Original => &[],
+        }
+    }
+
     fn with(&self, change: &SettingChange) -> Result<Settings, String> {
         let mut next = self.clone();
         match change {
@@ -305,6 +335,7 @@ impl Settings {
             }
             SettingChange::ResetGameBindings => next.game_bindings = GameBindings::default(),
             SettingChange::Assisted(assisted) => next.assisted = *assisted,
+            SettingChange::RandomBattles(battles) => next.random_battles = *battles,
         }
         next.validate()?;
         Ok(next)
@@ -634,6 +665,40 @@ mod tests {
         assert_eq!(Settings::read(&serde_json::json!({"mouse_camera": true})).unwrap().0.mouse_deadzone, DEFAULT_MOUSE_DEADZONE);
         let (read, reset) = Settings::read(&serde_json::json!({"mouse_deadzone": MAX_MOUSE_DEADZONE + 1})).unwrap();
         assert_eq!((read.mouse_deadzone, reset), (DEFAULT_MOUSE_DEADZONE, vec!["mouse_deadzone".to_string()]));
+    }
+
+    #[test]
+    fn random_battles_stay_off_in_platforming_areas_unless_the_original_is_chosen() {
+        use super::*;
+        let store = SharedStore::default();
+        let mut service = SettingsService::open(store.clone()).unwrap();
+        assert_eq!(service.settings().random_battles, RandomBattles::NotWhilePlatforming);
+        let off = service.settings().random_battles_off();
+        assert_eq!(off, xem_core::encounters::platforming_maps());
+        assert!(off.contains(&414) && !off.contains(&23), "Babel Tower's map 414, not Blackmoon Forest's map 23");
+        // The default saves the policy's name, not its maps: a revised table
+        // applies to it.
+        service.apply(SettingChange::MasterVolume(40)).unwrap();
+        let saved: serde_json::Value = serde_json::from_str(store.0.borrow().as_deref().unwrap()).unwrap();
+        assert_eq!(saved["random_battles"], "NotWhilePlatforming");
+        // A deliberate Original survives other changes and a reload.
+        service.apply(SettingChange::RandomBattles(RandomBattles::Original)).unwrap();
+        assert_eq!(service.settings().random_battles_off(), &[] as &[u16]);
+        service.apply(SettingChange::MouseCamera(true)).unwrap();
+        let reopened = SettingsService::open(store.clone()).unwrap();
+        assert_eq!(reopened.settings().random_battles, RandomBattles::Original);
+        // A backup carries it into another service.
+        let mut other = SettingsService::with_defaults(MemoryStore::default());
+        other.import(&reopened.export()).unwrap();
+        assert_eq!(other.settings().random_battles, RandomBattles::Original);
+        let agent: SettingChange = serde_json::from_str(r#"{"RandomBattles":"NotWhilePlatforming"}"#).unwrap();
+        other.apply(agent).unwrap();
+        assert_eq!(other.settings().random_battles_off(), off);
+        // Saved before the setting existed, or with a policy no longer
+        // offered: the default, alone.
+        assert_eq!(Settings::read(&serde_json::json!({"mouse_camera": true})).unwrap().0.random_battles, RandomBattles::NotWhilePlatforming);
+        let (read, reset) = Settings::read(&serde_json::json!({"random_battles": "Never", "mouse_camera": true})).unwrap();
+        assert_eq!((read.random_battles, read.mouse_camera, reset), (RandomBattles::NotWhilePlatforming, true, vec!["random_battles".to_string()]));
     }
 
     #[test]

@@ -34,6 +34,10 @@ const WORK_CONTROLLED: u32 = FIELD_WORK + 0x1F4;
 const WORK_PARTY_PROCESSING: u32 = FIELD_WORK + 0x154;
 const WORK_ALT_DPAD: u32 = FIELD_WORK + 0x2DC;
 const WORK_OPEN_WINDOWS: u32 = FIELD_WORK + 0xFC;
+/// The random draw's `unk2294` (frames left of the period), `unk2298` (the
+/// period), `unk229C` (the count) and `unk22A0` (the steps, u16[32]).
+const WORK_DRAW: u32 = FIELD_WORK + 0x21C;
+const MODE_FIELD_MAP_ID: u32 = 0x8004_F34C;
 const DESCRIPTOR_SIZE: u32 = 0x5C;
 const ACTOR_SIZE: usize = 0x138;
 
@@ -222,6 +226,39 @@ pub struct Actor {
 impl Actor {
     pub fn airborne(&self) -> bool {
         self.flags & FLAG_AIRBORNE != 0
+    }
+}
+
+/// The field's random draw (`field_encounter_count_down`) as the map's
+/// scripts armed it (event f7): each `period` counted field frames (a
+/// direction held under player control) start `count` battles, one as each
+/// of `steps` comes down to 0; `window` frames of the period are left. A
+/// period of 0 is a draw the map has not armed. `map` is the field map
+/// (the low 12 bits of `mode_field_map_id`).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct RandomDraw {
+    pub map: u16,
+    pub period: i32,
+    pub count: i32,
+    pub window: i32,
+    /// The frames left before each of the period's battles (65535 once
+    /// spent).
+    pub steps: Vec<u16>,
+}
+
+impl RandomDraw {
+    /// Reads the draw. Only meaningful while the field mode runs.
+    pub fn read(memory: &dyn GameMemory) -> Option<RandomDraw> {
+        let work = read_bytes(memory, WORK_DRAW, 12 + 64)?;
+        let map = s32(&read_bytes(memory, MODE_FIELD_MAP_ID, 4)?, 0);
+        let count = s32(&work, 8);
+        Some(RandomDraw {
+            map: (map & 0xFFF) as u16,
+            period: s32(&work, 4),
+            count,
+            window: s32(&work, 0),
+            steps: (0..count.clamp(0, 32) as usize).map(|i| u16_(&work, 12 + i * 2)).collect(),
+        })
     }
 }
 

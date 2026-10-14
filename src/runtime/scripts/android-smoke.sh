@@ -184,10 +184,12 @@ shot 01-started
 
 if [ -z "${XEM_SMOKE_GAME_ONLY:-}" ]; then
 # The panel (1064x1470 at 2.625, at 8,465 on the 1080x2400 screen) shows
-# its sections as a strip of tabs: Graphics at 250,722, Saves at 830,722.
+# its eight sections as a strip of tabs, each as wide as its label at
+# least: Graphics at 210,722, Saves at 727,722 (the panel example's
+# --locate at that size and scale).
 echo "== settings change by touch (Show FPS)"
 mark
-tap 250 722
+tap 210 722
 sleep 1
 shot 01-graphics
 # The compact Graphics card has no heading/help rows; its Show FPS switch
@@ -197,7 +199,7 @@ wait_for "xem: settings applied ShowFps\(true\)"
 
 echo "== disc import through the document picker (Import disc... button)"
 mark
-tap 830 722
+tap 727 722
 sleep 1
 shot 01-saves
 # Import disc is now the first row directly below the tabs.
