@@ -1066,6 +1066,7 @@ impl View {
         let mut game = Quad::screen(game_view, placed, target_size);
         // The renderer's frames hold sRGB-encoded values in a linear format.
         game.srgb_encoded = encoded;
+        game.opaque = true;
         game.filter = match presentation.filter {
             Filter::Nearest => wgpu::FilterMode::Nearest,
             Filter::Linear => wgpu::FilterMode::Linear,

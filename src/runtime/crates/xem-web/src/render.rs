@@ -501,6 +501,7 @@ impl WebRenderer {
         };
         let mut game = Quad::screen(game_view, placed, target);
         game.srgb_encoded = encoded;
+        game.opaque = true;
         game.filter = match presentation.filter {
             Filter::Nearest => wgpu::FilterMode::Nearest,
             Filter::Linear => wgpu::FilterMode::Linear,
@@ -695,6 +696,7 @@ impl WebRenderer {
                 let whole = within.get(i).map(|picture| {
                     let mut quad = Quad::screen(picture, Rect { x: 0.0, y: 0.0, width: size.0 as f32, height: size.1 as f32 }, size);
                     quad.srgb_encoded = true;
+                    quad.opaque = true;
                     quad.filter = filter;
                     quad
                 });
@@ -702,9 +704,11 @@ impl WebRenderer {
                     .into_iter()
                     .chain(screen.iter().map(|screen| {
                         // The screen, or beside the views' pictures the
-                        // interface's pane where it was.
+                        // interface's pane where it was. The game's picture
+                        // covers the room; the pane covers by its alpha.
                         let mut quad = Quad::world(screen, view.proj * view.view, pose, Vec2::new(width, height));
                         quad.srgb_encoded = encoded;
+                        quad.opaque = within.is_empty();
                         quad.filter = filter;
                         if !encoded && graphics.renderer == xem_settings::Renderer::ExMachina {
                             quad.filter = wgpu::FilterMode::Nearest;

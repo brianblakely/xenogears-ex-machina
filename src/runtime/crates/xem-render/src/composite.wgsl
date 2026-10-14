@@ -8,6 +8,9 @@ struct QuadUniform {
     decode: u32,
     // The target holds encoded values in a linear format.
     encode: u32,
+    // The texture's alpha is not coverage (the game's picture: the PS1's
+    // mask bit): the quad covers what lies behind it.
+    opaque: u32,
 };
 
 @group(0) @binding(0) var<uniform> quad: QuadUniform;
@@ -41,7 +44,10 @@ fn to_srgb(c: vec3<f32>) -> vec3<f32> {
 
 @fragment
 fn fs_quad(in: Out) -> @location(0) vec4<f32> {
-    let texel = textureSample(image, image_sampler, in.uv);
+    var texel = textureSample(image, image_sampler, in.uv);
+    if quad.opaque != 0u {
+        texel.a = 1.0;
+    }
     var color = texel.rgb;
     if texel.a > 0.0 {
         color = color / texel.a;

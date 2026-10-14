@@ -561,6 +561,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             };
             let eye_size = session.eye_size();
             let mut readback = None;
+            let mut pictures = Vec::new();
             session
                 .render_eyes(|encoder, target| {
                     let screen = texture.as_ref().map(|t| t.create_view(&Default::default()));
@@ -571,6 +572,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                         let within = inside.get(eye).map(|picture| {
                             let mut quad = Quad::screen(picture, whole, eye_size);
                             quad.srgb_encoded = true;
+                            quad.opaque = true;
                             quad.filter = filter;
                             quad
                         });
@@ -586,8 +588,10 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                                 // the interface's pane where it was.
                                 let mut quad = Quad::world(screen, view_proj, pose, Vec2::new(width, height));
                                 // The renderer's frames hold sRGB-encoded values in a linear
-                                // format; movie frames are an sRGB texture.
+                                // format; movie frames are an sRGB texture. The game's
+                                // picture covers the room; the pane covers by its alpha.
                                 quad.srgb_encoded = from_view;
+                                quad.opaque = inside.is_empty();
                                 quad.filter = filter;
                                 // Movie frames the device shows itself stay as the
                                 // decoder made them, each pixel a block.
@@ -604,11 +608,19 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                     compositor.draw_targets(encoder, &[(target.views[0], clear, &quads[0]), (target.views[1], clear, &quads[1])]);
                     if capture.is_some() {
                         readback = Some(crate::readback::Readback::record(&gpu.device, encoder, target.texture));
+                        // From within the scene, each eye's picture as the
+                        // renderer drew it too (what the eyes should show).
+                        pictures = (0..inside.len()).filter_map(|eye| view.eye_texture(eye))
+                            .map(|picture| crate::readback::Readback::record(&gpu.device, encoder, picture))
+                            .collect();
                     }
                 })
                 .map_err(|e| e.to_string())?;
             if let (Some(dir), Some(readback)) = (capture, readback) {
                 readback.save(&gpu.device, &[dir.join("left.png"), dir.join("right.png")])?;
+                for (picture, name) in pictures.into_iter().zip(["left-picture.png", "right-picture.png"]) {
+                    picture.save(&gpu.device, &[dir.join(name)])?;
+                }
                 println!("capture dir={}", dir.display());
                 captured = true;
             }

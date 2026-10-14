@@ -10,8 +10,9 @@
 // after the same frames is the same in and out of the headset. First-person
 // inspection (field 30, IWER's tracked hands): the underhand grab looks from
 // within the scene through each view, a head turn changes the view while the
-// player's Pause holds the game, and the grab again gives the screen back at
-// its size.
+// player's Pause holds the game, the controllers' click and stick toggle and
+// turn it then too and the Original renderer ends it, and the grab again
+// gives the screen back at its size.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -276,6 +277,36 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       await page.evaluate(() => window.xrDevice.quaternion.set(0, 0, 0, 1));
       await frames(8);
       assert.deepEqual(await read(), still, 'the head back, the view is too');
+
+      // Still paused, the controllers (IWER's, the hands put down for a
+      // while) toggle the view and turn it, and the Original renderer ends
+      // it; the game's frames stand still throughout.
+      await page.evaluate(() => { window.xrDevice.primaryInputMode = 'controller'; });
+      await frames(6);
+      await click();
+      assert.equal((await status(page)).xr.inspecting, false, 'paused, the right stick\'s click turned inspection off');
+      await click();
+      assert.equal((await status(page)).xr.inspecting, true, 'paused, the click turned it on again');
+      await page.waitForFunction(() => window.xem.status().xr.within, null, { timeout: 30_000 });
+      await page.evaluate(() => window.xrDevice.controllers.right.updateAxes('thumbstick', 1, 0));
+      await frames(6);
+      await page.evaluate(() => window.xrDevice.controllers.right.updateAxes('thumbstick', 0, 0));
+      await frames(3);
+      assert.ok(Math.abs((await look()).yaw - Math.PI / 6) < 1e-3, `paused, one push turned the view 30 degrees: ${JSON.stringify(await look())}`);
+      const graphics = (await page.evaluate(() => window.xem.settings.get())).settings.graphics;
+      await page.evaluate((g) => window.xem.settings.apply({ Graphics: { ...g, renderer: 'Original' } }), graphics);
+      await frames(3);
+      info = await status(page);
+      assert.equal(info.xr.inspecting, false, 'paused, the Original renderer ended the view');
+      assert.equal(info.xr.within, false, 'the views show the screen again');
+      await page.evaluate((g) => window.xem.settings.apply({ Graphics: g }), graphics);
+      await click();
+      info = await status(page);
+      assert.equal(info.xr.inspecting, true, 'on again under Ex Machina');
+      assert.equal(info.xr.pauses.player, true, 'the player\'s Pause holds');
+      assert.equal(info.loop.gameFrames, held, 'the game stayed paused throughout');
+      await page.evaluate(() => { window.xrDevice.primaryInputMode = 'hand'; });
+      await frames(6);
 
       // Resumed, then the underhand grab again: the screen, at its size.
       await grab(false);

@@ -12,9 +12,11 @@
 #   with stereo disparity, not reconstructed 3D);
 # - first-person inspection in field 30: the underhand grab turns it on and
 #   off, each eye then looks from the character's eye with the head (their
-#   pictures cover the view, differ between the eyes and follow the head
-#   while the player's Pause holds the game), the screen keeps its size,
-#   and the game's RAM is xem-headless's.
+#   pictures cover the view, show the room, differ between the eyes and
+#   follow the head while the player's Pause holds the game, and the eyes
+#   show them in the renderer's own colours, under HD-2D and under the
+#   default Modern profile), the grab toggles it while the game is paused,
+#   the screen keeps its size, and the game's RAM is xem-headless's.
 #
 #   nix develop path:./nix/runtime -c src/runtime/scripts/xr-game-smoke.sh
 #
@@ -87,6 +89,13 @@ echo "{\"commands\": $inspect}" >"$out/inspect.json"
     --xr-hands "150:inspect,180:pause,240:pause,270:inspect" --xr-capture "$out/inspect" --xr-capture-at 200,225 >"$out/inspect.log" 2>"$out/inspect.err"
 printf '{"cmd":"schedule","commands":%s}\n{"cmd":"run_until","until":{"frames":1200},"max_frames":2000}\n{"cmd":"memory_hash"}\n' "$inspect" |
     "$headless" --disc "$disc" --control >"$out/inspect-headless.log" 2>"$out/inspect-headless.err"
+# The same under the default profile (Modern: no effects, so each eye's
+# picture is the frame itself, whose alpha is the PS1's mask bit): on at
+# 150, the Pause grab at 180, the underhand grab at 195 and 210 while the
+# game is paused (off, then on), both eyes captured at 230.
+echo '{"graphics": {"profile": "Modern"}}' >"$out/config/xenogears-ex-machina/settings.json"
+"$desktop" --xr --disc "$disc" --script "$out/inspect.json" --exit-after-frames 240 \
+    --xr-hands "150:inspect,180:pause,195:inspect,210:inspect" --xr-capture "$out/modern" --xr-capture-at 230 >"$out/modern.log" 2>"$out/modern.err"
 
 python3 - "$out" "$frames" <<'EOF'
 import json, re, sys, zlib, struct
@@ -227,13 +236,38 @@ def covered(rows_):
     # Pixels unlike the room around the screen (the running eyes' corner).
     return sum(1 for row in rows_ for x in range(0, len(row), 16)
                if sum(abs(row[x + k] - back[k]) for k in range(3)) > 30) / (len(rows_) * len(rows_[0]) // 16)
-eyes = {f"{n} {side}": png(f"{out}/inspect/{n}/{side}.png")[2] for n in (200, 225) for side in ("left", "right")}
-check(all(covered(e) > 0.9 for e in eyes.values()), "the eyes' pictures do not cover the view: "
-      + ", ".join(f"{k} {covered(e):.2f}" for k, e in eyes.items()))
-check(eyes["200 left"] != eyes["200 right"], "both eyes see the same picture from within the scene")
-check(eyes["200 left"] != eyes["225 left"], "the paused view did not follow the head")
+def means(image, n=(16, 12)):
+    # The mean colours of a grid of blocks over the whole image.
+    w, h, rows_ = image
+    blocks = []
+    for j in range(n[1]):
+        for i in range(n[0]):
+            xs, ys = range(i * w // n[0], (i + 1) * w // n[0]), range(j * h // n[1], (j + 1) * h // n[1])
+            blocks.append([sum(rows_[y][4 * x + k] for y in ys for x in xs) / (len(xs) * len(ys)) for k in range(3)])
+    return blocks
+def off(eye, picture):
+    # How far an eye's view is from the picture the renderer drew for it
+    # (over the whole view): the median of the grid's blocks' mean colour
+    # differences, levels (the interface's pane covers a few blocks).
+    d = sorted(sum(abs(a - b) for a, b in zip(p, q)) / 3 for p, q in zip(means(eye), means(picture)))
+    return d[len(d) // 2]
+def colours(image):
+    return len({row[x:x + 3] for row in image[2] for x in range(0, len(row), 4)})
+# Each eye as captured and the picture the renderer drew for it, under
+# HD-2D twice while paused and under the default profile once.
+eyes = {f"{n} {side}": (png(f"{out}/inspect/{n}/{side}.png"), png(f"{out}/inspect/{n}/{side}-picture.png"))
+        for n in (200, 225) for side in ("left", "right")}
+eyes.update({f"Modern {side}": (png(f"{out}/modern/230/{side}.png"), png(f"{out}/modern/230/{side}-picture.png"))
+             for side in ("left", "right")})
+for name, (eye, picture) in eyes.items():
+    check(covered(eye[2]) > 0.9, f"{name}: the eye's picture does not cover the view ({covered(eye[2]):.2f})")
+    check(colours(picture) > 100, f"{name}: the eye's picture holds {colours(picture)} colours, not the room")
+    check(off(eye, picture) <= 4, f"{name}: the eye shows its picture {off(eye, picture):.1f} levels off its colours")
+check(eyes["200 left"][1] != eyes["200 right"][1], "both eyes see the same picture from within the scene")
+check(eyes["200 left"][1] != eyes["225 left"][1], "the paused view did not follow the head")
 print(f"inspect: on {on[0]}..{on[-1]}, {len(within)} frames from within the scene, {len(paused)} paused at game frame "
-      f"{paused[0]['game_frames']}; eyes cover " + ", ".join(f"{k} {covered(e):.0%}" for k, e in eyes.items()))
+      f"{paused[0]['game_frames']}; eyes " + ", ".join(f"{k}: cover {covered(e[2]):.0%}, {colours(p)} colours, "
+      f"{off(e, p):.1f} levels off" for k, (e, p) in eyes.items()))
 # Pacing and the presentation's time on its thread, from within the scene and as the screen.
 def pace(select):
     pairs = [(a, b) for a, b in zip(rows, rows[1:]) if select(a) and select(b)]
@@ -243,6 +277,17 @@ def pace(select):
     return f"interval p50 {gaps[len(gaps) // 2] / 1000:.2f} ms, p99 {gaps[int(len(gaps) * 0.99)] / 1000:.2f} ms, {late} of {len(gaps)} late; presenting p50 {present[len(present) // 2] / 1000:.2f} ms, p95 {present[int(len(present) * 0.95)] / 1000:.2f} ms"
 print(f"inspect pacing, the screen: {pace(lambda r: r['within'] == '0' and int(r['n']) > 20)}")
 print(f"inspect pacing, from within: {pace(lambda r: r['within'] == '1')}")
+# Under the default profile the underhand grab turns the view off and on
+# again while the player's Pause holds the game.
+rows = records("modern.log")
+by = {int(r["n"]): r for r in rows}
+paused = [r for r in rows if r["player_pause"] == "1"]
+check(len(paused) >= 40 and len({r["game_frames"] for r in paused}) == 1, f"Modern: the Pause grab held the game for {len(paused)} frames")
+gone = [int(r["n"]) for r in paused if r["fp"] == "0"]
+check(bool(gone) and 195 <= gone[0] <= 208 and 209 <= gone[-1] <= 222 and len(gone) == gone[-1] - gone[0] + 1,
+      f"Modern: the grabs while paused turned the view off and on again: off {gone[:1]}..{gone[-1:]}")
+check(all(by[n]["fp"] == "1" and by[n]["within"] == "1" for n in range(225, 235)), "Modern: the view was not back from within the scene while paused")
+print(f"modern: paused from frame {paused[0]['n'] if paused else '-'}, off while paused {gone[:1]}..{gone[-1:]}")
 
 if problems:
     print("xr-game-smoke: FAILED\n  " + "\n  ".join(problems))

@@ -613,7 +613,7 @@ impl XemApp {
     /// stick in steps (the head looks around). Whether it shows. Neither
     /// happens while the settings panel has the input or the page has lost
     /// focus, when the game's buttons are let go too (the page reads the
-    /// gamepad whatever the focus).
+    /// gamepad whatever the focus). The Original renderer ends it.
     fn look(&mut self, bindings: &xem_settings::GameBindings, field: xem_core::FieldControls, now: f64) -> bool {
         // The mouse's and a finger's motion are the view's this frame, or no one's.
         let mut mouse = std::mem::take(&mut self.look_mouse);
@@ -623,6 +623,11 @@ impl XemApp {
         let away = self.panel_visible() || !self.app_input.focused();
         let headset = self.xr_input.is_some();
         let Some(renderer) = self.renderer.as_mut() else { return false };
+        // The console's own picture has nothing to look around in, whether
+        // a game frame runs or not (a headset would go on drawing the eyes).
+        if !drawn {
+            renderer.set_first_person(false);
+        }
         if away {
             self.look_toggle.clear();
             self.snap.clear();
@@ -842,9 +847,8 @@ impl XemApp {
                     let graphics = self.settings.borrow().settings().graphics;
                     if graphics.renderer == xem_settings::Renderer::Original {
                         // The console's own picture, as the device shows it
-                        // (nothing to look around in).
+                        // (nothing to look around in: `look` ends the view).
                         self.actor_view = 0;
-                        renderer.set_first_person(false);
                         let gpu = &mut session.runtime.services().gpu;
                         if gpu.device().trace_enabled() {
                             gpu.device_mut().set_trace(false);

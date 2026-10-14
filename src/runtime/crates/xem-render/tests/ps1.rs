@@ -1908,6 +1908,94 @@ fn a_headset_sees_from_the_characters_eye_through_each_eyes_field_of_view_with_t
     assert_eq!(held.len(), 2, "the eyes go on through a frame without the character's record");
     assert_eq!(named(at(&held[0], 209, 76)), "red");
     assert_eq!(named(at(&held[0], 218, 84)), "yellow");
+
+    // A state loaded (all of VRAM again, another moment's grey screen):
+    // nothing of the shown buffer to replay. The eyes keep the room, and
+    // the pane shows nothing rather than the display, whose scene and
+    // interface the game's camera saw.
+    let loaded = DEVICE.with(|device| {
+        let mut device = device.borrow_mut();
+        *device = xem_gpu::Gpu::new();
+        device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0200]);
+        device.write_gp0_words(&[0x0280_8080, 0, 240 << 16 | 320]);
+        device.set_trace(true);
+        device.take_trace()
+    });
+    view.push(loaded);
+    let (held, pane) = present(&mut view, &eyes(level));
+    assert_eq!(held.len(), 2, "the eyes go on through a state loaded");
+    assert_eq!(named(at(&held[0], 209, 76)), "red");
+    let shown = pane.chunks_exact(4).filter(|p| *p != [0, 0, 0, 0]).count();
+    assert_eq!(shown, 0, "the pane shows nothing of the loaded display ({shown} pixels)");
+}
+
+#[test]
+fn a_headsets_eye_keeps_its_colours_composited_and_the_pane_covers_by_its_alpha() {
+    use xem_render::ps1::{GameView, HeadsetEye, HostClass, ViewConfig};
+    use xem_render::{Compositor, Quad, Rect, wgpu};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    // A wall of middle tones ahead of the eye (encoded to sRGB twice, they
+    // would come out paler), drawn without the mask bit: the frame's alpha
+    // there is 0, which is no coverage.
+    let z = HEADSET_FEET[2] + 1000.0;
+    let quad = |x0: f32, x1: f32, y0: f32, y1: f32| [[x0, y0, z], [x1, y0, z], [x0, y1, z], [x1, y1, z]];
+    let wall = [
+        quad(-3000.0, 0.0, EYE_Y - 3000.0, EYE_Y),
+        quad(0.0, 3000.0, EYE_Y - 3000.0, EYE_Y),
+        quad(-3000.0, 0.0, EYE_Y, EYE_Y + 3000.0),
+        quad(0.0, 3000.0, EYE_Y, EYE_Y + 3000.0),
+    ]
+    .map(|corners| (corners, 0x60_4020));
+    let (sync, trace) = traced(|device| headset_scene(device, true, &wall));
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    view.configure(ViewConfig::resolve(&Default::default(), HostClass::Headset, (320, 240), view.max_scale()));
+    view.push(sync);
+    view.push(trace);
+    view.set_first_person(true);
+    let display = xem_gpu::DisplayInfo { enabled: true, x: 0, y: 0, width: 320, height: 240, mode_width: 320, color24: false, interlaced: false, pal: false };
+    let eye = HeadsetEye { orientation: [0.0, 0.0, 0.0, 1.0], position: [0.0; 3], fov: [-1.0, 1.0, 0.75, -0.75] };
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    let presented = view.present_headset(&mut encoder, &display, "field:1", 0.0, &[eye]).expect("presented");
+    assert_eq!(presented.eyes.len(), 1, "the eye looks from within the scene");
+    let (picture, pane) = (presented.eyes[0].clone(), presented.screen.view.clone());
+    gpu.queue.submit([encoder.finish()]);
+    let drawn = read_rgba8(&gpu.device, &gpu.queue, view.eye_texture(0).expect("an eye"));
+    assert_eq!(drawn[(60 * 320 + 100) * 4..][..4], [32, 64, 96, 0], "the wall in the eye's picture, its mask bit clear");
+    // Composited as the headsets composite them, the pane over the eye's
+    // picture, onto an sRGB target (OpenXR's swapchains) and a linear one
+    // (a WebXR layer's buffers).
+    for format in [wgpu::TextureFormat::Rgba8UnormSrgb, wgpu::TextureFormat::Rgba8Unorm] {
+        let target = gpu.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("headset target"),
+            size: wgpu::Extent3d { width: 320, height: 240, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+        let whole = Rect { x: 0.0, y: 0.0, width: 320.0, height: 240.0 };
+        let mut seen = Quad::screen(&picture, whole, (320, 240));
+        seen.srgb_encoded = true;
+        seen.opaque = true;
+        seen.filter = wgpu::FilterMode::Nearest;
+        let mut interface = Quad::screen(&pane, whole, (320, 240));
+        interface.srgb_encoded = true;
+        interface.filter = wgpu::FilterMode::Nearest;
+        let mut compositor = Compositor::new(&gpu.device, &gpu.queue, format);
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        compositor.draw(&mut encoder, &target.create_view(&Default::default()), Some(wgpu::Color::BLACK), &[seen, interface]);
+        gpu.queue.submit([encoder.finish()]);
+        let shown = read_rgba8(&gpu.device, &gpu.queue, &target);
+        let at = |x: usize, y: usize| -> [u8; 4] { shown[(y * 320 + x) * 4..][..4].try_into().unwrap() };
+        for (x, y) in [(100, 60), (5, 5), (230, 100), (60, 180)] {
+            let p = at(x, y);
+            let close = p[..3].iter().zip([32u8, 64, 96]).all(|(a, b)| a.abs_diff(b) <= 1);
+            assert!(close && p[3] == 255, "{format:?}: the wall in its own colours at {x},{y}: {p:?}");
+        }
+        assert_eq!(at(280, 215), [255, 255, 255, 255], "{format:?}: the pane's white rectangle covers the wall");
+    }
 }
 
 #[test]

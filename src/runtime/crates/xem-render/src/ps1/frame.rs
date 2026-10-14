@@ -286,6 +286,23 @@ pub(crate) fn uniform_buffer(device: &wgpu::Device) -> wgpu::Buffer {
     })
 }
 
+/// Clears a frame's colour and auxiliary targets to transparent black.
+fn clear(encoder: &mut wgpu::CommandEncoder, textures: [&wgpu::Texture; 2]) {
+    for texture in textures {
+        let view = texture.create_view(&Default::default());
+        encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("frame clear"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &view,
+                depth_slice: None,
+                resolve_target: None,
+                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
+            })],
+            ..Default::default()
+        });
+    }
+}
+
 impl FrameRenderer {
     pub fn new(device: &wgpu::Device) -> Self {
         let color = texture(device, "frame", (1, 1), COLOR_FORMAT, picture_usage());
@@ -440,7 +457,14 @@ impl FrameRenderer {
         self.replaying = replay;
         self.overlay.clear();
         if !replay {
-            renderer.copy_display(encoder, area, &self.color, &self.aux);
+            // The display as it is; or, without the interface or with it
+            // alone, nothing while there is nothing to replay (no log of
+            // what the shown buffer holds: a state loaded, a rewind's step),
+            // since the display holds both as the game's camera saw them.
+            match framing.interface {
+                Interface::Drawn => renderer.copy_display(encoder, area, &self.color, &self.aux),
+                Interface::Omitted | Interface::Only => clear(encoder, [&self.color, &self.aux]),
+            }
             return;
         }
         let render_height = if feedback { u32::from(rect.height).max(area.height) } else { area.height };
@@ -560,18 +584,7 @@ impl FrameRenderer {
         self.vertices.write(device, queue, bytemuck::cast_slice(&builder.vertices));
         self.staging.write(device, queue, &builder.staging);
         // Start from black (the replayed clear covers what the game cleared).
-        for view in [color.create_view(&Default::default()), aux.create_view(&Default::default())] {
-            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("frame clear"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    depth_slice: None,
-                    resolve_target: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
-                })],
-                ..Default::default()
-            });
-        }
+        clear(encoder, [&color, &aux]);
         let depth_view = depth.create_view(&Default::default());
         let visible_depth_view = self.depth.create_view(&Default::default());
         for view in std::iter::once(&depth_view).chain(extra.then_some(&visible_depth_view)) {

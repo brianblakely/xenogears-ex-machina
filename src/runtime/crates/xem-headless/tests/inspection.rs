@@ -17,7 +17,8 @@
 //! game frame runs (the listener staying on the view's heading), follow the
 //! character walking without turning, leave the interface to its pane, and
 //! change nothing in the game; through the field's menu, which draws no
-//! field, they keep the room while the menu shows on the pane.
+//! field, they keep the room while the menu shows on the pane; and with a
+//! state loaded and no frame since, the pane shows nothing of it.
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test inspection
 
@@ -381,4 +382,14 @@ fn a_headset_looks_from_the_characters_eye_through_each_eye_paused_or_not_and_ch
         }
     }
     assert!(menu > 30, "{menu} frames of the menu's commands");
+
+    // A state loaded with no game frame since (Load State from the panel,
+    // which holds the game): nothing of the loaded screen to replay, so the
+    // pane shows nothing while the eyes keep the room.
+    session.restore_bytes(&start).unwrap();
+    let (eyes, pane) = present(&mut session, &mut view, &level);
+    assert_eq!(eyes.len(), 2, "the eyes go on through a state loaded");
+    assert!(colours(&eyes[0]) > 100, "the eyes keep the room ({} colours)", colours(&eyes[0]));
+    let shown = pane.chunks_exact(4).filter(|p| *p != [0, 0, 0, 0]).count();
+    assert_eq!(shown, 0, "the pane shows nothing of the loaded screen ({shown} pixels)");
 }

@@ -81,6 +81,10 @@ pub struct Quad<'a> {
     /// The texture has a linear format but holds sRGB-encoded values, as Slint's
     /// panel texture does.
     pub srgb_encoded: bool,
+    /// The texture's alpha is not coverage, and the quad covers what lies
+    /// behind it: the game's picture (the PS1 renderer's frames keep the
+    /// PS1's mask bit there, 0 for most pixels).
+    pub opaque: bool,
 }
 
 impl<'a> Quad<'a> {
@@ -132,6 +136,7 @@ impl<'a> Quad<'a> {
             filter: wgpu::FilterMode::Linear,
             opacity: 1.0,
             srgb_encoded: false,
+            opaque: false,
         }
     }
 }
@@ -143,7 +148,7 @@ struct QuadUniform {
     opacity: f32,
     decode: u32,
     encode: u32,
-    pad: u32,
+    opaque: u32,
 }
 
 /// Draws textures (the game image, application panels) onto targets of one format.
@@ -326,7 +331,7 @@ impl Compositor {
                 opacity: quad.opacity,
                 decode: quad.srgb_encoded.into(),
                 encode: encode.into(),
-                pad: 0,
+                opaque: quad.opaque.into(),
             };
             let at = index * self.stride as usize;
             bytes[at..at + size_of::<QuadUniform>()].copy_from_slice(bytemuck::bytes_of(&uniform));

@@ -118,7 +118,8 @@ fn options() -> Result<Options, String> {
                      from the character's eyes, the head looking and the right stick turning in steps; \
                      --xr-hands plays synthetic gestures (pause, inspect, pinch, tap, swipe-up/down/left/right, \
                      prayer, lose; NAME@X/Y also aims eye gaze at that screen pixel) at headset frames, for tests without hand tracking; \
-                     --xr-capture-at saves both eyes at those headset frames.\n\
+                     --xr-capture-at saves both eyes at those headset frames (looking from within the scene, \
+                     each eye's picture as the renderer drew it too: left-picture.png, right-picture.png).\n\
                      --control answers JSON commands on stdin, a line each, while the game plays: \
                      the command layer's (status, context, navigate, act, ...), settings, \
                      settings_apply {{change}} (the panel's own typed change), panel {{visible}} and \
