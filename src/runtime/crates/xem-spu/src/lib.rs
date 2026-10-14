@@ -432,11 +432,13 @@ impl Spu {
         }
     }
 
-    /// Returns to the power-on state, keeping the IRQ hook.
+    /// Returns to the power-on state (a console reset), keeping the IRQ hook
+    /// and the sample clock, which goes on counting.
     pub fn reset(&mut self) {
-        let hook = self.irq_hook.take();
+        let (hook, clock) = (self.irq_hook.take(), self.clock);
         *self = Spu::new();
         self.irq_hook = hook;
+        self.clock = clock;
     }
 
     /// Installs (or removes) the callback run when the IRQ is raised. It runs

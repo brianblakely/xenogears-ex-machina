@@ -5316,6 +5316,7 @@ dependencies = [
  "xem-media",
  "xem-render",
  "xem-settings",
+ "xem-spu",
 ]
 
 [[package]]

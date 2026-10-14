@@ -1,11 +1,10 @@
 //! What the assisted controls show over the game (as Seraph Glass widgets,
 //! `xem_render::glass`), the same in a headset and on a touch screen: the
 //! live cursor and the committed destination (related silhouettes, never
-//! the same), the battle ring's page mark, the region a swipe scrolls, and
-//! the keys beside the picture (a shop's quantity keys, a battle's target
-//! list). Positions are the game screen's pixels
-//! (320x224, with the wider framing's sides); hosts place them on their
-//! picture or virtual screen.
+//! the same), the region a swipe scrolls, and the keys beside the picture
+//! (a shop's quantity keys, a battle's target list). Positions are the
+//! game screen's pixels (320x224, with the wider framing's sides); hosts
+//! place them on their picture or virtual screen.
 use crate::dispatch::Out;
 use xem_core::action::GameAction;
 use xem_core::context::Context;
@@ -20,8 +19,6 @@ pub enum Kind {
     Floor(Reach),
     /// The committed destination.
     Destination,
-    /// The battle ring's pages: `current` of `count`.
-    Pages { count: u8, current: u8 },
     /// The list a swipe up or down scrolls now.
     Region,
 }
@@ -70,9 +67,6 @@ impl QuantityKey {
 /// The floor cursor's radius (world units) and the screen cursor's (pixels).
 const FLOOR_RADIUS: f32 = 14.0;
 const CURSOR_RADIUS: f32 = 9.0;
-/// Where the command ring's centre is drawn (it is fixed on the screen),
-/// and its page mark below it.
-const RING_PAGES_AT: (f32, f32) = (112.0, 120.0);
 
 fn flat(kind: Kind, centre: (f32, f32), half: (f32, f32)) -> Mark {
     Mark { kind, centre, x: (half.0, 0.0), y: (0.0, half.1) }
@@ -86,8 +80,8 @@ fn floor(kind: Kind, field: &Field, point: V3, radius: f32) -> Option<Mark> {
 }
 
 /// The marks for this frame: the cursor where `aim` points, the
-/// destination of the assist under way (`destination`), the ring's pages,
-/// the list a swipe would scroll.
+/// destination of the assist under way (`destination`), the list a swipe
+/// would scroll.
 pub fn marks(ui: Context, aim: Option<(f32, f32)>, field: Option<&Field>, destination: Option<V3>, targets: Option<&Targets>) -> Vec<Mark> {
     let mut marks = Vec::new();
     if let Some((x0, y0, x1, y1)) = aim.zip(targets).and_then(|(aim, targets)| crate::dispatch::receiving_region(ui, targets, aim)) {
@@ -103,12 +97,6 @@ pub fn marks(ui: Context, aim: Option<(f32, f32)>, field: Option<&Field>, destin
                 let on_floor = field.and_then(|f| f.pick(aim).and_then(|hit| floor(Kind::Floor(hit.reach), f, hit.point, FLOOR_RADIUS)));
                 marks.push(on_floor.unwrap_or_else(|| flat(Kind::Cursor, aim, (CURSOR_RADIUS, CURSOR_RADIUS))));
             }
-        }
-        Context::Battle { page, attack: false, list: false, targeting: false, .. } => {
-            if let Some((_, layer)) = crate::dispatch::ring_slot(page) {
-                marks.push(flat(Kind::Pages { count: 2, current: layer as u8 }, RING_PAGES_AT, (24.0, 8.0)));
-            }
-            marks.extend(aim.map(|aim| flat(Kind::Cursor, aim, (CURSOR_RADIUS, CURSOR_RADIUS))));
         }
         Context::None => {}
         _ => marks.extend(aim.map(|aim| flat(Kind::Cursor, aim, (CURSOR_RADIUS, CURSOR_RADIUS)))),
@@ -167,12 +155,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_ring_shows_its_page_and_menus_a_flat_cursor() {
+    fn the_ring_and_menus_show_only_a_flat_cursor() {
         let ring = Context::Battle { page: 9, attack: false, ap: 6, list: false, targeting: false };
         let marks = marks(ring, Some((50.0, 60.0)), None, None, None);
-        assert_eq!(marks[0].kind, Kind::Pages { count: 2, current: 1 });
-        assert_eq!(marks[1].kind, Kind::Cursor);
-        assert_eq!(marks[1].centre, (50.0, 60.0));
+        assert_eq!(marks.len(), 1, "the ring's own arrows show its pages: {marks:?}");
+        assert_eq!(marks[0].kind, Kind::Cursor);
+        assert_eq!(marks[0].centre, (50.0, 60.0));
+        assert!(super::marks(ring, None, None, None, None).is_empty(), "nothing over the ring without a pointer");
         assert!(super::marks(Context::None, Some((1.0, 1.0)), None, None, None).is_empty());
         assert!(quantity_keys(Context::Menu { screen: 4, cursor: 2, choice: 0, choices: 0, switch: false, quantities: true }));
     }

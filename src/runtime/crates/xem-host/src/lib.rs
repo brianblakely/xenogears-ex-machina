@@ -663,7 +663,7 @@ impl View {
                     self.look_mouse[0] += motion.xrel * scale;
                     self.look_mouse[1] += motion.yrel * scale;
                 } else if self.relative_mouse {
-                    self.player.mouse.moved(motion.xrel * self.settings.borrow().settings().mouse_scale());
+                    self.player.mouse.moved(motion.xrel, self.settings.borrow().settings());
                 }
             }
             SDL_EVENT_MOUSE_BUTTON_DOWN | SDL_EVENT_MOUSE_BUTTON_UP if unsafe { event.button }.which != SDL_TOUCH_MOUSEID => {
@@ -970,6 +970,12 @@ impl View {
     /// The game ran `frames` frames with the last [`View::pad_buttons`].
     pub fn frames_ran(&mut self, frames: u32) {
         self.player.frames_ran(frames);
+    }
+
+    /// Whether the battle's attack sequence under way began with a pointer's
+    /// press of its attacks (`Game::want_attack_page`).
+    pub fn attack_pointed(&self) -> bool {
+        self.player.attack_pointed()
     }
 
     /// Records one frame into `output` (a target of the view's size) at scene

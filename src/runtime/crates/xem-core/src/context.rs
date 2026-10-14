@@ -73,7 +73,8 @@ pub enum Context {
     Menu { screen: u8, cursor: u8, choice: u8, choices: u8, switch: bool, quantities: bool },
     /// A battle: the command page, whether the attack inputs take the
     /// buttons, AP left, an item or art list open (`battle_ui.cursorShown`)
-    /// and a target being chosen.
+    /// and a target being chosen for one (the attack page's own target
+    /// choice is part of its attack inputs).
     Battle { page: u8, attack: bool, ap: u8, list: bool, targeting: bool },
     /// The world map: movement mode and scene.
     WorldMap { movement: u32, scene: u32 },
@@ -198,11 +199,12 @@ fn battle(memory: &dyn GameMemory) -> Option<Context> {
     let ui = u32_at(memory, BATTLE_UI).and_then(ram_pointer);
     let cursor = ui.and_then(|ui| u8_at(memory, ui + 0x9E)).is_some_and(|c| c != 0);
     let choosing = ui.and_then(|ui| u8_at(memory, ui + 0xC6)).is_some_and(|c| c == 1);
+    let attack = !closed && matches!(page, 5 | 0x64 | 0x19 | 0x65);
     Some(Context::Battle {
         page,
-        attack: !closed && matches!(page, 5 | 0x64 | 0x19 | 0x65),
+        attack,
         ap: u8_at(memory, turn + 0x2D4)?,
         list: !closed && cursor && matches!(page, 2 | 8 | 4 | 0x11 | 0x13 | 0x16),
-        targeting: !closed && choosing && !cursor,
+        targeting: !closed && choosing && !cursor && !attack,
     })
 }

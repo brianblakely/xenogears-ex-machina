@@ -24,6 +24,23 @@ typedef struct {
 static XemEvent xem_events[XEM_EVENT_COUNT];
 static s32 xem_critical;
 
+void xem_pad_power_on(void);
+
+/* The console's reset (XEM_RESTART_POWER_ON): no event open (the abandoned
+ * game's, such as the sound driver's tick, would go on firing beside the new
+ * one's), no critical section, the pad driver stopped. */
+void xem_libapi_power_on(void) {
+    s32 i;
+
+    for (i = 0; i < XEM_EVENT_COUNT; i++) {
+        xem_events[i].open = 0;
+        xem_events[i].enabled = 0;
+        xem_events[i].ready = 0;
+    }
+    xem_critical = 0;
+    xem_pad_power_on();
+}
+
 long OpenEvent(unsigned long desc, long spec, long mode, long (*func)()) {
     s32 i;
 
@@ -211,6 +228,18 @@ static unsigned char *xem_pad_send_buffers[2];
 void libapi_register_pad_send_buffers(unsigned char *data0, long size0, unsigned char *data1, long size1) {
     xem_pad_send_buffers[0] = data0;
     xem_pad_send_buffers[1] = data1;
+}
+
+/* The pad driver as at power-on: stopped, with no buffers. */
+void xem_pad_power_on(void) {
+    s32 port;
+
+    for (port = 0; port < 2; port++) {
+        xem_pad_buffers[port] = NULL;
+        xem_pad_lengths[port] = 0;
+        xem_pad_send_buffers[port] = NULL;
+    }
+    xem_pad_started = 0;
 }
 
 void xem_pad_vblank(void) {

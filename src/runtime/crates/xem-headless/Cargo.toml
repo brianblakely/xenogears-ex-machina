@@ -22,3 +22,4 @@ xem-settings = { path = "../xem-settings" }
 xem-assist = { path = "../xem-assist" }
 pollster.workspace = true
 xem-media = { path = "../xem-media" }
+xem-spu = { path = "../xem-spu" }

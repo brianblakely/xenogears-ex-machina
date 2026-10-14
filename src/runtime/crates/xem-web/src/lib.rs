@@ -619,6 +619,7 @@ impl XemApp {
                 let Some(session) = self.session.as_mut() else { break };
                 session.set_window_focus(self.app_input.focused(),pause_on_focus_loss);
                 session.set_actor_view(self.actor_view).map_err(error)?;
+                session.set_attack_page(self.input.attack_pointed());
                 session.set_sound_mode(sound_mode).map_err(error)?;
                 match session.frame() {
                     Ok(true) => {
@@ -901,7 +902,7 @@ impl XemApp {
             "move" => {
                 self.input.hover(screen);
                 if self.mouse_captured && self.mouse_camera_active() {
-                    self.input.mouse.moved(dx * self.settings.borrow().settings().mouse_scale());
+                    self.input.mouse.moved(dx, self.settings.borrow().settings());
                 }
                 return false;
             }
@@ -1189,7 +1190,7 @@ impl XemApp {
             bios::install_kanji_font(runtime.memory(), None).map_err(error)?;
             // The BIOS copies the executable's text to its address and jumps to pc0.
             let header = exe::parse(&executable).map_err(error)?;
-            runtime.memory().write(header.text_address, exe::text(&executable, &header)).map_err(error)?;
+            runtime.load_executable(header.text_address, exe::text(&executable, &header)).map_err(error)?;
         }
         if let Some((number, source)) = game_disc {
             runtime.services().insert_disc(number, source);
@@ -1327,6 +1328,9 @@ impl XemApp {
                 "panelSection": r.panel().map(|panel| panel.component().get_selected_section()),
                 "fps": r.frame_rate.as_ref().map(|counter| counter.label()),
                 "hud": r.frame_rate.as_ref().map(|hud| json!({"visible":hud.visible(),"notice":hud.notice(),"fast_forward":hud.component().get_fast_forward(),"rewinding":hud.component().get_rewinding()})),
+                // Where the game's picture lies on the canvas (canvas pixels)
+                // and the screen it shows (with the wider framing's sides).
+                "picture": r.picture.map(|p| json!({"x": p.placed.x, "y": p.placed.y, "width": p.placed.width, "height": p.placed.height, "display": [p.display.0, p.display.1], "side": p.side})),
                 "lost": r.lost(),
             })
         });

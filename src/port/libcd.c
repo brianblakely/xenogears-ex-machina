@@ -76,6 +76,12 @@ extern s32 xem_in_interrupt;
 static s32 libcd_interrupt_depth;
 static s32 libcd_dma_done;
 
+/* The console's reset (XEM_RESTART_POWER_ON): no CD interrupt under way. */
+void xem_libcd_power_on(void) {
+    libcd_interrupt_depth = 0;
+    libcd_dma_done = 0;
+}
+
 /* The DMA3 completion interrupt, served now (the dispatcher's next one). */
 static void libcd_dma_interrupt(void) {
     s32 in_interrupt = xem_in_interrupt;

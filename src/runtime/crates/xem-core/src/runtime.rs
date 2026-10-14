@@ -10,6 +10,9 @@ use crate::pad::Pads;
 /// Where `xem_run` starts (src/port/include/xem/port.h).
 pub const RESTART_BOOT: u32 = 0;
 pub const RESTART_DISPATCH: u32 = 1;
+/// The console's reset: the port returns the BIOS's own state to power-on,
+/// then boots as `RESTART_BOOT` (src/port/boot.c).
+pub const RESTART_POWER_ON: u32 = 2;
 
 /// The fibers (src/port/include/xem/port.h): the game, whose bottom frame is
 /// `xem_run`, and the arena task, whose bottom frame is `xem_task_run`.
@@ -70,6 +73,10 @@ pub struct Services {
     /// field camera's pull-back in percent plus 100 (bits 0-15) and the
     /// pixels shown beyond each side (bits 16-31); 0 the original's.
     pub(crate) actor_view: u32,
+    /// The host keeps the battle's attack page shown through the attack
+    /// sequence (src/port/attack_page.c): the player began it by pointing at
+    /// its attacks.
+    pub(crate) attack_page: bool,
     /// The host's sound mode, the game's own (src/port/sound.c): 0 Mono,
     /// 1 Stereo, 2 Wide; none leaves the game's as the original sets it.
     pub(crate) sound_mode: Option<u32>,
@@ -260,6 +267,7 @@ impl ImportHandler for Services {
             }
             "pause_requested" => Action::Return(u32::from(self.focus_pause.requested())),
             "actor_view" => Action::Return(self.actor_view),
+            "attack_page" => Action::Return(u32::from(self.attack_page)),
             "sound_mode" => Action::Return(self.sound_mode.unwrap_or(u32::MAX)),
             "sound_mode_change" => {
                 let changed = std::mem::take(&mut self.sound_mode_changed);
@@ -391,6 +399,9 @@ pub struct Runtime<M: GameModule> {
     /// A 32-bit write made when the game next restarts into the dispatcher,
     /// before `xem_run` enters it: (address, value).
     dispatch_write: Option<(u32, u32)>,
+    /// The executable's text as the BIOS copied it to its address at
+    /// power-on (code and initialized data), which a reset copies again.
+    executable: Option<(u32, Vec<u8>)>,
 }
 
 impl<M: GameModule> Runtime<M> {
@@ -413,7 +424,16 @@ impl<M: GameModule> Runtime<M> {
             dispatch_write: None,
             stopped_before_vblank: false,
             frames: 0,
+            executable: None,
         }
+    }
+
+    /// Copy the executable's text to `address` as the BIOS does at power-on
+    /// (and keep it for a reset).
+    pub fn load_executable(&mut self, address: u32, text: &[u8]) -> Result<(), crate::memory::OutOfBounds> {
+        self.memory().write(address, text)?;
+        self.executable = Some((address, text.to_vec()));
+        Ok(())
     }
 
     pub fn services(&mut self) -> &mut Services {
@@ -520,20 +540,37 @@ impl<M: GameModule> Runtime<M> {
         self.current = 0;
     }
 
-    /// The console's soft reset: abandon suspended work and enter the
-    /// original boot routine, which clears BSS and initializes the game.
-    /// Attached discs and memory cards remain attached.
+    /// The console's reset: abandon suspended work, load the executable
+    /// again and boot it as the BIOS does after the reset line (the port's
+    /// BIOS state back at power-on: no event open, so the abandoned sound
+    /// driver's tick does not go on beside the new one's), the sound chip,
+    /// the drive and the root counters as at power-on, so nothing of the
+    /// abandoned game (its initialized data, voices, a stream the drive was
+    /// playing) outlives it. Attached discs and memory cards remain attached.
     pub fn reset(&mut self) {
-        self.restart(RESTART_BOOT, 0);
+        self.restart(RESTART_POWER_ON, 0);
         self.resume_advance = None;
         self.stopped_before_vblank = false;
         self.dispatch_write = None;
-        let services = self.services();
+        // SAFETY: no game export runs here; services and module memory are disjoint.
+        let services = unsafe { &mut *self.services };
         services.pending = None;
         services.trap_reason = None;
         services.mode = None;
         services.last_wait = None;
         services.focus_pause.set_active(false);
+        services.raised.clear();
+        services.clock.counters = Default::default();
+        services.clock.reconcile_audio_due();
+        services.cd.power_on();
+        let memory = self.module.memory();
+        let loaded = match &self.executable {
+            Some((address, text)) => memory.write(*address, text),
+            None => Ok(()),
+        };
+        if let Err(error) = loaded.and_then(|()| services.spu.power_on(memory)) {
+            services.trap_reason = Some(error.to_string());
+        }
     }
 
     /// Deliver an interrupt while the game is suspended, on the stack below

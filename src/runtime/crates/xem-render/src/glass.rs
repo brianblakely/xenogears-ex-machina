@@ -1,6 +1,6 @@
 //! Seraph Glass (plan.md): the look of the bespoke widgets added for
 //! headset and touch play: the gaze and pointer cursors, committed
-//! destinations, the battle ring's page marks, quantity and control decks.
+//! destinations, quantity and control decks.
 //! Not the settings panel or any ordinary application interface, and never
 //! a coating over the game.
 //!
@@ -71,8 +71,6 @@ pub enum Widget {
     Button(Icon, State),
     /// A wide control with a label (quantity buttons, deck keys).
     Key(Icon, State),
-    /// The battle ring's page mark: `count` pages, `current` lit.
-    Pages { count: u8, current: u8 },
     /// The region a swipe acts on (a list): corner brackets, stretched
     /// over it by the host.
     Region,
@@ -377,19 +375,6 @@ fn shade(widget: &Widget, style: Style, x: f32, y: f32, size: f32) -> Rgba {
                 let strike = segment(x, y, -hw * 0.6, hh * 0.6, hw * 0.6, -hh * 0.6) - c * 0.035;
                 over(&mut p, RECESS, cover(strike - 1.5, aa) * 0.8);
                 over(&mut p, SILVER_DARK, cover(strike, aa));
-            }
-        }
-        Widget::Pages { count, current } => {
-            // Diamonds on a thin bar; the current page filled in gold.
-            let count = (*count).max(1) as f32;
-            let spacing = size * 0.8 / count;
-            let bar = segment(x, y, -size * 0.4, 0.0, size * 0.4, 0.0) - 1.0;
-            over(&mut p, SILVER_DARK, cover(bar, aa) * 0.8);
-            for i in 0..count as u8 {
-                let cx = -size * 0.4 + spacing * (f32::from(i) + 0.5);
-                let d = ((x - cx).abs() + y.abs()) * 0.7071 - c * 0.12;
-                over(&mut p, RECESS, cover(d - 2.0, aa) * 0.7);
-                over(&mut p, if i == *current { GOLD } else { SILVER }, cover(if i == *current { d } else { d.abs() - 1.2 }, aa));
             }
         }
         Widget::Region => {

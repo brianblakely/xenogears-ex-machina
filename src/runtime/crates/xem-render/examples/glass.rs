@@ -16,7 +16,6 @@ fn main() {
         Widget::Floor(Reach::Jump),
         Widget::Floor(Reach::Invalid),
         Widget::Destination,
-        Widget::Pages { count: 2, current: 1 },
         Widget::Button(Icon::Arrow(Dir::Up), State::Normal),
         Widget::Button(Icon::Cross, State::Hover),
         Widget::Button(Icon::Circle, State::Pressed),

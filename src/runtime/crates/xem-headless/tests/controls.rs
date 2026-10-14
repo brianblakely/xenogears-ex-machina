@@ -133,6 +133,7 @@ fn host_frame(session: &mut Session<NativeModule>, player: &mut xem_settings::pl
     };
     let buttons = player.buttons(bindings, 0.0, context);
     session.set_pad(0, buttons);
+    session.set_attack_page(player.attack_pointed());
     run(session, json!({"cmd": "frames", "count": 1}));
     player.frames_ran(1);
 }
@@ -518,4 +519,222 @@ fn control_queries_survive_a_world_map_encounter() {
     assert!(battle, "the naturally rolled encounter reached the battle interface");
     assert_eq!(session.runtime.services().mode, Some(2));
     assert!(session.stopped.is_none());
+}
+
+/// The debug battle selector's battle on foot (ovl2606), at the player's
+/// first command ring.
+fn debug_battle() -> Option<Session<NativeModule>> {
+    let disc = disc()?;
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    run(&mut session, json!({"cmd": "frames", "count": 60}));
+    run(&mut session, json!({"cmd": "write", "path": "mode_battle_standalone", "value": 1}));
+    run(&mut session, json!({"cmd": "boot_mode", "mode": 2}));
+    run(&mut session, json!({"cmd": "frames", "count": 900}));
+    run(&mut session, json!({"cmd": "press", "buttons": ["start"], "frames": 1}));
+    for _ in 0..80 {
+        run(&mut session, json!({"cmd": "frames", "count": 50}));
+        let context = context(&mut session);
+        if context["kind"] == "battle" && context["page"] == 1 {
+            run(&mut session, json!({"cmd": "frames", "count": 4}));
+            return Some(session);
+        }
+    }
+    panic!("no command ring: {}", context(&mut session));
+}
+
+/// One host frame with the mouse: the pointer steers to the interface's
+/// entries, then the frame runs.
+fn pointer_frame(session: &mut Session<NativeModule>, player: &mut xem_settings::player::PlayerInput, bindings: &xem_settings::GameBindings) {
+    let targets = session.runtime.targets();
+    player.browse(targets.as_ref());
+    host_frame(session, player, bindings);
+}
+
+/// A point on entry `index` that no other entry takes (`Targets::at`).
+fn point_on(targets: &xem_core::menu::Targets, index: usize) -> (f32, f32) {
+    let rect = targets.entries[index].rect;
+    (0..20).flat_map(|i| (0..20).map(move |j| (rect.x + rect.width * (i as f32 + 0.5) / 20.0, rect.y + rect.height * (j as f32 + 0.5) / 20.0)))
+        .find(|point| targets.at(*point) == Some(index))
+        .unwrap_or_else(|| panic!("entry {index} is covered: {targets:?}"))
+}
+
+/// Clicks entry `index` of the interface's entries and plays `frames` host
+/// frames.
+fn click(session: &mut Session<NativeModule>, player: &mut xem_settings::player::PlayerInput, bindings: &xem_settings::GameBindings, index: usize, frames: usize) {
+    let targets = session.runtime.targets().expect("entries to click");
+    player.hover(Some(point_on(&targets, index)));
+    assert!(player.click(Some(&targets)), "entry {index} of {targets:?}");
+    for _ in 0..frames {
+        pointer_frame(session, player, bindings);
+    }
+}
+
+/// The shade of the attack page's first attack glyph as the panel draws it
+/// (battle graphics +0x641C, list 0 in the panel's buffer): 0x80 shown,
+/// down to 0 as the panel fades.
+fn attack_page_shade(session: &mut Session<NativeModule>) -> u8 {
+    let word = |session: &mut Session<NativeModule>, address: u32| {
+        let mut bytes = [0; 4];
+        session.runtime.memory().read(address, &mut bytes).unwrap();
+        u32::from_le_bytes(bytes)
+    };
+    let graphics = word(session, 0x800C_3EA4);
+    let ui = word(session, 0x800D_2D28);
+    let mut byte = [0; 1];
+    session.runtime.memory().read(ui + 0xA3, &mut byte).unwrap();
+    session.runtime.memory().read(graphics + 0x641C + u32::from(byte[0]) * 0x28 + 4, &mut byte).unwrap();
+    byte[0]
+}
+
+/// The entry of the interface's entries that `matches`.
+fn entry(session: &mut Session<NativeModule>, matches: fn(&xem_core::menu::Entry) -> bool) -> usize {
+    let targets = session.runtime.targets().expect("entries");
+    targets.entries.iter().position(matches).unwrap_or_else(|| panic!("no such entry: {targets:?}"))
+}
+
+/// The mouse plays a battle: pointing at the ring's Item highlights it, a
+/// page arrow flips the ring to the other page's slot its way, a click on
+/// Attack opens the attack page, where a click on the enemy keeps it as the
+/// target without attacking and clicks on the attacks spend their AP until
+/// the end ends the sequence; begun by a click, the sequence keeps its
+/// attack page shown.
+#[test]
+fn the_mouse_plays_the_command_ring_and_the_attacks() {
+    use xem_core::action::GameAction;
+    let Some(mut session) = debug_battle() else { return };
+    let bindings = xem_settings::GameBindings::default();
+    let mut player = xem_settings::player::PlayerInput::default();
+    let ring = session.runtime.targets().expect("the ring");
+    assert_eq!((ring.what, ring.entries.len()), ("battle_ring", 7), "{ring:?}");
+    assert_eq!(ring.selected.map(|s| ring.entries[s].select), Some(Some(GameAction::Right)), "Attack: {ring:?}");
+    let item = entry(&mut session, |e| e.select == Some(GameAction::Down));
+    player.hover(Some(point_on(&ring, item)));
+    for _ in 0..20 {
+        pointer_frame(&mut session, &mut player, &bindings);
+    }
+    assert_eq!(context(&mut session)["page"], 2, "pointing at Item highlights it");
+    let up = entry(&mut session, |e| e.press == Some(GameAction::Up));
+    click(&mut session, &mut player, &bindings, up, 20);
+    assert_eq!(context(&mut session)["page"], 0xA, "the up arrow flips the ring to its other page's Up slot");
+    let left = entry(&mut session, |e| e.press == Some(GameAction::Left));
+    click(&mut session, &mut player, &bindings, left, 20);
+    assert_eq!(context(&mut session)["page"], 3, "the left arrow flips it back, to Defense");
+    let attack = entry(&mut session, |e| e.select == Some(GameAction::Right));
+    click(&mut session, &mut player, &bindings, attack, 40);
+    let attack = context(&mut session);
+    assert_eq!((attack["page"].as_u64(), attack["attack"].as_bool()), (Some(5), Some(true)), "Attack opened the attack page: {attack}");
+    let ap = attack["ap"].as_u64().unwrap();
+    let page = session.runtime.targets().expect("the attack page");
+    assert_eq!(page.what, "battle_attack");
+    let enemy = page.entries.iter().position(|e| e.ground.is_some_and(|g| g.slot == 3)).expect("the enemy");
+    click(&mut session, &mut player, &bindings, enemy, 60);
+    let still = context(&mut session);
+    assert_eq!((still["page"].as_u64(), still["ap"].as_u64()), (Some(5), Some(ap)), "choosing the target attacks nothing: {still}");
+    let weak = entry(&mut session, |e| e.press == Some(GameAction::AttackWeak));
+    click(&mut session, &mut player, &bindings, weak, 60);
+    assert_eq!(context(&mut session)["ap"].as_u64(), Some(ap - 1), "Weak costs one");
+    assert_eq!(attack_page_shade(&mut session), 0x80, "the attack page stays shown");
+    let strong = entry(&mut session, |e| e.press == Some(GameAction::AttackStrong));
+    click(&mut session, &mut player, &bindings, strong, 60);
+    assert_eq!(context(&mut session)["ap"].as_u64(), Some(ap - 3), "Strong costs two");
+    assert_eq!(attack_page_shade(&mut session), 0x80);
+    let end = entry(&mut session, |e| e.press == Some(GameAction::AttackEnd));
+    click(&mut session, &mut player, &bindings, end, 30);
+    assert_eq!(context(&mut session)["attack"], false, "the sequence ended: {}", context(&mut session));
+    assert_eq!(session.execute(&json!({"cmd": "status"}))["attack_page"], false, "and the page is the game's again");
+}
+
+/// A sequence the player's buttons begin fades its attack page as the
+/// original does, the attacks still pointed at where it showed them.
+#[test]
+fn a_sequence_the_buttons_begin_fades_its_attack_page() {
+    let Some(mut session) = debug_battle() else { return };
+    let bindings = xem_settings::GameBindings::default();
+    let mut player = xem_settings::player::PlayerInput::default();
+    tap(&mut session, &mut player, &bindings, "KeyE", 40);
+    assert_eq!(context(&mut session)["attack"], true, "{}", context(&mut session));
+    let ap = context(&mut session)["ap"].as_u64().unwrap();
+    tap(&mut session, &mut player, &bindings, "KeyW", 60);
+    assert_eq!(context(&mut session)["ap"].as_u64(), Some(ap - 1), "Weak, from its key");
+    assert_eq!(attack_page_shade(&mut session), 0, "the page faded");
+    assert_eq!(session.execute(&json!({"cmd": "status"}))["attack_page"], false);
+    let strong = entry(&mut session, |e| e.press == Some(xem_core::action::GameAction::AttackStrong));
+    click(&mut session, &mut player, &bindings, strong, 60);
+    assert_eq!(context(&mut session)["ap"].as_u64(), Some(ap - 3), "Strong, clicked where the faded page showed it");
+    assert_eq!(attack_page_shade(&mut session), 0, "the page stays faded");
+}
+
+/// The mouse chooses an item's target: a click on Item opens the list, a
+/// click on its fourth item asks for a target, and a click on Elly gives
+/// it to her.
+#[test]
+fn the_mouse_chooses_a_battle_target() {
+    let Some(mut session) = debug_battle() else { return };
+    let bindings = xem_settings::GameBindings::default();
+    let mut player = xem_settings::player::PlayerInput::default();
+    let item = entry(&mut session, |e| e.select == Some(xem_core::action::GameAction::Down));
+    click(&mut session, &mut player, &bindings, item, 60);
+    assert_eq!(context(&mut session)["list"], true, "the item list: {}", context(&mut session));
+    click(&mut session, &mut player, &bindings, 3, 60);
+    assert_eq!(context(&mut session)["targeting"], true, "{}", context(&mut session));
+    let targets = session.runtime.targets().expect("the targets");
+    let elly = targets.entries.iter().position(|e| e.ground.is_some_and(|g| g.slot == 1)).expect("Elly");
+    player.hover(Some(point_on(&targets, elly)));
+    assert!(player.click(Some(&targets)));
+    for _ in 0..120 {
+        pointer_frame(&mut session, &mut player, &bindings);
+        if context(&mut session)["targeting"] != true { break; }
+    }
+    assert_eq!(context(&mut session)["targeting"], false, "confirmed: {}", context(&mut session));
+    assert_eq!(session.execute(&json!({"cmd": "inspect", "path": "battle_target_cursor_slot"})), json!(1), "Elly");
+}
+
+/// A reset leaves nothing of the abandoned game's sound: the field's music
+/// stops at once, the boot's first jingle sounds as it does after power-on,
+/// a second at a time (the reset game's sound plays a frame later; its loud
+/// seconds within half a decibel), and the sound driver ticks as often as
+/// after power-on (no event of the abandoned game's left to tick it too).
+#[test]
+fn console_reset_leaves_none_of_the_abandoned_games_sound() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let options = xem_game::BootOptions { audio_output: true, ..Default::default() };
+    let levels = |session: &mut Session<NativeModule>| -> Vec<[Option<f64>; 2]> {
+        (0..24).map(|_| {
+            run(session, json!({"cmd": "audio_capture", "action": "start"}));
+            run(session, json!({"cmd": "frames", "count": 60}));
+            let capture = session.execute(&json!({"cmd": "audio_capture", "action": "stop"}));
+            [capture["rms_db"][0].as_f64(), capture["rms_db"][1].as_f64()]
+        }).collect()
+    };
+    let sounding = |session: &mut Session<NativeModule>| {
+        (0..xem_spu::VOICES).filter(|&v| session.runtime.services().spu.chip().voice(v).phase != xem_spu::Phase::Off).count()
+    };
+    let (mut clean, _) = boot(&disc, &options).expect("boot");
+    let power_on = levels(&mut clean);
+    let (mut session, _) = boot(&disc, &options).expect("boot");
+    run(&mut session, json!({"cmd": "enter_field", "map": 30}));
+    run(&mut session, json!({"cmd": "frames", "count": 600}));
+    assert!(sounding(&mut session) > 0, "the field's music plays");
+    run(&mut session, json!({"cmd": "reset"}));
+    assert_eq!(sounding(&mut session), 0, "the reset silenced it");
+    assert_eq!(session.runtime.services().spu.audio_queued(), 0, "and dropped what it had not played");
+    let reset = levels(&mut session);
+    let loud: Vec<_> = power_on.iter().zip(&reset).enumerate()
+        .flat_map(|(second, (a, b))| (0..2).filter_map(move |side| Some((second, a[side]?, b[side]?))))
+        .filter(|(_, a, _)| *a > -30.0)
+        .collect();
+    assert!(loud.len() >= 20, "the jingle plays after power-on: {power_on:?}");
+    for (second, a, b) in loud {
+        assert!((a - b).abs() < 0.5, "second {second}: {a:.1} dB after power-on, {b:.1} dB after the reset");
+    }
+    let ticks = |session: &mut Session<NativeModule>| {
+        let count = |session: &mut Session<NativeModule>| session.execute(&json!({"cmd": "inspect", "path": "sound_tick_count", "depth": 0})).as_u64().unwrap();
+        let before = count(session);
+        run(session, json!({"cmd": "frames", "count": 600}));
+        count(session) - before
+    };
+    assert_eq!(ticks(&mut session), ticks(&mut clean), "the sound driver's ticks in ten seconds");
 }
