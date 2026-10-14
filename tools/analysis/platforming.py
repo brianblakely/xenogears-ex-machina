@@ -10,49 +10,67 @@ docs/runtime.md ("Random battles in platforming areas"):
   it (field_event_become_party_character): on foot attribute bit 7 blocks walking
   (field_collision_walk_attribute_aware: bits 5-7 against flags 8-10) and bit 4 airborne moves and
   jump starts (field_collision_walk, field_actor_is_jump_blocked_by_floor: bits 3-4 against flags
-  9-10), in a gear bits 6 and 3; 0x800000 blocks layer 0. PARTIES holds each party's running jump as
-  measured on the game (docs/runtime.md).
+  9-10), in a gear bits 6 and 3. PARTIES holds each party's running jump as measured on the game
+  (docs/runtime.md), FALL a walk off a floor, which falls from rest as the jumps fall.
 - **Layers.** Actors stand on layers 0 to count - 2 (field_event_place_actor_on_floor,
   field_collision_find_actor_floor); the top layer is the camera's floor
-  (field_camera_walk_top_layer), which nobody walks.
-- **Walk graph.** The leader walks from a floor (a triangle without 0x400000) to any neighbouring
-  floor and onto a ledge (0x400000) that is not more than CLIMB above it
-  (field_collision_walk_attribute_aware refuses a ledge whose floor is above the actor). A ledge
-  takes the leader's direction away and slides it down (field_actor_apply_additive_motion), so from
-  a ledge it only goes on to neighbours not more than CLIMB above. Heights are the triangles'
-  centroids, as xem_core::field compares them.
-- **Regions** are the strongly connected components of the floors, a slide down ledges joining the
-  floor it starts from to the floors it ends on. A region link that leads down a slide is a walk
-  link; a **fall** is one whose way back needs a jump (or has none on the layer).
-- **Jump links** join two regions when a jump from a floor's edge into a ledge carries the leader
-  over ledges to a floor of the other region: every edge it crosses within the jump's arc
-  (Party.carries: the distance from the takeoff and the height above it, edge midpoints), and no
-  triangle it may not cross in the air. No jump starts on a ledge
-  (field_event_request_player_control).
+  (field_camera_walk_top_layer). Each actor layer is measured on its own, though the game moves the
+  leader between them by itself (field_actor_update_position): in the air and where its layer has
+  no floor it takes the highest floor below it on any actor layer, and a floor of attribute 0x4
+  lifts it to the next floor up. Those moves, the layer masks scripts set (1f, f8) and the slabs
+  other layers' triangles stand on are not followed.
+- **Floors.** A triangle of attribute 0x800000 has no floor on its layer
+  (field_collision_find_actor_floor). On layer 0 the walks refuse it (a wall); on a layer above it
+  is a pit: the leader walking or flying into it falls to the floor below it, the highest the other
+  actor layers have under its centroid below its highest corner (with none, or one that blocks the
+  party, the game refuses the move: a wall again).
+- **Walk graph.** The leader walks from a floor to any neighbouring floor and onto a slide
+  (0x400000) that is not more than CLIMB above it (field_collision_walk_attribute_aware refuses a
+  slide whose floor is above the actor). A slide takes the leader's direction away and slides it
+  down (field_actor_apply_additive_motion), so from a slide it only goes on to neighbours not more
+  than CLIMB above. A walk into a pit falls (FALL) over pits and the slides it clears to a floor of
+  the layer, unless it reaches a pit's floor below first. Heights are the triangles' centroids, as
+  xem_core::field compares them.
+- **Regions** are the strongly connected components of the floors, a slide or a fall joining the
+  floor it starts from to the floors it ends on. A region link that leads down a slide or a fall is
+  a walk link; a **fall** is one whose way back needs a jump (or has none on the layer).
+- **Jump links** join two regions when a jump from a floor's edge into a slide or a pit carries the
+  leader over slides and pits to a floor of the other region: every edge it crosses within the
+  jump's arc (reaches: the distance from the takeoff and the height above it, edge midpoints), above
+  each pit's floor below, and no triangle it may not cross in the air. A pressed jump starts on no
+  slide (field_event_request_player_control); a leader stuck on one for 32 frames with Jump held
+  jumps from it, which is not followed.
 - **Entrances** are the entry records (the event bytecode opens with ff; record n at 1 + 7n holds
   s16 x, s16 z and the layer: field_event_place_at_map_entry) that other maps' map changes name (12,
   47, 98, fe 84, fe cf with immediate field and entry operands; debug maps 720-729 aside) and the
   world map's path regions (the area files' four path tables and worldmap_fixed_path_regions; a
   region of kind 4 only names a destination). An entrance stands on the first triangle whose edges
-  wind around it as field_collision_find_floor_triangle tests them.
+  wind around it as field_collision_find_floor_triangle tests them; one outside every triangle, on
+  one with no floor, on one that blocks the party or on a slide that ends on no floor stands on no
+  floor, and the listing says which.
 - **Traversal jumps** of a map: between each ordered pair of its entrances on one layer, the fewest
   jump links on the way (0-1 breadth-first search, walk links free); the map's figure is the most
-  any pair needs. A pair the layer does not join counts nothing.
+  any joined pair needs. A pair on two layers, one its layer does not join and one with an entrance
+  on no floor are not measured and count nothing, so the figure of a map with such pairs is a lower
+  bound: the map is partly measured, or not measured when none of its pairs is joined. Its climb
+  is the most jumps any region a walk from one of its entrances reaches needs.
 - **Areas** are the armed maps whose draws start the same encounters (the battle and enemy ids of
   each formation with a weight: sets differing only in a stage, a weight or an undrawn formation
   are one area's) that doors join, through maps not armed with others. An area is
   **platforming-heavy** when at least half of its armed maps need at least one traversal jump and
-  its maps' traversal jumps sum to at least 3. Both discs are read; an area heavy on either disc is
-  listed, the maps of overlapping areas together. Its name is the nearest world-map entrance's (at
-  most NAME_STEPS door steps, then the lowest map) from the area file's name table, read with
+  its maps' traversal jumps sum to at least 3, as measured. One that is not but would be if each of
+  its maps with pairs not measured needed a jump is **unresolved**: not listed, and reviewed in
+  docs/runtime.md. Both discs are read; an area heavy on either disc is listed, the maps of
+  overlapping areas together. Its name is the nearest world-map entrance's (at most NAME_STEPS door
+  steps, then the lowest map) from the area file's name table, read with
   tools.analysis.text_control's characters (the later areas' Japanese tables name nothing).
 
-`--table` (the default) prints every area and its maps' metrics with the reason, and the (battle,
-enemy id) pairs only met in random battles of the listed maps (formations.reach without their draw).
-`--rust` prints PLATFORMING_AREAS for src/runtime/crates/xem-core/src/encounters.rs; `--check
-[FILE]` fails unless FILE (that one) holds exactly that. `--map N [--disc D]` prints one map's
-layers, regions, links and entrances. Inputs: .local/extract and .local/discs (`--root`); keep
-listings under .local/.
+`--table` (the default) prints every area and its maps' metrics with the reason, the unresolved
+areas, and the (battle, enemy id) pairs only met in random battles of the listed maps
+(formations.reach without their draw). `--rust` prints PLATFORMING_AREAS for
+src/runtime/crates/xem-core/src/encounters.rs; `--check [FILE]` fails unless FILE (that one) holds
+exactly that. `--map N [--disc D]` prints one map's layers, regions, links and entrances. Inputs:
+.local/extract and .local/discs (`--root`); keep listings under .local/.
 """
 
 from __future__ import annotations
@@ -64,6 +82,7 @@ import re
 import struct
 import sys
 from collections import Counter, deque
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -77,8 +96,8 @@ ROOT = Path(__file__).resolve().parents[2]
 TABLE = ROOT / "src/runtime/crates/xem-core/src/encounters.rs"
 
 COLLISION = 1  # BUNDLE_COLLISION (src/decomp/src/field/field_load.h)
-LEDGE = 0x400000  # a slide: not walked onto from below, no jump starts (field_motion.c)
-LAYER0_BLOCK = 0x800000
+LEDGE = 0x400000  # a slide: not walked onto from below, no pressed jump starts on it
+NO_FLOOR = 0x800000  # no floor on its layer: a wall on layer 0, a pit on the layers above
 CLIMB = 8  # a ledge more than this above a floor is not walked onto (xem_core::field)
 GEARS = "fe 1e"  # switch_party_to_gears
 DEBUG_MAPS = frozenset(range(720, 730))  # the development menu's maps, whose doors go everywhere
@@ -100,12 +119,20 @@ NAME_STEPS = 2  # how many door steps away an area's world-map name may come fro
 # ---------------------------------------------------------------------------
 
 
+def reaches(arc, distance: float, rise: float) -> bool:
+    """Whether a flight along `arc` (the distance from where it started and the height above it
+    after each field update) passes `distance` on at `rise` above its start or higher. In the air
+    the leader may go slower than it runs, so any update as far or farther counts."""
+    return any(d >= distance and h >= rise for d, h in arc)
+
+
 @dataclass(frozen=True)
 class Party:
     """The party leader as the collision code sees it, and its running jump: `arc` holds the
     distance from the takeoff and the height above it after each field update that moved it."""
 
     name: str
+    label: str
     walk_block: int
     air_block: int
     arc: tuple[tuple[float, float], ...]
@@ -120,9 +147,8 @@ class Party:
         return max(distance for distance, height in self.arc if height >= 0)
 
     def carries(self, distance: float, rise: float) -> bool:
-        """Whether a jump passes `distance` from its takeoff at `rise` above it or higher. In the
-        air the leader may go slower than it runs, so any update as far or farther counts."""
-        return any(d >= distance and h >= rise for d, h in self.arc)
+        """Whether a jump passes `distance` from its takeoff at `rise` above it or higher."""
+        return reaches(self.arc, distance, rise)
 
 
 # Measured headless (docs/runtime.md): the leader's FieldActor position (16.16) every vertical
@@ -131,6 +157,7 @@ class Party:
 # the first two updates straight up, then 12 units an update (16 running on the floor).
 FOOT = Party(
     "foot",
+    "on foot",
     0x80,
     0x10,
     (
@@ -145,6 +172,7 @@ FOOT = Party(
 # running on the floor).
 GEAR = Party(
     "gear",
+    "in its gears",
     0x40,
     0x08,
     (
@@ -154,6 +182,9 @@ GEAR = Party(
     ),
 )  # fmt: skip
 PARTIES = {party.name: party for party in (FOOT, GEAR)}
+# A walk off a floor falls from rest as both parties' jumps fall: 2.0 an update faster each update
+# (2, 6, 12 ... down), 12 units an update on with Run held.
+FALL = tuple((12 * k, -k * (k + 1)) for k in range(32))
 
 
 # ---------------------------------------------------------------------------
@@ -174,12 +205,11 @@ def nclip(a: tuple[int, int], b: tuple[int, int], c: tuple[int, int]) -> int:
     return signed32(x0 * y1 + x1 * y2 + x2 * y0 - x0 * y2 - x1 * y0 - x2 * y1)
 
 
-class Walkmesh:
-    """One collision layer as one party crosses it (module notes)."""
+class Surface:
+    """One collision layer's triangles: their corners, attribute words and neighbours."""
 
-    def __init__(self, layer: CollisionLayer, words: list[int], index: int, party: Party):
+    def __init__(self, layer: CollisionLayer, words: list[int]):
         count = len(layer.triangles)
-        self.index, self.party = index, party
         self.points = [(x, y, z) for x, y, z, _ in layer.vertices]
         self.corners = [triangle.vertices for triangle in layer.triangles]
         self.word = []
@@ -190,11 +220,65 @@ class Walkmesh:
             tuple(n if 0 <= n < count else -1 for n in map(signed16, triangle.adjacent_raw))
             for triangle in layer.triangles
         ]
+        # Bounds a point must be within to wind inside (a negative z's borrow moves x by 1); none
+        # for a triangle without area, which winds around every point on its line.
+        self._bounds: list[tuple[int, int, int, int] | None] = []
+        for corners in self.corners:
+            xs, zs = [self.points[i][0] for i in corners], [self.points[i][2] for i in corners]
+            flat = nclip(*(gte_xy(x, z) for x, z in zip(xs, zs, strict=True))) == 0
+            self._bounds.append(None if flat else (min(xs) - 1, max(xs) + 1, min(zs), max(zs)))
+
+    def __len__(self) -> int:
+        return len(self.corners)
+
+    def centroid(self, t: int) -> tuple[float, float]:
+        corners = [self.points[i] for i in self.corners[t]]
+        return sum(p[0] for p in corners) / 3, sum(p[2] for p in corners) / 3
+
+    def height(self, t: int, x: float, z: float) -> float:
+        """The height of t's plane at (x, z) (field_collision_compute_plane_height: 0 for an
+        upright triangle)."""
+        (ax, ay, az), (bx, by, bz), (cx, cy, cz) = (self.points[i] for i in self.corners[t])
+        nx = (by - ay) * (cz - az) - (bz - az) * (cy - ay)
+        ny = (bz - az) * (cx - ax) - (bx - ax) * (cz - az)
+        nz = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax)
+        return 0.0 if ny == 0 else ay - (nx * (x - ax) + nz * (z - az)) / ny
+
+    def locate(self, x: int, z: int) -> int | None:
+        """The first triangle whose edges wind around (x, z) as field_collision_find_floor_triangle
+        tests them: each GTE normal clip at least 0."""
+        p = gte_xy(x, z)
+        for t, corners in enumerate(self.corners):
+            bounds = self._bounds[t]
+            if bounds and not (bounds[0] <= x <= bounds[1] and bounds[2] <= z <= bounds[3]):
+                continue
+            a, b, c = (gte_xy(self.points[i][0], self.points[i][2]) for i in corners)
+            if nclip(a, b, p) >= 0 and nclip(b, c, p) >= 0 and nclip(c, a, p) >= 0:
+                return t
+        return None
+
+
+class Walkmesh(Surface):
+    """One actor layer as one party crosses it (module notes); `others` are the map's other actor
+    layers, whose floors lie under this layer's pits."""
+
+    def __init__(
+        self,
+        layer: CollisionLayer,
+        words: list[int],
+        index: int,
+        party: Party,
+        others: Sequence[Surface] = (),
+    ):
+        super().__init__(layer, words)
+        self.index, self.party = index, party
         self.floor = [sum(self.points[i][1] for i in corners) / 3 for corners in self.corners]
+        self.depth = self._depths(others)
         self._slides: dict[int, frozenset[int]] = {}
+        self._drops: dict[int, frozenset[int]] = {}
         self._exits = {
             t: sorted(self.exits(t))
-            for t in range(count)
+            for t in range(len(self))
             if not self.blocked(t) and not self.ledge(t)
         }
         self.region, self.regions = self._components()
@@ -211,15 +295,21 @@ class Walkmesh:
         for a, b in self.jump_links:
             self._adjacent.setdefault(a, []).append((b, 1))
 
-    def __len__(self) -> int:
-        return len(self.corners)
-
     def blocked(self, t: int) -> bool:
-        word = self.word[t]
-        return bool(word & self.party.walk_block) or (self.index == 0 and bool(word & LAYER0_BLOCK))
+        """Whether the party cannot stand on t: a wall for it, or no floor."""
+        return bool(self.word[t] & (self.party.walk_block | NO_FLOOR))
+
+    def pit(self, t: int) -> bool:
+        """Whether t is a pit: no floor on this upper layer, a floor below it on another."""
+        return self.depth.get(t) is not None
 
     def air_blocked(self, t: int) -> bool:
-        return self.blocked(t) or bool(self.word[t] & self.party.air_block)
+        """Whether the party may not cross t in the air: a wall for it there, or no floor and no
+        pit."""
+        word = self.word[t]
+        return bool(word & (self.party.walk_block | self.party.air_block)) or (
+            bool(word & NO_FLOOR) and not self.pit(t)
+        )
 
     def ledge(self, t: int) -> bool:
         return bool(self.word[t] & LEDGE)
@@ -228,8 +318,35 @@ class Walkmesh:
         """Whether n's floor is more than CLIMB above t's (y grows down)."""
         return self.floor[n] < self.floor[t] - CLIMB
 
+    def _depths(self, others: Sequence[Surface]) -> dict[int, float | None]:
+        """Each floorless triangle of this upper layer the party may enter: the height of the floor
+        it falls to, the highest the other actor layers have under its centroid and below its top
+        corner, or None when there is none or it blocks the party (field_actor_update_position
+        then refuses the move)."""
+        depths: dict[int, float | None] = {}
+        if self.index == 0:
+            return depths
+        for t, word in enumerate(self.word):
+            if not word & NO_FLOOR or word & (self.party.walk_block | self.party.air_block):
+                continue
+            x, z = self.centroid(t)
+            top = min(self.points[i][1] for i in self.corners[t])
+            below = []
+            for other in others:
+                u = other.locate(round(x), round(z))
+                if u is not None and not other.word[u] & NO_FLOOR:
+                    height = other.height(u, x, z)
+                    if height >= top:
+                        below.append((height, other.word[u]))
+            if below:
+                height, under = min(below)
+                depths[t] = None if under & self.party.walk_block else height
+            else:
+                depths[t] = None
+        return depths
+
     def moves(self, t: int):
-        """Where the leader goes on from t without jumping."""
+        """Where the leader walks on from t."""
         if self.blocked(t):
             return
         for n in self.neighbours[t]:
@@ -240,11 +357,13 @@ class Walkmesh:
             yield n
 
     def slide(self, t: int) -> frozenset[int]:
-        """The floors a slide from ledge t ends on."""
+        """The floors a slide from ledge t ends on, falling through any pit it slides into."""
         if t not in self._slides:
             ends, seen, queue = set(), {t}, deque([t])
             while queue:
-                for n in self.moves(queue.popleft()):
+                over = queue.popleft()
+                ends |= self.drops(over)
+                for n in self.moves(over):
                     if n in seen:
                         continue
                     seen.add(n)
@@ -255,10 +374,21 @@ class Walkmesh:
             self._slides[t] = frozenset(ends)
         return self._slides[t]
 
+    def drops(self, t: int) -> frozenset[int]:
+        """The floors of this layer a walk from t into a neighbouring pit falls to (FALL)."""
+        if t not in self._drops:
+            found: set[int] = set()
+            for e, n in enumerate(self.neighbours[t]):
+                if n >= 0 and self.pit(n):
+                    found.update(self._flight(t, e, n, FALL))
+            found.discard(t)
+            self._drops[t] = frozenset(found)
+        return self._drops[t]
+
     def exits(self, t: int) -> set[int]:
-        """The floors a walk from floor t reaches next: its floor neighbours and the slides'
-        ends."""
-        out = set()
+        """The floors a walk from floor t reaches next: its floor neighbours, the slides' ends and
+        where falls through its neighbouring pits land."""
+        out = set(self.drops(t))
         for n in self.moves(t):
             out |= self.slide(n) if self.ledge(n) else {n}
         out.discard(t)
@@ -307,6 +437,37 @@ class Walkmesh:
         b = self.points[self.corners[t][(e + 1) % 3]]
         return ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2)
 
+    def _flight(self, t: int, e: int, n: int, arc) -> dict[int, float]:
+        """The floors a flight along `arc` from edge e of t into n lands on, with the rise to each:
+        it goes on over the slides it clears and over pits while above their floors below, crossing
+        every edge within the arc and none the party may not cross in the air."""
+        tx, ty, tz = self.midpoint(t, e)
+        landings: dict[int, float] = {}
+        seen, queue = {n}, deque([n])
+        while queue:
+            over = queue.popleft()
+            for e2, u in enumerate(self.neighbours[over]):
+                if u < 0 or u in seen or self.air_blocked(u):
+                    continue
+                ux, uy, uz = self.midpoint(over, e2)
+                distance = math.hypot(ux - tx, uz - tz)
+                if self.pit(over) and not reaches(arc, distance, ty - self.depth[over]):
+                    continue  # it lands below the pit first
+                if self.pit(u):
+                    if reaches(arc, distance, ty - self.depth[u]):
+                        seen.add(u)
+                        queue.append(u)
+                    continue
+                rise = ty - uy
+                if not reaches(arc, distance, rise):
+                    continue
+                seen.add(u)
+                if self.ledge(u):
+                    queue.append(u)
+                else:
+                    landings[u] = min(landings.get(u, rise), rise)
+        return landings
+
     def _jump_links(self) -> dict[tuple[int, int], float]:
         """(region, region) -> the lowest rise of a jump between them."""
         links: dict[tuple[int, int], float] = {}
@@ -314,25 +475,12 @@ class Walkmesh:
             if self.region[t] < 0 or self.air_blocked(t):
                 continue
             for e, n in enumerate(self.neighbours[t]):
-                if n < 0 or not self.ledge(n) or self.air_blocked(n):
+                if n < 0 or self.air_blocked(n) or not (self.ledge(n) or self.pit(n)):
                     continue
-                tx, ty, tz = self.midpoint(t, e)
-                seen, queue = {n}, deque([n])
-                while queue:
-                    over = queue.popleft()
-                    for e2, u in enumerate(self.neighbours[over]):
-                        if u < 0 or u in seen or self.air_blocked(u):
-                            continue
-                        ux, uy, uz = self.midpoint(over, e2)
-                        rise = ty - uy
-                        if not self.party.carries(math.hypot(ux - tx, uz - tz), rise):
-                            continue
-                        seen.add(u)
-                        if self.ledge(u):
-                            queue.append(u)
-                        elif self.region[u] not in (-1, self.region[t]):
-                            key = (self.region[t], self.region[u])
-                            links[key] = min(links.get(key, rise), rise)
+                for u, rise in self._flight(t, e, n, self.party.arc).items():
+                    if self.region[u] not in (-1, self.region[t]):
+                        key = (self.region[t], self.region[u])
+                        links[key] = min(links.get(key, rise), rise)
         return links
 
     def jumps_from(self, starts) -> dict[int, int]:
@@ -358,23 +506,18 @@ class Walkmesh:
                 need += 1
         return need, none
 
-    def locate(self, x: int, z: int) -> int | None:
-        """The first triangle whose edges wind around (x, z) as field_collision_find_floor_triangle
-        tests them: each GTE normal clip at least 0."""
-        p = gte_xy(x, z)
-        for t, corners in enumerate(self.corners):
-            a, b, c = (gte_xy(self.points[i][0], self.points[i][2]) for i in corners)
-            if nclip(a, b, p) >= 0 and nclip(b, c, p) >= 0 and nclip(c, a, p) >= 0:
-                return t
-        return None
-
-    def regions_at(self, t: int) -> frozenset[int]:
-        """The regions a leader placed on triangle t is in: its own, or a slide's ends'."""
+    def standing(self, t: int) -> tuple[frozenset[int], str]:
+        """The regions a leader placed on triangle t is in (a slide's ends' for a slide), or none
+        and why."""
+        word = self.word[t]
+        if word & NO_FLOOR:
+            return frozenset(), f"triangle {t} has no floor (0x800000)"
         if self.blocked(t):
-            return frozenset()
+            return frozenset(), f"triangle {t} (word {word:#x}) blocks the party {self.party.label}"
         if self.ledge(t):
-            return frozenset(self.region[u] for u in self.slide(t))
-        return frozenset([self.region[t]])
+            ends = frozenset(self.region[u] for u in self.slide(t))
+            return ends, "" if ends else f"triangle {t} is a slide that ends on no floor"
+        return frozenset([self.region[t]]), ""
 
 
 # ---------------------------------------------------------------------------
@@ -437,6 +580,7 @@ class LayerMetrics:
     layer: int
     triangles: int
     ledges: int
+    pits: int
     regions: int
     jump_links: int
     walk_links: int
@@ -449,14 +593,36 @@ class MapResult:
     map: int
     party: str
     layers: list[LayerMetrics] = field(default_factory=list)
-    entrances: dict[int, str] = field(default_factory=dict)  # entry -> where it stands
-    pairs: dict[tuple[int, int], int | None] = field(default_factory=dict)  # fewest jumps
+    entrances: dict[int, str] = field(default_factory=dict)  # entry -> where it stands, or why not
+    placed: dict[int, int] = field(default_factory=dict)  # entry -> its layer, standing on a floor
+    # (entry, entry) on one layer -> the fewest jumps from the first to the second, None unjoined
+    pairs: dict[tuple[int, int], int | None] = field(default_factory=dict)
+    climb: int = 0  # the most jumps a region reached from one of its entrances needs
     error: str = ""
 
     @property
     def traversal(self) -> int:
-        """The most jumps a walk between two of its entrances needs."""
+        """The most jumps a walk between two of its entrances needs, of the pairs measured."""
         return max((jumps for jumps in self.pairs.values() if jumps is not None), default=0)
+
+    @property
+    def unmeasured(self) -> list[tuple[int, int]]:
+        """The ordered pairs of its entrances that no walk on one layer joins: on two layers, not
+        joined by their layer, or with an entrance on no floor."""
+        entries = sorted(self.entrances)
+        pairs = [(a, b) for a in entries for b in entries if a != b]
+        return [pair for pair in pairs if self.pairs.get(pair) is None]
+
+    @property
+    def status(self) -> str:
+        if self.error:
+            return "not read"
+        if len(self.entrances) < 2:
+            return "one entrance" if self.entrances else "no entrance"
+        if not self.unmeasured:
+            return "measured"
+        joined = any(jumps is not None for jumps in self.pairs.values())
+        return "partly measured" if joined else "not measured"
 
     @property
     def jump_links(self) -> int:
@@ -466,6 +632,25 @@ class MapResult:
     def falls(self) -> int:
         return sum(layer.falls for layer in self.layers)
 
+    def gaps(self) -> str:
+        """Why the pairs not measured are not: not joined on their layer, on two layers, or with an
+        entrance on no floor."""
+        unjoined = [f"{a}->{b}" for (a, b), jumps in sorted(self.pairs.items()) if jumps is None]
+        placed = sorted(self.placed)
+        layer = self.placed
+        across = [f"{a}-{b}" for a in placed for b in placed if a < b and layer[a] != layer[b]]
+        nowhere = [str(entry) for entry in sorted(self.entrances) if entry not in self.placed]
+        parts = [
+            f"{label} {' '.join(items)}"
+            for label, items in (
+                ("not joined", unjoined),
+                ("on two layers", across),
+                ("on no floor", nowhere),
+            )
+            if items and len(self.entrances) > 1
+        ]
+        return ", ".join(parts)
+
     def text(self) -> str:
         if self.error:
             return f"map {self.map}: {self.error}"
@@ -473,10 +658,13 @@ class MapResult:
             f"{a}->{b}:{'-' if jumps is None else jumps}"
             for (a, b), jumps in sorted(self.pairs.items())
         )
+        gaps = self.gaps()
         return (
-            f"map {self.map} ({self.party}): {self.traversal} traversal jumps, {self.jump_links}"
-            f" jump links, {self.falls} falls; entrances {len(self.entrances)}"
+            f"map {self.map} ({self.party}): {self.status}, {self.traversal} traversal jumps"
+            f" (climb {self.climb}), {self.jump_links} jump links, {self.falls} falls;"
+            f" entrances {len(self.entrances)}"
             + (f"; pairs {pairs}" if pairs else "")
+            + (f"; not measured: {gaps}" if gaps else "")
         )
 
 
@@ -491,7 +679,12 @@ def analyse_map(map_id: int, data: bytes, scripts: Scripts, entries) -> tuple[Ma
         return result, []
     raw = package.attributes_raw
     words = [struct.unpack_from("<I", raw, at)[0] for at in range(0, len(raw) - 3, 4)]
-    meshes = [Walkmesh(layer, words, n, party) for n, layer in enumerate(package.layers[:-1])]
+    layers = package.layers[:-1]
+    surfaces = [Surface(layer, words) for layer in layers]
+    meshes = [
+        Walkmesh(layer, words, n, party, surfaces[:n] + surfaces[n + 1 :])
+        for n, layer in enumerate(layers)
+    ]
     for mesh in meshes:
         falls, one_way = mesh.falls()
         result.layers.append(
@@ -499,6 +692,7 @@ def analyse_map(map_id: int, data: bytes, scripts: Scripts, entries) -> tuple[Ma
                 mesh.index,
                 len(mesh),
                 sum(mesh.ledge(t) for t in range(len(mesh))),
+                sum(mesh.pit(t) for t in range(len(mesh))),
                 mesh.regions,
                 len(mesh.jump_links),
                 len(mesh.walk_links),
@@ -517,15 +711,20 @@ def analyse_map(map_id: int, data: bytes, scripts: Scripts, entries) -> tuple[Ma
             result.entrances[entry] = f"layer {layer}: not an actor layer"
             continue
         t = meshes[layer].locate(x, z)
-        regions = frozenset() if t is None else meshes[layer].regions_at(t)
+        if t is None:
+            result.entrances[entry] = f"layer {layer} ({x}, {z}): outside every triangle"
+            continue
+        regions, why = meshes[layer].standing(t)
         if not regions:
-            result.entrances[entry] = f"layer {layer} ({x}, {z}): no floor"
+            result.entrances[entry] = f"layer {layer} ({x}, {z}): {why}"
             continue
         result.entrances[entry] = f"layer {layer} triangle {t} regions {sorted(regions)}"
+        result.placed[entry] = layer
         placed.setdefault(layer, []).append((entry, regions))
     for layer, here in placed.items():
         for entry, regions in here:
             cost = meshes[layer].jumps_from(regions)
+            result.climb = max(result.climb, *cost.values())
             for other, targets in here:
                 if other != entry:
                     jumps = [cost[r] for r in targets if r in cost]
@@ -613,10 +812,24 @@ class Area:
         return sum(result.traversal for result in self.results)
 
     @property
+    def partial(self) -> list[int]:
+        """Its maps with entrance pairs not measured, whose figures are lower bounds."""
+        return [result.map for result in self.results if result.unmeasured]
+
+    @property
     def heavy(self) -> bool:
         return (
             HEAVY_SHARE * len(self.jumping) >= len(self.maps) and self.traversal >= HEAVY_JUMPS
         )
+
+    @property
+    def unresolved(self) -> bool:
+        """Not heavy as measured, but heavy if each map with pairs not measured needed a jump (how
+        many is unknown, so the sum could reach the threshold too)."""
+        if self.heavy or not self.partial:
+            return False
+        could = set(self.jumping) | set(self.partial)
+        return HEAVY_SHARE * len(could) >= len(self.maps)
 
     def reason(self) -> str:
         share = f"{len(self.jumping)} of {len(self.maps)} armed maps need a traversal jump"
@@ -628,6 +841,13 @@ class Area:
             missing.append(f"only {share}")
         if self.traversal < HEAVY_JUMPS:
             missing.append(f"only {jumps}")
+        if self.unresolved:
+            maps = ", ".join(map(str, self.partial))
+            which = f"maps {maps} are" if len(self.partial) > 1 else f"map {maps} is"
+            return (
+                f"unresolved: as measured {' and '.join(missing)}; {which} not fully measured and"
+                " could make it heavy"
+            )
         return "not heavy: " + " and ".join(missing)
 
 
@@ -810,10 +1030,17 @@ def report(analyses: list[DiscAnalysis]) -> list[str]:
         lines.append(f"disc {analysis.number}: {armed} armed maps in {areas} areas")
         for area in analysis.areas:
             lines.append(f"  {area.name} {area.maps} ({area.named}): {area.reason()}")
-            if area.traversal or any(result.jump_links for result in area.results):
+            if area.traversal or area.partial or any(r.jump_links for r in area.results):
                 lines += [f"    {result.text()}" for result in area.results]
     lines.append("table (PLATFORMING_AREAS):")
     lines += [f"  {name}: {maps}" for name, maps in rows]
+    unresolved = [(a.number, area) for a in analyses for area in a.areas if area.unresolved]
+    lines.append(f"unresolved areas (not listed; reviewed in docs/runtime.md): {len(unresolved)}")
+    lines += [
+        f"  disc {number}: {area.name} {area.maps}: maps {', '.join(map(str, area.partial))}"
+        " not fully measured"
+        for number, area in unresolved
+    ]
     lost = lost_enemies(analyses, [m for _, maps in rows for m in maps])
     lines.append(f"(battle, enemy id) met only in random battles of these maps: {len(lost)}")
     for pair, how in lost.items():

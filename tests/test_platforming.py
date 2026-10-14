@@ -16,9 +16,9 @@ from tools.analysis import platforming as pf
 from tools.analysis.field import CollisionLayer, CollisionTriangle
 
 # Attribute indices into WORDS: floor, slide, a wall for walkers on foot, a wall for gears, a floor
-# no party on foot may jump from or over, and one that blocks layer 0 only.
-FLOOR, SLIDE, FOOT_WALL, GEAR_WALL, FOOT_NO_JUMP, LAYER0 = range(6)
-WORDS = [0, pf.LEDGE, 0x80, 0x40, 0x10, pf.LAYER0_BLOCK]
+# no party on foot may jump from or over, and no floor at all.
+FLOOR, SLIDE, FOOT_WALL, GEAR_WALL, FOOT_NO_JUMP, NONE = range(6)
+WORDS = [0, pf.LEDGE, 0x80, 0x40, 0x10, pf.NO_FLOOR]
 
 
 def layer(points, faces) -> CollisionLayer:
@@ -53,8 +53,9 @@ def strip(xs, heights, attributes, width=100) -> CollisionLayer:
     return layer(points, faces)
 
 
-def walkmesh(mesh: CollisionLayer, party=pf.FOOT, index=1) -> pf.Walkmesh:
-    return pf.Walkmesh(mesh, WORDS, index, party)
+def walkmesh(mesh: CollisionLayer, party=pf.FOOT, index=1, below=()) -> pf.Walkmesh:
+    """The layer as `party` crosses it, over the layers `below` (CollisionLayers)."""
+    return pf.Walkmesh(mesh, WORDS, index, party, [pf.Surface(other, WORDS) for other in below])
 
 
 def region_at(mesh: pf.Walkmesh, x: float, z: float = 50) -> int:
@@ -99,6 +100,7 @@ def door(field_id: int, entry: int) -> bytes:
 
 
 CAMERA = strip([0, 1000], [0, 0], [FLOOR])  # every map's top layer: the camera's floor
+GROUND = strip([0, 1000], [200, 200], [FLOOR])  # a floor 200 below the layers above it
 
 
 class PartyTests(unittest.TestCase):
@@ -117,6 +119,12 @@ class PartyTests(unittest.TestCase):
         self.assertFalse(pf.FOOT.carries(0, 119))
         self.assertTrue(pf.GEAR.carries(72, 131))
         self.assertFalse(pf.GEAR.carries(73, 131))
+
+    def test_a_walk_off_falls_from_rest(self):
+        self.assertEqual(pf.FALL[:4], ((0, 0), (12, -2), (24, -6), (36, -12)))
+        self.assertTrue(pf.reaches(pf.FALL, 12, -2))
+        self.assertFalse(pf.reaches(pf.FALL, 13, -2), "no faster than 12 an update")
+        self.assertFalse(pf.reaches(pf.FALL, 1, 1), "a fall never rises")
 
 
 class WalkmeshTests(unittest.TestCase):
@@ -180,10 +188,27 @@ class WalkmeshTests(unittest.TestCase):
         self.assertEqual(walkmesh(mesh).jump_links, {})
         self.assertEqual(len(walkmesh(mesh, pf.GEAR).jump_links), 2)
 
-    def test_0x800000_blocks_layer_0_only(self):
-        mesh = strip([0, 100, 200, 300], [0, 0, 0, 0], [FLOOR, LAYER0, FLOOR])
-        self.assertEqual(walkmesh(mesh, index=0).regions, 2)
-        self.assertEqual(walkmesh(mesh, index=1).regions, 1)
+    def test_no_floor_walls_layer_0_and_is_a_pit_above_a_floor(self):
+        mesh = strip([0, 100, 200, 300], [0, 0, 0, 0], [FLOOR, NONE, FLOOR])
+        walled = strip([0, 1000], [200, 200], [FOOT_WALL])
+        for index, below in ((0, [GROUND]), (1, []), (1, [walled])):
+            walls = walkmesh(mesh, index=index, below=below)
+            self.assertEqual(walls.regions, 2, "nobody stands on it")
+            self.assertFalse(walls.walk_links or walls.jump_links, f"a wall on layer {index}")
+        pit = walkmesh(mesh, index=1, below=[GROUND])
+        left, right = region_at(pit, 50), region_at(pit, 250)
+        self.assertEqual(pit.depth[pit.locate(150, 50)], 200, "the floor it falls to")
+        self.assertEqual(pit.walk_links, set(), "a walk in falls before the far side")
+        self.assertEqual(pit.jump_links, {(left, right): 0, (right, left): 0}, "a jump crosses it")
+
+    def test_a_walk_into_a_narrow_pit_falls_to_the_floor_beyond(self):
+        # A floor, a pit 10 wide, a floor 30 lower, over a floor 200 down.
+        cliff = strip([0, 100, 110, 210], [0, 0, 30, 30], [FLOOR, NONE, FLOOR])
+        mesh = walkmesh(cliff, below=[GROUND])
+        high, low = region_at(mesh, 50), region_at(mesh, 160)
+        self.assertEqual(mesh.walk_links, {(high, low)}, "down without a jump")
+        self.assertEqual(mesh.jump_links[(low, high)], 30, "back up with one")
+        self.assertEqual(mesh.falls(), (1, 0))
 
     def test_an_entrance_stands_where_the_game_finds_the_floor(self):
         self.assertEqual(pf.gte_xy(5, -3), (-3, 4), "a negative z borrows from x")
@@ -192,9 +217,24 @@ class WalkmeshTests(unittest.TestCase):
         self.assertFalse(mesh.ledge(mesh.locate(50, 50)))
         slide = mesh.locate(250, 50)
         self.assertTrue(mesh.ledge(slide))
-        self.assertEqual(mesh.regions_at(slide), {region_at(mesh, 50)}, "it slides down")
+        self.assertEqual(mesh.standing(slide), ({region_at(mesh, 50)}, ""), "it slides down")
         # On an edge two triangles share (square 0's second, square 1's first), the first has it.
         self.assertEqual(mesh.locate(100, 50), 1)
+
+    def test_a_triangle_without_area_takes_every_point_on_its_line(self):
+        points = [(0, 0, 50), (50, 0, 50), (100, 0, 50), (200, 0, 0), (300, 0, 0), (200, 0, 100)]
+        surface = pf.Surface(layer(points, [((0, 1, 2), FLOOR), ((3, 4, 5), FLOOR)]), WORDS)
+        self.assertEqual(surface.locate(250, 50), 0, "on its line, beyond its corners")
+        self.assertEqual(surface.locate(250, 20), 1)
+
+    def test_an_entrance_on_no_floor_says_why(self):
+        mesh = walkmesh(strip([0, 100, 200, 300, 400], [0, 0, 60, 0, 0], [NONE, FOOT_WALL, 1, 1]))
+        self.assertEqual(mesh.standing(0), (set(), "triangle 0 has no floor (0x800000)"))
+        self.assertEqual(
+            mesh.standing(2), (set(), "triangle 2 (word 0x80) blocks the party on foot")
+        )
+        self.assertEqual(mesh.standing(6), (set(), "triangle 6 is a slide that ends on no floor"))
+        self.assertEqual(mesh.height(4, 250, 50), 30, "its plane, halfway down the valley")
 
 
 class MapTests(unittest.TestCase):
@@ -225,11 +265,30 @@ class MapTests(unittest.TestCase):
         result, meshes = pf.analyse_map(7, data, pf.map_scripts(data), {0, 1, 2, 9})
         self.assertEqual(len(meshes), 1, "the top layer is the camera's")
         self.assertEqual(result.pairs, {(0, 1): 1, (1, 0): 0})
-        self.assertEqual(result.traversal, 1)
+        self.assertEqual((result.traversal, result.climb), (1, 1))
         self.assertEqual((result.jump_links, result.falls), (2, 1), "up and down; down slides")
         self.assertEqual(result.entrances[2], "layer 1: not an actor layer")
         self.assertEqual(result.entrances[9], "no entry record")
-        self.assertIn("1 traversal jumps", result.text())
+        self.assertEqual(result.status, "partly measured", "2 and 9 stand on no floor")
+        self.assertIn("1 traversal jumps (climb 1)", result.text())
+        self.assertIn("not measured: on no floor 2 9", result.text())
+
+    def test_pairs_on_two_layers_or_unjoined_are_not_measured(self):
+        # Layer 0: a floor, a slide 200 up, a floor (no jump up it); layer 1: one floor.
+        walls = strip([0, 100, 200, 300, 400], [0, 0, 0, -200, -200], [0, 0, 1, 0])
+        records = [(50, 50, 0), (350, 50, 0), (50, 50, 1), (500, 50, 0)]
+        package, col = events(records, b"\x00"), collision([walls, GROUND, CAMERA])
+        data = bundle({1: (len(col), col), 5: (len(package), package)})
+        result, _ = pf.analyse_map(7, data, pf.map_scripts(data), {0, 1, 2, 3})
+        self.assertEqual(result.pairs, {(0, 1): None, (1, 0): 0})
+        self.assertEqual(result.placed, {0: 0, 1: 0, 2: 1})
+        self.assertEqual(result.entrances[3], "layer 0 (500, 50): outside every triangle")
+        self.assertEqual(result.status, "partly measured")
+        self.assertEqual(len(result.unmeasured), 11, "all but 1->0")
+        self.assertEqual(result.gaps(), "not joined 0->1, on two layers 0-2 1-2, on no floor 3")
+        lone = pf.MapResult(8, "foot", entrances={0: "", 1: ""}, pairs={})
+        self.assertEqual(lone.status, "not measured")
+        self.assertEqual(pf.MapResult(9, "foot", entrances={0: ""}).status, "one entrance")
 
 
 def path_area(regions) -> bytes:
@@ -252,8 +311,11 @@ class WorldMapTests(unittest.TestCase):
         self.assertEqual(pf.fixed_regions(), [(0x138, 1, 14), (0x1B8, 1, 29), (0x122, 3, -1)])
 
 
-def result(map_id: int, traversal: int) -> pf.MapResult:
-    return pf.MapResult(map_id, "foot", pairs={(0, 1): traversal} if traversal else {})
+def result(map_id: int, traversal: int, measured: bool = True) -> pf.MapResult:
+    """A map of two entrances, `traversal` jumps from the first to the second; not measured, the
+    way back is not joined, and nor is the way there when it needs no jump."""
+    pairs = {(0, 1): traversal if measured or traversal else None, (1, 0): 0 if measured else None}
+    return pf.MapResult(map_id, "foot", entrances={0: "", 1: ""}, pairs=pairs)
 
 
 class AreaTests(unittest.TestCase):
@@ -287,6 +349,23 @@ class AreaTests(unittest.TestCase):
         low = pf.Area([1, 2], [result(1, 1), result(2, 1)])
         self.assertEqual(low.reason(), "not heavy: only 2 traversal jumps in all")
         self.assertTrue(pf.Area([1, 2], [result(1, 3), result(2, 0)]).heavy, "half is enough")
+
+    def test_maps_not_measured_leave_an_area_unresolved(self):
+        unknown = pf.Area([1, 2, 3], [result(1, 2), result(2, 0, measured=False), result(3, 0)])
+        self.assertFalse(unknown.heavy)
+        self.assertEqual(unknown.partial, [2])
+        self.assertTrue(unknown.unresolved, "2 of 3 would need a jump")
+        self.assertEqual(
+            unknown.reason(),
+            "unresolved: as measured only 1 of 3 armed maps need a traversal jump and only 2"
+            " traversal jumps in all; map 2 is not fully measured and could make it heavy",
+        )
+        maps = [result(1, 2), result(2, 0, measured=False)] + [result(m, 0) for m in (3, 4, 5)]
+        settled = pf.Area([1, 2, 3, 4, 5], maps)
+        self.assertFalse(settled.unresolved, "2 of 5 at most")
+        self.assertIn("not heavy", settled.reason())
+        heavy = pf.Area([1], [result(1, 3, measured=False)])
+        self.assertFalse(heavy.unresolved, "heavy as measured")
 
     def test_an_area_takes_the_nearest_world_map_name(self):
         links = {1: {2}, 2: {1, 3}, 3: {2, 4}, 4: {3}}
@@ -379,10 +458,11 @@ class DiscTests(unittest.TestCase):
         lines = pf.report(analyses)
         self.assertIn("  maps 0-1: [0, 1]", lines)
         self.assertIn(
-            "    map 1 (gear): 2 traversal jumps, 4 jump links, 2 falls; entrances 2;"
-            " pairs 0->1:2 1->0:0",
+            "    map 1 (gear): measured, 2 traversal jumps (climb 2), 4 jump links, 2 falls;"
+            " entrances 2; pairs 0->1:2 1->0:0",
             lines,
         )
+        self.assertIn("unresolved areas (not listed; reviewed in docs/runtime.md): 0", lines)
 
     def test_the_command_line_prints_and_checks_the_table(self):
         def run(*argv):
@@ -406,7 +486,7 @@ class DiscTests(unittest.TestCase):
             self.assertIn("differs from the analysis", text)
             status, text = run("--map", "1")
         self.assertEqual(status, 0)
-        self.assertIn("map 1 (gear): 2 traversal jumps", text)
+        self.assertIn("map 1 (gear): measured, 2 traversal jumps", text)
         self.assertIn("entrance 1: layer 0 triangle", text)
 
 

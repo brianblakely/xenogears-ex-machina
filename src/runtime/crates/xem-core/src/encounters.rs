@@ -10,8 +10,10 @@
 //! with a nonzero period and count, and player control runs it) whose draws
 //! start the same encounters and that doors join. It is platforming-heavy
 //! when at least half of its maps need a jump between two of their
-//! entrances and those maps' jumps sum to at least three. Only maps that
-//! arm the draw are listed: elsewhere it never runs.
+//! entrances and those maps' jumps sum to at least three, as measured. Only
+//! maps that arm the draw are listed: elsewhere it never runs. Areas whose
+//! maps the walkmesh model cannot fully measure, and that could be heavy,
+//! are not listed; docs/runtime.md reviews them.
 
 use std::sync::LazyLock;
 
@@ -20,7 +22,6 @@ use std::sync::LazyLock;
 pub const PLATFORMING_AREAS: &[(&str, &[u16])] = &[
     ("Blackmoon Forest", &[22]),
     ("Babel Tower", &[407, 409, 412, 413, 414, 415, 416]),
-    ("Anima Relic 2", &[641, 642, 644, 650, 651]),
 ];
 
 /// Every map of `PLATFORMING_AREAS`, ascending (field map numbers, the
