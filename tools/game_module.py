@@ -564,6 +564,9 @@ class Rewriter:
             lines, pause_helpers = focus_pause_checks(lines)
             for helper in sorted(pause_helpers):
                 self.declare(unit, helper, "i32", ["i32"])
+            lines, division_helpers = mips_division(lines)
+            for helper in sorted(division_helpers):
+                self.declare(unit, helper, "i32", ["i32", "i32"])
             lines = poll_back_edges(lines)
             lines = valueless_returns(lines, self.returns)
             self.declare(unit, "xem_loop_poll", "void", [])
@@ -844,6 +847,30 @@ def focus_pause_checks(lines):
                 if count != checks:
                     raise ValueError(f"{function}: expected {checks} pause Start checks, found {count}")
                 function = None
+        out.append(line)
+    return out, helpers
+
+
+DIVISION_RE = re.compile(r"^(\s+%\S+) = (sdiv|udiv|srem|urem)(?: exact)? i32 (\S+), (%\S+)$")
+MIPS_DIVISION = {
+    "sdiv": "xem_mips_div",
+    "udiv": "xem_mips_divu",
+    "srem": "xem_mips_rem",
+    "urem": "xem_mips_remu",
+}
+
+
+def mips_division(lines):
+    """Divide as the R3000 does where the divisor is not a constant: a zero
+    divisor (or 0x80000000 / -1) leaves a result there, where wasm's i32 div
+    and rem trap (src/port/division.c)."""
+    out, helpers = [], set()
+    for line in lines:
+        m = DIVISION_RE.match(line)
+        if m:
+            helper = MIPS_DIVISION[m.group(2)]
+            line = f"{m.group(1)} = call i32 @{helper}(i32 {m.group(3)}, i32 {m.group(4)})"
+            helpers.add(helper)
         out.append(line)
     return out, helpers
 

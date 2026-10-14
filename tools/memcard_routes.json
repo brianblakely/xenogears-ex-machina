@@ -1,0 +1,52 @@
+{
+  "saves": [
+    {
+      "name": "pirates-lair",
+      "file": 2,
+      "disc": 1,
+      "start": {"story": 54, "map": 80, "entry": 1, "roster": [0, 2], "party": [0, 2], "gears": {"0": 0}, "max": true},
+      "steps": [{"advance": {"story": 56}, "max_frames": 40000}],
+      "save_point": {"map": 76, "entry": 2}
+    },
+    {
+      "name": "kislev-capital",
+      "file": 3,
+      "disc": 1,
+      "start": {"story": 96, "map": 213, "entry": 7, "roster": [0], "party": [0], "gears": {"0": 0}, "max": true},
+      "steps": [{"advance": {"story": 105, "map": 199}, "max_frames": 30000}],
+      "save_point": {"map": 199, "entry": 2}
+    },
+    {
+      "name": "sky-city-shevat",
+      "file": 4,
+      "disc": 1,
+      "start": {"story": 174, "map": 421, "entry": 0, "roster": [0, 1, 2, 3, 4, 5], "party": [0, 1, 2], "gears": {"0": 0}, "set_bits": [[266, 256]], "max": true},
+      "steps": [{"advance": {"story": 176}, "max_frames": 60000}],
+      "save_point": {"map": 426, "entry": 4}
+    },
+    {
+      "name": "into-solaris",
+      "file": 5,
+      "disc": 1,
+      "start": {"story": 207, "map": 453, "entry": 0, "roster": [0, 1, 2, 3, 4, 5, 6, 7, 8], "party": [0, 1, 2], "gears": {"0": 0}, "max": true},
+      "steps": [{"advance": {"story": 209, "map": 466}, "max_frames": 60000}],
+      "save_point": {"map": 466, "entry": 1}
+    },
+    {
+      "name": "soul-vessel",
+      "file": 6,
+      "disc": 2,
+      "start": {"story": 258, "map": 622, "entry": 0, "roster": [0, 1, 3, 4, 5, 6, 7, 8, 9], "party": [0, 1, 9], "gears": {"0": 1, "3": 10, "9": 11}, "max": true},
+      "steps": [{"advance": {"story": 263, "map": 628}, "max_frames": 60000}],
+      "save_point": {"map": 628, "entry": 2}
+    },
+    {
+      "name": "first-and-last",
+      "file": 7,
+      "disc": 2,
+      "start": {"story": 330, "map": 687, "entry": 1, "roster": [0, 1, 3, 4, 5, 6, 7, 8, 9], "party": [0, 9, 3], "gears": {"0": 15, "3": 12, "4": 13, "5": 14, "9": 11}, "max": true},
+      "steps": [{"advance": {"story": 340}, "max_frames": 30000}],
+      "save_point": {"map": 687, "entry": 1}
+    }
+  ]
+}
