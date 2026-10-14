@@ -2309,8 +2309,9 @@ units; the gear measurement takes `enter_field`'s kernel-menu recipe with
 `inGear` set for the three slots before the field loads.
 `xem-headless/tests/jumps.rs` repeats both measurements. A walk off a
 floor falls from rest under the same gravity: on map 15 (below) the leader
-dropped 2, 6, 12, 20, 30 ... units after one, two, three ... updates, and
-in the air it moves 12 units an update with Run held.
+dropped 2, 6, 12, 20, 30 ... units after one, two, three ... updates. The
+classifier gives such a fall the jumps' air speed, 12 units an update with
+Run held.
 
 **Slides.** On a floor of attribute 0x400000 the leader has no direction:
 `field_actor_apply_additive_motion` sets bit 15 of its heading before
@@ -2419,7 +2420,7 @@ same maps 15, 632-634 and 641-651 and no other):
 | Map 69 (gears) | 0 of 1 | its two entrances are on layers 2 and 1; 36 jump links | its crossing needs 3 jumps |
 | Map 241 (foot) | 1 of 1, 1 jump | entrance 2 stands in a region of layer 0 joined to no other: 6 of its 12 pairs | one of those needs 3 jumps |
 | Mountain Path, map 15 (foot) | 0 of 1 | 8 of its 12 pairs not joined; 21 jump links, climb 1 | one of those needs 3 jumps |
-| Nortune (Kislev) 239, map 259, Bart's Lair 333, the Ethos HQ 339-350, Anima Relic 1 632-634 (all on foot) | no jump but 633's one | pairs on two layers or not joined; each map's layers hold 0 to 6 jump links and its climb is at most 1 | half their maps need jumps, 3 in all |
+| Maps 239 and 259, Bart's Lair 333, the Ethos HQ 339-350, Anima Relic 1 632-634 (all on foot) | no jump but 633's one | pairs on two layers or not joined; each map's layers hold 0 to 6 jump links and its climb is at most 1 | half their maps need jumps, 3 in all |
 
 Reviewed and not heavy:
 

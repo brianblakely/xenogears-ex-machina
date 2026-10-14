@@ -11,7 +11,8 @@ docs/runtime.md ("Random battles in platforming areas"):
   (field_collision_walk_attribute_aware: bits 5-7 against flags 8-10) and bit 4 airborne moves and
   jump starts (field_collision_walk, field_actor_is_jump_blocked_by_floor: bits 3-4 against flags
   9-10), in a gear bits 6 and 3. PARTIES holds each party's running jump as measured on the game
-  (docs/runtime.md), FALL a walk off a floor, which falls from rest as the jumps fall.
+  (docs/runtime.md), FALL a walk off a floor: from rest under the jumps' gravity, at their air
+  speed.
 - **Layers.** Actors stand on layers 0 to count - 2 (field_event_place_actor_on_floor,
   field_collision_find_actor_floor); the top layer is the camera's floor
   (field_camera_walk_top_layer). Each actor layer is measured on its own, though the game moves the
@@ -182,8 +183,8 @@ GEAR = Party(
     ),
 )  # fmt: skip
 PARTIES = {party.name: party for party in (FOOT, GEAR)}
-# A walk off a floor falls from rest as both parties' jumps fall: 2.0 an update faster each update
-# (2, 6, 12 ... down), 12 units an update on with Run held.
+# A walk off a floor falls from rest under the jumps' gravity, 2.0 an update faster each update (2,
+# 6, 12 ... down, as on map 15), and goes on at their air speed, 12 units an update with Run held.
 FALL = tuple((12 * k, -k * (k + 1)) for k in range(32))
 
 
