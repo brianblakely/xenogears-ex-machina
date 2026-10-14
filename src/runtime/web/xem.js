@@ -80,7 +80,7 @@ export function createAutomation(host) {
     snapshot: (name = 'default') => command({ cmd: 'snapshot', name }),
     restore: (name = 'default') => command({ cmd: 'restore', name }),
     rewind: (steps = 1) => command({ cmd: 'rewind', steps }),
-    configureRewind: (maxBytes = 64 * 1024 * 1024, intervalSeconds = 1, historySeconds = 30) => command({ cmd: 'rewind_configure', max_bytes: maxBytes, interval_seconds: intervalSeconds, history_seconds: historySeconds }),
+    configureRewind: (maxBytes = 2 * 1024 * 1024 * 1024, intervalSeconds = 1, historySeconds = 30) => command({ cmd: 'rewind_configure', max_bytes: maxBytes, interval_seconds: intervalSeconds, history_seconds: historySeconds }),
     fastForward: (enabled) => command({ cmd: 'fast_forward', ...(enabled === undefined ? {} : { enabled }) }),
     /** Snapshot bytes (Uint8Array) for files and saves, and back. */
     exportSnapshot: () => app.snapshot_bytes(),

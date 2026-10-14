@@ -513,6 +513,13 @@ pub(crate) struct Builder<'a> {
     /// Row quads the interface may still take ([`push_rows`]); past them
     /// its polygons are drawn whole.
     rows_left: usize,
+    /// The native VRAM as the frame's writes leave it, for the texels of
+    /// faces the game paints in their buffer's clear colour
+    /// ([`Builder::backdrop`]).
+    pub(crate) vram: Option<&'a [u16]>,
+    /// The fills that cleared screen buffers, newest last, in the colour
+    /// VRAM stores.
+    pub(crate) clears: Vec<(VramRect, u16)>,
 }
 
 /// A builder's buffers kept between builds: a frame's vertices run to
@@ -529,6 +536,40 @@ const ROW_BUDGET: usize = 65_536;
 
 fn color(rgb: u32) -> [f32; 4] {
     [f32::from(rgb as u8) / 255.0, f32::from((rgb >> 8) as u8) / 255.0, f32::from((rgb >> 16) as u8) / 255.0, 1.0]
+}
+
+/// A colour (0xBBGGRR) as VRAM stores it: 5 bits a channel.
+fn rgb15(rgb: u32) -> u16 {
+    (((rgb >> 3) & 31) | ((rgb >> 11) & 31) << 5 | ((rgb >> 19) & 31) << 10) as u16
+}
+
+/// A fill's colour as VRAM keeps it, expanded as texels are (the full
+/// range, or the console's 15-bit colours): texels painted to match a
+/// fill, as a sky around a texture's clouds, then match it.
+fn fill_color(rgb: u32, fifteen: bool) -> [f32; 4] {
+    let channel = |shift: u32| {
+        let c = (rgb >> shift >> 3) & 31;
+        if fifteen { (c * 8 + c / 4) as f32 / 255.0 } else { c as f32 / 31.0 }
+    };
+    [channel(0), channel(8), channel(16), 1.0]
+}
+
+/// The texel at (u, v) of `p`'s texture in `vram`, as the GPU reads it
+/// (the texture window applied; 4- and 8-bit texels through the CLUT).
+fn texel(vram: &[u16], p: &Primitive, u: i16, v: i16) -> u16 {
+    let window = p.environment.texture_window;
+    let (mask_x, mask_y, offset_x, offset_y) = (window & 31, window >> 5 & 31, window >> 10 & 31, window >> 15 & 31);
+    let u = (u as u32 & 255 & !(mask_x * 8)) | (offset_x & mask_x) * 8;
+    let v = (v as u32 & 255 & !(mask_y * 8)) | (offset_y & mask_y) * 8;
+    let mode = p.environment.draw_mode;
+    let (page_x, page_y) = ((mode & 15) * 64, (mode >> 4 & 1) * 256);
+    let at = |x: u32, y: u32| vram.get(((y & 511) * VRAM_WIDTH + (x & 1023)) as usize).copied().unwrap_or(0);
+    let clut = |index: u32| at(u32::from(p.clut & 63) * 16 + index, u32::from(p.clut >> 6 & 511));
+    match mode >> 7 & 3 {
+        0 => clut(u32::from(at(page_x + u / 4, page_y + v)) >> (u % 4 * 4) & 15),
+        1 => clut(u32::from(at(page_x + u / 2, page_y + v)) >> (u % 2 * 8) & 255),
+        _ => at(page_x + u, page_y + v),
+    }
 }
 
 /// The screen offset most of the scene is projected with. Projections
@@ -606,6 +647,8 @@ impl<'a> Builder<'a> {
             feedback: None,
             feedback_copies: Vec::new(),
             feedback_started: false,
+            vram: None,
+            clears: Vec::new(),
         }
     }
 
@@ -642,11 +685,12 @@ impl<'a> Builder<'a> {
             x0 -= self.spill as f32;
             x1 += self.spill as f32;
         }
+        let color = fill_color(rgb, self.options.fidelity.color_15bit);
         let vertex = |x, y| Vertex {
             position: [x, y],
             depth: 0.0,
             w: 1.0,
-            color: color(rgb),
+            color,
             uv: [0.0, 0.0],
             mode: [0, 0, 0, u32::from(upload)],
             limits: 0,
@@ -661,6 +705,44 @@ impl<'a> Builder<'a> {
         self.rect_vertices(rect, rgb, false);
         let key = PipelineKey { fragment: Fragment::Rect, blend: 0, depth: DepthMode::Clear };
         self.push_draw(key, None, start);
+        if rect.width >= 128 && rect.height >= 128 {
+            self.clears.push((rect, rgb15(rgb)));
+        }
+    }
+
+    /// Whether `p` is sky the game painted: a textured face of the scene
+    /// whose texture fades into the colour of the fill that cleared its
+    /// buffer, at each of its corners and along its outline but for one
+    /// texel in ten (Shevat's sea of clouds below its towers, the sky
+    /// around each cloud; not a floor whose texture merely shares the
+    /// clear's colour, as the desert's sand does). The effects leave it as
+    /// they leave that fill (no depth: no light, shade or haze), which it
+    /// meets without an edge, as on the console.
+    fn backdrop(&self, p: &Primitive) -> bool {
+        let Some(vram) = self.vram else { return false };
+        if !p.textured || p.semi || p.shape == Shape::Rectangle || !matches!(p.class, Class::World | Class::Model) {
+            return false;
+        }
+        let [x, y, ..] = p.environment.area;
+        let Some(&(_, sky)) = self.clears.iter().rev().find(|(rect, _)| contains(rect, x, y)) else { return false };
+        let corners = &p.vertices[..p.vertex_count()];
+        if sky == 0 || !corners.iter().all(|v| texel(vram, p, v.u, v.v) == sky) {
+            return false;
+        }
+        // Round its outline in the texture (a quad's corners go 0, 1, 3, 2).
+        let outline: &[usize] = if corners.len() == 4 { &[0, 1, 3, 2] } else { &[0, 1, 2] };
+        let (mut same, mut all) = (0, 0);
+        for (k, &from) in outline.iter().enumerate() {
+            let (a, b) = (&corners[from], &corners[outline[(k + 1) % outline.len()]]);
+            let (du, dv) = (i32::from(b.u) - i32::from(a.u), i32::from(b.v) - i32::from(a.v));
+            let steps = du.abs().max(dv.abs()).max(1);
+            for t in 0..steps {
+                let (u, v) = (i32::from(a.u) + du * t / steps, i32::from(a.v) + dv * t / steps);
+                same += u32::from(texel(vram, p, u as i16, v as i16) == sky);
+                all += 1;
+            }
+        }
+        same * 10 >= all * 9
     }
 
     pub(crate) fn upload(&mut self, rect: VramRect, pixels: &[u16], show: bool) {
@@ -759,7 +841,8 @@ impl<'a> Builder<'a> {
         };
         let blend = p.environment.draw_mode >> 5 & 3;
         let baked = p.gouraud || (p.textured && !p.raw && p.vertices[..count].iter().any(|v| v.color & 0xFF_FFFF != 0x80_8080));
-        let mut flags = (blend << BLEND_SHIFT) | (aux_class(class) << CLASS_SHIFT);
+        let kind = if self.backdrop(p) { AUX_BACKGROUND } else { aux_class(class) };
+        let mut flags = (blend << BLEND_SHIFT) | (kind << CLASS_SHIFT);
         for (on, flag) in [
             (p.textured, FLAG_TEXTURED),
             (p.raw, FLAG_RAW),
@@ -1341,14 +1424,15 @@ pub(crate) fn encode(
                             copy_capture(encoder, target, capture, *source, *destination, (*width, *height));
                         }
                     }
-                    Copies::From { color, aux, scale, capture, scratch, .. } => {
+                    Copies::From { color, aux, scale, capture, earlier, scratch, .. } => {
                         if let Some(side) = local {
                             copy_region(encoder, target, scratch, *source, *destination, (*width, *height), *side);
                         } else {
                             copy_from(encoder, target, (color, aux, scale), *source, *destination, (*width, *height));
                         }
                         if let Some(capture) = capture {
-                            copy_capture(encoder, target, capture, *source, *destination, (*width, *height));
+                            let _ = std::iter::once(capture).chain(earlier)
+                                .any(|capture| copy_capture(encoder, target, capture, *source, *destination, (*width, *height)));
                         }
                     }
                 }
@@ -1412,12 +1496,14 @@ pub(crate) enum Copies<'a> {
     /// Inside the target, through a scratch texture.
     InPlace { scratch: &'a wgpu::Texture, capture: &'a Capture },
     /// From the scaled VRAM picture (colour, auxiliary, scale) into the
-    /// target; a copy of the screen the game took, from its picture.
-    From { color: &'a wgpu::Texture, aux: &'a wgpu::Texture, scale: u32, capture: Option<&'a Capture>, scratch: &'a wgpu::Texture, feedback: &'a wgpu::Texture, feedback_aux: &'a wgpu::Texture },
+    /// target; a copy of a screen the game took (the capture, or one taken
+    /// before it), from its picture.
+    From { color: &'a wgpu::Texture, aux: &'a wgpu::Texture, scale: u32, capture: Option<&'a Capture>, earlier: &'a [Capture], scratch: &'a wgpu::Texture, feedback: &'a wgpu::Texture, feedback_aux: &'a wgpu::Texture },
 }
 
 /// A copy of all of a captured screen ([`Capture`]) into a replay's target:
-/// its picture's colour, the sides too (where the target has room).
+/// its picture's colour, the sides too (where the target has room). False
+/// when the copy is not of that screen.
 fn copy_capture(
     encoder: &mut wgpu::CommandEncoder,
     target: &Target,
@@ -1425,14 +1511,14 @@ fn copy_capture(
     source: (u16, u16),
     destination: (u16, u16),
     (width, height): (u16, u16),
-) {
+) -> bool {
     let s = target.scale;
     let Some((rect, _)) = capture.areas().find(|(r, screen)| {
         (r.width, r.height) == (width, height)
             && ((r.x, r.y) == source || (*screen && (r.x, r.y) == destination))
-    }) else { return };
+    }) else { return false };
     if capture.scale != s {
-        return;
+        return false;
     }
     let size = target.color.size();
     let held = capture.texture.size();
@@ -1440,20 +1526,21 @@ fn copy_capture(
     let left = (f32::from(destination.0) - target.origin.0 - capture.side as f32) * s as f32;
     let dy = (f32::from(destination.1) - target.origin.1) * s as f32;
     if dy < 0.0 {
-        return;
+        return true;
     }
     let skip = (-left).max(0.0) as u32;
     let dx = left.max(0.0) as u32;
     let w = ((u32::from(rect.width) + 2 * capture.side) * s).min(held.width).saturating_sub(skip).min(size.width.saturating_sub(dx));
     let h = (u32::from(rect.height) * s).min(held.height).min(size.height.saturating_sub(dy as u32));
     if w == 0 || h == 0 {
-        return;
+        return true;
     }
     encoder.copy_texture_to_texture(
         wgpu::TexelCopyTextureInfo { texture: &capture.texture, mip_level: 0, origin: wgpu::Origin3d { x: skip, y: 0, z: 0 }, aspect: wgpu::TextureAspect::All },
         wgpu::TexelCopyTextureInfo { texture: target.color, mip_level: 0, origin: wgpu::Origin3d { x: dx, y: dy as u32, z: 0 }, aspect: wgpu::TextureAspect::All },
         wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
     );
+    true
 }
 
 /// A VRAM copy from the scaled picture into another target (a replay).
@@ -1600,9 +1687,14 @@ pub struct Ps1Renderer {
     /// Seal the world's T-junction cracks ([`Builder::seal`]).
     pub(crate) seal: bool,
     stats: DrawStats,
+    /// Frames logged so far ([`FrameLog::frames`]).
+    logged: u64,
     /// The screen the game last took ([`Capture`]), the picture presented
     /// before the trace being drawn, and the draws so far.
     pub(crate) capture: Capture,
+    /// Screens it took before, elsewhere in VRAM, while VRAM still holds
+    /// them (newest first): a copy of one still brings its picture.
+    pub(crate) earlier: Vec<Capture>,
     presented: Option<PresentedPicture>,
     draws: u64,
     storage: Storage,
@@ -1617,7 +1709,8 @@ pub struct FrameLog {
     /// frame samples), with their pixels.
     pub ops: Vec<TraceOp>,
     pub previous: Vec<TraceOp>,
-    /// Clears so far (one per frame drawn into the buffer).
+    /// The frame it holds, numbered across every buffer and every start of
+    /// the trace (a state loaded, a rewind's step): which frame it is.
     pub frames: u64,
     /// The native VRAM when the buffer was cleared: a replay samples VRAM
     /// as it was then, changed by the writes in `ops` as it goes.
@@ -1769,7 +1862,9 @@ impl Ps1Renderer {
             native: vec![0; (VRAM_WIDTH * VRAM_HEIGHT) as usize],
             seal: false,
             stats: DrawStats::default(),
+            logged: 0,
             capture,
+            earlier: Vec::new(),
             presented: None,
             draws: 0,
             storage: Storage::default(),
@@ -1793,6 +1888,18 @@ impl Ps1Renderer {
     fn watch_captures(&mut self, encoder: &mut wgpu::CommandEncoder, ops: &[TraceOp]) -> bool {
         let mut written = false;
         for op in ops {
+            // All of VRAM again (a state loaded, a rewind's step, a trace
+            // started again): no screen taken before is kept.
+            if let TraceOp::Write { rect, upload: true, .. } = op
+                && u32::from(rect.width) == VRAM_WIDTH
+                && u32::from(rect.height) == VRAM_HEIGHT
+            {
+                self.capture.rect = None;
+                self.capture.aliases.clear();
+                self.capture.source = None;
+                self.earlier.clear();
+                continue;
+            }
             // Reusing a source is only an alias while that source remains
             // unchanged; mirrored writes also cover draws and copies.
             if let TraceOp::Write { rect, .. } | TraceOp::Fill { rect, .. } = op
@@ -1816,7 +1923,7 @@ impl Ps1Renderer {
                             self.capture.source = Some(from);
                         }
                     } else {
-                        self.capture.invalidate(to, false);
+                        self.invalidate_captures(to, false);
                     }
                 }
                 // A non-upload only mirrors the native pixels of a copy,
@@ -1829,19 +1936,58 @@ impl Ps1Renderer {
                     } else if marked && rect.width >= 256 && rect.height >= 192 && !self.is_screen(rect) {
                         written |= self.take_capture(encoder, *rect);
                     } else {
-                        self.capture.invalidate(*rect, true);
+                        self.invalidate_captures(*rect, true);
                     }
                 }
-                TraceOp::Fill { rect, .. } => self.capture.invalidate(*rect, false),
+                TraceOp::Fill { rect, .. } => self.invalidate_captures(*rect, false),
                 _ => {}
             }
         }
         written
     }
 
+    /// What overwrites VRAM lets go of the screens kept there, but for
+    /// replays of a frame logged copying one (the field's saved screen,
+    /// given back to textures while a buffer copied from it is shown).
+    fn invalidate_captures(&mut self, rect: VramRect, partial_upload: bool) {
+        let held = self.capture.rect;
+        self.capture.invalidate(rect, partial_upload);
+        if let Some(held) = held.filter(|held| self.capture.rect.is_none() && copied_from(&self.logs, *held)) {
+            let generation = self.capture.generation + 1;
+            let mut capture = std::mem::replace(&mut self.capture, Capture::new(&self.device, (1, 1)));
+            self.capture.generation = generation;
+            self.group = bind_group(&self.device, &self.pipelines.layout, &self.uniform, &self.vram, &self.capture, None);
+            capture.rect = Some(held);
+            capture.aliases.clear();
+            capture.replayed = true;
+            self.earlier.insert(0, capture);
+        }
+        for capture in &mut self.earlier {
+            let held = capture.rect;
+            capture.invalidate(rect, partial_upload);
+            if let Some(held) = held.filter(|held| capture.rect.is_none() && copied_from(&self.logs, *held)) {
+                capture.rect = Some(held);
+                capture.aliases.clear();
+                capture.replayed = true;
+            }
+        }
+        self.earlier.retain(|capture| capture.rect.is_some());
+    }
+
     /// Keeps the presented picture (its sides included) as the screen the
-    /// game took into `rect`.
+    /// game took into `rect`. The screen taken before stays while VRAM
+    /// holds it elsewhere (the field's saved one, which its menu copies
+    /// under it after taking the dimmed screen too).
     fn take_capture(&mut self, encoder: &mut wgpu::CommandEncoder, rect: VramRect) -> bool {
+        self.earlier.retain(|kept| kept.rect.is_some_and(|kept| overlap(&kept, &rect) == 0));
+        if self.capture.rect.is_some_and(|kept| overlap(&kept, &rect) == 0) {
+            let generation = self.capture.generation + 1;
+            let earlier = std::mem::replace(&mut self.capture, Capture::new(&self.device, (1, 1)));
+            self.capture.generation = generation;
+            self.group = bind_group(&self.device, &self.pipelines.layout, &self.uniform, &self.vram, &self.capture, None);
+            self.earlier.insert(0, earlier);
+            self.earlier.truncate(EARLIER_CAPTURES);
+        }
         self.capture.rect = None;
         self.capture.aliases.clear();
         self.capture.source = None;
@@ -1901,9 +2047,11 @@ impl Ps1Renderer {
         // A destination first copied before the mode change may only now
         // become a display buffer (and must restore the picture's sides).
         let displayed = |rect: VramRect| overlap(&area, &rect) * 10 >= u32::from(area.width) * u32::from(area.height) * 9;
-        self.capture.screen |= self.capture.rect.is_some_and(displayed);
-        for (rect, screen) in &mut self.capture.aliases {
-            *screen |= displayed(*rect);
+        for capture in std::iter::once(&mut self.capture).chain(&mut self.earlier) {
+            capture.screen |= capture.rect.is_some_and(displayed);
+            for (rect, screen) in &mut capture.aliases {
+                *screen |= displayed(*rect);
+            }
         }
         if self.shown.last() != Some(&area) {
             self.shown.retain(|a| *a != area);
@@ -1972,12 +2120,22 @@ impl Ps1Renderer {
         self.draws += 1;
         let captured = self.watch_captures(encoder, &trace.ops);
         self.log(&trace.ops);
+        // A screen kept only for replays goes once no frame logged copies it.
+        if self.earlier.iter().any(|capture| capture.replayed) {
+            let logs = &self.logs;
+            self.earlier.retain(|capture| !capture.replayed || capture.rect.is_some_and(|rect| copied_from(logs, rect)));
+        }
         let options = self.options;
         let mut builder = Builder::reusing(&options, &trace.ops, &mut self.storage);
         builder.seal = self.seal;
         // (Its sides have no place in VRAM.)
         builder.capture = self.capture.rect.map(|rect| (rect, 0));
         builder.capture_aliases = &self.capture.aliases;
+        builder.vram = Some(&self.native);
+        builder.clears = self.logs.iter().filter_map(|log| match log.ops.first() {
+            Some(TraceOp::Fill { rect, color }) => Some((*rect, rgb15(*color))),
+            _ => None,
+        }).collect();
         for op in &trace.ops {
             builder.op(op);
         }
@@ -2018,11 +2176,17 @@ impl Ps1Renderer {
         // All of VRAM again (a trace started again: a new scale, the Original
         // renderer shown meanwhile) holding what the logs left: nothing was
         // drawn meanwhile (a paused game draws nothing new), and the frames
-        // they replay are still the ones shown.
+        // they replay are still the ones shown. Anything else (a state
+        // loaded, a rewind's step) leaves no frame to replay: what follows
+        // starts the logs again.
         let ops = match ops.first() {
             Some(TraceOp::Write { rect, pixels, upload: true })
-                if u32::from(rect.width) == VRAM_WIDTH && u32::from(rect.height) == VRAM_HEIGHT && pixels[..] == self.native[..] =>
+                if u32::from(rect.width) == VRAM_WIDTH && u32::from(rect.height) == VRAM_HEIGHT =>
             {
+                if pixels[..] != self.native[..] {
+                    self.native.copy_from_slice(pixels);
+                    self.logs.clear();
+                }
                 &ops[1..]
             }
             _ => ops,
@@ -2045,13 +2209,19 @@ impl Ps1Renderer {
             if !cleared && self.logs[index].ops.len() > 64 && covers(ops, shown) {
                 let start = std::sync::Arc::new(self.native.clone());
                 let eye = self.frame_eye();
+                self.logged += 1;
                 let log = &mut self.logs[index];
                 log.previous = std::mem::take(&mut log.ops);
-                log.frames += 1;
+                log.frames = self.logged;
                 log.start = start;
                 log.eye = eye;
             }
         }
+        // A shown buffer without a log (the trace started again, a state
+        // loaded or a rewind's step) that the game never clears starts one
+        // when this trace draws all over it, once its clears are done below.
+        let unlogged: Vec<VramRect> = self.shown.iter().copied().filter(|area| !self.half_logged(area)).collect();
+        let before = (!unlogged.is_empty()).then(|| (std::sync::Arc::new(self.native.clone()), self.frame_eye()));
         for op in ops {
             match op {
                 TraceOp::Eye(eye) => {
@@ -2110,26 +2280,27 @@ impl Ps1Renderer {
                 let (width, height) = self.display.unwrap_or((256, 192));
                 let buffer = u32::from(rect.width) * 10 >= u32::from(width) * 9 && u32::from(rect.height) * 10 >= u32::from(height) * 8;
                 let eye = self.frame_eye();
+                self.logged += 1;
+                let frames = self.logged;
                 if let Some(log) = self.logs.iter_mut().find(|l| {
                     let size = u32::from(l.rect.width) * u32::from(l.rect.height);
                     overlap(&l.rect, &rect) * 10 >= size.max(area) * 9
                 }) {
                     log.previous = std::mem::replace(&mut log.ops, vec![op.clone()]);
                     log.rect = rect;
-                    log.frames += 1;
+                    log.frames = frames;
                     log.start = std::sync::Arc::new(self.native.clone());
                     log.eye = eye;
                     continue;
                 }
                 if buffer || self.logs.iter().all(|l| overlap(&l.rect, &rect) == 0) {
                     let replaced = |l: &FrameLog| overlap(&l.rect, &rect) * 2 >= area.min(u32::from(l.rect.width) * u32::from(l.rect.height));
-                    let previous = self.logs.iter().filter(|l| replaced(l)).max_by_key(|l| overlap(&l.rect, &rect)).map_or(0, |l| l.frames);
                     // A mode change moves the second buffer from y=256 to
                     // y=216. Its clear must not retire the still displayed
                     // first buffer merely because their last eight rows meet.
                     self.logs.retain(|l| !replaced(l));
                     let start = std::sync::Arc::new(self.native.clone());
-                    self.logs.push(FrameLog { rect, ops: vec![op.clone()], previous: Vec::new(), frames: previous + 1, start, eye });
+                    self.logs.push(FrameLog { rect, ops: vec![op.clone()], previous: Vec::new(), frames, start, eye });
                     if self.logs.len() > 6 {
                         self.logs.remove(0);
                     }
@@ -2163,6 +2334,31 @@ impl Ps1Renderer {
                 log.ops.push(op.clone());
             }
         }
+        if let Some((start, eye)) = before {
+            for area in unlogged {
+                if self.half_logged(&area) || !covers(ops, area) {
+                    continue;
+                }
+                // Its draws, fills and copies, and every write (as a log keeps them).
+                let ops = ops.iter().filter(|op| match op {
+                    TraceOp::Write { .. } => true,
+                    TraceOp::Draw(p) => contains(&area, p.environment.area[0], p.environment.area[1]),
+                    TraceOp::Fill { rect, .. } => contains(&area, rect.x, rect.y),
+                    TraceOp::Copy { destination, .. } => contains(&area, destination.0, destination.1),
+                    _ => false,
+                }).cloned().collect();
+                self.logged += 1;
+                self.logs.push(FrameLog { rect: area, ops, previous: Vec::new(), frames: self.logged, start: start.clone(), eye });
+                if self.logs.len() > 6 {
+                    self.logs.remove(0);
+                }
+            }
+        }
+    }
+
+    /// Whether a log is of the buffer a display of `area` shows.
+    fn half_logged(&self, area: &VramRect) -> bool {
+        self.logs.iter().any(|l| shown_by(l, area))
     }
 
     /// The character's place a frame starting now was recorded with.
@@ -2180,8 +2376,7 @@ impl Ps1Renderer {
     /// buffer's last clear).
     pub fn frame_log(&self, area: DisplayArea) -> Option<&FrameLog> {
         let rect = VramRect { x: area.x as u16, y: area.y as u16, width: area.width as u16, height: area.height as u16 };
-        let size = area.width * area.height;
-        self.logs.iter().find(|l| overlap(&l.rect, &rect) * 2 >= size)
+        self.logs.iter().find(|l| shown_by(l, &rect))
     }
 
     /// What the last [`Ps1Renderer::draw`] drew and dropped.
@@ -2245,6 +2440,23 @@ pub(crate) fn bind_group(
     })
 }
 
+/// Screens taken before the capture kept while VRAM holds them.
+const EARLIER_CAPTURES: usize = 2;
+
+/// Whether `log` is of the buffer a display of `area` shows: one holding
+/// the display's corner and at least half of it (the field draws 224 rows
+/// and shows 216), not another buffer it overlaps (a newly shown one whose
+/// own log has not started yet would show that buffer's frame moved).
+fn shown_by(log: &FrameLog, area: &VramRect) -> bool {
+    contains(&log.rect, area.x, area.y) && overlap(&log.rect, area) * 2 >= u32::from(area.width) * u32::from(area.height)
+}
+
+/// Whether a frame logged copies all of `rect` (a screen kept there).
+fn copied_from(logs: &[FrameLog], rect: VramRect) -> bool {
+    logs.iter().any(|log| log.ops.iter().any(|op| matches!(op,
+        TraceOp::Copy { source, width, height, .. } if (source.0, source.1, *width, *height) == (rect.x, rect.y, rect.width, rect.height))))
+}
+
 /// A screen the game took into VRAM (a copy of a screen buffer, or its
 /// pixels written back with their semi-transparency bits set), kept as the
 /// picture presented then (wider, pulled back, at the renderer's scale):
@@ -2264,6 +2476,9 @@ pub(crate) struct Capture {
     /// A buffer-to-buffer copy (pause/transition): its partial uploads are
     /// overlays, and a replay of the original copy uses this held picture.
     pub(crate) screen: bool,
+    /// Its VRAM was overwritten: kept for replays of a frame logged copying
+    /// it ([`Ps1Renderer::earlier`]).
+    replayed: bool,
     /// The draw it was taken at.
     taken: u64,
     /// Counts new textures (bind groups made with an older one are stale).
@@ -2279,7 +2494,7 @@ impl Capture {
             min_filter: wgpu::FilterMode::Linear,
             ..Default::default()
         });
-        Capture { view: texture.create_view(&Default::default()), texture, sampler, rect: None, aliases: Vec::new(), source: None, scale: 1, side: 0, screen: false, taken: 0, generation: 0 }
+        Capture { view: texture.create_view(&Default::default()), texture, sampler, rect: None, aliases: Vec::new(), source: None, scale: 1, side: 0, screen: false, replayed: false, taken: 0, generation: 0 }
     }
 
     pub(crate) fn areas(&self) -> impl Iterator<Item = (VramRect, bool)> + '_ {
@@ -2334,6 +2549,64 @@ mod tests {
         p.environment.area[3] = 215;
         p.environment.draw_mode -= 1;
         assert!(!samples(&p, &capture), "neighbouring texture pages are not the captured screen");
+    }
+
+    #[test]
+    fn a_face_painted_in_its_buffers_clear_colour_is_background() {
+        // Shevat's sea of clouds: a 4-bit texture (page 640,0; CLUT 0,492)
+        // whose corners hold the sky its buffer was cleared with.
+        let sky = 0xF8_90_68;
+        let width = VRAM_WIDTH as usize;
+        let mut vram = vec![0u16; width * VRAM_HEIGHT as usize];
+        vram[492 * width + 1] = rgb15(sky);
+        vram[492 * width + 2] = 0x7FFF;
+        for v in 0..16 {
+            vram[v * width + 640..][..4].fill(0x1111);
+        }
+        vram[8 * width + 641] = 0x2222;
+        let mut gpu = xem_gpu::Gpu::new();
+        gpu.set_trace(true);
+        let _ = gpu.take_trace();
+        gpu.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 223 << 10 | 319, 0xE500_0000]);
+        // A raw textured quad, its texels u 0-15, v 0-15.
+        gpu.write_gp0_words(&[0x2D80_8080, 0, (492 << 6) << 16, 100, 10 << 16 | 15, 100 << 16, 15 << 8, 100 << 16 | 100, 15 << 8 | 15]);
+        let trace = gpu.take_trace();
+        let mut face = trace.ops.into_iter().find_map(|op| match op { TraceOp::Draw(p) => Some(p), _ => None }).unwrap();
+        // (A model's face, as the port's projections make it.)
+        face.class = Class::Model;
+        let options = DrawOptions::default();
+        let screen = VramRect { x: 0, y: 0, width: 320, height: 224 };
+        let kind = |face: &Primitive, clear: u32, vram: &[u16]| {
+            let mut builder = Builder::new(&options, &[]);
+            builder.vram = Some(vram);
+            builder.op(&TraceOp::Fill { rect: screen, color: clear });
+            builder.primitive(face);
+            builder.vertices.last().unwrap().mode[3] >> CLASS_SHIFT & 15
+        };
+        assert_eq!(kind(&face, sky, &vram), AUX_BACKGROUND, "the sky the game painted");
+        assert_eq!(kind(&face, 0xF8_F8_F8, &vram), AUX_MODEL, "another clear colour");
+        assert_eq!(kind(&face, 0, &vram), AUX_MODEL, "a black clear: transparent texels are not sky");
+        let mut cloud = vram.clone();
+        cloud[640] = 0x1112;
+        assert_eq!(kind(&face, sky, &cloud), AUX_MODEL, "a cloud at a corner");
+        // The clear's colour at the corners only, its top and bottom edges
+        // between them of cloud: a texture that shares the colour.
+        let mut edges = vram.clone();
+        for v in [0, 15] {
+            edges[v * width + 640..][..4].copy_from_slice(&[0x2221, 0x2222, 0x2222, 0x1222]);
+        }
+        assert_eq!(kind(&face, sky, &edges), AUX_MODEL, "an outline mostly of cloud");
+        face.semi = true;
+        assert_eq!(kind(&face, sky, &vram), AUX_MODEL, "translucent: the class beneath stays anyway");
+
+        // The clear as VRAM keeps it, expanded as texels are (the full
+        // range, or the console's 15-bit colours).
+        for (fidelity, expected) in [(Fidelity::MODERN, [13.0 / 31.0, 18.0 / 31.0, 1.0, 1.0]), (Fidelity::ORIGINAL, [107.0 / 255.0, 148.0 / 255.0, 1.0, 1.0])] {
+            let options = DrawOptions { fidelity, ..DrawOptions::default() };
+            let mut builder = Builder::new(&options, &[]);
+            builder.op(&TraceOp::Fill { rect: screen, color: sky });
+            assert_eq!(builder.vertices[0].color, expected);
+        }
     }
 
     #[test]

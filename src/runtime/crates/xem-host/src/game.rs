@@ -148,7 +148,7 @@ impl Game {
         Ok(())
     }
     pub fn configure_rewind(&mut self, enabled: bool, interval_seconds: u32, history_seconds: u32) -> Result<(),String> {
-        let budget = if enabled { xem_core::rewind::DEFAULT_REWIND_BYTES } else { 0 };
+        let budget = if enabled { xem_core::rewind::MAX_REWIND_BYTES } else { 0 };
         if self.session.rewind.budget != budget || self.session.rewind.interval_seconds != interval_seconds || self.session.rewind.history_seconds != history_seconds {
             self.session.configure_rewind(budget,interval_seconds,history_seconds)?;
             if !enabled { self.set_rewind_held(false,false)?; self.set_rewind_held(false,true)?; }
@@ -163,7 +163,14 @@ impl Game {
         let held = self.rewind_held.iter().any(|held| *held);
         if was_held != held {
             self.rewind_next = Instant::now();
-            if held { self.pause(); } else { self.resume(); self.timeline_revision = self.session.timeline_revision; }
+            if held {
+                self.pause();
+            } else {
+                // Play refills the pre-roll after the rewind's moments of sound.
+                self.stop_audio();
+                self.resume();
+                self.timeline_revision = self.session.timeline_revision;
+            }
         }
         Ok(())
     }
@@ -216,6 +223,7 @@ impl Game {
             field: self.session.runtime.field_controls(),
             assignment: self.session.runtime.button_assignment(),
             ui: self.session.runtime.context(),
+            paused: self.session.runtime.game_paused(),
         }
     }
 
@@ -265,7 +273,10 @@ impl Game {
         if self.rewind_held.iter().any(|held| *held) {
             let now = Instant::now();
             if now >= self.rewind_next {
-                self.hud_rewind = self.session.rewind_step()?.then_some(now);
+                let stepped = self.session.rewind_step()?;
+                self.hud_rewind = stepped.then_some(now);
+                // The frames played on from the state sound as they played.
+                if stepped { self.queue_audio(settings, true); }
                 self.rewind_next = now + Duration::from_millis(xem_core::rewind::REWIND_STEP_MS);
             }
             self.paced = now;
@@ -334,28 +345,36 @@ impl Game {
             }
             _ => self.pacer.reset(),
         }
+        self.queue_audio(settings, false);
+        Ok(batch)
+    }
+
+    /// Queues the sound of the frames run since, at the master volume. The
+    /// device starts once the pre-roll is queued, or at once (`at_once`: a
+    /// rewind step's moment of sound, which never fills one).
+    fn queue_audio(&mut self, settings: &xem_settings::Settings, at_once: bool) {
         let spu = &mut self.session.runtime.services().spu;
         self.samples.resize(spu.audio_queued(), 0);
         spu.take_audio(&mut self.samples);
-        if !self.audio.is_null() && !self.samples.is_empty() {
-            let gain = f32::from(settings.master_volume.min(xem_settings::MAX_VOLUME))
-                / f32::from(xem_settings::MAX_VOLUME);
-            for sample in &mut self.samples {
-                *sample = (f32::from(*sample) * gain) as i16;
-            }
-            // SAFETY: an open stream; SDL copies the bytes.
-            unsafe {
-                SDL_PutAudioStreamData(
-                    self.audio,
-                    self.samples.as_ptr().cast(),
-                    (self.samples.len() * 2) as i32,
-                );
-                if !self.audio_started && SDL_GetAudioStreamQueued(self.audio) >= AUDIO_PREROLL_BYTES {
-                    self.audio_started = SDL_ResumeAudioStreamDevice(self.audio);
-                }
+        if self.audio.is_null() || self.samples.is_empty() {
+            return;
+        }
+        let gain = f32::from(settings.master_volume.min(xem_settings::MAX_VOLUME))
+            / f32::from(xem_settings::MAX_VOLUME);
+        for sample in &mut self.samples {
+            *sample = (f32::from(*sample) * gain) as i16;
+        }
+        // SAFETY: an open stream; SDL copies the bytes.
+        unsafe {
+            SDL_PutAudioStreamData(
+                self.audio,
+                self.samples.as_ptr().cast(),
+                (self.samples.len() * 2) as i32,
+            );
+            if !self.audio_started && (at_once || SDL_GetAudioStreamQueued(self.audio) >= AUDIO_PREROLL_BYTES) {
+                self.audio_started = SDL_ResumeAudioStreamDevice(self.audio);
             }
         }
-        Ok(batch)
     }
 
     /// The setting follows the sound mode the game's own Sound screen chose
@@ -372,6 +391,12 @@ impl Game {
     pub fn pause(&mut self) {
         self.hud_forward = None;
         self.hud_rewind = None;
+        self.stop_audio();
+    }
+
+    /// Stops the audio device and drops the sound queued for it; the next
+    /// sound refills the pre-roll first.
+    fn stop_audio(&mut self) {
         self.audio_started = false;
         if !self.audio.is_null() {
             // SAFETY: an open stream.
@@ -484,7 +509,7 @@ mod tests {
         let clock = std::rc::Rc::new(std::cell::Cell::new(Duration::ZERO));
         let source = clock.clone();
         let mut session = Session::new(session.runtime,session.schema,move || source.get());
-        session.configure_rewind(xem_core::rewind::DEFAULT_REWIND_BYTES,1,30).unwrap();
+        session.configure_rewind(xem_core::rewind::MAX_REWIND_BYTES,1,30).unwrap();
         let mut samples = Vec::new();
         let mut checkpoint_samples = Vec::new();
         // Put a one-second checkpoint every ten sampled frames, so the p99

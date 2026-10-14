@@ -104,6 +104,20 @@ impl Gpu {
         self.chcr
     }
 
+    /// Takes `state` (a snapshot loaded beside this device), keeping what
+    /// is presentation only: the draw trace, which starts again from all of
+    /// the restored VRAM (what the game draws from the state follows it),
+    /// and the port's ring entries already handed to it.
+    pub(crate) fn restore_state(&mut self, mut state: Self) {
+        state.gpu.keep_presentation(&mut self.gpu);
+        state.traced = self.traced;
+        state.entries = std::mem::take(&mut self.entries);
+        state.projections = std::mem::take(&mut self.projections);
+        state.stores = std::mem::take(&mut self.stores);
+        state.reveals = std::mem::take(&mut self.reveals);
+        *self = state;
+    }
+
     /// Hands what the port's presentation records gained since the last
     /// call to the draw trace: `args` are the headers (each starting with
     /// how many entries were ever written) of the projection, store and

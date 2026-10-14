@@ -163,6 +163,6 @@ mod tests {
         assert_eq!(marks[0].centre, (50.0, 60.0));
         assert!(super::marks(ring, None, None, None, None).is_empty(), "nothing over the ring without a pointer");
         assert!(super::marks(Context::None, Some((1.0, 1.0)), None, None, None).is_empty());
-        assert!(quantity_keys(Context::Menu { screen: 4, cursor: 2, choice: 0, choices: 0, switch: false, quantities: true }));
+        assert!(quantity_keys(Context::Menu { screen: 4, cursor: 2, choice: 0, choices: 0, commands: false, open: true, switch: false, quantities: true }));
     }
 }

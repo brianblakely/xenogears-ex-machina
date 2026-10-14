@@ -2,9 +2,15 @@
 use std::collections::VecDeque;
 use std::time::Duration;
 
-pub const MAX_REWIND_BYTES: usize = 256 * 1024 * 1024;
-pub const DEFAULT_REWIND_BYTES: usize = 64 * 1024 * 1024;
-pub const REWIND_STEP_MS: u64 = 100;
+/// The most the retained states may take, whatever the history length.
+pub const MAX_REWIND_BYTES: usize = 2 * 1024 * 1024 * 1024;
+/// A held rewind takes one state off the queue this often.
+pub const REWIND_STEP_MS: u64 = 250;
+/// Vertical blanks a held rewind plays on from each state at most: the
+/// display shows a frame both built and drawn after the state from its
+/// third change of buffers (three to six blanks where the game draws every
+/// other one, up to twelve where it draws every fourth).
+pub const REWIND_PLAY_BLANKS: u64 = 12;
 
 // Give checkpoint metadata the same actual allocation layout on supported
 // 32/64-bit hosts, so one memory budget retains the same history on each.
@@ -52,6 +58,26 @@ mod tests {
         assert_eq!(history.available_seconds(),5.0);
         history.configure(4096,1,30,Duration::from_secs(3601)).unwrap();
         assert_eq!(history.status()["states"],6,"increasing retention preserves the remaining queue");
+    }
+
+    #[test]
+    fn a_held_rewind_pops_each_state_once_and_keeps_its_play_time() {
+        let mut history = Rewind::default();
+        history.configure(4096,1,30,Duration::ZERO).unwrap();
+        for second in 0..5 {
+            history.due(Duration::from_secs(second));
+            history.push(second*60,vec![second as u8],Duration::from_secs(second));
+        }
+        // The game at frame 241 (a state at 240): the newest one before it.
+        assert_eq!(history.pop_before(241),Some((240,vec![4])));
+        assert_eq!(history.status()["states"],4);
+        // Played on from it (frame 242 now), the next step goes further back.
+        assert_eq!(history.pop_before(242),Some((180,vec![3])));
+        assert_eq!(history.available_seconds(),3.0,"play time is the popped state's own");
+        // A state no earlier than the game is skipped and dropped.
+        assert_eq!(history.pop_before(60),Some((0,vec![0])));
+        assert_eq!(history.status()["states"],0);
+        assert_eq!(history.pop_before(60),None,"the beginning of history");
     }
 }
 
@@ -123,6 +149,17 @@ impl Rewind {
         index = index.checked_sub(steps.checked_sub(1)?)?;
         let entry = &self.entries[index];
         Some((entry.frame,entry.data.clone()))
+    }
+    /// The newest state from before frame `before`, taken off the queue
+    /// with every later one; play time goes back to the state's own.
+    pub(crate) fn pop_before(&mut self, before: u64) -> Option<(u64, Vec<u8>)> {
+        let index = self.entries.iter().rposition(|entry| entry.frame < before)?;
+        self.entries.truncate(index + 1);
+        let entry = self.entries.pop_back()?;
+        self.played = entry.played;
+        self.last_checkpoint = self.played;
+        self.recount();
+        Some((entry.frame, entry.data))
     }
     pub fn truncate(&mut self, frame: u64) {
         while self.entries.back().is_some_and(|entry| entry.frame > frame) {

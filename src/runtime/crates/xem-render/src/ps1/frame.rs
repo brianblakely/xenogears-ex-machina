@@ -26,7 +26,7 @@
 //!   there as they are drawn, and depth is tested whatever the ordering.
 
 use super::{
-    AUX_FORMAT, Builder, COLOR_FORMAT, Copies, DisplayArea, DrawOptions, Near, PASS_RECIPROCAL_DEPTH, PassUniform, Ps1Renderer, Reveal, Storage,
+    AUX_FORMAT, Builder, COLOR_FORMAT, Capture, Copies, DisplayArea, DrawOptions, Near, PASS_RECIPROCAL_DEPTH, PassUniform, Ps1Renderer, Reveal, Storage,
     Stream, Target, VRAM_HEIGHT, VRAM_WIDTH, bind_group, effective_class, encode, overlap, pass_options, picture_usage, samples, scene_offset,
     texture,
 };
@@ -214,15 +214,15 @@ impl FrameRenderer {
             let known = self.newest_ops.len();
             if log.ops.len() > known {
                 self.newest_ops.extend_from_slice(&log.ops[known..]);
-                self.drawn += drawn(&log.ops[known..]);
+                self.drawn += drawn(&log.ops[known..], log.rect);
             } else if log.ops.len() < known {
                 self.newest_ops.clone_from(&log.ops);
-                self.drawn = drawn(&self.newest_ops);
+                self.drawn = drawn(&self.newest_ops, log.rect);
             }
             return false;
         }
         self.previous_ops = std::mem::replace(&mut self.newest_ops, log.ops.clone());
-        self.drawn = drawn(&self.newest_ops);
+        self.drawn = drawn(&self.newest_ops, log.rect);
         self.newest = Some(identity);
         self.snapshot = Some(log.start.clone());
         self.eye = log.eye;
@@ -302,8 +302,9 @@ impl FrameRenderer {
                 ops
             }
         };
-        let screen_copies: Vec<_> = renderer.capture.areas().filter(|(_, screen)| *screen && renderer.capture.scale == scale).map(|(r, _)| r).collect();
-        settle_copies(&mut ops, &screen_copies, feedback.then_some(rect));
+        let captures: Vec<_> = std::iter::once(&renderer.capture).chain(&renderer.earlier).filter(|capture| capture.scale == scale)
+            .flat_map(Capture::areas).collect();
+        settle_copies(&mut ops, &captures, feedback.then_some(rect));
         // What the game draws of a screen it took (its pieces, zoomed,
         // shattered) is that screen, as presented then: a screen effect,
         // where the game put it.
@@ -371,6 +372,7 @@ impl FrameRenderer {
         builder.capture = capture;
         builder.capture_aliases = &renderer.capture.aliases;
         builder.feedback = feedback.then_some(rect);
+        builder.vram = self.snapshot.is_some().then_some(&self.held[..]);
         // A frame recorded looking around holds faces from anywhere, not
         // only beside the screen: seen from the game's camera, none.
         builder.reveal = if pulled || framing.look.is_some() {
@@ -450,7 +452,7 @@ impl FrameRenderer {
             &group,
             self.vertices.buffer(),
             Some((self.staging.buffer(), &self.vram)),
-            Copies::From { color: &picture_color, aux: &picture_aux, scale, capture: Some(&renderer.capture), scratch: &renderer.scratch, feedback: &self.feedback, feedback_aux: &self.feedback_aux },
+            Copies::From { color: &picture_color, aux: &picture_aux, scale, capture: Some(&renderer.capture), earlier: &renderer.earlier, scratch: &renderer.scratch, feedback: &self.feedback, feedback_aux: &self.feedback_aux },
             &target,
             &builder.commands,
         );
@@ -497,7 +499,7 @@ impl FrameRenderer {
         let origin = (area.x as f32 - self.side as f32, area.y as f32);
         let target = Target { color: &color, aux: &self.aux, depth: &depth_view, origin, scale: self.scale };
         let (picture_color, picture_aux) = (renderer.color.clone(), renderer.aux.clone());
-        let copies = Copies::From { color: &picture_color, aux: &picture_aux, scale: self.scale, capture: Some(&renderer.capture), scratch: &renderer.scratch, feedback: &self.feedback, feedback_aux: &self.feedback_aux };
+        let copies = Copies::From { color: &picture_color, aux: &picture_aux, scale: self.scale, capture: Some(&renderer.capture), earlier: &renderer.earlier, scratch: &renderer.scratch, feedback: &self.feedback, feedback_aux: &self.feedback_aux };
         let staging = Some((self.overlay_staging.buffer(), &self.vram));
         encode(device, &mut renderer.pipelines, encoder, &group, self.overlay_vertices.buffer(), staging, copies, &target, &builder.commands);
         builder.store(&mut self.overlay_storage);
@@ -550,8 +552,15 @@ impl FrameRenderer {
 
 /// The ops that change a frame's picture: all but the native pixels a copy,
 /// fill or drawing left.
-fn drawn(ops: &[TraceOp]) -> usize {
-    ops.iter().filter(|op| !matches!(op, TraceOp::Write { upload: false, .. })).count()
+/// How many of `ops` (the log of buffer `rect`) change its picture: all but
+/// the mirrors of what was drawn and transfers elsewhere in VRAM (textures,
+/// a saved screen's place given back while the frame is still shown).
+fn drawn(ops: &[TraceOp], rect: VramRect) -> usize {
+    ops.iter().filter(|op| match op {
+        TraceOp::Write { upload: false, .. } => false,
+        TraceOp::Write { rect: written, .. } => overlap(written, &rect) > 0,
+        _ => true,
+    }).count()
 }
 
 /// What identifies a primitive between frames: its shape, page, CLUT,
@@ -797,7 +806,7 @@ fn framebuffer_effect(ops: &[TraceOp], area: VramRect) -> bool {
 /// overwritten while the copy is still shown) shows the pixels it copied:
 /// the native ones its destination's write carries, not the scaled
 /// picture's source as it is when the frame is replayed.
-fn settle_copies(ops: &mut [TraceOp], screen_copies: &[VramRect], feedback: Option<VramRect>) {
+fn settle_copies(ops: &mut [TraceOp], captures: &[(VramRect, bool)], feedback: Option<VramRect>) {
     let mut later: Vec<VramRect> = Vec::new();
     for i in (0..ops.len()).rev() {
         match &ops[i] {
@@ -806,8 +815,11 @@ fn settle_copies(ops: &mut [TraceOp], screen_copies: &[VramRect], feedback: Opti
                 let from = VramRect { x: source.0, y: source.1, width, height };
                 let to = VramRect { x: destination.0, y: destination.1, width, height };
                 // A pause/transition copied the displayed picture to this
-                // buffer. Its held presentation survives source overwrites.
-                if screen_copies.contains(&to) || feedback.is_some_and(|area| overlap(&area, &from) == u32::from(width) * u32::from(height)) {
+                // buffer, or a buffer took a kept screen: the held picture
+                // survives source overwrites.
+                if captures.iter().any(|&(area, screen)| (screen && area == to) || area == from)
+                    || feedback.is_some_and(|area| overlap(&area, &from) == u32::from(width) * u32::from(height))
+                {
                     continue;
                 }
                 // Its own destination's write follows it.

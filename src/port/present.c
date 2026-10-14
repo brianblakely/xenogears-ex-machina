@@ -448,8 +448,10 @@ static s32 xem_spans_screen(u32 packet) {
 /* Presentation only (xem/gte.h): the backdrop polygons just linked at
  * `entry` (since its word was `head`) that span the screen (the sky, fade
  * and ground fills, horizon bands) again on either side, `reach` wide with
- * the same rows and colours, as culled faces at that entry, in the order
- * they were linked. */
+ * the same rows and colours, as culled faces drawn just before each one:
+ * over what the original draws before it and under what it draws after,
+ * with the drawing mode it is drawn in (a translucent band's blending, set
+ * by the textured polygons before it). */
 static void xem_reveal_backdrop_fills(u32 entry, u32 head, s32 reach) {
     u32 spans[16], words[8], at = XEM_U32(entry) & 0x00FFFFFF, count, n = 0, walked, i, k, side;
     s32 x;
@@ -472,7 +474,7 @@ static void xem_reveal_backdrop_fills(u32 entry, u32 head, s32 reach) {
                 x = (s16)(words[k] & 0xFFFF) == 0 ? (side ? 320 : -reach) : (side ? 320 + reach : 0);
                 words[k] = (words[k] & 0xFFFF0000) | ((u32)x & 0xFFFF);
             }
-            xem_present_reveal(entry, 0, xem_gte_ring->count, words, count);
+            xem_present_reveal_at(at, 0, xem_gte_ring->count, 0, words, count);
         }
     }
 }
