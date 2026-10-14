@@ -640,8 +640,13 @@ CD input), Chromium's raw Mono, Stereo and Wide, Binaural bypassed, and
 Binaural turned on and off again are xem-headless's output sample for
 sample (tolerance 0: raw playback is integer arithmetic on both hosts;
 while Binaural presents, within its declared 2, measured 1 in the field
-and 0 in the movie, where it keeps the CD's mix); in the movie Mono's
-output is Stereo's, as the findings say. `xr-game.test.mjs`: the listener turns with the emulated headset
+and 0 in the movie, where it keeps the CD's mix). On each host the
+commands are seen to take effect: in the field the three modes' outputs
+all differ, and in the movie Mono's is Stereo's and Wide's is not, as the
+findings say; the bypass is engaged and plays Stereo's output; Binaural
+presents halfway (in the field 92 572 of the 92 738 samples to the end of
+its fade differ from Stereo's), and from the end of its fade the output is
+Stereo's again. `xr-game.test.mjs`: the listener turns with the emulated headset
 while the game is paused, and has no head after the session.
 
 Not done or not measured: no listening tests with people (direction and
