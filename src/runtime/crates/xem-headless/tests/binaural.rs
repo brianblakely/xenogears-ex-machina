@@ -8,7 +8,16 @@
 //! setting leaves the game, the driver's voice volumes and the SPU as they
 //! are in plain Stereo frame by frame, each placed source reports the gain
 //! the driver resolved before panning, and Mono and Wide differ from
-//! Stereo only in what the sound-mode findings name.
+//! Stereo only in what the sound-mode findings name. On the same walk the
+//! field reader, apart from the presenter, puts each emitter where it is
+//! heard (front and back, up and down, the original's side; the camera's
+//! turns turn it, the character's do not); each emitter start is one
+//! source following its own actor, its tail keeping its last direction;
+//! the music keeps its places through camera turns, walking and looking
+//! around, and turns against a tracked head; switching sources and
+//! settings adds no clicks; a tap capture mixes again what was presented
+//! and shows each placed source mixed once; drawing zoomed out changes
+//! nothing heard, and with characters in view the game's own gains stay.
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test binaural
 
@@ -541,7 +550,7 @@ impl GameMemory for Ram {
 }
 
 /// How a session under test presents the walk.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 enum Presentation {
     /// No Binaural: the game's own Stereo, the reference.
     Plain,
@@ -554,7 +563,54 @@ enum Presentation {
     View,
     /// The settings changing every 120 frames ([`TOGGLES`]).
     Toggled,
+    /// Binaural on while a game view draws every frame zoomed out four
+    /// times with characters in view off, so the game's actor view stays
+    /// the original's.
+    Zoomed,
+    /// Binaural on with characters in view: the game keeps the field's
+    /// actors moving in that zoomed view (`Session::set_actor_view`), a
+    /// change to the game itself.
+    InView,
 }
+
+/// The Binaural mode's defaults, on.
+const ON: Config = Config { enabled: true, spatial_music: true, positional_effects: true, music_immersion: 70, head_tracked_music: false, bypass: false };
+
+/// The sessions the walk's tests read, all played once ([`walks`]).
+const PRESENTATIONS: [Presentation; 12] = [
+    Presentation::Plain,
+    Presentation::Settings(ON),
+    Presentation::Settings(Config { bypass: true, ..ON }),
+    Presentation::Settings(Config { positional_effects: false, ..ON }),
+    Presentation::Settings(Config { spatial_music: false, ..ON }),
+    Presentation::Settings(Config { music_immersion: 0, ..ON }),
+    Presentation::Settings(Config { music_immersion: 100, ..ON }),
+    Presentation::Head,
+    Presentation::View,
+    Presentation::Toggled,
+    Presentation::Zoomed,
+    Presentation::InView,
+];
+const PLAIN: usize = 0;
+const PLACED: usize = 1;
+const BYPASS: usize = 2;
+const HEAD: usize = 7;
+const VIEW: usize = 8;
+const TOGGLED: usize = 9;
+const ZOOMED: usize = 10;
+const IN_VIEW: usize = 11;
+
+/// The walk's frames (counted from its input's start) the placed session
+/// keeps a tap capture of: the camera's quarter turn, turns in place,
+/// walking, and the menu opened and closed with its interface sounds.
+const TAP: std::ops::Range<u64> = 330..830;
+
+/// The zoomed view: four times pulled back, wider framing, characters in
+/// view off, on a 16:9 desktop output.
+fn zoomed_graphics() -> xem_settings::Graphics {
+    xem_settings::Graphics { widescreen: true, zoom_out: 400, actors_in_view: false, ..Default::default() }
+}
+const ZOOMED_OUTPUT: (u32, u32) = (640, 360);
 
 /// The settings a [`Presentation::Toggled`] session goes through: on, off
 /// (the presentation fades out and ends), bypassed, music or effects only,
@@ -573,6 +629,106 @@ const TOGGLES: [Config; 8] = [
 /// The sweep's yaw (radians) at walk frame `n`.
 fn sweep(n: u64) -> f32 {
     std::f32::consts::FRAC_PI_2 * (n as f32 / 240.0 * std::f32::consts::TAU).sin()
+}
+
+/// The first-person axes a [`Presentation::View`] session sets before walk
+/// frame `n`: looking `sweep(n)` to the right.
+fn view_axes(n: u64) -> [[f32; 3]; 3] {
+    let (s, c) = sweep(n).sin_cos();
+    [[c, 0.0, -s], [0.0, 1.0, 0.0], [s, 0.0, c]]
+}
+
+/// The head a [`Presentation::Head`] session sets before walk frame `n`:
+/// turned `sweep(n)` to the right (a rotation about +Y by minus that).
+fn head_of(n: u64) -> [[f32; 3]; 3] {
+    let half = sweep(n) / 2.0;
+    xem_core::binaural::head_axes([0.0, -half.sin(), 0.0, half.cos()])
+}
+
+fn apply(rows: &[[f32; 3]; 3], v: [f32; 3]) -> [f32; 3] {
+    rows.map(|row| row[0] * v[0] + row[1] * v[1] + row[2] * v[2])
+}
+
+fn unit(v: [f32; 3]) -> [f32; 3] {
+    let length = v.iter().map(|c| c * c).sum::<f32>().sqrt();
+    v.map(|c| c / length)
+}
+
+/// The direction (right, down, forward) of an azimuth clockwise from ahead
+/// and an elevation up, degrees, as the status reports them.
+fn direction_of(azimuth: f64, elevation: f64) -> [f32; 3] {
+    let (a, e) = (azimuth.to_radians(), elevation.to_radians());
+    [(a.sin() * e.cos()) as f32, -e.sin() as f32, (a.cos() * e.cos()) as f32]
+}
+
+/// The angle between two directions, degrees.
+fn between(a: [f32; 3], b: [f32; 3]) -> f32 {
+    let (a, b) = (unit(a), unit(b));
+    let cos = f64::from(a[0] * b[0] + a[1] * b[1] + a[2] * b[2]).clamp(-1.0, 1.0);
+    // acos loses precision near 1: the chord's half-angle instead.
+    let chord = a.iter().zip(&b).map(|(x, y)| f64::from(x - y).powi(2)).sum::<f64>().sqrt();
+    (if cos > 0.9 { 2.0 * (chord / 2.0).asin() } else { cos.acos() }).to_degrees() as f32
+}
+
+/// A source's target in the status as a direction (none: it keeps its own).
+fn target(source: &Value) -> Option<[f32; 3]> {
+    let target = source.get("target").filter(|t| !t.is_null())?;
+    Some(direction_of(target["azimuth"].as_f64()?, target["elevation"].as_f64()?))
+}
+
+/// The field after a frame as `xem_core::field::Field` reads it, apart from
+/// the presenter: the camera (`scaled_world`'s rows), each actor's position
+/// and facing (`FieldActor.heading_goal`'s direction, 0x1000 a turn; bit 15
+/// only marks the turn done), the controlled actor, and the emitter slots
+/// (`field_sound_emitter_slots` at 0x800AFE88: the actor each follows and
+/// its sound, 0xFFFF free).
+#[derive(Clone, Debug)]
+struct Seen {
+    camera: [[f32; 3]; 3],
+    actors: Vec<Option<[f32; 3]>>,
+    facings: Vec<Option<i16>>,
+    player: Option<usize>,
+    slots: [(u16, u16); 3],
+}
+
+impl Seen {
+    fn read(memory: &dyn GameMemory) -> Option<Seen> {
+        let field = xem_core::field::Field::read(memory)?;
+        let mut bytes = [0u8; 18];
+        memory.read(0x800A_FE88, &mut bytes).ok()?;
+        let half = |at: usize| u16::from_le_bytes([bytes[at], bytes[at + 1]]);
+        Some(Seen {
+            camera: field.camera.m,
+            actors: field.actors.iter().map(|a| a.map(|a| [a.position.x, a.position.y, a.position.z])).collect(),
+            facings: field.actors.iter().map(|a| a.map(|a| a.heading_goal & 0xFFF)).collect(),
+            player: field.player,
+            slots: [0, 1, 2].map(|slot| (half(slot * 6), half(slot * 6 + 2))),
+        })
+    }
+
+    fn position(&self, actor: usize) -> Option<[f32; 3]> {
+        *self.actors.get(actor)?
+    }
+
+    /// Actor `actor` as the camera sees it from the controlled actor: their
+    /// difference turned into view space (right, down, forward), unscaled.
+    fn view_of(&self, actor: usize) -> Option<[f32; 3]> {
+        let (at, from) = (self.position(actor)?, self.position(self.player?)?);
+        Some(apply(&self.camera, [0, 1, 2].map(|i| at[i] - from[i])))
+    }
+
+    /// The same through the camera's rows each made unit length (its
+    /// orientation alone): nothing of any actor's facing in it.
+    fn oriented_view_of(&self, actor: usize) -> Option<[f32; 3]> {
+        let (at, from) = (self.position(actor)?, self.position(self.player?)?);
+        Some(apply(&self.camera.map(unit), [0, 1, 2].map(|i| at[i] - from[i])))
+    }
+
+    /// The slot an effect on effect channels `pair` and the next plays from
+    /// (`field_sound_start_emitter` plays slot i on channels 2i ^ 8).
+    fn slot_of(pair: u64) -> usize {
+        ((pair as usize) ^ 8) / 2
+    }
 }
 
 /// What one frame of the walk left: game memory (`memory_hash`), the 24
@@ -627,8 +783,7 @@ struct Voices {
 /// no voice's sample zero at either end: a sample's silent loop gives no
 /// gain), and against the driver's own pre-pan volume within the pan law's
 /// rounding.
-fn check_gains(session: &mut Session<NativeModule>, previous: &Voices, frame: u64, gains: &mut Gains) -> Voices {
-    let status = execute(session, json!({"cmd": "binaural"}));
+fn check_gains(session: &mut Session<NativeModule>, status: &Value, previous: &Voices, frame: u64, gains: &mut Gains) -> Voices {
     let chip = session.runtime.services().spu.chip();
     let voice: Vec<xem_spu::VoiceInfo> = (0..xem_spu::VOICES).map(|v| chip.voice(v)).collect();
     let mut now = Voices {
@@ -716,36 +871,117 @@ struct Walked {
     /// Plain only: what the walk did (emitter slot changes, camera angles,
     /// frames in the menu).
     coverage: Option<(u32, usize, u32)>,
+    /// Each frame's `binaural` status (placed, head, view, zoomed and in
+    /// view: the sessions whose directions are checked).
+    statuses: Vec<Value>,
+    /// The field as the reader saw it after each frame (plain, placed, head,
+    /// view and in view).
+    seen: Vec<Option<Seen>>,
+    /// The output as presented, and where each frame's ended in it.
+    audio: Vec<i16>,
+    ends: Vec<usize>,
+    /// The placed session's tap capture over [`TAP`]: its journal, and the
+    /// output captured alongside it (`audio_capture`).
+    tap: Option<(xem_binaural::Journal, Vec<i16>)>,
+    /// The view session's `audio_capture` with `tap: true` over the first
+    /// two seconds of [`TAP`], as the command replies.
+    tap_reply: Option<Value>,
+}
+
+/// A view drawing a session's frames as a desktop host would ([`Presentation::Zoomed`]).
+struct Drawn {
+    gpu: xem_render::Gpu,
+    view: xem_render::ps1::GameView,
+}
+
+impl Drawn {
+    fn new() -> Drawn {
+        let gpu = pollster::block_on(xem_render::Gpu::headless()).expect("a wgpu adapter");
+        let mut view = xem_render::ps1::GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        view.configure(Self::config(&view));
+        Drawn { gpu, view }
+    }
+
+    fn config(view: &xem_render::ps1::GameView) -> xem_render::ps1::ViewConfig {
+        xem_render::ps1::ViewConfig::resolve(&zoomed_graphics(), xem_render::ps1::HostClass::Desktop, ZOOMED_OUTPUT, view.max_scale())
+    }
+
+    /// The frame the session just ran, drawn (the draw trace on and the
+    /// port recording what the wider picture reveals, as the host does).
+    fn draw(&mut self, session: &mut Session<NativeModule>, n: u64) {
+        let config = Self::config(&self.view);
+        self.view.configure(config);
+        let device = session.runtime.services().gpu.device_mut();
+        if self.view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(self.view.reveals());
+        self.view.push(device.take_trace());
+        let display = device.display();
+        let scene = session.scene();
+        let mut encoder = self.gpu.device.create_command_encoder(&Default::default());
+        let _ = self.view.present(&mut encoder, &display, &scene, n as f64 / 60.0);
+        self.gpu.queue.submit([encoder.finish()]);
+    }
 }
 
 fn walk(disc: &Path, state: &[u8], log: &Log, presentation: Presentation) -> Walked {
     let mut session = walker(disc, state, log, 1);
-    let on = Config { enabled: true, ..Config::default() };
+    let mut drawn = None;
     match presentation {
         Presentation::Plain => {}
         Presentation::Settings(config) => session.set_binaural(config),
-        Presentation::Head => session.set_binaural(Config { head_tracked_music: true, ..on }),
-        Presentation::View | Presentation::Toggled => session.set_binaural(on),
+        Presentation::Head => session.set_binaural(Config { head_tracked_music: true, ..ON }),
+        Presentation::View | Presentation::Toggled => session.set_binaural(ON),
+        Presentation::Zoomed => {
+            session.set_binaural(ON);
+            drawn = Some(Drawn::new());
+        }
+        Presentation::InView => {
+            session.set_binaural(ON);
+            // What the zoomed view asks of the game with characters in view
+            // (the hosts' `want_actor_view(renderer.actor_view())`).
+            let view = Drawn::new().view.actor_view();
+            assert!(view & 0xFFFF == 400 && view >> 16 > 0, "pulled back four times with wider sides: {view:#x}");
+            session.set_actor_view(view).unwrap();
+        }
     }
+    let placed = presentation == PRESENTATIONS[PLACED];
+    let observed = placed || matches!(presentation, Presentation::Head | Presentation::View | Presentation::Zoomed | Presentation::InView);
+    let reads = observed && presentation != Presentation::Zoomed || presentation == Presentation::Plain;
     let mut frames = Vec::new();
     let mut gains = Gains::default();
     let mut previous = Voices::default();
+    let (mut statuses, mut seen, mut audio, mut ends, mut tap, mut tap_reply) = (Vec::new(), Vec::new(), Vec::new(), Vec::new(), None, None);
     let (mut slots, mut slot_changes, mut angles, mut menu) = (Vec::new(), 0, std::collections::BTreeSet::new(), 0);
     for n in 0..log.frames - log.start() {
-        let yaw = sweep(n);
         match presentation {
-            Presentation::Head => {
-                let half = yaw / 2.0;
-                session.set_head(Some(xem_core::binaural::head_axes([0.0, -half.sin(), 0.0, half.cos()])));
-            }
-            Presentation::View => {
-                let (s, c) = yaw.sin_cos();
-                session.set_listener_view(Some([[c, 0.0, -s], [0.0, 1.0, 0.0], [s, 0.0, c]]));
-            }
+            Presentation::Head => session.set_head(Some(head_of(n))),
+            Presentation::View => session.set_listener_view(Some(view_axes(n))),
             Presentation::Toggled if n % 120 == 0 && n > 0 => session.set_binaural(TOGGLES[(n / 120) as usize % TOGGLES.len()]),
             _ => {}
         }
-        step(&mut session);
+        if (placed || presentation == Presentation::View) && n == TAP.start {
+            let reply = execute(&mut session, json!({"cmd": "audio_capture", "action": "start", "tap": true}));
+            assert_eq!(reply, json!({"capturing": true, "tap": true}));
+        }
+        if presentation == Presentation::View && n == TAP.start + 120 {
+            tap_reply = Some(execute(&mut session, json!({"cmd": "audio_capture", "action": "stop"})));
+        }
+        assert!(session.frame().expect("a frame"), "a native disc never blocks");
+        if let Some(drawn) = drawn.as_mut() {
+            drawn.draw(&mut session, n);
+        }
+        let spu = &mut session.runtime.services().spu;
+        let start = audio.len();
+        audio.resize(start + spu.audio_queued(), 0);
+        spu.take_audio(&mut audio[start..]);
+        ends.push(audio.len());
+        if placed && n + 1 == TAP.end {
+            let journal = spu.take_tap_capture().expect("a tap capture");
+            let output = spu.take_capture().expect("the output alongside");
+            tap = Some((journal, output));
+        }
         let at = log.start() + n + 1;
         let chip = session.runtime.services().spu.chip();
         let registers: Vec<u16> = (0..xem_spu::VOICES)
@@ -754,7 +990,11 @@ fn walk(disc: &Path, state: &[u8], log: &Log, presentation: Presentation) -> Wal
         let volumes: Vec<[i16; 2]> = (0..xem_spu::VOICES).map(|v| chip.voice(v).volume).collect();
         let chip_state = (at % 60 == 0).then(|| fnv(&chip.save()));
         if !matches!(presentation, Presentation::Plain) {
-            previous = check_gains(&mut session, &previous, at, &mut gains);
+            let status = execute(&mut session, json!({"cmd": "binaural"}));
+            previous = check_gains(&mut session, &status, &previous, at, &mut gains);
+            if observed {
+                statuses.push(status);
+            }
         } else {
             let mut now = [0u8; 18];
             session.runtime.memory().read(0x800A_FE88, &mut now).unwrap();
@@ -765,48 +1005,63 @@ fn walk(disc: &Path, state: &[u8], log: &Log, presentation: Presentation) -> Wal
             }
             menu += u32::from(execute(&mut session, json!({"cmd": "context"}))["kind"] == "menu");
         }
+        if reads {
+            seen.push(Seen::read(session.runtime.memory()));
+        }
         frames.push(Frame { memory: session.memory_hash().unwrap(), registers, volumes, chip: chip_state });
     }
     let memory_hash = format!("{:016x}", session.memory_hash().unwrap());
     let coverage = matches!(presentation, Presentation::Plain).then_some((slot_changes, angles.len(), menu));
-    Walked { presentation, frames, gains, memory_hash, coverage }
+    Walked { presentation, frames, gains, memory_hash, coverage, statuses, seen, audio, ends, tap, tap_reply }
+}
+
+/// Every session of the walk ([`PRESENTATIONS`]), played once for all the
+/// tests that read them.
+struct Walks {
+    log: Log,
+    walked: Vec<Walked>,
+}
+
+static WALKS: std::sync::OnceLock<Result<Walks, String>> = std::sync::OnceLock::new();
+
+/// The walk's sessions, each on its own thread from one state (the
+/// sessions are deterministic and share nothing); none without the disc.
+fn walks() -> Option<&'static Walks> {
+    let disc = disc()?;
+    let walks = WALKS.get_or_init(|| {
+        let played = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let log = Log::read(WALK);
+            let state = walk_state(&disc, &log);
+            let started = std::time::Instant::now();
+            let walked: Vec<Walked> = std::thread::scope(|scope| {
+                let runs: Vec<_> = PRESENTATIONS.iter().map(|p| scope.spawn(|| walk(&disc, &state, &log, *p))).collect();
+                runs.into_iter().map(|run| run.join().unwrap_or_else(|panic| std::panic::resume_unwind(panic))).collect()
+            });
+            eprintln!("{} sessions, {} frames each, in {:.1} s", walked.len(), log.frames - log.start(), started.elapsed().as_secs_f64());
+            Walks { log, walked }
+        }));
+        played.map_err(|panic| panic.downcast_ref::<String>().cloned().or_else(|| panic.downcast_ref::<&str>().map(|s| (*s).to_owned())).unwrap_or_default())
+    });
+    match walks {
+        Ok(walks) => Some(walks),
+        Err(error) => panic!("the walk's sessions failed: {error}"),
+    }
 }
 
 #[test]
 fn along_a_walk_every_presentation_setting_leaves_the_games_gains_and_emitters_as_they_are() {
-    let Some(disc) = disc() else {
+    let Some(Walks { log, walked }) = walks() else {
         eprintln!("skipping: no disc 1 (set XEM_DISC1)");
         return;
     };
-    let log = Log::read(WALK);
-    let state = walk_state(&disc, &log);
-    let on = Config { enabled: true, ..Config::default() };
-    let presentations = [
-        Presentation::Plain,
-        Presentation::Settings(on),
-        Presentation::Settings(Config { bypass: true, ..on }),
-        Presentation::Settings(Config { positional_effects: false, ..on }),
-        Presentation::Settings(Config { spatial_music: false, ..on }),
-        Presentation::Settings(Config { music_immersion: 0, ..on }),
-        Presentation::Settings(Config { music_immersion: 100, ..on }),
-        Presentation::Head,
-        Presentation::View,
-        Presentation::Toggled,
-    ];
-    // Each session on its own thread; the frames are compared afterwards,
-    // frame by frame (the sessions are deterministic and share nothing).
-    let started = std::time::Instant::now();
-    let walked: Vec<Walked> = std::thread::scope(|scope| {
-        let runs: Vec<_> = presentations.iter().map(|p| scope.spawn(|| walk(&disc, &state, &log, *p))).collect();
-        runs.into_iter().map(|run| run.join().expect("a walk")).collect()
-    });
-    eprintln!("{} sessions, {} frames each, in {:.1} s", walked.len(), log.frames - log.start(), started.elapsed().as_secs_f64());
-    let plain = &walked[0];
+    let plain = &walked[PLAIN];
     assert_eq!(plain.memory_hash, log.memory_hash, "the walk ends where its log was recorded");
     let (slot_changes, angles, menu) = plain.coverage.unwrap();
     eprintln!("walk: the nearest three emitters changed {slot_changes} times, the camera took {angles} angles, {menu} frames in the menu");
     assert!(slot_changes >= 5 && angles >= 3 && menu >= 100, "the walk walks among the emitters, turns the camera and opens the menu");
-    for run in &walked[1..] {
+    // Characters in view change the game (its own eligibility changes):
+    // that session is checked on its own.
+    for run in walked[1..].iter().filter(|run| run.presentation != Presentation::InView) {
         for (n, (frame, reference)) in run.frames.iter().zip(&plain.frames).enumerate() {
             assert_eq!(frame, reference, "{:?}, frame {}: the game, the voices' volumes and the SPU as in plain Stereo", run.presentation, log.start() + n as u64 + 1);
         }
@@ -817,7 +1072,7 @@ fn along_a_walk_every_presentation_setting_leaves_the_games_gains_and_emitters_a
         assert!(gains.failures.is_empty(), "{:?}: {} sources report another gain than their voices' driver gain, first: {}",
             run.presentation, gains.failures.len(), gains.failures.first().unwrap());
     }
-    let placed = &walked[1].gains;
+    let placed = &walked[PLACED].gains;
     assert!(placed.effects >= 500 && placed.music >= 500, "the emitters and the music were placed and checked: {placed:?}");
     // The registers truncate gain * volume >> 15, the nearer side's gain at
     // least 0x5A00, so for a volume of 0x100 or more the nearer register
@@ -960,3 +1215,611 @@ fn along_a_walk_mono_and_wide_differ_from_stereo_only_where_the_sound_mode_findi
     eprintln!("staged volumes checked against the driver's law: {staged_checked}; voice registers against them: {registers_checked}");
     assert!(staged_checked > 10_000 && registers_checked > 10_000);
 }
+
+
+/// The walk frame `n`'s number in the log.
+fn frame_at(log: &Log, n: usize) -> u64 {
+    log.start() + n as u64 + 1
+}
+
+/// The sources of a status that are effects placed at field emitters.
+fn field_emitters(status: &Value) -> impl Iterator<Item = &Value> {
+    status["sources"].as_array().into_iter().flatten().filter(|s| s["emitter"] == "field emitter")
+}
+
+/// What the direction checks of one session saw.
+#[derive(Debug, Default)]
+struct Directions {
+    checked: u64,
+    worst: f32,
+    front: u64,
+    back: u64,
+    up: u64,
+    down: u64,
+    sides: u64,
+    orbit_frames: u64,
+    orbit_turn: f32,
+    turns: u64,
+    turn_worst: f32,
+}
+
+#[test]
+fn along_a_walk_effects_are_heard_where_the_field_reader_puts_their_emitters() {
+    let Some(Walks { log, walked }) = walks() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    // The oracle: the controlled actor and the emitter's actor as the field
+    // reader has them, their difference through the camera's matrix as the
+    // game draws with it (`scaled_world`, whose rows' lengths differ by up
+    // to 0.8%: the presenter takes each row's direction, hence the 0.5
+    // degree bound), then the first-person view's or the head's turn.
+    for index in [PLACED, VIEW, HEAD, IN_VIEW] {
+        let run = &walked[index];
+        let mut d = Directions::default();
+        let mut previous: Option<(&Seen, std::collections::HashMap<u64, (usize, [f32; 3], [f32; 3])>)> = None;
+        for (n, status) in run.statuses.iter().enumerate() {
+            let at = frame_at(log, n);
+            let seen = run.seen[n].as_ref().expect("the walk stays in the field");
+            let turn = match index {
+                VIEW => Some(view_axes(n as u64)),
+                HEAD => Some(head_of(n as u64)),
+                _ => None,
+            };
+            let mut heard = std::collections::HashMap::new();
+            for source in field_emitters(status) {
+                let (id, actor) = (source["id"].as_u64().unwrap(), source["follows"].as_u64().unwrap() as usize);
+                let v = unit(seen.view_of(actor).expect("the emitter's actor and the controlled one"));
+                let t = target(source).expect("an emitter apart from the character has a direction");
+                let off = between(turn.map_or(v, |axes| apply(&axes, v)), t);
+                d.worst = d.worst.max(off);
+                d.checked += 1;
+                assert!(off < 0.5, "{:?}, frame {at}: source {id} is heard {off:.3} degrees from where the field reader puts actor {actor}: {source}", run.presentation);
+                if turn.is_none() {
+                    // Ahead or behind by the camera-space depth, above or
+                    // below by the camera-space y (down).
+                    if v[2].abs() > 0.05 {
+                        assert_eq!(t[2] > 0.0, v[2] > 0.0, "frame {at}: source {id} in front or behind as its depth says: {source}");
+                        *(if v[2] > 0.0 { &mut d.front } else { &mut d.back }) += 1;
+                    }
+                    if v[1].abs() > 0.05 {
+                        assert_eq!(t[1] < 0.0, v[1] < 0.0, "frame {at}: source {id} above or below as its height says: {source}");
+                        *(if v[1] < 0.0 { &mut d.up } else { &mut d.down }) += 1;
+                    }
+                }
+                let oriented = unit(seen.oriented_view_of(actor).expect("as above"));
+                heard.insert(id, (actor, t, turn.map_or(oriented, |axes| apply(&axes, oriented))));
+            }
+            // The original pans an emitter by where the screen shows it;
+            // heard from the character, it falls on that side when the pan
+            // is clear of the centre.
+            if turn.is_none() {
+                for voice in status["voices"].as_array().unwrap().iter().filter(|v| v.get("effect_channel").is_some()) {
+                    let Some(&(_, t, _)) = voice["route"].as_u64().and_then(|id| heard.get(&id)) else { continue };
+                    let v = voice["voice"].as_u64().unwrap() as usize;
+                    let Some(unpanned) = xem_binaural::pan::unpan(run.frames[n].volumes[v]) else { continue };
+                    let azimuth = t[0].atan2(t[2]).to_degrees();
+                    if (unpanned.pan - 16384.0).abs() > 4096.0 && azimuth.abs() > 10.0 && azimuth.abs() < 170.0 {
+                        assert_eq!(unpanned.pan > 16384.0, azimuth > 0.0, "frame {at}: voice {v} panned {} but heard at {azimuth}", unpanned.pan);
+                        d.sides += 1;
+                    }
+                }
+            }
+            if let Some((before, was)) = &previous {
+                let player = seen.player.expect("a controlled actor");
+                let stays = |actor: usize| before.position(actor) == seen.position(actor);
+                for (id, &(actor, t, oriented)) in &heard {
+                    let Some(&(_, earlier, was_oriented)) = was.get(id) else { continue };
+                    if !stays(player) || !stays(actor) {
+                        continue;
+                    }
+                    if before.facings.get(player) != seen.facings.get(player) {
+                        // The character turns in place (the camera gliding
+                        // on or not): the sound moves exactly as the camera's
+                        // orientation and the positions, which hold nothing
+                        // of its facing, move it.
+                        let moved = (between(earlier, t) - between(was_oriented, oriented)).abs().max(between(oriented, t));
+                        d.turn_worst = d.turn_worst.max(moved);
+                        d.turns += 1;
+                        assert!(moved < 0.1, "frame {at}: the character's turn moved source {id} by {moved} degrees beyond the geometry");
+                    } else if before.camera != seen.camera {
+                        // The camera orbits: where the sound is heard turns
+                        // by the geometry (the check above, every frame).
+                        d.orbit_frames += 1;
+                        d.orbit_turn += between(earlier, t);
+                    }
+                }
+            }
+            previous = Some((seen, heard));
+        }
+        eprintln!("{:?}: {d:?}", run.presentation);
+        assert!(d.checked > 2000, "{:?}: the emitters were placed and checked", run.presentation);
+        if index == PLACED {
+            assert!(d.front > 0 && d.back > 0 && d.up > 0 && d.down > 0 && d.sides > 100, "the walk heard emitters ahead, behind, above, below and to the sides: {d:?}");
+            assert!(d.orbit_frames > 20 && d.orbit_turn > 30.0, "the camera's turns turned what is heard: {d:?}");
+            assert!(d.turns > 0, "the character turned in place: {d:?}");
+        }
+    }
+}
+
+#[test]
+fn along_a_walk_each_emitter_start_is_one_source_that_follows_its_own_actor() {
+    let Some(Walks { log, walked }) = walks() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let run = &walked[PLACED];
+    type Start = (u64, String, u64);
+    let mut starts: std::collections::HashMap<u64, Start> = std::collections::HashMap::new();
+    let mut sources: std::collections::HashMap<Start, u64> = std::collections::HashMap::new();
+    let mut followed = std::collections::HashMap::new();
+    let mut last = std::collections::HashMap::new();
+    let (mut new_starts, mut tails, mut tail_frames, mut paired, mut original) = (0, std::collections::BTreeSet::new(), 0, 0, 0);
+    for (n, status) in run.statuses.iter().enumerate() {
+        let at = frame_at(log, n);
+        let seen = run.seen[n].as_ref().expect("the walk stays in the field");
+        for source in status["sources"].as_array().unwrap().iter().filter(|s| s["kind"] == "effect") {
+            let id = source["id"].as_u64().unwrap();
+            let start: Start = (source["channels"][0].as_u64().unwrap(), source["effect"].as_str().unwrap().to_owned(), source["start"].as_u64().unwrap());
+            assert_eq!(*starts.entry(id).or_insert_with(|| start.clone()), start, "frame {at}: source {id} is one start, no other's");
+            assert_eq!(*sources.entry(start.clone()).or_insert(id), id, "frame {at}: start {start:?} is one source");
+            match source["emitter"].as_str().unwrap() {
+                "field emitter" => {
+                    let actor = source["follows"].as_u64().unwrap();
+                    if !followed.contains_key(&id) {
+                        // A new start: its slot follows that actor with
+                        // that sound now (field_sound_start_emitter).
+                        let slot = seen.slots[Seen::slot_of(start.0)];
+                        let effect = u64::from_str_radix(start.1.trim_start_matches("0x"), 16).unwrap();
+                        assert_eq!((u64::from(slot.0), u64::from(slot.1)), (actor, effect & 0xFFFF), "frame {at}: source {id} starts with its slot's actor and sound");
+                        new_starts += 1;
+                    }
+                    assert_eq!(*followed.entry(id).or_insert(actor), actor, "frame {at}: source {id} follows one actor");
+                    last.insert(id, target(source).expect("a direction"));
+                }
+                gone => {
+                    assert_eq!(gone, "gone: keeps its last direction", "frame {at}: {source}");
+                    assert!(source.get("follows").is_none(), "frame {at}: a tail follows nobody: {source}");
+                    let placed = last.get(&id).expect("a tail was placed before");
+                    assert_eq!(target(source), Some(*placed), "frame {at}: the tail of source {id} keeps its last direction");
+                    tails.insert(id);
+                    tail_frames += 1;
+                }
+            }
+        }
+        // Each voice routed to an effect's source is one of that start's
+        // two channels; an effect voice in its original mix is a gap (with
+        // positional effects on); a voice no channel holds keeps its mix.
+        let mut voices_of = std::collections::HashMap::<u64, u32>::new();
+        for voice in status["voices"].as_array().unwrap() {
+            if voice.get("owner").is_some() {
+                assert_eq!(voice["route"], "original", "frame {at}: {voice}");
+            }
+            let Some(channel) = voice["effect_channel"].as_u64() else { continue };
+            match voice["route"].as_u64() {
+                Some(id) => {
+                    let start: Start = (channel & !1, voice["effect"].as_str().unwrap().to_owned(), voice["start"].as_u64().unwrap());
+                    assert_eq!(starts.get(&id), Some(&start), "frame {at}: voice {} is routed to its own start's source", voice["voice"]);
+                    *voices_of.entry(id).or_default() += 1;
+                }
+                None => {
+                    assert_eq!(voice["route"], "original");
+                    assert!(!voice["unresolved"].is_null(), "frame {at}: an effect voice in its original mix is reported: {voice}");
+                    original += 1;
+                }
+            }
+        }
+        paired += voices_of.values().filter(|&&count| count == 2).count();
+    }
+    let gaps = &run.statuses.last().unwrap()["coverage_gaps"];
+    eprintln!("emitters: {new_starts} starts, {} sources, {} tails over {tail_frames} frames ({tails:?}), {paired} frames of a start's two voices on one source, {original} effect voice frames in their original mix; gaps {gaps}", starts.len(), tails.len());
+    assert!(new_starts >= 10, "the nearest three changed and new starts followed their new actors");
+    assert!(!tails.is_empty(), "a start sounded on after its slot moved on");
+    assert!(paired > 1000, "starts sounded on both their channels' voices");
+    // What the menu played (its interface sounds) is reported, in the field
+    // mode, and was mixed as the original; nothing else is.
+    let gaps = gaps.as_array().unwrap();
+    assert!(!gaps.is_empty() && gaps.iter().all(|gap| gap["mode"] == 1), "the menu's sounds are the field's coverage gaps: {gaps:?}");
+    assert!(original > 0, "they played in the original mix");
+}
+
+#[test]
+fn along_a_walk_the_music_keeps_its_places() {
+    let Some(Walks { log, walked }) = walks() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let placed = &walked[PLACED];
+    type Part = (String, u64);
+    let music = |status: &Value| -> std::collections::BTreeMap<Part, Value> {
+        status["sources"].as_array().unwrap().iter().filter(|s| s["kind"] == "music")
+            .map(|s| ((s["song"].as_str().unwrap().to_owned(), s["part"].as_u64().unwrap()), s.clone())).collect()
+    };
+    // Where a part's place on the stage turns with its own pan.
+    let stage = |source: &Value| {
+        let p = &source["placement"];
+        let (azimuth, elevation, home, spread) = (p["azimuth"].as_f64().unwrap(), p["elevation"].as_f64().unwrap(), p["home_pan"].as_f64().unwrap(), p["spread"].as_f64().unwrap());
+        let pan = source["pan"].as_f64().unwrap_or(home);
+        direction_of(azimuth + (pan - home) / 16384.0 * spread, elevation)
+    };
+    let mut places: std::collections::HashMap<Part, Value> = std::collections::HashMap::new();
+    let (mut checked, mut turning, mut walking, mut pans, mut worst_pan) = (0, 0, 0, 0, 0f64);
+    for (n, status) in placed.statuses.iter().enumerate() {
+        let at = frame_at(log, n);
+        let parts = music(status);
+        for (part, source) in &parts {
+            assert_eq!(*places.entry(part.clone()).or_insert_with(|| source["placement"].clone()), source["placement"], "frame {at}: part {part:?} keeps its place");
+            let off = between(stage(source), target(source).expect("a place"));
+            assert!(off < 0.01, "frame {at}: part {part:?} is heard {off} degrees from its place turned by its own pan: {source}");
+            checked += 1;
+            // Its own pan is its voice's (the SPU's volumes unpanned) where
+            // the one voice it has held still through the frame.
+            let id = &source["id"];
+            let voices: Vec<usize> = status["voices"].as_array().unwrap().iter().filter(|v| &v["route"] == id).map(|v| v["voice"].as_u64().unwrap() as usize).collect();
+            if let ([v], Some(pan), true) = (voices.as_slice(), source["pan"].as_f64(), n > 0) {
+                let volume = placed.frames[n].volumes[*v];
+                if volume == placed.frames[n - 1].volumes[*v] && !source["level_db"].is_null()
+                    && let Some(unpanned) = xem_binaural::pan::unpan(volume)
+                {
+                    worst_pan = worst_pan.max((f64::from(unpanned.pan) - pan).abs());
+                    pans += 1;
+                }
+            }
+        }
+        if n > 0 && !parts.is_empty() {
+            let (before, now) = (placed.seen[n - 1].as_ref().unwrap(), placed.seen[n].as_ref().unwrap());
+            turning += u32::from(before.camera != now.camera);
+            walking += u32::from(now.player.and_then(|p| now.position(p)) != before.player.and_then(|p| before.position(p)));
+        }
+    }
+    eprintln!("music: {} parts, {checked} part frames heard at their places, through {turning} frames of camera movement and {walking} of walking; its pan within {worst_pan} of its voice's in {pans} frames", places.len());
+    assert!(places.len() >= 8 && checked > 10_000 && turning > 300 && walking > 300, "the song played through the walk's camera turns and walking");
+    assert!(pans > 1000 && worst_pan <= 256.0, "the music's own pan is its voices' (unpan's precision)");
+    // The first-person look leaves the music where it is.
+    for (n, (view, plain)) in walked[VIEW].statuses.iter().zip(&placed.statuses).enumerate() {
+        let strip = |parts: std::collections::BTreeMap<Part, Value>| -> Vec<(Part, Value, Value)> {
+            parts.into_iter().map(|(part, s)| (part, s["target"].clone(), s["placement"].clone())).collect()
+        };
+        assert_eq!(strip(music(view)), strip(music(plain)), "frame {}: looking around in first person moves no music", frame_at(log, n));
+    }
+    // Head-tracked music: the stage stays put as the head turns, so it is
+    // heard turned the other way.
+    let mut worst = 0f32;
+    for (n, status) in walked[HEAD].statuses.iter().enumerate() {
+        for source in music(status).values() {
+            let off = between(apply(&head_of(n as u64), stage(source)), target(source).expect("a place"));
+            worst = worst.max(off);
+            assert!(off < 0.05, "frame {}: head-tracked part {} heard {off} degrees from its place against the head", frame_at(log, n), source["part"]);
+        }
+    }
+    eprintln!("head-tracked music: within {worst} degrees of its places against the head");
+}
+
+/// Each block's (`BLOCK` samples) energy in a band, both sides summed: from
+/// `low` Hz up (two second-order Butterworth high-pass sections, RBJ's
+/// cookbook), below `high` Hz when given (two low-pass sections).
+fn band(audio: &[i16], low: f64, high: Option<f64>) -> Vec<f64> {
+    let section = |f0: f64, pass_high: bool| {
+        let (sin, cos) = (2.0 * std::f64::consts::PI * f0 / 44_100.0).sin_cos();
+        let alpha = sin / std::f64::consts::SQRT_2;
+        let a0 = 1.0 + alpha;
+        let b = if pass_high { [(1.0 + cos) / 2.0, -(1.0 + cos), (1.0 + cos) / 2.0] } else { [(1.0 - cos) / 2.0, 1.0 - cos, (1.0 - cos) / 2.0] };
+        (b.map(|x| x / a0), [-2.0 * cos / a0, (1.0 - alpha) / a0])
+    };
+    let mut sections = vec![section(low, true), section(low, true)];
+    if let Some(high) = high {
+        sections.extend([section(high, false), section(high, false)]);
+    }
+    let frames = audio.len() / 2;
+    let mut blocks = vec![0f64; frames.div_ceil(xem_binaural::BLOCK)];
+    for e in 0..2 {
+        let mut states = vec![[0f64; 4]; sections.len()];
+        for n in 0..frames {
+            let mut x = f64::from(audio[2 * n + e]);
+            for ((b, a), s) in sections.iter().zip(states.iter_mut()) {
+                let y = b[0] * x + b[1] * s[0] + b[2] * s[1] - a[0] * s[2] - a[1] * s[3];
+                *s = [x, s[0], y, s[2]];
+                x = y;
+            }
+            blocks[n / xem_binaural::BLOCK] += x * x;
+        }
+    }
+    blocks
+}
+
+/// The high band above 8 kHz, and its three parts the click metric reads.
+fn high_band(audio: &[i16]) -> Vec<f64> {
+    band(audio, 8000.0, None)
+}
+const HIGH_PARTS: [(f64, f64); 3] = [(8000.0, 11_000.0), (11_000.0, 15_000.0), (15_000.0, 20_000.0)];
+
+/// Around each event (the samples `start..end` of `original`'s timeline,
+/// which `presented` is aligned to): from two blocks before it to twenty
+/// after (58 ms, fades and glides included), how much more than the
+/// original's the presentation's high band stands out of its own
+/// surroundings, in dB, in the least of its three parts (8-11, 11-15 and
+/// 15-20 kHz); and, for the record, its largest block against the
+/// original's over the whole band. A block stands out by its energy over
+/// the louder of the medians of the 20 blocks (58 ms) before it and the 20
+/// after, over a floor of four LSB in band. A click, a step or an impulse
+/// from one sample to the next, is a block or two above both in every
+/// part of the band; a sound placed elsewhere changes the band's level
+/// for as long as it sounds and reshapes it part by part (its HRTF pair's
+/// spectrum), its attack and its end included.
+fn clicks(presented: &[i16], original: &[i16], events: &[(usize, usize)]) -> Vec<(f64, f64)> {
+    let floor = (xem_binaural::BLOCK * 2 * 16) as f64;
+    let standing = |e: &[f64]| -> Vec<f64> {
+        let median = |range: std::ops::Range<usize>| {
+            let mut v = e[range].to_vec();
+            v.sort_by(f64::total_cmp);
+            v.get(v.len() / 2).copied().unwrap_or(0.0)
+        };
+        (0..e.len())
+            .map(|k| {
+                let around = median(k.saturating_sub(20)..k).max(median((k + 1).min(e.len())..(k + 21).min(e.len())));
+                (e[k] + floor) / (around + floor)
+            })
+            .collect()
+    };
+    let parts: Vec<(Vec<f64>, Vec<f64>)> =
+        HIGH_PARTS.iter().map(|&(low, high)| (standing(&band(presented, low, Some(high))), standing(&band(original, low, Some(high))))).collect();
+    let (b, o) = (high_band(presented), high_band(original));
+    events
+        .iter()
+        .map(|&(start, end)| {
+            let blocks = (start / xem_binaural::BLOCK).saturating_sub(2)..(end / xem_binaural::BLOCK + 21).min(b.len()).min(o.len());
+            let peak = |e: &[f64]| blocks.clone().map(|k| e[k]).fold(0.0, f64::max);
+            let excess = parts.iter().map(|(p, q)| 10.0 * (peak(p) / peak(q)).log10()).fold(f64::MAX, f64::min);
+            (excess, 10.0 * ((peak(&b) + floor) / (peak(&o) + floor)).log10())
+        })
+        .collect()
+}
+
+/// The samples the bypass is behind the original (under a block): the
+/// presentation's own delay, by which its output is aligned.
+fn held(bypass: &[i16], original: &[i16]) -> usize {
+    (0..xem_binaural::BLOCK)
+        .find(|held| bypass.len() >= 2 * held && bypass[2 * held..] == original[..bypass.len() - 2 * held])
+        .expect("the bypass is the original mix, less than a block behind")
+}
+
+#[test]
+fn along_a_walk_switching_sources_adds_no_clicks() {
+    let Some(Walks { log, walked }) = walks() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    // The presentation delays when samples are output, not where they are:
+    // the sessions' outputs share one timeline (the bypass is the original
+    // itself from its first sample).
+    let plain = &walked[PLAIN];
+    assert_eq!(held(&walked[BYPASS].audio, &plain.audio), 0);
+    // The frames whose sources changed (an emitter's start or end, a voice
+    // routed anew), and those whose settings changed (sounding voices fade
+    // between their place and the original mix, the mix in or out).
+    let placed = &walked[PLACED];
+    let routes = |status: &Value| -> Vec<(u64, Value)> {
+        status["voices"].as_array().unwrap().iter().map(|v| (v["voice"].as_u64().unwrap(), v["route"].clone())).collect()
+    };
+    let frame = |run: &Walked, n: usize| (run.ends[n - 1] / 2, run.ends[n] / 2);
+    let switches: Vec<_> = (1..placed.statuses.len()).filter(|&n| routes(&placed.statuses[n]) != routes(&placed.statuses[n - 1])).map(|n| frame(placed, n)).collect();
+    let toggled = &walked[TOGGLED];
+    let settings: Vec<_> = (1..toggled.ends.len()).filter(|n| n % 120 == 0).map(|n| frame(toggled, n)).collect();
+    let mut worst = Vec::new();
+    for (name, run, events) in [("sources switched", placed, &switches), ("settings changed", toggled, &settings)] {
+        let rises = clicks(&run.audio, &plain.audio, events);
+        let most = rises.iter().map(|r| r.0).fold(f64::MIN, f64::max);
+        let level = rises.iter().map(|r| r.1).fold(f64::MIN, f64::max);
+        let at: Vec<String> = events.iter().zip(&rises).map(|(e, r)| format!("{}:{:+.1}/{:+.1}", e.0, r.0, r.1)).collect();
+        eprintln!("clicks: {} frames where {name} (from frame {}); there the high band stands out at most {most:+.2} dB more than the original's in all its parts, its level at most {level:+.2} dB over it; {}",
+            events.len(), frame_at(log, 0), at.join(" "));
+        assert!(events.len() >= 10, "{name} along the walk");
+        worst.push((name, most));
+    }
+    for (name, most) in worst {
+        assert!(most <= 3.0, "where {name}, the high band stands out at most 3 dB more than the original's: {most:+.2} dB");
+    }
+    let (b, o) = (high_band(&placed.audio).iter().sum::<f64>(), high_band(&plain.audio).iter().sum::<f64>());
+    eprintln!("the placed walk's high band against the original's: {:+.2} dB", 10.0 * (b / o).log10());
+}
+
+#[test]
+fn along_a_walk_each_placed_source_is_mixed_once() {
+    use xem_binaural::{BLOCK, Route};
+    use xem_spu::VOICES;
+    let Some(Walks { walked, .. }) = walks() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (journal, output) = walked[PLACED].tap.as_ref().expect("the placed session's tap capture");
+    assert!(!journal.truncated());
+    assert_eq!(journal.replay(|_, _| {}), *output, "mixed again from the capture, the output is the same, sample for sample");
+    assert!(journal.frames().iter().all(|f| f.cd == [0, 0]), "the field plays no CD audio");
+    let lead = journal.lead();
+    // From the 25th block on: what the block under way when the capture
+    // started held has left the filters' tails and the bass shelf.
+    let skip = 24 * BLOCK;
+    let sat = |x: i32| x.clamp(-32768, 32767);
+    let mixed = |frame: &xem_spu::TapFrame, e: usize, reverb: bool| -> i32 {
+        if frame.muted {
+            return 0;
+        }
+        let voices: i32 = (0..VOICES).map(|v| (i32::from(frame.voice[v]) * i32::from(frame.volume[v][e])) >> 15).sum();
+        let m = voices + if reverb { i32::from(frame.reverb[e]) } else { 0 };
+        sat((sat(m + frame.cd[e]) * i32::from(frame.main[e])) >> 15)
+    };
+    // Each source alone: its voices, nothing else. Its signal is theirs at
+    // the gains the driver resolved before panning (unpanned), the main
+    // volume; heard from one place through the window, it is that signal
+    // through the place's HRTF pair and the bass shelf, once: its energy is
+    // what the pair's spectrum makes of the signal's (one transform of the
+    // whole window, Parseval), where twice would be 3 dB or more over it.
+    // Its energy against its voices' in the original mix is the pair's
+    // colouring of its spectrum: within 1.5 dB for the pink spectrum the
+    // pairs are levelled with (xem-binaural's tests), more for sounds whose
+    // energy lies where the pair lifts or lowers it.
+    let window = &walked[PLACED].statuses[TAP.start as usize..TAP.end as usize];
+    let ids: std::collections::BTreeSet<u32> = journal.block_routes().into_iter().flatten().map(|(id, _)| id).collect();
+    let hrtf = xem_binaural::hrtf::Hrtf::kemar();
+    let (mut colouring, mut once) = (Vec::new(), Vec::new());
+    for id in ids {
+        let (mut original, mut heard, mut dry, mut n) = (0f64, 0usize, 0usize, 0usize);
+        let mut signal = Vec::new();
+        let alone = journal.replay(|routes, frame| {
+            for (v, route) in routes.iter().enumerate() {
+                if *route != Route::Source(id) {
+                    frame.voice[v] = 0;
+                }
+            }
+            frame.reverb = [0; 2];
+            if n >= skip {
+                original += (0..2).map(|e| f64::from(mixed(frame, e, false)).powi(2)).sum::<f64>();
+                heard += usize::from(frame.voice.iter().any(|s| *s != 0));
+                let main = f32::from(frame.main[0]).abs().max(f32::from(frame.main[1]).abs()) / 32768.0;
+                let mut s = 0.0;
+                for v in (0..VOICES).filter(|&v| frame.voice[v] != 0 && !frame.muted) {
+                    match xem_binaural::pan::unpan(frame.volume[v]) {
+                        Some(unpanned) => s += f32::from(frame.voice[v]) / 32768.0 * unpanned.gain * main,
+                        None => dry += 1,
+                    }
+                }
+                signal.push(s);
+            }
+            n += 1;
+        });
+        let energy: f64 = alone.iter().skip(2 * (lead + skip)).map(|s| f64::from(*s).powi(2)).sum();
+        // Sources heard for a tenth of a second at least, above 10 LSB.
+        if heard < 4410 || original < 100.0 * 2.0 * heard as f64 {
+            continue;
+        }
+        colouring.push((id, 10.0 * (energy / original).log10()));
+        let statuses: Vec<&Value> = window.iter().filter_map(|s| s["sources"].as_array().unwrap().iter().find(|s| s["id"] == id)).collect();
+        let first = statuses.first().and_then(|s| target(s));
+        let fixed = statuses.len() == window.len()
+            && statuses.iter().all(|s| target(s).zip(first).is_some_and(|(t, first)| between(t, first) < 0.25)
+                && between(direction_of(s["azimuth"].as_f64().unwrap(), s["elevation"].as_f64().unwrap()), first.unwrap()) < 0.5);
+        if fixed && dry == 0 {
+            let place = statuses[0]["target"].clone();
+            let mut filter = xem_binaural::hrtf::Filter::default();
+            hrtf.filter(place["azimuth"].as_f64().unwrap() as f32, place["elevation"].as_f64().unwrap() as f32, &mut filter);
+            let predicted = through_pair(&signal, &filter) * 32768.0 * 32768.0;
+            once.push((id, statuses[0]["kind"].as_str().unwrap().to_owned(), 10.0 * (energy / predicted).log10()));
+        }
+    }
+    eprintln!("each source alone against its voices in the original mix (id, dB): {colouring:?}");
+    eprintln!("sources heard from one place through the window, alone against their signal through that place's pair (id, kind, dB): {once:?}");
+    assert!(colouring.len() >= 8 && once.len() >= 5, "the window's music parts and emitters were checked");
+    for (id, kind, db) in &once {
+        assert!(db.abs() <= 0.2, "{kind} source {id} alone is its signal through its pair once: {db:+.2} dB");
+    }
+    let within = colouring.iter().filter(|(_, db)| db.abs() <= 1.5).count();
+    eprintln!("{within} of {} sources within 1.5 dB of their voices' original energy", colouring.len());
+    for (id, db) in &colouring {
+        assert!(db.abs() <= 3.0, "source {id} alone keeps its original energy but for its pair's colouring: {db:+.2} dB");
+    }
+    // The direct path alone (every voice routed to a source silenced) is
+    // the original minus those voices: the rest as the SPU mixed it, within
+    // the SPU's truncations (one LSB a voice) and the presentation's
+    // rounding.
+    let (mut expected, mut n) = (Vec::new(), 0usize);
+    let rest = journal.replay(|routes, frame| {
+        for (v, route) in routes.iter().enumerate() {
+            if *route != Route::Original {
+                frame.voice[v] = 0;
+            }
+        }
+        let voices = frame.voice.iter().filter(|s| **s != 0).count() as i32;
+        expected.push(([mixed(frame, 0, true), mixed(frame, 1, true)], voices));
+        n += 1;
+    });
+    let mut worst = 0;
+    let mut differing = 0;
+    for (i, (want, voices)) in expected.iter().enumerate().skip(skip) {
+        let Some(got) = rest.get(2 * (lead + i)..2 * (lead + i) + 2) else { break };
+        for e in 0..2 {
+            let off = (i32::from(got[e]) - want[e]).abs();
+            worst = worst.max(off);
+            differing += usize::from(off != 0);
+            assert!(off <= voices + 1, "sample {i} side {e}: the direct path {} against the original's rest {} ({voices} voices)", got[e], want[e]);
+        }
+    }
+    eprintln!("direct path: within {worst} of the original minus the placed voices ({differing} of {} samples differ)", 2 * (n - skip));
+    // The agent's view of a capture: which voices each source had, block by block.
+    let reply = walked[VIEW].tap_reply.as_ref().expect("the view session's capture");
+    let tap = &reply["tap"];
+    let routes = tap["routes"].as_array().unwrap();
+    assert_eq!(tap["block"], BLOCK);
+    assert_eq!(routes.first().map(|r| r["blocks"][0].clone()), Some(json!(0)));
+    assert_eq!(routes.last().map(|r| r["blocks"][1].as_u64().unwrap() + 1), Some(tap["frames"].as_u64().unwrap().div_ceil(BLOCK as u64)));
+    assert!(routes.windows(2).all(|w| w[1]["blocks"][0].as_u64().unwrap() == w[0]["blocks"][1].as_u64().unwrap() + 1), "the runs follow each other");
+    assert!(routes.iter().any(|r| r["sources"].as_object().unwrap().len() >= 4), "music parts and emitters: {routes:?}");
+    eprintln!("tap reply: {} frames in {} runs of blocks", tap["frames"], routes.len());
+}
+
+#[test]
+fn along_a_walk_zooming_out_changes_nothing_heard_and_characters_in_view_keep_the_games_gains() {
+    let Some(Walks { log, walked }) = walks() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    // Zoomed out with characters in view off, the game's view is the
+    // original's: the presentation has no zoom of its own to apply.
+    let (zoomed, placed, plain) = (&walked[ZOOMED], &walked[PLACED], &walked[PLAIN]);
+    assert_eq!(zoomed.frames, plain.frames, "drawing zoomed out leaves the game, its voices and the SPU as they are");
+    for (n, (z, p)) in zoomed.statuses.iter().zip(&placed.statuses).enumerate() {
+        assert_eq!(z, p, "frame {}: what is presented is the same, zoomed out or not", frame_at(log, n));
+    }
+    assert_eq!(zoomed.audio, placed.audio, "and sounds the same");
+    // With characters in view the game keeps actors moving that the
+    // original stops: which emitters it keeps sounding is then its own
+    // decision, and every placed source still has the gain the driver gave
+    // its voices (directions from the game's camera: checked with the field
+    // reader above).
+    let in_view = &walked[IN_VIEW];
+    assert_ne!(in_view.memory_hash, plain.memory_hash, "characters in view change the game");
+    let slots = |run: &Walked| -> Vec<[(u16, u16); 3]> { run.seen.iter().map(|s| s.as_ref().unwrap().slots).collect() };
+    let differing = slots(in_view).iter().zip(&slots(plain)).filter(|(a, b)| a != b).count();
+    let gains = &in_view.gains;
+    eprintln!("characters in view: the emitter slots differ from the original's in {differing} frames; {} source frames checked ({} effects, {} music), worst {:+.4}",
+        gains.checked, gains.effects, gains.music, gains.worst_ratio);
+    assert!(gains.failures.is_empty(), "{} sources report another gain than the driver gave their voices, first: {}", gains.failures.len(), gains.failures.first().unwrap());
+    assert!(gains.effects >= 500 && gains.music >= 500 && gains.worst_ratio.abs() < 0.01, "{gains:?}");
+}
+
+
+/// The energy of the mono `signal` (full scale 1) through the filter pair
+/// `filter` (the renderer's 256-point spectra of one direction) and the
+/// bass shelf, both ears: over one transform of the whole signal
+/// (Parseval), as for a source whose filter stays put.
+fn through_pair(signal: &[f32], filter: &xem_binaural::hrtf::Filter) -> f64 {
+    use xem_binaural::fft::{Complex, Fft};
+    use xem_binaural::hrtf::{BINS, FFT_SIZE};
+    let n = (signal.len() + FFT_SIZE).next_power_of_two();
+    let fft = Fft::new(n);
+    let mut spectrum: Vec<Complex> = (0..n).map(|i| Complex::new(signal.get(i).copied().unwrap_or(0.0), 0.0)).collect();
+    fft.forward(&mut spectrum);
+    let shelf = xem_binaural::hrtf::Hrtf::kemar().bass_shelf();
+    let mut energy = 0.0;
+    for ear in &filter.ears {
+        // The ear's impulse response: its spectrum's inverse transform.
+        let mut response = vec![Complex::ZERO; FFT_SIZE];
+        for k in 0..BINS {
+            response[k] = ear[k];
+            if k > 0 && k < FFT_SIZE / 2 {
+                response[FFT_SIZE - k] = ear[k].conj();
+            }
+        }
+        Fft::new(FFT_SIZE).inverse(&mut response);
+        let mut long: Vec<Complex> = (0..n).map(|i| Complex::new(response.get(i).map_or(0.0, |c| c.re), 0.0)).collect();
+        fft.forward(&mut long);
+        energy += (0..n)
+            .map(|k| {
+                let gain = f64::from(shelf.magnitude(k.min(n - k) as f32 * 44_100.0 / n as f32));
+                f64::from(spectrum[k].norm_sqr()) * f64::from(long[k].norm_sqr()) * gain * gain
+            })
+            .sum::<f64>();
+    }
+    energy / n as f64
+}
+
+

@@ -646,17 +646,67 @@ field 509 (`tests/reference-inputs/binaural-field509-walk.json`, a session
 log: six emitter actors playing three sounds, of which the original keeps
 the three nearest the character sounding, a set that changes nine times on
 the walk; the camera turned by 45 and 90 degrees, turns in place, the menu
-and a jump), ten sessions from one state (plain Stereo; Binaural with its
+and a jump), eleven sessions from one state (plain Stereo; Binaural with its
 defaults, bypassed, music only, effects only, immersion 0 and 100;
 head-tracked music under a head sweeping 90 degrees either way; sweeping
 first-person axes; the settings changed every 120 frames, off and on again
-among them) have the same game memory (`memory_hash`), voice volume
+among them; a game view drawing every frame zoomed out four times with
+wider framing, characters in view off, the port recording what it reveals)
+have the same game memory (`memory_hash`), voice volume
 registers and current volumes every frame and the same SPU every 60
 frames, and every placed source reports exactly the gain the driver staged
 for its voices (13 152 source frames whose voices held still and sounded
 through the frame, 1 606 of them effects; within 0.3% of the driver's own
 gain before panning, recomputed from its records by the decomp's formula,
-which is the pan law's rounding). Mono and Wide on the same walk differ
+which is the pan law's rounding); the zoomed-out session presents exactly
+what the plain Binaural one does, status and sound alike (the presenter has
+no zoom). A twelfth session keeps the field's characters moving in that
+zoomed view (`set_actor_view`, as the hosts do with characters in view):
+its game differs, the original's nearest three stay the same on this walk,
+and its placed sources still report the driver's gains (13 152 checked).
+In those sessions the field reader (`xem_core::field::Field` and the
+emitter slots, apart from the presenter) puts each placed emitter where it
+is heard, through the camera matrix the game draws with, within 0.5 degree
+(0.21 at worst: the matrix's rows differ in length by up to 0.8%, and the
+presenter takes their directions), 3 786 times each: in front or behind as
+its camera-space depth says (3 382 and 384 times), above or below as its
+camera-space height says (2 746 and 806), on the side the original pans it
+to (4 281 voice frames), and through the first-person axes or the head as
+they turn. The camera's turns (71 frames with the character and the
+emitter still, 127 degrees in all) turn what is heard by the geometry; the
+character's five turns in place move nothing beyond what the camera's glide
+moves (within 4e-6 degree). Each of the 15 emitter starts is a source of
+its own, starting with its slot's actor and sound and following that actor
+only, both channels' voices on it (3 425 frames); no source is two starts,
+the two tails (starts whose slot moved on) keep their last direction, and
+the only coverage gaps are the menu's interface sounds, in the field mode,
+heard in their original mix. The music's 18 parts keep their places
+(`placement`) through 372 frames of camera movement and 381 of walking,
+heard there turned only by their own pan, which is their voice's (within
+0.03 of unpanned volumes, 11 949 frames); looking around in first person
+moves no music; head-tracked music is heard against the head within 2e-5
+degree. Clicks: where sources switched (28 frames) and where the settings
+changed (12), from two blocks before to twenty after, the presented high
+band stands out of its surroundings (its 20 blocks before and after) at
+most 1.24 and 0.10 dB more than the original's, in the least of its three
+parts (8-11, 11-15, 15-20 kHz), a click being a step from one sample to the
+next and so in every part; placing a sound reshapes the band part by part,
+its level there up to 5.3 dB over the original's (1.7 dB under it over the
+walk). Before the renderer's filters cross-faded, the music's immersion
+going from 0 to 70 stood out 5.8 dB there. The placed session keeps a tap
+capture over 500 frames (the camera's quarter turn, turns in place, the
+menu): mixed again it is the output sample for sample; each placed source
+alone, its voices and nothing else, is its signal through its pair once,
+for the seven parts heard from one place throughout within 0.02 dB of what
+the pair's spectrum makes of their signal's (one transform of the whole
+window; twice would be 3 dB or more over it); against their voices' energy
+in the original mix the 25 sources are within 3 dB, 18 of them within 1.5
+(the pairs are levelled for pink noise: a rhythm part ahead, half its
+energy above 4 kHz where the pair lowers it, is 2.8 dB under, supports to
+the sides up to 2 dB over); and the direct path alone (every voice routed
+to a source silenced) is the original minus those voices, the rest as the
+SPU mixed it, the menu's sounds and the reverb return among it, within 3
+LSB. Mono and Wide on the same walk differ
 from Stereo only in what the sound-mode findings
 (`analysis/formats/sound-modes.md`) name: the mode bits;
 Mono's staged volumes (every channel's gain before its law the same in all
