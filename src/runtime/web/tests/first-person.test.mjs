@@ -4,10 +4,13 @@
 // and stops the route under way, and new routes are refused; while it shows
 // the walking and jumping keys reach no pad and the character stays, the
 // arrow keys and the mouse the game holds turn it, the wheel's zoom rests
-// and the Binaural listener looks where it looks; the touch deck's SELECT
-// toggles it and a finger dragged on the picture turns it; Backspace again
-// gives the keys back; the Original renderer ends it. The canvas's pictures
-// go to build/web-test (first-person-*.png).
+// and the Binaural listener looks where it looks; a tap on the picture walks
+// nowhere, the touch deck's SELECT toggles the view and a finger dragged on
+// the picture turns it; Backspace again gives the keys back; the Original
+// renderer ends it. The canvas's pictures go to build/web-test
+// (first-person-*.png). Input is held until the page's frames have read it,
+// so a loaded machine (the suite runs browsers side by side) slows the test
+// but does not change what it sees.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -19,20 +22,29 @@ import { HEADLESS, NO_WEBGPU, SHOTS, USER_DISC, WEB, pixelStats, shot, start, st
 const available = existsSync(USER_DISC) && existsSync(join(WEB, 'game', 'game.wasm')) && existsSync(HEADLESS);
 mkdirSync(SHOTS, { recursive: true });
 
-/** Animation frames of the page. */
+/** Animation frames of the page (each one a frame of its loop). */
 const frames = (page, count) => page.evaluate(async (count) => {
   for (let i = 0; i < count; i++) await new Promise(requestAnimationFrame);
 }, count);
 const command = (page, cmd) => page.evaluate((cmd) => window.xem.command(cmd), cmd);
 const renderer = async (page) => (await status(page)).renderer;
+const pads = async (page) => (await command(page, { cmd: 'status' })).pads[0].buttons;
 const player = async (page) => {
   const field = await command(page, { cmd: 'field' });
   return field.actors.find((actor) => actor.index === field.player).position;
 };
-/** A key held for a moment of play (the page reads it at its frames). */
-async function tap(page, key, ms = 150) {
+/** Backspace held until the view is `on`, then released. */
+async function toggle(page, on) {
+  await page.keyboard.down('Backspace');
+  await page.waitForFunction((on) => window.xem.status().renderer.firstPerson === on, on);
+  await page.keyboard.up('Backspace');
+  await frames(page, 3);
+}
+/** A key held for `ms` and at least a few of the page's frames. */
+async function hold(page, key, ms) {
   await page.keyboard.down(key);
   await page.waitForTimeout(ms);
+  await frames(page, 3);
   await page.keyboard.up(key);
   await frames(page, 3);
 }
@@ -76,12 +88,11 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
       assert.notDeepEqual(await player(page), start, 'and walks');
       await page.keyboard.down('Backspace');
       await page.evaluate(() => window.xem.setRunning(true));
-      await frames(page, 6);
+      await page.waitForFunction(() => window.xem.status().renderer.firstPerson);
       await page.keyboard.up('Backspace');
       await frames(page, 3);
       let r = await renderer(page);
-      assert.equal(r.firstPerson, true, 'Backspace toggles the view');
-      assert.deepEqual(r.look, { yaw: 0, pitch: 0 });
+      assert.deepEqual(r.look, { yaw: 0, pitch: 0 }, 'the view looks along the camera\'s heading');
       let session = (await status(page)).session;
       assert.equal(session.inspecting, true);
       assert.equal(session.assist, null, 'the route stopped');
@@ -95,25 +106,21 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
       const stood = await player(page);
       await page.keyboard.down('KeyW');
       await page.keyboard.down('Space');
-      await page.waitForTimeout(600);
-      const pads = (await command(page, { cmd: 'status' })).pads[0].buttons;
-      assert.ok(!pads.includes('up') && !pads.includes('triangle'), JSON.stringify(pads));
+      await page.waitForTimeout(300);
+      await frames(page, 10);
+      const held = await pads(page);
+      assert.ok(!held.includes('up') && !held.includes('triangle'), JSON.stringify(held));
       assert.deepEqual(await player(page), stood, 'the character stays where it stands');
       await page.keyboard.up('KeyW');
       await page.keyboard.up('Space');
 
       // The arrow keys turn the view (2 radians a second across, 1.5 up, a
       // tenth of a second at most a frame: a loaded page turns less).
-      await page.keyboard.down('ArrowRight');
-      await page.waitForTimeout(500);
-      await page.keyboard.up('ArrowRight');
-      await page.keyboard.down('ArrowUp');
-      await page.waitForTimeout(300);
-      await page.keyboard.up('ArrowUp');
-      await frames(page, 3);
+      await hold(page, 'ArrowRight', 500);
+      await hold(page, 'ArrowUp', 300);
       r = await renderer(page);
-      assert.ok(r.look.yaw > 0.2 && r.look.yaw < 2, `ArrowRight turned it right: ${JSON.stringify(r.look)}`);
-      assert.ok(r.look.pitch > 0.05 && r.look.pitch < 1, `ArrowUp turned it up: ${JSON.stringify(r.look)}`);
+      assert.ok(r.look.yaw > 0.2 && r.look.yaw < 3, `ArrowRight turned it right: ${JSON.stringify(r.look)}`);
+      assert.ok(r.look.pitch > 0.05 && r.look.pitch < 1.4, `ArrowUp turned it up: ${JSON.stringify(r.look)}`);
       const turned = await canvasShot(page, 'first-person-turned.png');
       assert.ok(turned.lit > 0.1, `the turned view shows the room (${turned.lit})`);
 
@@ -149,8 +156,8 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
       await page.evaluate(() => window.xem.panel.show(false));
       assert.equal((await page.evaluate(() => window.xem.settings.apply({ MouseCamera: false }))).ok, true);
 
-      // Touch: the deck's SELECT toggles the view, a finger dragged on the
-      // picture turns it (the scene follows the finger).
+      // Touch: a finger at `at` (a deck control's name, canvas pixels, or
+      // the picture's middle), then the page's frames.
       const finger = (type, id, at) => page.evaluate(async ({ type, id, at }) => {
         const canvas = document.querySelector('canvas');
         const scale = window.devicePixelRatio || 1;
@@ -162,17 +169,19 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
         for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
         return [x, y];
       }, { type, id, at });
-      // The first touch (a tap on the picture, which walks nowhere while the
-      // view shows) brings the deck.
+      // The first touch (a tap on the picture, which walks nowhere while
+      // the view shows) brings the deck.
       await finger('pointerdown', 9);
       await finger('pointerup', 9);
+      await frames(page, 3);
       assert.equal((await status(page)).session.assist, null, 'a tap on the picture walks nowhere');
       const controls = (await status(page)).touch.controls.map((c) => c.control);
       assert.ok(controls.includes('Select'), JSON.stringify(controls));
+      // The deck's SELECT toggles the view off and on again.
       for (const shows of [false, true]) {
         await finger('pointerdown', 1, 'Select');
+        await page.waitForFunction((shows) => window.xem.status().renderer.firstPerson === shows, shows);
         await finger('pointerup', 1, 'Select');
-        assert.equal((await renderer(page)).firstPerson, shows, 'the deck\'s SELECT toggles the view');
       }
       r = await renderer(page);
       assert.deepEqual(r.look, { yaw: 0, pitch: 0 }, 'a new view looks along the camera\'s heading');
@@ -180,29 +189,30 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
       const scale = await page.evaluate(() => window.devicePixelRatio || 1);
       for (let step = 1; step <= 4; step++) await finger('pointermove', 2, [x + step * 25 * scale, y]);
       await finger('pointerup', 2, [x + 100 * scale, y]);
+      await frames(page, 3);
       const dragged = (await renderer(page)).look;
       assert.ok(Math.abs(dragged.yaw + 0.3) < 0.02 && Math.abs(dragged.pitch) < 0.02, `100 pixels dragged right turn it 0.3 radians left: ${JSON.stringify(dragged)}`);
       assert.equal((await status(page)).session.assist, null, 'the drag walks nowhere');
       await canvasShot(page, 'first-person-touch.png');
 
-      // Backspace again: the view goes and the keys walk again.
-      await tap(page, 'Backspace');
-      assert.equal((await renderer(page)).firstPerson, false);
+      // Backspace again: the view goes, the listener has the camera's view
+      // and the keys walk again.
+      await toggle(page, false);
       assert.equal((await status(page)).session.inspecting, false);
+      await frames(page, 3);
       listener = (await command(page, { cmd: 'binaural' })).first_person;
       assert.equal(listener, null, 'the listener has the camera\'s view again');
       await page.keyboard.down('KeyW');
-      await page.waitForTimeout(200);
-      assert.ok((await command(page, { cmd: 'status' })).pads[0].buttons.includes('up'), 'W walks again');
+      await page.waitForFunction(() => window.xem.command({ cmd: 'status' }).pads[0].buttons.includes('up'));
       await page.keyboard.up('KeyW');
 
       // The Original renderer ends the view.
-      await tap(page, 'Backspace');
-      assert.equal((await renderer(page)).firstPerson, true);
+      await toggle(page, true);
       const graphics = (await page.evaluate(() => window.xem.settings.get())).settings.graphics;
       await page.evaluate((g) => window.xem.settings.apply({ Graphics: { ...g, renderer: 'Original' } }), graphics);
-      await frames(page, 6);
-      assert.equal((await renderer(page)).firstPerson, false, 'the Original renderer has nothing to look around in');
+      await page.waitForFunction(() => !window.xem.status().renderer.firstPerson);
+      await frames(page, 3);
+      assert.equal((await status(page)).session.inspecting, false, 'the Original renderer has nothing to look around in');
       await page.evaluate((g) => window.xem.settings.apply({ Graphics: g }), graphics);
       assert.deepEqual(page.errors, []);
     } finally {

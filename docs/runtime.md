@@ -518,8 +518,8 @@ or on the game's own Sound screen, turns it off.
   the sprite is still that sprite (its resource, animation, bank and
   allocation words unchanged). The direction is from the listening
   position to the emitter, in the camera's orientation, then through the
-  first-person view's axes (desktop inspection) and a headset's head, each
-  once. The listening position is the field's controlled character, the
+  first-person view's axes (inspection, on every host) and a headset's
+  head, each once. The listening position is the field's controlled character, the
   arena's player Gear, and in a battle the centre of its formation's
   occupied slots on the floor (their placements, fixed for the battle, at
   the combatants' average height), which no turn moves from one combatant
@@ -1127,28 +1127,29 @@ recorded as the player's own `assist_stop` is, and while it is on
 `navigate` and `interact` are refused ("first-person inspection keeps the
 character where it stands: turn it off to walk or interact"); `status`
 reports `inspecting`. A recorded `assist` (a replay's, a session log's)
-still runs, a replay ignores the host's state, and a host playing a
-session log gives none. Turning it off restarts nothing. Taps on the
+still runs, a replay ignores the host's state, and the native hosts give
+none while they play a session log (`--script`, Android's `script.json`).
+Turning it off restarts nothing. Taps on the
 picture resolve without the field, since the view shows no field camera to
 walk or point through: walking, they walk nowhere and talk to no one,
 while a dialogue's still advance and a menu's still choose, and no floor or
 destination marks show. A headset's gestures follow the same rule
 ([Headsets: hands, gaze and control decks](#headsets-hands-gaze-and-control-decks)).
 
-It is presentation only. While it is on, `GameView::reveals` asks for every
-face the game culls (`Reveals::LOOK`, bit 0 of the culled-face ring's
-`around` word: [Camera records](#camera-records)): the port's visibility
-tests keep any face wherever it lies (behind the game's camera, facing away
-or at depth 0 too), the scenery pieces the field's bounding test culls and
-the sprite actors the character pass skips for overflow are all drawn for
-the record, and `field_draw_models` records the field camera
-(`XEM_PROJECTION_AXIS`, `XEM_PROJECTION_CAMERA`) and the controlled
-character's position through it (its descriptor's translation) with its
-sprite (`XEM_PROJECTION_EYE`). The trace hands the place over in order with
-the commands (`TraceOp::Eye`), and each buffer's log keeps the one recorded
-for its frame (the newest within four vertical blanks when the frame's
-first primitive is drawn), so the view stands where the character stood in
-the frame shown.
+The view itself is presentation only. While it is on, `GameView::reveals`
+asks for every face the game culls (`Reveals::LOOK`, bit 0 of the
+culled-face ring's `around` word: [Camera records](#camera-records)): the
+port's visibility tests keep any face wherever it lies (behind the game's
+camera, facing away or at depth 0 too), the scenery pieces the field's
+bounding test culls and the sprite actors the character pass skips for
+overflow are all drawn for the record, and `field_draw_models` records the
+field camera (`XEM_PROJECTION_AXIS`, `XEM_PROJECTION_CAMERA`) and the
+controlled character's position through it (its descriptor's translation)
+with its sprite (`XEM_PROJECTION_EYE`). The trace hands the place over in
+order with the commands (`TraceOp::Eye`), and each buffer's log keeps the
+one recorded for its frame (the newest within four vertical blanks when the
+frame's first primitive is drawn), so the view stands where the character
+stood in the frame shown.
 From the first frame recorded so it looks along the heading of the game's
 camera, level, from 0.9 of the character's sprite's height above its feet,
 with a 70-degree field of view across the original's 320 pixels (H 228.5).
