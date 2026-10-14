@@ -1410,8 +1410,10 @@ profile): no headset frame late, from within the scene or as the screen;
 the presentation's time on the loop's thread, p50, 11.3 ms from within
 against 8.9 ms as the screen under HD-2D (12.4 ms, p95 16.4 ms, against
 8.7 ms in the smoke's last run) and 5.6 against 3.1 ms under Modern.
-Under a load average of 18 the frames from within took 110 ms (p50)
-against the screen's 53. On IWER's Quest 3 in headless Chromium (WebGL2
+Other work raising the load (to 14 in one of the `xr` tier's runs) made 21
+of 117 headset frames late from within and 31 of 209 as the screen; at a
+load average of 18 the frames from within took 110 ms (p50) against the
+screen's 53. On IWER's Quest 3 in headless Chromium (WebGL2
 on SwiftShader, the layer at a quarter scale, load average about 5), the
 session ran 7.8 frames a second from within against 11.7 as the screen,
 and the game, whose frames the session's paces (at most four a frame),
