@@ -2449,8 +2449,8 @@ default, and a policy no longer offered resets alone (`Settings::read`).
 `Settings::random_battles_off()` resolves the policy to its maps. The
 Gameplay section (between Saves and About; Phase 7's other options join it)
 shows the choice and, under it, the areas it turns off by name; the browser
-renders the same panel. In the narrow panel's strip each tab is at least as
-wide as its label, so the eight labels fit a phone's width.
+renders the same panel, and a narrow panel's strip of tabs holds all eight
+sections ([Desktop host and settings panel](#desktop-host-and-settings-panel)).
 
 **The control.** Before every game frame of a batch outside session logs
 the interactive hosts give the session the resolved maps, as they give it
@@ -2820,10 +2820,19 @@ panel is the launcher too: Saves' Import disc… opens SDL's file dialog and
 plays the chosen disc (CHD, cue sheet or Redump-verified ISO), or gives it
 to a running game's disc changer.
 The panel (`xem-ui/ui/settings.slint`) lists its sections in a sidebar at
-560 logical pixels wide and more, else in a strip of tabs above the section;
-each section is a column of cards of settings, and the status line under
-them says what the last change or operation did (a note, done, or a
-problem in red). Controls edits
+560 logical pixels wide and more, else in a strip of tabs above the section.
+A tab of the strip takes its label's width (bold, as when selected) and
+shares out the rest while the strip has room for all eight: from 390
+logical pixels with the panel's font (the panel on the Android emulator's
+1080-pixel screen at density 2.625 is 405). A narrower strip takes the
+same width from every tab, so the labels still show whole down to 342 (a
+1080-pixel phone at density 3.0 gives 355) and elide below, and no tab
+narrows below 24 pixels: all eight stay inside the panel down to its least
+width, 280. `xem-ui/tests/panel.rs` clicks every tab at six widths from 280
+to 405 and checks that the Android smoke's two taps select Graphics and
+Saves at 405. Each section is a column of cards of settings, and the
+status line under them says what the last change or operation did (a
+note, done, or a problem in red). Controls edits
 the game's bindings ([Controls](#controls)) and the assisted controls
 (hand gestures, the headset pointer, Stop at ledges, touch controls,
 reduced transparency and motion); Shortcuts lists every app operation with

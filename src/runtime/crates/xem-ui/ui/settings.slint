@@ -95,9 +95,12 @@ component NavItem inherits Rectangle {
     private property <brush> icon-color: root.selected ? Theme.accent : root.hovered ? Theme.text : Theme.text-secondary;
     min-height: root.stacked ? 54px : 38px;
     max-height: root.stacked ? 54px : 38px;
-    // A tab in the strip is at least as wide as its label, bold as when
-    // selected, so no label elides; the strip shares out the rest.
-    min-width: root.stacked ? label-size.preferred-width + 6px : 0px;
+    // A tab in the strip would be as wide as its label, bold as when
+    // selected, and shares out any room left; a strip too narrow for that
+    // takes the same from every tab (their labels elide), down to a tab
+    // just wider than its icon, so every tab stays inside the panel.
+    min-width: root.stacked ? 24px : 0px;
+    preferred-width: root.stacked ? label-size.preferred-width + 6px : 0px;
     label-size := Text { text: root.label; font-size: 10.5px; font-weight: 600; visible: false; accessible-role: none; }
     border-radius: 8px;
     background: touch.pressed ? Theme.pressed : root.selected ? (root.hovered ? Theme.selected-hover : Theme.selected) : root.hovered ? Theme.hover : transparent;

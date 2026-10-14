@@ -602,6 +602,46 @@ fn random_battles_are_chosen_in_the_gameplay_section_through_the_settings_servic
 }
 
 #[test]
+fn every_section_tab_lies_inside_a_narrow_panel_and_answers_a_click() {
+    const SECTIONS: [&str; 8] = ["Audio", "Graphics", "Controls", "Shortcuts", "Time", "Saves", "Gameplay", "About"];
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings, (344, 560), 1.0).unwrap();
+    assert_eq!(ui.component().get_section_count(), SECTIONS.len() as i32);
+    // Hosts make the panel min(640 × scale, width - 16) physical pixels
+    // wide: a phone browser 360 CSS pixels wide, a 1080-pixel phone at
+    // densities 3.0 (360 dp) and 2.75, the Android smoke's emulator (2.625),
+    // a browser 320 wide, and the panel's least width.
+    for (size, scale) in [
+        ((344, 560), 1.0), ((1064, 1470), 3.0), ((1064, 1470), 2.75),
+        ((1064, 1470), 2.625), ((304, 560), 1.0), ((280, 560), 1.0),
+    ] {
+        ui.resize(size, scale);
+        ui.update().unwrap();
+        let width = size.0 as f32 / scale;
+        for (index, label) in SECTIONS.into_iter().enumerate() {
+            let tab = element(&ui, label, AccessibleRole::Tab);
+            let (at, extent) = (tab.absolute_position(), tab.size());
+            assert!(
+                at.x >= 0.0 && at.x + extent.width <= width,
+                "the {label} tab lies inside a panel {width} wide: {at:?} {extent:?}"
+            );
+            section(&mut ui, label, index as i32);
+        }
+    }
+    // The Android smoke taps Graphics and Saves at 210,722 and 727,722 on
+    // its 1080x2400 screen, where the panel (1064x1470 at 2.625) is at 8,465.
+    ui.resize((1064, 1470), 2.625);
+    ui.update().unwrap();
+    for (x, label, index) in [(210.0, "Graphics", 1), (727.0, "Saves", 5)] {
+        click(&ui, LogicalPosition::new((x - 8.0) / 2.625, (722.0 - 465.0) / 2.625));
+        ui.update().unwrap();
+        assert_eq!(ui.component().get_selected_section(), index, "the smoke's tap selects {label}");
+    }
+}
+
+#[test]
 fn a_missing_disc_is_asked_for_over_the_saves_section() {
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
