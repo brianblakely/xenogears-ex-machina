@@ -847,3 +847,95 @@ fn settings_choices_are_relevant_and_wheel_does_not_change_dropdowns() {
     assert!(dropdown.absolute_position().y < before_y, "wheel over a focused dropdown scrolls the containing panel");
     assert_eq!(*settings.borrow().settings(), before);
 }
+
+#[test]
+fn memory_cards_list_their_saves_and_their_operations_reach_the_host() {
+    use xem_core::devices::card::{BLOCK_SIZE, CardStatus, formatted};
+    use xem_core::devices::card_file::{self, CardFormat, Save};
+    use xem_settings::{AppRequest, CardRequest};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let settings = Rc::new(RefCell::new(SettingsService::with_defaults(MemoryStore::default())));
+    let shared = SharedGpu { instance: gpu.instance.clone(), device: gpu.device.clone(), queue: gpu.queue.clone() };
+    let mut ui = SettingsUi::new(shared, settings, (640, 2000), 1.0).unwrap();
+    let requests = Rc::new(RefCell::new(Vec::new()));
+    ui.on_app_request({ let requests = requests.clone(); move |request| requests.borrow_mut().push(request) });
+    ui.update().unwrap();
+    section(&mut ui, "Saves", 5);
+    element(&ui, "Boot a game to manage its memory cards.", AccessibleRole::Text);
+
+    // Card 1 holds this game's first file and another game's save; no card 2.
+    let mut game = vec![0; BLOCK_SIZE];
+    game[..4].copy_from_slice(&[b'S', b'C', 0x11, 1]);
+    game[4..34].copy_from_slice(b"\x82\x77\x82\x64\x82\x6d\x82\x6e\x82\x66\x82\x64\x82\x60\x82\x71\x82\x72\x81\x5e\x82\x6d\x82\x8f\x81\x44\x82\x4f\x82\x50");
+    game[0x1FFF] = 0;
+    let mut other = vec![0x5A; BLOCK_SIZE];
+    other[..0x80].fill(0);
+    other[..8].copy_from_slice(b"SC\x11\x01Game");
+    let image = [Save { name: b"BASLUS-006640".to_vec(), data: game }, Save { name: b"BESLES-01234GAME".to_vec(), data: other }]
+        .iter()
+        .fold(formatted(), |card, save| card_file::insert(&card, save).unwrap());
+    let status = |image: &[u8]| [
+        CardStatus { slot: 0, card: Some(card_file::list(image)), previous: true, busy: None },
+        CardStatus { slot: 1, card: None, previous: false, busy: None },
+    ];
+    ui.set_cards(Some(&status(&image)), "");
+    ui.update().unwrap();
+    element(&ui, "Memory card 1", AccessibleRole::Groupbox);
+    element(&ui, "2 saves · 13 of 15 blocks free", AccessibleRole::Text);
+    element(&ui, "XENOGEARS/No.01", AccessibleRole::Text);
+    element(&ui, "BASLUS-006640 · 1 block · Xenogears disc 1, file 01 · the game's checks pass", AccessibleRole::Text);
+    element(&ui, "BESLES-01234GAME · 1 block · another game", AccessibleRole::Text);
+    element(&ui, "No card is inserted.", AccessibleRole::Text);
+    let shown = |ui: &SettingsUi, label: &str| ElementHandle::find_by_accessible_label(ui.component(), label).next().is_some();
+    assert!(!shown(&ui, "Export Memory card 2") && !shown(&ui, "Restore the previous card of Memory card 2"), "nothing to export or restore");
+
+    press(&ui, &element(&ui, "Export BASLUS-006640 from Memory card 1", AccessibleRole::Button));
+    press(&ui, &element(&ui, "Import to Memory card 2", AccessibleRole::Button));
+    press(&ui, &element(&ui, ".gme", AccessibleRole::RadioButton));
+    press(&ui, &element(&ui, "Export Memory card 1", AccessibleRole::Button));
+    press(&ui, &element(&ui, "Restore the previous card of Memory card 1", AccessibleRole::Button));
+    assert_eq!(
+        requests.borrow().as_slice(),
+        [
+            AppRequest::Card(CardRequest::ExportSave { slot: 0, name: "BASLUS-006640".into() }),
+            AppRequest::Card(CardRequest::Import { slot: 1 }),
+            AppRequest::Card(CardRequest::Export { slot: 0, format: CardFormat::Gme }),
+            AppRequest::Card(CardRequest::RestorePrevious { slot: 0 }),
+        ]
+    );
+
+    // A delete asks first: Cancel, a press beside it and the host's Escape
+    // keep the save; the dialog's Delete deletes it.
+    requests.borrow_mut().clear();
+    let delete = element(&ui, "Delete BESLES-01234GAME from Memory card 1", AccessibleRole::Button);
+    let open = |ui: &mut SettingsUi| {
+        press(ui, &delete);
+        ui.update().unwrap();
+        assert!(ui.component().get_delete_confirming(), "Delete asks first");
+    };
+    open(&mut ui);
+    element(&ui, "Delete this save?", AccessibleRole::Groupbox);
+    press(&ui, &element(&ui, "Cancel", AccessibleRole::Button));
+    assert!(!ui.component().get_delete_confirming());
+    open(&mut ui);
+    click(&ui, LogicalPosition::new(24.0, 1980.0));
+    assert!(!ui.component().get_delete_confirming(), "a press beside it cancels");
+    open(&mut ui);
+    assert!(ui.cancel_dialog() && !ui.component().get_delete_confirming(), "so does the host's Escape");
+    assert!(requests.borrow().is_empty(), "nothing deleted so far");
+    open(&mut ui);
+    press(&ui, &element(&ui, "Delete", AccessibleRole::Button));
+    assert_eq!(requests.borrow().as_slice(), [AppRequest::Card(CardRequest::Delete { slot: 0, name: "BESLES-01234GAME".into() })]);
+
+    // A damaged directory is the card's summary; without cards, the note.
+    let mut damaged = image.clone();
+    damaged[0x80 + 0x20] ^= 1;
+    let listing = card_file::list(&damaged);
+    ui.set_cards(Some(&status(&damaged)), "");
+    ui.update().unwrap();
+    element(&ui, &format!("Its directory is damaged: {}", listing.problems[0]), AccessibleRole::Text);
+    ui.set_cards(None, "Play a disc to see its memory cards.");
+    ui.update().unwrap();
+    element(&ui, "Play a disc to see its memory cards.", AccessibleRole::Text);
+    assert!(!shown(&ui, "Memory card 1"));
+}

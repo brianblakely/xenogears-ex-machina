@@ -36,8 +36,144 @@ const faultInjector = () => {
   };
 };
 
+// --- Synthetic saves in the containers players bring (no original content) ----
+const FRAME = 0x80, BLOCK = 0x2000, CARD = 0x20000;
+const seal = (bytes, at) => { let x = 0; for (let i = 0; i < 0x7f; i++) x ^= bytes[at + i]; bytes[at + 0x7f] = x; };
+/** This game's save of file `digit` (one block): its title frame, its file
+ * digit and the payload's checksum as the game writes them. */
+function gameSave(digit) {
+  const block = Buffer.alloc(BLOCK);
+  block.set([0x53, 0x43, 0x11, 1]);
+  block.set([0x82, 0x77, 0x82, 0x64, 0x82, 0x6d, 0x82, 0x6e, 0x82, 0x66, 0x82, 0x64, 0x82, 0x60, 0x82, 0x71, 0x82, 0x72,
+    0x81, 0x5e, 0x82, 0x6d, 0x82, 0x8f, 0x81, 0x44, 0x82, 0x4f + Math.floor((digit + 1) / 10), 0x82, 0x4f + (digit + 1) % 10], 4);
+  block[0x123] = digit;
+  let sum = 0;
+  for (let i = 0x100; i < 0x1fff; i++) sum = (sum + block[i]) & 0xff;
+  block[0x1fff] = sum;
+  return block;
+}
+const gameName = (digit) => `BASLUS-00664${String.fromCharCode(0x30 + digit)}`;
+/** The containers of a single save: .mcs (its directory frame first), PS3
+ * .psv (its header, type 1), Action Replay's 54-byte header. */
+function mcs(name, blocks) {
+  const frame = Buffer.alloc(FRAME);
+  frame[0] = 0x51; frame.writeUInt32LE(blocks.length, 4); frame.writeUInt16LE(0xffff, 8);
+  frame.write(name, 0x0a, 'latin1'); seal(frame, 0);
+  return Buffer.concat([frame, blocks]);
+}
+function psv(name, blocks) {
+  const header = Buffer.alloc(0x84, 0);
+  header.write('\0VSP', 0, 'latin1'); header.fill(0xa5, 0x08, 0x30);
+  header[0x38] = 0x14; header[0x3c] = 1; header.writeUInt32LE(blocks.length, 0x40); header[0x44] = 0x84;
+  header.write(name, 0x64, 'latin1');
+  return Buffer.concat([header, blocks]);
+}
+function actionReplay(name, blocks) {
+  const header = Buffer.alloc(54);
+  header.write(name, 0, 'latin1'); header.write('Xenogears', 0x15, 'latin1');
+  return Buffer.concat([header, blocks]);
+}
+/** The containers of a whole card around a raw image. */
+function vgs(card) {
+  const header = Buffer.alloc(0x40);
+  header.write('VgsM', 0, 'latin1'); header[4] = 1; header[8] = 1; header[12] = 1; header[17] = 2;
+  return Buffer.concat([header, card]);
+}
+function vmp(card) {
+  const header = Buffer.alloc(0x80, 0x5a);
+  header.write('\0PMV', 0, 'latin1'); header.writeUInt32LE(0x80, 4);
+  return Buffer.concat([header, card]);
+}
+
 // Each test opens its own browser and storage: two run at once.
 describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, () => {
+  test('original saves import from every supported container, list, export and delete, keeping the previous card', async () => {
+    const browser = await start({ args: NO_WEBGPU, fixtures: true });
+    try {
+      const page = await browser.page(fixture);
+      const toPage = (buffer) => Array.from(buffer);
+      const result = await page.evaluate(async ({ files }) => {
+        const x = window.xem;
+        const bytes = (array) => Uint8Array.from(array);
+        await x.boot({ executable: false });
+        const fresh = Array.from(x.cards.image(0));
+        const first = await x.cards.importFile(0, bytes(files.mcs), 'file1.mcs');
+        const previous = Array.from(await x.cards.previous(0));
+        for (const [name, file] of [['file2.psv', files.psv], ['file3.psx', files.ar], [files.rawName, files.raw]]) {
+          await x.cards.importFile(0, bytes(file), name);
+        }
+        const errors = [];
+        for (const [file, name] of [[files.mcs, 'again.mcs'], [new Array(1000).fill(7), 'notes.txt'], [files.raw, 'my save.bin']]) {
+          try { await x.cards.importFile(0, bytes(file), name); } catch (error) { errors.push(String(error.message ?? error)); }
+        }
+        const listed = x.cards.list(0);
+        const exportedSave = Array.from(x.cards.exportSave(0, 'BASLUS-006640'));
+        const raw = x.cards.exportCard(0, 'raw');
+        const gme = x.cards.exportCard(0, 'gme');
+        await x.cards.importFile(1, gme, 'card1.gme');
+        const fromGme = x.cards.image(1).every((b, i) => b === raw[i]);
+        return { fresh, first, previous, errors, listed, exportedSave, raw: Array.from(raw), gmeHeader: Array.from(gme.subarray(0, 0x15)), gmeLength: gme.length, fromGme };
+      }, { files: { mcs: toPage(mcs(gameName(0), gameSave(0))), psv: toPage(psv(gameName(1), gameSave(1))),
+        ar: toPage(actionReplay(gameName(2), gameSave(2))), raw: toPage(gameSave(3)), rawName: gameName(3) } });
+      assert.equal(result.first.message, 'BASLUS-006640, from a single save (.mcs, .ps1), is on memory card 1. Restore previous takes it off.');
+      assert.deepEqual(result.previous, result.fresh, 'IndexedDB keeps the card the import replaced');
+      assert.match(result.errors[0], /already has a save named BASLUS-006640/);
+      assert.match(result.errors[1], /notes\.txt \(1000 bytes\) is not a memory card or a save/);
+      assert.match(result.errors[2], /named by its file name/);
+      const saves = result.listed.card.saves;
+      assert.deepEqual(saves.map((s) => [s.name, s.kind.file, s.kind.disc, s.problems.length]),
+        [[gameName(0), 1, 1, 0], [gameName(1), 2, 1, 0], [gameName(2), 3, 1, 0], [gameName(3), 4, 1, 0]]);
+      assert.equal(saves[0].title, 'ＸＥＮＯＧＥＡＲＳ／Ｎｏ．０１');
+      assert.equal(result.listed.card.free_blocks, 11);
+      assert.deepEqual(result.exportedSave, toPage(mcs(gameName(0), gameSave(0))), 'a save goes out as it came in');
+      assert.deepEqual(result.gmeHeader, toPage(Buffer.from('123-456-STD\0\0\0\0\0\0\0\x01\0\x01', 'latin1')));
+      assert.equal(result.gmeLength, 0xf40 + CARD);
+      assert.ok(result.fromGme, 'a DexDrive card imports as the card it holds');
+
+      // VGS and PSP cards replace card 2; the panel's delete and restore
+      // requests change card 1; a reload keeps the cards and the previous card.
+      const raw = Buffer.from(result.raw);
+      const second = await page.evaluate(async ({ vgs, vmp }) => {
+        const x = window.xem;
+        const vgsReply = await x.cards.importFile(1, Uint8Array.from(vgs), 'card.vgs');
+        const vmpReply = await x.cards.importFile(1, Uint8Array.from(vmp), 'SCEVMC1.VMP');
+        const deleted = await x.appOperation({ Card: { Delete: { slot: 0, name: 'BASLUS-006641' } } });
+        const restored = await x.appOperation({ Card: { RestorePrevious: { slot: 0 } } });
+        return { vgs: vgsReply.imported, vmp: vmpReply.imported, deleted: deleted.card.card.saves.length, restored: restored.card.card.saves.length,
+          status: x.status().page.operationStatus };
+      }, { vgs: toPage(vgs(raw)), vmp: toPage(vmp(raw)) });
+      assert.deepEqual([second.vgs, second.vmp], [{ imported: 'card', container: 'vgs' }, { imported: 'card', container: 'vmp' }]);
+      assert.deepEqual([second.deleted, second.restored], [3, 4]);
+      assert.equal(second.status, 'Memory card 1 is back as it was before its last change.');
+      await page.reload();
+      await page.waitForFunction(() => document.body.dataset.ready === 'true');
+      const reloaded = await page.evaluate(async () => {
+        const x = window.xem;
+        const before = x.cards.list(0);
+        await x.boot({ executable: false });
+        return { before, after: x.cards.list(0), second: x.cards.list(1).card.saves.length, previous: (await x.cards.previous(0)).length };
+      });
+      assert.deepEqual(reloaded.before, reloaded.after, 'the page lists the stored cards before a boot as the session does after it');
+      assert.equal(reloaded.after.card.saves.length, 4);
+      assert.equal(reloaded.after.previous, true);
+      assert.equal(reloaded.second, 4);
+      assert.equal(reloaded.previous, CARD);
+
+      // The page's own picker accepts every supported extension, and a raw
+      // single save named by its file joins the card its Import… chose.
+      const accept = await page.$eval('#import-card', (input) => input.accept.split(','));
+      for (const extension of ['.mcd', '.mcr', '.mc', '.srm', '.mem', '.bin', '.vm1', '.ddf', '.ps', '.gme', '.vgs', '.vmp', '.mcs', '.ps1', '.psv', '.psx', '.mcb', '.mcx', '.pda']) {
+        assert.ok(accept.includes(extension), `the picker accepts ${extension}`);
+      }
+      await page.$eval('#import-card', (input) => { input.dataset.slot = '1'; });
+      await page.setInputFiles('#import-card', { name: gameName(4), mimeType: 'application/octet-stream', buffer: gameSave(4) });
+      await page.waitForFunction(() => window.xem.status().page.operationStatus?.includes('is on memory card 2'));
+      const picked = await page.evaluate(() => window.xem.cards.list(1).card.saves.map((s) => s.name));
+      assert.ok(picked.includes(gameName(4)), JSON.stringify(picked));
+      assert.deepEqual(page.errors, []);
+    } finally { await browser.close(); }
+  });
+
   test('HUD shows active time controls and state results without memory-card notices', async () => {
     const browser = await start({ args: NO_WEBGPU, fixtures: true, initScripts: [faultInjector] });
     try {

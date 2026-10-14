@@ -1160,10 +1160,20 @@ impl<M: GameModule> Session<M> {
                     "pad_queue_reads_last_frame": services.input_reads_last_frame,
                     "stopped": stopped,
                     "valid_commands": ["pad", "press", "hold", "act", "context", "targets", "field", "pick", "navigate", "interact", "assist", "assist_stop", "shop_quantity", "frames", "run_until", "inspect", "write", "snapshot",
-                                        "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "attack_page", "sound_mode", "random_battles", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "reset", "schedule", "record", "replay"],
+                                        "restore", "rewind_configure", "rewind", "fast_forward_configure", "fast_forward", "fast_forward_pace", "actor_view", "attack_page", "sound_mode", "random_battles", "binaural", "audio_capture", "focus_pause", "music_advance", "scenario", "boot_mode", "enter_field", "reset", "schedule", "record", "replay", "card_list"],
                 }))
             }
             "memory_hash" => Ok(json!(format!("{:016x}", self.memory_hash()?))),
+            "card_list" => {
+                // What a memory card holds (`card_file::list`), read only:
+                // changing it is the hosts' explicit file operations'.
+                let slot = arg_u64("slot").ok_or("card_list needs slot (0 or 1)")?;
+                if slot > 1 {
+                    return Err("card_list: memory cards are 0 and 1".into());
+                }
+                let services = self.runtime.services();
+                Ok(serde_json::to_value(services.card.status(slot as usize, services.clock.now)).expect("card status"))
+            }
             "record" => {
                 let vblank = self.vblank();
                 let changes = self.runtime.services().pads.0.iter().enumerate().map(|(port,pad)| (vblank,port as u32,pad.buttons)).collect();

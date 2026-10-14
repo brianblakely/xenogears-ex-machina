@@ -508,7 +508,8 @@ fn console_reset_reboots_the_original_game_and_keeps_memory_cards() {
     let cards: Vec<_> = (0..2).map(|slot| {
         let mut image = xem_core::devices::card::formatted();
         image[0x2000..0x2004].copy_from_slice(&[b'X', b'E', b'M', slot as u8]);
-        session.runtime.services().card.import_image(slot, image.clone()).unwrap();
+        let now = session.runtime.services().clock.now;
+        session.runtime.services().card.change(slot, image.clone(), now).unwrap();
         image
     }).collect();
     session.configure_rewind(xem_core::rewind::MAX_REWIND_BYTES, 1, 30).unwrap();

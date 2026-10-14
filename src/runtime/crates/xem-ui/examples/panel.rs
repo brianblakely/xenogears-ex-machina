@@ -2,7 +2,8 @@
 //! on a headless device (build/validation/panel/ by default: ignored):
 //!
 //!     cargo run -p xem-ui --example panel -- [--size WxH] [--scale F] [--out DIR] [--name NAME]
-//!         [--section N] [--click X,Y]... [--tab N] [--hover X,Y] [--desktop] [--import-disc] [--locate LABEL]...
+//!         [--section N] [--click X,Y]... [--tab N] [--hover X,Y] [--desktop] [--import-disc] [--cards]
+//!         [--locate LABEL]...
 //!
 //! One picture per section (`NAME-<index>.png`; only section N with
 //! `--section`), composited over a dark grey as hosts composite it over the
@@ -11,9 +12,10 @@
 //! N times (focus rings) and `--hover` leaves the pointer at one, for hover
 //! states; `--desktop` offers Quit and Fullscreen
 //! as the desktop host does, `--import-disc` the disc card as the browser
-//! and Android hosts do; `--locate` prints where the elements of an
-//! accessible label lie (logical x, y, width, height), for tests that tap
-//! the panel.
+//! and Android hosts do, `--cards` memory cards in the Saves section (made
+//! up: this game's first file and a damaged save of another game's on card
+//! 1, no card 2); `--locate` prints where the elements of an accessible
+//! label lie (logical x, y, width, height), for tests that tap the panel.
 
 use std::cell::RefCell;
 use std::path::PathBuf;
@@ -32,6 +34,7 @@ fn main() {
     let mut tabs = 0;
     let mut desktop = false;
     let mut import_disc = false;
+    let mut cards = false;
     let mut locate: Vec<String> = Vec::new();
     let mut out = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../build/validation/panel");
     let mut args = std::env::args().skip(1);
@@ -48,6 +51,7 @@ fn main() {
             "--section" => only = Some(value().parse().unwrap()),
             "--desktop" => desktop = true,
             "--import-disc" => import_disc = true,
+            "--cards" => cards = true,
             "--locate" => locate.push(value()),
             "--hover" => hover = Some(position(&value())),
             "--click" => clicks.push(position(&value())),
@@ -69,6 +73,9 @@ fn main() {
     }
     if import_disc {
         ui.on_import_disc(|| {});
+    }
+    if cards {
+        ui.set_cards(Some(&made_up_cards()), "");
     }
     let sections = ui.component().get_section_count();
     for section in (0..sections).filter(|section| only.is_none_or(|only| only == *section)) {
@@ -119,6 +126,27 @@ fn main() {
         encoder.write_header().unwrap().write_image_data(&rgb).unwrap();
         eprintln!("{}", path.display());
     }
+}
+
+/// Card 1 with this game's first file (title, checksum and disc as the game
+/// writes them) and another game's two-block save whose title frame gives
+/// the wrong block count; no card 2.
+fn made_up_cards() -> [xem_core::devices::card::CardStatus; 2] {
+    use xem_core::devices::card::{BLOCK_SIZE, CardStatus, formatted};
+    use xem_core::devices::card_file::{self, Save};
+    let mut game = vec![0; BLOCK_SIZE];
+    game[..4].copy_from_slice(&[b'S', b'C', 0x11, 1]);
+    game[4..46].copy_from_slice(b"\x82\x77\x82\x64\x82\x6d\x82\x6e\x82\x66\x82\x64\x82\x60\x82\x71\x82\x72\x81\x5e\x82\x6d\x82\x8f\x81\x44\x82\x4f\x82\x50\x81\x40\x82\x6b\x82\x81\x82\x88\x82\x81\x82\x8e");
+    let mut other = vec![0x5A; 2 * BLOCK_SIZE];
+    other[..0x80].fill(0);
+    other[..13].copy_from_slice(b"SC\x11\x03SAGA FILE");
+    let image = [Save { name: b"BASLUS-006640".to_vec(), data: game }, Save { name: b"BASLUS-00999SAGA".to_vec(), data: other }]
+        .iter()
+        .fold(formatted(), |card, save| card_file::insert(&card, save).unwrap());
+    [
+        CardStatus { slot: 0, card: Some(card_file::list(&image)), previous: true, busy: None },
+        CardStatus { slot: 1, card: None, previous: false, busy: None },
+    ]
 }
 
 fn position(value: &str) -> (f32, f32) {

@@ -45,7 +45,7 @@ export function createAutomation(host) {
   }
 
   return Object.freeze({
-    version: 3,
+    version: 4,
     /** Renderer, disc, session, loop, audio, storage and page state. */
     status: () => ({ ...parse(app.status()), page: host.pageStatus() }),
     /** Start a session on a fresh game module instance: `{executable: false}`
@@ -109,13 +109,36 @@ export function createAutomation(host) {
     /** Save the session snapshot to IndexedDB, and read one back. */
     save: (slot = 'slot0') => host.save(slot),
     load: (slot = 'slot0') => host.load(slot),
+    /** The memory cards (slot 0 or 1). Changes apply between frames and
+     * resolve to {message, imported, card} once IndexedDB holds the card
+     * and the card it replaced (`cardN-previous`); a change while the game
+     * has a file open on the card is refused. */
     cards: Object.freeze({
-      /** The image the card device holds in slot 0 or 1 (a session's). */
+      /** The image the card device holds (a session's). */
       image: (slot) => app.card_image(slot),
-      /** The image IndexedDB holds for slot 0 or 1. */
+      /** The image IndexedDB holds. */
       stored: (slot) => host.cards.stored(slot),
-      /** Persist and insert an image (Uint8Array, a .mcd) in slot 0 or 1. */
+      /** The previous card IndexedDB holds. */
+      previous: (slot) => host.cards.storedPrevious(slot),
+      /** What the card holds: the `card_list` reply (also before a boot). */
+      list: (slot) => host.cards.list(slot),
+      /** Put a raw image (Uint8Array, exactly 128 KiB, formatted or not) in the slot. */
       store: (slot, image) => host.cards.store(slot, image),
+      /** Replace the card with the card a file holds (raw, .gme, .vgs, .vmp). */
+      importCard: (slot, bytes, name) => host.cards.importCard(slot, bytes, name),
+      /** Import a file's bytes as the Saves section's Import… does: a whole
+       * card (raw, .gme, .vgs, .vmp) replaces the card, a single save
+       * (.mcs, .ps1, .psv, .psx, .mcb, .mcx, .pda, or raw named by `name`)
+       * joins it. */
+      importFile: (slot, bytes, name) => host.cards.importFile(slot, bytes, name),
+      /** Add a save: a single save's file's, or `saveName` of a card's file. */
+      importSave: (slot, bytes, name, saveName) => host.cards.importSave(slot, bytes, name, saveName),
+      /** The card as a file, `format` 'raw' (.mcd) or 'gme' (DexDrive). */
+      exportCard: (slot, format = 'raw') => app.card_export(slot, format),
+      /** A save as a single-save file (.mcs). */
+      exportSave: (slot, name) => app.save_export(slot, name),
+      deleteSave: (slot, name) => host.cards.deleteSave(slot, name),
+      restorePrevious: (slot) => host.cards.restorePrevious(slot),
       /** Resolves when the card device's writes so far are in IndexedDB. */
       flush: () => host.flushCards(),
       retry: () => host.cards.flush({ retry: true }),

@@ -136,8 +136,19 @@ impl Game {
     }
     pub fn snapshot_bytes(&mut self) -> Result<Vec<u8>,String> { self.session.snapshot_bytes() }
     pub fn restore_bytes(&mut self, bytes: &[u8]) -> Result<(),String> { self.session.restore_bytes(bytes) }
-    pub fn card_image(&mut self, slot: usize) -> Option<Vec<u8>> { self.session.runtime.services().card.image(slot).map(<[u8]>::to_vec) }
-    pub fn import_card(&mut self, slot: usize, bytes: Vec<u8>) -> Result<(),String> { self.session.runtime.services().card.import_image(slot,bytes) }
+    /// The memory card device and the clock's cycle, for the Saves
+    /// section's operations between frames (`Card::change` and those built
+    /// on it).
+    pub fn cards(&mut self) -> (&mut xem_core::devices::card::Card, u64) {
+        let services = self.session.runtime.services();
+        let now = services.clock.now;
+        (&mut services.card, now)
+    }
+    /// The memory cards as the Saves section lists them (`card_list`).
+    pub fn card_status(&mut self) -> [xem_core::devices::card::CardStatus; 2] {
+        let (card, now) = self.cards();
+        [card.status(0, now), card.status(1, now)]
+    }
     pub fn retry_storage(&mut self) -> Result<(),String> { self.session.runtime.services().card.retry_writes() }
     pub fn configure_fast_forward(&mut self, rate: xem_settings::FastForwardRate) -> Result<(),String> {
         self.session.configure_fast_forward(rate)

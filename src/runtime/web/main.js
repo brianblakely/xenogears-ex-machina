@@ -554,7 +554,8 @@ function download(name, bytes, type = 'application/octet-stream') {
   link.href = url; link.download = name; link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-let importCardSlot = 0;
+/** The largest file a memory card or save container is (a DexDrive card). */
+const MAX_CARD_FILE = 0xF40 + 0x20000;
 function operationStatus(message) { page.operationStatus = message; app.set_operation_status(message); }
 const operationGuard = (action) => async (event) => {
   try { await action(event); }
@@ -572,11 +573,14 @@ $('import-state').addEventListener('change', operationGuard(async (event) => {
     throw error;
   }
 }));
+// The memory card picker: the slot its Import… chose, then the file (a
+// whole card replaces the card, a single save joins it).
 $('import-card').addEventListener('change', operationGuard(async (event) => {
   const file = event.target.files[0]; if (!file) return;
-  if (file.size !== 0x20000) throw new Error('Card must be exactly 128 KiB (.mcd).');
-  await cards.store(importCardSlot, new Uint8Array(await file.arrayBuffer()));
-  event.target.value = ''; operationStatus('Card imported, saved and inserted.');
+  event.target.value = '';
+  if (file.size > MAX_CARD_FILE) throw new Error(`${file.name} (${file.size} bytes) is larger than any memory card or save file.`);
+  const reply = await cards.importFile(Number(event.target.dataset.slot ?? 0), new Uint8Array(await file.arrayBuffer()), file.name);
+  operationStatus(reply.message);
 }));
 $('import-settings').addEventListener('change', operationGuard(async (event) => {
   const file = event.target.files[0]; if (!file) return;
@@ -593,7 +597,7 @@ function chooseBackup(id) {
   const input = $(id);
   input.value = '';
   input.showPicker();
-  operationStatus('Choose a backup file.');
+  operationStatus('Choose a file.');
 }
 async function appOperation(request) {
   try { return await executeAppOperation(request); }
@@ -604,7 +608,38 @@ async function appOperation(request) {
     throw error;
   }
 }
+/** A memory card operation of the Saves section ({Import: {slot}}, ...). */
+async function cardOperation(request) {
+  const [kind, { slot, name, format }] = Object.entries(request)[0];
+  switch (kind) {
+    case 'Import': {
+      $('import-card').dataset.slot = String(slot);
+      chooseBackup('import-card');
+      return { ok: true };
+    }
+    case 'Export': {
+      const extension = format === 'gme' ? 'gme' : 'mcd';
+      download(`card${slot + 1}.${extension}`, app.card_export(slot, format));
+      operationStatus(`Memory card ${slot + 1} downloaded as ${format === 'gme' ? 'a DexDrive card (.gme)' : 'a raw image (.mcd)'}.`);
+      return { ok: true };
+    }
+    case 'ExportSave':
+      download(`${name}.mcs`, app.save_export(slot, name));
+      operationStatus(`${name} downloaded as a single save (.mcs).`);
+      return { ok: true };
+    case 'Delete': {
+      const reply = await cards.deleteSave(slot, name);
+      operationStatus(reply.message); return reply;
+    }
+    case 'RestorePrevious': {
+      const reply = await cards.restorePrevious(slot);
+      operationStatus(reply.message); return reply;
+    }
+    default: throw new Error(`Unknown memory card operation ${kind}`);
+  }
+}
 async function executeAppOperation(request) {
+  if ('Card' in request) return cardOperation(request.Card);
   if ('Rewind' in request || 'UiRewind' in request) {
     const panel = 'UiRewind' in request;
     const held = panel ? request.UiRewind : request.Rewind;
@@ -679,15 +714,6 @@ async function executeAppOperation(request) {
     case 'ExportState':
       download('xenogears.xemstate', app.snapshot_bytes()); app.state_notice(true, undefined); operationStatus('State backup exported.'); break;
     case 'ImportState': chooseBackup('import-state'); break;
-    case 'ExportCard1': case 'ExportCard2': {
-      const slot = action === 'ExportCard1' ? 0 : 1;
-      const image = app.card_image(slot) ?? await cards.stored(slot);
-      if (!image) throw new Error('No card image to export.');
-      download(`card${slot + 1}.mcd`, image); operationStatus('Original raw memory card exported.'); break;
-    }
-    case 'ImportCard1': case 'ImportCard2':
-      importCardSlot = action === 'ImportCard1' ? 0 : 1;
-      chooseBackup('import-card'); break;
     case 'ExportSettings':
       download('xenogears-settings.json', app.export_settings(), 'application/json'); operationStatus('Settings backup exported.'); break;
     case 'ImportSettings': chooseBackup('import-settings'); break;

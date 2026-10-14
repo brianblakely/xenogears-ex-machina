@@ -6,6 +6,7 @@ use crate::memory::GameMemory;
 use crate::module::Action;
 
 pub mod card;
+pub mod card_file;
 pub mod cd;
 pub mod gpu;
 pub mod mdec;

@@ -16,7 +16,7 @@ pub mod look;
 pub mod player;
 pub use graphics::{EffectLevels, Fidelity, Graphics, GraphicsProfile, MAX_ZOOM_OUT, MovieFilter, PresentRate, QualityTier, Renderer, TextureFiltering, XrScreen, ZOOM_STEP};
 pub use bindings::{GameAction, GameBinding, GameBindings, InputContext, GAME_ACTION_ROWS};
-pub use controls::{AppAction, AppBinding, AppInput, AppRequest, APP_ACTIONS};
+pub use controls::{AppAction, AppBinding, AppInput, AppRequest, CardRequest, APP_ACTIONS};
 /// The platforming areas whose random battles NotWhilePlatforming turns off.
 pub use xem_core::encounters::PLATFORMING_AREAS;
 

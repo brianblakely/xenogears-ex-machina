@@ -13,6 +13,27 @@ export struct BindingRow {
     gamepad: string,
 }
 
+/// A save on a memory card, as the Saves section lists it: its directory
+/// name (what its operations name), its title as the panel shows it, its
+/// blocks, whose it is and its checks, and whether one of those fails.
+export struct SaveRow {
+    name: string,
+    title: string,
+    detail: string,
+    problem: bool,
+}
+
+/// A memory card slot: what it holds, whether that is damaged, whether a
+/// card is inserted and a previous card kept, and its saves.
+export struct MemoryCardView {
+    title: string,
+    summary: string,
+    problem: bool,
+    inserted: bool,
+    previous: bool,
+    saves: [SaveRow],
+}
+
 struct Section {
     label: string,
     icon: string,
@@ -46,6 +67,7 @@ global Icons {
     out property <string> saves: "M5 4 L15.5 4 L20 8.5 L20 20 L5 20 Z M8 4 L8 8.5 L15 8.5 L15 4 M8 20 L8 13.5 L17 13.5 L17 20";
     out property <string> gameplay: "M20 4 L20 8 L10.5 17.5 L6.5 13.5 L16 4 Z M5 12 L12 19 M7.5 16.5 L4 20";
     out property <string> about: "M12 3.5 A8.5 8.5 0 1 1 11.99 3.5 Z M12 11 L12 16.5 M12 7.6 L12 7.7";
+    out property <string> delete: "M4.5 7 L19.5 7 M9.5 7 L9.5 4.5 L14.5 4.5 L14.5 7 M6.5 7 L7.5 20 L16.5 20 L17.5 7 M10.5 10.5 L10.5 16.5 M13.5 10.5 L13.5 16.5";
     out property <string> close: "M6.5 6.5 L17.5 17.5 M17.5 6.5 L6.5 17.5";
     out property <string> reset: "M19.5 8 A8 8 0 1 0 20 15 M19.5 3.5 L19.5 8.5 L14.5 8.5";
     out property <string> power: "M12 3.5 L12 11.5 M6.7 7.7 A7.5 7.5 0 1 0 17.3 7.7";
@@ -514,9 +536,42 @@ component IconButton inherits Rectangle {
     }
 }
 
-// Asks before the app quits, over the dimmed panel. A press beside it, or
-// the host's Escape or Back, cancels; Tab moves between its two buttons only.
-component QuitDialog inherits Rectangle {
+// A save in a memory card's list: its title over its details, and its
+// Export and Delete (which asks first) beside them.
+component SaveItem inherits HorizontalLayout {
+    in property <SaveRow> save;
+    // The card it is on, for the buttons' names ("Memory card 1").
+    in property <string> card;
+    callback export();
+    callback delete();
+    spacing: 12px;
+    VerticalLayout {
+        alignment: center;
+        spacing: 2px;
+        horizontal-stretch: 1;
+        Text { text: root.save.title; font-size: 13px; color: Theme.text; wrap: word-wrap; }
+        Text { text: root.save.detail; font-size: 11.5px; color: root.save.problem ? Theme.bad : Theme.text-secondary; wrap: word-wrap; }
+    }
+    VerticalLayout {
+        alignment: center;
+        horizontal-stretch: 0;
+        HorizontalLayout {
+            spacing: 6px;
+            Button { text: "Export"; accessible-label: "Export " + root.save.name + " from " + root.card; clicked => { root.export(); } }
+            Button { text: "Delete"; accessible-label: "Delete " + root.save.name + " from " + root.card; clicked => { root.delete(); } }
+        }
+    }
+}
+
+// Asks before something that cannot simply be taken back (quitting,
+// deleting a save), over the dimmed panel: its question, what follows and
+// its action. A press beside it, or the host's Escape or Back, cancels;
+// Tab moves between its two buttons only.
+component ConfirmDialog inherits Rectangle {
+    in property <string> heading;
+    in property <string> detail;
+    in property <string> action;
+    in property <string> icon;
     callback cancelled();
     callback confirmed();
     private property <float> shown;
@@ -540,7 +595,7 @@ component QuitDialog inherits Rectangle {
         capture-key-pressed(event) => {
             if event.text == Key.Tab || event.text == Key.Backtab {
                 if cancel.has-focus {
-                    quit.focus();
+                    confirm.focus();
                 } else {
                     cancel.focus();
                 }
@@ -550,7 +605,7 @@ component QuitDialog inherits Rectangle {
         }
         card := Rectangle {
             accessible-role: groupbox;
-            accessible-label: "Quit Xenogears Ex Machina?";
+            accessible-label: root.heading;
             min-height: layout.min-height;
             background: #1c1f26;
             border-radius: 12px;
@@ -575,7 +630,7 @@ component QuitDialog inherits Rectangle {
                             border-radius: 18px;
                             background: Theme.bad.with-alpha(0.13);
                             Icon {
-                                data: Icons.power;
+                                data: root.icon;
                                 color: Theme.bad;
                                 x: (parent.width - self.width) / 2;
                                 y: (parent.height - self.height) / 2;
@@ -585,8 +640,8 @@ component QuitDialog inherits Rectangle {
                     VerticalLayout {
                         alignment: center;
                         spacing: 4px;
-                        Text { text: "Quit Xenogears Ex Machina?"; font-size: 15px; font-weight: 650; color: Theme.text; wrap: word-wrap; }
-                        Text { text: "Progress since your last save is lost."; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
+                        Text { text: root.heading; font-size: 15px; font-weight: 650; color: Theme.text; wrap: word-wrap; }
+                        Text { text: root.detail; font-size: 12px; color: Theme.text-secondary; wrap: word-wrap; }
                     }
                 }
                 HorizontalLayout {
@@ -596,8 +651,8 @@ component QuitDialog inherits Rectangle {
                         text: "Cancel";
                         clicked => { root.cancelled(); }
                     }
-                    quit := Button {
-                        text: "Quit";
+                    confirm := Button {
+                        text: root.action;
                         primary: true;
                         clicked => { root.confirmed(); }
                     }
@@ -704,6 +759,16 @@ export component SettingsPanel inherits Window {
     in-out property <string> keyboard-binding;
     in-out property <string> gamepad-binding;
     in property <[string]> backup-actions;
+    // The memory cards the host holds, and what the section says without them.
+    in property <[MemoryCardView]> memory-cards;
+    in property <string> memory-cards-note: "Boot a game to manage its memory cards.";
+    // Cards are exported raw (.mcd, 0) or as DexDrive files (.gme, 1).
+    in-out property <int> card-export-format;
+    // The save a Delete asks about: its card, name and title.
+    in-out property <bool> delete-confirming;
+    in-out property <int> delete-slot;
+    in-out property <string> delete-name;
+    in-out property <string> delete-title;
     // Every game action with its inputs (xem_settings::bindings); the
     // selected one (-1 none) is edited: keys, gamepad inputs, mouse buttons.
     in property <[BindingRow]> game-bindings;
@@ -766,6 +831,9 @@ export component SettingsPanel inherits Window {
     callback game-bindings-reset();
     callback app-action-requested(int);
     callback backup-action-requested(int);
+    // A memory card operation by name (import, export, export-save, delete,
+    // restore), on card slot 0 or 1, and the save it names.
+    callback card-requested(string, int, string);
     callback fast-forward-rate-edited(int);
     callback invert-trigger-chords-edited(bool);
     callback mouse-camera-edited(bool);
@@ -1549,6 +1617,51 @@ export component SettingsPanel inherits Window {
                                     Button { text: "Load state"; clicked => { root.app-action-requested(1); } }
                                 }
                             }
+                            // The memory cards: each one's saves (the game's
+                            // own saves its save screens make), and importing,
+                            // exporting and deleting them.
+                            if root.selected-section == 5 && root.memory-cards.length == 0: Card {
+                                title: "Memory cards";
+                                Text { text: root.memory-cards-note; font-size: 12.5px; color: Theme.text-secondary; wrap: word-wrap; }
+                            }
+                            if root.selected-section == 5: VerticalLayout {
+                                spacing: 12px;
+                                for card[slot] in root.memory-cards: Card {
+                                    title: card.title;
+                                    VerticalLayout {
+                                        spacing: 4px;
+                                        Text { text: card.title; font-size: 12px; font-weight: 600; color: Theme.text-secondary; accessible-role: none; }
+                                        Text { text: card.summary; font-size: 12.5px; color: card.problem ? Theme.bad : Theme.text-secondary; wrap: word-wrap; }
+                                    }
+                                    for save in card.saves: SaveItem {
+                                        save: save;
+                                        card: card.title;
+                                        export => { root.card-requested("export-save", slot, save.name); }
+                                        delete => {
+                                            root.delete-slot = slot;
+                                            root.delete-name = save.name;
+                                            root.delete-title = save.title;
+                                            root.delete-confirming = true;
+                                        }
+                                    }
+                                    if card.saves.length > 0: Divider { }
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        Button { text: "Import…"; accessible-label: "Import to " + card.title; horizontal-stretch: 1; preferred-width: 0px; clicked => { root.card-requested("import", slot, ""); } }
+                                        if card.inserted: Button { text: "Export card…"; accessible-label: "Export " + card.title; horizontal-stretch: 1; preferred-width: 0px; clicked => { root.card-requested("export", slot, ""); } }
+                                    }
+                                    if card.inserted || card.previous: HorizontalLayout {
+                                        spacing: 8px;
+                                        if card.inserted: Segmented {
+                                            accessible-label: "Export format of " + card.title;
+                                            options: [".mcd", ".gme"];
+                                            current <=> root.card-export-format;
+                                        }
+                                        Rectangle { horizontal-stretch: 1; }
+                                        if card.previous: Button { text: "Restore previous"; accessible-label: "Restore the previous card of " + card.title; clicked => { root.card-requested("restore", slot, ""); } }
+                                    }
+                                }
+                            }
                             if root.selected-section == 5: Card {
                                 title: "Backups";
 
@@ -1620,13 +1733,30 @@ export component SettingsPanel inherits Window {
                 }
             }
         }
-        if root.quit-confirming: QuitDialog {
+        if root.quit-confirming: ConfirmDialog {
+            heading: "Quit Xenogears Ex Machina?";
+            detail: "Progress since your last save is lost.";
+            action: "Quit";
+            icon: Icons.power;
             width: parent.width;
             height: parent.height;
             cancelled => { root.quit-confirming = false; }
             confirmed => {
                 root.quit-confirming = false;
                 root.quit-requested();
+            }
+        }
+        if root.delete-confirming: ConfirmDialog {
+            heading: "Delete this save?";
+            detail: root.delete-title + " (" + root.delete-name + ") leaves memory card " + (root.delete-slot + 1) + ". Restore previous puts the card back as it was.";
+            action: "Delete";
+            icon: Icons.delete;
+            width: parent.width;
+            height: parent.height;
+            cancelled => { root.delete-confirming = false; }
+            confirmed => {
+                root.delete-confirming = false;
+                root.card-requested("delete", root.delete-slot, root.delete-name);
             }
         }
     }

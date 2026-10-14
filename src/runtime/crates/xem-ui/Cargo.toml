@@ -9,6 +9,7 @@ publish.workspace = true
 [dependencies]
 slint = { workspace = true, features = ["std", "compat-1-2", "unstable-wgpu-30", "renderer-femtovg-wgpu"] }
 wgpu.workspace = true
+xem-core = { path = "../xem-core" }
 xem-settings = { path = "../xem-settings" }
 
 [target.'cfg(target_os = "android")'.dependencies]
