@@ -819,6 +819,10 @@ fn along_a_walk_every_presentation_setting_leaves_the_games_gains_and_emitters_a
     }
     let placed = &walked[1].gains;
     assert!(placed.effects >= 500 && placed.music >= 500, "the emitters and the music were placed and checked: {placed:?}");
+    // The registers truncate gain * volume >> 15, the nearer side's gain at
+    // least 0x5A00, so for a volume of 0x100 or more the nearer register
+    // (180 or more) is off by under 0.56%, and the pan read from the
+    // farther one moves the unpanned gain by under 0.33%.
     assert!(placed.worst_ratio.abs() < 0.01, "the reported gain is the driver's pre-pan volume within its law's rounding: {:+.4}", placed.worst_ratio);
 }
 
