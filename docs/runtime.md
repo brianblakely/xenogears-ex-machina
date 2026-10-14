@@ -317,11 +317,16 @@ to the changer rather than starting it again.
 differing only in the file index each embeds, which the game loads again
 from the disc it changes to) and keeps the number of the disc in the drive;
 restoring puts that disc back in, or is refused when the session has not
-got it. A state saved with either disc in the drive restores in a session
+got it. A state saved while the game waits for a disc its session lacked
+takes that disc at once in a session that holds it (`Cd::restore_state`,
+as when the host adds it; at the story's change the five-second wait is
+not taken again). A state saved with either disc in the drive restores in a session
 booted from either (`xem-headless/tests/discs.rs`, with both discs: a new
 game on disc 2 gets disc 1 at once and a state from before the change goes
 on identically in a session booted from disc 1; without disc 1 the game
-waits until it is added; the story's change waits five seconds; and
+waits until it is added; a state saved in that wait, restored in a session
+booted from disc 1, takes disc 1 and the new game begins; the story's
+change waits five seconds; and
 `web/tests/disc.test.mjs`: in the browser, disc 1 imported while the game
 waits for it goes in).
 
@@ -428,7 +433,9 @@ waits for it goes in).
   250 kHz per 128-byte frame, during which the port suspends as the BIOS
   blocks, and a check ends with the card interrupt and its event (done,
   timeout without a card, new card for a card without a file system).
-  Snapshots hold the images.
+  The images are persistent saves outside snapshots; a state keeps the
+  calls under way, which a restore checks against the inserted cards
+  ([Saves and time controls](#saves-and-time-controls)).
 - **Kanji font.** Krom2RawAdd returns glyph addresses in the BIOS ROM's font
   through its KUSEG mirror 0x1FC66000; the host places the font there from the
   user's BIOS image (`--bios FILE`), or blank glyphs without one
@@ -1715,10 +1722,14 @@ saves do not produce HUD notifications. Every HUD element has one treatment
 corners, a plain 16-pixel icon coloured by what it says (a success's check
 green, a failure's mark red) and one weight of text; the counter, then the
 activity icons, in a row, a result below them, and a failure's chip grown
-downward to give its cause. Native headset play uses the same quick
-save/load and time controls; file pickers remain available in windowed play.
-Settings contains save-state, rewind, backup and binding controls.
-All these operations accept keyboard and gamepad chords. Fast-forward is an
+downward to give its cause. Settings contains save-state, rewind, backup
+and binding controls, and windowed play their file pickers. On desktop,
+Android and in the browser these operations also take keyboard and gamepad
+chords. Native headset play (OpenXR) reaches them only through its Settings
+panel: its controllers and hands do not reach the app bindings. In a WebXR
+session the controllers' chords queue their operations, which run at the
+page's next key, pointer or window-frame input (after the session, or a key
+of an attached keyboard). Fast-forward is an
 on/off toggle, bound to backtick (`Backquote`) or Back+RT by default, with no
 Settings checkbox for the toggle. Its separate
 saved rate defaults to 10×. The slider snaps to 1×, 5×, 10×, 15×, 20× and
@@ -1797,11 +1808,19 @@ App bindings remain available while Settings is open; editing a settings text fi
 captures keyboard input.
 Rewind queues the same serialized game saves used by save states and steps
 back through them. Loading or rewinding keeps app commands, recording controls,
-the FF toggle, FF rate and app settings as currently set.
+the FF toggle, FF rate and app settings as currently set. A recording goes on
+across a load or a rewind step and `stop_recording` lists them (`restores`:
+each a `state_load` or a `rewind_step`, with the vblank it left and the one
+it restored). The game's vblank count is restored with its state, so the
+log's later entries belong to another timeline: `replay` refuses a log whose
+vblanks go back, naming the entry and the vblanks, and one that lists a
+restore (a load forward in time keeps them in order), rather than
+interleave two timelines.
 
 Ordinary saves still use the original game save menu and its two memory cards.
-Settings can import or export an exact 128 KiB raw `.mcd` card. Browser card
-imports apply to the next boot; native imports replace the inserted card.
+Settings can import or export an exact 128 KiB raw `.mcd` card. An import
+replaces the inserted card at once, closing its open files; the browser
+writes it to IndexedDB first, with play paused until that completes.
 State backups use `.xemstate`; settings have a separate JSON backup. Native
 writes acknowledge after writing, syncing and replacing the file. Document
 providers on Android acknowledge after write, flush and close; their own
@@ -1813,15 +1832,41 @@ decoder/drive progress, with the number of the disc in the drive. The state
 identifies the exact game module, the game (both discs alike, [Discs](#discs))
 and ordered package digests. Checksums, versions, identity, buffer bounds,
 device data and the drive's disc being at hand are validated before committing
-the restore. Incompatible states are rejected explicitly. Host disc/storage
-attachments and presentation settings and current memory-card images stay
-attached (the drive takes the state's disc from them); queued future audio is
-discarded. App pacing is omitted from the state and reapplied after restoring
-the game's music phase. The game state format is version 8; older snapshots
-are rejected explicitly. Card device
-protocol state is saved, but persistent card contents are excluded. Loading,
-importing and rewinding never roll back or write ordinary card saves; card
-backups are separate explicit operations.
+the restore, and a refused state changes nothing. A refusal names what
+differs: a size outside 32 bytes to 64 MiB, the checksum, the magic, the
+format version found and the one expected (`bad snapshot: format version 8,
+expected 9`), each identity part that differs with the state's value and the
+session's (`incompatible state: the state's game module is "…", this
+session's is "…"`, likewise the disc and the packages), an identity field
+the format has not got, a device's version found and expected, truncated or
+trailing bytes, or the drive's disc not being at hand. Hosts show that text
+as it is (the HUD's failure chip, the panel's status line; `Game::command`
+returns it plain). Host disc/storage attachments and presentation settings
+and current memory-card images stay attached (the drive takes the state's
+disc from them); queued future audio is discarded. App pacing is omitted
+from the state and reapplied after restoring the game's music phase. The
+game state format is version 9 (`snapshot::VERSION`); a state of another
+version is refused, never converted. `snapshot::FORMAT_FINGERPRINT` beside
+it is the SHA-256 of a stand-in state with the format's parts in use
+(`format_fingerprint_matches_version`): a change to what a state holds or
+how it is written fails that test until the version changes with it.
+
+Card device protocol state is saved, but persistent card contents are
+excluded. Loading, importing and rewinding never roll back or write ordinary
+card saves; card backups are separate explicit operations. The protocol
+state is the calls under way: the open files, a directory search and a
+pending check. Each open file carries the directory frame of its first block
+as the device last left it (recorded when it opens, kept in step as the
+device's own calls change the directory), and the search the digest of the
+directory it lists. Restored over the inserted cards, a file whose first
+block's frame reads otherwise there is closed: its calls fail as on a removed
+card, and the game takes its own retry and failure path (the save command's
+failed-save notice, 0x35) instead of writing the rest of an old save over
+what the block holds now, a newer save that reused it or another card's
+file. A search over a directory that differs ends, and a pending check
+reports the card inserted now. Over the same card a state goes on as it
+would have.
+
 Rewind expires states beyond the configured history length and discards the
 future after stepping back. Retained allocations also stay within 2 GiB
 (`MAX_REWIND_BYTES`, the budget whenever history is on); Settings reports
@@ -1867,8 +1912,54 @@ input, setup and pacing commands and cannot access files. Browsers use explicit
 Settings operations or `window.xem.appOperation({Action: 'ExportState'})` and
 the snapshot/card/settings automation methods. Browser file pickers require a
 recognized activation; a refusal is shown in Settings and operation status.
-There is no Lua runtime or XR game session in the current hosts to qualify;
-these state paths cover the existing game, event, audio and media services.
+Headset play (OpenXR's `xr_play`, the browser's WebXR session) saves and
+loads through the same session. No Lua runtime exists yet (plan.md, Phase
+11), so these state paths cover the game, event, audio and media services.
+
+Tests: `xem-core/tests/persistence.rs`, over a stand-in module and the real
+clock and devices (no local inputs):
+`every_damaged_or_foreign_state_is_refused_by_name_and_changes_nothing` (an
+empty file, 31 bytes, one byte over the cap, a flipped byte, a truncated
+file, garbage sealed and not, another magic, versions 8 and 10, another game
+module, disc or package list, an extra identity field, a trailing byte, a
+truncated last device and a drive's disc the session has not got: each
+refused with its message through `Runtime::restore` and
+`Session::restore_bytes`, the live state and the session's timeline
+unchanged; given the disc, the state restores and goes on as where it was
+saved); `random_damage_never_panics_or_half_restores` (200 seeded mutations
+of a state's content, resealed: a bit flipped, a word overwritten, inserted
+or deleted, anywhere or where the structure is dense; 98 refused with
+nothing changed, 102 accepted whole, each saving as given or restoring as
+itself; an unoptimised build runs the first 20, about six seconds here);
+`format_fingerprint_matches_version`;
+`rewinding_into_a_save_never_changes_another_file_and_the_same_card_goes_on_identically`
+(the stand-in saving as the game does, a card call a frame: rewound into its
+writes after a newer save took the block, its remaining writes and its
+rename are refused and the newer save and its stored copy stay; over the
+card as the state left it, the save and the state end as the first time);
+`a_recording_reports_the_restores_it_spans_and_a_replay_refuses_them`. The
+card device's tests: a restored save writes on over the same card and never
+over another file, a file the device changed while it was open (the game's
+failure path leaves one open) restores over the same card, and a restored
+listing and check follow the inserted card; the drive's: a state waiting for
+a disc takes it where the session holds it, as when the host adds it.
+`web/tests/persistence.test.mjs`: a state another game module build saved
+(the fixture with one custom section more) is refused with the module
+message, the running state and the stored state unchanged, besides the
+storage failures above. `xem-ui/tests/hud.rs` shows a refusal in the failure
+chip.
+
+Not done or not measured: only the first block's directory frame of an open
+file is compared (the game's saves are one block; a longer file's later
+blocks are not checked); two temporary files in one block have the same
+frame, so a state taken inside one save and restored inside a later save
+that reused the block (once that save deleted the first one) writes on over
+it; a state taken inside a save is tested with the stand-in and the card
+device's bench, not the original game's save menu; sealed but crafted values
+for the entry, the stack pointer, fiber areas, the clock and the pads are
+accepted and fail later in the bounds-checked module; the fingerprint guards
+the layout of the stand-in's state, not device semantics changed without a
+layout change.
 
 ## Desktop host and settings panel
 
@@ -2051,9 +2142,12 @@ as JSON text or bytes.
   card, with a visible missing/eviction notice). The card device's `CardStorage` is synchronous and IndexedDB is not:
   the page loads both images before any session boots, the storage
   (`BrowserCards`) answers loads from that copy and takes the device's writes
-  into it at once, marking the card dirty; after each animation frame and
-  automation step the page writes the latest dirty images to IndexedDB in
-  order and acknowledges only completed transactions. A failed write retains
+  into it at once, marking the card dirty; after each of the window's
+  animation frames and each automation step the page writes the latest
+  dirty images to IndexedDB in order and acknowledges only completed
+  transactions. A WebXR session's frames replace the window's and write
+  nothing: dirty images wait for the session's end, an automation step or
+  an explicit retry. A failed write retains
   the image for explicit retry and export, with the error visible in Settings.
   Quota exhaustion, denied storage, interrupted transactions, corrupt states
   and missing/evicted saves have explicit errors. The runtime's

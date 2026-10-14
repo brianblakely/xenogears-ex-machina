@@ -1,13 +1,53 @@
 //! Public tests for restore failure atomicity, queued commands and time controls.
 //! This stand-in exercises the real clock/devices; original-game tests live in
-//! xem-headless/tests/slice.rs and route.rs.
+//! xem-headless/tests/slice.rs and route.rs. No local inputs are needed:
+//!
+//!     cargo test -p xem-core --test persistence
 use serde_json::json;
-use std::{cell::Cell,rc::Rc,time::Duration};
+use std::{cell::{Cell,RefCell},rc::Rc,time::Duration};
 use xem_core::control::Session;
+use xem_core::devices::card::{CardStorage, formatted};
 use xem_core::memory::OutOfBounds;
 use xem_core::module::{AsyncState, ImportHandler};
 use xem_core::snapshot::{REGIONS, checked, seal};
 use xem_core::{Action, GameMemory, GameModule, Import, Runtime, Trap};
+
+/// The stand-in's save, as the game's (menu_framework.c's save command):
+/// with `SAVE_STEP` nonzero each frame makes one step of BIOS file calls
+/// through the port's card imports. Step 1 checks the card, lists it, deletes
+/// the old save and the temporary file, creates that and opens it for
+/// writing; steps 2-33 write its 32 sectors of 0x100 bytes from `SAVE_DATA`;
+/// step 34 closes and renames it to the save's name.
+const SAVE_STEP: u32 = 0x8000_0200;
+const SAVE_FD: u32 = 0x8000_0204;
+/// The writes that wrote their sector, those refused, the rename's result.
+const SAVE_WRITTEN: u32 = 0x8000_0208;
+const SAVE_REFUSED: u32 = 0x8000_020c;
+const SAVE_RENAMED: u32 = 0x8000_0210;
+const SAVE_DEVICE: u32 = 0x8000_0280;
+const SAVE_TEMP: u32 = 0x8000_0300;
+const SAVE_NAME: u32 = 0x8000_0320;
+const SAVE_ENTRY: u32 = 0x8000_0340;
+const SAVE_DATA: u32 = 0x8000_1000;
+const SAVE_STEPS: u32 = 34;
+
+/// Card images shared with the test, as a host's storage.
+#[derive(Clone)]
+struct Storage(Rc<RefCell<[Vec<u8>; 2]>>);
+impl CardStorage for Storage {
+    fn load(&mut self, slot: usize) -> std::io::Result<Option<Vec<u8>>> { Ok(Some(self.0.borrow()[slot].clone())) }
+    fn store(&mut self, slot: usize, image: &[u8]) -> std::io::Result<()> { self.0.borrow_mut()[slot] = image.to_vec(); Ok(()) }
+}
+
+/// A small deterministic generator for damaged states.
+struct Lcg(u64);
+impl Lcg {
+    fn next(&mut self) -> u32 {
+        self.0 = self.0.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        (self.0 >> 33) as u32
+    }
+    fn below(&mut self, n: usize) -> usize { self.next() as usize % n }
+}
 
 struct Memory(Vec<Vec<u8>>);
 impl Memory {
@@ -39,6 +79,45 @@ impl Counter {
         Self { memory: Memory(REGIONS.iter().map(|(_, size)| vec![0; *size as usize]).collect()),
             handler: None, state: AsyncState::Normal, sp: 0x1010_0000 }
     }
+
+    /// A card import, as the port's BIOS calls make it.
+    fn card(&mut self, name: &str, args: &[u32]) -> u32 {
+        match unsafe { (*self.handler.unwrap()).import(Import { name, args }, &mut self.memory) } {
+            Action::Return(value) => value,
+            other => panic!("{name}: {other:?}"),
+        }
+    }
+
+    fn save_step(&mut self, step: u32) {
+        let count = |memory: &mut Memory, at: u32| memory.write_u32(at, memory.read_u32(at).unwrap() + 1).unwrap();
+        match step {
+            1 => {
+                self.card("card_start", &[]);
+                self.card("card_info", &[0]);
+                self.card("card_firstfile", &[SAVE_DEVICE, SAVE_ENTRY]);
+                self.card("card_delete", &[SAVE_NAME]);
+                self.card("card_delete", &[SAVE_TEMP]);
+                let created = self.card("card_open", &[SAVE_TEMP, 1 << 16 | 0x200]);
+                self.card("card_close", &[created]);
+                let fd = self.card("card_open", &[SAVE_TEMP, 2]);
+                for (at, value) in [(SAVE_FD, fd), (SAVE_WRITTEN, 0), (SAVE_REFUSED, 0), (SAVE_RENAMED, 0)] {
+                    self.memory.write_u32(at, value).unwrap();
+                }
+            }
+            2..SAVE_STEPS => {
+                let fd = self.memory.read_u32(SAVE_FD).unwrap();
+                let wrote = self.card("card_write", &[fd, SAVE_DATA + (step - 2) * 0x100, 0x100]);
+                count(&mut self.memory, if wrote == 0x100 { SAVE_WRITTEN } else { SAVE_REFUSED });
+            }
+            _ => {
+                let fd = self.memory.read_u32(SAVE_FD).unwrap();
+                self.card("card_close", &[fd]);
+                let renamed = self.card("card_rename", &[SAVE_TEMP, SAVE_NAME]);
+                self.memory.write_u32(SAVE_RENAMED, renamed).unwrap();
+            }
+        }
+        self.memory.write_u32(SAVE_STEP, if step == SAVE_STEPS { 0 } else { step + 1 }).unwrap();
+    }
 }
 impl GameModule for Counter {
     fn game_paused(&mut self, mode: u32) -> bool {
@@ -51,6 +130,8 @@ impl GameModule for Counter {
         self.state = AsyncState::Normal;
         let count = self.memory.read_u32(0x8000_0000).unwrap();
         self.memory.write_u32(0x8000_0000, count + 1).unwrap();
+        let step = self.memory.read_u32(SAVE_STEP).unwrap();
+        if step != 0 { self.save_step(step); }
         let action = unsafe { (*self.handler.unwrap()).import(Import { name: "yield", args: &[1] }, &mut self.memory) };
         assert_eq!(action, Action::Unwind);
         self.state = AsyncState::Unwinding;
@@ -148,14 +229,7 @@ fn paused_game_frames_neither_add_snapshots_nor_expire_play_history() {
 
 #[test]
 fn loading_and_rewinding_do_not_roll_back_ordinary_card_saves() {
-    use xem_core::devices::card::{CardStorage, CARD_SIZE, formatted};
-    use std::cell::RefCell;
-    #[derive(Clone)]
-    struct Storage(Rc<RefCell<[Vec<u8>; 2]>>);
-    impl CardStorage for Storage {
-        fn load(&mut self, slot: usize) -> std::io::Result<Option<Vec<u8>>> { Ok(Some(self.0.borrow()[slot].clone())) }
-        fn store(&mut self, slot: usize, image: &[u8]) -> std::io::Result<()> { self.0.borrow_mut()[slot] = image.to_vec(); Ok(()) }
-    }
+    use xem_core::devices::card::CARD_SIZE;
     let stored = Rc::new(RefCell::new([formatted(), formatted()]));
     let (mut s, clock) = timed_session();
     s.configure_rewind(0,1,30).unwrap();
@@ -297,27 +371,296 @@ fn fast_forward_toggles_without_changing_the_saved_rate_and_uncapped_uses_normal
     assert_eq!(other.snapshot_bytes().unwrap(),saved);
 }
 
+/// A state's content with its identity record (after the magic and the
+/// version) replaced by `identity`.
+fn with_identity(content: &[u8], identity: &str) -> Vec<u8> {
+    let length = u32::from_le_bytes(content[12..16].try_into().unwrap()) as usize;
+    let mut w = xem_core::snapshot::Writer(content[..12].to_vec());
+    w.bytes(identity.as_bytes());
+    w.0.extend_from_slice(&content[16 + length..]);
+    w.0
+}
+
+/// A small disc for the stand-in's drive.
+fn disc() -> Box<dyn xem_disc::SectorSource> {
+    Box::new(xem_disc::MemorySource::from_sectors(std::iter::repeat_n([0; xem_disc::sector::SECTOR_SIZE], 16)))
+}
+
 #[test]
-fn a_corrupt_late_device_or_incompatible_state_changes_nothing() {
+fn every_damaged_or_foreign_state_is_refused_by_name_and_changes_nothing() {
+    use xem_core::snapshot::{MAX_STATE, VERSION};
     let mut s = session();
     s.execute(&json!({"cmd":"frames", "count":2}));
     let original = s.runtime.snapshot().unwrap();
+    let content = checked(&original).unwrap().to_vec();
     s.execute(&json!({"cmd":"frames", "count":3}));
     let current = s.runtime.snapshot().unwrap();
-    let mut body = checked(&original).unwrap().to_vec();
-    body.pop(); // truncate the last device, keeping a correct envelope checksum
-    assert!(s.runtime.restore(&seal(body)).is_err());
-    assert_eq!(s.runtime.snapshot().unwrap(), current);
-    let mut extra = checked(&original).unwrap().to_vec(); extra.push(7);
-    assert!(s.runtime.restore(&seal(extra)).is_err());
-    assert_eq!(s.runtime.snapshot().unwrap(), current);
-    s.runtime.identity.packages.push("different-package-digest".into());
-    let incompatible = s.runtime.snapshot().unwrap();
-    assert!(s.runtime.restore(&original).unwrap_err().to_string().contains("incompatible"));
-    assert_eq!(s.runtime.snapshot().unwrap(), incompatible);
-    let mut broken = original; broken[80] ^= 1;
-    assert!(s.runtime.restore(&broken).unwrap_err().to_string().contains("checksum"));
-    assert_eq!(s.runtime.snapshot().unwrap(), incompatible);
+    let changed = |at: usize, bytes: &[u8]| {
+        let mut c = content.clone();
+        c[at..at + bytes.len()].copy_from_slice(bytes);
+        seal(c)
+    };
+    let mut rng = Lcg(7);
+    let garbage: Vec<u8> = (0..4096).map(|_| rng.next() as u8).collect();
+    let module = std::any::type_name::<Counter>();
+    let identity = |json: String| seal(with_identity(&content, &json));
+    let cases: Vec<(&str, Vec<u8>, String)> = vec![
+        ("an empty file", vec![], "bad snapshot: state size 0 bytes, outside 32 bytes to 64 MiB".into()),
+        ("31 bytes", vec![0; 31], "bad snapshot: state size 31 bytes".into()),
+        ("over the size cap", vec![0; MAX_STATE + 1], format!("bad snapshot: state size {} bytes", MAX_STATE + 1)),
+        ("a flipped byte", { let mut b = original.clone(); b[80] ^= 1; b }, "bad snapshot: checksum".into()),
+        ("a truncated file", original[..original.len() - 1].to_vec(), "bad snapshot: checksum".into()),
+        ("garbage", garbage.clone(), "bad snapshot: checksum".into()),
+        ("sealed garbage", seal(garbage), "bad snapshot: magic".into()),
+        ("another magic", changed(0, b"XEMSNAQ"), "bad snapshot: magic".into()),
+        ("version 8", changed(8, &8u32.to_le_bytes()), format!("bad snapshot: format version 8, expected {VERSION}")),
+        ("version 10", changed(8, &10u32.to_le_bytes()), format!("bad snapshot: format version 10, expected {VERSION}")),
+        ("another game module", identity(r#"{"module":"another build","disc":"","packages":[]}"#.into()),
+            format!(r#"incompatible state: the state's game module is "another build", this session's is "{module}""#)),
+        ("another disc", identity(format!(r#"{{"module":"{module}","disc":"SLUS-00664+SLUS-00669","packages":[]}}"#)),
+            r#"incompatible state: the state's disc is "SLUS-00664+SLUS-00669", this session's is """#.into()),
+        ("other packages", identity(format!(r#"{{"module":"{module}","disc":"","packages":["a mod"]}}"#)),
+            r#"incompatible state: the state's packages are ["a mod"], this session's are []"#.into()),
+        ("an extra identity field", identity(format!(r#"{{"module":"{module}","disc":"","packages":[],"extra":1}}"#)),
+            "bad snapshot: identity: unknown field `extra`".into()),
+        ("a trailing byte", { let mut c = content.clone(); c.push(7); seal(c) }, "bad snapshot: trailing bytes".into()),
+        ("a truncated last device", { let mut c = content.clone(); c.pop(); seal(c) }, "bad snapshot: truncated".into()),
+    ];
+    // Through the runtime and the session; a refusal cannot undo another's
+    // change, so one snapshot after both shows that neither changed the game.
+    for (what, bytes, expected) in &cases {
+        let error = s.runtime.restore(bytes).unwrap_err().to_string();
+        assert!(error.contains(expected.as_str()), "{what}: {error}");
+        let (revision, rewind) = (s.timeline_revision, s.rewind.status());
+        let error = s.restore_bytes(bytes).unwrap_err();
+        assert!(error.contains(expected.as_str()), "{what}: {error}");
+        assert_eq!((s.timeline_revision, s.rewind.status()), (revision, rewind), "{what}: the session's timeline is unchanged");
+        assert!(s.snapshot_bytes().unwrap() == current, "{what}: the game is unchanged");
+    }
+
+    // A state with disc 2 in the drive, in a session that has not got it.
+    let mut two = session();
+    two.runtime.services().insert_disc(2, disc());
+    two.execute(&json!({"cmd":"frames", "count":2}));
+    let with_disc_2 = two.snapshot_bytes().unwrap();
+    let expected = "snapshot device state: the state has disc 2 in the drive, which is not here";
+    let error = s.runtime.restore(&with_disc_2).unwrap_err().to_string();
+    assert!(error.contains(expected), "{error}");
+    assert!(s.runtime.snapshot().unwrap() == current);
+    assert!(s.restore_bytes(&with_disc_2).unwrap_err().contains(expected));
+    assert!(s.snapshot_bytes().unwrap() == current);
+    // Given disc 2, it restores and goes on as where it was saved.
+    s.runtime.services().add_disc(2, disc());
+    s.restore_bytes(&with_disc_2).unwrap();
+    for session in [&mut s, &mut two] { session.execute(&json!({"cmd":"frames", "count":3})); }
+    assert!(s.snapshot_bytes().unwrap() == two.snapshot_bytes().unwrap());
+}
+
+#[test]
+fn random_damage_never_panics_or_half_restores() {
+    // Each restore and each snapshot that checks it go through the regions'
+    // 26 MiB and every device: an unoptimised build (CI's dev profile, about
+    // 0.3 s a mutation here) runs the first tenth of the mutations.
+    let mutations = if cfg!(debug_assertions) { 20 } else { 200 };
+    let mut s = session();
+    s.execute(&json!({"cmd":"frames", "count":3}));
+    let content = checked(&s.runtime.snapshot().unwrap()).unwrap().to_vec();
+    s.execute(&json!({"cmd":"frames", "count":2}));
+    let mut current = s.runtime.snapshot().unwrap();
+    let mut rng = Lcg(0x5eed);
+    let (mut refused, mut restored) = (0, 0);
+    for _ in 0..mutations {
+        let mut damaged = content.clone();
+        // Anywhere, or where the structure is dense: the header, identity,
+        // fibers and clock first, the card and the SPU's registers last.
+        let at = match rng.below(3) {
+            0 => rng.below(damaged.len() - 4),
+            1 => rng.below(1024),
+            _ => damaged.len() - 4 - rng.below(4096),
+        };
+        match rng.below(4) {
+            0 => damaged[at] ^= 1 << rng.below(8),
+            1 => damaged[at..at + 4].copy_from_slice(&rng.next().to_le_bytes()),
+            2 => { damaged.splice(at..at, rng.next().to_le_bytes()); }
+            _ => { damaged.drain(at..at + 4); }
+        }
+        let damaged = seal(damaged);
+        match s.runtime.restore(&damaged) {
+            Err(_) => {
+                refused += 1;
+                assert!(s.runtime.snapshot().unwrap() == current, "a refused state changes nothing");
+            }
+            Ok(()) => {
+                restored += 1;
+                // What it accepted is whole: it saves as it was given, or,
+                // given in another encoding, restores as itself again.
+                let accepted = s.runtime.snapshot().unwrap();
+                if accepted != damaged {
+                    s.runtime.restore(&accepted).unwrap();
+                    assert!(s.runtime.snapshot().unwrap() == accepted, "an accepted state restores as itself");
+                }
+                current = accepted;
+            }
+        }
+    }
+    assert!(refused * 4 > mutations && restored * 10 > mutations, "both outcomes: {refused} refused, {restored} restored");
+}
+
+#[test]
+fn format_fingerprint_matches_version() {
+    use xem_core::snapshot::{FORMAT_FINGERPRINT, VERSION, digest};
+    // A deterministic stand-in state with the format's parts in use: game
+    // memory in each region, a sound timer, pads, the GPU's VRAM, settings
+    // and a partial command, the SPU's registers, a read under way, a card
+    // with a save half written (an open file, a listing, a check), raised
+    // interrupts and a dispatch write.
+    let mut s = session();
+    s.runtime.services().card.attach_storage(Box::new(Storage(Rc::new(RefCell::new([formatted(), formatted()]))))).unwrap();
+    s.runtime.services().insert_disc(1, disc());
+    s.runtime.services().clock.set_counter(2, 0x44e8, xem_core::clock::RCNT_MODE_INTERRUPT);
+    s.runtime.services().clock.start_counter(2);
+    for (at, value) in [(0x0000_0400, 1), (0x1000_0100, 2), (0x1F80_0010, 3), (0x1F80_1D80, 0x3FFF_3FFF), (0x8000_0040, 0x1234_5678)] {
+        s.runtime.memory().write_u32(at, value).unwrap();
+    }
+    s.set_pad(0, xem_core::pad::button::CROSS | xem_core::pad::button::START);
+    let gpu = s.runtime.services().gpu.device_mut();
+    gpu.write_gp1(0x0800_0001);
+    gpu.write_gp0_words(&[0xE100_0208, 0x0212_3456, 0x0010_0020, 0x0008_0010, 0x2800_FF00, 0x0004_0004]);
+    s.execute(&json!({"cmd":"frames", "count":3}));
+    begin_save(&mut s, 0x3C);
+    s.runtime.step().unwrap();
+    let now = s.runtime.services().clock.now;
+    s.runtime.services().cd.command(xem_core::devices::cd::com::READN, &[], now);
+    s.runtime.services().raised.push((5, 0x20));
+    s.runtime.write_before_next_dispatch(0x8000_0400, 7);
+    let content = checked(&s.runtime.snapshot().unwrap()).unwrap().to_vec();
+    let fingerprint: String = digest(&content).iter().map(|b| format!("{b:02x}")).collect();
+    assert_eq!(fingerprint, FORMAT_FINGERPRINT,
+        "the state format changed: bump snapshot::VERSION (now {VERSION}) and set FORMAT_FINGERPRINT to {fingerprint}");
+}
+
+/// The stand-in's save under way from the next frame: its names, and
+/// `fill` mixed with each sector's number as its data.
+fn begin_save(s: &mut Session<Counter>, fill: u8) {
+    let memory = s.runtime.memory();
+    for (at, text) in [(SAVE_DEVICE, "bu00:"), (SAVE_TEMP, "bu00:__tmp_file"), (SAVE_NAME, "bu00:BASLUS-00664")] {
+        memory.write(at, format!("{text}\0").as_bytes()).unwrap();
+    }
+    let data: Vec<u8> = (0..0x2000u32).map(|i| fill ^ (i / 0x100) as u8).collect();
+    memory.write(SAVE_DATA, &data).unwrap();
+    memory.write_u32(SAVE_STEP, 1).unwrap();
+}
+
+/// Frames until the save under way has committed or failed.
+fn finish_save(s: &mut Session<Counter>) {
+    while word(s, SAVE_STEP) != 0 { assert!(s.frame().unwrap()); }
+}
+
+fn word(s: &mut Session<Counter>, at: u32) -> u32 { s.runtime.memory().read_u32(at).unwrap() }
+
+fn card_image(s: &mut Session<Counter>) -> Vec<u8> { s.runtime.services().card.image(0).unwrap().to_vec() }
+
+#[test]
+fn rewinding_into_a_save_never_changes_another_file_and_the_same_card_goes_on_identically() {
+    let (mut s, clock) = timed_session();
+    let stored = Rc::new(RefCell::new([formatted(), formatted()]));
+    s.runtime.services().card.attach_storage(Box::new(Storage(stored.clone()))).unwrap();
+    begin_save(&mut s, 0xA0);
+    for _ in 0..10 { assert!(s.frame().unwrap()); }
+    // A rewind state inside the save's writes.
+    frame_at(&mut s, &clock, 1);
+    let mid_frame = s.runtime.frames();
+    assert_eq!(s.rewind.status()["newest_frame"], mid_frame);
+    let mid = s.snapshot_bytes().unwrap();
+    let card_then = card_image(&mut s);
+    let written = word(&mut s, SAVE_WRITTEN);
+    assert!((1..32).contains(&written), "{written} sectors written");
+    finish_save(&mut s);
+    assert_eq!((word(&mut s, SAVE_WRITTEN), word(&mut s, SAVE_RENAMED)), (32, 1), "saved");
+    let finished = s.snapshot_bytes().unwrap();
+    let first_save = card_image(&mut s);
+    // A newer save of the same file takes the same block.
+    begin_save(&mut s, 0x5B);
+    finish_save(&mut s);
+    let newer = card_image(&mut s);
+    assert!(newer != first_save && word(&mut s, SAVE_RENAMED) == 1);
+
+    // Rewound into the first save's writes, its calls on the old file are
+    // refused as on a removed card, and its own failure path follows (the
+    // rename finds no temporary file): the newer save stays as it is.
+    let reply = s.execute(&json!({"cmd":"rewind","steps":1}));
+    assert!(reply.get("error").is_none(), "{reply}");
+    assert_eq!(s.runtime.frames(), mid_frame);
+    finish_save(&mut s);
+    assert_eq!((word(&mut s, SAVE_REFUSED), word(&mut s, SAVE_RENAMED)), (32 - written, 0));
+    assert!(card_image(&mut s) == newer, "the newer save is intact");
+    assert!(stored.borrow()[0] == newer, "and so is the stored card");
+
+    // Over the card as the state left it, the save goes on identically.
+    s.runtime.services().card.import_image(0, card_then).unwrap();
+    s.restore_bytes(&mid).unwrap();
+    finish_save(&mut s);
+    assert!(card_image(&mut s) == first_save, "the same save");
+    assert!(s.snapshot_bytes().unwrap() == finished, "the same state as the first time");
+}
+
+fn vblank(s: &mut Session<Counter>) -> u64 { s.execute(&json!({"cmd":"status"}))["vblanks"].as_u64().unwrap() }
+
+#[test]
+fn a_recording_reports_the_restores_it_spans_and_a_replay_refuses_them() {
+    let cross = xem_core::pad::button::CROSS;
+    let (mut s, clock) = timed_session();
+    let initial = s.snapshot_bytes().unwrap();
+    s.execute(&json!({"cmd":"record"}));
+    s.execute(&json!({"cmd":"frames","count":5}));
+    frame_at(&mut s, &clock, 1);
+    let rewound_to = vblank(&mut s);
+    s.execute(&json!({"cmd":"frames","count":4}));
+    s.set_pad(0, cross);
+    let pressed_at = vblank(&mut s);
+    s.execute(&json!({"cmd":"frames","count":2}));
+    let rewound_from = vblank(&mut s);
+    assert!(s.execute(&json!({"cmd":"rewind","steps":1})).get("error").is_none());
+    assert_eq!(vblank(&mut s), rewound_to);
+    s.set_pad(0, 0);
+    s.execute(&json!({"cmd":"frames","count":3}));
+    let loaded_from = vblank(&mut s);
+    s.restore_bytes(&initial).unwrap();
+    assert_eq!(s.execute(&json!({"cmd":"status"}))["recording"], true, "the recording goes on");
+    s.execute(&json!({"cmd":"frames","count":2}));
+    let log = s.execute(&json!({"cmd":"stop_recording"}));
+    assert_eq!(log["restores"], json!([
+        {"kind":"rewind_step","from_vblank":rewound_from,"to_vblank":rewound_to},
+        {"kind":"state_load","from_vblank":loaded_from,"to_vblank":0},
+    ]));
+    // Its pad changes after the rewind go back in time: the replay refuses
+    // the log, naming where, and schedules nothing.
+    let mut replay = log.clone();
+    replay["cmd"] = json!("replay");
+    let mut other = session();
+    other.restore_bytes(&initial).unwrap();
+    let error = other.execute(&replay)["error"].as_str().unwrap().to_string();
+    assert!(error.contains(&format!("goes back in time at its changes entry 3: vblank {rewound_to} after vblank {pressed_at}")), "{error}");
+    other.execute(&json!({"cmd":"frames","count":20}));
+    assert_eq!(other.execute(&json!({"cmd":"status"}))["pads"][0]["buttons"], json!([]), "nothing replayed");
+
+    // A restore forward in time keeps the vblanks in order; the log names it
+    // and a replay refuses it all the same.
+    let mut later = session();
+    later.execute(&json!({"cmd":"frames","count":30}));
+    let ahead = later.snapshot_bytes().unwrap();
+    let mut s = session();
+    s.execute(&json!({"cmd":"record"}));
+    s.execute(&json!({"cmd":"frames","count":2}));
+    let from = vblank(&mut s);
+    s.restore_bytes(&ahead).unwrap();
+    let to = vblank(&mut s);
+    s.execute(&json!({"cmd":"frames","count":2}));
+    let mut log = s.execute(&json!({"cmd":"stop_recording"}));
+    assert_eq!(log["restores"], json!([{"kind":"state_load","from_vblank":from,"to_vblank":to}]));
+    log["cmd"] = json!("replay");
+    let error = session().execute(&log)["error"].as_str().unwrap().to_string();
+    assert!(error.contains(&format!("the log spans 1 restore(s), the first a state load at vblank {from} to vblank {to}")), "{error}");
 }
 
 #[test]

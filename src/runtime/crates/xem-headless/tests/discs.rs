@@ -3,7 +3,8 @@
 //! changer puts it in at once when it is beside disc 2, and without it the
 //! game waits at its change-disc notice until the host adds it. A state saved
 //! before the change restores in a session booted from disc 1 and goes on
-//! identically. At the story's disc change the changer waits five seconds.
+//! identically; one saved while the game waits takes disc 1 there at once.
+//! At the story's disc change the changer waits five seconds.
 //!
 //!     XEM_DISC1=<disc 1> XEM_DISC2=<disc 2> cargo test --release -p xem-headless --test discs
 
@@ -86,20 +87,24 @@ fn a_new_game_on_disc_2_gets_disc_1_from_beside_it() {
     assert_eq!(other.memory_hash().unwrap(), reference);
 }
 
+/// Disc 2 alone in a directory (no disc 1 beside it).
+fn disc_2_alone(disc2: &std::path::Path) -> PathBuf {
+    let alone = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("disc-2-alone");
+    std::fs::create_dir_all(&alone).unwrap();
+    let link = alone.join(disc2.file_name().unwrap());
+    if !link.exists() {
+        std::os::unix::fs::symlink(std::fs::canonicalize(disc2).unwrap(), &link).unwrap();
+    }
+    link
+}
+
 #[test]
 fn without_disc_1_the_game_waits_until_the_host_adds_it() {
     let (Some(disc1), Some(disc2)) = (disc(1), disc(2)) else {
         eprintln!("skipping: needs both discs (XEM_DISC1, XEM_DISC2)");
         return;
     };
-    // Disc 2 alone in a directory.
-    let alone = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("disc-2-alone");
-    std::fs::create_dir_all(&alone).unwrap();
-    let link = alone.join(disc2.file_name().unwrap());
-    if !link.exists() {
-        std::os::unix::fs::symlink(std::fs::canonicalize(&disc2).unwrap(), &link).unwrap();
-    }
-    let mut session = session(&link);
+    let mut session = session(&disc_2_alone(&disc2));
     run(&mut session, 0, END + 600);
     assert_eq!(session.runtime.services().cd.wanted(), Some(1), "the new game asks for disc 1");
     assert_eq!(place(&mut session), (TITLE_MAP, 2, 2), "and waits at its change-disc notice");
@@ -107,6 +112,25 @@ fn without_disc_1_the_game_waits_until_the_host_adds_it() {
     assert_eq!(session.runtime.services().cd.wanted(), None);
     run(&mut session, END + 600, END + 1200);
     assert_eq!(place(&mut session), (FIRST_MAP, 1, 1), "with disc 1 the new game begins");
+}
+
+#[test]
+fn a_state_waiting_for_disc_1_takes_it_in_a_session_that_has_it() {
+    let (Some(disc1), Some(disc2)) = (disc(1), disc(2)) else {
+        eprintln!("skipping: needs both discs (XEM_DISC1, XEM_DISC2), side by side");
+        return;
+    };
+    let mut alone = session(&disc_2_alone(&disc2));
+    run(&mut alone, 0, END + 600);
+    assert_eq!(alone.runtime.services().cd.wanted(), Some(1), "the new game waits for disc 1");
+    let waiting = alone.snapshot_bytes().unwrap();
+    // Restored in a session booted from disc 1 with disc 2 beside it: the
+    // state's disc 2 goes back in the drive, and disc 1 in at once.
+    let mut both = session(&disc1);
+    both.restore_bytes(&waiting).expect("a state restores across the boot discs");
+    assert_eq!(both.runtime.services().cd.wanted(), None, "the wait takes the disc the session holds");
+    run(&mut both, END + 600, END + 1200);
+    assert_eq!(place(&mut both), (FIRST_MAP, 1, 1), "disc 1 went in, its index loaded, the new game began");
 }
 
 #[test]

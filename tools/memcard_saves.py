@@ -53,7 +53,7 @@ from tools.analysis.text_control import archive_entry  # noqa: E402
 
 KSEG0 = 0x80000000
 BLOCK, FRAME, HEADER = 0x2000, 0x80, 0x100
-PREFIX = b"BASLUS-00664"  # slot39 menu_load_card_resources: the prefix on both discs
+PREFIX = b"BASLUS-00664"  # slot39 menu_load_resources: the prefix on both discs
 GAME_DATA_SIZE = 0x2358
 
 # Game data (resident/gamedata.h) and save payload (slot39/file.h) offsets.

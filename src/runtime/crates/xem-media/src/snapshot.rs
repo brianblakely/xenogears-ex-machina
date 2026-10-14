@@ -9,8 +9,9 @@ use std::fmt;
 pub enum SnapshotError {
     /// The data does not start with this device's tag.
     WrongTag,
-    /// The data was written by an unknown format version.
-    UnsupportedVersion(u8),
+    /// The data was written by another format version: the one it has and
+    /// the one this device reads.
+    UnsupportedVersion { found: u8, expected: u8 },
     /// The data ends before the state does.
     Truncated,
     /// The data continues after the state.
@@ -23,7 +24,9 @@ impl fmt::Display for SnapshotError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::WrongTag => write!(f, "snapshot belongs to another device"),
-            Self::UnsupportedVersion(v) => write!(f, "unsupported snapshot version {v}"),
+            Self::UnsupportedVersion { found, expected } => {
+                write!(f, "unsupported snapshot version {found}, expected {expected}")
+            }
             Self::Truncated => write!(f, "snapshot is truncated"),
             Self::TrailingBytes => write!(f, "snapshot has trailing bytes"),
             Self::InvalidValue(field) => write!(f, "snapshot field {field} is out of range"),
@@ -82,7 +85,7 @@ impl<'a> Reader<'a> {
         }
         let found = reader.u8()?;
         if found != version {
-            return Err(SnapshotError::UnsupportedVersion(found));
+            return Err(SnapshotError::UnsupportedVersion { found, expected: version });
         }
         Ok(reader)
     }

@@ -424,8 +424,9 @@ impl Device for Spu {
     fn load(&mut self, state: &[u8]) -> Result<(), String> {
         let read = |state: &[u8]| -> Result<_, SnapshotError> {
             let mut r = Reader::new(state);
-            if r.u32()? != SNAPSHOT_VERSION {
-                return Err(SnapshotError::Format("SPU device version"));
+            let found = r.u32()?;
+            if found != SNAPSHOT_VERSION {
+                return Err(SnapshotError::Version { what: "SPU device", found, expected: SNAPSHOT_VERSION });
             }
             let mut chip = xem_spu::Spu::new();
             chip.load(r.bytes()?).map_err(|e| SnapshotError::Device(e.to_string()))?;

@@ -906,9 +906,9 @@ impl<M: GameModule> Runtime<M> {
         use crate::snapshot::*;
         let mut r = Reader::new(data);
         read_header(&mut r)?;
-        let identity: StateIdentity = serde_json::from_slice(r.bytes()?).map_err(|_| SnapshotError::Format("identity"))?;
-        if identity != self.identity {
-            return Err(SnapshotError::Format("incompatible game module, disc or packages"));
+        let identity: StateIdentity = serde_json::from_slice(r.bytes()?).map_err(|e| SnapshotError::Identity(e.to_string()))?;
+        if let Some(difference) = self.identity.difference(&identity) {
+            return Err(SnapshotError::Incompatible(difference));
         }
         let entry = (r.u32()?, r.u32()?);
         let current = r.u32()?;

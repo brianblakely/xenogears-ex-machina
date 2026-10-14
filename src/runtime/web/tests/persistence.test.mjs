@@ -2,11 +2,12 @@
 // commands. Original state/card files are generated in temporary local paths.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
-import { HEADLESS, NO_WEBGPU, ROOT, USER_DISC, WEB, settingsSection, start, status } from './support.mjs';
+import { HEADLESS, NO_WEBGPU, ROOT, USER_DISC, WEB, buildFixtures, settingsSection, start, status } from './support.mjs';
 
 const fixture = '?game=/fixtures/fixture.wasm';
 const forever = async (page) => page.evaluate(async () => {
@@ -167,6 +168,33 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
       });
       assert.match(result.error, /checksum/i); assert.deepEqual(result.before, result.after);
       assert.equal(result.missing, null); assert.match(result.notice, /cleared or evicted/);
+    } finally { await browser.close(); }
+  });
+
+  test('a state another game module build saved is refused by name, and the running state and stored state stay', async () => {
+    const browser = await start({ args: NO_WEBGPU, fixtures: true });
+    try {
+      const page = await browser.page(fixture); await forever(page);
+      await page.evaluate(() => window.xem.appOperation({ Action: 'SaveState' }));
+      const stored = () => page.evaluate(async () => (await (await import('/storage.js')).get('saves', 'slot0'))?.sha256);
+      const saved = await stored();
+      // The page again, running the other build.
+      await page.goto(`${browser.base}?game=/fixtures/fixture-b.wasm`);
+      await page.waitForFunction(() => document.body.dataset.ready === 'true');
+      await forever(page);
+      const result = await page.evaluate(async () => {
+        const x = window.xem; const before = Array.from(x.exportSnapshot()); let error;
+        try { await x.appOperation({ Action: 'LoadState' }); } catch (e) { error = String(e.message ?? e); }
+        return { before, after: Array.from(x.exportSnapshot()), error, notice: x.status().renderer.hud.notice };
+      });
+      const [state, running] = ['fixture.wasm', 'fixture-b.wasm']
+        .map((name) => createHash('sha256').update(readFileSync(join(buildFixtures(), name))).digest('hex'));
+      assert.notEqual(state, running);
+      assert.equal(result.error, `incompatible state: the state's game module is "${state}", this session's is "${running}"`);
+      assert.equal(result.notice, `Could not load state: ${result.error}`);
+      assert.deepEqual(result.after, result.before, 'the running state is unchanged');
+      assert.equal(await stored(), saved, 'the stored state is kept');
+      assert.deepEqual(page.errors, []);
     } finally { await browser.close(); }
   });
 

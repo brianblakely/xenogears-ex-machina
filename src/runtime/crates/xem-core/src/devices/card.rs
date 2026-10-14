@@ -39,6 +39,20 @@
 //! in tests, IndexedDB in browsers. Every call that changes a card writes its
 //! image back. Card images are persistent saves, independent of a game-state
 //! snapshot. Restoring game progress keeps the currently inserted cards.
+//!
+//! # Restoring over the inserted cards
+//!
+//! A state keeps the calls under way: the open files, a directory search and
+//! a pending `_card_info`. Each open file carries the directory frame of its
+//! first block as this device last left it (recorded at `open`, kept in step
+//! as its own calls change the directory), and the search the digest of the
+//! directory it lists. Restored over the inserted cards, a file whose first
+//! block's frame reads otherwise there is closed: its calls fail as on a
+//! removed card, and the game takes its own retry or failure path instead of
+//! writing the rest of an old save over whatever that block holds now (a
+//! newer save that reused it, another card). A search over a directory that
+//! differs ends; a pending check reports the card inserted now. Over the same
+//! card the state goes on as it would have.
 
 use super::{Context, Device, unknown};
 use crate::clock::CPU_HZ;
@@ -68,7 +82,9 @@ const NAME_LENGTH: usize = 20;
 const FILES: usize = 16;
 /// The BIOS's first file descriptor for a file (0 and 1 are the console).
 const FIRST_FD: u32 = 2;
-const SNAPSHOT_VERSION: u32 = 2;
+const SNAPSHOT_VERSION: u32 = 3;
+/// The directory a search lists: block 0's header and directory frames.
+const DIRECTORY_SIZE: usize = BLOCKS * FRAME_SIZE;
 
 /// Where the card images persist.
 pub trait CardStorage {
@@ -166,6 +182,16 @@ fn state(image: &[u8], block: usize) -> u32 {
     get_u32(frame(image, block), 0)
 }
 
+/// Block `block`'s directory frame on a card, or None without one.
+fn directory_frame(image: Option<&[u8]>, block: usize) -> Option<[u8; FRAME_SIZE]> {
+    image.map(|image| frame(image, block).try_into().expect("a frame"))
+}
+
+/// The digest of the directory a search lists (none without a card).
+fn directory_digest(image: Option<&[u8]>) -> [u8; 32] {
+    crate::snapshot::digest(image.map_or(&[][..], |image| &image[..DIRECTORY_SIZE]))
+}
+
 /// The first block of the file named `name`.
 fn find(image: &[u8], name: &[u8]) -> Option<usize> {
     (1..BLOCKS).find(|&b| state(image, b) == STATE_FIRST && entry_name(image, b) == name)
@@ -225,6 +251,9 @@ struct OpenFile {
     size: u32,
     position: u32,
     flags: u32,
+    /// The directory frame of the file's first block as this device last
+    /// left it: a restored file stays open only where the card has it.
+    frame: [u8; FRAME_SIZE],
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -232,6 +261,16 @@ struct Search {
     slot: usize,
     pattern: Vec<u8>,
     next: usize,
+    /// The digest of the directory it lists ([`directory_digest`]).
+    directory: [u8; 32],
+}
+
+/// A pending `_card_info`: when it ends, the channel it checks and its event.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Check {
+    at: u64,
+    channel: u32,
+    event: u32,
 }
 
 #[derive(Default)]
@@ -242,21 +281,47 @@ pub struct Card {
     files: [Option<OpenFile>; FILES],
     search: Option<Search>,
     busy_until: u64,
-    /// A pending `_card_info`: when it ends and its event.
-    check: Option<(u64, u32)>,
+    check: Option<Check>,
     /// Storage errors, for the host to report.
     pub errors: Vec<String>,
     pending: [bool; 2],
 }
 
 impl Card {
+    /// The device as a snapshot left it (`state`, loaded) over the inserted
+    /// cards (see "Restoring over the inserted cards" above).
     pub(crate) fn restore_state(&mut self, mut state: Self) {
         state.storage = self.storage.take();
         state.images = std::mem::take(&mut self.images);
         state.pending = self.pending;
         state.errors = std::mem::take(&mut self.errors);
+        for file in &mut state.files {
+            if file.as_ref().is_some_and(|f| directory_frame(state.images[f.slot].as_deref(), f.first) != Some(f.frame)) {
+                *file = None;
+            }
+        }
+        if state.search.as_ref().is_some_and(|s| directory_digest(state.images[s.slot].as_deref()) != s.directory) {
+            state.search = None;
+        }
+        if let Some(check) = state.check {
+            state.check = Some(Check { event: state.info_event(check.channel), ..check });
+        }
         *self = state;
     }
+
+    /// Keep what the open files and the search expect of `slot`'s card in
+    /// step with a change this device made there (a file created, renamed or
+    /// deleted, the card formatted or another inserted).
+    fn directory_changed(&mut self, slot: usize) {
+        let image = self.images[slot].as_deref();
+        for file in self.files.iter_mut().flatten().filter(|file| file.slot == slot) {
+            file.frame = directory_frame(image, file.first).unwrap_or([0; FRAME_SIZE]);
+        }
+        if let Some(search) = self.search.as_mut().filter(|search| search.slot == slot) {
+            search.directory = directory_digest(image);
+        }
+    }
+
     /// Use `storage` and insert the cards it holds.
     pub fn attach_storage(&mut self, mut storage: Box<dyn CardStorage>) -> std::io::Result<()> {
         let mut images = [None, None];
@@ -270,6 +335,8 @@ impl Card {
         }
         self.images = images;
         self.storage = Some(storage);
+        self.directory_changed(0);
+        self.directory_changed(1);
         Ok(())
     }
 
@@ -284,6 +351,7 @@ impl Card {
                 *file = None;
             }
         }
+        self.directory_changed(slot);
     }
 
     pub fn image(&self, slot: usize) -> Option<&[u8]> {
@@ -341,14 +409,20 @@ impl Card {
         if !self.started || self.check.is_some() {
             return 0;
         }
+        let event = self.info_event(channel);
+        self.check = Some(Check { at: self.busy_until.max(now) + FRAME_CYCLES, channel, event });
+        1
+    }
+
+    /// What `_card_info` on `channel` finds: a file system, a card without
+    /// one, or no card.
+    fn info_event(&self, channel: u32) -> u32 {
         let slot = (channel >> 4 & 1) as usize;
-        let event = match (&self.images[slot], channel & 0xF) {
+        match (&self.images[slot], channel & 0xF) {
             (Some(image), 0) if is_formatted(image) => EVENT_DONE,
             (Some(_), 0) => EVENT_NEW,
             _ => EVENT_TIMEOUT,
-        };
-        self.check = Some((self.busy_until.max(now) + FRAME_CYCLES, event));
-        1
+        }
     }
 
     fn open(&mut self, path: &[u8], flags: u32, now: u64) -> u32 {
@@ -385,6 +459,7 @@ impl Card {
                 seal(f);
             }
             first = free[0];
+            self.directory_changed(slot);
             self.busy(now, count as u64);
             if !self.persist(slot) {
                 return u32::MAX;
@@ -393,9 +468,9 @@ impl Card {
             let Some(found) = find(image, &name) else { return u32::MAX };
             first = found;
         }
-        let image = self.images[slot].as_ref().unwrap();
-        let size = get_u32(frame(image, first), 4);
-        self.files[fd] = Some(OpenFile { slot, first, size, position: 0, flags });
+        let frame = directory_frame(self.images[slot].as_deref(), first).expect("a formatted card");
+        let size = get_u32(&frame, 4);
+        self.files[fd] = Some(OpenFile { slot, first, size, position: 0, flags, frame });
         fd as u32 + FIRST_FD
     }
 
@@ -495,6 +570,7 @@ impl Card {
         f[NAME_OFFSET..NAME_OFFSET + 21].fill(0);
         f[NAME_OFFSET..NAME_OFFSET + new.len()].copy_from_slice(&new);
         seal(f);
+        self.directory_changed(slot);
         self.busy(now, 1);
         self.persist(slot) as u32
     }
@@ -511,6 +587,7 @@ impl Card {
             put_u32(f, 0, (s & 0x0F) | 0xA0);
             seal(f);
         }
+        self.directory_changed(slot);
         self.busy(now, blocks.len() as u64);
         self.persist(slot) as u32
     }
@@ -524,6 +601,7 @@ impl Card {
                 *file = None;
             }
         }
+        self.directory_changed(slot);
         self.busy(now, 64);
         self.persist(slot) as u32
     }
@@ -576,7 +654,12 @@ impl Device for Card {
                 "close" => self.close(arg(0)),
                 "firstfile" => {
                     let path = read_string(context.memory, arg(0))?;
-                    self.search = parse(&path).map(|(slot, pattern)| Search { slot, pattern: pattern.to_vec(), next: 1 });
+                    self.search = parse(&path).map(|(slot, pattern)| Search {
+                        slot,
+                        pattern: pattern.to_vec(),
+                        next: 1,
+                        directory: directory_digest(self.images[slot].as_deref()),
+                    });
                     self.next_match(arg(1), context)?
                 }
                 "nextfile" => self.next_match(arg(0), context)?,
@@ -607,15 +690,15 @@ impl Device for Card {
     }
 
     fn next_event(&self) -> Option<u64> {
-        self.check.map(|(at, _)| at)
+        self.check.map(|check| check.at)
     }
 
     fn run_events(&mut self, context: &mut Context<'_>) {
-        if let Some((at, event)) = self.check
-            && at <= context.now
+        if let Some(check) = self.check
+            && check.at <= context.now
         {
             self.check = None;
-            context.raised.push((IRQ_CARD, event));
+            context.raised.push((IRQ_CARD, check.event));
         }
     }
 
@@ -630,6 +713,7 @@ impl Device for Card {
                     for v in [f.slot as u32, f.first as u32, f.size, f.position, f.flags] {
                         w.u32(v);
                     }
+                    w.bytes(&f.frame);
                 }
                 None => w.u32(0),
             }
@@ -640,15 +724,17 @@ impl Device for Card {
                 w.u32(s.slot as u32);
                 w.bytes(&s.pattern);
                 w.u32(s.next as u32);
+                w.bytes(&s.directory);
             }
             None => w.u32(0),
         }
         w.u64(self.busy_until);
         match self.check {
-            Some((at, event)) => {
+            Some(check) => {
                 w.u32(1);
-                w.u64(at);
-                w.u32(event);
+                w.u64(check.at);
+                w.u32(check.channel);
+                w.u32(check.event);
             }
             None => w.u32(0),
         }
@@ -656,11 +742,12 @@ impl Device for Card {
     }
 
     fn load(&mut self, state: &[u8]) -> Result<(), String> {
-        type Loaded = (bool, [Option<OpenFile>; FILES], Option<Search>, u64, Option<(u64, u32)>);
+        type Loaded = (bool, [Option<OpenFile>; FILES], Option<Search>, u64, Option<Check>);
         let read = |state: &[u8]| -> Result<Loaded, SnapshotError> {
             let mut r = Reader::new(state);
-            if r.u32()? != SNAPSHOT_VERSION {
-                return Err(SnapshotError::Format("card device version"));
+            let found = r.u32()?;
+            if found != SNAPSHOT_VERSION {
+                return Err(SnapshotError::Version { what: "card device", found, expected: SNAPSHOT_VERSION });
             }
             let started = r.u32()? != 0;
             let mut files: [Option<OpenFile>; FILES] = Default::default();
@@ -671,22 +758,25 @@ impl Device for Card {
                     if slot > 1 || !(1..BLOCKS).contains(&first) {
                         return Err(SnapshotError::Format("card file"));
                     }
-                    *file = Some(OpenFile { slot, first, size: r.u32()?, position: r.u32()?, flags: r.u32()? });
+                    let (size, position, flags) = (r.u32()?, r.u32()?, r.u32()?);
+                    let frame = r.bytes()?.try_into().map_err(|_| SnapshotError::Format("card file frame"))?;
+                    *file = Some(OpenFile { slot, first, size, position, flags, frame });
                 }
             }
             let search = if r.u32()? != 0 {
                 let slot = r.u32()? as usize;
                 let pattern = r.bytes()?.to_vec();
                 let next = r.u32()? as usize;
+                let directory = r.bytes()?.try_into().map_err(|_| SnapshotError::Format("card search directory"))?;
                 if slot > 1 {
                     return Err(SnapshotError::Format("card search"));
                 }
-                Some(Search { slot, pattern, next })
+                Some(Search { slot, pattern, next, directory })
             } else {
                 None
             };
             let busy_until = r.u64()?;
-            let check = if r.u32()? != 0 { Some((r.u64()?, r.u32()?)) } else { None };
+            let check = if r.u32()? != 0 { Some(Check { at: r.u64()?, channel: r.u32()?, event: r.u32()? }) } else { None };
             if !r.done() {
                 return Err(SnapshotError::Format("trailing card device bytes"));
             }
@@ -797,6 +887,123 @@ mod tests {
 
     fn storage_with_formatted_card() -> MemoryStorage {
         MemoryStorage { images: [Some(formatted()), None] }
+    }
+
+    /// The game's save (menu_framework.c's save command): its temporary
+    /// file created and opened for writing; the caller writes and commits.
+    fn begin_save(b: &mut Bench) -> u32 {
+        let tmp = b.string(NAME, "bu00:__tmp_file");
+        b.call("delete", &[tmp]);
+        let created = b.call("open", &[tmp, 1 << 16 | 0x200]);
+        b.call("close", &[created]);
+        b.call("open", &[tmp, 2])
+    }
+
+    /// The save's 0x100-byte writes `sectors`, of `fill` mixed with each
+    /// sector's number; what each returned.
+    fn write_sectors(b: &mut Bench, fd: u32, sectors: std::ops::Range<u8>, fill: u8) -> Vec<u32> {
+        sectors.map(|n| {
+            b.memory.write(BUFFER, &[fill ^ n; 0x100]).unwrap();
+            b.call("write", &[fd, BUFFER, 0x100])
+        }).collect()
+    }
+
+    /// The save's commit: close, then rename to its name.
+    fn commit_save(b: &mut Bench, fd: u32) -> u32 {
+        b.call("close", &[fd]);
+        let tmp = b.string(NAME, "bu00:__tmp_file");
+        let save = b.string(NAME2, "bu00:BASLUS-00664");
+        b.call("rename", &[tmp, save])
+    }
+
+    /// Restore a saved device over the bench's inserted cards.
+    fn restore(b: &mut Bench, state: &[u8]) {
+        let mut loaded = Card::default();
+        loaded.load(state).unwrap();
+        b.card.restore_state(loaded);
+    }
+
+    #[test]
+    fn a_restored_save_writes_on_over_the_same_card_and_never_over_another_file() {
+        let mut b = Bench::new(storage_with_formatted_card());
+        b.call("start", &[]);
+        let fd = begin_save(&mut b);
+        assert!(write_sectors(&mut b, fd, 0..4, 0xA0).iter().all(|&n| n == 0x100));
+        let state = b.card.save();
+        let card_then = b.card.image(0).unwrap().to_vec();
+        assert!(write_sectors(&mut b, fd, 4..0x20, 0xA0).iter().all(|&n| n == 0x100));
+        assert_eq!(commit_save(&mut b, fd), 1);
+        let first_save = b.card.image(0).unwrap().to_vec();
+        // A newer save to the same file takes the same block.
+        let old = b.string(NAME2, "bu00:BASLUS-00664");
+        assert_eq!(b.call("delete", &[old]), 1);
+        let newer = begin_save(&mut b);
+        assert!(write_sectors(&mut b, newer, 0..0x20, 0x5B).iter().all(|&n| n == 0x100));
+        assert_eq!(commit_save(&mut b, newer), 1);
+        let card_now = b.card.image(0).unwrap().to_vec();
+        assert_eq!(card_now[BLOCK_SIZE + 0x1F00], 0x5B ^ 0x1F, "the newer save holds block 1");
+
+        // Rewound into the first save's writes over the card that holds the
+        // newer save: the old descriptor is closed and writes nothing.
+        restore(&mut b, &state);
+        assert_eq!(write_sectors(&mut b, fd, 4..0x20, 0xA0), vec![u32::MAX; 0x1C], "the rest of the old save is refused");
+        assert_eq!(b.call("close", &[fd]), u32::MAX, "as on a removed card");
+        assert_eq!(b.card.image(0).unwrap(), card_now, "the newer save is intact");
+        assert_eq!(b.list("bu00:"), vec![("BASLUS-00664".to_string(), 0x2000)]);
+
+        // Over the card as the state left it, the save goes on identically.
+        b.card.import_image(0, card_then).unwrap();
+        restore(&mut b, &state);
+        assert_eq!(b.card.save(), state, "nothing of the state is dropped");
+        assert!(write_sectors(&mut b, fd, 4..0x20, 0xA0).iter().all(|&n| n == 0x100));
+        assert_eq!(commit_save(&mut b, fd), 1);
+        assert_eq!(b.card.image(0).unwrap(), first_save);
+    }
+
+    #[test]
+    fn a_file_the_device_changed_while_open_restores_over_the_same_card() {
+        // The game's failure path after a refused first write closes fd 0
+        // instead of its file and deletes the file it still has open.
+        let mut b = Bench::new(storage_with_formatted_card());
+        let fd = begin_save(&mut b);
+        let tmp = b.string(NAME, "bu00:__tmp_file");
+        assert_eq!(b.call("close", &[0]), u32::MAX);
+        assert_eq!(b.call("delete", &[tmp]), 1);
+        let state = b.card.save();
+        restore(&mut b, &state);
+        assert_eq!(b.card.save(), state, "the leaked descriptor stays open, as it would have");
+        assert_eq!(b.call("close", &[fd]), fd);
+    }
+
+    #[test]
+    fn a_restored_listing_and_check_follow_the_inserted_card() {
+        let mut b = Bench::new(storage_with_formatted_card());
+        b.call("start", &[]);
+        for name in ["bu00:ONE", "bu00:TWO"] {
+            let path = b.string(NAME, name);
+            let fd = b.call("open", &[path, 1 << 16 | 0x200]);
+            b.call("close", &[fd]);
+        }
+        let device = b.string(NAME, "bu00:");
+        assert_eq!(b.call("firstfile", &[device, ENTRY]), 1);
+        assert_eq!(b.call("info", &[0]), 1);
+        let state = b.card.save();
+        // Over the same card the listing goes on and the check finds it.
+        restore(&mut b, &state);
+        assert_eq!(b.card.save(), state);
+        assert_eq!(b.call("nextfile", &[ENTRY]), 1);
+        assert_eq!(&b.memory.0[(ENTRY - BASE) as usize..][..4], b"TWO\0");
+        b.wait();
+        assert_eq!(b.raised.last(), Some(&(IRQ_CARD, EVENT_DONE)));
+        // Over a card with other files the listing ends; without a card the
+        // check reports none.
+        b.card.insert(0, Some(formatted()));
+        restore(&mut b, &state);
+        assert_eq!(b.call("nextfile", &[ENTRY]), 0);
+        b.card.insert(0, None);
+        restore(&mut b, &state);
+        b.wait();
+        assert_eq!(b.raised.last(), Some(&(IRQ_CARD, EVENT_TIMEOUT)));
     }
 
     #[test]

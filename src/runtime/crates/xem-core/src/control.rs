@@ -23,6 +23,42 @@ pub struct InputLog {
     pub changes: Vec<(u64, u32, u16)>,
     pub controls: Vec<(u64, Value)>,
     pub end_vblank: u64,
+    /// The restores the recording went on across. The game's vblank count
+    /// is restored with its state, so the entries after one belong to
+    /// another timeline; a replay refuses the log.
+    pub restores: Vec<Restore>,
+}
+
+/// A restore during a recording: what restored, the vblank it left and the
+/// vblank of the state it restored.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Restore {
+    pub kind: RestoreKind,
+    pub from_vblank: u64,
+    pub to_vblank: u64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RestoreKind {
+    /// A state loaded (`restore_bytes`: the `restore` command, a state file
+    /// or a host's load).
+    StateLoad,
+    /// A rewind step (the `rewind` command or a held rewind).
+    RewindStep,
+}
+
+/// Where a log list's vblanks first go back: (entry, its vblank, the one
+/// before it), the start counting as the one before the first entry.
+fn goes_back(start: u64, vblanks: impl IntoIterator<Item = u64>) -> Option<(usize, u64, u64)> {
+    let mut previous = start;
+    for (index, at) in vblanks.into_iter().enumerate() {
+        if at < previous {
+            return Some((index, at, previous));
+        }
+        previous = at;
+    }
+    None
 }
 
 pub struct Session<M: GameModule> {
@@ -1030,7 +1066,7 @@ impl<M: GameModule> Session<M> {
             "record" => {
                 let vblank = self.vblank();
                 let changes = self.runtime.services().pads.0.iter().enumerate().map(|(port,pad)| (vblank,port as u32,pad.buttons)).collect();
-                self.recording = Some(InputLog { start_vblank: vblank, changes, end_vblank: vblank,
+                self.recording = Some(InputLog { start_vblank: vblank, changes, end_vblank: vblank, restores: Vec::new(),
                     controls: vec![(vblank,json!({"cmd":"fast_forward_configure","rate":self.fast_forward_rate})),
                         (vblank,json!({"cmd":"fast_forward","enabled":self.fast_forward})),
                         (vblank,json!({"cmd":"fast_forward_pace","pace":self.fast_forward_pace}))] });
@@ -1068,6 +1104,7 @@ impl<M: GameModule> Session<M> {
                 let start = command.get("start_vblank").and_then(Value::as_u64).unwrap_or(0);
                 let now = self.vblank();
                 let mut scheduled = Vec::new();
+                let mut vblanks = (Vec::new(), Vec::new());
                 for change in changes {
                     let c = change.as_array().ok_or("changes are [vblank, port, buttons]")?;
                     let at = c.first().and_then(Value::as_u64).ok_or("vblank")?;
@@ -1075,12 +1112,14 @@ impl<M: GameModule> Session<M> {
                     let buttons = c.get(2).and_then(Value::as_u64).ok_or("buttons")? as u16;
                     if port > 1 { return Err("port is 0 or 1".into()); }
                     scheduled.push((now + at.saturating_sub(start), port, buttons));
+                    vblanks.0.push(at);
                 }
                 let mut controls = Vec::new();
                 if let Some(entries) = command.get("controls") {
                     for entry in entries.as_array().ok_or("controls are [vblank, command]")? {
                         let pair = entry.as_array().filter(|p| p.len() == 2).ok_or("controls are [vblank, command]")?;
                         let at = pair[0].as_u64().ok_or("control vblank")?;
+                        vblanks.1.push(at);
                         let control = &pair[1];
                         match control.get("cmd").and_then(Value::as_str) {
                             Some("fast_forward") if control.get("enabled").is_some_and(Value::is_boolean) => {},
@@ -1102,6 +1141,23 @@ impl<M: GameModule> Session<M> {
                         }
                         controls.push((now + at.saturating_sub(start),control.clone()));
                     }
+                }
+                // The game's vblank count is restored with its state: a log
+                // whose vblanks go back spans a restore, and the entries after
+                // it belong to another timeline, never to be interleaved.
+                let end = command.get("end_vblank").and_then(Value::as_u64);
+                for (list, list_vblanks) in [("changes", &vblanks.0), ("controls", &vblanks.1)] {
+                    if let Some((index, at, previous)) = goes_back(start, list_vblanks.iter().copied().chain(end)) {
+                        let entry = if index < list_vblanks.len() { format!("{list} entry {index}") } else { format!("end after its {list}") };
+                        return Err(format!("the log goes back in time at its {entry}: vblank {at} after vblank {previous}. \
+                            It spans a restore (a state load or a rewind step), which a replay cannot reproduce"));
+                    }
+                }
+                if let Some(restores) = command.get("restores").and_then(Value::as_array).filter(|r| !r.is_empty()) {
+                    let first: Restore = serde_json::from_value(restores[0].clone()).map_err(|e| format!("restores: {e}"))?;
+                    let kind = match first.kind { RestoreKind::StateLoad => "a state load", RestoreKind::RewindStep => "a rewind step" };
+                    return Err(format!("the log spans {} restore(s), the first {kind} at vblank {} to vblank {}, \
+                        which a replay cannot reproduce", restores.len(), first.from_vblank, first.to_vblank));
                 }
                 scheduled.sort_by_key(|(at,_,_)| *at);
                 controls.sort_by_key(|(at,_)| *at);
@@ -1268,15 +1324,27 @@ impl<M: GameModule> Session<M> {
 
     /// Rewind game progress, keeping the app's current controls and commands.
     fn restore_game_state(&mut self, data: &[u8]) -> Result<(), String> {
+        let from = self.vblank();
         self.runtime.restore(data).map_err(|e| e.to_string())?;
+        self.note_restore(RestoreKind::StateLoad, from);
         self.game_state_restored();
         Ok(())
     }
 
     fn restore_rewind_state(&mut self, data: &[u8]) -> Result<(), String> {
+        let from = self.vblank();
         self.runtime.restore_content(data).map_err(|e| e.to_string())?;
+        self.note_restore(RestoreKind::RewindStep, from);
         self.game_state_restored();
         Ok(())
+    }
+
+    /// A recording goes on across a restore and reports it (`restores`).
+    fn note_restore(&mut self, kind: RestoreKind, from_vblank: u64) {
+        let to_vblank = self.vblank();
+        if let Some(log) = &mut self.recording {
+            log.restores.push(Restore { kind, from_vblank, to_vblank });
+        }
     }
 
     fn game_state_restored(&mut self) {

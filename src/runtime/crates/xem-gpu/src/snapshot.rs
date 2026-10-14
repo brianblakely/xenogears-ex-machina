@@ -31,7 +31,7 @@ impl std::fmt::Display for SnapshotError {
         match self {
             SnapshotError::Magic => write!(f, "not a GPU snapshot"),
             SnapshotError::Version(version) => {
-                write!(f, "unsupported GPU snapshot version {version}")
+                write!(f, "unsupported GPU snapshot version {version}, expected {VERSION}")
             }
             SnapshotError::Length => write!(f, "GPU snapshot has the wrong length"),
             SnapshotError::Invalid(field) => write!(f, "GPU snapshot has an invalid {field}"),

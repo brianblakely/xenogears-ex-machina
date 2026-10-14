@@ -5,7 +5,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -30,7 +30,9 @@ export const WEBGPU = ['--enable-unsafe-webgpu', '--enable-features=Vulkan', '--
 export const NO_WEBGPU = ['--disable-features=WebGPU'];
 
 let fixtures;
-/** The fixture game module, built with wabt and binaryen like the real one. */
+/** The fixture game module, built with wabt and binaryen like the real one,
+ *  and fixture-b.wasm, the same module with a custom section more: another
+ *  build, whose states another build's page refuses. */
 export function buildFixtures() {
   if (fixtures) return fixtures;
   fixtures = mkdtempSync(join(tmpdir(), 'xem-web-'));
@@ -38,6 +40,11 @@ export function buildFixtures() {
   execFileSync('wat2wasm', [join(here, 'fixture.wat'), '-o', join(fixtures, 'fixture.raw.wasm')]);
   execFileSync('wasm-opt', ['-O1', '--asyncify', '--pass-arg=asyncify-imports@xem.yield,xem.restart',
     join(fixtures, 'fixture.raw.wasm'), '-o', join(fixtures, 'fixture.wasm')]);
+  // A custom section (id 0): its size, then its name's length and name, then its bytes.
+  const name = Buffer.from('xem-build', 'latin1');
+  const section = Buffer.concat([Buffer.from([name.length]), name, Buffer.from('b', 'latin1')]);
+  writeFileSync(join(fixtures, 'fixture-b.wasm'),
+    Buffer.concat([readFileSync(join(fixtures, 'fixture.wasm')), Buffer.from([0, section.length]), section]));
   writeFileSync(join(fixtures, 'stubs.txt'), '0 FixtureStub\n');
   return fixtures;
 }

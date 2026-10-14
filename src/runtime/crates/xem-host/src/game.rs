@@ -122,9 +122,12 @@ impl Game {
         format!("{:016x}", self.session.memory_hash().unwrap_or(0))
     }
 
+    /// A shared control or native file command; an error is its plain text.
     pub fn command(&mut self, command: &serde_json::Value) -> Result<serde_json::Value,String> {
         let reply = xem_game::storage::command(&mut self.session,command);
-        if let Some(error) = reply.get("error") { return Err(error.to_string()); }
+        if let Some(error) = reply.get("error") {
+            return Err(error.as_str().map_or_else(|| error.to_string(), str::to_owned));
+        }
         Ok(reply)
     }
     pub fn snapshot_bytes(&mut self) -> Result<Vec<u8>,String> { self.session.snapshot_bytes() }

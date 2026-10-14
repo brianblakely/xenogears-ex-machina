@@ -62,7 +62,8 @@
 //! (0x10) until a Getstat after the lid closed, and commands other than
 //! Getstat and the mode/filter settings fail (INT5, error 0x80) without a
 //! closed lid and a disc. A snapshot keeps which disc is in the drive, and
-//! restoring one puts that disc back in.
+//! restoring one puts that disc back in; a state waiting for a disc takes it
+//! at once when the restoring session holds it.
 
 use std::collections::VecDeque;
 
@@ -308,7 +309,9 @@ impl Cd {
 
     /// The drive as a snapshot left it (`state`, loaded), with the live
     /// discs: the one the state had in the drive goes back in
-    /// ([`Self::holds`] said it is here).
+    /// ([`Self::holds`] said it is here). A state waiting for a disc its
+    /// session lacked takes it when this one holds it, as when the host adds
+    /// it ([`Self::add_disc`]).
     pub(crate) fn restore_state(&mut self, mut state: Self) {
         let mut discs = std::mem::take(&mut self.shelf);
         discs.extend(self.disc.take().map(|disc| (self.inserted, disc)));
@@ -316,6 +319,9 @@ impl Cd {
         state.shelf = discs;
         state.sector_log = self.sector_log.take();
         *self = state;
+        if let Some(number) = self.wanted.filter(|&number| self.holds(number)) {
+            self.change(number);
+        }
     }
 
     /// Whether disc `number` is here, in the drive or on the changer's shelf
@@ -1275,6 +1281,37 @@ mod tests {
         lone.add_disc(2, disc(8));
         assert_eq!((lone.inserted(), lone.wanted()), (2, None));
         assert!(lone.shell_latch);
+    }
+
+    #[test]
+    fn a_state_waiting_for_a_disc_takes_it_where_the_session_holds_it() {
+        // Disc 1 alone: the game asks for disc 2 and waits for it.
+        let mut lone = Cd::default();
+        lone.insert_disc(1, disc(4));
+        lone.request(2, false, 0);
+        let waiting = lone.save();
+        let restored = |cd: &mut Cd| {
+            let mut loaded = Cd::default();
+            loaded.load(&waiting).unwrap();
+            assert_eq!(loaded.wanted(), Some(2));
+            cd.restore_state(loaded);
+        };
+        // A session with both discs: disc 2 goes in at once, as when the
+        // host adds it to the waiting one.
+        let mut both = Cd::default();
+        both.insert_disc(1, disc(4));
+        both.add_disc(2, disc(8));
+        restored(&mut both);
+        assert_eq!((both.inserted(), both.wanted()), (2, None));
+        assert!(both.lid_open && both.holds(1), "the game's check sees the lid open; disc 1 goes to the changer");
+        lone.add_disc(2, disc(8));
+        assert_eq!(both.save(), lone.save());
+        // A session still without it goes on waiting.
+        let mut alone = Cd::default();
+        alone.insert_disc(1, disc(4));
+        restored(&mut alone);
+        assert_eq!((alone.inserted(), alone.wanted()), (1, Some(2)));
+        assert_eq!(alone.save(), waiting);
     }
 
     #[test]

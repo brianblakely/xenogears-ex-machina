@@ -22,7 +22,7 @@ impl fmt::Display for SnapshotError {
         match self {
             SnapshotError::BadMagic => write!(f, "not an SPU snapshot"),
             SnapshotError::UnsupportedVersion(v) => {
-                write!(f, "unsupported SPU snapshot version {v}")
+                write!(f, "unsupported SPU snapshot version {v}, expected {}", crate::SNAPSHOT_VERSION)
             }
             SnapshotError::Truncated => write!(f, "truncated SPU snapshot"),
             SnapshotError::TrailingData => write!(f, "trailing data after SPU snapshot"),

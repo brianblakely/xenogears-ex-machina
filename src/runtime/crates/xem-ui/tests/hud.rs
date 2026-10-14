@@ -42,10 +42,15 @@ fn activity_and_state_results_show_without_fps_and_expire_independently() {
     hud.frame(at(6), 1.0, false).unwrap();
     assert!(!hud.visible());
 
-    hud.notify_state(false, Some("The selected state belongs to a different game module."), at(6));
+    // The runtime's refusal of a state another game module build saved
+    // (`StateIdentity::difference`): the chip shows its start, the field.
+    let refused = "incompatible state: the state's game module is \
+        \"0d5be8a3f1c2479e6b0a8d3c5e7f9182a4b6c8d0e2f4a6b8c0d2e4f6a8b0c2d4\", this session's is \
+        \"26cf0a08a5bfa7e219f5f3450068fc68406e6b788f8270ea05282a43758d0d53\"";
+    hud.notify_state(false, Some(refused), at(6));
     hud.frame(at(13), 2.0, false).unwrap();
     assert_eq!(hud.size(), (608, 220));
-    assert_eq!(hud.notice().as_deref(), Some("Could not load state: The selected state belongs to a different game module."));
+    assert_eq!(hud.notice(), Some(format!("Could not load state: {refused}")));
     assert!(hud.visible());
     let error = ElementHandle::find_by_accessible_label(hud.component(), &hud.notice().unwrap()).next().unwrap();
     assert_eq!((error.absolute_position().x, error.absolute_position().y), (0.0, 0.0));

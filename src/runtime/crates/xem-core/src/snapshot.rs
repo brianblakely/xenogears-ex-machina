@@ -13,7 +13,13 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 const MAGIC: &[u8; 8] = b"XEMSNAP\0";
-const VERSION: u32 = 8;
+/// The state format. A state of another version is refused, never converted.
+pub const VERSION: u32 = 9;
+/// The SHA-256 of the stand-in state xem-core's tests/persistence.rs builds
+/// (`format_fingerprint_matches_version`), as this format lays it out: a
+/// change to what a state holds or how it is written changes it, and the
+/// test fails until [`VERSION`] and this change together.
+pub const FORMAT_FINGERPRINT: &str = "47555b501b4b842567e388f4e891aea9dcf549a46fb6d16300f3a7aa1c659956";
 /// Hard bound on any decoded snapshot region/device buffer.
 pub const MAX_BUFFER: usize = 32 * 1024 * 1024;
 pub const MAX_STATE: usize = 64 * 1024 * 1024;
@@ -26,6 +32,24 @@ pub struct StateIdentity {
     pub module: String,
     pub disc: String,
     pub packages: Vec<String>,
+}
+
+impl StateIdentity {
+    /// What of `state` differs from this identity, each part with the
+    /// state's value and this one's; None when they match.
+    pub fn difference(&self, state: &StateIdentity) -> Option<String> {
+        let mut parts = Vec::new();
+        if state.module != self.module {
+            parts.push(format!("the state's game module is {:?}, this session's is {:?}", state.module, self.module));
+        }
+        if state.disc != self.disc {
+            parts.push(format!("the state's disc is {:?}, this session's is {:?}", state.disc, self.disc));
+        }
+        if state.packages != self.packages {
+            parts.push(format!("the state's packages are {:?}, this session's are {:?}", state.packages, self.packages));
+        }
+        (!parts.is_empty()).then(|| parts.join("; "))
+    }
 }
 
 pub fn digest(bytes: &[u8]) -> [u8; 32] {
@@ -42,7 +66,7 @@ pub fn seal(mut bytes: Vec<u8>) -> Vec<u8> {
 
 pub fn checked(bytes: &[u8]) -> Result<&[u8], SnapshotError> {
     if bytes.len() < 32 || bytes.len() > MAX_STATE {
-        return Err(SnapshotError::Format("state size"));
+        return Err(SnapshotError::Size(bytes.len()));
     }
     let (data, hash) = bytes.split_at(bytes.len() - 32);
     if digest(data) != hash {
@@ -60,6 +84,16 @@ pub const REGIONS: [(u32, u32); 4] =
 #[derive(Debug)]
 pub enum SnapshotError {
     Format(&'static str),
+    /// A file of `n` bytes: under the seal's 32 or over [`MAX_STATE`].
+    Size(usize),
+    /// What carries the version (the format, a device), the version the
+    /// state has and the one this runtime reads.
+    Version { what: &'static str, found: u32, expected: u32 },
+    /// The identity record does not decode (an unknown field, say).
+    Identity(String),
+    /// The state names another game module, disc or package list: each
+    /// part that differs, with the state's value and this session's.
+    Incompatible(String),
     Memory(OutOfBounds),
     Device(String),
 }
@@ -68,6 +102,12 @@ impl std::fmt::Display for SnapshotError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SnapshotError::Format(what) => write!(f, "bad snapshot: {what}"),
+            SnapshotError::Size(n) => write!(f, "bad snapshot: state size {n} bytes, outside 32 bytes to 64 MiB"),
+            SnapshotError::Version { what, found, expected } => {
+                write!(f, "bad snapshot: {what} version {found}, expected {expected}")
+            }
+            SnapshotError::Identity(e) => write!(f, "bad snapshot: identity: {e}"),
+            SnapshotError::Incompatible(what) => write!(f, "incompatible state: {what}"),
             SnapshotError::Memory(e) => write!(f, "snapshot memory: {e}"),
             SnapshotError::Device(e) => write!(f, "snapshot device state: {e}"),
         }
@@ -256,8 +296,9 @@ pub(crate) fn read_header(r: &mut Reader<'_>) -> Result<(), SnapshotError> {
     if r.take(8)? != MAGIC {
         return Err(SnapshotError::Format("magic"));
     }
-    if r.u32()? != VERSION {
-        return Err(SnapshotError::Format("version"));
+    let found = r.u32()?;
+    if found != VERSION {
+        return Err(SnapshotError::Version { what: "format", found, expected: VERSION });
     }
     Ok(())
 }

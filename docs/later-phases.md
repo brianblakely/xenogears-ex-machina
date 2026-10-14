@@ -360,7 +360,9 @@ as `worldmap_terrain_draw_quarter_block.s` states), GPU drawing and display
 settings, SPU voice and control registers (written through
 `sound_spu_registers`), the CD drive's position, mode and any command or read in
 progress, root counters (the sound tick runs on counter 2) and pending
-interrupts, and the memory cards' contents.
+interrupts, and the memory card calls under way. The cards' contents are the
+player's saves and stay outside it ([runtime.md](runtime.md), Saves and time
+controls).
 
 ### The resident API
 
