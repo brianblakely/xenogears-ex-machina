@@ -89,7 +89,6 @@ pub fn mark_widget(kind: crate::overlay::Kind) -> xem_render::glass::Widget {
             xem_core::field::Reach::Invalid => Reach::Invalid,
         }),
         crate::overlay::Kind::Destination => Widget::Destination,
-        crate::overlay::Kind::Pages { count, current } => Widget::Pages { count, current },
         crate::overlay::Kind::Region => Widget::Region,
     }
 }

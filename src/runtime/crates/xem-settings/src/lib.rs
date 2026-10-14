@@ -19,6 +19,9 @@ pub use bindings::{GameAction, GameBinding, GameBindings, InputContext, GAME_ACT
 pub use controls::{AppAction, AppBinding, AppInput, AppRequest, APP_ACTIONS};
 
 pub const MAX_VOLUME: u8 = 100;
+/// The mouse deadzone's default and largest radius, in pixels of motion.
+pub const DEFAULT_MOUSE_DEADZONE: u16 = 8;
+pub const MAX_MOUSE_DEADZONE: u16 = 40;
 pub use xem_core::time::{FastForwardRate, FAST_FORWARD_RATES, DEFAULT_REWIND_INTERVAL_SECONDS, MAX_REWIND_INTERVAL_SECONDS, DEFAULT_REWIND_HISTORY_SECONDS, MAX_REWIND_HISTORY_SECONDS};
 /// The Binaural sound mode's settings (`xem_core::binaural::Config`): the
 /// mode is on with `enabled`; [`Settings::audio_output`] keeps the original
@@ -141,6 +144,9 @@ pub struct Settings {
     pub mouse_camera: bool,
     /// Mouse camera rate as a percentage of the original host sensitivity.
     pub mouse_sensitivity: u16,
+    /// Pixels the mouse may move from where it rested before its motion
+    /// turns the camera (or the first-person view).
+    pub mouse_deadzone: u16,
     /// Field movement runs unless the player holds the run button.
     pub run_by_default: bool,
     pub rewind_enabled: bool,
@@ -164,6 +170,7 @@ impl Default for Settings {
             invert_trigger_chords: false,
             mouse_camera: false,
             mouse_sensitivity: 50,
+            mouse_deadzone: DEFAULT_MOUSE_DEADZONE,
             run_by_default: false,
             rewind_enabled: true,
             rewind_interval_seconds: DEFAULT_REWIND_INTERVAL_SECONDS,
@@ -184,6 +191,7 @@ pub enum SettingChange {
     InvertTriggerChords(bool),
     MouseCamera(bool),
     MouseSensitivity(u16),
+    MouseDeadzone(u16),
     RunByDefault(bool),
     RewindEnabled(bool),
     RewindIntervalSeconds(u32),
@@ -270,6 +278,7 @@ impl Settings {
             SettingChange::InvertTriggerChords(invert) => next.invert_trigger_chords = *invert,
             SettingChange::MouseCamera(enabled) => next.mouse_camera = *enabled,
             SettingChange::MouseSensitivity(percent) => next.mouse_sensitivity = *percent,
+            SettingChange::MouseDeadzone(pixels) => next.mouse_deadzone = *pixels,
             SettingChange::RunByDefault(enabled) => next.run_by_default = *enabled,
             SettingChange::RewindEnabled(enabled) => next.rewind_enabled = *enabled,
             SettingChange::RewindIntervalSeconds(seconds) => next.rewind_interval_seconds = *seconds,
@@ -348,6 +357,9 @@ impl Settings {
         self.graphics.validate()?;
         if !(10..=200).contains(&self.mouse_sensitivity) {
             return Err("mouse sensitivity must be 10–200 percent".into());
+        }
+        if self.mouse_deadzone > MAX_MOUSE_DEADZONE {
+            return Err(format!("mouse deadzone must be 0–{MAX_MOUSE_DEADZONE} pixels"));
         }
         if !(1..=MAX_REWIND_INTERVAL_SECONDS).contains(&self.rewind_interval_seconds) {
             return Err(format!("rewind interval must be 1–{MAX_REWIND_INTERVAL_SECONDS} seconds"));
@@ -597,12 +609,31 @@ mod tests {
         let duration = |percent| {
             let settings = Settings { mouse_sensitivity: percent, ..Default::default() };
             let mut mouse = bindings::Mouse::default();
-            mouse.moved(20.0 * settings.mouse_scale());
+            mouse.moved(20.0, &settings);
             (0..200).take_while(|ms| mouse.turn(f64::from(*ms)).is_some()).count()
         };
         assert!(duration(50) < duration(100));
         assert!(duration(100) < duration(200));
         assert_eq!(Settings::read(&serde_json::json!({"mouse_camera": true})).unwrap().0.mouse_sensitivity, 50);
+    }
+
+    #[test]
+    fn mouse_deadzone_defaults_validates_and_persists() {
+        use super::*;
+        let store = SharedStore::default();
+        let mut service = SettingsService::open(store.clone()).unwrap();
+        assert_eq!(service.settings().mouse_deadzone, DEFAULT_MOUSE_DEADZONE);
+        for pixels in [0, 1, 20, MAX_MOUSE_DEADZONE] {
+            service.apply(SettingChange::MouseDeadzone(pixels)).unwrap();
+            assert_eq!(SettingsService::open(store.clone()).unwrap().settings().mouse_deadzone, pixels);
+        }
+        for pixels in [MAX_MOUSE_DEADZONE + 1, u16::MAX] {
+            assert!(service.apply(SettingChange::MouseDeadzone(pixels)).is_err());
+        }
+        // Saved before the setting existed, or out of range: the default.
+        assert_eq!(Settings::read(&serde_json::json!({"mouse_camera": true})).unwrap().0.mouse_deadzone, DEFAULT_MOUSE_DEADZONE);
+        let (read, reset) = Settings::read(&serde_json::json!({"mouse_deadzone": 99})).unwrap();
+        assert_eq!((read.mouse_deadzone, reset), (DEFAULT_MOUSE_DEADZONE, vec!["mouse_deadzone".to_string()]));
     }
 
     #[test]

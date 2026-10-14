@@ -109,7 +109,7 @@ impl Default for GameBindings {
                 (Down, "KeyS", "Down LStickDown", ""),
                 (Left, "KeyA", "Left LStickLeft", ""),
                 (Right, "KeyD", "Right LStickRight", ""),
-                (Confirm, "KeyE", "South", "MouseLeft"),
+                (Confirm, "KeyE Backslash", "South", "MouseLeft"),
                 (Cancel, "KeyF", "East", "MouseRight"),
                 (Run, "ShiftLeft ShiftRight", "East", ""),
                 (Jump, "Space", "North", ""),
@@ -236,16 +236,24 @@ impl Held {
 /// Mouse milliseconds of camera turn per pixel moved, and the most it banks.
 const TURN_MS_PER_PIXEL: f64 = 4.0;
 const MAX_TURN_MS: f64 = 400.0;
+/// Milliseconds without motion after which the mouse has come to rest.
+const REST_MS: f64 = 100.0;
 
 /// The mouse: its buttons, and (under the mouse camera setting) sideways
 /// motion turning the field camera, holding CameraLeft or CameraRight for
-/// as long as the motion lasts.
+/// as long as the motion lasts. Motion within the deadzone of where the
+/// mouse came to rest turns nothing; beyond it the motion turns, the
+/// deadzone following it.
 #[derive(Default)]
 pub struct Mouse {
     buttons: u8,
     /// Turn still owed in milliseconds (negative turns left).
     turn: f64,
     last: Option<f64>,
+    /// The motion since the mouse came to rest that the deadzone holds
+    /// back, and when it last moved (as of the last [`Mouse::turn`]).
+    drift: (f32, f32),
+    moved_at: Option<f64>,
 }
 
 impl Mouse {
@@ -262,9 +270,28 @@ impl Mouse {
         true
     }
 
-    /// Sideways motion in pixels (positive to the right).
-    pub fn moved(&mut self, dx: f32) {
+    /// Sideways motion in pixels (positive to the right) turning the field
+    /// camera, past the deadzone and at the sensitivity of `settings`.
+    pub fn moved(&mut self, dx: f32, settings: &crate::Settings) {
+        let (dx, _) = self.look((dx, 0.0), settings);
         self.turn = (self.turn + f64::from(dx) * TURN_MS_PER_PIXEL).clamp(-MAX_TURN_MS, MAX_TURN_MS);
+    }
+
+    /// Motion in pixels (x right, y down) as it turns a view: what passes
+    /// the deadzone of `settings`, at its sensitivity.
+    pub fn look(&mut self, (dx, dy): (f32, f32), settings: &crate::Settings) -> (f32, f32) {
+        let now = self.last.unwrap_or(0.0);
+        if self.moved_at.is_none_or(|at| now - at > REST_MS) {
+            self.drift = (0.0, 0.0);
+        }
+        self.moved_at = Some(now);
+        let drift = (self.drift.0 + dx, self.drift.1 + dy);
+        let length = drift.0.hypot(drift.1);
+        let deadzone = f32::from(settings.mouse_deadzone);
+        let held = if length > deadzone { deadzone / length } else { 1.0 };
+        self.drift = (drift.0 * held, drift.1 * held);
+        let scale = settings.mouse_scale();
+        ((drift.0 - self.drift.0) * scale, (drift.1 - self.drift.1) * scale)
     }
 
     pub fn clear(&mut self) {
@@ -307,6 +334,7 @@ mod tests {
         assert_eq!(bindings.buttons(&keys(&["KeyD"]), true), button::CIRCLE);
         assert_eq!(bindings.buttons(&keys(&["KeyF"]), true), button::CIRCLE);
         assert_eq!(bindings.buttons(&keys(&["KeyE", "Space"]), false), button::CROSS | button::TRIANGLE);
+        assert_eq!(bindings.buttons(&keys(&["Backslash"]), false), button::CROSS, "Backslash confirms too");
         assert_eq!(bindings.buttons(&keys(&["KeyZ"]), false), 0);
         assert_eq!(bindings.actions(&keys(&["ShiftLeft"]), false), BTreeSet::from([GameAction::Run]));
     }
@@ -327,12 +355,42 @@ mod tests {
         mouse.button(2, true);
         held.mouse = mouse.buttons();
         assert_eq!(bindings.buttons(&held, false), button::CROSS | button::CIRCLE);
-        mouse.moved(5.0);
+        let settings = crate::Settings { mouse_sensitivity: 200, mouse_deadzone: 0, ..Default::default() };
+        mouse.moved(5.0, &settings);
         assert_eq!(mouse.turn(0.0), Some(GameAction::CameraRight));
         assert_eq!(mouse.turn(40.0), Some(GameAction::CameraRight));
         assert_eq!(mouse.turn(41.0), None);
-        mouse.moved(-1.0);
+        mouse.moved(-0.5, &settings);
         assert_eq!(mouse.turn(42.0), Some(GameAction::CameraLeft));
+    }
+
+    #[test]
+    fn the_deadzone_holds_back_motion_near_where_the_mouse_rested() {
+        let settings = crate::Settings { mouse_sensitivity: 100, mouse_deadzone: 8, ..Default::default() };
+        let mut mouse = Mouse::default();
+        assert_eq!(mouse.turn(0.0), None);
+        mouse.moved(5.0, &settings);
+        assert_eq!(mouse.turn(16.0), None, "a nudge within the deadzone");
+        mouse.moved(-7.0, &settings);
+        assert_eq!(mouse.turn(32.0), None, "and back across it");
+        // Moving on past it turns; the deadzone follows the motion.
+        mouse.moved(12.0, &settings);
+        assert_eq!(mouse.turn(48.0), Some(GameAction::CameraRight), "two pixels past it");
+        assert_eq!(mouse.turn(64.0), None);
+        mouse.moved(1.0, &settings);
+        assert_eq!(mouse.turn(80.0), Some(GameAction::CameraRight), "still moving: no deadzone again");
+        // Rested, a nudge turns nothing again.
+        assert_eq!(mouse.turn(300.0), None);
+        mouse.moved(5.0, &settings);
+        assert_eq!(mouse.turn(316.0), None);
+        // First-person look: both axes, the deadzone a circle.
+        let mut look = Mouse::default();
+        look.turn(0.0);
+        assert_eq!(look.look((3.0, 4.0), &settings), (0.0, 0.0));
+        let (x, y) = look.look((3.0, 4.0), &settings);
+        assert!((x - 1.2).abs() < 1e-5 && (y - 1.6).abs() < 1e-5, "{x}, {y}");
+        let off = crate::Settings { mouse_deadzone: 0, ..settings };
+        assert_eq!(Mouse::default().look((1.0, 0.0), &off), (1.0, 0.0), "no deadzone");
     }
 
     #[test]

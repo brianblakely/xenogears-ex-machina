@@ -37,7 +37,8 @@ impl Default for Context {
 const PULSE_HOLD: u32 = 2;
 const PULSE_GAP: u32 = 2;
 /// Steps toward a pointed entry that may leave the selection unchanged
-/// before the entry is given up.
+/// before the entry is given up: three, or one on the battle's command ring,
+/// where a refused slot's second press flips the ring to its other page.
 const STALLS: u32 = 3;
 /// The most Cancel presses closing the field menu takes (its deepest screen
 /// is a few levels down; each press backs out one).
@@ -171,13 +172,16 @@ impl PlayerInput {
     }
 
     /// A click at the pointer: true when it lands on an entry of `targets`
-    /// (it selects that entry, then confirms it); otherwise the click is
-    /// the bindings' (the mouse's Confirm).
+    /// (it selects that entry, then confirms it where the interface's
+    /// choices are confirmed; a button entry is pressed once instead);
+    /// otherwise the click is the bindings' (the mouse's Confirm).
     pub fn click(&mut self, targets: Option<&xem_core::menu::Targets>) -> bool {
-        let Some(entry) = targets.zip(self.hover).and_then(|(t, p)| t.at(p)) else { return false };
-        self.goal = Some(entry);
-        self.stalls = None;
-        self.click = CLICK_FRAMES;
+        let Some((targets, entry)) = targets.zip(self.hover).and_then(|(t, p)| Some((t, t.at(p)?))) else { return false };
+        if let Some(action) = targets.entries[entry].press {
+            self.pulse(Pulse::new([action]));
+            return true;
+        }
+        self.select(entry, targets.confirm);
         true
     }
 
@@ -189,9 +193,10 @@ impl PlayerInput {
         self.click = if confirm { CLICK_FRAMES } else { 0 };
     }
 
-    /// Steers the game's cursor to the entry the pointer moved onto, and
-    /// confirms a clicked one once selected. Call once a host frame with
-    /// the interface's entries.
+    /// Steers the game's cursor to the entry the pointer moved onto (where
+    /// the interface's choices are confirmed; never a button), and confirms
+    /// a clicked one once selected. Call once a host frame with the
+    /// interface's entries.
     pub fn browse(&mut self, targets: Option<&xem_core::menu::Targets>) {
         let Some(targets) = targets else {
             self.goal = None;
@@ -199,7 +204,9 @@ impl PlayerInput {
             return;
         };
         if std::mem::take(&mut self.hover_moved)
+            && targets.confirm
             && let Some(entry) = self.hover.and_then(|p| targets.at(p))
+            && targets.entries[entry].press.is_none()
         {
             self.goal = Some(entry);
             self.stalls = None;
@@ -211,10 +218,11 @@ impl PlayerInput {
             self.stalls = None;
             return;
         };
+        let stalls = if targets.what == "battle_ring" { 1 } else { STALLS };
         match targets.step_toward(goal) {
             // A goal the cursor stops short of (past a list's end, a target
-            // the game will not move to) is given up.
-            Some(_) if matches!(self.stalls, Some((before, n)) if before == targets.selected && n + 1 >= STALLS) => {
+            // the game will not move to, a refused slot) is given up.
+            Some(_) if matches!(self.stalls, Some((before, n)) if before == targets.selected && n + 1 >= stalls) => {
                 self.goal = None;
                 self.click = 0;
                 self.stalls = None;
@@ -416,9 +424,10 @@ mod tests {
         let rect = |y: f32| Rect { x: 0.0, y, width: 50.0, height: 10.0 };
         let mut targets = Targets {
             what: "commands",
-            entries: (0..7).map(|i| Entry { rect: rect(100.0 - 10.0 * i as f32), select: None, ground: None }).collect(),
+            entries: (0..7).map(|i| Entry { rect: rect(100.0 - 10.0 * i as f32), select: None, press: None, ground: None }).collect(),
             selected: Some(0),
             steps: Steps::Ring { count: 7, next: GameAction::Up },
+            confirm: true,
         };
         let menu = field(Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, switch: false, quantities: false });
         input.hover(Some((10.0, 85.0)));
@@ -439,6 +448,84 @@ mod tests {
         // Off the entries a click is the mouse's own.
         input.hover(Some((200.0, 5.0)));
         assert!(!input.click(Some(&targets)));
+    }
+
+    /// The battle's command ring and attack page: pointing at a slot
+    /// highlights it (once: a refused slot is given up rather than pressed
+    /// into a flip), a click on a page arrow presses it, the attacks are
+    /// pressed, and the attack page's target is selected without Confirm,
+    /// by a click only.
+    #[test]
+    fn the_battle_ring_and_attack_page_take_the_pointer() {
+        use xem_core::menu::{Entry, Ground, Rect, Steps, Targets};
+        let bindings = GameBindings::default();
+        let mut input = PlayerInput::default();
+        let rect = |x: f32| Rect { x, y: 0.0, width: 10.0, height: 10.0 };
+        let entry = |x: f32| Entry { rect: rect(x), select: None, press: None, ground: None };
+        let mut ring = Targets {
+            what: "battle_ring",
+            entries: vec![
+                Entry { select: Some(GameAction::Right), ..entry(0.0) },
+                Entry { select: Some(GameAction::Down), ..entry(20.0) },
+                Entry { press: Some(GameAction::Right), ..entry(40.0) },
+            ],
+            selected: Some(0),
+            steps: Steps::Direct,
+            confirm: true,
+        };
+        let battle = field(Ui::Battle { page: 1, attack: false, ap: 7, list: false, targeting: false });
+        // Pointing at Down highlights it with one press; the game refuses
+        // it (the selection stays), and nothing presses Down again.
+        input.hover(Some((25.0, 5.0)));
+        let mut pressed = Vec::new();
+        for _ in 0..12 {
+            input.browse(Some(&ring));
+            pressed.push(input.buttons(&bindings, 0.0, battle));
+            input.frames_ran(1);
+        }
+        assert_eq!(pressed.iter().filter(|b| **b & button::DOWN != 0).count(), 2, "one press, held two frames: {pressed:?}");
+        // Pointing at the arrow selects nothing; a click flips the page.
+        input.hover(Some((45.0, 5.0)));
+        input.browse(Some(&ring));
+        assert!(!input.pulsing());
+        assert!(input.click(Some(&ring)));
+        assert_eq!(run(&mut input, &bindings, battle, 4), [button::RIGHT, button::RIGHT, 0, 0]);
+        // A click on the highlighted slot confirms it.
+        ring.selected = Some(1);
+        input.hover(Some((25.0, 5.0)));
+        assert!(input.click(Some(&ring)));
+        input.browse(Some(&ring));
+        assert_eq!(run(&mut input, &bindings, battle, 2), [button::CROSS, button::CROSS]);
+        // The attack page (a new interface): Weak, then the enemy.
+        let mut input = PlayerInput::default();
+        let attack = Targets {
+            what: "battle_attack",
+            entries: vec![
+                Entry { press: Some(GameAction::AttackWeak), ..entry(0.0) },
+                // The debug battle's Fei, and the enemy left of him.
+                Entry { ground: Some(Ground { slot: 0, x: 4360, z: 4160, selectable: true }), ..entry(20.0) },
+                Entry { ground: Some(Ground { slot: 3, x: 3820, z: 4040, selectable: true }), ..entry(40.0) },
+            ],
+            selected: Some(1),
+            steps: Steps::Compass,
+            confirm: false,
+        };
+        let attacking = Context { attack: true, ..field(Ui::Battle { page: 5, attack: true, ap: 7, list: false, targeting: false }) };
+        input.hover(Some((5.0, 5.0)));
+        assert!(input.click(Some(&attack)));
+        assert_eq!(run(&mut input, &bindings, attacking, 4), [button::TRIANGLE, button::TRIANGLE, 0, 0], "Weak");
+        input.hover(Some((45.0, 5.0)));
+        input.browse(Some(&attack));
+        assert!(!input.pulsing(), "pointing at a target does not move to it");
+        assert!(input.click(Some(&attack)));
+        let mut pressed = Vec::new();
+        for _ in 0..8 {
+            input.browse(Some(&attack));
+            pressed.push(input.buttons(&bindings, 0.0, attacking));
+            input.frames_ran(1);
+        }
+        assert_eq!(pressed[..2], [button::LEFT, button::LEFT], "the enemy is left: {pressed:?}");
+        assert!(pressed.iter().all(|b| b & button::CROSS == 0), "nothing confirms it (Cross is Fierce): {pressed:?}");
     }
 
     fn field(ui: Ui) -> Context {

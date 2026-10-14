@@ -901,7 +901,7 @@ impl XemApp {
             "move" => {
                 self.input.hover(screen);
                 if self.mouse_captured && self.mouse_camera_active() {
-                    self.input.mouse.moved(dx * self.settings.borrow().settings().mouse_scale());
+                    self.input.mouse.moved(dx, self.settings.borrow().settings());
                 }
                 return false;
             }
@@ -1327,6 +1327,9 @@ impl XemApp {
                 "panelSection": r.panel().map(|panel| panel.component().get_selected_section()),
                 "fps": r.frame_rate.as_ref().map(|counter| counter.label()),
                 "hud": r.frame_rate.as_ref().map(|hud| json!({"visible":hud.visible(),"notice":hud.notice(),"fast_forward":hud.component().get_fast_forward(),"rewinding":hud.component().get_rewinding()})),
+                // Where the game's picture lies on the canvas (canvas pixels)
+                // and the screen it shows (with the wider framing's sides).
+                "picture": r.picture.map(|p| json!({"x": p.placed.x, "y": p.placed.y, "width": p.placed.width, "height": p.placed.height, "display": [p.display.0, p.display.1], "side": p.side})),
                 "lost": r.lost(),
             })
         });

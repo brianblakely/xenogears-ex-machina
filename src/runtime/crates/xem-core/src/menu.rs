@@ -32,10 +32,31 @@
 //!   `battle_target_cursor_slot` 0x800C3E2C), each at its sprite
 //!   (`battle_area.sprites` 0x800CCB3C) projected as
 //!   `battle_get_slot_screen_box` does (`battle_camera_view_matrix`
-//!   0x800D30BC, screen 512, offset (160, 164)). A direction moves to the
-//!   nearest candidate that way on the floor (`battle_find_candidate_in_direction`
-//!   on the slots' x and z, `battle_area_slots` 0x800C3EB4), so the way to a
-//!   candidate is searched over those moves.
+//!   0x800D30BC, screen 512, offset (160, 164)), as tall as the sprite's
+//!   frame (+0x36); where boxes overlap the smallest takes the point. A
+//!   direction moves to the nearest candidate that way on the floor
+//!   (`battle_find_candidate_in_direction` on the slots' x and z,
+//!   `battle_area_slots` 0x800C3EB4), so the way to a candidate is searched
+//!   over those moves.
+//! - A battle's command ring (`battle_turn_state` +0x2DD, the command page,
+//!   while `battle_ui` +0xCB has the command panel drawn): its four slots
+//!   (Right, Down, Left, Up; a direction highlights its slot, the
+//!   highlighted one's own direction flips the ring's page) and the page
+//!   arrows above it, each a part of their glyph (0x54, a Gear's 0x58),
+//!   which flip the page. The panel is built from constant tables
+//!   (`battle_command_panel_build_page`, 8008D598): each page's glyph sets
+//!   (`battle_command_panel_pages` 0x800C3000, `battle_command_panel_glyph_sets`
+//!   0x800C2F4C: id, x, y, shade; ids from 0x4000 a byte of the acting
+//!   member's turn slot, 0xFF not drawn), each glyph's parts placed from its
+//!   point by the battle's glyph table (`battle_glyph_table` 0x800D2F5C).
+//! - The attack page (5, a Gear's 0x19; 0x64 and 0x65 while the panel
+//!   fades out after the first attack): its four attacks, each its button's
+//!   glyph (0xE Weak, 0xD Strong, 0xC Fierce, 0xB the end of the
+//!   sequence) with the label and digits right of it on its row, which keep
+//!   their places through the sequence; and, until the first attack fixes
+//!   it (+0x2E9), the attack's target (+0x2E8) among the candidates, which
+//!   a direction moves to as `battle_choose_target` does, unconfirmed: the
+//!   attacks confirm it, and Confirm is one of them.
 use crate::action::GameAction;
 use crate::context::Context;
 use crate::memory::GameMemory;
@@ -90,9 +111,19 @@ pub struct Entry {
     pub rect: Rect,
     /// The action that selects it directly (`Steps::Direct`).
     pub select: Option<GameAction>,
+    /// A button rather than a choice (the ring's page arrows, the attacks):
+    /// pointing at it selects nothing, and choosing it presses this once.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub press: Option<GameAction>,
     /// Its place (`Steps::Compass`).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ground: Option<Ground>,
+}
+
+impl Entry {
+    fn at(rect: Rect) -> Entry {
+        Entry { rect, select: None, press: None, ground: None }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -101,12 +132,27 @@ pub struct Targets {
     pub entries: Vec<Entry>,
     pub selected: Option<usize>,
     pub steps: Steps,
+    /// A chosen entry is confirmed (Confirm, once it is selected), and
+    /// pointing at one selects it. Not on the attack page, whose attacks
+    /// confirm its target (Confirm is one of them): there a target is
+    /// selected only when chosen, and nothing confirms it.
+    pub confirm: bool,
 }
 
 impl Targets {
-    /// The entry at a screen point.
+    fn new(what: &'static str, entries: Vec<Entry>, selected: Option<usize>, steps: Steps) -> Targets {
+        Targets { what, entries, selected, steps, confirm: true }
+    }
+
+    /// The entry at a screen point: the first of the interface's own there
+    /// (in the order they are drawn over one another: a ring's slots over
+    /// its arrows, the attacks over the scene), else the smallest target
+    /// (a battle's boxes overlap, a big enemy's holding the party's).
     pub fn at(&self, point: (f32, f32)) -> Option<usize> {
-        self.entries.iter().position(|e| e.ground.is_none_or(|g| g.selectable) && e.rect.contains(point))
+        let hits = || self.entries.iter().enumerate().filter(move |(_, e)| e.ground.is_none_or(|g| g.selectable) && e.rect.contains(point));
+        hits().find(|(_, e)| e.ground.is_none())
+            .or_else(|| hits().min_by(|(_, a), (_, b)| (a.rect.width * a.rect.height).total_cmp(&(b.rect.width * b.rect.height))))
+            .map(|(i, _)| i)
     }
 
     /// The next press toward entry `to`, if not selected already.
@@ -215,6 +261,7 @@ fn bytes(memory: &dyn GameMemory, address: u32, len: usize) -> Option<Vec<u8>> {
     memory.read(address, &mut b).ok().map(|()| b)
 }
 fn u8_at(memory: &dyn GameMemory, address: u32) -> Option<u8> { bytes(memory, address, 1).map(|b| b[0]) }
+fn u16_at(memory: &dyn GameMemory, address: u32) -> Option<u16> { bytes(memory, address, 2).map(|b| u16::from_le_bytes([b[0], b[1]])) }
 fn s16_at(memory: &dyn GameMemory, address: u32) -> Option<i16> { bytes(memory, address, 2).map(|b| i16::from_le_bytes([b[0], b[1]])) }
 fn s32_at(memory: &dyn GameMemory, address: u32) -> Option<i32> { bytes(memory, address, 4).map(|b| i32::from_le_bytes([b[0], b[1], b[2], b[3]])) }
 fn ram(pointer: i32) -> Option<u32> {
@@ -234,7 +281,7 @@ fn table(memory: &dyn GameMemory, xs: u32, ys: u32, first: usize, count: usize, 
     (first..first + count).map(|i| {
         let hx = s32_at(memory, xs + i as u32 * 4)?;
         let hy = s32_at(memory, ys + i as u32 * 4)?;
-        Some(Entry { rect: highlight(hx, hy, width), select: None, ground: None })
+        Some(Entry::at(highlight(hx, hy, width)))
     }).collect()
 }
 
@@ -243,8 +290,10 @@ pub fn targets(memory: &dyn GameMemory, ui: Context) -> Option<Targets> {
     match ui {
         Context::Menu { screen, cursor, choice, choices, .. } => menu(memory, screen, cursor, choice, choices),
         Context::Dialogue { choice: Some(_) } => dialogue_choice(memory),
+        Context::Battle { page, attack: true, .. } => battle_attack(memory, page),
         Context::Battle { targeting: true, .. } => battle_targets(memory),
         Context::Battle { list: true, .. } => battle_list(memory),
+        Context::Battle { page, .. } => battle_ring(memory, page),
         _ => None,
     }
 }
@@ -269,9 +318,9 @@ fn menu(memory: &dyn GameMemory, screen: u8, cursor: u8, choice: u8, choices: u8
                 let x = f32::from(s16_at(memory, poly + 8)?);
                 let y = f32::from(s16_at(memory, poly + 0xA)?);
                 // The marker and the word after it.
-                Some(Entry { rect: Rect { x: x - 4.0, y: y - 6.0, width: 56.0, height: 24.0 }, select: Some(if i == 2 { GameAction::Left } else { GameAction::Right }), ground: None })
+                Some(Entry { select: Some(if i == 2 { GameAction::Left } else { GameAction::Right }), ..Entry::at(Rect { x: x - 4.0, y: y - 6.0, width: 56.0, height: 24.0 }) })
             }).collect::<Option<Vec<_>>>()?;
-            return Some(Targets { what: "yes_no", entries, selected: Some(if shown[0] != 0 { 0 } else { 1 }), steps: Steps::Direct });
+            return Some(Targets::new("yes_no", entries, Some(if shown[0] != 0 { 0 } else { 1 }), Steps::Direct));
         }
     }
     if let Some(list) = list(memory, screen, state, flags) {
@@ -288,11 +337,11 @@ fn menu(memory: &dyn GameMemory, screen: u8, cursor: u8, choice: u8, choices: u8
     }
     if !dim {
         let entries = table(memory, xs, ys, 0, commands, width)?;
-        return Some(Targets { what: "commands", entries, selected: Some(usize::from(cursor)), steps: Steps::Ring { count: commands, next: GameAction::Up } });
+        return Some(Targets::new("commands", entries, Some(usize::from(cursor)), Steps::Ring { count: commands, next: GameAction::Up }));
     }
     if flag(0x0A) && (1..=4).contains(&choices) {
         let entries = table(memory, xs, ys, rows_from, usize::from(choices), width)?;
-        return Some(Targets { what: "choices", entries, selected: Some(usize::from(choice)), steps: Steps::Ring { count: usize::from(choices), next: GameAction::Up } });
+        return Some(Targets::new("choices", entries, Some(usize::from(choice)), Steps::Ring { count: usize::from(choices), next: GameAction::Up }));
     }
     None
 }
@@ -325,17 +374,13 @@ fn list(memory: &dyn GameMemory, screen: u8, state: u32, flags: u32) -> Option<T
     let (cx, cy) = (x - LIST_CURSOR_OFFSET.0, y - LIST_CURSOR_OFFSET.1);
     let column = if columns == 2 { ((cx - left + column_width / 2) / column_width).clamp(0, 1) } else { 0 };
     let row = ((cy - top + row_height / 2) / row_height).clamp(0, rows - 1);
-    let entries = (0..rows).flat_map(|r| (0..columns).map(move |c| (r, c))).map(|(r, c)| Entry {
-        rect: Rect {
-            x: (x + (c - column) * column_width) as f32,
-            y: (y + (r - row) * row_height) as f32,
-            width: (column_width - 4) as f32,
-            height: row_height as f32,
-        },
-        select: None,
-        ground: None,
-    }).collect();
-    Some(Targets { what: "list", entries, selected: Some((row * columns + column) as usize), steps: Steps::Grid { columns: columns as usize } })
+    let entries = (0..rows).flat_map(|r| (0..columns).map(move |c| (r, c))).map(|(r, c)| Entry::at(Rect {
+        x: (x + (c - column) * column_width) as f32,
+        y: (y + (r - row) * row_height) as f32,
+        width: (column_width - 4) as f32,
+        height: row_height as f32,
+    })).collect();
+    Some(Targets::new("list", entries, Some((row * columns + column) as usize), Steps::Grid { columns: columns as usize }))
 }
 
 fn dialogue_choice(memory: &dyn GameMemory) -> Option<Targets> {
@@ -355,12 +400,8 @@ fn dialogue_choice(memory: &dyn GameMemory) -> Option<Targets> {
         let width = f32::from(s16_at(memory, text + 8)?);
         let line = f32::from(s16_at(memory, text + 0x14)?.max(1));
         let top = f32::from(s16_at(memory, text + 0x16)?);
-        let entries = (0..count).map(|k| Entry {
-            rect: Rect { x: x - 16.0, y: y + line * (f32::from(first) + k as f32 - top), width: width + 16.0, height: line },
-            select: None,
-            ground: None,
-        }).collect();
-        return Some(Targets { what: "dialogue_choice", entries, selected: usize::try_from(index).ok(), steps: Steps::Ring { count, next: GameAction::Down } });
+        let entries = (0..count).map(|k| Entry::at(Rect { x: x - 16.0, y: y + line * (f32::from(first) + k as f32 - top), width: width + 16.0, height: line })).collect();
+        return Some(Targets::new("dialogue_choice", entries, usize::try_from(index).ok(), Steps::Ring { count, next: GameAction::Down }));
     }
     None
 }
@@ -398,12 +439,13 @@ fn battle_list(memory: &dyn GameMemory) -> Option<Targets> {
         if dy < 0 || dy % height != 0 || dy / height >= rows {
             continue;
         }
-        let entries = (0..rows).flat_map(|r| (0..columns).map(move |c| (r, c))).map(|(r, c)| Entry {
-            rect: Rect { x: (x + c * step + GLYPH_OFFSET.0) as f32, y: (y + r * height + GLYPH_OFFSET.1) as f32, width: (step - 4) as f32, height: height as f32 },
-            select: None,
-            ground: None,
-        }).collect();
-        return Some(Targets { what: "battle_list", entries, selected: Some((dy / height * columns + column) as usize), steps: Steps::Grid { columns: columns as usize } });
+        let entries = (0..rows).flat_map(|r| (0..columns).map(move |c| (r, c))).map(|(r, c)| Entry::at(Rect {
+            x: (x + c * step + GLYPH_OFFSET.0) as f32,
+            y: (y + r * height + GLYPH_OFFSET.1) as f32,
+            width: (step - 4) as f32,
+            height: height as f32,
+        })).collect();
+        return Some(Targets::new("battle_list", entries, Some((dy / height * columns + column) as usize), Steps::Grid { columns: columns as usize }));
     }
     None
 }
@@ -426,9 +468,16 @@ fn project(matrix: &[i32; 12], point: [i32; 3]) -> Option<(f32, f32, f32)> {
 }
 
 fn battle_targets(memory: &dyn GameMemory) -> Option<Targets> {
-    let candidates = bytes(memory, TARGET_CANDIDATES, 11)?;
     let mask = u16::from_le_bytes(bytes(memory, TARGET_CANDIDATE_MASK, 2)?.try_into().ok()?);
     let cursor = u8_at(memory, TARGET_CURSOR_SLOT)?;
+    let (entries, selected) = target_entries(memory, cursor, |slot| mask & (1 << slot) != 0)?;
+    (!entries.is_empty()).then_some(Targets::new("battle_targets", entries, selected, Steps::Compass))
+}
+
+/// The target candidates, each at its sprite (`selectable`: the game lets
+/// its cursor onto that slot), and the entry of slot `cursor`.
+fn target_entries(memory: &dyn GameMemory, cursor: u8, selectable: impl Fn(u8) -> bool) -> Option<(Vec<Entry>, Option<usize>)> {
+    let candidates = bytes(memory, TARGET_CANDIDATES, 11)?;
     let m = bytes(memory, CAMERA_VIEW_MATRIX, 0x20)?;
     let half = |o: usize| i32::from(i16::from_le_bytes([m[o], m[o + 1]]));
     let word = |o: usize| i32::from_le_bytes([m[o], m[o + 1], m[o + 2], m[o + 3]]);
@@ -440,44 +489,201 @@ fn battle_targets(memory: &dyn GameMemory) -> Option<Targets> {
         let sprite = ram(s32_at(memory, AREA_SPRITES + u32::from(slot) * 4)?)?;
         let at = [s32_at(memory, sprite)? >> 16, s32_at(memory, sprite + 4)? >> 16, s32_at(memory, sprite + 8)? >> 16];
         let (x, y, depth) = project(&matrix, at)?;
-        // A box the size of a person standing on the point (about 100
-        // units tall: Fei measures 45 pixels at depth 1074), at least
-        // comfortable to point at.
-        let size = (512.0 * 100.0 / depth).clamp(24.0, 200.0);
+        // A box as tall as the sprite's frame (`height` +0x36, its extent
+        // at its scale: a person's 96 units, a Gear's about 500, a big
+        // enemy's more) standing on the point, at least comfortable to
+        // point at and at most the screen's height.
+        let tall = match u16_at(memory, sprite + 0x36)? {
+            0 => 100.0,
+            height => f32::from(height),
+        };
+        let size = (512.0 * tall / depth).clamp(24.0, 224.0);
         if slot == cursor {
             selected = Some(entries.len());
         }
-        entries.push(Entry {
-            rect: Rect { x: x - size * 0.35, y: y - size, width: size * 0.7, height: size },
-            select: None,
-            ground: Some(Ground { slot, x: s16_at(memory, place + 0xA)?, z: s16_at(memory, place + 0xC)?, selectable: mask & (1 << slot) != 0 }),
-        });
+        let ground = Ground { slot, x: s16_at(memory, place + 0xA)?, z: s16_at(memory, place + 0xC)?, selectable: selectable(slot) };
+        entries.push(Entry { ground: Some(ground), ..Entry::at(Rect { x: x - size * 0.35, y: y - size, width: size * 0.7, height: size }) });
     }
-    (!entries.is_empty()).then_some(Targets { what: "battle_targets", entries, selected, steps: Steps::Compass })
+    Some((entries, selected))
+}
+
+const BATTLE_TURN_STATE: u32 = 0x800C_3EAC;
+const COMMAND_PANEL_PAGES: u32 = 0x800C_3000;
+const COMMAND_PANEL_GLYPH_SETS: u32 = 0x800C_2F4C;
+const BATTLE_GLYPH_TABLE: u32 = 0x800D_2F5C;
+
+/// The ring's slots: the command page of each direction on each of its two
+/// pages (layers), on foot and in a Gear, in `battle_pressed_key` order
+/// (Right, Down, Left, Up).
+const RING_PAGES: [[[u8; 4]; 2]; 2] = [[[1, 2, 3, 4], [7, 8, 9, 0xA]], [[0x10, 0x11, 0x12, 0x13], [0x15, 0x16, 0x17, 0x18]]];
+
+/// The ring slot a command page highlights: (its direction, Right, Down,
+/// Left or Up, which of the ring's pages).
+pub fn ring_slot(page: u8) -> Option<(usize, usize)> {
+    RING_PAGES.iter().flat_map(|unit| unit.iter().enumerate()).find_map(|(layer, pages)| {
+        pages.iter().position(|p| *p == page).map(|direction| (direction, layer))
+    })
+}
+
+/// A command panel glyph as the page draws it: its id in the glyph set and
+/// its parts on the screen (none when its turn slot byte is 0xFF).
+struct PanelGlyph {
+    id: u16,
+    parts: Vec<Rect>,
+}
+
+/// The union of rectangles.
+fn union(rects: impl IntoIterator<Item = Rect>) -> Option<Rect> {
+    rects.into_iter().reduce(|a, b| {
+        let (x, y) = (a.x.min(b.x), a.y.min(b.y));
+        Rect { x, y, width: (a.x + a.width).max(b.x + b.width) - x, height: (a.y + a.height).max(b.y + b.height) - y }
+    })
+}
+
+/// The glyph sets command panel page `page` draws, each glyph placed as
+/// `battle_command_panel_build_page` places it, while the panel is drawn
+/// (`battle_ui` +0xCB).
+fn panel_glyph_sets(memory: &dyn GameMemory, page: u8) -> Option<Vec<Vec<PanelGlyph>>> {
+    let ui = ram(s32_at(memory, BATTLE_UI)?)?;
+    if u8_at(memory, ui + 0xCB)? == 0 || page >= 26 {
+        return None;
+    }
+    let turn = ram(s32_at(memory, BATTLE_TURN_STATE)?)?;
+    let layout = turn + u32::from(u8_at(memory, turn + 0x2D3)?) * 0x40;
+    let sheet = ram(s32_at(memory, BATTLE_GLYPH_TABLE)?)?;
+    let lists = ram(s32_at(memory, COMMAND_PANEL_PAGES + u32::from(page) * 4)?)?;
+    let mut sets = Vec::new();
+    for i in 0..2 {
+        if u8_at(memory, lists + i)? == 0xFF {
+            break;
+        }
+        let set = ram(s32_at(memory, COMMAND_PANEL_GLYPH_SETS + u32::from(u8_at(memory, lists + 2 + i)?) * 4)?)?;
+        let mut glyphs = Vec::new();
+        for record in (set..).step_by(8).take(25) {
+            let id = u16_at(memory, record)?;
+            if id == 0xFFFF {
+                break;
+            }
+            let glyph = if id >= 0x4000 { u16::from(u8_at(memory, layout + u32::from(id & 0xFF))?) } else { id };
+            if glyph == 0xFF {
+                glyphs.push(PanelGlyph { id, parts: Vec::new() });
+                continue;
+            }
+            let (x, y) = (i32::from(s16_at(memory, record + 2)?), i32::from(s16_at(memory, record + 4)?));
+            // The sheet's entry: its part count, then 0x1C bytes a part
+            // (size at +4, placement from the glyph's point at +8).
+            let entry = sheet + u32::from(u16_at(memory, sheet + (u32::from(glyph) + 2) * 2)?);
+            let parts = (0..u32::try_from(s16_at(memory, entry)?).unwrap_or(0)).map(|k| {
+                let part = entry + 4 + k * 0x1C;
+                Some(Rect {
+                    x: (x + i32::from(s16_at(memory, part + 8)?)) as f32,
+                    y: (y + i32::from(s16_at(memory, part + 0xA)?)) as f32,
+                    width: f32::from(u16_at(memory, part + 4)?),
+                    height: f32::from(u16_at(memory, part + 6)?),
+                })
+            }).collect::<Option<Vec<_>>>()?;
+            glyphs.push(PanelGlyph { id, parts });
+        }
+        sets.push(glyphs);
+    }
+    Some(sets)
+}
+
+/// The page arrows' glyph above the ring (on foot, in a Gear).
+const RING_ARROWS: [u16; 2] = [0x54, 0x58];
+/// Screen pixels around each page arrow that count as pointing at it.
+const ARROW_REACH: f32 = 2.0;
+
+/// The command ring of page `page`: its four slots, then its page arrows,
+/// which press the highlighted slot's direction (the page's flip).
+fn battle_ring(memory: &dyn GameMemory, page: u8) -> Option<Targets> {
+    let (highlighted, _) = ring_slot(page)?;
+    let ring = panel_glyph_sets(memory, page)?.into_iter().next()?;
+    // The slots are the set's first four glyphs, in direction order; a slot
+    // the member has no command for is not drawn and takes no pointing.
+    if ring.len() < 4 {
+        return None;
+    }
+    let nowhere = Rect { x: 0.0, y: 0.0, width: 0.0, height: 0.0 };
+    let mut entries: Vec<Entry> = ring.iter().take(4).zip(COMPASS)
+        .map(|(glyph, direction)| Entry { select: Some(direction), ..Entry::at(union(glyph.parts.iter().copied()).unwrap_or(nowhere)) })
+        .collect();
+    let flip = COMPASS[highlighted];
+    for arrow in ring.iter().filter(|g| RING_ARROWS.contains(&g.id)).flat_map(|g| &g.parts) {
+        let rect = Rect { x: arrow.x - ARROW_REACH, y: arrow.y - ARROW_REACH, width: arrow.width + 2.0 * ARROW_REACH, height: arrow.height + 2.0 * ARROW_REACH };
+        entries.push(Entry { press: Some(flip), ..Entry::at(rect) });
+    }
+    Some(Targets::new("battle_ring", entries, Some(highlighted), Steps::Direct))
+}
+
+/// The attack buttons' glyphs and what each presses.
+const ATTACK_BUTTONS: [(u16, GameAction); 4] = [
+    (0xE, GameAction::AttackWeak),
+    (0xD, GameAction::AttackStrong),
+    (0xC, GameAction::AttackFierce),
+    (0xB, GameAction::AttackEnd),
+];
+
+/// The attack page (`page` 5 or 0x64, a Gear's 0x19 or 0x65): its attacks,
+/// then the attack's target choice until the first attack fixes it.
+fn battle_attack(memory: &dyn GameMemory, page: u8) -> Option<Targets> {
+    let panel = match page {
+        0x64 => 5,
+        0x65 => 0x19,
+        page => page,
+    };
+    let sets = panel_glyph_sets(memory, panel)?;
+    let set = sets.iter().find(|set| set.iter().any(|g| ATTACK_BUTTONS.iter().any(|(id, _)| g.id == *id)))?;
+    let buttons: Vec<(Rect, GameAction)> = set.iter()
+        .filter_map(|g| Some((union(g.parts.iter().copied())?, ATTACK_BUTTONS.iter().find(|(id, _)| g.id == *id)?.1)))
+        .collect();
+    // Each label and digit joins the nearest button left of it on its row.
+    let mut attacks: Vec<(Rect, GameAction)> = buttons.clone();
+    for glyph in set.iter().filter(|g| !ATTACK_BUTTONS.iter().any(|(id, _)| g.id == *id)) {
+        let Some(rect) = union(glyph.parts.iter().copied()) else { continue };
+        let (_, middle) = rect.centre();
+        let owner = buttons.iter().enumerate()
+            .filter(|(_, (button, _))| button.x <= rect.x && middle >= button.y && middle < button.y + button.height)
+            .max_by(|a, b| a.1.0.x.total_cmp(&b.1.0.x))
+            .map(|(i, _)| i);
+        if let Some(i) = owner {
+            attacks[i].0 = union([attacks[i].0, rect])?;
+        }
+    }
+    let mut entries: Vec<Entry> = attacks.into_iter().map(|(rect, action)| Entry { press: Some(action), ..Entry::at(rect) }).collect();
+    let turn = ram(s32_at(memory, BATTLE_TURN_STATE)?)?;
+    let mut selected = None;
+    if u8_at(memory, turn + 0x2E9)? == 0 {
+        let (targets, cursor) = target_entries(memory, u8_at(memory, turn + 0x2E8)?, |_| true)?;
+        selected = cursor.map(|i| entries.len() + i);
+        entries.extend(targets);
+    }
+    Some(Targets { confirm: false, ..Targets::new("battle_attack", entries, selected, Steps::Compass) })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::memory::OutOfBounds;
 
     #[test]
     fn rings_step_the_short_way_and_direct_entries_their_own() {
-        let entry = Entry { rect: Rect { x: 0.0, y: 0.0, width: 10.0, height: 10.0 }, select: None, ground: None };
-        let ring = Targets { what: "commands", entries: vec![entry; 7], selected: Some(1), steps: Steps::Ring { count: 7, next: GameAction::Up } };
+        let entry = Entry::at(Rect { x: 0.0, y: 0.0, width: 10.0, height: 10.0 });
+        let ring = Targets::new("commands", vec![entry; 7], Some(1), Steps::Ring { count: 7, next: GameAction::Up });
         assert_eq!(ring.step_toward(3), Some(GameAction::Up));
         assert_eq!(ring.step_toward(6), Some(GameAction::Down));
         assert_eq!(ring.step_toward(1), None);
         let yes = Entry { select: Some(GameAction::Left), ..entry };
-        let no = Entry { select: Some(GameAction::Right), rect: Rect { x: 20.0, ..entry.rect }, ground: None };
-        let pair = Targets { what: "yes_no", entries: vec![yes, no], selected: Some(1), steps: Steps::Direct };
+        let no = Entry { select: Some(GameAction::Right), ..Entry::at(Rect { x: 20.0, ..entry.rect }) };
+        let pair = Targets::new("yes_no", vec![yes, no], Some(1), Steps::Direct);
         assert_eq!(pair.step_toward(0), Some(GameAction::Left));
         assert_eq!(pair.at((25.0, 5.0)), Some(1));
     }
 
     #[test]
     fn grids_step_rows_then_columns() {
-        let entry = Entry { rect: Rect { x: 0.0, y: 0.0, width: 1.0, height: 1.0 }, select: None, ground: None };
-        let grid = Targets { what: "list", entries: vec![entry; 16], selected: Some(1), steps: Steps::Grid { columns: 2 } };
+        let entry = Entry::at(Rect { x: 0.0, y: 0.0, width: 1.0, height: 1.0 });
+        let grid = Targets::new("list", vec![entry; 16], Some(1), Steps::Grid { columns: 2 });
         assert_eq!(grid.step_toward(5), Some(GameAction::Down));
         assert_eq!(grid.step_toward(0), Some(GameAction::Left));
         let below = Targets { selected: Some(4), ..grid.clone() };
@@ -488,13 +694,9 @@ mod tests {
     #[test]
     fn battle_targets_step_the_way_the_game_moves_its_cursor() {
         // The debug battle's party (Fei, Elly, Citan) and its enemy, on the floor.
-        let place = |slot, x, z| Entry {
-            rect: Rect { x: 0.0, y: 0.0, width: 1.0, height: 1.0 },
-            select: None,
-            ground: Some(Ground { slot, x, z, selectable: true }),
-        };
+        let place = |slot, x, z| Entry { ground: Some(Ground { slot, x, z, selectable: true }), ..Entry::at(Rect { x: 0.0, y: 0.0, width: 1.0, height: 1.0 }) };
         let entries = vec![place(0, 4360, 4160), place(1, 4420, 3840), place(2, 4460, 4000), place(3, 3820, 4040)];
-        let from = |selected| Targets { what: "battle_targets", entries: entries.clone(), selected: Some(selected), steps: Steps::Compass };
+        let from = |selected| Targets::new("battle_targets", entries.clone(), Some(selected), Steps::Compass);
         assert_eq!(from(0).step_toward(3), Some(GameAction::Left));
         assert_eq!(from(0).step_toward(2), Some(GameAction::Down), "Citan is nearer than Elly");
         // From the enemy Right reaches Fei first, then Down Citan.
@@ -504,6 +706,170 @@ mod tests {
         let mut only = from(0);
         only.entries[3].ground.as_mut().unwrap().selectable = false;
         assert_eq!(only.step_toward(3), None);
+    }
+
+    #[test]
+    fn overlapping_targets_give_the_point_to_the_smallest() {
+        let target = |slot, rect| Entry { ground: Some(Ground { slot, x: 0, z: 0, selectable: true }), ..Entry::at(rect) };
+        let enemy = target(3, Rect { x: 0.0, y: 0.0, width: 200.0, height: 200.0 });
+        let fei = target(0, Rect { x: 50.0, y: 50.0, width: 30.0, height: 45.0 });
+        let targets = Targets::new("battle_targets", vec![enemy, fei], Some(0), Steps::Compass);
+        assert_eq!(targets.at((60.0, 60.0)), Some(1), "Fei, inside the enemy's box");
+        assert_eq!(targets.at((150.0, 150.0)), Some(0));
+        let mut only_enemy = targets.clone();
+        only_enemy.entries[1].ground.as_mut().unwrap().selectable = false;
+        assert_eq!(only_enemy.at((60.0, 60.0)), Some(0), "where Fei cannot be chosen, the enemy behind him");
+        // The interface's own entries keep their order: a slot's label
+        // drawn over a page arrow takes the point.
+        let label = Entry { select: Some(GameAction::Up), ..Entry::at(Rect { x: 28.0, y: 46.0, width: 60.0, height: 15.0 }) };
+        let arrow = Entry { press: Some(GameAction::Up), ..Entry::at(Rect { x: 25.0, y: 51.0, width: 9.0, height: 11.0 }) };
+        let ring = Targets::new("battle_ring", vec![label, arrow], Some(0), Steps::Direct);
+        assert_eq!(ring.at((30.0, 55.0)), Some(0));
+        assert_eq!(ring.at((26.0, 55.0)), Some(1));
+    }
+
+    #[test]
+    fn ring_pages_name_their_slot_and_page() {
+        assert_eq!(ring_slot(1), Some((0, 0)), "Attack: Right, the first page");
+        assert_eq!(ring_slot(9), Some((2, 1)));
+        assert_eq!(ring_slot(0x17), Some((2, 1)), "a Gear's Escape");
+        assert_eq!(ring_slot(5), None, "the attack page is no slot");
+    }
+
+    /// Main RAM for the battle's tables.
+    struct Ram(Vec<u8>);
+
+    impl Ram {
+        fn put(&mut self, address: u32, data: &[u8]) {
+            let at = (address - 0x8000_0000) as usize;
+            self.0[at..at + data.len()].copy_from_slice(data);
+        }
+        fn word(&mut self, address: u32, value: u32) {
+            self.put(address, &value.to_le_bytes());
+        }
+        /// A glyph set's records (id, x, y; shade 0), ended by 0xFFFF.
+        fn set(&mut self, address: u32, glyphs: &[(u16, i16, i16)]) {
+            for (i, (id, x, y)) in glyphs.iter().enumerate() {
+                let record = address + i as u32 * 8;
+                self.put(record, &id.to_le_bytes());
+                self.put(record + 2, &x.to_le_bytes());
+                self.put(record + 4, &y.to_le_bytes());
+            }
+            self.put(address + glyphs.len() as u32 * 8, &0xFFFFu16.to_le_bytes());
+        }
+    }
+
+    impl GameMemory for Ram {
+        fn read(&self, address: u32, out: &mut [u8]) -> Result<(), OutOfBounds> {
+            let at = address.wrapping_sub(0x8000_0000) as usize;
+            let bytes = self.0.get(at..at + out.len()).ok_or(OutOfBounds { address, len: out.len() })?;
+            out.copy_from_slice(bytes);
+            Ok(())
+        }
+        fn write(&mut self, address: u32, data: &[u8]) -> Result<(), OutOfBounds> {
+            self.put(address, data);
+            Ok(())
+        }
+    }
+
+    /// The debug battle's on-foot command panel as the game holds it: Fei's
+    /// slots, the ring's set (0) and the attack page's (4), each glyph's
+    /// parts as the battle's glyph table places them (measured from the
+    /// game's own quads), the enemy (slot 3) straight ahead of the camera.
+    fn battle_memory(page: u8, fixed: bool) -> Ram {
+        let mut ram = Ram(vec![0; 0x20_0000]);
+        let (ui, turn, sheet) = (0x8010_0000, 0x8011_0000, 0x8013_0000);
+        ram.word(BATTLE_UI, ui);
+        ram.put(ui + 0xCB, &[1]);
+        ram.word(BATTLE_TURN_STATE, turn);
+        ram.put(turn, &[0x1E, 0x1C, 0x22, 0x25]);
+        ram.put(turn + 0x2DD, &[page]);
+        ram.put(turn + 0x2E8, &[3, u8::from(fixed)]);
+        // Pages 1 (the ring) and 5 (its lists: the ring, then the attacks).
+        ram.word(COMMAND_PANEL_PAGES + 4, 0x8012_0000);
+        ram.put(0x8012_0000, &[0, 0xFF, 0, 0xFF]);
+        ram.word(COMMAND_PANEL_PAGES + 5 * 4, 0x8012_0010);
+        ram.put(0x8012_0010, &[1, 0, 0, 4]);
+        ram.word(COMMAND_PANEL_GLYPH_SETS, 0x8012_1000);
+        ram.set(0x8012_1000, &[(0x4000, 128, 72), (0x4001, 96, 96), (0x4002, 64, 72), (0x4003, 96, 48), (0x56, 96, 64), (0x54, 104, 72), (0x57, 96, 80)]);
+        ram.word(COMMAND_PANEL_GLYPH_SETS + 4 * 4, 0x8012_2000);
+        ram.set(0x8012_2000, &[(3, 214, 110), (0, 176, 144), (1, 140, 112), (2, 176, 72), (0xB, 192, 112), (0xC, 176, 128), (0xD, 160, 112), (0xE, 176, 96)]);
+        // Each glyph's parts (x, y, w, h from its point).
+        let glyphs: [(u16, &[(i16, i16, u16, u16)]); 15] = [
+            (0x1E, &[(-68, -9, 45, 14)]), (0x1C, &[(-55, -12, 31, 12)]), (0x22, &[(-64, -9, 52, 18)]), (0x25, &[(-63, 0, 46, 12)]),
+            (0x56, &[(-76, 1, 72, 14)]), (0x57, &[(-63, -24, 46, 32)]),
+            (0x54, &[(-52, -31, 4, 5), (-48, -31, 4, 5), (-77, -19, 5, 7), (-24, -19, 5, 7)]),
+            (3, &[(-45, -44, 45, 10)]), (0, &[(-32, -57, 31, 10)]), (1, &[(-21, -45, 29, 10)]), (2, &[(-30, -25, 24, 10)]),
+            (0xB, &[(-36, -46, 12, 12)]), (0xC, &[(-44, -42, 12, 12)]), (0xD, &[(-52, -46, 12, 12)]), (0xE, &[(-44, -50, 12, 12)]),
+        ];
+        let mut entry = sheet + 0x400;
+        for (id, parts) in glyphs {
+            ram.put(sheet + (u32::from(id) + 2) * 2, &((entry - sheet) as u16).to_le_bytes());
+            ram.put(entry, &(parts.len() as i16).to_le_bytes());
+            for (k, (x, y, w, h)) in parts.iter().enumerate() {
+                let part = entry + 4 + k as u32 * 0x1C;
+                ram.put(part + 4, &w.to_le_bytes());
+                ram.put(part + 6, &h.to_le_bytes());
+                ram.put(part + 8, &x.to_le_bytes());
+                ram.put(part + 0xA, &y.to_le_bytes());
+            }
+            entry += 4 + parts.len() as u32 * 0x1C;
+        }
+        ram.word(BATTLE_GLYPH_TABLE, sheet);
+        // The enemy: the only candidate, at the camera's centre 1000 away.
+        ram.put(TARGET_CANDIDATES, &[3, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]);
+        for (i, value) in [4096i16, 0, 0, 0, 4096, 0, 0, 0, 4096].into_iter().enumerate() {
+            ram.put(CAMERA_VIEW_MATRIX + i as u32 * 2, &value.to_le_bytes());
+        }
+        ram.word(CAMERA_VIEW_MATRIX + 0x1C, 1000);
+        ram.word(AREA_SPRITES + 3 * 4, 0x8014_0000);
+        ram.put(0x8014_0036, &100u16.to_le_bytes());
+        ram
+    }
+
+    #[test]
+    fn the_ring_points_at_its_slots_and_its_arrows_flip_the_page() {
+        let ram = battle_memory(1, false);
+        let ring = targets(&ram, Context::Battle { page: 1, attack: false, ap: 7, list: false, targeting: false }).expect("the ring");
+        assert_eq!((ring.what, ring.selected, ring.steps, ring.confirm), ("battle_ring", Some(0), Steps::Direct, true));
+        // Attack (Right) is highlighted; Item (Down) is a press of Down away.
+        assert_eq!(ring.entries[0].rect, Rect { x: 60.0, y: 63.0, width: 45.0, height: 14.0 });
+        assert_eq!(ring.at((70.0, 90.0)), Some(1), "Item");
+        assert_eq!(ring.step_toward(1), Some(GameAction::Down));
+        assert_eq!(ring.at((20.0, 70.0)), Some(2), "Defense");
+        assert_eq!(ring.at((50.0, 55.0)), Some(3), "Arcane");
+        // The arrows above it: the up arrow's two halves, then the sides.
+        let arrows: Vec<_> = ring.entries[4..].iter().map(|e| (e.rect.centre(), e.press)).collect();
+        assert_eq!(arrows.len(), 4);
+        assert!(arrows.iter().all(|(_, press)| *press == Some(GameAction::Right)), "Attack's direction flips the page: {arrows:?}");
+        assert_eq!(ring.at((54.0, 43.0)), Some(4), "the up arrow");
+        assert_eq!(ring.at((29.0, 56.0)), Some(6), "the left one");
+        assert_eq!(ring.at((84.0, 56.0)), Some(7), "the right one");
+        // Without the panel there is nothing to point at.
+        let mut hidden = battle_memory(1, false);
+        hidden.put(0x8010_00CB, &[0]);
+        assert!(targets(&hidden, Context::Battle { page: 1, attack: false, ap: 7, list: false, targeting: false }).is_none());
+    }
+
+    #[test]
+    fn the_attack_page_presses_its_attacks_and_chooses_its_target_unconfirmed() {
+        let ram = battle_memory(5, false);
+        let attack = targets(&ram, Context::Battle { page: 5, attack: true, ap: 7, list: false, targeting: false }).expect("the attack page");
+        assert_eq!((attack.what, attack.confirm), ("battle_attack", false));
+        let presses: Vec<_> = attack.entries.iter().map(|e| e.press).collect();
+        assert_eq!(presses, [Some(GameAction::AttackEnd), Some(GameAction::AttackFierce), Some(GameAction::AttackStrong), Some(GameAction::AttackWeak), None]);
+        // Each button with its label right of it on its row.
+        assert_eq!(attack.entries[3].rect, Rect { x: 132.0, y: 46.0, width: 38.0, height: 12.0 }, "Weak: its button and \"1 point\"");
+        assert_eq!(attack.at((165.0, 52.0)), Some(3));
+        assert_eq!(attack.at((210.0, 70.0)), Some(0), "the end of the sequence");
+        assert_eq!(attack.at((125.0, 70.0)), Some(2), "Strong, left of the end");
+        // The target, until the first attack fixes it.
+        assert_eq!(attack.selected, Some(4));
+        let target = attack.entries[4];
+        assert_eq!(target.ground.map(|g| (g.slot, g.selectable)), Some((3, true)));
+        assert!(target.rect.contains((160.0, 150.0)), "{:?}", target.rect);
+        let fixed = targets(&battle_memory(0x64, true), Context::Battle { page: 0x64, attack: true, ap: 6, list: false, targeting: false }).unwrap();
+        assert_eq!((fixed.entries.len(), fixed.selected), (4, None), "the attacks keep their places as the panel fades");
     }
 }
 

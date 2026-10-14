@@ -21,7 +21,7 @@ use serde_json::{Value, json};
 use xem_core::action::GameAction;
 use xem_core::context::Context;
 use xem_core::field::{Field, Reach};
-use xem_core::menu::Targets;
+use xem_core::menu::{Targets, ring_slot};
 
 /// What a gesture does.
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -55,22 +55,8 @@ pub type Aim = Option<(f32, f32)>;
 /// Screen pixels within which an actor counts as pointed at.
 const ACTOR_REACH: f32 = 18.0;
 
-/// The ring's slots: the command page of each direction on each layer, on
-/// foot and in a Gear (Right, Down, Left, Up; then the second layer).
-const RING_PAGES: [[[u8; 4]; 2]; 2] = [[[1, 2, 3, 4], [7, 8, 9, 0xA]], [[0x10, 0x11, 0x12, 0x13], [0x15, 0x16, 0x17, 0x18]]];
+/// The ring's directions in `ring_slot` order.
 const RING_DIRECTIONS: [GameAction; 4] = [GameAction::Right, GameAction::Down, GameAction::Left, GameAction::Up];
-
-/// The ring slot a command page shows: (direction index, which layer).
-pub fn ring_slot(page: u8) -> Option<(usize, usize)> {
-    for unit in RING_PAGES {
-        for (layer, pages) in unit.iter().enumerate() {
-            if let Some(direction) = pages.iter().position(|p| *p == page) {
-                return Some((direction, layer));
-            }
-        }
-    }
-    None
-}
 
 fn press(actions: impl IntoIterator<Item = GameAction>) -> Out {
     Out::Press { actions: actions.into_iter().collect() }
@@ -100,8 +86,8 @@ pub fn dispatch(gestures: &[Gesture], ui: Context, aim: Aim, field: Option<&Fiel
 /// A touch screen's tap (or a click that stands for one) on the picture at
 /// screen pixel `at`: walking, an actor is approached and talked to, the
 /// floor walked to (a tap is both the pointer's pinch and its tap there);
-/// a menu's or a choice's entry is selected and confirmed; a dialogue
-/// advances. Elsewhere the deck's controls play.
+/// an entry of a menu, a choice or a battle is chosen ([`choose`]); a
+/// dialogue advances. Elsewhere the deck's controls play.
 pub fn tap_at(at: (f32, f32), ui: Context, field: Option<&Field>, targets: Option<&Targets>) -> Option<Out> {
     match ui {
         Context::Walk => {
@@ -112,11 +98,21 @@ pub fn tap_at(at: (f32, f32), ui: Context, field: Option<&Field>, targets: Optio
             pinch(ui, Some(at), Some(field))
         }
         Context::Dialogue { choice: None } => Some(press([GameAction::Confirm])),
-        Context::Dialogue { choice: Some(_) } | Context::Menu { .. } | Context::Battle { targeting: true, .. } | Context::Battle { list: true, .. } => {
-            let index = targets?.at(at)?;
-            Some(Out::Select { index, confirm: true })
+        Context::Dialogue { choice: Some(_) } | Context::Menu { .. } | Context::Battle { .. } => {
+            let targets = targets?;
+            Some(choose(targets, targets.at(at)?))
         }
         _ => None,
+    }
+}
+
+/// Entry `index` chosen: a button (a page arrow, an attack) pressed once,
+/// anything else selected, then confirmed where choices are (not the attack
+/// page's target, which its attacks confirm).
+fn choose(targets: &Targets, index: usize) -> Out {
+    match targets.entries[index].press {
+        Some(action) => press([action]),
+        None => Out::Select { index, confirm: targets.confirm },
     }
 }
 
@@ -145,8 +141,8 @@ fn tap(ui: Context, aim: Aim, field: Option<&Field>, targets: Option<&Targets>) 
             let index = targets.zip(aim).and_then(|(t, aim)| t.at(aim))?;
             Some(Out::Select { index, confirm: true })
         }
-        Context::Menu { .. } | Context::Battle { targeting: true, .. } | Context::Battle { list: true, .. } => Some(match targets.zip(aim).and_then(|(t, aim)| t.at(aim)) {
-            Some(index) => Out::Select { index, confirm: true },
+        Context::Menu { .. } | Context::Battle { targeting: true, .. } | Context::Battle { list: true, .. } => Some(match targets.zip(aim).and_then(|(t, aim)| Some((t, t.at(aim)?))) {
+            Some((targets, index)) => choose(targets, index),
             None => press([GameAction::Confirm]),
         }),
         // Paging the ring: its highlighted direction again flips the layer.
@@ -296,7 +292,24 @@ mod tests {
         assert_eq!(swipe(Swipe::Right), [press([GameAction::Confirm])], "the highlighted slot activates");
         assert_eq!(swipe(Swipe::Up), [press([GameAction::Up]), press([GameAction::Confirm])]);
         assert_eq!(dispatch(&[Gesture::Tap { hand: HAND }], battle(1, false), None, None, None), [press([GameAction::Right])], "its direction again flips the page");
-        assert_eq!(ring_slot(0x17), Some((2, 1)));
+    }
+
+    #[test]
+    fn a_touch_chooses_battle_entries_as_a_click_does() {
+        let entry = |x: f32, press: Option<GameAction>, ground: Option<xem_core::menu::Ground>| Entry { rect: Rect { x, y: 0.0, width: 10.0, height: 10.0 }, select: None, press, ground };
+        let target = xem_core::menu::Ground { slot: 3, x: 0, z: 0, selectable: true };
+        let attack = Targets {
+            what: "battle_attack",
+            entries: vec![entry(0.0, Some(GameAction::AttackWeak), None), entry(20.0, None, Some(target))],
+            selected: Some(1),
+            steps: Steps::Compass,
+            confirm: false,
+        };
+        assert_eq!(tap_at((5.0, 5.0), battle(5, true), None, Some(&attack)), Some(press([GameAction::AttackWeak])), "an attack is pressed");
+        assert_eq!(tap_at((25.0, 5.0), battle(5, true), None, Some(&attack)), Some(Out::Select { index: 1, confirm: false }), "its target only selected");
+        assert_eq!(tap_at((50.0, 5.0), battle(5, true), None, Some(&attack)), None, "nothing there");
+        let ring = Targets { what: "battle_ring", entries: vec![Entry { select: Some(GameAction::Down), ..entry(0.0, None, None) }], selected: None, steps: Steps::Direct, confirm: true };
+        assert_eq!(tap_at((5.0, 5.0), battle(1, false), None, Some(&ring)), Some(Out::Select { index: 0, confirm: true }), "a slot is activated");
     }
 
     #[test]
@@ -311,7 +324,8 @@ mod tests {
 
     fn list() -> Targets {
         let rect = |y: f32| Rect { x: 100.0, y, width: 100.0, height: 14.0 };
-        Targets { what: "dialogue_choice", entries: vec![Entry { rect: rect(100.0), select: None, ground: None }, Entry { rect: rect(114.0), select: None, ground: None }], selected: Some(0), steps: Steps::Ring { count: 2, next: GameAction::Down } }
+        let entry = |y| Entry { rect: rect(y), select: None, press: None, ground: None };
+        Targets { what: "dialogue_choice", entries: vec![entry(100.0), entry(114.0)], selected: Some(0), steps: Steps::Ring { count: 2, next: GameAction::Down }, confirm: true }
     }
 
     #[test]

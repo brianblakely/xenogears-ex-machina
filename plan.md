@@ -471,8 +471,9 @@ thumb swipes for quantities or interpret ALL as every item in the shop.
 #### Battles and bespoke minigames
 
 On the command ring, thumb up/right/left/down directly activate the corresponding
-visible slots; **thumb tap cycles command-ring pages** with a visible page
-indicator. Do not use pinch for paging or require an extra tap for each command.
+visible slots; **thumb tap cycles command-ring pages**, which the game's own
+page arrows above the ring indicate (no added indicator). Do not use pinch for
+paging or require an extra tap for each command.
 On the attack ring, **up = Weak, left = Strong, down = Fierce, right = End the
 attack sequence**. Keep positions fixed and unavailable attacks visibly disabled;
 each swipe submits one legal input, with no extra confirmation, automatic repeats

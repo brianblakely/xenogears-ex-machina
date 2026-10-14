@@ -659,11 +659,11 @@ impl View {
                     self.player.hover(self.picture.and_then(|p| p.to_screen(x, y)));
                 }
                 if self.relative_mouse && self.renderer.first_person() {
-                    let scale = self.settings.borrow().settings().mouse_scale();
-                    self.look_mouse[0] += motion.xrel * scale;
-                    self.look_mouse[1] += motion.yrel * scale;
+                    let (x, y) = self.player.mouse.look((motion.xrel, motion.yrel), self.settings.borrow().settings());
+                    self.look_mouse[0] += x;
+                    self.look_mouse[1] += y;
                 } else if self.relative_mouse {
-                    self.player.mouse.moved(motion.xrel * self.settings.borrow().settings().mouse_scale());
+                    self.player.mouse.moved(motion.xrel, self.settings.borrow().settings());
                 }
             }
             SDL_EVENT_MOUSE_BUTTON_DOWN | SDL_EVENT_MOUSE_BUTTON_UP if unsafe { event.button }.which != SDL_TOUCH_MOUSEID => {

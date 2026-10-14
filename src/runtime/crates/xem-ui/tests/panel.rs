@@ -720,10 +720,18 @@ fn settings_choices_are_relevant_and_wheel_does_not_change_dropdowns() {
     assert_eq!(settings.borrow().settings().mouse_sensitivity, 105);
     settings.borrow_mut().apply(SettingChange::MouseSensitivity(75)).unwrap();
     assert_eq!(ui.component().get_mouse_sensitivity(), 75);
+    // The deadzone beside it, in pixels of motion.
+    let deadzone = element(&ui, "Mouse deadzone", AccessibleRole::Slider);
+    assert_eq!(deadzone.accessible_value().as_deref(), Some("8"));
+    press(&ui, &deadzone);
+    assert_eq!(settings.borrow().settings().mouse_deadzone, 20);
+    settings.borrow_mut().apply(SettingChange::MouseDeadzone(3)).unwrap();
+    assert_eq!(ui.component().get_mouse_deadzone(), 3);
     press(&ui, &element(&ui, "Turn the camera with the mouse", AccessibleRole::Switch));
     ui.update().unwrap();
     assert!(!shown(&ui, "Mouse sensitivity"));
-    assert_eq!(settings.borrow().settings().mouse_sensitivity, 75);
+    assert!(!shown(&ui, "Mouse deadzone"));
+    assert_eq!((settings.borrow().settings().mouse_sensitivity, settings.borrow().settings().mouse_deadzone), (75, 3));
 
     ui.resize((640, 560), 1.0);
     section(&mut ui, "Graphics", 1);

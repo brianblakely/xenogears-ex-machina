@@ -719,6 +719,7 @@ export component SettingsPanel inherits Window {
     in-out property <bool> invert-trigger-chords;
     in-out property <bool> mouse-camera;
     in-out property <int> mouse-sensitivity: 50;
+    in-out property <int> mouse-deadzone: 8;
     in-out property <bool> run-by-default;
     // The assisted controls (xem_settings::Assisted): hand gestures, the
     // headset pointer (0 eye gaze, 1 head, 2 left hand, 3 right hand), the
@@ -751,6 +752,7 @@ export component SettingsPanel inherits Window {
     callback invert-trigger-chords-edited(bool);
     callback mouse-camera-edited(bool);
     callback mouse-sensitivity-edited(int);
+    callback mouse-deadzone-edited(int);
     callback run-by-default-edited(bool);
     // An assisted-controls choice by name (gestures, pointer, ledge-brake,
     // touch, solid, still) and value.
@@ -1125,6 +1127,16 @@ export component SettingsPanel inherits Window {
                                         minimum: 10; maximum: 200;
                                         value: root.mouse-sensitivity;
                                         changed(value) => { root.mouse-sensitivity-edited(round(value / 5) * 5); }
+                                    }
+                                }
+                                if root.mouse-camera: SliderRow {
+                                    label: "Mouse deadzone";
+                                    value-text: "\{root.mouse-deadzone} px";
+                                    Slider {
+                                        accessible-label: "Mouse deadzone";
+                                        minimum: 0; maximum: 40;
+                                        value: root.mouse-deadzone;
+                                        changed(value) => { root.mouse-deadzone-edited(round(value)); }
                                     }
                                 }
                                 Divider { }
@@ -1583,6 +1595,31 @@ export component SettingsPanel inherits Window {
     }
 }
 
+// One treatment for every element of the HUD over the game: a dark chip
+// of one height, border and radius, its symbol a plain icon coloured by
+// what it says and its words one weight of text. A failure keeps the
+// chip and grows downward to give its cause.
+component HudChip inherits Rectangle {
+    height: 32px;
+    background: #14171cf0;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: #ffffff24;
+}
+
+component HudText inherits Text {
+    color: Theme.text;
+    font-size: 13px;
+    font-weight: 600;
+    vertical-alignment: center;
+}
+
+component HudIcon inherits Icon {
+    width: 16px;
+    height: 16px;
+    color: Theme.text;
+}
+
 export component FrameRateOverlay inherits Window {
     in property <string> counter: "— FPS";
     in property <bool> show-fps;
@@ -1599,85 +1636,75 @@ export component FrameRateOverlay inherits Window {
         x: 0px;
         y: 0px;
         width: parent.width;
-        height: 28px;
+        height: 32px;
         alignment: start;
         spacing: 6px;
-        if root.show-fps: Rectangle {
-            width: 96px;
-            background: #101114d9;
-            border-radius: 5px;
-            Text {
+        if root.show-fps: HudChip {
+            width: 88px;
+            HudText {
                 text: root.counter;
-                color: Theme.text;
+                // Steady digits: the counter changes every second.
                 font-family: "monospace";
-                font-size: 14px;
-                font-weight: 600;
                 horizontal-alignment: center;
-                vertical-alignment: center;
             }
         }
-        if root.fast-forward: Rectangle {
-            width: 36px;
-            background: #101114d9;
-            border-radius: 5px;
+        if root.fast-forward: HudChip {
+            width: 32px;
             accessible-role: text;
             accessible-label: "Fast-forwarding";
-            Icon {
+            HudIcon {
                 x: (parent.width - self.width) / 2;
                 y: (parent.height - self.height) / 2;
                 data: "M3 5 L11 12 L3 19 Z M13 5 L21 12 L13 19 Z";
-                color: Theme.text;
             }
         }
-        if root.rewinding: Rectangle {
-            width: 36px;
-            background: #101114d9;
-            border-radius: 5px;
+        if root.rewinding: HudChip {
+            width: 32px;
             accessible-role: text;
             accessible-label: "Rewinding";
-            Icon {
+            HudIcon {
                 x: (parent.width - self.width) / 2;
                 y: (parent.height - self.height) / 2;
                 data: "M11 5 L3 12 L11 19 Z M21 5 L13 12 L21 19 Z";
-                color: Theme.text;
             }
         }
     }
-    if root.notice != "": Rectangle {
+    if root.notice != "": HudChip {
         x: 0px;
-        y: root.show-fps || root.fast-forward || root.rewinding ? 34px : 0px;
-        width: root.notice-error ? parent.width : 160px;
-        height: root.notice-error ? 76px : 40px;
-        background: #171b23f2;
-        border-radius: 8px;
-        border-width: 1px;
-        border-color: #ffffff24;
+        y: root.show-fps || root.fast-forward || root.rewinding ? 38px : 0px;
+        width: root.notice-error ? parent.width : min(parent.width, line.preferred-width);
+        height: root.notice-error ? 72px : 32px;
         accessible-role: text;
         accessible-label: root.notice;
-        Rectangle {
-            x: 10px; y: root.notice-error ? 10px : 8px;
-            width: 24px; height: 24px; border-radius: 12px;
-            background: root.notice-error ? #ffa3a319 : #8fd9a819;
-            Icon {
-                x: 4px; y: 4px; width: 16px; height: 16px;
-                data: root.notice-error ? Icons.alert : Icons.check;
-                color: root.notice-error ? Theme.bad : Theme.good;
+        line := HorizontalLayout {
+            y: 0px;
+            height: 32px;
+            padding-left: 10px;
+            padding-right: 12px;
+            spacing: 8px;
+            VerticalLayout {
+                alignment: center;
+                HudIcon {
+                    data: root.notice-error ? Icons.alert : Icons.check;
+                    color: root.notice-error ? Theme.bad : Theme.good;
+                }
+            }
+            HudText {
+                text: root.notice-title;
+                overflow: elide;
+                accessible-role: none;
             }
         }
-        Text {
-            x: 44px; y: root.notice-error ? 10px : 11px;
-            width: parent.width - 56px; height: 18px;
-            text: root.notice-title; color: #f4f6fa;
-            font-size: 13px; font-weight: 600;
-            vertical-alignment: center;
-            accessible-role: none;
-        }
         if root.notice-error: Text {
-            x: 44px; y: 30px;
-            width: parent.width - 56px; height: 36px;
-            text: root.notice-detail; color: #c2c8d3;
+            x: 34px;
+            y: 30px;
+            width: parent.width - 46px;
+            height: 34px;
+            text: root.notice-detail;
+            color: Theme.text-secondary;
             font-size: 12px;
-            wrap: word-wrap; overflow: elide;
+            wrap: word-wrap;
+            overflow: elide;
             accessible-role: none;
         }
     }

@@ -519,3 +519,120 @@ fn control_queries_survive_a_world_map_encounter() {
     assert_eq!(session.runtime.services().mode, Some(2));
     assert!(session.stopped.is_none());
 }
+
+/// The debug battle selector's battle on foot (ovl2606), at the player's
+/// first command ring.
+fn debug_battle() -> Option<Session<NativeModule>> {
+    let disc = disc()?;
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    run(&mut session, json!({"cmd": "frames", "count": 60}));
+    run(&mut session, json!({"cmd": "write", "path": "mode_battle_standalone", "value": 1}));
+    run(&mut session, json!({"cmd": "boot_mode", "mode": 2}));
+    run(&mut session, json!({"cmd": "frames", "count": 900}));
+    run(&mut session, json!({"cmd": "press", "buttons": ["start"], "frames": 1}));
+    for _ in 0..80 {
+        run(&mut session, json!({"cmd": "frames", "count": 50}));
+        let context = context(&mut session);
+        if context["kind"] == "battle" && context["page"] == 1 {
+            run(&mut session, json!({"cmd": "frames", "count": 4}));
+            return Some(session);
+        }
+    }
+    panic!("no command ring: {}", context(&mut session));
+}
+
+/// One host frame with the mouse: the pointer steers to the interface's
+/// entries, then the frame runs.
+fn pointer_frame(session: &mut Session<NativeModule>, player: &mut xem_settings::player::PlayerInput, bindings: &xem_settings::GameBindings) {
+    let targets = session.runtime.targets();
+    player.browse(targets.as_ref());
+    host_frame(session, player, bindings);
+}
+
+/// A point on entry `index` that no smaller entry overlaps there.
+fn point_on(targets: &xem_core::menu::Targets, index: usize) -> (f32, f32) {
+    let rect = targets.entries[index].rect;
+    (0..20).flat_map(|i| (0..20).map(move |j| (rect.x + rect.width * (i as f32 + 0.5) / 20.0, rect.y + rect.height * (j as f32 + 0.5) / 20.0)))
+        .find(|point| targets.at(*point) == Some(index))
+        .unwrap_or_else(|| panic!("entry {index} is covered: {targets:?}"))
+}
+
+/// Clicks entry `index` of the interface's entries and plays `frames` host
+/// frames.
+fn click(session: &mut Session<NativeModule>, player: &mut xem_settings::player::PlayerInput, bindings: &xem_settings::GameBindings, index: usize, frames: usize) {
+    let targets = session.runtime.targets().expect("entries to click");
+    player.hover(Some(point_on(&targets, index)));
+    assert!(player.click(Some(&targets)), "entry {index} of {targets:?}");
+    for _ in 0..frames {
+        pointer_frame(session, player, bindings);
+    }
+}
+
+/// The mouse plays a battle: pointing at the ring's Item highlights it, its
+/// page arrows flip the ring, a click on Attack opens the attack page,
+/// where a click on the enemy keeps it as the target without attacking and
+/// clicks on the attacks spend their AP (also where the game has faded
+/// them, through the sequence) until the end ends it.
+#[test]
+fn the_mouse_plays_the_command_ring_and_the_attacks() {
+    let Some(mut session) = debug_battle() else { return };
+    let bindings = xem_settings::GameBindings::default();
+    let mut player = xem_settings::player::PlayerInput::default();
+    let ring = session.runtime.targets().expect("the ring");
+    assert_eq!((ring.what, ring.selected, ring.entries.len()), ("battle_ring", Some(0), 8), "{ring:?}");
+    player.hover(Some(point_on(&ring, 1)));
+    for _ in 0..20 {
+        pointer_frame(&mut session, &mut player, &bindings);
+    }
+    assert_eq!(context(&mut session)["page"], 2, "pointing at Item highlights it");
+    click(&mut session, &mut player, &bindings, 4, 20);
+    assert_eq!(context(&mut session)["page"], 8, "the up arrow flips the ring to its other page");
+    click(&mut session, &mut player, &bindings, 6, 20);
+    assert_eq!(context(&mut session)["page"], 2, "the left arrow flips it back");
+    click(&mut session, &mut player, &bindings, 0, 40);
+    let attack = context(&mut session);
+    assert_eq!((attack["page"].as_u64(), attack["attack"].as_bool()), (Some(5), Some(true)), "Attack opened the attack page: {attack}");
+    let ap = attack["ap"].as_u64().unwrap();
+    let page = session.runtime.targets().expect("the attack page");
+    assert_eq!(page.what, "battle_attack");
+    let enemy = page.entries.iter().position(|e| e.ground.is_some_and(|g| g.slot == 3)).expect("the enemy");
+    click(&mut session, &mut player, &bindings, enemy, 60);
+    let still = context(&mut session);
+    assert_eq!((still["page"].as_u64(), still["ap"].as_u64()), (Some(5), Some(ap)), "choosing the target attacks nothing: {still}");
+    let attack_entry = |session: &mut Session<NativeModule>, action| {
+        session.runtime.targets().unwrap().entries.iter().position(|e| e.press == Some(action)).unwrap()
+    };
+    let weak = attack_entry(&mut session, xem_core::action::GameAction::AttackWeak);
+    click(&mut session, &mut player, &bindings, weak, 60);
+    assert_eq!(context(&mut session)["ap"].as_u64(), Some(ap - 1), "Weak costs one");
+    let strong = attack_entry(&mut session, xem_core::action::GameAction::AttackStrong);
+    click(&mut session, &mut player, &bindings, strong, 60);
+    assert_eq!(context(&mut session)["ap"].as_u64(), Some(ap - 3), "Strong costs two, where the faded page showed it");
+    let end = attack_entry(&mut session, xem_core::action::GameAction::AttackEnd);
+    click(&mut session, &mut player, &bindings, end, 30);
+    assert_eq!(context(&mut session)["attack"], false, "the sequence ended: {}", context(&mut session));
+}
+
+/// The mouse chooses an item's target: a click on Item opens the list, a
+/// click on its fourth item asks for a target, and a click on Elly gives
+/// it to her.
+#[test]
+fn the_mouse_chooses_a_battle_target() {
+    let Some(mut session) = debug_battle() else { return };
+    let bindings = xem_settings::GameBindings::default();
+    let mut player = xem_settings::player::PlayerInput::default();
+    click(&mut session, &mut player, &bindings, 1, 60);
+    assert_eq!(context(&mut session)["list"], true, "the item list: {}", context(&mut session));
+    click(&mut session, &mut player, &bindings, 3, 60);
+    assert_eq!(context(&mut session)["targeting"], true, "{}", context(&mut session));
+    let targets = session.runtime.targets().expect("the targets");
+    let elly = targets.entries.iter().position(|e| e.ground.is_some_and(|g| g.slot == 1)).expect("Elly");
+    player.hover(Some(point_on(&targets, elly)));
+    assert!(player.click(Some(&targets)));
+    for _ in 0..120 {
+        pointer_frame(&mut session, &mut player, &bindings);
+        if context(&mut session)["targeting"] != true { break; }
+    }
+    assert_eq!(context(&mut session)["targeting"], false, "confirmed: {}", context(&mut session));
+    assert_eq!(session.execute(&json!({"cmd": "inspect", "path": "battle_target_cursor_slot"})), json!(1), "Elly");
+}

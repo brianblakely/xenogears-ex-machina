@@ -508,8 +508,16 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
       await page.waitForFunction(()=>!document.pointerLockElement);
       assert.equal((await status(page)).renderer.panelVisible,false,'battle input releases without opening Settings');
       const ap = await page.evaluate(()=>window.xem.command({cmd:'context'}).ap);
-      await canvas.hover(); await page.mouse.down();
-      await page.waitForFunction(ap=>window.xem.command({cmd:'context'}).ap<ap,ap);
+      // A click on the attack page's Weak attack (a click on the enemy only
+      // chooses it as the target).
+      const weak = await page.evaluate(()=>window.xem.command({cmd:'targets'}).entries.find(entry=>entry.press==='AttackWeak').rect);
+      const {renderer} = await status(page);
+      const box = await canvas.boundingBox(), picture = renderer.picture;
+      const u = (weak.x + weak.width/2 + picture.side)/(picture.display[0] + 2*picture.side);
+      const x = picture.x + u*picture.width, y = picture.y + (weak.y + weak.height/2)/picture.display[1]*picture.height;
+      await page.mouse.move(box.x + x*box.width/renderer.size[0], box.y + y*box.height/renderer.size[1]);
+      await page.mouse.down();
+      await page.waitForFunction(ap=>window.xem.command({cmd:'context'}).ap===ap-1,ap);
       await page.mouse.up();
       assert.equal(await page.evaluate(()=>!!document.pointerLockElement),false,'attacking by mouse cannot recapture the cursor');
       assert.deepEqual(page.errors,[]);

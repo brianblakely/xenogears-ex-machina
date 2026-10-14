@@ -458,6 +458,7 @@ fn show(panel: &SettingsPanel, settings: &Settings) {
     panel.set_invert_trigger_chords(settings.invert_trigger_chords);
     panel.set_mouse_camera(settings.mouse_camera);
     panel.set_mouse_sensitivity(i32::from(settings.mouse_sensitivity));
+    panel.set_mouse_deadzone(i32::from(settings.mouse_deadzone));
     panel.set_run_by_default(settings.run_by_default);
     let assisted = settings.assisted;
     panel.set_assist_gestures(assisted.gestures);
@@ -644,6 +645,10 @@ fn bind(panel: &SettingsPanel, settings: &Rc<RefCell<SettingsService>>) {
     panel.on_mouse_sensitivity_edited({
         let apply = apply.clone();
         move |value| apply(u16::try_from(value).ok().map(SettingChange::MouseSensitivity))
+    });
+    panel.on_mouse_deadzone_edited({
+        let apply = apply.clone();
+        move |value| apply(u16::try_from(value).ok().map(SettingChange::MouseDeadzone))
     });
     panel.on_rewind_enabled_edited({
         let apply = apply.clone();

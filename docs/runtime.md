@@ -1219,15 +1219,19 @@ the inputs and resolves them, the same code on desktop, Android, headsets
 and the browser; the mouse camera's sideways motion holds CameraLeft or
 CameraRight while it lasts. Mouse sensitivity is saved as 10–200 percent,
 defaults to 50 percent of the previous rate, and scales both field camera
-motion and first-person mouse look. A headset's controllers are the gamepad
-(`xr-standard` layout: A South, B East, X West, Y North, triggers L1/R1,
+motion and first-person mouse look. The mouse deadzone beside it (0–40
+pixels of motion, 8 by default) holds back motion within that distance of
+where the mouse came to rest (no motion for a tenth of a second), so a
+nudge turns nothing; motion past it turns the camera or the view, the
+deadzone following along until the mouse rests again. A headset's
+controllers are the gamepad (`xr-standard` layout: A South, B East, X West, Y North, triggers L1/R1,
 grips LT/RT, the right stick's click Back, the left's Start, both sticks),
 natively (`xem_host::xr_play::gamepad`) and in the browser (`xrGamepad`).
 
 | Action | Keys | Gamepad | Mouse |
 | --- | --- | --- | --- |
 | Up, Down, Left, Right | W, S, A, D | D-pad, left stick | |
-| Confirm | E | South | left button |
+| Confirm | E, Backslash | South | left button |
 | Cancel | F | East | right button |
 | Run (held) | Shift | East | |
 | Jump | Space | North | |
@@ -1245,7 +1249,9 @@ memory (`context` command): `walk` (the player has control in a field),
 `python3 -m tools.analysis.events --buttons`), `dialogue` (with its open `choice`: count and index), `menu`
 (`menu_state_screen` and its cursors; the field menu runs inside the field
 mode), `battle` (the command page, whether the attack inputs have the
-buttons, AP left), `world_map` and `arena`. `xem_core::menu` (`targets`)
+buttons, AP left, an open list, a target being chosen for an item, art or
+command; the attack page's own target choice is part of its attack
+inputs), `world_map` and `arena`. `xem_core::menu` (`targets`)
 lists the selectable entries the screen shows (320x224 screen pixels, as
 the display shows the drawing area): the field menu's commands and a
 command's choice window (the arc tables `menu_highlight_x/y_table`; the
@@ -1254,11 +1260,19 @@ screens' two columns of eight rows, the equipment screen's column, as
 `menu_list_cursor_place` lays them out around the drawn list cursor), the
 shops' commands and their stock and sell lists (one column of eight rows), Yes/No (their markers' quads), a dialogue's choice lines,
 a battle's lists (arts, items, the combo setup, a Gear's commands, as
-their cursor glyph is placed) and a battle's targets (each
-candidate's sprite projected as `battle_get_slot_screen_box` does, about a
-person's size), with the selected entry and how the D-pad steps it (a
-battle target is reached by the moves `battle_find_candidate_in_direction`
-makes: nearest candidate that way on the floor).
+their cursor glyph is placed), a battle's targets (each
+candidate's sprite projected as `battle_get_slot_screen_box` does, as tall
+as the sprite's frame: a person's 96 units, a Gear's about 500, a big
+enemy's more; where boxes overlap the smallest takes the point), the
+command ring (its four slots and the page arrows above it, each glyph's
+parts as the command panel's constant glyph tables and the battle's glyph
+sheet place them) and the attack page (its four attacks, each its
+button's glyph with the label and digits right of it, which keep their
+places while the game fades them through the sequence; and the attack's
+target among the candidates until the first attack fixes it), with the
+selected entry and how the D-pad steps it (a battle target is reached by
+the moves `battle_find_candidate_in_direction` makes: nearest candidate
+that way on the floor; a ring slot by its own direction).
 
 On every host, `PlayerInput` turns these into presses the game reads as
 any player's (held and released for whole game frames, counted as the host
@@ -1278,7 +1292,17 @@ reports the frames run):
   game's cursor there with the D-pad; a click on an entry selects it and
   then confirms it once; a click elsewhere is the mouse's binding. An entry
   the cursor stops short of (past a list's end) is given up after three
-  steps that leave the selection where it was. With the
+  steps that leave the selection where it was (one on the battle's
+  command ring: a slot the game refuses is not pressed again into a page
+  flip). In battle, pointing at a ring slot
+  highlights it and a click activates it; a click on the page arrows
+  above the ring flips its page (the highlighted slot's direction again),
+  a click on an attack presses it (Weak, Strong, Fierce, the end of the
+  sequence), and on the attack page a click on an enemy makes it the
+  attack's target, selected only (the attacks confirm it; Confirm is one
+  of them, and pointing there selects nothing). A click on a target that
+  an item, art or command asks for chooses and confirms it. A touch's tap
+  on the picture chooses the same way. With the
   mouse camera on, menus, choices, every battle command/attack page and
   the original pause screen release the cursor. Camera movement resumes
   only when play can take it again.
@@ -1338,7 +1362,9 @@ adds Board (L2 and R2 together: a Gear boarded or left), a shop's quantity
 list adds +, -, ALL and NONE. A tap on the picture (short, not travelling)
 is the pointer's tap (`xem_assist::dispatch::tap_at`): walking, on an actor
 it approaches and talks, on the floor it walks there; in a menu or choice
-it selects the entry and confirms it; in a dialogue it advances. The deck
+it selects the entry and confirms it; in battle it chooses as a click does
+([The game's interface context](#the-games-interface-context)); in a
+dialogue it advances. The deck
 shows once a finger touches the game (always on Android) under Settings'
 Touch controls. Android logs the deck's place (`touch deck ...`) and its
 smoke test holds Confirm on it; the browser suite plays it with touch
@@ -1385,7 +1411,8 @@ the browser's WebXR sessions (plan.md, the hand/gaze contract):
   (later entries up) or, beside the list on a character screen, change
   the character. The command ring: a swipe activates its direction's slot
   (selecting it first unless highlighted, whose direction would flip the
-  page), a tap pages the ring (its mark drawn below it); the attack ring:
+  page), a tap pages the ring (the game's own arrows above it show that
+  it pages); the attack ring:
   up Weak, left Strong, down Fierce, right ends the sequence; lists
   take the entry under the gaze on a tap (else confirm the selected one)
   and back out to the right; targets take the one under
@@ -1420,8 +1447,8 @@ the browser's WebXR sessions (plan.md, the hand/gaze contract):
   cursor (a hollow halo with fins and a gold centre; on the floor it lies
   as the floor projects, silver where walkable, a gold chevron where a
   jump is needed, broken and struck through where unreachable), the
-  committed destination (gilded, related but distinct), the ring's page
-  mark, the region a swipe up or down would scroll (corner brackets
+  committed destination (gilded, related but distinct), the region a
+  swipe up or down would scroll (corner brackets
   around the list; on a character screen only while the gaze is on the
   list), and keys beside the screen. Seraph Glass is drawn on the
   processor (faceted silver shells, halos, fins, dark recesses, gold
@@ -1566,7 +1593,12 @@ The same HUD shows icons during active fast-forward and successful held rewind,
 including with Show FPS off. Paused play and exhausted rewind history hide their
 indicators. Save-state saves/loads and state backup imports/exports show a result
 for four seconds; failures show the cause for eight seconds. Ordinary memory-card
-saves do not produce HUD notifications. Native headset play uses the same quick
+saves do not produce HUD notifications. Every HUD element has one treatment
+(`FrameRateOverlay`): a dark chip 32 pixels high with the same border and
+corners, a plain 16-pixel icon coloured by what it says (a success's check
+green, a failure's mark red) and one weight of text; the counter, then the
+activity icons, in a row, a result below them, and a failure's chip grown
+downward to give its cause. Native headset play uses the same quick
 save/load and time controls; file pickers remain available in windowed play.
 Settings contains save-state, rewind, backup and binding controls.
 All these operations accept keyboard and gamepad chords. Fast-forward is an
@@ -1823,7 +1855,9 @@ as JSON text or bytes.
   caught up.
 - **Rendering.** wgpu on the canvas: WebGPU when the browser gives an adapter,
   WebGL2 otherwise (`?backend=webgl2` forces it); `status().renderer.backend`
-  says which. With a session the canvas shows the GPU device's display
+  says which, and `status().renderer.picture` where the game's picture lies
+  on the canvas (canvas pixels) and the screen it shows (its display size
+  and the wider framing's sides). With a session the canvas shows the GPU device's display
   (`display_rgba8`, uploaded to an sRGB texture after frames ran and placed by
   the presentation scale and filter, as xem-host's `View::set_game_image`);
   without one, the test scene. The Slint panel (FemtoVG's wgpu renderer on the same device,

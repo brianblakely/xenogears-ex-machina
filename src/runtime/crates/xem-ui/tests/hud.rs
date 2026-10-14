@@ -20,7 +20,7 @@ fn activity_and_state_results_show_without_fps_and_expire_independently() {
     assert!(ElementHandle::find_by_accessible_label(hud.component(), "Fast-forwarding").next().is_some());
     let pixels = read_rgba8(&gpu.device, &gpu.queue, hud.texture());
     assert!(pixels.chunks_exact(4).any(|p| p[3] > 0), "the activity icon is drawn with FPS disabled");
-    assert!(pixels[304 * 28 * 4..].chunks_exact(4).all(|p| p[3] == 0), "the unused HUD area stays transparent");
+    assert!(pixels[304 * 32 * 4..].chunks_exact(4).all(|p| p[3] == 0), "the unused HUD area stays transparent");
     hud.set_activity(false, true);
     hud.frame(at(2), 1.0, false).unwrap();
     assert!(ElementHandle::find_by_accessible_label(hud.component(), "Rewinding").next().is_some());
@@ -29,9 +29,11 @@ fn activity_and_state_results_show_without_fps_and_expire_independently() {
     hud.notify_state(true, None, at(2));
     hud.frame(at(2), 1.0, false).unwrap();
     assert_eq!(hud.notice().as_deref(), Some("State saved"));
+    // Every element one chip: the result below the activity, as tall as it.
     let success = ElementHandle::find_by_accessible_label(hud.component(), "State saved").next().unwrap();
-    assert_eq!((success.absolute_position().x, success.absolute_position().y), (0.0, 34.0));
-    assert_eq!((success.size().width, success.size().height), (160.0, 40.0));
+    assert_eq!((success.absolute_position().x, success.absolute_position().y), (0.0, 38.0));
+    assert_eq!(success.size().height, 32.0);
+    assert!((96.0..160.0).contains(&success.size().width), "as wide as its words: {:?}", success.size());
     capture(&gpu, &hud, "saved-with-rewind");
     hud.frame(at(6), 1.0, false).unwrap();
     assert!(hud.notice().is_none());
@@ -47,7 +49,7 @@ fn activity_and_state_results_show_without_fps_and_expire_independently() {
     assert!(hud.visible());
     let error = ElementHandle::find_by_accessible_label(hud.component(), &hud.notice().unwrap()).next().unwrap();
     assert_eq!((error.absolute_position().x, error.absolute_position().y), (0.0, 0.0));
-    assert_eq!((error.size().width, error.size().height), (304.0, 76.0));
+    assert_eq!((error.size().width, error.size().height), (304.0, 72.0), "the chip grown to give the cause");
     capture(&gpu, &hud, "load-error-2x");
     hud.frame(at(14), 2.0, false).unwrap();
     assert!(!hud.visible(), "errors remain for eight seconds");
@@ -67,11 +69,13 @@ fn activity_and_state_results_show_without_fps_and_expire_independently() {
     hud.set_activity(true, true);
     hud.frame(at(19), 1.0, true).unwrap();
     let fps = ElementHandle::find_by_accessible_label(hud.component(), "60 FPS").next().unwrap();
-    assert_eq!((fps.absolute_position().x + fps.size().width / 2.0, fps.absolute_position().y + fps.size().height / 2.0), (48.0, 14.0));
-    for (label, x) in [("Fast-forwarding", 102.0), ("Rewinding", 144.0)] {
+    assert_eq!((fps.absolute_position().x + fps.size().width / 2.0, fps.absolute_position().y + fps.size().height / 2.0), (44.0, 16.0));
+    for (label, x) in [("Fast-forwarding", 94.0), ("Rewinding", 132.0)] {
         let activity = ElementHandle::find_by_accessible_label(hud.component(), label).next().unwrap();
         assert_eq!((activity.absolute_position().x, activity.absolute_position().y), (x, 0.0));
+        assert_eq!((activity.size().width, activity.size().height), (32.0, 32.0), "{label}: a chip like the others");
     }
+    capture(&gpu, &hud, "fps-with-activity");
 }
 
 /// Optional review captures use the same texture and assertions as the test.
