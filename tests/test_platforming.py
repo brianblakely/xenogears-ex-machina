@@ -378,6 +378,7 @@ class AreaTests(unittest.TestCase):
         self.assertEqual(pf.nearest_name([1], links, {4: ["Farther"]})[0], "map 1")
 
 
+@mock.patch.object(pf, "PLAYER_EVIDENCE", ())
 class DiscTests(unittest.TestCase):
     """Two discs holding the same invented dungeon: maps 0 and 1 (gears, the same encounters on
     different stages) need one and two jumps, map 2 joins them to map 3 (another set)."""
@@ -463,6 +464,27 @@ class DiscTests(unittest.TestCase):
             lines,
         )
         self.assertIn("unresolved areas (not listed; reviewed in docs/runtime.md): 0", lines)
+
+    def test_player_evidence_lists_an_area_the_rule_leaves_out(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.build(root)
+            with mock.patch.object(pf, "PLAYER_EVIDENCE", (("Flats", (3,)),)):
+                analyses = [pf.analyse_disc(root, number, names=False) for number in (1, 2)]
+                self.assertEqual(pf.table(analyses), [("maps 0-1", [0, 1]), ("Flats", [3])])
+                flats = analyses[0].areas[1]
+                self.assertEqual(
+                    flats.reason(),
+                    "listed on player evidence (docs/runtime.md); not heavy: only 0 of 1 armed"
+                    " maps need a traversal jump and only 0 traversal jumps in all",
+                )
+                lines = pf.report(analyses)
+                self.assertIn("  Flats: [3]", lines)
+                self.assertTrue(any(line.startswith("  Flats [3] (no world-map") for line in lines))
+            with mock.patch.object(pf, "PLAYER_EVIDENCE", (("Half", (0,)),)):
+                analyses = [pf.analyse_disc(root, number, names=False) for number in (1, 2)]
+                with self.assertRaisesRegex(ValueError, "names no area of armed maps: Half"):
+                    pf.table(analyses)
 
     def test_the_command_line_prints_and_checks_the_table(self):
         def run(*argv):

@@ -61,9 +61,11 @@ docs/runtime.md ("Random battles in platforming areas"):
   **platforming-heavy** when at least half of its armed maps need at least one traversal jump and
   its maps' traversal jumps sum to at least 3, as measured. One that is not but would be if each of
   its maps with pairs not measured needed a jump is **unresolved**: not listed, and reviewed in
-  docs/runtime.md. Both discs are read; an area heavy on either disc is listed, the maps of
-  overlapping areas together. Its name is the nearest world-map entrance's (at most NAME_STEPS door
-  steps, then the lowest map) from the area file's name table, read with
+  docs/runtime.md. Players' complaints augment the rule: an area PLAYER_EVIDENCE names (several
+  independent sources, docs/runtime.md quotes them) is listed whatever its figures. Both discs are
+  read; an area heavy on either disc or named by the evidence is listed, the maps of overlapping
+  areas together. Its name is the evidence's, else the nearest world-map entrance's (at most
+  NAME_STEPS door steps, then the lowest map) from the area file's name table, read with
   tools.analysis.text_control's characters (the later areas' Japanese tables name nothing).
 
 `--table` (the default) prints every area and its maps' metrics with the reason, the unresolved
@@ -113,6 +115,10 @@ DESTINATION = 4  # a kind that only records a destination (worldmap_path_select_
 FIXED_UNIT = "worldmap/worldmap_movement_terrain.c"  # worldmap_fixed_path_regions
 HEAVY_SHARE, HEAVY_JUMPS = 2, 3  # half the armed maps need a jump; at least 3 in all
 NAME_STEPS = 2  # how many door steps away an area's world-map name may come from
+# Areas the rule leaves out that players name for their platforming, in independent sources
+# docs/runtime.md quotes: the name they use and every armed map of the area, which the evidence
+# alone lists. The maps are the area's as the tool groups them, or the table refuses the entry.
+PLAYER_EVIDENCE = (("Aveh-Kislev border mountains", (172, 173, 175)),)
 
 
 # ---------------------------------------------------------------------------
@@ -803,6 +809,11 @@ class Area:
     results: list[MapResult]
     name: str = ""
     named: str = ""  # where the name comes from
+    evidence: str = ""  # the PLAYER_EVIDENCE name that lists it
+
+    @property
+    def listed(self) -> bool:
+        return self.heavy or bool(self.evidence)
 
     @property
     def jumping(self) -> list[int]:
@@ -833,6 +844,12 @@ class Area:
         return HEAVY_SHARE * len(could) >= len(self.maps)
 
     def reason(self) -> str:
+        measured = self.measured()
+        if self.evidence and not self.heavy:
+            return f"listed on player evidence (docs/runtime.md); {measured}"
+        return measured
+
+    def measured(self) -> str:
         share = f"{len(self.jumping)} of {len(self.maps)} armed maps need a traversal jump"
         jumps = f"{self.traversal} traversal jumps in all"
         if self.heavy:
@@ -950,8 +967,14 @@ def analyse_disc(root: Path, number: int, names: bool = True) -> DiscAnalysis:
         results[map_id], _ = analyse_map(map_id, bundles[map_id], scripts[map_id], entries)
     keys = {m: frozenset() for m in armed}
     keys.update({s.item: encounters(s) for s in census.of("field") if s.item in results})
+    evidence = {frozenset(maps): name for name, maps in PLAYER_EVIDENCE}
     areas = [
-        Area(maps, [results[m] for m in maps], *nearest_name(maps, links, named))
+        Area(
+            maps,
+            [results[m] for m in maps],
+            *nearest_name(maps, links, named),
+            evidence.get(frozenset(maps), ""),
+        )
         for maps in group_areas(armed, keys, links)
     ]
     return DiscAnalysis(number, census, armed, scripts, entrances, links, results, areas)
@@ -963,11 +986,12 @@ def analyse_disc(root: Path, number: int, names: bool = True) -> DiscAnalysis:
 
 
 def table(analyses: list[DiscAnalysis]) -> list[tuple[str, list[int]]]:
-    """(name, maps) of every area heavy on either disc, overlapping ones together, by first map."""
+    """(name, maps) of every area heavy on either disc or listed on player evidence, overlapping
+    ones together, by first map. An evidence entry that is no disc's area is refused."""
     merged: list[tuple[str, set[int]]] = []
     for analysis in analyses:
         for area in analysis.areas:
-            if not area.heavy:
+            if not area.listed:
                 continue
             maps = set(area.maps)
             for n, (name, others) in enumerate(merged):
@@ -975,7 +999,11 @@ def table(analyses: list[DiscAnalysis]) -> list[tuple[str, list[int]]]:
                     merged[n] = (name, others | maps)
                     break
             else:
-                merged.append((area.name, maps))
+                merged.append((area.evidence or area.name, maps))
+    found = {area.evidence for analysis in analyses for area in analysis.areas}
+    missing = [name for name, _ in PLAYER_EVIDENCE if name not in found]
+    if missing:
+        raise ValueError(f"PLAYER_EVIDENCE names no area of armed maps: {', '.join(missing)}")
     return sorted(((name, sorted(maps)) for name, maps in merged), key=lambda row: row[1][0])
 
 
@@ -1030,12 +1058,18 @@ def report(analyses: list[DiscAnalysis]) -> list[str]:
         armed, areas = len(analysis.armed), len(analysis.areas)
         lines.append(f"disc {analysis.number}: {armed} armed maps in {areas} areas")
         for area in analysis.areas:
-            lines.append(f"  {area.name} {area.maps} ({area.named}): {area.reason()}")
+            name = area.evidence or area.name
+            lines.append(f"  {name} {area.maps} ({area.named}): {area.reason()}")
             if area.traversal or area.partial or any(r.jump_links for r in area.results):
                 lines += [f"    {result.text()}" for result in area.results]
     lines.append("table (PLATFORMING_AREAS):")
     lines += [f"  {name}: {maps}" for name, maps in rows]
-    unresolved = [(a.number, area) for a in analyses for area in a.areas if area.unresolved]
+    unresolved = [
+        (analysis.number, area)
+        for analysis in analyses
+        for area in analysis.areas
+        if area.unresolved and not area.evidence
+    ]
     lines.append(f"unresolved areas (not listed; reviewed in docs/runtime.md): {len(unresolved)}")
     lines += [
         f"  disc {number}: {area.name} {area.maps}: maps {', '.join(map(str, area.partial))}"

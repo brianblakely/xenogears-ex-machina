@@ -10,17 +10,22 @@
 //! with a nonzero period and count, and player control runs it) whose draws
 //! start the same encounters and that doors join. It is platforming-heavy
 //! when at least half of its maps need a jump between two of their
-//! entrances and those maps' jumps sum to at least three, as measured. Only
-//! maps that arm the draw are listed: elsewhere it never runs. Areas whose
-//! maps the walkmesh model cannot fully measure, and that could be heavy,
-//! are not listed; docs/runtime.md reviews them.
+//! entrances and those maps' jumps sum to at least three, as measured.
+//! Players' complaints augment the rule: an area that independent sources
+//! name for its platforming is listed whatever its figures (the tool's
+//! `PLAYER_EVIDENCE`; docs/runtime.md quotes them). Only maps that arm the
+//! draw are listed: elsewhere it never runs. Other areas whose maps the
+//! walkmesh model cannot fully measure, and that could be heavy, are not
+//! listed; docs/runtime.md reviews them.
 
 use std::sync::LazyLock;
 
-/// The platforming-heavy areas: the world map's name for the nearest
-/// entrance, and the maps that arm the draw, ascending.
+/// The platforming-heavy areas: the players' name for one the evidence
+/// lists, else the world map's for the nearest entrance, and the maps that
+/// arm the draw, ascending.
 pub const PLATFORMING_AREAS: &[(&str, &[u16])] = &[
     ("Blackmoon Forest", &[22]),
+    ("Aveh-Kislev border mountains", &[172, 173, 175]),
     ("Babel Tower", &[407, 409, 412, 413, 414, 415, 416]),
 ];
 

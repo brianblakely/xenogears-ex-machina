@@ -2553,14 +2553,68 @@ half of its armed maps need at least one traversal jump and its maps'
 traversal jumps sum to at least 3, as measured; an area heavy on either
 disc is listed. One that is not, but would be if each of its maps with
 pairs not measured needed a jump, is *unresolved*: the classification
-cannot decide it and does not list it. Its name is the world map's for the
-entrance fewest door steps away (at most two); the later areas' name
-tables are Japanese and name nothing.
+cannot decide it and does not list it. Players' complaints augment the
+rule: an area that independent sources name for its platforming, and
+whose maps arm the draw, is listed whatever its figures (the tool's
+`PLAYER_EVIDENCE`, below). Its name is then the players', else the world
+map's for the entrance fewest door steps away (at most two); the later
+areas' name tables are Japanese and name nothing.
+
+**Player evidence.** At the user's direction (2026-10-14) the
+classification was cross-checked against what players say: web searches of
+reviews, retrospectives, forum threads, walkthroughs and a Let's Play for
+the places Xenogears players complain about for their platforming or
+jumping, alone or with random battles. An area with several independent
+complaints and armed random battles joins the table; a measured area
+without any would stay only on clearly platforming figures (none had to).
+The sources name places, not maps; the game's own data maps them: Babel
+Tower is the world map's name for scenes 405 and 411, whose doors join
+maps 405-422; Blackmoon Forest is its name for map 22. The Aveh-Kislev
+border mountains have no world-map entrance (the Xeno Series Wiki's
+[Mountain Cave](https://www.xenoserieswiki.org/wiki/Mountain_Cave) "does
+not appear on the map"); doors join maps 172-177, map 174's script sends
+Elly's Gebler unit against Fei while "Bart's team is already on their way
+to the castle", map 175's says "Head for the mountain peak", and the draws
+of maps 172, 173 and 175 start battles 21, 27 and 32, whose name tables
+hold the Nomad Fix Bot, Medusoid, May Fly and Edelweiss, the enemies the
+wiki lists for the Mountain Cave. Quotes are verbatim; reddit refuses
+direct reads here, so its quote comes from the search engine's index.
+
+| Area | Source | Quote |
+| --- | --- | --- |
+| Babel Tower | [Kotaku's look back at the game](https://kotaku.com/gears-gods-and-giant-robots-a-look-back-at-one-of-th-5911139) (Jason Schreier) | "Especially when you're trying to pull off a tricky jump in the Babel Tower and suddenly you get into a random battle" |
+| Babel Tower | [Hardcore Gaming 101](https://www.hardcoregaming101.net/xenogears/) (Maciej Miszczyk) | "a lot of frustration will be had in the mountains on Aveh-Kislev border and in the infamous Babel Tower" |
+| Babel Tower | [Carl's Backtrack and Bosses, Wayback Wednesday vol. 25 part 2](https://buymeacoffee.com/carldexter/xenogears-wayback-wednesday-vol-25-part-2) | "A few times, a random encounter occurred just as I was pushing the jump button to cross a gap" |
+| Babel Tower | [r/XenoGears, "Babel Tower"](https://www.reddit.com/r/XenoGears/comments/1kt4ito/babel_tower/) | "the prime example of why the platforming in this game was so awful" |
+| Aveh-Kislev border mountains | Hardcore Gaming 101 (above) | "the mountains on Aveh-Kislev border", with "most of mistakes being punished with annoying random encounters" |
+| Aveh-Kislev border mountains, Blackmoon Forest | [Nintendo World Report, "The Thirsty Mage: Xenogears"](https://nintendoworldreport.com/feature/50044/the-thirsty-mage-xenogears), comment by David Lloyd | "the forest at the beginning and the mountain hopping in the Gear were particularly annoying" |
+| Aveh-Kislev border mountains | [Almar's Guides, chapter 2](https://almarsguides.com/retro/walkthroughs/PS1/Games/Xenogears/FullPlaythrough/Chapter2/) ("Fei At The Rockies"; a walkthrough, no complaint) | "In the next area you'll find a bunch more jumping that we need to do" |
+| Blackmoon Forest | [Almar's Guides, chapter 1](https://almarsguides.com/retro/walkthroughs/PS1/Games/Xenogears/FullPlaythrough/Chapter1/) (a walkthrough) | "There will be a hobgoblin here which will jump across the roots, you need to follow him" |
+
+Others name no place: [PlayStation LifeStyle's review](https://www.playstationlifestyle.net/?p=135866)
+(Heath Hindman) finds "a few segments of required jumping tend to be
+frustrating", and a commenter on the Nintendo World Report piece
+"segments that were needlessly hard with having to hold down the run
+button and then time your jump properly". The searches found no
+platforming complaint about the other candidate areas: Anima Relic 2
+(Almar's Guides' chapter 5 calls the block-pushing puzzle before it
+"arguably the worst puzzle in the entire game", which has no jump), maps
+444-450 (Shevat's emergency shaft), the Aveh excavation site (maps 64-69,
+where chapter 1 of the same guide only describes "a bunch of platforms we
+have to jump up to"), the Mountain Path ("the only complicated part is the
+running jump to get over the gap") and the Soylent System. Players
+disagree on one point: a reddit commenter and a WaniKani reading club
+believe Babel Tower's battles stand on fixed tiles; its maps arm the
+random draw (f7 periods 360, 300 and 240, one battle each), so they do not.
+Babel Tower and Blackmoon Forest are listed by the rule as well; the
+Aveh-Kislev border mountains on two independent complaints and a
+walkthrough's description, though the rule cannot decide them (below).
 
 | Area | Maps | Party | Maps needing a jump | Traversal jumps | Reason |
 | --- | --- | --- | --- | --- | --- |
-| Blackmoon Forest | 22 | foot | 1 of 1 | 3 | From the early world map's entrance (entry 0) up to entry 1, where map 23's door and the later world map arrive, the floor rises 150-250 units over a staircase of eight stumps 50-95 units across (-40 to -257 high): 3 jumps up, none down. An actor there hops up the same stones ahead of the party (`arc_jump`), and a scripted battle waits at the top. Measured; 66 jump links, 23 falls. |
-| Babel Tower | 407, 409, 412-416 | gears | 5 of 7 | 15 | 412: 5 (climb 6), 413: 3, 414: 2, 415: 3, 416: 2; 407 and 409: 0 as measured, their entrance 1 (the doors of maps 408 and 410, which the party crosses on foot) on a strip (word 0x48) that blocks the party in its gears. 412 and 415 have pairs on two layers or not joined, so the area's figures are lower bounds. 88 jump links, 39 falls. |
+| Blackmoon Forest | 22 | foot | 1 of 1 | 3 | From the early world map's entrance (entry 0) up to entry 1, where map 23's door and the later world map arrive, the floor rises 150-250 units over a staircase of eight stumps 50-95 units across (-40 to -257 high): 3 jumps up, none down. An actor there hops up the same stones ahead of the party (`arc_jump`), and a scripted battle waits at the top. Measured; 66 jump links, 23 falls. One complaint and a walkthrough name it. |
+| Aveh-Kislev border mountains | 172, 173, 175 | gears | 0 of 3 as measured | 0 as measured | Listed on player evidence. As measured unresolved: 173 and 175 are partly measured, their entrance 0 not joined to entrance 1 on its layer (175: from entrance 0, walks and up to 6 jumps reach 19 regions, the highest at y -35, but not entrance 1's at y -323; 173: no walk or jump leaves entrance 0's region), and 172 has one entrance. 241 jump links, 62 falls. |
+| Babel Tower | 407, 409, 412-416 | gears | 5 of 7 | 15 | 412: 5 (climb 6), 413: 3, 414: 2, 415: 3, 416: 2; 407 and 409: 0 as measured, their entrance 1 (the doors of maps 408 and 410, which the party crosses on foot) on a strip (word 0x48) that blocks the party in its gears. 412 and 415 have pairs on two layers or not joined, so the area's figures are lower bounds. 88 jump links, 39 falls. Four independent complaints. |
 
 Unresolved, not listed, for the user's review (disc 1; disc 2 holds the
 same maps 15, 632-634 and 641-651 and no other):
@@ -2569,7 +2623,6 @@ same maps 15, 632-634 and 641-651 and no other):
 | --- | --- | --- | --- |
 | Anima Relic 2, maps 641, 642, 644, 650, 651 (gears) | 2 of 5 (642: 2, 650: 1), 3 jumps | 641: no walk or jump on layer 1 joins entrance 2 (map 644's door) to entrances 0 and 1 (map 643's): its two platforms, both at y -360, lie 430 units apart over slides and pits, and layer 0's floor below them is 280-360 lower. 644 and 651: entrance 1 (map 645's door, crossed on foot) is on a strip (word 0x48) that blocks the gears. | 641 needs a jump (3 of 5). The classifier's first version listed the area by walking 641's floorless triangles. |
 | Maps 444-450 (foot) | 3 of 7 (444: 1, 447: 1, 448: 2), 4 jumps | 449: its layer-2 entrances 0 and 1 lie in regions layer 2 does not join, entrance 2 is on layer 0. 450: its entrances are on layers 2 and 1. 445: entrances 1 and 2 (map 447's doors) are on floorless layer-0 triangles. 446 has one entrance. | 449 or 450 needs a jump (4 of 7). Without 449 and 450 the area is heavy (3 of 5, 4 jumps), and grouped by identical encounter-set bytes so are maps 444 and 448 (2 of 2, 3 jumps). |
-| Maps 172, 173, 175 (gears) | 0 of 3, 0 jumps | 173: no walk or jump leaves entrance 0's region. 175: from entrance 0, walks and up to 6 jumps reach 19 regions, the highest at y -35, but not entrance 1's at y -323. 172 has one entrance. Both ways back need none. | 173 and 175 need 3 jumps between them |
 | Maps 64-68 (gears) | 2 of 5 (64: 3, 66: 5), 8 jumps | 64: 0->2 and 1->2 not joined. 65: entrances on layers 0 and 1. 66: no walk or jump takes entrance 0 to the others (climb 6). | 65 needs a jump (3 of 5) |
 | Map 69 (gears) | 0 of 1 | its two entrances are on layers 2 and 1; 36 jump links | its crossing needs 3 jumps |
 | Map 241 (foot) | 1 of 1, 1 jump | entrance 2 stands in a region of layer 0 joined to no other: 6 of its 12 pairs | one of those needs 3 jumps |
@@ -2588,11 +2641,13 @@ Reviewed and not heavy:
 **Enemies met only in these random battles.** `--table` ends with the
 (battle, enemy id) pairs some formation starts on either disc
 (`formations.reach`: drawn, named or chained) that none starts once the
-listed maps' draws stop: battle 59's enemy 2 (Babel Tower, formation 6 of
-maps 407, 409 and 412-416 on disc 1 and 412-416 on disc 2). With random
-battles off there, it is not met at all. Battle 71's enemy 4 is met only
-in Anima Relic 2's random battles (formation 0 of its five maps on both
-discs), so listing that area would lose it too.
+listed maps' draws stop: battle 32's enemy 0 (the Aveh-Kislev border
+mountains, formation 2 of maps 172, 173 and 175, disc 1) and battle 59's
+enemy 2 (Babel Tower, formation 6 of maps 407, 409 and 412-416 on disc 1
+and 412-416 on disc 2). With random battles off there, they are not met at
+all. Battle 71's enemy 4 is met only in Anima Relic 2's random battles
+(formation 0 of its five maps on both discs), so listing that area would
+lose it too.
 
 Tests: `tests/test_platforming.py` (`python3 -m unittest
 tests.test_platforming`, suite.sh's port stage) checks the classifier on
@@ -2610,8 +2665,9 @@ line), why an entrance stands on no floor, entry records, doors and fe
 1e, pairs on two layers or not joined left unmeasured, path regions
 without destinations, `worldmap_fixed_path_regions`, encounter keys that
 ignore stages and weights, area grouping, the rule and unresolved areas,
-names, a two-map dungeon classified, listed and its lost enemy found, and
-`--rust`, `--check` and `--map`. `encounters.rs`'s unit test checks that
+names, a two-map dungeon classified, listed and its lost enemy found, an
+area the player evidence names listed whatever its figures and an evidence
+entry that is no area refused, and `--rust`, `--check` and `--map`. `encounters.rs`'s unit test checks that
 each area's maps ascend and that no map is in two areas.
 `xem-headless/tests/jumps.rs` (local, disc 1, about 6 s) checks on the
 game that Fei's running jump on map 22 rises 118.25 and touches down 240
