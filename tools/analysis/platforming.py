@@ -77,8 +77,6 @@ ROOT = Path(__file__).resolve().parents[2]
 TABLE = ROOT / "src/runtime/crates/xem-core/src/encounters.rs"
 
 COLLISION = 1  # BUNDLE_COLLISION (src/decomp/src/field/field_load.h)
-SIZES, OFFSETS = 0x10C, 0x130  # FieldBundle.sizes, .offsets
-SLACK = 0x10  # field_load_from_bundle decodes the component's size + 0x10
 LEDGE = 0x400000  # a slide: not walked onto from below, no jump starts (field_motion.c)
 LAYER0_BLOCK = 0x800000
 CLIMB = 8  # a ledge more than this above a floor is not walked onto (xem_core::field)
@@ -86,9 +84,8 @@ GEARS = "fe 1e"  # switch_party_to_gears
 DEBUG_MAPS = frozenset(range(720, 730))  # the development menu's maps, whose doors go everywhere
 # Each map change: its field operand (events.FIELD_OPERAND) and the entry operand after it.
 DOORS = {key: (operand, operand + 1) for key, operand in events.FIELD_OPERAND.items()}
-ENTRY_MARKER = 0xFF  # field_event_place_at_map_entry: the bytecode opens with entry records
+ENTRY_MARKER = b"\xff"  # field_event_place_at_map_entry: the bytecode opens with entry records
 ENTRY_RECORD = 7
-AREA_DIRECTORY = formations.AREA_DIRECTORY
 SPOTS, NAMES = 0x04, 0x1C  # AreaHeader.spots, .names
 PATH_TABLES = 4  # SpotHeader.table: four offsets, relative to the spot block
 PATH_REGION = struct.Struct("<8h")  # PathRegion: x, z, w, h, scene, entry, link, kind
@@ -387,15 +384,15 @@ class Walkmesh:
 
 def component(data: bytes, index: int) -> bytes:
     """A bundle component as field_load_from_bundle decodes it, cut to its size."""
-    size = struct.unpack_from("<I", data, SIZES + 4 * index)[0]
-    offset = struct.unpack_from("<I", data, OFFSETS + 4 * index)[0]
-    return decode_block(data[offset:], output_limit=size + SLACK).data[:size]
+    size = struct.unpack_from("<I", data, formations.SIZES + 4 * index)[0]
+    offset = struct.unpack_from("<I", data, formations.OFFSETS + 4 * index)[0]
+    return decode_block(data[offset:], output_limit=size + formations.SLACK).data[:size]
 
 
 def entry_record(bytecode: bytes, entry: int) -> tuple[int, int, int] | None:
     """(x, z, layer) of entry record `entry`, None when the bytecode holds none there."""
     at = 1 + ENTRY_RECORD * entry
-    if bytecode[:1] != bytes([ENTRY_MARKER]) or entry < 0 or at + ENTRY_RECORD > len(bytecode):
+    if bytecode[:1] != ENTRY_MARKER or entry < 0 or at + ENTRY_RECORD > len(bytecode):
         return None
     x, z = struct.unpack_from("<hh", bytecode, at)
     return x, z, bytecode[at + 4]
@@ -580,7 +577,7 @@ def area_names(disc: int, root: Path) -> dict[int, list[str]]:
     chars = text_control.character_map(image, threshold).glyphs
     names = {}
     for area in sorted(set(dispatch_tables.area_files())):
-        data = text_control.unpack(image.sectors(image.slot(*AREA_DIRECTORY, area + 1)))
+        data = text_control.unpack(image.sectors(image.slot(*formations.AREA_DIRECTORY, area + 1)))
         table = data[struct.unpack_from("<I", data, NAMES)[0] :]
         offsets, _ = text_control.text_table(table)
         texts, readable = [], 0
@@ -691,6 +688,8 @@ def nearest_name(maps, links: dict[int, set[int]], named: dict[int, list[str]]) 
 
 
 def analyse_disc(root: Path, number: int, names: bool = True) -> DiscAnalysis:
+    """Every map that arms the draw on disc `number`, its areas and (with `names`) their
+    world-map names."""
     census = formations.read_disc(root, number)
     files = formations.DiscFiles(root, number)
     bundles, scripts = {}, {}
@@ -713,19 +712,19 @@ def analyse_disc(root: Path, number: int, names: bool = True) -> DiscAnalysis:
     named: dict[int, list[str]] = {}
     texts = area_names(number, root) if names else {}
     for area in sorted(set(dispatch_tables.area_files())):
-        data = decode_block(files.sectors(files.slot(AREA_DIRECTORY, area + 1))).data
+        data = decode_block(files.sectors(files.slot(formations.AREA_DIRECTORY, area + 1))).data
+        table = texts.get(area + 1, [])
         for _, scene, entry, link in path_regions(data):
             entrances.setdefault(scene & 0xFFF, set()).add(entry)
-            name = texts.get(area + 1, [])[link] if 0 <= link < len(texts.get(area + 1, [])) else ""
-            if name:
-                named.setdefault(scene & 0xFFF, []).append(name)
+            if 0 <= link < len(table) and table[link]:
+                named.setdefault(scene & 0xFFF, []).append(table[link])
     for scene, entry, _ in fixed_regions():
         entrances.setdefault(scene & 0xFFF, set()).add(entry)
     armed = sorted(m for m in census.armings if formations.armed(census, m))
     results = {}
     for map_id in armed:
-        results[map_id], _ = analyse_map(map_id, bundles[map_id], scripts[map_id],
-                                         entrances.get(map_id, set()))
+        entries = entrances.get(map_id, set())
+        results[map_id], _ = analyse_map(map_id, bundles[map_id], scripts[map_id], entries)
     keys = {m: frozenset() for m in armed}
     keys.update({s.item: encounters(s) for s in census.of("field") if s.item in results})
     areas = [

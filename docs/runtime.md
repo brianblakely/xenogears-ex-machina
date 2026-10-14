@@ -2306,6 +2306,7 @@ leaves `game_data.inGear` clear, so on map 414 the leader is then its pilot
 on foot with the gears' alternate sprite set (fe 1e), which hops 31.5
 units; the gear measurement takes `enter_field`'s kernel-menu recipe with
 `inGear` set for the three slots before the field loads.
+`xem-headless/tests/jumps.rs` repeats both measurements.
 
 **Slides.** On a floor of attribute 0x400000 the leader has no direction:
 `field_actor_apply_additive_motion` sets bit 15 of its heading before
@@ -2399,8 +2400,12 @@ edge), entry records, doors and fe 1e, path regions without destinations,
 weights, area grouping, the rule, names, a two-map dungeon classified,
 listed and its lost enemy found, and `--rust`, `--check` and `--map`.
 `encounters.rs`'s unit test checks that each area's maps ascend and that
-no map is in two areas. With the user's discs extracted, `python3 -m
-tools.analysis.platforming --check` proves the shipped table.
+no map is in two areas. `xem-headless/tests/jumps.rs` (local, disc 1,
+about 4 s) checks on the game that Fei's running jump on map 22 rises
+118.25 and touches down 240 units on, and the party's in its gears on map
+414 131.25 and 204, as the classifier's arcs hold them. With the user's
+discs extracted, `python3 -m tools.analysis.platforming --check` proves
+the shipped table.
 
 Not done or not measured: the classification is a static approximation of
 the walkmesh. It follows one layer at a time (scripted layer changes, lifts,
