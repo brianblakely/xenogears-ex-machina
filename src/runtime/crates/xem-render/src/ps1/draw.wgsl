@@ -16,7 +16,8 @@ struct Pass {
     scale: f32,
     // Bit 0 perspective-correct texturing, 1 15-bit colour, 2 dithering,
     // 3 depth-tested ordering, 4 depth from its reciprocal (a camera within
-    // the scene: ps1/mod.rs PASS_RECIPROCAL_DEPTH).
+    // the scene: ps1/mod.rs PASS_RECIPROCAL_DEPTH), 5 an eye of the diorama
+    // (PASS_WORLD), 6 the diorama's interface pane (PASS_PANE).
     options: u32,
     // A screen the game took into VRAM (ps1/mod.rs Capture): its picture's
     // scale and sides (VRAM pixels on each side of the screen, the left one
@@ -25,7 +26,19 @@ struct Pass {
     capture_scale: f32,
     capture_side: u32,
     capture: vec4<u32>,
+    // The diorama (ps1/diorama.rs): an eye's clip space from the game's
+    // world and from the table's space, the world in the table's space, and
+    // the table's volume there (nothing outside it is drawn).
+    world_to_clip: mat4x4<f32>,
+    table_to_clip: mat4x4<f32>,
+    world_to_table: mat4x4<f32>,
+    volume_min: vec4<f32>,
+    volume_max: vec4<f32>,
 };
+
+// Pass options (ps1/mod.rs PASS_WORLD, PASS_PANE).
+const PASS_WORLD: u32 = 32u;
+const PASS_PANE: u32 = 64u;
 
 @group(0) @binding(0) var<uniform> pass_: Pass;
 @group(0) @binding(1) var vram: texture_2d<u32>;
@@ -52,6 +65,10 @@ const CLASS_SPRITE: u32 = 4u;
 const LINE: u32 = 131072u;
 const CAPTURE: u32 = 262144u;
 const FEEDBACK: u32 = 524288u;
+// A diorama vertex in the table's space, not the game's world; one in clip
+// space (a full-screen fade over a whole target).
+const TABLE: u32 = 1048576u;
+const CLIP: u32 = 2097152u;
 
 struct VertexIn {
     @location(0) position: vec2<f32>,
@@ -78,6 +95,8 @@ struct VertexOut {
     @location(3) @interpolate(flat) mode: vec4<u32>,
     @location(4) depth: f32,
     @location(5) @interpolate(flat) limits: u32,
+    // A diorama fragment's point in the table's space (vs_world).
+    @location(6) table: vec3<f32>,
 };
 
 @vertex
@@ -110,6 +129,35 @@ fn vs_main(in: VertexIn) -> VertexOut {
     out.uv_affine_w = vec3<f32>(in.uv * in.w, in.w);
     out.mode = in.mode;
     out.depth = in.depth;
+    out.limits = in.limits;
+    out.table = vec3<f32>(0.0);
+    return out;
+}
+
+// A diorama vertex (ps1/diorama.rs): its point in the game's world (x and y
+// in `position`, z in `depth`), or in the table's space (TABLE: the
+// backdrop's wall), seen through the eye's matrices; or a point of clip
+// space (CLIP: a fade over the whole target). Textures interpolate
+// perspective-correctly through the clip w.
+@vertex
+fn vs_world(in: VertexIn) -> VertexOut {
+    var out: VertexOut;
+    let point = vec4<f32>(in.position, in.depth, 1.0);
+    if (in.mode.w & CLIP) != 0u {
+        out.clip = vec4<f32>(in.position, 0.0, 1.0);
+        out.table = vec3<f32>(0.0);
+    } else if (in.mode.w & TABLE) != 0u {
+        out.clip = pass_.table_to_clip * point;
+        out.table = point.xyz;
+    } else {
+        out.clip = pass_.world_to_clip * point;
+        out.table = (pass_.world_to_table * point).xyz;
+    }
+    out.color = in.color;
+    out.uv_perspective = in.uv;
+    out.uv_affine_w = vec3<f32>(in.uv, 1.0);
+    out.mode = in.mode;
+    out.depth = 0.0;
     out.limits = in.limits;
     return out;
 }
@@ -234,6 +282,11 @@ struct Shaded {
 // The primitive's colour at this fragment in 8-bit units, before blending.
 fn shade(in: VertexOut, frag: vec4<f32>) -> Shaded {
     let flags = in.mode.w;
+    // A diorama's eye draws only inside the table's volume.
+    if (pass_.options & PASS_WORLD) != 0u && (flags & CLIP) == 0u
+        && (any(in.table < pass_.volume_min.xyz) || any(in.table > pass_.volume_max.xyz)) {
+        discard;
+    }
     // The interface as the original draws it (ORIGINAL), whatever the pass
     // draws the scene with: colour and texture coordinates taken at the
     // native pixel's sample point (so each native pixel is one colour, as
@@ -311,7 +364,10 @@ fn shade(in: VertexOut, frag: vec4<f32>) -> Shaded {
         let c5 = floor(color8 / 8.0);
         color = (c5 * 8.0 + floor(c5 / 4.0)) / 255.0;
     }
-    return Shaded(vec4<f32>(color, select(0.0, 1.0, mask)), semi);
+    // A picture of VRAM keeps the mask bit in alpha; a diorama's eye and its
+    // interface pane keep coverage there (they are drawn over other things).
+    let coverage = (pass_.options & (PASS_WORLD | PASS_PANE)) != 0u;
+    return Shaded(vec4<f32>(color, select(select(0.0, 1.0, mask), 1.0, coverage)), semi);
 }
 
 struct Targets {
@@ -376,7 +432,38 @@ fn fs_semi(in: VertexOut) -> Targets {
     } else if mode == 3u {
         weight = 0.25;
     }
+    // The diorama's interface pane is premultiplied and starts transparent,
+    // blended (One, OneMinusSrcAlpha) for colour and alpha alike: B/2+F/2 is
+    // F/2 at half coverage, B+F and B+F/4 add F and F/4 without coverage, so
+    // the pane shows over the scene as the original blends them; B-F has no
+    // such form and darkens by F's brightest channel instead.
+    if (pass_.options & PASS_PANE) != 0u {
+        if mode == 0u {
+            return Targets(vec4<f32>(s.color.rgb * 0.5, 0.5), vec4<f32>(0.0));
+        }
+        if mode == 2u {
+            return Targets(vec4<f32>(0.0, 0.0, 0.0, max(s.color.r, max(s.color.g, s.color.b))), vec4<f32>(0.0));
+        }
+        return Targets(vec4<f32>(s.color.rgb * weight, 0.0), vec4<f32>(0.0));
+    }
     return Targets(vec4<f32>(s.color.rgb, weight), vec4<f32>(0.0));
+}
+
+// A full-screen fade over a diorama's eye or its pane (ps1/diorama.rs): its
+// colour over what the target holds, weighted by the target's own coverage
+// (the blend's source factor is the destination's alpha), so what is
+// transparent there (the room around the table) stays so. Opaque (blend key
+// 4) it replaces; mode 0 halves, 1 and 3 add, 2 subtracts (ps1/mod.rs).
+@fragment
+fn fs_tint(in: VertexOut) -> Targets {
+    let mode = (in.mode.w >> BLEND_SHIFT) & 3u;
+    if (in.mode.w & SEMI) == 0u {
+        return Targets(vec4<f32>(in.color.rgb, 1.0), vec4<f32>(0.0));
+    }
+    if mode == 0u {
+        return Targets(vec4<f32>(in.color.rgb * 0.5, 0.5), vec4<f32>(0.0));
+    }
+    return Targets(vec4<f32>(in.color.rgb * select(1.0, 0.25, mode == 3u), 0.0), vec4<f32>(0.0));
 }
 
 // The semi-transparent pixels of an interface primitive, marked as
@@ -413,8 +500,10 @@ fn vs_rect(in: VertexIn) -> BlitOut {
 
 @fragment
 fn fs_rect(in: BlitOut) -> Targets {
+    // The diorama's pane keeps coverage in alpha (shade).
+    let coverage = (pass_.options & PASS_PANE) != 0u;
     if in.upload == 0u {
-        return Targets(vec4<f32>(in.color.rgb, 0.0), vec4<f32>(0.0));
+        return Targets(vec4<f32>(in.color.rgb, select(0.0, 1.0, coverage)), vec4<f32>(0.0));
     }
     // An upload: the native pixel under this one.
     let native = vec2<i32>(floor(pass_.origin + floor(in.clip.xy) / pass_.scale));
@@ -422,7 +511,8 @@ fn fs_rect(in: BlitOut) -> Targets {
     var c5 = rgb5(pixel);
     let color = (c5 * 8.0 + floor(c5 / 4.0)) / 255.0;
     // Uploaded pictures belong to the interface class (1): no world effects.
-    return Targets(vec4<f32>(color, select(0.0, 1.0, (pixel & 0x8000u) != 0u)), vec4<f32>(0.0, 0.0, 1.0 / 255.0, 0.0));
+    let alpha = select(select(0.0, 1.0, (pixel & 0x8000u) != 0u), 1.0, coverage);
+    return Targets(vec4<f32>(color, alpha), vec4<f32>(0.0, 0.0, 1.0 / 255.0, 0.0));
 }
 
 // Sprite shadows (ps1/effects.rs): a cast shadow is a sprite part's

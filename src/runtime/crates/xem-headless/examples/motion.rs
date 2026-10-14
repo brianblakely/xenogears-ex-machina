@@ -9,6 +9,7 @@
 //!         [--profile modern|hd2d|ps1] [--only effect,...] [--widescreen] [--zoom PERCENT] [--interpolate]
 //!         [--scale N] [--size WxH] [--every N] [--crop x,y,w,h] [--compare] [--bench] [--no-trace]
 //!         [--probe x,y] [--original-actors] [--cards DIR] [--look YAW,PITCH[,TURN]]
+//!         [--diorama YAW,PITCH,DIST[,SCALE[,FOV]]] [--turns smooth|snap|fixed]
 //!         [--name NAME] [--out DIR]
 //!
 //! `--win` ends the battle in victory first (the enemies' HP set to 1, then
@@ -50,7 +51,18 @@
 //! as off screen per frame (`still`). `--look` shows the field in
 //! first-person inspection, turned YAW degrees to the right and PITCH up
 //! from the camera's heading (and TURN degrees more each kept frame), and
-//! reports where the controlled character stood (`eye`).
+//! reports where the controlled character stood (`eye`). `--diorama` shows
+//! the scene as the headsets' diorama (docs/runtime.md, Diorama) through a
+//! flat review camera: from the default seat's table, YAW degrees round it
+//! from the seat's side (positive to the right), PITCH up from the table's
+//! top, DIST metres from its centre, at the player's scale SCALE (1 the
+//! default; `--turns` how the table turns) with a vertical field of view
+//! of FOV degrees (50), the interface pane where a headset shows it and,
+//! while the view falls back to the screen, the flat screen 2.5 m ahead;
+//! it reports what each build drew (`diorama`) and writes the last pane
+//! (`NAME-pane.png`). From the default seat the table's centre lies 0.75 m
+//! away, 36.9 degrees down: `--diorama 0,36.87,0.75,1,100` is roughly what
+//! a seated player sees.
 
 /// A build without the game module has nothing to run.
 #[cfg(not(has_game_module))]
@@ -99,6 +111,83 @@ impl Stage {
 #[cfg(has_game_module)]
 const ANIMATED: usize = 240;
 
+/// `--diorama`'s flat review camera: its picture, and the compositor that
+/// lays the pane (and the screen, while the view falls back to it) over it.
+#[cfg(has_game_module)]
+struct Review {
+    target: xem_render::wgpu::Texture,
+    compositor: xem_render::Compositor,
+    eye: (xem_render::glam::Mat4, xem_render::glam::Mat4),
+    /// The screen's share and what the diorama drew, per presentation, and
+    /// the last pane drawn.
+    screens: Vec<f32>,
+    builds: Vec<Value>,
+    pane: Option<xem_render::wgpu::Texture>,
+}
+
+#[cfg(has_game_module)]
+impl Review {
+    /// A review camera YAW degrees round the default table from the seat's
+    /// side, PITCH up from its top, DIST metres from its centre, looking at
+    /// that centre with a vertical field of view of FOV degrees, for
+    /// pictures of `size`.
+    fn new(gpu: &Gpu, [yaw, pitch, distance, _, fov]: [f32; 5], table: &xem_render::ps1::Table, size: (u32, u32)) -> Review {
+        use xem_render::glam::{Mat4, Vec3};
+        let target = gpu.device.create_texture(&xem_render::wgpu::TextureDescriptor {
+            label: Some("review"),
+            size: xem_render::wgpu::Extent3d { width: size.0, height: size.1, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: xem_render::wgpu::TextureDimension::D2,
+            format: xem_render::wgpu::TextureFormat::Rgba8Unorm,
+            usage: xem_render::wgpu::TextureUsages::RENDER_ATTACHMENT | xem_render::wgpu::TextureUsages::COPY_SRC | xem_render::wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+        let centre = table.room_from_table(Mat4::IDENTITY).transform_point3(Vec3::ZERO);
+        let (yaw, pitch) = (yaw.to_radians(), pitch.to_radians());
+        let at = centre + Vec3::new(yaw.sin() * pitch.cos(), pitch.sin(), yaw.cos() * pitch.cos()) * distance;
+        let eye = (Mat4::look_at_rh(at, centre, Vec3::Y), Mat4::perspective_rh(fov.to_radians(), size.0 as f32 / size.1 as f32, 0.01, 50.0));
+        let compositor = xem_render::Compositor::new(&gpu.device, &gpu.queue, xem_render::wgpu::TextureFormat::Rgba8Unorm);
+        Review { target, compositor, eye, screens: Vec::new(), builds: Vec::new(), pane: None }
+    }
+
+    /// Presents the view's diorama (or its screen) through the camera.
+    fn present(&mut self, gpu: &Gpu, view: &mut GameView, display: &xem_render::xem_gpu::DisplayInfo, scene: &str, now: f64) -> Option<(u32, u32)> {
+        use xem_render::glam::{Mat4, Vec2, Vec3};
+        let target = self.target.create_view(&Default::default());
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        let backdrop = xem_render::wgpu::Color { r: 0.06, g: 0.06, b: 0.07, a: 1.0 };
+        self.compositor.draw(&mut encoder, &target, Some(backdrop), &[]);
+        let eyes = [xem_render::ViewTarget { view: self.eye.0, proj: self.eye.1, target: &target, viewport: xem_render::Viewport::full(self.target.width(), self.target.height()) }];
+        let presented = view.present_diorama(&mut encoder, display, scene, now, &eyes, Mat4::IDENTITY);
+        if let Some(presented) = &presented {
+            let view_proj = self.eye.1 * self.eye.0;
+            let mut quads = Vec::new();
+            if let (Some(pane), Some(space)) = (presented.pane, presented.space) {
+                self.pane = Some(pane.texture().clone());
+                let mut quad = xem_render::Quad::world(pane, view_proj, space.pane, space.pane_size);
+                quad.srgb_encoded = true;
+                quads.push(quad);
+            }
+            if let Some(frame) = presented.frame.as_ref().filter(|_| presented.screen > 0.0) {
+                let (width, height) = (frame.size.0 as f32, frame.size.1 as f32);
+                let mut quad = xem_render::Quad::world(frame.view, view_proj, Mat4::from_translation(Vec3::new(0.0, 0.0, -2.5)), Vec2::new(3.0, 3.0 * height / width));
+                quad.opacity = presented.screen;
+                quad.srgb_encoded = true;
+                quads.push(quad);
+            }
+            self.screens.push(presented.screen);
+            self.compositor.draw(&mut encoder, &target, None, &quads);
+        }
+        let shown = presented.is_some();
+        gpu.queue.submit([encoder.finish()]);
+        let stats = view.diorama_stats();
+        self.builds.push(json!({"scene": stats.scene, "sprites": stats.sprites, "one_sided": stats.one_sided, "revealed": stats.revealed,
+            "wall": stats.wall, "pane": stats.pane, "tints": stats.tints, "unplaced": stats.unplaced, "lifted": stats.lifted, "runs": stats.runs}));
+        shown.then(|| (self.target.width(), self.target.height()))
+    }
+}
+
 /// `rgba` (of `from` pixels) on a black picture of `to` pixels, top left.
 #[cfg(has_game_module)]
 fn fit(rgba: &[u8], from: (u32, u32), to: (u32, u32)) -> ((u32, u32), Vec<u8>) {
@@ -145,6 +234,8 @@ fn main() {
     let mut name = String::from("motion");
     let mut cards: Option<PathBuf> = None;
     let mut look: Option<(f32, f32, f32)> = None;
+    let mut diorama: Option<[f32; 5]> = None;
+    let mut turns = xem_render::ps1::Turns::Smooth;
     let mut out = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../../build/validation/motion");
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -226,6 +317,18 @@ fn main() {
                 let v: Vec<f32> = value().split(',').map(|n| n.parse().unwrap()).collect();
                 look = Some((v[0], v.get(1).copied().unwrap_or(0.0), v.get(2).copied().unwrap_or(0.0)));
             }
+            "--diorama" => {
+                let v: Vec<f32> = value().split(',').map(|n| n.parse().unwrap()).collect();
+                diorama = Some([v[0], v.get(1).copied().unwrap_or(40.0), v.get(2).copied().unwrap_or(1.0), v.get(3).copied().unwrap_or(1.0), v.get(4).copied().unwrap_or(50.0)]);
+            }
+            "--turns" => {
+                turns = match value().as_str() {
+                    "smooth" => xem_render::ps1::Turns::Smooth,
+                    "snap" => xem_render::ps1::Turns::Snap,
+                    "fixed" => xem_render::ps1::Turns::Fixed,
+                    other => panic!("unknown turns {other}"),
+                }
+            }
             "--out" => out = value().into(),
             other => panic!("unknown option {other}"),
         }
@@ -294,10 +397,18 @@ fn main() {
         view.set_first_person(true);
         view.look_around(yaw.to_radians(), pitch.to_radians());
     }
+    // The diorama, seen through a flat review camera, with a headset's
+    // settings (the Headset class).
+    let host = if diorama.is_some() { HostClass::Headset } else { HostClass::Desktop };
+    let mut review = diorama.map(|camera| {
+        let table = xem_render::ps1::Table { scale: camera[3], turns, ..Default::default() };
+        view.set_xr_view(xem_render::ps1::XrView::Diorama(table));
+        Review::new(&gpu, camera, &table, output)
+    });
     // From boot the trace and the presentation run through the setup too,
     // as a host's do (a frame at a time, nothing kept).
-    let presented_frame = |session: &mut xem_core::control::Session<xem_game::NativeModule>, view: &mut GameView| {
-        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, output, view.max_scale()));
+    let presented_frame = |session: &mut xem_core::control::Session<xem_game::NativeModule>, view: &mut GameView, review: &mut Option<Review>, clock: f64| {
+        view.configure(ViewConfig::resolve(&graphics, host, output, view.max_scale()));
         session.set_actor_view(if graphics.actors_in_view { view.actor_view() } else { 0 }).expect("actor view");
         session.frame().expect("frame");
         let device = session.runtime.services().gpu.device_mut();
@@ -308,13 +419,24 @@ fn main() {
         view.push(device.take_trace());
         let display = device.display();
         let scene = session.scene();
-        let mut encoder = gpu.device.create_command_encoder(&Default::default());
-        let _ = view.present(&mut encoder, &display, &scene, 0.0);
-        gpu.queue.submit([encoder.finish()]);
+        match review {
+            Some(review) => {
+                let _ = review.present(&gpu, view, &display, &scene, clock);
+            }
+            None => {
+                let mut encoder = gpu.device.create_command_encoder(&Default::default());
+                let _ = view.present(&mut encoder, &display, &scene, clock);
+                gpu.queue.submit([encoder.finish()]);
+            }
+        }
     };
+    let mut setup_clock = 0.0;
     for command in &setup {
         match command.get("count").and_then(Value::as_u64).filter(|_| from_boot && command["cmd"] == "frames") {
-            Some(count) => (0..count).for_each(|_| presented_frame(&mut session, &mut view)),
+            Some(count) => (0..count).for_each(|_| {
+                setup_clock += 1.0 / 60.0;
+                presented_frame(&mut session, &mut view, &mut review, setup_clock)
+            }),
             None => {
                 let reply = session.execute(command);
                 assert!(reply.get("error").is_none(), "{command} -> {reply}");
@@ -322,7 +444,8 @@ fn main() {
         }
     }
     for _ in 0..skip {
-        presented_frame(&mut session, &mut view);
+        setup_clock += 1.0 / 60.0;
+        presented_frame(&mut session, &mut view, &mut review, setup_clock);
     }
     if win {
         // battle_work_area's combatants (0x170 bytes; slots 3-10 the
@@ -372,13 +495,13 @@ fn main() {
     let mut still = Vec::new();
     let mut previous: Option<Vec<u8>> = None;
     let mut size = (0, 0);
-    let mut clock = 0.0f64;
+    let mut clock = setup_clock;
     if !from_boot && skip == 0 {
         session.runtime.services().gpu.device_mut().set_trace(traced);
         let _ = view.take_restart();
     }
     for frame in 0..frames {
-        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, output, view.max_scale()));
+        view.configure(ViewConfig::resolve(&graphics, host, output, view.max_scale()));
         if load_at == Some(frame) {
             session.restore_bytes(saved.as_ref().expect("saved")).expect("load");
         }
@@ -426,9 +549,15 @@ fn main() {
         for step in 0..present {
             clock += 1.0 / 60.0 / f64::from(present);
             let started = Instant::now();
-            let mut encoder = gpu.device.create_command_encoder(&Default::default());
-            let presented = view.present(&mut encoder, &display, &scene, clock).map(|p| p.size);
-            gpu.queue.submit([encoder.finish()]);
+            let presented = match &mut review {
+                Some(review) => review.present(&gpu, &mut view, &display, &scene, clock),
+                None => {
+                    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+                    let presented = view.present(&mut encoder, &display, &scene, clock).map(|p| p.size);
+                    gpu.queue.submit([encoder.finish()]);
+                    presented
+                }
+            };
             stages[2].samples.push(started.elapsed().as_secs_f64() * 1000.0);
             let started = Instant::now();
             gpu.device.poll(xem_render::wgpu::PollType::wait_indefinitely()).unwrap();
@@ -438,7 +567,11 @@ fn main() {
             if bench {
                 continue;
             }
-            let mut rgba = read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().expect("presented"));
+            let picture = match &review {
+                Some(review) => &review.target,
+                None => view.presented_texture().expect("presented"),
+            };
+            let mut rgba = read_rgba8(&gpu.device, &gpu.queue, picture);
             rgba.chunks_exact_mut(4).for_each(|p| p[3] = 255);
             if let Some([x, y, w, h]) = crop {
                 let (w, h) = (w.min(size.0 - x), h.min(size.1 - y));
@@ -497,6 +630,30 @@ fn main() {
                 eprintln!("{:?} {:?} textured {} semi {} offset {:?} owner {:#x} depths {depths:?} bounds {x0:.1},{y0:.1}-{x1:.1},{y1:.1} mode {:#x}",
                     p.class, p.shape, p.textured, p.semi, p.projection, p.owner, p.environment.draw_mode);
                 eprintln!("    points (x, y, u, v): {:?}", v.iter().map(|v| (v.x, v.y, v.u, v.v)).collect::<Vec<_>>());
+                eprintln!("    before the division: {:?}, floor {:?}", v.iter().map(|v| v.view).collect::<Vec<_>>(), p.ground);
+                // A small texture's texels: '.' transparent, 's' translucent (its
+                // semi-transparency bit), '#' opaque.
+                let (u0, u1) = v.iter().fold((255, 0), |(a, b), v| (a.min(v.u), b.max(v.u)));
+                let (v0, v1) = v.iter().fold((255, 0), |(a, b), v| (a.min(v.v), b.max(v.v)));
+                if p.textured && u1 - u0 <= 32 && v1 - v0 <= 32 {
+                    let vram = session.runtime.services().gpu.device().vram().to_vec();
+                    let mode = p.environment.draw_mode;
+                    let (page_x, page_y) = ((mode & 15) as usize * 64, (mode >> 4 & 1) as usize * 256);
+                    let at = |x: usize, y: usize| vram[(y & 511) * 1024 + (x & 1023)];
+                    let clut = |index: usize| at(usize::from(p.clut & 63) * 16 + index, usize::from(p.clut >> 6 & 511));
+                    for tv in v0..=v1 {
+                        let row: String = (u0..=u1).map(|tu| {
+                            let (tu, tv) = (tu as usize, tv as usize);
+                            let texel = match mode >> 7 & 3 {
+                                0 => clut(usize::from(at(page_x + tu / 4, page_y + tv) >> (tu % 4 * 4) & 15)),
+                                1 => clut(usize::from(at(page_x + tu / 2, page_y + tv) >> (tu % 2 * 8) & 255)),
+                                _ => at(page_x + tu, page_y + tv),
+                            };
+                            if texel == 0 { '.' } else if texel & 0x8000 != 0 { 's' } else { '#' }
+                        }).collect();
+                        eprintln!("    {row}");
+                    }
+                }
             }
         }
     }
@@ -542,6 +699,10 @@ fn main() {
     if let Some(last) = animation.last() {
         write(out.join(format!("{name}-last.png")), size, std::slice::from_ref(last));
     }
+    // The diorama's last interface pane (transparent where it shows nothing).
+    if let Some(pane) = review.as_ref().and_then(|review| review.pane.as_ref()) {
+        write(out.join(format!("{name}-pane.png")), (pane.width(), pane.height()), &[read_rgba8(&gpu.device, &gpu.queue, pane)]);
+    }
     if !animation.is_empty() {
         write(out.join(format!("{name}.png")), size, &animation);
     }
@@ -564,6 +725,7 @@ fn main() {
         "still": still,
         "eye": view.frame().eye().map(|eye| json!({"position": eye.position, "axes": eye.axes, "sprite": eye.sprite})),
         "first_person": view.first_person(),
+        "diorama": review.as_ref().map(|review| json!({"screen": review.screens, "builds": review.builds})),
     });
     std::fs::write(out.join(format!("{name}.json")), serde_json::to_string_pretty(&report).unwrap()).unwrap();
     println!("{}", serde_json::to_string(&json!({"stages": report["stages"], "changed_mean": mean_change, "points": report["points"], "revealed": [revealed.first(), revealed.iter().min(), revealed.iter().max(), revealed.last()], "still": [still.first(), still.iter().min(), still.iter().max(), still.last()], "revealed_sprites": [revealed_sprites.iter().min(), revealed_sprites.iter().max()], "memory_hash": session.execute(&json!({"cmd": "memory_hash"})), "vram_hash": vram_hash})).unwrap());

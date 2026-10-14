@@ -9,11 +9,13 @@
 //! 16-bit VRAM for texture sampling, which the trace keeps equal to the
 //! device's at every command.
 
+mod diorama;
 mod effects;
 mod frame;
 mod movie;
 mod view;
 
+pub use diorama::{DioramaPresented, DioramaSpace, DioramaStats, Table, Turns, XrView};
 pub use effects::{DebugView, Effects, EffectsRenderer, Lighting, Quality, SceneAnalysis, SpriteGroup};
 pub use frame::{FrameRenderer, Framing, Look, Welder, central_depth, first_person, interpolate, pull_back, weld};
 pub use movie::{MovieRenderer, MovieTiles, Planes, fitted, planes};
@@ -61,6 +63,11 @@ const FLAG_LINE: u32 = 1 << 17;
 /// then, its sides included.
 const FLAG_CAPTURE: u32 = 1 << 18;
 const FLAG_FEEDBACK: u32 = 1 << 19;
+/// A diorama vertex ([`diorama`]) in the table's space, not the game's
+/// world (the backdrop's wall); one in clip space (a fade over a whole
+/// target).
+const FLAG_TABLE: u32 = 1 << 20;
+const FLAG_CLIP: u32 = 1 << 21;
 
 /// Which of the original GPU's limits a picture keeps. Each is independent.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -170,6 +177,11 @@ pub(crate) struct Near {
 /// across the screen as the true depth does (a camera within the scene sees
 /// polygons spanning much of its depth range; draw.wgsl).
 pub(crate) const PASS_RECIPROCAL_DEPTH: u32 = 16;
+/// [`PassUniform::options`]: an eye of the diorama ([`diorama`]: drawn only
+/// inside the table's volume, coverage in alpha) and its interface pane
+/// (premultiplied, coverage in alpha).
+pub(crate) const PASS_WORLD: u32 = 32;
+pub(crate) const PASS_PANE: u32 = 64;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct DrawOptions {
@@ -218,6 +230,14 @@ pub(crate) struct PassUniform {
     /// Where the captured screen lies in VRAM: x, y, width, height (width
     /// 0: none).
     pub(crate) capture: [u32; 4],
+    /// The diorama's ([`diorama`]; zero elsewhere): an eye's clip space from
+    /// the game's world and from the table's space, the world in the table's
+    /// space, and the table's volume there.
+    pub(crate) world_to_clip: [[f32; 4]; 4],
+    pub(crate) table_to_clip: [[f32; 4]; 4],
+    pub(crate) world_to_table: [[f32; 4]; 4],
+    pub(crate) volume_min: [f32; 4],
+    pub(crate) volume_max: [f32; 4],
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -233,6 +253,9 @@ pub(crate) enum Fragment {
     /// in the auxiliary target, the colour unchanged (after an additive or
     /// subtractive interface draw, whose blend cannot also set the class).
     Mark,
+    /// A full-screen fade over a diorama's eye or pane (draw.wgsl `fs_tint`;
+    /// blend 0-3 its mode, 4 opaque).
+    Tint,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -241,8 +264,21 @@ pub(crate) enum DepthMode {
     Over,
     /// Tested and written (depth-tested ordering).
     Test,
+    /// Tested, not written (a diorama's translucent primitives).
+    Read,
     /// Writes the far plane (fills).
     Clear,
+}
+
+/// Where a draw goes: the VRAM picture or a replay of the frame (`Screen`),
+/// a diorama's eyes (`World`: points in the game's world or the table's
+/// space through each eye's matrices; `cull` drops the faces an eye sees
+/// from behind), or its interface pane (`Pane`, drawn as the screen is).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub(crate) enum Space {
+    Screen,
+    World { cull: bool },
+    Pane,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -250,6 +286,7 @@ pub(crate) struct PipelineKey {
     pub(crate) fragment: Fragment,
     pub(crate) blend: u32,
     pub(crate) depth: DepthMode,
+    pub(crate) space: Space,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -358,14 +395,19 @@ impl Pipelines {
             // draw.wgsl fs_semi: the weight is the source alpha, and both
             // targets keep their stored alpha.
             let keep = C { src_factor: F::Zero, dst_factor: F::One, operation: O::Add };
-            let blend = match key.fragment {
+            let blend = match (key.fragment, key.space) {
                 // Weight 0 for the colour, 1 for the auxiliary target, its
                 // alpha included (flags 255).
-                Fragment::Mark => {
+                (Fragment::Mark, _) => {
                     let over = C { src_factor: F::SrcAlpha, dst_factor: F::OneMinusSrcAlpha, operation: O::Add };
                     Some(wgpu::BlendState { color: over, alpha: over })
                 }
-                Fragment::Semi => Some(wgpu::BlendState {
+                // The pane is premultiplied (draw.wgsl fs_semi).
+                (Fragment::Semi, Space::Pane) => {
+                    let over = C { src_factor: F::One, dst_factor: F::OneMinusSrcAlpha, operation: O::Add };
+                    Some(wgpu::BlendState { color: over, alpha: over })
+                }
+                (Fragment::Semi, _) => Some(wgpu::BlendState {
                     color: match key.blend {
                         0 => C { src_factor: F::SrcAlpha, dst_factor: F::OneMinusSrcAlpha, operation: O::Add },
                         2 => C { src_factor: F::SrcAlpha, dst_factor: F::One, operation: O::ReverseSubtract },
@@ -373,15 +415,28 @@ impl Pipelines {
                     },
                     alpha: keep,
                 }),
+                // Weighted by the target's coverage (draw.wgsl fs_tint).
+                (Fragment::Tint, _) => Some(wgpu::BlendState {
+                    color: match key.blend {
+                        0 => C { src_factor: F::DstAlpha, dst_factor: F::OneMinusSrcAlpha, operation: O::Add },
+                        2 => C { src_factor: F::DstAlpha, dst_factor: F::One, operation: O::ReverseSubtract },
+                        4 => C { src_factor: F::DstAlpha, dst_factor: F::OneMinusDstAlpha, operation: O::Add },
+                        _ => C { src_factor: F::DstAlpha, dst_factor: F::One, operation: O::Add },
+                    },
+                    alpha: keep,
+                }),
                 _ => None,
             };
+            // A diorama's eyes take their points through the eye's matrices.
+            let vertex = if matches!(key.space, Space::World { .. }) { "vs_world" } else { "vs_main" };
             let (vertex, fragment) = match key.fragment {
-                Fragment::Opaque => ("vs_main", "fs_opaque"),
-                Fragment::OpaqueTexels => ("vs_main", "fs_opaque_texels"),
-                Fragment::Semi => ("vs_main", "fs_semi"),
+                Fragment::Opaque => (vertex, "fs_opaque"),
+                Fragment::OpaqueTexels => (vertex, "fs_opaque_texels"),
+                Fragment::Semi => (vertex, "fs_semi"),
                 Fragment::Rect => ("vs_rect", "fs_rect"),
                 Fragment::Shadow => ("vs_main", "fs_shadow"),
-                Fragment::Mark => ("vs_main", "fs_mark"),
+                Fragment::Mark => (vertex, "fs_mark"),
+                Fragment::Tint => ("vs_world", "fs_tint"),
             };
             let shadow = key.fragment == Fragment::Shadow;
             let picture_targets = [
@@ -397,8 +452,12 @@ impl Pipelines {
             let (compare, write) = match key.depth {
                 DepthMode::Over => (wgpu::CompareFunction::Always, false),
                 DepthMode::Test => (wgpu::CompareFunction::LessEqual, true),
+                DepthMode::Read => (wgpu::CompareFunction::LessEqual, false),
                 DepthMode::Clear => (wgpu::CompareFunction::Always, true),
             };
+            // A diorama emits the faces it may cull counter-clockwise seen
+            // from their front ([`diorama`]).
+            let cull = matches!(key.space, Space::World { cull: true });
             device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: Some("ps1 primitives"),
                 layout: Some(&self.pipeline_layout),
@@ -412,7 +471,11 @@ impl Pipelines {
                         attributes: &VERTEX_ATTRIBUTES,
                     })],
                 },
-                primitive: wgpu::PrimitiveState::default(),
+                primitive: wgpu::PrimitiveState {
+                    front_face: wgpu::FrontFace::Ccw,
+                    cull_mode: cull.then_some(wgpu::Face::Back),
+                    ..Default::default()
+                },
                 depth_stencil: (!shadow).then(|| wgpu::DepthStencilState {
                     format: DEPTH_FORMAT,
                     depth_write_enabled: Some(write),
@@ -520,6 +583,9 @@ pub(crate) struct Builder<'a> {
     /// The fills that cleared screen buffers, newest last, in the colour
     /// VRAM stores.
     pub(crate) clears: Vec<(VramRect, u16)>,
+    /// Where the draws of [`Builder::primitive`], fills and shown uploads go
+    /// (a diorama's pane takes the interface drawn as the screen is).
+    pub(crate) space: Space,
 }
 
 /// A builder's buffers kept between builds: a frame's vertices run to
@@ -533,6 +599,21 @@ pub(crate) struct Storage {
 
 /// Row quads one build may draw the interface with (about 24 MB of vertices).
 const ROW_BUDGET: usize = 65_536;
+
+/// A primitive's vertex attributes ([`Builder::attributes`]): its vertices'
+/// `mode` and `limits`, its class with off-centre projections as interface,
+/// and what decides how its points are drawn.
+pub(crate) struct Attributes {
+    pub(crate) mode: [u32; 4],
+    pub(crate) limits: u32,
+    pub(crate) class: Class,
+    projected: bool,
+    original: bool,
+    captured: bool,
+    captured_from: Option<VramRect>,
+    feedback: Option<[f32; 2]>,
+    perspective: bool,
+}
 
 fn color(rgb: u32) -> [f32; 4] {
     [f32::from(rgb as u8) / 255.0, f32::from((rgb >> 8) as u8) / 255.0, f32::from((rgb >> 16) as u8) / 255.0, 1.0]
@@ -649,6 +730,7 @@ impl<'a> Builder<'a> {
             feedback_started: false,
             vram: None,
             clears: Vec::new(),
+            space: Space::Screen,
         }
     }
 
@@ -703,7 +785,7 @@ impl<'a> Builder<'a> {
     pub(crate) fn fill(&mut self, rect: VramRect, rgb: u32) {
         let start = self.vertices.len() as u32;
         self.rect_vertices(rect, rgb, false);
-        let key = PipelineKey { fragment: Fragment::Rect, blend: 0, depth: DepthMode::Clear };
+        let key = PipelineKey { fragment: Fragment::Rect, blend: 0, depth: DepthMode::Clear, space: self.space };
         self.push_draw(key, None, start);
         if rect.width >= 128 && rect.height >= 128 {
             self.clears.push((rect, rgb15(rgb)));
@@ -757,7 +839,7 @@ impl<'a> Builder<'a> {
         if show {
             let start = self.vertices.len() as u32;
             self.rect_vertices(rect, 0, true);
-            let key = PipelineKey { fragment: Fragment::Rect, blend: 0, depth: DepthMode::Clear };
+            let key = PipelineKey { fragment: Fragment::Rect, blend: 0, depth: DepthMode::Clear, space: self.space };
             self.push_draw(key, None, start);
         }
     }
@@ -818,8 +900,9 @@ impl<'a> Builder<'a> {
         (b.fx - a.fx) * (c.fy - a.fy) - (b.fy - a.fy) * (c.fx - a.fx) > 0.0
     }
 
-    /// A primitive's triangles; returns the index of its first vertex.
-    pub(crate) fn triangles(&mut self, p: &Primitive) -> u32 {
+    /// What a primitive's vertices carry besides their points: its drawing
+    /// mode, CLUT, texture window and flags, and its texel range.
+    pub(crate) fn attributes(&self, p: &Primitive) -> Attributes {
         let fidelity = &self.options.fidelity;
         let count = p.vertex_count();
         let class = effective_class(p, self.scene);
@@ -875,6 +958,14 @@ impl<'a> Builder<'a> {
             flags |= FLAG_CLAMP;
         }
         let mode = [p.environment.draw_mode, u32::from(p.clut), p.environment.texture_window, flags];
+        Attributes { mode, limits, class, projected, original, captured, captured_from, feedback, perspective }
+    }
+
+    /// A primitive's triangles; returns the index of its first vertex.
+    pub(crate) fn triangles(&mut self, p: &Primitive) -> u32 {
+        let fidelity = &self.options.fidelity;
+        let count = p.vertex_count();
+        let Attributes { mode, limits, class, projected, original, captured, captured_from, feedback, perspective } = self.attributes(p);
         let vertex = |i: usize| {
             let v = &p.vertices[i];
             // Each vertex at the GTE's sub-pixel point when it has one, so
@@ -1029,19 +1120,21 @@ impl<'a> Builder<'a> {
         // Semi-transparent pixels leave the depth and class under them; those
         // of the interface (windows) are then marked as interface, so no
         // effect touches them (a full-screen one, a fade, is a screen effect).
-        let mark = p.semi && effective_class(p, self.scene) == Class::Flat && !self.covers_screen(p);
+        // (A diorama's pane needs no classes.)
+        let mark = p.semi && effective_class(p, self.scene) == Class::Flat && !self.covers_screen(p) && self.space == Space::Screen;
+        let space = self.space;
         for scissor in scissors {
             if !p.semi {
-                self.push_range(PipelineKey { fragment: Fragment::Opaque, blend: 0, depth }, scissor, start..end);
+                self.push_range(PipelineKey { fragment: Fragment::Opaque, blend: 0, depth, space }, scissor, start..end);
             } else if p.textured {
                 // Opaque texels, then semi-transparent ones, over the same vertices.
-                self.push_range(PipelineKey { fragment: Fragment::OpaqueTexels, blend: 0, depth }, scissor, start..end);
-                self.push_range(PipelineKey { fragment: Fragment::Semi, blend, depth }, scissor, start..end);
+                self.push_range(PipelineKey { fragment: Fragment::OpaqueTexels, blend: 0, depth, space }, scissor, start..end);
+                self.push_range(PipelineKey { fragment: Fragment::Semi, blend, depth, space }, scissor, start..end);
             } else {
-                self.push_range(PipelineKey { fragment: Fragment::Semi, blend, depth }, scissor, start..end);
+                self.push_range(PipelineKey { fragment: Fragment::Semi, blend, depth, space }, scissor, start..end);
             }
             if mark {
-                self.push_range(PipelineKey { fragment: Fragment::Mark, blend: 0, depth }, scissor, start..end);
+                self.push_range(PipelineKey { fragment: Fragment::Mark, blend: 0, depth, space }, scissor, start..end);
             }
         }
     }
@@ -1396,20 +1489,7 @@ pub(crate) fn encode(
         match &commands[index] {
             Command::Upload { offset, rect } => {
                 if let Some((staging, vram)) = staging {
-                    let row = (u32::from(rect.width) * 2).next_multiple_of(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT);
-                    encoder.copy_buffer_to_texture(
-                        wgpu::TexelCopyBufferInfo {
-                            buffer: staging,
-                            layout: wgpu::TexelCopyBufferLayout { offset: *offset, bytes_per_row: Some(row), rows_per_image: None },
-                        },
-                        wgpu::TexelCopyTextureInfo {
-                            texture: vram,
-                            mip_level: 0,
-                            origin: wgpu::Origin3d { x: rect.x.into(), y: rect.y.into(), z: 0 },
-                            aspect: wgpu::TextureAspect::All,
-                        },
-                        wgpu::Extent3d { width: rect.width.into(), height: rect.height.into(), depth_or_array_layers: 1 },
-                    );
+                    upload(encoder, staging, vram, *offset, *rect);
                 }
                 index += 1;
             }
@@ -1471,18 +1551,7 @@ pub(crate) fn encode(
                 while let Some(Command::Draw { key, scissor, vertices }) = commands.get(index) {
                     let pipeline = pipelines.get(device, *key);
                     pass.set_pipeline(pipeline);
-                    let (x, y, w, h) = match scissor {
-                        Some(s) => {
-                            let x0 = ((s.x as f32 - target.origin.0) * target.scale as f32).max(0.0) as u32;
-                            let y0 = ((s.y as f32 - target.origin.1) * target.scale as f32).max(0.0) as u32;
-                            let x1 = (((s.x + s.width) as f32 - target.origin.0) * target.scale as f32).max(0.0) as u32;
-                            let y1 = (((s.y + s.height) as f32 - target.origin.1) * target.scale as f32).max(0.0) as u32;
-                            let x0 = x0.min(size.width);
-                            let y0 = y0.min(size.height);
-                            (x0, y0, x1.min(size.width).saturating_sub(x0), y1.min(size.height).saturating_sub(y0))
-                        }
-                        None => (0, 0, size.width, size.height),
-                    };
+                    let (x, y, w, h) = scissor_rect(scissor.as_ref(), target.origin, target.scale, size);
                     if w > 0 && h > 0 {
                         pass.set_scissor_rect(x, y, w, h);
                         pass.draw(vertices.clone(), 0..1);
@@ -1492,6 +1561,42 @@ pub(crate) fn encode(
             }
         }
     }
+}
+
+/// A draw's scissor in the pixels of a target covering VRAM from `origin` at
+/// `scale` (x, y, width, height; all of it without one).
+pub(crate) fn scissor_rect(scissor: Option<&Scissor>, origin: (f32, f32), scale: u32, size: wgpu::Extent3d) -> (u32, u32, u32, u32) {
+    match scissor {
+        Some(s) => {
+            let x0 = ((s.x as f32 - origin.0) * scale as f32).max(0.0) as u32;
+            let y0 = ((s.y as f32 - origin.1) * scale as f32).max(0.0) as u32;
+            let x1 = (((s.x + s.width) as f32 - origin.0) * scale as f32).max(0.0) as u32;
+            let y1 = (((s.y + s.height) as f32 - origin.1) * scale as f32).max(0.0) as u32;
+            let x0 = x0.min(size.width);
+            let y0 = y0.min(size.height);
+            (x0, y0, x1.min(size.width).saturating_sub(x0), y1.min(size.height).saturating_sub(y0))
+        }
+        None => (0, 0, size.width, size.height),
+    }
+}
+
+/// A [`Command::Upload`]: staged pixels at `offset` into the native VRAM
+/// copy at `rect`.
+pub(crate) fn upload(encoder: &mut wgpu::CommandEncoder, staging: &wgpu::Buffer, vram: &wgpu::Texture, offset: u64, rect: VramRect) {
+    let row = (u32::from(rect.width) * 2).next_multiple_of(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT);
+    encoder.copy_buffer_to_texture(
+        wgpu::TexelCopyBufferInfo {
+            buffer: staging,
+            layout: wgpu::TexelCopyBufferLayout { offset, bytes_per_row: Some(row), rows_per_image: None },
+        },
+        wgpu::TexelCopyTextureInfo {
+            texture: vram,
+            mip_level: 0,
+            origin: wgpu::Origin3d { x: rect.x.into(), y: rect.y.into(), z: 0 },
+            aspect: wgpu::TextureAspect::All,
+        },
+        wgpu::Extent3d { width: rect.width.into(), height: rect.height.into(), depth_or_array_layers: 1 },
+    );
 }
 
 /// How [`encode`] copies VRAM rectangles.
@@ -2205,6 +2310,7 @@ impl Ps1Renderer {
             capture_scale,
             capture_side,
             capture,
+            ..Zeroable::zeroed()
         };
         self.queue.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&uniform));
         self.stats = builder.stats;

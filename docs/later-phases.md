@@ -764,6 +764,15 @@ well:
   `sprite_draw_parts`). Model renderers sort by average, farthest or nearest
   vertex (`model_draw_*.s`; the GT3 and GT4 far and near sorts share
   `model_depth.s`). A plain depth buffer breaks these intentional masks.
+- **Sprites are screen pictures in 3D.** A sprite's parts face the camera
+  (corners at one depth through `RotTransPers4`) with the feet a little
+  below the sprite's floor point on screen, so in the game's own 3D the
+  quad passes through the floor; a character may be several sprites at one
+  floor point and depth (Fei in field 30: two, his lowest part 48 view
+  units, 8 pixels, below his floor point). The field's character shadows
+  are translucent subtractive quads (World class, no owner) drawn twice,
+  1 to 1.5 view units above the floor (field 30). Measured in the diorama
+  (docs/runtime.md, Diorama).
 - **Primitives.** 3D models use the 17 types of `model_primitive_types`
   (model_renderer.c): POLY_F3, FT3, G3, GT3, flat quads, FT4, G4, GT4 and the
   environment-mapped FT3 of type 16. Shipped models use 13 of them

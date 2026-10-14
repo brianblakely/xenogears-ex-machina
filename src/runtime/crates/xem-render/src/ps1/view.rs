@@ -4,6 +4,7 @@
 //! settings. The host hands over traces and the display; nothing here
 //! reaches the game.
 
+use super::diorama::{Diorama, DioramaPresented, Fallback, XrView};
 use super::{DisplayArea, DrawOptions, Effects, EffectsRenderer, Fidelity, Filtering, FrameRenderer, Framing, Lighting, Look, Ps1Renderer, Quality, central_depth};
 use xem_gpu::{Class, DisplayInfo, Reveals, Trace, TraceOp};
 use xem_settings::{Filter, Graphics, QualityTier};
@@ -189,6 +190,23 @@ pub struct Presented<'a> {
     pub new_frame: bool,
 }
 
+/// Which picture a flat presentation drew into.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Picture {
+    Movie,
+    Effects,
+    Frame,
+}
+
+/// A flat presentation: its picture, the picture's size and whether its
+/// game frame is new.
+#[derive(Clone, Copy, Debug)]
+struct Flat {
+    picture: Picture,
+    size: (u32, u32),
+    new_frame: bool,
+}
+
 pub struct GameView {
     device: wgpu::Device,
     queue: wgpu::Queue,
@@ -226,6 +244,9 @@ pub struct GameView {
     presented_movie: bool,
     /// First-person inspection, while it is on.
     first_person: Option<FirstPerson>,
+    /// What a headset shows, and the diorama's state.
+    xr_view: XrView,
+    diorama: Diorama,
 }
 
 /// What a presentation shows: the frame (its identity and the ops that
@@ -263,7 +284,18 @@ impl GameView {
             movie: super::MovieRenderer::new(adapter.is_some_and(|adapter| adapter.get_info().device_type == wgpu::DeviceType::Cpu)),
             presented_movie: false,
             first_person: None,
+            xr_view: XrView::Screen,
+            diorama: Diorama::default(),
         }
+    }
+
+    /// Whether the view shows (or may soon show) the diorama of a scene
+    /// with a camera: a field, a battle or the world map, not looking
+    /// around in first person.
+    fn diorama_scene(&self) -> bool {
+        matches!(self.xr_view, XrView::Diorama(_))
+            && self.first_person.is_none()
+            && ["field", "battle", "worldmap"].contains(&self.scene.split(':').next().unwrap_or_default())
     }
 
     pub fn max_scale(&self) -> u32 {
@@ -305,6 +337,10 @@ impl GameView {
             // Looking around from the controlled character: every face,
             // and where the character stands.
             Some(Reveals { reach: [side as u16 + 32, 32], pull_back: 0, around: Reveals::LOOK })
+        } else if self.diorama_scene() {
+            // A view from anywhere: every face, and the camera each frame
+            // is drawn with.
+            Some(Reveals { reach: [side as u16 + 32, 32], pull_back: 0, around: Reveals::ANYWHERE })
         } else if config.draw.culling.viewport {
             None
         } else if zoom > 1.0 {
@@ -339,7 +375,9 @@ impl GameView {
     /// turn anywhere.
     pub fn actor_view(&self) -> u32 {
         let Some(config) = self.config else { return 0 };
-        if self.first_person.is_some() {
+        // Looking around, or a diorama of a field: the view may show it
+        // from anywhere.
+        if self.first_person.is_some() || (self.diorama_scene() && self.scene.starts_with("field")) {
             return 1000 | 1024 << 16;
         }
         let zoom = (config.zoom * 100.0).round().clamp(100.0, 1000.0) as u32;
@@ -454,6 +492,47 @@ impl GameView {
     /// device's own picture instead; see [`GameView::shows`]).
     pub fn present(&mut self, encoder: &mut wgpu::CommandEncoder, display: &DisplayInfo, scene: &str, now: f64) -> Option<Presented<'_>> {
         let config = self.config?;
+        self.draw_pending(encoder, display, scene, config);
+        let flat = if let Some(output) = config.movies.filter(|_| self.movie.shows(display)) {
+            self.present_movie(encoder, display, output)
+        } else {
+            self.presented_movie = false;
+            let area = self.area(display)?;
+            let new_frame = self.track_shown(area, scene, now);
+            self.present_frame(encoder, area, config, now, new_frame)
+        };
+        self.flat_view(flat?)
+    }
+
+    /// The display area this view draws `display` as, if it draws it (15-bit
+    /// and on, with all of VRAM).
+    fn area(&self, display: &DisplayInfo) -> Option<DisplayArea> {
+        (Self::shows(display) && !self.renderer.needs_full_vram())
+            .then(|| DisplayArea { x: display.x.into(), y: display.y.into(), width: display.width, height: display.height })
+    }
+
+    /// The view of a flat presentation's picture.
+    fn flat_view(&self, flat: Flat) -> Option<Presented<'_>> {
+        let view = match flat.picture {
+            Picture::Movie => self.movie.output_view()?,
+            Picture::Effects => self.effects.output_view()?,
+            Picture::Frame => self.frame.color_view(),
+        };
+        Some(Presented { view, size: flat.size, new_frame: flat.new_frame })
+    }
+
+    /// A movie frame the MDEC decoded, rebuilt (the Enhanced setting) to fit
+    /// `output`.
+    fn present_movie(&mut self, encoder: &mut wgpu::CommandEncoder, display: &DisplayInfo, output: (u32, u32)) -> Option<Flat> {
+        self.presented_movie = true;
+        self.shown = None;
+        let (_, size, new_frame) = self.movie.present(&self.device, &self.queue, encoder, display, output, &self.renderer.vram)?;
+        Some(Flat { picture: Picture::Movie, size, new_frame })
+    }
+
+    /// Draws the pending trace into the renderer's picture of VRAM, the
+    /// frames it begins tagged with the scene drawing them.
+    fn draw_pending(&mut self, encoder: &mut wgpu::CommandEncoder, display: &DisplayInfo, scene: &str, config: ViewConfig) {
         let trace = Trace { ops: std::mem::take(&mut self.pending), focus: None };
         if Self::shows(display) {
             self.renderer.set_display(xem_gpu::VramRect {
@@ -482,20 +561,11 @@ impl GameView {
                 self.frame_scenes.push((identity, scene.to_string()));
             }
         }
-        // A movie frame the MDEC decoded, rebuilt (the Enhanced setting).
-        if let Some(output) = config.movies
-            && self.movie.shows(display)
-        {
-            self.presented_movie = true;
-            self.shown = None;
-            let (view, size, new_frame) = self.movie.present(&self.device, &self.queue, encoder, display, output, &self.renderer.vram)?;
-            return Some(Presented { view, size, new_frame });
-        }
-        self.presented_movie = false;
-        if !Self::shows(display) || self.renderer.needs_full_vram() {
-            return None;
-        }
-        let area = DisplayArea { x: display.x.into(), y: display.y.into(), width: display.width, height: display.height };
+    }
+
+    /// Notes the frame `area` shows and the scene that drew it, at `now`;
+    /// returns whether it is a new game frame.
+    fn track_shown(&mut self, area: DisplayArea, scene: &str, now: f64) -> bool {
         let new_frame = self.frame.track(&self.renderer, area);
         // The scene that drew the frame shown frames it: the field's last
         // frame stays pulled back while a battle loads behind it (and its
@@ -524,6 +594,12 @@ impl GameView {
             self.arrived = now;
             self.update_focus(area);
         }
+        new_frame
+    }
+
+    /// The frame `area` shows (tracked: [`GameView::track_shown`]), framed
+    /// and with the effects, drawn into the frame's or the effects' picture.
+    fn present_frame(&mut self, encoder: &mut wgpu::CommandEncoder, area: DisplayArea, config: ViewConfig, now: f64, new_frame: bool) -> Option<Flat> {
         let alpha = ((now - self.arrived) / self.interval).clamp(0.0, 1.0) as f32;
         let zoom = scene_zoom(config.zoom, &self.scene);
         let look = self.look();
@@ -532,9 +608,9 @@ impl GameView {
         self.side = config.aspect.map_or(0, |aspect| display_side((area.width, area.height), aspect));
         let framing = Framing { side: self.side, interpolate: config.interpolation.then_some(alpha), pull_back, replay: config.effects.any(), look };
         let shown = Shown { identity: self.frame.identity(), drawn: self.frame.drawn(), area, config, framing };
+        let picture = if config.effects.any() { Picture::Effects } else { Picture::Frame };
         if !new_frame && self.shown == Some(shown) && self.presented_effects == Some(config.effects.any()) {
-            let view = if config.effects.any() { self.effects.output_view()? } else { self.frame.color_view() };
-            return Some(Presented { view, size: self.frame.size(), new_frame });
+            return Some(Flat { picture, size: self.frame.size(), new_frame });
         }
         self.shown = Some(shown);
         self.frame.prepare(&self.device, &self.queue, encoder, &mut self.renderer, area, framing);
@@ -555,11 +631,114 @@ impl GameView {
             // The interface the game drew after its scene, over the effects.
             let output = self.effects.output().cloned();
             self.frame.draw_overlay(&self.device, &self.queue, encoder, &mut self.renderer, output.as_ref());
-            let view = self.effects.output_view()?;
-            return Some(Presented { view, size: self.frame.size(), new_frame });
+            return Some(Flat { picture, size: self.frame.size(), new_frame });
         }
         self.frame.draw_overlay(&self.device, &self.queue, encoder, &mut self.renderer, None);
-        Some(Presented { view: self.frame.color_view(), size: self.frame.size(), new_frame })
+        Some(Flat { picture, size: self.frame.size(), new_frame })
+    }
+
+    /// Shows the game in a headset as `view`: the flat screen
+    /// ([`GameView::present`]) or the diorama
+    /// ([`GameView::present_diorama`]; the screen until it can show).
+    pub fn set_xr_view(&mut self, view: XrView) {
+        if view == XrView::Screen && self.xr_view != XrView::Screen {
+            self.diorama.reset();
+        }
+        self.xr_view = view;
+    }
+
+    pub fn xr_view(&self) -> XrView {
+        self.xr_view
+    }
+
+    /// Presents for a headset (docs/runtime.md, Diorama): draws the pending
+    /// trace and, while the view is the diorama and the frame shown can be
+    /// one, the diorama into each of `eyes` (its target's viewport, from the
+    /// room through its view and projection, over what the target holds),
+    /// the table placed from `seat` (its pose in the room, turned about its
+    /// up only). Otherwise, and easing between the two, the flat frame
+    /// `present` gives, for the host to show on its screen. `None` while
+    /// there is nothing to show.
+    pub fn present_diorama(
+        &mut self,
+        encoder: &mut wgpu::CommandEncoder,
+        display: &DisplayInfo,
+        scene: &str,
+        now: f64,
+        eyes: &[crate::ViewTarget],
+        seat: glam::Mat4,
+    ) -> Option<DioramaPresented<'_>> {
+        let config = self.config?;
+        self.draw_pending(encoder, display, scene, config);
+        let movie = config.movies.filter(|_| self.movie.shows(display));
+        let area = if movie.is_some() { None } else { self.area(display) };
+        let new_frame = area.is_some_and(|area| self.track_shown(area, scene, now));
+        let table = match self.xr_view {
+            XrView::Diorama(table) if self.first_person.is_none() => Some(table),
+            _ => None,
+        };
+        let fallback = match (table, area) {
+            (Some(_), Some(area)) => Diorama::fallback(&self.renderer, &self.frame, &self.scene, area),
+            _ => Some(Fallback::Screen),
+        };
+        let (screen, hold) = self.diorama.ease(fallback, new_frame, now);
+        let drew = match (table, area) {
+            (Some(table), Some(area)) if screen < 1.0 => self.diorama.present(
+                &self.device,
+                &self.queue,
+                encoder,
+                &mut self.renderer,
+                &self.frame,
+                (area, &self.scene, now, new_frame),
+                hold,
+                eyes,
+                seat,
+                &table,
+                1.0 - screen,
+            ),
+            _ => false,
+        };
+        if !drew {
+            self.diorama.forget_space();
+        }
+        let screen = if drew { screen } else { 1.0 };
+        let flat = if screen > 0.0 {
+            match (movie, area) {
+                (Some(output), _) => self.present_movie(encoder, display, output),
+                (None, Some(area)) => {
+                    self.presented_movie = false;
+                    self.present_frame(encoder, area, config, now, new_frame)
+                }
+                (None, None) => None,
+            }
+        } else {
+            // No flat picture this time: a screen the game takes next is
+            // not the one presented before.
+            (self.presented_movie, self.presented_effects, self.shown) = (false, None, None);
+            None
+        };
+        if !drew && flat.is_none() {
+            return None;
+        }
+        Some(DioramaPresented {
+            screen,
+            frame: flat.and_then(|flat| self.flat_view(flat)),
+            pane: if drew { self.diorama.pane() } else { None },
+            space: self.diorama.space(),
+            new_frame,
+            effects_unavailable: drew && config.effects.any(),
+        })
+    }
+
+    /// The diorama the last [`GameView::present_diorama`] drew: where the
+    /// game's world and the table lie in the room.
+    pub fn diorama_space(&self) -> Option<super::DioramaSpace> {
+        self.diorama.space()
+    }
+
+    /// What the last diorama build drew.
+    pub fn diorama_stats(&self) -> super::diorama::DioramaStats {
+        self.diorama.stats()
     }
 
     /// The depth a pulled-back camera keeps its zoom at: the field camera's

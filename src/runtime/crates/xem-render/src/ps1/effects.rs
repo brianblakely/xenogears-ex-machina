@@ -704,6 +704,7 @@ impl EffectsRenderer {
             capture_scale: 0.0,
             capture_side: 0,
             capture: [0; 4],
+            ..Zeroable::zeroed()
         };
         queue.write_buffer(&self.shadow_uniform, 0, bytemuck::bytes_of(&uniform));
         self.shadow_vertices.write(device, queue, bytemuck::cast_slice(&shadow_vertices));
@@ -720,7 +721,7 @@ impl EffectsRenderer {
                     group
                 }
             };
-            let pipeline = ps1.pipelines.get(device, PipelineKey { fragment: Fragment::Shadow, blend: 0, depth: DepthMode::Over }).clone();
+            let pipeline = ps1.pipelines.get(device, PipelineKey { fragment: Fragment::Shadow, blend: 0, depth: DepthMode::Over, space: super::Space::Screen }).clone();
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("sprite shadows"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {

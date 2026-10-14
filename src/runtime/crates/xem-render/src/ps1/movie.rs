@@ -529,6 +529,11 @@ impl MovieRenderer {
     pub fn output(&self) -> Option<&wgpu::Texture> {
         self.passes.as_ref()?.targets.as_ref().map(|targets| &targets.output)
     }
+
+    /// The view the last [`MovieRenderer::present`] returned.
+    pub fn output_view(&self) -> Option<&wgpu::TextureView> {
+        self.passes.as_ref()?.targets.as_ref().map(|targets| &targets.output_view)
+    }
 }
 
 #[cfg(test)]

@@ -1150,3 +1150,433 @@ fn each_frame_keeps_the_camera_recorded_before_its_first_primitive() {
     draw(&mut renderer, &stale);
     assert_eq!(kept(&renderer), None, "no camera of its own");
 }
+
+// The diorama (docs/runtime.md, Diorama).
+
+use xem_render::glam::{Mat4, Vec3, Vec4};
+use xem_render::ps1::{DioramaSpace, GameView, HostClass, Table, ViewConfig, XrView};
+use xem_render::{ViewTarget, Viewport};
+
+/// The projection (offset 160, 120; H 256) of view-space point `point`, made
+/// for `class` (0 world, 1 model, 2 sprite, 3 a sprite's floor) by `owner`.
+fn projection(point: [f32; 3], class: u8, owner: u32) -> Projection {
+    let [x, y, z] = point;
+    let (sx, sy) = (160.0 + 256.0 * x / z, 120.0 + 256.0 * y / z);
+    Projection {
+        sxy: xy(sx.floor() as i32, sy.floor() as i32),
+        sz: z as u16,
+        class,
+        x: (sx * 65536.0) as i32,
+        y: (sy * 65536.0) as i32,
+        offset: (160, 120),
+        h: 256,
+        owner,
+        view: point.map(|c| c as i32),
+    }
+}
+
+/// The port's record of a field camera (xem/gte.h): its matrix's columns in
+/// 4.12 (axes 0-2), its translation (axis 3), then the point it looks at and
+/// that point's depth through it.
+fn camera_entries(columns: [[i32; 3]; 3], translation: [i32; 3], target: [i32; 3], focus: u16) -> Vec<Projection> {
+    let entry = |class: u8, owner: u32, view: [i32; 3], sz: u16| Projection { sxy: 0, sz, class, x: 0, y: 0, offset: (160, 120), h: 256, owner, view };
+    vec![
+        entry(6, 0, columns[0], 0),
+        entry(6, 1, columns[1], 0),
+        entry(6, 2, columns[2], 0),
+        entry(6, 3, translation, 0),
+        entry(8, 1, target, focus),
+    ]
+}
+
+/// The level camera of [`diorama_scene`]: at the world's origin looking
+/// along +z (view = world), at a point on the floor 1200 ahead.
+const LEVEL: [[i32; 3]; 3] = [[4096, 0, 0], [0, 4096, 0], [0, 0, 4096]];
+
+/// A face of a test field: its corners in the world (a quad's in Z order),
+/// projection class (1 model, 2 sprite), owner and command word (its colour
+/// 0xBBGGRR, untextured), and for a sprite part the floor point recorded
+/// before it.
+#[derive(Clone, Copy)]
+struct Face {
+    points: [[f32; 3]; 4],
+    class: u8,
+    owner: u32,
+    command: u32,
+    ground: Option<[f32; 3]>,
+}
+
+const MODEL: u32 = 0x8020_0000;
+const SPRITE: u32 = 0x8010_0000;
+const FEET: [f32; 3] = [0.0, 200.0, 1000.0];
+
+/// A green floor 200 below the camera from 400 to 2000 ahead, a red wall
+/// 1500 ahead, and a sprite standing on the floor 1000 ahead (a blue part,
+/// then a yellow one over its right side), far to near as an ordering
+/// table draws them.
+const FIELD: [Face; 4] = [
+    Face { points: [[-300.0, 200.0, 2000.0], [300.0, 200.0, 2000.0], [-300.0, 200.0, 400.0], [300.0, 200.0, 400.0]], class: 1, owner: MODEL, command: 0x2800_FF00, ground: None },
+    Face { points: [[-100.0, 0.0, 1500.0], [100.0, 0.0, 1500.0], [-100.0, 200.0, 1500.0], [100.0, 200.0, 1500.0]], class: 1, owner: MODEL, command: 0x2800_00FF, ground: None },
+    Face { points: [[-30.0, 100.0, 1000.0], [30.0, 100.0, 1000.0], [-30.0, 200.0, 1000.0], [30.0, 200.0, 1000.0]], class: 2, owner: SPRITE, command: 0x28FF_0000, ground: Some(FEET) },
+    Face { points: [[0.0, 120.0, 1000.0], [40.0, 120.0, 1000.0], [0.0, 180.0, 1000.0], [40.0, 180.0, 1000.0]], class: 2, owner: SPRITE, command: 0x2800_FFFF, ground: None },
+];
+
+/// A field frame drawn through the GTE (offset 160, 120; H 256): the
+/// clear, then `faces`, with a camera record (`columns` its matrix; view =
+/// matrix · world, looking at a point on the floor 1200 ahead) when
+/// `camera`.
+fn gte_frame(gpu: &mut xem_gpu::Gpu, columns: [[i32; 3]; 3], faces: &[Face], camera: bool) {
+    gpu.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0200]);
+    gpu.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+    let matrix = Mat3x3(columns);
+    let target = matrix.view([0.0, 200.0, 1200.0]);
+    let mut projections = if camera { camera_entries(columns, [0, 0, 0], target.map(|c| c as i32), target[2] as u16) } else { Vec::new() };
+    let mut packets = Vec::new();
+    for face in faces {
+        if let Some(ground) = face.ground {
+            projections.push(projection(matrix.view(ground), 3, face.owner));
+        }
+        let first = projections.len();
+        let corners: Vec<Projection> = face.points.iter().map(|&p| projection(matrix.view(p), face.class, face.owner)).collect();
+        let words: Vec<u32> = std::iter::once(face.command).chain(corners.iter().map(|p| p.sxy)).collect();
+        projections.extend(corners);
+        packets.push((words, (0..4).map(|i| (i + 1, first + i)).collect()));
+    }
+    submit(gpu, &projections, &packets);
+}
+
+/// [`FIELD`] seen by a camera with the matrix `columns`, then a yellow
+/// interface rectangle (250..310, 200..230).
+fn diorama_scene(gpu: &mut xem_gpu::Gpu, columns: [[i32; 3]; 3]) {
+    gte_frame(gpu, columns, &FIELD, true);
+    gpu.write_gp0_words(&[0x6000_FFFF, xy(250, 200), 30 << 16 | 60]);
+}
+
+/// A camera matrix in 4.12 by its columns: view = matrix · world.
+struct Mat3x3([[i32; 3]; 3]);
+
+impl Mat3x3 {
+    fn view(&self, world: [f32; 3]) -> [f32; 3] {
+        std::array::from_fn(|i| (0..3).map(|k| self.0[k][i] as f32 / 4096.0 * world[k]).sum())
+    }
+}
+
+const DISPLAY: xem_gpu::DisplayInfo = xem_gpu::DisplayInfo { enabled: true, x: 0, y: 0, width: 320, height: 240, mode_width: 320, color24: false, interlaced: false, pal: false };
+
+/// A view configured as a headset's (the picture at twice the original),
+/// the diorama on `table`, given `traces`.
+fn diorama_view(gpu: &Gpu, traces: &(xem_gpu::Trace, xem_gpu::Trace), table: Table) -> GameView {
+    let mut view = GameView::new(&gpu.device, &gpu.queue, None);
+    view.configure(ViewConfig::resolve(&xem_settings::Graphics::default(), HostClass::Headset, (640, 480), view.max_scale()));
+    let _ = view.take_restart();
+    view.set_xr_view(XrView::Diorama(table));
+    for trace in [&traces.0, &traces.1] {
+        view.push(trace.clone());
+    }
+    view
+}
+
+/// Render targets for eyes of `size` pixels.
+fn eye_targets(gpu: &Gpu, count: usize, size: (u32, u32)) -> Vec<xem_render::wgpu::Texture> {
+    (0..count).map(|_| gpu.device.create_texture(&xem_render::wgpu::TextureDescriptor {
+        label: None,
+        size: xem_render::wgpu::Extent3d { width: size.0, height: size.1, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: xem_render::wgpu::TextureDimension::D2,
+        format: xem_render::wgpu::TextureFormat::Rgba8Unorm,
+        usage: xem_render::wgpu::TextureUsages::RENDER_ATTACHMENT | xem_render::wgpu::TextureUsages::COPY_SRC | xem_render::wgpu::TextureUsages::TEXTURE_BINDING,
+        view_formats: &[],
+    })).collect()
+}
+
+/// One diorama presentation at `now` into eyes `(view, proj)` over black
+/// targets of `size`: each eye's picture, the screen's share and the pane.
+fn present_diorama(gpu: &Gpu, view: &mut GameView, eyes: &[(Mat4, Mat4)], size: (u32, u32), now: f64) -> (Vec<Vec<u8>>, f32, Option<Vec<u8>>) {
+    present_over(gpu, view, eyes, size, now, "field:1", xem_render::wgpu::Color::BLACK)
+}
+
+/// [`present_diorama`] of `scene` over targets cleared to `clear`.
+fn present_over(gpu: &Gpu, view: &mut GameView, eyes: &[(Mat4, Mat4)], size: (u32, u32), now: f64, scene: &str, clear: xem_render::wgpu::Color) -> (Vec<Vec<u8>>, f32, Option<Vec<u8>>) {
+    let targets = eye_targets(gpu, eyes.len(), size);
+    let views: Vec<_> = targets.iter().map(|t| t.create_view(&Default::default())).collect();
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    for target in &views {
+        encoder.begin_render_pass(&xem_render::wgpu::RenderPassDescriptor {
+            label: None,
+            color_attachments: &[Some(xem_render::wgpu::RenderPassColorAttachment {
+                view: target,
+                depth_slice: None,
+                resolve_target: None,
+                ops: xem_render::wgpu::Operations { load: xem_render::wgpu::LoadOp::Clear(clear), store: xem_render::wgpu::StoreOp::Store },
+            })],
+            ..Default::default()
+        });
+    }
+    let eye_views: Vec<ViewTarget> = eyes.iter().zip(&views).map(|(&(eye, proj), target)| ViewTarget { view: eye, proj, target, viewport: Viewport::full(size.0, size.1) }).collect();
+    let presented = view.present_diorama(&mut encoder, &DISPLAY, scene, now, &eye_views, Mat4::IDENTITY).expect("a presentation");
+    let screen = presented.screen;
+    let pane = presented.pane.map(|pane| pane.texture().clone());
+    gpu.queue.submit([encoder.finish()]);
+    let pictures = targets.iter().map(|t| read_rgba8(&gpu.device, &gpu.queue, t)).collect();
+    (pictures, screen, pane.map(|pane| read_rgba8(&gpu.device, &gpu.queue, &pane)))
+}
+
+/// The eye at the game camera's pose (its view matrix, in the room of
+/// `space`) and the game's projection (offset 160, 120; H 256) onto a
+/// 320x240 screen, a native pixel's centre where the flat frame puts it.
+fn game_eye(space: &DioramaSpace, columns: [[i32; 3]; 3]) -> (Mat4, Mat4) {
+    let m = xem_render::glam::Mat3::from_cols_array_2d(&columns.map(|c| c.map(|v| v as f32 / 4096.0)));
+    let units = m.x_axis.length();
+    let view_from_world = Mat4::from_mat3(m);
+    // Eye space: x right, y up, z backwards, metres.
+    let k = space.scale / units;
+    let eye = Mat4::from_scale(Vec3::new(k, -k, -k)) * view_from_world * space.room_from_world.inverse();
+    let (near, far) = (0.005, 20.0);
+    let proj = Mat4::from_cols(
+        Vec4::new(256.0 / 160.0, 0.0, 0.0, 0.0),
+        Vec4::new(0.0, 256.0 / 120.0, 0.0, 0.0),
+        Vec4::new(-0.5 / 160.0, 0.5 / 120.0, far / (near - far), -1.0),
+        Vec4::new(0.0, 0.0, near * far / (near - far), 0.0),
+    );
+    (eye, proj)
+}
+
+#[test]
+fn a_diorama_eye_at_the_game_cameras_pose_shows_the_flat_frames_scene() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let traces = traced(|device| diorama_scene(device, LEVEL));
+    // Small enough on the table that the whole scene lies inside its volume.
+    let mut view = diorama_view(&gpu, &traces, Table { scale: 0.2, ..Table::default() });
+    let size = (640, 480);
+    let any = (Mat4::look_at_rh(Vec3::new(0.0, 0.2, 0.4), Vec3::new(0.0, -0.45, -0.6), Vec3::Y), Mat4::perspective_rh(1.2, 4.0 / 3.0, 0.01, 10.0));
+    // The screen first, easing into the diorama.
+    let (_, screen, pane) = present_diorama(&gpu, &mut view, &[any], size, 0.0);
+    assert_eq!((screen, pane.is_some()), (1.0, false), "the diorama view begins on the screen");
+    let flat = read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().expect("the flat frame"));
+    let (_, screen, _) = present_diorama(&gpu, &mut view, &[any], size, 1.0);
+    assert_eq!(screen, 0.0, "a frame with a camera record shows as a diorama");
+    let space = view.diorama_space().expect("a diorama shown");
+    let (pictures, _, pane) = present_diorama(&gpu, &mut view, &[game_eye(&space, LEVEL)], size, 1.1);
+    let eye = &pictures[0];
+    if let Some(directory) = std::env::var_os("XEM_DIORAMA_DUMP") {
+        for (name, pixels) in [("flat", &flat), ("eye", eye)] {
+            let file = std::fs::File::create(std::path::Path::new(&directory).join(format!("identity-{name}.png"))).unwrap();
+            let mut encoder = png::Encoder::new(file, size.0, size.1);
+            encoder.set_color(png::ColorType::Rgba);
+            let opaque: Vec<u8> = pixels.chunks(4).flat_map(|p| [p[0], p[1], p[2], 255]).collect();
+            encoder.write_header().unwrap().write_image_data(&opaque).unwrap();
+        }
+    }
+    // The interface rectangle (250..310, 200..230) is on the pane, not in the eye.
+    let interface = |x: usize, y: usize| (500..620).contains(&x) && (400..460).contains(&y);
+    let (mut differ, mut total) = (0, 0);
+    for y in 0..480 {
+        for x in 0..640 {
+            if interface(x, y) {
+                continue;
+            }
+            let at = (y * 640 + x) * 4;
+            total += 1;
+            differ += usize::from((0..3).any(|c| (i32::from(flat[at + c]) - i32::from(eye[at + c])).abs() > 24));
+        }
+    }
+    eprintln!("{differ} of {total} pixels differ between the flat frame and the eye at the game camera");
+    assert!(differ * 200 < total, "the eye at the game camera shows the flat frame's scene ({differ} of {total} pixels differ)");
+    let pane = pane.expect("the pane");
+    let at = |x: usize, y: usize| pane[(y * 640 + x) * 4..(y * 640 + x) * 4 + 4].to_vec();
+    assert_eq!(at(560, 430), [255, 255, 0, 255], "the interface on the pane");
+    assert_eq!(at(320, 300), [0, 0, 0, 0], "the pane is transparent elsewhere");
+    let blue = (0..640 * 480).filter(|i| eye[i * 4..i * 4 + 3] == [0, 0, 255]).count();
+    assert!(blue > 500, "the sprite stands in the eye ({blue} pixels)");
+}
+
+/// An eye looking at the default table's centre from `yaw` degrees round it
+/// (0 the seat's side, positive to the right), `pitch` up and `distance`
+/// metres away, `shift` metres to its right (a stereo pair's half).
+fn orbit(yaw: f32, pitch: f32, distance: f32, shift: f32) -> (Mat4, Mat4) {
+    let centre = Table::default().room_from_table(Mat4::IDENTITY).transform_point3(Vec3::ZERO);
+    let (yaw, pitch) = (yaw.to_radians(), pitch.to_radians());
+    let at = centre + Vec3::new(yaw.sin() * pitch.cos(), pitch.sin(), yaw.cos() * pitch.cos()) * distance;
+    let view = Mat4::look_at_rh(at, centre, Vec3::Y);
+    let right = view.inverse().transform_vector3(Vec3::X);
+    (Mat4::look_at_rh(at + right * shift, centre + right * shift, Vec3::Y), Mat4::perspective_rh(50f32.to_radians(), 4.0 / 3.0, 0.01, 20.0))
+}
+
+/// The pixels of `picture` (640 wide) whose colour is `rgb`.
+fn pixels_of(picture: &[u8], rgb: [u8; 3]) -> Vec<(usize, usize)> {
+    picture.chunks(4).enumerate().filter(|(_, p)| p[..3] == rgb).map(|(i, _)| (i % 640, i / 640)).collect()
+}
+
+/// A trace of [`gte_frame`] shown by a diorama view from `now` 0 (the
+/// screen) to 1 (eased into the diorama), and the view.
+fn shown_diorama(gpu: &Gpu, faces: &[Face], table: Table) -> GameView {
+    let traces = traced(|device| gte_frame(device, LEVEL, faces, true));
+    let mut view = diorama_view(gpu, &traces, table);
+    for now in [0.0, 1.0] {
+        present_diorama(gpu, &mut view, &[orbit(0.0, 40.0, 1.0, 0.0)], (640, 480), now);
+    }
+    view
+}
+
+#[test]
+fn split_sprites_at_one_floor_point_keep_the_games_order_in_the_diorama() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    // The yellow part drawn by another sprite standing at the same floor
+    // point, as the field splits a character into several.
+    let mut faces = FIELD;
+    faces[3].owner = SPRITE + 0x100;
+    faces[3].ground = Some(FEET);
+    let mut view = shown_diorama(&gpu, &faces, Table { scale: 2.0, ..Table::default() });
+    for (yaw, pitch) in [(0.0, 40.0), (35.0, 30.0), (-50.0, 25.0)] {
+        let (pictures, _, _) = present_diorama(&gpu, &mut view, &[orbit(yaw, pitch, 0.8, 0.0)], (640, 480), 2.0);
+        let picture = &pictures[0];
+        dump(&format!("split-{yaw}-{pitch}"), picture);
+        let yellow = pixels_of(picture, [255, 255, 0]);
+        assert!(yellow.len() > 300, "the later sprite shows ({} pixels from {yaw}, {pitch})", yellow.len());
+        // Along each row, nothing of the earlier sprite between the later
+        // one's leftmost and rightmost pixels: it lies over it whole.
+        let mut through = 0;
+        for y in 0..480 {
+            let row: Vec<usize> = yellow.iter().filter(|p| p.1 == y).map(|p| p.0).collect();
+            let (Some(&left), Some(&right)) = (row.iter().min(), row.iter().max()) else { continue };
+            through += (left..=right).filter(|&x| picture[(y * 640 + x) * 4..(y * 640 + x) * 4 + 3] == [0, 0, 255]).count();
+        }
+        assert_eq!(through, 0, "the earlier sprite shows through the later one from {yaw}, {pitch}");
+    }
+}
+
+#[test]
+fn both_eyes_see_one_upright_sprite_apart_only_by_their_disparity() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = shown_diorama(&gpu, &FIELD, Table { scale: 2.0, ..Table::default() });
+    let eyes = [orbit(0.0, 35.0, 0.7, -0.032), orbit(0.0, 35.0, 0.7, 0.032)];
+    let (pictures, _, _) = present_diorama(&gpu, &mut view, &eyes, (640, 480), 2.0);
+    let bounds = |picture: &[u8]| {
+        let blue = pixels_of(picture, [0, 0, 255]);
+        let xs = blue.iter().map(|p| p.0);
+        let ys = blue.iter().map(|p| p.1);
+        (xs.clone().min().unwrap(), xs.max().unwrap(), ys.clone().min().unwrap(), ys.max().unwrap())
+    };
+    let ((l0, r0, t0, b0), (l1, r1, t1, b1)) = (bounds(&pictures[0]), bounds(&pictures[1]));
+    eprintln!("left eye x {l0}..{r0} y {t0}..{b0}, right eye x {l1}..{r1} y {t1}..{b1}");
+    assert!(t0.abs_diff(t1) <= 1 && b0.abs_diff(b1) <= 1, "the same height in both eyes");
+    assert!((r0 - l0).abs_diff(r1 - l1) <= 2, "the same width in both eyes");
+    assert!(l0 > l1 + 2, "the right eye sees it further left: a disparity ({l0} against {l1})");
+}
+
+#[test]
+fn the_diorama_drops_faces_an_eye_sees_from_behind_but_not_double_sided_ones() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    // A white face the game drew from behind (double-sided), behind the
+    // red wall, both above the floor.
+    let mut faces = FIELD[..2].to_vec();
+    faces.push(Face { points: [[300.0, -100.0, 1800.0], [200.0, -100.0, 1800.0], [300.0, 100.0, 1800.0], [200.0, 100.0, 1800.0]], class: 1, owner: MODEL, command: 0x28FF_FFFF, ground: None });
+    let mut view = shown_diorama(&gpu, &faces, Table { scale: 0.5, ..Table::default() });
+    let count = |view: &mut GameView, yaw: f32, rgb: [u8; 3]| {
+        let (pictures, _, _) = present_diorama(&gpu, view, &[orbit(yaw, 20.0, 1.0, 0.0)], (640, 480), 2.0);
+        pixels_of(&pictures[0], rgb).len()
+    };
+    assert!(count(&mut view, 0.0, [255, 0, 0]) > 200, "the wall faces the seat's side");
+    assert_eq!(count(&mut view, 180.0, [255, 0, 0]), 0, "seen from behind, it is cut away");
+    assert!(count(&mut view, 0.0, [255, 255, 255]) > 50 && count(&mut view, 180.0, [255, 255, 255]) > 50, "the double-sided face shows from both sides");
+}
+
+#[test]
+fn a_fade_tints_the_diorama_and_its_pane_but_not_the_room() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let grey = xem_render::wgpu::Color { r: 0.5, g: 0.5, b: 0.5, a: 1.0 };
+    let picture = |fade: bool| {
+        let traces = traced(|device| {
+            diorama_scene(device, LEVEL);
+            if fade {
+                // A full-screen translucent quad subtracting 64 (mode 2).
+                device.write_gp0(0xE100_0240);
+                device.write_gp0_words(&[0x2A40_4040, xy(0, 0), xy(320, 0), xy(0, 240), xy(320, 240)]);
+            }
+        });
+        let mut view = diorama_view(&gpu, &traces, Table::default());
+        for now in [0.0, 1.0] {
+            present_over(&gpu, &mut view, &[orbit(0.0, 40.0, 1.0, 0.0)], (640, 480), now, "field:1", grey);
+        }
+        let (pictures, screen, pane) = present_over(&gpu, &mut view, &[orbit(0.0, 40.0, 1.0, 0.0)], (640, 480), 2.0, "field:1", grey);
+        assert_eq!(screen, 0.0);
+        (pictures.into_iter().next().unwrap(), pane.expect("a pane"))
+    };
+    let ((plain, plain_pane), (faded, faded_pane)) = (picture(false), picture(true));
+    let at = |p: &[u8], i: usize| [p[i * 4], p[i * 4 + 1], p[i * 4 + 2]];
+    let room = (0..640 * 480).filter(|&i| at(&plain, i) == [128, 128, 128]).collect::<Vec<_>>();
+    assert!(room.len() > 1000 && room.iter().all(|&i| at(&faded, i) == [128, 128, 128]), "the room around the table is left as it was");
+    let green = (0..640 * 480).filter(|&i| at(&plain, i) == [0, 255, 0]).collect::<Vec<_>>();
+    assert!(green.len() > 1000 && green.iter().all(|&i| at(&faded, i) == [0, 191, 0]), "the floor darkens by the fade's 64");
+    let pane_at = |p: &[u8], x: usize, y: usize| p[(y * 640 + x) * 4..(y * 640 + x) * 4 + 4].to_vec();
+    assert_eq!((pane_at(&plain_pane, 560, 430), pane_at(&faded_pane, 560, 430)), (vec![255, 255, 0, 255], vec![191, 191, 0, 255]), "the interface under the fade darkens on the pane");
+    assert_eq!(pane_at(&faded_pane, 320, 300), [0, 0, 0, 0], "the rest of the pane stays transparent");
+}
+
+#[test]
+fn frames_without_a_camera_record_or_in_other_modes_show_the_screen() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let eye = [orbit(0.0, 40.0, 1.0, 0.0)];
+    // No camera record: the screen, and no diorama to hold.
+    let traces = traced(|device| gte_frame(device, LEVEL, &FIELD, false));
+    let mut view = diorama_view(&gpu, &traces, Table::default());
+    for now in [0.0, 1.0, 2.0] {
+        let (_, screen, pane) = present_diorama(&gpu, &mut view, &eye, (640, 480), now);
+        assert_eq!((screen, pane.is_some()), (1.0, false), "a frame without a camera record shows the screen");
+    }
+    assert!(view.diorama_space().is_none());
+    // A menu (or a movie, the arena, booting): the screen.
+    let traces = traced(|device| diorama_scene(device, LEVEL));
+    let mut view = diorama_view(&gpu, &traces, Table::default());
+    for now in [0.0, 1.0] {
+        let (_, screen, _) = present_over(&gpu, &mut view, &eye, (640, 480), now, "menu", xem_render::wgpu::Color::BLACK);
+        assert_eq!(screen, 1.0, "a menu shows the screen");
+    }
+    // A frame the field draws next (the frame shown keeps the scene that
+    // drew it): eased into the diorama over 0.3 s.
+    let next = DEVICE.with(|device| {
+        let mut device = device.borrow_mut();
+        device.vblank();
+        diorama_scene(&mut device, LEVEL);
+        device.take_trace()
+    });
+    view.push(next);
+    let shares: Vec<f32> = [1.1, 1.2, 1.3, 1.5].iter().map(|&now| present_diorama(&gpu, &mut view, &eye, (640, 480), now).1).collect();
+    assert!(shares.windows(2).all(|w| w[1] < w[0]) && shares[3] == 0.0, "the screen eases into the diorama: {shares:?}");
+    // The screen view: the screen whatever the frame.
+    view.set_xr_view(XrView::Screen);
+    assert_eq!(present_diorama(&gpu, &mut view, &eye, (640, 480), 1.6).1, 1.0);
+}
+
+#[test]
+fn nothing_outside_the_tables_volume_is_drawn() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    // A floor far wider than the table at this scale.
+    let mut faces = FIELD[..1].to_vec();
+    faces[0].points = [[-3000.0, 200.0, 2000.0], [3000.0, 200.0, 2000.0], [-3000.0, 200.0, 400.0], [3000.0, 200.0, 400.0]];
+    let mut view = shown_diorama(&gpu, &faces, Table { scale: 2.0, ..Table::default() });
+    let eye = orbit(0.0, 60.0, 1.4, 0.0);
+    let (pictures, _, _) = present_diorama(&gpu, &mut view, &[eye], (640, 480), 2.0);
+    let space = view.diorama_space().expect("a diorama");
+    // Where the table's top at x 0.4 and 0.5 m (inside and beyond its
+    // volume's half width, 0.45) shows.
+    let pixel = |x: f32| {
+        let clip = eye.1 * eye.0 * space.room_from_table * Vec4::new(x, 0.0, 0.0, 1.0);
+        let (u, v) = (clip.x / clip.w * 0.5 + 0.5, 0.5 - clip.y / clip.w * 0.5);
+        let (px, py) = ((u * 640.0) as usize, (v * 480.0) as usize);
+        pictures[0][(py * 640 + px) * 4..(py * 640 + px) * 4 + 3].to_vec()
+    };
+    assert_eq!((pixel(0.4), pixel(-0.4)), (vec![0, 255, 0], vec![0, 255, 0]), "the floor on the table");
+    assert_eq!((pixel(0.5), pixel(-0.5)), (vec![0, 0, 0], vec![0, 0, 0]), "nothing beyond the table's volume");
+}
+
+/// With XEM_DIORAMA_DUMP set, writes a 640x480 `picture` there as NAME.png.
+fn dump(name: &str, picture: &[u8]) {
+    let Some(directory) = std::env::var_os("XEM_DIORAMA_DUMP") else { return };
+    let file = std::fs::File::create(std::path::Path::new(&directory).join(format!("{name}.png"))).unwrap();
+    let mut encoder = png::Encoder::new(file, 640, 480);
+    encoder.set_color(png::ColorType::Rgba);
+    let opaque: Vec<u8> = picture.chunks(4).flat_map(|p| [p[0], p[1], p[2], 255]).collect();
+    encoder.write_header().unwrap().write_image_data(&opaque).unwrap();
+}

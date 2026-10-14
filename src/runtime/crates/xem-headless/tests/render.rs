@@ -6,7 +6,9 @@
 //! wider framing with the camera pulled back, which has the port record the
 //! scenery the game culls, PS1, Custom), a spectator view attaches, changes
 //! and detaches midway, or the view looks around in first person (the port
-//! then records every face the game culls and where its character stands).
+//! then records every face the game culls and where its character stands),
+//! or a headset's diorama shows it from a moving head at changing scales
+//! (the port records every face and each frame's camera).
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test render
 
@@ -660,4 +662,64 @@ fn first_person_directional_sprites_render_their_alternate_texture_cells() {
             encoder.write_header().unwrap().write_image_data(&pixels).unwrap();
         }
     }
+}
+
+#[test]
+fn a_diorama_seen_from_a_moving_head_leaves_the_game_unchanged() {
+    use xem_render::glam::{Mat4, Vec3};
+    use xem_render::ps1::{Table, Turns, XrView};
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    assert!(session.execute(&json!({"cmd": "enter_field", "map": 12})).get("error").is_none());
+    assert!(session.execute(&json!({"cmd": "frames", "count": 400})).get("error").is_none());
+    let start = session.snapshot_bytes().unwrap();
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let (skipped, _) = run(&mut session, &gpu, |_| None, |_| None);
+    session.restore_bytes(&start).unwrap();
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    let target = gpu.device.create_texture(&xem_render::wgpu::TextureDescriptor {
+        label: None,
+        size: xem_render::wgpu::Extent3d { width: 320, height: 240, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: xem_render::wgpu::TextureDimension::D2,
+        format: xem_render::wgpu::TextureFormat::Rgba8Unorm,
+        usage: xem_render::wgpu::TextureUsages::RENDER_ATTACHMENT,
+        view_formats: &[],
+    });
+    let target_view = target.create_view(&Default::default());
+    let mut dioramas = 0;
+    for n in 0..FRAMES {
+        // The scale and the turns change midway, as a player's would.
+        let table = Table { scale: if n < 120 { 1.0 } else { 1.6 }, turns: if n < 160 { Turns::Smooth } else { Turns::Snap }, ..Table::default() };
+        view.set_xr_view(XrView::Diorama(table));
+        view.configure(ViewConfig::resolve(&Graphics::default(), HostClass::Headset, (640, 480), view.max_scale()));
+        assert!(session.frame().expect("frame"));
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        view.push(device.take_trace());
+        let display = device.display();
+        let scene = session.scene();
+        // A head swaying round the table.
+        let t = n as f32 / 60.0;
+        let head = Vec3::new(0.3 * t.sin(), 0.1 * (2.0 * t).sin(), 0.2 * t.cos());
+        let eyes = [-0.032f32, 0.032].map(|x| xem_render::ViewTarget {
+            view: Mat4::look_at_rh(head + Vec3::X * x, Vec3::new(0.0, -0.45, -0.6), Vec3::Y),
+            proj: Mat4::perspective_rh(1.6, 4.0 / 3.0, 0.05, 20.0),
+            target: &target_view,
+            viewport: xem_render::Viewport::full(320, 240),
+        });
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        let shown = view.present_diorama(&mut encoder, &display, &scene, n as f64 / 60.0, &eyes, Mat4::IDENTITY).is_some_and(|presented| presented.screen < 1.0);
+        gpu.queue.submit([encoder.finish()]);
+        dioramas += u32::from(shown && view.diorama_space().is_some());
+    }
+    assert!(dioramas > 150, "the field shows as a diorama ({dioramas} of {FRAMES} frames)");
+    assert_eq!(hash(&mut session), skipped, "showing a diorama changes nothing");
 }

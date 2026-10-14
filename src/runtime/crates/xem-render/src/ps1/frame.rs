@@ -108,19 +108,15 @@ pub struct FrameRenderer {
     replaying: bool,
     /// The native VRAM when the newest frame began (its log's start).
     snapshot: Option<Arc<Vec<u16>>>,
-    /// The native VRAM a replay samples: the snapshot, changed by the
-    /// frame's writes in order as the replay goes (a texture slot the game
-    /// fills again later in the frame shows each primitive its own texels),
-    /// its staged writes, and a copy of what that texture holds (the rows of
-    /// a new snapshot that differ from it are all a new frame uploads).
-    vram: wgpu::Texture,
+    /// The native VRAM a replay samples ([`ReplayVram`]) and its staged
+    /// writes.
+    vram: ReplayVram,
     feedback: wgpu::Texture,
     feedback_aux: wgpu::Texture,
     /// Extra rows the game draws below its viewport, which a framebuffer
     /// distortion may bring into view. Cropped only after that effect.
     work: Option<(wgpu::Texture, wgpu::Texture, wgpu::Texture)>,
     staging: Stream,
-    held: Vec<u16>,
     /// The replay's bind group, made with the capture texture of a generation.
     group: Option<(u64, wgpu::BindGroup)>,
     overlay_group: Option<(u64, wgpu::BindGroup)>,
@@ -129,8 +125,69 @@ pub struct FrameRenderer {
     overlay_storage: Storage,
 }
 
+/// The native VRAM a replay samples: the frame's snapshot, changed by its
+/// writes in order as the replay goes (a texture slot the game fills again
+/// later in the frame shows each primitive its own texels), and a copy of
+/// what the texture holds once the replay's writes are done (the rows of a
+/// snapshot that differ from it are all a replay uploads first).
+pub(crate) struct ReplayVram {
+    pub(crate) texture: wgpu::Texture,
+    held: Vec<u16>,
+}
+
+impl ReplayVram {
+    pub(crate) fn new(device: &wgpu::Device, label: &str) -> Self {
+        let texture = texture(device, label, (VRAM_WIDTH, VRAM_HEIGHT), wgpu::TextureFormat::R16Uint,
+            wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST);
+        Self { texture, held: vec![0; (VRAM_WIDTH * VRAM_HEIGHT) as usize] }
+    }
+
+    /// Sets the texture to `start` before a replay of `ops` (the rows that
+    /// differ from what it holds, in runs, through the queue), and notes what
+    /// the writes among `ops` leave in it.
+    pub(crate) fn start<'a>(&mut self, queue: &wgpu::Queue, start: &[u16], ops: impl Iterator<Item = &'a TraceOp>) {
+        let width = VRAM_WIDTH as usize;
+        let mut row = 0;
+        while row < VRAM_HEIGHT as usize {
+            let same = |row: usize| start[row * width..(row + 1) * width] == self.held[row * width..(row + 1) * width];
+            if same(row) {
+                row += 1;
+                continue;
+            }
+            let first = row;
+            while row < VRAM_HEIGHT as usize && !same(row) {
+                row += 1;
+            }
+            let rows = first * width..row * width;
+            queue.write_texture(
+                wgpu::TexelCopyTextureInfo { texture: &self.texture, mip_level: 0, origin: wgpu::Origin3d { x: 0, y: first as u32, z: 0 }, aspect: wgpu::TextureAspect::All },
+                bytemuck::cast_slice(&start[rows.clone()]),
+                wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(VRAM_WIDTH * 2), rows_per_image: None },
+                wgpu::Extent3d { width: VRAM_WIDTH, height: (row - first) as u32, depth_or_array_layers: 1 },
+            );
+            self.held[rows.clone()].copy_from_slice(&start[rows]);
+        }
+        for op in ops {
+            if let TraceOp::Write { rect, pixels, .. } = op {
+                let (x, w) = (usize::from(rect.x), usize::from(rect.width));
+                for (k, line) in pixels.chunks(w.max(1)).enumerate() {
+                    let at = (usize::from(rect.y) + k) * width + x;
+                    if let Some(target) = self.held.get_mut(at..at + line.len()) {
+                        target.copy_from_slice(line);
+                    }
+                }
+            }
+        }
+    }
+
+    /// The native VRAM as the replay's writes leave it.
+    pub(crate) fn held(&self) -> &[u16] {
+        &self.held
+    }
+}
+
 /// A pass uniform of `size_of::<PassUniform>()` bytes.
-fn uniform_buffer(device: &wgpu::Device) -> wgpu::Buffer {
+pub(crate) fn uniform_buffer(device: &wgpu::Device) -> wgpu::Buffer {
     device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("frame replay"),
         size: size_of::<PassUniform>() as u64,
@@ -169,13 +226,11 @@ impl FrameRenderer {
             replayed: Vec::new(),
             replaying: false,
             snapshot: None,
-            vram: texture(device, "frame replay vram", (VRAM_WIDTH, VRAM_HEIGHT), wgpu::TextureFormat::R16Uint,
-                wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST),
+            vram: ReplayVram::new(device, "frame replay vram"),
             feedback: texture(device, "frame feedback", (1, 1), COLOR_FORMAT, picture_usage()),
             feedback_aux: texture(device, "frame feedback aux", (1, 1), AUX_FORMAT, picture_usage()),
             work: None,
             staging: Stream::new(device, "frame replay staging", wgpu::BufferUsages::COPY_SRC),
-            held: vec![0; (VRAM_WIDTH * VRAM_HEIGHT) as usize],
             group: None,
             overlay_group: None,
             storage: Storage::default(),
@@ -251,6 +306,11 @@ impl FrameRenderer {
     /// How many of the newest frame's ops change its picture.
     pub fn drawn(&self) -> usize {
         self.drawn
+    }
+
+    /// The native VRAM when the newest frame began (its log's start).
+    pub(crate) fn snapshot(&self) -> Option<&Arc<Vec<u16>>> {
+        self.snapshot.as_ref()
     }
 
     /// Takes `area` of the renderer's picture as the frame, replayed when
@@ -339,43 +399,9 @@ impl FrameRenderer {
         self.overlay_scene = scene_offset(&ops);
         self.overlay = split_overlay(&mut ops, feedback.then_some(rect));
         // The replay samples VRAM as it was when the frame began, then as the
-        // frame's writes changed it, in order.
+        // frame's writes (the replay's and the overlay's) changed it, in order.
         if let Some(start) = &self.snapshot {
-            // The rows that differ from what the texture holds, in runs.
-            let width = VRAM_WIDTH as usize;
-            let mut row = 0;
-            while row < VRAM_HEIGHT as usize {
-                let same = |row: usize| start[row * width..(row + 1) * width] == self.held[row * width..(row + 1) * width];
-                if same(row) {
-                    row += 1;
-                    continue;
-                }
-                let first = row;
-                while row < VRAM_HEIGHT as usize && !same(row) {
-                    row += 1;
-                }
-                let rows = first * width..row * width;
-                queue.write_texture(
-                    wgpu::TexelCopyTextureInfo { texture: &self.vram, mip_level: 0, origin: wgpu::Origin3d { x: 0, y: first as u32, z: 0 }, aspect: wgpu::TextureAspect::All },
-                    bytemuck::cast_slice(&start[rows.clone()]),
-                    wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(VRAM_WIDTH * 2), rows_per_image: None },
-                    wgpu::Extent3d { width: VRAM_WIDTH, height: (row - first) as u32, depth_or_array_layers: 1 },
-                );
-                self.held[rows.clone()].copy_from_slice(&start[rows]);
-            }
-            // The frame's writes (the replay's and the overlay's) as they will
-            // leave it.
-            for op in ops.iter().chain(&self.overlay) {
-                if let TraceOp::Write { rect, pixels, .. } = op {
-                    let (x, w) = (usize::from(rect.x), usize::from(rect.width));
-                    for (k, line) in pixels.chunks(w.max(1)).enumerate() {
-                        let at = (usize::from(rect.y) + k) * width + x;
-                        if let Some(target) = self.held.get_mut(at..at + line.len()) {
-                            target.copy_from_slice(line);
-                        }
-                    }
-                }
-            }
+            self.vram.start(queue, start, ops.iter().chain(&self.overlay));
         }
         let options: DrawOptions = *renderer.options();
         let mut builder = Builder::reusing(&options, &ops, &mut self.storage);
@@ -385,7 +411,7 @@ impl FrameRenderer {
         builder.capture = capture;
         builder.capture_aliases = &renderer.capture.aliases;
         builder.feedback = feedback.then_some(rect);
-        builder.vram = self.snapshot.is_some().then_some(&self.held[..]);
+        builder.vram = self.snapshot.is_some().then_some(self.vram.held());
         // A frame recorded looking from within or around the scene holds
         // faces from anywhere, not only beside the screen: seen from the
         // game's camera, none.
@@ -410,6 +436,7 @@ impl FrameRenderer {
             capture_scale,
             capture_side,
             capture,
+            ..bytemuck::Zeroable::zeroed()
         };
         queue.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&uniform));
         let overlay_uniform = PassUniform { extent: [(area.width + 2 * side) as f32, area.height as f32], ..uniform };
@@ -451,10 +478,10 @@ impl FrameRenderer {
             self.overlay_group = None;
         }
         self.overlay_group.get_or_insert_with(|| (generation,
-            bind_group(device, &renderer.pipelines.layout, &self.overlay_uniform, &self.vram, &renderer.capture, Some((&self.feedback, &self.feedback_aux)))));
+            bind_group(device, &renderer.pipelines.layout, &self.overlay_uniform, &self.vram.texture, &renderer.capture, Some((&self.feedback, &self.feedback_aux)))));
         let group = self
             .group
-            .get_or_insert_with(|| (generation, bind_group(device, &renderer.pipelines.layout, &self.uniform, &self.vram, &renderer.capture, Some((&self.feedback, &self.feedback_aux)))))
+            .get_or_insert_with(|| (generation, bind_group(device, &renderer.pipelines.layout, &self.uniform, &self.vram.texture, &renderer.capture, Some((&self.feedback, &self.feedback_aux)))))
             .1
             .clone();
         let (picture_color, picture_aux) = (renderer.color.clone(), renderer.aux.clone());
@@ -465,7 +492,7 @@ impl FrameRenderer {
             encoder,
             &group,
             self.vertices.buffer(),
-            Some((self.staging.buffer(), &self.vram)),
+            Some((self.staging.buffer(), &self.vram.texture)),
             Copies::From { color: &picture_color, aux: &picture_aux, scale, capture: Some(&renderer.capture), earlier: &renderer.earlier, scratch: &renderer.scratch, feedback: &self.feedback, feedback_aux: &self.feedback_aux },
             &target,
             &builder.commands,
@@ -514,7 +541,7 @@ impl FrameRenderer {
         let target = Target { color: &color, aux: &self.aux, depth: &depth_view, origin, scale: self.scale };
         let (picture_color, picture_aux) = (renderer.color.clone(), renderer.aux.clone());
         let copies = Copies::From { color: &picture_color, aux: &picture_aux, scale: self.scale, capture: Some(&renderer.capture), earlier: &renderer.earlier, scratch: &renderer.scratch, feedback: &self.feedback, feedback_aux: &self.feedback_aux };
-        let staging = Some((self.overlay_staging.buffer(), &self.vram));
+        let staging = Some((self.overlay_staging.buffer(), &self.vram.texture));
         encode(device, &mut renderer.pipelines, encoder, &group, self.overlay_vertices.buffer(), staging, copies, &target, &builder.commands);
         builder.store(&mut self.overlay_storage);
     }
@@ -822,7 +849,7 @@ fn framebuffer_end(ops: &[TraceOp], area: VramRect) -> Option<usize> {
     last
 }
 
-fn framebuffer_effect(ops: &[TraceOp], area: VramRect) -> bool {
+pub(crate) fn framebuffer_effect(ops: &[TraceOp], area: VramRect) -> bool {
     framebuffer_end(ops, area).is_some()
 }
 
@@ -972,38 +999,8 @@ pub fn first_person(ops: &mut Vec<TraceOp>, look: &Look) {
     // The world's up in the camera's space: a sprite stands along it, as
     // wide along the camera's right as the game's camera showed it.
     let up = look.axes.map(|axis| dot(look.up, axis));
-    // A point on the screen and its depth, back in the game's view space.
-    let unproject = |p: &Primitive, (x, y, z): (f32, f32, f32)| {
-        let ((ox, oy), h) = p.projection.unwrap_or_default();
-        let h = f32::from(h).max(1.0);
-        let center = (f32::from(ox) + f32::from(p.environment.offset.0), f32::from(oy) + f32::from(p.environment.offset.1));
-        [(x - center.0) * z / h, (y - center.1) * z / h, z]
-    };
-    let point = |p: &Primitive, i: usize| {
-        let v = &p.vertices[i];
-        v.view.or_else(|| (v.z > 0.0).then(|| unproject(p, (v.fx, v.fy, v.z))))
-    };
-    // Where each sprite stands: its floor point, else below the middle of
-    // all its parts' points, at the lowest (y grows downwards).
-    let mut feet: HashMap<u32, [f32; 3]> = HashMap::new();
-    let mut parts: HashMap<u32, ([f32; 3], f32)> = HashMap::new();
-    for op in ops.iter() {
-        let TraceOp::Draw(p) = op else { continue };
-        if p.class != Class::Sprite || p.projection.is_none() {
-            continue;
-        }
-        if let Some([x, y, z]) = p.ground {
-            feet.insert(p.owner, unproject(p, (x, y, z)));
-        }
-        for q in (0..p.vertex_count()).filter_map(|i| point(p, i)) {
-            let (sums, n) = parts.entry(p.owner).or_insert(([0.0, f32::MIN, 0.0], 0.0));
-            *sums = [sums[0] + q[0], sums[1].max(q[1]), sums[2] + q[2]];
-            *n += 1.0;
-        }
-    }
-    for (owner, (sums, n)) in parts {
-        feet.entry(owner).or_insert([sums[0] / n, sums[1], sums[2] / n]);
-    }
+    let point = view_point;
+    let feet = sprite_feet(ops);
     ops.retain_mut(|op| {
         let TraceOp::Draw(p) = op else { return true };
         let Some(((ox, oy), _)) = p.projection else { return true };
@@ -1049,6 +1046,49 @@ pub fn first_person(ops: &mut Vec<TraceOp>, look: &Look) {
         }
         true
     });
+}
+
+/// A point on the screen and its depth, back in the game camera's view space
+/// through `p`'s projection.
+pub(crate) fn unproject(p: &Primitive, (x, y, z): (f32, f32, f32)) -> [f32; 3] {
+    let ((ox, oy), h) = p.projection.unwrap_or_default();
+    let h = f32::from(h).max(1.0);
+    let center = (f32::from(ox) + f32::from(p.environment.offset.0), f32::from(oy) + f32::from(p.environment.offset.1));
+    [(x - center.0) * z / h, (y - center.1) * z / h, z]
+}
+
+/// Vertex `i` of `p` in the game camera's view space: its point before the
+/// division, else its screen point taken back through the projection (none
+/// for a point without a projection).
+pub(crate) fn view_point(p: &Primitive, i: usize) -> Option<[f32; 3]> {
+    let v = &p.vertices[i];
+    v.view.or_else(|| (v.z > 0.0).then(|| unproject(p, (v.fx, v.fy, v.z))))
+}
+
+/// Where each sprite of `ops` stands (by its owner), in the game camera's
+/// view space: its floor point, else below the middle of all its parts'
+/// points, at the lowest (y grows downwards).
+pub(crate) fn sprite_feet(ops: &[TraceOp]) -> HashMap<u32, [f32; 3]> {
+    let mut feet: HashMap<u32, [f32; 3]> = HashMap::new();
+    let mut parts: HashMap<u32, ([f32; 3], f32)> = HashMap::new();
+    for op in ops {
+        let TraceOp::Draw(p) = op else { continue };
+        if p.class != Class::Sprite || p.projection.is_none() {
+            continue;
+        }
+        if let Some([x, y, z]) = p.ground {
+            feet.insert(p.owner, unproject(p, (x, y, z)));
+        }
+        for q in (0..p.vertex_count()).filter_map(|i| view_point(p, i)) {
+            let (sums, n) = parts.entry(p.owner).or_insert(([0.0, f32::MIN, 0.0], 0.0));
+            *sums = [sums[0] + q[0], sums[1].max(q[1]), sums[2] + q[2]];
+            *n += 1.0;
+        }
+    }
+    for (owner, (sums, n)) in parts {
+        feet.entry(owner).or_insert([sums[0] / n, sums[1], sums[2] / n]);
+    }
+    feet
 }
 
 /// The depth the camera looks at, measured: the median depth of the scene
