@@ -258,7 +258,7 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
       await page.keyboard.press('F7');
       assert.equal((await status(page)).session.rewind.max_bytes, 0);
       await page.keyboard.press('F7');
-      assert.equal((await status(page)).session.rewind.max_bytes, 64 * 1024 * 1024);
+      assert.equal((await status(page)).session.rewind.max_bytes, 2 * 1024 * 1024 * 1024);
       await page.keyboard.press('Backquote'); assert.equal((await status(page)).session.fast_forward, true);
       assert.deepEqual((await status(page)).session.fast_forward_rate, { Fixed: 10 });
       await page.evaluate(() => { window.padButtons[8] = true; window.padButtons[7] = true; });
@@ -495,12 +495,11 @@ describe('browser storage, rewind, pause and interchange', { concurrency: 2 }, (
       await page.keyboard.up('Enter');
       await page.waitForFunction(()=>!document.pointerLockElement);
       assert.equal((await status(page)).renderer.panelVisible,false,'game pause must not open app Settings');
+      // A click on the pause screen resumes play (it presses Start once);
+      // the next click gives the game the mouse again.
       await canvas.click();
-      await page.waitForTimeout(100);
-      assert.equal(await page.evaluate(()=>!!document.pointerLockElement),false,'clicking the pause screen cannot recapture the cursor');
-      await page.keyboard.down('Enter');
       await page.waitForFunction(()=>!(window.xem.command({cmd:'inspect',path:'sound_driver_flags'})&0x40));
-      await page.keyboard.up('Enter');
+      assert.equal(await page.evaluate(()=>!!document.pointerLockElement),false,'clicking the pause screen cannot recapture the cursor');
       await canvas.click();
       await page.waitForFunction(()=>document.pointerLockElement === document.querySelector('canvas'));
       await page.evaluate(bytes=>window.xem.importSnapshot(Uint8Array.from(bytes)),Array.from(readFileSync(battleState)));

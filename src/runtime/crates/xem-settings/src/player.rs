@@ -6,10 +6,12 @@
 //!
 //! Some inputs mean a short sequence of presses the game reads as it reads
 //! any player's: the Menu action closes the field menu it opened (Cancel
-//! until the menu has closed, from any of its screens), and the mouse wheel
-//! steps a menu's or a choice's cursor. Such presses ([`Pulse`]) are held
-//! and released for whole game frames (the menus act on a button's press),
-//! counted as the host reports the frames run ([`PlayerInput::frames_ran`]).
+//! out of each command's screen it is in, then once more at the menu's
+//! commands), a click or a tap on the paused game resumes it (Start), and
+//! the mouse wheel steps a menu's or a choice's cursor. Such presses
+//! ([`Pulse`]) are held and released for whole game frames (the menus act
+//! on a button's press), counted as the host reports the frames run
+//! ([`PlayerInput::frames_ran`]).
 use crate::bindings::{GameAction, GameBindings, Held, Mouse};
 use std::collections::{BTreeSet, VecDeque};
 use xem_core::context::Context as Ui;
@@ -25,11 +27,13 @@ pub struct Context {
     pub assignment: xem_core::action::Assignment,
     /// The interface the input reaches (`xem_core::context`).
     pub ui: Ui,
+    /// The game shows its pause screen (`Runtime::game_paused`).
+    pub paused: bool,
 }
 
 impl Default for Context {
     fn default() -> Self {
-        Self { attack: false, field: Default::default(), assignment: Default::default(), ui: Ui::None }
+        Self { attack: false, field: Default::default(), assignment: Default::default(), ui: Ui::None, paused: false }
     }
 }
 
@@ -43,6 +47,10 @@ const STALLS: u32 = 3;
 /// The most Cancel presses closing the field menu takes (its deepest screen
 /// is a few levels down; each press backs out one).
 const MENU_CLOSE_PRESSES: u32 = 8;
+/// Game frames a command's screen takes to go back after a Cancel backs out
+/// of it (the item screen: 21): the menu reads the pad meanwhile, and plays
+/// its sound for a Cancel it does nothing with.
+const MENU_BACK_FRAMES: u32 = 30;
 /// The most wheel steps queued at once.
 const MAX_WHEEL_STEPS: usize = 3;
 
@@ -76,8 +84,10 @@ pub struct PlayerInput {
     /// Actions a touch screen's controls hold.
     pub touch: BTreeSet<GameAction>,
     pulses: VecDeque<Pulse>,
-    /// Cancel presses left to close the field menu.
+    /// Cancel presses left to close the field menu, and game frames until
+    /// the next may back out of a command's screen.
     closing: u32,
+    settle: u32,
     /// Menu was held at the last resolution (the toggle acts on a press).
     menu_held: bool,
     /// Wheel notches not yet a whole step.
@@ -100,6 +110,8 @@ pub struct PlayerInput {
     refused: Option<usize>,
     /// The attack page awaited its first attack at the last resolution.
     first_attack: bool,
+    /// The game showed its pause screen at the last resolution.
+    paused: bool,
     /// The battle's attack sequence under way began with a pointer's press
     /// of an attack (a click, a touch) rather than the player's buttons.
     attack_pointed: bool,
@@ -171,6 +183,7 @@ impl PlayerInput {
         self.touch.clear();
         self.pulses.clear();
         self.closing = 0;
+        self.settle = 0;
         self.menu_held = false;
         self.wheel = 0.0;
         self.goal = None;
@@ -186,12 +199,28 @@ impl PlayerInput {
         }
     }
 
-    /// A click at the pointer: true when it lands on an entry of `targets`
-    /// (chosen as [`PlayerInput::select`] chooses it); otherwise the click is
-    /// the bindings' (the mouse's Confirm).
+    /// A click at the pointer: true when it resumes the game's pause
+    /// ([`PlayerInput::unpause`]) or lands on an entry of `targets` (chosen
+    /// as [`PlayerInput::select`] chooses it); otherwise the click is the
+    /// bindings' (the mouse's Confirm).
     pub fn click(&mut self, targets: Option<&xem_core::menu::Targets>) -> bool {
+        if self.unpause() {
+            return true;
+        }
         let Some((targets, entry)) = targets.zip(self.hover).and_then(|(t, p)| Some((t, t.at(p)?))) else { return false };
         self.select(entry, targets.confirm);
+        true
+    }
+
+    /// A click or a tap on the game while it shows its pause screen: Start,
+    /// once, resumes it (true). False while it plays.
+    pub fn unpause(&mut self) -> bool {
+        if !self.paused {
+            return false;
+        }
+        if !self.pulses.iter().any(|pulse| pulse.actions.contains(&GameAction::Start)) {
+            self.pulse(Pulse::new([GameAction::Start]));
+        }
         true
     }
 
@@ -300,6 +329,7 @@ impl PlayerInput {
 
     /// The host ran `frames` game frames with the last buttons.
     pub fn frames_ran(&mut self, frames: u32) {
+        self.settle = self.settle.saturating_sub(frames);
         if let Some(pulse) = self.pulses.front_mut() {
             pulse.elapsed += frames;
             if pulse.done() {
@@ -342,6 +372,7 @@ impl PlayerInput {
         }
         self.epoch = Some(epoch);
         self.first_attack = first_attack_awaited(context.ui);
+        self.paused = context.paused;
         self.held.mouse = self.mouse.buttons();
         let mut actions = bindings.actions(&self.held, context.attack);
         actions.extend(self.mouse.turn(now));
@@ -355,11 +386,14 @@ impl PlayerInput {
             self.attack_pointed = false;
         }
         // Menu toggles the field menu: pressed while it runs, it backs out
-        // with Cancel until the menu has closed.
+        // of each command's screen with Cancel, then presses Cancel at the
+        // menu's commands, which closes it: one Cancel each, as a player's
+        // (the menu sounds each Cancel it reads, closing too).
         let field_menu = matches!(context.ui, Ui::Menu { screen: 0, .. }) && context.field.field;
         let menu = actions.contains(&GameAction::Menu);
         if field_menu && menu && !self.menu_held {
             self.closing = MENU_CLOSE_PRESSES;
+            self.settle = 0;
         }
         self.menu_held = menu;
         if !field_menu {
@@ -367,8 +401,19 @@ impl PlayerInput {
         } else {
             actions.remove(&GameAction::Menu);
             if self.closing > 0 && self.pulses.is_empty() {
-                self.closing -= 1;
-                self.pulse(Pulse::new([GameAction::Cancel]));
+                match context.ui {
+                    Ui::Menu { commands: true, .. } => {
+                        self.closing -= 1;
+                        self.pulse(Pulse::new([GameAction::Cancel]));
+                    }
+                    Ui::Menu { open: true, .. } if self.settle == 0 => {
+                        self.closing -= 1;
+                        self.settle = MENU_BACK_FRAMES;
+                        self.pulse(Pulse::new([GameAction::Cancel]));
+                    }
+                    // Loading, opening, between screens or closing.
+                    _ => {}
+                }
             }
         }
         if let Some(pulse) = self.pulses.front() {
@@ -448,7 +493,7 @@ mod tests {
         assert_eq!(input.buttons(&bindings, 0.0, reassigned), button::UP | GameAction::Run.button_with(&reassigned.assignment));
         for ui in [Ui::Event { map: 1, buttons: 0xffff }, Ui::None, Ui::WorldMap { movement: 1, scene: 0 },
             Ui::Battle { page: 0, attack: false, ap: 0, list: false, targeting: false },
-            Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, switch: false, quantities: false }]
+            Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, commands: true, open: false, switch: false, quantities: false }]
         {
             assert_eq!(input.buttons(&bindings, 0.0, field(ui)), button::UP, "{ui:?} gets no automatic Run");
         }
@@ -483,7 +528,7 @@ mod tests {
             steps: Steps::Ring { count: 7, next: GameAction::Up },
             confirm: true,
         };
-        let menu = field(Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, switch: false, quantities: false });
+        let menu = field(Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, commands: true, open: false, switch: false, quantities: false });
         input.hover(Some((10.0, 85.0)));
         assert!(input.click(Some(&targets)), "on entry 2");
         let mut pressed = Vec::new();
@@ -638,6 +683,20 @@ mod tests {
         Context { field, ui, ..Context::default() }
     }
 
+    #[test]
+    fn a_click_or_a_tap_resumes_the_games_pause_with_one_start() {
+        let bindings = GameBindings::default();
+        let mut input = PlayerInput::default();
+        let paused = Context { paused: true, ..field(Ui::Walk) };
+        assert!(!input.click(None), "playing, a click off the entries is the mouse's binding");
+        assert_eq!(input.buttons(&bindings, 0.0, paused), 0);
+        assert!(input.click(None), "paused, a click anywhere on the game is Start's");
+        assert!(input.unpause(), "a tap too, without another press");
+        assert_eq!(run(&mut input, &bindings, paused, 4), vec![button::START, button::START, 0, 0]);
+        assert_eq!(input.buttons(&bindings, 0.0, field(Ui::Walk)), 0, "one press");
+        assert!(!input.unpause(), "resumed, a tap plays again");
+    }
+
     /// Runs `frames` game frames of `context` with the player's keys,
     /// returning each frame's buttons.
     fn run(input: &mut PlayerInput, bindings: &GameBindings, context: Context, frames: usize) -> Vec<u16> {
@@ -653,7 +712,7 @@ mod tests {
         let bindings = GameBindings::default();
         let mut input = PlayerInput::default();
         let walk = field(Ui::Walk);
-        let menu = field(Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, switch: false, quantities: false });
+        let menu = field(Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, commands: true, open: false, switch: false, quantities: false });
         input.key(&bindings, "Tab", true);
         assert_eq!(run(&mut input, &bindings, walk, 1), [button::SQUARE], "Tab opens the menu");
         // Held into the menu, it does nothing there.
@@ -661,16 +720,28 @@ mod tests {
         input.key(&bindings, "Tab", false);
         run(&mut input, &bindings, menu, 1);
         input.key(&bindings, "Tab", true);
-        // Pressed again: Cancel for two frames, released for two, again
-        // while the menu runs.
-        assert_eq!(run(&mut input, &bindings, menu, 8),
-            [button::CIRCLE, button::CIRCLE, 0, 0, button::CIRCLE, button::CIRCLE, 0, 0]);
-        // Closed: the presses stop.
+        // Pressed again at the commands: one Cancel, two frames held, then
+        // none while the menu closes (its commands no longer take input)
+        // and the field fades back.
+        assert_eq!(run(&mut input, &bindings, menu, 2), [button::CIRCLE, button::CIRCLE]);
+        let closing = field(Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, commands: false, open: false, switch: false, quantities: false });
+        assert_eq!(run(&mut input, &bindings, closing, 40), [0; 40]);
         input.key(&bindings, "Tab", false);
         assert_eq!(run(&mut input, &bindings, walk, 4), [0, 0, 0, 0]);
+        // From a command's screen: Cancel backs out of it; the next waits
+        // for its screen to go back, then Cancel at the commands.
+        let inside = field(Ui::Menu { screen: 0, cursor: 4, choice: 0, choices: 0, commands: false, open: true, switch: false, quantities: false });
+        run(&mut input, &bindings, inside, 1);
+        input.key(&bindings, "Tab", true);
+        let mut pressed = run(&mut input, &bindings, inside, 40);
+        pressed.extend(run(&mut input, &bindings, menu, 4));
+        let presses: Vec<_> = pressed.windows(2).enumerate().filter(|(_, w)| w[0] == 0 && w[1] == button::CIRCLE).map(|(i, _)| i + 1).collect();
+        assert_eq!(pressed[0], button::CIRCLE);
+        assert_eq!(presses, [30, 40], "backed out, then again after its screen went back, then at the commands");
+        input.key(&bindings, "Tab", false);
         // A shop (another screen) keeps the Menu button.
         input.key(&bindings, "Tab", true);
-        let shop = field(Ui::Menu { screen: 4, cursor: 0, choice: 0, choices: 0, switch: false, quantities: false });
+        let shop = field(Ui::Menu { screen: 4, cursor: 0, choice: 0, choices: 0, commands: true, open: false, switch: false, quantities: false });
         assert_eq!(run(&mut input, &bindings, shop, 1), [button::SQUARE]);
     }
 
@@ -679,7 +750,7 @@ mod tests {
         let bindings = GameBindings::default();
         let mut input = PlayerInput::default();
         assert!(!input.wheel(1.0, Ui::Walk));
-        let menu = Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, switch: false, quantities: false };
+        let menu = Ui::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, commands: true, open: false, switch: false, quantities: false };
         assert!(input.wheel(0.5, menu));
         assert!(!input.pulsing(), "half a notch");
         assert!(input.wheel(1.5, menu));

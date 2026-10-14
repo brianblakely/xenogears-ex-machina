@@ -83,7 +83,7 @@ fn timed_session() -> (Session<Counter>,Rc<Cell<Duration>>) {
     let clock = Rc::new(Cell::new(Duration::ZERO));
     let source = clock.clone();
     let mut session = Session::new(Runtime::new(Counter::new()),None,move || source.get());
-    session.configure_rewind(xem_core::rewind::DEFAULT_REWIND_BYTES,1,30).unwrap();
+    session.configure_rewind(xem_core::rewind::MAX_REWIND_BYTES,1,30).unwrap();
     (session,clock)
 }
 fn frame_at(s: &mut Session<Counter>, clock: &Cell<Duration>, seconds: u64) {
@@ -119,7 +119,7 @@ fn paused_game_frames_neither_add_snapshots_nor_expire_play_history() {
     s.runtime.memory().write(0x8000_0010,&0x40u16.to_le_bytes()).unwrap();
     for second in 2..=40 { frame_at(&mut s, &clock, second); }
     assert_eq!(s.rewind.status(),retained,"pause-screen frames must not consume or age out history");
-    s.configure_rewind(xem_core::rewind::DEFAULT_REWIND_BYTES,1,30).unwrap();
+    s.configure_rewind(xem_core::rewind::MAX_REWIND_BYTES,1,30).unwrap();
     assert_eq!(s.rewind.status(),retained,"configuring history while paused must not add a state");
     s.runtime.memory().write(0x8000_0010,&0u16.to_le_bytes()).unwrap();
     frame_at(&mut s, &clock, 4000);
@@ -160,7 +160,7 @@ fn loading_and_rewinding_do_not_roll_back_ordinary_card_saves() {
     let (mut s, clock) = timed_session();
     s.configure_rewind(0,1,30).unwrap();
     s.runtime.services().card.attach_storage(Box::new(Storage(stored.clone()))).unwrap();
-    s.configure_rewind(xem_core::rewind::DEFAULT_REWIND_BYTES, 1, 30).unwrap();
+    s.configure_rewind(xem_core::rewind::MAX_REWIND_BYTES, 1, 30).unwrap();
     let state = s.snapshot_bytes().unwrap();
     frame_at(&mut s, &clock, 1);
     let mut saved_card = formatted();
@@ -384,7 +384,7 @@ fn rewind_records_game_saves_by_elapsed_seconds_and_steps_through_the_queue() {
     assert_eq!(s.rewind.status()["states"],2);
     let (_,saved) = s.rewind.latest().unwrap();
     assert!(saved == s.snapshot_bytes().unwrap(),"rewind stores the identical game save format");
-    s.configure_rewind(xem_core::rewind::DEFAULT_REWIND_BYTES,2,30).unwrap();
+    s.configure_rewind(xem_core::rewind::MAX_REWIND_BYTES,2,30).unwrap();
     assert_eq!(s.rewind.status()["states"],2,"changing the interval keeps existing states");
     clock.set(Duration::from_millis(2999)); s.frame().unwrap();
     assert_eq!(s.rewind.status()["states"],2);
@@ -393,10 +393,15 @@ fn rewind_records_game_saves_by_elapsed_seconds_and_steps_through_the_queue() {
     s.frame().unwrap();
     assert!(s.rewind_step().unwrap());
     assert!(s.rewind_step().unwrap());
-    assert_eq!(s.runtime.frames(),checkpoint_frame);
-    assert!(s.snapshot_bytes().unwrap() == saved);
+    // The state it took, played on a frame (not as far as where it began).
+    assert_eq!(s.runtime.frames(),checkpoint_frame+1);
+    let mut reference = session();
+    reference.execute(&json!({"cmd":"fast_forward","enabled":true}));
+    reference.restore_bytes(&saved).unwrap();
+    reference.frame().unwrap();
+    assert!(s.snapshot_bytes().unwrap() == reference.snapshot_bytes().unwrap());
     assert!(s.rewind_step().unwrap());
-    assert_eq!(s.runtime.frames(),0);
+    assert_eq!(s.runtime.frames(),xem_core::rewind::REWIND_PLAY_BLANKS);
     assert!(!s.rewind_step().unwrap());
 }
 
@@ -518,19 +523,36 @@ fn long_runs_and_output_modes_produce_the_same_restored_state() {
 }
 
 #[test]
-fn held_rewind_steps_stop_at_the_oldest_checkpoint_without_advancing_the_game() {
+fn held_rewind_steps_pop_each_state_play_on_from_it_and_stop_at_the_oldest() {
     let (mut s,clock) = timed_session();
     s.execute(&json!({"cmd":"rewind_configure","max_bytes":0}));
     assert!(s.rewind_step().unwrap_err().contains("Enable rewind"));
-    s.execute(&json!({"cmd":"rewind_configure","max_bytes":xem_core::rewind::DEFAULT_REWIND_BYTES,"interval_seconds":2}));
-    for at in 1..=8 { frame_at(&mut s,&clock,at); }
-    for frame in [6,4,2,0] {
-        assert!(s.rewind_step().unwrap()); assert_eq!(s.runtime.frames(),frame);
+    s.execute(&json!({"cmd":"rewind_configure","max_bytes":xem_core::rewind::MAX_REWIND_BYTES,"interval_seconds":1}));
+    s.runtime.services().spu.set_output(true);
+    // States at frames 0, 1, 21, 41 and 61; the game at 80.
+    for second in 1..=4 {
+        clock.set(Duration::from_secs(second));
+        for _ in 0..20 { assert!(s.frame().unwrap()); }
     }
+    assert_eq!(s.rewind.status()["states"],5);
+    // Under fast-forward the music follows the host's clock: the frames
+    // played on advance it as they play, more than one advance may (100 ms).
+    assert_eq!(s.execute(&json!({"cmd":"fast_forward","enabled":true}))["fast_forward"],true);
+    assert!(s.begin_live_music().unwrap());
+    // Each step plays on from its state (this stand-in never changes its
+    // display's buffers: the most frames), never as far as where it began,
+    // and its frames add no state of their own; their sound is queued.
+    let most = xem_core::rewind::REWIND_PLAY_BLANKS;
+    for (frame, states) in [(61+most,4),(41+most,3),(21+most,2),(1+most,1),(most,0)] {
+        assert!(s.rewind_step().unwrap());
+        assert_eq!(s.runtime.frames(),frame);
+        assert_eq!(s.rewind.status()["states"],states);
+    }
+    assert!(s.runtime.services().spu.audio_queued() > 0,"the frames played on sound");
     let oldest = s.snapshot_bytes().unwrap();
     assert!(!s.rewind_step().unwrap());
     assert_eq!(s.snapshot_bytes().unwrap(),oldest);
-    assert!(s.frame().unwrap()); assert_eq!(s.runtime.frames(),1);
+    assert!(s.frame().unwrap()); assert_eq!(s.runtime.frames(),most+1);
 }
 
 #[test]

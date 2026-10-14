@@ -588,9 +588,12 @@ impl Gpu {
         &self.vram
     }
 
-    /// Mutable VRAM, for hosts that restore or inspect it directly.
+    /// Mutable VRAM, for hosts that restore or inspect it directly (the
+    /// next trace starts with all of VRAM as they leave it).
     pub fn vram_mut(&mut self) -> &mut [u16] {
-        self.trace_resync();
+        if let Some(trace) = &mut self.trace {
+            trace.restart();
+        }
         &mut self.vram
     }
 

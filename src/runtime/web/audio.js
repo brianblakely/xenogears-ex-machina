@@ -54,7 +54,9 @@ export class AudioOut {
     const samples = this.app.take_audio();
     if (samples.length === 0 || this.context?.state !== 'running' || !this.node) return;
     this.posted += samples.length / 2;
-    this.node.port.postMessage(samples, [samples.buffer]);
+    // A held rewind's moments of sound, each shorter than the pre-roll, play at once.
+    if (this.app.rewinding()) this.node.port.postMessage({ samples, prime: true }, [samples.buffer]);
+    else this.node.port.postMessage(samples, [samples.buffer]);
   }
 
   status() {

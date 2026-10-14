@@ -433,6 +433,8 @@ impl XemApp {
         let field = (session.runtime.services().mode == Some(1)).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten();
         for tap in std::mem::take(&mut self.taps) {
             let Some(at) = picture.and_then(|p| p.to_screen(tap.0, tap.1)) else { continue };
+            // A tap on the paused game resumes it, as a click does.
+            if self.input.unpause() { continue; }
             let outs = xem_assist::dispatch::tap_at(at, ui, field.as_ref(), self.targets.as_ref()).into_iter().collect();
             xem_assist::headset::carry(outs, &mut WebCarry { session: Some(session), input: &mut self.input }, &mut self.xr_scaling);
         }
@@ -563,7 +565,8 @@ impl XemApp {
                 if let Some(session) = self.session.as_mut() {
                     let advanced = session.rewind_step().map_err(error)?;
                     self.hud_rewind = advanced.then_some(now);
-                    if advanced { self.display_dirty = true; }
+                    // The frames played on from the state, picture and sound.
+                    if advanced { self.ran_frames(); }
                 }
                 self.rewind_next = now + xem_core::rewind::REWIND_STEP_MS as f64;
             }
@@ -578,6 +581,7 @@ impl XemApp {
                 field: s.runtime.field_controls(),
                 assignment: s.runtime.button_assignment(),
                 ui: s.runtime.context(),
+                paused: s.runtime.game_paused(),
             });
             self.ui = context.ui;
             self.targets = self.session.as_mut().and_then(|s| s.runtime.targets());
@@ -965,6 +969,8 @@ impl XemApp {
         self.audio.take(self.settings.borrow().settings())
     }
     pub fn timeline_revision(&self) -> u64 { self.session.as_ref().map_or(0, |s| s.timeline_revision) }
+    /// Whether a held rewind steps back now (its sound plays at once).
+    pub fn rewinding(&self) -> bool { self.running && self.rewind_held.iter().any(|held| *held) }
 
     // --- Settings -----------------------------------------------------------
 
@@ -1026,7 +1032,7 @@ impl XemApp {
             let settings = settings.settings();
             let next = (settings.fast_forward_rate, settings.rewind_enabled, settings.rewind_interval_seconds, settings.rewind_history_seconds);
             if self.applied_time_settings.is_none_or(|old| old.0 != next.0) { session.configure_fast_forward(next.0).map_err(error)?; }
-            let budget = if history && next.1 { xem_core::rewind::DEFAULT_REWIND_BYTES } else { 0 };
+            let budget = if history && next.1 { xem_core::rewind::MAX_REWIND_BYTES } else { 0 };
             if self.applied_time_settings.is_none_or(|old| (old.1,old.2,old.3) != (next.1,next.2,next.3)) {
                 session.configure_rewind(budget,next.2,next.3).map_err(error)?;
                 if budget == 0 { self.rewind_held = [false;2]; }

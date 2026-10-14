@@ -513,6 +513,13 @@ fn polygon_points(op: u32) -> impl Iterator<Item = usize> {
 }
 
 impl Recorder {
+    /// Drop what was traced: the next take starts with all of VRAM as it is
+    /// then.
+    pub(crate) fn restart(&mut self) {
+        self.ops.clear();
+        self.full_sync = true;
+    }
+
     /// Projection `index` while the history holds it.
     fn projection(&self, index: u32) -> Option<&Projection> {
         let age = self.history_end.wrapping_sub(index);
@@ -662,6 +669,21 @@ impl Gpu {
         }
     }
 
+    /// Takes over the presentation of `live`, the device a snapshot loaded
+    /// into this one replaces: its counters, and its draw trace, which goes
+    /// on asking for the same culled faces but starts again from all of this
+    /// VRAM (what is drawn next follows it), without what the abandoned
+    /// timeline recorded (the port's projections, the faces it culled, the
+    /// screen points it stored in RAM).
+    pub fn keep_presentation(&mut self, live: &mut Gpu) {
+        self.stats = std::mem::take(&mut live.stats);
+        if let Some(trace) = live.trace.take() {
+            self.set_trace(true);
+            self.set_reveals(trace.wanted);
+            self.trace_resync();
+        }
+    }
+
     /// [`Gpu::set_reveals`]'s reach as the port's word: x in bits 0-15, y
     /// in bits 16-31, 0 for none.
     pub fn reveal_reach(&self) -> u32 {
@@ -719,11 +741,23 @@ impl Gpu {
         Trace { ops, focus }
     }
 
-    /// The trace must start again from the whole VRAM (a snapshot replaced it).
+    /// The trace starts again from the whole VRAM as it is now (a snapshot
+    /// replaced it): what was traced before is dropped, and what the GPU
+    /// does next follows it (a rewind's frames played on from the state).
     pub(crate) fn trace_resync(&mut self) {
-        if let Some(trace) = &mut self.trace {
-            trace.full_sync = true;
+        if self.trace.is_none() {
+            return;
         }
+        let pixels = self.vram.as_slice().into();
+        let trace = self.trace.as_mut().expect("checked above");
+        trace.full_sync = false;
+        trace.dirty = None;
+        trace.ops.clear();
+        trace.ops.push(TraceOp::Write {
+            rect: VramRect { x: 0, y: 0, width: VRAM_WIDTH as u16, height: VRAM_HEIGHT as u16 },
+            pixels,
+            upload: true,
+        });
     }
 
     /// The DMA walk reached `node` (0: it left a node). The faces culled
@@ -778,8 +812,7 @@ impl Gpu {
             });
             trace.ops.push(TraceOp::VBlank);
             if trace.ops.len() > TRACE_LIMIT {
-                trace.ops.clear();
-                trace.full_sync = true;
+                trace.restart();
             }
         }
     }

@@ -27,9 +27,14 @@ const WINDOW_AGE: u32 = 0x410;
 /// The menus: the screen (`menu_state_screen`: 0 the field menu, 1 member
 /// change, 2 load, 3 name entry, 4 shop, 5 Gear shop, 6 disc change) and
 /// the state block (`menu_state_current`: the top cursor +0x336, a choice
-/// window's cursor +0x338 and count +0x33A, bytes).
+/// window's cursor +0x338 and count +0x33A, bytes; its `MenuFlags` +0x33C
+/// and `MenuImages` +0x350). A field's menu runs while
+/// `menu_state_debug_start` is 0 (`field_run_menu` clears it for
+/// `mode_run_menu`, which sets it again on leaving): before, the block is
+/// the last menu's, after, it is freed.
 const MENU_STATE_SCREEN: u32 = 0x8005_9460;
 const MENU_STATE_CURRENT: u32 = 0x8006_25A0;
+const MENU_STATE_DEBUG_START: u32 = 0x8005_9178;
 /// The battle's turn (`battle_turn_state`, a pointer): `eventsDone` +0x2DB,
 /// the command page +0x2DD, the closed combo or command +0x2E1, AP left
 /// +0x2D4.
@@ -67,10 +72,14 @@ pub enum Context {
     /// A field dialogue the player advances, or answers.
     Dialogue { choice: Option<Choice> },
     /// A menu screen (`screen`, `menu_state_screen`) with its top cursor and
-    /// a choice window's; `switch` while L1/R1 change the character shown
-    /// (the arrow marks, `MenuFlags.marks_shown`); `quantities` while a
-    /// shop's buy or sell list proposes quantities.
-    Menu { screen: u8, cursor: u8, choice: u8, choices: u8, switch: bool, quantities: bool },
+    /// a choice window's; `commands` while its commands take the input (the
+    /// field menu's arc: its highlight shown, `MenuFlags.sprite_shown`, over
+    /// no command's screen); `open` while a command's screen is open
+    /// (`MenuImages.dim`; Cancel backs out of it); neither while the menu
+    /// loads, opens, goes between them or closes; `switch` while L1/R1
+    /// change the character shown (the arrow marks, `MenuFlags.marks_shown`);
+    /// `quantities` while a shop's buy or sell list proposes quantities.
+    Menu { screen: u8, cursor: u8, choice: u8, choices: u8, commands: bool, open: bool, switch: bool, quantities: bool },
     /// A battle: the command page, whether the attack inputs take the
     /// buttons, AP left, an item or art list open (`battle_ui.cursorShown`)
     /// and a target being chosen for one (the attack page's own target
@@ -124,12 +133,16 @@ fn menu(memory: &dyn GameMemory) -> Option<Context> {
     let screen = u8_at(memory, MENU_STATE_SCREEN)?;
     let state = ram_pointer(u32_at(memory, MENU_STATE_CURRENT)?)?;
     let flags = ram_pointer(u32_at(memory, state + 0x33C)?)?;
+    let images = ram_pointer(u32_at(memory, state + 0x350)?)?;
     let flag = |offset: u32| u8_at(memory, flags + offset).is_some_and(|f| f != 0);
+    let open = u8_at(memory, images + 0x1192)? != 0;
     Some(Context::Menu {
         screen,
         cursor: u8_at(memory, state + 0x336)?,
         choice: u8_at(memory, state + 0x338)?,
         choices: u8_at(memory, state + 0x33A)?,
+        commands: !open && flag(0x04),
+        open,
         switch: flag(0x53),
         quantities: matches!(screen, 4 | 5) && flag(0x5A) && flag(0x50),
     })
@@ -137,9 +150,12 @@ fn menu(memory: &dyn GameMemory) -> Option<Context> {
 
 fn field(memory: &dyn GameMemory) -> Option<Context> {
     if u8_at(memory, FIELD_MENU_REQUEST)? != 0xFF {
-        // The menu loads for some frames after the request; its state block
-        // (left behind by the last menu until then) is read once it runs.
-        return Some(menu(memory).unwrap_or(Context::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, switch: false, quantities: false }));
+        // The menu loads for some frames after the request, and the field
+        // fades back in after it: its state block is read while it runs.
+        let running = u8_at(memory, MENU_STATE_DEBUG_START)? == 0;
+        return Some(running.then(|| menu(memory)).flatten().unwrap_or(Context::Menu {
+            screen: 0, cursor: 0, choice: 0, choices: 0, commands: false, open: false, switch: false, quantities: false,
+        }));
     }
     if u16_at(memory, FIELD_OPEN_WINDOWS)? != 0 {
         let mut choice = None;

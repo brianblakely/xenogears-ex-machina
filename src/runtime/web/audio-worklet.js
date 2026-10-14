@@ -21,6 +21,7 @@ class XemOutput extends AudioWorkletProcessor {
     this.primed = false;
     this.port.onmessage = (event) => {
       if (event.data.reset) { this.read = 0; this.buffered = 0; this.primed = false; }
+      else if (event.data.prime) { this.push(event.data.samples); this.primed = true; }
       else this.push(event.data);
     };
   }

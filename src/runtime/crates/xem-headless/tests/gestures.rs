@@ -133,6 +133,7 @@ impl Player {
             field: self.session.runtime.field_controls(),
             assignment: self.session.runtime.button_assignment(),
             ui,
+            paused: self.session.runtime.game_paused(),
         };
         self.input.browse(targets.as_ref());
         let buttons = self.input.buttons(&self.bindings, 0.0, context);

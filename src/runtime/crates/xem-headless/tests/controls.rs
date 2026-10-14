@@ -130,6 +130,7 @@ fn host_frame(session: &mut Session<NativeModule>, player: &mut xem_settings::pl
         field: session.runtime.field_controls(),
         assignment: session.runtime.button_assignment(),
         ui: session.runtime.context(),
+        paused: session.runtime.game_paused(),
     };
     let buttons = player.buttons(bindings, 0.0, context);
     session.set_pad(0, buttons);
@@ -145,8 +146,40 @@ fn tap(session: &mut Session<NativeModule>, player: &mut xem_settings::player::P
     for _ in 0..then { host_frame(session, player, bindings); }
 }
 
-/// Tab opens the field menu and, pressed again from a screen inside it,
-/// backs out with Cancel presses until the menu has closed; the wheel
+/// Whether the field's menu read a Cancel press in the last frame (the
+/// frame's decoded input, `menu_state_current` +0x325, is 5): it plays its
+/// sound for each.
+fn menu_read_cancel(session: &mut Session<NativeModule>) -> bool {
+    let mut bytes = [0u8; 4];
+    session.runtime.memory().read(0x8005_9178, &mut bytes[..1]).unwrap();
+    if bytes[0] != 0 {
+        return false;
+    }
+    session.runtime.memory().read(0x8006_25A0, &mut bytes).unwrap();
+    let mut input = [0u8];
+    session.runtime.memory().read(u32::from_le_bytes(bytes) + 0x325, &mut input).is_ok_and(|()| input[0] == 5)
+}
+
+/// Tab for two frames, then host frames until the field menu has closed;
+/// the Cancel presses the menu read meanwhile.
+fn tab_until_closed(session: &mut Session<NativeModule>, player: &mut xem_settings::player::PlayerInput, bindings: &xem_settings::GameBindings) -> u32 {
+    let (mut frames, mut cancels) = (0, 0);
+    player.key(bindings, "Tab", true);
+    while context(session)["kind"] != "walk" {
+        if frames == 2 {
+            player.key(bindings, "Tab", false);
+        }
+        host_frame(session, player, bindings);
+        cancels += u32::from(menu_read_cancel(session));
+        frames += 1;
+        assert!(frames < 600, "the menu closes: {}", context(session));
+    }
+    cancels
+}
+
+/// Tab opens the field menu and, pressed again, closes it with one Cancel
+/// at its commands (the menu sounds each Cancel it reads, closing too),
+/// or from a screen inside it, a Cancel out of that screen first; the wheel
 /// steps the menu's cursor.
 #[test]
 fn tab_toggles_the_field_menu_from_any_of_its_screens() {
@@ -160,6 +193,9 @@ fn tab_toggles_the_field_menu_from_any_of_its_screens() {
     run(&mut session, json!({"cmd": "enter_field", "map": 30}));
     run(&mut session, json!({"cmd": "frames", "count": 400}));
     tap(&mut session, &mut player, &bindings, "Tab", 200);
+    assert_eq!(context(&mut session)["commands"], true, "{}", context(&mut session));
+    assert_eq!(tab_until_closed(&mut session, &mut player, &bindings), 1, "one Cancel at the commands");
+    tap(&mut session, &mut player, &bindings, "Tab", 200);
     let menu = context(&mut session);
     assert_eq!(menu["kind"], "menu", "{menu}");
     // The wheel (a notch toward the player) steps the arc's cursor down.
@@ -172,14 +208,31 @@ fn tab_toggles_the_field_menu_from_any_of_its_screens() {
         tap(&mut session, &mut player, &bindings, "KeyW", 6);
     }
     tap(&mut session, &mut player, &bindings, "KeyE", 60);
-    tap(&mut session, &mut player, &bindings, "Tab", 0);
-    let mut frames = 0;
-    while context(&mut session)["kind"] != "walk" {
+    assert_eq!(context(&mut session)["open"], true, "{}", context(&mut session));
+    assert_eq!(tab_until_closed(&mut session, &mut player, &bindings), 2, "out of the item screen, then at the commands");
+}
+
+/// A click on the game while it shows its pause screen (or a tap) resumes
+/// it with one Start; playing, a click is the mouse's binding again.
+#[test]
+fn a_click_resumes_the_original_pause() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let bindings = xem_settings::GameBindings::default();
+    let mut player = xem_settings::player::PlayerInput::default();
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    run(&mut session, json!({"cmd": "enter_field", "map": 30}));
+    run(&mut session, json!({"cmd": "frames", "count": 400}));
+    tap(&mut session, &mut player, &bindings, "Enter", 30);
+    assert!(session.runtime.game_paused(), "Start pauses the field");
+    assert!(player.click(None), "the click is Start's");
+    for _ in 0..60 {
         host_frame(&mut session, &mut player, &bindings);
-        frames += 1;
-        assert!(frames < 600, "the menu closes: {}", context(&mut session));
     }
-    assert!(!player.pulsing() || frames < 600);
+    assert!(!session.runtime.game_paused(), "one Start resumed play");
+    assert!(!player.click(None));
 }
 
 /// The field as the assisted controls read it: the walkmesh under the
@@ -458,7 +511,7 @@ fn console_reset_reboots_the_original_game_and_keeps_memory_cards() {
         session.runtime.services().card.import_image(slot, image.clone()).unwrap();
         image
     }).collect();
-    session.configure_rewind(xem_core::rewind::DEFAULT_REWIND_BYTES, 1, 30).unwrap();
+    session.configure_rewind(xem_core::rewind::MAX_REWIND_BYTES, 1, 30).unwrap();
     let revision = session.timeline_revision;
     run(&mut session, json!({"cmd": "hold", "actions": ["Up", "Run"]}));
     run(&mut session, json!({"cmd": "reset"}));

@@ -51,6 +51,8 @@ pub struct Session<M: GameModule> {
     pub timeline_revision: u64,
     rewind_clock: Box<dyn Fn() -> Duration>,
     rewind_game_paused: bool,
+    /// A held rewind plays on from the state it went back to.
+    rewinding: bool,
     /// Assisted movement (`navigate`, `interact`), and the pad 1 the host
     /// and scheduled input set beneath it.
     pub assist: Option<crate::assist::Assist>,
@@ -132,6 +134,7 @@ impl<M: GameModule> Session<M> {
             timeline_revision: 0,
             rewind_clock: Box::new(rewind_clock),
             rewind_game_paused: false,
+            rewinding: false,
             assist: None,
             assist_outcome: None,
             base_pad: 0,
@@ -1201,7 +1204,8 @@ impl<M: GameModule> Session<M> {
     }
 
     fn checkpoint(&mut self) {
-        if self.rewind.budget == 0 { return; }
+        // A held rewind's frames go back in time: no history of their own.
+        if self.rewind.budget == 0 || self.rewinding { return; }
         let paused = self.game_paused();
         if paused || self.rewind_game_paused {
             self.reset_rewind_timer();
@@ -1218,15 +1222,48 @@ impl<M: GameModule> Session<M> {
         }
     }
 
-    /// One older checkpoint for a host's held rewind. Reaching the beginning
-    /// leaves the game there until the player releases the input.
+    /// One older checkpoint for a host's held rewind, taken off the queue
+    /// and played on from until the display shows a frame the game drew
+    /// since, so the picture and the sound are the game's of that moment
+    /// ([`crate::rewind::REWIND_PLAY_BLANKS`]), never as far as where the
+    /// game was. Reaching the beginning leaves the game there until the
+    /// player releases the input.
     pub fn rewind_step(&mut self) -> Result<bool, String> {
         if let Some(error) = &self.rewind.error { return Err(error.clone()); }
         if self.rewind.budget == 0 { return Err("Enable rewind history in Settings first.".into()); }
-        let Some((at,data)) = self.rewind.previous(self.runtime.frames(),1) else { return Ok(false) };
+        let was = self.runtime.frames();
+        let Some((at, data)) = self.rewind.pop_before(was) else { return Ok(false) };
         self.restore_rewind_state(&data)?;
-        self.rewind.truncate(at);
+        self.rewinding = true;
+        let played = self.play_rewound(crate::rewind::REWIND_PLAY_BLANKS.min(was.saturating_sub(at + 1)));
+        self.rewinding = false;
+        played?;
         Ok(true)
+    }
+
+    /// Runs at most `limit` frames from a rewound state, until the display
+    /// has changed buffers three times: the first shows a buffer drawn
+    /// before the state, the second one drawn from what the game had built
+    /// before it (whose projections the port recorded then, not now), the
+    /// third one built and drawn after it. Under fast-forward the music, on
+    /// the host's clock, plays those frames too.
+    fn play_rewound(&mut self, limit: u64) -> Result<(), String> {
+        let shown = |session: &mut Self| {
+            let display = session.runtime.services().gpu.device().display();
+            (display.x, display.y)
+        };
+        let mut last = shown(self);
+        let (mut blanks, mut flips) = (0, 0);
+        while blanks < limit && flips < 3 {
+            // A disc read the browser still fetches: the frame goes on later.
+            if !self.frame().map_err(|trap| trap.to_string())? { break; }
+            if self.live_music() { self.advance_music(crate::clock::VBLANK_CYCLES)?; }
+            blanks += 1;
+            let now = shown(self);
+            flips += u32::from(now != last);
+            last = now;
+        }
+        Ok(())
     }
 
     /// Rewind game progress, keeping the app's current controls and commands.

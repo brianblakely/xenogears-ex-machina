@@ -82,7 +82,7 @@ fn original_start_pause_preserves_the_rewind_queue_until_play_resumes() {
     let reply = s.execute(&json!({"cmd":"enter_field","map":22}));
     assert!(reply.get("error").is_none(),"{reply}");
     s.execute(&json!({"cmd":"frames","count":300}));
-    s.configure_rewind(xem_core::rewind::DEFAULT_REWIND_BYTES,1,30).unwrap();
+    s.configure_rewind(xem_core::rewind::MAX_REWIND_BYTES,1,30).unwrap();
     clock.set(Duration::from_secs(1));
     assert!(s.frame().unwrap());
     let retained = s.rewind.status();
@@ -109,8 +109,11 @@ fn original_start_pause_preserves_the_rewind_queue_until_play_resumes() {
     assert!(s.frame().unwrap());
     assert_eq!(s.rewind.status()["states"],3);
     assert_eq!(s.rewind.available_seconds(),2.0);
+    let (was, newest) = (s.runtime.frames(), retained["newest_frame"].as_u64().unwrap());
     assert!(s.rewind_step().unwrap());
-    assert_eq!(s.runtime.frames(),retained["newest_frame"].as_u64().unwrap());
+    // The newest playing state, played on until a frame drawn since shows.
+    let landed = s.runtime.frames();
+    assert!(landed > newest && landed <= newest + xem_core::rewind::REWIND_PLAY_BLANKS && landed < was, "{newest} -> {landed}");
     assert!(!silenced(&mut s),"rewind must land on playing history");
 }
 

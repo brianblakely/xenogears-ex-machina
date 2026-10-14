@@ -659,7 +659,10 @@ snapshots are its. The renderer only draws again what it drew:
   strip continued from the texture column the original ends at
   (`gpu_draw_panorama_strip`), and the sky, fade and ground fills and the
   battle sky's horizon bands that cross the screen copied beside it
-  (`gpu_draw_panorama`, `battle_draw_stage_sky`). Things the game leaves
+  (`gpu_draw_panorama`, `battle_draw_stage_sky`), each drawn just before
+  its band, in the drawing mode the band is drawn in (the desert's
+  translucent haze adds over the horizon drawn before it, as the band
+  does). Things the game leaves
   undrawn only because a projection overflowed (an object far off the
   original screen, or near or behind its camera), which a pulled-back
   camera sees, are drawn again for the record: the field's sprite actors
@@ -721,8 +724,11 @@ snapshots are its. The renderer only draws again what it drew:
   the list a frame shows was built two to six game frames before it (the
   field and the world map draw every other vertical blank, from double
   buffers), so a batch that asked only in its last frames showed none.
-  The trace is not part of `Gpu::save`; a snapshot load restarts it from all
-  of VRAM, and so does a trace past 100 000 ops at a vertical blank (tens of
+  The trace is not part of `Gpu::save`; a snapshot load starts it again
+  from all of VRAM, without what the abandoned timeline recorded (the
+  port's projections, the faces it culled, the screen points stored in
+  RAM), and what the game draws next follows that (a rewind step's
+  frames); a trace past 100 000 ops at a vertical blank restarts too (tens of
   frames not taken: a host running frames without presenting them, such as
   a long browser command, keeps no backlog to replay). In the scenes
   measured every 3D point matches (Lahan: 41 640 matched, the 420 others 2D).
@@ -732,7 +738,10 @@ snapshots are its. The renderer only draws again what it drew:
   buffering, the saved-screen slot and copies between screen regions work as
   on the console; textures are decoded in the shader from the native VRAM copy
   (4/8-bit CLUT, 15-bit, texture window, texel 0000h transparency, the STP bit
-  selecting semi-transparency, modulation, raw textures). Each vertex sits at
+  selecting semi-transparency, modulation, raw textures). A fill shows the
+  colour VRAM keeps of it (15 bits), expanded as texels are (to the full
+  range, or as the console's 15-bit colours), so texels painted to match it
+  match it here too. Each vertex sits at
   its own sub-pixel point when it has one (a point shared by neighbouring
   faces lands in the same place in each), and a polygon samples only its own
   texels (no bleeding from the page at higher scales or when filtered). On
@@ -783,6 +792,13 @@ snapshots are its. The renderer only draws again what it drew:
   semi-transparent as the screen's texel: the field's menu fading over it,
   its zoom into a map change and back from a battle, the battle's shatter
   show the zoomed-out, wider picture the player saw, not the original's.
+  A screen taken elsewhere keeps the two taken before while VRAM still
+  holds them, and one whose VRAM is overwritten stays while a logged frame
+  copies it, so a copy of either still brings its picture and a replay
+  never takes such a copy as the native pixels it copied: the field's menu
+  takes the dimmed screen, and its own last frame, after the field's saved
+  one, then fades back in from the saved one and gives its place back to
+  textures while the frame faded in from it still shows.
   What is drawn of it is a screen effect (interface class, never pulled
   back, no effects), and the polygons the game draws with every point the
   GTE projected at depth 0 (the field's screen pieces, scaled with
@@ -807,11 +823,16 @@ snapshots are its. The renderer only draws again what it drew:
   buffer, as after a load, nothing is replayed until its next clear; a trace
   started again on all of VRAM that holds what the logs left, as after a new
   scale or the Original renderer shown while the game was paused, keeps
-  them). A
+  them; logs are numbered across every buffer and every start of the trace,
+  so a frame logged after a state is never taken for one logged before
+  it; a display shows the log of the buffer holding its corner, so a
+  buffer shown before its own log starts, as a menu's first, shows its
+  VRAM, not the frame of another it overlaps, moved). A
   game frame whose opaque drawing leaves none of a buffer's displayed
   pixels as they were (fills, copies, uploads, untextured polygons and
   textured scenery; a battle's stage drawn over the last frame instead of
-  a clear) also starts its log, so a log holds about one frame where the
+  a clear) also starts its log, a shown buffer without one too (a state
+  loaded, a rewind's step), so a log holds about one frame where the
   game never clears (a world map battle's log had grown to 88 000 primitives
   replayed every presentation). A copy whose source the game changed after
   it shows the native pixels it copied then (the loading screen after a
@@ -851,8 +872,9 @@ snapshots are its. The renderer only draws again what it drew:
   the field's characters keep moving in (`actor_view`, below), and
   presents. A presentation with nothing new to draw (the display refreshing
   faster than the game draws: the same frame, its ops drawn so far, framing,
-  settings and no interpolation) shows the picture presented last: no
-  replay, no effects. 24-bit movie frames are not traced pictures. Under
+  settings and no interpolation; transfers elsewhere in VRAM, textures or a
+  saved screen's place given back, change nothing shown) shows the picture
+  presented last: no replay, no effects. 24-bit movie frames are not traced pictures. Under
   the Enhanced movies setting (the default) the view rebuilds them from
   what the MDEC decoded (`ps1::MovieRenderer`): while a trace runs, the
   decoder keeps each colour macroblock's planes from before its RGB
@@ -1043,7 +1065,13 @@ pixels and animation (no smoothing unless a filter is chosen). Interface
 pixels (primitives without a GTE projection, or projected with another screen
 offset than the scene's, such as the field compass, translucent ones
 included) keep their colours through every pass; full-screen translucent
-fades count as scene. The look aims at Square Enix's HD-2D (Final Fantasy
+fades count as scene. A face of the scene whose texture fades into the
+colour its buffer was cleared with, at each of its corners and along its
+outline but for one texel in ten, is sky the game painted (Shevat's sea of
+clouds below its towers, the sky around each cloud; not the desert's
+floor, whose sand merely shares its clear's colour): it takes the cleared
+sky's place in the auxiliary target, without depth, so no light, shade or
+haze sets it apart from the sky it meets. The look aims at Square Enix's HD-2D (Final Fantasy
 Resonance's field and battle pictures: a sharp playfield with soft
 foreground and background, glowing lamps that light what is near them, airy
 distance haze, warm highlights and cool shadows). In order: the frame's
@@ -1248,8 +1276,11 @@ natively (`xem_host::xr_play::gamepad`) and in the browser (`xrGamepad`).
 memory (`context` command): `walk` (the player has control in a field),
 `event` (with the map and the pad buttons its scripts test, from
 `python3 -m tools.analysis.events --buttons`), `dialogue` (with its open `choice`: count and index), `menu`
-(`menu_state_screen` and its cursors; the field menu runs inside the field
-mode), `battle` (the command page, whether the attack inputs have the
+(`menu_state_screen` and its cursors; `commands` while its commands take
+the input, the arc's highlight shown over no command's screen, `open`
+while a command's screen is open; the field menu runs inside the field
+mode, and is read while it runs, `menu_state_debug_start` 0, not while it
+loads nor while the field fades back in after it), `battle` (the command page, whether the attack inputs have the
 buttons, AP left, an open list, a target being chosen for an item, art or
 command; the attack page's own target choice is part of its attack
 inputs), `world_map` and `arena`. `xem_core::menu` (`targets`)
@@ -1287,8 +1318,11 @@ reports the frames run):
   walks. Keyboard, gamepad, touch and headset inputs share the preference;
   menus, dialogue, scripted events and battles retain their buttons.
 - **Menu toggles the field menu**: pressed while it runs (any screen of
-  it), it backs out with Cancel presses until the menu has closed; other
-  screens (shops) keep the button.
+  it), it presses Cancel at the menu's commands, which closes it, after
+  backing out of each command's screen it is in, one Cancel each, the next
+  once that screen has gone back (30 frames; the item screen takes 21):
+  the menu sounds every Cancel it reads, while it closes too, so one more
+  would be heard. Other screens (shops) keep the button.
 - **The wheel** steps a menu's or a choice's cursor (a notch toward the
   player is Down); elsewhere it pulls the field camera back or in.
 - **Pointing** at an entry (the mouse over the picture,
@@ -1317,10 +1351,14 @@ reports the frames run):
   replays too); one the player's buttons begin fades as the original's,
   its attacks still pointed at where it showed them. A click on a target that
   an item, art or command asks for chooses and confirms it. A touch's tap
-  on the picture chooses the same way. With the
+  on the picture chooses the same way. While the game shows its pause
+  screen (`Runtime::game_paused`, the player context's `paused`), a click
+  or a tap anywhere on the game presses Start once, which resumes it,
+  instead. With the
   mouse camera on, menus, choices, every battle command/attack page and
   the original pause screen release the cursor. Camera movement resumes
-  only when play can take it again.
+  only when play can take it again: the desktop takes the cursor back then,
+  a browser (whose pointer lock needs a click) at the next click.
 
 ### Assisted movement
 
@@ -1375,7 +1413,8 @@ lets go (explicit press and release). Battling names the face buttons and
 turns as the bout does (A, B, Jump, Dash, Charge, Special), the world map
 adds Board (L2 and R2 together: a Gear boarded or left), a shop's quantity
 list adds +, -, ALL and NONE. A tap on the picture (short, not travelling)
-is the pointer's tap (`xem_assist::dispatch::tap_at`): walking, on an actor
+is the pointer's tap (`xem_assist::dispatch::tap_at`; on the pause
+screen, Start, as a click): walking, on an actor
 it approaches and talks, on the floor it walks there; in a menu or choice
 it selects the entry and confirms it; in battle it chooses as a click does
 ([The game's interface context](#the-games-interface-context)); in a
@@ -1654,7 +1693,7 @@ Title screens, app menus and movies receive no synthetic Start input. Focus is
 sampled before each game frame (also when retrying a disc-blocked frame), so
 refocusing before the legal check cancels the request. Refocusing after the game
 pauses leaves it paused until the player resumes with the normal Enter/Start
-binding. The pause screen keeps running its original input and display logic;
+binding or a click or tap on the game. The pause screen keeps running its original input and display logic;
 rewind snapshots and history time remain frozen. Pause flags are read by the
 port itself, so this also works when the browser cannot load `schema.json`.
 The focus-loss preference is
@@ -1662,7 +1701,18 @@ bindable to keyboard/gamepad, persists with Settings and is included in settings
 backups. Pending focus requests are outside game snapshots; input recordings
 include their requests and cancellations so replay reaches the same game pause.
 
-Rewind runs while R (`KeyR`) or Back+LT is held and resumes on release. History
+Rewind runs while R (`KeyR`) or Back+LT is held and resumes on release.
+Every 250 ms (`REWIND_STEP_MS`) a held rewind takes the newest state before
+the game's frame off the queue and plays on from it until the display shows
+a frame both built and drawn after it (its third change of buffers: the
+first shows one drawn before the state, the second one drawn from what the
+game had built before it, whose projections the port recorded then; at
+most 12 vertical blanks, never as far as where the step began), with those
+frames' sound at the master volume (under fast-forward the music, on the
+host's clock, plays them too). Its picture is the game's at that moment as
+the renderer draws it (wider, in high resolution), not the restored VRAM;
+where the game draws nothing new (a transition holding its last picture)
+the restored picture shows. History
 is enabled by Settings for interactive play. Headless sessions, scripted native
 playback and browser command-driven boots have history off unless requested;
 browser automation can boot with `rewind: true` or use `rewind_configure`.
@@ -1710,8 +1760,9 @@ protocol state is saved, but persistent card contents are excluded. Loading,
 importing and rewinding never roll back or write ordinary card saves; card
 backups are separate explicit operations.
 Rewind expires states beyond the configured history length and discards the
-future after stepping back. Retained allocations also stay within a 256 MiB
-maximum (64 MiB by default); Settings reports the actual seconds available and
+future after stepping back. Retained allocations also stay within 2 GiB
+(`MAX_REWIND_BYTES`, the budget whenever history is on); Settings reports
+the actual seconds available and
 memory used. The real-time queue's landing points depend on elapsed play time;
 they are player conveniences, not deterministic replay checkpoints. An oversized
 checkpoint reports an error without stopping play.
@@ -1725,7 +1776,7 @@ The shared control commands are available through `xem-headless --control` and
 {"cmd":"fast_forward_configure","rate":{"Fixed":10}}
 {"cmd":"fast_forward"}
 {"cmd":"fast_forward","enabled":false}
-{"cmd":"rewind_configure","max_bytes":67108864,"interval_seconds":1,"history_seconds":30}
+{"cmd":"rewind_configure","max_bytes":2147483648,"interval_seconds":1,"history_seconds":30}
 {"cmd":"rewind","steps":1}
 {"cmd":"reset"}
 ```

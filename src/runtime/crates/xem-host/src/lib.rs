@@ -939,6 +939,8 @@ impl View {
             let targets = game.targets();
             for tap in taps {
                 let Some(at) = self.picture.and_then(|p| p.to_screen(tap.0, tap.1)) else { continue };
+                // A tap on the paused game resumes it, as a click does.
+                if self.player.unpause() { continue; }
                 match xem_assist::dispatch::tap_at(at, ui, field.as_ref(), targets.as_ref()) {
                     Some(xem_assist::dispatch::Out::Command { command }) => {
                         let _ = game.command(&command);

@@ -326,8 +326,10 @@ fn aux(in: VertexOut) -> vec4<f32> {
         let point = clamp(vec2<i32>((affine(in) + vec2<f32>(0.5) - pass_.origin) * pass_.scale), vec2<i32>(0), size - vec2<i32>(1));
         return textureLoad(feedback_aux, point, 0);
     }
-    let depth = u32(clamp(in.depth, 0.0, 65535.0));
     let kind = (in.mode.w >> CLASS_SHIFT) & 15u;
+    // The background (sky the game painted, ps1/mod.rs Builder::backdrop)
+    // has no depth, as the fills it continues.
+    let depth = select(u32(clamp(in.depth, 0.0, 65535.0)), 0u, kind == 0u);
     var flags = 0u;
     if (in.mode.w & BAKED) != 0u {
         flags |= 1u;

@@ -125,6 +125,327 @@ fn worldmap_cloud_corners_keep_their_original_quad() {
     eprintln!("checked {checked} original worldmap cloud quads");
 }
 
+/// The field menu's frames replay its own buffers' (in both, its windows,
+/// commands and portraits), and closing it, the field fades back in from
+/// the screen it saved and holds it while its sprites load: the wider
+/// picture presented before the menu, sides included, not the original's
+/// own picture of it (the screen taken twice more meanwhile, the menu's
+/// dimmed copy and its last frame, keeps the field's; its place given back
+/// to textures leaves the frame shown as it is).
+#[test]
+fn the_field_menu_closes_back_to_the_wider_picture() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    session.execute(&json!({"cmd":"enter_field", "map": 22}));
+    session.execute(&json!({"cmd":"frames", "count": 340}));
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    let graphics = Graphics { widescreen: true, zoom_out: 125, ..Graphics::default() };
+    let (mut checked, mut menu_frames) = (0, 0);
+    for n in 0..480u64 {
+        // The menu opens, then closes from its commands.
+        let buttons = match n { 60 | 61 => vec!["square"], 260 | 261 => vec!["circle"], _ => vec![] };
+        session.execute(&json!({"cmd":"pad", "buttons": buttons}));
+        assert!(session.frame().unwrap());
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (1280, 720), view.max_scale()));
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        view.push(device.take_trace());
+        let display = device.display();
+        let scene = session.scene();
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        let (width, height) = view.present(&mut encoder, &display, &scene, n as f64 / 60.0).expect("presented").size;
+        gpu.queue.submit([encoder.finish()]);
+        if matches!(session.runtime.context(), xem_core::context::Context::Menu { commands: true, .. }) {
+            assert!(view.frame().drawn() > 50, "frame {n}: the menu's buffer at {:?} replays another's frame", (display.x, display.y));
+            menu_frames += 1;
+        }
+        // From the fade back in until the field has drawn again.
+        if n < 300 {
+            continue;
+        }
+        let rgba = xem_render::read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().unwrap());
+        let side = view.config().unwrap().side;
+        let edge = (width * side / (display.width + 2 * side)) as usize;
+        let mean = |x0: usize, x1: usize| {
+            let (mut sum, mut count) = (0u64, 0u64);
+            for y in (0..height as usize).step_by(4) {
+                for x in (x0..x1).step_by(4) {
+                    let p = &rgba[(y * width as usize + x) * 4..][..3];
+                    sum += p.iter().map(|&c| u64::from(c)).sum::<u64>();
+                    count += 3;
+                }
+            }
+            sum as f32 / count as f32
+        };
+        let (left, centre, right) = (mean(0, edge), mean(edge, width as usize - edge), mean(width as usize - edge, width as usize));
+        if centre > 8.0 {
+            assert!(left > centre * 0.4 && right > centre * 0.4, "frame {n}: sides {left} and {right}, the middle {centre}");
+            checked += 1;
+        }
+    }
+    assert!(menu_frames > 30, "{menu_frames} frames of the menu's commands");
+    assert!(checked > 100, "{checked} frames of the field shown back");
+}
+
+/// A held rewind's steps show the game's frames as the renderer draws them
+/// (wider, in high resolution), not the restored VRAM as it is: each takes
+/// a state off the queue and plays on from it until the display shows a
+/// frame the game drew since, never as far as where the step began.
+#[test]
+fn held_rewind_steps_show_frames_the_game_drew() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (session, _) = boot(&disc, &Default::default()).expect("boot");
+    let clock = std::rc::Rc::new(std::cell::Cell::new(std::time::Duration::ZERO));
+    let source = clock.clone();
+    let mut session = Session::new(session.runtime, session.schema, move || source.get());
+    // A room: walking there starts no battle (a battle's transition holds
+    // the field's last picture, drawn before any state).
+    session.execute(&json!({"cmd":"enter_field", "map": 30}));
+    session.execute(&json!({"cmd":"frames", "count": 340}));
+    session.configure_rewind(xem_core::rewind::MAX_REWIND_BYTES, 1, 30).unwrap();
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    let graphics = Graphics { widescreen: true, ..Graphics::default() };
+    let mut tick = 0u64;
+    // One host presentation: what the game drew since the last, drawn;
+    // how many of the shown frame's ops the renderer replayed.
+    let mut present = |session: &mut Session<NativeModule>, view: &mut GameView| -> usize {
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (1280, 720), view.max_scale()));
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        view.push(device.take_trace());
+        let display = device.display();
+        let scene = session.scene();
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        tick += 1;
+        assert!(view.present(&mut encoder, &display, &scene, tick as f64 / 60.0).is_some());
+        gpu.queue.submit([encoder.finish()]);
+        view.frame().drawn()
+    };
+    // Ten seconds of walking about, a state a second.
+    for n in 0..600u64 {
+        clock.set(std::time::Duration::from_millis(n * 1000 / 60));
+        session.execute(&json!({"cmd":"pad", "buttons": if (n / 90) % 2 == 0 { vec!["left"] } else { vec!["right"] }}));
+        assert!(session.frame().unwrap());
+        present(&mut session, &mut view);
+    }
+    for step in 0..8 {
+        let was = session.runtime.frames();
+        assert!(session.rewind_step().unwrap());
+        let landed = session.runtime.frames();
+        assert!(landed < was, "step {step}: {was} -> {landed}");
+        assert!(present(&mut session, &mut view) > 0, "step {step}: the restored VRAM shown instead of a frame drawn since");
+    }
+}
+
+/// The flat bands a battle stage's sky draws across the screen go on beside
+/// it as culled faces drawn just before each band, in the band's drawing
+/// mode: over what the stage draws before the band and under what after,
+/// as the band itself (the desert's translucent haze adds over the horizon
+/// drawn before it; drawn first, its sides were covered and averaged).
+#[test]
+fn battle_sky_bands_continue_beside_the_screen_where_they_are_drawn() {
+    use xem_gpu::{Primitive, Shape, TraceOp};
+
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    start_desert_battle(&mut session);
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    let graphics = Graphics { widescreen: true, ..Graphics::default() };
+    view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (1280, 720), view.max_scale()));
+    session.runtime.services().gpu.device_mut().set_trace(true);
+    let (mut checked, mut haze) = (0, false);
+    for _ in 0..1700 {
+        session.runtime.services().gpu.device_mut().set_reveals(view.reveals());
+        assert!(session.frame().unwrap());
+        let ops = session.runtime.services().gpu.device_mut().take_trace().ops;
+        let draws: Vec<&Primitive> = ops.iter().filter_map(|op| match op { TraceOp::Draw(p) => Some(p), _ => None }).collect();
+        for (i, copy) in draws.iter().enumerate() {
+            let xs = copy.vertices.map(|v| v.x);
+            let beside = xs.iter().all(|&x| x <= 0) || xs.iter().all(|&x| x >= 320);
+            if !(copy.revealed && !copy.textured && copy.shape == Shape::Quad && beside && (xs.contains(&0) || xs.contains(&320))) {
+                continue;
+            }
+            // Just before the band (after the other side's copy, if any).
+            let others = draws[i + 1..].iter().take_while(|p| p.revealed).count();
+            let band = draws.get(i + 1 + others).expect("the band");
+            assert!(others <= 1 && band.vertices.iter().all(|v| v.x == 0 || v.x == 320), "{copy:?} is not just before its band: {band:?}");
+            assert_eq!((band.vertices[0].color, band.semi), (copy.vertices[0].color, copy.semi));
+            assert_eq!(band.environment.draw_mode, copy.environment.draw_mode, "drawn in its band's mode");
+            checked += 1;
+            haze |= copy.semi;
+        }
+    }
+    assert!(checked > 100 && haze, "{checked} band copies seen, the haze among them: {haze}");
+}
+
+/// Below Shevat's towers the game draws a sea of clouds whose texture holds,
+/// around each cloud, the colour its buffer was cleared with: on the console
+/// that sky meets the cleared sky without an edge. Here too: the clear shows
+/// the colour VRAM keeps (as the texels are expanded), and the HD-2D effects
+/// take the painted sky for the sky, without depth (no light, shade or haze
+/// that the sky beside it does not get).
+#[test]
+fn the_sky_painted_around_shevats_clouds_meets_the_sky_without_an_edge() {
+    use xem_render::ps1::DebugView;
+
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    session.execute(&json!({"cmd":"enter_field", "map": 424}));
+    session.execute(&json!({"cmd":"frames", "count": 240}));
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    // Modern's picture, and the HD-2D effects' inputs (black: background).
+    let mut views = [Graphics::default(), Graphics { profile: GraphicsProfile::Hd2d, ..Graphics::default() }].map(|graphics| {
+        let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (1280, 720), view.max_scale()));
+        view
+    });
+    views[1].effects_mut().set_debug_view(DebugView::Class);
+    let mut sizes = [(0, 0); 2];
+    for n in 0..40 {
+        assert!(session.frame().unwrap());
+        let device = session.runtime.services().gpu.device_mut();
+        let restart = views.iter_mut().fold(false, |restart, view| view.take_restart() | restart);
+        if restart || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(views[0].reveals());
+        let trace = device.take_trace();
+        let display = device.display();
+        let scene = session.scene();
+        for (view, size) in views.iter_mut().zip(&mut sizes) {
+            view.push(trace.clone());
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            *size = view.present(&mut encoder, &display, &scene, n as f64 / 60.0).expect("presented").size;
+            gpu.queue.submit([encoder.finish()]);
+        }
+    }
+    let pictures: Vec<_> = views.iter().zip(sizes).map(|(view, size)| (size, xem_render::read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().unwrap()))).collect();
+    // Each native pixel showing the sky (the frame's commonest colour), and
+    // its neighbours too, where the console shows it (the cleared sky and
+    // the painted one alike).
+    let (width, height, native) = session.runtime.services().gpu.display_rgba8();
+    let (width, height) = (width as usize, height as usize);
+    let at = |x: usize, y: usize| &native[(y * width + x) * 4..][..3];
+    let mut counts = std::collections::HashMap::new();
+    for pixel in native.chunks_exact(4) {
+        *counts.entry(&pixel[..3]).or_insert(0) += 1;
+    }
+    let sky = *counts.iter().max_by_key(|(_, n)| **n).unwrap().0;
+    let (mut skies, mut modern) = (0, std::collections::HashMap::new());
+    for y in 1..height - 1 {
+        for x in 1..width - 1 {
+            if !(y - 1..=y + 1).all(|y| (x - 1..=x + 1).all(|x| at(x, y) == sky)) {
+                continue;
+            }
+            let shown = |(size, rgba): &((u32, u32), Vec<u8>)| {
+                let (px, py) = ((x * 2 + 1) * size.0 as usize / (width * 2), (y * 2 + 1) * size.1 as usize / (height * 2));
+                rgba[(py * size.0 as usize + px) * 4..][..3].to_vec()
+            };
+            *modern.entry(shown(&pictures[0])).or_insert(0) += 1;
+            assert_eq!(shown(&pictures[1]), [0, 0, 0], "native ({x}, {y}): sky the effects take for scenery");
+            skies += 1;
+        }
+    }
+    assert!(skies > 10_000, "{skies} pixels of sky");
+    // In Modern, one colour (the translucent clouds over it, mapped in
+    // perspective, lie a little elsewhere than on the console).
+    let most = modern.values().max().unwrap();
+    eprintln!("sky {sky:?}: {skies} pixels; Modern {modern:?}");
+    assert!(most * 100 >= skies * 97, "the sky in Modern: {modern:?}");
+}
+
+/// A held rewind in a battle that draws its stage over its last frame
+/// instead of clearing it (the desert) shows the frames it draws: they
+/// start their logs again after each step's state, as after a state loaded.
+#[test]
+fn held_rewind_in_a_battle_that_never_clears_shows_its_frames() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (session, _) = boot(&disc, &Default::default()).expect("boot");
+    let clock = std::rc::Rc::new(std::cell::Cell::new(std::time::Duration::ZERO));
+    let source = clock.clone();
+    let mut session = Session::new(session.runtime, session.schema, move || source.get());
+    start_desert_battle(&mut session);
+    session.execute(&json!({"cmd":"frames", "count": 1500}));
+    session.configure_rewind(xem_core::rewind::MAX_REWIND_BYTES, 1, 30).unwrap();
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    let graphics = Graphics { widescreen: true, ..Graphics::default() };
+    let mut tick = 0u64;
+    let mut present = |session: &mut Session<NativeModule>, view: &mut GameView| -> usize {
+        view.configure(ViewConfig::resolve(&graphics, HostClass::Desktop, (1280, 720), view.max_scale()));
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        view.push(device.take_trace());
+        let display = device.display();
+        let scene = session.scene();
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        tick += 1;
+        assert!(view.present(&mut encoder, &display, &scene, tick as f64 / 60.0).is_some());
+        gpu.queue.submit([encoder.finish()]);
+        view.frame().drawn()
+    };
+    // The trace starts in the battle; five seconds of it, a state a second.
+    for n in 0..300u64 {
+        clock.set(std::time::Duration::from_millis(n * 1000 / 60));
+        assert!(session.frame().unwrap());
+        present(&mut session, &mut view);
+    }
+    assert!(present(&mut session, &mut view) > 0, "the battle's frames are drawn again");
+    for step in 0..4 {
+        let was = session.runtime.frames();
+        assert!(session.rewind_step().unwrap());
+        assert!(session.runtime.frames() < was);
+        assert!(present(&mut session, &mut view) > 0, "step {step}: the restored VRAM shown instead of a frame drawn since");
+    }
+}
+
+/// Starts the debug battle selector's (`battle_scene_select_values`) first
+/// event file's formation 15: the desert, its party in their Gears.
+fn start_desert_battle(session: &mut Session<NativeModule>) {
+    for cmd in [
+        json!({"cmd":"frames", "count":60}),
+        json!({"cmd":"write", "path":"mode_battle_standalone", "value":1}),
+        json!({"cmd":"boot_mode", "mode":2}),
+        json!({"cmd":"frames", "count":900}),
+    ] { assert!(session.execute(&cmd).get("error").is_none()); }
+    let mut put = |row: u32, column: u32, value: u32| {
+        session.runtime.memory().write(0x801E_1DA0 + (row * 3 + column) * 4, &value.to_le_bytes()).unwrap();
+    };
+    put(0, 0, 15);
+    put(3, 0, 253);
+    for column in 0..3 {
+        put(2, column, 1);
+    }
+    session.execute(&json!({"cmd":"press", "buttons":["start"], "frames":1}));
+}
+
 fn disc() -> Option<PathBuf> {
     let path = std::env::var_os("XEM_DISC1")
         .map(PathBuf::from)

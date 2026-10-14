@@ -186,7 +186,8 @@ impl Gpu {
     }
 
     /// Restores a [`Gpu::save`] snapshot. On error the GPU is unchanged. The
-    /// per-frame statistics are kept.
+    /// per-frame statistics and the draw trace are kept
+    /// ([`Gpu::keep_presentation`]).
     pub fn load(&mut self, data: &[u8]) -> Result<(), SnapshotError> {
         let mut r = Reader(data);
         if &r.take::<8>()? != MAGIC {
@@ -264,11 +265,8 @@ impl Gpu {
         if !r.0.is_empty() {
             return Err(SnapshotError::Length);
         }
-        gpu.stats = std::mem::take(&mut self.stats);
-        let trace = self.trace.take();
-        *self = gpu;
-        self.trace = trace;
-        self.trace_resync();
+        let mut live = std::mem::replace(self, gpu);
+        self.keep_presentation(&mut live);
         Ok(())
     }
 }

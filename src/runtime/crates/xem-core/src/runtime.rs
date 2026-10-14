@@ -1000,7 +1000,7 @@ impl<M: GameModule> Runtime<M> {
         let services = unsafe { &mut *self.services };
         let speed = services.clock.audio_speed;
         clock.external_audio = services.clock.external_audio;
-        services.gpu = loaded.gpu;
+        services.gpu.restore_state(loaded.gpu);
         services.cd.restore_state(loaded.cd);
         services.mdec = loaded.mdec;
         services.spu.restore_state(loaded.spu);

@@ -321,7 +321,7 @@ mod tests {
 
     #[test]
     fn the_receiving_region_is_the_list_a_swipe_scrolls() {
-        let menu = |switch| Context::Menu { screen: 0, cursor: 0, choice: 0, choices: 2, switch, quantities: false };
+        let menu = |switch| Context::Menu { screen: 0, cursor: 0, choice: 0, choices: 2, commands: false, open: true, switch, quantities: false };
         let bounds = Some((100.0, 100.0, 200.0, 128.0));
         assert_eq!(receiving_region(menu(false), &list(), (10.0, 10.0)), bounds, "the only list, wherever the gaze is");
         assert_eq!(receiving_region(menu(true), &list(), (150.0, 110.0)), bounds, "on a character screen, under the gaze");
@@ -342,7 +342,7 @@ mod tests {
 
     #[test]
     fn menus_scroll_under_the_gaze_and_switch_characters_beside_it() {
-        let menu = Context::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, switch: true, quantities: false };
+        let menu = Context::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, commands: false, open: true, switch: true, quantities: false };
         let swipe = |d, aim| dispatch(&[Gesture::Swipe { hand: HAND, direction: d }], menu, aim, None, Some(&list()));
         assert_eq!(swipe(Swipe::Up, Some((150.0, 105.0))), [press([GameAction::Down])], "up: later entries");
         assert_eq!(swipe(Swipe::Down, Some((150.0, 105.0))), [press([GameAction::Up])]);
@@ -350,7 +350,7 @@ mod tests {
         assert_eq!(swipe(Swipe::Down, Some((10.0, 200.0))), [press([GameAction::CameraLeft])]);
         assert_eq!(swipe(Swipe::Right, None), [press([GameAction::Cancel])], "back");
         // Without character switching the gaze outside the list still scrolls.
-        let plain = Context::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, switch: false, quantities: false };
+        let plain = Context::Menu { screen: 0, cursor: 0, choice: 0, choices: 0, commands: false, open: true, switch: false, quantities: false };
         assert_eq!(dispatch(&[Gesture::Swipe { hand: HAND, direction: Swipe::Up }], plain, Some((10.0, 200.0)), None, Some(&list())), [press([GameAction::Down])]);
     }
 
