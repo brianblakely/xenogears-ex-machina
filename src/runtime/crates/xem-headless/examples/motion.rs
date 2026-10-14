@@ -180,10 +180,16 @@ impl Review {
             self.compositor.draw(&mut encoder, &target, None, &quads);
         }
         let shown = presented.is_some();
+        // Whether the frame's camera matrix mirrors its world (its axes'
+        // determinant negative), which the table undoes.
+        let mirrored = presented.as_ref().and_then(|presented| presented.space).map(|space| {
+            xem_render::glam::Mat3::from_cols_array_2d(&space.camera.axes).determinant() < 0.0
+        });
         gpu.queue.submit([encoder.finish()]);
         let stats = view.diorama_stats();
         self.builds.push(json!({"scene": stats.scene, "sprites": stats.sprites, "one_sided": stats.one_sided, "revealed": stats.revealed,
-            "wall": stats.wall, "pane": stats.pane, "tints": stats.tints, "unplaced": stats.unplaced, "lifted": stats.lifted, "runs": stats.runs}));
+            "wall": stats.wall, "pane": stats.pane, "tints": stats.tints, "unplaced": stats.unplaced, "lifted": stats.lifted, "runs": stats.runs,
+            "mirrored": mirrored}));
         shown.then(|| (self.target.width(), self.target.height()))
     }
 }

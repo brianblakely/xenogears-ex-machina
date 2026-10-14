@@ -1567,9 +1567,10 @@ tests below drive it.
   `seat · (0, height, -distance)`, tilted about its x axis (positive raises
   its far edge). The world stands on it upright: shifted to the point the
   table follows, turned about the world's up to the table's heading, y
-  flipped up and z with it unless the camera mirrors its world (the world
-  map's does), which keeps the world's handedness (nothing is mirrored and
-  every face keeps its winding), and scaled so the original screen's width
+  flipped up and z with it (z kept should a camera's matrix mirror its
+  world; Lahan's, the debug battle's and the world map's do not), which
+  keeps the world's handedness (nothing is mirrored and every face keeps
+  its winding), and scaled so the original screen's width
   at the camera's target depth (320 times the target's depth over H, in
   view units, over the field's scale) spans the table's 0.9 m, fixed when a
   scene begins, times the player's scale. The camera's pitch and roll do

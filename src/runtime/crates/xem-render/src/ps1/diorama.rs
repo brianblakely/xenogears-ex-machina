@@ -330,7 +330,8 @@ impl Placement {
             return None;
         }
         // y down to y up, keeping the world's handedness (its z flipped too
-        // unless the camera mirrors it, as the world map's does).
+        // unless the camera's matrix mirrors its world, which none measured
+        // does: a field's, the debug battle's, the world map's).
         let flip = Vec3::new(1.0, -1.0, if m.determinant() < 0.0 { 1.0 } else { -1.0 });
         // The camera's axis in the world (its third row), level, as the
         // table's -z (away from the seat).
