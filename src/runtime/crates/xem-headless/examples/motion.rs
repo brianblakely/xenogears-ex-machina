@@ -166,6 +166,7 @@ impl Review {
             if let (Some(pane), Some(space)) = (presented.pane, presented.space) {
                 self.pane = Some(pane.texture().clone());
                 let mut quad = xem_render::Quad::world(pane, view_proj, space.pane, space.pane_size);
+                quad.opacity = 1.0 - presented.screen;
                 quad.srgb_encoded = true;
                 quads.push(quad);
             }
@@ -189,7 +190,7 @@ impl Review {
         let stats = view.diorama_stats();
         self.builds.push(json!({"scene": stats.scene, "sprites": stats.sprites, "one_sided": stats.one_sided, "revealed": stats.revealed,
             "wall": stats.wall, "pane": stats.pane, "tints": stats.tints, "unplaced": stats.unplaced, "lifted": stats.lifted, "runs": stats.runs,
-            "mirrored": mirrored}));
+            "builds": stats.builds, "mirrored": mirrored}));
         shown.then(|| (self.target.width(), self.target.height()))
     }
 }

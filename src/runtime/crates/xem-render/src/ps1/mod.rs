@@ -68,6 +68,9 @@ const FLAG_FEEDBACK: u32 = 1 << 19;
 /// target).
 const FLAG_TABLE: u32 = 1 << 20;
 const FLAG_CLIP: u32 = 1 << 21;
+/// A diorama vertex of a sprite's billboard part, lifted by its `w` (world
+/// units) along the billboards' normal towards the side the eye sees.
+const FLAG_BILLBOARD: u32 = 1 << 22;
 
 /// Which of the original GPU's limits a picture keeps. Each is independent.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -238,6 +241,10 @@ pub(crate) struct PassUniform {
     pub(crate) world_to_table: [[f32; 4]; 4],
     pub(crate) volume_min: [f32; 4],
     pub(crate) volume_max: [f32; 4],
+    /// The eye's point in the game's world, and the sprites' billboards'
+    /// normal there ([`FLAG_BILLBOARD`]).
+    pub(crate) eye: [f32; 4],
+    pub(crate) billboard: [f32; 4],
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

@@ -34,6 +34,10 @@ struct Pass {
     world_to_table: mat4x4<f32>,
     volume_min: vec4<f32>,
     volume_max: vec4<f32>,
+    // The eye's point in the game's world, and the sprites' billboards'
+    // normal there (BILLBOARD).
+    eye: vec4<f32>,
+    billboard: vec4<f32>,
 };
 
 // Pass options (ps1/mod.rs PASS_WORLD, PASS_PANE).
@@ -66,9 +70,11 @@ const LINE: u32 = 131072u;
 const CAPTURE: u32 = 262144u;
 const FEEDBACK: u32 = 524288u;
 // A diorama vertex in the table's space, not the game's world; one in clip
-// space (a full-screen fade over a whole target).
+// space (a full-screen fade over a whole target); one of a sprite's
+// billboard part, lifted by its `w` (vs_world).
 const TABLE: u32 = 1048576u;
 const CLIP: u32 = 2097152u;
+const BILLBOARD: u32 = 4194304u;
 
 struct VertexIn {
     @location(0) position: vec2<f32>,
@@ -137,12 +143,20 @@ fn vs_main(in: VertexIn) -> VertexOut {
 // A diorama vertex (ps1/diorama.rs): its point in the game's world (x and y
 // in `position`, z in `depth`), or in the table's space (TABLE: the
 // backdrop's wall), seen through the eye's matrices; or a point of clip
-// space (CLIP: a fade over the whole target). Textures interpolate
+// space (CLIP: a fade over the whole target). A sprite's billboard part
+// (BILLBOARD) is lifted over the parts drawn before it by `w` (world units)
+// along the billboards' normal, towards the side of its billboard the eye
+// sees, so the game's order holds from either side. Textures interpolate
 // perspective-correctly through the clip w.
 @vertex
 fn vs_world(in: VertexIn) -> VertexOut {
     var out: VertexOut;
-    let point = vec4<f32>(in.position, in.depth, 1.0);
+    var point = vec4<f32>(in.position, in.depth, 1.0);
+    if (in.mode.w & BILLBOARD) != 0u {
+        let normal = pass_.billboard.xyz;
+        let side = select(-1.0, 1.0, dot(normal, pass_.eye.xyz - point.xyz) >= 0.0);
+        point = vec4<f32>(point.xyz + normal * (in.w * side), 1.0);
+    }
     if (in.mode.w & CLIP) != 0u {
         out.clip = vec4<f32>(in.position, 0.0, 1.0);
         out.table = vec3<f32>(0.0);

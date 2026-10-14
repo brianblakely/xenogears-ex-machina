@@ -1229,8 +1229,9 @@ fn gte_frame(gpu: &mut xem_gpu::Gpu, columns: [[i32; 3]; 3], faces: &[Face], cam
     gpu.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0200]);
     gpu.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
     let matrix = Mat3x3(columns);
-    let target = matrix.view([0.0, 200.0, 1200.0]);
-    let mut projections = if camera { camera_entries(columns, [0, 0, 0], target.map(|c| c as i32), target[2] as u16) } else { Vec::new() };
+    // The target in the world, and its depth through the camera.
+    let target = [0.0, 200.0, 1200.0];
+    let mut projections = if camera { camera_entries(columns, [0, 0, 0], target.map(|c| c as i32), matrix.view(target)[2] as u16) } else { Vec::new() };
     let mut packets = Vec::new();
     for face in faces {
         if let Some(ground) = face.ground {
@@ -1298,6 +1299,21 @@ fn present_diorama(gpu: &Gpu, view: &mut GameView, eyes: &[(Mat4, Mat4)], size: 
 
 /// [`present_diorama`] of `scene` over targets cleared to `clear`.
 fn present_over(gpu: &Gpu, view: &mut GameView, eyes: &[(Mat4, Mat4)], size: (u32, u32), now: f64, scene: &str, clear: xem_render::wgpu::Color) -> (Vec<Vec<u8>>, f32, Option<Vec<u8>>) {
+    present_shown(gpu, view, eyes, size, now, scene, clear, &DISPLAY).expect("a presentation")
+}
+
+/// [`present_over`] of `display`: `None` when there is nothing to show.
+#[allow(clippy::too_many_arguments)]
+fn present_shown(
+    gpu: &Gpu,
+    view: &mut GameView,
+    eyes: &[(Mat4, Mat4)],
+    size: (u32, u32),
+    now: f64,
+    scene: &str,
+    clear: xem_render::wgpu::Color,
+    display: &xem_gpu::DisplayInfo,
+) -> Option<(Vec<Vec<u8>>, f32, Option<Vec<u8>>)> {
     let targets = eye_targets(gpu, eyes.len(), size);
     let views: Vec<_> = targets.iter().map(|t| t.create_view(&Default::default())).collect();
     let mut encoder = gpu.device.create_command_encoder(&Default::default());
@@ -1314,12 +1330,12 @@ fn present_over(gpu: &Gpu, view: &mut GameView, eyes: &[(Mat4, Mat4)], size: (u3
         });
     }
     let eye_views: Vec<ViewTarget> = eyes.iter().zip(&views).map(|(&(eye, proj), target)| ViewTarget { view: eye, proj, target, viewport: Viewport::full(size.0, size.1) }).collect();
-    let presented = view.present_diorama(&mut encoder, &DISPLAY, scene, now, &eye_views, Mat4::IDENTITY).expect("a presentation");
-    let screen = presented.screen;
-    let pane = presented.pane.map(|pane| pane.texture().clone());
+    let presented = view.present_diorama(&mut encoder, display, scene, now, &eye_views, Mat4::IDENTITY);
+    let shown = presented.map(|presented| (presented.screen, presented.pane.map(|pane| pane.texture().clone())));
     gpu.queue.submit([encoder.finish()]);
+    let (screen, pane) = shown?;
     let pictures = targets.iter().map(|t| read_rgba8(&gpu.device, &gpu.queue, t)).collect();
-    (pictures, screen, pane.map(|pane| read_rgba8(&gpu.device, &gpu.queue, &pane)))
+    Some((pictures, screen, pane.map(|pane| read_rgba8(&gpu.device, &gpu.queue, &pane))))
 }
 
 /// The eye at the game camera's pose (its view matrix, in the room of
@@ -1428,7 +1444,9 @@ fn split_sprites_at_one_floor_point_keep_the_games_order_in_the_diorama() {
     faces[3].owner = SPRITE + 0x100;
     faces[3].ground = Some(FEET);
     let mut view = shown_diorama(&gpu, &faces, Table { scale: 2.0, ..Table::default() });
-    for (yaw, pitch) in [(0.0, 40.0), (35.0, 30.0), (-50.0, 25.0)] {
+    // From the seat's side, and from beyond the billboards' plane (their
+    // backs, round the table).
+    for (yaw, pitch) in [(0.0, 40.0), (35.0, 30.0), (-50.0, 25.0), (180.0, 30.0), (150.0, 25.0)] {
         let (pictures, _, _) = present_diorama(&gpu, &mut view, &[orbit(yaw, pitch, 0.8, 0.0)], (640, 480), 2.0);
         let picture = &pictures[0];
         dump(&format!("split-{yaw}-{pitch}"), picture);
@@ -1547,6 +1565,156 @@ fn frames_without_a_camera_record_or_in_other_modes_show_the_screen() {
     // The screen view: the screen whatever the frame.
     view.set_xr_view(XrView::Screen);
     assert_eq!(present_diorama(&gpu, &mut view, &eye, (640, 480), 1.6).1, 1.0);
+}
+
+/// The game's next frame of [`FIELD`] through the camera `columns`,
+/// `blanks` vertical blanks after the one before: with a camera record when
+/// `camera`; without its scene (`scene` false) only the clear and a
+/// full-screen fade.
+fn next_frame(blanks: usize, columns: [[i32; 3]; 3], camera: bool, scene: bool) -> xem_gpu::Trace {
+    DEVICE.with(|device| {
+        let mut device = device.borrow_mut();
+        for _ in 0..blanks {
+            device.vblank();
+        }
+        if scene {
+            gte_frame(&mut device, columns, &FIELD, camera);
+        } else {
+            device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0240]);
+            device.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+            device.write_gp0_words(&[0x2A40_4040, xy(0, 0), xy(320, 0), xy(0, 240), xy(320, 240)]);
+        }
+        device.take_trace()
+    })
+}
+
+/// The floor's pixels in an eye's picture over black (pure green, faded by
+/// the diorama's share) and their mean green.
+fn floor(picture: &[u8]) -> (usize, f32) {
+    let green: Vec<u8> = picture.chunks(4).filter(|p| p[0] == 0 && p[2] == 0 && p[1] > 0).map(|p| p[1]).collect();
+    (green.len(), green.iter().map(|&g| f32::from(g)).sum::<f32>() / green.len().max(1) as f32)
+}
+
+#[test]
+fn leaving_the_diorama_eases_to_the_screen_as_the_last_diorama_fades_out() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let eye = [orbit(0.0, 40.0, 1.0, 0.0)];
+    let black = xem_render::wgpu::Color::BLACK;
+    let movie = xem_gpu::DisplayInfo { color24: true, ..DISPLAY };
+    // A menu, a 24-bit movie frame, first-person inspection: each after a
+    // diorama (eased in by now 1), presented every 0.1 s.
+    for case in ["menu", "movie", "first person"] {
+        let mut view = shown_diorama(&gpu, &FIELD, Table::default());
+        let (pictures, screen, _) = present_diorama(&gpu, &mut view, &eye, (640, 480), 1.0);
+        assert_eq!(screen, 0.0);
+        let (shown, _) = floor(&pictures[0]);
+        let (scene, display) = match case {
+            // The next frame drawn by the menu (no scene, no camera record).
+            "menu" => {
+                view.push(next_frame(5, LEVEL, false, false));
+                ("menu", &DISPLAY)
+            }
+            "movie" => ("field:1", &movie),
+            _ => {
+                view.set_first_person(true);
+                ("field:1", &DISPLAY)
+            }
+        };
+        let mut shares = Vec::new();
+        for now in [1.1, 1.2, 1.35] {
+            match present_shown(&gpu, &mut view, &eye, (640, 480), now, scene, black, display) {
+                Some((pictures, screen, pane)) => {
+                    shares.push(screen);
+                    if screen < 1.0 {
+                        // The last diorama, fading out over the screen.
+                        let (count, green) = floor(&pictures[0]);
+                        assert!(count * 10 > shown * 9, "{case}: the last diorama's floor shows ({count} of {shown} pixels)");
+                        assert!((green - 255.0 * (1.0 - screen)).abs() < 3.0, "{case}: at one minus the screen's share ({green} at {screen})");
+                        assert!(pane.is_some(), "{case}: and its pane");
+                    }
+                }
+                // A movie the view does not draw: nothing left to show.
+                None => shares.push(1.0),
+            }
+        }
+        eprintln!("{case}: {shares:?}");
+        assert!((shares[0] - 1.0 / 3.0).abs() < 0.01 && (shares[1] - 2.0 / 3.0).abs() < 0.01 && shares[2] == 1.0, "{case}: the screen eases in over 0.3 s: {shares:?}");
+        assert!(view.diorama_space().is_none(), "{case}: no diorama once the screen shows alone");
+    }
+}
+
+#[test]
+fn frames_without_a_camera_record_or_a_scene_keep_the_diorama_for_two_frames_then_ease_to_the_screen() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let eye = [orbit(0.0, 40.0, 1.0, 0.0)];
+    for case in ["no scene", "no camera"] {
+        let mut view = shown_diorama(&gpu, &FIELD, Table::default());
+        let (pictures, _, _) = present_diorama(&gpu, &mut view, &eye, (640, 480), 1.0);
+        let (shown, _) = floor(&pictures[0]);
+        let mut shares = Vec::new();
+        for (n, now) in [1.1, 1.133, 1.166, 1.3, 1.5].into_iter().enumerate() {
+            if n < 3 {
+                // A frame without its scene drawn a vertical blank after the
+                // last (taking that camera record, as the field menu's
+                // opening fades over the field do), or a field frame five
+                // blanks after it (no record of its own, the last expired).
+                let frame = if case == "no scene" { next_frame(1, LEVEL, false, false) } else { next_frame(5, LEVEL, false, true) };
+                view.push(frame);
+            }
+            let (pictures, screen, _) = present_diorama(&gpu, &mut view, &eye, (640, 480), now);
+            shares.push(screen);
+            if screen < 1.0 {
+                let (count, green) = floor(&pictures[0]);
+                assert!(count * 10 > shown * 9, "{case}: the diorama before shows, not an empty table ({count} of {shown} floor pixels)");
+                assert!((green - 255.0 * (1.0 - screen)).abs() < 3.0, "{case}: at one minus the screen's share ({green} at {screen})");
+            }
+        }
+        eprintln!("{case}: {shares:?}");
+        assert_eq!(&shares[..2], [0.0, 0.0], "{case}: two frames keep the diorama before");
+        assert!(shares.windows(2).skip(1).all(|w| w[1] > w[0]) && shares[4] == 1.0, "{case}: then the screen eases in: {shares:?}");
+        // The field drawn again with its camera: eased back into the diorama.
+        view.push(next_frame(1, LEVEL, true, true));
+        let (_, screen, _) = present_diorama(&gpu, &mut view, &eye, (640, 480), 1.6);
+        assert!((screen - 2.0 / 3.0).abs() < 0.01, "{case}: the diorama eases in again: {screen}");
+    }
+}
+
+/// A camera turned `degrees` about the world's up from [`LEVEL`].
+fn turned(degrees: f32) -> [[i32; 3]; 3] {
+    let (sin, cos) = degrees.to_radians().sin_cos();
+    // view = R · world with R = Ry(-degrees): its columns.
+    [[cos, 0.0, sin], [0.0, 1.0, 0.0], [-sin, 0.0, cos]].map(|column| column.map(|c| (c * 4096.0).round() as i32))
+}
+
+#[test]
+fn the_diorama_is_built_once_a_game_frame_while_the_table_turns() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let eye = [orbit(0.0, 40.0, 1.0, 0.0)];
+    let mut view = shown_diorama(&gpu, &FIELD, Table::default());
+    let builds = |view: &GameView| view.diorama_stats().builds;
+    let before = builds(&view);
+    // The camera turning 3 degrees a game frame (90 a second, as L1 turns
+    // Lahan's), each frame presented three times at 90 Hz: the table turns
+    // after it at every presentation.
+    let mut now = 1.0;
+    for frame in 1..=10 {
+        view.push(next_frame(2, turned(3.0 * frame as f32), true, true));
+        for _ in 0..3 {
+            now += 1.0 / 90.0;
+            assert_eq!(present_diorama(&gpu, &mut view, &eye, (640, 480), now).1, 0.0);
+        }
+    }
+    assert_eq!(builds(&view) - before, 10, "one build a game frame");
+    // The game paused while the table turns on towards its camera: built
+    // again only as it turns ten degrees from the last build.
+    let before = builds(&view);
+    for _ in 0..90 {
+        now += 1.0 / 90.0;
+        present_diorama(&gpu, &mut view, &eye, (640, 480), now);
+    }
+    let paused = builds(&view) - before;
+    eprintln!("{paused} builds in 90 presentations of a paused game");
+    assert!((1..=2).contains(&paused), "{paused} builds while paused");
 }
 
 #[test]

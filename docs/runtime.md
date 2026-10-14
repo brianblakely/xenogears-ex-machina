@@ -1557,10 +1557,14 @@ tests below drive it.
   camera's matrix, once a game frame. The vertices hold world points; each
   eye's pass uniform holds its matrices from the world and from the table's
   space to clip space (draw.wgsl `vs_world`), so both eyes and every
-  headset frame between two game frames draw one build (made again within a
-  game frame only once the table turns half a degree or its scale changes
-  by a quarter, for the billboards). Textures are perspective-correct
-  through clip space.
+  headset frame between two game frames draw one build. A build is made
+  again within a game frame only once the table has turned 10 degrees
+  since it (a game paused while the table turns on towards its camera) or
+  its scale has changed by a quarter: the billboards face the seat's way
+  as the table stood at the build, and while the game draws, a smooth
+  turn moves the table less than that from a game frame to the next (at
+  most 6.9 degrees at 20 frames a second, the camera just short of a cut
+  away). Textures are perspective-correct through clip space.
 - **The table** (`Table`: scale 1, height -0.45 m, distance 0.6 m, tilt 0,
   turns Smooth by default). The host gives the seat's pose in the room (its
   reference space, turned about its up only); the table's top lies at
@@ -1609,9 +1613,16 @@ tests below drive it.
   outline overlaps by more than that (not one sharing an edge) is lifted
   0.1 mm (a hundred times the depth buffer's resolution a metre away)
   above the highest of them, towards the side the game's camera saw it
-  from; billboard parts likewise along the billboards' normal. Faces are
-  found by their plane's normal and distance and by 256-unit cells of the
-  plane. From the default seat at scale 1 (960x720, the review camera 1.1 m
+  from. A sprite's billboard parts are lifted likewise along the
+  billboards' normal, towards whichever side of the billboard each eye
+  sees: the vertex carries the lift (`w`, with `FLAG_BILLBOARD`) and the
+  pass the eye's point in the world, so the game's order holds from behind
+  the billboards too, where their mirrored picture shows (field 30's Fei
+  seen from behind at scale 3, 0.5 m away: before, the layers his drawing
+  hides covered him; the seat's side is unchanged, its picture the same
+  in every pixel). Faces are found by their plane's normal and distance
+  and by 256-unit cells of the plane. From the default seat at scale 1
+  (960x720, the review camera 1.1 m
   from the table's centre and 40 degrees up), the faces and parts lifted a
   frame and the pixels the lift changes against the same frames built
   without it: Lahan 382 and 0, field 12 11 and 18, the forest 40 and 227,
@@ -1632,30 +1643,51 @@ tests below drive it.
   scene's first primitive (the clear, panoramas, sky bands) are the
   backdrop: a wall at the back of the volume, facing the seat (seen from
   behind it is not drawn), the original screen mapped across the volume's
-  width. Flat primitives drawn after it (windows, text, portraits, menus,
-  the compass and other interface models, battle numbers) and pictures
-  uploaded to the screen go onto the interface pane, drawn as the screen
+  width, a line there a ribbon a native pixel wide. Flat primitives drawn
+  after it (windows, text, portraits, menus, the compass and other
+  interface models, battle numbers) and pictures uploaded to the screen
+  go onto the interface pane, drawn as the screen
   draws them into a transparent premultiplied texture (`PASS_PANE`): an
   opaque pixel covers, mode 0 is half the colour at half coverage, modes 1
   and 3 add without coverage, so over the room the pane shows as the
   original blends it; mode 2 (B-F) has no such form and darkens by F's
-  brightest channel. A full-screen untextured one (a fade, a flash) tints
-  each eye's diorama and the pane over what they hold then, weighted by
-  their coverage (the room around the table stays as it is). Uploads keep
+  brightest channel. A full-screen untextured one (a fade, a flash), or a
+  fill over nine tenths of the screen shown, tints each eye's diorama and
+  the pane over what they hold then, weighted by their coverage (the room
+  around the table stays as it is); a smaller fill (a window's, a
+  letterbox band) goes on the pane. Uploads keep
   their order with the draws: each group of draws between two goes into
   every eye and the pane before the next, so each samples VRAM as the game
   left it for it in every eye (two such groups a frame in the fields
   measured, five in the debug battle).
-- **The screen instead.** The frame shows on the flat screen, easing
-  between the two over 0.3 s, in other modes than fields, battles and the
-  world map (menus, movies, the arena, booting, the kernel), for 24-bit
-  movie frames, frames drawing a screen the game took (menu fades, shatter,
-  transitions) or sampling their own picture (the heat haze), while
-  first-person inspection is on, and for frames without a camera record
-  (one or two in a row keep the diorama of the frame before: the port
-  records with the bits it had, so the first frame after a change has
-  none). The Original renderer does not use `GameView`: a host shows its
-  picture on its screen as before.
+- **The screen instead.** The frame shows on the flat screen in other
+  modes than fields, battles and the world map (menus, movies, the arena,
+  booting, the kernel), for 24-bit movie frames, frames drawing a screen
+  the game took (menu fades, shatter, transitions) or sampling their own
+  picture (the heat haze), while first-person inspection is on, and for
+  frames without a camera record or without a scene to place. Both ways
+  the view eases over 0.3 s: going to the screen, the last diorama built
+  stands, fading out (at one minus the screen's share) as the screen fades
+  in; coming back, the frame shown fades in. A frame takes the camera
+  recorded within the four vertical blanks before its first primitive
+  ([Camera records](#camera-records)): a frame with its scene drawn then
+  without a record of its own is built with that camera, and the frames
+  the field draws over its last picture as it opens its menu (a fade over
+  the held field, no scene drawn) carry it too, but having no scene to
+  place, they hold no diorama of their own. Two game frames in a row
+  without a camera record or a scene keep the diorama of the frame before
+  (the port records with the bits it had, so the first frame after a
+  change has none); from the third the screen eases in. While the game
+  plays on, the view stays on the diorama once eased in (the review
+  camera: 180 frames of the world map turning with L1, 240 of field 12
+  with Cross tapped every 30, 120 of Lahan turning). Opening the field
+  menu in the forest (map 22, Square, the review camera): the forest's
+  last diorama stands for two game frames, then eases out over 18
+  presentations of a 60 Hz review (0.056 a presentation) while the
+  darkening field and the menu ease in; likewise in field 30, and at the
+  end of the debug battle won (the share rising 0.056 a presentation from
+  0 to 1, no step larger in 240 frames). The Original renderer does not
+  use `GameView`: a host shows its picture on its screen as before.
 - **Presenting.** `present_diorama(encoder, display, scene, now, eyes, seat)`
   draws the pending trace and, while the diorama shows, composites each
   eye's picture (premultiplied, at one minus the screen's share and the
@@ -1666,10 +1698,10 @@ tests below drive it.
   `DioramaSpace`: the room from the world and from the table, the volume,
   the pane's pose and size (0.6 m wide, its lower edge 2 cm above the
   volume's far top edge, facing the seat) and the camera and scale of the
-  frame shown (`diorama_space` gives the last). The host draws its screen,
-  the pane, its HUD and panels after. A presentation that shows no flat
-  picture leaves none for a screen the game takes next (it takes the
-  native pixels).
+  frame shown (`diorama_space` gives the last). The host draws its screen
+  (at the screen's share), the pane (at one minus it), its HUD and panels
+  after. A presentation that shows no flat picture leaves none for a
+  screen the game takes next (it takes the native pixels).
 - **What it does not draw.** HD-2D effects are not drawn in the diorama
   (`effects_unavailable`, for a host's panel to say so; the profile stays
   as chosen). The screen's limits have no place in a view from anywhere:
@@ -1703,7 +1735,14 @@ under a load average of about 14 from other builds; 960x720, means per
 presentation, each game frame presented once and four times): building a
 game frame's diorama with its first presentation 5.2 ms in Lahan, 6.1 in
 the forest, 6.5 in the battle and 6.0 on the world map; presenting a built
-one again 0.3-1.1 ms. Profiled over 120 frames of Lahan (`perf record
+one again 0.3-1.1 ms. While the table turns (Lahan with L1 held, 120
+frames presented four times each at 640x480, two runs each, load average
+about 14) the presentation's CPU work averages 1.70 and 2.69 ms with
+smooth turns and 1.73 and 1.78 ms with fixed ones, 57 builds in 480
+presentations either way (the review measured 5.24 against 1.92 ms when
+a build was made again whenever the table had turned half a degree); the
+second runs end at one memory hash, the one the review's runs ended at.
+Profiled over 120 frames of Lahan (`perf record
 --all-user`), the diorama's own code takes 1.1% of the run and lavapipe
 70%. The same RAM and VRAM hash end every review angle of a scene.
 
@@ -1714,8 +1753,10 @@ game's projection: 0 of the 300 000 pixels outside the interface's
 rectangle differ from the flat frame by more than 24 levels, and the
 interface is on the pane only, its other pixels transparent);
 `split_sprites_at_one_floor_point_keep_the_games_order_in_the_diorama`
-(from three sides nothing of the earlier sprite shows through the later
-one; without the lift 219 pixels of it did);
+(from five sides, two of them beyond the billboards' plane, nothing of
+the earlier sprite shows through the later one; without the lift 219
+pixels of it did from the seat's side, and lifted towards the seat
+whatever the eye, from behind the earlier one covered the later);
 `both_eyes_see_one_upright_sprite_apart_only_by_their_disparity` (6.4 cm
 apart: the same rows 287-380 and width in both eyes, 75 pixels apart);
 `the_diorama_drops_faces_an_eye_sees_from_behind_but_not_double_sided_ones`;
@@ -1724,13 +1765,35 @@ off the floor and off the pane's interface, the room's grey and the pane's
 transparency kept);
 `frames_without_a_camera_record_or_in_other_modes_show_the_screen` (and
 the screen easing into the diorama over 0.3 s, and the screen view);
-`nothing_outside_the_tables_volume_is_drawn`. The unit tests in
-`ps1/diorama.rs` check the build: the backdrop on one plane and the
+`leaving_the_diorama_eases_to_the_screen_as_the_last_diorama_fades_out`
+(a menu's frame, a 24-bit movie frame and first-person inspection after a
+diorama: the screen's share 1/3, 2/3 and 1 at 0.1, 0.2 and 0.35 s, the
+floor of the last diorama in the eye at one minus it, and its pane);
+`frames_without_a_camera_record_or_a_scene_keep_the_diorama_for_two_frames_then_ease_to_the_screen`
+(frames of a fade without the scene a vertical blank after the last
+record, which they take, and field frames five blanks after it: the
+diorama before for two frames, not an empty table, then the share rising
+0.11, 0.56, 1; the field with its camera again eases back in);
+`the_diorama_is_built_once_a_game_frame_while_the_table_turns` (the
+camera turning 3 degrees a frame, each frame presented three times at
+90 Hz: 10 builds for 10 frames; paused, one build in 90 presentations as
+the table turns on); `nothing_outside_the_tables_volume_is_drawn`. The
+unit tests in `ps1/diorama.rs` check the build: the backdrop on one plane and the
 interface on the pane only, never in the eyes' pass; a sprite's parts
-upright in planes facing the seat at its floor point, as tall as drawn,
-the second lifted; split sprites standing together on their floor point
-and a jumping one above it; a shadow lifted over a floor and a face
-beside it not; which faces may be dropped from behind.
+upright in one plane facing the seat at its floor point, as tall as
+drawn, the second carrying the lift; split sprites standing together on
+their floor point and a jumping one above it; a shadow lifted over a
+floor and a face beside it not; which faces may be dropped from behind;
+fills after the scene over part of the screen on the pane and one over
+all of it a tint; a line before the scene a ribbon on the wall and a
+frame without a scene built without fault. They check the placement:
+the table level under pitched and rolled cameras (the world's up its up,
+the camera's level axis away from the seat); a 20-degree turn eased and
+a 60-degree one a cut that jumps and dims for 0.25 s, as does a target
+jumping beyond a third of the table; Snap holding within 30 degrees and
+jumping past them, Fixed keeping the first heading; a battle keeping
+its first point and heading whatever its camera does; a new scene
+beginning its own point and scale (half at twice the depth).
 `xem-headless/tests/render.rs`
 `a_diorama_seen_from_a_moving_head_leaves_the_game_unchanged` presents
 240 frames of field 12 from the same state as a diorama for two eyes of a
@@ -1748,7 +1811,12 @@ its front once an eye sees it from behind; surfaces the game never models
 stay holes; the world map's distant terrain lies beyond the volume at
 scale 1; the cost on a headset's CPU (Quest's) and GPU is not measured;
 the per-eye pass count grows with the uploads between draws (two to five
-groups measured).
+groups measured); a fade the game draws over its held picture without
+its scene is not shown on the diorama held (the screen shows it as it
+eases in); close up, a one-pixel column of the layers beneath shows down
+the middle of Fei's head in field 30 (640x480, scale 3, 0.5 m, from the
+seat's side and from behind), which the game's picture does not have and
+a tenfold lift does not change: its cause is not established.
 
 ### HD-2D effects
 

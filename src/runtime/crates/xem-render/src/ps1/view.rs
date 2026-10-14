@@ -656,7 +656,8 @@ impl GameView {
     /// one, the diorama into each of `eyes` (its target's viewport, from the
     /// room through its view and projection, over what the target holds),
     /// the table placed from `seat` (its pose in the room, turned about its
-    /// up only). Otherwise, and easing between the two, the flat frame
+    /// up only). Otherwise, and easing between the two (the last diorama
+    /// fading out as the screen eases in, and back), the flat frame
     /// `present` gives, for the host to show on its screen. `None` while
     /// there is nothing to show.
     pub fn present_diorama(
@@ -674,32 +675,27 @@ impl GameView {
         let area = if movie.is_some() { None } else { self.area(display) };
         let new_frame = area.is_some_and(|area| self.track_shown(area, scene, now));
         let table = match self.xr_view {
-            XrView::Diorama(table) if self.first_person.is_none() => Some(table),
-            _ => None,
+            XrView::Diorama(table) => Some(table),
+            XrView::Screen => None,
         };
-        let fallback = match (table, area) {
-            (Some(_), Some(area)) => Diorama::fallback(&self.renderer, &self.frame, &self.scene, area),
-            _ => Some(Fallback::Screen),
+        // A movie, a display this view does not draw, and looking around in
+        // first person show the screen.
+        let fallback = match area.filter(|_| self.first_person.is_none()) {
+            Some(area) => Diorama::fallback(&self.renderer, &self.frame, &self.scene, area),
+            None => Some(Fallback::Screen),
         };
-        let (screen, hold) = self.diorama.ease(fallback, new_frame, now);
-        let drew = match (table, area) {
-            (Some(table), Some(area)) if screen < 1.0 => self.diorama.present(
-                &self.device,
-                &self.queue,
-                encoder,
-                &mut self.renderer,
-                &self.frame,
-                (area, &self.scene, now, new_frame),
-                hold,
-                eyes,
-                seat,
-                &table,
-                1.0 - screen,
-            ),
+        let (screen, build) = self.diorama.ease(fallback, new_frame, now);
+        let drew = match table {
+            Some(table) if screen < 1.0 => {
+                // The frame shown when it can be a diorama, else the last
+                // build, held or fading out.
+                let shown = area.filter(|_| build).map(|area| (&self.frame, area, self.scene.as_str(), new_frame));
+                self.diorama.present(&self.device, &self.queue, encoder, &mut self.renderer, shown, now, eyes, seat, &table, 1.0 - screen)
+            }
             _ => false,
         };
         if !drew {
-            self.diorama.forget_space();
+            self.diorama.hide();
         }
         let screen = if drew { screen } else { 1.0 };
         let flat = if screen > 0.0 {
