@@ -85,6 +85,10 @@ impl Game {
         match *self {}
     }
 
+    pub fn want_inspection(&mut self, _on: bool) {
+        match *self {}
+    }
+
     pub fn set_head(&mut self, _axes: Option<[[f32; 3]; 3]>) {
         match *self {}
     }

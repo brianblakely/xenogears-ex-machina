@@ -317,6 +317,13 @@ impl SettingsUi {
     pub fn set_first_person(&self, offered: bool) {
         self.panel.set_first_person(offered);
     }
+
+    /// Whether the host's touch controls show: the Controls section lists a
+    /// finger dragged on the picture among inspection's looks (the touch
+    /// deck's SELECT is Select's).
+    pub fn set_first_person_touch(&self, touch: bool) {
+        self.panel.set_first_person_touch(touch);
+    }
     pub fn text_editor_focused(&self) -> bool {
         self.panel.get_text_editor_focused()
     }

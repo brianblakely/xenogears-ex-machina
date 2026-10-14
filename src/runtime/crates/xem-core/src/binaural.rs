@@ -1141,6 +1141,19 @@ mod tests {
     /// and translation `t`, the character at `listener` and slot 0's emitter
     /// (actor 1, sound 0x30) at `emitter`; the direction it is heard from.
     fn field_direction(rows: [i16; 9], t: [i32; 3], listener: [i32; 3], emitter: [i32; 3]) -> [f32; 3] {
+        heard(&field_scene(rows, t, listener, emitter))
+    }
+
+    /// The direction `field_scene`'s emitter is heard from.
+    fn heard(presenter: &Presenter) -> [f32; 3] {
+        match presenter.place_effect(presenter.tags[8].unwrap()) {
+            Placing::Placed { direction, .. } => direction,
+            other => panic!("{other:?}"),
+        }
+    }
+
+    /// The presenter of `field_direction`'s field.
+    fn field_scene(rows: [i16; 9], t: [i32; 3], listener: [i32; 3], emitter: [i32; 3]) -> Presenter {
         let mut ram = driver();
         let mut matrix: Vec<u8> = rows.iter().flat_map(|r| r.to_le_bytes()).collect();
         matrix.extend([0, 0]);
@@ -1161,10 +1174,30 @@ mod tests {
         let mut presenter = Presenter::new(on());
         presenter.update_scene(&ram, Some(MODE_FIELD), false);
         presenter.key_on(1 << 8, &ram);
-        match presenter.place_effect(presenter.tags[8].unwrap()) {
-            Placing::Placed { direction, .. } => direction,
-            other => panic!("{other:?}"),
-        }
+        presenter
+    }
+
+    #[test]
+    fn a_look_and_a_head_turn_are_each_applied_once() {
+        let level: [i16; 9] = [4096, 0, 0, 0, 4096, 0, 0, 0, 4096];
+        // The emitter on the camera's left of the character.
+        let mut presenter = field_scene(level, [0, 0, 1000], [0, 0, 0], [-300, 0, 0]);
+        let camera = heard(&presenter);
+        assert!(camera[0] < -0.99, "{camera:?}");
+        // First-person inspection looking a quarter to the left: it is ahead.
+        presenter.set_view(Some([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]]));
+        let looked = heard(&presenter);
+        assert!(looked[2] > 0.99, "{looked:?}");
+        // The head then turned a quarter right (in a headset, whose reference
+        // faces the look's base): the two turns cancel, back to the camera's.
+        let half = (-std::f32::consts::FRAC_PI_4).sin_cos();
+        presenter.set_head(Some(head_axes([0.0, half.0, 0.0, half.1])));
+        let both = heard(&presenter);
+        assert!(both.iter().zip(camera).all(|(a, b)| (a - b).abs() < 1e-5), "{both:?} against {camera:?}");
+        // Without the look, the head turned right alone hears it behind.
+        presenter.set_view(None);
+        let head = heard(&presenter);
+        assert!(head[2] < -0.99, "{head:?}");
     }
 
     #[test]

@@ -1083,29 +1083,57 @@ still at every zoom; with the setting, 43 at 1x, 32 at 1.5x, 16-17 at 2x,
 
 ### First-person inspection
 
-The SDL hosts (`xem_host::View`: desktop, and Android with a gamepad) look
-around a field from its controlled character's eyes (plan.md Phase 8's
-stationary first-person inspection, on a flat display; the browser and
-headset hosts do not offer it yet). While the player walks in a field (the
-player control read the pad in the field's last event pass, which it does
-with no dialogue open, and no menu runs), Select toggles the view where the
-original's Select shows nothing: `field_picture_show` shows a map's picture
-on ten maps once their item is held, and there Select stays the game's
-(the port's `xem_game_field_controls` tells the hosts whether the player
-walks, a menu runs and the picture shows). The right stick's click toggles
-it anywhere in a field but a menu; a gamepad's Back toggles when it is
-released alone, since Back begins the app chords. While the view is on, the
-arrow keys (2 radians a second across, 1.5 up and down), the right stick (3
-and 2 at full tilt, past a fifth of its travel) and, under the mouse camera
-setting, the mouse (0.0025 radians a pixel) turn it, within 80 degrees of
-level, and the mouse wheel's zoom rests. L1/R1 (the field camera's turns,
-which the field takes whoever has control) are held back, so the game's
-camera stays; while the player walks so are the directions and Triangle
-(jump), so the character stays where it stands, while a dialogue's choices
-keep the directions. A menu (the field's own, with the view as the screen
-it takes, or a script's) keeps every button, and the view does not turn
-under it (`xem_settings::look`). It ends when toggled again, when the field
-or its map is left, and under the Original renderer.
+The flat hosts look around a field from its controlled character's eyes
+(plan.md Phase 8's stationary first-person inspection): the SDL hosts
+(`xem_host::View`: desktop, and Android by touch or a gamepad) and the
+browser host (keyboard, mouse, gamepad and touch alike). Headsets toggle it
+too, but show it on their flat virtual screen ([Headsets](#headsets)).
+While the player walks in a field (the player control read the pad in the
+field's last event pass, which it does with no dialogue open, and no menu
+runs), Select toggles the view where the original's Select shows nothing:
+`field_picture_show` shows a map's picture on ten maps once their item is
+held, and there Select stays the game's (the port's
+`xem_game_field_controls` tells the hosts whether the player walks, a menu
+runs and the picture shows; the browser reads it through `WebModule` as the
+native hosts do). Select is any of its bound keys (Backspace), the touch
+deck's SELECT ([Touch screens](#touch-screens)) and a gamepad's Back
+released alone (Back begins the app chords; a headset controller's Back is
+its right stick's click). The right stick's click toggles it anywhere in a
+field but a menu. While the view is on, the arrow keys (2 radians a second
+across, 1.5 up and down, whatever the bindings give them), the right stick
+(3 and 2 at full tilt, past a fifth of its travel), a finger alone dragged
+on the picture (0.003 radians a logical pixel, the scene following the
+finger: dragged right, the view turns left) and, under the mouse camera
+setting, the mouse the game holds (0.0025 radians a pixel at the mouse
+sensitivity, across and up) turn it, within 80 degrees of level, and the
+mouse wheel's zoom rests. The field camera's turns (CameraLeft and
+CameraRight: L1/R1 under the game's default assignment; the field takes
+them whoever has control) are held back, so the game's camera stays; while
+the player walks so are the directions and Jump, so the character stays
+where it stands, while a dialogue's choices keep the directions. What is
+held back follows the game's live button assignment
+(`pad_button_assignment`, as every action does), and Run by default is off
+while the view shows (it would leave Run pressed alone once the directions
+are held back). A menu (the field's own, with the view as the screen it
+takes, or a script's) keeps every button, and the view does not turn under
+it (`xem_settings::look`). It ends when toggled again, when the field or its
+map is left, and under the Original renderer.
+
+Every input path keeps the character where it stands. Hosts give the
+session the view's state before each batch of frames
+(`Session::set_inspecting`: `Game::want_inspection` on desktop, Android and
+OpenXR, the browser's frame loop): turning it on stops a route under way,
+recorded as the player's own `assist_stop` is, and while it is on
+`navigate` and `interact` are refused ("first-person inspection keeps the
+character where it stands: turn it off to walk or interact"); `status`
+reports `inspecting`. A recorded `assist` (a replay's, a session log's)
+still runs, a replay ignores the host's state, and a host playing a
+session log gives none. Turning it off restarts nothing. Taps on the
+picture resolve without the field, since the view shows no field camera to
+walk or point through: walking, they walk nowhere and talk to no one,
+while a dialogue's still advance and a menu's still choose, and no floor or
+destination marks show. A headset's gestures follow the same rule
+([Headsets: hands, gaze and control decks](#headsets-hands-gaze-and-control-decks)).
 
 It is presentation only. While it is on, `GameView::reveals` asks for every
 face the game culls (`Reveals::LOOK`, bit 0 of the culled-face ring's
@@ -1142,16 +1170,65 @@ only beside the screen.
 With characters in view on, the view the field's characters keep moving in
 is the widest (`actor_view` 1000% with 1024-pixel sides: the view may turn
 anywhere; in the forest, map 22, the 30 sprite actors the original stops
-keep moving); off, the game runs as the original. `xem-headless/tests/render.rs`
-looks around in field 12 for 160 frames (more than 100 shown from the eyes)
-and ends at the same RAM hash; `tests/controls.rs` checks the field query
-(the map's picture, walking, the menu) on the original's maps. `--example motion -- --map 30 --look
-YAW,PITCH[,TURN]` shows a field from the eyes (degrees from the camera's
-heading, TURN more each frame kept: map 30's room with its townspeople
-standing round the table). Measured in the forest (960x720 output, this
-machine's CPU and lavapipe, means per game frame): the game frame 1.5 ms
-without the view and 2.5 ms with it (4 763 culled faces recorded a frame),
-the presentation's CPU work 1.9 and 5.5 ms.
+keep moving); off, the game runs as the original. The
+[Binaural sound mode](#binaural-sound-mode)'s listener looks where the view
+looks (`GameView::listener_axes`, which every host gives the session each
+frame: the look alone, never a headset's head, which `Session::set_head`
+adds once more after it). `status().renderer.firstPerson` and
+`status().renderer.look` (radians turned from the heading it began with,
+yaw right and pitch up) show it in browsers. `--example motion -- --map 30
+--look YAW,PITCH[,TURN]` shows a field from the eyes (degrees from the
+camera's heading, TURN more each frame kept: map 30's room with its
+townspeople standing round the table). Measured in the forest (960x720
+output, this machine's CPU and lavapipe, means per game frame): the game
+frame 1.5 ms without the view and 2.5 ms with it (4 763 culled faces
+recorded a frame), the presentation's CPU work 1.9 and 5.5 ms.
+
+Tests: `xem-headless/tests/render.rs` looks around in field 12 for 160
+frames (more than 100 shown from the eyes) and ends at the same RAM hash;
+`tests/controls.rs` checks the field query (the map's picture, walking,
+the menu) on the original's maps. `tests/inspection.rs` (local, disc 1)
+plays a flat host's part in field 30: turning the view on stops a route 15
+frames under way (`Stopped`) and refuses new ones; the character and the
+game's camera stay over 60 frames of a held direction, jump and camera
+turn (more than 50 of them shown from the eyes); while an agent's presses
+turn the character five ways and the game's camera a quarter turn (0 to
+1024) over 120 frames, the view's heading in the world moves at most
+0.0027 radians (the camera matrix's fixed point); turning it off moves no
+camera, starts no route, keeps the character and shows the game's camera
+pixel for pixel against a view that never looked, and a new route walks.
+`xem-core/tests/persistence.rs` checks the session's part on a stand-in
+module (one recorded stop, the refusals, a recorded intent that still runs,
+a replay that ignores the host), `xem-settings`' look tests the toggles
+(Select's keys and the deck's SELECT alike), the held-back buttons under
+the default, an unswapped and a shoulder-swapped assignment and the turn
+rates, `xem-assist`'s the headset's gestures and pointer keys while
+inspecting and two-hand scaling that leaves the screen, and the deck's
+SELECT and drag, `xem-host`'s a gamepad's toggles and the touch deck (SELECT
+toggling and staying the game's where the map's picture shows, no Run left
+alone, a 100-pixel drag turning 0.3 radians and tapping nothing),
+`xem-core`'s Binaural test a look and a head turn each applied once, and
+`xem-ui/tests/panel.rs` the look row's drag on touch screens.
+`web/tests/first-person.test.mjs` (local, disc 1) runs field 30 in a page
+with WebGL2: Backspace held as the loop resumes stops an 8-frame route and
+`navigate` is refused; W and Space reach no pad and the character stays;
+ArrowRight and ArrowUp turn the view right and up; the wheel leaves the
+zoom; the Binaural listener faces right with the view; the mouse under
+pointer lock turns it right and down; a tap on the picture walks nowhere,
+the deck's SELECT toggles it off and on, and a 100-pixel drag turns it
+0.3 radians left; Backspace gives W back and the listener its camera; the
+Original renderer ends the view. Its canvas pictures go to
+`build/web-test/first-person-*.png`. `web/tests/page.test.mjs` holds the
+game's Select with the deck's SELECT outside a field.
+
+Not done or not measured: in a headset the view still shows on the flat
+virtual screen, without head tracking (Phase 8's immersive inspection is
+later work). The touch look's rate is a constant chosen to follow the
+finger on a phone-sized picture, not measured with people, and the
+Android emulator has not played the touch toggle or drag (the unit tests
+and the browser's touch pointers have). Keyboard-only players have no
+toggle on the ten maps where Select shows the map's picture (the gamepad's
+right stick's click remains).
 
 ### Camera records
 
@@ -1436,6 +1513,15 @@ Headset class (Low tier, depth of field off unless enabled).
   or Exit VR; a hidden session (the browser's own menu) or its end lets go
   of held input.
 
+In a field both toggle first-person inspection with the underhand grab
+and the controllers' Back (the right stick's click) released alone, and
+the Original renderer ends it; it shows on the virtual screen, its view
+turned by the right stick, the character held where it stands as on the
+flat hosts ([First-person inspection](#first-person-inspection)) and the
+Binaural listener looking along it before the head turns it. The canvas
+and the session share the browser's view, so it carries across Enter and
+Exit VR.
+
 ## Controls
 
 Humans and agents play through one vocabulary of typed actions
@@ -1488,6 +1574,12 @@ natively (`xem_host::xr_play::gamepad`) and in the browser (`xrGamepad`).
 | Start, Select | Enter, Backspace | Start, Back | |
 | L2, R2 | 1, 2 | LT, RT | |
 | AttackWeak, AttackStrong, AttackFierce, AttackEnd | W, A, S, D | North, West, South, East | |
+
+In a field, Select (where the game's shows nothing) and the right stick's
+click also toggle first-person inspection, which the arrow keys, the right
+stick, a finger on the picture and the mouse camera's motion turn
+([First-person inspection](#first-person-inspection)); Settings' Controls
+section lists them (with the finger's drag where touch controls show).
 
 ### The game's interface context
 
@@ -1624,11 +1716,14 @@ bindings changed from the open panel hold when play resumes.
 On a touch screen (Android; phone and tablet browsers) the game's controls
 are a Seraph Glass deck (`xem_assist::touch`) beside the picture when the
 letterbox has room (three controls and their gaps, at least 40 dp each),
-else over its corners: a D-pad on the left, the face buttons on the right
-(Jump, Cancel and Run, Confirm, Menu), the camera's turns at the top
-corners, Settings and Start at the top. A finger holds the control it is
-on and slides across the D-pad's directions; lifting or a cancelled touch
-lets go (explicit press and release). Battling names the face buttons and
+else over its corners: a D-pad on the left with Select above it (the
+game's Select, and in a field first-person inspection's toggle where the
+game's shows nothing), the face buttons on the right (Jump, Cancel and
+Run, Confirm, Menu), the camera's turns at the top corners, Settings and
+Start at the top. A finger holds the control it is on and slides across the
+D-pad's directions; lifting or a cancelled touch lets go (explicit press
+and release). A finger alone dragged on the picture turns inspection's
+view, the scene following it. Battling names the face buttons and
 turns as the bout does (A, B, Jump, Dash, Charge, Special), the world map
 adds Board (L2 and R2 together: a Gear boarded or left), a shop's quantity
 list adds +, -, ALL and NONE. A tap on the picture (short, not travelling)
@@ -1693,14 +1788,21 @@ the browser's WebXR sessions (plan.md, the hand/gaze contract):
   left with those swipes and back out to the right; beside the screen
   they also stand as a list (ALLY 1-3, FOE n; the selected one lit) for
   targets that overlap or hide one another. Presses queued for one
-  interface never reach the next (`PlayerInput`).
+  interface never reach the next (`PlayerInput`). While first-person
+  inspection shows (`Headset::inspecting`), walking, the pinch, the tap and
+  the swipes up, left and right do nothing (the swipe down still opens the
+  menu), the pointer's keys keep only OK, BACK and MENU, and the hosts
+  resolve gestures and draw marks without the field, so nothing walks,
+  approaches or jumps.
 - **Pauses.** The overhand grab toggles the player's Pause in every
   context (no game frame runs; head tracking, drawing, the panel and app
   input stay live); the underhand grab toggles first-person inspection in
   a field; prayer hands toggle Settings, which hold their own pause, and
   closing them keeps the player's. Losing the hands or the app's focus
   drops what was pending, stops assisted movement and pauses until the
-  player's Pause (from an open hand).
+  player's Pause (from an open hand). Two-hand scaling leaves the screen's
+  size while inspection shows (the gesture still owns both hands, so no
+  grab fires as they close).
 - **Control decks** (`xem_assist::arcade`) for the bespoke inputs,
   one-handed: Battling's bouts and the open world map (walking, Gears,
   vehicles). A pinch captures a stick at the hand, the hand's travel holds
@@ -2303,9 +2405,16 @@ as JSON text or bytes.
   standard mapping; Back+Start toggles the panel) hold pad 1 through the
   game bindings ([Controls](#controls)); touch pointers play the touch
   deck and tap the picture ([Touch screens](#touch-screens)); the mouse
-  points at menu entries. The page keeps only the game's keys from the
-  browser (and Escape, which toggles the panel; the header's Settings
-  button and the deck's Settings do too, so Escape is never the only way).
+  points at menu entries. In a field, Select's keys, the deck's SELECT and
+  the gamepad's Back alone or its right stick's click toggle first-person
+  inspection, which the arrow keys, the right stick, a finger on the
+  picture and the mouse under pointer lock (both its motions: the page
+  passes `movementY` too) turn
+  ([First-person inspection](#first-person-inspection)). The page keeps
+  only the game's keys from the browser, and the arrow keys while
+  inspection shows (and Escape, which toggles the panel; the header's
+  Settings button and the deck's Settings do too, so Escape is never the
+  only way).
   Audio starts with the first click, key or touch on the game (or "Start
   audio"); a Fullscreen button asks for the page's fullscreen, and
   entering or leaving it, blur and hiding let go of held input. The

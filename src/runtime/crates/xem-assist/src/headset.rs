@@ -10,7 +10,12 @@
 //! - Losing the active hand's tracking, or the app's focus, releases held
 //!   input, cancels what was pending and pauses; the player resumes with
 //!   Pause, from a neutral hand (a hand must open before any grab fires).
-//! - Inspection changes the view, never the pause.
+//! - Inspection changes the view, never the pause. While it is on
+//!   ([`Headset::inspecting`]) the character stays where it stands: walking,
+//!   the pinch, the thumb's tap and its swipes up, left and right do
+//!   nothing (the swipe down still opens the game's menu), the pointer's
+//!   direction, JUMP and camera keys are gone, and two-hand scaling leaves
+//!   the screen as it was (the gesture still owns both hands).
 //!
 //! The pointer source is the player's explicit choice (eye gaze where the
 //! runtime grants it, the head's direction, or one hand's ray as the
@@ -179,6 +184,9 @@ pub struct Headset {
     pub pointer: bool,
     pub pauses: Pauses,
     pub settings_open: bool,
+    /// The host shows first-person inspection (hosts set it before each
+    /// [`Headset::update`]).
+    pub inspecting: bool,
     was_focused: bool,
     tracked: [bool; 2],
 }
@@ -219,10 +227,20 @@ impl Headset {
         if !self.pointer || crate::arcade::deck(ui).is_some() || self.settings_open {
             return vec![];
         }
-        crate::overlay::POINTER_KEYS.iter().enumerate().map(|(i, (label, _))| crate::draw::KeyMark {
+        self.pointer_keys(ui).iter().enumerate().map(|(i, (label, _))| crate::draw::KeyMark {
             label: label.to_string(),
             state: if self.hovered_pad == Some(i as u32) { State::Hover } else { State::Normal },
         }).collect()
+    }
+
+    /// The pointer's keys in `ui`: inspecting while the player walks, only
+    /// those that leave the character where it stands (OK, BACK, MENU).
+    fn pointer_keys(&self, ui: Context) -> Vec<(&'static str, xem_core::action::GameAction)> {
+        use xem_core::action::GameAction;
+        let stationary = self.inspecting && ui == Context::Walk;
+        crate::overlay::POINTER_KEYS.iter().copied()
+            .filter(|(_, action)| !stationary || matches!(action, GameAction::Confirm | GameAction::Cancel | GameAction::Menu))
+            .collect()
     }
 
     /// Opens or closes settings (prayer hands, a menu button): their pause
@@ -280,14 +298,15 @@ impl Headset {
         self.hovered_key = aimed_key;
         // The pointer's keys, outside a deck.
         let pad = self.pointer && deck.is_none() && !self.settings_open;
-        let pad_keys = if pad { crate::draw::pad_keys(screen, crate::overlay::POINTER_KEYS.len()) } else { vec![] };
+        let pointer_keys = self.pointer_keys(ui);
+        let pad_keys = if pad { crate::draw::pad_keys(screen, pointer_keys.len()) } else { vec![] };
         let aimed_pad = nearest(&pad_keys);
         self.hovered_pad = aimed_pad;
         if let Some(key) = aimed_pad {
             game_gestures.retain(|g| {
                 let pressed = matches!(g, Gesture::Pinch { .. });
                 if pressed {
-                    effects.outs.push(Out::Press { actions: vec![crate::overlay::POINTER_KEYS[key as usize].1] });
+                    effects.outs.push(Out::Press { actions: vec![pointer_keys[key as usize].1] });
                 }
                 !pressed
             });
@@ -306,6 +325,17 @@ impl Headset {
                 }
                 !pressed
             });
+        }
+        // Inspecting, the screen keeps its size (the scaling gesture still
+        // owns both hands: no grab fires) and, while the player walks,
+        // nothing walks, approaches, jumps or turns the game's camera.
+        if self.inspecting {
+            game_gestures.retain(|g| !matches!(g, Gesture::ScaleBegin | Gesture::Scale { .. } | Gesture::ScaleEnd));
+            if ui == Context::Walk {
+                use crate::gesture::Swipe;
+                game_gestures.retain(|g| !matches!(g, Gesture::Pinch { .. } | Gesture::Tap { .. }
+                    | Gesture::Swipe { direction: Swipe::Up | Swipe::Left | Swipe::Right, .. }));
+            }
         }
         let palms = [0, 1].map(|i| input.hands[i].map(|j| crate::gesture::Shape::of(&j, crate::gesture::Hand::BOTH[i]).palm));
         let facing = input.head.map_or(Vec3::NEG_Z, |h| h.forward());
@@ -442,6 +472,100 @@ mod tests {
         assert!(headset.pauses.player, "paused until the player resumes");
         assert!(headset.update(&input, &screen(), Context::Walk, None, None).outs.is_empty(), "regaining focus resumes nothing");
         assert!(headset.pauses.player);
+    }
+
+    /// A field whose one other actor stands ahead of the player, at the
+    /// screen's centre.
+    fn field() -> Field {
+        let actor = |index: usize, z: f32| xem_core::field::Actor {
+            index, position: xem_core::field::V3::new(0.0, 0.0, z), layer: 0, triangle: [0; 4], flags: 0, layer_flags: 0,
+            radius: 20, height: 0, heading: 0, heading_goal: 0,
+        };
+        Field {
+            camera: xem_core::field::Camera { m: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], t: [0.0; 3], h: 256.0, angle: 0 },
+            layers: vec![], attributes: vec![], actors: vec![Some(actor(0, 10.0)), Some(actor(1, 500.0))], player: Some(0),
+            alt_dpad: false, party_processing: false, dialogue_open: false,
+        }
+    }
+
+    /// Carries nothing out (the outs are what is checked).
+    struct Ignored;
+
+    impl Carry for Ignored {
+        fn command(&mut self, _: serde_json::Value) {}
+        fn press(&mut self, _: Vec<xem_core::action::GameAction>) {}
+        fn select(&mut self, _: usize, _: bool) {}
+        fn inspect(&mut self) {}
+        fn release(&mut self) {}
+    }
+
+    #[test]
+    fn inspecting_keeps_the_character_where_it_stands_and_the_screen_its_size() {
+        use crate::synthetic::{Runtime, Step, fist, gesture, in_front, left, open, place, whole_pinch};
+        use xem_core::action::GameAction;
+        let field = field();
+        let mut time = 0.0;
+        let mut play = |headset: &mut Headset, steps: &[Step], aim: (f32, f32), runtime: Runtime, ui: Context| -> Vec<Out> {
+            let mut outs = Vec::new();
+            for step in steps {
+                let head = Pose { position: Vec3::ZERO, orientation: Quat::from_rotation_arc(Vec3::NEG_Z, screen().point(aim).normalize()) };
+                let hands = in_front(step.hands, Vec3::ZERO, Quat::IDENTITY);
+                let frame = step.frame(time, hands, Vec3::X, runtime);
+                time += 1.0 / 72.0;
+                let input = Input { time: frame.time, head: Some(head), hands, pinch: frame.pinch, micro: frame.micro, micro_capable: frame.micro_capable, focused: true, ..Input::default() };
+                outs.extend(headset.update(&input, &screen(), ui, Some(&field), None).outs);
+            }
+            outs
+        };
+        let g = |name: &str| gesture(name).unwrap();
+        let npc = field.camera.project(field.actors[1].unwrap().position).unwrap();
+        let press = |action| Out::Press { actions: vec![action] };
+        // With the thumb's microgestures: a tap talks to the actor gazed at,
+        // a swipe up jumps.
+        let mut headset = Headset::default();
+        assert_eq!(play(&mut headset, &g("tap"), npc, Runtime::HORIZON, Context::Walk), [Out::Command { command: serde_json::json!({"cmd": "interact", "actor": 1}) }]);
+        assert_eq!(play(&mut headset, &g("swipe-up"), npc, Runtime::HORIZON, Context::Walk), [press(GameAction::Jump)]);
+        // Inspecting, nothing walks, approaches, jumps or turns the camera;
+        // the menu, Pause and inspection's own grab stay.
+        headset.inspecting = true;
+        for name in ["tap", "pinch", "swipe-up", "swipe-left", "swipe-right"] {
+            let outs = play(&mut headset, &g(name), npc, Runtime::HORIZON, Context::Walk);
+            assert!(outs.is_empty(), "{name} while inspecting: {outs:?}");
+        }
+        assert_eq!(play(&mut headset, &g("swipe-down"), npc, Runtime::HORIZON, Context::Walk),
+            [Out::Command { command: serde_json::json!({"cmd": "assist_stop"}) }, press(GameAction::Menu)]);
+        assert_eq!(play(&mut headset, &g("inspect"), npc, Runtime::HORIZON, Context::Walk), [Out::ToggleInspect]);
+        assert_eq!(play(&mut headset, &g("pause"), npc, Runtime::HORIZON, Context::Walk), [Out::TogglePause]);
+        headset.pauses.player = false;
+        assert_eq!(play(&mut headset, &g("tap"), npc, Runtime::HORIZON, Context::Dialogue { choice: None }), [press(GameAction::Confirm)], "a dialogue still advances");
+        // As a pointer: a pinch on the actor approaches nothing, and only the
+        // keys that leave the character standing show and press.
+        let mut pointer = Headset { inspecting: true, ..Headset::default() };
+        assert!(play(&mut pointer, &g("pinch"), npc, Runtime::WEBXR, Context::Walk).is_empty());
+        let labels: Vec<String> = pointer.pad_marks(Context::Walk).into_iter().map(|key| key.label).collect();
+        assert_eq!(labels, ["OK", "BACK", "MENU"]);
+        let back = crate::draw::pad_keys(&screen(), labels.len())[1].1.pose.position - screen().quad.pose.position;
+        let on_back = ((back.x / 3.2 + 0.5) * 320.0, (0.5 - back.y / 2.24) * 224.0);
+        assert_eq!(play(&mut pointer, &g("pinch"), on_back, Runtime::WEBXR, Context::Walk), [press(GameAction::Cancel)]);
+        assert_eq!(pointer.pad_marks(Context::Dialogue { choice: None }).len(), crate::overlay::POINTER_KEYS.len(), "only walking loses keys");
+        // Two whole-hand pinches spread apart: scaling owns both hands (no
+        // grab fires when one closes) and, inspecting, leaves the screen.
+        let at = |x: f32, hand| place(hand, Quat::IDENTITY, Vec3::new(x, 0.0, 0.0));
+        let spread: Vec<Step> = [
+            [Some(left(at(0.1, open()))), Some(at(0.1, open()))],
+            [Some(at(-0.1, left(whole_pinch()))), Some(at(0.1, whole_pinch()))],
+            [Some(at(-0.2, left(whole_pinch()))), Some(at(0.2, whole_pinch()))],
+            [Some(at(-0.2, left(fist()))), Some(at(0.2, whole_pinch()))],
+            [Some(at(-0.2, left(fist()))), Some(at(0.2, fist()))],
+        ].map(Step::of).to_vec();
+        for (inspecting, scaled) in [(false, true), (true, false)] {
+            let mut headset = Headset { inspecting, ..Headset::default() };
+            let mut scaling = Scaling::default();
+            let outs = play(&mut headset, &spread, npc, Runtime::HORIZON, Context::Walk);
+            assert!(!outs.contains(&Out::TogglePause), "{outs:?}");
+            carry(outs, &mut Ignored, &mut scaling);
+            assert_eq!(scaling.scale != 1.0, scaled, "inspecting={inspecting}: scale {}", scaling.scale);
+        }
     }
 }
 

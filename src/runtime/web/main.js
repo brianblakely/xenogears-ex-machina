@@ -117,9 +117,11 @@ function wireCanvas() {
         return;
       }
     }
-    // Sideways mouse motion turns the field camera; the wheel zooms it.
+    // Mouse motion turns the field camera (sideways) or first-person
+    // inspection's view; the wheel zooms the field camera.
     if (kind === 'down') startAudioOnGesture();
-    if (app.pointer(kind, x, y, event.button ?? 0, event.deltaX ?? event.movementX ?? 0, event.deltaY ?? 0)) event.preventDefault();
+    const [dx, dy] = kind === 'wheel' ? [event.deltaX, event.deltaY] : [event.movementX ?? 0, event.movementY ?? 0];
+    if (app.pointer(kind, x, y, event.button ?? 0, dx, dy)) event.preventDefault();
     // With the mouse camera on, the game keeps the mouse (hidden, unbounded
     // motion) while it has the input.
     if (kind === 'down' && event.pointerType !== 'touch' && document.pointerLockElement !== canvas

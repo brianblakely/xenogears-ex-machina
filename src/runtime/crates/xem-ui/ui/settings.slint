@@ -673,8 +673,10 @@ export component SettingsPanel inherits Window {
     // The status line: 0 a note, 1 something done, 2 a problem.
     in property <string> status;
     in property <int> status-kind;
-    // The host offers first-person inspection (the game controls list it).
+    // The host offers first-person inspection (the game controls list it),
+    // and its touch controls show (a finger dragged on the picture looks).
     in property <bool> first-person;
+    in property <bool> first-person-touch;
     in property <bool> can-import-disc;
     // The host can quit (desktop, Android, a headset): Quit in the header,
     // which asks first.
@@ -1292,7 +1294,12 @@ export component SettingsPanel inherits Window {
                             if root.selected-section == 2: Card {
                                 title: "App keys and views";
                                 if root.first-person: ControlRow { action: "First-person view (in a field)"; inputs: ["Select", "R3"]; }
-                                if root.first-person: ControlRow { action: "Look around in FPV"; inputs: root.mouse-camera ? ["Arrows", "Right stick", "Mouse"] : ["Arrows", "Right stick"]; }
+                                if root.first-person: ControlRow {
+                                    action: "Look around in FPV";
+                                    inputs: root.mouse-camera
+                                        ? (root.first-person-touch ? ["Arrows", "Right stick", "Mouse", "Drag"] : ["Arrows", "Right stick", "Mouse"])
+                                        : (root.first-person-touch ? ["Arrows", "Right stick", "Drag"] : ["Arrows", "Right stick"]);
+                                }
                                 ControlRow { action: "Settings"; inputs: ["Esc", "Back+Start"]; }
                             }
                             // Shortcuts

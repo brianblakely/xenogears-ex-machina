@@ -72,6 +72,7 @@ struct Link {
     get_state: Function,
     game_paused: Function,
     combo_input: Function,
+    field_controls: Function,
     stack_pointer: WebAssembly::Global,
     handler: Cell<Option<*mut dyn ImportHandler>>,
     resume_value: Cell<u32>,
@@ -139,6 +140,7 @@ impl WebModule {
             get_state: function("asyncify_get_state")?,
             game_paused: function("xem_game_paused")?,
             combo_input: function("xem_game_combo_input")?,
+            field_controls: function("xem_game_field_controls")?,
             stack_pointer: global("__stack_pointer")?,
             handler: Cell::new(None),
             resume_value: Cell::new(0),
@@ -199,6 +201,9 @@ impl GameModule for WebModule {
     }
     fn combo_input(&mut self, mode: u32) -> bool {
         self.link.combo_input.call1(&JsValue::NULL, &mode.into()).is_ok_and(|value| number(value) != 0)
+    }
+    fn field_controls(&mut self, mode: u32) -> u32 {
+        self.link.field_controls.call1(&JsValue::NULL, &mode.into()).map_or(0, number)
     }
     fn content_id(&self) -> String { self.content_id.clone() }
     unsafe fn set_import_handler(&mut self, handler: *mut dyn ImportHandler) {

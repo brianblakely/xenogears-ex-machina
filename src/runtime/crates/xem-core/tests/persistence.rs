@@ -1165,6 +1165,39 @@ fn the_actor_view_is_recorded_and_a_replay_keeps_it() {
 }
 
 #[test]
+fn inspection_stops_a_route_refuses_new_ones_and_leaves_recorded_ones_to_run() {
+    let mut s = session();
+    let intent = xem_core::assist::Intent::Walk { to: xem_core::field::V3::new(10.0, 0.0, 20.0), triangle: 0, layer: 0 };
+    s.execute(&json!({"cmd":"record"}));
+    s.start_assist(intent.clone());
+    s.set_inspecting(true);
+    assert!(s.assist.is_none(), "turning inspection on stops the route under way");
+    assert_eq!(s.assist_outcome, Some(xem_core::assist::Outcome::Stopped));
+    assert_eq!(s.execute(&json!({"cmd":"status"}))["inspecting"], json!(true));
+    for command in [json!({"cmd":"navigate","to":[1.0,2.0]}), json!({"cmd":"interact","actor":1})] {
+        let reply = s.execute(&command);
+        assert!(reply["error"].as_str().is_some_and(|e| e.starts_with("first-person inspection keeps the character")), "{command} -> {reply}");
+    }
+    // A recorded intent (a replay's, a session log's) still runs; staying
+    // on stops nothing more, and turning it off restarts nothing.
+    assert!(s.execute(&json!({"cmd":"assist","intent":intent})).get("error").is_none());
+    s.set_inspecting(true);
+    assert!(s.assist.is_some(), "only turning it on stops a route");
+    s.execute(&json!({"cmd":"assist_stop"}));
+    s.set_inspecting(false);
+    assert!(s.assist.is_none(), "turning it off starts no route");
+    assert_eq!(s.execute(&json!({"cmd":"status"}))["inspecting"], json!(false));
+    let log = s.execute(&json!({"cmd":"stop_recording"}));
+    let assists: Vec<&str> = log["controls"].as_array().unwrap().iter().filter_map(|c| c[1]["cmd"].as_str()).filter(|cmd| cmd.starts_with("assist")).collect();
+    assert_eq!(assists, ["assist", "assist_stop", "assist", "assist_stop"], "inspection's stop is recorded as the player's own");
+    // A replay keeps its own record: the host's inspection stops none of its routes.
+    let replay = json!({"cmd":"replay","start_vblank":0,"end_vblank":5,"changes":[],"controls":[[0,{"cmd":"assist","intent":intent}]]});
+    assert!(s.execute(&replay).get("error").is_none());
+    s.set_inspecting(true);
+    assert!(s.assist.is_some(), "a replay's route runs whatever the host shows");
+}
+
+#[test]
 fn the_sound_mode_is_recorded_and_a_replay_keeps_it() {
     let mut s = session();
     let initial = s.snapshot_bytes().unwrap();

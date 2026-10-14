@@ -112,10 +112,13 @@ impl Assisted {
     }
 
     /// Recognises and carries out this frame's gestures. Returns whether the
-    /// settings panel is open after them.
+    /// settings panel is open after them. During first-person inspection
+    /// the gestures leave the character where it stands, and nothing is
+    /// pointed at through the field camera the view does not show.
     #[allow(clippy::too_many_arguments)]
     pub fn update(&mut self, settings: &Settings, input: &Input, screen: &Screen, game: &mut Game, player: &mut PlayerInput, view: &mut GameView, panel_visible: bool) -> bool {
         self.headset.source = source(settings.assisted.pointer);
+        self.headset.inspecting = view.first_person();
         if self.headset.settings_open != panel_visible {
             self.headset.set_settings(panel_visible);
         }
@@ -124,7 +127,7 @@ impl Assisted {
             return panel_visible;
         }
         let context = game.pad_context();
-        let field = game.field();
+        let field = if self.headset.inspecting { None } else { game.field() };
         let targets = game.targets();
         let effects = self.headset.update(input, screen, context.ui, field.as_ref(), targets.as_ref());
         // What a control deck holds (its stick, its held keys).
@@ -141,10 +144,12 @@ impl Assisted {
             return vec![];
         }
         let ui = game.pad_context().ui;
-        let field = game.field();
+        let inspecting = self.headset.inspecting;
+        let field = if inspecting { None } else { game.field() };
         let aim = self.headset.aim(input, screen);
         let targets = game.targets();
-        let marks = overlay::marks(ui, aim, field.as_ref(), game.destination(), targets.as_ref());
+        let destination = if inspecting { None } else { game.destination() };
+        let marks = overlay::marks(ui, aim, field.as_ref(), destination, targets.as_ref());
         xem_assist::draw::room(&marks, screen, &self.headset.key_marks(ui, targets.as_ref()), &self.headset.pad_marks(ui))
     }
 

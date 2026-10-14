@@ -2,19 +2,20 @@
 //! as a Seraph Glass deck beside the picture, and taps on the picture
 //! resolved as the headset's pointer gestures are.
 //!
-//! - The deck: a D-pad on the left, the four face buttons on the right
-//!   (Jump, Cancel and Run, Confirm, Menu), the camera's turns at the top
-//!   corners, Start and Settings at the top. A finger holds the control it
-//!   is on, sliding from one to another (the D-pad's directions), and
-//!   lets go when lifted or cancelled: explicit press and release. In
-//!   Battling the face buttons show the bout's own names (A, B, Jump,
-//!   Dash) and the turns its Charge and Special. Controls stand in the
-//!   letterbox beside the picture when it leaves room, else over its
-//!   corners.
+//! - The deck: a D-pad on the left with Select above it, the four face
+//!   buttons on the right (Jump, Cancel and Run, Confirm, Menu), the
+//!   camera's turns at the top corners, Start and Settings at the top. A
+//!   finger holds the control it is on, sliding from one to another (the
+//!   D-pad's directions), and lets go when lifted or cancelled: explicit
+//!   press and release. In Battling the face buttons show the bout's own
+//!   names (A, B, Jump, Dash) and the turns its Charge and Special.
+//!   Controls stand in the letterbox beside the picture when it leaves
+//!   room, else over its corners.
 //! - A tap on the picture (a short touch that does not travel) is the
 //!   pointer's tap: walking, on an actor it approaches and talks, on the
 //!   floor it walks there; in a menu or a choice it selects the entry and
-//!   confirms it; in a dialogue it advances.
+//!   confirms it; in a dialogue it advances. A finger dragged on the
+//!   picture turns first-person inspection's view ([`Deck::take_drag`]).
 //! - A shop's quantity list adds the +, -, ALL and NONE keys; the world
 //!   map adds Board (L2 and R2 together: a Gear boarded or left).
 use crate::overlay::QuantityKey;
@@ -35,6 +36,9 @@ pub enum Control {
     CameraLeft,
     CameraRight,
     Start,
+    /// The game's Select (a map's picture), and in a field first-person
+    /// inspection's toggle where the game's Select shows nothing.
+    Select,
     Settings,
     /// The world map's Board: L2 and R2 together (a Gear boarded or left).
     Board,
@@ -56,6 +60,7 @@ impl Control {
             Control::CameraLeft => vec![GameAction::CameraLeft],
             Control::CameraRight => vec![GameAction::CameraRight],
             Control::Start => vec![GameAction::Start],
+            Control::Select => vec![GameAction::Select],
             Control::Board => vec![GameAction::L2, GameAction::R2],
             Control::Settings | Control::Quantity(_) => vec![],
         }
@@ -76,6 +81,7 @@ impl Control {
             Control::CameraLeft => if arena { "CHARGE" } else { "L1" },
             Control::CameraRight => if arena { "SPECIAL" } else { "R1" },
             Control::Start => "START",
+            Control::Select => "SELECT",
             Control::Settings => "SETTINGS",
             Control::Board => "BOARD",
             Control::Quantity(k) => QuantityKey::ALL[k as usize].label(),
@@ -142,9 +148,12 @@ pub fn layout(target: (f32, f32), picture: Rect, density: f32, ui: Context) -> V
     let small = |x: f32| Rect { x: x - size * 0.7, y: top - size * 0.35, width: size * 1.4, height: size * 0.7 };
     controls.push((Control::Settings, small(w / 2.0 - size * 0.85)));
     controls.push((Control::Start, small(w / 2.0 + size * 0.85)));
+    // A wide key above a cluster: Select over the D-pad, the world map's
+    // Board over the face buttons.
+    let above = |cx: f32| Rect { x: cx - size * 0.8, y: low - 2.3 * (size + gap) - size * 0.35, width: size * 1.6, height: size * 0.7 };
+    controls.push((Control::Select, above(left_x)));
     if matches!(ui, Context::WorldMap { .. }) {
-        let (cx, cy) = (right_x, low - 2.3 * (size + gap));
-        controls.push((Control::Board, Rect { x: cx - size * 0.8, y: cy - size * 0.35, width: size * 1.6, height: size * 0.7 }));
+        controls.push((Control::Board, above(right_x)));
     }
     if matches!(ui, Context::Menu { quantities: true, .. }) {
         let x = right_x;
@@ -156,7 +165,8 @@ pub fn layout(target: (f32, f32), picture: Rect, density: f32, ui: Context) -> V
     controls
 }
 
-/// A finger's first touch: where and when, and whether it travelled.
+/// A finger's first touch: where and when, whether it travelled, and where
+/// it is now.
 #[derive(Clone, Copy, Debug)]
 struct Finger {
     control: Option<Control>,
@@ -164,6 +174,7 @@ struct Finger {
     began: f64,
     travelled: bool,
     on_picture: bool,
+    at: (f32, f32),
 }
 
 /// What a touch did.
@@ -187,6 +198,9 @@ pub struct Deck {
     pub controls: Vec<(Control, Rect)>,
     pub picture: Option<Rect>,
     fingers: BTreeMap<u64, Finger>,
+    /// How far a lone finger that began on the picture moved, not yet
+    /// taken (target pixels).
+    drag: (f32, f32),
 }
 
 impl Deck {
@@ -204,7 +218,7 @@ impl Deck {
     pub fn down(&mut self, finger: u64, at: (f32, f32), time: f64) -> Touched {
         let control = self.control_at(at);
         let on_picture = control.is_none() && self.picture.is_some_and(|p| p.contains(at));
-        self.fingers.insert(finger, Finger { control, start: at, began: time, travelled: false, on_picture });
+        self.fingers.insert(finger, Finger { control, start: at, began: time, travelled: false, on_picture, at });
         match control {
             Some(Control::Settings) => Touched::Settings,
             Some(Control::Quantity(k)) => Touched::Quantity(QuantityKey::ALL[k as usize]),
@@ -212,15 +226,22 @@ impl Deck {
         }
     }
 
-    /// A finger moved: a finger on the D-pad slides between its directions.
+    /// A finger moved: a finger on the D-pad slides between its directions;
+    /// one alone on the picture drags it.
     pub fn moved(&mut self, finger: u64, at: (f32, f32)) {
         let control = self.control_at(at);
+        let alone = self.fingers.values().filter(|f| f.on_picture).count() == 1;
         if let Some(f) = self.fingers.get_mut(&finger) {
             let dx = at.0 - f.start.0;
             let dy = at.1 - f.start.1;
             if (dx * dx + dy * dy).sqrt() > TAP_TRAVEL {
                 f.travelled = true;
             }
+            if f.on_picture && alone {
+                self.drag.0 += at.0 - f.at.0;
+                self.drag.1 += at.1 - f.at.1;
+            }
+            f.at = at;
             let dpad = |c: Option<Control>| matches!(c, Some(Control::Up | Control::Down | Control::Left | Control::Right));
             if dpad(f.control) && dpad(control) {
                 f.control = control;
@@ -240,6 +261,14 @@ impl Deck {
     /// Lets everything go (focus lost, the panel took the screen).
     pub fn release(&mut self) {
         self.fingers.clear();
+        self.drag = (0.0, 0.0);
+    }
+
+    /// How far a finger alone on the picture (one that began there) moved
+    /// since the last call, in target pixels across and down: first-person
+    /// inspection's look (two fingers there drag nothing).
+    pub fn take_drag(&mut self) -> (f32, f32) {
+        std::mem::take(&mut self.drag)
     }
 
     /// The controls fingers hold.
@@ -304,5 +333,55 @@ mod tests {
         assert_eq!(deck.up(7, (1200.0, 500.0), 3.6, false), Touched::Nothing, "a hold");
         let settings = deck.controls.iter().find(|(k, _)| *k == Control::Settings).unwrap().1.centre();
         assert_eq!(deck.down(8, settings, 4.0), Touched::Settings);
+    }
+
+    #[test]
+    fn select_stands_above_the_dpad_clear_of_every_other_control() {
+        for (target, picture) in [
+            // The phone's letterbox, and a 4:3 tablet's picture filling it.
+            ((2400.0, 1080.0), Rect { x: 480.0, y: 0.0, width: 1440.0, height: 1080.0 }),
+            ((2048.0, 1536.0), Rect { x: 0.0, y: 0.0, width: 2048.0, height: 1536.0 }),
+        ] {
+            for ui in [Context::Walk, Context::WorldMap { movement: 0, scene: 0 }] {
+                let mut deck = Deck::default();
+                deck.arrange(target, picture, 2.0, ui);
+                let rect = |c: Control| deck.controls.iter().find(|(k, _)| *k == c).unwrap().1;
+                let (select, up) = (rect(Control::Select), rect(Control::Up));
+                assert!(select.y + select.height <= up.y && (select.centre().0 - up.centre().0).abs() < 1.0, "{select:?} over {up:?}");
+                for (other, r) in deck.controls.iter().filter(|(k, _)| *k != Control::Select) {
+                    let apart = r.x >= select.x + select.width || select.x >= r.x + r.width || r.y >= select.y + select.height || select.y >= r.y + r.height;
+                    assert!(apart, "{other:?} {r:?} overlaps Select {select:?} ({ui:?})");
+                }
+                let mut deck = deck;
+                deck.down(1, select.centre(), 0.0);
+                assert_eq!(deck.actions(), BTreeSet::from([GameAction::Select]));
+                assert_eq!(Control::Select.label(ui), "SELECT");
+            }
+        }
+    }
+
+    #[test]
+    fn a_lone_finger_dragged_on_the_picture_is_taken_as_a_drag() {
+        let mut deck = deck();
+        let dpad = deck.controls.iter().find(|(k, _)| *k == Control::Up).unwrap().1.centre();
+        deck.down(1, (1200.0, 500.0), 0.0);
+        deck.moved(1, (1230.0, 490.0));
+        deck.moved(1, (1250.0, 520.0));
+        assert_eq!(deck.take_drag(), (50.0, 20.0), "what it moved since it touched");
+        assert_eq!(deck.take_drag(), (0.0, 0.0), "taken once");
+        // A finger on the deck drags nothing; a second on the picture stops
+        // the drag (two fingers are no look).
+        deck.down(2, dpad, 0.1);
+        deck.moved(2, (dpad.0 + 40.0, dpad.1));
+        deck.moved(1, (1260.0, 520.0));
+        assert_eq!(deck.take_drag(), (10.0, 0.0));
+        deck.down(3, (1000.0, 600.0), 0.2);
+        deck.moved(1, (1300.0, 520.0));
+        deck.moved(3, (1050.0, 600.0));
+        assert_eq!(deck.take_drag(), (0.0, 0.0));
+        assert_eq!(deck.up(1, (1300.0, 520.0), 0.3, false), Touched::Nothing, "a drag is no tap");
+        deck.moved(3, (1080.0, 600.0));
+        deck.release();
+        assert_eq!(deck.take_drag(), (0.0, 0.0), "letting go forgets it");
     }
 }

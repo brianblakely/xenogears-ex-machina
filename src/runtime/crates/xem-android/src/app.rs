@@ -679,6 +679,7 @@ impl Host {
                 live.buttons = buttons;
             }
             game.want_attack_page(self.view.attack_pointed());
+            game.want_inspection(self.view.first_person());
             let result = game.update(buttons, &settings, || window.focused());
             if let Ok(frames) = result {
                 self.view.frames_ran(frames);

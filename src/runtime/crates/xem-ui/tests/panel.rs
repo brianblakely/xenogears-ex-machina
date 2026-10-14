@@ -612,6 +612,10 @@ fn movement_preference_reset_and_binding_cancel_use_the_shared_services() {
     ui.update().unwrap();
     assert!(ElementHandle::find_by_accessible_label(ui.component(), "Stop at ledges").next().is_some());
     assert!(ElementHandle::find_by_accessible_label(ui.component(), "Look around in FPV").next().is_some());
+    assert!(ElementHandle::find_by_accessible_label(ui.component(), "Drag").next().is_none(), "no touch controls, no drag");
+    ui.set_first_person_touch(true);
+    ui.update().unwrap();
+    assert!(ElementHandle::find_by_accessible_label(ui.component(), "Drag").next().is_some(), "a touch screen lists the drag among the looks");
     let saved = settings.borrow().settings().clone();
     press(&ui, &element(&ui, "Up", AccessibleRole::ListItem));
     ui.update().unwrap();

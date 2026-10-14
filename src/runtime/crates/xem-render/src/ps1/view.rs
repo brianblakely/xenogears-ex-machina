@@ -362,9 +362,17 @@ impl GameView {
 
     /// The first-person view's axes (right, down, forward) in the game
     /// camera's view space, while it looks around: where a listener faces
-    /// (the Binaural mode's first-person listener).
+    /// (the Binaural mode's first-person listener). They never include a
+    /// headset's head, which the session turns the listener by once more
+    /// (`Session::set_head`).
     pub fn listener_axes(&mut self) -> Option<[[f32; 3]; 3]> {
         self.look().map(|look| look.axes)
+    }
+
+    /// How far the first-person view has turned from the heading it began
+    /// with: radians to the right, and up (none while it is off).
+    pub fn look_angles(&self) -> Option<(f32, f32)> {
+        self.first_person.as_ref().map(|view| (view.yaw, view.pitch))
     }
 
     /// Turns the first-person view by `yaw` radians to the right and

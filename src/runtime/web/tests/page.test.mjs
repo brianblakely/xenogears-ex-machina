@@ -412,12 +412,17 @@ describe('automation over a game module fixture', () => {
       await finger('pointerdown', 9, null);
       await finger('pointerup', 9, null);
       const controls = await touch.evaluate(() => window.xem.status().touch.controls.map((c) => c.control));
-      assert.ok(controls.includes('Up') && controls.includes('Confirm') && controls.includes('Settings'), JSON.stringify(controls));
+      assert.ok(controls.includes('Up') && controls.includes('Confirm') && controls.includes('Settings') && controls.includes('Select'), JSON.stringify(controls));
       assert.deepEqual(await finger('pointerdown', 1, 'Up'), { held: ['Up'], buttons: ['up'], touched: true });
       assert.deepEqual(await finger('pointerdown', 2, 'Confirm'), { held: ['Up', 'Confirm'], buttons: ['cross', 'up'], touched: true });
       assert.deepEqual(await finger('pointermove', 1, 'Right'), { held: ['Right', 'Confirm'], buttons: ['cross', 'right'], touched: true }, 'a finger slides across the D-pad');
       assert.deepEqual(await finger('pointerup', 2, 'Confirm'), { held: ['Right'], buttons: ['right'], touched: true });
       assert.deepEqual(await finger('pointercancel', 1, 'Right'), { held: [], buttons: [], touched: true }, 'a cancelled touch lets go');
+      // SELECT is the game's Select outside a field (in one it toggles
+      // first-person inspection where the game's shows nothing).
+      assert.deepEqual(await finger('pointerdown', 4, 'Select'), { held: ['Select'], buttons: ['select'], touched: true });
+      assert.deepEqual(await finger('pointerup', 4, 'Select'), { held: [], buttons: [], touched: true });
+      assert.equal((await touch.evaluate(() => window.xem.status().renderer.firstPerson)), false);
       // Settings is a touch away (not only Escape).
       await finger('pointerdown', 3, 'Settings');
       assert.equal(await touch.evaluate(() => window.xem.panel.visible()), true);

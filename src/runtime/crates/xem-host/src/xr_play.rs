@@ -234,6 +234,10 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     let mut pointer = PanelPointer::default();
     let mut menu_held = false;
     let mut player = xem_settings::player::PlayerInput::default();
+    // First-person inspection's toggle on the controllers (their Back), and
+    // when its view last turned.
+    let mut look_toggle = xem_settings::look::Toggle::default();
+    let mut looked: Option<Instant> = None;
     let mut assist = Assisted::new();
     // The virtual screen as the last frame showed it (where gestures aim).
     let mut last_screen: Option<xem_assist::headset::Screen> = None;
@@ -391,8 +395,29 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             let (pressed, axes) = gamepad(&input);
             if visible { player.clear() } else { player.gamepad(&pressed, &axes) }
             let context = game.pad_context();
-            player.run_by_default = current.run_by_default;
+            // The controllers' Back (the right stick's click) released alone
+            // toggles first-person inspection in a field, as a gamepad's
+            // does, where Ex Machina draws it. It keeps the character where
+            // it stands (`xem_settings::look`); running by default would
+            // leave Run pressed alone.
+            let drawn = current.graphics.renderer == xem_settings::Renderer::ExMachina;
+            if visible {
+                look_toggle.clear();
+            } else if look_toggle.update(false, &pressed, context.field) && drawn {
+                view.set_first_person(!view.first_person());
+            }
+            let inspecting = view.first_person();
+            // The right stick turns the view.
+            let now = Instant::now();
+            let seconds = looked.replace(now).map_or(0.0, |then| now.duration_since(then).as_secs_f32().min(0.1));
+            if !visible && xem_settings::look::turns(inspecting, context.field) {
+                let (yaw, pitch) = xem_settings::look::Turn { stick: [axes[2], axes[3]], ..Default::default() }.radians(seconds);
+                view.look_around(yaw, pitch);
+            }
+            player.run_by_default = current.run_by_default && !inspecting;
             let buttons = if visible { 0 } else { player.buttons(&current.game_bindings, start.elapsed().as_secs_f64() * 1000.0, context) };
+            let buttons = xem_settings::look::game_buttons(buttons, inspecting, context.field, &context.assignment);
+            game.want_inspection(inspecting);
             let focused = session.state() == xem_xr::SessionState::FOCUSED;
             ran = game.update(buttons, &current, || focused)?;
             game.follow_sound_mode(&settings);
@@ -405,9 +430,16 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         let config = ViewConfig::resolve(&current.graphics, HostClass::Headset, (session.eye_size().0 / 2, session.eye_size().1 / 2), view.max_scale());
         view.configure(config);
         let restart = view.take_restart();
-        // The Original renderer shows the display as the device holds it.
+        // The Original renderer shows the display as the device holds it
+        // (nothing to look around in).
         let original = current.graphics.renderer == xem_settings::Renderer::Original;
+        if original {
+            view.set_first_person(false);
+        }
         game.want_actor_view(if !original && current.graphics.actors_in_view { view.actor_view() } else { 0 });
+        // The Binaural listener looks where inspection looks; the head turns
+        // it once more (`set_head` above).
+        game.want_listener_view(view.listener_axes());
         let (display, scene) = if original {
             game.stop_trace();
             (game.display_info(), String::new())

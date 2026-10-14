@@ -145,8 +145,8 @@ browser() {
     XEM_HEADLESS=$headless node --test tests/slice.test.mjs >"$logs/browser-slice.log" 2>&1 &
     local slice=$!
     XEM_HEADLESS=$headless node --test --test-concurrency=2 --test-skip-pattern="$timed" \
-        tests/binaural.test.mjs tests/disc.test.mjs tests/page.test.mjs tests/persistence.test.mjs tests/render.test.mjs \
-        tests/sound.test.mjs tests/xr-hands.test.mjs || status=1
+        tests/binaural.test.mjs tests/disc.test.mjs tests/first-person.test.mjs tests/page.test.mjs tests/persistence.test.mjs \
+        tests/render.test.mjs tests/sound.test.mjs tests/xr-hands.test.mjs || status=1
     wait "$slice" || status=1
     return $status
 }

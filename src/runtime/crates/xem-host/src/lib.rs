@@ -847,6 +847,7 @@ impl View {
             self.player.clear();
             self.look_toggle.clear();
             self.look_mouse = [0.0; 2];
+            self.deck.take_drag();
             self.looked = None;
             return 0;
         }
@@ -864,35 +865,48 @@ impl View {
         let invert_triggers = self.settings.borrow().settings().invert_trigger_chords;
         self.player.gamepad(&self.app_input.gamepad_for_game(&app_bindings, invert_triggers), &self.axes);
         self.player.browse(self.targets.as_ref());
-        self.player.run_by_default = self.settings.borrow().settings().run_by_default;
-        let buttons = self.player.buttons(&bindings, now, context);
-        let select_key = bindings.play.get(&xem_settings::GameAction::Select).is_some_and(|b| b.keyboard.iter().any(|k| held(k)));
-        // First-person inspection: toggled in a field (Ex Machina draws it),
-        // and while it is on, turned by the arrows, the right stick and the
-        // mouse the game holds.
+        // First-person inspection: toggled in a field (Ex Machina draws it)
+        // by Select's keys, the touch deck's SELECT and the gamepad, and
+        // while it is on, turned by the arrows, the right stick, a finger on
+        // the picture and the mouse the game holds.
         let field = context.field;
+        let select = bindings.play.get(&xem_settings::GameAction::Select).is_some_and(|b| b.keyboard.iter().any(|k| held(k)))
+            || self.deck.held().contains(&xem_assist::touch::Control::Select);
         let drawn = self.settings.borrow().settings().graphics.renderer == xem_settings::Renderer::ExMachina;
-        if self.look_toggle.update(select_key, &self.pad, field) && drawn {
+        if self.look_toggle.update(select, &self.pad, field) && drawn {
             self.renderer.set_first_person(!self.renderer.first_person());
             self.player.mouse.clear();
             self.look_mouse = [0.0; 2];
         }
+        let on = self.renderer.first_person();
+        // Running by default would leave Run pressed alone once the view
+        // holds the directions back.
+        self.player.run_by_default = self.settings.borrow().settings().run_by_default && !on;
+        let buttons = self.player.buttons(&bindings, now, context);
         let now = Instant::now();
         let seconds = self.looked.map_or(0.0, |then| now.duration_since(then).as_secs_f32().min(0.1));
         self.looked = Some(now);
-        let on = self.renderer.first_person();
-        // The mouse's motion is the view's this frame, or no one's.
+        // The mouse's and a finger's motion are the view's this frame, or
+        // no one's.
         let mouse = std::mem::take(&mut self.look_mouse);
+        let (dx, dy) = self.deck.take_drag();
         if xem_settings::look::turns(on, field) {
+            let density = self.ui.scale_factor();
             let turn = xem_settings::look::Turn {
                 arrows: ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].map(held),
                 stick: right_stick(self.gamepads.first().copied()),
                 mouse,
+                touch: [dx / density, dy / density],
             };
             let (yaw, pitch) = turn.radians(seconds);
             self.renderer.look_around(yaw, pitch);
         }
-        xem_settings::look::game_buttons(buttons, on, field)
+        xem_settings::look::game_buttons(buttons, on, field, &context.assignment)
+    }
+
+    /// Whether first-person inspection shows (`Game::want_inspection`).
+    pub fn first_person(&self) -> bool {
+        self.renderer.first_person()
     }
 
     /// A finger on the game (`at` across the target, 0..1).
@@ -929,12 +943,15 @@ impl View {
     /// Touch play, before [`View::pad_buttons`]: the deck laid out by the
     /// picture, taps on the picture resolved in the game's context (walk or
     /// talk there, select a menu entry), shop quantity keys, and the marks
-    /// (the committed destination) to draw.
+    /// (the committed destination) to draw. First-person inspection shows
+    /// no field camera to walk or point through: its taps walk nowhere and
+    /// talk to no one, and no floor marks show.
     pub fn assist(&mut self, game: &mut Game) {
         let ui = game.pad_context().ui;
         self.arrange(ui);
         let taps = std::mem::take(&mut self.taps);
-        let field = game.field();
+        let inspecting = self.renderer.first_person();
+        let field = if inspecting { None } else { game.field() };
         if !taps.is_empty() {
             let targets = game.targets();
             for tap in taps {
@@ -954,7 +971,8 @@ impl View {
         for key in std::mem::take(&mut self.quantity) {
             let _ = game.command(&serde_json::json!({"cmd": "shop_quantity", "op": key.op()}));
         }
-        self.marks = xem_assist::overlay::marks(ui, None, field.as_ref(), game.destination(), None);
+        let destination = if inspecting { None } else { game.destination() };
+        self.marks = xem_assist::overlay::marks(ui, None, field.as_ref(), destination, None);
         self.player.touch = self.deck.actions();
     }
 
@@ -995,6 +1013,7 @@ impl View {
 
         let panel_rect = self.panel_rect();
         let touch_shown = self.touch_shown();
+        self.ui.set_first_person_touch(touch_shown);
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
         self.fresh_frame = false;
         let side = self.renderer.config().map_or(0, |c| c.side) as f32;
@@ -1448,6 +1467,72 @@ mod tests {
             SDL_DetachVirtualJoystick(id);
             SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
         }
+    }
+
+    #[test]
+    fn the_touch_decks_select_toggles_first_person_and_a_finger_on_the_picture_turns_it() {
+        use xem_assist::touch::Control;
+        use xem_core::FieldControls;
+        use xem_core::pad::button;
+        let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+        let settings = Rc::new(RefCell::new(SettingsService::with_defaults(xem_settings::MemoryStore::default())));
+        settings.borrow_mut().apply(xem_settings::SettingChange::RunByDefault(true)).unwrap();
+        let (width, height) = (1280u32, 720u32);
+        let mut view = View::new(&gpu, wgpu::TextureFormat::Rgba8UnormSrgb, (width, height), 1.0, settings, false).unwrap();
+        let black: Vec<_> = (0..320 * 240).flat_map(|_| [0, 0, 0, 255]).collect();
+        view.set_game_image(&gpu, (320, 240), &black);
+        let target = gpu.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("touch target"),
+            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            mip_level_count: 1, sample_count: 1, dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+        view.render(&gpu, &target.create_view(&Default::default()), 0.0).unwrap();
+        view.arrange(xem_core::context::Context::Walk);
+        let walking = FieldControls { field: true, walking: true, menu: false, picture: false };
+        let context = PadContext { field: walking, ui: xem_core::context::Context::Walk, ..PadContext::default() };
+        let across = |(x, y): (f32, f32)| (x / width as f32, y / height as f32);
+        let control = |view: &View, c: Control| view.deck.controls.iter().find(|(k, _)| *k == c).unwrap().1.centre();
+        let (select, up) = (control(&view, Control::Select), control(&view, Control::Up));
+        // Off, the D-pad walks and (by default) runs.
+        view.finger(Finger::Down, 1, across(up));
+        assert_eq!(view.pad_buttons(context, None), button::UP | button::CIRCLE);
+        view.finger(Finger::Up, 1, across(up));
+        // SELECT toggles the view, and is the view's here, not the game's.
+        view.finger(Finger::Down, 2, across(select));
+        assert_eq!(view.pad_buttons(context, None), 0);
+        assert!(view.first_person(), "the deck's SELECT toggles the view");
+        view.finger(Finger::Up, 2, across(select));
+        assert_eq!(view.pad_buttons(context, None), 0);
+        // On, the D-pad holds nothing back for the game: no direction, and no
+        // Run left alone.
+        view.finger(Finger::Down, 3, across(up));
+        assert_eq!(view.pad_buttons(context, None), 0, "the character stays where it stands");
+        view.finger(Finger::Up, 3, across(up));
+        // A finger dragged right on the picture turns the view left (the
+        // scene follows it), and that drag is no tap.
+        let picture = view.picture.expect("the picture's place").placed;
+        let middle = (picture.x + picture.width / 2.0, picture.y + picture.height / 2.0);
+        view.finger(Finger::Down, 4, across(middle));
+        view.finger(Finger::Moved, 4, across((middle.0 + 100.0, middle.1)));
+        view.pad_buttons(context, None);
+        let (yaw, pitch) = view.renderer.look_angles().expect("on");
+        assert!((yaw + 0.3).abs() < 1e-3 && pitch.abs() < 1e-3, "100 logical pixels turn it 0.3 radians: {yaw} {pitch}");
+        view.finger(Finger::Up, 4, across((middle.0 + 100.0, middle.1)));
+        assert!(view.taps.is_empty(), "a drag is no tap");
+        // SELECT again: the view goes, and the D-pad walks again.
+        view.finger(Finger::Down, 2, across(select));
+        view.pad_buttons(context, None);
+        view.finger(Finger::Up, 2, across(select));
+        assert!(!view.first_person());
+        view.finger(Finger::Down, 1, across(up));
+        assert_eq!(view.pad_buttons(context, None), button::UP | button::CIRCLE);
+        // Where the map's picture shows, the deck's SELECT is the game's.
+        view.finger(Finger::Down, 2, across(select));
+        assert_eq!(view.pad_buttons(PadContext { field: FieldControls { picture: true, ..walking }, ..context }, None) & button::SELECT, button::SELECT);
+        assert!(!view.first_person());
     }
 
     #[test]

@@ -153,12 +153,27 @@ pub struct XemApp {
     /// where it last clicked (logical pixels).
     xr_panel_hit: Option<(f32, f32)>,
     xr_panel_click: Option<(f32, f32)>,
+    /// First-person inspection: the first gamepad's buttons and axes as
+    /// they are (before app chords take theirs), the arrow keys held
+    /// (whatever the bindings say), the toggle, the mouse motion that turns
+    /// the view, and when it last turned (page time).
+    pad: [u8; 16],
+    axes: [f32; 4],
+    arrows: [bool; 4],
+    look_toggle: xem_settings::look::Toggle,
+    look_mouse: [f32; 2],
+    looked: Option<f64>,
 }
+
+/// The arrow keys, in `look::Turn::arrows` order.
+const ARROWS: [&str; 4] = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"];
 
 /// The browser's game and player's input, as the headset's effects reach them.
 struct WebCarry<'a> {
     session: Option<&'a mut Session<WebModule>>,
     input: &'a mut xem_settings::player::PlayerInput,
+    /// The underhand grab asked for first-person inspection's toggle.
+    inspect: bool,
 }
 
 impl xem_assist::headset::Carry for WebCarry<'_> {
@@ -176,7 +191,9 @@ impl xem_assist::headset::Carry for WebCarry<'_> {
     fn select(&mut self, index: usize, confirm: bool) {
         self.input.select(index, confirm);
     }
-    fn inspect(&mut self) {}
+    fn inspect(&mut self) {
+        self.inspect = true;
+    }
     fn release(&mut self) {
         self.input.clear();
     }
@@ -247,6 +264,12 @@ impl XemApp {
             xr_held: Default::default(),
             xr_panel_hit: None,
             xr_panel_click: None,
+            pad: [0; 16],
+            axes: [0.0; 4],
+            arrows: [false; 4],
+            look_toggle: Default::default(),
+            look_mouse: [0.0; 2],
+            looked: None,
         }
     }
 
@@ -258,6 +281,8 @@ impl XemApp {
         let closed = self.panel_closed.clone();
         renderer.attach_panel(self.settings.clone(), move || closed.set(true));
         if let Some(panel) = renderer.panel() {
+            // The Controls section lists first-person inspection's keys.
+            panel.set_first_person(true);
             let requests = self.app_requests.clone();
             panel.on_app_request(move |request| requests.borrow_mut().push(request));
             // The panel's Import disc… is the page's file chooser.
@@ -429,20 +454,23 @@ impl XemApp {
             let (width, height) = renderer.size();
             self.deck.arrange((width as f32, height as f32), placed, renderer.scale_factor(), ui);
         }
+        // First-person inspection shows no field camera to walk or point
+        // through: its taps walk nowhere and talk to no one.
+        let inspecting = self.first_person();
         let Some(session) = self.session.as_mut() else { return };
-        let field = (session.runtime.services().mode == Some(1)).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten();
+        let field = (session.runtime.services().mode == Some(1) && !inspecting).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten();
         for tap in std::mem::take(&mut self.taps) {
             let Some(at) = picture.and_then(|p| p.to_screen(tap.0, tap.1)) else { continue };
             // A tap on the paused game resumes it, as a click does.
             if self.input.unpause() { continue; }
             let outs = xem_assist::dispatch::tap_at(at, ui, field.as_ref(), self.targets.as_ref()).into_iter().collect();
-            xem_assist::headset::carry(outs, &mut WebCarry { session: Some(session), input: &mut self.input }, &mut self.xr_scaling);
+            xem_assist::headset::carry(outs, &mut WebCarry { session: Some(session), input: &mut self.input, inspect: false }, &mut self.xr_scaling);
         }
         for key in std::mem::take(&mut self.quantity) {
             session.execute(&json!({"cmd": "shop_quantity", "op": key.op()}));
         }
         let destination = match session.assist.as_ref().map(|a| &a.intent) {
-            Some(xem_core::assist::Intent::Walk { to, .. }) => Some(*to),
+            Some(xem_core::assist::Intent::Walk { to, .. }) if !inspecting => Some(*to),
             _ => None,
         };
         let marks = xem_assist::overlay::marks(ui, None, field.as_ref(), destination, None);
@@ -450,6 +478,9 @@ impl XemApp {
         let style = xem_render::glass::Style { reduced_transparency: self.settings.borrow().settings().assisted.reduced_transparency };
         let held = self.deck.held();
         if let Some(renderer) = &mut self.renderer {
+            if let Some(panel) = renderer.panel() {
+                panel.set_first_person_touch(shown);
+            }
             renderer.overlay.marks = marks;
             renderer.overlay.ui = shown.then_some(ui);
             renderer.overlay.style = style;
@@ -477,12 +508,17 @@ impl XemApp {
         }
         let Some(screen) = self.xr_screen else { return };
         let ui = self.ui;
-        let (field, targets) = match self.session.as_mut() {
+        // First-person inspection keeps the character where it stands, and
+        // shows no field camera to point through.
+        let inspecting = self.first_person();
+        self.headset.inspecting = inspecting;
+        let (field, targets, controls) = match self.session.as_mut() {
             Some(session) => (
-                (session.runtime.services().mode == Some(1)).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten(),
+                (session.runtime.services().mode == Some(1) && !inspecting).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten(),
                 session.runtime.targets(),
+                session.runtime.field_controls(),
             ),
-            None => (None, None),
+            None => (None, None, Default::default()),
         };
         let effects = if settings.assisted.gestures {
             self.headset.update(&input, &screen, ui, field.as_ref(), targets.as_ref())
@@ -492,7 +528,17 @@ impl XemApp {
         let pinched = effects.gestures.iter().any(|g| matches!(g, xem_assist::gesture::Gesture::Pinch { .. }));
         self.xr_pinches += u32::from(pinched);
         self.xr_held = effects.held.clone();
-        xem_assist::headset::carry(effects.outs, &mut WebCarry { session: self.session.as_mut(), input: &mut self.input }, &mut self.xr_scaling);
+        let inspect = {
+            let mut host = WebCarry { session: self.session.as_mut(), input: &mut self.input, inspect: false };
+            xem_assist::headset::carry(effects.outs, &mut host, &mut self.xr_scaling);
+            host.inspect
+        };
+        // The underhand grab toggles inspection in a field but its menu,
+        // where Ex Machina draws it.
+        let drawn = settings.graphics.renderer == xem_settings::Renderer::ExMachina;
+        if inspect && controls.field && !controls.menu && drawn && let Some(renderer) = &mut self.renderer {
+            renderer.set_first_person(!inspecting);
+        }
         self.xr_gestures = effects.gestures;
         if self.headset.settings_open != panel_visible {
             self.set_panel_visible(self.headset.settings_open);
@@ -501,7 +547,7 @@ impl XemApp {
         if let Some(renderer) = &mut self.renderer {
             renderer.xr_scale = self.xr_scaling.scale;
             let destination = match self.session.as_ref().and_then(|s| s.assist.as_ref()).map(|a| &a.intent) {
-                Some(xem_core::assist::Intent::Walk { to, .. }) => Some(*to),
+                Some(xem_core::assist::Intent::Walk { to, .. }) if !inspecting => Some(*to),
                 _ => None,
             };
             let marks = if settings.assisted.gestures { xem_assist::overlay::marks(ui, effects.aim, field.as_ref(), destination, targets.as_ref()) } else { vec![] };
@@ -541,6 +587,48 @@ impl XemApp {
             }
         }
         self.xr_select = None;
+    }
+
+    /// Whether first-person inspection shows.
+    fn first_person(&self) -> bool {
+        self.renderer.as_ref().is_some_and(|r| r.first_person())
+    }
+
+    /// First-person inspection this frame, at page time `now`
+    /// (`xem_settings::look`): toggled in a field, where Ex Machina draws
+    /// it, by Select's keys, the touch deck's SELECT, the gamepad's Back
+    /// released alone or its right stick's click; while it shows, turned by
+    /// the arrow keys, the right stick, a finger on the picture and the
+    /// mouse the game holds. Whether it shows.
+    fn look(&mut self, bindings: &xem_settings::GameBindings, field: xem_core::FieldControls, now: f64) -> bool {
+        // The mouse's and a finger's motion are the view's this frame, or no one's.
+        let mut mouse = std::mem::take(&mut self.look_mouse);
+        let (dx, dy) = self.deck.take_drag();
+        let looked = self.looked.replace(now);
+        let drawn = self.settings.borrow().settings().graphics.renderer == xem_settings::Renderer::ExMachina;
+        let panel = self.panel_visible();
+        let Some(renderer) = self.renderer.as_mut() else { return false };
+        if panel {
+            self.look_toggle.clear();
+            self.looked = None;
+            return renderer.first_person();
+        }
+        let select = bindings.play.get(&xem_settings::GameAction::Select).is_some_and(|b| b.keyboard.iter().any(|k| self.input.key_held(k)))
+            || self.deck.held().contains(&xem_assist::touch::Control::Select);
+        if self.look_toggle.update(select, &self.pad, field) && drawn {
+            renderer.set_first_person(!renderer.first_person());
+            self.input.mouse.clear();
+            mouse = [0.0; 2];
+        }
+        let on = renderer.first_person();
+        if xem_settings::look::turns(on, field) {
+            let seconds = looked.map_or(0.0, |then| ((now - then) / 1000.0).clamp(0.0, 0.1)) as f32;
+            let density = renderer.scale_factor();
+            let turn = xem_settings::look::Turn { arrows: self.arrows, stick: [self.axes[2], self.axes[3]], mouse, touch: [dx / density, dy / density] };
+            let (yaw, pitch) = turn.radians(seconds);
+            renderer.look_around(yaw, pitch);
+        }
+        on
     }
 
     /// The game frames due since the last step (see [`XemApp::frame`]).
@@ -589,8 +677,12 @@ impl XemApp {
             let bindings = self.settings.borrow().settings().game_bindings.clone();
             if self.panel_visible() { self.input.clear(); }
             self.input.browse(self.targets.as_ref());
-            self.input.run_by_default = self.settings.borrow().settings().run_by_default;
+            let inspecting = self.look(&bindings, context.field, now);
+            // Running by default would leave Run pressed alone once the view
+            // holds the directions back.
+            self.input.run_by_default = self.settings.borrow().settings().run_by_default && !inspecting;
             let buttons = if self.panel_visible() { 0 } else { self.input.buttons(&bindings, now, context) };
+            let buttons = xem_settings::look::game_buttons(buttons, inspecting, context.field, &context.assignment);
             if buttons != self.host_buttons
                 && let Some(session) = self.session.as_mut()
             {
@@ -618,6 +710,10 @@ impl XemApp {
             };
             if let Some(session) = self.session.as_mut() {
                 session.set_binaural(binaural);
+                // Inspection stops a route on entry and refuses new ones;
+                // the Binaural listener looks where it looks.
+                session.set_inspecting(inspecting);
+                session.set_listener_view(self.renderer.as_mut().and_then(|r| r.listener_axes()));
             }
             while limit.is_none_or(|frames| batch < frames) && (batch == 0 || now_ms() - start < BATCH_BUDGET_MS) {
                 let Some(session) = self.session.as_mut() else { break };
@@ -720,8 +816,10 @@ impl XemApp {
                 Some(session) if self.display_dirty => {
                     let graphics = self.settings.borrow().settings().graphics;
                     if graphics.renderer == xem_settings::Renderer::Original {
-                        // The console's own picture, as the device shows it.
+                        // The console's own picture, as the device shows it
+                        // (nothing to look around in).
                         self.actor_view = 0;
+                        renderer.set_first_person(false);
                         let gpu = &mut session.runtime.services().gpu;
                         if gpu.device().trace_enabled() {
                             gpu.device_mut().set_trace(false);
@@ -763,10 +861,16 @@ impl XemApp {
     }
 
     /// A key (`KeyboardEvent.code`) went down or up; true when it is one of
-    /// pad 1's keys (the page then keeps it from the browser). Ignored while
-    /// the settings panel has the input.
+    /// pad 1's keys, or an arrow key while first-person inspection shows
+    /// (the page then keeps it from the browser). Ignored while the
+    /// settings panel has the input.
     pub fn game_key(&mut self, code: &str, down: bool) -> bool {
         if !self.app_input.focused() { return true; }
+        // The arrow keys turn inspection's view whatever the bindings say.
+        let arrow = ARROWS.iter().position(|a| *a == code);
+        if let Some(i) = arrow && !down {
+            self.arrows[i] = false;
+        }
         let editing = self.text_editor_focused();
         if editing { self.app_input.release_keyboard(); } else { self.app_input.key(code, down); }
         let settings = self.settings.borrow();
@@ -783,13 +887,19 @@ impl XemApp {
         if down && self.panel_visible() {
             return false;
         }
+        if let Some(i) = arrow {
+            self.arrows[i] = down;
+        }
         let game = self.settings.borrow().settings().game_bindings.clone();
-        self.input.key(&game, code, down)
+        self.input.key(&game, code, down) || (arrow.is_some() && self.first_person())
     }
 
     /// The first gamepad's buttons and axes (Gamepad API standard mapping,
     /// 1 = pressed). Back+Start toggles Settings.
     pub fn gamepad(&mut self, pressed: &[u8], axes: &[f32]) {
+        // As they are, for first-person inspection's toggle (Back alone).
+        self.pad = std::array::from_fn(|i| pressed.get(i).copied().unwrap_or(0));
+        self.axes = std::array::from_fn(|i| axes.get(i).copied().unwrap_or(0.0));
         if self.app_input.pad(pressed) {
             self.set_panel_visible(!self.panel_visible());
         }
@@ -804,6 +914,9 @@ impl XemApp {
     pub fn release_input(&mut self) {
         self.input.clear();
         self.deck.release();
+        self.arrows = [false; 4];
+        self.look_toggle.clear();
+        self.look_mouse = [0.0; 2];
         let _ = self.app_input.set_focused(false);
         if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) { panel.cancel_pointer(); }
         self.app_requests.borrow_mut().retain(|r| matches!(r,AppRequest::Action(_)));
@@ -881,10 +994,12 @@ impl XemApp {
     }
 
     /// Host pointer input over the canvas (canvas pixels); true when the
-    /// panel took it, when the game took a button (`dx`: sideways movement
-    /// turns the field camera under the mouse camera setting), or when the wheel zoomed the field
-    /// camera (down pulls it back, up brings it in; `dy` in pixels, about
-    /// 100 a notch).
+    /// panel took it, when the game took a button (`dx`, `dy`: the mouse's
+    /// movement, which under the mouse camera setting turns the field camera
+    /// sideways, or first-person inspection's view), or when the wheel
+    /// zoomed the field camera (down pulls it back, up brings it in; `dy` in
+    /// pixels, about 100 a notch; not while inspecting, which shows no
+    /// pulled-back camera).
     pub fn pointer(&mut self, kind: &str, x: f32, y: f32, button: i32, dx: f32, dy: f32) -> bool {
         if self.renderer.as_mut().is_some_and(|r| r.pointer(kind, x, y, button, (dx, dy))) {
             return true;
@@ -906,12 +1021,19 @@ impl XemApp {
             "move" => {
                 self.input.hover(screen);
                 if self.mouse_captured && self.mouse_camera_active() {
-                    self.input.mouse.moved(dx, self.settings.borrow().settings());
+                    if self.first_person() {
+                        let scale = self.settings.borrow().settings().mouse_scale();
+                        self.look_mouse[0] += dx * scale;
+                        self.look_mouse[1] += dy * scale;
+                    } else {
+                        self.input.mouse.moved(dx, self.settings.borrow().settings());
+                    }
                 }
                 return false;
             }
             // In a menu or a choice the wheel steps the cursor.
             "wheel" if self.input.wheel(dy / 100.0, self.ui) => return true,
+            "wheel" if self.first_person() => return true,
             "wheel" => {}
             _ => return false,
         }
@@ -1337,6 +1459,10 @@ impl XemApp {
                 // Where the game's picture lies on the canvas (canvas pixels)
                 // and the screen it shows (with the wider framing's sides).
                 "picture": r.picture.map(|p| json!({"x": p.placed.x, "y": p.placed.y, "width": p.placed.width, "height": p.placed.height, "display": [p.display.0, p.display.1], "side": p.side})),
+                // First-person inspection, and how far its view has turned
+                // from the heading it began with (radians, yaw right, pitch up).
+                "firstPerson": r.first_person(),
+                "look": r.look_angles().map(|(yaw, pitch)| json!({"yaw": yaw, "pitch": pitch})),
                 "lost": r.lost(),
             })
         });

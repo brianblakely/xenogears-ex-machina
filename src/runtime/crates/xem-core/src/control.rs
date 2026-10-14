@@ -96,6 +96,8 @@ pub struct Session<M: GameModule> {
     base_pad: u16,
     /// Stop at a jump's takeoff instead of pressing on (an assistance option).
     pub ledge_brake: bool,
+    /// The host shows first-person inspection ([`Session::set_inspecting`]).
+    inspecting: bool,
     /// A shop quantity edit under way (`shop_quantity`).
     quantity: Option<Quantity>,
 }
@@ -132,6 +134,9 @@ const BUTTONS: [(&str, u16); 16] = [
     ("cross", button::CROSS),
     ("square", button::SQUARE),
 ];
+
+/// Why `navigate` and `interact` are refused during first-person inspection.
+const INSPECTING: &str = "first-person inspection keeps the character where it stands: turn it off to walk or interact";
 
 /// A button's bit by its control name ("cross", "start", ...).
 pub fn button_bit(name: &str) -> Option<u16> {
@@ -175,6 +180,7 @@ impl<M: GameModule> Session<M> {
             assist_outcome: None,
             base_pad: 0,
             ledge_brake: false,
+            inspecting: false,
             quantity: None,
         };
         session.configure_rewind(0,crate::time::DEFAULT_REWIND_INTERVAL_SECONDS,crate::time::DEFAULT_REWIND_HISTORY_SECONDS).expect("valid default rewind settings");
@@ -496,6 +502,22 @@ impl<M: GameModule> Session<M> {
         }
     }
 
+    /// Whether the host shows first-person inspection, which keeps the
+    /// character where it stands: turning it on stops a route under way
+    /// (recorded as `assist_stop`, as the player's own stop is), and while
+    /// it is on `navigate` and `interact` are refused. A recorded `assist`
+    /// (a replay's, a session log's) still runs. Hosts set it before every
+    /// batch of frames; a replay keeps its own record and ignores it.
+    pub fn set_inspecting(&mut self, on: bool) {
+        if self.replay_end.is_some() {
+            return;
+        }
+        if on && !self.inspecting {
+            self.stop_assist(crate::assist::Outcome::Stopped);
+        }
+        self.inspecting = on;
+    }
+
     /// Pad 1 for the next frame: the base input, and the assist's D-pad and
     /// Run over it while it runs. A direction of the player's own ends it.
     fn apply_assist(&mut self) {
@@ -674,6 +696,7 @@ impl<M: GameModule> Session<M> {
             "rewind": self.rewind.status(),
             "assist": self.assist.as_ref().map(|a| json!({"intent": a.intent, "phase": a.phase})),
             "assist_outcome": self.assist_outcome,
+            "inspecting": self.inspecting,
         })
     }
 
@@ -892,6 +915,9 @@ impl<M: GameModule> Session<M> {
             "navigate" => {
                 // Walk to a floor point: `to` [x, z] in world units, or the
                 // floor a `screen` point picks.
+                if self.inspecting {
+                    return Err(INSPECTING.into());
+                }
                 if self.runtime.context() != crate::context::Context::Walk {
                     return Err("navigate needs the player walking in a field".into());
                 }
@@ -915,6 +941,9 @@ impl<M: GameModule> Session<M> {
                 Ok(json!({ "hit": hit, "status": self.status() }))
             }
             "interact" => {
+                if self.inspecting {
+                    return Err(INSPECTING.into());
+                }
                 if self.runtime.context() != crate::context::Context::Walk {
                     return Err("interact needs the player walking in a field".into());
                 }

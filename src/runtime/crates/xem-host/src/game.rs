@@ -48,6 +48,9 @@ pub struct Game {
     /// The listener's axes while the presentation looks from within the
     /// scene (first-person inspection; `Session::set_listener_view`).
     listener_view: Option<[[f32; 3]; 3]>,
+    /// The presentation shows first-person inspection
+    /// (`Session::set_inspecting`).
+    inspecting: bool,
 }
 
 impl Game {
@@ -88,6 +91,7 @@ impl Game {
             actor_view: 0,
             attack_page: false,
             listener_view: None,
+            inspecting: false,
         };
         game.sync_time_settings(&xem_settings::Settings::default()).expect("valid interactive defaults");
         game
@@ -273,6 +277,9 @@ impl Game {
         self.sync_time_settings(settings)?;
         self.session.set_binaural(settings.binaural);
         self.session.set_listener_view(self.listener_view);
+        if !self.scripted {
+            self.session.set_inspecting(self.inspecting);
+        }
         if self.rewind_held.iter().any(|held| *held) {
             let now = Instant::now();
             if now >= self.rewind_next {
@@ -449,6 +456,13 @@ impl Game {
     /// Binaural mode.
     pub fn want_listener_view(&mut self, axes: Option<[[f32; 3]; 3]>) {
         self.listener_view = axes;
+    }
+
+    /// Whether the presentation shows first-person inspection from the next
+    /// update (`View::first_person`): turning it on stops a route under way,
+    /// and the session refuses new ones while it is on.
+    pub fn want_inspection(&mut self, on: bool) {
+        self.inspecting = on;
     }
 
     /// The headset's head in the presentation's reference space, for the

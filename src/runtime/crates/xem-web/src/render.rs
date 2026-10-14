@@ -367,6 +367,31 @@ impl WebRenderer {
         self.renderer.actor_view()
     }
 
+    /// Whether first-person inspection shows (`GameView::first_person`).
+    pub fn first_person(&self) -> bool {
+        self.renderer.first_person()
+    }
+
+    pub fn set_first_person(&mut self, on: bool) {
+        self.renderer.set_first_person(on);
+    }
+
+    /// Turns the first-person view (`GameView::look_around`).
+    pub fn look_around(&mut self, yaw: f32, pitch: f32) {
+        self.renderer.look_around(yaw, pitch);
+    }
+
+    /// How far the first-person view has turned (`GameView::look_angles`).
+    pub fn look_angles(&self) -> Option<(f32, f32)> {
+        self.renderer.look_angles()
+    }
+
+    /// Where the first-person view faces, for the Binaural listener
+    /// (`GameView::listener_axes`).
+    pub fn listener_axes(&mut self) -> Option<[[f32; 3]; 3]> {
+        self.renderer.listener_axes()
+    }
+
     /// The renderer's configuration for `graphics` on this canvas (or in a
     /// headset); returns whether the device's draw trace must restart from
     /// the whole VRAM.
