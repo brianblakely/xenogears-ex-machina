@@ -571,7 +571,9 @@ def fixed_regions(root: Path = ROOT) -> list[tuple[int, int, int]]:
 def area_names(disc: int, root: Path) -> dict[int, list[str]]:
     """Area file -> its name table's texts, in the characters text_control's map gives; a table
     most of whose texts hold more glyphs the map does not give than it does (the Japanese ones of
-    the later areas) names nothing."""
+    the later areas) names nothing. text_control reads a checkout's .local (disc_index.Disc)."""
+    if root.name != ".local":
+        raise SystemExit(f"{root}: the world map's names need a checkout's .local as --root")
     image = Disc(disc, root.parent)
     threshold = text_control.font_threshold(text_control.unpack(image.sectors(image.slot(0, 1, 6))))
     chars = text_control.character_map(image, threshold).glyphs
