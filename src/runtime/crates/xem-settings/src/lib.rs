@@ -19,9 +19,9 @@ pub use bindings::{GameAction, GameBinding, GameBindings, InputContext, GAME_ACT
 pub use controls::{AppAction, AppBinding, AppInput, AppRequest, APP_ACTIONS};
 
 pub const MAX_VOLUME: u8 = 100;
-/// The mouse deadzone's default and largest radius, in pixels of motion.
-pub const DEFAULT_MOUSE_DEADZONE: u16 = 8;
-pub const MAX_MOUSE_DEADZONE: u16 = 40;
+/// The mouse camera's deadzone, default and largest, in pixels of motion.
+pub const DEFAULT_MOUSE_DEADZONE: u16 = 40;
+pub const MAX_MOUSE_DEADZONE: u16 = 100;
 pub use xem_core::time::{FastForwardRate, FAST_FORWARD_RATES, DEFAULT_REWIND_INTERVAL_SECONDS, MAX_REWIND_INTERVAL_SECONDS, DEFAULT_REWIND_HISTORY_SECONDS, MAX_REWIND_HISTORY_SECONDS};
 /// The Binaural sound mode's settings (`xem_core::binaural::Config`): the
 /// mode is on with `enabled`; [`Settings::audio_output`] keeps the original
@@ -145,7 +145,7 @@ pub struct Settings {
     /// Mouse camera rate as a percentage of the original host sensitivity.
     pub mouse_sensitivity: u16,
     /// Pixels the mouse may move from where it rested before its motion
-    /// turns the camera (or the first-person view).
+    /// turns the field camera (first-person look takes every pixel).
     pub mouse_deadzone: u16,
     /// Field movement runs unless the player holds the run button.
     pub run_by_default: bool,
@@ -607,7 +607,7 @@ mod tests {
             assert!(service.apply(SettingChange::MouseSensitivity(percent)).is_err());
         }
         let duration = |percent| {
-            let settings = Settings { mouse_sensitivity: percent, ..Default::default() };
+            let settings = Settings { mouse_sensitivity: percent, mouse_deadzone: 0, ..Default::default() };
             let mut mouse = bindings::Mouse::default();
             mouse.moved(20.0, &settings);
             (0..200).take_while(|ms| mouse.turn(f64::from(*ms)).is_some()).count()
@@ -632,7 +632,7 @@ mod tests {
         }
         // Saved before the setting existed, or out of range: the default.
         assert_eq!(Settings::read(&serde_json::json!({"mouse_camera": true})).unwrap().0.mouse_deadzone, DEFAULT_MOUSE_DEADZONE);
-        let (read, reset) = Settings::read(&serde_json::json!({"mouse_deadzone": 99})).unwrap();
+        let (read, reset) = Settings::read(&serde_json::json!({"mouse_deadzone": MAX_MOUSE_DEADZONE + 1})).unwrap();
         assert_eq!((read.mouse_deadzone, reset), (DEFAULT_MOUSE_DEADZONE, vec!["mouse_deadzone".to_string()]));
     }
 

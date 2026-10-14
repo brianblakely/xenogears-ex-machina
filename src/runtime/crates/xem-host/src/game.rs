@@ -42,6 +42,9 @@ pub struct Game {
     /// The view the field's characters keep moving in (see
     /// `Session::set_actor_view`), set by the presentation.
     actor_view: u32,
+    /// The battle's attack page stays shown through a sequence the player
+    /// began by pointing at it (`Session::set_attack_page`).
+    attack_page: bool,
     /// The listener's axes while the presentation looks from within the
     /// scene (first-person inspection; `Session::set_listener_view`).
     listener_view: Option<[[f32; 3]; 3]>,
@@ -83,6 +86,7 @@ impl Game {
             pacer: Default::default(),
             last_update: Instant::now(),
             actor_view: 0,
+            attack_page: false,
             listener_view: None,
         };
         game.sync_time_settings(&xem_settings::Settings::default()).expect("valid interactive defaults");
@@ -306,6 +310,7 @@ impl Game {
             if !self.scripted {
                 self.session.set_window_focus(focused(),settings.pause_on_focus_loss);
                 self.session.set_actor_view(self.actor_view)?;
+                self.session.set_attack_page(self.attack_page);
                 self.session.set_sound_mode(settings.game_sound_mode())?;
             }
             if !self.session.frame().map_err(|trap| trap.to_string())? { break; }
@@ -403,6 +408,12 @@ impl Game {
     /// frame (`GameView::actor_view`; 0 the original's).
     pub fn want_actor_view(&mut self, view: u32) {
         self.actor_view = view;
+    }
+
+    /// Whether the battle's attack page stays shown through the attack
+    /// sequence from the next frame (`PlayerInput::attack_pointed`).
+    pub fn want_attack_page(&mut self, kept: bool) {
+        self.attack_page = kept;
     }
 
     /// The listener's axes while the presentation looks from within the

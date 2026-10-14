@@ -719,7 +719,7 @@ export component SettingsPanel inherits Window {
     in-out property <bool> invert-trigger-chords;
     in-out property <bool> mouse-camera;
     in-out property <int> mouse-sensitivity: 50;
-    in-out property <int> mouse-deadzone: 8;
+    in-out property <int> mouse-deadzone: 40;
     in-out property <bool> run-by-default;
     // The assisted controls (xem_settings::Assisted): hand gestures, the
     // headset pointer (0 eye gaze, 1 head, 2 left hand, 3 right hand), the
@@ -1134,7 +1134,7 @@ export component SettingsPanel inherits Window {
                                     value-text: "\{root.mouse-deadzone} px";
                                     Slider {
                                         accessible-label: "Mouse deadzone";
-                                        minimum: 0; maximum: 40;
+                                        minimum: 0; maximum: 100;
                                         value: root.mouse-deadzone;
                                         changed(value) => { root.mouse-deadzone-edited(round(value)); }
                                     }

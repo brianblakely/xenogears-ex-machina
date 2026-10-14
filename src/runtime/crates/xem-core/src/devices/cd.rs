@@ -288,6 +288,24 @@ impl Default for Cd {
 }
 
 impl Cd {
+    /// The console's reset: the drive returns to its power-on state (no
+    /// read, seek or play under way, no response pending, the XA decoder and
+    /// the mix as at power-on) with its discs, the lid as it is.
+    pub(crate) fn power_on(&mut self) {
+        *self = Cd {
+            disc: self.disc.take(),
+            inserted: self.inserted,
+            shelf: std::mem::take(&mut self.shelf),
+            wanted: self.wanted,
+            lid_open: self.lid_open,
+            shell_latch: self.shell_latch,
+            sequence: self.sequence,
+            sector_log: self.sector_log.take(),
+            xa_sectors: self.xa_sectors,
+            ..Cd::default()
+        };
+    }
+
     /// The drive as a snapshot left it (`state`, loaded), with the live
     /// discs: the one the state had in the drive goes back in
     /// ([`Self::holds`] said it is here).
@@ -1119,6 +1137,27 @@ mod tests {
         let (mut a, mut b) = (now, now);
         assert_eq!(run(&mut cd, &mut a, now + CPU_HZ / 5), run(&mut copy, &mut b, now + CPU_HZ / 5));
         assert_eq!(cd.read_buffer(16), copy.read_buffer(16));
+    }
+
+    #[test]
+    fn a_console_reset_stops_the_drive_and_keeps_its_disc() {
+        let mut cd = Cd::default();
+        cd.insert_disc(0, disc(200));
+        let mut now = 0;
+        cd.command(com::SETLOC, &loc(16), now);
+        cd.command(com::READN, &[], now);
+        run(&mut cd, &mut now, CPU_HZ / 10);
+        assert!(!cd.events.is_empty(), "a read under way");
+        cd.power_on();
+        assert!(cd.events.is_empty() && cd.pending.is_empty() && matches!(cd.drive, Drive::Idle), "nothing of the old read goes on");
+        assert_eq!(run(&mut cd, &mut now, CPU_HZ), vec![], "nor answers the reset game");
+        // The disc stays in: the boot's own commands read it (the motor
+        // spinning up first, as after power-on).
+        let start = now;
+        cd.command(com::SETLOC, &loc(16), start);
+        cd.command(com::READN, &[], start);
+        let events = run(&mut cd, &mut now, start + 3 * CPU_HZ);
+        assert!(events.iter().any(|e| e.1 == intr::DATA_READY), "{events:?}");
     }
 
     #[test]

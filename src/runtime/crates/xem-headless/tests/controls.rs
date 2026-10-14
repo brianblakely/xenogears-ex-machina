@@ -133,6 +133,7 @@ fn host_frame(session: &mut Session<NativeModule>, player: &mut xem_settings::pl
     };
     let buttons = player.buttons(bindings, 0.0, context);
     session.set_pad(0, buttons);
+    session.set_attack_page(player.attack_pointed());
     run(session, json!({"cmd": "frames", "count": 1}));
     player.frames_ran(1);
 }
@@ -568,18 +569,35 @@ fn click(session: &mut Session<NativeModule>, player: &mut xem_settings::player:
     }
 }
 
+/// The shade of the attack page's first attack glyph as the panel draws it
+/// (battle graphics +0x641C, list 0 in the panel's buffer): 0x80 shown,
+/// down to 0 as the panel fades.
+fn attack_page_shade(session: &mut Session<NativeModule>) -> u8 {
+    let word = |session: &mut Session<NativeModule>, address: u32| {
+        let mut bytes = [0; 4];
+        session.runtime.memory().read(address, &mut bytes).unwrap();
+        u32::from_le_bytes(bytes)
+    };
+    let graphics = word(session, 0x800C_3EA4);
+    let ui = word(session, 0x800D_2D28);
+    let mut byte = [0; 1];
+    session.runtime.memory().read(ui + 0xA3, &mut byte).unwrap();
+    session.runtime.memory().read(graphics + 0x641C + u32::from(byte[0]) * 0x28 + 4, &mut byte).unwrap();
+    byte[0]
+}
+
 /// The mouse plays a battle: pointing at the ring's Item highlights it, its
 /// page arrows flip the ring, a click on Attack opens the attack page,
 /// where a click on the enemy keeps it as the target without attacking and
-/// clicks on the attacks spend their AP (also where the game has faded
-/// them, through the sequence) until the end ends it.
+/// clicks on the attacks spend their AP until the end ends the sequence;
+/// begun by a click, the sequence keeps its attack page shown.
 #[test]
 fn the_mouse_plays_the_command_ring_and_the_attacks() {
     let Some(mut session) = debug_battle() else { return };
     let bindings = xem_settings::GameBindings::default();
     let mut player = xem_settings::player::PlayerInput::default();
     let ring = session.runtime.targets().expect("the ring");
-    assert_eq!((ring.what, ring.selected, ring.entries.len()), ("battle_ring", Some(0), 8), "{ring:?}");
+    assert_eq!((ring.what, ring.selected, ring.entries.len()), ("battle_ring", Some(0), 7), "{ring:?}");
     player.hover(Some(point_on(&ring, 1)));
     for _ in 0..20 {
         pointer_frame(&mut session, &mut player, &bindings);
@@ -587,7 +605,7 @@ fn the_mouse_plays_the_command_ring_and_the_attacks() {
     assert_eq!(context(&mut session)["page"], 2, "pointing at Item highlights it");
     click(&mut session, &mut player, &bindings, 4, 20);
     assert_eq!(context(&mut session)["page"], 8, "the up arrow flips the ring to its other page");
-    click(&mut session, &mut player, &bindings, 6, 20);
+    click(&mut session, &mut player, &bindings, 5, 20);
     assert_eq!(context(&mut session)["page"], 2, "the left arrow flips it back");
     click(&mut session, &mut player, &bindings, 0, 40);
     let attack = context(&mut session);
@@ -605,12 +623,35 @@ fn the_mouse_plays_the_command_ring_and_the_attacks() {
     let weak = attack_entry(&mut session, xem_core::action::GameAction::AttackWeak);
     click(&mut session, &mut player, &bindings, weak, 60);
     assert_eq!(context(&mut session)["ap"].as_u64(), Some(ap - 1), "Weak costs one");
+    assert_eq!(attack_page_shade(&mut session), 0x80, "the attack page stays shown");
     let strong = attack_entry(&mut session, xem_core::action::GameAction::AttackStrong);
     click(&mut session, &mut player, &bindings, strong, 60);
-    assert_eq!(context(&mut session)["ap"].as_u64(), Some(ap - 3), "Strong costs two, where the faded page showed it");
+    assert_eq!(context(&mut session)["ap"].as_u64(), Some(ap - 3), "Strong costs two");
+    assert_eq!(attack_page_shade(&mut session), 0x80);
     let end = attack_entry(&mut session, xem_core::action::GameAction::AttackEnd);
     click(&mut session, &mut player, &bindings, end, 30);
     assert_eq!(context(&mut session)["attack"], false, "the sequence ended: {}", context(&mut session));
+    assert_eq!(session.execute(&json!({"cmd": "status"}))["attack_page"], false, "and the page is the game's again");
+}
+
+/// A sequence the player's buttons begin fades its attack page as the
+/// original does, the attacks still pointed at where it showed them.
+#[test]
+fn a_sequence_the_buttons_begin_fades_its_attack_page() {
+    let Some(mut session) = debug_battle() else { return };
+    let bindings = xem_settings::GameBindings::default();
+    let mut player = xem_settings::player::PlayerInput::default();
+    tap(&mut session, &mut player, &bindings, "KeyE", 40);
+    assert_eq!(context(&mut session)["attack"], true, "{}", context(&mut session));
+    let ap = context(&mut session)["ap"].as_u64().unwrap();
+    tap(&mut session, &mut player, &bindings, "KeyW", 60);
+    assert_eq!(context(&mut session)["ap"].as_u64(), Some(ap - 1), "Weak, from its key");
+    assert_eq!(attack_page_shade(&mut session), 0, "the page faded");
+    assert_eq!(session.execute(&json!({"cmd": "status"}))["attack_page"], false);
+    let strong = session.runtime.targets().unwrap().entries.iter().position(|e| e.press == Some(xem_core::action::GameAction::AttackStrong)).unwrap();
+    click(&mut session, &mut player, &bindings, strong, 60);
+    assert_eq!(context(&mut session)["ap"].as_u64(), Some(ap - 3), "Strong, clicked where the faded page showed it");
+    assert_eq!(attack_page_shade(&mut session), 0, "the page stays faded");
 }
 
 /// The mouse chooses an item's target: a click on Item opens the list, a
@@ -635,4 +676,46 @@ fn the_mouse_chooses_a_battle_target() {
     }
     assert_eq!(context(&mut session)["targeting"], false, "confirmed: {}", context(&mut session));
     assert_eq!(session.execute(&json!({"cmd": "inspect", "path": "battle_target_cursor_slot"})), json!(1), "Elly");
+}
+
+/// A reset leaves nothing of the abandoned game's sound: the field's music
+/// stops at once, and the boot's first jingle sounds as it does after
+/// power-on, a second at a time (the reset game's sound plays a frame
+/// later; its loud seconds within half a decibel).
+#[test]
+fn console_reset_leaves_none_of_the_abandoned_games_sound() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let options = xem_game::BootOptions { audio_output: true, ..Default::default() };
+    let levels = |session: &mut Session<NativeModule>| -> Vec<[Option<f64>; 2]> {
+        (0..24).map(|_| {
+            run(session, json!({"cmd": "audio_capture", "action": "start"}));
+            run(session, json!({"cmd": "frames", "count": 60}));
+            let capture = session.execute(&json!({"cmd": "audio_capture", "action": "stop"}));
+            [capture["rms_db"][0].as_f64(), capture["rms_db"][1].as_f64()]
+        }).collect()
+    };
+    let sounding = |session: &mut Session<NativeModule>| {
+        (0..xem_spu::VOICES).filter(|&v| session.runtime.services().spu.chip().voice(v).phase != xem_spu::Phase::Off).count()
+    };
+    let (mut clean, _) = boot(&disc, &options).expect("boot");
+    let power_on = levels(&mut clean);
+    let (mut session, _) = boot(&disc, &options).expect("boot");
+    run(&mut session, json!({"cmd": "enter_field", "map": 30}));
+    run(&mut session, json!({"cmd": "frames", "count": 600}));
+    assert!(sounding(&mut session) > 0, "the field's music plays");
+    run(&mut session, json!({"cmd": "reset"}));
+    assert_eq!(sounding(&mut session), 0, "the reset silenced it");
+    assert_eq!(session.runtime.services().spu.audio_queued(), 0, "and dropped what it had not played");
+    let reset = levels(&mut session);
+    let loud: Vec<_> = power_on.iter().zip(&reset).enumerate()
+        .flat_map(|(second, (a, b))| (0..2).filter_map(move |side| Some((second, a[side]?, b[side]?))))
+        .filter(|(_, a, _)| *a > -30.0)
+        .collect();
+    assert!(loud.len() >= 20, "the jingle plays after power-on: {power_on:?}");
+    for (second, a, b) in loud {
+        assert!((a - b).abs() < 0.5, "second {second}: {a:.1} dB after power-on, {b:.1} dB after the reset");
+    }
 }

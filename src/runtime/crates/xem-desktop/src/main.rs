@@ -543,6 +543,7 @@ impl Host {
             self.view.assist(game);
             let (context, targets) = (game.pad_context(), game.targets());
             let buttons = self.view.pad_buttons(context, targets);
+            game.want_attack_page(self.view.attack_pointed());
             match game.update(buttons, &settings, || window.focused()) {
                 Ok(frames) => {
                     ran = frames;

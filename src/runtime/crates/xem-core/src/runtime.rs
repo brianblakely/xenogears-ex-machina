@@ -70,6 +70,10 @@ pub struct Services {
     /// field camera's pull-back in percent plus 100 (bits 0-15) and the
     /// pixels shown beyond each side (bits 16-31); 0 the original's.
     pub(crate) actor_view: u32,
+    /// The host keeps the battle's attack page shown through the attack
+    /// sequence (src/port/attack_page.c): the player began it by pointing at
+    /// its attacks.
+    pub(crate) attack_page: bool,
     /// The host's sound mode, the game's own (src/port/sound.c): 0 Mono,
     /// 1 Stereo, 2 Wide; none leaves the game's as the original sets it.
     pub(crate) sound_mode: Option<u32>,
@@ -260,6 +264,7 @@ impl ImportHandler for Services {
             }
             "pause_requested" => Action::Return(u32::from(self.focus_pause.requested())),
             "actor_view" => Action::Return(self.actor_view),
+            "attack_page" => Action::Return(u32::from(self.attack_page)),
             "sound_mode" => Action::Return(self.sound_mode.unwrap_or(u32::MAX)),
             "sound_mode_change" => {
                 let changed = std::mem::take(&mut self.sound_mode_changed);
@@ -522,18 +527,27 @@ impl<M: GameModule> Runtime<M> {
 
     /// The console's soft reset: abandon suspended work and enter the
     /// original boot routine, which clears BSS and initializes the game.
-    /// Attached discs and memory cards remain attached.
+    /// Attached discs and memory cards remain attached. The sound chip and
+    /// the drive return to their power-on state, as the console's reset line
+    /// returns them, so no sound of the abandoned game (voices, reverb, a
+    /// stream the drive was playing) outlives it.
     pub fn reset(&mut self) {
         self.restart(RESTART_BOOT, 0);
         self.resume_advance = None;
         self.stopped_before_vblank = false;
         self.dispatch_write = None;
-        let services = self.services();
+        // SAFETY: no game export runs here; services and module memory are disjoint.
+        let services = unsafe { &mut *self.services };
         services.pending = None;
         services.trap_reason = None;
         services.mode = None;
         services.last_wait = None;
         services.focus_pause.set_active(false);
+        services.raised.clear();
+        services.cd.power_on();
+        if let Err(error) = services.spu.power_on(self.module.memory()) {
+            services.trap_reason = Some(error.to_string());
+        }
     }
 
     /// Deliver an interrupt while the game is suspended, on the stack below

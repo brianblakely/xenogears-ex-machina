@@ -94,6 +94,11 @@ pub struct PlayerInput {
     click: u32,
     /// The interface the queued presses were meant for.
     epoch: Option<Epoch>,
+    /// The attack page awaited its first attack at the last resolution.
+    first_attack: bool,
+    /// The battle's attack sequence under way began with a pointer's press
+    /// of an attack (a click, a touch) rather than the player's buttons.
+    attack_pointed: bool,
 }
 
 /// What a press is meant for: a press queued in one interface never acts
@@ -126,6 +131,12 @@ fn epoch(ui: Ui) -> Epoch {
 
 /// Frames a click waits for the cursor to reach its entry.
 const CLICK_FRAMES: u32 = 90;
+
+/// The attack page before its first attack (on foot 5, a Gear's 0x19;
+/// after it 0x64 and 0x65).
+fn first_attack_awaited(ui: Ui) -> bool {
+    matches!(ui, Ui::Battle { attack: true, page: 5 | 0x19, .. })
+}
 
 impl PlayerInput {
     /// A key went down or up; false when no game binding names it.
@@ -178,11 +189,29 @@ impl PlayerInput {
     pub fn click(&mut self, targets: Option<&xem_core::menu::Targets>) -> bool {
         let Some((targets, entry)) = targets.zip(self.hover).and_then(|(t, p)| Some((t, t.at(p)?))) else { return false };
         if let Some(action) = targets.entries[entry].press {
-            self.pulse(Pulse::new([action]));
+            self.press_pointed([action]);
             return true;
         }
         self.select(entry, targets.confirm);
         true
+    }
+
+    /// A pointer pressed a button entry (a click, a touch's tap): its
+    /// actions, once. When it presses the attack page's first attack, the
+    /// sequence it begins is a pointed one ([`PlayerInput::attack_pointed`]).
+    pub fn press_pointed(&mut self, actions: impl IntoIterator<Item = GameAction>) {
+        let pulse = Pulse::new(actions);
+        if self.first_attack && pulse.actions.iter().any(|a| matches!(a, GameAction::AttackWeak | GameAction::AttackStrong | GameAction::AttackFierce)) {
+            self.attack_pointed = true;
+        }
+        self.pulse(pulse);
+    }
+
+    /// Whether the battle's attack sequence under way began with a pointer's
+    /// press (hosts keep its attack page shown through it then:
+    /// `Session::set_attack_page`).
+    pub fn attack_pointed(&self) -> bool {
+        self.attack_pointed
     }
 
     /// Selects entry `index` of the interface's targets with the D-pad, then
@@ -296,10 +325,19 @@ impl PlayerInput {
             self.click = 0;
         }
         self.epoch = Some(epoch);
+        self.first_attack = first_attack_awaited(context.ui);
         self.held.mouse = self.mouse.buttons();
         let mut actions = bindings.actions(&self.held, context.attack);
         actions.extend(self.mouse.turn(now));
         actions.extend(self.touch.iter().copied());
+        // An attack sequence the player's buttons begin (any binding of an
+        // attack's button) is theirs; it ends with the attack page.
+        let attacks = xem_core::action::buttons_with([GameAction::AttackWeak, GameAction::AttackStrong, GameAction::AttackFierce], &context.assignment);
+        if !matches!(context.ui, Ui::Battle { attack: true, .. })
+            || (self.first_attack && xem_core::action::buttons_with(actions.iter().copied(), &context.assignment) & attacks != 0)
+        {
+            self.attack_pointed = false;
+        }
         // Menu toggles the field menu: pressed while it runs, it backs out
         // with Cancel until the menu has closed.
         let field_menu = matches!(context.ui, Ui::Menu { screen: 0, .. }) && context.field.field;
@@ -526,6 +564,34 @@ mod tests {
         }
         assert_eq!(pressed[..2], [button::LEFT, button::LEFT], "the enemy is left: {pressed:?}");
         assert!(pressed.iter().all(|b| b & button::CROSS == 0), "nothing confirms it (Cross is Fierce): {pressed:?}");
+    }
+
+    /// An attack sequence is a pointed one when a pointer pressed its first
+    /// attack, whatever presses follow, until it ends; one a key begins (or
+    /// takes over after a press the game refused) is the player's buttons'.
+    #[test]
+    fn an_attack_sequence_is_pointed_when_a_pointer_presses_its_first_attack() {
+        let bindings = GameBindings::default();
+        let mut input = PlayerInput::default();
+        let battle = |page, ap| Context { attack: page != 1, ..field(Ui::Battle { page, attack: page != 1, ap, list: false, targeting: false }) };
+        run(&mut input, &bindings, battle(5, 7), 1);
+        assert!(!input.attack_pointed());
+        input.press_pointed([GameAction::AttackWeak]);
+        assert!(input.attack_pointed(), "a click on Weak begins it");
+        run(&mut input, &bindings, battle(5, 7), 4);
+        input.key(&bindings, "KeyA", true);
+        run(&mut input, &bindings, battle(0x64, 6), 4);
+        input.key(&bindings, "KeyA", false);
+        assert!(input.attack_pointed(), "Strong from its key goes on with it");
+        run(&mut input, &bindings, battle(1, 7), 1);
+        assert!(!input.attack_pointed(), "it ended with the attack page");
+        // A press the game refuses, then a key that begins the sequence.
+        run(&mut input, &bindings, battle(5, 7), 1);
+        input.press_pointed([GameAction::AttackFierce]);
+        run(&mut input, &bindings, battle(5, 7), 4);
+        input.key(&bindings, "KeyE", true);
+        run(&mut input, &bindings, battle(5, 7), 1);
+        assert!(!input.attack_pointed(), "Confirm's button is Fierce's there");
     }
 
     fn field(ui: Ui) -> Context {

@@ -125,6 +125,30 @@ impl Spu {
         state.capture = self.capture.take();
         *self = state;
     }
+    /// The console's reset: the chip returns to its power-on state (no voice
+    /// sounding, registers and RAM cleared) and the register window in game
+    /// memory shows it; transfers, the pending interrupt and the output not
+    /// yet played go with the abandoned game. The host's output, speed and
+    /// music clock stay, and the Binaural presentation forgets the sound so
+    /// far, as after a restore.
+    pub(crate) fn power_on(&mut self, memory: &mut dyn crate::memory::GameMemory) -> Result<(), crate::memory::OutOfBounds> {
+        self.chip.reset();
+        self.transfers.clear();
+        self.irq_raised = false;
+        if let Some(output) = self.output.as_mut() {
+            output.clear();
+        }
+        self.tap.clear();
+        self.sound_source = 0;
+        if let Some(presenter) = self.presenter.as_mut() {
+            presenter.reset();
+        }
+        // An empty window changes nothing, and takes the chip's registers back.
+        let mut window = [0u8; xem_spu::WINDOW_SIZE];
+        self.chip.sync_window(&mut window);
+        memory.write(REGISTERS, &window)
+    }
+
     /// The SPU itself (RAM, voices, registers), for inspection.
     pub fn chip(&self) -> &xem_spu::Spu {
         &self.chip
@@ -507,6 +531,37 @@ mod tests {
         // KON is write-triggered: the window reads 0 afterwards.
         assert_eq!(read_reg(&mut mem, reg::KEY_ON), 0);
         assert_eq!(spu.chip().voice(0).phase, xem_spu::Phase::Attack);
+    }
+
+    #[test]
+    fn a_console_reset_silences_the_chip_and_its_window_and_keeps_time_and_output() {
+        let mut mem = memory();
+        let mut spu = Spu::default();
+        let mut raised = Vec::new();
+        spu.set_output(true);
+        spu.set_speed(3);
+        let mut block = [0x11; 16];
+        block[1] = 7;
+        spu.chip.ram_mut()[0x1000..0x1010].copy_from_slice(&block);
+        for (offset, value) in [(0, 0x3FFF), (2, 0x3FFF), (4, 0x1000), (6, 0x200), (8, 0x00FF), (10, 0x1FC0),
+            (reg::MAIN_VOLUME_LEFT, 0x3FFF), (reg::MAIN_VOLUME_RIGHT, 0x3FFF), (reg::CONTROL, control::ENABLE | control::UNMUTE), (reg::KEY_ON, 1)] {
+            write_reg(&mut mem, offset, value);
+        }
+        with_context(&mut mem, 0, &mut raised, |c| spu.sync(c));
+        with_context(&mut mem, CYCLES_PER_SAMPLE * 3 * 300, &mut raised, |c| spu.advance(c));
+        assert_ne!(spu.chip().voice(0).phase, xem_spu::Phase::Off);
+        assert!(spu.audio_queued() > 0);
+        let clock = spu.chip().clock();
+        spu.power_on(&mut mem).unwrap();
+        assert!((0..xem_spu::VOICES).all(|v| spu.chip().voice(v).phase == xem_spu::Phase::Off), "no voice sounds on");
+        assert_eq!(spu.chip().ram()[0x1001], 0, "nor does its sound in RAM");
+        assert_eq!(read_reg(&mut mem, reg::MAIN_VOLUME_LEFT), 0, "the window shows the chip as it is");
+        assert_eq!(spu.audio_queued(), 0, "nothing of the abandoned game left to play");
+        // The next sync applies nothing old; time and the host's output go on.
+        with_context(&mut mem, CYCLES_PER_SAMPLE * 3 * 400, &mut raised, |c| { spu.sync(c); spu.advance(c) });
+        assert_eq!(spu.chip().read16(reg::MAIN_VOLUME_LEFT), 0);
+        assert_eq!(spu.chip().clock(), clock + 100);
+        assert_eq!((spu.speed(), spu.audio_queued()), (3, 200));
     }
 
     #[test]

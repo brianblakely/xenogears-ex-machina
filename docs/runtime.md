@@ -1219,11 +1219,12 @@ the inputs and resolves them, the same code on desktop, Android, headsets
 and the browser; the mouse camera's sideways motion holds CameraLeft or
 CameraRight while it lasts. Mouse sensitivity is saved as 10–200 percent,
 defaults to 50 percent of the previous rate, and scales both field camera
-motion and first-person mouse look. The mouse deadzone beside it (0–40
-pixels of motion, 8 by default) holds back motion within that distance of
-where the mouse came to rest (no motion for a tenth of a second), so a
-nudge turns nothing; motion past it turns the camera or the view, the
-deadzone following along until the mouse rests again. A headset's
+motion and first-person mouse look. The mouse deadzone beside it (0–100
+pixels of motion, 40 by default) holds back the field camera's motion
+within that distance of where the mouse came to rest (no motion for a
+tenth of a second), so a nudge turns nothing; motion past it turns the
+camera, the deadzone following along until the mouse rests again.
+First-person look takes every pixel. A headset's
 controllers are the gamepad (`xr-standard` layout: A South, B East, X West, Y North, triggers L1/R1,
 grips LT/RT, the right stick's click Back, the left's Start, both sticks),
 natively (`xem_host::xr_play::gamepad`) and in the browser (`xrGamepad`).
@@ -1266,10 +1267,12 @@ as the sprite's frame: a person's 96 units, a Gear's about 500, a big
 enemy's more; where boxes overlap the smallest takes the point), the
 command ring (its four slots and the page arrows above it, each glyph's
 parts as the command panel's constant glyph tables and the battle's glyph
-sheet place them) and the attack page (its four attacks, each its
-button's glyph with the label and digits right of it, which keep their
-places while the game fades them through the sequence; and the attack's
-target among the candidates until the first attack fixes it), with the
+sheet place them; an arrow reaches well beyond itself, upward and away
+from the ring, the slots' labels keeping the points they cover) and the
+attack page (its four attacks, each its button's glyph with the label and
+digits right of it, which keep their places through the sequence; and
+the attack's target among the candidates until the first attack fixes
+it), with the
 selected entry and how the D-pad steps it (a battle target is reached by
 the moves `battle_find_candidate_in_direction` makes: nearest candidate
 that way on the floor; a ring slot by its own direction).
@@ -1300,7 +1303,14 @@ reports the frames run):
   a click on an attack presses it (Weak, Strong, Fierce, the end of the
   sequence), and on the attack page a click on an enemy makes it the
   attack's target, selected only (the attacks confirm it; Confirm is one
-  of them, and pointing there selects nothing). A click on a target that
+  of them, and pointing there selects nothing). A sequence whose first
+  attack a pointer pressed keeps its attack page shown until it ends,
+  where the game would fade it after that attack (`PlayerInput::attack_pointed`,
+  `Session::set_attack_page`: src/port/attack_page.c skips the panel's
+  fade, `battle_command_panel_fade`, which only shades its quads; recorded
+  with the inputs as the `attack_page` control, in session logs and
+  replays too); one the player's buttons begin fades as the original's,
+  its attacks still pointed at where it showed them. A click on a target that
   an item, art or command asks for chooses and confirms it. A touch's tap
   on the picture chooses the same way. With the
   mouse camera on, menus, choices, every battle command/attack page and
@@ -1717,7 +1727,12 @@ The shared control commands are available through `xem-headless --control` and
 
 `reset` abandons the current game stack and enters the original console boot
 routine. It releases held pads, clears rewind history and retains attached
-discs, memory cards and app preferences.
+discs, memory cards and app preferences. The sound chip and the drive return
+to their power-on state as the console's reset line returns them (no voice
+sounding, the SPU's registers and RAM cleared, its unplayed output dropped;
+no read or stream under way, the disc still in), and the Binaural
+presentation forgets the sound so far, so nothing of the abandoned game's
+sound outlives it: the boot sounds as it does after power-on.
 
 Native file commands are `state_save`/`state_load` with `path`, and
 `card_import`/`card_export` with `path` and `slot` (0 or 1). File commands are

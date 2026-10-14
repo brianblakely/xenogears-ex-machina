@@ -591,8 +591,17 @@ fn panel_glyph_sets(memory: &dyn GameMemory, page: u8) -> Option<Vec<Vec<PanelGl
 
 /// The page arrows' glyph above the ring (on foot, in a Gear).
 const RING_ARROWS: [u16; 2] = [0x54, 0x58];
-/// Screen pixels around each page arrow that count as pointing at it.
-const ARROW_REACH: f32 = 2.0;
+/// How far (screen pixels) pointing at a page arrow reaches beyond the
+/// tiny arrow: upward, and away from the ring (the up arrow both ways),
+/// over nothing else to point at. Toward the ring it reaches [`ARROW_EDGE`];
+/// the slots' labels keep the points they cover.
+const ARROW_REACH: f32 = 24.0;
+const ARROW_EDGE: f32 = 2.0;
+
+/// Whether two rectangles touch or overlap.
+fn touching(a: &Rect, b: &Rect) -> bool {
+    a.x <= b.x + b.width && b.x <= a.x + a.width && a.y <= b.y + b.height && b.y <= a.y + a.height
+}
 
 /// The command ring of page `page`: its four slots, then its page arrows,
 /// which press the highlighted slot's direction (the page's flip).
@@ -608,9 +617,27 @@ fn battle_ring(memory: &dyn GameMemory, page: u8) -> Option<Targets> {
     let mut entries: Vec<Entry> = ring.iter().take(4).zip(COMPASS)
         .map(|(glyph, direction)| Entry { select: Some(direction), ..Entry::at(union(glyph.parts.iter().copied()).unwrap_or(nowhere)) })
         .collect();
+    // The arrows: the glyph's parts joined where they touch (the one above
+    // the ring is two halves), then each reaching away from the ring.
+    let mut arrows: Vec<Rect> = Vec::new();
+    for part in ring.iter().filter(|g| RING_ARROWS.contains(&g.id)).flat_map(|g| &g.parts) {
+        match arrows.iter_mut().find(|arrow| touching(arrow, part)) {
+            Some(arrow) => *arrow = union([*arrow, *part])?,
+            None => arrows.push(*part),
+        }
+    }
+    let top = arrows.iter().min_by(|a, b| a.y.total_cmp(&b.y)).copied();
     let flip = COMPASS[highlighted];
-    for arrow in ring.iter().filter(|g| RING_ARROWS.contains(&g.id)).flat_map(|g| &g.parts) {
-        let rect = Rect { x: arrow.x - ARROW_REACH, y: arrow.y - ARROW_REACH, width: arrow.width + 2.0 * ARROW_REACH, height: arrow.height + 2.0 * ARROW_REACH };
+    for arrow in &arrows {
+        let middle = top.map_or(arrow.centre().0, |top| top.centre().0);
+        let (left, right) = if Some(*arrow) == top {
+            (middle - ARROW_REACH * 0.75, middle + ARROW_REACH * 0.75)
+        } else if arrow.centre().0 < middle {
+            (arrow.x - ARROW_REACH, arrow.x + arrow.width + ARROW_EDGE)
+        } else {
+            (arrow.x - ARROW_EDGE, arrow.x + arrow.width + ARROW_REACH)
+        };
+        let rect = Rect { x: left, y: arrow.y - ARROW_REACH, width: right - left, height: arrow.height + ARROW_REACH + ARROW_EDGE };
         entries.push(Entry { press: Some(flip), ..Entry::at(rect) });
     }
     Some(Targets::new("battle_ring", entries, Some(highlighted), Steps::Direct))
@@ -838,13 +865,18 @@ mod tests {
         assert_eq!(ring.step_toward(1), Some(GameAction::Down));
         assert_eq!(ring.at((20.0, 70.0)), Some(2), "Defense");
         assert_eq!(ring.at((50.0, 55.0)), Some(3), "Arcane");
-        // The arrows above it: the up arrow's two halves, then the sides.
-        let arrows: Vec<_> = ring.entries[4..].iter().map(|e| (e.rect.centre(), e.press)).collect();
-        assert_eq!(arrows.len(), 4);
+        // The arrows above it (the up arrow's halves one), each reaching
+        // well beyond itself, away from the ring and upward.
+        let arrows: Vec<_> = ring.entries[4..].iter().map(|e| (e.rect, e.press)).collect();
+        assert_eq!(arrows.len(), 3);
         assert!(arrows.iter().all(|(_, press)| *press == Some(GameAction::Right)), "Attack's direction flips the page: {arrows:?}");
-        assert_eq!(ring.at((54.0, 43.0)), Some(4), "the up arrow");
-        assert_eq!(ring.at((29.0, 56.0)), Some(6), "the left one");
-        assert_eq!(ring.at((84.0, 56.0)), Some(7), "the right one");
+        assert_eq!(arrows[0].0, Rect { x: 38.0, y: 17.0, width: 36.0, height: 31.0 }, "the up arrow");
+        assert_eq!(arrows[1].0, Rect { x: 3.0, y: 29.0, width: 31.0, height: 33.0 }, "the left one");
+        assert_eq!(arrows[2].0, Rect { x: 78.0, y: 29.0, width: 31.0, height: 33.0 }, "the right one");
+        for (point, arrow) in [((54.0, 43.0), 4), ((56.0, 20.0), 4), ((29.0, 56.0), 5), ((8.0, 32.0), 5), ((84.0, 56.0), 6), ((105.0, 33.0), 6)] {
+            assert_eq!(ring.at(point), Some(arrow), "{point:?}");
+        }
+        assert_eq!(ring.at((40.0, 55.0)), Some(3), "Arcane's label keeps its points");
         // Without the panel there is nothing to point at.
         let mut hidden = battle_memory(1, false);
         hidden.put(0x8010_00CB, &[0]);

@@ -659,9 +659,9 @@ impl View {
                     self.player.hover(self.picture.and_then(|p| p.to_screen(x, y)));
                 }
                 if self.relative_mouse && self.renderer.first_person() {
-                    let (x, y) = self.player.mouse.look((motion.xrel, motion.yrel), self.settings.borrow().settings());
-                    self.look_mouse[0] += x;
-                    self.look_mouse[1] += y;
+                    let scale = self.settings.borrow().settings().mouse_scale();
+                    self.look_mouse[0] += motion.xrel * scale;
+                    self.look_mouse[1] += motion.yrel * scale;
                 } else if self.relative_mouse {
                     self.player.mouse.moved(motion.xrel, self.settings.borrow().settings());
                 }
@@ -944,7 +944,7 @@ impl View {
                         let _ = game.command(&command);
                     }
                     Some(xem_assist::dispatch::Out::Select { index, confirm }) => self.player.select(index, confirm),
-                    Some(xem_assist::dispatch::Out::Press { actions }) => self.player.pulse(xem_settings::player::Pulse::new(actions)),
+                    Some(xem_assist::dispatch::Out::Press { actions }) => self.player.press_pointed(actions),
                     _ => {}
                 }
             }
@@ -970,6 +970,12 @@ impl View {
     /// The game ran `frames` frames with the last [`View::pad_buttons`].
     pub fn frames_ran(&mut self, frames: u32) {
         self.player.frames_ran(frames);
+    }
+
+    /// Whether the battle's attack sequence under way began with a pointer's
+    /// press of its attacks (`Game::want_attack_page`).
+    pub fn attack_pointed(&self) -> bool {
+        self.player.attack_pointed()
     }
 
     /// Records one frame into `output` (a target of the view's size) at scene

@@ -678,6 +678,7 @@ impl Host {
                 log(&format!("pad buttons {buttons:#06x} game_vblank={}", game.vblanks()));
                 live.buttons = buttons;
             }
+            game.want_attack_page(self.view.attack_pointed());
             let result = game.update(buttons, &settings, || window.focused());
             if let Ok(frames) = result {
                 self.view.frames_ran(frames);

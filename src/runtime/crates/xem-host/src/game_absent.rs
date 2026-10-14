@@ -77,6 +77,10 @@ impl Game {
         match *self {}
     }
 
+    pub fn want_attack_page(&mut self, _kept: bool) {
+        match *self {}
+    }
+
     pub fn want_listener_view(&mut self, _axes: Option<[[f32; 3]; 3]>) {
         match *self {}
     }

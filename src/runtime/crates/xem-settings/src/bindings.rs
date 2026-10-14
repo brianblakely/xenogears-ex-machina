@@ -252,7 +252,7 @@ pub struct Mouse {
     last: Option<f64>,
     /// The motion since the mouse came to rest that the deadzone holds
     /// back, and when it last moved (as of the last [`Mouse::turn`]).
-    drift: (f32, f32),
+    drift: f32,
     moved_at: Option<f64>,
 }
 
@@ -271,27 +271,18 @@ impl Mouse {
     }
 
     /// Sideways motion in pixels (positive to the right) turning the field
-    /// camera, past the deadzone and at the sensitivity of `settings`.
+    /// camera: what passes the deadzone of `settings`, at its sensitivity.
     pub fn moved(&mut self, dx: f32, settings: &crate::Settings) {
-        let (dx, _) = self.look((dx, 0.0), settings);
-        self.turn = (self.turn + f64::from(dx) * TURN_MS_PER_PIXEL).clamp(-MAX_TURN_MS, MAX_TURN_MS);
-    }
-
-    /// Motion in pixels (x right, y down) as it turns a view: what passes
-    /// the deadzone of `settings`, at its sensitivity.
-    pub fn look(&mut self, (dx, dy): (f32, f32), settings: &crate::Settings) -> (f32, f32) {
         let now = self.last.unwrap_or(0.0);
         if self.moved_at.is_none_or(|at| now - at > REST_MS) {
-            self.drift = (0.0, 0.0);
+            self.drift = 0.0;
         }
         self.moved_at = Some(now);
-        let drift = (self.drift.0 + dx, self.drift.1 + dy);
-        let length = drift.0.hypot(drift.1);
         let deadzone = f32::from(settings.mouse_deadzone);
-        let held = if length > deadzone { deadzone / length } else { 1.0 };
-        self.drift = (drift.0 * held, drift.1 * held);
-        let scale = settings.mouse_scale();
-        ((drift.0 - self.drift.0) * scale, (drift.1 - self.drift.1) * scale)
+        let drift = self.drift + dx;
+        self.drift = drift.clamp(-deadzone, deadzone);
+        let dx = (drift - self.drift) * settings.mouse_scale();
+        self.turn = (self.turn + f64::from(dx) * TURN_MS_PER_PIXEL).clamp(-MAX_TURN_MS, MAX_TURN_MS);
     }
 
     pub fn clear(&mut self) {
@@ -383,14 +374,11 @@ mod tests {
         assert_eq!(mouse.turn(300.0), None);
         mouse.moved(5.0, &settings);
         assert_eq!(mouse.turn(316.0), None);
-        // First-person look: both axes, the deadzone a circle.
-        let mut look = Mouse::default();
-        look.turn(0.0);
-        assert_eq!(look.look((3.0, 4.0), &settings), (0.0, 0.0));
-        let (x, y) = look.look((3.0, 4.0), &settings);
-        assert!((x - 1.2).abs() < 1e-5 && (y - 1.6).abs() < 1e-5, "{x}, {y}");
+        // Without a deadzone every pixel turns.
         let off = crate::Settings { mouse_deadzone: 0, ..settings };
-        assert_eq!(Mouse::default().look((1.0, 0.0), &off), (1.0, 0.0), "no deadzone");
+        let mut mouse = Mouse::default();
+        mouse.moved(1.0, &off);
+        assert_eq!(mouse.turn(0.0), Some(GameAction::CameraRight), "no deadzone");
     }
 
     #[test]

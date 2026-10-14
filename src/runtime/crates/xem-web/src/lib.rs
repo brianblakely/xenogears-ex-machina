@@ -433,8 +433,10 @@ impl XemApp {
         let field = (session.runtime.services().mode == Some(1)).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten();
         for tap in std::mem::take(&mut self.taps) {
             let Some(at) = picture.and_then(|p| p.to_screen(tap.0, tap.1)) else { continue };
-            let outs = xem_assist::dispatch::tap_at(at, ui, field.as_ref(), self.targets.as_ref()).into_iter().collect();
-            xem_assist::headset::carry(outs, &mut WebCarry { session: Some(session), input: &mut self.input }, &mut self.xr_scaling);
+            match xem_assist::dispatch::tap_at(at, ui, field.as_ref(), self.targets.as_ref()) {
+                Some(xem_assist::dispatch::Out::Press { actions }) => self.input.press_pointed(actions),
+                outs => xem_assist::headset::carry(outs.into_iter().collect(), &mut WebCarry { session: Some(session), input: &mut self.input }, &mut self.xr_scaling),
+            }
         }
         for key in std::mem::take(&mut self.quantity) {
             session.execute(&json!({"cmd": "shop_quantity", "op": key.op()}));
@@ -619,6 +621,7 @@ impl XemApp {
                 let Some(session) = self.session.as_mut() else { break };
                 session.set_window_focus(self.app_input.focused(),pause_on_focus_loss);
                 session.set_actor_view(self.actor_view).map_err(error)?;
+                session.set_attack_page(self.input.attack_pointed());
                 session.set_sound_mode(sound_mode).map_err(error)?;
                 match session.frame() {
                     Ok(true) => {
