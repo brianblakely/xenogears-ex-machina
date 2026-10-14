@@ -371,7 +371,29 @@ waits for it goes in).
 
   These are energy shares of the 5.1 output. "Original" means the
   PCSX-ReARMed recordings in `.local/scenarios/p1-original-sound-*-20261002`,
-  which give the same picture.
+  which give the same picture. `xem-headless/tests/original_sound.rs`
+  plays the three routes natively (from boot, one thread each, 30 s on
+  this machine unloaded) and compares them with the recordings in the
+  two windows `tools/analysis/audio_modes.py` reported on
+  (`p1-original-audio-modes-20261002.json`, whose figures it first
+  reproduces from the recordings). The relations hold as recorded:
+  R(wide) = -R(stereo) within 1 (the recordings: 3), and in the opening
+  movie (frames 4 200-4 800, CD input only) Mono is Stereo and L(wide) is
+  L(stereo) sample for sample. The movie's left channel is the
+  recording's own waveform (correlation 0.9998, natively 540 ms later),
+  and so is the field's dry left part, (Stereo + Wide) / 2 (0.98, 70 ms
+  earlier; frames 22 200-22 800); the field's reverb return,
+  (Stereo - Wide) / 2, matches the recording's only to 0.67 and is 0.7 dB
+  weaker against the dry part: xem-spu's reverb unit (psx-spx's formula at
+  22.05 kHz through its 39-tap resampling filter) and PCSX-ReARMed's
+  differ. Correlation, sum/difference and FreeSurround's rear share agree
+  within 0.015, 0.15 dB and 0.009 in the movie (declared 0.03, 0.5 dB and
+  0.05); in the field, where the reverb decorrelates the channels, the
+  native mix is 0.04 (Stereo, Wide) to 0.08 (Mono) more correlated and up
+  to 1.6 dB higher in sum/difference (declared 0.1 and 2 dB, which still
+  tell the modes apart), the rear shares within 0.04. The native level is
+  1.22 times the recordings' in the movie and 1.33 for the field's dry
+  part, printed and never normalized.
   The hosts' Sound mode setting is this mode, not a mix of their own: they
   play the SPU's output as it is, at the master volume ([Binaural sound
   mode](#binaural-sound-mode), the one exception, presents the game's
@@ -598,7 +620,12 @@ Mono's staged volumes (every channel's gain before its law the same in all
 three modes, each staging its mode's law: 110 586 stagings checked), its
 voices' volumes and the reverb work area they feed; Wide's master right and
 reverb-depth left (the driver's pair and the copy `SpuSetReverbModeDepth`
-keeps) and the three SPU registers they reach. `web/tests/binaural.test.mjs`: one state
+keeps) and the three SPU registers they reach. `tests/original_sound.rs`:
+on the Wide route in the field after the opening movie, Binaural turned
+on through the settings service (the game in Stereo) and off again four
+seconds later gives back the never-enabled Wide run's output sample for
+sample 4 393 samples (99.6 ms, the fade) after it went off, and leaves game
+memory and the SPU as that run's. `web/tests/binaural.test.mjs`: one state
 restored natively and in Chromium presents the same mix (99.6% of the
 samples identical, the rest within 1; the declared tolerance is 2, each
 host's own sin, cos and atan2 making the filters), and the presentation
@@ -2295,5 +2322,8 @@ loop is the one Monado runs through `xem-desktop --xr`), headset frame pacing
 at 72-120 Hz on a mobile GPU, the HD-2D effects' cost at Medium and Low tiers
 on mobile and headset GPUs, and D3D12 and Metal (only Vulkan, WebGPU and
 WebGL2 run here). The game's sound
-level (about 1.3x the reference emulator's recordings in every sound mode)
-needs a console recording to settle.
+level (1.22 times the reference emulator's recordings for the movie's CD
+input and 1.33 for the SPU's voices, in every sound mode) and the reverb
+unit's return (it matches the recordings' only loosely:
+`xem-headless/tests/original_sound.rs`) need a console recording to
+settle.
