@@ -132,7 +132,9 @@ impl Assisted {
         let effects = self.headset.update(input, screen, context.ui, field.as_ref(), targets.as_ref());
         // What a control deck holds (its stick, its held keys).
         player.touch = effects.held.clone();
-        let inspectable = context.field.field && !context.field.menu;
+        // The underhand grab toggles inspection in a field but its menu,
+        // where Ex Machina draws it.
+        let inspectable = xem_settings::look::grab_toggles(context.field, settings.graphics.renderer);
         xem_assist::headset::carry(effects.outs, &mut Native { game, player, view, inspectable }, &mut self.scaling);
         self.gestures = effects.gestures;
         self.headset.settings_open

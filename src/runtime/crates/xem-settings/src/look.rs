@@ -122,6 +122,14 @@ pub fn turns(on: bool, field: FieldControls) -> bool {
     on && !field.menu
 }
 
+/// Whether a headset's underhand grab toggles the view: in a field but its
+/// menu, as the right stick's click does, where Ex Machina draws it (the
+/// Original renderer has nothing to look around in, and a toggle there
+/// would still stop a route and hold back the walking buttons).
+pub fn grab_toggles(field: FieldControls, renderer: crate::Renderer) -> bool {
+    renderer == crate::Renderer::ExMachina && field.field && !field.menu
+}
+
 /// What turns the view in a host frame.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Turn {
@@ -197,6 +205,17 @@ mod tests {
         assert_eq!(game_buttons(button::SELECT | button::R3, false, PICTURE), button::SELECT);
         assert_eq!(game_buttons(button::SELECT | button::R3, false, MENU), button::SELECT | button::R3);
         assert_eq!(game_buttons(button::SELECT | button::R3, false, ELSEWHERE), button::SELECT | button::R3);
+    }
+
+    #[test]
+    fn the_underhand_grab_toggles_in_a_field_but_its_menu_where_ex_machina_draws_it() {
+        use crate::Renderer::{ExMachina, Original};
+        for field in [FIELD, PICTURE, DIALOGUE] {
+            assert!(grab_toggles(field, ExMachina), "{field:?}");
+            assert!(!grab_toggles(field, Original), "the Original renderer has no view to show: {field:?}");
+        }
+        assert!(!grab_toggles(MENU, ExMachina), "a menu has the screen");
+        assert!(!grab_toggles(ELSEWHERE, ExMachina), "only in a field");
     }
 
     #[test]

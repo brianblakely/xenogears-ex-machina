@@ -7,7 +7,9 @@
 // and the Binaural listener looks where it looks; a tap on the picture walks
 // nowhere, the touch deck's SELECT toggles the view and a finger dragged on
 // the picture turns it; Backspace again gives the keys back; the Original
-// renderer ends it. The canvas's pictures go to build/web-test
+// renderer ends it; a gamepad's right stick's click toggles it, its right
+// stick turns it and its Back released alone ends it, none of which acts
+// while the page has lost focus. The canvas's pictures go to build/web-test
 // (first-person-*.png). Input is held until the page's frames have read it,
 // so a loaded machine (the suite runs browsers side by side) slows the test
 // but does not change what it sees.
@@ -214,6 +216,54 @@ describe('first-person inspection in browsers', { skip: !available && `needs ${U
       await frames(page, 3);
       assert.equal((await status(page)).session.inspecting, false, 'the Original renderer has nothing to look around in');
       await page.evaluate((g) => window.xem.settings.apply({ Graphics: g }), graphics);
+
+      // A gamepad (standard mapping, read each of the page's frames): the
+      // right stick's click toggles the view, the right stick turns it and
+      // Back released alone ends it. While the page has lost focus neither
+      // toggles nor turns it, and a click still held when focus returns
+      // toggles nothing.
+      await page.evaluate(() => {
+        window.testPad = { id: 'Test gamepad', connected: true, mapping: 'standard',
+          buttons: Array.from({ length: 17 }, () => ({ pressed: false })), axes: [0, 0, 0, 0] };
+        Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [window.testPad] });
+      });
+      /** The pad's buttons and axes as they are for `ms` and a few of the page's frames. */
+      const gamepad = (buttons = [], axes = [0, 0, 0, 0], ms = 0) => page.evaluate(async ({ buttons, axes, ms }) => {
+        window.testPad.buttons.forEach((button, i) => { button.pressed = buttons.includes(i); });
+        window.testPad.axes = axes;
+        await new Promise((resolve) => setTimeout(resolve, ms));
+        for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
+      }, { buttons, axes, ms });
+      const [BACK, R3] = [8, 11];
+      await gamepad([R3]);
+      await page.waitForFunction(() => window.xem.status().renderer.firstPerson);
+      await gamepad();
+      await gamepad([], [0, 0, 1, 0], 300);
+      await gamepad();
+      r = await renderer(page);
+      assert.ok(r.look.yaw > 0.1 && Math.abs(r.look.pitch) < 1e-6, `the right stick turned it right: ${JSON.stringify(r.look)}`);
+      const focusPause = (await page.evaluate(() => window.xem.settings.get())).settings.pause_on_focus_loss;
+      assert.equal((await page.evaluate(() => window.xem.settings.apply({ PauseOnFocusLoss: false }))).ok, true);
+      await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+      await gamepad([], [0, 0, 1, 0], 300);
+      await gamepad();
+      assert.deepEqual((await renderer(page)).look, r.look, 'without focus the stick turns nothing');
+      await gamepad([R3]);
+      await gamepad();
+      assert.equal((await renderer(page)).firstPerson, true, 'nor does its click toggle the view');
+      await gamepad([BACK]);
+      await gamepad();
+      assert.equal((await renderer(page)).firstPerson, true, 'nor Back released alone');
+      await gamepad([R3]);
+      await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+      await gamepad([R3]);
+      await gamepad();
+      assert.equal((await renderer(page)).firstPerson, true, 'a click held as focus returns toggles nothing');
+      await gamepad([BACK]);
+      await gamepad();
+      await page.waitForFunction(() => !window.xem.status().renderer.firstPerson);
+      assert.equal((await status(page)).session.inspecting, false, 'Back released alone ends it');
+      assert.equal((await page.evaluate((p) => window.xem.settings.apply({ PauseOnFocusLoss: p }), focusPause)).ok, true);
       assert.deepEqual(page.errors, []);
     } finally {
       await browser.close();

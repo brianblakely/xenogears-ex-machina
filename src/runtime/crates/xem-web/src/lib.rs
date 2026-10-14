@@ -383,6 +383,11 @@ impl XemApp {
     pub fn xr_input(&mut self, now: f64, data: &[f32], select: i32) {
         use xem_render::glam::{Quat, Vec3};
         const HAND: usize = 8 + 1 + 75 + 2;
+        // In the session, the Controls section lists first-person
+        // inspection's headset controls.
+        if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) {
+            panel.set_first_person_headset(true);
+        }
         if data.len() < 8 + 2 * HAND {
             self.xr_input = None;
             return;
@@ -434,6 +439,9 @@ impl XemApp {
         self.input.clear();
         if let Some(renderer) = &mut self.renderer {
             renderer.release_xr();
+            if let Some(panel) = renderer.panel() {
+                panel.set_first_person_headset(false);
+            }
         }
         self.display_dirty = true;
     }
@@ -535,8 +543,7 @@ impl XemApp {
         };
         // The underhand grab toggles inspection in a field but its menu,
         // where Ex Machina draws it.
-        let drawn = settings.graphics.renderer == xem_settings::Renderer::ExMachina;
-        if inspect && controls.field && !controls.menu && drawn && let Some(renderer) = &mut self.renderer {
+        if inspect && xem_settings::look::grab_toggles(controls, settings.graphics.renderer) && let Some(renderer) = &mut self.renderer {
             renderer.set_first_person(!inspecting);
         }
         self.xr_gestures = effects.gestures;
@@ -599,16 +606,19 @@ impl XemApp {
     /// it, by Select's keys, the touch deck's SELECT, the gamepad's Back
     /// released alone or its right stick's click; while it shows, turned by
     /// the arrow keys, the right stick, a finger on the picture and the
-    /// mouse the game holds. Whether it shows.
+    /// mouse the game holds. Whether it shows. Neither happens while the
+    /// settings panel has the input or the page has lost focus, when the
+    /// game's buttons are let go too (the page reads the gamepad whatever
+    /// the focus).
     fn look(&mut self, bindings: &xem_settings::GameBindings, field: xem_core::FieldControls, now: f64) -> bool {
         // The mouse's and a finger's motion are the view's this frame, or no one's.
         let mut mouse = std::mem::take(&mut self.look_mouse);
         let (dx, dy) = self.deck.take_drag();
         let looked = self.looked.replace(now);
         let drawn = self.settings.borrow().settings().graphics.renderer == xem_settings::Renderer::ExMachina;
-        let panel = self.panel_visible();
+        let away = self.panel_visible() || !self.app_input.focused();
         let Some(renderer) = self.renderer.as_mut() else { return false };
-        if panel {
+        if away {
             self.look_toggle.clear();
             self.looked = None;
             return renderer.first_person();

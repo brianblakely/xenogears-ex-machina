@@ -202,6 +202,9 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         PANEL_SCALE,
     )
     .map_err(|e| e.to_string())?;
+    // The Controls section lists first-person inspection's headset controls.
+    ui.set_first_person(true);
+    ui.set_first_person_headset(true);
     let panel_visible = Rc::new(RefCell::new(options.show_settings));
     ui.on_close({
         let visible = panel_visible.clone();

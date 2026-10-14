@@ -1119,21 +1119,26 @@ takes, or a script's) keeps every button, and the view does not turn under
 it (`xem_settings::look`). It ends when toggled again, when the field or its
 map is left, and under the Original renderer.
 
-Every input path keeps the character where it stands. Hosts give the
-session the view's state before each batch of frames
-(`Session::set_inspecting`: `Game::want_inspection` on desktop, Android and
-OpenXR, the browser's frame loop): turning it on stops a route under way,
-recorded as the player's own `assist_stop` is, and while it is on
-`navigate` and `interact` are refused ("first-person inspection keeps the
-character where it stands: turn it off to walk or interact"); `status`
-reports `inspecting`. A recorded `assist` (a replay's, a session log's)
-still runs, a replay ignores the host's state, and the native hosts give
-none while they play a session log (`--script`, Android's `script.json`).
-Turning it off restarts nothing. Taps on the
-picture resolve without the field, since the view shows no field camera to
-walk or point through: walking, they walk nowhere and talk to no one,
-while a dialogue's still advance and a menu's still choose, and no floor or
-destination marks show. A headset's gestures follow the same rule
+The player's inputs all keep the character where it stands: the keys,
+buttons, mouse and touch deck above, the taps below and a headset's
+gestures. Hosts give the session the view's state before each batch of
+frames (`Session::set_inspecting`: `Game::want_inspection` on desktop,
+Android and OpenXR, the browser's frame loop): turning it on stops a route
+under way, recorded as the player's own `assist_stop` is, and while it is
+on `navigate` and `interact` are refused ("first-person inspection keeps
+the character where it stands: turn it off to walk or interact");
+`status` reports `inspecting`. An agent's other input is not held back:
+`pad`, `press`, `hold` and `act` reach the pad as sent, so its directions
+and Jump walk, turn and jump the character under the view
+(`tests/inspection.rs` turns it so), and an `assist` command (the intent
+`navigate` and `interact` record, sent live or replayed) starts its
+route. A replay ignores the host's state, and the native hosts give none
+while they play a session log (`--script`, Android's `script.json`).
+Turning it off restarts nothing. Taps on the picture resolve without the
+field, since the view shows no field camera to walk or point through:
+walking, they walk nowhere and talk to no one, while a dialogue's still
+advance and a menu's still choose, and no floor or destination marks
+show. A headset's gestures follow the same rule
 ([Headsets: hands, gaze and control decks](#headsets-hands-gaze-and-control-decks)).
 
 The view itself is presentation only. While it is on, `GameView::reveals`
@@ -1201,15 +1206,18 @@ pixel for pixel against a view that never looked, and a new route walks.
 `xem-core/tests/persistence.rs` checks the session's part on a stand-in
 module (one recorded stop, the refusals, a recorded intent that still runs,
 a replay that ignores the host), `xem-settings`' look tests the toggles
-(Select's keys and the deck's SELECT alike), the held-back buttons under
-the default, an unswapped and a shoulder-swapped assignment and the turn
-rates, `xem-assist`'s the headset's gestures and pointer keys while
+(Select's keys and the deck's SELECT alike), the underhand grab's rule
+(`look::grab_toggles`: in a field but its menu, under Ex Machina only),
+the held-back buttons under the default, an unswapped and a
+shoulder-swapped assignment and the turn rates, `xem-assist`'s the
+headset's gestures and pointer keys while
 inspecting and two-hand scaling that leaves the screen, and the deck's
 SELECT and drag, `xem-host`'s a gamepad's toggles and the touch deck (SELECT
 toggling and staying the game's where the map's picture shows, no Run left
 alone, a 100-pixel drag turning 0.3 radians and tapping nothing),
 `xem-core`'s Binaural test a look and a head turn each applied once, and
-`xem-ui/tests/panel.rs` the look row's drag on touch screens.
+`xem-ui/tests/panel.rs` the look row's drag on touch screens and a
+headset's own rows.
 `web/tests/first-person.test.mjs` (local, disc 1) runs field 30 in a page
 with WebGL2: Backspace held as the loop resumes stops an 8-frame route and
 `navigate` is refused; W and Space reach no pad and the character stays;
@@ -1218,18 +1226,32 @@ zoom; the Binaural listener faces right with the view; the mouse under
 pointer lock turns it right and down; a tap on the picture walks nowhere,
 the deck's SELECT toggles it off and on, and a 100-pixel drag turns it
 0.3 radians left; Backspace gives W back and the listener its camera; the
-Original renderer ends the view. Its canvas pictures go to
-`build/web-test/first-person-*.png`. `web/tests/page.test.mjs` holds the
-game's Select with the deck's SELECT outside a field.
+Original renderer ends the view; a gamepad's right stick's click toggles
+it, its right stick turns it right and its Back released alone ends it,
+while after the page's `blur` neither the stick, the click nor Back acts,
+and a click held as focus returns toggles nothing. Its canvas pictures go
+to `build/web-test/first-person-*.png`. `web/tests/page.test.mjs` holds
+the game's Select with the deck's SELECT outside a field.
 
 Not done or not measured: in a headset the view still shows on the flat
 virtual screen, without head tracking (Phase 8's immersive inspection is
-later work). The touch look's rate is a constant chosen to follow the
-finger on a phone-sized picture, not measured with people, and the
-Android emulator has not played the touch toggle or drag (the unit tests
-and the browser's touch pointers have). Keyboard-only players have no
-toggle on the ten maps where Select shows the map's picture (the gamepad's
-right stick's click remains).
+later work), and no test plays inspection in a headset: the underhand
+grab's and the controllers' Back's toggles, the right stick's turning,
+the held-back buttons, the Binaural listener's view, the Original
+renderer's end and the view carried across Enter and Exit VR have not run
+on Monado or IWER (only the grab's rule and the headset core's gating are
+unit-tested); the immersive view's qualification takes them up. The touch
+look's rate is a constant chosen to follow the finger on a phone-sized
+picture, not measured with people, and the Android emulator has not
+played the touch toggle or drag (the unit tests and the browser's touch
+pointers have). Keyboard-only and touch-only players have no toggle on the
+ten maps where Select shows the map's picture (the deck has no right
+stick's click; a gamepad's remains). Inspection is the player's alone: no
+command or page call lets an agent turn the view on, off or around on any
+host (agents see it through `status`'s `inspecting` and browsers'
+`status().renderer`), and an agent's pad input and `assist` commands are
+not held back while it shows. Whether hosts should give agents the view,
+and hold their input back during it, is undecided.
 
 ### Camera records
 
@@ -1515,13 +1537,16 @@ Headset class (Low tier, depth of field off unless enabled).
   of held input.
 
 In a field both toggle first-person inspection with the underhand grab
-and the controllers' Back (the right stick's click) released alone, and
-the Original renderer ends it; it shows on the virtual screen, its view
-turned by the right stick, the character held where it stands as on the
+and the controllers' Back (the right stick's click) released alone, where
+Ex Machina draws it (the Original renderer ends it, and neither toggles
+it there); it shows on the virtual screen, its view turned by the right
+stick, the player's input leaving the character where it stands as on the
 flat hosts ([First-person inspection](#first-person-inspection)) and the
-Binaural listener looking along it before the head turns it. The canvas
-and the session share the browser's view, so it carries across Enter and
-Exit VR.
+Binaural listener looking along it before the head turns it. The settings
+panel's Controls section lists the grab, the right stick's click and the
+right stick in place of the flat hosts' keys (in a browser, while the
+session runs). The canvas and the session share the browser's view, so it
+carries across Enter and Exit VR.
 
 ## Controls
 
@@ -1580,7 +1605,9 @@ In a field, Select (where the game's shows nothing) and the right stick's
 click also toggle first-person inspection, which the arrow keys, the right
 stick, a finger on the picture and the mouse camera's motion turn
 ([First-person inspection](#first-person-inspection)); Settings' Controls
-section lists them (with the finger's drag where touch controls show).
+section lists them (with the finger's drag where touch controls show; a
+headset's lists its underhand grab, the right stick's click and the right
+stick instead, [Headsets](#headsets)).
 
 ### The game's interface context
 
@@ -1798,7 +1825,8 @@ the browser's WebXR sessions (plan.md, the hand/gaze contract):
 - **Pauses.** The overhand grab toggles the player's Pause in every
   context (no game frame runs; head tracking, drawing, the panel and app
   input stay live); the underhand grab toggles first-person inspection in
-  a field; prayer hands toggle Settings, which hold their own pause, and
+  a field but its menu, where Ex Machina draws it (`look::grab_toggles`);
+  prayer hands toggle Settings, which hold their own pause, and
   closing them keeps the player's. Losing the hands or the app's focus
   drops what was pending, stops assisted movement and pauses until the
   player's Pause (from an open hand). Two-hand scaling leaves the screen's
@@ -2418,7 +2446,9 @@ as JSON text or bytes.
   only way).
   Audio starts with the first click, key or touch on the game (or "Start
   audio"); a Fullscreen button asks for the page's fullscreen, and
-  entering or leaving it, blur and hiding let go of held input. The
+  entering or leaving it, blur and hiding let go of held input (and until
+  focus returns the gamepad neither toggles nor turns first-person
+  inspection, as it holds none of the game's buttons). The
   animation loop sets the pad when the player's buttons change, so a pad an
   automation client set (`pad`, `press`, `hold`, `act`, `replay`) stays until the player
   presses something.

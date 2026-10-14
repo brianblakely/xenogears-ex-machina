@@ -324,6 +324,13 @@ impl SettingsUi {
     pub fn set_first_person_touch(&self, touch: bool) {
         self.panel.set_first_person_touch(touch);
     }
+
+    /// Whether the host plays in a headset: the Controls section lists the
+    /// underhand grab and the controllers' Back (their right stick's click)
+    /// as inspection's toggles, and their right stick as its look.
+    pub fn set_first_person_headset(&self, headset: bool) {
+        self.panel.set_first_person_headset(headset);
+    }
     pub fn text_editor_focused(&self) -> bool {
         self.panel.get_text_editor_focused()
     }
