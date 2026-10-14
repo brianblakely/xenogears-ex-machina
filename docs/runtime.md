@@ -2483,13 +2483,18 @@ brought a battle request 140 frames in without the control; with the
 default setting's maps, none in 6 020 frames, the window still 300 and the
 step still 52 as dealt.
 
-**Agents** set the maps directly with `{"cmd":"random_battles","off":[407,
-414]}` on any host's command layer (`xem-headless --control` included;
-field maps 0-4095, any order), or change the setting:
+**Agents** change the setting as people do, through the settings service:
 `{"cmd":"settings_apply","change":{"RandomBattles":"Original"}}` on
 `xem-desktop --control` and `window.xem.settings.apply({RandomBattles:
 'Original'})` in the browser; the next frame's `status` shows the maps the
-host gave.
+host gave. The interactive hosts (the desktop, a running browser page,
+Android and OpenXR) give the setting's maps before every frame, so there a
+`random_battles` command lasts only until the next frame, both changes
+recorded. Where no host gives them, agents set the maps directly with
+`{"cmd":"random_battles","off":[407, 414]}` (field maps 0-4095, any
+order): `xem-headless --control`, session logs, and a browser page whose
+frames commands drive (`setRunning(false)`, then `runFrames` or
+`step`).
 
 Tests: `xem-settings`'
 `random_battles_stay_off_in_platforming_areas_unless_the_original_is_chosen`
