@@ -1,8 +1,8 @@
-//! Original saves in the files players bring and take: whole memory cards
-//! and single saves in the containers emulators and save tools write, and
-//! what a card holds as the BIOS and the game see it. Pure functions over
-//! bytes; the card device ([`super::card::Card`]) applies them to the
-//! inserted cards between frames.
+//! Original saves in the files players pick for a memory card: whole cards
+//! and single saves in the containers emulators and save tools write, read
+//! into the raw card the device holds, and what a card holds as the BIOS and
+//! the game see it. Pure functions over bytes; the card device
+//! ([`super::card::Card::import_file`]) takes the card between frames.
 //!
 //! # Containers
 //!
@@ -11,20 +11,21 @@
 //! apart by size and magic, and names a raw single save by its file name
 //! (its directory name):
 //!
-//! | Container | Extensions | Layout | Here |
-//! |---|---|---|---|
-//! | Raw card | .mcd .mcr .mc .srm .mem .bin .vm1 .ddf .ps | 131 072 bytes beginning "MC" | import, export |
-//! | DexDrive | .gme | a 0xF40-byte header beginning "123-456-STD", then the card | import, export |
-//! | Connectix VGS | .vgs .mem | a 64-byte header beginning "VgsM", then the card | import |
-//! | PSP, PS Vita | .vmp | a 0x80-byte header beginning 00 "PMV", then the card | import |
-//! | Single save | .mcs .ps1 | the 0x80-byte directory frame of its first block, then its blocks | import, export |
-//! | PS3 | .psv | a 0x84-byte header beginning 00 "VSP" (type 1, a PS1 save, at 0x3C, its name at 0x64), then its blocks | import |
-//! | Action Replay, GameShark, Xploder, Caetla | .psx .mcb .mcx .pda | a 54-byte header (its name at 0, a title at 0x15), then its blocks | import |
-//! | Raw single save | its directory name | its blocks | import |
+//! | Container | Extensions | Layout |
+//! |---|---|---|
+//! | Raw card | .mcd .mcr .mc .srm .mem .bin .vm1 .ddf .ps | 131 072 bytes beginning "MC" |
+//! | DexDrive | .gme | a 0xF40-byte header beginning "123-456-STD", then the card |
+//! | Connectix VGS | .vgs .mem | a 64-byte header beginning "VgsM", then the card |
+//! | PSP, PS Vita | .vmp | a 0x80-byte header beginning 00 "PMV", then the card |
+//! | Single save | .mcs .ps1 | the 0x80-byte directory frame of its first block, then its blocks |
+//! | PS3 | .psv | a 0x84-byte header beginning 00 "VSP" (type 1, a PS1 save, at 0x3C, its name at 0x64), then its blocks |
+//! | Action Replay, GameShark, Xploder, Caetla | .psx .mcb .mcx .pda | a 54-byte header (its name at 0, a title at 0x15), then its blocks |
+//! | Raw single save | its directory name | its blocks |
 //!
-//! A single save's blocks begin with its title frame ("SC"). A PSP's or a
-//! PS3's file carries a signature over its contents: it is not checked on
-//! import, and those files are not written (signing is not implemented).
+//! A single save's blocks begin with its title frame ("SC"); it becomes a
+//! freshly formatted card holding only that save, written as the BIOS
+//! creates and writes a file (blocks 1, 2, ... chained). A PSP's or a PS3's
+//! file carries a signature over its contents, which is not checked.
 //!
 //! # What a card holds
 //!
@@ -52,7 +53,7 @@
 //! was at hand to confirm it.
 
 use super::card::{self, BLOCK_SIZE, BLOCKS, CARD_SIZE, FRAME_SIZE, NAME_LENGTH, NAME_OFFSET};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 const GME_HEADER: usize = 0xF40;
 const VGS_HEADER: usize = 0x40;
@@ -82,8 +83,7 @@ const GAME_FILES: u8 = 15;
 const TITLE: std::ops::Range<usize> = 4..0x44;
 
 /// A file's container.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Container {
     Raw,
     Gme,
@@ -96,74 +96,46 @@ pub enum Container {
 }
 
 impl Container {
-    pub fn describe(self) -> &'static str {
+    /// What the file is, as an import reports it.
+    pub fn name(self) -> &'static str {
         match self {
-            Container::Raw => "a raw memory card image",
-            Container::Gme => "a DexDrive card (.gme)",
-            Container::Vgs => "a Connectix VGS card (.vgs, .mem)",
-            Container::Vmp => "a PSP or PS Vita card (.vmp)",
-            Container::Mcs => "a single save (.mcs, .ps1)",
-            Container::Psv => "a PS3 single save (.psv)",
-            Container::ActionReplay => "an Action Replay, GameShark, Xploder or Caetla save (.psx, .mcb, .mcx, .pda)",
-            Container::RawSave => "a raw single save",
+            Container::Raw => "raw card",
+            Container::Gme => "DexDrive card",
+            Container::Vgs => "Connectix VGS card",
+            Container::Vmp => "PSP or PS Vita card",
+            Container::Mcs => "single save (.mcs, .ps1)",
+            Container::Psv => "PS3 save (.psv)",
+            Container::ActionReplay => "Action Replay save (.psx, .mcb, .mcx, .pda)",
+            Container::RawSave => "raw save",
         }
+    }
+
+    /// Whether it holds a single save, not a whole card.
+    pub fn single_save(self) -> bool {
+        matches!(self, Container::Mcs | Container::Psv | Container::ActionReplay | Container::RawSave)
     }
 }
 
-/// The containers a whole card is written in.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum CardFormat {
-    /// A raw image (.mcd).
-    #[default]
-    Raw,
-    /// A DexDrive file (.gme).
-    Gme,
-}
-
-impl CardFormat {
-    pub fn extension(self) -> &'static str {
-        match self {
-            CardFormat::Raw => "mcd",
-            CardFormat::Gme => "gme",
-        }
-    }
-}
-
-/// A save as a file holds it: its directory name and its blocks (whole
-/// 8 KiB blocks, the title frame first).
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Save {
-    pub name: Vec<u8>,
-    pub data: Vec<u8>,
-}
-
-/// What a file holds.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Contents {
-    /// A raw 128 KiB card.
-    Card(Vec<u8>),
-    Save(Save),
-}
-
-/// What `bytes`, a file named `file_name` (its directories are ignored),
-/// holds: by its size and magic, or for a raw single save by its name.
-pub fn detect(bytes: &[u8], file_name: &str) -> Result<(Container, Contents), String> {
+/// The card `bytes`, a file named `file_name` (its directories are
+/// ignored), holds, as a raw 128 KiB image: by its size and magic, or for a
+/// raw single save by its name. A single save's is a freshly formatted card
+/// holding only that save.
+pub fn detect(bytes: &[u8], file_name: &str) -> Result<(Container, Vec<u8>), String> {
     let file_name = base_name(file_name);
     let size = bytes.len();
     let card = |container: Container, header: usize| {
         if size == header + CARD_SIZE && bytes[header..].starts_with(b"MC") {
-            Ok((container, Contents::Card(bytes[header..].to_vec())))
+            Ok((container, bytes[header..].to_vec()))
         } else {
             Err(format!(
-                "{file_name} begins as {} but is not one: that is {} bytes with a card beginning \"MC\" after its header, this file {size} bytes",
-                container.describe(),
+                "{file_name} begins as a {} but is not one: that is {} bytes with a card beginning \"MC\" after its header, this file {size} bytes",
+                container.name(),
                 header + CARD_SIZE
             ))
         }
     };
     if size == CARD_SIZE && bytes.starts_with(b"MC") {
-        return Ok((Container::Raw, Contents::Card(bytes.to_vec())));
+        return Ok((Container::Raw, bytes.to_vec()));
     }
     if bytes.starts_with(b"123-456-STD") {
         return card(Container::Gme, GME_HEADER);
@@ -174,15 +146,17 @@ pub fn detect(bytes: &[u8], file_name: &str) -> Result<(Container, Contents), St
     if bytes.starts_with(b"\0PMV") {
         return card(Container::Vmp, VMP_HEADER);
     }
-    let save = |container: Container, header: usize, name: Result<Vec<u8>, String>| -> Result<(Container, Contents), String> {
+    let save = |container: Container, header: usize, name: Result<Vec<u8>, String>| -> Result<(Container, Vec<u8>), String> {
         let data = blocks_after(bytes, header).ok_or_else(|| {
             format!(
-                "{file_name} begins as {} but is not one: that is a header of {header} bytes, then 1-15 blocks of 8 KiB beginning \"SC\", this file {size} bytes",
-                container.describe()
+                "{file_name} begins as a {} but is not one: that is a header of {header} bytes, then 1-15 blocks of 8 KiB beginning \"SC\", this file {size} bytes",
+                container.name()
             )
         })?;
-        let name = name.map_err(|error| format!("{file_name} ({}): {error}", container.describe()))?;
-        Ok((container, Contents::Save(Save { name, data })))
+        let name = name.map_err(|error| format!("{file_name} ({}): {error}", container.name()))?;
+        let mut image = card::formatted();
+        add(&mut image, &name, &data).expect("a fresh card takes any 1-15 blocks under a valid name");
+        Ok((container, image))
     };
     if bytes.starts_with(b"\0VSP") {
         let kind = bytes.get(PSV_TYPE).copied().unwrap_or(0);
@@ -251,15 +225,9 @@ fn raw_save_name(file_name: &str) -> Result<Vec<u8>, String> {
     Ok(name.to_vec())
 }
 
-/// A name's bytes as text, each byte the character of that code (Latin-1,
-/// so every name reads back as itself, [`name_bytes`]).
-pub fn name_text(name: &[u8]) -> String {
+/// A name's bytes as text, each byte the character of that code (Latin-1).
+fn name_text(name: &[u8]) -> String {
     name.iter().map(|&b| char::from(b)).collect()
-}
-
-/// A name given as text ([`name_text`]) as its bytes.
-pub fn name_bytes(name: &str) -> Result<Vec<u8>, String> {
-    name.chars().map(|c| u8::try_from(c).map_err(|_| format!("{name:?} is not a card file's name (its characters are single bytes)"))).collect()
 }
 
 /// A card, as [`list`] reads it.
@@ -278,6 +246,30 @@ pub struct Listing {
     /// file); harmless to the files.
     pub notes: Vec<String>,
     pub saves: Vec<Entry>,
+}
+
+impl Listing {
+    /// What an import of a `container` file holding this card found, as
+    /// the hosts' status lines report it ("DexDrive card, 3 saves"), with
+    /// the first thing wrong with this game's saves (a load it refuses).
+    pub fn found(&self, container: Container) -> String {
+        let fresh = if container.single_save() { " on a fresh card" } else { "" };
+        let saves = match self.saves.len() {
+            0 => "no saves".to_string(),
+            1 => "1 save".to_string(),
+            n => format!("{n} saves"),
+        };
+        let mut found = format!("{}{fresh}, {saves}", container.name());
+        let mut wrong = self.saves.iter().filter(|save| matches!(save.kind, Kind::Xenogears { .. }) && !save.problems.is_empty());
+        if let Some(save) = wrong.next() {
+            found += &format!("; {}: {}", save.name, save.problems[0]);
+            let more = wrong.count();
+            if more > 0 {
+                found += &format!(" (and {more} more of this game's saves with problems)");
+            }
+        }
+        found
+    }
 }
 
 /// A save on a card.
@@ -304,17 +296,6 @@ pub enum Kind {
     Xenogears { file: u8, disc: Option<u8> },
     JapaneseXenogears,
     Other,
-}
-
-impl Kind {
-    pub fn describe(self) -> String {
-        match self {
-            Kind::Xenogears { file, disc: Some(disc) } => format!("Xenogears disc {disc}, file {file:02}"),
-            Kind::Xenogears { file, disc: None } => format!("Xenogears, file {file:02}"),
-            Kind::JapaneseXenogears => "Japanese Xenogears".into(),
-            Kind::Other => "another game".into(),
-        }
-    }
 }
 
 /// What a card (a raw 128 KiB image) holds, and what is wrong with it.
@@ -460,77 +441,16 @@ fn xenogears(block: &[u8], problems: &mut Vec<String>) -> Kind {
     Kind::Xenogears { file: digit.wrapping_add(1), disc }
 }
 
-/// The save named `name` on a card, its blocks as the BIOS reads them.
-pub fn extract(image: &[u8], name: &[u8]) -> Result<Save, String> {
-    let first = card::find(image, name).ok_or_else(|| format!("no save named {} is on the card", name_text(name)))?;
-    let data = card::chain(image, first).iter().flat_map(|&b| image[b * BLOCK_SIZE..(b + 1) * BLOCK_SIZE].iter().copied()).collect();
-    Ok(Save { name: name.to_vec(), data })
-}
-
-/// The card (a formatted raw image) with `save` added as the BIOS creates
-/// a file ([`super::card`]'s create: the first free or deleted blocks),
-/// or why not: as the game's Copy refuses them (`menu_copy_command_run`),
-/// a save of that name on the card, or too few free blocks.
-pub fn insert(image: &[u8], save: &Save) -> Result<Vec<u8>, String> {
-    let name = name_text(&save.name);
-    if !card::is_formatted(image) {
-        return Err("the card has no file system: the game formats it from its save screen".into());
+/// Add the save `name` (its whole blocks `data`) to a formatted card as
+/// the BIOS creates and writes a file ([`card::create`]: the first free or
+/// deleted blocks, chained); None where the BIOS refuses it (a name not 1-20
+/// characters, one the card has, too few free blocks).
+fn add(image: &mut [u8], name: &[u8], data: &[u8]) -> Option<()> {
+    let blocks = card::create(image, name, data.len() / BLOCK_SIZE)?;
+    for (&block, data) in blocks.iter().zip(data.chunks_exact(BLOCK_SIZE)) {
+        image[block * BLOCK_SIZE..(block + 1) * BLOCK_SIZE].copy_from_slice(data);
     }
-    let count = save.data.len() / BLOCK_SIZE;
-    if count == 0 || !save.data.len().is_multiple_of(BLOCK_SIZE) || count >= BLOCKS {
-        return Err(format!("{name} is not 1-15 whole blocks"));
-    }
-    let mut out = image.to_vec();
-    let blocks = card::create(&mut out, &save.name, count).map_err(|refused| match refused {
-        card::Refused::Name => format!("{name:?} is not a card file's name (1-20 characters)"),
-        card::Refused::Exists => format!("the card already has a save named {name} (the game's Copy refuses it too): delete that one first"),
-        card::Refused::Full { free } => {
-            format!("{name} needs {count} block(s) and the card has {free} free (the game's Copy refuses a full card too)")
-        }
-    })?;
-    for (i, &block) in blocks.iter().enumerate() {
-        out[block * BLOCK_SIZE..(block + 1) * BLOCK_SIZE].copy_from_slice(&save.data[i * BLOCK_SIZE..(i + 1) * BLOCK_SIZE]);
-    }
-    Ok(out)
-}
-
-/// The card with the save named `name` deleted as the BIOS deletes it
-/// (its blocks marked deleted, free for the next save).
-pub fn delete(image: &[u8], name: &[u8]) -> Result<Vec<u8>, String> {
-    let mut out = image.to_vec();
-    card::erase(&mut out, name).ok_or_else(|| format!("no save named {} is on the card", name_text(name)))?;
-    Ok(out)
-}
-
-/// A card as a file of `format`. A DexDrive header (psx-spx) copies each
-/// frame's first and ninth bytes of block 0 and leaves its 15 comments
-/// empty.
-pub fn export_card(image: &[u8], format: CardFormat) -> Vec<u8> {
-    match format {
-        CardFormat::Raw => image.to_vec(),
-        CardFormat::Gme => {
-            let mut out = vec![0; GME_HEADER];
-            out[..11].copy_from_slice(b"123-456-STD");
-            out[0x12] = 1;
-            out[0x14] = 1;
-            for n in 0..BLOCKS {
-                out[0x15 + n] = card::frame(image, n)[0];
-                out[0x25 + n] = card::frame(image, n)[8];
-            }
-            out.extend_from_slice(image);
-            out
-        }
-    }
-}
-
-/// The save named `name` as a single-save file (.mcs): its first block's
-/// directory frame as the card holds it, then its blocks.
-pub fn export_save(image: &[u8], name: &[u8]) -> Result<Vec<u8>, String> {
-    let save = extract(image, name)?;
-    let first = card::find(image, name).expect("extracted");
-    let mut out = card::frame(image, first).to_vec();
-    out.extend_from_slice(&save.data);
-    Ok(out)
+    Some(())
 }
 
 /// A title (bytes up to a NUL) decoded from Shift-JIS: ASCII, half-width
@@ -539,7 +459,7 @@ pub fn export_save(image: &[u8], name: &[u8]) -> Result<Vec<u8>, String> {
 /// mapping); kanji, which need a table not kept here, become U+FFFD.
 /// Returns the text and the offset of the first byte that is not
 /// Shift-JIS, where decoding stops.
-pub fn decode_title(raw: &[u8]) -> (String, Option<usize>) {
+fn decode_title(raw: &[u8]) -> (String, Option<usize>) {
     let raw = &raw[..raw.iter().position(|&b| b == 0).unwrap_or(raw.len())];
     let mut text = String::new();
     let mut at = 0;
@@ -573,19 +493,6 @@ pub fn decode_title(raw: &[u8]) -> (String, Option<usize>) {
         }
     }
     (text, None)
-}
-
-/// A title for a display without full-width glyphs: full-width ASCII
-/// forms as ASCII, the ideographic space as a space.
-pub fn narrow(title: &str) -> String {
-    title
-        .chars()
-        .map(|c| match c {
-            '\u{FF01}'..='\u{FF5E}' => char::from_u32(c as u32 - 0xFEE0).expect("ASCII"),
-            '\u{3000}' => ' ',
-            other => other,
-        })
-        .collect()
 }
 
 /// Shift-JIS lead bytes 0x81-0x84 by trail byte (0x40-0x7E, 0x80-0xFC; 188
@@ -678,6 +585,13 @@ mod tests {
         data
     }
 
+    /// A save as a file holds it: its directory name and its whole blocks.
+    #[derive(Clone)]
+    struct Save {
+        name: Vec<u8>,
+        data: Vec<u8>,
+    }
+
     /// This game's save for file `digit` on `disc`, its checksum right.
     fn xenogears_save(digit: u8, disc: u16) -> Save {
         let mut title = GAME_TITLE.to_vec();
@@ -698,28 +612,45 @@ mod tests {
         Save { name: b"BESLES-01234GAME".to_vec(), data: blocks(2, b"ABC", 0x5A) }
     }
 
-    /// A card holding `saves`.
+    /// A card holding `saves`, each added as the BIOS creates a file.
     fn card_with(saves: &[&Save]) -> Vec<u8> {
-        saves.iter().fold(formatted(), |image, save| insert(&image, save).unwrap())
+        let mut image = formatted();
+        for save in saves {
+            add(&mut image, &save.name, &save.data).unwrap();
+        }
+        image
     }
 
-    fn detected(bytes: &[u8], name: &str) -> (Container, Contents) {
+    /// A single save (.mcs) as save tools write one: its first block's
+    /// directory frame as a card holds it, then its blocks.
+    fn mcs(save: &Save) -> Vec<u8> {
+        let image = card_with(&[save]);
+        [card::frame(&image, 1), &image[BLOCK_SIZE..(1 + save.data.len() / BLOCK_SIZE) * BLOCK_SIZE]].concat()
+    }
+
+    /// A DexDrive card as psx-spx gives its header: "123-456-STD", then
+    /// each directory frame's first and ninth bytes, 15 empty comments.
+    fn gme(image: &[u8]) -> Vec<u8> {
+        let mut out = vec![0; GME_HEADER];
+        out[..11].copy_from_slice(b"123-456-STD");
+        out[0x12] = 1;
+        out[0x14] = 1;
+        for n in 0..BLOCKS {
+            out[0x15 + n] = card::frame(image, n)[0];
+            out[0x25 + n] = card::frame(image, n)[8];
+        }
+        [out, image.to_vec()].concat()
+    }
+
+    fn detected(bytes: &[u8], name: &str) -> (Container, Vec<u8>) {
         detect(bytes, name).unwrap_or_else(|error| panic!("{name}: {error}"))
     }
 
     #[test]
-    fn every_card_container_reads_back_the_card_and_raw_and_dexdrive_write_it() {
+    fn every_card_container_reads_back_the_card() {
         let image = card_with(&[&xenogears_save(0, 0), &foreign_save()]);
-        assert_eq!(detected(&image, "card1.mcd"), (Container::Raw, Contents::Card(image.clone())));
-        // DexDrive, as written here: its header (psx-spx) and the card.
-        let gme = export_card(&image, CardFormat::Gme);
-        assert_eq!(gme.len(), 0xF40 + CARD_SIZE);
-        assert_eq!(&gme[..12], b"123-456-STD\0");
-        assert_eq!(&gme[0x10..0x15], &[0, 0, 1, 0, 1]);
-        assert_eq!(&gme[0x15..0x18], &[b'M', 0x51, 0x51], "frame 0's first byte, then the files' states");
-        assert_eq!(gme[0x26..0x28], [0xFF, 0x02], "then their links: none, and to block 3 (2)");
-        assert!(gme[0x40..0xF40].iter().all(|&b| b == 0), "empty comments");
-        assert_eq!(detected(&gme, "card1.gme"), (Container::Gme, Contents::Card(image.clone())));
+        assert_eq!(detected(&image, "card1.mcd"), (Container::Raw, image.clone()));
+        assert_eq!(detected(&gme(&image), "card1.gme"), (Container::Gme, image.clone()));
         // Connectix VGS and PSP headers as their tools write them (the PSP's
         // signature is not checked: these are junk).
         let mut vgs = vec![0; 0x40];
@@ -729,24 +660,36 @@ mod tests {
         vgs[12] = 1;
         vgs[17] = 2;
         vgs.extend_from_slice(&image);
-        assert_eq!(detected(&vgs, "card.vgs"), (Container::Vgs, Contents::Card(image.clone())));
+        assert_eq!(detected(&vgs, "card.vgs"), (Container::Vgs, image.clone()));
         let mut vmp = vec![0x5A; 0x80];
         vmp[..4].copy_from_slice(b"\0PMV");
         vmp[4..8].copy_from_slice(&0x80u32.to_le_bytes());
         vmp.extend_from_slice(&image);
-        assert_eq!(detected(&vmp, "SCEVMC0.VMP"), (Container::Vmp, Contents::Card(image.clone())));
-        assert_eq!(export_card(&image, CardFormat::Raw), image);
+        assert_eq!(detected(&vmp, "SCEVMC0.VMP"), (Container::Vmp, image.clone()));
+        assert_eq!(list(&image).found(Container::Gme), "DexDrive card, 2 saves");
     }
 
     #[test]
-    fn every_single_save_container_reads_back_the_save_and_mcs_writes_it() {
+    fn every_single_save_container_becomes_a_fresh_card_holding_only_that_save() {
         let save = foreign_save();
-        let image = card_with(&[&xenogears_save(3, 1), &save]);
-        let mcs = export_save(&image, &save.name).unwrap();
+        // The card the BIOS makes when a game writes that save on a fresh card.
+        let alone = card_with(&[&save]);
+        let fresh = |bytes: &[u8], name: &str, container: Container| {
+            let (found, image) = detected(bytes, name);
+            assert_eq!(found, container, "{name}");
+            assert!(image == alone, "{name}: the card the BIOS makes for the save alone");
+            let listing = list(&image);
+            assert_eq!(listing.saves.len(), 1, "{name}");
+            assert_eq!((listing.saves[0].name.as_bytes(), listing.saves[0].first_block, listing.saves[0].blocks), (&save.name[..], 1, 2));
+            assert_eq!(&image[BLOCK_SIZE..3 * BLOCK_SIZE], &save.data[..], "{name}: its blocks as the file holds them");
+            assert_eq!(listing.free_blocks, 13);
+            assert!(listing.problems.is_empty() && listing.notes.is_empty(), "{listing:?}");
+            assert_eq!(listing.found(container), format!("{} on a fresh card, 1 save", container.name()));
+        };
+        let mcs = mcs(&save);
         assert_eq!(mcs.len(), 0x80 + 2 * BLOCK_SIZE);
-        assert_eq!(&mcs[..0x80], card::frame(&image, 2), "its first block's directory frame");
-        assert_eq!(detected(&mcs, "game.mcs"), (Container::Mcs, Contents::Save(save.clone())));
-        assert_eq!(detected(&mcs, "game.ps1").0, Container::Mcs);
+        fresh(&mcs, "game.mcs", Container::Mcs);
+        fresh(&mcs, "game.ps1", Container::Mcs);
         // PS3: header with type 1 and the name, then the blocks (the
         // signature is not checked).
         let mut psv = vec![0; 0x84];
@@ -758,44 +701,41 @@ mod tests {
         psv[0x44] = 0x84;
         psv[0x64..0x64 + save.name.len()].copy_from_slice(&save.name);
         psv.extend_from_slice(&save.data);
-        assert_eq!(detected(&psv, "BESLES-01234.PSV"), (Container::Psv, Contents::Save(save.clone())));
+        fresh(&psv, "BESLES-01234.PSV", Container::Psv);
         // Action Replay's 54-byte header: the name, then a title.
         let mut ar = vec![0; 54];
         ar[..save.name.len()].copy_from_slice(&save.name);
         ar[0x15..0x15 + 4].copy_from_slice(b"Game");
         ar.extend_from_slice(&save.data);
         for name in ["save.psx", "save.mcb", "save.mcx", "save.pda"] {
-            assert_eq!(detected(&ar, name), (Container::ActionReplay, Contents::Save(save.clone())));
+            fresh(&ar, name, Container::ActionReplay);
         }
         // A raw save, named by its file (its directories ignored).
+        fresh(&save.data, "/saves/BESLES-01234GAME", Container::RawSave);
         let digit_ten = xenogears_save(10, 0);
         assert_eq!(&digit_ten.name, b"BASLUS-00664:", "digit 10 is ':'");
-        assert_eq!(
-            detected(&digit_ten.data, "/saves/BASLUS-00664:"),
-            (Container::RawSave, Contents::Save(digit_ten.clone()))
-        );
-        // Each goes onto another card and comes back as it was.
-        for bytes in [&mcs, &psv, &ar] {
-            let Contents::Save(read) = detected(bytes, "save.mcs").1 else { panic!() };
-            let other = insert(&formatted(), &read).unwrap();
-            assert_eq!(extract(&other, &read.name).unwrap(), save);
-        }
+        let (_, image) = detected(&digit_ten.data, "C:\\saves\\BASLUS-00664:");
+        assert_eq!(list(&image).saves[0].kind, Kind::Xenogears { file: 11, disc: Some(1) });
     }
 
     #[test]
     fn files_that_are_not_cards_or_saves_are_refused_by_what_they_are_not() {
         let refused = |bytes: &[u8], name: &str| detect(bytes, name).err().unwrap_or_else(|| panic!("{name} accepted"));
         assert!(refused(&[0; 1000], "notes.txt").contains("not a memory card or a save"));
-        let mut short_gme = export_card(&formatted(), CardFormat::Gme);
+        let mut short_gme = gme(&formatted());
         short_gme.truncate(0x10000);
-        assert!(refused(&short_gme, "card.gme").contains("begins as a DexDrive card (.gme) but is not one"));
+        assert!(refused(&short_gme, "card.gme").contains("begins as a DexDrive card but is not one"));
         let mut ps2 = vec![0; 0x84 + BLOCK_SIZE];
         ps2[..4].copy_from_slice(b"\0VSP");
         ps2[0x3C] = 2;
         assert!(refused(&ps2, "game.psv").contains("type 2, not of a PS1 game"));
+        let mut cut = vec![0; 0x84 + 100];
+        cut[..4].copy_from_slice(b"\0VSP");
+        cut[0x3C] = 1;
+        assert!(refused(&cut, "game.psv").contains("begins as a PS3 save (.psv) but is not one"));
         let raw = foreign_save().data;
         assert!(refused(&raw, "my save.bin").contains("named by its file name"), "a raw save needs its directory name");
-        let mut nameless = export_save(&card_with(&[&foreign_save()]), b"BESLES-01234GAME").unwrap();
+        let mut nameless = mcs(&foreign_save());
         nameless[NAME_OFFSET..NAME_OFFSET + 21].fill(0);
         assert!(refused(&nameless, "game.mcs").contains("is not a card file's"));
         let mut unformatted = vec![0xFF; CARD_SIZE];
@@ -817,10 +757,8 @@ mod tests {
         assert_eq!(listing.free_blocks, 15 - 7);
         let saves = &listing.saves;
         assert_eq!(saves[0].title, "ＸＥＮＯＧＥＡＲＳ／Ｎｏ．０１　Ｌａｈａｎ");
-        assert_eq!(narrow(&saves[0].title), "XENOGEARS/No.01 Lahan");
         assert_eq!((saves[0].kind, saves[0].problems.len()), (Kind::Xenogears { file: 1, disc: Some(1) }, 0));
         assert_eq!(saves[1].kind, Kind::Xenogears { file: 3, disc: Some(2) });
-        assert_eq!(saves[1].kind.describe(), "Xenogears disc 2, file 03");
         assert!(saves[2].problems[0].contains("the game's load refuses it"), "{:?}", saves[2].problems);
         assert_eq!(saves[3].kind, Kind::Xenogears { file: 16, disc: None });
         assert!(saves[3].problems[0].contains("past the game's 15 files"));
@@ -828,6 +766,11 @@ mod tests {
         assert_eq!((saves[4].kind, saves[4].title.as_str()), (Kind::JapaneseXenogears, "ゼノ"));
         assert_eq!((saves[5].kind, saves[5].blocks, saves[5].first_block), (Kind::Other, 2, 6));
         assert!(saves[5].problems.is_empty());
+        // An import names the first of this game's saves a check fails.
+        assert_eq!(
+            listing.found(Container::Raw),
+            format!("raw card, 6 saves; BASLUS-006641: {} (and 1 more of this game's saves with problems)", saves[2].problems[0])
+        );
     }
 
     #[test]
@@ -877,33 +820,6 @@ mod tests {
     }
 
     #[test]
-    fn a_save_takes_the_first_free_or_deleted_blocks_and_the_games_copy_refusals() {
-        let one = xenogears_save(0, 0);
-        let image = card_with(&[&one, &foreign_save()]);
-        let freed = delete(&image, &one.name).unwrap();
-        assert_eq!(card::state(&freed, 1), 0xA1, "deleted as the BIOS deletes");
-        assert!(list(&freed).saves.iter().all(|s| s.name.as_bytes() != one.name));
-        // A three-block save takes deleted block 1, then 4 and 5.
-        let three = Save { name: b"BASLUS-00999LONG".to_vec(), data: blocks(3, b"L", 0x33) };
-        let card = insert(&freed, &three).unwrap();
-        assert_eq!(card::chain(&card, 1), vec![1, 4, 5]);
-        assert_eq!([card::state(&card, 1), card::state(&card, 4), card::state(&card, 5)], [0x51, 0x52, 0x53]);
-        assert_eq!(card::get_u32(card::frame(&card, 1), 4), 3 * BLOCK_SIZE as u32);
-        assert_eq!(extract(&card, &three.name).unwrap(), three);
-        assert!(list(&card).problems.is_empty());
-        let again = insert(&card, &three).unwrap_err();
-        assert!(again.contains("already has a save named BASLUS-00999LONG"), "{again}");
-        let mut full = card.clone();
-        for n in 0..10 {
-            full = insert(&full, &Save { name: format!("BASLUS-00999F{n}").into_bytes(), data: blocks(1, b"F", 0) }).unwrap();
-        }
-        let refused = insert(&full, &xenogears_save(5, 0)).unwrap_err();
-        assert!(refused.contains("needs 1 block(s) and the card has 0 free"), "{refused}");
-        assert!(insert(&vec![0; CARD_SIZE], &one).unwrap_err().contains("no file system"));
-        assert!(delete(&card, b"BASLUS-006640").unwrap_err().contains("no save named BASLUS-006640"));
-    }
-
-    #[test]
     fn titles_decode_shift_jis_kana_and_say_where_they_stop() {
         assert_eq!(decode_title(b"Plain ASCII\0junk"), ("Plain ASCII".into(), None));
         assert_eq!(decode_title(&[0xB1, 0xB2, 0x83, 0x41, 0x82, 0xA0]), ("ｱｲアあ".into(), None));
@@ -911,8 +827,5 @@ mod tests {
         assert_eq!(decode_title(&[0x41, 0x82]), ("A".into(), Some(1)), "a lead byte without its trail");
         assert_eq!(decode_title(&[0x41, 0x81, 0xAD]), ("A".into(), Some(1)), "a pair cp932 does not assign");
         assert_eq!(decode_title(&[0x80, 0x41]), (String::new(), Some(0)));
-        assert_eq!(narrow("ＸＥＮＯＧＥＡＲＳ／Ｎｏ．０１　"), "XENOGEARS/No.01 ");
-        assert_eq!(name_bytes(&name_text(&[0x42, 0xE9, 0x7F])).unwrap(), [0x42, 0xE9, 0x7F]);
-        assert!(name_bytes("名").is_err());
     }
 }

@@ -48,8 +48,6 @@ struct Storage(Rc<RefCell<[Vec<u8>; 2]>>);
 impl CardStorage for Storage {
     fn load(&mut self, slot: usize) -> std::io::Result<Option<Vec<u8>>> { Ok(Some(self.0.borrow()[slot].clone())) }
     fn store(&mut self, slot: usize, image: &[u8]) -> std::io::Result<()> { self.0.borrow_mut()[slot] = image.to_vec(); Ok(()) }
-    fn load_previous(&mut self, _: usize) -> std::io::Result<Option<Vec<u8>>> { Ok(None) }
-    fn store_previous(&mut self, _: usize, _: &[u8]) -> std::io::Result<()> { Ok(()) }
 }
 
 /// A small deterministic generator for damaged states.
@@ -287,7 +285,7 @@ fn loading_and_rewinding_do_not_roll_back_ordinary_card_saves() {
 #[test]
 fn scheduled_file_operations_are_rejected_before_any_command_is_queued() {
     let mut s = session();
-    for operation in ["state_save", "state_load", "card_export", "card_import", "card_restore_previous", "save_import", "save_export", "save_delete", "card_list"] {
+    for operation in ["state_save", "state_load", "card_export", "card_import", "card_list"] {
         let reply = s.execute(&json!({"cmd":"schedule", "commands":[[1,{"cmd":"fast_forward"}],[2,{"cmd":operation,"path":"/tmp/user-file"}]]}));
         assert!(reply.get("error").is_some(), "{reply}");
         assert!(s.frame().unwrap());
@@ -689,21 +687,20 @@ fn card_image(s: &mut Session<Counter>) -> Vec<u8> { s.runtime.services().card.i
 
 #[test]
 fn a_card_changes_from_outside_the_game_only_between_its_card_calls() {
-    use xem_core::devices::card::Imported;
-    use xem_core::devices::card_file::{CardFormat, Container, export_card};
     let stored = Rc::new(RefCell::new([formatted(), formatted()]));
     let mut s = session();
     s.runtime.services().card.attach_storage(Box::new(Storage(stored.clone()))).unwrap();
     begin_save(&mut s, 0xA0);
     for _ in 0..10 { assert!(s.frame().unwrap()); }
     // The save holds its file open across frames: a DexDrive card's import
-    // and a delete of the save's temporary file are refused, nothing changed.
-    let other = export_card(&formatted(), CardFormat::Gme);
+    // is refused and changes nothing; `card_list` says why.
+    let mut other = vec![0; 0xF40];
+    other[..11].copy_from_slice(b"123-456-STD");
+    other.extend_from_slice(&formatted());
     let during = card_image(&mut s);
     let now = s.runtime.services().clock.now;
     let refused = s.runtime.services().card.import_file(0, &other, "other.gme", now).unwrap_err();
     assert!(refused.contains("the game has a file open on memory card 1 (a save or a load is under way)"), "{refused}");
-    assert!(s.runtime.services().card.delete_save(0, "__tmp_file", now).is_err());
     let listed = s.execute(&json!({"cmd":"card_list","slot":0}));
     assert!(listed["busy"].as_str().is_some_and(|b| b.contains("under way")), "{listed}");
     assert_eq!(listed["card"]["saves"][0]["name"], "__tmp_file");
@@ -711,16 +708,12 @@ fn a_card_changes_from_outside_the_game_only_between_its_card_calls() {
     // The game's save goes on and commits; between frames the import applies.
     finish_save(&mut s);
     assert_eq!((word(&mut s, SAVE_WRITTEN), word(&mut s, SAVE_RENAMED)), (32, 1), "the game saved");
-    let saved = card_image(&mut s);
     let now = s.runtime.services().clock.now;
-    let imported = s.runtime.services().card.import_file(0, &other, "other.gme", now).unwrap();
-    assert_eq!(imported, Imported::Card { container: Container::Gme });
+    let found = s.runtime.services().card.import_file(0, &other, "other.gme", now).unwrap();
+    assert_eq!(found, "Card 1: DexDrive card, no saves");
     assert!(card_image(&mut s) == formatted() && stored.borrow()[0] == formatted());
-    assert_eq!(s.runtime.services().card.previous(0), Some(&saved[..]), "the card with the game's save is kept");
     let listed = s.execute(&json!({"cmd":"card_list","slot":0}));
-    assert_eq!((listed["previous"].as_bool(), listed["busy"].is_null()), (Some(true), true), "{listed}");
-    s.runtime.services().card.restore_previous(0, now).unwrap();
-    assert!(card_image(&mut s) == saved, "the game's save is back");
+    assert_eq!((listed["busy"].is_null(), listed["card"]["saves"].as_array().map(Vec::len)), (true, Some(0)), "{listed}");
     assert!(s.execute(&json!({"cmd":"card_list","slot":2})).get("error").is_some());
 }
 

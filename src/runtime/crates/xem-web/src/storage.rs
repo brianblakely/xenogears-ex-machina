@@ -35,14 +35,12 @@ impl SettingsStore for LocalStorageStore {
 }
 
 /// The memory cards: the card device's `CardStorage` (synchronous) over
-/// IndexedDB (asynchronous). The page reads both images, and the previous
-/// cards save management kept, from IndexedDB before a session boots
-/// ([`set_image`](Self::set_image), [`set_previous`](Self::set_previous));
-/// the device's writes replace them here at once and mark them dirty; the
-/// page takes the dirty ones after each animation frame and automation step
-/// ([`take_write`](Self::take_write), [`take_previous_write`](Self::take_previous_write))
-/// and writes them to IndexedDB (`cardN`, `cardN-previous`). The images here
-/// are the authority; IndexedDB trails them by at most the writes in flight.
+/// IndexedDB (asynchronous). The page reads both images from IndexedDB
+/// before a session boots ([`set_image`](Self::set_image)); the device's
+/// writes replace the image here at once and mark it dirty; the page takes
+/// the dirty images after each animation frame and automation step
+/// ([`take_write`](Self::take_write)) and writes them to IndexedDB. The image
+/// here is the authority; IndexedDB trails it by at most the writes in flight.
 #[derive(Clone, Default)]
 pub struct BrowserCards(Rc<RefCell<Cards>>);
 
@@ -50,8 +48,6 @@ pub struct BrowserCards(Rc<RefCell<Cards>>);
 struct Cards {
     images: [Option<Vec<u8>>; 2],
     dirty: [bool; 2],
-    previous: [Option<Vec<u8>>; 2],
-    previous_dirty: [bool; 2],
 }
 
 impl BrowserCards {
@@ -62,28 +58,14 @@ impl BrowserCards {
         cards.dirty[slot] = false;
     }
 
-    /// The previous card IndexedDB holds for `slot`, if any.
-    pub fn set_previous(&self, slot: usize, image: Option<Vec<u8>>) {
-        let mut cards = self.0.borrow_mut();
-        cards.previous[slot] = image;
-        cards.previous_dirty[slot] = false;
-    }
-
     /// `slot`'s image if the device changed it since the last call.
     pub fn take_write(&self, slot: usize) -> Option<Vec<u8>> {
         let mut cards = self.0.borrow_mut();
         std::mem::take(&mut cards.dirty[slot]).then(|| cards.images[slot].clone()).flatten()
     }
 
-    /// `slot`'s previous card if a change kept another since the last call.
-    pub fn take_previous_write(&self, slot: usize) -> Option<Vec<u8>> {
-        let mut cards = self.0.borrow_mut();
-        std::mem::take(&mut cards.previous_dirty[slot]).then(|| cards.previous[slot].clone()).flatten()
-    }
-
     pub fn dirty(&self) -> bool {
-        let cards = self.0.borrow();
-        cards.dirty.contains(&true) || cards.previous_dirty.contains(&true)
+        self.0.borrow().dirty.contains(&true)
     }
 }
 
@@ -96,17 +78,6 @@ impl CardStorage for BrowserCards {
         let mut cards = self.0.borrow_mut();
         cards.images[slot] = Some(image.to_vec());
         cards.dirty[slot] = true;
-        Ok(())
-    }
-
-    fn load_previous(&mut self, slot: usize) -> io::Result<Option<Vec<u8>>> {
-        Ok(self.0.borrow().previous[slot].clone())
-    }
-
-    fn store_previous(&mut self, slot: usize, image: &[u8]) -> io::Result<()> {
-        let mut cards = self.0.borrow_mut();
-        cards.previous[slot] = Some(image.to_vec());
-        cards.previous_dirty[slot] = true;
         Ok(())
     }
 }

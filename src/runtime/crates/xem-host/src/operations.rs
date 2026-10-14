@@ -4,15 +4,15 @@ use sdl3_sys::everything::*;
 use std::ffi::{CStr, CString, c_char, c_void};
 use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver, Sender};
-use xem_core::devices::card_file::{CardFormat, MAX_FILE};
-use xem_settings::{AppAction, AppRequest, CardRequest, FileStore, SettingChange, SettingsService};
+use xem_core::devices::card_file::MAX_FILE;
+use xem_settings::{AppAction, AppRequest, FileStore, SettingChange, SettingsService};
 
 struct Dialog {
-    request: AppRequest,
+    action: AppAction,
     path: Result<Option<String>,String>,
 }
 struct Callback {
-    request: AppRequest,
+    action: AppAction,
     sender: Sender<Dialog>,
 }
 
@@ -21,8 +21,7 @@ pub struct Operations {
     sender: Sender<Dialog>,
     results: Receiver<Dialog>,
     pub busy: bool,
-    /// The bytes a save dialog writes, and what its result says.
-    export: Option<(Vec<u8>,String)>,
+    export: Option<Vec<u8>>,
 }
 impl Default for Operations {
     fn default() -> Self {
@@ -31,33 +30,33 @@ impl Default for Operations {
     }
 }
 impl Operations {
-    pub fn poll(&mut self, mut game: Option<&mut Game>, settings: &mut SettingsService) -> Option<(AppRequest,Result<String,String>)> {
+    pub fn poll(&mut self, mut game: Option<&mut Game>, settings: &mut SettingsService) -> Option<(AppAction,Result<String,String>)> {
         let dialog = self.results.try_recv().ok()?;
         self.busy = false;
         let export = self.export.take();
-        let result = (|| {
+        Some((dialog.action,(|| {
             let Some(path) = dialog.path? else { return Ok("File operation canceled.".into()) };
-            if let Some((bytes,written)) = export {
+            if let Some(bytes) = export {
                 write(&path,&bytes)?;
-                return Ok(written);
+                return Ok("Backup written and closed.".into());
             }
-            match &dialog.request {
-                AppRequest::Action(AppAction::ImportSettings) => {
+            match dialog.action {
+                AppAction::ImportSettings => {
                     let bytes = read(&path,1024*1024)?;
                     settings.import(std::str::from_utf8(&bytes).map_err(|e| e.to_string())?)?;
                 }
-                AppRequest::Action(AppAction::ImportState) => game.as_deref_mut().ok_or("Boot a game before importing a state.")?.restore_bytes(&read(&path,64*1024*1024)?)?,
-                AppRequest::Card(CardRequest::Import { slot }) => {
-                    let bytes = read(&path,MAX_FILE)?;
-                    let (card,now) = game.as_deref_mut().ok_or("Boot a game before importing into a memory card.")?.cards();
-                    let slot = usize::from(*slot);
-                    return Ok(card.import_file(slot,&bytes,&file_name(&path),now)?.describe(slot));
+                AppAction::ImportState => game.as_deref_mut().ok_or("Boot a game before importing a state.")?.restore_bytes(&read(&path,64*1024*1024)?)?,
+                AppAction::ImportCard1 | AppAction::ImportCard2 => {
+                    // Any card or save file, by its contents; the status line
+                    // says what was found.
+                    let slot = usize::from(dialog.action == AppAction::ImportCard2);
+                    let game = game.as_deref_mut().ok_or("Boot a game before importing a card.")?;
+                    return game.import_card(slot,&read(&path,MAX_FILE)?,&file_name(&path));
                 }
                 _ => return Err("Unexpected file operation.".into()),
             }
             Ok("Backup imported.".into())
-        })();
-        Some((dialog.request,result))
+        })()))
     }
 
     pub fn execute(&mut self, request: AppRequest, window: Option<&sdl::Window>, mut game: Option<&mut Game>, settings: &mut SettingsService) -> Result<String,String> {
@@ -66,11 +65,7 @@ impl Operations {
             return Ok(if held { "Rewinding while held." } else { "Rewind released." }.into());
         }
         if self.busy { return Err("Finish the open file picker first.".into()); }
-        let action = match request {
-            AppRequest::Action(action) => action,
-            AppRequest::Card(request) => return self.card(request,window,game),
-            AppRequest::Rewind(_) | AppRequest::UiRewind(_) => unreachable!(),
-        };
+        let AppRequest::Action(action) = request else { unreachable!() };
         match action {
             AppAction::Reset => {
                 game.as_deref_mut().ok_or("No game session.")?.command(&serde_json::json!({"cmd":"reset"}))?;
@@ -130,56 +125,32 @@ impl Operations {
                 Ok("Pending card writes completed.".into())
             }
             AppAction::RequestPersistence => Ok("Native saves use application files. Export backups for another device.".into()),
-            AppAction::ExportSettings => self.pick(request,window,Some((settings.export().into_bytes(),"Backup written and closed.".into()))),
-            AppAction::ExportState => {
-                let bytes = game.as_deref_mut().ok_or("No game session.")?.snapshot_bytes()?;
-                self.pick(request,window,Some((bytes,"Backup written and closed.".into())))
-            }
-            AppAction::ImportSettings | AppAction::ImportState => self.pick(request,window,None),
-        }
-    }
-
-    /// A memory card operation of the Saves section: deleting and restoring
-    /// at once, importing and exporting through a file picker.
-    fn card(&mut self, request: CardRequest, window: Option<&sdl::Window>, game: Option<&mut Game>) -> Result<String,String> {
-        let slot = request.slot();
-        let (card,now) = game.ok_or("Boot a game to manage its memory cards.")?.cards();
-        match &request {
-            CardRequest::Delete { name, .. } => card.delete_save(slot,name,now),
-            CardRequest::RestorePrevious { .. } => card.restore_previous(slot,now),
-            CardRequest::Export { format, .. } => {
-                let bytes = card.export_card(slot,*format)?;
-                let kind = match format { CardFormat::Raw => "a raw image (.mcd)", CardFormat::Gme => "a DexDrive card (.gme)" };
-                self.pick(AppRequest::Card(request.clone()),window,Some((bytes,format!("Memory card {} written as {kind}.",slot+1))))
-            }
-            CardRequest::ExportSave { name, .. } => {
-                let bytes = card.export_save(slot,name)?;
-                self.pick(AppRequest::Card(request.clone()),window,Some((bytes,format!("{name} written as a single save (.mcs)."))))
-            }
-            CardRequest::Import { .. } => self.pick(AppRequest::Card(request),window,None),
-        }
-    }
-
-    /// Open the platform's file picker for `request`: a save dialog that
-    /// writes `export` (its bytes, then what the result says), else an open
-    /// dialog whose file [`poll`](Self::poll) reads.
-    fn pick(&mut self, request: AppRequest, window: Option<&sdl::Window>, export: Option<(Vec<u8>,String)>) -> Result<String,String> {
-        let window = window.ok_or("File pickers are available in windowed play.")?;
-        let saving = export.is_some();
-        self.export = export;
-        let callback = Box::new(Callback { request, sender: self.sender.clone() });
-        self.busy = true;
-        // SAFETY: SDL calls the callback once; it owns this box until
-        // then. No borrowed game/UI data crosses the callback thread.
-        unsafe {
-            let userdata = Box::into_raw(callback).cast();
-            if saving {
-                SDL_ShowSaveFileDialog(Some(chosen),userdata,window.raw,std::ptr::null(),0,std::ptr::null());
-            } else {
-                SDL_ShowOpenFileDialog(Some(chosen),userdata,window.raw,std::ptr::null(),0,std::ptr::null(),false);
+            _ => {
+                let window = window.ok_or("File pickers are available in windowed play.")?;
+                self.export = match action {
+                    AppAction::ExportSettings => Some(settings.export().into_bytes()),
+                    AppAction::ExportState => Some(game.as_deref_mut().ok_or("No game session.")?.snapshot_bytes()?),
+                    AppAction::ExportCard1 | AppAction::ExportCard2 => {
+                        let slot = usize::from(action == AppAction::ExportCard2);
+                        Some(game.as_deref_mut().ok_or("No game session.")?.card_image(slot).ok_or("No card in slot.")?)
+                    }
+                    _ => None,
+                };
+                let callback = Box::new(Callback { action, sender: self.sender.clone() });
+                self.busy = true;
+                // SAFETY: SDL calls the callback once; it owns this box until
+                // then. No borrowed game/UI data crosses the callback thread.
+                unsafe {
+                    let userdata = Box::into_raw(callback).cast();
+                    if self.export.is_some() {
+                        SDL_ShowSaveFileDialog(Some(chosen),userdata,window.raw,std::ptr::null(),0,std::ptr::null());
+                    } else {
+                        SDL_ShowOpenFileDialog(Some(chosen),userdata,window.raw,std::ptr::null(),0,std::ptr::null(),false);
+                    }
+                }
+                Ok("Choose a backup file.".into())
             }
         }
-        Ok("Choose a file.".into())
     }
 }
 unsafe extern "C" fn chosen(userdata: *mut c_void, files: *const *const c_char, _: i32) {
@@ -189,7 +160,7 @@ unsafe extern "C" fn chosen(userdata: *mut c_void, files: *const *const c_char, 
     let path = if files.is_null() { Err(sdl::error()) }
         else if unsafe { *files }.is_null() { Ok(None) }
         else { unsafe { CStr::from_ptr(*files) }.to_str().map(|s| Some(s.to_owned())).map_err(|e| e.to_string()) };
-    let _ = callback.sender.send(Dialog { request: callback.request, path });
+    let _ = callback.sender.send(Dialog { action: callback.action, path });
 }
 
 /// A picked file's name, which names a raw single save: a path's last

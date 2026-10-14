@@ -11,11 +11,9 @@ use slint::{ComponentHandle, Model, PhysicalSize, PlatformError};
 use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
 use std::time::Duration;
-use xem_core::devices::card::CardStatus;
-use xem_core::devices::card_file::{self, CardFormat, Kind};
 use xem_settings::{
-    APP_ACTIONS, AppAction, AppBinding, AppRequest, AudioOutput, CardRequest, EffectLevels, FAST_FORWARD_RATES, Fidelity, Filter,
-    Graphics, GraphicsProfile, PresentRate, QualityTier, RandomBattles, Rejected, Scale, SettingChange, Settings, SettingsService,
+    APP_ACTIONS, AppAction, AppBinding, AppRequest, AudioOutput, EffectLevels, FAST_FORWARD_RATES, Fidelity, Filter, Graphics,
+    GraphicsProfile, PresentRate, QualityTier, RandomBattles, Rejected, Scale, SettingChange, Settings, SettingsService,
     GAME_ACTION_ROWS, GameBinding, PLATFORMING_AREAS,
 };
 
@@ -108,81 +106,9 @@ pub struct SettingsUi {
     window: Rc<PanelWindow>,
     panel: SettingsPanel,
     rewind_held: Rc<Cell<bool>>,
-    /// The memory cards and the note as last shown ([`SettingsUi::set_cards`]).
-    cards: RefCell<Option<(Vec<CardRows>, String)>>,
     device: wgpu::Device,
     texture: wgpu::Texture,
     view: wgpu::TextureView,
-}
-
-/// A memory card as the Saves section shows it (`MemoryCardView`).
-#[derive(Clone, Debug, PartialEq)]
-struct CardRows {
-    title: String,
-    summary: String,
-    problem: bool,
-    inserted: bool,
-    previous: bool,
-    saves: Vec<SaveRow>,
-}
-
-impl CardRows {
-    fn of(status: &CardStatus) -> Self {
-        let title = format!("Memory card {}", status.slot + 1);
-        let (summary, problem, saves) = match &status.card {
-            None => ("No card is inserted.".to_string(), false, Vec::new()),
-            Some(listing) if !listing.formatted => ("Not formatted: the game formats it from its save screen.".to_string(), false, Vec::new()),
-            Some(listing) => {
-                let summary = match listing.problems.first() {
-                    Some(problem) => format!("Its directory is damaged: {problem}"),
-                    None => format!(
-                        "{} save{} · {} of 15 blocks free",
-                        listing.saves.len(),
-                        if listing.saves.len() == 1 { "" } else { "s" },
-                        listing.free_blocks
-                    ),
-                };
-                let saves = listing.saves.iter().map(|save| {
-                    let mut detail = format!(
-                        "{} · {} block{} · {}",
-                        save.name,
-                        save.blocks,
-                        if save.blocks == 1 { "" } else { "s" },
-                        save.kind.describe()
-                    );
-                    match (save.problems.first(), save.kind) {
-                        (Some(problem), _) => detail = format!("{detail} · {problem}"),
-                        (None, Kind::Xenogears { .. }) => detail.push_str(" · the game's checks pass"),
-                        (None, _) => {}
-                    }
-                    let shown = card_file::narrow(&save.title);
-                    SaveRow {
-                        name: save.name.clone().into(),
-                        title: if shown.trim().is_empty() { save.name.clone() } else { shown }.into(),
-                        detail: detail.into(),
-                        problem: !save.problems.is_empty(),
-                    }
-                }).collect();
-                (summary, !listing.problems.is_empty(), saves)
-            }
-        };
-        let summary = match &status.busy {
-            Some(busy) => format!("{summary} Busy: {busy}."),
-            None => summary,
-        };
-        CardRows { title, summary, problem, inserted: status.card.is_some(), previous: status.previous, saves }
-    }
-
-    fn view(&self) -> MemoryCardView {
-        MemoryCardView {
-            title: self.title.clone().into(),
-            summary: self.summary.clone().into(),
-            problem: self.problem,
-            inserted: self.inserted,
-            previous: self.previous,
-            saves: slint::ModelRc::new(slint::VecModel::from(self.saves.clone())),
-        }
-    }
 }
 
 impl SettingsUi {
@@ -207,7 +133,6 @@ impl SettingsUi {
             window,
             panel,
             rewind_held: Rc::new(Cell::new(false)),
-            cards: RefCell::new(None),
             device,
             texture,
             view,
@@ -300,28 +225,11 @@ impl SettingsUi {
     }
 
     /// Escape or Back on the open panel, and the panel hidden: closes the
-    /// quit or delete confirmation, saying whether one showed (then the
-    /// panel stays).
+    /// quit confirmation, saying whether it showed (then the panel stays).
     pub fn cancel_dialog(&self) -> bool {
-        let shown = self.panel.get_quit_confirming() || self.panel.get_delete_confirming();
+        let shown = self.panel.get_quit_confirming();
         self.panel.set_quit_confirming(false);
-        self.panel.set_delete_confirming(false);
         shown
-    }
-
-    /// The memory cards the Saves section lists, with their saves and
-    /// operations (none: the host holds no cards now, `note` says why).
-    /// Called each frame the panel shows; it changes the panel only when
-    /// what it shows changed.
-    pub fn set_cards(&self, cards: Option<&[CardStatus]>, note: &str) {
-        let shown = (cards.into_iter().flatten().map(CardRows::of).collect::<Vec<_>>(), note.to_string());
-        if self.cards.borrow().as_ref() == Some(&shown) {
-            return;
-        }
-        let views: Vec<MemoryCardView> = shown.0.iter().map(CardRows::view).collect();
-        self.panel.set_memory_cards(slint::ModelRc::new(slint::VecModel::from(views)));
-        self.panel.set_memory_cards_note(note.into());
-        *self.cards.borrow_mut() = Some(shown);
     }
 
     /// Whether this host places its own window (Graphics offers Fullscreen).
@@ -375,26 +283,6 @@ impl SettingsUi {
                 {
                     f.borrow_mut()(AppRequest::Action(action));
                 }
-            }
-        });
-        self.panel.on_card_requested({
-            let f = f.clone();
-            let weak = self.panel.as_weak();
-            move |operation, slot, name| {
-                let (Some(panel), Ok(slot)) = (weak.upgrade(), u8::try_from(slot)) else { return };
-                let name = name.to_string();
-                let request = match operation.as_str() {
-                    "import" => CardRequest::Import { slot },
-                    "export" => CardRequest::Export {
-                        slot,
-                        format: if panel.get_card_export_format() == 1 { CardFormat::Gme } else { CardFormat::Raw },
-                    },
-                    "export-save" => CardRequest::ExportSave { slot, name },
-                    "delete" => CardRequest::Delete { slot, name },
-                    "restore" => CardRequest::RestorePrevious { slot },
-                    _ => return,
-                };
-                f.borrow_mut()(AppRequest::Card(request));
             }
         });
         let rewind_held = self.rewind_held.clone();
@@ -1006,6 +894,10 @@ fn backup_actions() -> impl Iterator<Item = (AppAction, &'static str)> {
             action,
             AppAction::ExportState
                 | AppAction::ImportState
+                | AppAction::ExportCard1
+                | AppAction::ImportCard1
+                | AppAction::ExportCard2
+                | AppAction::ImportCard2
                 | AppAction::ExportSettings
                 | AppAction::ImportSettings
                 | AppAction::RetryStorage

@@ -8,44 +8,18 @@ pub enum AppAction {
     IncreaseFastForwardRate, DecreaseFastForwardRate,
     IncreaseRewindInterval, DecreaseRewindInterval,
     IncreaseRewindHistory, DecreaseRewindHistory,
-    ExportState, ImportState,
+    ExportState, ImportState, ExportCard1, ImportCard1, ExportCard2, ImportCard2,
     ExportSettings, ImportSettings, RetryStorage, RequestPersistence,
     ToggleFps, TogglePauseOnFocusLoss, Reset,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AppRequest {
     Action(AppAction),
     Rewind(bool),
     UiRewind(bool),
-    /// Save management in the Saves section (`xem_core::devices::card`).
-    Card(CardRequest),
 }
-
-/// A memory card operation of the Saves section, on card `slot` (0, 1).
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub enum CardRequest {
-    /// Choose a file: a whole card replaces the card, a single save joins it.
-    Import { slot: u8 },
-    /// Choose where to write the card, raw or as a DexDrive file.
-    Export { slot: u8, format: xem_core::devices::card_file::CardFormat },
-    /// Choose where to write the save `name` (.mcs).
-    ExportSave { slot: u8, name: String },
-    /// Delete the save `name` (the panel asks first).
-    Delete { slot: u8, name: String },
-    /// Put back the card the last change replaced.
-    RestorePrevious { slot: u8 },
-}
-
-impl CardRequest {
-    pub fn slot(&self) -> usize {
-        let (CardRequest::Import { slot } | CardRequest::Export { slot, .. } | CardRequest::ExportSave { slot, .. }
-            | CardRequest::Delete { slot, .. } | CardRequest::RestorePrevious { slot }) = self;
-        usize::from(*slot)
-    }
-}
-
-pub const APP_ACTIONS: [(AppAction, &str); 21] = [
+pub const APP_ACTIONS: [(AppAction, &str); 25] = [
     (AppAction::SaveState, "Save state"), (AppAction::LoadState, "Load state"),
     (AppAction::Rewind, "Rewind (hold)"), (AppAction::ToggleRewind, "Toggle rewind history"),
     (AppAction::ToggleFastForward, "Toggle fast-forward"),
@@ -57,6 +31,8 @@ pub const APP_ACTIONS: [(AppAction, &str); 21] = [
     (AppAction::IncreaseRewindHistory, "Increase rewind history length"),
     (AppAction::DecreaseRewindHistory, "Decrease rewind history length"),
     (AppAction::ExportState, "Export state backup"), (AppAction::ImportState, "Import state backup"),
+    (AppAction::ExportCard1, "Export original card 1"), (AppAction::ImportCard1, "Import original card 1"),
+    (AppAction::ExportCard2, "Export original card 2"), (AppAction::ImportCard2, "Import original card 2"),
     (AppAction::ExportSettings, "Export settings"), (AppAction::ImportSettings, "Import settings"),
     (AppAction::RetryStorage, "Retry pending card writes"), (AppAction::RequestPersistence, "Request browser persistence"),
     (AppAction::ToggleFps, "Toggle FPS display"),
@@ -271,7 +247,7 @@ mod tests {
             let mut input = AppInput::default();
             input.key("ControlLeft",true); input.key("KeyS",true);
             let request = if action == AppAction::Rewind { AppRequest::Rewind(true) } else { AppRequest::Action(action) };
-            assert_eq!(input.requests(&bindings,false), vec![request.clone()]);
+            assert_eq!(input.requests(&bindings,false), vec![request]);
             assert!(input.requests(&bindings,false).is_empty());
             let released = input.clear();
             assert_eq!(released,if action == AppAction::Rewind { vec![AppRequest::Rewind(false)] } else { vec![] });
@@ -298,7 +274,7 @@ mod tests {
             input.pad(&pad);
             assert!(input.requests(&bindings,false).is_empty());
             assert_eq!(input.gamepad_for_game(&bindings,false),pad);
-            assert_eq!(input.requests(&bindings,true),vec![request.clone()]);
+            assert_eq!(input.requests(&bindings,true),vec![request]);
             assert_eq!(input.gamepad_for_game(&bindings,true),[0;16]);
             pad[8]=1; input.pad(&pad);
             assert_eq!(input.requests(&bindings,true),if trigger == 6 { vec![AppRequest::Rewind(false)] } else { vec![] });

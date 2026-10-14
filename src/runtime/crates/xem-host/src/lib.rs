@@ -451,8 +451,8 @@ impl View {
         }
         let was_busy = self.operations.busy;
         let completed = self.operations.poll(game.as_mut(),&mut self.settings.borrow_mut());
-        if let Some((request,result)) = completed {
-            if let AppRequest::Action(action) = request { self.state_notice(action,&result); }
+        if let Some((action,result)) = completed {
+            self.state_notice(action,&result);
             self.show_result(result);
         }
         let bindings = self.settings.borrow().settings().app_bindings.clone();
@@ -473,9 +473,8 @@ impl View {
         self.app_requests.borrow_mut().extend(self.app_input.requests(&bindings,invert_triggers));
         let requests = std::mem::take(&mut *self.app_requests.borrow_mut());
         for request in requests {
-            let action = match request { AppRequest::Action(action) => Some(action), _ => None };
             let result = self.operations.execute(request,Some(window),game.as_mut(),&mut self.settings.borrow_mut());
-            if let Some(action) = action {
+            if let AppRequest::Action(action) = request {
                 if result.is_err() || !self.operations.busy { self.state_notice(action,&result); }
             }
             self.show_result(result);
@@ -492,7 +491,6 @@ impl View {
             let (fast_forward,status) = game.time_status();
             self.ui.set_time_status(Some(fast_forward),&status);
             self.ui.set_storage_status(&game.storage_status());
-            if self.panel_visible() { self.ui.set_cards(Some(&game.card_status()),""); }
             // A disc the game waits for and the changer has not got: ask for it.
             let wanted = game.wanted_disc();
             if wanted != self.wanted_disc {
@@ -505,7 +503,6 @@ impl View {
         } else {
             self.frame_rate.set_activity(false,false);
             self.ui.set_time_status(None,"Boot a game to use save states and time controls.");
-            self.ui.set_cards(None,"Boot a game to manage its memory cards.");
         }
         !self.operations.busy
     }
@@ -1267,7 +1264,7 @@ mod tests {
         view.frame_rate.set_activity(false,true);
         assert!(pixels(&mut view).chunks_exact(4).any(|p| p[0]>180),"rewind icon is visible with FPS off");
         view.frame_rate.set_activity(false,false);
-        view.state_notice(xem_settings::AppAction::RetryStorage,&Err("card error".into()));
+        view.state_notice(xem_settings::AppAction::ImportCard1,&Err("card error".into()));
         assert!(view.frame_rate.notice().is_none(),"memory-card operations do not create state notices");
         view.state_notice(xem_settings::AppAction::SaveState,&Ok("written".into()));
         assert_eq!(view.frame_rate.notice().as_deref(),Some("State saved"));

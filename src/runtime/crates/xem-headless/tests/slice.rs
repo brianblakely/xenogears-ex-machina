@@ -303,19 +303,20 @@ fn the_agent_saves_at_field_22_and_the_title_screen_loads_it() {
     assert_eq!(loaded_data, saved_data, "the loaded inventory is the saved one");
     drop(loading);
 
-    // The same save as a single save (.mcs), imported into a fresh card 1
-    // before the load: the card is the one the game made, and the title's
-    // Continue loads it to the same end.
+    // The same save as a single save (.mcs: its directory frame, then its
+    // block), imported as card 1 before the load: a fresh card holding it is
+    // the card the game made, and the title's Continue loads it to the same end.
     let listing = xem_core::devices::card_file::list(&card);
-    assert_eq!(listing.saves[0].kind, xem_core::devices::card_file::Kind::Xenogears { file: 1, disc: Some(1) });
-    assert!(listing.saves[0].problems.is_empty(), "the game's checks pass: {:?}", listing.saves[0].problems);
-    let name = listing.saves[0].name.clone();
+    let found = &listing.saves[0];
+    assert_eq!(found.kind, xem_core::devices::card_file::Kind::Xenogears { file: 1, disc: Some(1) });
+    assert!(found.problems.is_empty(), "the game's checks pass: {:?}", found.problems);
+    assert_eq!((listing.saves.len(), found.first_block, found.blocks), (1, 1, 1), "one save, in block 1");
     let imported_cards = cards("imported");
     let file = imported_cards.join("save.mcs");
-    std::fs::write(&file, xem_core::devices::card_file::export_save(&card, name.as_bytes()).unwrap()).unwrap();
+    std::fs::write(&file, [&card[0x80..0x100], &card[0x2000..0x4000]].concat()).unwrap();
     let mut importing = session(&disc, &imported_cards, &load);
-    let reply = xem_game::storage::command(&mut importing, &json!({ "cmd": "save_import", "slot": 0, "path": file }));
-    assert!(reply.get("error").is_none(), "{reply}");
+    let reply = xem_game::storage::command(&mut importing, &json!({ "cmd": "card_import", "slot": 0, "path": file }));
+    assert_eq!(reply["message"], "Card 1: single save (.mcs, .ps1) on a fresh card, 1 save", "{reply}");
     assert!(std::fs::read(imported_cards.join("card1.mcd")).unwrap() == card, "the card the game made");
     importing.execute(&json!({ "cmd": "frames", "count": load.frames }));
     assert_eq!(hash(&mut importing), load.memory_hash, "the imported save loads as the game's own");

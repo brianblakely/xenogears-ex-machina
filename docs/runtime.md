@@ -436,10 +436,9 @@ waits for it goes in).
   timeout without a card, new card for a card without a file system).
   The images are persistent saves outside snapshots; a state keeps the
   calls under way, which a restore checks against the inserted cards
-  ([Saves and time controls](#saves-and-time-controls)). Save management
-  from outside the game (imports in every common container, exports,
-  deletes) changes a card between the game's card calls and keeps the card
-  it replaces (`card1.previous.mcd`; [Original saves and memory
+  ([Saves and time controls](#saves-and-time-controls)). A card or save
+  file the player imports replaces a card between the game's card calls,
+  never during one ([Original saves and memory
   cards](#original-saves-and-memory-cards)).
 - **Kanji font.** Krom2RawAdd returns glyph addresses in the BIOS ROM's font
   through its KUSEG mirror 0x1FC66000; the host places the font there from the
@@ -2545,9 +2544,12 @@ vblanks go back, naming the entry and the vblanks, and one that lists a
 restore (a load forward in time keeps them in order), rather than
 interleave two timelines.
 
-Ordinary saves use the original game's save screens and its two memory
-cards ([Sound and memory cards](#sound-and-memory-cards), [Original saves
-and memory cards](#original-saves-and-memory-cards)). State backups use
+Ordinary saves still use the original game save menu and its two memory
+cards. Settings' Import original card 1/2 takes any memory card or save file
+the runtime reads, and Export original card 1/2 writes the exact 128 KiB raw
+`.mcd` ([Original saves and memory cards](#original-saves-and-memory-cards)).
+An import replaces the inserted card between frames; the browser writes it
+to IndexedDB first, with play paused until that completes. State backups use
 `.xemstate`; settings have a separate JSON backup. Native writes acknowledge
 after writing, syncing and replacing the file. Document providers on Android
 acknowledge after write, flush and close; their own replacement guarantees
@@ -2647,26 +2649,24 @@ game outlives it (its sound driver's tick event would otherwise go on beside
 the new one's, the music at twice its tempo): the boot sounds as it does
 after power-on.
 
-Native file commands are `state_save`/`state_load` with `path`, and for the
-memory cards (`slot` 0 or 1; [Original saves and memory
-cards](#original-saves-and-memory-cards)) `card_import {slot, path}` (a whole
-card in any of its containers), `card_export {slot, path, format}` (`format`
-`"raw"`, the default, or `"gme"`), `card_restore_previous {slot}`,
-`save_import {slot, path, name}` (a single save's file, or with `name` that
-save of a whole card's file), `save_export {slot, name, path}` (`.mcs`) and
-`save_delete {slot, name}`; each replies with what it did and the card's
-listing (`card`). The shared `card_list {slot}` reads a card on every host,
-the browser's `window.xem.command` too: its listing (`card`, none without a
-card: `formatted`, `free_blocks`, `problems`, `notes` and `saves`, each with
-`name`, `first_block`, `blocks`, `title`, `kind` and `problems`), whether a
-previous card is kept and why it cannot change now (`busy`). File and card
-commands are accepted only as explicit host requests; scheduled logs accept
-game input, setup and pacing commands and cannot access files or change
-cards. Browsers use explicit Settings operations or
-`window.xem.appOperation({Action: 'ExportState'})` (`{Card: {Delete: {slot,
-name}}}` for a card's) and the snapshot/card/settings automation methods.
-Browser file pickers require a recognized activation; a refusal is shown in
-Settings and operation status.
+Native file commands are `state_save`/`state_load` with `path`, and
+`card_import`/`card_export` with `path` and `slot` (0 or 1). `card_import`
+reads any memory card or save file as Import original card 1/2 does
+([Original saves and memory cards](#original-saves-and-memory-cards)) and
+replies with what
+it found (`message`, the status line's report) and the card's listing
+(`card`); `card_export` writes the raw card. The shared, read-only
+`card_list {slot}` reports a card on every host, the browser's
+`window.xem.command` too, for agents and tests (no panel shows it): its
+listing (`card`, none without a card: `formatted`, `free_blocks`, `problems`,
+`notes` and `saves`, each with `name`, `first_block`, `blocks`, `title`,
+`kind` and `problems`) and why it cannot change now (`busy`). File commands
+are accepted only as explicit native host requests; scheduled logs accept
+game input, setup and pacing commands and cannot access files or list cards.
+Browsers use explicit Settings operations or
+`window.xem.appOperation({Action: 'ExportState'})` and the
+snapshot/card/settings automation methods. Browser file pickers require a
+recognized activation; a refusal is shown in Settings and operation status.
 Headset play (OpenXR's `xr_play`, the browser's WebXR session) saves and
 loads through the same session. No Lua runtime exists yet (plan.md, Phase
 11), so these state paths cover the game, event, audio and media services.
@@ -2729,63 +2729,59 @@ layout change pass it.
 
 ### Original saves and memory cards
 
-Settings → Saves lists each memory card (`xem_core::devices::card_file::list`
-through `Card::status`, the `card_list` reply): its saves, each with its
-title (decoded from Shift-JIS; the panel shows full-width Latin letters,
-digits and punctuation as ASCII), its directory name, its blocks, whose it
-is and the first thing wrong with it, or that the game's checks pass; the
-card's free blocks and any damage to its directory. Each card offers
-Import…, Export card… (a raw `.mcd` or a DexDrive `.gme`, by the choice
-beside it) and, once a change kept one, Restore previous; each save Export
-(a single save, `.mcs`) and Delete, which asks first, as Quit does (Cancel,
-a press beside it or the host's Escape or Back keep the save). Native hosts
-list a running game's cards; the browser lists its stored cards before a boot
-too. Import… takes any file below: a whole card replaces the card, a single
-save joins it. The operations are `CardRequest`s (`xem_settings`), not
-bindable app actions.
+Settings → Saves → Backups' Import original card 1 and 2 (app actions on
+every host, bindable like the others) take any file below and tell what it
+is by its contents (`xem_core::devices::card_file::detect`; a raw single
+save by its file name): a whole card becomes the card, a single save a
+freshly formatted card holding only that save, written as the BIOS creates
+and writes a file (blocks 1, 2, ... chained: the device's own create, which
+the game's saves go through too). Either replaces the inserted card. The
+status line says what was found: the file's container and the card's saves
+("Card 1: DexDrive card, 3 saves", "Card 2: PS3 save (.psv) on a fresh card,
+1 save"), then the first problem of this game's saves, if one has any (a
+load the game refuses, below). Export original card 1 and 2 write the card
+as it is, the raw 128 KiB `.mcd`. The native command `card_import` and the
+browser automation's `cards.importFile(slot, bytes, name)` do what the
+pickers do; `card_list` lists a card for agents and tests ([Saves and time
+controls](#saves-and-time-controls)).
 
-The files players bring and take are told apart by size and magic
-(`card_file::detect`); the layouts are psx-spx's ("Memory Card Images") and,
-for the PSP's and the PS3's, those of the tools that write them:
+The files are told apart by size and magic; the layouts are psx-spx's
+("Memory Card Images") and, for the PSP's and the PS3's, those of the tools
+that write them. Each is imported only; the one export is the raw card.
 
-| File | Extensions | Layout | Here |
-|---|---|---|---|
-| Raw card | .mcd .mcr .mc .srm .mem .bin .vm1 .ddf .ps | 131 072 bytes beginning "MC" | import, export |
-| DexDrive card | .gme | a 0xF40-byte header beginning "123-456-STD", then the card | import, export |
-| Connectix VGS card | .vgs .mem | a 64-byte header beginning "VgsM", then the card | import |
-| PSP or PS Vita card | .vmp | a 0x80-byte header beginning 00 "PMV", then the card | import |
-| Single save | .mcs .ps1 | its first block's 0x80-byte directory frame, then its blocks | import, export |
-| PS3 single save | .psv | a 0x84-byte header beginning 00 "VSP" (type 1, a PS1 save, at 0x3C; its name at 0x64), then its blocks | import |
-| Action Replay, GameShark, Xploder, Caetla save | .psx .mcb .mcx .pda | a 54-byte header (its name at 0, a title at 0x15), then its blocks | import |
-| Raw single save | its directory name, e.g. BASLUS-006640 | its blocks | import |
+| File | Extensions | Layout |
+|---|---|---|
+| Raw card | .mcd .mcr .mc .srm .mem .bin .vm1 .ddf .ps | 131 072 bytes beginning "MC" |
+| DexDrive card | .gme | a 0xF40-byte header beginning "123-456-STD", then the card |
+| Connectix VGS card | .vgs .mem | a 64-byte header beginning "VgsM", then the card |
+| PSP or PS Vita card | .vmp | a 0x80-byte header beginning 00 "PMV", then the card |
+| Single save | .mcs .ps1 | its first block's 0x80-byte directory frame, then its blocks |
+| PS3 single save | .psv | a 0x84-byte header beginning 00 "VSP" (type 1, a PS1 save, at 0x3C; its name at 0x64), then its blocks |
+| Action Replay, GameShark, Xploder, Caetla save | .psx .mcb .mcx .pda | a 54-byte header (its name at 0, a title at 0x15), then its blocks |
+| Raw single save | its directory name, e.g. BASLUS-006640 | its blocks |
 
 A single save is 1-15 whole 8 KiB blocks beginning with its title frame
 ("SC"). A raw one is named by its file, whose name must be a directory name
 as PlayStation games make them (a region BA, BE or BI, a game code such as
 SLUS-00664, up to eight characters more). The PSP's and the PS3's files
-carry a signature over their contents: it is not checked on import, and
-those files are not written, since that needs a re-signing not implemented
-here. A DexDrive card is written with its header's copies of the directory
-and its 15 comments empty. An exported single save carries its first block's
-directory frame as the card holds it. The browser's picker offers every
-extension above (a raw single save, which has none, under its "all files"
-choice); Android's document picker names a raw single save where the
-provider's document id carries the file's path (the external-storage
-provider's does).
+carry a signature over their contents, which is not checked. The browser's
+picker offers every extension above (a raw single save, which has none,
+under its "all files" choice); Android's document picker names a raw single
+save where the provider's document id carries the file's path (the
+external-storage provider's does). An import reads at most 0xF40 + 131 072
+bytes, a DexDrive card's, the largest container; the browser refuses a
+larger file before reading it.
 
-Importing a whole card replaces the card. A card whose directory is damaged
-is refused, naming the damage: an in-use directory frame whose checksum is
-wrong, a chain of blocks that breaks, loops or runs past the card, a block
-two files claim. Oddities that leave the files whole are notes of the
-listing instead: the header frame's checksum, a free frame's, a frame
-neither free nor in use (its block is not used), a block in use by no file.
-Importing a single save adds it to the card as the BIOS creates a file (the
-first free or deleted blocks in order, chained: the device's own create,
-which the game's saves go through too); it is refused, as the game's Copy
-refuses a copy (`menu_copy_command_run`), when the card holds a save of that
-name or has too few free blocks. A delete marks the save's blocks deleted
-as the BIOS does. Other games' saves, and the Japanese game's, are card
-contents like any other, listed as such.
+An import is refused, naming why, for a file no container above holds (an
+unformatted image among them: a raw card begins "MC"), a PS3 save of another
+type, a raw save not named by a directory name, and a card whose directory
+is damaged where its files depend on it: an in-use directory frame whose
+checksum is wrong, a chain of blocks that breaks, loops or runs past the
+card, a block two files claim. Oddities that leave the files whole are
+notes of the listing instead: the header frame's checksum, a free frame's,
+a frame neither free nor in use (its block is not used), a block in use by
+no file. Other games' saves, and the Japanese game's, are card contents like
+any other, listed as such.
 
 For this game's saves the listing adds what the game itself checks
 (`src/decomp/src/slot39/menu_framework.c`). Its own files are those whose
@@ -2796,96 +2792,102 @@ Its load takes a save only when its payload (block offsets 0x100-0x1FFE)
 sums to the byte at 0x1FFF (`READ_SAVE`; otherwise "Load failed"). After a
 load from the title it asks for disc vars\[82\] + 1 (`menu_main`; vars\[82\]
 at block offset 0x12D8, written by `menu_save_build_payload`). The listing
-names each save's disc and file ("Xenogears disc 2, file 03") and each of
-these checks it fails. The Japanese game's saves are told by the name prefix
-"BISLPS-01160", which is inferred: the North American program keeps
+gives each such save's file and the disc it asks for (`kind`) and each of
+these checks it fails (`problems`). The Japanese game's saves are told by
+the name prefix "BISLPS-01160", which is inferred: the North American program keeps
 "BASLUS-01160" as a second prefix that no code reads (`menu_load_resources`),
 the Japanese first disc's serial under the American region code; no Japanese
 disc or save was at hand to confirm it.
 
-Every change of a card from outside the game (an import, a delete, Restore
-previous, the browser automation's `cards.store` of a raw image) keeps the
-card it replaces as that slot's previous card: `cardN.previous.mcd` beside
-`cardN.mcd` natively, `cardN-previous` in browsers' IndexedDB. Storage
-takes the previous card, then the new one, before the device does, so a
-refused write changes nothing but which card is the previous one. Restore
-previous puts the previous card back and keeps the one it replaces in turn:
-a second restore undoes the first. A change applies between frames and is
-refused, with the reason, while the game has a file open on that card (a
-save or a load under way: the game's own saves write a sector a frame), is
-checking it, or the cards are still busy with an access (`Card::busy_with`;
-`card_list` reports it as `busy`); the browser pauses play for a change,
-writes any pending card writes first and resolves once IndexedDB holds both
-cards. The game reads its cards only in its menus' file screens, which list
-them when they open and then act by name on what they listed: a change while
-one of them shows leaves that screen's listing as it was until it lists
-again (after its own save, copy or delete), so a save it overwrites or
-deletes then is the one of that name on the card now. Changing cards before
-opening the game's file screen avoids that.
+An import changes a card between frames (`Card::change`), never under a
+call of the game's: it is refused, with the reason, while the game has a
+file open on that card (a save or a load under way: the game's own saves
+write a sector a frame), is checking it, or the cards are still busy with an
+access (`Card::busy_with`; `card_list` reports it as `busy`). Natively the
+file `cardN.mcd` takes the card before the device does, so a refused write
+changes nothing. The browser pauses play, lands any pending card writes, has
+the runtime read the file (`read_card_file`, refused while the card is busy
+as above), writes the card to IndexedDB and only then gives it to the
+session (`set_card_image`): a failed IndexedDB write leaves both as they
+were. Were the card to become busy while IndexedDB writes (frames that
+automation runs meanwhile), the session refuses it and IndexedDB takes back
+the session's card. Natively, an import into a slot whose card file did not
+load (a file of another size, a read error: the slot is left empty and the
+file unchanged) replaces that file. The game reads its cards only in its menus'
+file screens, which list them when they open and then act by name on what
+they listed: an import while one of them shows leaves that screen's listing
+as it was until it lists again (after its own save, copy or delete), so a
+save it overwrites or deletes then is the one of that name on the card now.
+Importing before opening the game's file screen avoids that.
 
 Tests: `xem-core`'s `card_file` tests make every container from a card or a
 save built here (this game's save with its title, digit, disc and checksum
 as the game writes them; another game's two-block save), no original content:
-`every_card_container_reads_back_the_card_and_raw_and_dexdrive_write_it` (raw,
-DexDrive with its header's bytes as psx-spx gives them, VGS, PSP with a junk
-signature), `every_single_save_container_reads_back_the_save_and_mcs_writes_it`
-(`.mcs` and `.ps1`, `.psv`, the four 54-byte extensions, a raw save named by
-its file; each onto another card and back),
+`every_card_container_reads_back_the_card` (raw, DexDrive, VGS, PSP with a
+junk signature, and the report),
+`every_single_save_container_becomes_a_fresh_card_holding_only_that_save`
+(`.mcs` and `.ps1`, `.psv`, the four 54-byte extensions, raw saves named by
+their file: each the card the BIOS makes for that save alone, its blocks as
+the file holds them, and the report),
 `files_that_are_not_cards_or_saves_are_refused_by_what_they_are_not` (a cut
-DexDrive file, a PS2 save, a raw save not named by its directory name, a
-nameless `.mcs`, an unformatted image),
+DexDrive file, a PS2 save, a cut PS3 save, a raw save not named by its
+directory name, a nameless `.mcs`, an unformatted image),
 `the_listing_reads_titles_kinds_and_the_games_own_checks` (discs 1 and 2, a
 payload one bit off, a digit past the 15 files, a disc variable of 7, the
-Japanese prefix, another game's save),
-`a_damaged_directory_is_named_and_harmless_oddities_are_noted`,
-`a_save_takes_the_first_free_or_deleted_blocks_and_the_games_copy_refusals`
-and `titles_decode_shift_jis_kana_and_say_where_they_stop`. The card
-device's: `changes_from_outside_wait_for_the_games_files_and_keep_the_card_they_replace`
-(an open file, a check under way and the busy time refuse a change, the
-other card goes on; the previous card in storage, restored twice, found by
-another session and kept across a restored state) and
-`a_save_added_from_outside_lies_where_the_games_own_create_puts_a_file` (an
-insert equals the BIOS's create and writes over a card with a deleted file).
+Japanese prefix, another game's save; the report naming the first failure),
+`a_damaged_directory_is_named_and_harmless_oddities_are_noted` and
+`titles_decode_shift_jis_kana_and_say_where_they_stop`. The card device's:
+`changes_from_outside_wait_for_the_games_files` (an open file refuses a
+change and an import, a check under way and the busy time refuse a change,
+the other card goes on, storage takes the new card) and
+`an_imported_single_save_is_the_card_the_bios_makes_for_it_and_a_damaged_card_is_refused`
+(a `.mcs` of a file the BIOS created and the game wrote gives that card byte
+for byte; a damaged card and a text file are refused, nothing changed).
 `xem-core/tests/persistence.rs`:
 `a_card_changes_from_outside_the_game_only_between_its_card_calls` (the
-stand-in's save holds its file open across frames: a DexDrive import and a
-delete are refused and change nothing, `card_list` says why; the save
-commits and the import then applies, its card the previous one, put back
-after); `scheduled_file_operations_are_rejected_before_any_command_is_queued`
+stand-in's save holds its file open across frames: a DexDrive import is
+refused and changes nothing, `card_list` says why; the save commits and the
+import then applies); `scheduled_file_operations_are_rejected_before_any_command_is_queued`
 covers the card commands and `card_list`. `xem-game/tests/cards.rs` (a
 stand-in module, card files in a temporary directory):
-`saves_and_cards_go_in_and_out_as_files_and_each_change_keeps_the_card_it_replaced`
-(every native command, the files back byte for byte, `cardN.previous.mcd`,
-each refusal) and `a_change_waits_while_the_game_checks_the_card`.
+`an_import_reads_any_card_or_save_file_and_says_what_it_found` (`.mcs`,
+`.psv`, `.psx`, raw saves and a DexDrive card through `card_import` with each
+reply, `card_export`'s raw card, a save the game's load refuses named in the
+reply, each refusal leaving the card file as it was) and
+`an_import_waits_while_the_game_checks_the_card`. `xem-host`'s
+`a_picked_files_name_comes_from_its_path_or_its_android_document`.
 `xem-headless/tests/slice.rs`'s
 `the_agent_saves_at_field_22_and_the_title_screen_loads_it` (disc 1) lists
 the save the game made as its first file of disc 1 passing the game's
-checks, exports it as `.mcs`, imports it into a fresh card 1 (the card the
-game made, byte for byte) and plays the title's load from it to the
-recorded hash (44 s for the test here). `xem-ui/tests/panel.rs`'s
-`memory_cards_list_their_saves_and_their_operations_reach_the_host`
-(titles, details, the requests of each button and the export choice, the
-delete's confirmation and its cancels, a damaged directory, no cards).
-`web/tests/persistence.test.mjs`'s "original saves import from every
-supported container, list, export and delete, keeping the previous card"
-(the fixture module: `.mcs`, `.psv`, `.psx` and raw saves into card 1 and
-the refusals, the save and the card out as `.mcs` and `.gme`, DexDrive,
-VGS and PSP cards into card 2, the panel's delete and restore requests,
-IndexedDB's `card1-previous` across a reload, the page's picker with every
-extension and a raw save through it).
+checks, imports it as a `.mcs` through `card_import` (a fresh card 1, byte
+for byte the card the game made) and plays the title's load from it to the
+recorded hash (52 s for the test here, beside other builds).
+`web/tests/persistence.test.mjs`'s "a card or save file imports into a card
+by its contents, and a refused one changes nothing" (the fixture module: a
+`.mcs` before a boot, in IndexedDB and then in the session, listed by
+`card_list`; `.psv`, `.psx` and raw saves and DexDrive, VGS, PSP and raw
+cards into the running session's card 2 with each report; a damaged card, a
+text file and an unnamed raw save refused; IndexedDB's write failing on
+quota with card 1 left as it was in both; Import original card 2's own
+picker, on a key, offering every extension and reporting a raw save on the
+status line).
 
 Not done or not measured: kanji in titles are not decoded (they show as
 U+FFFD; the table is kept for the rows of symbols, digits, Latin letters,
 kana, Greek, Cyrillic and box drawing); the Japanese prefix is inferred, not
-confirmed with a Japanese save; the PSP's and PS3's signatures are neither
-checked nor written; a DexDrive file's comments are not read; the broken
-sector list (frames 16-35) and the write test frame (63) are not checked;
-the containers are tested with files made here from their documented
-layouts, not with files from DexDrive, VGS, a PSP, a PS3 or the save tools
-themselves; the game's file screens keep their listing across a change made
-while they show (described above; the host does not take the card out and
-put it back for them); a file screen's own operations over imported saves
-are tested only through the slice's load, not its copy or delete.
+confirmed with a Japanese save; the PSP's and PS3's signatures are not
+checked; a DexDrive file's comments are not read; the broken sector list
+(frames 16-35) and the write test frame (63) are not checked; the containers
+are tested with files made here from their documented layouts, not with
+files from DexDrive, VGS, a PSP, a PS3 or the save tools themselves; the
+native pickers' imports (SDL's dialogs on the desktop, Android's document
+picker, a raw save named by a document id among them) are not driven by a
+test, only the command and the file name rule they share; the browser's
+take-back of IndexedDB when frames run during an import is not tested; the
+game's file screens keep their listing across an import made while they
+show (described above; the host does not take the card out and put it back
+for them); a file screen's own operations over imported saves are tested
+only through the slice's load, not its copy or delete.
 
 ## Gameplay options
 
@@ -3309,10 +3311,7 @@ reduced transparency and motion); Shortcuts lists every app operation with
 its bindings and edits the chosen one in place; Gameplay holds the options
 that change the game itself ([Random battles in platforming
 areas](#random-battles-in-platforming-areas)). Cancel closes either binding
-editor without saving its changes. Saves holds the disc (where a host
-imports discs), the save states, the memory cards with their saves
-([Original saves and memory cards](#original-saves-and-memory-cards); a
-save's Delete asks first, as Quit does) and the backups. The header's Reset sends the shared
+editor without saving its changes. The header's Reset sends the shared
 `reset` command. The header's Quit (desktop,
 Android, a headset; not the browser) asks first: Cancel, a press beside the
 question, Escape or Android's Back keep playing, and hiding the panel drops
@@ -3322,10 +3321,9 @@ Graphics' Fullscreen (desktop, off by default, saved) asks SDL for the
 whole display at start and whenever it changes, never otherwise, so a
 window manager's own fullscreen is left as it is. `cargo run -p xem-ui
 --example panel` draws each section on a headless device for review
-(`build/validation/panel/`; `--desktop`, `--click`, `--hover`, `--cards`
-and `--locate` show the desktop's controls, the question, hover states,
-made-up memory cards in Saves and where elements lie for tests that tap the
-panel).
+(`build/validation/panel/`; `--desktop`, `--click`, `--hover` and
+`--locate` show the desktop's controls, the question, hover states and
+where elements lie for tests that tap the panel).
 One `xem_render::Gpu` (instance, adapter,
 device, queue) serves `SceneRenderer`, `Compositor` and `xem_ui::SettingsUi`;
 Slint runs as a custom platform under the host loop and renders into a texture
@@ -3482,10 +3480,8 @@ as JSON text or bytes.
 - **Persistence.** Settings: `SettingsService` over `localStorage`
   (`xem.settings`). Memory cards: two 128 KB images in IndexedDB (`xem`
   database, `cards` store, `card1`/`card2`; none stored is a fresh formatted
-  card, with a visible missing/eviction notice), and the previous card a
-  change from Settings kept for each (`card1-previous`/`card2-previous`;
-  [Original saves and memory cards](#original-saves-and-memory-cards)). The card device's `CardStorage` is synchronous and IndexedDB is not:
-  the page loads the images before any session boots, the storage
+  card, with a visible missing/eviction notice). The card device's `CardStorage` is synchronous and IndexedDB is not:
+  the page loads both images before any session boots, the storage
   (`BrowserCards`) answers loads from that copy and takes the device's writes
   into it at once, marking the card dirty; after each of the window's
   animation frames and each automation step the page writes the latest
@@ -3502,10 +3498,13 @@ as JSON text or bytes.
   Storage belongs to the current origin/browser profile and can be cleared or
   evicted; Settings offers persistence requests and explicit backups. No write
   depends on an unload handler and persistence is not a permanent-storage promise.
-  A card changes from Settings or `window.xem.cards` between frames (before
-  a boot, over the stored cards): play pauses, pending card writes land
-  first, the runtime applies the change and the change resolves once
-  IndexedDB holds the card and its previous card. `npm run test:slice` (local, with disc 1)
+  `window.xem.cards.store(slot, image)` puts a card image (a `.mcd`) in
+  IndexedDB and inserts it into the live session, and
+  `cards.importFile(slot, bytes, name)` any card or save file as Import
+  original card 1/2 does ([Original saves and memory
+  cards](#original-saves-and-memory-cards)); an import pauses play until the
+  write completes, and the session takes the card only after IndexedDB has
+  it. `npm run test:slice` (local, with disc 1)
   plays the slice's session logs on a desktop browser, a phone (Playwright's
   Pixel 7) and a headset browser (Quest Browser's user agent, IWER's Quest 3
   as navigator.xr) to their native hashes; the save goes through a reload
@@ -3519,14 +3518,9 @@ as JSON text or bytes.
   `settings.get()`/`settings.apply(change)` (a `SettingChange`, e.g.
   `{MasterVolume: 40}`), `panel.show(bool)`, `importDisc(blob)`,
   `readSectors(lba, count)`, `save(slot)`/`load(slot)`,
-  `cards.image(slot)`/`cards.stored(slot)`/`cards.previous(slot)`/`cards.flush()`,
-  and for save management `cards.list(slot)` (the `card_list` reply, also
-  before a boot), `cards.importFile(slot, bytes, name)` (as Import… does),
-  `cards.importCard`, `cards.importSave(slot, bytes, name, saveName)`,
-  `cards.store(slot, image)` (any raw 128 KiB image, formatted or not),
-  `cards.exportCard(slot, 'raw' | 'gme')`, `cards.exportSave(slot, name)`,
-  `cards.deleteSave(slot, name)` and `cards.restorePrevious(slot)` (the
-  changes resolve to `{message, imported, card}`). Each is the
+  `cards.image(slot)`/`cards.stored(slot)`/`cards.flush()`,
+  `cards.store(slot, image)` and `cards.importFile(slot, bytes, name)`
+  (resolving to what it found, the status line's report). Each is the
   runtime method the page's controls use; there is no DOM-input path (pads
   are set with the shared `pad`, `press` and `replay` commands).
 
@@ -3727,9 +3721,10 @@ project (Nix's Gradle 8.14, AGP 8.7.3 pinned, no wrapper; outputs under
   emulator, the forest route with a background and return on the way, the
   save, and the load of card 2 in a fresh process.
 - **Settings.** `xem_settings::FileStore` at `<files dir>/settings.json`.
-  The Saves section's memory card imports and exports go through the same
-  document pickers (`content://` documents read and written through SDL);
-  the previous cards are `<files dir>/cards/cardN.previous.mcd`.
+  Import and Export original card 1/2 go through the document pickers
+  (`content://` documents read and written through SDL); a raw single save
+  takes its name from the document id ([Original saves and memory
+  cards](#original-saves-and-memory-cards)).
 - **Lifecycle.** SDL 3.4 delivers the application events only to event
   watches, synchronously on the SDL thread inside `SDL_PollEvent`: on
   `WILL_ENTER_BACKGROUND` the host drops the wgpu surface and stops the

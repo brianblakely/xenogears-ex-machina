@@ -42,13 +42,11 @@
 //!
 //! # Changes from outside the game
 //!
-//! The player's save management ([`Card::change`], and the file operations
-//! over [`super::card_file`] built on it) replaces a card between frames,
-//! never under a call of the game's: it is refused while the game has a
-//! file open on that card (a save or a load under way), checks it, or the
-//! card is still busy with an access. The image a change replaces is kept
-//! in storage as that card's previous card ([`Card::restore_previous`] puts
-//! it back, keeping the one it replaces in turn).
+//! A card the player imports ([`Card::import_file`]: any card or save file
+//! [`super::card_file`] reads, as a raw image) replaces the card between
+//! frames, never under a call of the game's ([`Card::change`]): it is
+//! refused while the game has a file open on that card (a save or a load
+//! under way), checks it, or the cards are still busy with an access.
 //!
 //! # Restoring over the inserted cards
 //!
@@ -84,35 +82,8 @@ pub struct CardStatus {
     pub slot: usize,
     /// The inserted card's listing; none without a card.
     pub card: Option<card_file::Listing>,
-    /// Whether a previous card is kept ([`Card::restore_previous`]).
-    pub previous: bool,
     /// Why the card cannot change now ([`Card::busy_with`]).
     pub busy: Option<String>,
-}
-
-/// What an import did ([`Card::import_file`]).
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-#[serde(tag = "imported", rename_all = "snake_case")]
-pub enum Imported {
-    /// The file's card replaced the card, which became the previous card.
-    Card { container: card_file::Container },
-    /// The file's save joined the card.
-    Save { container: card_file::Container, name: String },
-}
-
-impl Imported {
-    /// What it did, as the hosts report it.
-    pub fn describe(&self, slot: usize) -> String {
-        let card = slot + 1;
-        match self {
-            Imported::Card { container } => {
-                format!("Memory card {card} is now {}. Restore previous puts back the card it replaced.", container.describe())
-            }
-            Imported::Save { container, name } => {
-                format!("{name}, from {}, is on memory card {card}. Restore previous takes it off.", container.describe())
-            }
-        }
-    }
 }
 
 pub const CARD_SIZE: usize = 0x2_0000;
@@ -146,17 +117,12 @@ pub trait CardStorage {
     /// The image in `slot` (0, 1), or None when no card is inserted there.
     fn load(&mut self, slot: usize) -> std::io::Result<Option<Vec<u8>>>;
     fn store(&mut self, slot: usize, image: &[u8]) -> std::io::Result<()>;
-    /// The card the last change from outside the game replaced in `slot`
-    /// ([`Card::change`]), or None.
-    fn load_previous(&mut self, slot: usize) -> std::io::Result<Option<Vec<u8>>>;
-    fn store_previous(&mut self, slot: usize, image: &[u8]) -> std::io::Result<()>;
 }
 
 /// Images in memory (tests, hosts without storage).
 #[derive(Default, Clone)]
 pub struct MemoryStorage {
     pub images: [Option<Vec<u8>>; 2],
-    pub previous: [Option<Vec<u8>>; 2],
 }
 
 impl CardStorage for MemoryStorage {
@@ -166,15 +132,6 @@ impl CardStorage for MemoryStorage {
 
     fn store(&mut self, slot: usize, image: &[u8]) -> std::io::Result<()> {
         self.images[slot] = Some(image.to_vec());
-        Ok(())
-    }
-
-    fn load_previous(&mut self, slot: usize) -> std::io::Result<Option<Vec<u8>>> {
-        Ok(self.previous[slot].clone())
-    }
-
-    fn store_previous(&mut self, slot: usize, image: &[u8]) -> std::io::Result<()> {
-        self.previous[slot] = Some(image.to_vec());
         Ok(())
     }
 }
@@ -256,33 +213,20 @@ pub(super) fn state(image: &[u8], block: usize) -> u32 {
     get_u32(frame(image, block), 0)
 }
 
-/// Why a file cannot be created ([`create`]).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum Refused {
-    /// The name is empty or longer than 20 characters.
-    Name,
-    /// A file of that name exists.
-    Exists,
-    /// Fewer free (or deleted) blocks than the file needs.
-    Full { free: usize },
-}
-
-/// Create a file of `count` blocks named `name` on a formatted card as the
-/// BIOS's create does: the first free or deleted blocks in order, chained,
-/// the size and the name in the first one's frame. Returns its blocks.
-pub(super) fn create(image: &mut [u8], name: &[u8], count: usize) -> Result<Vec<usize>, Refused> {
-    if name.is_empty() || name.len() > NAME_LENGTH {
-        return Err(Refused::Name);
-    }
-    if find(image, name).is_some() {
-        return Err(Refused::Exists);
+/// Create a file of `count` blocks (1 when 0) named `name` on a formatted
+/// card as the BIOS's create does: the first free or deleted blocks in
+/// order, chained, the size and the name in the first one's frame. Returns
+/// its blocks, or None where the BIOS refuses it: a name empty or longer
+/// than 20 characters, one a file has, too few free blocks.
+pub(super) fn create(image: &mut [u8], name: &[u8], count: usize) -> Option<Vec<usize>> {
+    if name.is_empty() || name.len() > NAME_LENGTH || find(image, name).is_some() {
+        return None;
     }
     let count = count.max(1);
-    let free: Vec<usize> = (1..BLOCKS).filter(|&b| state(image, b) & 0xF0 == STATE_FREE).collect();
+    let free: Vec<usize> = (1..BLOCKS).filter(|&b| state(image, b) & 0xF0 == STATE_FREE).take(count).collect();
     if free.len() < count {
-        return Err(Refused::Full { free: free.len() });
+        return None;
     }
-    let free = &free[..count];
     for (i, &block) in free.iter().enumerate() {
         let f = frame_mut(image, block);
         f.fill(0);
@@ -301,22 +245,7 @@ pub(super) fn create(image: &mut [u8], name: &[u8], count: usize) -> Result<Vec<
         }
         seal(f);
     }
-    Ok(free.to_vec())
-}
-
-/// Delete the file named `name` as the BIOS's delete does: each of its
-/// blocks marked deleted (its state's low digit kept). Returns its blocks,
-/// or None without such a file.
-pub(super) fn erase(image: &mut [u8], name: &[u8]) -> Option<Vec<usize>> {
-    let first = find(image, name)?;
-    let blocks = chain(image, first);
-    for &block in &blocks {
-        let f = frame_mut(image, block);
-        let s = get_u32(f, 0);
-        put_u32(f, 0, (s & 0x0F) | 0xA0);
-        seal(f);
-    }
-    Some(blocks)
+    Some(free)
 }
 
 /// Block `block`'s directory frame on a card, or None without one.
@@ -349,13 +278,12 @@ fn file_digest(image: Option<&[u8]>, file: &OpenFile) -> [u8; 32] {
 }
 
 /// The first block of the file named `name`.
-pub(super) fn find(image: &[u8], name: &[u8]) -> Option<usize> {
+fn find(image: &[u8], name: &[u8]) -> Option<usize> {
     (1..BLOCKS).find(|&b| state(image, b) == STATE_FIRST && entry_name(image, b) == name)
 }
 
-/// A file's blocks in order, as the BIOS follows them (it stops at a loop
-/// or a pointer past the card).
-pub(super) fn chain(image: &[u8], first: usize) -> Vec<usize> {
+/// A file's blocks in order.
+fn chain(image: &[u8], first: usize) -> Vec<usize> {
     let mut blocks = vec![first];
     let mut block = first;
     loop {
@@ -436,9 +364,6 @@ struct Check {
 pub struct Card {
     storage: Option<Box<dyn CardStorage>>,
     images: [Option<Vec<u8>>; 2],
-    /// The cards the last changes from outside the game replaced, as
-    /// storage keeps them ([`Card::change`]).
-    previous: [Option<Vec<u8>>; 2],
     started: bool,
     files: [Option<OpenFile>; FILES],
     search: Option<Search>,
@@ -455,7 +380,6 @@ impl Card {
     pub(crate) fn restore_state(&mut self, mut state: Self) {
         state.storage = self.storage.take();
         state.images = std::mem::take(&mut self.images);
-        state.previous = std::mem::take(&mut self.previous);
         state.pending = self.pending;
         state.errors = std::mem::take(&mut self.errors);
         let images = &state.images;
@@ -495,7 +419,6 @@ impl Card {
     /// Use `storage` and insert the cards it holds.
     pub fn attach_storage(&mut self, mut storage: Box<dyn CardStorage>) -> std::io::Result<()> {
         let mut images = [None, None];
-        let mut previous = [None, None];
         for slot in 0..2 {
             match storage.load(slot) {
                 Ok(Some(image)) if image.len() == CARD_SIZE => images[slot] = Some(image),
@@ -503,15 +426,8 @@ impl Card {
                 Ok(Some(_)) => self.errors.push(format!("memory card {}: expected a raw 128 KiB image; slot left empty, file unchanged", slot + 1)),
                 Err(error) => self.errors.push(format!("memory card {}: {error}; slot left empty, file unchanged", slot + 1)),
             }
-            match storage.load_previous(slot) {
-                Ok(Some(image)) if image.len() == CARD_SIZE => previous[slot] = Some(image),
-                Ok(None) => {},
-                Ok(Some(_)) => self.errors.push(format!("memory card {}: its previous card is not a raw 128 KiB image; none kept", slot + 1)),
-                Err(error) => self.errors.push(format!("memory card {}: its previous card: {error}; none kept", slot + 1)),
-            }
         }
         self.images = images;
-        self.previous = previous;
         self.storage = Some(storage);
         self.card_changed(0);
         self.card_changed(1);
@@ -536,11 +452,6 @@ impl Card {
         self.images[slot].as_deref()
     }
 
-    /// The card the last change from outside the game replaced in `slot`.
-    pub fn previous(&self, slot: usize) -> Option<&[u8]> {
-        self.previous[slot].as_deref()
-    }
-
     /// Why the card in `slot` cannot change from outside the game at cycle
     /// `now`: the game has a file open on it, checks it, or the cards are
     /// still busy with an access (none: it can, between frames).
@@ -562,9 +473,8 @@ impl Card {
 
     /// Put `image` (a raw 128 KiB card) in `slot` from outside the game at
     /// cycle `now`, between frames: refused while [`busy_with`](Self::busy_with)
-    /// gives a reason. The card it replaces becomes the slot's previous card;
-    /// storage keeps that, then the new card, before the device takes it
-    /// (a refused write changes nothing but what the previous card is).
+    /// gives a reason. Storage takes the card before the device does (a
+    /// refused write changes nothing).
     pub fn change(&mut self, slot: usize, image: Vec<u8>, now: u64) -> Result<(), String> {
         if slot > 1 {
             return Err("memory cards are 0 and 1".into());
@@ -576,13 +486,6 @@ impl Card {
         if let Some(reason) = self.busy_with(slot, now) {
             return Err(format!("memory card {card} not changed: {reason}"));
         }
-        let replaced = self.images[slot].clone();
-        if let (Some(storage), Some(replaced)) = (self.storage.as_mut(), replaced.as_ref()) {
-            storage.store_previous(slot, replaced).map_err(|e| format!("memory card {card} not changed: keeping the card it replaces: {e}"))?;
-        }
-        if replaced.is_some() {
-            self.previous[slot] = replaced;
-        }
         if let Some(storage) = self.storage.as_mut() {
             storage.store(slot, &image).map_err(|e| format!("memory card {card} not changed: {e}"))?;
         }
@@ -591,108 +494,46 @@ impl Card {
         Ok(())
     }
 
-    /// Put `slot`'s previous card back; the card it replaces becomes the
-    /// previous one, so doing it again undoes it. Returns what it did, as
-    /// the hosts report it.
-    pub fn restore_previous(&mut self, slot: usize, now: u64) -> Result<String, String> {
-        let previous = self.previous.get(slot).cloned().flatten().ok_or_else(|| {
-            format!("memory card {} has no previous card: importing a card or a save, or deleting a save, keeps the card it changes", slot + 1)
-        })?;
-        self.change(slot, previous, now)?;
-        Ok(format!("Memory card {} is back as it was before its last change.", slot + 1))
-    }
-
-    /// What `slot` holds (a listing of its card, `card_list`), whether it
-    /// has a previous card and why it cannot change now.
+    /// What `slot` holds (a listing of its card, `card_list`) and why it
+    /// cannot change now.
     pub fn status(&self, slot: usize, now: u64) -> CardStatus {
-        CardStatus {
-            slot,
-            card: self.images[slot].as_deref().map(card_file::list),
-            previous: self.previous[slot].is_some(),
-            busy: self.busy_with(slot, now),
+        CardStatus { slot, card: self.images[slot].as_deref().map(card_file::list), busy: self.busy_with(slot, now) }
+    }
+
+    /// The card a file the player picked holds, for `slot` at cycle `now`:
+    /// its raw image ([`card_file::detect`]: a whole card, or a fresh card
+    /// holding a single save; `file_name` names a raw single save) and what
+    /// was found, as the hosts' status lines report it ("Card 1: DexDrive
+    /// card, 3 saves"). Refused, naming why, for a file no container holds,
+    /// a card whose directory is damaged where its files depend on it, and
+    /// while [`busy_with`](Self::busy_with) gives a reason; nothing changes.
+    pub fn read_file(&self, slot: usize, bytes: &[u8], file_name: &str, now: u64) -> Result<(Vec<u8>, String), String> {
+        if slot > 1 {
+            return Err("memory cards are 0 and 1".into());
         }
-    }
-
-    /// The card in `slot`, as a change from outside the game starts from.
-    fn current(&self, slot: usize) -> Result<&[u8], String> {
-        self.images.get(slot).ok_or("memory cards are 0 and 1")?.as_deref().ok_or_else(|| format!("no memory card {} is inserted", slot + 1))
-    }
-
-    /// Import the file `bytes` the player brought (`file_name` names a raw
-    /// single save) into `slot`: a whole card replaces the card, a single
-    /// save joins it ([`card_file::detect`], [`Card::import_save`]).
-    pub fn import_file(&mut self, slot: usize, bytes: &[u8], file_name: &str, now: u64) -> Result<Imported, String> {
-        let (container, contents) = card_file::detect(bytes, file_name)?;
-        match contents {
-            card_file::Contents::Card(image) => self.replace_card(slot, container, image, now),
-            card_file::Contents::Save(save) => self.add_save(slot, container, save, now),
-        }
-    }
-
-    /// Replace the card in `slot` with the card a file holds (any card
-    /// container); a file with a single save is refused.
-    pub fn import_card(&mut self, slot: usize, bytes: &[u8], file_name: &str, now: u64) -> Result<Imported, String> {
-        match card_file::detect(bytes, file_name)? {
-            (container, card_file::Contents::Card(image)) => self.replace_card(slot, container, image, now),
-            (container, card_file::Contents::Save(_)) => Err(format!("{file_name} is {}, not a whole card: import its save instead", container.describe())),
-        }
-    }
-
-    /// Add a save to the card in `slot`: a single save's file's, or with
-    /// `name` the save of that name a whole card's file holds. Refused, as
-    /// the game's Copy refuses it, when the card has a save of that name or
-    /// too few free blocks.
-    pub fn import_save(&mut self, slot: usize, bytes: &[u8], file_name: &str, name: Option<&str>, now: u64) -> Result<Imported, String> {
-        let (container, contents) = card_file::detect(bytes, file_name)?;
-        let save = match (contents, name) {
-            (card_file::Contents::Save(save), None) => save,
-            (card_file::Contents::Save(save), Some(name)) if card_file::name_bytes(name)? == save.name => save,
-            (card_file::Contents::Save(save), Some(name)) => {
-                return Err(format!("{file_name} holds the save {}, not {name}", card_file::name_text(&save.name)));
-            }
-            (card_file::Contents::Card(image), Some(name)) => card_file::extract(&image, &card_file::name_bytes(name)?)
-                .map_err(|error| format!("{file_name} ({}): {error}", container.describe()))?,
-            (card_file::Contents::Card(_), None) => {
-                return Err(format!("{file_name} is {}: name the save of it to import", container.describe()));
-            }
-        };
-        self.add_save(slot, container, save, now)
-    }
-
-    fn replace_card(&mut self, slot: usize, container: card_file::Container, image: Vec<u8>, now: u64) -> Result<Imported, String> {
+        let card = slot + 1;
+        let (container, image) = card_file::detect(bytes, file_name).map_err(|error| format!("memory card {card} not changed: {error}"))?;
         let listing = card_file::list(&image);
         if let Some(problem) = listing.problems.first() {
-            let more = listing.problems.len() - 1;
-            let more = if more > 0 { format!(" (and {more} more)") } else { String::new() };
-            return Err(format!("memory card {} not changed: the card's directory is damaged: {problem}{more}", slot + 1));
+            let more = match listing.problems.len() - 1 {
+                0 => String::new(),
+                more => format!(" (and {more} more)"),
+            };
+            return Err(format!("memory card {card} not changed: the picked card's directory is damaged: {problem}{more}"));
         }
+        if let Some(reason) = self.busy_with(slot, now) {
+            return Err(format!("memory card {card} not changed: {reason}"));
+        }
+        Ok((image, format!("Card {card}: {}", listing.found(container))))
+    }
+
+    /// Import a file the player picked into `slot` at cycle `now`, between
+    /// frames: [`read_file`](Self::read_file), then [`change`](Self::change).
+    /// Returns what was found, as the hosts' status lines report it.
+    pub fn import_file(&mut self, slot: usize, bytes: &[u8], file_name: &str, now: u64) -> Result<String, String> {
+        let (image, found) = self.read_file(slot, bytes, file_name, now)?;
         self.change(slot, image, now)?;
-        Ok(Imported::Card { container })
-    }
-
-    fn add_save(&mut self, slot: usize, container: card_file::Container, save: card_file::Save, now: u64) -> Result<Imported, String> {
-        let image = card_file::insert(self.current(slot)?, &save).map_err(|error| format!("memory card {}: {error}", slot + 1))?;
-        self.change(slot, image, now)?;
-        Ok(Imported::Save { container, name: card_file::name_text(&save.name) })
-    }
-
-    /// Delete the save `name` from the card in `slot`, as the BIOS deletes
-    /// a file (its blocks marked deleted); the card as it was becomes the
-    /// previous card. Returns what it did, as the hosts report it.
-    pub fn delete_save(&mut self, slot: usize, name: &str, now: u64) -> Result<String, String> {
-        let image = card_file::delete(self.current(slot)?, &card_file::name_bytes(name)?).map_err(|error| format!("memory card {}: {error}", slot + 1))?;
-        self.change(slot, image, now)?;
-        Ok(format!("{name} is deleted from memory card {}. Restore previous puts it back.", slot + 1))
-    }
-
-    /// The card in `slot` as a file: a raw image or a DexDrive card.
-    pub fn export_card(&self, slot: usize, format: card_file::CardFormat) -> Result<Vec<u8>, String> {
-        Ok(card_file::export_card(self.current(slot)?, format))
-    }
-
-    /// The save `name` of the card in `slot` as a single-save file (.mcs).
-    pub fn export_save(&self, slot: usize, name: &str) -> Result<Vec<u8>, String> {
-        card_file::export_save(self.current(slot)?, &card_file::name_bytes(name)?).map_err(|error| format!("memory card {}: {error}", slot + 1))
+        Ok(found)
     }
 
     pub fn retry_writes(&mut self) -> Result<(), String> {
@@ -758,7 +599,7 @@ impl Card {
         let first;
         if flags & 0x200 != 0 {
             let count = ((flags >> 16) as usize).max(1);
-            let Ok(blocks) = create(image, &name, count) else { return u32::MAX };
+            let Some(blocks) = create(image, &name, count) else { return u32::MAX };
             first = blocks[0];
             self.card_changed(slot);
             self.busy(now, count as u64);
@@ -888,7 +729,14 @@ impl Card {
         let Some((slot, name)) = parse(path) else { return 0 };
         let name = name.to_vec();
         let Some(image) = self.formatted_image(slot) else { return 0 };
-        let Some(blocks) = erase(image, &name) else { return 0 };
+        let Some(first) = find(image, &name) else { return 0 };
+        let blocks = chain(image, first);
+        for &block in &blocks {
+            let f = frame_mut(image, block);
+            let s = get_u32(f, 0);
+            put_u32(f, 0, (s & 0x0F) | 0xA0);
+            seal(f);
+        }
         self.card_changed(slot);
         self.busy(now, blocks.len() as u64);
         self.persist(slot) as u32
@@ -1190,7 +1038,7 @@ mod tests {
     }
 
     fn storage_with_formatted_card() -> MemoryStorage {
-        MemoryStorage { images: [Some(formatted()), None], ..Default::default() }
+        MemoryStorage { images: [Some(formatted()), None] }
     }
 
     /// The game's save (menu_framework.c's save command): its temporary
@@ -1405,12 +1253,10 @@ mod tests {
     impl CardStorage for Shared {
         fn load(&mut self, slot: usize) -> std::io::Result<Option<Vec<u8>>> { self.0.borrow_mut().load(slot) }
         fn store(&mut self, slot: usize, image: &[u8]) -> std::io::Result<()> { self.0.borrow_mut().store(slot, image) }
-        fn load_previous(&mut self, slot: usize) -> std::io::Result<Option<Vec<u8>>> { self.0.borrow_mut().load_previous(slot) }
-        fn store_previous(&mut self, slot: usize, image: &[u8]) -> std::io::Result<()> { self.0.borrow_mut().store_previous(slot, image) }
     }
 
     #[test]
-    fn changes_from_outside_wait_for_the_games_files_and_keep_the_card_they_replace() {
+    fn changes_from_outside_wait_for_the_games_files() {
         let shared = Shared::default();
         shared.0.borrow_mut().images[0] = Some(formatted());
         let mut b = Bench::new(MemoryStorage::default());
@@ -1424,10 +1270,11 @@ mod tests {
         let during = b.card.image(0).unwrap().to_vec();
         let refused = b.card.change(0, other.clone(), b.now).unwrap_err();
         assert!(refused.contains("memory card 1 not changed: the game has a file open on memory card 1"), "{refused}");
+        let refused = b.card.import_file(0, &other, "other.mcd", b.now).unwrap_err();
+        assert!(refused.contains("the game has a file open on memory card 1"), "an import waits too: {refused}");
         assert_eq!(b.card.image(0).unwrap(), during, "nothing changed");
         assert!(b.card.status(0, b.now).busy.is_some());
         b.card.change(1, other.clone(), b.now).expect("the other card is not held up");
-        assert_eq!(b.card.previous(1), None, "no card was there to keep");
         b.call("close", &[fd]);
         // A check of the card under way, then an access's busy time.
         b.call("info", &[0]);
@@ -1437,44 +1284,17 @@ mod tests {
         assert_eq!(b.call("delete", &[tmp]), 1);
         assert!(b.card.change(0, other.clone(), b.now).unwrap_err().contains("busy with the game's access"));
         b.wait();
-        let replaced = b.card.image(0).unwrap().to_vec();
+        assert_eq!(b.card.status(0, b.now).busy, None);
         b.card.change(0, other.clone(), b.now).unwrap();
         assert_eq!(b.card.image(0), Some(&other[..]));
-        assert_eq!(b.card.previous(0), Some(&replaced[..]));
         assert_eq!(shared.0.borrow().images[0].as_deref(), Some(&other[..]), "storage has the new card");
-        assert_eq!(shared.0.borrow().previous[0].as_deref(), Some(&replaced[..]), "and keeps the one it replaced");
-        // Restoring the previous card swaps them; doing it again undoes it.
-        b.card.restore_previous(0, b.now).unwrap();
-        assert_eq!((b.card.image(0), b.card.previous(0)), (Some(&replaced[..]), Some(&other[..])));
-        b.card.restore_previous(0, b.now).unwrap();
-        assert_eq!((b.card.image(0), b.card.previous(0)), (Some(&other[..]), Some(&replaced[..])));
-        // Another session over the same storage finds both.
-        let mut later = Card::default();
-        later.attach_storage(Box::new(shared.clone())).unwrap();
-        assert_eq!((later.image(0), later.previous(0)), (Some(&other[..]), Some(&replaced[..])));
-        assert!(later.restore_previous(1, 0).unwrap_err().contains("memory card 2 has no previous card"));
         assert!(b.card.change(0, vec![0; 100], b.now).unwrap_err().contains("not 100"));
-        // A state restored over the cards keeps them and their previous cards.
-        let state = b.card.save();
-        let mut loaded = Card::default();
-        loaded.load(&state).unwrap();
-        b.card.restore_state(loaded);
-        assert_eq!((b.card.image(0), b.card.previous(0)), (Some(&other[..]), Some(&replaced[..])));
     }
 
     #[test]
-    fn a_save_added_from_outside_lies_where_the_games_own_create_puts_a_file() {
-        // The game's way: a one-block file deleted, then a three-block file
-        // created (deleted block 1 first, then 3 and 4) and written.
-        let mut b = Bench::new(storage_with_formatted_card());
-        let one = b.string(NAME, "bu00:ONE");
-        let fd = b.call("open", &[one, 1 << 16 | 0x200]);
-        b.call("close", &[fd]);
-        let two = b.string(NAME2, "bu00:TWO");
-        let fd = b.call("open", &[two, 1 << 16 | 0x200]);
-        b.call("close", &[fd]);
-        assert_eq!(b.call("delete", &[one]), 1);
-        let before = b.card.image(0).unwrap().to_vec();
+    fn an_imported_single_save_is_the_card_the_bios_makes_for_it_and_a_damaged_card_is_refused() {
+        // The game's way on a fresh card: a three-block file created and written.
+        let mut b = Bench::new(MemoryStorage { images: [Some(formatted()), Some(formatted())] });
         let mut data: Vec<u8> = (0..3 * BLOCK_SIZE).map(|i| (i * 13 % 251) as u8).collect();
         data[..4].copy_from_slice(&[b'S', b'C', 0x11, 3]);
         let long = b.string(NAME, "bu00:BASLUS-00999LONG");
@@ -1486,10 +1306,21 @@ mod tests {
             assert_eq!(b.call("write", &[fd, BUFFER, 0x100]), 0x100);
         }
         b.call("close", &[fd]);
-        // Added from outside, it is the same card.
-        let save = card_file::Save { name: b"BASLUS-00999LONG".to_vec(), data };
-        assert_eq!(card_file::insert(&before, &save).unwrap(), b.card.image(0).unwrap());
-        assert_eq!(chain(b.card.image(0).unwrap(), 1), vec![1, 3, 4]);
+        b.wait();
+        // That save as a single save (.mcs): its directory frame, its blocks.
+        let made = b.card.image(0).unwrap().to_vec();
+        let mcs = [frame(&made, 1), &data[..]].concat();
+        let found = b.card.import_file(1, &mcs, "/saves/long.mcs", b.now).unwrap();
+        assert_eq!(found, "Card 2: single save (.mcs, .ps1) on a fresh card, 1 save");
+        assert!(b.card.image(1).unwrap() == made, "the card the BIOS made for it");
+        // A card whose directory its files depend on is damaged is refused.
+        let mut damaged = made.clone();
+        damaged[FRAME_SIZE + 0x20] ^= 1;
+        let refused = b.card.import_file(0, &damaged, "damaged.mcd", b.now).unwrap_err();
+        assert!(refused.starts_with("memory card 1 not changed: the picked card's directory is damaged: directory frame 1"), "{refused}");
+        let refused = b.card.import_file(0, &[7; 1000], "notes.txt", b.now).unwrap_err();
+        assert!(refused.starts_with("memory card 1 not changed: notes.txt (1000 bytes) is not a memory card or a save"), "{refused}");
+        assert!(b.card.image(0).unwrap() == made, "nothing changed");
     }
 
     #[test]
@@ -1603,7 +1434,7 @@ mod tests {
 
     #[test]
     fn an_unformatted_card_formats() {
-        let mut b = Bench::new(MemoryStorage { images: [Some(vec![0xFF; CARD_SIZE]), None], ..Default::default() });
+        let mut b = Bench::new(MemoryStorage { images: [Some(vec![0xFF; CARD_SIZE]), None] });
         let device = b.string(NAME, "bu00:");
         assert!(b.list("bu00:").is_empty());
         assert_eq!(b.call("format", &[device]), 1);

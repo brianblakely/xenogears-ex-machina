@@ -5388,7 +5388,6 @@ dependencies = [
  "slint",
  "slint-build",
  "wgpu",
- "xem-core",
  "xem-render",
  "xem-settings",
 ]

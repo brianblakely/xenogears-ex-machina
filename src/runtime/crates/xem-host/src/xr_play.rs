@@ -354,14 +354,12 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         }
 
         for request in std::mem::take(&mut *requests.borrow_mut()) {
-            use xem_settings::AppAction::*;
-            let saved = match request {
-                xem_settings::AppRequest::Action(SaveState | ExportState) => Some(true),
-                xem_settings::AppRequest::Action(LoadState | ImportState) => Some(false),
-                _ => None,
-            };
             let result = operations.execute(request,None,Some(&mut game),&mut settings.borrow_mut());
-            if let Some(saved) = saved { hud.notify_state(saved,result.as_ref().err().map(String::as_str),start.elapsed()); }
+            if let xem_settings::AppRequest::Action(action) = request {
+                use xem_settings::AppAction::*;
+                let saved = match action { SaveState | ExportState => Some(true), LoadState | ImportState => Some(false), _ => None };
+                if let Some(saved) = saved { hud.notify_state(saved,result.as_ref().err().map(String::as_str),start.elapsed()); }
+            }
             match result {
                 Ok(message) => ui.set_operation_status(&message),
                 Err(error) => ui.set_operation_error(&error),
@@ -370,7 +368,6 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         let (fast_forward,status) = game.time_status();
         ui.set_time_status(Some(fast_forward),&status);
         ui.set_storage_status(&game.storage_status());
-        if *panel_visible.borrow() { ui.set_cards(Some(&game.card_status()),""); }
 
         // The game: whatever frames are due by the wall clock, once per
         // headset frame (never per eye), unless paused for a test or by the

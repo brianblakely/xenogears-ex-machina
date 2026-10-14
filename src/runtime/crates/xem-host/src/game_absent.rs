@@ -8,8 +8,8 @@ impl Game {
     pub fn command(&mut self, _: &serde_json::Value) -> Result<serde_json::Value,String> { match *self {} }
     pub fn snapshot_bytes(&mut self) -> Result<Vec<u8>,String> { match *self {} }
     pub fn restore_bytes(&mut self, _: &[u8]) -> Result<(),String> { match *self {} }
-    pub fn cards(&mut self) -> (&mut xem_core::devices::card::Card, u64) { match *self {} }
-    pub fn card_status(&mut self) -> [xem_core::devices::card::CardStatus; 2] { match *self {} }
+    pub fn card_image(&mut self, _: usize) -> Option<Vec<u8>> { match *self {} }
+    pub fn import_card(&mut self, _: usize, _: &[u8], _: &str) -> Result<String,String> { match *self {} }
     pub fn retry_storage(&mut self) -> Result<(),String> { match *self {} }
     pub fn configure_fast_forward(&mut self, _: xem_settings::FastForwardRate) -> Result<(),String> { match *self {} }
     pub fn sync_time_settings(&mut self, _: &xem_settings::Settings) -> Result<(),String> { match *self {} }

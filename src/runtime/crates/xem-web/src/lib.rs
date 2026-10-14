@@ -30,8 +30,6 @@ use std::rc::Rc;
 use serde_json::{Value, json};
 use wasm_bindgen::prelude::*;
 use xem_core::control::Session;
-use xem_core::devices::card::{Card, CardStatus};
-use xem_core::devices::card_file::CardFormat;
 use xem_core::inspect::Schema;
 use xem_core::{Runtime, bios, exe};
 use xem_settings::{AppInput, AppRequest, Rejected, SettingChange, SettingsService};
@@ -817,11 +815,6 @@ impl XemApp {
         let forward = active && !held && self.session.as_ref().is_some_and(|s| s.fast_forward && s.stopped.is_none())
             && self.hud_forward.is_some_and(|at| now - at < 150.0);
         let rewind = active && held && self.hud_rewind.is_some_and(|at| now - at < xem_core::rewind::REWIND_STEP_MS as f64 + 100.0);
-        // The memory cards the Saves section lists, while the panel shows.
-        let cards = if self.renderer.as_ref().is_some_and(|r| r.panel_visible) { self.card_statuses() } else { None };
-        if let (Some(panel), Some(cards)) = (self.renderer.as_ref().and_then(|r| r.panel()), &cards) {
-            panel.set_cards(Some(cards), "");
-        }
         if let Some(renderer) = &mut self.renderer {
             if let Some(hud) = &mut renderer.frame_rate { hud.set_activity(forward,rewind); }
             if let (Some(panel),Some(session)) = (renderer.panel(),self.session.as_ref()) {
@@ -938,7 +931,7 @@ impl XemApp {
         self.look_mouse = [0.0; 2];
         let _ = self.app_input.set_focused(false);
         if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) { panel.cancel_pointer(); }
-        self.app_requests.borrow_mut().retain(|r| matches!(r,AppRequest::Action(_) | AppRequest::Card(_)));
+        self.app_requests.borrow_mut().retain(|r| matches!(r,AppRequest::Action(_)));
         let _ = self.set_rewind_held(false,false);
         let _ = self.set_rewind_held(false,true);
     }
@@ -983,19 +976,9 @@ impl XemApp {
 
     pub fn set_panel_visible(&mut self, visible: bool) {
         if let Some(renderer) = &mut self.renderer {
-            if renderer.panel_visible && !visible && let Some(panel) = renderer.panel() {
-                panel.cancel_pointer();
-                // A hidden panel asks nothing (a save's Delete).
-                panel.cancel_dialog();
-            }
+            if renderer.panel_visible && !visible && let Some(panel) = renderer.panel() { panel.cancel_pointer(); }
             renderer.panel_visible = visible && renderer.has_panel();
         }
-    }
-
-    /// Escape on the shown panel: closes its confirmation if one shows (the
-    /// page then keeps the panel), saying whether one did.
-    pub fn cancel_dialog(&mut self) -> bool {
-        self.renderer.as_ref().filter(|r| r.panel_visible).and_then(|r| r.panel()).is_some_and(|panel| panel.cancel_dialog())
     }
 
     pub fn panel_visible(&self) -> bool {
@@ -1439,20 +1422,50 @@ impl XemApp {
     // --- Memory cards -------------------------------------------------------
 
     /// The image IndexedDB holds for card `slot` (0, 1), or undefined for a
-    /// fresh formatted card, and the previous card it keeps for the slot
-    /// (undefined: none); the page sets them before a session boots, which
-    /// then changes its cards through the card operations below.
-    pub fn set_card_image(&mut self, slot: usize, image: Option<Vec<u8>>, previous: Option<Vec<u8>>) -> Result<(), JsValue> {
-        check_card_slot(slot)?;
-        if self.session.is_some() {
-            return Err(error("a session's memory cards change through its card operations (card_import_file)"));
+    /// fresh formatted card; the page sets both before a session boots, and
+    /// one IndexedDB took since (an import), which a session's device takes
+    /// too, between frames: refused, nothing changed, while the game has a
+    /// file open on that card or is busy with it (`Card::change`).
+    pub fn set_card_image(&mut self, slot: usize, image: Option<Vec<u8>>) -> Result<(), JsValue> {
+        if slot > 1 {
+            return Err(error("cards are 0 and 1"));
         }
-        if [&image, &previous].into_iter().flatten().any(|i| i.len() != xem_core::devices::card::CARD_SIZE) {
+        if image.as_ref().is_some_and(|i| i.len() != xem_core::devices::card::CARD_SIZE) {
             return Err(error("memory card image must be exactly 128 KiB (.mcd)"));
         }
+        if let Some(session) = self.session.as_mut() {
+            // The live device too: its next in-game save must use the
+            // imported image rather than replace it with the old session card.
+            let services = session.runtime.services();
+            let card = image.clone().unwrap_or_else(xem_core::devices::card::formatted);
+            services.card.change(slot, card, services.clock.now).map_err(error)?;
+        }
+        // IndexedDB holds it: not a write to make.
         self.cards.set_image(slot, image);
-        self.cards.set_previous(slot, previous);
         Ok(())
+    }
+
+    /// What a card or save file the player picked holds, for card `slot`:
+    /// `{image, message}`, its raw image (a whole card, or a fresh card
+    /// holding a single save; `file_name` names a raw single save) and what
+    /// was found, as the status line reports it ("Card 1: DexDrive card, 3
+    /// saves"). Refused, naming why, for a file no container holds, a card
+    /// whose directory is damaged, and while a session's game has a file
+    /// open on that card or is busy with it. Nothing changes: the page writes
+    /// the image to IndexedDB, then sets it ([`set_card_image`](Self::set_card_image)).
+    pub fn read_card_file(&mut self, slot: usize, bytes: &[u8], file_name: &str) -> Result<js_sys::Object, JsValue> {
+        let (image, message) = match self.session.as_mut() {
+            Some(session) => {
+                let services = session.runtime.services();
+                services.card.read_file(slot, bytes, file_name, services.clock.now)
+            }
+            None => xem_core::devices::card::Card::default().read_file(slot, bytes, file_name, 0),
+        }
+        .map_err(error)?;
+        let found = js_sys::Object::new();
+        js_sys::Reflect::set(&found, &"image".into(), &js_sys::Uint8Array::from(&image[..]))?;
+        js_sys::Reflect::set(&found, &"message".into(), &message.into())?;
+        Ok(found)
     }
 
     /// Card `slot`'s image when the card device changed it since the last
@@ -1461,120 +1474,10 @@ impl XemApp {
         (slot < 2).then(|| self.cards.take_write(slot)).flatten()
     }
 
-    /// Card `slot`'s previous card when a change kept another since the
-    /// last call (the page writes it to IndexedDB as `cardN-previous`).
-    pub fn take_previous_card_write(&mut self, slot: usize) -> Option<Vec<u8>> {
-        (slot < 2).then(|| self.cards.take_previous_write(slot)).flatten()
-    }
-
     /// The image the card device holds in `slot` (none without a session).
     pub fn card_image(&mut self, slot: usize) -> Option<Vec<u8>> {
         let session = self.session.as_mut()?;
         (slot < 2).then(|| session.runtime.services().card.image(slot).map(<[u8]>::to_vec)).flatten()
-    }
-
-    /// `operation` on the memory card device at cycle `now`: the session's
-    /// between frames, or before a session boots a device over the stored
-    /// cards (whose changes reach IndexedDB the same way).
-    fn with_cards<T>(&mut self, operation: impl FnOnce(&mut Card, u64) -> Result<T, String>) -> Result<T, JsValue> {
-        match self.session.as_mut() {
-            Some(session) => {
-                let services = session.runtime.services();
-                let now = services.clock.now;
-                operation(&mut services.card, now).map_err(error)
-            }
-            None => {
-                let mut card = Card::default();
-                card.attach_storage(Box::new(self.cards.clone())).map_err(error)?;
-                operation(&mut card, 0).map_err(error)
-            }
-        }
-    }
-
-    /// Both slots as the Saves section lists them.
-    fn card_statuses(&mut self) -> Option<[CardStatus; 2]> {
-        self.with_cards(|card, now| Ok([card.status(0, now), card.status(1, now)])).ok()
-    }
-
-    /// What card `slot` holds, as the shared `card_list` command reports
-    /// it (JSON); also before a session boots.
-    pub fn card_status(&mut self, slot: usize) -> Result<String, JsValue> {
-        check_card_slot(slot)?;
-        self.with_cards(|card, now| Ok(to_json(&card.status(slot, now))))
-    }
-
-    /// Import the file `bytes` named `file_name` (a raw single save's name
-    /// is its directory name) into card `slot`: a whole card replaces it, a
-    /// single save joins it. Returns `{message, imported, card}` (JSON); the
-    /// page then writes the changed card and the previous card to IndexedDB.
-    pub fn card_import_file(&mut self, slot: usize, bytes: &[u8], file_name: &str) -> Result<String, JsValue> {
-        check_card_slot(slot)?;
-        self.with_cards(|card, now| {
-            let imported = card.import_file(slot, bytes, file_name, now)?;
-            Ok(card_outcome(card, slot, now, imported.describe(slot), json!(imported)))
-        })
-    }
-
-    /// Put the raw image `image` (exactly 128 KiB, formatted or not: a new
-    /// card is not) in card `slot`, as automation sets a card up.
-    pub fn card_store(&mut self, slot: usize, image: Vec<u8>) -> Result<String, JsValue> {
-        check_card_slot(slot)?;
-        self.with_cards(|card, now| {
-            card.change(slot, image, now)?;
-            let message = format!("Memory card {} holds the image given. Restore previous puts back the card it replaced.", slot + 1);
-            Ok(card_outcome(card, slot, now, message, Value::Null))
-        })
-    }
-
-    /// Replace card `slot` with the card a file holds (any card container).
-    pub fn card_import_card(&mut self, slot: usize, bytes: &[u8], file_name: &str) -> Result<String, JsValue> {
-        check_card_slot(slot)?;
-        self.with_cards(|card, now| {
-            let imported = card.import_card(slot, bytes, file_name, now)?;
-            Ok(card_outcome(card, slot, now, imported.describe(slot), json!(imported)))
-        })
-    }
-
-    /// Add a save to card `slot`: a single save's file's, or with `name`
-    /// the save of that name a whole card's file holds.
-    pub fn card_import_save(&mut self, slot: usize, bytes: &[u8], file_name: &str, name: Option<String>) -> Result<String, JsValue> {
-        check_card_slot(slot)?;
-        self.with_cards(|card, now| {
-            let imported = card.import_save(slot, bytes, file_name, name.as_deref(), now)?;
-            Ok(card_outcome(card, slot, now, imported.describe(slot), json!(imported)))
-        })
-    }
-
-    /// Delete the save `name` from card `slot` (the card as it was becomes
-    /// the previous card).
-    pub fn save_delete(&mut self, slot: usize, name: &str) -> Result<String, JsValue> {
-        check_card_slot(slot)?;
-        self.with_cards(|card, now| {
-            let message = card.delete_save(slot, name, now)?;
-            Ok(card_outcome(card, slot, now, message, Value::Null))
-        })
-    }
-
-    /// Put card `slot`'s previous card back.
-    pub fn card_restore_previous(&mut self, slot: usize) -> Result<String, JsValue> {
-        check_card_slot(slot)?;
-        self.with_cards(|card, now| {
-            let message = card.restore_previous(slot, now)?;
-            Ok(card_outcome(card, slot, now, message, Value::Null))
-        })
-    }
-
-    /// Card `slot` as a file: `format` "raw" (.mcd) or "gme" (DexDrive).
-    pub fn card_export(&mut self, slot: usize, format: &str) -> Result<Vec<u8>, JsValue> {
-        check_card_slot(slot)?;
-        let format: CardFormat = serde_json::from_value(json!(format)).map_err(|_| error("a card is exported \"raw\" or \"gme\""))?;
-        self.with_cards(|card, _| card.export_card(slot, format))
-    }
-
-    /// The save `name` of card `slot` as a single-save file (.mcs).
-    pub fn save_export(&mut self, slot: usize, name: &str) -> Result<Vec<u8>, JsValue> {
-        check_card_slot(slot)?;
-        self.with_cards(|card, _| card.export_save(slot, name))
     }
 
     /// Everything a client can inspect.
@@ -1683,15 +1586,6 @@ pub fn audio_sample_rate() -> u32 {
 #[wasm_bindgen]
 pub fn default_settings() -> String {
     to_json(&xem_settings::Settings::default())
-}
-
-fn check_card_slot(slot: usize) -> Result<(), JsValue> {
-    if slot > 1 { Err(error("memory cards are 0 and 1")) } else { Ok(()) }
-}
-
-/// A card operation's reply: what it did, its details and the card now.
-fn card_outcome(card: &Card, slot: usize, now: u64, message: String, details: Value) -> String {
-    to_json(&json!({ "message": message, "imported": details, "card": card.status(slot, now) }))
 }
 
 /// What the panel's Game disc card says of an import.

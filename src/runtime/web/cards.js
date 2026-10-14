@@ -1,10 +1,7 @@
 // Changed images stay here until IndexedDB acknowledges their transaction.
 // An error retains the latest image for explicit retry and export backup.
-// Each card is `cardN`; the card a change from Settings replaced (an import,
-// a delete, a restore) is `cardN-previous`.
 import * as storage from './storage.js';
 const key = (slot) => `card${slot + 1}`;
-const previousKey = (slot) => `${key(slot)}-previous`;
 const check = (slot, image) => {
   if (![0, 1].includes(slot) || !(image instanceof Uint8Array) || image.length !== 0x20000) {
     throw new Error('Card slot is 0 or 1; image must be exactly 128 KiB (.mcd).');
@@ -22,17 +19,14 @@ export class Cards {
     this.missing = new Set();
   }
 
-  /** Hand both stored images and their previous cards to the runtime (none
-   * stored: a fresh formatted card, no previous card). */
+  /** Hand both stored images to the runtime (none stored: a fresh formatted card). */
   async load() {
     this.missing.clear();
     for (const slot of [0, 1]) {
       const image = await storage.get('cards', key(slot));
-      const previous = await storage.get('cards', previousKey(slot));
       if (image) check(slot, image);
       else this.missing.add(slot);
-      if (previous) check(slot, previous);
-      this.app.set_card_image(slot, image ?? undefined, previous ?? undefined);
+      this.app.set_card_image(slot, image ?? undefined);
     }
     this.updateNotice();
   }
@@ -46,9 +40,7 @@ export class Cards {
   collect() {
     for (const slot of [0, 1]) {
       const image = this.app.take_card_write(slot);
-      if (image) this.images.set(key(slot), image);
-      const previous = this.app.take_previous_card_write(slot);
-      if (previous) this.images.set(previousKey(slot), previous);
+      if (image) this.images.set(slot, image);
     }
   }
   flush({ retry = false } = {}) {
@@ -58,12 +50,12 @@ export class Cards {
     if (this.error) return Promise.reject(new Error(this.error));
     this.writing = (async () => {
       while (this.images.size) {
-        const [name, image] = this.images.entries().next().value;
+        const [slot, image] = this.images.entries().next().value;
         try {
-          await storage.put('cards', name, image);
-          if (this.images.get(name) === image) this.images.delete(name);
+          await storage.put('cards', key(slot), image);
+          if (this.images.get(slot) === image) this.images.delete(slot);
           this.written++;
-          for (const slot of [0, 1]) if (name === key(slot)) this.missing.delete(slot);
+          this.missing.delete(slot);
           this.updateNotice();
         } catch (error) {
           this.error = String(error);
@@ -74,68 +66,55 @@ export class Cards {
     return this.writing;
   }
 
-  /** A change of a card from Settings or automation, between frames: play
-   * pauses, pending writes land first, the runtime applies it (`operation`,
-   * which returns its JSON reply) and both the card and the card it
-   * replaced are in IndexedDB before it resolves. */
-  async change(operation) {
+  /** Persist a raw card and insert it into the live session between frames. */
+  async store(slot, image) {
+    check(slot, image);
+    await this.replace(slot, () => image);
+  }
+
+  /** Import a card or save file the player picked into card `slot`: the
+   * runtime reads it (any supported card, or a fresh card holding a single
+   * save; refused while the game has a file open on the card), then it is
+   * stored and inserted as `store` does. Resolves to what was found
+   * ("Card 1: DexDrive card, 3 saves"). */
+  async importFile(slot, bytes, name) {
+    let message;
+    await this.replace(slot, () => {
+      const found = this.app.read_card_file(slot, bytes, name);
+      message = found.message;
+      return found.image;
+    });
+    return message;
+  }
+
+  /** With play paused and pending writes landed, IndexedDB takes the card
+   * `read` gives, then the runtime (between frames). */
+  async replace(slot, read) {
     const running = JSON.parse(this.app.status()).running;
     this.app.set_running(false);
     try {
       await this.flush({ retry: true });
-      const reply = JSON.parse(operation());
-      await this.flush();
-      return reply;
+      const image = read();
+      await storage.put('cards', key(slot), image);
+      try {
+        this.app.set_card_image(slot, image);
+      } catch (error) {
+        // Refused only when frames ran meanwhile and the game opened a file
+        // on the card: IndexedDB takes back the card the session keeps.
+        const kept = this.app.card_image(slot);
+        if (kept) await storage.put('cards', key(slot), kept);
+        throw error;
+      }
+      this.missing.delete(slot);
+      this.updateNotice();
     } finally {
       if (running) this.app.set_running(true);
     }
   }
 
-  /** Import a file into card `slot`: a whole card (any supported container)
-   * replaces it, a single save joins it. */
-  importFile(slot, bytes, name) {
-    return this.change(() => this.app.card_import_file(slot, bytes, name));
-  }
-
-  /** Put a raw card image (Uint8Array, exactly 128 KiB, formatted or not)
-   * in card `slot`. */
-  store(slot, image) {
-    check(slot, image);
-    return this.change(() => this.app.card_store(slot, image));
-  }
-
-  /** Replace card `slot` with the card a file holds (raw, .gme, .vgs, .vmp). */
-  importCard(slot, bytes, name) {
-    return this.change(() => this.app.card_import_card(slot, bytes, name));
-  }
-
-  /** Add a save to card `slot`: a single save's file's, or with `saveName`
-   * the save of that name a whole card's file holds. */
-  importSave(slot, bytes, name, saveName) {
-    return this.change(() => this.app.card_import_save(slot, bytes, name, saveName ?? undefined));
-  }
-
-  deleteSave(slot, name) {
-    return this.change(() => this.app.save_delete(slot, name));
-  }
-
-  restorePrevious(slot) {
-    return this.change(() => this.app.card_restore_previous(slot));
-  }
-
-  /** What card `slot` holds (the shared `card_list` reply). */
-  list(slot) {
-    return JSON.parse(this.app.card_status(slot));
-  }
-
   /** The image IndexedDB holds for `slot`, or undefined. */
   stored(slot) {
     return storage.get('cards', key(slot));
-  }
-
-  /** The previous card IndexedDB holds for `slot`, or undefined. */
-  storedPrevious(slot) {
-    return storage.get('cards', previousKey(slot));
   }
 
   status() {
