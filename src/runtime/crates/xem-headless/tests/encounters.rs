@@ -2,9 +2,9 @@
 //! nothing else changes (docs/runtime.md, Random battles in platforming
 //! areas). On Babel Tower's map 414 a held direction brings a random battle
 //! under the original (no control), while under the default setting's maps
-//! (`Settings::default().random_battles_off()`) a walk of more than twice
-//! the original draw's longest window brings none and the draw's period
-//! and step stay as the map's script dealt them; the map's door still leads
+//! (`Settings::default().random_battles_off()`) a walk five of the draw's
+//! longest windows long brings none and the draw's period and step stay
+//! as the map's script dealt them; the map's door still leads
 //! on to map 415; map 172's Repair Bot still starts its scripted battle
 //! when the player picks it; and on a map the setting leaves on (the
 //! Mountain Path, map 15) the same walk brings the same random battle and
@@ -111,8 +111,8 @@ fn held_directions_bring_babel_towers_random_battle_only_under_the_original() {
     assert_eq!((armed["map"].clone(), armed["period"].clone(), armed["count"].clone(), armed["off_here"].clone()), (json!(414), json!(300), json!(1), json!(false)));
     let came = walk_until_battle(&mut original, &["Up"], 2 * 301 * 4).expect("the original's random battle comes within two windows");
     eprintln!("map 414: the original's random battle after {came} frames; its draw as dealt: {armed}");
-    // The default setting turns Babel Tower's off: a walk more than twice
-    // as long as two windows brings none, and the draw stays as it was dealt.
+    // The default setting turns Babel Tower's off: a walk of five windows
+    // brings none, and the draw stays as it was dealt.
     let off = Settings::default().random_battles_off();
     assert!(off.contains(&414));
     let mut suppressed = session(&disc, off);

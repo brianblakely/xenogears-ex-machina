@@ -536,6 +536,30 @@ mod tests {
     }
 
     #[test]
+    fn frames_give_the_session_the_settings_random_battle_maps_and_a_session_log_none() {
+        use serde_json::json;
+        use xem_settings::{RandomBattles, Settings};
+        let session = || Session::new(xem_core::Runtime::new(NativeModule::new()), None, Duration::default);
+        let off = |game: &mut Game| game.session.execute(&json!({"cmd":"status"}))["random_battles_off"].clone();
+        let update = |game: &mut Game, settings: &Settings| {
+            game.paced = Instant::now() - FRAME * 2;
+            game.update(0, settings, || true).unwrap()
+        };
+        let mut game = Game::new(session());
+        let mut settings = Settings::default();
+        assert!(update(&mut game, &settings) > 0);
+        assert_eq!(off(&mut game), json!(settings.random_battles_off()), "the default policy's maps");
+        settings.random_battles = RandomBattles::Original;
+        update(&mut game, &settings);
+        assert_eq!(off(&mut game), json!([]), "the original's: none");
+        // A session log plays the original whatever the settings say.
+        let mut scripted = Game::new(session());
+        scripted.schedule(&json!({"commands": []})).unwrap();
+        assert!(update(&mut scripted, &Settings::default()) > 0);
+        assert_eq!(off(&mut scripted), json!([]));
+    }
+
+    #[test]
     #[ignore = "needs the original disc 1 and built game module"]
     fn original_game_rewind_frame_latency_and_scheduled_setup() {
         use serde_json::json;

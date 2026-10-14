@@ -2495,25 +2495,29 @@ Tests: `xem-settings`'
 `random_battles_stay_off_in_platforming_areas_unless_the_original_is_chosen`
 checks the default policy and its maps, that the default saves its name,
 that a deliberate Original survives other changes, a reload and a backup,
-an agent's change, and that an old file or a policy no longer offered reads
-the default alone. `tests/test_port_encounters.py` (suite.sh's port stage)
-builds `src/port/encounters.c` natively with `-Wall -Werror` against an
-invented host: the draw runs where the host leaves it on and not where it
-turns it off, asked with the map's low 12 bits.
-`xem-core/tests/persistence.rs` checks on the stand-in
-module, whose draw asks the import every frame: no draw on a map turned off
-(its gear bits aside), each change recorded once with its maps ascending, a
-replay starting from none and keeping the recorded maps over the host's,
-drawing as the recording did, a recording begun with maps off, `schedule`,
+an agent's change, and that an old file or a policy no longer offered
+reads the default alone. `tests/test_port_encounters.py` (suite.sh's port
+stage) builds `src/port/encounters.c` natively with `-Wall -Werror`
+against an invented host: the draw runs where the host leaves it on and
+not where it turns it off, asked with the map's low 12 bits.
+`xem-core/tests/persistence.rs` checks on the stand-in module, whose draw
+asks the import every frame: no draw on a map turned off (its gear bits
+aside), each change recorded once with its maps ascending, a replay
+starting from none and keeping the recorded maps over the host's, drawing
+as the recording did, a recording begun with maps off, `schedule`,
 `readiness`, refused maps and refused recorded controls; and `field`'s
-`random_draw` with `off_here`. `xem-ui/tests/panel.rs` checks that the
-Gameplay section's choice applies through the service, is acknowledged,
-shows its note and follows an agent's change, and that the wheel never
-changes it. `xem-headless/tests/encounters.rs` (local, disc 1, about 23 s)
-checks on the game that on map 414 Up held brings a random battle within
-two of the draw's windows without the control and none in five under the
-default setting's maps, the draw as dealt; that map 414's door still leads
-to 415 and map 172's Repair Bot, its third choice picked, still starts its
+`random_draw` with `off_here`. `xem-host`'s
+`frames_give_the_session_the_settings_random_battle_maps_and_a_session_log_none`
+checks that `Game::update` gives the session the default policy's maps,
+none under Original and none while a session log plays.
+`xem-ui/tests/panel.rs` checks that the Gameplay section's choice applies
+through the service, is acknowledged, shows its note and follows an
+agent's change, and that the wheel never changes it.
+`xem-headless/tests/encounters.rs` (local, disc 1, 14-23 s here) checks on
+the game that on map 414 Up held brings a random battle within two of the
+draw's windows without the control and none in five under the default
+setting's maps, the draw as dealt; that map 414's door still leads to 415
+and map 172's Repair Bot, its third choice picked, still starts its
 scripted battle (formation 3) under them; and that on the Mountain Path
 (map 15, left on) the same walk brings its battle at the same frame and to
 the same RAM with them as without. The slice logs replay to their recorded
@@ -2701,13 +2705,14 @@ platforming complaint about the other candidate areas: Anima Relic 2
 444-450 (Shevat's emergency shaft), the Aveh excavation site (maps 64-69,
 where chapter 1 of the same guide only describes "a bunch of platforms we
 have to jump up to"), the Mountain Path ("the only complicated part is the
-running jump to get over the gap") and the Soylent System. Players
-disagree on one point: a reddit commenter and a WaniKani reading club
-believe Babel Tower's battles stand on fixed tiles; its maps arm the
-random draw (f7 periods 360, 300 and 240, one battle each), so they do not.
-Babel Tower and Blackmoon Forest are listed by the rule as well; the
-Aveh-Kislev border mountains on two independent complaints and a
-walkthrough's description, though the rule cannot decide them (below).
+running jump to get over the gap") and the Soylent System. One belief
+disagrees with the game: a commenter in the same reddit thread holds that
+"most of babel tower has fixed encounter rates/tiles", but its maps arm
+the random draw (f7 periods 360, 300 and 240, one battle each), whose
+steps `rand()` deals. Babel Tower and Blackmoon Forest are listed by the
+rule as well; the Aveh-Kislev border mountains on two independent
+complaints and a walkthrough's description, though the rule cannot decide
+them (below).
 
 | Area | Maps | Party | Maps needing a jump | Traversal jumps | Reason |
 | --- | --- | --- | --- | --- | --- |
