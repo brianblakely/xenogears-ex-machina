@@ -216,8 +216,19 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       await frames(3);
       assert.ok(Math.abs((await look()).yaw - Math.PI / 6) < 1e-3, `one push, one 30-degree step: ${JSON.stringify(await look())}`);
       assert.equal((await look()).pitch, 0, 'the stick does not pitch: the head does');
+      // The Binaural listener looks along the view (turned right: right of
+      // the game's camera, in its view space), the head turning it once more.
+      const binaural = (await page.evaluate(() => window.xem.settings.get())).settings.binaural;
+      assert.equal((await page.evaluate((b) => window.xem.settings.apply({ Binaural: { ...b, enabled: true } }), binaural)).ok, true);
+      await frames(6);
+      let listening = await page.evaluate(() => window.xem.command({ cmd: 'binaural' }));
+      assert.ok(listening.first_person && listening.first_person.yaw > 10 && listening.head,
+        `the listener faces the view's turn, the head on it: ${JSON.stringify(listening)}`);
       await click();
       assert.equal((await status(page)).xr.inspecting, false, 'clicked again, off');
+      await frames(3);
+      listening = await page.evaluate(() => window.xem.command({ cmd: 'binaural' }));
+      assert.equal(listening.first_person, null, 'the listener has the camera\'s view again');
 
       // The hands: the underhand grab (palm up) looks from within the scene.
       await page.evaluate(() => {
@@ -274,8 +285,17 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       assert.equal(info.xr.inspecting, false, 'the underhand grab again turned inspection off');
       assert.equal(info.xr.within, false, 'the screen again');
       assert.equal(info.xr.scale, 1, 'the screen kept its size');
+
+      // On again as the session ends: the canvas goes on with the view (the
+      // page has one view for the canvas and the headset).
+      await grab(true);
+      assert.equal((await status(page)).xr.inspecting, true);
       await page.evaluate(() => window.xem.xr.exit());
       await page.waitForFunction(() => !window.xem.status().page.xr.active, null, { timeout: 30_000 });
+      info = await status(page);
+      assert.equal(info.renderer.firstPerson, true, 'the view carries out of the headset');
+      await page.waitForTimeout(300);
+      assert.ok((await status(page)).loop.animationFrames > info.loop.animationFrames, 'the canvas draws it');
       assert.deepEqual(page.errors, []);
     } finally {
       await browser.close();

@@ -1408,9 +1408,14 @@ on this machine, with other work keeping a load average of about 9
 (`xr-game-smoke.sh`'s inspection run, and the same run under each
 profile): no headset frame late, from within the scene or as the screen;
 the presentation's time on the loop's thread, p50, 11.3 ms from within
-against 8.9 ms as the screen under HD-2D (13.8 ms, p95 20.8 ms, in the
-smoke's run) and 5.6 against 3.1 ms under Modern. Under a load average of
-18 the frames from within took 110 ms (p50) against the screen's 53.
+against 8.9 ms as the screen under HD-2D (12.4 ms, p95 16.4 ms, against
+8.7 ms in the smoke's last run) and 5.6 against 3.1 ms under Modern.
+Under a load average of 18 the frames from within took 110 ms (p50)
+against the screen's 53. On IWER's Quest 3 in headless Chromium (WebGL2
+on SwiftShader, the layer at a quarter scale, load average about 5), the
+session ran 7.8 frames a second from within against 11.7 as the screen,
+and the game, whose frames the session's paces (at most four a frame),
+31.2 against 41.1.
 
 Tests: `xem-headless/tests/render.rs` looks around in field 12 for 160
 frames (more than 100 shown from the eyes) and ends at the same RAM hash;
@@ -1490,11 +1495,10 @@ a semi-transparent interface pixel over another as half covering, and
 shows no subtractive effect (it darkens nothing behind it); the field
 menu's backdrop is the first eye's view squeezed into the display's shape,
 and the room round the menu is the last frame before it (its characters
-stand still). The held-back buttons, the
-Binaural listener's view, the Original renderer's end and the view
-carried across Enter and Exit VR have not run in a headset session (they
-are the flat hosts' code, unit-tested; the sessions above toggle, turn,
-pause and exit). The touch
+stand still). The held-back buttons and the Original renderer's end have
+not run in a headset session (they are the flat hosts' code,
+unit-tested), nor has the view been carried into a session (only out of
+one). The touch
 look's rate is a constant chosen to follow the finger on a phone-sized
 picture, not measured with people, and the Android emulator has not
 played the touch toggle or drag (the unit tests and the browser's touch
@@ -2082,12 +2086,14 @@ Headset class (Low tier, depth of field off unless enabled).
   a slower session rate, both views showing the screen, paused head tracking,
   exit, and an unchanged RAM hash; its inspection test (field 30) toggles
   the view with the right controller's stick click, turns it one
-  30-degree step with the stick (no pitch), toggles it off, then with
-  tracked hands turns it on with the underhand grab (the views' centres no
-  longer the screen's), pauses with the overhand grab and turns the head a
-  quarter (the centres change, the game's frames do not, the head back
-  gives the same picture), resumes, turns it off (the screen again at its
-  size) and exits. The session asks for `hand-tracking`;
+  30-degree step with the stick (no pitch; the Binaural listener faces the
+  turn with the head on it, and the camera's view again once it is off),
+  toggles it off, then with tracked hands turns it on with the underhand
+  grab (the views' centres no longer the screen's), pauses with the
+  overhand grab and turns the head a quarter (the centres change, the
+  game's frames do not, the head back gives the same picture), resumes,
+  turns it off (the screen again at its size), turns it on again and
+  exits, the canvas going on with the view. The session asks for `hand-tracking`;
   each frame the page passes the viewer's pose, the session's visibility,
   each hand's target ray and its 25 joints to the headset core
   ([Headsets: hands, gaze and control decks](#headsets-hands-gaze-and-control-decks)),
