@@ -23,7 +23,7 @@ pub use display::DisplayInfo;
 pub use dma::{DmaError, DmaSummary, Memory, MemoryMut};
 pub use raster::TriangleRows;
 pub use snapshot::SnapshotError;
-pub use trace::{Class, Environment, Eye, FaceWords, MovieBlock, Primitive, Projection, Reveal, Reveals, Shape, SpriteFacing, SpriteFacingPart, SxyStore, Trace, TraceOp, TraceVertex, VramRect};
+pub use trace::{Camera, CameraMode, Class, Environment, Eye, FaceWords, MovieBlock, Primitive, Projection, Reveal, Reveals, Shape, SpriteFacing, SpriteFacingPart, SxyStore, Trace, TraceOp, TraceVertex, VramRect};
 
 /// VRAM width in 16-bit pixels.
 pub const VRAM_WIDTH: usize = 1024;

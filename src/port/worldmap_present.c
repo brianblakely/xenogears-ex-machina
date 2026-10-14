@@ -22,15 +22,21 @@ void xem_original_worldmap_clouds_draw(void);
 void xem_original_worldmap_terrain_draw(u_long *ot, s32 packets, Camera *camera);
 void xem_worldmap_terrain_reveal_quarter(u32 cells, u32 ot, u32 packet, const u32 *vertices);
 void xem_reveal_model(SpriteModel *model, RenderPacket *packets, u32 *ot, s32 mode, XemGte *placed);
+void xem_present_camera(MATRIX *m, s32 x, s32 y, s32 z, u32 mode);
 
-/* The scene objects: the original, then, while a camera pulled back wants
- * culled faces (xem/gte.h), the ones it leaves undrawn because their
- * origin's projection overflowed (near or behind its camera, or far off its
- * screen) that the pulled-back camera sees within the original's draw
- * distance (depth 0xD80), drawn again for the record (present.c
- * xem_reveal_model) with the transform the original builds for them (its
- * parent chain, the offset from the camera's target wrapped round the map,
- * half scale). The GTE and the ring's register provenance are put back. */
+/* The scene objects: the original, then, while a camera pulled back or a
+ * view looking from around the scene wants culled faces (xem/gte.h), first
+ * (a view from anywhere) the camera every world-map frame draws its scene
+ * objects and terrain with (worldmap_camera_matrix, which places points
+ * relative to the camera's target, z negated) and the point it looks at
+ * (the target, at (0, its height, 0) there: worldmap_camera_place_orbit),
+ * then the objects it leaves undrawn because their origin's projection
+ * overflowed (near or behind its camera, or far off its screen) that the
+ * view sees (any, looking around) within the original's draw distance
+ * (depth 0xD80), drawn again for the record (present.c xem_reveal_model)
+ * with the transform the original builds for them (its parent chain, the
+ * offset from the camera's target wrapped round the map, half scale). The
+ * GTE and the ring's register provenance are put back. */
 void worldmap_objects_draw(void) {
     XemProjectionRing *ring = xem_gte_ring;
     SceneObject *object, *parent;
@@ -44,8 +50,11 @@ void worldmap_objects_draw(void) {
     s32 i, x, z, radius;
 
     xem_original_worldmap_objects_draw();
-    if (!xem_present_reveals->wanted || xem_present_capture->active || xem_present_reveals->pull_back == 0) {
+    if (!xem_present_reveals->wanted || xem_present_capture->active || !xem_present_elsewhere()) {
         return;
+    }
+    if (xem_present_reveals->around & XEM_AROUND_ANYWHERE) {
+        xem_present_camera(&worldmap_camera_matrix, 0, worldmap_camera.target.vy >> 12, 0, XEM_CAMERA_WORLDMAP);
     }
     gte = xem_gte;
     for (i = 0; i < 3; i++) {

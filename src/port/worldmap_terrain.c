@@ -45,7 +45,8 @@ static s32 xem_worldmap_on_screen(u32 sxy0, u32 sxy1, u32 sxy2) {
 enum { XEM_TERRAIN_DRAWN, XEM_TERRAIN_REJECTED, XEM_TERRAIN_FLAG_ERROR };
 
 /* Presentation only (xem/gte.h): a terrain triangle the screen-bounds test
- * culled (or, with the camera pulled back, the winding test dropped),
+ * culled (or, with the camera pulled back or a view looking from around
+ * the scene, the winding test dropped),
  * recorded as the POLY_FT3 it would have been (the pool's command
  * word, the page and CLUT as drawn triangles get them) when the host wants
  * culled faces, xem_present_face_visible keeps it and it is nearer than the
@@ -120,9 +121,11 @@ static s32 xem_terrain_triangle(u32 word, u32 ot, u32 *packet, u32 *count, u32 u
     xem_gte_execute(XEM_GTE_NCLIP);
     if ((s32)xem_gte_read_data(XEM_GTE_MAC0) <= 0) {
         /* A sliver can have no area at the original's whole pixels but
-         * still cover pixels in the modern view, including at 1x zoom.
-         * Record it without changing the game's packets or winding test. */
-        if (xem_present_reveals->pull_back != 0 || xem_gte_read_data(XEM_GTE_MAC0) == 0) {
+         * still cover pixels in the modern view, including at 1x zoom; a
+         * view from elsewhere (pulled back, or from around the scene) may
+         * see any face it drops. Record it without changing the game's
+         * packets or winding test. */
+        if (xem_present_elsewhere() || xem_gte_read_data(XEM_GTE_MAC0) == 0) {
             xem_terrain_reveal(word, ot, *packet, uv0, uv1, uv2, sxy0, sxy1, sxy2);
         }
         return XEM_TERRAIN_REJECTED;

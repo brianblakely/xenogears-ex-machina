@@ -582,10 +582,10 @@ fn first_person_sprite_facings_leave_original_ram_vram_and_sound_unchanged() {
             session.runtime.services().clock.now);
         (state, changed)
     };
-    let (original, no_facings) = run(&mut session,false);
+    let (original, no_facings) = run(&mut session, 0);
     assert_eq!(no_facings,0);
     session.restore_bytes(&initial).unwrap();
-    let (looking, facings) = run(&mut session,true);
+    let (looking, facings) = run(&mut session, Reveals::LOOK);
     assert!(facings > 0,"Lahan NPCs must select frames from the player's viewing position");
     assert_eq!(looking,original,"alternate texture assembly cannot change original RAM (including RNG), VRAM, sound or time");
 }

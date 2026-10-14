@@ -273,20 +273,55 @@ fn each_original_limit_changes_the_picture_on_its_own() {
     assert_ne!(at(&base, 2 * 185, 2 * 140), at(&depth, 2 * 185, 2 * 140), "painter's order and depth order differ where the quads overlap");
 }
 
+/// A model's triangle drawn through the GTE wound against every face of
+/// [`projected_scene`] (facing away), at x 240-300, y 30-90.
+fn back_facing_triangle(gpu: &mut xem_gpu::Gpu) {
+    let points = [(250.5, 30.5), (240.5, 90.5), (300.5, 60.5)];
+    let projections: Vec<Projection> = points
+        .iter()
+        .map(|&(x, y)| Projection {
+            sxy: xy(x as i32, y as i32),
+            sz: 800,
+            class: 1,
+            x: (x * 65536.0) as i32,
+            y: (y * 65536.0) as i32,
+            offset: (160, 120),
+            h: 256,
+            owner: 0x8010_0000,
+            view: view(x, y, 800.0),
+        })
+        .collect();
+    let word = |(x, y): (f32, f32)| xy(x as i32, y as i32);
+    submit(gpu, &projections, &[(vec![0x2000_FFFF, word(points[0]), word(points[1]), word(points[2])], vec![(1, 0), (2, 1), (3, 2)])]);
+}
+
 #[test]
 fn culling_is_off_by_default_and_counted_apart_from_the_gpu_limits() {
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let trace = traced(|device| {
         projected_scene(device);
+        back_facing_triangle(device);
         // A triangle beyond the GPU's size limit.
         device.write_gp0_words(&[0x2000_FFFF, xy(-600, 10), xy(500, 10), xy(0, 100)]);
     });
-    let (plain, _) = draw(&gpu, &trace, Fidelity::MODERN, Culling::default());
+    let (plain, all) = draw(&gpu, &trace, Fidelity::MODERN, Culling::default());
     let stats = plain.stats();
     assert_eq!(stats.culled_back_faces, 0, "nothing is culled by default");
     assert_eq!(stats.rejected_size, 1, "the GPU's own size limit applies always");
-    let (back, _) = draw(&gpu, &trace, Fidelity::MODERN, Culling { back_faces: true, viewport: false });
-    assert!(back.stats().culled_back_faces > 0, "the minority winding is dropped when asked");
+    let (back, culled) = draw(&gpu, &trace, Fidelity::MODERN, Culling { back_faces: true, viewport: false });
+    assert_eq!(back.stats().culled_back_faces, 1, "the face wound against the frame's majority is dropped when asked, and only it");
+    // The quads facing the camera keep both their triangles (a quad's
+    // second triangle runs 1-2-3, the other way round from its first):
+    // the picture changes only where the dropped face was.
+    let mut changed = 0;
+    for (i, (a, b)) in all.chunks(4).zip(culled.chunks(4)).enumerate() {
+        let (x, y) = (i % 2048 / 2, i / 2048 / 2);
+        if a != b {
+            assert!((240..=301).contains(&x) && (30..=91).contains(&y), "({x}, {y}) changed beside the dropped face");
+            changed += 1;
+        }
+    }
+    assert!(changed > 1000, "the dropped face's pixels change ({changed})");
 }
 
 /// A frame whose OT entry carries a face the game culled beside its
@@ -980,4 +1015,71 @@ fn a_saved_screen_survives_a_second_copy_and_clearing_that_display_alias() {
     frame.draw_overlay(&gpu.device, &gpu.queue, &mut encoder, &mut renderer, None);
     gpu.queue.submit([encoder.finish()]);
     assert_eq!(read_rgba8(&gpu.device, &gpu.queue, frame.color()), expected, "both the pulled-back picture and its sides survive the cleared alias");
+}
+
+/// The port's record of a field camera (xem/gte.h): the world's axes
+/// (axes 0-2), the translation (axis 3, its depth `depth` telling records
+/// apart), then the point it looks at, owned by the mode (1: a field).
+fn camera_records(depth: i32) -> Vec<Projection> {
+    let entry = |class: u8, owner: u32, view: [i32; 3]| Projection { sxy: 0, sz: 0, class, x: 0, y: 0, offset: (160, 120), h: 256, owner, view };
+    vec![entry(6, 0, [4096, 0, 0]), entry(6, 1, [0, 4096, 0]), entry(6, 2, [0, 0, 4096]), entry(6, 3, [0, 0, depth]), entry(8, 1, [0, 0, 0])]
+}
+
+#[test]
+fn each_frame_keeps_the_camera_recorded_before_its_first_primitive() {
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut renderer = Ps1Renderer::new(&gpu.device, &gpu.queue, 1);
+    renderer.set_display(xem_gpu::VramRect { x: 0, y: 0, width: 320, height: 240 });
+    let area = DisplayArea { x: 0, y: 0, width: 320, height: 240 };
+    let clear = [0x0200_0000, 0, 240 << 16 | 320];
+    let small = |k: i32| [0x2000_FFFF, xy(k, 10), xy(k + 4, 10), xy(k, 14)];
+    let draw = |renderer: &mut Ps1Renderer, trace: &xem_gpu::Trace| {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        renderer.draw(&mut encoder, trace);
+        gpu.queue.submit([encoder.finish()]);
+    };
+    let kept = |renderer: &Ps1Renderer| renderer.frame_log(area).and_then(|log| log.camera).map(|camera| camera.translation[2]);
+    // A frame: its buffer cleared, then the camera the port records as the
+    // game builds it, then its primitives.
+    let (sync, first) = traced(|device| {
+        device.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000]);
+        device.write_gp0_words(&clear);
+        device.trace_projections(0, &camera_records(1000), &[], &[]);
+        for k in 0..70 {
+            device.write_gp0_words(&small(k * 4));
+        }
+    });
+    draw(&mut renderer, &sync);
+    draw(&mut renderer, &first);
+    assert_eq!(kept(&renderer), Some(1000.0), "the frame keeps the camera recorded before its first primitive");
+    let mut frame = FrameRenderer::new(&gpu.device);
+    assert!(frame.track(&renderer, area));
+    assert_eq!(frame.camera().map(|camera| camera.translation[2]), Some(1000.0), "the frame shown keeps its log's");
+    // The next frame drawn over the last instead of a clear (a battle's
+    // stage): its log begins with the trace holding it, and keeps the
+    // camera recorded in that trace before its first primitive.
+    let next = DEVICE.with(|device| {
+        let mut device = device.borrow_mut();
+        device.vblank();
+        device.trace_projections(5, &camera_records(2000), &[], &[]);
+        device.write_gp0_words(&[0x2800_8040, xy(0, 0), xy(320, 0), xy(0, 240), xy(320, 240)]);
+        device.take_trace()
+    });
+    draw(&mut renderer, &next);
+    assert_eq!(kept(&renderer), Some(2000.0), "a frame drawn over the last keeps its own camera, not the one before");
+    assert!(frame.track(&renderer, area), "a new frame");
+    assert_eq!(frame.camera().map(|camera| camera.translation[2]), Some(2000.0));
+    // Recorded more than four vertical blanks before a frame, it is not
+    // that frame's.
+    let stale = DEVICE.with(|device| {
+        let mut device = device.borrow_mut();
+        for _ in 0..5 {
+            device.vblank();
+        }
+        device.write_gp0_words(&clear);
+        device.write_gp0_words(&small(0));
+        device.take_trace()
+    });
+    draw(&mut renderer, &stale);
+    assert_eq!(kept(&renderer), None, "no camera of its own");
 }

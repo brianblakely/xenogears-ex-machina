@@ -910,6 +910,51 @@ fn interface_projections_trace_as_flat_whole_pixels() {
     assert_eq!(p.projection, None);
 }
 
+#[test]
+fn a_recorded_camera_comes_before_its_frame_and_its_inverse_gives_back_world_points() {
+    use xem_gpu::{CameraMode, Projection, Reveals, TraceOp};
+    let mut ram = Ram::new();
+    let mut gpu = fresh();
+    gpu.set_trace(true);
+    gpu.set_reveals(Some(Reveals { reach: [32, 32], pull_back: 0, around: Reveals::ANYWHERE }));
+    assert_eq!(gpu.reveal_around(), 2, "the port reads the bits");
+    let _ = gpu.take_trace();
+    // A camera turned 30 degrees about y, its rows in 4.12 at half scale (a
+    // field's): the port records its columns (axes 0-2), its translation
+    // (axis 3), then the point it looks at with its depth, owned by the
+    // mode (2: a battle).
+    let (c, s) = (30f32.to_radians().cos() * 2048.0, 30f32.to_radians().sin() * 2048.0);
+    let rows = [[c, 0.0, -s], [0.0, 2048.0, 0.0], [s, 0.0, c]].map(|row| row.map(|v| v.round() as i32));
+    let translation = [120, -40, 2600];
+    let target = [300, -200, 500];
+    let depth = ((0..3).map(|k| rows[2][k] * target[k]).sum::<i32>() >> 12) + translation[2];
+    let entry = |class: u8, sz: u16, owner: u32, view: [i32; 3]| Projection { sxy: 0, sz, class, x: 0, y: 0, offset: (160, 112), h: 256, owner, view };
+    let mut records: Vec<Projection> = (0..3).map(|k| entry(6, 0, k as u32, [rows[0][k], rows[1][k], rows[2][k]])).collect();
+    records.push(entry(6, 0, 3, translation));
+    records.push(entry(8, depth as u16, 2, target));
+    // An unknown mode's record is no camera.
+    records.push(entry(8, depth as u16, 9, target));
+    gpu.trace_projections(0, &records, &[], &[]);
+    ram.node(0x1000, 0xFF_FFFF, &[0x2000_FFFF, xy(10, 20), xy(40, 60), xy(5, 50)]);
+    gpu.dma_linked_list(&ram, 0x1000, 1000).unwrap();
+    let trace = gpu.take_trace();
+    let cameras: Vec<_> = trace.ops.iter().enumerate().filter_map(|(i, op)| if let TraceOp::Camera(c) = op { Some((i, *c)) } else { None }).collect();
+    let draw = trace.ops.iter().position(|op| matches!(op, TraceOp::Draw(_))).expect("the frame's triangle");
+    assert_eq!(cameras.len(), 1, "one camera: {cameras:?}");
+    let (at, camera) = cameras[0];
+    assert!(at < draw, "the camera comes before the commands of its frame");
+    assert_eq!(camera.mode, CameraMode::Battle);
+    assert_eq!(camera.axes[0], [rows[0][0], rows[1][0], rows[2][0]].map(|v| v as f32), "the first column");
+    assert_eq!(camera.translation, translation.map(|v| v as f32));
+    assert_eq!((camera.target, camera.focus), (target.map(|v| v as f32), depth as f32));
+    // Through the camera and back.
+    let point = [-750.0, 125.0, 1900.0];
+    let back = camera.world_point(camera.view_point(point)).expect("a camera spanning space");
+    assert!(point.iter().zip(back).all(|(a, b)| (a - b).abs() < 0.01), "{point:?} came back as {back:?}");
+    assert!((camera.view_point(camera.target)[2] - camera.focus).abs() < 1.0, "the target lies at its depth");
+    assert_eq!(xem_gpu::Camera { axes: [[0.0; 3]; 3], ..camera }.world_point([1.0; 3]), None, "no space, no inverse");
+}
+
 /// FNV-1a over bytes, as the MDEC keys a macroblock's output.
 fn fnv1a(bytes: impl IntoIterator<Item = u8>) -> u64 {
     bytes.into_iter().fold(0xCBF2_9CE4_8422_2325, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x100_0000_01B3))

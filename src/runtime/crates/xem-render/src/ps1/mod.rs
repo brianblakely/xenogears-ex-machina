@@ -126,9 +126,9 @@ pub struct Culling {
     /// against that screen ([`Primitive::revealed`]): beside the original
     /// screen with wider framing, everywhere when the camera is pulled back.
     pub viewport: bool,
-    /// Drop projected triangles wound against the frame's majority (the
-    /// game already culled its back faces; this also drops the double-sided
-    /// faces it meant to show).
+    /// Drop projected triangles wound against the frame's majority, a
+    /// quad's both as the quad winds (the game already culled its back
+    /// faces; this also drops the double-sided faces it meant to show).
     pub back_faces: bool,
 }
 
@@ -930,7 +930,11 @@ impl<'a> Builder<'a> {
                         self.stats.rejected_size += 1;
                         continue;
                     }
-                    if self.options.culling.back_faces && near.is_none() && class.is_scene() && winding(p, *triangle) * self.front < 0 {
+                    // A quad's points run in Z order (0 1 / 2 3), so its
+                    // second triangle 1-2-3 winds the other way round from
+                    // its first: the face's own winding is that of 1-3-2.
+                    let facing = if *triangle == [1, 2, 3] { [1, 3, 2] } else { *triangle };
+                    if self.options.culling.back_faces && near.is_none() && class.is_scene() && winding(p, facing) * self.front < 0 {
                         self.stats.culled_back_faces += 1;
                         continue;
                     }
@@ -1096,7 +1100,7 @@ impl<'a> Builder<'a> {
                 let show = *upload && self.shown.is_none_or(|area| overlap(&area, rect) > 0);
                 self.upload(*rect, pixels, show);
             }
-            TraceOp::VBlank | TraceOp::Movie { .. } | TraceOp::MovieFramesLeft(_) | TraceOp::Eye(_) => {}
+            TraceOp::VBlank | TraceOp::Movie { .. } | TraceOp::MovieFramesLeft(_) | TraceOp::Eye(_) | TraceOp::Camera(_) => {}
         }
     }
 }
@@ -1673,10 +1677,13 @@ pub struct Ps1Renderer {
     pub(crate) synced: bool,
     /// What was drawn into each screen buffer since it was last cleared.
     logs: Vec<FrameLog>,
-    /// Where the field's controlled character stood as the port recorded it
-    /// last ([`TraceOp::Eye`]), and the vertical blanks since: the next
-    /// buffer cleared is the frame it was recorded for.
+    /// Where the field's controlled character stood and the camera the game
+    /// drew with, as the port recorded them last ([`TraceOp::Eye`],
+    /// [`TraceOp::Camera`]), each with the vertical blanks since: the next
+    /// frame a buffer's log begins drawing is the one they were recorded
+    /// for.
     eye: Option<(xem_gpu::Eye, u32)>,
+    camera: Option<(xem_gpu::Camera, u32)>,
     /// The display's size in VRAM pixels (a screen buffer's), when known,
     /// and the last few areas displayed (the screen buffers).
     display: Option<(u16, u16)>,
@@ -1718,6 +1725,15 @@ pub struct FrameLog {
     /// Where the field's controlled character stood in this frame, when
     /// the port recorded it (a view looking around: [`TraceOp::Eye`]).
     pub eye: Option<xem_gpu::Eye>,
+    /// The camera the game drew this frame with, when the port recorded it
+    /// (a view looking from within or around the scene: [`TraceOp::Camera`]).
+    pub camera: Option<xem_gpu::Camera>,
+    /// Whether a primitive was drawn into it since it began: the port
+    /// records a frame's place and camera as it builds it, before its
+    /// first primitive, so the records current then are its own (also for
+    /// a buffer the game draws over instead of clearing it, whose log
+    /// begins with the trace holding the frame).
+    drawn: bool,
 }
 
 /// A log grows without a clear in modes that never clear nor draw over all
@@ -1857,6 +1873,7 @@ impl Ps1Renderer {
             synced: false,
             logs: Vec::new(),
             eye: None,
+            camera: None,
             display: None,
             shown: Vec::new(),
             native: vec![0; (VRAM_WIDTH * VRAM_HEIGHT) as usize],
@@ -2208,30 +2225,37 @@ impl Ps1Renderer {
             let shown = VramRect { width: rect.width.min(width), height: rect.height.min(height), ..rect };
             if !cleared && self.logs[index].ops.len() > 64 && covers(ops, shown) {
                 let start = std::sync::Arc::new(self.native.clone());
-                let eye = self.frame_eye();
                 self.logged += 1;
                 let log = &mut self.logs[index];
                 log.previous = std::mem::take(&mut log.ops);
                 log.frames = self.logged;
                 log.start = start;
-                log.eye = eye;
+                (log.eye, log.camera, log.drawn) = (None, None, false);
             }
         }
         // A shown buffer without a log (the trace started again, a state
         // loaded or a rewind's step) that the game never clears starts one
-        // when this trace draws all over it, once its clears are done below.
+        // when this trace draws all over it, once its clears are done below,
+        // with the records current at its first primitive.
         let unlogged: Vec<VramRect> = self.shown.iter().copied().filter(|area| !self.half_logged(area)).collect();
-        let before = (!unlogged.is_empty()).then(|| (std::sync::Arc::new(self.native.clone()), self.frame_eye()));
+        let before = (!unlogged.is_empty()).then(|| std::sync::Arc::new(self.native.clone()));
+        let mut unlogged_records = vec![None; unlogged.len()];
         for op in ops {
             match op {
                 TraceOp::Eye(eye) => {
                     self.eye = Some((*eye, 0));
                     continue;
                 }
-                // Recorded each frame the field draws (every other blank)
-                // while the view looks around; older, it is not this frame's.
+                TraceOp::Camera(camera) => {
+                    self.camera = Some((*camera, 0));
+                    continue;
+                }
+                // Recorded each frame the game draws (every other blank in a
+                // field) while the view looks from within or around the
+                // scene; older, they are not this frame's.
                 TraceOp::VBlank => {
                     self.eye = self.eye.and_then(|(eye, blanks)| (blanks < 4).then_some((eye, blanks + 1)));
+                    self.camera = self.camera.and_then(|(camera, blanks)| (blanks < 4).then_some((camera, blanks + 1)));
                     continue;
                 }
                 _ => {}
@@ -2279,7 +2303,6 @@ impl Ps1Renderer {
                 // cleared at once before, a mode change), which it replaces.
                 let (width, height) = self.display.unwrap_or((256, 192));
                 let buffer = u32::from(rect.width) * 10 >= u32::from(width) * 9 && u32::from(rect.height) * 10 >= u32::from(height) * 8;
-                let eye = self.frame_eye();
                 self.logged += 1;
                 let frames = self.logged;
                 if let Some(log) = self.logs.iter_mut().find(|l| {
@@ -2290,7 +2313,7 @@ impl Ps1Renderer {
                     log.rect = rect;
                     log.frames = frames;
                     log.start = std::sync::Arc::new(self.native.clone());
-                    log.eye = eye;
+                    (log.eye, log.camera, log.drawn) = (None, None, false);
                     continue;
                 }
                 if buffer || self.logs.iter().all(|l| overlap(&l.rect, &rect) == 0) {
@@ -2300,7 +2323,7 @@ impl Ps1Renderer {
                     // first buffer merely because their last eight rows meet.
                     self.logs.retain(|l| !replaced(l));
                     let start = std::sync::Arc::new(self.native.clone());
-                    self.logs.push(FrameLog { rect, ops: vec![op.clone()], previous: Vec::new(), frames, start, eye });
+                    self.logs.push(FrameLog { rect, ops: vec![op.clone()], frames, start, ..Default::default() });
                     if self.logs.len() > 6 {
                         self.logs.remove(0);
                     }
@@ -2322,6 +2345,14 @@ impl Ps1Renderer {
                     }
                 }
             }
+            let records = self.frame_records();
+            if let TraceOp::Draw(p) = op {
+                for (area, taken) in unlogged.iter().zip(&mut unlogged_records) {
+                    if taken.is_none() && contains(area, p.environment.area[0], p.environment.area[1]) {
+                        *taken = Some(records);
+                    }
+                }
+            }
             if let Some((x, y)) = at
                 && let Some(index) = self.logs.iter().position(|l| (l.rect.x, l.rect.y) == (x, y))
                     .or_else(|| self.logs.iter().position(|l| contains(&l.rect, x, y)))
@@ -2331,11 +2362,16 @@ impl Ps1Renderer {
                     log.ops.clear();
                     log.previous.clear();
                 }
+                // Its frame's first primitive: the records current now are
+                // the ones the port made building that frame.
+                if !log.drawn && matches!(op, TraceOp::Draw(_)) {
+                    (log.eye, log.camera, log.drawn) = (records.0, records.1, true);
+                }
                 log.ops.push(op.clone());
             }
         }
-        if let Some((start, eye)) = before {
-            for area in unlogged {
+        if let Some(start) = before {
+            for (area, records) in unlogged.into_iter().zip(unlogged_records) {
                 if self.half_logged(&area) || !covers(ops, area) {
                     continue;
                 }
@@ -2348,7 +2384,8 @@ impl Ps1Renderer {
                     _ => false,
                 }).cloned().collect();
                 self.logged += 1;
-                self.logs.push(FrameLog { rect: area, ops, previous: Vec::new(), frames: self.logged, start: start.clone(), eye });
+                let ((eye, camera), drawn) = (records.unwrap_or_default(), records.is_some());
+                self.logs.push(FrameLog { rect: area, ops, frames: self.logged, start: start.clone(), eye, camera, drawn, ..Default::default() });
                 if self.logs.len() > 6 {
                     self.logs.remove(0);
                 }
@@ -2361,9 +2398,10 @@ impl Ps1Renderer {
         self.logs.iter().any(|l| shown_by(l, area))
     }
 
-    /// The character's place a frame starting now was recorded with.
-    fn frame_eye(&self) -> Option<xem_gpu::Eye> {
-        self.eye.map(|(eye, _)| eye)
+    /// The character's place and the camera a frame starting now was
+    /// recorded with.
+    fn frame_records(&self) -> (Option<xem_gpu::Eye>, Option<xem_gpu::Camera>) {
+        (self.eye.map(|(eye, _)| eye), self.camera.map(|(camera, _)| camera))
     }
 
     /// The logs' identities (where each buffer lies and how many frames it

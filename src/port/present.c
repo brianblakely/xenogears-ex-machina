@@ -13,6 +13,7 @@
 #include "resident/mode.h"
 #include "resident/model.h"
 #include "resident/sprite.h"
+#include "battle/actor.h"
 #include "../decomp/src/field/field.h"
 #include "../decomp/src/field/field_camera.h"
 #include "../decomp/src/field/field_draw.h"
@@ -57,6 +58,7 @@ s32 xem_original_model_draw_sprite_model(SpriteModel *model, RenderPacket *packe
 s32 xem_original_field_instance_is_off_screen(FieldInstance *instance);
 void xem_original_field_draw_models(void);
 void xem_original_sprite_set_draw_matrix(Sprite *sprite);
+void xem_original_sprite_set_view_matrix(MATRIX *view);
 void xem_original_sprite_draw_parts(Sprite *sprite, u_long *ot);
 void xem_original_sprite_draw_parts_cut_below(Sprite *sprite, u_long *ot, s32 height);
 void xem_original_sprite_draw_parts_cut_above(Sprite *sprite, u_long *ot, s32 height);
@@ -67,6 +69,9 @@ void xem_original_gpu_draw_panorama_strip(Panorama *panorama, s32 start, s32 bot
 void xem_original_battle_draw_stage_sky(void *sky, SVECTOR *eye, SVECTOR *target, MATRIX *view, u32 *ot, s32 buffer);
 void field_sprite_set_color_unless_fog(void *target, u8 *color);
 void xem_present_sprite_facing(Sprite *sprite, u32 first, u32 last, s32 cut, s32 height);
+/* The battle camera's look-at point (battle/objects.h, whose other headers
+ * the port does not need). */
+extern SVECTOR battle_camera_view_target;
 
 /* Whether the host wants the faces the game culls (xem/gte.h), and no model
  * is being drawn again for the record. */
@@ -254,11 +259,26 @@ static void xem_record_entry(u32 class_, s32 sz, u32 owner, s32 x, s32 y, s32 z)
     ring->count++;
 }
 
+/* For a view looking from within or around the scene (xem/gte.h `around`):
+ * the camera `m` a frame of `mode` (XEM_CAMERA_*) is drawn with, as the
+ * world's axes through its rotation (its columns) and its translation
+ * (XEM_PROJECTION_AXIS entries), then the point (x, y, z) it looks at and
+ * that point's depth through it (XEM_PROJECTION_CAMERA). Written to the
+ * ring only. */
+void xem_present_camera(MATRIX *m, s32 x, s32 y, s32 z, u32 mode) {
+    s32 k;
+
+    for (k = 0; k < 3; k++) {
+        xem_record_entry(XEM_PROJECTION_AXIS, 0, (u32)k, m->m[0][k], m->m[1][k], m->m[2][k]);
+    }
+    xem_record_entry(XEM_PROJECTION_AXIS, 0, 3, m->t[0], m->t[1], m->t[2]);
+    xem_record_entry(XEM_PROJECTION_CAMERA, ((m->m[2][0] * x + m->m[2][1] * y + m->m[2][2] * z) >> 12) + m->t[2], mode, x, y, z);
+}
+
 /* For a view looking around from the controlled character (xem/gte.h
- * `around`): the world's axes through the camera's rotation (the columns
- * of field_view.scaled_world) as XEM_PROJECTION_AXIS entries, then the
- * character's position (its descriptor's translation) through the camera
- * as an XEM_PROJECTION_EYE entry its sprite owns. */
+ * `around`), after the field camera's record: the character's position
+ * (its descriptor's translation) through the camera as an
+ * XEM_PROJECTION_EYE entry its sprite owns. */
 static void xem_record_eye(void) {
     MATRIX *m = &field_view.scaled_world;
     FieldDescriptor *d;
@@ -269,9 +289,6 @@ static void xem_record_eye(void) {
         return;
     }
     d = &field_view.components.descriptors[field_work.controlled];
-    for (k = 0; k < 3; k++) {
-        xem_record_entry(XEM_PROJECTION_AXIS, 0, (u32)k, m->m[0][k], m->m[1][k], m->m[2][k]);
-    }
     for (i = 0; i < 3; i++) {
         v[i] = 0;
         for (k = 0; k < 3; k++) {
@@ -286,8 +303,9 @@ static void xem_record_eye(void) {
  * wider or farther out than the original's), the depth of the camera's
  * target through the sprites' view (field_view.scaled_world) as an
  * XEM_PROJECTION_FOCUS entry of the ring: a view pulled back moves the
- * camera by multiples of it; and, looking around, the controlled
- * character's place. Written to the ring only. */
+ * camera by multiples of it; and, looking from within or around the scene,
+ * that camera with its target and the controlled character's place.
+ * Written to the ring only. */
 void field_draw_models(void) {
     MATRIX *m = &field_view.scaled_world;
     s32 x, y, z, depth;
@@ -299,10 +317,27 @@ void field_draw_models(void) {
         depth = ((m->m[2][0] * x + m->m[2][1] * y + m->m[2][2] * z) >> 12) + m->t[2];
         xem_record_entry(XEM_PROJECTION_FOCUS, depth, 0, 0, 0, depth);
         if (xem_present_reveals->around != 0) {
+            xem_present_camera(m, x, y, z, XEM_CAMERA_FIELD);
             xem_record_eye();
         }
     }
     xem_original_field_draw_models();
+}
+
+/* The sprites' view matrix: the original, then, while a view from anywhere
+ * around the scene wants culled faces (xem/gte.h XEM_AROUND_ANYWHERE), the
+ * battle's camera (the matrix every battle frame sets it from, once its
+ * stage is drawn) recorded with the point it looks at. A field records its
+ * camera with its models (field_draw_models), the world map with its scene
+ * objects (worldmap_present.c), which every one of its frames draws.
+ * Written to the ring only. */
+void sprite_set_view_matrix(MATRIX *view) {
+    xem_original_sprite_set_view_matrix(view);
+    if (xem_reveals_wanted() && (xem_present_reveals->around & XEM_AROUND_ANYWHERE) && sprite_in_battle &&
+        view == &battle_camera.matrix) {
+        xem_present_camera(view, battle_camera_view_target.vx, battle_camera_view_target.vy, battle_camera_view_target.vz,
+                           XEM_CAMERA_BATTLE);
+    }
 }
 
 /* A sprite's draw matrix: its position through the view matrix, as the GTE

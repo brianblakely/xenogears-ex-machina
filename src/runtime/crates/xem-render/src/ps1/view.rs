@@ -304,13 +304,13 @@ impl GameView {
         if self.first_person.is_some() && self.scene.starts_with("field") {
             // Looking around from the controlled character: every face,
             // and where the character stands.
-            Some(Reveals { reach: [side as u16 + 32, 32], pull_back: 0, around: true })
+            Some(Reveals { reach: [side as u16 + 32, 32], pull_back: 0, around: Reveals::LOOK })
         } else if config.draw.culling.viewport {
             None
         } else if zoom > 1.0 {
             match self.focus {
                 // The margin covers the camera moving between frames.
-                Some(focus) => Some(Reveals { reach: [side as u16 + 32, 32], pull_back: ((zoom - 1.0) * focus).round() as u32, around: false }),
+                Some(focus) => Some(Reveals { reach: [side as u16 + 32, 32], pull_back: ((zoom - 1.0) * focus).round() as u32, around: 0 }),
                 None => {
                     // Pulled back k times, what lies at the camera's target
                     // depth within k frames of the middle shows, and nearer
@@ -319,14 +319,14 @@ impl GameView {
                     let width = 320.0 + 2.0 * side as f32;
                     let x = (2.0 * (zoom - 1.0) * width + side as f32 + 16.0).min(2048.0);
                     let y = (2.0 * (zoom - 1.0) * 240.0 + 16.0).min(2048.0);
-                    Some(Reveals { reach: [x as u16, y as u16], pull_back: 0, around: false })
+                    Some(Reveals { reach: [x as u16, y as u16], pull_back: 0, around: 0 })
                 }
             }
         } else if side > 0 || (self.scene.starts_with("worldmap") && !config.draw.fidelity.vertex_snapping) {
             // The sides, and a little more for faces leaning into them.
             // Modern world terrain also needs sub-pixel slivers the
             // original's whole-pixel winding test discarded inside them.
-            Some(Reveals { reach: [side as u16 + 16, 16], pull_back: 0, around: false })
+            Some(Reveals { reach: [side as u16 + 16, 16], pull_back: 0, around: 0 })
         } else {
             None
         }

@@ -98,7 +98,7 @@ void xem_present_sprite_facing(Sprite *sprite, u32 first, u32 last, s32 cut, s32
     XemSxyStore *store;
     FacingPart *part;
 
-    if (!xem_gte_ring->recording || !xem_present_reveals->around || facing->active ||
+    if (!xem_gte_ring->recording || !(xem_present_reveals->around & XEM_AROUND_LOOK) || facing->active ||
         sprite_in_battle || sprite_in_worldmap || !sprite->animations || !sprite->animation ||
         (sprite->render.word & 3) != 1 || field_work.controlled >= field_event_actor_count) {
         return;

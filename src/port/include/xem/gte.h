@@ -111,11 +111,13 @@ typedef struct {
  *   put back), and what the game skips because a projection overflowed and
  *   that camera sees is drawn again for the record (the field's sprite
  *   actors, present.c; the world map's scene objects, worldmap_present.c).
- *   With a view that looks around from within the field (`around`:
- *   first-person inspection), every face counts wherever it lies, as for a
+ *   With a view that looks from within or around the scene (`around`:
+ *   first-person inspection, or a view from anywhere around a field, a
+ *   battle or the world map), every face counts wherever it lies, as for a
  *   camera elsewhere but without a screen to reach: also behind the game's
- *   camera, facing away or at depth 0, and every scenery piece and sprite
- *   actor the field culls or skips is drawn for the record.
+ *   camera, facing away or at depth 0, and every scenery piece, sprite
+ *   actor and world map scene object the game culls or skips is drawn for
+ *   the record.
  * None of them changes what the game draws, links or keeps. */
 #define XEM_PRESENT_STORES 65536
 #define XEM_PRESENT_STORE_ADDRESS 0x70300000u
@@ -163,11 +165,20 @@ typedef struct {
     /* Set by the host: how far behind the game's camera, in depth units,
      * the view that wants them looks from (0: the game's camera). */
     unsigned int pull_back;
-    /* Set by the host: nonzero while that view looks around from the
-     * field's controlled character (first-person inspection). */
+    /* Set by the host: XEM_AROUND_* bits while that view looks from within
+     * or around the scene; 0 while it looks from the game's camera. */
     unsigned int around;
     XemReveal entries[XEM_PRESENT_REVEALS];
 } XemRevealRing;
+
+/* The `around` bits: the view looks around from the field's controlled
+ * character (first-person inspection: sprites are drawn again facing its
+ * eyes, sprite_facing.c), or from anywhere around the scene (a diorama:
+ * the battle's and the world map's cameras are recorded too). */
+enum {
+    XEM_AROUND_LOOK = 1,
+    XEM_AROUND_ANYWHERE = 2,
+};
 
 /* A model drawn again for the record (present.c): the renderers' links,
  * captured instead of made, and the packets they wrote, saved beforehand. */
@@ -185,15 +196,31 @@ typedef struct {
 
 /* What a non-drawn point in the ring is: the floor under a sprite
  * (present.c), the depth of the field camera's target, and, while the host
- * looks around (`around`), the world's x, y and z axes through the field
- * camera's rotation (`view`, 4.12 times the field's scale; `owner` the
- * axis) and the controlled character's position through the camera (its
- * sprite the owner), after its axes. */
+ * looks from within or around the scene (`around`), the camera the frame is
+ * drawn with, in this order: the world's x, y and z axes through its
+ * rotation (AXIS entries, `view` the matrix's column in 4.12, times the
+ * field's scale in a field; `owner` the axis, 0-2), its translation (an
+ * AXIS entry owned by 3), and the point it looks at in the same world
+ * units (CAMERA: `view` the point, `sz` its depth, `owner` the mode,
+ * XEM_CAMERA_*), so that a point's view is the rotation times the world
+ * point, shifted 12 bits, plus the translation; then, in a field, the
+ * controlled character's position through the camera (EYE, its sprite the
+ * owner). The world map's camera maps points relative to the camera's
+ * target, its z negated, as the world map places its objects
+ * (worldmap_present.c): its target is (0, the target's height, 0). */
 enum {
     XEM_PROJECTION_GROUND = 3,
     XEM_PROJECTION_FOCUS = 4,
     XEM_PROJECTION_AXIS = 6,
     XEM_PROJECTION_EYE = 7,
+    XEM_PROJECTION_CAMERA = 8,
+};
+
+/* A CAMERA entry's owner: which of the game's 3D modes drew the frame. */
+enum {
+    XEM_CAMERA_FIELD = 1,
+    XEM_CAMERA_BATTLE = 2,
+    XEM_CAMERA_WORLDMAP = 3,
 };
 
 #ifdef __psx__

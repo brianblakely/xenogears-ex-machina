@@ -1,4 +1,5 @@
-"""Presentation-only seams: cloud corner provenance and battle glyph class.
+"""Presentation-only seams: cloud corner provenance, battle glyph class and
+the camera record.
 
 Invented inputs exercise the actual port functions without original assets.
 """
@@ -31,10 +32,20 @@ void xem_original_battle_popup_draw_glyph(SpritePart *glyph, s32 colour) {
     test_glyph_colour = colour;
     test_glyph_class = xem_gte_ring->class_;
 }
+void xem_present_camera(MATRIX *m, s32 x, s32 y, s32 z, u32 mode);
+/* A camera turned 30 degrees about y (rows in 4.12), its translation, and
+ * the point a battle's looks at. */
+void test_record_camera(void) {
+    MATRIX m = {{{3547, 0, -2048}, {0, 4096, 0}, {2048, 0, 3547}}, {120, -40, 2600}};
+    xem_present_camera(&m, 300, -200, 500, XEM_CAMERA_BATTLE);
+}
 '''
         for path, name, signature in (
             ("src/port/asm.c", "xem_asm_link_9_words", "void xem_asm_link_9_words(u32 *entry, u32 *packet)"),
             ("src/port/present.c", "battle_popup_draw_glyph", "void battle_popup_draw_glyph(SpritePart *glyph, s32 colour)"),
+            ("src/port/present.c", "xem_record_entry",
+             "static void xem_record_entry(u32 class_, s32 sz, u32 owner, s32 x, s32 y, s32 z)"),
+            ("src/port/present.c", "xem_present_camera", "void xem_present_camera(MATRIX *m, s32 x, s32 y, s32 z, u32 mode)"),
         ):
             source += "\n" + signature + " {" + function_body(path, name) + "\n"
         fixture = Path(cls.build.name) / "presentation.c"
@@ -82,6 +93,26 @@ void xem_original_battle_popup_draw_glyph(SpritePart *glyph, s32 colour) {
         self.assertEqual(mem.u32(packet), 0x09ABCDEF)
         self.assertEqual(mem.u32(entry), 0x00101000)
         self.assertEqual(self.stores[0], 0)
+
+    def test_a_camera_is_recorded_as_its_axes_translation_and_the_point_it_looks_at(self):
+        self.ring[0] = 7  # entries written so far
+        self.lib.test_record_camera()
+        self.assertEqual(self.ring[0], 12, "five entries")
+
+        def entry(i):
+            # sxy, sz | class << 16, x, y, offset, h, owner, view[3]
+            words = list(self.ring[8 + (7 + i) * 10:8 + (8 + i) * 10])
+            view = [w - (1 << 32) if w >= 1 << 31 else w for w in words[7:10]]
+            return words[1] & 0xFFFF, words[1] >> 16, words[6], view
+
+        # The matrix's columns (axes 0-2), its translation (axis 3), then
+        # the target with its depth through the camera, owned by the mode.
+        columns = [[3547, 0, 2048], [0, 4096, 0], [-2048, 0, 3547]]
+        for k in range(3):
+            self.assertEqual(entry(k), (0, 6, k, columns[k]))
+        self.assertEqual(entry(3), (0, 6, 3, [120, -40, 2600]))
+        depth = ((2048 * 300 + 3547 * 500) >> 12) + 2600
+        self.assertEqual(entry(4), (depth, 8, 2, [300, -200, 500]))
 
     def test_battle_glyphs_are_interface_and_restore_the_callers_class(self):
         self.ring[1] = 2  # a surrounding sprite draw

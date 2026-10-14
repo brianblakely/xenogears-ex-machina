@@ -761,9 +761,10 @@ snapshots are its. The renderer only draws again what it drew:
   cloud's layers stop the recorded ones too.
   Intentionally hidden ones stay hidden;
   RAM stays the same (Lahan 150 frames at 1x, 3x and 5x wider: one hash). Each
-  sprite's floor point (its x and z at `ground` through the sprite view) and,
-  in the field, the depth of the camera's target are ring entries of their
-  own; the points the world map's overlay projects (its player marker,
+  sprite's floor point (its x and z at `ground` through the sprite view),
+  in the field the depth of the camera's target, and, for a view looking
+  from within or around the scene, the camera each frame is drawn with
+  ([Camera records](#camera-records)) are ring entries of their own; the points the world map's overlay projects (its player marker,
   `worldmap_map_overlay_draw`) are marked as interface. libgpu hands the
   three rings' headers to the GPU device before each transfer
   (`xem.gpu_projections`); the device writes the projection ring's
@@ -1023,10 +1024,17 @@ their screen and the field drops whole scenery pieces before anything reaches
 the GPU. With it off (the default) a wider or pulled-back view shows what
 the port recorded of that (above); with it on, only what the game drew.
 Back-face culling drops submitted triangles wound against the frame's
-majority (counted in `DrawStats`). Both are distinct from clipping (the
-drawing area, and the GPU size limit, always kept) and from intentional
-hiding and gameplay activation (game state, decided against the original
-camera and screen whatever is drawn, except as the next section says).
+majority (counted in `DrawStats`), a quad's two as the quad winds: its
+points run in Z order, so its second triangle (points 1, 2, 3) runs the
+other way round from its first and is judged as 1, 3, 2, and a quad
+facing the camera keeps both (`xem-render/tests/ps1.rs`
+`culling_is_off_by_default_and_counted_apart_from_the_gpu_limits`: of a
+scene's quads and triangles only the one face wound the other way is
+dropped, and the picture changes only where it lay). Both are distinct
+from clipping (the drawing area, and the GPU size limit, always kept) and
+from intentional hiding and gameplay activation (game state, decided
+against the original camera and screen whatever is drawn, except as the
+next section says).
 
 ### Characters in a wider view
 
@@ -1084,18 +1092,19 @@ under it (`xem_settings::look`). It ends when toggled again, when the field
 or its map is left, and under the Original renderer.
 
 It is presentation only. While it is on, `GameView::reveals` asks for every
-face the game culls (`Reveals::around`, the culled-face ring's `around`
-word): the port's visibility tests keep any face wherever it lies (behind
-the game's camera, facing away or at depth 0 too), the scenery pieces the
-field's bounding test culls and the sprite actors the character pass skips
-for overflow are all drawn for the record, and `field_draw_models` records
-the world's axes through the field camera (`field_view.scaled_world`'s
-columns) and the controlled character's position through it (its
-descriptor's translation) with its sprite (`XEM_PROJECTION_AXIS`,
-`XEM_PROJECTION_EYE`). The trace hands the place over in order with the
-commands (`TraceOp::Eye`), and each buffer's log keeps the one recorded for
-its frame (the newest within four vertical blanks when the buffer is
-cleared), so the view stands where the character stood in the frame shown.
+face the game culls (`Reveals::LOOK`, bit 0 of the culled-face ring's
+`around` word: [Camera records](#camera-records)): the port's visibility
+tests keep any face wherever it lies (behind the game's camera, facing away
+or at depth 0 too), the scenery pieces the field's bounding test culls and
+the sprite actors the character pass skips for overflow are all drawn for
+the record, and `field_draw_models` records the field camera
+(`XEM_PROJECTION_AXIS`, `XEM_PROJECTION_CAMERA`) and the controlled
+character's position through it (its descriptor's translation) with its
+sprite (`XEM_PROJECTION_EYE`). The trace hands the place over in order with
+the commands (`TraceOp::Eye`), and each buffer's log keeps the one recorded
+for its frame (the newest within four vertical blanks when the frame's
+first primitive is drawn), so the view stands where the character stood in
+the frame shown.
 From the first frame recorded so it looks along the heading of the game's
 camera, level, from 0.9 of the character's sprite's height above its feet,
 with a 70-degree field of view across the original's 320 pixels (H 228.5).
@@ -1127,6 +1136,93 @@ standing round the table). Measured in the forest (960x720 output, this
 machine's CPU and lavapipe, means per game frame): the game frame 1.5 ms
 without the view and 2.5 ms with it (4 763 culled faces recorded a frame),
 the presentation's CPU work 1.9 and 5.5 ms.
+
+### Camera records
+
+A view that looks at the scene from elsewhere than the game's camera needs
+the camera each frame was drawn with, to take the frame's view-space points
+back into its world (plan.md Phase 8's seated diorama). The culled-face
+ring's `around` word carries bits (`Reveals::around`, xem/gte.h
+`XEM_AROUND_*`; 0 the game's own camera): `Reveals::LOOK` (1) for
+first-person inspection, `Reveals::ANYWHERE` (2) for a view from anywhere
+around a field, a battle or the world map. With either bit every face
+counts wherever it lies, the field's culled scenery pieces and skipped
+sprite actors are drawn for the record, and so are the world map's scene
+objects its projection skips and the terrain triangles its winding test
+drops (before, with a pulled-back camera only); the sprites the port draws
+again facing the character's eyes come with `LOOK` only (`sprite_facing.c`),
+the battle's and the world map's cameras with `ANYWHERE` only. No host asks
+for `ANYWHERE` yet: the diorama view that will is the next part of Phase 8.
+
+The port records a camera as ring entries that are no drawn points
+(xem/gte.h), in this order: the world's x, y and z axes through its rotation
+(three `XEM_PROJECTION_AXIS` entries owned by 0-2: the matrix's columns in
+4.12, times the field's scale in a field), its translation (an AXIS entry
+owned by 3), and the point it looks at in the same world units with that
+point's depth through it (`XEM_PROJECTION_CAMERA`, owned by the mode:
+`XEM_CAMERA_FIELD`, `_BATTLE`, `_WORLDMAP`), so that a point's view is the
+rotation times the world point, shifted 12 bits, plus the translation
+(`present.c` `xem_present_camera`). Each mode records the matrix its frame
+is drawn with where it is set:
+
+| Mode | Where | Camera | Target |
+| --- | --- | --- | --- |
+| field | `field_draw_models`, with either bit (then the controlled character, `XEM_PROJECTION_EYE`) | `field_view.scaled_world` | `field_view.target` |
+| battle | `sprite_set_view_matrix` (WRAPPED), when the battle sets it from `battle_camera.matrix` once a frame, after drawing its stage | the look-at matrix with the quake's offset | `battle_camera_view_target` |
+| world map | `worldmap_objects_draw`, which every world-map frame calls (the actors' sprite pass that also sets the sprites' view matrix runs in the open map only) | `worldmap_camera_matrix`, which maps points relative to the camera's target with z negated, as the world map places its objects | (0, the target's height, 0), the point the orbit and look-at cameras look at |
+
+The trace hands each one over in order with the commands
+(`TraceOp::Camera`: `xem_gpu::Camera` with its axes, translation, target,
+focus depth and `CameraMode`; `Camera::world_point` inverts it,
+`Camera::view_point` applies it). A buffer's log keeps the records current
+when its frame's first primitive is drawn (`FrameLog::camera` and `eye`,
+the newest within four vertical blanks), and `FrameRenderer::camera` the
+shown frame's: the port makes a frame's records while the game builds it,
+before any of its primitives, so a buffer cleared and one the game draws
+over instead (a battle's stage, whose log begins with the trace that holds
+the frame) both keep their own. Taken when a log began, as the place was
+before, the desert battle's frames each kept the camera of the frame
+before: no primitive held still between its frames with alike records. A
+frame recorded with either bit but shown from the game's camera shows none
+of its culled faces, which lie anywhere. The records write the rings only:
+from the same state the game ends at the same RAM, VRAM, sound and clock
+with `around` 0, 1 and 2 as without a trace.
+
+Tests: `xem-headless/tests/camera.rs` presents frames with `ANYWHERE` as a
+host would and takes each shown frame's camera and primitives; the
+scenery that holds still (primitives whose view-space points stay the same
+from a frame to the next while the camera record does) must stay within 4
+world units through each frame's own camera while the game's camera turns
+or moves, and move more than four times that through the frame before's.
+Measured here (suite profile, lavapipe): in Lahan (map 1, L1 turning the
+camera 30 of every 150 frames, 600 frames) 298 of 299 frames shown keep a
+camera, the camera turns 300 degrees, the scenery moves at most 0.31 units a
+frame (a median 50.2 through the frame before's camera); the battle the
+debug battle selector starts as it is, with Cross every 10 frames (900
+frames): the camera turns 173 degrees and travels 19 530 units, the stage
+moves at most 1.02 (a median 18.5); its desert, drawn over the last frame,
+as its camera comes in (1500 frames): at most 1.02 (24.5); the world map
+turned by L1 (600 frames): 85 degrees, at most 1.07 (41.7). The target the
+battle and the world map record lies on their camera's axis within 2% of
+its depth, at its recorded depth; the world map's (its height -256 there,
+y down) negated would lie off it.
+`camera_records_leave_ram_vram_sound_and_time_unchanged` runs 240 frames
+from the same state in each of the four with `around` 0, 1 and 2 and
+without a trace: one RAM hash, VRAM, sound and clock each. One
+desert battle frame drawn with `ANYWHERE` held 8 262 primitives, 4 654 of
+them culled faces. `xem-render/tests/ps1.rs`
+`each_frame_keeps_the_camera_recorded_before_its_first_primitive` (a cleared
+buffer, one drawn over, a record older than four vertical blanks),
+`xem-gpu/tests/gpu.rs`
+`a_recorded_camera_comes_before_its_frame_and_its_inverse_gives_back_world_points`
+and `tests/test_port_presentation.py` (the entries `xem_present_camera`
+writes) check the format and the logs without the game.
+
+Not done or not measured: no host shows a view from anywhere yet, so
+nothing presents these records; the cost of `ANYWHERE` in battles and on
+the world map is not measured; the world map's scripted scenes, the
+arena, menus and movies were not run with it; the first battle's camera
+turned while it attacked, the desert's only came in (0.9 degrees).
 
 ### HD-2D effects
 

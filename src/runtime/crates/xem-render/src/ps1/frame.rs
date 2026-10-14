@@ -32,7 +32,7 @@ use super::{
 };
 use std::collections::HashMap;
 use std::sync::Arc;
-use xem_gpu::{Class, Eye, Primitive, Shape, TraceOp, VramRect};
+use xem_gpu::{Camera, Class, Eye, Primitive, Shape, TraceOp, VramRect};
 
 /// How the frame is framed.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -94,9 +94,11 @@ pub struct FrameRenderer {
     /// primitives, and the frame before.
     newest: Option<((u16, u16), u64)>,
     newest_ops: Vec<TraceOp>,
-    /// Where the field's controlled character stood in the newest frame,
-    /// when the port recorded it ([`xem_gpu::TraceOp::Eye`]).
+    /// Where the field's controlled character stood in the newest frame and
+    /// the camera the game drew it with, when the port recorded them
+    /// ([`xem_gpu::TraceOp::Eye`], [`xem_gpu::TraceOp::Camera`]).
     eye: Option<Eye>,
+    camera: Option<Camera>,
     /// How many of them change the picture (not the native pixels a copy,
     /// fill or drawing left, which only follow what was drawn).
     drawn: usize,
@@ -161,6 +163,7 @@ impl FrameRenderer {
             newest: None,
             newest_ops: Vec::new(),
             eye: None,
+            camera: None,
             drawn: 0,
             previous_ops: Vec::new(),
             replayed: Vec::new(),
@@ -204,13 +207,16 @@ impl FrameRenderer {
             self.previous_ops.clear();
             self.snapshot = None;
             self.eye = None;
+            self.camera = None;
             self.drawn = 0;
             return false;
         };
         let identity = ((log.rect.x, log.rect.y), log.frames);
         if self.newest == Some(identity) {
             // The same frame, perhaps grown (a frame drawn over several
-            // takes): a log only grows until its buffer is cleared.
+            // takes): a log only grows until its buffer is cleared, and
+            // takes its records with its first primitive.
+            (self.eye, self.camera) = (log.eye, log.camera);
             let known = self.newest_ops.len();
             if log.ops.len() > known {
                 self.newest_ops.extend_from_slice(&log.ops[known..]);
@@ -226,6 +232,7 @@ impl FrameRenderer {
         self.newest = Some(identity);
         self.snapshot = Some(log.start.clone());
         self.eye = log.eye;
+        self.camera = log.camera;
         true
     }
 
@@ -233,6 +240,12 @@ impl FrameRenderer {
     /// shown, when the port recorded it (while a view looks around).
     pub fn eye(&self) -> Option<Eye> {
         self.eye
+    }
+
+    /// The camera the game drew the newest frame shown with, when the port
+    /// recorded it (while a view looks from within or around the scene).
+    pub fn camera(&self) -> Option<Camera> {
+        self.camera
     }
 
     /// How many of the newest frame's ops change its picture.
@@ -373,11 +386,12 @@ impl FrameRenderer {
         builder.capture_aliases = &renderer.capture.aliases;
         builder.feedback = feedback.then_some(rect);
         builder.vram = self.snapshot.is_some().then_some(&self.held[..]);
-        // A frame recorded looking around holds faces from anywhere, not
-        // only beside the screen: seen from the game's camera, none.
+        // A frame recorded looking from within or around the scene holds
+        // faces from anywhere, not only beside the screen: seen from the
+        // game's camera, none.
         builder.reveal = if pulled || framing.look.is_some() {
             Reveal::Everywhere
-        } else if side > 0 && self.eye.is_none() {
+        } else if side > 0 && self.eye.is_none() && self.camera.is_none() {
             Reveal::Sides
         } else {
             Reveal::Hidden

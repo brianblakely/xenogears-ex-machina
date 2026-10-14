@@ -84,22 +84,104 @@ pub struct Reveals {
     /// How far behind the game's camera the view looks from (GTE depth
     /// units; 0 for the game's own camera).
     pub pull_back: u32,
-    /// The view looks around from the field's controlled character
-    /// (first-person inspection): every face counts wherever it lies, and
-    /// the port records where the character stands ([`TraceOp::Eye`]).
-    pub around: bool,
+    /// Whether the view looks from within or around the scene, as the
+    /// port's `around` bits ([`Reveals::LOOK`], [`Reveals::ANYWHERE`]; 0
+    /// from the game's camera): every face counts wherever it lies, and the
+    /// port records the camera each frame is drawn with ([`TraceOp::Camera`])
+    /// and, in a field, where the controlled character stands
+    /// ([`TraceOp::Eye`]).
+    pub around: u8,
+}
+
+impl Reveals {
+    /// [`Reveals::around`]: the view looks around from the field's
+    /// controlled character (first-person inspection); the port also draws
+    /// the field's sprites again facing its eyes.
+    pub const LOOK: u8 = 1;
+    /// [`Reveals::around`]: the view looks from anywhere around a field, a
+    /// battle or the world map (a diorama); the port also records the
+    /// battle's and the world map's cameras.
+    pub const ANYWHERE: u8 = 2;
 }
 
 /// Where the field's controlled character stands, as the port records it
-/// while the view looks around ([`Reveals::around`]): its position and the
-/// world's x, y and z axes (4.12 times the field's scale) through the field
-/// camera, in the camera's view space (the space of [`TraceVertex::view`]),
-/// and its sprite (the owner of its parts).
+/// while the view looks from within or around the scene
+/// ([`Reveals::around`]): its position and the world's x, y and z axes
+/// (4.12 times the field's scale) through the field camera, in the camera's
+/// view space (the space of [`TraceVertex::view`]), and its sprite (the
+/// owner of its parts).
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Eye {
     pub position: [f32; 3],
     pub axes: [[f32; 3]; 3],
     pub sprite: u32,
+}
+
+/// The camera the game draws a frame with, as the port records it while the
+/// view looks from within or around the scene ([`Reveals::around`]): the
+/// world's x, y and z axes through its rotation (its matrix's columns in
+/// 4.12, times the field's scale in a field) and its translation, so that a
+/// world point's view-space point (the space of [`TraceVertex::view`]) is
+/// `axes · point / 4096 + translation`; the point it looks at, in the same
+/// world units (`target`), and that point's depth through it (`focus`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Camera {
+    pub axes: [[f32; 3]; 3],
+    pub translation: [f32; 3],
+    pub target: [f32; 3],
+    pub focus: f32,
+    pub mode: CameraMode,
+}
+
+/// Which of the game's 3D modes a [`Camera`] drew a frame of, and so the
+/// world its points lie in (each with y down).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CameraMode {
+    /// A field: its world (`field_view.scaled_world`, looking at
+    /// `field_view.target`).
+    Field,
+    /// A battle: its stage's world (`battle_camera.matrix`, looking at
+    /// `battle_camera_view_target`).
+    Battle,
+    /// The world map: points relative to the camera's target, z negated, as
+    /// the world map places them (`worldmap_camera_matrix`, looking at the
+    /// target: (0, its height, 0)).
+    Worldmap,
+}
+
+impl CameraMode {
+    /// The mode a camera record's owner names (xem/gte.h `XEM_CAMERA_*`).
+    fn from_owner(owner: u32) -> Option<CameraMode> {
+        match owner {
+            1 => Some(CameraMode::Field),
+            2 => Some(CameraMode::Battle),
+            3 => Some(CameraMode::Worldmap),
+            _ => None,
+        }
+    }
+}
+
+impl Camera {
+    /// The world point whose view-space point is `view` (the camera's
+    /// transform inverted), or `None` when its axes span no space.
+    pub fn world_point(&self, view: [f32; 3]) -> Option<[f32; 3]> {
+        let column = |k: usize| self.axes[k].map(f64::from);
+        let (a, b, c) = (column(0), column(1), column(2));
+        let d: [f64; 3] = std::array::from_fn(|i| (f64::from(view[i]) - f64::from(self.translation[i])) * 4096.0);
+        let cross = |u: [f64; 3], v: [f64; 3]| [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+        let dot = |u: [f64; 3], v: [f64; 3]| u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+        // Cramer's rule for the point p with a·p.x + b·p.y + c·p.z = d.
+        let determinant = dot(a, cross(b, c));
+        if determinant.abs() < 1e-6 {
+            return None;
+        }
+        Some([dot(d, cross(b, c)), dot(a, cross(d, c)), dot(a, cross(b, d))].map(|x| (x / determinant) as f32))
+    }
+
+    /// The view-space point of the world point `point` through the camera.
+    pub fn view_point(&self, point: [f32; 3]) -> [f32; 3] {
+        std::array::from_fn(|i| (0..3).map(|k| self.axes[k][i] * point[k]).sum::<f32>() / 4096.0 + self.translation[i])
+    }
 }
 
 /// A screen point the game stored (the port's store ring).
@@ -170,12 +252,16 @@ pub enum Class {
 }
 
 /// Ring entries that are not drawn points (xem/gte.h): the floor under a
-/// sprite, the depth of the field camera's target, and the world's axes and
-/// the controlled character's position through the field camera.
+/// sprite, the depth of the field camera's target, the world's axes through
+/// a camera and its translation (an axis owned by [`TRANSLATION`]), the
+/// point that camera looks at, and the controlled character's position
+/// through the field camera.
 const GROUND: u8 = 3;
 const FOCUS: u8 = 4;
 const AXIS: u8 = 6;
 const EYE: u8 = 7;
+const CAMERA: u8 = 8;
+const TRANSLATION: u32 = 3;
 /// Points the interface projects (xem/gte.h: the world map's player marker),
 /// traced as interface: flat, at the original's whole pixels.
 const INTERFACE: u8 = 5;
@@ -390,9 +476,14 @@ pub enum TraceOp {
     /// [`Gpu::trace_movie_frames_left`]). Presentation only.
     MovieFramesLeft(u16),
     /// Where the field's controlled character stands in the frame the game
-    /// draws next (while the view looks around: [`Reveals::around`]), in
-    /// order with the commands: the port records it as it builds the frame.
+    /// draws next (while the view looks from within or around the scene:
+    /// [`Reveals::around`]), in order with the commands: the port records
+    /// it as it builds the frame.
     Eye(Eye),
+    /// The camera the game draws its next frame with (while the view looks
+    /// from within or around the scene: [`Reveals::around`]), in order with
+    /// the commands: the port records it as it builds the frame.
+    Camera(Camera),
 }
 
 /// A movie macroblock as the MDEC decoded it, before its conversion to RGB:
@@ -457,11 +548,13 @@ pub(crate) struct Recorder {
     /// Points traced: matched to their projection, and not (2D points).
     matches: std::cell::Cell<[u64; 2]>,
     /// The newest floor point of each sprite (by owner), the camera focus
-    /// depth since the last take, and the world's axes the port recorded
-    /// last (before the controlled character's position).
+    /// depth since the last take, and the world's axes and the translation
+    /// the port recorded last (before the camera's target and the
+    /// controlled character's position).
     grounds: WordMap<u32>,
     focus: Option<u16>,
     axes: [[f32; 3]; 3],
+    translation: [f32; 3],
     /// The age of culled faces: vertical blanks after which the port had
     /// recorded something new. A game that records nothing (paused) holds
     /// its last list and its faces with it.
@@ -561,8 +654,18 @@ impl Recorder {
                 }
                 FOCUS => self.focus = Some(projection.sz),
                 AXIS => {
-                    if let Some(axis) = self.axes.get_mut(projection.owner as usize) {
-                        *axis = projection.view.map(|c| c as f32);
+                    let view = projection.view.map(|c| c as f32);
+                    match self.axes.get_mut(projection.owner as usize) {
+                        Some(axis) => *axis = view,
+                        None if projection.owner == TRANSLATION => self.translation = view,
+                        None => {}
+                    }
+                }
+                CAMERA => {
+                    if let Some(mode) = CameraMode::from_owner(projection.owner) {
+                        let target = projection.view.map(|c| c as f32);
+                        let camera = Camera { axes: self.axes, translation: self.translation, target, focus: f32::from(projection.sz), mode };
+                        self.ops.push(TraceOp::Camera(camera));
                     }
                 }
                 EYE => {
@@ -695,7 +798,7 @@ impl Gpu {
         self.trace.as_ref().and_then(|t| t.wanted).map_or(0, |r| r.pull_back)
     }
 
-    /// Whether [`Gpu::set_reveals`]'s view looks around, as the port's word.
+    /// [`Gpu::set_reveals`]'s `around` bits as the port's word (0 for none).
     pub fn reveal_around(&self) -> u32 {
         self.trace.as_ref().and_then(|t| t.wanted).map_or(0, |r| u32::from(r.around))
     }
