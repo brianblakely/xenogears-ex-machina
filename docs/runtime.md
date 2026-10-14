@@ -631,7 +631,14 @@ samples identical, the rest within 1; the declared tolerance is 2, each
 host's own sin, cos and atan2 making the filters), and the presentation
 costs 2.1% of real time in Chromium on this machine, 5.4 and 7.4% in two
 runs with the processor throttled four times (a phone's budget; the cost
-test runs with the timed tests). `xr-game.test.mjs`: the listener turns with the emulated headset
+test runs with the timed tests). `web/tests/sound.test.mjs`: from field 15
+and from the opening movie (frame 4 200 of the new-game route, its sound
+CD input), Chromium's raw Mono, Stereo and Wide, Binaural bypassed, and
+Binaural turned on and off again are xem-headless's output sample for
+sample (tolerance 0: raw playback is integer arithmetic on both hosts;
+while Binaural presents, within its declared 2, measured 1 in the field
+and 0 in the movie, where it keeps the CD's mix); in the movie Mono's
+output is Stereo's, as the findings say. `xr-game.test.mjs`: the listener turns with the emulated headset
 while the game is paused, and has no head after the session.
 
 Not done or not measured: no listening tests with people (direction and
