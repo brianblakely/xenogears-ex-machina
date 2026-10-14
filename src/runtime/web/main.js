@@ -742,8 +742,9 @@ for (const type of ['keydown', 'keyup']) {
     const down = type === 'keydown';
     if (down) startAudioOnGesture();
     if (down && event.key === 'Escape') {
-      // Unless this Escape released the mouse and opened the panel already.
-      if (performance.now() - pointerReleasedAt > 250) app.set_panel_visible(!app.panel_visible());
+      // Unless this Escape released the mouse and opened the panel already,
+      // or closes the panel's confirmation (a save's Delete) instead.
+      if (performance.now() - pointerReleasedAt > 250 && !app.cancel_dialog()) app.set_panel_visible(!app.panel_visible());
       releasePointerForGame();
       event.preventDefault();
       return;

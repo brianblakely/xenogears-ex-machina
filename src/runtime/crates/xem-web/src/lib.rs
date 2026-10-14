@@ -983,9 +983,19 @@ impl XemApp {
 
     pub fn set_panel_visible(&mut self, visible: bool) {
         if let Some(renderer) = &mut self.renderer {
-            if renderer.panel_visible && !visible && let Some(panel) = renderer.panel() { panel.cancel_pointer(); }
+            if renderer.panel_visible && !visible && let Some(panel) = renderer.panel() {
+                panel.cancel_pointer();
+                // A hidden panel asks nothing (a save's Delete).
+                panel.cancel_dialog();
+            }
             renderer.panel_visible = visible && renderer.has_panel();
         }
+    }
+
+    /// Escape on the shown panel: closes its confirmation if one shows (the
+    /// page then keeps the panel), saying whether one did.
+    pub fn cancel_dialog(&mut self) -> bool {
+        self.renderer.as_ref().filter(|r| r.panel_visible).and_then(|r| r.panel()).is_some_and(|panel| panel.cancel_dialog())
     }
 
     pub fn panel_visible(&self) -> bool {
