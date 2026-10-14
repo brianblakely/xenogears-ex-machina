@@ -577,7 +577,28 @@ the original pans it to; the opening movie's sound stays within 1 of the
 original mix; fast-forward and rewind keep presenting; a restored state
 sounds the same every time; in the forest's battle (the slice's route) the
 combatants' sounds are placed at their sprites (8 effects) around the
-formation's centre, which stays put through the battle. `web/tests/binaural.test.mjs`: one state
+formation's centre, which stays put through the battle. Along a walk through
+field 509 (`tests/reference-inputs/binaural-field509-walk.json`, a session
+log: six emitter actors playing three sounds, of which the original keeps
+the three nearest the character sounding, a set that changes nine times on
+the walk; the camera turned by 45 and 90 degrees, turns in place, the menu
+and a jump), ten sessions from one state (plain Stereo; Binaural with its
+defaults, bypassed, music only, effects only, immersion 0 and 100;
+head-tracked music under a head sweeping 90 degrees either way; sweeping
+first-person axes; the settings changed every 120 frames, off and on again
+among them) have the same game memory (`memory_hash`), voice volume
+registers and current volumes every frame and the same SPU every 60
+frames, and every placed source reports exactly the gain the driver staged
+for its voices (13 152 source frames whose voices held still and sounded
+through the frame, 1 606 of them effects; within 0.3% of the driver's own
+gain before panning, recomputed from its records by the decomp's formula,
+which is the pan law's rounding). Mono and Wide on the same walk differ
+from Stereo only in what the sound-mode findings name: the mode bits;
+Mono's staged volumes (every channel's gain before its law the same in all
+three modes, each staging its mode's law: 110 586 stagings checked), its
+voices' volumes and the reverb work area they feed; Wide's master right and
+reverb-depth left (the driver's pair and the copy `SpuSetReverbModeDepth`
+keeps) and the three SPU registers they reach. `web/tests/binaural.test.mjs`: one state
 restored natively and in Chromium presents the same mix (99.6% of the
 samples identical, the rest within 1; the declared tolerance is 2, each
 host's own sin, cos and atan2 making the filters), and the presentation
