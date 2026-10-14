@@ -7,24 +7,21 @@
 // paused (and with it the Binaural mode's listener, the music's stage
 // turning with the head, or staying put and heard against it with
 // head-tracked music); leaving returns to the canvas; and the game's RAM
-// after the same frames is the same in and out of the headset.
+// after the same frames is the same in and out of the headset. First-person
+// inspection (field 30, IWER's tracked hands): the underhand grab looks from
+// within the scene through each view, a head turn changes the view while the
+// player's Pause holds the game, and the grab again gives the screen back at
+// its size.
 
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
-import { HEADLESS, NO_WEBGPU, ROOT, SHOTS, USER_DISC, WEB, start, status } from './support.mjs';
+import { HAND_MODEL, HEADLESS, IWER, NO_WEBGPU, QUEST, QUEST_BROWSER, SHOTS, USER_DISC, WEB, start, status } from './support.mjs';
 
-const available = existsSync(USER_DISC) && existsSync(join(WEB, 'game', 'game.wasm')) && existsSync(HEADLESS);
+const available = IWER && existsSync(USER_DISC) && existsSync(join(WEB, 'game', 'game.wasm')) && existsSync(HEADLESS);
 mkdirSync(SHOTS, { recursive: true });
-
-const QUEST_BROWSER = 'Mozilla/5.0 (X11; Linux x86_64; Quest 3) AppleWebKit/537.36 (KHTML, like Gecko) '
-  + 'OculusBrowser/37.0.0.0 SamsungBrowser/4.0 Chrome/132.0.0.0 VR Safari/537.36';
-const IWER = existsSync(join(ROOT, 'src/runtime/web/node_modules/iwer/build/iwer.min.js'))
-  ? readFileSync(join(ROOT, 'src/runtime/web/node_modules/iwer/build/iwer.min.js'), 'utf8') : '';
-const QUEST = `${IWER}\n;window.xrDevice = new IWER.XRDevice(IWER.metaQuest3, { stereoEnabled: true });`
-  + 'window.xrDevice.installRuntime({ forceInstall: true });';
 
 const xr = async (page) => (await status(page)).page.xr;
 
@@ -150,6 +147,135 @@ describe('immersive play in a headset browser', { skip: !available && `needs ${U
       const flat = (await status(page)).loop.animationFrames;
       await page.waitForTimeout(300);
       assert.ok((await status(page)).loop.animationFrames > flat, 'the canvas draws again');
+      assert.deepEqual(page.errors, []);
+    } finally {
+      await browser.close();
+    }
+  });
+
+  test('first-person inspection looks from within the scene through each view, paused or not', { timeout: 600_000 }, async () => {
+    // Field 30 with Fei walked into the room (as xr-game-smoke.sh does).
+    const state = join(SHOTS, 'xr-field30.state');
+    execFileSync(HEADLESS, ['--disc', USER_DISC, '--control'], {
+      input: [{ cmd: 'enter_field', map: 30 }, { cmd: 'frames', count: 400 }, { cmd: 'press', buttons: ['down'], frames: 60 },
+        { cmd: 'frames', count: 30 }, { cmd: 'state_save', path: state }].map((c) => JSON.stringify(c)).join('\n') + '\n',
+    });
+    const browser = await start({ args: NO_WEBGPU, context: { userAgent: QUEST_BROWSER }, initScripts: [{ content: QUEST + HAND_MODEL }] });
+    try {
+      const page = await browser.page('?xrScale=0.25');
+      await page.setInputFiles('#file', USER_DISC);
+      await page.waitForFunction(() => window.xem.status().disc?.state === 'identified', null, { timeout: 60_000 });
+      await page.evaluate(() => window.xem.boot());
+      const base64 = readFileSync(state).toString('base64');
+      await page.evaluate((base64) => window.xem.importSnapshot(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))), base64);
+      await page.evaluate(() => window.xem.setRunning(true));
+      await page.click('#vr');
+      await page.waitForFunction(() => window.xem.status().xr.input && window.xem.status().page.xr.frames > 20, null, { timeout: 60_000 });
+      const frames = (n) => page.evaluate(async (n) => {
+        const start = window.xem.status().page.xr.frames;
+        while (window.xem.status().page.xr.frames < start + n) await new Promise((r) => setTimeout(r, 10));
+      }, n);
+      const look = async () => (await status(page)).renderer.look;
+      const layer = await page.evaluate(() => {
+        const gl = document.querySelector('canvas').getContext('webgl2');
+        return [gl.drawingBufferWidth, gl.drawingBufferHeight];
+      });
+      // Nine points about each view's centre (layer pixels from the bottom left).
+      const points = [0.25, 0.75].flatMap((u) => [-0.04, 0, 0.04].flatMap((dx) => [-0.08, 0, 0.08]
+        .map((dy) => [Math.floor((u + dx) * layer[0]), Math.floor((0.5 + dy) * layer[1])])));
+      const read = () => page.evaluate((points) => window.xem.xr.readback(points), points);
+      // The session's and the game's rates over two seconds (recorded, not checked).
+      const rates = async () => {
+        const before = await status(page);
+        const t0 = Date.now();
+        await page.waitForTimeout(2000);
+        const after = await status(page);
+        const seconds = (Date.now() - t0) / 1000;
+        return `session ${((after.page.xr.frames - before.page.xr.frames) / seconds).toFixed(1)} frames/s, `
+          + `game ${((after.loop.gameFrames - before.loop.gameFrames) / seconds).toFixed(1)} frames/s`;
+      };
+      const screen = await read();
+      console.log(`as the screen: ${await rates()}`);
+
+      // The controllers' Back (the right stick's click) released alone
+      // toggles it; the right stick turns the view 30 degrees a push.
+      const click = async () => {
+        await page.evaluate(() => window.xrDevice.controllers.right.updateButtonValue('thumbstick', 1));
+        await frames(3);
+        await page.evaluate(() => window.xrDevice.controllers.right.updateButtonValue('thumbstick', 0));
+        await frames(3);
+      };
+      await click();
+      let info = await status(page);
+      assert.equal(info.xr.inspecting, true, 'the right stick\'s click turned inspection on');
+      assert.equal(info.renderer.firstPerson, true);
+      await page.waitForFunction(() => window.xem.status().xr.within, null, { timeout: 30_000 });
+      await page.evaluate(() => window.xrDevice.controllers.right.updateAxes('thumbstick', 1, 0));
+      await frames(6);
+      await page.evaluate(() => window.xrDevice.controllers.right.updateAxes('thumbstick', 0, 0));
+      await frames(3);
+      assert.ok(Math.abs((await look()).yaw - Math.PI / 6) < 1e-3, `one push, one 30-degree step: ${JSON.stringify(await look())}`);
+      assert.equal((await look()).pitch, 0, 'the stick does not pitch: the head does');
+      await click();
+      assert.equal((await status(page)).xr.inspecting, false, 'clicked again, off');
+
+      // The hands: the underhand grab (palm up) looks from within the scene.
+      await page.evaluate(() => {
+        const device = window.xrDevice;
+        device.primaryInputMode = 'hand';
+        window.handModel.install(device);
+        device.hands.left.position.set(-0.15, 1.4, -0.3);
+        device.hands.right.position.set(0.15, 1.4, -0.3);
+        window.handModel.set(device, 'left', 'open');
+        window.handModel.set(device, 'right', 'open');
+      });
+      await frames(6);
+      const grab = async (palmUp) => {
+        await page.evaluate((up) => window.xrDevice.hands.right.quaternion.set(0, 0, up ? 1 : 0, up ? 0 : 1), palmUp);
+        await frames(3);
+        for (const name of ['open', 'half', 'fist', 'open']) {
+          await page.evaluate((name) => window.handModel.set(window.xrDevice, 'right', name), name);
+          await frames(3);
+        }
+      };
+      await grab(true);
+      assert.equal((await status(page)).xr.inspecting, true, 'the underhand grab turned inspection on');
+      await page.waitForFunction(() => window.xem.status().xr.within, null, { timeout: 30_000 });
+      await frames(3);
+      const ahead = await read();
+      console.log(`view centres: the screen ${screen.slice(0, 4)}, from within ${ahead.slice(0, 4)}`);
+      assert.notDeepEqual(ahead, screen, 'the views show the scene from within, not the screen');
+      console.log(`from within the scene: ${await rates()}`);
+
+      // The player's Pause (the overhand grab): the game stands still and
+      // a quarter turn of the head to the right turns the view.
+      await grab(false);
+      info = await status(page);
+      assert.equal(info.xr.pauses.player, true, 'the Pause grab paused the game');
+      const held = info.loop.gameFrames;
+      await frames(3);
+      const still = await read();
+      await page.evaluate(() => window.xrDevice.quaternion.set(0, -Math.SQRT1_2, 0, Math.SQRT1_2));
+      await frames(8);
+      const turned = await read();
+      info = await status(page);
+      assert.equal(info.loop.gameFrames, held, 'the game stays paused');
+      assert.equal(info.xr.within, true, 'the views go on looking from within the scene');
+      assert.notDeepEqual(turned, still, 'turning the head turns the view while the game is paused');
+      await page.evaluate(() => window.xrDevice.quaternion.set(0, 0, 0, 1));
+      await frames(8);
+      assert.deepEqual(await read(), still, 'the head back, the view is too');
+
+      // Resumed, then the underhand grab again: the screen, at its size.
+      await grab(false);
+      assert.equal((await status(page)).xr.pauses.player, false, 'resumed');
+      await grab(true);
+      info = await status(page);
+      assert.equal(info.xr.inspecting, false, 'the underhand grab again turned inspection off');
+      assert.equal(info.xr.within, false, 'the screen again');
+      assert.equal(info.xr.scale, 1, 'the screen kept its size');
+      await page.evaluate(() => window.xem.xr.exit());
+      await page.waitForFunction(() => !window.xem.status().page.xr.active, null, { timeout: 30_000 });
       assert.deepEqual(page.errors, []);
     } finally {
       await browser.close();

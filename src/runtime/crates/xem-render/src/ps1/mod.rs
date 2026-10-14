@@ -17,9 +17,9 @@ mod view;
 
 pub use diorama::{DioramaPresented, DioramaSpace, DioramaStats, Table, Turns, XrView};
 pub use effects::{DebugView, Effects, EffectsRenderer, Lighting, Quality, SceneAnalysis, SpriteGroup};
-pub use frame::{FrameRenderer, Framing, Look, Welder, central_depth, first_person, interpolate, pull_back, weld};
+pub use frame::{FrameRenderer, Framing, Interface, Look, Welder, central_depth, first_person, interpolate, pull_back, weld};
 pub use movie::{MovieRenderer, MovieTiles, Planes, fitted, planes};
-pub use view::{GameView, HostClass, MAX_WIDE_SIDE, Presented, ViewConfig, scene_zoom, wide_side};
+pub use view::{GameView, HeadsetEye, HeadsetPresented, HostClass, MAX_WIDE_SIDE, Presented, ViewConfig, scene_zoom, wide_side};
 
 use bytemuck::{Pod, Zeroable};
 use std::collections::HashMap;
@@ -169,11 +169,13 @@ pub(crate) enum Reveal {
 /// A camera within the scene (first-person inspection, [`frame::first_person`]):
 /// the scene's points are in its space ([`xem_gpu::TraceVertex::view`]:
 /// right, down, forward), polygons reaching nearer than `distance` are
-/// clipped there, and `h` projects their points.
+/// clipped there, and `h` and `shift` project their points as
+/// [`frame::Look`]'s do.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Near {
     pub(crate) distance: f32,
-    pub(crate) h: f32,
+    pub(crate) h: [f32; 2],
+    pub(crate) shift: [f32; 2],
 }
 
 /// [`PassUniform::options`]: depth from its reciprocal, which interpolates
@@ -1420,7 +1422,8 @@ fn push_line(vertices: &mut Vec<Vertex>, [a, b]: [Vertex; 2], [(x0, y0), (x1, y1
 /// camera's space, each with the vertex it was built as) clipped to what
 /// lies beyond the near plane, as triangles: a point on an edge takes the
 /// colour and texture coordinates of its place along it, and each point is
-/// projected about `center` (sub-pixel unless `snap`).
+/// projected about `center` as the near plane's camera projects (sub-pixel
+/// unless `snap`).
 fn push_clipped(vertices: &mut Vec<Vertex>, corners: [([f32; 3], Vertex); 3], near: Near, center: (f32, f32), perspective: bool, snap: bool) {
     let mut polygon = [([0.0f32; 3], Vertex::default()); 4];
     let mut n = 0;
@@ -1441,7 +1444,7 @@ fn push_clipped(vertices: &mut Vec<Vertex>, corners: [([f32; 3], Vertex); 3], ne
     }
     let project = |(point, vertex): ([f32; 3], Vertex)| {
         let z = point[2].max(near.distance);
-        let (x, y) = (center.0 + near.h * point[0] / z, center.1 + near.h * point[1] / z);
+        let (x, y) = (center.0 + near.shift[0] + near.h[0] * point[0] / z, center.1 + near.shift[1] + near.h[1] * point[1] / z);
         let (x, y) = if snap { (x.floor(), y.floor()) } else { (x, y) };
         Vertex { position: [x + 0.5, y + 0.5], depth: z, w: if perspective { z / 1024.0 } else { 1.0 }, ..vertex }
     };
@@ -2825,7 +2828,7 @@ mod tests {
         // One point 90 units behind the near plane (10), two 90 ahead of it.
         let corners = [([0.0, 100.0, -80.0], corner(0.0, 0.0)), ([-100.0, 100.0, 100.0], corner(10.0, 1.0)), ([100.0, 100.0, 100.0], corner(20.0, 1.0))];
         let mut vertices = Vec::new();
-        push_clipped(&mut vertices, corners, Near { distance: 10.0, h: 100.0 }, (160.0, 120.0), true, false);
+        push_clipped(&mut vertices, corners, Near { distance: 10.0, h: [100.0; 2], shift: [0.0; 2] }, (160.0, 120.0), true, false);
         assert_eq!(vertices.len(), 6, "a quad: two triangles");
         // The cuts lie on the near plane halfway along the edges from the
         // point behind it, with the colour and texture coordinates there.
@@ -2839,7 +2842,7 @@ mod tests {
         // Wholly behind it, nothing.
         let behind = corners.map(|(point, vertex)| ([point[0], point[1], 5.0], vertex));
         let mut none = Vec::new();
-        push_clipped(&mut none, behind, Near { distance: 10.0, h: 100.0 }, (160.0, 120.0), true, false);
+        push_clipped(&mut none, behind, Near { distance: 10.0, h: [100.0; 2], shift: [0.0; 2] }, (160.0, 120.0), true, false);
         assert!(none.is_empty());
     }
 }

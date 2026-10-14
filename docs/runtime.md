@@ -1244,8 +1244,9 @@ still at every zoom; with the setting, 43 at 1x, 32 at 1.5x, 16-17 at 2x,
 The flat hosts look around a field from its controlled character's eyes
 (plan.md Phase 8's stationary first-person inspection): the SDL hosts
 (`xem_host::View`: desktop, and Android by touch or a gamepad) and the
-browser host (keyboard, mouse, gamepad and touch alike). Headsets toggle it
-too, but show it on their flat virtual screen ([Headsets](#headsets)).
+browser host (keyboard, mouse, gamepad and touch alike). Headsets look from
+within the scene with the head instead, each eye drawn from the
+character's eye (below, and [Headsets](#headsets)).
 While the player walks in a field (the player control read the pad in the
 field's last event pass, which it does with no dialogue open, and no menu
 runs), Select toggles the view where the original's Select shows nothing:
@@ -1348,6 +1349,69 @@ output, this machine's CPU and lavapipe, means per game frame): the game
 frame 1.5 ms without the view and 2.5 ms with it (4 763 culled faces
 recorded a frame), the presentation's CPU work 1.9 and 5.5 ms.
 
+**In a headset** the view is immersive (`GameView::present_headset`, every
+headset frame, paused or not): each eye is drawn from the character's eye, turned
+and moved as the head turns and moves it. The session's reference space is
+laid on the view: its -z along the view's level heading (the field
+camera's when the view began, plus the right stick's steps), its y the
+world's up and its origin the character's eye (OpenXR's LOCAL space and
+WebXR's `local` begin at the head as the session began, where the virtual
+screen's place is reckoned from too). A metre of head movement moves the
+eye by its height above the character's feet over `EYE_HEIGHT_METRES`,
+1.6 m (an assumed standing eye height: Fei's eye at 66.6 units in a field
+of scale 1 makes about 42 units a metre, 2.7 units between the eyes of a
+64 mm IPD). Each eye's field of view, asymmetric as a headset's are, is
+fitted onto the frame (the display with the wider framing's sides): the
+look projects with a distance and a shift per axis (`Look::h`,
+`Look::shift`, about each primitive's projection centre), so the
+frustum's edges fall on the frame's, its pixels as wide as the eye's view
+and the display make them; the near plane and its clipping are the flat
+view's. The sprites stand along the world's up turned to face the head
+between the eyes (`Look::facing`), worked out from that one point for both
+eyes, so both see one billboard and turning the head turns none. The eyes
+leave out every interface primitive the game drew (`Interface::Omitted`),
+which would otherwise go about with the head: the interface alone goes on
+a pane where the virtual screen was, as large (`Interface::Only`: the
+scene and the fills that clear it are left out, and `FrameRenderer::pane`
+makes the coverage its alpha from the auxiliary target, the frame's own
+alpha being the PS1's mask bit: opaque where the interface drew, half
+covering where it was semi-transparent, as the original's commonest blend
+lets half of what lies behind through, and a semi-transparent effect over
+the whole screen added to what lies behind). Gestures and pointers aim at
+the pane as at the screen, and a screen the game takes meanwhile (the
+field menu's backdrop) is the first eye's picture, what the player looked
+at. A frame that does not draw the field leaves the eyes on the last that
+did (`Framing::hold`), replayed where it was drawn and seen as the head now
+is: the field's menu draws none, in both buffers by turns, so the room
+stays round the menu on the pane. The port records the character's place
+as the field draws its models, and a frame may keep a record from up to
+four vertical blanks before it, so a frame without a record or without
+the field's world (its map's scenery through the GTE, which a menu's own
+models are not) counts; the eyes keep the last record too, rather than
+cut to the game's camera. Entered while no game frame runs (the player's
+Pause), the view begins with the game's next frame, which records the
+place. The right stick turns
+the view in 30-degree steps (`look::SnapTurn`: once past 0.7 of its travel
+to a side, the next once back within 0.3), never smoothly, and pitching is
+the head's alone (the arrows, the mouse and a drag do not turn it in a
+session). The toggles and the stick work whether the game runs or the
+player's Pause or the settings hold it. The character's moves (an
+agent's, a script's) carry the eyes with it without turning them: the
+heading stays the world's, so the view follows the character's place but
+neither its turning nor its animation. The Binaural listener looks along
+the view's level heading without the head, which `Session::set_head` adds
+once. Turned off, the screen is back where it was and as large (two-hand
+scaling does nothing while the view shows).
+
+Measured on Monado's simulated HMD (20 Hz, eyes of 320x240) with lavapipe
+on this machine, with other work keeping a load average of about 9
+(`xr-game-smoke.sh`'s inspection run, and the same run under each
+profile): no headset frame late, from within the scene or as the screen;
+the presentation's time on the loop's thread, p50, 11.3 ms from within
+against 8.9 ms as the screen under HD-2D (13.8 ms, p95 20.8 ms, in the
+smoke's run) and 5.6 against 3.1 ms under Modern. Under a load average of
+18 the frames from within took 110 ms (p50) against the screen's 53.
+
 Tests: `xem-headless/tests/render.rs` looks around in field 12 for 160
 frames (more than 100 shown from the eyes) and ends at the same RAM hash;
 `tests/controls.rs` checks the field query (the map's picture, walking,
@@ -1376,6 +1440,30 @@ alone, a 100-pixel drag turning 0.3 radians and tapping nothing),
 `xem-core`'s Binaural test a look and a head turn each applied once, and
 `xem-ui/tests/panel.rs` the look row's drag on touch screens and a
 headset's own rows.
+In a headset: `xem-render/tests/ps1.rs` presents a synthetic field to two
+eyes 32 mm apart with asymmetric fields of view (tangents -1 to 0.5 and
+-0.5 to 1 across, 0.5 up, 1 down): each eye's line of sight falls at two
+thirds and a third across and a third down, as the frustums put it, a floor
+reaching from behind the eye fills each frame's bottom, clipped at the near
+plane, the interface is on the pane alone (a white rectangle opaque, a grey
+semi-transparent one half covering, the scene transparent) and in neither
+eye, the listener stays level and head-free through a quarter turn of the
+head, which turns the view, and a frame without the character's record
+keeps the eyes where they were; and canted eyes see one sprite, as wide
+as the game drew it and facing the head between them, where each eye's own
+plane would show two. `xem-settings`' look tests the stick's 30-degree
+steps (one a push, none until it comes back, none for a stick still pushed
+when input returns). `tests/inspection.rs` presents field 30 to a
+headset: the eyes see apart (89% of pixels differ), the pane holds the
+compass alone (7% of it covered); with no game frame a head turned 0.5
+radians and moved 10 cm turns the view while the listener and the pane stay,
+and the head back gives the same picture; an agent walking the character 50
+units carries the eyes without moving the heading (0 radians), and the RAM
+hash is the run's without any view; through 240 frames of the field's menu
+(more than 30 with its commands) the eyes keep the room every frame and
+the pane shows the menu (over 30% of it covered). `xr-game-smoke.sh`
+plays it on Monado ([Headsets](#headsets)) and `web/tests/xr-game.test.mjs`
+on IWER.
 `web/tests/first-person.test.mjs` (local, disc 1) runs field 30 in a page
 with WebGL2: Backspace held as the loop resumes stops an 8-frame route and
 `navigate` is refused; W and Space reach no pad and the character stays;
@@ -1391,14 +1479,22 @@ and a click held as focus returns toggles nothing. Its canvas pictures go
 to `build/web-test/first-person-*.png`. `web/tests/page.test.mjs` holds
 the game's Select with the deck's SELECT outside a field.
 
-Not done or not measured: in a headset the view still shows on the flat
-virtual screen, without head tracking (Phase 8's immersive inspection is
-later work), and no test plays inspection in a headset: the underhand
-grab's and the controllers' Back's toggles, the right stick's turning,
-the held-back buttons, the Binaural listener's view, the Original
-renderer's end and the view carried across Enter and Exit VR have not run
-on Monado or IWER (only the grab's rule and the headset core's gating are
-unit-tested); the immersive view's qualification takes them up. The touch
+Not done or not measured: in a headset, comfort is not measured (no people
+tests): the view follows the character's scripted moves (vection, with no
+comfort vignette), and its pictures are the display's frame (320 by about
+216 pixels and the sides, times the internal scale) spread over each eye's
+field of view. Its cost was measured on Monado and IWER only, not on a
+Quest-class CPU: the eyes double the replay and the effects (HD-2D's per
+eye too), and the pane adds a third, interface-only replay. The pane takes
+a semi-transparent interface pixel over another as half covering, and
+shows no subtractive effect (it darkens nothing behind it); the field
+menu's backdrop is the first eye's view squeezed into the display's shape,
+and the room round the menu is the last frame before it (its characters
+stand still). The held-back buttons, the
+Binaural listener's view, the Original renderer's end and the view
+carried across Enter and Exit VR have not run in a headset session (they
+are the flat hosts' code, unit-tested; the sessions above toggle, turn,
+pause and exit). The touch
 look's rate is a constant chosen to follow the finger on a phone-sized
 picture, not measured with people, and the Android emulator has not
 played the touch toggle or drag (the unit tests and the browser's touch
@@ -1959,7 +2055,20 @@ Headset class (Low tier, depth of field off unless enabled).
   50.06 ms, p99 under 57 ms, at most 5% beyond 1.5 periods; measured on
   lavapipe), a paused game with head tracking and rendering
   continuing, the RAM at frame N equal to `xem-headless`'s, stereo eye
-  captures of the screen, and an HD-2D field on it.
+  captures of the screen, and an HD-2D field on it. Its inspection run
+  (field 30, Fei walked into the room by the session log's pads; the
+  underhand grab at headset frames 150 and 270, the Pause grab at 180 and
+  240) checks that the view is on from the first grab to the second
+  (`fp=1` on every frame between, `fp=0` after), that the eyes are drawn
+  from within the scene (`within=1`) on all but the frame or two before a
+  game frame records the place, also on every paused frame (the game
+  frames still, the head tracked), that both eyes' pictures captured twice
+  while paused cover over 90% of the view, differ between the eyes and
+  between the captures (the simulated head sways), that the screen keeps
+  its size (`scale=`), and that the RAM at frame 1200 equals
+  `xem-headless`'s for the same log; it prints the pacing and the
+  presentation's time (`present_us=`) from within the scene and as the
+  screen ([First-person inspection](#first-person-inspection)).
 - **WebXR** (browser host): a browser that offers immersive VR renders
   through an XR-compatible WebGL2 context from the start (WebXR layers on
   WebGPU are not testable; flat WebGPU stays for the others); Enter VR runs
@@ -1971,7 +2080,14 @@ Headset class (Low tier, depth of field off unless enabled).
   pixels within 8 levels). `web/tests/xr-game.test.mjs` (IWER's
   Quest 3) checks the backend, two views, the game near 60 frames a second at
   a slower session rate, both views showing the screen, paused head tracking,
-  exit, and an unchanged RAM hash. The session asks for `hand-tracking`;
+  exit, and an unchanged RAM hash; its inspection test (field 30) toggles
+  the view with the right controller's stick click, turns it one
+  30-degree step with the stick (no pitch), toggles it off, then with
+  tracked hands turns it on with the underhand grab (the views' centres no
+  longer the screen's), pauses with the overhand grab and turns the head a
+  quarter (the centres change, the game's frames do not, the head back
+  gives the same picture), resumes, turns it off (the screen again at its
+  size) and exits. The session asks for `hand-tracking`;
   each frame the page passes the viewer's pose, the session's visibility,
   each hand's target ray and its 25 joints to the headset core
   ([Headsets: hands, gaze and control decks](#headsets-hands-gaze-and-control-decks)),
@@ -1985,14 +2101,25 @@ Headset class (Low tier, depth of field off unless enabled).
 In a field both toggle first-person inspection with the underhand grab
 and the controllers' Back (the right stick's click) released alone, where
 Ex Machina draws it (the Original renderer ends it, and neither toggles
-it there); it shows on the virtual screen, its view turned by the right
-stick, the player's input leaving the character where it stands as on the
-flat hosts ([First-person inspection](#first-person-inspection)) and the
-Binaural listener looking along it before the head turns it. The settings
-panel's Controls section lists the grab, the right stick's click and the
-right stick in place of the flat hosts' keys (in a browser, while the
-session runs). The canvas and the session share the browser's view, so it
-carries across Enter and Exit VR.
+it there), whether the game runs or the player's Pause holds it. The view
+is immersive: each eye's picture from the character's eye, turned and
+moved with the head, covers its whole view, and the game's interface
+shows alone on the virtual screen's pane, at its place and size
+([First-person inspection](#first-person-inspection)); the right stick
+turns it 30 degrees a push. The player's input leaves the character where
+it stands as on the flat hosts, and the Binaural listener looks along the
+view's heading before the head turns it. Each headset frame presents the
+eyes again, paused or not: OpenXR from its views' poses in LOCAL (held
+through frames the runtime cannot locate them in) and their fields of
+view, WebXR from each view's inverse transform and the tangents its
+projection matrix holds (`XrView::eye`). OpenXR's `xrframe` line reports
+`fp=` (the view on), `within=` (drawn from within), `look=` (yaw, pitch),
+`scale=` and `present_us=`; `--xr-capture-at N,...` captures both eyes
+at those headset frames; `status().xr.inspecting` and `.within` show it
+in a browser. The settings panel's Controls section lists the grab, the
+right stick's click, the head and the right stick in place of the flat
+hosts' keys (in a browser, while the session runs). The canvas and the
+session share the browser's view, so it carries across Enter and Exit VR.
 
 ## Controls
 
@@ -2052,8 +2179,9 @@ click also toggle first-person inspection, which the arrow keys, the right
 stick, a finger on the picture and the mouse camera's motion turn
 ([First-person inspection](#first-person-inspection)); Settings' Controls
 section lists them (with the finger's drag where touch controls show; a
-headset's lists its underhand grab, the right stick's click and the right
-stick instead, [Headsets](#headsets)).
+headset's lists its underhand grab, the right stick's click, the head and
+the right stick instead, the stick turning in 30-degree steps,
+[Headsets](#headsets)).
 
 ### The game's interface context
 

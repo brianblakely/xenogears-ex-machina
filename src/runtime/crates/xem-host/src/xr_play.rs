@@ -11,6 +11,13 @@
 //! screen, not reconstructed 3D. The settings panel is a quad layer beside
 //! it (left menu button); the right controller points at it.
 //!
+//! First-person inspection (the underhand grab, or the controllers' Back
+//! released alone) looks from within the scene instead: each eye's own
+//! picture from the character's eye, turned and moved as the eye is, over
+//! its whole view, and the game's interface alone on a pane where the
+//! screen was (`GameView::present_headset`), every headset frame, paused
+//! or not; the right stick turns the view in 30-degree steps.
+//!
 //! The controllers are the game bindings' gamepad ([`gamepad`]): by default
 //! the left stick moves, A confirms, B cancels and runs, Y jumps, X opens
 //! the menu, the triggers and the right stick turn the camera.
@@ -22,8 +29,8 @@ use std::rc::Rc;
 use std::time::Instant;
 use crate::Game;
 use xem_render::glam::{Mat4, Quat, Vec2, Vec3};
-use xem_render::ps1::{GameView, HostClass, ViewConfig};
-use xem_render::{Compositor, Quad, wgpu};
+use xem_render::ps1::{GameView, HeadsetEye, HostClass, ViewConfig};
+use xem_render::{Compositor, Quad, Rect, wgpu};
 use xem_settings::{Filter, SettingsService};
 use xem_ui::{LogicalPosition, PointerEventButton, SettingsUi, SharedGpu, WindowEvent};
 use xem_xr::{HandInput, InputState, PanelPlacement, Pose, SessionConfig, SessionEvent, XrContext, XrSession};
@@ -160,6 +167,17 @@ fn screen_pose(distance: f32) -> Pose {
     Pose { position: Vec3::new(0.0, 0.0, -distance), orientation: Quat::IDENTITY }
 }
 
+/// An eye as the renderer looks through it from within the scene: its pose
+/// in LOCAL (whose -Z faces the screen) and its field of view's tangents.
+fn headset_eye(eye: &xem_xr::EyeView) -> HeadsetEye {
+    let fov = eye.fov;
+    HeadsetEye {
+        orientation: eye.pose.orientation.to_array(),
+        position: eye.pose.position.to_array(),
+        fov: [fov.left.tan(), fov.right.tan(), fov.up.tan(), fov.down.tan()],
+    }
+}
+
 /// What a headset run is asked for (tests and captures besides play).
 #[derive(Clone, Debug, Default)]
 pub struct XrPlay {
@@ -167,8 +185,10 @@ pub struct XrPlay {
     pub show_settings: bool,
     /// Pause the game at headset frame N for M frames.
     pub pause: Option<(u64, u64)>,
-    /// Save both eyes of a late frame here.
+    /// Save both eyes of a late frame here (with `capture_at`, of those
+    /// headset frames instead, each in a directory named by its number).
     pub capture: Option<std::path::PathBuf>,
+    pub capture_at: Vec<u64>,
     /// End the session after this many headset frames.
     pub exit_after_frames: Option<u64>,
     /// End the session when the game has run this many frames, reporting its RAM hash.
@@ -237,10 +257,12 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
     let mut pointer = PanelPointer::default();
     let mut menu_held = false;
     let mut player = xem_settings::player::PlayerInput::default();
-    // First-person inspection's toggle on the controllers (their Back), and
-    // when its view last turned.
+    // First-person inspection's toggle on the controllers (their Back), its
+    // turn on the right stick, and the last eyes tracked (held through
+    // frames the runtime cannot locate them in).
     let mut look_toggle = xem_settings::look::Toggle::default();
-    let mut looked: Option<Instant> = None;
+    let mut snap = xem_settings::look::SnapTurn::default();
+    let mut tracked_eyes: Option<[HeadsetEye; 2]> = None;
     let mut assist = Assisted::new();
     // The virtual screen as the last frame showed it (where gestures aim).
     let mut last_screen: Option<xem_assist::headset::Screen> = None;
@@ -274,6 +296,9 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         let Some(frame) = session.begin_frame().map_err(|e| e.to_string())? else { continue };
         let should_render = frame.should_render;
         let eyes = frame.eyes;
+        if frame.views_valid {
+            tracked_eyes = Some(eyes.each_ref().map(headset_eye));
+        }
         let input = frame.input.clone();
         let head = frame.head;
         let period = frame.predicted_display_period.as_nanos();
@@ -393,30 +418,32 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         if let Some(head) = head {
             game.set_head(Some(xem_core::binaural::head_axes(head.orientation.to_array())));
         }
-        let mut ran = 0;
-        if !game_paused {
-            let (pressed, axes) = gamepad(&input);
-            if visible { player.clear() } else { player.gamepad(&pressed, &axes) }
-            let context = game.pad_context();
-            // The controllers' Back (the right stick's click) released alone
-            // toggles first-person inspection in a field, as a gamepad's
-            // does, where Ex Machina draws it. It keeps the character where
-            // it stands (`xem_settings::look`); running by default would
-            // leave Run pressed alone.
-            let drawn = current.graphics.renderer == xem_settings::Renderer::ExMachina;
-            if visible {
-                look_toggle.clear();
-            } else if look_toggle.update(false, &pressed, context.field) && drawn {
+        // First-person inspection, paused or not: the controllers' Back (the
+        // right stick's click) released alone toggles it in a field, as a
+        // gamepad's does, where Ex Machina draws it, and the right stick
+        // turns it in steps (the head does the looking); neither while the
+        // panel has the controllers.
+        let (pressed, axes) = gamepad(&input);
+        let context = game.pad_context();
+        let drawn = current.graphics.renderer == xem_settings::Renderer::ExMachina;
+        if visible {
+            look_toggle.clear();
+            snap.clear();
+        } else {
+            if look_toggle.update(false, &pressed, context.field) && drawn {
                 view.set_first_person(!view.first_person());
             }
-            let inspecting = view.first_person();
-            // The right stick turns the view.
-            let now = Instant::now();
-            let seconds = looked.replace(now).map_or(0.0, |then| now.duration_since(then).as_secs_f32().min(0.1));
-            if !visible && xem_settings::look::turns(inspecting, context.field) {
-                let (yaw, pitch) = xem_settings::look::Turn { stick: [axes[2], axes[3]], ..Default::default() }.radians(seconds);
-                view.look_around(yaw, pitch);
+            if xem_settings::look::turns(view.first_person(), context.field) {
+                view.look_around(snap.update(axes[2]), 0.0);
             }
+        }
+        let mut ran = 0;
+        if !game_paused {
+            if visible { player.clear() } else { player.gamepad(&pressed, &axes) }
+            // Inspection keeps the character where it stands
+            // (`xem_settings::look`); running by default would leave Run
+            // pressed alone.
+            let inspecting = view.first_person();
             player.run_by_default = current.run_by_default && !inspecting;
             let buttons = if visible { 0 } else { player.buttons(&current.game_bindings, start.elapsed().as_secs_f64() * 1000.0, context) };
             let buttons = xem_settings::look::game_buttons(buttons, inspecting, context.field, &context.assignment);
@@ -453,8 +480,18 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         };
         let from_view = !original && (GameView::shows(&display) || view.shows_movie(&display));
         let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        // Inspection looks from within the scene through the eyes (held
+        // through frames the runtime cannot locate them in), every headset
+        // frame, paused or not; the screen's picture is then the interface's.
+        let looking: Vec<HeadsetEye> = tracked_eyes.filter(|_| view.first_person()).map_or_else(Vec::new, |eyes| eyes.to_vec());
+        let mut inside: Vec<wgpu::TextureView> = Vec::new();
+        // The presentation's own time on this thread (the frame log's).
+        let presenting = Instant::now();
         let picture = if from_view {
-            view.present(&mut encoder, &display, &scene, start.elapsed().as_secs_f64()).map(|p| p.size)
+            view.present_headset(&mut encoder, &display, &scene, start.elapsed().as_secs_f64(), &looking).map(|p| {
+                inside = p.eyes.iter().map(|&eye| eye.clone()).collect();
+                p.screen.size
+            })
         } else {
             // 24-bit movie frames, as the device shows them.
             let (width, height, rgba) = game.display();
@@ -462,6 +499,7 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             (width > 0 && height > 0).then_some((width, height))
         };
         gpu.queue.submit([encoder.finish()]);
+        let present_us = presenting.elapsed().as_micros();
         if let Some(size) = picture {
             presented_size = size;
         }
@@ -512,25 +550,40 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                 (Some(_), true) => view.presented_texture().cloned(),
                 (Some(_), false) => movie.texture.clone(),
             };
-            // Capture once, in the run's last third, facing the screen.
+            // Capture once, in the run's last third, facing the screen (or
+            // at the headset frames asked for).
             let late = options.exit_after_frames.is_some_and(|n| frames * 3 >= n * 2)
                 || options.exit_at_frame.is_some_and(|at| game.frames_run() * 3 >= at * 2);
             let facing = head.is_some_and(|head| (head.orientation * Vec3::NEG_Z).dot(Vec3::NEG_Z) > 0.95);
-            let capture = options.capture.as_ref().filter(|_| late && facing && !captured);
+            let capture = match options.capture_at.is_empty() {
+                true => options.capture.clone().filter(|_| late && facing && !captured),
+                false => options.capture.as_ref().filter(|_| options.capture_at.contains(&frames)).map(|dir| dir.join(frames.to_string())),
+            };
+            let eye_size = session.eye_size();
             let mut readback = None;
             session
                 .render_eyes(|encoder, target| {
                     let screen = texture.as_ref().map(|t| t.create_view(&Default::default()));
                     let quads: [Vec<Quad>; 2] = [0, 1].map(|eye| {
                         let view_proj: Mat4 = eyes[eye].proj * eyes[eye].view;
+                        // Looking from within the scene: the eye's picture over its whole view.
+                        let whole = Rect { x: 0.0, y: 0.0, width: eye_size.0 as f32, height: eye_size.1 as f32 };
+                        let within = inside.get(eye).map(|picture| {
+                            let mut quad = Quad::screen(picture, whole, eye_size);
+                            quad.srgb_encoded = true;
+                            quad.filter = filter;
+                            quad
+                        });
                         let glass = marks.iter().chain(hud_quad.iter()).map(|(texture, pose, size)| {
                             let mut quad = Quad::world(texture, view_proj, *pose, *size);
                             quad.srgb_encoded = true;
                             quad
                         });
-                        screen
-                            .iter()
-                            .map(|screen| {
+                        within
+                            .into_iter()
+                            .chain(screen.iter().map(|screen| {
+                                // The screen, or beside the eyes' pictures
+                                // the interface's pane where it was.
                                 let mut quad = Quad::world(screen, view_proj, pose, Vec2::new(width, height));
                                 // The renderer's frames hold sRGB-encoded values in a linear
                                 // format; movie frames are an sRGB texture.
@@ -542,14 +595,13 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
                                     quad.filter = wgpu::FilterMode::Nearest;
                                 }
                                 quad
-                            })
+                            }))
                             .chain(glass)
                             .collect()
                     });
-                    compositor.draw_targets(
-                        encoder,
-                        &[(target.views[0], Some(BACKDROP), &quads[0]), (target.views[1], Some(BACKDROP), &quads[1])],
-                    );
+                    // The room around the screen; the eyes' pictures cover it.
+                    let clear = Some(if inside.is_empty() { BACKDROP } else { wgpu::Color::BLACK });
+                    compositor.draw_targets(encoder, &[(target.views[0], clear, &quads[0]), (target.views[1], clear, &quads[1])]);
                     if capture.is_some() {
                         readback = Some(crate::readback::Readback::record(&gpu.device, encoder, target.texture));
                     }
@@ -563,8 +615,11 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
         }
         let ended = session.end_frame(visible.then_some(panel)).map_err(|e| e.to_string())?;
         let head = head.map_or("-".into(), |p| format!("{:.5},{:.5},{:.5};{:.5},{:.5},{:.5},{:.5}", p.position.x, p.position.y, p.position.z, p.orientation.x, p.orientation.y, p.orientation.z, p.orientation.w));
+        // First-person inspection: on, drawn from within the scene (the
+        // eyes' pictures), and the view's turn (yaw, pitch; radians).
+        let look = view.look_angles().map_or("-".into(), |(yaw, pitch)| format!("{yaw:.4},{pitch:.4}"));
         println!(
-            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} head={head} gestures={} player_pause={} marks={} assist={} context={}",
+            "xrframe n={frames} wall_us={} pdt_ns={display_time} period_ns={period} render={} layers={} game_ran={ran} game_frames={} game_vblanks={} paused={} picture={} head={head} gestures={} player_pause={} marks={} assist={} context={} fp={} within={} look={look} scale={:.4} present_us={present_us}",
             start.elapsed().as_micros(),
             u8::from(should_render),
             ended.layers.len(),
@@ -577,6 +632,9 @@ pub fn run(platform: &xem_xr::Platform, options: &XrPlay, settings: Rc<RefCell<S
             marks.len(),
             game.assist_state(),
             serde_json::to_string(&game.pad_context().ui).unwrap_or_default(),
+            u8::from(view.first_person()),
+            u8::from(!inside.is_empty()),
+            assist.scaling.scale,
         );
         frames += 1;
         if quit.get() && !exit_requested {

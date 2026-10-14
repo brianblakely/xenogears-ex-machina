@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{HtmlCanvasElement, WebGl2RenderingContext, WebGlFramebuffer, XrWebGlLayer};
 use xem_render::glam::{Mat4, Vec2, Vec3, Vec4};
-use xem_render::ps1::{GameView, HostClass, ViewConfig};
+use xem_render::ps1::{GameView, HeadsetEye, HostClass, ViewConfig};
 use xem_render::xem_gpu::{DisplayInfo, Reveals, Trace};
 use xem_render::{Compositor, Gpu, Picture, Quad, Rect, SceneRenderer, ViewTarget, Viewport, demo_camera, present_rect, wgpu};
 use xem_settings::{Filter, SettingsService};
@@ -78,6 +78,9 @@ pub struct WebRenderer {
     xr_eye_height: u32,
     /// Two-hand scaling of the headset's screen.
     pub xr_scale: f32,
+    /// The last immersive frame looked from within the scene through each
+    /// view (first-person inspection), the screen showing the interface.
+    pub xr_within: bool,
     /// The assisted controls to draw this frame, and their textures.
     pub overlay: Overlay,
     atlas: xem_render::glass::Atlas,
@@ -89,6 +92,21 @@ pub struct XrView {
     pub view: Mat4,
     pub proj: Mat4,
     pub viewport: [i32; 4],
+}
+
+impl XrView {
+    /// The view as the renderer looks through it from within the scene: its
+    /// pose in the session's 'local' space (whose -Z faces the screen) and
+    /// its field of view's tangents, from its projection (an OpenGL frustum's
+    /// x and y rows, which wgpu's depth leaves as they are).
+    pub fn eye(&self) -> HeadsetEye {
+        let (_, rotation, position) = self.view.inverse().to_scale_rotation_translation();
+        let p = self.proj;
+        let tangents = |scale: f32, skew: f32| ((skew - 1.0) / scale, (skew + 1.0) / scale);
+        let (left, right) = tangents(p.x_axis.x, p.z_axis.x);
+        let (down, up) = tangents(p.y_axis.y, p.z_axis.y);
+        HeadsetEye { orientation: rotation.to_array(), position: position.to_array(), fov: [left, right, up, down] }
+    }
 }
 
 /// The immersive layer wrapped as a wgpu target, the eye buffers and the
@@ -200,6 +218,7 @@ pub async fn create(canvas: HtmlCanvasElement, prefer: &str) -> Result<WebRender
         xr: None,
         xr_eye_height: 1080,
         xr_scale: 1.0,
+        xr_within: false,
         overlay: Overlay::default(),
         atlas: Default::default(),
     })
@@ -581,7 +600,10 @@ impl WebRenderer {
     /// Draws one immersive frame into `layer`: the game (presented once,
     /// whatever the number of views) on a flat virtual screen `width` metres
     /// wide, `distance` metres in front of the reference space's origin, as
-    /// each view sees it. Monoscopic content, shown as a screen.
+    /// each view sees it. Monoscopic content, shown as a screen; while
+    /// first-person inspection looks from within the scene, each view's own
+    /// picture from the character's eye over its whole buffer and the game's
+    /// interface alone on the screen (`GameView::present_headset`).
     pub fn render_xr(
         &mut self,
         layer: &XrWebGlLayer,
@@ -609,10 +631,18 @@ impl WebRenderer {
             hud.frame(std::time::Duration::from_secs_f64(time), self.scale, presentation.show_fps).map_err(|e| e.to_string())?;
         }
         let mut encoder = self.gpu.device.create_command_encoder(&Default::default());
+        // First-person inspection looks from within the scene through each
+        // view, every immersive frame, paused or not.
+        let eyes: Vec<HeadsetEye> = if self.renderer.first_person() { views.iter().map(XrView::eye).collect() } else { Vec::new() };
+        let mut within: Vec<wgpu::TextureView> = Vec::new();
         let presented = match &self.game_frame {
-            Some((display, scene)) => self.renderer.present(&mut encoder, display, scene, time).map(|p| (p.view, p.size, true)),
+            Some((display, scene)) => self.renderer.present_headset(&mut encoder, display, scene, time, &eyes).map(|p| {
+                within = p.eyes.iter().map(|&eye| eye.clone()).collect();
+                (p.screen.view, p.screen.size, true)
+            }),
             None => None,
         };
+        self.xr_within = !within.is_empty();
         let (screen, screen_size, encoded) = match (presented, &self.game_image) {
             (Some(presented), _) => (Some(presented.0), presented.1, presented.2),
             (None, Some((_, view, size))) => (Some(view), *size, false),
@@ -658,10 +688,21 @@ impl WebRenderer {
         };
         let eye_quads: Vec<Vec<Quad>> = views
             .iter()
-            .map(|view| {
-                screen
-                    .iter()
-                    .map(|screen| {
+            .enumerate()
+            .map(|(i, view)| {
+                // Looking from within the scene: the view's picture over its whole buffer.
+                let size = (view.viewport[2].max(1) as u32, view.viewport[3].max(1) as u32);
+                let whole = within.get(i).map(|picture| {
+                    let mut quad = Quad::screen(picture, Rect { x: 0.0, y: 0.0, width: size.0 as f32, height: size.1 as f32 }, size);
+                    quad.srgb_encoded = true;
+                    quad.filter = filter;
+                    quad
+                });
+                whole
+                    .into_iter()
+                    .chain(screen.iter().map(|screen| {
+                        // The screen, or beside the views' pictures the
+                        // interface's pane where it was.
                         let mut quad = Quad::world(screen, view.proj * view.view, pose, Vec2::new(width, height));
                         quad.srgb_encoded = encoded;
                         quad.filter = filter;
@@ -669,7 +710,7 @@ impl WebRenderer {
                             quad.filter = wgpu::FilterMode::Nearest;
                         }
                         quad
-                    })
+                    }))
                     .chain(room.iter().chain(hud_quad.iter()).chain(panel_quad.iter()).map(|(texture, pose, size)| {
                         let mut quad = Quad::world(texture, view.proj * view.view, *pose, *size);
                         quad.srgb_encoded = true;
@@ -678,6 +719,8 @@ impl WebRenderer {
                     .collect()
             })
             .collect();
+        // The room around the screen; the views' pictures cover it.
+        let clear = Some(if within.is_empty() { BACKDROP } else { wgpu::Color::BLACK });
         // The eyes into the layer-sized buffer at their viewports (WebXR
         // counts rows from the bottom; the buffer from the top until the flip).
         let assembled: Vec<Quad> = targets
@@ -704,9 +747,9 @@ impl WebRenderer {
             .eyes
             .iter()
             .zip(&eye_quads)
-            .map(|((_, eye), quads)| (eye, Some(BACKDROP), quads.as_slice()))
+            .map(|((_, eye), quads)| (eye, clear, quads.as_slice()))
             .collect();
-        passes.push((&targets.assembled, Some(BACKDROP), &assembled));
+        passes.push((&targets.assembled, clear, &assembled));
         let last = [flipped];
         passes.push((&targets.layer, Some(wgpu::Color::BLACK), &last));
         self.compositor.draw_targets(&mut encoder, &passes);
@@ -735,6 +778,7 @@ impl WebRenderer {
     /// Forgets the targets of an ended session.
     pub fn release_xr(&mut self) {
         self.xr = None;
+        self.xr_within = false;
     }
 
     fn xr_targets(&self, framebuffer: Option<WebGlFramebuffer>, size: (u32, u32)) -> XrTargets {

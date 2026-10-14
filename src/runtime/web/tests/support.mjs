@@ -84,6 +84,76 @@ export async function start({ args = [], fixtures: withFixtures = false, context
 
 export const status = (page) => page.evaluate(() => window.xem.status());
 
+// --- Headset browsers: Quest Browser's user agent with IWER as navigator.xr --
+export const QUEST_BROWSER = 'Mozilla/5.0 (X11; Linux x86_64; Quest 3) AppleWebKit/537.36 (KHTML, like Gecko) '
+  + 'OculusBrowser/37.0.0.0 SamsungBrowser/4.0 Chrome/132.0.0.0 VR Safari/537.36';
+const IWER_PATH = join(ROOT, 'src/runtime/web/node_modules/iwer/build/iwer.min.js');
+export const IWER = existsSync(IWER_PATH) ? readFileSync(IWER_PATH, 'utf8') : '';
+/** An init script making IWER's Meta Quest 3 the page's navigator.xr. */
+export const QUEST = `${IWER}\n;window.xrDevice = new IWER.XRDevice(IWER.metaQuest3, { stereoEnabled: true });`
+  + 'window.xrDevice.installRuntime({ forceInstall: true });';
+
+// The hand model in the page (an init script after QUEST): a right hand in
+// its own frame (wrist at the origin, fingers along -Z, palm down), each
+// finger curled by `curl`, the thumb's tip at `thumb`; poses are registered
+// with IWER as left-hand data (IWER mirrors them for the right hand).
+export const HAND_MODEL = `
+window.handModel = (() => {
+  const JOINTS = ['wrist', 'thumb-metacarpal', 'thumb-phalanx-proximal', 'thumb-phalanx-distal', 'thumb-tip'];
+  for (const f of ['index-finger', 'middle-finger', 'ring-finger', 'pinky-finger'])
+    for (const j of ['metacarpal', 'phalanx-proximal', 'phalanx-intermediate', 'phalanx-distal', 'tip']) JOINTS.push(f + '-' + j);
+  const right = (curl, thumb) => {
+    const joints = Array.from({ length: 25 }, () => [0, 0, 0]);
+    const lateral = [-0.035, -0.012, 0.01, 0.03];
+    const bones = [[0.065, 0.04, 0.025, 0.022], [0.064, 0.045, 0.028, 0.024], [0.06, 0.042, 0.027, 0.024], [0.056, 0.034, 0.02, 0.02]];
+    for (let f = 0; f < 4; f++) {
+      const base = 5 + f * 5;
+      joints[base] = [lateral[f] * 0.6, 0, 0];
+      let angle = 0;
+      let at = [lateral[f], 0, -bones[f][0]];
+      joints[base + 1] = at;
+      for (let k = 0; k < 3; k++) {
+        angle += curl[f] * [1.4, 1.6, 1.2][k];
+        at = [at[0], at[1] - Math.sin(angle) * bones[f][k + 1], at[2] - Math.cos(angle) * bones[f][k + 1]];
+        joints[base + 2 + k] = at;
+      }
+    }
+    joints[1] = [-0.02, -0.01, -0.02];
+    joints[2] = [-0.04, -0.015, -0.04];
+    joints[3] = joints[2].map((v, i) => (v + thumb[i]) / 2);
+    joints[4] = thumb;
+    return joints;
+  };
+  const rest = [-0.06, -0.01, -0.06];
+  const fist = () => {
+    const j = right([1, 1, 1, 1], [0, 0, 0]);
+    j[4] = [j[12][0] - 0.01, j[12][1] - 0.012, j[12][2]];
+    j[3] = j[2].map((v, i) => (v + j[4][i]) / 2);
+    return j;
+  };
+  const shapes = { open: right([0, 0, 0, 0], rest), half: right([0.5, 0.5, 0.5, 0.5], rest), fist: fist() };
+  const pose = (joints) => ({
+    jointTransforms: Object.fromEntries(JOINTS.map((name, i) => {
+      const [x, y, z] = joints[i];
+      // Left-hand data: the model's x mirrored.
+      return [name, { offsetMatrix: new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -x, y, z, 1]), radius: 0.008 }];
+    })),
+  });
+  const handInput = (hand) => hand[Object.getOwnPropertySymbols(hand).find((s) => s.description === '@iwer/xr-hand-input')];
+  return {
+    install(device) {
+      for (const hand of [device.hands.left, device.hands.right]) {
+        const poses = handInput(hand).poses;
+        for (const [name, joints] of Object.entries(shapes)) poses[name] = pose(joints);
+      }
+    },
+    set(device, hand, shape) {
+      device.hands[hand].poseId = shape;
+      device.hands[hand].updateHandPose();
+    },
+  };
+})();`;
+
 /** Select a section through the rendered Slint navigation at 1× scale: the
  *  sidebar's rows (38 high, 40 apart from 75 under the panel's top). A
  *  narrow panel's strip sizes its tabs by their labels, so it is refused. */

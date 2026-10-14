@@ -30,8 +30,10 @@ struct Options {
     xr: bool,
     /// Headset tests: pause the game at headset frame N for M frames.
     xr_pause: Option<(u64, u64)>,
-    /// Headset tests: save both eyes of the last frame here.
+    /// Headset tests: save both eyes of the last frame here (or of the
+    /// headset frames listed, each in a directory named by its number).
     xr_capture: Option<PathBuf>,
+    xr_capture_at: Vec<u64>,
     /// Headset tests: scripted hand gestures (headset frame, gesture name).
     xr_hands: Vec<(u64, String)>,
     /// Agents' commands on stdin while the game plays (`--control`).
@@ -51,6 +53,7 @@ fn options() -> Result<Options, String> {
         xr: false,
         xr_pause: None,
         xr_capture: None,
+        xr_capture_at: Vec::new(),
         xr_hands: Vec::new(),
         control: false,
     };
@@ -85,6 +88,12 @@ fn options() -> Result<Options, String> {
                 options.xr_pause = Some((at.parse().map_err(|_| "bad --xr-pause")?, count.parse().map_err(|_| "bad --xr-pause")?));
             }
             "--xr-capture" => options.xr_capture = Some(args.next().ok_or("--xr-capture needs a directory")?.into()),
+            "--xr-capture-at" => {
+                let value = args.next().ok_or("--xr-capture-at needs FRAME,...")?;
+                for item in value.split(',') {
+                    options.xr_capture_at.push(item.parse().map_err(|_| format!("bad --xr-capture-at frame {item:?}"))?);
+                }
+            }
             "--xr-hands" => {
                 let value = args.next().ok_or("--xr-hands needs FRAME:GESTURE,...")?;
                 for item in value.split(',') {
@@ -98,15 +107,18 @@ fn options() -> Result<Options, String> {
             "--help" => {
                 println!(
                     "xem-desktop [--disc DISC [--cards DIR] [--bios FILE] [--script LOG] \
-                     [--exit-at-frame N] [--xr [--xr-pause N,M] [--xr-capture DIR] [--xr-hands N:GESTURE,...]]] [--show-settings] \
+                     [--exit-at-frame N] [--xr [--xr-pause N,M] [--xr-capture DIR [--xr-capture-at N,...]] [--xr-hands N:GESTURE,...]]] [--show-settings] \
                      [--exit-after-frames N] [--screenshot out.png] [--control]\n\
                      DISC is a CHD, a cue sheet or a Redump-verified ISO; the game's other disc, \
                      when it is beside it, goes in when the game asks for it.\n\
                      --xr plays in an OpenXR headset on a virtual screen: the controllers are the \
                      game bindings' gamepad, hands gesture (overhand grab Pause, prayer hands Settings, \
                      pinch to walk, thumb taps and swipes), the left menu button toggles Settings; \
+                     in a field the underhand grab (or the right stick's click released alone) looks around \
+                     from the character's eyes, the head looking and the right stick turning in steps; \
                      --xr-hands plays synthetic gestures (pause, inspect, pinch, tap, swipe-up/down/left/right, \
-                     prayer, lose; NAME@X/Y also aims eye gaze at that screen pixel) at headset frames, for tests without hand tracking.\n\
+                     prayer, lose; NAME@X/Y also aims eye gaze at that screen pixel) at headset frames, for tests without hand tracking; \
+                     --xr-capture-at saves both eyes at those headset frames.\n\
                      --control answers JSON commands on stdin, a line each, while the game plays: \
                      the command layer's (status, context, navigate, act, ...), settings, \
                      settings_apply {{change}} (the panel's own typed change), panel {{visible}} and \
@@ -248,6 +260,7 @@ fn run_xr(options: &Options) -> Result<(), String> {
         show_settings: options.show_settings,
         pause: options.xr_pause,
         capture: options.xr_capture.clone(),
+        capture_at: options.xr_capture_at.clone(),
         hands: options.xr_hands.clone(),
         exit_after_frames: options.exit_after_frames,
         exit_at_frame: options.exit_at_frame,

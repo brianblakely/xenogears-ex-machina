@@ -9,7 +9,12 @@
 # - neither the headset nor the HD-2D profile nor pausing changes the game:
 #   the RAM at game frame N equals xem-headless's at frame N;
 # - both eyes show the same game picture from their own views (a flat screen
-#   with stereo disparity, not reconstructed 3D).
+#   with stereo disparity, not reconstructed 3D);
+# - first-person inspection in field 30: the underhand grab turns it on and
+#   off, each eye then looks from the character's eye with the head (their
+#   pictures cover the view, differ between the eyes and follow the head
+#   while the player's Pause holds the game), the screen keeps its size,
+#   and the game's RAM is xem-headless's.
 #
 #   nix develop path:./nix/runtime -c src/runtime/scripts/xr-game-smoke.sh
 #
@@ -72,6 +77,16 @@ echo '{"commands": [[0, {"cmd": "enter_field", "map": 12}]]}' >"$out/field.json"
 "$desktop" --xr --disc "$disc" --script "$out/field.json" --exit-at-frame 750 --xr-capture "$out/field" >"$out/field.log" 2>"$out/field.err"
 printf '{"cmd":"frames","count":%d}\n{"cmd":"memory_hash"}\n' "$frames" |
     "$headless" --disc "$disc" --control >"$out/headless.log" 2>"$out/headless.err"
+# First-person inspection in field 30, Fei walked into the room by the log
+# (whose pads stand in for the player's): the underhand grab at headset
+# frame 150 and again at 270, the Pause grab at 180 and 240, both eyes
+# captured twice while paused; then the same log in xem-headless.
+inspect='[[0, {"cmd": "enter_field", "map": 30}], [500, {"cmd": "pad", "buttons": ["down"]}], [560, {"cmd": "pad", "buttons": []}]]'
+echo "{\"commands\": $inspect}" >"$out/inspect.json"
+"$desktop" --xr --disc "$disc" --script "$out/inspect.json" --exit-at-frame 1200 \
+    --xr-hands "150:inspect,180:pause,240:pause,270:inspect" --xr-capture "$out/inspect" --xr-capture-at 200,225 >"$out/inspect.log" 2>"$out/inspect.err"
+printf '{"cmd":"schedule","commands":%s}\n{"cmd":"run_until","until":{"frames":1200},"max_frames":2000}\n{"cmd":"memory_hash"}\n' "$inspect" |
+    "$headless" --disc "$disc" --control >"$out/inspect-headless.log" 2>"$out/inspect-headless.err"
 
 python3 - "$out" "$frames" <<'EOF'
 import json, re, sys, zlib, struct
@@ -187,6 +202,47 @@ _, _, field = png(f"{out}/field/left.png")
 colours = {row[x:x + 3] for row in field for x in range(0, len(row), 4)}
 check(len(colours) > 200, f"the field shows only {len(colours)} colours")
 print(f"field: {len(colours)} colours on the left eye")
+
+# First-person inspection.
+rows = records("inspect.log")
+by = {int(r["n"]): r for r in rows}
+on = [int(r["n"]) for r in rows if r["fp"] == "1"]
+check(bool(on) and 150 <= on[0] <= 160 and 270 <= on[-1] <= 280 and len(on) == on[-1] - on[0] + 1,
+      f"the underhand grabs turned inspection on and off: on {on[:1]}..{on[-1:]}")
+check(all(r["fp"] == "0" for r in rows if int(r["n"]) > 285), "inspection stayed on after the second grab")
+within = [r for r in rows if r["within"] == "1"]
+check(len(within) >= len(on) - 4 and all(r["fp"] == "1" for r in within),
+      f"the eyes looked from within the scene for {len(within)} of {len(on)} frames")
+paused = [r for r in rows if r["player_pause"] == "1"]
+check(len(paused) >= 40 and len({r["game_frames"] for r in paused}) == 1, f"the Pause grab held the game for {len(paused)} frames")
+check(all(r["within"] == "1" and r["render"] == "1" for r in paused), "while paused the eyes stopped looking from within the scene")
+check(len({r["head"] for r in paused}) > len(paused) // 2, "head tracking stopped while paused")
+check(all(by[n]["player_pause"] == "1" for n in (200, 225)), "the eyes were not captured while paused")
+check(all(r["scale"] == "1.0000" for r in rows), "the screen's size changed")
+inspected = [json.loads(l) for l in open(f"{out}/inspect-headless.log") if l.startswith("{") or l.startswith('"')]
+inspected = next(v for v in inspected if isinstance(v, str))
+check(final_hash("inspect.log") == inspected, f"inspect.log: RAM at game frame 1200 {final_hash('inspect.log')} != headless {inspected}")
+back = left[0][0:3]
+def covered(rows_):
+    # Pixels unlike the room around the screen (the running eyes' corner).
+    return sum(1 for row in rows_ for x in range(0, len(row), 16)
+               if sum(abs(row[x + k] - back[k]) for k in range(3)) > 30) / (len(rows_) * len(rows_[0]) // 16)
+eyes = {f"{n} {side}": png(f"{out}/inspect/{n}/{side}.png")[2] for n in (200, 225) for side in ("left", "right")}
+check(all(covered(e) > 0.9 for e in eyes.values()), "the eyes' pictures do not cover the view: "
+      + ", ".join(f"{k} {covered(e):.2f}" for k, e in eyes.items()))
+check(eyes["200 left"] != eyes["200 right"], "both eyes see the same picture from within the scene")
+check(eyes["200 left"] != eyes["225 left"], "the paused view did not follow the head")
+print(f"inspect: on {on[0]}..{on[-1]}, {len(within)} frames from within the scene, {len(paused)} paused at game frame "
+      f"{paused[0]['game_frames']}; eyes cover " + ", ".join(f"{k} {covered(e):.0%}" for k, e in eyes.items()))
+# Pacing and the presentation's time on its thread, from within the scene and as the screen.
+def pace(select):
+    pairs = [(a, b) for a, b in zip(rows, rows[1:]) if select(a) and select(b)]
+    gaps = sorted(int(b["wall_us"]) - int(a["wall_us"]) for a, b in pairs)
+    present = sorted(int(b["present_us"]) for _, b in pairs)
+    late = sum(1 for g in gaps if g > 1.5 * period / 1000)
+    return f"interval p50 {gaps[len(gaps) // 2] / 1000:.2f} ms, p99 {gaps[int(len(gaps) * 0.99)] / 1000:.2f} ms, {late} of {len(gaps)} late; presenting p50 {present[len(present) // 2] / 1000:.2f} ms, p95 {present[int(len(present) * 0.95)] / 1000:.2f} ms"
+print(f"inspect pacing, the screen: {pace(lambda r: r['within'] == '0' and int(r['n']) > 20)}")
+print(f"inspect pacing, from within: {pace(lambda r: r['within'] == '1')}")
 
 if problems:
     print("xr-game-smoke: FAILED\n  " + "\n  ".join(problems))

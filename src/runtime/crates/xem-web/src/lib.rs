@@ -156,13 +156,15 @@ pub struct XemApp {
     /// First-person inspection: the first gamepad's buttons and axes as
     /// they are (before app chords take theirs), the arrow keys held
     /// (whatever the bindings say), the toggle, the mouse motion that turns
-    /// the view, and when it last turned (page time).
+    /// the view, when it last turned (page time), and a headset's stepped
+    /// turn.
     pad: [u8; 16],
     axes: [f32; 4],
     arrows: [bool; 4],
     look_toggle: xem_settings::look::Toggle,
     look_mouse: [f32; 2],
     looked: Option<f64>,
+    snap: xem_settings::look::SnapTurn,
 }
 
 /// The arrow keys, in `look::Turn::arrows` order.
@@ -270,6 +272,7 @@ impl XemApp {
             look_toggle: Default::default(),
             look_mouse: [0.0; 2],
             looked: None,
+            snap: Default::default(),
         }
     }
 
@@ -602,14 +605,15 @@ impl XemApp {
     }
 
     /// First-person inspection this frame, at page time `now`
-    /// (`xem_settings::look`): toggled in a field, where Ex Machina draws
-    /// it, by Select's keys, the touch deck's SELECT, the gamepad's Back
-    /// released alone or its right stick's click; while it shows, turned by
-    /// the arrow keys, the right stick, a finger on the picture and the
-    /// mouse the game holds. Whether it shows. Neither happens while the
-    /// settings panel has the input or the page has lost focus, when the
-    /// game's buttons are let go too (the page reads the gamepad whatever
-    /// the focus).
+    /// (`xem_settings::look`), paused or not: toggled in a field, where Ex
+    /// Machina draws it, by Select's keys, the touch deck's SELECT, the
+    /// gamepad's Back released alone or its right stick's click; while it
+    /// shows, turned by the arrow keys, the right stick, a finger on the
+    /// picture and the mouse the game holds, or in a headset by the right
+    /// stick in steps (the head looks around). Whether it shows. Neither
+    /// happens while the settings panel has the input or the page has lost
+    /// focus, when the game's buttons are let go too (the page reads the
+    /// gamepad whatever the focus).
     fn look(&mut self, bindings: &xem_settings::GameBindings, field: xem_core::FieldControls, now: f64) -> bool {
         // The mouse's and a finger's motion are the view's this frame, or no one's.
         let mut mouse = std::mem::take(&mut self.look_mouse);
@@ -617,9 +621,11 @@ impl XemApp {
         let looked = self.looked.replace(now);
         let drawn = self.settings.borrow().settings().graphics.renderer == xem_settings::Renderer::ExMachina;
         let away = self.panel_visible() || !self.app_input.focused();
+        let headset = self.xr_input.is_some();
         let Some(renderer) = self.renderer.as_mut() else { return false };
         if away {
             self.look_toggle.clear();
+            self.snap.clear();
             self.looked = None;
             return renderer.first_person();
         }
@@ -632,11 +638,15 @@ impl XemApp {
         }
         let on = renderer.first_person();
         if xem_settings::look::turns(on, field) {
-            let seconds = looked.map_or(0.0, |then| ((now - then) / 1000.0).clamp(0.0, 0.1)) as f32;
-            let density = renderer.scale_factor();
-            let turn = xem_settings::look::Turn { arrows: self.arrows, stick: [self.axes[2], self.axes[3]], mouse, touch: [dx / density, dy / density] };
-            let (yaw, pitch) = turn.radians(seconds);
-            renderer.look_around(yaw, pitch);
+            if headset {
+                renderer.look_around(self.snap.update(self.axes[2]), 0.0);
+            } else {
+                let seconds = looked.map_or(0.0, |then| ((now - then) / 1000.0).clamp(0.0, 0.1)) as f32;
+                let density = renderer.scale_factor();
+                let turn = xem_settings::look::Turn { arrows: self.arrows, stick: [self.axes[2], self.axes[3]], mouse, touch: [dx / density, dy / density] };
+                let (yaw, pitch) = turn.radians(seconds);
+                renderer.look_around(yaw, pitch);
+            }
         }
         on
     }
@@ -644,6 +654,11 @@ impl XemApp {
     /// The game frames due since the last step (see [`XemApp::frame`]).
     fn step(&mut self, now: f64) -> Result<(), JsValue> {
         self.sync_time_controls()?;
+        // First-person inspection is toggled and turned whether the game
+        // runs or not (a headset's Pause stands apart from it).
+        let field = self.session.as_mut().map(|s| s.runtime.field_controls()).unwrap_or_default();
+        let bindings = self.settings.borrow().settings().game_bindings.clone();
+        let inspecting = self.look(&bindings, field, now);
         // The player's Pause in a headset (or settings' own pause there):
         // time stands still, nothing to catch up afterwards.
         if self.headset.pauses.paused() && self.xr_input.is_some() {
@@ -684,10 +699,8 @@ impl XemApp {
             self.ui = context.ui;
             self.targets = self.session.as_mut().and_then(|s| s.runtime.targets());
             self.assist_touch();
-            let bindings = self.settings.borrow().settings().game_bindings.clone();
             if self.panel_visible() { self.input.clear(); }
             self.input.browse(self.targets.as_ref());
-            let inspecting = self.look(&bindings, context.field, now);
             // Running by default would leave Run pressed alone once the view
             // holds the directions back.
             self.input.run_by_default = self.settings.borrow().settings().run_by_default && !inspecting;
@@ -928,6 +941,7 @@ impl XemApp {
         self.deck.release();
         self.arrows = [false; 4];
         self.look_toggle.clear();
+        self.snap.clear();
         self.look_mouse = [0.0; 2];
         let _ = self.app_input.set_focused(false);
         if let Some(panel) = self.renderer.as_ref().and_then(|r| r.panel()) { panel.cancel_pointer(); }
@@ -1537,6 +1551,10 @@ impl XemApp {
                 "pauses": self.headset.pauses,
                 "settings": self.headset.settings_open,
                 "scale": self.xr_scaling.scale,
+                // First-person inspection on, and the last immersive frame
+                // drawn from within the scene through each view.
+                "inspecting": self.first_person(),
+                "within": self.renderer.as_ref().is_some_and(|r| r.xr_within),
                 "panelHit": self.xr_panel_hit,
                 "panelClick": self.xr_panel_click,
                 // The panel's logical size (where its controls are).

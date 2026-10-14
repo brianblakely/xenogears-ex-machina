@@ -30,6 +30,7 @@ use super::{
     Stream, Target, VRAM_HEIGHT, VRAM_WIDTH, bind_group, effective_class, encode, overlap, pass_options, picture_usage, samples, scene_offset,
     texture,
 };
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;
 use xem_gpu::{Camera, Class, Eye, Primitive, Shape, TraceOp, VramRect};
@@ -50,6 +51,29 @@ pub struct Framing {
     pub replay: bool,
     /// Look around from within the scene instead of the game's camera.
     pub look: Option<Look>,
+    /// Whether the game's interface is drawn with its scene, left out, or
+    /// drawn alone.
+    pub interface: Interface,
+    /// Frame the game frame shown last again, not the newest (a headset's
+    /// eye through frames that draw no scene, such as a field's menu).
+    pub hold: bool,
+}
+
+/// The game's interface in a frame: its interface primitives (the compass,
+/// windows, portraits, fades), wherever the game drew them among its scene.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Interface {
+    /// With the scene, as the game drew it.
+    #[default]
+    Drawn,
+    /// Left out: a headset's eye looking from within the scene, which
+    /// would otherwise carry the interface about with the head.
+    Omitted,
+    /// Alone, over nothing: the scene and the fills that clear it are left
+    /// out, so the frame is the interface on a transparent picture (its
+    /// coverage as alpha: [`FrameRenderer::pane`]), for a pane where the
+    /// virtual screen was.
+    Only,
 }
 
 /// A camera within the scene (first-person inspection): where it stands and
@@ -61,12 +85,24 @@ pub struct Look {
     pub axes: [[f32; 3]; 3],
     /// The world's up in that space: sprites stand along it.
     pub up: [f32; 3],
-    /// The projection distance (VRAM pixels: the field of view) and the
-    /// near plane's distance (view-space units).
-    pub h: f32,
+    /// The projection, per axis: a point (right, down, forward) of the
+    /// camera's space lands at `centre + shift + h * (right, down) /
+    /// forward`, `centre` being each primitive's projection centre (VRAM
+    /// pixels). `h` is the projection distance across and down (the field
+    /// of view; unequal where a headset's eye is fitted onto the frame),
+    /// `shift` where the view's axis lies from that centre (an asymmetric
+    /// field of view, such as each eye's of a headset).
+    pub h: [f32; 2],
+    pub shift: [f32; 2],
+    /// The near plane's distance (view-space units).
     pub near: f32,
     /// The sprite whose parts are left out (the viewer's own; 0 none).
     pub hide: u32,
+    /// What the sprites face: none, the view's plane (they turn as the
+    /// view turns); a point (a headset's head, in the game camera's view
+    /// space), each sprite turning about the world's up to face it, the
+    /// same for both eyes whichever way the head looks.
+    pub facing: Option<[f32; 3]>,
 }
 
 /// Holds the presented frame.
@@ -123,6 +159,60 @@ pub struct FrameRenderer {
     /// The replay's and the overlay's builder buffers.
     storage: Storage,
     overlay_storage: Storage,
+    /// The interface alone as a picture to lay over another
+    /// ([`FrameRenderer::pane`]), made when first asked for.
+    pane: Option<Pane>,
+}
+
+/// [`FrameRenderer::pane`]'s pass and picture.
+struct Pane {
+    pipeline: wgpu::RenderPipeline,
+    layout: wgpu::BindGroupLayout,
+    texture: wgpu::Texture,
+    view: wgpu::TextureView,
+}
+
+impl Pane {
+    fn new(device: &wgpu::Device) -> Self {
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("frame pane"),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("pane.wgsl"))),
+        });
+        let entry = |binding| wgpu::BindGroupLayoutEntry {
+            binding,
+            visibility: wgpu::ShaderStages::FRAGMENT,
+            ty: wgpu::BindingType::Texture {
+                sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                view_dimension: wgpu::TextureViewDimension::D2,
+                multisampled: false,
+            },
+            count: None,
+        };
+        let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor { label: Some("frame pane"), entries: &[entry(0), entry(1)] });
+        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("frame pane"),
+            bind_group_layouts: &[Some(&layout)],
+            immediate_size: 0,
+        });
+        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("frame pane"),
+            layout: Some(&pipeline_layout),
+            vertex: wgpu::VertexState { module: &shader, entry_point: Some("vs_pane"), compilation_options: Default::default(), buffers: &[] },
+            primitive: Default::default(),
+            depth_stencil: None,
+            multisample: Default::default(),
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: Some("fs_pane"),
+                compilation_options: Default::default(),
+                targets: &[Some(wgpu::ColorTargetState { format: COLOR_FORMAT, blend: None, write_mask: wgpu::ColorWrites::ALL })],
+            }),
+            multiview_mask: None,
+            cache: None,
+        });
+        let texture = texture(device, "frame pane", (1, 1), COLOR_FORMAT, picture_usage());
+        Self { pipeline, layout, view: texture.create_view(&Default::default()), texture }
+    }
 }
 
 /// The native VRAM a replay samples: the frame's snapshot, changed by its
@@ -235,6 +325,7 @@ impl FrameRenderer {
             overlay_group: None,
             storage: Storage::default(),
             overlay_storage: Storage::default(),
+            pane: None,
         }
     }
 
@@ -314,7 +405,9 @@ impl FrameRenderer {
     }
 
     /// Takes `area` of the renderer's picture as the frame, replayed when
-    /// `framing` asks for wider framing or interpolation.
+    /// `framing` asks for wider framing or interpolation (the newest frame
+    /// the renderer logged, unless `framing` holds the one shown before:
+    /// `area` is then that frame's).
     pub fn prepare(
         &mut self,
         device: &wgpu::Device,
@@ -325,14 +418,19 @@ impl FrameRenderer {
         framing: Framing,
     ) {
         let scale = renderer.scale();
-        self.track(renderer, area);
+        if !framing.hold || self.newest_ops.is_empty() {
+            self.track(renderer, area);
+        }
         // The game may draw a few rows below the displayed viewport (the
         // field draws 224 and shows 216); its distortion copies those rows.
         let rect = renderer.frame_log(area).map(|log| log.rect)
             .unwrap_or(VramRect { x: area.x as u16, y: area.y as u16, width: area.width as u16, height: area.height as u16 });
         let feedback = renderer.options().fidelity != super::Fidelity::ORIGINAL && framebuffer_effect(&self.newest_ops, rect);
         let pulled = framing.pull_back > 0.0;
-        let replay = (framing.side > 0 || framing.interpolate.is_some() || pulled || framing.look.is_some() || framing.replay || feedback)
+        // The interface alone has no scene to look at.
+        let look = framing.look.filter(|_| framing.interface != Interface::Only);
+        let replay = (framing.side > 0 || framing.interpolate.is_some() || pulled || look.is_some() || framing.replay || feedback
+            || framing.interface != Interface::Drawn)
             && !self.newest_ops.is_empty();
         let side = if replay { framing.side } else { 0 };
         self.resize(device, ((area.width.max(1) + 2 * side) * scale, area.height.max(1) * scale));
@@ -375,13 +473,16 @@ impl FrameRenderer {
                 ops
             }
         };
-        let captures: Vec<_> = std::iter::once(&renderer.capture).chain(&renderer.earlier).filter(|capture| capture.scale == scale)
+        // A frame held from before the screen the game took last (a field's
+        // menu takes it) drew nothing of it.
+        let current = !framing.hold;
+        let captures: Vec<_> = std::iter::once(&renderer.capture).chain(&renderer.earlier).filter(|capture| current && capture.scale == scale)
             .flat_map(Capture::areas).collect();
         settle_copies(&mut ops, &captures, feedback.then_some(rect));
         // What the game draws of a screen it took (its pieces, zoomed,
         // shattered) is that screen, as presented then: a screen effect,
         // where the game put it.
-        let capture = renderer.capture.rect.filter(|_| renderer.capture.scale == scale).map(|rect| (rect, renderer.capture.side));
+        let capture = renderer.capture.rect.filter(|_| current && renderer.capture.scale == scale).map(|rect| (rect, renderer.capture.side));
         if let Some((rect, _)) = capture {
             for op in &mut ops {
                 if let TraceOp::Draw(p) = op
@@ -391,13 +492,28 @@ impl FrameRenderer {
                 }
             }
         }
-        if let Some(look) = &framing.look {
+        if let Some(look) = &look {
             first_person(&mut ops, look);
         } else if pulled {
             pull_back(&mut ops, framing.pull_back);
         }
         self.overlay_scene = scene_offset(&ops);
         self.overlay = split_overlay(&mut ops, feedback.then_some(rect));
+        // The interface left out wherever the game drew it, or kept alone
+        // (with the writes and copies its textures follow).
+        let scene = self.overlay_scene;
+        match framing.interface {
+            Interface::Drawn => {}
+            Interface::Omitted => {
+                ops.retain(|op| !matches!(op, TraceOp::Draw(p) if !effective_class(p, scene).is_scene()));
+                self.overlay.clear();
+            }
+            Interface::Only => ops.retain(|op| match op {
+                TraceOp::Draw(p) => !effective_class(p, scene).is_scene(),
+                TraceOp::Fill { .. } => false,
+                _ => true,
+            }),
+        }
         // The replay samples VRAM as it was when the frame began, then as the
         // frame's writes (the replay's and the overlay's) changed it, in order.
         if let Some(start) = &self.snapshot {
@@ -409,20 +525,20 @@ impl FrameRenderer {
         builder.seal = renderer.seal;
         builder.spill = side;
         builder.capture = capture;
-        builder.capture_aliases = &renderer.capture.aliases;
+        builder.capture_aliases = if current { &renderer.capture.aliases } else { &[] };
         builder.feedback = feedback.then_some(rect);
         builder.vram = self.snapshot.is_some().then_some(self.vram.held());
         // A frame recorded looking from within or around the scene holds
         // faces from anywhere, not only beside the screen: seen from the
         // game's camera, none.
-        builder.reveal = if pulled || framing.look.is_some() {
+        builder.reveal = if pulled || look.is_some() {
             Reveal::Everywhere
         } else if side > 0 && self.eye.is_none() && self.camera.is_none() {
             Reveal::Sides
         } else {
             Reveal::Hidden
         };
-        builder.near = framing.look.map(|look| Near { distance: look.near, h: look.h });
+        builder.near = look.map(|look| Near { distance: look.near, h: look.h, shift: look.shift });
         for op in &ops {
             builder.op(op);
         }
@@ -432,7 +548,7 @@ impl FrameRenderer {
             origin: [origin.0, origin.1],
             extent: [(area.width + 2 * side) as f32, render_height as f32],
             scale: scale as f32,
-            options: pass_options(&options.fidelity) | if framing.look.is_some() { PASS_RECIPROCAL_DEPTH } else { 0 },
+            options: pass_options(&options.fidelity) | if look.is_some() { PASS_RECIPROCAL_DEPTH } else { 0 },
             capture_scale,
             capture_side,
             capture,
@@ -544,6 +660,58 @@ impl FrameRenderer {
         let staging = Some((self.overlay_staging.buffer(), &self.vram.texture));
         encode(device, &mut renderer.pipelines, encoder, &group, self.overlay_vertices.buffer(), staging, copies, &target, &builder.commands);
         builder.store(&mut self.overlay_storage);
+    }
+
+    /// The frame as a picture to lay over another, its coverage as alpha
+    /// (premultiplied; the colours sRGB-encoded as the frame's): for a frame
+    /// drawn with [`Interface::Only`], its interface where the screen was.
+    /// It covers what lies behind where the interface drew, by half where
+    /// that was semi-transparent (the original's commonest blend lets half
+    /// of what lies behind through; one over another interface pixel is
+    /// taken the same way), adds the colour of a semi-transparent effect
+    /// over the whole screen (which leaves no class, as an additive flash),
+    /// and covers nothing elsewhere. The frame's alpha is the PS1's mask
+    /// bit, not coverage: its auxiliary target's class and marks tell what
+    /// was drawn (ps1/pane.wgsl).
+    pub fn pane(&mut self, device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder) -> &wgpu::TextureView {
+        let size = self.size;
+        let pane = self.pane.get_or_insert_with(|| Pane::new(device));
+        if (pane.texture.width(), pane.texture.height()) != size {
+            pane.texture = texture(device, "frame pane", size, COLOR_FORMAT, picture_usage());
+            pane.view = pane.texture.create_view(&Default::default());
+        }
+        let group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("frame pane"),
+            layout: &pane.layout,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&self.color_view) },
+                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&self.aux.create_view(&Default::default())) },
+            ],
+        });
+        let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("frame pane"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &pane.view,
+                depth_slice: None,
+                resolve_target: None,
+                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
+            })],
+            ..Default::default()
+        });
+        pass.set_pipeline(&pane.pipeline);
+        pass.set_bind_group(0, &group, &[]);
+        pass.draw(0..3, 0..1);
+        drop(pass);
+        &pane.view
+    }
+
+    /// The picture the last [`FrameRenderer::pane`] made.
+    pub fn pane_texture(&self) -> Option<&wgpu::Texture> {
+        self.pane.as_ref().map(|pane| &pane.texture)
+    }
+
+    pub fn pane_view(&self) -> Option<&wgpu::TextureView> {
+        self.pane.as_ref().map(|pane| &pane.view)
     }
 
     /// The identity of the newest frame shown (its buffer's position and
@@ -939,14 +1107,15 @@ pub fn pull_back(ops: &mut Vec<TraceOp>, distance: f32) {
 /// `ops` seen from `look`, a camera within the scene: each projected vertex
 /// of the scene moves into its space (its [`xem_gpu::TraceVertex::view`]
 /// holds it there, for the near plane's clipping when drawn) and is
-/// projected with `look.h` about its projection centre; a point without a
-/// point before the division is taken back through the game's projection
-/// first. A sprite's parts face the camera, standing along the world's up
-/// at the sprite's floor point (as the game's camera showed them, sized by
-/// their distance); the viewer's own sprite is left out. A primitive wholly
-/// behind the near plane is dropped, and points behind it are placed at it
-/// until the primitive is clipped there. Interface primitives stay as they
-/// are.
+/// projected with `look.h` and `look.shift` about its projection centre; a
+/// point without a point before the division is taken back through the
+/// game's projection first. A sprite's parts stand along the world's up at
+/// the sprite's floor point (as the game's camera showed them, sized by
+/// their distance), spread across the view's right or, with `look.facing`,
+/// turned to face that point; the viewer's own sprite is left out. A
+/// primitive wholly behind the near plane is dropped, and points behind it
+/// are placed at it until the primitive is clipped there. Interface
+/// primitives stay as they are.
 pub fn first_person(ops: &mut Vec<TraceOp>, look: &Look) {
     // Each original part carries the same alternative for its drawing pass.
     // Replace that pass once, including the original builder's texture cells,
@@ -997,8 +1166,27 @@ pub fn first_person(ops: &mut Vec<TraceOp>, look: &Look) {
         look.axes.map(|axis| dot(d, axis))
     };
     // The world's up in the camera's space: a sprite stands along it, as
-    // wide along the camera's right as the game's camera showed it.
+    // wide along the camera's right (or across the line to what it faces)
+    // as the game's camera showed it.
     let up = look.axes.map(|axis| dot(look.up, axis));
+    let across = |anchor: [f32; 3]| -> [f32; 3] {
+        let Some(viewer) = look.facing else { return [1.0, 0.0, 0.0] };
+        // The line from the viewer to the sprite, level: the sprite's
+        // right is across it (the viewer's right, facing the sprite).
+        let d = [anchor[0] - viewer[0], anchor[1] - viewer[1], anchor[2] - viewer[2]];
+        let rise = dot(d, look.up);
+        let level = [d[0] - rise * look.up[0], d[1] - rise * look.up[1], d[2] - rise * look.up[2]];
+        let right = [
+            level[1] * look.up[2] - level[2] * look.up[1],
+            level[2] * look.up[0] - level[0] * look.up[2],
+            level[0] * look.up[1] - level[1] * look.up[0],
+        ];
+        let length = dot(right, right).sqrt();
+        if length < 1e-3 {
+            return [1.0, 0.0, 0.0];
+        }
+        look.axes.map(|axis| dot(right, axis) / length)
+    };
     let point = view_point;
     let feet = sprite_feet(ops);
     ops.retain_mut(|op| {
@@ -1013,15 +1201,16 @@ pub fn first_person(ops: &mut Vec<TraceOp>, look: &Look) {
         let count = p.vertex_count();
         let mut moved = [[0.0f32; 3]; 4];
         let anchor = feet.get(&p.owner).copied().filter(|_| p.class == Class::Sprite);
+        let spread = anchor.map(&across);
         for (i, m) in moved.iter_mut().enumerate().take(count) {
             let Some(q) = point(p, i) else { return false };
-            *m = match anchor {
-                Some(anchor) => {
+            *m = match (anchor, spread) {
+                (Some(anchor), Some(s)) => {
                     let base = camera(anchor);
                     let (right, down) = (q[0] - anchor[0], q[1] - anchor[1]);
-                    [base[0] + right - down * up[0], base[1] - down * up[1], base[2] - down * up[2]]
+                    std::array::from_fn(|k| base[k] + right * s[k] - down * up[k])
                 }
-                None => camera(q),
+                _ => camera(q),
             };
         }
         if moved[..count].iter().all(|m| m[2] < look.near) {
@@ -1030,7 +1219,7 @@ pub fn first_person(ops: &mut Vec<TraceOp>, look: &Look) {
         let center = (f32::from(ox) + f32::from(p.environment.offset.0), f32::from(oy) + f32::from(p.environment.offset.1));
         let project = |m: [f32; 3]| {
             let z = m[2].max(look.near);
-            (center.0 + look.h * m[0] / z, center.1 + look.h * m[1] / z, z)
+            (center.0 + look.shift[0] + look.h[0] * m[0] / z, center.1 + look.shift[1] + look.h[1] * m[1] / z, z)
         };
         for (v, m) in p.vertices.iter_mut().zip(&moved[..count]) {
             (v.fx, v.fy, v.z) = project(*m);
@@ -1089,6 +1278,24 @@ pub(crate) fn sprite_feet(ops: &[TraceOp]) -> HashMap<u32, [f32; 3]> {
         feet.entry(owner).or_insert([sums[0] / n, sums[1], sums[2] / n]);
     }
     feet
+}
+
+/// Where the world of `ops` (its scenery, drawn through the GTE: a field's
+/// map, which a menu's own models are not) is projected about: its
+/// projection offset plus the drawing offset (VRAM pixels), as
+/// [`first_person`] takes each scene primitive's centre; none without it.
+pub(crate) fn projection_centre(ops: &[TraceOp]) -> Option<(f32, f32)> {
+    let scene = scene_offset(ops)?;
+    ops.iter().find_map(|op| match op {
+        TraceOp::Draw(p) if p.class == Class::World => match p.projection {
+            Some((offset, _)) if offset == scene => Some((
+                f32::from(offset.0) + f32::from(p.environment.offset.0),
+                f32::from(offset.1) + f32::from(p.environment.offset.1),
+            )),
+            _ => None,
+        },
+        _ => None,
+    })
 }
 
 /// The depth the camera looks at, measured: the median depth of the scene

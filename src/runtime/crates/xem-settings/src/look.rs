@@ -9,6 +9,8 @@
 //! camera turns are held back, so the game's camera stays; while the player
 //! walks so are walking and jumping, so the character stays where it
 //! stands. A menu keeps every button, and the view does not turn under it.
+//! In a headset the head looks around, and the right stick turns the view
+//! in steps ([`SnapTurn`]).
 use xem_core::FieldControls;
 use xem_core::action::{Assignment, GameAction, buttons_with};
 use xem_core::pad::button;
@@ -40,6 +42,12 @@ const MOUSE_TURN: f32 = 0.0025;
 const TOUCH_TURN: f32 = 0.003;
 /// The right stick's dead zone, a share of its travel.
 const DEAD_ZONE: f32 = 0.2;
+/// A headset's turn, radians (30 degrees), when its right stick is pushed
+/// past [`SNAP_ON`] of its travel to a side; the next waits until the stick
+/// comes back within [`SNAP_OFF`].
+pub const SNAP_TURN: f32 = std::f32::consts::PI / 6.0;
+const SNAP_ON: f32 = 0.7;
+const SNAP_OFF: f32 = 0.3;
 
 /// Whether Select toggles the view: while the player walks in a field
 /// (only then the field reads Select; menus may), where it shows no map's
@@ -158,6 +166,38 @@ impl Turn {
         let pitch = (keys(self.arrows[3], self.arrows[2]) * KEY_TURN[1] - stick(self.stick[1]) * STICK_TURN[1]) * seconds
             - self.mouse[1] * MOUSE_TURN + self.touch[1] * TOUCH_TURN;
         (yaw, pitch)
+    }
+}
+
+/// A headset's turning of the view: the head looks around, and the right
+/// stick turns the view in [`SNAP_TURN`] steps, never smoothly (a smooth
+/// turn the body does not feel is the commonest cause of discomfort);
+/// pitching is the head's alone.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct SnapTurn {
+    /// A step was taken and the stick has not come back yet.
+    held: bool,
+}
+
+impl SnapTurn {
+    /// The step the right stick's `x` (-1 to 1, to the right) takes now:
+    /// radians to the right, or 0.
+    pub fn update(&mut self, x: f32) -> f32 {
+        if self.held {
+            self.held = x.abs() >= SNAP_OFF;
+            return 0.0;
+        }
+        if x.abs() < SNAP_ON {
+            return 0.0;
+        }
+        self.held = true;
+        SNAP_TURN * x.signum()
+    }
+
+    /// A stick still pushed when input comes back (focus regained, the
+    /// panel closed) steps nothing until it has come back.
+    pub fn clear(&mut self) {
+        self.held = true;
     }
 }
 
@@ -287,5 +327,23 @@ mod tests {
         // dragged down, it looks up.
         let (yaw, pitch) = Turn { touch: [100.0, 50.0], ..Turn::default() }.radians(0.0);
         assert!((yaw + 0.3).abs() < 1e-6 && (pitch - 0.15).abs() < 1e-6, "{yaw} {pitch}");
+    }
+
+    #[test]
+    fn a_headsets_right_stick_turns_the_view_thirty_degrees_a_push() {
+        let mut snap = SnapTurn::default();
+        assert_eq!(snap.update(0.5), 0.0, "short of the push");
+        assert_eq!(snap.update(0.8), SNAP_TURN, "pushed right, a step right");
+        assert!((SNAP_TURN - 30f32.to_radians()).abs() < 1e-6);
+        assert_eq!(snap.update(1.0), 0.0, "held, once");
+        assert_eq!(snap.update(0.4), 0.0, "not yet back");
+        assert_eq!(snap.update(0.1), 0.0, "back");
+        assert_eq!(snap.update(-0.9), -SNAP_TURN, "pushed left, a step left");
+        assert_eq!(snap.update(0.0), 0.0);
+        // Input coming back with the stick still pushed steps nothing.
+        snap.clear();
+        assert_eq!(snap.update(0.9), 0.0, "still pushed when input came back");
+        assert_eq!(snap.update(0.0), 0.0);
+        assert_eq!(snap.update(0.9), SNAP_TURN, "pushed again");
     }
 }

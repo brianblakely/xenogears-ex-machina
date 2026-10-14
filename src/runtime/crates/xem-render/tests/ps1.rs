@@ -502,7 +502,16 @@ fn with_view(op: TraceOp, points: &[[f32; 3]]) -> TraceOp {
 }
 
 /// The game's own camera as a view from within the scene.
-const AHEAD: Look = Look { eye: [0.0; 3], axes: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], up: [0.0, -1.0, 0.0], h: 256.0, near: 1.0, hide: 0 };
+const AHEAD: Look = Look {
+    eye: [0.0; 3],
+    axes: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+    up: [0.0, -1.0, 0.0],
+    h: [256.0; 2],
+    shift: [0.0; 2],
+    near: 1.0,
+    hide: 0,
+    facing: None,
+};
 
 #[test]
 fn looking_around_moves_the_scene_into_the_views_camera_and_leaves_the_interface() {
@@ -1747,4 +1756,199 @@ fn dump(name: &str, picture: &[u8]) {
     encoder.set_color(png::ColorType::Rgba);
     let opaque: Vec<u8> = picture.chunks(4).flat_map(|p| [p[0], p[1], p[2], 255]).collect();
     encoder.write_header().unwrap().write_image_data(&opaque).unwrap();
+}
+
+/// Where the headset tests' controlled character stands (the game camera's
+/// view space, y down) and the height of its eye there: 0.9 of the 74 units
+/// a field's characters stand where the frame draws no sprite of theirs.
+const HEADSET_FEET: [f32; 3] = [0.0, 100.0, 500.0];
+const EYE_Y: f32 = 100.0 - 66.6;
+
+/// Flat quads through the GTE (offset 160, 120; H 256) from their view-space
+/// corners (0 1 / 2 3) and 0xBBGGRR colours, over a black screen, after the
+/// port's records (with `eye`) of the field camera (the world's axes as the
+/// view's) and of the controlled character standing at `HEADSET_FEET` (its
+/// sprite drawing nothing); then the interface: a white rectangle and a grey
+/// semi-transparent one.
+fn headset_scene(gpu: &mut xem_gpu::Gpu, eye: bool, quads: &[([[f32; 3]; 4], u32)]) {
+    gpu.write_gp0_words(&[0xE300_0000, 0xE400_0000 | 239 << 10 | 319, 0xE500_0000, 0xE100_0200]);
+    gpu.write_gp0_words(&[0x0200_0000, 0, 240 << 16 | 320]);
+    if eye {
+        let entry = |class: u8, owner: u32, view: [i32; 3]| Projection { sxy: 0, sz: 0, class, x: 0, y: 0, offset: (160, 120), h: 256, owner, view };
+        let records = [entry(6, 0, [4096, 0, 0]), entry(6, 1, [0, 4096, 0]), entry(6, 2, [0, 0, 4096]), entry(7, 0x8020_0000, HEADSET_FEET.map(|c| c as i32))];
+        gpu.trace_projections(0, &records, &[], &[]);
+    }
+    let mut projections = Vec::new();
+    let mut packets = Vec::new();
+    for (corners, color) in quads {
+        let mut words = vec![0x2800_0000 | color];
+        let mut points = Vec::new();
+        for &[x, y, z] in corners {
+            let (sx, sy) = (160.0 + 256.0 * x / z, 120.0 + 256.0 * y / z);
+            let sxy = xy(sx.floor() as i32, sy.floor() as i32);
+            points.push((words.len(), projections.len()));
+            words.push(sxy);
+            projections.push(Projection {
+                sxy,
+                sz: z as u16,
+                class: 0,
+                x: (sx * 65536.0) as i32,
+                y: (sy * 65536.0) as i32,
+                offset: (160, 120),
+                h: 256,
+                owner: 0,
+                view: [x as i32, y as i32, z as i32],
+            });
+        }
+        packets.push((words, points));
+    }
+    submit(gpu, &projections, &packets);
+    gpu.write_gp0_words(&[0x60FF_FFFF, xy(250, 200), 30 << 16 | 60]);
+    gpu.write_gp0_words(&[0x6280_8080, xy(20, 200), 20 << 16 | 40]);
+}
+
+#[test]
+fn a_headset_sees_from_the_characters_eye_through_each_eyes_field_of_view_with_the_interface_on_its_pane() {
+    use xem_render::ps1::{GameView, HeadsetEye, HostClass, ViewConfig};
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    // A thousand units ahead of the eye, four quadrants meeting on its line
+    // of sight: red up left, green up right, blue down left, yellow down
+    // right; and a magenta floor at the character's feet from 300 units
+    // behind the eye to 900 ahead, which the near plane clips.
+    let z = HEADSET_FEET[2] + 1000.0;
+    let quad = |x0: f32, x1: f32, y0: f32, y1: f32| [[x0, y0, z], [x1, y0, z], [x0, y1, z], [x1, y1, z]];
+    let floor = [[-300.0, HEADSET_FEET[1], HEADSET_FEET[2] - 300.0], [300.0, HEADSET_FEET[1], HEADSET_FEET[2] - 300.0], [-300.0, HEADSET_FEET[1], HEADSET_FEET[2] + 900.0], [300.0, HEADSET_FEET[1], HEADSET_FEET[2] + 900.0]];
+    let scene = [
+        (quad(-3000.0, 0.0, EYE_Y - 3000.0, EYE_Y), 0x0000FF),
+        (quad(0.0, 3000.0, EYE_Y - 3000.0, EYE_Y), 0x00FF00),
+        (quad(-3000.0, 0.0, EYE_Y, EYE_Y + 3000.0), 0xFF0000),
+        (quad(0.0, 3000.0, EYE_Y, EYE_Y + 3000.0), 0x00FFFF),
+        (floor, 0xFF00FF),
+    ];
+    let (sync, trace) = traced(|device| headset_scene(device, true, &scene));
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    view.configure(ViewConfig::resolve(&Default::default(), HostClass::Headset, (320, 240), view.max_scale()));
+    view.push(sync);
+    view.push(trace);
+    view.set_first_person(true);
+    let display = xem_gpu::DisplayInfo { enabled: true, x: 0, y: 0, width: 320, height: 240, mode_width: 320, color24: false, interlaced: false, pal: false };
+    // Each eye 32 mm off the head's centre, its field of view wider away
+    // from the nose and wider down than up.
+    let eyes = |orientation: [f32; 4]| {
+        [
+            HeadsetEye { orientation, position: [-0.032, 0.0, 0.0], fov: [-1.0, 0.5, 0.5, -1.0] },
+            HeadsetEye { orientation, position: [0.032, 0.0, 0.0], fov: [-0.5, 1.0, 0.5, -1.0] },
+        ]
+    };
+    let present = |view: &mut GameView, eyes: &[HeadsetEye]| -> (Vec<Vec<u8>>, Vec<u8>) {
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        let count = view.present_headset(&mut encoder, &display, "field:1", 0.0, eyes).expect("presented").eyes.len();
+        gpu.queue.submit([encoder.finish()]);
+        let pictures = (0..count).map(|i| read_rgba8(&gpu.device, &gpu.queue, view.eye_texture(i).expect("an eye"))).collect();
+        (pictures, read_rgba8(&gpu.device, &gpu.queue, view.presented_texture().expect("the pane")))
+    };
+    let at = |pixels: &[u8], x: usize, y: usize| -> [u8; 4] { pixels[(y * 320 + x) * 4..][..4].try_into().unwrap() };
+    let named = |p: [u8; 4]| match p[..3] {
+        [r, g, b] if r > 200 && g < 60 && b < 60 => "red",
+        [r, g, b] if r < 60 && g > 200 && b < 60 => "green",
+        [r, g, b] if r < 60 && g < 60 && b > 200 => "blue",
+        [r, g, b] if r > 200 && g > 200 && b < 60 => "yellow",
+        [r, g, b] if r > 200 && g < 60 && b > 200 => "magenta",
+        [r, g, b] if r > 200 && g > 200 && b > 200 => "white",
+        [r, g, b] if r < 20 && g < 20 && b < 20 => "black",
+        _ => "other",
+    };
+    let level = [0.0, 0.0, 0.0, 1.0];
+    let (pictures, pane) = present(&mut view, &eyes(level));
+    assert_eq!(pictures.len(), 2, "both eyes look from within the scene");
+    // The left eye's line of sight at two thirds across (tangent 0 of -1 to
+    // 0.5), its horizon a third down (0.5 to -1): the frustum's edges on
+    // the frame's. The floor reaches its bottom edge, clipped at the near
+    // plane, and ends 900 ahead, below the horizon.
+    for (x, y, expected) in [
+        (1, 1, "red"), (318, 1, "green"), (209, 76, "red"), (218, 76, "green"), (209, 84, "blue"), (218, 84, "yellow"),
+        (1, 238, "magenta"), (318, 238, "magenta"), (160, 200, "magenta"),
+    ] {
+        assert_eq!(named(at(&pictures[0], x, y)), expected, "the left eye at {x},{y}: {:?}", at(&pictures[0], x, y));
+    }
+    // The right eye's a third across (-0.5 to 1).
+    for (x, y, expected) in [(102, 76, "red"), (111, 76, "green"), (102, 84, "blue"), (111, 84, "yellow"), (318, 238, "magenta")] {
+        assert_eq!(named(at(&pictures[1], x, y)), expected, "the right eye at {x},{y}: {:?}", at(&pictures[1], x, y));
+    }
+    // The interface is on the pane alone: opaque where drawn, half covering
+    // where semi-transparent, transparent elsewhere; neither eye carries it.
+    assert_eq!(at(&pane, 280, 215), [255, 255, 255, 255], "the white rectangle, opaque");
+    let semi = at(&pane, 40, 210);
+    assert!((120..=136).contains(&semi[3]) && (56..=72).contains(&semi[0]), "the grey semi-transparent rectangle, half covering: {semi:?}");
+    for (x, y) in [(1, 1), (100, 50), (160, 200)] {
+        assert_eq!(at(&pane, x, y)[3], 0, "the scene is left out of the pane at {x},{y}");
+    }
+    for (eye, picture) in pictures.iter().enumerate() {
+        assert_eq!(named(at(picture, 280, 215)), "magenta", "eye {eye} shows the floor where the interface was drawn");
+        assert_eq!(named(at(picture, 40, 210)), "magenta", "eye {eye} shows the floor where the interface was drawn");
+    }
+    // The listener looks along the view's level heading, whatever the head does.
+    let forward = view.listener_axes().expect("looking")[2];
+    assert!((forward[2] - 1.0).abs() < 1e-4, "{forward:?}");
+
+    // A quarter turn of the head to the right: the scene ahead leaves the
+    // right of the view, the listener stays.
+    let right = [0.0, -std::f32::consts::FRAC_1_SQRT_2, 0.0, std::f32::consts::FRAC_1_SQRT_2];
+    let (turned, _) = present(&mut view, &eyes(right));
+    assert_eq!(named(at(&turned[0], 318, 1)), "black", "nothing to the right");
+    assert_ne!(turned[0], pictures[0]);
+    assert!((view.listener_axes().expect("looking")[2][2] - 1.0).abs() < 1e-4, "the listener is head-free");
+
+    // A frame without the character's record: the eyes stay where they were
+    // rather than cut to the game's camera.
+    let (sync, trace) = traced(|device| headset_scene(device, false, &scene));
+    view.push(sync);
+    view.push(trace);
+    let (held, _) = present(&mut view, &eyes(level));
+    assert_eq!(held.len(), 2, "the eyes go on through a frame without the character's record");
+    assert_eq!(named(at(&held[0], 209, 76)), "red");
+    assert_eq!(named(at(&held[0], 218, 84)), "yellow");
+}
+
+#[test]
+fn a_headsets_eyes_see_each_sprite_stand_in_one_place_facing_the_head() {
+    // A sprite a thousand units right of the game's camera, facing it.
+    let TraceOp::Draw(mut p) = primitive(0, 0, 0) else { unreachable!() };
+    p.shape = Shape::Quad;
+    p.class = Class::Sprite;
+    p.owner = 0x8010_0000;
+    p.vertices[3] = p.vertices[0];
+    let ops = vec![with_view(TraceOp::Draw(p), &[[950.0, -200.0, 0.0], [1050.0, -200.0, 0.0], [950.0, 0.0, 0.0], [1050.0, 0.0, 0.0]])];
+    // Two eyes 2.6 units apart, turned differently (canted displays): one
+    // looks right along the game camera's +x, one 30 degrees off it.
+    let turned = |angle: f32| {
+        let (s, c) = angle.sin_cos();
+        [[-s, 0.0, -c], [0.0, 1.0, 0.0], [c, 0.0, -s]]
+    };
+    let eyes = [([0.0, 0.0, -1.3], turned(0.0)), ([0.0, 0.0, 1.3], turned(0.5236))];
+    // Each eye's points back in the game camera's view space.
+    let seen = |facing: Option<[f32; 3]>| -> Vec<Vec<[f32; 3]>> {
+        eyes.iter()
+            .map(|&(eye, axes)| {
+                let mut ops = ops.clone();
+                first_person(&mut ops, &Look { eye, axes, facing, ..AHEAD });
+                let TraceOp::Draw(p) = &ops[0] else { unreachable!() };
+                p.vertices.iter().map(|v| {
+                    let m = v.view.unwrap();
+                    std::array::from_fn(|i| eye[i] + m[0] * axes[0][i] + m[1] * axes[1][i] + m[2] * axes[2][i])
+                }).collect()
+            })
+            .collect()
+    };
+    let close = |a: [f32; 3], b: [f32; 3]| (0..3).all(|i| (a[i] - b[i]).abs() < 0.05);
+    // Facing the head between the eyes: one sprite for both, its width
+    // across the line to the head.
+    let both = seen(Some([0.0; 3]));
+    assert!(both[0].iter().zip(&both[1]).all(|(a, b)| close(*a, *b)), "one sprite for both eyes: {both:?}");
+    let across = [both[0][1][0] - both[0][0][0], both[0][1][1] - both[0][0][1], both[0][1][2] - both[0][0][2]];
+    assert!((across.iter().map(|c| c * c).sum::<f32>().sqrt() - 100.0).abs() < 0.05, "as wide as the game drew it: {across:?}");
+    assert!(across[0].abs() < 0.05, "facing the head along the game camera's +x: {across:?}");
+    // Each facing its own eye's plane, the eyes would see two.
+    let apart = seen(None);
+    assert!(!apart[0].iter().zip(&apart[1]).all(|(a, b)| close(*a, *b)), "each eye's own plane turns the sprite");
 }

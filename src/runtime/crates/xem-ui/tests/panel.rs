@@ -694,16 +694,17 @@ fn movement_preference_reset_and_binding_cancel_use_the_shared_services() {
     ui.update().unwrap();
     assert!(ElementHandle::find_by_accessible_label(ui.component(), "Drag").next().is_some(), "a touch screen lists the drag among the looks");
     // A headset lists its own: the underhand grab and the controllers'
-    // Back (their right stick's click) toggle, their right stick looks,
-    // within its panel's 440 logical pixels.
+    // Back (their right stick's click) toggle, the head and the right stick
+    // look, within its panel's 440 logical pixels.
     let listed = |ui: &SettingsUi, label: &str| ElementHandle::find_by_accessible_label(ui.component(), label).next().is_some();
-    assert!(!listed(&ui, "Underhand grab"));
+    assert!(!listed(&ui, "Underhand grab") && !listed(&ui, "Head"));
     ui.set_first_person_headset(true);
     ui.resize((440, 2000), 1.0);
     ui.update().unwrap();
     assert!(listed(&ui, "Underhand grab") && listed(&ui, "Right stick click"), "a headset lists its toggles");
+    assert!(listed(&ui, "Head"), "and the head among its looks");
     assert!(!listed(&ui, "R3") && !listed(&ui, "Arrows") && !listed(&ui, "Drag"), "and none of the flat hosts' inputs");
-    for label in ["Underhand grab", "Right stick click"] {
+    for label in ["Underhand grab", "Right stick click", "Head"] {
         let key = element(&ui, label, AccessibleRole::Text);
         let (at, size) = (key.absolute_position(), key.size());
         assert!(at.x >= 0.0 && at.x + size.width <= 440.0, "{label} at {at:?} {size:?} fits the headset's panel");

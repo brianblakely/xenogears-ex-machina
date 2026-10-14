@@ -2,11 +2,17 @@
 //! presentations, the PS1 renderer, the frame (replayed for wider framing
 //! and interpolation) and the effects, configured from the graphics
 //! settings. The host hands over traces and the display; nothing here
-//! reaches the game.
+//! reaches the game. A headset looking from within the scene (first-person
+//! inspection) has each of its eyes drawn too, and the game's interface on
+//! a pane of its own ([`GameView::present_headset`]).
 
 use super::diorama::{Diorama, DioramaPresented, Fallback, XrView};
-use super::{DisplayArea, DrawOptions, Effects, EffectsRenderer, Fidelity, Filtering, FrameRenderer, Framing, Lighting, Look, Ps1Renderer, Quality, central_depth};
-use xem_gpu::{Class, DisplayInfo, Reveals, Trace, TraceOp};
+use super::frame::projection_centre;
+use super::{
+    DisplayArea, DrawOptions, Effects, EffectsRenderer, Fidelity, Filtering, FrameRenderer, Framing, Interface, Lighting, Look, Ps1Renderer, Quality,
+    central_depth,
+};
+use xem_gpu::{Class, DisplayInfo, Eye, Reveals, Trace, TraceOp};
 use xem_settings::{Filter, Graphics, QualityTier};
 
 /// What kind of host presents, for the settings' automatic choices.
@@ -167,12 +173,20 @@ const EYE_LEVEL: f32 = 0.9;
 const SPRITE_HEIGHT: f32 = 74.0;
 /// How far it looks up or down at most (radians: 80 degrees).
 const MAX_PITCH: f32 = 1.396;
+/// A headset's eye height, metres: the head moving this far moves the
+/// character's eye by the eye's own height above the character's feet (an
+/// adult's standing eye height, assumed: Fei's eye at 66.6 units of a field
+/// makes about 42 units a metre, 2.7 between the eyes of a 64 mm IPD).
+pub const EYE_HEIGHT_METRES: f32 = 1.6;
 
 /// First-person inspection (docs/runtime.md): the view's turn from the field
 /// camera's heading when it began (`yaw` to the right, `pitch` up, radians),
 /// that heading and the eye's height above the character's feet (from the
-/// first frame showing where the character stood), and the field it began
-/// in (leaving it ends the view).
+/// first frame showing where the character stood), the field it began in
+/// (leaving it ends the view), the last frame's record of where the
+/// character stood, and where the field's scene was projected about in the
+/// display (VRAM pixels from its corner): a headset keeps both through
+/// frames without them.
 #[derive(Clone, Debug, Default, PartialEq)]
 struct FirstPerson {
     yaw: f32,
@@ -180,6 +194,8 @@ struct FirstPerson {
     heading: Option<f32>,
     height: Option<f32>,
     field: Option<String>,
+    held: Option<Eye>,
+    centre: Option<(f32, f32)>,
 }
 
 /// A presented frame: an `Rgba8Unorm` texture of sRGB-encoded values.
@@ -190,12 +206,14 @@ pub struct Presented<'a> {
     pub new_frame: bool,
 }
 
-/// Which picture a flat presentation drew into.
+/// Which picture a flat presentation drew into: a movie frame, the screen
+/// (the frame, or what the effects made of it), or beside a headset's eyes
+/// the screen's interface alone, for its pane.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Picture {
     Movie,
-    Effects,
-    Frame,
+    Screen,
+    Pane,
 }
 
 /// A flat presentation: its picture, the picture's size and whether its
@@ -207,18 +225,48 @@ struct Flat {
     new_frame: bool,
 }
 
+/// One eye of a headset (OpenXR, WebXR) in its session's reference space,
+/// whose -z is where the presentation faces (the virtual screen) and whose
+/// y is up: its orientation (a unit quaternion x, y, z, w turning the eye's
+/// own axes, x right, y up, looking along -z, into the space's), its
+/// position (metres; the space's origin is where the character's eye
+/// stands), and its field of view as the tangents of its half-angles
+/// (left, right, up, down: left and down negative for a centred eye).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct HeadsetEye {
+    pub orientation: [f32; 4],
+    pub position: [f32; 3],
+    pub fov: [f32; 4],
+}
+
+/// A headset's presentation ([`GameView::present_headset`]).
+pub struct HeadsetPresented<'a> {
+    /// Each eye's picture looking from within the scene (an `Rgba8Unorm`
+    /// texture of sRGB-encoded values covering that eye's whole view), in
+    /// the order the eyes came; none while the view is the game's screen.
+    pub eyes: Vec<&'a wgpu::TextureView>,
+    /// The screen's picture: the game's, or beside the eyes its interface
+    /// alone, transparent elsewhere (premultiplied alpha), for a pane where
+    /// the screen was.
+    pub screen: Presented<'a>,
+}
+
 pub struct GameView {
     device: wgpu::Device,
     queue: wgpu::Queue,
+    adapter: Option<wgpu::Adapter>,
     renderer: Ps1Renderer,
-    frame: FrameRenderer,
-    effects: EffectsRenderer,
+    /// The picture presented: the game's screen, or beside a headset's
+    /// eyes its interface's pane.
+    main: Target,
+    /// A headset's eyes looking from within the scene, made when first
+    /// needed, and whether the last presentation drew them.
+    eyes: Vec<Target>,
+    headset: bool,
     config: Option<ViewConfig>,
     pending: Vec<TraceOp>,
     /// The trace must restart from the whole VRAM.
     restart: bool,
-    /// The last presentation drew the effects (else the plain frame).
-    presented_effects: Option<bool>,
     /// When the newest game frame arrived and the interval before it
     /// (seconds, the host's clock), for interpolation.
     arrived: f64,
@@ -234,10 +282,6 @@ pub struct GameView {
     frame_scenes: Vec<(((u16, u16), u64), String)>,
     /// Welds each trace's scene points ([`super::weld`]), its tables kept.
     welder: super::Welder,
-    /// What the last presentation showed: presented again with nothing new
-    /// to draw (the display refreshing faster than the game draws), its
-    /// picture stands.
-    shown: Option<Shown>,
     /// Movie frames rebuilt from what the MDEC decoded, and whether the last
     /// presentation was one.
     movie: super::MovieRenderer,
@@ -247,6 +291,17 @@ pub struct GameView {
     /// What a headset shows, and the diorama's state.
     xr_view: XrView,
     diorama: Diorama,
+}
+
+/// One picture a presentation draws: its frame, the effects over it, what
+/// it showed last (presented again with nothing new to draw, the display
+/// refreshing faster than the game draws, its picture stands) and whether
+/// that had the effects.
+struct Target {
+    frame: FrameRenderer,
+    effects: EffectsRenderer,
+    shown: Option<Shown>,
+    presented_effects: Option<bool>,
 }
 
 /// What a presentation shows: the frame (its identity and the ops that
@@ -260,18 +315,124 @@ struct Shown {
     framing: Framing,
 }
 
+impl Target {
+    fn new(device: &wgpu::Device, adapter: Option<&wgpu::Adapter>) -> Self {
+        Self { frame: FrameRenderer::new(device), effects: EffectsRenderer::new(device, adapter), shown: None, presented_effects: None }
+    }
+
+    /// The picture last drawn: what the effects made of the frame, or the frame.
+    fn texture(&self) -> Option<&wgpu::Texture> {
+        match self.presented_effects? {
+            true => self.effects.output(),
+            false => Some(self.frame.color()),
+        }
+    }
+
+    fn view(&self) -> Option<&wgpu::TextureView> {
+        match self.presented_effects? {
+            true => self.effects.output_view(),
+            false => Some(self.frame.color_view()),
+        }
+    }
+
+    /// Draws `area` of the renderer's picture framed by `framing`, with the
+    /// effects `config` asks for (tuned for `scene`) but on the interface
+    /// alone, unless this target shows it already.
+    #[allow(clippy::too_many_arguments)]
+    fn show(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        encoder: &mut wgpu::CommandEncoder,
+        renderer: &mut Ps1Renderer,
+        area: DisplayArea,
+        config: ViewConfig,
+        framing: Framing,
+        scene: &str,
+        new_frame: bool,
+    ) {
+        // A frame held is replayed where it was drawn (the display may show
+        // the game's other buffer now).
+        let held = self.frame.area().map(|(area, _)| area).filter(|_| framing.hold && !self.frame.newest().is_empty());
+        let area = held.unwrap_or(area);
+        let new_frame = held.is_none() && (self.frame.track(renderer, area) || new_frame);
+        let effects = config.effects.any() && framing.interface != Interface::Only;
+        let shown = Shown { identity: self.frame.identity(), drawn: self.frame.drawn(), area, config, framing };
+        if !new_frame && self.shown == Some(shown) && self.presented_effects == Some(effects) {
+            return;
+        }
+        self.shown = Some(shown);
+        self.frame.prepare(device, queue, encoder, renderer, area, framing);
+        self.presented_effects = Some(effects);
+        if effects {
+            let lighting = Lighting::for_scene(scene);
+            self.effects.render(device, queue, encoder, renderer, &self.frame, self.frame.primitives(), &config.effects, config.quality, &lighting);
+            // The interface the game drew after its scene, over the effects.
+            let output = self.effects.output().cloned();
+            self.frame.draw_overlay(device, queue, encoder, renderer, output.as_ref());
+        } else {
+            self.frame.draw_overlay(device, queue, encoder, renderer, None);
+        }
+        if framing.interface == Interface::Only {
+            self.frame.pane(device, encoder);
+        }
+    }
+}
+
+/// Where first-person inspection looks from in the frame shown: the
+/// character's eye, the world's axes (unit) and up in the game camera's
+/// view space, the eye's height above the feet (view-space units), the
+/// view's heading in the world and its pitch (radians), and the sprite left
+/// out.
+struct Base {
+    eye: [f32; 3],
+    world: [[f32; 3]; 3],
+    up: [f32; 3],
+    height: f32,
+    heading: f32,
+    pitch: f32,
+    hide: u32,
+}
+
+impl Base {
+    /// A direction of the world (y down) in the game camera's view space.
+    fn to_view(&self, w: [f32; 3]) -> [f32; 3] {
+        std::array::from_fn(|i| w[0] * self.world[0][i] + w[1] * self.world[1][i] + w[2] * self.world[2][i])
+    }
+
+    /// The view's right, down and forward, on its heading and `pitch` up.
+    fn axes(&self, pitch: f32) -> [[f32; 3]; 3] {
+        let yaw = self.heading;
+        let forward = self.to_view([yaw.sin() * pitch.cos(), -pitch.sin(), yaw.cos() * pitch.cos()]);
+        let right = self.to_view([yaw.cos(), 0.0, -yaw.sin()]);
+        let down = [
+            forward[1] * right[2] - forward[2] * right[1],
+            forward[2] * right[0] - forward[0] * right[2],
+            forward[0] * right[1] - forward[1] * right[0],
+        ];
+        [right, down, forward]
+    }
+
+    /// The near plane's distance: as far in front of the eye as a 32nd of
+    /// its height.
+    fn near(&self) -> f32 {
+        (self.height / 32.0).max(1.0)
+    }
+}
+
 impl GameView {
     pub fn new(device: &wgpu::Device, queue: &wgpu::Queue, adapter: Option<&wgpu::Adapter>) -> Self {
         Self {
             device: device.clone(),
             queue: queue.clone(),
+            adapter: adapter.cloned(),
             renderer: Ps1Renderer::new(device, queue, 1),
-            frame: FrameRenderer::new(device),
-            effects: EffectsRenderer::new(device, adapter),
+            main: Target::new(device, adapter),
+            eyes: Vec::new(),
+            headset: false,
             config: None,
             pending: Vec::new(),
             restart: true,
-            presented_effects: None,
             arrived: 0.0,
             interval: 1.0 / 30.0,
             scene: String::new(),
@@ -280,7 +441,6 @@ impl GameView {
             side: 0,
             frame_scenes: Vec::new(),
             welder: super::Welder::default(),
-            shown: None,
             movie: super::MovieRenderer::new(adapter.is_some_and(|adapter| adapter.get_info().device_type == wgpu::DeviceType::Cpu)),
             presented_movie: false,
             first_person: None,
@@ -402,9 +562,12 @@ impl GameView {
     /// camera's view space, while it looks around: where a listener faces
     /// (the Binaural mode's first-person listener). They never include a
     /// headset's head, which the session turns the listener by once more
-    /// (`Session::set_head`).
+    /// (`Session::set_head`): in a headset they are level on the view's
+    /// heading (the head does the pitching), the base its eyes turn from.
     pub fn listener_axes(&mut self) -> Option<[[f32; 3]; 3]> {
-        self.look().map(|look| look.axes)
+        let headset = self.headset;
+        let base = self.base(headset)?;
+        Some(base.axes(if headset { 0.0 } else { base.pitch }))
     }
 
     /// How far the first-person view has turned from the heading it began
@@ -422,48 +585,123 @@ impl GameView {
         }
     }
 
-    /// The first-person view of the frame shown, when it shows where the
-    /// controlled character stood: from its eyes (by its sprite's height
-    /// above its feet), turned from the heading it began with.
-    fn look(&mut self) -> Option<Look> {
-        let eye = self.frame.eye()?;
+    /// Where first-person inspection looks from in the frame shown, when it
+    /// shows where the controlled character stood (with `hold`, as the last
+    /// frame that did when it does not): from its eyes (by its sprite's
+    /// height above its feet), turned from the heading it began with.
+    fn base(&mut self, hold: bool) -> Option<Base> {
+        let shown = self.main.frame.eye();
         let view = self.first_person.as_mut()?;
+        let eye = match (shown, view.held) {
+            (Some(eye), _) => *view.held.insert(eye),
+            (None, Some(held)) if hold => held,
+            _ => return None,
+        };
         let unit = |v: [f32; 3]| {
             let length = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
             (length > 0.0).then(|| v.map(|c| c / length))
         };
-        let axes = [unit(eye.axes[0])?, unit(eye.axes[1])?, unit(eye.axes[2])?];
-        // A direction of the world (y down) in the game camera's view space.
-        let world = |w: [f32; 3]| -> [f32; 3] { std::array::from_fn(|i| w[0] * axes[0][i] + w[1] * axes[1][i] + w[2] * axes[2][i]) };
-        let up = world([0.0, -1.0, 0.0]);
+        let world = [unit(eye.axes[0])?, unit(eye.axes[1])?, unit(eye.axes[2])?];
+        // The world's up in the game camera's view space (the world's y is down).
+        let up: [f32; 3] = std::array::from_fn(|i| -world[1][i]);
         // The heading the game's camera looked along: its axis in the world.
-        let heading = *view.heading.get_or_insert_with(|| axes[0][2].atan2(axes[2][2]));
+        let heading = *view.heading.get_or_insert_with(|| world[0][2].atan2(world[2][2]));
         let height = match view.height {
             Some(height) => height,
             None => {
                 // A sprite the frame does not draw stands as tall as the
                 // field's characters do (the axes carry the field's scale).
                 let scale = eye.axes[0].iter().map(|c| c * c).sum::<f32>().sqrt() / 4096.0;
-                let top = sprite_height(self.frame.newest(), eye.sprite, eye.position, up).unwrap_or(SPRITE_HEIGHT * scale);
+                let top = sprite_height(self.main.frame.newest(), eye.sprite, eye.position, up).unwrap_or(SPRITE_HEIGHT * scale);
                 *view.height.insert(top * EYE_LEVEL)
             }
         };
-        let (yaw, pitch) = (heading + view.yaw, view.pitch);
-        let forward = world([yaw.sin() * pitch.cos(), -pitch.sin(), yaw.cos() * pitch.cos()]);
-        let right = world([yaw.cos(), 0.0, -yaw.sin()]);
-        let down = [
-            forward[1] * right[2] - forward[2] * right[1],
-            forward[2] * right[0] - forward[0] * right[2],
-            forward[0] * right[1] - forward[1] * right[0],
-        ];
-        Some(Look {
+        Some(Base {
             eye: std::array::from_fn(|i| eye.position[i] + up[i] * height),
-            axes: [right, down, forward],
+            world,
             up,
-            h: LOOK_H,
-            near: (height / 32.0).max(1.0),
+            height,
+            heading: heading + view.yaw,
+            pitch: view.pitch,
             hide: eye.sprite,
         })
+    }
+
+    /// The first-person view of the frame shown, when it shows where the
+    /// controlled character stood.
+    fn look(&mut self) -> Option<Look> {
+        let base = self.base(false)?;
+        Some(Look {
+            eye: base.eye,
+            axes: base.axes(base.pitch),
+            up: base.up,
+            h: [LOOK_H; 2],
+            shift: [0.0; 2],
+            near: base.near(),
+            hide: base.hide,
+            facing: None,
+        })
+    }
+
+    /// Each headset eye's view from within the scene, fitted onto the frame
+    /// of `area` (its wider framing's sides included): none unless
+    /// first-person inspection is on and a frame has shown where the
+    /// character stands (the last such frame's stands through frames that
+    /// do not, rather than a cut to the game's camera). The session's
+    /// reference space is laid on the view: its -z along the view's level
+    /// heading, its y the world's up, its origin at the character's eye,
+    /// [`EYE_HEIGHT_METRES`] to the eye's height above the feet; the
+    /// sprites face the head between the eyes.
+    fn eye_looks(&mut self, area: DisplayArea, eyes: &[HeadsetEye]) -> Vec<Look> {
+        if eyes.is_empty() {
+            return Vec::new();
+        }
+        let Some(base) = self.base(true) else { return Vec::new() };
+        // Where the field's scene is projected about, from the display's
+        // corner (each buffer the game draws in has its own corner): this
+        // frame's, else the last frame's that drew it, else the middle.
+        let corner = (area.x as f32, area.y as f32);
+        let measured = projection_centre(self.main.frame.newest()).map(|(x, y)| (x - corner.0, y - corner.1));
+        let Some(view) = self.first_person.as_mut() else { return Vec::new() };
+        if let Some(measured) = measured.filter(|_| self.main.frame.eye().is_some()) {
+            view.centre = Some(measured);
+        }
+        let (width, height) = ((area.width + 2 * self.side) as f32, area.height as f32);
+        let centre = view.centre.unwrap_or((area.width as f32 / 2.0, height / 2.0));
+        let [right, _, forward] = base.axes(0.0);
+        let space = |v: [f32; 3]| -> [f32; 3] { std::array::from_fn(|i| v[0] * right[i] + v[1] * base.up[i] - v[2] * forward[i]) };
+        let metre = base.height / EYE_HEIGHT_METRES;
+        let at = |p: [f32; 3]| -> [f32; 3] {
+            let d = space(p);
+            std::array::from_fn(|i| base.eye[i] + d[i] * metre)
+        };
+        let n = eyes.len() as f32;
+        let head = at(std::array::from_fn(|i| eyes.iter().map(|eye| eye.position[i]).sum::<f32>() / n));
+        eyes.iter()
+            .map(|eye| {
+                let [l, r, u, d] = eye.fov;
+                if r - l <= 1e-3 || u - d <= 1e-3 {
+                    return None;
+                }
+                let q = glam::Quat::from_array(eye.orientation).normalize();
+                let axis = |v: glam::Vec3| space((q * v).to_array());
+                let (hx, hy) = (width / (r - l), height / (u - d));
+                Some(Look {
+                    eye: at(eye.position),
+                    axes: [axis(glam::Vec3::X), axis(glam::Vec3::NEG_Y), axis(glam::Vec3::NEG_Z)],
+                    up: base.up,
+                    // The frustum's edges on the frame's: tangent l at its
+                    // left edge (the sides' outer edge), r at its right, u
+                    // at the top, d the bottom, whichever buffer it is in.
+                    h: [hx, hy],
+                    shift: [-(self.side as f32) - l * hx - centre.0, u * hy - centre.1],
+                    near: base.near(),
+                    hide: base.hide,
+                    facing: Some(head),
+                })
+            })
+            .collect::<Option<Vec<_>>>()
+            .unwrap_or_default()
     }
 
     /// Adds what the game drew since the last push.
@@ -499,9 +737,70 @@ impl GameView {
             self.presented_movie = false;
             let area = self.area(display)?;
             let new_frame = self.track_shown(area, scene, now);
-            self.present_frame(encoder, area, config, now, new_frame)
+            self.headset = false;
+            self.present_frame(encoder, area, now, new_frame)
         };
         self.flat_view(flat?)
+    }
+
+    /// [`GameView::present`] for a headset whose `eyes` are as given: while
+    /// first-person inspection looks from within the scene (once a frame
+    /// has shown where the character stands), each eye's picture from the
+    /// character's eye turned and moved as the eye is (`HeadsetEye`; its
+    /// sprites face the head, the same for both eyes), and the game's
+    /// interface alone as the screen's, for a pane where the screen was;
+    /// otherwise the screen's picture alone, as `present` draws it. Called
+    /// every headset frame (paused or not), so the eyes follow the head.
+    pub fn present_headset(
+        &mut self,
+        encoder: &mut wgpu::CommandEncoder,
+        display: &DisplayInfo,
+        scene: &str,
+        now: f64,
+        eyes: &[HeadsetEye],
+    ) -> Option<HeadsetPresented<'_>> {
+        let config = self.config?;
+        self.draw_pending(encoder, display, scene, config);
+        if let Some(output) = config.movies.filter(|_| self.movie.shows(display)) {
+            self.headset = false;
+            let flat = self.present_movie(encoder, display, output)?;
+            return Some(HeadsetPresented { eyes: Vec::new(), screen: self.flat_view(flat)? });
+        }
+        self.presented_movie = false;
+        let area = self.area(display)?;
+        let new_frame = self.track_shown(area, scene, now);
+        let looks = self.eye_looks(area, eyes);
+        self.headset = !looks.is_empty();
+        if looks.is_empty() {
+            let flat = self.present_frame(encoder, area, now, new_frame)?;
+            return Some(HeadsetPresented { eyes: Vec::new(), screen: self.flat_view(flat)? });
+        }
+        // The interface on its pane, then the eyes without it. A frame that
+        // does not draw the field (a field's menu has the screen: the port
+        // records the character's place as the field draws its models, and
+        // a frame may keep a record of the one before it) leaves the eyes
+        // on the last that did, seen as the head now is.
+        self.show_screen(encoder, area, now, new_frame, None, Interface::Only);
+        let alpha = self.alpha(now);
+        let hold = self.main.frame.eye().is_none() || projection_centre(self.main.frame.newest()).is_none();
+        while self.eyes.len() < looks.len() {
+            self.eyes.push(Target::new(&self.device, self.adapter.as_ref()));
+        }
+        for (target, look) in self.eyes.iter_mut().zip(&looks) {
+            let framing = Framing {
+                side: self.side,
+                interpolate: config.interpolation.then_some(alpha).filter(|_| !hold),
+                pull_back: 0.0,
+                replay: config.effects.any(),
+                look: Some(*look),
+                interface: Interface::Omitted,
+                hold,
+            };
+            target.show(&self.device, &self.queue, encoder, &mut self.renderer, area, config, framing, &self.scene, new_frame);
+        }
+        let eyes = self.eyes[..looks.len()].iter().map(Target::view).collect::<Option<Vec<_>>>()?;
+        let screen = self.flat_view(Flat { picture: Picture::Pane, size: self.main.frame.size(), new_frame })?;
+        Some(HeadsetPresented { eyes, screen })
     }
 
     /// The display area this view draws `display` as, if it draws it (15-bit
@@ -515,8 +814,8 @@ impl GameView {
     fn flat_view(&self, flat: Flat) -> Option<Presented<'_>> {
         let view = match flat.picture {
             Picture::Movie => self.movie.output_view()?,
-            Picture::Effects => self.effects.output_view()?,
-            Picture::Frame => self.frame.color_view(),
+            Picture::Screen => self.main.view()?,
+            Picture::Pane => self.main.frame.pane_view()?,
         };
         Some(Presented { view, size: flat.size, new_frame: flat.new_frame })
     }
@@ -525,7 +824,7 @@ impl GameView {
     /// `output`.
     fn present_movie(&mut self, encoder: &mut wgpu::CommandEncoder, display: &DisplayInfo, output: (u32, u32)) -> Option<Flat> {
         self.presented_movie = true;
-        self.shown = None;
+        self.main.shown = None;
         let (_, size, new_frame) = self.movie.present(&self.device, &self.queue, encoder, display, output, &self.renderer.vram)?;
         Some(Flat { picture: Picture::Movie, size, new_frame })
     }
@@ -543,10 +842,15 @@ impl GameView {
             });
         }
         // A screen the game takes in this trace is the picture last presented
-        // (a frame's; after a movie frame, the native pixels it took).
-        let frame = self.presented_texture().filter(|_| !self.presented_movie).cloned();
-        let presented = frame.zip(self.frame.area()).map(|(texture, (_, scale))| {
-            super::PresentedPicture { texture, side: self.frame.side(), scale }
+        // (a frame's, or with a headset's eyes the first eye's, what the
+        // player looked at; after a movie frame, the native pixels it took).
+        let looked = match self.headset {
+            true => self.eyes.first().and_then(Target::texture),
+            false => self.presented_texture(),
+        };
+        let frame = looked.filter(|_| !self.presented_movie).cloned();
+        let presented = frame.zip(self.main.frame.area()).map(|(texture, (_, scale))| {
+            super::PresentedPicture { texture, side: self.main.frame.side(), scale }
         });
         self.renderer.set_presented(presented);
         // The world map's terrain blocks meet in T-junctions that open at
@@ -563,15 +867,16 @@ impl GameView {
         }
     }
 
-    /// Notes the frame `area` shows and the scene that drew it, at `now`;
-    /// returns whether it is a new game frame.
+    /// Notes the frame `area` shows and the scene that drew it, at `now`
+    /// (the view's field, the game's frame arrivals, the camera's focus and
+    /// the wider framing's sides); returns whether it is a new game frame.
     fn track_shown(&mut self, area: DisplayArea, scene: &str, now: f64) -> bool {
-        let new_frame = self.frame.track(&self.renderer, area);
+        let new_frame = self.main.frame.track(&self.renderer, area);
         // The scene that drew the frame shown frames it: the field's last
         // frame stays pulled back while a battle loads behind it (and its
         // shatter takes it so), a battle's last one stays as the battle drew
         // it while the field loads.
-        let shown = self.frame.identity().and_then(|identity| self.frame_scenes.iter().find(|(known, _)| *known == identity));
+        let shown = self.main.frame.identity().and_then(|identity| self.frame_scenes.iter().find(|(known, _)| *known == identity));
         let shown = shown.map_or(scene, |(_, drawn)| drawn.as_str());
         if shown != self.scene {
             self.scene = shown.to_string();
@@ -594,47 +899,38 @@ impl GameView {
             self.arrived = now;
             self.update_focus(area);
         }
+        // The sides widen this display at its own height to the output's shape.
+        self.side = self.config.and_then(|config| config.aspect).map_or(0, |aspect| display_side((area.width, area.height), aspect));
         new_frame
     }
 
-    /// The frame `area` shows (tracked: [`GameView::track_shown`]), framed
-    /// and with the effects, drawn into the frame's or the effects' picture.
-    fn present_frame(&mut self, encoder: &mut wgpu::CommandEncoder, area: DisplayArea, config: ViewConfig, now: f64, new_frame: bool) -> Option<Flat> {
-        let alpha = ((now - self.arrived) / self.interval).clamp(0.0, 1.0) as f32;
-        let zoom = scene_zoom(config.zoom, &self.scene);
+    /// How far interpolation has gone from the frame before the newest to
+    /// the newest at `now`.
+    fn alpha(&self, now: f64) -> f32 {
+        ((now - self.arrived) / self.interval).clamp(0.0, 1.0) as f32
+    }
+
+    /// The frame `area` shows (tracked: [`GameView::track_shown`]) as the
+    /// screen: from the game's camera, or from the character's eye while
+    /// first-person inspection looks around, with the effects.
+    fn present_frame(&mut self, encoder: &mut wgpu::CommandEncoder, area: DisplayArea, now: f64, new_frame: bool) -> Option<Flat> {
         let look = self.look();
-        let pull_back = if zoom > 1.0 && look.is_none() { self.focus.map_or(0.0, |focus| (zoom - 1.0) * focus) } else { 0.0 };
-        // The sides widen this display at its own height to the output's shape.
-        self.side = config.aspect.map_or(0, |aspect| display_side((area.width, area.height), aspect));
-        let framing = Framing { side: self.side, interpolate: config.interpolation.then_some(alpha), pull_back, replay: config.effects.any(), look };
-        let shown = Shown { identity: self.frame.identity(), drawn: self.frame.drawn(), area, config, framing };
-        let picture = if config.effects.any() { Picture::Effects } else { Picture::Frame };
-        if !new_frame && self.shown == Some(shown) && self.presented_effects == Some(config.effects.any()) {
-            return Some(Flat { picture, size: self.frame.size(), new_frame });
-        }
-        self.shown = Some(shown);
-        self.frame.prepare(&self.device, &self.queue, encoder, &mut self.renderer, area, framing);
-        self.presented_effects = Some(config.effects.any());
-        if config.effects.any() {
-            let lighting = Lighting::for_scene(&self.scene);
-            self.effects.render(
-                &self.device,
-                &self.queue,
-                encoder,
-                &mut self.renderer,
-                &self.frame,
-                self.frame.primitives(),
-                &config.effects,
-                config.quality,
-                &lighting,
-            );
-            // The interface the game drew after its scene, over the effects.
-            let output = self.effects.output().cloned();
-            self.frame.draw_overlay(&self.device, &self.queue, encoder, &mut self.renderer, output.as_ref());
-            return Some(Flat { picture, size: self.frame.size(), new_frame });
-        }
-        self.frame.draw_overlay(&self.device, &self.queue, encoder, &mut self.renderer, None);
-        Some(Flat { picture, size: self.frame.size(), new_frame })
+        self.show_screen(encoder, area, now, new_frame, look, Interface::Drawn);
+        Some(Flat { picture: Picture::Screen, size: self.main.frame.size(), new_frame })
+    }
+
+    /// Draws the screen's picture of `area`: from the game's camera (pulled
+    /// back as the settings say) or from `look`, its interface as
+    /// `interface` says (alone: the interface's pane).
+    fn show_screen(&mut self, encoder: &mut wgpu::CommandEncoder, area: DisplayArea, now: f64, new_frame: bool, look: Option<Look>, interface: Interface) {
+        let Some(config) = self.config else { return };
+        let alone = interface == Interface::Only;
+        let zoom = scene_zoom(config.zoom, &self.scene);
+        let pull_back = if zoom > 1.0 && look.is_none() && !alone { self.focus.map_or(0.0, |focus| (zoom - 1.0) * focus) } else { 0.0 };
+        // The interface moves as the game moves it: nothing to interpolate.
+        let interpolate = (config.interpolation && !alone).then_some(self.alpha(now));
+        let framing = Framing { side: self.side, interpolate, pull_back, replay: config.effects.any(), look, interface, hold: false };
+        self.main.show(&self.device, &self.queue, encoder, &mut self.renderer, area, config, framing, &self.scene, new_frame);
     }
 
     /// Shows the game in a headset as `view`: the flat screen
@@ -671,6 +967,8 @@ impl GameView {
     ) -> Option<DioramaPresented<'_>> {
         let config = self.config?;
         self.draw_pending(encoder, display, scene, config);
+        // Not a headset's eyes looking from within the scene.
+        self.headset = false;
         let movie = config.movies.filter(|_| self.movie.shows(display));
         let area = if movie.is_some() { None } else { self.area(display) };
         let new_frame = area.is_some_and(|area| self.track_shown(area, scene, now));
@@ -681,7 +979,7 @@ impl GameView {
         // A movie, a display this view does not draw, and looking around in
         // first person show the screen.
         let fallback = match area.filter(|_| self.first_person.is_none()) {
-            Some(area) => Diorama::fallback(&self.renderer, &self.frame, &self.scene, area),
+            Some(area) => Diorama::fallback(&self.renderer, &self.main.frame, &self.scene, area),
             None => Some(Fallback::Screen),
         };
         let (screen, build) = self.diorama.ease(fallback, new_frame, now);
@@ -689,7 +987,7 @@ impl GameView {
             Some(table) if screen < 1.0 => {
                 // The frame shown when it can be a diorama, else the last
                 // build, held or fading out.
-                let shown = area.filter(|_| build).map(|area| (&self.frame, area, self.scene.as_str(), new_frame));
+                let shown = area.filter(|_| build).map(|area| (&self.main.frame, area, self.scene.as_str(), new_frame));
                 self.diorama.present(&self.device, &self.queue, encoder, &mut self.renderer, shown, now, eyes, seat, &table, 1.0 - screen)
             }
             _ => false,
@@ -703,14 +1001,14 @@ impl GameView {
                 (Some(output), _) => self.present_movie(encoder, display, output),
                 (None, Some(area)) => {
                     self.presented_movie = false;
-                    self.present_frame(encoder, area, config, now, new_frame)
+                    self.present_frame(encoder, area, now, new_frame)
                 }
                 (None, None) => None,
             }
         } else {
             // No flat picture this time: a screen the game takes next is
             // not the one presented before.
-            (self.presented_movie, self.presented_effects, self.shown) = (false, None, None);
+            (self.presented_movie, self.main.presented_effects, self.main.shown) = (false, None, None);
             None
         };
         if !drew && flat.is_none() {
@@ -745,7 +1043,7 @@ impl GameView {
             self.focus = Some(recorded);
             return;
         }
-        let Some(measured) = central_depth(self.frame.newest(), area) else { return };
+        let Some(measured) = central_depth(self.main.frame.newest(), area) else { return };
         self.focus = Some(match self.focus {
             Some(focus) if (measured / focus - 1.0).abs() < 0.5 => focus + (measured - focus) * 0.1,
             _ => measured,
@@ -768,18 +1066,25 @@ impl GameView {
     /// The frame the last [`GameView::present`] drew (its colour and
     /// auxiliary textures), before the effects.
     pub fn frame(&self) -> &FrameRenderer {
-        &self.frame
+        &self.main.frame
     }
 
-    /// The texture the last [`GameView::present`] returned a view of.
+    /// The texture the last [`GameView::present`] (or the screen's of
+    /// [`GameView::present_headset`]) returned a view of.
     pub fn presented_texture(&self) -> Option<&wgpu::Texture> {
         if self.presented_movie {
             return self.movie.output();
         }
-        match self.presented_effects? {
-            true => self.effects.output(),
-            false => Some(self.frame.color()),
+        if self.headset {
+            return self.main.frame.pane_texture();
         }
+        self.main.texture()
+    }
+
+    /// The picture of headset eye `eye` the last
+    /// [`GameView::present_headset`] drew, while it drew the eyes.
+    pub fn eye_texture(&self, eye: usize) -> Option<&wgpu::Texture> {
+        self.eyes.get(eye).filter(|_| self.headset)?.texture()
     }
 
     /// What the renderer drew and dropped at the last presentation.
@@ -792,7 +1097,7 @@ impl GameView {
     }
 
     pub fn effects_mut(&mut self) -> &mut EffectsRenderer {
-        &mut self.effects
+        &mut self.main.effects
     }
 }
 

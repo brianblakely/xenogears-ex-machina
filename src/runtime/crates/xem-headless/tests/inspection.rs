@@ -11,7 +11,13 @@
 //! keeps its heading in the world for 120 frames while an agent's presses
 //! turn the character about and the game's camera a quarter; turning it
 //! off moves no camera, shows the game's camera again, pixel for pixel,
-//! and restarts no route, and a new route walks.
+//! and restarts no route, and a new route walks. A headset's view
+//! (`GameView::present_headset`) of the same field looks through each eye
+//! from the character's eye: the eyes see apart, follow the head while no
+//! game frame runs (the listener staying on the view's heading), follow the
+//! character walking without turning, leave the interface to its pane, and
+//! change nothing in the game; through the field's menu, which draws no
+//! field, they keep the room while the menu shows on the pane.
 //!
 //!     XEM_DISC1=<disc 1 image> cargo test --release -p xem-headless --test inspection
 
@@ -225,4 +231,154 @@ fn inspection_stops_the_route_keeps_the_character_and_its_heading_and_restores_t
         host.frame(0, None);
     }
     assert!(distance(stood, host.player().position) > 5.0, "a new route walks");
+}
+
+/// A headset's eyes, 32 mm either side of the head turned `yaw` radians to
+/// the right and moved `x` metres, with fields of view wider away from the
+/// nose (tangents left, right, up, down).
+fn headset(yaw: f32, x: f32) -> [xem_render::ps1::HeadsetEye; 2] {
+    let orientation = [0.0, (-yaw / 2.0).sin(), 0.0, (-yaw / 2.0).cos()];
+    let (cos, sin) = (yaw.cos(), yaw.sin());
+    let eye = |side: f32, fov: [f32; 4]| xem_render::ps1::HeadsetEye { orientation, position: [x + side * 0.032 * cos, 0.0, side * 0.032 * sin], fov };
+    [eye(-1.0, [-1.1, 0.9, 0.9, -1.1]), eye(1.0, [-0.9, 1.1, 0.9, -1.1])]
+}
+
+#[test]
+fn a_headset_looks_from_the_characters_eye_through_each_eye_paused_or_not_and_changes_nothing() {
+    let Some(disc) = disc() else {
+        eprintln!("skipping: no disc 1 (set XEM_DISC1)");
+        return;
+    };
+    let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
+    run(&mut session, json!({"cmd": "enter_field", "map": 30}));
+    run(&mut session, json!({"cmd": "frames", "count": 400}));
+    // Into the room, the view's heading across it.
+    run(&mut session, json!({"cmd": "press", "buttons": ["down"], "frames": 60}));
+    run(&mut session, json!({"cmd": "frames", "count": 30}));
+    let start = session.snapshot_bytes().unwrap();
+    // An agent's pads: still, then walking left for 20 frames, then still.
+    let pad = |n: u64| if (40..60).contains(&n) { button::LEFT } else { 0 };
+    for n in 0..100 {
+        session.set_pad(0, pad(n));
+        assert!(session.frame().unwrap());
+    }
+    let unseen = session.memory_hash().unwrap();
+
+    session.restore_bytes(&start).unwrap();
+    let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
+    let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
+    view.configure(ViewConfig::resolve(&Default::default(), HostClass::Headset, (640, 640), view.max_scale()));
+    view.set_first_person(true);
+    // Presents the game's newest frame to `eyes`; the eyes' pictures and the screen's.
+    let present = |session: &mut Session<NativeModule>, view: &mut GameView, eyes: &[xem_render::ps1::HeadsetEye]| -> (Vec<Vec<u8>>, Vec<u8>) {
+        let device = session.runtime.services().gpu.device_mut();
+        if view.take_restart() || !device.trace_enabled() {
+            device.set_trace(true);
+        }
+        device.set_reveals(view.reveals());
+        view.push(device.take_trace());
+        let display = device.display();
+        let scene = session.scene();
+        let mut encoder = gpu.device.create_command_encoder(&Default::default());
+        let count = view.present_headset(&mut encoder, &display, &scene, 0.0, eyes).expect("presented").eyes.len();
+        gpu.queue.submit([encoder.finish()]);
+        let read = |texture: &xem_render::wgpu::Texture| xem_render::read_rgba8(&gpu.device, &gpu.queue, texture);
+        ((0..count).map(|i| read(view.eye_texture(i).expect("an eye"))).collect(), read(view.presented_texture().expect("the screen")))
+    };
+    let frame = |session: &mut Session<NativeModule>, n: u64| {
+        session.set_pad(0, pad(n));
+        assert!(session.frame().unwrap());
+    };
+    let differ = |a: &[u8], b: &[u8]| a.chunks_exact(4).zip(b.chunks_exact(4)).filter(|(p, q)| p[..3] != q[..3]).count() as f32 / (a.len() / 4) as f32;
+    let colours = |picture: &[u8]| picture.chunks_exact(4).map(|p| [p[0], p[1], p[2]]).collect::<std::collections::BTreeSet<_>>().len();
+    // Where the view looks in the world (as `Host::look_heading`).
+    let heading = |view: &mut GameView| -> f32 {
+        let look = view.listener_axes().expect("looking");
+        let eye = view.frame().eye().expect("the character's record");
+        let unit = |v: [f32; 3]| v.map(|c| c / v.iter().map(|c| c * c).sum::<f32>().sqrt());
+        let world = eye.axes.map(unit).map(|axis| axis.iter().zip(look[2]).map(|(a, f)| a * f).sum::<f32>());
+        world[0].atan2(world[2])
+    };
+
+    let level = headset(0.0, 0.0);
+    let mut seen = (Vec::new(), Vec::new());
+    for n in 0..40 {
+        frame(&mut session, n);
+        seen = present(&mut session, &mut view, &level);
+    }
+    let (eyes, pane) = seen;
+    assert_eq!(eyes.len(), 2, "both eyes look from within the scene");
+    let covered = pane.chunks_exact(4).filter(|p| p[3] > 0).count() as f32 / (pane.len() / 4) as f32;
+    eprintln!("eyes: {} and {} colours, {:.3} apart; the pane covers {covered:.3}", colours(&eyes[0]), colours(&eyes[1]), differ(&eyes[0], &eyes[1]));
+    if let Some(directory) = std::env::var_os("XEM_HEADSET_CAPTURE") {
+        // Optional local pictures of the eyes and the pane (original game content stays local).
+        let size = view.eye_texture(0).map(|t| (t.width(), t.height())).unwrap();
+        let screen = view.presented_texture().map(|t| (t.width(), t.height())).unwrap();
+        for (name, pixels, (width, height)) in [("left", &eyes[0], size), ("right", &eyes[1], size), ("pane", &pane, screen)] {
+            std::fs::create_dir_all(&directory).unwrap();
+            // The eyes' alpha is the PS1's mask bit: shown opaque; the pane's is its coverage.
+            let mut pixels = pixels.clone();
+            if name != "pane" {
+                pixels.chunks_exact_mut(4).for_each(|p| p[3] = 255);
+            }
+            let file = std::fs::File::create(PathBuf::from(&directory).join(format!("{name}.png"))).unwrap();
+            let mut encoder = png::Encoder::new(file, width, height);
+            encoder.set_color(png::ColorType::Rgba);
+            encoder.write_header().unwrap().write_image_data(&pixels).unwrap();
+        }
+    }
+    assert!(colours(&eyes[0]) > 100 && colours(&eyes[1]) > 100, "the eyes see the room");
+    assert!(differ(&eyes[0], &eyes[1]) > 0.05, "each eye sees from its own place and field of view");
+    // The interface alone on the screen's pane: the compass, the rest clear.
+    assert!(covered > 0.005 && covered < 0.2, "the pane holds the interface alone ({covered})");
+    let facing = heading(&mut view);
+
+    // No game frame (a pause): the head turns and moves, the eyes follow
+    // it; the listener stays on the view's heading, the pane as it was.
+    let listener = view.listener_axes();
+    let (turned, still) = present(&mut session, &mut view, &headset(0.5, 0.1));
+    assert!(differ(&turned[0], &eyes[0]) > 0.3, "turning the head turns the view ({})", differ(&turned[0], &eyes[0]));
+    assert_eq!(view.listener_axes(), listener, "the listener does not follow the head");
+    assert_eq!(still, pane, "the interface stays on its pane");
+    let (back, _) = present(&mut session, &mut view, &level);
+    assert_eq!(back, eyes, "the head back where it was, the view is too");
+
+    // The character walks (the agent's pads, which inspection does not hold
+    // back): the eyes go with it, the view keeps its heading.
+    let position = |session: &mut Session<NativeModule>| Field::read(session.runtime.memory()).and_then(|field| field.player().map(|actor| actor.position));
+    let stood = position(&mut session).expect("the player");
+    let mut worst: f32 = 0.0;
+    let mut walked = 0.0;
+    for n in 40..100 {
+        frame(&mut session, n);
+        let (now, _) = present(&mut session, &mut view, &level);
+        let off = (heading(&mut view) - facing + std::f32::consts::PI).rem_euclid(std::f32::consts::TAU) - std::f32::consts::PI;
+        worst = worst.max(off.abs());
+        walked = differ(&now[0], &eyes[0]);
+    }
+    let went = position(&mut session).expect("the player");
+    eprintln!("the character walked from {stood:?} to {went:?}; the eyes' picture changed by {walked:.3}, the heading by at most {worst} radians");
+    assert!(distance(stood, went) > 5.0, "the character walked");
+    assert!(walked > 0.1, "the eyes moved with the character ({walked})");
+    assert!(worst < 0.01, "the view keeps its heading while the character walks (off by {worst} radians)");
+    assert_eq!(session.memory_hash().unwrap(), unseen, "the headset's view changes nothing in the game");
+
+    // The field's menu (the menu button, which inspection leaves to the
+    // game) draws no field: the eyes keep the room as the last frame that
+    // drew it, every frame though the menu draws in both buffers by turns,
+    // and the menu is on the pane.
+    let mut menu = 0;
+    for n in 0..240u64 {
+        session.set_pad(0, if n < 2 { button::SQUARE } else { 0 });
+        assert!(session.frame().unwrap());
+        let (eyes, pane) = present(&mut session, &mut view, &level);
+        assert_eq!(eyes.len(), 2, "frame {n} of the menu: the eyes go on");
+        assert!(colours(&eyes[0]) > 100, "frame {n} of the menu: the eyes keep the room ({} colours)", colours(&eyes[0]));
+        if matches!(session.runtime.context(), xem_core::context::Context::Menu { commands: true, .. }) {
+            let covered = pane.chunks_exact(4).filter(|p| p[3] > 0).count() as f32 / (pane.len() / 4) as f32;
+            assert!(covered > 0.3, "frame {n} of the menu: the pane shows it ({covered})");
+            menu += 1;
+        }
+    }
+    assert!(menu > 30, "{menu} frames of the menu's commands");
 }
