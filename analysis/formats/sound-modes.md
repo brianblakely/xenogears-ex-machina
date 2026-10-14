@@ -21,11 +21,20 @@ The mode lives in bits `0x700` of the driver flag word `8005957c` (u16).
 
 - `800386c4(mode)` (observed): clear `0x700`; 1 → `|100`, 2 → `|300`,
   3 → `|500`, any other value leaves mono. Then `80038df4` recomputes the
-  master/CD/reverb pairs, `8004e574` (libspu) writes the reverb output volume
-  pair to SPU `+184/+186` at once, every sequence voice is marked `0x100`
-  (`8003e680` over the list at `80059564`) so the next tick recomputes voice
-  volumes, flag `0x4000` would call `8003885c` (below), and the "mode voice"
-  record at `80059518` is recomputed (below).
+  master/CD/reverb pairs, `8004e574` (libspu `SpuSetReverbModeDepth`) writes
+  the reverb output volume pair to SPU `+184/+186` at once and keeps it in
+  libspu's own state at `800589bc/800589be` (so Wide's negated left is there
+  too), the active channels (flags ≠ 0) of every sequence on the playing
+  list `80059564`, the effect channel set among them (`8003b148` links it
+  there), are marked `0x100` (`8003e680`) so the next tick recomputes their
+  voice volumes, flag `0x4000` would call `8003885c` (below), and the "mode
+  voice" record at `80059518` is recomputed (below).
+- A hardware voice that no channel holds (released, silent) is not
+  recomputed: it keeps the volumes last written under the old mode until a
+  channel claims it and stages new ones (observed in a native run of the
+  field 509 walk, below: after a switch to Mono, voice 17, whose sound had
+  ended, kept Stereo's `004d/005d` for 145 frames with its envelope at 0,
+  until a channel claimed it with Mono's `0744/0744`).
 - `80038824()` (observed): `0x700` clear → 0; `0x600` clear → 1; else 2.
 - Callers (observed, whole resident and all analysed overlays): driver init
   `80037b88` calls `800386c4(1)`; the menu overlay's Sound screen reads the
@@ -153,6 +162,27 @@ Numbers from `tools/analysis/audio_modes.py` (windows in frontend frames):
   L−R (sum/difference −73.6 dB).
 - Mono field output keeps L≠R (correlation 0.70): the reverb unit returns a
   stereo signal from equal voice inputs, and nothing in Mono folds it down.
+
+## Native lockstep walk
+
+A native run executes these instructions (the byte-matching decompilation)
+with the runtime's SPU. On the field 509 walk
+(`tests/reference-inputs/binaural-field509-walk.json`: 1 500 frames from
+one state, Mono, Stereo and Wide in lockstep;
+`src/runtime/crates/xem-headless/tests/binaural.rs`) only these differ from
+Stereo (observed: RAM and SPU registers every frame, SPU RAM every 60
+frames):
+
+- Wide: the mode bits, the master pair's right half (`8005a3c6`), the
+  reverb depth's left half in the driver's pair (`8005940c`) and in
+  libspu's copy (`800589bc`); in the SPU the master volume right (`182`),
+  the current main volume right (`1ba`) and the reverb output volume left
+  (`184`).
+- Mono: the mode bits and the channels' staged volumes (`+0x38/+0x3a`;
+  every channel's volume and pan before the law are Stereo's); in the SPU
+  the voice volumes (`+0/+2`), their current volumes and the reverb work
+  area from its base (`1a2`) up, which the voices feed after their
+  volumes; nothing below that base.
 
 ## Music, sample and effect lifetimes on the slice routes
 

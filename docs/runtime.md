@@ -346,8 +346,10 @@ waits for it goes in).
   (`Cd::take_audio`, `Services::route_cd_audio`) before the SPU advances.
 - **Sound modes.** The configuration menu's Mono, Stereo and Wide are
   driver modes 0, 1 and 2 (`sound_set_output_mode`; mode 3 exists but no
-  menu reaches it). Mono gives every voice the centre gain and halves CD
-  audio into both sides; Stereo and Wide share the pan law. Wide only flips
+  menu reaches it). Mono gives every voice the centre gain and leaves CD
+  audio as Stereo has it (the driver's CD mix, `sound_set_cd_mix_volume`,
+  which would halve it into both sides, runs only behind driver flag
+  0x4000, which nothing sets); Stereo and Wide share the pan law. Wide only flips
   signs (`sound_set_stereo_volume`): the master volume's right side and the
   reverb depth's left side. The SPU applies the master volume after the
   reverb and CD mix, so the dry mix, XA included, comes out in anti-phase,
@@ -615,7 +617,8 @@ for its voices (13 152 source frames whose voices held still and sounded
 through the frame, 1 606 of them effects; within 0.3% of the driver's own
 gain before panning, recomputed from its records by the decomp's formula,
 which is the pan law's rounding). Mono and Wide on the same walk differ
-from Stereo only in what the sound-mode findings name: the mode bits;
+from Stereo only in what the sound-mode findings
+(`analysis/formats/sound-modes.md`) name: the mode bits;
 Mono's staged volumes (every channel's gain before its law the same in all
 three modes, each staging its mode's law: 110 586 stagings checked), its
 voices' volumes and the reverb work area they feed; Wide's master right and
