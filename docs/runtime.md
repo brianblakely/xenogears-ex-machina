@@ -821,9 +821,18 @@ snapshots are its. The renderer only draws again what it drew:
   T-junctions that open into hairline cracks at higher scales (the
   original's whole pixels hide them), opaque world triangles are grown by
   half a native pixel, their attributes taken from their own plane; and
-  each trace's scene points of different faces within half a native pixel
-  and 1% in depth of each other are welded to one point (`weld`), closing
-  the cracks between pieces the game places with different matrices. A
+  each game frame's scene points of different faces within half a native
+  pixel and 1% in depth of each other are welded to one point (`weld`),
+  closing the cracks between pieces the game places with different
+  matrices. A trace of several frames (the host ran them before it
+  presented) welds each apart: welded across them, the desert battle
+  presented four game frames at a time showed frames with points an
+  earlier frame of the presentation drew there, and its still scenery
+  moved up to a median 3.31 units a frame through each frame's own
+  camera, 86.73% of it within 4 units (welded apart: 1.00 and 99.94%,
+  each frame shown as it is when presented alone;
+  `xem-headless/tests/camera.rs`, and `tests/ps1.rs`
+  `scene_points_weld_to_their_own_game_frames_only` without the game). A
   mirrored sprite part (its coordinates falling across the screen) samples
   one texel further on, as the game's u - 1 means for the GPU, which takes
   each texel at a native pixel's leading edge: the part keeps its first
@@ -906,8 +915,15 @@ snapshots are its. The renderer only draws again what it drew:
   a clear) also starts its log, a shown buffer without one too (a state
   loaded, a rewind's step), so a log holds about one frame where the
   game never clears (a world map battle's log had grown to 88 000 primitives
-  replayed every presentation). A copy whose source the game changed after
-  it shows the native pixels it copied then (the loading screen after a
+  replayed every presentation). When one presentation holds several game
+  frames (the host ran them before it presented: fast-forward, catching
+  up; a frame begins after each vertical blank), such a log starts with
+  the last of them from which the trace draws all over the buffer, unless
+  a clear there starts it, and holds that frame on, not the ones before
+  (`tests/ps1.rs`
+  `each_frame_keeps_the_camera_recorded_before_its_first_primitive`). A
+  copy whose source the game changed after it shows the native pixels it
+  copied then (the loading screen after a
   save is loaded copies the saved screen while the loader fills VRAM beside
   it), not the scaled picture's source as it is when replayed. The
   interface the game drew after its last scene primitive (in order, with
@@ -1153,6 +1169,13 @@ drops (before, with a pulled-back camera only); the sprites the port draws
 again facing the character's eyes come with `LOOK` only (`sprite_facing.c`),
 the battle's and the world map's cameras with `ANYWHERE` only. No host asks
 for `ANYWHERE` yet: the diorama view that will is the next part of Phase 8.
+The port reads the bits (as the reach and the pull-back) that the host wrote
+into the ring's header when the port's GPU commands last handed the rings
+over, and the rings are no part of a state: the first frame the game builds
+after the bits change, or after a state is restored, is built with the bits
+before. In Lahan, after 90 frames with `LOOK`, 90 frames run again from the
+same state with `ANYWHERE` replayed 57 sprite facings in the first frame
+the game drew and none after it.
 
 The port records a camera as ring entries that are no drawn points
 (xem/gte.h), in this order: the world's x, y and z axes through its rotation
@@ -1179,40 +1202,67 @@ when its frame's first primitive is drawn (`FrameLog::camera` and `eye`,
 the newest within four vertical blanks), and `FrameRenderer::camera` the
 shown frame's: the port makes a frame's records while the game builds it,
 before any of its primitives, so a buffer cleared and one the game draws
-over instead (a battle's stage, whose log begins with the trace that holds
-the frame) both keep their own. Taken when a log began, as the place was
-before, the desert battle's frames each kept the camera of the frame
-before: no primitive held still between its frames with alike records. A
-frame recorded with either bit but shown from the game's camera shows none
-of its culled faces, which lie anywhere. The records write the rings only:
-from the same state the game ends at the same RAM, VRAM, sound and clock
-with `around` 0, 1 and 2 as without a trace.
+over instead (a battle's stage, whose log begins with the frame that draws
+all over it) both keep their own, also when one presentation takes several
+game frames. Taken when a log began, as the place was before, the desert
+battle's frames each kept the camera of the frame before: no primitive
+held still between its frames with alike records. A frame recorded with
+either bit but shown from the game's camera shows none of its culled
+faces, which lie anywhere. The records write the rings only: from the same
+state the game ends at the same RAM, VRAM, sound and clock with `around`
+0, 1 and 2 as without a trace.
 
 Tests: `xem-headless/tests/camera.rs` presents frames with `ANYWHERE` as a
-host would and takes each shown frame's camera and primitives; the
-scenery that holds still (primitives whose view-space points stay the same
-from a frame to the next while the camera record does) must stay within 4
-world units through each frame's own camera while the game's camera turns
-or moves, and move more than four times that through the frame before's.
-Measured here (suite profile, lavapipe): in Lahan (map 1, L1 turning the
-camera 30 of every 150 frames, 600 frames) 298 of 299 frames shown keep a
-camera, the camera turns 300 degrees, the scenery moves at most 0.31 units a
-frame (a median 50.2 through the frame before's camera); the battle the
+host would, one game frame a presentation unless said, and takes each
+shown frame's camera and primitives. For the scenery that holds still
+(primitives whose view-space points stay the same from a frame to the next
+while the camera record does), each primitive's distance from where it was
+a frame before is taken through each frame's own camera while the game's
+camera turns or moves: the median over a pair of frames must be within 4
+world units, and more than four times that through the frame before's
+camera, and 95 in 100 of all the distances must be within 4. Measured here
+(suite profile, lavapipe): in Lahan (map 1, L1 turning the camera 30 of
+every 150 frames, 600 frames) 298 of 299 frames shown keep a camera and
+the camera turns 300 degrees; the median still primitive moves at most
+0.31 units a frame (the largest pair's median; 99.21% of all 737 667
+distances are within 4, the 90th percentile 0.38 and the 99th 2.30),
+against a median 50.2 through the frame before's camera. The battle the
 debug battle selector starts as it is, with Cross every 10 frames (900
-frames): the camera turns 173 degrees and travels 19 530 units, the stage
-moves at most 1.02 (a median 18.5); its desert, drawn over the last frame,
-as its camera comes in (1500 frames): at most 1.02 (24.5); the world map
-turned by L1 (600 frames): 85 degrees, at most 1.07 (41.7). The target the
-battle and the world map record lies on their camera's axis within 2% of
-its depth, at its recorded depth; the world map's (its height -256 there,
-y down) negated would lie off it.
+frames): the camera turns 173 degrees and travels 19 530 units, the median
+at most 1.02 (99.85% of 770 773 within 4, 1.08 and 1.30), against 18.5.
+Its desert, drawn over the last frame, as its camera comes in (1500
+frames): 1.02 (99.97% of 117 530, 1.12 and 1.35), against 24.5. The same
+desert presented four game frames at a time, as in fast-forward (it draws
+one every vertical blank into its two buffers in turn and shows the one
+before the last, so the buffer shown is drawn twice a presentation): 374
+of 374 frames shown keep a camera, each with the same primitives as the
+frame with that camera presented alone, 1.00 (99.94% of 32 143, 1.14 and
+1.44), against 33.2; with the logs begun at the presentation's start, as
+before, they held both frames: 12 primitives held still and no pair could
+be compared. The world map turned by L1 (600 frames): 85 degrees, 1.07
+(98.86% of 334 803, 1.18 and 5.56), against 41.7. The distances beyond 4
+units belong to primitives the test's key cannot tell from a like one
+elsewhere (inspected: a world map tile matched with the same tile in
+another cell, a model's face with another of the same texture elsewhere)
+and, in Lahan, quads that move with the camera. The target the battle and
+the world map record lies on their camera's axis within 2% of its depth,
+at its recorded depth; the world map's (its height -256 there, y down)
+negated would lie off it.
 `camera_records_leave_ram_vram_sound_and_time_unchanged` runs 240 frames
 from the same state in each of the four with `around` 0, 1 and 2 and
 without a trace: one RAM hash, VRAM, sound and clock each. One
 desert battle frame drawn with `ANYWHERE` held 8 262 primitives, 4 654 of
-them culled faces. `xem-render/tests/ps1.rs`
+them culled faces. `xem-headless/tests/render.rs`
+`first_person_sprite_facings_replay_only_when_looking_and_leave_original_ram_vram_and_sound_unchanged`
+replays no sprite facings in 90 frames of Lahan with `ANYWHERE` (after a
+run with the original's bits) and some with `LOOK`, at the same RAM, VRAM,
+sound and clock. `xem-render/tests/ps1.rs`
 `each_frame_keeps_the_camera_recorded_before_its_first_primitive` (a cleared
-buffer, one drawn over, a record older than four vertical blanks),
+buffer, one drawn over, a presentation of two frames cleared, drawn over or
+one of each, a state's first presentation of two frames drawn over, a
+record older than four vertical blanks; with the logs begun at the start
+of a presentation, the last of two frames drawn over kept the first one's
+camera and 142 primitives instead of its own 71),
 `xem-gpu/tests/gpu.rs`
 `a_recorded_camera_comes_before_its_frame_and_its_inverse_gives_back_world_points`
 and `tests/test_port_presentation.py` (the entries `xem_present_camera`
@@ -1222,7 +1272,9 @@ Not done or not measured: no host shows a view from anywhere yet, so
 nothing presents these records; the cost of `ANYWHERE` in battles and on
 the world map is not measured; the world map's scripted scenes, the
 arena, menus and movies were not run with it; the first battle's camera
-turned while it attacked, the desert's only came in (0.9 degrees).
+turned while it attacked, the desert's only came in (0.9 degrees); of the
+real game, only the desert was presented several frames at a time; a frame
+built with the bits before a change is not told apart.
 
 ### HD-2D effects
 

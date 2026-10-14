@@ -1732,45 +1732,79 @@ pub struct FrameLog {
     /// records a frame's place and camera as it builds it, before its
     /// first primitive, so the records current then are its own (also for
     /// a buffer the game draws over instead of clearing it, whose log
-    /// begins with the trace holding the frame).
+    /// begins with the frame).
     drawn: bool,
 }
+
+/// Where the field's controlled character stood and the camera the game
+/// drew with, as the port recorded them for a frame.
+type Records = (Option<xem_gpu::Eye>, Option<xem_gpu::Camera>);
 
 /// A log grows without a clear in modes that never clear nor draw over all
 /// of their buffer; it is dropped past this length (the effects then see
 /// no primitives).
 const LOG_LIMIT: usize = 200_000;
 
-/// Whether `ops` leave none of `rect`'s pixels as they were: each covered
-/// by an opaque fill, copy, upload or polygon (untextured, or textured
-/// scenery, whose textures have no holes) drawn without the mask test. A
-/// semi-transparent one shows what lay beneath.
-fn covers(ops: &[TraceOp], rect: VramRect) -> bool {
-    let (width, height) = (usize::from(rect.width), usize::from(rect.height));
-    if width == 0 || height == 0 {
-        return false;
+/// The last of a trace's game frames (where each begins in `ops`) from
+/// which `ops` leave none of `rect`'s pixels as they were, hiding what was
+/// drawn there before: each covered by an opaque fill, copy, upload or
+/// polygon (untextured, or textured scenery, whose textures have no holes)
+/// drawn without the mask test. A semi-transparent one shows what lay
+/// beneath.
+fn covered_from(ops: &[TraceOp], frames: &[usize], rect: VramRect) -> Option<usize> {
+    // What a frame covers is all the same in any order: the frames from
+    // the last one back, until they cover it all.
+    let mut coverage = Coverage::new(rect);
+    let mut end = ops.len();
+    for &start in frames.iter().rev() {
+        if ops[start..end].iter().any(|op| coverage.add(op)) {
+            return Some(start);
+        }
+        end = start;
     }
-    let stride = width.div_ceil(64);
-    let mut bits = vec![0u64; stride * height];
-    // Pixels not yet covered: done as soon as there are none.
-    let mut left = width * height;
-    let span = |bits: &mut Vec<u64>, left: &mut usize, y: i32, x0: i32, x1: i32| {
-        let y = y - i32::from(rect.y);
-        let (x0, x1) = ((x0 - i32::from(rect.x)).max(0) as usize, (x1 - i32::from(rect.x)).clamp(0, width as i32) as usize);
-        if y < 0 || y >= height as i32 || x0 >= x1 {
+    None
+}
+
+/// The pixels of a rectangle opaque drawing covered ([`covered_from`]).
+struct Coverage {
+    rect: VramRect,
+    stride: usize,
+    bits: Vec<u64>,
+    /// Pixels not yet covered: done as soon as there are none.
+    left: usize,
+}
+
+impl Coverage {
+    fn new(rect: VramRect) -> Self {
+        let (width, height) = (usize::from(rect.width), usize::from(rect.height));
+        let stride = width.div_ceil(64);
+        Coverage { rect, stride, bits: vec![0; stride * height], left: width * height }
+    }
+
+    fn span(&mut self, y: i32, x0: i32, x1: i32) {
+        let (width, height) = (i32::from(self.rect.width), i32::from(self.rect.height));
+        let y = y - i32::from(self.rect.y);
+        let (x0, x1) = ((x0 - i32::from(self.rect.x)).max(0) as usize, (x1 - i32::from(self.rect.x)).clamp(0, width) as usize);
+        if y < 0 || y >= height || x0 >= x1 {
             return;
         }
-        let row = &mut bits[y as usize * stride..(y as usize + 1) * stride];
+        let row = &mut self.bits[y as usize * self.stride..(y as usize + 1) * self.stride];
         for (i, word) in row.iter_mut().enumerate().take(x1.div_ceil(64)).skip(x0 / 64) {
             let (lo, hi) = (i * 64, i * 64 + 64);
             let a = x0.max(lo) - lo;
             let b = x1.min(hi) - lo;
             let set = if b - a == 64 { u64::MAX } else { ((1u64 << (b - a)) - 1) << a };
-            *left -= (set & !*word).count_ones() as usize;
+            self.left -= (set & !*word).count_ones() as usize;
             *word |= set;
         }
-    };
-    for op in ops {
+    }
+
+    /// Adds what `op` covers; returns whether all of the rectangle is
+    /// covered (never an empty one).
+    fn add(&mut self, op: &TraceOp) -> bool {
+        if self.bits.is_empty() {
+            return false;
+        }
         let fill = match op {
             TraceOp::Fill { rect, .. } | TraceOp::Write { rect, upload: true, .. } => Some(*rect),
             TraceOp::Copy { destination, width, height, .. } => Some(VramRect { x: destination.0, y: destination.1, width: *width, height: *height }),
@@ -1778,22 +1812,20 @@ fn covers(ops: &[TraceOp], rect: VramRect) -> bool {
         };
         if let Some(r) = fill {
             for y in i32::from(r.y)..i32::from(r.y) + i32::from(r.height) {
-                span(&mut bits, &mut left, y, i32::from(r.x), i32::from(r.x) + i32::from(r.width));
+                self.span(y, i32::from(r.x), i32::from(r.x) + i32::from(r.width));
             }
-            if left == 0 {
-                return true;
-            }
-            continue;
+            return self.left == 0;
         }
-        let TraceOp::Draw(p) = op else { continue };
+        let TraceOp::Draw(p) = op else { return false };
         let solid = !p.textured || matches!(p.class, Class::World | Class::Model);
         if p.semi || p.revealed || !solid || p.environment.mask & 2 != 0 || !matches!(p.shape, Shape::Triangle | Shape::Quad | Shape::Rectangle) {
-            continue;
+            return false;
         }
+        let rect = self.rect;
         let [area_left, top, right, bottom] = p.environment.area.map(i32::from);
         // Drawn elsewhere (the other buffer): nothing here.
-        if right < i32::from(rect.x) || area_left >= i32::from(rect.x) + width as i32 || bottom < i32::from(rect.y) || top >= i32::from(rect.y) + height as i32 {
-            continue;
+        if right < i32::from(rect.x) || area_left >= i32::from(rect.x) + i32::from(rect.width) || bottom < i32::from(rect.y) || top >= i32::from(rect.y) + i32::from(rect.height) {
+            return false;
         }
         let triangles: &[[usize; 3]] = if p.shape == Shape::Triangle { &[[0, 1, 2]] } else { &[[0, 1, 2], [1, 2, 3]] };
         for t in triangles {
@@ -1813,15 +1845,23 @@ fn covers(ops: &[TraceOp], rect: VramRect) -> bool {
                 if lo <= hi {
                     let x0 = ((lo - 0.5).ceil() as i32).max(area_left);
                     let x1 = ((hi - 0.5).ceil() as i32).min(right + 1);
-                    span(&mut bits, &mut left, y, x0, x1);
+                    self.span(y, x0, x1);
                 }
             }
         }
-        if left == 0 {
-            return true;
-        }
+        self.left == 0
     }
-    false
+}
+
+/// Whether `op` clears most of `rect`: a fill or a copy over nine tenths
+/// of it.
+fn clears(op: &TraceOp, rect: VramRect) -> bool {
+    let over = |r: VramRect| overlap(&r, &rect) * 10 >= u32::from(rect.width) * u32::from(rect.height) * 9;
+    match op {
+        TraceOp::Fill { rect: r, .. } => over(*r),
+        TraceOp::Copy { destination, width, height, .. } => over(VramRect { x: destination.0, y: destination.1, width: *width, height: *height }),
+        _ => false,
+    }
 }
 
 fn contains(rect: &VramRect, x: u16, y: u16) -> bool {
@@ -2208,39 +2248,61 @@ impl Ps1Renderer {
             }
             _ => ops,
         };
+        // The game frames the trace holds begin at its start and after each
+        // vertical blank: several when the host ran more than one before
+        // presenting (fast-forward, catching up).
+        let frame_starts: Vec<usize> = std::iter::once(0)
+            .chain(ops.iter().enumerate().filter(|(_, op)| matches!(op, TraceOp::VBlank)).map(|(n, _)| n + 1))
+            .collect();
         // A buffer the game draws over completely instead of clearing it
-        // (a battle's stage, every frame) starts its log again at this
-        // trace, which hides everything before it.
+        // (a battle's stage, every frame) starts its log again with the last
+        // of them from which the trace draws all over it, which hides
+        // everything before (each buffer's, found when first needed).
         let (width, height) = self.display.unwrap_or((256, 192));
-        for index in 0..self.logs.len() {
-            let rect = self.logs[index].rect;
-            let cleared = ops.iter().any(|op| match op {
-                TraceOp::Fill { rect: r, .. } => overlap(r, &rect) * 10 >= u32::from(rect.width) * u32::from(rect.height) * 9,
-                TraceOp::Copy { destination, width, height, .. } => {
-                    let r = VramRect { x: destination.0, y: destination.1, width: *width, height: *height };
-                    overlap(&r, &rect) * 10 >= u32::from(rect.width) * u32::from(rect.height) * 9
-                }
-                _ => false,
-            });
-            let shown = VramRect { width: rect.width.min(width), height: rect.height.min(height), ..rect };
-            if !cleared && self.logs[index].ops.len() > 64 && covers(ops, shown) {
-                let start = std::sync::Arc::new(self.native.clone());
-                self.logged += 1;
-                let log = &mut self.logs[index];
-                log.previous = std::mem::take(&mut log.ops);
-                log.frames = self.logged;
-                log.start = start;
-                (log.eye, log.camera, log.drawn) = (None, None, false);
-            }
-        }
+        let mut drawn_over: Vec<(VramRect, Option<usize>)> = Vec::new();
         // A shown buffer without a log (the trace started again, a state
         // loaded or a rewind's step) that the game never clears starts one
-        // when this trace draws all over it, once its clears are done below,
-        // with the records current at its first primitive.
-        let unlogged: Vec<VramRect> = self.shown.iter().copied().filter(|area| !self.half_logged(area)).collect();
-        let before = (!unlogged.is_empty()).then(|| std::sync::Arc::new(self.native.clone()));
-        let mut unlogged_records = vec![None; unlogged.len()];
-        for op in ops {
+        // with the last frame from which the trace draws all over it, once
+        // its clears are done below: with the VRAM as that frame began and
+        // the records current at its first primitive there.
+        let mut unlogged: Vec<(VramRect, usize, Option<std::sync::Arc<Vec<u16>>>, Option<Records>)> = self.shown.iter().copied()
+            .filter(|area| !self.half_logged(area))
+            .filter_map(|area| Some((area, covered_from(ops, &frame_starts, area)?, None, None)))
+            .collect();
+        for (n, op) in ops.iter().enumerate() {
+            if n == 0 || matches!(ops[n - 1], TraceOp::VBlank) {
+                let mut start = None;
+                for index in 0..self.logs.len() {
+                    let rect = self.logs[index].rect;
+                    if self.logs[index].ops.len() <= 64 {
+                        continue;
+                    }
+                    let from = match drawn_over.iter().find(|(r, _)| *r == rect) {
+                        Some((_, from)) => *from,
+                        None => {
+                            let shown = VramRect { width: rect.width.min(width), height: rect.height.min(height), ..rect };
+                            // Unless a clear there starts it.
+                            let from = covered_from(ops, &frame_starts, shown).filter(|&from| !ops[from..].iter().any(|op| clears(op, rect)));
+                            drawn_over.push((rect, from));
+                            from
+                        }
+                    };
+                    if from == Some(n) {
+                        let start = start.get_or_insert_with(|| std::sync::Arc::new(self.native.clone())).clone();
+                        self.logged += 1;
+                        let log = &mut self.logs[index];
+                        log.previous = std::mem::take(&mut log.ops);
+                        log.frames = self.logged;
+                        log.start = start;
+                        (log.eye, log.camera, log.drawn) = (None, None, false);
+                    }
+                }
+                for (_, from, taken, _) in &mut unlogged {
+                    if *from == n {
+                        *taken = Some(start.get_or_insert_with(|| std::sync::Arc::new(self.native.clone())).clone());
+                    }
+                }
+            }
             match op {
                 TraceOp::Eye(eye) => {
                     self.eye = Some((*eye, 0));
@@ -2347,8 +2409,8 @@ impl Ps1Renderer {
             }
             let records = self.frame_records();
             if let TraceOp::Draw(p) = op {
-                for (area, taken) in unlogged.iter().zip(&mut unlogged_records) {
-                    if taken.is_none() && contains(area, p.environment.area[0], p.environment.area[1]) {
+                for (area, from, _, taken) in &mut unlogged {
+                    if taken.is_none() && n >= *from && contains(area, p.environment.area[0], p.environment.area[1]) {
                         *taken = Some(records);
                     }
                 }
@@ -2370,25 +2432,22 @@ impl Ps1Renderer {
                 log.ops.push(op.clone());
             }
         }
-        if let Some(start) = before {
-            for (area, records) in unlogged.into_iter().zip(unlogged_records) {
-                if self.half_logged(&area) || !covers(ops, area) {
-                    continue;
-                }
-                // Its draws, fills and copies, and every write (as a log keeps them).
-                let ops = ops.iter().filter(|op| match op {
-                    TraceOp::Write { .. } => true,
-                    TraceOp::Draw(p) => contains(&area, p.environment.area[0], p.environment.area[1]),
-                    TraceOp::Fill { rect, .. } => contains(&area, rect.x, rect.y),
-                    TraceOp::Copy { destination, .. } => contains(&area, destination.0, destination.1),
-                    _ => false,
-                }).cloned().collect();
-                self.logged += 1;
-                let ((eye, camera), drawn) = (records.unwrap_or_default(), records.is_some());
-                self.logs.push(FrameLog { rect: area, ops, frames: self.logged, start: start.clone(), eye, camera, drawn, ..Default::default() });
-                if self.logs.len() > 6 {
-                    self.logs.remove(0);
-                }
+        for (area, from, start, records) in unlogged {
+            let Some(start) = start.filter(|_| !self.half_logged(&area)) else { continue };
+            // Its draws, fills and copies, and every write (as a log keeps
+            // them), from its frame on.
+            let ops = ops[from..].iter().filter(|op| match op {
+                TraceOp::Write { .. } => true,
+                TraceOp::Draw(p) => contains(&area, p.environment.area[0], p.environment.area[1]),
+                TraceOp::Fill { rect, .. } => contains(&area, rect.x, rect.y),
+                TraceOp::Copy { destination, .. } => contains(&area, destination.0, destination.1),
+                _ => false,
+            }).cloned().collect();
+            self.logged += 1;
+            let ((eye, camera), drawn) = (records.unwrap_or_default(), records.is_some());
+            self.logs.push(FrameLog { rect: area, ops, frames: self.logged, start, eye, camera, drawn, ..Default::default() });
+            if self.logs.len() > 6 {
+                self.logs.remove(0);
             }
         }
     }
@@ -2400,7 +2459,7 @@ impl Ps1Renderer {
 
     /// The character's place and the camera a frame starting now was
     /// recorded with.
-    fn frame_records(&self) -> (Option<xem_gpu::Eye>, Option<xem_gpu::Camera>) {
+    fn frame_records(&self) -> Records {
         (self.eye.map(|(eye, _)| eye), self.camera.map(|(camera, _)| camera))
     }
 

@@ -554,7 +554,7 @@ fn rendering_skipped_offscreen_or_as_a_spectator_leaves_the_game_unchanged() {
 }
 
 #[test]
-fn first_person_sprite_facings_leave_original_ram_vram_and_sound_unchanged() {
+fn first_person_sprite_facings_replay_only_when_looking_and_leave_original_ram_vram_and_sound_unchanged() {
     use xem_gpu::{Reveals, TraceOp};
     let Some(disc) = disc() else { eprintln!("skipping: no disc 1 (set XEM_DISC1)"); return };
     let (mut session, _) = boot(&disc, &Default::default()).expect("boot");
@@ -584,6 +584,14 @@ fn first_person_sprite_facings_leave_original_ram_vram_and_sound_unchanged() {
     };
     let (original, no_facings) = run(&mut session, 0);
     assert_eq!(no_facings,0);
+    // A view from anywhere has no viewer's position to face: no facings.
+    // (The port takes the bits its GPU commands last handed over, and its
+    // rings are no part of a state: the first frame after a restore is
+    // built with the run before's, so this one follows the original's.)
+    session.restore_bytes(&initial).unwrap();
+    let (anywhere, anywhere_facings) = run(&mut session, Reveals::ANYWHERE);
+    assert_eq!(anywhere_facings,0,"sprite facings replay for first-person looking only");
+    assert_eq!(anywhere,original,"a view from anywhere cannot change original RAM, VRAM, sound or time");
     session.restore_bytes(&initial).unwrap();
     let (looking, facings) = run(&mut session, Reveals::LOOK);
     assert!(facings > 0,"Lahan NPCs must select frames from the player's viewing position");

@@ -663,12 +663,12 @@ pub fn interpolate(newest: &[TraceOp], previous: &[TraceOp], alpha: f32) -> Vec<
 }
 
 /// Points of the scene that the GTE placed within half a native pixel of a
-/// point of another primitive, at nearly the same depth, become that point
-/// (the first drawn; its sub-pixel position and point before the
-/// division): neighbouring pieces of scenery, each placed by its own
-/// matrix, meet without the hairline cracks their rounding opens at higher
-/// scales (the original's whole pixels close them). Sprites and the
-/// interface keep their points.
+/// point of another primitive of the same game frame, at nearly the same
+/// depth, become that point (the first drawn; its sub-pixel position and
+/// point before the division): neighbouring pieces of scenery, each placed
+/// by its own matrix, meet without the hairline cracks their rounding opens
+/// at higher scales (the original's whole pixels close them). Sprites and
+/// the interface keep their points.
 pub fn weld(ops: &mut [TraceOp]) {
     Welder::default().weld(ops);
 }
@@ -701,6 +701,16 @@ fn whole(x: f32) -> i32 {
 
 impl Welder {
     pub fn weld(&mut self, ops: &mut [TraceOp]) {
+        // Each game frame (they end at a vertical blank) apart: a trace
+        // holding several (the host ran them before presenting) would weld
+        // a frame's points to the ones an earlier frame drew there, with
+        // another camera.
+        for frame in ops.split_mut(|op| matches!(op, TraceOp::VBlank)) {
+            self.weld_frame(frame);
+        }
+    }
+
+    fn weld_frame(&mut self, ops: &mut [TraceOp]) {
         let welded = |p: &Primitive| matches!(p.class, Class::World | Class::Model) && matches!(p.shape, Shape::Triangle | Shape::Quad);
         let points: usize = ops.iter().map(|op| match op {
             TraceOp::Draw(p) if welded(p) => p.vertex_count(),

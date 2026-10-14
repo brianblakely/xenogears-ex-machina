@@ -4,13 +4,17 @@
 //! frame is drawn with in a field (Lahan, map 1), a battle (the one the
 //! debug battle selector starts as it is, and its desert, whose stage is
 //! drawn over the last frame instead of a cleared buffer) and on the world
-//! map, and each frame shown keeps the one its frame was drawn with.
-//! Through the inverse of each frame's own camera the scenery that holds
-//! still stays where it is while the game's camera turns or moves (through
-//! the frame before's, it moves), and in a battle and on the world map the
-//! camera looks at the target it records. The records change nothing of
-//! the game: from the same state, the same frames end at the same RAM,
-//! VRAM, sound and clock with `around` 0, 1 and 2 as without a trace.
+//! map, and each frame shown keeps the one its frame was drawn with, also
+//! when a presentation takes several game frames (the desert, four at a
+//! time). Through the inverse of each frame's own camera the scenery that
+//! holds still stays where it is while the game's camera turns or moves:
+//! from a frame to the next, the median still primitive moves less than 4
+//! world units and 95 in 100 of them do (through the frame before's camera,
+//! the median moves more than four times that). In a battle and on the
+//! world map the camera looks at the target it records. The records change
+//! nothing of the game: from the same state, the same frames end at the
+//! same RAM, VRAM, sound and clock with `around` 0, 1 and 2 as without a
+//! trace.
 //! Local only: it needs the user's disc 1 and a game module build; the GPU
 //! is whatever wgpu finds (lavapipe in the runtime shell).
 //!
@@ -127,15 +131,19 @@ struct Shown {
 }
 
 /// Presents `frames` frames as a host would with a view from anywhere (the
-/// trace asking for every face and the cameras), holding `buttons(n)` in
+/// trace asking for every face and the cameras), `per` game frames a
+/// presentation (more than one as in fast-forward), holding `buttons(n)` in
 /// frame `n`; returns the frames shown, in order.
-fn present(session: &mut Session<NativeModule>, gpu: &Gpu, frames: u64, buttons: impl Fn(u64) -> Vec<&'static str>) -> Vec<Shown> {
+fn present(session: &mut Session<NativeModule>, gpu: &Gpu, frames: u64, per: u64, buttons: impl Fn(u64) -> Vec<&'static str>) -> Vec<Shown> {
     let mut view = GameView::new(&gpu.device, &gpu.queue, Some(&gpu.adapter));
     let mut shown: Vec<Shown> = Vec::new();
     let mut identity = None;
     for n in 0..frames {
         session.execute(&json!({"cmd": "pad", "buttons": buttons(n)}));
         assert!(session.frame().expect("frame"));
+        if (n + 1) % per != 0 {
+            continue;
+        }
         view.configure(ViewConfig::resolve(&Graphics::default(), HostClass::Desktop, (640, 448), view.max_scale()));
         let device = session.runtime.services().gpu.device_mut();
         if view.take_restart() || !device.trace_enabled() {
@@ -196,11 +204,10 @@ fn distance(p: [f32; 3], q: [f32; 3]) -> f32 {
     ((p[0] - q[0]).powi(2) + (p[1] - q[1]).powi(2) + (p[2] - q[2]).powi(2)).sqrt()
 }
 
-/// The median, over the primitives of `keys` two frames both drew, of the
-/// farthest any of a primitive's points lies from where it was in the world
-/// (the first frame's points through `a`, the second's through `b`), and
-/// how many primitives that is.
-fn moved(keys: &HashSet<Key>, first: &Points, second: &Points, a: &Camera, b: &Camera) -> (f32, usize) {
+/// For each of the primitives of `keys` two frames both drew, the farthest
+/// any of its points lies from where it was in the world (the first frame's
+/// points through `a`, the second's through `b`), in order.
+fn moved(keys: &HashSet<Key>, first: &Points, second: &Points, a: &Camera, b: &Camera) -> Vec<f32> {
     let mut distances: Vec<f32> = keys
         .iter()
         .filter_map(|key| {
@@ -209,7 +216,14 @@ fn moved(keys: &HashSet<Key>, first: &Points, second: &Points, a: &Camera, b: &C
         })
         .collect();
     distances.sort_by(f32::total_cmp);
-    (distances.get(distances.len() / 2).copied().unwrap_or(f32::NAN), distances.len())
+    distances
+}
+
+/// The value `share` of the ordered `values` lie below or at (the median
+/// for a half).
+fn quantile(values: &[f32], share: f64) -> f32 {
+    let at = ((values.len() as f64 * share) as usize).min(values.len().saturating_sub(1));
+    values.get(at).copied().unwrap_or(f32::NAN)
 }
 
 /// The direction a camera looks along in its world (its matrix's third row).
@@ -240,19 +254,23 @@ fn same_view(a: &Camera, b: &Camera) -> bool {
 /// and the scenery that holds still (the primitives whose view-space points
 /// stay the same from a frame to the next while the camera record does
 /// too) stays put through each frame's own camera while the camera turns or
-/// moves: less than `tolerance` world units (the median over the primitives
-/// two frames share), against more than four times that through the frame
-/// before's camera where it turned more than a degree or moved more than
-/// that. A battle's and the world map's look-at camera has the target it
-/// records on its axis, at its recorded depth.
-fn scenery_stays_put_as_the_camera_turns(mode: Mode, frames: u64, tolerance: f32) {
+/// moves: the median over the primitives two frames share moves less than
+/// `tolerance` world units, against more than four times that through the
+/// frame before's camera where it turned more than a degree or moved more
+/// than that, and 95 in 100 of all the distances measured are within
+/// `tolerance` (some primitives the key cannot tell apart from another
+/// elsewhere, and quads that move with the camera, move further). A
+/// battle's and the world map's look-at camera has the target it records
+/// on its axis, at its recorded depth. The frames are presented `per` game
+/// frames at a time.
+fn scenery_stays_put_as_the_camera_turns(mode: Mode, frames: u64, per: u64, tolerance: f32) {
     let Some(disc) = disc() else {
         eprintln!("skipping: no disc 1 (set XEM_DISC1)");
         return;
     };
     let gpu = pollster::block_on(Gpu::headless()).expect("a wgpu adapter");
     let mut session = mode.enter(&disc);
-    let shown = present(&mut session, &gpu, frames, |n| mode.buttons(n));
+    let shown = present(&mut session, &gpu, frames, per, |n| mode.buttons(n));
     let recorded = shown.iter().filter(|frame| frame.camera.is_some_and(|c| c.mode == mode.camera())).count();
     assert!(shown.len() > 100 && recorded * 10 >= shown.len() * 9, "{mode:?}: {recorded} of {} frames shown keep a camera", shown.len());
     let frames: Vec<Option<(Camera, Points)>> = shown.iter().map(|frame| frame.camera.map(|camera| (camera, scenery(&frame.ops)))).collect();
@@ -272,31 +290,36 @@ fn scenery_stays_put_as_the_camera_turns(mode: Mode, frames: u64, tolerance: f32
     }
     let still: HashSet<Key> = holds.into_iter().filter_map(|(key, same)| same.then_some(key)).collect();
     let (mut turned, mut travelled, mut checked, mut worst, mut through_previous) = (0.0, 0.0, 0, 0f32, Vec::new());
+    let mut distances = Vec::new();
     for pair in frames.windows(2) {
         let [Some((a, first)), Some((b, second))] = pair else { continue };
         if same_view(a, b) {
             continue;
         }
-        let (own, shared) = moved(&still, first, second, a, b);
-        if shared < 30 {
+        let own = moved(&still, first, second, a, b);
+        if own.len() < 30 {
             continue;
         }
-        let (angle, travel) = (turn(a, b), distance(eye(a), eye(b)));
-        let (stale, _) = moved(&still, first, second, a, a);
-        assert!(own <= tolerance, "{mode:?}: the scenery moved {own} world units in a frame through each frame's camera (the camera turned {angle} degrees and moved {travel}; {shared} primitives)");
-        (turned, travelled, checked, worst) = (turned + angle, travelled + travel, checked + 1, worst.max(own));
+        let (median, angle, travel) = (quantile(&own, 0.5), turn(a, b), distance(eye(a), eye(b)));
+        let stale = quantile(&moved(&still, first, second, a, a), 0.5);
+        assert!(median <= tolerance, "{mode:?}: the median still primitive moved {median} world units in a frame through each frame's camera (the camera turned {angle} degrees and moved {travel}; {} primitives)", own.len());
+        (turned, travelled, checked, worst) = (turned + angle, travelled + travel, checked + 1, worst.max(median));
         if angle > 1.0 || travel > tolerance {
             through_previous.push(stale);
         }
+        distances.extend(own);
     }
     through_previous.sort_by(f32::total_cmp);
-    let stale = through_previous.get(through_previous.len() / 2).copied().unwrap_or(0.0);
+    let stale = quantile(&through_previous, 0.5);
+    distances.sort_by(f32::total_cmp);
+    let within = distances.iter().filter(|d| **d <= tolerance).count() as f64 / distances.len().max(1) as f64;
     eprintln!(
-        "{mode:?}: {recorded} of {} frames shown keep a camera; {} primitives hold still over {alike} frame pairs seen alike; over {checked} frame pairs the camera turned {turned:.1} degrees and moved {travelled:.0} units, the scenery at most {worst:.2} a frame through each frame's camera, a median {stale:.1} through the frame before's ({} pairs)",
-        shown.len(), still.len(), through_previous.len()
+        "{mode:?}, {per} a presentation: {recorded} of {} frames shown keep a camera; {} primitives hold still over {alike} frame pairs seen alike; over {checked} frame pairs the camera turned {turned:.1} degrees and moved {travelled:.0} units; through each frame's camera the median still primitive moved at most {worst:.2} a frame, and of all {} distances {:.2}% are within {tolerance} (90th percentile {:.2}, 99th {:.2}); the median {stale:.1} through the frame before's ({} pairs)",
+        shown.len(), still.len(), distances.len(), within * 100.0, quantile(&distances, 0.9), quantile(&distances, 0.99), through_previous.len()
     );
     assert!(checked > 20 && through_previous.len() > 10, "{mode:?}: the camera moved in {} of {checked} frame pairs sharing still scenery", through_previous.len());
     assert!(stale > tolerance * 4.0, "{mode:?}: through the frame before's camera the scenery moves only {stale} (the camera record would not matter)");
+    assert!(within >= 0.95, "{mode:?}: only {:.2}% of the still primitives' distances are within {tolerance} world units", within * 100.0);
     if matches!(mode, Mode::Field | Mode::Worldmap) {
         assert!(turned > 30.0, "{mode:?}: L1 turned the camera {turned} degrees");
     }
@@ -324,22 +347,30 @@ fn scenery_stays_put_as_the_camera_turns(mode: Mode, frames: u64, tolerance: f32
 
 #[test]
 fn a_fields_scenery_stays_put_through_each_frames_camera_as_the_camera_turns() {
-    scenery_stays_put_as_the_camera_turns(Mode::Field, 600, 4.0);
+    scenery_stays_put_as_the_camera_turns(Mode::Field, 600, 1, 4.0);
 }
 
 #[test]
 fn a_battles_stage_stays_put_through_each_frames_camera_as_the_camera_moves() {
-    scenery_stays_put_as_the_camera_turns(Mode::Battle, 900, 4.0);
+    scenery_stays_put_as_the_camera_turns(Mode::Battle, 900, 1, 4.0);
 }
 
 #[test]
 fn a_stage_drawn_over_the_last_frame_stays_put_through_each_frames_camera_as_the_camera_comes_in() {
-    scenery_stays_put_as_the_camera_turns(Mode::Desert, 1500, 4.0);
+    scenery_stays_put_as_the_camera_turns(Mode::Desert, 1500, 1, 4.0);
+}
+
+/// The desert battle draws a frame every vertical blank, into its two
+/// buffers in turn, and shows the frame before the last: presented four at
+/// a time, the buffer shown is drawn over twice a presentation.
+#[test]
+fn a_stage_drawn_over_twice_a_presentation_keeps_its_last_frames_camera() {
+    scenery_stays_put_as_the_camera_turns(Mode::Desert, 1500, 4, 4.0);
 }
 
 #[test]
 fn the_world_maps_terrain_stays_put_through_each_frames_camera_as_the_camera_turns() {
-    scenery_stays_put_as_the_camera_turns(Mode::Worldmap, 600, 4.0);
+    scenery_stays_put_as_the_camera_turns(Mode::Worldmap, 600, 1, 4.0);
 }
 
 /// The game's state after `frames` frames from `state` with the trace

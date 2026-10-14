@@ -143,7 +143,7 @@ fn original_fidelity_matches_the_software_gpu() {
 
 use xem_gpu::{Class, Environment, Primitive, Projection, Reveal, Shape, SxyStore, TraceOp, TraceVertex};
 use xem_render::ps1::{
-    Culling, DisplayArea, Effects, EffectsRenderer, FrameRenderer, Framing, Lighting, Look, Quality, first_person, interpolate, pull_back,
+    Culling, DisplayArea, Effects, EffectsRenderer, FrameRenderer, Framing, Lighting, Look, Quality, first_person, interpolate, pull_back, weld,
 };
 
 /// A packed GP0 vertex word.
@@ -700,6 +700,34 @@ fn primitive(x: i32, y: i32, u: i16) -> TraceOp {
 }
 
 #[test]
+fn scene_points_weld_to_their_own_game_frames_only() {
+    // A face of the scene a quarter of a pixel to the right of `primitive`'s,
+    // its points before the division where it lies.
+    let face = |dx: f32| {
+        let mut op = primitive(100, 100, 0);
+        if let TraceOp::Draw(p) = &mut op {
+            for v in &mut p.vertices[..3] {
+                v.fx += dx;
+                v.view = Some([v.fx, v.fy, 1000.0]);
+            }
+        }
+        op
+    };
+    let first = |op: &TraceOp| match op {
+        TraceOp::Draw(p) => (p.vertices[0].fx, p.vertices[0].view),
+        _ => unreachable!("a face"),
+    };
+    let mut ops = vec![face(0.0), face(0.25)];
+    weld(&mut ops);
+    assert_eq!(first(&ops[1]), (100.0, Some([100.0, 100.0, 1000.0])), "within a frame, the later face takes the first one's point");
+    // The same two faces in two game frames of one trace (the host ran both
+    // before presenting): each keeps its own.
+    let mut ops = vec![face(0.0), TraceOp::VBlank, face(0.25)];
+    weld(&mut ops);
+    assert_eq!(first(&ops[2]), (100.25, Some([100.25, 100.0, 1000.0])), "a frame's face is not welded to one an earlier frame drew there");
+}
+
+#[test]
 fn interpolation_moves_matched_primitives_and_leaves_cuts() {
     let x = |op: &TraceOp| match op {
         TraceOp::Draw(p) => p.vertices[0].fx,
@@ -1039,6 +1067,7 @@ fn each_frame_keeps_the_camera_recorded_before_its_first_primitive() {
         gpu.queue.submit([encoder.finish()]);
     };
     let kept = |renderer: &Ps1Renderer| renderer.frame_log(area).and_then(|log| log.camera).map(|camera| camera.translation[2]);
+    let draws = |renderer: &Ps1Renderer| renderer.frame_log(area).map_or(0, |log| log.ops.iter().filter(|op| matches!(op, TraceOp::Draw(_))).count());
     // A frame: its buffer cleared, then the camera the port records as the
     // game builds it, then its primitives.
     let (sync, first) = traced(|device| {
@@ -1055,20 +1084,58 @@ fn each_frame_keeps_the_camera_recorded_before_its_first_primitive() {
     let mut frame = FrameRenderer::new(&gpu.device);
     assert!(frame.track(&renderer, area));
     assert_eq!(frame.camera().map(|camera| camera.translation[2]), Some(1000.0), "the frame shown keeps its log's");
-    // The next frame drawn over the last instead of a clear (a battle's
-    // stage): its log begins with the trace holding it, and keeps the
-    // camera recorded in that trace before its first primitive.
-    let next = DEVICE.with(|device| {
-        let mut device = device.borrow_mut();
+    let state = DEVICE.with(|device| device.borrow().save());
+    // A game frame (after its vertical blank) recorded as camera `depth` at
+    // ring entry `at` and drawn over the last instead of a clear (a
+    // battle's stage), or into its buffer cleared.
+    let frame_drawn = |device: &mut xem_gpu::Gpu, at: u32, depth: i32, cleared: bool| {
         device.vblank();
-        device.trace_projections(5, &camera_records(2000), &[], &[]);
-        device.write_gp0_words(&[0x2800_8040, xy(0, 0), xy(320, 0), xy(0, 240), xy(320, 240)]);
+        device.trace_projections(at, &camera_records(depth), &[], &[]);
+        if cleared {
+            device.write_gp0_words(&clear);
+        } else {
+            device.write_gp0_words(&[0x2800_0000 | depth as u32, xy(0, 0), xy(320, 0), xy(0, 240), xy(320, 240)]);
+        }
+        for k in 0..70 {
+            device.write_gp0_words(&small(k * 4));
+        }
+    };
+    let take = |frames: &[(u32, i32, bool)]| DEVICE.with(|device| {
+        let mut device = device.borrow_mut();
+        for (k, &(at, depth, cleared)) in frames.iter().enumerate() {
+            if k > 0 {
+                // Two blanks a frame, as a field draws.
+                device.vblank();
+            }
+            frame_drawn(&mut device, at, depth, cleared);
+        }
         device.take_trace()
     });
-    draw(&mut renderer, &next);
+    // The next frame drawn over the last: its log begins with the frame,
+    // and keeps the camera recorded before its first primitive.
+    draw(&mut renderer, &take(&[(5, 2000, false)]));
     assert_eq!(kept(&renderer), Some(2000.0), "a frame drawn over the last keeps its own camera, not the one before");
     assert!(frame.track(&renderer, area), "a new frame");
     assert_eq!(frame.camera().map(|camera| camera.translation[2]), Some(2000.0));
+    // One presentation of several frames (the host ran them before it
+    // presented: fast-forward, catching up): the buffer's log begins with
+    // the last that draws all over it, cleared or drawn over.
+    draw(&mut renderer, &take(&[(10, 3000, false), (15, 4000, false)]));
+    assert_eq!((kept(&renderer), draws(&renderer)), (Some(4000.0), 71), "the last of two frames drawn over in one trace keeps its own camera and only its primitives");
+    assert!(frame.track(&renderer, area), "a new frame");
+    assert_eq!(frame.camera().map(|camera| camera.translation[2]), Some(4000.0));
+    draw(&mut renderer, &take(&[(20, 5000, true), (25, 6000, true)]));
+    assert_eq!((kept(&renderer), draws(&renderer)), (Some(6000.0), 70), "the last of two cleared frames in one trace");
+    draw(&mut renderer, &take(&[(30, 6500, true), (35, 7000, false)]));
+    assert_eq!((kept(&renderer), draws(&renderer)), (Some(7000.0), 71), "a frame drawn over one cleared in the same trace");
+    // A state loaded (the trace starts again on its VRAM): the shown buffer
+    // the game draws over starts a log with the last frame that draws all
+    // over it.
+    DEVICE.with(|device| device.borrow_mut().load(&state).expect("a state"));
+    draw(&mut renderer, &take(&[(40, 8000, false), (45, 9000, false)]));
+    assert_eq!((kept(&renderer), draws(&renderer)), (Some(9000.0), 71), "a state's first trace keeps the camera of its last frame drawn over");
+    assert!(frame.track(&renderer, area), "a new frame");
+    assert_eq!(frame.camera().map(|camera| camera.translation[2]), Some(9000.0));
     // Recorded more than four vertical blanks before a frame, it is not
     // that frame's.
     let stale = DEVICE.with(|device| {
