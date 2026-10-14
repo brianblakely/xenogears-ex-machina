@@ -21,6 +21,7 @@ enum {
 enum {
     XEM_RESTART_BOOT = 0,     /* the entry point: clear the BSS, run boot_main */
     XEM_RESTART_DISPATCH = 1, /* mode_dispatch(arg) on an empty stack */
+    XEM_RESTART_POWER_ON = 2, /* the console's reset: the BIOS as at power-on, then the entry point */
 };
 
 /* Suspend the game: asyncify unwinds the game stack into game-module memory

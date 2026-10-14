@@ -944,7 +944,7 @@ impl View {
                         let _ = game.command(&command);
                     }
                     Some(xem_assist::dispatch::Out::Select { index, confirm }) => self.player.select(index, confirm),
-                    Some(xem_assist::dispatch::Out::Press { actions }) => self.player.press_pointed(actions),
+                    Some(xem_assist::dispatch::Out::Press { actions }) => self.player.pulse(xem_settings::player::Pulse::new(actions)),
                     _ => {}
                 }
             }

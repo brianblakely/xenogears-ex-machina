@@ -10,6 +10,9 @@ use crate::pad::Pads;
 /// Where `xem_run` starts (src/port/include/xem/port.h).
 pub const RESTART_BOOT: u32 = 0;
 pub const RESTART_DISPATCH: u32 = 1;
+/// The console's reset: the port returns the BIOS's own state to power-on,
+/// then boots as `RESTART_BOOT` (src/port/boot.c).
+pub const RESTART_POWER_ON: u32 = 2;
 
 /// The fibers (src/port/include/xem/port.h): the game, whose bottom frame is
 /// `xem_run`, and the arena task, whose bottom frame is `xem_task_run`.
@@ -396,6 +399,9 @@ pub struct Runtime<M: GameModule> {
     /// A 32-bit write made when the game next restarts into the dispatcher,
     /// before `xem_run` enters it: (address, value).
     dispatch_write: Option<(u32, u32)>,
+    /// The executable's text as the BIOS copied it to its address at
+    /// power-on (code and initialized data), which a reset copies again.
+    executable: Option<(u32, Vec<u8>)>,
 }
 
 impl<M: GameModule> Runtime<M> {
@@ -418,7 +424,16 @@ impl<M: GameModule> Runtime<M> {
             dispatch_write: None,
             stopped_before_vblank: false,
             frames: 0,
+            executable: None,
         }
+    }
+
+    /// Copy the executable's text to `address` as the BIOS does at power-on
+    /// (and keep it for a reset).
+    pub fn load_executable(&mut self, address: u32, text: &[u8]) -> Result<(), crate::memory::OutOfBounds> {
+        self.memory().write(address, text)?;
+        self.executable = Some((address, text.to_vec()));
+        Ok(())
     }
 
     pub fn services(&mut self) -> &mut Services {
@@ -525,14 +540,15 @@ impl<M: GameModule> Runtime<M> {
         self.current = 0;
     }
 
-    /// The console's soft reset: abandon suspended work and enter the
-    /// original boot routine, which clears BSS and initializes the game.
-    /// Attached discs and memory cards remain attached. The sound chip and
-    /// the drive return to their power-on state, as the console's reset line
-    /// returns them, so no sound of the abandoned game (voices, reverb, a
-    /// stream the drive was playing) outlives it.
+    /// The console's reset: abandon suspended work, load the executable
+    /// again and boot it as the BIOS does after the reset line (the port's
+    /// BIOS state back at power-on: no event open, so the abandoned sound
+    /// driver's tick does not go on beside the new one's), the sound chip,
+    /// the drive and the root counters as at power-on, so nothing of the
+    /// abandoned game (its initialized data, voices, a stream the drive was
+    /// playing) outlives it. Attached discs and memory cards remain attached.
     pub fn reset(&mut self) {
-        self.restart(RESTART_BOOT, 0);
+        self.restart(RESTART_POWER_ON, 0);
         self.resume_advance = None;
         self.stopped_before_vblank = false;
         self.dispatch_write = None;
@@ -544,8 +560,15 @@ impl<M: GameModule> Runtime<M> {
         services.last_wait = None;
         services.focus_pause.set_active(false);
         services.raised.clear();
+        services.clock.counters = Default::default();
+        services.clock.reconcile_audio_due();
         services.cd.power_on();
-        if let Err(error) = services.spu.power_on(self.module.memory()) {
+        let memory = self.module.memory();
+        let loaded = match &self.executable {
+            Some((address, text)) => memory.write(*address, text),
+            None => Ok(()),
+        };
+        if let Err(error) = loaded.and_then(|()| services.spu.power_on(memory)) {
             services.trap_reason = Some(error.to_string());
         }
     }

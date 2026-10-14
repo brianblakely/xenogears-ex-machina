@@ -12,6 +12,9 @@ extern void (*heap_report_output)(char *line);
 extern u8 boot_bss_last_word[];
 
 void boot_main(void);
+void xem_libapi_power_on(void);
+void xem_libetc_power_on(void);
+void xem_libcd_power_on(void);
 void xem_host_mode(int mode);
 u32 xem_original_pad_dequeue_state(void);
 void xem_host_input_read(unsigned int state);
@@ -56,9 +59,18 @@ void mode_dispatch(s32 error) {
 /* The host runs the game from here, at start-up and after each restart; it
  * calls it again to resume the suspended game fiber (src/port/fiber.c). A start
  * on an empty stack abandons the task fiber; asyncify skips that reset when
- * it rewinds. */
+ * it rewinds. The console's reset (the host's, which loads the executable
+ * again and resets the devices as the BIOS and the reset line do) first
+ * returns the BIOS's own state to power-on; the game's soft reset keeps it,
+ * as the original's does. */
 void xem_run(s32 kind, s32 arg) {
     xem_fiber_reset();
+    if (kind == XEM_RESTART_POWER_ON) {
+        xem_libapi_power_on();
+        xem_libetc_power_on();
+        xem_libcd_power_on();
+        kind = XEM_RESTART_BOOT;
+    }
     if (kind == XEM_RESTART_BOOT) {
         boot_clear_bss_range((u8 *)&heap_report_output, boot_bss_last_word);
         boot_main();

@@ -38,8 +38,9 @@ pub enum Out {
     TrackingLost,
     /// Press these actions together, once.
     Press { actions: Vec<GameAction> },
-    /// Select entry `index` of the interface's targets, then (`confirm`)
-    /// press Confirm once it is selected.
+    /// Choose entry `index` of the interface's targets: a button is
+    /// pressed; anything else is selected, then (`confirm`) confirmed with
+    /// Confirm once it is selected.
     Select { index: usize, confirm: bool },
     /// A command for the command layer (`navigate`, `interact`,
     /// `assist_stop`, `shop_quantity`).
@@ -100,19 +101,9 @@ pub fn tap_at(at: (f32, f32), ui: Context, field: Option<&Field>, targets: Optio
         Context::Dialogue { choice: None } => Some(press([GameAction::Confirm])),
         Context::Dialogue { choice: Some(_) } | Context::Menu { .. } | Context::Battle { .. } => {
             let targets = targets?;
-            Some(choose(targets, targets.at(at)?))
+            Some(Out::Select { index: targets.at(at)?, confirm: targets.confirm })
         }
         _ => None,
-    }
-}
-
-/// Entry `index` chosen: a button (a page arrow, an attack) pressed once,
-/// anything else selected, then confirmed where choices are (not the attack
-/// page's target, which its attacks confirm).
-fn choose(targets: &Targets, index: usize) -> Out {
-    match targets.entries[index].press {
-        Some(action) => press([action]),
-        None => Out::Select { index, confirm: targets.confirm },
     }
 }
 
@@ -142,7 +133,7 @@ fn tap(ui: Context, aim: Aim, field: Option<&Field>, targets: Option<&Targets>) 
             Some(Out::Select { index, confirm: true })
         }
         Context::Menu { .. } | Context::Battle { targeting: true, .. } | Context::Battle { list: true, .. } => Some(match targets.zip(aim).and_then(|(t, aim)| Some((t, t.at(aim)?))) {
-            Some((targets, index)) => choose(targets, index),
+            Some((targets, index)) => Out::Select { index, confirm: targets.confirm },
             None => press([GameAction::Confirm]),
         }),
         // Paging the ring: its highlighted direction again flips the layer.
@@ -296,7 +287,7 @@ mod tests {
 
     #[test]
     fn a_touch_chooses_battle_entries_as_a_click_does() {
-        let entry = |x: f32, press: Option<GameAction>, ground: Option<xem_core::menu::Ground>| Entry { rect: Rect { x, y: 0.0, width: 10.0, height: 10.0 }, select: None, press, ground };
+        let entry = |x: f32, press: Option<GameAction>, ground: Option<xem_core::menu::Ground>| Entry { rect: Rect { x, y: 0.0, width: 10.0, height: 10.0 }, select: None, press, twice: false, ground };
         let target = xem_core::menu::Ground { slot: 3, x: 0, z: 0, selectable: true };
         let attack = Targets {
             what: "battle_attack",
@@ -305,7 +296,7 @@ mod tests {
             steps: Steps::Compass,
             confirm: false,
         };
-        assert_eq!(tap_at((5.0, 5.0), battle(5, true), None, Some(&attack)), Some(press([GameAction::AttackWeak])), "an attack is pressed");
+        assert_eq!(tap_at((5.0, 5.0), battle(5, true), None, Some(&attack)), Some(Out::Select { index: 0, confirm: false }), "an attack is chosen (pressed)");
         assert_eq!(tap_at((25.0, 5.0), battle(5, true), None, Some(&attack)), Some(Out::Select { index: 1, confirm: false }), "its target only selected");
         assert_eq!(tap_at((50.0, 5.0), battle(5, true), None, Some(&attack)), None, "nothing there");
         let ring = Targets { what: "battle_ring", entries: vec![Entry { select: Some(GameAction::Down), ..entry(0.0, None, None) }], selected: None, steps: Steps::Direct, confirm: true };
@@ -324,7 +315,7 @@ mod tests {
 
     fn list() -> Targets {
         let rect = |y: f32| Rect { x: 100.0, y, width: 100.0, height: 14.0 };
-        let entry = |y| Entry { rect: rect(y), select: None, press: None, ground: None };
+        let entry = |y| Entry { rect: rect(y), select: None, press: None, twice: false, ground: None };
         Targets { what: "dialogue_choice", entries: vec![entry(100.0), entry(114.0)], selected: Some(0), steps: Steps::Ring { count: 2, next: GameAction::Down }, confirm: true }
     }
 

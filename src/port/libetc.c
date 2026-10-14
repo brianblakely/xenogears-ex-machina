@@ -123,6 +123,25 @@ static u32 xem_pending_dma_channels;
 
 static void xem_dispatch(u32 irq, u32 detail);
 
+/* The console's reset (XEM_RESTART_POWER_ON): no callback set, every
+ * interrupt enabled and none pending (the game's ResetCallback then starts
+ * afresh too: its flag is data the reset loads again). */
+void xem_libetc_power_on(void) {
+    s32 i;
+
+    xem_vsync_callback = NULL;
+    for (i = 0; i < 11; i++) {
+        xem_interrupt_callbacks[i] = NULL;
+    }
+    for (i = 0; i < 7; i++) {
+        xem_dma_callbacks[i] = NULL;
+    }
+    xem_interrupt_mask = 0xFFFFFFFF;
+    xem_pending_interrupts = 0;
+    xem_pending_dma_channels = 0;
+    xem_in_interrupt = 0;
+}
+
 static void xem_run_pending(void) {
     u32 irq, channel;
 

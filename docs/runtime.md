@@ -1268,7 +1268,8 @@ enemy's more; where boxes overlap the smallest takes the point), the
 command ring (its four slots and the page arrows above it, each glyph's
 parts as the command panel's constant glyph tables and the battle's glyph
 sheet place them; an arrow reaches well beyond itself, upward and away
-from the ring, the slots' labels keeping the points they cover) and the
+from the ring, over the slots' labels where they meet; a slot the member
+cannot use, drawn dim, takes no pointing) and the
 attack page (its four attacks, each its button's glyph with the label and
 digits right of it, which keep their places through the sequence; and
 the attack's target among the candidates until the first attack fixes
@@ -1297,9 +1298,13 @@ reports the frames run):
   the cursor stops short of (past a list's end) is given up after three
   steps that leave the selection where it was (one on the battle's
   command ring: a slot the game refuses is not pressed again into a page
-  flip). In battle, pointing at a ring slot
-  highlights it and a click activates it; a click on the page arrows
-  above the ring flips its page (the highlighted slot's direction again),
+  flip), and not steered to again while the pointer stays on it. In
+  battle, pointing at a ring slot highlights it and a click activates it
+  (one the member cannot use takes neither, and the ring stays on its
+  page); a click on a page arrow above the ring flips it to the other
+  page's slot that way, highlighted (the left arrow to Defense or Escape,
+  the right to Attack or the combo setup, the up arrow to the Up slot:
+  the arrow's direction, pressed twice when another slot is highlighted),
   a click on an attack presses it (Weak, Strong, Fierce, the end of the
   sequence), and on the attack page a click on an enemy makes it the
   attack's target, selected only (the attacks confirm it; Confirm is one
@@ -1725,14 +1730,21 @@ The shared control commands are available through `xem-headless --control` and
 {"cmd":"reset"}
 ```
 
-`reset` abandons the current game stack and enters the original console boot
-routine. It releases held pads, clears rewind history and retains attached
-discs, memory cards and app preferences. The sound chip and the drive return
-to their power-on state as the console's reset line returns them (no voice
-sounding, the SPU's registers and RAM cleared, its unplayed output dropped;
-no read or stream under way, the disc still in), and the Binaural
-presentation forgets the sound so far, so nothing of the abandoned game's
-sound outlives it: the boot sounds as it does after power-on.
+`reset` abandons the current game stack and boots the game as the console
+does after its reset line: the executable is copied to its address again
+(its code and initialized data as the disc holds them), the port's BIOS
+returns to power-on (`xem_run` with `XEM_RESTART_POWER_ON`: no event open,
+no interrupt callback set, the pad driver stopped; the game's own soft reset
+keeps them, as the original's does), and the original boot routine runs. It
+releases held pads, restarts the root counters, clears rewind history and
+retains attached discs, memory cards and app preferences. The sound chip and
+the drive return to their power-on state as the console's reset line returns
+them (no voice sounding, the SPU's registers and RAM cleared, its unplayed
+output dropped; no read or stream under way, the disc still in), and the
+Binaural presentation forgets the sound so far, so nothing of the abandoned
+game outlives it (its sound driver's tick event would otherwise go on beside
+the new one's, the music at twice its tempo): the boot sounds as it does
+after power-on.
 
 Native file commands are `state_save`/`state_load` with `path`, and
 `card_import`/`card_export` with `path` and `slot` (0 or 1). File commands are

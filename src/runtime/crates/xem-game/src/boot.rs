@@ -72,7 +72,7 @@ pub fn boot_source(
     }
     runtime.services().spu.set_output(options.audio_output);
     // The BIOS copies the executable's text to its address and jumps to pc0.
-    runtime.memory().write(header.text_address, exe::text(&identity.executable, &header))?;
+    runtime.load_executable(header.text_address, exe::text(&identity.executable, &header))?;
     runtime.services().insert_disc(identity.disc.map_or(0, |disc| disc.number()), source);
     // The module's schema (build/game/schema.json, embedded by build.rs).
     let schema = Schema::parse(include_str!(concat!(env!("OUT_DIR"), "/schema.json")))?;

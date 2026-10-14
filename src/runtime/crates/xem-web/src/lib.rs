@@ -433,10 +433,8 @@ impl XemApp {
         let field = (session.runtime.services().mode == Some(1)).then(|| xem_core::field::Field::read(session.runtime.memory())).flatten();
         for tap in std::mem::take(&mut self.taps) {
             let Some(at) = picture.and_then(|p| p.to_screen(tap.0, tap.1)) else { continue };
-            match xem_assist::dispatch::tap_at(at, ui, field.as_ref(), self.targets.as_ref()) {
-                Some(xem_assist::dispatch::Out::Press { actions }) => self.input.press_pointed(actions),
-                outs => xem_assist::headset::carry(outs.into_iter().collect(), &mut WebCarry { session: Some(session), input: &mut self.input }, &mut self.xr_scaling),
-            }
+            let outs = xem_assist::dispatch::tap_at(at, ui, field.as_ref(), self.targets.as_ref()).into_iter().collect();
+            xem_assist::headset::carry(outs, &mut WebCarry { session: Some(session), input: &mut self.input }, &mut self.xr_scaling);
         }
         for key in std::mem::take(&mut self.quantity) {
             session.execute(&json!({"cmd": "shop_quantity", "op": key.op()}));
@@ -1192,7 +1190,7 @@ impl XemApp {
             bios::install_kanji_font(runtime.memory(), None).map_err(error)?;
             // The BIOS copies the executable's text to its address and jumps to pc0.
             let header = exe::parse(&executable).map_err(error)?;
-            runtime.memory().write(header.text_address, exe::text(&executable, &header)).map_err(error)?;
+            runtime.load_executable(header.text_address, exe::text(&executable, &header)).map_err(error)?;
         }
         if let Some((number, source)) = game_disc {
             runtime.services().insert_disc(number, source);
