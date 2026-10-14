@@ -27,6 +27,8 @@
 //!   mixes the ring's samples from that; at each register sync it reads who
 //!   keyed on the voices the sync keys on. Neither touches the SPU's state
 //!   or game memory, and a restore keeps the presenter but forgets its sound.
+//!   A tap capture ([`Spu::start_tap_capture`]) keeps the renderer's journal
+//!   of those samples and routes for an agent to mix again offline.
 
 use std::collections::VecDeque;
 
@@ -76,6 +78,8 @@ pub struct Spu {
     tap: Vec<xem_spu::TapFrame>,
     /// The output as presented, kept for an agent (`audio_capture`).
     capture: Option<Vec<i16>>,
+    /// A tap capture's journal whose presentation ended before it was taken.
+    ended_journal: Option<xem_binaural::Journal>,
     /// The sprite running a script command that plays a sound
     /// (`xem.spu_sound_source`, src/port/binaural.c), 0 between them.
     sound_source: u32,
@@ -97,6 +101,7 @@ impl Default for Spu {
             presenter: None,
             tap: Vec::new(),
             capture: None,
+            ended_journal: None,
             sound_source: 0,
         }
     }
@@ -123,6 +128,7 @@ impl Spu {
             presenter
         });
         state.capture = self.capture.take();
+        state.ended_journal = self.ended_journal.take();
         *self = state;
     }
     /// The console's reset: the chip returns to its power-on state (no voice
@@ -203,6 +209,21 @@ impl Spu {
     /// The output kept since [`start_capture`](Self::start_capture), ending it.
     pub fn take_capture(&mut self) -> Option<Vec<i16>> {
         self.capture.take()
+    }
+
+    /// Starts keeping what the Binaural presentation mixes, a journal of
+    /// every sample's tap and its routes (`xem_binaural::Journal`), up to
+    /// `xem_binaural::JOURNAL_LIMIT` samples; `false` when nothing presents.
+    /// Presentation only: the output and the game stay as they are.
+    pub fn start_tap_capture(&mut self) -> bool {
+        self.ended_journal = None;
+        self.presenter.as_mut().map(|presenter| presenter.start_journal()).is_some()
+    }
+
+    /// The journal kept since [`start_tap_capture`](Self::start_tap_capture),
+    /// ending it (one the presentation ended with stays until taken).
+    pub fn take_tap_capture(&mut self) -> Option<xem_binaural::Journal> {
+        self.presenter.as_mut().and_then(|presenter| presenter.take_journal()).or_else(|| self.ended_journal.take())
     }
 
     /// Whether the samples are kept for a host ([`set_output`](Self::set_output)).
@@ -336,6 +357,7 @@ impl Spu {
                             presenter.render(&self.tap, ring);
                             if presenter.finished() {
                                 presenter.finish(ring);
+                                self.ended_journal = presenter.take_journal().or(self.ended_journal.take());
                                 finished = true;
                             }
                         }

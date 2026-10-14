@@ -30,7 +30,7 @@ use std::collections::{BTreeMap, HashMap};
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use xem_binaural::{CdRoute, Renderer, Route, Target, music};
+use xem_binaural::{CdRoute, Journal, Renderer, Route, Target, music};
 use xem_spu::{TapFrame, VOICES};
 
 use crate::memory::GameMemory;
@@ -159,8 +159,9 @@ enum Tag {
     Music { seq: u32, song: u64, part: u8 },
     /// Effect channel `channel` playing effect `id` (bank << 16 | effect)
     /// started at driver tick `stamp`, by a script command of `sprite` (0:
-    /// not a sprite's).
-    Effect { channel: u8, id: u32, stamp: u32, sprite: u32 },
+    /// not a sprite's), from the mode's positional emitter that follows
+    /// `emitter` as it started (none: not one of them).
+    Effect { channel: u8, id: u32, stamp: u32, sprite: u32, emitter: Option<u32> },
     /// No sequence or effect channel of the driver (`owner`, 0: none).
     Other { owner: u32 },
 }
@@ -190,6 +191,13 @@ struct Emitter {
     full_id: bool,
     position: [f32; 3],
     follows: u32,
+}
+
+impl Emitter {
+    /// Whether it plays effect `id` on effect channel `channel`.
+    fn plays(&self, channel: u8, id: u32) -> bool {
+        self.pair == channel & !1 && if self.full_id { self.sound == id } else { self.sound == id & 0xFFFF }
+    }
 }
 
 /// Where the listener is and what it hears positionally, read once a frame.
@@ -492,9 +500,15 @@ impl Presenter {
         }
         // An emitter starting now: the game wrote its slot (or ran its
         // sprite's command) before the effect started, so the scene is read
-        // with the key-on, not a frame later.
+        // with the key-on, not a frame later. The start keeps the emitter it
+        // came from: its tail never follows another actor the slot takes.
         if effects {
             self.read_scene(memory, self.scene.mode, self.scene.movie);
+        }
+        for &v in &keyed {
+            if let Some(Tag::Effect { channel, id, emitter, .. }) = &mut self.tags[v] {
+                *emitter = self.scene.emitters.iter().find(|e| e.plays(*channel, *id)).map(|e| e.follows);
+            }
         }
         for &v in &keyed {
             if let Some(tag @ Tag::Effect { id, .. }) = self.tags[v]
@@ -529,7 +543,7 @@ impl Presenter {
                 let record = effects + SEQ_CHANNEL_ARRAY + c * CHANNEL_SIZE;
                 let id = u32_at(memory, record + CHANNEL_ID).unwrap_or(0);
                 let sprite = self.starts[c as usize].filter(|(started, _)| *started == id).map_or(0, |(_, sprite)| sprite);
-                return Tag::Effect { channel: c as u8, id, stamp: u32_at(memory, record + CHANNEL_STAMP).unwrap_or(0), sprite };
+                return Tag::Effect { channel: c as u8, id, stamp: u32_at(memory, record + CHANNEL_STAMP).unwrap_or(0), sprite, emitter: None };
             }
         }
         let mut seq = u32_at(memory, PLAYING_SEQS).and_then(ram);
@@ -597,17 +611,17 @@ impl Presenter {
     /// Where an effect is heard: by the mode's positional emitters, else by
     /// the sprite whose script started it.
     fn place_effect(&self, tag: Tag) -> Placing {
-        let Tag::Effect { channel, id, sprite, .. } = tag else { return Placing::Unresolved("not an effect") };
-        let pair = channel & !1;
-        let slot = self.scene.emitters.iter().find(|e| e.pair == pair && if e.full_id { e.sound == id } else { e.sound == id & 0xFFFF });
+        let Tag::Effect { channel, id, sprite, emitter, .. } = tag else { return Placing::Unresolved("not an effect") };
+        let slot = self.scene.emitters.iter().find(|e| e.plays(channel, id) && Some(e.follows) == emitter);
         let (position, camera, follows, emitter) = match (slot, sprite) {
             (Some(slot), _) => {
                 let kind = if self.scene.mode == Some(MODE_ARENA) { "arena voice" } else { "field emitter" };
                 (slot.position, self.scene.camera, slot.follows, kind)
             }
             (None, 0) => {
-                return Placing::Unresolved(match self.scene.mode {
-                    Some(MODE_FIELD) | Some(MODE_ARENA) => "not one of the mode's positional emitters, nor a sprite's",
+                return Placing::Unresolved(match (emitter, self.scene.mode) {
+                    (Some(_), _) => "its emitter is gone (its slot freed or following another)",
+                    (None, Some(MODE_FIELD) | Some(MODE_ARENA)) => "not one of the mode's positional emitters, nor a sprite's",
                     _ => "not a sprite's, and no positional emitters recovered in this mode",
                 });
             }
@@ -783,6 +797,17 @@ impl Presenter {
         self.ids.retain(|key, _| live.contains(key));
     }
 
+    /// Starts keeping a journal of what the renderer mixes (the tap
+    /// capture: `xem_binaural::Journal`), anew if one is under way.
+    pub fn start_journal(&mut self) {
+        self.renderer.start_journal();
+    }
+
+    /// The journal kept since [`start_journal`](Self::start_journal), ending it.
+    pub fn take_journal(&mut self) -> Option<Journal> {
+        self.renderer.take_journal()
+    }
+
     /// Mixes the samples `tap` says the SPU made into `ring`.
     pub fn render(&mut self, tap: &[TapFrame], ring: &mut std::collections::VecDeque<i16>) {
         self.out.clear();
@@ -812,6 +837,8 @@ impl Presenter {
                     "id": source.id,
                     "azimuth": source.azimuth,
                     "elevation": source.elevation,
+                    "target": source.target.map(|(azimuth, elevation)| json!({"azimuth": azimuth, "elevation": elevation})),
+                    "pan": source.pan,
                     "placed": source.placed,
                     "gain": source.gain,
                     "level_db": source.level_db,
@@ -824,17 +851,17 @@ impl Presenter {
                         entry["song"] = json!(format!("{song:016x}"));
                         entry["part"] = json!(part);
                         entry["role"] = json!(role);
+                        if let Some(Target::Stage { azimuth, elevation, home_pan, spread }) = self.music_target(*seq, *part) {
+                            entry["placement"] = json!({"azimuth": azimuth, "elevation": elevation, "home_pan": home_pan, "spread": spread});
+                        }
                     }
                     Some(SourceKey::Effect { pair, id, stamp }) => {
                         entry["kind"] = json!("effect");
                         entry["effect"] = json!(format!("{id:#x}"));
+                        entry["start"] = json!(stamp);
                         entry["channels"] = json!([pair, pair + 1]);
-                        let sprite = self.tags.iter().find_map(|tag| match tag {
-                            Some(Tag::Effect { channel, stamp: s, id: i, sprite }) if channel & !1 == *pair && s == stamp && i == id => Some(*sprite),
-                            _ => None,
-                        });
-                        let tag = Tag::Effect { channel: *pair, id: *id, stamp: *stamp, sprite: sprite.unwrap_or(0) };
-                        if let Placing::Placed { follows, emitter, .. } = self.place_effect(tag) {
+                        let tag = self.tags.iter().flatten().copied().find(|tag| key_of(*tag) == Some(SourceKey::Effect { pair: *pair, stamp: *stamp, id: *id }));
+                        if let Some(Placing::Placed { follows, emitter, .. }) = tag.map(|tag| self.place_effect(tag)) {
                             entry["emitter"] = json!(emitter);
                             entry["follows"] = json!(if emitter == "sprite" { json!(format!("{follows:#x}")) } else { json!(follows) });
                             if let Some(position) = self.scene.sprites.get(&follows).filter(|_| emitter == "sprite") {
@@ -860,12 +887,12 @@ impl Presenter {
                 };
                 Some(match (*tag)? {
                     Tag::Music { part, .. } => json!({"voice": v, "music_part": part, "route": route}),
-                    Tag::Effect { channel, id, sprite, .. } => {
+                    Tag::Effect { channel, id, stamp, sprite, .. } => {
                         let why = match self.place_effect(tag.expect("some")) {
                             Placing::Unresolved(why) => json!(why),
                             Placing::Placed { .. } => Value::Null,
                         };
-                        json!({"voice": v, "effect_channel": channel, "effect": format!("{id:#x}"), "sprite": (sprite != 0).then(|| format!("{sprite:#x}")), "route": route, "unresolved": why})
+                        json!({"voice": v, "effect_channel": channel, "effect": format!("{id:#x}"), "start": stamp, "sprite": (sprite != 0).then(|| format!("{sprite:#x}")), "route": route, "unresolved": why})
                     }
                     Tag::Other { owner } => json!({"voice": v, "owner": format!("{owner:#x}"), "route": route}),
                 })
@@ -1051,7 +1078,7 @@ mod tests {
         let mut presenter = Presenter::new(on());
         presenter.key_on((1 << 0) | (1 << 22) | (1 << 23) | (1 << 5), &ram);
         assert!(matches!(presenter.tags[0], Some(Tag::Music { seq: MUSIC, part: 2, .. })));
-        assert_eq!(presenter.tags[22], Some(Tag::Effect { channel: 14, id: 0x0004_0021, stamp: 77, sprite: 0 }));
+        assert_eq!(presenter.tags[22], Some(Tag::Effect { channel: 14, id: 0x0004_0021, stamp: 77, sprite: 0, emitter: None }));
         assert_eq!(presenter.tags[5], Some(Tag::Other { owner: 0x8015_0000 }));
         // Music is placed; an effect without an emitter keeps its mix and is
         // counted as a gap; so does a voice nobody owns.
@@ -1137,6 +1164,50 @@ mod tests {
         assert_eq!(presenter.renderer.route(10), Route::Original);
     }
 
+    #[test]
+    fn an_emitters_tail_keeps_its_place_when_its_slot_follows_another_actor() {
+        let mut ram = driver();
+        let rows: [i16; 9] = [4096, 0, 0, 0, 4096, 0, 0, 0, 4096];
+        ram.put(FIELD_VIEW_SCALED_WORLD, &rows.iter().flat_map(|r| r.to_le_bytes()).collect::<Vec<u8>>());
+        let descriptors = 0x8013_0000;
+        ram.word(FIELD_COMPONENTS, 3);
+        ram.word(FIELD_COMPONENTS + 4, descriptors);
+        ram.word(FIELD_CONTROLLED, 0);
+        for (index, at) in [[100i32, 0, 100], [-100, 0, 100], [300, 0, 100]].iter().enumerate() {
+            ram.put(descriptors + index as u32 * FIELD_DESCRIPTOR_SIZE + 0x20, &at.iter().flat_map(|c| c.to_le_bytes()).collect::<Vec<u8>>());
+        }
+        let slot = |ram: &mut Ram, actor: u16| {
+            for slot in 0..3u32 {
+                let (actor, sound) = if slot == 1 { (actor, 0x21u16) } else { (0xFFFF, 0xFFFF) };
+                ram.put(FIELD_EMITTER_SLOTS + slot * 6, &[actor.to_le_bytes(), sound.to_le_bytes()].concat());
+            }
+        };
+        // Slot 1 follows actor 2, on the character's right.
+        slot(&mut ram, 2);
+        effect(&mut ram, 10, 10, 0x21, 5);
+        let mut presenter = Presenter::new(on());
+        presenter.update_scene(&ram, Some(MODE_FIELD), false);
+        presenter.key_on(1 << 10, &ram);
+        let Route::Source(first) = presenter.renderer.route(10) else { panic!("placed") };
+        // The slot takes actor 1 (on the left) for the same sound, started
+        // again on another voice while the first start's release sounds.
+        slot(&mut ram, 1);
+        effect(&mut ram, 12, 10, 0x21, 6);
+        presenter.key_on(1 << 12, &ram);
+        presenter.update_scene(&ram, Some(MODE_FIELD), false);
+        let Route::Source(second) = presenter.renderer.route(12) else { panic!("placed") };
+        assert_ne!(first, second, "a start of its own");
+        match presenter.place_effect(presenter.tags[12].unwrap()) {
+            Placing::Placed { direction, follows, .. } => assert!(follows == 1 && direction[0] < -0.99, "{direction:?} following {follows}"),
+            other => panic!("{other:?}"),
+        }
+        assert_eq!(presenter.place_effect(presenter.tags[10].unwrap()), Placing::Unresolved("its emitter is gone (its slot freed or following another)"));
+        assert_eq!(presenter.renderer.route(10), Route::Source(first), "the tail keeps its source to its end");
+        let target = |id: u32| presenter.renderer.sources().into_iter().find(|s| s.id == id).and_then(|s| s.target).expect("a target");
+        assert!((target(first).0 - 90.0).abs() < 1e-3, "the tail keeps its last direction: {:?}", target(first));
+        assert!((target(second).0 + 90.0).abs() < 1e-3, "{:?}", target(second));
+    }
+
     /// The field of `a_field_emitter_...` with the camera's rotation `rows`
     /// and translation `t`, the character at `listener` and slot 0's emitter
     /// (actor 1, sound 0x30) at `emitter`; the direction it is heard from.
@@ -1152,7 +1223,8 @@ mod tests {
         }
     }
 
-    /// The presenter of `field_direction`'s field.
+    /// The presenter of `field_direction`'s field, its emitter's voice 8
+    /// keyed on.
     fn field_scene(rows: [i16; 9], t: [i32; 3], listener: [i32; 3], emitter: [i32; 3]) -> Presenter {
         let mut ram = driver();
         let mut matrix: Vec<u8> = rows.iter().flat_map(|r| r.to_le_bytes()).collect();
@@ -1198,6 +1270,39 @@ mod tests {
         presenter.set_view(None);
         let head = heard(&presenter);
         assert!(head[2] < -0.99, "{head:?}");
+    }
+
+    #[test]
+    fn the_first_person_view_then_the_head_turn_a_direction_once_each() {
+        // Looking a quarter to the right in first person (the view's axes in
+        // the camera's space) and the head pitched 45 degrees up (its axes
+        // in the presentation's, as a headset's pose gives them): two turns
+        // that do not commute.
+        let view = [[0.0, 0.0, -1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]];
+        let (s, c) = std::f32::consts::FRAC_PI_4.sin_cos();
+        let half = std::f32::consts::FRAC_PI_8.sin_cos();
+        let head = head_axes([half.0, 0.0, 0.0, half.1]);
+        let close = |a: [f32; 3], b: [f32; 3]| a.iter().zip(&b).all(|(x, y)| (x - y).abs() < 1e-6);
+        assert!(close(head[1], [0.0, c, s]) && close(head[2], [0.0, -s, c]), "the head's forward is raised: {head:?}");
+        // An emitter on the camera's right, level with the character.
+        let level: [i16; 9] = [4096, 0, 0, 0, 4096, 0, 0, 0, 4096];
+        let mut presenter = field_scene(level, [0, 0, 1000], [0, 0, 0], [500, 0, 0]);
+        presenter.set_view(Some(view));
+        presenter.set_head(Some(head));
+        let Placing::Placed { direction, .. } = presenter.place_effect(presenter.tags[8].unwrap()) else { panic!("placed") };
+        let right = [1.0, 0.0, 0.0];
+        // Ahead of the turned view, so below the raised head.
+        assert!(close(direction, [0.0, s, c]), "{direction:?}");
+        assert!(close(presenter.to_listener(right), direction));
+        // Not the head first, nor either turn twice.
+        for wrong in [apply(&view, apply(&head, right)), apply(&head, apply(&view, apply(&view, right))), apply(&head, apply(&head, apply(&view, right)))] {
+            assert!(!close(direction, wrong), "{direction:?} against {wrong:?}");
+        }
+        // The renderer is told the same direction.
+        let Route::Source(id) = presenter.renderer.route(8) else { panic!("routed") };
+        let status = presenter.renderer.sources().into_iter().find(|s| s.id == id).expect("its source");
+        let (azimuth, elevation) = status.target.expect("a target");
+        assert!(azimuth.abs() < 1e-3 && (elevation + 45.0).abs() < 1e-3, "{status:?}");
     }
 
     #[test]
@@ -1285,7 +1390,7 @@ mod tests {
         effect(&mut ram, 4, 4, 0x0007_0009, 40);
         effect(&mut ram, 5, 5, 0x0007_0009, 40);
         presenter.key_on((1 << 4) | (1 << 5), &ram);
-        assert_eq!(presenter.tags[4], Some(Tag::Effect { channel: 4, id: 0x0007_0009, stamp: 40, sprite: sprites[1] }));
+        assert_eq!(presenter.tags[4], Some(Tag::Effect { channel: 4, id: 0x0007_0009, stamp: 40, sprite: sprites[1], emitter: None }));
         assert_eq!(presenter.renderer.route(4), presenter.renderer.route(5), "one source for both channels");
         let direction = match presenter.place_effect(presenter.tags[4].unwrap()) {
             Placing::Placed { direction, emitter, .. } => {

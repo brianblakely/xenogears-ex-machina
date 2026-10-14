@@ -51,6 +51,7 @@ impl Complex {
 }
 
 /// An in-place FFT of `n` points (a power of two).
+#[derive(Clone)]
 pub struct Fft {
     n: usize,
     /// `e^(-2 pi i k / n)` for k below n / 2.

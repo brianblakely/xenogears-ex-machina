@@ -525,7 +525,10 @@ or on the game's own Sound screen, turns it off.
   the combatants' average height), which no turn moves from one combatant
   to another. The distance is dropped: the game's own volume keeps its
   distance law. An emitter at the listener keeps the direction it had.
-  Emitters are read with the key-on that starts them and after every frame.
+  Emitters are read with the key-on that starts them and after every frame;
+  a start keeps the emitter it came from, so when its slot takes another
+  actor (the original's nearest three changing), even for the same sound,
+  the start's tail stays where it was rather than following the newcomer.
   Every other effect (interface sounds, effects field and battle scripts
   start and pan themselves, the world map's) keeps its original mix and is
   counted as a coverage gap by mode and effect id; an emitter that is gone
@@ -546,8 +549,15 @@ or on the game's own Sound screen, turns it off.
   glide (30 ms), a source fades between placed and its original mix (50 ms)
   and the whole presentation crossfades with the SPU's own mix (100 ms);
   under the diagnostic bypass or at rest it outputs the SPU's samples
-  themselves. Above -1.4 dBFS a soft knee bends peaks towards full scale
-  instead of clipping.
+  themselves. A filter is remade once its direction has moved half a
+  degree; the block it is remade in fades, sample by sample, from all the
+  old filters give (the block and the last one's tail through them) to all
+  the new ones give (the last block's tail through them too), so neither a
+  filter nor its interaural delay changes from one sample to the next. A
+  glide past the front (a camera cut, the music's immersion changed) moves
+  up to 6 degrees a block; without the fade each block boundary stepped,
+  a zipper 6 to 15 dB above the high band around it. Above -1.4 dBFS a
+  soft knee bends peaks towards full scale instead of clipping.
 - **HRTF data.** MIT KEMAR, diffuse-field equalized, at 44.1 kHz
   (`crates/xem-binaural/hrtf/README.md`: source, checksums, terms and the
   citation the About section repeats; `tools/binaural_hrtf.py` repacks the
@@ -562,7 +572,10 @@ or on the game's own Sound screen, turns it off.
   `xem_core::binaural::Config`): enabled, spatial music, positional effects,
   music immersion (0-100, 70 by default), head-tracked music, and a diagnostic
   bypass available through the service (not the Settings panel). The
-  hosts apply them with each frame batch (`Session::set_binaural`), with the
+  hosts apply them with each frame batch (`Session::set_binaural`; a
+  presentation starting reads the scene at once, so the voices sounding
+  then are placed by their emitters at the next register sync rather than
+  counted as gaps), with the
   first-person view's axes (`GameView::listener_axes`) and a headset's head
   (`xem_core::binaural::head_axes` of the OpenXR or WebXR viewer pose, the
   screen's forward its reference; lost tracking keeps the last; leaving the
@@ -576,18 +589,34 @@ or on the game's own Sound screen, turns it off.
   service: `settings_apply` with `{"change": {"Binaural": {...}}}` on the
   desktop's `--control`, `xem.settings.apply({Binaural: {...}})` in the
   browser. Without a host (xem-headless) the session's `binaural` command
-  changes the settings given by name. It reports what is presented: each source (music: song, part and role;
-  effect: id, channels and emitter; its direction, pre-pan gain, level),
-  each voice's identity and route, the listener, the first-person and head
-  turns, the CD input's route and the coverage gaps. `audio_capture`
-  (`action` start or stop, `samples: true` for the samples as hex) keeps
-  the presented output, whoever takes the ring, for offline checks;
-  `xem-headless --binaural` (or `--binaural-config JSON`) with `--wav`
-  writes it to a file and prints the status.
+  changes the settings given by name. It reports what is presented: each
+  source (music: song, part, role and `placement`, its place on the stage
+  at the immersion set: azimuth, elevation, `home_pan`, `spread`; effect:
+  id, `start` tick, channels and emitter), the direction it is heard from
+  now (glided) and its `target`, where it is heading (null while it keeps
+  its direction), its voices' `pan` in the last block, its pre-pan gain and
+  level; each voice's identity (an effect's start too) and route, the
+  listener, the first-person and head turns, the CD input's route and the
+  coverage gaps. `audio_capture` (`action` start or stop, `samples: true`
+  for the samples as hex) keeps the presented output, whoever takes the
+  ring, for offline checks. With `tap: true` at the start (only while
+  Binaural presents) it also keeps the renderer's journal
+  (`xem_binaural::Journal`, presentation only, at most 30 s at about
+  7.4 MB a second): the renderer as it was, every sample's tap and every
+  change to its routes and sources, from which `Journal::replay` mixes the
+  same output again sample for sample, or any part alone. The stop then
+  reports, block by block in runs, which voices each source had sounding
+  (`tap.routes`), with the capture's `frames` and `lead` (the output
+  samples before its first). `xem-headless --binaural` (or
+  `--binaural-config JSON`) with `--wav` writes the output to a file and
+  prints the status.
 
 Tests: `xem-spu` (the tap reconstructs every sample and changes nothing);
 `xem-binaural`'s units (levelling, interaural cues, the shelf, the pan law,
-gains, crossfades, resets, the knee, the stage's rotation) and
+gains, crossfades, resets, the knee, the stage's rotation; a tone turned
+from right to left stays as smooth through the glide as held at either end;
+a source's status says where it heads and how its voices pan; a journal
+mixes again exactly what was mixed, its parts adding up) and
 `tests/directions.rs`, where noise placed in 48 directions between the
 measured ones is recovered from the rendered ears alone (spectra and delay,
 matched against every measured direction) within 1.5 degrees (median), 3.5
@@ -595,7 +624,10 @@ at worst, left and right, front and back and up and down always right; the
 model listener there is the measured head, not people. `xem_core::binaural`
 on synthetic driver memory (identities, songs, field and arena emitters,
 sprites followed until freed, the battle's fixed centre, distance, zoom and
-scale changing nothing, restores, head turns). On the
+scale changing nothing, restores, head turns; a start's tail keeping its
+place when its slot takes another actor for the same sound; a first-person
+look a quarter right and a head pitched 45 degrees up, which do not
+commute, turning a direction in that order, each once). On the
 original game, `xem-headless/tests/binaural.rs` (field 15: three emitters
 and its music): with the mode on, music only, effects only or bypassed, game
 memory and the SPU (voice volumes, the driver's pre-pan gains, included)
@@ -666,7 +698,11 @@ guessed), and sounds that event scripts start (field and battle) are left
 out, since the actor running a script is not necessarily the emitter; no
 per-song overrides were reviewed; the arena path is tested on synthetic
 memory, not reached in the game; headsets and phones only through IWER and a
-throttled processor.
+throttled processor. The interaural delay, applied as a phase ramp, leaves
+up to 1e-4 of a filter's energy (-40 dB) past the 128 samples a block
+convolves without wrapping; it wraps into the start of the block (a 300 Hz
+tone held to one side shows a second difference of 55 where its own is
+about 13).
 
 ## Presentation
 

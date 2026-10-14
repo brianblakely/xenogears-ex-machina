@@ -27,7 +27,7 @@ pub mod music;
 pub mod pan;
 mod render;
 
-pub use render::{CdRoute, Renderer, Route, SourceStatus, Target};
+pub use render::{CdRoute, Change, JOURNAL_LIMIT, Journal, Renderer, Route, SourceStatus, Target};
 
 /// The SPU's output rate, which the renderer keeps.
 pub const SAMPLE_RATE: u32 = 44_100;

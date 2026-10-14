@@ -358,7 +358,14 @@ impl<M: GameModule> Session<M> {
     /// only, never recorded; it works where the SPU's output is kept for a
     /// host. Hosts run the game in Stereo under it (`set_sound_mode(1)`).
     pub fn set_binaural(&mut self, config: crate::binaural::Config) {
+        let starting = self.runtime.services().spu.binaural().is_none();
         self.runtime.services().spu.configure_binaural(config);
+        // A presentation starting reads the scene at once: the voices
+        // sounding are identified at the next register sync, within the
+        // frame, by where their emitters are.
+        if starting {
+            self.runtime.update_binaural();
+        }
     }
 
     /// The listener's axes (right, down, forward) in the game camera's view
@@ -791,17 +798,30 @@ impl<M: GameModule> Session<M> {
                 // The output as presented (Binaural or the original mix),
                 // kept from "start" to "stop": its length, levels, an FNV-1a
                 // hash of its samples and, with "samples": true, the
-                // samples as little-endian hex.
+                // samples as little-endian hex. "tap": true at the start
+                // also keeps what the Binaural presentation mixed them from
+                // (presentation only), and the stop reports which voices
+                // each source had in each block.
                 let spu = &mut self.runtime.services().spu;
                 match arg_str("action").ok_or("audio_capture needs action: start or stop")? {
                     "start" => {
+                        let tap = command.get("tap").map(|v| v.as_bool().ok_or("audio_capture tap must be boolean")).transpose()?.unwrap_or(false);
+                        if tap && spu.binaural().is_none() {
+                            return Err("audio_capture tap: true keeps what the Binaural presentation mixes, and nothing presents".into());
+                        }
                         if !spu.start_capture() {
                             return Err("the SPU's output is not kept for a host (headless without --wav): nothing to capture".into());
                         }
-                        Ok(json!({"capturing": true}))
+                        if tap {
+                            spu.start_tap_capture();
+                        } else {
+                            spu.take_tap_capture();
+                        }
+                        Ok(json!({"capturing": true, "tap": tap}))
                     }
                     "stop" => {
                         let samples = spu.take_capture().ok_or("no audio capture under way")?;
+                        let tap = spu.take_tap_capture();
                         let side = |s: usize| samples.iter().skip(s).step_by(2);
                         let rms = |s: usize| {
                             let n = side(s).count().max(1) as f64;
@@ -821,6 +841,9 @@ impl<M: GameModule> Session<M> {
                         });
                         if command.get("samples").and_then(Value::as_bool) == Some(true) {
                             reply["samples"] = json!(hex(&bytes));
+                        }
+                        if let Some(journal) = tap {
+                            reply["tap"] = tap_summary(&journal);
                         }
                         Ok(reply)
                     }
@@ -1449,6 +1472,29 @@ impl<M: GameModule> Session<M> {
 
 fn hex(data: &[u8]) -> String {
     data.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// A tap capture as `audio_capture` reports it: its samples, the output
+/// samples before its first (`lead`), and its blocks in runs (first and
+/// last block) in which each source had the same voices sounding.
+fn tap_summary(journal: &xem_binaural::Journal) -> Value {
+    let blocks = journal.block_routes();
+    let voices = |mask: u32| (0..xem_spu::VOICES as u32).filter(|v| mask & (1 << v) != 0).collect::<Vec<u32>>();
+    let mut runs = Vec::new();
+    let mut first = 0;
+    while first < blocks.len() {
+        let end = (first..blocks.len()).find(|&k| blocks[k] != blocks[first]).unwrap_or(blocks.len());
+        let sources: serde_json::Map<String, Value> = blocks[first].iter().map(|(id, mask)| (id.to_string(), json!(voices(*mask)))).collect();
+        runs.push(json!({"blocks": [first, end - 1], "sources": sources}));
+        first = end;
+    }
+    json!({
+        "frames": journal.frames().len(),
+        "lead": journal.lead(),
+        "block": xem_binaural::BLOCK,
+        "truncated": journal.truncated(),
+        "routes": runs,
+    })
 }
 
 fn unhex(text: &str) -> Result<Vec<u8>, String> {
