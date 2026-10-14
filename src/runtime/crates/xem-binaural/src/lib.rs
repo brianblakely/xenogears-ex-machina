@@ -1,5 +1,5 @@
 //! Binaural presentation of the SPU's voices for headphones (plan.md,
-//! Phase 9, Binaural; docs/runtime.md, Binaural sound mode).
+//! Phase 8, Binaural; docs/runtime.md, Binaural sound mode).
 //!
 //! The SPU says what each output sample was mixed from
 //! (`xem_spu::Spu::run_tapped`): every voice's signal before its volume and

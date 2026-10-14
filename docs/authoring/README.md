@@ -3,7 +3,7 @@
 This is retained Phase 0 design and dependency qualification, not an implemented
 SDK. No authoring command, isolated build service or playable authored world is
 claimed by specification tests. The native runtime and its first playable slice
-come first; **Phase 6 owns the authoring bridge**. The [plan](../../plan.md) is
+come first; **Phase 11 owns the authoring bridge**. The [plan](../../plan.md) is
 authoritative.
 Legacy phase/facet labels in the retained JSON describe the earlier specification,
 not additional Phase 1 requirements or current implementation completion.

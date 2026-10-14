@@ -417,7 +417,7 @@ Binaural (Settings → Audio → Sound mode, beside the game's own Mono, Stereo
 and Wide) presents the game's sound for headphones, in two channels: the
 music's parts arranged around the listener and the world's positional
 effects from where their emitters are, each at the gain the game gives it
-(plan.md, Phase 9). It is a presentation: the game runs in its own Stereo
+(plan.md, Phase 8). It is a presentation: the game runs in its own Stereo
 under it (`Settings::game_sound_mode`; Stereo's pan law is what the
 placement reads), and nothing it does reaches game memory, the sound driver
 or the SPU. Turning it off gives back the original mode chosen before
@@ -989,7 +989,7 @@ still at every zoom; with the setting, 43 at 1x, 32 at 1.5x, 16-17 at 2x,
 ### First-person inspection
 
 The SDL hosts (`xem_host::View`: desktop, and Android with a gamepad) look
-around a field from its controlled character's eyes (plan.md Phase 9's
+around a field from its controlled character's eyes (plan.md Phase 8's
 stationary first-person inspection, on a flat display; the browser and
 headset hosts do not offer it yet). While the player walks in a field (the
 player control read the pad in the field's last event pass, which it does
@@ -1679,7 +1679,7 @@ Normal-tempo music is an explicit player requirement. The original sound driver
 also gates gameplay: scenes waiting on its progress run at normal speed during
 FF. Consequently FF play can differ from 1× play with the same per-frame pads.
 This is an intentional exception to the simulation/pacing independence in
-plan.md (host scheduling, Phase 2 authority, and Phase 7 timing semantics).
+plan.md (host scheduling, Phase 2 authority, and Phase 6 timing semantics).
 Fixed-rate FF remains reproducible for the same timed inputs. Uncapped play's
 host clock is an additional input and must be included in a recording for
 reproducible replay. CD/movie audio retains only the latest 100 ms when input

@@ -2,15 +2,15 @@
 
 > Roadmap ownership: plan.md is authoritative. The native runtime and its first
 > playable slice come first (Phases 2–3); the authoring bridge belongs to
-> Phase 6. Legacy facet/gate labels in retained specification JSON are
+> Phase 11. Legacy facet/gate labels in retained specification JSON are
 > historical identifiers, not additional Phase 1 work or implementation-completion
 > claims.
 
 
 Execution ownership follows the sequential plan. Phase 2 proves the complete
 minimum native field/event/persistence and agent foundation; Phase 3 adds the
-original slice's battle/menu/media integration; Phase 6 implements Lua; Phase 12
-completes every original subsystem. Acceptance gates list their initial owner and
+original slice's battle/menu/media integration; Phase 9 completes every original
+subsystem; Phase 11 implements Lua. Acceptance gates list their initial owner and
 separate later regression tasks. Unavailable families are explicit errors, not
 empty successful implementations. No later checklist is an earlier phase exit.
 

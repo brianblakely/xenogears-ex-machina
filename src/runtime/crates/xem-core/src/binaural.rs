@@ -1,4 +1,4 @@
-//! The Binaural sound mode's game side (plan.md, Phase 9; docs/runtime.md,
+//! The Binaural sound mode's game side (plan.md, Phase 8; docs/runtime.md,
 //! Binaural sound mode). The SPU device mixes its voices again through
 //! [`xem_binaural::Renderer`] while the mode is on; this module tells it
 //! what each voice is and where it is heard. Everything here only reads:

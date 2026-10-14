@@ -358,7 +358,7 @@ All game functions, including Pause and inspection, must be operable with either
 single hand; app settings and presentation manipulation may use two hands.
 Qualify the Phase 5 controls on Phase 4's virtual-screen/stereo presentation.
 Diorama scaling and first-person inspection use the bindings specified here when
-Phase 9 implements those views; they are not prerequisites for Phase 5's exit.
+Phase 8 implements those views; they are not prerequisites for Phase 5's exit.
 These requirements do not add work to the Phase 1 matching decompilation.
 
 Use capability/permission checks for hand tracking, eye gaze and supported thumb
@@ -462,7 +462,7 @@ context actions expose otherwise awkward commands such as Gear boarding/exiting
 without requiring two-handed button chords or bypassing normal eligibility.
 
 In shops, put **+, -, ALL, NONE** virtual quantity buttons outside the game surface
-(and outside the Phase 9 diorama). They edit the selected item's proposed
+(and outside the Phase 8 diorama). They edit the selected item's proposed
 quantity only: ALL selects its maximum legal quantity subject to funds, stock,
 inventory and transaction limits; NONE clears that proposal. Display quantity
 and total, then separately confirm the purchase/sale. Do not reuse left/right
@@ -522,58 +522,27 @@ Keep controls clear of the play area in both modes.
 
 **Exit:** Every original system and application settings are usable through the
 appropriate desktop, browser, touch and headset controls, including qualified
-one-hand Horizon/WebXR gameplay, with human/agent action parity. Phase 9 qualifies
+one-hand Horizon/WebXR gameplay, with human/agent action parity. Phase 8 qualifies
 the diorama and stationary-inspection presentation bindings.
 
-## Phase 6 — Mods and source-oriented agent authoring
-
-**Goal:** Add authoring on the proven runtime; do not build a second game engine.
-
-- [ ] Implement native mod packages, dependency/conflict handling, deterministic
-  load order, validation, graphical mod management and explicit save compatibility.
-- [ ] Provide Lua gameplay extensions with shared scheduling, debugging and
-  serializable progress. Integrate custom tasks with snapshots/replay and errors.
-- [ ] Build the small TypeScript/optional TSX source-to-playable bridge here:
-  source/parameters -> supervised Node build -> IR -> meshes/world/collision/events
-  -> runtime package. The shared Rust/C runtime/events/Lua own gameplay. Native
-  prebuilt play needs no browser; native and browser prebuilt play need no Node,
-  QML, authoring tools or second game runtime. Keep supervised source builds and
-  full authoring on desktop; qualify portable prebuilt mods and Lua in WebAssembly
-  without native plugins or privileged filesystem/process assumptions.
-- [ ] Support reusable procedural solids, surfaces/arbitrary meshes and optional
-  external/original assets. Start with a wall/door/collectible, then two rooms,
-  an arched passage, elevation change, custom object, NPC and one-time reward.
-- [ ] Expose a discoverable typed SDK/catalog and revision-aware transactional
-  source edits. Preserve stable IDs, handwritten code and unrelated edits; source
-  is authoritative, generated GLBs/IR/packages are not competing editable masters.
-- [ ] Isolate executable generators/dependency installation with filesystem,
-  network and credential restrictions, resource limits and watchdogs. Node vm
-  and typing are not security boundaries. Publish immutable successful builds.
-- [ ] Prove prompt -> discover -> author -> build -> legal play -> diagnose ->
-  repair -> targeted revision -> package. Protect acceptance tests from author edits;
-  retain source diagnostics, immutable test versions and generated/mixed-asset tests.
-
-**Exit:** Mods and the small authoring bridge work with protected native verification;
-source-preserving human/agent edits and prebuilt headless play are demonstrated.
-
-## Phase 7 — Persistence and time controls
+## Phase 6 — Persistence and time controls
 
 **Goal:** Robust player conveniences built on foundational runtime state/time services.
 
 - [ ] Complete ordinary saves and supported original-save import/export; implement
-  save states, rewind and fast-forward, including event/Lua/audio/media progress.
+  save states, rewind and fast-forward, including event/audio/media progress.
 - [x] Persist browser saves/settings in qualified origin-local storage (such as
   IndexedDB/OPFS), acknowledge completed writes and offer explicit import/export
   backup and native/browser interchange. Handle quota exhaustion, denied storage,
   eviction and interrupted writes visibly; do not rely on unload-time saving or
   describe browser-managed storage as guaranteed permanent. Bound rewind memory.
 - [ ] Verify deterministic restore across flat/stereo/XR and headless modes,
-  long runs, errors and package changes. Qualify supported cross-device save/state
+  long runs, errors and revision changes. Qualify supported cross-device save/state
   interchange; reject incompatible states explicitly rather than silently migrating.
 
 **Exit:** Saves and time controls preserve required state and timing semantics.
 
-## Phase 8 — Gameplay quality of life
+## Phase 7 — Gameplay quality of life
 
 **Goal:** Explicit independently implemented options, separate from unknown behavior.
 
@@ -585,7 +554,7 @@ source-preserving human/agent edits and prebuilt headless play are demonstrated.
 
 **Exit:** Options work without disguising missing original logic or breaking progression.
 
-## Phase 9 — Extended camera, VR, media and binaural audio
+## Phase 8 — Extended camera, VR, media and binaural audio
 
 **Goal:** Add optional camera/media features and binaural spatial presentation
 while preserving original gameplay and authored audio decisions.
@@ -733,30 +702,7 @@ effects while preserving original audibility, gain and timing decisions; origina
 sound modes remain available. Optional media/audio features are verified
 independently, without fidelity overclaims or changes to game physics.
 
-## Phase 10 — Graphical level and cutscene editors
-
-**Goal:** Human clients of the same source/build/runtime/debug services agents use.
-
-- [ ] Deliver Slint desktop level, geometry, object, event and cutscene editing,
-  selection/source attribution, preview, diagnostics, undo/redo and transactions.
-- [ ] Preserve components, stable IDs and handwritten source; do not promise
-  arbitrary code round-tripping. No operation exists only in a GUI callback.
-- [ ] Verify mixed human/agent revisions and build/play/repair workflows.
-
-**Exit:** Editors produce source-preserving playable packages through shared services.
-
-## Phase 11 — Battle and minigame tooling
-
-**Goal:** Extend the shared tools to custom combat and activities.
-
-- [ ] Provide graphical battle-system, encounter, AI, balance and minigame tools,
-  including Lua/event authoring, direct headless playtests and full diagnostics.
-- [ ] Verify multiple seeds/policies and distinguish simulation time from estimated
-  human reading/decision time. Preserve the same runtime and package contracts.
-
-**Exit:** These systems are editable and verifiable without another rules model.
-
-## Phase 12 — Complete native/browser gameplay on both discs
+## Phase 9 — Complete native/browser gameplay on both discs
 
 **Goal:** Integrate the already recovered game, not resume deferred decompilation.
 
@@ -774,15 +720,14 @@ independently, without fidelity overclaims or changes to game physics.
 human/agent parity, including disc transitions and streamed audio/FMV playback.
 Unknown behavior and progression workarounds cannot be reported as completion.
 
-## Phase 13 — Release qualification
+## Phase 10 — Release qualification
 
-**Goal:** Reproducible native/browser desktop/mobile/headset play and a desktop
-modding toolkit.
+**Goal:** Release reproducible native/browser desktop/mobile/headset play of the
+complete original game. The modding toolkit follows this release.
 
 - [ ] Qualify Arch-first Linux, Windows, macOS, Android and Meta Horizon OS builds,
   appropriate graphics backends, installation/upgrades, input/audio devices,
-  performance and headless/no-image operation. Distinguish desktop authoring/tools
-  from mobile/headset play; prebuilt packages use the same runtime contracts.
+  performance and headless/no-image operation.
 - [ ] Test mobile storage/asset import, save persistence, background/resume,
   surface/device recreation and controller/audio reconnects on actual devices.
   Qualify sustained performance/thermal behavior and XR frame pacing, stereo,
@@ -800,7 +745,7 @@ modding toolkit.
   in-headset settings on actual supported browsers/headsets. Verify HD-2D quality
   tiers, stereo correctness and sustained frame pacing across native/browser
   presentation modes; report unsupported combinations rather than implying parity.
-- [ ] Run original-game, agent, authoring, mod, editor, save/time and presentation
+- [ ] Run original-game, agent, save/time and presentation
   regressions on the applicable native/browser targets; verify defaults, optional
   original behavior and error diagnostics.
 - [ ] Audit licenses and the explicit authored-source allowlist; distribute no
@@ -810,4 +755,74 @@ modding toolkit.
   workflows, including self-hosting and local asset/save handling. Ship tested
   artifacts, not merely completed specifications.
 
-**Exit:** All preceding phase outcomes remain passing in the supported release builds.
+**Exit:** All preceding phase outcomes remain passing in the supported release builds
+of the complete native/browser app.
+
+## Phase 11 — Mods and source-oriented agent authoring
+
+**Goal:** Add authoring on the proven runtime; do not build a second game engine.
+
+- [ ] Implement native mod packages, dependency/conflict handling, deterministic
+  load order, validation, graphical mod management and explicit save compatibility.
+- [ ] Provide Lua gameplay extensions with shared scheduling, debugging and
+  serializable progress. Integrate custom tasks with saves, snapshots/rewind/replay
+  and errors; reject saves/states from incompatible package versions explicitly.
+- [ ] Build the small TypeScript/optional TSX source-to-playable bridge here:
+  source/parameters -> supervised Node build -> IR -> meshes/world/collision/events
+  -> runtime package. The shared Rust/C runtime/events/Lua own gameplay. Native
+  prebuilt play needs no browser; native and browser prebuilt play need no Node,
+  QML, authoring tools or second game runtime. Keep supervised source builds and
+  full authoring on desktop; qualify portable prebuilt mods and Lua in WebAssembly
+  without native plugins or privileged filesystem/process assumptions.
+- [ ] Support reusable procedural solids, surfaces/arbitrary meshes and optional
+  external/original assets. Start with a wall/door/collectible, then two rooms,
+  an arched passage, elevation change, custom object, NPC and one-time reward.
+- [ ] Expose a discoverable typed SDK/catalog and revision-aware transactional
+  source edits. Preserve stable IDs, handwritten code and unrelated edits; source
+  is authoritative, generated GLBs/IR/packages are not competing editable masters.
+- [ ] Isolate executable generators/dependency installation with filesystem,
+  network and credential restrictions, resource limits and watchdogs. Node vm
+  and typing are not security boundaries. Publish immutable successful builds.
+- [ ] Prove prompt -> discover -> author -> build -> legal play -> diagnose ->
+  repair -> targeted revision -> package. Protect acceptance tests from author edits;
+  retain source diagnostics, immutable test versions and generated/mixed-asset tests.
+
+**Exit:** Mods and the small authoring bridge work with protected native verification;
+source-preserving human/agent edits and prebuilt headless play are demonstrated.
+
+## Phase 12 — Graphical level and cutscene editors
+
+**Goal:** Human clients of the same source/build/runtime/debug services agents use.
+
+- [ ] Deliver Slint desktop level, geometry, object, event and cutscene editing,
+  selection/source attribution, preview, diagnostics, undo/redo and transactions.
+- [ ] Preserve components, stable IDs and handwritten source; do not promise
+  arbitrary code round-tripping. No operation exists only in a GUI callback.
+- [ ] Verify mixed human/agent revisions and build/play/repair workflows.
+
+**Exit:** Editors produce source-preserving playable packages through shared services.
+
+## Phase 13 — Battle and minigame tooling
+
+**Goal:** Extend the shared tools to custom combat and activities.
+
+- [ ] Provide graphical battle-system, encounter, AI, balance and minigame tools,
+  including Lua/event authoring, direct headless playtests and full diagnostics.
+- [ ] Verify multiple seeds/policies and distinguish simulation time from estimated
+  human reading/decision time. Preserve the same runtime and package contracts.
+
+**Exit:** These systems are editable and verifiable without another rules model.
+
+## Phase 14 — Modding toolkit release
+
+**Goal:** Ship the desktop modding toolkit on the released app without regressing it.
+
+- [ ] Package the authoring bridge, editors and battle/minigame tools for desktop
+  hosts, distinguished from mobile/headset play; prebuilt mod packages use the
+  same runtime contracts on every Phase 10 native/browser target.
+- [ ] Run authoring, mod, editor, Lua and save-compatibility regressions alongside
+  the Phase 10 release suite; extend the license/allowlist audit and documentation
+  to the toolkit, mod packaging and agent authoring workflows.
+
+**Exit:** The toolkit ships in tested artifacts and every Phase 10 release outcome
+still passes with mods enabled, disabled and absent.
